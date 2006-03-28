@@ -235,7 +235,7 @@ ta_obj_value_set(const char *type, const char *name, const char *value)
 int
 ta_obj_set(const char *type, const char *name,
            const char *attr_name, const char *attr_value,
-           ta_obj_set_cb cb_func)
+           unsigned int gid, ta_obj_cb cb_func)
 {
     ta_cfg_obj_t *obj = ta_obj_find(type, name);
     te_bool       locally_created = FALSE;
@@ -248,6 +248,7 @@ ta_obj_set(const char *type, const char *name,
             return rc;
 
         obj->action = TA_CFG_OBJ_SET;
+        obj->gid = gid;
         locally_created = TRUE;
         
         if (cb_func != NULL && (rc = cb_func(obj)) != 0)
@@ -255,6 +256,12 @@ ta_obj_set(const char *type, const char *name,
             ta_obj_free(obj);
             return rc;
         }
+    }
+    else if (gid != obj->gid)
+    {
+        ERROR("%s(): Request GID=%u does not match object GID=%u",
+              __FUNCTION__, gid, obj->gid);
+        return TE_RC(TE_RCF_PCH, TE_ESYNCFAILED);
     }
 
     /* Now set specified attribute */
@@ -270,7 +277,8 @@ ta_obj_set(const char *type, const char *name,
 
 /* See the description in rcf_pch_ta_cfg.h */
 int
-ta_obj_del(const char *type, const char *name, void *user_data)
+ta_obj_del(const char *type, const char *name, void *user_data,
+           unsigned int gid, ta_obj_cb cb_func)
 {
     ta_cfg_obj_t *obj = ta_obj_find(type, name);
     int           rc;
@@ -286,8 +294,15 @@ ta_obj_del(const char *type, const char *name, void *user_data)
         return rc;
 
     obj->action = TA_CFG_OBJ_DELETE;
+    obj->gid = gid;
 
-    return rc;
+    if (cb_func != NULL && (rc = cb_func(obj)) != 0)
+    {
+        ta_obj_free(obj);
+        return rc;
+    }
+
+    return 0;
 }
 
 /* Route-specific functions */

@@ -346,7 +346,7 @@ rt_msghdr_metrics2str(unsigned int metrics, char *buf, size_t buflen)
 
 /** Log routing socket message */
 static void
-route_log(const struct rt_msghdr *rtm)
+route_log(const char *title, const struct rt_msghdr *rtm)
 {
     char                    inits[64];
     char                    locks[64];
@@ -384,7 +384,8 @@ route_log(const struct rt_msghdr *rtm)
         }
     }
 
-    PRINT("len=%u ver=%u type=%s index=%u pid=%ld seq=%d errno=%d use=%d\n"
+    PRINT("%s\n"
+         "len=%u ver=%u type=%s index=%u pid=%ld seq=%d errno=%d use=%d\n"
          "addrs=%s\nflags=%s\ninits=%s\nlocks=%s\n"
          "mtu=%u hops=%u expire=%u recvpipe=%u sendpipe=%u\n"
          "ssthresh=%u rtt=%u rttvar=%u pksent=%u\n"
@@ -402,7 +403,7 @@ route_log(const struct rt_msghdr *rtm)
 #ifdef RTAX_SRCIFP
          "srcifp=%s\n"
 #endif
-         ,
+         , title,
          rtm->rtm_msglen, rtm->rtm_version,
          rt_msghdr_type2str(rtm->rtm_type), rtm->rtm_index,
          (long)rtm->rtm_pid, rtm->rtm_seq, rtm->rtm_errno, rtm->rtm_use,
@@ -601,7 +602,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     /* msg->rtm_addrs is 0 */
     msg->rtm_seq = ++rt_seq;
     /* msg->rtm_errno is 0 */
-    /* msg->rtm_flags is 0 */
+    msg->rtm_flags = RTF_UP | RTF_STATIC;
     /* msg->rtm_use is 0 */
     /* msg->rtm_inits is 0 */
     /* msg->rtm_rmx has all zeros */
@@ -641,6 +642,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         msg->rtm_msglen += addrlen;
         memcpy(addr, &rt_info->gw, addrlen);
         msg->rtm_addrs |= RTA_GATEWAY;
+        msg->rtm_flags |= RTF_GATEWAY;
         addr = SA(((const uint8_t *)addr) + addrlen);
     }
 
@@ -653,7 +655,11 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     rc = te_sockaddr_mask_by_prefix(addr, addrlen, rt_info->dst.ss_family,
                                     rt_info->prefix);
     if (rc != 0)
+    {
+        ERROR("%s(): te_sockaddr_mask_by_prefix() failed: %r",
+              __FUNCTION__, rc);
         return TE_RC(TE_TA_UNIX, rc);
+    }
     msg->rtm_addrs |= RTA_NETMASK;
     addr = SA(((const uint8_t *)addr) + addrlen);
 
@@ -777,7 +783,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
 
 #if 0
     /* Reply got */
-    route_log(rtm);
+    route_log(__FUNCTION__, rtm);
 #endif
 
     rc = rt_msghdr_to_ta_rt_info(rtm, rt_info);
@@ -807,7 +813,11 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
 
     rc = ta_rt_info_to_rt_msghdr(action, rt_info, rtm, rt_buflen);
     if (rc != 0)
+    {
+        ERROR("%s(): ta_rt_info_to_rt_msghdr() failed: %r",
+              __FUNCTION__, rc);
         return rc;
+    }
 
     rt_cmd = rtm->rtm_type;
     rt_pid = rtm->rtm_pid;
@@ -827,8 +837,9 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     ret = write(rt_sock, rt_buf, rtm->rtm_msglen);
     if (ret != rtm->rtm_msglen)
     {
-        rc = TE_RC(TE_TA_UNIX, TE_EIO);
-        ERROR("Failed to send route request to kernel");
+        rc = TE_OS_RC(TE_TA_UNIX, (ret < 0) ? errno : EIO);
+        ERROR("%s(): Failed to send route request to kernel sent=%d: %r",
+              __FUNCTION__, (int)ret, rc);
         goto cleanup;
     }
 
@@ -850,11 +861,6 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
 
     } while ((rtm->rtm_type != rt_cmd) || (rtm->rtm_seq != rt_seq) ||
              (rtm->rtm_pid != rt_pid));
-
-#if 1
-    RING("ROUTE CHANGE RESULT MESSAGE:");
-    route_log(rtm);
-#endif
 
 cleanup:
     if (rt_sock != -1)

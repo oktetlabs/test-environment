@@ -63,6 +63,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_sockaddr.h"
 #include "cs_common.h"
 #include "logger_api.h"
 #include "comm_agent.h"
@@ -78,110 +79,59 @@
 #endif
 
 
-/*
- * Forward declaration of routing configuration tree accessors.
+/**
+ * Find route and return its attributes.
+ *
+ * @param gid       Operation group ID
+ * @param route     Route instance name: see doc/cm_cm_base.xml
+ *                  for the format
+ * @param rt_info   Route related information (OUT)
+ *
+ * @return Status code.
+ *
+ * @note The function uses static variables for caching, so it is
+ *       not multithread safe.
  */
-
-static te_errno ip4_rt_default_if_get(unsigned int, const char *, char *);
-
-
-static te_errno route_mtu_get(unsigned int, const char *, char *,
-                              const char *);
-static te_errno route_mtu_set(unsigned int, const char *, const char *,
-                              const char *);
-
-static te_errno route_win_get(unsigned int, const char *, char *,
-                              const char *);
-static te_errno route_win_set(unsigned int, const char *, const char *,
-                              const char *);
-
-static te_errno route_irtt_get(unsigned int, const char *, char *,
-                               const char *);
-static te_errno route_irtt_set(unsigned int, const char *, const char *,
-                               const char *);
-
-static te_errno route_dev_get(unsigned int, const char *, char *,
-                              const char *);
-static te_errno route_dev_set(unsigned int, const char *, const char *,
-                              const char *);
-
-/* FIXME: Route types are disabled until Configurator is redesigned - A.A */
-#if 0
-static te_errno route_type_get(unsigned int, const char *, char *,
-                              const char *);
-static te_errno route_type_set(unsigned int, const char *, const char *,
-                              const char *);
-#endif
-
-static te_errno route_get(unsigned int, const char *, char *, const char *);
-static te_errno route_set(unsigned int, const char *, const char *,
-                          const char *);
-
-static te_errno route_add(unsigned int, const char *, const char *,
-                          const char *);
-static te_errno route_del(unsigned int, const char *,
-                          const char *);
-
-static te_errno route_list(unsigned int, const char *, char **);
-
-static te_errno route_commit(unsigned int gid, const cfg_oid *p_oid);
-
-static te_errno blackhole_list(unsigned int, const char *, char **);
-static te_errno blackhole_add(unsigned int, const char *, const char *,
-                              const char *);
-static te_errno blackhole_del(unsigned int, const char *, const char *);
-
-
-/*
- * Unix Test Agent routing configuration tree.
- */
-
-RCF_PCH_CFG_NODE_RO(node_rt_default_if, "ip4_rt_default_if",
-                    NULL, NULL, ip4_rt_default_if_get);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_blackhole, "blackhole",
-                            NULL, &node_rt_default_if,
-                            blackhole_add, blackhole_del,
-                            blackhole_list, NULL);
-
-static rcf_pch_cfg_object node_route;
-
-/* FIXME: Route types are disabled until Configurator is redesigned - A.A */
-#if 0
-RCF_PCH_CFG_NODE_RWC(node_route_type, "type", NULL, NULL,
-                     route_type_get, route_type_set, &node_route);
-#endif
-
-RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, NULL,
-                     route_irtt_get, route_irtt_set, &node_route);
-
-RCF_PCH_CFG_NODE_RWC(node_route_win, "win", NULL, &node_route_irtt,
-                     route_win_get, route_win_set, &node_route);
-
-RCF_PCH_CFG_NODE_RWC(node_route_mtu, "mtu", NULL, &node_route_win,
-                     route_mtu_get, route_mtu_set, &node_route);
-
-RCF_PCH_CFG_NODE_RWC(node_route_dev, "dev", NULL, &node_route_mtu,
-                     route_dev_get, route_dev_set, &node_route);
-
-static rcf_pch_cfg_object node_route =
-    {"route", 0, &node_route_dev, &node_blackhole,
-     (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
-     (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
-     (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit, NULL};
-
-
-/*
- * Forward declaration of helper functions.
- */
-static te_errno route_find(const char *, ta_rt_info_t *);
-
-
-/* See the description in conf_route.h */
-te_errno
-ta_unix_conf_route_init(void)
+static te_errno
+route_find(unsigned int gid, const char *route, ta_rt_info_t **rt_info)
 {
-    return rcf_pch_add_node("/agent", &node_route);
+    static unsigned int  rt_cache_gid = (unsigned int)-1;
+    static char         *rt_cache_name = NULL;
+    static ta_rt_info_t  rt_cache_info;
+    
+    te_errno    rc;
+
+    ENTRY("GID=%u route=%s", gid, route);
+
+    if ((gid == rt_cache_gid) && (rt_cache_name != NULL) &&
+        (strcmp(route, rt_cache_name) == 0))
+    {
+        *rt_info = &rt_cache_info;
+        return 0;
+    }
+
+    /* Make cache invalid */
+    free(rt_cache_name);
+    rt_cache_name = NULL;
+
+    if ((rc = ta_rt_parse_inst_name(route, &rt_cache_info)) != 0)
+    {
+        ERROR("Error parsing instance name: %s", route);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+    if ((rc = ta_unix_conf_route_find(&rt_cache_info)) != 0)
+    {
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    rt_cache_gid = gid;
+    rt_cache_name = strdup(route);
+    if (rt_cache_name == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    *rt_info = &rt_cache_info;
+
+    return 0;
 }
 
 
@@ -198,46 +148,45 @@ static te_errno
 ip4_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
 {
 
-    ta_rt_info_t  attr;
+    ta_rt_info_t *attr;
     te_errno      rc;
     char         *route_name = "0.0.0.0|0";
     char          value[INET_ADDRSTRLEN];
     const char   *ret_val = NULL;
 
-    UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = route_find(route_name, &attr)) != 0)
+    if ((rc = route_find(gid, route_name, &attr)) != 0)
     {
         ERROR("Route %s cannot be found", route_name);
         return rc;
     }
 
-    switch (attr.dst.ss_family)
+    switch (attr->dst.ss_family)
     {
         case AF_INET:
         {
-            ret_val = inet_ntop(AF_INET, &SIN(&attr.gw)->sin_addr,
+            ret_val = inet_ntop(AF_INET, &SIN(&attr->gw)->sin_addr,
                                 value, INET_ADDRSTRLEN);
             if (ret_val == NULL)
             {
                 ERROR("Convertaion failure of the address of family: %d",
-                      attr.dst.ss_family);
+                      attr->dst.ss_family);
                 return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
             }
 
-            strncpy(ifname, attr.ifname, IF_NAMESIZE);
+            strncpy(ifname, attr->ifname, IF_NAMESIZE);
             break;
         }
 
         case AF_INET6:
         {
-            ret_val = inet_ntop(AF_INET6, &SIN6(&attr.gw)->sin6_addr,
+            ret_val = inet_ntop(AF_INET6, &SIN6(&attr->gw)->sin6_addr,
                                 value, INET6_ADDRSTRLEN);
             if (ret_val == NULL)
             {
                 ERROR("Convertaion failure of the address of family: %d",
-                      attr.dst.ss_family);
+                      attr->dst.ss_family);
                 return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
             }
 
@@ -249,38 +198,12 @@ ip4_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
         default:
         {
             ERROR("Unexpected destination address family: %d",
-                  attr.dst.ss_family);
+                  attr->dst.ss_family);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
     }
 
     return 0;
-}
-
-
-/**
- * Find route and return its attributes.
- *
- * @param route    route instance name: see doc/cm_cm_base.xml
- *                 for the format
- * @param rt_info  route related information (OUT)
- *
- * @return         Status code
- */
-static te_errno
-route_find(const char *route, ta_rt_info_t *rt_info)
-{
-    te_errno    rc;
-
-    ENTRY("%s", route);
-
-    if ((rc = ta_rt_parse_inst_name(route, rt_info)) != 0)
-    {
-        ERROR("Error parsing instance name: %s", route);
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-
-    return ta_unix_conf_route_find(rt_info);
 }
 
 
@@ -299,30 +222,29 @@ static te_errno
 route_get(unsigned int gid, const char *oid,
           char *value, const char *route_name)
 {
-    ta_rt_info_t  attr;
+    ta_rt_info_t *attr;
     te_errno      rc;
 
-    UNUSED(gid);
     UNUSED(oid);
     
-    if ((rc = route_find(route_name, &attr)) != 0)
+    if ((rc = route_find(gid, route_name, &attr)) != 0)
     {
         ERROR("Route %s cannot be found", route_name);
         return rc;
     }
 
-    switch (attr.dst.ss_family)
+    switch (attr->dst.ss_family)
     {
         case AF_INET:
         {
-            inet_ntop(AF_INET, &SIN(&attr.gw)->sin_addr,
+            inet_ntop(AF_INET, &SIN(&attr->gw)->sin_addr,
                       value, INET_ADDRSTRLEN);
             break;
         }
 
         case AF_INET6:
         {
-            inet_ntop(AF_INET6, &SIN6(&attr.gw)->sin6_addr,
+            inet_ntop(AF_INET6, &SIN6(&attr->gw)->sin6_addr,
                       value, INET6_ADDRSTRLEN);
             break;
         }
@@ -330,7 +252,7 @@ route_get(unsigned int gid, const char *oid,
         default:
         {
             ERROR("Unexpected destination address family: %d",
-                  attr.dst.ss_family);
+                  attr->dst.ss_family);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
     }
@@ -368,20 +290,18 @@ route_set(unsigned int gid, const char *oid, const char *value,
 static te_errno
 route_load_attrs(ta_cfg_obj_t *obj)
 {
-    ta_rt_info_t rt_info;
-    te_errno     rc;
-    char         val[128];
+    ta_rt_info_t   *rt_info;
+    te_errno        rc;
+    char            val[128];
 
-    if ((rc = route_find(obj->name, &rt_info)) != 0)
+    if ((rc = route_find(obj->gid, obj->name, &rt_info)) != 0)
         return rc;
 
 #define ROUTE_LOAD_ATTR(field_flg_, field_) \
     do {                                                      \
-        snprintf(val, sizeof(val), "%d", rt_info.field_);     \
-        if (rt_info.flags & TA_RT_INFO_FLG_ ## field_flg_ &&  \
-            (rc = ta_obj_set(TA_OBJ_TYPE_ROUTE,               \
-                             obj->name, #field_,              \
-                             val, NULL)) != 0)                \
+        snprintf(val, sizeof(val), "%d", rt_info->field_);    \
+        if (rt_info->flags & TA_RT_INFO_FLG_ ## field_flg_ && \
+            (rc = ta_obj_attr_set(obj, #field_, val) != 0))   \
         {                                                     \
             return rc;                                        \
         }                                                     \
@@ -391,35 +311,39 @@ route_load_attrs(ta_cfg_obj_t *obj)
     ROUTE_LOAD_ATTR(WIN, win);
     ROUTE_LOAD_ATTR(IRTT, irtt);
 
-    snprintf(val, sizeof(val), "%s", rt_info.ifname);
-    if (rt_info.flags & TA_RT_INFO_FLG_IF &&
-        (rc = ta_obj_set(TA_OBJ_TYPE_ROUTE,
-                        obj->name, "dev",
-                         val, NULL)) != 0)
+    snprintf(val, sizeof(val), "%s", rt_info->ifname);
+    if (rt_info->flags & TA_RT_INFO_FLG_IF &&
+        (rc = ta_obj_attr_set(obj, "dev", val)) != 0)
     {
         ERROR("Invalid interface");
         return rc;
     }
 
-    if ((rc = ta_obj_set(TA_OBJ_TYPE_ROUTE,
-                         obj->name, "type",
-                         ta_rt_type2name(rt_info.type), 
-                         NULL)) != 0)
+    if ((rc = ta_obj_attr_set(obj, "type",
+                              ta_rt_type2name(rt_info->type))) != 0)
     {
         ERROR("Invalid route type");
         return rc;
     }
 
-    if (rt_info.gw.ss_family == AF_INET)
+    if (rt_info->flags & TA_RT_INFO_FLG_GW)
     {
-        inet_ntop(AF_INET, &(SIN(&rt_info.gw)->sin_addr),
-                  val, INET_ADDRSTRLEN);
+        if (inet_ntop(rt_info->gw.ss_family,
+                      te_sockaddr_get_netaddr(SA(&rt_info->gw)),
+                      val, sizeof(val)) == NULL)
+        {
+            ERROR("Invalid gateway address");
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        rc = ta_obj_value_set(TA_OBJ_TYPE_ROUTE, obj->name, val);
+        if (rc != 0)
+        {
+            ERROR("Failed to set route object value: %r", rc);
+            return rc;
+        }
     }
-    else if (rt_info.gw.ss_family == AF_INET6)
-    {
-        inet_ntop(AF_INET6, &(SIN6(&rt_info.gw)->sin6_addr),
-                  val, INET6_ADDRSTRLEN);
-    }    
+
 
 #undef ROUTE_LOAD_ATTR
 
@@ -431,16 +355,15 @@ static te_errno                                             \
 route_ ## field_ ## _get(unsigned int gid, const char *oid, \
                          char *value, const char *route)    \
 {                                                           \
-    te_errno     rc;                                        \
-    ta_rt_info_t rt_info;                                   \
+    te_errno        rc;                                     \
+    ta_rt_info_t   *rt_info;                                \
                                                             \
-    UNUSED(gid);                                            \
     UNUSED(oid);                                            \
                                                             \
-    if ((rc = route_find(route, &rt_info)) != 0)            \
+    if ((rc = route_find(gid, route, &rt_info)) != 0)       \
         return rc;                                          \
                                                             \
-    sprintf(value, "%d", rt_info.field_);                   \
+    sprintf(value, "%d", rt_info->field_);                  \
     return 0;                                               \
 }
 
@@ -453,7 +376,7 @@ route_ ## field_ ## _set(unsigned int gid, const char *oid,    \
     UNUSED(oid);                                               \
                                                                \
     return ta_obj_set(TA_OBJ_TYPE_ROUTE, route, #field_,       \
-                      value, route_load_attrs);                \
+                      value, gid, route_load_attrs);           \
 }
 
 DEF_ROUTE_GET_FUNC(mtu);
@@ -472,16 +395,15 @@ static te_errno
 route_dev_get(unsigned int gid, const char *oid,
               char *value, const char *route) 
 {
-    te_errno     rc;
-    ta_rt_info_t rt_info;
+    te_errno        rc;
+    ta_rt_info_t   *rt_info;
 
-    UNUSED(gid);
     UNUSED(oid);
     
-    if ((rc = route_find(route, &rt_info)) != 0)
+    if ((rc = route_find(gid, route, &rt_info)) != 0)
         return rc;
 
-    sprintf(value, "%s", rt_info.ifname);
+    sprintf(value, "%s", rt_info->ifname);
     return 0;
 }
 
@@ -491,19 +413,18 @@ static te_errno
 route_type_get(unsigned int gid, const char *oid,
               char *value, const char *route) 
 {
-    te_errno     rc;
-    ta_rt_info_t rt_info;
+    te_errno        rc;
+    ta_rt_info_t   *rt_info;
 
-    UNUSED(gid);
     UNUSED(oid);
     
-    if ((rc = route_find(route, &rt_info)) != 0)
+    if ((rc = route_find(gid, route, &rt_info)) != 0)
         return rc;
 
-    if (rt_info.type >= TA_RT_TYPE_MAX_VALUE)
+    if (rt_info->type >= TA_RT_TYPE_MAX_VALUE)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    sprintf(value, "%s", ta_rt_type2name(rt_info.type));
+    sprintf(value, "%s", ta_rt_type2name(rt_info->type));
     return 0;
 }
 #endif
@@ -547,10 +468,10 @@ route_add(unsigned int gid, const char *oid, const char *value,
 static te_errno
 route_del(unsigned int gid, const char *oid, const char *route)
 {
-    UNUSED(gid);
     UNUSED(oid);
 
-    return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL);
+    return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL, gid,
+                      route_load_attrs);
 }
 
 
@@ -643,4 +564,51 @@ blackhole_del(unsigned int gid, const char *oid, const char *route)
         return rc;
 
     return ta_unix_conf_route_blackhole_del(&rt_info);
+}
+
+
+/*
+ * Unix Test Agent routing configuration tree.
+ */
+
+RCF_PCH_CFG_NODE_RO(node_rt_default_if, "ip4_rt_default_if",
+                    NULL, NULL, ip4_rt_default_if_get);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_blackhole, "blackhole",
+                            NULL, &node_rt_default_if,
+                            blackhole_add, blackhole_del,
+                            blackhole_list, NULL);
+
+static rcf_pch_cfg_object node_route;
+
+/* FIXME: Route types are disabled until Configurator is redesigned - A.A */
+#if 0
+RCF_PCH_CFG_NODE_RWC(node_route_type, "type", NULL, NULL,
+                     route_type_get, route_type_set, &node_route);
+#endif
+
+RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, NULL,
+                     route_irtt_get, route_irtt_set, &node_route);
+
+RCF_PCH_CFG_NODE_RWC(node_route_win, "win", NULL, &node_route_irtt,
+                     route_win_get, route_win_set, &node_route);
+
+RCF_PCH_CFG_NODE_RWC(node_route_mtu, "mtu", NULL, &node_route_win,
+                     route_mtu_get, route_mtu_set, &node_route);
+
+RCF_PCH_CFG_NODE_RWC(node_route_dev, "dev", NULL, &node_route_mtu,
+                     route_dev_get, route_dev_set, &node_route);
+
+static rcf_pch_cfg_object node_route =
+    {"route", 0, &node_route_dev, &node_blackhole,
+     (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
+     (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
+     (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit, NULL};
+
+
+/* See the description in conf_route.h */
+te_errno
+ta_unix_conf_route_init(void)
+{
+    return rcf_pch_add_node("/agent", &node_route);
 }

@@ -121,14 +121,15 @@ typedef enum ta_cfg_obj_action {
 
 /** Object data structure, which is inserted into collection */
 typedef struct ta_cfg_obj {
-    te_bool  in_use; /**< Whether this entry is in use */
-    char    *type; /**< Object type in string representation */
-    char    *name; /**< Object name - actually, instance name */
-    char    *value; /**< Object value - actually, instance value */
+    te_bool  in_use;    /**< Whether this entry is in use */
+    char    *type;      /**< Object type in string representation */
+    char    *name;      /**< Object name - actually, instance name */
+    char    *value;     /**< Object value - actually, instance value */
     void    *user_data; /**< Pointer to user-provided data */
 
+    unsigned int         gid;    /**< Group ID */
     ta_cfg_obj_action_e  action; /**< Object action */
-    ta_cfg_obj_attr_t   *attrs; /**< List of object's attributes */
+    ta_cfg_obj_attr_t   *attrs;  /**< List of object's attributes */
 } ta_cfg_obj_t;
 
 /**
@@ -198,8 +199,8 @@ extern int ta_obj_add(const char *type,
 extern int ta_obj_value_set(const char *type, const char *name,
                             const char *value); 
 
-/** Prototype for callback function used in ta_obj_set() */
-typedef int (* ta_obj_set_cb)(ta_cfg_obj_t *obj);
+/** Prototype for callback function used in ta_obj_set/del() */
+typedef int (* ta_obj_cb)(ta_cfg_obj_t *obj);
 
 /**
  * Create or update object of specified type.
@@ -215,6 +216,7 @@ typedef int (* ta_obj_set_cb)(ta_cfg_obj_t *obj);
  * @param name        Object name - actually, instance name
  * @param attr_name   Attribute name to update in object
  * @param attr_value  Attribute value
+ * @param gid         Request group ID
  * @param cb_func     Callback function to be called if SET operation
  *                    leads to creating a new object in collection
  *
@@ -222,7 +224,7 @@ typedef int (* ta_obj_set_cb)(ta_cfg_obj_t *obj);
  */
 extern int ta_obj_set(const char *type, const char *name,
                       const char *attr_name, const char *attr_value,
-                      ta_obj_set_cb cb_func);
+                      unsigned int gid, ta_obj_cb cb_func);
 
 /**
  * Create an object of specified type and mark it as deleted.
@@ -230,10 +232,13 @@ extern int ta_obj_set(const char *type, const char *name,
  * @param type        Object type - user-defined constant
  * @param name        Object name - actually, instance name
  * @param user_data   Some user-data value associated with this object
+ * @param gid         Request group ID
+ * @param cb_func     Callback function to be called for created object
  *
  * @return Error code or 0
  */
-extern int ta_obj_del(const char *type, const char *name, void *user_data);
+extern int ta_obj_del(const char *type, const char *name, void *user_data,
+                      unsigned int gid, ta_obj_cb cb_func);
 
 /* Route-specific definitions */
 

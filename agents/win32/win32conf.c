@@ -1671,8 +1671,7 @@ route_load_attrs(ta_cfg_obj_t *obj)
 
     snprintf(val, sizeof(val), "%s", rt_info.ifname);
     if ((rt_info.flags & TA_RT_INFO_FLG_IF) != 0 &&
-        (rc = ta_obj_set(TA_OBJ_TYPE_ROUTE, obj->name,
-                         "dev", val, NULL)) != 0)
+        (rc = ta_obj_attr_set(obj , "dev", val)) != 0)
     {
         return rc;
     }
@@ -1701,11 +1700,10 @@ static te_errno
 route_dev_set(unsigned int gid, const char *oid,
               const char *value, const char *route)
 {
-    UNUSED(gid);
     UNUSED(oid);
     
     return ta_obj_set(TA_OBJ_TYPE_ROUTE, route, "dev",
-                      value, route_load_attrs);
+                      value, gid, route_load_attrs);
 }
 
 /**
@@ -1743,10 +1741,9 @@ route_add(unsigned int gid, const char *oid, const char *value,
 static te_errno
 route_del(unsigned int gid, const char *oid, const char *route)
 {
-    UNUSED(gid);
     UNUSED(oid);
 
-    return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL);
+    return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL, gid, NULL);
 }
 
 /** Get the value of the route.
