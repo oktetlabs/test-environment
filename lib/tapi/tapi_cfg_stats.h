@@ -121,7 +121,7 @@ typedef struct tapi_cfg_net_stats {
 /**
  * Get IfTable statistics for the certain network interface.
  *
- * @param ta            Test Agent to gether statistics on
+ * @param ta            Test Agent to gather statistics on
  * @param ifname        Network interface to gather statistics of
  * @param stats         Resulted interface statistics structure
  * 
@@ -133,17 +133,45 @@ tapi_cfg_stats_if_stats_get(const char          *ta,
                             tapi_cfg_if_stats   *stats);
 
 /**
+ * Print IfTable statistics for the certain network interface.
+ *
+ * @param ta            Test Agent to gather statistics on
+ * @param ifname        Network interface to gather statistics of
+ * @param stats         Gathered interface statistics structure to print
+ * 
+ * @return Status code
+ */
+te_errno 
+tapi_cfg_stats_if_stats_print(const char          *ta,
+                              const char          *ifname,
+                              tapi_cfg_if_stats   *stats);
+
+/**
  * Get /proc/net/snmp like statistics for the host,
  * where Test Agent is running.
  *
- * @param ta            Test Agent to gether statistics on
+ * @param ta            Test Agent to gather statistics on
  * @param stats         Resulted host statistics structure
  * 
  * @return Status code
  */
 extern te_errno 
-tapi_cfg_stats_net_stats_get(const char          *ta,
+tapi_cfg_stats_net_stats_get(const char           *ta,
                              tapi_cfg_net_stats   *stats);
+
+/**
+ * Print /proc/net/snmp like statistics for the host,
+ * where Test Agent is running.
+ *
+ * @param ta            Test Agent to gether statistics on
+ * @param stats         Gathered host statistics structure to print
+ * 
+ * @return Status code
+ */
+extern te_errno 
+tapi_cfg_stats_net_stats_print(const char           *ta,
+                               tapi_cfg_net_stats   *stats);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

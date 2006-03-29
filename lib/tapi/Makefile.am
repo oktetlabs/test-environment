@@ -17,6 +17,7 @@ include_HEADERS = \
 	tapi_cfg_dhcp.h \
 	tapi_cfg_vtund.h \
 	tapi_cfg_ip6.h \
+	tapi_cfg_stats.h \
 	tapi_file.h
 
 lib_LTLIBRARIES = libtapi.la
@@ -33,6 +34,7 @@ libtapi_la_SOURCES = \
 	tapi_cfg_dhcp.c \
 	tapi_cfg_vtund.c \
 	tapi_cfg_ip6.c \
+	tapi_cfg_stats.c \
 	tapi_file.c
 
 
