@@ -257,8 +257,77 @@ typedef struct {
     int reject;
 } iscsi_target_thread_params_t;
 
-/** iSCSI PDU formats */
 /* parse layout */
+/* byteorder: network; */
+
+/* name: ISCSI_BHS; */
+/* accessors: bhs_; */
+/* mostly_reserved: yes; */
+struct generic_pdu {
+    /* bits: 0-5; reader: yes; writer: yes; */
+    uint8_t   opcode;
+    /* name: F_BIT; bit: 7; reader: yes; writer: yes; */
+    /* bittype: te_bool; */
+    /*-*/
+    /* name: I_BIT; bit: 6; reader: yes; writer: yes; */
+    /* bittype: te_bool; */
+    /*-*/
+    uint8_t   flags;
+    uint8_t   version_max;
+    uint8_t   version_active;
+    /* name: data_segment_length; */
+    /* bits: 0-23; reader: yes; writer: yes; */
+    uint32_t  length;
+    /* name: total_ahs_length; */
+    /* bits: 24-31; reader: yes; writer: yes; */
+    /*-*/
+    uint8_t   isid[6];
+    /* reader: yes; writer: yes; */
+    uint16_t  tsih;  
+    /* reader: yes; writer: yes; */
+    uint32_t  init_task_tag;
+    uint16_t  CID;
+    uint16_t  rsvd1;
+    uint32_t  cmd_sn;
+    /* reader: yes; writer: yes; */
+    uint32_t  exp_stat_sn;
+    uint32_t  max_cmd_sn;
+    uint8_t   status_class;
+    uint8_t   status_detail;
+    uint16_t  rsvd2;
+    uint32_t  offset;
+    uint32_t  resid;
+    uint32_t  header_digest;
+    uint8_t  *text;
+    uint32_t  text_length;
+} __attribute((packed))__;
+
+/* name: ISCSI_BHS; */
+/* mostly_reserved: yes; */
+struct response_pdu {
+    uint8_t  opcode;
+    uint8_t  flags;
+    uint8_t  reason;
+    uint8_t  version_active;
+    uint32_t length;
+    uint64_t lun;
+    uint32_t init_task_tag;
+    uint32_t target_xfer_tag;
+    /* reader: yes; writer: yes; */
+    uint32_t stat_sn;
+    uint32_t exp_cmd_sn;
+    uint32_t max_cmd_sn;
+    uint8_t  status_class;
+    uint8_t  status_detail;
+    uint16_t rsvd2;
+    uint32_t offset;
+    uint32_t xfer_len;
+    uint32_t header_digest;
+} __attribute((packed))__;
+
+
+/** iSCSI PDU formats */
+/* ignore: yes; */
 struct iscsi_init_scsi_cmnd {
     uint8_t  opcode;
     uint8_t  flags;
@@ -272,13 +341,18 @@ struct iscsi_init_scsi_cmnd {
     uint32_t exp_stat_sn;
     uint8_t  cdb[16];
     uint32_t header_digest; 
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.4 SCSI Response */
+
+/* accessors: bhs_scsi_; */
+/* name: ISCSI_BHS_SCSI; */
+/* mostly_reserved: yes; */
 struct iscsi_targ_scsi_rsp {    
     uint8_t  opcode;
     uint8_t  flags;
     uint8_t  response;
+    /* reader: yes; writer: yes; */
     uint8_t  status;
     uint32_t length;
     uint64_t lun;
@@ -291,9 +365,10 @@ struct iscsi_targ_scsi_rsp {
     uint32_t bidi_resid;
     uint32_t resid;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.5 Task Management Function Request */
+/* ignore: yes; */
 struct iscsi_init_task_mgt_command {    
     uint8_t  opcode;
     uint8_t  function;
@@ -309,9 +384,10 @@ struct iscsi_init_task_mgt_command {
     uint32_t exp_data_sn;
     uint64_t rsvd4;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.6 Task Management Function Response */
+/* ignore: yes; */
 struct iscsi_targ_task_mgt_response {   
     uint8_t  opcode;
     uint8_t  flags;
@@ -328,9 +404,10 @@ struct iscsi_targ_task_mgt_response {
     uint32_t rsvd4;
     uint64_t rsvd5;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.7 SCSI Data-out */
+/* ignore: yes; */
 struct iscsi_init_scsi_data_out {
     uint8_t  opcode;
     uint8_t  flags;
@@ -350,9 +427,10 @@ struct iscsi_init_scsi_data_out {
     /* reserved: yes; */
     uint32_t rsvd5;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.7 SCSI Data-in */
+/* ignore: yes; */
 struct iscsi_targ_scsi_data_in {    
     uint8_t  opcode;
     uint8_t  flags;
@@ -370,9 +448,10 @@ struct iscsi_targ_scsi_data_in {
     uint32_t offset;
     uint32_t resid;
     uint32_t header_digest; 
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.8 Ready To Transfer (R2T) */
+/* ignore: yes; */
 struct iscsi_targ_r2t {     
     uint8_t  opcode;
     uint8_t  flags;
@@ -389,9 +468,10 @@ struct iscsi_targ_r2t {
     uint32_t offset;
     uint32_t xfer_len;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.9 Asynchronous Message */
+/* ignore: yes; */
 struct iscsi_targ_async_msg {   
     uint8_t  opcode;
     uint8_t  flags;
@@ -413,7 +493,7 @@ struct iscsi_targ_async_msg {
     /* reserved: yes; */
     uint32_t rsvd5;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 enum iscsi_targ_async_msg_events {
     ISCSI_ASYNC_SCSI_EVENT,
@@ -425,6 +505,7 @@ enum iscsi_targ_async_msg_events {
 };
 
 /** RFC 3720, Section 10.10 Text Request */
+/* ignore: yes; */
 struct iscsi_init_text_cmnd {   
     uint8_t  opcode;
     uint8_t  flags;
@@ -441,9 +522,10 @@ struct iscsi_init_text_cmnd {
     /* reserved: yes; */
     uint64_t rsvd5;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /**< RFC 3720, Section 10.11 Text Response */
+/* ignore: yes; */
 struct iscsi_targ_text_rsp {    
     uint8_t  opcode;
     uint8_t  flags;
@@ -461,7 +543,7 @@ struct iscsi_targ_text_rsp {
     /* reserved: yes; */
     uint64_t rsvd5;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.12 Login Request */
 struct iscsi_init_login_cmnd {  
@@ -483,7 +565,7 @@ struct iscsi_init_login_cmnd {
     /* reserved: yes; */
     uint64_t rsvd3;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.13 Login Response */
 struct iscsi_targ_login_rsp {   
@@ -507,7 +589,7 @@ struct iscsi_targ_login_rsp {
     /* reserved: yes; */
     uint64_t rsvd3;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.14 Logout Request */
 struct iscsi_init_logout_cmnd { 
@@ -528,7 +610,7 @@ struct iscsi_init_logout_cmnd {
     /* reserved: yes; */
     uint64_t rsvd5;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.15 Logout Response */
 struct iscsi_targ_logout_rsp {  
@@ -552,7 +634,7 @@ struct iscsi_targ_logout_rsp {
     /* reserved: yes; */
     uint32_t rsvd5;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.16 SNACK Request */
 struct iscsi_init_snack {   
@@ -569,7 +651,7 @@ struct iscsi_init_snack {
     uint32_t begrun;
     uint32_t runlen;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.17 Reject */
 struct iscsi_targ_rjt {     
@@ -587,7 +669,7 @@ struct iscsi_targ_rjt {
     uint32_t data_sn;
     uint64_t rsvd5;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.18 NOP-Out */
 struct iscsi_init_nopout {  
@@ -603,7 +685,7 @@ struct iscsi_init_nopout {
     uint64_t rsvd2;
     uint64_t rsvd3;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
 /** RFC 3720, Section 10.19 NOP-In */
 struct iscsi_targ_nopin {   
@@ -620,51 +702,8 @@ struct iscsi_targ_nopin {
     uint32_t rsvd2;
     uint64_t rsvd3;
     uint32_t header_digest;
-};
+} __attribute((packed))__;
 
-struct generic_pdu {
-    uint8_t   opcode;     
-    uint8_t   flags;
-    uint8_t   version_max;
-    uint8_t   version_active;
-    uint32_t  length;
-    uint8_t   isid[6];
-    uint16_t  tsih;  
-    uint32_t  init_task_tag;
-    uint16_t  CID;
-    uint16_t  rsvd1;
-    uint32_t  cmd_sn;
-    uint32_t  exp_stat_sn;
-    uint32_t  max_cmd_sn;
-    uint8_t   status_class;
-    uint8_t   status_detail;
-    uint16_t  rsvd2;
-    uint32_t  offset;
-    uint32_t  resid;
-    uint32_t  header_digest;
-    uint8_t  *text;
-    uint32_t  text_length;
-};
-
-struct response_pdu {
-    uint8_t  opcode;
-    uint8_t  flags;
-    uint8_t  reason;
-    uint8_t  version_active;
-    uint32_t length;
-    uint64_t lun;
-    uint32_t init_task_tag;
-    uint32_t target_xfer_tag;
-    uint32_t stat_sn;
-    uint32_t exp_cmd_sn;
-    uint32_t max_cmd_sn;
-    uint8_t  status_class;
-    uint8_t  status_detail;
-    uint16_t rsvd2;
-    uint32_t offset;
-    uint32_t xfer_len;
-    uint32_t header_digest;
-};
 
 /** The format of the data returned by the SCSI REQUEST SENSE command.
  *  SCSI Primary Commands - 2 (SPC-2)

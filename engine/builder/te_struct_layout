@@ -9,41 +9,140 @@
 }
     
 do_parse && $1 == "struct"  && ($2 !~ /;$/) {
-    in_struct = (next_name ? next_name : $2);
-    next_name = "";
-    next_offset= "0";
+    if (ignore_next) ignore_next = "";
+    else
+    {
+        in_struct = (next_name ? next_name : $2);
+        next_name = "";
+        next_offset= "0";
+    }
     next;
 }
 
 do_parse && $1 == "typedef" && $2 == "struct" && ($4 !~ /;$/) {
-    in_struct = (next_name ? next_name : $3);
-    next_name = "";
-    next_offset = "0";
+    if (ignore_next) ignore_next = "";
+    else
+    {
+        in_struct = (next_name ? next_name : $3);
+        next_name = "";
+        next_offset = "0";
+    }
     next;
 }
 
 in_struct && ($0 ~ /^\}/) {
     next_offset = "";
     mostly_reserved = "";
+    next_name = "";
+    in_struct = "";
     next;
 }
 
 function print_bits()
 {
-    if (field_bit_shift)
+    if (field_bit_shift != "")
     {
-        printf "#define %s_%s_SHIFT (%s)\n", toupper(in_struct), toupper(varname), field_bit_shift;
-        printf "#define %s_%s_MASK (%s)\n", toupper(in_struct), toupper(varname), field_bit_mask;
+        printf "#define %s_SHIFT (%s)\n", varname, field_bit_shift;
+         printf "#define %s_MASK (%s)\n", varname, field_bit_mask;
     }
+    result_type = (field_bit_shift != "") && bit_field_type ? bit_field_type : field_type;
+    tohost = tonet = "";
+    if (network_order)
+    {
+        if (result_type == "uint16_t" || result_type == "int16_t")
+        {
+            tohost = "ntohs";
+            tonet  = "htons";
+        }
+        else if (result_type == "uint32_t" || result_type == "uint32_t")
+        {
+            tohost = "ntohl";
+            tonet  = "htonl";
+        }
+    }
+
     if (field_reader)
     {
-        result_type = field_bit_shift ? (bit_field_type ? bit_field_type : "unsigned") : field_type;
-        printf "\nstatic inline %s\n%s(const void *x%s)\n", 
-            result_type, field_reader, (array_boundary ? ", int idx" : "");
-        printf "{\n   %s val = ((%s *)((uint8_t *)x + %s))[%s]
+        if (array_access)
+        {
+            printf "\nstatic inline %s %s*\n%s(%s void *x)\n",
+                (array_access == "raw" ? "" : "const"), 
+                result_type, 
+                accessor_prefix "get_" accessname,
+                (array_access == "raw" ? "" : "const");
+            printf "{\n    return ((%s *)((uint8_t *)x + %s));\n", 
+                field_type, field_type, varname "_OFFSET";
+        }
+        else
+        {
+            printf "\nstatic inline %s\n%s(const void *x%s)\n", 
+                result_type, 
+                accessor_prefix "get_" accessname,
+                (array_boundary ? ", unsigned idx" : "");
+            printf "{\n   %s val = ((%s *)((uint8_t *)x + %s))[%s];\n", 
+                field_type, field_type, varname "_OFFSET", 
+                (array_boundary ? "idx" : "0");
+            if (field_bit_shift == "")
+            {
+                printf  "    return %s(val);\n", tohost;
+            }
+            else
+            {
+                printf "    return (%s)((%s(val) & %s_MASK) >> %s_SHIFT);\n",
+                    result_type, tohost, varname, varname;
+            }
+        }
+        print "}";
     }
+    if (field_writer)
+    {
+        if (array_access)
+        {
+            printf "\nstatic inline void\n%s(void *x, %s *data)\n",
+                accessor_prefix "set_" accessname, result_type;
+            printf "{\n    memcpy((uint8_t *)x + %s_OFFSET, data, %s_SIZE);\n", 
+                varname, varname;
+        }
+        else if (result_type == "te_bool")
+        {
+            printf "\nstatic inline void\n%s(void *x)\n",
+                accessor_prefix "set_" accessname;
+            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s));\n", 
+                field_type, field_type, varname "_OFFSET";
+            printf "   *dest |= %s_MASK;\n", varname;
+            print "}"
+            printf "\nstatic inline void\n%s(void *x)\n",
+                accessor_prefix "unset_" accessname;
+            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s));\n", 
+                field_type, field_type, varname "_OFFSET";
+            printf "   *dest &= ~%s_MASK;\n", varname;
+        }
+        else
+        {
+            printf "\nstatic inline void\n%s(void *x%s, %s val)\n",
+                accessor_prefix "set_" accessname, 
+                (array_boundary ? ", unsigned idx" : ""),
+                result_type;
+            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s)) + %s;\n", 
+                field_type, field_type, varname "_OFFSET", 
+                (array_boundary ? "idx" : "0");
+            if (field_bit_shift != "")
+            {
+                printf  "    *dest = %s(val);\n", tonet;
+            }
+            else
+            {
+                printf "    *dest = (%s(*dest) & ~%s_MASK) | (((%s)val << %s_SHIFT) & %s_MASK)\n",
+                    tohost, varname, field_type, varname, varname;
+                if (tonet)
+                    printf "   *dest = %s(*dest);\n", tonet;
+            }
+        }
+        print "}";
+    }
+    bit_field_type  = "";
     field_bit_shift = "";
-    field_bit_mask = "";
+    field_bit_mask  = "";
 }
 
 in_struct && ($1 ~ /^[[:alpha:]_][[:alnum:]_]*/) && ($2 ~ /^\**[[:alpha:]][[:alnum:]_]*(\[[^\]]+\])*;$/) {
@@ -54,10 +153,13 @@ in_struct && ($1 ~ /^[[:alpha:]_][[:alnum:]_]*/) && ($2 ~ /^\**[[:alpha:]][[:aln
         varname = $2;
         gsub(/[^[:alnum:]_]/, "", varname);
     }
+    accessname = tolower(varname)
+    varname = toupper(in_struct) "_" toupper(varname);
+
     if (!reserved_field)
     {
-        printf "#define %s_%s_OFFSET (%s)\n", toupper(in_struct), toupper(varname), next_offset;
-        next_offset = toupper(in_struct) "_" toupper(varname) "_OFFSET";
+        printf "#define %s_OFFSET (%s)\n", varname, next_offset;
+        next_offset = varname "_OFFSET";
     }
     pointers = $2;
     gsub(/\[[^\]]+\]/, "", pointers); # to eliminate possible multiply signs in array boundary 
@@ -72,7 +174,7 @@ in_struct && ($1 ~ /^[[:alpha:]_][[:alnum:]_]*/) && ($2 ~ /^\**[[:alpha:]][[:aln
     field_type = $1 pointers;
     if (!reserved_field)
     {
-        printf "#define %s_%s_SIZE (%s)\n", toupper(in_struct), toupper(varname), size;
+        printf "#define %s_SIZE (%s)\n", varname, size;
         print_bits();
     }
     next_offset = next_offset " + " size;
@@ -80,6 +182,13 @@ in_struct && ($1 ~ /^[[:alpha:]_][[:alnum:]_]*/) && ($2 ~ /^\**[[:alpha:]][[:aln
     field_bit_shift = "";
     field_bit_mask = "";
     next_name = "";
+    next;
+}
+
+in_struct && field_bit_shift && ($0 ~ /^ *\/\*+-\*+\/ *$/) {
+    varname = toupper(in_struct) "_" toupper(next_name);
+    next_name = "";
+    print_bits();
     next;
 }
 
@@ -116,8 +225,9 @@ do_parse && ($0 ~ /^ *\/\*+( *[[:alpha:]_]+: *[^;]*;)+ *\**\/ *$/) {
             {
                 field_bit_mask -= field_bit_shift;
                 field_bit_mask++;
-                field_bit_mask = "((1 << " field_bit_mask ") - 1)"
-            }   
+                field_bit_mask = "(((1 << " field_bit_mask ") - 1) << " field_bit_shift ")";
+            }
+            reserved_field = 0;
         }
         else if (fieldname == "bittype")
         {
@@ -125,19 +235,35 @@ do_parse && ($0 ~ /^ *\/\*+( *[[:alpha:]_]+: *[^;]*;)+ *\**\/ *$/) {
         }
         else if (fieldname == "array")
         {
-            use_array = (fieldval == "yes");
+            array_access = fieldval;
         }
         else if (fieldname == "reader")
         {
-            field_reader = fieldval;
+            field_reader = (fieldval == "yes");
+            reserved_field = 0;
         }
         else if (fieldname == "writer")
         {
-            field_writer = fieldval;
+            field_writer = (fieldval == "yes");
+            reserved_field = 0;
         }
         else if (fieldname == "name")
         {
             next_name = fieldval;
+            accessname = tolower(fieldval);
+            reserved_field = 0;
+        }
+        else if (fieldname == "byteorder")
+        {
+            network_order = (fieldval == "network");
+        }
+        else if (fieldname == "accessors")
+        {
+            accessor_prefix = fieldval;
+        }
+        else if (fieldname == "ignore")
+        {
+            ignore_next = (fieldval == "yes");
         }
     }
 }
