@@ -52,7 +52,7 @@
 extern char *ta_name;
 
 /* Auxiliary buffer */
-static char  buf[2048] = {0, };
+static char  buf[2048 * 32] = {0, };
 
 #define PRINT(msg...) \
     do {                                                \
@@ -680,7 +680,10 @@ interface_list(unsigned int gid, const char *oid, char **list)
     buf[0] = 0;
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
-        s += sprintf(s, "%s ", ifindex2ifname(table->table[i].dwIndex));
+    {
+        s += snprintf(s, sizeof(buf) - (s - buf),
+                      "%s ", ifindex2ifname(table->table[i].dwIndex));
+    }                      
 
     free(table);
 
@@ -940,8 +943,9 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         if (table->table[i].dwIndex != if_entry.dwIndex)
             continue;
 
-        s += sprintf(s, "%s ",
-                 inet_ntoa(*(struct in_addr *)&(table->table[i].dwAddr)));
+        s += snprintf(s, sizeof(buf) - (s - buf), "%s ",
+                      inet_ntoa(*(struct in_addr *)
+                                    &(table->table[i].dwAddr)));
     }
 
     free(table);
@@ -1517,8 +1521,9 @@ neigh_list(unsigned int gid, const char *oid, char **list,
         {
             continue;
         }
-        s += sprintf(s, "%s ",
-                 inet_ntoa(*(struct in_addr *)&(table->table[i].dwAddr)));
+        s += snprintf(s, sizeof(buf) - (s - buf), "%s ",
+                      inet_ntoa(*(struct in_addr *)
+                                    &(table->table[i].dwAddr)));
     }
 
     free(table);
