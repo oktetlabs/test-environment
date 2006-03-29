@@ -167,6 +167,10 @@ if_stats_get(const char *ifname, if_stats *stats)
     FILE *ifcfg_output = NULL;
     int   status = 0;
 
+    te_bool rx_counters_parsed = FALSE;
+    te_bool tx_counters_parsed = FALSE;
+    te_bool rx_tx_octets_counters_parsed = FALSE;
+
     uint64_t in_overruns;
     uint64_t in_frame_losses;
     uint64_t out_overruns;
@@ -174,7 +178,7 @@ if_stats_get(const char *ifname, if_stats *stats)
 
     memset(stats, 0, sizeof(if_stats));
 
-    RING("if_stats_get(ifname=\"%s\") started", ifname);
+    VERB("if_stats_get(ifname=\"%s\") started", ifname);
 
 #if __linux__
     if ((ifname == NULL) || (stats == NULL))
@@ -212,14 +216,88 @@ if_stats_get(const char *ifname, if_stats *stats)
     {
         if (fgets(buf, MAX_IFCONFIG_OUTPUT_LEN, ifcfg_output) == NULL)
         {
+#if 0
             ERROR("Invalid ifconfig output format");
             rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
             goto cleanup;
+#else
+            WARN("ifconfig output contains not all lines");
+            break;
+#endif
         }
         
-        RING("Ifconfig output for interface \"%s\", line %d\n>%s",
+        VERB("Ifconfig output for interface \"%s\", line %d\n>%s",
              ifname, line, buf);
-        
+
+        if ((ptr = strstr(buf, "RX packets")) != NULL)
+        {
+            VERB("Try to parse string \"%s\" with format string \"%s\"",
+                 ptr, if_stats_rx_pkts_fmt);
+            if ((rc = sscanf(ptr, if_stats_rx_pkts_fmt,
+                             &stats->in_ucast_pkts,
+                             &stats->in_errors,
+                             &stats->in_discards,
+                             &in_overruns,
+                             &in_frame_losses)) !=
+                IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS)
+            {
+                ERROR("Invalid format of the Rx stats line, "
+                      "only %d args parsed, but %d required", rc,
+                      IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS);
+                rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
+                goto cleanup;
+            }
+            rx_counters_parsed = TRUE;
+        }
+
+        if ((ptr = strstr(buf, "TX packets")) != NULL)
+        {
+            VERB("Try to parse string \"%s\" with format string \"%s\"",
+                 ptr, if_stats_tx_pkts_fmt);
+            if ((rc = sscanf(ptr, if_stats_tx_pkts_fmt,
+                             &stats->out_ucast_pkts,
+                             &stats->out_errors,
+                             &stats->out_discards,
+                             &out_overruns,
+                             &out_carrier_losses)) !=
+                IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS)
+            {
+                ERROR("Invalid format of the Tx stats line, "
+                      "only %d args parsed, but %d required", rc,
+                      IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS);
+                rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
+                goto cleanup;
+            }
+            tx_counters_parsed = TRUE;
+        }
+
+        if ((ptr = strstr(buf, "RX bytes")) != NULL)
+        {
+            if (sscanf(ptr, if_stats_rx_octets_fmt,
+                       &stats->in_octets) != 1)
+            {
+                ERROR("Invalid format of the Rx bytes stats line");
+                rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
+                goto cleanup;
+            }
+
+            if ((ptr = strstr(buf, "TX bytes")) == NULL)
+            {
+                ERROR("Invalid format of the Rx/Tx bytes stats line");
+                rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
+                goto cleanup;
+            }
+            if (sscanf(ptr, if_stats_tx_octets_fmt,
+                       &stats->out_octets) != 1)
+            {
+                ERROR("Invalid format of the Tx bytes stats line");
+                rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
+                goto cleanup;
+            }
+            rx_tx_octets_counters_parsed = TRUE;
+        }
+
+#if 0        
         switch (line)
         {
             case IFCONFIG_OUTPUT_RX_STAT_LINE:
@@ -230,7 +308,7 @@ if_stats_get(const char *ifname, if_stats *stats)
                     rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
                     goto cleanup;
                 }
-                RING("Try to parse string \"%s\" with format string \"%s\"",
+                VERB("Try to parse string \"%s\" with format string \"%s\"",
                      ptr, if_stats_rx_pkts_fmt);
                 if ((rc = sscanf(ptr, if_stats_rx_pkts_fmt,
                                  &stats->in_ucast_pkts,
@@ -256,7 +334,7 @@ if_stats_get(const char *ifname, if_stats *stats)
                     rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
                     goto cleanup;
                 }
-                RING("Try to parse string \"%s\" with format string \"%s\"",
+                VERB("Try to parse string \"%s\" with format string \"%s\"",
                      ptr, if_stats_tx_pkts_fmt);
                 if ((rc = sscanf(ptr, if_stats_tx_pkts_fmt,
                                  &stats->out_ucast_pkts,
@@ -307,6 +385,30 @@ if_stats_get(const char *ifname, if_stats *stats)
             default:
                 break;
         }
+#endif
+    }
+
+    if (!rx_counters_parsed)
+    {
+        ERROR("Invalid format of the Rx stats line, "
+              "no \"RX packets\" substring found");
+              rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
+        goto cleanup;
+    }
+    
+    if (!tx_counters_parsed)
+    {
+        ERROR("Invalid format of the Tx stats line, "
+              "no \"TX packets\" substring found");
+              rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
+        goto cleanup;
+    }
+
+    if (!rx_tx_octets_counters_parsed)
+    {
+        ERROR("Invalid format of the Rx/Tx bytes stats line");
+        rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
+        goto cleanup;
     }
 
 #endif
@@ -369,7 +471,7 @@ net_stats_get(net_stats *stats)
         return TE_OS_RC(TE_TA_UNIX, ENOMEM);
     }
 
-    RING("Try to open /proc/net/snmp file");
+    VERB("Try to open /proc/net/snmp file");
 
     if ((fd = open("/proc/net/snmp", O_RDONLY)) < 0)
     {
@@ -378,7 +480,7 @@ net_stats_get(net_stats *stats)
         goto cleanup;
     }
 
-    RING("Try to read /proc/net/snmp file");
+    VERB("Try to read /proc/net/snmp file");
 
     if (read(fd, buf, MAX_PROC_NET_SNMP_SIZE) <= 0)
     {
@@ -387,11 +489,11 @@ net_stats_get(net_stats *stats)
         goto cleanup;
     }
 
-    RING("Close /proc/net/snmp file");
+    VERB("Close /proc/net/snmp file");
 
     close(fd);
 
-    RING("/proc/net/snmp file dump:\n%s", buf);
+    VERB("/proc/net/snmp file dump:\n%s", buf);
 
     ptr = buf;
 
@@ -664,11 +766,12 @@ STATS_NET_IF_ATTR(out_errors, out_discards);
 
 /* /proc/net/snmp/ipv4 counters */
 
-RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_ipv4_in_recvs, "in_recvs",
+RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_ipv4_in_recvs, "ipv4_in_recvs",
                     NULL, NULL, net_snmp_ipv4_stats_in_recvs_get);
 
 #define STATS_NET_SNMP_IPV4_ATTR(_name_, _next) \
-    RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_ipv4_##_name_, #_name_, \
+    RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_ipv4_##_name_,          \
+                        "ipv4_" #_name_,                            \
                         NULL, &node_stats_net_snmp_ipv4_##_next,    \
                         net_snmp_ipv4_stats_##_name_##_get);
 
@@ -692,12 +795,13 @@ STATS_NET_SNMP_IPV4_ATTR(frag_creates, frag_fails);
 
 /* /proc/net/snmp/icmp counters */
 
-RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_icmp_in_msgs, "in_msgs",
+RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_icmp_in_msgs, "icmp_in_msgs",
                     NULL, &node_stats_net_snmp_ipv4_frag_creates,
                     net_snmp_icmp_stats_in_msgs_get);
 
 #define STATS_NET_SNMP_ICMP_ATTR(_name_, _next) \
-    RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_icmp_##_name_, #_name_, \
+    RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_icmp_##_name_,          \
+                        "icmp_" #_name_,                            \
                         NULL, &node_stats_net_snmp_icmp_##_next,    \
                         net_snmp_icmp_stats_##_name_##_get);
 
