@@ -118,6 +118,14 @@
 #include <iproute/ip_common.h>
 #endif
 
+#ifndef ENABLE_IFCONFIG_STATS
+#define ENABLE_IFCONFIG_STATS
+#endif
+
+#ifndef ENABLE_NET_SNMP_STATS
+#define ENABLE_NET_SNMP_STATS
+#endif
+
 #ifndef IF_NAMESIZE
 #define IF_NAMESIZE IFNAMSIZ
 #endif
@@ -132,6 +140,14 @@
 extern te_errno ta_unix_conf_supplicant_init();
 extern te_errno supplicant_grab(const char *name);
 extern te_errno supplicant_release(const char *name);
+#endif
+
+#ifdef ENABLE_IFCONFIG_STATS
+extern te_errno ta_unix_conf_net_if_stats_init();
+#endif
+
+#ifdef ENABLE_NET_SNMP_STATS
+extern te_errno ta_unix_conf_net_snmp_stats_init();
 #endif
 
 #ifdef ENABLE_WIFI_SUPPORT
@@ -557,6 +573,14 @@ rcf_ch_conf_root(void)
 #endif
 #ifdef ENABLE_8021X
         if (ta_unix_conf_supplicant_init() != 0)
+            return NULL;
+#endif
+#ifdef ENABLE_IFCONFIG_STATS
+        if (ta_unix_conf_net_if_stats_init() != 0)
+            return NULL;
+#endif
+#ifdef ENABLE_NET_SNMP_STATS
+        if (ta_unix_conf_net_snmp_stats_init() != 0)
             return NULL;
 #endif
 

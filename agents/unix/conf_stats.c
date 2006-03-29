@@ -459,11 +459,11 @@ net_stats_get(net_stats *stats)
     char       *ptr = NULL;
     uint64_t    forwarding;
     uint64_t    default_ttl;
-
-#if __linux__
-    int fd = -1;
+    int         fd = -1;
 
     memset(stats, 0, sizeof(net_stats));
+
+#if __linux__
 
     buf = (char *)malloc(MAX_PROC_NET_SNMP_SIZE);
     if (buf == NULL)

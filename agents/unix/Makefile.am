@@ -23,6 +23,7 @@ noinst_HEADERS = \
 MY_SOURCES = \
 	main.c \
 	conf.c \
+	conf_stats.c \
 	conf_route.c \
 	conf_route_netlink.c \
 	conf_route_socket.c \
