@@ -300,7 +300,7 @@ struct generic_pdu {
     uint32_t  header_digest;
     uint8_t  *text;
     uint32_t  text_length;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /* name: ISCSI_BHS; */
 /* mostly_reserved: yes; */
@@ -323,7 +323,7 @@ struct response_pdu {
     uint32_t offset;
     uint32_t xfer_len;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 
 /** iSCSI PDU formats */
@@ -341,7 +341,7 @@ struct iscsi_init_scsi_cmnd {
     uint32_t exp_stat_sn;
     uint8_t  cdb[16];
     uint32_t header_digest; 
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.4 SCSI Response */
 
@@ -365,7 +365,7 @@ struct iscsi_targ_scsi_rsp {
     uint32_t bidi_resid;
     uint32_t resid;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.5 Task Management Function Request */
 /* ignore: yes; */
@@ -384,7 +384,7 @@ struct iscsi_init_task_mgt_command {
     uint32_t exp_data_sn;
     uint64_t rsvd4;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.6 Task Management Function Response */
 /* ignore: yes; */
@@ -404,7 +404,7 @@ struct iscsi_targ_task_mgt_response {
     uint32_t rsvd4;
     uint64_t rsvd5;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.7 SCSI Data-out */
 /* ignore: yes; */
@@ -427,7 +427,7 @@ struct iscsi_init_scsi_data_out {
     /* reserved: yes; */
     uint32_t rsvd5;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.7 SCSI Data-in */
 /* ignore: yes; */
@@ -448,7 +448,7 @@ struct iscsi_targ_scsi_data_in {
     uint32_t offset;
     uint32_t resid;
     uint32_t header_digest; 
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.8 Ready To Transfer (R2T) */
 /* ignore: yes; */
@@ -468,7 +468,7 @@ struct iscsi_targ_r2t {
     uint32_t offset;
     uint32_t xfer_len;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.9 Asynchronous Message */
 /* ignore: yes; */
@@ -493,7 +493,7 @@ struct iscsi_targ_async_msg {
     /* reserved: yes; */
     uint32_t rsvd5;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 enum iscsi_targ_async_msg_events {
     ISCSI_ASYNC_SCSI_EVENT,
@@ -522,7 +522,7 @@ struct iscsi_init_text_cmnd {
     /* reserved: yes; */
     uint64_t rsvd5;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /**< RFC 3720, Section 10.11 Text Response */
 /* ignore: yes; */
@@ -543,7 +543,7 @@ struct iscsi_targ_text_rsp {
     /* reserved: yes; */
     uint64_t rsvd5;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.12 Login Request */
 struct iscsi_init_login_cmnd {  
@@ -565,7 +565,7 @@ struct iscsi_init_login_cmnd {
     /* reserved: yes; */
     uint64_t rsvd3;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.13 Login Response */
 struct iscsi_targ_login_rsp {   
@@ -589,7 +589,7 @@ struct iscsi_targ_login_rsp {
     /* reserved: yes; */
     uint64_t rsvd3;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.14 Logout Request */
 struct iscsi_init_logout_cmnd { 
@@ -610,7 +610,7 @@ struct iscsi_init_logout_cmnd {
     /* reserved: yes; */
     uint64_t rsvd5;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.15 Logout Response */
 struct iscsi_targ_logout_rsp {  
@@ -634,7 +634,7 @@ struct iscsi_targ_logout_rsp {
     /* reserved: yes; */
     uint32_t rsvd5;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.16 SNACK Request */
 struct iscsi_init_snack {   
@@ -651,7 +651,7 @@ struct iscsi_init_snack {
     uint32_t begrun;
     uint32_t runlen;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.17 Reject */
 struct iscsi_targ_rjt {     
@@ -669,7 +669,7 @@ struct iscsi_targ_rjt {
     uint32_t data_sn;
     uint64_t rsvd5;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.18 NOP-Out */
 struct iscsi_init_nopout {  
@@ -685,7 +685,7 @@ struct iscsi_init_nopout {
     uint64_t rsvd2;
     uint64_t rsvd3;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 /** RFC 3720, Section 10.19 NOP-In */
 struct iscsi_targ_nopin {   
@@ -702,7 +702,7 @@ struct iscsi_targ_nopin {
     uint32_t rsvd2;
     uint64_t rsvd3;
     uint32_t header_digest;
-} __attribute((packed))__;
+} __attribute__((packed));
 
 
 /** The format of the data returned by the SCSI REQUEST SENSE command.
@@ -817,8 +817,14 @@ struct scsi_fixed_sense_data
 typedef enum iscsi_connection_status
 {
     ISCSI_CONNECTION_REMOVED = -1, /**< Connection is removed */
-    ISCSI_CONNECTION_DOWN,         /**< Connection is down */ 
-    ISCSI_CONNECTION_UP            /**< Connection is up */
+    ISCSI_CONNECTION_DOWN,         /**< Connection is down */
+    ISCSI_CONNECTION_ESTABLISHING, /**< Connection is being established */
+    ISCSI_CONNECTION_WAITING_DEVICE, /**< Connection is up but 
+                                      *  a corresponding SCSI device is not
+                                      *  yet ready */
+    ISCSI_CONNECTION_UP,           /**< Connection is up and ready */
+    ISCSI_CONNECTION_CLOSING,      /**< Connection is being closed */
+    ISCSI_CONNECTION_ABNORMAL,     /**< Connection is in abnormal state */
 } iscsi_connection_status;
 
 /**
