@@ -387,8 +387,8 @@ extern te_errno asn_parse_dvalue_in_file(const char *filename,
  * @return number characters should be written to buffer 
  * (without trailing zero), or -1 if error occured. 
  */ 
-extern te_errno asn_sprint_value(const asn_value *value, char *buffer,
-                                 size_t buf_len, unsigned int indent);
+extern int asn_sprint_value(const asn_value *value, char *buffer,
+                            size_t buf_len, unsigned int indent);
 
 /**
  * Prepare textual ASN.1 presentation of passed value and save this string

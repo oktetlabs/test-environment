@@ -55,41 +55,41 @@ size_t number_of_digits(int value);
 size_t asn_count_len_array_fields(const asn_value *value, 
                                   unsigned int indent);
 
-int asn_impl_pt_label(const char*text, char *label, int *parsed_syms);
+te_errno asn_impl_pt_label(const char*text, char *label, int *parsed_syms);
 
 
-int asn_impl_pt_charstring(const char *text, const asn_type *type, 
+te_errno asn_impl_pt_charstring(const char *text, const asn_type *type, 
                            asn_value **parsed, int *parsed_syms);
 
-int asn_impl_pt_bool(const char *text, const asn_type *type, 
+te_errno asn_impl_pt_bool(const char *text, const asn_type *type, 
                      asn_value **parsed, int *parsed_syms);
 
-int asn_impl_pt_integer(const char *text, const asn_type *type, 
+te_errno asn_impl_pt_integer(const char *text, const asn_type *type, 
                         asn_value **parsed, int *parsed_syms);
 
-int asn_impl_pt_null(const char*text, const asn_type *type, 
+te_errno asn_impl_pt_null(const char*text, const asn_type *type, 
                      asn_value **parsed, int *parsed_syms);
 
-int asn_impl_pt_objid(const char*text, const asn_type *type,
+te_errno asn_impl_pt_objid(const char*text, const asn_type *type,
                       asn_value **parsed, int *parsed_syms);
 
 
-int asn_impl_pt_octstring(const char *text, const asn_type *type, 
+te_errno asn_impl_pt_octstring(const char *text, const asn_type *type, 
                           asn_value **parsed, int *parsed_syms);
 
-int asn_impl_pt_enum(const char*text, const asn_type *type, 
+te_errno asn_impl_pt_enum(const char*text, const asn_type *type, 
                      asn_value **parsed, int *parsed_syms);
 
-int asn_impl_pt_named_array(const char*text, const asn_type *type, 
+te_errno asn_impl_pt_named_array(const char*text, const asn_type *type, 
                             asn_value **parsed, int *parsed_syms);
 
-int asn_impl_pt_indexed_array(const char*text, const asn_type *type, 
+te_errno asn_impl_pt_indexed_array(const char*text, const asn_type *type, 
                               asn_value **parsed, int *parsed_syms);
 
-int asn_impl_pt_choice(const char *txt, const asn_type *type, 
+te_errno asn_impl_pt_choice(const char *txt, const asn_type *type, 
                        asn_value **parsed, int *parsed_syms);
 
-int asn_parse_value_text(const char*text, const asn_type *type, 
+te_errno asn_parse_value_text(const char*text, const asn_type *type, 
                          asn_value **parsed, int *parsed_syms);
 
 
@@ -106,7 +106,7 @@ int asn_parse_value_text(const char*text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */ 
-int 
+te_errno 
 asn_impl_pt_label(const char *text, char *label, int *syms)
 { 
     int         l = 0;
@@ -160,7 +160,7 @@ asn_impl_pt_label(const char *text, char *label, int *syms)
  *
  * @return zero on success, otherwise error code.
  */ 
-int 
+te_errno 
 asn_impl_pt_charstring(const char *text, const asn_type *type, 
                        asn_value **parsed, int *syms_parsed)
 {
@@ -169,7 +169,7 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
     size_t num_blocks = 1;
     char  *buffer;
     char  *pb;       
-    int    rc = 0;
+    te_errno  rc = 0;
     
     size_t l;
     size_t total = 0;
@@ -238,7 +238,7 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */ 
-int 
+te_errno 
 asn_impl_pt_octstring(const char *text, const asn_type *type, 
                       asn_value **parsed, int *syms_parsed)
 {
@@ -248,7 +248,7 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
     char txt_buf[3]; 
     int  octstr_len = 0;
     int  b_num = 0;
-    int  rc;
+    te_errno  rc;
 
     txt_buf[2] = 0;
 
@@ -343,7 +343,7 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */ 
-int 
+te_errno 
 asn_impl_pt_integer(const char *text, const asn_type *type, 
                     asn_value **parsed, int *syms_parsed)
 {
@@ -385,7 +385,7 @@ asn_impl_pt_integer(const char *text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */ 
-int 
+te_errno 
 asn_impl_pt_bool(const char*text, const asn_type *type, 
                  asn_value **parsed, int *syms_parsed)
 {
@@ -422,7 +422,7 @@ asn_impl_pt_bool(const char*text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */ 
-int 
+te_errno 
 asn_impl_pt_null(const char *text, const asn_type *type, 
                  asn_value **parsed, int *syms_parsed)
 {
@@ -457,11 +457,11 @@ asn_impl_pt_null(const char *text, const asn_type *type,
  * @return zero on success, otherwise error code.
  *
  */ 
-int 
+te_errno 
 asn_impl_pt_enum(const char*text, const asn_type *type, 
                  asn_value **parsed, int *syms_parsed)
 {
-    int   rc;
+    te_errno   rc;
     int   p_value;
     char *endptr; 
     char  label_buf[100];
@@ -522,7 +522,7 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
  *
  * @todo parse of symbolic labels
  */
-int 
+te_errno 
 asn_impl_pt_objid(const char *text, const asn_type *type,
                   asn_value **parsed, int *parsed_syms)
 {
@@ -531,7 +531,7 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
     int        *parsed_ints = NULL;
     int         parsed_ints_len = 0;
     char       *endptr;
-    int         rc = 0;
+    te_errno    rc = 0;
     int         p_s;
 
     if (!text || !parsed || !parsed_syms)
@@ -623,14 +623,14 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
  * @todo        check for the order of elements in SEQUENCE and presence 
  *              of non-OPTIONAL fields should be done. 
  */
-int 
+te_errno 
 asn_impl_pt_named_array(const char *text, const asn_type *type, 
                         asn_value **parsed, int *parsed_syms)
 {
     const char *pt = text; 
+    te_errno   rc;
 
     char label_buf[100];
-    int  rc;
 
     ENTRY("text='%s' type=%p parsed=%p parsed_syms=%p",
           text, type, parsed, parsed_syms);
@@ -671,8 +671,8 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
         if (rc) 
         {
             *parsed_syms = pt - text;
-            WARN("%s(): subtype for label '%s' not found",
-                 __FUNCTION__, label_buf);
+            WARN("%s(): subtype for label '%s' not found, %r",
+                 __FUNCTION__, label_buf, rc);
             return TE_EASNTXTVALNAME;
         }
 
@@ -721,13 +721,13 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */
-int 
+te_errno 
 asn_impl_pt_indexed_array(const char*text, const asn_type * type, 
                           asn_value **parsed, int *parsed_syms)
 {
     const char *pt = text; 
 
-    int rc = 0;
+    te_errno rc = 0;
 
     if (!text || !type || !parsed || !parsed_syms)
         return TE_EWRONGPTR; 
@@ -794,16 +794,16 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
  *
  * @return zero on success, otherwise error code.
  */
-int 
+te_errno 
 asn_impl_pt_choice(const char *txt, const asn_type *type, 
                    asn_value **parsed, int *parsed_syms)
 {
     const char *pt = txt; 
+    te_errno    rc;
 
     char  l_b[100];
     char *label_buf;
 
-    int rc;
     int p_s = sizeof(l_b) - 1; 
 
     const asn_type *subtype;
@@ -881,7 +881,7 @@ asn_impl_pt_choice(const char *txt, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */ 
-int 
+te_errno 
 asn_parse_value_text(const char *text, const asn_type *type, 
                      asn_value **parsed, int *syms_parsed)
 {
@@ -932,7 +932,7 @@ asn_parse_value_text(const char *text, const asn_type *type,
 }
 
 /* See description in asn_usr.h */
-int
+te_errno
 asn_parse_value_assign_text(const char *string, asn_value **value)
 {
     UNUSED(string);
@@ -951,7 +951,7 @@ asn_parse_value_assign_text(const char *string, asn_value **value)
  *
  * @return zero on success, otherwise error code.
  */ 
-int 
+te_errno 
 asn_parse_file(const char *filename, char **found_names, int *found_len)
 {
     UNUSED(filename);
@@ -1789,7 +1789,7 @@ asn_count_len_array_fields(const asn_value *value, unsigned int indent)
  *
  * @return zero on success, otherwise error code.
  */ 
-int
+te_errno
 asn_save_to_file(const asn_value *value, const char *filename)
 {
     FILE *fp;
@@ -1824,7 +1824,7 @@ asn_save_to_file(const asn_value *value, const char *filename)
 }
 
 
-static int
+static te_errno
 file_len(const char *filename, size_t *len)
 {
     struct stat fst;
@@ -1849,7 +1849,7 @@ file_len(const char *filename, size_t *len)
  *
  * @return zero on success, otherwise error code.
  */ 
-int 
+te_errno 
 asn_parse_dvalue_in_file(const char *filename, const asn_type *type, 
                          asn_value **parsed_value, int *syms_parsed) 
 { 
@@ -1857,7 +1857,8 @@ asn_parse_dvalue_in_file(const char *filename, const asn_type *type,
     char *buf;
     int   fd;
     int   read_sz;
-    int   rc;
+
+    te_errno rc;
 
     if (filename == NULL || type == NULL || 
         parsed_value == NULL || syms_parsed == NULL)

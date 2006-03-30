@@ -153,8 +153,9 @@ struct asn_value
  *
  * @return zero on success, otherwise error code. 
  */ 
-extern int asn_impl_find_subtype(const asn_type * type, const char *label,
-                                 const asn_type ** found_type);
+extern te_errno asn_impl_find_subtype(const asn_type * type,
+                                      const char *label,
+                                      const asn_type ** found_type);
 
 /**
  * Find one-depth subvalue in ASN value tree by its label.
@@ -168,9 +169,9 @@ extern int asn_impl_find_subtype(const asn_type * type, const char *label,
  *
  * @return zero on success, otherwise error code. 
  */ 
-extern int asn_impl_find_subvalue(const asn_value *container, 
-                                  const char *label, 
-                                  asn_value const **found_val);
+extern te_errno asn_impl_find_subvalue(const asn_value *container, 
+                                       const char *label, 
+                                       asn_value const **found_val);
 
 /**
  * Find numeric index of subvalue in ASN type specification by 
@@ -188,8 +189,8 @@ extern int asn_impl_find_subvalue(const asn_value *container,
  *
  * @return status code
  */
-extern int asn_child_named_index(const asn_type *type, const char *labels, 
-                                 int *index, const char **rest_labels);
+extern te_errno asn_child_named_index(const asn_type *type, const char *labels, 
+                                      int *index, const char **rest_labels);
 
 /**
  * Determine numeric index of field in structure presenting ASN.1 type
@@ -204,9 +205,9 @@ extern int asn_child_named_index(const asn_type *type, const char *labels,
  *
  * @return zero on success, otherwise error code. 
  */
-extern int asn_child_tag_index(const asn_type *type,
-                               asn_tag_class tag_class, uint16_t tag_val,
-                               int *index);
+extern te_errno asn_child_tag_index(const asn_type *type,
+                                    asn_tag_class tag_class, uint16_t tag_val,
+                                    int *index);
 
 
 /**
@@ -224,9 +225,9 @@ extern int asn_child_tag_index(const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */
-extern int asn_put_child_by_index(asn_value *container, 
-                                  asn_value *child, 
-                                  int index);
+extern te_errno asn_put_child_by_index(asn_value *container, 
+                                       asn_value *child, 
+                                       int index);
 
 /**
  * Internal method for get child by its index in container
@@ -245,9 +246,9 @@ extern int asn_put_child_by_index(asn_value *container,
  *
  * @return zero on success, otherwise error code.
  */
-extern int asn_get_child_by_index(const asn_value *container, 
-                                  asn_value **child, 
-                                  int index);
+extern te_errno asn_get_child_by_index(const asn_value *container, 
+                                       asn_value **child, 
+                                       int index);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -51,14 +51,17 @@ extern int number_of_digits(int value);
 
 
 
-int asn_impl_fall_down_to_tree_nc(const asn_value *, char *,
-                                  asn_value const **);
+te_errno asn_impl_fall_down_to_tree_nc(const asn_value *, char *,
+                                       asn_value const **);
 
-int asn_impl_write_value_field(asn_value *, const void *, size_t , char *);
+te_errno asn_impl_write_value_field(asn_value *, const void *,
+                                    size_t , char *);
 
-int asn_impl_read_value_field(const asn_value *, void *, size_t *, char *);
+te_errno asn_impl_read_value_field(const asn_value *, void *,
+                                   size_t *, char *);
 
-int asn_impl_write_component_value(asn_value *, const asn_value *,  char *);
+te_errno asn_impl_write_component_value(asn_value *, const asn_value *,
+                                        char *);
 
 
 /*
@@ -86,12 +89,12 @@ asn_strdup(const char* src)
  * Wrapper over asn_impl_find_subvalue, for find in writable container
  * and get writable subvalue. All parameters are same. 
  */ 
-static inline int
+static inline te_errno
 asn_impl_find_subvalue_writable(asn_value *container, const char *label, 
                                 asn_value **found_val)
 {
     const asn_value *f_val;
-    int rc = asn_impl_find_subvalue(container, label, &f_val);
+    te_errno rc = asn_impl_find_subvalue(container, label, &f_val);
 
     *found_val = (asn_value *)f_val;
     return rc;
@@ -102,12 +105,12 @@ asn_impl_find_subvalue_writable(asn_value *container, const char *label,
  * Wrapper over asn_impl_fall_down_to_tree_nc, for find in writable container
  * and get writable subvalue. All parameters are same. 
  */ 
-static inline int 
+static inline te_errno 
 asn_impl_fall_down_to_tree_writable(asn_value *container, 
                                     const char *field_labels,
                                     asn_value **found_value)
 {
-    int rc;
+    te_errno rc;
     char *rest_labels = asn_strdup(field_labels); 
     const asn_value *f_val;
 
@@ -356,7 +359,7 @@ te_errno
 asn_free_child(asn_value *value,
                asn_tag_class tag_class, asn_tag_value tag_val)
 {
-    int rc = 0;
+    te_errno rc = 0;
     int index;
 
     if (value == NULL)
@@ -393,7 +396,8 @@ asn_free_descendant(asn_value *value, const char *labels)
     int   len;
     char *low_label;
     char *up_labels = asn_strdup(labels);
-    int   rc = 0;
+
+    te_errno rc = 0;
 
     asn_value *subvalue;
 
@@ -586,7 +590,7 @@ asn_impl_find_subtype(const asn_type *type, const char *label,
 
     if (!(type->syntax & 1))
     {
-        int rc;
+        te_errno rc;
         int index; 
 
         if ((rc = asn_child_named_index(type, label, &index, &rest)) != 0)
@@ -707,7 +711,7 @@ te_errno
 asn_put_child_value(asn_value *container, asn_value *subvalue, 
                     asn_tag_class tag_class, asn_tag_value tag_val)
 {
-    int rc;
+    te_errno rc;
     int index;
 
     if (container == NULL) 
@@ -730,8 +734,8 @@ te_errno
 asn_put_child_value_by_label(asn_value *container, asn_value *subvalue,
                              const char *label)
 {
-    int index;
-    int rc;
+    int       index;
+    te_errno  rc;
 
     const char *rest_labels = NULL;
 
@@ -891,7 +895,7 @@ asn_get_descendent(const asn_value *container,
                    asn_value **found_value, 
                    const char *labels)
 {
-    te_errno    rc = 0;
+    te_errno rc = 0;
 #if 0
 
     if (!container || !found_value)
@@ -942,9 +946,9 @@ asn_put_descendent(asn_value *container, asn_value *subval,
     const char  *rest_labels = labels;
     asn_value   *par_value = container;
     asn_value   *tmp;
+    te_errno     rc = 0;
 
     int index;
-    int rc = 0;
 
     if (!container || !labels)
         return TE_EWRONGPTR; 
@@ -994,7 +998,7 @@ te_errno
 asn_get_indexed(const asn_value *container, asn_value **subval, 
                 int index, const char *labels)
 {
-    te_errno rc;
+    te_errno         rc;
     const asn_value *indexed_value = NULL;
 
     if (!container || !subval)
@@ -1050,9 +1054,9 @@ te_errno
 asn_write_value_field(asn_value *container, const void *data, size_t d_len, 
                       const char *field_labels)
 {
-    char *field_labels_int_copy = asn_strdup(field_labels); 
-    int   rc = asn_impl_write_value_field(container, data, d_len, 
-                                          field_labels_int_copy);
+    char     *field_labels_int_copy = asn_strdup(field_labels); 
+    te_errno  rc = asn_impl_write_value_field(container, data, d_len,
+                                              field_labels_int_copy);
     free(field_labels_int_copy);
 
     return rc;
@@ -1188,7 +1192,7 @@ asn_impl_write_value_field(asn_value *container,
         {
             char       * rest_field_labels = field_labels;
             char       * cur_label = "";
-            int          rc;
+            te_errno     rc;
 
 
             switch (container->syntax)
@@ -1290,7 +1294,7 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
 {
     asn_value *value;
     size_t     m_len;
-    int        rc;
+    te_errno   rc;
 
     if (!container) return TE_EWRONGPTR; 
 
@@ -1423,7 +1427,7 @@ asn_write_string(asn_value *container, const char *value,
                  const char *labels)
 {
     const asn_type *leaf_type;
-    int rc;
+    te_errno rc;
 
     if (container == NULL || value == NULL)
         return TE_EWRONGPTR;
@@ -1445,7 +1449,7 @@ asn_read_string(const asn_value *container, char **value,
                 const char *labels)
 {
     const asn_value *leaf_val;
-    int rc;
+    te_errno rc;
 
     if (container == NULL || value == NULL)
         return TE_EWRONGPTR;
@@ -1487,7 +1491,7 @@ asn_write_component_value(asn_value *container,
 {
     char *field_labels_int_copy = asn_strdup(subval_labels); 
 
-    int   rc = asn_impl_write_component_value(container, elem_value,
+    te_errno   rc = asn_impl_write_component_value(container, elem_value,
                                               field_labels_int_copy);
     free (field_labels_int_copy);
 
@@ -1519,7 +1523,7 @@ asn_impl_write_component_value(asn_value *container,
     char        *rest_field_labels = subval_labels;
     char        *cur_label = "";
     asn_value * subvalue;
-    int          rc;
+    te_errno     rc;
 
                 asn_value *new_value = NULL;
 
@@ -1651,7 +1655,8 @@ te_errno
 asn_get_child_type(const asn_type *type, const asn_type **subtype,
                    asn_tag_class tag_class, asn_tag_value tag_val)
 {
-    int index, rc;
+    int index; 
+    te_errno rc;
 
     if (type == NULL || subtype == NULL)
         return TE_EWRONGPTR; 
@@ -1672,7 +1677,8 @@ te_errno
 asn_get_child_value(const asn_value *container, const asn_value **subval,
                     asn_tag_class tag_class, asn_tag_value tag_val)
 {
-    int index, rc;
+    int index;
+    te_errno rc;
 
     if (!container || !subval)
         return TE_EWRONGPTR; 
@@ -1733,7 +1739,7 @@ asn_get_field_data(const asn_value *container,
     const asn_value  *subval = container;
     const void      **data_ptr = (const void **)location;    
 
-    int rc;
+    te_errno rc;
 
 
     if (data_ptr == NULL || container == NULL)
@@ -1797,7 +1803,7 @@ asn_read_component_value (const asn_value *container,
                 asn_value ** elem_value, const char *subval_labels)
 {
     const asn_value  *subvalue;
-    int          rc; 
+    te_errno     rc; 
 
     rc = asn_get_subvalue(container, (asn_value **)&subvalue, 
                           subval_labels); 
@@ -1840,7 +1846,7 @@ asn_write_indexed(asn_value *container, const asn_value *elem_value,
 {
     asn_value *value = container;
 
-    int rc;
+    te_errno rc;
 
     rc = asn_impl_fall_down_to_tree_writable(container, subval_labels,
                                              &value);
@@ -2047,7 +2053,7 @@ asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
  *
  * @return number of elements in constractive subvalue, -1 if error occurred. 
  */ 
-te_errno
+int
 asn_get_length(const asn_value *container, const char *subval_labels)
 {
     const asn_value *val;
