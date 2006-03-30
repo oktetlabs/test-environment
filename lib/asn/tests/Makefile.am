@@ -5,7 +5,7 @@ AM_LDFLAGS = @TE_LDFLAGS@
 
 
 TESTS=parse_simple put_get parse_file val_set03 write_ind2 save_to_file1 \
-      find1
+      find1 retrieve1
 check_PROGRAMS=$(TESTS)
 
 extra_DIST= \
@@ -16,6 +16,7 @@ oid1.c \
 prn01.c \
 prn02.c \
 find1.c \
+retrieve1.c \
 val_set01.c \
 val_set02.c \
 val_set03.c \

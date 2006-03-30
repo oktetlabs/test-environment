@@ -618,6 +618,12 @@ asn_impl_find_subtype(const asn_type *type, const char *label,
 
 
 
+#define RETURN_NULL_WITH_ERROR(_error) \
+    do {                                \
+        if (status != NULL)             \
+            *status = (_error);         \
+        return NULL;                    \
+    } while(0) 
 
 
 /* see description in asn_usr.h */
@@ -635,21 +641,21 @@ asn_find_descendant(const asn_value *value, te_errno *status,
     va_start(list, labels_fmt);
     if (labels_fmt != NULL) 
     {
-        vsnprintf(labels_buf, sizeof(labels_buf), labels_fmt, list); 
+        if (vsnprintf(labels_buf, sizeof(labels_buf), labels_fmt, list) >=
+            (int)sizeof(labels_buf))
+            rc = TE_E2BIG;
     }
     va_end(list);
+    if (rc != 0)
+        RETURN_NULL_WITH_ERROR(rc);
 
     if (status != NULL)
         *status = 0;
 
     if (!value)
-    {
-        if (status != NULL)
-            *status = TE_EWRONGPTR; 
-        return NULL; 
-    }
+        RETURN_NULL_WITH_ERROR(TE_EWRONGPTR);
 
-    if (labels_fmt == NULL || *labels_fmt == '\0')
+    if (labels_buf == NULL || *labels_buf == '\0')
         return (asn_value *)value;
 
     while (rest_labels != NULL && (*rest_labels != '\0'))
@@ -684,23 +690,87 @@ asn_retrieve_descendant(asn_value *value, te_errno *status,
                         const char *labels_fmt, ...)
 {
     va_list     list;
-    te_errno    rc;
-    asn_value  *found_result;
+    te_errno    rc = 0;
+    asn_value  *tmp_value = value;
     char        labels_buf[200]; 
+    const char *rest_labels = labels_buf;
+    int         subval_index;
 
     va_start(list, labels_fmt);
     if (labels_fmt != NULL) 
     {
-        vsnprintf(labels_buf, sizeof(labels_buf), labels_fmt, list); 
+        if (vsnprintf(labels_buf, sizeof(labels_buf), labels_fmt, list) >=
+            (int)sizeof(labels_buf))
+            rc = TE_E2BIG;
     }
     va_end(list);
 
-    rc = asn_get_descendent(value, &found_result, labels_buf); 
-    if (status != NULL)
-        *status = rc;
+    if (rc != 0)
+        RETURN_NULL_WITH_ERROR(rc);
 
-    return (rc == 0) ? found_result : NULL;
+    if (status != NULL)
+        *status = 0;
+
+    if (value == NULL)
+        RETURN_NULL_WITH_ERROR(TE_EWRONGPTR);
+
+    if (labels_buf == NULL || *labels_buf == '\0')
+        return (asn_value *)value;
+
+    while ((rest_labels != NULL) && (*rest_labels != '\0') && (rc == 0))
+    { 
+        asn_value *new_value;
+        rc = asn_child_named_index(tmp_value->asn_type, rest_labels, 
+                                   &subval_index, &rest_labels);
+        if (rc != 0)
+            break;
+
+        rc = asn_get_child_by_index(tmp_value, &new_value, subval_index);
+        if (rc == TE_EASNOTHERCHOICE)
+            break;
+        else if (rc == TE_EASNINCOMPLVAL)
+        {
+            const asn_type *new_type;
+
+            rc = 0;
+            switch (tmp_value->syntax)
+            {
+                case SEQUENCE:
+                case SET:
+                case CHOICE:
+                    {
+                    const asn_named_entry_t *ne = 
+                            (tmp_value->asn_type->sp.named_entries) +
+                            subval_index;
+                    new_type = ne->type;
+                    }
+                    break;
+
+                case SEQUENCE_OF:
+                case SET_OF:
+                    new_type = tmp_value->asn_type->sp.subtype;
+                    break;
+
+                default:
+                    rc = TE_EASNGENERAL;
+                    break;
+            }
+            if (rc != 0)
+                break;
+
+            new_value = asn_init_value(new_type); 
+            rc = asn_put_child_by_index(tmp_value, new_value, subval_index); 
+        }
+        tmp_value = new_value;
+    }
+
+    if (rc != 0 && status != NULL)
+        *status = rc; 
+
+    return (rc == 0) ? tmp_value : NULL;
 }
+
+#undef RETURN_NULL_WITH_ERROR
 
 
 
@@ -768,7 +838,7 @@ asn_get_child_by_index(const asn_value *container, asn_value **child,
 
     *child = container->data.array[ (container->syntax == CHOICE ||
                                      container->syntax == TAGGED    ) 
-                                    ? 0 : index                         ];
+                                    ? 0 : index                       ];
 
     /* additional check for named children */
     if (!(container->syntax & 1))
