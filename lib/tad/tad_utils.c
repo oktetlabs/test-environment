@@ -1533,11 +1533,7 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
         }
         if (r == 0)
         {
-            /* 
-             * FIXME: Not sure, that it is correct return code for this 
-             * situation
-             */
-            return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
+            return TE_RC(TE_TAD_CSAP, TE_ETADENDOFDATA);
         }
 
         if (fromlen != NULL)

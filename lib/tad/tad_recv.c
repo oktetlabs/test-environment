@@ -1162,8 +1162,8 @@ tad_recv_thread(void *arg)
         if (rc != 0)
         {
             /* Unexpected read callback error */
-            ERROR(CSAP_LOG_FMT "Read callback failed: %r",
-                  CSAP_LOG_ARGS(csap), rc);
+            WARN(CSAP_LOG_FMT "Read callback failed: %r",
+                 CSAP_LOG_ARGS(csap), rc);
             break;
         }
 
