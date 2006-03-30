@@ -79,12 +79,14 @@
 #endif
 
 /* Solaris/SunOS uses DLPI as interface to link-layer */
+#if HAVE_LIBDLPI
 #if HAVE_SYS_DLPI_H
 #include <sys/dlpi.h>
 #endif
 #if HAVE_LIBDLPI_H
 #include <libdlpi.h>
 #endif
+#endif /* HAVE_LIBDLPI */
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -2559,6 +2561,8 @@ static te_errno
 link_addr_get(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
+    const uint8_t   all_zeros[ETHER_ADDR_LEN] = { 0, };
+
     te_errno        rc;
     const uint8_t  *ptr = NULL;
 
@@ -2578,12 +2582,11 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
 #elif HAVE_LIBDLPI_H
     if (strcmp(ifname, "lo0") == 0)
     {
-        const uint8_t   all_zeros[ETHER_ADDR_LEN] = { 0, };
-
         ptr = all_zeros;
     }
     else
     {
+#if HAVE_LIBDLPI
         int             fd;
         dlpi_if_attr_t  if_attr;
         dl_info_ack_t   dl_info;
@@ -2628,6 +2631,9 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
         }
         (void)dlpi_close(fd);
         ptr = buf;
+#else
+        ptr = all_zeros;
+#endif
     }
 #elif defined(__FreeBSD__)
 

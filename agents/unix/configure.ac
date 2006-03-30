@@ -294,7 +294,7 @@ AC_SEARCH_LIBS([sendfile], [sendfile], [], [])
 dnl
 dnl DLPI interface is required for Solaris/SunOS configuration.
 dnl
-AC_SEARCH_LIBS([dlpi_open], [dlpi], [], [])
+AC_CHECK_LIB([dlpi], [dlpi_open], [], [])
 
 dnl
 dnl POSIX threads are provided by:
