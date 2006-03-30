@@ -74,7 +74,8 @@ struct asn_type {
     const char  *name;   /**< ASN.1 name of type, if any assigned. */
 
     asn_tag_t    tag;    /**< tag value of type. */
-    asn_syntax   syntax; /**< syntax of type, that is "type" of value itself. */
+    asn_syntax   syntax; /**< syntax of type, that is "type" of value
+                              itself. */
 
     size_t       len; /**< Size of value, if any specified as SIZE clause
                            in ASN.1 type specification.. 
@@ -117,7 +118,8 @@ struct asn_value
                     length of value. semantic is depended on syntax: 
                     - primitive syntax:
                         -# INTEGER -- 
-                            zero for usual native 'int' or number of bits used. 
+                            zero for usual native 'int' or number of bits
+                            used. 
                         -# LONG_INT, CHAR_STRING, OCT_STRING, REAL --
                             number of used octets;
                         -# OBJECT IDENTIFIER -- 
@@ -126,7 +128,7 @@ struct asn_value
                         -# BIT_STRING -- number of bits;    
                     - constraint syntax:       
                           number of sub-values, 
-                          This field should be one or zero (for non-complete 
+                          This field should be one or zero (for non-complete
                           values) for CHOICE and TAGGED syntaxes.  
                         */ 
 
@@ -148,7 +150,8 @@ struct asn_value
  *
  * @param type       pointer to ASN value which leaf field is interested;
  * @param label      textual field label, specifying subvalue of 'type',
- *                   for syntaxes "*_OF" and "TAGGED" this parameter is ignored. 
+ *                   for syntaxes "*_OF" and "TAGGED" this parameter
+ *                   is ignored. 
  * @param found_type pointer to found ASN type (OUT).
  *
  * @return zero on success, otherwise error code. 
@@ -162,7 +165,8 @@ extern te_errno asn_impl_find_subtype(const asn_type * type,
  * This method is applicable only to values with CONSTRAINT syntax. 
  *
  * @param container  pointer to ASN value which leaf field is interested;
- * @param label      textual field label, specifying subvalue of 'container'. 
+ * @param label      textual field label, specifying subvalue of
+ *                   'container'. 
  *                   Label for 'SEQUENCE OF' and 'SET OF' subvalues 
  *                   is decimal notation of its integer index in array.
  * @param found_val  pointer to found subvalue (OUT).
@@ -189,8 +193,9 @@ extern te_errno asn_impl_find_subvalue(const asn_value *container,
  *
  * @return status code
  */
-extern te_errno asn_child_named_index(const asn_type *type, const char *labels, 
-                                      int *index, const char **rest_labels);
+extern te_errno asn_child_named_index(const asn_type *type,
+                                      const char *labels, int *index,
+                                      const char **rest_labels);
 
 /**
  * Determine numeric index of field in structure presenting ASN.1 type
@@ -206,7 +211,8 @@ extern te_errno asn_child_named_index(const asn_type *type, const char *labels,
  * @return zero on success, otherwise error code. 
  */
 extern te_errno asn_child_tag_index(const asn_type *type,
-                                    asn_tag_class tag_class, uint16_t tag_val,
+                                    asn_tag_class tag_class,
+                                    uint16_t tag_val,
                                     int *index);
 
 
