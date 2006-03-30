@@ -4,7 +4,8 @@ AM_CFLAGS = @TE_CFLAGS@ $(SNMP_F)
 AM_LDFLAGS = @TE_LDFLAGS@ 
 
 
-TESTS=parse_simple put_get parse_file val_set03 write_ind2 save_to_file1
+TESTS=parse_simple put_get parse_file val_set03 write_ind2 save_to_file1 \
+      find1
 check_PROGRAMS=$(TESTS)
 
 extra_DIST= \
@@ -14,6 +15,7 @@ parse_file.c \
 oid1.c \
 prn01.c \
 prn02.c \
+find1.c \
 val_set01.c \
 val_set02.c \
 val_set03.c \
