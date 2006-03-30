@@ -4612,8 +4612,6 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
                  tarpc_overfill_buffers_out *out)
 {
     int             ret = 0;
-    int             rc;
-    int             val;
     ssize_t         sent = 0;
     int             errno_save = errno;
     api_func        ioctl_func;
@@ -4664,12 +4662,13 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     /* SunOS has MSG_DONTWAIT flag, but does not support it for send */
     if (!in->is_nonblocking)
     {
-        val = 1;
-        rc = ioctl_func(in->sock, FIONBIO, &val);
-        if (rc != 0)
+        int val = 1;
+
+        if (ioctl_func(in->sock, FIONBIO, &val) != 0)
         {
             out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
-            ERROR("%s(): ioctl() failed: %r", __FUNCTION__, rc);
+            ERROR("%s(): ioctl() failed: %r", __FUNCTION__,
+                  out->common._errno);
             ret = -1;
             goto overfill_buffers_exit;
         }
@@ -4731,12 +4730,13 @@ overfill_buffers_exit:
 #ifdef __sun__
     if (!in->is_nonblocking)
     {
-        val = 0;
-        rc = ioctl_func(in->sock, FIONBIO, &val);
-        if (rc != 0)
+        int val = 0;
+
+        if (ioctl_func(in->sock, FIONBIO, &val) != 0)
         {
             out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
-            ERROR("%s(): ioctl() failed: %r", __FUNCTION__, rc);
+            ERROR("%s(): ioctl() failed: %r", __FUNCTION__,
+                  out->common._errno);
             ret = -1;
         }
     }
