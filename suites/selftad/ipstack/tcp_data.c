@@ -163,7 +163,7 @@ main(int argc, char *argv[])
 
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
-    rc = rpc_recv(sock_pco, socket, rx_buffer, sizeof(rx_buffer), 0); 
+    rc = rpc_recv(sock_pco, socket, rx_buffer, sizeof(rx_buffer), 0);
     if (rc != (int)len)
         TEST_FAIL("CSAP->RPC: len received %d, expected %d", rc, len);
 
@@ -186,41 +186,7 @@ main(int argc, char *argv[])
             TEST_FAIL("recv on CSAP failed: %r", rc); 
     }
     else
-        TEST_FAIL("recv on TCP CSAP have detect that connection closed");
-
-    {
-        csap_handle_t tcp_raw;
-        asn_value *template;
-        uint8_t rem_addr[] = {0x00, 0x0E, 0xA6, 0x41, 0xD5, 0x2E};
-
-        rc = tapi_tcp_ip4_eth_csap_create(host_csap->ta, 0, "eth0", 
-                                          NULL, rem_addr, 
-                                          SIN(csap_addr)->sin_addr.s_addr,
-                                          SIN(sock_addr)->sin_addr.s_addr,
-                                          SIN(csap_addr)->sin_port,
-                                          SIN(sock_addr)->sin_port,
-                                          &tcp_raw);
-        if (rc != 0)
-            TEST_FAIL("create raw TCP socket failed, %r", rc); 
-
-        rc = tapi_tcp_template(5, 10, FALSE, FALSE,
-                               NULL, 0, &template);
-        if (rc != 0)
-            TEST_FAIL("create TCP template failed, %r", rc); 
-
-        rc = asn_write_int32(template, TCP_RST_FLAG, "pdus.0.flags.#plain");
-        if (rc != 0)
-            TEST_FAIL("write RESET to TCP template failed, %r", rc); 
-
-        rc = tapi_tad_trsend_start(host_csap->ta, 0, tcp_raw, template,
-                                   RCF_MODE_BLOCKING);
-        if (rc != 0)
-            TEST_FAIL("send RESET via TCP raw ♣SAP failed, %r", rc); 
-    }
-
-    rc = rpc_recv(sock_pco, socket, rx_buffer, sizeof(rx_buffer), 0); 
-
-    RING("++++++++++++ recv rc %d", rc);
+        TEST_FAIL("recv on TCP CSAP have detect that connection closed"); 
 
     TEST_SUCCESS;
 
