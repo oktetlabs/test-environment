@@ -60,6 +60,28 @@
 #define IF_NAMESIZE IFNAMSIZ
 #endif
 
+#ifdef U64_FMT
+#undef U64_FMT
+#endif
+
+#ifdef _U64_FMT
+#undef _U64_FMT
+#endif
+
+#ifdef I64_FMT
+#undef I64_FMT
+#endif
+
+#ifdef _I64_FMT
+#undef _I64_FMT
+#endif
+
+#define U64_FMT "%" TE_PRINTF_64 "u"
+#define I64_FMT "%" TE_PRINTF_64 "u"
+
+#define _U64_FMT " " U64_FMT
+#define _I64_FMT " " I64_FMT
+
 
 typedef struct if_stats {
     uint64_t      in_octets;
@@ -132,6 +154,7 @@ typedef struct net_stats {
 } net_stats;
 
 
+#if 0
 static char *if_stats_rx_pkts_fmt =
     "RX packets:%llu errors:%llu dropped:%llu overruns:%llu frame:%llu";
 
@@ -143,6 +166,27 @@ static char *if_stats_rx_octets_fmt =
 
 static char *if_stats_tx_octets_fmt =
     "TX bytes:%llu";
+#else
+static char *if_stats_rx_pkts_fmt =
+    "RX packets:" U64_FMT
+    " errors:" U64_FMT
+    " dropped:" U64_FMT
+    " overruns:" U64_FMT
+    " frame:" U64_FMT;
+
+static char *if_stats_tx_pkts_fmt =
+    "TX packets:" U64_FMT
+    " errors:" U64_FMT
+    " dropped:" U64_FMT
+    " overruns:" U64_FMT
+    " carrier:" U64_FMT;
+
+static char *if_stats_rx_octets_fmt =
+    "RX bytes:" U64_FMT;
+
+static char *if_stats_tx_octets_fmt =
+    "TX bytes:" U64_FMT;
+#endif
 
 #define MAX_IFCONFIG_OUTPUT_LEN             1024
 #define MAX_IFCONFIG_CMD_LEN                48
@@ -433,19 +477,35 @@ cleanup:
     return rc;
 }
 
+
 static char *stats_net_snmp_ipv4_fmt =
-  "Ip: %lld %lld %llu %llu %llu %llu "
-  "%llu %llu %llu %llu %llu %llu "
-  "%llu %llu %llu %llu %llu %llu %llu";
+#if 0
+    "Ip: %lld %lld %llu %llu %llu %llu "
+    "%llu %llu %llu %llu %llu %llu "
+    "%llu %llu %llu %llu %llu %llu %llu";
+#else
+    "Ip:" _I64_FMT _I64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
+    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
+    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT;
+#endif
 
 #define STATS_SNMP_IPV4_PARAM_COUNT     19
 
 static char *stats_net_snmp_icmp_fmt =
-  "Icmp: %llu %llu %llu %llu %llu %llu "
-  "%llu %llu %llu %llu %llu %llu "
-  "%llu %llu %llu %llu %llu %llu "
-  "%llu %llu %llu %llu %llu "
-  "%llu %llu %llu";
+#if 0
+    "Icmp: %llu %llu %llu %llu %llu %llu "
+    "%llu %llu %llu %llu %llu %llu "
+    "%llu %llu %llu %llu %llu %llu "
+    "%llu %llu %llu %llu %llu "
+    "%llu %llu %llu";
+#else
+    "Icmp:"
+    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
+    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
+    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
+    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
+    _U64_FMT _U64_FMT _U64_FMT;
+#endif
 
 #define STATS_SNMP_ICMP_PARAM_COUNT     26
 
@@ -611,9 +671,9 @@ static te_errno net_if_stats_##_counter_##_get(unsigned int gid_,       \
         ERROR("Cannot get statistics for interface %s", (if_name_));    \
     }                                                                   \
                                                                         \
-    snprintf((value_), RCF_MAX_VAL, "%llu", if_stats. _field_);         \
+    snprintf((value_), RCF_MAX_VAL, U64_FMT, if_stats. _field_);        \
                                                                         \
-    RING("if_counter_get(if_name=%s, counter=%s) returns %s",           \
+    VERB("if_counter_get(if_name=%s, counter=%s) returns %s",           \
          if_name_, #_counter_, value_);                                 \
                                                                         \
     return 0;                                                           \
@@ -653,10 +713,10 @@ net_snmp_ipv4_stats_##_counter_##_get(unsigned int gid_,        \
         ERROR("Cannot get network statistics for system");      \
     }                                                           \
                                                                 \
-    snprintf((value_), RCF_MAX_VAL, "%llu",                     \
+    snprintf((value_), RCF_MAX_VAL, U64_FMT,                    \
              net_stats.ipv4._field_);                           \
                                                                 \
-    RING("net_snmp_ipv4_counter_get(counter=%s) returns %s",    \
+    VERB("net_snmp_ipv4_counter_get(counter=%s) returns %s",    \
          #_counter_, value_);                                   \
                                                                 \
     return 0;                                                   \
@@ -702,10 +762,10 @@ net_snmp_icmp_stats_ ## _counter_ ## _get(unsigned int gid_,    \
         ERROR("Cannot get network statistics for system");      \
     }                                                           \
                                                                 \
-    snprintf((value_), RCF_MAX_VAL, "%llu",                     \
+    snprintf((value_), RCF_MAX_VAL, U64_FMT,                    \
              net_stats.icmp._field_);                           \
                                                                 \
-    RING("net_snmp_icmp_counter_get(counter=%s) returns %s",    \
+    VERB("net_snmp_icmp_counter_get(counter=%s) returns %s",    \
          #_counter_, value_);                                   \
                                                                 \
     return 0;                                                   \
