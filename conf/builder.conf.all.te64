@@ -62,6 +62,18 @@ TE_PLATFORM([i386-pc-solaris2.11], [],
 TE_TA_TYPE([solaris2], [i386-pc-solaris2.11], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent])
 
+
+TE_PLATFORM([x86_64-pc-solaris2.11], [],
+            [-I${SOLARIS2_HOME}/sys-include], [-m64],
+            [-L${SOLARIS2_HOME}/lib \
+             -Wl,-rpath-link,${SOLARIS2_HOME}/lib/amd64],
+            [tools rpc_types conf_oid rpcxdr \
+             comm_net_agent loggerta rcfpch tad])
+
+TE_TA_TYPE([solaris2_64], [x86_64-pc-solaris2.11], [unix],
+           [--with-rcf-rpc], [], [], [], [comm_net_agent])
+
+
 #
 # FreeBSD6 platform
 #
