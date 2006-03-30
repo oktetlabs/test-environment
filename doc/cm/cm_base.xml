@@ -198,6 +198,243 @@
             type="integer" volatile="true"/>
 
 
+    <!-- Summary network statistics.
+         Name:  Agent network statistics -->
+    <object oid="/agent/stats" access="read_only" 
+            type="string" volatile="true"/>
+
+    <!-- The total number of recieved IPv4 packets.
+         Name:  Received IPv4 packets -->
+    <object oid="/agent/stats/ipv4_in_recvs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of packets discarded due to errors in their IPv4 headers.
+         Name:  Counter of packets discarded due to IPv4 header errors -->
+    <object oid="/agent/stats/ipv4_in_hdr_errs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of packets discarded due to value of IPv4 destination.
+         Name:  Counter of packets discarded due to wrong IPv4 destination -->
+    <object oid="/agent/stats/ipv4_in_addr_errs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of forwarded IPv4 packets.
+         Name:  Counter of forwarded packets -->
+    <object oid="/agent/stats/ipv4_forw_dgrams" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of packets discarded due to unknown or unsupported
+         protocols.
+         Name:  Counter of packets with unknown protocol field -->
+    <object oid="/agent/stats/ipv4_in_unknown_protos" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of input IP packets for which no problems were
+         encountered to prevent their continued processing, but which
+         were discarded (e.g., for lack of buffer space).
+         Name:  Counter of packets discarded by all other reasons -->
+    <object oid="/agent/stats/ipv4_in_discards" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The total numver of input packets successfully delivered to IPv4
+         user-protocols.
+         Name:  The total delivered packets counter -->
+    <object oid="/agent/stats/ipv4_in_delivers" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The total numver of IPv4 packets which local IP user-protocols
+       * (including ICMP) supplied to IP in request for transmission.
+         Name:  Transmit requests counter -->
+    <object oid="/agent/stats/ipv4_out_requests" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The total number of output IP packets for which no problems
+         were ecountered to prevent their countinued processing, but
+         which were discarded (e.g., for lack of buffer space).
+         Name:  Discarded outgouing IP packets counter -->
+    <object oid="/agent/stats/ipv4_out_discards" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of IP packets discarded because there was no
+         appropriate route to their destination found.
+         Name:   -->
+    <object oid="/agent/stats/ipv4_out_no_routes" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of reassembly timeouts.
+         Name:  Reassembly timeouts counter -->
+    <object oid="/agent/stats/ipv4_reasm_timeout" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of reassembly requests.
+         Name:  Reassembly requests counter -->
+    <object oid="/agent/stats/ipv4_reasm_reqds" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of successfuly reassemblied IP packets.
+         Name:  Total reassembled IP packets counter -->
+    <object oid="/agent/stats/ipv4_reasm_oks" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The total number of failures in reassembling IP packets.
+         Name:  Reassembly failures counter -->
+    <object oid="/agent/stats/ipv4_reasm_fails" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of successfuly fragmented IP packets.
+         Name:  Successfuly fragmented IP packets counter -->
+    <object oid="/agent/stats/ipv4_frag_oks" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of unsuccessfuly fragmented IP packets.
+         Name:  Unuccessfuly fragmented IP packets counter -->
+    <object oid="/agent/stats/ipv4_frag_fails" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The total number of fragmented IP packets.
+         Name:  All fragmented IP packets counter -->
+    <object oid="/agent/stats/ipv4_frag_created" access="read_only" 
+            type="integer" volatile="true"/>
+
+
+    <!-- The total number of ICMP messages received.
+         Name:  Total ICMP messages received counter -->
+    <object oid="/agent/stats/icmp_in_msgs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The total number of ICMP error messages received.
+         Name:  Total ICMP error messages received counter -->
+    <object oid="/agent/stats/icmp_in_errs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The total number of ICMP error messages
+         Destination Unreachable received.
+         Name:  Total Destination Unreachable ICMP error messages
+                received counter -->
+    <object oid="/agent/stats/icmp_in_dest_unreachs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Time Exceeded messages received.
+         Name:  Total ICMP Time Exceeded messages received counter -->
+    <object oid="/agent/stats/icmp_in_time_excds" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Parameter Problem messages received.
+         Name:  Total ICMP Parameter Problem messages received counter -->
+    <object oid="/agent/stats/ipv4_in_parm_probs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Source Quench messages received.
+         Name:  Total ICMP Source Quench messages received counter -->
+    <object oid="/agent/stats/ipv4_in_src_quenchs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Redirect messages received.
+         Name:  Total ICMP Redirect messages received counter -->
+    <object oid="/agent/stats/ipv4_in_redirects" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Echo (request) messages received.
+         Name:  Total ICMP Echo (request) messages received counter -->
+    <object oid="/agent/stats/ipv4_in_echos" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Echo (reply) messages received.
+         Name:  Total ICMP Echo (reply) messages received counter -->
+    <object oid="/agent/stats/ipv4_in_echo_reps" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Timestamp (request) messages received.
+         Name:  Total ICMP Timestamp (request) messages received counter -->
+    <object oid="/agent/stats/ipv4_in_timestamps" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Timestamp (reply) messages received.
+         Name:  Total ICMP Timestamp (reply) messages received counter -->
+    <object oid="/agent/stats/ipv4_in_timestamp_reps" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Address Mask (request) messages received.
+         Name:  Total ICMP Address Mask (request) messages received
+                counter -->
+    <object oid="/agent/stats/ipv4_in_addr_masks" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Address Mask (reply) messages received.
+         Name:  Total ICMP Address Mask (reply) messages received counter -->
+    <object oid="/agent/stats/ipv4_in_addr_mask_reps" access="read_only" 
+            type="integer" volatile="true"/>
+
+
+    <!-- The total number of ICMP messages transmitted.
+         Name:  Total ICMP messages transmitted counter -->
+    <object oid="/agent/stats/icmp_in_msgs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The total number of ICMP error messages transmitted.
+         Name:  Total ICMP error messages transmitted counter -->
+    <object oid="/agent/stats/icmp_in_errs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The total number of ICMP error messages
+         Destination Unreachable transmitted.
+         Name:  Total Destination Unreachable ICMP error messages
+                transmitted counter -->
+    <object oid="/agent/stats/icmp_in_dest_unreachs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Time Exceeded messages transmitted.
+         Name:  Total ICMP Time Exceeded messages transmitted counter -->
+    <object oid="/agent/stats/icmp_in_time_excds" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Parameter Problem messages transmitted.
+         Name:  Total ICMP Parameter Problem messages transmitted counter -->
+    <object oid="/agent/stats/ipv4_in_parm_probs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Source Quench messages transmitted.
+         Name:  Total ICMP Source Quench messages transmitted counter -->
+    <object oid="/agent/stats/ipv4_in_src_quenchs" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Redirect messages transmitted.
+         Name:  Total ICMP Redirect messages transmitted counter -->
+    <object oid="/agent/stats/ipv4_in_redirects" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Echo (request) messages transmitted.
+         Name:  Total ICMP Echo (request) messages transmitted counter -->
+    <object oid="/agent/stats/ipv4_in_echos" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Echo (reply) messages transmitted.
+         Name:  Total ICMP Echo (reply) messages transmitted counter -->
+    <object oid="/agent/stats/ipv4_in_echo_reps" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Timestamp (request) messages transmitted.
+         Name:  Total ICMP Timestamp (request) messages transmitted counter -->
+    <object oid="/agent/stats/ipv4_in_timestamps" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Timestamp (reply) messages transmitted.
+         Name:  Total ICMP Timestamp (reply) messages transmitted counter -->
+    <object oid="/agent/stats/ipv4_in_timestamp_reps" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Address Mask (request) messages transmitted.
+         Name:  Total ICMP Address Mask (request) messages transmitted
+                counter -->
+    <object oid="/agent/stats/ipv4_in_addr_masks" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- The number of ICMP Address Mask (reply) messages transmitted.
+         Name:  Total ICMP Address Mask (reply) messages transmitted counter -->
+    <object oid="/agent/stats/ipv4_in_addr_mask_reps" access="read_only" 
+            type="integer" volatile="true"/>
+
+
     <!-- Routing table entry.
          Name: (network address in human notation)'|'(prefix)[,metric:Metric][,tos:Tos];
          e.g. "1.2.3.4|24,metric=20,tos=5"         
