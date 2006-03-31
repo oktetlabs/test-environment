@@ -814,12 +814,20 @@ RCF_PCH_CFG_NODE_NA(node_net_snmp_stats, "stats",
 te_errno
 ta_unix_conf_net_snmp_stats_init(void)
 {
+#if 0
     return rcf_pch_add_node("/agent", &node_net_snmp_stats);
+#else
+    return 0;
+#endif
 }
 
 /* See the description in conf_stats.h */
 te_errno
 ta_unix_conf_net_if_stats_init(void)
 {
+#if 0
     return rcf_pch_add_node("/agent/interface", &node_net_if_stats);
+#else
+    return 0;
+#endif
 }
