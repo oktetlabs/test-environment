@@ -1543,15 +1543,21 @@ neigh_list(unsigned int gid, const char *oid, char **list,
  * Win32-specific MIB_IPFORWARDROW data structure.
  *
  * @param rt_info TA portable route info
- * @Param rt      Win32-specific data structure (OUT)
+ * @param rt      Win32-specific data structure (OUT)
+ *
+ * @return Status code.
  */
-static int
+static te_errno
 rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
 {
     int rc;
 
-    assert((rt_info->flags & TA_RT_INFO_FLG_GW) != 0 ||
-           (rt_info->flags & TA_RT_INFO_FLG_IF) != 0);
+    if ((rt_info->flags & TA_RT_INFO_FLG_GW) == 0 &&
+        (rt_info->flags & TA_RT_INFO_FLG_IF) == 0)
+    {
+        ERROR("Incorrect flags %x for rt_info %x", rt_info->flags);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
+    }
 
     rt->dwForwardDest = SIN(&(rt_info->dst))->sin_addr.s_addr;
     rt->dwForwardNextHop = SIN(&(rt_info->gw))->sin_addr.s_addr;
@@ -1950,8 +1956,11 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         case TA_CFG_OBJ_CREATE:
         {
             if ((rc = rt_info2ipforw(&rt_info, &rt)) != 0)
+            {
                 ERROR("Failed to convert route to "
                       "MIB_IPFORWARDROW data structure");
+                return TE_RC(TE_TA_WIN32, TE_EWIN);
+            }
                       
             /* Add or set operation */
             if ((rc = CreateIpForwardEntry(&rt)) != NO_ERROR)
