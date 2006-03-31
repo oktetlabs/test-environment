@@ -180,13 +180,14 @@ extern ta_cfg_obj_t *ta_obj_find(const char *type, const char *name);
  * @param type        Object type - user-defined constant
  * @param name        Object name - actually, instance name
  * @param value       Object value
+ * @param gid         Request group ID
  * @param user_data   Some user-data value associated with this object
  * @param new_obj     Object entry (OUT)
  *
  * @return Error code or 0
  */
-extern int ta_obj_add(const char *type,
-                      const char *name, const char *value,
+extern int ta_obj_add(const char *type, const char *name,
+                      const char *value, unsigned int gid,
                       void *user_data, ta_cfg_obj_t **new_obj);
 
 /**
@@ -195,9 +196,10 @@ extern int ta_obj_add(const char *type,
  * @param type       Object type - user-defined constant
  * @param name       Object name
  * @param value      Object value
+ * @param gid        Request group ID
  */
 extern int ta_obj_value_set(const char *type, const char *name,
-                            const char *value); 
+                            const char *value, unsigned int gid); 
 
 /** Prototype for callback function used in ta_obj_set/del() */
 typedef int (* ta_obj_cb)(ta_cfg_obj_t *obj);

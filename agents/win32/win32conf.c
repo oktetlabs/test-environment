@@ -1732,11 +1732,9 @@ static te_errno
 route_add(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
-    UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
 
-    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, value, NULL, NULL);
+    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, value, gid, NULL, NULL);
 }
 
 /**
@@ -1813,10 +1811,9 @@ static te_errno
 route_set(unsigned int gid, const char *oid, const char *value,
           const char *route_name)
 {
-    UNUSED(gid);
     UNUSED(oid);
 
-    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE, route_name, value);
+    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE, route_name, value, gid);
 }            
 
 /**

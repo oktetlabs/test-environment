@@ -171,7 +171,7 @@ ta_obj_find(const char *type, const char *name)
 /* See the description in rcf_pch_ta_cfg.h */
 int
 ta_obj_add(const char *type, const char *name, const char *value,
-           void *user_data, ta_cfg_obj_t **new_obj)
+           unsigned int gid, void *user_data, ta_cfg_obj_t **new_obj)
 {
     int           i;
     ta_cfg_obj_t *obj = ta_obj_find(type, name);
@@ -194,6 +194,7 @@ ta_obj_add(const char *type, const char *name, const char *value,
     ta_objs[i].name = strdup(name);
     ta_objs[i].value = ((value != NULL) ? strdup(value) : NULL);
     ta_objs[i].user_data = user_data;
+    ta_objs[i].gid = gid;
     ta_objs[i].action = TA_CFG_OBJ_CREATE;
     ta_objs[i].attrs = NULL;
 
@@ -212,7 +213,8 @@ ta_obj_add(const char *type, const char *name, const char *value,
 
 /* See the description in rcf_pch_ta_cfg.h */
 int
-ta_obj_value_set(const char *type, const char *name, const char *value)
+ta_obj_value_set(const char *type, const char *name, const char *value,
+                 unsigned int gid)
 {
     ta_cfg_obj_t *obj = ta_obj_find(type, name);
     int           rc;
@@ -220,7 +222,7 @@ ta_obj_value_set(const char *type, const char *name, const char *value)
     if (obj == NULL)
     {
         /* Add object first, but reset add flag */
-        if ((rc = ta_obj_add(type, name, NULL, NULL, &obj)) != 0)
+        if ((rc = ta_obj_add(type, name, NULL, gid, NULL, &obj)) != 0)
             return rc;
 
         obj->action = TA_CFG_OBJ_SET;
@@ -244,7 +246,7 @@ ta_obj_set(const char *type, const char *name,
     if (obj == NULL)
     {
         /* Add object first, but reset add flag */
-        if ((rc = ta_obj_add(type, name, NULL, NULL, &obj)) != 0)
+        if ((rc = ta_obj_add(type, name, NULL, gid, NULL, &obj)) != 0)
             return rc;
 
         obj->action = TA_CFG_OBJ_SET;
@@ -290,7 +292,7 @@ ta_obj_del(const char *type, const char *name, void *user_data,
     }
 
     /* Add object, but reset add flag */
-    if ((rc = ta_obj_add(type, name, NULL, user_data, &obj)) != 0)
+    if ((rc = ta_obj_add(type, name, NULL, gid, user_data, &obj)) != 0)
         return rc;
 
     obj->action = TA_CFG_OBJ_DELETE;

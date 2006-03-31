@@ -277,7 +277,7 @@ route_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE, route_name, value);
+    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE, route_name, value, gid);
 }
 
 /**
@@ -336,7 +336,8 @@ route_load_attrs(ta_cfg_obj_t *obj)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
-        rc = ta_obj_value_set(TA_OBJ_TYPE_ROUTE, obj->name, val);
+        rc = ta_obj_value_set(TA_OBJ_TYPE_ROUTE, obj->name, val,
+                              obj->gid);
         if (rc != 0)
         {
             ERROR("Failed to set route object value: %r", rc);
@@ -447,11 +448,9 @@ static te_errno
 route_add(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
-    UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
 
-    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, value, NULL, NULL);
+    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, value, gid, NULL, NULL);
 }
 
 /**
