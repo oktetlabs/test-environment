@@ -372,7 +372,6 @@ static te_errno                                                \
 route_ ## field_ ## _set(unsigned int gid, const char *oid,    \
                          const char *value, const char *route) \
 {                                                              \
-    UNUSED(gid);                                               \
     UNUSED(oid);                                               \
                                                                \
     return ta_obj_set(TA_OBJ_TYPE_ROUTE, route, #field_,       \
