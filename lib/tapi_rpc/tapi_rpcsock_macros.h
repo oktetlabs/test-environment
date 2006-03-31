@@ -226,8 +226,9 @@
             {                                                           \
                 if (strcmp(_old_act.mm_handler, (old_handler_)) != 0)   \
                 {                                                       \
-                    ERROR("Value returned from rpc_sigaction() is "     \
-                          "not the same as expected ");                 \
+                    ERROR("Value returned from rpc_sigaction() (%s) "   \
+                          "is not the same as expected (%s)",           \
+                          _old_act.mm_handler, (old_handler_));         \
                     MACRO_TEST_ERROR;                                   \
                 }                                                       \
             }                                                           \
