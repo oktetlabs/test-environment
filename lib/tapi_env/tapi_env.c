@@ -1467,7 +1467,14 @@ bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
                               cfg_nets->nets[i].nodes[j].handle,
                               cfg_nets->nets[p->net->i_net].
                                   nodes[p->i_node].handle) == 0);
-                if (one_host != one_ta)
+                /* 
+                 * If host is the same, it implies that names are
+                 * specified. If both names are not specified, allow
+                 * any binding.
+                 */
+                if ((one_host != one_ta) &&
+                    ((iface->host->name[0] != '\0') ||
+                     (p->host->name[0] != '\0')))
                 {
                     VERB("Hosts with %s names ('%s/%s' vs '%s/%s') "
                          "can't be bound to nodes %s",
