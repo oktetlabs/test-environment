@@ -25,17 +25,11 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-EXTRA_DIST = OKTL-ARCH-0000044-TE.doc\
+EXTRA_DIST = OKTL-ARCH-0000044-TE.sxw \
              OKT-HLD-0000027-TE_RCF.sxw \
              OKT-HLD-0000031-TE_BS.sxw \
              OKT-HLD-0000037-TE_TCE.sxw \
-             OKT-HLD-0000041-TE_LS_IF.doc \
-             OKT-HLD-0000045-TE_LS_TEN.sxw \
-             OKT-HLD-0000047-TE_LS_TA.sxw \
+             OKT-HLD-0000041-TE_LS_IF.sxw \
              OKT-HLD-0000055-TE_RG.sxw \
              OKTL-HLD-0000151-TE_PROTO.sxw \
-             OKT-HLD-0000069-TE_CS.sxw \
-             OKT-HLD-0000071-TE_CS_DATA.sxw \
-             OKT-HLD-0000085-TE_TSC.sxw \
-             OKT-HLD-0000095-TE_TS.sxw \
-             OKT-HLD-0000107-TE_LIB_ST.sxw
+             OKT-HLD-0000085-TE_TSC.sxw 
