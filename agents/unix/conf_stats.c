@@ -237,12 +237,12 @@ if_stats_get(const char *ifname, if_stats *stats)
         goto cleanup;
     }
 
-    snprintf(cmd, MAX_IFCONFIG_CMD_LEN, "ifconfig %s", ifname);
+    snprintf(cmd, MAX_IFCONFIG_CMD_LEN, "/sbin/ifconfig %s", ifname);
     
     pid = te_shell_cmd(cmd, -1, NULL, &out_fd);
     if (pid < 0)
     {
-        ERROR("Cannot execute ifconfig utility");
+        VERB("Cannot execute ifconfig utility");
         rc = TE_OS_RC(TE_TA_UNIX, pid);
         goto cleanup;
     }
@@ -250,7 +250,7 @@ if_stats_get(const char *ifname, if_stats *stats)
     ifcfg_output = fdopen(out_fd, "r");
     if (ifcfg_output == NULL)
     {
-        ERROR("Cannot do fdopen() on ifconfig output file descriptor");
+        VERB("Cannot do fdopen() on ifconfig output file descriptor");
         rc = TE_OS_RC(TE_TA_UNIX, errno);
         goto cleanup;
     }
@@ -279,9 +279,9 @@ if_stats_get(const char *ifname, if_stats *stats)
                              &in_frame_losses)) !=
                 IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS)
             {
-                ERROR("Invalid format of the Rx stats line, "
-                      "only %d args parsed, but %d required", rc,
-                      IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS);
+                VERB("Invalid format of the Rx stats line, "
+                     "only %d args parsed, but %d required", rc,
+                     IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS);
                 rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
                 goto cleanup;
             }
@@ -300,7 +300,7 @@ if_stats_get(const char *ifname, if_stats *stats)
                              &out_carrier_losses)) !=
                 IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS)
             {
-                ERROR("Invalid format of the Tx stats line, "
+                VERB("Invalid format of the Tx stats line, "
                       "only %d args parsed, but %d required", rc,
                       IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS);
                 rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
@@ -314,121 +314,31 @@ if_stats_get(const char *ifname, if_stats *stats)
             if (sscanf(ptr, if_stats_rx_octets_fmt,
                        &stats->in_octets) != 1)
             {
-                ERROR("Invalid format of the Rx bytes stats line");
+                VERB("Invalid format of the Rx bytes stats line");
                 rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
                 goto cleanup;
             }
 
             if ((ptr = strstr(buf, "TX bytes")) == NULL)
             {
-                ERROR("Invalid format of the Rx/Tx bytes stats line");
+                VERB("Invalid format of the Rx/Tx bytes stats line");
                 rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
                 goto cleanup;
             }
             if (sscanf(ptr, if_stats_tx_octets_fmt,
                        &stats->out_octets) != 1)
             {
-                ERROR("Invalid format of the Tx bytes stats line");
+                VERB("Invalid format of the Tx bytes stats line");
                 rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
                 goto cleanup;
             }
             rx_tx_octets_counters_parsed = TRUE;
         }
-
-#if 0        
-        switch (line)
-        {
-            case IFCONFIG_OUTPUT_RX_STAT_LINE:
-                if ((ptr = strstr(buf, "RX packets")) == NULL)
-                {
-                    ERROR("Invalid format of the Rx stats line, "
-                         "no \"RX packets\" substring found");
-                    rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                    goto cleanup;
-                }
-                VERB("Try to parse string \"%s\" with format string \"%s\"",
-                     ptr, if_stats_rx_pkts_fmt);
-                if ((rc = sscanf(ptr, if_stats_rx_pkts_fmt,
-                                 &stats->in_ucast_pkts,
-                                 &stats->in_errors,
-                                 &stats->in_discards,
-                                 &in_overruns,
-                                 &in_frame_losses)) !=
-                    IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS)
-                {
-                    ERROR("Invalid format of the Rx stats line, "
-                          "only %d args parsed, but %d required", rc,
-                          IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS);
-                    rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                    goto cleanup;
-                }
-                break;
-
-            case IFCONFIG_OUTPUT_TX_STAT_LINE:
-                if ((ptr = strstr(buf, "TX packets")) == NULL)
-                {
-                    ERROR("Invalid format of the Rx stats line, "
-                         "no \"TX packets\" substring found");
-                    rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                    goto cleanup;
-                }
-                VERB("Try to parse string \"%s\" with format string \"%s\"",
-                     ptr, if_stats_tx_pkts_fmt);
-                if ((rc = sscanf(ptr, if_stats_tx_pkts_fmt,
-                                 &stats->out_ucast_pkts,
-                                 &stats->out_errors,
-                                 &stats->out_discards,
-                                 &out_overruns,
-                                 &out_carrier_losses)) !=
-                    IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS)
-                {
-                    ERROR("Invalid format of the Tx stats line, "
-                          "only %d args parsed, but %d required", rc,
-                          IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS);
-                    rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                    goto cleanup;
-                }
-                break;
-
-            case IFCONFIG_OUTPUT_RX_TX_BYTES_LINE:
-                if ((ptr = strstr(buf, "RX bytes")) == NULL)
-                {
-                    ERROR("Invalid format of the Rx/Tx bytes stats line");
-                    rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                    goto cleanup;
-                }
-                if (sscanf(ptr, if_stats_rx_octets_fmt,
-                           &stats->in_octets) != 1)
-                {
-                    ERROR("Invalid format of the Rx bytes stats line");
-                    rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                    goto cleanup;
-                }
-
-                if ((ptr = strstr(buf, "TX bytes")) == NULL)
-                {
-                    ERROR("Invalid format of the Rx/Tx bytes stats line");
-                    rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                    goto cleanup;
-                }
-                if (sscanf(ptr, if_stats_tx_octets_fmt,
-                           &stats->out_octets) != 1)
-                {
-                    ERROR("Invalid format of the Tx bytes stats line");
-                    rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                    goto cleanup;
-                }
-                break;
-
-            default:
-                break;
-        }
-#endif
     }
 
     if (!rx_counters_parsed)
     {
-        ERROR("Invalid format of the Rx stats line, "
+        VERB("Invalid format of the Rx stats line, "
               "no \"RX packets\" substring found");
               rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
         goto cleanup;
@@ -436,7 +346,7 @@ if_stats_get(const char *ifname, if_stats *stats)
     
     if (!tx_counters_parsed)
     {
-        ERROR("Invalid format of the Tx stats line, "
+        VERB("Invalid format of the Tx stats line, "
               "no \"TX packets\" substring found");
               rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
         goto cleanup;
@@ -444,7 +354,7 @@ if_stats_get(const char *ifname, if_stats *stats)
 
     if (!rx_tx_octets_counters_parsed)
     {
-        ERROR("Invalid format of the Rx/Tx bytes stats line");
+        VERB("Invalid format of the Rx/Tx bytes stats line");
         rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
         goto cleanup;
     }
