@@ -1580,8 +1580,9 @@ main(int argc, char **argv)
     /* FIXME */
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);    
 
+    memset(&sigact, 0, sizeof(sigact));
     sigact.sa_flags = SA_RESTART;
-    sigfillset(&sigact.sa_mask);
+    sigemptyset(&sigact.sa_mask);
 
     /* FIXME: Is it used by RPC */
     sigact.sa_handler = (void *)ta_sigint_handler;
