@@ -1464,6 +1464,89 @@ cfg_get_object(const char *oid_s)
     return tmp;
 }
 
+/**
+ * Find object for specified object identifier.
+ *
+ * @param obj_id_str   object identifier in string representation
+ *
+ * @return pointer to object structure or NULL
+ */
+cfg_object *
+cfg_get_obj_by_obj_id_str(const char *obj_id_str)
+{
+    cfg_oid             *idsplit = cfg_convert_oid_str(obj_id_str);
+    cfg_object          *obj = &cfg_obj_root;
+    cfg_object_subid    *ids;
+    int                 i = 0;
+
+    if (idsplit == NULL)
+        return NULL;
+
+    if (idsplit->inst)
+    {
+        cfg_free_oid(idsplit);
+        return NULL;
+    }
+    
+    ids = (cfg_object_subid *)(idsplit->ids);
+
+    while (TRUE)
+    {
+        while(obj != NULL && strcmp(obj->subid, ids->subid) != 0)
+            obj = obj->brother;
+        if (++i == idsplit->len || obj == NULL)
+            break;
+
+        obj = obj->son;
+        ids++;
+    }
+
+    cfg_free_oid(idsplit);
+    return obj;
+}
+
+/**
+ * Find instance for specified instance identifier.
+ *
+ * @param ins_id_str   instance identifier in string representation
+ *
+ * @return pointer to instance structure or NULL
+ */
+cfg_instance *
+cfg_get_ins_by_ins_id_str(const char *ins_id_str)
+{
+    cfg_oid             *idsplit = cfg_convert_oid_str(ins_id_str);
+    cfg_instance        *ins = &cfg_inst_root;
+    cfg_inst_subid      *ids;
+    int                 i = 0;
+
+    if (idsplit == NULL)
+        return NULL;
+
+    if (!idsplit->inst)
+    {
+        cfg_free_oid(idsplit);
+        return NULL;
+    }
+    
+    ids = (cfg_inst_subid *)(idsplit->ids);
+
+    while (TRUE)
+    {
+        while(ins != NULL && strcmp(ins->obj->subid, ids->subid) != 0 && \
+                             strcmp(ins->name,       ids->name)  != 0)
+            ins = ins->brother;
+        if (++i == idsplit->len || ins == NULL)
+            break;
+
+        ins = ins->son;
+        ids++;
+    }
+
+    cfg_free_oid(idsplit);
+    return ins;
+}
+
 /*
  * Decide if the string matches to pattern
  *
@@ -1574,5 +1657,15 @@ cfg_oid_match_volatile(const char *oid_s, char **ta)
     cfg_free_oid(oid);
     
     return match;
+}
+
+void
+cfg_process_msg_tree_print(cfg_tree_print_msg *msg)
+{
+    char *flname = NULL;
+
+    if (msg->flname_len != 0)
+        flname = (msg->buf) + (msg->id_len);
+    msg->rc = cfg_db_tree_print(flname, msg->log_lvl, msg->buf);
 }
 

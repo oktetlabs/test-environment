@@ -2243,3 +2243,82 @@ cfg_touch_instance(const char *oid_tmpl, ...)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
+
+/**
+ * Starting from a given prefix, print a tree of objects or instances
+ * into a file and(or) log.
+ *
+ * @param filename          output filename (NULL to skip)
+ * @param log_lvl           TE log level (0 to skip)
+ * @param id_fmt            a format string for the id of the root
+ *                          from which we print.
+ *
+ * @return                  Status code.
+ */
+te_errno
+cfg_tree_print(const char *filename,
+               const unsigned int log_lvl,
+               const char *id_fmt, ...)
+{
+    cfg_tree_print_msg *msg;
+
+    size_t      id_len, flname_len, len;
+    char        id[CFG_OID_MAX];
+    te_errno    ret_val = 0;
+    va_list ap;
+
+    
+    if (id_fmt == NULL)
+        return TE_RC(TE_CONF_API, TE_EINVAL);
+    va_start(ap, id_fmt);
+    id_len = (size_t)vsnprintf(id, sizeof(id), id_fmt, ap);
+    va_end(ap);
+    if (id_len >= sizeof(id))
+        return TE_RC(TE_CONF_API, TE_EINVAL);
+    id_len += 1; /* '\0' */
+
+    if (filename == NULL)
+        flname_len = 0;
+    else
+        flname_len = strlen(filename) + 1;
+    
+    if (sizeof(cfg_tree_print_msg) + id_len + flname_len > CFG_MSG_MAX)
+        return TE_RC(TE_CONF_API, TE_EMSGSIZE);
+    
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_lock(&cfgl_lock);
+#endif
+    INIT_IPC;
+    if (cfgl_ipc_client == NULL)
+    {
+#ifdef HAVE_PTHREAD_H
+        pthread_mutex_unlock(&cfgl_lock);
+#endif
+        return TE_RC(TE_CONF_API, TE_EIPC);
+    }
+    msg = (cfg_tree_print_msg *)cfgl_msg_buf;
+    msg->type = CFG_TREE_PRINT;
+    msg->log_lvl = log_lvl;
+    
+    memcpy(msg->buf, id, id_len);
+    msg->id_len = id_len;
+   
+    if (flname_len != 0)
+        memcpy((msg->buf) + id_len, filename, flname_len);
+    msg->flname_len = flname_len;
+    
+    msg->len = sizeof(cfg_tree_print_msg) + id_len + flname_len;
+    
+    len = CFG_MSG_MAX;
+    ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
+                                           CONFIGURATOR_SERVER,
+                                           msg, msg->len, msg, &len);
+    if (ret_val == 0)
+        ret_val = msg->rc;
+
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_unlock(&cfgl_lock);
+#endif
+    return TE_RC(TE_CONF_API, ret_val);
+}
+

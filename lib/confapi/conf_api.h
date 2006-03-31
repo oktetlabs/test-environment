@@ -817,13 +817,27 @@ extern te_errno cfg_wait_changes(void);
 extern te_errno cfg_touch_instance(const char *oid_tmpl, ...);
 
 /**
+ * Starting from a given prefix, print a tree of objects or instances
+ * into a file and(or) log.
+ *
+ * @param filename          output filename (NULL to skip)
+ * @param log_lvl           TE log level (0 to skip)
+ * @param id_fmt            a format string for the id of the root
+ *                          from which we print.
+ *
+ * @return                  Status code.
+ */
+extern te_errno cfg_tree_print(const char *filename,
+                               const unsigned int log_lvl,
+                               const char *id_fmt, ...);
+
+/**
  * Clean up resources allocated by Configurator API.
  *
  * Usually user should not worry about calling of the function, since
  * it is called automatically using atexit() mechanism.
  */
 extern void cfg_api_cleanup(void);
-
 
 #ifdef __cplusplus
 }

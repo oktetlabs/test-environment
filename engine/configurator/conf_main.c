@@ -1137,6 +1137,10 @@ log_msg(cfg_msg *msg, te_bool before)
             LOG_MSG(level, "Shutdown command%s", addon);
             break;
 
+        case CFG_TREE_PRINT:
+            cfg_db_tree_print_msg_log((cfg_tree_print_msg *)msg, level);
+            break;
+
         default:
             ERROR("Unknown command %x", msg->type);
     }
@@ -1426,6 +1430,10 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             cs_flags |= CS_SHUTDOWN;
             break;
 
+        case CFG_TREE_PRINT:
+            cfg_process_msg_tree_print((cfg_tree_print_msg *)*msg);
+            break;
+
         default: /* Should not occur */
             ERROR("Unknown message is received");
             break;
@@ -1593,8 +1601,10 @@ main(int argc, char **argv)
 
     if (cs_flags & CS_PRINT_TREES)
     {
-        print_otree(&cfg_obj_root, 0);
-        print_tree(&cfg_inst_root, 0);
+        /* print_otree(&cfg_obj_root, 0); */
+        /* print_tree(&cfg_inst_root, 0); */
+        cfg_db_tree_print("objects", TE_LL_RING, "/");
+        cfg_db_tree_print("instances", TE_LL_RING, "/:");
     }
 
     /* 

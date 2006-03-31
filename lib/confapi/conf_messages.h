@@ -83,6 +83,7 @@ enum {
     CFG_CONF_DELAY,/**< Sleep conf_delay */                        
     CFG_SHUTDOWN,  /**< Shutdown the Configurator */
     CFG_ADD_DEPENDENCY, /**< Add a dependency */
+    CFG_TREE_PRINT /**< Print a tree of obj|ins from a prefix */
 };
 
 /* Set of generic fields of the Configurator message */
@@ -265,6 +266,14 @@ typedef struct cfg_shutdown_msg {
     CFG_MSG_FIELDS
 } cfg_shutdown_msg;
 
+/** CFG_TREE_PRINT message content */
+typedef struct cfg_tree_print_msg {
+    CFG_MSG_FIELDS
+    unsigned int  log_lvl;  /**< IN:  log level */
+    size_t        id_len;   /**< IN:  obj|ins id string length */
+    size_t        flname_len;/**< IN: output filename length */
+    char          buf[1];   /**< IN:  id + filename */
+} cfg_tree_print_msg;
 
 #ifdef __cplusplus
 extern "C" {

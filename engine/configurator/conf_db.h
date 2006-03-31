@@ -189,6 +189,7 @@ extern void cfg_process_msg_get_oid(cfg_get_oid_msg *msg);
 extern void cfg_process_msg_get_id(cfg_get_id_msg *msg);
 extern void cfg_process_msg_family(cfg_family_msg *msg);
 extern void cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg);
+extern void cfg_process_msg_tree_print(cfg_tree_print_msg *msg);
 
 /**
  * Process pattern user request.
@@ -210,6 +211,24 @@ extern cfg_pattern_msg *cfg_process_msg_pattern(cfg_pattern_msg *msg);
  * @return object structure pointer or NULL
  */
 extern cfg_object *cfg_get_object(const char *oid_s);
+
+/**
+ * Find object for specified object identifier.
+ *
+ * @param obj_id_str   object identifier in string representation
+ *
+ * @return pointer to object structure or NULL
+ */
+extern cfg_object *cfg_get_obj_by_obj_id_str(const char *obj_id_str);
+
+/**
+ * Find instance for specified instance identifier.
+ *
+ * @param ins_id_str   instance identifier in string representation
+ *
+ * @return pointer to instance structure or NULL
+ */
+extern cfg_instance *cfg_get_ins_by_ins_id_str(const char *ins_id_str);
 
 /**
  * Add instance to the database.
@@ -316,6 +335,33 @@ cfg_conf_delay_reset(void)
         cfg_conf_delay = 0;
     }
 }
+
+
+/**
+ * Starting from a given prefix, print a tree of objects or instances
+ * into a file and(or) log.
+ *
+ * @param filename          output filename (NULL to skip)
+ * @param log_lvl           TE log level (0 to skip)
+ * @param id_fmt            a format string for the id of the root
+ *                          from which we print.
+ *
+ * @return                  Status code.
+ */
+extern te_errno  cfg_db_tree_print(const char *filename,
+                                   const unsigned int log_lvl,
+                                   const char *id_fmt, ...);
+/**
+ * log_msg() helper to print a log upon arrival of this type of msg.
+ *
+ * @param msg               Message (usually received by Configurator).
+ * @param cfg_log_lvl       Level at which to log the message itself
+ *                          (maybe different from  msg->log_lvl)
+ *
+ * @return
+ */
+extern void cfg_db_tree_print_msg_log(cfg_tree_print_msg *msg,
+                                      const unsigned int cfg_log_lvl);
 
 #ifdef __cplusplus
 }
