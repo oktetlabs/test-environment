@@ -260,14 +260,8 @@ if_stats_get(const char *ifname, if_stats *stats)
     {
         if (fgets(buf, MAX_IFCONFIG_OUTPUT_LEN, ifcfg_output) == NULL)
         {
-#if 0
-            ERROR("Invalid ifconfig output format");
-            rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-            goto cleanup;
-#else
-            WARN("ifconfig output contains not all lines");
+            VERB("ifconfig output contains not all lines");
             break;
-#endif
         }
         
         VERB("Ifconfig output for interface \"%s\", line %d\n>%s",
