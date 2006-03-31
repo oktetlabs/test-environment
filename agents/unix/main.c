@@ -1094,7 +1094,10 @@ ta_sigchld_handler(void)
         for (wake = ta_children_wait_list; wake != NULL; wake = wake->next)
         {
             if (wake->pid == pid)
+            {
                 sem_post(&wake->sem);
+                break;
+            }
         }
 
         /* Now try to log status of the child */
@@ -1181,12 +1184,13 @@ ta_children_cleanup()
  * This function is to be called from waitpid.
  * It should be called with lock held.
  *
- * @param pid pid of process to find or -1 to find any pid
+ * @param pid    pid of process to find or -1 to find any pid
+ * @param status status of the process to return
  *
- * @return entry number with required pid or -1
+ * @return TRUE is a child was found, FALSE overwise.
  */
-static inline int
-find_dead_child(pid_t pid)
+static inline te_bool
+find_dead_child(pid_t pid, int *status)
 {
     int     dead;
 
@@ -1203,25 +1207,26 @@ find_dead_child(pid_t pid)
                     ta_children_dead_heap[dead].next;
             }
             else
-            {
                 ta_children_dead_list = ta_children_dead_heap[dead].next;
-            }
+
+            *status = ta_children_dead_heap[dead].status;
+            ta_children_dead_heap[dead].valid = FALSE;
             break;
         }
     }
 
-    return dead;
+    return dead != -1;
 }
 
 /* See description in unix_internal.h */
 /* FIXME: Possible use after free in the function */
 pid_t
-ta_waitpid(pid_t pid, int *status, int options)
+ta_waitpid(pid_t pid, int *p_status, int options)
 {
-    int         dead;
-    int         rc;
+    te_bool found = FALSE;
+    int     rc;
+    int     status;
 
-    ta_children_wait  *wake;
 
     if (!ta_children_dead_heap_inited)
         ta_children_dead_heap_init();
@@ -1238,38 +1243,58 @@ ta_waitpid(pid_t pid, int *status, int options)
         return -1;
     }
 
+/**
+ * Log that a function returned impossible value.
+ * @todo there thould be ERROR, not PRINT, but I'd like to see this log
+ * from RPC.
+ */
+#define LOG_IMPOSSIBLE(_func) \
+    PRINT("%s: Impossible! " #_func " retured %d: %s",  \
+          __FUNCTION__, rc, strerror(errno))
+
     /* For WNOHANG, check if the process is running. There is possible race
      * condition, because any call of waitpid() may perform a race with
      * waitpid() from SIGCHLD handler. So, we should return to user any
      * non-error value. */
     if ((options & WNOHANG))
     {
-        rc = waitpid(pid, status, options);
+        rc = waitpid(pid, &status, options);
         if (rc == 0)
-            return rc;
-        if (rc != -1)
+            return rc; /* The process is running */
+        else if (rc != -1)
         {
-            log_child_death(pid, *status);
+            /* We've got the real status */
+            log_child_death(pid, status);
+            if (p_status != NULL)
+                *p_status = status;
             return rc;
         }
+        else
+        {
+            /* The child is probably dead */
+            rc = pthread_mutex_lock(&children_lock);
+            if (rc != 0)
+            {
+                LOG_IMPOSSIBLE(pthread_mutex_lock);
+                return -1;
+            }
+            found = find_dead_child(pid, &status);
+            rc = pthread_mutex_unlock(&children_lock);
+            if (rc != 0)
+            {
+                LOG_IMPOSSIBLE(pthread_mutex_unlock);
+                return -1;
+            }
+        }
     }
-
-    if ((wake = malloc(sizeof(ta_children_wait))) == NULL)
+    else
     {
-        ERROR("%s: Out of memory", __FUNCTION__);
-    }
-
-/**
- * Log that a function returned impossible value.
- * @todo there thould be ERROR, not PRINT, but I'd like to see this log
- * from RPC.
- */
+        ta_children_wait  *wake;
 #define IMPOSSIBLE_LOG_AND_RET(_func) \
-    do {                                                    \
-        PRINT("%s: Impossible! " #_func " retured %d: %s",  \
-              __FUNCTION__, rc, strerror(errno));           \
-        free(wake);                                         \
-        return -1;                                          \
+    do {                                \
+        LOG_IMPOSSIBLE(_func);          \
+        free(wake);                     \
+        return -1;                      \
     } while(0)
 #define LOCK \
     do {                                                \
@@ -1284,82 +1309,75 @@ ta_waitpid(pid_t pid, int *status, int options)
             IMPOSSIBLE_LOG_AND_RET(pthread_mutex_unlock);   \
     } while(0)
 
-    /* Lock both volatile lists. */
-    rc = pthread_mutex_lock(&children_lock);
-    if (rc != 0)
-    {
-        if (errno != EINVAL)
-            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_lock);
-        ERROR("%s: dead_child_lock mutex is not initialized in %d", 
-              __FUNCTION__, getpid());
-        rc = pthread_mutex_init(&children_lock, NULL);
-        if (rc != 0)
-            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_init);
-        LOCK;
-    }
-
-    /* Add an entry to ta_children_wait, so signal handler can wake us. */
-    if (!(options & WNOHANG))
-    {
+        /* Create wait structure */
+        if ((wake = malloc(sizeof(ta_children_wait))) == NULL)
+        {
+            ERROR("%s: Out of memory", __FUNCTION__);
+            return -1;
+        }
         wake->pid = pid;
         rc = sem_init(&wake->sem, 0, 0);
         if (rc != 0)
-        {
-            pthread_mutex_unlock(&children_lock);
             IMPOSSIBLE_LOG_AND_RET(sem_init);
-        }
+
+        /* 
+         * Add an entry to ta_children_wait, so signal handler can wake us
+         */
         wake->prev = NULL;
+        LOCK;
         wake->next = ta_children_wait_list;
         ta_children_wait_list = wake;
         if (wake->next != NULL)
             wake->next->prev = wake;
-    }
-    UNLOCK; LOCK; /* @todo is it really necessary? */
+        found = find_dead_child(pid, &status);
 
-    /* Find dead child entry */
-    dead = find_dead_child(pid);
-    UNLOCK;
-
-    /* Sleep */
-    if (!(options & WNOHANG))
-    {
-        int saved_errno = errno;
-
-        while (dead == -1 && (rc = sem_wait(&wake->sem)) != 0)
+        if (!found)
         {
-            if (errno != EINTR)
-                IMPOSSIBLE_LOG_AND_RET(sem_wait);
-            /* Really, if it is "our" signal (SIGCHLD), we can try to 
-             * call find_dead_child, but we should not free(wake) before
-             * signal handler will call sem_post(), so let's sleep until
-             * ta_sigchld_handler will wake up us explicitly. */
-            errno = saved_errno;
+            int saved_errno = errno;
+
+            /* Sleep in unlocked state */
+            UNLOCK;
+            while ((rc = sem_wait(&wake->sem)) != 0)
+            {
+                if (errno != EINTR)
+                    IMPOSSIBLE_LOG_AND_RET(sem_wait);
+                /* Really, if it is "our" signal (SIGCHLD), we can try to 
+                 * call find_dead_child, but we should not free(wake) before
+                 * signal handler will call sem_post(), so let's sleep until
+                 * ta_sigchld_handler will wake up us explicitly. */
+                errno = saved_errno;
+            }
+            LOCK;
         }
 
-        /* Clean up wait queue and release the lock */
-        LOCK;
+        /* Clean up wait queue */
         if (wake->prev != NULL)
             wake->prev->next = wake->next;
         else
             ta_children_wait_list = wake->next;
-        if (dead == -1)
-            dead = find_dead_child(pid);
+        if (!found)
+            found = find_dead_child(pid, &status);
         UNLOCK;
         free(wake);
     }
 
     /* Get the results. */
-    if (dead != -1)
+    if (found)
     {
-        if (status != NULL)
-            *status = ta_children_dead_heap[dead].status;
-        ta_children_dead_heap[dead].valid = FALSE;
-    } 
-    return dead == -1 ? -1 : pid;
+        if (p_status != NULL)
+            *p_status = status;
+        return pid;
+    }
+    else
+    {
+        errno = ECHILD;
+        return -1;
+    }
 }
 #undef LOCK
 #undef UNLOCK
 #undef IMPOSSIBLE_LOG_AND_RET
+#undef LOG_IMPOSSIBLE
 
 /* See description in unix_internal.h */
 int 
