@@ -1720,7 +1720,7 @@ check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
                         cfg_net_node_t     *node,
                         tapi_env_processes *processes)
 {
-    return (get_pcos_type(processes) == TAPI_ENV_IUT) ==
+    return (get_pcos_type(processes) != TAPI_ENV_IUT) ||
            (get_ta_type(cfg_nets, node) == NET_NODE_TYPE_NUT);
 }
 
