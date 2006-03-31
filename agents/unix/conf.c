@@ -2573,6 +2573,8 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, rc);
 
 #ifdef SIOCGIFHWADDR
+    UNUSED(all_zeros);
+
     memset(&req, 0, sizeof(req));
     strcpy(req.my_ifr_name, ifname);
     CFG_IOCTL(cfg_socket, SIOCGIFHWADDR, &req);
@@ -2662,15 +2664,14 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
             }
             else
             {
-                /* FIXME */
-                memset(buf, 0, ETHER_ADDR_LEN);
-                ptr = buf;
+                ptr = all_zeros;
             }
             break;
         }
     }
     free(ifconf_buf);
 #else
+    UNUSED(all_zeros);
     ERROR("%s(): %s", __FUNCTION__, strerror(EOPNOTSUPP));
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
