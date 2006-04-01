@@ -345,6 +345,8 @@ tapi_env_free(tapi_env *env)
             }
         }
         CIRCLEQ_REMOVE(&env->addrs, addr, links);
+        if (addr->addr != SA(&addr->addr_st))
+            free(addr->addr);
         free(addr);
     }
     /* Destroy list of nets */
