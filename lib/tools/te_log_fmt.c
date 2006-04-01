@@ -949,7 +949,7 @@ case mod_:\
                 {
                     /* TODO */
                 }
-                va_arg(ap, void *);
+                (void)va_arg(ap, void *);
                 fmt_needed = TRUE;
                 break;
 
@@ -973,19 +973,19 @@ case mod_:\
                 switch (modifier)
                 {
                     case 'j':
-                        va_arg(ap, intmax_t);
+                        (void)va_arg(ap, intmax_t);
                         break;
                     case 't':
-                        va_arg(ap, ptrdiff_t);
+                        (void)va_arg(ap, ptrdiff_t);
                         break;
                     case 'L':
-                        va_arg(ap, long long);
+                        (void)va_arg(ap, long long);
                         break;
                     case 'l':
-                        va_arg(ap, long);
+                        (void)va_arg(ap, long);
                         break;
                     case '8':
-                        va_arg(ap, int64_t);
+                        (void)va_arg(ap, int64_t);
                         break;
                     case '4':
                     case '2':
@@ -993,7 +993,7 @@ case mod_:\
                     case 'H':
                     case 'h':
                     case '\0':
-                        va_arg(ap, int);
+                        (void)va_arg(ap, int);
                         break;
                     default:
                         /* TODO */
@@ -1018,10 +1018,10 @@ case mod_:\
                 switch (modifier)
                 {
                     case 'L':
-                        va_arg(ap, long double);
+                        (void)va_arg(ap, long double);
                         break;
                     case '\0':
-                        va_arg(ap, double);
+                        (void)va_arg(ap, double);
                         break;
                     default:
                         /* TODO */
