@@ -299,11 +299,11 @@ case mod_:\
                 /* Shift to next argument */ 
                 if (modifier == '8')
                 {
-                    va_arg(ap, int64_t);
+                    (void)va_arg(ap, int64_t);
                 }
                 else
                 {
-                    va_arg(ap, int);
+                    (void)va_arg(ap, int);
                 }
 
                 va_copy(ap0, ap);
@@ -482,7 +482,7 @@ case mod_:\
                 {
                     case 'L':
                     {
-                        va_arg(ap, long long);
+                        (void)va_arg(ap, long long);
                         break;
                     }
                     case '8':
@@ -495,7 +495,7 @@ case mod_:\
                     }
                     default:
                     {
-                        va_arg(ap, int);
+                        (void)va_arg(ap, int);
                     }
                 }
                 modifier = '\0';
