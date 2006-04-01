@@ -104,8 +104,6 @@ AC_CONFIG_FILES([Makefile
                  lib/tmpls/Makefile
                  rgt-cfg/Makefile
                  rgt-cfg/tmpls/Makefile
-                 rgt-cfg/tests/Makefile
-                 rgt-cfg/tests/rgt-filter-xml2tcl/Makefile
                  rgt-core/Makefile 
                  rgt-core/rgt-conv
                  rgt-format/Makefile

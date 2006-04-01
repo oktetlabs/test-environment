@@ -24,7 +24,7 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-SUBDIRS = tmpls . tests
+SUBDIRS = tmpls .
 
 pkgdatadir = $(datadir)/$(subdir)
 
@@ -64,7 +64,7 @@ rgt-filter-xml2tcl.h: tmpls/Makefile
 	    echo -E "const char *xml2fmt_files[] = {" >> $${util}.h; \
 	    for i in `ls $(srcdir)/tmpls/*.tmpl`; do \
 	        basename $${i} | \
-	            sed "s,\(.*\),\"$(pkgdatadir)/tmpls/\1\"," | \
+	            sed "s,\(.*\),\"$(DESTDIR)/$(pkgdatadir)/tmpls/\1\"," | \
 	                awk '{ printf "%s", $$1 }'>> $${util}.h; \
 	        echo "," >> $${util}.h; \
 	    done; \
@@ -75,8 +75,6 @@ rgt-filter-xml2tcl.h: tmpls/Makefile
 	    echo -E -n "size_t     xml2fmt_tmpls_num = " >> $${util}.h; \
 	    echo -E -n "sizeof(xml2fmt_files) / " >> $${util}.h; \
 	    echo -E "sizeof(xml2fmt_files[0]);" >> $${util}.h; \
-	    echo "#define INSTALL_DIR \"${pkgdatadir}/\"" >> \
-	            $${util}.h; \
 	done
 
 
