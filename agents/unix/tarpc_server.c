@@ -254,7 +254,7 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
  *
  * @return errno if error or 0
  */
-static int
+static te_errno
 name2handler(const char *name, void **handler)
 {
     if (name == NULL || *name == '\0')
@@ -1475,8 +1475,8 @@ TARPC_FUNC(sigaction,
         out->common._errno = 
             name2handler(out_oldact->handler, 
                          (oldact.sa_flags & SA_SIGINFO) ?
-                         (void **)&(act.sa_sigaction) :
-                         (void **)&(act.sa_handler));
+                         (void **)&(oldact.sa_sigaction) :
+                         (void **)&(oldact.sa_handler));
                              
         if (out->common._errno != 0)
         {
@@ -1485,7 +1485,7 @@ TARPC_FUNC(sigaction,
         }
         
         out->common._errno = name2handler(out_oldact->restorer,
-                                          get_sa_restorer(&act));
+                                          get_sa_restorer(&oldact));
         if (out->common._errno != 0)
         {
             out->retval = -1;
