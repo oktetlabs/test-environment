@@ -257,7 +257,7 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
 static int
 name2handler(const char *name, void **handler)
 {
-    if (name == NULL || *name == 0)
+    if (name == NULL || *name == '\0')
     {
         *handler = NULL;
         return 0;
@@ -270,7 +270,7 @@ name2handler(const char *name, void **handler)
         int   id;
         
         id = strtol(name, &tmp, 10);
-        if (tmp == name || *tmp != 0)
+        if (tmp == name || *tmp != '\0')
             return TE_RC(TE_TA_UNIX, TE_ENOENT);
             
         *handler = rcf_pch_mem_get(id);
