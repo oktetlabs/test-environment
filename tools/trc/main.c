@@ -74,6 +74,7 @@ enum {
     TRC_OPT_NO_SKIPPED,
     TRC_OPT_NO_EXP_PASSED,
     TRC_OPT_NO_EXPECTED,
+    TRC_OPT_NO_STATS_NOT_RUN,
 };
 
 /** HTML report data */
@@ -174,6 +175,10 @@ process_cmd_line_opts(int argc, char **argv)
           NULL },
         { "no-exp-passed", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_EXP_PASSED,
           "Do not include scripts with passed as expected results.",
+          NULL },
+        { "no-stats-not-run", '\0', POPT_ARG_NONE, NULL,
+          TRC_OPT_NO_STATS_NOT_RUN,
+          "Do not entries with unexpected 'not run' statistics.",
           NULL },
 
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_OPT_VERSION, 
@@ -285,6 +290,7 @@ process_cmd_line_opts(int argc, char **argv)
             TRC_OPT_FLAG(NO_SKIPPED);
             TRC_OPT_FLAG(NO_EXP_PASSED);
             TRC_OPT_FLAG(NO_EXPECTED);
+            TRC_OPT_FLAG(NO_STATS_NOT_RUN);
 
 #undef TRC_OPT_FLAG
 

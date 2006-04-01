@@ -297,6 +297,7 @@ enum trc_out_flags {
     TRC_OUT_NO_SKIPPED          = 0x20,
     TRC_OUT_NO_EXP_PASSED       = 0x40,
     TRC_OUT_NO_EXPECTED         = 0x80,
+    TRC_OUT_NO_STATS_NOT_RUN    = 0x100,
 };
 
 /**

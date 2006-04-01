@@ -597,15 +597,20 @@ tests_to_html(te_bool stats, unsigned int flags,
              /* NO_SKIPPED is clear or tests are run or unspec */
              ((~flags & TRC_OUT_NO_SKIPPED) ||
               (TRC_STATS_RUN(&p->stats) != 0) ||
-              (TRC_STATS_NOT_RUN(&p->stats) != 
-               (p->stats.skip_exp + p->stats.skip_une))) &&
+              ((~flags & TRC_OUT_NO_STATS_NOT_RUN) &&
+               (TRC_STATS_NOT_RUN(&p->stats) != 
+                (p->stats.skip_exp + p->stats.skip_une)))) &&
              /* NO_EXP_PASSED or not all tests are passed as expected */
              ((~flags & TRC_OUT_NO_EXP_PASSED) ||
               (TRC_STATS_RUN(&p->stats) != p->stats.pass_exp) ||
-              (TRC_STATS_NOT_RUN(&p->stats) != 0)) &&
+              ((TRC_STATS_NOT_RUN(&p->stats) != 0) &&
+               ((TRC_STATS_NOT_RUN(&p->stats) != p->stats.not_run) ||
+                (~flags & TRC_OUT_NO_STATS_NOT_RUN)))) &&
              /* NO_EXPECTED or unexpected results are got */
              ((~flags & TRC_OUT_NO_EXPECTED) ||
-              (TRC_STATS_UNEXP(&p->stats) != 0)));
+              ((TRC_STATS_UNEXP(&p->stats) != 0) &&
+               ((TRC_STATS_UNEXP(&p->stats) != p->stats.not_run) ||
+                (~flags & TRC_OUT_NO_STATS_NOT_RUN)))));
 
         if (stats &&
             (((p->type == TRC_TEST_PACKAGE) &&
