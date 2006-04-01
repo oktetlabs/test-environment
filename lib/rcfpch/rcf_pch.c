@@ -455,7 +455,7 @@ rcf_pch_run(const char *confstr, const char *info)
     {
         size_t   len = cmd_buf_len;
         char    *ptr;
-        char    *ba;         /* Binary attachment pointer */
+        uint8_t *ba;         /* Binary attachment pointer */
 
         answer_plen = 0;
 
@@ -468,7 +468,7 @@ rcf_pch_run(const char *confstr, const char *info)
             size_t tmp;
             
             int received = cmd_buf_len;
-            int ba_offset = ba == NULL ? 0 : ba - cmd;
+            int ba_offset = ba == NULL ? 0 : (ba - (uint8_t *)cmd);
             
             char *old_cmd = cmd;
             
@@ -485,7 +485,7 @@ rcf_pch_run(const char *confstr, const char *info)
             cmd_buf_len = len;
             tmp = len - received;
             if (ba_offset > 0)
-                ba = cmd + ba_offset;
+                ba = (uint8_t *)cmd + ba_offset;
             
             if ((rc = rcf_comm_agent_wait(conn, cmd + received, 
                                           &tmp, NULL)) != 0)
@@ -1086,8 +1086,8 @@ rcf_pch_run(const char *confstr, const char *info)
                 
                 if (ba)
                 {
-                    len -= (ba - cmd);
-                    ptr = ba;
+                    len -= (ba - (uint8_t *)cmd);
+                    ptr = (char *)ba;
                 }
                 else
                 {
