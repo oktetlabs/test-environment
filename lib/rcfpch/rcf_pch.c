@@ -76,7 +76,7 @@
 static struct rcf_comm_connection *conn;
 
 /* Buffer for raw log to be transmitted to the TEN */
-static char log_data[RCF_PCH_LOG_BULK];
+static uint8_t log_data[RCF_PCH_LOG_BULK];
 
 
 /**
