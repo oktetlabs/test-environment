@@ -1210,24 +1210,16 @@ tapi_sigaction_simple(rcf_rpc_server *rpcs,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
+    memset(&act, 0, sizeof(act));
+    act.mm_flags = RPC_SA_SIGINFO | RPC_SA_RESTART | RPC_SA_NODEFER;
+    act.mm_mask = rpc_sigset_new(rpcs);
+    rpc_sigemptyset(rpcs, act.mm_mask);
+    strcpy(act.mm_handler, handler);
+
     if (oldact != NULL && oldact->mm_mask == RPC_NULL)
         oldact->mm_mask = rpc_sigset_new(rpcs);
 
-    /* Save initial state */
-    rpc_sigaction(rpcs, signum, NULL, oldact);
-
-    /* Install handler using signal() to don't care about mask */
-    free(rpc_signal(rpcs, signum, handler));
-
-    /* Get current installed state with mask and flags */
-    memset(&act, 0, sizeof(act));
-    act.mm_mask = rpc_sigset_new(rpcs);
-    rpc_sigaction(rpcs, signum, NULL, &act);
-
-    /* Clean up SA_RESETHAND flag and set SA_SIGINFO */
-    act.mm_flags &= ~RPC_SA_RESETHAND;
-    act.mm_flags |= RPC_SA_SIGINFO;
-    rpc_sigaction(rpcs, signum, &act, NULL);
+    rpc_sigaction(rpcs, signum, &act, oldact);
 
     rpc_sigset_delete(rpcs, act.mm_mask);
 
