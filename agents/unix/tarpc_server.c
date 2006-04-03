@@ -1410,6 +1410,7 @@ TARPC_FUNC(sigaction,
 {
     tarpc_sigaction  *out_oldact = out->oldact.oldact_val;
 
+    int               signum = signum_rpc2h(in->signum);
     struct sigaction  act;
     struct sigaction *p_act = NULL;
     struct sigaction  oldact;
@@ -1493,8 +1494,19 @@ TARPC_FUNC(sigaction,
         }
     }
 
-    MAKE_CALL(out->retval = func(signum_rpc2h(in->signum),
-                                 p_act, p_oldact));
+    MAKE_CALL(out->retval = func(signum, p_act, p_oldact));
+
+    if ((out->retval == 0) && (p_act != NULL) &&
+        (((p_act->sa_flags & SA_SIGINFO) ?
+              (void *)(act.sa_sigaction) :
+              (void *)(act.sa_handler)) == signal_registrar))
+    {
+        /*
+         * Delete signal from set of received signals when
+         * signal registrar is set for the signal.
+         */
+        sigdelset(&rpcs_received_signals, signum);
+    }
 
     if (p_oldact != NULL)
     {
