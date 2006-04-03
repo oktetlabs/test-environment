@@ -36,14 +36,6 @@
 #include "conf_defs.h"
 
 
-/* #define _CONF_PRINT_LCL_DEBUG_ */
-
-#ifdef _CONF_PRINT_LCL_DEBUG_
-#include <stdarg.h>
-#include <malloc.h>
-#define ERROR(args...) fprintf(stderr, args)
-#endif
-
 static char *obj_tree_bufprint(cfg_object *obj,   const int indent);
 static char *ins_tree_bufprint(cfg_instance *ins, const int indent);
 static char *bufprintf(char **p_buf, int *p_offset, size_t *p_sz,
@@ -124,7 +116,9 @@ cfg_db_tree_print(const char *filename,
         root = (void *)cfg_get_ins_by_ins_id_str(id);
     if (root == NULL)
     {
-        LOG_MSG(log_lvl, "no node with id string: %s\n", id);
+        te_log_message(__FILE__, __LINE__,
+                       log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
+                       "no node with id string: %s\n", id);
         return TE_RC(TE_CS, TE_EINVAL);
     }
 
@@ -139,14 +133,14 @@ cfg_db_tree_print(const char *filename,
     }
     /* Wanted to keep the "title" separate from the buffer: */
     if (log_lvl != 0)
-        LOG_MSG(log_lvl, "tree of %s %s:\n", title[which], id);
-    LOG_MSG(log_lvl, "%s", buf);
+        te_log_message(__FILE__, __LINE__,
+                       log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
+                       "tree of %s %s:\n%s", title[which], id, buf);
     if (filename != NULL)
     {
-        if((f = fopen(filename, "w")) == NULL)
+        if ((f = fopen(filename, "w")) == NULL)
             ERROR("Can't open file: %s", filename);
-        fprintf(f, "tree of %s %s:\n", title[which], id);
-        fprintf(f, "%s", buf);
+        fprintf(f, "tree of %s %s:\n%s", title[which], id, buf);
         fclose(f);
     }
 
@@ -329,29 +323,4 @@ bufprintf(char **p_buf, int *p_offset, size_t *p_sz,
 
     return buf;
 }
-
-
-
-
-#ifdef _CONF_PRINT_LCL_DEBUG_
-int
-main(int argc, char *argv[])
-{
-    char *buf = NULL;
-    size_t sz = 32;
-    int offset = 0;
-    int count;
-
-
-    fprintf(stderr, "sizeof(char): %d\n", (int)sizeof(char));
-
-    for(count = 0; count < 256; ++count)
-    {
-        bufprintf(&buf, &offset, &sz, "%07d\n", count);
-    }
-    fprintf(stdout, "%s", buf);
-
-    return 0;
-}
-#endif
 
