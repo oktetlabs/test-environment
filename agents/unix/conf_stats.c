@@ -154,225 +154,123 @@ typedef struct net_stats {
 } net_stats;
 
 
-#if 0
-static char *if_stats_rx_pkts_fmt =
-    "RX packets:%llu errors:%llu dropped:%llu overruns:%llu frame:%llu";
+#define STATS_NET_DEV_PROC_LINE_LEN 1024
 
-static char *if_stats_tx_pkts_fmt =
-    "TX packets:%llu errors:%llu dropped:%llu overruns:%llu carrier:%llu";
+#define STATS_NET_DEV_LINES_TO_SKIP 2
 
-static char *if_stats_rx_octets_fmt =
-    "RX bytes:%llu";
+static char *stats_net_dev_fmt =
+    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT;
 
-static char *if_stats_tx_octets_fmt =
-    "TX bytes:%llu";
-#else
-static char *if_stats_rx_pkts_fmt =
-    "RX packets:" U64_FMT
-    " errors:" U64_FMT
-    " dropped:" U64_FMT
-    " overruns:" U64_FMT
-    " frame:" U64_FMT;
-
-static char *if_stats_tx_pkts_fmt =
-    "TX packets:" U64_FMT
-    " errors:" U64_FMT
-    " dropped:" U64_FMT
-    " overruns:" U64_FMT
-    " carrier:" U64_FMT;
-
-static char *if_stats_rx_octets_fmt =
-    "RX bytes:" U64_FMT;
-
-static char *if_stats_tx_octets_fmt =
-    "TX bytes:" U64_FMT;
-#endif
-
-#define MAX_IFCONFIG_OUTPUT_LEN             1024
-#define MAX_IFCONFIG_CMD_LEN                48
-#define IFCONFIG_OUTPUT_RX_STAT_LINE        4
-#define IFCONFIG_OUTPUT_TX_STAT_LINE        5
-#define IFCONFIG_OUTPUT_RX_TX_BYTES_LINE    7
-#define MAX_IFCONFIG_OUTPUT_LINE            9
-
-#define IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS     5
-#define IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS     5
+#define STATS_NET_DEV_PARAM_COUNT   15
 
 static te_errno
-if_stats_get(const char *ifname, if_stats *stats)
+dev_stats_get(const char *devname, if_stats *stats)
 {
     int   rc = 0;
     char *buf = NULL;
     char *ptr = NULL;
-    int   pid = -1;
-    int   out_fd = -1;
+    FILE *devf = NULL;
     int   line = 0;
-    char  cmd[MAX_IFCONFIG_CMD_LEN];
-    FILE *ifcfg_output = NULL;
-    int   status = 0;
-
-    te_bool rx_counters_parsed = FALSE;
-    te_bool tx_counters_parsed = FALSE;
-    te_bool rx_tx_octets_counters_parsed = FALSE;
 
     uint64_t in_overruns;
     uint64_t in_frame_losses;
+    uint64_t in_compressed;
     uint64_t out_overruns;
     uint64_t out_carrier_losses;
+    uint64_t out_compressed;
 
     memset(stats, 0, sizeof(if_stats));
 
-    VERB("if_stats_get(ifname=\"%s\") started", ifname);
+    VERB("dev_stats_get(devname=\"%s\") started", devname);
 
 #if __linux__
-    if ((ifname == NULL) || (stats == NULL))
+    if ((devname == NULL) || (stats == NULL))
     {
         return TE_OS_RC(TE_TA_UNIX, EINVAL);
     }
-    
-    buf = (char *)malloc(MAX_IFCONFIG_OUTPUT_LEN);
+
+    buf = (char *)malloc(STATS_NET_DEV_PROC_LINE_LEN);
     if (buf == NULL)
     {
-        rc = TE_OS_RC(TE_TA_UNIX, ENOMEM);
-        goto cleanup;
+        return TE_OS_RC(TE_TA_UNIX, ENOMEM);
     }
 
-    snprintf(cmd, MAX_IFCONFIG_CMD_LEN, "/sbin/ifconfig %s", ifname);
-    
-    pid = te_shell_cmd(cmd, -1, NULL, &out_fd);
-    if (pid < 0)
-    {
-        VERB("Cannot execute ifconfig utility");
-        rc = TE_OS_RC(TE_TA_UNIX, pid);
-        goto cleanup;
-    }
+    VERB("Try to open /proc/net/dev file");
 
-    ifcfg_output = fdopen(out_fd, "r");
-    if (ifcfg_output == NULL)
+    if ((devf = fopen("/proc/net/dev", "r")) == NULL)
     {
-        VERB("Cannot do fdopen() on ifconfig output file descriptor");
+        ERROR("Cannot open() /proc/net/dev");
         rc = TE_OS_RC(TE_TA_UNIX, errno);
         goto cleanup;
     }
-        
 
-    for (line = 0; line < MAX_IFCONFIG_OUTPUT_LINE; line++)
+    for (line = 0; line < STATS_NET_DEV_LINES_TO_SKIP; line++)
     {
-        if (fgets(buf, MAX_IFCONFIG_OUTPUT_LEN, ifcfg_output) == NULL)
+        if (fgets(buf, STATS_NET_DEV_PROC_LINE_LEN, devf) == NULL)
         {
-            VERB("ifconfig output contains not all lines");
+            ERROR("Invalid /proc/net/dev file format");
+            rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
+            goto cleanup;
+        }
+    }
+
+    ptr = NULL;
+
+    for (;; line++)
+    {
+        if (fgets(buf, STATS_NET_DEV_PROC_LINE_LEN, devf) == NULL)
             break;
-        }
         
-        VERB("Ifconfig output for interface \"%s\", line %d\n>%s",
-             ifname, line, buf);
+        VERB("/proc/net/dev: line %d: >%s", line, buf);
 
-        if ((ptr = strstr(buf, "RX packets")) != NULL)
+        if ((ptr = strstr(buf, devname)) != NULL)
         {
-            VERB("Try to parse string \"%s\" with format string \"%s\"",
-                 ptr, if_stats_rx_pkts_fmt);
-            if ((rc = sscanf(ptr, if_stats_rx_pkts_fmt,
-                             &stats->in_ucast_pkts,
-                             &stats->in_errors,
-                             &stats->in_discards,
-                             &in_overruns,
-                             &in_frame_losses)) !=
-                IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS)
-            {
-                VERB("Invalid format of the Rx stats line, "
-                     "only %d args parsed, but %d required", rc,
-                     IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS);
-                rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                goto cleanup;
-            }
-            rx_counters_parsed = TRUE;
-        }
-
-        if ((ptr = strstr(buf, "TX packets")) != NULL)
-        {
-            VERB("Try to parse string \"%s\" with format string \"%s\"",
-                 ptr, if_stats_tx_pkts_fmt);
-            if ((rc = sscanf(ptr, if_stats_tx_pkts_fmt,
-                             &stats->out_ucast_pkts,
-                             &stats->out_errors,
-                             &stats->out_discards,
-                             &out_overruns,
-                             &out_carrier_losses)) !=
-                IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS)
-            {
-                VERB("Invalid format of the Tx stats line, "
-                      "only %d args parsed, but %d required", rc,
-                      IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS);
-                rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                goto cleanup;
-            }
-            tx_counters_parsed = TRUE;
-        }
-
-        if ((ptr = strstr(buf, "RX bytes")) != NULL)
-        {
-            if (sscanf(ptr, if_stats_rx_octets_fmt,
-                       &stats->in_octets) != 1)
-            {
-                VERB("Invalid format of the Rx bytes stats line");
-                rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                goto cleanup;
-            }
-
-            if ((ptr = strstr(buf, "TX bytes")) == NULL)
-            {
-                VERB("Invalid format of the Rx/Tx bytes stats line");
-                rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                goto cleanup;
-            }
-            if (sscanf(ptr, if_stats_tx_octets_fmt,
-                       &stats->out_octets) != 1)
-            {
-                VERB("Invalid format of the Tx bytes stats line");
-                rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-                goto cleanup;
-            }
-            rx_tx_octets_counters_parsed = TRUE;
+            if (*(ptr + strlen(devname)) == ':')
+                break;
+            else
+                ptr = NULL;
         }
     }
 
-    if (!rx_counters_parsed)
-    {
-        VERB("Invalid format of the Rx stats line, "
-              "no \"RX packets\" substring found");
-              rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-        goto cleanup;
-    }
     
-    if (!tx_counters_parsed)
+    if (ptr != NULL)
     {
-        VERB("Invalid format of the Tx stats line, "
-              "no \"TX packets\" substring found");
-              rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-        goto cleanup;
+        VERB("Found line %d: >%s", line, buf);
+        ptr += strlen(devname) + 1;
+        if ((rc = sscanf(ptr, stats_net_dev_fmt,
+                         &stats->in_octets,
+                         &stats->in_ucast_pkts,
+                         &stats->in_errors,
+                         &stats->in_discards,
+                         &in_overruns,
+                         &in_frame_losses,
+                         &in_compressed,
+                         &stats->in_nucast_pkts,
+                         &stats->out_octets,
+                         &stats->out_ucast_pkts,
+                         &stats->out_errors,
+                         &stats->out_discards,
+                         &out_overruns,
+                         &out_carrier_losses,
+                         &out_compressed)) != STATS_NET_DEV_PARAM_COUNT)
+        {
+            ERROR("Invalid /proc/net/dev file format, "
+                  "only %d of %d counters are parsed",
+                  rc, STATS_NET_DEV_PARAM_COUNT);
+            return TE_OS_RC(TE_TA_UNIX, EINVAL);
+        }
     }
-
-    if (!rx_tx_octets_counters_parsed)
-    {
-        VERB("Invalid format of the Rx/Tx bytes stats line");
-        rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
-        goto cleanup;
-    }
-
 #endif
 
     rc = 0;
 
+
 cleanup:
 #if __linux__
-    if (ifcfg_output != NULL)
-        fclose(ifcfg_output);
-
-    if (pid >=0)
-        ta_waitpid(pid, &status, 0);
-        
-    if (out_fd >= 0)
-        close(out_fd);
+    if (devf != NULL)
+        fclose(devf);
 
     if (buf != NULL)
         free(buf);
@@ -382,34 +280,23 @@ cleanup:
 }
 
 
+
+
 static char *stats_net_snmp_ipv4_fmt =
-#if 0
-    "Ip: %lld %lld %llu %llu %llu %llu "
-    "%llu %llu %llu %llu %llu %llu "
-    "%llu %llu %llu %llu %llu %llu %llu";
-#else
-    "Ip:" _I64_FMT _I64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
-    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
-    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT;
-#endif
+    "Ip:"
+    I64_FMT I64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT;
 
 #define STATS_SNMP_IPV4_PARAM_COUNT     19
 
 static char *stats_net_snmp_icmp_fmt =
-#if 0
-    "Icmp: %llu %llu %llu %llu %llu %llu "
-    "%llu %llu %llu %llu %llu %llu "
-    "%llu %llu %llu %llu %llu %llu "
-    "%llu %llu %llu %llu %llu "
-    "%llu %llu %llu";
-#else
     "Icmp:"
-    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
-    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
-    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
-    _U64_FMT _U64_FMT _U64_FMT _U64_FMT _U64_FMT
-    _U64_FMT _U64_FMT _U64_FMT;
-#endif
+    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+    U64_FMT U64_FMT U64_FMT;
 
 #define STATS_SNMP_ICMP_PARAM_COUNT     26
 
@@ -560,28 +447,29 @@ cleanup:
 static te_errno net_if_stats_##_counter_##_get(unsigned int gid_,       \
                                                const char  *oid_,       \
                                                char        *value_,     \
-                                               const char  *if_name_)   \
+                                               const char  *dev_name_)  \
 {                                                                       \
     int        rc = 0;                                                  \
-    if_stats   if_stats;                                                \
+    if_stats   stats;                                                   \
                                                                         \
     UNUSED(gid_);                                                       \
     UNUSED(oid_);                                                       \
                                                                         \
-    memset(&if_stats, 0, sizeof(if_stats));                             \
+    memset(&stats, 0, sizeof(if_stats));                                \
                                                                         \
-    if ((rc = if_stats_get((if_name_), &if_stats)) != 0)                \
+    if ((rc = dev_stats_get((dev_name_), &stats)) != 0)                 \
     {                                                                   \
-        ERROR("Cannot get statistics for interface %s", (if_name_));    \
+        ERROR("Cannot get statistics for interface %s", (dev_name_));   \
     }                                                                   \
                                                                         \
-    snprintf((value_), RCF_MAX_VAL, U64_FMT, if_stats. _field_);        \
+    snprintf((value_), RCF_MAX_VAL, U64_FMT, stats. _field_);           \
                                                                         \
-    VERB("if_counter_get(if_name=%s, counter=%s) returns %s",           \
-         if_name_, #_counter_, value_);                                 \
+    VERB("dev_counter_get(dev_name=%s, counter=%s) returns %s",         \
+         dev_name_, #_counter_, value_);                                \
                                                                         \
     return 0;                                                           \
 }
+
 
 STATS_IFTABLE_COUNTER_GET(in_octets, in_octets);
 STATS_IFTABLE_COUNTER_GET(in_ucast_pkts, in_ucast_pkts);
@@ -814,20 +702,12 @@ RCF_PCH_CFG_NODE_NA(node_net_snmp_stats, "stats",
 te_errno
 ta_unix_conf_net_snmp_stats_init(void)
 {
-#if 0
     return rcf_pch_add_node("/agent", &node_net_snmp_stats);
-#else
-    return 0;
-#endif
 }
 
 /* See the description in conf_stats.h */
 te_errno
 ta_unix_conf_net_if_stats_init(void)
 {
-#if 0
     return rcf_pch_add_node("/agent/interface", &node_net_if_stats);
-#else
-    return 0;
-#endif
 }
