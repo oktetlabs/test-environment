@@ -149,7 +149,7 @@ build_native: $(tawin32tmpl_rpcserver_SOURCES) \
         fi
 
 clean-local:
-	rm -f *.exe
+	rm -f *.exe *.tgz
 
 distclean-local:
 	rm -f *.exe
