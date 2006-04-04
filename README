@@ -14,6 +14,9 @@ Engine:
 - flex >= 2.5.31-31 from sourceforge; flex 2.5.4a from gnu.org will not work
 - gawk (mawk will not work)
 - any curses library (ncurses will work) with development files
+- perl-Time-HiRes package on Redhat/Fedora is very usefull (it allows to
+  avoid mixture in log because of unprecise timestamps in messages
+  logged by Dispatcher (via logging script))
 
 Test Agent:
 
