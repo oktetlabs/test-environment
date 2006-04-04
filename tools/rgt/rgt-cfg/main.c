@@ -136,6 +136,12 @@ typedef struct rgt_gen_ctx {
 
     /** Wheter the cache was used by user or not? */
     te_bool       entity_cache_used;
+
+    /**
+     * Entity name matching type (note that this is only for Entity name,
+     * not for user name).
+     */
+    char         *match_type;
     /*@}*/
 
     /** @name Branch filter related fields */
@@ -387,7 +393,14 @@ cb_func(gpointer key, gpointer value, gpointer user_data)
 static void
 create_entry_filter(rgt_gen_ctx_t *ctx)
 {
-    rgt_tmpls_output(ctx->fd, &xml2fmt_tmpls[ENTITY_FILTER_START], NULL);
+    rgt_attrs_t *attrs;
+
+    attrs = rgt_tmpls_attrs_new(NULL);
+    rgt_tmpls_attrs_add_fstr(attrs, "match_type", ctx->match_type);
+    rgt_tmpls_output(ctx->fd, &xml2fmt_tmpls[ENTITY_FILTER_START], attrs);
+    rgt_tmpls_attrs_free(attrs);
+
+    free(ctx->match_type);
 
     g_hash_table_foreach(ctx->entities, cb_func, ctx);
 
@@ -740,6 +753,27 @@ branch_filter_rule(rgt_gen_ctx_t *ctx, const xmlChar **xml_attrs)
     branch->include = include;
 }
 
+static void
+entity_filter_start(rgt_gen_ctx_t *ctx, const xmlChar **xml_attrs)
+{
+    const char *match = 
+        rgt_tmpls_xml_attrs_get((const char **)xml_attrs, "match");
+
+    if (match == NULL)
+        return;
+
+    if (strcmp(match, "exact") != 0 && strcmp(match, "regexp") != 0)
+    {
+        throw_exception(ctx,
+                        "Unknown matching type '%s' for 'entity-filter'. "
+                        "Allowed are 'exact' and 'regexp'\n", match);
+    }
+
+    free(ctx->match_type);
+    ctx->match_type = strdup(match);
+    CHECK_NOT_NULL(ctx->match_type);
+}
+
 /**
  * This function is called when we meet <include> or <exclude> TAG
  * in the context of "entity-filter".
@@ -948,6 +982,9 @@ rgt_start_document(void *user_data)
     g_hash_table_insert(ctx->entities, def_entity->name, def_entity);
     ctx->def_entity = def_entity;
 
+    ctx->match_type = strdup("exact");
+    CHECK_NOT_NULL(ctx->match_type);
+
     /* Branch filter preparation */
     ctx->pathes = g_hash_table_new(g_str_hash, g_str_equal);
 
@@ -1022,6 +1059,7 @@ rgt_start_element(void *user_data,
             if (strcmp(tag, "entity-filter") == 0)
             {
                 ctx->state = RGT_ST_ENTITY_FILTER;
+                entity_filter_start(ctx, attrs);
                 break;
             }
             else if (strcmp(tag, "branch-filter") == 0)

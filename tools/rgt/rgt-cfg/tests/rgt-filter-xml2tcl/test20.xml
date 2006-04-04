@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<filters>
+  <entity-filter match="regexp">
+    <exclude entity=""/>
+    <include entity="^A.*">
+        <user name="B"/>
+        <user name="C"/>
+    </include>
+  </entity-filter>
+</filters>

@@ -12,4 +12,4 @@
 #    it returns "pass" string, otherwise "fail".
 #
 proc rgt_entity_filter { entity user level } {
-    switch $entity {
+    switch -@@%s:match_type@@ -- $entity {
