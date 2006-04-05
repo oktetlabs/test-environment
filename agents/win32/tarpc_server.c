@@ -4525,6 +4525,8 @@ TARPC_FUNC(post_queued_completion_status,
 {},
 {
     UNUSED(list);
+    
+    RING("Before call PostQueuedCompletionStatus()");
 
     MAKE_CALL(out->retval = PostQueuedCompletionStatus(
         (HANDLE)(in->completion_port),
@@ -4533,6 +4535,8 @@ TARPC_FUNC(post_queued_completion_status,
         in->overlapped == 0 ? NULL :
             (HANDLE)rcf_pch_mem_get(in->overlapped))
     );
+
+    RING("After call PostQueuedCompletionStatus()");
 }
 )
 
