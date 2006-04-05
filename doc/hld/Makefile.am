@@ -26,10 +26,7 @@
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
 EXTRA_DIST = OKTL-ARCH-0000044-TE.sxw \
-             OKT-HLD-0000027-TE_RCF.sxw \
-             OKT-HLD-0000031-TE_BS.sxw \
-             OKT-HLD-0000037-TE_TCE.sxw \
-             OKT-HLD-0000041-TE_LS_IF.sxw \
              OKT-HLD-0000055-TE_RG.sxw \
              OKTL-HLD-0000151-TE_PROTO.sxw \
-             OKT-HLD-0000085-TE_TSC.sxw 
+             OKTL-HLD-0000236-TE_TAD.sxw \
+             OKTL-HLD-0000207-TE_TCE2.sxw
