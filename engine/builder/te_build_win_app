@@ -45,6 +45,8 @@ shift 4
 
 BUILDDIR=`pwd`
 
+WIN_DIR=${USER}_build_${APPNAME%%.exe}
+
 rm -rf tmpsrc
 
 if test $PLATFORM != ${PLATFORM#x86_64} ; then
@@ -63,6 +65,7 @@ BUILD_HOST=${TE_WIN32_BUILD_HOST}
 KEY=${TE_WIN32_BUILD_HOST_KEY}
 ADD_CMD=
 ADD_LIB=
+PDB="/Zi"
 
 fi
 
@@ -78,12 +81,13 @@ if ! ssh $KEY $BUILD_HOST ls >/dev/null; then
     exit 0
 fi
 
+ssh $KEY ${BUILD_HOST} "rm -rf ${WIN_DIR}; mkdir -p ${WIN_DIR}/tmpsrc"
 
 # Copy libraries and headers to the build host
 cd ${TE_INSTALL}
 tar czf ${BUILDDIR}/${PLATFORM}.tgz ${PLATFORM}
 cd ${BUILDDIR}
-scp $KEY ${PLATFORM}.tgz ${BUILD_HOST}:
+scp $KEY ${PLATFORM}.tgz ${BUILD_HOST}:${WIN_DIR}
 rm ${PLATFORM}.tgz
 
 mkdir tmpsrc
@@ -107,26 +111,30 @@ for i in $* ; do
     indent tmpsrc/${FILENAME} ;
 done
 
-ssh $KEY ${BUILD_HOST} "rm -rf tmpsrc; rm -rf ${PLATFORM}; mkdir tmpsrc"
 
 # Build the application
 
-scp $KEY tmpsrc/*.c ${BUILD_HOST}:tmpsrc
+scp $KEY tmpsrc/*.c ${BUILD_HOST}:${WIN_DIR}/tmpsrc
 rm -rf tmpsrc 
 
 ssh $KEY ${BUILD_HOST} bash -l -c "\"
 $ADD_CMD \
+cd ${WIN_DIR} ; \
 tar xzf ${PLATFORM}.tgz ; \
 rm ${PLATFORM}.tgz ; \
 cd tmpsrc ; \
 cl /nologo -I../${PLATFORM}/include -DWINDOWS -D_CRT_SECURE_NO_DEPRECATE \
-   -D_WIN32_WINNT=0x0501 *.c \
-   /link /OUT:${APPNAME} /LIBPATH:../${PLATFORM}/lib ${LIBS} ${ADD_LIB} ; \""
+   -D_WIN32_WINNT=0x0501 ${PDB} *.c \
+   /link /OUT:${APPNAME} /MAP /LIBPATH:../${PLATFORM}/lib \
+   ${LIBS} ${ADD_LIB} ; 
+cd ../.. ; \
+tar czf ${WIN_DIR}.tgz ${WIN_DIR} \""
 
-scp $KEY ${BUILD_HOST}:tmpsrc/${APPNAME} .
+scp $KEY ${BUILD_HOST}:${WIN_DIR}/tmpsrc/${APPNAME} .
+scp $KEY ${BUILD_HOST}:${WIN_DIR}.tgz .
 
 if test -e ${APPNAME} ; then
-    ssh $KEY ${BUILD_HOST} "rm -rf tmpsrc ${PLATFORM}"
+    ssh $KEY ${BUILD_HOST} "rm -rf ${WIN_DIR} ${WIN_DIR}.tgz"
     exit 0
 fi
 
