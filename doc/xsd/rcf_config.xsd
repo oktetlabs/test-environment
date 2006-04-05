@@ -3,6 +3,35 @@
             xml:lang="en"
             xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
+    <xsd:complexType name="function_call">
+        <xsd:annotation>
+             <xsd:documentation>
+                 Function/Thread/Task call type
+             </xsd:documentation>
+        </xsd:annotation>
+        <xsd:attribute name="name" type="xs:string" use="required">
+             <xsd:annotation>
+                  <xsd:documentation>
+                      Name of a function to call
+                 </xsd:documentation>
+              </xsd:annotation>
+        </xsd:attribute>     
+        <xsd:sequence>
+             <xsd:element name="arg" minOccurs="0" maxOccurs="unbounded">
+                  <xsd:complexType>
+                       <xsd:attribute name="value" type="xs:string" 
+                                      use="required">
+                            <xsd:annotation>
+                                 <xsd:documentation>
+                                      Value of the nth argument
+                                 </xsd:documentation>
+                            </xsd:annotation>
+                       </xsd:attribute>
+                  </xsd:complexType>
+             </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
     <xsd:element name="rcf">
         <xsd:annotation>
             <xsd:documentation>
@@ -108,7 +137,35 @@
                                 </xsd:documentation>
                             </xsd:annotation>
                         </xsd:attribute>                        
-                        
+                    
+                        <xsd:sequence>
+                <xsd:choice>
+                    <xsd:element name="function" type="function_call" 
+                             minOccurs="0" maxOccurs="unbounded">
+                     <xsd:annotation>
+                          <xsd:documentation>
+                          A function to call at TA startup
+                      </xsd:documentation>
+                     </xsd:annotation>
+                </xsd:element>
+                    <xsd:element name="thread" type="function_call" 
+                             minOccurs="0" maxOccurs="unbounded">
+                     <xsd:annotation>
+                          <xsd:documentation>
+                          A thread to start at TA startup
+                      </xsd:documentation>
+                     </xsd:annotation>
+                </xsd:element>
+                    <xsd:element name="task" type="function_call" 
+                             minOccurs="0" maxOrcurs="unbounded">
+                     <xsd:annotation>
+                          <xsd:documentation>
+                          A subprocess to start at TA startup
+                      </xsd:documentation>
+                     </xsd:annotation>
+                </xsd:element>
+                </xsd:choice>
+                </xsd:sequence>
                     </xsd:complexType>
                 </xsd:element>
 

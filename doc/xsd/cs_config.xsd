@@ -91,6 +91,20 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
+            <xs:sequence>
+                <xs:element name="depends" 
+                            minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            An object OID the given object depends on
+                        </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="oid" 
+                                      type="xs:string" use="required"/>
+                    </xs:complexType>
+               </xs:element>
+            </xs:sequence>
         </xs:complexType>
     </xs:element>
 
