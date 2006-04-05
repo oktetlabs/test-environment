@@ -80,7 +80,7 @@ main(void)
     sub_val = asn_retrieve_descendant(val, &rc, "pdus.0.#tcp.checksum.#plain"); 
     printf("2: return %p, status %x\n", sub_val, rc);
 
-#if 0
+#if 1
     rc = 0;
     sub_val = asn_retrieve_descendant(val, &rc, "pdus.2.#eth.length-type.#plain"); 
     printf("2: return %p, status %x\n", sub_val, rc);

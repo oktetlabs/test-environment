@@ -836,18 +836,29 @@ asn_get_child_by_index(const asn_value *container, asn_value **child,
     if (!(container->syntax & CONSTRAINT))
         return TE_EASNWRONGTYPE;
 
+    if (index < 0)
+        index += container->len;
+
+    if (index >= container->len)
+    {
+        if (container->syntax == SEQUENCE_OF ||
+            container->syntax == SET_OF) 
+            return TE_EASNINCOMPLVAL;
+        else
+            return TE_EINVAL;
+    }
+
     *child = container->data.array[ (container->syntax == CHOICE ||
                                      container->syntax == TAGGED    ) 
                                     ? 0 : index                       ];
 
     /* additional check for named children */
     if (!(container->syntax & 1))
-    {
-        ne = container->asn_type->sp.named_entries + index;
-
+    { 
         if (*child == NULL)
             return TE_EASNINCOMPLVAL;
 
+        ne = container->asn_type->sp.named_entries + index;
 #if 0
         fprintf(stderr, "%s(index %d) bad child tag or name\n"
                 "container: tag %d.%d, '%s', type name '%s'\n"
@@ -863,9 +874,7 @@ asn_get_child_by_index(const asn_value *container, asn_value **child,
 
         if (!asn_tag_equal((*child)->tag,  ne->tag) || 
              (strcmp((*child)->name, ne->name) != 0)  ) 
-        {
-
-
+        { 
             if (container->syntax == CHOICE)
                 return TE_EASNOTHERCHOICE; 
             else 
