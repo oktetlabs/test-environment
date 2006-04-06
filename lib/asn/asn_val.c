@@ -839,12 +839,15 @@ asn_get_child_by_index(const asn_value *container, asn_value **child,
     if (index < 0)
         index += container->len;
 
-    if (index >= container->len)
+    if (index < 0)
+        return TE_EINVAL;
+
+    if ((unsigned)index >= container->len)
     {
         if (container->syntax == SEQUENCE_OF ||
             container->syntax == SET_OF) 
             return TE_EASNINCOMPLVAL;
-        else
+        else if (container->syntax != CHOICE) 
             return TE_EINVAL;
     }
 
