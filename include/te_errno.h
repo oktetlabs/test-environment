@@ -232,7 +232,7 @@ typedef enum {
 /** @name ASN.1 text parse errors */
     TE_EASNGENERAL = TE_MIN_ERRNO + 700, 
                           /**< Generic error */
-    TE_EASNWRONGLABEL,    /**< Wrong ASN label */
+    TE_EASNWRONGLABEL,    /**< Wrong ASN label or out-of-range index */
     TE_EASNTXTPARSE,      /**< General ASN.1 text parse error */
     TE_EASNDERPARSE,      /**< DER decode error */
     TE_EASNINCOMPLVAL,    /**< Imcomplete ASN.1 value */
