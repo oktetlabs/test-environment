@@ -633,7 +633,7 @@ asn_find_descendant(const asn_value *value, te_errno *status,
 {
     va_list     list;
     te_errno    rc = 0;
-    char        labels_buf[200]; 
+    char        labels_buf[200] = ""; 
     const char *rest_labels = labels_buf;
     asn_value  *tmp_value = (asn_value *)value;
     int         subval_index;
@@ -655,7 +655,7 @@ asn_find_descendant(const asn_value *value, te_errno *status,
     if (!value)
         RETURN_NULL_WITH_ERROR(TE_EWRONGPTR);
 
-    if (labels_buf == NULL || *labels_buf == '\0')
+    if (*labels_buf == '\0')
         return (asn_value *)value;
 
     while (rest_labels != NULL && (*rest_labels != '\0'))
@@ -842,7 +842,7 @@ asn_get_child_by_index(const asn_value *container, asn_value **child,
             child_internal_offset = 0; /* fall through ... */
         case SEQUENCE:
         case SET:
-            if (index < 0 || index > container->asn_type->len)
+            if ((index < 0) || ((unsigned)index > container->asn_type->len))
                 return TE_EASNWRONGLABEL;
 
             *child = container->data.array[child_internal_offset];
@@ -991,7 +991,7 @@ asn_get_descendent(const asn_value *container,
                    const char *labels)
 {
     te_errno rc = 0;
-#if 0
+#if 1
 
     if (!container || !found_value)
         return TE_EWRONGPTR; 
