@@ -59,7 +59,7 @@ main(void)
         printf("parse failed rc %x, syms: %d\n", rc, s_parsed);
         return 1;
     } 
-
+#if 1
     sub_val = asn_retrieve_descendant(val, &rc, "pdus.%d.src-addr", 1);
 
     if (rc != 0)
@@ -71,19 +71,19 @@ main(void)
                "there was a choice\n", TE_EASNWRONGLABEL);
         return 1;
     }
-
+#endif
     rc = 0;
     sub_val = asn_retrieve_descendant(val, &rc, "pdus.0.#tcp"); 
     printf("2: return %p, status %x\n", sub_val, rc);
 
     rc = 0;
     sub_val = asn_retrieve_descendant(val, &rc, "pdus.0.#tcp.checksum.#plain"); 
-    printf("2: return %p, status %x\n", sub_val, rc);
+    printf("3: return %p, status %x\n", sub_val, rc);
 
 #if 1
     rc = 0;
     sub_val = asn_retrieve_descendant(val, &rc, "pdus.2.#eth.length-type.#plain"); 
-    printf("2: return %p, status %x\n", sub_val, rc);
+    printf("4: return %p, status %x\n", sub_val, rc);
 #endif
 
     asn_sprint_value(val, buf, sizeof(buf), 0);
