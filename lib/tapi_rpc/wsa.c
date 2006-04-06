@@ -1244,7 +1244,7 @@ rpc_completion_callback(rcf_rpc_server *rpcs,
     
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(completion_callback, rc);
 
-    TAPI_RPC_LOG("RPC (%s,%s): completion_callback() -> %r "
+    TAPI_RPC_LOG("RPC (%s,%s): completion_callback() -> %s "
                  "called %d times;  error %d; bytes %d; overlapped %u",
                  rpcs->ta, rpcs->name, errno_rpc2str(RPC_ERRNO(rpcs)),
                  out.called, out.error, out.bytes, out.overlapped);
