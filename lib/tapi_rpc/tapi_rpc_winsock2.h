@@ -1094,6 +1094,20 @@ extern int rpc_completion_callback(rcf_rpc_server *rpcs,
                                    rpc_overlapped *overlapped);
 
 /**
+ * Cleanup completion callback statistics.
+ *
+ * @param rpcs          RPC server handle
+ */
+static inline void
+rpc_cleanup_completion_callback(rcf_rpc_server *rpcs)
+{
+    rpc_overlapped ovl;
+    int            tmp;
+    
+    rpc_completion_callback(rpcs, &tmp, &tmp, &tmp, &ovl);
+}
+
+/**
  * Specify an event object to be associated with the specified set of
  * network events.
  *
