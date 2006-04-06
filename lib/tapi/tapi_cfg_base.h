@@ -208,7 +208,7 @@ tapi_cfg_base_if_arp_enable(const char *ta, const char * iface)
 static inline te_errno
 tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
 {
-    int arp_use = 0; /* enable */
+    int arp_use = 0; /* disable */
 
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, arp_use),
                                 "/agent:%s/interface:%s/arp:",
