@@ -833,56 +833,69 @@ asn_get_child_by_index(const asn_value *container, asn_value **child,
 {
     const asn_named_entry_t *ne;
 
-    if (!(container->syntax & CONSTRAINT))
-        return TE_EASNWRONGTYPE;
+    int child_internal_offset = index;
 
-    if (index < 0)
-        index += container->len;
-
-    if (index < 0)
-        return TE_EINVAL;
-
-    if ((unsigned)index >= container->len)
+    switch (container->syntax)
     {
-        if (container->syntax == SEQUENCE_OF ||
-            container->syntax == SET_OF) 
-            return TE_EASNINCOMPLVAL;
-        else if (container->syntax != CHOICE) 
-            return TE_EINVAL;
-    }
+        case CHOICE:
+        case TAGGED:
+            child_internal_offset = 0; /* fall through ... */
+        case SEQUENCE:
+        case SET:
+            if (index < 0 || index > container->asn_type->len)
+                return TE_EASNWRONGLABEL;
 
-    *child = container->data.array[ (container->syntax == CHOICE ||
-                                     container->syntax == TAGGED    ) 
-                                    ? 0 : index                       ];
+            *child = container->data.array[child_internal_offset];
 
-    /* additional check for named children */
-    if (!(container->syntax & 1))
-    { 
-        if (*child == NULL)
-            return TE_EASNINCOMPLVAL;
+            if (*child == NULL)
+                return TE_EASNINCOMPLVAL;
 
-        ne = container->asn_type->sp.named_entries + index;
+            if (container->syntax == TAGGED)
+                break;
+
+            /* additional check of subtype for named children */
+            ne = container->asn_type->sp.named_entries + index;
 #if 0
-        fprintf(stderr, "%s(index %d) bad child tag or name\n"
-                "container: tag %d.%d, '%s', type name '%s'\n"
-                "    child: tag %d.%d, '%s'\n"
-                "  in type: tag %d.%d, '%s'\n",
-                __FUNCTION__, index,
-                (int)((container)->tag.cl), (int)((container)->tag.val),
-                        (container)->name, container->asn_type->name,
-                (int)((*child)->tag.cl), (int)((*child)->tag.val), (*child)->name,
-                (int)(ne->tag.cl), (int)(ne->tag.val), ne->name);
-        fflush(stderr);
+            fprintf(stderr, "%s(index %d) bad child tag or name\n"
+                    "container: tag %d.%d, '%s', type name '%s'\n"
+                    "    child: tag %d.%d, '%s'\n"
+                    "  in type: tag %d.%d, '%s'\n",
+                    __FUNCTION__, index,
+                    (int)((container)->tag.cl), 
+                    (int)((container)->tag.val),
+                    (container)->name, container->asn_type->name,
+                    (int)((*child)->tag.cl), 
+                    (int)((*child)->tag.val), (*child)->name,
+                    (int)(ne->tag.cl), (int)(ne->tag.val), ne->name);
+            fflush(stderr);
 #endif
 
-        if (!asn_tag_equal((*child)->tag,  ne->tag) || 
-             (strcmp((*child)->name, ne->name) != 0)  ) 
-        { 
-            if (container->syntax == CHOICE)
-                return TE_EASNOTHERCHOICE; 
-            else 
-                return TE_EASNGENERAL;
-        }
+            if (!asn_tag_equal((*child)->tag,  ne->tag) || 
+                 (strcmp((*child)->name, ne->name) != 0)  ) 
+            { 
+                if (container->syntax == CHOICE)
+                    return TE_EASNOTHERCHOICE; 
+                else 
+                    return TE_EASNGENERAL;
+            }
+            break;
+
+        case SEQUENCE_OF:
+        case SET_OF:
+            if (index < 0)
+                index += container->len;
+
+            if (index < 0)
+                return TE_EINVAL;
+
+            if ((unsigned)index >= container->len)
+                return TE_EASNINCOMPLVAL;
+
+            *child = container->data.array[index]; 
+            break;
+
+        default:
+            return TE_EASNWRONGTYPE;
     }
 
     return 0;
