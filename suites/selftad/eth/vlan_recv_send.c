@@ -105,12 +105,12 @@ main(int argc, char *argv[])
     
     if (rcf_get_ta_list(ta, &len) != 0)
     {
-        TEST_FAIL("rcf_get_ta_list failed\n");
+        TEST_FAIL("rcf_get_ta_list failed");
     }
     VERB("Agent: %s\n", ta);
        
     if (rcf_ta_create_session(ta, &sid) != 0)
-        TEST_FAIL("rcf_ta_create_session failed\n");
+        TEST_FAIL("rcf_ta_create_session failed");
     VERB("Test: Created session: %d\n", sid); 
 
     do {
@@ -213,12 +213,12 @@ main(int argc, char *argv[])
         rc = asn_parse_value_text("{{ pdus { eth:{ }}}}", 
                             ndn_traffic_pattern, &pattern, &syms); 
         if (rc)
-            TEST_FAIL("parse value text fails, %X", rc);
+            TEST_FAIL("parse value text fails, %r", rc);
 
         rc = asn_write_value_field(pattern, rem_addr, sizeof(rem_addr), 
                  "0.pdus.0.#eth.dst-addr.#plain"); 
         if (rc)
-            TEST_FAIL("write dst to pattern failed %X", rc);
+            TEST_FAIL("write dst to pattern failed %r", rc);
 
 
 #if 0
@@ -290,7 +290,7 @@ main(int argc, char *argv[])
                                    RCF_MODE_BLOCKING);
 
         if (rc)
-            TEST_FAIL("ETH send fails, rc %X", rc);
+            TEST_FAIL("ETH send fails, rc %r", rc);
 
         VERB("Eth pkt sent");
 
@@ -303,9 +303,9 @@ main(int argc, char *argv[])
                                   &num);
 
         if (rc != 0)
-            TEST_FAIL("ETH recv_stop fails, rc %X", rc);
+            TEST_FAIL("ETH recv_stop fails, rc %r", rc);
 
-        INFO("trrecv stop rc: %x, num of pkts: %d\n", rc, num);
+        INFO("trrecv stop rc: %r, num of pkts: %d", rc, num);
 
         if (num <= 0)
             TEST_FAIL("no received packets");
@@ -317,11 +317,11 @@ main(int argc, char *argv[])
 cleanup:
     if (eth_csap != CSAP_INVALID_HANDLE &&
         (rc = rcf_ta_csap_destroy(ta, sid, eth_csap) != 0) )
-        ERROR("ETH csap destroy fails, rc %X", rc);
+        ERROR("ETH csap destroy fails, rc %r", rc);
 
     if (eth_listen_csap != CSAP_INVALID_HANDLE &&
         (rc = rcf_ta_csap_destroy(ta, sid, eth_listen_csap) != 0) )
-        ERROR("ETH listen csap destroy fails, rc %X", rc);
+        ERROR("ETH listen csap destroy fails, rc %r", rc);
 
     TEST_END; 
 }
