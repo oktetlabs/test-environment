@@ -42,6 +42,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#include "ipstack-ts.h" 
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -51,9 +52,10 @@
 #include "conf_api.h"
 #include "tapi_rpc.h"
 #include "tapi_tad.h"
-#include "tapi_eth.h"
+#include "tapi_cfg.h"
 
 #include "tapi_test.h"
+#include "tapi_env.h"
 #include "tapi_ip.h"
 #include "tapi_udp.h"
 
@@ -66,15 +68,17 @@ main(int argc, char *argv[])
 {
     int  udp_socket = -1;
     int  syms;
-    int  sid_a;
-    int  sid_b;
-    char ta[32];
-    char *agt_a = ta;
-    char *agt_b;
-    size_t  len = sizeof(ta);
+    int  sid;
+    char *agt_a = NULL;
 
-    in_addr_t ip_addr_a = inet_addr("192.168.72.18");
-    in_addr_t ip_addr_b = inet_addr("192.168.72.38");
+    const struct sockaddr *csap_addr;
+    size_t csap_addr_len;
+
+    const struct sockaddr *pco_addr;
+    size_t pco_addr_len;
+
+    struct sockaddr_in from_sa;
+    size_t from_len = sizeof(from_sa);
 
     tapi_ip_frag_spec_t frags[] = {
             { hdr_offset:0, real_offset:0,
@@ -87,7 +91,7 @@ main(int argc, char *argv[])
 
     csap_handle_t ip4_send_csap = CSAP_INVALID_HANDLE;
 
-    rcf_rpc_server *srv_listen = NULL;
+    rcf_rpc_server *pco = NULL;
 
     asn_value *template; /* template for traffic generation */ 
     asn_value *ip4_pdu; 
@@ -102,65 +106,54 @@ main(int argc, char *argv[])
                                0x00, 0x00, 0x00, 0x00,
                                0x01, 0x01, 0x02, 0x02};
 
-    struct sockaddr_in listen_sa;
-    struct sockaddr_in from_sa;
-    size_t from_len;
+    tapi_env_host *host_csap;
 
     uint8_t rcv_buffer[2000];
 
+    uint8_t pco_mac[ETHER_ADDR_LEN];
+    size_t  pco_mac_len = sizeof(pco_mac);
+    const struct if_nameindex *pco_if;
+    const struct if_nameindex *csap_if;
+
 
     TEST_START; 
+    TEST_GET_HOST(host_csap);
+    TEST_GET_PCO(pco);
+    TEST_GET_IF(pco_if);
+    TEST_GET_IF(csap_if);
+    TEST_GET_ADDR(pco_addr, pco_addr_len);
+    TEST_GET_ADDR(csap_addr, csap_addr_len);
 
-    /******** Find TA names *************/
-    if ((rc = rcf_get_ta_list(ta, &len)) != 0)
-        TEST_FAIL("rcf_get_ta_list failed: %r", rc);
+    agt_a = host_csap->ta;
 
-    INFO("Found first TA: %s; len %d", ta, len);
+    CHECK_RC(tapi_cfg_get_hwaddr(pco->ta, pco_if->if_name, 
+                                 pco_mac, &pco_mac_len));
 
-    agt_a = ta;
-    if (strlen(ta) + 1 >= len) 
-        TEST_FAIL("There is no second Test Agent");
+    /* set SRC UDP port in datagram image, both are in NET byte order */
+    *((uint16_t *)udp_dgm_image)       = SIN(csap_addr)->sin_port;
 
-    agt_b = ta + strlen(ta) + 1;
-
-    INFO("Found second TA: %s", agt_b, len);
+    /* set DST UDP port in datagram image, both are in NET byte order */
+    *((uint16_t *)(udp_dgm_image + 2)) = SIN(pco_addr) ->sin_port;
 
     /******** Create RCF sessions *************/
-    if (rcf_ta_create_session(agt_a, &sid_a) != 0)
+    if (rcf_ta_create_session(agt_a, &sid) != 0)
     {
         TEST_FAIL("rcf_ta_create_session failed");
     }
-    INFO("Test: Created session for A agt: %d", sid_a); 
-
-    if (rcf_ta_create_session(agt_b, &sid_b) != 0)
-    {
-        TEST_FAIL("rcf_ta_create_session failed");
-    }
-    INFO("Test: Created session for B: %d", sid_b); 
+    INFO("Test: Created session for A agt: %d", sid); 
 
 
-    /******** Init RPC server and UDP socket *************/
 
-    memset(&listen_sa, 0, sizeof(listen_sa)); 
+    /******** Init UDP socket *************/
 
-    listen_sa.sin_family = AF_INET;
-    listen_sa.sin_port = htons(20001); /* TODO generic port */
-
-    if ((rc = rcf_rpc_server_create(agt_b, "FIRST", &srv_listen)) != 0) 
-        TEST_FAIL("Cannot create server %x", rc); 
-
-    srv_listen->def_timeout = 5000; 
-    rcf_rpc_setlibname(srv_listen, NULL); 
-
-    udp_socket = rpc_socket(srv_listen, RPC_PF_INET,
+    udp_socket = rpc_socket(pco, RPC_PF_INET,
                             RPC_SOCK_DGRAM, RPC_PROTO_DEF);
     if (udp_socket < 0)
     {
         TEST_FAIL("create socket failed");
     }
 
-    rc = rpc_bind(srv_listen, udp_socket, SA(&listen_sa),
-                  sizeof(listen_sa));
+    rc = rpc_bind(pco, udp_socket, pco_addr, pco_addr_len);
     if (rc != 0)
         TEST_FAIL("bind failed");
 
@@ -171,16 +164,21 @@ main(int argc, char *argv[])
         20 + (frags[1].real_length = 
               (sizeof(udp_dgm_image) - frags[0].real_length));
 
-    rc = asn_parse_value_text("{ pdus { eth:{ "
-                              "    dst-addr plain:'00 0D 88 4F 55 AF'H}} }",
+    rc = asn_parse_value_text("{ pdus { eth:{}} }",
                               ndn_traffic_template,
                               &template, &syms);
     if (rc != 0)
         TEST_FAIL("parse of template failed %X, syms %d", rc, syms);
-    rc = tapi_ip4_pdu(ip_addr_a, ip_addr_b,
-                      frags, sizeof(frags)/sizeof(frags[0]), 
-                      64, IPPROTO_UDP, &ip4_pdu);
 
+    rc = asn_write_value_field(template, pco_mac, pco_mac_len, 
+                          "pdus.0.#eth.dst-addr.#plain");
+    if (rc != 0)
+        TEST_FAIL("write dst MAC fail %r", rc);
+
+    rc = tapi_ip4_pdu(SIN(csap_addr)->sin_addr.s_addr, 
+                      SIN(pco_addr)->sin_addr.s_addr, 
+                      frags, sizeof(frags)/sizeof(frags[0]), 
+                      64, IPPROTO_UDP, &ip4_pdu); 
     if (rc != 0)
         TEST_FAIL("make IP PDU failed: %x", rc); 
 
@@ -195,8 +193,8 @@ main(int argc, char *argv[])
         TEST_FAIL("set payload to template failed %r", rc);
 
     /***************** Create 'ip4.eth' CSAP *****************/
-    rc = tapi_ip4_eth_csap_create(agt_a, sid_a, "eth2", NULL, NULL,
-                                  ip_addr_a, ip_addr_b,
+    rc = tapi_ip4_eth_csap_create(agt_a, sid, csap_if->if_name,
+                                  NULL, NULL, INADDR_ANY, INADDR_ANY,
                                   &ip4_send_csap);
     if (rc != 0)
         TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
@@ -204,14 +202,14 @@ main(int argc, char *argv[])
 
 
     /***************** Issue datagram via CSAP *****************/
-    rc = tapi_tad_trsend_start(agt_a, sid_a, ip4_send_csap,
+    rc = tapi_tad_trsend_start(agt_a, sid, ip4_send_csap,
                                template, RCF_MODE_BLOCKING);
     if (rc != 0) 
         TEST_FAIL("send start failed %X", rc); 
-    RPC_AWAIT_IUT_ERROR(srv_listen);
+    RPC_AWAIT_IUT_ERROR(pco);
     SLEEP(1);
     from_len = sizeof(from_sa);
-    rc = rpc_recvfrom(srv_listen, udp_socket,
+    rc = rpc_recvfrom(pco, udp_socket,
                       rcv_buffer, sizeof(rcv_buffer), RPC_MSG_DONTWAIT, 
                       SA(&from_sa), &from_len);
     if (rc <= 0)
@@ -231,15 +229,10 @@ cleanup:
                       csap_tmp, ta_, rc);                               \
     } while (0)                                                         \
                                                                     
-    CLEANUP_CSAP(agt_a, sid_a, ip4_send_csap);
+    CLEANUP_CSAP(agt_a, sid, ip4_send_csap);
 
     if (udp_socket > 0)
-        rpc_close(srv_listen, udp_socket);
-
-    if (srv_listen != NULL && (rcf_rpc_server_destroy(srv_listen) != 0))
-    {
-        WARN("Cannot delete listen RPC server\n");
-    }
+        rpc_close(pco, udp_socket);
 
     TEST_END;
 }
