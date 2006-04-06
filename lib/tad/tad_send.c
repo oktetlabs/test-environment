@@ -1108,11 +1108,21 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
 
         rc = asn_get_indexed(arg_set, (asn_value **)&arg_spec_elem,
                              i, NULL);
-        if (rc) break;
+        if (rc) 
+        {
+            WARN("%s(): asn_get_indexed(%d) failed %r", 
+                 __FUNCTION__, i, rc);
+            break;
+        }
 
         rc = asn_get_choice_value(arg_spec_elem, (asn_value **)&arg_val,
                                   &t_class, &t_val);
-        if (rc) break;
+        if (rc)
+        {
+            WARN("%s(): asn_get_choice_value failed %r", 
+                 __FUNCTION__, rc);
+            break;
+        }
 
         VERB("iter tag class %d, tag val %d", (int)t_class, (int)t_val);
 
