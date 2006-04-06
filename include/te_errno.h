@@ -192,6 +192,8 @@ typedef enum {
     TE_E_IO_INCOMPLETE,  /**< Overlapped I/O event is not in a
                               signaled state */
     TE_E_IO_PENDING,     /**< Overlapped I/O operation is in progress */
+    TE_E_GEN_FAILURE,    /**< General failure */
+    TE_E_LOG_FILE_FULL,  /**< Log file is full */
     
     /* TE-specific error codes */
     TE_EUNSPEC,         /**< Undefined OS errno 
@@ -598,7 +600,8 @@ te_rc_err2str(te_errno err)
         ERR2STR(E_IO_INCOMPLETE);
         ERR2STR(E_IO_PENDING);
         ERR2STR(E_NETNAME_DELETED);
-
+        ERR2STR(E_GEN_FAILURE);
+        ERR2STR(E_LOG_FILE_FULL);
         ERR2STR(EUNSPEC);
         ERR2STR(EUNKNOWN);
 

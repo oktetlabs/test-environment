@@ -323,11 +323,15 @@ win_rpc_errno(int err)
         case ERROR_OPERATION_ABORTED: return RPC_E_OPERATION_ABORTED;
         case ERROR_IO_INCOMPLETE: return RPC_E_IO_INCOMPLETE;
         case ERROR_IO_PENDING: return RPC_E_IO_PENDING;
+        case ERROR_NOT_ENOUGH_MEMORY: return RPC_ENOMEM;
         case ERROR_NOACCESS: return RPC_EFAULT; /* FIXME? */
         case ERROR_MORE_DATA: return RPC_EMSGSIZE; /* FIXME? */
         case ERROR_INVALID_PARAMETER: return RPC_EINVAL; /* FIXME? */
         case ERROR_FILE_NOT_FOUND: return RPC_ENOENT;
-        case ERROR_NETNAME_DELETED: return RPC_E_NETNAME_DELETED;                           
+        case ERROR_ALREADY_EXISTS: return RPC_EEXIST;
+        case ERROR_NETNAME_DELETED: return RPC_E_NETNAME_DELETED;
+        case ERROR_GEN_FAILURE: return RPC_E_GEN_FAILURE;
+        case ERROR_LOG_FILE_FULL: return RPC_E_LOG_FILE_FULL;
         case WAIT_TIMEOUT: return RPC_E_WAIT_TIMEOUT;
 
         
