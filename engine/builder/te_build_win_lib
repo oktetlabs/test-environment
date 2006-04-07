@@ -41,7 +41,7 @@ shift 4
 
 . `dirname $0`/te_build_win_platform
 
-WIN_DIR=${USER}_build_${LIBNAME%%.lib}_$DIR_POSTFIX
+WIN_DIR=${USER}_build/${LIBNAME%%.lib}_$DIR_POSTFIX
 
 if test -z "$TE_WIN32_BUILD_HOST" ; then
     echo "Warning: build host for $PLATFORM platform is not specified; \
@@ -51,12 +51,12 @@ if test -z "$TE_WIN32_BUILD_HOST" ; then
 fi
 
 if ! ssh $KEY $TE_WIN32_BUILD_HOST \
-         "rm -rf $WIN_DIR; mkdir $WIN_DIR" >/dev/null; then
+         "rm -rf $WIN_DIR; mkdir -p $WIN_DIR" >/dev/null; then
     echo "Error: build host $TE_WIN32_BUILD_HOST is unreachable"
     exit 1
 fi
 
-rm -rf tmpsrc
+rm -rf tmpsrc ${LIBNAME}
 mkdir tmpsrc
 cd tmpsrc
 
@@ -89,7 +89,7 @@ chmod a+x build.sh
 
 scp $KEY * ${TE_WIN32_BUILD_HOST}:$WIN_DIR
 cd ..
-rm -rf tmpsrc 
+rm -rf tmpsrc build.sh
 
 ssh $KEY ${TE_WIN32_BUILD_HOST} "bash -l -c $WIN_DIR/build.sh"
 
