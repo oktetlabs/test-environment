@@ -572,7 +572,9 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     if (*(ta->flags) & TA_FAKE)
         return 0;
     
-    if (ta->pid > 0 && (*(ta->flags) & TA_DEAD))
+    if ((ta->pid > 0) &&
+        ((*(ta->flags) & TA_DEAD) ||
+         strcmp_start("solaris2", ta->ta_type) == 0))
     {
         /* Kill TA itself */
         if (ta->is_local)
@@ -625,7 +627,9 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     }
 
     /* FIXME */
-    if ((*(ta->flags) & TA_DEAD) || strcmp_start("win32", ta->ta_type) == 0)
+    if ((*(ta->flags) & TA_DEAD) ||
+        strcmp_start("win32", ta->ta_type) == 0 ||
+        strcmp_start("solaris2", ta->ta_type) == 0)
     {
         if (ta->is_local)
             sprintf(cmd, "rm -f /tmp/%s*", ta->exec_name);
