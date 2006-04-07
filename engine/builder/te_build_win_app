@@ -83,8 +83,7 @@ ln -s ${TE_INSTALL}/${PLATFORM} ${PLATFORM}
 
 # Generate the script
 cat >build.sh <<EOF
-MSSDK_CYGWIN_BAD=\$( cygpath -u \$MSSDK ) 
-MSSDK_CYGWIN="\`echo \$MSSDK_CYGWIN_BAD\`"
+MSSDK_CYGWIN=\$( cygpath -u "\$MSSDK" ) 
 export PATH="\${MSSDK_CYGWIN}/Bin$PATH_POSTFIX:\$PATH"
 export LIB="\${MSSDK}\Lib$LIB_POSTFIX;\$LIB"
 rm src.tgz

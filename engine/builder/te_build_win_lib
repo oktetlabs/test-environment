@@ -77,8 +77,7 @@ rm -f *~
 # Generate the script
 cat >build.sh <<EOF
 cd $WIN_DIR
-MSSDK_CYGWIN_BAD=\$( cygpath -u \$MSSDK ) 
-MSSDK_CYGWIN="\`echo \$MSSDK_CYGWIN_BAD\`"
+MSSDK_CYGWIN=\$( cygpath -u "\$MSSDK" ) 
 export PATH="\${MSSDK_CYGWIN}/Bin$PATH_POSTFIX:\$PATH"
 cl /w -D_WIN32_WINNT=0x0501 -D_CRT_SECURE_NO_DEPRECATE /Od *.c /c   
 lib /OUT:${LIBNAME} /nologo *.obj
