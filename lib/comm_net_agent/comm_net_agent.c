@@ -247,7 +247,7 @@ rcf_comm_agent_init(const char *config_str,
  */
 int
 rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
-                    char *buffer, size_t *pbytes, char **pba)
+                    char *buffer, size_t *pbytes, void **pba)
 {
     int     ret;
     size_t  l = 0;

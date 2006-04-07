@@ -455,7 +455,7 @@ rcf_pch_run(const char *confstr, const char *info)
     {
         size_t   len = cmd_buf_len;
         char    *ptr;
-        uint8_t *ba;         /* Binary attachment pointer */
+        void    *ba;         /* Binary attachment pointer */
 
         answer_plen = 0;
 
@@ -468,7 +468,8 @@ rcf_pch_run(const char *confstr, const char *info)
             size_t tmp;
             
             int received = cmd_buf_len;
-            int ba_offset = ba == NULL ? 0 : (ba - (uint8_t *)cmd);
+            int ba_offset = (ba == NULL) ? 0 :
+                                ((uint8_t *)ba - (uint8_t *)cmd);
             
             char *old_cmd = cmd;
             
@@ -1084,9 +1085,9 @@ rcf_pch_run(const char *confstr, const char *info)
                     
                 READ_INT(timeout);
                 
-                if (ba)
+                if (ba != NULL)
                 {
-                    len -= (ba - (uint8_t *)cmd);
+                    len -= ((uint8_t *)ba - (uint8_t *)cmd);
                     ptr = (char *)ba;
                 }
                 else

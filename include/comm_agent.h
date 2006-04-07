@@ -96,7 +96,7 @@ extern int rcf_comm_agent_init(const char *config_str,
  * @retval other value  errno.
  */
 extern int rcf_comm_agent_wait(rcf_comm_connection *rcc, 
-                               char *buffer, size_t *pbytes, char **pba);
+                               char *buffer, size_t *pbytes, void **pba);
 
 
 /**
