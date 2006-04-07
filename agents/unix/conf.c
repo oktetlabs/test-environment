@@ -93,6 +93,7 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_ethernet.h"
+#include "te_sockaddr.h"
 #include "cs_common.h"
 #include "logger_api.h"
 #include "comm_agent.h"
@@ -1762,38 +1763,38 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
 #elif defined(SIOCLIFADDIF)
     {
-        int             sock = (family == AF_INET6) ?
-                               cfg6_socket : cfg_socket;
-        struct lifreq   lreq;
-
-        memset(&lreq, 0, sizeof(lreq));
-        strncpy(lreq.lifr_name, ifname, sizeof(lreq.lifr_name));
-
         /*
          * It is impossible to specify netmask/prefixlen when address
          * is added. We don't want to have address with incorrect mask,
          * since it can be fatal (unexpected routing, etc). Therefore,
-         *  - add logical interface with unspecified address;
+         *  - if interface has specified address, add logical interface
+         *    with unspecified address;
          *  - set required netmaks / prefix length;
          *  - set required address;
          *  - push interface up.
          */
-        lreq.lifr_addr.ss_family = family;
-        CFG_IOCTL(sock, SIOCLIFADDIF, &lreq);
-        /* NOTE: Name of logical interface was set in 'lreq' */
+        int             sock = (family == AF_INET6) ?
+                               cfg6_socket : cfg_socket;
+        struct lifreq   lreq;
+        te_bool         logical_iface = FALSE;
 
-        if (family == AF_INET)
+        memset(&lreq, 0, sizeof(lreq));
+        strncpy(lreq.lifr_name, ifname, sizeof(lreq.lifr_name));
+        lreq.lifr_addr.ss_family = family;
+
+        CFG_IOCTL(sock, SIOCGLIFADDR, &lreq);
+
+        if (!te_sockaddr_is_wildcard(SA(&lreq.lifr_addr)))
         {
-            lreq.lifr_addr.ss_family = family;
-            SIN(&lreq.lifr_addr)->sin_addr.s_addr = 
-                htonl(PREFIX2MASK(prefix));
-            CFG_IOCTL(sock, SIOCSLIFNETMASK, &lreq);
+            logical_iface = TRUE;
+            CFG_IOCTL(sock, SIOCLIFADDIF, &lreq);
+            /* NOTE: Name of logical interface was set in 'lreq' */
         }
-        else
-        {
-            lreq.lifr_addrlen = prefix;
-            ERROR("Set IPv6 address prefix!!!");
-        }
+
+        te_sockaddr_mask_by_prefix(SA(&lreq.lifr_addr),
+                                   sizeof(lreq.lifr_addr),
+                                   family, prefix);
+        CFG_IOCTL(sock, SIOCSLIFNETMASK, &lreq);
 
         lreq.lifr_addr.ss_family = family;
         memcpy((family == AF_INET) ?
@@ -1802,10 +1803,13 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
                &new_addr, addrlen);
         CFG_IOCTL(sock, SIOCSLIFADDR, &lreq);
 
-        /* Push logical interface up */
-        CFG_IOCTL(sock, SIOCGLIFFLAGS, &lreq);
-        lreq.lifr_flags |= IFF_UP;
-        CFG_IOCTL(sock, SIOCSLIFFLAGS, &lreq);
+        if (logical_iface)
+        {
+            /* Push logical interface up */
+            CFG_IOCTL(sock, SIOCGLIFFLAGS, &lreq);
+            lreq.lifr_flags |= IFF_UP;
+            CFG_IOCTL(sock, SIOCSLIFFLAGS, &lreq);
+        }
     }
 #elif defined(SIOCALIFADDR)
     {
