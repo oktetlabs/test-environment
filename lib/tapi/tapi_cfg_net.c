@@ -811,7 +811,6 @@ tapi_cfg_net_delete_all_ip4_addresses(void)
             }
             if (strcmp(ta_type, "win32") == 0 ||
                 /* The following types have issues in /agent/route */
-                strcmp(ta_type, "solaris2") == 0 ||
                 strcmp(ta_type, "freebsd6") == 0 ||
                 strcmp(ta_type, "netbsd") == 0)
             {
