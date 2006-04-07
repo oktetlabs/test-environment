@@ -77,11 +77,12 @@ fi
 
 if test ! -e Makefile ; then
     PLATFORM_NAME=`echo ${host} | tr .- _`
-    ADD_CPPFLAGS="`eval echo '$'${PLATFORM_NAME}'_CPPFLAGS'`"
-    ADD_CFLAGS="`eval echo '$'${PLATFORM_NAME}'_CFLAGS'`"
-    ADD_LDFLAGS="`eval echo '$'${PLATFORM_NAME}'_LDFLAGS'`"
-    echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} --build=${host}"
-    
+    PARMS="`eval echo '$TE_BS_SUITE_'${SUITE}'_PARMS'`"
+    ADD_CPPFLAGS="`eval echo '$'${PLATFORM_NAME}'_CPPFLAGS'` `eval echo '$TE_BS_SUITE_'$SUITE'_CPPFLAGS'`"
+    ADD_CFLAGS="`eval echo '$'${PLATFORM_NAME}'_CFLAGS'` `eval echo '$TE_BS_SUITE_'$SUITE'_CFLAGS'`"
+    ADD_LDFLAGS="`eval echo '$'${PLATFORM_NAME}'_LDFLAGS'` `eval echo '$TE_BS_SUITE_'$SUITE'_LDFLAGS'`"
+    echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} --build=${host}" $PARMS
+
     TE_INSTALL="${TE_INSTALL}" \
     TE_PATH="${TE_PATH}" \
     TE_BASE="${TE_BASE}" \
@@ -89,7 +90,7 @@ if test ! -e Makefile ; then
     TE_CPPFLAGS="-I${TE_INSTALL}/${host}/include ${ADD_CPPFLAGS}" \
     TE_LDFLAGS="-L${TE_INSTALL}/${host}/lib ${ADD_LDFLAGS}" \
     CFLAGS="" \
-    eval "${SOURCES}/configure" -q --prefix="${TE_INSTALL_SUITE}" --build=${host} || exit 1
+    eval "${SOURCES}/configure" -q --prefix="${TE_INSTALL_SUITE}" --build=${host} $PARMS || exit 1
 fi
 make install || exit 1
 

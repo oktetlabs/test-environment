@@ -271,24 +271,29 @@ TE_BS_TA_$1_PLATFORM=$PLATFORM
 ]
 ])
 
-dnl Specifies the suite.
+dnl Specifies additional parameters for test suite.
+dnl The path to test suite is specified in tester.conf file.
 dnl
 dnl Parameters:
-dnl       suite name
-dnl       sources location - name of the directory in ${TE_BASE}
-dnl       
+dnl       suite name - should be the same as specified in tester.conf
+dnl       additional parameters to configure script (may be empty)
+dnl       additional preprocessor flags
+dnl       additional compiler flags
+dnl       additional linker flags
+dnl
 define([TE_SUITE],
 [
 TE_HOST_DEFINED=yes
-ADD=yes
-for i in $TE_BS_SUITES ; do 
-    if test x"$i" = x"$1" ; then
-        ADD=no
-        break
-    fi
-done
-if test "$ADD"="yes" ; then
-    TE_BS_SUITES="$TE_BS_SUITES $1" 
+if test -n "${TE_BS_SUITE_$1_DEFINED}" ;
+then
+    TE_BS_CONF_ERR="configuration for suite $1 is specified twice" ; 
+    break ; 
 fi
+
+TE_BS_SUITE_$1_DEFINED=yes
+TE_BS_SUITE_$1_PARMS="$2"
+TE_BS_SUITE_$1_CPPFLAGS="$3"
+TE_BS_SUITE_$1_CFLAGS="$4"
+TE_BS_SUITE_$1_LDFLAGS="$5"
 ]
 )
