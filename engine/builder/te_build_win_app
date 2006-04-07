@@ -90,7 +90,7 @@ export LIB="\${MSSDK}\Lib$LIB_POSTFIX;\$LIB"
 rm src.tgz
 cd tmpsrc 
 cl -I../${PLATFORM}/include -DWINDOWS -D_CRT_SECURE_NO_DEPRECATE \
-   -D_WIN32_WINNT=0x0501 /w /Zi *.c \
+   -D_WIN32_WINNT=0x0501 /w /Od /Zi *.c \
    /link /OUT:${APPNAME} /MAP /LIBPATH:../${PLATFORM}/lib \
    ${LIBS} ${ADD_LIB} 
 EOF
