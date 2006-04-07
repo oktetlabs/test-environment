@@ -13,23 +13,25 @@ include_HEADERS = \
 	te_format.h \
 	te_iscsi.h
 
+lib_LIBRARIES = libtools.a
+
 if WINDOWS
 
-RANLIB=touch
+libtools_a_SOURCES = te_format.c 
 
-lib_LIBRARIES = libtools.lib
-
-libtools_lib_SOURCES = te_format.c 
-
-libtools.lib: $(libtools_lib_SOURCES) 
+libtools.a: $(libtools_a_SOURCES) 
 	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
-        $(DESTDIR)/$(prefix) $(libtools_lib_SOURCES)
+        $(DESTDIR)/$(prefix) $(libtools_a_SOURCES)
         
+install-exec-hook:
+	if test -e $(lib_LIBRARIES) -a ! -s $(lib_LIBRARIES) \
+                -a -n "$$TE_WIN32_BUILD_HOST" ; then \
+            rm $(lib_LIBRARIES) ; $(MAKE) install ; \
+        fi
+
 EXTRA_DIST=te_shell_cmd.c te_bufs.c te_log_fmt.c te_sockaddr.c
 
 else
-
-lib_LIBRARIES = libtools.a
 
 libtools_a_SOURCES = \
 	te_bufs.c \
@@ -37,8 +39,6 @@ libtools_a_SOURCES = \
 	te_shell_cmd.c \
 	te_log_fmt.c \
 	te_format.c
-
-endif
 
 install-exec-hook:
 	touch -c -r libtools.* $(DESTDIR)/$(libdir)/libtools.*
@@ -49,3 +49,6 @@ install-data-hook:
 	done
 
 all: install
+
+endif
+

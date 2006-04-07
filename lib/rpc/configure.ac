@@ -12,7 +12,11 @@ AC_CONFIG_MACRO_DIR([../../auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 AC_PROG_CC
-AC_PROG_RANLIB
+if test x$host != x${host%windows} ; then
+    RANLIB=touch
+else    
+    AC_PROG_RANLIB
+fi    
 
 AC_CONFIG_FILES([Makefile])
 

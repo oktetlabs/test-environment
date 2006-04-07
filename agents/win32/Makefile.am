@@ -124,7 +124,7 @@ uninstall-hook:
 	      $(DESTDIR)/$(bindir)/ta@with_name@.exe \
 	      $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver*
 
-RPCSERVER_LIBS="librcfpch.lib libloggerta.lib libtools.lib librpc.lib \
+RPCSERVER_LIBS="librcfpch.a libloggerta.a libtools.a librpc.a \
                 ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib user32.lib"
 
 build_native: $(tawin32tmpl_rpcserver_SOURCES) \
