@@ -39,38 +39,24 @@ LIBNAME=$3
 INCLUDE=$4/include
 shift 4
 
-if test $PLATFORM != ${PLATFORM#x86_64} ; then
+. `dirname $0`/te_build_win_platform
 
-BUILD_HOST=${TE_WIN64_BUILD_HOST}
-KEY=${TE_WIN64_BUILD_HOST_KEY}
-ADD_CMD='export PATH=`cygpath -u \"\$MSSDK\bin\win64\x86\AMD64\"`:\$PATH ;'
+WIN_DIR=${USER}_build_${LIBNAME%%.lib}_$DIR_POSTFIX
 
-else
-
-BUILD_HOST=${TE_WIN32_BUILD_HOST}
-KEY=${TE_WIN32_BUILD_HOST_KEY}
-ADD_CMD=
-
-fi
-
-if test -z "$BUILD_HOST" ; then
+if test -z "$TE_WIN32_BUILD_HOST" ; then
     echo "Warning: build host for $PLATFORM platform is not specified; \
           library $LIBNAME is not (re-)built"
     touch ${LIBNAME}
     exit 0
 fi
 
-if test -n "$KEY" ; then
-    KEY="-i $KEY "
-fi    
-
-if ! ssh $KEY $BUILD_HOST ls >/dev/null; then
-    echo "Warning: build host $BUILD_HOST is unreachable; \
-          library $LIBNAME for $PLATFORM platform is not (re-)built"
-    touch ${LIBNAME}
-    exit 0
+if ! ssh $KEY $TE_WIN32_BUILD_HOST \
+         "rm -rf $WIN_DIR; mkdir $WIN_DIR" >/dev/null; then
+    echo "Error: build host $TE_WIN32_BUILD_HOST is unreachable"
+    exit 1
 fi
 
+rm -rf tmpsrc
 mkdir tmpsrc
 cd tmpsrc
 
@@ -88,24 +74,28 @@ for i in $* ; do
 done
 rm -f *~
 
-ssh $KEY ${BUILD_HOST} "rm -rf tmpsrc; mkdir tmpsrc"
+# Generate the script
+cat >build.sh <<EOF
+cd $WIN_DIR
+MSSDK_CYGWIN_BAD=\$( cygpath -u \$MSSDK ) 
+MSSDK_CYGWIN="\`echo \$MSSDK_CYGWIN_BAD\`"
+export PATH="\${MSSDK_CYGWIN}/Bin$PATH_POSTFIX:\$PATH"
+cl /nologo /w -D_WIN32_WINNT=0x0501 -D_CRT_SECURE_NO_DEPRECATE /Od *.c /c   
+lib /OUT:${LIBNAME} /nologo *.obj
+EOF
+chmod a+x build.sh
 
 # Build the library
 
-scp $KEY $* ${BUILD_HOST}:tmpsrc
+scp $KEY * ${TE_WIN32_BUILD_HOST}:$WIN_DIR
 cd ..
 rm -rf tmpsrc 
 
-ssh $KEY ${BUILD_HOST} bash -l -c "\"
-$ADD_CMD \
-cd tmpsrc ; \
-cl -D_WIN32_WINNT=0x0501 -D_CRT_SECURE_NO_DEPRECATE /nologo *.c /c ; \
-lib /nologo /OUT:${LIBNAME} *.obj\""
+ssh $KEY ${TE_WIN32_BUILD_HOST} "bash -l -c $WIN_DIR/build.sh"
 
-scp $KEY ${BUILD_HOST}:tmpsrc/${LIBNAME} .
+scp $KEY ${TE_WIN32_BUILD_HOST}:$WIN_DIR/${LIBNAME} .
 
 if test -e ${LIBNAME} ; then
-    ssh $KEY ${BUILD_HOST} rm -rf tmpsrc 
     exit 0
 fi
 
