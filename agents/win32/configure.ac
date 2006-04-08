@@ -47,8 +47,6 @@ AM_CONDITIONAL(CFG_STANDALONE_RPCSERVER,
 
 export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/
 
-PKG_CHECK_MODULES(TAD, te-$with_tad)
-
 AC_CONFIG_FILES([Makefile])
 
 TE_APP_RESTORE

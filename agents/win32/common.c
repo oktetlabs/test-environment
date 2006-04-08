@@ -116,6 +116,7 @@ thread_mutex_unlock(void *mutex)
 int 
 setenv(const char *name, const char *value, int overwrite)
 {
+    UNUSED(overwrite);
     return SetEnvironmentVariable(name, value) ? 0 : -1;
 }
 
@@ -125,4 +126,3 @@ unsetenv(const char *name)
 {
     SetEnvironmentVariable(name, NULL);
 }
-

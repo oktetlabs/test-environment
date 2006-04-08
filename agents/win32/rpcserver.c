@@ -99,6 +99,8 @@ main(int argc, char **argv)
 {
     WSADATA data;
     
+    UNUSED(argc);
+    
     WSAStartup(MAKEWORD(2,2), &data);
     
     ta_hinstance = GetModuleHandle(NULL);

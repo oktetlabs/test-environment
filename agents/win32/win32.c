@@ -594,6 +594,15 @@ die(void)
 
 #ifdef RCF_RPC
 extern void wsa_func_handles_discover();
+#else
+
+/** Dummy */
+void 
+sleep_waitable(int msec)
+{
+    usleep(msec * 1000);
+} 
+
 #endif
 
 
@@ -615,6 +624,8 @@ main(int argc, char **argv)
     pthread_t tid;
 
     WSADATA data;
+    
+    UNUSED(argc);
 
     WSAStartup(MAKEWORD(2,2), &data);
 

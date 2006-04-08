@@ -58,12 +58,17 @@ struct timezone {
 #include "te_errno.h"
 #include "rcf_pch.h"
 #include "logger_api.h"
+#include "logfork.h"
 #include "rcf_rpc_defs.h"
 #ifndef WINDOWS
 #include "te_rpc_types.h"
 #else
 INCLUDE(te_rpc_types.h)
 #endif
+
+/** Discover addresses of *Ex functions */
+extern void wsa_func_handles_discover();
+
 
 /** Try to get both cygwin and windows environment; non-reenterable */
 static inline char *

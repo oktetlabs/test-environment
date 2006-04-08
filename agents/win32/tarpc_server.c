@@ -80,12 +80,6 @@ wsa_func_handles_discover()
     closesocket(s);
 }
 
-/** Sleep in waitable state */
-void 
-sleep_waitable(int msec)
-{
-    SleepEx(msec, TRUE);
-} 
 #ifdef WINDOWS
 /** Calculate the auxiliary buffer length for msghdr */
 static inline int
@@ -683,7 +677,7 @@ TARPC_FUNC(transmit_packets, {},
     TRANSMIT_PACKETS_ELEMENT   *transmit_buffers;
     rpc_overlapped             *overlapped = IN_OVERLAPPED;
     rpc_overlapped              tmp;
-    int                         i;
+    unsigned int                i;
 
     if (overlapped == NULL)
     {
@@ -751,8 +745,6 @@ TARPC_FUNC(transmit_packets, {},
                                           in->send_size,
                                           (LPWSAOVERLAPPED)in->overlapped,
                                           in->flags); );
-finish:
-    ;    
 }
 )
 /*-------------- TransmitFile() ----------------------------*/
@@ -1926,8 +1918,6 @@ TARPC_FUNC(ioctl,
     static struct timeval req_timeval;
     static int            req_int;
 
-    DWORD ret_num;
-
     if (out->req.req_val != NULL)
     {
         switch(out->req.req_val[0].type)
@@ -2982,7 +2972,6 @@ default_completion_callback(DWORD error, DWORD bytes,
 {
     UNUSED(flags);
 
-    PRINT("Callback error %d bytes %d", error, bytes);
     thread_mutex_lock(completion_lock);
     completion_called++;
     completion_error = win_rpc_errno(error);
@@ -3470,6 +3459,8 @@ wsa_recv_msg_control_in(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
     WSA_CMSG_FIRSTHDR(msg)->cmsg_len = WSA_CMSG_LEN(data_len);
     return 0;
 #else
+    UNUSED(rpc_msg);
+    UNUSED(msg);
     ERROR("Non-zero Control is not supported");
     return TE_RC(TE_TA_WIN32, TE_EINVAL);
 #endif            
@@ -3524,6 +3515,10 @@ wsa_recv_msg_control_out(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
     }
     rpc_msg->msg_control.msg_control_len = i;
 #endif    
+
+    UNUSED(rpc_msg);
+    UNUSED(msg);
+    
     return 0;
 }
 
@@ -4671,3 +4666,10 @@ completion_callback_register(const char *name,
 
     return 0;
 }                             
+
+/** Sleep in waitable state */
+void 
+sleep_waitable(int msec)
+{
+    SleepEx(msec, TRUE);
+} 
