@@ -252,7 +252,11 @@ rcf_pch_rpc_server(const char *name)
     (void)tcp_nodelay_enable(s);
 #endif
 
-    RING("RPC server '%s' (%s-bit) (re-)started (PID %d, TID %u)",
+    RING("RPC server '%s' (%s-bit"
+#if defined(__CYGWIN__) && !defined(WINDOWS)
+         ", cygwin"
+#endif             
+         ") (re-)started (PID %d, TID %u)",
          name, sizeof(void *) == 8 ? "64" : "32",  
          (int)getpid(), thread_self());
 
