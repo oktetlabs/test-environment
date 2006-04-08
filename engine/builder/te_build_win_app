@@ -47,6 +47,7 @@ shift 4
 WIN_DIR=${USER}_build/${APPNAME%%.exe}
 
 if test -z "$TE_WIN32_BUILD_HOST" -o ! -d ${TE_INSTALL}/${PLATFORM} ; then
+    touch ${APPNAME}
     exit 0
 fi    
 

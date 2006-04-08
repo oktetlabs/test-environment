@@ -284,16 +284,17 @@ dnl
 define([TE_SUITE],
 [
 TE_HOST_DEFINED=yes
-if test -n "${TE_BS_SUITE_$1_DEFINED}" ;
-then
+SUITE=$1
+SUITE_NAME=`echo $SUITE | tr .- _`
+DEFINED=`eval echo '$TE_BS_SUITE_'${SUITE_NAME}'_DEFINED'`
+if test "${DEFINED}" ; then
     TE_BS_CONF_ERR="configuration for suite $1 is specified twice" ; 
     break ; 
 fi
-
-TE_BS_SUITE_$1_DEFINED=yes
-TE_BS_SUITE_$1_PARMS="$2"
-TE_BS_SUITE_$1_CPPFLAGS="$3"
-TE_BS_SUITE_$1_CFLAGS="$4"
-TE_BS_SUITE_$1_LDFLAGS="$5"
+eval `echo TE_BS_SUITE_${SUITE_NAME}_DEFINED=yes`
+eval `echo TE_BS_SUITE_${SUITE_NAME}_PARMS=\"$2\"`
+eval `echo TE_BS_SUITE_${SUITE_NAME}_CPPFLAGS=\"$3\"`
+eval `echo TE_BS_SUITE_${SUITE_NAME}_CFLAGS=\"$4\"`
+eval `echo TE_BS_SUITE_${SUITE_NAME}_LDFLAGS=\"$5\"`
 ]
 )
