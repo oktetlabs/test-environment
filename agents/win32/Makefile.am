@@ -51,7 +51,7 @@ if CFG_STANDALONE_RPCSERVER
 
 bin_PROGRAMS=ta@with_name@ ta@with_name@_rpcserver \
              ta@with_name@_rpcserver32 ta@with_name@_rpcserver64
-
+ 
 CLEANFILES+=rpcserver_symtbl.c
 
 ta@with_name@_rpcserver_DEPENDENCIES=\
@@ -64,6 +64,9 @@ ta@with_name@_rpcserver_DEPENDENCIES=\
 
 ta@with_name@_rpcserver_SOURCES=tarpc_server.c rpcserver.c \
                                 common.c rpc_unsupported.c
+
+ta@with_name@_rpcserver32_SOURCES=
+ta@with_name@_rpcserver64_SOURCES=
 
 ta@with_name@_rpcserver_LDADD=rpcserver_symtbl.o $(TE_LDADD) -lrpcxdrta \
                               -lrcfpch -lloggerta -ltools -lrpc \
