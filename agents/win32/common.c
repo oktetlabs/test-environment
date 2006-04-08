@@ -119,7 +119,7 @@ setenv(const char *name, const char *value, int overwrite)
     UNUSED(overwrite);
     return SetEnvironmentVariable(name, value) ? 0 : -1;
 }
-
+ 
 /** Replaces cygwin function */
 void 
 unsetenv(const char *name)

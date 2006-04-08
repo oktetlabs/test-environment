@@ -49,7 +49,8 @@ rpc_supported.h: tarpc_server.o @TE_DEPENDENCIES@
 
 if CFG_STANDALONE_RPCSERVER
 
-bin_PROGRAMS=ta@with_name@ ta@with_name@_rpcserver 
+bin_PROGRAMS=ta@with_name@ ta@with_name@_rpcserver \
+             ta@with_name@_rpcserver32 ta@with_name@_rpcserver64
 
 CLEANFILES+=rpcserver_symtbl.c
 
@@ -74,6 +75,10 @@ rpcserver_symtbl.c: tarpc_server.o \
 
 # Native build
 
+RPCSERVER_NAME=ta@with_name@_rpcserver$(EXEEXT)
+RPCSERVER32_NAME=ta@with_name@_rpcserver32$(EXEEXT)
+RPCSERVER64_NAME=ta@with_name@_rpcserver64$(EXEEXT)
+
 RPCSERVER_LIBS="librcfpch.a libloggerta.a libtools.a librpc.a \
                 ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib user32.lib"
 
@@ -84,28 +89,32 @@ RPCSERVER_SRC= \
     ../../lib/@_host_@_rpcxdr/tarpc_xdr.c \
     @PRIV_LIB_DIR@/talib/rpc.c
 
-install-exec-hook: native
-
-native: $(RPCSERVER_SRC)
+ta@with_name@_rpcserver32$(EXEEXT): $(RPCSERVER_SRC)        
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
         $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
-            i686-pc-windows ta@with_name@_rpcserver.exe \
-            \"$(RPCSERVER_LIBS)\" $^
-	if test -e ta@with_name@_rpcserver.exe ; then \
-            $(INSTALL) ta@with_name@_rpcserver.exe $(DESTDIR)/$(bindir) ; \
-        fi
+        i686-pc-windows $@ \"$(RPCSERVER_LIBS)\" $^
+        
+ta@with_name@_rpcserver64$(EXEEXT): $(RPCSERVER_SRC)        
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
         $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
-            x86_64-pc-windows ta@with_name@_rpcserver64.exe \
-            \"$(RPCSERVER_LIBS)\" $^
-	if test -e ta@with_name@_rpcserver64.exe ; then \
-            $(INSTALL) ta@with_name@_rpcserver64.exe $(DESTDIR)/$(bindir) ; \
-        fi
+        x86_64-pc-windows $@ \"$(RPCSERVER_LIBS)\" $^
 
-uninstall-hook:
-	rm -f $(DESTDIR)/$(bindir)/ta@with_name@ \
-	      $(DESTDIR)/$(bindir)/ta@with_name@.exe \
-	      $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver*
+install-exec-hook:
+	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
+	if test -e $(RPCSERVER32_NAME) -a ! -s $(RPCSERVER32_NAME) \
+                -a -n "$$TE_WIN32_BUILD_HOST" ; then \
+            rm ta@with_name@_rpcserver* ; $(MAKE) install ; \
+        fi
+	if test ! -s $(DESTDIR)/$(bindir)/$(RPCSERVER32_NAME) ; then \
+            rm -f $(DESTDIR)/$(bindir)/$(RPCSERVER32_NAME) ; \
+        fi
+	if test ! -s $(DESTDIR)/$(bindir)/$(RPCSERVER64_NAME) ; then \
+            rm -f $(DESTDIR)/$(bindir)/$(RPCSERVER64_NAME) ; \
+        fi
+	if test -s $(DESTDIR)/$(bindir)/$(RPCSERVER32_NAME) ; then \
+            mv $(DESTDIR)/$(bindir)/$(RPCSERVER32_NAME) \
+               $(DESTDIR)/$(bindir)/$(RPCSERVER_NAME) ; \
+        fi
 
 clean-local:
 	rm -f *.exe *.tgz
@@ -121,6 +130,9 @@ bin_PROGRAMS=ta@with_name@
 
 EXTRA_DIST+=rpcserver.c
 
+install-exec-hook:
+	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
+
 endif
 
 else
@@ -134,6 +146,9 @@ LDADD=symtbl.o \
 -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin -lexpat 
 
 EXTRA_DIST+=tarpc_server.c rpcserver.c
+
+install-exec-hook:
+	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
         
 endif
 
@@ -142,3 +157,5 @@ endif
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) $(TE_DEPENDENCIES)
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
+uninstall-hook:
+	rm -f $(DESTDIR)/$(bindir)/ta@with_name@ 

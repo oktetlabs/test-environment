@@ -344,6 +344,7 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     
     const char *postfix[] = { 
         "_rpcserver64 %s",
+        "_rpcserver32 %s",  
         "_rpcserver %s",  
         " rpcserver %s"
     };
