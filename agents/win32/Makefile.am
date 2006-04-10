@@ -32,8 +32,11 @@ LDADD=symtbl.o \
 -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin -lexpat
 
 AM_CPPFLAGS+=-DRCF_RPC -I.
-ta@with_name@_SOURCES+=tarpc_server.c rpc_unsupported.c
+ta@with_name@_SOURCES+=tarpc_server.c 
+nodist_ta@with_name@_SOURCES=rpc_unsupported.c rpc_supported.h
+
 BUILT_SOURCES=rpc_unsupported.c rpc_supported.h
+
 SYMTBL_OBJECTS+=tarpc_server.o
 
 CLEANFILES+=rpc_unsupported.c rpc_supported.h
@@ -62,9 +65,9 @@ ta@with_name@_rpcserver_DEPENDENCIES=\
     $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdrta.a 
 
-ta@with_name@_rpcserver_SOURCES=tarpc_server.c rpcserver.c \
-                                common.c rpc_unsupported.c
+ta@with_name@_rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c 
 
+nodist_ta@with_name@_rpcserver_SOURCES=rpc_unsupported.c rpc_supported.h
 ta@with_name@_rpcserver32_SOURCES=
 ta@with_name@_rpcserver64_SOURCES=
 
