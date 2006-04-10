@@ -41,7 +41,7 @@
                 <req id="TAD_IP4"/>
             </script>
             <arg name="env">
-                <value>{'host_csap'{{'dummy_pco':IUT},addr:'csap_addr':inet:fake,if:'csap_if'},
+                <value>{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},
                 {{'pco':tester},addr:'pco_addr':inet:unicast,if:'pco_if'}}
                 </value>
             </arg>
@@ -52,7 +52,7 @@
                 <req id="TAD_IP4"/>
             </script>
             <arg name="env">
-                <value>{'host_csap'{{'dummy_pco':IUT},addr:'csap_addr':inet:fake,if:'csap_if'},
+                <value>{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},
                 {{'pco':tester},addr:'pco_addr':inet:unicast,if:'pco_if'}}
                 </value>
             </arg>
@@ -71,7 +71,7 @@
                 <value>TRUE</value>
             </arg>
             <arg name="env">
-                <value>{'host_csap'{{'dummy_pco':IUT},addr:'csap_addr':inet:fake,if:'csap_if'},
+                <value>{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},
                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}
                 </value>
             </arg>
@@ -82,7 +82,7 @@
                 <req id="TAD_TCP"/>
             </script>
             <arg name="env">
-                <value>{'host_csap'{{'dummy_pco':IUT},addr:'csap_addr':inet:fake,if:'csap_if'},
+                <value>{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},
                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}
                 </value>
             </arg>
@@ -93,7 +93,7 @@
                 <req id="TAD_TCP"/>
             </script>
             <arg name="env">
-                <value>{'host_csap'{{'dummy_pco':IUT},addr:'csap_addr':inet:unicast,if:'csap_if'},
+                <value>{'host_csap'{addr:'csap_addr':inet:unicast,if:'csap_if'},
                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}
                 </value>
             </arg>
