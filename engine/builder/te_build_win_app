@@ -93,6 +93,9 @@ cl -I../${PLATFORM}/include -DWINDOWS -D_CRT_SECURE_NO_DEPRECATE \
    -D_WIN32_WINNT=0x0501 /w /Od /Zi *.c \
    /link /OUT:${APPNAME} /MAP /LIBPATH:../${PLATFORM}/lib \
    ${LIBS} ${ADD_LIB} 
+cd ../../
+rm app.tgz   
+tar czf app.tgz *   
 EOF
 chmod a+x build.sh
 
@@ -109,6 +112,9 @@ ssh $KEY ${TE_WIN32_BUILD_HOST} \
 scp $KEY ${TE_WIN32_BUILD_HOST}:${WIN_DIR}/tmpsrc/${APPNAME} .
 
 if test -e ${APPNAME} ; then
+    if test -n "${TE_WIN_BUILD_COPY}" ; then
+        scp $KEY ${TE_WIN32_BUILD_HOST}:${USER}_build/app.tgz .
+    fi
     exit 0
 fi
 
