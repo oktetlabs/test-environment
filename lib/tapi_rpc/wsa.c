@@ -799,7 +799,7 @@ rpc_create_io_completion_port(rcf_rpc_server *rpcs,
 te_bool
 rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
                                  int completion_port,
-                                 unsigned int *number_of_bytes,
+                                 size_t *number_of_bytes,
                                  uint64_t *completion_key,
                                  rpc_overlapped *overlapped,
                                  unsigned int milliseconds)
@@ -1207,7 +1207,7 @@ rpc_delete_overlapped(rcf_rpc_server *rpcs,
 
 int
 rpc_completion_callback(rcf_rpc_server *rpcs,
-                        int *called, int *error, int *bytes,
+                        int *called, int *error, ssize_t *bytes,
                         rpc_overlapped *overlapped)
 {
     tarpc_completion_callback_in  in;
@@ -1245,7 +1245,7 @@ rpc_completion_callback(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(completion_callback, rc);
 
     TAPI_RPC_LOG("RPC (%s,%s): completion_callback() -> %s "
-                 "called %d times;  error %d; bytes %d; overlapped %u",
+                 "called %d times;  error %d; bytes %ld; overlapped %u",
                  rpcs->ta, rpcs->name, errno_rpc2str(RPC_ERRNO(rpcs)),
                  out.called, out.error, out.bytes, out.overlapped);
 
@@ -1466,7 +1466,7 @@ int
 rpc_wsa_send(rcf_rpc_server *rpcs,
              int s, const struct rpc_iovec *iov,
              size_t iovcnt, rpc_send_recv_flags flags,
-             int *bytes_sent, rpc_overlapped overlapped,
+             ssize_t *bytes_sent, rpc_overlapped overlapped,
              const char *callback)
 {
     rcf_rpc_op         op;
@@ -1559,7 +1559,7 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
              int s, const struct rpc_iovec *iov,
              size_t iovcnt, size_t riovcnt,
              rpc_send_recv_flags *flags,
-             int *bytes_received, rpc_overlapped overlapped,
+             ssize_t *bytes_received, rpc_overlapped overlapped,
              const char *callback)
 {
     rcf_rpc_op         op;
@@ -1678,7 +1678,8 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
 
 int
 rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
-                size_t iovcnt, rpc_send_recv_flags flags, int *bytes_sent,
+                size_t iovcnt, rpc_send_recv_flags flags, 
+                ssize_t *bytes_sent,
                 const struct sockaddr *to, socklen_t tolen,
                 rpc_overlapped overlapped, const char *callback)
 {
@@ -1792,7 +1793,7 @@ int
 rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
                   const struct rpc_iovec *iov, size_t iovcnt,
                   size_t riovcnt, rpc_send_recv_flags *flags,
-                  int *bytes_received, struct sockaddr *from,
+                  ssize_t *bytes_received, struct sockaddr *from,
                   socklen_t *fromlen, rpc_overlapped overlapped,
                   const char *callback)
 {
@@ -2083,7 +2084,7 @@ rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
 
 int
 rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
-                 struct rpc_msghdr *msg, int *bytes_received,
+                 struct rpc_msghdr *msg, ssize_t *bytes_received,
                  rpc_overlapped overlapped, const char *callback)
 {
     char                   str_buf[1024] = {'\0', };
@@ -2303,9 +2304,10 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
     }
 
     snprintf(str_buf + strlen(str_buf), sizeof(str_buf) - strlen(str_buf),
-             "), %d, %u, %p", *bytes_received, overlapped, callback);
+             "), %"TE_PRINTF_SIZE_T"d, %u, %p", 
+             *bytes_received, overlapped, callback);
     snprintf(str_buf + strlen(str_buf), sizeof(str_buf) - strlen(str_buf),
-             ") -> %d (%s)",
+             ") -> %ld (%s)",
              out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     TAPI_RPC_LOG("%s", str_buf);
@@ -2316,7 +2318,7 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 te_bool
 rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
                               int s, rpc_overlapped overlapped,
-                              int *bytes, te_bool wait,
+                              ssize_t *bytes, te_bool wait,
                               rpc_send_recv_flags *flags,
                               char *buf, int buflen)
 {
@@ -3073,7 +3075,7 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
 int
 rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
               char *inbuf, unsigned int inbuf_len, char *outbuf,
-              unsigned int outbuf_len, unsigned int *bytes_returned,
+              unsigned int outbuf_len, size_t *bytes_returned,
               rpc_overlapped overlapped, const char *callback)
 {
     rcf_rpc_op           op;
