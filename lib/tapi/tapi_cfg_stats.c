@@ -44,6 +44,29 @@
 #include "tapi_cfg_stats.h"
 
 
+#ifdef U64_FMT
+#undef U64_FMT
+#endif
+
+#ifdef _U64_FMT
+#undef _U64_FMT
+#endif
+
+#ifdef I64_FMT
+#undef I64_FMT
+#endif
+
+#ifdef _I64_FMT
+#undef _I64_FMT
+#endif
+
+#define U64_FMT "%" TE_PRINTF_64 "u"
+#define I64_FMT "%" TE_PRINTF_64 "u"
+
+#define _U64_FMT " " U64_FMT
+#define _I64_FMT " " I64_FMT
+
+
 /* See description in tapi_cfg_stats.h */
 te_errno 
 tapi_cfg_stats_if_stats_get(const char          *ta,
@@ -249,18 +272,19 @@ tapi_cfg_stats_if_stats_print(const char          *ta,
     }
 
     snprintf(buf, TAPI_CFG_IF_STATS_MAX_LINE_LEN,
-             "Network statistics for interface %s on Test Agent %s:\n"
-             "  in_octets : %llu\n"
-             "  in_ucast_pkts : %llu\n"
-             "  in_nucast_pkts : %llu\n"
-             "  in_discards : %llu\n"
-             "  in_errors : %llu\n"
-             "  in_unknown_protos : %llu\n"
-             "  out_octets : %llu\n"
-             "  out_ucast_pkts : %llu\n"
-             "  out_nucast_pkts : %llu\n"
-             "  out_discards : %llu\n"
-             "  out_errors : %llu\n",
+             "Network statistics for interface %s on Test Agent %s:"
+             "\n  in_octets : " U64_FMT
+             "\n  in_ucast_pkts : " U64_FMT
+             "\n  in_nucast_pkts : " U64_FMT
+             "\n  in_discards : " U64_FMT
+             "\n  in_errors : " U64_FMT
+             "\n  in_unknown_protos : " U64_FMT
+             "\n  out_octets : " U64_FMT
+             "\n  out_ucast_pkts : " U64_FMT
+             "\n  out_nucast_pkts : " U64_FMT
+             "\n  out_discards : " U64_FMT
+             "\n  out_errors : " U64_FMT
+             "\n",
              ifname, ta,
              stats->in_octets,
              stats->in_ucast_pkts,
@@ -298,52 +322,53 @@ tapi_cfg_stats_net_stats_print(const char          *ta,
     }
 
     snprintf(buf, TAPI_CFG_NET_STATS_MAX_LINE_LEN,
-             "Network statistics for Test Agent %s:\n"
-             "IPv4:\n"
-             "  in_recvs : %llu\n"
-             "  in_hdr_errs : %llu\n"
-             "  in_addr_errs : %llu\n"
-             "  forw_dgrams : %llu\n"
-             "  in_unknown_protos : %llu\n"
-             "  in_discards : %llu\n"
-             "  in_delivers : %llu\n"
-             "  out_requests : %llu\n"
-             "  out_discards : %llu\n"
-             "  out_no_routes : %llu\n"
-             "  reasm_timeout : %llu\n"
-             "  reasm_reqds : %llu\n"
-             "  reasm_oks : %llu\n"
-             "  reasm_fails : %llu\n"
-             "  frag_oks : %llu\n"
-             "  frag_fails : %llu\n"
-             "  frag_creates : %llu\n"
-             "ICMP:\n"
-             "  in_msgs : %llu\n"
-             "  in_errs : %llu\n"
-             "  in_dest_unreachs : %llu\n"
-             "  in_time_excds : %llu\n"
-             "  in_parm_probs : %llu\n"
-             "  in_src_quenchs : %llu\n"
-             "  in_redirects : %llu\n"
-             "  in_echos : %llu\n"
-             "  in_echo_reps : %llu\n"
-             "  in_timestamps : %llu\n"
-             "  in_timestamp_reps : %llu\n"
-             "  in_addr_masks : %llu\n"
-             "  in_addr_mask_reps : %llu\n"
-             "  out_msgs : %llu\n"
-             "  out_errs : %llu\n"
-             "  out_dest_unreachs : %llu\n"
-             "  out_time_excds : %llu\n"
-             "  out_parm_probs : %llu\n"
-             "  out_src_quenchs : %llu\n"
-             "  out_redirects : %llu\n"
-             "  out_echos : %llu\n"
-             "  out_echo_reps : %llu\n"
-             "  out_timestamps : %llu\n"
-             "  out_timestamp_reps : %llu\n"
-             "  out_addr_masks : %llu\n"
-             "  out_addr_mask_reps : %llu\n",
+             "Network statistics for Test Agent %s:"
+             "\nIPv4:"
+             "\n  in_recvs : " U64_FMT
+             "\n  in_hdr_errs : " U64_FMT
+             "\n  in_addr_errs : " U64_FMT
+             "\n  forw_dgrams : " U64_FMT
+             "\n  in_unknown_protos : " U64_FMT
+             "\n  in_discards : " U64_FMT
+             "\n  in_delivers : " U64_FMT
+             "\n  out_requests : " U64_FMT
+             "\n  out_discards : " U64_FMT
+             "\n  out_no_routes : " U64_FMT
+             "\n  reasm_timeout : " U64_FMT
+             "\n  reasm_reqds : " U64_FMT
+             "\n  reasm_oks : " U64_FMT
+             "\n  reasm_fails : " U64_FMT
+             "\n  frag_oks : " U64_FMT
+             "\n  frag_fails : " U64_FMT
+             "\n  frag_creates : " U64_FMT
+             "\nICMP:"
+             "\n  in_msgs : " U64_FMT
+             "\n  in_errs : " U64_FMT
+             "\n  in_dest_unreachs : " U64_FMT
+             "\n  in_time_excds : " U64_FMT
+             "\n  in_parm_probs : " U64_FMT
+             "\n  in_src_quenchs : " U64_FMT
+             "\n  in_redirects : " U64_FMT
+             "\n  in_echos : " U64_FMT
+             "\n  in_echo_reps : " U64_FMT
+             "\n  in_timestamps : " U64_FMT
+             "\n  in_timestamp_reps : " U64_FMT
+             "\n  in_addr_masks : " U64_FMT
+             "\n  in_addr_mask_reps : " U64_FMT
+             "\n  out_msgs : " U64_FMT
+             "\n  out_errs : " U64_FMT
+             "\n  out_dest_unreachs : " U64_FMT
+             "\n  out_time_excds : " U64_FMT
+             "\n  out_parm_probs : " U64_FMT
+             "\n  out_src_quenchs : " U64_FMT
+             "\n  out_redirects : " U64_FMT
+             "\n  out_echos : " U64_FMT
+             "\n  out_echo_reps : " U64_FMT
+             "\n  out_timestamps : " U64_FMT
+             "\n  out_timestamp_reps : " U64_FMT
+             "\n  out_addr_masks : " U64_FMT
+             "\n  out_addr_mask_reps : " U64_FMT
+             "\n",
              ta,
              stats->ipv4.in_recvs,
              stats->ipv4.in_hdr_errs,
