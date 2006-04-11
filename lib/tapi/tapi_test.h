@@ -175,6 +175,14 @@ extern "C" {
     LOG_RING(TE_LOG_CMSG_USER, fmt)
 
 /**
+ * Macro should be used to output verdict with WARN log level from tests.
+ *
+ * @param fmt  the content of the verdict as format string with arguments
+ */
+#define WARN_VERDICT(fmt...) \
+    LOG_WARN(TE_LOG_CMSG_USER, fmt)
+
+/**
  * Macro should be used to output verdict with ERROR log level from tests.
  *
  * @param fmt  the content of the verdict as format string with arguments
