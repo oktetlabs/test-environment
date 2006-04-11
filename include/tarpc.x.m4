@@ -1084,7 +1084,7 @@ struct tarpc_get_queued_completion_status_in {
 
 struct tarpc_get_queued_completion_status_out {
     struct tarpc_out_arg  common;
-    tarpc_uint            number_of_bytes;
+    tarpc_size_t          number_of_bytes;
     uint64_t              completion_key;
     tarpc_overlapped      overlapped;
     tarpc_bool            retval;
@@ -1463,7 +1463,7 @@ struct tarpc_wsa_ioctl_in {
     tarpc_size_t        outbuf_len;
     tarpc_overlapped    overlapped;
     string              callback<>;
-    tarpc_uint          bytes_returned<>;
+    tarpc_size_t        bytes_returned<>;
 };
 
 struct tarpc_wsa_ioctl_out {
@@ -1668,7 +1668,7 @@ struct tarpc_completion_callback_out {
     struct tarpc_out_arg common;
     tarpc_int            called;        /**< 1 if callback was called    */
     tarpc_int            error;         /**< Error code (as is for now)  */
-    tarpc_int            bytes;         /**< Number of bytes transferred */
+    tarpc_ssize_t        bytes;         /**< Number of bytes transferred */
     tarpc_overlapped     overlapped;    /**< Overlapped passed to callback */
 };
 
@@ -1873,7 +1873,7 @@ struct tarpc_mreqn {
     uint32_t            multiaddr;
     uint32_t            address;
     tarpc_int           ifindex;
-    tarpc_int           len_diff;
+    tarpc_ssize_t       len_diff;
 };
 
 struct option_value_tcp_info {
@@ -1938,7 +1938,7 @@ struct tarpc_setsockopt_in {
     tarpc_int       optname;
     option_value    optval<>;
     tarpc_socklen_t optlen;
-    tarpc_int       len_diff;
+    tarpc_ssize_t   len_diff;
 };
 
 typedef struct tarpc_int_retval_out tarpc_setsockopt_out;
@@ -2925,7 +2925,7 @@ struct tarpc_wsa_send_in {
     tarpc_int           s;              /**< Socket */
     struct tarpc_iovec  vector<>;       /**< Buffers */
     tarpc_size_t        count;          /**< Number of buffers */
-    tarpc_int           bytes_sent<>;   /**< Location for sent bytes num */
+    tarpc_ssize_t       bytes_sent<>;   /**< Location for sent bytes num */
     tarpc_int           flags;          /**< Flags */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
     string              callback<>;     /**< Callback name */
@@ -2944,7 +2944,7 @@ struct tarpc_wsa_recv_in {
     tarpc_int           s;              /**< Socket */
     struct tarpc_iovec  vector<>;       /**< Buffers */
     tarpc_size_t        count;          /**< Number of buffers */
-    tarpc_int           bytes_received<>;   
+    tarpc_ssize_t       bytes_received<>;   
                                         /**< Location for received bytes num */
     tarpc_int           flags<>;        /**< Flags */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
@@ -2967,7 +2967,7 @@ struct tarpc_wsa_get_overlapped_result_in {
     tarpc_int           s;              /**< Socket    */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure */
     tarpc_int           wait;           /**< Wait flag */
-    tarpc_int           bytes<>;        /**< Transferred bytes location */
+    tarpc_size_t        bytes<>;        /**< Transferred bytes location */
     tarpc_int           flags<>;        /**< Flags location */
     tarpc_bool          get_data;       /**< Whether the data should be 
                                          *   returned in out.vector */
@@ -3015,7 +3015,7 @@ struct tarpc_wsa_send_to_in {
     tarpc_int           s;              /**< TA-local socket */
     struct tarpc_iovec  vector<>;       /**< Buffers */
     tarpc_size_t        count;          /**< Number of buffers */
-    tarpc_int           bytes_sent<>;   /**< Location for sent bytes num */
+    tarpc_ssize_t       bytes_sent<>;   /**< Location for sent bytes num */
     tarpc_int           flags;          /**< Flags */
     struct tarpc_sa     to;             /**< Target address */
     tarpc_socklen_t     tolen;          /**< Target address lenght */
@@ -3035,7 +3035,7 @@ struct tarpc_wsa_recv_from_in {
     tarpc_int           s;              /**< TA-local socket */
     struct tarpc_iovec  vector<>;       /**< Buffers */
     tarpc_size_t        count;          /**< Number of buffers */
-    tarpc_int           bytes_received<>;   
+    tarpc_ssize_t       bytes_received<>;   
                                         /**< Location for received bytes num */
     tarpc_int           flags<>;        /**< Flags */
     struct tarpc_sa     from;           /**< Address to be passed as location
@@ -3087,7 +3087,7 @@ struct tarpc_wsa_recv_msg_in {
 
     tarpc_int           s;
     struct tarpc_msghdr msg<>;
-    tarpc_int           bytes_received<>;   
+    tarpc_ssize_t       bytes_received<>;   
                                         /**< Location for received bytes num */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
     string              callback<>;     /**< Callback name */
