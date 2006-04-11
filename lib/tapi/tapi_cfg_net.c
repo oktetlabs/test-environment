@@ -1277,3 +1277,82 @@ tapi_cfg_net_delete_all(void)
 
     return rc;
 }
+
+/**
+ * Remove networks with empty interface names from the CS database.
+ *
+ * @return Status code.
+ */
+te_errno 
+tapi_cfg_net_remove_empty(void)
+{
+    unsigned int n_nets, n_nodes, i, j;
+    cfg_handle  *net_handles = NULL;
+    cfg_handle  *node_handles = NULL;
+    char        *net_name = NULL;
+    char        *node_value = NULL;
+    te_errno     rc = 0;
+
+    if ((rc = cfg_find_pattern("/net:*", &n_nets, &net_handles)) != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+            return 0;
+
+        return rc;
+    }
+    
+    for (i = 0; i < n_nets && rc == 0; i++)
+    {
+        char *tmp;
+        
+        if ((rc = cfg_get_inst_name(net_handles[i], &net_name)) != 0)
+        {
+            ERROR("Failed to get /net name by its handle");
+            break;
+        }
+            
+        if ((rc = cfg_find_pattern_fmt(&n_nodes, &node_handles, 
+                                       "/net:%s/node:*", net_name)) != 0)
+        {                                   
+            ERROR("Failed to get nodes of the net %s", net_name);
+            break;
+        }
+        
+        for (j = 0; j < n_nodes; j++)
+        {
+            if ((rc = cfg_get_instance(node_handles[j], NULL, 
+                                       &node_value)) != 0)
+            {
+                ERROR("Failed to get /net/node value");
+                break;
+            }
+        
+            if ((tmp = strrchr(node_value, ':')) == NULL)
+            {
+                ERROR("Unexpected /net/node value: %s", node_value);
+                rc = TE_RC(TE_TAPI, TE_EINVAL);
+                break;
+            }
+        
+            if (*(tmp + 1) == 0)
+            {
+                if ((rc = cfg_del_instance(net_handles[i], TRUE)) != 0)
+                    ERROR("Failed to delete /net:%s", net_name);
+
+                break;
+            }
+            free(node_value); node_value = NULL;
+        }
+        
+        free(net_name); net_name = NULL;
+        free(node_handles); node_handles = NULL;
+        free(node_value); node_value = NULL;
+    }
+    
+    free(net_handles);
+    free(node_handles);
+    free(net_name);
+    free(node_value);
+    
+    return rc;
+}

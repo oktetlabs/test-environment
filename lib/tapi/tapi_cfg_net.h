@@ -172,6 +172,13 @@ extern void tapi_cfg_net_free_nodes_values(char **oids);
 extern int tapi_cfg_net_get_switch_port(const char *ta_node,
                                         unsigned int *p_port);
 
+/**
+ * Remove networks with empty interface names from the CS database.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_remove_empty(void);
+
 
 /**
  * Reserve resources for all interfaces mentioned in networks
