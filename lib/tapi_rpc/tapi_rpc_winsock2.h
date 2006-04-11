@@ -469,7 +469,7 @@ extern int rpc_create_io_completion_port(rcf_rpc_server *rpcs,
  */
 extern te_bool rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
                                  int completion_port,
-                                 size_t *number_of_bytes,
+                                 unsigned int *number_of_bytes,
                                  uint64_t *completion_key,
                                  rpc_overlapped *overlapped,
                                  unsigned int milliseconds);
@@ -709,7 +709,7 @@ extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
                          rpc_ioctl_code control_code,
                          char *inbuf, unsigned int inbuf_len,
                          char *outbuf, unsigned int outbuf_len,
-                         size_t *bytes_returned,
+                         unsigned int *bytes_returned,
                          rpc_overlapped overlapped, 
                          const char *callback);
 
@@ -927,7 +927,7 @@ extern void rpc_delete_overlapped(rcf_rpc_server *rpcs,
 extern int rpc_wsa_send(rcf_rpc_server *rpcs,
                        int s, const struct rpc_iovec *iov,
                        size_t iovcnt, rpc_send_recv_flags flags,
-                       ssize_t *bytes_sent, rpc_overlapped overlapped,
+                       int *bytes_sent, rpc_overlapped overlapped,
                        const char *callback);
 
 /**
@@ -951,7 +951,7 @@ extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
                         int s, const struct rpc_iovec *iov,
                         size_t iovcnt, size_t riovcnt,
                         rpc_send_recv_flags *flags,
-                        ssize_t *bytes_received, rpc_overlapped overlapped,
+                        int *bytes_received, rpc_overlapped overlapped,
                         const char *callback);
 
 /**
@@ -975,7 +975,7 @@ extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
 extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
                            const struct rpc_iovec *iov,
                            size_t iovcnt, rpc_send_recv_flags flags,
-                           ssize_t *bytes_sent, const struct sockaddr *to,
+                           int *bytes_sent, const struct sockaddr *to,
                            socklen_t tolen, rpc_overlapped overlapped,
                            const char *callback);
 
@@ -1002,9 +1002,8 @@ extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
 extern int rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
                              const struct rpc_iovec *iov, size_t iovcnt,
                              size_t riovcnt, rpc_send_recv_flags *flags,
-                             ssize_t *bytes_received,
-                             struct sockaddr *from, socklen_t *fromlen,
-                             rpc_overlapped overlapped,
+                             int *bytes_received, struct sockaddr *from,
+                             socklen_t *fromlen, rpc_overlapped overlapped,
                              const char *callback);
 
 /**
@@ -1048,8 +1047,7 @@ extern int rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
  * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
-                            struct rpc_msghdr *msg,
-                            ssize_t *bytes_received,
+                            struct rpc_msghdr *msg, int *bytes_received,
                             rpc_overlapped overlapped, 
                             const char *callback);
 
@@ -1074,7 +1072,7 @@ extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 extern te_bool rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
                                              int s, 
                                              rpc_overlapped overlapped,
-                                             ssize_t *bytes, te_bool wait,
+                                             int *bytes, te_bool wait,
                                              rpc_send_recv_flags *flags,
                                              char *buf, int buflen);
 /**
@@ -1092,7 +1090,7 @@ extern te_bool rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
  * @return 0 (success) or -1 (failure)
  */
 extern int rpc_completion_callback(rcf_rpc_server *rpcs,
-                                   int *called, int *error, ssize_t *bytes,
+                                   int *called, int *error, int *bytes,
                                    rpc_overlapped *overlapped);
 
 /**
@@ -1105,9 +1103,8 @@ rpc_cleanup_completion_callback(rcf_rpc_server *rpcs)
 {
     rpc_overlapped ovl;
     int            tmp;
-    ssize_t        stmp;
     
-    rpc_completion_callback(rpcs, &tmp, &tmp, &stmp, &ovl);
+    rpc_completion_callback(rpcs, &tmp, &tmp, &tmp, &ovl);
 }
 
 /**

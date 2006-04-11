@@ -139,8 +139,8 @@ extern int rpc_write(rcf_rpc_server *rpcs,
  *
  * @return  Number of bytes actually written, otherwise -1 on failure
  */
-extern tarpc_ssize_t rpc_writebuf(rcf_rpc_server *rpcs,
-                                  int fd, rpc_ptr buf, size_t count);
+extern int rpc_writebuf(rcf_rpc_server *rpcs,
+                        int fd, rpc_ptr buf, size_t count);
 
 
 /**

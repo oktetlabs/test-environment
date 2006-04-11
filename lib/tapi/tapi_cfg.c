@@ -1304,7 +1304,7 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
 int
 tapi_cfg_get_hwaddr(const char *ta,
                     const char *ifname,
-                    void *hwaddr, size_t *hwaddr_len)
+                    void *hwaddr, unsigned int *hwaddr_len)
 {
     char     buf[1024];
     int      rc;

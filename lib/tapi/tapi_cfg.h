@@ -428,7 +428,7 @@ extern te_errno tapi_cfg_del_neigh_dynamic(const char *ta,
  */
 extern int tapi_cfg_get_hwaddr(const char *ta,
                                const char *ifname,
-                               void *hwaddr, size_t *hwaddr_len);
+                               void *hwaddr, unsigned int *hwaddr_len);
 
 
 /**
