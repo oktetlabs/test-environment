@@ -3241,6 +3241,185 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_xvfb, "Xvfb",
                             NULL, NULL, 
                             ds_xvfb_add, ds_xvfb_del, ds_xvfb_list, NULL);
 
+/*---------------------- OpenLDAP daemon slapd --------------------------*/
+
+/**
+ * Check if slapd with specified port is running.
+ *
+ * @param port  port in string representation
+ *
+ * @return pid of the daemon or 0
+ */
+static uint32_t
+slapd_exists(char *port)
+{
+    FILE *f = popen("ps ax | grep 'slapd ' | grep -v grep", "r");
+    char  line[128];
+    int   len = strlen(port);
+
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp = strstr(line, "slapd");
+
+        tmp = strstr(tmp, ":");
+        if (tmp == NULL)
+            continue;
+        tmp++;
+
+        if (strncmp(tmp, port, len) == 0 && !isdigit(*(tmp + len)))
+        {
+            pclose(f);
+            return atoi(line);
+        }
+    }
+
+    pclose(f);
+
+    return 0;
+}
+
+/**
+ * Add a new slapd with specified port.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         unused
+ * @param port          slapd port
+ *
+ * @return error code
+ *
+ * @todo TODO fix slapd.conf and sample.ldif location. Edit slapd.conf to 
+ * fix database directory location.
+ */
+static te_errno
+ds_slapd_add(unsigned int gid, const char *oid, const char *value,
+            const char *port)
+{
+    uint32_t pid = slapd_exists((char *)port);
+    uint32_t p;
+    char    *tmp;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+    p = strtol(port, &tmp, 10);
+    if (tmp == port || *tmp != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    if (pid != 0)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+    sprintf(buf, "rm -rf /tmp/ldap; mkdir /tmp/ldap");
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    sprintf(buf, "/usr/sbin/slapadd -f /tmp/slapd.conf "
+            "-l /tmp/sample.ldif");
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    sprintf(buf, 
+            "/usr/sbin/slapd -4 -f /tmp/slapd.conf -h ldap://0.0.0.0:%s/", 
+            port);
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    return 0;
+}
+
+/**
+ * Stop slapd with specified port.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param port          slapd port
+ *
+ * @return error code
+ */
+static te_errno
+ds_slapd_del(unsigned int gid, const char *oid, const char *port)
+{
+    uint32_t pid = slapd_exists((char *)port);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (pid == 0)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (kill(pid, SIGTERM) != 0)
+    {
+        int kill_errno = errno;
+        ERROR("Failed to send SIGTERM to slapd daemon with PID=%u: %d",
+              pid, kill_errno);
+        /* Just to make sure */
+        kill(pid, SIGKILL);
+    }
+
+    sprintf(buf, "rm -rf /tmp/ldap");
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    MSLEEP(100);
+
+    return 0;
+}
+
+/**
+ * Return list of slapd daemons.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param list          location for the list pointer
+ *
+ * @return error code
+ */
+static te_errno
+ds_slapd_list(unsigned int gid, const char *oid, char **list)
+{
+    FILE *f = popen("ps ax | grep 'slapd ' | grep -v grep", "r");
+    char  line[128];
+    char *s = buf;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp = strstr(line, "slapd");
+        
+        tmp = strstr(tmp, ":") + 2;
+        s += sprintf(s, "%u ", atoi(tmp));
+    }
+    
+    pclose(f);
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    
+    return 0;
+}
+
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_slapd, "slapd",
+                            NULL, NULL, 
+                            ds_slapd_add, ds_slapd_del, ds_slapd_list, 
+                            NULL);
+
+
+
 /** Information about all dynamically grabbed daemons/services */
 static struct {
     const char *name;
@@ -3325,7 +3504,8 @@ ta_unix_conf_daemons_init()
     /* Static services */
 
     if ((rc = rcf_pch_add_node("/agent", &node_ds_sshd)) != 0 ||
-        (rc = rcf_pch_add_node("/agent", &node_ds_xvfb)) != 0)
+        (rc = rcf_pch_add_node("/agent", &node_ds_xvfb)) != 0 ||
+        (rc = rcf_pch_add_node("/agent", &node_ds_slapd)) != 0)
     {
         return rc;
     }
