@@ -56,7 +56,8 @@ TE_TA_TYPE([linux], [i386-linux], [unix],
 # Solaris2 platform
 #
 TE_PLATFORM([i386-pc-solaris2.11], [], 
-            [-I${SOLARIS2_HOME}/sys-include], [], [-L${SOLARIS2_HOME}/lib],
+            [-I${SOLARIS2_HOME}/sys-include], [-mt],
+            [-L${SOLARIS2_HOME}/lib],
             [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
 TE_TA_TYPE([solaris2], [i386-pc-solaris2.11], [unix],
@@ -64,7 +65,7 @@ TE_TA_TYPE([solaris2], [i386-pc-solaris2.11], [unix],
 
 
 TE_PLATFORM([x86_64-pc-solaris2.11], [],
-            [-I${SOLARIS2_HOME}/sys-include], [-m64],
+            [-I${SOLARIS2_HOME}/sys-include], [-m64 -mt],
             [-L${SOLARIS2_HOME}/lib \
              -Wl,-rpath-link,${SOLARIS2_HOME}/lib/amd64],
             [tools rpc_types conf_oid rpcxdr \
