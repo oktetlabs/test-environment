@@ -97,7 +97,7 @@ wait_status_flag_rpc2str(rpc_wait_status_flag flag)
 static inline rpc_wait_status
 wait_status_h2rpc(int st)
 {
-    rpc_wait_status ret;
+    rpc_wait_status ret = {RPC_WAIT_STATUS_UNKNOWN, 0};
 
     if (WIFEXITED(st))
     {
