@@ -951,6 +951,15 @@ log_msg(cfg_msg *msg, te_bool before)
             break;
         }
 
+        case CFG_UNREGISTER:
+        {
+            cfg_unregister_msg *m = (cfg_unregister_msg *)msg;
+
+            LOG_MSG(level,
+                    "Msg: request to unregister object: %s", m->id);
+            break;
+        }
+
         case CFG_ADD_DEPENDENCY:
         {
             cfg_add_dependency_msg *ad = (cfg_add_dependency_msg *)msg;
@@ -1323,6 +1332,10 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             cfg_process_msg_register((cfg_register_msg *)*msg);
             if ((*msg)->rc != 0 && update_dh)
                 cfg_dh_delete_last_command();
+            break;
+
+        case CFG_UNREGISTER:
+            cfg_process_msg_unregister((cfg_unregister_msg *)*msg);
             break;
 
         case CFG_ADD_DEPENDENCY:

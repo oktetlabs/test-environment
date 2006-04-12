@@ -56,6 +56,7 @@ cs_server_name()
 enum {
     CFG_REGISTER,  /**< Register object: IN: OID, description;
                         OUT: handle */
+    CFG_UNREGISTER,  /**< Unregister object: IN: OID. */    
     CFG_FIND,      /**< Find handle by OID: IN: OID; OUT: handle */
     CFG_GET_DESCR, /**< Get description by handle:
                         IN: handle; OUT: description */
@@ -109,6 +110,12 @@ typedef struct cfg_register_msg {
                                  object identifier */
     char          oid[0];   /**< IN: start of the object identifier */
 } cfg_register_msg;
+
+/** CFG_UNREGISTER message content */
+typedef struct cfg_unregister_msg {
+    CFG_MSG_FIELDS
+    char          id[1];   /**< IN: start of the object identifier */
+} cfg_unregister_msg;
 
 /** CFG_FIND message content */
 typedef struct cfg_find_msg {

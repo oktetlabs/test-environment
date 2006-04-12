@@ -297,6 +297,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
         }
         
         if (xmlStrcmp(cmd->name , (const xmlChar *)"register") != 0 &&
+            xmlStrcmp(cmd->name , (const xmlChar *)"unregister") != 0 &&
             xmlStrcmp(cmd->name , (const xmlChar *)"add") != 0 &&
             xmlStrcmp(cmd->name , (const xmlChar *)"set") != 0 &&
             xmlStrcmp(cmd->name , (const xmlChar *)"delete") != 0)
@@ -414,7 +415,36 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 RETERR(TE_EINVAL,
                        "Unexpected node '%s' in register command",
                        tmp->name);
-        }
+        }   /* register */      
+        else if (xmlStrcmp(cmd->name , (const xmlChar *)"unregister") == 0)
+        {
+            cfg_msg *msg = NULL; /* dummy for RETERR to work */
+            
+            if (postsync)
+                continue;
+
+            while (tmp != NULL)
+            {
+                if (xmlStrcmp(tmp->name , (const xmlChar *)"object") != 0)
+                    RETERR(TE_EINVAL,
+                           "Unexpected node '%s' in 'unregister' command",
+                           tmp->name);
+
+                if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
+                    RETERR(TE_EINVAL, "Incorrect %s command format",
+                           cmd->name);                
+
+                rc = cfg_db_unregister_obj_by_id_str(oid);
+                if (rc != 0)
+                    RETERR(rc, "Failed to execute 'unregister' command "
+                           "for object %s", oid);
+
+                free(oid);
+                oid = NULL;
+
+                tmp = xmlNodeNext(tmp);
+            }
+        }   /* unregister */
         else if (xmlStrcmp(cmd->name , (const xmlChar *)"add") == 0)
         {
             if (!postsync)
@@ -745,6 +775,7 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
     cfg_dh_entry *limit = NULL;
     cfg_dh_entry *tmp;
     cfg_dh_entry *prev;
+    char         *id;
     
     int rc;
     int result = 0;
@@ -773,18 +804,29 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
         prev = tmp->prev;
         switch (tmp->cmd->type)
         {
-            case CFG_REGISTER:
+            case CFG_UNREGISTER:
                 break;
-                
+            case CFG_REGISTER:
+            {
+                id = ((cfg_register_msg *)(tmp->cmd))->oid;
+                rc = cfg_db_unregister_obj_by_id_str(id);
+                if (rc != 0)
+                {
+                    ERROR("%s(): cfg_db_unregister_obj_by_id_str() "
+                          "failed: %r, id: %s", __FUNCTION__, rc, id);
+                }
+                break;
+            }
+
             case CFG_ADD:
             {
                 cfg_del_msg msg = { CFG_DEL, sizeof(msg), 0, 0};
                 cfg_msg    *p_msg = (cfg_msg *)&msg;
-               
+
                 rc = cfg_db_find((char *)(tmp->cmd) + 
                                  ((cfg_add_msg *)(tmp->cmd))->oid_offset, 
                                  &(msg.handle));
-               
+
                 if (rc != 0)
                 {
                     if (TE_RC_GET_ERROR(rc) != TE_ENOENT)

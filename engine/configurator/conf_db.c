@@ -337,7 +337,8 @@ cfg_maybe_adopt_objects (cfg_object *master, cfg_oid *oid)
 
 
 /**
- * Process message with user request.
+ * Process a message with the user request: "register"
+ * (that is, the request to add an object to the data base).
  *
  * @param msg   message pointer (it is assumed that message buffer
  *              length is long enough, for example for
@@ -471,6 +472,181 @@ cfg_process_msg_register(cfg_register_msg *msg)
     msg->handle = i;
     msg->len = sizeof(*msg);
 }
+
+/**
+ * Process a message with the user request: "unregister"
+ * (that is, the request to remove an object from the data base).
+ *
+ * @param msg   pointer to a message containing the request.
+ */
+void 
+cfg_process_msg_unregister(cfg_unregister_msg *msg)
+{   
+    msg->rc = cfg_db_unregister_obj_by_id_str(msg->id);
+    return;
+}
+
+/**
+ * Remove an object from the data base.
+ *
+ * @param id   id string of an object to be removed.
+ *
+ * @return  0 or TE_EINVAL, if error occurred.
+ *
+ * @author Igor Baryshev <Igor.Baryshev@oktetlabs.ru> 
+ */
+te_errno 
+cfg_db_unregister_obj_by_id_str(char *id)
+{
+    cfg_object          *obj;
+    cfg_object          *brother;
+    cfg_object          *father;
+    cfg_object          *master;
+    cfg_dependency      *depends_on;
+    cfg_dependency      *dependants, *dependants_prev;
+
+    cfg_oid             *idsplit = NULL;
+    cfg_object_subid    *id_elmnt, *ids_end;
+    int                 len;
+    int                 n;
+    char                pattern[CFG_OID_MAX];
+    char                *iter;
+    cfg_handle          *matches = NULL;
+    int                 nof_matches = 0;
+    te_errno            rc;
+
+
+    obj = cfg_get_obj_by_obj_id_str(id);
+    if (obj == NULL)
+    {
+        ERROR("no object with id string: %s\n", id);
+        return TE_RC(TE_CS, TE_EINVAL);
+    }
+    
+    if (obj->dependants != NULL)
+    {
+        ERROR("can't remove an object: %s, "
+              "because a dependant is present: %s\n",
+              id, obj->dependants->depends->oid);
+        return TE_RC(TE_CS, TE_EINVAL);
+    }
+    
+    if (obj->son != NULL)
+    {
+        ERROR("can't remove an object: %s, "
+              "because a son is present: %s\n",
+              id, obj->son->oid);
+        return TE_RC(TE_CS, TE_EINVAL);
+    }
+   
+    if (obj->father == NULL)
+    {
+        ERROR("can't remove a root object: %s\n", id);
+        return TE_RC(TE_CS, TE_EINVAL);
+    }
+
+    
+    /* Form a pattern '|A0:*|A1:*|... and check for instances: */
+    idsplit = cfg_convert_oid_str(id);
+    id_elmnt = (cfg_object_subid *)(idsplit->ids);
+    ids_end = id_elmnt + idsplit->len;
+    iter = pattern;
+    /* skip empty ids[0], i.e. '/:*' as the first part of the pattern: */
+    for (id_elmnt++; id_elmnt < ids_end; id_elmnt++)
+    {
+        len = strlen(id_elmnt->subid) + 4; /* '/'+':'+'*'+'\n' */
+        if (iter + len > pattern + CFG_OID_MAX)
+            return TE_RC(TE_CS, TE_EINVAL);
+        
+        n = snprintf(iter, len, "/%s:*", id_elmnt->subid);
+        iter += (len -1 ); /* will overwrite '\n' */
+    }
+    cfg_free_oid(idsplit);
+
+    rc = cfg_db_find_pattern(pattern, &nof_matches, &matches);
+    if (rc != 0)
+    {
+        ERROR("cfg_db_find_pattern() failed: %r; pattern: %s\n",
+              rc, pattern);
+        return rc;
+    }
+    if (matches != NULL)
+    {
+        ERROR("can't remove an object: %s, "
+              "because an instance is present: %s\n",
+              id, cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(matches[0])]->oid);
+        free(matches);
+        return TE_RC(TE_CS, TE_EINVAL);
+    }
+
+    
+    /* remove obj from the list of dependants of each master: */
+    depends_on = obj->depends_on;
+    for (;depends_on != NULL; depends_on = depends_on->next)
+    {
+        master = depends_on->depends;
+        assert(master != NULL);
+        
+        /* go through the list of dependants: */
+        dependants = master->dependants, dependants_prev = dependants;
+        for (;dependants != NULL;
+             dependants_prev = dependants, dependants = dependants->next)
+        {
+            if (dependants->depends == obj) /* remove the obj: */
+            {
+                if (dependants_prev == dependants) /* head */
+                    master->dependants = NULL;
+                else                               /* remove the link */
+                    dependants_prev->next = dependants->next;
+
+                break;
+            }
+        }
+        /* didn't find obj, which should have been there! */
+        assert(dependants != NULL);
+    }
+    
+    
+    /* Since we assumed and tested above that nobody depends on the obj,
+     * we just remove the obj from the topological order: */
+    if (obj->dep_prev == NULL)       /* head */
+    {
+        topological_order       = obj->dep_next;
+        topological_order->dep_prev = NULL;
+    }
+    else if (obj->dep_next == NULL)  /* tail */
+    {
+        obj->dep_prev->dep_next = NULL;
+    }
+    else
+    {
+        obj->dep_prev->dep_next = obj->dep_next;
+        obj->dep_next->dep_prev = obj->dep_prev;
+    }
+    
+    
+    /* Remove the obj from the obj tree: */
+    father = obj->father;
+    if (father->son == obj)
+        father->son = obj->brother;
+    else
+    {
+        for (brother = father->son;
+             brother->brother != obj;
+             brother = brother->brother); 
+             
+        assert(brother != NULL);
+        brother->brother = obj->brother;
+    }
+    
+    /* Delete from the array of objects */
+    cfg_all_obj[obj->handle] = NULL;
+
+    free(obj->oid);
+    free(obj->def_val);
+    free(obj);
+    return 0;
+} /* cfg_db_unregister_obj_by_id_str() */
 
 void
 cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
@@ -636,8 +812,10 @@ cfg_process_msg_family(cfg_family_msg *msg)
 #undef RET    
 }
 
+
 /**
- * Process pattern user request.
+ * Process a user request to find all objects or object instances
+ * matching a pattern.
  *
  * @param msg   message pointer
  *
@@ -648,20 +826,19 @@ cfg_pattern_msg *
 cfg_process_msg_pattern(cfg_pattern_msg *msg)
 {
     cfg_pattern_msg *tmp = msg;
-    cfg_oid         *oid = NULL;
     
     int num_max = (CFG_BUF_LEN - sizeof(*msg)) / sizeof(cfg_handle);
     int num = 0;
-    int i;
-    int k;
-    
-    te_bool all = FALSE;
-    te_bool inst;
 
-/* Number of slots to be allocated additionally once */
+    cfg_handle *matches = NULL;
+    int         nof_matches;
+    te_errno    rc;
+    
+
+/* Number of slots in additional allocation chunks */
 #define ALLOC_STEP  32 
 
-/* Put the handle to the handles array of the message */
+/* Put a handle into the array of handles of the message */
 #define PUT_HANDLE(_handle) \
     do {                                                            \
         if (num == num_max)                                         \
@@ -673,7 +850,7 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
                     num_max * sizeof(cfg_handle));                  \
                 if (tmp == NULL)                                    \
                 {                                                   \
-                    msg->rc = TE_ENOMEM;                               \
+                    msg->rc = TE_RC(TE_CS, TE_ENOMEM);              \
                     return msg;                                     \
                 }                                                   \
                 memcpy(tmp, msg, sizeof(*msg) +                     \
@@ -686,7 +863,7 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
                 if (tmp1 == NULL)                                   \
                 {                                                   \
                     free(tmp);                                      \
-                    msg->rc = TE_ENOMEM;                               \
+                    msg->rc = TE_RC(TE_CS, TE_ENOMEM);              \
                     return msg;                                     \
                 }                                                   \
                 tmp = (cfg_pattern_msg *)tmp1;                      \
@@ -699,59 +876,114 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
     do {                        \
         if (tmp != msg)         \
             free(tmp);          \
-        if (oid)                \
-            cfg_free_oid(oid);  \
         msg->rc = _rc;          \
         return msg;             \
     } while (0)
 
-    if (strcmp(msg->pattern, "*") == 0)
+    
+    rc = cfg_db_find_pattern(msg->pattern, &nof_matches, &matches);
+    if (rc != 0)
+        RETERR(rc);
+    
+    for (num = 0; num < nof_matches;)
+        PUT_HANDLE(matches[num]);  /* num++ is done in here */
+    free(matches);
+    
+    VERB("Found %d OIDs by pattern", num);
+    tmp->len = sizeof(*msg) + sizeof(cfg_handle) * num;
+    return tmp;
+    
+#undef ALLOC_STEP
+#undef PUT_HANDLE
+#undef RETERR
+}   /* cfg_process_msg_pattern() */
+
+
+
+/**
+ * Find all objects or object instances matching a pattern.
+ *
+ * @param pattern       string object identifier possibly containing '*'
+ *                      (see Configurator documentation for details)
+ * @param p_nmatches    OUT: number of found objects or object instances
+ * @param p_matches     OUT: array of object/(object instance) handles;
+ *                      memory for the array is allocated using malloc()
+ *
+ * @return  0 or
+ *          TE_EINVAL if a pattern format is incorrect or
+ *                    some argument is NULL.
+ */
+te_errno
+cfg_db_find_pattern(const char *pattern,
+                    unsigned int *p_nmatches,
+                    cfg_handle **p_matches)
+{
+    cfg_handle  *matches = NULL;
+    int         nof_matches = 0;
+    cfg_oid     *idsplit = NULL;   
+    int         i, k;
+    
+    te_bool     all = FALSE;
+    te_bool     inst;
+
+#define RETERR(_rc) \
+    do {                            \
+        if (idsplit)                \
+            cfg_free_oid(idsplit);  \
+        return TE_RC(TE_CS, _rc);   \
+    } while (0)
+
+      
+    if (strcmp(pattern, "*") == 0)
     {
         all = TRUE;
         inst = FALSE;
+        RING("pattern: %s, file: %s, line: %d\n",
+             pattern, __FILE__, __LINE__);
     }
-    else if (strcmp(msg->pattern, "*:*") == 0)
+    else if (strcmp(pattern, "*:*") == 0)
     {
         all = TRUE;
         inst = TRUE;
     }
-    else if ((oid = cfg_convert_oid_str(msg->pattern)) == NULL)
-    {
-        msg->rc = TE_EINVAL;
-        return msg;
-    }
+    else if ((idsplit = cfg_convert_oid_str(pattern)) == NULL)
+        return TE_RC(TE_CS, TE_EINVAL);
     else
-        inst = oid->inst;
+        inst = idsplit->inst;
 
     if (inst)
     {
+        matches = calloc(cfg_all_inst_size, sizeof(cfg_handle));
+        if (matches == NULL)
+            RETERR(TE_ENOMEM);
+
         for (i = 0; i < cfg_all_inst_size; i++)
         {
             cfg_inst_subid *s1;
             cfg_inst_subid *s2;
-            cfg_oid        *tmp_oid;
+            cfg_oid        *tmp_idsplit;
             
             if (cfg_all_inst[i] == NULL)
                 continue;
                 
             if (all)
             {
-                PUT_HANDLE(cfg_all_inst[i]->handle);
+                matches[nof_matches++] = cfg_all_inst[i]->handle;
                 continue;
             }
-            
-            tmp_oid = cfg_convert_oid_str(cfg_all_inst[i]->oid);
-            if (tmp_oid == NULL)
+
+            tmp_idsplit = cfg_convert_oid_str(cfg_all_inst[i]->oid);
+            if (tmp_idsplit == NULL)
                 RETERR(TE_ENOMEM);
-                
-            if (tmp_oid->len != oid->len)
+
+            if (tmp_idsplit->len != idsplit->len)
             {
-                cfg_free_oid(tmp_oid);
+                cfg_free_oid(tmp_idsplit);
                 continue;
             }
-            s1 = (cfg_inst_subid *)(oid->ids);
-            s2 = (cfg_inst_subid *)(tmp_oid->ids);
-            for (k = 0; k < oid->len; k++, s1++, s2++)
+            s1 = (cfg_inst_subid *)(idsplit->ids);
+            s2 = (cfg_inst_subid *)(tmp_idsplit->ids);
+            for (k = 0; k < idsplit->len; k++, s1++, s2++)
             {
                 if ((s1->subid[0] != '*' && 
                      pattern_match(s1->subid, s2->subid) != 0) ||
@@ -761,40 +993,44 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
                     break;
                 }
             }
-            cfg_free_oid(tmp_oid);
-            if (k == oid->len)
-                PUT_HANDLE(cfg_all_inst[i]->handle);
+            cfg_free_oid(tmp_idsplit);
+            if (k == idsplit->len)
+                matches[nof_matches++] = cfg_all_inst[i]->handle;
         }
     }
     else
     {
+        matches = calloc(cfg_all_obj_size, sizeof(cfg_handle));
+        if (matches == NULL)
+            RETERR(TE_ENOMEM);
+
         for (i = 0; i < cfg_all_obj_size; i++)
         {
             cfg_object_subid *s1;
             cfg_object_subid *s2;
-            cfg_oid        *tmp_oid;
+            cfg_oid          *tmp_idsplit;
             
             if (cfg_all_obj[i] == NULL)
                 continue;
                 
             if (all)
             {
-                PUT_HANDLE(i);
+                matches[nof_matches++] = cfg_all_obj[i]->handle;
                 continue;
             }
             
-            tmp_oid = cfg_convert_oid_str(cfg_all_obj[i]->oid);
-            if (tmp_oid == NULL)
+            tmp_idsplit = cfg_convert_oid_str(cfg_all_obj[i]->oid);
+            if (tmp_idsplit == NULL)
                 RETERR(TE_ENOMEM);
                 
-            if (tmp_oid->len != oid->len)
+            if (tmp_idsplit->len != idsplit->len)
             {
-                cfg_free_oid(tmp_oid);
+                cfg_free_oid(tmp_idsplit);
                 continue;
             }
-            s1 = (cfg_object_subid *)(oid->ids);
-            s2 = (cfg_object_subid *)(tmp_oid->ids);
-            for (k = 0; k < oid->len; k++, s1++, s2++)
+            s1 = (cfg_object_subid *)(idsplit->ids);
+            s2 = (cfg_object_subid *)(tmp_idsplit->ids);
+            for (k = 0; k < idsplit->len; k++, s1++, s2++)
             {
                 if (s1->subid[0] != '*' &&
                     pattern_match(s1->subid, s2->subid) != 0) 
@@ -802,21 +1038,21 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
                     break;
                 }
             }
-            cfg_free_oid(tmp_oid);
-            if (k == oid->len)
-                PUT_HANDLE(i);
+            cfg_free_oid(tmp_idsplit);
+            if (k == idsplit->len)
+                matches[nof_matches++] = cfg_all_obj[i]->handle;
         }
-    }    
-    
-    VERB("Found %d OIDs by pattern", num);
-    tmp->len = sizeof(*msg) + sizeof(cfg_handle) * num;
-    cfg_free_oid(oid);
-    return tmp;
-    
-#undef ALLOC_STEP
-#undef PUT_HANDLE
+    }
+
+    cfg_free_oid(idsplit);
+    matches = realloc(matches, nof_matches * sizeof(cfg_handle));
+    *p_matches = matches;
+    *p_nmatches = nof_matches;    
+    return 0;
 #undef RETERR
-}
+}   /* cfg_db_find_pattern() */
+
+
 
 /** 
  * Add instance children if they are read/write.

@@ -114,7 +114,7 @@ static int kill(cfg_handle handle);
 
 
 /**
- * Register new object using string object identifiers.
+ * Register a new object using string object identifiers.
  *
  * @param oid       object identifier in string representation
  * @param descr     object properties description
@@ -730,7 +730,7 @@ cfg_find_object_by_instance(cfg_handle instance, cfg_handle *object)
 }
 
 /**
- * Find all objects or object instances matching to pattern.
+ * Find all objects or object instances matching a pattern.
  *
  * @param pattern       string object identifier possibly containing '*'
  *                      (see Configurator documentation for details)
@@ -2308,6 +2308,69 @@ cfg_tree_print(const char *filename,
     msg->flname_len = flname_len;
     
     msg->len = sizeof(cfg_tree_print_msg) + id_len + flname_len;
+    
+    len = CFG_MSG_MAX;
+    ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
+                                           CONFIGURATOR_SERVER,
+                                           msg, msg->len, msg, &len);
+    if (ret_val == 0)
+        ret_val = msg->rc;
+
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_unlock(&cfgl_lock);
+#endif
+    return TE_RC(TE_CONF_API, ret_val);
+}
+
+
+/**
+ * Request Configurator to remove an object with a given id from
+ * the data base of objects.
+ *
+ * @param id_fmt            a format string for the object id.
+ *
+ * @return                  Status code.
+ */
+te_errno
+cfg_unregister_object_str(const char *id_fmt, ...)
+{
+    cfg_unregister_msg *msg;
+
+    size_t      id_len, len;
+    char        id[CFG_OID_MAX];
+    te_errno    ret_val = 0;
+    va_list ap;
+
+    
+    if (id_fmt == NULL)
+        return TE_RC(TE_CONF_API, TE_EINVAL);
+    va_start(ap, id_fmt);
+    id_len = (size_t)vsnprintf(id, sizeof(id), id_fmt, ap);
+    va_end(ap);
+    if (id_len >= sizeof(id))
+        return TE_RC(TE_CONF_API, TE_EINVAL);
+    id_len += 1; /* '\0' */
+    
+    if (sizeof(cfg_unregister_msg) + id_len > CFG_MSG_MAX)
+        return TE_RC(TE_CONF_API, TE_EMSGSIZE);
+    
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_lock(&cfgl_lock);
+#endif
+    INIT_IPC;
+    if (cfgl_ipc_client == NULL)
+    {
+#ifdef HAVE_PTHREAD_H
+        pthread_mutex_unlock(&cfgl_lock);
+#endif
+        return TE_RC(TE_CONF_API, TE_EIPC);
+    }
+    msg = (cfg_unregister_msg *)cfgl_msg_buf;
+    msg->type = CFG_UNREGISTER;
+    
+    memcpy(msg->id, id, id_len);
+    
+    msg->len = sizeof(cfg_unregister_msg) + id_len;
     
     len = CFG_MSG_MAX;
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,

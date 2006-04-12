@@ -156,6 +156,17 @@ extern te_errno cfg_register_object(const cfg_oid *oid,
                                     cfg_handle    *handle);
 
 /**
+ * Request Configurator to remove an object with a given id from
+ * the data base of objects.
+ *
+ * @param id_fmt            a format string for the object id.
+ *
+ * @return                  Status code.
+ */
+extern te_errno cfg_unregister_object_str(const char *id_fmt, ...);
+
+
+/**
  * Obtain parameters configured for the object.
  *
  * @param handle    object handle
@@ -294,16 +305,17 @@ extern te_errno cfg_find_object_by_instance(cfg_handle  instance,
                                             cfg_handle *object);
 
 /**
- * Find all objects or object instances matching to pattern.
+ * Find all objects or object instances matching a pattern.
  *
- * @param pattern   string object identifier possibly containing '*'
- *                  (see Configurator documentation for details)
- * @param p_num     OUT: number of found objects or object instances
- * @param p_set     OUT: array of object/object instances handles;
- *                    memory for the array is allocated using malloc()
+ * @param pattern       string object identifier possibly containing '*'
+ *                      (see Configurator documentation for details)
+ * @param p_nmatches    OUT: number of found objects or object instances
+ * @param p_matches     OUT: array of object/(object instance) handles;
+ *                      memory for the array is allocated using malloc()
  *
- * @return 0 or TE_EINVAL if pattern format is incorrect some argument is
- *         NULL
+ * @return  0 or
+ *          TE_EINVAL if a pattern format is incorrect or
+ *                    some argument is NULL.
  */
 extern te_errno cfg_find_pattern(const char    *pattern,
                                  unsigned int  *p_num,

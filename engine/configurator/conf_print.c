@@ -38,6 +38,7 @@
 
 static char *obj_tree_bufprint(cfg_object *obj,   const int indent);
 static char *ins_tree_bufprint(cfg_instance *ins, const int indent);
+static char *obj_bufprint_deps(cfg_object *obj);
 static char *bufprintf(char **p_buf, int *p_offset, size_t *p_sz,
                        const char *format, ...);
 
@@ -102,7 +103,7 @@ cfg_db_tree_print(const char *filename,
     id_len = (size_t)vsnprintf(id, sizeof(id), id_fmt, ap);
     va_end(ap);
     if (id_len >= sizeof(id))
-        return TE_RC(TE_CONF_API, TE_EINVAL);
+        return TE_RC(TE_CS, TE_EINVAL);
     
     if ((idsplit = cfg_convert_oid_str(id)) == NULL)
         return TE_RC(TE_CS, TE_EINVAL);
@@ -262,8 +263,123 @@ ins_tree_bufprint(cfg_instance *ins, const int indent)
     return buf;
 }
 
+
+/**
+ * Print all dependancies of an object into a file and(or) log.
+ *
+ * @param filename          output filename (NULL to skip)
+ * @param log_lvl           TE log level (0 to skip)
+ * @param id_fmt            a format string for the id of an obj.
+ *
+ * @return                  Status code.
+ */
+te_errno
+cfg_db_obj_print_deps(const char *filename,
+                      const unsigned int log_lvl,
+                      const char *id_fmt, ...)
+{
+    char            *buf = NULL;
+    FILE            *f;
+    char            id[CFG_OID_MAX];
+    size_t          id_len;
+    cfg_object      *obj;
+    cfg_dependency  *depends_on;
+    cfg_dependency  *dependants;
+    va_list ap;
+
+
+    if (id_fmt == NULL)
+        return TE_RC(TE_CS, TE_EINVAL);
+    va_start(ap, id_fmt);
+    id_len = (size_t)vsnprintf(id, sizeof(id), id_fmt, ap);
+    va_end(ap);
+    if (id_len >= sizeof(id))
+        return TE_RC(TE_CS, TE_EINVAL);
+    
+    
+    obj = cfg_get_obj_by_obj_id_str(id);
+    if (obj == NULL)
+    {
+        te_log_message(__FILE__, __LINE__,
+                       log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
+                       "no node with id string: %s\n", id);
+        return TE_RC(TE_CS, TE_EINVAL);
+    }
+
+    buf = obj_bufprint_deps(obj);
+    if (buf == NULL)
+    {
+        ERROR("obj_bufprint_deps() failed\n");
+        return TE_RC(TE_CS, TE_ENOMEM);
+    }
+
+    if (log_lvl != 0)
+        te_log_message(__FILE__, __LINE__,
+                       log_lvl, TE_LGR_ENTITY, TE_LGR_USER, "%s", buf);
+    if (filename != NULL)
+    {
+        if ((f = fopen(filename, "w")) == NULL)
+            ERROR("Can't open file: %s", filename);
+        fprintf(f, "%s", buf);
+        fclose(f);
+    }
+
+    free(buf);
+    return 0;
+}
+
+/**
+ * Print all dependancies of an object into the buffer.
+ *
+ * @param obj       The object of interest.
+ *
+ * @return
+ *     Pointer to the allocated buffer containing the output.
+ *     NULL, if error occurred.
+ */
+static char *
+obj_bufprint_deps(cfg_object *obj)
+{
+    const size_t    sz_ini = 16 * 1024;
+    static char     *buf = NULL;
+    static int      offset = 0;
+    static size_t   sz = sz_ini;
+    int             i;
+    char            *tmp;
+    cfg_object      *otmp;
+    cfg_dependency  *depends_on;
+    cfg_dependency  *dependants;
+
+    
+    CHECK(bufprintf(&buf, &offset, &sz, "Masters of the object: %s\n",
+                    obj->oid) != NULL);
+    for (depends_on = obj->depends_on;
+         depends_on != NULL; depends_on = depends_on->next)
+    {
+        otmp = depends_on->depends;
+        CHECK(bufprintf(&buf, &offset, &sz, "%s\n",
+                        otmp != NULL ? otmp->oid : "NULL") != NULL);
+    }
+
+    CHECK(bufprintf(&buf, &offset, &sz, "Dependants of the object: %s\n",
+                    obj->oid) != NULL);
+    for (dependants = obj->dependants;
+         dependants != NULL; dependants = dependants->next)
+    {
+        otmp = dependants->depends;
+        CHECK(bufprintf(&buf, &offset, &sz, "%s\n",
+                        otmp != NULL ? otmp->oid : "NULL") != NULL);
+    }
+    
+    tmp = buf;
+    BUF_RESET;
+    return tmp;
+}
+
+
 #undef BUF_RESET
 #undef CHECK
+
 
 /**
  * Print into auto-growing buffer according to format.

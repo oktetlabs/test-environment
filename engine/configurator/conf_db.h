@@ -190,9 +190,11 @@ extern void cfg_process_msg_get_id(cfg_get_id_msg *msg);
 extern void cfg_process_msg_family(cfg_family_msg *msg);
 extern void cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg);
 extern void cfg_process_msg_tree_print(cfg_tree_print_msg *msg);
+extern void cfg_process_msg_unregister(cfg_unregister_msg *msg);
 
 /**
- * Process pattern user request.
+ * Process a user request to find all objects or object instances
+ * matching a pattern.
  *
  * @param msg   message pointer
  *
@@ -290,6 +292,22 @@ extern int cfg_db_get(cfg_handle handle, cfg_inst_val *val);
 extern int cfg_db_find(const char *oid_s, cfg_handle *handle);
 
 /**
+ * Find all objects or object instances matching a pattern.
+ *
+ * @param pattern       string object identifier possibly containing '*'
+ *                      (see Configurator documentation for details)
+ * @param p_nmatches    OUT: number of found objects or object instances
+ * @param p_matches     OUT: array of object/(object instance) handles;
+ *                      memory for the array is allocated using malloc()
+ *
+ * @return  0 or
+ *          TE_EINVAL if a pattern format is incorrect or
+ *                    some argument is NULL.
+ */
+extern te_errno cfg_db_find_pattern(const char *pattern,
+                                    unsigned int *p_nmatches,
+                                    cfg_handle **p_matches);
+/**
  * Initialize the database during startup or re-initialization.
  *
  * @return 0 (success) or TE_ENOMEM
@@ -362,6 +380,28 @@ extern te_errno  cfg_db_tree_print(const char *filename,
  */
 extern void cfg_db_tree_print_msg_log(cfg_tree_print_msg *msg,
                                       const unsigned int cfg_log_lvl);
+
+/**
+ * Print all dependancies of an object into a file and(or) log.
+ *
+ * @param filename          output filename (NULL to skip)
+ * @param log_lvl           TE log level (0 to skip)
+ * @param id_fmt            a format string for the id of an obj.
+ *
+ * @return                  Status code.
+ */
+extern te_errno cfg_db_obj_print_deps(const char *filename,
+                                      const unsigned int log_lvl,
+                                      const char *id_fmt, ...);
+
+/**
+ * Remove an object from the data base.
+ *
+ * @param id   id string of an object to be removed.
+ *
+ * @return  0 or TE_EINVAL, if error occurred.
+ */
+extern te_errno cfg_db_unregister_obj_by_id_str(char *id);
 
 #ifdef __cplusplus
 }
