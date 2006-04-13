@@ -1701,11 +1701,11 @@ cfg_get_object(const char *oid_s)
 }
 
 /**
- * Find object for specified object identifier.
+ * Find the object for a specified object identifier.
  *
  * @param obj_id_str   object identifier in string representation
  *
- * @return pointer to object structure or NULL
+ * @return pointer to the object structure or NULL.
  */
 cfg_object *
 cfg_get_obj_by_obj_id_str(const char *obj_id_str)
@@ -1713,7 +1713,7 @@ cfg_get_obj_by_obj_id_str(const char *obj_id_str)
     cfg_oid             *idsplit = cfg_convert_oid_str(obj_id_str);
     cfg_object          *obj = &cfg_obj_root;
     cfg_object_subid    *ids;
-    int                 i = 0;
+    int                 i;
 
     if (idsplit == NULL)
         return NULL;
@@ -1726,9 +1726,9 @@ cfg_get_obj_by_obj_id_str(const char *obj_id_str)
     
     ids = (cfg_object_subid *)(idsplit->ids);
 
-    while (TRUE)
+    for (i = 0;;)
     {
-        while(obj != NULL && strcmp(obj->subid, ids->subid) != 0)
+        while (obj != NULL && strcmp(obj->subid, ids->subid) != 0)
             obj = obj->brother;
         if (++i == idsplit->len || obj == NULL)
             break;
@@ -1742,11 +1742,11 @@ cfg_get_obj_by_obj_id_str(const char *obj_id_str)
 }
 
 /**
- * Find instance for specified instance identifier.
+ * Find the instance for a specified instance identifier.
  *
  * @param ins_id_str   instance identifier in string representation
  *
- * @return pointer to instance structure or NULL
+ * @return pointer to the instance structure or NULL.
  */
 cfg_instance *
 cfg_get_ins_by_ins_id_str(const char *ins_id_str)
@@ -1754,7 +1754,7 @@ cfg_get_ins_by_ins_id_str(const char *ins_id_str)
     cfg_oid             *idsplit = cfg_convert_oid_str(ins_id_str);
     cfg_instance        *ins = &cfg_inst_root;
     cfg_inst_subid      *ids;
-    int                 i = 0;
+    int                 i;
 
     if (idsplit == NULL)
         return NULL;
@@ -1767,10 +1767,11 @@ cfg_get_ins_by_ins_id_str(const char *ins_id_str)
     
     ids = (cfg_inst_subid *)(idsplit->ids);
 
-    while (TRUE)
+    for (i = 0;;)
     {
-        while(ins != NULL && strcmp(ins->obj->subid, ids->subid) != 0 && \
-                             strcmp(ins->name,       ids->name)  != 0)
+        while (ins != NULL && \
+               (strcmp(ins->obj->subid, ids->subid) != 0 || \
+                strcmp(ins->name,       ids->name ) != 0   )  )
             ins = ins->brother;
         if (++i == idsplit->len || ins == NULL)
             break;
