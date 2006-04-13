@@ -25,7 +25,7 @@ TE_LIB_PARMS([tad], [], [],
              [], [], [])
 
 TE_TA_TYPE([linux], [], [unix],
-           [--with-rcf-rpc \
+           [--with-rcf-rpc  --with-iscsi\
             --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd'],
            [], [], [], [comm_net_agent ndn asn])
 
