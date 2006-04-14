@@ -350,6 +350,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
 {
     cfg_oid    *oid = cfg_convert_oid_str(msg->oid);
     cfg_object *father = &cfg_obj_root;
+    cfg_object  *obj = NULL;
     
     int i = 0;
     
@@ -365,7 +366,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
         msg->rc = TE_EINVAL;
         return;
     }
-    
+        
     /* Look for the father first */
     while (TRUE)
     {
@@ -387,8 +388,24 @@ cfg_process_msg_register(cfg_register_msg *msg)
         msg->rc = TE_ENOENT;
         return;
     }
+      
+    /* Check for an obj with the same name */
+    for (obj = father->son; 
+         obj != NULL && \
+         strcmp(obj->subid,
+                ((cfg_object_subid *)(oid->ids))[i].subid) != 0; 
+         obj = obj->brother);
     
-    /* Now look for empty slot in the objects array */
+    if (obj != NULL)
+    {
+        cfg_free_oid(oid);
+        ERROR("Attempt to register: object already exists: %s\n",
+              obj->oid);
+        msg->rc = TE_RC(TE_CS, TE_EEXIST);
+        return;
+    }
+    
+    /* Now look for an empty slot in the objects array */
     for (i = 0; i < cfg_all_obj_size && cfg_all_obj[i] != NULL; i++);
     
     if (i == cfg_all_obj_size)

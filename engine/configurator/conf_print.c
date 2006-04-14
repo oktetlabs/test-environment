@@ -195,14 +195,15 @@ obj_tree_bufprint(cfg_object *obj, const int indent)
     for (i = 0; i < indent; i++)
         CHECK(bufprintf(&buf, &offset, &sz, " ") != NULL);
 
-    CHECK(bufprintf(&buf, &offset, &sz, "%s  %s  %s\n",
+    CHECK(bufprintf(&buf, &offset, &sz, "%s  %s %s %s\n",
                     obj->oid, 
-                    obj->access == CFG_READ_CREATE ? "read_create" :
-                    obj->access == CFG_READ_WRITE ? "read_write" :
-                    "read_only",
-                    obj->type == CVT_NONE ? "none" : 
-                    obj->type == CVT_INTEGER ? "integer" :
-                    obj->type == CVT_ADDRESS ? "address" : "string")
+                    obj->access == CFG_READ_CREATE ? "RC" :
+                    obj->access == CFG_READ_WRITE ? "RW" :
+                    "R",
+                    obj->type == CVT_NONE ? "none" :
+                    obj->type == CVT_INTEGER ? "int" :
+                    obj->type == CVT_ADDRESS ? "addr" : "str",
+                    obj->vol == TRUE ? "V" : "")
           != NULL);
     for (obj = obj->son; obj != NULL; obj = obj->brother)
         CHECK(obj_tree_bufprint(obj, indent + 2) != NULL);
