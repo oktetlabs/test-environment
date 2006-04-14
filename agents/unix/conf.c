@@ -338,6 +338,12 @@ static te_errno link_addr_get(unsigned int, const char *, char *,
 static te_errno link_addr_set(unsigned int, const char *, const char *,
                               const char *);
 
+static te_errno bcast_link_addr_set(unsigned int, const char *,
+                                    const char *, const char *);
+
+static te_errno bcast_link_addr_get(unsigned int, const char *,
+                                    char *, const char *);
+
 static te_errno ifindex_get(unsigned int, const char *, char *,
                             const char *);
 
@@ -438,7 +444,11 @@ RCF_PCH_CFG_NODE_RW(node_arp, "arp", NULL, &node_mtu,
 RCF_PCH_CFG_NODE_RW(node_link_addr, "link_addr", NULL, &node_arp,
                     link_addr_get, link_addr_set);
 
-RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_link_addr,
+RCF_PCH_CFG_NODE_RW(node_bcast_link_addr, "bcast_link_addr", NULL,
+                    &node_link_addr,
+                    bcast_link_addr_get, bcast_link_addr_set);
+
+RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_bcast_link_addr,
                     ifindex_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
@@ -2549,6 +2559,79 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
 }
 
 
+/*
+ * Next functions are pulled out from iproute internals
+ * to be accessible here and renamed.
+ */
+static const char *
+link_addr_n2a(unsigned char *addr, int alen,
+            int type, char *buf, int blen)
+{
+    int i;
+    int l;
+
+    if (alen == 4 &&
+        (type == ARPHRD_TUNNEL ||
+         type == ARPHRD_SIT ||
+         type == ARPHRD_IPGRE))
+    {
+        return inet_ntop(AF_INET, addr, buf, blen);
+    }
+    l = 0;
+    for (i = 0; i < alen; i++)
+    {
+        if (i==0)
+        {
+            snprintf(buf + l, blen, "%02x", addr[i]);
+            blen -= 2;
+            l += 2;
+        }
+        else
+        {
+            snprintf(buf+l, blen, ":%02x", addr[i]);
+            blen -= 3;
+            l += 3;
+        }
+    }
+    return buf;
+}
+
+static int
+link_addr_a2n(uint8_t *lladdr, int len, char *str)
+{
+    char *arg = str;
+    int i;
+
+    for (i = 0; i < len; i++)
+    {
+        unsigned int  temp;
+        char         *cp = strchr(arg, ':');
+        if (cp)
+        {
+            *cp = 0;
+            cp++;
+        }
+        if (sscanf(arg, "%x", &temp) != 1)
+        {
+            ERROR("%s: \"%s\" is invalid lladdr",
+                  __FUNCTION__, arg);
+            return -1;
+        }
+        if (temp > 255)
+        {
+            ERROR("%s:\"%s\" is invalid lladdr",
+                  __FUNCTION__, arg);
+            return -1;
+        }
+
+        lladdr[i] = (uint8_t)temp;
+        if (!cp)
+            break;
+        arg = cp;
+    }
+    return i + 1;
+}
+
 /**
  * Get hardware address of the interface.
  * Only MAC addresses are supported now.
@@ -2692,6 +2775,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
+
 /**
  * Set hardware address of the interface.
  * Only MAC addresses are supported now.
@@ -2709,9 +2793,12 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
               const char *ifname)
 {
     te_errno rc = 0;
+    char     aux[65];
 
     UNUSED(gid);
     UNUSED(oid);
+
+    memset(aux, 0, 65);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -2722,63 +2809,216 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
+    strncpy(aux, value, 64);
+
 #ifdef SIOCSIFHWADDR
     strcpy(req.my_ifr_name, ifname);
     req.my_ifr_hwaddr.sa_family = AF_LOCAL;
 
+    if ((rc = link_addr_a2n(req.my_ifr_hwaddr.sa_data, 6, aux)) == -1)
     {
-        /* Conversion MAC address to binary value */
-        uint8_t    *ll_addr = req.my_ifr_hwaddr.sa_data;
-        const char *ptr = value;
-        const char *aux_ptr;
-        int         i;
-
-        for (i = 0; i < 6; i++)
-        {
-            aux_ptr = ptr;
-            if (!isxdigit(*aux_ptr))
-            {
-                ERROR("Invalid MAC address (unexpected symbol %c)",
-                      *aux_ptr);
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
-            aux_ptr++;
-            if (isxdigit(*aux_ptr))
-                aux_ptr++;
-            if ((*aux_ptr == ':') || (*aux_ptr == '\0'))
-            {
-                aux_ptr = ptr;
-                ll_addr[i] = strtol(ptr, (char **)&aux_ptr, 16);
-                ptr = aux_ptr + 1;
-                if (i == 5)
-                {
-                    if ((*aux_ptr == '\0'))
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        ERROR("Invalid MAC address");
-                        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-                    }
-                }
-            }
-            else
-            {
-                ERROR("Invalid MAC address (unexp. symbol %c)", *aux_ptr);
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
-        }
+        ERROR("%s: Link layer address conversation issue", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
+    rc = 0;
 
     CFG_IOCTL(cfg_socket, SIOCSIFHWADDR, &req);
 #else
     ERROR("Set of link-layer address is not supported");
     rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
+    return rc;
+}
+
+/**
+ * Set broadcast hardware address of the interface.
+ * Only MAC addresses are supported now.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         broadcast hardware address (it should be
+ *                      provided as XX:XX:XX:XX:XX:XX string)
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+bcast_link_addr_set(unsigned int gid, const char *oid,
+                    const char *value, const char *ifname)
+{
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    if (value == NULL)
+    {
+       ERROR("A broadcast link layer address to set is not provided");
+       return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+#ifdef SIOCSIFHWBROADCAST
+    strcpy(req.my_ifr_name, ifname);
+    req.my_ifr_hwaddr.sa_family = AF_LOCAL;
+
+    if ((rc = link_addr_a2n(req.my_ifr_hwaddr.sa_data, 6,
+                            (char *)value)) == -1)
+    {
+        ERROR("%s: Link layer address conversation issue", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    rc = 0;
+
+    CFG_IOCTL(cfg_socket, SIOCSIFHWBROADCAST, &req);
+#else
+    ERROR("Set of broadcast link-layer address is not supported");
+    rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
 
     return rc;
 }
+
+
+/**
+ * Set broadcast hardware address of the interface.
+ * Only MAC addresses are supported now.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         broadcast hardware address (it should be
+ *                      provided as XX:XX:XX:XX:XX:XX string)
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+bcast_link_addr_get(unsigned int gid, const char *oid,
+                    char *value, const char *ifname)
+{
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    if (value == NULL)
+    {
+       ERROR("A broadcast link layer address to set is not provided");
+       return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+#ifdef USE_NETLINK
+{
+    struct rtnl_handle  rth;
+    int                 ifindex;
+    agt_nlmsg_list      info_list;
+    agt_nlmsg_entry    *a_aux;
+    struct nlmsghdr    *n_aux = NULL;
+    struct ifinfomsg   *ifi = NULL;
+    struct rtattr      *tb[IFLA_MAX+1];
+    int                 len;
+
+
+    TAILQ_INIT(&info_list);
+
+    memset(&rth, 0, sizeof(rth));
+    if (rtnl_open(&rth, 0) < 0)
+    {
+        ERROR("%s: rtnl_open() failed", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    ll_init_map(&rth);
+
+    ifindex = ll_name_to_index(ifname);
+    if (ifindex <= 0)
+    {
+        ERROR("%s: Device \"%s\" does not exist.\n",
+              __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    if (rtnl_wilddump_request(&rth, AF_PACKET, RTM_GETLINK) < 0)
+    {
+        ERROR("%s: Cannot send dump request", __FUNCTION__);
+        rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto on_error;
+    }
+
+    if (rtnl_dump_filter(&rth, store_nlmsg, &info_list, NULL, NULL) < 0)
+    {
+        ERROR("%s: Dump terminated ", __FUNCTION__);
+        rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto on_error;
+    }
+
+    for (a_aux = info_list.tqh_first;
+         a_aux != NULL;
+         a_aux = a_aux->links.tqe_next)
+    {
+        n_aux = a_aux->hdr;
+        len = n_aux->nlmsg_len;
+        ifi = NLMSG_DATA(n_aux);
+
+        if (n_aux->nlmsg_type != RTM_NEWLINK &&
+            n_aux->nlmsg_type != RTM_DELLINK)
+            continue;
+
+        if (ifi->ifi_index != ifindex)
+            continue;
+
+        len -= NLMSG_LENGTH(sizeof(*ifi));
+        if (len < 0)
+            continue;
+
+        if (ifi->ifi_index != ifindex)
+            continue;
+
+        memset(tb, 0, sizeof(tb));
+        parse_rtattr(tb, IFLA_MAX, IFLA_RTA(ifi), len);
+        if (tb[IFLA_IFNAME] == NULL)
+        {
+            ERROR("%s: BUG! For ifindex %d ifname is not "
+                  "set into returned info", __FUNCTION__, ifindex);
+            rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+            goto on_error;
+        }
+
+        if (tb[IFLA_BROADCAST])
+        {
+            char buf[64];
+            link_addr_n2a(RTA_DATA(tb[IFLA_BROADCAST]),
+                          RTA_PAYLOAD(tb[IFLA_BROADCAST]),
+                          ifi->ifi_type,
+                          buf, sizeof(buf));
+            sprintf(value, "%s", buf);
+#ifdef LOCAL_FUNC_DEBUGGING
+            ERROR("IGORV: %s: tb[IFLA_BROADCAST] is TRUE - "
+                  "%s: %s", __FUNCTION__, ifname, buf);
+#endif
+        }
+        break;
+    }
+on_error:
+    rtnl_close(&rth);
+    free_nlmsg_list(&info_list);
+
+    return rc;
+}
+#else
+    ERROR("Retrieving of an interface broadcast link-layer address "
+          "is not supported");
+    rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+
+    return rc;
+}
+
 
 /**
  * Get MTU of the interface.

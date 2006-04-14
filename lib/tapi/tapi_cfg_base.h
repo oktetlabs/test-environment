@@ -82,12 +82,24 @@ extern int tapi_cfg_base_if_get_mac(const char *oid, uint8_t *mac);
  * Set MAC address of TA interface.
  *
  * @param oid       instance OID of TA interface
- * @param mac       location of MAC address to be set 
+ * @param mac       location of MAC address to be set
  *                  (at least ETHER_ADDR_LEN)
  *
  * @return Status code.
  */
 extern int tapi_cfg_base_if_set_mac(const char *oid, const uint8_t *mac);
+
+/**
+ * Set broadcast MAC address of TA interface.
+ *
+ * @param oid       instance OID of TA interface
+ * @param bcast_mac location of broadcast MAC address to be set
+ *                  (at least ETHER_ADDR_LEN)
+ *
+ * @return Status code.
+ */
+extern int tapi_cfg_base_if_bcast_set_mac(const char *oid,
+                                          const uint8_t *bcast_mac);
 
 /**
  * Get link address of TA interface.

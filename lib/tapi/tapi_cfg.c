@@ -1388,6 +1388,46 @@ tapi_cfg_set_hwaddr(const char *ta,
     return tapi_cfg_base_if_set_mac(buf, hwaddr);
 }
 
+/* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_set_bcast_hwaddr(const char *ta, const char *ifname,
+                          const void *hwaddr, unsigned int hwaddr_len)
+{
+    char        buf[1024];
+    char       *ifname_bkp;
+    char       *ptr;
+
+    if (hwaddr == NULL || hwaddr_len == 0)
+    {
+        ERROR("%s(): It is not allowed to have NULL 'hwaddr' or "
+              "'hwaddr_len' parameter", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (hwaddr_len < IFHWADDRLEN)
+    {
+        ERROR("%s(): 'hwaddr' is too short", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EMSGSIZE);
+    }
+
+    /**
+     * Configuration model does not support alias interfaces,
+     * so that we should truncate trailing :XX part from the interface name.
+     */
+    if ((ifname_bkp = (char *)malloc(strlen(ifname) + 1)) == NULL)
+    {
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+    memcpy(ifname_bkp, ifname, strlen(ifname) + 1);
+
+    if ((ptr = strchr(ifname_bkp, ':')) != NULL)
+        *ptr = '\0';
+
+    snprintf(buf, sizeof(buf), "/agent:%s/interface:%s",
+             ta, ifname_bkp);
+    free(ifname_bkp);
+    return tapi_cfg_base_if_set_bcast_mac(buf, hwaddr);
+}
+
 
 /* See the description in tapi_cfg.h */
 static int
