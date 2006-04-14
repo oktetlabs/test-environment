@@ -39,7 +39,7 @@ TE_TA_TYPE([linux64_lite], [], [unix], [--with-tad=tad_dummy], [], [], [],
 #
 TE_PLATFORM([i386-linux], [], [], [], [],
             [tools rpc_types comm_net_agent loggerta conf_oid rpcxdr rcfpch \
-             asn ndn tad])
+             asn ndn tad iscsi_unh_target])
 
 TE_LIB_PARMS([tad], [i386-linux], [],
              [-with-pcap --with-eth --with-bridge \
