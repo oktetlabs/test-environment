@@ -253,13 +253,13 @@ rcf_pch_rpc_server(const char *name)
 #endif
 
 #if defined(__CYGWIN__) && !defined(WINDOWS)
-    RING("RPC server '%s' (%s-bit, cygwin) (re-)started (PID %d, TID %u)",
-         name, sizeof(void *) == 8 ? "64" : "32",  
-         (int)getpid(), thread_self());
-#else	 
-    RING("RPC server '%s' (%s-bit) (re-)started (PID %d, TID %u)",
-         name, sizeof(void *) == 8 ? "64" : "32",  
-         (int)getpid(), thread_self());
+    RING("RPC server '%s' (%u-bit, cygwin) (re-)started (PID %d, TID %u)",
+         name, (unsigned)(sizeof(void *) << 3),
+         (int)getpid(), (unsigned)thread_self());
+#else
+    RING("RPC server '%s' (%u-bit) (re-)started (PID %d, TID %u)",
+         name, (unsigned)(sizeof(void *) << 3),
+         (int)getpid(), (unsigned)thread_self());
 #endif             
 
     while (TRUE)
