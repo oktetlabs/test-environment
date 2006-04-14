@@ -89,6 +89,38 @@ rpc_fopen(rcf_rpc_server *rpcs,
     RETVAL_RPC_PTR(fopen, out.mem_ptr);
 }
 
+rpc_file_p
+rpc_fdopen(rcf_rpc_server *rpcs, int fd,
+           const char *mode)
+{
+    tarpc_fdopen_in  in;
+    tarpc_fdopen_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL || fd < 0 || mode == NULL)
+    {
+        ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
+        RETVAL_RPC_PTR(fdopen, RPC_NULL);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.fd = fd;
+    in.mode = strdup(mode == NULL ? "" : mode);
+
+    rcf_rpc_call(rpcs, "fdopen", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): fdopen(%d, %s) -> 0x%x (%s)",
+                 rpcs->ta, rpcs->name,
+                 fd, mode,
+                 (unsigned)out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 
+    free(in.mode);                 
+
+    RETVAL_RPC_PTR(fdopen, out.mem_ptr);
+}
+
 int
 rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file)
 {

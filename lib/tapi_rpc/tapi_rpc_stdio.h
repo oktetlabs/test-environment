@@ -69,6 +69,19 @@ extern int rpc_fileno(rcf_rpc_server *rpcs,
  */
 extern rpc_file_p rpc_fopen(rcf_rpc_server *rpcs,
                             const char *path, const char *mode);
+
+/**
+ * Open a file on RPC server side and associate it with a stream.
+ *
+ * @note See @b fdopen manual page for more information
+ * @param rpcs     RPC server handle
+ * @param fd       file descriptor
+ * @param mode     type of file access
+ *
+ * @return Stream associated with the file name, otherwise @b NULL on error
+ */
+extern rpc_file_p rpc_fdopen(rcf_rpc_server *rpcs, int fd,
+                             const char *mode);
  
 /**
  * Close the stream associated with the file.

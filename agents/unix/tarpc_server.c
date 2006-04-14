@@ -3252,6 +3252,15 @@ TARPC_FUNC(fopen, {},
 }
 )
 
+/*-------------- fdopen() --------------------------------*/
+TARPC_FUNC(fdopen, {},
+{
+    MAKE_CALL(out->mem_ptr = 
+                  rcf_pch_mem_alloc(func_ptr_ret_ptr(in->fd,
+                                                     in->mode)));
+}
+)
+
 /*-------------- fclose() -------------------------------*/
 TARPC_FUNC(fclose, {},
 {

@@ -2418,6 +2418,20 @@ struct tarpc_fopen_out {
     tarpc_ptr mem_ptr;
 };
 
+/* fdopen() */
+struct tarpc_fdopen_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_int fd;
+    string    mode<>;
+};
+
+struct tarpc_fdopen_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_ptr mem_ptr;
+};
+
 /* fclose() */
 struct tarpc_fclose_in {
     struct tarpc_in_arg  common;
@@ -3369,6 +3383,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(socketpair)
         RPC_DEF(open)
         RPC_DEF(fopen)
+        RPC_DEF(fdopen)
         RPC_DEF(fclose)
         RPC_DEF(te_shell_cmd)
         RPC_DEF(system)
