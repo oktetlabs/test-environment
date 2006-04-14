@@ -2308,7 +2308,7 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
              *bytes_received, overlapped, callback);
     snprintf(str_buf + strlen(str_buf), sizeof(str_buf) - strlen(str_buf),
              ") -> %ld (%s)",
-             out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+             (long)out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     TAPI_RPC_LOG("%s", str_buf);
 
