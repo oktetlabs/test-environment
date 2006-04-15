@@ -524,8 +524,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
             sigprocmask(SIG_SETMASK, NULL, &(arg->mask));           \
             arg->done = FALSE;                                      \
                                                                     \
-            if (pthread_create(&_tid, NULL, _func##_proc,           \
-                               (void *)arg) != 0)                   \
+            if (pthread_create(&_tid, NULL, _func##_proc, arg) != 0)\
             {                                                       \
                 free(arg);                                          \
                 out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);   \
@@ -541,7 +540,11 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
             memset(in,  0, sizeof(*in));                            \
             memset(out, 0, sizeof(*out));                           \
                                                                     \
-            out->common.tid = rcf_pch_mem_alloc((void *)_tid);      \
+            /*                                                      \
+             * FIXME: Do not assumed that pthread_t is an integer,  \
+             * allocate memory for it.                              \
+             */                                                     \
+            out->common.tid = rcf_pch_mem_alloc((void *)(long)_tid);\
             out->common.done = rcf_pch_mem_alloc(&arg->done);       \
                                                                     \
             break;                                                  \
