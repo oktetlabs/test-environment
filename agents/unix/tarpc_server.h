@@ -285,10 +285,11 @@ extern int tarpc_find_func(const char *lib, const char *name,
 typedef struct checked_arg {
     struct checked_arg *next; /**< Next checked argument in the list */
 
-    char *real_arg;     /**< Pointer to real buffer */
-    char *control;      /**< Pointer to control buffer */
-    int   len;          /**< Whole length of the buffer */
-    int   len_visible;  /**< Length passed to the function under test */
+    uint8_t    *real_arg;     /**< Pointer to real buffer */
+    void       *control;      /**< Pointer to control buffer */
+    int         len;          /**< Whole length of the buffer */
+    int         len_visible;  /**< Length passed to the function
+                                   under test */
 } checked_arg;
 
 /** Initialise the checked argument and add it into the list */
