@@ -552,9 +552,13 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
                                                                     \
         case RCF_RPC_WAIT:                                          \
         {                                                           \
-            enum xdr_op op;                                         \
+            /*                                                      \
+             * FIXME: Do not assumed that pthread_t is an integer,  \
+             * allocate memory for it.                              \
+             */                                                     \
             pthread_t   _tid =                                      \
-                (pthread_t)rcf_pch_mem_get(in->common.tid);         \
+                (pthread_t)(long)rcf_pch_mem_get(in->common.tid);   \
+            enum xdr_op op;                                         \
                                                                     \
             VERB("%s(): WAIT", #_func);                             \
                                                                     \
@@ -565,7 +569,11 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
             rcf_pch_mem_free(in->common.done);                      \
             rcf_pch_mem_free(in->common.tid);                       \
                                                                     \
-            if (_tid == (pthread_t)NULL)                            \
+            /*                                                      \
+             * FIXME: Do not assumed that pthread_t is an integer,  \
+             * allocate memory for it.                              \
+             */                                                     \
+            if (_tid == (pthread_t)(long)NULL)                      \
             {                                                       \
                 ERROR("No thread with ID %u to wait",               \
                       (unsigned)in->common.tid);                    \
