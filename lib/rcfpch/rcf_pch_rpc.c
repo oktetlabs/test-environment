@@ -161,7 +161,7 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
  * @return Status code
  */
 static int
-recv_result(rpcserver *rpcs, uint8_t *buf, size_t buflen, 
+recv_result(rpcserver *rpcs, void *buf, size_t buflen, 
             uint32_t *p_len)
 {
     uint32_t len;
@@ -186,7 +186,7 @@ recv_result(rpcserver *rpcs, uint8_t *buf, size_t buflen,
     
     while (offset < len)
     {
-        int n = recv_timeout(rpcs->sock, buf + offset, 
+        int n = recv_timeout(rpcs->sock, (uint8_t *)buf + offset, 
                              buflen - offset, 5);
         
         if (n <= 0)
