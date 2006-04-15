@@ -103,7 +103,7 @@ msg_va_output(struct te_log_out_params *param, const char *fmt, va_list ap)
         if (param->offset >= param->buflen)
             return TE_EINVAL;
 
-        ret = vsnprintf(param->buf + param->offset,
+        ret = vsnprintf((char *)(param->buf + param->offset),
                         param->buflen - param->offset, fmt, ap);
 
         /* 
@@ -118,7 +118,7 @@ msg_va_output(struct te_log_out_params *param, const char *fmt, va_list ap)
             if (param->buf == NULL)
                 return TE_ENOMEM;
 
-            ret = vsnprintf(param->buf + param->offset,
+            ret = vsnprintf((char *)(param->buf + param->offset),
                             param->buflen - param->offset, fmt, ap);
             if (param->offset + ret >= param->buflen)
             {
