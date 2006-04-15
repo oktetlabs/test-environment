@@ -195,7 +195,7 @@ typedef struct md_list {
     struct md_list *next;
     struct md_list *last;
     uint32_t        narg;
-    uint8_t        *addr;
+    void           *addr;
     uint32_t        length;
 } md_list;
 
@@ -440,7 +440,7 @@ lgr_rb_allocate_head(struct lgr_rb *ring_buffer,
  */
 static inline uint32_t
 lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
-                         uint8_t *start, uint32_t length,
+                         void *start, uint32_t length,
                          uint8_t **arg_addr)
 {
     uint32_t start_pos = 0;
