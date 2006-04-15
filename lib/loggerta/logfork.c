@@ -436,15 +436,13 @@ logfork_log_message(const char *file, unsigned int line,
     udp_msg msg;
 
     struct te_log_out_params cm =
-        { NULL, msg.__log_msg, sizeof(msg.__log_msg), 0 };
+        { NULL, (uint8_t *)msg.__log_msg, sizeof(msg.__log_msg), 0 };
 
     UNUSED(file);
     UNUSED(line);
     UNUSED(entity);
 
     memset(&msg, 0, sizeof(msg));
-    cm.buf = msg.__log_msg;
-    cm.buflen = sizeof(msg.__log_msg);
 
     va_start(ap, fmt);
     (void)te_log_vprintf(&cm, fmt, ap);
