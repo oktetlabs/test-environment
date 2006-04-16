@@ -7,6 +7,7 @@ AM_LDFLAGS = @TE_LDFLAGS@
 
 include_HEADERS = \
 	tapi_test.h \
+	tapi_test_log.h \
 	tapi_jmp.h \
 	tapi_bufs.h \
 	tapi_sockaddr.h \

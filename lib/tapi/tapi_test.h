@@ -49,6 +49,8 @@
 #include "logger_api.h"
 #include "logger_ten.h"
 #include "tapi_jmp.h"
+#include "tapi_test_log.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -142,64 +144,6 @@ extern "C" {
     TEST_END_SPECIFIC;                                              \
     return result
 
-/**
- * Terminate a test with success status.
- */
-#define TEST_SUCCESS    (TAPI_JMP_DO(0))
-
-/**
- * Terminate a test with failure status. It is assumed that error is
- * already reported.
- */
-#define TEST_STOP       (TAPI_JMP_DO(TE_ETESTFAIL))
-
-/**
- * Terminate a test with failure status, report an error.
- *
- * @param fmt       error message format string with parameters
- */
-#define TEST_FAIL(fmt...) \
-    do {                                                            \
-        ERROR("Test Failed in %s, line %d, %s()",                   \
-              __FILE__, __LINE__, __FUNCTION__);                    \
-        ERROR(fmt);                                                 \
-        TEST_STOP;                                                  \
-    } while (0)
-
-/**
- * Macro should be used to output verdict from tests.
- *
- * @param fmt  the content of the verdict as format string with arguments
- */
-#define RING_VERDICT(fmt...) \
-    LOG_RING(TE_LOG_CMSG_USER, fmt)
-
-/**
- * Macro should be used to output verdict with WARN log level from tests.
- *
- * @param fmt  the content of the verdict as format string with arguments
- */
-#define WARN_VERDICT(fmt...) \
-    LOG_WARN(TE_LOG_CMSG_USER, fmt)
-
-/**
- * Macro should be used to output verdict with ERROR log level from tests.
- *
- * @param fmt  the content of the verdict as format string with arguments
- */
-#define ERROR_VERDICT(fmt...) \
-    LOG_ERROR(TE_LOG_CMSG_USER, fmt)
-
-/**
- * Terminate a test with failure status, report an error as verdict.
- *
- * @param fmt       error message format string with parameters
- */
-#define TEST_VERDICT(fmt...) \
-    do {                    \
-        ERROR_VERDICT(fmt); \
-        TEST_STOP;          \
-    } while (0)
 
 /**
  * Check an expression passed as the argument against zero.
