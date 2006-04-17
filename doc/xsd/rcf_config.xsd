@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsd:schema version="$Id: $"
+<xsd:schema version="$Id$"
     xml:lang="en"
     xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
@@ -27,6 +27,15 @@
             <xsd:annotation>
                 <xsd:documentation>
                     Name of a function to call
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>     
+        <xsd:attribute name="when" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation>
+                    If this attribute is present, the function is
+                    only called when the expanded value of the
+                    attribute is not empty
                 </xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>     
