@@ -62,6 +62,31 @@ enum iscsi_target_opcodes {
     ISCSI_TARG_RJT           = 0x3f
 };
 
+/** Logout responses */
+enum iscsi_logout_responses {
+    ISCSI_LOGOUT_RESPONSE_OK = 0x00,
+    ISCSI_LOGOUT_RESPONSE_NO_CID = 0x01,
+    ISCSI_LOGOUT_RESPONSE_CONN_RECOVERY_NOT_SUPPORTED = 0x02,
+    ISCSI_LOGOUT_RESPONSE_CLEANUP_FAILED = 0x03,
+};
+
+static inline int 
+iscsi_logout_resp_str2int(const char *resp)
+{
+    RING("Resp = %s", resp);
+
+    if (strcmp(resp, "NO_CID") == 0)
+        return ISCSI_LOGOUT_RESPONSE_NO_CID;
+    
+    if (strcmp(resp, "CONN_RECOVERY_NOT_SUPPORTED") == 0)
+        return ISCSI_LOGOUT_RESPONSE_CONN_RECOVERY_NOT_SUPPORTED;
+    
+    if (strcmp(resp, "OK") == 0)
+        return ISCSI_LOGOUT_RESPONSE_OK;
+
+    return ISCSI_LOGOUT_RESPONSE_CLEANUP_FAILED;
+}
+
 #define USE_FLAT_SPACE_LUN            0x0001
 #define USE_FULL_REPLIES              0x0002
 #define USE_SECURITY_PHASE            0x0004
