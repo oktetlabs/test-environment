@@ -515,10 +515,24 @@ parse_config(const char *filename)
 
         for (task = cur->xmlChildrenNode; task != NULL; task = task->next)
         {
+            char *condition;
+
             if (xmlStrcmp(task->name, (const xmlChar *)"thread") != 0 &&
                 xmlStrcmp(task->name, (const xmlChar *)"task") != 0 &&
                 xmlStrcmp(task->name, (const xmlChar *)"function") != 0)
                 continue;
+
+            condition = xmlGetProp_exp(task, (const xmlChar *)"when");
+            if (condition != NULL)
+            {
+                if (*condition == '\0')
+                {
+                    free(condition);
+                    continue;
+                }
+                free(condition);
+            }
+
             ta_task = malloc(sizeof(*ta_task));
             if (ta_task == NULL)
             {
