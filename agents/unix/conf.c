@@ -2548,6 +2548,71 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
 #endif
 }
 
+/*
+ * Next functions are pulled out from iproute internals
+ * to be accessible here and renamed.
+ */
+static const char *
+link_addr_n2a(unsigned char *addr, int alen,
+            int type, char *buf, int blen)
+{
+    int i;
+    int l;
+
+    l = 0;
+    for (i = 0; i < alen; i++)
+    {
+        if (i == 0)
+        {
+            snprintf(buf + l, blen, "%02x", addr[i]);
+            blen -= 2;
+            l += 2;
+        }
+        else
+        {
+            snprintf(buf + l, blen, ":%02x", addr[i]);
+            blen -= 3;
+            l += 3;
+        }
+    }
+    return buf;
+}
+
+static int
+link_addr_a2n(uint8_t *lladdr, int len, char *str)
+{
+    char *arg = str;
+    int i;
+
+    for (i = 0; i < len; i++)
+    {
+        unsigned int  temp;
+        char         *cp = strchr(arg, ':');
+        if (cp)
+        {
+            *cp = 0;
+            cp++;
+        }
+        if (sscanf(arg, "%x", &temp) != 1)
+        {
+            ERROR("%s: \"%s\" is invalid lladdr",
+                  __FUNCTION__, arg);
+            return -1;
+        }
+        if (temp > 255)
+        {
+            ERROR("%s:\"%s\" is invalid lladdr",
+                  __FUNCTION__, arg);
+            return -1;
+        }
+
+        lladdr[i] = (uint8_t)temp;
+        if (!cp)
+            break;
+        arg = cp;
+    }
+    return i + 1;
+}
 
 /**
  * Get hardware address of the interface.
