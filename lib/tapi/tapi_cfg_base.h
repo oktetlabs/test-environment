@@ -98,9 +98,8 @@ extern int tapi_cfg_base_if_set_mac(const char *oid, const uint8_t *mac);
  *
  * @return Status code.
  */
-extern int tapi_cfg_base_if_bcast_set_mac(const char *oid,
+extern int tapi_cfg_base_if_set_bcast_mac(const char *oid,
                                           const uint8_t *bcast_mac);
-
 /**
  * Get link address of TA interface.
  *
