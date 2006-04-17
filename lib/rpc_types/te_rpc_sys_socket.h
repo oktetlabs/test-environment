@@ -1438,7 +1438,6 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IP_RECVTOS);
         RPC2STR(IP_RECVTTL);
         RPC2STR(IP_RETOPTS);
-        RPC2STR(IP_ROUTER_ALERT);
         RPC2STR(IP_TOS);
         RPC2STR(IP_TTL);
         RPC2STR(IP_MTU);

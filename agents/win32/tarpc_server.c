@@ -1590,7 +1590,7 @@ TARPC_FUNC(setsockopt, {},
         struct in_addr          addr;
         struct timeval          tv;
         struct ip_mreq          mreq;
-        struct ipv6_mreq        mreq6;                         
+        struct ipv6_mreq        mreq6;
         
         if (in->optname == RPC_SO_SNDTIMEO || 
             in->optname == RPC_SO_RCVTIMEO)
@@ -1605,8 +1605,10 @@ TARPC_FUNC(setsockopt, {},
             
             opt = (char *)&optval;
             optlen = sizeof(int);
+            goto call_setsockopt;
         }
-        else switch (in->optval.optval_val[0].opttype)
+
+        switch (in->optval.optval_val[0].opttype)
         {
             case OPT_INT:
             {
@@ -1699,15 +1701,6 @@ TARPC_FUNC(setsockopt, {},
                 break;
             }
 
-            case OPT_IP_OPTS:
-            {
-                opt = (char *)in->optval.optval_val[0].option_value_u.
-                                  opt_ip_opts.options.options_val;
-                optlen = in->optval.optval_val[0].option_value_u.
-                             opt_ip_opts.options.options_len;
-                break;
-            }
-
             default:
                 ERROR("incorrect option type %d is received",
                       in->optval.optval_val[0].opttype);
@@ -1781,7 +1774,6 @@ TARPC_FUNC(getsockopt,
                     break;
 
                 case OPT_RAW_DATA:
-                case OPT_IP_OPTS:
                 {
                     optlen_in = optlen_out = *(out->optlen.optlen_val);
                     break;
@@ -1898,7 +1890,6 @@ TARPC_FUNC(getsockopt,
                        opt_string_len);
                 break;
             }
-            
             case OPT_RAW_DATA:
             {
                 char *str = (char *)opt;
@@ -1908,29 +1899,6 @@ TARPC_FUNC(getsockopt,
                        opt_raw_len);
                 break;
             }
-            
-            case OPT_IP_OPTS:
-            {
-                char *str = (char *)opt;
-
-                /* 
-                 * "Destination address" field is absent on Win32,
-                 * so write zero there.
-                 */
-                out->optval.optval_val[0].option_value_u.opt_ip_opts.
-                     dst_addr = 0;
-                
-                /* Copy getsockopt() result */
-                memcpy(out->optval.optval_val[0].option_value_u.opt_ip_opts.
-                       options.options_val, str, optlen_out);
-                
-                out->optval.optval_val[0].option_value_u.opt_ip_opts.
-                options.options_len = *(u_int *)out->optlen.optlen_val;
-
-                *(out->optlen.optlen_val) += sizeof(uint32_t);
-                break;
-            }
-
             default:
                 ERROR("incorrect option type %d is received",
                       out->optval.optval_val[0].opttype);

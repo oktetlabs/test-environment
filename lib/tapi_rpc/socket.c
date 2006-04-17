@@ -1362,24 +1362,6 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     optlen_copy = RPC_OPTLEN_AUTO;
                 break;
 
-            case RPC_IP_OPTIONS:
-            {
-                val.opttype = OPT_IP_OPTS;                
-                val.option_value_u.opt_ip_opts.dst_addr = 0;
-                
-                WARN("Get option value to buffer %d bytes long",  *optlen);
-                
-                val.option_value_u.opt_ip_opts.options.options_len = 
-                    (roptlen == RPC_OPTLEN_AUTO)?
-                    sizeof(struct ip_opts) : roptlen;
-                val.option_value_u.opt_ip_opts.options.options_val =
-                    (uint8_t *)optval;
-
-                if (optlen_copy == sizeof(struct ip_opts))
-                    optlen_copy = RPC_OPTLEN_AUTO;
-                break;
-            }               
-
             default:
                 val.opttype = OPT_INT;
                 if (roptlen >= sizeof(int))
@@ -1558,16 +1540,6 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                          "sizeof(struct tcp_info)=%u, value is ignored",
                          sockopt_rpc2str(optname), sizeof(struct tcp_info));
                 }
-                break;
-                
-                case RPC_IP_OPTIONS:
-                    memcpy(optval,
-                           out.optval.optval_val[0].option_value_u.
-                           opt_ip_opts.options.options_val,
-                           *optlen);
-                
-                    snprintf(opt_val_str, sizeof(opt_val_str),
-                             "{ options }");
                 break;
 
                 default:
@@ -1748,9 +1720,8 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                     {
                         if (optname != RPC_IP_MULTICAST_IF)
                         {
-                            ERROR("%s socket option does not support "
-                                  "'struct in_addr' argument",
-                                  sockopt_rpc2str(optname));
+                            ERROR("IP_MULTICAST_IF socket option does not"
+                                  " support 'struct in_addr' argument");
                             return TE_RC(TE_TAPI, TE_EINVAL);
                         }
                         
@@ -1829,16 +1800,6 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                     in.optlen = RPC_OPTLEN_AUTO;
                 break;
 
-            }
-
-            case RPC_IP_OPTIONS:
-            {
-                val.opttype = OPT_IP_OPTS;                
-                val.option_value_u.opt_ip_opts.dst_addr = 0;
-                val.option_value_u.opt_ip_opts.options.options_len = optlen;
-                val.option_value_u.opt_ip_opts.options.options_val =
-                    (uint8_t *)optval;
-                break;
             }
 
             default:
