@@ -496,12 +496,66 @@ cfg_process_msg_register(cfg_register_msg *msg)
  *
  * @param msg   pointer to a message containing the request.
  */
-void 
+void
 cfg_process_msg_unregister(cfg_unregister_msg *msg)
-{   
+{
     msg->rc = cfg_db_unregister_obj_by_id_str(msg->id);
     return;
 }
+
+/**
+ * Remove an object from the list of dependants of the master obj.
+ *
+ * @param master   An object whose list of dependants is to be processed.
+ * @param obj      An object to be removed from the list of dependants.
+ *
+ * return  The dependant object, if found and removed.
+ *          NULL, otherwise.
+ */
+#define CFG_DEP_LIST_RM(head, obj)                                  \
+    do {                                                            \
+        curr = head; prev = curr;                                   \
+        for (;curr != NULL && curr->depends != obj;                 \
+             prev = curr, curr = curr->next);                       \
+                                                                    \
+        if (curr == NULL) /* didn't find the obj in the list */     \
+            return NULL;                                            \
+                                                                    \
+        if (prev == curr) /* head */                                \
+            head = curr->next;                                      \
+        else                   /* remove the link */                \
+            prev->next = curr->next;                                \
+    } while (0)
+
+static cfg_object *
+forget_dependant(cfg_object *master, cfg_object *obj)
+{
+    cfg_dependency      *curr, *prev;
+
+    CFG_DEP_LIST_RM(master->dependants, obj);
+
+    return obj;
+}
+
+/**
+ * Remove an object from the list of masters of the dependant obj.
+ *
+ * @param dependant   An object whose list of masters is to be processed.
+ * @param obj         An object to be removed from the list of masters.
+ *
+ * return  The master object, if found and removed.
+ *          NULL, otherwise.
+ */
+static cfg_object *
+forget_master(cfg_object *dependant, cfg_object *obj)
+{
+    cfg_dependency      *curr, *prev;
+
+    CFG_DEP_LIST_RM(dependant->depends_on, obj);
+
+    return obj;
+}
+#undef CFG_DEP_LIST_RM
 
 /**
  * Remove an object from the data base.
@@ -510,9 +564,9 @@ cfg_process_msg_unregister(cfg_unregister_msg *msg)
  *
  * @return  0 or TE_EINVAL, if error occurred.
  *
- * @author Igor Baryshev <Igor.Baryshev@oktetlabs.ru> 
+ * @author Igor Baryshev <Igor.Baryshev@oktetlabs.ru>
  */
-te_errno 
+te_errno
 cfg_db_unregister_obj_by_id_str(char *id)
 {
     cfg_object          *obj;
@@ -520,12 +574,12 @@ cfg_db_unregister_obj_by_id_str(char *id)
     cfg_object          *father;
     cfg_object          *master;
     cfg_dependency      *depends_on;
-    cfg_dependency      *dependants, *dependants_prev;
+    cfg_dependency      *dependants;
 
     cfg_oid             *idsplit = NULL;
     cfg_object_subid    *id_elmnt, *ids_end;
     int                 len;
-    int                 n;
+    int                 i;
     char                pattern[CFG_OID_MAX];
     char                *iter;
     cfg_handle          *matches = NULL;
@@ -539,15 +593,7 @@ cfg_db_unregister_obj_by_id_str(char *id)
         ERROR("no object with id string: %s\n", id);
         return TE_RC(TE_CS, TE_EINVAL);
     }
-    
-    if (obj->dependants != NULL)
-    {
-        ERROR("can't remove an object: %s, "
-              "because a dependant is present: %s\n",
-              id, obj->dependants->depends->oid);
-        return TE_RC(TE_CS, TE_EINVAL);
-    }
-    
+
     if (obj->son != NULL)
     {
         ERROR("can't remove an object: %s, "
@@ -555,14 +601,28 @@ cfg_db_unregister_obj_by_id_str(char *id)
               id, obj->son->oid);
         return TE_RC(TE_CS, TE_EINVAL);
     }
-   
+
     if (obj->father == NULL)
     {
         ERROR("can't remove a root object: %s\n", id);
         return TE_RC(TE_CS, TE_EINVAL);
     }
 
-    
+
+    /* Cut off all the dependants by brutal force
+     * (normally, should not happen): */
+    for (dependants = obj->dependants; dependants != NULL;
+         dependants = dependants->next)
+    {
+        WARN("To remove object: %s, "
+             "will break the dependency (on it) of: %s\n",
+             id, dependants->depends->oid);
+
+        /* the obj must be there, so assert: */
+        assert(forget_master(dependants->depends, obj) != NULL);
+    }
+
+
     /* Form a pattern '|A0:*|A1:*|... and check for instances: */
     idsplit = cfg_convert_oid_str(id);
     id_elmnt = (cfg_object_subid *)(idsplit->ids);
@@ -574,8 +634,8 @@ cfg_db_unregister_obj_by_id_str(char *id)
         len = strlen(id_elmnt->subid) + 4; /* '/'+':'+'*'+'\n' */
         if (iter + len > pattern + CFG_OID_MAX)
             return TE_RC(TE_CS, TE_EINVAL);
-        
-        n = snprintf(iter, len, "/%s:*", id_elmnt->subid);
+
+        snprintf(iter, len, "/%s:*", id_elmnt->subid);
         iter += (len -1 ); /* will overwrite '\n' */
     }
     cfg_free_oid(idsplit);
@@ -587,49 +647,36 @@ cfg_db_unregister_obj_by_id_str(char *id)
               rc, pattern);
         return rc;
     }
-    if (matches != NULL)
-    {
-        ERROR("can't remove an object: %s, "
-              "because an instance is present: %s\n",
-              id, cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(matches[0])]->oid);
-        free(matches);
-        return TE_RC(TE_CS, TE_EINVAL);
-    }
 
-    
+    for (i = 0; i < nof_matches; i++)
+    {
+        WARN("To remove object: %s, "
+              "will try to remove instance: %s\n",
+              id, cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(matches[i])]->oid);
+        cfg_db_del(matches[i]);
+    }
+    free(matches);
+
+
     /* remove obj from the list of dependants of each master: */
     depends_on = obj->depends_on;
     for (;depends_on != NULL; depends_on = depends_on->next)
     {
         master = depends_on->depends;
         assert(master != NULL);
-        
-        /* go through the list of dependants: */
-        dependants = master->dependants, dependants_prev = dependants;
-        for (;dependants != NULL;
-             dependants_prev = dependants, dependants = dependants->next)
-        {
-            if (dependants->depends == obj) /* remove the obj: */
-            {
-                if (dependants_prev == dependants) /* head */
-                    master->dependants = NULL;
-                else                               /* remove the link */
-                    dependants_prev->next = dependants->next;
 
-                break;
-            }
-        }
-        /* didn't find obj, which should have been there! */
-        assert(dependants != NULL);
+        /* the obj must be there, so assert: */
+        assert(forget_dependant(master, obj) != NULL);
     }
-    
-    
-    /* Since we assumed and tested above that nobody depends on the obj,
+
+
+    /* Since we've made sure above that nobody depends on the obj,
      * we just remove the obj from the topological order: */
     if (obj->dep_prev == NULL)       /* head */
     {
         topological_order       = obj->dep_next;
-        topological_order->dep_prev = NULL;
+        if (topological_order != NULL)
+            topological_order->dep_prev = NULL;
     }
     else if (obj->dep_next == NULL)  /* tail */
     {
@@ -640,8 +687,8 @@ cfg_db_unregister_obj_by_id_str(char *id)
         obj->dep_prev->dep_next = obj->dep_next;
         obj->dep_next->dep_prev = obj->dep_prev;
     }
-    
-    
+
+
     /* Remove the obj from the obj tree: */
     father = obj->father;
     if (father->son == obj)
@@ -650,12 +697,13 @@ cfg_db_unregister_obj_by_id_str(char *id)
     {
         for (brother = father->son;
              brother->brother != obj;
-             brother = brother->brother); 
-             
+             brother = brother->brother);
+
         assert(brother != NULL);
         brother->brother = obj->brother;
     }
-    
+
+
     /* Delete from the array of objects */
     cfg_all_obj[obj->handle] = NULL;
 
@@ -664,6 +712,7 @@ cfg_db_unregister_obj_by_id_str(char *id)
     free(obj);
     return 0;
 } /* cfg_db_unregister_obj_by_id_str() */
+
 
 void
 cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
