@@ -154,17 +154,6 @@ typedef struct net_stats {
 } net_stats;
 
 
-#define STATS_NET_DEV_PROC_LINE_LEN 1024
-
-#define STATS_NET_DEV_LINES_TO_SKIP 2
-
-static char *stats_net_dev_fmt =
-    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
-    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
-    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT;
-
-#define STATS_NET_DEV_PARAM_COUNT   15
-
 static te_errno
 dev_stats_get(const char *devname, if_stats *stats)
 {
@@ -193,6 +182,8 @@ dev_stats_get(const char *devname, if_stats *stats)
         return TE_OS_RC(TE_TA_UNIX, EINVAL);
     }
 
+#define STATS_NET_DEV_PROC_LINE_LEN 1024
+
     buf = (char *)malloc(STATS_NET_DEV_PROC_LINE_LEN);
     if (buf == NULL)
     {
@@ -207,6 +198,8 @@ dev_stats_get(const char *devname, if_stats *stats)
         rc = TE_OS_RC(TE_TA_UNIX, errno);
         goto cleanup;
     }
+
+#define STATS_NET_DEV_LINES_TO_SKIP 2
 
     for (line = 0; line < STATS_NET_DEV_LINES_TO_SKIP; line++)
     {
@@ -239,6 +232,13 @@ dev_stats_get(const char *devname, if_stats *stats)
     
     if (ptr != NULL)
     {
+#define STATS_NET_DEV_PARAM_COUNT   15
+
+        static const char *stats_net_dev_fmt =
+            U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+            U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+            U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT;
+
         VERB("Found line %d: >%s", line, buf);
         ptr += strlen(devname) + 1;
         if ((rc = sscanf(ptr, stats_net_dev_fmt,
@@ -263,6 +263,7 @@ dev_stats_get(const char *devname, if_stats *stats)
                   rc, STATS_NET_DEV_PARAM_COUNT);
             return TE_OS_RC(TE_TA_UNIX, EINVAL);
         }
+#undef STATS_NET_DEV_PARAM_COUNT
     }
 #endif
 
@@ -284,30 +285,31 @@ cleanup:
 
 
 
-static char *stats_net_snmp_ipv4_fmt =
-    "Ip:"
-    I64_FMT I64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
-    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
-    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT;
-
-#define STATS_SNMP_IPV4_PARAM_COUNT     19
-
-static char *stats_net_snmp_icmp_fmt =
-    "Icmp:"
-    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
-    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
-    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
-    U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
-    U64_FMT U64_FMT U64_FMT;
-
-#define STATS_SNMP_ICMP_PARAM_COUNT     26
-
 #define MAX_PROC_NET_SNMP_SIZE  4096
 
 static te_errno
 net_stats_get(net_stats *stats)
 {
 #if __linux__
+
+#define STATS_SNMP_IPV4_PARAM_COUNT     19
+
+    static const char *stats_net_snmp_ipv4_fmt =
+        "Ip:"
+        I64_FMT I64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+        U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+        U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT;
+
+#define STATS_SNMP_ICMP_PARAM_COUNT     26
+
+    static const char *stats_net_snmp_icmp_fmt =
+        "Icmp:"
+        U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+        U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+        U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+        U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
+        U64_FMT U64_FMT U64_FMT;
+
     int         rc = 0;
     char       *buf = NULL;
     char       *ptr = NULL;
