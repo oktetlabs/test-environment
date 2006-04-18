@@ -1,0 +1,10 @@
+#
+# Builder configuration file to build TE logs processing and report 
+# generation tools only.
+#
+
+TE_PLATFORM()
+
+TE_APP([])
+
+TE_TOOLS([rgt trc])
