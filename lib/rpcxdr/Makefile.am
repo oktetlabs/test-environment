@@ -2,7 +2,8 @@
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I. -I$(DESTDIR)/$(includedir) -include config.h
-AM_CFLAGS = @TE_CFLAGS@ -Wno-unused-parameter -Wno-unused-variable
+AM_CFLAGS = @TE_CFLAGS@ -Wno-unused-parameter -Wno-unused-variable \
+            -fno-strict-aliasing
 include_HEADERS=rpc_xdr.h tarpc.h
 
 lib_LIBRARIES=librpcxdr.a librpcxdrta.a
