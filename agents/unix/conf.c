@@ -310,6 +310,9 @@ static const char * const env_hidden[] = {
 static te_errno ip4_fw_get(unsigned int, const char *, char *);
 static te_errno ip4_fw_set(unsigned int, const char *, const char *);
 
+static te_errno ip6_fw_get(unsigned int, const char *, char *);
+static te_errno ip6_fw_set(unsigned int, const char *, const char *);
+
 static te_errno interface_list(unsigned int, const char *, char **);
 static te_errno interface_add(unsigned int, const char *, const char *,
                               const char *);
@@ -459,9 +462,11 @@ RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
 RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_interface,
                     ip4_fw_get, ip4_fw_set);
 
+RCF_PCH_CFG_NODE_RW(node_ip6_fw, "ip6_fw", NULL, &node_ip4_fw,
+                    ip6_fw_get, ip6_fw_set);
 
 static rcf_pch_cfg_object node_env =
-    { "env", 0, NULL, &node_ip4_fw,
+    { "env", 0, NULL, &node_ip6_fw,
       (rcf_ch_cfg_get)env_get, (rcf_ch_cfg_set)env_set,
       (rcf_ch_cfg_add)env_add, (rcf_ch_cfg_del)env_del,
       (rcf_ch_cfg_list)env_list, NULL, NULL };
@@ -549,6 +554,10 @@ rcf_ch_conf_root(void)
 #endif
 
         rcf_pch_rsrc_info("/agent/ip4_fw", 
+                          rcf_pch_rsrc_grab_dummy,
+                          rcf_pch_rsrc_release_dummy);
+
+        rcf_pch_rsrc_info("/agent/ip6_fw",
                           rcf_pch_rsrc_grab_dummy,
                           rcf_pch_rsrc_release_dummy);
 
@@ -690,6 +699,7 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
     if ((*value != '0' && *value != '1') || *(value + 1) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
+#if __linux__
     fd = open("/proc/sys/net/ipv4/ip_forward",
               O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if (fd < 0)
@@ -702,9 +712,91 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
     }
 
     close(fd);
-
+#endif
     return 0;
 }
+
+/**
+ * Obtain value of the IPv6 forwarding sustem variable.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full instance identifier (unused)
+ * @param value         value location
+ *
+ * @return              Status code
+ */
+static te_errno
+ip6_fw_get(unsigned int gid, const char *oid, char *value)
+{
+    char c = '0';
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    {
+        int  fd;
+
+        if ((fd = open("/proc/sys/net/ipv6/conf/all/forwarding",
+                       O_RDONLY)) < 0)
+            return TE_OS_RC(TE_TA_UNIX, errno);
+
+        if (read(fd, &c, 1) < 0)
+        {
+            close(fd);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        close(fd);
+    }
+#endif
+
+    sprintf(value, "%d", c == '0' ? 0 : 1);
+
+    return 0;
+}   /* ip6_fw_get() */
+
+/**
+ * Enable/disable IPv6 forwarding.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full instance identifier (unused)
+ * @param value         pointer to new value of IPv6 forwarding system
+ *                      variable
+ *
+ * @return              Status code
+ */
+static te_errno
+ip6_fw_set(unsigned int gid, const char *oid, const char *value)
+{
+    int fd;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (!rcf_pch_rsrc_accessible("/agent/ip6_fw"))
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+
+    if ((*value != '0' && *value != '1') || *(value + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    
+#if __linux__
+    fd = open("/proc/sys/net/ipv6/conf/all/forwarding",
+              O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    close(fd);
+#endif
+
+    return 0;
+}   /* ip6_fw_set() */
 
 /**
  * Convert and check address prefix value.
