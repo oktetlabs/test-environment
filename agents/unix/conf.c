@@ -2713,7 +2713,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
             return TE_RC(TE_TA_UNIX, rc);
         }
         (void)dlpi_close(fd);
-        ptr = buf;
+        ptr = (uint8_t *)buf;
 #else
         ptr = all_zeros;
 #endif
