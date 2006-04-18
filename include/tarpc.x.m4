@@ -1843,7 +1843,8 @@ enum option_type {
     OPT_TCP_INFO        = 8,
     OPT_HANDLE          = 9,
     OPT_MREQ6           = 10,
-    OPT_RAW_DATA        = 11
+    OPT_RAW_DATA        = 11,
+    OPT_IP_OPTS         = 12
 };
 
 struct tarpc_linger {
@@ -1874,6 +1875,11 @@ struct tarpc_mreqn {
     uint32_t            address;
     tarpc_int           ifindex;
     tarpc_ssize_t       len_diff;
+};
+
+struct option_value_ip_opts {
+    uint32_t    dst_addr;
+    uint8_t     options<>;
 };
 
 struct option_value_tcp_info {
@@ -1926,6 +1932,7 @@ union option_value switch (option_type opttype) {
     case OPT_TCP_INFO:          struct option_value_tcp_info opt_tcp_info;
     case OPT_HANDLE:            int opt_handle;
     case OPT_RAW_DATA:          uint8_t opt_raw<>;
+    case OPT_IP_OPTS:           struct option_value_ip_opts opt_ip_opts;                            
 };
 
 /* setsockopt() */
