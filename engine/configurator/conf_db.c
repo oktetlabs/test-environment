@@ -935,7 +935,7 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
                 tmp = (cfg_pattern_msg *)tmp1;                      \
             }                                                       \
         }                                                           \
-        tmp->handles[num++] = _handle;                              \
+        tmp->handles[num] = _handle;                              \
     } while(0)
 
 #define RETERR(_rc) \
@@ -951,8 +951,9 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
     if (rc != 0)
         RETERR(rc);
     
-    for (num = 0; num < nof_matches;)
-        PUT_HANDLE(matches[num]);  /* num++ is done in here */
+    for (num = 0; num < nof_matches; num++)
+        PUT_HANDLE(matches[num]);
+        
     free(matches);
     
     VERB("Found %d OIDs by pattern", num);

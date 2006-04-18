@@ -284,8 +284,6 @@ cfg_db_obj_print_deps(const char *filename,
     char            id[CFG_OID_MAX];
     size_t          id_len;
     cfg_object      *obj;
-    cfg_dependency  *depends_on;
-    cfg_dependency  *dependants;
     va_list ap;
 
 
@@ -345,7 +343,6 @@ obj_bufprint_deps(cfg_object *obj)
     static char     *buf = NULL;
     static int      offset = 0;
     static size_t   sz = sz_ini;
-    int             i;
     char            *tmp;
     cfg_object      *otmp;
     cfg_dependency  *depends_on;
