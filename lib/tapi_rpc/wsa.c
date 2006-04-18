@@ -3197,18 +3197,21 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
             tarpc_qos *rqos;
             rpc_qos   *qos;
 
-            rqos = &in_req.wsa_ioctl_request_u.req_qos;
-            qos = (rpc_qos *)inbuf;
+            if (inbuf != NULL)
+            {
+                rqos = &in_req.wsa_ioctl_request_u.req_qos;
+                qos = (rpc_qos *)inbuf;
 
-            in_req.type = WSA_IOCTL_QOS;
-            /* rpc_flowspec and tarpc_flowspec declarations are
-             * identical, so we can freely cast each to other. */
-            rqos->sending = *(tarpc_flowspec *)&qos->sending;
-            rqos->receiving = *(tarpc_flowspec *)&qos->receiving;
-            rqos->provider_specific_buf.provider_specific_buf_val =
-                qos->provider_specific_buf;
-            rqos->provider_specific_buf.provider_specific_buf_len =
-                qos->provider_specific_buf_len;
+                in_req.type = WSA_IOCTL_QOS;
+                /* rpc_flowspec and tarpc_flowspec declarations are
+                 * identical, so we can freely cast each to other. */
+                rqos->sending = *(tarpc_flowspec *)&qos->sending;
+                rqos->receiving = *(tarpc_flowspec *)&qos->receiving;
+                rqos->provider_specific_buf.provider_specific_buf_val =
+                    qos->provider_specific_buf;
+                rqos->provider_specific_buf.provider_specific_buf_len =
+                    qos->provider_specific_buf_len;
+            }
             break;
         }
 
