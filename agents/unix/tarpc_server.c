@@ -1120,23 +1120,25 @@ TARPC_FUNC(if_indextoname,
     COPY_ARG(ifname);
 },
 {
-    char *name;
-
-    memcmp(name, out->ifname.ifname_val, out->ifname.ifname_len);
-
-    MAKE_CALL(name = (char *)func_ret_ptr(in->ifindex, 
-                                          out->ifname.ifname_val));
-
-    if (name != NULL && name != out->ifname.ifname_val)
+    if (out->ifname.ifname_val == NULL ||
+        out->ifname.ifname_len >= IF_NAMESIZE)
     {
-        ERROR("if_indextoname returned incorrect pointer");
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
+        char *name;
+
+        MAKE_CALL(name = (char *)func_ret_ptr(in->ifindex, 
+                                              out->ifname.ifname_val));
+
+        if (name != NULL && name != out->ifname.ifname_val)
+        {
+            ERROR("if_indextoname() returned incorrect pointer");
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
+        }
     }
-
-    if (name == NULL &&
-        memcmp(name, out->ifname.ifname_val, out->ifname.ifname_len) != 0)
+    else
     {
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
+        ERROR("if_indextoname() cannot be called with 'ifname' location "
+              "size less than IF_NAMESIZE");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 }
 )
@@ -2847,12 +2849,12 @@ TARPC_FUNC(recvmsg,
                  c != NULL;
                  i++, c = CMSG_NXTHDR(&msg, c))
             {
-                char *data = CMSG_DATA(c);
+                uint8_t *data = CMSG_DATA(c);
                 
                 rpc_c->level = socklevel_h2rpc(c->cmsg_level);
                 rpc_c->type = sockopt_h2rpc(c->cmsg_level, c->cmsg_type);
                 if ((rpc_c->data.data_len = 
-                         c->cmsg_len - (data - (char *)c)) > 0)
+                         c->cmsg_len - (data - (uint8_t *)c)) > 0)
                 {
                     rpc_c->data.data_val = malloc(rpc_c->data.data_len);
                     if (rpc_c->data.data_val == NULL)
