@@ -169,6 +169,7 @@ static te_errno
 dev_stats_get(const char *devname, if_stats *stats)
 {
     int   rc = 0;
+#if __linux__
     char *buf = NULL;
     char *ptr = NULL;
     FILE *devf = NULL;
@@ -180,8 +181,9 @@ dev_stats_get(const char *devname, if_stats *stats)
     uint64_t out_overruns;
     uint64_t out_carrier_losses;
     uint64_t out_compressed;
+#endif
 
-    memset(stats, 0, sizeof(if_stats));
+    memset(stats, 0, sizeof(*stats));
 
     VERB("dev_stats_get(devname=\"%s\") started", devname);
 
@@ -267,8 +269,8 @@ dev_stats_get(const char *devname, if_stats *stats)
     rc = 0;
 
 
-cleanup:
 #if __linux__
+cleanup:
     if (devf != NULL)
         fclose(devf);
 
