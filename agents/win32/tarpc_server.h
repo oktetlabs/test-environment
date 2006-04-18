@@ -827,6 +827,8 @@ _func##_proc(void *arg)                                                 \
     tarpc_##_func##_out *out = &(((_func##_arg *)arg)->out);            \
     checked_arg         *list = NULL;                                   \
                                                                         \
+    UNUSED(list); /* Possibly unused */                                 \
+                                                                        \
     logfork_register_user(#_func);                                      \
                                                                         \
     VERB("Entry thread %s", #_func);                                    \
@@ -848,7 +850,9 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     _func##_arg  *arg;                                                  \
     enum xdr_op  op = XDR_FREE;                                         \
                                                                         \
+    UNUSED(list); /* Possibly unused */                                 \
     UNUSED(rqstp);                                                      \
+                                                                        \
     memset(out, 0, sizeof(*out));                                       \
     VERB("PID=%d TID=%d: Entry %s",                                     \
          (int)getpid(), (int)thread_self(), #_func);                    \
