@@ -211,7 +211,7 @@ ta_unix_conf_get_mib(unsigned int mib_level, unsigned int mib_name,
         }
 
         data.maxlen = hdr->len;
-        data.buf    = (uint8_t *)(*buf) + used;
+        data.buf    = (char *)(*buf) + used;
         data.len    = 0;
         flags = 0;
         ret = getmsg(dev, NULL, &data, &flags);
