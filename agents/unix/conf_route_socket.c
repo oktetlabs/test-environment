@@ -71,6 +71,8 @@
 static int rt_seq = 0;
 
 
+#ifdef TA_UNIX_CONF_ROUTE_DEBUG
+
 /**
  * Convert route message type to string.
  *
@@ -431,6 +433,9 @@ route_log(const char *title, const struct rt_msghdr *rtm)
 #endif
          );
 }
+
+#endif /* TA_UNIX_CONF_ROUTE_DEBUG */
+
 
 /**
  * Convert routing socket message to system-independent route
