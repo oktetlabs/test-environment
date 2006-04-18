@@ -15,7 +15,7 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 AC_PROG_CC
 AC_PROG_INSTALL
 
-TE_PLAIN_SET
+TE_LIB_SET
 
 AC_CONFIG_HEADERS([te_config_internal.h])
 AH_TOP([#ifndef __TE_CONFIG_INTERNAL_H__
@@ -254,6 +254,6 @@ AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
 
 AC_CONFIG_FILES([Makefile])
 
-TE_PLAIN_RESTORE
+TE_LIB_RESTORE
 
 AC_OUTPUT
