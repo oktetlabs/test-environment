@@ -307,14 +307,16 @@ static char *stats_net_snmp_icmp_fmt =
 static te_errno
 net_stats_get(net_stats *stats)
 {
+#if __linux__
     int         rc = 0;
     char       *buf = NULL;
     char       *ptr = NULL;
     uint64_t    forwarding;
     uint64_t    default_ttl;
     int         fd = -1;
+#endif
 
-    memset(stats, 0, sizeof(net_stats));
+    memset(stats, 0, sizeof(*stats));
 
 #if __linux__
 
@@ -438,9 +440,9 @@ net_stats_get(net_stats *stats)
     }
 
     free(buf);
-#endif    
 
 cleanup:
+#endif    
 
     return 0;
 }
