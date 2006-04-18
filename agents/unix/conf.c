@@ -2559,6 +2559,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
 }
 
 
+#ifdef USE_NETLINK
 /*
  * Next functions are pulled out from iproute internals
  * to be accessible here and renamed.
@@ -2588,7 +2589,9 @@ link_addr_n2a(unsigned char *addr, int alen,
     }
     return buf;
 }
+#endif
 
+#if defined(SIOCSIFHWADDR) || defined(SIOCSIFHWBROADCAST)
 static int
 link_addr_a2n(uint8_t *lladdr, int len, char *str)
 {
@@ -2624,6 +2627,7 @@ link_addr_a2n(uint8_t *lladdr, int len, char *str)
     }
     return i + 1;
 }
+#endif
 
 /**
  * Get hardware address of the interface.
