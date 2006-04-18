@@ -61,7 +61,7 @@ TE_BS_PLATFORMS=
 TE_BS_TOOLS=rgt
 
 # List of TEN applications
-TE_BS_APP="builder rcf logger tester configurator"
+TE_BS_APPS="builder rcf logger tester configurator"
 
 # List of Test Agents
 TE_BS_TA=
@@ -108,7 +108,7 @@ else
     echo TE_BS_PLATFORMS=$TE_BS_PLATFORMS >> ${TE_BUILD}/builder.conf.processed.new
     eval ${HOST}_LIBS="ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tad"
     echo ${HOST}_LIBS=\"ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tad\" >> ${TE_BUILD}/builder.conf.processed.new
-    echo TE_BS_APP=\"$TE_BS_APP\" >> ${TE_BUILD}/builder.conf.processed.new
+    echo TE_BS_APPS=\"$TE_BS_APPS\" >> ${TE_BUILD}/builder.conf.processed.new
 fi
 echo 'TE_PATH=${TE_INSTALL}/${host}/bin' >> ${TE_BUILD}/builder.conf.processed.new
 
@@ -208,12 +208,12 @@ AC_SUBST([LIB_DIST_SUBDIRS])
 
 # Configure TEN applications
 if test -z "$no_create" ; then
-    for package in $DUMMY $TE_BS_APP ; do
+    for package in $DUMMY $TE_BS_APPS ; do
         ${TE_BASE}/engine/builder/te_configure_package APP $package $package \
             $host ${TE_BASE}/engine/$package $prefix || exit 1
     done
 fi    
-APP_SUBDIRS="$TE_BS_APP"
+APP_SUBDIRS="$TE_BS_APPS"
 AC_SUBST([APP_SUBDIRS])
 
 # Configure tools
