@@ -2691,7 +2691,8 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
             return TE_RC(TE_TA_UNIX, TE_ENOSYS);
         }
         /* Get link-layer address */
-        if (dlpi_phys_addr(fd, -1, DL_CURR_PHYS_ADDR, buf, NULL) < 0)
+        if (dlpi_phys_addr(fd, -1, DL_CURR_PHYS_ADDR,
+                           (uint8_t *)buf, NULL) < 0)
         {
             rc = te_rc_os2te(errno);
             ERROR("%s(): dlpi_phys_addr(DL_CURR_PHYS_ADDR) failed: %r",
