@@ -460,6 +460,7 @@ _func##_proc(void *arg)                                             \
     checked_arg            *list = NULL;                            \
     checked_arg           **list_ptr = &list;                       \
                                                                     \
+    UNUSED(list_ptr); /* Possibly unused */                         \
                                                                     \
     logfork_register_user(#_func);                                  \
                                                                     \
@@ -498,6 +499,8 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
         {                                                           \
             checked_arg    *list = NULL;                            \
             checked_arg   **list_ptr = &list;                       \
+                                                                    \
+            UNUSED(list_ptr); /* Possibly unused */                 \
                                                                     \
             VERB("%s(): CALL-WAIT", #_func);                        \
                                                                     \
