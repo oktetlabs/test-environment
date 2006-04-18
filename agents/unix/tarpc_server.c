@@ -533,7 +533,13 @@ _thread_create_1_svc(tarpc_thread_create_in *in,
     out->retval = pthread_create(&tid, NULL, (void *)rcf_pch_rpc_server,
                                  strdup(in->name.name_val));
     if (out->retval == 0)                                 
-        out->tid = rcf_pch_mem_alloc((void *)tid);
+    {
+        /*
+         * FIXME: Do not assumed that pthread_t is an integer,
+         * allocate memory for it.
+         */
+        out->tid = rcf_pch_mem_alloc((void *)(long)tid);
+    }
 
     return TRUE;
 }
@@ -547,7 +553,11 @@ _thread_cancel_1_svc(tarpc_thread_cancel_in *in,
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
     
-    out->retval = pthread_cancel((pthread_t)rcf_pch_mem_get(in->tid));
+    /*
+     * FIXME: Do not assumed that pthread_t is an integer,
+     * allocate memory for it.
+     */
+    out->retval = pthread_cancel((pthread_t)(long)rcf_pch_mem_get(in->tid));
     rcf_pch_mem_free(in->tid);
 
     return TRUE;
