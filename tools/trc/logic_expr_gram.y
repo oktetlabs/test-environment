@@ -16,6 +16,8 @@
 
 #include "trc_log.h"
 
+#include "te_printf.h"
+
 #include "logic_expr.h"
 #include "logic_expr_gram.h"
 #include "logic_expr_lex.h"
@@ -57,7 +59,8 @@ logic_expr_binary(logic_expr_type type, logic_expr *lhv, logic_expr *rhv)
     p = calloc(1, sizeof(*p));
     if (p == NULL)
     {
-        ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, sizeof(*p));
+        ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed", 
+              __FUNCTION__, sizeof(*p));
         return NULL;
     }
     p->type = type;
@@ -94,7 +97,8 @@ expr:
 
         if ((p == NULL) || ($1 == NULL))
         {
-            ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, sizeof(*p));
+            ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed", 
+                  __FUNCTION__, sizeof(*p));
             return -1;
         }
         p->type = LOGIC_EXPR_VALUE;
@@ -111,7 +115,8 @@ expr:
 
         if (p == NULL)
         {
-            ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, sizeof(*p));
+            ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed", 
+                  __FUNCTION__, sizeof(*p));
             return -1;
         }
         p->type = LOGIC_EXPR_NOT;
