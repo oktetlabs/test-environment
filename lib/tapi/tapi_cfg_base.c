@@ -209,6 +209,37 @@ tapi_cfg_base_if_set_mac(const char *oid, const uint8_t *mac)
 
 /* See description in tapi_cfg_base.h */
 int
+tapi_cfg_base_if_get_bcast_mac(const char *oid, uint8_t *bcast_mac)
+{
+    int                 rc;
+    char                buf[strlen(oid) + strlen("/bcast_link_addr:") + 1];
+    cfg_handle          handle;
+    cfg_val_type        type = CVT_ADDRESS;
+    struct sockaddr    *addr = NULL;
+
+    sprintf(buf, "%s/bcast_link_addr:", oid);
+    rc = cfg_find_str(buf, &handle);
+    if (rc != 0)
+    {
+        ERROR("Failed to find MAC address OID handle for %s", oid);
+        return rc;
+    }
+
+    rc = cfg_get_instance(handle, &type, &addr);
+    if (rc != 0)
+    {
+        ERROR("Failed to get MAC address using OID %s", buf);
+        return rc;
+    }
+    memcpy(bcast_mac, addr->sa_data, ETHER_ADDR_LEN);
+
+    free(addr);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_base.h */
+int
 tapi_cfg_base_if_set_bcast_mac(const char *oid,
                                const uint8_t *bcast_mac)
 {

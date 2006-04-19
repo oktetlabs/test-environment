@@ -66,8 +66,6 @@ extern "C" {
  */
 extern int tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled);
 
-
-
 /**
  * Get MAC address of TA interface.
  *
@@ -88,6 +86,18 @@ extern int tapi_cfg_base_if_get_mac(const char *oid, uint8_t *mac);
  * @return Status code.
  */
 extern int tapi_cfg_base_if_set_mac(const char *oid, const uint8_t *mac);
+
+/**
+ * Get broadcast MAC address of TA interface.
+ *
+ * @param oid       instance OID of TA interface
+ * @param bcast_mac location for broadcast MAC address
+ *                  (at least ETHER_ADDR_LEN)
+ *
+ * @return Status code.
+ */
+extern int tapi_cfg_base_if_get_bcast_mac(const char *oid,
+                                          uint8_t *bcast_mac);
 
 /**
  * Set broadcast MAC address of TA interface.

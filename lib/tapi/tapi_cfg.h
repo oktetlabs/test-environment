@@ -432,6 +432,42 @@ extern int tapi_cfg_get_hwaddr(const char *ta,
 
 
 /**
+ * Sets broadcast hardware address of specified interface on
+ * a particular test agent.
+ *
+ * @param ta          Test agent name
+ * @param ifname      Interface name whose hardware address should
+ *                    be set
+ * @param hwaddr      Hardware address - link-layer address
+ * @param hwaddr_len  Length of 'hwaddr'
+ *
+ * @return Status of the oprtation
+ * @retval 0            on success
+ * @retval TE_EMSGSIZE  Buffer is too short to fit the hardware address
+ */
+extern te_errno tapi_cfg_set_bcast_hwaddr(const char *ta,
+                                          const char *ifname,
+                                          const void *hwaddr,
+                                          unsigned int hwaddr_len);
+
+/**
+ * Returns broadcast hardware address of specified interface on
+ * a particular test agent.
+ * 
+ * @param ta          Test agent name
+ * @param ifname      Interface name whose hardware address is obtained
+ * @param hwaddr      Hardware address - link-layer address (OUT)
+ * @param hwaddr_len  Length of 'hwaddr' buffer (IN/OUT)
+ *
+ * @return Status of the oprtation
+ * @retval 0            on success
+ * @retval TE_EMSGSIZE  Buffer is too short to fit the hardware address
+ */
+extern int tapi_cfg_get_bcast_hwaddr(const char *ta,
+                                     const char *ifname,
+                                     void *hwaddr, size_t *hwaddr_len);
+
+/**
  * Sets hardware address of specified interface on a particular
  * test agent.
  *
