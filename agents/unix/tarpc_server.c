@@ -1557,7 +1557,9 @@ typedef union opt_param {
     struct ip_mreq      mreq;
     struct in_addr      addr;
     struct timeval      tv;
+#if HAVE_STRUCT_IP_OPTS 
     struct ip_opts      opts;
+#endif    
 } opt_param;
 
 static void
@@ -1653,7 +1655,7 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
                           opt_string.opt_string_len;
             break;
         }
-
+#if HAVE_STRUCT_IP_OPTS
         case OPT_IP_OPTS:
         {
             param->opts.ip_dst.s_addr = in->optval.optval_val[0].
@@ -1666,7 +1668,7 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
                    options.options_len);
             break;
         }            
-
+#endif
         default:
             ERROR("incorrect option type %d is received",
                   in->optval.optval_val[0].opttype);
@@ -2051,10 +2053,6 @@ TARPC_FUNC(getsockopt,
                     *(out->optlen.optlen_val) = sizeof(struct timeval);
                     break;
 
-                case OPT_IP_OPTS:
-                    *(out->optlen.optlen_val) = sizeof(struct ip_opts);
-                    break;
-
                 case OPT_STRING:
                     break;
 
@@ -2171,17 +2169,6 @@ TARPC_FUNC(getsockopt,
                 break;
             }
             
-            case OPT_IP_OPTS:
-            {
-                in->optval.optval_val[0].option_value_u.opt_ip_opts.
-                    dst_addr = param->opts.ip_dst.s_addr;
-                memcpy(in->optval.optval_val[0].option_value_u.opt_ip_opts.
-                       options.options_val,param->opts.ip_opts,
-                       in->optval.optval_val[0].option_value_u.opt_ip_opts.
-                       options.options_len);
-            break;
-            }
-
             default:
                 ERROR("incorrect option type %d is received",
                       out->optval.optval_val[0].opttype);

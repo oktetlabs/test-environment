@@ -214,6 +214,11 @@ dnl Check for 'struct ip_mreqn'
 dnl
 AC_CHECK_TYPES([struct ip_mreqn], [], [],
                [#include <netinet/in.h>])
+dnl
+dnl Check for 'struct ip_opts'
+dnl
+AC_CHECK_TYPES([struct ip_opts], [], [],
+               [#include <netinet/in.h>])
 
 dnl
 dnl Check for 'ipv6mr_interface' member in 'struct ipv6_mreq'.
