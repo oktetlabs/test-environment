@@ -1367,8 +1367,6 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 val.opttype = OPT_IP_OPTS;                
                 val.option_value_u.opt_ip_opts.dst_addr = 0;
                 
-                WARN("Get option value to buffer %d bytes long",  *optlen);
-                
                 val.option_value_u.opt_ip_opts.options.options_len = 
                     (roptlen == RPC_OPTLEN_AUTO)?
                     sizeof(struct ip_opts) : roptlen;
