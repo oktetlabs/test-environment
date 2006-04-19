@@ -1678,6 +1678,7 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
     }
 }
 
+#ifdef __linux__
 TARPC_FUNC(setsockopt, 
 {}, 
 {
@@ -1718,6 +1719,45 @@ TARPC_FUNC(setsockopt,
     }       
 }
 )
+#else
+TARPC_FUNC(setsockopt, 
+{}, 
+{
+    if (in->optval.optval_val == NULL)
+    {
+        MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
+                                     sockopt_rpc2h(in->optname),
+                                     NULL, in->optlen));
+    }
+    else
+    {
+        opt_param  param;
+        socklen_t  optlen;
+        void      *optval;
+
+        tarpc_setsockopt(in, out, &param, &optlen);
+        if (out->retval == 0)
+        {
+            switch (in->optval.optval_val[0].opttype)
+            {
+                case OPT_STRING:
+                    optval = param.str;
+                    break;
+                default:
+                    optval = &param;
+            }
+            INIT_CHECKED_ARG(optval, optlen, 0);
+            if (in->optlen == RPC_OPTLEN_AUTO)
+                in->optlen = optlen;
+            
+            MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
+                                         sockopt_rpc2h(in->optname),
+                                         optval, in->optlen));
+        }
+    }       
+}
+)
+#endif
 
 
 /*-------------- getsockopt() ------------------------------*/
