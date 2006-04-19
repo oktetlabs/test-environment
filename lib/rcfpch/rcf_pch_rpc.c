@@ -29,10 +29,6 @@
 
 #include "te_config.h"
 
-#ifdef __CYGWIN__
-#define TCP_TRANSPORT
-#endif
-
 #include <stdio.h>
 #ifdef STDC_HEADERS
 #include <stdlib.h>
@@ -60,35 +56,6 @@
 #if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
-#if HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#if HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#if HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#if HAVE_NETINET_TCP_H
-#include <netinet/tcp.h>
-#endif
-
-#ifdef TCP_TRANSPORT
-
-#if HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-
-#else
-
-#if HAVE_SYS_UN_H
-#include <sys/un.h>
-#endif
-
-/** Maximum length of the pipe address */
-#define PIPENAME_LEN    sizeof(((struct sockaddr_un *)0)->sun_path)
-
-#endif /* TCP_TRANSPORT */
 
 #include "rcf_pch_internal.h"
 
@@ -106,7 +73,7 @@
 #include "rcf_rpc_defs.h"
 #include "tarpc.h"
 
-#include "rcf_pch_rpc_server.c"
+#include "rpc_transport.h"
 
 /** Data corresponding to one RPC server */
 typedef struct rpcserver {
@@ -114,9 +81,10 @@ typedef struct rpcserver {
     struct rpcserver *father; /**< Father pointer */
 
     char name[RCF_MAX_ID]; /**< RPC server name */
-    int  sock;             /**< Socket for interaction with the server */
-    int  ref;              /**< Number of thread children */
     
+    rpc_transport_handle handle; /**< Transport handle */
+    
+    int       ref;         /**< Number of thread children */
     pid_t     pid;         /**< Process identifier */
     uint32_t  tid;         /**< Thread identifier or 0 */
     time_t    sent;        /**< Time of the last request sending */
@@ -129,7 +97,6 @@ static rpcserver *list;        /**< List of all RPC servers */
 static char      *rpc_buf;     /**< Buffer for receiving of RPC answers;
                                     may be used in dispatch thread
                                     context only */
-static int        lsock = -1;  /**< Listening socket */
 
 static te_errno rpcserver_get(unsigned int, const char *, char *,
                               const char *);
@@ -151,60 +118,6 @@ static struct rcf_comm_connection *conn_saved;
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 /**
- * Receive encoded data from the RPC server.
- *
- * @param rpcs          RPC server handle
- * @param buf           buffer for data receiving
- * @param buflen        buffer length
- * @param p_len         location for length of received data
- *
- * @return Status code
- */
-static int
-recv_result(rpcserver *rpcs, void *buf, size_t buflen, 
-            uint32_t *p_len)
-{
-    uint32_t len;
-    uint32_t offset = 0;
-    
-    int rc = recv_timeout(rpcs->sock, &len, sizeof(len), 5);
-    
-    if (rc == -2)      /* AF_UNIX bug work-around */
-        return TE_EAGAIN;
-    
-    if (rc != sizeof(len))
-    {
-        ERROR("Failed to receive RPC data from the server %s", rpcs->name);
-        return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
-    }
-    
-    if (len > buflen)
-    {
-        ERROR("Too long RPC data bulk");
-        return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
-    }
-    
-    while (offset < len)
-    {
-        int n = recv_timeout(rpcs->sock, (uint8_t *)buf + offset, 
-                             buflen - offset, 5);
-        
-        if (n <= 0)
-        {
-            ERROR("Too long RPC data bulk");
-            return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
-        }
-
-        offset += n;
-    }
-
-    *p_len = len;
-    
-    return 0;
-}
-
-
-/**
  * Call RPC on the specified RPC server.
  *
  * @param rpcs  RPC server structure
@@ -217,11 +130,10 @@ recv_result(rpcserver *rpcs, void *buf, size_t buflen,
 static int
 call(rpcserver *rpcs, char *name, void *in, void *out)
 {
-    uint8_t  buf[1024];
-    size_t   buflen = sizeof(buf);
-    uint32_t len;
-    int      rc;
-    char     c = '\0';
+    uint8_t buf[1024];
+    int     len = sizeof(buf);
+    int     rc;
+    char    c = '\0';
 
     ((tarpc_in_arg *)in)->lib = &c;
     
@@ -231,7 +143,7 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
         return TE_RC(TE_RCF_PCH, TE_EBUSY);
     }
     
-    if ((rc = rpc_xdr_encode_call(name, buf, &buflen, in)) != 0) 
+    if ((rc = rpc_xdr_encode_call(name, buf, &len, in)) != 0) 
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
             ERROR("Unknown RPC %s is called from TA", name);
@@ -240,22 +152,23 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
         return rc;
     }
     
-    len = buflen;
-    if (send(rpcs->sock, &len, sizeof(len), MSG_MORE) !=
-            (ssize_t)sizeof(len) ||
-        send(rpcs->sock, buf, len, 0) != (ssize_t)len)
+    if (rpc_transport_send(rpcs->handle, buf, len) != 0)
     {
         ERROR("Failed to send RPC data to the server %s", rpcs->name);
         return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
     }
     
-    buflen = sizeof(buf);
-    if (recv_result(rpcs, buf, buflen, &len) != 0)
+    len = sizeof(buf);
+    if (rpc_transport_recv(rpcs->handle, buf, &len, 5) != 0)
+    {
+        ERROR("Failed to receive RPC data from the server %s", rpcs->name);
         return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
+    }
 
     if ((rc = rpc_xdr_decode_result(name, buf, len, out)) != 0)
     {
-        ERROR("Decoding of RPC %s input parameters failed", name);
+        ERROR("Decoding of RPC %s output parameters (length %d) failed", 
+              name, len);
         return rc;
     }
         
@@ -343,8 +256,7 @@ fork_child(rpcserver *rpcs)
     tarpc_create_process_in  in;
     tarpc_create_process_out out;
 
-    RING("Fork RPC server '%s' from '%s'",
-         rpcs->name, rpcs->father->name);
+    RING("Fork RPC server '%s' from '%s'", rpcs->name, rpcs->father->name);
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -379,70 +291,13 @@ fork_child(rpcserver *rpcs)
 static int
 connect_getpid(rpcserver *rpcs)
 {
-    struct timeval  tv = { 50, 0 };
-    fd_set          set;
-    struct sockaddr addr;
-    int             len = sizeof(addr);
-    int             rc;
-    
     tarpc_getpid_in  in;
     tarpc_getpid_out out;
-
+    te_errno         rc;
     
-    FD_ZERO(&set);
-    FD_SET(lsock, &set);
-    
-    /* Accept the connection */
-    VERB("Selecting on RPC servers listening socket...");
-    while ((rc = select(lsock + 1, &set, NULL, NULL, &tv)) <= 0)
-    {
-        if (rc == 0)
-        {
-            ERROR("RPC server '%s' does not try to connect", rpcs->name);
-            return TE_RC(TE_RCF_PCH, TE_ETIMEDOUT);
-        }
-        else if (errno != EINTR && errno != 0)
-        {
-            int err = TE_OS_RC(TE_RCF_PCH, errno);
-        
-            ERROR("select() failed with unexpected error=%r", err);
-            return err;
-        }
-    }
-    
-    /* Close current connection to RPC server, if it exists */
-    if (rpcs->sock != -1)
-    {
-        VERB("Closing connection socket to RPC server '%s'...", rpcs->name);
-        if (close(rpcs->sock) != 0)
-        {
-            rc = TE_OS_RC(TE_RCF_PCH, errno);
-            ERROR("Close of connection socket to RPC server '%s' failed",
-                  rpcs->name);
-            return rc;
-        }
-        VERB("Closed connection socket to RPC server '%s'", rpcs->name);
-        rpcs->sock = -1;
-    }
-
-    VERB("Accepting new RPC server '%s' connection...", rpcs->name);
-    if ((rpcs->sock = accept(lsock, &addr, &len)) < 0)
-    {
-        int err = TE_OS_RC(TE_RCF_PCH, errno);
-        
-        ERROR("Failed to accept connection from RPC server %s: error=%r",
-              rpcs->name, err);
-        return err;
-    }
-    VERB("Accepted new RPC server '%s' connection", rpcs->name);
-
-#if HAVE_FCNTL_H
-    /* 
-     * Try to set close-on-exec flag, but ignore failures, 
-     * since it's not critical.
-     */
-    (void)fcntl(rpcs->sock, F_SETFD, FD_CLOEXEC);
-#endif
+    rc = rpc_transport_connect_rpcserver(rpcs->name, &rpcs->handle);
+    if (rc != 0)
+        return rc;
 
     /* Call getpid() RPC to verify that the server is usable */
     memset(&in, 0, sizeof(in));
@@ -494,34 +349,23 @@ rpc_error(rpcserver *rpcs, int rc)
 static void *
 dispatch(void *arg)
 {
-    fd_set set0, set1;
-    
     UNUSED(arg);
-    
-    FD_ZERO(&set0);
-    FD_ZERO(&set1);
     
     while (TRUE)
     {
-        struct timeval tv = { 1, 0 };
-        rpcserver     *rpcs;
-        time_t         now;
-        uint32_t       len;
-        int            rc;
+        rpcserver *rpcs;
+        time_t     now;
+        int        len;
+        te_errno   rc;
         
-        set0 = set1;
-
-        if ((rc = select(FD_SETSIZE, &set0, NULL, NULL, &tv)) < 0)
-        {
-            if (errno != EINTR && errno != 0)
-            {
-                te_errno err = TE_OS_RC(TE_RCF_PCH, errno);
-            
-                WARN("select() failed with unexpected error=%r", err);
-            }
-        }
+        rpc_transport_read_set_init();
         
-        FD_ZERO(&set1);
+        pthread_mutex_lock(&lock);
+        for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
+            rpc_transport_read_set_add(rpcs->handle);
+        pthread_mutex_unlock(&lock);
+        
+        rpc_transport_read_set_wait(1);
         pthread_mutex_lock(&lock);
         now = time(NULL);
         for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
@@ -538,24 +382,16 @@ dispatch(void *arg)
                 rpc_error(rpcs, TE_ERPCTIMEOUT);
                 continue;
             } 
-            assert(rpcs->sock >= 0);
-            FD_SET(rpcs->sock, &set1);
-
-            if (!FD_ISSET(rpcs->sock, &set0))
-                continue;
-                
-            if (rpcs->last_sid == 0) /* AF_UNIX bug work-around */
-                continue;
-                
-            if ((rc = recv_result(rpcs, rpc_buf, 
-                                  RCF_RPC_HUGE_BUF_LEN, &len)) != 0)
+            
+            len = RCF_RPC_HUGE_BUF_LEN;
+            rc = rpc_transport_recv(rpcs->handle, rpc_buf, &len, 0);
+            if (rc != 0)
             {
-                if (TE_RC_GET_ERROR(rc) != TE_EAGAIN) 
-                /* AF_UNIX bug work-around */
-                {
-                    rpcs->dead = TRUE;
-                    rpc_error(rpcs, TE_ERPCDEAD);
-                }
+                if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT)
+                    continue;
+
+                rpcs->dead = TRUE;
+                rpc_error(rpcs, TE_ERPCDEAD);
                 continue;
             }
             
@@ -610,127 +446,39 @@ dispatch(void *arg)
 void 
 rcf_pch_rpc_init()
 {
-#ifdef TCP_TRANSPORT    
-    struct sockaddr_in  addr;
-#else    
-    struct sockaddr_un  addr;
-#endif    
-    int                 len;
-    char                port[16];
-    pthread_t           tid = 0;
-    
-#define RETERR(msg...) \
-    do {                  \
-        ERROR(msg);       \
-        if (lsock >= 0)   \
-            close(lsock); \
-        free(rpc_buf);    \
-        rpc_buf = NULL;   \
-        return;           \
-    } while (0)
+    pthread_t tid = 0;
+
+    if (rpc_transport_init() != 0)
+        return;
 
     if ((rpc_buf = malloc(RCF_RPC_HUGE_BUF_LEN)) == NULL)
-        RETERR("Cannot allocate memory for RPC buffer on the TA");
-
-#ifdef TCP_TRANSPORT    
-    if ((lsock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-        RETERR("Failed to open listening socket for RPC servers");
-#else
-    if ((lsock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
-        RETERR("Failed to open listening socket for RPC servers");
-#endif        
-
-#if HAVE_FCNTL_H
-    /* 
-     * Try to set close-on-exec flag, but ignore failures, 
-     * since it's not critical.
-     */
-    (void)fcntl(lsock, F_SETFD, FD_CLOEXEC);
-#endif
-
-    memset(&addr, 0, sizeof(addr));
-#ifdef TCP_TRANSPORT    
-    addr.sin_family = AF_INET;
-    len = sizeof(struct sockaddr_in);
-#else
-    addr.sun_family = AF_UNIX;
-    snprintf(addr.sun_path, sizeof(addr.sun_path), 
-             "/tmp/terpc_%ld", (long)getpid());
-    len = sizeof(struct sockaddr_un) - PIPENAME_LEN +  
-          strlen(addr.sun_path);
-#endif    
-
-#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
-    ((struct sockaddr *)&addr)->sa_len = len;
-#endif
-
-    if (bind(lsock, (struct sockaddr *)&addr, len) < 0)
     {
-        int err = TE_OS_RC(TE_RCF_PCH, errno);
-        
-        RETERR("Failed to bind listening socket for RPC servers: "
-               "error=%r", err);
+        rpc_transport_shutdown();
+        ERROR("Cannot allocate memory for RPC buffer on the TA");
+        return;
     }
         
-    if (listen(lsock, 1) < 0)
-        RETERR("listen() failed for listening socket for RPC servers");
-
-#ifdef TCP_TRANSPORT    
-    /* TCP_NODEALY is not critical */
-    (void)tcp_nodelay_enable(lsock);
-
-    if (getsockname(lsock, (struct sockaddr *)&addr, &len) < 0)
-        RETERR("getsockname() failed for listening socket for RPC servers");
-
-    sprintf(port, "%d", addr.sin_port);
-#else    
-    strcpy(port, addr.sun_path);
-#endif
-        
-    if (setenv("TE_RPC_PORT", port, 1) < 0)
-    {
-        int err = TE_OS_RC(TE_RCF_PCH, errno);
-        
-        RETERR("Failed to set TE_RPC_PORT environment variable: "
-               "error=%r", err);
-    }
-
     if (pthread_create(&tid, NULL, dispatch, NULL) != 0)
-        RETERR("Failed to create the thread for RPC servers dispatching");
+    {
+        rpc_transport_shutdown();
+        free(rpc_buf); 
+        ERROR("Failed to create the thread for RPC servers dispatching");
+        return;
+    }
     
     rcf_pch_add_node("/agent", &node_rpcserver);
-    
-#undef RETERR    
 }
 
-
 /** 
- * Close all RCF RPC sockets.
+ * Close all RCF RPC connections.
  */
 static void 
-rcf_pch_rpc_close_sockets(void)
+rcf_pch_rpc_close_connections(void)
 {
     rpcserver *rpcs;
-    
-    if (lsock >= 0)
-    {
-        if (close(lsock) != 0)
-        {
-            ERROR("%s(): Failed to close RPC listening socket: %d",
-                  __FUNCTION__, strerror(errno));
-        }
-        lsock = -1;
-    }
-        
+
     for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
-    {
-        if (close(rpcs->sock) != 0)
-        {
-            ERROR("%s(): Failed to close RPC accepted socket: %d",
-                  __FUNCTION__, strerror(errno));
-        }
-        rpcs->sock = -1;
-    }
+        rpc_transport_close(rpcs->handle);
 }
 
 /* See description in rcf_pch.h */
@@ -739,7 +487,7 @@ rcf_pch_rpc_atfork(void)
 {
     rpcserver *rpcs, *next;
     
-    rcf_pch_rpc_close_sockets();
+    rcf_pch_rpc_close_connections();
         
     for (rpcs = list; rpcs != NULL; rpcs = next)
     {
@@ -759,17 +507,10 @@ void
 rcf_pch_rpc_shutdown(void)
 {
     rpcserver *rpcs, *next;
-#ifndef TCP_TRANSPORT
-    char *pipename = getenv("TE_RPC_PORT");
-#endif        
-
-#ifndef TCP_TRANSPORT
-    if (pipename != NULL)
-        unlink(pipename);
-#endif        
 
     pthread_mutex_lock(&lock);
-    rcf_pch_rpc_close_sockets();
+    rcf_pch_rpc_close_connections();
+    rpc_transport_shutdown();
     usleep(100000);
     for (rpcs = list; rpcs != NULL; rpcs = next)
     {
@@ -893,7 +634,6 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     }
     
     strcpy(rpcs->name, new_name);
-    rpcs->sock = -1;
     rpcs->father = father;
     if (father == NULL)
     {
@@ -963,6 +703,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     rpcserver *rpcs, *prev;
     
     char buf[64];
+    int  len = sizeof(buf);
     
     UNUSED(gid);
     UNUSED(oid);
@@ -999,8 +740,8 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
 
     /* Try soft shutdown first */
     if (rpcs->sent > 0 || 
-        send(rpcs->sock, "FIN", 4, 0) != 4 ||
-        recv_timeout(rpcs->sock, buf, sizeof(buf), 5) != 3 || 
+        rpc_transport_send(rpcs->handle, "FIN", sizeof("FIN")) != 0 ||
+        rpc_transport_recv(rpcs->handle, buf, &len, 5) != 0 ||
         strcmp(buf, "OK") != 0)
     {
         WARN("Soft shutdown of RPC server '%s' failed", rpcs->name);
@@ -1009,11 +750,10 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
         else
             rcf_ch_kill_process(rpcs->pid);
     }
+    rpc_transport_close(rpcs->handle);
 
     pthread_mutex_unlock(&lock);
-
-    if (rpcs->sock != -1)
-        close(rpcs->sock);
+    
     free(rpcs);
     
     return 0;
@@ -1128,9 +868,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
         return rc;
     
     /* Send encoded data to server */
-    if (send(rpcs->sock, &rpc_data_len, sizeof(rpc_data_len), MSG_MORE) != 
-        sizeof(rpc_data_len) ||
-        send(rpcs->sock, data, rpc_data_len, 0) != (ssize_t)rpc_data_len)
+    if (rpc_transport_send(rpcs->handle, data, rpc_data_len) != 0)
     {
         ERROR("Failed to send RPC data to the server %s", rpcs->name);
         RETERR(TE_ESUNRPC);
@@ -1141,6 +879,8 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
 
 #undef RETERR    
 }            
+
+#include "rcf_pch_rpc_server.c"
 
 /**
  * Wrapper to call rcf_pch_rpc_server via "ta exec func" mechanism. 
@@ -1154,3 +894,4 @@ rcf_pch_rpc_server_argv(int argc, char **argv)
     UNUSED(argc);
     rcf_pch_rpc_server(argv[0]);
 }
+

@@ -349,6 +349,7 @@ open_sock(void)
     {
         fprintf(stderr, "Failed to register logfork user: "
                         "TE_LOG_PORT is not exported\n");
+        fflush(stderr);
         return -1;
     }
 
@@ -357,6 +358,7 @@ open_sock(void)
     {
         fprintf(stderr, 
                 "Failed to register logfork user: socket() failed\n");
+        fflush(stderr);
         return -1;
     }
     
@@ -369,6 +371,7 @@ open_sock(void)
     {
         fprintf(stderr, 
                 "Failed to register logfork user: - connect() failed\n");
+        fflush(stderr);
         close(sock);
         return -1;
     }
@@ -416,6 +419,7 @@ logfork_register_user(const char *name)
     {
         fprintf(stderr, "logfork_register_user() - cannot send "
                 "notification: %s\n", strerror(errno));
+        fflush(stderr);
         return -1;
     }
     
@@ -456,8 +460,9 @@ logfork_log_message(const char *file, unsigned int line,
 
     if (logfork_clnt_sockd == -1 && open_sock() != 0)
     {
-        fprintf(stderr, "%s(): %s %s\n", __FUNCTION__, user,
+        fprintf(stdout, "%s(): %s %s\n", __FUNCTION__, user,
                 msg.__log_msg);
+        fflush(stdout);
         return;
     }
 

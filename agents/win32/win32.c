@@ -598,7 +598,7 @@ extern void wsa_func_handles_discover();
 
 /** Dummy */
 void 
-sleep_waitable(int msec)
+sleep_ex(int msec)
 {
     usleep(msec * 1000);
 } 

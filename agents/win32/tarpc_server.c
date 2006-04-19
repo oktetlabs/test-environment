@@ -4702,7 +4702,7 @@ completion_callback_register(const char *name,
 
 /** Sleep in waitable state */
 void 
-sleep_waitable(int msec)
+sleep_ex(int msec)
 {
     SleepEx(msec, TRUE);
 } 
