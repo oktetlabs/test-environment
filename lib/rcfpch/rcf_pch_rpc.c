@@ -94,7 +94,7 @@ typedef struct rpcserver {
 } rpcserver;
 
 static rpcserver *list;        /**< List of all RPC servers */
-static char      *rpc_buf;     /**< Buffer for receiving of RPC answers;
+static uint8_t   *rpc_buf;     /**< Buffer for receiving of RPC answers;
                                     may be used in dispatch thread
                                     context only */
 
@@ -131,7 +131,7 @@ static int
 call(rpcserver *rpcs, char *name, void *in, void *out)
 {
     uint8_t buf[1024];
-    int     len = sizeof(buf);
+    size_t  len = sizeof(buf);
     int     rc;
     char    c = '\0';
 
@@ -355,7 +355,7 @@ dispatch(void *arg)
     {
         rpcserver *rpcs;
         time_t     now;
-        int        len;
+        size_t     len;
         te_errno   rc;
         
         rpc_transport_read_set_init();
@@ -397,14 +397,14 @@ dispatch(void *arg)
             
             /* Send response */
             if (len < RCF_MAX_VAL && 
-                strcmp_start("<?xml", rpc_buf) == 0)
+                strcmp_start("<?xml", (char *)rpc_buf) == 0)
             {
                 /* Send as string */
-                char *s0 = rpc_buf + RCF_MAX_VAL;
+                char *s0 = (char *)rpc_buf + RCF_MAX_VAL;
                 char *s = s;
                 
                 s += sprintf(s, "SID %d 0 ", rpcs->last_sid);
-                write_str_in_quotes(s, rpc_buf, len);
+                write_str_in_quotes(s, (char *)rpc_buf, len);
                 rcf_ch_lock();
                 rcf_comm_agent_reply(conn_saved, s0, strlen(s0) + 1);
                 rcf_ch_unlock();
@@ -702,8 +702,8 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
 {
     rpcserver *rpcs, *prev;
     
-    char buf[64];
-    int  len = sizeof(buf);
+    uint8_t buf[64];
+    size_t  len = sizeof(buf);
     
     UNUSED(gid);
     UNUSED(oid);
@@ -740,9 +740,10 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
 
     /* Try soft shutdown first */
     if (rpcs->sent > 0 || 
-        rpc_transport_send(rpcs->handle, "FIN", sizeof("FIN")) != 0 ||
+        rpc_transport_send(rpcs->handle, (uint8_t *)"FIN", 
+                           sizeof("FIN")) != 0 ||
         rpc_transport_recv(rpcs->handle, buf, &len, 5) != 0 ||
-        strcmp(buf, "OK") != 0)
+        strcmp((char *)buf, "OK") != 0)
     {
         WARN("Soft shutdown of RPC server '%s' failed", rpcs->name);
         if (rpcs->tid > 0)
@@ -868,7 +869,8 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
         return rc;
     
     /* Send encoded data to server */
-    if (rpc_transport_send(rpcs->handle, data, rpc_data_len) != 0)
+    if (rpc_transport_send(rpcs->handle, (uint8_t *)data, 
+                           rpc_data_len) != 0)
     {
         ERROR("Failed to send RPC data to the server %s", rpcs->name);
         RETERR(TE_ESUNRPC);

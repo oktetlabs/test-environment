@@ -124,7 +124,7 @@ extern te_bool rpc_transport_is_readable(rpc_transport_handle handle);
  * @retval TE_ENOMEM            Message is too long
  */
 extern te_errno rpc_transport_recv(rpc_transport_handle handle, 
-                                   uint8_t *buf, int *p_len, 
+                                   uint8_t *buf, size_t *p_len, 
                                    int timeout);
 
 /** 
@@ -138,6 +138,6 @@ extern te_errno rpc_transport_recv(rpc_transport_handle handle,
  * @retval TE_ECONNRESET        Connection is broken
  */
 extern te_errno rpc_transport_send(rpc_transport_handle handle, 
-                                   const uint8_t *buf, int len);
+                                   const uint8_t *buf, size_t len);
 
 #endif /* !__RPC_TRANSPORT_H__ */

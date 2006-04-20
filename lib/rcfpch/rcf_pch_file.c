@@ -176,7 +176,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
                 more_len = cmdlen - buflen;
                 /* Write binary attachment to 'addr' on receive */
                 rc = rcf_comm_agent_wait(conn, 
-                                         ((uint8_t *)addr) + got_len,
+                                         ((char *)addr) + got_len,
                                          &more_len, NULL);
                 if (rc != 0)
                 {

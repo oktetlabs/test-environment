@@ -778,9 +778,9 @@ rpc_transport_is_readable(rpc_transport_handle handle)
 #if (RPC_TRANSPORT != RPC_TRANSPORT_WINPIPE)
 /** Recieve exact number of bytes from the stream */
 static te_errno
-recv_from_stream(int handle, uint8_t *buf, int len, int timeout)
+recv_from_stream(int handle, uint8_t *buf, size_t len, int timeout)
 {
-    int rcvd = 0;
+    size_t rcvd = 0;
     
     while (rcvd < len)
     {
@@ -828,7 +828,7 @@ recv_from_stream(int handle, uint8_t *buf, int len, int timeout)
  */
 te_errno 
 rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf, 
-                   int *p_len, int timeout)
+                   size_t *p_len, int timeout)
 {
 #if (RPC_TRANSPORT == RPC_TRANSPORT_WINPIPE)
     DWORD num;
@@ -877,7 +877,7 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
     
 #else
     uint8_t  lenbuf[4];
-    int      len;
+    size_t   len;
     te_errno rc;
     
     if ((rc = recv_from_stream((int)handle, lenbuf, 
@@ -916,7 +916,8 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
  * @retval TE_ECONNRESET        Connection is broken
  */
 te_errno 
-rpc_transport_send(rpc_transport_handle handle, const uint8_t *buf, int len)
+rpc_transport_send(rpc_transport_handle handle, const uint8_t *buf, 
+                   size_t len)
 {
 #if (RPC_TRANSPORT == RPC_TRANSPORT_WINPIPE)
     DWORD num;
@@ -945,7 +946,7 @@ rpc_transport_send(rpc_transport_handle handle, const uint8_t *buf, int len)
     lenbuf[3] = (uint8_t)(len & 0xFF);
     
     if (send((int)handle, lenbuf, sizeof(lenbuf), 0) != sizeof(lenbuf) ||
-        send((int)handle, buf, len, 0) != len)
+        send((int)handle, buf, len, 0) != (int)len)
     {
         return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
     }

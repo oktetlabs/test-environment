@@ -51,7 +51,7 @@ void *
 rcf_pch_rpc_server(const char *name)
 {
     rpc_transport_handle handle;
-    char                *buf = NULL;
+    uint8_t             *buf = NULL;
     
 #define STOP(msg...)    \
     do {                \
@@ -99,19 +99,24 @@ rcf_pch_rpc_server(const char *name)
         void     *out = NULL;           /* Output parameter C structure */
         rpc_info *info = NULL;          /* RPC information */
         te_bool   result = FALSE;       /* "rc" attribute */
-        int       len = RCF_RPC_HUGE_BUF_LEN;
+        size_t    len = RCF_RPC_HUGE_BUF_LEN;
         
         strcpy(rpc_name, "Unknown");
         
         if (rpc_transport_recv(handle, buf, &len, 0xFFFF) != 0)
             STOP("Connection with TA is broken!");
             
-        if (strcmp(buf, "FIN") == 0)
+        if (strcmp((char *)buf, "FIN") == 0)
         {
-            if (rpc_transport_send(handle, "OK", sizeof("OK")) == 0)
+            if (rpc_transport_send(handle, (uint8_t *)"OK", 
+                                   sizeof("OK")) == 0)
+            {
                 RING("RPC server '%s' finished", name);
+            }
             else
+            {
                 ERROR("Failed to send 'OK' in response to 'FIN'");
+            }
             goto cleanup;
         }
         
@@ -139,9 +144,12 @@ rcf_pch_rpc_server(const char *name)
         free(in);
             
         len = RCF_RPC_HUGE_BUF_LEN;
-        if (rpc_xdr_encode_result(rpc_name, result, buf, &len, out) != 0)
+        if (rpc_xdr_encode_result(rpc_name, result, (char *)buf, 
+                                  &len, out) != 0)
+        {
             STOP("Fatal error: encoding of RPC %s output "
                  "parameters failed", rpc_name);
+        }
             
         if (info != NULL)
             rpc_xdr_free(info->out, out);
