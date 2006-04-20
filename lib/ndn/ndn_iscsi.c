@@ -474,7 +474,8 @@ padding:
     {
        if (*current != '\0')
        {
-           ERROR("%s, %d: padding is not zeroed");
+           ERROR("%s, %d: padding is not zeroed",
+                 __FUNCTION__, __LINE__);
            return TE_EFMT;
        }
        current++;
