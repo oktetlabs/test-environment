@@ -87,6 +87,17 @@
 #include <libdlpi.h>
 #endif
 #endif /* HAVE_LIBDLPI */
+/* IP forwarding on Solaris: */
+#ifdef HAVE_STROPTS_H
+#include <stropts.h>
+#endif
+#ifdef HAVE_INET_ND_H
+#include <inet/nd.h>
+#endif
+#if defined(HAVE_STROPTS_H) && defined(HAVE_INET_ND_H) && \
+    !defined(SOLARIS_IP_FW)
+#define SOLARIS_IP_FW 1
+#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -636,6 +647,52 @@ rcf_ch_conf_release()
         (void)close(cfg_socket);
 }
 
+#if SOLARIS_IP_FW
+/**
+ * Set or obtain the value of IP forwarding variable on Solaris.
+ *
+ * @param ipfw_str      name: "ip_forwarding" or "ip6_forwarding"
+ * @param p_val         location of the value: 0 or 1 to set the variable,
+ *                      other - to read into the location (IN/OUT).
+ *
+ * @return              Status code.
+ */
+static te_errno
+ipforward_solaris(char *ipfw_str, int *p_val)
+{
+    int            fd;
+    char            xbuf[16 * 1024];
+    struct strioctl si;
+    int             rc;
+
+
+    if ((fd = open ("/dev/ip", O_RDWR)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    
+    strncpy(xbuf, ipfw_str, sizeof(xbuf));
+
+    si.ic_cmd = ND_GET;
+    if (*p_val == 0 || *p_val == 1)
+    {
+        si.ic_cmd = ND_SET;
+        /* paramname\0value\0 */
+        snprintf(xbuf + strlen(xbuf) + 1, 2, "%d", *p_val);
+    }
+    si.ic_timout = 0;  /* 0 means a default value of 15s */
+    si.ic_len = sizeof(xbuf);
+    si.ic_dp = xbuf;
+
+    if ((rc = ioctl(fd, I_STR, &si)) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    *p_val = atoi(xbuf);
+    return 0;
+}
+#endif
+
 /**
  * Obtain value of the IPv4 forwarding sustem variable.
  *
@@ -648,8 +705,14 @@ rcf_ch_conf_release()
 static te_errno
 ip4_fw_get(unsigned int gid, const char *oid, char *value)
 {
-    char c;
-
+#if __linux__
+    char c = '0';
+    int  fd;
+#endif
+#if SOLARIS_IP_FW
+    te_errno    rc;
+    int         ival;
+#endif
     UNUSED(gid);
     UNUSED(oid);
 
@@ -657,26 +720,29 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
 #if __linux__
+    if ((fd = open("/proc/sys/net/ipv4/ip_forward", O_RDONLY)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (read(fd, &c, 1) < 0)
     {
-        int  fd;
-
-        if ((fd = open("/proc/sys/net/ipv4/ip_forward", O_RDONLY)) < 0)
-            return TE_OS_RC(TE_TA_UNIX, errno);
-
-        if (read(fd, &c, 1) < 0)
-        {
-            close(fd);
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-
         close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
     }
-#else
-    /* Assume that forwarding is disabled */
-    c = '0';
-#endif
+    close(fd);
 
     sprintf(value, "%d", c == '0' ? 0 : 1);
+    
+#elif SOLARIS_IP_FW
+    ival = 2; /* anything except 0|1 is read */    
+    rc = ipforward_solaris("ip_forwarding", &ival);
+    if (rc != 0)
+        return rc;
+    sprintf(value, "%d", ival);
+
+#else
+    /* Assume that forwarding is disabled */
+    sprintf(value, "%d", 0); 
+#endif
 
     return 0;
 }
@@ -694,32 +760,40 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
 static te_errno
 ip4_fw_set(unsigned int gid, const char *oid, const char *value)
 {
+#if __linux__
+    int fd;
+#endif
+#if SOLARIS_IP_FW
+    te_errno rc;
+    int ival;
+#endif
     UNUSED(gid);
     UNUSED(oid);
     
     if (!rcf_pch_rsrc_accessible("/agent/ip4_fw"))
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
 
     if ((*value != '0' && *value != '1') || *(value + 1) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
 #if __linux__
+    fd = open("/proc/sys/net/ipv4/ip_forward",
+              O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
     {
-        int fd;
-
-        fd = open("/proc/sys/net/ipv4/ip_forward",
-                  O_WRONLY | O_CREAT | O_TRUNC, 0666);
-        if (fd < 0)
-            return TE_OS_RC(TE_TA_UNIX, errno);
-
-        if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
-        {
-            close(fd);
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-
         close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
     }
+    close(fd);
+    
+#elif SOLARIS_IP_FW
+    ival = atoi(value);    
+    rc = ipforward_solaris("ip_forwarding", &ival);
+    if (rc != 0)
+        return rc;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -739,33 +813,45 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
 static te_errno
 ip6_fw_get(unsigned int gid, const char *oid, char *value)
 {
-    char c;
-
+#if __linux__
+    int  fd;
+    char c = '0';
+#endif
+#if SOLARIS_IP_FW
+    te_errno    rc;
+    int         ival;
+#endif
     UNUSED(gid);
     UNUSED(oid);
 
+    if (!rcf_pch_rsrc_accessible("/agent/ip6_fw"))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
 #if __linux__
+    if ((fd = open("/proc/sys/net/ipv6/conf/all/forwarding",
+                   O_RDONLY)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (read(fd, &c, 1) < 0)
     {
-        int  fd;
-
-        if ((fd = open("/proc/sys/net/ipv6/conf/all/forwarding",
-                       O_RDONLY)) < 0)
-            return TE_OS_RC(TE_TA_UNIX, errno);
-
-        if (read(fd, &c, 1) < 0)
-        {
-            close(fd);
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-
         close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
     }
+    close(fd);
+    
+    sprintf(value, "%d", c == '0' ? 0 : 1);
+
+#elif SOLARIS_IP_FW
+    ival = 2; /* anything except 0|1 is read */    
+    rc = ipforward_solaris("ip6_forwarding", &ival);
+    if (rc != 0)
+        return rc;
+    sprintf(value, "%d", ival);
+
 #else
     /* Assume that forwarding is disabled */
-    c = '0';
+    sprintf(value, "%d", 0);
 #endif
-
-    sprintf(value, "%d", c == '0' ? 0 : 1);
 
     return 0;
 }   /* ip6_fw_get() */
@@ -783,8 +869,16 @@ ip6_fw_get(unsigned int gid, const char *oid, char *value)
 static te_errno
 ip6_fw_set(unsigned int gid, const char *oid, const char *value)
 {
+#if __linux__
+    int fd;
+#endif
+#if SOLARIS_IP_FW
+    te_errno rc;
+    int ival;
+#endif    
     UNUSED(gid);
     UNUSED(oid);
+
     
     if (!rcf_pch_rsrc_accessible("/agent/ip6_fw"))
         return TE_RC(TE_TA_UNIX, TE_EPERM);
@@ -793,22 +887,23 @@ ip6_fw_set(unsigned int gid, const char *oid, const char *value)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     
 #if __linux__
+    fd = open("/proc/sys/net/ipv6/conf/all/forwarding",
+              O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
     {
-        int fd;
-
-        fd = open("/proc/sys/net/ipv6/conf/all/forwarding",
-                  O_WRONLY | O_CREAT | O_TRUNC, 0666);
-        if (fd < 0)
-            return TE_OS_RC(TE_TA_UNIX, errno);
-
-        if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
-        {
-            close(fd);
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-
         close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
     }
+    close(fd);
+    
+#elif SOLARIS_IP_FW
+    ival = atoi(value);    
+    rc = ipforward_solaris("ip6_forwarding", &ival);
+    if (rc != 0)
+        return rc;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
