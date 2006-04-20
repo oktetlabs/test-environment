@@ -375,7 +375,7 @@ rpc_transport_connect_rpcserver(const char *name,
                                       PIPE_ACCESS_DUPLEX | 
                                       FILE_FLAG_OVERLAPPED, 
                                       PIPE_TYPE_MESSAGE, 
-                                      2, 1024 * 1024, 1024 * 1024,
+                                      1, 1024 * 1024, 1024 * 1024,
                                       100, NULL);
         
     if (pipes[i].handle == INVALID_HANDLE_VALUE)
