@@ -684,6 +684,9 @@ typedef enum rpc_sockopt {
 
     RPC_SO_PROTOCOL_INFOA,  /**< Returns the WSAPROTOCOL_INFOA structure */
     RPC_SO_PROTOCOL_INFOW,  /**< Returns the WSAPROTOCOL_INFOW structure */
+
+    RPC_SO_DGRAM_ERRIND,    /**< Delayed ICMP errors on not connected
+                                 datagram socket */
         
     RPC_IP_ADD_MEMBERSHIP,  /**< Join a multicast group */
     RPC_IP_DROP_MEMBERSHIP, /**< Leave a multicast group */
@@ -940,6 +943,9 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef SO_PROTOCOL_INFOW
         RPC2H(SO_PROTOCOL_INFOW);
 #endif
+#ifdef SO_DGRAM_ERRIND
+        RPC2H(SO_DGRAM_ERRIND);
+#endif
 #ifdef IP_ADD_MEMBERSHIP
         RPC2H(IP_ADD_MEMBERSHIP);
 #endif
@@ -1191,6 +1197,9 @@ sockopt_h2rpc(int opt_type, int opt)
 #ifdef SO_PROTOCOL_INFOW
                 H2RPC(SO_PROTOCOL_INFOW);
 #endif
+#ifdef SO_DGRAM_ERRIND
+                H2RPC(SO_DGRAM_ERRIND);
+#endif
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
@@ -1426,6 +1435,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_GROUP_PRIORITY);
         RPC2STR(SO_PROTOCOL_INFOA);
         RPC2STR(SO_PROTOCOL_INFOW);
+        RPC2STR(SO_DGRAM_ERRIND);
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
         RPC2STR(IP_MULTICAST_IF);
