@@ -250,7 +250,7 @@ rpc_transport_init()
 #else
     addr.sun_family = AF_UNIX;
     snprintf(addr.sun_path, sizeof(addr.sun_path), 
-             "/tmp/terpc_%ld", (long)getpid());
+             "/tmp/terpc_%ld", time(NULL));
     len = sizeof(addr) - UNIX_PATH_MAX + strlen(addr.sun_path);
 #endif    
 
