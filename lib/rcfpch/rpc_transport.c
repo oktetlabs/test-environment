@@ -197,7 +197,7 @@ rpc_transport_init()
 
     conn_mutex = CreateMutex(NULL, FALSE, NULL);
 
-    sprintf(port, "%d", getpid());
+    sprintf(port, "%d", time(NULL));
 
     if (setenv("TE_RPC_PORT", port, 1) < 0)
         return TE_RC(TE_RCF_PCH, TE_EWIN); 
