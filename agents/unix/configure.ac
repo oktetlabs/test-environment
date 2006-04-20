@@ -37,7 +37,6 @@ fi
 AC_CHECK_HEADERS([\
 sys/dlpi.h \        
 libdlpi.h \
-stropts.h \
 inet/nd.h \
 ])
 
