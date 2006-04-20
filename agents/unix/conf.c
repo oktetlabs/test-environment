@@ -731,7 +731,7 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
 static te_errno
 ip6_fw_get(unsigned int gid, const char *oid, char *value)
 {
-    char c = '0';
+    char c;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -752,6 +752,9 @@ ip6_fw_get(unsigned int gid, const char *oid, char *value)
 
         close(fd);
     }
+#else
+    /* Assume that forwarding is disabled */
+    c = '0';
 #endif
 
     sprintf(value, "%d", c == '0' ? 0 : 1);
@@ -772,8 +775,6 @@ ip6_fw_get(unsigned int gid, const char *oid, char *value)
 static te_errno
 ip6_fw_set(unsigned int gid, const char *oid, const char *value)
 {
-    int fd;
-
     UNUSED(gid);
     UNUSED(oid);
     
@@ -784,18 +785,24 @@ ip6_fw_set(unsigned int gid, const char *oid, const char *value)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     
 #if __linux__
-    fd = open("/proc/sys/net/ipv6/conf/all/forwarding",
-              O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if (fd < 0)
-        return TE_OS_RC(TE_TA_UNIX, errno);
-
-    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
     {
-        close(fd);
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
+        int fd;
 
-    close(fd);
+        fd = open("/proc/sys/net/ipv6/conf/all/forwarding",
+                  O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        if (fd < 0)
+            return TE_OS_RC(TE_TA_UNIX, errno);
+
+        if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
+        {
+            close(fd);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        close(fd);
+    }
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 
     return 0;
@@ -3103,9 +3110,9 @@ on_error:
     return rc;
 }
 #else
-    ERROR("Retrieving of an interface broadcast link-layer address "
-          "is not supported");
-    rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+    WARN("Retrieving of an interface broadcast link-layer address "
+         "is not supported");
+    strcpy(value, "ff:ff:ff:ff:ff:ff");
 #endif
 
     return rc;
