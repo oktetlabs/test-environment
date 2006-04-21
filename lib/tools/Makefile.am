@@ -44,7 +44,7 @@ libtools_la_SOURCES = \
 	te_format.c
 
 install-exec-hook:
-	touch -c -r libtools.a $(DESTDIR)/$(libdir)/libtools.*
+	touch -c -r libtools.la $(DESTDIR)/$(libdir)/libtools.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
