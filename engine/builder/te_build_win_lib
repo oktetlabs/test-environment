@@ -39,7 +39,9 @@ LIBNAME=$3
 INCLUDE=$4/include
 shift 4
 
-. `dirname $0`/te_build_win_platform
+BUILDER=`dirname $0`
+
+. $BUILDER/te_build_win_platform
 
 WIN_DIR=${USER}_build/${LIBNAME%%.lib}_$DIR_POSTFIX
 
@@ -64,12 +66,13 @@ cd tmpsrc
 
 for i in $* ; do 
     gcc -I${INCLUDE} -I${SRCDIR} -include te_win.h -DWINDOWS \
-        -P -E ${SRCDIR}/${i} -o ${i}.tmp ; 
-    cat ${i}.tmp | awk --posix '\
+        -P -E ${SRCDIR}/${i} -o ${i}.tmp1 ; 
+    cat ${i}.tmp1 | awk --posix '\
     /^INCLUDE/ { printf("#include <%s>\n", \
                  substr($1, 9, length($1) - 9)); next; } \
-    { print $0; }'  > ${i} ; 
-    rm ${i}.tmp ; 
+    { print $0; }'  > ${i}.tmp2 ; 
+    $BUILDER/te_rpc_conv ${i}.tmp2 ${i}
+    rm ${i}.tmp* ; 
     indent ${i} ;
 done
 rm -f *~
@@ -79,7 +82,10 @@ cat >build.sh <<EOF
 cd $WIN_DIR
 MSSDK_CYGWIN=\$( cygpath -u "\$MSSDK" ) 
 export PATH="\${MSSDK_CYGWIN}/Bin$PATH_POSTFIX:\$PATH"
-cl /nologo -D_WIN32_WINNT=0x0501 -D_CRT_SECURE_NO_DEPRECATE /Od *.c /c   
+cl /nologo -D_WIN32_WINNT=0x0501 -D_CRT_SECURE_NO_DEPRECATE \
+           -DSOL_IP=IPPROTO_IP -DSOL_IPV6=IPPROTO_IPV6 \
+           -DSOL_TCP=IPPROTO_TCP -DSOL_UDP=IPPROTO_UDP \
+   /Od *.c /c   
 lib /OUT:${LIBNAME} /nologo *.obj
 EOF
 chmod a+x build.sh

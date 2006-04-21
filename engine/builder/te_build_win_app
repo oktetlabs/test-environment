@@ -90,7 +90,10 @@ export LIB="\${MSSDK}\Lib$LIB_POSTFIX;\$LIB"
 rm src.tgz
 cd tmpsrc 
 cl /nologo -I../${PLATFORM}/include -DWINDOWS -D_CRT_SECURE_NO_DEPRECATE \
-   -D_WIN32_WINNT=0x0501 /w /Od /Zi *.c \
+   -D_WIN32_WINNT=0x0501 \
+   -DSOL_IP=IPPROTO_IP -DSOL_IPV6=IPPROTO_IPV6 \
+   -DSOL_TCP=IPPROTO_TCP -DSOL_UDP=IPPROTO_UDP \
+   /w /Od /Zi *.c \
    /link /OUT:${APPNAME} /MAP /LIBPATH:../${PLATFORM}/lib \
    ${LIBS} ${ADD_LIB} 
 cd ../../

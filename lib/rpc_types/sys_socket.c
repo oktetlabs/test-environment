@@ -39,6 +39,17 @@
 /* Required on Solaris2 (SunOS 5.11) to see IOCTLs */
 #define BSD_COMP
 
+#ifdef __CYGWIN__
+#ifndef WINDOWS
+#include "winsock2.h"
+#include "mswsock.h"
+#include "ws2tcpip.h"
+#undef ERROR
+#else
+INCLUDE(te_win_defs.h)
+#endif
+#else
+
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -70,20 +81,11 @@
 #include <scsi/sg.h>
 #endif
 
+#endif
+
 #include "logger_api.h"
 #include "te_rpc_defs.h"
 #include "te_rpc_sys_socket.h"
-
-#ifndef AF_LOCAL        
-#define AF_LOCAL        AF_UNIX
-#define PF_LOCAL        AF_LOCAL
-#endif
-
-#ifndef PF_INET6
-#ifdef AF_INET6
-#define PF_INET6        AF_INET6
-#endif
-#endif
 
 /** Convert RPC domain to string */
 const char *
@@ -113,16 +115,12 @@ domain_rpc2h(rpc_socket_domain domain)
 {
     switch (domain)
     {
-        RPC2H(PF_UNSPEC);
-        RPC2H(PF_INET);
-#ifdef PF_INET6
-        RPC2H(PF_INET6);
-#endif        
-#ifdef PF_PACKET
-        RPC2H(PF_PACKET);
-#endif
-        RPC2H(PF_LOCAL);
-        RPC2H(PF_UNIX);
+        RPC2H_CHECK(PF_UNSPEC);
+        RPC2H_CHECK(PF_INET);
+        RPC2H_CHECK(PF_INET6);
+        RPC2H_CHECK(PF_PACKET);
+        RPC2H_CHECK(PF_LOCAL);
+        RPC2H_CHECK(PF_UNIX);
         default:
             WARN("%s is converted to PF_MAX(%u)",
                  domain_rpc2str(domain), PF_MAX);
@@ -136,22 +134,11 @@ domain_h2rpc(int domain)
 {
     switch (domain)
     {
-        H2RPC(PF_UNSPEC);
-        H2RPC(PF_INET);
-#ifdef PF_INET6
-        H2RPC(PF_INET6);
-#endif        
-#ifdef PF_PACKET
-        H2RPC(PF_PACKET);
-#endif
-        H2RPC(PF_UNIX);
-#ifdef PF_LOCAL
-#ifdef PF_UNIX
-#if PF_LOCAL != PF_UNIX
-        H2RPC(PF_LOCAL);
-#endif
-#endif
-#endif
+        H2RPC_CHECK(PF_UNSPEC);
+        H2RPC_CHECK(PF_INET);
+        H2RPC_CHECK(PF_INET6);
+        H2RPC_CHECK(PF_PACKET);
+        H2RPC_CHECK(PF_UNIX);
         default: return RPC_PF_UNKNOWN;
     }
 }
@@ -163,12 +150,8 @@ addr_family_rpc2str(rpc_socket_addr_family addr_family)
     switch (addr_family)
     {
         RPC2STR(AF_INET);
-#ifdef AF_INET6
         RPC2STR(AF_INET6);
-#endif        
-#ifdef AF_PACKET
         RPC2STR(AF_PACKET);
-#endif
         RPC2STR(AF_LOCAL);
         RPC2STR(AF_UNIX);
         RPC2STR(AF_UNSPEC);
@@ -189,17 +172,15 @@ addr_family_rpc2h(rpc_socket_addr_family addr_family)
 {
     switch (addr_family)
     {
-        RPC2H(AF_INET);
-#ifdef AF_INET6
-        RPC2H(AF_INET6);
-#endif        
-#ifdef AF_PACKET
-        RPC2H(AF_PACKET);
-#endif
-        RPC2H(AF_LOCAL);
-        RPC2H(AF_UNIX);
-        RPC2H(AF_UNSPEC);
+        RPC2H_CHECK(AF_INET);
+        RPC2H_CHECK(AF_INET6);
+        RPC2H_CHECK(AF_PACKET);
+        RPC2H_CHECK(AF_LOCAL);
+        RPC2H_CHECK(AF_UNIX);
+        RPC2H_CHECK(AF_UNSPEC);
+#ifdef AF_LOCAL        
         case RPC_AF_ETHER: return AF_LOCAL;
+#endif        
         case RPC_AF_UNKNOWN: return AF_MAX;
 
         default:
@@ -215,16 +196,14 @@ addr_family_h2rpc(int addr_family)
 {
     switch (addr_family)
     {
-        H2RPC(AF_INET);
-#ifdef AF_INET6
-        H2RPC(AF_INET6);
-#endif        
-#ifdef AF_PACKET
-        H2RPC(AF_PACKET);
-#endif
-        H2RPC(AF_UNSPEC);
+        H2RPC_CHECK(AF_INET);
+        H2RPC_CHECK(AF_INET6);
+        H2RPC_CHECK(AF_PACKET);
+        H2RPC_CHECK(AF_UNSPEC);
         /* AF_UNIX is equal to AF_LOCAL */
+#ifdef AF_LOCAL        
         case AF_LOCAL: return RPC_AF_ETHER;
+#endif        
         default: return RPC_AF_UNKNOWN;
     }
 }
@@ -264,12 +243,12 @@ socktype_rpc2h(rpc_socket_type type)
 {
     switch (type)
     {
-        RPC2H(SOCK_UNSPEC);
-        RPC2H(SOCK_DGRAM);
-        RPC2H(SOCK_STREAM);
-        RPC2H(SOCK_RAW);
-        RPC2H(SOCK_SEQPACKET);
-        RPC2H(SOCK_RDM);
+        case RPC_SOCK_UNSPEC: return SOCK_UNSPEC;
+        RPC2H_CHECK(SOCK_DGRAM);
+        RPC2H_CHECK(SOCK_STREAM);
+        RPC2H_CHECK(SOCK_RAW);
+        RPC2H_CHECK(SOCK_SEQPACKET);
+        RPC2H_CHECK(SOCK_RDM);
         default:
             WARN("%s is converted to SOCK_MAX(%u)",
                  socktype_rpc2str(type), SOCK_MAX);
@@ -283,12 +262,12 @@ socktype_h2rpc(int type)
 {
     switch (type)
     {
-        H2RPC(SOCK_UNSPEC);
-        H2RPC(SOCK_DGRAM);
-        H2RPC(SOCK_STREAM);
-        H2RPC(SOCK_RAW);
-        H2RPC(SOCK_SEQPACKET);
-        H2RPC(SOCK_RDM);
+        case SOCK_UNSPEC: return RPC_SOCK_UNSPEC;
+        H2RPC_CHECK(SOCK_DGRAM);
+        H2RPC_CHECK(SOCK_STREAM);
+        H2RPC_CHECK(SOCK_RAW);
+        H2RPC_CHECK(SOCK_SEQPACKET);
+        H2RPC_CHECK(SOCK_RDM);
         default: return RPC_SOCK_UNKNOWN;
     }
 }
@@ -317,10 +296,10 @@ proto_rpc2h(rpc_socket_proto proto)
 {
     switch (proto)
     {
-        RPC2H(IPPROTO_IP);
-        RPC2H(IPPROTO_ICMP);
-        RPC2H(IPPROTO_UDP);
-        RPC2H(IPPROTO_TCP);
+        RPC2H_CHECK(IPPROTO_IP);
+        RPC2H_CHECK(IPPROTO_ICMP);
+        RPC2H_CHECK(IPPROTO_UDP);
+        RPC2H_CHECK(IPPROTO_TCP);
         case RPC_PROTO_DEF: return 0;
         default:
             WARN("%s is converted to IPPROTO_MAX(%u)",
@@ -335,10 +314,10 @@ proto_h2rpc(int proto)
 {
     switch (proto)
     {
-        H2RPC(IPPROTO_IP);
-        H2RPC(IPPROTO_ICMP);
-        H2RPC(IPPROTO_UDP);
-        H2RPC(IPPROTO_TCP);
+        H2RPC_CHECK(IPPROTO_IP);
+        H2RPC_CHECK(IPPROTO_ICMP);
+        H2RPC_CHECK(IPPROTO_UDP);
+        H2RPC_CHECK(IPPROTO_TCP);
         default: return RPC_PROTO_UNKNOWN;
     } 
 }
@@ -600,261 +579,91 @@ sockopt_rpc2h(rpc_sockopt opt)
 {
     switch (opt)
     {
-#ifdef SO_ACCEPTCONN
-        RPC2H(SO_ACCEPTCONN);
-#endif
-#ifdef SO_ACCEPTFILTER
-        RPC2H(SO_ACCEPTFILTER);
-#endif
-#ifdef SO_BINDTODEVICE
-        RPC2H(SO_BINDTODEVICE);
-#endif
-#ifdef SO_BROADCAST
-        RPC2H(SO_BROADCAST);
-#endif
-#ifdef SO_DEBUG
-        RPC2H(SO_DEBUG);
-#endif
-#ifdef SO_DONTROUTE
-        RPC2H(SO_DONTROUTE);
-#endif
-#ifdef SO_ERROR
-        RPC2H(SO_ERROR);
-#endif
-#ifdef SO_KEEPALIVE
-        RPC2H(SO_KEEPALIVE);
-#endif
-#ifdef SO_LINGER
-        RPC2H(SO_LINGER);
-#endif
-#ifdef SO_OOBINLINE
-        RPC2H(SO_OOBINLINE);
-#endif
-#ifdef SO_PRIORITY
-        RPC2H(SO_PRIORITY);
-#endif
-#ifdef SO_RCVBUF
-        RPC2H(SO_RCVBUF);
-#endif
-#ifdef SO_RCVLOWAT
-        RPC2H(SO_RCVLOWAT);
-#endif
-#ifdef SO_RCVTIMEO
-        RPC2H(SO_RCVTIMEO);
-#endif
-#ifdef SO_REUSEADDR
-        RPC2H(SO_REUSEADDR);
-#endif
-#ifdef SO_SNDBUF
-        RPC2H(SO_SNDBUF);
-#endif
-#ifdef SO_SNDLOWAT
-       RPC2H(SO_SNDLOWAT);
-#endif
-#ifdef SO_UPDATE_ACCEPT_CONTEXT
-        RPC2H(SO_UPDATE_ACCEPT_CONTEXT);
-#endif
-#ifdef SO_UPDATE_CONNECT_CONTEXT
-        RPC2H(SO_UPDATE_CONNECT_CONTEXT);
-#endif
-#ifdef SO_SNDTIMEO
-        RPC2H(SO_SNDTIMEO);
-#endif
-#ifdef SO_TYPE
-        RPC2H(SO_TYPE);
-#endif
-#ifdef SO_CONNECT_TIME
-        RPC2H(SO_CONNECT_TIME);
-#endif
-#ifdef SO_OPENTYPE
-        RPC2H(SO_OPENTYPE);
-#endif
-#ifdef SO_DONTLINGER
-        RPC2H(SO_DONTLINGER);
-#endif
-#ifdef SO_CONDITIONAL_ACCEPT
-        RPC2H(SO_CONDITIONAL_ACCEPT);
-#endif
-#ifdef SO_MAX_MSG_SIZE
-        RPC2H(SO_MAX_MSG_SIZE);
-#endif
-#ifdef SO_USELOOPBACK
-        RPC2H(SO_USELOOPBACK);
-#endif
-#ifdef SO_EXCLUSIVEADDRUSE
-        RPC2H(SO_EXCLUSIVEADDRUSE);
-#endif
-#ifdef SO_GROUP_ID
-        RPC2H(SO_GROUP_ID);
-#endif
-#ifdef SO_GROUP_PRIORITY
-        RPC2H(SO_GROUP_PRIORITY);
-#endif
-#ifdef SO_PROTOCOL_INFOA
-        RPC2H(SO_PROTOCOL_INFOA);
-#endif
-#ifdef SO_PROTOCOL_INFOW
-        RPC2H(SO_PROTOCOL_INFOW);
-#endif
-#ifdef SO_DGRAM_ERRIND
-        RPC2H(SO_DGRAM_ERRIND);
-#endif
-#ifdef IP_ADD_MEMBERSHIP
-        RPC2H(IP_ADD_MEMBERSHIP);
-#endif
-#ifdef IP_DROP_MEMBERSHIP
-        RPC2H(IP_DROP_MEMBERSHIP);
-#endif
-#ifdef IP_MULTICAST_IF
-        RPC2H(IP_MULTICAST_IF);
-#endif
-#ifdef IP_MULTICAST_LOOP
-        RPC2H(IP_MULTICAST_LOOP);
-#endif
-#ifdef IP_MULTICAST_TTL
-        RPC2H(IP_MULTICAST_TTL);
-#endif
-#ifdef IP_OPTIONS
-        RPC2H(IP_OPTIONS);
-#endif
-#ifdef IP_PKTINFO
-        RPC2H(IP_PKTINFO);
-#endif
-#ifdef IP_RECVERR
-        RPC2H(IP_RECVERR);
-#endif
-#ifdef IP_RECVOPTS
-        RPC2H(IP_RECVOPTS);
-#endif        
-#ifdef IP_RECVTOS
-        RPC2H(IP_RECVTOS);
-#endif
-#ifdef IP_RECVTTL
-        RPC2H(IP_RECVTTL);
-#endif
-#ifdef IP_RETOPTS
-        RPC2H(IP_RETOPTS);
-#endif
-#ifdef IP_TOS
-        RPC2H(IP_TOS);
-#endif
-#ifdef IP_TTL
-        RPC2H(IP_TTL);
-#endif
-#ifdef IP_MTU
-        RPC2H(IP_MTU);
-#endif
-#ifdef IP_MTU_DISCOVER
-        RPC2H(IP_MTU_DISCOVER);
-#endif
-#ifdef IP_RECEIVE_BROADCAST
-        RPC2H(IP_RECEIVE_BROADCAST);
-#endif
-#ifdef IP_DONTFRAGMENT
-        RPC2H(IP_DONTFRAGMENT);
-#endif
-#ifdef IPV6_ADDRFORM
-        RPC2H(IPV6_ADDRFORM);
-#endif
-#ifdef IPV6_PKTINFO
-        RPC2H(IPV6_PKTINFO);
-#endif
-#ifdef IPV6_HOPOPTS
-        RPC2H(IPV6_HOPOPTS);
-#endif
-#ifdef IPV6_DSTOPTS
-        RPC2H(IPV6_DSTOPTS);
-#endif
-#ifdef IPV6_RTHDR
-        RPC2H(IPV6_RTHDR);
-#endif
-#ifdef IPV6_PKTOPTIONS
-        RPC2H(IPV6_PKTOPTIONS);
-#endif
-#ifdef IPV6_CHECKSUM
-        RPC2H(IPV6_CHECKSUM);
-#endif
-#ifdef IPV6_HOPLIMIT
-        RPC2H(IPV6_HOPLIMIT);
-#endif
-#ifdef IPV6_NEXTHOP
-        RPC2H(IPV6_NEXTHOP);
-#endif
-#ifdef IPV6_AUTHHDR
-        RPC2H(IPV6_AUTHHDR);
-#endif
-#ifdef IPV6_UNICAST_HOPS
-        RPC2H(IPV6_UNICAST_HOPS);
-#endif
-#ifdef IPV6_MULTICAST_IF
-        RPC2H(IPV6_MULTICAST_IF);
-#endif
-#ifdef IPV6_MULTICAST_HOPS
-        RPC2H(IPV6_MULTICAST_HOPS);
-#endif
-#ifdef IPV6_MULTICAST_LOOP
-        RPC2H(IPV6_MULTICAST_LOOP);
-#endif        
-#ifdef IPV6_ADD_MEMBERSHIP
-        RPC2H(IPV6_ADD_MEMBERSHIP);
-#endif
-#ifdef IPV6_DROP_MEMBERSHIP
-        RPC2H(IPV6_DROP_MEMBERSHIP);
-#endif
-#ifdef IPV6_ROUTER_ALERT
-        RPC2H(IPV6_ROUTER_ALERT);
-#endif
-#ifdef IPV6_MTU_DISCOVER
-        RPC2H(IPV6_MTU_DISCOVER);
-#endif        
-#ifdef IPV6_MTU
-        RPC2H(IPV6_MTU);
-#endif        
-#ifdef IPV6_RECVERR
-        RPC2H(IPV6_RECVERR);
-#endif        
-#ifdef IPV6_V6ONLY
-        RPC2H(IPV6_V6ONLY);
-#endif
-#ifdef IPV6_JOIN_ANYCAST
-        RPC2H(IPV6_JOIN_ANYCAST);
-#endif
-#ifdef IPV6_LEAVE_ANYCAST
-        RPC2H(IPV6_LEAVE_ANYCAST);
-#endif        
-#ifdef IPV6_IPSEC_POLICY
-        RPC2H(IPV6_IPSEC_POLICY);
-#endif        
-#ifdef IPV6_XFRM_POLICY
-        RPC2H(IPV6_XFRM_POLICY);
-#endif        
-#ifdef TCP_MAXSEG
-        RPC2H(TCP_MAXSEG);
-#endif
-#ifdef TCP_NODELAY
-        RPC2H(TCP_NODELAY);
-#endif
-#ifdef TCP_CORK
-        RPC2H(TCP_CORK);
-#endif
-#ifdef TCP_KEEPIDLE
-        RPC2H(TCP_KEEPIDLE);
-#endif
-#ifdef TCP_KEEPINTVL
-        RPC2H(TCP_KEEPINTVL);
-#endif
-#ifdef TCP_KEEPCNT
-        RPC2H(TCP_KEEPCNT);
-#endif
-#ifdef TCP_INFO
-        RPC2H(TCP_INFO);
-#endif
-#ifdef TCP_DEFER_ACCEPT
-        RPC2H(TCP_DEFER_ACCEPT);
-#endif        
-#ifdef UDP_NOCHECKSUM
-        RPC2H(UDP_NOCHECKSUM);
-#endif        
+        RPC2H_CHECK(SO_ACCEPTCONN);
+        RPC2H_CHECK(SO_ACCEPTFILTER);
+        RPC2H_CHECK(SO_BINDTODEVICE);
+        RPC2H_CHECK(SO_BROADCAST);
+        RPC2H_CHECK(SO_DEBUG);
+        RPC2H_CHECK(SO_DONTROUTE);
+        RPC2H_CHECK(SO_ERROR);
+        RPC2H_CHECK(SO_KEEPALIVE);
+        RPC2H_CHECK(SO_LINGER);
+        RPC2H_CHECK(SO_OOBINLINE);
+        RPC2H_CHECK(SO_PRIORITY);
+        RPC2H_CHECK(SO_RCVBUF);
+        RPC2H_CHECK(SO_RCVLOWAT);
+        RPC2H_CHECK(SO_RCVTIMEO);
+        RPC2H_CHECK(SO_REUSEADDR);
+        RPC2H_CHECK(SO_SNDBUF);
+        RPC2H_CHECK(SO_SNDLOWAT);
+        RPC2H_CHECK(SO_UPDATE_ACCEPT_CONTEXT);
+        RPC2H_CHECK(SO_UPDATE_CONNECT_CONTEXT);
+        RPC2H_CHECK(SO_SNDTIMEO);
+        RPC2H_CHECK(SO_TYPE);
+        RPC2H_CHECK(SO_CONNECT_TIME);
+        RPC2H_CHECK(SO_OPENTYPE);
+        RPC2H_CHECK(SO_DONTLINGER);
+        RPC2H_CHECK(SO_CONDITIONAL_ACCEPT);
+        RPC2H_CHECK(SO_MAX_MSG_SIZE);
+        RPC2H_CHECK(SO_USELOOPBACK);
+        RPC2H_CHECK(SO_EXCLUSIVEADDRUSE);
+        RPC2H_CHECK(SO_GROUP_ID);
+        RPC2H_CHECK(SO_GROUP_PRIORITY);
+        RPC2H_CHECK(SO_PROTOCOL_INFOA);
+        RPC2H_CHECK(SO_PROTOCOL_INFOW);
+        RPC2H_CHECK(SO_DGRAM_ERRIND);
+        RPC2H_CHECK(IP_ADD_MEMBERSHIP);
+        RPC2H_CHECK(IP_DROP_MEMBERSHIP);
+        RPC2H_CHECK(IP_MULTICAST_IF);
+        RPC2H_CHECK(IP_MULTICAST_LOOP);
+        RPC2H_CHECK(IP_MULTICAST_TTL);
+        RPC2H_CHECK(IP_OPTIONS);
+        RPC2H_CHECK(IP_PKTINFO);
+        RPC2H_CHECK(IP_RECVERR);
+        RPC2H_CHECK(IP_RECVOPTS);
+        RPC2H_CHECK(IP_RECVTOS);
+        RPC2H_CHECK(IP_RECVTTL);
+        RPC2H_CHECK(IP_RETOPTS);
+        RPC2H_CHECK(IP_TOS);
+        RPC2H_CHECK(IP_TTL);
+        RPC2H_CHECK(IP_MTU);
+        RPC2H_CHECK(IP_MTU_DISCOVER);
+        RPC2H_CHECK(IP_RECEIVE_BROADCAST);
+        RPC2H_CHECK(IP_DONTFRAGMENT);
+        RPC2H_CHECK(IPV6_ADDRFORM);
+        RPC2H_CHECK(IPV6_PKTINFO);
+        RPC2H_CHECK(IPV6_HOPOPTS);
+        RPC2H_CHECK(IPV6_DSTOPTS);
+        RPC2H_CHECK(IPV6_RTHDR);
+        RPC2H_CHECK(IPV6_PKTOPTIONS);
+        RPC2H_CHECK(IPV6_CHECKSUM);
+        RPC2H_CHECK(IPV6_HOPLIMIT);
+        RPC2H_CHECK(IPV6_NEXTHOP);
+        RPC2H_CHECK(IPV6_AUTHHDR);
+        RPC2H_CHECK(IPV6_UNICAST_HOPS);
+        RPC2H_CHECK(IPV6_MULTICAST_IF);
+        RPC2H_CHECK(IPV6_MULTICAST_HOPS);
+        RPC2H_CHECK(IPV6_MULTICAST_LOOP);
+        RPC2H_CHECK(IPV6_ADD_MEMBERSHIP);
+        RPC2H_CHECK(IPV6_DROP_MEMBERSHIP);
+        RPC2H_CHECK(IPV6_ROUTER_ALERT);
+        RPC2H_CHECK(IPV6_MTU_DISCOVER);
+        RPC2H_CHECK(IPV6_MTU);
+        RPC2H_CHECK(IPV6_RECVERR);
+        RPC2H_CHECK(IPV6_V6ONLY);
+        RPC2H_CHECK(IPV6_JOIN_ANYCAST);
+        RPC2H_CHECK(IPV6_LEAVE_ANYCAST);
+        RPC2H_CHECK(IPV6_IPSEC_POLICY);
+        RPC2H_CHECK(IPV6_XFRM_POLICY);
+        RPC2H_CHECK(TCP_MAXSEG);
+        RPC2H_CHECK(TCP_NODELAY);
+        RPC2H_CHECK(TCP_CORK);
+        RPC2H_CHECK(TCP_KEEPIDLE);
+        RPC2H_CHECK(TCP_KEEPINTVL);
+        RPC2H_CHECK(TCP_KEEPCNT);
+        RPC2H_CHECK(TCP_INFO);
+        RPC2H_CHECK(TCP_DEFER_ACCEPT);
+        RPC2H_CHECK(UDP_NOCHECKSUM);
         default:
             WARN("%s is converted to RPC_SOCKOPT_MAX(%u)",
                  sockopt_rpc2str(opt), RPC_SOCKOPT_MAX);
@@ -885,269 +694,124 @@ sockopt_h2rpc(int opt_type, int opt)
 {
     switch (opt_type)
     {
-#ifdef SOL_SOCKET    
         case SOL_SOCKET:
             switch (opt)
             {
-                H2RPC(SO_ACCEPTCONN);
-#ifdef SO_ACCEPTFILTER
-                H2RPC(SO_ACCEPTFILTER);
-#endif
-#ifdef SO_BINDTODEVICE
-                H2RPC(SO_BINDTODEVICE);
-#endif
-                H2RPC(SO_BROADCAST);
-                H2RPC(SO_DEBUG);
-                H2RPC(SO_DONTROUTE);
-                H2RPC(SO_ERROR);
-                H2RPC(SO_KEEPALIVE);
-                H2RPC(SO_LINGER);
-                H2RPC(SO_OOBINLINE);
-#ifdef SO_PRIORITY
-                H2RPC(SO_PRIORITY);
-#endif
-                H2RPC(SO_RCVBUF);
-                H2RPC(SO_RCVLOWAT);
-                H2RPC(SO_RCVTIMEO);
-                H2RPC(SO_REUSEADDR);
-                H2RPC(SO_SNDBUF);
-                H2RPC(SO_SNDLOWAT);
-#ifdef SO_UPDATE_CONNECT_CONTEXT
-                H2RPC(SO_UPDATE_CONNECT_CONTEXT);
-#endif
-#ifdef SO_UPDATE_ACCEPT_CONTEXT
-                H2RPC(SO_UPDATE_ACCEPT_CONTEXT);
-#endif
-                H2RPC(SO_SNDTIMEO);
-                H2RPC(SO_TYPE);
-#ifdef SO_CONNECT_TIME
-                H2RPC(SO_CONNECT_TIME);
-#endif
-#ifdef SO_OPENTYPE
-                H2RPC(SO_OPENTYPE);
-#endif
-#ifdef SO_DONTLINGER
-                H2RPC(SO_DONTLINGER);
-#endif
-#ifdef SO_CONDITIONAL_ACCEPT
-                H2RPC(SO_CONDITIONAL_ACCEPT);
-#endif
-#ifdef SO_MAX_MSG_SIZE
-                H2RPC(SO_MAX_MSG_SIZE);
-#endif
-#ifdef SO_USELOOPBACK
-                H2RPC(SO_USELOOPBACK);
-#endif
-#ifdef SO_EXCLUSIVEADDRUSE
-                H2RPC(SO_EXCLUSIVEADDRUSE);
-#endif
-#ifdef SO_GROUP_ID
-                H2RPC(SO_GROUP_ID);
-#endif
-#ifdef SO_GROUP_PRIORITY
-                H2RPC(SO_GROUP_PRIORITY);
-#endif
-#ifdef SO_PROTOCOL_INFOA
-                H2RPC(SO_PROTOCOL_INFOA);
-#endif
-#ifdef SO_PROTOCOL_INFOW
-                H2RPC(SO_PROTOCOL_INFOW);
-#endif
-#ifdef SO_DGRAM_ERRIND
-                H2RPC(SO_DGRAM_ERRIND);
-#endif
+                H2RPC_CHECK(SO_ACCEPTCONN);
+                H2RPC_CHECK(SO_ACCEPTFILTER);
+                H2RPC_CHECK(SO_BINDTODEVICE);
+                H2RPC_CHECK(SO_BROADCAST);
+                H2RPC_CHECK(SO_DEBUG);
+                H2RPC_CHECK(SO_DONTROUTE);
+                H2RPC_CHECK(SO_ERROR);
+                H2RPC_CHECK(SO_KEEPALIVE);
+                H2RPC_CHECK(SO_LINGER);
+                H2RPC_CHECK(SO_OOBINLINE);
+                H2RPC_CHECK(SO_PRIORITY);
+                H2RPC_CHECK(SO_RCVBUF);
+                H2RPC_CHECK(SO_RCVLOWAT);
+                H2RPC_CHECK(SO_RCVTIMEO);
+                H2RPC_CHECK(SO_REUSEADDR);
+                H2RPC_CHECK(SO_SNDBUF);
+                H2RPC_CHECK(SO_SNDLOWAT);
+                H2RPC_CHECK(SO_UPDATE_CONNECT_CONTEXT);
+                H2RPC_CHECK(SO_UPDATE_ACCEPT_CONTEXT);
+                H2RPC_CHECK(SO_SNDTIMEO);
+                H2RPC_CHECK(SO_TYPE);
+                H2RPC_CHECK(SO_CONNECT_TIME);
+                H2RPC_CHECK(SO_OPENTYPE);
+                H2RPC_CHECK(SO_DONTLINGER);
+                H2RPC_CHECK(SO_CONDITIONAL_ACCEPT);
+                H2RPC_CHECK(SO_MAX_MSG_SIZE);
+                H2RPC_CHECK(SO_USELOOPBACK);
+                H2RPC_CHECK(SO_EXCLUSIVEADDRUSE);
+                H2RPC_CHECK(SO_GROUP_ID);
+                H2RPC_CHECK(SO_GROUP_PRIORITY);
+                H2RPC_CHECK(SO_PROTOCOL_INFOA);
+                H2RPC_CHECK(SO_PROTOCOL_INFOW);
+                H2RPC_CHECK(SO_DGRAM_ERRIND);
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
-#endif
 
-#ifdef SOL_TCP
         case SOL_TCP:
             switch (opt)
             {
-#ifdef TCP_MAXSEG            
-                H2RPC(TCP_MAXSEG);
-#endif
-#ifdef TCP_NODELAY                
-                H2RPC(TCP_NODELAY);
-#endif                
-#ifdef TCP_KEEPIDLE
-                H2RPC(TCP_KEEPIDLE);
-#endif
-#ifdef TCP_KEEPINTVL
-                H2RPC(TCP_KEEPINTVL);
-#endif
-#ifdef TCP_KEEPCNT
-                H2RPC(TCP_KEEPCNT);
-#endif
-#ifdef TCP_INFO
-                H2RPC(TCP_INFO);
-#endif
+                H2RPC_CHECK(TCP_MAXSEG);
+                H2RPC_CHECK(TCP_NODELAY);
+                H2RPC_CHECK(TCP_KEEPIDLE);
+                H2RPC_CHECK(TCP_KEEPINTVL);
+                H2RPC_CHECK(TCP_KEEPCNT);
+                H2RPC_CHECK(TCP_INFO);
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
-#endif
 
-#ifdef SOL_IP        
         case SOL_IP:
             switch (opt)
             {
-#ifdef IP_ADD_MEMBERSHIP
-                H2RPC(IP_ADD_MEMBERSHIP);
-#endif
-#ifdef IP_DROP_MEMBERSHIP
-                H2RPC(IP_DROP_MEMBERSHIP);
-#endif
-#ifdef IP_MULTICAST_IF
-                H2RPC(IP_MULTICAST_IF);
-#endif
-#ifdef IP_MULTICAST_LOOP
-                H2RPC(IP_MULTICAST_LOOP);
-#endif
-#ifdef IP_MULTICAST_TTL
-                H2RPC(IP_MULTICAST_TTL);
-#endif
-#ifdef IP_OPTIONS
-                H2RPC(IP_OPTIONS);
-#endif
-#ifdef IP_PKTINFO
-                H2RPC(IP_PKTINFO);
-#endif
-#ifdef IP_RECVERR                
-                H2RPC(IP_RECVERR);
-#endif
-#ifdef IP_RECVOPTS                
-                H2RPC(IP_RECVOPTS);
-#endif
-#ifdef IP_RECVTOS                
-                H2RPC(IP_RECVTOS);
-#endif
-#ifdef IP_RECVTTL                
-                H2RPC(IP_RECVTTL);
-#endif
-#ifdef IP_RETOPTS                
-                H2RPC(IP_RETOPTS);
-#endif                
-#ifdef IP_TOS
-                H2RPC(IP_TOS);
-#endif
-#ifdef IP_TTL
-                H2RPC(IP_TTL);
-#endif
-#ifdef IP_MTU
-                H2RPC(IP_MTU);
-#endif
-#ifdef IP_MTU_DISCOVER
-                H2RPC(IP_MTU_DISCOVER);
-#endif
-#ifdef IP_RECEIVE_BROADCAST
-                H2RPC(IP_RECEIVE_BROADCAST);
-#endif
-#ifdef IP_DONTFRAGMENT
-                H2RPC(IP_DONTFRAGMENT);
-#endif
+                H2RPC_CHECK(IP_ADD_MEMBERSHIP);
+                H2RPC_CHECK(IP_DROP_MEMBERSHIP);
+                H2RPC_CHECK(IP_MULTICAST_IF);
+                H2RPC_CHECK(IP_MULTICAST_LOOP);
+                H2RPC_CHECK(IP_MULTICAST_TTL);
+                H2RPC_CHECK(IP_OPTIONS);
+                H2RPC_CHECK(IP_PKTINFO);
+                H2RPC_CHECK(IP_RECVERR);
+                H2RPC_CHECK(IP_RECVOPTS);
+                H2RPC_CHECK(IP_RECVTOS);
+                H2RPC_CHECK(IP_RECVTTL);
+                H2RPC_CHECK(IP_RETOPTS);
+                H2RPC_CHECK(IP_TOS);
+                H2RPC_CHECK(IP_TTL);
+                H2RPC_CHECK(IP_MTU);
+                H2RPC_CHECK(IP_MTU_DISCOVER);
+                H2RPC_CHECK(IP_RECEIVE_BROADCAST);
+                H2RPC_CHECK(IP_DONTFRAGMENT);
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
-#endif
 
-#ifdef SOL_IPV6
         case SOL_IPV6:
             switch (opt)
             {
-#ifdef IPV6_UNICAST_HOPS
-                H2RPC(IPV6_UNICAST_HOPS);
-#endif
-#ifdef IPV6_MULTICAST_HOPS
-                H2RPC(IPV6_MULTICAST_HOPS);
-#endif
-#ifdef IPV6_MULTICAST_IF
-                H2RPC(IPV6_MULTICAST_IF);
-#endif
-#ifdef IPV6_ADDRFORM                
-                H2RPC(IPV6_ADDRFORM);
-#endif
-#ifdef IPV6_PKTINFO                
-                H2RPC(IPV6_PKTINFO);
-#endif
-#ifdef IPV6_PKTOPTIONS
-                H2RPC(IPV6_PKTOPTIONS);
-#endif
-#ifdef IPV6_CHECKSUM
-                H2RPC(IPV6_CHECKSUM);
-#endif
-#ifdef IPV6_RTHDR
-                H2RPC(IPV6_RTHDR);
-#endif
-#ifdef IPV6_AUTHHDR
-                H2RPC(IPV6_AUTHHDR);
-#endif
-#ifdef IPV6_DSTOPTS
-                H2RPC(IPV6_DSTOPTS);
-#endif
-#ifdef IPV6_HOPOPTS
-                H2RPC(IPV6_HOPOPTS);
-#endif
-#ifdef IPV6_FLOWINFO
-                H2RPC(IPV6_FLOWINFO);
-#endif
-#ifdef IPV6_HOPLIMIT
-                H2RPC(IPV6_HOPLIMIT);
-#endif
-#ifdef IPV6_NEXTHOP
-                H2RPC(IPV6_NEXTHOP);
-#endif
-#ifdef IPV6_MULTICAST_LOOP
-                H2RPC(IPV6_MULTICAST_LOOP);
-#endif
-#ifdef IPV6_ADD_MEMBERSHIP
-                H2RPC(IPV6_ADD_MEMBERSHIP);
-#endif
-#ifdef IPV6_DROP_MEMBERSHIP
-                H2RPC(IPV6_DROP_MEMBERSHIP);
-#endif
-#ifdef IPV6_MTU                
-                H2RPC(IPV6_MTU);
-#endif
-#ifdef IPV6_MTU_DISCOVER                
-                H2RPC(IPV6_MTU_DISCOVER);
-#endif
-#ifdef IPV6_RECVERR
-                H2RPC(IPV6_RECVERR);
-#endif
-#ifdef IPV6_V6ONLY
-                H2RPC(IPV6_V6ONLY);
-#endif
-#ifdef IPV6_JOIN_ANYCAST
-                H2RPC(IPV6_JOIN_ANYCAST);
-#endif
-#ifdef IPV6_LEAVE_ANYCAST
-                H2RPC(IPV6_LEAVE_ANYCAST);
-#endif
-#ifdef IPV6_IPSEC_POLICY
-                H2RPC(IPV6_IPSEC_POLICY);
-#endif
-#ifdef IPV6_XFRM_POLICY
-                H2RPC(IPV6_XFRM_POLICY);
-#endif
-#ifdef IPV6_ROUTER_ALERT
-                H2RPC(IPV6_ROUTER_ALERT);
-#endif                
+                H2RPC_CHECK(IPV6_UNICAST_HOPS);
+                H2RPC_CHECK(IPV6_MULTICAST_HOPS);
+                H2RPC_CHECK(IPV6_MULTICAST_IF);
+                H2RPC_CHECK(IPV6_ADDRFORM);
+                H2RPC_CHECK(IPV6_PKTINFO);
+                H2RPC_CHECK(IPV6_PKTOPTIONS);
+                H2RPC_CHECK(IPV6_CHECKSUM);
+                H2RPC_CHECK(IPV6_RTHDR);
+                H2RPC_CHECK(IPV6_AUTHHDR);
+                H2RPC_CHECK(IPV6_DSTOPTS);
+                H2RPC_CHECK(IPV6_HOPOPTS);
+                H2RPC_CHECK(IPV6_FLOWINFO);
+                H2RPC_CHECK(IPV6_HOPLIMIT);
+                H2RPC_CHECK(IPV6_NEXTHOP);
+                H2RPC_CHECK(IPV6_MULTICAST_LOOP);
+                H2RPC_CHECK(IPV6_ADD_MEMBERSHIP);
+                H2RPC_CHECK(IPV6_DROP_MEMBERSHIP);
+                H2RPC_CHECK(IPV6_MTU);
+                H2RPC_CHECK(IPV6_MTU_DISCOVER);
+                H2RPC_CHECK(IPV6_RECVERR);
+                H2RPC_CHECK(IPV6_V6ONLY);
+                H2RPC_CHECK(IPV6_JOIN_ANYCAST);
+                H2RPC_CHECK(IPV6_LEAVE_ANYCAST);
+                H2RPC_CHECK(IPV6_IPSEC_POLICY);
+                H2RPC_CHECK(IPV6_XFRM_POLICY);
+                H2RPC_CHECK(IPV6_ROUTER_ALERT);
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
-#endif
-#ifdef SOL_UDP
+
         case SOL_UDP:
             switch (opt)
             {
-#ifdef UDP_NOCHECKSUM
-                H2RPC(UDP_NOCHECKSUM);
-#endif                
+                H2RPC_CHECK(UDP_NOCHECKSUM);
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
-#endif
 
         default: return RPC_SOCKOPT_MAX;
     }
@@ -1181,21 +845,11 @@ socklevel_rpc2h(rpc_socklevel level)
 {
     switch (level)
     {
-#ifdef SOL_SOCKET
-        RPC2H(SOL_SOCKET);
-#endif
-#ifdef SOL_IP        
-        RPC2H(SOL_IP);
-#endif
-#ifdef SOL_IPV6        
-        RPC2H(SOL_IPV6);
-#endif        
-#ifdef SOL_TCP
-        RPC2H(SOL_TCP);
-#endif
-#ifdef SOL_UDP        
-        RPC2H(SOL_UDP);
-#endif        
+        RPC2H_CHECK(SOL_SOCKET);
+        RPC2H_CHECK(SOL_IP);
+        RPC2H_CHECK(SOL_IPV6);
+        RPC2H_CHECK(SOL_TCP);
+        RPC2H_CHECK(SOL_UDP);
         default:
             WARN("%s is converted to SOL_MAX(%u)",
                  socklevel_rpc2str(level), SOL_MAX);
@@ -1209,21 +863,11 @@ socklevel_h2rpc(int level)
 {
     switch (level)
     {
-#ifdef SOL_SOCKET
-        H2RPC(SOL_SOCKET);
-#endif
-#ifdef SOL_IP        
-        H2RPC(SOL_IP);
-#endif
-#ifdef SOL_IPV6        
-        H2RPC(SOL_IPV6);
-#endif
-#ifdef SOL_TCP        
-        H2RPC(SOL_TCP);
-#endif
-#ifdef SOL_UDP        
-        H2RPC(SOL_UDP);
-#endif        
+        H2RPC_CHECK(SOL_SOCKET);
+        H2RPC_CHECK(SOL_IP);
+        H2RPC_CHECK(SOL_IPV6);
+        H2RPC_CHECK(SOL_TCP);
+        H2RPC_CHECK(SOL_UDP);
         default: return RPC_SOL_UNKNOWN;
     }
 }
@@ -1307,114 +951,60 @@ ioctl_rpc2h(rpc_ioctl_code code)
 {
     switch (code)
     {
-#ifdef SIOCGSTAMP
-        RPC2H(SIOCGSTAMP);
-#endif
-#ifdef FIOASYNC
-        RPC2H(FIOASYNC);
-#endif
-#ifdef FIONBIO
-        RPC2H(FIONBIO);
-#endif
-#ifdef FIONREAD
-        RPC2H(FIONREAD);
-#endif
-#ifdef SIOCATMARK
-        RPC2H(SIOCATMARK);
-#endif
-#ifdef SIOCINQ
-        RPC2H(SIOCINQ);
-#endif
-#ifdef SIOCSPGRP
-        RPC2H(SIOCSPGRP);
-#endif
-#ifdef SIOCGPGRP
-        RPC2H(SIOCGPGRP);
-#endif
-#ifdef SIOCGIFCONF
-        RPC2H(SIOCGIFCONF);
-#endif
-#ifdef SIOCGIFFLAGS
-        RPC2H(SIOCGIFFLAGS);
-#endif
-#ifdef SIOCSIFFLAGS
-        RPC2H(SIOCSIFFLAGS);
-#endif
-#ifdef SIOCGIFADDR
-        RPC2H(SIOCGIFADDR);
-#endif
-#ifdef SIOCSIFADDR
-        RPC2H(SIOCSIFADDR);
-#endif
-#ifdef SIOCGIFNETMASK
-        RPC2H(SIOCGIFNETMASK);
-#endif
-#ifdef SIOCSIFNETMASK
-        RPC2H(SIOCSIFNETMASK);
-#endif
-#ifdef SIOCGIFBRDADDR
-        RPC2H(SIOCGIFBRDADDR);
-#endif
-#ifdef SIOCSIFBRDADDR
-        RPC2H(SIOCSIFBRDADDR);
-#endif
-#ifdef SIOCGIFDSTADDR
-        RPC2H(SIOCGIFDSTADDR);
-#endif
-#ifdef SIOCSIFDSTADDR
-        RPC2H(SIOCSIFDSTADDR);
-#endif
-#ifdef SIOCGIFHWADDR
-        RPC2H(SIOCGIFHWADDR);
-#endif
-#ifdef SIOCGIFMTU
-        RPC2H(SIOCGIFMTU);
-#endif
-#ifdef SIOCSIFMTU
-        RPC2H(SIOCSIFMTU);
-#endif
-#ifdef SIOCSARP
-        RPC2H(SIOCSARP);
-#endif
-#ifdef SIOCDARP
-        RPC2H(SIOCDARP);
-#endif
-#ifdef SIOCGARP
-        RPC2H(SIOCGARP);
-#endif
+        RPC2H_CHECK(SIOCGSTAMP);
+        RPC2H_CHECK(FIOASYNC);
+        RPC2H_CHECK(FIONBIO);
+        RPC2H_CHECK(FIONREAD);
+        RPC2H_CHECK(SIOCATMARK);
+        RPC2H_CHECK(SIOCINQ);
+        RPC2H_CHECK(SIOCSPGRP);
+        RPC2H_CHECK(SIOCGPGRP);
+        RPC2H_CHECK(SIOCGIFCONF);
+        RPC2H_CHECK(SIOCGIFFLAGS);
+        RPC2H_CHECK(SIOCSIFFLAGS);
+        RPC2H_CHECK(SIOCGIFADDR);
+        RPC2H_CHECK(SIOCSIFADDR);
+        RPC2H_CHECK(SIOCGIFNETMASK);
+        RPC2H_CHECK(SIOCSIFNETMASK);
+        RPC2H_CHECK(SIOCGIFBRDADDR);
+        RPC2H_CHECK(SIOCSIFBRDADDR);
+        RPC2H_CHECK(SIOCGIFDSTADDR);
+        RPC2H_CHECK(SIOCSIFDSTADDR);
+        RPC2H_CHECK(SIOCGIFHWADDR);
+        RPC2H_CHECK(SIOCGIFMTU);
+        RPC2H_CHECK(SIOCSIFMTU);
+        RPC2H_CHECK(SIOCSARP);
+        RPC2H_CHECK(SIOCDARP);
+        RPC2H_CHECK(SIOCGARP);
+        RPC2H_CHECK(SG_IO);
 
-#ifdef SG_IO
-        RPC2H(SG_IO);
-#endif
+        RPC2H_CHECK(SIO_ADDRESS_LIST_CHANGE);
+        RPC2H_CHECK(SIO_ADDRESS_LIST_QUERY);
+        RPC2H_CHECK(SIO_ASSOCIATE_HANDLE);
+        RPC2H_CHECK(SIO_ENABLE_CIRCULAR_QUEUEING);
+        RPC2H_CHECK(SIO_FIND_ROUTE);
+        RPC2H_CHECK(SIO_FLUSH);
+        RPC2H_CHECK(SIO_GET_BROADCAST_ADDRESS);
+        RPC2H_CHECK(SIO_GET_EXTENSION_FUNCTION_POINTER);
+        RPC2H_CHECK(SIO_GET_GROUP_QOS);
+        RPC2H_CHECK(SIO_GET_QOS);
+        RPC2H_CHECK(SIO_MULTIPOINT_LOOPBACK);
+        RPC2H_CHECK(SIO_MULTICAST_SCOPE);
+        RPC2H_CHECK(SIO_ROUTING_INTERFACE_CHANGE);
+        RPC2H_CHECK(SIO_ROUTING_INTERFACE_QUERY);
+        RPC2H_CHECK(SIO_SET_GROUP_QOS);
+        RPC2H_CHECK(SIO_SET_QOS);
+        RPC2H_CHECK(SIO_TRANSLATE_HANDLE);
 
-#ifdef SIO_ADDRESS_LIST_CHANGE
-        RPC2H(SIO_ADDRESS_LIST_CHANGE);
-        RPC2H(SIO_ADDRESS_LIST_QUERY);
-        RPC2H(SIO_ADDRESS_LIST_SORT);
-        RPC2H(SIO_ASSOCIATE_HANDLE);
-        RPC2H(SIO_CHK_QOS);
-        RPC2H(SIO_ENABLE_CIRCULAR_QUEUEING);
-        RPC2H(SIO_FIND_ROUTE);
-        RPC2H(SIO_FLUSH);
-        RPC2H(SIO_GET_BROADCAST_ADDRESS);
-        RPC2H(SIO_GET_EXTENSION_FUNCTION_POINTER);
-        RPC2H(SIO_GET_GROUP_QOS);
-        RPC2H(SIO_GET_QOS);
-        RPC2H(SIO_KEEPALIVE_VALS);
-        RPC2H(SIO_MULTIPOINT_LOOPBACK);
-        RPC2H(SIO_MULTICAST_SCOPE);
-        RPC2H(SIO_RCVALL);
-        RPC2H(SIO_RCVALL_IGMPMCAST);
-        RPC2H(SIO_RCVALL_MCAST);
-        RPC2H(SIO_ROUTING_INTERFACE_CHANGE);
-        RPC2H(SIO_ROUTING_INTERFACE_QUERY);
-        RPC2H(SIO_SET_GROUP_QOS);
-        RPC2H(SIO_SET_QOS);
-        RPC2H(SIO_TRANSLATE_HANDLE);
-        RPC2H(SIO_UDP_CONNRESET);
-        RPC2H(SIO_INDEX_BIND);
-        RPC2H(SIO_UCAST_IF);
-#endif
+        RPC2H_CHECK(SIO_ADDRESS_LIST_SORT);
+        RPC2H_CHECK(SIO_CHK_QOS);
+        RPC2H_CHECK(SIO_KEEPALIVE_VALS);
+        RPC2H_CHECK(SIO_RCVALL);
+        RPC2H_CHECK(SIO_RCVALL_IGMPMCAST);
+        RPC2H_CHECK(SIO_RCVALL_MCAST);
+        RPC2H_CHECK(SIO_UDP_CONNRESET);
+        RPC2H_CHECK(SIO_INDEX_BIND);
+        RPC2H_CHECK(SIO_UCAST_IF);
         
         default:
             WARN("%s is converted to IOCTL_MAX(%u)",

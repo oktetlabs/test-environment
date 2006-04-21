@@ -200,6 +200,7 @@ network_event_rpc2str(rpc_network_event events)
     return buf;
 }
 
+#ifndef WINDOWS
 
 #ifndef TF_DISCONNECT
 #define TF_DISCONNECT  0
@@ -223,6 +224,8 @@ network_event_rpc2str(rpc_network_event events)
 
 #ifndef TF_WRITE_BEHIND
 #define TF_WRITE_BEHIND  0
+#endif
+
 #endif
 
 #define TRANSMIT_FILE_FLAGS_MAPPING_LIST \

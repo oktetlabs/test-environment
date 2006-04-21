@@ -28,12 +28,12 @@
 #
 
 cat $1 | awk --posix '\
-/RPC2H/ { name=substr($1, 7, length($1) - 8); \
-          printf("#ifdef %s\n        case RPC_%s: return %s;\n#endif\n", 
-                 name, name, name); next } ; \
-/H2RPC/ { name=substr($1, 7, length($1) - 8); \
-          printf("#ifdef %s\n        case %s: return RPC_%s;\n#endif\n", 
-                 name, name, name); next } ; \
-{ print $0; }'  > $2 
+/RPC2H_CHECK/ { name=substr($1, 13, length($1) - 14); \
+  printf("#ifdef %s\n        case RPC_%s: return %s;\n#endif\n", 
+  name, name, name); next } ; \
+/H2RPC_CHECK/ { name=substr($1, 13, length($1) - 14); \
+  printf("#ifdef %s\n        case %s: return RPC_%s;\n#endif\n", 
+  name, name, name); next } ; \
+{ print $0; }' > $2 
 
 exit 0
