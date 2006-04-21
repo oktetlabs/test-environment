@@ -18,7 +18,7 @@ nodist_librpcxdr_la_SOURCES=tarpc_xdr.c tarpc_dummy.c
 
 lib_LIBRARIES=librpcxdrta.a
 
-librpcxdrta_a_CFLAGS=-DTE_DUMMY
+librpcxdrta_a_CFLAGS=-DTE_DUMMY $(AM_CFLAGS)
 librpcxdrta_a_SOURCES=xml_xdr.c rpc_xdr.c
 
 nodist_librpcxdrta_a_SOURCES=tarpc_xdr.c 
