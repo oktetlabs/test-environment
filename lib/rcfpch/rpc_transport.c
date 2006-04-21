@@ -146,6 +146,9 @@ static int max_pipe;
 /** Mutex to protect pipe state */
 static HANDLE conn_mutex;
 
+/** Unique identifier for interaction with RPC servers */
+static int ta_port;
+
 #endif
 
 #if (RPC_TRANSPORT == RPC_TRANSPORT_TCP)
@@ -197,7 +200,8 @@ rpc_transport_init()
 
     conn_mutex = CreateMutex(NULL, FALSE, NULL);
 
-    sprintf(port, "%d", time(NULL));
+    ta_port = time(NULL);
+    sprintf(port, "%d", ta_port);
 
     if (setenv("TE_RPC_PORT", port, 1) < 0)
         return TE_RC(TE_RCF_PCH, TE_EWIN); 
@@ -250,7 +254,7 @@ rpc_transport_init()
 #else
     addr.sun_family = AF_UNIX;
     snprintf(addr.sun_path, sizeof(addr.sun_path), 
-             "/tmp/terpc_%ld", time(NULL));
+             "/tmp/terpc_%ld", getpid());
     len = sizeof(addr) - UNIX_PATH_MAX + strlen(addr.sun_path);
 #endif    
 
@@ -369,7 +373,7 @@ rpc_transport_connect_rpcserver(const char *name,
         return rc;
     }
     
-    sprintf(pipename, "\\\\.\\pipe\\%d_%s", getpid(), name);
+    sprintf(pipename, "\\\\.\\pipe\\%d_%s", ta_port, name);
 
     pipes[i].handle = CreateNamedPipe(pipename, 
                                       PIPE_ACCESS_DUPLEX | 
