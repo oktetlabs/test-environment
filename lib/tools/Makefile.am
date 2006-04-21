@@ -18,11 +18,11 @@ if WINDOWS
 lib_LIBRARIES = libtools.a
 
 libtools_a_CFLAGS = -DTE_DUMMY
-libtools_a_SOURCES = te_format.c 
+WIN_SRC = te_format.c 
 
-libtools.a: $(libtools_a_SOURCES) 
+libtools.a: $(WIN_SRC) 
 	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
-        $(DESTDIR)/$(prefix) $(libtools_a_SOURCES)
+        $(DESTDIR)/$(prefix) $(WIN_SRC)
         
 install-exec-hook:
 	if test -e $(lib_LIBRARIES) -a ! -s $(lib_LIBRARIES) \

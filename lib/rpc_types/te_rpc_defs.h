@@ -86,8 +86,8 @@ bitmap_name_ ## _rpc2str(int bitmap_name_)         \
  *
  * @return String representation of bit mask
  */
-extern const char * bitmask2str(struct rpc_bit_map_entry *maps,
-                                unsigned int val);
+extern const char *bitmask2str(struct rpc_bit_map_entry *maps,
+                               unsigned int val);
 
 #ifdef __cplusplus
 } /* extern "C" */

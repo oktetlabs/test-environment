@@ -79,6 +79,11 @@
 #define PF_LOCAL        AF_LOCAL
 #endif
 
+#ifndef PF_INET6
+#ifdef AF_INET6
+#define PF_INET6        AF_INET6
+#endif
+#endif
 
 /** Convert RPC domain to string */
 const char *
@@ -110,7 +115,9 @@ domain_rpc2h(rpc_socket_domain domain)
     {
         RPC2H(PF_UNSPEC);
         RPC2H(PF_INET);
+#ifdef PF_INET6
         RPC2H(PF_INET6);
+#endif        
 #ifdef PF_PACKET
         RPC2H(PF_PACKET);
 #endif
@@ -131,7 +138,9 @@ domain_h2rpc(int domain)
     {
         H2RPC(PF_UNSPEC);
         H2RPC(PF_INET);
+#ifdef PF_INET6
         H2RPC(PF_INET6);
+#endif        
 #ifdef PF_PACKET
         H2RPC(PF_PACKET);
 #endif
@@ -147,7 +156,6 @@ domain_h2rpc(int domain)
     }
 }
 
-
 /** Convert RPC address family to string */
 const char *
 addr_family_rpc2str(rpc_socket_addr_family addr_family)
@@ -155,7 +163,9 @@ addr_family_rpc2str(rpc_socket_addr_family addr_family)
     switch (addr_family)
     {
         RPC2STR(AF_INET);
+#ifdef AF_INET6
         RPC2STR(AF_INET6);
+#endif        
 #ifdef AF_PACKET
         RPC2STR(AF_PACKET);
 #endif
@@ -180,7 +190,9 @@ addr_family_rpc2h(rpc_socket_addr_family addr_family)
     switch (addr_family)
     {
         RPC2H(AF_INET);
+#ifdef AF_INET6
         RPC2H(AF_INET6);
+#endif        
 #ifdef AF_PACKET
         RPC2H(AF_PACKET);
 #endif
@@ -204,7 +216,9 @@ addr_family_h2rpc(int addr_family)
     switch (addr_family)
     {
         H2RPC(AF_INET);
+#ifdef AF_INET6
         H2RPC(AF_INET6);
+#endif        
 #ifdef AF_PACKET
         H2RPC(AF_PACKET);
 #endif
@@ -1347,7 +1361,7 @@ ioctl_rpc2h(rpc_ioctl_code code)
 #ifdef SIOCGIFDSTADDR
         RPC2H(SIOCGIFDSTADDR);
 #endif
-#ifdef SIOCGIFHWADDR
+#ifdef SIOCSIFDSTADDR
         RPC2H(SIOCSIFDSTADDR);
 #endif
 #ifdef SIOCGIFHWADDR

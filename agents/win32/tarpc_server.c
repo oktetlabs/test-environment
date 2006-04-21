@@ -1716,7 +1716,6 @@ TARPC_FUNC(setsockopt, {},
                 goto finish;
                 break;
         }
-        call_setsockopt:
         INIT_CHECKED_ARG(opt, optlen, 0);
         if (in->optlen == RPC_OPTLEN_AUTO)
             in->optlen = optlen;

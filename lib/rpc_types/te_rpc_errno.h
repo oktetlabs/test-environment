@@ -41,7 +41,6 @@
 
 #include "te_errno.h"
 
-
 /** RPC errno values */
 typedef enum {
     RPC_EOK = 0,

@@ -13,6 +13,7 @@ ta@with_name@_SOURCES=win32.c win32conf.c inet_pton.c common.c
 ta@with_name@_DEPENDENCIES=$(TE_DEPENDENCIES) symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdrta.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librpc_types.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a \
@@ -28,8 +29,9 @@ SYMTBL_LIBS= $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
 if CFG_RCF_RPC
 
 LDADD=symtbl.o \
--lrcfpch -lrpcxdrta -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta -lpthread \
--lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin -lexpat
+-lrcfpch -lrpc_types -lrpcxdrta -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta \
+-lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin \
+-lexpat
 
 AM_CPPFLAGS+=-DRCF_RPC -I.
 ta@with_name@_SOURCES+=tarpc_server.c 
@@ -72,7 +74,7 @@ ta@with_name@_rpcserver32_SOURCES=
 ta@with_name@_rpcserver64_SOURCES=
 
 ta@with_name@_rpcserver_LDADD=rpcserver_symtbl.o $(TE_LDADD) -lrpcxdrta \
-                              -lrcfpch -lloggerta -ltools -lrpc \
+                              -lrpc_types -lrcfpch -lloggerta -ltools -lrpc \
                               -lws2_32 -lmswsock -lwsock32 -liphlpapi 
 
 rpcserver_symtbl.c: tarpc_server.o \
@@ -85,7 +87,7 @@ RPCSERVER_NAME=ta@with_name@_rpcserver$(EXEEXT)
 RPCSERVER32_NAME=ta@with_name@_rpcserver32$(EXEEXT)
 RPCSERVER64_NAME=ta@with_name@_rpcserver64$(EXEEXT)
 
-RPCSERVER_LIBS="librcfpch.a libloggerta.a libtools.a librpc.a \
+RPCSERVER_LIBS="librcfpch.a libloggerta.a libtools.a librpc.a librpc_types.a \
                 ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib user32.lib"
 
 RPCSERVER_SRC= \
@@ -148,8 +150,9 @@ else
 bin_PROGRAMS=ta@with_name@ 
 
 LDADD=symtbl.o \
--lrcfpch -lrpcxdr -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta -lpthread \
--lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin -lexpat 
+-lrcfpch -lrpcxdr -lrpc_types -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta \
+-lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools \
+-lcygwin -lexpat 
 
 EXTRA_DIST+=tarpc_server.c rpcserver.c
 

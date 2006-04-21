@@ -12,13 +12,13 @@ lib_LIBRARIES = libloggerta.a
 
 if WINDOWS
 
-libloggerta_a_SOURCES = logfork.c
+WIN_SRC = logfork.c
 
 EXTRA_DIST = logger_ta.c 
 
-libloggerta.a: $(libloggerta_a_SOURCES) 
+libloggerta.a: $(WIN_SRC) 
 	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
-        $(DESTDIR)/$(prefix) $(libloggerta_a_SOURCES)
+        $(DESTDIR)/$(prefix) $(WIN_SRC)
 
 install-exec-hook:
 	if test -e $(lib_LIBRARIES) -a ! -s $(lib_LIBRARIES) \

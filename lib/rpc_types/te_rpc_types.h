@@ -46,6 +46,7 @@ typedef rpc_ptr rpc_fd_set_p;
 typedef rpc_ptr rpc_sigset_p;
 typedef rpc_ptr rpc_aiocb_p;
 
+
 #ifndef WINDOWS
 
 #include "te_rpc_aio.h"

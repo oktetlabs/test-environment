@@ -40,7 +40,20 @@
 #include "te_rpc_defs.h"
 #include "te_rpc_wsa.h"
 
+#ifdef __CYGWIN__
+#ifndef WINDOWS
+#include <winsock2.h>
+#include <winerror.h>
+#include <mswsock.h>
+#include <ws2tcpip.h>
+#define _SYS_SOCKET_H
+#define _NETINET_IN_H
+#else
+INCLUDE(te_win_defs.h)
+#endif
+#endif
 
+#ifndef WINDOWS
 
 #ifdef FD_READ
 #define HAVE_FD_READ    1
@@ -110,6 +123,8 @@
 #else
 #define HAVE_FD_ADDRESS_LIST_CHANGE        0
 #define FD_ADDRESS_LIST_CHANGE             0
+#endif
+
 #endif
 
 /** Convert RPC network evenet flags to native flags */
@@ -292,7 +307,7 @@ servicetype_flags_h2rpc(unsigned int flags)
 }
 
 
-#ifdef WSA_FLAG_OVERLAPPED
+#if defined(WSA_FLAG_OVERLAPPED) || defined(WINDOWS)
 /** Convert rpc_open_sock_flags to the native ones */
 unsigned int
 open_sock_flags_rpc2h(unsigned int flags)
@@ -326,7 +341,7 @@ join_leaf_rpc2str(rpc_join_leaf_flags open_code)
 }
 
 
-#ifdef JL_SENDER_ONLY
+#if defined(JL_SENDER_ONLY) || defined(WINDOWS)
 /** Convert rpc_join_leaf_flags to the native ones */
 unsigned int
 join_leaf_flags_rpc2h(unsigned int flags)

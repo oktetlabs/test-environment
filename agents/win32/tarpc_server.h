@@ -60,6 +60,8 @@ struct timezone {
 #include "logger_api.h"
 #include "logfork.h"
 #include "rcf_rpc_defs.h"
+#include "te_rpc_errno.h"
+
 #ifndef WINDOWS
 #include "te_rpc_types.h"
 #else

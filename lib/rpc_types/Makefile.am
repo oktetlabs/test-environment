@@ -23,6 +23,35 @@ include_HEADERS = \
 	te_rpc_sys_wait.h \
 	te_rpc_wsa.h
 
+if WINDOWS
+
+WIN_SRC=defs.c wsa.c sys_socket.c
+
+lib_LIBRARIES=librpc_types.a
+
+librpc_types.a: $(WIN_SRC) 
+	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
+        $(DESTDIR)/$(prefix) $(WIN_SRC)
+
+install-exec-hook:
+	if test -e $(lib_LIBRARIES) -a ! -s $(lib_LIBRARIES) \
+                -a -n "$$TE_WIN32_BUILD_HOST" ; then \
+            rm $(lib_LIBRARIES) ; $(MAKE) install ; \
+        fi
+
+EXTRA_DIST=\
+	aio.c \
+	fcntl.c \
+	netdb.c \
+	net_if_arp.c \
+	net_if.c \
+	signal.c \
+	sys_poll.c \
+	sys_resource.c \
+	sys_stat.c \
+	sys_wait.c 
+        
+else
 
 lib_LTLIBRARIES=librpc_types.la
 
@@ -51,3 +80,5 @@ install-exec-hook:
 	touch -c -r librpc_types.* $(DESTDIR)/$(libdir)/librpc_types.*
 
 all: install
+
+endif
