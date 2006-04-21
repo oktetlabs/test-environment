@@ -32,7 +32,12 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "RPC types"
+
 #include "te_config.h"
+
+/* Required on Solaris2 (SunOS 5.11) to see IOCTLs */
+#define BSD_COMP
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -58,10 +63,14 @@
 #if HAVE_NET_IF_H
 #include <net/if.h>
 #endif
+#if HAVE_NET_IF_ARP_H
+#include <net/if_arp.h>
+#endif
 #if HAVE_SCSI_SG_H
 #include <scsi/sg.h>
 #endif
 
+#include "logger_api.h"
 #include "te_rpc_defs.h"
 #include "te_rpc_sys_socket.h"
 
@@ -107,7 +116,10 @@ domain_rpc2h(rpc_socket_domain domain)
 #endif
         RPC2H(PF_LOCAL);
         RPC2H(PF_UNIX);
-        default: return PF_MAX;
+        default:
+            WARN("%s is converted to PF_MAX(%u)",
+                 domain_rpc2str(domain), PF_MAX);
+            return PF_MAX;
     }
 }
 
@@ -135,25 +147,6 @@ domain_h2rpc(int domain)
     }
 }
 
-/** Convert RPC address family to native address family */
-int
-addr_family_rpc2h(rpc_socket_addr_family addr_family)
-{
-    switch (addr_family)
-    {
-        RPC2H(AF_INET);
-        RPC2H(AF_INET6);
-#ifdef AF_PACKET
-        RPC2H(AF_PACKET);
-#endif
-        RPC2H(AF_LOCAL);
-        RPC2H(AF_UNIX);
-        RPC2H(AF_UNSPEC);
-        case RPC_AF_ETHER: return AF_LOCAL;
-        case RPC_AF_UNKNOWN: return AF_MAX;
-        default: return AF_MAX;
-    }
-}
 
 /** Convert RPC address family to string */
 const char *
@@ -180,6 +173,29 @@ addr_family_rpc2str(rpc_socket_addr_family addr_family)
     }
 }
 
+/** Convert RPC address family to native address family */
+int
+addr_family_rpc2h(rpc_socket_addr_family addr_family)
+{
+    switch (addr_family)
+    {
+        RPC2H(AF_INET);
+        RPC2H(AF_INET6);
+#ifdef AF_PACKET
+        RPC2H(AF_PACKET);
+#endif
+        RPC2H(AF_LOCAL);
+        RPC2H(AF_UNIX);
+        RPC2H(AF_UNSPEC);
+        case RPC_AF_ETHER: return AF_LOCAL;
+        case RPC_AF_UNKNOWN: return AF_MAX;
+
+        default:
+            WARN("%s is converted to AF_MAX(%u)",
+                 addr_family_rpc2str(addr_family), AF_MAX);
+            return AF_MAX;
+    }
+}
 
 /** Convert native address family to RPC address family */
 rpc_socket_addr_family
@@ -240,7 +256,10 @@ socktype_rpc2h(rpc_socket_type type)
         RPC2H(SOCK_RAW);
         RPC2H(SOCK_SEQPACKET);
         RPC2H(SOCK_RDM);
-        default: return SOCK_MAX;
+        default:
+            WARN("%s is converted to SOCK_MAX(%u)",
+                 socktype_rpc2str(type), SOCK_MAX);
+            return SOCK_MAX;
     }
 }
 
@@ -289,7 +308,10 @@ proto_rpc2h(rpc_socket_proto proto)
         RPC2H(IPPROTO_UDP);
         RPC2H(IPPROTO_TCP);
         case RPC_PROTO_DEF: return 0;
-        default:            return IPPROTO_MAX;
+        default:
+            WARN("%s is converted to IPPROTO_MAX(%u)",
+                 proto_rpc2str(proto), IPPROTO_MAX);
+            return IPPROTO_MAX;
     }
 }
 
@@ -819,7 +841,10 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef UDP_NOCHECKSUM
         RPC2H(UDP_NOCHECKSUM);
 #endif        
-        default: return RPC_SOCKOPT_MAX;
+        default:
+            WARN("%s is converted to RPC_SOCKOPT_MAX(%u)",
+                 sockopt_rpc2str(opt), RPC_SOCKOPT_MAX);
+            return RPC_SOCKOPT_MAX;
     }
 }
 
@@ -1157,7 +1182,10 @@ socklevel_rpc2h(rpc_socklevel level)
 #ifdef SOL_UDP        
         RPC2H(SOL_UDP);
 #endif        
-        default: return SOL_MAX;
+        default:
+            WARN("%s is converted to SOL_MAX(%u)",
+                 socklevel_rpc2str(level), SOL_MAX);
+            return SOL_MAX;
     }
 }
 
@@ -1374,6 +1402,9 @@ ioctl_rpc2h(rpc_ioctl_code code)
         RPC2H(SIO_UCAST_IF);
 #endif
         
-        default: return IOCTL_MAX;
+        default:
+            WARN("%s is converted to IOCTL_MAX(%u)",
+                 ioctl_rpc2str(code), IOCTL_MAX);
+            return IOCTL_MAX;
     }
 }
