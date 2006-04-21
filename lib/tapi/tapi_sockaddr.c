@@ -4,7 +4,7 @@
  * Implementation of test API for working with struct sockaddr.
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -33,8 +33,14 @@
 #include "te_config.h"
 
 #include <stdio.h>
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #if HAVE_STRING_H
 #include <string.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
 #endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -46,6 +52,8 @@
 #include <pthread.h>
 #endif
 
+#include "te_errno.h"
+#include "te_stdint.h"
 #include "logger_api.h"
 #include "conf_api.h"
 
@@ -101,5 +109,20 @@ tapi_allocate_port(uint16_t *p_port)
 
     *p_port = (uint16_t)port;
 
+    return 0;
+}
+
+/* See description in tapi_env.h */
+te_errno
+tapi_allocate_port_htons(uint16_t *p_port)
+{
+    uint16_t port;
+    int      rc;
+    
+    if ((rc = tapi_allocate_port(&port)) != 0)
+        return rc;
+        
+    *p_port = htons(port);
+    
     return 0;
 }

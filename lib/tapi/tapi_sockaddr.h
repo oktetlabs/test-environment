@@ -4,7 +4,7 @@
  * Definition of test API for working with struct sockaddr.
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -31,25 +31,14 @@
 #ifndef __TE_TAPI_SOCKADDR_H__
 #define __TE_TAPI_SOCKADDR_H__
 
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#if HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#if HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-
-#include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_sockaddr.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /**
  * Retrieve unused in system port in host order.
@@ -67,19 +56,7 @@ extern te_errno tapi_allocate_port(uint16_t *p_port);
  *
  * @return Status code.
  */
-static inline te_errno
-tapi_allocate_port_htons(uint16_t *p_port)
-{
-    uint16_t port;
-    int      rc;
-    
-    if ((rc = tapi_allocate_port(&port)) != 0)
-        return rc;
-        
-    *p_port = htons(port);
-    
-    return 0;
-}
+extern te_errno tapi_allocate_port_htons(uint16_t *p_port);
 
 #ifdef __cplusplus
 } /* extern "C" */
