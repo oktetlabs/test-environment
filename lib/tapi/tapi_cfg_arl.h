@@ -33,13 +33,10 @@
 #ifndef __TE_TAPI_CFG_ARL_H__
 #define __TE_TAPI_CFG_ARL_H__
 
-#ifdef HAVE_NET_ETHERNET_H
-#include <net/ethernet.h>
-#endif
-
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_queue.h"
+#include "te_ethernet.h"
 #include "tapi_cfg_arl.h"
 
 #ifdef __cplusplus
