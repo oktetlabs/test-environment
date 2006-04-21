@@ -13,10 +13,11 @@ include_HEADERS = \
 	te_format.h \
 	te_iscsi.h
 
-lib_LIBRARIES = libtools.a
-
 if WINDOWS
 
+lib_LIBRARIES = libtools.a
+
+libtools_a_CFLAGS = -DTE_DUMMY
 libtools_a_SOURCES = te_format.c 
 
 libtools.a: $(libtools_a_SOURCES) 
@@ -33,7 +34,9 @@ EXTRA_DIST=te_shell_cmd.c te_bufs.c te_log_fmt.c te_sockaddr.c
 
 else
 
-libtools_a_SOURCES = \
+lib_LTLIBRARIES = libtools.la
+
+libtools_la_SOURCES = \
 	te_bufs.c \
 	te_sockaddr.c \
 	te_shell_cmd.c \
@@ -41,11 +44,11 @@ libtools_a_SOURCES = \
 	te_format.c
 
 install-exec-hook:
-	touch -c -r libtools.* $(DESTDIR)/$(libdir)/libtools.*
+	touch -c -r libtools.a $(DESTDIR)/$(libdir)/libtools.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install
