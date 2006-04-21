@@ -58,8 +58,26 @@ else
 
 lib_LTLIBRARIES=librpc_types.la
 
-librpc_types_la_SOURCES = \
-	defs.c \
+librpc_types_la_SOURCES = defs.c 
+
+nodist_librpc_types_la_SOURCES = \
+	sys_socket_conv.c \
+	aio_conv.c \
+	fcntl_conv.c \
+	netdb_conv.c \
+	net_if_arp_conv.c \
+	net_if_conv.c \
+	signal_conv.c \
+	sys_poll_conv.c \
+	sys_resource_conv.c \
+	sys_stat_conv.c \
+	sys_wait_conv.c \
+	wsa_conv.c
+
+CLEANFILES=$(nodist_librpc_types_la_SOURCES)
+
+EXTRA_DIST=\
+	sys_socket.c \
 	aio.c \
 	fcntl.c \
 	netdb.c \
@@ -72,11 +90,7 @@ librpc_types_la_SOURCES = \
 	sys_wait.c \
 	wsa.c
 
-nodist_librpc_types_la_SOURCES = sys_socket_conv.c
-
-CLEANFILES=$(nodist_librpc_types_la_SOURCES)
-
-sys_socket_conv.c: sys_socket.c
+%_conv.c: %.c
 	$(srcdir)/../../engine/builder/te_rpc_conv $^ $@
 
 install-data-hook:
