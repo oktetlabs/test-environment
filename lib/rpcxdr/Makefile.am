@@ -5,18 +5,24 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I. -I$(DESTDIR)/$(includedir) -include config.h
 AM_CFLAGS = @TE_CFLAGS@ -Wno-unused-parameter -Wno-unused-variable \
             -fno-strict-aliasing
 
+
 include_HEADERS=rpc_xdr.h tarpc.h
 
+
 lib_LTLIBRARIES=librpcxdr.la
-#lib_LIBRARIES=librpcxdrta.a
 
 librpcxdr_la_SOURCES=xml_xdr.c rpc_xdr.c
 
 nodist_librpcxdr_la_SOURCES=tarpc_xdr.c tarpc_dummy.c
 
-#librpcxdrta_a_SOURCES=xml_xdr.c rpc_xdr.c
 
-#nodist_librpcxdrta_a_SOURCES=tarpc_xdr.c 
+lib_LIBRARIES=librpcxdrta.a
+
+librpcxdrta_a_CFLAGS=-DTE_DUMMY
+librpcxdrta_a_SOURCES=xml_xdr.c rpc_xdr.c
+
+nodist_librpcxdrta_a_SOURCES=tarpc_xdr.c 
+
 
 CLEANFILES=tarpc.h tarpc_xdr.c tarpc_dummy.c
 
