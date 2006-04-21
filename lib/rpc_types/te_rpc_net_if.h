@@ -37,6 +37,10 @@
 #include "te_rpc_defs.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* ifreq flags */
 typedef enum rpc_if_fl {
     RPC_IFF_UP          = 0x0001,   /**< Interface is up */
@@ -87,98 +91,12 @@ typedef enum rpc_if_fl {
  */
 RPCBITMAP2STR(if_fl, IF_FL_MAPPING_LIST)
 
-#ifdef IFF_UP
+extern unsigned int if_fl_rpc2h(unsigned int flags);
 
-#ifndef IFF_MASTER
-#define IFF_MASTER          0
+extern unsigned int if_fl_h2rpc(unsigned int flags);
+
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
-
-#ifndef IFF_SLAVE
-#define IFF_SLAVE           0
-#endif
-
-#ifndef IFF_PORTSEL
-#define IFF_PORTSEL         0
-#endif
-
-#ifndef IFF_NOTRAILERS
-#define IFF_NOTRAILERS      0
-#endif
-
-#ifndef IFF_NOARP
-#define IFF_NOARP           0
-#endif
-
-#ifndef IFF_DEBUG
-#define IFF_DEBUG           0
-#endif
-
-#ifndef IFF_POINTOPOINT
-#define IFF_POINTOPOINT     0
-#endif
-
-#ifndef IFF_RUNNING     
-#define IFF_RUNNING         0
-#endif
-
-#ifndef IFF_PROMISC
-#define IFF_PROMISC         0
-#endif
-
-#ifndef IFF_ALLMULTI      
-#define IFF_ALLMULTI        0
-#endif
-
-#define IF_FLAGS_ALL (IFF_UP | IFF_BROADCAST | IFF_DEBUG |       \
-                         IFF_POINTOPOINT | IFF_NOTRAILERS |      \
-                         IFF_RUNNING | IFF_NOARP | IFF_PROMISC | \
-                         IFF_ALLMULTI | IFF_MASTER | IFF_SLAVE | \
-                         IFF_MULTICAST | IFF_PORTSEL |           \
-                         IFF_AUTOMEDIA)
-
-#define IFF_UNKNOWN 0xFFFF
-
-static inline int
-if_fl_rpc2h(rpc_if_fl flags)
-{
-    if ((flags & ~RPC_IF_FLAGS_ALL) != 0)
-        return IFF_UNKNOWN;
-    
-    return (!!(flags & RPC_IFF_UP) * IFF_UP) |
-           (!!(flags & RPC_IFF_BROADCAST) * IFF_BROADCAST) |
-           (!!(flags & RPC_IFF_DEBUG) * IFF_DEBUG) |
-           (!!(flags & RPC_IFF_POINTOPOINT) * IFF_POINTOPOINT) |
-           (!!(flags & RPC_IFF_NOTRAILERS) * IFF_NOTRAILERS) |
-           (!!(flags & RPC_IFF_RUNNING) * IFF_RUNNING) |
-           (!!(flags & RPC_IFF_NOARP) * IFF_NOARP) |
-           (!!(flags & RPC_IFF_PROMISC) * IFF_PROMISC) |
-           (!!(flags & RPC_IFF_ALLMULTI) * IFF_ALLMULTI) |
-           (!!(flags & RPC_IFF_MASTER) * IFF_MASTER) |
-           (!!(flags & RPC_IFF_SLAVE) * IFF_SLAVE) |
-           (!!(flags & RPC_IFF_MULTICAST) * IFF_MULTICAST) |
-           (!!(flags & RPC_IFF_PORTSEL) * IFF_PORTSEL) |
-           (!!(flags & RPC_IFF_AUTOMEDIA));
-}
-
-static inline int
-if_fl_h2rpc(int flags)
-{
-    return (!!(flags & IFF_UP) * RPC_IFF_UP) |
-           (!!(flags & IFF_BROADCAST) * RPC_IFF_BROADCAST) |
-           (!!(flags & IFF_DEBUG) * RPC_IFF_DEBUG) |
-           (!!(flags & IFF_POINTOPOINT) * RPC_IFF_POINTOPOINT) |
-           (!!(flags & IFF_NOTRAILERS) * RPC_IFF_NOTRAILERS) |
-           (!!(flags & IFF_RUNNING) * RPC_IFF_RUNNING) |
-           (!!(flags & IFF_NOARP) * RPC_IFF_NOARP) |
-           (!!(flags & IFF_PROMISC) * RPC_IFF_PROMISC) |
-           (!!(flags & IFF_ALLMULTI) * RPC_IFF_ALLMULTI) |
-           (!!(flags & IFF_MASTER) * RPC_IFF_MASTER) |
-           (!!(flags & IFF_SLAVE) * RPC_IFF_SLAVE) |
-           (!!(flags & IFF_MULTICAST) * RPC_IFF_MULTICAST) |
-           (!!(flags & IFF_PORTSEL) * RPC_IFF_PORTSEL) |
-           (!!(flags & (~IFF_UNKNOWN)) * RPC_IFF_UNKNOWN);
-}
-
-#endif /* IFF_UP */
-
 #endif /* !__TE_RPC_NET_IF_H__ */

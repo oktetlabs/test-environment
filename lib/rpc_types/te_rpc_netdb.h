@@ -37,6 +37,10 @@
 #include "te_rpc_defs.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** TA-independent addrinfo flags */
 typedef enum rpc_ai_flags {
     RPC_AI_PASSIVE     = 1,    /**< Socket address is intended for `bind' */
@@ -45,32 +49,15 @@ typedef enum rpc_ai_flags {
     RPC_AI_UNKNOWN     = 8     /**< Invalid flags */
 } rpc_ai_flags;
 
-#ifdef AI_PASSIVE
-
 #define AI_INVALID      0xFFFFFFFF
 #define AI_ALL_FLAGS    (AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST)
 
 /** Convert RPC AI flags to native ones */
-static inline int
-ai_flags_rpc2h(rpc_ai_flags flags)
-{
-    return (!!(flags & RPC_AI_PASSIVE) * AI_PASSIVE) |
-           (!!(flags & RPC_AI_CANONNAME) * AI_CANONNAME) |
-           (!!(flags & RPC_AI_NUMERICHOST) * AI_NUMERICHOST) |
-           (!!(flags & RPC_AI_UNKNOWN) * AI_INVALID);
-}
+extern int ai_flags_rpc2h(rpc_ai_flags flags);
 
 /** Convert native AI flags to RPC ones */
-static inline rpc_ai_flags
-ai_flags_h2rpc(int flags)
-{
-    if ((flags & ~AI_ALL_FLAGS) != 0)
-        return RPC_AI_UNKNOWN;
-        
-    return (!!(flags & AI_PASSIVE) * RPC_AI_PASSIVE) |
-           (!!(flags & AI_CANONNAME) * RPC_AI_CANONNAME) |
-           (!!(flags & AI_NUMERICHOST) * RPC_AI_NUMERICHOST);
-}
+extern rpc_ai_flags ai_flags_h2rpc(int flags);
+
 
 /* TA-independent getaddrinfo() return codes  */
 typedef enum rpc_ai_rc {
@@ -93,42 +80,10 @@ typedef enum rpc_ai_rc {
     RPC_EAI_UNKNOWN
 } rpc_ai_rc;
 
-static inline int
-ai_rc_h2rpc(rpc_ai_rc rc)
-{
-    switch (rc)
-    {
-        H2RPC(EAI_BADFLAGS);
-        H2RPC(EAI_NONAME);
-        H2RPC(EAI_AGAIN);
-        H2RPC(EAI_FAIL);
-#ifdef EAI_NODATA
-#if (EAI_NODATA != EAI_NONAME)
-        H2RPC(EAI_NODATA);
-#endif
-#endif
-        H2RPC(EAI_FAMILY);
-        H2RPC(EAI_SOCKTYPE);
-        H2RPC(EAI_SERVICE);
-#ifdef EAI_ADDRFAMILY
-        H2RPC(EAI_ADDRFAMILY);
-#endif
-        H2RPC(EAI_MEMORY);
-#ifdef EAI_SYSTEM        
-        H2RPC(EAI_SYSTEM);
-#endif        
-#if 0
-        H2RPC(EAI_INPROGRESS);
-        H2RPC(EAI_CANCELED);
-        H2RPC(EAI_NOTCANCELED);
-        H2RPC(EAI_ALLDONE);
-        H2RPC(EAI_INTR);
-#endif        
-        case 0:  return 0;
-        default: return RPC_EAI_UNKNOWN;
-    }
-}
+extern rpc_ai_rc ai_rc_h2rpc(int rc);
 
-#endif /* AI_PASSIVE */
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_RPC_NETDB_H__ */

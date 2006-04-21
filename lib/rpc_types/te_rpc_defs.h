@@ -32,6 +32,10 @@
 #ifndef __TE_RPC_DEFS_H__
 #define __TE_RPC_DEFS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Coverts system native constant to its mirror in RPC namespace
  */
@@ -51,7 +55,7 @@
     case RPC_ ## name_: return #name_
 
 /** Entry for mapping a bit of bitmask to its string value */
-struct RPC_BIT_MAP_ENTRY {
+struct rpc_bit_map_entry {
     const char   *str_val; /**< String value */
     unsigned int  bit_val; /**< Numerical value */
 };
@@ -65,7 +69,7 @@ struct RPC_BIT_MAP_ENTRY {
 static inline const char *                         \
 bitmap_name_ ## _rpc2str(int bitmap_name_)         \
 {                                                  \
-    struct RPC_BIT_MAP_ENTRY maps_[] = {           \
+    struct rpc_bit_map_entry maps_[] = {           \
         mapping_list_,                             \
         { NULL, 0 }                                \
     };                                             \
@@ -82,63 +86,10 @@ bitmap_name_ ## _rpc2str(int bitmap_name_)         \
  *
  * @return String representation of bit mask
  */
-static inline const char *
-bitmask2str(struct RPC_BIT_MAP_ENTRY *maps, unsigned int val)
-{
-    /* Number of buffers used in the function */
-#define N_BUFS 10
-#define BUF_SIZE 1024
-#define BIT_DELIMETER " | "
+extern const char * bitmask2str(struct rpc_bit_map_entry *maps,
+                                unsigned int val);
 
-    static char buf[N_BUFS][BUF_SIZE];
-    static char (*cur_buf)[BUF_SIZE] = (char (*)[BUF_SIZE])buf[0];
-
-    char *ptr;
-    int   i;
-
-    /*
-     * Firt time the function is called we start from the second buffer, but
-     * then after a turn we'll use all N_BUFS buffer.
-     */
-    if (cur_buf == (char (*)[BUF_SIZE])buf[N_BUFS - 1])
-        cur_buf = (char (*)[BUF_SIZE])buf[0];
-    else
-        cur_buf++;
-
-    ptr = *cur_buf;
-    *ptr = '\0';
-
-    for (i = 0; maps[i].str_val != NULL; i++)
-    {
-        if (val & maps[i].bit_val)
-        {
-            snprintf(ptr + strlen(ptr), BUF_SIZE - strlen(ptr),
-                     "%s" BIT_DELIMETER, maps[i].str_val);
-            /* clear processed bit */
-            val &= (~maps[i].bit_val);
-        }
-    }
-    if (val != 0)
-    {
-        /* There are some unprocessed bits */
-        snprintf(ptr + strlen(ptr), BUF_SIZE - strlen(ptr),
-                 "0x%x" BIT_DELIMETER, val);
-    }
-
-    if (strlen(ptr) == 0)
-    {
-        snprintf(ptr, BUF_SIZE, "0");
-    }
-    else
-    {
-        ptr[strlen(ptr) - strlen(BIT_DELIMETER)] = '\0';
-    }
-
-    return ptr;
-
-#undef BIT_DELIMETER
-#undef N_BUFS
-#undef BUF_SIZE
-}
-
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_RPC_DEFS_H__ */

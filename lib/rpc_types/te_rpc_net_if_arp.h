@@ -36,11 +36,10 @@
 
 #include "te_rpc_defs.h"
 
-/* FIXME: Ideally remove it from hehe */
-#if HAVE_NET_IF_ARP_H
-#include <net/if_arp.h>
-#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* arpreq flags */
 typedef enum rpc_arp_flags {
@@ -55,8 +54,6 @@ typedef enum rpc_arp_flags {
     (RPC_ATF_COM | RPC_ATF_PERM | RPC_ATF_PUBL |  \
      RPC_ATF_NETMASK | RPC_ATF_DONTPUB)
 
-#define ARP_UNKNOWN 0xFFFF
-
 /** List of mapping numerical value to string for 'rpc_io_fl' */
 #define ARP_FL_MAPPING_LIST \
     RPC_BIT_MAP_ENTRY(ATF_COM), \
@@ -65,58 +62,13 @@ typedef enum rpc_arp_flags {
     RPC_BIT_MAP_ENTRY(ATF_NETMASK), \
     RPC_BIT_MAP_ENTRY(ATF_DONTPUB)
 
-#if HAVE_NET_IF_ARP_H
 
-#ifdef ATF_NETMASK
-#define HAVE_ATF_NETMASK 1
-#else
-#define HAVE_ATF_NETMASK 0
-#define ATF_NETMASK      0
+extern unsigned int arp_fl_rpc2h(unsigned int flags);
+
+extern unsigned int arp_fl_h2rpc(unsigned int flags);
+
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
-#ifdef ATF_DONTPUB
-#define HAVE_ATF_DONTPUB 1
-#else
-#define HAVE_ATF_DONTPUB 0
-#define ATF_DONTPUB      0
-#endif
-
-#define ARP_FLAGS_ALL \
-    (ATF_COM | ATF_PERM | ATF_PUBL | ATF_NETMASK | ATF_DONTPUB)
-
-static inline int
-arp_fl_rpc2h(rpc_arp_fl flags)
-{
-    if ((flags & ~RPC_ARP_FLAGS_ALL) != 0)
-        return ARP_UNKNOWN;
-    
-    return (!!(flags & RPC_ATF_COM) * ATF_COM) |
-           (!!(flags & RPC_ATF_PERM) * ATF_PERM) |
-           (!!(flags & RPC_ATF_PUBL) * ATF_PUBL)
-#if HAVE_ATF_NETMASK
-           | (!!(flags & RPC_ATF_NETMASK) * ATF_NETMASK)
-#endif
-#if HAVE_ATF_DONTPUB
-           | (!!(flags & RPC_ATF_DONTPUB) * ATF_DONTPUB)
-#endif
-           ;
-}
-
-static inline int
-arp_fl_h2rpc(int flags)
-{
-    return (!!(flags & ATF_COM) * RPC_ATF_COM) |
-           (!!(flags & ATF_PERM) * RPC_ATF_PERM) |
-           (!!(flags & ATF_PUBL) * RPC_ATF_PUBL)
-#if HAVE_ATF_NETMASK
-           | (!!(flags & ATF_NETMASK) * RPC_ATF_NETMASK)
-#endif
-#if HAVE_ATF_DONTPUB
-           | (!!(flags & ATF_DONTPUB) * RPC_ATF_DONTPUB)
-#endif
-           ;
-}
-
-#endif /* HAVE_NET_IF_ARP_H */
-
-
 #endif /* !__TE_RPC_NET_IF_ARP_H__ */

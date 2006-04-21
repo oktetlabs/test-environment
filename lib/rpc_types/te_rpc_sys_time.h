@@ -33,6 +33,12 @@
 #define __TE_RPC_SYS_TIME_H__
 
 #include "te_rpc_defs.h"
+#include "tarpc.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Convert 'struct timeval' to 'struct tarpc_timeval'.
@@ -102,4 +108,8 @@ timezone_rpc2h(const struct tarpc_timezone *tz_rpc, struct timezone *tz_h)
                TE_RC(TE_TA, TE_ERPC2H) : 0;
 }
 
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_RPC_SYS_TIME_H__ */

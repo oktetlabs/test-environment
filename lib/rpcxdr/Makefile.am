@@ -4,17 +4,19 @@ ACLOCAL_AMFLAGS = -I @TE_M4@
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I. -I$(DESTDIR)/$(includedir) -include config.h
 AM_CFLAGS = @TE_CFLAGS@ -Wno-unused-parameter -Wno-unused-variable \
             -fno-strict-aliasing
+
 include_HEADERS=rpc_xdr.h tarpc.h
 
-lib_LIBRARIES=librpcxdr.a librpcxdrta.a
+lib_LTLIBRARIES=librpcxdr.la
+#lib_LIBRARIES=librpcxdrta.a
 
-librpcxdr_a_SOURCES=xml_xdr.c rpc_xdr.c
+librpcxdr_la_SOURCES=xml_xdr.c rpc_xdr.c
 
-nodist_librpcxdr_a_SOURCES=tarpc_xdr.c tarpc_dummy.c
+nodist_librpcxdr_la_SOURCES=tarpc_xdr.c tarpc_dummy.c
 
-librpcxdrta_a_SOURCES=xml_xdr.c rpc_xdr.c
+#librpcxdrta_a_SOURCES=xml_xdr.c rpc_xdr.c
 
-nodist_librpcxdrta_a_SOURCES=tarpc_xdr.c 
+#nodist_librpcxdrta_a_SOURCES=tarpc_xdr.c 
 
 CLEANFILES=tarpc.h tarpc_xdr.c tarpc_dummy.c
 
@@ -39,7 +41,7 @@ tarpc.h tarpc_xdr.c tarpc_dummy.c: $(srcdir)/../../include/tarpc.x.m4 @RPCDEFS@
 	rm -f tarpc.x tmp.x.m4
 
 install-exec-hook:
-	touch -c -r librpcxdr.a $(DESTDIR)/$(libdir)/librpcxdr.a
+	touch -c -r librpcxdr.a $(DESTDIR)/$(libdir)/librpcxdr.*
 
 install-data-hook:
 	touch -c -r $(srcdir)/rpc_xdr.h \

@@ -84,6 +84,7 @@
 #include "rcf_internal.h"
 #include "rpc_xdr.h"
 #include "tarpc.h"
+#include "te_rpc_errno.h"
 
 
 /** Initialize mutex and forwarding semaphore for RPC server */

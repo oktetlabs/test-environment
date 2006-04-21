@@ -8,9 +8,9 @@
 #include "te_config.h"
 #include "config.h"
 #include "te_defs.h"
-#include "rcf_rpc_defs.h"
 #include "tarpc.h"
 #include "logger_api.h"
+#include "te_rpc_errno.h"
 #include "rpc_supported.h"
 
 changequote([,])

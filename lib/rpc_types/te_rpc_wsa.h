@@ -37,6 +37,10 @@
 #include "te_rpc_defs.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * TA-independent network event flags. 
  */
@@ -58,76 +62,6 @@ typedef enum rpc_network_event {
                                                   family of the socket */
 } rpc_network_event;
 
-#ifdef FD_READ
-#define HAVE_FD_READ    1
-#else
-#define HAVE_FD_READ    0
-#define FD_READ         0
-#endif
-
-#ifdef FD_WRITE
-#define HAVE_FD_WRITE   1
-#else
-#define HAVE_FD_WRITE   0
-#define FD_WRITE        0
-#endif
-
-#ifdef FD_OOB
-#define HAVE_FD_OOB     1
-#else
-#define HAVE_FD_OOB     0
-#define FD_OOB          0
-#endif
-
-#ifdef FD_ACCEPT
-#define HAVE_FD_ACCEPT  1
-#else
-#define HAVE_FD_ACCEPT  0
-#define FD_ACCEPT       0
-#endif
-
-#ifdef FD_CONNECT
-#define HAVE_FD_CONNECT 1
-#else
-#define HAVE_FD_CONNECT 0
-#define FD_CONNECT      0
-#endif
-
-#ifdef FD_CLOSE
-#define HAVE_FD_CLOSE   1
-#else
-#define HAVE_FD_CLOSE   0
-#define FD_CLOSE        0
-#endif
-
-#ifdef FD_QOS
-#define HAVE_FD_QOS     1
-#else
-#define HAVE_FD_QOS     0
-#define FD_QOS          0
-#endif
-
-#ifdef FD_GROUP_QOS
-#define HAVE_FD_GROUP_QOS    1
-#else
-#define HAVE_FD_GROUP_QOS    0
-#define FD_GROUP_QOS         0
-#endif
-
-#ifdef FD_ROUTING_INTERFACE_CHANGE
-#define HAVE_FD_ROUTING_INTERFACE_CHANGE   1
-#else
-#define HAVE_FD_ROUTING_INTERFACE_CHANGE   0
-#define FD_ROUTING_INTERFACE_CHANGE        0
-#endif
-
-#ifdef FD_ADDRESS_LIST_CHANGE
-#define HAVE_FD_ADDRESS_LIST_CHANGE        1
-#else
-#define HAVE_FD_ADDRESS_LIST_CHANGE        0
-#define FD_ADDRESS_LIST_CHANGE             0
-#endif
-
 #define NETW_EVENT_FLAGS_MAPPING_LIST \
             RPC_BIT_MAP_ENTRY(FD_READ),                      \
             RPC_BIT_MAP_ENTRY(FD_WRITE),                     \
@@ -140,78 +74,15 @@ typedef enum rpc_network_event {
             RPC_BIT_MAP_ENTRY(FD_ROUTING_INTERFACE_CHANGE),  \
             RPC_BIT_MAP_ENTRY(FD_ADDRESS_LIST_CHANGE)
 
+/** Convert RPC network event(s) to string */
+extern const char * network_event_rpc2str(rpc_network_event events);
+
 /** Convert RPC network evenet flags to native flags */
-static inline unsigned int
-network_event_rpc2h(rpc_network_event flags)
-{
-    return 
-           (!!(flags & RPC_FD_READ) * FD_READ) |
-           (!!(flags & RPC_FD_WRITE) * FD_WRITE) |
-           (!!(flags & RPC_FD_OOB) * FD_OOB) |
-           (!!(flags & RPC_FD_ACCEPT) * FD_ACCEPT) |
-           (!!(flags & RPC_FD_CONNECT) * FD_CONNECT) |
-           (!!(flags & RPC_FD_CLOSE) * FD_CLOSE) |
-           (!!(flags & RPC_FD_QOS) * FD_QOS) |
-           (!!(flags & RPC_FD_GROUP_QOS) * FD_GROUP_QOS) |
-           (!!(flags & RPC_FD_ROUTING_INTERFACE_CHANGE) *
-                FD_ROUTING_INTERFACE_CHANGE) |
-           (!!(flags & RPC_FD_ADDRESS_LIST_CHANGE) *
-                FD_ADDRESS_LIST_CHANGE); 
-}
+extern unsigned int network_event_rpc2h(rpc_network_event flags);
 
 /** Convert native network evenet flags to RPC flags */
-static inline rpc_network_event
-network_event_h2rpc(unsigned int flags)
-{
-    return (!!(flags & FD_READ) * RPC_FD_READ) |
-           (!!(flags & FD_WRITE) * RPC_FD_WRITE) |
-           (!!(flags & FD_OOB) * RPC_FD_OOB) |
-           (!!(flags & FD_ACCEPT) * RPC_FD_ACCEPT) |
-           (!!(flags & FD_CONNECT) * RPC_FD_CONNECT) |
-           (!!(flags & FD_CLOSE) * RPC_FD_CLOSE) |
-           (!!(flags & FD_QOS) * RPC_FD_QOS) |
-           (!!(flags & FD_GROUP_QOS) * RPC_FD_GROUP_QOS) |
-           (!!(flags & FD_ROUTING_INTERFACE_CHANGE) *
-                RPC_FD_ROUTING_INTERFACE_CHANGE) |
-           (!!(flags & FD_ADDRESS_LIST_CHANGE) *
-                RPC_FD_ADDRESS_LIST_CHANGE);
-}
+extern rpc_network_event network_event_h2rpc(unsigned int flags);
 
-/** Convert RPC network event(s) to string */
-static inline const char *
-network_event_rpc2str(rpc_network_event events)
-{
-    static char buf[128];
-    char      * s = buf;
-    
-    buf[0] = 0;
-    
-#define APPEND(_event)                                  \
-    do {                                                \
-        if (events & RPC_##_event)                      \
-        {                                               \
-            if (s == buf)                               \
-                s += sprintf(s, "%s",  #_event);        \
-            else                                        \
-                s += sprintf(s, " |  %s", #_event);     \
-        }                                               \
-    } while (0)
-    
-    APPEND(FD_READ);
-    APPEND(FD_WRITE);
-    APPEND(FD_OOB);
-    APPEND(FD_ACCEPT);
-    APPEND(FD_CONNECT);
-    APPEND(FD_CLOSE);
-    APPEND(FD_QOS);
-    APPEND(FD_GROUP_QOS);
-    APPEND(FD_ROUTING_INTERFACE_CHANGE);
-    APPEND(FD_ADDRESS_LIST_CHANGE);
-
-#undef APPEND
-
-    return buf;
-}
 
 /**
  * TA-independent TransmitFile() flags. 
@@ -233,30 +104,6 @@ typedef enum rpc_transmit_file_flags {
                                             pending */
 } rpc_transmit_file_flags;
 
-#ifndef TF_DISCONNECT
-#define TF_DISCONNECT  0
-#endif
-
-#ifndef TF_REUSE_SOCKET
-#define TF_REUSE_SOCKET  0
-#endif
-
-#ifndef TF_USE_DEFAULT_WORKER
-#define TF_USE_DEFAULT_WORKER  0
-#endif
-
-#ifndef TF_USE_SYSTEM_THREAD
-#define TF_USE_SYSTEM_THREAD  0
-#endif
-
-#ifndef TF_USE_KERNEL_APC
-#define TF_USE_KERNEL_APC  0
-#endif
-
-#ifndef TF_WRITE_BEHIND
-#define TF_WRITE_BEHIND  0
-#endif
-
 #define TRANSMIT_FILE_FLAGS_MAPPING_LIST \
             RPC_BIT_MAP_ENTRY(TF_DISCONNECT),          \
             RPC_BIT_MAP_ENTRY(TF_REUSE_SOCKET),        \
@@ -266,17 +113,9 @@ typedef enum rpc_transmit_file_flags {
             RPC_BIT_MAP_ENTRY(TF_WRITE_BEHIND)
 
 /** Convert RPC transmit file flags to native flags */
-static inline unsigned int
-transmit_file_flags_rpc2h(rpc_transmit_file_flags flags)
-{
-    return 
-           (!!(flags & RPC_TF_DISCONNECT) * TF_DISCONNECT) |
-           (!!(flags & RPC_TF_REUSE_SOCKET) * TF_REUSE_SOCKET) |
-           (!!(flags & RPC_TF_USE_DEFAULT_WORKER) * TF_USE_DEFAULT_WORKER) |
-           (!!(flags & RPC_TF_USE_SYSTEM_THREAD) * TF_USE_SYSTEM_THREAD) |
-           (!!(flags & RPC_TF_USE_KERNEL_APC) * TF_USE_KERNEL_APC) |
-           (!!(flags & RPC_TF_WRITE_BEHIND) * TF_WRITE_BEHIND);
-}
+extern unsigned int transmit_file_flags_rpc2h(
+                        rpc_transmit_file_flags flags);
+
 
 /**
  * TA-independent Win32 SERVICETYPE flags. 
@@ -312,65 +151,10 @@ typedef enum rpc_servicetype_flags {
 #define SERVICE_NO_QOS_SIGNALING            0x40000000
 #endif
 
-static inline unsigned int
-servicetype_flags_rpc2h(rpc_servicetype_flags flags)
-{
-    return
-        (!!(flags & RPC_SERVICETYPE_NOTRAFFIC)
-            * SERVICETYPE_NOTRAFFIC) |
-        (!!(flags & RPC_SERVICETYPE_BESTEFFORT)
-            * SERVICETYPE_BESTEFFORT) |
-        (!!(flags & RPC_SERVICETYPE_CONTROLLEDLOAD)
-            * SERVICETYPE_CONTROLLEDLOAD) |
-        (!!(flags & RPC_SERVICETYPE_GUARANTEED)
-            * SERVICETYPE_GUARANTEED) |
-        (!!(flags & RPC_SERVICETYPE_NETWORK_UNAVAILABLE)
-            * SERVICETYPE_NETWORK_UNAVAILABLE) |
-        (!!(flags & RPC_SERVICETYPE_GENERAL_INFORMATION)
-            * SERVICETYPE_GENERAL_INFORMATION) |
-        (!!(flags & RPC_SERVICETYPE_NOCHANGE)
-            * SERVICETYPE_NOCHANGE) |
-        (!!(flags & RPC_SERVICETYPE_NONCONFORMING)
-            * SERVICETYPE_NONCONFORMING) |
-        (!!(flags & RPC_SERVICETYPE_NETWORK_CONTROL)
-            * SERVICETYPE_NETWORK_CONTROL) |
-        (!!(flags & RPC_SERVICETYPE_QUALITATIVE)
-            * SERVICETYPE_QUALITATIVE) |
-        (!!(flags & RPC_SERVICE_NO_TRAFFIC_CONTROL)
-            * SERVICE_NO_TRAFFIC_CONTROL) |
-        (!!(flags & RPC_SERVICE_NO_QOS_SIGNALING)
-            * SERVICE_NO_QOS_SIGNALING);
-}
+extern unsigned int servicetype_flags_rpc2h(rpc_servicetype_flags flags);
 
-static inline rpc_servicetype_flags
-servicetype_flags_h2rpc(unsigned int flags)
-{
-    return
-        (!!(flags & SERVICETYPE_NOTRAFFIC)
-            * RPC_SERVICETYPE_NOTRAFFIC) |
-        (!!(flags & SERVICETYPE_BESTEFFORT)
-            * RPC_SERVICETYPE_BESTEFFORT) |
-        (!!(flags & SERVICETYPE_CONTROLLEDLOAD)
-            * RPC_SERVICETYPE_CONTROLLEDLOAD) |
-        (!!(flags & SERVICETYPE_GUARANTEED)
-            * RPC_SERVICETYPE_GUARANTEED) |
-        (!!(flags & SERVICETYPE_NETWORK_UNAVAILABLE)
-            * RPC_SERVICETYPE_NETWORK_UNAVAILABLE) |
-        (!!(flags & SERVICETYPE_GENERAL_INFORMATION)
-            * RPC_SERVICETYPE_GENERAL_INFORMATION) |
-        (!!(flags & SERVICETYPE_NOCHANGE)
-            * RPC_SERVICETYPE_NOCHANGE) |
-        (!!(flags & SERVICETYPE_NONCONFORMING)
-            * RPC_SERVICETYPE_NONCONFORMING) |
-        (!!(flags & SERVICETYPE_NETWORK_CONTROL)
-            * RPC_SERVICETYPE_NETWORK_CONTROL) |
-        (!!(flags & SERVICETYPE_QUALITATIVE)
-            * RPC_SERVICETYPE_QUALITATIVE) |
-        (!!(flags & SERVICE_NO_TRAFFIC_CONTROL)
-            * RPC_SERVICE_NO_TRAFFIC_CONTROL) |
-        (!!(flags & SERVICE_NO_QOS_SIGNALING)
-            * RPC_SERVICE_NO_QOS_SIGNALING);
-}
+extern rpc_servicetype_flags servicetype_flags_h2rpc(unsigned int flags);
+
 
 #define RPCWSA2H(name_) \
     case RPC_WSA_##name_: return name_;
@@ -449,6 +233,7 @@ typedef enum rpc_cf_flags_attributes {
     RPC_CF_FILE_ATTRIBUTE_NORMAL = 0x01
 } rpc_cf_flags_attributes;
 
+
 /**
  * TA-independent flags for WSASocket()
  */ 
@@ -469,38 +254,20 @@ typedef enum rpc_open_sock_flags {
                                               multipoint session */
 } rpc_open_sock_flags;
 
-
 #define OPEN_SOCK_FLAGS_MAPPING_LIST \
-            RPC_BIT_MAP_ENTRY(WSA_FLAG_OVERLAPPED),               \
-            RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_C_ROOT),        \
-            RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_C_LEAF),        \
-            RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_D_ROOT),        \
-            RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_D_LEAF)         
+    RPC_BIT_MAP_ENTRY(WSA_FLAG_OVERLAPPED),               \
+    RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_C_ROOT),        \
+    RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_C_LEAF),        \
+    RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_D_ROOT),        \
+    RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_D_LEAF)         
           
 /**
  * open_sock_flags_rpc2str()
  */
 RPCBITMAP2STR(open_sock_flags, OPEN_SOCK_FLAGS_MAPPING_LIST)
 
-
-#ifdef WSA_FLAG_OVERLAPPED
 /** Convert rpc_open_sock_flags to the native ones */
-static inline unsigned int
-open_sock_flags_rpc2h(unsigned int flags)
-{
-    return 
-           (!!(flags & RPC_WSA_FLAG_OVERLAPPED) * WSA_FLAG_OVERLAPPED) |
-           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_C_ROOT) * 
-            WSA_FLAG_MULTIPOINT_C_ROOT) |
-           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_C_LEAF) * 
-            WSA_FLAG_MULTIPOINT_C_LEAF) |
-           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_D_ROOT) * 
-            WSA_FLAG_MULTIPOINT_D_ROOT) |
-           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_D_LEAF) * 
-            WSA_FLAG_MULTIPOINT_D_LEAF) ;
-
-}
-#endif
+extern unsigned int open_sock_flags_rpc2h(unsigned int flags);
 
 
 /**
@@ -515,7 +282,6 @@ typedef enum rpc_join_leaf_flags {
                                    as a sender and as a receiver */
 } rpc_join_leaf_flags;
 
-
 #define JOIN_LEAF_FLAGS_MAPPING_LIST \
             RPC_BIT_MAP_ENTRY(JL_SENDER_ONLY),          \
             RPC_BIT_MAP_ENTRY(JL_RECEIVER_ONLY),        \
@@ -526,33 +292,15 @@ typedef enum rpc_join_leaf_flags {
  */
 RPCBITMAP2STR(join_leaf_flags, JOIN_LEAF_FLAGS_MAPPING_LIST)
 
+/** Convert rpc_join_leaf_flags to the native ones */
+extern unsigned int join_leaf_flags_rpc2h(unsigned int flags);
 
 
 /** Convert rpc_join_leaf_flags to string */
-static inline const char *
-join_leaf_rpc2str(rpc_join_leaf_flags open_code)
-{
-    switch (open_code)
-    {
-        RPC2STR(JL_SENDER_ONLY);
-        RPC2STR(JL_RECEIVER_ONLY);
-        RPC2STR(JL_BOTH);
-        default: return "<JOIN_LEAF_FATAL_ERROR>";
-    }
-}
+extern const char * join_leaf_rpc2str(rpc_join_leaf_flags open_code);
 
 
-#ifdef JL_SENDER_ONLY
-/** Convert rpc_join_leaf_flags to the native ones */
-static inline unsigned int
-join_leaf_flags_rpc2h(unsigned int flags)
-{
-    return 
-           (!!(flags & RPC_JL_SENDER_ONLY) * JL_SENDER_ONLY) |
-           (!!(flags & RPC_JL_RECEIVER_ONLY) * JL_RECEIVER_ONLY) |
-           (!!(flags & RPC_JL_BOTH) * JL_BOTH);
-}
-
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
-
 #endif /* !__TE_RPC_WSA_H__ */

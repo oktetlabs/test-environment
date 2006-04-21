@@ -36,6 +36,11 @@
 
 #include "te_rpc_defs.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * All known file mode flags.
  */
@@ -83,30 +88,11 @@ typedef enum rpc_file_mode_flags {
  */
 RPCBITMAP2STR(file_mode_flags, FILE_MODE_FLAGS_MAPPING_LIST)
 
-#ifdef S_ISUID
 /** Convert RPC mode flags to native flags */
-static inline int
-file_mode_flags_rpc2h(unsigned int flags)
-{
-    return 
-        (!!(flags & RPC_S_ISUID) * S_ISUID) |
-        (!!(flags & RPC_S_ISGID) * S_ISGID) |
-        (!!(flags & RPC_S_IRUSR) * S_IRUSR) |
-        (!!(flags & RPC_S_IWUSR) * S_IWUSR) |
-        (!!(flags & RPC_S_IXUSR) * S_IXUSR) |
-        (!!(flags & RPC_S_IRWXU) * S_IRWXU) |
-        (!!(flags & RPC_S_IREAD) * S_IREAD) |
-        (!!(flags & RPC_S_IWRITE) * S_IWRITE) |
-        (!!(flags & RPC_S_IEXEC) * S_IEXEC) |
-        (!!(flags & RPC_S_IRGRP) * S_IRGRP) |
-        (!!(flags & RPC_S_IWGRP) * S_IWGRP) |
-        (!!(flags & RPC_S_IXGRP) * S_IXGRP) |
-        (!!(flags & RPC_S_IRWXG) * S_IRWXG) |
-        (!!(flags & RPC_S_IROTH) * S_IROTH) |
-        (!!(flags & RPC_S_IWOTH) * S_IWOTH) |
-        (!!(flags & RPC_S_IXOTH) * S_IXOTH) |
-        (!!(flags & RPC_S_IRWXO) * S_IRWXO);
-}
-#endif
+extern unsigned int file_mode_flags_rpc2h(unsigned int flags);
 
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_RPC_SYS_STAT_H__ */

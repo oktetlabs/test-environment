@@ -34,12 +34,12 @@
 #ifndef __TE_RPC_AIO_H__
 #define __TE_RPC_AIO_H__
 
-#include "te_rpc_defs.h"
-
-/* FIXME: Ideally remove it from here */
-#if HAVE_AIO_H
-#include <aio.h>
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+/** Incorrect address of the callback function should be used */
+#define AIO_WRONG_CALLBACK      "aio_wrong_callback"
 
 
 /** TA-independent operation code for lio_listio function */
@@ -50,47 +50,14 @@ typedef enum rpc_lio_opcode {
     RPC_LIO_UNKNOWN
 } rpc_lio_opcode; 
 
-#if HAVE_AIO_H
+/** Convert RPC lio_listio opcode to string */
+extern const char * lio_opcode_rpc2str(rpc_lio_opcode opcode);
 
 /** Convert RPC lio_listio opcode to native one */
-static inline int
-lio_opcode_rpc2h(rpc_lio_opcode opcode)
-{
-    switch (opcode)
-    {
-        RPC2H(LIO_READ);
-        RPC2H(LIO_WRITE);
-        RPC2H(LIO_NOP);   
-        default: return LIO_READ + LIO_WRITE + LIO_NOP + 1;
-    }
-}
+extern int lio_opcode_rpc2h(rpc_lio_opcode opcode);
 
 /** Convert native lio_listio opcode to RPC one */
-static inline rpc_lio_opcode
-lio_opcode_h2rpc(int opcode)
-{
-    switch (opcode)
-    {
-        H2RPC(LIO_READ); 
-        H2RPC(LIO_WRITE);
-        H2RPC(LIO_NOP);  
-        default: return RPC_LIO_UNKNOWN;
-    }
-}
-#endif
-
-/** Convert RPC lio_listio opcode to string */
-static inline const char *
-lio_opcode_rpc2str(rpc_lio_opcode opcode)
-{
-    switch (opcode)
-    {
-        RPC2STR(LIO_READ); 
-        RPC2STR(LIO_WRITE);
-        RPC2STR(LIO_NOP);  
-        default: return "LIO_UNKNOWN";
-    }
-}
+extern rpc_lio_opcode lio_opcode_h2rpc(int opcode);
 
 
 /** TA-independent modes for lio_listio function */
@@ -100,44 +67,14 @@ typedef enum rpc_lio_mode {
     RPC_LIO_MODE_UNKNOWN
 } rpc_lio_mode; 
 
-#ifdef HAVE_AIO_H
+/** Convert RPC lio_listio mode to string */
+extern const char * lio_mode_rpc2str(rpc_lio_mode mode);
 
 /** Convert RPC lio_listio option to native one */
-static inline int
-lio_mode_rpc2h(rpc_lio_mode mode)
-{
-    switch (mode)
-    {
-        RPC2H(LIO_WAIT);
-        RPC2H(LIO_NOWAIT);
-        default: return LIO_WAIT + LIO_NOWAIT + 1;
-    }
-}
+extern int lio_mode_rpc2h(rpc_lio_mode mode);
 
 /** Convert native lio_listio mode to RPC one */
-static inline rpc_lio_mode
-lio_mode_h2rpc(int mode)
-{
-    switch (mode)
-    {
-        H2RPC(LIO_WAIT); 
-        H2RPC(LIO_NOWAIT);
-        default: return RPC_LIO_MODE_UNKNOWN;
-    }
-}
-#endif
-
-/** Convert RPC lio_listio mode to string */
-static inline const char *
-lio_mode_rpc2str(rpc_lio_mode mode)
-{
-    switch (mode)
-    {
-        RPC2STR(LIO_WAIT); 
-        RPC2STR(LIO_NOWAIT);
-        default: return "LIO_MODE_UNKNOWN";
-    }
-}
+extern rpc_lio_mode lio_mode_h2rpc(int mode);
 
 
 /** TA-independent return values for aio_cancel function */
@@ -148,51 +85,17 @@ typedef enum rpc_aio_cancel_retval {
     RPC_AIO_UNKNOWN
 } rpc_aio_cancel_retval; 
 
-#ifdef HAVE_AIO_H
+/** Convert RPC aio_cancel return to string */
+extern const char * aio_cancel_retval_rpc2str(rpc_aio_cancel_retval ret);
 
 /** Convert RPC aio_cancel return value to native one */
-static inline int
-aio_cancel_retval_rpc2h(rpc_aio_cancel_retval ret)
-{
-    switch (ret)
-    {
-        case -1: return -1;
-        RPC2H(AIO_CANCELED);
-        RPC2H(AIO_NOTCANCELED);
-        RPC2H(AIO_ALLDONE);
-        default: return -1; /* FIXME */
-    }
-}
+extern int aio_cancel_retval_rpc2h(rpc_aio_cancel_retval ret);
 
 /** Convert native aio_cancel return to RPC one */
-static inline rpc_aio_cancel_retval
-aio_cancel_retval_h2rpc(int ret)
-{
-    switch (ret)
-    {
-        case -1: return -1;
-        H2RPC(AIO_CANCELED);
-        H2RPC(AIO_NOTCANCELED);
-        H2RPC(AIO_ALLDONE);
-        default: return RPC_AIO_UNKNOWN;
-    }
-}
+extern rpc_aio_cancel_retval aio_cancel_retval_h2rpc(int ret);
+
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
-
-/** Convert RPC aio_cancel return to string */
-static inline const char *
-aio_cancel_retval_rpc2str(rpc_aio_cancel_retval ret)
-{
-    switch (ret)
-    {
-        RPC2STR(AIO_CANCELED);
-        RPC2STR(AIO_NOTCANCELED);
-        RPC2STR(AIO_ALLDONE);
-        default: return "AIO_UNKNOWN";
-    }
-}
-
-/** Incorrect address of the callback function should be used */
-#define AIO_WRONG_CALLBACK      "aio_wrong_callback"
-
 #endif /* !__TE_RPC_AIO_H__ */

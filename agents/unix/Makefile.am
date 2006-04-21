@@ -11,7 +11,7 @@ AM_YFLAGS=-d
 # functions provided by -l@TAD@. @TE_LDADD@ must be after -l@TAD@,
 # since @TE_LDADD@ may contain ASN and NDN libraries.
 #
-MY_LDADD=symtbl.o @TE_LDADD@ -lrcfpch -lrpcxdr -l@TAD@ \
+MY_LDADD=symtbl.o @TE_LDADD@ -lrpc_types -lrcfpch -lrpcxdr -l@TAD@ \
          -lconf_oid -lloggerta -lrcfpch -ltools
 
 noinst_HEADERS = \
