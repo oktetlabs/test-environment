@@ -43,6 +43,7 @@ dist_mybin_SCRIPTS = \
     te_build_win_platform \
     te_build_win_lib \
     te_build_win_app \
+    te_rpc_conv \
     te_tests_info.sh
 
 # Scripts to be installed by 'install'
