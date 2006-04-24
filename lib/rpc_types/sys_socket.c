@@ -342,7 +342,20 @@ shut_how_rpc2str(rpc_shut_how how)
     }
 }
 
+#ifdef WINDOWS
 
+#define MSG_DONTWAIT    0
+#define MSG_WAITALL     0
+#define MSG_NOSIGNAL    0
+#define MSG_CTRUNC      0
+#define MSG_MCAST       0
+#define MSG_BCAST       0
+#define MSG_MORE        0
+#define MSG_ERRQUEUE    0
+#define MSG_CONFIRM     0
+#define MSG_EOR         0
+
+#else
 
 #ifndef MSG_OOB
 #define MSG_OOB         0
@@ -388,6 +401,8 @@ shut_how_rpc2str(rpc_shut_how how)
 #endif
 #ifndef MSG_EOR
 #define MSG_EOR         0
+#endif
+
 #endif
 
 #define MSG_MAX         0xFFFFFFFF
