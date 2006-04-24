@@ -77,6 +77,14 @@
 #if HAVE_NET_IF_DL_H
 #include <net/if_dl.h>
 #endif
+#if HAVE_SYS_SYSCTL_H
+#include <sys/sysctl.h>
+#endif
+#if defined(HAVE_SYS_SYSCTL_H) && defined(HAVE_SYS_TYPES_H) && \
+    !defined(__linux__) && !defined(BSD_IP_FW)
+#define BSD_IP_FW 1
+#endif
+
 
 /* Solaris/SunOS uses DLPI as interface to link-layer */
 #if HAVE_LIBDLPI
@@ -693,6 +701,55 @@ ipforward_solaris(char *ipfw_str, int *p_val)
 }
 #endif
 
+#if BSD_IP_FW
+/**
+ * Set or obtain the value of IP forwarding variable on BSD.
+ *
+ * @param ip6           FALSE for IPv4, TRUE for IPv6
+ * @param p_val         location of the value: 0 or 1 to set the variable,
+ *                      other - to read into the location (IN/OUT).
+ *
+ * @return              Status code.
+ */
+static te_errno
+ipforward_bsd(te_bool ip6, int *p_val)
+{
+    int rc;
+#define MIB_SZ 4
+    int mib_v4[MIB_SZ] =
+    {
+        CTL_NET,
+        PF_INET,
+        IPPROTO_IP,
+        IPCTL_FORWARDING
+    };
+    int mib_v6[MIB_SZ] =
+    {
+        CTL_NET,
+        PF_INET6,
+        IPPROTO_IPV6,
+        IPV6CTL_FORWARDING
+    };
+    int *mib = mib_v4;
+    size_t val_sz = sizeof(*p_val);
+
+
+    if (ip6)
+       mib = mib_v6;
+    
+    if (*p_val == 0 || *p_val == 1)
+        rc = sysctl(mib, MIB_SZ, NULL, NULL, p_val, val_sz);
+    else
+        rc = sysctl(mib, MIB_SZ, p_val, &val_sz, NULL, 0);
+
+    if (rc  < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
+#undef MIB_SZ
+}
+#endif
+
 /**
  * Obtain value of the IPv4 forwarding sustem variable.
  *
@@ -709,7 +766,7 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
     char c = '0';
     int  fd;
 #endif
-#if SOLARIS_IP_FW
+#if defined(SOLARIS_IP_FW) || defined(BSD_IP_FW)
     te_errno    rc;
     int         ival;
 #endif
@@ -739,6 +796,13 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
         return rc;
     sprintf(value, "%d", ival);
 
+#elif BSD_IP_FW
+    ival = 2;
+    rc = ipforward_bsd(FALSE, &ival); /* FALSE if not ip6 */
+    if (rc != 0)
+        return rc;
+    sprintf(value, "%d", ival);
+
 #else
     /* Assume that forwarding is disabled */
     sprintf(value, "%d", 0); 
@@ -763,7 +827,7 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
 #if __linux__
     int fd;
 #endif
-#if SOLARIS_IP_FW
+#if defined(SOLARIS_IP_FW) || defined(BSD_IP_FW)
     te_errno rc;
     int ival;
 #endif
@@ -794,6 +858,13 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
     rc = ipforward_solaris("ip_forwarding", &ival);
     if (rc != 0)
         return rc;
+
+#elif BSD_IP_FW
+    ival = atoi(value);
+    rc = ipforward_bsd(FALSE, &ival); /* FALSE if not ip6 */
+    if (rc != 0)
+        return rc;
+
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -817,7 +888,7 @@ ip6_fw_get(unsigned int gid, const char *oid, char *value)
     int  fd;
     char c = '0';
 #endif
-#if SOLARIS_IP_FW
+#if defined(SOLARIS_IP_FW) || defined(BSD_IP_FW)
     te_errno    rc;
     int         ival;
 #endif
@@ -848,6 +919,13 @@ ip6_fw_get(unsigned int gid, const char *oid, char *value)
         return rc;
     sprintf(value, "%d", ival);
 
+#elif BSD_IP_FW
+    ival = 2;
+    rc = ipforward_bsd(TRUE, &ival); /* FALSE if not ip6 */
+    if (rc != 0)
+        return rc;
+    sprintf(value, "%d", ival);
+
 #else
     /* Assume that forwarding is disabled */
     sprintf(value, "%d", 0);
@@ -872,7 +950,7 @@ ip6_fw_set(unsigned int gid, const char *oid, const char *value)
 #if __linux__
     int fd;
 #endif
-#if SOLARIS_IP_FW
+#if defined(SOLARIS_IP_FW) || defined(BSD_IP_FW)
     te_errno rc;
     int ival;
 #endif    
@@ -904,6 +982,13 @@ ip6_fw_set(unsigned int gid, const char *oid, const char *value)
     rc = ipforward_solaris("ip6_forwarding", &ival);
     if (rc != 0)
         return rc;
+
+#elif BSD_IP_FW
+    ival = atoi(value);
+    rc = ipforward_bsd(TRUE, &ival); /* FALSE if not ip6 */
+    if (rc != 0)
+        return rc;
+
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
