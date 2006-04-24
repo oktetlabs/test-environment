@@ -29,6 +29,9 @@
  */
 
 #include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #if HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>

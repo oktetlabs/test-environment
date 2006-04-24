@@ -32,6 +32,9 @@
  */
 
 #include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #ifdef HAVE_NETDB_H
 #include <netdb.h>

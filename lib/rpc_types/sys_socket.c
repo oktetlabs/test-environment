@@ -35,6 +35,9 @@
 #define TE_LGR_USER     "RPC types"
 
 #include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 /* Required on Solaris2 (SunOS 5.11) to see IOCTLs */
 #define BSD_COMP
