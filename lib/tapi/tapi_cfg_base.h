@@ -51,20 +51,55 @@ extern "C" {
 #endif
 
 /**
- * Enable/disable IPv4 forwarding on the Test Agent.
+ * Enable/disable IPv4 forwarding on a Test Agent.
  *
  * @param ta        TA name
  * @param enabled   IN: TRUE - enable, FALSE - disable;
- *                  OUT: previous state of the forwarding
+ *                  OUT: previous state of forwarding
  *
  * @return Status code.
  *
  * @note Allocates ip4_fw resource on the Test Agent (if it is not
  * allocated). The resource is not released, because it should be locked
- * until forwarding state is important for the test. It is recommended
+ * while the forwarding state is important to the test. It is recommended
  * to use silent configuration tracking for tests using this function.
  */
 extern int tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled);
+
+/**
+ * Enable/disable IPv6 forwarding on a Test Agent.
+ *
+ * @param ta        TA name
+ * @param enabled   IN: TRUE - enable, FALSE - disable;
+ *                  OUT: previous state of forwarding
+ *
+ * @return Status code.
+ *
+ * @note Allocates ip6_fw resource on the Test Agent (if it is not
+ * allocated). The resource is not released, because it should be locked
+ * while the forwarding state is important to the test. It is recommended
+ * to use silent configuration tracking for tests using this function.
+ */
+extern int tapi_cfg_base_ipv6_fw(const char *ta, te_bool *enabled);
+
+/**
+ * Enable/disable IPv4/IPv6 forwarding on a Test Agent
+ * (a backend for ...ipv4_fw() and ...ipv6_fw() )
+ *
+ * @param ta        TA name
+ * @param enabled   IN: TRUE - enable, FALSE - disable;
+ *                  OUT: previous state of forwarding
+ * @param vrsn      a string "4" or "6".
+ *
+ * @return Status code.
+ *
+ * @note Allocates ipN_fw resource on the Test Agent (if it is not
+ * allocated). The resource is not released, because it should be locked
+ * while the forwarding state is important to the test. It is recommended
+ * to use silent configuration tracking for tests using this function.
+ */
+extern int tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled,
+                               const char *vrsn);
 
 /**
  * Get MAC address of TA interface.

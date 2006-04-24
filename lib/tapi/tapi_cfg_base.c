@@ -67,20 +67,24 @@
 #include "tapi_sockaddr.h"
 
 
-/* See description in tapi_cfg_base.h */
+/* See the description in tapi_cfg_base.h */
 int
-tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
+tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled, const char *vrsn)
 {
     int             rc;
     cfg_val_type    val_type = CVT_INTEGER;
     int             val;
-    char           *val_str;
+    char            *val_str;
+    char            obj_id[CFG_OID_MAX];
     
-    if (cfg_get_instance_fmt(NULL, &val_str, 
-                             "/agent:%s/rsrc:ip4_fw", ta) != 0)
+
+    snprintf(obj_id, sizeof(obj_id), "/agent/ip%s_fw", vrsn);
+    
+    if (cfg_get_instance_fmt(NULL, &val_str,
+                             "/agent:%s/rsrc:ip%s_fw", ta, vrsn) != 0)
     {
-        rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, "/agent/ip4_fw"), 
-                                  "/agent:%s/rsrc:ip4_fw", ta);
+        rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, obj_id),
+                                  "/agent:%s/rsrc:ip%s_fw", ta, vrsn);
         if (rc != 0)
             return rc;
     }        
@@ -88,10 +92,11 @@ tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
         free(val_str);                     
 
     rc = cfg_get_instance_fmt(&val_type, &val,
-                              "/agent:%s/ip4_fw:", ta);
+                              "/agent:%s/ip%s_fw:", ta, vrsn);
     if (rc != 0)
     {
-        ERROR("Failed to get IPv4 forwarding state on '%s': %r", ta, rc);
+        ERROR("Failed to get IPv%s forwarding state on '%s': %r",
+              vrsn, ta, rc);
         return rc;
     }
 
@@ -100,20 +105,34 @@ tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
         int new_val = *enabled;
 
         rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, new_val),
-                                  "/agent:%s/ip4_fw:", ta);
+                                  "/agent:%s/ip%s_fw:", ta, vrsn);
         if (rc != 0)
         {
-            ERROR("Failed to configure IPv4 forwarding on '%s': %r",
-                  ta, rc);
+            ERROR("Failed to configure IPv%s forwarding on '%s': %r",
+                  vrsn, ta, rc);
             return rc;
         }
         *enabled = val;
     }
 
     return 0;
+}   /* tapi_cfg_base_ip_fw() */
+
+/* See the description in tapi_cfg_base.h */
+int
+tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
+{
+    return tapi_cfg_base_ip_fw(ta, enabled, "4");
 }
 
-/* See description in tapi_cfg_base.h */
+/* See the description in tapi_cfg_base.h */
+int
+tapi_cfg_base_ipv6_fw(const char *ta, te_bool *enabled)
+{
+    return tapi_cfg_base_ip_fw(ta, enabled, "6");
+}
+
+/* See the description in tapi_cfg_base.h */
 int
 tapi_cfg_base_if_get_link_addr(const char *ta, const char *dev,
                                struct sockaddr *link_addr)
