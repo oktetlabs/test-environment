@@ -464,7 +464,6 @@ test_iters_to_html(te_bool stats, unsigned int flags,
     char           *s;
     unsigned int    i;
     te_bool         name_anchor = TRUE;
-    tqe_string     *v;
 
     for (s = level_str, i = 0; i < level; ++i)
         s += sprintf(s, "*-");
@@ -489,15 +488,7 @@ test_iters_to_html(te_bool stats, unsigned int flags,
             fputs(trc_test_exp_got_row_mid, f);
             
             fputs(trc_test_result_to_string(p->got_result), f);
-            if (p->got_verdicts.tqh_first != NULL)
-                fputs("<BR/><BR/>", f);
-            for (v = p->got_verdicts.tqh_first;
-                 v != NULL;
-                 v = v->links.tqe_next)
-            {
-                fputc(' ', f);
-                fputs(v->str, f);
-            }
+            trc_verdicts_to_html(f, &p->got_verdicts);
             
             fprintf(f, trc_test_exp_got_row_end,
                     PRINT_STR(p->exp_result.key),
