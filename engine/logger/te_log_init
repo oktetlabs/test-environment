@@ -1,13 +1,13 @@
-#!/bin/sh
-
+#!/usr/bin/perl -w
+#
 # Test Environment: Logger subsystem
 #
 # Script takes no arguments, creates and initializes temporary raw log file.
 # This script has to be called before Logging functionality will be used.
 #
 #
-# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
-# root directory of the distribution).
+# Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or 
 # modify it under the terms of the GNU General Public License as 
@@ -26,23 +26,42 @@
 #
 #
 # Author: Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
+# Author: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+#
+# $Id: $
 #
 
-if [ ${#@} -ne 0 ]; then
-    echo "Usage: te_log_init" >&2
-    exit 1
-fi
+use File::Path;
 
-if [ -z ${TE_LOG_DIR} ]; then
-    echo "TE_LOG_DIR environment variable must be set" >&2
-    exit 1
-fi
+# Validate number of parameters
+if (@ARGV != 0)
+{
+    print STDOUT "Usage: te_log_init\n";
+    exit 1;
+}
 
-mkdir -p $TE_LOG_DIR
-rm -rf $TE_LOG_RAW
+my $te_log_path = $ENV{TE_LOG_DIR};
+if (length($te_log_path) == 0) 
+{
+    die("TE_LOG_DIR environment variable must be set\n");
+}
 
-# File version is set 1
-echo -ne "\1" > $TE_LOG_RAW
-chmod 666 $TE_LOG_RAW
+eval { mkpath($te_log_path) };
+if ($@)
+{
+    die("Couldn't create directory for logs: " . $te_log_path . ": " . $@);
+}
 
-exit 0
+my $te_log_raw  = $ENV{TE_LOG_RAW};
+
+open(OUTFILE, ">" . $te_log_raw) or 
+    die("Can't create raw log file: " . $te_log_raw . ": $!");
+
+binmode OUTFILE;
+
+# Write log file version 
+print OUTFILE pack("C", 1);
+
+close OUTFILE;
+
+exit 0;
