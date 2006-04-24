@@ -17,6 +17,6 @@ tetest_PROGRAMS = \
 	poll_invalid_only \
 	poll_one
 
-LDADD = -ltapi_rpc -ltapi_env -ltapi_tad -ltapi_ipstack -ltapi_atm \
+LDADD = -ltapi_rpc -lrpc_types -ltapi_env -ltapi_tad -ltapi_ipstack -ltapi_atm \
 	-ltapi_arp -ltapi_eth -lndn -lasn -ltapi -lrcfrpc -lrcfapi -lrpcxdr \
 	-lconfapi -lconf_oid -llogger_ten -lipc -ltools -lpthread -lfl
