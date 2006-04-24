@@ -31,11 +31,6 @@ We are using versions of libraries specified in parentheses.
 Of course, gcc, make, sed and other standard development tools
 are required to build sources.
 
-To control DHCP daemon using OMAPI from Linux TA DHCP development
-package is required (dhcp3-dev on Debian, dhcp-devel on RedHat and
-Fedora Core). On Debian dhcp3-dev package should be rebuild to have
-libdst.a library.
-
 
 Tools required for development:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
