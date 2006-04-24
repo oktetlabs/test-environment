@@ -591,6 +591,13 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     
     UNUSED(gid);
     UNUSED(oid);
+
+#ifdef __CYGWIN__
+    {
+        extern uint32_t ta_processes_num;
+        ta_processes_num++;
+    }
+#endif    
     
     if (strcmp_start("thread_", value) == 0)
         father_name = value + strlen("thread_");
