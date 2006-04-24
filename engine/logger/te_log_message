@@ -1,12 +1,14 @@
 #!/usr/bin/perl -w
-# Test Environment, Logger subsystem
+#
+# Test Environment: Logger subsystem
+#
 # This script provides logging of the string messages and text files.
 # It takes four arguments for processing. Three beggining arguments are
 # mandatory. Four argument is processed as string containing full file
 # name of logged file if it exists. All symbols allowable in C-string
 # are allowable in MESSAGE.
 #
-# Copyright (C) 2004 Test Environment authors (see file AUTHORS
+# Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
 # in the root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or 
@@ -27,7 +29,8 @@
 # Author: Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
 # Author: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 #
-# $Id: $
+# $Id$
+#
 
 use File::Basename qw(basename);
 use File::Copy qw(copy);
