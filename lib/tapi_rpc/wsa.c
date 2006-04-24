@@ -59,6 +59,59 @@
        }                                                                \
    } while (0)                                     
 
+int 
+rpc_wsa_startup(rcf_rpc_server *rpcs)
+{
+    rcf_rpc_op                 op;
+    tarpc_wsa_startup_in  in;
+    tarpc_wsa_startup_out out; 
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(wsa_startup, -1);
+    }
+
+    op = rpcs->op;
+    rcf_rpc_call(rpcs, "wsa_startup", &in, &out);
+    
+    TAPI_RPC_LOG("RPC (%s,%s)%s: WSAStartup() -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(wsa_startup, out.retval);
+}
+
+
+int 
+rpc_wsa_cleanup(rcf_rpc_server *rpcs)
+{
+    rcf_rpc_op                 op;
+    tarpc_wsa_cleanup_in  in;
+    tarpc_wsa_cleanup_out out; 
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(wsa_cleanup, -1);
+    }
+
+    op = rpcs->op;
+    rcf_rpc_call(rpcs, "wsa_cleanup", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: WSACleanup() -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(wsa_cleanup, out.retval);
+}
+
 int
 rpc_wsa_socket(rcf_rpc_server *rpcs,
                rpc_socket_domain domain, rpc_socket_type type,

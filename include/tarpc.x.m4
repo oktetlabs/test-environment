@@ -291,6 +291,30 @@ struct tarpc_socket_out {
     tarpc_int   fd;     /**< TA-local socket */
 };
 
+
+/* WSACleanup */
+
+struct tarpc_wsa_cleanup_in{
+    struct tarpc_in_arg common;
+};
+
+struct tarpc_wsa_cleanup_out{
+    struct tarpc_out_arg common;
+    tarpc_int   retval;
+};
+
+/* WSAStartup */
+
+struct tarpc_wsa_startup_in{
+    struct tarpc_in_arg common;
+};
+
+struct tarpc_wsa_startup_out{
+    struct tarpc_out_arg common;
+    tarpc_int   retval;
+};
+
+
 /* WSASocket() */
 
 struct tarpc_wsa_socket_in {
@@ -3304,6 +3328,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(socket)
         RPC_DEF(wsa_socket)
+	RPC_DEF(wsa_startup)
+	RPC_DEF(wsa_cleanup)
         RPC_DEF(duplicate_socket)
         RPC_DEF(duplicate_handle)
         RPC_DEF(dup)

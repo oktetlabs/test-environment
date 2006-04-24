@@ -64,6 +64,22 @@ typedef struct _rpc_sys_info {
     unsigned int  number_of_processors;  /** CPUs number on the host */
 } rpc_sys_info;
 
+/**
+* @b WSAStartup() remote call.
+*
+* @param rpcs      RPC server handle
+* @return Zero if successful.
+*/
+extern int rpc_wsa_startup(rcf_rpc_server *rpcs);
+
+/**
+* @b WSACleanup() remote call.
+*
+* @param rpcs      RPC server handle
+* @return Zero if successful.
+*/
+extern int rpc_wsa_cleanup(rcf_rpc_server *rpcs);
+
 /** 
  * @b WSASocket() remote call.
  *

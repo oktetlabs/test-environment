@@ -430,6 +430,26 @@ TARPC_FUNC(socket, {},
 }
 )
 
+/*-------------- WSAStartup() ------------------------------*/
+TARPC_FUNC(wsa_startup, {}, 
+{ 
+    WSADATA wsaData;
+    WORD version;    
+    version = MAKEWORD(2, 0);
+    
+    MAKE_CALL(out->retval = WSAStartup(version, &wsaData)); 
+    
+})
+
+
+/*-------------- WSACleanup() ------------------------------*/
+TARPC_FUNC(wsa_cleanup, {}, 
+{ 
+    MAKE_CALL(out->retval = WSACleanup()); 
+})
+
+
+
 /*-------------- WSASocket() ------------------------------*/
 
 TARPC_FUNC(wsa_socket, {},
