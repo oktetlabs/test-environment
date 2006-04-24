@@ -452,8 +452,6 @@ typedef enum rpc_sockopt {
 
 } rpc_sockopt;
 
-#define RPC_SOCKOPT_MAX     0xFFFFFFFF
-
 /** Convert RPC socket option to string */
 extern const char * sockopt_rpc2str(rpc_sockopt opt);
 
