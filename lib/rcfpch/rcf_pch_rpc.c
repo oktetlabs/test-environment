@@ -88,10 +88,11 @@ typedef struct rpcserver {
     int       ref;         /**< Number of thread children */
     pid_t     pid;         /**< Process identifier */
     uint32_t  tid;         /**< Thread identifier or 0 */
-    time_t    sent;        /**< Time of the last request sending */
+    
     uint32_t  timeout;     /**< Timeout for the last sent request */
     int       last_sid;    /**< SID received with the last command */
     te_bool   dead;        /**< RPC server does not respond */
+    time_t    sent;  /**< Time of the last request sending */
 } rpcserver;
 
 static rpcserver *list;        /**< List of all RPC servers */
@@ -364,7 +365,14 @@ dispatch(void *arg)
         pthread_mutex_lock(&lock);
         for (rpcs = list; rpcs != NULL && !rpcs->dead; rpcs = rpcs->next)
         {
-            rpc_transport_read_set_add(rpcs->handle);
+            /* 
+             * We do not require sent > 0, because RPC is sent from the 
+             * other thread and sent is changed there. If we do not include 
+             * RPC server handle to the set now, next time we'll have a 
+             * chance only after second.
+             */
+            if (!rpcs->dead)
+                rpc_transport_read_set_add(rpcs->handle);
         }
         pthread_mutex_unlock(&lock);
         
