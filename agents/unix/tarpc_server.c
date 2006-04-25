@@ -1559,8 +1559,8 @@ typedef union opt_param {
     struct timeval      tv;
 #if HAVE_STRUCT_IP_OPTS 
     struct ip_opts      opts;
-    struct in6_addr     addr6;
 #endif    
+    struct in6_addr     addr6;
 } opt_param;
 
 static void
@@ -2234,7 +2234,7 @@ TARPC_FUNC(getsockopt,
 
             case OPT_IPADDR6:
             {
-                memcpy(out->optval.optval_val[0].option_value_u.opt_inaddr6,
+                memcpy(out->optval.optval_val[0].option_value_u.opt_ipaddr6,
                        opt, sizeof(struct in6_addr));
                 break;
             }
