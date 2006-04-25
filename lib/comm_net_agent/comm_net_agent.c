@@ -73,6 +73,19 @@
 #include "comm_agent.h"
 
 
+/**
+ * Error logging macro (TE logging facilities cannot be used here).
+ *
+ * When perror() is used here, it causes TA hang up inside perror() on
+ * fclose() call.
+ */
+#define ERROR(_fmt...) \
+    do {                        \
+        fprintf(stderr, _fmt);  \
+        fflush(stderr);         \
+    } while (0)
+
+
 /** This structure is used to store some context for each connection. */
 struct rcf_comm_connection {
     int     socket;          /**< Connection socket */
@@ -115,7 +128,7 @@ rcf_comm_agent_init(const char *config_str,
     if (s < 0)
     {
         /* Socket error */
-        perror("socket() error");
+        ERROR("socket() error");
         return TE_OS_RC(TE_COMM, errno);
     }
 
@@ -123,7 +136,7 @@ rcf_comm_agent_init(const char *config_str,
                    &optval, sizeof(optval)) != 0)
     {
         rc = errno;
-        perror("setsockopt(SOL_SOCKET, SO_REUSEADDR, enabled)");
+        ERROR("setsockopt(SOL_SOCKET, SO_REUSEADDR, enabled)");
         (void)close(s);
         return TE_OS_RC(TE_COMM, rc);
     }
@@ -131,7 +144,7 @@ rcf_comm_agent_init(const char *config_str,
     if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
     {
         rc = errno;
-        perror("bind() error");
+        ERROR("bind() error");
         (void)close(s);
         return TE_OS_RC(TE_COMM, rc);
     }
@@ -139,7 +152,7 @@ rcf_comm_agent_init(const char *config_str,
     if (listen(s, 5) != 0)
     {
         rc = errno;
-        perror("listen() error");
+        ERROR("listen() error");
         (void)close(s);
         return TE_OS_RC(TE_COMM, rc);
     }
@@ -148,7 +161,7 @@ rcf_comm_agent_init(const char *config_str,
     if (s1 < 0)
     {
         rc = errno;
-        perror("accept() error");
+        ERROR("accept() error");
         (void)close(s);
         return TE_OS_RC(TE_COMM, rc);
     }
@@ -157,7 +170,7 @@ rcf_comm_agent_init(const char *config_str,
     if (close(s) != 0)
     {
         rc = errno;
-        perror("close(s) error");
+        ERROR("close(s) error");
         (void)close(s1);
         return TE_OS_RC(TE_COMM, rc);
     }
@@ -180,7 +193,7 @@ rcf_comm_agent_init(const char *config_str,
                    TCP_NODELAY, &optval, sizeof(optval)) != 0)
     {
         rc = errno;
-        perror("setsockopt(SOL_TCP, TCP_NODELAY, enabled)");
+        ERROR("setsockopt(SOL_TCP, TCP_NODELAY, enabled)");
         (void)close(s1);
         return TE_OS_RC(TE_COMM, rc);
     }
@@ -191,7 +204,7 @@ rcf_comm_agent_init(const char *config_str,
     if ((*p_rcc) == NULL)
     {
         rc = errno;
-        perror("memory allocation error");
+        ERROR("memory allocation error");
         (void)close(s1);
         return TE_OS_RC(TE_COMM, rc);
     }
@@ -288,7 +301,7 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
         {
             if (errno == EINTR) /* Valgrind work-around */
                 continue;
-            perror("recv");
+            ERROR("recv");
             return TE_OS_RC(TE_COMM, errno);
         }
         if (r == 0)
@@ -445,7 +458,7 @@ rcf_comm_agent_close(struct rcf_comm_connection **p_rcc)
 
     if (close((*p_rcc)->socket) < 0)
     {
-        perror("close");
+        ERROR("close");
         return TE_OS_RC(TE_COMM, errno);
     }
 
@@ -574,7 +587,7 @@ read_socket(int socket, void *buffer, size_t len)
         r = recv(socket, buffer, len, 0);
         if (r < 0)
         {
-            perror("recv() from socket");
+            ERROR("recv() from socket");
             return TE_OS_RC(TE_COMM, errno);
         }
         else if (r == 0)
