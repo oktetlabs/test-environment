@@ -39,7 +39,7 @@
 
 #ifndef RPC_TRANSPORT
 #if defined(__CYGWIN__) || defined(WINDOWS)
-#define RPC_TRANSPORT   RPC_TRANSPORT_WINPIPE
+#define RPC_TRANSPORT   RPC_TRANSPORT_TCP
 #else
 #define RPC_TRANSPORT   RPC_TRANSPORT_UNIX
 #endif
