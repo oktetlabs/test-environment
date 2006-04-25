@@ -322,7 +322,7 @@ net_stats_get(net_stats *stats)
 
 #if __linux__
 
-    buf = (char *)malloc(MAX_PROC_NET_SNMP_SIZE);
+    buf = (char *)calloc(MAX_PROC_NET_SNMP_SIZE, 1);
     if (buf == NULL)
     {
         return TE_OS_RC(TE_TA_UNIX, ENOMEM);
