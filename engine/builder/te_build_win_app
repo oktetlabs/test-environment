@@ -67,6 +67,8 @@ mkdir tmpsrc
 FILES=
 for i in $* ; do 
     FILENAME=`basename ${i}` 
+    if ! test "$FILENAME" = "${FILENAME%.a}" ; then break; fi
+    if ! test "$FILENAME" = "${FILENAME%.o}" ; then break; fi
     FILES="${FILES} ${FILENAME}"
     gcc -I${TE_INSTALL}/i686-pc-cygwin/include \
         -I${TE_INSTALL}/${PLATFORM}/include \
