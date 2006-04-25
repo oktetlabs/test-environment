@@ -77,6 +77,11 @@
 #if HAVE_NET_IF_DL_H
 #include <net/if_dl.h>
 #endif
+/* { required for sysctl on netbsd */
+#if HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+/* } required for sysctl on netbsd */
 #if HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
 #endif
