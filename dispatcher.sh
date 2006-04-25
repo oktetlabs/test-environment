@@ -2,11 +2,11 @@
 
 TE_RUN_DIR="${PWD}"
 
-DISPATCHER="$(which $0)"
+DISPATCHER="$(which "$0")"
 while test -L "$DISPATCHER" ; do
     DISPATCHER="$(dirname "$DISPATCHER")/$(readlink "${DISPATCHER}")"
 done
-pushd "$(dirname $DISPATCHER)" >/dev/null
+pushd "$(dirname "$DISPATCHER")" >/dev/null
 DISPATCHER_DIR="${PWD}"
 popd >/dev/null
 
@@ -152,7 +152,7 @@ EOF
 
 exit_with_log()
 {
-    rm -rf ${TE_TMP}
+    rm -rf "${TE_TMP}"
     popd >/dev/null
     exit 1
 }
@@ -373,16 +373,16 @@ process_opts()
 # Export TE_BASE
 if test -z "${TE_BASE}" ; then
     if test -e "${DISPATCHER_DIR}/configure.ac" ; then
-        echo "TE source directory is ${DISPATCHER_DIR} - exporting TE_BASE." ;
-        export TE_BASE="${DISPATCHER_DIR}" ;
+        echo "TE source directory is ${DISPATCHER_DIR} - exporting TE_BASE."
+        export TE_BASE="${DISPATCHER_DIR}"
     fi
 fi
 
 if test -z "$CONF_DIR" ; then
     if test -n "${TE_BASE}" ; then
-        CONF_DIR=${TE_BASE}/conf ;
+        CONF_DIR="${TE_BASE}/conf"
     else
-        CONF_DIR="${PWD}" ;
+        CONF_DIR="${PWD}"
     fi
 fi
 
@@ -400,9 +400,9 @@ fi
 export TE_NO_AUTOTOOL
 
 for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do
-    CONF_FILE=$(eval echo '$CONF_'$i) ;
+    CONF_FILE="$(eval echo '$CONF_'$i)"
     if test -n "${CONF_FILE}" -a "${CONF_FILE:0:1}" != "/" ; then
-        eval CONF_$i="${CONF_DIR}/${CONF_FILE}" ;
+        eval CONF_$i=\"${CONF_DIR}/${CONF_FILE}\"
     fi
 done
 
@@ -456,7 +456,7 @@ if test -z "$TE_INSTALL" ; then
     fi
     if test -z "${QUIET}" ; then
         echo "Exporting TE installation directory as TE_INSTALL:"
-        echo '    '$TE_INSTALL
+        echo '    '"$TE_INSTALL"
     fi
     export TE_INSTALL
 fi
@@ -468,10 +468,10 @@ if test -z "${TE_PATH}" ; then
         eval $tmp
     fi
     if test -z "${host}" -a -n "${TE_BASE}" ; then
-        host=$(${TE_BASE}/engine/builder/te_discover_host)
+        host=$("${TE_BASE}/engine/builder/te_discover_host")
     fi
     if test -z "${host}" -a -x "${DISPATCHER_DIR}/te_discover_host" ; then
-        host=$(${DISPATCHER_DIR}/te_discover_host)
+        host=$("${DISPATCHER_DIR}/te_discover_host")
     fi
     if test -z "$host" ; then
         echo 'Cannot determine host platform.' >&2
