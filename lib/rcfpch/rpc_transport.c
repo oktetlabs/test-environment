@@ -450,7 +450,7 @@ rpc_transport_connect_rpcserver(const char *name,
             ERROR("RPC server '%s' does not try to connect", name);
             return TE_RC(TE_RCF_PCH, TE_ETIMEDOUT);
         }
-        else if (errno != EINTR && errno != 0)
+        else if (errno != EINTR)
         {
             RETERR("select() failed with unexpected errno %d", errno);
         }
@@ -738,7 +738,7 @@ rpc_transport_read_set_wait(int timeout)
      
     if (select(FD_SETSIZE, &rset, NULL, NULL, &tv) < 0)
     {
-        if (errno != EINTR && errno != 0)
+        if (errno != EINTR)
             return FALSE;
     }
     
@@ -798,7 +798,7 @@ recv_from_stream(int handle, uint8_t *buf, size_t len, int timeout)
         }
         else if (rc < 0)
         {
-            if (errno == EINTR || errno == 0)
+            if (errno == EINTR)
                 continue;
             return TE_OS_RC(TE_RCF_PCH, errno);
         }
