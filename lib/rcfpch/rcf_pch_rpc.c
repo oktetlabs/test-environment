@@ -362,8 +362,10 @@ dispatch(void *arg)
         rpc_transport_read_set_init();
         
         pthread_mutex_lock(&lock);
-        for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
+        for (rpcs = list; rpcs != NULL && !rpcs->dead; rpcs = rpcs->next)
+        {
             rpc_transport_read_set_add(rpcs->handle);
+        }
         pthread_mutex_unlock(&lock);
         
         rpc_transport_read_set_wait(1);
