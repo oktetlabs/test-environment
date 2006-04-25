@@ -536,7 +536,7 @@ rcf_ch_start_process(pid_t *pid,
                     ERROR("Too many arguments for %s, "
                           "increase constant in %s %d", 
                           __FILE__, __LINE__);
-                    return 1;
+                    return TE_RC(TE_TA_UNIX, TE_E2BIG);
                 }
                 memset(argv, 0, sizeof(argv));
                 argv[0] = ta_execname;
@@ -546,15 +546,18 @@ rcf_ch_start_process(pid_t *pid,
 
                 execve(ta_execname, (char * const *)argv, 
                        (char * const *)environ);
-                
-                return 1;
+
+                assert(errno != 0);
+                return TE_OS_RC(TE_TA_UNIX, errno);
             }
             else
+            {
                 ((rcf_rtn)(addr))(params[0], params[1], params[2],
                                   params[3], params[4], params[5],
                                   params[6], params[7], params[8],
                                   params[9]);
-            exit(0);
+                exit(0);
+            }
         }
         else if (*pid > 0)
         {
@@ -563,10 +566,10 @@ rcf_ch_start_process(pid_t *pid,
         }
         else
         {
-            int rc = TE_OS_RC(TE_TA_UNIX, errno);
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
-            ERROR("%s(): fork() failed", __FUNCTION__);
-            
+            ERROR("%s(): fork() failed: %r", __FUNCTION__, rc);
+
             return rc;
         }
     }
