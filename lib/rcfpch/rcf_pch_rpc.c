@@ -370,7 +370,7 @@ dispatch(void *arg)
         now = time(NULL);
         for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
         {
-            if (rpcs->dead)
+            if (rpcs->dead || rpcs->sent == 0)
                 continue;
                
             if (rpcs->sent > 0 && 
