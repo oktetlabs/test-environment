@@ -333,17 +333,21 @@ get_opcode(char **ptr, rcf_op_t *opcode)
  *
  * @return 0 or error returned by communication library
  */
-static int
+static te_errno
 transmit_log(struct rcf_comm_connection *conn, char *cbuf,
              size_t buflen, size_t answer_plen)
 {
-    int len;
-    int rc;
+    size_t      len;
+    te_errno    rc;
+    int         ret;
 
     len = ta_log_get(sizeof(log_data), log_data);
 
-    if ((size_t)snprintf(cbuf + answer_plen, buflen - answer_plen,
-                         "0 attach %d", len) >= (buflen - answer_plen))
+    ret = snprintf(cbuf + answer_plen, buflen - answer_plen,
+                   (len == 0) ? "%u" : "0 attach %u",
+                   (len == 0) ? (unsigned)TE_RC(TE_RCF_PCH, TE_ENOENT) :
+                                (unsigned)len);
+    if ((size_t)ret >= (buflen - answer_plen))
     {
         ERROR("Command buffer too small");
         /* It MUST NOT happen */

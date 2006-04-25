@@ -482,30 +482,28 @@ ta_handler(void *ta)
         *log_file = '\0';
         if ((rc = rcf_ta_get_log(inst->agent, log_file)) != 0)
         {
-            if (rc == TE_RC(TE_RCF, TE_ETIMEDOUT))
+            /* Any error interrupts flush operation */
+            if (do_flush)
             {
-                /* 
-                 * Ignore error if request to TA is timed out by RCF,
-                 * continue processing as is.
-                 */
+                do_flush = FALSE;
+                flush_done = TRUE;
+            }
+            if (/* No log messages */
+                (rc == TE_RC(TE_RCF_PCH, TE_ENOENT)) ||
+                /* RCF request to TA is timed out */
+                (rc == TE_RC(TE_RCF, TE_ETIMEDOUT)) ||
+                /* TA is being rebooted, or has been rebooted */
+                (rc == TE_RC(TE_RCF, TE_ETAREBOOTED)) ||
+                /* TA has dies, but may be revivified later by RCF */
+                (rc == TE_RC(TE_RCF, TE_ETADEAD)))
+            {
                 continue;
             }
-            else if (rc == TE_RC(TE_RCF, TE_ETAREBOOTED) ||
-                     rc == TE_RC(TE_RCF, TE_ETADEAD))
+            else
             {
-                /* 
-                 * Ignore error if TA is rebooted by RCF, but terminate
-                 * flush operation.
-                 */
-                if (do_flush)
-                {
-                    do_flush = FALSE;
-                    flush_done = TRUE;
-                }
-                continue;
+                /* The rest of errors are considered as fatal */
+                break;
             }
-            /* The rest of errors are considered as fatal */
-            break;
         }
 
         rc = stat(log_file, &log_file_stat);
@@ -518,13 +516,14 @@ ta_handler(void *ta)
         else if (log_file_stat.st_size == 0)
         {
             /* File is empty */
+            ERROR("TA %s: log file '%s' is empty", inst->agent, log_file);
+
             if (remove(log_file) != 0)
             {
                 ERROR("Failed to delete log file '%s': errno=%d",
                       log_file, errno);
                 /* Continue */
             }
-
             if (do_flush)
             {
                 do_flush = FALSE;
