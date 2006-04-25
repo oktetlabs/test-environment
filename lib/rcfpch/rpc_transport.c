@@ -39,7 +39,7 @@
 
 #ifndef RPC_TRANSPORT
 #if defined(__CYGWIN__) || defined(WINDOWS)
-#define RPC_TRANSPORT   RPC_TRANSPORT_TCP
+#define RPC_TRANSPORT   RPC_TRANSPORT_WINPIPE
 #else
 #define RPC_TRANSPORT   RPC_TRANSPORT_UNIX
 #endif
@@ -364,6 +364,7 @@ rpc_transport_connect_rpcserver(const char *name,
     DWORD    rc;
     char     pipename[128];
     int      i;
+    int      tries = RPC_TIMEOUT / 10;
     
     WaitForSingleObject(conn_mutex, INFINITE);
     
@@ -375,19 +376,34 @@ rpc_transport_connect_rpcserver(const char *name,
     
     sprintf(pipename, "\\\\.\\pipe\\%d_%s", ta_port, name);
 
-    pipes[i].handle = CreateNamedPipe(pipename, 
-                                      PIPE_ACCESS_DUPLEX | 
-                                      FILE_FLAG_OVERLAPPED, 
-                                      PIPE_TYPE_MESSAGE, 
-                                      1, 1024 * 1024, 1024 * 1024,
-                                      100, NULL);
+    while (--tries > 0)
+    {
+        pipes[i].handle = CreateNamedPipe(pipename, 
+                                          PIPE_ACCESS_DUPLEX | 
+                                          FILE_FLAG_OVERLAPPED, 
+                                          PIPE_TYPE_MESSAGE, 
+                                          1, 1024 * 1024, 1024 * 1024,
+                                          100, NULL);
         
+        if (pipes[i].handle != INVALID_HANDLE_VALUE)
+            break;
+            
+        if (GetLastError() != ERROR_PIPE_BUSY)
+        {
+            ERROR("CreateNamedPipe() failed: %d", GetLastError());
+            ReleaseMutex(conn_mutex);
+            return TE_RC(TE_RCF_PCH, TE_EWIN);
+        }
+        SleepEx(10, FALSE);
+    }
+    
     if (pipes[i].handle == INVALID_HANDLE_VALUE)
     {
-        ERROR("Connect with %s:  CreateNamedPipe failed: %d\n", 
-              name, GetLastError());
+        ERROR("Connect timeout with RPC server %s", name);
+        ReleaseMutex(conn_mutex);
         return TE_RC(TE_RCF_PCH, TE_EWIN);
     }
+        
     if (ConnectNamedPipe(pipes[i].handle, &pipes[i].ov) ||
         GetLastError() == ERROR_PIPE_CONNECTED)
     {
@@ -524,7 +540,8 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
         if (pipes[i].handle != INVALID_HANDLE_VALUE)
             break;
             
-        if (GetLastError() != ERROR_FILE_NOT_FOUND)
+        if (GetLastError() != ERROR_FILE_NOT_FOUND &&
+            GetLastError() != ERROR_PIPE_BUSY)
         {
             ERROR("CreateFile() failed: %d", GetLastError());
             ReleaseMutex(conn_mutex);
