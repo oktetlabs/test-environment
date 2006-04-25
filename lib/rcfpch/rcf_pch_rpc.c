@@ -80,7 +80,8 @@ typedef struct rpcserver {
     struct rpcserver *next;   /**< Next server in the list */
     struct rpcserver *father; /**< Father pointer */
 
-    char name[RCF_MAX_ID]; /**< RPC server name */
+    char name[RCF_MAX_ID];  /**< RPC server name */
+    char value[RCF_MAX_ID]; /**< RPC server father name */
     
     rpc_transport_handle handle; /**< Transport handle */
     
@@ -556,12 +557,7 @@ rpcserver_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_RCF_PCH, TE_ENOENT);
     }
         
-    if (rpcs->father == NULL)
-        *value = 0;
-    else if (rpcs->tid > 0)
-        sprintf(value, "thread_%s", rpcs->father->name);
-    else
-        sprintf(value, "fork_%s", rpcs->father->name);
+    strcpy(value, rpcs->value);
 
     pthread_mutex_unlock(&lock);
         
@@ -641,6 +637,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     }
     
     strcpy(rpcs->name, new_name);
+    strcpy(rpcs->value, value);
     rpcs->father = father;
     if (father == NULL)
     {
