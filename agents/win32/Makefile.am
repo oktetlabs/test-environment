@@ -65,6 +65,7 @@ ta@with_name@_rpcserver_DEPENDENCIES=\
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librpc_types.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdrta.a 
 
 ta@with_name@_rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c 
@@ -97,12 +98,14 @@ RPCSERVER_SRC= \
     ../../lib/@_host_@_rpcxdr/tarpc_xdr.c \
     @PRIV_LIB_DIR@/talib/rpc.c
 
-ta@with_name@_rpcserver32$(EXEEXT): $(RPCSERVER_SRC)        
+ta@with_name@_rpcserver32$(EXEEXT): $(RPCSERVER_SRC) \
+                                    $(ta@with_name@_rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
         $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
         i686-pc-windows $@ \"$(RPCSERVER_LIBS)\" $^
         
-ta@with_name@_rpcserver64$(EXEEXT): $(RPCSERVER_SRC)        
+ta@with_name@_rpcserver64$(EXEEXT): $(RPCSERVER_SRC) \
+                                    $(ta@with_name@_rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
         $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
         x86_64-pc-windows $@ \"$(RPCSERVER_LIBS)\" $^
