@@ -792,11 +792,15 @@ recv_from_stream(int handle, uint8_t *buf, size_t len, int timeout)
         
         rc = select(handle + 1, &set, NULL, NULL, &tv);
         
-        if (rc <= 0)
+        if (rc == 0)
         {
-            if (errno == EINTR)
-                continue;
             return TE_RC(TE_RCF_PCH, TE_ETIMEDOUT);
+        }
+        else if (rc < 0)
+        {
+            if (errno == EINTR || errno == 0)
+                continue;
+            return TE_OS_RC(TE_RCF_PCH, errno);
         }
     
         rc = recv(handle, buf + rcvd, len - rcvd, 0);
