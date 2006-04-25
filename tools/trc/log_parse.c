@@ -128,7 +128,8 @@ iter_stats_update_by_result(test_iter *iter)
         ERROR("Unexpected got result value");
         return;
     }
-    if (iter->got_result == TRC_TEST_FAKED)
+    if (iter->got_result == TRC_TEST_FAKED ||
+        iter->got_result == TRC_TEST_EMPTY)
     {
         return;
     }
@@ -251,6 +252,8 @@ get_result(xmlNodePtr node, trc_test_result *value)
         *value = TRC_TEST_CORED;
     else if (xmlStrcmp(s, CONST_CHAR2XML("FAKED")) == 0)
         *value = TRC_TEST_FAKED;
+    else if (xmlStrcmp(s, CONST_CHAR2XML("EMPTY")) == 0)
+        *value = TRC_TEST_EMPTY;
     else
     {
         ERROR("Invalid value '%s' of the result", XML2CHAR(s));
