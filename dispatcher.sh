@@ -508,7 +508,7 @@ if test -z "$(which te_log_init 2>/dev/null)" ; then
 fi
 
 # Intitialize log
-test -n "${DAEMON}" || te_log_init
+test -z "${DAEMON}" && te_log_init
 te_log_message Engine Dispatcher "Command-line options: ${cmd_line_opts}"
 te_log_message Engine Dispatcher \
     "Expanded command-line options: ${cmd_line_opts_all}"
