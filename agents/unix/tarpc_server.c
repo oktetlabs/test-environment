@@ -1559,6 +1559,7 @@ typedef union opt_param {
     struct timeval      tv;
 #if HAVE_STRUCT_IP_OPTS 
     struct ip_opts      opts;
+    struct in6_addr     addr6;
 #endif    
 } opt_param;
 
@@ -1669,6 +1670,13 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
             break;
         }            
 #endif
+        case OPT_IPADDR6:
+        {
+            memcpy(&param->addr6,
+                   in->optval.optval_val[0].option_value_u.opt_ipaddr6,
+                   sizeof(struct in6_addr));
+            break;
+        }
         default:
             ERROR("incorrect option type %d is received",
                   in->optval.optval_val[0].opttype);
@@ -1832,6 +1840,10 @@ TARPC_FUNC(getsockopt,
                     break;
                     
                 case OPT_STRING:
+                    break;
+
+                case OPT_IPADDR6:
+                    optlen_in = optlen_out = sizeof(struct in6_addr);
                     break;
 
                 default:
@@ -2031,9 +2043,16 @@ TARPC_FUNC(getsockopt,
                 
                 memcpy(out->optval.optval_val[0].option_value_u.opt_ip_opts.
                        options.options_val,
-                       ((uint8_t *)opt)/* + sizeof(uint32_t)*/,
+                       ((uint8_t *)opt),
                        out->optval.optval_val[0].option_value_u.opt_ip_opts.
                        options.options_len);
+                break;
+            }
+
+            case OPT_IPADDR6:
+            {
+                memcpy(out->optval.optval_val[0].option_value_u.opt_ipaddr6,
+                       opt, sizeof(struct in6_addr));
                 break;
             }
 
@@ -2094,6 +2113,10 @@ TARPC_FUNC(getsockopt,
                     break;
 
                 case OPT_STRING:
+                    break;
+
+                case OPT_IPADDR6:
+                    *(out->optlen.optlen_val) = sizeof(struct in6_addr);
                     break;
 
                 default:
@@ -2206,6 +2229,13 @@ TARPC_FUNC(getsockopt,
                        str,
                        out->optval.optval_val[0].option_value_u.opt_string.
                            opt_string_len);
+                break;
+            }
+
+            case OPT_IPADDR6:
+            {
+                memcpy(out->optval.optval_val[0].option_value_u.opt_inaddr6,
+                       opt, sizeof(struct in6_addr));
                 break;
             }
             

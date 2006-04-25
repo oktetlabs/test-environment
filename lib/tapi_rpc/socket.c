@@ -1376,7 +1376,18 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 if (optlen_copy == sizeof(struct ip_opts))
                     optlen_copy = RPC_OPTLEN_AUTO;
                 break;
-            }               
+            }
+
+            case RPC_IPV6_NEXTHOP:
+            {
+                val.opttype = OPT_IPADDR6;
+                memcpy(val.option_value_u.opt_ipaddr6, optval,
+                       MIN(*optlen, sizeof(struct in6_addr)));
+
+                if (optlen_copy == sizeof(struct in6_addr))
+                    optlen_copy = RPC_OPTLEN_AUTO;
+                break;
+            }
 
             default:
                 val.opttype = OPT_INT;
@@ -1566,6 +1577,18 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 
                     snprintf(opt_val_str, sizeof(opt_val_str),
                              "{ options }");
+                break;
+
+                case RPC_IPV6_NEXTHOP:
+                    memcpy(optval,
+                           out.optval.optval_val[0].option_value_u.
+                           opt_ipaddr6, sizeof(struct in6_addr));
+                    snprintf(opt_val_str, sizeof(opt_val_str), "{ ");
+                    inet_ntop(AF_INET6, optval, opt_val_str + strlen("{ "),
+                              sizeof(opt_val_str) - strlen("{ "));
+                    snprintf(opt_val_str + strlen(opt_val_str),
+                             sizeof(opt_val_str) - strlen(opt_val_str),
+                             " }");
                 break;
 
                 default:
@@ -1836,6 +1859,14 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                 val.option_value_u.opt_ip_opts.options.options_len = optlen;
                 val.option_value_u.opt_ip_opts.options.options_val =
                     (uint8_t *)optval;
+                break;
+            }
+
+            case RPC_IPV6_NEXTHOP:
+            {
+                val.opttype = OPT_IP_OPTS;
+                memcpy(val.option_value_u.opt_ipaddr6, optval,
+                       MIN(optlen, sizeof(struct in6_addr)));
                 break;
             }
 
