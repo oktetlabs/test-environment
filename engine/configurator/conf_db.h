@@ -397,11 +397,16 @@ extern te_errno cfg_db_obj_print_deps(const char *filename,
 /**
  * Remove an object from the data base.
  *
- * @param id   id string of an object to be removed.
+ * @param id        id string of an object to be removed.
+ * @param log_lvl   Log level for messages about forced actions
+ *                  (instance delete, dependancy cut, etc. ) 
  *
  * @return  0 or TE_EINVAL, if error occurred.
+ *
+ * @author Igor Baryshev <Igor.Baryshev@oktetlabs.ru>
  */
-extern te_errno cfg_db_unregister_obj_by_id_str(char *id);
+extern te_errno cfg_db_unregister_obj_by_id_str(char *id,
+                                                const unsigned int log_lvl);
 
 #ifdef __cplusplus
 }

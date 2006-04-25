@@ -434,7 +434,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
                            cmd->name);                
 
-                rc = cfg_db_unregister_obj_by_id_str(oid);
+                rc = cfg_db_unregister_obj_by_id_str(oid, TE_LL_WARN);
                 if (rc != 0)
                     RETERR(rc, "Failed to execute 'unregister' command "
                            "for object %s", oid);
@@ -779,6 +779,7 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
     
     int rc;
     int result = 0;
+    int unreg_obj_LL;
     
     cfg_dh_optimize();
     
@@ -798,7 +799,14 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
     
     if (filename != NULL && limit != NULL)
         VERB("Restore backup %s up to command %d", filename, limit->seq);
-        
+
+    /* If reversing the start up history, sweep warnings under the rug: */
+    if (filename == NULL)
+        unreg_obj_LL = TE_LL_VERB;
+    else
+        unreg_obj_LL = TE_LL_WARN;
+
+
     for (tmp = last; tmp != limit; tmp = prev)
     {
         prev = tmp->prev;
@@ -809,7 +817,7 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
             case CFG_REGISTER:
             {
                 id = ((cfg_register_msg *)(tmp->cmd))->oid;
-                rc = cfg_db_unregister_obj_by_id_str(id);
+                rc = cfg_db_unregister_obj_by_id_str(id, unreg_obj_LL);
                 if (rc != 0)
                 {
                     ERROR("%s(): cfg_db_unregister_obj_by_id_str() "

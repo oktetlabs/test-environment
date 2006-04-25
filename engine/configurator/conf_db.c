@@ -499,7 +499,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
 void
 cfg_process_msg_unregister(cfg_unregister_msg *msg)
 {
-    msg->rc = cfg_db_unregister_obj_by_id_str(msg->id);
+    msg->rc = cfg_db_unregister_obj_by_id_str(msg->id, TE_LL_WARN);
     return;
 }
 
@@ -560,14 +560,17 @@ forget_master(cfg_object *dependant, cfg_object *obj)
 /**
  * Remove an object from the data base.
  *
- * @param id   id string of an object to be removed.
+ * @param id        id string of an object to be removed.
+ * @param log_lvl   Log level for messages about forced actions
+ *                  (instance delete, dependancy cut, etc. ) 
  *
  * @return  0 or TE_EINVAL, if error occurred.
  *
  * @author Igor Baryshev <Igor.Baryshev@oktetlabs.ru>
  */
 te_errno
-cfg_db_unregister_obj_by_id_str(char *id)
+cfg_db_unregister_obj_by_id_str(char *id,
+                                const unsigned int log_lvl)
 {
     cfg_object          *obj;
     cfg_object          *brother;
@@ -614,9 +617,9 @@ cfg_db_unregister_obj_by_id_str(char *id)
     for (dependants = obj->dependants; dependants != NULL;
          dependants = dependants->next)
     {
-        WARN("To remove object: %s, "
-             "will break the dependency (on it) of: %s\n",
-             id, dependants->depends->oid);
+        LOG_MSG(log_lvl, "To remove object: %s, "
+                "will break the dependency (on it) of: %s\n",
+                id, dependants->depends->oid);
 
         /* the obj must be there, so assert: */
         assert(forget_master(dependants->depends, obj) != NULL);
@@ -650,9 +653,10 @@ cfg_db_unregister_obj_by_id_str(char *id)
 
     for (i = 0; i < nof_matches; i++)
     {
-        WARN("To remove object: %s, "
-              "will try to remove instance: %s\n",
-              id, cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(matches[i])]->oid);
+        LOG_MSG(log_lvl, "To remove object: %s, "
+                "will try to remove instance: %s\n",
+                id,
+                cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(matches[i])]->oid);
         cfg_db_del(matches[i]);
     }
     free(matches);
