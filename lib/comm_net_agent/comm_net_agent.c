@@ -145,7 +145,7 @@ rcf_comm_agent_init(const char *config_str,
     if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
     {
         rc = TE_OS_RC(TE_COMM, errno);
-        ERROR("bind() error: errno=%d\n");
+        ERROR("bind() error: errno=%d\n", errno);
         (void)close(s);
         return rc;
     }
