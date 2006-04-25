@@ -769,13 +769,7 @@ rpc_transport_is_readable(rpc_transport_handle handle)
         
     return rc;
 #else
-    struct timeval tv = { 0, 0 };
-    fd_set         set;
-    
-    FD_ZERO(&set);
-    FD_SET((int)handle, &set);
-    
-    return select((int)handle + 1, &set, NULL, NULL, &tv) > 0;
+    return FD_ISSET((int)handle, &rset);
 #endif    
 }
 
