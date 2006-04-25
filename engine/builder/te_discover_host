@@ -29,12 +29,12 @@
 # $Id$
 #
 
-if test -e ${TE_BASE}/auxdir/config.sub ; then
-    CONFIG_SUB=${TE_BASE}/auxdir/config.sub
+if test -e "${TE_BASE}/auxdir/config.sub" ; then
+    CONFIG_SUB="${TE_BASE}/auxdir/config.sub"
 else
-    CONFIG_SUB=`find /usr/share/automake* -name config.sub | tail -n 1`
+    CONFIG_SUB=$(find /usr/share/automake* -name config.sub | tail -n 1)
 fi
-host=`gcc -dumpmachine`
-host=`$CONFIG_SUB $host`
+host=$(gcc -dumpmachine)
+host=$("$CONFIG_SUB" $host)
 echo $host
 exit 0
