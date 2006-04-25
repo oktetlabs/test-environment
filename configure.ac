@@ -34,23 +34,23 @@ AM_INIT_AUTOMAKE([1.9.1 foreign -Wall dist-bzip2 tar-pax])
 
 AC_PROG_INSTALL
 
-CONFIGURE=`which $0` ;
-TE_BASE_DIR=`dirname $CONFIGURE`
-pushd $TE_BASE_DIR >/dev/null
-export TE_BASE=`pwd` 
+CONFIGURE="$(which "$0")"
+TE_BASE_DIR="$(dirname "$CONFIGURE")"
+pushd "$TE_BASE_DIR" >/dev/null
+export TE_BASE="$(pwd)"
 popd >/dev/null
 
 # Do not use config.guess to avoid problems with 64-bit architecture
 # and i686 tools.
-host=`${TE_BASE}/engine/builder/te_discover_host`
+host=$("${TE_BASE}/engine/builder/te_discover_host")
 
-TE_BUILD=`pwd`
+TE_BUILD="$(pwd)"
 
 if test "$prefix" = "NONE" ; then
-    prefix=/usr/local ;
+    prefix=/usr/local
 fi    
 
-TE_INSTALL=$prefix
+TE_INSTALL="$prefix"
 
 # Put initial values to control variables
 
@@ -70,11 +70,11 @@ TE_BS_TA=
 TE_BS_SUITES=
 
 if test -z "${TE_INSTALL_NUT}" ; then 
-    TE_INSTALL_NUT=${TE_INSTALL}/nuts ; 
-fi ; 
+    TE_INSTALL_NUT="${TE_INSTALL}/nuts"
+fi
 
 if test -z "$TE_INSTALL_SUITE" ; then
-    TE_INSTALL_SUITE=${TE_INSTALL}/suites
+    TE_INSTALL_SUITE="${TE_INSTALL}/suites"
 fi
 
 # Parse configuration file
@@ -87,23 +87,24 @@ echo host=$host >> ${TE_BUILD}/builder.conf.processed.new
 
 AC_ARG_VAR(with_config)
 
-if test -z "$with_config" -a -e ${srcdir}/conf/builder.conf ; then
+if test -z "$with_config" -a -e "${srcdir}/conf/builder.conf" ; then
     # Called from make distcheck
-    with_config=${srcdir}/conf/builder.conf
+    with_config="${srcdir}/conf/builder.conf"
 fi    
 
-AC_SUBST([TE_CONF_DIR], [`dirname $with_config`])
-TE_BUILDER_CONF=$with_config
+AC_SUBST([TE_CONF_DIR], [$(dirname "$with_config")])
+TE_BUILDER_CONF="$with_config"
 AC_SUBST([TE_BUILDER_CONF])
 
 if test -n "$with_config" ; then
-    if test ! -e ${with_config} ; then
+    if test ! -e "${with_config}" ; then
         AC_MSG_ERROR([Cannot find $with_config])
     fi
-    cat ${TE_BASE}/engine/builder/builder.m4 $with_config | m4 >> ${TE_BUILD}/builder.conf.processed.new
+    cat "${TE_BASE}/engine/builder/builder.m4" "$with_config" | \
+        m4 >> "${TE_BUILD}/builder.conf.processed.new"
 else        
     # Fill default configuration
-    HOST=`echo $host | tr .- _`
+    HOST=$(echo $host | tr .- _)
     TE_BS_PLATFORMS=$HOST
     echo TE_BS_PLATFORMS=$TE_BS_PLATFORMS >> ${TE_BUILD}/builder.conf.processed.new
     eval ${HOST}_LIBS="ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tad"
@@ -112,13 +113,14 @@ else
 fi
 echo 'TE_PATH=${TE_INSTALL}/${host}/bin' >> ${TE_BUILD}/builder.conf.processed.new
 
-if test -e ${TE_BUILD}/builder.conf.processed ; then
-    if ! diff -q ${TE_BUILD}/builder.conf.processed ${TE_BUILD}/builder.conf.processed.new > /dev/null ; then 
-        cd ${TE_BUILD}    
+if test -e "${TE_BUILD}/builder.conf.processed" ; then
+    if ! diff -q "${TE_BUILD}/builder.conf.processed" \
+                 "${TE_BUILD}/builder.conf.processed.new" > /dev/null ; then 
+        cd "${TE_BUILD}"
         if test ! -e configure.ac ; then
             rm -rf `ls | grep -v builder.conf`
         fi
-        cd $OLDPWD
+        cd "$OLDPWD"
         no_create=""
     fi
 fi    
@@ -128,7 +130,7 @@ mv ${TE_BUILD}/builder.conf.processed.new ${TE_BUILD}/builder.conf.processed
 # Dummy loop to avoid breaking in the case of error
 while test 1 ; do
     . ${TE_BUILD}/builder.conf.processed
-    break ;
+    break
 done
 if test -n "$TE_BS_CONF_ERR" ; then
     AC_MSG_ERROR([$TE_BS_CONF_ERR])
@@ -142,15 +144,15 @@ for i in $TE_BS_HOST_EXEC ; do
     fi
 done ;
 
-WORK_DIR=`pwd`
-cd ${TE_BASE}/doc
+WORK_DIR="$(pwd)"
+cd "${TE_BASE}/doc"
 if test ! -e configure ; then
     echo "Calling aclocal/autoheader/autoconf/automake in `pwd`"
-    aclocal -I ${TE_BASE}/auxdir || exit 1 ;
+    aclocal -I "${TE_BASE}/auxdir" || exit 1 ;
     autoconf || exit 1 ;
     automake || exit 1 ;
 fi
-cd ${WORK_DIR}
+cd "${WORK_DIR}"
 AC_CONFIG_SUBDIRS(doc)
 
 mkdir -p include
@@ -168,8 +170,8 @@ for p in ${TE_BS_PLATFORMS} ; do
     PLATFORM=`eval echo '$'${p}'_PLATFORM'`
     
     if test $PLATFORM == $host ; then 
-        ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
-                include $host ${TE_BASE}/include $prefix || exit 1
+        "${TE_BASE}/engine/builder/te_configure_package" INCLUDE include \
+                include $host "${TE_BASE}/include" "$prefix" || exit 1
     fi
     
     LIBS=`eval echo '$'${p}'_LIBS'`
@@ -177,25 +179,26 @@ for p in ${TE_BS_PLATFORMS} ; do
         PKGNAME=${p}_$package
         PKGSRC=`eval echo '$TE_BS_LIB_'${PKGNAME}'_SOURCES'`
         if test -z "$PKGSRC" ; then 
-            PKGSRC=${TE_BASE}/lib/$package ; 
+            PKGSRC="${TE_BASE}/lib/$package"
         fi
         
         cd lib
-        mkdir -p $PKGNAME
-        NAME=`basename $PKGSRC`
-        if ! test -e $NAME ; then
-            ln -s $PKGNAME $NAME
+        mkdir -p "$PKGNAME"
+        NAME="$(basename "$PKGSRC")"
+        if ! test -e "$NAME" ; then
+            ln -s "$PKGNAME" "$NAME"
         fi
         cd ..
         
         if test $PLATFORM != $host ; then continue ; fi
         
         if test -z "$no_create" ; then
-            ${TE_BASE}/engine/builder/te_configure_package LIB $package \
-            $PKGNAME $PLATFORM $PKGSRC $prefix || exit 1
-            cd lib/$PKGNAME
+            "${TE_BASE}/engine/builder/te_configure_package" LIB \
+                $package $PKGNAME $PLATFORM "$PKGSRC" "$prefix" || \
+                exit 1
+            cd "lib/$PKGNAME"
             make install-data || exit 1
-            cd ../..
+            cd "../.."
         fi
         LIB_SUBDIRS="$LIB_SUBDIRS $PKGNAME"
     done
@@ -209,8 +212,9 @@ AC_SUBST([LIB_DIST_SUBDIRS])
 # Configure TEN applications
 if test -z "$no_create" ; then
     for package in $DUMMY $TE_BS_APPS ; do
-        ${TE_BASE}/engine/builder/te_configure_package APP $package $package \
-            $host ${TE_BASE}/engine/$package $prefix || exit 1
+        "${TE_BASE}/engine/builder/te_configure_package" APP $package \
+            $package $host "${TE_BASE}/engine/$package" "$prefix" || \
+            exit 1
     done
 fi    
 APP_SUBDIRS="$TE_BS_APPS"
@@ -219,8 +223,9 @@ AC_SUBST([APP_SUBDIRS])
 # Configure tools
 if test -z "$no_create" ; then
     for package in $DUMMY ${TE_BS_TOOLS} ; do
-        ${TE_BASE}/engine/builder/te_configure_package TOOL $package $package \
-            $host ${TE_BASE}/tools/$package $prefix || exit 1
+        "${TE_BASE}/engine/builder/te_configure_package" TOOL $package \
+            $package $host "${TE_BASE}/tools/$package" "$prefix" || \
+            exit 1
     done
 fi    
 TOOLS_SUBDIRS="${TE_BS_TOOLS}" 
@@ -230,10 +235,10 @@ AC_SUBST([TOOLS_SUBDIRS])
 TA_SUBDIRS=
 TA_DIST_SUBDIRS=
 for package in $DUMMY $TE_BS_TA ; do
-    PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'` ;
-    PKGSRC=`eval echo '$TE_BS_TA_'${package}'_SOURCES'` ;
+    PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'`
+    PKGSRC=`eval echo '$TE_BS_TA_'${package}'_SOURCES'`
     if test -z "$PKGSRC" ; then 
-        PKGSRC=${TE_BASE}/agents/$package ; 
+        PKGSRC="${TE_BASE}/agents/$package" 
     fi
     
     cd agents
@@ -250,8 +255,8 @@ for package in $DUMMY $TE_BS_TA ; do
     if test "$PLATFORM" != "$host" ; then continue ; fi
     
     if test -z "$no_create" ; then
-        ${TE_BASE}/engine/builder/te_configure_package TA $package $package \
-            $host $PKGSRC $prefix || exit 1
+        "${TE_BASE}/engine/builder/te_configure_package" TA $package \
+            $package $host "$PKGSRC" "$prefix" || exit 1
     fi
     TA_SUBDIRS="$TA_SUBDIRS $package"
 done
@@ -275,16 +280,17 @@ AC_SUBST([SUITE_SCRIPTS_EXTRA_DIST])
 AC_SUBST([SUITE_SCRIPTS])
 
 if test -z "$no_create" ; then
-    mkdir -p ${TE_BUILD}/suites
-    if test -e ${TE_BASE}/suites/Makefile.suites ; then
-        cp ${TE_BASE}/suites/Makefile.suites ${TE_BUILD}/suites/Makefile.suites
+    mkdir -p "${TE_BUILD}/suites"
+    if test -e "${TE_BASE}/suites/Makefile.suites" ; then
+        cp "${TE_BASE}/suites/Makefile.suites" \
+           "${TE_BUILD}/suites/Makefile.suites"
     else
-        echo "TE_BS_SUITES=$TE_BS_SUITES" > ${TE_BUILD}/suites/Makefile.suites
+        echo "TE_BS_SUITES=$TE_BS_SUITES" \
+            >"${TE_BUILD}/suites/Makefile.suites"
     fi
 fi    
 
-AC_CONFIG_FILES(Makefile lib/Makefile 
-                engine/Makefile tools/Makefile agents/Makefile suites/Makefile)
+AC_CONFIG_FILES(Makefile lib/Makefile engine/Makefile tools/Makefile
+                agents/Makefile suites/Makefile)
 
 AC_OUTPUT
-
