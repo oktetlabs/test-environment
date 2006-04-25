@@ -536,12 +536,12 @@ if test -n "$BUILDER" ; then
     popd >/dev/null
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
     if test -n "${QUIET}" ; then
-        ${TE_BASE}/configure -q --prefix="${TE_INSTALL}" \
+        "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
             --with-config="${CONF_BUILDER}" >"${TE_BUILD_LOG}" || \
             exit_with_log ;
         make install >>"${TE_BUILD_LOG}" || exit_with_log ;
     else
-        ${TE_BASE}/configure -q --prefix="${TE_INSTALL}" \
+        "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
             --with-config="${CONF_BUILDER}" || exit_with_log ;
         make install || exit_with_log ;
     fi
