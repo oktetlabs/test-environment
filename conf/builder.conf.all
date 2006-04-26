@@ -49,7 +49,7 @@ TE_TA_TYPE([solaris2], [i386-pc-solaris2.11], [unix],
 
 TE_PLATFORM([x86_64-pc-solaris2.11], [],
             [-I${SOLARIS2_HOME}/sys-include], [-m64 -pthreads],
-            [-L${SOLARIS2_HOME}/lib \
+            [-L${SOLARIS2_HOME}/lib/amd64 \
              -Wl,-rpath-link,${SOLARIS2_HOME}/lib/amd64],
             [tools rpc_types conf_oid rpcxdr \
              comm_net_agent loggerta rcfpch tad])
