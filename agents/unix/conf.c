@@ -3201,7 +3201,7 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
 
     if (value == NULL)
     {
-       ERROR("A broadcast link layer address to set is not provided");
+       ERROR("A buffer for broadcast link layer address is not provided");
        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
@@ -3293,6 +3293,11 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
             ERROR("IGORV: %s: tb[IFLA_BROADCAST] is TRUE - "
                   "%s: %s", __FUNCTION__, ifname, buf);
 #endif
+        }
+        else
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+            goto on_error;
         }
         break;
     }
