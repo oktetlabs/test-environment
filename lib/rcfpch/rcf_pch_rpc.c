@@ -300,7 +300,7 @@ connect_getpid(rpcserver *rpcs)
     rc = rpc_transport_connect_rpcserver(rpcs->name, &rpcs->handle);
     if (rc != 0)
         return rc;
-
+        
     /* Call getpid() RPC to verify that the server is usable */
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -690,6 +690,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         free(rpcs);
         return rc;
     }
+    printf("Getpid OK\n"); fflush(stdout);
     
     if (rpcs->tid > 0)
         rpcs->father->ref++;
@@ -698,6 +699,8 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     list = rpcs;
 
     pthread_mutex_unlock(&lock);
+    
+    printf("RPC server is added\n"); fflush(stdout);
     
     return 0;
 }
