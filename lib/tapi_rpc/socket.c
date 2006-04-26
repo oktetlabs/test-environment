@@ -1573,7 +1573,9 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     memcpy(optval,
                            out.optval.optval_val[0].option_value_u.
                            opt_ip_opts.options.options_val,
-                           *optlen);
+                           MIN(*optlen,
+                               out.optval.optval_val[0].option_value_u.
+                               opt_ip_opts.options.options_len));
                 
                     snprintf(opt_val_str, sizeof(opt_val_str),
                              "{ options }");
