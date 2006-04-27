@@ -19,6 +19,7 @@ lib_LIBRARIES = libtools.a
 
 libtools_a_CFLAGS = -DTE_DUMMY
 WIN_SRC = te_format.c 
+libtools_a_SOURCES=$(WIN_SRC)
 
 libtools.a: $(WIN_SRC) 
 	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
