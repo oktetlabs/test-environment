@@ -63,6 +63,9 @@
 #if HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
@@ -197,18 +200,28 @@ logfork_destroy_list(list **list)
     }
 }
 
+
+/** LogFork server data */
+typedef struct logfork_data {
+    int     sockd;
+    list   *proc_list;
+} logfork_data;
+
 /**
  * Close opened socket and clear the list of process info.
  *
  * @param  sockd  socket descriptor
  */
 static void
-logfork_cleanup(list **list, int sockd)
+logfork_cleanup(void *opaque)
 {
-    if (list != NULL)
-        logfork_destroy_list(list);
-    
-    (void)close(sockd);
+    logfork_data   *data = opaque;
+
+    if (data == NULL)
+        return;
+
+    (void)close(data->sockd);
+    logfork_destroy_list(&data->proc_list);
 }
 
 
@@ -216,116 +229,127 @@ logfork_cleanup(list **list, int sockd)
 void 
 logfork_entry(void)
 {
-    struct sockaddr_in servaddr;
+    logfork_data        data = { -1, NULL };
+
+    struct sockaddr_in  servaddr;
+    socklen_t           addrlen;
     
-    int   sockd = -1;
     char *name;
     char  name_pid[LOGFORK_MAXLEN];
-    list *proc_list = NULL;
     char  port[16];
-        
-    socklen_t   addrlen = sizeof(struct sockaddr_in);
     
     udp_msg msg;
-    size_t  msg_len = sizeof(msg);
 
-    sockd = socket(PF_INET, SOCK_DGRAM, 0);
-    if (sockd < 0)
-    {
-        fprintf(stderr, "logfork_entry(): cannot create socket\n");
-        return;
-    }
+#if HAVE_PTHREAD_H
+    /* It seems, recv() is not a cancelation point on Solaris. */
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);    
 
-#if HAVE_FCNTL_H
-    /* 
-     * Try to set close-on-exec flag, but ignore failures, 
-     * since it's not critical.
-     */
-    (void)fcntl(sockd, F_SETFD, FD_CLOEXEC);
+    pthread_cleanup_push(logfork_cleanup, &data);
 #endif
 
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    servaddr.sin_port = htons(0);
-    
-    if (bind(sockd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
-    {
-        ERROR("logfork_entry(): bind() failed; errno %d", errno);
-        logfork_cleanup(&proc_list, sockd);
-        return;
-    }
-    
-    if (getsockname(sockd, (struct sockaddr *)&servaddr, &addrlen) < 0)
-    {
-        ERROR("logfork_entry(): getsockname() failed ; errno %d", errno);
-        logfork_cleanup(&proc_list, sockd);
-        return;
-    }
-    
-    sprintf(port, "%d", ntohs(servaddr.sin_port));
-    if (setenv("TE_LOG_PORT", port, 1) < 0)
-    {
-        int err = TE_OS_RC(TE_RCF_PCH, errno);
-        
-        ERROR("Failed to set TE_LOG_PORT environment variable: "
-              "error=%r", err);
-    }
+    do {
+        data.sockd = socket(PF_INET, SOCK_DGRAM, 0);
+        if (data.sockd < 0)
+        {
+            fprintf(stderr, "logfork_entry(): cannot create socket\n");
+            break;
+        }
 
-    while (1)
-    {         
-        int len;
-        
-        if ((len = recv(sockd, (char *)&msg, msg_len, 0)) <= 0)
-        {
-            WARN("logfork_entry(): recv() failed, len=%d; errno %d", 
-                 len, errno);
-            continue;
-        }
-        
-        if (len != sizeof(msg))
-        {
-            ERROR("logfork_entry(): log message length is %d instead %d", 
-                  len, sizeof(msg));
-            continue;
-        }
-        
-        /* If udp message */
-        if (!msg.is_notif)
-        {   
-            if (logfork_find_name_by_pid(&proc_list, &name, 
-                                         msg.pid, msg.tid) != 0)
-            {
-                name = "Unnamed";
-            }
-            sprintf(name_pid, "%s.%u.%u",
-                    name, (unsigned)msg.pid, (unsigned)msg.tid);
+#if HAVE_FCNTL_H
+        /* 
+         * Try to set close-on-exec flag, but ignore failures, 
+         * since it's not critical.
+         */
+        (void)fcntl(data.sockd, F_SETFD, FD_CLOEXEC);
+#endif
 
-            te_log_message(__FILE__, __LINE__,
-                           msg.__log_level, TE_LGR_ENTITY, 
-                           strdup(msg.__lgr_user), 
-                           "%s: %s", name_pid, msg.__log_msg);
-        }
-        else 
+        memset(&servaddr, 0, sizeof(servaddr));
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        servaddr.sin_port = htons(0);
+        
+        if (bind(data.sockd, CONST_SA(&servaddr), sizeof(servaddr)) < 0)
         {
-            if (logfork_find_name_by_pid(&proc_list, &name, 
-                                         msg.pid, msg.tid) == 0)
+            ERROR("logfork_entry(): bind() failed; errno %d", errno);
+            break;
+        }
+        
+        addrlen = sizeof(servaddr);
+        if (getsockname(data.sockd, SA(&servaddr), &addrlen) < 0)
+        {
+            ERROR("logfork_entry(): getsockname() failed; errno %d", errno);
+            break;
+        }
+        
+        sprintf(port, "%d", ntohs(servaddr.sin_port));
+        if (setenv("TE_LOG_PORT", port, 1) < 0)
+        {
+            int err = TE_OS_RC(TE_RCF_PCH, errno);
+            
+            ERROR("Failed to set TE_LOG_PORT environment variable: "
+                  "error=%r", err);
+        }
+
+        while (1)
+        {         
+            int len;
+            
+            if ((len = recv(data.sockd, (char *)&msg, sizeof(msg), 0)) <= 0)
             {
-                snprintf(name, LOGFORK_MAXUSER, "%s", msg.__name);
+                WARN("logfork_entry(): recv() failed, len=%d; errno %d", 
+                     len, errno);
                 continue;
             }
-
-            if (logfork_list_add(&proc_list, msg.__name, 
-                                 msg.pid, msg.tid) != 0)
+            
+            if (len != sizeof(msg))
             {
-                ERROR("logfork_entry(): out of Memory");
-                break;
+                ERROR("logfork_entry(): log message length is %d instead %d", 
+                      len, sizeof(msg));
+                continue;
             }
-        }
-        
-    } /* while(1) */
+            
+            /* If udp message */
+            if (!msg.is_notif)
+            {   
+                if (logfork_find_name_by_pid(&data.proc_list, &name, 
+                                             msg.pid, msg.tid) != 0)
+                {
+                    name = "Unnamed";
+                }
+                sprintf(name_pid, "%s.%u.%u",
+                        name, (unsigned)msg.pid, (unsigned)msg.tid);
+
+                te_log_message(__FILE__, __LINE__,
+                               msg.__log_level, TE_LGR_ENTITY, 
+                               strdup(msg.__lgr_user), 
+                               "%s: %s", name_pid, msg.__log_msg);
+            }
+            else 
+            {
+                if (logfork_find_name_by_pid(&data.proc_list, &name, 
+                                             msg.pid, msg.tid) == 0)
+                {
+                    snprintf(name, LOGFORK_MAXUSER, "%s", msg.__name);
+                    continue;
+                }
+
+                if (logfork_list_add(&data.proc_list, msg.__name, 
+                                     msg.pid, msg.tid) != 0)
+                {
+                    ERROR("logfork_entry(): out of Memory");
+                    break;
+                }
+            }
+            
+        } /* while(1) */
+
+    } while (0);
     
-    logfork_cleanup(&proc_list, sockd);
+#if HAVE_PTHREAD_H
+    pthread_cleanup_pop(!0);
+#else
+    logfork_cleanup(&data);
+#endif
 }
 
 
