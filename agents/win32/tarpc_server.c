@@ -3035,7 +3035,7 @@ default_completion_callback(DWORD error, DWORD bytes,
 
 void CALLBACK
 default_file_completion_callback(DWORD error, DWORD bytes, 
-                                LPWSAOVERLAPPED overlapped)
+                                 LPOVERLAPPED overlapped)
 {
     
     default_completion_callback(error, bytes, overlapped, 0);
@@ -3044,7 +3044,7 @@ default_file_completion_callback(DWORD error, DWORD bytes,
 /** Dummy callback */
 void CALLBACK
 empty_file_completion_callback(DWORD error, DWORD bytes, 
-                               LPWSAOVERLAPPED overlapped)
+                               LPOVERLAPPED overlapped)
 {
     UNUSED(error);
     UNUSED(bytes);
