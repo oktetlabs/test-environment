@@ -690,7 +690,6 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         free(rpcs);
         return rc;
     }
-    printf("Getpid OK\n"); fflush(stdout);
     
     if (rpcs->tid > 0)
         rpcs->father->ref++;
@@ -699,8 +698,6 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     list = rpcs;
 
     pthread_mutex_unlock(&lock);
-    
-    printf("RPC server is added\n"); fflush(stdout);
     
     return 0;
 }
