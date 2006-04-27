@@ -7,13 +7,15 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) -g
 AM_CFLAGS = @TE_CFLAGS@ 
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
-MY_LDADD=-ltapi_rpc -ltapi_env -ltapi -lrcfrpc -lconfapi -lconf_oid \
+MY_LDADD=-ltapi_rpc -lrpc_types -ltapi_env -ltapi -lrcfrpc \
+         -lconfapi -lconf_oid \
          -lrcfapi -lrpcxdr -llogger_ten -lipc -ltools -lexpat -lpthread -lfl
 
 MY_DEPS= \
     ${TE_INSTALL}/@host@/lib/libtapi_rpc.a \
     ${TE_INSTALL}/@host@/lib/libtapi.a \
     ${TE_INSTALL}/@host@/lib/libtapi_env.a \
+    ${TE_INSTALL}/@host@/lib/librpc_types.a \
     ${TE_INSTALL}/@host@/lib/librcfrpc.a \
     ${TE_INSTALL}/@host@/lib/libconfapi.a \
     ${TE_INSTALL}/@host@/lib/libconf_oid.a \
