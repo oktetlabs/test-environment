@@ -560,8 +560,6 @@ rpc_transport_connect_rpcserver(const char *name,
         } 
     }
 
-    PRINT("Server OK %p", pipes[i].handle);
-
     pipes[i].valid = TRUE;
     ReleaseMutex(conn_mutex);
     *p_handle = i;
@@ -709,8 +707,6 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
         ReleaseMutex(conn_mutex);
         return TE_RC(TE_RCF_PCH, TE_EWIN);
     }
-    
-    PRINT("Connect pipe OK %p", pipes[i].handle);
     
     pipes[i].valid = TRUE;
     ReleaseMutex(conn_mutex);
