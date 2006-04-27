@@ -59,6 +59,12 @@ int a = IP_MTU;],
 #endif
 ])
 
+dnl
+dnl Check for 'sa_restorer' member in 'struct sigaction'.
+dnl
+AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],
+                 [#include <signal.h>])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
