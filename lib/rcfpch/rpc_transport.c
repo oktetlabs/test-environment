@@ -1076,8 +1076,9 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
     {
         pipes[handle].wait = FALSE;
         CancelIo(pipes[handle].in_handle);
-        SleepEx(1, TRUE);
+        SleepEx(10, TRUE);
     }
+    again:
     ResetEvent(pipes[handle].ov.hEvent);
     
     if (!ReadFile(pipes[handle].in_handle, buf, *p_len, &num, 
@@ -1115,8 +1116,8 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
         
         if (num == 0)
         {
-            ERROR("0 bytes are received\n");
-            return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
+            ERROR("0 bytes are received");
+            goto again;
         }
     } 
 
