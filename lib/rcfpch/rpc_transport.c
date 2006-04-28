@@ -427,14 +427,19 @@ rpc_transport_send_pname(const char *pname)
         if (GetLastError() != ERROR_PIPE_BUSY)
         {
             ERROR("CreateFile() failed: %d", GetLastError());
-            ReleaseMutex(conn_mutex);
             return TE_RC(TE_RCF_PCH, TE_EWIN);
         }
         SleepEx(10, FALSE);
     }
+
+    if (handle == INVALID_HANDLE_VALUE)
+    {
+        ERROR("Connect timeout on auxiliary file");
+        return TE_RC(TE_RCF_PCH, TE_EWIN);
+    }
     
-   if (!SetNamedPipeHandleState(handle, &mode, NULL, NULL))
-   {
+    if (!SetNamedPipeHandleState(handle, &mode, NULL, NULL))
+    {
         ERROR("SetNamedPipeHandleState() failed: %d", GetLastError());
         CloseHandle(handle);
         return TE_RC(TE_RCF_PCH, TE_EWIN);
@@ -1105,6 +1110,12 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
         {
             ERROR("Failed to read from the pipe: %d", GetLastError());
             pipes[handle].read = FALSE;
+            return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
+        }
+        
+        if (num == 0)
+        {
+            ERROR("0 bytes are received\n");
             return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
         }
     } 
