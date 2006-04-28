@@ -8,7 +8,7 @@ TE_TOOLS([rgt rpcgen trc tce millicom])
 # Host platform
 #
 TE_PLATFORM([], [], [], [], [],
-            [tools rpc_types conf_oid rpcxdr asn ndn \
+            [tools conf_oid rpcxdr rpc_types asn ndn \
              comm_net_agent loggerta rcfpch tce tad tad_dummy \
              iscsi_unh_target \
              ipc bsapi loggerten rcfapi confapi comm_net_engine rcfunix \
@@ -38,7 +38,7 @@ TE_TA_TYPE([linux64_lite], [], [unix], [--with-tad=tad_dummy], [], [], [],
 # i386 Linux platform
 #
 TE_PLATFORM([i386-linux], [], [], [], [],
-            [tools rpc_types comm_net_agent loggerta conf_oid rpcxdr rcfpch \
+            [tools comm_net_agent loggerta conf_oid rpcxdr rpc_types rcfpch \
              asn ndn tad iscsi_unh_target])
 
 TE_LIB_PARMS([tad], [i386-linux], [],
@@ -58,7 +58,7 @@ TE_TA_TYPE([linux], [i386-linux], [unix],
 TE_PLATFORM([i386-pc-solaris2.11], [], 
             [-I${SOLARIS2_HOME}/sys-include], [-pthreads],
             [-L${SOLARIS2_HOME}/lib],
-            [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
+            [tools loggerta comm_net_agent conf_oid rpcxdr rpc_types rcfpch tad])
 
 TE_TA_TYPE([solaris2], [i386-pc-solaris2.11], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent])
@@ -68,7 +68,7 @@ TE_PLATFORM([x86_64-pc-solaris2.11], [],
             [-I${SOLARIS2_HOME}/sys-include], [-m64 -pthreads],
             [-L${SOLARIS2_HOME}/lib/amd64 \
              -Wl,-rpath-link,${SOLARIS2_HOME}/lib/amd64],
-            [tools rpc_types conf_oid rpcxdr \
+            [tools conf_oid rpcxdr rpc_types \
              comm_net_agent loggerta rcfpch tad])
 
 TE_TA_TYPE([solaris2_64], [x86_64-pc-solaris2.11], [unix],
@@ -80,7 +80,7 @@ TE_TA_TYPE([solaris2_64], [x86_64-pc-solaris2.11], [unix],
 #
 TE_PLATFORM([i386-pc-freebsd6], [],
             [-I${FREEBSD6_HOME}/sys-include], [], [-L${FREEBSD6_HOME}/lib],
-            [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
+            [tools loggerta comm_net_agent conf_oid rpcxdr rpc_types rcfpch tad])
 
 TE_TA_TYPE([freebsd6], [i386-pc-freebsd6], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent])
@@ -90,7 +90,7 @@ TE_TA_TYPE([freebsd6], [i386-pc-freebsd6], [unix],
 #
 TE_PLATFORM([i386-pc-netbsdelf], [],
             [-I${NETBSD_HOME}/sys-include], [], [-L${NETBSD_HOME}/lib],
-            [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
+            [tools loggerta comm_net_agent conf_oid rpcxdr rpc_types rcfpch tad])
 
 TE_TA_TYPE([netbsd], [i386-pc-netbsdelf], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent])
@@ -102,7 +102,7 @@ TE_PLATFORM([i686-pc-cygwin], [],
             [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api -D__CYGWIN__],
             [],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
-            [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
+            [tools loggerta comm_net_agent conf_oid rpcxdr rpc_types rcfpch tad])
 
 TE_TA_TYPE([win32], [i686-pc-cygwin], [],
            [--with-rcf-rpc], [], [], [], [ws2_32 comm_net_agent])

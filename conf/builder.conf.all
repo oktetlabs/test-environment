@@ -8,7 +8,7 @@ TE_TOOLS([rgt rpcgen trc tce millicom])
 # Host platform
 #
 TE_PLATFORM([], [], [], [], [],
-            [tools rpc_types conf_oid rpcxdr asn ndn \
+            [tools conf_oid rpcxdr rpc_types asn ndn \
              comm_net_agent loggerta rcfpch tce tad tad_dummy \
              iscsi_unh_target \
              ipc bsapi loggerten rcfapi confapi comm_net_engine rcfunix \

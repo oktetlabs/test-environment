@@ -5,7 +5,7 @@
 TE_TOOLS([rgt trc tce])
 
 TE_PLATFORM([], [], [], [], [],
-            [tools rpc_types conf_oid rpcxdr asn ndn \
+            [tools conf_oid rpcxdr rpc_types asn ndn \
              comm_net_agent loggerta rcfpch tce tad \
              iscsi_unh_target \
              ipc bsapi loggerten rcfapi confapi comm_net_engine rcfunix \
