@@ -32,4 +32,5 @@ EXTRA_DIST = \
 	cs_config.xsd \
 	tester_config.xsd \
 	test_package.xsd \
-	tester_defs.xsd
+	tester_defs.xsd \
+	trc_db.xsd
