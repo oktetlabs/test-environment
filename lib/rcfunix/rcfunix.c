@@ -122,22 +122,23 @@
 
 /** UNIX Test Agent descriptor */
 typedef struct unix_ta {
-    char     ta_name[RCF_MAX_NAME];   /**< Test agent name */
-    char     ta_type[RCF_MAX_NAME];   /**< Test Agent type */
-    char     host[RCF_MAX_NAME];      /**< Test Agent host */
-    char     port[RCF_MAX_NAME];      /**< TCP port */
-    char     exec_name[RCF_MAX_PATH]; /**< Name of the started file */
-    char     key[RCF_MAX_PATH];       /**< Private ssh key file */
-    te_bool  sudo;                    /**< Manipulate process using sudo */
-    te_bool  notcopy;                 /**< Do not copy TA image to remote
-                                           host */
-    te_bool  is_local;                /**< TA is started on the local PC */
-    uint32_t pid;                     /**< TA pid */
-    int     *flags;                   /**< Flags */
-    pid_t    start_pid;               /**< PID of the SSH process which
-                                           started the agent */
+    char    ta_name[RCF_MAX_NAME];      /**< Test agent name */
+    char    ta_type[RCF_MAX_NAME];      /**< Test Agent type */
+    char    host[RCF_MAX_NAME];         /**< Test Agent host */
+    char    port[RCF_MAX_NAME];         /**< TCP port */
+    char    exec_name[RCF_MAX_PATH];    /**< Name of the started file */
+    char    key[RCF_MAX_PATH];          /**< Private ssh key file */
+
+    te_bool sudo;       /**< Manipulate process using sudo */
+    te_bool notcopy;    /**< Do not copy TA image to remote host */
+    te_bool is_local;   /**< TA is started on the local PC */
+
+    uint32_t        pid;        /**< TA pid */
+    unsigned int   *flags;      /**< Flags */
+    pid_t           start_pid;  /**< PID of the SSH process which
+                                     started the agent */
     
-    struct rcf_net_connection *conn;  /**< Connection handle */
+    struct rcf_net_connection  *conn;   /**< Connection handle */
 } unix_ta;
 
 /**
@@ -149,22 +150,22 @@ typedef struct unix_ta {
  * @return Status code.
  * @return TE_ETIMEDOUT    Command timed out
  */   
-static int
+static te_errno
 system_with_timeout(const char *cmd, int timeout)
 {
     pid_t           pid;
     int             fd;
     char            buf[64] = { 0, };
-    int             rc;
+    te_errno        rc;
     int             status;
     unsigned int    waitpid_tries = 0;
 
     pid = te_shell_cmd_inline(cmd, -1, NULL, &fd);
     if (pid < 0)
     {
-        rc = errno;
+        rc = TE_OS_RC(TE_RCF_UNIX, errno);
         ERROR("te_shell_cmd() for the command <%s> failed", cmd);
-        return TE_OS_RC(TE_RCF_UNIX, rc);
+        return rc;
     }
     
     while (1)
@@ -241,42 +242,43 @@ system_with_timeout(const char *cmd, int timeout)
  * @param handle        location for TA handle
  * @param flags         location for TA flags
  *
- * @return error code
+ * @return Error code.
  */
-int
-rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
-              rcf_talib_handle *handle, int *flags)
+te_errno
+rcfunix_start(const char *ta_name, const char *ta_type,
+              const char *conf_str, rcf_talib_handle *handle,
+              unsigned int *flags)
 {
     static unsigned int seqno = 0;
 
-    int      rc;
-    unix_ta *ta;
-    char    *token;
-    char     path[RCF_MAX_PATH];
-    char     cmd[RCFUNIX_SHELL_CMD_MAX];
-    char    *installdir;
-    char    *tmp;
-    char    *dup;
-    char    *shell;
+    te_errno    rc;
+    unix_ta    *ta;
+    char       *token;
+    char        path[RCF_MAX_PATH];
+    char        cmd[RCFUNIX_SHELL_CMD_MAX];
+    char       *installdir;
+    char       *tmp;
+    char       *dup;
+    char       *shell;
 
     RING("Starting TA '%s' type '%s' conf_str '%s'",
          ta_name, ta_type, conf_str);
 
 /** Get the next token from configuration string */
 #define GET_TOKEN \
-    do {                                \
-        token = conf_str;               \
-        if (conf_str != NULL)           \
-        {                               \
-            tmp = index(conf_str, ':'); \
-            if (tmp == NULL)            \
-                conf_str = NULL;        \
-            else                        \
-            {                           \
-                *tmp = 0;               \
-                conf_str = tmp + 1;     \
-            }                           \
-        }                               \
+    do {                            \
+        token = dup;                \
+        if (dup != NULL)            \
+        {                           \
+            tmp = index(dup, ':');  \
+            if (tmp == NULL)        \
+                dup = NULL;         \
+            else                    \
+            {                       \
+                *tmp = 0;           \
+                dup = tmp + 1;      \
+            }                       \
+        }                           \
     } while (FALSE)
 
 
@@ -328,12 +330,11 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
 
     VERB("Executable name '%s'", ta->exec_name);
 
-    if ((conf_str = strdup(conf_str)) == NULL)
+    if ((dup = strdup(conf_str)) == NULL)
     {
         ERROR("Failed to duplicate string '%s'", conf_str);
         return TE_ENOMEM;
     }
-    dup = conf_str;
 
     GET_TOKEN;
     if (token == NULL)
@@ -552,15 +553,14 @@ bad_confstr:
  *                      pointer in the case of TA restart
  * @param parms         library-specific parameters
  *
- * @return error code 
+ * @return Error code.
  */
-int
-rcfunix_finish(rcf_talib_handle handle, char *parms)
+te_errno
+rcfunix_finish(rcf_talib_handle handle, const char *parms)
 {
-    unix_ta *ta = (unix_ta *)handle;
-    int      rc;
-
-    char  cmd[RCFUNIX_SHELL_CMD_MAX];
+    unix_ta    *ta = (unix_ta *)handle;
+    te_errno    rc;
+    char        cmd[RCFUNIX_SHELL_CMD_MAX];
     
     (void)parms;
 
@@ -658,9 +658,9 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
  *                      descriptor (for Test Agents supporting listening
  *                      mode) (IN/OUT)
  *
- * @return error code
+ * @return Error code.
  */
-int
+te_errno
 rcfunix_close(rcf_talib_handle handle, fd_set *select_set)
 {
     return rcf_net_engine_close(&(((unix_ta *)handle)->conn), select_set);
@@ -681,17 +681,17 @@ rcfunix_close(rcf_talib_handle handle, fd_set *select_set)
  *                      polling mode only)
  *                      (IN/OUT)
  *
- * @return error code
+ * @return Error code.
  */
-int
+te_errno
 rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
                 struct timeval *select_tm)
 {
-    int     rc;
-    char    buf[16];
-    char   *tmp;
-    size_t  len = 16;
-    char   *host;
+    te_errno    rc;
+    char        buf[16];
+    char       *tmp;
+    size_t      len = 16;
+    char       *host;
     
     (void)select_tm;
 
@@ -736,9 +736,9 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
  * @param data          data to be transmitted
  * @param len           data length
  *
- * @return error code
+ * @return Error code.
  */
-int
+te_errno
 rcfunix_transmit(rcf_talib_handle handle, char *data, size_t len)
 {
     return rcf_net_engine_transmit(((unix_ta *)handle)->conn, data, len);
@@ -771,7 +771,7 @@ rcfunix_is_ready(rcf_talib_handle handle)
  *                      end marker (is set only if binary attachment
  *                      presents)
  *
- * @return error code
+ * @return Error code.
  * @retval 0            success
  *
  * @retval TE_ESMALLBUF Buffer is too small for the command. The part
@@ -788,7 +788,7 @@ rcfunix_is_ready(rcf_talib_handle handle)
  *
  * @retval other        OS errno
  */
-int
+te_errno
 rcfunix_receive(rcf_talib_handle handle, char *buf, size_t *len, char **pba)
 {
     return rcf_net_engine_receive(((unix_ta *)handle)->conn, buf, len, pba);

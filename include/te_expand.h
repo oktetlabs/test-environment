@@ -196,7 +196,7 @@ xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
         char *result = NULL;
         int   rc;
 
-        rc = cfg_expand_env_vars(value, &result);
+        rc = cfg_expand_env_vars((const char *)value, &result);
         if (rc == 0)
         {
             xmlFree(value);
@@ -210,7 +210,7 @@ xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
             value = NULL;
         }
     }
-    return value;
+    return (char *)value;
 }
 
 #endif /* !__TE_EXPAND_H__ */

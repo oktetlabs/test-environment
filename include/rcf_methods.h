@@ -74,11 +74,13 @@ typedef void *rcf_talib_handle;
  * @param flags         IN/OUT location of TA flags;
  *                      these location is shared between RCF and library
  *
- * @return error code 
+ * @return Error code.
  */
-typedef int (* rcf_talib_start)(char *ta_name, char *ta_type, 
-                                char *conf_str, rcf_talib_handle *handle,
-                                int *flags);
+typedef te_errno (* rcf_talib_start)(const char       *ta_name,
+                                     const char       *ta_type, 
+                                     const char       *conf_str,
+                                     rcf_talib_handle *handle,
+                                     unsigned int     *flags);
 
 /**
  * Kill all processes related to TA on the station where it is run.
@@ -89,9 +91,10 @@ typedef int (* rcf_talib_start)(char *ta_name, char *ta_type,
  *                      pointer in the case of TA restart
  * @param parms         library-specific parameters
  *
- * @return error code 
+ * @return Error code.
  */
-typedef int (* rcf_talib_finish)(rcf_talib_handle handle, char *parms);
+typedef te_errno (* rcf_talib_finish)(rcf_talib_handle  handle,
+                                      const char       *parms);
 
 /**
  * Establish connection with the Test Agent. Note that it's not necessary
@@ -108,11 +111,11 @@ typedef int (* rcf_talib_finish)(rcf_talib_handle handle, char *parms);
  *                      polling mode only)
  *                      (IN/OUT)
  *
- * @return error code 
+ * @return Error code.
  */
-typedef int (* rcf_talib_connect)(rcf_talib_handle handle, 
-                                  fd_set *select_set, 
-                                  struct timeval *select_tm);
+typedef te_errno (* rcf_talib_connect)(rcf_talib_handle  handle, 
+                                       fd_set           *select_set, 
+                                       struct timeval   *select_tm);
 
 /**
  * Transmit data to the Test Agent.
@@ -121,10 +124,10 @@ typedef int (* rcf_talib_connect)(rcf_talib_handle handle,
  * @param data          data to be transmitted
  * @param len           data length
  *
- * @return error code 
+ * @return Error code.
  */
-typedef int (* rcf_talib_transmit)(rcf_talib_handle handle, 
-                                   char *data, size_t len);
+typedef te_errno (* rcf_talib_transmit)(rcf_talib_handle handle, 
+                                        const void *data, size_t len);
  
 /**
  * Check pending data on the Test Agent connection.
@@ -148,7 +151,7 @@ typedef te_bool (* rcf_talib_is_ready)(rcf_talib_handle handle);
  *                      end marker (is set only if binary attachment
  *                      presents)
  *
- * @return error code
+ * @return Error code.
  * @retval 0            success
  *
  * @retval TE_ESMALLBUF Buffer is too small for the command. The part
@@ -165,8 +168,8 @@ typedef te_bool (* rcf_talib_is_ready)(rcf_talib_handle handle);
  *
  * @retval other        OS errno
  */
-typedef int (* rcf_talib_receive)(rcf_talib_handle handle, 
-                                  char *buf, size_t *len, char **pba);
+typedef te_errno (* rcf_talib_receive)(rcf_talib_handle handle, 
+                                       char *buf, size_t *len, char **pba);
 
 /**
  * Close interactions with TA.
@@ -176,10 +179,10 @@ typedef int (* rcf_talib_receive)(rcf_talib_handle handle,
  *                      descriptor (for Test Agents supporting listening
  *                      mode) (IN/OUT)
  *
- * @return error code 
+ * @return Error code.
  */
-typedef int (* rcf_talib_close)(rcf_talib_handle handle,
-                                fd_set *select_set);
+typedef te_errno (* rcf_talib_close)(rcf_talib_handle  handle,
+                                     fd_set           *select_set);
 
 #ifdef __cplusplus
 }
