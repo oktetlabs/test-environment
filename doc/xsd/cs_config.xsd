@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsd:schema version="$Id: $"
+<xsd:schema version="$Id$"
   xml:lang="en"
   xmlns:xs="http://www.w3.org/2001/XMLSchema"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -208,6 +208,7 @@
                     <xs:element ref="set"/>
                     <xs:element ref="delete"/>
                     <xs:element ref="reboot"/>
+                    <xs:element ref="history"/>
                 </xs:choice>
             </xs:sequence>
         </xs:complexType>
