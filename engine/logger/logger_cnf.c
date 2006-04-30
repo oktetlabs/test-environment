@@ -31,9 +31,6 @@
 
 #include "logger_internal.h"
 
-#ifndef UNUSED
-#define UNUSED(_var)    (void)(_var)
-#endif
 
 /* TA single linked list */
 extern ta_inst *ta_list;
@@ -42,15 +39,18 @@ extern ta_inst *ta_list;
 /**
  * User call back called when an opening tag has been processed.
  *
- * @param  name  Element name
- * @param  ctxt  XML parser context
+ * @param ctx       XML parser context
+ * @param xml_name  Element name
+ * @param xml_atts  Array with element attributes
  */
 static void
-startElementLGR(void *ctx ATTRIBUTE_UNUSED,
-                const xmlChar *name,
-                const xmlChar **atts)
+startElementLGR(void           *ctx,
+                const xmlChar  *xml_name,
+                const xmlChar **xml_atts)
 {
-    ta_inst *tmp_el;
+    const char  *name = (const char *)xml_name;
+    const char **atts = (const char **)xml_atts;
+    ta_inst     *tmp_el;
 
     UNUSED(ctx);
 
