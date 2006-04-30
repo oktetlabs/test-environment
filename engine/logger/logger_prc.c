@@ -4,7 +4,7 @@
  * TEN side Logger library. 
  *
  *  
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@
  * MA  02111-1307  USA
  *
  *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
  * $Id$
@@ -37,7 +38,6 @@
 #if HAVE_FCNTL_H
 #include <fcntl.h> 
 #endif
-
 #if HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
@@ -55,10 +55,8 @@
 /** Initial size of the log message buffer */
 #define LGR_PRC_MSG_BUF_INIT    0x100
 
-#ifdef HAVE_PTHREAD_H
 /** Mutual exclusion execution lock */
 static pthread_mutex_t  lgr_lock = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
 /**
  * Logging output interface.
@@ -80,10 +78,7 @@ lgr_log_message(const char *file, unsigned int line,
 {
     va_list ap;
 
-#ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&lgr_lock);
-#endif
-    
 
     if (te_log_message_tx == NULL)
     {
@@ -100,9 +95,7 @@ lgr_log_message(const char *file, unsigned int line,
     log_message_va(&lgr_out, file, line, level, entity, user, fmt, ap);
     va_end(ap);
 
-#ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&lgr_lock);
-#endif
 }
 
 /** Logging backend */
