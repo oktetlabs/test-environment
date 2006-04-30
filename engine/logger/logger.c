@@ -4,8 +4,8 @@
  * Logger executable module.
  *
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -23,6 +23,7 @@
  * MA  02111-1307  USA
  *
  *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
  * $Id$
@@ -62,7 +63,6 @@
 #define FREAD(_fd, _buf, _len) \
     fread((_buf), sizeof(uint8_t), (_len), (_fd))
 
-#define SET_SEC(_poll)  ((_poll) / 1000000)
 #define SET_MSEC(_poll) ((_poll) % 1000000)
 
 
@@ -74,9 +74,6 @@ enum {
 
 
 DEFINE_LGR_ENTITY("Logger");
-
-/* TEN entities linked list */
-te_inst *te_list = NULL;
 
 /* TA single linked list */
 ta_inst *ta_list = NULL;
@@ -102,40 +99,6 @@ static const char          *cfg_file = NULL;
 static struct ipc_server   *logger_ten_srv = NULL;
 
 
-#if 0
-/**
- * Check if user incoming message should be processed.
- *
- * @param user_name  User name.
- * @param filters    Filters location
- *
- * @retval  LGR_INCLUDE  Message should be processed.
- * @retval  LGR_EXCLUDE  Message should not be processed.
- */
-static int
-lgr_message_filter(const char *user_name, re_fltr *filters)
-{
-    re_fltr    *tmp_fltr;
-    regmatch_t  pmatch[1];
-    int         lgr_type = LGR_INCLUDE;
-
-    tmp_fltr = filters;
-    while (tmp_fltr->next != tmp_fltr)
-    {
-        size_t str_len = strlen(user_name);
-
-        if (regexec(tmp_fltr->preg, user_name, 1, pmatch, 0) == 0)
-        {
-           if ((str_len - (pmatch->rm_eo - pmatch->rm_so) == 0))
-               lgr_type = tmp_fltr->type;
-        }
-        tmp_fltr = tmp_fltr->next;
-    }
-    return lgr_type;
-}
-#endif
-
-
 /**
  * Register the log message in the raw log file.
  *
@@ -145,7 +108,6 @@ lgr_message_filter(const char *user_name, re_fltr *filters)
 void
 lgr_register_message(const void *buf, size_t len)
 {
-    /* MUTual  EXclusion device */
     static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
     pthread_mutex_lock(&mutex);
@@ -245,38 +207,7 @@ te_handler(void)
         }
         else
         {
-#if 0
-            uint32_t          log_flag = LGR_INCLUDE;
-            struct te_inst   *te_el;
-            char              tmp_name[TE_LOG_FIELD_MAX];
-            uint32_t          len = buf[0]; /* BUG here */
-
-            memcpy(tmp_name, buf, len);
-            tmp_name[len] = 0;
-
-            te_el = te_list;
-            while (te_el != NULL)
-            {
-                if (!strcmp(te_el->entity, tmp_name))
-                {
-                    char *tmp_pnt;
-
-                    /* BUG here */
-                    len = sizeof(te_log_nfl) + buf[0] + 
-                          TE_LOG_MSG_COMMON_HDR_SZ;
-                    tmp_pnt = buf + len + 1;
-                    len = buf[len];
-                    memcpy(tmp_name, tmp_pnt, len);
-                    log_flag = lgr_message_filter(tmp_name,
-                                                  &te_el->filters);
-                    break;
-                }
-                te_el = te_el->next;
-            }
-
-            if (log_flag == LGR_INCLUDE)
-#endif
-                lgr_register_message(buf, len);
+            lgr_register_message(buf, len);
         }
     } /* end of forever loop */
 
@@ -422,7 +353,7 @@ ta_handler(void *ta)
             gettimeofday(&now, NULL);
 
             /* Calculate moment until we should wait before next get log */
-            poll_ts.tv_sec  += SET_SEC (polling);
+            poll_ts.tv_sec  += TE_US2SEC(polling);
             poll_ts.tv_usec += SET_MSEC(polling);
             if (poll_ts.tv_usec >= 1000000)
             {
@@ -947,8 +878,6 @@ main(int argc, const char *argv[])
             memcpy(ta_el->agent, aux_str, tmp_len);
             str_len += tmp_len;
 
-            ta_el->filters.next = ta_el->filters.last = &ta_el->filters;
-
             res = rcf_ta_name2type(ta_el->agent, ta_el->type);
             if (res != 0)
             {
@@ -1021,17 +950,7 @@ exit:
         }
 #endif
 
-        LGR_FREE_FLTR_LIST(&ta_el->filters);
         free(ta_el);
-    }
-    while (te_list != NULL)
-    {
-        te_inst *te_el;
-
-        te_el = te_list;
-        te_list = te_el->next;
-        LGR_FREE_FLTR_LIST(&te_el->filters);
-        free(te_el);
     }
 
     if ((pid_f != NULL) && (fclose(pid_f) != 0))

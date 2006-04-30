@@ -38,65 +38,6 @@
 /* TA single linked list */
 extern ta_inst *ta_list;
 
-/* TEN entities single linked list */
-extern te_inst *te_list;
-
-
-/**
- * Insert filter appropriate type for separate entity.
- *
- * @param entity   Entity name
- * @param rexp     Regular expression for filter
- * @param type     Inclusion/exclusion of logged messages
- *                 appropriate to the filter
- */
-static void
-lgr_insert_filter(const char *entity, const char* rexp, uint32_t type)
-{
-    ta_inst *ta_el;
-    te_inst *te_el;
-    regex_t *cmp_buffer;
-
-    cmp_buffer = (regex_t *)malloc(sizeof(regex_t));
-    memset(cmp_buffer, 0, sizeof(regex_t));
-
-    if (regcomp(cmp_buffer, rexp, REG_EXTENDED) != 0)
-    {
-        ERROR("RegExpr compilation failure\n");
-        return;
-    }
-
-    ta_el = ta_list;
-    while(ta_el != NULL)
-    {
-        if (!strcmp(ta_el->agent, entity))
-        {
-            LGR_PUT_FLTR(&ta_el->filters, type, cmp_buffer);
-            return;
-        }
-        ta_el = ta_el->next;
-    }
-
-    te_el = te_list;
-    while(te_el != NULL)
-    {
-        if (!strcmp(te_el->entity, entity))
-        {
-            LGR_PUT_FLTR(&te_el->filters, type, cmp_buffer);
-            return;
-        }
-        te_el = te_el->next;
-    }
-
-    te_el = (te_inst *)malloc(sizeof(struct te_inst));
-    memset(te_el, 0, sizeof(struct te_inst));
-    te_el->next = te_list;
-    te_list = te_el;
-    strcpy(te_el->entity, entity);
-    te_el->filters.next = te_el->filters.last = &te_el->filters;
-    LGR_PUT_FLTR(&te_el->filters, type, cmp_buffer);
-}
-
 
 /**
  * User call back called when an opening tag has been processed.
@@ -203,24 +144,6 @@ startElementLGR(void *ctx ATTRIBUTE_UNUSED,
                 tmp_el = tmp_el->next;
             }
         }
-    }
-    else if (!strcmp(name, "include") &&
-             (atts != NULL) &&
-             (atts[0] != NULL) &&
-             (atts[1] != NULL) &&
-             (atts[2] != NULL) &&
-             (atts[3] != NULL))
-    {
-        lgr_insert_filter(atts[1], atts[3], LGR_INCLUDE);
-    }
-    else if (!strcmp(name, "exclude") &&
-             (atts != NULL) &&
-             (atts[0] != NULL) &&
-             (atts[1] != NULL) &&
-             (atts[2] != NULL) &&
-             (atts[3] != NULL))
-    {
-        lgr_insert_filter(atts[1], atts[3], LGR_EXCLUDE);
     }
 }
 

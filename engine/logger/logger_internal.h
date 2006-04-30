@@ -101,45 +101,6 @@ extern "C" {
 #define LGR_TANAMES_LEN   1024
 
 
-#define LGR_PUT_FLTR(_hdr, _ftype, _preg) \
-    do {                                                            \
-            re_fltr *tmp_el =                                       \
-                (struct re_fltr *)malloc(sizeof(struct re_fltr));   \
-            (_hdr)->last->next = tmp_el;                            \
-            (_hdr)->last = tmp_el;                                  \
-            tmp_el->type = (_ftype);                                \
-            tmp_el->preg = (_preg);                                 \
-            tmp_el->next = (_hdr);                                  \
-    } while (0)
-
-#define LGR_FREE_FLTR_LIST(_hdr) \
-    do {                                        \
-        while ((_hdr)->next != (_hdr))          \
-        {                                       \
-            (_hdr)->last = (_hdr)->next;        \
-            (_hdr)->next = (_hdr)->next->next;  \
-            regfree((_hdr)->last->preg);        \
-            free((_hdr)->last);                 \
-        }                                       \
-        (_hdr)->next = (_hdr);                  \
-        (_hdr)->last = (_hdr);                  \
-    } while (0)
-
-
-/** Filter type */
-enum flt_type {
-    LGR_EXCLUDE = 0,    /**< Exclude filter */
-    LGR_INCLUDE         /**< Include filter */
-};
-
-/** Filter list should be in normal order not inverse */
-typedef struct re_fltr {
-    struct re_fltr *next;   /**< Pointer to the next structure */
-    struct re_fltr *last;
-    uint32_t        type;
-    regex_t        *preg;   /**< Pattern buffer storage area */
-} re_fltr;
-
 /** Node of the TA single linked list */
 typedef struct ta_inst {
     struct ta_inst *next;                /**< Pointer to the next
@@ -154,19 +115,7 @@ typedef struct ta_inst {
     pthread_t       thread;              /**< Thread identifier */
     int             flush_log;           /**< 0 - normal processing;
                                               1 - flush TA local log */
-    struct re_fltr  filters;             /**< Filters formed within Logger
-                                              configuration file parsing */
 } ta_inst;
-
-
-/** Node of the TEN entities single linked list */
-typedef struct te_inst {
-    struct te_inst *next;                 /**< Pointer to the next 
-                                               structure */
-    char            entity[RCF_MAX_NAME]; /**< TEN entity name */
-    struct re_fltr  filters;              /**< Filters formed within Logger
-                                               configuration file parsing */
-} te_inst;
 
 
 /**
