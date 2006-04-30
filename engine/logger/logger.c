@@ -100,6 +100,25 @@ static struct ipc_server   *logger_ten_srv = NULL;
 
 
 /**
+ * Get NFL from buffer in TE raw log format.
+ *
+ * @param buf   Pointer to the buffer
+ *
+ * @return NFL value in host byte order
+ */
+static inline te_log_nfl
+te_log_raw_get_nfl(const void *buf)
+{
+    te_log_nfl  nfl;
+    
+    memcpy(&nfl, buf, sizeof(nfl));
+#if HAVE_ASSERT_H
+    assert(sizeof(nfl) == 2);
+#endif
+    return ntohs(nfl);
+}
+
+/**
  * Register the log message in the raw log file.
  *
  * @param buf       Log message location
@@ -131,9 +150,9 @@ te_handler(void)
     struct ipc_server          *srv = logger_ten_srv;
     struct ipc_server_client   *ipcsc_p;
     size_t                      buf_len;
-    uint8_t                    *buf;
+    void                       *buf;
     size_t                      len;
-    int                         rc;
+    te_errno                    rc;
 
 
     buf_len = LGR_MSG_BUF_MIN;
@@ -179,7 +198,8 @@ te_handler(void)
 
             /* Receive the rest of the message */
             len = buf_len - received;
-            rc = ipc_receive_message(srv, buf + received, &len, &ipcsc_p);
+            rc = ipc_receive_message(srv, (uint8_t *)buf + received,
+                                     &len, &ipcsc_p);
             if (rc != 0)
             {
                 ERROR("Failed to receive the rest of the message "
@@ -197,8 +217,8 @@ te_handler(void)
             len = total;
         }
 
-        if (strncmp((buf + sizeof(te_log_nfl)), LGR_SHUTDOWN,
-                    *(te_log_nfl *)buf) == 0)
+        if (strncmp((const char *)((uint8_t *)buf + sizeof(te_log_nfl)),
+                    LGR_SHUTDOWN, te_log_raw_get_nfl(buf)) == 0)
         {
             RING("Logger shutdown ...\n");
             lgr_flags |= LOGGER_SHUTDOWN;
@@ -247,25 +267,6 @@ ta_flush_done(struct ipc_server *srv)
     }
 
     return 0;
-}
-
-/**
- * Get NFL from buffer in TE raw log format.
- *
- * @param buf   Pointer to the buffer
- *
- * @return NFL value in host byte order
- */
-static inline te_log_nfl
-te_log_raw_get_nfl(const uint8_t *buf)
-{
-    te_log_nfl  nfl;
-    
-    memcpy(&nfl, buf, sizeof(nfl));
-#if HAVE_ASSERT_H
-    assert(sizeof(nfl) == 2);
-#endif
-    return ntohs(nfl);
 }
 
 
@@ -327,7 +328,7 @@ ta_handler(void *ta)
         inst->polling = LGR_TA_POLL_DEF;
 
     /* Recalculate polling timeout in microseconds */
-    polling = inst->polling * 1000;
+    polling = TE_MS2US(inst->polling);
 
     /* It not so important to poll at start up */
     gettimeofday(&poll_ts, NULL);
