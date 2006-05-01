@@ -1751,6 +1751,8 @@ TARPC_FUNC(setsockopt, {},
 )
 
 /*-------------- getsockopt() ------------------------------*/
+/* Maximal size of IP_OPTIONS argument */
+#define IPOPTS_MAX_LEN          40
 
 TARPC_FUNC(getsockopt,
 {
@@ -1770,10 +1772,11 @@ TARPC_FUNC(getsockopt,
     }
     else
     {
+        /* Assume that this size is large enough */
         char opt[sizeof(WSAPROTOCOL_INFOW)];
-        
+
         memset(opt, 0, sizeof(opt));
-        
+
         if (out->optlen.optlen_val != NULL &&
             *(out->optlen.optlen_val) == RPC_OPTLEN_AUTO)
         {
@@ -1800,11 +1803,12 @@ TARPC_FUNC(getsockopt,
                     break;
 
                 case OPT_RAW_DATA:
-                case OPT_IP_OPTS:
-                {
                     optlen_in = optlen_out = *(out->optlen.optlen_val);
                     break;
-                }
+                    
+                case OPT_IP_OPTS:
+                    optlen_in = optlen_out = IPOPTS_MAX_LEN;
+                    break;
 
                 default:
                     ERROR("incorrect option type %d is received",
