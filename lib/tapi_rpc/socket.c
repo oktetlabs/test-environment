@@ -1866,7 +1866,7 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
 
             case RPC_IPV6_NEXTHOP:
             {
-                val.opttype = OPT_IP_OPTS;
+                val.opttype = OPT_IPADDR6;
                 memcpy(val.option_value_u.opt_ipaddr6, optval,
                        MIN(optlen, sizeof(struct in6_addr)));
                 break;
