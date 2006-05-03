@@ -630,7 +630,7 @@ cfg_find_str(const char *oid, cfg_handle *handle)
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
                                            msg, msg->len, msg, &len);
-    if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
+    if ((ret_val == 0) && ((ret_val = msg->rc) == 0) && (handle != NULL))
     {
         *handle = msg->handle;
     }
