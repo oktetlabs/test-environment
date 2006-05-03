@@ -117,9 +117,16 @@ if test -e "${TE_BUILD}/builder.conf.processed" ; then
     if ! diff -q "${TE_BUILD}/builder.conf.processed" \
                  "${TE_BUILD}/builder.conf.processed.new" > /dev/null ; then 
         cd "${TE_BUILD}"
-        if test ! -e configure.ac ; then
-            rm -rf `ls | grep -v builder.conf`
+        if test -z "$TE_NO_PROMPT" ; then
+            echo "Build configuration file is changed."
+            echo "All files in build directory will be removed."
+            echo -n "Continue? (y/n) "
+            read answer
+            if ! test "$answer" = "y" ; then
+                exit 1 ;
+            fi
         fi
+        rm -rf `ls | grep -v builder.conf`
         cd "$OLDPWD"
         no_create=""
     fi

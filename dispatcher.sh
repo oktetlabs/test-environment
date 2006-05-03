@@ -54,6 +54,7 @@ Generic options:
   --no-run                      Do not run Logger, RCF, Configurator and Tester
   --no-autotool                 Do not try to perform autoconf/automake after
                                 package configure failure
+  --force                       never prompt                                
 
   --opts=<filename>             Get additional command-line options from file
 
@@ -321,6 +322,7 @@ process_opts()
             --conf-rcf=*) CONF_RCF=${1#--conf-rcf=} ;;
             --conf-rgt=*) CONF_RGT=${1#--conf-rgt=} ;;
             --conf-nut=*) DO_NUTS=yes ; CONF_NUT="${1#--conf-nut=}" ;;
+            --force) TE_NO_PROMPT=yes ;;
             
             --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
             --log-online) LOG_ONLINE=yes ;;
@@ -398,6 +400,7 @@ if test -z "$TE_BASE" -a -n "$BUILDER" ; then
 fi
 
 export TE_NO_AUTOTOOL
+export TE_NO_PROMPT
 
 for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do
     CONF_FILE="$(eval echo '$CONF_'$i)"
