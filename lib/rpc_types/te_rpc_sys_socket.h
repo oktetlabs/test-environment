@@ -437,6 +437,14 @@ typedef enum rpc_sockopt {
                                  this period */
     RPC_TCP_KEEPINTVL,      /**< Interval between keepalive probes */
     RPC_TCP_KEEPCNT,        /**< Number of keepalive probess before death */
+    
+    RPC_TCP_KEEPALIVE_THRESHOLD,        /**< Start sending keepalive probes
+                                             after this idle period in
+                                             milliseconds */
+    RPC_TCP_KEEPALIVE_ABORT_THRESHOLD,  /**< Abort TCP connection after
+                                             this keep-alive failed period
+                                             in milliseconds */
+
     RPC_TCP_INFO,
     RPC_TCP_DEFER_ACCEPT,   /**< Allows a listener to be awakened only when
                                  data arrives on the socket.*/

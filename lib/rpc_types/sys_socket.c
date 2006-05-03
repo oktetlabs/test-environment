@@ -575,6 +575,8 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(TCP_KEEPIDLE);
         RPC2STR(TCP_KEEPINTVL);
         RPC2STR(TCP_KEEPCNT);
+        RPC2STR(TCP_KEEPALIVE_THRESHOLD);
+        RPC2STR(TCP_KEEPALIVE_ABORT_THRESHOLD);
         RPC2STR(TCP_INFO);
         RPC2STR(TCP_DEFER_ACCEPT);
 
@@ -679,6 +681,8 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(TCP_KEEPIDLE);
         RPC2H_CHECK(TCP_KEEPINTVL);
         RPC2H_CHECK(TCP_KEEPCNT);
+        RPC2H_CHECK(TCP_KEEPALIVE_THRESHOLD);
+        RPC2H_CHECK(TCP_KEEPALIVE_ABORT_THRESHOLD);
         RPC2H_CHECK(TCP_INFO);
         RPC2H_CHECK(TCP_DEFER_ACCEPT);
         RPC2H_CHECK(UDP_NOCHECKSUM);
@@ -760,6 +764,8 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(TCP_KEEPIDLE);
                 H2RPC_CHECK(TCP_KEEPINTVL);
                 H2RPC_CHECK(TCP_KEEPCNT);
+                H2RPC_CHECK(TCP_KEEPALIVE_THRESHOLD);
+                H2RPC_CHECK(TCP_KEEPALIVE_ABORT_THRESHOLD);
                 H2RPC_CHECK(TCP_INFO);
                 default: return RPC_SOCKOPT_MAX;
             }
