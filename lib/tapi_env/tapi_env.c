@@ -1196,17 +1196,6 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
             const char *oid_fmt = "/agent:%s/interface:%s";
             char       *ta;
 
-            /* 
-             * It's assumed here that name of the loopback interface
-             * on the test agent is equal to 'lo'.
-             */
-            p->info.if_name = strdup(p->name);
-            if (p->info.if_name == NULL)
-            {
-                ERROR("strdup() failed");
-                return errno;
-            }
-
             /* Get name of the test agent */
             rc = node_value_get_ith_inst_name(
                      cfg_nets->nets[p->net->i_net].nodes[p->i_node].handle,
@@ -1215,6 +1204,25 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
             {
                 ERROR("Failed to get test agent name");
                 return rc;
+            }
+
+            if (cfg_find_fmt(NULL, oid_fmt, ta, "lo") == 0)
+            {
+                p->info.if_name = strdup("lo");
+            }
+            else if (cfg_find_fmt(NULL, oid_fmt, ta, "lo0") == 0)
+            {
+                p->info.if_name = strdup("lo0");
+            }
+            else
+            {
+                ERROR("Unable to get loopback interface");
+                return TE_ESRCH;
+            }
+            if (p->info.if_name == NULL)
+            {
+                ERROR("strdup() failed");
+                return te_rc_os2te(errno);
             }
 
             oid = malloc(strlen(oid_fmt) - 2 + strlen(ta) -
