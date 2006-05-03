@@ -481,6 +481,14 @@ rpc_accept(rcf_rpc_server *rpcs,
                           (addrlen == NULL) ? 0 : *addrlen);
 }
 
+
+/** Storage sufficient for any fixed-size socket option value */
+typedef union rpc_sockopt_value {
+    int                 v_int;
+    tarpc_linger        v_linger;
+    tarpc_timeval       v_tv;
+} rpc_sockopt_value;
+
 /**
  * This generic routine manipulates options associated with a socket.
  * This operation takes place on RPC server side.
