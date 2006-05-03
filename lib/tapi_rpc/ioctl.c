@@ -462,7 +462,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 int n = out.req.req_val[0].ioctl_request_u.req_ifconf.nmemb;
                 int max_addrlen = sizeof(req->ifr_addr) - SA_COMMON_LEN;
                 
-                if ((int)(n * sizeof(struct ifreq)) > 
+                if (((struct ifconf *)arg)->ifc_len != 0 &&
+                    (int)(n * sizeof(struct ifreq)) > 
                     ((struct ifconf *)arg)->ifc_len)
                 {
                     ERROR("TA returned too many interfaces from "
