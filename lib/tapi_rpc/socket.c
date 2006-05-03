@@ -1213,7 +1213,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
             case RPC_SO_BINDTODEVICE:
                 val.opttype = OPT_STRING;
                 val.option_value_u.opt_string.opt_string_len = 
-                    (roptlen == RPC_OPTLEN_AUTO)?
+                    (roptlen == RPC_OPTLEN_AUTO) ?
                     MIN(IFNAMSIZ, strlen(optval) + 1) : roptlen;
                 val.option_value_u.opt_string.opt_string_val =
                     (char *)optval;
@@ -1368,7 +1368,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 val.option_value_u.opt_ip_opts.dst_addr = 0;
                 
                 val.option_value_u.opt_ip_opts.options.options_len = 
-                    (roptlen == RPC_OPTLEN_AUTO)?
+                    (roptlen == RPC_OPTLEN_AUTO) ?
                     sizeof(struct ip_opts) : roptlen;
                 val.option_value_u.opt_ip_opts.options.options_val =
                     (uint8_t *)optval;
@@ -1762,7 +1762,7 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
 
                 val.opttype = opt->type;
                 optlen_cpy = (signed)optlen_cpy + opt->len_diff;
-                in.optlen = (opt->len_diff == 0)?
+                in.optlen = (opt->len_diff == 0) ?
                             RPC_OPTLEN_AUTO : optlen_cpy;
                         
                 switch (opt->type)
