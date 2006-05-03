@@ -491,6 +491,9 @@ extern int socklevel_rpc2h(rpc_socklevel level);
 /** Convert native socket option constants to RPC ones */
 extern rpc_socklevel socklevel_h2rpc(int level);
 
+/** Convert RPC socket option constant to its level. */
+extern rpc_socklevel rpc_sockopt2level(rpc_sockopt opt);
+
 
 /**
  * TA-independent IOCTL codes

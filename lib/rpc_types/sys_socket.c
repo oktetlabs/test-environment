@@ -482,6 +482,117 @@ send_recv_flags_h2rpc(unsigned int flags)
 }
 
 
+/** Convert RPC socket option constant to its level. */
+rpc_socklevel
+rpc_sockopt2level(rpc_sockopt opt)
+{
+    switch (opt)
+    {
+        case RPC_SO_ACCEPTCONN:
+        case RPC_SO_ACCEPTFILTER:
+        case RPC_SO_BINDTODEVICE:
+        case RPC_SO_BROADCAST:
+        case RPC_SO_DEBUG:
+        case RPC_SO_DONTROUTE:
+        case RPC_SO_ERROR:
+        case RPC_SO_KEEPALIVE:
+        case RPC_SO_LINGER:
+        case RPC_SO_OOBINLINE:
+        case RPC_SO_PRIORITY:
+        case RPC_SO_RCVBUF:
+        case RPC_SO_RCVLOWAT:
+        case RPC_SO_RCVTIMEO:
+        case RPC_SO_REUSEADDR:
+        case RPC_SO_SNDBUF:
+        case RPC_SO_SNDLOWAT:
+        case RPC_SO_UPDATE_ACCEPT_CONTEXT:
+        case RPC_SO_UPDATE_CONNECT_CONTEXT:
+        case RPC_SO_SNDTIMEO:
+        case RPC_SO_TYPE:
+        case RPC_SO_CONNECT_TIME:
+        case RPC_SO_OPENTYPE:
+        case RPC_SO_DONTLINGER:
+        case RPC_SO_CONDITIONAL_ACCEPT:
+        case RPC_SO_MAX_MSG_SIZE:
+        case RPC_SO_USELOOPBACK:
+        case RPC_SO_EXCLUSIVEADDRUSE:
+        case RPC_SO_GROUP_ID:
+        case RPC_SO_GROUP_PRIORITY:
+        case RPC_SO_PROTOCOL_INFOA:
+        case RPC_SO_PROTOCOL_INFOW:
+        case RPC_SO_DGRAM_ERRIND:
+            return RPC_SOL_SOCKET;
+
+        case RPC_IP_ADD_MEMBERSHIP:
+        case RPC_IP_DROP_MEMBERSHIP:
+        case RPC_IP_MULTICAST_IF:
+        case RPC_IP_MULTICAST_LOOP:
+        case RPC_IP_MULTICAST_TTL:
+        case RPC_IP_OPTIONS:
+        case RPC_IP_PKTINFO:
+        case RPC_IP_RECVERR:
+        case RPC_IP_RECVOPTS:
+        case RPC_IP_RECVTOS:
+        case RPC_IP_RECVTTL:
+        case RPC_IP_RETOPTS:
+        case RPC_IP_ROUTER_ALERT:
+        case RPC_IP_TOS:
+        case RPC_IP_TTL:
+        case RPC_IP_MTU:
+        case RPC_IP_MTU_DISCOVER:
+        case RPC_IP_RECEIVE_BROADCAST:
+        case RPC_IP_DONTFRAGMENT:
+            return RPC_SOL_IP;
+
+        case RPC_IPV6_UNICAST_HOPS:
+        case RPC_IPV6_MULTICAST_HOPS:
+        case RPC_IPV6_MULTICAST_IF:
+        case RPC_IPV6_ADDRFORM:
+        case RPC_IPV6_PKTINFO:
+        case RPC_IPV6_PKTOPTIONS:
+        case RPC_IPV6_CHECKSUM:
+        case RPC_IPV6_RTHDR:
+        case RPC_IPV6_AUTHHDR:
+        case RPC_IPV6_DSTOPTS:
+        case RPC_IPV6_HOPOPTS:
+        case RPC_IPV6_FLOWINFO:
+        case RPC_IPV6_HOPLIMIT:
+        case RPC_IPV6_NEXTHOP:
+        case RPC_IPV6_MULTICAST_LOOP:
+        case RPC_IPV6_ADD_MEMBERSHIP:
+        case RPC_IPV6_DROP_MEMBERSHIP:
+        case RPC_IPV6_MTU:
+        case RPC_IPV6_MTU_DISCOVER:
+        case RPC_IPV6_RECVERR:
+        case RPC_IPV6_ROUTER_ALERT:
+        case RPC_IPV6_V6ONLY:
+        case RPC_IPV6_JOIN_ANYCAST:
+        case RPC_IPV6_LEAVE_ANYCAST:
+        case RPC_IPV6_IPSEC_POLICY:
+        case RPC_IPV6_XFRM_POLICY:
+            return RPC_SOL_IPV6;
+
+        case RPC_TCP_MAXSEG:
+        case RPC_TCP_NODELAY:
+        case RPC_TCP_CORK:
+        case RPC_TCP_KEEPIDLE:
+        case RPC_TCP_KEEPINTVL:
+        case RPC_TCP_KEEPCNT:
+        case RPC_TCP_KEEPALIVE_THRESHOLD:
+        case RPC_TCP_KEEPALIVE_ABORT_THRESHOLD:
+        case RPC_TCP_INFO:
+        case RPC_TCP_DEFER_ACCEPT:
+            return RPC_SOL_TCP;
+
+        case RPC_UDP_NOCHECKSUM:
+            return RPC_SOL_UDP;
+
+        default:
+            ERROR("Conversion of unknown socket option %u to level",
+                  opt);
+            return RPC_SOL_UNKNOWN;
+    }
+}
 
 /** Convert RPC socket option to string */
 const char *
