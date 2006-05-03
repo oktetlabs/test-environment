@@ -16,6 +16,7 @@ cat <<EOF
 Usage: dispatcher.sh [<generic options>] [[<test options> tests ]...
 Generic options:
   -q                            Suppress part of output messages
+  --force                       Never prompt                                
 
   --daemon[=<PID>]              Run/use TE engine daemons
   --shutdown[=<PID>]            Shut down TE engine daemons on exit
@@ -54,7 +55,6 @@ Generic options:
   --no-run                      Do not run Logger, RCF, Configurator and Tester
   --no-autotool                 Do not try to perform autoconf/automake after
                                 package configure failure
-  --force                       never prompt                                
 
   --opts=<filename>             Get additional command-line options from file
 
