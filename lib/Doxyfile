@@ -469,8 +469,8 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = mainpage.dox confapi loggerten rcfapi rcfrpc tapi tapi_arp \
-                         tapi_bridge tapi_cli tapi_eth \
+INPUT                  = mainpage.dox confapi loggerten rcfapi rcfrpc asn tapi \
+                         tapi_arp tapi_bridge tapi_cli tapi_eth \
                          tapi_ipstack tapi_rpc tapi_snmp tapi_tad
 
 # If the value of the INPUT tag contains directories, you can use the 
