@@ -1,0 +1,28 @@
+
+/** @page asn ASN.1 library
+
+@par External documentation
+
+ITU-T Recommendation X.680
+"Information technology - Abstract Syntax Notation One (ASN.1): 
+Specification of basic notation"
+
+ITU-T Recommendation X.690
+"Information technology - ASN.1 encoding rules:
+Specification of BER, CER and DER"
+
+@par Overview
+
+This library provides full-functional API for work with ASN.1 values.
+Representation of data, storing ASN.1 value, is opaque for library users.
+One of the main features of this library is that "ASN.1 value" object
+instance contains all information, necessary for BER encoding,
+whereas ASN.1 textual representation of value is insufficient for it --
+encoding requires information about ASN.1 type definition.
+
+User API: asn_usr.h
+Internal API: asn_impl.h
+
+
+
+*/
