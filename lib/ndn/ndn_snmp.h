@@ -88,11 +88,11 @@ typedef enum {
 /** Default SNMP security model */
 #define NDN_SNMP_SEC_MODEL_DEFAULT NDN_SNMP_SEC_MODEL_V2C
 
-extern asn_type_p ndn_snmp_message;
-extern asn_type_p ndn_snmp_csap;
+extern asn_type *ndn_snmp_message;
+extern asn_type *ndn_snmp_csap;
 
-extern asn_type_p ndn_snmp_var_bind;
-extern asn_type_p ndn_snmp_var_bind_seq;
+extern asn_type *ndn_snmp_var_bind;
+extern asn_type *ndn_snmp_var_bind_seq;
 
 #if 0
 /**

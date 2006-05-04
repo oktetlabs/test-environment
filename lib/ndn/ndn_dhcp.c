@@ -61,8 +61,8 @@ static asn_type ndn_dhcpv4_options_s =
 };
 
 
-asn_type_p ndn_dhcpv4_option  = &ndn_dhcpv4_option_s;
-asn_type_p ndn_dhcpv4_options = &ndn_dhcpv4_options_s;
+asn_type *ndn_dhcpv4_option  = &ndn_dhcpv4_option_s;
+asn_type * ndn_dhcpv4_options = &ndn_dhcpv4_options_s;
 
 
 static asn_named_entry_t _ndn_dhcpv4_message_ne_array [] = 
@@ -92,7 +92,7 @@ asn_type ndn_dhcpv4_message_s =
 };
 
 
-asn_type_p ndn_dhcpv4_message = &ndn_dhcpv4_message_s;
+asn_type * ndn_dhcpv4_message = &ndn_dhcpv4_message_s;
 
 
 
@@ -128,7 +128,7 @@ asn_type ndn_dhcpv4_csap_s =
     {_ndn_dhcpv4_csap_ne_array}
 };
 
-asn_type_p ndn_dhcpv4_csap = &ndn_dhcpv4_csap_s;
+asn_type * ndn_dhcpv4_csap = &ndn_dhcpv4_csap_s;
 
 
 

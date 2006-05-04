@@ -2557,6 +2557,7 @@ asn_label_to_tag(const asn_type *type, const char *label, asn_tag_t *tag)
 /**
  * Definitions of ASN.1 base types.
  */ 
+
 const asn_type asn_base_boolean_s = 
 { "BOOLEAN",           {UNIVERSAL, 1}, BOOL,        0, {NULL} };
 const asn_type asn_base_integer_s = 

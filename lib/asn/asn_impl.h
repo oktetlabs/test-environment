@@ -36,10 +36,13 @@
 extern "C" {
 #endif
 
+/**
+ * ÅSN.1 tagging type
+ */
 typedef enum {
-    AUTOMATIC,
-    IMPLICIT,
-    EXPLICIT
+    AUTOMATIC, /**< Tags are assigned automatically */
+    IMPLICIT,  /**< Tag is not inserted for this value */ 
+    EXPLICIT   /**< Tag is explicitely specified */
 } asn_tagging_type;
 
 /**
@@ -52,19 +55,25 @@ typedef enum {
  * @retval 1 if tags are equal;
  * @retval 0 if tags are differ; 
  */
-extern int asn_tag_equal(asn_tag_t, asn_tag_t);
+extern int asn_tag_equal(asn_tag_t l, asn_tag_t r);
 
+/**
+ * Element of array, specifying named subvalue in complex ASN value. 
+ */
 typedef struct asn_named_entry_t
 {
-    char           *const name;
-    const asn_type *const type;
-    asn_tag_t             tag;
+    char           *const name; /**< Text label of subvalue */
+    const asn_type *const type; /**< ASN type of subvalue */
+    asn_tag_t             tag;  /**< Tag of subvalue */
 } asn_named_entry_t;
 
+/**
+ * Element of array, specifying named integer value in enumerated type.
+ */
 typedef struct asn_enum_entry_t
 {
-    char * const name;
-    int          value;
+    char * const name;  /**< Text label of value */
+    int          value; /**< Value itself */
 } asn_enum_entry_t;
 
 /**
@@ -107,12 +116,12 @@ struct asn_type {
  */
 struct asn_value 
 {
-    const asn_type * asn_type; /**< ASN.1 type of value. */
-    asn_tag_t        tag;      /**< ASN.1 tag of value. */
-    asn_syntax       syntax;   /**< ASN.1 syntax of value. */
+    const asn_type *asn_type; /**< ASN.1 type of value. */
+    asn_tag_t       tag;      /**< ASN.1 tag of value. */
+    asn_syntax      syntax;   /**< ASN.1 syntax of value. */
 
-    char        * name;     /**< name of value itself or field label, 
-                                 may be NULL or empty string. */
+    char           *name;     /**< Name of value itself or field label, 
+                                   may be NULL or empty string. */
 
     size_t          len; /**< 
                     length of value. semantic is depended on syntax: 
@@ -133,10 +142,13 @@ struct asn_value
                         */ 
 
     union {
-        int          integer;
-        void        *other;
-        asn_value  **array;
-    } data;
+        int          integer;   /**< for INTEGER-based syntaxes */
+        asn_value  **array;     /**< for CONSTRAINT syntaxes */
+        void        *other;     /**< Other syntaxes: octet and character
+                                     strings, long ints, etc. Pointer
+                                     is casted explicitely in internal
+                                     sources. */
+    } data;        /**< Syntax-specific data */
 
     int txt_len;   /**< Length of textual presentation of value, 
                         may be unknown, this is denoted by -1. 

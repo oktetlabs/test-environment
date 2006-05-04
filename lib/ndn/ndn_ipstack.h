@@ -94,23 +94,23 @@ typedef enum {
 extern "C" {
 #endif
 
-extern asn_type_p ndn_ip4_header;
-extern asn_type_p ndn_ip4_csap; 
+extern asn_type *ndn_ip4_header;
+extern asn_type *ndn_ip4_csap; 
 
-extern asn_type_p ndn_ip4_frag_spec;
-extern asn_type_p ndn_ip4_frag_seq;
-
-
-extern asn_type_p ndn_icmp4_message;
-extern asn_type_p ndn_icmp4_csap;
+extern asn_type *ndn_ip4_frag_spec;
+extern asn_type *ndn_ip4_frag_seq;
 
 
-extern asn_type_p ndn_udp_header;
-extern asn_type_p ndn_udp_csap;
+extern asn_type *ndn_icmp4_message;
+extern asn_type *ndn_icmp4_csap;
 
 
-extern asn_type_p ndn_tcp_header;
-extern asn_type_p ndn_tcp_csap;
+extern asn_type *ndn_udp_header;
+extern asn_type *ndn_udp_csap;
+
+
+extern asn_type *ndn_tcp_header;
+extern asn_type *ndn_tcp_csap;
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

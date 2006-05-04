@@ -53,8 +53,8 @@ typedef enum {
     NDN_TAG_SOCKET_TYPE_TCP_CLIENT,
 } ndn_socket_tags_t;
 
-extern asn_type_p ndn_socket_message;
-extern asn_type_p ndn_socket_csap; 
+extern asn_type * ndn_socket_message;
+extern asn_type * ndn_socket_csap; 
 
 #ifdef __cplusplus
 } /* extern "C" */

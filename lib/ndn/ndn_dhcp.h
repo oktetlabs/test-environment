@@ -60,10 +60,10 @@ typedef enum {
     NDN_DHCP_IFACE,
 } ndn_dhcp_tags_t;
 
-extern asn_type_p ndn_dhcpv4_message;
-extern asn_type_p ndn_dhcpv4_options;
-extern asn_type_p ndn_dhcpv4_option;
-extern asn_type_p ndn_dhcpv4_csap;
+extern asn_type *ndn_dhcpv4_message;
+extern asn_type *ndn_dhcpv4_options;
+extern asn_type *ndn_dhcpv4_option;
+extern asn_type *ndn_dhcpv4_csap;
 
 typedef enum dhcp_csap_mode {
     DHCP4_CSAP_MODE_SERVER = 1,

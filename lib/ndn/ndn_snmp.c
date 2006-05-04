@@ -285,7 +285,7 @@ asn_type ndn_snmp_var_bind_s =
     {_ndn_snmp_var_bind_ne_array}
 };
 
-asn_type_p ndn_snmp_var_bind = &ndn_snmp_var_bind_s;
+asn_type * ndn_snmp_var_bind = &ndn_snmp_var_bind_s;
 
 
 asn_type ndn_snmp_var_bind_seq_s = 
@@ -321,7 +321,7 @@ asn_type ndn_snmp_message_s =
     {_ndn_snmp_message_ne_array}
 };
 
-asn_type_p ndn_snmp_message = &ndn_snmp_message_s;
+asn_type * ndn_snmp_message = &ndn_snmp_message_s;
 
 
 
@@ -443,7 +443,7 @@ asn_type ndn_snmp_csap_s =
     {_ndn_snmp_csap_ne_array}
 };
 
-asn_type_p ndn_snmp_csap = &ndn_snmp_csap_s;
+asn_type * ndn_snmp_csap = &ndn_snmp_csap_s;
 
 int snmp_asn_syntaxes[] = 
 { 

@@ -56,12 +56,12 @@ typedef enum {
     NDN_CLI_PASSWORD,
 } ndn_cli_tags_t;
 
-extern asn_type_p ndn_cli_message;
-extern asn_type_p ndn_cli_serial_params;
-extern asn_type_p ndn_cli_telnet_params;
-extern asn_type_p ndn_cli_shell_params;
-extern asn_type_p ndn_cli_params;
-extern asn_type_p ndn_cli_csap;
+extern asn_type *ndn_cli_message;
+extern asn_type *ndn_cli_serial_params;
+extern asn_type *ndn_cli_telnet_params;
+extern asn_type *ndn_cli_shell_params;
+extern asn_type *ndn_cli_params;
+extern asn_type *ndn_cli_csap;
 
 
 #ifdef __cplusplus

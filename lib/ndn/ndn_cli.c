@@ -46,7 +46,7 @@ asn_type ndn_cli_message_s =
     {_ndn_cli_message_ne_array}
 };
 
-asn_type_p ndn_cli_message = &ndn_cli_message_s;
+asn_type * ndn_cli_message = &ndn_cli_message_s;
 
 
 /* CLI-Telnet-Params definitions */
@@ -63,7 +63,7 @@ asn_type ndn_cli_telnet_params_s =
     {_ndn_cli_telnet_params_ne_array}
 };
 
-asn_type_p ndn_cli_telnet_params = &ndn_cli_telnet_params_s;
+asn_type * ndn_cli_telnet_params = &ndn_cli_telnet_params_s;
 
 
 /* CLI-Serial-Params definitions */
@@ -79,7 +79,7 @@ asn_type ndn_cli_serial_params_s =
     {_ndn_cli_serial_params_ne_array}
 };
 
-asn_type_p ndn_cli_serial_params = &ndn_cli_serial_params_s;
+asn_type * ndn_cli_serial_params = &ndn_cli_serial_params_s;
 
 
 /* CLI-Shell-Params definitions */
@@ -95,7 +95,7 @@ asn_type ndn_cli_shell_params_s =
     {_ndn_cli_shell_params_ne_array}
 };
 
-asn_type_p ndn_cli_shell_params = &ndn_cli_shell_params_s;
+asn_type * ndn_cli_shell_params = &ndn_cli_shell_params_s;
 
 
 /* CLI-Params definitions */
@@ -113,7 +113,7 @@ asn_type ndn_cli_params_s =
     {_ndn_cli_params_ne_array}
 };
 
-asn_type_p ndn_cli_params = &ndn_cli_params_s;
+asn_type * ndn_cli_params = &ndn_cli_params_s;
 
 
 /* CLI-CSAP definitions */
@@ -142,6 +142,6 @@ asn_type ndn_cli_csap_s =
     {_ndn_cli_csap_ne_array}
 };
 
-asn_type_p ndn_cli_csap = &ndn_cli_csap_s;
+asn_type * ndn_cli_csap = &ndn_cli_csap_s;
 
 

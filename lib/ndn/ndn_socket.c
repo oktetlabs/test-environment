@@ -59,7 +59,7 @@ asn_type ndn_socket_message_s =
     { _ndn_socket_message_ne_array }
 };
 
-asn_type_p ndn_socket_message = &ndn_socket_message_s;
+asn_type * ndn_socket_message = &ndn_socket_message_s;
 
 
 
@@ -108,4 +108,4 @@ asn_type ndn_socket_csap_s =
     { _ndn_socket_csap_ne_array }
 };
 
-asn_type_p ndn_socket_csap = &ndn_socket_csap_s;
+asn_type * ndn_socket_csap = &ndn_socket_csap_s;

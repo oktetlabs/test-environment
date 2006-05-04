@@ -63,7 +63,7 @@ asn_type ndn_ip4_frag_spec_s =
 };
 
 
-asn_type_p ndn_ip4_frag_spec = &ndn_ip4_frag_spec_s;
+asn_type *ndn_ip4_frag_spec = &ndn_ip4_frag_spec_s;
 
 asn_type ndn_ip4_frag_seq_s =
 {
@@ -71,7 +71,7 @@ asn_type ndn_ip4_frag_seq_s =
     {subtype: &ndn_ip4_frag_spec_s}
 };
 
-asn_type_p ndn_ip4_frag_seq = &ndn_ip4_frag_seq_s;
+asn_type *ndn_ip4_frag_seq = &ndn_ip4_frag_seq_s;
 
 /*
 IP-Payload-Checksum ::= CHOICE {
@@ -95,7 +95,7 @@ asn_type ndn_ip4_pld_chksm_s =
     {_ndn_ip4_pld_chksm_ne_array}
 };
 
-asn_type_p ndn_ip4_pld_chksm = &ndn_ip4_pld_chksm_s;
+asn_type *ndn_ip4_pld_chksm = &ndn_ip4_pld_chksm_s;
 
 /* IPv4 PDU */
 
@@ -139,7 +139,7 @@ asn_type ndn_ip4_header_s =
     {_ndn_ip4_header_ne_array}
 };
 
-asn_type_p ndn_ip4_header = &ndn_ip4_header_s;
+asn_type *ndn_ip4_header = &ndn_ip4_header_s;
 
 
 
@@ -177,7 +177,7 @@ asn_type ndn_ip4_csap_s =
     {_ndn_ip4_csap_ne_array}
 };
 
-asn_type_p ndn_ip4_csap = &ndn_ip4_csap_s;
+asn_type *ndn_ip4_csap = &ndn_ip4_csap_s;
 
 
 
@@ -199,7 +199,7 @@ asn_type ndn_icmp4_message_s =
     {_ndn_icmp4_message_ne_array}
 };
 
-asn_type_p ndn_icmp4_message = &ndn_icmp4_message_s;
+asn_type *ndn_icmp4_message = &ndn_icmp4_message_s;
 
 
 
@@ -241,7 +241,7 @@ asn_type ndn_udp_header_s =
     {_ndn_udp_header_ne_array}
 };
 
-asn_type_p ndn_udp_header = &ndn_udp_header_s;
+asn_type *ndn_udp_header = &ndn_udp_header_s;
 
 
 
@@ -260,7 +260,7 @@ asn_type ndn_udp_csap_s =
     {_ndn_udp_csap_ne_array}
 };
 
-asn_type_p ndn_udp_csap = &ndn_udp_csap_s;
+asn_type *ndn_udp_csap = &ndn_udp_csap_s;
 
 
 
@@ -293,7 +293,7 @@ asn_type ndn_tcp_header_s =
     {_ndn_tcp_header_ne_array}
 };
 
-asn_type_p ndn_tcp_header = &ndn_tcp_header_s;
+asn_type *ndn_tcp_header = &ndn_tcp_header_s;
 
 
 
@@ -333,5 +333,5 @@ asn_type ndn_tcp_csap_s =
     {_ndn_tcp_csap_ne_array}
 };
 
-asn_type_p ndn_tcp_csap = &ndn_tcp_csap_s;
+asn_type *ndn_tcp_csap = &ndn_tcp_csap_s;
 
