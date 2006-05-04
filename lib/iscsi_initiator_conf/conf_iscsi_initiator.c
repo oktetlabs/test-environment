@@ -31,8 +31,12 @@
  * TODO: in each set function the check for the correctness of the
  * input parameter should be added
  */
+#include "te_config.h"
+#include "package.h"
+
 #include <sys/types.h>
 #include <stddef.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -44,16 +48,24 @@
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <glob.h>
+#include <pthread.h>
+#include <semaphore.h>
 
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
-#include "te_config.h"
-#include "config.h"
-#include "conf_daemons.h"
+#include "rcf_ch_api.h"
+#include "rcf_pch.h"
 #include "te_shell_cmd.h"
 #include "ndn_iscsi.h"
 #include "te_iscsi.h"
+
+extern int ta_system(const char *cmd);
+
+/* Type of the agent (usually TE_TA_UNIX or TE_TA_WIN32),
+ *  used primarily for error codes
+ */
+static int iscsi_agent_type;
 
 /* Debug logs */
 #define ISCSI_DEBUG_LOG_
@@ -110,16 +122,14 @@
  */
 #define DEFAULT_HOST_BUS_ADAPTER            0
 
+
+/** Maximum length of device name */
+#define MAX_DEVICE_NAME_LEN 32
+
 /**
  * Lun of the target to connect to.
  */
 #define DEFAULT_LUN_NUMBER 0
-
-
-#define WRITE_TO_ISCSI_DEVICE " && T=`grep -l UNH " \
-                              "/sys/bus/scsi/devices/*/vendor` && " \
-                              "B=`readlink ${T%/vendor}/block` && " \
-                              "echo test >/dev/`basename $B`"
 
 /**
  * Types of the Initiator to configure.
@@ -131,7 +141,7 @@ typedef enum {
     UNH,       /**< UNH Initiator (GPL 2) */
     L5,        /**< Level 5 Networks */
     OPENISCSI, /**< Open iSCSI */
-    MICROSOFT,
+    MICROSOFT, /**< Microsoft iSCSI */
 } iscsi_initiator_type;
 
 /** Encoding of challenge and response */
@@ -162,7 +172,7 @@ typedef struct iscsi_tgt_chap_data {
                                                          notation) */
     char        local_secret[SECURITY_COMMON_LENGTH]; /**< Local Secret (lx in
                                                            UNH Notation */
-    te_bool     target_auth; /**< If TRUE than Target authentication is
+    int         target_auth; /**< If TRUE than Target authentication is
                                   required during the Security Phase */
 } iscsi_tgt_chap_data_t;
 
@@ -193,6 +203,7 @@ typedef struct iscsi_connection_data {
     char              session_type[SESSION_TYPE_LENGTH]; /**< SessionType */
 
     iscsi_tgt_chap_data_t chap; /**< Serurity related data */
+    char              device_name[MAX_DEVICE_NAME_LEN];
 } iscsi_connection_data_t;
 
 
@@ -219,6 +230,17 @@ typedef struct iscsi_target_data {
 } iscsi_target_data_t;
 
 /**
+ * Asynchronous connection status change request.
+ */
+typedef struct iscsi_connection_req {
+    int     target_id; /**< Target ID */
+    int     cid;       /**< Connection ID */
+    int     status;    /**< Desired connection status */
+
+    struct iscsi_connection_req *next; /** Queue chain link */
+} iscsi_connection_req;
+
+/**
  * Initiator data structure.
  * Contains general information about the Initiator and
  * per target data.
@@ -228,9 +250,21 @@ typedef struct iscsi_initiator_data {
 
     int                   host_bus_adapter;  /**< Number of the host bus 
                                                   adapter. Usually 0 */
-    char                  script_path[MAX_CMD_SIZE];
-    
+    int                   verbosity;  /**< Initiator verbosity level */
+
+    char                  script_path[MAX_CMD_SIZE]; 
+                                     /**< Path to iSCSI config scripts */
+
+    int                   n_targets; /**< Number of configured targets */
+    int                   n_connections; 
+                          /**< Total number of brought up connections */
     iscsi_target_data_t   targets[MAX_TARGETS_NUMBER]; /**< Per target data */
+    pthread_mutex_t       initiator_mutex;    /**< Request mutex */
+    sem_t                 request_sem;
+                          /**< Pending request semaphore */
+    pthread_t             request_thread;
+    iscsi_connection_req *request_queue_head; /**< Request queue head */
+    iscsi_connection_req *request_queue_tail; /**< Request queue tail */
 } iscsi_initiator_data_t;
 
 
@@ -250,7 +284,6 @@ static iscsi_initiator_data_t *init_data = NULL;
 static int
 iscsi_get_target_id(const char *oid)
 {
-    char *c;
     int   tgt_id;
     
     sscanf(oid, "/agent:%*[^/]/iscsi_initiator:/target_data:target_%d", 
@@ -269,7 +302,6 @@ iscsi_get_target_id(const char *oid)
 static int
 iscsi_get_cid(const char *oid)
 {
-    char *c;
     int cid;
 
     sscanf(oid, 
@@ -290,7 +322,7 @@ void
 iscsi_init_default_connection_parameters(iscsi_connection_data_t *conn_data)
 {
     memset(conn_data, 0, sizeof(conn_data));
-    
+
     conn_data->status = ISCSI_CONNECTION_REMOVED;
     strcpy(conn_data->initiator_name, DEFAULT_INITIATOR_NAME);
     strcpy(conn_data->initiator_alias, DEFAULT_INITIATOR_ALIAS);
@@ -349,6 +381,8 @@ iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
 /** Configure only general Initiator data */
 #define ISCSI_CONF_NO_TARGETS -2
 
+static void *iscsi_initator_conn_request_thread(void *arg);
+
 /**
  * Function configures the Initiator.
  *
@@ -361,6 +395,9 @@ iscsi_init_default_ini_parameters(int how)
 {
     init_data = malloc(sizeof(iscsi_initiator_data_t));
     memset(init_data, 0, sizeof(init_data));
+
+    pthread_mutex_init(&init_data->initiator_mutex, NULL);
+    sem_init(&init_data->request_sem, 0, 0);
 
     /* init_id */
     /* init_type */
@@ -411,6 +448,7 @@ iscsi_initiator_get(const char *gid, const char *oid,
     return 0;
 }
 
+#if 0
 /**
  * Executes te_shell_cmd() function.
  *
@@ -432,6 +470,7 @@ te_shell_cmd_ex(const char *cmd, ...)
     IVERB("iSCSI Initiator: %s\n", cmdline);
     return te_shell_cmd(cmdline, -1, NULL, NULL) > 0 ? 0 : TE_ESHCMD;
 }
+#endif
 
 /**
  * Executes ta_system.
@@ -487,43 +526,184 @@ ta_system_ex(const char *cmd, ...)
         }                                                                   \
     } while (0)
 
+enum iscsi_target_param_kind_t { 
+    ISCSI_FIXED_PARAM,
+    ISCSI_GLOBAL_PARAM,
+    ISCSI_OPER_PARAM,
+    ISCSI_SECURITY_PARAM
+};
+
 typedef struct iscsi_target_param_descr_t
 {
-    int      offer;
+    uint32_t offer;
     char    *name;
     te_bool  is_string;
-    int      offset;    
+    enum iscsi_target_param_kind_t kind;
+    int      offset;
+    char  *(*formatter)(void *);
+    te_bool (*predicate)(iscsi_target_data_t *,
+                         iscsi_connection_data_t *,
+                         iscsi_tgt_chap_data_t *);
 } iscsi_target_param_descr_t;
 
-#define ISCSI_END_PARAM_TABLE {0, NULL, FALSE, 0}
+#define ISCSI_END_PARAM_TABLE {0, NULL, FALSE, 0, -1, NULL, NULL}
+
+typedef struct iscsi_constant_t
+{
+    int zero;
+    char true[2];
+    char wildcard[2];
+    char l5_tgt_auth[19];
+} iscsi_constant_t;
+
+static te_bool
+iscsi_is_param_needed(iscsi_target_param_descr_t *param,
+                      iscsi_target_data_t *tgt_data,
+                      iscsi_connection_data_t *conn_data,
+                      iscsi_tgt_chap_data_t *auth_data)
+{
+    return (param->predicate != NULL ?
+            param->predicate(tgt_data, conn_data, auth_data) : 
+            TRUE);
+}
+
+static void
+iscsi_write_param(void (*outfunc)(void *, char *),
+                  void *destination,
+                  iscsi_target_param_descr_t *param,
+                  iscsi_target_data_t *tgt_data,
+                  iscsi_connection_data_t *conn_data,
+                  iscsi_tgt_chap_data_t *auth_data)
+{
+    static iscsi_constant_t constants = {0, "T", "*", 
+                                         "CHAPWithTargetAuth"
+    };
+    void *dataptr;
+
+    switch(param->kind)
+    {
+        case ISCSI_FIXED_PARAM:
+            dataptr = &constants;
+            break;
+        case ISCSI_GLOBAL_PARAM:
+            dataptr = tgt_data;
+            break;
+        case ISCSI_OPER_PARAM:
+            dataptr = conn_data;
+            break;
+        case ISCSI_SECURITY_PARAM:
+            dataptr = auth_data;
+            break;
+        default:
+            ERROR("Internal error at %s:%d %s(): bad parameter kind",
+                  __FILE__, __LINE__, __FUNCTION__);
+            return;
+    }
+    if (param->formatter != NULL)
+    {
+        char *result;
+        
+        result = param->formatter((char *)dataptr + param->offset);
+        outfunc(destination, result);
+    }
+    else
+    {
+        if (param->is_string)
+            outfunc(destination, (char *)dataptr + param->offset);
+        else
+        {
+            char number[32];
+            snprintf(number, sizeof(number), 
+                     "%d", *(int *)((char *)dataptr + 
+                                    param->offset));
+            outfunc(destination, number);
+        }
+    }
+}
+
+static void
+iscsi_write_to_file(void *destination, char *what)
+{
+    fputs(what, destination);
+}
+
+static void
+iscsi_put_to_buf(void *destination, char *what)
+{
+    strcpy(destination, what);
+}
+
+static char *
+iscsi_not_none (void *val)
+{
+    static char buf[2];
+    *buf = (strcmp(val, "None") == 0 ? '0' : '1');
+    return buf;
+}
+
+static char *
+iscsi_bool2int (void *val)
+{
+    static char buf[2];
+    *buf = (strcmp(val, "Yes") == 0 ? '1' : '0');
+    return buf;
+}
+
+static te_bool
+iscsi_when_tgt_auth(iscsi_target_data_t *target_data,
+                    iscsi_connection_data_t *conn_data,
+                    iscsi_tgt_chap_data_t *auth_data)
+{
+    UNUSED(target_data);
+    UNUSED(conn_data);
+
+    return auth_data->target_auth;
+}
+
+static te_bool
+iscsi_when_not_tgt_auth(iscsi_target_data_t *target_data,
+                        iscsi_connection_data_t *conn_data,
+                        iscsi_tgt_chap_data_t *auth_data)
+{
+    UNUSED(target_data);
+    UNUSED(conn_data);
+
+    return !auth_data->target_auth;
+}
+
+static te_bool
+iscsi_when_chap(iscsi_target_data_t *target_data,
+                iscsi_connection_data_t *conn_data,
+                iscsi_tgt_chap_data_t *auth_data)
+{
+    UNUSED(target_data);
+    UNUSED(conn_data);
+
+    return strstr(auth_data->chap, "CHAP") != NULL;
+}
 
 /****** L5 Initiator specific stuff  ****/
 
 static void
 iscsi_l5_write_param(FILE *destination, 
                      iscsi_target_param_descr_t *param,
-                     void *data)
+                     iscsi_target_data_t *tgt_data,
+                     iscsi_connection_data_t *conn_data,
+                     iscsi_tgt_chap_data_t *auth_data)
 {
     const char *n;
+
+    if (!iscsi_is_param_needed(param, tgt_data, conn_data, auth_data))
+        return;
+
     for (n = param->name; *n != '\0'; n++)
     {
         if (*n != '_')
             fputc(*n, destination);
     }
     fputs(": ", destination);
-    if (param->is_string)
-    {
-        VERB("Setting %s = %s", param->name, 
-             (char *)data + param->offset);
-        fputs((char *)data + param->offset, destination);
-    }
-    else
-    {
-        VERB("Setting %s = %d", param->name,
-             *(int *)((char *)data + param->offset));
-        fprintf(destination, "%d", 
-                *(int *)((char *)data + param->offset));
-    }
+    iscsi_write_param(iscsi_write_to_file, destination, param, 
+                      tgt_data, conn_data, auth_data);
     fputc('\n', destination);
 }
 
@@ -535,7 +715,19 @@ iscsi_l5_write_target_params(FILE *destination,
     iscsi_connection_data_t    *connection = target->conns;
 
 #define PARAMETER(field, offer, type) \
-    {OFFER_##offer, #field, type, offsetof(iscsi_connection_data_t, field)}
+    {OFFER_##offer, #field, type, ISCSI_OPER_PARAM, \
+     offsetof(iscsi_connection_data_t, field), NULL, NULL}
+#define GPARAMETER(name, field, type) \
+    {0, name, type, ISCSI_GLOBAL_PARAM, \
+     offsetof(iscsi_target_data_t, field), NULL, NULL}
+#define AUTH_PARAM(field, name, type, predicate) \
+     {0, name, type, ISCSI_SECURITY_PARAM, \
+      offsetof(iscsi_tgt_chap_data_t, field), NULL, predicate}
+#define CONSTANT(name, field, type, predicate) \
+    {0, name, type, ISCSI_FIXED_PARAM, \
+    offsetof(iscsi_constant_t, field), NULL, predicate}
+
+
     static iscsi_target_param_descr_t session_params[] =
         {
             PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
@@ -549,93 +741,70 @@ iscsi_l5_write_target_params(FILE *destination,
             PARAMETER(data_pdu_in_order, DATA_PDU_IN_ORDER,  TRUE),
             PARAMETER(data_sequence_in_order, DATA_SEQUENCE_IN_ORDER,  TRUE),
             PARAMETER(error_recovery_level, ERROR_RECOVERY_LEVEL,  FALSE),
+            AUTH_PARAM(local_name, "TargetCHAPName", TRUE, iscsi_when_tgt_auth),
+            AUTH_PARAM(local_secret, "TargetCHAPSecret", TRUE, iscsi_when_tgt_auth),
             ISCSI_END_PARAM_TABLE
         };
     static iscsi_target_param_descr_t connection_params[] =
         {
+            GPARAMETER("Host", target_addr, TRUE),
+            GPARAMETER("Port", target_port, FALSE),
             PARAMETER(header_digest, HEADER_DIGEST,  TRUE),
             PARAMETER(data_digest, DATA_DIGEST,  TRUE),
             PARAMETER(max_recv_data_segment_length, MAX_RECV_DATA_SEGMENT_LENGTH,  
                       FALSE),
+            AUTH_PARAM(chap, "AuthMethod", TRUE, iscsi_when_not_tgt_auth),
+            CONSTANT("AuthMethod", l5_tgt_auth, TRUE, iscsi_when_tgt_auth),
+            AUTH_PARAM(peer_name, "CHAPName", TRUE, iscsi_when_chap),
+            AUTH_PARAM(peer_secret, "CHAPSecret", TRUE, iscsi_when_chap),
             ISCSI_END_PARAM_TABLE
         };
 
-#define AUTH_PARAM(field, name, type) \
-    static iscsi_target_param_descr_t authp_##field = \
-        {0, name, type, offsetof(iscsi_tgt_chap_data_t, field)}
-#define WRITE_AUTH(field) \
-    iscsi_l5_write_param(destination, &authp_##field, &connection->chap)
-
-    AUTH_PARAM(chap, "AuthMethod", TRUE);
-    AUTH_PARAM(peer_name, "CHAPName", TRUE);
-    AUTH_PARAM(peer_secret, "CHAPSecret", TRUE);
-    AUTH_PARAM(local_name, "TargetCHAPName", TRUE);
-    AUTH_PARAM(local_secret, "TargetCHAPSecret", TRUE);
-    
     for (p = session_params; p->name != NULL; p++)
     {
 #if 0
         if ((connection->conf_params & p->offer) == p->offer)
         {
 #endif
-            iscsi_l5_write_param(destination, p, connection);
+            iscsi_l5_write_param(destination, p, 
+                                 target, connection, &connection->chap);
 #if 0
         }
 #endif
     }
-    if (connection->chap.target_auth)
-    {
-        WRITE_AUTH(local_name);
-        WRITE_AUTH(local_secret);
-    }
-
     /** Other authentication parameters are not supported by
      *  L5 initiator, both on the level of script and on 
      *  the level of ioctls
      */
 
-    for (assert(connection == target->conns); 
-         connection < target->conns + MAX_CONNECTIONS_NUMBER;
+    for (; connection < target->conns + MAX_CONNECTIONS_NUMBER;
          connection++)
     {
         if (connection->status != ISCSI_CONNECTION_REMOVED)
         {
-            fprintf(destination, "\n\n[target%d_conn%d]\n"
-                    "Host: %s\n"
-                    "Port: %d\n",
+            fprintf(destination, "\n\n[target%d_conn%d]\n",
                     target->target_id,
-                    (int)(connection - target->conns),
-                    target->target_addr, 
-                    target->target_port);
+                    (int)(connection - target->conns));
+
             for (p = connection_params; p->name != NULL; p++)
             {
 #if 0
                 if ((connection->conf_params & p->offer) == p->offer)
                 {
 #endif
-                    iscsi_l5_write_param(destination, p, connection);
+                    iscsi_l5_write_param(destination, p, 
+                                         target, connection, &connection->chap);
 #if 0
                 }
 #endif
             }
-            if (!connection->chap.target_auth)
-                WRITE_AUTH(chap);
-            else
-            {
-                fputs("AuthMethod: CHAPWithTargetAuth\n", 
-                      destination);
-            }
-            if (strstr(connection->chap.chap, "CHAP") != 0)
-            {
-                WRITE_AUTH(peer_name);
-                WRITE_AUTH(peer_secret);
-            }
         }
     }
     return 0;
+#undef CONSTANT
 #undef PARAMETER
+#undef GPARAMETER
 #undef AUTH_PARAM
-#undef WRITE_AUTH
 }
 
 static int
@@ -656,14 +825,14 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
     {
         ERROR("Cannot open '%s' for writing: %s",
               filename, strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
+        return TE_OS_RC(iscsi_agent_type, errno);
     }
              
     target = iscsi_data->targets;
     if (target->target_id < 0)
     {
         ERROR("No targets configured");
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        return TE_RC(iscsi_agent_type, TE_ENOENT);
     }
     /** NOTE: L5 Initator seems to be unable 
      *  to have different Initator names for
@@ -731,49 +900,76 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
                            init_data->script_path);
 }
 
+/*** END of L5 specific stuff ***/
+
+
 static int
 iscsi_openiscsi_set_param(const char *recid,
                           iscsi_target_param_descr_t *param,
-                          void *data)
+                          iscsi_target_data_t *target,
+                          iscsi_connection_data_t *connection,
+                          iscsi_tgt_chap_data_t *auth_data)
 {
     int rc = 0;
+    static char buffer[1024];
 
+    if (!iscsi_is_param_needed(param, target, connection, auth_data))
+        return 0;
 
-    if (param->is_string)
-    {
-        RING("Setting %s to %s", param->name, 
-             (char *)data + param->offset);
-        rc = ta_system_ex("iscsiadm -m node --record=%s --op=update "
-                             "--name=%s --value=%s", recid,
-                             param->name,
-                             (char *)data + param->offset);
-    }
-    else
-    {
-        RING("Setting %s to %d", param->name,
-             *(int *)((char *)data + param->offset));
-        rc = ta_system_ex("iscsiadm -m node --record=%s --op=update "
-                        "--name=%s --value=%d", recid,
-                        param->name,
-                        *(int *)((char *)data + param->offset));
-    }
-    return TE_RC(TE_TA_UNIX, rc);
+    iscsi_write_param(iscsi_put_to_buf, buffer,
+                      param, target, connection, auth_data);
+
+    RING("Setting %s to %s", param->name, buffer);
+    rc = ta_system_ex("iscsiadm -m node --record=%s --op=update "
+                      "--name=%s --value=%s", recid,
+                      param->name, buffer);
+    return TE_RC(iscsi_agent_type, rc);
 }
 
-static pid_t iscsid_process = (pid_t)-1;
+
+#define ISCSID_PID_FILE "/var/run/iscsid.pid"
+#define ISCSID_RECORD_FILE "/var/db/iscsi/node.db"
+
+static int iscsi_openiscsi_stop_daemon(void);
 
 static int
-iscsi_openiscsi_start_daemon(iscsi_target_data_t *target)
+iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
 {
     int   rc = 0;
     FILE *name_file;
-    
+    FILE *pid_file;
+    int   i;   
+
     RING("Starting iscsid daemon");
-    if (iscsid_process != (pid_t)-1)
+    fputs("> starting iscsid daemon\n", stderr);
+
+    pid_file = fopen(ISCSID_PID_FILE, "r");
+
+    if (pid_file != NULL)
     {
-        WARN("iscsid already started");
-        return 0;
+        int iscsid_pid = 0;
+        if (fscanf(pid_file, "%d", &iscsid_pid) == 1)
+        {
+            if (force_start)
+            {
+                WARN("Stale iscsid (pid = %d) found, killing, iscsid_pid");
+                ta_system("iscsiadm --stop");
+                USLEEP(1000);
+                kill(iscsid_pid, SIGKILL);
+            }
+            else
+            {
+                if (kill(iscsid_pid, 0) == 0)
+                {
+                    fclose(pid_file);
+                    return 0;
+                }
+            }
+        }
+        fclose(pid_file);
     }
+    remove(ISCSID_PID_FILE);
+    remove(ISCSID_RECORD_FILE);
 
     name_file = fopen("/tmp/initiatorname.iscsi", "w");
     if (name_file == NULL)
@@ -781,44 +977,56 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target)
         rc = errno;
         ERROR("Cannot open /tmp/initiatorname.iscsi: %s",
               strerror(rc));
-        return TE_OS_RC(TE_TA_UNIX, rc);
+        return TE_OS_RC(iscsi_agent_type, rc);
     }
     fprintf(name_file, "InitiatorName=%s\n", target->conns[0].initiator_name);
     if (*target->conns[0].initiator_alias != '\0')
         fprintf(name_file, "InitiatorAlias=%s\n", target->conns[0].initiator_alias);
     fclose(name_file);
 
-    iscsid_process = te_shell_cmd("iscsid -f -c /dev/null -i /tmp/initiatorname.iscsi",
-                                  -1, NULL, NULL);
-    if (iscsid_process == (pid_t)-1)
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    RING("Open iSCSI daemon started");
-    return 0;
+    ta_system_ex("iscsid %s -c /dev/null -i /tmp/initiatorname.iscsi", 
+             init_data->verbosity > 0 ? "-d255" : "");
+
+    for (i = 10; i != 0; i--)
+    {
+        if (access(ISCSID_PID_FILE, R_OK) == 0)
+        {
+            return 0;
+        }
+        USLEEP(1000);
+    }
+    ERROR("Cannot check that iscsid actually started");
+    iscsi_openiscsi_stop_daemon();
+    
+    return TE_RC(iscsi_agent_type, TE_EFAIL);
 }
 
 static int
 iscsi_openiscsi_stop_daemon(void)
 {
-    int   unused;
+    FILE *pid_file;
 
-    RING("Stopping iscsid daemon");    
-    if (iscsid_process == (pid_t)-1)
+    RING("Stopping iscsid daemon");
+
+    pid_file = fopen(ISCSID_PID_FILE, "r");
+
+    if (pid_file != NULL)
     {
-        WARN("iscsid already stopped");
-        return 0;
+        int iscsid_pid = 0;
+        if (fscanf(pid_file, "%d", &iscsid_pid) == 1)
+        {
+            fprintf(stderr, "< stopping iscsid daemon pid = %d\n", iscsid_pid);
+            if (kill(iscsid_pid, 0) == 0)
+            {
+                ta_system("iscsiadm --stop");
+                USLEEP(1000);
+                kill(iscsid_pid, SIGKILL);
+            }
+        }
+        fclose(pid_file);
     }
-    if (kill(iscsid_process, SIGHUP))
-    {
-        WARN("Unable to kill iscsid: %s",
-             strerror(errno));
-        iscsid_process = -1;
-    }
-    else if (ta_waitpid(iscsid_process, &unused, 0))
-    {
-        WARN("Unable to wait for iscsid: %s",
-             strerror(errno));
-    }
-    iscsid_process = -1;    
+    remove(ISCSID_PID_FILE);
+
     return 0;
 }
 
@@ -827,20 +1035,18 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
 {
     iscsi_target_param_descr_t *p;
 #define PARAMETER(field, name, offer, type) \
-    {OFFER_##offer, name, type, offsetof(iscsi_connection_data_t, field)}
+    {OFFER_##offer, name, type, ISCSI_OPER_PARAM, offsetof(iscsi_connection_data_t, field), NULL, NULL}
 #define TGT_PARAMETER(field, name, type) \
-    {0, name, type, offsetof(iscsi_target_data_t, field)}
+    {0, name, type, ISCSI_GLOBAL_PARAM, offsetof(iscsi_target_data_t, field), NULL, NULL}
+#define AUTH_PARAM(field, name, predicate) \
+        {0, "node.session.auth." name, TRUE, ISCSI_SECURITY_PARAM, \
+         offsetof(iscsi_tgt_chap_data_t, field), NULL, predicate}
 
-    static iscsi_target_param_descr_t tgt_params[] =
+    static iscsi_target_param_descr_t params[] =
         {
             TGT_PARAMETER(target_name, "node.name", TRUE),
             TGT_PARAMETER(target_addr, "node.conn[0].address", TRUE),
             TGT_PARAMETER(target_port, "node.conn[0].port", FALSE),
-            ISCSI_END_PARAM_TABLE
-        };
-
-    static iscsi_target_param_descr_t params[] =
-        {
             PARAMETER(max_connections, 
                       "node.session.iscsi.MaxConnections", MAX_CONNECTIONS, FALSE),
             PARAMETER(initial_r2t, 
@@ -900,31 +1106,15 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
             PARAMETER(error_recovery_level, 
                       "node.session.iscsi.ERL", 
                       ERROR_RECOVERY_LEVEL,  FALSE),
-            ISCSI_END_PARAM_TABLE
-        };
-#define AUTH_PARAM(field, name) \
-        {0, "node.session.auth." name, TRUE, offsetof(iscsi_tgt_chap_data_t, field)}
-    static iscsi_target_param_descr_t auth_params[] =
-        {
-            AUTH_PARAM(chap, "authmethod"),
-            AUTH_PARAM(local_name, "username"),
-            AUTH_PARAM(local_secret, "password"),
-            AUTH_PARAM(peer_name, "username_in"),
-            AUTH_PARAM(peer_secret, "password_in"),
+            AUTH_PARAM(chap, "authmethod", NULL),
+            AUTH_PARAM(local_name, "username", NULL),
+            AUTH_PARAM(local_secret, "password", NULL),
+            AUTH_PARAM(peer_name, "username_in", iscsi_when_tgt_auth),
+            AUTH_PARAM(peer_secret, "password_in", iscsi_when_tgt_auth),
             ISCSI_END_PARAM_TABLE
         };
 
     int   rc;
-
-    for (p = tgt_params; p->name != NULL; p++)
-    {
-        if ((rc = iscsi_openiscsi_set_param(target->record_id, 
-                                            p, target)) != 0)
-        {
-            ERROR("Unable to set param %s: %r", p->name, rc);
-            return rc;
-        }
-    }
 
     for (p = params; p->name != NULL; p++)
     {
@@ -932,27 +1122,18 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
             ((target->conns[0].conf_params & p->offer) == p->offer))
         {
             if ((rc = iscsi_openiscsi_set_param(target->record_id, 
-                                                p, target->conns)) != 0)
+                                                p, target, target->conns,
+                                                &target->conns[0].chap)) != 0)
             {
                 ERROR("Unable to set param %s: %r", p->name, rc);
                 return rc;
             }
         }
     }
-    for (p = auth_params; p->name != NULL; p++)
-    {
-        if ((rc = iscsi_openiscsi_set_param(target->record_id,
-                                            p, &target->conns[0].chap)) != 0)
-        {
-            ERROR("Unable to set param %s: %r", p->name, rc);
-            return rc;
-        }
-    }
-
     return 0;
+#undef TGT_PARAMETER
 #undef PARAMETER
 #undef AUTH_PARAM
-#undef WRITE_AUTH
 }
 
 static const char *
@@ -962,15 +1143,16 @@ iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
 {
     char      buffer[80];
     FILE     *nodelist;
-    int       i;
     int       status;
 
     static char recid[RECORD_ID_LENGTH];
 
     
     snprintf(buffer, sizeof(buffer), 
-             "iscsiadm -m node --op=new --portal=%s:%d",
+             "iscsiadm %s -m node --op=new --portal=%s:%d",
+             data->verbosity != 0 ? "-d255" : "",
              target, target_port);
+    RING("Attempting to create a record for %s:%d", target, target_port);
     nodelist = popen(buffer, "r");
     if (nodelist == NULL)
     {
@@ -979,14 +1161,13 @@ iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
         return NULL;
     }
 
-    
     if (fgets(buffer, sizeof(buffer), nodelist) == NULL)
     {
         ERROR("EOF from iscsiadm, something's wrong");
         return NULL;
     }
     
-    VERB("Got '%s' from iscsiadm", buffer);
+    RING("Got '%s' from iscsiadm", buffer);
     status = pclose(nodelist);
     if (status != 0)
     {
@@ -1227,8 +1408,8 @@ iscsi_get_cid_and_target(const char *cmdline, te_bool *status,
  * @param cid       CID of the new connection or ISCSI_CONNECTION_REMOVED
  */
 static int
-iscsi_initiator_unh_set(const int target_id, const int cid, 
-                        int oper)
+iscsi_initiator_unh_set(iscsi_connection_req *req)
+
 {
     int                      rc = -1;
     iscsi_target_data_t     *target;
@@ -1236,214 +1417,248 @@ iscsi_initiator_unh_set(const int target_id, const int cid,
 
     int                     offer;
 
-    target = &init_data->targets[target_id];
-    conn = &target->conns[cid];
+    target = &init_data->targets[req->target_id];
+    conn = &target->conns[req->cid];
     
     offer = conn->conf_params;
 
     IVERB("Current number of open connections: %d", 
           target->number_of_open_connections);
     
-    if (oper == ISCSI_CONNECTION_DOWN)
+    if (req->status == ISCSI_CONNECTION_DOWN || 
+        req->status == ISCSI_CONNECTION_REMOVED)
     {
-        conn->status = ISCSI_CONNECTION_DOWN;
+        int former_status;
+        
+        pthread_mutex_lock(&init_data->initiator_mutex);
+        former_status = target->conns[req->cid].status;
+        target->conns[req->cid].status = ISCSI_CONNECTION_CLOSING;
+        pthread_mutex_unlock(&init_data->initiator_mutex);
 
         rc = ta_system_ex("iscsi_config down cid=%d target=%d host=%d",
-                          cid, target_id, 
+                          req->cid, req->target_id, 
                           init_data->host_bus_adapter);
+
+        pthread_mutex_lock(&init_data->initiator_mutex);
+        target->conns[req->cid].status = req->status;
+        pthread_mutex_unlock(&init_data->initiator_mutex);
+
+        if (former_status == ISCSI_CONNECTION_UP && 
+            target->number_of_open_connections > 0)
+        {
+            target->number_of_open_connections--;
+            init_data->n_connections--;
+        }
+
         if (rc != 0)
         {
             ERROR("Failed to close the connection "
-                  "with CID = %d", cid);
-            return TE_RC(TE_TA_UNIX, EINVAL);
+                  "with CID = %d", req->cid);
+            return TE_RC(iscsi_agent_type, EINVAL);
         }
-        if (target->number_of_open_connections > 0)
-            target->number_of_open_connections--;
-        INFO("Connections with ID %d is closed", cid);
+        INFO("Connections with ID %d is closed", req->cid);
 
-        return 0;
     }
-    /* We should open new connection */
-    /* 1: configurating the Initiator */
-
-    CHECK_SHELL_CONFIG_RC(
-        ta_system_ex("iscsi_manage init restore target=%d host=%d",
-                     target_id, init_data->host_bus_adapter),
-        "Restoring");
-    
-    if (strcmp(conn->session_type, "Normal") == 0)
-        ISCSI_UNH_SET_UNNEGOTIATED("TargetName", target->target_name, target_id);
-
-    if (target->number_of_open_connections == 0)
+    else
     {
-        if (strcmp(conn->session_type, "Normal") == 0)
-        {
-            ISCSI_UNH_SET_INT("MaxConnections", conn->max_connections,
-                              target_id, OFFER_MAX_CONNECTIONS, offer);
-            ISCSI_UNH_SET("InitialR2T", conn->initial_r2t, target_id, 
-                          OFFER_INITIAL_R2T, offer);
-            ISCSI_UNH_SET("ImmediateData", conn->immediate_data, target_id,
-                          OFFER_IMMEDIATE_DATA, offer);
-            ISCSI_UNH_SET_INT("MaxBurstLength", 
-                              conn->max_burst_length, target_id,
-                              OFFER_MAX_BURST_LENGTH, offer);
-            ISCSI_UNH_SET_INT("FirstBurstLength", 
-                              conn->first_burst_length, target_id,
-                              OFFER_FIRST_BURST_LENGTH, offer);
-            ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
-                              conn->max_outstanding_r2t, target_id,
-                              OFFER_MAX_OUTSTANDING_R2T, offer);
-            ISCSI_UNH_SET("DataPDUInOrder", 
-                          conn->data_pdu_in_order, target_id,
-                          OFFER_DATA_PDU_IN_ORDER, offer);
-            ISCSI_UNH_SET("DataSequenceInOrder", 
-                          conn->data_sequence_in_order, target_id,
-                          OFFER_DATA_SEQUENCE_IN_ORDER, offer);
-        }
-
-        ISCSI_UNH_SET("HeaderDigest", conn->header_digest, target_id,
-                      OFFER_HEADER_DIGEST, offer);
-
-        ISCSI_UNH_SET("DataDigest", conn->data_digest, target_id,
-                      OFFER_DATA_DIGEST, offer);
-
-        ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
-                          conn->max_recv_data_segment_length,
-                          target_id, OFFER_MAX_RECV_DATA_SEGMENT_LENGTH,
-                          offer);
-
-        ISCSI_UNH_SET_INT("DefaultTime2Wait", 
-                          conn->default_time2wait, target_id,
-                          OFFER_DEFAULT_TIME2WAIT, offer);
-
-        ISCSI_UNH_SET_INT("DefaultTime2Retain", 
-                          conn->default_time2retain, target_id,
-                          OFFER_DEFAULT_TIME2RETAIN, offer);
-
-        ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
-                          conn->error_recovery_level, target_id,
-                          OFFER_ERROR_RECOVERY_LEVEL, offer);
-
-        ISCSI_UNH_SET_UNNEGOTIATED("SessionType", conn->session_type, target_id);
-
+        /* We should open new connection */
+        /* 1: configurating the Initiator */
         
-
-    }
-    ISCSI_UNH_SET_UNNEGOTIATED("AuthMethod", conn->chap.chap, target_id);
-
-    /* Target' CHAP */
-    if (conn->chap.target_auth)
-    {
-        ISCSI_UNH_FORCE_FLAG("t", target_id,
-                             "Target Authentication");
-    }
-
-    ISCSI_UNH_FORCE_STRING("px", conn->chap.peer_secret, target_id,
-                           "Peer Secret");
-
-    ISCSI_UNH_FORCE("ln", conn->chap.local_name, target_id,
-                    "Local Name");
-
-    if (conn->chap.enc_fmt == BASE_64)
-        ISCSI_UNH_FORCE_FLAG("b", target_id,
-                             "Encoding Format");
-
-    ISCSI_UNH_FORCE_INT("cl", conn->chap.challenge_length, target_id,
-                        "Challenge Length");
-
-    ISCSI_UNH_FORCE("pn", conn->chap.peer_name, target_id,
-                    "Peer Name");
-
-    ISCSI_UNH_FORCE_STRING("lx", conn->chap.local_secret, target_id,
-                           "Local Secret");
-
-    ISCSI_UNH_FORCE_INT("sch", 1, target_id,
-                        "Load-balancing"); /* Turning on round-robin */
-
-    /* Initiator itself */
-    ISCSI_UNH_SET_UNNEGOTIATED("InitiatorName", 
-                  conn->initiator_name,
-                  target_id);
+        CHECK_SHELL_CONFIG_RC(
+            ta_system_ex("iscsi_manage init restore target=%d host=%d",
+                         req->target_id, init_data->host_bus_adapter),
+            "Restoring");
+        
+        if (strcmp(conn->session_type, "Normal") == 0)
+            ISCSI_UNH_SET_UNNEGOTIATED("TargetName", target->target_name, req->target_id);
+        
+        if (target->number_of_open_connections == 0)
+        {
+            if (strcmp(conn->session_type, "Normal") == 0)
+            {
+                ISCSI_UNH_SET_INT("MaxConnections", conn->max_connections,
+                                  req->target_id, OFFER_MAX_CONNECTIONS, offer);
+                ISCSI_UNH_SET("InitialR2T", conn->initial_r2t, req->target_id, 
+                              OFFER_INITIAL_R2T, offer);
+                ISCSI_UNH_SET("ImmediateData", conn->immediate_data, req->target_id,
+                              OFFER_IMMEDIATE_DATA, offer);
+                ISCSI_UNH_SET_INT("MaxBurstLength", 
+                                  conn->max_burst_length, req->target_id,
+                                  OFFER_MAX_BURST_LENGTH, offer);
+                ISCSI_UNH_SET_INT("FirstBurstLength", 
+                                  conn->first_burst_length, req->target_id,
+                                  OFFER_FIRST_BURST_LENGTH, offer);
+                ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
+                                  conn->max_outstanding_r2t, req->target_id,
+                                  OFFER_MAX_OUTSTANDING_R2T, offer);
+                ISCSI_UNH_SET("DataPDUInOrder", 
+                              conn->data_pdu_in_order, req->target_id,
+                              OFFER_DATA_PDU_IN_ORDER, offer);
+                ISCSI_UNH_SET("DataSequenceInOrder", 
+                              conn->data_sequence_in_order, req->target_id,
+                              OFFER_DATA_SEQUENCE_IN_ORDER, offer);
+            }
+            
+            ISCSI_UNH_SET("HeaderDigest", conn->header_digest, req->target_id,
+                          OFFER_HEADER_DIGEST, offer);
+            
+            ISCSI_UNH_SET("DataDigest", conn->data_digest, req->target_id,
+                          OFFER_DATA_DIGEST, offer);
+            
+            ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
+                              conn->max_recv_data_segment_length,
+                              req->target_id, OFFER_MAX_RECV_DATA_SEGMENT_LENGTH,
+                              offer);
+            
+            ISCSI_UNH_SET_INT("DefaultTime2Wait", 
+                              conn->default_time2wait, req->target_id,
+                              OFFER_DEFAULT_TIME2WAIT, offer);
+            
+            ISCSI_UNH_SET_INT("DefaultTime2Retain", 
+                              conn->default_time2retain, req->target_id,
+                              OFFER_DEFAULT_TIME2RETAIN, offer);
+            
+            ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
+                              conn->error_recovery_level, req->target_id,
+                              OFFER_ERROR_RECOVERY_LEVEL, offer);
+            
+            ISCSI_UNH_SET_UNNEGOTIATED("SessionType", conn->session_type, req->target_id);
+            
+            
+            
+        }
+        ISCSI_UNH_SET_UNNEGOTIATED("AuthMethod", conn->chap.chap, req->target_id);
+        
+        /* Target' CHAP */
+        if (conn->chap.target_auth)
+        {
+            ISCSI_UNH_FORCE_FLAG("t", req->target_id,
+                                 "Target Authentication");
+        }
+        
+        ISCSI_UNH_FORCE_STRING("px", conn->chap.peer_secret, req->target_id,
+                               "Peer Secret");
+        
+        ISCSI_UNH_FORCE("ln", conn->chap.local_name, req->target_id,
+                        "Local Name");
+        
+        if (conn->chap.enc_fmt == BASE_64)
+            ISCSI_UNH_FORCE_FLAG("b", req->target_id,
+                                 "Encoding Format");
+        
+        ISCSI_UNH_FORCE_INT("cl", conn->chap.challenge_length, req->target_id,
+                            "Challenge Length");
+        
+        ISCSI_UNH_FORCE("pn", conn->chap.peer_name, req->target_id,
+                        "Peer Name");
+        
+        ISCSI_UNH_FORCE_STRING("lx", conn->chap.local_secret, req->target_id,
+                               "Local Secret");
+        
+        ISCSI_UNH_FORCE_INT("sch", 1, req->target_id,
+                            "Load-balancing"); /* Turning on round-robin */
+        
+        /* Initiator itself */
+        ISCSI_UNH_SET_UNNEGOTIATED("InitiatorName", 
+                                   conn->initiator_name,
+                                   req->target_id);
 #if 0
-    ISCSI_UNH_SET_UNNEGOTIATED("InitiatorAlias", 
-                  conn->initiator_alias, 
-                  target_id);
+        ISCSI_UNH_SET_UNNEGOTIATED("InitiatorAlias", 
+                                   conn->initiator_alias, 
+                                   target_id);
 #endif
-    /* Now the connection should be opened */
-    rc = te_shell_cmd_ex("iscsi_config up ip=%s port=%d "
-                         "cid=%d target=%d host=%d lun=%d %s",
-                         target->target_addr,
-                         target->target_port,
-                         cid, target_id, init_data->host_bus_adapter,
-                         DEFAULT_LUN_NUMBER,
-                         target->number_of_open_connections == 0 ?
-                         WRITE_TO_ISCSI_DEVICE : "");
-    if (rc != 0)
-    {
-        ERROR("Failed to establish connection with cid=%d", cid);
-        return TE_RC(TE_TA_UNIX, rc);
+        /* Now the connection should be opened */
+        rc = ta_system_ex("iscsi_config up ip=%s port=%d "
+                          "cid=%d target=%d host=%d lun=%d",
+                          target->target_addr,
+                          target->target_port,
+                          req->cid, req->target_id, 
+                          init_data->host_bus_adapter,
+                          DEFAULT_LUN_NUMBER);
+        pthread_mutex_lock(&init_data->initiator_mutex);
+        conn->status = (rc == 0 ? ISCSI_CONNECTION_WAITING_DEVICE : 
+                        ISCSI_CONNECTION_ABNORMAL);
+        pthread_mutex_unlock(&init_data->initiator_mutex);
+
+        if (rc != 0)
+        {
+            ERROR("Failed to establish connection with cid=%d", req->cid);
+            return TE_RC(iscsi_agent_type, rc);
+        }
+        target->number_of_open_connections++;
+        init_data->n_connections++;
     }
-    conn->status = ISCSI_CONNECTION_UP;
-    target->number_of_open_connections++;
     return 0;
 }
 
 static int
-iscsi_initiator_l5_set(const int target_id, const int cid, int oper)
+iscsi_initiator_l5_set(iscsi_connection_req *req)
 {
     int                  rc = -1;
-    int                  i;
-    te_bool              there_are_connections = FALSE;
-    iscsi_target_data_t *target = init_data->targets + target_id;
+    int                  former_status;
+    iscsi_target_data_t *target = init_data->targets + req->target_id;
     
-    for (i = 0; i < MAX_TARGETS_NUMBER; i++)
-    {
-        if (init_data->targets[i].number_of_open_connections > 0)
-            there_are_connections = TRUE;
-    }
-
-    switch (oper)
+    switch (req->status)
     {
         case ISCSI_CONNECTION_DOWN:
-            RING("Stopping connection %d, %d", target_id, cid);
+        case ISCSI_CONNECTION_REMOVED:
+            RING("Stopping connection %d, %d", req->target_id, req->cid);
+            fprintf(stderr, "emergency: Stopping connection %d, %d\n", req->target_id, req->cid);
             
-            if (strcmp(target->conns[cid].session_type, "Discovery") != 0)
+            if (strcmp(target->conns[req->cid].session_type, "Discovery") != 0)
             {
-                rc = te_shell_cmd_ex("cd %s; ./iscsi_stopconns target%d_conn%d", 
-                                     init_data->script_path,
-                                     target_id, cid);
+                pthread_mutex_lock(&init_data->initiator_mutex);
+                former_status = target->conns[req->cid].status;
+                target->conns[req->cid].status = ISCSI_CONNECTION_CLOSING;
+                pthread_mutex_unlock(&init_data->initiator_mutex);
+                rc = ta_system_ex("cd %s; ./iscsi_stopconns %s target%d_conn%d", 
+                                  init_data->script_path,
+                                  init_data->verbosity != 0 ? "-v" : "",
+                                  req->target_id, req->cid);
+                pthread_mutex_lock(&init_data->initiator_mutex);
+                target->conns[req->cid].status = req->status;
+                pthread_mutex_unlock(&init_data->initiator_mutex);
+
                 if (rc != 0)
                 {
                     ERROR("Unable to stop initiator connection %d, %d, "
                           "status = %d", 
-                          target_id, cid, rc);
-                    return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+                          req->target_id, req->cid, rc);
+                    return TE_RC(iscsi_agent_type, TE_ESHCMD);
                 }
+                if (former_status == ISCSI_CONNECTION_UP && 
+                    target->number_of_open_connections > 0)
+                {
+                    target->number_of_open_connections--;
+                    init_data->n_connections--;
+                }
+                fprintf(stderr, "emergency: stopped connection %d, %d\n", req->target_id, req->cid);
             }
-            if (target->number_of_open_connections > 0)
-                target->number_of_open_connections--;
             break;
         case ISCSI_CONNECTION_UP:
-            if (!there_are_connections)
+            if (init_data->n_connections == 0)
             {
                 rc = iscsi_l5_write_config(init_data);
                 if (rc != 0)
                     return rc;
             }
 
-            if (strcmp(target->conns[cid].session_type, "Discovery") != 0)
+            pthread_mutex_lock(&init_data->initiator_mutex);
+            target->conns[req->cid].status = ISCSI_CONNECTION_ESTABLISHING;
+            pthread_mutex_unlock(&init_data->initiator_mutex);
+
+            if (strcmp(target->conns[req->cid].session_type, "Discovery") != 0)
             {
-                rc = te_shell_cmd_ex("cd %s; ./iscsi_startconns target%d_conn%d %s", 
-                                     init_data->script_path,
-                                     target_id, cid, 
-                                     (target->number_of_open_connections == 0 ? 
-                                      WRITE_TO_ISCSI_DEVICE : ""));
+                rc = ta_system_ex("cd %s; ./iscsi_startconns %s target%d_conn%d", 
+                                  init_data->script_path,
+                                  init_data->verbosity != 0 ? "-v" : "",
+                                  req->target_id, req->cid);
             }
             else
             {
                 if (target->number_of_open_connections == 0)
                 {
-                    rc = te_shell_cmd_ex("cd %s; ./iscsi_discover te", 
+                    rc = ta_system_ex("cd %s; ./iscsi_discover te", 
                                          init_data->script_path);
                 }
                 else
@@ -1452,68 +1667,80 @@ iscsi_initiator_l5_set(const int target_id, const int cid, int oper)
                     rc = 0;
                 }
             }
+            pthread_mutex_lock(&init_data->initiator_mutex);
+            target->conns[req->cid].status = (rc == 0 ? 
+                                              ISCSI_CONNECTION_WAITING_DEVICE :
+                                              ISCSI_CONNECTION_ABNORMAL);
+            pthread_mutex_unlock(&init_data->initiator_mutex);
             if (rc != 0)
             {
                 ERROR("Unable to start initiator connection %d, %d",
-                      target_id, cid);
-                return TE_RC(TE_TA_UNIX, rc);
+                      req->target_id, req->cid);
+                return TE_RC(iscsi_agent_type, rc);
             }
             target->number_of_open_connections++;
+            init_data->n_connections++;
             break;
         default:
-            ERROR("Invalid operational code %d", oper);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            ERROR("Invalid operational code %d", req->status);
+            return TE_RC(iscsi_agent_type, TE_EINVAL);
     }
     return 0;
 }
 
 static int
-iscsi_initiator_openiscsi_set(const int target_id, const int cid, int oper)
+iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
 {
     int                     rc = -1;
     int                     rc2 = -1;
-    iscsi_target_data_t    *target = init_data->targets + target_id;
+    iscsi_target_data_t    *target = init_data->targets + req->target_id;
+    int                     former_status;
 
-    if (oper == ISCSI_CONNECTION_DOWN)
+    if (req->status == ISCSI_CONNECTION_DOWN || 
+        req->status == ISCSI_CONNECTION_REMOVED) 
     {
-        int i;
-
         if (*target->record_id == '\0')
         {
-            ERROR("Target %d has no associated record id", target_id);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            ERROR("Target %d has no associated record id", req->target_id);
+            return TE_RC(iscsi_agent_type, TE_EINVAL);
         }
-#if 0
-        /** Open iSCSI allows connection logouts only in the order
-            they have been brought up, so checking for it
-        */
-        for (i = 0; i < MAX_CONNECTIONS_NUMBER; i++)
-        {
-            if (target->conns[i].cid > cid)
-            {
-                ERROR("Wrong order of connection logouts for Open iSCSI");
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
-        }
-#endif
+        pthread_mutex_lock(&init_data->initiator_mutex);
+        former_status = target->conns[req->cid].status;
+        target->conns[req->cid].status = ISCSI_CONNECTION_CLOSING;
+        pthread_mutex_unlock(&init_data->initiator_mutex);
         rc = ta_system_ex("iscsiadm -m node --record=%s --logout",
                           target->record_id);
         rc2 = ta_system_ex("iscsiadm -m node --record=%s --op=delete",
                            target->record_id);
         *target->record_id = '\0';
-        if (target->number_of_open_connections > 0)
+        if (former_status == ISCSI_CONNECTION_UP && 
+            target->number_of_open_connections > 0)
+        {
             target->number_of_open_connections--;
-        return rc != 0? TE_RC(TE_TA_UNIX, rc) : 
-            (rc2 != 0 ? TE_RC(TE_TA_UNIX, rc2) : 0);
+            init_data->n_connections--;
+        }
+        if (init_data->n_connections == 0)
+        {
+            iscsi_openiscsi_stop_daemon();
+        }
+        
+        pthread_mutex_lock(&init_data->initiator_mutex);
+        target->conns[req->cid].status = req->status;
+        pthread_mutex_unlock(&init_data->initiator_mutex);
+        return rc != 0? TE_RC(iscsi_agent_type, rc) : 
+            (rc2 != 0 ? TE_RC(iscsi_agent_type, rc2) : 0);
     }
     else
     {
-        if (iscsid_process == (pid_t)-1)
-        {
-            rc = iscsi_openiscsi_start_daemon(target);
-            if (rc != 0)
-                return rc;
-        }
+        pthread_mutex_lock(&init_data->initiator_mutex);
+        target->conns[req->cid].status = ISCSI_CONNECTION_ESTABLISHING;
+        pthread_mutex_unlock(&init_data->initiator_mutex);
+
+        rc = iscsi_openiscsi_start_daemon(target, 
+                                          init_data->n_connections == 0);
+        if (rc != 0)
+            return rc;
+
         if (*target->record_id == '\0')
         {
             const char *id = iscsi_openiscsi_alloc_node(init_data,
@@ -1521,7 +1748,7 @@ iscsi_initiator_openiscsi_set(const int target_id, const int cid, int oper)
                                                         target->target_port);
             if (id == NULL)
             {
-                return TE_RC(TE_TA_UNIX, TE_ETOOMANY);
+                return TE_RC(iscsi_agent_type, TE_ETOOMANY);
             }
             strcpy(target->record_id, id);
         }
@@ -1531,16 +1758,430 @@ iscsi_initiator_openiscsi_set(const int target_id, const int cid, int oper)
             return rc;
         }
         
-        rc = te_shell_cmd_ex("iscsiadm -m node --record=%s --login "
-                             WRITE_TO_ISCSI_DEVICE,
+        rc = ta_system_ex("iscsiadm -m node --record=%s --login",
                              target->record_id);
         if (rc == 0)
+        {
             target->number_of_open_connections++;
-
-        return TE_RC(TE_TA_UNIX, rc);
+            init_data->n_connections++;
+            pthread_mutex_lock(&init_data->initiator_mutex);
+            target->conns[req->cid].status = ISCSI_CONNECTION_WAITING_DEVICE;
+            pthread_mutex_unlock(&init_data->initiator_mutex);
+        }
+        else
+        {
+            pthread_mutex_lock(&init_data->initiator_mutex);
+            target->conns[req->cid].status = ISCSI_CONNECTION_ABNORMAL;
+            pthread_mutex_unlock(&init_data->initiator_mutex);
+        }
+        
+        return TE_RC(iscsi_agent_type, rc);
     }
     
     return 0;
+}
+
+static te_errno
+iscsi_post_connection_request(int target_id, int cid, int status)
+{
+    iscsi_connection_req *req;
+
+    RING("Posting connection status change request: %d,%d -> %d", target_id, cid, status);
+
+    switch (status)
+    {
+        case ISCSI_CONNECTION_UP:
+        case ISCSI_CONNECTION_DOWN:
+        case ISCSI_CONNECTION_REMOVED:
+            /* status is ok */
+            break;
+        default:
+            return TE_RC(iscsi_agent_type, TE_EINVAL);
+    }
+
+    req = malloc(sizeof(*req));
+    if (req == NULL)
+        return TE_OS_RC(iscsi_agent_type, errno);
+    req->target_id = target_id;
+    req->cid       = cid;
+    req->status    = status;
+    req->next      = NULL;
+    pthread_mutex_lock(&init_data->initiator_mutex);
+    if (init_data->request_queue_tail != NULL)
+        init_data->request_queue_tail->next = req;
+    else
+        init_data->request_queue_head = req;
+    init_data->request_queue_tail = req;
+    pthread_mutex_unlock(&init_data->initiator_mutex);
+    sem_post(&init_data->request_sem);
+    return 0;
+}
+
+static te_errno
+iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
+{
+    char        dev_pattern[128];
+    glob_t      devices;
+    int         rc = 0;
+    char       *nameptr;
+    FILE       *hba = NULL;
+
+    switch (init_data->init_type)
+    {
+        case L5:
+            hba = popen("T=`grep -l efabiscsi "
+                        "/sys/class/scsi_host/host*/proc_name` && "
+                        "B=${T%/proc_name} && "
+                        "echo ${B##*/host}", "r");
+            if (hba == NULL)
+            {
+                return TE_RC(iscsi_agent_type, TE_EAGAIN);
+            }
+            
+            rc = fscanf(hba, "%d", &init_data->host_bus_adapter);
+            if (rc <= 0)
+            {
+                return TE_RC(iscsi_agent_type, TE_EAGAIN);
+            }
+            pclose(hba);
+            break;
+        default:
+        {
+            if ((rc = glob("/sys/bus/scsi/devices/*/vendor", GLOB_ERR, NULL, &devices)) != 0)
+            {
+                switch(rc)
+                {
+                    case GLOB_NOSPACE:
+                        ERROR("Cannot read a list of host bus adpaters: no memory");
+                        return TE_RC(iscsi_agent_type, TE_ENOMEM);
+                    case GLOB_ABORTED:
+                        ERROR("Cannot read a list of host bus adapters: read error");
+                        return TE_RC(iscsi_agent_type, TE_EIO);
+                    case GLOB_NOMATCH:
+                        pthread_mutex_lock(&init_data->initiator_mutex);
+                        *conn->device_name = '\0';
+                        pthread_mutex_unlock(&init_data->initiator_mutex);
+                        return TE_RC(iscsi_agent_type, TE_EAGAIN);
+                    default:
+                        ERROR("unexpected error on glob()");
+                        return TE_RC(iscsi_agent_type, TE_EFAIL);
+                }
+            }
+            else
+            {
+                unsigned i;
+                
+                for (i = 0; i < devices.gl_pathc; i++)
+                {
+                    RING("Trying %s", devices.gl_pathv[i]);
+                    hba = fopen(devices.gl_pathv[i], "r");
+                    if (hba == NULL)
+                    {
+                        WARN("Cannot open %s: %s", devices.gl_pathv[i], 
+                             strerror(errno));
+                    }
+                    else
+                    {
+                        *dev_pattern = '\0';
+                        fgets(dev_pattern, sizeof(dev_pattern) - 1, hba);
+                        RING("Vendor reported is %s", dev_pattern);
+                        fclose(hba);
+                        if (strstr(dev_pattern, "UNH") != NULL)
+                        {
+                            rc = sscanf(devices.gl_pathv[i], "/sys/bus/scsi/devices/%d:", 
+                                        &init_data->host_bus_adapter);
+                            if (rc != 1)
+                            {
+                                ERROR("Something strange with /sys/bus/scsi/devices");
+                                globfree(&devices);
+                                return TE_RC(iscsi_agent_type, TE_EFAIL);
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (i == devices.gl_pathc)
+                {
+                    globfree(&devices);
+                    return TE_RC(iscsi_agent_type, TE_EAGAIN);
+                }
+                globfree(&devices);
+            }
+            RING("Host bus adapter detected as %d", init_data->host_bus_adapter);
+            break;
+        }
+    }
+       
+    sprintf(dev_pattern, "/sys/bus/scsi/devices/%d:*:%d/block*", 
+            init_data->host_bus_adapter, target_id);
+    if ((rc = glob(dev_pattern, GLOB_ERR, NULL, &devices)) != 0)
+    {
+        switch(rc)
+        {
+            case GLOB_NOSPACE:
+                ERROR("Cannot read a list of devices: no memory");
+                return TE_RC(iscsi_agent_type, TE_ENOMEM);
+            case GLOB_ABORTED:
+                ERROR("Cannot read a list of devices: read error");
+                return TE_RC(iscsi_agent_type, TE_EIO);
+            case GLOB_NOMATCH:
+                RING("No items for %s", dev_pattern);
+                pthread_mutex_lock(&init_data->initiator_mutex);
+                *conn->device_name = '\0';
+                pthread_mutex_unlock(&init_data->initiator_mutex);
+                return TE_RC(iscsi_agent_type, TE_EAGAIN);
+            default:
+                ERROR("unexpected error on glob()");
+                return TE_RC(iscsi_agent_type, TE_EFAIL);
+        }
+    }
+
+    if (devices.gl_pathc > 1)
+    {
+        WARN("Stale devices detected; hoping we choose the right one");
+    }
+
+    if (realpath(devices.gl_pathv[devices.gl_pathc - 1], dev_pattern) == NULL)
+    {
+        rc = TE_OS_RC(iscsi_agent_type, errno);
+        WARN("Cannot resolve %s: %r", 
+             devices.gl_pathv[devices.gl_pathc - 1],
+             rc);
+    }
+    else
+    {
+        int  fd;
+
+        nameptr = strrchr(dev_pattern, '/');
+        if (nameptr == NULL)
+            WARN("Strange sysfs name: %s", dev_pattern);
+        else
+        {
+            pthread_mutex_lock(&init_data->initiator_mutex);
+            strcpy(conn->device_name, "/dev/");
+            strcat(conn->device_name, nameptr + 1);
+            pthread_mutex_unlock(&init_data->initiator_mutex);
+        }
+        /** Now checking that the device is active */
+        strcpy(dev_pattern, devices.gl_pathv[0]);
+        nameptr = strrchr(dev_pattern, '/');
+        strcpy(nameptr + 1, "state");
+        fd = open(dev_pattern, O_RDONLY);
+        if (fd < 0)
+        {
+            rc = TE_OS_RC(iscsi_agent_type, errno);
+            ERROR("Cannot get device state for %s: %r", 
+                  dev_pattern, rc);
+        }
+        else
+        {
+            char state[16] = "";
+            read(fd, state, sizeof(state) - 1);
+            if (strcmp(state, "running\n") != 0)
+            {
+                WARN("Device is present but not ready: %s", state);
+                pthread_mutex_lock(&init_data->initiator_mutex);
+                *conn->device_name = '\0';
+                pthread_mutex_unlock(&init_data->initiator_mutex);
+                rc = TE_RC(iscsi_agent_type, TE_EAGAIN);
+            }
+            close(fd);
+        }
+    }
+    globfree(&devices);
+    if (rc == 0)
+    {
+        int fd = open(conn->device_name, O_WRONLY | O_SYNC);
+        
+        if (fd < 0)
+        {
+            rc = TE_OS_RC(iscsi_agent_type, errno);
+            if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+            {
+                RING("Device %s is not ready :(", conn->device_name);
+                pthread_mutex_lock(&init_data->initiator_mutex);
+                *conn->device_name = '\0';
+                pthread_mutex_unlock(&init_data->initiator_mutex);
+                rc = TE_RC(iscsi_agent_type, TE_EAGAIN);
+            }
+            else
+            {
+                ERROR("Cannot open a device %s: %r",
+                      conn->device_name, rc);
+            }
+        }
+        else
+        {
+            const char buf[16] = "testing";
+            errno = 0;
+            if (write(fd, buf, sizeof(buf)) != sizeof(buf))
+            {
+                rc = (errno == 0 ? TE_RC(iscsi_agent_type, TE_ENOSPC) :
+                      TE_OS_RC(iscsi_agent_type, errno));
+                ERROR("Cannot write to device %s: %r",
+                      conn->device_name, rc);
+                close(fd);
+            }
+            else
+            {
+                if (close(fd) != 0)
+                {
+                    rc = TE_OS_RC(iscsi_agent_type, errno);
+                    ERROR("Error syncing data to %s: %r",
+                          conn->device_name, rc);
+                }
+            }
+        }
+    }
+    return rc;
+}
+
+static void *
+iscsi_initator_conn_request_thread(void *arg)
+{
+    iscsi_connection_req *current_req = NULL;
+    
+    int old_status;
+
+    UNUSED(arg);
+    
+    for (;;)
+    {
+        sem_wait(&init_data->request_sem);
+        RING("Got connection status change request");
+        pthread_mutex_lock(&init_data->initiator_mutex);
+        current_req = init_data->request_queue_head;
+        if (current_req != NULL)
+        {
+            init_data->request_queue_head = current_req->next;
+            if (init_data->request_queue_head == NULL)
+                init_data->request_queue_tail = NULL;
+        }
+        pthread_mutex_unlock(&init_data->initiator_mutex);
+        if (current_req == NULL)
+            continue;
+
+        if (current_req->cid == ISCSI_ALL_CONNECTIONS)
+        {
+            if (init_data->init_type == OPENISCSI)
+            {
+                iscsi_openiscsi_stop_daemon();
+            }
+            return NULL;
+        }
+
+        old_status = init_data->targets[current_req->target_id].
+            conns[current_req->cid].status;
+
+        switch (old_status)
+        {
+            case ISCSI_CONNECTION_DOWN:
+            case ISCSI_CONNECTION_REMOVED:
+                if (current_req->status != ISCSI_CONNECTION_UP)
+                {
+                    RING("Connection %d,%d is already down, nothing to do",
+                         current_req->target_id, current_req->cid);
+                    pthread_mutex_lock(&init_data->initiator_mutex);
+                    init_data->targets[current_req->target_id].
+                        conns[current_req->cid].status = current_req->status;
+                    pthread_mutex_unlock(&init_data->initiator_mutex);
+                    free(current_req);
+                    continue;
+                }
+                break;
+            case ISCSI_CONNECTION_UP:
+            {
+                if (current_req->status == ISCSI_CONNECTION_UP)
+                {
+                    iscsi_connection_req *down_req = NULL;
+                    WARN("Connection %d:%d is already up, "
+                         "trying to bring it down first",
+                         current_req->target_id, current_req->cid);
+                    pthread_mutex_lock(&init_data->initiator_mutex);
+                    current_req->next = init_data->request_queue_head;
+                    if (init_data->request_queue_tail == NULL)
+                        init_data->request_queue_tail = current_req;
+                    down_req  = malloc(sizeof(*down_req));
+                    *down_req = *current_req;
+                    down_req->status = ISCSI_CONNECTION_DOWN;
+                    down_req->next = current_req;
+                    init_data->request_queue_head = down_req;
+                    sem_post(&init_data->request_sem); /* for down request */
+                    sem_post(&init_data->request_sem); /* for up request */
+                    pthread_mutex_unlock(&init_data->initiator_mutex);
+                    continue;
+                }
+                break;
+            }
+            default:
+            {
+                if (current_req->status == ISCSI_CONNECTION_UP)
+                {
+                    ERROR("Connection %d:%d is in inconsistent state, "
+                          "refusing to bring it up",
+                          current_req->target_id, current_req->cid);
+                    free(current_req);
+                    continue;
+                }
+            }
+        }
+            
+        switch (init_data->init_type)
+        {
+            case UNH:
+                iscsi_initiator_unh_set(current_req);
+                break;
+            case L5:
+                iscsi_initiator_l5_set(current_req);
+                break;
+            case OPENISCSI:
+                iscsi_initiator_openiscsi_set(current_req);
+                break;
+            default:
+                ERROR("Corrupted init_data->init_type: %d",
+                      init_data->init_type);
+        }
+        if (init_data->targets[current_req->target_id].
+            conns[current_req->cid].status == 
+            ISCSI_CONNECTION_WAITING_DEVICE)
+        {
+            if (init_data->targets[current_req->target_id].
+                number_of_open_connections > 1)
+            {
+                    pthread_mutex_lock(&init_data->initiator_mutex);
+                    init_data->targets[current_req->target_id].
+                        conns[current_req->cid].status = ISCSI_CONNECTION_UP;
+                    pthread_mutex_unlock(&init_data->initiator_mutex);
+            }
+            else
+            {
+                int i, rc;
+                
+                for (i = 30; i != 0; i--)
+                {
+                    rc = iscsi_prepare_device(&init_data->targets[current_req->target_id].
+                                              conns[current_req->cid],
+                                              current_req->target_id);
+                    if (rc == 0 || TE_RC_GET_ERROR(rc) != TE_EAGAIN)
+                        break;
+                    USLEEP(500000);
+                }
+                if (rc != 0)
+                {
+                    ERROR("Cannot prepare SCSI device for connection %d,%d: %r",
+                          current_req->target_id, current_req->cid, rc);
+                }
+                else
+                {
+                    pthread_mutex_lock(&init_data->initiator_mutex);
+                    init_data->targets[current_req->target_id].
+                        conns[current_req->cid].status = ISCSI_CONNECTION_UP;
+                pthread_mutex_unlock(&init_data->initiator_mutex);
+                }
+            }
+        }
+        free(current_req);    
+    }
 }
 
 static te_errno
@@ -1701,10 +2342,9 @@ iscsi_conn_del(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    init_data->targets[iscsi_get_target_id(oid)].
-        conns[iscsi_get_cid(oid)].status = ISCSI_CONNECTION_REMOVED;
-
-    return 0;
+    return iscsi_post_connection_request(iscsi_get_target_id(oid),
+                                         iscsi_get_cid(oid), 
+                                         ISCSI_CONNECTION_REMOVED);
 }
 
 static te_errno
@@ -1736,7 +2376,7 @@ iscsi_conn_list(unsigned int gid, const char *oid,
     if (*list == NULL)
     {
         ERROR("Failed to allocate memory for the list of connections.");
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        return TE_RC(iscsi_agent_type, TE_ENOMEM);
     }
 
     return 0;
@@ -1752,7 +2392,21 @@ iscsi_target_data_add(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     UNUSED(value);
- 
+
+    if (init_data->n_targets == 0)
+    {
+        int rc;
+        rc = pthread_create(&init_data->request_thread, NULL, 
+                            iscsi_initator_conn_request_thread,
+                            NULL);
+        if (rc != 0)
+        {
+            ERROR("Cannot create a connection request processing thread");
+            return TE_OS_RC(iscsi_agent_type, rc);
+        }
+    }
+    
+    init_data->n_targets++;
     iscsi_init_default_tgt_parameters(&init_data->targets[tgt_id]);
     init_data->targets[tgt_id].target_id = tgt_id;
 
@@ -1772,6 +2426,14 @@ iscsi_target_data_del(unsigned int gid, const char *oid,
     
     IVERB("Deletting %s\n", oid);
     init_data->targets[tgt_id].target_id = -1;
+    if (--init_data->n_targets == 0)
+    {
+        /* to stop the thread and possibly a service daemon */
+        iscsi_post_connection_request(ISCSI_ALL_CONNECTIONS, ISCSI_ALL_CONNECTIONS, 
+                                      ISCSI_CONNECTION_REMOVED);
+        pthread_join(init_data->request_thread, NULL);
+    }
+    
     return 0;
 }
 
@@ -1804,7 +2466,7 @@ iscsi_target_data_list(unsigned int gid, const char *oid,
     if (*list == NULL)
     {
         ERROR("Failed to allocate memory for the list of targets");
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        return TE_RC(iscsi_agent_type, TE_ENOMEM);
     }
     return 0;
 }
@@ -2462,133 +3124,25 @@ static te_errno
 iscsi_host_device_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
-    char        dev_pattern[128];
-    glob_t      devices;
-    int         rc = 0;
-    char       *nameptr;
-    FILE       *hba = NULL;
-
+    int status;
+    int tgt_id = iscsi_get_target_id(oid);
+    int cid    = iscsi_get_cid(oid);
 
     UNUSED(gid);
     UNUSED(instance);
-    UNUSED(oid);
 
-    switch (init_data->init_type)
+    pthread_mutex_lock(&init_data->initiator_mutex);
+    status = init_data->targets[tgt_id].conns[cid].status;
+    if (status != ISCSI_CONNECTION_UP)
     {
-        case L5:
-            hba = popen("T=`grep -l efabiscsi "
-                        "/sys/class/scsi_host/host*/proc_name` && "
-                        "B=${T%/proc_name} && "
-                        "echo ${B##*/host}", "r");
-            if (hba == NULL)
-            {
-                ERROR("Failed to get host bus adapter for the L5 Initiator");
-                return TE_RC(TE_TA_UNIX, TE_ENOENT);
-            }
-            
-            rc = fscanf(hba, "%d", &init_data->host_bus_adapter);
-            if (rc <= 0)
-            {
-                ERROR("Failed to read the host bus adapter from the file");
-                return TE_RC(TE_TA_UNIX, TE_ENOENT);
-            }
-            pclose(hba);
-            break;
-        default:
-        {
-            hba = popen("grep -l UNH /sys/bus/scsi/devices/*/vendor", "r");
-            if (hba == NULL)
-            {
-                ERROR("Cannot detect a host bus adapter");
-                return TE_RC(TE_TA_UNIX, TE_ENOENT);
-            }
-            rc = fscanf(hba, "/sys/bus/scsi/devices/%d:", &init_data->host_bus_adapter);
-            if (rc != 1)
-            {
-                ERROR("Cannot detect a host bus adapter");
-                return TE_RC(TE_TA_UNIX, TE_ENOENT);
-            }
-            pclose(hba);
-            RING("Host bus adapter detected as %d", init_data->host_bus_adapter);
-            break;
-        }
-    }
-
-       
-    sprintf(dev_pattern, "/sys/bus/scsi/devices/%d:*:%d/block", 
-            init_data->host_bus_adapter, iscsi_get_target_id(oid));
-    if ((rc = glob(dev_pattern, GLOB_ERR, NULL, &devices)) != 0)
-    {
-        switch(rc)
-        {
-            case GLOB_NOSPACE:
-                ERROR("Cannot read a list of devices: no memory");
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            case GLOB_ABORTED:
-                ERROR("Cannot read a list of devices: read error");
-                return TE_RC(TE_TA_UNIX, TE_EIO);
-            case GLOB_NOMATCH:
-                WARN("No iSCSI devices found!!!");
-                *value = '\0';
-                return 0;
-            default:
-                ERROR("unexpected error on glob()");
-                return TE_RC(TE_TA_UNIX, TE_EFAIL);
-        }
-    }
-
-    *value = '\0';
-    if (devices.gl_pathc > 1)
-    {
-        WARN("Multiple devices associated with the target -- very strange");
-    }
-
-    if (realpath(devices.gl_pathv[0], dev_pattern) == NULL)
-    {
-        rc = errno;
-        WARN("Cannot resolve %s: %s", devices.gl_pathv[0], strerror(rc));
-        rc = TE_OS_RC(TE_TA_UNIX, rc);
+        *value = '\0';
     }
     else
     {
-        int  fd;
-
-        nameptr = strrchr(dev_pattern, '/');
-        if (nameptr == NULL)
-            WARN("Strange sysfs name: %s", dev_pattern);
-        else
-        {
-            if (*value != '\0')
-                strcat(value, " ");
-            strcat(value, "/dev/");
-            strcat(value, nameptr + 1);
-        }
-        /** Now checking that the device is active */
-        strcpy(dev_pattern, devices.gl_pathv[0]);
-        nameptr = strrchr(dev_pattern, '/');
-        strcpy(nameptr + 1, "state");
-        fd = open(dev_pattern, O_RDONLY);
-        if (fd < 0)
-        {
-            rc = errno;
-            ERROR("Cannot get device state for %s: %s", 
-                  dev_pattern, strerror(errno));
-            rc = TE_OS_RC(TE_TA_UNIX, rc);
-        }
-        else
-        {
-            char state[16] = "";
-            read(fd, state, sizeof(state) - 1);
-            if (strcmp(state, "running\n") != 0)
-            {
-                WARN("Device is present but not ready: %s", state);
-                *value = '\0';
-            }
-            close(fd);
-        }
+        strcpy(value, init_data->targets[tgt_id].conns[cid].device_name);
     }
-    globfree(&devices);
-    return rc;
+    pthread_mutex_unlock(&init_data->initiator_mutex);
+    return 0;
 }
 
 /* Initiator's path to scripts (for L5) */
@@ -2622,7 +3176,9 @@ static te_errno
 iscsi_type_set(unsigned int gid, const char *oid,
                char *value, const char *instance, ...)
 {
+#if 0
     int previous_type = init_data->init_type;
+#endif
 
     UNUSED(gid);
     UNUSED(instance);
@@ -2637,13 +3193,15 @@ iscsi_type_set(unsigned int gid, const char *oid,
     else if (strcmp(value, "open-iscsi") == 0)
         init_data->init_type = OPENISCSI;
     else
-        return TE_RC(TE_TA_UNIX, EINVAL);
+        return TE_RC(iscsi_agent_type, TE_EINVAL);
 
+#if 0
     if (previous_type != init_data->init_type &&
         previous_type == OPENISCSI)
     {
         iscsi_openiscsi_stop_daemon();
     }
+#endif
 
     return 0;
 }
@@ -2690,6 +3248,35 @@ iscsi_host_bus_adapter_get(unsigned int gid, const char *oid,
     UNUSED(oid);
 
     sprintf(value, "%d", init_data->host_bus_adapter);
+
+    return 0;
+}
+
+/* Verbosity */
+static te_errno
+iscsi_initiator_verbose_set(unsigned int gid, const char *oid,
+                              char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    init_data->verbosity = atoi(value);
+
+    return 0;
+}
+
+
+static te_errno
+iscsi_initiator_verbose_get(unsigned int gid, const char *oid,
+                              char *value, const char *instance, ...)
+{
+
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    sprintf(value, "%d", init_data->verbosity);
 
     return 0;
 }
@@ -2749,7 +3336,7 @@ iscsi_parameters2advertize_get(unsigned int gid, const char *oid,
 
     tgt_id = iscsi_get_target_id(oid);
     cid    = iscsi_get_cid(oid);
-    INFO("iscsi_parameters2advertize_get: %d, %d", tgt_id, cid);
+    RING("iscsi_parameters2advertize_get: %d, %d", tgt_id, cid);
     sprintf(value, "%d", 
             init_data->targets[tgt_id].conns[cid].conf_params);
     
@@ -2757,7 +3344,7 @@ iscsi_parameters2advertize_get(unsigned int gid, const char *oid,
 }
 
 static te_errno
-iscsi_cid_set(unsigned int gid, const char *oid,
+iscsi_status_set(unsigned int gid, const char *oid,
               char *value, const char *instance, ...)
 {
     int tgt_id = iscsi_get_target_id(oid);
@@ -2770,38 +3357,35 @@ iscsi_cid_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    switch (init_data->init_type)
-    {
-        case UNH:
-            return iscsi_initiator_unh_set(tgt_id, cid, oper);
-        case L5:
-            return iscsi_initiator_l5_set(tgt_id, cid, oper);
-        case OPENISCSI:
-            return iscsi_initiator_openiscsi_set(tgt_id, cid, oper);
-        default:
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    return 0;
+    return iscsi_post_connection_request(tgt_id, cid, oper);
 }
 
 static te_errno
-iscsi_cid_get(unsigned int gid, const char *oid,
-              char *value, const char *instance, ...)
+iscsi_status_get(unsigned int gid, const char *oid,
+                 char *value, const char *instance, ...)
 {
+    int status;
     UNUSED(gid);
     UNUSED(instance);
+
+    pthread_mutex_lock(&init_data->initiator_mutex);
+    status = init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].status;
+    pthread_mutex_unlock(&init_data->initiator_mutex);    
     
-    sprintf(value, "%d", init_data->targets[iscsi_get_target_id(oid)].
-            conns[iscsi_get_cid(oid)].status);
+    sprintf(value, "%d", status);
 
     return 0;
 }
 
 /* Configuration tree */
 
+RCF_PCH_CFG_NODE_RW(node_iscsi_verbose, "verbose", NULL, 
+                    NULL, iscsi_initiator_verbose_get,
+                    iscsi_initiator_verbose_set);
+
 RCF_PCH_CFG_NODE_RW(node_iscsi_script_path, "script_path", NULL, 
-                    NULL, iscsi_script_path_get,
+                    &node_iscsi_verbose, iscsi_script_path_get,
                     iscsi_script_path_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_type, "type", NULL, 
@@ -2828,8 +3412,8 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_target_name, "target_name", NULL,
                     &node_iscsi_target_addr, iscsi_target_name_get,
                     iscsi_target_name_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_cid, "cid", NULL, NULL,
-                    iscsi_cid_get, iscsi_cid_set);
+RCF_PCH_CFG_NODE_RW(node_iscsi_cid, "status", NULL, NULL,
+                    iscsi_status_get, iscsi_status_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_alias, "initiator_alias", NULL, 
                     &node_iscsi_cid, iscsi_initiator_alias_get,
@@ -2984,10 +3568,12 @@ RCF_PCH_CFG_NODE_RW(node_ds_iscsi_initiator, "iscsi_initiator",
  * object in the agent's tree.
  */
 te_errno
-ta_unix_iscsi_initiator_init()
+iscsi_initiator_conf_init(int agent_type)
 {
     /* On Init there is only one target configured on the Initiator */
     iscsi_init_default_ini_parameters(ISCSI_CONF_NO_TARGETS);
+
+    iscsi_agent_type = agent_type;
 
     return rcf_pch_add_node("/agent", &node_ds_iscsi_initiator);
 }

@@ -79,8 +79,9 @@
             VERB("answer is truncated\n");                              \
         }                                                               \
         rcf_ch_lock();                                                  \
+        pthread_cleanup_push((void (*)(void *))rcf_ch_unlock, NULL);      \
         _rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);     \
-        rcf_ch_unlock();                                                \
+        pthread_cleanup_pop(1);                                         \
         return _rc;                                                     \
     } while (FALSE)
 
@@ -233,7 +234,6 @@ rcf_ch_init()
     return 0;
 }
 
-
 /* See description in rcf_ch_api.h */
 void
 rcf_ch_lock()
@@ -272,9 +272,10 @@ rcf_ch_reboot(struct rcf_comm_connection *handle,
     
     len += snprintf(cbuf + answer_plen,             
                      buflen - answer_plen, "0") + 1;
-    rcf_ch_lock();                                  
+    rcf_ch_lock();
+    pthread_cleanup_push((void (*)(void *))rcf_ch_unlock, NULL);
     rcf_comm_agent_reply(handle, cbuf, len);         
-    rcf_ch_unlock();                                
+    pthread_cleanup_pop(1);
     
     ta_system("/sbin/reboot");
     return 0;
@@ -437,6 +438,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
         }
 
         rcf_ch_lock();
+        pthread_cleanup_push((void (*)(void *))rcf_ch_unlock, NULL);
         rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);
 
         auxbuf_p = auxbuf;
@@ -449,7 +451,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
             auxbuf_p += len;
             rc = rcf_comm_agent_reply(handle, cbuf, len);
         }
-        rcf_ch_unlock();
+        pthread_cleanup_pop(1);
         close(fd);
 
         EXIT("%r", rc);

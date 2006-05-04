@@ -10,7 +10,7 @@ TE_TOOLS([rgt rpcgen trc tce millicom])
 TE_PLATFORM([], [], [], [], [],
             [tools conf_oid rpcxdr rpc_types asn ndn \
              comm_net_agent loggerta rcfpch tce tad tad_dummy \
-             iscsi_unh_target \
+             iscsi_unh_target iscsi_initiator_conf \
              ipc bsapi loggerten rcfapi confapi comm_net_engine rcfunix \
              tapi rcfrpc tapi_rpc tapi_env tapi_tad tapi_pcap tapi_eth \
              tapi_bridge tapi_arp tapi_ipstack tapi_dhcp tapi_cli \
