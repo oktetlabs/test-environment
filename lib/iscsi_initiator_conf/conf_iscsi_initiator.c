@@ -1107,10 +1107,10 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
                       "node.session.iscsi.ERL", 
                       ERROR_RECOVERY_LEVEL,  FALSE),
             AUTH_PARAM(chap, "authmethod", NULL),
-            AUTH_PARAM(local_name, "username", NULL),
-            AUTH_PARAM(local_secret, "password", NULL),
-            AUTH_PARAM(peer_name, "username_in", iscsi_when_tgt_auth),
-            AUTH_PARAM(peer_secret, "password_in", iscsi_when_tgt_auth),
+            AUTH_PARAM(peer_name, "username", NULL),
+            AUTH_PARAM(peer_secret, "password", NULL),
+            AUTH_PARAM(local_name, "username_in", iscsi_when_tgt_auth),
+            AUTH_PARAM(local_secret, "password_in", iscsi_when_tgt_auth),
             ISCSI_END_PARAM_TABLE
         };
 
