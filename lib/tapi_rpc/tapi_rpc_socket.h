@@ -521,48 +521,32 @@ extern int rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
 
 /**
- * Query options associated with a socket.
- * This operation takes place on RPC server side.
+ * Query options associated with a socket. This operation takes place
+ * on RPC server side.
+ *
+ * The function should be used for fixed-size options when valid option
+ * level is required. RPC socket option name is unambiguously mapped to
+ * socket option level (see rpc_sockopt2level()).
  *
  * @note For more information about supported option level, 
  * see te_rpc_sys_socket.h.
  *
- * @param rpcs     RPC server handle
- * @param s        socket descriptor
- * @param level    protocol level at which the option resides. 
- *                 Following values can be specified:
- *                  - @b RPC_SOL_SOCKET  socket level
- *                  - @b RPC_SOL_IP      IPPROTO_IP level
- *                  - @b RPC_SOL_IPV6    IPPROTO_IPV6 level
- *                  - @b RPC_SOL_TCP     IPPROTO_TCP level
- * @param optname  Option name
- * @param optval   pointer to a buffer containing the value associated 
- *                 with the selected option.
- * @param optlen   initially points to the length of supplied buffer.
- *                 On return contain the actual size of the buffer.
- * @param roptlen  maximal length of the buffer or zero 
+ * @param rpcs      RPC server handle
+ * @param s         Socket descriptor
+ * @param optname   Option name
+ * @param optval    Location for option value value (size of location
+ *                  depends on option name and assumed to be sufficient)
  *
  * @return 0 on success or -1 on failure
+ *
+ * @sa rpc_getsockopt_gen()
  */
 static inline int
 rpc_getsockopt(rcf_rpc_server *rpcs,
-               int s, rpc_socklevel level, rpc_sockopt optname,
-               void *optval, socklen_t *optlen)
+               int s, rpc_sockopt optname, void *optval)
 {
-    return rpc_getsockopt_gen(rpcs, s, level, optname, optval, optlen,
-                              (optlen != NULL) ? *optlen : 0);
-}
-
-/**
- * Same as rpc_getsockopt, but argument length is detected automatically.
- */
-static inline int
-rpc_getsockopt_smart(rcf_rpc_server *rpcs, int s,
-                     rpc_socklevel level, rpc_sockopt optname, void *optval)
-{
-    socklen_t opt_len = RPC_OPTLEN_AUTO;
-    return rpc_getsockopt_gen(rpcs, s, level, optname, optval, &opt_len,
-                              opt_len);
+    return rpc_getsockopt_gen(rpcs, s, rpc_sockopt2level(optname),
+                              optname, optval, NULL, RPC_OPTLEN_AUTO);
 }
 
 /**
