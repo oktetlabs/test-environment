@@ -513,13 +513,13 @@ iscsi_l5_write_param(FILE *destination,
     fputs(": ", destination);
     if (param->is_string)
     {
-        RING("Setting %s = %s", param->name, 
+        VERB("Setting %s = %s", param->name, 
              (char *)data + param->offset);
         fputs((char *)data + param->offset, destination);
     }
     else
     {
-        RING("Setting %s = %d", param->name,
+        VERB("Setting %s = %d", param->name,
              *(int *)((char *)data + param->offset));
         fprintf(destination, "%d", 
                 *(int *)((char *)data + param->offset));
@@ -2749,7 +2749,7 @@ iscsi_parameters2advertize_get(unsigned int gid, const char *oid,
 
     tgt_id = iscsi_get_target_id(oid);
     cid    = iscsi_get_cid(oid);
-    RING("iscsi_parameters2advertize_get: %d, %d", tgt_id, cid);
+    INFO("iscsi_parameters2advertize_get: %d, %d", tgt_id, cid);
     sprintf(value, "%d", 
             init_data->targets[tgt_id].conns[cid].conf_params);
     
