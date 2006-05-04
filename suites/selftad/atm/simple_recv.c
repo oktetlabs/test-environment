@@ -228,8 +228,7 @@ main(int argc, char *argv[])
 
     tst_s = rpc_socket(pco_tst, rpc_socket_domain_by_addr(iut_addr),
                        RPC_SOCK_STREAM, RPC_PROTO_DEF);
-    rpc_setsockopt(pco_tst, tst_s, RPC_SOL_TCP, RPC_TCP_NODELAY,
-                   &enable, sizeof(enable));
+    rpc_setsockopt(pco_tst, tst_s, RPC_TCP_NODELAY, &enable);
     rpc_connect(pco_tst, tst_s, iut_addr, iut_addrlen);
 
     CHECK_RC(tapi_tcp_server_recv(iut_host->ta, 0, tcp_srv_csap,
