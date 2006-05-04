@@ -31,382 +31,143 @@
 #include <stddef.h>
 #include "conf_daemons.h"
 #include <sys/wait.h>
-#include "debug.h"
-#include "chap.h"
-#include "target_negotiate.h"
 #include "iscsi_target_api.h"
-#include "iscsi_custom.h"
-
-extern struct iscsi_global *devdata;
-extern int iscsi_server_init();
-
-#define CHAP_SET_SECRET(value, x) \
-    (CHAP_SetSecret(value, x) == 1)
-#define CHAP_SET_NAME(value, n) \
-    (CHAP_SetName(value, n) == 1)
-#define CHAP_GET_NAME(n) \
-    CHAP_GetName(n)
-#define CHAP_GET_SECRET(n) \
-    CHAP_GetSecret(n)
-#define CHAP_SET_CHALLENGE_LENGTH(len, lx) \
-    (CHAP_SetChallengeLength(len, lx) == 1)
-#define CHAP_GET_CHALLENGE_LENGTH(n) \
-    CHAP_GetChallengeLength(n)
-#define CHAP_SET_ENCODING_FMT(fmt, lx, px) \
-    ((CHAP_SetNumberFormat(fmt, lx) == 1) && (CHAP_SetNumberFormat(fmt, px) == 1))
 
 
-#define DEVDATA_GET_CHECK                               \
-    if (devdata == NULL)                                \
-    {                                                   \
-        RING("devdata is NULL in %s", __FUNCTION__);    \
-        *value = '\0';                                  \
-        return 0;                                       \
-    }
-
-#define DEVDATA_SET_CHECK                               \
-    if (devdata == NULL)                                \
-    {                                                   \
-        RING("devdata is NULL in %s", __FUNCTION__);    \
-        return 0;                                       \
-    }
-
-/** Get CHAP peer name */
 static te_errno
-iscsi_target_pn_get(unsigned int gid, const char *oid,
-                    char *value, const char *instance, ...)
+copy_value(char *buf, int size, void *value)
 {
-    char *tmp;
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
+    memcpy(value, buf, size);
+    return 0;
+}
 
-    DEVDATA_GET_CHECK;
-    tmp = CHAP_GET_NAME(devdata->auth_parameter.chap_peer_ctx);
-    if (tmp == NULL)
-        strcpy(value, "Peer name");
+static te_errno
+boolean_value(char *buf, int size, void *value)
+{
+    UNUSED(size);
+
+    if (strcmp(buf, "true") == 0)
+        *(char *)value = '1';
+    else if (strcmp(buf, "false") == 0)
+        *(char *)value = '0';
     else
-    {
-        strcpy(value, tmp);
-        free(tmp);
-    }
+        return TE_RC(TE_TA_UNIX, TE_EPROTO);
+    ((char *)value)[1] = '\0';
     return 0;
 }
 
-/** Set CHAP peer name */
-static te_errno
-iscsi_target_pn_set(unsigned int gid, const char *oid,
-                    char *value, const char *instance, ...)
+static const char *
+map_oid_to_seccmd(const char *oid)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-
-    DEVDATA_SET_CHECK;
-
-    if (!CHAP_SET_NAME(value, 
-                        devdata->auth_parameter.chap_peer_ctx))
-    {    
-        ERROR("%s, %d: Cannot set name",
-              __FUNCTION__,
-              __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }   
-    return 0;
-}
-
-/** Get CHAP peer secret */
-static te_errno
-iscsi_target_px_get(unsigned int gid, const char *oid,
-                    char *value, const char *instance, ...)
-{
-    char *tmp;
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-
-    DEVDATA_GET_CHECK;
-    tmp = CHAP_GET_SECRET(devdata->auth_parameter.chap_peer_ctx);
-    if (tmp == NULL)
-        strcpy(value, "Peer secret");
-    else
+    static char *mappings[][2] =
+        {{"pn:", "peername"},
+         {"px:", "peersecret"},
+         {"ln:", "localname"},
+         {"lx:", "localsecret"},
+         {"t:", "mutualauth"},
+         {"b:", "base64"},
+         {"cl:", "length"},
+         {NULL, NULL}
+        };
+    int i;
+    
+    oid = strrchr(oid, '/');
+    if (oid == NULL)
     {
-        strcpy(value, tmp);
-        free(tmp);
+        ERROR("OID is malformed");
+        return "";
     }
 
-    return 0;
-}
-
-/** Set CHAP peer name */
-static te_errno
-iscsi_target_px_set(unsigned int gid, const char *oid,
-                    char *value, const char *instance, ...)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-
-    DEVDATA_SET_CHECK;
- 
-    if (!CHAP_SET_SECRET(value, 
-                         devdata->auth_parameter.chap_peer_ctx))
+    oid++;
+    for (i = 0; mappings[i][0] != NULL; i++)
     {
-        ERROR("%s, %d: Cannot set secret",
-              __FUNCTION__,
-              __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }    
-    return 0;
-}
-
-/** Get mutual auth status */
-static te_errno
-iscsi_target_t_get(unsigned int gid, const char *oid,
-                   char *value, const char *instance, ...)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(instance);
-
-    DEVDATA_GET_CHECK;
-
-    *value = (devdata->auth_parameter.auth_flags & USE_TARGET_CONFIRMATION ? '1' : '0');
-    value[1] = '\0';
-    return 0;
-}
-
-/** Set mutual auth status */
-static te_errno
-iscsi_target_t_set(unsigned int gid, const char *oid,
-                   char *value, const char *instance, ...)
-{
-    int tgt_cfmt = strtol(value, NULL, 0);
-    
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-
-    DEVDATA_SET_CHECK;
- 
-    if (!(tgt_cfmt == 0 || tgt_cfmt == 1))
-    {
-        ERROR("%s, %d: Bad cfmt parameter provideded",
-              __FUNCTION__,
-              __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        if (strcmp(mappings[i][0], oid) == 0)
+        {
+            return mappings[i][1];
+        }
     }
-    
-    if (tgt_cfmt == 1)
-        devdata->auth_parameter.auth_flags |= USE_TARGET_CONFIRMATION;
-    else
-        devdata->auth_parameter.auth_flags &= ~USE_TARGET_CONFIRMATION;
-    return 0;
+    ERROR("Unknown OID: %s", oid);
+    return "";
 }
 
-/** Get challenge encoding */
+
 static te_errno
-iscsi_target_b_get(unsigned int gid, const char *oid,
-                   char *value, const char *instance, ...)
-{   
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-
-    DEVDATA_GET_CHECK;
-
-    *value = (devdata->auth_parameter.auth_flags & USE_BASE64 ? '1' : '0');
-    value[1] = '\0';
-
-    return 0;
-}
-
-/** Set challenge encoding */
-static te_errno
-iscsi_target_b_set(unsigned int gid, const char *oid,
-                   char *value, const char *instance, ...)
+iscsi_target_security_get(unsigned int gid, const char *oid,
+                          char *value, const char *instance, ...)
 {
-    int fmt = strtol(value, NULL, 0);
-    int base_fmt;
-    
     UNUSED(gid);
-    UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_SET_CHECK;
-    
-    if (!(fmt == 0 || fmt == 1))
+    if (!iscsi_server_check())
     {
-        ERROR("%s, %d: Bad format parameter provided",
-              __FUNCTION__,
-              __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    if (fmt == 1)
-    {    
-        devdata->auth_parameter.auth_flags |= USE_BASE64;
-        base_fmt = BASE64_FORMAT;
-    }    
-    else
-    {
-        devdata->auth_parameter.auth_flags &= ~USE_BASE64;
-        base_fmt = HEX_FORMAT;
-    }
-    if (!CHAP_SET_ENCODING_FMT(base_fmt, 
-                               devdata->auth_parameter.chap_local_ctx,
-                               devdata->auth_parameter.chap_peer_ctx))
-    {
-        ERROR("%s, %d: Cannot set encoding format",
-              __FUNCTION__,
-              __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        
-    }
-    return 0;
-}
-
-/** Get challenge length */
-static te_errno
-iscsi_target_cl_get(unsigned int gid, const char *oid,
-                    char *value, const char *instance, ...)
-{
-    int length;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-    
-    DEVDATA_GET_CHECK;
-
-    length = CHAP_GET_CHALLENGE_LENGTH(devdata->auth_parameter.chap_local_ctx);
-    sprintf(value, "%d", length);
-
-    return 0;
-}
-
-/** Set challenge length */
-static te_errno
-iscsi_target_cl_set(unsigned int gid, const char *oid,
-                    char *value, const char *instance, ...)
-{
-    int challenge_len = strtol(value, NULL, 0);
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-
-    DEVDATA_SET_CHECK;
-    
-    if (challenge_len == 0)
-    {
-        RING("Attempted to set challenge length to 0, ignored");
+        *value = '\0';
         return 0;
     }
 
-    if (!CHAP_SET_CHALLENGE_LENGTH(challenge_len, 
-                                   devdata->auth_parameter.
-                                   chap_local_ctx))
-    {
-        ERROR("%s, %d: Cannot set challenge length",
-              __FUNCTION__,
-              __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }    
-    return 0;
+    return iscsi_target_send_msg(copy_value, value, 
+                                 "getsecurity", 
+                                 map_oid_to_seccmd(oid));
 }
 
-/** Get CHAP local name */
+/** Set CHAP peer name */
 static te_errno
-iscsi_target_ln_get(unsigned int gid, const char *oid,
-                    char *value, const char *instance, ...)
+iscsi_target_security_set(unsigned int gid, const char *oid,
+                          char *value, const char *instance, ...)
 {
-    char *tmp;
     UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
     UNUSED(instance);
 
-    DEVDATA_GET_CHECK;
-    tmp = CHAP_GET_NAME(devdata->auth_parameter.chap_local_ctx);
-    if (tmp == NULL)
-        strcpy(value, "Local name");
-    else
+    if (!iscsi_server_check())
     {
-        strcpy(value, tmp);
-        free(tmp);
+        return (*value == '\0' ? 0 : TE_RC(TE_TA_UNIX, TE_ECONNREFUSED));
     }
-    return 0;
+
+    return iscsi_target_send_msg(NULL, NULL, 
+                                 "security", 
+                                 "%s %s",
+                                 map_oid_to_seccmd(oid), value);
 }
 
-/** Set CHAP local name */
 static te_errno
-iscsi_target_ln_set(unsigned int gid, const char *oid,
-                    char *value, const char *instance, ...)
+iscsi_target_security_flag_get(unsigned int gid, const char *oid,
+                   char *value, const char *instance, ...)
 {
     UNUSED(gid);
-    UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_SET_CHECK;
-
-    if (!CHAP_SET_NAME((char *)value, 
-                        devdata->auth_parameter.chap_local_ctx))
-    {    
-        ERROR("%s, %d: Cannot set name",
-              __FUNCTION__,
-              __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }   
-    return 0;
-}
-
-/** Get CHAP local secret */
-static te_errno
-iscsi_target_lx_get(unsigned int gid, const char *oid,
-                    char *value, const char *instance, ...)
-{
-    char *tmp;
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(instance);
-
-    DEVDATA_GET_CHECK;
-    tmp = CHAP_GET_SECRET(devdata->auth_parameter.chap_local_ctx);
-    if (tmp == NULL)
-        strcpy(value, "Local secret");
-    else
+    if (!iscsi_server_check())
     {
-        strcpy(value, tmp);
-        free(tmp);
+        *value = '\0';
+        return 0;
     }
-    return 0;
 
+    return iscsi_target_send_msg(boolean_value, value, 
+                                 "getsecurity", 
+                                 map_oid_to_seccmd(oid));
 }
 
-/** Set CHAP local secret */
+/** Set CHAP peer name */
 static te_errno
-iscsi_target_lx_set(unsigned int gid, const char *oid,
-                    char *value, const char *instance, ...)
+iscsi_target_security_flag_set(unsigned int gid, const char *oid,
+                          char *value, const char *instance, ...)
 {
     UNUSED(gid);
-    UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_SET_CHECK;
-
-    if (!CHAP_SET_SECRET(value, 
-                         devdata->auth_parameter.chap_local_ctx))
+    if (!iscsi_server_check())
     {
-        ERROR("%s, %d: Cannot set secret",
-              __FUNCTION__,
-              __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }    
-    return 0;
+        return (*value == '\0' || *value == '0' ? 
+                0 : TE_RC(TE_TA_UNIX, TE_ECONNREFUSED));
+    }
+
+    return iscsi_target_send_msg(NULL, NULL, 
+                                 "security", 
+                                 "%s %s",
+                                 map_oid_to_seccmd(oid), 
+                                 (*value == '\0' || *value == '0') ? "false" : "true");
 }
 
-/** Get Auth method */
+
 static te_errno
 iscsi_target_chap_set(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
@@ -415,12 +176,15 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_SET_CHECK;
+    if (!iscsi_server_check())
+    {
+        return (*value == '\0' ? 0 : TE_RC(TE_TA_UNIX, TE_ECONNREFUSED));
+    }
 
-    iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
-                                "AuthMethod",
-                                *value == '\0' ? "None" : value,
-                                *devdata->param_tbl);
+    return iscsi_target_send_msg(NULL, NULL, 
+                                 "set", 
+                                 "AuthMethod=%s",
+                                 (*value == '\0' ? "None" : value));
     return 0;
 }   
 
@@ -434,9 +198,16 @@ iscsi_target_chap_get(unsigned int gid, const char *oid,
     UNUSED(value);
     UNUSED(instance);
 
-    iscsi_convert_param_to_str(value,
-                               "AuthMethod",
-                               *devdata->param_tbl);
+    if (!iscsi_server_check())
+    {
+        *value = '\0';
+        return 0;
+    }
+
+    return iscsi_target_send_msg(copy_value, value, 
+                                 "get", 
+                                 "AuthMethod");
+
     return 0;
 }
 
@@ -508,9 +279,15 @@ iscsi_target_oper_get(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    iscsi_convert_param_to_str(value, param,
-                               *devdata->param_tbl);
-    return 0;
+    if (!iscsi_server_check())
+    {
+        *value = '\0';
+        return 0;
+    }
+
+    return iscsi_target_send_msg(copy_value, value, 
+                                 "get", 
+                                 param);
 }
 
 
@@ -523,17 +300,22 @@ iscsi_target_oper_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     if (*value == '\0')
     {
-        iscsi_restore_default_param(map_oid_to_param(oid),
-                                    *devdata->param_tbl);
+        if (!iscsi_server_check())
+            return 0;
+        return iscsi_target_send_msg(NULL, NULL,
+                                     "restore",
+                                     map_oid_to_param(oid));
     }
     else
     {
-        iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
-                                    map_oid_to_param(oid),
-                                    value,
-                                    *devdata->param_tbl);
+        if (!iscsi_server_check())
+            return TE_RC(TE_TA_UNIX, TE_ECONNREFUSED);
+
+        return iscsi_target_send_msg(NULL, NULL, 
+                                     "set",
+                                     "%s=%s", 
+                                     map_oid_to_param(oid), value);
     }
-    return 0;
 }
 
 #define TARGET_BLOCK_SIZE 512
@@ -552,7 +334,8 @@ iscsi_target_backstore_mount(void)
         return 0;
 
     RING("Mounting iSCSI target backing store as a loop device");
-    status = iscsi_sync_device(0, 0);
+    status = iscsi_target_send_msg(NULL, NULL,
+                                   "sync", "0 0");
     if (status != 0)
         return status;
     
@@ -600,34 +383,61 @@ iscsi_target_backstore_unmount(void)
     }
 }
 
+typedef struct device_param {
+    te_bool  is_mmap;
+    unsigned long size;    
+} device_param;
+
 /** Get the size of a target backing store */
+static te_errno
+parse_device_param(char *buf, int size, void *result)
+{
+    device_param *p = result;
+    char b[32];
+
+    UNUSED(size);
+
+    if (sscanf(buf, "%s %lu", b, &p->size) != 2)
+        return TE_RC(TE_TA_UNIX, TE_EPROTO);
+    p->is_mmap = (strcmp(b, "true") == 0);
+    return 0;
+}
+
 static te_errno
 iscsi_target_backstore_get(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
-    te_bool  is_mmap;
-    uint32_t size;
+    device_param params;
     int      rc;
 
     UNUSED(gid);
     UNUSED(instance);
     UNUSED(oid);
-    rc = iscsi_get_device_param(0, 0, &is_mmap, &size);
+
+    if (!iscsi_server_check())
+    {
+        *value = '\0';
+        return 0;
+    }
+
+
+    rc = iscsi_target_send_msg(parse_device_param, &params,
+                               "getparam", "0 0");
     if (rc != 0)
         return rc;
-    if (!is_mmap)
+    if (!params.is_mmap)
         *value = '\0';
-    else if (size > 1024 * 1024 && (size % (1024 * 1024) == 0))
+    else if (params.size > 1024 * 1024 && (params.size % (1024 * 1024) == 0))
     {
-        sprintf(value, "%lum", (unsigned long)size / (1024 * 1024));
+        sprintf(value, "%lum", (unsigned long)params.size / (1024 * 1024));
     }
-    else if (size > 1024 && (size % 1024) == 0)
+    else if (params.size > 1024 && (params.size % 1024) == 0)
     {
-        sprintf(value, "%luk", (unsigned long)size / 1024);
+        sprintf(value, "%luk", (unsigned long)params.size / 1024);
     }
     else
     {
-        sprintf(value, "%lu", (unsigned long)size);
+        sprintf(value, "%lu", (unsigned long)params.size);
     }
     return 0;
 }
@@ -643,6 +453,13 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
 
+
+    if (!iscsi_server_check())
+    {
+        return 0;
+    }
+
+
     while (is_backstore_mounted > 0)
         iscsi_target_backstore_unmount();
     sprintf(fname, "/tmp/te_backing_store.%lu", (unsigned long)getpid());
@@ -652,7 +469,8 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
         {
             WARN("Cannot remove backing store: %s", strerror(errno));
         }
-        return iscsi_free_device(0, 0);
+        return iscsi_target_send_msg(NULL, NULL,
+                                     "sync", "0 0");
     }
     else
     {
@@ -716,7 +534,9 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
             remove(fname);
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
-        rc = iscsi_mmap_device(0, 0, fname);
+        rc = iscsi_target_send_msg(NULL, NULL,
+                                   "mmap",
+                                   "0 0 %s", fname);
         if (rc != 0)
         {
             remove(fname);
@@ -735,6 +555,11 @@ iscsi_tgt_backstore_mp_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     UNUSED(oid);
+
+    if (!iscsi_server_check())
+    {
+        return 0;
+    }
 
     if (strcmp(value, backstore_mountpoint) != 0)
     {
@@ -768,8 +593,17 @@ iscsi_tgt_verbose_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
 
-    strcpy(value, iscsi_get_verbose());
-    return 0;
+    if (!iscsi_server_check())
+    {
+        *value = '\0';
+        return 0;
+    }
+
+
+    return iscsi_target_send_msg(copy_value, value,
+                                 "getverbosity", 
+                                 NULL, 0);
+
 }
 
 /** Set a target verbosity level */
@@ -780,8 +614,20 @@ iscsi_tgt_verbose_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     UNUSED(oid);
+
+    if (!iscsi_server_check())
+    {
+        /* obviously, there's no harm in doing this,
+         *  but it prevents history restore failing
+         *  in some cases
+         */
+        return 0;
+    }
     
-    return iscsi_set_verbose(value) ? 0 : TE_RC(TE_TA_UNIX, TE_EINVAL);
+    return iscsi_target_send_msg(NULL, NULL,
+                                 "verbosity", 
+                                 value);
+
 }
 
 /** A stub for a target topmost object */
@@ -820,11 +666,17 @@ iscsi_tgt_max_cmd_sn_delta_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     UNUSED(oid);
-    
+
     max_cmd_sn_delta = strtol(value, NULL, 10);
-    return iscsi_set_custom_value(ISCSI_CUSTOM_DEFAULT, 
-                                  "max_cmd_sn_delta",
-                                  value);
+    if (!iscsi_server_check())
+    {
+        return (max_cmd_sn_delta == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_ECONNREFUSED));
+    }
+    
+    return iscsi_target_send_msg(NULL, NULL,
+                                 "tweak",
+                                 "-1 max_cmd_sn_delta %d",
+                                 max_cmd_sn_delta);
 }
 
 static te_errno
@@ -835,12 +687,16 @@ iscsi_tgt_phase_collapse_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
 
-    DEVDATA_GET_CHECK;
+    if (!iscsi_server_check())
+    {
+        *value = '\0';
+        return 0;
+    }
 
-    *value = (devdata->phase_collapse == 0 ? '0' : '1');
-    value[1] = '\0';
 
-    return 0;
+    return iscsi_target_send_msg(boolean_value, value,
+                                 "collapse", 
+                                 "keep");
 }
 
 static te_errno
@@ -851,11 +707,16 @@ iscsi_tgt_phase_collapse_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
 
-    DEVDATA_SET_CHECK;
+    if (!iscsi_server_check())
+    {
+        return (*value == '\0' || *value == '0' ? 
+                0 : TE_RC(TE_TA_UNIX, TE_ECONNREFUSED));
+    }
 
-    devdata->phase_collapse = (*value != '0' && *value != '\0');
+    return iscsi_target_send_msg(NULL, NULL,
+                                 "collapse", 
+                                 (*value == '\0' || *value == '0') ? "false" : "true");
 
-    return 0;
 }
 
 
@@ -1004,38 +865,38 @@ RCF_PCH_CFG_NODE_RO(node_iscsi_target_oper, "oper",
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_pn, "pn",
                     NULL, NULL,
-                    iscsi_target_pn_get,
-                    iscsi_target_pn_set);
+                    iscsi_target_security_get,
+                    iscsi_target_security_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_px, "px",
                     NULL, &node_iscsi_target_pn,
-                    iscsi_target_px_get,
-                    iscsi_target_px_set);
+                    iscsi_target_security_get,
+                    iscsi_target_security_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_t, "t",
                     &node_iscsi_target_px, NULL,
-                    iscsi_target_t_get,
-                    iscsi_target_t_set);
+                    iscsi_target_security_flag_get,
+                    iscsi_target_security_flag_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_b, "b",
                     NULL, &node_iscsi_target_t,
-                    iscsi_target_b_get,
-                    iscsi_target_b_set);
+                    iscsi_target_security_flag_get,
+                    iscsi_target_security_flag_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_cl, "cl",
                     NULL, &node_iscsi_target_b,
-                    iscsi_target_cl_get,
-                    iscsi_target_cl_set);
+                    iscsi_target_security_get,
+                    iscsi_target_security_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_ln, "ln",
                     NULL, &node_iscsi_target_cl,
-                    iscsi_target_ln_get,
-                    iscsi_target_ln_set);
+                    iscsi_target_security_get,
+                    iscsi_target_security_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_lx, "lx",
                     NULL, &node_iscsi_target_ln,
-                    iscsi_target_lx_get,
-                    iscsi_target_lx_set);
+                    iscsi_target_security_get,
+                    iscsi_target_security_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_chap, "chap", 
                     &node_iscsi_target_lx, &node_iscsi_target_oper, 
@@ -1049,14 +910,6 @@ RCF_PCH_CFG_NODE_RO(node_ds_iscsi_target, "iscsi_target",
 te_errno
 ta_unix_iscsi_target_init()
 {
-    int rc;
-        
-    if ((rc = iscsi_server_init()) != 0)
-    {
-        ERROR("%s, %d: Cannot init iscsi server");
-        return rc;
-    }
-    
     return rcf_pch_add_node("/agent", &node_ds_iscsi_target);
 }
 
