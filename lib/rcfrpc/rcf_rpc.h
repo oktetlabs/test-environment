@@ -188,10 +188,10 @@ rcp_rpc_default_timeout(void)
  *
  * @return Status code
  */
-extern int rcf_rpc_server_get(const char *ta, const char *name,
-                              const char *father, te_bool thread, 
-                              te_bool existing, te_bool clear, 
-                              rcf_rpc_server **p_new);
+extern te_errno rcf_rpc_server_get(const char *ta, const char *name,
+                                   const char *father, te_bool thread, 
+                                   te_bool existing, te_bool clear, 
+                                   rcf_rpc_server **p_new);
 
 /**
  * Create RPC server.
@@ -202,11 +202,28 @@ extern int rcf_rpc_server_get(const char *ta, const char *name,
  *
  * @return Status code
  */
-static inline int 
+static inline te_errno 
 rcf_rpc_server_create(const char *ta, const char *name, 
                       rcf_rpc_server **p_handle)
 {
     return rcf_rpc_server_get(ta, name, NULL, FALSE, FALSE, TRUE, p_handle);
+}                      
+
+/**
+ * Create RPC server as TA thread.
+ *
+ * @param ta            a test agent
+ * @param name          name of the new server
+ * @param p_handle      location for new RPC server handle
+ *
+ * @return Status code
+ */
+static inline te_errno 
+rcf_rpc_server_create_ta_thread(const char *ta, const char *name, 
+                                rcf_rpc_server **p_handle)
+{
+    return rcf_rpc_server_get(ta, name, "local", 
+                              TRUE, FALSE, TRUE, p_handle);
 }                      
 
 /**
@@ -218,7 +235,7 @@ rcf_rpc_server_create(const char *ta, const char *name,
  *
  * @return Status code
  */
-static inline int 
+static inline te_errno 
 rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
                              rcf_rpc_server **p_new)
 {
@@ -238,7 +255,7 @@ rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
  *
  * @return Status code
  */
-static inline int 
+static inline te_errno 
 rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
                     rcf_rpc_server **p_new)
 {
@@ -247,7 +264,28 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
 
     return rcf_rpc_server_get(rpcs->ta, name, rpcs->name, 
                               FALSE, FALSE, TRUE, p_new);
-}                    
+}          
+
+/** Parameters for process creation */
+typedef struct rcf_rpc_cp_params {
+    te_bool inherit;   /**< Inherit file handles */
+    te_bool net_init;  /**< Initialize network */
+} rcf_rpc_cp_params;    
+
+/**
+ * Fork RPC server with non-default conditions.
+ *
+ * @param rpcs          existing RPC server handle
+ * @param name          name of the new server
+ * @param params        additional parameters for process creation
+ * @param p_new         location for new RPC server handle
+ *
+ * @return Status code
+ */
+extern te_errno rcf_rpc_server_create_process(rcf_rpc_server *rpcs, 
+                                              const char *name,
+                                              rcf_rpc_cp_params *params,
+                                              rcf_rpc_server **p_new);
 
 /**
  * Perform execve() on the RPC server. Filename of the running process
@@ -257,7 +295,7 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
  *
  * @return Status code
  */
-extern int rcf_rpc_server_exec(rcf_rpc_server *rpcs);
+extern te_errno rcf_rpc_server_exec(rcf_rpc_server *rpcs);
 
 /**
  * Set dynamic library name to be used for additional name resolution.
@@ -267,7 +305,8 @@ extern int rcf_rpc_server_exec(rcf_rpc_server *rpcs);
  *
  * @return Status code
  */
-extern int rcf_rpc_setlibname(rcf_rpc_server *rpcs, const char *libname);
+extern te_errno rcf_rpc_setlibname(rcf_rpc_server *rpcs, 
+                                   const char *libname);
 
 /**
  * Restart RPC server.
@@ -276,7 +315,7 @@ extern int rcf_rpc_setlibname(rcf_rpc_server *rpcs, const char *libname);
  *
  * @return Status code
  */
-static inline int 
+static inline te_errno 
 rcf_rpc_server_restart(rcf_rpc_server *rpcs)
 {
     rcf_rpc_server *new_rpcs;
@@ -323,7 +362,7 @@ extern te_errno rcf_rpc_servers_restart_all(void);
  *
  * @return Status code
  */
-extern int rcf_rpc_server_destroy(rcf_rpc_server *rpcs);
+extern te_errno rcf_rpc_server_destroy(rcf_rpc_server *rpcs);
 
 
 /**
@@ -350,8 +389,8 @@ extern void rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
  *
  * @return Status code
  */
-extern int rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs,
-                                     te_bool *done);
+extern te_errno rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs,
+                                          te_bool *done);
 
 /** Free memory allocated by rcf_rpc_call */
 static inline void

@@ -92,7 +92,8 @@ typedef struct rpcserver {
     uint32_t  timeout;     /**< Timeout for the last sent request */
     int       last_sid;    /**< SID received with the last command */
     te_bool   dead;        /**< RPC server does not respond */
-    time_t    sent;  /**< Time of the last request sending */
+    te_bool   local;       /**< RPC server is TA thread */
+    time_t    sent;        /**< Time of the last request sending */
 } rpcserver;
 
 static rpcserver *list;        /**< List of all RPC servers */
@@ -250,7 +251,7 @@ delete_thread_child(rpcserver *rpcs)
  *
  * @return Status code
  */
-static int
+static te_errno
 fork_child(rpcserver *rpcs)
 {
     int rc;
@@ -265,6 +266,8 @@ fork_child(rpcserver *rpcs)
     in.common.op = RCF_RPC_CALL_WAIT;
     in.name.name_len = strlen(rpcs->name) + 1;
     in.name.name_val = rpcs->name;
+    in.inherit = TRUE;
+    in.net_init = TRUE;
     
     if ((rc = call(rpcs->father, "create_process", &in, &out)) != 0)
         return rc;
@@ -526,7 +529,8 @@ rcf_pch_rpc_shutdown(void)
     for (rpcs = list; rpcs != NULL; rpcs = next)
     {
         next = rpcs->next;
-        rcf_ch_kill_process(rpcs->pid);
+        if (rpcs->tid == 0)
+            rcf_ch_kill_process(rpcs->pid);
         free(rpcs);
     }
     list = NULL;
@@ -592,12 +596,13 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
 {
     rpcserver  *rpcs;
     rpcserver  *father = NULL;
-    const char *father_name;
+    const char *father_name = NULL;
     int         rc;
+    te_bool     existing = FALSE, local = FALSE, thread = FALSE;
     
     UNUSED(gid);
     UNUSED(oid);
-
+    
 #ifdef __CYGWIN__
     {
         extern uint32_t ta_processes_num;
@@ -605,13 +610,29 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     }
 #endif    
     
-    if (strcmp_start("thread_", value) == 0)
+    if (strcmp("thread_local", value) == 0)
+    {
+        local = TRUE;
+    }
+    else if (strcmp_start("thread_existing_", value) == 0)
+    {
+        existing = TRUE;
+        father_name = value + strlen("thread_existing_");
+    }
+    else if (strcmp_start("thread_", value) == 0)
+    {
         father_name = value + strlen("thread_");
+        thread = TRUE;
+    }
+    else if (strcmp("fork_existing", value) == 0)
+    {
+        existing = TRUE;
+    }
     else if (strcmp_start("fork_", value) == 0)
+    {
         father_name = value + strlen("fork_");
-    else if (value[0] == '\0')
-        father_name = NULL;
-    else
+    }
+    else if (value[0] != '\0')
     {
         ERROR("Incorrect RPC server '%s' father '%s'", new_name, value);
         return TE_RC(TE_RCF_PCH, TE_EINVAL);
@@ -649,13 +670,18 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     strcpy(rpcs->name, new_name);
     strcpy(rpcs->value, value);
     rpcs->father = father;
-    if (father == NULL)
+    rpcs->local = local;
+    
+    if (existing)
+        goto connect;
+         
+    if (father == NULL && !local)
     {
         char *argv[1];
         
         argv[0] = rpcs->name;
         
-        if ((rc = rcf_ch_start_process(&rpcs->pid, 0, 
+        if ((rc = rcf_ch_start_process((pid_t *)&rpcs->pid, 0, 
                                        "rcf_pch_rpc_server_argv",
                                        TRUE, 1, (void **)argv)) != 0)
         {
@@ -664,28 +690,54 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             ERROR("Failed to spawn RPC server process: error=%r", rc);
             return rc;
         }
+        goto connect;
     }
-    else 
+    
+    if (local)
     {
-        if (*value == 't')
-            rc = create_thread_child(rpcs);
-        else
-            rc = fork_child(rpcs);
-            
-        if (rc != 0)
+        char *argv[1];
+        
+        argv[0] = rpcs->name;
+        
+        if ((rc = rcf_ch_start_thread((int *)&rpcs->tid, 0, 
+                                      "rcf_ch_rpc_server_thread",
+                                      TRUE, 1, (void **)argv)) != 0)
         {
             pthread_mutex_unlock(&lock);
             free(rpcs);
+            ERROR("Failed to spawn RPC server thread: error=%r", rc);
             return rc;
         }
+
+        goto connect;
     }
     
+    if (thread)
+        rc = create_thread_child(rpcs);
+    else
+        rc = fork_child(rpcs);
+            
+    if (rc != 0)
+    {
+        pthread_mutex_unlock(&lock);
+        free(rpcs);
+        return rc;
+    }
+    
+    connect:
     if ((rc = connect_getpid(rpcs)) != 0)
     {
         if (rpcs->tid > 0)
-            delete_thread_child(rpcs);
-        else
+        {
+            if (rpcs->local)
+                rcf_ch_kill_thread(rpcs->tid);
+            else
+                delete_thread_child(rpcs);
+        }
+        else if (!existing)
+        {
             rcf_ch_kill_process(rpcs->pid);
+        }
         pthread_mutex_unlock(&lock);
         free(rpcs);
         return rc;
@@ -749,7 +801,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     else
         list = rpcs->next;
         
-    if (rpcs->tid > 0)
+    if (rpcs->father != NULL)
         rpcs->father->ref--;
 
     /* Try soft shutdown first */
@@ -761,7 +813,12 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     {
         WARN("Soft shutdown of RPC server '%s' failed", rpcs->name);
         if (rpcs->tid > 0)
-            delete_thread_child(rpcs);
+        {
+            if (rpcs->local)
+                rcf_ch_kill_thread(rpcs->tid);
+            else
+                delete_thread_child(rpcs);
+        }
         else
             rcf_ch_kill_process(rpcs->pid);
     }
@@ -910,4 +967,3 @@ rcf_pch_rpc_server_argv(int argc, char **argv)
     UNUSED(argc);
     rcf_pch_rpc_server(argv[0]);
 }
-

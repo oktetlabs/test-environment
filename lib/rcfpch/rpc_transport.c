@@ -808,9 +808,6 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
     
     UNUSED(name);
 
-    if (lsock > 0)
-        close(lsock);
-    
     memset(&addr, 0, sizeof(addr));
 #if (RPC_TRANSPORT == RPC_TRANSPORT_TCP)
     addr.sin_family = AF_INET;

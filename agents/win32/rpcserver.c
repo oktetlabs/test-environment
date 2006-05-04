@@ -101,7 +101,13 @@ main(int argc, char **argv)
     
     UNUSED(argc);
     
-    WSAStartup(MAKEWORD(2,2), &data);
+    if (argc > 2 && strcmp(argv[2], "net_init") == 0)
+        WSAStartup(MAKEWORD(2,2), &data);
+    else
+    {
+        printf("WSAStartup is not called!\n");
+        fflush(stdout);
+    }
     
     ta_hinstance = GetModuleHandle(NULL);
     

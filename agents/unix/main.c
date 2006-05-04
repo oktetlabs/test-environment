@@ -633,7 +633,7 @@ struct rcf_thread_parameter {
     void     **params;
     te_errno   rc;
     te_bool    sem_created;
-    sem_t params_processed;
+    sem_t      params_processed;
 };
 
 #define TA_MAX_THREADS 16
@@ -1553,6 +1553,42 @@ thread_mutex_unlock(void *mutex)
     else        
         pthread_mutex_unlock(mutex);
 }
+
+
+#ifdef RCF_RPC
+/**
+ * Entry point for RPC server started as TA thread.
+ *
+ * @param ready         semaphore to be posted after params processing
+ * @param argc          number of arguments in argv array
+ * @param argv          arguments (RPC server name first)     
+ *
+ * @return Status code.
+ */
+te_errno 
+rcf_ch_rpc_server_thread(void *ready, int argc, char *argv[])
+{
+    char *name;
+    
+    if (argc < 1)
+    {
+        ERROR("Too few parameters for rcf_ch_rpcserver_thread");
+        sem_post(ready);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    if ((name = strdup(argv[0])) == NULL)
+    {
+        sem_post(ready);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    
+    sem_post(ready);
+    rcf_pch_rpc_server(name);
+    
+    return 0;
+}
+#endif
+
 
 /**
  * Entry point of the Unix Test Agent.

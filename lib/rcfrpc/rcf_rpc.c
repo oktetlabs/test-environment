@@ -123,7 +123,7 @@ rpc_server_sem_init(rcf_rpc_server *rpcs)
  *
  * @return Status code
  */
-int 
+te_errno 
 rcf_rpc_server_get(const char *ta, const char *name,
                    const char *father, te_bool thread, 
                    te_bool existing, te_bool clear, 
@@ -176,7 +176,9 @@ rcf_rpc_server_get(const char *ta, const char *name,
         }
     }        
         
-    if (father != NULL && 
+    /* FIXME: thread support to be done */
+    if (father != NULL && strcmp(father, "local") != 0 &&
+        strcmp(father, "existing") != 0 &&
         cfg_get_instance_fmt(NULL, &val0, "/agent:%s/rpcserver:%s", 
                              ta, father) != 0)
     {
@@ -345,7 +347,7 @@ rcf_rpc_servers_restart_all(void)
  *
  * @return status code
  */
-int 
+te_errno 
 rcf_rpc_server_exec(rcf_rpc_server *rpcs)
 {
     tarpc_execve_in  in;
@@ -390,7 +392,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
  *
  * @return status code
  */
-int 
+te_errno 
 rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
 {
     int rc;
@@ -544,7 +546,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
 }
 
 /* See description in rcf_rpc.h */
-int
+te_errno
 rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
 {
     tarpc_rpc_is_op_done_in  in;
@@ -574,7 +576,7 @@ rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
 }
 
 /* See description in rcf_rpc.h */
-int
+te_errno
 rcf_rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
 {
     tarpc_setlibname_in  in;
@@ -630,7 +632,7 @@ extern int rcf_send_recv_msg(rcf_msg *send_buf, size_t send_size,
  *
  * @return Status code
  */
-int 
+te_errno 
 rcf_ta_call_rpc(const char *ta_name, int session, 
                 const char *rpcserver, int timeout,
                 const char *rpc_name, void *in, void *out)
@@ -771,3 +773,68 @@ rcf_rpc_server_has_children(rcf_rpc_server *rpcs)
     free(servers);
     return FALSE;    
 }
+
+/**
+ * Fork RPC server with non-default conditions.
+ *
+ * @param rpcs          existing RPC server handle
+ * @param name          name of the new server
+ * @param params        additional parameters for process creation
+ * @param p_new         location for new RPC server handle
+ *
+ * @return Status code
+ */
+te_errno 
+rcf_rpc_server_create_process(rcf_rpc_server *rpcs, 
+                              const char *name,
+                              rcf_rpc_cp_params *params,
+                              rcf_rpc_server **p_new)
+{
+    tarpc_create_process_in  in;
+    tarpc_create_process_out out;
+    char                     lib = 0;
+    te_errno                 rc;
+
+    if (rpcs == NULL)
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    in.common.op = RCF_RPC_CALL_WAIT;
+    in.common.lib = &lib;
+    in.name.name_len = strlen(name) + 1;
+    in.name.name_val = strdup(name);
+    in.inherit = params->inherit;
+    in.net_init = params->net_init;
+    
+    if ((rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
+                              1000, "create_process", &in, &out)) != 0)
+    {                              
+        return rc;
+    }
+    
+    free(in.name.name_val);
+        
+    if (out.pid < 0)
+    {
+        ERROR("RPC create_process() failed on the server %s with errno %r", 
+              rpcs->name, out.common._errno);
+        return (out.common._errno != 0) ?
+                   out.common._errno : TE_RC(TE_RCF_API, TE_ECORRUPTED);
+    }
+    
+    rc = rcf_rpc_server_get(rpcs->ta, name, "existing", 
+                            FALSE, FALSE, TRUE, p_new);
+    
+    if (rc != 0)
+    {
+        ERROR("Failed to register created RPC server %s on TA: %r", rc, 
+              name);
+              
+        if (rcf_ta_kill_task(rpcs->ta, 0, out.pid) != 0)
+            ERROR("Failed to kill created RPC server");
+    }
+    
+    return rc;
+}                              

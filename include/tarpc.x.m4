@@ -2893,7 +2893,9 @@ struct tarpc_echoer_out {
 struct tarpc_create_process_in {
     struct tarpc_in_arg common;
     
-    char       name<>;           /**< RPC server name */
+    tarpc_bool inherit;         /**< Inherit file handles */
+    tarpc_bool net_init;        /**< Initialize network */
+    char       name<>;          /**< RPC server name */
 };
 
 struct tarpc_create_process_out {

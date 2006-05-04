@@ -462,6 +462,8 @@ logfork_log_message(const char *file, unsigned int line,
 {
     va_list ap;
     udp_msg msg;
+    
+    static te_bool init = FALSE;
 
     struct te_log_out_params cm =
         { NULL, (uint8_t *)msg.__log_msg, sizeof(msg.__log_msg), 0 };
@@ -481,11 +483,15 @@ logfork_log_message(const char *file, unsigned int line,
     msg.is_notif = FALSE;
     strncpy(msg.__lgr_user, user, sizeof(msg.__lgr_user) - 1);
     msg.__log_level = level;
+    
+    if (!init && logfork_clnt_sockd == -1)
+        open_sock();
 
-    if (logfork_clnt_sockd == -1 && open_sock() != 0)
+    init = TRUE;
+
+    if (logfork_clnt_sockd == -1)
     {
-        fprintf(stdout, "%s(): %s %s\n", __FUNCTION__, user,
-                msg.__log_msg);
+        fprintf(stdout, "%s %s\n", user, msg.__log_msg);
         fflush(stdout);
         return;
     }

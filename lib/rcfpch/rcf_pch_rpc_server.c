@@ -74,7 +74,7 @@ rcf_pch_rpc_server(const char *name)
 #ifdef HAVE_PTHREAD_H
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 #endif    
-
+    
     if (rpc_transport_connect_ta(name, &handle) != 0)
         return NULL;
 
@@ -166,6 +166,11 @@ rcf_pch_rpc_server(const char *name)
 #endif
         if (rpc_transport_send(handle, buf, len) != 0)
             STOP("Sending data failed in main RPC server loop");
+
+#ifdef WINDOWS        
+        if (strcmp(rpc_name, "select") == 0)
+            RING("RPC \"select\" response is sent");
+#endif
     }
 
 cleanup:    

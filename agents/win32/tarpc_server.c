@@ -330,23 +330,26 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
 /**
  * Create RPC server process using CreateProcess().
  *
- * @param name  RPC server name
- * @param pid   location for process identifier
+ * @param name          RPC server name
+ * @param pid           location for process identifier
+ * @param inherit       if TRUE, inherit file handles
+ * @param net_init      if TRUE, initialize network
  *
  * @return Status code
  */
 te_errno
-create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
+create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit,
+                          te_bool net_init)
 {
     char  cmdline[256];
     char *tmp;
     char *val;
     
     const char *postfix[] = { 
-        "_rpcserver64 %s",
-        "_rpcserver32 %s",  
-        "_rpcserver %s",  
-        " rpcserver %s"
+        "_rpcserver64 %s %s",
+        "_rpcserver32 %s %s",  
+        "_rpcserver %s %s",  
+        " rpcserver %s %s"
     };
     
     int i = 0;
@@ -375,7 +378,7 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     
     for (; i < 3; i++)
     {
-        sprintf(tmp, postfix[i], name);
+        sprintf(tmp, postfix[i], name, net_init ? "net_init" : "");
         memset(&si, 0, sizeof(si));
         si.cb = sizeof(si);
         
@@ -397,7 +400,8 @@ TARPC_FUNC(create_process, {},
 {
     MAKE_CALL(out->common._errno = 
                   create_process_rpc_server(in->name.name_val, 
-                                            &out->pid, TRUE));
+                                            &out->pid, in->inherit, 
+                                            in->net_init));
 }
 )
 
