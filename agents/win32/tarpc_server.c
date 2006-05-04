@@ -1728,6 +1728,15 @@ TARPC_FUNC(setsockopt, {},
                 break;
             }
 
+            case OPT_RAW_DATA:
+            {
+                opt = (char *)in->optval.optval_val[0].option_value_u.
+                                  opt_raw.opt_raw_val;
+                optlen = in->optval.optval_val[0].option_value_u.
+                             opt_raw.opt_raw_len;
+                break;
+            }
+
             default:
                 ERROR("incorrect option type %d is received",
                       in->optval.optval_val[0].opttype);

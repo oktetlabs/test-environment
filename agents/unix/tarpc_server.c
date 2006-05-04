@@ -1565,7 +1565,7 @@ typedef union opt_param {
 
 static void
 tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
-                 opt_param *param, socklen_t *optlen)
+                 opt_param *param, socklen_t *optlen, void **optval)
 {
     switch (in->optval.optval_val[0].opttype)
     {
@@ -1637,6 +1637,13 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
             *optlen = sizeof(&param->addr);
             break;
         }
+        case OPT_IPADDR6:
+        {
+            memcpy(&param->addr6,
+                   in->optval.optval_val[0].option_value_u.opt_ipaddr6,
+                   sizeof(struct in6_addr));
+            break;
+        }
 
         case OPT_TIMEVAL:
         {
@@ -1654,8 +1661,10 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
                              opt_string.opt_string_val;
             *optlen = in->optval.optval_val[0].option_value_u.
                           opt_string.opt_string_len;
+            *optval = param->str;
             break;
         }
+
 #if HAVE_STRUCT_IP_OPTS
         case OPT_IP_OPTS:
         {
@@ -1667,16 +1676,20 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
                                             options.options_val,
                    in->optval.optval_val[0].option_value_u.opt_ip_opts.
                    options.options_len);
+            *optval = &param->opts;
             break;
         }            
 #endif
-        case OPT_IPADDR6:
+
+        case OPT_RAW_DATA:
         {
-            memcpy(&param->addr6,
-                   in->optval.optval_val[0].option_value_u.opt_ipaddr6,
-                   sizeof(struct in6_addr));
+            *optval =
+                in->optval.optval_val[0].option_value_u.opt_raw.opt_raw_val;
+            *optlen =
+                in->optval.optval_val[0].option_value_u.opt_raw.opt_raw_len;
             break;
         }
+
         default:
             ERROR("incorrect option type %d is received",
                   in->optval.optval_val[0].opttype);
@@ -1686,7 +1699,6 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
     }
 }
 
-#ifdef __linux__
 TARPC_FUNC(setsockopt, 
 {}, 
 {
@@ -1700,22 +1712,11 @@ TARPC_FUNC(setsockopt,
     {
         opt_param  param;
         socklen_t  optlen;
-        void      *optval;
+        void      *optval = &param;
 
-        tarpc_setsockopt(in, out, &param, &optlen);
+        tarpc_setsockopt(in, out, &param, &optlen, &optval);
         if (out->retval == 0)
         {
-            switch (in->optval.optval_val[0].opttype)
-            {
-                case OPT_STRING:
-                    optval = param.str;
-                    break;
-                case OPT_IP_OPTS:
-                    optval = param.opts.ip_opts;
-                    break;
-                default:
-                    optval = &param;
-            }
             INIT_CHECKED_ARG(optval, optlen, 0);
             if (in->optlen == RPC_OPTLEN_AUTO)
                 in->optlen = optlen;
@@ -1727,45 +1728,6 @@ TARPC_FUNC(setsockopt,
     }       
 }
 )
-#else
-TARPC_FUNC(setsockopt, 
-{}, 
-{
-    if (in->optval.optval_val == NULL)
-    {
-        MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
-                                     sockopt_rpc2h(in->optname),
-                                     NULL, in->optlen));
-    }
-    else
-    {
-        opt_param  param;
-        socklen_t  optlen;
-        void      *optval;
-
-        tarpc_setsockopt(in, out, &param, &optlen);
-        if (out->retval == 0)
-        {
-            switch (in->optval.optval_val[0].opttype)
-            {
-                case OPT_STRING:
-                    optval = param.str;
-                    break;
-                default:
-                    optval = &param;
-            }
-            INIT_CHECKED_ARG(optval, optlen, 0);
-            if (in->optlen == RPC_OPTLEN_AUTO)
-                in->optlen = optlen;
-            
-            MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
-                                         sockopt_rpc2h(in->optname),
-                                         optval, in->optlen));
-        }
-    }       
-}
-)
-#endif
 
 
 /*-------------- getsockopt() ------------------------------*/
