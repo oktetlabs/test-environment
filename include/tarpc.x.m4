@@ -1902,9 +1902,10 @@ struct tarpc_mreqn {
     tarpc_ssize_t       len_diff;
 };
 
-struct option_value_ip_opts {
-    uint32_t    dst_addr;
-    uint8_t     options<>;
+struct tarpc_ip_opts {
+    tarpc_bool  ip_dst_set;
+    uint32_t    ip_dst;
+    uint8_t     ip_opts<>;
 };
 
 struct option_value_tcp_info {
@@ -1957,7 +1958,7 @@ union option_value switch (option_type opttype) {
     case OPT_TCP_INFO:          struct option_value_tcp_info opt_tcp_info;
     case OPT_HANDLE:            int opt_handle;
     case OPT_RAW_DATA:          uint8_t opt_raw<>;
-    case OPT_IP_OPTS:           struct option_value_ip_opts opt_ip_opts;
+    case OPT_IP_OPTS:           struct tarpc_ip_opts opt_ip_opts;
     case OPT_IPADDR6:           uint32_t opt_ipaddr6[4];
                                 
 };

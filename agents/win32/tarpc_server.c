@@ -1602,9 +1602,10 @@ TARPC_FUNC(setsockopt, {},
     }
     else
     {
-        char  *opt;
-        int    optlen;
-        HANDLE handle;
+        option_value   *in_optval = in->optval.optval_val;
+        char           *opt;
+        int             optlen;
+        HANDLE          handle;
         
         struct linger           linger;
         struct in_addr          addr;
@@ -1618,20 +1619,17 @@ TARPC_FUNC(setsockopt, {},
             static int optval;
             
             optval = 
-                in->optval.optval_val[0].option_value_u.
-                opt_timeval.tv_sec * 1000 + 
-                in->optval.optval_val[0].option_value_u.
-                opt_timeval.tv_usec / 1000;
+                in_optval->option_value_u.opt_timeval.tv_sec * 1000 + 
+                in_optval->option_value_u.opt_timeval.tv_usec / 1000;
             
             opt = (char *)&optval;
             optlen = sizeof(int);
         }
-        else switch (in->optval.optval_val[0].opttype)
+        else switch (in_optval->opttype)
         {
             case OPT_INT:
             {
-                opt = (char *)&(in->optval.optval_val[0].
-                                option_value_u.opt_int);
+                opt = (char *)&(in_optval->option_value_u.opt_int);
                 optlen = sizeof(int);
                 break;
             }
@@ -1639,10 +1637,10 @@ TARPC_FUNC(setsockopt, {},
             case OPT_LINGER:
             {
                 opt = (char *)&linger;
-                linger.l_onoff = in->optval.optval_val[0].
-                                 option_value_u.opt_linger.l_onoff;
-                linger.l_linger = in->optval.optval_val[0].
-                                  option_value_u.opt_linger.l_linger;
+                linger.l_onoff =
+                    in_optval->option_value_u.opt_linger.l_onoff;
+                linger.l_linger =
+                    in_optval->option_value_u.opt_linger.l_linger;
                 optlen = sizeof(linger);
                 break;
             }
@@ -1652,8 +1650,7 @@ TARPC_FUNC(setsockopt, {},
                 opt = (char *)&addr;
 
                 memcpy(&addr,
-                       &(in->optval.optval_val[0].
-                         option_value_u.opt_ipaddr),
+                       &(in_optval->option_value_u.opt_ipaddr),
                        sizeof(struct in_addr));
                 optlen = sizeof(addr);
                 break;
@@ -1663,28 +1660,25 @@ TARPC_FUNC(setsockopt, {},
             {
                 opt = (char *)&tv;
 
-                tv.tv_sec = in->optval.optval_val[0].option_value_u.
-                    opt_timeval.tv_sec;
-                tv.tv_usec = in->optval.optval_val[0].option_value_u.
-                    opt_timeval.tv_usec;
+                tv.tv_sec = in_optval->option_value_u.opt_timeval.tv_sec;
+                tv.tv_usec = in_optval->option_value_u.opt_timeval.tv_usec;
                 optlen = sizeof(tv);
                 break;
             }
 
             case OPT_STRING:
             {
-                opt = (char *)in->optval.optval_val[0].option_value_u.
-                    opt_string.opt_string_val;
-                optlen = in->optval.optval_val[0].option_value_u.
-                    opt_string.opt_string_len;
+                opt = (char *)in_optval->option_value_u.opt_string.
+                                  opt_string_val;
+                optlen =
+                    in_optval->option_value_u.opt_string.opt_string_len;
                 break;
             }
             
             case OPT_HANDLE:
             {
                 opt = (char *)&handle;
-                handle = (HANDLE)
-                    (in->optval.optval_val[0].option_value_u.opt_handle);
+                handle = (HANDLE)(in_optval->option_value_u.opt_handle);
                 optlen = sizeof(handle);
                 break;
             }
@@ -1694,12 +1688,11 @@ TARPC_FUNC(setsockopt, {},
             {
                 opt = (char *)&mreq;
                 memcpy(&mreq.imr_multiaddr,
-                       &(in->optval.optval_val[0].option_value_u.opt_mreqn.
-                         imr_multiaddr), sizeof(struct in_addr));
-                
+                       &(in_optval->option_value_u.opt_mreqn.imr_multiaddr),
+                       sizeof(struct in_addr));
                 memcpy(&mreq.imr_interface,
-                       &(in->optval.optval_val[0].option_value_u.opt_mreqn.
-                         imr_address), sizeof(struct in_addr));
+                       &(in_optval->option_value_u.opt_mreqn.imr_address),
+                       sizeof(struct in_addr));
                 
                 optlen = sizeof(mreq);
                 break;
@@ -1711,35 +1704,42 @@ TARPC_FUNC(setsockopt, {},
                 opt = (char *)&mreq6;
 
                 memcpy(&mreq6.ipv6mr_multiaddr,
-                       &(in->optval.optval_val[0].option_value_u.opt_mreq6.
-                         ipv6mr_multiaddr), sizeof(struct in6_addr));
-                mreq6.ipv6mr_interface = in->optval.optval_val[0].
-                    option_value_u.opt_mreq6.ipv6mr_ifindex;
+                       &(in_optval->option_value_u.opt_mreq6.
+                             ipv6mr_multiaddr), sizeof(struct in6_addr));
+                mreq6.ipv6mr_interface =
+                    in_optval->option_value_u.opt_mreq6.ipv6mr_ifindex;
                 optlen = sizeof(mreq6);
                 break;
             }
 
             case OPT_IP_OPTS:
             {
-                opt = (char *)in->optval.optval_val[0].option_value_u.
-                                  opt_ip_opts.options.options_val;
-                optlen = in->optval.optval_val[0].option_value_u.
-                             opt_ip_opts.options.options_len;
+                if (in_optval->option_value_u.opt_ip_opts.ip_dst_set)
+                {
+                    ERROR("WinSock2 version of IP_OPTIONS does not "
+                          "have 'ip_dst' field in option value");
+                    out->common._errno = TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
+                    out->retval = -1;
+                    goto finish;
+                    break;
+                }
+                opt = (char *)in_optval->option_value_u.
+                                  opt_ip_opts.ip_opts.ip_opts_val;
+                optlen = in_optval->option_value_u.
+                             opt_ip_opts.ip_opts.ip_opts_len;
                 break;
             }
 
             case OPT_RAW_DATA:
             {
-                opt = (char *)in->optval.optval_val[0].option_value_u.
-                                  opt_raw.opt_raw_val;
-                optlen = in->optval.optval_val[0].option_value_u.
-                             opt_raw.opt_raw_len;
+                opt = (char *)in_optval->option_value_u.opt_raw.opt_raw_val;
+                optlen = in_optval->option_value_u.opt_raw.opt_raw_len;
                 break;
             }
 
             default:
                 ERROR("incorrect option type %d is received",
-                      in->optval.optval_val[0].opttype);
+                      in_optval->opttype);
                 out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
                 out->retval = -1;
                 goto finish;
@@ -1816,7 +1816,9 @@ TARPC_FUNC(getsockopt,
                     break;
                     
                 case OPT_IP_OPTS:
-                    optlen_in = optlen_out = IPOPTS_MAX_LEN;
+                    optlen_in = optlen_out =
+                        out->optval.optval_val[0].option_value_u.
+                            opt_ip_opts.ip_opts.ip_opts_len;
                     break;
 
                 default:
@@ -1942,26 +1944,26 @@ TARPC_FUNC(getsockopt,
             }
             
             case OPT_IP_OPTS:
-            {
-                char *str = (char *)opt;
-
                 /* 
                  * "Destination address" field is absent on Win32,
                  * so write zero there.
                  */
                 out->optval.optval_val[0].option_value_u.opt_ip_opts.
-                     dst_addr = 0;
+                     ip_dst_set = FALSE;
+                out->optval.optval_val[0].option_value_u.opt_ip_opts.
+                     ip_dst = 0;
                 
                 /* Copy getsockopt() result */
-                memcpy(out->optval.optval_val[0].option_value_u.opt_ip_opts.
-                       options.options_val, str, optlen_out);
-                
-                out->optval.optval_val[0].option_value_u.opt_ip_opts.
-                options.options_len = *(u_int *)out->optlen.optlen_val;
-
-                *(out->optlen.optlen_val) += sizeof(uint32_t);
+                memcpy(out->optval.optval_val[0].option_value_u.
+                       opt_ip_opts.ip_opts.ip_opts_val, opt,
+                       MIN(optlen_out, optlen_in));
+                /* TODO: What happens if optlen_in < optlen_out? */
+                /* Do not update 'ip_opts' length field */
+                /* 
+                 * Generic option value length field contains real
+                 * length returned by the system.
+                 */
                 break;
-            }
 
             default:
                 ERROR("incorrect option type %d is received",
