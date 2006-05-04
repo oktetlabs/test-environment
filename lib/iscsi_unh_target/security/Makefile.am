@@ -1,6 +1,7 @@
-
-AM_CPPFLAGS = -I$(DESTDIR)/$(includedir) -I$(srcdir)/../common
-
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) \
+              -I$(srcdir)/../common
+AM_CFLAGS = @TE_CFLAGS@ 
+AM_LDFLAGS = @TE_LDFLAGS@
 
 pkginclude_HEADERS = chap.h misc_func.h 
 

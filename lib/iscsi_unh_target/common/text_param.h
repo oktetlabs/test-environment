@@ -33,8 +33,8 @@
 #ifndef _TEXT_PARAM_H
 #define _TEXT_PARAM_H
 
-#include <semaphore.h>
 #include <stdint.h>
+#include "my_memory.h"
 
 /*
  * Define the Login/Text Parameters
@@ -310,7 +310,7 @@ while(0)
  */
 struct parameter_type {
 	/* Name of the parameter */
-	char *parameter_name;
+	SHARED char *parameter_name;
 
 	/*      Type of the parameter:
 	 *      Byte 3 - Security, operational etc..
@@ -328,13 +328,13 @@ struct parameter_type {
 	/*      used only if the type is STRING or ENUMERATED or BOOLEAN or
 	 *      NUMBER_RANGE, not NUMBER
 	 */
-	char *str_value;
+	SHARED char *str_value;
 
 	/*      used only if the type is STRING or ENUMERATED or BOOLEAN or
 	 *      NUMBER_RANGE, not NUMBER
 	 * Stores the list of allowed values (for negotiation)
 	 */
-	char *value_list;
+	SHARED char *value_list;
 
 	/*      Contains all the info required for negotiating this parameter
 	 *      packed into bits
@@ -457,56 +457,51 @@ void setup_security_hash_table(void);
 /*	Called to get table entry for key identified by keytext string.
  *	Returns pointer to entry if found, NULL if not found.
  */
-struct parameter_type * __attribute__ ((no_instrument_function))
+SHARED struct parameter_type * 
 find_parameter(const char *keytext,
-               struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS]);
+               SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS]);
 
 /* Called to get pointer to table entry for key identified by its special flag*/
-struct parameter_type * __attribute__ ((no_instrument_function))
+SHARED struct parameter_type * 
 find_flag_parameter(uint64_t key_flag,
-		    struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS]);
+                    SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS]);
 
 /*	Called to set max_recv_length to value we sent to target in a
  *	MaxRecvDataSegmentLength key
  */
 void
-set_connection_recv_length(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-			   int *max_recv_length);
+set_connection_recv_length(SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                           int *max_recv_length);
 
 void
-set_digestflags(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		uint32_t * connection_flags);
+set_digestflags(SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                uint32_t * connection_flags);
 
 /*	Check that a number is within legal bounds depending on its type.
  *	Returns 1 if ok, 0 if error
  */
-int __attribute__ ((no_instrument_function))
-check_bounds(struct parameter_type *p, int int_value, int who_called);
+int check_bounds(SHARED struct parameter_type *p, int int_value, int who_called);
 
 /*	This is a range, check both numbers and their order.
  *	Returns first number in range if ok, -1 if error
  */
-int __attribute__ ((no_instrument_function))
-check_range(const char *value_list, int value);
+int check_range(SHARED const char *value_list, int value);
 
-void __attribute__ ((no_instrument_function))
-strreplace(char **str, const char *new_str);
+void strreplace(SHARED char * SHARED *str, SHARED const char *new_str);
 
-void __attribute__ ((no_instrument_function))
-strreplace_upto(char **str, const char *new_str, int delim);
+void strreplace_upto(SHARED char * SHARED *str, SHARED const char *new_str, int delim);
 
 /* Copy src parameter table to dst, duplicating any strings */
 void
-param_tbl_cpy(struct parameter_type dst[MAX_CONFIG_PARAMS],
-	      struct parameter_type src[MAX_CONFIG_PARAMS]);
+param_tbl_cpy(SHARED struct parameter_type dst[MAX_CONFIG_PARAMS],
+              SHARED struct parameter_type src[MAX_CONFIG_PARAMS]);
 
 /* Copy initial parameter table to dst, duplicating any strings */
 void
-param_tbl_init(struct parameter_type dst[MAX_CONFIG_PARAMS]);
+param_tbl_init(SHARED struct parameter_type dst[MAX_CONFIG_PARAMS]);
 
 /* Free any strings referenced in dst parameter table */
-void
-param_tbl_uncpy(struct parameter_type dst[MAX_CONFIG_PARAMS]);
+void param_tbl_uncpy(SHARED struct parameter_type dst[MAX_CONFIG_PARAMS]);
 
 /** The main function for target configuraton
  *
@@ -518,7 +513,7 @@ param_tbl_uncpy(struct parameter_type dst[MAX_CONFIG_PARAMS]);
 void iscsi_configure_param_value(int param_neg_info,
                                  const char *key,
                                  const char *value,
-                                 struct parameter_type *p_param_tbl);
+                                 SHARED struct parameter_type *p_param_tbl);
 
 void
 configure_parameter(int param_neg_info,
@@ -536,8 +531,8 @@ configure_parameter(int param_neg_info,
  *	integrity checking."
  */
 void
-check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		      uint16_t secondary_connection);
+check_integrity_rules(SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                      uint16_t secondary_connection);
 
 
 /************************************************************************/
@@ -567,8 +562,8 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags);
  * 	0 if success
  */
 int
-check_neg_responses(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		    uint32_t print_error);
+check_neg_responses(SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                    uint32_t print_error);
 
 /*
  * scan through the input and process keys
@@ -581,7 +576,7 @@ check_neg_responses(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
  */
 int
 scan_input_and_process(int sock,
-			struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+			SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 			int process_these_types,
 			int flags_to_be_set,
 			int role,
@@ -600,8 +595,8 @@ scan_input_and_process(int sock,
  * returns counts in last 3 parameters
  */
 void
-scan_table_and_count(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		     int *nsecurity, int *ninformational, int *noperational);
+scan_table_and_count(SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                     int *nsecurity, int *ninformational, int *noperational);
 
 /*
  * scan through the table and process keys
@@ -611,22 +606,22 @@ scan_table_and_count(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
  */
 int
 scan_table_and_process(int sock,
-		       struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		       int process_these_types,
-		       int flags_to_be_set,
-		       int role,
-		       struct generic_pdu *inputpdu,
-		       struct generic_pdu *outputpdu,
-		       uint32_t flags,
-		       uint64_t * login_flags);
+                       SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                       int process_these_types,
+                       int flags_to_be_set,
+                       int role,
+                       struct generic_pdu *inputpdu,
+                       struct generic_pdu *outputpdu,
+                       uint32_t flags,
+                       uint64_t * login_flags);
 
 /*	
  * Uses the final values negotiated during a successful login of a new session
  * to set up the session-wide operational values used during FFP
  */
 void
-set_session_parameters(struct session_operational_parameters *oper_param_entry,
-		       struct parameter_type login_params[MAX_CONFIG_PARAMS]);
+set_session_parameters(SHARED struct session_operational_parameters *oper_param_entry,
+                       SHARED struct parameter_type login_params[MAX_CONFIG_PARAMS]);
 
 /*
  * Uses the final values negotiated during a successful login of a new
@@ -669,7 +664,7 @@ print_config_info(struct parameter_type param_tbl[MAX_CONFIG_PARAMS],
  */
 void iscsi_convert_param_to_str(char *buffer,
                                 const char *param,
-                                struct parameter_type *param_tbl);
+                                SHARED struct parameter_type *param_tbl);
 
 
 /*	
@@ -684,6 +679,6 @@ print_session_params(struct session_operational_parameters *sop,
 extern struct parameter_type config_params[];
 
 void iscsi_restore_default_param (const char *name, 
-                                  struct parameter_type *param_tbl);
+                                  SHARED struct parameter_type *param_tbl);
 
 #endif

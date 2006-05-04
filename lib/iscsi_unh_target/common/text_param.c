@@ -169,17 +169,17 @@ setup_security_hash_table(void)
 /*	Called to get table entry for key identified by keytext string.
  *	Returns pointer to entry if found, NULL if not found.
  */
-struct parameter_type * __attribute__ ((no_instrument_function))
+SHARED struct parameter_type *
 find_parameter(const char *keytext,
-               struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
+               SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
 {
-	struct parameter_type *p, *result = NULL;
+	SHARED struct parameter_type *p, *result = NULL;
 	int i;
 
 	TRACE(DEBUG, "Enter find_parameter %s", keytext);
 
 	for (i = 0, p = p_param_tbl; i < MAX_CONFIG_PARAMS; i++, p++) {
-		if (!strcmp(p->parameter_name, keytext)) {
+		if (!shstrcmp(p->parameter_name, keytext)) {
 			result = p;
 			break;
 		}
@@ -191,11 +191,11 @@ find_parameter(const char *keytext,
 }
 
 /* Called to get pointer to table entry for key identified by its special flag*/
-struct parameter_type * __attribute__ ((no_instrument_function))
+SHARED struct parameter_type * 
 find_flag_parameter(uint64_t key_flag,
-		    struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
+                    SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
 {
-	struct parameter_type *p, *result = NULL;
+	SHARED struct parameter_type *p, *result = NULL;
 	int i;
 
 	for (i = 0, p = p_param_tbl; i < MAX_CONFIG_PARAMS; i++, p++) {
@@ -212,10 +212,10 @@ find_flag_parameter(uint64_t key_flag,
  *	MaxRecvDataSegmentLength key
  */
 void
-set_connection_recv_length(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-			   int *max_recv_length)
+set_connection_recv_length(SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                           int *max_recv_length)
 {
-	struct parameter_type *p;
+	SHARED struct parameter_type *p;
 
 	TRACE(DEBUG, "Enter set_connection_recv_length");
 
@@ -231,19 +231,19 @@ set_connection_recv_length(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 }
 
 void
-set_digestflags(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		uint32_t * connection_flags)
+set_digestflags(SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                uint32_t * connection_flags)
 {
-	struct parameter_type *p;
+	SHARED struct parameter_type *p;
 
 	if ((p = find_flag_parameter(HEADERDIGEST_FLAG, p_param_tbl))) {
-		if (strcmp(p->str_value, CRC32C) == 0) {
+		if (shstrcmp(p->str_value, CRC32C) == 0) {
 			*connection_flags |= USE_HEADERDIGEST;
 			TRACE(NORMAL, "Enabling Header Digests");
 		}
 	}
 	if ((p = find_flag_parameter(DATADIGEST_FLAG, p_param_tbl))) {
-		if (strcmp(p->str_value, CRC32C) == 0) {
+		if (shstrcmp(p->str_value, CRC32C) == 0) {
 			*connection_flags |= USE_DATADIGEST;
 			TRACE(NORMAL, "Enabling Data Digests");
 		}
@@ -253,8 +253,8 @@ set_digestflags(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 /*	Check that a number is within legal bounds depending on its type.
  *	Returns 1 if ok, 0 if error
  */
-int __attribute__ ((no_instrument_function))
-check_bounds(struct parameter_type *p, int int_value, int who_called)
+int 
+check_bounds(SHARED struct parameter_type *p, int int_value, int who_called)
 {
 	int retval = 1;
 
@@ -307,13 +307,13 @@ check_bounds(struct parameter_type *p, int int_value, int who_called)
 /*	This is a range, check both numbers and their order.
  *	Returns first number in range if ok, -1 if error
  */
-int __attribute__ ((no_instrument_function))
-check_range(const char *value_list, int value)
+int 
+check_range(SHARED const char *value_list, int value)
 {
 	char *endptr;
 	int lower, upper;
 
-	lower = strtoul(value_list, &endptr, 0);
+	lower = strtoul((const char *)value_list, &endptr, 0);
 	if (*endptr == '~') {
 		/* first number followed by ~ must be 
 			followed by another number */
@@ -344,9 +344,9 @@ check_range(const char *value_list, int value)
  * Called only from check_correctness
  */
 
-static void __attribute__ ((no_instrument_function))
-check_type_correctness(struct parameter_type *p,
-		       char *value, int who_called, int *int_value)
+static void 
+check_type_correctness(SHARED struct parameter_type *p,
+                       char *value, int who_called, int *int_value)
 {
 	char *dummy;
 	char *endptr = NULL;
@@ -686,18 +686,18 @@ check_type_correctness(struct parameter_type *p,
  * output parameter.
  * Returns pointer to parameter in p_param_tbl if ok, else NULL	
  * (but on non-NULL p->neg_info can have flag set on fatal error)		*/
-static struct parameter_type * __attribute__ ((no_instrument_function))
+static SHARED struct parameter_type * 
 check_correctness(char *keytext,
-		  char **p_value,
-		  struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		  uint32_t who_called,
-		  uint32_t when_called,
-		  uint32_t flags,
-		  int *int_value, 
-		  struct unknown_key **unknown_key_list)
+                  char **p_value,
+                  SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                  uint32_t who_called,
+                  uint32_t when_called,
+                  uint32_t flags,
+                  int *int_value, 
+                  struct unknown_key **unknown_key_list)
 {
 	char *value;
-	struct parameter_type *p = NULL;
+	SHARED struct parameter_type *p = NULL;
 	struct unknown_key *uptr;
 	uint32_t count;
 
@@ -870,31 +870,52 @@ check_correctness(char *keytext,
 	return p;
 }
 
-void __attribute__ ((no_instrument_function))
-strreplace(char **str, const char *new_str)
+void 
+strreplace(SHARED char * SHARED *str, SHARED const char *new_str)
 {
-	if (*str != NULL)
-		free(*str);
-	*str = (new_str == NULL ? NULL : strdup(new_str));
-}
+    int newlen = (new_str == NULL ? 0 : shstrlen(new_str) + 1);
 
-void __attribute__ ((no_instrument_function))
-strreplace_upto(char **str, const char *new_str, int delim)
-{
-    const char *endptr;
 	if (*str != NULL)
-		free(*str);
+    {
+        int oldlen = shstrlen(*str) + 1;
+        if (newlen <= oldlen)
+        {
+            shmemcpy(*str, new_str, newlen);
+            return;
+        }
+        shfree(*str);
+    }
     if (new_str == NULL)
         *str = NULL;
     else
     {
-        endptr = strchr(new_str, delim);
+        *str = shalloc(newlen);
+        if (*str == NULL)
+            ERROR("%s(): Aiye! cannot allocate memory", __FUNCTION__);
+        else
+            shmemcpy(*str, new_str, newlen);
+    }
+}
+
+void 
+strreplace_upto(SHARED char * SHARED *str, SHARED const char *new_str, int delim)
+{
+    SHARED const char *endptr;
+	if (*str != NULL)
+		shfree(*str);
+    if (new_str == NULL)
+        *str = NULL;
+    else
+    {
+        endptr = shstrchr((const char *)new_str, delim);
         if (endptr == NULL)
-            *str = strdup(new_str);
+        {
+            *str = shstrdup(new_str);
+        }
         else
         {
-            *str = malloc(endptr - new_str);
-            memcpy(*str, new_str, endptr - new_str - 1);
+            *str = shalloc(endptr - new_str);
+            shmemcpy(*str, new_str, endptr - new_str - 1);
             (*str)[endptr - new_str] = '\0';
         }
     }
@@ -903,10 +924,10 @@ strreplace_upto(char **str, const char *new_str, int delim)
 
 /* Copy src parameter table to dst, duplicating any strings */
 void
-param_tbl_cpy(struct parameter_type dst[MAX_CONFIG_PARAMS],
-	      struct parameter_type src[MAX_CONFIG_PARAMS])
+param_tbl_cpy(SHARED struct parameter_type dst[MAX_CONFIG_PARAMS],
+              SHARED struct parameter_type src[MAX_CONFIG_PARAMS])
 {
-	struct parameter_type *dptr;
+	SHARED struct parameter_type *dptr;
 	int i;
 
 	TRACE(DEBUG,
@@ -914,18 +935,18 @@ param_tbl_cpy(struct parameter_type dst[MAX_CONFIG_PARAMS],
 	      sizeof (struct parameter_type) * MAX_CONFIG_PARAMS);
 
 	/* copy everything in the src table to the dst table "as is" */
-	memcpy(dst, src, sizeof (struct parameter_type) * MAX_CONFIG_PARAMS);
+	shmemcpy(dst, src, sizeof (struct parameter_type) * MAX_CONFIG_PARAMS);
 
 	/* now go back and "dup" all the strings */
 	for (i = 0, dptr = dst; i < MAX_CONFIG_PARAMS; i++, dptr++) {
 		if (dptr->parameter_name) {
-			dptr->parameter_name = strdup(dptr->parameter_name);
+			dptr->parameter_name = shstrdup(dptr->parameter_name);
 		}
 		if (dptr->str_value) {
-			dptr->str_value = strdup(dptr->str_value);
+			dptr->str_value = shstrdup(dptr->str_value);
 		}
 		if (dptr->value_list) {
-			dptr->value_list = strdup(dptr->value_list);
+			dptr->value_list = shstrdup(dptr->value_list);
 		}
 	}
 
@@ -934,16 +955,16 @@ param_tbl_cpy(struct parameter_type dst[MAX_CONFIG_PARAMS],
 
 /* Copy initial parameter table to dst, duplicating any strings */
 void
-param_tbl_init(struct parameter_type dst[MAX_CONFIG_PARAMS])
+param_tbl_init(SHARED struct parameter_type dst[MAX_CONFIG_PARAMS])
 {
 	param_tbl_cpy(dst, config_params);
 }
 
 /* Free any strings referenced in dst parameter table */
 void
-param_tbl_uncpy(struct parameter_type dst[MAX_CONFIG_PARAMS])
+param_tbl_uncpy(SHARED struct parameter_type dst[MAX_CONFIG_PARAMS])
 {
-	struct parameter_type *dptr;
+	SHARED struct parameter_type *dptr;
 	int i;
 
 	TRACE(DEBUG, "Enter param_tbl_uncpy, dst %p, size %d",
@@ -952,13 +973,13 @@ param_tbl_uncpy(struct parameter_type dst[MAX_CONFIG_PARAMS])
 	/* go thru and free all the strings that were "duped" during copy */
 	for (i = 0, dptr = dst; i < MAX_CONFIG_PARAMS; i++, dptr++) {
 		if (dptr->parameter_name) {
-			free(dptr->parameter_name);
+			shfree(dptr->parameter_name);
 		}
 		if (dptr->str_value) {
-			free(dptr->str_value);
+			shfree(dptr->str_value);
 		}
 		if (dptr->value_list) {
-			free(dptr->value_list);
+			shfree(dptr->value_list);
 		}
 	}
 
@@ -969,9 +990,9 @@ void
 iscsi_configure_param_value(int param_neg_info,
                             const char *key,
                             const char *value,
-                            struct parameter_type *p_param_tbl)
+                            SHARED struct parameter_type *p_param_tbl)
 {
-	struct parameter_type *param = NULL;
+	SHARED struct parameter_type *param = NULL;
 	char *endptr;
 	int int_value;
 
@@ -1052,10 +1073,10 @@ configure_parameter(int param_neg_info,
  *	integrity checking."
  */
 void
-check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		      uint16_t secondary_connection)
+check_integrity_rules(SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                      uint16_t secondary_connection)
 {
-	struct parameter_type *p, *p2;
+	SHARED struct parameter_type *p, *p2;
 
 	TRACE(DEBUG, "Enter check_integrity_rules");
 
@@ -1072,7 +1093,7 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 						 p_param_tbl)) != NULL) {
 				TRACE(DEBUG, "Have %s=%s",
 				      p->parameter_name, p->str_value);
-				if (!strcmp(p->str_value, key_table->yes)) {
+				if (!shstrcmp(p->str_value, key_table->yes)) {
 					/* have OFMarker=Yes, change value 
 						to No */
 					strreplace(&p->str_value,
@@ -1092,7 +1113,7 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 						 p_param_tbl)) != NULL) {
 				TRACE(DEBUG, "Have %s=%s",
 				      p->parameter_name, p->str_value);
-				if (!strcmp(p->str_value, key_table->yes)) {
+				if (!shstrcmp(p->str_value, key_table->yes)) {
 					/* have IFMarker=Yes, change 
 						value to No */
 					strreplace(&p->str_value,
@@ -1132,7 +1153,7 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 		 */
 		if ((p = find_flag_parameter(SESSIONTYPE_FLAG,
 					 p_param_tbl)) != NULL) {
-			if (!strcmp(p->str_value, key_table->discovery)
+			if (!shstrcmp(p->str_value, key_table->discovery)
 			    && (p2 = find_flag_parameter(MAXCONNECTIONS_FLAG,
 						    p_param_tbl)) != NULL) {
 				if (p2->int_value != 1) {
@@ -1156,7 +1177,7 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 		 */
 		if ((p = find_flag_parameter(DATASEQUENCEINORDER_FLAG,
 					 p_param_tbl)) != NULL) {
-			if (!strcmp(p->str_value, key_table->yes)
+			if (!shstrcmp(p->str_value, key_table->yes)
 			    && (p2 =
 				find_flag_parameter(ERRORRECOVERYLEVEL_FLAG,
 						    p_param_tbl))
@@ -1192,6 +1213,7 @@ int
 iscsi_recv_msg(int sock, int length, char *buffer, int flags)
 {
     int retval;
+    int rc;
 
     /* the following code will receive PDU's from the other side */
 
@@ -1201,7 +1223,7 @@ iscsi_recv_msg(int sock, int length, char *buffer, int flags)
 
     TRACE(VERBOSE, "Attempting to read %d bytes", length);
     retval = recv(sock, buffer, length, MSG_WAITALL);
-    pthread_testcancel();
+    rc = errno;
 
     if (retval <= 0) {
         if (retval == 0) {
@@ -1217,6 +1239,7 @@ iscsi_recv_msg(int sock, int length, char *buffer, int flags)
 out:
     TRACE(DEBUG, "Leave iscsi_recv_msg, retval %d", retval);
 
+    errno = rc;
     return retval;
 }
 
@@ -1327,12 +1350,12 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
  *	0 if success 
  */
 int
-check_neg_responses(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		    uint32_t print_error)
+check_neg_responses(SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                    uint32_t print_error)
 {
 	int i = 0;
 	int retval = 0;
-	struct parameter_type *p = NULL;
+	SHARED struct parameter_type *p = NULL;
 
 	TRACE(DEBUG, "Enter check_neg_responses");
 
@@ -1383,13 +1406,13 @@ check_neg_responses(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
  * Return:
  *	If supported returns the pointer to the (terminated) value in
  *	the supplied_values_from_sender list, else returns NULL			*/
-static char * __attribute__ ((no_instrument_function))
-check_for_support(struct parameter_type *p, char *supplied_values_from_sender)
+static char *
+check_for_support(SHARED struct parameter_type *p, char *supplied_values_from_sender)
 {
-	char *dummy1 = NULL;
+	SHARED char *dummy1 = NULL;
 	char *dummy2 = NULL;
 	char *sender_value = NULL;
-	char *receiver_value = p->value_list;
+	SHARED char *receiver_value = p->value_list;
 
 	TRACE(DEBUG, "Enter check_for_support, sender_value %s",
 	      supplied_values_from_sender);
@@ -1406,7 +1429,7 @@ check_for_support(struct parameter_type *p, char *supplied_values_from_sender)
 
 	do {
 		/* Get the receiver_value from the parameter's value_list */
-		dummy1 = strchr(receiver_value, ',');
+		dummy1 = shstrchr(receiver_value, ',');
 		if (dummy1) {
 			*dummy1 = '\0';
 		}
@@ -1425,7 +1448,7 @@ check_for_support(struct parameter_type *p, char *supplied_values_from_sender)
 
 			TRACE(DEBUG, "sender_value: %s", sender_value);
 
-			if (!strcmp(receiver_value, sender_value)) {
+			if (!shstrcmp(receiver_value, sender_value)) {
 				/* Found a match, return pointer to it 
 					in sender_value */
 				if (dummy1)
@@ -1474,8 +1497,8 @@ check_for_support(struct parameter_type *p, char *supplied_values_from_sender)
 	return sender_value;
 }
 
-static void __attribute__ ((no_instrument_function))
-update_key_value(struct parameter_type *p, int int_value, char *value)
+static void 
+update_key_value(SHARED struct parameter_type *p, int int_value, char *value)
 {
 	if (IS_NUMBER(p->type) || IS_NUMBER_RANGE(p->type)) {
 		if ((int)p->int_value != int_value) {
@@ -1484,7 +1507,7 @@ update_key_value(struct parameter_type *p, int int_value, char *value)
 			TRACE(NORMAL, "Update key %s, new value %d",
 			      p->parameter_name, p->int_value);
 		}
-	} else if (p->str_value && !strcmp(value, p->str_value)) {
+	} else if (p->str_value && !shstrcmp(value, p->str_value)) {
 		/* already have this string value in place */
 		} else {
 			/* have a new string value for this key */
@@ -1494,27 +1517,26 @@ update_key_value(struct parameter_type *p, int int_value, char *value)
 	}
 }
 
-static void __attribute__ ((no_instrument_function))
-handle_boolean_param(struct parameter_type *p, char **value);
+static void handle_boolean_param(SHARED struct parameter_type *p, char **value);
 
-static int __attribute__ ((no_instrument_function))
-handle_params_noexch(struct parameter_type *p,
-			struct parameter_type p_param_tbl [MAX_CONFIG_PARAMS],
-			uint32_t flags,
-			int int_value,
-			char *value,
-			char *string,
-			int *resp_len,
-			int *FBLength ,
-			struct parameter_type **FBp,
-			int *MBLength,
-			struct parameter_type **MBp);
+static int 
+handle_params_noexch(SHARED struct parameter_type *p,
+                     SHARED struct parameter_type p_param_tbl [MAX_CONFIG_PARAMS],
+                     uint32_t flags,
+                     int int_value,
+                     char *value,
+                     char *string,
+                     int *resp_len,
+                     int *FBLength ,
+                     SHARED struct parameter_type **FBp,
+                     int *MBLength,
+                     SHARED struct parameter_type **MBp);
 
-static int __attribute__ ((no_instrument_function))
-handle_params_resp(struct parameter_type *p,
-                	char *value,
-                	int int_value,
-                	int *out_length);
+static int
+handle_params_resp(SHARED struct parameter_type *p,
+                   char *value,
+                   int int_value,
+                   int *out_length);
 
 /*
  * scan through the input and process keys
@@ -1527,7 +1549,7 @@ handle_params_resp(struct parameter_type *p,
  */
 int
 scan_input_and_process(int sock,
-			struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+			SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 			int process_these_types,
 			int flags_to_be_set,
 			int role,
@@ -1539,7 +1561,7 @@ scan_input_and_process(int sock,
 			uint64_t * login_flags,
 			struct unknown_key **unknown_key_list)
 {
-	struct parameter_type *p = NULL;
+	SHARED struct parameter_type *p = NULL;
 	int resp_len, n;
 	char *dummy_string;
 	char *input_str, *this_key;
@@ -1551,7 +1573,7 @@ scan_input_and_process(int sock,
 	int int_value;
 	char *last_input;
 	int FBLength = -1, MBLength = -1;
-	struct parameter_type *FBp = NULL, *MBp = NULL;
+	SHARED struct parameter_type *FBp = NULL, *MBp = NULL;
 
         UNUSED(sock);
 
@@ -1581,8 +1603,8 @@ scan_input_and_process(int sock,
 		value = NULL;
 		int_value = -1;
 		if ((p = check_correctness(input_string, &value, p_param_tbl,
-					   role, when_called, flags, &int_value,
-					   unknown_key_list)) == NULL) {
+                                   role, when_called, flags, &int_value,
+                                   unknown_key_list)) == NULL) {
 
 			/* We don't understand the request. */
 			if (value == NULL) {	/* Error is fatal */
@@ -1652,7 +1674,7 @@ scan_input_and_process(int sock,
 						"gotten from other side" */
 					p = NULL;
 				} else if (p->str_value
-					   && !strcmp(p->str_value, "?")) {
+					   && !shstrcmp(p->str_value, "?")) {
 					/* we sent an inquiry and this is 
 					 * the response 
 					 * Note this should never happen 
@@ -1988,8 +2010,8 @@ scan_input_and_process(int sock,
  * that we expect back from the other end.
  */
 
-static void __attribute__ ((no_instrument_function))
-handle_boolean_param(struct parameter_type *p, char **value)
+static void 
+handle_boolean_param(SHARED struct parameter_type *p, char **value)
 {
 	int receiver_value;
 	int sender_value;
@@ -2002,7 +2024,7 @@ handle_boolean_param(struct parameter_type *p, char **value)
 	else
 		sender_value = 0;
 
-	if (!strcmp(p->str_value, key_table->yes))
+	if (!shstrcmp(p->str_value, key_table->yes))
 		receiver_value = 1;
 	else
 		receiver_value = 0;
@@ -2097,20 +2119,20 @@ handle_boolean_param(struct parameter_type *p, char **value)
  * passed back in resp_len.
  * Also ensures that the MaxBurst lengths are not exceeded.
  */
-static int __attribute__ ((no_instrument_function))
-handle_params_noexch(struct parameter_type *p,
-		struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		uint32_t flags,
-		int int_value,
-		char *value,
-		char *string,
-		int *resp_len,
-		int *FBLength ,
-		struct parameter_type **FBp,
-		int *MBLength,
-		struct parameter_type **MBp )
+static int 
+handle_params_noexch(SHARED struct parameter_type *p,
+                     SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                     uint32_t flags,
+                     int int_value,
+                     char *value,
+                     char *string,
+                     int *resp_len,
+                     int *FBLength ,
+                     SHARED struct parameter_type **FBp,
+                     int *MBLength,
+                     SHARED struct parameter_type **MBp )
 {
-	struct parameter_type *p1 = NULL;
+	SHARED struct parameter_type *p1 = NULL;
 
 	TRACE(DEBUG, "Enter handle_params_noexch");
 
@@ -2134,7 +2156,7 @@ handle_params_noexch(struct parameter_type *p,
 				if ((p1 =
 				     find_flag_parameter (OFMARKER_FLAG, 
 						p_param_tbl)) != NULL) {
-					if (!strcmp
+					if (!shstrcmp
 					    (p1->str_value, key_table->no)) {
 						send_irrelevant = 1;
 					}
@@ -2144,7 +2166,7 @@ handle_params_noexch(struct parameter_type *p,
 				if ((p1 = find_flag_parameter
 				     		(IFMARKER_FLAG, p_param_tbl))
 						    != NULL) {
-					if (!strcmp
+					if (!shstrcmp
 					    (p1->str_value, key_table->no)) {
 						send_irrelevant = 1;
 					}
@@ -2245,11 +2267,11 @@ handle_params_noexch(struct parameter_type *p,
 /* 
  * Parameter already sent, so this is the response 
  */
-static int __attribute__ ((no_instrument_function))
-handle_params_resp(struct parameter_type *p,
-                char *value,
-                int int_value,
-                int *out_length)
+static int
+handle_params_resp(SHARED struct parameter_type *p,
+                   char *value,
+                   int int_value,
+                   int *out_length)
 {
 
 	TRACE(DEBUG, "Enter handle_params_resp for %s",
@@ -2346,10 +2368,10 @@ handle_params_resp(struct parameter_type *p,
  * returns counts in last 3 parameters 
  */
 void
-scan_table_and_count(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		     int *nsecurity, int *ninformational, int *noperational)
+scan_table_and_count(SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                     int *nsecurity, int *ninformational, int *noperational)
 {
-	struct parameter_type *p;
+	SHARED struct parameter_type *p;
 	int i;
 
 	TRACE(DEBUG, "Enter scan_table_and_count");
@@ -2382,16 +2404,16 @@ scan_table_and_count(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
  */
 int
 scan_table_and_process(int sock,
-		       struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-		       int process_these_types,
-		       int flags_to_be_set,
-		       int role,
-		       struct generic_pdu *inputpdu,
-		       struct generic_pdu *outputpdu,
-		       uint32_t flags, 
-		       uint64_t * login_flags)
+                       SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                       int process_these_types,
+                       int flags_to_be_set,
+                       int role,
+                       struct generic_pdu *inputpdu,
+                       struct generic_pdu *outputpdu,
+                       uint32_t flags, 
+                       uint64_t * login_flags)
 {
-	struct parameter_type *p;
+	SHARED struct parameter_type *p;
 	int resp_len = 0;
 	char *dummy_string;
 	int out_length = 0;
@@ -2465,10 +2487,10 @@ scan_table_and_process(int sock,
 				/* in 2 special cases, set the reply 
 					optional bit */
 				if ((IS_BOOL_AND(p->type)
-				     && strcmp(p->str_value,
+				     && shstrcmp(p->str_value,
 					       key_table->no) == 0)
 				    || (IS_BOOL_OR(p->type)
-					&& strcmp(p->str_value,
+					&& shstrcmp(p->str_value,
 						  key_table->yes) == 0)) {
 					p->neg_info |= KEY_REPLY_OPTIONAL;
 					TRACE(DEBUG,
@@ -2502,10 +2524,10 @@ scan_table_and_process(int sock,
  * to set up the session-wide operational values used during FFP
  */
 void
-set_session_parameters(struct session_operational_parameters *oper_param_entry,
-		       struct parameter_type login_params[MAX_CONFIG_PARAMS])
+set_session_parameters(SHARED struct session_operational_parameters *oper_param_entry,
+                       SHARED struct parameter_type login_params[MAX_CONFIG_PARAMS])
 {
-	struct parameter_type *p;
+	SHARED struct parameter_type *p;
 	uint32_t i;
 
 	TRACE(DEBUG, "Enter set_session_parameters");
@@ -2518,12 +2540,12 @@ set_session_parameters(struct session_operational_parameters *oper_param_entry,
 		/* For InitialR2T */
 		else if (p->special_key_flag & INITIALR2T_FLAG)
 			oper_param_entry->InitialR2T =
-			    !strcmp(p->str_value, key_table->yes);
+			    !shstrcmp(p->str_value, key_table->yes);
 
 		/* For ImmediateData */
 		else if (p->special_key_flag & IMMEDIATEDATA_FLAG)
 			oper_param_entry->ImmediateData =
-			    !strcmp(p->str_value, key_table->yes);
+			    !shstrcmp(p->str_value, key_table->yes);
 
 		/* For MaxBurstLength */
 		else if (p->special_key_flag & MAXBURSTLENGTH_FLAG)
@@ -2550,12 +2572,12 @@ set_session_parameters(struct session_operational_parameters *oper_param_entry,
 		/* For DataPDUInOrder */
 		else if (p->special_key_flag & DATAPDUINORDER_FLAG)
 			oper_param_entry->DataPDUInOrder =
-			    !strcmp(p->str_value, key_table->yes);
+			    !shstrcmp(p->str_value, key_table->yes);
 
 		/* For DataSequenceInOrder */
 		else if (p->special_key_flag & DATASEQUENCEINORDER_FLAG)
 			oper_param_entry->DataSequenceInOrder =
-			    !strcmp(p->str_value, key_table->yes);
+			    !shstrcmp(p->str_value, key_table->yes);
 
 		/* For ErrorRecoveryLevel */
 		else if (p->special_key_flag & ERRORRECOVERYLEVEL_FLAG)
@@ -2564,7 +2586,7 @@ set_session_parameters(struct session_operational_parameters *oper_param_entry,
 		/* For SessionType */
 		else if (p->special_key_flag & SESSIONTYPE_FLAG) {
 			if ((oper_param_entry->SessionType =
-			     !strcmp(p->str_value, key_table->discovery))) {
+			     !shstrcmp(p->str_value, key_table->discovery))) {
 				/* discovery session */
 				/*  Draft 20, Section 12.21 SessionType
 				 *  "The discovery session implies 
@@ -2651,21 +2673,21 @@ check_step_key_number(struct unknown_key *key, uint32_t * got_keys,
 	return retval;
 }
 
-static int __attribute__ ((no_instrument_function))
-print_int_param(char *buffer, char *name, int value)
+static int
+print_int_param(char *buffer, const char *name, int value)
 {
 	return sprintf(buffer, "%30s  %d\n", name, value);
 }
 
 static int __attribute__ ((no_instrument_function))
-print_boolean_param(char *buffer, char *name, int value)
+print_boolean_param(char *buffer, const char *name, int value)
 {
 	return sprintf(buffer, "%30s  %s\n", name,
 			value ? key_table->yes : key_table->no);
 }
 
-static int __attribute__ ((no_instrument_function))
-print_string_param(char *buffer, char *name, char *value)
+static int 
+print_string_param(char *buffer, const char *name, const char *value)
 {
 	return sprintf(buffer, "%30s  %s\n", name, (value ? value : "<NULL>"));
 }
@@ -2686,13 +2708,13 @@ print_config_info(struct parameter_type param_tbl[MAX_CONFIG_PARAMS],
 	for (i = 0, params = param_tbl; i < MAX_CONFIG_PARAMS; params++, i++) {
 		if (params->type & NUMBER) {
 			pos += print_int_param(buffer + pos,
-						params->parameter_name,
-						params->int_value);
+                                   (const char *)params->parameter_name,
+                                   params->int_value);
 
 		} else {
 			pos += print_string_param(buffer + pos,
-						  params->parameter_name,
-						  params->value_list);
+						  (const char *)params->parameter_name,
+						  (const char *)params->value_list);
 		}
 	}
 
@@ -2704,9 +2726,9 @@ print_config_info(struct parameter_type param_tbl[MAX_CONFIG_PARAMS],
 void
 iscsi_convert_param_to_str(char *buffer,
                            const char *param,
-                           struct parameter_type *param_tbl)
+                           SHARED struct parameter_type *param_tbl)
 {
-    struct parameter_type *found = find_parameter(param, param_tbl);
+    SHARED struct parameter_type *found = find_parameter(param, param_tbl);
     
     if (found == NULL || found->neg_info == 0)
         *buffer = '\0';
@@ -2721,7 +2743,7 @@ iscsi_convert_param_to_str(char *buffer,
             if (found->value_list == NULL)
                 *buffer = '\0';
             else
-                strcpy(buffer, found->value_list);
+                strcpy(buffer, (const char *)found->value_list);
 		}
     }
 }
@@ -2744,85 +2766,85 @@ print_session_params(struct session_operational_parameters *sop,
 		/* For InitiatorName 12.5 */
 		if (p->special_key_flag & INITIATORNAME_FLAG) {
 			pos += print_string_param(buffer + pos,
-						  p->parameter_name,
-						  p->str_value);
+                                      (const char *)p->parameter_name,
+                                      (const char *)p->str_value);
 
 		/* For TargetName 12.4 */
 		} else if (p->special_key_flag & TARGETNAME_FLAG) {
 			pos += print_string_param(buffer + pos,
-						  p->parameter_name,
-						  p->str_value);
+                                      (const char *)p->parameter_name,
+                                      (const char *)p->str_value);
 
 		/* For TargetPortalGroupTag 12.9 */
 		} else if (p->special_key_flag & TARGETPORTALGROUPTAG_FLAG) {
 			pos += print_int_param(buffer + pos,
-						  p->parameter_name,
-						  p->int_value);
+                                   (const char *)p->parameter_name,
+                                   p->int_value);
 
 		/* For MaxConnections 12.2 */
 		} else if (p->special_key_flag & MAXCONNECTIONS_FLAG) {
 			pos += print_int_param(buffer + pos,
-					       p->parameter_name,
-					       sop->MaxConnections);
+                                   (const char *)p->parameter_name,
+                                   sop->MaxConnections);
 
 		/* For InitialR2T 12.10 */
 		} else if (p->special_key_flag & INITIALR2T_FLAG) {
 			pos += print_boolean_param(buffer + pos,
-						   p->parameter_name,
-						   sop->InitialR2T);
+                                       (const char *)p->parameter_name,
+                                       sop->InitialR2T);
 
 		/* For ImmediateData 12.11 */
 		} else if (p->special_key_flag & IMMEDIATEDATA_FLAG) {
 			pos += print_boolean_param(buffer + pos,
-						   p->parameter_name,
-						   sop->ImmediateData);
+                                       (const char *)p->parameter_name,
+                                       sop->ImmediateData);
 
 		/* For MaxBurstLength 12.13 */
 		} else if (p->special_key_flag & MAXBURSTLENGTH_FLAG) {
 			pos += print_int_param(buffer + pos,
-					       p->parameter_name,
-					       sop->MaxBurstLength);
+                                   (const char *)p->parameter_name,
+                                   sop->MaxBurstLength);
 
 		/* For FirstBurstLength 12.14 */
 		} else if (p->special_key_flag & FIRSTBURSTLENGTH_FLAG) {
 			pos += print_int_param(buffer + pos,
-					       p->parameter_name,
-					       sop->FirstBurstLength);
+                                   (const char *)p->parameter_name,
+                                   sop->FirstBurstLength);
 
 		/* For DefaultTime2Wait 12.15 */
 		} else if (p->special_key_flag & DEFAULTTIME2WAIT_FLAG) {
 			pos += print_int_param(buffer + pos,
-				               p->parameter_name,
-					       sop-> DefaultTime2Wait);
+                                   (const char *)p->parameter_name,
+                                   sop-> DefaultTime2Wait);
 
 		/* For DefaultTime2Retain 12.16 */
 		} else if (p->special_key_flag & DEFAULTTIME2RETAIN_FLAG) {
 			pos += print_int_param(buffer + pos,
-					       p->parameter_name,
-					       sop-> DefaultTime2Retain);
+                                   (const char *)p->parameter_name,
+                                   sop-> DefaultTime2Retain);
 
 		/* For MaxOutstandingR2T 12.17 */
 		} else if (p->special_key_flag & MAXOUTSTANDINGR2T_FLAG) {
 			pos += print_int_param(buffer + pos,
-					       p->parameter_name,
-					       sop->MaxOutstandingR2T);
+                                   (const char *)p->parameter_name,
+                                   sop->MaxOutstandingR2T);
 
 		/* For DataPDUInOrder 12.18 */
 		} else if (p->special_key_flag & DATAPDUINORDER_FLAG) {
 			pos += print_boolean_param(buffer + pos,
-						   p->parameter_name,
-						   sop->DataPDUInOrder);
+                                       (const char *)p->parameter_name,
+                                       sop->DataPDUInOrder);
 
 		/* For DataSequenceInOrder 12.19 */
 		} else if (p->special_key_flag & DATASEQUENCEINORDER_FLAG) {
 			pos += print_boolean_param(buffer + pos,
-						   p->parameter_name,
+						   (const char *)p->parameter_name,
 						   sop->DataSequenceInOrder);
 
 		/* For ErrorRecoveryLevel 12.20 */
 		} else if (p->special_key_flag & ERRORRECOVERYLEVEL_FLAG) {
 			pos += print_int_param(buffer + pos,
-					       p->parameter_name,
+					       (const char *)p->parameter_name,
 					       sop->ErrorRecoveryLevel);
 
 		/* For SessionType 12.21 */

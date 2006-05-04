@@ -126,7 +126,7 @@ struct target_map_item
 	static struct target_map_item target_map[MAX_TARGETS][MAX_LUNS];
 
 /* mutex to control access to target_map array */
-pthread_mutex_t target_map_mutex = PTHREAD_MUTEX_INITIALIZER;
+ipc_mutex_t target_map_mutex;
 
 /*
  * Scsi_Target_Device: Maximum number of "active" targets at any time
@@ -140,7 +140,7 @@ pthread_mutex_t target_map_mutex = PTHREAD_MUTEX_INITIALIZER;
  * whereas for each device there is a single entry in the device list
  */
 
-Target_Emulator target_data;
+static SHARED Target_Emulator *target_data;
 
 static te_bool iscsi_accomodate_buffer (struct target_map_item *target, 
                                         uint32_t size);
@@ -184,14 +184,24 @@ scsi_target_init(void)
 	 * initialize the target semaphore as locked because you want
 	 * the thread to block after entering the first loop
 	 */
-	pthread_mutex_init(&target_data.msg_lock, NULL);
-	target_data.st_device_list = NULL;
-	target_data.st_target_template = NULL;
-	pthread_mutex_init(&target_data.cmd_queue_lock, NULL);
-	INIT_LIST_HEAD(&target_data.cmd_queue);
-	target_data.msgq_start = NULL;
-	target_data.msgq_end = NULL;
-	target_data.command_id = 0;
+    target_map_mutex = ipc_mutex_alloc();
+    target_data = shalloc(sizeof(*target_data));
+    if (target_data == NULL)
+    {
+        ERROR("Cannot allocate memory for Target_Emulator: %s",
+              strerror(errno));
+        ipc_mutex_free(target_map_mutex);
+        return -1;
+    }
+    
+	target_data->msg_lock = ipc_mutex_alloc();
+	target_data->st_device_list = NULL;
+	target_data->st_target_template = NULL;
+	target_data->cmd_queue_lock = ipc_mutex_alloc();
+	INIT_LIST_HEAD(&target_data->cmd_queue);
+	target_data->msgq_start = NULL;
+	target_data->msgq_end = NULL;
+	target_data->command_id = 0;
 
 	INIT_LIST_HEAD(&target_map_list);
 
@@ -368,7 +378,12 @@ iscsi_write_to_device(uint8_t target, uint8_t lun,
 
     if (offset + len > device->storage_size * 
         SCSI_BLOCKSIZE)
+    {
+        ERROR("Offset (%u) or length (%u) are out of bounds: %u",
+              (unsigned)offset, (unsigned)len,
+              device->storage_size * SCSI_BLOCKSIZE);
         return TE_RC(TE_ISCSI_TARGET, TE_ENOSPC);
+    }
     if (!iscsi_accomodate_buffer(device, offset + len))
         return TE_RC(TE_ISCSI_TARGET, TE_ENXIO);
     src_fd = open(fname, O_RDONLY);
@@ -502,14 +517,14 @@ make_target_front_end(void)
 		return NULL;
 	}
 
-	the_device->next = target_data.st_device_list;
+	the_device->next = target_data->st_device_list;
 
 	if (the_device->next)
 		the_device->id = the_device->next->id + 1;
 	else
 		the_device->id = 0;		/* first device */
 
-	target_data.st_device_list = the_device;
+	target_data->st_device_list = the_device;
 
 	return the_device;
 }
@@ -548,7 +563,7 @@ destroy_target_front_end(Scsi_Target_Device * the_device)
 	 * go through the device list till we get to this device and
 	 * then remove it from the list
 	 */
-	for (curr = target_data.st_device_list; curr != NULL; curr = curr->next) {
+	for (curr = target_data->st_device_list; curr != NULL; curr = curr->next) {
 		if (curr == the_device) {
 			break;
 		} else
@@ -565,7 +580,7 @@ destroy_target_front_end(Scsi_Target_Device * the_device)
 		previous->next = curr->next;
 
 	else
-		target_data.st_device_list = curr->next;
+		target_data->st_device_list = curr->next;
 
 	/* release the device */
 #if 0
@@ -574,23 +589,23 @@ destroy_target_front_end(Scsi_Target_Device * the_device)
 
 #if 0
 	/* mark all commands corresponding to this device for dequeuing */
-	spin_lock_irqsave(&target_data.cmd_queue_lock, flags);
+	spin_lock_irqsave(&target_data->cmd_queue_lock, flags);
 #endif
 
-	list_for_each_entry(cmnd, &target_data.cmd_queue, link) {
+	list_for_each_entry(cmnd, &target_data->cmd_queue, link) {
 		if (cmnd->dev_id == curr->id)
 			cmnd->state = ST_DEQUEUE;
 	}
 
 #if 0
-	spin_unlock_irqrestore(&target_data.cmd_queue_lock, flags);
+	spin_unlock_irqrestore(&target_data->cmd_queue_lock, flags);
 #endif
 
 	/* wake up scsi_target_process_thread so it can dequeue stuff */
     
 #if 0
-	if (atomic_read(&target_data.target_sem.count) <= 0) {
-		up(&target_data.target_sem);
+	if (atomic_read(&target_data->target_sem.count) <= 0) {
+		up(&target_data->target_sem);
 	}
 #endif
 
@@ -644,7 +659,7 @@ signal_process_thread(void *param)
 	siginitsetinv(&current->blocked, IO_SIGS);
 
 	/* mark that this signal thread is alive */
-	target_data.signal_id = current;
+	target_data->signal_id = current;
 
 	unlock_kernel();
 
@@ -695,7 +710,7 @@ signal_process_thread(void *param)
 	up(&target_map_sem);
 
 	while (1) {
-		down_interruptible(&target_data.sig_thr_sem);
+		down_interruptible(&target_data->sig_thr_sem);
 
 		sigioflag = 0;
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 4, 18)
@@ -735,19 +750,19 @@ signal_process_thread(void *param)
 #endif
 
 		/* change the state of all PROCESSING commands */
-		spin_lock_irqsave(&target_data.cmd_queue_lock, flags);
-		list_for_each_entry(cmd_curr, &target_data.cmd_queue, link) {
+		spin_lock_irqsave(&target_data->cmd_queue_lock, flags);
+		list_for_each_entry(cmd_curr, &target_data->cmd_queue, link) {
 			if (cmd_curr->state == ST_PROCESSING) {
 				cmd_curr->state = ST_PROCESSED;
 				/* wake up scsi_target_process_thread */
-				if (atomic_read(&target_data.target_sem.count) <= 0) {
-					up(&target_data.target_sem);
+				if (atomic_read(&target_data->target_sem.count) <= 0) {
+					up(&target_data->target_sem);
 				}
 			}
 		}
-		spin_unlock_irqrestore(&target_data.cmd_queue_lock, flags);
+		spin_unlock_irqrestore(&target_data->cmd_queue_lock, flags);
 	}
-	up(&target_data.signal_sem);
+	up(&target_data->signal_sem);
 	printk("%s Exiting pid %d\n", current->comm, current->pid);
 }
 # endif
@@ -776,14 +791,14 @@ scsi_target_process(void)
 	struct list_head *lptr, *next;
 
     /* is message received */
-    while (target_data.msgq_start) {
+    while (target_data->msgq_start) {
         /* house keeping */
-        pthread_mutex_lock(&target_data.msg_lock);
-        msg = target_data.msgq_start;
-        target_data.msgq_start = msg->next;
-        if (!target_data.msgq_start)
-            target_data.msgq_end = NULL;
-        pthread_mutex_unlock(&target_data.msg_lock);
+        ipc_mutex_lock(target_data->msg_lock);
+        msg = target_data->msgq_start;
+        target_data->msgq_start = msg->next;
+        if (!target_data->msgq_start)
+            target_data->msgq_end = NULL;
+        ipc_mutex_unlock(target_data->msg_lock);
 
 			/* execute function */
         switch (msg->message) 
@@ -793,15 +808,15 @@ scsi_target_process(void)
                 Target_Scsi_Cmnd *cmnd;
                 cmnd = (Target_Scsi_Cmnd *)msg->value;
                 found = 0;
-                pthread_mutex_lock(&target_data.cmd_queue_lock);
-                list_for_each_entry(cmd_curr,&target_data.cmd_queue,link) {
+                ipc_mutex_lock(target_data->cmd_queue_lock);
+                list_for_each_entry(cmd_curr,&target_data->cmd_queue,link) {
                     if ((cmd_curr->id == cmnd->id)
                         && (cmd_curr->lun == cmnd->lun)) {
                         found = 1;
                         break;
                     }
                 }
-                pthread_mutex_unlock(&target_data.cmd_queue_lock);
+                ipc_mutex_unlock(target_data->cmd_queue_lock);
 
                 if (found) {
                     cmd_curr->abort_code = CMND_ABORTED;
@@ -823,12 +838,12 @@ scsi_target_process(void)
                 /* BAD BAD REALLY BAD */
                 uint64_t lun = *((uint64_t *)msg->value);
                 
-                pthread_mutex_lock(&target_data.cmd_queue_lock);
-                list_for_each_entry(cmd_curr,&target_data.cmd_queue,link) {
+                ipc_mutex_lock(target_data->cmd_queue_lock);
+                list_for_each_entry(cmd_curr,&target_data->cmd_queue,link) {
                     if (cmd_curr->lun == lun)
                         scsi_release(cmd_curr);
                 }
-                pthread_mutex_unlock(&target_data.cmd_queue_lock);
+                ipc_mutex_unlock(target_data->cmd_queue_lock);
                 
                 aen_notify(msg->message, lun);
                 break;
@@ -837,11 +852,11 @@ scsi_target_process(void)
 			case TMF_TARGET_WARM_RESET:
 			case TMF_TARGET_COLD_RESET:
             {
-                pthread_mutex_lock(&target_data.cmd_queue_lock);
-                list_for_each_entry(cmd_curr,&target_data.cmd_queue,link) {
+                ipc_mutex_lock(target_data->cmd_queue_lock);
+                list_for_each_entry(cmd_curr,&target_data->cmd_queue,link) {
                     scsi_release(cmd_curr);
                 }
-                pthread_mutex_unlock(&target_data.cmd_queue_lock);
+                ipc_mutex_unlock(target_data->cmd_queue_lock);
                 
                 aen_notify(msg->message, 0);
 					break;
@@ -874,7 +889,7 @@ scsi_target_process(void)
      * and we will be back into this loop again in no time.
      * Why do we say this race is harmless?
      * The loop initialization generated by list_for_each_safe:
-     *		lptr = (&target_data.cmd_queue)->next
+     *		lptr = (&target_data->cmd_queue)->next
      * and the code:
      *		next = lptr->next;
      * will always work properly, because list_add_tail() always sets
@@ -886,7 +901,7 @@ scsi_target_process(void)
      * the new element which is completely filled in, in which case we
      * do process the new element).
      */
-    list_for_each_safe(lptr, next, &target_data.cmd_queue) {
+    list_for_each_safe(lptr, next, &target_data->cmd_queue) {
         cmd_curr = list_entry(lptr, Target_Scsi_Cmnd, link);
         /* is command received */
         if (cmd_curr->state == ST_NEW_CMND) 
@@ -1018,26 +1033,40 @@ scsi_target_process(void)
             kfree(cmd_curr->sg->sbp);
             kfree(cmd_curr->sg);
 # endif
-            if (cmd_curr->req) {
-                /* free up pages */
-                st_list = (struct scatterlist *) cmd_curr->req->sr_buffer;
-                for (i = 0; i < cmd_curr->req->sr_use_sg; i++) {
-                    free(st_list[i].address);
+            if (cmd_curr->pid != getpid())
+            {
+                if (kill(cmd_curr->pid, 0) != 0)
+                {
+                    WARN("Stale SCSI command %p detected", cmd_curr);
+                }
+                else
+                {
+                    continue;
+                }
             }
-                
-                /* free up scatterlist */
-                if (cmd_curr->req->sr_use_sg)
-                    free(st_list);
-                
-                /* free up Scsi_Request */
-                free(cmd_curr->req);
+            else
+            {
+                if (cmd_curr->req) {
+                    /* free up pages */
+                    st_list = (struct scatterlist *) cmd_curr->req->sr_buffer;
+                    for (i = 0; i < cmd_curr->req->sr_use_sg; i++) {
+                        free(st_list[i].address);
+                    }
+                    
+                    /* free up scatterlist */
+                    if (cmd_curr->req->sr_use_sg)
+                        free(st_list);
+                    
+                    /* free up Scsi_Request */
+                    free(cmd_curr->req);
+                }
             }
             
             /* dequeue and free up Target_Scsi_Cmnd */
-            pthread_mutex_lock(&target_data.cmd_queue_lock);
+            ipc_mutex_lock(target_data->cmd_queue_lock);
             list_del(lptr);
-            pthread_mutex_unlock(&target_data.cmd_queue_lock);
-            free(cmd_curr);
+            ipc_mutex_unlock(target_data->cmd_queue_lock);
+            shfree(cmd_curr);
         }
 
 # ifdef DEBUG_SCSI_THREAD
@@ -1058,12 +1087,12 @@ scsi_thread_out:
  * 		unavailable
  * OUTPUT:	Target_Scsi_Cmnd struct or NULL if things go wrong
  */
-Target_Scsi_Cmnd *
+SHARED Target_Scsi_Cmnd *
 rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 	uint64_t lun, uint8_t *scsi_cdb, int len, int datalen, int in_flags,
-	Target_Scsi_Cmnd **result_command)
+	SHARED Target_Scsi_Cmnd **result_command)
 {
-	Target_Scsi_Cmnd *command;
+	SHARED Target_Scsi_Cmnd *command;
 #if 0
 	unsigned long flags;
 #endif
@@ -1076,11 +1105,11 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 	}
 
 	*result_command = command =
-		(Target_Scsi_Cmnd *)malloc(sizeof(Target_Scsi_Cmnd));
+		shalloc(sizeof(Target_Scsi_Cmnd));
     
 	if (command == NULL) {
 		TRACE_ERROR("rx_cmnd: No space for command\n");
-		/* sendsig (SIGKILL, target_data.thread_id, 0); */
+		/* sendsig (SIGKILL, target_data->thread_id, 0); */
 		return NULL;
 	}
 # ifdef DEBUG_RX_CMND
@@ -1093,6 +1122,7 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 	command->abort_code = CMND_OPEN;
 	command->device = device;
 	command->dev_id = device->id;
+    command->pid = getpid();
 
 	/*ramesh@global.com
 	   added data length and flgs to the command structure */
@@ -1108,7 +1138,7 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 	else {
 		command->len = MAX_COMMAND_SIZE;
 	}
-	memcpy(command->cmd, scsi_cdb, command->len);
+	shmemcpy(command->cmd, scsi_cdb, command->len);
     
 # if defined (FILEIO) || defined (GENERICIO)
 	/* fill in the file pointer */
@@ -1147,20 +1177,20 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 	}
 # endif
 
-    pthread_mutex_lock(&target_data.cmd_queue_lock);
+    ipc_mutex_lock(target_data->cmd_queue_lock);
 
-	command->id = ++target_data.command_id;
+	command->id = ++target_data->command_id;
 	/* check this to make sure you dont have a command with this id ?????
 	 * IGNORE FOR NOW
 	 */
 	if (!command->id) {
 		/* FOR WRAP AROUNDS */
-		command->id = ++target_data.command_id;
+		command->id = ++target_data->command_id;
 	}
 
-	list_add_tail(&command->link, &target_data.cmd_queue);
+	list_add_tail(&command->link, &target_data->cmd_queue);
 
-    pthread_mutex_unlock(&target_data.cmd_queue_lock);
+    ipc_mutex_unlock(target_data->cmd_queue_lock);
 
 	/* wake up scsi_target_process_thread */
     scsi_target_process();
@@ -1179,15 +1209,15 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
  * OUTPUT: 0 if okay else < 0
  */
 int
-scsi_rx_data(Target_Scsi_Cmnd * the_command)
+scsi_rx_data(SHARED Target_Scsi_Cmnd * the_command)
 {
 	the_command->state = ST_TO_PROCESS;
 
     scsi_target_process();
 #if 0
 	/* wake up the mid-level scsi_target_process_thread */
-	if (atomic_read(&target_data.target_sem.count) <= 0) {
-		up(&target_data.target_sem);
+	if (atomic_read(&target_data->target_sem.count) <= 0) {
+		up(&target_data->target_sem);
 	}
 #endif
 
@@ -1208,14 +1238,14 @@ scsi_rx_data(Target_Scsi_Cmnd * the_command)
  * 	   < 0 if there is trouble
  */
 int
-scsi_target_done(Target_Scsi_Cmnd * the_command)
+scsi_target_done(SHARED Target_Scsi_Cmnd * the_command)
 {
 	the_command->state = ST_DEQUEUE;
 
 	/* awaken scsi_target_process_thread to dequeue stuff */
 #if 0
-	if (atomic_read(&target_data.target_sem.count) <= 0) {
-		up(&target_data.target_sem);
+	if (atomic_read(&target_data->target_sem.count) <= 0) {
+		up(&target_data->target_sem);
 	}
 #endif
 
@@ -1234,7 +1264,7 @@ scsi_target_done(Target_Scsi_Cmnd * the_command)
  * OUTPUT: 0 if success, < 0 if there is trouble
  */
 int
-scsi_release(Target_Scsi_Cmnd * cmnd)
+scsi_release(SHARED Target_Scsi_Cmnd * cmnd)
 {
 	cmnd->abort_code = CMND_RELEASED;
 
@@ -1252,8 +1282,8 @@ scsi_release(Target_Scsi_Cmnd * cmnd)
 
 	/* wake up scsi_process_target_thread so it can dequeue stuff */
 #if 0
-	if (atomic_read(&target_data.target_sem.count) <= 0) {
-		up(&target_data.target_sem);
+	if (atomic_read(&target_data->target_sem.count) <= 0) {
+		up(&target_data->target_sem);
 	}
 #endif
 
@@ -1288,7 +1318,7 @@ scsi_release(Target_Scsi_Cmnd * cmnd)
  * 	set value = NULL
  */
 struct SM *
-rx_task_mgmt_fn(struct Scsi_Target_Device *dev, int fn, void *value)
+rx_task_mgmt_fn(struct Scsi_Target_Device *dev, int fn, SHARED void *value)
 {
 #if 0
 	unsigned long flags;
@@ -1323,19 +1353,19 @@ rx_task_mgmt_fn(struct Scsi_Target_Device *dev, int fn, void *value)
 	msg->value = value;
 	msg->message = fn;
 
-    pthread_mutex_lock(&target_data.cmd_queue_lock);
-	if (!target_data.msgq_start) {
-		target_data.msgq_start = target_data.msgq_end = msg;
+    ipc_mutex_lock(target_data->cmd_queue_lock);
+	if (!target_data->msgq_start) {
+		target_data->msgq_start = target_data->msgq_end = msg;
 	} else {
-		target_data.msgq_end->next = msg;
-		target_data.msgq_end = msg;
+		target_data->msgq_end->next = msg;
+		target_data->msgq_end = msg;
 	}
-    pthread_mutex_unlock(&target_data.cmd_queue_lock);
+    ipc_mutex_unlock(target_data->cmd_queue_lock);
 
 	/* wake up scsi_target_process_thread */
 #if 0
-	if (atomic_read(&target_data.target_sem.count) <= 0) {
-		up(&target_data.target_sem);
+	if (atomic_read(&target_data->target_sem.count) <= 0) {
+		up(&target_data->target_sem);
 	}
 #endif
 
@@ -1468,6 +1498,8 @@ get_space(Scsi_Request * req, int space /* in bytes */ )
 	int count;
     long pagesize = FAKED_PAGE_SIZE;
 
+    TRACE(DEBUG, "Trying to allocate buffers for %p: %d", req, space);
+
 	/* we assume that all buffers are split by page size */
 
 	/* get enough scatter gather entries */
@@ -1538,12 +1570,12 @@ allocate_report_lun_space(Target_Scsi_Cmnd * cmnd)
 	}
 
 	luns = 0;
-    pthread_mutex_lock(&target_map_mutex);
+    ipc_mutex_lock(target_map_mutex);
     for (i = 0; i < MAX_LUNS; i++) {
         if (target_map[cmnd->target_id][i].in_use)
             luns++;
     }
-    pthread_mutex_unlock(&target_map_mutex);
+    ipc_mutex_unlock(target_map_mutex);
 
 	if (luns == 0) {
 		TRACE_ERROR("No luns in use for target id %u\n",
@@ -1805,7 +1837,7 @@ get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 
 	if (cmnd->target_id < MAX_TARGETS) 
     {
-        pthread_mutex_lock(&target_map_mutex);
+        ipc_mutex_lock(target_map_mutex);
         for (i = 0; i < MAX_LUNS && next_slot < limit; i++) 
         {
             if (target_map[cmnd->target_id][i].in_use) {
@@ -1813,7 +1845,7 @@ get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
                 next_slot += 8;;
             }
         }
-        pthread_mutex_unlock(&target_map_mutex);
+        ipc_mutex_unlock(target_map_mutex);
     }
 
 	/* lun list length */
@@ -1871,7 +1903,7 @@ do_scsi_io(Target_Scsi_Cmnd *command,
     int       status_code = SAM_STAT_GOOD;
     int       sense_key = 0;
     
-    pthread_mutex_lock(&target_map_mutex);
+    ipc_mutex_lock(target_map_mutex);
 
     if (command->cmd[0] == READ_6 || command->cmd[0] == WRITE_6)
     {
@@ -1928,7 +1960,7 @@ do_scsi_io(Target_Scsi_Cmnd *command,
         if (lba >= target->storage_size)
         {
             TRACE_ERROR("LBA %lu is out of range for lun %d, target %d",
-                        lba, lun, command->target_id);
+                        (unsigned long)lba, lun, command->target_id);
             status_code = SAM_STAT_CHECK_CONDITION;
             sense_key = ILLEGAL_REQUEST;
             success = FALSE;
@@ -1936,7 +1968,8 @@ do_scsi_io(Target_Scsi_Cmnd *command,
         else if (lba + length >= target->storage_size)
         {
             TRACE_ERROR("LBA %lu + %lu is out of range for lun %d, target %d",
-                        lba, length, lun, command->target_id);
+                        (unsigned long)lba, 
+                        (unsigned long)length, lun, command->target_id);
             status_code = SAM_STAT_CHECK_CONDITION;
             sense_key = ILLEGAL_REQUEST;
             success = FALSE;
@@ -1991,7 +2024,7 @@ do_scsi_io(Target_Scsi_Cmnd *command,
             target_map[command->target_id][lun].last_lba = 
                 lba + length - 1;
     }
-    pthread_mutex_unlock(&target_map_mutex);
+    ipc_mutex_unlock(target_map_mutex);
 }
 
 static te_bool
@@ -2056,7 +2089,7 @@ hand_to_front_end(Target_Scsi_Cmnd * the_command)
 # endif
 
 	/* get the device template corresponding to the device_id */
-	for (curr_device = target_data.st_device_list; curr_device != NULL;
+	for (curr_device = target_data->st_device_list; curr_device != NULL;
 		 curr_device = curr_device->next) {
 		if (curr_device->id == the_command->dev_id)
 			break;
@@ -2070,7 +2103,7 @@ hand_to_front_end(Target_Scsi_Cmnd * the_command)
 		 * former is more probable
 		 */
 		TRACE_ERROR("hand_to_front_end: no device with id %llu\n",
-			   the_command->dev_id);
+                    (unsigned long long)the_command->dev_id);
 		return -1;
 	}
 
@@ -2129,7 +2162,7 @@ abort_notify(Target_Scsi_Message * msg)
 	}
 
 	/* get the device template corresponding to the device_id */
-	for (curr_device = target_data.st_device_list; curr_device != NULL;
+	for (curr_device = target_data->st_device_list; curr_device != NULL;
 		 curr_device = curr_device->next) {
 		if (curr_device->id == cmnd->dev_id)
 			break;
@@ -2163,7 +2196,7 @@ aen_notify(int fn, uint64_t lun)
 #if 0
 	Scsi_Target_Device *dev;
 
-	for (dev = target_data.st_device_list; dev != NULL; dev = dev->next) {
+	for (dev = target_data->st_device_list; dev != NULL; dev = dev->next) {
         iscsi_report_aen(fn, lun);
 	}
 #endif

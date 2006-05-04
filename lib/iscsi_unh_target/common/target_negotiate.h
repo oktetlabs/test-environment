@@ -42,7 +42,9 @@
 #include "iscsi_common.h"
 #include "list.h"
 #include "text_param.h"
-#include <iscsi_custom.h>
+#include "mutex.h"
+#include "iscsi_custom.h"
+#include "my_memory.h"
 
 /* names of bit numbers in the iscsi_conn control byte */
 #define SILENCE_BIT		0
@@ -87,24 +89,15 @@ struct iscsi_global
   /* session_sem: semaphore to add and remove sessions from both session lists
    *	this semaphore also controls access to session->conn_list
    */
-  pthread_mutex_t session_mutex;
+  ipc_mutex_t session_mutex;
 
   /* session_read_mutex: semaphore to read (no changes) both session lists
    *	as well as the session->conn_list
    */
-  pthread_mutex_t session_read_mutex;
+  ipc_mutex_t session_read_mutex;
 
   /* session_readers: counts number of current readers of the session lists */
   uint32_t			session_readers;
-
-  /* server_thr: task struct for the server thread */
-  struct task_struct	*server_thr[MAX_PORTAL];
-
-  /* server_socket: socket on which the server listens */
-  struct socket		*server_socket[MAX_PORTAL];
-
-  /* server_sem: semaphore for killing the server thread */
-  sem_t	server_sem;
 
   /* device: device returned by the STML */
   struct Scsi_Target_Device *device;
@@ -119,7 +112,7 @@ struct iscsi_global
   uint32_t			r2t_period;
 
   /* text parameters accepted by the target */
-  struct parameter_type   (*param_tbl)[MAX_CONFIG_PARAMS];
+  SHARED struct parameter_type   *param_tbl;
 
   /* chap parameter - CHONG */
   struct auth_parameter_type auth_parameter;
@@ -127,9 +120,6 @@ struct iscsi_global
 
 /* stores everything related to an iscsi connection on the target */
 struct iscsi_conn {
-	/* conn_link: structure for threading this conn onto lists */
-	struct list_head conn_link;
-
 	/* conn_id: the id for this connection */
 	int conn_id;
 
@@ -143,10 +133,10 @@ struct iscsi_conn {
 	int conn_socket;
 
 	/* session: what session does this connection belong to */
-	struct iscsi_session *session;
+	SHARED struct iscsi_session *session;
 
 	/* dev: device on which this connection was received */
-	struct iscsi_global *dev;
+	SHARED struct iscsi_global *dev;
 
 	/* rx_thread: task struct for rx_thread */
 	struct task_struct *rx_thread;
@@ -155,17 +145,13 @@ struct iscsi_conn {
 	struct task_struct *tx_thread;
 
 	/* tx_sem: semaphore to control operation of tx_thread */
-	sem_t tx_sem;
-
-	/* semaphores to kill rx and tx threads */
-	sem_t kill_rx_sem;
-	sem_t kill_tx_sem;
+	ipc_sem_t tx_sem;
 
 	/* reject_list: list of rejects to be sent back to initiator */
 	struct list_head	reject_list;
 
 	/* reject_sem: semaphore to add/remove reject items */
-	sem_t reject_sem;
+	ipc_sem_t reject_sem;
 
 	/* bad_hdr: complete header of bad PDU for reject */
 	uint8_t bad_hdr[ISCSI_HDR_LEN];
@@ -186,10 +172,10 @@ struct iscsi_conn {
 	uint32_t connection_flags;
 
 	/* text_in_progress: ptr to text command in-progress, else NULL */
-	void *text_in_progress;
+	SHARED void *text_in_progress;
 
 	/* text_in_progress_sem: semaphore to add/remove text_in_progress */
-	pthread_mutex_t text_in_progress_mutex;
+	ipc_mutex_t text_in_progress_mutex;
 
 	/* 
 	 * Connection WIDE COUNTERS: stat_sn
@@ -199,15 +185,23 @@ struct iscsi_conn {
 	uint32_t max_recv_length;	/*target's MaxRecvPDULength */
 
     /** thread to produce async messages */
-    pthread_t manager_thread;
+    pid_t manager_thread;
 
-    iscsi_custom_data *custom;
+    SHARED iscsi_custom_data *custom;
 };
+
+struct iscsi_conn_info {
+	int conn_id;
+    uint16_t cid;
+    pid_t    pid;
+};
+
+#define MAX_CONNECTIONS_PER_SESSION 8
 
 /* stores everything related to an iscsi session on the target */
 struct iscsi_session {
 	/* sess_link: structure for threading this session onto lists */
-	struct list_head sess_link;
+	SHARED struct list_head sess_link;
 
 	/* isid: id assigned to a session by the Initiator */
 	uint8_t isid[6];
@@ -225,37 +219,29 @@ struct iscsi_session {
 	uint32_t cmnd_id;
 
 	/* cmnd_list: list of commands received within session */
-	struct iscsi_cmnd *cmnd_list;
+	SHARED struct iscsi_cmnd *cmnd_list;
 
 	/* conn_sem: semaphore to add/remove commands and reject items */
-	pthread_mutex_t cmnd_mutex;
-    pthread_mutexattr_t cmnd_mutex_recursive;
+	ipc_mutex_t cmnd_mutex;
 
 	/* nconn: no of active connections */
 	int nconn;
 
-	/* conn_list: list of connections within session
-	 *	access to this list is under protection of the session_sem
-	 *	it can be read only when session_list is read protected
-	 *	it can be written only when session_list is write protected
-	 */
-	struct list_head conn_list;
+    struct iscsi_conn_info connections[MAX_CONNECTIONS_PER_SESSION];
 
 	/* devdata: pointer to the device specific data */
-	struct iscsi_global *devdata;
+	SHARED struct iscsi_global *devdata;
 
 	/* Added the r2t retransmit timer - SAI */
 	uint32_t r2t_period;
 
 	/* error recovery ver ref18_04 */
-	pthread_t retran_thread;
+	pid_t retran_thread;
     te_bool   has_retran_thread;
    
-	sem_t thr_kill_sem;
-
 	/* For parameters */
-	struct parameter_type (*session_params)[MAX_CONFIG_PARAMS];
-	struct session_operational_parameters *oper_param;
+	SHARED struct parameter_type (*session_params)[MAX_CONFIG_PARAMS];
+	SHARED struct session_operational_parameters *oper_param;
 
 	/* version identifiers */
 	uint8_t version_min;
@@ -270,27 +256,26 @@ struct iscsi_session {
 	uint32_t max_cmd_sn;
 
 	/* command ordering variables - SAI */
-	sem_t cmd_order_sem;
+	ipc_sem_t cmd_order_sem;
 	struct order_cmd *cmd_order_head;
 	struct order_cmd *cmd_order_tail;
 };
 
 
-void __attribute__ ((no_instrument_function))
-print_isid_tsih_message(struct iscsi_session *session, char *message);
+void print_isid_tsih_message(SHARED struct iscsi_session *session, char *message);
 
 
 int parameter_negotiate(struct iscsi_conn *conn,
-			struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-			struct iscsi_init_login_cmnd *loginpdu,
-			uint32_t when_called,
-			struct auth_parameter_type auth_param);
+                        SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                        struct iscsi_init_login_cmnd *loginpdu,
+                        uint32_t when_called,
+                        struct auth_parameter_type auth_param);
 
 
 /* set back the leading only keys if these keys were set to be
  * " KEY_TO_BE_NEGOTIATED" in the leading connection negotation.*/
-void reset_parameter_table(struct parameter_type
-			   p_param_tbl[MAX_CONFIG_PARAMS]);
+void reset_parameter_table(SHARED struct parameter_type
+                           p_param_tbl[MAX_CONFIG_PARAMS]);
 
 
 /*
@@ -300,6 +285,6 @@ void reset_parameter_table(struct parameter_type
  * OUTPUT: 0 if success, < 0 if there is trouble
  */
 int
-iscsi_release_session(struct iscsi_session *session);
+iscsi_release_session(SHARED struct iscsi_session *session);
 
 #endif

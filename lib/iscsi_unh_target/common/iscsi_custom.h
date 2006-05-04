@@ -36,15 +36,21 @@ typedef struct iscsi_custom_data iscsi_custom_data;
 
 #define ISCSI_CUSTOM_DEFAULT INT_MAX
 
-iscsi_custom_data *iscsi_register_custom(int id);
-void iscsi_deregister_custom(iscsi_custom_data *block);
+SHARED iscsi_custom_data *iscsi_alloc_custom(void);
+void iscsi_free_custom(SHARED iscsi_custom_data *block);
+void iscsi_bind_custom(SHARED iscsi_custom_data *block, pid_t pid);
 
-int iscsi_set_custom_value(int id, const char *param, const char *value);
+int iscsi_set_custom_value(SHARED iscsi_custom_data *block, const char *param, const char *value);
 
-int iscsi_get_custom_value(iscsi_custom_data *block, const char *param);
-te_bool iscsi_is_changed_custom_value(iscsi_custom_data *block, const char *param);
+int iscsi_get_custom_value(SHARED iscsi_custom_data *block, const char *param);
+te_bool iscsi_is_changed_custom_value(SHARED iscsi_custom_data *block, const char *param);
 
 int iscsi_custom_wait_change(iscsi_custom_data *block);
+
+void iscsi_custom_change_sighandler(int signo);
+te_bool iscsi_custom_pending_changes(void);
+
+
 
 #endif /* __TE_TAD_ISCSI_CUSTOM_H__ */
 

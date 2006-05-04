@@ -35,13 +35,15 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <semaphore.h>
+#include <unistd.h>
+#include <signal.h>
 
 #include <te_defs.h>
 #include <logger_api.h>
 #include <logger_defs.h>
 
-#include <pthread.h>
+#include "mutex.h"
+#include "my_memory.h"
 #include "iscsi_custom.h"
 
 #define ISCSI_CUSTOM_MAX_PARAM 15
@@ -50,64 +52,54 @@
 
 struct iscsi_custom_data
 {
-    unsigned long magic;
-    int id;
-    struct iscsi_custom_data *next, *prev;
     int params[ISCSI_CUSTOM_MAX_PARAM];
     te_bool changed[ISCSI_CUSTOM_MAX_PARAM];
-    sem_t on_change;
+    pid_t pid;
+    ipc_mutex_t mutex;
 };
 
-static pthread_mutex_t custom_mutex = PTHREAD_MUTEX_INITIALIZER;
+static iscsi_custom_data default_block = { pid: (pid_t)-1 };
 
-static iscsi_custom_data default_block = { magic: ISCSI_CUSTOM_MAGIC,
-                                           id: ISCSI_CUSTOM_DEFAULT };
-static iscsi_custom_data *custom_data_list = &default_block;
-
-
-
-iscsi_custom_data *
-iscsi_register_custom(int id)
+SHARED iscsi_custom_data *
+iscsi_alloc_custom(void)
 {
-    iscsi_custom_data *block = malloc(sizeof(*block));
+    SHARED iscsi_custom_data *block = shalloc(sizeof(*block));
 
     if (block == NULL)
     {
         ERROR("%s: Not enough memory", __FUNCTION__);
         return NULL;
     }
-    memset(block, 0, sizeof(*block));
-    memcpy(block->params, default_block.params, sizeof(block->params));
-    sem_init(&block->on_change, 0, 0);
-    block->magic = ISCSI_CUSTOM_MAGIC;
-    block->id = id;
-    assert(custom_data_list->magic == ISCSI_CUSTOM_MAGIC);
-    pthread_mutex_lock(&custom_mutex);
-    block->next = custom_data_list->next;
-    block->prev = custom_data_list;
-    custom_data_list->next = block;
-    pthread_mutex_unlock(&custom_mutex);
+    shmemset(block, 0, sizeof(*block));
+    shmemcpy(block->params, default_block.params, sizeof(block->params));
+    block->pid = (pid_t)-1;
+    block->mutex = ipc_mutex_alloc();
+    if (block->mutex < 0)
+    {
+        ERROR("%s(): Cannot alloc custom data mutex", __FUNCTION__);
+        shfree(block);
+        return NULL;
+    }
+    VERB("Allocated custom block %p", block);
     return block;
 }
 
 void
-iscsi_deregister_custom(iscsi_custom_data *block)
+iscsi_bind_custom(SHARED iscsi_custom_data *block, pid_t pid)
 {
+    block->pid = pid;
+}
+
+void
+iscsi_free_custom(SHARED iscsi_custom_data *block)
+{
+    VERB("Freeing custom block: %p", block);
+    
     if (block == NULL)
         return;
 
-    assert(block->magic == ISCSI_CUSTOM_MAGIC);
-
-    pthread_mutex_lock(&custom_mutex);
-    if (block->next != NULL)
-        block->next->prev = block->prev;
-    if (block->prev != NULL)
-        block->prev->next = block->next;
-    else
-        custom_data_list = block->next;
-    block->magic = 0;
-    pthread_mutex_unlock(&custom_mutex);
-    free(block);
+    ipc_mutex_free(block->mutex);
+    shfree(block);
 }
 
 typedef struct iscsi_custom_descr
@@ -212,72 +204,65 @@ translate_custom_value(int idx, const char *value)
     return 0;    
 }
 
-int
-iscsi_set_custom_value(int id, const char *param, const char *value)
+te_errno
+iscsi_set_custom_value(SHARED iscsi_custom_data *block, const char *param, const char *value)
 {
-    iscsi_custom_data *block;
     te_bool            need_post;
     int                param_no = find_custom_param(param, &need_post);
     int                intvalue;
-    te_bool            has_set = FALSE;
         
     if (param_no < 0)
     {
         ERROR("Parameter %s not found", param);
-        return -1;
+        return TE_RC(TE_ISCSI_TARGET, TE_ENOENT);
     }
         
+    if (block == NULL)
+        block = &default_block;
+
     intvalue = translate_custom_value(param_no, value);
-    RING("Setting a custom value %s to %s (%d) for %d", param, value,
-         intvalue, id);
-    pthread_mutex_lock(&custom_mutex);
-    for (block = custom_data_list; block != NULL; block = block->next)
+    RING("Setting a custom value %s to %s (%d)", param, value,
+         intvalue);
+
+    ipc_mutex_lock(block->mutex);
+    block->params[param_no] = intvalue;
+    block->changed[param_no] = TRUE;
+    ipc_mutex_unlock(block->mutex);
+    if (need_post && block->pid != (pid_t)-1)
     {
-        assert(block->magic == ISCSI_CUSTOM_MAGIC);
-        if (id < 0 || block->id == id)
+        RING("Awakening the manager");
+        if (kill(block->pid, SIGUSR1) != 0)
         {
-            block->params[param_no] = intvalue;
-            block->changed[param_no] = TRUE;
-            if (need_post && block->id != ISCSI_CUSTOM_DEFAULT)
-            {
-                RING("Awakening the manager");
-                sem_post(&block->on_change);
-            }
-            has_set = TRUE;
-            if (id >= 0)
-                break;
+            ERROR("The target process is dead");
+            return TE_OS_RC(TE_ISCSI_TARGET, TE_ESRCH);
         }
     }
-    pthread_mutex_unlock(&custom_mutex);
-    return !has_set;
+    return 0;
 }
 
 int
-iscsi_get_custom_value(iscsi_custom_data *block,
+iscsi_get_custom_value(SHARED iscsi_custom_data *block,
                        const char *param)
 {
     int value;
     int param_no = find_custom_param(param, NULL);
-
-    assert(block->magic == ISCSI_CUSTOM_MAGIC);
 
     if (param_no < 0)
     {
         return 0;
     }
 
-    pthread_mutex_lock(&custom_mutex);
+    ipc_mutex_lock(block->mutex);
     value = block->params[param_no];
     block->changed[param_no] = FALSE;
-    pthread_mutex_unlock(&custom_mutex);
+    ipc_mutex_unlock(block->mutex);
     return value;
 }
 
 te_bool
-iscsi_is_changed_custom_value(iscsi_custom_data *block,
+iscsi_is_changed_custom_value(SHARED iscsi_custom_data *block,
                               const char *param)
 {
-    te_bool flag;
     int param_no = find_custom_param(param, NULL);
 
     if (param_no < 0)
@@ -285,28 +270,23 @@ iscsi_is_changed_custom_value(iscsi_custom_data *block,
         return FALSE;
     }
 
-    pthread_mutex_lock(&custom_mutex);
-    flag = block->changed[param_no];
-    pthread_mutex_unlock(&custom_mutex);
-    return flag;
+    return block->changed[param_no];
 }
 
-int
-iscsi_custom_wait_change(iscsi_custom_data *block)
-{
-    int i;
-    int count;
+static sig_atomic_t custom_change_counter;
 
-    VERB("Waiting for a custom change");
-    sem_wait(&block->on_change);
-    VERB("semaphore fired");
-    pthread_mutex_lock(&custom_mutex);
-    for (i = 0, count = 0; i < ISCSI_CUSTOM_MAX_PARAM; i++)
-    {
-        if(block->changed[i])
-            count++;
-    }
-    pthread_mutex_unlock(&custom_mutex);
-    VERB("Has %d changed values", count);
-    return count;
+void
+iscsi_custom_change_sighandler(int signo)
+{
+    UNUSED(signo);
+    custom_change_counter++;
+}
+
+te_bool
+iscsi_custom_pending_changes(void)
+{
+    if (custom_change_counter == 0)
+        return FALSE;
+    custom_change_counter--;
+    return TRUE;
 }

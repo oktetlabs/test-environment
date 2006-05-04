@@ -55,8 +55,8 @@ struct data_list
 {
 	uint32_t offset;
 	uint32_t length;
-	char *buffer;
-	struct data_list *next;
+	SHARED char *buffer;
+	SHARED struct data_list *next;
 };
 
 /* values for "state" in struct iscsi_cmnd */
@@ -87,16 +87,16 @@ struct data_list
 struct iscsi_cmnd
 {
     /* next: pointer to the next command in the list */
-    struct iscsi_cmnd	*next;
+    SHARED struct iscsi_cmnd	*next;
     
     /* conn: connection on which this command was received */
     struct iscsi_conn	*conn;
     
     /* session: session on which this command was received */
-    struct iscsi_session	*session;
+    SHARED struct iscsi_session	*session;
     
     /* unsolicited_data_sem: to control receiving immediate data */
-    sem_t    	unsolicited_data_sem;
+    ipc_sem_t    	unsolicited_data_sem;
     
     /* state: execution state of the command */
     uint8_t			state;
@@ -111,13 +111,13 @@ struct iscsi_cmnd
     uint8_t			command_flags;
     
     /* ping_data: data get from nopout and send for nopin */
-    char			*ping_data;
+    SHARED char			*ping_data;
     
     /* in_progress_buffer: accumulated data during text negotiations */
-    char			*in_progress_buffer;
+    SHARED char			*in_progress_buffer;
     
     /* cmnd: cmnd corresponding to this struct */
-    Target_Scsi_Cmnd	*cmnd;
+    SHARED Target_Scsi_Cmnd	*cmnd;
     
     /* message: message corresponding to this struct */
     Target_Scsi_Message 	*message;
@@ -208,16 +208,16 @@ struct iscsi_cmnd
     
     /* for out-of-order command */
     uint8_t			 hdr[ISCSI_HDR_LEN];
-    struct data_list	*unsolicited_data_head;
-    struct data_list	*unsolicited_data_tail;
+    SHARED struct data_list	*unsolicited_data_head;
+    SHARED struct data_list	*unsolicited_data_tail;
     
     /* Added r2t cookie details - SAI */
-    struct iscsi_cookie	*first_r2t_cookie;
-    struct iscsi_cookie	*last_r2t_cookie;
+    SHARED struct iscsi_cookie	*first_r2t_cookie;
+    SHARED struct iscsi_cookie	*last_r2t_cookie;
     
     /* queue out-of-order data pdus - SAI */
-    struct iscsi_cookie	*first_data_q;
-    struct iscsi_cookie	*last_data_q;
+    SHARED struct iscsi_cookie	*first_data_q;
+    SHARED struct iscsi_cookie	*last_data_q;
     
     /* Added timestamp for r2t retransmissions - SAI */
     time_t	timestamp;
@@ -232,7 +232,7 @@ struct iscsi_cmnd
 };
 
 
-extern struct iscsi_global *devdata;
+extern SHARED struct iscsi_global *devdata;
 
 extern int	iscsi_detect		(Scsi_Target_Template*);
 extern int	iscsi_release		(Scsi_Target_Device*);

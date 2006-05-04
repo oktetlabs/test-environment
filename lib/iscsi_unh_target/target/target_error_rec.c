@@ -30,6 +30,7 @@
 
 #include <te_config.h>
 
+#include <time.h>
 #include "iscsi_target.h"
 #include "target_error_rec.h"
 
@@ -90,7 +91,7 @@ out:
 void
 targ_session_recovery(struct iscsi_conn *current_connection)
 {
-	struct iscsi_session *sess;
+	SHARED struct iscsi_session *sess;
 
 	TRACE(DEBUG, "Enter targ_session_recovery\n");
 
@@ -122,7 +123,7 @@ targ_digest_recovery(struct targ_error_rec *err_rec)
 	unsigned int opcode = 0;
 	struct iscsi_conn *curr_conn;
 	struct iscsi_init_scsi_data_out *data_out_hdr;
-	struct iscsi_cmnd *cmd;
+	SHARED struct iscsi_cmnd *cmd;
 
 	curr_conn = err_rec->curr_conn;
 	err_type = err_rec->err_type;
@@ -242,14 +243,14 @@ targ_drop_pdu_data(struct iscsi_conn *curr_conn, int size)
 * create an R2T cookie and store the R2T details in the cookie. This cookie
 * is esssential for R2T re-transmssions in error conditions.
 ***************************************************************************/
-struct iscsi_cookie *
-create_r2t_cookie(struct iscsi_cmnd *cmnd)
+SHARED struct iscsi_cookie *
+create_r2t_cookie(SHARED struct iscsi_cmnd *cmnd)
 {
-	struct iscsi_cookie *cookie = NULL;
+	SHARED struct iscsi_cookie *cookie = NULL;
 
 	TRACE(DEBUG, "Enter create_r2t_cookie\n");
 
-	cookie = malloc(sizeof(struct iscsi_cookie));
+	cookie = shalloc(sizeof(struct iscsi_cookie));
 	if (cookie == NULL) {
 		TRACE_ERROR("Malloc problem in creating R2T cookie\n");
 		goto end_iscsi_cookie;
@@ -272,17 +273,17 @@ end_iscsi_cookie:
 
 /* free the long pending R2T cookie list after the command is completed - SAI */
 void
-free_r2t_cookie(struct iscsi_cmnd *cmnd)
+free_r2t_cookie(SHARED struct iscsi_cmnd *cmnd)
 {
-	struct iscsi_cookie *cookie = cmnd->first_r2t_cookie;
-	struct iscsi_cookie *tmp_cookie = NULL;
+	SHARED struct iscsi_cookie *cookie = cmnd->first_r2t_cookie;
+	SHARED struct iscsi_cookie *tmp_cookie = NULL;
 
 	TRACE(DEBUG, "Enter free_r2t_cookie\n");
 
 	while (cookie) {
 		tmp_cookie = cookie;
 		cookie = cookie->next;
-		free(tmp_cookie);
+		shfree(tmp_cookie);
 	}
 
 	TRACE(DEBUG, "Leave free_r2t_cookie\n");
@@ -308,8 +309,8 @@ free_r2t_cookie(struct iscsi_cmnd *cmnd)
 *    already requested."
 ********************************************************************************/
 int
-send_recovery_r2t(struct iscsi_cmnd *cmnd, int data_offset,
-		  struct iscsi_cookie *cookie, struct generic_pdu *hdr)
+send_recovery_r2t(SHARED struct iscsi_cmnd *cmnd, int data_offset,
+                  SHARED struct iscsi_cookie *cookie, struct generic_pdu *hdr)
 {
 	int data_length;
 	int max_burst_len;
@@ -380,17 +381,16 @@ void *
 iscsi_retran_thread(void *param)
 {
     UNUSED(param);
-	struct iscsi_session *session = (struct iscsi_session *) param;
-	struct iscsi_cmnd *cmnd;
+	SHARED struct iscsi_session *session = (struct iscsi_session *) param;
+	SHARED struct iscsi_cmnd *cmnd;
 
     for (;;)
     {
         
         sleep(session->r2t_period);
-        pthread_testcancel();
 
 		/* lock the session-wide list of commands */
-        pthread_mutex_lock(&session->cmnd_mutex);
+        ipc_mutex_lock(session->cmnd_mutex);
 		for (cmnd = session->cmnd_list; cmnd; cmnd = cmnd->next) {
 			if (cmnd->outstanding_r2t > 0
 			   && time(NULL) > (time_t)(cmnd->timestamp + session->r2t_period)
@@ -417,7 +417,7 @@ iscsi_retran_thread(void *param)
                 iscsi_tx(cmnd->conn);
 			}
 		}
-        pthread_mutex_unlock(&session->cmnd_mutex);
+        ipc_mutex_unlock(session->cmnd_mutex);
 	}
 	return 0;
 }
@@ -554,10 +554,10 @@ queue_data(struct targ_error_rec *err_rec)
 * accordingly.
 ***********************************************************************/
 void
-search_data_q(struct iscsi_cmnd *cmd)
+search_data_q(SHARED struct iscsi_cmnd *cmd)
 {
 	int unhook_flg = 0;
-	struct iscsi_cookie *dataq, *prev, *tmp_q;
+	SHARED struct iscsi_cookie *dataq, *prev, *tmp_q;
 
 	TRACE(DEBUG, "Entering search_data_q\n");
 
@@ -588,7 +588,7 @@ search_data_q(struct iscsi_cmnd *cmd)
 
 			tmp_q = dataq;
 			dataq = dataq->next;
-			free(tmp_q);
+			shfree(tmp_q);
 			unhook_flg = 0;
 		} else {
 			prev = dataq;

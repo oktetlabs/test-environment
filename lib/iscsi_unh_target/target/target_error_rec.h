@@ -39,7 +39,7 @@ struct targ_error_rec
 {
 	struct iscsi_conn	*curr_conn;
 	struct generic_pdu	*pdu_hdr;
-	struct iscsi_cmnd	*cmd;
+	SHARED struct iscsi_cmnd	*cmd;
 	uint8_t			err_type;
 };
 
@@ -52,7 +52,7 @@ struct iscsi_cookie
 	int						offset;
 	int						list_offset;
 	int						list_count;
-	struct iscsi_cookie 	*next;
+	SHARED struct iscsi_cookie 	*next;
 };
 
 
@@ -115,11 +115,12 @@ void deal_with_r2t_timer(unsigned long data);
 * create an R2T cookie and store the R2T details in the cookie. This cookie
 * is esssential for R2T re-transmssions in error conditions.
 ***************************************************************************/
-struct iscsi_cookie* create_r2t_cookie(struct iscsi_cmnd *cmnd);
+SHARED struct iscsi_cookie* 
+create_r2t_cookie(SHARED struct iscsi_cmnd *cmnd);
 
 
 /* free the long pending R2T cookie list after the command is completed - SAI */
-void free_r2t_cookie(struct iscsi_cmnd *cmnd);
+void free_r2t_cookie(SHARED struct iscsi_cmnd *cmnd);
 
 
 /*******************************************************************************
@@ -128,8 +129,8 @@ void free_r2t_cookie(struct iscsi_cmnd *cmnd);
 * function is called by SNACK mechanism and also by other places of the code that
 * finds a discrepency in Dataouts using data sequence numbering or offsets.
 ********************************************************************************/
-int send_recovery_r2t (struct iscsi_cmnd *cmnd, int data_offset,
-						struct iscsi_cookie *cookie, struct generic_pdu *hdr);
+int send_recovery_r2t (SHARED struct iscsi_cmnd *cmnd, int data_offset,
+                       SHARED struct iscsi_cookie *cookie, struct generic_pdu *hdr);
 
 
 /***********************************************************************
@@ -158,6 +159,6 @@ int queue_data(struct targ_error_rec *err_rec);
 * out-of-order dataouts for the command and updates the state variables
 * accordingly.
 ***********************************************************************/
-void search_data_q(struct iscsi_cmnd *cmd);
+void search_data_q(SHARED struct iscsi_cmnd *cmd);
 
 #endif

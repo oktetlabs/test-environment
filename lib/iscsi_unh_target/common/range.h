@@ -34,16 +34,17 @@
 #ifndef	_RANGE_H
 #define	_RANGE_H
 
+#include "my_memory.h"
+
 /*	Holds information to control out-of-order sequences and/or data pdus */
 struct order_range {
 	uint32_t offset;		/* base offset of range */
 	uint32_t limit;		/* == offset + length of range */
-	struct order_range *next;	/* next range element in list */
+	SHARED struct order_range *next;	/* next range element in list */
 };
 
 /*	frees all elements in a range list and then sets head->next to NULL */
-void __attribute__ ((no_instrument_function))
-free_range_list(struct order_range *head);
+void free_range_list(SHARED struct order_range *head);
 
 /*	Accepts the new range [new_offset..new_offset+new_length]
  *	and merges it into the existing list pointed to by head.
@@ -53,13 +54,13 @@ free_range_list(struct order_range *head);
  *	extended by the new range.
  *	In addition, elements in the list are collapsed as holes are filled.
  */
-void merge_offset_length(struct order_range *head, uint32_t new_offset,
-			 uint32_t new_length);
+void merge_offset_length(SHARED struct order_range *head, uint32_t new_offset,
+                         uint32_t new_length);
 
 /*	Checks that range list covers the complete range it was supposed to cover.
  *	On entry, both head and head->next must NOT be NULL!
  *	Returns total number of bytes not covered by items in the range list.
  */
-int check_range_list_complete(struct order_range *head);
+int check_range_list_complete(SHARED struct order_range *head);
 
 #endif

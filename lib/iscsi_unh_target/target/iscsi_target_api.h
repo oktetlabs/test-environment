@@ -26,122 +26,24 @@
  * $Id: tad_iscsi_impl.h 20278 2005-10-29 10:46:56Z arybchik $
  */
 
-#ifndef __TE_ISCSI_TARGET_H__
-#define __TE_ISCSI_TARGET_H__
+#ifndef __TE_ISCSI_TARGET_API_H__
+#define __TE_ISCSI_TARGET_API_H__
 
 #include <te_config.h>
 #include <te_defs.h>
 #include <inttypes.h>
 
-/**
- * Frees all resources (memory mappings and buffers)
- * associated with a given virtual iSCSI target device
- * 
- * @param target        Target No
- * @param lun           LUN
- * 
- * @return Status code
- */
-extern int iscsi_free_device(uint8_t target, uint8_t lun);
+#define ISCSI_TARGET_CONTROL_SOCKET "/tmp/te_iscsi_target_control"
+#define ISCSI_TARGET_DATA_SOCKET "/tmp/te_iscsi_target_data"
 
+#define ISCSI_TARGET_SHARED_MEMORY (4 * 1024 * 1024)
 
-/**
- * Causes a specified target device to use a named file
- * as a backend instead of a memory buffer
- * 
- * @param target        Target No
- * @param lun           LUN
- * @param fname         Name of a backend file
- * 
- * @return Status code
- */
-extern int iscsi_mmap_device(uint8_t target, uint8_t lun, 
-                             const char *fname);
-
-/**
- * Gets information about the target device's backend parameters
- * 
- * @param target        Target No
- * @param lun           LUN
- * @param is_mmap       Set to TRUE if the device uses a file backend (OUT)
- * @param storage_size  The size of the device storage in bytes (OUT)
- * 
- * @return Status code
- */
-extern int iscsi_get_device_param(uint8_t target, uint8_t lun,
-                                  te_bool *is_mmap,
-                                  uint32_t *storage_size);
-
-/**
- * Causes the target device to sync its file backend to disk.
- * No-op for a memory backend.
- * 
- * @param target        Target No
- * @param lun           LUN
- * 
- * @return Status code
- */
-extern int iscsi_sync_device(uint8_t target, uint8_t lun);
-
-/**
- * Writes a specified amount of data to the target virtual device
- * at a given position.
- * 
- * @param target        Target No
- * @param lun           LUN
- * @param offset        Position to write at
- * @param fname         File to read from
- * @param len           Length of data
- * 
- * @return Status code
- */
-extern int iscsi_write_to_device(uint8_t target, uint8_t lun,
-                                 uint32_t offset,
-                                 const char *fname, 
-                                 uint32_t len);
-
-/**
- * Verifies that the target virtual device contains specified data
- * at a given position.
- * 
- * @param target        Target No
- * @param lun           LUN
- * @param offset        Position to read from
- * @param fname         File to read to
- * @param len           Length of data
- * 
- * @return Status code
- */
-extern int iscsi_read_from_device(uint8_t target, uint8_t lun,
-                                  uint32_t offset,
-                                  const char *fname,
-                                  uint32_t len);
-
-/**
- * Sets a device failure state.
- *
- * @param target Target No
- * @param lun    LUN
- * @param status  Status code (0 means normal operation).
- * @param sense   Sense key
- * @param asc     SAM ASC
- * @param ascq    SAM ASCQ
- *
- * @return Status code
- */
-extern te_errno iscsi_set_device_failure_state(uint8_t target, uint8_t lun, 
-                                               uint32_t status,
-                                               uint32_t sense,
-                                               uint32_t asc,
-                                               uint32_t ascq);
-
-/**
- * Informs the target that the following sessions will be 
- * somewhat different from the previous ones.
- * In practice, that means informing the target that a new test
- * is being run.
- * 
- */
-extern void iscsi_start_new_session_group(void);
+extern int iscsi_server_init(void);
+extern te_errno iscsi_target_send_msg(te_errno (*process)(char *buf, int size, void *data),
+                                      void *data,
+                                      const char *msg, const char *fmt, ...);
+extern te_errno iscsi_target_send_simple_msg(const char *msg, const char *arg);
+extern int iscsi_target_connect(void);
+extern te_bool iscsi_server_check(void);
 
 #endif

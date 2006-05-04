@@ -220,10 +220,10 @@ check_other_login(struct iscsi_conn *conn, int correct_CSG,
 static int
 check_flags(struct iscsi_conn *conn, uint64_t login_flags,
 			struct generic_pdu *outputpdu,
-			struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
+			SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
 {
 	int err = 1;
-	struct parameter_type *ptr;
+	SHARED struct parameter_type *ptr;
 
 	TRACE(DEBUG, "Enter check_flags");
 
@@ -325,8 +325,8 @@ out:
 	return retval;
 }
 
-void __attribute__ ((no_instrument_function))
-print_isid_tsih_message(struct iscsi_session *session, char *message)
+void 
+print_isid_tsih_message(SHARED struct iscsi_session *session, char *message)
 {
 	int i;
 	char buffer[32], *ptr;
@@ -335,16 +335,16 @@ print_isid_tsih_message(struct iscsi_session *session, char *message)
 	for (i = 0; i < 6; i++) {
 		ptr += sprintf(ptr, " %02x", session->isid[i]);
 	}
-	printf("%sISID%s TSIH %u\n", message, buffer, session->tsih);
+	fprintf(stderr, "%sISID%s TSIH %u\n", message, buffer, session->tsih);
 }
 
-static void __attribute__ ((no_instrument_function))
-finalize_new_session(struct iscsi_session *session)
+static void 
+finalize_new_session(SHARED struct iscsi_session *session)
 {
-	struct iscsi_global *host;
-	struct parameter_type *sess_iname;
-	struct parameter_type *sess_tname;
-	struct parameter_type *sess_pname;
+	SHARED struct iscsi_global *host;
+	SHARED struct parameter_type *sess_iname;
+	SHARED struct parameter_type *sess_tname;
+	SHARED struct parameter_type *sess_pname;
 	uint16_t new_tsih;
 
 	if ((host = session->devdata) == NULL) {
@@ -386,7 +386,7 @@ out:
 
 static int
 target_check_login(struct iscsi_conn *conn,
-				   struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+				   SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 				   struct generic_pdu *inputpdu,
 				   struct generic_pdu *outputpdu,
 				   uint32_t when_called,
@@ -674,15 +674,15 @@ attach_key_string(struct generic_pdu *outputpdu, char *key_name,
 }
 
 void
-check_authmethod(struct parameter_type *auth_p,
+check_authmethod(SHARED struct parameter_type *auth_p,
 				 struct generic_pdu *outputpdu,
 				 enum security_steps *security_step)
 {
 	if (IS_KEY_GOT_FROM_OTHER_SIDE(auth_p->neg_info)) {	
 		/* initiator has sent AuthMethod offer/reply, check it */
-		if (!strcmp(auth_p->str_value, CHAP))
+		if (!shstrcmp(auth_p->str_value, CHAP))
 			*security_step = ss_find_chap_a;
-		else if (!strcmp(auth_p->str_value, SRP))
+		else if (!shstrcmp(auth_p->str_value, SRP))
 			*security_step = ss_find_srp_u;
 		else if (outputpdu->flags & T_BIT)
 			*security_step = ss_leave;
@@ -695,7 +695,7 @@ check_authmethod(struct parameter_type *auth_p,
 
 static int
 target_security_negotiate(struct iscsi_conn *conn,
-						  struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+						  SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 						  struct generic_pdu *inputpdu,
 						  struct generic_pdu *outputpdu,
 						  uint32_t when_called,
@@ -707,7 +707,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 	int sock = conn->conn_socket;
 	int retval = 0;
 	int padding = 0;
-	struct parameter_type *auth_p;
+	SHARED struct parameter_type *auth_p;
 	char *dummy_string;
 	struct unknown_key *key, *key_next, **key_prev;
 	int count = 0;
@@ -1267,12 +1267,12 @@ target_security_negotiate(struct iscsi_conn *conn,
 
 static int
 target_parameter_negotiate(struct iscsi_conn *conn, 
-						struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
-						struct generic_pdu *inputpdu, 
-						struct generic_pdu *outputpdu, 
-						uint32_t when_called, 
-						struct auth_parameter_type auth_param,	
-						struct unknown_key **unknown_key_list)
+                           SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+                           struct generic_pdu *inputpdu, 
+                           struct generic_pdu *outputpdu, 
+                           uint32_t when_called, 
+                           struct auth_parameter_type auth_param,	
+                           struct unknown_key **unknown_key_list)
 {
 	int sock = conn->conn_socket;
 	int retval = 0, count;
@@ -1422,7 +1422,7 @@ out:
 
 int
 parameter_negotiate(struct iscsi_conn *conn,
-					struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
+					SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 					struct iscsi_init_login_cmnd *loginpdu,
 					uint32_t when_called,
 					struct auth_parameter_type auth_param)
@@ -1474,7 +1474,7 @@ parameter_negotiate(struct iscsi_conn *conn,
 	outputpdu->init_task_tag = htonl(loginpdu->init_task_tag);
 
 	/*set the ISID and TSIH for this session */
-	memcpy(outputpdu->isid, conn->session->isid, 6);
+	shmemcpy(outputpdu->isid, conn->session->isid, 6);
 	outputpdu->tsih = htons(conn->session->tsih);
 
 	/* Set opcode */
@@ -1534,9 +1534,9 @@ out:
  * in an existing session).
  */
 void
-reset_parameter_table(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
+reset_parameter_table(SHARED struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
 {
-	struct parameter_type *p = NULL;
+	SHARED struct parameter_type *p = NULL;
 	int i;
 
 	TRACE(DEBUG, "Enter reset_parameter_table");

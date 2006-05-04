@@ -67,6 +67,7 @@
 #include "tapi_tcp.h"
 #include "tapi_test.h"
 #include "tapi_rpc.h"
+#include "tapi_socket.h"
 #include "tapi_file.h"
 
 /* Initiator configuration */
@@ -147,14 +148,14 @@ tapi_iscsi_tgt_csap_create(const char        *ta_name,
                            iscsi_digest_type  data_dig,
                            csap_handle_t     *csap)
 {
-    te_errno    rc;
-    int         sock;
+    int sock;
+    int rc;
 
     rc = rcf_ta_call(ta_name, 0 /* sid */,
-                     "iscsi_target_start_rx_thread", &sock, 0, FALSE);
+                     "iscsi_target_connect", &sock, 0, FALSE);
     if (rc != 0)
     {
-        ERROR("Failed to call iscsi_target_start_rx_thread() on TA "
+        ERROR("Failed to call iscsi_target_connect() on TA "
               "'%s': %r", ta_name, rc);
         return rc;
     }
@@ -1545,6 +1546,39 @@ tapi_iscsi_key_value_write(iscsi_key_values val_array,
 }
 
 /* Target configuration */
+static te_errno
+tapi_iscsi_send_target_msg(const char *ta, const char *msg, 
+                           const char *fmt, ...)
+{
+    static char buffer[RCF_MAX_PATH + 1];
+    te_errno local_rc;
+    te_errno remote_rc;
+
+    va_list args;
+
+    if (fmt == NULL)
+        *buffer = '\0';
+    else
+    {
+        int size;
+        va_start(args, fmt);
+        size = vsnprintf(buffer, sizeof(buffer), fmt, args);
+        if (size < 0 || (unsigned)size >= sizeof(buffer))
+        {
+            ERROR("Cannot format message: %s", strerror(errno));
+            return TE_RC(TE_TAPI, TE_EFMT);
+        }
+        va_end(args);
+    }
+
+    local_rc = rcf_ta_call(ta, 0, "iscsi_target_send_simple_msg", 
+                           &remote_rc,
+                           2, FALSE,
+                           RCF_STRING, msg, RCF_STRING, buffer);
+    return (local_rc == 0 ? remote_rc : local_rc);
+}                          
+
+
 
 /* see description in tapi_iscsi.h */
 int
@@ -1605,16 +1639,10 @@ tapi_iscsi_target_customize(const char *ta, int id,
                             const char *key, 
                             const char *value)
 {
-    te_errno remote_rc;
-    te_errno local_rc;
-    
     INFO("Setting %s to %s on %s:%d", key, value, ta, id);
-    local_rc = rcf_ta_call(ta, 0, "iscsi_set_custom_value", &remote_rc,
-                           3, FALSE, 
-                           RCF_INT32, id,
-                           RCF_STRING, key, RCF_STRING, value);
-    return local_rc != 0 ? local_rc : 
-        (remote_rc != 0 ? TE_RC(TE_TAPI, TE_ESRCH) : 0);
+
+    return tapi_iscsi_send_target_msg(ta, "tweak", "%d %s %s",
+                                      id, key, value);
 }
 
 int
@@ -1682,9 +1710,6 @@ tapi_iscsi_target_set_failure_state(const char *ta, const char *status,
                                     const char *sense, 
                                     const char *additional_code)
 {
-    te_errno local_rc;
-    te_errno remote_rc;
-
     typedef struct status_mapping
     {
         const char *name;
@@ -1777,18 +1802,14 @@ tapi_iscsi_target_set_failure_state(const char *ta, const char *status,
          found_asc != NULL ? found_asc->asc : 0,
          found_asc != NULL ? found_asc->ascq : 0);
 
-    local_rc = rcf_ta_call(ta, 0, "iscsi_set_device_failure_state", 
-                           &remote_rc,
-                           6, FALSE, 
-                           RCF_UINT8, 0, RCF_UINT8, 0,
-                           RCF_UINT32, found_status->key,
-                           RCF_UINT32, 
-                           found_sense != NULL ? found_sense - senses : 0,
-                           RCF_UINT32, 
-                           found_asc != NULL ? found_asc->asc : 0,
-                           RCF_UINT32, 
-                           found_asc != NULL ? found_asc->ascq : 0);
-    return local_rc != 0 ? local_rc : remote_rc;
+    return tapi_iscsi_send_target_msg(ta, "setfail", "0 0 %d %d %d %d",
+                                      found_status->key,
+                                      found_sense != NULL ? 
+                                      found_sense - senses : 0,
+                                      found_asc != NULL ? 
+                                      found_asc->asc : 0,
+                                      found_asc != NULL ? 
+                                      found_asc->ascq : 0);
 }
 
 int
@@ -2014,16 +2035,16 @@ tapi_iscsi_initiator_conn_establish(const char *ta,
     sprintf(cmd, "%d", ISCSI_CONNECTION_UP);
 
     INFO("Setting: /agent:%s/iscsi_initiator:/target_data:"
-         "target_%d/conn:%d/cid:", ta, tgt_id, cid);
+         "target_%d/conn:%d/status:", ta, tgt_id, cid);
 
     rc = cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
                               "/agent:%s/iscsi_initiator:/target_data:"
-                              "target_%d/conn:%d/cid:", ta,
+                              "target_%d/conn:%d/status:", ta,
                               tgt_id, cid);
     if (rc != 0)
     {
         ERROR("Failed to establish the connection "
-              "with cid=%d for target %d", cid, tgt_id);
+              "with cid=%d for target %d: %r", cid, tgt_id, rc);
         return rc;
     }
 
@@ -2042,7 +2063,7 @@ tapi_iscsi_initiator_conn_down(const char *ta,
 
     rc = cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
                               "/agent:%s/iscsi_initiator:/target_data:"
-                              "target_%d/conn:%d/cid:", ta,
+                              "target_%d/conn:%d/status:", ta,
                               tgt_id,
                               cid);
     if (rc != 0)
@@ -2299,22 +2320,16 @@ get_target_mountpoint(void)
 te_errno
 tapi_iscsi_target_inform_new_test(const char *ta)
 {
-    int  unused;
-
-    return rcf_ta_call(ta, 0, "iscsi_start_new_session_group", 
-                       &unused,
-                       0, FALSE);
+    return tapi_iscsi_send_target_msg(ta, "reset", NULL);
 }
 
 te_errno
 tapi_iscsi_target_mount(const char *ta)
 {
     int  rc;
-    int  unused;
 
-    rc = rcf_ta_call(ta, 0, "iscsi_sync_device", &unused,
-                     2, FALSE,
-                     RCF_UINT8, 0, RCF_UINT8, 0);
+    rc = tapi_iscsi_send_target_msg(ta, "sync", "0 0");
+
     if (rc != 0)
         return rc;
 
@@ -2450,7 +2465,6 @@ tapi_iscsi_target_raw_write(const char *ta, off_t offset,
                             size_t multiply)
 {
     int rc;
-    int result;
     const char *localfname; 
     const char *remotefname;
 
@@ -2478,13 +2492,11 @@ tapi_iscsi_target_raw_write(const char *ta, off_t offset,
         return rc;
     }
 
-    rc = rcf_ta_call(ta, 0 /* sid */,
-                     "iscsi_write_to_device", &result, 5, FALSE,
-                     RCF_UINT8, 0, RCF_UINT8, 0,
-                     RCF_UINT32, offset, 
-                     RCF_STRING, remotefname,
-                     RCF_UINT32, length * multiply);
-    return rc == 0 ? result : rc;
+    return tapi_iscsi_send_target_msg(ta, "write",
+                                      "0 0 %lu %s %lu", 
+                                      (unsigned long)offset,
+                                      remotefname, 
+                                      (unsigned long)length * multiply);
 }
 
 int
@@ -2492,7 +2504,6 @@ tapi_iscsi_target_raw_read(const char *ta, off_t offset,
                            void *data, size_t length)
 {
    int rc;
-   int result;
    int fd;
     
    ssize_t result_len;
@@ -2507,16 +2518,13 @@ tapi_iscsi_target_raw_read(const char *ta, off_t offset,
    if (localfname == NULL)
        return TE_RC(TE_TAPI, TE_EBADF);
 
-   rc = rcf_ta_call(ta, 0 /* sid */,
-                    "iscsi_read_from_device", &result, 5, FALSE,
-                    RCF_UINT8, 0, RCF_UINT8, 0,
-                    RCF_UINT32, offset, 
-                    RCF_STRING, remotefname, 
-                    RCF_UINT32, length);
+   rc = tapi_iscsi_send_target_msg(ta, "read", 
+                                   "0 0 %lu %s %lu", 
+                                   (unsigned long)offset,
+                                   remotefname, (unsigned long)length);
    if (rc != 0)
        return rc;
-   if (result != 0)
-       return rc;
+
    rc = rcf_ta_get_file(ta, 0, remotefname, localfname);
    rcf_ta_del_file(ta, 0, remotefname);
    if (rc != 0)
@@ -2629,17 +2637,27 @@ tapi_iscsi_initiator_is_device_ready(const char *ta, iscsi_target_id id)
         return TRUE;
     else
     {
-        char    *dev = get_host_device(ta, id);
+        cfg_val_type type = CVT_STRING;
+        char        *status;
+        int          rc;
         
-        if (dev == NULL)
+        rc = cfg_get_instance_fmt(&type, &status,
+                                  "/agent:%s/iscsi_initiator:"
+                                  "/target_data:target_%d/conn:0/status:",
+                                  ta, id);
+        if (rc != 0)
+        {
+            ERROR("Cannot obtain host device status: %r", rc);
             return FALSE;
-        device_created[id] = (*dev != '\0');
-        free(dev);
+        }
+
+        device_created[id] = (atoi(status) == ISCSI_CONNECTION_UP);
+        free(status);
         return device_created[id];
     }
 }
 
-
+#if 0
 static void
 rpc_server_destructor (void *arg)
 {
@@ -2651,6 +2669,7 @@ rpc_server_destructor (void *arg)
     rcf_rpc_server_destroy(ioh->rpcs);
     puts("destroyed RPC server");
 }
+#endif
 
 /**
  * The thread routine that interacts with a TA 

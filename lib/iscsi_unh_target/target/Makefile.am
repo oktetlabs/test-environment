@@ -1,7 +1,8 @@
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) \
               -I$(srcdir)/../common -I$(srcdir)/../security
-AM_CFLAGS = @TE_CFLAGS@ 
+AM_CFLAGS = @TE_CFLAGS@ -pthread
+AM_LDFLAGS = @TE_LDFLAGS@
 
 
 noinst_HEADERS = \

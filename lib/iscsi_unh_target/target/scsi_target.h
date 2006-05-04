@@ -30,10 +30,10 @@
 
 #include <te_config.h>
 #include <te_defs.h>
-#include <pthread.h>
-#include <semaphore.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include "my_memory.h"
+#include "mutex.h"
 
 #include "../common/linux-scsi.h"
 #include "../common/scsi_request.h"
@@ -144,7 +144,7 @@ typedef struct SC {
 	/* link: thread to link this command onto the cmd_queue */
 	struct list_head link;
 	/* req: this is the SCSI request for the Scsi Command */
-	Scsi_Request	*req;
+	SHARED Scsi_Request	*req;
 #ifdef GENERICIO
 	/* sg: this is what Scsi generic will use to do I/O */
 	sg_io_hdr_t	*sg;
@@ -165,7 +165,7 @@ typedef struct SC {
 	*/
 	int datalen;
 	int flags;
-
+    pid_t pid;
 } Target_Scsi_Cmnd;
 
 
@@ -354,7 +354,7 @@ typedef struct GTE
 	 * received CDBs can get queued up in the context of an
 	 * interrupt handler so we have to a spinlock, not a semaphore.
 	 */
-	pthread_mutex_t		cmd_queue_lock;
+	ipc_mutex_t		cmd_queue_lock;
 	/*
 	 * cmd_queue: doubly linked circular queue of commands
 	 */
@@ -370,7 +370,7 @@ typedef struct GTE
 	/*
 	 * msg_lock: spinlock for the message
 	 */
-	pthread_mutex_t		msg_lock;
+	ipc_mutex_t		msg_lock;
 } Target_Emulator;
 
 /* number of devices target currently has access to */
@@ -381,18 +381,18 @@ extern int target_count;
 /* these are entry points provided to the low-level driver */
 int	register_target_template	(Scsi_Target_Template*);
 int	deregister_target_template	(Scsi_Target_Template*);
-int	scsi_target_done		(Target_Scsi_Cmnd*);
+int	scsi_target_done		(SHARED Target_Scsi_Cmnd*);
 int	deregister_target_front_end	(Scsi_Target_Device*);
-int	scsi_rx_data			(Target_Scsi_Cmnd*);
-int	scsi_release			(Target_Scsi_Cmnd*);
+int	scsi_rx_data			(SHARED Target_Scsi_Cmnd*);
+int	scsi_release			(SHARED Target_Scsi_Cmnd*);
 
 
 Scsi_Target_Device *make_target_front_end(void);
 
-Target_Scsi_Cmnd*	rx_cmnd		(Scsi_Target_Device*, uint64_t,
-					uint64_t, unsigned char*, int, int, int,
-					Target_Scsi_Cmnd**);
-Target_Scsi_Message*	rx_task_mgmt_fn	(Scsi_Target_Device*,int,void*);
+SHARED Target_Scsi_Cmnd*	rx_cmnd		(Scsi_Target_Device*, uint64_t,
+                                         uint64_t, unsigned char*, int, int, int,
+                                         SHARED Target_Scsi_Cmnd**);
+Target_Scsi_Message*	rx_task_mgmt_fn	(Scsi_Target_Device*, int, SHARED void*);
 
 /** Default size of an iSCSI backing store in 512-blocks */
 #define DEFAULT_STORAGE_SIZE   16384
@@ -462,5 +462,23 @@ extern const char *get_scsi_command_name(int code);
 
 extern int scsi_target_init(void);
 extern void scsi_target_cleanup(void);
+
+extern int iscsi_free_device(uint8_t target, uint8_t lun);
+
+extern int iscsi_sync_device(uint8_t target, uint8_t lun);
+extern int iscsi_mmap_device(uint8_t target, uint8_t lun, const char *fname);
+extern int iscsi_get_device_param(uint8_t target, uint8_t lun,
+                                  te_bool *is_mmap,
+                                  uint32_t *storage_size);
+extern int iscsi_write_to_device(uint8_t target, uint8_t lun,
+                                 uint32_t offset,
+                                 const char *fname, uint32_t len);
+extern int iscsi_read_from_device(uint8_t target, uint8_t lun,
+                                  uint32_t offset,
+                                  const char *fname, uint32_t len);
+
+extern te_errno iscsi_set_device_failure_state(uint8_t target, uint8_t lun, uint32_t status,
+                                               uint32_t sense, uint32_t asc, uint32_t ascq);
+
 
 #endif

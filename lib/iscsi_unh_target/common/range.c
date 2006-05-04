@@ -40,16 +40,16 @@
 #include "range.h"
 
 /*	frees all elements in a range list and then sets head->next to NULL */
-void __attribute__ ((no_instrument_function))
-free_range_list(struct order_range *head)
+void 
+free_range_list(SHARED struct order_range *head)
 {
-	struct order_range *ptr, *next;
+	SHARED struct order_range *ptr, *next;
 
 	for (ptr = head->next; ptr != NULL; ptr = next) {
 		next = ptr->next;
 		TRACE(VERBOSE, "free range [%u..%u]\n", ptr->offset,
 		      ptr->limit);
-		free(ptr);
+		shfree(ptr);
 	}
 	head->next = NULL;
 }
@@ -58,7 +58,7 @@ free_range_list(struct order_range *head)
  * here to collapse two items into 1 if they are adjacent or overlap 
  */
 static void
-collapse(struct order_range *here, struct order_range *next)
+collapse(SHARED struct order_range *here, SHARED struct order_range *next)
 {
 	if (next != NULL && here->limit >= next->offset) {	
 		/* ranges are adjacent or overlap */
@@ -86,7 +86,7 @@ collapse(struct order_range *here, struct order_range *next)
 			here->limit = next->limit;
 		}
 		here->next = next->next;
-		free(next);
+		shfree(next);
 		/* note recurse */
 		collapse(here, here->next);
 	}
@@ -101,10 +101,10 @@ collapse(struct order_range *here, struct order_range *next)
  *	In addition, elements in the list are collapsed as holes are filled.
  */
 void
-merge_offset_length(struct order_range *head, uint32_t new_offset,
-		    uint32_t new_length)
+merge_offset_length(SHARED struct order_range *head, uint32_t new_offset,
+                    uint32_t new_length)
 {
-	struct order_range *ptr, *prev, *newptr;
+	SHARED struct order_range *ptr, *prev, *newptr;
 	uint32_t new_limit;
 
 	new_limit = new_offset + new_length;
@@ -148,8 +148,7 @@ merge_offset_length(struct order_range *head, uint32_t new_offset,
 		}
 	}
 	/* if loop finishes, need to add a new range after prev, before ptr */
-	if ((newptr = (struct order_range *) 
-		malloc(sizeof (struct order_range))) == NULL) {	
+	if ((newptr = shalloc(sizeof (struct order_range))) == NULL) {	
 			/* no memory for new range structure */
 		return;
 	}
@@ -174,9 +173,9 @@ merge_offset_length(struct order_range *head, uint32_t new_offset,
  *	Returns total number of bytes not covered by items in the range list.
  */
 int
-check_range_list_complete(struct order_range *head)
+check_range_list_complete(SHARED struct order_range *head)
 {
-	struct order_range *ptr, *prev;
+	SHARED struct order_range *ptr, *prev;
 	uint32_t gap;
 	int missing;
 

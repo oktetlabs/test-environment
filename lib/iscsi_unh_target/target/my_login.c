@@ -38,16 +38,25 @@
 #include <te_config.h>
 #include <te_defs.h>
 #include <stddef.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <signal.h>
 #include <errno.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/select.h>
+#include <sys/poll.h>
 #include <sys/time.h>
-#include <pthread.h>
+#include <sys/wait.h>
+#include <time.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "../common/list.h"
 #include <iscsi_common.h>
@@ -66,8 +75,11 @@
 #include <scsi_request.h>
 #include <linux-scsi.h>
 #include "iscsi_target.h"
+#include "iscsi_target_api.h"
 #include "iscsi_portal_group.h"
 #include "target_error_rec.h"
+#include "rcf_common.h"
+#include "logfork.h"
 
 #include <my_memory.h>
 
@@ -75,21 +87,23 @@
 
 
 /** Pointer to the device specific data */
-struct iscsi_global *devdata;
+SHARED struct iscsi_global *devdata;
 
-static void check_queued_cmnd(struct iscsi_session *session);
-static void update_after_read(struct generic_pdu *hdr, struct iscsi_cmnd *cmnd);
-static int check_cmd_sn(struct iscsi_cmnd *cmnd, void *ptr, struct iscsi_session *session,
+static void check_queued_cmnd(SHARED struct iscsi_session *session);
+static void update_after_read(struct generic_pdu *hdr, 
+                              SHARED struct iscsi_cmnd *cmnd);
+static int check_cmd_sn(SHARED struct iscsi_cmnd *cmnd, void *ptr, 
+                        SHARED struct iscsi_session *session,
                         uint32_t increment);
-static int ack_sent_cmnds(struct iscsi_conn *conn, struct iscsi_cmnd *cmnd,
+static int ack_sent_cmnds(struct iscsi_conn *conn, SHARED struct iscsi_cmnd *cmnd,
                           uint32_t exp_stat_sn, te_bool add_cmnd_to_queue);
 static uint32_t skip_thru_sg_list(struct scatterlist *st_list, uint32_t *i, uint32_t offset);
-static int send_unsolicited_data(struct iscsi_cmnd *cmd,
+static int send_unsolicited_data(SHARED struct iscsi_cmnd *cmd,
                                  struct iscsi_conn *conn,
-                                 struct iscsi_session *session);
-static int handle_nopin(struct iscsi_cmnd *cmnd,
+                                 SHARED struct iscsi_session *session);
+static int handle_nopin(SHARED struct iscsi_cmnd *cmnd,
                         struct iscsi_conn *conn,
-                        struct iscsi_session *session);
+                        SHARED struct iscsi_session *session);
 
 int fill_iovec(struct iovec *iov, int p, int niov,
                struct scatterlist *st_list, int *offset, uint32_t data);
@@ -97,17 +111,21 @@ int find_iovec_needed(uint32_t data_len, struct scatterlist *st_list, uint32_t o
 
 int iscsi_tx (struct iscsi_conn *conn);
 
+static void iscsi_target_start_process(int data_socket);
+static void iscsi_target_process_control_msg(int sock);
+static void iscsi_reply_status(int sock, struct sockaddr_un *dest, te_errno rc);
+
 /*
  * RDR
  * allocate and zero out a new struct iscsi_cmnd.
  * Returns pointer to the new struct if all ok, else NULL after error message
  */
-struct iscsi_cmnd *
+SHARED struct iscsi_cmnd *
 get_new_cmnd( void )
 {
-	struct iscsi_cmnd *cmnd;
+	SHARED struct iscsi_cmnd *cmnd;
 
-	cmnd = calloc(1, sizeof(*cmnd));
+	cmnd = shcalloc(1, sizeof(*cmnd));
 
 	if (cmnd) 
     {
@@ -126,7 +144,6 @@ iscsi_release_connection(struct iscsi_conn *conn)
     /* Release socket */                                                          
     conn->conn_socket = -1;                                                       
     TRACE(VERBOSE, "Dequeue connection conn->cid %u", conn->conn_id);  
-    list_del(&conn->conn_link);                                                   
     conn->session->nconn--;
 #if 0                                                                             
     /* Dequeue connection */                                                      
@@ -135,28 +152,26 @@ iscsi_release_connection(struct iscsi_conn *conn)
     free(conn->local_ip_address);                                    
     free(conn->ip_address);                                          
 #endif
-    pthread_cancel(conn->manager_thread);
-    pthread_join(conn->manager_thread, NULL);
-    iscsi_deregister_custom(conn->custom);
+    ipc_mutex_free(conn->text_in_progress_mutex);
+#if 0
+    ipc_sem_free(conn->tx_sem);
+#endif
+    ipc_sem_free(conn->reject_sem);
+
     free(conn);
     return 0;                                                                     
 }
 
-static void
-iscsi_thread_cleanup(void *arg)
-{
-    iscsi_release_connection(arg);
-}
 
 static void
-free_data_list(struct iscsi_cmnd *cmnd)
+free_data_list(SHARED struct iscsi_cmnd *cmnd)
 {
-    struct data_list *data;
+    SHARED struct data_list *data;
 
     while ((data = cmnd->unsolicited_data_head)) {
         cmnd->unsolicited_data_head = data->next;
-        free(data->buffer);
-        free(data);
+        shfree(data->buffer);
+        shfree(data);
     }
 }
 
@@ -174,7 +189,6 @@ iscsi_recv_iov (int csap, struct iovec *iov, int niov)
             received = 0;
         else
             received = recv(csap, iov->iov_base, iov->iov_len, MSG_WAITALL);
-        pthread_testcancel();
         if (received < 0)
             return received;
     }
@@ -288,13 +302,13 @@ out:
  * if ok, sets result to newly allocated buffer, else leaves result unchanged
  */
 static int
-read_single_data_seg(uint8_t *buffer, struct iscsi_cmnd *cmd,
-					 int bufsize, char **result)
+read_single_data_seg(uint8_t *buffer, SHARED struct iscsi_cmnd *cmd,
+					 int bufsize, SHARED char * SHARED *result)
 {
 	struct iovec iov[3];
 	int size, niov = 1, padding, err;
 	uint32_t digest, pad_bytes;
-	char *data_buf;
+	SHARED char *data_buf;
 	struct targ_error_rec err_rec;
 
 	size = bufsize;
@@ -314,8 +328,8 @@ read_single_data_seg(uint8_t *buffer, struct iscsi_cmnd *cmd,
 		niov++;
 	}
 
-	if ((data_buf = malloc(bufsize))) {
-		iov[0].iov_base = data_buf;
+	if ((data_buf = shalloc(bufsize))) {
+		iov[0].iov_base = (void *)data_buf;
 		iov[0].iov_len = bufsize;
 
 		err = iscsi_rx_data(cmd->conn, iov, niov, size);
@@ -331,7 +345,7 @@ read_single_data_seg(uint8_t *buffer, struct iscsi_cmnd *cmd,
 				err_rec.err_type = PAYLOAD_DIGERR;
 				err = targ_do_error_recovery(&err_rec);
 			}
-			ZFREE(data_buf);
+			ZSHFREE(data_buf);
 		} else {
 			*result = data_buf;
 		}
@@ -351,11 +365,11 @@ read_single_data_seg(uint8_t *buffer, struct iscsi_cmnd *cmd,
  */
 
 static int
-save_unsolicited_data(struct iscsi_cmnd *cmnd, uint32_t offset,
+save_unsolicited_data(SHARED struct iscsi_cmnd *cmnd, uint32_t offset,
 					  struct generic_pdu *hdr)
 {
 	int err;
-	struct data_list *data;
+	SHARED struct data_list *data;
 	uint32_t total_length, length;
 
 	TRACE(DEBUG, "Enter save_unsolicited_data");
@@ -371,7 +385,7 @@ save_unsolicited_data(struct iscsi_cmnd *cmnd, uint32_t offset,
 			length = MAX_MALLOC_SIZE;
 
 		/* receive length bytes of data */
-		data = malloc(sizeof(struct data_list));
+		data = shalloc(sizeof(struct data_list));
 		if (data == NULL)
 			return -1;
 
@@ -381,7 +395,7 @@ save_unsolicited_data(struct iscsi_cmnd *cmnd, uint32_t offset,
 		/* receive unsolicited data into a newly-allocated buffer */
 		err = read_single_data_seg((uint8_t *)hdr, cmnd, length, &data->buffer);
 		if (err <= 0) {
-			free(data);
+			shfree(data);
 			return err;
 		}
 
@@ -410,7 +424,8 @@ save_unsolicited_data(struct iscsi_cmnd *cmnd, uint32_t offset,
  * returns > 0 if ok, < 0 if error, = 0 if error recovery completed ok
  */
 static int
-read_list_data_seg(struct generic_pdu *hdr, struct iscsi_cmnd *cmd,
+read_list_data_seg(struct generic_pdu *hdr, 
+                   SHARED struct iscsi_cmnd *cmd,
 				   struct scatterlist *st_list, int offset)
 {
 	struct targ_error_rec err_rec;
@@ -478,8 +493,9 @@ read_list_data_seg(struct generic_pdu *hdr, struct iscsi_cmnd *cmd,
 /* called after reading unsolicited data attached to a WRITE SCSI command pdu,
  * or solicited data attached to a DataOut pdu.
  */
-static void __attribute__ ((no_instrument_function))
-update_after_read(struct generic_pdu *hdr, struct iscsi_cmnd *cmnd)
+static void 
+update_after_read(struct generic_pdu *hdr, 
+                  SHARED struct iscsi_cmnd *cmnd)
 {
 	cmnd->data_done += hdr->length;
 	cmnd->immediate_data_present = 0;
@@ -500,17 +516,18 @@ update_after_read(struct generic_pdu *hdr, struct iscsi_cmnd *cmnd)
  * OUTPUT: 0 if success, < 0 if there is trouble
  */
 int
-iscsi_release_session(struct iscsi_session *session)
+iscsi_release_session(SHARED struct iscsi_session *session)
 {
-    struct iscsi_cmnd *cmnd;
-    struct iscsi_conn *conn;
-    struct list_head *list_ptr, *list_temp;
+    SHARED struct iscsi_cmnd *cmnd;
+    int i;
 
     if (!session) {
         TRACE_ERROR("Cannot release a NULL session\n");
         return -1;
     }
-
+    
+    TRACE(DEBUG, "iscsi_release_session(): %p, TSIH %u",
+          session, session->tsih);
     print_isid_tsih_message(session, "Release session with ");
 
 
@@ -528,19 +545,19 @@ iscsi_release_session(struct iscsi_session *session)
         }
         /* free data_list if any, cdeng */
         free_data_list(cmnd);
-        free(cmnd->ping_data);
-        free(cmnd);
+        ipc_sem_free(cmnd->unsolicited_data_sem);
+        
+        shfree(cmnd->ping_data);
+        shfree(cmnd);
     }
 
     /* free connections */
-    list_for_each_safe(list_ptr, list_temp, &session->conn_list) {
-        conn = list_entry(list_ptr, struct iscsi_conn, conn_link);
+    for (i = 0; i < session->nconn; i++)
+    {
         TRACE(NORMAL, "releasing connection %d", (int)
-              conn->conn_id);
+              session->connections[i].conn_id);
 
-        if (iscsi_release_connection(conn) < 0) {
-            TRACE_ERROR("Trouble releasing connection\n");
-        }
+        kill(session->connections[i].pid, SIGTERM);
     }
 
     /* dequeue session if it is linked into some list */
@@ -550,17 +567,22 @@ iscsi_release_session(struct iscsi_session *session)
         /* error recovery ver new 18_04 - SAI */
         if (session->has_retran_thread) 
         {
-            pthread_cancel(session->retran_thread);
-            pthread_join(session->retran_thread, NULL);
+            kill(session->retran_thread, SIGTERM);
+            waitpid(session->retran_thread, NULL, 0);
         }
     }
 
+    ipc_mutex_free(session->cmnd_mutex);
+#if 0
+    ipc_sem_free(session->cmd_order_sem);
+#endif
+
     /* free session structures */
-    free(session->session_params);
+    shfree(session->session_params);
 
-    free(session->oper_param);
+    shfree(session->oper_param);
 
-    free(session);
+    shfree(session);
 
     return 0;
 }
@@ -576,13 +598,13 @@ iscsi_release_session(struct iscsi_session *session)
  *		   if return value is not NULL, result_sess has been filled in with
  *							the session, and the session->cmnd_sem is locked
  */
-static struct iscsi_cmnd * __attribute__ ((no_instrument_function))
-search_iscsi_cmnd(Target_Scsi_Cmnd * cmnd, struct iscsi_session **result_sess)
+static SHARED struct iscsi_cmnd *
+search_iscsi_cmnd(Target_Scsi_Cmnd * cmnd, SHARED struct iscsi_session **result_sess)
 {
-	struct iscsi_cmnd *cmd = NULL;
-	struct iscsi_session *session;
+	SHARED struct iscsi_cmnd *cmd = NULL;
+	SHARED struct iscsi_session *session;
 	struct iscsi_global *host;
-	struct list_head *list_ptr;
+	SHARED struct list_head *list_ptr;
 
 	if (!cmnd) {
 		TRACE_ERROR("Cannot search for a NULL command\n");
@@ -590,35 +612,52 @@ search_iscsi_cmnd(Target_Scsi_Cmnd * cmnd, struct iscsi_session **result_sess)
 	}
 
 	host = (struct iscsi_global *) cmnd->device->dev_specific;
+    if (!is_shared_ptr(host))
+    {
+        ERROR("%s(): %p is not a valid iscsi_global pointer", 
+              __FUNCTION__, host);
+        return NULL;
+    }
 
 	/* non-destructive access to session lists */
 
-    pthread_mutex_lock(&host->session_read_mutex);
+    ipc_mutex_lock(host->session_read_mutex);
     host->session_readers++;
-    pthread_mutex_unlock(&host->session_read_mutex);
+    ipc_mutex_unlock(host->session_read_mutex);
 
-    pthread_mutex_lock(&host->session_mutex);
+    ipc_mutex_lock(host->session_mutex);
 	list_for_each(list_ptr, &host->session_list) {
-		session = list_entry(list_ptr, struct iscsi_session, sess_link);
+		session = list_entry(list_ptr, SHARED struct iscsi_session, sess_link);
 
-        pthread_mutex_lock(&session->cmnd_mutex);
-		for (cmd = session->cmnd_list; cmd != NULL; cmd = cmd->next) {
-			if (cmd->cmnd == cmnd) {
-				*result_sess = session;
-                /*** NOTE: The cmnd_mutex is released in the CALLER!!! ***/
+        if (!is_shared_ptr(session))
+        {
+            ERROR("%s(): %p is not a valid session pointer", 
+                  __FUNCTION__, session);
+            goto search_iscsi_cmnd_out;
+        }
+        
+        if (session->nconn != 0)
+        {
+            ipc_mutex_lock(session->cmnd_mutex);
+            for (cmd = session->cmnd_list; cmd != NULL; cmd = cmd->next) {
+                if (cmd->cmnd == cmnd) {
+                    TRACE(DEBUG, "found cmd %p in session %p for %p", cmd, session, cmnd);
+                    *result_sess = session;
+                    /*** NOTE: The cmnd_mutex is released in the CALLER!!! ***/
                 /*** Blame the original target authors, not me - A.A.  ***/
-				goto search_iscsi_cmnd_out;
-			}
-		}
-        pthread_mutex_unlock(&session->cmnd_mutex);
+                    goto search_iscsi_cmnd_out;
+                }
+            }
+            ipc_mutex_unlock(session->cmnd_mutex);
+        }
 	}
 
 search_iscsi_cmnd_out:
 
-    pthread_mutex_unlock(&host->session_mutex);
-    pthread_mutex_lock(&host->session_read_mutex);
+    ipc_mutex_unlock(host->session_mutex);
+    ipc_mutex_lock(host->session_read_mutex);
 	--host->session_readers;
-    pthread_mutex_unlock(&host->session_read_mutex);
+    ipc_mutex_unlock(host->session_read_mutex);
 
 	return cmd;
 }
@@ -630,11 +669,12 @@ search_iscsi_cmnd_out:
  * INPUT: Target_Scsi_Message
  * OUTPUT: struct iscsi_cmnd if it finds one, NULL otherwise
  */
-static struct iscsi_cmnd *search_task_mgt_command(Target_Scsi_Message * message) {
-	struct iscsi_cmnd *related_task_mgt_command = NULL;
-	struct iscsi_session *related_session;
+static SHARED struct iscsi_cmnd *
+search_task_mgt_command(Target_Scsi_Message * message) {
+	SHARED struct iscsi_cmnd *related_task_mgt_command = NULL;
+	SHARED struct iscsi_session *related_session;
 	struct iscsi_global *host;
-	struct list_head *list_ptr;
+	SHARED struct list_head *list_ptr;
 
 	if (!message) {
 		TRACE_ERROR("Cannot search for a NULL command\n");
@@ -644,34 +684,34 @@ static struct iscsi_cmnd *search_task_mgt_command(Target_Scsi_Message * message)
 	host = (struct iscsi_global *) message->device->dev_specific;
 
 	/* non-destructive access to session lists */
-    pthread_mutex_lock(&host->session_read_mutex);
+    ipc_mutex_lock(host->session_read_mutex);
     host->session_readers++;
-    pthread_mutex_unlock(&host->session_read_mutex);
+    ipc_mutex_unlock(host->session_read_mutex);
 
-    pthread_mutex_lock(&host->session_mutex);
+    ipc_mutex_lock(host->session_mutex);
 	list_for_each(list_ptr, &host->session_list) {
 		related_session = list_entry(list_ptr, struct iscsi_session, sess_link);
 
-        pthread_mutex_lock(&related_session->cmnd_mutex);
+        ipc_mutex_lock(related_session->cmnd_mutex);
 
 		for (related_task_mgt_command = related_session->cmnd_list;
 			 related_task_mgt_command != NULL;
 			 related_task_mgt_command = related_task_mgt_command->next) {
 			if (related_task_mgt_command->message == message) {
-                pthread_mutex_unlock(&related_session->cmnd_mutex);
+                ipc_mutex_unlock(related_session->cmnd_mutex);
 				goto out;
 			}
 		}
 
-        pthread_mutex_unlock(&related_session->cmnd_mutex);
+        ipc_mutex_unlock(related_session->cmnd_mutex);
 	}
 
 out:
-    pthread_mutex_unlock(&host->session_mutex);
+    ipc_mutex_unlock(host->session_mutex);
 
-    pthread_mutex_lock(&host->session_read_mutex);
+    ipc_mutex_lock(host->session_read_mutex);
 	--host->session_readers;
-    pthread_mutex_unlock(&host->session_read_mutex);
+    ipc_mutex_unlock(host->session_read_mutex);
 
 	return related_task_mgt_command;
 }
@@ -684,12 +724,12 @@ out:
  * INPUT: connection, initiator and target tag
  * OUTPUT: struct iscsi_cmnd if it finds one, NULL otherwise
  */
-static struct iscsi_cmnd * __attribute__ ((no_instrument_function))
+static SHARED struct iscsi_cmnd * 
 search_tags(struct iscsi_conn *conn, uint32_t init_task_tag, 
             uint32_t target_xfer_tag, int dumpall)
 {
-	struct iscsi_cmnd *cmd = NULL;
-	struct iscsi_session *session;
+	SHARED struct iscsi_cmnd *cmd = NULL;
+	SHARED struct iscsi_session *session;
 
 	if (!conn) {
 		TRACE_ERROR(" Cannot search a NULL connection\n");
@@ -699,7 +739,7 @@ search_tags(struct iscsi_conn *conn, uint32_t init_task_tag,
 	/* get session from conn structure directly to support multiple sessions */
 	session = conn->session;
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
 
 	if (dumpall) {
 		for (cmd = session->cmnd_list; cmd != NULL; cmd = cmd->next) {
@@ -727,7 +767,7 @@ search_tags(struct iscsi_conn *conn, uint32_t init_task_tag,
 		}
 	}
 
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 	return cmd;
 }
@@ -823,7 +863,7 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
         while (current_tx < iov->iov_len) 
         {
             TRACE(DEBUG, "iscsi_tx_data: niov %d, data %u, total_tx %u",
-                  i, iov->iov_len, current_tx);
+                  i, (unsigned)iov->iov_len, current_tx);
 
             tx_loop = send(conn->conn_socket, buffer, (iov->iov_len - current_tx), 0);
 
@@ -1011,16 +1051,18 @@ static int
 handle_login(struct iscsi_conn *conn, uint8_t *buffer)
 {
     struct iscsi_init_login_cmnd *pdu = (struct iscsi_init_login_cmnd *) buffer;
-    struct iscsi_session         *session;
+    SHARED struct iscsi_session         *session;
     uint32_t                      when_called = 0;
     int                           retval = -1;
     struct auth_parameter_type    auth_param;
 
+    int i;
+
     /*chap and srp support - CHONG */
-    struct parameter_type *p;
-    struct parameter_type (*this_param_tbl)[MAX_CONFIG_PARAMS];
-    struct parameter_type (*temp_params)[MAX_CONFIG_PARAMS];
-    struct iscsi_global   *host;
+    SHARED struct parameter_type *p;
+    SHARED struct parameter_type (*this_param_tbl)[MAX_CONFIG_PARAMS];
+    SHARED struct parameter_type (*temp_params)[MAX_CONFIG_PARAMS];
+    SHARED struct iscsi_global   *host;
 
     print_init_login_cmnd(pdu);
 
@@ -1048,7 +1090,7 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
     pdu->exp_stat_sn = ntohl(pdu->exp_stat_sn);
 
     /* destructive access to session lists */
-    pthread_mutex_lock(&host->session_mutex);
+    ipc_mutex_lock(host->session_mutex);
 
     if (pdu->tsih == 0) {
         /* a new session, the iscsi_session structure is already set up */
@@ -1059,7 +1101,7 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
         session->max_cmd_sn = pdu->cmd_sn + 
             iscsi_get_custom_value(conn->custom, "max_cmd_sn_delta");
 
-        memcpy(session->isid, pdu->isid, 6);
+        shmemcpy(session->isid, pdu->isid, 6);
 
         /* set up the operational parameters from the global structure */
         set_session_parameters(session->oper_param, *session->session_params);
@@ -1075,13 +1117,12 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
     else
     {
         te_bool               found = FALSE;
-        struct list_head     *list_ptr;
-        struct iscsi_session *temp;
-        struct iscsi_conn    *temp_conn;
+        SHARED struct list_head     *list_ptr;
+        SHARED struct iscsi_session *temp;
 
         /* existing session, check through the session list to find it */
         list_for_each(list_ptr, &conn->dev->session_list) {
-            session = list_entry(list_ptr, struct iscsi_session, sess_link);
+            session = list_entry(list_ptr, SHARED struct iscsi_session, sess_link);
             if (session->tsih == pdu->tsih) {
                 found = TRUE;
                 break;
@@ -1107,7 +1148,7 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
         }
 
         /* check isid */
-        if (memcmp(pdu->isid, session->isid, 6) != 0) {
+        if (shmemcmp(pdu->isid, session->isid, 6) != 0) {
             TRACE_ERROR("The session has a different ISID, "
                         "terminate the connection\n");
 
@@ -1119,16 +1160,15 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
         conn->cid = pdu->cid;
         conn->stat_sn = pdu->exp_stat_sn;
 
-        /* check cid, and if it already exists then release old connection */
-        list_for_each(list_ptr, &session->conn_list) {
-            temp_conn = list_entry(list_ptr, struct iscsi_conn, conn_link);
-            if (temp_conn->cid == conn->cid) {
+
+        for (i = 0; i < session->nconn; i++)
+        {
+            if (session->connections[i].cid == conn->cid) 
+            {
                 TRACE(NORMAL, "connection reinstatement with cid %u",
                       conn->cid);
 
-                if (iscsi_release_connection(temp_conn) < 0) {
-                    TRACE_ERROR("Error releasing connection\n");
-                }
+                kill(session->connections[i].pid, SIGTERM);
                 break;
             }
         }
@@ -1140,9 +1180,10 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
         /* add new connection to end of connection list for existing session */
         temp = conn->session;
         conn->session = session;
-        list_del(&conn->conn_link);
         temp->nconn = 0;
-        list_add_tail(&conn->conn_link, &session->conn_list);
+        session->connections[session->nconn].pid = getpid();
+        session->connections[session->nconn].conn_id = conn->conn_id;
+        session->connections[session->nconn].cid = conn->cid;
         session->nconn++;
 
         /* use clean parameter table for negotiations, free it later */
@@ -1160,7 +1201,7 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
         when_called = INITIAL_ONLY | ALL;
     }
 
-    pthread_mutex_unlock(&host->session_mutex);
+    ipc_mutex_unlock(host->session_mutex);
 
     auth_param.auth_flags = 0;
     auth_param.chap_local_ctx =
@@ -1217,6 +1258,7 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
 			/* error recovery ver ref18_04 */
 
 			/* create a retransmit_thread for handling error recovery */
+#if 0
 			if (pthread_create(&session->retran_thread, NULL, 
                                iscsi_retran_thread, (void *)session))
             {
@@ -1227,6 +1269,7 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
             {
                 session->has_retran_thread = TRUE;
 			}
+#endif
 		}
 
 
@@ -1309,10 +1352,10 @@ enum text_types {TEXT_EMPTY, TEXT_ST_ALL, TEXT_ST_TN, TEXT_ST_NULL, TEXT_OTHER};
  *			TEXT_OTHER		if only other keys
  */
 static int __attribute__ ((no_instrument_function))
-parse_text_buffer(struct iscsi_cmnd *cmnd, uint8_t discovery_session,
+parse_text_buffer(SHARED struct iscsi_cmnd *cmnd, uint8_t discovery_session,
 				  enum text_types *result)
 {
-	char *ptr, *ptr2, *equal, *which;
+	SHARED char *ptr, *ptr2, *equal, *which;
 	int size, reason = 0;
 	enum text_types text_type = TEXT_EMPTY;
 
@@ -1350,13 +1393,13 @@ parse_text_buffer(struct iscsi_cmnd *cmnd, uint8_t discovery_session,
 				TRACE(VERBOSE, "iscsi %s ITT %u %s", which, cmnd->init_task_tag, ptr);
 
 				equal++;
-				if (strncmp(ptr, "SendTargets=", 12) == 0) {
+				if (shstrncmp(ptr, "SendTargets=", 12) == 0) {
 					if (text_type != TEXT_EMPTY) {
 						TRACE_ERROR("SendTargets key not only key in text\n");
 						reason = REASON_NEGOTIATION_RESET;
 						break;
 					}
-					if (strcmp(equal, "All") == 0) {
+					if (shstrcmp(equal, "All") == 0) {
 						if (!discovery_session) {
 							TRACE_ERROR("%s not allowed in Normal Session\n",
 										ptr);
@@ -1394,7 +1437,7 @@ parse_text_buffer(struct iscsi_cmnd *cmnd, uint8_t discovery_session,
  * returns 0 if ok, != 0 is reason for reject
  */
 static int
-accumulate_text_input(struct iscsi_cmnd *cmnd, struct iscsi_cmnd *in_progress)
+accumulate_text_input(SHARED struct iscsi_cmnd *cmnd, SHARED struct iscsi_cmnd *in_progress)
 {
 	uint32_t size;
 
@@ -1414,10 +1457,10 @@ accumulate_text_input(struct iscsi_cmnd *cmnd, struct iscsi_cmnd *in_progress)
 			return REASON_OUT_OF_RESOURCES;
 		}
 
-		memcpy(in_progress->in_progress_buffer + in_progress->data_length,
-			   cmnd->ping_data, cmnd->first_burst_len);
+		shmemcpy(in_progress->in_progress_buffer + in_progress->data_length,
+                 cmnd->ping_data, cmnd->first_burst_len);
 		in_progress->data_length = size;
-		ZFREE(cmnd->ping_data);
+		ZSHFREE(cmnd->ping_data);
 	}
 	return 0;
 }
@@ -1428,11 +1471,14 @@ accumulate_text_input(struct iscsi_cmnd *cmnd, struct iscsi_cmnd *in_progress)
  * connection's text_in_progress_sem MUST be locked by caller.
  */
 static void
-generate_text_response(struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
-					   struct iscsi_session *session)
+generate_text_response(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
+					   SHARED struct iscsi_session *session)
 {
 	enum text_types text_type;
-	char *buffer = NULL, *ptr, *ip_ptr, *equal;
+	char *buffer = NULL;
+    char *ptr;
+    char *ip_ptr;
+    SHARED char *equal;
 	int reason, size = 0, i, j, n, maxt;
 	struct portal_group *pg_ptr;
 
@@ -1469,8 +1515,8 @@ generate_text_response(struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 		n = 1 + sprintf(ptr, "TargetName=%s%d", TARGETNAME_HEADER, i);
 		if (text_type == TEXT_ST_TN) {
 			/* need to match the name in SendTargets=<target-name> */
-			if ((equal = strchr(cmnd->ping_data, '=')) == NULL
-								|| strcmp(equal, strchr(ptr, '=')) != 0) {
+			if ((equal = shstrchr(cmnd->ping_data, '=')) == NULL
+                || shstrcmp(equal, strchr(ptr, '=')) != 0) {
 			continue;
 			}
 		}
@@ -1506,7 +1552,7 @@ generate_text_response(struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 	}
 
 outok:
-	ZFREE(cmnd->ping_data);
+	ZSHFREE(cmnd->ping_data);
 	cmnd->ping_data = buffer;
 	cmnd->data_length = size;
 	cmnd->data_done = 0;
@@ -1520,7 +1566,7 @@ outbad:
 }
 
 static inline void __attribute__ ((no_instrument_function))
-copy_in_progress_stuff(struct iscsi_cmnd *cmnd, struct iscsi_cmnd *in_progress)
+copy_in_progress_stuff(SHARED struct iscsi_cmnd *cmnd, SHARED struct iscsi_cmnd *in_progress)
 {
 	cmnd->state = ISCSI_DEQUEUE;
 	in_progress->command_flags = cmnd->command_flags;
@@ -1533,14 +1579,14 @@ copy_in_progress_stuff(struct iscsi_cmnd *cmnd, struct iscsi_cmnd *in_progress)
  * called when a Text Request is the next command to be processed.
  */
 static void
-do_text_request(struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
-				struct iscsi_session *session)
+do_text_request(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
+				SHARED struct iscsi_session *session)
 {
 	int reason;
-	struct iscsi_cmnd *in_progress;
+	SHARED struct iscsi_cmnd *in_progress;
 	char *which;
 
-	pthread_mutex_lock(&conn->text_in_progress_mutex);
+	ipc_mutex_lock(conn->text_in_progress_mutex);
 
 	if (cmnd->init_task_tag == ALL_ONES) {
 		TRACE_ERROR("Text Request with reserved ITT=0x%08x\n", ALL_ONES);
@@ -1684,7 +1730,7 @@ do_text_request(struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 	}
 
 out:
-    pthread_mutex_unlock(&conn->text_in_progress_mutex);
+    ipc_mutex_unlock(conn->text_in_progress_mutex);
 	return;
 
 outbadprotocol:
@@ -1706,11 +1752,11 @@ outbad:
  */
 static int
 handle_text_request(struct iscsi_conn *conn,
-                    struct iscsi_session *session,
+                    SHARED struct iscsi_session *session,
                     uint8_t *buffer)
 {
 	struct iscsi_init_text_cmnd *pdu = (struct iscsi_init_text_cmnd *)buffer;
-	struct iscsi_cmnd *cmnd;
+	SHARED struct iscsi_cmnd *cmnd;
 	int err;
 
     print_init_text_cmnd(pdu);
@@ -1739,7 +1785,7 @@ handle_text_request(struct iscsi_conn *conn,
 		/* read length bytes of text data into a newly-allocated buffer */
 		err = read_single_data_seg(buffer, cmnd, pdu->length, &cmnd->ping_data);
 		if (err <= 0) {
-			free(cmnd);
+			shfree(cmnd);
 			return err;
 		}
 	} else if (conn->text_in_progress == NULL ||
@@ -1752,11 +1798,11 @@ handle_text_request(struct iscsi_conn *conn,
 					  cmnd->init_task_tag, cmnd->opcode_byte);
 	}
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
     
     err = check_cmd_sn(cmnd, pdu, session, 1);
 
-	pthread_mutex_unlock(&session->cmnd_mutex);
+	ipc_mutex_unlock(session->cmnd_mutex);
 
 	if (err < 0) {
 		/* out of range, silently ignore it */
@@ -1765,8 +1811,8 @@ handle_text_request(struct iscsi_conn *conn,
 					cmnd->cmd_sn, session->exp_cmd_sn,
 					cmnd->init_task_tag, cmnd->opcode_byte);
 		ack_sent_cmnds(conn, cmnd, pdu->exp_stat_sn, 0);
-		free(cmnd->ping_data);
-		free(cmnd);
+		shfree(cmnd->ping_data);
+		shfree(cmnd);
 	} else {
 		if (err == 0) {
 			/* do immediate command or expected non-immediate command now */
@@ -1789,11 +1835,11 @@ handle_text_request(struct iscsi_conn *conn,
  */
 static int
 handle_nopout(struct iscsi_conn *conn,
-			  struct iscsi_session *session,
+			  SHARED struct iscsi_session *session,
 			  uint8_t *buffer)
 {
 	struct iscsi_init_nopout *pdu = (struct iscsi_init_nopout *) buffer;
-	struct iscsi_cmnd *cmnd;
+	SHARED struct iscsi_cmnd *cmnd;
 	int err;
 
     print_init_nopout(pdu);
@@ -1860,16 +1906,16 @@ handle_nopout(struct iscsi_conn *conn,
 		/* read length bytes of nopout data into a newly-allocated buffer */
 		err = read_single_data_seg(buffer, cmnd, pdu->length, &cmnd->ping_data);
 		if (err <= 0) {
-			free(cmnd);
+			shfree(cmnd);
 			return err;
 		}
 	}
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
 
 	err = check_cmd_sn(cmnd, pdu, session, 1);
 	
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 	if (err < 0 || (err == 0 && pdu->init_task_tag == ALL_ONES)) {
 		/* nopout is out of range, or is in order but is not used as a
@@ -1890,8 +1936,8 @@ handle_nopout(struct iscsi_conn *conn,
 							"opcode 0x%02x\n",
 							cmnd->cmd_sn, session->exp_cmd_sn,
 							cmnd->init_task_tag, cmnd->opcode_byte);
-		free(cmnd->ping_data);
-		free(cmnd);
+		shfree(cmnd->ping_data);
+		shfree(cmnd);
 	} else {
 		if (err > 0) {
 			/* within range but out of order, queue it for later */
@@ -1916,12 +1962,12 @@ handle_nopout(struct iscsi_conn *conn,
  */
 static int
 handle_logout(struct iscsi_conn *conn,
-			  struct iscsi_session *session,
+			  SHARED struct iscsi_session *session,
 			  uint8_t *buffer)
 {
 	struct iscsi_init_logout_cmnd *pdu =
 		(struct iscsi_init_logout_cmnd *) buffer;
-	struct iscsi_cmnd *cmnd;
+	SHARED struct iscsi_cmnd *cmnd;
 	int err;
 
     print_init_logout_cmnd(pdu);
@@ -1956,14 +2002,14 @@ handle_logout(struct iscsi_conn *conn,
 					cmnd->init_task_tag, cmnd->opcode_byte);
 		err = read_single_data_seg(buffer, cmnd, pdu->length, &cmnd->ping_data);
 		if (err <= 0) {
-			free(cmnd);
+			shfree(cmnd);
 			return err;
 		}
 	}
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
 	err = check_cmd_sn(cmnd, pdu, session, 1);
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 	if (err < 0) {	
 		/* out of range, silently ignore it */
@@ -1972,8 +2018,8 @@ handle_logout(struct iscsi_conn *conn,
 					cmnd->cmd_sn, session->exp_cmd_sn,
 					cmnd->init_task_tag, cmnd->opcode_byte);
 		ack_sent_cmnds(conn, cmnd, pdu->exp_stat_sn, 0);
-		free(cmnd->ping_data);
-		free(cmnd);
+		shfree(cmnd->ping_data);
+		shfree(cmnd);
 	} else {
 		if (err == 0) {		
 			/* do immediate command or expected non-immediate command now */
@@ -1993,8 +2039,8 @@ handle_logout(struct iscsi_conn *conn,
  * generate the next TTT in a session
  * must be called with session->cmnd_mutex lock held
  */
-static inline uint32_t __attribute__ ((no_instrument_function))
-generate_next_ttt(struct iscsi_session* session)
+static inline uint32_t 
+generate_next_ttt(SHARED struct iscsi_session *session)
 {
 	uint32_t retval;
 
@@ -2014,10 +2060,10 @@ generate_next_ttt(struct iscsi_session* session)
  */
 static int
 generate_nopin(struct iscsi_conn *conn,
-			   struct iscsi_session *session)
+			   SHARED struct iscsi_session *session)
 {
-	struct iscsi_cmnd *cmnd;
-	struct iscsi_cmnd *temp;
+	SHARED struct iscsi_cmnd *cmnd;
+	SHARED struct iscsi_cmnd *temp;
 
 	if ((cmnd = get_new_cmnd()) == NULL) {
 		return -1;
@@ -2030,7 +2076,7 @@ generate_nopin(struct iscsi_conn *conn,
 	cmnd->init_task_tag = ALL_ONES;
 	cmnd->state = ISCSI_NOPIN_SENT;
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
 	cmnd->target_xfer_tag = generate_next_ttt(session);
 
 	/* Add this command to end of the queue */
@@ -2043,79 +2089,71 @@ generate_nopin(struct iscsi_conn *conn,
 		temp->next = cmnd;
 	else
 		session->cmnd_list = cmnd;
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 	TRACE(VERBOSE, "Send NopIn ping, TTT %u\n", cmnd->target_xfer_tag);
 
 	return handle_nopin(cmnd, conn, session);
 }
 
-static void *
-iscsi_manager_thread (void *data)
+static void 
+iscsi_manager (struct iscsi_conn *conn)
 {
-    struct iscsi_conn *conn = data;
     int async_msg;
     struct iscsi_targ_async_msg hdr;
     
-    TRACE(VERBOSE, "Running the target manager thread");
-    for (;;)
+    TRACE(VERBOSE, "Got something for manager");
+    if (iscsi_is_changed_custom_value(conn->custom,
+                                      "send_async"))
     {
-        iscsi_custom_wait_change(conn->custom);
-        pthread_testcancel();
-        TRACE(VERBOSE, "Got something for manager");
-        if (iscsi_is_changed_custom_value(conn->custom,
-                                          "send_async"))
-        {
-            TRACE(VERBOSE, "Got request to send AM");
-            async_msg = iscsi_get_custom_value(conn->custom, "send_async");
-            memset(&hdr, 0, sizeof(hdr));
-            hdr.opcode        = ISCSI_TARG_ASYNC_MSG;
-            hdr.init_task_tag = 0xFFFFFFFF;
-            /** NOTE: a possible race condition below. 
-             *  Needs further exploration
-             */
-            hdr.stat_sn       = conn->stat_sn++;
-            hdr.stat_sn       = htonl(hdr.stat_sn);
-            hdr.max_cmd_sn    = htonl(conn->session->max_cmd_sn);
-            hdr.exp_cmd_sn    = htonl(conn->session->exp_cmd_sn);
-            hdr.async_event   = async_msg;
+        TRACE(VERBOSE, "Got request to send AM");
+        async_msg = iscsi_get_custom_value(conn->custom, "send_async");
+        memset(&hdr, 0, sizeof(hdr));
+        hdr.opcode        = ISCSI_TARG_ASYNC_MSG;
+        hdr.init_task_tag = 0xFFFFFFFF;
+        /** NOTE: a possible race condition below. 
+         *  Needs further exploration
+         */
+        hdr.stat_sn       = conn->stat_sn++;
+        hdr.stat_sn       = htonl(hdr.stat_sn);
+        hdr.max_cmd_sn    = htonl(conn->session->max_cmd_sn);
+        hdr.exp_cmd_sn    = htonl(conn->session->exp_cmd_sn);
+        hdr.async_event   = async_msg;
 #define CUSTOM(id) (htons(iscsi_get_custom_value(conn->custom, #id)))
 #define CUSTOM_BYTE(id) (iscsi_get_custom_value(conn->custom, #id))
-            switch (async_msg)
-            {
-                case ISCSI_ASYNC_SCSI_EVENT:
-                    WARN("Async SCSI events are not yet fully supported");
-                    break;
-                case ISCSI_ASYNC_LOGOUT_REQUEST:
+        switch (async_msg)
+        {
+            case ISCSI_ASYNC_SCSI_EVENT:
+                WARN("Async SCSI events are not yet fully supported");
+                break;
+            case ISCSI_ASYNC_LOGOUT_REQUEST:
                     hdr.parameter3 = CUSTOM(async_logout_timeout);
                     break;
-                case ISCSI_ASYNC_DROP_CONNECTION:
-                    hdr.parameter1 = conn->cid;
-                    /* FALL THROUGH */
-                case ISCSI_ASYNC_DROP_ALL:
-                    hdr.parameter2 = CUSTOM(async_drop_time2wait);
-                    hdr.parameter3 = CUSTOM(async_drop_time2retain);
-                    break;
-                case ISCSI_ASYNC_RENEGOTIATE:
-                    hdr.parameter3 = CUSTOM(async_text_timeout);
-                    break;
-                case ISCSI_ASYNC_VENDOR:
-                    hdr.async_vcode = CUSTOM_BYTE(async_vcode);
-                    WARN("Issuing a vendor-specific async message");
-                    break;
-                default:
-                    WARN("Unknown async message event %d", async_msg);
-            }
-            send_hdr_only(conn, &hdr);
+            case ISCSI_ASYNC_DROP_CONNECTION:
+                hdr.parameter1 = conn->cid;
+                /* FALL THROUGH */
+            case ISCSI_ASYNC_DROP_ALL:
+                hdr.parameter2 = CUSTOM(async_drop_time2wait);
+                hdr.parameter3 = CUSTOM(async_drop_time2retain);
+                break;
+            case ISCSI_ASYNC_RENEGOTIATE:
+                hdr.parameter3 = CUSTOM(async_text_timeout);
+                break;
+            case ISCSI_ASYNC_VENDOR:
+                hdr.async_vcode = CUSTOM_BYTE(async_vcode);
+                WARN("Issuing a vendor-specific async message");
+                break;
+            default:
+                WARN("Unknown async message event %d", async_msg);
         }
+        send_hdr_only(conn, &hdr);
+    }
 #undef CUSTOM
 #undef CUSTOM_BYTE
-        else if (iscsi_is_changed_custom_value(conn->custom, "send_nopin"))
-        {
-            generate_nopin(conn, conn->session);
-        }
+    else if (iscsi_is_changed_custom_value(conn->custom, "send_nopin"))
+    {
+        generate_nopin(conn, conn->session);
     }
-    return NULL;
 }
 
 
@@ -2136,10 +2174,10 @@ iscsi_manager_thread (void *data)
  * @param ptr      Portal group structure pointer.
  */
 static struct iscsi_conn *
-build_conn_sess(int sock, int custom_id, struct portal_group *ptr)
+build_conn_sess(int sock, SHARED iscsi_custom_data *custom, struct portal_group *ptr)
 {
     struct iscsi_conn *conn;
-    struct iscsi_session *session;
+    SHARED struct iscsi_session *session;
 
     conn = (struct iscsi_conn *)malloc(sizeof(struct iscsi_conn));
     if (!conn) 
@@ -2150,10 +2188,9 @@ build_conn_sess(int sock, int custom_id, struct portal_group *ptr)
     TRACE(DEBUG, "new conn %p for sock %d", conn, sock);
     memset(conn, 0, sizeof(struct iscsi_conn));
 
-    INIT_LIST_HEAD(&conn->conn_link);
-
     INIT_LIST_HEAD(&conn->reject_list);
-    sem_init(&conn->reject_sem, 0, 1);
+
+    conn->reject_sem = ipc_sem_alloc(1);
 
     conn->active = 1;
     conn->conn_id = ++devdata->conn_id;
@@ -2163,81 +2200,65 @@ build_conn_sess(int sock, int custom_id, struct portal_group *ptr)
     conn->max_recv_length = 8192;
     conn->portal_group_tag = ptr->tag;
     conn->connection_flags = devdata->force;
-    sem_init(&conn->kill_rx_sem, 0, 0);
-    sem_init(&conn->kill_tx_sem, 0, 0);
-    pthread_mutex_init(&conn->text_in_progress_mutex, NULL);
+    conn->text_in_progress_mutex = ipc_mutex_alloc();
 
-    session = malloc(sizeof(struct iscsi_session));
+    session = shalloc(sizeof(struct iscsi_session));
     if (!session) 
     {
 
         goto out4;
     }
 
-    memset(session, 0, sizeof(struct iscsi_session));
+    shmemset(session, 0, sizeof(struct iscsi_session));
 
     INIT_LIST_HEAD(&session->sess_link);
-    INIT_LIST_HEAD(&session->conn_list);
-    list_add_tail(&conn->conn_link, &session->conn_list);
 
     conn->session = session;
     session->nconn = 1;
+    session->connections[0].pid = getpid();
+    session->connections[0].conn_id = conn->conn_id;
+    session->connections[0].cid = conn->cid;
     session->devdata = devdata;
     session->portal_group_tag = ptr->tag;
     session->version_max = ISCSI_MAX_VERSION;
     session->version_min = ISCSI_MIN_VERSION;
 
-    if (!(session->session_params = malloc(MAX_CONFIG_PARAMS *
+    if (!(session->session_params = shalloc(MAX_CONFIG_PARAMS *
                                            sizeof(struct parameter_type)))) {
 
         goto out6;
     }
 
     if (!(session->oper_param = 
-          malloc(MAX_CONFIG_PARAMS *
+          shalloc(MAX_CONFIG_PARAMS *
                  sizeof(struct session_operational_parameters)))) {
 
         goto out7;
     }
 
     /* copy the parameters information from the global structure */
-    param_tbl_cpy(*session->session_params, *devdata->param_tbl);
+    param_tbl_cpy(*session->session_params, devdata->param_tbl);
     session->r2t_period = devdata->r2t_period;
 
     /* Store SNACK flags as part of Session - SAI */
     session->targ_snack_flg = devdata->targ_snack_flg;
 
-    if (pthread_mutexattr_init(&session->cmnd_mutex_recursive))
-        goto out7;
-    
-    if (pthread_mutexattr_settype(&session->cmnd_mutex_recursive, 
-                                  PTHREAD_MUTEX_RECURSIVE))
-        goto out7;
-    
-    if (pthread_mutex_init(&session->cmnd_mutex, &session->cmnd_mutex_recursive))
+    if ((session->cmnd_mutex = ipc_mutex_alloc()) < 0)
     {
-        pthread_mutexattr_destroy(&session->cmnd_mutex_recursive);
         goto out7;
     }
-    sem_init(&session->thr_kill_sem,0 ,0);
 
-    RING("Registering target thread %d", custom_id);
-    conn->custom = iscsi_register_custom(custom_id);
-    if (pthread_create(&conn->manager_thread, NULL, 
-                       iscsi_manager_thread, conn) != 0)
-    {
-        TRACE_ERROR("Cannot create manager thread!!!");
-    }
+    conn->custom = custom;
 
     return conn;
 
 out7:
-    free(session->session_params);
+    shfree(session->session_params);
 
     printf("\n 1 \n");
 out6:
 
-    free(session);
+    shfree(session);
 
 out4:
     free(conn);
@@ -2298,7 +2319,7 @@ out:
 #define LAST_SEQ_FLAG	0x0010
 
 static uint32_t
-do_command_status(struct iscsi_cmnd *cmnd, Scsi_Request *req,
+do_command_status(SHARED struct iscsi_cmnd *cmnd, Scsi_Request *req,
 				  int *data_left, int *residual_count)
 {
 	int transfer = 0;
@@ -2359,20 +2380,20 @@ do_command_status(struct iscsi_cmnd *cmnd, Scsi_Request *req,
  * (i.e., when cmnd state is ISCSI_SEND_TEXT_RESPONSE)
  */
 static int
-handle_discovery_rsp(struct iscsi_cmnd *cmnd,
+handle_discovery_rsp(SHARED struct iscsi_cmnd *cmnd,
 					 struct iscsi_conn *conn,
-					 struct iscsi_session *session)
+					 SHARED struct iscsi_session *session)
 {
 	uint8_t iscsi_hdr[ISCSI_HDR_LEN];
 	struct iscsi_targ_text_rsp *hdr;
 	unsigned size, offset;
     int retval = 0;
 	int next_state = ISCSI_SENT;
-	struct iscsi_cmnd *next_in_progress = NULL;
-	char *ptr;
+	SHARED struct iscsi_cmnd *next_in_progress = NULL;
+	SHARED char *ptr;
 
 
-	pthread_mutex_lock(&conn->text_in_progress_mutex);
+	ipc_mutex_lock(conn->text_in_progress_mutex);
 
 	/* under protection of this lock, make sure command has not been reset */
 	if (cmnd->state != ISCSI_SEND_TEXT_RESPONSE
@@ -2391,7 +2412,7 @@ handle_discovery_rsp(struct iscsi_cmnd *cmnd,
 
 	if (size > 0 && conn->connection_flags & USE_ONE_KEY_PER_TEXT) {
 		/* send just one key per text response (for testing) */
-		size = strlen(ptr) + 1;
+		size = shstrlen(ptr) + 1;
 		cmnd->data_done += size;
 		next_state = ISCSI_BLOCKED_SENDING_TEXT;
 		next_in_progress = cmnd;
@@ -2421,7 +2442,7 @@ handle_discovery_rsp(struct iscsi_cmnd *cmnd,
 	hdr->init_task_tag = htonl(cmnd->init_task_tag);
 	hdr->stat_sn = htonl(conn->stat_sn++);
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
 
 	/* generate next TTT if we expect initiator to send another text request */
 	if (next_in_progress) {
@@ -2436,11 +2457,11 @@ handle_discovery_rsp(struct iscsi_cmnd *cmnd,
 		session->max_cmd_sn++;
 	}
 	cmnd->state = next_state;
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 	conn->text_in_progress = next_in_progress;
 
-	if (send_hdr_plus_1_data(conn, iscsi_hdr, ptr, size) < 0) {
+	if (send_hdr_plus_1_data(conn, iscsi_hdr, (void *)ptr, size) < 0) {
 		goto out1;
 	}
 
@@ -2449,7 +2470,7 @@ handle_discovery_rsp(struct iscsi_cmnd *cmnd,
     print_targ_text_rsp(hdr);
 
 out:
-    pthread_mutex_unlock(&conn->text_in_progress_mutex);
+    ipc_mutex_unlock(conn->text_in_progress_mutex);
 	return retval;
 
 out1:
@@ -2467,16 +2488,16 @@ out1:
  * This text response pdu has C=0 F=0 DSL=0 ITT=from request TTT=newly generated
  */
 static int
-ask_for_more_text(struct iscsi_cmnd *cmnd,
+ask_for_more_text(SHARED struct iscsi_cmnd *cmnd,
 				  struct iscsi_conn *conn,
-				  struct iscsi_session *session)
+				  SHARED struct iscsi_session *session)
 {
 	uint8_t iscsi_hdr[ISCSI_HDR_LEN];
 	struct iscsi_targ_text_rsp *hdr;
 	int retval = 0;
 
 
-    pthread_mutex_lock(&conn->text_in_progress_mutex);
+    ipc_mutex_lock(conn->text_in_progress_mutex);
 
 	/* under protection of this lock, make sure command has not been reset */
 	if (cmnd->state != ISCSI_ASK_FOR_MORE_TEXT
@@ -2491,7 +2512,7 @@ ask_for_more_text(struct iscsi_cmnd *cmnd,
 	hdr->init_task_tag = htonl(cmnd->init_task_tag);
 	hdr->stat_sn = htonl(conn->stat_sn++);
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
 
 	/* generate the next TTT */
 	cmnd->target_xfer_tag = generate_next_ttt(session);
@@ -2503,7 +2524,7 @@ ask_for_more_text(struct iscsi_cmnd *cmnd,
 		/* the text command pdu was not immediate, CmdSN advances */
 		session->max_cmd_sn++;
 	}
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 	cmnd->state = ISCSI_AWAIT_MORE_TEXT;
 
@@ -2517,7 +2538,7 @@ ask_for_more_text(struct iscsi_cmnd *cmnd,
     print_targ_text_rsp(hdr);
 
 out1:
-    pthread_mutex_unlock(&conn->text_in_progress_mutex);
+    ipc_mutex_unlock(conn->text_in_progress_mutex);
 	return retval;
 }
 
@@ -2525,9 +2546,9 @@ out1:
  * executed only by the tx thread.
 */
 static int
-handle_logout_rsp(struct iscsi_cmnd *cmnd,
+handle_logout_rsp(SHARED struct iscsi_cmnd *cmnd,
 				  struct iscsi_conn *conn,
-				  struct iscsi_session *session)
+				  SHARED struct iscsi_session *session)
 {
 	uint8_t iscsi_hdr[ISCSI_HDR_LEN];
 	struct iscsi_targ_logout_rsp *hdr;
@@ -2544,14 +2565,14 @@ handle_logout_rsp(struct iscsi_cmnd *cmnd,
 	hdr->init_task_tag = htonl(cmnd->init_task_tag);
 	hdr->stat_sn = htonl(conn->stat_sn++);
 
-	pthread_mutex_lock(&session->cmnd_mutex);
+	ipc_mutex_lock(session->cmnd_mutex);
 	hdr->exp_cmd_sn = htonl(session->exp_cmd_sn);
 	hdr->max_cmd_sn = htonl(session->max_cmd_sn);
 	if (!(cmnd->opcode_byte & I_BIT)) {
 		/* the logout command pdu was not immediate, CmdSN advances */
 		session->max_cmd_sn++;
 	}
-	pthread_mutex_unlock(&session->cmnd_mutex);
+	ipc_mutex_unlock(session->cmnd_mutex);
 
 	cmnd->state = ISCSI_SENT;
 
@@ -2577,9 +2598,9 @@ handle_logout_rsp(struct iscsi_cmnd *cmnd,
  * or as a new NopIn ping generated by the target
  */
 static int
-handle_nopin(struct iscsi_cmnd *cmnd,
+handle_nopin(SHARED struct iscsi_cmnd *cmnd,
 			 struct iscsi_conn *conn,
-			 struct iscsi_session *session)
+			 SHARED struct iscsi_session *session)
 {
 	uint8_t iscsi_hdr[ISCSI_HDR_LEN];
 	struct iscsi_targ_nopin *hdr;
@@ -2605,7 +2626,7 @@ handle_nopin(struct iscsi_cmnd *cmnd,
 	if (cmnd->init_task_tag != ALL_ONES)
 		conn->stat_sn++;
 
-    pthread_mutex_lock(&session->cmnd_mutex);	
+    ipc_mutex_lock(session->cmnd_mutex);	
     hdr->exp_cmd_sn = htonl(session->exp_cmd_sn);
 
     max_cmd_sn_delta = iscsi_get_custom_value(conn->custom, 
@@ -2618,15 +2639,15 @@ handle_nopin(struct iscsi_cmnd *cmnd,
 		/* the nopout command pdu was not immediate, CmdSN advances */
 		session->max_cmd_sn++;
 	}
-	pthread_mutex_unlock(&session->cmnd_mutex);
+	ipc_mutex_unlock(session->cmnd_mutex);
 
 	if (cmnd->target_xfer_tag == ALL_ONES) {
 		/* target not expecting a reply from initiator */
 		cmnd->state = ISCSI_SENT;
 	}
 
-	if (send_hdr_plus_1_data(conn, iscsi_hdr, cmnd->ping_data,
-													cmnd->data_length) < 0) {
+	if (send_hdr_plus_1_data(conn, iscsi_hdr, (void *)cmnd->ping_data,
+                             cmnd->data_length) < 0) {
 		return -1;
 	}
 
@@ -2639,7 +2660,7 @@ handle_nopin(struct iscsi_cmnd *cmnd,
 
     print_targ_nopin(hdr);
 
-	ZFREE(cmnd->ping_data);
+	ZSHFREE(cmnd->ping_data);
 
 	return 0;
 }
@@ -2654,12 +2675,12 @@ handle_nopin(struct iscsi_cmnd *cmnd,
  * OUTPUT: 0 if everything is okay, < 0 if there is trouble
  */
 static int
-handle_iscsi_mgt_fn_done(struct iscsi_cmnd *cmnd,
+handle_iscsi_mgt_fn_done(SHARED struct iscsi_cmnd *cmnd,
 						 struct iscsi_conn *conn,
-						 struct iscsi_session *session)
+						 SHARED struct iscsi_session *session)
 {
 	struct iscsi_targ_task_mgt_response rsp;
-	struct iscsi_cmnd *aborted_command = NULL;
+	SHARED struct iscsi_cmnd *aborted_command = NULL;
 
 	/* most fields in task management function response pdu go back as 0 */
 	memset(&rsp, 0x0, ISCSI_HDR_LEN);
@@ -2670,7 +2691,7 @@ handle_iscsi_mgt_fn_done(struct iscsi_cmnd *cmnd,
 	rsp.init_task_tag = htonl(cmnd->init_task_tag);
 	rsp.stat_sn = htonl(conn->stat_sn++);
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
 
 	rsp.exp_cmd_sn = htonl(session->exp_cmd_sn);
 	rsp.max_cmd_sn = htonl(session->max_cmd_sn);
@@ -2680,7 +2701,7 @@ handle_iscsi_mgt_fn_done(struct iscsi_cmnd *cmnd,
 		 */
 		session->max_cmd_sn++;
 	}
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 	cmnd->state = ISCSI_DEQUEUE;
 
@@ -2694,7 +2715,7 @@ handle_iscsi_mgt_fn_done(struct iscsi_cmnd *cmnd,
 
 	aborted_command = search_tags(conn, cmnd->ref_task_tag, ALL_ONES, 0);
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
 
 	if (cmnd->ref_cmd_sn == session->exp_cmd_sn) {
 		session->exp_cmd_sn++;
@@ -2706,7 +2727,7 @@ handle_iscsi_mgt_fn_done(struct iscsi_cmnd *cmnd,
 	if (aborted_command != NULL)
 		aborted_command->state = ISCSI_DEQUEUE;
 
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
     iscsi_tx(conn);
 	return 0;
@@ -2715,9 +2736,9 @@ handle_iscsi_mgt_fn_done(struct iscsi_cmnd *cmnd,
 
 /* until the last data_out received, it's ready for recovery r2t */
 void
-check_r2t_done(struct iscsi_cmnd *cmd, struct iscsi_init_scsi_data_out *hdr)
+check_r2t_done(SHARED struct iscsi_cmnd *cmd, struct iscsi_init_scsi_data_out *hdr)
 {
-	struct iscsi_cookie *next;
+	SHARED struct iscsi_cookie *next;
 
 	/* in case we lost the last data_out of unsolicited data */
 	if (hdr->offset > cmd->session->oper_param->FirstBurstLength)
@@ -2735,7 +2756,7 @@ check_r2t_done(struct iscsi_cmnd *cmd, struct iscsi_init_scsi_data_out *hdr)
 			/* unhook data_q now */
 			while (cmd->first_data_q) {
 				next = cmd->first_data_q->next;
-				free(cmd->first_data_q);
+				shfree(cmd->first_data_q);
 				cmd->first_data_q = next;
 			}
 			cmd->last_data_q = NULL;
@@ -2748,7 +2769,7 @@ check_r2t_done(struct iscsi_cmnd *cmd, struct iscsi_init_scsi_data_out *hdr)
 
 static void __attribute__ ((no_instrument_function))
 merge_out_of_order( struct iscsi_init_scsi_data_out *hdr,
-					struct iscsi_cmnd *cmd)
+					SHARED struct iscsi_cmnd *cmd)
 {
 	uint32_t limit;
 
@@ -2771,12 +2792,12 @@ merge_out_of_order( struct iscsi_init_scsi_data_out *hdr,
  */
 static int
 handle_data(struct iscsi_conn *conn,
-			struct iscsi_session *session,
+			SHARED struct iscsi_session *session,
 			uint8_t *buffer)
 {
 	struct iscsi_init_scsi_data_out *hdr =
 		(struct iscsi_init_scsi_data_out *) buffer;
-	struct iscsi_cmnd *cmd;
+	SHARED struct iscsi_cmnd *cmd;
 	struct targ_error_rec err_rec;
 	struct scatterlist *st_list;
 	int offset, err = 0, giveback = 0;
@@ -2819,7 +2840,7 @@ handle_data(struct iscsi_conn *conn,
 	ack_sent_cmnds(conn, cmd, hdr->exp_stat_sn, 0);
 
 	/* update last time this command got some data back from initiator */
-    time(&cmd->timestamp);
+    time((time_t *)&cmd->timestamp);
 	if (session->oper_param->DataPDUInOrder
 		&& session->oper_param->DataSequenceInOrder) {
 		/* error recovery ver ref18_04 - SAI */
@@ -2965,7 +2986,7 @@ handle_data(struct iscsi_conn *conn,
 	} else if ((cmd->state != ISCSI_BUFFER_RDY)
 			   && (cmd->state != ISCSI_ALL_R2TS_SENT)) {
 		TRACE(DEBUG, "handle_data: Blocked on unsolicited_data_sem");
-        sem_wait(&cmd->unsolicited_data_sem);
+        ipc_sem_wait(cmd->unsolicited_data_sem);
 		TRACE(DEBUG, "handle_data: Unblocked on unsolicited_data_sem");
 	}
 
@@ -2994,7 +3015,7 @@ handle_data(struct iscsi_conn *conn,
 
 	/* read data directly into midlevel buffers */
 	if ((err = read_list_data_seg((struct generic_pdu *) hdr, cmd, st_list,
-																offset)) <= 0)
+                                  offset)) <= 0)
 		goto end_handle_data;
 
 	/* error recovery ver ref18_04 - SAI */
@@ -3018,10 +3039,10 @@ handle_data(struct iscsi_conn *conn,
 		}
 
 		/* tell the scsi midlevel that all the expected data has arrived */
-        pthread_mutex_lock(&session->cmnd_mutex);
+        ipc_mutex_lock(session->cmnd_mutex);
         cmd->state = ISCSI_DATA_IN;
         err = scsi_rx_data(cmd->cmnd);
-        pthread_mutex_unlock(&session->cmnd_mutex);
+        ipc_mutex_unlock(session->cmnd_mutex);
             
 	}
 
@@ -3037,7 +3058,7 @@ end_handle_data:
 
 	/* update last time this command got some data back from initiator */
 	if (cmd)
-        time(&cmd->timestamp);
+        time((time_t *)&cmd->timestamp);
 
 	TRACE(DEBUG, "Leave handle_data, err = %d", err);
 	return err;
@@ -3052,13 +3073,13 @@ end_handle_data:
 
 static int
 handle_snack(struct iscsi_conn *conn,
-			 struct iscsi_session *session,
+			 SHARED struct iscsi_session *session,
 			 uint8_t *buffer)
 {
 	uint32_t runlen, begrun, reason = REASON_DATA_SNACK;
 	int delta1, delta2;
 	struct iscsi_init_snack *pdu = (struct iscsi_init_snack *) buffer;
-	struct iscsi_cmnd *cmd = NULL;
+	SHARED struct iscsi_cmnd *cmd = NULL;
 
 	TRACE(DEBUG, "Enter handle_snack");
 
@@ -3191,7 +3212,7 @@ handle_snack(struct iscsi_conn *conn,
 
 	/* here only if SNACK type is DATA_R2T_SNACK or STATUS_SNACK */
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
 	for (cmd = session->cmnd_list; cmd != NULL; cmd = cmd->next) {
 		if (cmd->init_task_tag == pdu->init_task_tag
 			&& (pdu->flags & SNACK_TYPE) == DATA_R2T_SNACK
@@ -3239,7 +3260,7 @@ handle_snack(struct iscsi_conn *conn,
 				 * 'Protocol error'."
 				 */
 				reason = REASON_PROTOCOL_ERR;
-                pthread_mutex_unlock(&session->cmnd_mutex);
+                ipc_mutex_unlock(session->cmnd_mutex);
 				goto out_reject;
 			}
 		} else if ((pdu->flags & SNACK_TYPE) == STATUS_SNACK) {
@@ -3265,11 +3286,11 @@ handle_snack(struct iscsi_conn *conn,
 				 * 'Protocol error'."
 				 */
 				reason = REASON_PROTOCOL_ERR;
-                pthread_mutex_unlock(&session->cmnd_mutex);
+                ipc_mutex_unlock(session->cmnd_mutex);
 				goto out_reject;
 		}
 	}
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 out:
 	TRACE(DEBUG, "Leave handle_snack ");
@@ -3289,7 +3310,7 @@ out_reject:
  * INPUT: command which has to be freed
  */
 static void
-iscsi_dequeue(struct iscsi_cmnd *cmnd, struct iscsi_conn *conn)
+iscsi_dequeue(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn)
 {
 	TRACE(DEBUG, "free cmnd with ITT %u", cmnd->init_task_tag);
 
@@ -3302,17 +3323,18 @@ iscsi_dequeue(struct iscsi_cmnd *cmnd, struct iscsi_conn *conn)
 	/* if this command was the text command currently in progress on this
 	 * connection, unblock the connection so it can process more text commands.
 	 */
-	pthread_mutex_lock(&conn->text_in_progress_mutex);
+	ipc_mutex_lock(conn->text_in_progress_mutex);
     if (conn->text_in_progress == cmnd)
         conn->text_in_progress = NULL;
-    pthread_mutex_unlock(&conn->text_in_progress_mutex);
+    ipc_mutex_unlock(conn->text_in_progress_mutex);
 
 	/* Free the R2T cookie if any - SAI */
 	free_r2t_cookie(cmnd);
 	free_data_list(cmnd);
-	free(cmnd->in_progress_buffer);
-	free(cmnd->ping_data);
-	free(cmnd);
+    ipc_sem_free(cmnd->unsolicited_data_sem);
+	shfree(cmnd->in_progress_buffer);
+	shfree(cmnd->ping_data);
+	shfree(cmnd);
 }
 
 static inline uint32_t __attribute__ ((no_instrument_function))
@@ -3467,16 +3489,16 @@ find_iovec_needed(uint32_t data_len, struct scatterlist *st_list, uint32_t offse
  *					received.
  */
 static int
-iscsi_tx_r2t(struct iscsi_cmnd *cmnd,
+iscsi_tx_r2t(SHARED struct iscsi_cmnd *cmnd,
 			 struct iscsi_conn *conn,
-			 struct iscsi_session *session)
+			 SHARED struct iscsi_session *session)
 {
 	uint8_t iscsi_hdr[ISCSI_HDR_LEN];
 	int err = 0;
 	struct iscsi_targ_r2t *hdr;
 	int data_length_left;
 	int max_burst_len = 0;
-	struct iscsi_cookie *cookie = NULL;
+	SHARED struct iscsi_cookie *cookie = NULL;
 
 	TRACE(DEBUG, "Enter iscsi_tx_r2t, r2t_data %d, "
 		  "retransmit_flg %u, outstanding_r2t %d, recovery_r2t %u\n",
@@ -3619,7 +3641,7 @@ iscsi_tx_r2t(struct iscsi_cmnd *cmnd,
 
 		/* store the r2t time stamp - SAI */
 		/* error recovery ver ref18_04 */
-        time(&cmnd->timestamp);
+        time((time_t *)&cmnd->timestamp);
 	} while (data_length_left > 0);
 
 r2t_out:
@@ -3688,9 +3710,9 @@ fill_iovec(struct iovec *iov, int p, int niov,
  * Error Recovery - SAI 
  */
 static int
-send_iscsi_response(struct iscsi_cmnd *cmnd,
+send_iscsi_response(SHARED struct iscsi_cmnd *cmnd,
 					struct iscsi_conn *conn,
-					struct iscsi_session *session)
+					SHARED struct iscsi_session *session)
 {
 	struct iscsi_targ_scsi_rsp *rsp;
 	Scsi_Request *req;
@@ -3796,9 +3818,9 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
  *	total_data_length	total number of all bytes to send in this pdu
  */
 static int
-send_read_data(struct iscsi_cmnd *cmnd,
+send_read_data(SHARED struct iscsi_cmnd *cmnd,
 			   struct iscsi_conn *conn,
-			   struct iscsi_session *session,
+			   SHARED struct iscsi_session *session,
 			   int *phase_collapse)
 {
 	int err = 0;
@@ -3811,7 +3833,7 @@ send_read_data(struct iscsi_cmnd *cmnd,
 	int niov;
 	Scsi_Request *req;
 	uint8_t iscsi_hdr[ISCSI_HDR_LEN];
-	uint32_t pad_bytes;
+	uint32_t pad_bytes = 0;
 	int padding;
 	unsigned data_length_left;
 	unsigned seq_length;
@@ -3984,7 +4006,7 @@ send_read_data(struct iscsi_cmnd *cmnd,
 			if (!session->oper_param->DataPDUInOrder
 								|| !session->oper_param->DataSequenceInOrder) {
 				cmnd->scatter_list_offset = skip_thru_sg_list(st_list,
-													&cmnd->scatter_list_count,
+													(uint32_t *)&cmnd->scatter_list_count,
 													pdu_offset);
 			}
 
@@ -4052,7 +4074,7 @@ send_read_data(struct iscsi_cmnd *cmnd,
 
 			cmnd->scatter_list_count +=
 						fill_iovec(iov, 1 + conn->hdr_crc, niov, st_list,
-								   &cmnd->scatter_list_offset,
+								   (uint32_t *)&cmnd->scatter_list_offset,
 								   data_payload_length);
 
 /* Daren Hayward, darenh@4bridgeworks.com */
@@ -4145,9 +4167,9 @@ out1:
  * OUTPUT: 0 if everything is okay, < 0 if there is trouble
  */
 static int
-handle_iscsi_done(struct iscsi_cmnd *cmnd,
+handle_iscsi_done(SHARED struct iscsi_cmnd *cmnd,
 				  struct iscsi_conn *conn,
-				  struct iscsi_session *session)
+				  SHARED struct iscsi_session *session)
 {
 	Scsi_Request *req;
 	int err = 0;
@@ -4181,9 +4203,9 @@ handle_iscsi_done(struct iscsi_cmnd *cmnd,
 
 	if (!(cmnd->opcode_byte & I_BIT)) {
 		/* the scsi command pdu was not immediate, CmdSN advances */
-        pthread_mutex_lock(&session->cmnd_mutex);
+        ipc_mutex_lock(session->cmnd_mutex);
 		session->max_cmd_sn++;
-		pthread_mutex_unlock(&session->cmnd_mutex);
+		ipc_mutex_unlock(session->cmnd_mutex);
 	}
 
 	err = 0;
@@ -4196,7 +4218,10 @@ handle_iscsi_done(struct iscsi_cmnd *cmnd,
 		if (phase_collapse == 0)
 			err = send_iscsi_response(cmnd, conn, session);
 		else
+        {
 			cmnd->state = ISCSI_SENT;
+            TRACE(DEBUG, "setting %p state to SENT", cmnd);
+        }
 	}
 
 	/* in case there are any out-of-order commands that are now in-order */
@@ -4215,8 +4240,8 @@ out:
 int
 iscsi_tx (struct iscsi_conn *conn)
 {
-	struct iscsi_session *session;
-	struct iscsi_cmnd *cmnd, *prev_cmnd;
+	SHARED struct iscsi_session *session;
+	SHARED struct iscsi_cmnd *cmnd, *prev_cmnd;
 	int count, skipover;
 
     session = conn->session;
@@ -4256,7 +4281,7 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
 						 * changed by other tx threads while we were busy).
 						 */
 		/* lock the session-wide list of commands */
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
 
     /* look at and count each command belonging to this session */
     count = 0;
@@ -4282,23 +4307,23 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
                 {
                     case ISCSI_SEND_TEXT_RESPONSE:
 					{
-                        pthread_mutex_unlock(&session->cmnd_mutex);
+                        ipc_mutex_unlock(session->cmnd_mutex);
 						if (handle_discovery_rsp(cmnd, conn, session) < 0) {
 							TRACE_ERROR("Trouble in handle_discovery_rsp\n");
 							goto iscsi_tx_thread_out;
 						}
-                        pthread_mutex_lock(&session->cmnd_mutex);
+                        ipc_mutex_lock(session->cmnd_mutex);
 						break;
 					}
 
                     case ISCSI_ASK_FOR_MORE_TEXT:
 					{
-                        pthread_mutex_unlock(&session->cmnd_mutex);
+                        ipc_mutex_unlock(session->cmnd_mutex);
 						if (ask_for_more_text(cmnd, conn, session) < 0) {
 							TRACE_ERROR("Trouble in ask_for_more_text\n");
 							goto iscsi_tx_thread_out;
 						}
-                        pthread_mutex_lock(&session->cmnd_mutex);
+                        ipc_mutex_lock(session->cmnd_mutex);
 						break;
 					}
 
@@ -4309,7 +4334,7 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
 							session->cmnd_list = cmnd->next;
 						else
 							prev_cmnd->next = cmnd->next;
-                        pthread_mutex_unlock(&session->cmnd_mutex);
+                        ipc_mutex_unlock(session->cmnd_mutex);
 						if (handle_logout_rsp(cmnd, conn, session) < 0) {
 							TRACE_ERROR("Trouble in handle_logout_rsp\n");
 						}
@@ -4320,58 +4345,58 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
 
                     case ISCSI_PING:
 					{
-                        pthread_mutex_unlock(&session->cmnd_mutex);
+                        ipc_mutex_unlock(session->cmnd_mutex);
 						if (handle_nopin(cmnd, conn, session) < 0) {
 							TRACE_ERROR("Trouble in handle_nopin\n");
 							goto iscsi_tx_thread_out;
 						}
-                        pthread_mutex_lock(&session->cmnd_mutex);
+                        ipc_mutex_lock(session->cmnd_mutex);
 						break;
 					}
 
                     case ISCSI_DONE:
 					{
-                        pthread_mutex_unlock(&session->cmnd_mutex);
+                        ipc_mutex_unlock(session->cmnd_mutex);
 						if (handle_iscsi_done(cmnd, conn, session) < 0) {
 							TRACE_ERROR("Trouble in handle_iscsi_done\n");
 							goto iscsi_tx_thread_out;
 						}
-                        pthread_mutex_lock(&session->cmnd_mutex);
+                        ipc_mutex_lock(session->cmnd_mutex);
 						break;
 					}
                     
                     case ISCSI_RESEND_STATUS:
 					{
-                        pthread_mutex_unlock(&session->cmnd_mutex);
+                        ipc_mutex_unlock(session->cmnd_mutex);
 						if (send_iscsi_response(cmnd, conn, session) < 0) {
 							TRACE_ERROR("Trouble in send_iscsi_response\n");
 							goto iscsi_tx_thread_out;
 						}
-                        pthread_mutex_lock(&session->cmnd_mutex);
+                        ipc_mutex_lock(session->cmnd_mutex);
 						break;
 					}
 
                     case ISCSI_MGT_FN_DONE:
 					{
-                        pthread_mutex_unlock(&session->cmnd_mutex);
+                        ipc_mutex_unlock(session->cmnd_mutex);
 						if (handle_iscsi_mgt_fn_done(cmnd, conn, session) < 0)
                         {
 							TRACE_ERROR("Trouble in iscsi_mgt_fn_done\n");
 							goto iscsi_tx_thread_out;
 						}
-                        pthread_mutex_lock(&session->cmnd_mutex);
+                        ipc_mutex_lock(session->cmnd_mutex);
 						break;
 					}
 
                     case ISCSI_BUFFER_RDY:
 					{
-                        pthread_mutex_unlock(&session->cmnd_mutex);
+                        ipc_mutex_unlock(session->cmnd_mutex);
 						if (iscsi_tx_r2t(cmnd, conn, session) < 0) 
                         {
 							TRACE_ERROR("Trouble in iscsi_tx_r2t\n");
 							goto iscsi_tx_thread_out;
 						}
-                        pthread_mutex_lock(&session->cmnd_mutex);
+                        ipc_mutex_lock(session->cmnd_mutex);
 						break;
 					}
 
@@ -4385,7 +4410,7 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
 							session->cmnd_list = cmnd->next;
 						else
 							prev_cmnd->next = cmnd->next;
-                        pthread_mutex_unlock(&session->cmnd_mutex);
+                        ipc_mutex_unlock(session->cmnd_mutex);
 						iscsi_dequeue(cmnd, conn);
 						skipover = count;
 						goto restart_after_dequeue;
@@ -4396,7 +4421,7 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
 						if (send_unsolicited_data(cmnd, conn, session) < 0) 
                         {
 							TRACE_ERROR("Trouble in send_unsolicited_data\n");
-                            pthread_mutex_unlock(&session->cmnd_mutex);
+                            ipc_mutex_unlock(session->cmnd_mutex);
 							goto iscsi_tx_thread_out;
 						}
 						break;
@@ -4421,7 +4446,7 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
 
                     default:		/* NEVER HERE */
 					{
-                        pthread_mutex_unlock(&session->cmnd_mutex);
+                        ipc_mutex_unlock(session->cmnd_mutex);
 						TRACE_ERROR("Unknown command state %u\n", cmnd->state);
 						goto iscsi_tx_thread_out;
 					}
@@ -4433,7 +4458,7 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
     } /* while */
 
     /* unlock the session-wide list of commands */
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
     TRACE(DEBUG, "handled %d commands", count);
 
@@ -4449,8 +4474,10 @@ iscsi_tx_thread_out:
 int
 iscsi_xmit_response(Target_Scsi_Cmnd * cmnd)
 {
-	struct iscsi_cmnd *cmd;
-	struct iscsi_session *session;
+	SHARED struct iscsi_cmnd *cmd;
+	SHARED struct iscsi_session *session;
+
+    TRACE(DEBUG, "Transmitting response for %p", cmnd);
 
 	cmd = search_iscsi_cmnd(cmnd, &session);
 
@@ -4465,11 +4492,13 @@ iscsi_xmit_response(Target_Scsi_Cmnd * cmnd)
 	cmd->cmd_sn_increment = 0;
 
 	cmd->state = ISCSI_DONE;
+    TRACE(DEBUG, "%s: setting state of cmd %p to DONE", 
+          __FUNCTION__, cmd);
 
 	TRACE(NORMAL, "CmdSN %u ITT %u done by target, ExpCmdSN %u",
 					  cmd->cmd_sn, cmd->init_task_tag, session->exp_cmd_sn);
     /** The mutex has been locked in `search_iscsi_cmnd' **/
-	pthread_mutex_unlock(&session->cmnd_mutex);
+	ipc_mutex_unlock(session->cmnd_mutex);
 
     iscsi_tx(cmd->conn);
 
@@ -4484,8 +4513,8 @@ iscsi_xmit_response(Target_Scsi_Cmnd * cmnd)
 int
 iscsi_rdy_to_xfer(Target_Scsi_Cmnd * cmnd)
 {
-	struct iscsi_cmnd *cmd;
-	struct iscsi_session *session;
+	SHARED struct iscsi_cmnd *cmd;
+	SHARED struct iscsi_session *session;
 
 	cmd = search_iscsi_cmnd(cmnd, &session);
 
@@ -4503,8 +4532,12 @@ iscsi_rdy_to_xfer(Target_Scsi_Cmnd * cmnd)
 	cmd->r2t_data = cmd->r2t_data_total;
 
 	if (cmd->data_length == 0)
+    {
 		/* this command expects no data from initiator, so it is done */
+        TRACE(DEBUG, "%s: setting state of cmd %p to DONE", 
+              __FUNCTION__, cmd);
 		cmd->state = ISCSI_DONE;
+    }
 	else if (cmd->state == ISCSI_QUEUE_CMND)
 		/* this command is queued, now it is queued and ready to receive */
 		cmd->state = ISCSI_QUEUE_CMND_RDY;
@@ -4521,11 +4554,11 @@ iscsi_rdy_to_xfer(Target_Scsi_Cmnd * cmnd)
 	}
 
     /** the mutex has been locked in `search_iscsi_cmnd' **/
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 	/* tell iscsi rx thread that midlevel buffers are now ready */
 	TRACE(DEBUG, "iscsi_rdy_to_xfer: unblocking unsolicited_data_sem");
-	sem_post(&cmd->unsolicited_data_sem);
+	ipc_sem_post(cmd->unsolicited_data_sem);
 
     iscsi_tx(cmd->conn);
 
@@ -4539,7 +4572,7 @@ iscsi_rdy_to_xfer(Target_Scsi_Cmnd * cmnd)
 void
 iscsi_task_mgt_fn_done(Target_Scsi_Message * msg)
 {
-	struct iscsi_cmnd *related_command;
+	SHARED struct iscsi_cmnd *related_command;
 
 	related_command = search_task_mgt_command(msg);
 
@@ -4573,12 +4606,12 @@ iscsi_task_mgt_fn_done(Target_Scsi_Message * msg)
  * then targets must return the 'Task does not exist' response.
  */
 static int __attribute__ ((no_instrument_function))
-get_abort_response( struct iscsi_session *session,
-					struct iscsi_cmnd *cmnd)
+get_abort_response(SHARED struct iscsi_session *session,
+				   SHARED struct iscsi_cmnd *cmnd)
 {
 	int delta, retval = TASK_DOES_NOT_EXIST;
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
 
 	delta = session->max_cmd_sn - cmnd->ref_cmd_sn;
 	if (delta < 0) {
@@ -4603,7 +4636,7 @@ get_abort_response( struct iscsi_session *session,
 	retval = FUNCTION_COMPLETE;
 
 out_unlock:
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 	return retval;
 }
@@ -4611,9 +4644,9 @@ out_unlock:
 
 static void __attribute__ ((no_instrument_function))
 do_task_mgt(struct iscsi_conn *conn,
-			struct iscsi_cmnd *cmnd)
+			SHARED struct iscsi_cmnd *cmnd)
 {
-	struct iscsi_cmnd *ref_command;
+	SHARED struct iscsi_cmnd *ref_command;
 
 	if (cmnd->ref_function == TMF_ABORT_TASK) {
 		ref_command = search_tags(conn, cmnd->ref_task_tag, ALL_ONES, 1);
@@ -4663,8 +4696,8 @@ enqueue_reject(struct iscsi_conn *conn, uint8_t reason)
 /* called when out-of-order queued commands (except for SCSI Commands)
  * become in-order and have to be "delivered"
  */
-static void __attribute__ ((no_instrument_function))
-deliver_queue_other(struct iscsi_cmnd *cmnd, struct iscsi_session *session)
+static void 
+deliver_queue_other(SHARED struct iscsi_cmnd *cmnd, SHARED struct iscsi_session *session)
 {
 	uint8_t opcode;
 
@@ -4677,7 +4710,7 @@ deliver_queue_other(struct iscsi_cmnd *cmnd, struct iscsi_session *session)
 					cmnd->init_task_tag, cmnd->cmd_sn);
 			/* NopOut pdu was not immediate, CmdSN was advanced */
 			session->max_cmd_sn++;
-			ZFREE(cmnd->ping_data);
+			ZSHFREE(cmnd->ping_data);
 			cmnd->state = ISCSI_DEQUEUE;
 		} else {
 			cmnd->state = ISCSI_PING;
@@ -4711,10 +4744,10 @@ deliver_queue_other(struct iscsi_cmnd *cmnd, struct iscsi_session *session)
  *	call rx_cmnd for it as the same as the handle_cmnd does
  */
 static void
-check_queued_cmnd(struct iscsi_session *session)
+check_queued_cmnd(SHARED struct iscsi_session *session)
 {
 	struct iscsi_init_scsi_cmnd *pdu;
-	struct iscsi_cmnd *temp, *prev = NULL;
+	SHARED struct iscsi_cmnd *temp, *prev = NULL;
 
 	/* need to restart search loop whenever ExpCmdSN is incremented,
 	 * which happens when we find and deliver a previously out-of-order
@@ -4722,7 +4755,7 @@ check_queued_cmnd(struct iscsi_session *session)
 	 */
 restart:
 	/* lock the session-wide list of commands while searching it */
-	pthread_mutex_lock(&session->cmnd_mutex);
+	ipc_mutex_lock(session->cmnd_mutex);
 
 	for (temp = session->cmnd_list; temp != NULL; temp = temp->next) {
 		if (temp->cmd_sn == session->exp_cmd_sn
@@ -4735,7 +4768,7 @@ restart:
 			if (temp->state == ISCSI_QUEUE_OTHER) {
 				/* this is non-SCSI command, deliver it to us, not target */
 				session->exp_cmd_sn++;
-                pthread_mutex_unlock(&session->cmnd_mutex);
+                ipc_mutex_unlock(session->cmnd_mutex);
 				deliver_queue_other(temp, session);
 				goto restart;				/* exp_cmd_sn has been bumped */
 			} else if (!temp->cmd_sn_increment) {
@@ -4743,13 +4776,14 @@ restart:
 				 * is now in-order, deliver it to target and mark it
 				 * until delivery is confirmed */
 				temp->cmd_sn_increment = 1;
-				pthread_mutex_unlock(&session->cmnd_mutex);
+				ipc_mutex_unlock(session->cmnd_mutex);
 				TRACE(NORMAL, "delivering CmdSN %u ITT %u to target",
 					  temp->cmd_sn, temp->init_task_tag);
 				pdu = (struct iscsi_init_scsi_cmnd *)temp->hdr;
 				rx_cmnd(temp->conn->dev->device,
 						session->oper_param->TargetName, pdu->lun, pdu->cdb,
-						ISCSI_CDB_LEN, pdu->xfer_len, pdu->flags, &temp->cmnd);
+						ISCSI_CDB_LEN, pdu->xfer_len, pdu->flags, 
+                        (SHARED Target_Scsi_Cmnd **)&temp->cmnd);
 
 				if (temp->cmnd)					/* rx_cmnd worked ok */
 					goto restart;				/* exp_cmd_sn may be bumped */
@@ -4757,17 +4791,17 @@ restart:
 				TRACE_ERROR("rx_cmnd returned NULL, ITT %u\n",
 							pdu->init_task_tag);
 
-                pthread_mutex_lock(&session->cmnd_mutex);
+                ipc_mutex_lock(session->cmnd_mutex);
 				/* have to bump this on error */
 				session->exp_cmd_sn += temp->cmd_sn_increment;
 				temp->cmd_sn_increment = 0;
-                pthread_mutex_unlock(&session->cmnd_mutex);
+                ipc_mutex_unlock(session->cmnd_mutex);
                 return;
 			}
 		}
 		prev = temp;
 	}
-	pthread_mutex_unlock(&session->cmnd_mutex);
+	ipc_mutex_unlock(session->cmnd_mutex);
 	return;
 }
 
@@ -4788,7 +4822,8 @@ restart:
  *  max_cmd_sn and exp_cmd_sn fields is atomic.
  */
 static int
-check_cmd_sn(struct iscsi_cmnd *cmnd, void *ptr, struct iscsi_session *session,
+check_cmd_sn(SHARED struct iscsi_cmnd *cmnd, void *ptr, 
+             SHARED struct iscsi_session *session,
 			 uint32_t increment)
 {
 	struct generic_pdu *pdu = ptr;
@@ -4841,21 +4876,23 @@ check_cmd_sn(struct iscsi_cmnd *cmnd, void *ptr, struct iscsi_session *session,
  */
 static int
 ack_sent_cmnds(struct iscsi_conn *conn,
-               struct iscsi_cmnd *cmnd,
+               SHARED struct iscsi_cmnd *cmnd,
                uint32_t exp_stat_sn,
                te_bool add_cmnd_to_queue)
 {
-	struct iscsi_cmnd *temp;
+	SHARED struct iscsi_cmnd *temp;
 	int delta, count;
     te_bool changed_something = add_cmnd_to_queue;
 
-	pthread_mutex_lock(&conn->session->cmnd_mutex);
+    TRACE(DEBUG, "search for commands to dequeue");
+	ipc_mutex_lock(conn->session->cmnd_mutex);
 
 	count = 0;
 	for (temp = conn->session->cmnd_list; temp != NULL; temp = temp->next) {
 		if (temp->conn == conn) {
 			count++;
 			if (temp->state == ISCSI_SENT) {
+                TRACE(DEBUG, "%p is in sent state", temp);
 				delta = temp->stat_sn - exp_stat_sn;
 				if (delta < 0) {
 					TRACE(DEBUG, "set dequeue command statsn %d, "
@@ -4883,7 +4920,7 @@ ack_sent_cmnds(struct iscsi_conn *conn,
 			conn->session->cmnd_list = cmnd;
 	}
 
-    pthread_mutex_unlock(&conn->session->cmnd_mutex);
+    ipc_mutex_unlock(conn->session->cmnd_mutex);
 
 	/* tell the tx thread it has something to do */
 	if (changed_something) {
@@ -4903,15 +4940,16 @@ ack_sent_cmnds(struct iscsi_conn *conn,
  * this thread is called with session->cmnd_sem lock held by caller (tx thread)
  */
 static int
-send_unsolicited_data(struct iscsi_cmnd *cmd,
+send_unsolicited_data(SHARED struct iscsi_cmnd *cmd,
 					  struct iscsi_conn *conn,
-					  struct iscsi_session *session)
+					  SHARED struct iscsi_session *session)
 {
 	struct scatterlist *st_list;
-	struct data_list *data;
+	SHARED struct data_list *data;
 	int err;
 	uint32_t expected_data_offset, offset, length, sglen, i, n;
-	uint8_t *buffer, *sgbuf;
+	SHARED uint8_t *buffer;
+    uint8_t *sgbuf;
 
     UNUSED(session);
 
@@ -4952,7 +4990,7 @@ send_unsolicited_data(struct iscsi_cmnd *cmd,
 			n = sglen - offset;		/* no of bytes left in sg list item's buf */
 			if (n > length)
 				n = length;			/* only this many data bytes left to copy */
-			memcpy(sgbuf + offset, buffer, n);
+			shmemcpy(sgbuf + offset, buffer, n);
 			length -= n;
 			buffer += n;
 			offset += n;
@@ -4996,7 +5034,7 @@ send_unsolicited_data(struct iscsi_cmnd *cmd,
  */
 static int
 out_of_order_cmnd(struct iscsi_conn *conn,
-				  struct iscsi_session *session,
+				  SHARED struct iscsi_session *session,
 				  uint8_t *buffer,
 				  struct iscsi_cmnd *cmnd, int err)
 {
@@ -5036,11 +5074,11 @@ out:
 
 static int
 handle_cmnd(struct iscsi_conn *conn,
-			struct iscsi_session *session,
+			SHARED struct iscsi_session *session,
 			uint8_t *buffer)
 {
 	struct iscsi_init_scsi_cmnd *pdu = (struct iscsi_init_scsi_cmnd *) buffer;
-	struct iscsi_cmnd *cmnd;
+	SHARED struct iscsi_cmnd *cmnd;
 	int err;
 
 	TRACE(DEBUG, "Enter handle_cmnd");
@@ -5099,11 +5137,11 @@ handle_cmnd(struct iscsi_conn *conn,
 
 	/* error recovery ver ref18_04 - SAI */
 
-	sem_init(&cmnd->unsolicited_data_sem, 0, 1);
+	cmnd->unsolicited_data_sem = ipc_sem_alloc(1);
 
 	/* check cmd_sn for command ordering */
     TRACE(DEBUG, "trying cmnd_mutex locking");
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
     TRACE(DEBUG, "cmnd_mutex successfully locked");
 
 	/* Last parameter is 0 because we cannot bump the exp_cmd_sn for the session
@@ -5115,7 +5153,7 @@ handle_cmnd(struct iscsi_conn *conn,
 
 	/* generate the next TTT, in case we need it */
 	cmnd->target_xfer_tag = generate_next_ttt(session);
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 	if (err) {
 		/* command received is not in expected CmdSN order */
@@ -5140,11 +5178,11 @@ handle_cmnd(struct iscsi_conn *conn,
 		TRACE_ERROR("rx_cmnd returned NULL, ITT %u\n",
 					cmnd->init_task_tag);
 		err = -1;
-		pthread_mutex_lock(&session->cmnd_mutex);
+		ipc_mutex_lock(session->cmnd_mutex);
 			/* bump exp_cmd_sn as needed */
         session->exp_cmd_sn += cmnd->cmd_sn_increment;
         cmnd->cmd_sn_increment = 0;
-		pthread_mutex_unlock(&session->cmnd_mutex);
+		ipc_mutex_unlock(session->cmnd_mutex);
 		goto out2;
 	}
 
@@ -5154,7 +5192,7 @@ handle_cmnd(struct iscsi_conn *conn,
 		 * read it directly into midlevel buffers
 		 */
 		TRACE(DEBUG, "Blocked on unsolicited_data_sem");
-		sem_wait(&cmnd->unsolicited_data_sem);
+		ipc_sem_wait(cmnd->unsolicited_data_sem);
 		TRACE(DEBUG, "Unblocked on unsolicited_data_sem");
 
 		/* state MUST now be ISCSI_BUFFER_RDY !*/
@@ -5200,10 +5238,10 @@ handle_cmnd(struct iscsi_conn *conn,
 
 			TRACE(DEBUG, "%d received for cmnd %p", pdu->length, cmnd);
 
-            pthread_mutex_lock(&session->cmnd_mutex);
+            ipc_mutex_lock(session->cmnd_mutex);
             cmnd->state = ISCSI_DATA_IN;
             err = scsi_rx_data(cmnd->cmnd);
-            pthread_mutex_unlock(&session->cmnd_mutex);
+            ipc_mutex_unlock(session->cmnd_mutex);
 
 			if (err < 0) {
 				TRACE_ERROR("scsi_rx_data returned an error\n");
@@ -5232,12 +5270,12 @@ out2:
  */
 static int
 handle_task_mgt_command(struct iscsi_conn *conn,
-						struct iscsi_session *session,
+						SHARED struct iscsi_session *session,
 						uint8_t *buffer)
 {
 	struct iscsi_init_task_mgt_command *pdu
 						= (struct iscsi_init_task_mgt_command *)buffer;
-	struct iscsi_cmnd *cmnd;
+	SHARED struct iscsi_cmnd *cmnd;
 	int err = 0;
 
 	/* turn on (almost) all tracing while processing a TM command */
@@ -5300,14 +5338,14 @@ handle_task_mgt_command(struct iscsi_conn *conn,
 					cmnd->init_task_tag, cmnd->opcode_byte);
 		err = read_single_data_seg(buffer, cmnd, pdu->length, &cmnd->ping_data);
 		if (err <= 0) {
-			ZFREE(cmnd);
+			ZSHFREE(cmnd);
 			goto out;
 		}
 	}
 
-    pthread_mutex_lock(&session->cmnd_mutex);
+    ipc_mutex_lock(session->cmnd_mutex);
     err = check_cmd_sn(cmnd, pdu, session, 1);
-    pthread_mutex_unlock(&session->cmnd_mutex);
+    ipc_mutex_unlock(session->cmnd_mutex);
 
 	if (err < 0) {	
 		/* out of range, silently ignore it */
@@ -5315,8 +5353,8 @@ handle_task_mgt_command(struct iscsi_conn *conn,
 					"ExpCmdSN %u\n", 
 					pdu->cmd_sn, session->exp_cmd_sn);
 		ack_sent_cmnds(conn, cmnd, pdu->exp_stat_sn, 0);
-		free(cmnd->ping_data);
-		ZFREE(cmnd);
+		shfree(cmnd->ping_data);
+		ZSHFREE(cmnd);
 	} else {
 		if (err > 0) {		
 			/* within range but out of order, queue it for later */
@@ -5334,86 +5372,1059 @@ out:
 	return err;
 }
 
+#define ISCSI_DEFAULT_PORT 3260
 
-void
-print_char(char c)
+static int
+alloc_iscsi_socket(const char *name, const char *description, int kind)
 {
+    int                sock;
+    struct sockaddr_un address;
 
-    printf("\n| %d | %d | %d | %d | %d | %d | %d | %d |\n",
-           (c % 256 - c % 128) / 128,
-           (c % 128 - c % 64) / 64,
-           (c % 64 - c % 32) / 32,
-           (c % 32 - c % 16) / 16,
-           (c % 16 - c % 8) / 8,
-           (c % 8 - c % 4) / 4,
-           (c % 4 - c % 2) / 2,
-           (c % 2)
-          );
+    address.sun_family = AF_LOCAL;
+    strcpy(address.sun_path, name);
+    unlink(name);
+    sock = socket(AF_LOCAL, kind, 0);
+    if (sock < 0)
+    {
+        ERROR("Unable to create %s socket: %s", description, strerror(errno));
+        return -1;
+    }
+    if (bind(sock, &address, sizeof(address)) != 0)
+    {
+        ERROR("Unable to bind %s socket: %s", description, strerror(errno));
+        return -1;
+    }
+    if (kind == SOCK_STREAM)
+    {
+        if (listen(sock, 5) != 0)
+        {
+            ERROR("Unable to listen at %s socket: %s", description, strerror(errno));
+            return -1;
+        }
+    }
+    return sock;
 }
 
-int 
-create_socket_pair(int *pipe)
-{
-    int rc;
-    
-    rc = socketpair(AF_LOCAL, SOCK_STREAM, 0, pipe);
-    if (rc != 0)
-    {
-        fputs("Failed to create sync pipe\n", stderr);
-        return 1;
-    }
+static int iscsi_control_fd;
+static int iscsi_listening_fd;
 
+static sig_atomic_t connection_terminated = 0;
+
+static
+void connection_termination_handler(int signo)
+{
+    UNUSED(signo);
+    connection_terminated++;
+}
+
+
+typedef struct iscsi_target_process {
+    te_bool alive;
+    pid_t pid;
+    int   exit_status;
+    SHARED iscsi_custom_data  *custom_data;
+} iscsi_target_process;
+
+
+static iscsi_target_process iscsi_target_processes[MAX_PORTAL];
+static int   iscsi_target_num_of_connections;
+
+static sig_atomic_t terminate_target_process = 0;
+
+static
+void target_termination_handler(int signo)
+{
+    UNUSED(signo);
+    terminate_target_process++;
+}
+
+static int
+iscsi_server_main_loop(void)
+{
+    struct pollfd waiting[2];
+    
+    iscsi_control_fd = alloc_iscsi_socket(ISCSI_TARGET_CONTROL_SOCKET, "control", SOCK_DGRAM);
+    if (iscsi_control_fd < 0)
+        return EXIT_FAILURE;
+
+    iscsi_listening_fd = alloc_iscsi_socket(ISCSI_TARGET_DATA_SOCKET, "data", SOCK_STREAM);
+    if (iscsi_listening_fd< 0)
+        return EXIT_FAILURE;
+    
+    waiting[0].fd = iscsi_control_fd;
+    waiting[0].events = POLLIN;
+    waiting[1].fd = iscsi_listening_fd;
+    waiting[1].events = POLLIN;
+
+    fputs("running iSCSI target\n", stderr);
+
+    while (terminate_target_process == 0)
+    {
+        if (connection_terminated != 0)
+        {
+            int status;
+            pid_t pid;
+
+            connection_terminated = 0;
+            for (;;)
+            {
+                pid = waitpid(-1, &status, WNOHANG);
+                if (pid == (pid_t)-1)
+                {
+                    if (errno == ECHILD)
+                        break;
+                    ERROR("Error waiting for child: %s", strerror(errno));
+                    continue;
+                }
+                else if (pid == 0)
+                    break;
+                else
+                {
+                    unsigned i;
+                    for (i = 0; i < TE_ARRAY_LEN(iscsi_target_processes); i++)
+                    {
+                        if (iscsi_target_processes[i].alive)
+                        {
+                            if (iscsi_target_processes[i].pid == pid)
+                            {
+                                RING("Target subprocess with pid = %d %s (%d)",
+                                     pid,
+                                     WIFEXITED(status) ? "terminated" : "killed",
+                                     WIFEXITED(status) ? WEXITSTATUS(status) : WTERMSIG(status));
+                                iscsi_target_processes[i].pid = (pid_t)-1;
+                                iscsi_target_processes[i].alive = FALSE;
+                                iscsi_target_processes[i].exit_status = status;
+                                iscsi_target_num_of_connections--;
+                                iscsi_free_custom(iscsi_target_processes[i].custom_data);
+                                iscsi_target_processes[i].custom_data = NULL;
+                                break;
+                            }
+                        }
+                    }
+                    if (i == TE_ARRAY_LEN(iscsi_target_processes))
+                    {
+                        ERROR("Unexpected child with pid = %d terminated", pid);
+                    }
+                }
+            }
+        }
+        if (poll(waiting, 2, -1) < 0)
+        {
+            if (errno == EINTR)
+                continue;
+            ERROR("Poll error: %s", strerror(errno));
+            continue;
+        }
+        if ((waiting[1].revents & POLLIN) == POLLIN)
+        {
+            int data_fd = accept(iscsi_listening_fd, NULL, NULL);
+            if (data_fd < 0)
+            {
+                ERROR("Error accepting connection: %s", strerror(errno));
+                continue;
+            }
+            iscsi_target_start_process(data_fd);
+        }
+        if ((waiting[0].revents & POLLIN) == POLLIN)
+        {
+            iscsi_target_process_control_msg(iscsi_control_fd);
+        }
+    }
     return 0;
 }
 
-#define ISCSI_DEFAULT_PORT 3260
+#define MAX_CONTROL_MSG_SIZE 4096
+#define ISCSI_CONTROL_INITIAL_TIMEOUT 100
+#define ISCSI_CONTROL_ACKED_TIMEOUT 1000
 
+typedef struct iscsi_target_control_command
+{
+    char *name;
+    void (*handler)(int sock, struct sockaddr_un *from, 
+                    int size, char *data);
+} iscsi_target_control_command;
+
+static te_errno
+iscsi_wait_reply(int sock, char *buf, int *size)
+{
+    int timeout = ISCSI_CONTROL_INITIAL_TIMEOUT;
+    int result;
+    struct pollfd waiting;
+    int rc;
+    
+    waiting.fd = sock;
+    waiting.events = POLLIN;
+
+    for (;;)
+    {
+        result = poll(&waiting, 1, timeout);
+        if (result != 1)
+        {
+            rc = (result == 0 ? 
+                  TE_RC(TE_ISCSI_TARGET, TE_ETIMEDOUT) :
+                  TE_OS_RC(TE_ISCSI_TARGET, errno));
+            if (TE_RC_GET_ERROR(rc) == TE_EINTR)
+                continue;
+            ERROR("Error polling the target: %r", rc);
+            return rc;
+        }
+        result = recv(sock, buf, *size, 0);
+        if (result < 0)
+        {
+            rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
+            ERROR("Error reading from the target: %r", rc);
+            return rc;
+        }
+        if (strcmp(buf, "ack") != 0)
+        {
+            *size = result;
+            return 0;
+        }
+        timeout = ISCSI_CONTROL_ACKED_TIMEOUT;
+    }
+    return TE_RC(TE_ISCSI_TARGET, TE_ETIMEDOUT);
+}
+
+static te_errno
+iscsi_send_control_msg(int sock, struct sockaddr_un *dest,
+                       const char *kind, const char *fmt, va_list args)
+{
+    static char msg_buf[MAX_CONTROL_MSG_SIZE];
+    int     kind_len = strlen(kind) + 1;
+    unsigned size = 0;
+
+    memcpy(msg_buf, kind, kind_len);
+    if (fmt != NULL)
+    {
+        size = vsnprintf(msg_buf + kind_len, sizeof(msg_buf) - kind_len, fmt, args);
+        if ((int)size < 0)
+        {
+            ERROR("Error formatting reply");
+            iscsi_reply_status(sock, dest, TE_EFMT);
+            return TE_RC(TE_ISCSI_TARGET, TE_EFMT);
+        }
+        size++;
+    }
+    else
+    {
+        size = va_arg(args, unsigned);
+        if (size != 0)
+        {
+            void *data = va_arg(args, void *);
+            memcpy(msg_buf + kind_len, data, MIN(size, sizeof(msg_buf) - kind_len));
+        }
+    }
+
+    size += kind_len;
+    if (size > sizeof(msg_buf))
+    {
+        ERROR("Reply too large");
+        iscsi_reply_status(sock, dest, TE_EMSGSIZE);
+        return TE_RC(TE_ISCSI_TARGET, TE_EMSGSIZE);
+    }
+    if (sendto(sock, msg_buf, size, 0, dest, sizeof(*dest)) < 0)
+    {
+        int rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
+        ERROR("%s(): Error sending message: %r", __FUNCTION__, rc);
+        return rc;
+    }
+    return 0;
+}
+
+
+static void
+iscsi_reply(int sock, struct sockaddr_un *dest,
+            const char *kind, const char *fmt, ...)
+{
+    int rc;
+    va_list args;
+    
+    RING("Sending reply '%s' (%s)", kind, fmt == NULL ? "" : fmt);
+    va_start(args, fmt);
+    rc = iscsi_send_control_msg(sock, dest, kind, fmt, args);
+    va_end(args);
+    if (rc != 0)
+        ERROR("Cannot send a reply: %r", rc);
+}
+
+static void
+iscsi_reply_status(int sock, struct sockaddr_un *dest, te_errno rc)
+{
+    if (rc == 0)
+        iscsi_reply(sock, dest, "ok", NULL, 0);
+    else
+        iscsi_reply(sock, dest, "error", "%x", rc);
+}
+
+
+static void
+iscsi_cmnd_set(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    char *value;
+
+    UNUSED(size);
+    
+    value = strchr(buffer, '=');
+    if (value == NULL)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+    *value++ = '\0';
+
+    iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
+                                buffer, value,
+                                devdata->param_tbl);
+    iscsi_reply_status(sock, dest, 0);
+}
+
+
+static void
+iscsi_cmnd_restore(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    UNUSED(size);
+
+    iscsi_restore_default_param(buffer,
+                                devdata->param_tbl);
+    iscsi_reply_status(sock, dest, 0);
+}
+
+
+static void
+iscsi_cmnd_get(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    static char value_buf[MAX_CONTROL_MSG_SIZE];
+
+    UNUSED(size);
+    
+    *value_buf = '\0';
+    iscsi_convert_param_to_str(value_buf, buffer,
+                               devdata->param_tbl);
+    iscsi_reply(sock, dest, "ok", NULL, strlen(value_buf) + 1, value_buf);
+}
+
+static void
+iscsi_cmnd_security(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    UNUSED(size);
+
+    buffer = strtok(buffer, " ");
+    if (buffer == NULL)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+    if (strcmp(buffer, "peername") == 0)
+    {
+        buffer += strlen(buffer) + 1;
+        CHAP_SetName(buffer, 
+                     devdata->auth_parameter.chap_peer_ctx);
+    }
+    else if (strcmp(buffer, "peersecret") == 0)
+    {
+        buffer += strlen(buffer) + 1;
+        CHAP_SetSecret(buffer, 
+                       devdata->auth_parameter.chap_peer_ctx);
+    }
+    else if (strcmp(buffer, "localname") == 0)
+    {
+        buffer += strlen(buffer) + 1;
+        CHAP_SetName(buffer, 
+                     devdata->auth_parameter.chap_local_ctx);
+    }
+    else if (strcmp(buffer, "localsecret") == 0)
+    {
+        buffer += strlen(buffer) + 1;
+        CHAP_SetSecret(buffer, 
+                       devdata->auth_parameter.chap_local_ctx);
+    }
+    else if (strcmp(buffer, "mutualauth") == 0)
+    {
+        buffer += strlen(buffer) + 1;
+        if (strcmp(buffer, "true") == 0)
+            devdata->auth_parameter.auth_flags |= USE_TARGET_CONFIRMATION;
+        else
+            devdata->auth_parameter.auth_flags &= ~USE_TARGET_CONFIRMATION;
+
+    }
+    else if (strcmp(buffer, "base64") == 0)
+    {
+        buffer += strlen(buffer) + 1;
+        if (strcmp(buffer, "true") == 0)
+        {
+            devdata->auth_parameter.auth_flags |= USE_BASE64;
+            CHAP_SetNumberFormat(BASE64_FORMAT, devdata->auth_parameter.chap_peer_ctx);
+            CHAP_SetNumberFormat(BASE64_FORMAT, devdata->auth_parameter.chap_local_ctx);
+        }    
+        else
+        {
+            devdata->auth_parameter.auth_flags &= ~USE_BASE64;
+            CHAP_SetNumberFormat(HEX_FORMAT, devdata->auth_parameter.chap_peer_ctx);
+            CHAP_SetNumberFormat(HEX_FORMAT, devdata->auth_parameter.chap_local_ctx);
+        }
+    }
+    else if (strcmp(buffer, "length") == 0)
+    {
+        int len = atoi(buffer + strlen(buffer) + 1);
+        CHAP_SetChallengeLength(len, devdata->auth_parameter.chap_peer_ctx);
+        CHAP_SetChallengeLength(len, devdata->auth_parameter.chap_local_ctx);
+    }
+    else
+    {
+        ERROR("Unknown security command '%s'", buffer);
+        iscsi_reply_status(sock, dest, TE_ENOSYS);
+    }
+    iscsi_reply_status(sock, dest, 0);
+}
+
+static void
+iscsi_cmnd_getsecurity(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    char *value;
+
+    UNUSED(size);
+
+    if (strcmp(buffer, "peername") == 0)
+    {
+        value = CHAP_GetName(devdata->auth_parameter.chap_peer_ctx);
+        if (value == NULL) value = "";
+        iscsi_reply(sock, dest, "ok", NULL, strlen(value) + 1, value);
+    }
+    else if (strcmp(buffer, "peersecret") == 0)
+    {
+        value = CHAP_GetSecret(devdata->auth_parameter.chap_peer_ctx);
+        if (value == NULL) value = "";
+        iscsi_reply(sock, dest, "ok", NULL, strlen(value) + 1, value);
+    }
+    else if (strcmp(buffer, "localname") == 0)
+    {
+        value = CHAP_GetName(devdata->auth_parameter.chap_local_ctx);
+        if (value == NULL) value = "";
+        iscsi_reply(sock, dest, "ok", NULL, strlen(value) + 1, value);
+    }
+    else if (strcmp(buffer, "localsecret") == 0)
+    {
+        value = CHAP_GetSecret(devdata->auth_parameter.chap_local_ctx);
+        if (value == NULL) value = "";
+        iscsi_reply(sock, dest, "ok", NULL, strlen(value) + 1, value);
+    }
+    else if (strcmp(buffer, "mutualauth") == 0)
+    {
+        iscsi_reply(sock, dest, "ok", 
+                    (devdata->auth_parameter.auth_flags & USE_TARGET_CONFIRMATION) == 
+                    USE_TARGET_CONFIRMATION ? "true" : "false");
+    }
+    else if (strcmp(buffer, "base64") == 0)
+    {
+        iscsi_reply(sock, dest, "ok", 
+                    (devdata->auth_parameter.auth_flags & USE_BASE64) == 
+                    USE_BASE64 ? "true" : "false");
+    }
+    else if (strcmp(buffer, "length") == 0)
+    {
+        iscsi_reply(sock, dest, "ok", "%d",
+                    CHAP_GetChallengeLength(devdata->auth_parameter.chap_peer_ctx));
+    }
+    else
+    {
+        ERROR("Unknown security command '%s'", buffer);
+        iscsi_reply_status(sock, dest, TE_ENOSYS);
+    }
+}
+
+static void
+iscsi_cmnd_free(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    unsigned target;
+    unsigned lun;
+    int      rc;
+
+    UNUSED(size);
+
+    if (sscanf(buffer, "%u %u", &target, &lun) != 2)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+    rc = iscsi_free_device(target, lun);
+    iscsi_reply_status(sock, dest, 0);
+}
+
+static void
+iscsi_cmnd_sync(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    unsigned target;
+    unsigned lun;
+    int      rc;
+
+    UNUSED(size);
+
+    if (sscanf(buffer, "%u %u", &target, &lun) != 2)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+    rc = iscsi_sync_device(target, lun);
+    iscsi_reply_status(sock, dest, rc);
+}
+
+
+static void
+iscsi_cmnd_mmap(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    unsigned target;
+    unsigned lun;
+    int      rc;
+    char     filename[RCF_MAX_PATH + 1];
+
+    UNUSED(size);
+
+    if (sscanf(buffer, "%u %u %s", &target, &lun, filename) != 3)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+    rc = iscsi_mmap_device(target, lun, filename);
+    iscsi_reply_status(sock, dest, rc);
+}
+
+
+static void
+iscsi_cmnd_get_devparam(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    unsigned target;
+    unsigned lun;
+    int      rc;
+    te_bool  is_mmap;
+    uint32_t devsize;
+
+    UNUSED(size);
+
+    if (sscanf(buffer, "%u %u", &target, &lun) != 2)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+    rc = iscsi_get_device_param(target, lun, &is_mmap, &devsize);
+    if (rc == 0)
+    {
+        iscsi_reply(sock, dest, "ok", "%s %lu", 
+                    is_mmap ? "true" : "false", (unsigned long)devsize);
+    }
+    else
+    {
+        iscsi_reply_status(sock, dest, rc);
+    }
+}
+
+static void
+iscsi_cmnd_write(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    unsigned target;
+    unsigned lun;
+    unsigned offset;
+    unsigned length;
+    int      rc;
+    char     filename[RCF_MAX_PATH + 1];
+
+    UNUSED(size);
+
+    if (sscanf(buffer, "%u %u %u %s %u", 
+               &target, &lun, &offset, filename, &length) != 5)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+    RING("Got target write request: %u %u %u %u",
+         target, lun, offset, length);
+    rc = iscsi_write_to_device(target, lun, offset, filename, length);
+    iscsi_reply_status(sock, dest, rc);
+}
+
+static void
+iscsi_cmnd_read(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    unsigned target;
+    unsigned lun;
+    unsigned offset;
+    unsigned length;
+    int      rc;
+    char     filename[RCF_MAX_PATH + 1];
+
+    UNUSED(size);
+
+    if (sscanf(buffer, "%u %u %u %s %u", 
+               &target, &lun, &offset, filename, &length) != 5)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+    rc = iscsi_read_from_device(target, lun, offset, filename, length);
+    iscsi_reply_status(sock, dest, rc);
+}
+
+static void
+iscsi_cmnd_setfail(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    unsigned target;
+    unsigned lun;
+    unsigned status;
+    unsigned sense;
+    unsigned asc;
+    unsigned ascq;
+    int      rc;
+
+    UNUSED(size);
+
+    if (sscanf(buffer, "%u %u %u %u %u %u", 
+               &target, &lun, &status, &sense, &asc, &ascq) != 6)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+    rc = iscsi_set_device_failure_state(target, lun, status, sense, asc, ascq);
+    iscsi_reply_status(sock, dest, rc);
+}
+
+static void
+iscsi_cmnd_status(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    if (size == 0)
+    {
+        int i;
+        char list[RCF_MAX_PATH + 1] = "";
+        char *listptr = list;
+        
+        for (i = 0; i < iscsi_target_num_of_connections; i++)
+        {
+            listptr += sprintf(listptr, "%d ", 
+                               iscsi_target_processes[i].alive ?
+                               (int)iscsi_target_processes[i].pid : -1);
+        }
+        iscsi_reply(sock, dest, "ok", "%d %s", 
+                    iscsi_target_num_of_connections,
+                    list);
+    }
+    else
+    {
+        int id = strtoul(buffer, NULL, 10);
+        
+        if (id < 0 || id >= iscsi_target_num_of_connections)
+            iscsi_reply_status(sock, dest, TE_ECHRNG);
+        if (iscsi_target_processes[id].alive)
+        {
+            int rc;
+            rc = waitpid(iscsi_target_processes[id].pid,
+                    &iscsi_target_processes[id].exit_status,
+                    WNOHANG);
+            if (rc == iscsi_target_processes[id].pid)
+            {
+                iscsi_reply(sock, dest, "ok", "running 0");
+                return;
+            }
+            else if (rc < 0)
+            {
+                iscsi_reply_status(sock, dest, te_rc_os2te(errno));
+                return;
+            }
+            else
+            {
+                iscsi_target_processes[id].alive = FALSE;
+            }
+        }
+        if (WIFEXITED(iscsi_target_processes[id].exit_status))
+        {
+            iscsi_reply(sock, dest, "ok", "exited %d", 
+                        WEXITSTATUS(iscsi_target_processes[id].exit_status));
+        }
+        else
+        {
+            iscsi_reply(sock, dest, "ok", "killed %d", 
+                        WTERMSIG(iscsi_target_processes[id].exit_status));
+        }
+    }
+}
+
+static void
+iscsi_cmnd_tweak(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    int   id;
+    char *varname;
+    char *varvalue;
+    int   rc;
+
+    UNUSED(size);
+
+    id = strtol(buffer, &varname, 10);
+    if (varname == buffer)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+
+    varname = strtok(varname, " ");
+    if (varname == NULL)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+    varvalue = strtok(NULL, " ");
+    if (varvalue == NULL)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+
+    if (id < -1 || id >= iscsi_target_num_of_connections)
+    {
+        iscsi_reply_status(sock, dest, TE_ECHRNG);
+        return;
+    }
+    if (id == -1)
+        rc  = iscsi_set_custom_value(NULL, varname, varvalue);
+    else
+    {
+        if (!iscsi_target_processes[id].alive)
+        {
+            iscsi_reply_status(sock, dest, TE_EPIPE);
+            return;
+        }
+        rc  = iscsi_set_custom_value(iscsi_target_processes[id].custom_data,
+                                     varname, varvalue);
+    }
+    iscsi_reply_status(sock, dest, rc);
+}
+
+static void 
+clean_session_list(SHARED struct list_head *list)
+{
+    SHARED struct iscsi_session *session;
+    SHARED struct list_head *list_ptr1, *list_temp1;
+
+    list_for_each_safe(list_ptr1, list_temp1, list)
+    {        
+        session = list_entry(list_ptr1, struct iscsi_session, sess_link);
+        list_del_init(list_ptr1);
+        iscsi_release_session(session);
+    }
+}
+
+static void
+iscsi_cmnd_reset(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    int i;
+
+    UNUSED(size);
+    UNUSED(buffer);
+    
+    for (i = 0; i < iscsi_target_num_of_connections; i++)
+    {
+        if (iscsi_target_processes[i].alive)
+        {
+            kill(iscsi_target_processes[i].pid, SIGTERM);
+            iscsi_target_processes[i].alive = FALSE;
+        }
+        iscsi_free_custom(iscsi_target_processes[i].custom_data);
+    }
+    ipc_mutex_lock(devdata->session_mutex);
+    clean_session_list(&devdata->bad_session_list);
+    INIT_LIST_HEAD(&devdata->bad_session_list);
+    clean_session_list(&devdata->session_list);
+    INIT_LIST_HEAD(&devdata->session_list);
+    ipc_mutex_unlock(devdata->session_mutex);
+    iscsi_target_num_of_connections = 0;
+    iscsi_reply_status(sock, dest, 0);
+}
+
+static void
+iscsi_cmnd_verbosity(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    UNUSED(size);
+    iscsi_reply_status(sock, dest, 
+                       iscsi_set_verbose(buffer) ? 0 : TE_EINVAL);
+}
+
+static void
+iscsi_cmnd_getverbosity(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    UNUSED(buffer);
+    UNUSED(size);
+    iscsi_reply(sock, dest, "ok", iscsi_get_verbose());
+}
+
+static void
+iscsi_cmnd_collapse(int sock, struct sockaddr_un *dest, int size, char *buffer)
+{
+    int collapse = devdata->phase_collapse;
+
+    UNUSED(buffer);
+    UNUSED(size);
+
+    if (strcmp(buffer, "true") == 0)
+        devdata->phase_collapse = 1;
+    else if (strcmp(buffer, "false") == 0)
+        devdata->phase_collapse = 0;
+    else if (strcmp(buffer, "keep") != 0)
+    {
+        iscsi_reply_status(sock, dest, TE_EPROTO);
+        return;
+    }
+    iscsi_reply(sock, dest, "ok", collapse ? "true" : "false");
+}
+
+static void
+iscsi_target_process_control_msg(int sock)
+{
+    static char msg_buf[MAX_CONTROL_MSG_SIZE];
+    int         read_bytes;
+    static iscsi_target_control_command commands[] =
+        {
+            {"set", iscsi_cmnd_set},
+            {"get", iscsi_cmnd_get},
+            {"restore", iscsi_cmnd_restore},
+            {"security", iscsi_cmnd_security},
+            {"getsecurity", iscsi_cmnd_getsecurity},
+            {"free", iscsi_cmnd_free},
+            {"mmap", iscsi_cmnd_mmap},
+            {"getparam", iscsi_cmnd_get_devparam},
+            {"sync", iscsi_cmnd_sync},
+            {"write", iscsi_cmnd_write},
+            {"read", iscsi_cmnd_read},
+            {"setfail", iscsi_cmnd_setfail},
+            {"tweak", iscsi_cmnd_tweak},
+            {"status", iscsi_cmnd_status},
+            {"reset", iscsi_cmnd_reset},
+            {"verbosity", iscsi_cmnd_verbosity},
+            {"getverbosity", iscsi_cmnd_getverbosity},
+            {"collapse", iscsi_cmnd_collapse},
+            {NULL, NULL}
+        };
+    iscsi_target_control_command *iter;
+    struct sockaddr_un source_addr;
+    socklen_t source_addr_len = sizeof(source_addr);
+    
+    source_addr.sun_family = AF_UNIX;
+    read_bytes = recvfrom(sock, msg_buf, sizeof(msg_buf) - 1, 0,
+                          (struct sockaddr *)&source_addr, 
+                          &source_addr_len);
+    if (read_bytes < 0)
+    {
+        if (errno == EINTR)
+            return;
+        ERROR("Error receiving control message: %s", strerror(errno));
+        return;
+    }
+    RING("Got control message '%s'", msg_buf);
+    for (iter = commands; iter->name != NULL; iter++)
+    {
+        if (strcmp(iter->name, msg_buf) == 0)
+        {
+            int len = strlen(iter->name);
+
+            if (read_bytes < len + 1)
+            {
+                iscsi_reply_status(sock, &source_addr, TE_EBADMSG);
+                return;
+            }
+            iter->handler(sock, &source_addr, read_bytes - len - 1, msg_buf + len + 1);
+            return;
+        }
+    }
+    iscsi_reply_status(sock, &source_addr, TE_ENOSYS);
+}
+
+te_errno
+iscsi_target_send_msg(te_errno (*process)(char *buf, int size, void *data),
+                      void *data,
+                      const char *msg, const char *fmt, ...)
+{
+    int sock = socket(AF_LOCAL, SOCK_DGRAM, 0);
+    int rc;
+    va_list args;
+    struct sockaddr_un address;
+    struct sockaddr_un local_address;
+    static char msg_buf[MAX_CONTROL_MSG_SIZE];
+    int size = sizeof(msg_buf);
+    
+    if (sock < 0)
+    {
+        rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
+        ERROR("%s(): Cannot create a socket: %r", __FUNCTION__, rc);
+        return rc;
+    }
+    address.sun_family = AF_LOCAL;
+    strcpy(address.sun_path, ISCSI_TARGET_CONTROL_SOCKET);
+
+    local_address.sun_family = AF_LOCAL;
+    memset(local_address.sun_path, 0, sizeof(local_address.sun_path));
+    sprintf(local_address.sun_path + 1, "iscsi-agent-socket-%d", getpid());
+    if (bind(sock, (struct sockaddr *)&local_address, sizeof(address)) < 0)
+    {
+        rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
+        ERROR("%s(): Cannot bind a socket: %r", __FUNCTION__, rc);
+        close(sock);
+        return rc;        
+    }
+    
+    va_start(args, fmt);
+    rc = iscsi_send_control_msg(sock, &address, msg, fmt, args);
+    va_end(args);
+    
+    if (rc != 0)
+    {
+        close(sock);
+        return rc;
+    }
+    rc = iscsi_wait_reply(sock, msg_buf, &size);
+    close(sock);
+
+    if (rc != 0)
+        return rc;
+    if (strcmp(msg_buf, "error") == 0)
+    {
+        rc = strtoul(msg_buf + strlen(msg_buf) + 1, NULL, 16);
+        return rc;
+    }
+    else if (strcmp(msg_buf, "ok") != 0)
+    {
+        ERROR("%s(): Invalid datagram received", __FUNCTION__);
+        return TE_RC(TE_ISCSI_TARGET, TE_EPROTO);
+    }
+    return process == NULL ? 0 : process(msg_buf + 3, size - 3, data);
+}
+
+te_errno
+iscsi_target_send_simple_msg(const char *msg, const char *arg)
+{
+    return (arg == NULL || *arg == '\0' ?
+            iscsi_target_send_msg(NULL, NULL, msg, NULL, 0) :
+            iscsi_target_send_msg(NULL, NULL, msg, "%s", arg));
+}
+
+te_bool
+iscsi_server_check(void)
+{
+    int sock = socket(AF_LOCAL, SOCK_DGRAM, 0);
+    int rc;
+
+    struct sockaddr_un address;
+    struct sockaddr_un local_address;
+    char msg_buf[16] = "";
+    int  size = sizeof(msg_buf) - 1;
+    
+    if (sock < 0)
+    {
+        rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
+        ERROR("%s(): Cannot create a socket: %r", __FUNCTION__, rc);
+        return FALSE;
+    }
+    address.sun_family = AF_LOCAL;
+    strcpy(address.sun_path, ISCSI_TARGET_CONTROL_SOCKET);
+
+    local_address.sun_family = AF_LOCAL;
+    memset(local_address.sun_path, 0, sizeof(local_address.sun_path));
+    sprintf(local_address.sun_path + 1, "iscsi-agent-socket-%d", getpid());
+    if (bind(sock, (struct sockaddr *)&local_address, sizeof(address)) < 0)
+    {
+        rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
+        ERROR("%s(): Cannot bind a socket: %r", __FUNCTION__, rc);
+        close(sock);
+        return FALSE;
+    }
+    
+    if (sendto(sock, "status", strlen("status") + 1, 0, 
+               (struct sockaddr *)&address, sizeof(address)) < 0)
+    {
+        close(sock);
+        return FALSE;
+    }
+
+    rc = iscsi_wait_reply(sock, msg_buf, &size);
+    close(sock);
+
+    return (rc != 0 ? FALSE : strcmp(msg_buf, "ok") == 0);
+}
+
+static void
+sigsegv_print_trace(int signo)
+{
+    char msg[] = "\n\n*** Segmentation fault:\n";
+    void *trace[10];
+    size_t size;
+
+    UNUSED(signo);
+
+    size = backtrace(trace, 10);
+    write(STDERR_FILENO, msg, sizeof(msg) - 1);
+    backtrace_symbols_fd(trace, size, STDERR_FILENO);
+    write(STDERR_FILENO, "\n", 1);
+    abort();
+}
 
 int
 iscsi_server_init(void)
 {
-    static te_bool already_initialized;
-    struct parameter_type *p;
+    SHARED struct parameter_type *p;
+
+    struct sigaction sig;
     
-    if (already_initialized)
+    sigemptyset(&sig.sa_mask);
+    sig.sa_flags = 0;
+    sig.sa_handler = connection_termination_handler;
+    sigaction(SIGCHLD, &sig, NULL);
+    sig.sa_handler = target_termination_handler;
+    sigaction(SIGTERM, &sig, NULL);
+    sigaction(SIGINT, &sig, NULL);
+    sig.sa_handler = sigsegv_print_trace;
+    sigaction(SIGSEGV, &sig, NULL);
+
+    RING("Starting iSCSI target");
+    fputs("starting iSCSI target\n", stderr);
+
+    if (shared_mem_init(ISCSI_TARGET_SHARED_MEMORY) != 0)
     {
-        WARN("iscsi_server_init() called twice");
-        return 0;
+        ERROR("Cannot initialize shared memory");
+        return EXIT_FAILURE;
     }
-    already_initialized = TRUE;
+
+    if (ipc_mutexes_init(1000) != 0)
+    {
+        ERROR("Unable to initalize locking subsystem");
+        return EXIT_FAILURE;
+    }
+
 
     if (scsi_target_init() != 0)
     {
-        TRACE_ERROR("Can't initialize SCSI target");
-        return -1;
+        ERROR("Can't initialize SCSI target");
+        return EXIT_FAILURE;
     }
     
     /* devdata init */
-    devdata = malloc(sizeof(struct iscsi_global));
+    devdata = shalloc(sizeof(struct iscsi_global));
 
-    memset(devdata, 0, sizeof(struct iscsi_global));
+    memset((void *)devdata, 0, sizeof(struct iscsi_global));
 
     INIT_LIST_HEAD(&devdata->session_list);
     INIT_LIST_HEAD(&devdata->bad_session_list);
 
-    pthread_mutex_init(&devdata->session_mutex, NULL);
-    pthread_mutex_init(&devdata->session_read_mutex, NULL);
-    sem_init(&devdata->server_sem, 0, 0);
+    devdata->session_mutex = ipc_mutex_alloc();
+    devdata->session_read_mutex = ipc_mutex_alloc();
 
-    devdata->param_tbl = malloc(MAX_CONFIG_PARAMS *
+    devdata->param_tbl = shalloc(MAX_CONFIG_PARAMS *
                                 sizeof(struct parameter_type));
-    if (!(devdata->param_tbl)) {
-
-        return -1;
+    if (!(devdata->param_tbl)) 
+    {
+        return EXIT_FAILURE;
     }
 
     /* Copy the default parameters */
-    param_tbl_init(*devdata->param_tbl);
+    param_tbl_init(devdata->param_tbl);
     /* chap and srp support - CHONG */
     devdata->auth_parameter.chap_local_ctx = CHAP_InitializeContext();
     devdata->auth_parameter.chap_peer_ctx = CHAP_InitializeContext();
     devdata->auth_parameter.srp_ctx = SRP_InitializeContext();
-    p = find_flag_parameter(TARGETPORTALGROUPTAG_FLAG, *devdata->param_tbl);
+    p = find_flag_parameter(TARGETPORTALGROUPTAG_FLAG, devdata->param_tbl);
     if (p != NULL)
         p->int_value = DEFAULT_TARGET_PORTAL_GROUP_TAG;
 
@@ -5425,25 +6436,49 @@ iscsi_server_init(void)
 	devdata->device = make_target_front_end();
 
 	if (!devdata->device) {
-		TRACE_ERROR("Device registration failed\n");
-        return -2;
+		ERROR("Device registration failed\n");
+        return EXIT_FAILURE;
 	}
 
 	devdata->device->dev_specific = (void *) devdata;
 
 	TRACE(DEBUG, "Registration complete");
 
-    return 0;
+    fputs("going to iSCSI target main loop\n", stderr);
+
+    return iscsi_server_main_loop();
 }
 
+int
+iscsi_target_connect(void)
+{
+    int sock = socket(AF_LOCAL, SOCK_STREAM, 0);
+
+    struct sockaddr_un destination;
+    
+    if (sock < 0)
+    {
+        ERROR("Cannot create socket: %s", strerror(errno));
+        return -1;
+    }
+    destination.sun_family = AF_LOCAL;
+    strcpy(destination.sun_path, ISCSI_TARGET_DATA_SOCKET);
+    if (connect(sock, (struct sockaddr *)&destination, sizeof(destination)) < 0)
+    {
+        ERROR("Cannot connect to a socket: %s", strerror(errno));
+        close(sock);
+        return -1;
+    }
+    return sock;
+}
 
 /* 
  * iscsi_rx_thread: This thread is responsible for receiving iSCSI PDUs
  * and messages from the Initiator and then figuring out what to do with
  * them
  */
-void *
-iscsi_server_rx_thread(void *param)
+static void
+iscsi_server_rx_main_loop(int send_recv_sock, SHARED iscsi_custom_data *custom)
 {
 	struct iscsi_conn *conn;
 	struct targ_error_rec err_rec;
@@ -5453,40 +6488,42 @@ iscsi_server_rx_thread(void *param)
 	uint32_t opcode;					/* extract 6-bit PDU opcode into here */
 	uint32_t local_itt;				/* convert 4-byte PDU ITT into here */
 	int err;
-    volatile te_bool terminate = FALSE;
-    iscsi_target_thread_params_t local_params;
     sigset_t mask;
     int reject_reason;
 
     /****************/ 
 
+    RING("New connection accepted at the target");
     sigemptyset(&mask);
     sigaddset(&mask, SIGINT);
-    pthread_sigmask(SIG_SETMASK, &mask, NULL);
+    sigprocmask(SIG_SETMASK, &mask, NULL);
 
-    local_params = *(iscsi_target_thread_params_t *)param;
-    free(param);
-    conn = build_conn_sess(local_params.send_recv_sock, local_params.custom_id,
+    conn = build_conn_sess(send_recv_sock, custom,
                            iscsi_portal_groups);
 
     if (conn == NULL)
     {
         TRACE_ERROR("Error init connection\n");
-        return NULL;
+        return;
     }
 #if 1
     memset(buffer, 0, sizeof(buffer));
 #endif
     
-    pthread_cleanup_push(iscsi_thread_cleanup, conn);
 	/* receive loop */
-	while (!terminate) 
+	while (terminate_target_process == 0) 
     {
 		/* receive iSCSI header */
 		err = iscsi_recv_msg(conn->conn_socket, ISCSI_HDR_LEN, buffer, 
                              conn->connection_flags);
 		if (err != ISCSI_HDR_LEN)
         {
+            if (errno == EINTR)
+            {
+                while (iscsi_custom_pending_changes())
+                    iscsi_manager(conn);
+                continue;
+            }
             TRACE_ERROR("Cannot read iSCSI header: %d", err);
             break;
         }
@@ -5560,7 +6597,7 @@ iscsi_server_rx_thread(void *param)
         {
             enqueue_reject(conn, reject_reason);
             targ_session_recovery(conn);
-            terminate = TRUE;
+            terminate_target_process++;
             continue;
         }
 
@@ -5571,7 +6608,7 @@ iscsi_server_rx_thread(void *param)
 				/* got Login request while in full feature phase */
 				TRACE_ERROR(" Got login request ITT %u in full feature "
 							"phase\n", local_itt);
-                terminate = TRUE;
+                terminate_target_process++;
                 continue;
 			}
             case ISCSI_INIT_TEXT_CMND:
@@ -5582,7 +6619,7 @@ iscsi_server_rx_thread(void *param)
 				if (handle_text_request(conn, conn->session, buffer) < 0) {
 					TRACE_ERROR("Trouble in handle_text_request, ITT %u\n",
 								local_itt);
-                    terminate = TRUE;
+                    terminate_target_process++;
                     continue;
 				}
 
@@ -5598,7 +6635,7 @@ iscsi_server_rx_thread(void *param)
 				if (handle_cmnd(conn, conn->session, buffer) < 0) {
 					TRACE_ERROR("Trouble in handle_cmnd, ITT %u\n",
 								local_itt);
-                    terminate = TRUE;
+                    terminate_target_process++;
                     continue;
 				}
 
@@ -5614,7 +6651,7 @@ iscsi_server_rx_thread(void *param)
 				if (handle_data(conn, conn->session, buffer) < 0) {
 					TRACE_ERROR("Trouble in handle_data, ITT %u\n",
 								local_itt);
-                    terminate = TRUE;
+                    terminate_target_process++;
                     continue;
 				}
                 
@@ -5630,7 +6667,7 @@ iscsi_server_rx_thread(void *param)
 				if (handle_task_mgt_command(conn, conn->session, buffer) < 0) {
 					TRACE_ERROR("Trouble in handle_task_mgt_cmnd, ITT %u\n",
 								local_itt);
-                    terminate = TRUE;
+                    terminate_target_process++;
                     continue;
 				}
 
@@ -5645,7 +6682,7 @@ iscsi_server_rx_thread(void *param)
 				if (handle_logout(conn, conn->session, buffer) < 0) {
 					TRACE_ERROR("Trouble in handle_logout, ITT %u\n",
 								local_itt);
-                    terminate = TRUE;
+                    terminate_target_process++;
                     continue;
 				}
 
@@ -5660,7 +6697,7 @@ iscsi_server_rx_thread(void *param)
 				if (handle_nopout(conn, conn->session, buffer) < 0) {
 					TRACE_ERROR("Trouble in handle_nopout, ITT %u\n",
 								local_itt);
-                    terminate = TRUE;
+                    terminate_target_process++;
                     continue;
 				}
 
@@ -5674,7 +6711,7 @@ iscsi_server_rx_thread(void *param)
 
 				if (handle_snack(conn, conn->session, buffer) < 0) {
 					TRACE_ERROR("Trouble in handle_snack\n");
-                    terminate = TRUE;
+                    terminate_target_process++;
                     continue;
 				}
 
@@ -5702,7 +6739,7 @@ iscsi_server_rx_thread(void *param)
 				/* Send a Reject PDU and escalate to session recovery */
 				enqueue_reject(conn, REASON_PROTOCOL_ERR);
 				targ_session_recovery(conn);
-                terminate = TRUE;
+                terminate_target_process++;
                 continue;
 			}
 
@@ -5714,7 +6751,7 @@ iscsi_server_rx_thread(void *param)
 				/* Send a Reject PDU and escalate to session recovery */
 				enqueue_reject(conn, REASON_COMMAND_NOT_SUPPORTED);
 				targ_session_recovery(conn);
-                terminate = TRUE;
+                terminate_target_process++;
                 continue;
 			}
 		} /* switch */
@@ -5724,80 +6761,55 @@ iscsi_server_rx_thread(void *param)
 
 	} /* while(!terminate) */
 
-    pthread_cleanup_pop(1);
-	return NULL;
+    iscsi_release_connection(conn);
 }
 
-static int iscsi_custom_id;
-
-int
-iscsi_start_new_session_group(void)
+static void
+iscsi_target_start_process(int data_socket)
 {
-    RING("Informing target that we are running a new test");
-    iscsi_custom_id = 0;
-    return 0;
-}
+    iscsi_target_process *process;
 
-/*
- * Create a pipe (using socketpair()) and start UNH Target Rx thread 
- * which works with one end of the pipe.
- *
- * @return Socket file descriptor or -1
- *
- * @todo Put it in appropriate place.
- */
-int
-iscsi_target_start_rx_thread(void)
-{
-    int                             rc;
-    iscsi_target_thread_params_t   *thread_params = NULL;
-    int                             conn_pipe[2] = { -1, -1 };
-    pthread_attr_t                  pthread_attr;
-    pthread_t                       thread;
-
-    thread_params = calloc(1, sizeof(*thread_params));
-    if (thread_params == NULL)
+    if (iscsi_target_num_of_connections == TE_ARRAY_LEN(iscsi_target_processes))
     {
-        ERROR("%s(): calloc() failed", __FUNCTION__);
-        goto error;
+        ERROR("Too many target connections, aborting");
+        close(data_socket);
+        return;
+    }
+    
+    process = iscsi_target_processes + (iscsi_target_num_of_connections++);
+    process->custom_data = iscsi_alloc_custom();
+    if (process->custom_data == NULL)
+    {
+        ERROR("Cannot allocate a custom data block");
+        close(data_socket);
+        return;
     }
 
-    if ((rc = socketpair(AF_LOCAL, SOCK_STREAM, 0, conn_pipe)) < 0)
+    process->pid = fork();
+
+    if (process->pid == 0)
     {
-        ERROR("%s(): socketpair(AF_LOCAL, SOCK_STREAM, 0) failed %d", 
-              __FUNCTION__, errno);
-        goto error;
+        struct sigaction sig;
+
+        sigemptyset(&sig.sa_mask);
+        sig.sa_flags = 0;
+        sig.sa_handler = iscsi_custom_change_sighandler;
+        sigaction(SIGUSR1, &sig, NULL);
+
+        close(iscsi_listening_fd);
+        close(iscsi_control_fd);
+        iscsi_server_rx_main_loop(data_socket, process->custom_data);
+        exit(0);
+    }
+    else if (process->pid == (pid_t)-1)
+    {
+        ERROR("Cannot fork: %s", strerror(errno));
+        close(data_socket);
+        return;
     }
 
-    thread_params->send_recv_sock = conn_pipe[0];
-    thread_params->custom_id      = iscsi_custom_id++;
-
-    if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
-        (rc = pthread_attr_setdetachstate(&pthread_attr,
-                                          PTHREAD_CREATE_DETACHED)) != 0)
-    {
-        ERROR("Cannot initialize pthread attribute variable: %d", rc);
-        goto error;
-    } 
-
-    /* TODO get and store pthread_t */
-    rc = pthread_create(&thread, &pthread_attr,
-                        iscsi_server_rx_thread, thread_params);
-    if (rc != 0)
-    {
-        ERROR("Cannot create a new iSCSI thread: %d", rc);
-        goto error;
-    } 
-
-    /* thread_params is owned by the thread */
-
-    return conn_pipe[1];
-
-error:
-    free(thread_params);
-    if (conn_pipe[0] != -1)
-        (void)close(conn_pipe[0]);
-    if (conn_pipe[1] != -1)
-        (void)close(conn_pipe[1]);
-    return -1;
+    process->alive = TRUE;
+    iscsi_bind_custom(process->custom_data, process->pid);
+    logfork_register_user("iSCSI Target connection");
+    close(data_socket);    
 }

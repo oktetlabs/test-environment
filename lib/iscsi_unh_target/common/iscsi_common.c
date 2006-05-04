@@ -84,7 +84,7 @@ print_payload(const void *buffer, int len)
         fptr += 3;
         if (fptr >= format + sizeof(format))
         {
-            RING("%s", format);
+            TRACE(DEBUG, "%s", format);
             fptr = format;
             memset(format, 0, sizeof(format));
         }
@@ -513,7 +513,7 @@ print_init_nopout(struct iscsi_init_nopout *cmd)
 	print_ttt(cmd->target_xfer_tag);
 	print_cmdsn_expstatsn(cmd->cmd_sn, cmd->exp_stat_sn);
 	print_rsvd_u64(2, cmd->rsvd2);
-	print_rsvd_u64(3, cmd->rsvd3);
+/*	print_rsvd_u64(3, cmd->rsvd3); */
 }
 
 void
@@ -831,3 +831,4 @@ int target_in_use(uint32_t target_id)
 
     return 0;
 }
+
