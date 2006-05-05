@@ -36,6 +36,7 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
 #if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
