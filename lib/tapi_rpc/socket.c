@@ -1161,13 +1161,15 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
 int
 rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                    int s, rpc_socklevel level, rpc_sockopt optname,
-                   void *optval, socklen_t *optlen, socklen_t roptlen)
+                   void *optval, void *raw_optval,
+                   socklen_t *raw_optlen, socklen_t raw_roptlen)
 {
     tarpc_getsockopt_in   in;
     tarpc_getsockopt_out  out;    
     struct option_value   val;
-    char                  opt_len_str[32];
-    char                  opt_val_str[4096] = {};
+    char                  opt_len_str[32] = "(nil)";
+    char                  opt_val_str[4096] = { 0, };
+    char                  raw_val_str[1024] = "(nil)";
     
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1182,7 +1184,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
      * Validate roptlen vs *optlen.
      * roptlen makes sence, iff optval is not NULL.
      */
-    if (optlen != NULL && optval != NULL && *optlen > roptlen)
+    if (raw_optlen != NULL && raw_optval != NULL &&
+        *raw_optlen > raw_roptlen)
     {
         rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(getsockopt, -1);
@@ -1194,21 +1197,20 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
     in.level = level;
     in.optname = optname;
 
-    if (roptlen == RPC_OPTLEN_AUTO)
+    if (optval != NULL || raw_optlen != NULL)
     {
-        TE_SPRINTF(opt_len_str, "AUTO");
-        in.optlen.optlen_len = 1;
-        in.optlen.optlen_val = &roptlen;
-    }
-    else if (optlen != NULL)
-    {
-        TE_SPRINTF(opt_len_str, "%p(%u)", optlen, (unsigned)*optlen);
-        in.optlen.optlen_len = 1;
-        in.optlen.optlen_val = optlen;
-    }
-    else
-    {
-        TE_SPRINTF(opt_len_str, "%p", NULL);
+        opt_len_str[0] = '\0';
+        if (optval != NULL)
+        {
+            TE_SPRINTF(opt_len_str, "AUTO");
+        }
+        if (raw_optlen != NULL)
+        {
+            snprintf(opt_len_str + strlen(opt_len_str),
+                     sizeof(opt_len_str) - strlen(opt_len_str),
+                     "%s%u",  (optval != NULL) ? "+" : "",
+                     (unsigned)*raw_optlen);
+        }
     }
 
     if (optval != NULL)
@@ -1220,60 +1222,20 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
         switch (optname)
         {
-            case RPC_SO_ACCEPTFILTER:
-            case RPC_SO_BINDTODEVICE:
-                val.opttype = OPT_STRING;
-                val.option_value_u.opt_string.opt_string_len = 
-                    (roptlen == RPC_OPTLEN_AUTO) ?
-                    MIN(IFNAMSIZ, strlen(optval) + 1) : roptlen;
-                val.option_value_u.opt_string.opt_string_val =
-                    (char *)optval;
-                break;
-
             case RPC_SO_LINGER:
                 val.opttype = OPT_LINGER;
-                if (roptlen == RPC_OPTLEN_AUTO ||
-                    roptlen >= sizeof(tarpc_linger))
-                {
-                    val.option_value_u.opt_linger.l_onoff =
-                        ((tarpc_linger *)optval)->l_onoff;
-                    val.option_value_u.opt_linger.l_linger =
-                        ((tarpc_linger *)optval)->l_linger;
-                }
-                else
-                {
-                    WARN("Length of socket option %s value is less than "
-                         "sizeof(tarpc_linger)=%u, value is ignored",
-                         sockopt_rpc2str(optname),
-                         sizeof(tarpc_linger));
-                }
+                val.option_value_u.opt_linger.l_onoff =
+                    ((tarpc_linger *)optval)->l_onoff;
+                val.option_value_u.opt_linger.l_linger =
+                    ((tarpc_linger *)optval)->l_linger;
                 break;
 
             case RPC_SO_RCVTIMEO:
             case RPC_SO_SNDTIMEO:
                 val.opttype = OPT_TIMEVAL;
-                if (roptlen == RPC_OPTLEN_AUTO ||
-                    roptlen >= sizeof(tarpc_timeval))
-                {
-                    val.option_value_u.opt_timeval =
-                        *((tarpc_timeval *)optval);
-                }
-                else
-                {
-                    WARN("Length of socket option %s value is less than "
-                         "sizeof(tarpc_timeval)=%u, value is ignored",
-                         sockopt_rpc2str(optname), sizeof(tarpc_timeval));
-                }
+                val.option_value_u.opt_timeval =
+                    *((tarpc_timeval *)optval);
                 break;
-
-            case RPC_SO_PROTOCOL_INFOA:
-            case RPC_SO_PROTOCOL_INFOW:
-            {
-                val.opttype = OPT_RAW_DATA;
-                val.option_value_u.opt_raw.opt_raw_len = roptlen;
-                val.option_value_u.opt_raw.opt_raw_val = (char *)optval;
-                break;
-            }
 
             case RPC_IPV6_PKTOPTIONS:
                 ERROR("IPV6_PKTOPTIONS is not supported yet");
@@ -1315,196 +1277,106 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                        &opt->address, sizeof(opt->address));
                 val.option_value_u.opt_mreqn.imr_ifindex = opt->ifindex;
                         
-#if 0
-                /* Don't know how to fix it, since do not understand it */
-                if (opt->len_diff == 0)
-                    optlen_copy = RPC_OPTLEN_AUTO;
-#endif
                 break;
             }
 
             case RPC_TCP_INFO:
                 val.opttype = OPT_TCP_INFO;
-                if (roptlen == RPC_OPTLEN_AUTO || 
-                    roptlen >= sizeof(struct tcp_info))
-                {
+
 #define COPY_TCP_INFO_FIELD(_name) \
-                    val.option_value_u.opt_tcp_info._name = \
-                        ((struct tcp_info *)optval)->_name
+    val.option_value_u.opt_tcp_info._name = \
+        ((struct tcp_info *)optval)->_name
 
-                    COPY_TCP_INFO_FIELD(tcpi_state);
-                    COPY_TCP_INFO_FIELD(tcpi_ca_state);
-                    COPY_TCP_INFO_FIELD(tcpi_retransmits);
-                    COPY_TCP_INFO_FIELD(tcpi_probes);
-                    COPY_TCP_INFO_FIELD(tcpi_backoff);
-                    COPY_TCP_INFO_FIELD(tcpi_options);
-                    COPY_TCP_INFO_FIELD(tcpi_snd_wscale);
-                    COPY_TCP_INFO_FIELD(tcpi_rcv_wscale);
-                    COPY_TCP_INFO_FIELD(tcpi_rto);
-                    COPY_TCP_INFO_FIELD(tcpi_ato);
-                    COPY_TCP_INFO_FIELD(tcpi_snd_mss);
-                    COPY_TCP_INFO_FIELD(tcpi_rcv_mss);
-                    COPY_TCP_INFO_FIELD(tcpi_unacked);
-                    COPY_TCP_INFO_FIELD(tcpi_sacked);
-                    COPY_TCP_INFO_FIELD(tcpi_lost);
-                    COPY_TCP_INFO_FIELD(tcpi_retrans);
-                    COPY_TCP_INFO_FIELD(tcpi_fackets);
-                    COPY_TCP_INFO_FIELD(tcpi_last_data_sent);
-                    COPY_TCP_INFO_FIELD(tcpi_last_ack_sent);
-                    COPY_TCP_INFO_FIELD(tcpi_last_data_recv);
-                    COPY_TCP_INFO_FIELD(tcpi_last_ack_recv);
-                    COPY_TCP_INFO_FIELD(tcpi_pmtu);
-                    COPY_TCP_INFO_FIELD(tcpi_rcv_ssthresh);
-                    COPY_TCP_INFO_FIELD(tcpi_rtt);
-                    COPY_TCP_INFO_FIELD(tcpi_rttvar);
-                    COPY_TCP_INFO_FIELD(tcpi_snd_ssthresh);
-                    COPY_TCP_INFO_FIELD(tcpi_snd_cwnd);
-                    COPY_TCP_INFO_FIELD(tcpi_advmss);
-                    COPY_TCP_INFO_FIELD(tcpi_reordering);
+                COPY_TCP_INFO_FIELD(tcpi_state);
+                COPY_TCP_INFO_FIELD(tcpi_ca_state);
+                COPY_TCP_INFO_FIELD(tcpi_retransmits);
+                COPY_TCP_INFO_FIELD(tcpi_probes);
+                COPY_TCP_INFO_FIELD(tcpi_backoff);
+                COPY_TCP_INFO_FIELD(tcpi_options);
+                COPY_TCP_INFO_FIELD(tcpi_snd_wscale);
+                COPY_TCP_INFO_FIELD(tcpi_rcv_wscale);
+                COPY_TCP_INFO_FIELD(tcpi_rto);
+                COPY_TCP_INFO_FIELD(tcpi_ato);
+                COPY_TCP_INFO_FIELD(tcpi_snd_mss);
+                COPY_TCP_INFO_FIELD(tcpi_rcv_mss);
+                COPY_TCP_INFO_FIELD(tcpi_unacked);
+                COPY_TCP_INFO_FIELD(tcpi_sacked);
+                COPY_TCP_INFO_FIELD(tcpi_lost);
+                COPY_TCP_INFO_FIELD(tcpi_retrans);
+                COPY_TCP_INFO_FIELD(tcpi_fackets);
+                COPY_TCP_INFO_FIELD(tcpi_last_data_sent);
+                COPY_TCP_INFO_FIELD(tcpi_last_ack_sent);
+                COPY_TCP_INFO_FIELD(tcpi_last_data_recv);
+                COPY_TCP_INFO_FIELD(tcpi_last_ack_recv);
+                COPY_TCP_INFO_FIELD(tcpi_pmtu);
+                COPY_TCP_INFO_FIELD(tcpi_rcv_ssthresh);
+                COPY_TCP_INFO_FIELD(tcpi_rtt);
+                COPY_TCP_INFO_FIELD(tcpi_rttvar);
+                COPY_TCP_INFO_FIELD(tcpi_snd_ssthresh);
+                COPY_TCP_INFO_FIELD(tcpi_snd_cwnd);
+                COPY_TCP_INFO_FIELD(tcpi_advmss);
+                COPY_TCP_INFO_FIELD(tcpi_reordering);
+
 #undef COPY_TCP_INFO_FIELD
-                }
-                else
-                {
-                    WARN("Length of socket option %s value is less than "
-                         "sizeof(struct tcp_info)=%u, value is ignored",
-                         sockopt_rpc2str(optname), sizeof(struct tcp_info));
-                }
-                break;
 
-            case RPC_IP_OPTIONS:
-            {
-                tarpc_ip_opts *opt = optval;
-
-                if (roptlen != RPC_OPTLEN_AUTO)
-                {
-                    ERROR("IP_OPTIONS can't be used with "
-                          "non-automatic length");
-                    rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
-                    RETVAL_INT(getsockopt, -1);
-                }
-                if (opt->ip_opts.ip_opts_val == NULL &&
-                    opt->ip_opts.ip_opts_len != 0)
-                {
-                    ERROR("Invalid IP_OPTIONS socket option value");
-                    rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
-                    RETVAL_INT(getsockopt, -1);
-                }
-                val.opttype = OPT_IP_OPTS;
-                val.option_value_u.opt_ip_opts = *(tarpc_ip_opts *)optval;
                 break;
-            }
 
             case RPC_IPV6_NEXTHOP:
-            {
                 val.opttype = OPT_IPADDR6;
-                /* BUG here - roptlen may be too big */
                 memcpy(val.option_value_u.opt_ipaddr6, optval,
-                       (roptlen == RPC_OPTLEN_AUTO) ?
-                           sizeof(val.option_value_u.opt_ipaddr6) :
-                           roptlen);
+                       sizeof(val.option_value_u.opt_ipaddr6));
                 break;
-            }
 
             default:
                 val.opttype = OPT_INT;
-                if (roptlen == RPC_OPTLEN_AUTO ||
-                    roptlen >= sizeof(int))
-                {
-                    val.option_value_u.opt_int = *(int *)optval;
-                }
-                else
-                {
-                    WARN("Length of socket option %s value is less than "
-                         "sizeof(int)=%u, value is ignored",
-                         sockopt_rpc2str(optname), sizeof(int));
-                }
+                val.option_value_u.opt_int = *(int *)optval;
                 break;
         }
+    }
+    if (raw_optval != NULL)
+    {
+        in.raw_optval.raw_optval_len = raw_roptlen;
+        in.raw_optval.raw_optval_val = raw_optval;
+    }
+    if (raw_optlen != NULL)
+    {
+        in.raw_optlen.raw_optlen_len = 1;
+        in.raw_optlen.raw_optlen_val = raw_optlen;
     }
 
     rcf_rpc_call(rpcs, "getsockopt", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
-        if (optlen != NULL)
-        {
-            *optlen = out.optlen.optlen_val[0];
-        }
         if (optval != NULL)
         {
             switch (optname)
             {
-                case RPC_SO_ACCEPTFILTER:
-                case RPC_SO_BINDTODEVICE:
-                {
-                    if (optlen != NULL)
-                    {
-                        char *buf;
-
-                        *optlen = strlen(out.optval.optval_val[0].
-                                        option_value_u.opt_string.
-                                        opt_string_val);
-
-                        if ((buf = (char *)malloc(*optlen + 1)) == NULL)
-                        {
-                            ERROR("No memory available");
-                            RETVAL_INT(getsockopt, -1);
-                        }
-                        buf[*optlen] = '\0';
-
-                        /* FIXME Is it sufficient space in optval buffer */
-                        memcpy(optval, out.optval.optval_val[0].
-                               option_value_u.opt_string.opt_string_val,
-                               *optlen);
-                        memcpy(buf, optval, *optlen);
-                        snprintf(opt_val_str, sizeof(opt_val_str),
-                                 "{ %s%s }",
-                                 buf, (strlen(buf) == *optlen) ?
-                                 " without trailing zero" : "");
-
-                        free(buf);
-                    }
-                    break;
-                }
-
                 case RPC_SO_LINGER:
-                    if (roptlen >= sizeof(tarpc_linger))
-                    {
-                        ((tarpc_linger *)optval)->l_onoff =
-                            out.optval.optval_val[0].option_value_u.
-                                opt_linger.l_onoff;
-                        ((tarpc_linger *)optval)->l_linger =
-                           out.optval.optval_val[0].option_value_u.
-                                opt_linger.l_linger;
-                        snprintf(opt_val_str, sizeof(opt_val_str),
-                                 "{ l_onoff: %d, l_linger: %d }",
-                                 ((tarpc_linger *)optval)->l_onoff,
-                                 ((tarpc_linger *)optval)->l_linger);
-                    }
+                    ((tarpc_linger *)optval)->l_onoff =
+                        out.optval.optval_val[0].option_value_u.
+                            opt_linger.l_onoff;
+                    ((tarpc_linger *)optval)->l_linger =
+                       out.optval.optval_val[0].option_value_u.
+                            opt_linger.l_linger;
+                    snprintf(opt_val_str, sizeof(opt_val_str),
+                             "{ l_onoff: %d, l_linger: %d }",
+                             ((tarpc_linger *)optval)->l_onoff,
+                             ((tarpc_linger *)optval)->l_linger);
                     break;
 
                 case RPC_SO_RCVTIMEO:
                 case RPC_SO_SNDTIMEO:
-                    if (roptlen >= sizeof(tarpc_timeval))
-                    {
-                        *((tarpc_timeval *)optval) =
-                            out.optval.optval_val[0].option_value_u.
-                                opt_timeval;
+                    *((tarpc_timeval *)optval) =
+                        out.optval.optval_val[0].option_value_u.
+                            opt_timeval;
+                    snprintf(opt_val_str, sizeof(opt_val_str),
+                             "{ tv_sec: %" TE_PRINTF_64 "d, "
+                             "tv_usec: %" TE_PRINTF_64 "d }",
+                             ((tarpc_timeval *)optval)->tv_sec,
+                             ((tarpc_timeval *)optval)->tv_usec);
+                    break;
 
-                        snprintf(opt_val_str, sizeof(opt_val_str),
-                                 "{ tv_sec: %" TE_PRINTF_64 "d, "
-                                 "tv_usec: %" TE_PRINTF_64 "d }",
-                                 ((tarpc_timeval *)optval)->tv_sec,
-                                 ((tarpc_timeval *)optval)->tv_usec);
-                    }
-                    break;
-                case RPC_SO_PROTOCOL_INFOA:
-                case RPC_SO_PROTOCOL_INFOW:
-                {
-                    memcpy(optval, out.optval.optval_val[0].
-                               option_value_u.opt_raw.opt_raw_val, *optlen);
-                    break;
-                }
                 case RPC_IP_ADD_MEMBERSHIP:
                 case RPC_IP_DROP_MEMBERSHIP:
                 case RPC_IP_MULTICAST_IF:
@@ -1526,8 +1398,6 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 }
 
                 case RPC_TCP_INFO:
-                    if (roptlen >= sizeof(struct tcp_info))
-                    {
 #define COPY_TCP_INFO_FIELD(_name) \
     do {                                                 \
         ((struct tcp_info *)optval)->_name =             \
@@ -1575,49 +1445,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                              sizeof(opt_val_str) - strlen(opt_val_str),
                              " }");
 #undef COPY_TCP_INFO_FIELD
-                }
-                else
-                {
-                    WARN("Length of socket option %s value is less than "
-                         "sizeof(struct tcp_info)=%u, value is ignored",
-                         sockopt_rpc2str(optname), sizeof(struct tcp_info));
-                }
-                break;
-                
-                case RPC_IP_OPTIONS:
-                {
-                    tarpc_ip_opts *opt = optval;
-
-                    if ((optlen != NULL || roptlen == RPC_OPTLEN_AUTO) &&
-                        (out.optlen.optlen_val[0] > 0))
-                    {
-                        opt->ip_dst_set =
-                            out.optval.optval_val[0].option_value_u.
-                                opt_ip_opts.ip_dst_set;
-                        if (opt->ip_dst_set)
-                        {
-                            opt->ip_dst =
-                                out.optval.optval_val[0].option_value_u.
-                                    opt_ip_opts.ip_dst;
-                        }
-                        opt->ip_opts.ip_opts_len = out.optlen.optlen_val[0];
-                        memcpy(opt->ip_opts.ip_opts_val,
-                               out.optval.optval_val[0].option_value_u.
-                                   opt_ip_opts.ip_opts.ip_opts_val,
-                               opt->ip_opts.ip_opts_len);
-                        snprintf(opt_val_str, sizeof(opt_val_str),
-                                 "{ TODO }");
-                    }
-                    else
-                    {
-                        opt->ip_dst_set = FALSE;
-                        opt->ip_opts.ip_opts_len = 0;
-                        snprintf(opt_val_str, sizeof(opt_val_str),
-                                 "{ <empty> }");
-                    }
                     break;
-                }
-
+                
                 case RPC_IPV6_NEXTHOP:
                     memcpy(optval,
                            out.optval.optval_val[0].option_value_u.
@@ -1628,38 +1457,58 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     snprintf(opt_val_str + strlen(opt_val_str),
                              sizeof(opt_val_str) - strlen(opt_val_str),
                              " }");
-                break;
+                    break;
 
                 default:
-                    if (roptlen >= sizeof(int))
+                    *(int *)optval =
+                        out.optval.optval_val[0].option_value_u.opt_int;
+                    if (level == RPC_SOL_SOCKET &&
+                        optname == RPC_SO_ERROR)
                     {
-                        *(int *)optval =
-                            out.optval.optval_val[0].option_value_u.opt_int;
-                        if (level == RPC_SOL_SOCKET &&
-                            optname == RPC_SO_ERROR)
-                        {
-                            snprintf(opt_val_str, sizeof(opt_val_str),
-                                     "%s", te_rc_err2str(*(int *)optval));
-                        }
-                        else
-                        {
-                            snprintf(opt_val_str, sizeof(opt_val_str),
-                                     "%d", *(int *)optval);
-                        }
+                        snprintf(opt_val_str, sizeof(opt_val_str),
+                                 "%s", te_rc_err2str(*(int *)optval));
+                    }
+                    else
+                    {
+                        snprintf(opt_val_str, sizeof(opt_val_str),
+                                 "%d", *(int *)optval);
                     }
                     break;
             }
+        }
+        if (raw_optlen != NULL)
+        {
+            *raw_optlen = *out.raw_optlen.raw_optlen_val;
+        }
+        if (raw_optval != NULL)
+        {
+            unsigned int i;
+
+            memcpy(raw_optval, out.raw_optval.raw_optval_val,
+                   out.raw_optval.raw_optval_len);
+
+            snprintf(raw_val_str, sizeof(raw_val_str), "[");
+            for (i = 0; i < (raw_optlen == NULL ? 0 : *raw_optlen); ++i)
+            {
+                snprintf(raw_val_str + strlen(raw_val_str),
+                         sizeof(raw_val_str) - strlen(raw_val_str),
+                         " %#02x", ((uint8_t *)raw_optval)[i]);
+            }
+            snprintf(raw_val_str + strlen(raw_val_str),
+                     sizeof(raw_val_str) - strlen(raw_val_str), " ]");
         }
     }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(getsockopt, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s): getsockopt(%d, %s, %s, %p, %s) "
-                 "-> %d (%s) optlen=%d optval=%s", rpcs->ta, rpcs->name,
+                 "-> %d (%s) optval=%s raw_optval=%s raw_optlen=%d",
+                 rpcs->ta, rpcs->name,
                  s, socklevel_rpc2str(level), sockopt_rpc2str(optname),
-                 optval, opt_len_str,
+                 optval != NULL ? optval : raw_optval, opt_len_str,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 (optlen == NULL) ? -1 : (int)*optlen, opt_val_str);
+                 opt_val_str, raw_val_str,
+                 (raw_optlen == NULL) ? -1 : (int)*raw_optlen);
 
     RETVAL_INT(getsockopt, out.retval);
 }
@@ -1667,13 +1516,15 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 int
 rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                    int s, rpc_socklevel level, rpc_sockopt optname,
-                   const void *optval, socklen_t optlen)
+                   const void *optval,
+                   const void *raw_optval, socklen_t raw_optlen,
+                   socklen_t raw_roptlen)
 {
     tarpc_setsockopt_in  in;
     tarpc_setsockopt_out out;
     struct option_value  val;
-    char                 opt_val_str[128] = {};
-    socklen_t            optlen_cpy = optlen;
+    char                 opt_len_str[32] = { 0, };
+    char                 opt_val_str[128] = "(nil)";
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1683,12 +1534,34 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(setsockopt, -1);
     }
+    if (raw_optval == NULL && raw_roptlen != 0)
+    {
+        ERROR("%s(): 'raw_roptlen' must be 0, if 'raw_optval' is NULL",
+              __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
+        RETVAL_INT(setsockopt, -1);
+    }
+    if (raw_optval != NULL && raw_roptlen < raw_optlen)
+    {
+        ERROR("%s(): 'raw_roptlen' must be greater or equal to "
+              "'raw_optlen'", __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
+        RETVAL_INT(setsockopt, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.s = s;
     in.level = level;
     in.optname = optname;
-    in.optlen = optlen; /* optlen is corrected to auto automatically! */
-    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.raw_optlen = raw_optlen;
+
+    if (optval != NULL)
+        TE_SPRINTF(opt_len_str, "AUTO");
+    if (raw_optval != NULL || raw_optlen != 0 || optval == NULL)
+        snprintf(opt_len_str + strlen(opt_len_str),
+                 sizeof(opt_len_str) - strlen(opt_len_str),
+                 "%s%u", optval != NULL ? "+" : "", (unsigned)raw_optlen);
 
     if (optval != NULL)
     {
@@ -1696,80 +1569,26 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
         in.optval.optval_val = &val;
         switch (optname)
         {
-            case RPC_SO_ACCEPTFILTER:
-            case RPC_SO_BINDTODEVICE:
-            {
-                char *buf;
-
-                if (optlen == RPC_OPTLEN_AUTO)
-                    in.optlen = optlen = strlen(optval) + 1;
-
-                val.opttype = OPT_STRING;
-                val.option_value_u.opt_string.opt_string_len = optlen;
-                val.option_value_u.opt_string.opt_string_val =
-                    (char *)optval;
-
-                if ((buf = (char *)malloc(optlen + 1)) == NULL)
-                {
-                    ERROR("No memory available");
-                    rpcs->_errno = TE_RC(TE_TAPI, TE_ENOMEM);
-                    RETVAL_INT(setsockopt, -1);
-                }
-                buf[optlen] = '\0';
-
-                memcpy(buf, optval, optlen);
-                snprintf(opt_val_str, sizeof(opt_val_str),
-                         "{ %s%s }",
-                         buf, (strlen(buf) == optlen) ?
-                         " without trailing zero" : "");
-                free(buf);
-                break;
-            }
-
             case RPC_SO_LINGER:
-                if (optlen == RPC_OPTLEN_AUTO ||
-                    optlen >= sizeof(tarpc_linger))
-                {
-                    val.opttype = OPT_LINGER;
-                    val.option_value_u.opt_linger =
-                        *((tarpc_linger *)optval);
-                    snprintf(opt_val_str, sizeof(opt_val_str),
-                             "{ l_onoff: %d, l_linger: %d }",
-                             ((tarpc_linger *)optval)->l_onoff,
-                             ((tarpc_linger *)optval)->l_linger);
-                }
-                else
-                {
-                    WARN("Option value buffer is too short to have "
-                         "SO_LINGER value - consider as raw data");
-                    val.opttype = OPT_RAW_DATA;
-                    val.option_value_u.opt_raw.opt_raw_len = optlen;
-                    val.option_value_u.opt_raw.opt_raw_val = (char *)optval;
-                }
+                val.opttype = OPT_LINGER;
+                val.option_value_u.opt_linger =
+                    *((tarpc_linger *)optval);
+                snprintf(opt_val_str, sizeof(opt_val_str),
+                         "{ l_onoff: %d, l_linger: %d }",
+                         ((tarpc_linger *)optval)->l_onoff,
+                         ((tarpc_linger *)optval)->l_linger);
                 break;
 
             case RPC_SO_RCVTIMEO:
             case RPC_SO_SNDTIMEO:
-                if (optlen == RPC_OPTLEN_AUTO ||
-                    optlen >= sizeof(tarpc_linger))
-                {
-                    val.opttype = OPT_TIMEVAL;
-                    val.option_value_u.opt_timeval =
-                        *((tarpc_timeval *)optval);
-                    snprintf(opt_val_str, sizeof(opt_val_str),
-                             "{ tv_sec: %" TE_PRINTF_64 "d, "
-                             "tv_usec: %" TE_PRINTF_64 "d }",
-                             ((tarpc_timeval *)optval)->tv_sec,
-                             ((tarpc_timeval *)optval)->tv_usec);
-                }
-                else
-                {
-                    WARN("Option value buffer is too short to have "
-                         "SO_*TIMEO value - consider as raw data");
-                    val.opttype = OPT_RAW_DATA;
-                    val.option_value_u.opt_raw.opt_raw_len = optlen;
-                    val.option_value_u.opt_raw.opt_raw_val = (char *)optval;
-                }
+                val.opttype = OPT_TIMEVAL;
+                val.option_value_u.opt_timeval =
+                    *((tarpc_timeval *)optval);
+                snprintf(opt_val_str, sizeof(opt_val_str),
+                         "{ tv_sec: %" TE_PRINTF_64 "d, "
+                         "tv_usec: %" TE_PRINTF_64 "d }",
+                         ((tarpc_timeval *)optval)->tv_sec,
+                         ((tarpc_timeval *)optval)->tv_usec);
                 break;
 
             case RPC_IPV6_PKTOPTIONS:
@@ -1800,9 +1619,6 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 val.option_value_u.opt_mreq6.ipv6mr_ifindex =
                     ((struct ipv6_mreq *)optval)->ipv6mr_interface;
 
-                if (optlen == sizeof(struct ipv6_mreq))
-                    in.optlen = RPC_OPTLEN_AUTO;
-
                 snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ multiaddr: %s, ifindex: %d }",
                          buf, val.option_value_u.opt_mreq6.ipv6mr_ifindex);
@@ -1819,9 +1635,6 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 char addr_buf2[INET_ADDRSTRLEN];
 
                 val.opttype = opt->type;
-                optlen_cpy = (signed)optlen_cpy + opt->len_diff;
-                in.optlen = (opt->len_diff == 0) ?
-                            RPC_OPTLEN_AUTO : optlen_cpy;
                         
                 switch (opt->type)
                 {
@@ -1907,69 +1720,49 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
             case RPC_SO_UPDATE_ACCEPT_CONTEXT:
                 val.opttype = OPT_HANDLE;
                 val.option_value_u.opt_handle = *(int *)optval;
-                if (optlen == sizeof(int))
-                    in.optlen = RPC_OPTLEN_AUTO;
                 break;
-
-
-            case RPC_IP_OPTIONS:
-            {
-                tarpc_ip_opts *opt = (tarpc_ip_opts *)optval;
-
-                if (optlen != RPC_OPTLEN_AUTO)
-                {
-                    ERROR("IP_OPTIONS can't be used with "
-                          "non-automatic length");
-                    rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
-                    RETVAL_INT(setsockopt, -1);
-                }
-                if (opt->ip_opts.ip_opts_val == NULL &&
-                    opt->ip_opts.ip_opts_len != 0)
-                {
-                    ERROR("Invalid IP_OPTIONS socket option value");
-                    rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
-                    RETVAL_INT(setsockopt, -1);
-                }
-                val.opttype = OPT_IP_OPTS;                
-                val.option_value_u.opt_ip_opts = *opt;
-                break;
-            }
 
             case RPC_IPV6_NEXTHOP:
                 val.opttype = OPT_IPADDR6;
                 memcpy(val.option_value_u.opt_ipaddr6, optval,
-                       MIN(optlen, sizeof(struct in6_addr)));
+                       sizeof(struct in6_addr));
                 break;
 
             default:
-                if (optlen == RPC_OPTLEN_AUTO ||
-                    optlen >= sizeof(int))
-                {
-                    val.opttype = OPT_INT;
-                    val.option_value_u.opt_int = *(int *)optval;
-                    snprintf(opt_val_str, sizeof(opt_val_str), "%d",
-                             *(int *)optval);
-                }
-                else
-                {
-                    WARN("Option value buffer is too short to have "
-                         "integer value - consider as raw data");
-                    val.opttype = OPT_RAW_DATA;
-                    val.option_value_u.opt_raw.opt_raw_len = optlen;
-                    val.option_value_u.opt_raw.opt_raw_val = (char *)optval;
-                }
+                val.opttype = OPT_INT;
+                val.option_value_u.opt_int = *(int *)optval;
+                snprintf(opt_val_str, sizeof(opt_val_str), "%d",
+                         *(int *)optval);
                 break;
         }
+    }
+
+    if (raw_optval != NULL)
+    {
+        unsigned int i;
+
+        in.raw_optval.raw_optval_len = raw_roptlen;
+        in.raw_optval.raw_optval_val = (void *)raw_optval;
+        if (optval == NULL)
+            opt_val_str[0] = '\0';
+        snprintf(opt_val_str + strlen(opt_val_str),
+                 sizeof(opt_val_str) - strlen(opt_val_str), "[");
+        for (i = 0; i < raw_roptlen; ++i)
+            snprintf(opt_val_str + strlen(opt_val_str),
+                     sizeof(opt_val_str) - strlen(opt_val_str),
+                     " %#02x", ((uint8_t *)raw_optval)[i]);
+        snprintf(opt_val_str + strlen(opt_val_str),
+                 sizeof(opt_val_str) - strlen(opt_val_str), " ]");
     }
 
     rcf_rpc_call(rpcs, "setsockopt", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(setsockopt, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s): setsockopt(%d, %s, %s, %p(%s), %d) "
+    TAPI_RPC_LOG("RPC (%s,%s): setsockopt(%d, %s, %s, %s, %s) "
                  "-> %d (%s)", rpcs->ta, rpcs->name,
                  s, socklevel_rpc2str(level), sockopt_rpc2str(optname),
-                 optval, opt_val_str, optlen_cpy,
+                 opt_val_str, opt_len_str,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(setsockopt, out.retval);

@@ -1857,19 +1857,16 @@ struct tarpc_poll_out {
  */
  
 enum option_type {
-    OPT_INT             = 1,
-    OPT_LINGER          = 2,
-    OPT_TIMEVAL         = 3,
-    OPT_MREQN           = 4,
-    OPT_MREQ            = 5,
-    OPT_IPADDR          = 6,
-    OPT_STRING          = 7,
-    OPT_TCP_INFO        = 8,
-    OPT_HANDLE          = 9,
-    OPT_MREQ6           = 10,
-    OPT_RAW_DATA        = 11,
-    OPT_IP_OPTS         = 12,
-    OPT_IPADDR6         = 13
+    OPT_INT         = 1,
+    OPT_LINGER      = 2,
+    OPT_TIMEVAL     = 3,
+    OPT_MREQN       = 4,
+    OPT_MREQ        = 5,
+    OPT_MREQ6       = 6,
+    OPT_IPADDR      = 7,
+    OPT_IPADDR6     = 8,
+    OPT_TCP_INFO    = 9,
+    OPT_HANDLE      = 10
 };
 
 struct tarpc_linger {
@@ -1883,17 +1880,6 @@ struct option_value_mreqn {
     tarpc_int   imr_ifindex;    /**< Interface index */
 };
 
-struct option_value_mreq6 {
-     uint32_t            ipv6mr_multiaddr<>;
-     tarpc_int           ipv6mr_ifindex;
-};
-
-
-struct option_value_mreq{
-    uint32_t    imr_multiaddr;  /**< IP multicast group address */
-    uint32_t    imr_address;    /**< IP address of local interface */
-};    
-
 struct tarpc_mreqn {
     enum option_type    type;
     uint32_t            multiaddr;
@@ -1902,10 +1888,14 @@ struct tarpc_mreqn {
     tarpc_ssize_t       len_diff;
 };
 
-struct tarpc_ip_opts {
-    tarpc_bool  ip_dst_set;
-    uint32_t    ip_dst;
-    uint8_t     ip_opts<>;
+struct option_value_mreq {
+    uint32_t    imr_multiaddr;  /**< IP multicast group address */
+    uint32_t    imr_address;    /**< IP address of local interface */
+};
+
+struct option_value_mreq6 {
+     uint32_t   ipv6mr_multiaddr<>;
+     tarpc_int  ipv6mr_ifindex;
 };
 
 struct option_value_tcp_info {
@@ -1947,20 +1937,16 @@ struct option_value_tcp_info {
 };
 
 union option_value switch (option_type opttype) {
-    case OPT_INT:               tarpc_int opt_int;
-    case OPT_LINGER:            struct tarpc_linger opt_linger;
-    case OPT_TIMEVAL:           struct tarpc_timeval opt_timeval;
-    case OPT_MREQN:             struct option_value_mreqn opt_mreqn;
-    case OPT_MREQ:              struct option_value_mreq opt_mreq;
-    case OPT_MREQ6:             struct option_value_mreq6 opt_mreq6;
-    case OPT_IPADDR:            uint32_t opt_ipaddr;                                
-    case OPT_STRING:            char opt_string<>;
-    case OPT_TCP_INFO:          struct option_value_tcp_info opt_tcp_info;
-    case OPT_HANDLE:            int opt_handle;
-    case OPT_RAW_DATA:          uint8_t opt_raw<>;
-    case OPT_IP_OPTS:           struct tarpc_ip_opts opt_ip_opts;
-    case OPT_IPADDR6:           uint32_t opt_ipaddr6[4];
-                                
+    case OPT_INT:       tarpc_int opt_int;
+    case OPT_LINGER:    struct tarpc_linger opt_linger;
+    case OPT_TIMEVAL:   struct tarpc_timeval opt_timeval;
+    case OPT_MREQN:     struct option_value_mreqn opt_mreqn;
+    case OPT_MREQ:      struct option_value_mreq opt_mreq;
+    case OPT_MREQ6:     struct option_value_mreq6 opt_mreq6;
+    case OPT_IPADDR:    uint32_t opt_ipaddr;
+    case OPT_IPADDR6:   uint32_t opt_ipaddr6[4];
+    case OPT_TCP_INFO:  struct option_value_tcp_info opt_tcp_info;
+    case OPT_HANDLE:    tarpc_int opt_handle;
 };
 
 /* setsockopt() */
@@ -1972,8 +1958,8 @@ struct tarpc_setsockopt_in {
     tarpc_int       level;
     tarpc_int       optname;
     option_value    optval<>;
-    tarpc_socklen_t optlen;
-    tarpc_ssize_t   len_diff;
+    uint8_t         raw_optval<>;
+    tarpc_socklen_t raw_optlen;
 };
 
 typedef struct tarpc_int_retval_out tarpc_setsockopt_out;
@@ -1987,17 +1973,18 @@ struct tarpc_getsockopt_in {
     tarpc_int       level; 
     tarpc_int       optname;
     option_value    optval<>;
-    tarpc_socklen_t optlen<>;
+    uint8_t         raw_optval<>;
+    tarpc_socklen_t raw_optlen<>;
 };
 
 struct tarpc_getsockopt_out {
     struct tarpc_out_arg  common;
 
-    tarpc_int             retval;
-    option_value          optval<>;
-    tarpc_socklen_t       optlen<>;
+    tarpc_int       retval;
+    option_value    optval<>;
+    uint8_t         raw_optval<>;
+    tarpc_socklen_t raw_optlen<>;
 };
-
 
 
 

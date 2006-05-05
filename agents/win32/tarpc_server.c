@@ -1602,7 +1602,8 @@ TARPC_FUNC(setsockopt, {},
         MAKE_CALL(out->retval = setsockopt(in->s,
                                            socklevel_rpc2h(in->level),
                                            sockopt_rpc2h(in->optname),
-                                           NULL, in->optlen));
+                                           in->raw_optval.raw_optval_val,
+                                           in->raw_optlen));
     }
     else
     {
@@ -1670,15 +1671,6 @@ TARPC_FUNC(setsockopt, {},
                 break;
             }
 
-            case OPT_STRING:
-            {
-                opt = (char *)in_optval->option_value_u.opt_string.
-                                  opt_string_val;
-                optlen =
-                    in_optval->option_value_u.opt_string.opt_string_len;
-                break;
-            }
-            
             case OPT_HANDLE:
             {
                 opt = (char *)&handle;
@@ -1716,31 +1708,6 @@ TARPC_FUNC(setsockopt, {},
                 break;
             }
 
-            case OPT_IP_OPTS:
-            {
-                if (in_optval->option_value_u.opt_ip_opts.ip_dst_set)
-                {
-                    ERROR("WinSock2 version of IP_OPTIONS does not "
-                          "have 'ip_dst' field in option value");
-                    out->common._errno = TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
-                    out->retval = -1;
-                    goto finish;
-                    break;
-                }
-                opt = (char *)in_optval->option_value_u.
-                                  opt_ip_opts.ip_opts.ip_opts_val;
-                optlen = in_optval->option_value_u.
-                             opt_ip_opts.ip_opts.ip_opts_len;
-                break;
-            }
-
-            case OPT_RAW_DATA:
-            {
-                opt = (char *)in_optval->option_value_u.opt_raw.opt_raw_val;
-                optlen = in_optval->option_value_u.opt_raw.opt_raw_len;
-                break;
-            }
-
             default:
                 ERROR("incorrect option type %d is received",
                       in_optval->opttype);
@@ -1749,14 +1716,13 @@ TARPC_FUNC(setsockopt, {},
                 goto finish;
                 break;
         }
+
         INIT_CHECKED_ARG(opt, optlen, 0);
-        if (in->optlen == RPC_OPTLEN_AUTO)
-            in->optlen = optlen;
 
         MAKE_CALL(out->retval = setsockopt(in->s,
                                            socklevel_rpc2h(in->level),
                                            sockopt_rpc2h(in->optname),
-                                           opt, in->optlen));
+                                           opt, optlen));
     }
     finish:
     ;
@@ -1764,75 +1730,59 @@ TARPC_FUNC(setsockopt, {},
 )
 
 /*-------------- getsockopt() ------------------------------*/
-/* Maximal size of IP_OPTIONS argument */
-#define IPOPTS_MAX_LEN          40
 
 TARPC_FUNC(getsockopt,
 {
     COPY_ARG(optval);
-    COPY_ARG(optlen);
+    COPY_ARG(raw_optval);
+    COPY_ARG(raw_optlen);
 },
 {
-    int optlen_in = 0;
-    int optlen_out = 0;
-    
     if (out->optval.optval_val == NULL)
     {
         MAKE_CALL(out->retval = 
                       getsockopt(in->s, socklevel_rpc2h(in->level),
-                      sockopt_rpc2h(in->optname),
-                      NULL, (int *)(out->optlen.optlen_val)));
+                                 sockopt_rpc2h(in->optname),
+                                 out->raw_optval.raw_optval_val,
+                                 (int *)(out->raw_optlen.raw_optlen_val)));
     }
     else
     {
+        int optlen_in = 0;
+        int optlen_out = 0;
+
         /* Assume that this size is large enough */
         char opt[sizeof(WSAPROTOCOL_INFOW)];
 
         memset(opt, 0, sizeof(opt));
 
-        if (out->optlen.optlen_val != NULL &&
-            *(out->optlen.optlen_val) == RPC_OPTLEN_AUTO)
+        switch (out->optval.optval_val[0].opttype)
         {
-            switch (out->optval.optval_val[0].opttype)
-            {
-                case OPT_INT:
-                    optlen_in = optlen_out = sizeof(int);
-                    break;
-                    
-                case OPT_LINGER:
-                    optlen_in = optlen_out = sizeof(struct linger);
-                    break;
+            case OPT_INT:
+                optlen_in = optlen_out = sizeof(int);
+                break;
+                
+            case OPT_LINGER:
+                optlen_in = optlen_out = sizeof(struct linger);
+                break;
 
-                case OPT_IPADDR:
-                    optlen_in = optlen_out = sizeof(struct in_addr);
-                    break;
+            case OPT_IPADDR:
+                optlen_in = optlen_out = sizeof(struct in_addr);
+                break;
 
-                case OPT_TIMEVAL:
-                    optlen_in = optlen_out = sizeof(struct timeval);
-                    break;
+            case OPT_TIMEVAL:
+                optlen_in = optlen_out = sizeof(struct timeval);
+                break;
 
-                case OPT_MREQ6:
-                    optlen_in = optlen_out = sizeof(struct ipv6_mreq);
-                    break;
+            case OPT_MREQ6:
+                optlen_in = optlen_out = sizeof(struct ipv6_mreq);
+                break;
 
-                case OPT_RAW_DATA:
-                    optlen_in = optlen_out = *(out->optlen.optlen_val);
-                    break;
-                    
-                case OPT_IP_OPTS:
-                    optlen_in = optlen_out =
-                        out->optval.optval_val[0].option_value_u.
-                            opt_ip_opts.ip_opts.ip_opts_len;
-                    break;
-
-                default:
-                    ERROR("incorrect option type %d is received",
-                          out->optval.optval_val[0].opttype);
-                    break;
-            }
+            default:
+                ERROR("incorrect option type %d is received",
+                      out->optval.optval_val[0].opttype);
+                break;
         }
-        else if (out->optlen.optlen_val)
-            optlen_in = optlen_out = *(out->optlen.optlen_val);
 
         memset(opt, 0, sizeof(opt));
         INIT_CHECKED_ARG(opt, sizeof(opt), optlen_in);
@@ -1840,16 +1790,16 @@ TARPC_FUNC(getsockopt,
         MAKE_CALL(out->retval = 
                       getsockopt(in->s, socklevel_rpc2h(in->level),
                                  sockopt_rpc2h(in->optname),
-                                 opt, 
-                                 out->optlen.optlen_val == NULL ?
-                                      NULL : &optlen_out));
+                                 opt, &optlen_out));
 
+#if 0
         if (out->optlen.optlen_val != NULL &&
             !(in->optname == RPC_SO_SNDTIMEO || 
               in->optname == RPC_SO_RCVTIMEO))
         {
             *(out->optlen.optlen_val) = optlen_out;
         }
+#endif
         
         switch (out->optval.optval_val[0].opttype)
         {
@@ -1926,49 +1876,6 @@ TARPC_FUNC(getsockopt,
                 }
                 break;
             }
-
-            case OPT_STRING:
-            {
-                char *str = (char *)opt;
-
-                memcpy(out->optval.optval_val[0].option_value_u.opt_string.
-                       opt_string_val, str,
-                       out->optval.optval_val[0].option_value_u.opt_string.
-                       opt_string_len);
-                break;
-            }
-            
-            case OPT_RAW_DATA:
-            {
-                char *str = (char *)opt;
-                memcpy(out->optval.optval_val[0].option_value_u.opt_raw.
-                       opt_raw_val, str,
-                       out->optval.optval_val[0].option_value_u.opt_raw.
-                       opt_raw_len);
-                break;
-            }
-            
-            case OPT_IP_OPTS:
-                /* 
-                 * "Destination address" field is absent on Win32,
-                 * so write zero there.
-                 */
-                out->optval.optval_val[0].option_value_u.opt_ip_opts.
-                     ip_dst_set = FALSE;
-                out->optval.optval_val[0].option_value_u.opt_ip_opts.
-                     ip_dst = 0;
-                
-                /* Copy getsockopt() result */
-                memcpy(out->optval.optval_val[0].option_value_u.
-                       opt_ip_opts.ip_opts.ip_opts_val, opt,
-                       MIN(optlen_out, optlen_in));
-                /* TODO: What happens if optlen_in < optlen_out? */
-                /* Do not update 'ip_opts' length field */
-                /* 
-                 * Generic option value length field contains real
-                 * length returned by the system.
-                 */
-                break;
 
             default:
                 ERROR("incorrect option type %d is received",

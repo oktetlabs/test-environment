@@ -484,10 +484,9 @@ rpc_accept(rcf_rpc_server *rpcs,
 
 /** Storage sufficient for any fixed-size socket option value */
 typedef union rpc_sockopt_value {
-    int                 v_int;
-    tarpc_linger        v_linger;
-    tarpc_timeval       v_tv;
-    tarpc_ip_opts       v_ip_opts;
+    int             v_int;
+    tarpc_linger    v_linger;
+    tarpc_timeval   v_tv;
 } rpc_sockopt_value;
 
 /**
@@ -517,9 +516,19 @@ typedef union rpc_sockopt_value {
 extern int rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                               int s, rpc_socklevel level,
                               rpc_sockopt optname,
-                              void *optval, socklen_t *optlen,
-                              socklen_t roptlen);
+                              void *optval, void *raw_optval,
+                              socklen_t *raw_optlen,
+                              socklen_t raw_roptlen);
 
+static inline int
+rpc_getsockopt_raw(rcf_rpc_server *rpcs,
+                   int s, rpc_sockopt optname,
+                   void *raw_optval, socklen_t *raw_optlen)
+{
+    return rpc_getsockopt_gen(rpcs, s, rpc_sockopt2level(optname),
+                              optname, NULL, raw_optval, raw_optlen,
+                              raw_optlen == NULL ? 0 : *raw_optlen);
+}
 
 /**
  * Query options associated with a socket. This operation takes place
@@ -547,53 +556,64 @@ rpc_getsockopt(rcf_rpc_server *rpcs,
                int s, rpc_sockopt optname, void *optval)
 {
     return rpc_getsockopt_gen(rpcs, s, rpc_sockopt2level(optname),
-                              optname, optval, NULL, RPC_OPTLEN_AUTO);
+                              optname, optval, NULL, NULL, 0);
 }
 
 /**
- * This generic routine sets options associated with a socket.
- * This operation takes place on RPC server side
+ * Set option on socket opened on RPC server.
  *
- * @note See @b setsockopt manual page for more information.
- *
- * @param rpcs      RPC server handle.
- * @param s         Socket descriptor 
- * @param level     Protocol level at which the option resides. 
- *                  Following values can be specified:
- *                      - @b RPC_SOL_SOCKET  socket level
- *                      - @b RPC_SOL_IP      IPPROTO_IP level
- *                      - @b RPC_SOL_IPV6    IPPROTO_IPV6 level
- *                      - @b RPC_SOL_TCP     IPPROTO_TCP level
- * @param optname   Option name
- * @param optval    Pointer to a buffer containing the value associated 
- *                  with the selected option
- * @param optlen    Size of the @b optval buffer
+ * @param rpcs          RPC server handle
+ * @param s             Socket descriptor
+ * @param level         Protocol level at which the option resides
+ * @param optname       Option name
+ * @param optval        Pointer to option value to be set or NULL
+ *                      (length is defined by option name)
+ * @param raw_optval    Pointer to option value as sequence of bytes
+ *                      (if @a optval is not NULL, @a raw_optval goes
+ *                      after binary representation of @a optval)
+ * @param raw_optlen    Size of the @a raw_optval specified in call
+ * @param raw_roptlen   Real size of the @a raw_optval
  *
  * @return 0 on success or -1 on failure
  *
- * @sa rpc_setsockopt()
+ * @sa rpc_setsockopt(), rpc_setsockopt_raw()
  */
 extern int rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                               int s, rpc_socklevel level,
                               rpc_sockopt optname,
-                              const void *optval, socklen_t optlen);
+                              const void *optval,
+                              const void *raw_optval,
+                              socklen_t raw_optlen,
+                              socklen_t raw_roptlen);
 
 /**
- * Set options associated with a socket.
- * This operation takes place on RPC server side
+ * Set option on socket opened on RPC server using raw option value
+ * representation.
  *
- * The function should be used for fixed-size options or when option
- * contents defines its length.
- * RPC socket option name is unambiguously mapped to
- * socket option level (see rpc_sockopt2level()).
+ * See rpc_setsockopt_gen() for parameters description. @a level is
+ * derived from @a optname using rpc_sockopt2level() function.
  *
- * @note See @b setsockopt manual page for more information.
+ * @return 0 on success or -1 on failure
  *
- * @param rpcs      RPC server handle.
- * @param s         Socket descriptor 
- * @param optname   Option name
- * @param optval    Pointer to a buffer containing the value associated 
- *                  with the selected option.
+ * @sa rpc_setsockopt_gen()
+ */
+static inline int
+rpc_setsockopt_raw(rcf_rpc_server *rpcs,
+                   int s, rpc_sockopt optname,
+                   const void *raw_optval, socklen_t raw_optlen)
+{
+    return rpc_setsockopt_gen(rpcs, s, rpc_sockopt2level(optname),
+                              optname, NULL, raw_optval, raw_optlen,
+                              raw_optlen);
+}
+
+/**
+ * Set option on socket opened on RPC server using convered value only.
+ *
+ * See rpc_setsockopt_gen() for parameters description. @a level is
+ * derived from @a optname using rpc_sockopt2level() function.
+ * @a raw_optval and @a raw_optlen are passed as @c NULL and @c 0
+ * correspondingly.
  *
  * @return 0 on success or -1 on failure
  *
@@ -604,7 +624,7 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                int s, rpc_sockopt optname, const void *optval)
 {
     return rpc_setsockopt_gen(rpcs, s, rpc_sockopt2level(optname),
-                              optname, optval, RPC_OPTLEN_AUTO);
+                              optname, optval, NULL, 0, 0);
 }
 
 
@@ -613,7 +633,6 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
  *  store this address in the @b sockaddr structure ponited by @b name,
  *  and store the lenght of this address to the object pointed by @b
  *  namelen.
-
  *
  *  @note See @b getsockname manual page for more information
  *  @param rpcs      RPC server handle
