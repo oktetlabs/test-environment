@@ -1549,18 +1549,18 @@ TARPC_FUNC(sigaction,
 typedef union sockopt_param {
     int                 integer;
     char               *str;
+    struct timeval      tv;
     struct linger       linger;
+    struct in_addr      addr;
+    struct in6_addr     addr6;
+    struct ip_mreq      mreq;
 #if HAVE_STRUCT_IP_MREQN
     struct ip_mreqn     mreqn;
 #endif
     struct ipv6_mreq    mreq6;
-    struct ip_mreq      mreq;
-    struct in_addr      addr;
-    struct timeval      tv;
 #if HAVE_STRUCT_IP_OPTS 
     struct ip_opts      opts;
 #endif    
-    struct in6_addr     addr6;
 #if HAVE_STRUCT_TCP_INFO
     struct tcp_info     tcpi;
 #endif
@@ -1673,7 +1673,9 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
         {
 #if HAVE_STRUCT_IP_OPTS
             param->opts.ip_dst.s_addr =
-                in_optval->option_value_u.opt_ip_opts.ip_dst;
+                (in_optval->option_value_u.opt_ip_opts.ip_dst_set) ?
+                    in_optval->option_value_u.opt_ip_opts.ip_dst :
+                    htonl(INADDR_ANY);
             if (in_optval->option_value_u.opt_ip_opts.ip_opts.ip_opts_len >
                     sizeof(param->opts.ip_opts))
             {
@@ -1691,9 +1693,19 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
             *optlen = sizeof(param->opts.ip_dst) +
                  in_optval->option_value_u.opt_ip_opts.ip_opts.ip_opts_len;
 #else
-            ERROR("'struct ip_opts is not defined'");
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-            out->retval = -1;
+            WARN("'struct ip_opts' is not defined, assume that "
+                 "IP_OPTIONS gets sequence of bytes");
+            if (in_optval->option_value_u.opt_ip_opts.ip_dst_set)
+            {
+                ERROR("Unable to specify 'ip_dst' in IP_OPTIONS");
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+                out->retval = -1;
+                return;
+            }
+            *optval =
+                in_optval->option_value_u.opt_ip_opts.ip_opts.ip_opts_val;
+            *optlen =
+                in_optval->option_value_u.opt_ip_opts.ip_opts.ip_opts_len;
 #endif
             break;
         }            
@@ -1787,7 +1799,10 @@ tarpc_sockoptlen(const option_value *optval)
 #endif
 
         case OPT_IP_OPTS:
-            return sizeof(struct in_addr) +
+            return 
+#if HAVE_STRUCT_IP_OPTS
+                sizeof(struct in_addr) +
+#endif
                 optval->option_value_u.opt_ip_opts.ip_opts.ip_opts_len;
             
         case OPT_STRING:
@@ -1802,11 +1817,10 @@ tarpc_sockoptlen(const option_value *optval)
 
 static void
 tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
-                 sockopt_param *opt, socklen_t out_optlen)
+                 sockopt_param *opt)
 {
     option_value   *out_optval = out->optval.optval_val;
 
-    UNUSED(out_optlen); /* possibly unused */
     switch (out_optval->opttype)
     {
         case OPT_INT:
@@ -1970,21 +1984,39 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
 #if HAVE_STRUCT_IP_OPTS 
             struct ip_opts *opts = &opt->opts;
 
-            out_optval->option_value_u.opt_ip_opts.ip_dst_set = TRUE;
-            out_optval->option_value_u.opt_ip_opts.ip_dst =
-                opts->ip_dst.s_addr;
-            memcpy(out_optval->option_value_u.opt_ip_opts.
-                       ip_opts.ip_opts_val,
-                   opts->ip_opts,
-                   out_optlen - sizeof(opts->ip_dst));
             /* 
              * Do not update ip_opts.ip_opts_len, real option length is
              * returned in generic option length field
              */
+            if (*(out->optlen.optlen_val) >= sizeof(opts->ip_dst))
+            {
+                out_optval->option_value_u.opt_ip_opts.ip_dst_set = TRUE;
+                out_optval->option_value_u.opt_ip_opts.ip_dst =
+                    opts->ip_dst.s_addr;
+                memcpy(out_optval->option_value_u.opt_ip_opts.
+                           ip_opts.ip_opts_val,
+                       opts->ip_opts,
+                       *(out->optlen.optlen_val) - sizeof(opts->ip_dst));
+                *(out->optlen.optlen_val) -= sizeof(opts->ip_dst);
+            }
+            else if (*(out->optlen.optlen_val) == 0)
+            {
+                out_optval->option_value_u.opt_ip_opts.ip_dst_set = FALSE;
+            }
+            else
+            {
+                ERROR("Unexpected option length %u is returned for "
+                      "IP_OPTIONS", (unsigned)*(out->optlen.optlen_val));
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+                out->retval = -1;
+            }
 #else
-            ERROR("'struct ip_opts' is not defined");
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-            out->retval = -1;
+            WARN("'struct ip_opts' is not defined, assume that "
+                 "IP_OPTIONS gets sequence of bytes");
+            out_optval->option_value_u.opt_ip_opts.ip_dst_set = FALSE;
+            memcpy(out_optval->option_value_u.opt_ip_opts.
+                       ip_opts.ip_opts_val,
+                   opt, *(out->optlen.optlen_val));
 #endif
             break;
         }
@@ -2022,15 +2054,10 @@ TARPC_FUNC(getsockopt,
 
         if (out->optlen.optlen_val != NULL)
         {
-            if (*(out->optlen.optlen_val) == RPC_OPTLEN_AUTO)
-            {
-                optlen_in = optlen_out =
-                    tarpc_sockoptlen(out->optval.optval_val);
-            }
-            else
-            {
-                optlen_in = optlen_out = *(out->optlen.optlen_val);
-            }
+            optlen_in = optlen_out =
+                (*(out->optlen.optlen_val) == RPC_OPTLEN_AUTO) ?
+                    tarpc_sockoptlen(out->optval.optval_val) :
+                    *(out->optlen.optlen_val);
         }
 
         memset(&opt, 0, sizeof(opt));
@@ -2042,9 +2069,10 @@ TARPC_FUNC(getsockopt,
                            &opt, 
                            out->optlen.optlen_val == NULL ? NULL 
                                                           : &optlen_out));
-        if (optlen_in != optlen_out)
+
+        /* Output makes sense iff option length pointer is not NULL */
+        if (out->optlen.optlen_val != NULL)
         {
-            /* Workaround to avoid corrupting of "auto" length */
             *(out->optlen.optlen_val) = optlen_out;
             
             if (out->optval.optval_val[0].opttype == OPT_MREQN &&
@@ -2053,9 +2081,9 @@ TARPC_FUNC(getsockopt,
                 /* Adjust option type from OPT_MREQN to OPT_IPADDR */
                 out->optval.optval_val[0].opttype = OPT_IPADDR;
             }
-        }
 
-        tarpc_getsockopt(in, out, &opt, optlen_out);
+            tarpc_getsockopt(in, out, &opt);
+        }
     }
 }
 )
