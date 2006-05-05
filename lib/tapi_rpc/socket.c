@@ -1169,8 +1169,6 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
     char                  opt_len_str[32];
     char                  opt_val_str[4096] = {};
     
-    socklen_t             optlen_copy;
-
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
@@ -1272,7 +1270,6 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
             case RPC_SO_PROTOCOL_INFOW:
             {
                 val.opttype = OPT_RAW_DATA;
-                optlen_copy = roptlen;
                 val.option_value_u.opt_raw.opt_raw_len = roptlen;
                 val.option_value_u.opt_raw.opt_raw_val = (char *)optval;
                 break;
@@ -1318,8 +1315,11 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                        &opt->address, sizeof(opt->address));
                 val.option_value_u.opt_mreqn.imr_ifindex = opt->ifindex;
                         
+#if 0
+                /* Don't know how to fix it, since do not understand it */
                 if (opt->len_diff == 0)
                     optlen_copy = RPC_OPTLEN_AUTO;
+#endif
                 break;
             }
 
@@ -1426,7 +1426,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
     if (RPC_IS_CALL_OK(rpcs))
     {
-        if (optlen != NULL && out.optlen.optlen_val[0] != RPC_OPTLEN_AUTO)
+        if (optlen != NULL)
         {
             *optlen = out.optlen.optlen_val[0];
         }
@@ -1587,19 +1587,34 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 case RPC_IP_OPTIONS:
                 {
                     tarpc_ip_opts *opt = optval;
-                    
-                    opt->ip_dst = out.optval.optval_val[0].option_value_u.
-                                      opt_ip_opts.ip_dst;
-                    opt->ip_opts.ip_opts_len =
-                        out.optval.optval_val[0].option_value_u.
-                        opt_ip_opts.ip_opts.ip_opts_len;
-                    memcpy(opt->ip_opts.ip_opts_val,
-                           out.optval.optval_val[0].option_value_u.
-                           opt_ip_opts.ip_opts.ip_opts_val,
-                           opt->ip_opts.ip_opts_len);
-                
-                    snprintf(opt_val_str, sizeof(opt_val_str),
-                             "{ TODO }");
+
+                    if ((optlen != NULL || roptlen == RPC_OPTLEN_AUTO) &&
+                        (out.optlen.optlen_val[0] > 0))
+                    {
+                        opt->ip_dst_set =
+                            out.optval.optval_val[0].option_value_u.
+                                opt_ip_opts.ip_dst_set;
+                        if (opt->ip_dst_set)
+                        {
+                            opt->ip_dst =
+                                out.optval.optval_val[0].option_value_u.
+                                    opt_ip_opts.ip_dst;
+                        }
+                        opt->ip_opts.ip_opts_len = out.optlen.optlen_val[0];
+                        memcpy(opt->ip_opts.ip_opts_val,
+                               out.optval.optval_val[0].option_value_u.
+                                   opt_ip_opts.ip_opts.ip_opts_val,
+                               opt->ip_opts.ip_opts_len);
+                        snprintf(opt_val_str, sizeof(opt_val_str),
+                                 "{ TODO }");
+                    }
+                    else
+                    {
+                        opt->ip_dst_set = FALSE;
+                        opt->ip_opts.ip_opts_len = 0;
+                        snprintf(opt_val_str, sizeof(opt_val_str),
+                                 "{ <empty> }");
+                    }
                     break;
                 }
 
