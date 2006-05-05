@@ -141,8 +141,7 @@ main(int argc, char *argv[])
         TEST_FAIL("Calling of RPC socket() failed %r", sock_pco->_errno);
 
     opt_val = 1;
-    rpc_setsockopt(sock_pco, socket, RPC_SOL_SOCKET, RPC_SO_REUSEADDR,
-                   &opt_val, sizeof(opt_val));
+    rpc_setsockopt(sock_pco, socket, RPC_SO_REUSEADDR, &opt_val);
 
 
     rc = rpc_bind(sock_pco, socket, sock_addr, sock_addr_len);
@@ -177,8 +176,7 @@ main(int argc, char *argv[])
         TEST_FAIL("connect() 'wait' failed: %r", rc); 
 
     opt_val = 1;
-    rpc_setsockopt(sock_pco, socket, RPC_SOL_SOCKET, RPC_SO_REUSEADDR,
-                   &opt_val, sizeof(opt_val));
+    rpc_setsockopt(sock_pco, socket, RPC_SO_REUSEADDR, &opt_val);
 
     /*
      * Send data
