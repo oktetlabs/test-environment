@@ -1843,7 +1843,8 @@ TARPC_FUNC(getsockopt,
                                  opt, 
                                  out->optlen.optlen_val == NULL ?
                                       NULL : &optlen_out));
-        if (optlen_in != optlen_out &&
+
+        if (out->optlen.optlen_val != NULL &&
             !(in->optname == RPC_SO_SNDTIMEO || 
               in->optname == RPC_SO_RCVTIMEO))
         {
