@@ -290,6 +290,7 @@ win_rpc_errno(int err)
     switch (err)
     {
         case 0: return 0;
+	case WSANOTINITIALISED: return RPC_WSANOTINITIALISED;
         case WSAEACCES: return RPC_EACCES;
         case WSAEFAULT: return RPC_EFAULT;
         case WSAEINVAL: return RPC_EINVAL;
