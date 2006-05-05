@@ -193,7 +193,7 @@ dnl
 dnl Check for 'struct tcp_info'
 dnl
 AC_CHECK_TYPES([struct tcp_info], [], [],
-               [#include <netinet/in.h>])
+               [#include <netinet/tcp.h>])
 
 dnl
 dnl Check for 'ipv6mr_interface' member in 'struct ipv6_mreq'.
