@@ -75,14 +75,14 @@ static pthread_mutex_t tapi_log_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** Check that 'ptr_' is a valid log buffer */
 #define VALIDATE_LOG_BUF(ptr_) \
-    do {                                                           \
-        assert((ptr_)->used == TRUE);                              \
-        assert(((ptr_) >= tapi_log_bufs) &&                        \
-               ((ptr_) - tapi_log_bufs) /                          \
-                   sizeof(tapi_log_bufs[0]) <=                     \
-               sizeof(tapi_log_bufs) / sizeof(tapi_log_bufs[0]) && \
-               ((ptr_) - tapi_log_bufs) %                          \
-                   sizeof(tapi_log_bufs[0]) == 0);                 \
+    do {                                                            \
+        assert((ptr_)->used == TRUE);                               \
+        assert(((ptr_) >= tapi_log_bufs));                          \
+        assert(((ptr_) - tapi_log_bufs) /                           \
+                   sizeof(tapi_log_bufs[0]) <=                      \
+               sizeof(tapi_log_bufs) / sizeof(tapi_log_bufs[0]));   \
+        assert(((ptr_) - tapi_log_bufs) %                           \
+                   sizeof(tapi_log_bufs[0]) == 0);                  \
     } while (0)
 
 
