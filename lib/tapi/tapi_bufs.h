@@ -41,7 +41,7 @@ extern "C" {
  * with pointer to this data structure.
  */
 struct tapi_log_buf;
-typedef struct tapi_log_buf *tapi_log_buf;
+typedef struct tapi_log_buf tapi_log_buf;
 
 
 /* Log buffer related functions */
