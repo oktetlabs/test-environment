@@ -1389,7 +1389,9 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     memcpy(&opt->address, &out.optval.optval_val[0].
                            option_value_u.opt_ipaddr,
                            sizeof(opt->address));
+#if 0
                     opt->len_diff = sizeof(opt->address) - sizeof(*opt);
+#endif
                     snprintf(opt_val_str, sizeof(opt_val_str),
                              "{ addr: %s }",
                              inet_ntop(AF_INET, &opt->address,

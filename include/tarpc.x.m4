@@ -1885,7 +1885,6 @@ struct tarpc_mreqn {
     uint32_t            multiaddr;
     uint32_t            address;
     tarpc_int           ifindex;
-    tarpc_ssize_t       len_diff;
 };
 
 struct option_value_mreq {
