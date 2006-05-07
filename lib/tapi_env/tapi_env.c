@@ -449,6 +449,12 @@ tapi_env_get_net(tapi_env *env, const char *name)
     tapi_env_net     *p;
     tapi_env_alias   *a;
 
+    if (env == NULL || name == NULL)
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return NULL;
+    }
+
     for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
     {
         if (strcmp(a->alias, name) == 0)
@@ -460,7 +466,7 @@ tapi_env_get_net(tapi_env *env, const char *name)
     }
     for (p = env->nets.lh_first; p != NULL; p = p->links.le_next)
     {
-        if (strcmp(p->name, name) == 0)
+        if (p->name != NULL && strcmp(p->name, name) == 0)
             return p;
     }
 
@@ -476,6 +482,12 @@ tapi_env_get_host(tapi_env *env, const char *name)
     tapi_env_host    *p;
     tapi_env_alias   *a;
 
+    if (env == NULL || name == NULL)
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return NULL;
+    }
+
     for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
     {
         if (strcmp(a->alias, name) == 0)
@@ -487,7 +499,7 @@ tapi_env_get_host(tapi_env *env, const char *name)
     }
     for (p = env->hosts.lh_first; p != NULL; p = p->links.le_next)
     {
-        if (strcmp(p->name, name) == 0)
+        if (p->name != NULL && strcmp(p->name, name) == 0)
             return p;
     }
 
@@ -504,6 +516,12 @@ tapi_env_get_pco(tapi_env *env, const char *name)
     tapi_env_host    *host;
     tapi_env_process *proc;
     tapi_env_pco     *pco;
+
+    if (env == NULL || name == NULL)
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return NULL;
+    }
 
     for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
     {
@@ -527,7 +545,7 @@ tapi_env_get_pco(tapi_env *env, const char *name)
                  pco != NULL;
                  pco = pco->links.tqe_next)
             {
-                if (strcmp(pco->name, name) == 0)
+                if (pco->name != NULL && strcmp(pco->name, name) == 0)
                     return pco->rpcs;
             }
         }
@@ -546,6 +564,12 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
     tapi_env_addr    *p;
     tapi_env_alias   *a;
 
+    if (env == NULL || name == NULL)
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return NULL;
+    }
+
     for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
     {
         if (strcmp(a->alias, name) == 0)
@@ -559,9 +583,10 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
          p != (void *)&env->addrs;
          p = p->links.cqe_next)
     {
-        if (strcmp(p->name, name) == 0)
+        if (p->name != NULL && strcmp(p->name, name) == 0)
         {
-            *addrlen = p->addrlen;
+            if (addrlen != NULL)
+                *addrlen = p->addrlen;
             return p->addr;
         }
     }
