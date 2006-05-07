@@ -66,13 +66,6 @@
 #define SET_MSEC(_poll) ((_poll) % 1000000)
 
 
-/** Logger application command line options */
-enum {
-    LOGGER_OPT_FOREGROUND = 1,
-    LOGGER_OPT_NO_RCF,
-};
-
-
 DEFINE_LGR_ENTITY("Logger");
 
 /* TA single linked list */
@@ -92,7 +85,9 @@ static unsigned int         lgr_flags = 0;
 #define LOGGER_FOREGROUND   0x01    /**< Run Logger in foreground */
 #define LOGGER_NO_RCF       0x02    /**< Run Logger without interaction
                                          with RCF */
-#define LOGGER_SHUTDOWN     0x04    /**< Logger is shuting down */
+#define LOGGER_CHECK        0x04    /**< Check messages before store in
+                                         raw log file */
+#define LOGGER_SHUTDOWN     0x10    /**< Logger is shuting down */
 /*@}*/
 
 static const char          *cfg_file = NULL;
@@ -119,6 +114,25 @@ te_log_raw_get_nfl(const void *buf)
 }
 
 /**
+ * Check raw log message format.
+ *
+ * @param msg       Log message location
+ * @param len       Log message length
+ *
+ * @return Is log message valid?
+ */
+static te_bool
+lgr_message_valid(const void *msg, size_t len)
+{
+    const uint8_t *p = msg;
+
+    UNUSED(p);
+    UNUSED(len);
+
+    return TRUE;
+}
+
+/**
  * Register the log message in the raw log file.
  *
  * @param buf       Log message location
@@ -129,12 +143,14 @@ lgr_register_message(const void *buf, size_t len)
 {
     static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
+    if ((lgr_flags & LOGGER_CHECK) && !lgr_message_valid(buf, len))
+        return;
+
     pthread_mutex_lock(&mutex);
     if (fwrite(buf, len, 1, raw_file) != 1)
-    {
         perror("fwrite() failure");
-    }
-    fflush(raw_file);
+    if (fflush(raw_file) != 0)
+        perror("fflush(raw_file) failed");
     pthread_mutex_unlock(&mutex);
 }
 
@@ -647,6 +663,12 @@ process_cmd_line_opts(int argc, const char **argv)
           POPT_ARG_NONE | POPT_BIT_SET, &lgr_flags, LOGGER_NO_RCF,
           "Run Logger without interaction with RCF, "
           "i.e. polling of Test Agents (usefull for Logger debugging).",
+          NULL },
+
+        { "check", 'c',
+          POPT_ARG_NONE | POPT_BIT_SET, &lgr_flags, LOGGER_CHECK,
+          "Check log messages received from users before store in raw "
+          "log file.",
           NULL },
 
         POPT_AUTOHELP
