@@ -605,6 +605,8 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
     
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
+    memset(&in_act, 0, sizeof(in_act));
+    memset(&in_oldact, 0, sizeof(in_oldact));
 
     if (rpcs == NULL)
     {
@@ -649,6 +651,11 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
     }
 
     rcf_rpc_call(rpcs, "sigaction", &in, &out);
+
+    free(in_act.handler);
+    free(in_act.restorer);
+    free(in_oldact.handler);
+    free(in_oldact.restorer);
 
     if (RPC_IS_CALL_OK(rpcs) && oldact != NULL)
     {
