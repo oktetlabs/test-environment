@@ -110,6 +110,7 @@ tapi_jmp_thread_ctx_destroy(void *handle)
         ERROR("Jump point destructed: %s:%u", p->file, p->lineno);
         free(p);
     }
+    free(ctx);
 }
 
 /**
