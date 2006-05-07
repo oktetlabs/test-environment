@@ -244,7 +244,8 @@ host:
             {
                 for (p = env->hosts.lh_first;
                      p != NULL &&
-                     strcmp(p->name, curr_host_if->host->name) != 0;
+                     (p->name == NULL ||
+                      strcmp(p->name, curr_host_if->host->name) != 0);
                      p = p->links.le_next);
 
                 if (p != NULL)
