@@ -75,9 +75,10 @@ extern te_errno tapi_tad_csap_add_layer(asn_value       **csap_spec,
 /**
  * Add a new layer specification in traffic template/pattern.
  *
- * @param csap_spec     Location of ASN.1 value with CSAP specification
+ * @param obj_spec      Location of ASN.1 value with Template of pattern spec
  *                      (if NULL pointer is stored in location, a new
  *                      CSAP specification is initialized)
+ * @param is_pattern    Flag wheather required NDN is traffic pattern
  * @param pdu_type      ASN.1 type of a new PDU
  * @param pdu_choice    String name of a new PDU as ASN.1 choice
  *                      (including '#', e.g. "#eth")

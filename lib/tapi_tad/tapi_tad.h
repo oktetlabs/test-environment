@@ -148,7 +148,7 @@ extern int tapi_tad_csap_create(const char *ta_name, int session,
  *
  * @param ta_name       Test Agent name                 
  * @param session       TA session or 0   
- * @param handle        CSAP handle
+ * @param csap          CSAP handle
  * @param templ         ASN value of type Traffic-Template
  * @param blk_mode      mode of the operation:
  *                      in blocking mode it suspends the caller
@@ -190,30 +190,90 @@ extern te_errno tapi_tad_trrecv_start(const char      *ta_name,
                                       rcf_trrecv_mode  mode);
 
 
+/**
+ * Type for callback which will receive catched packets.
+ *
+ * @param packet        ASN value with received packet
+ * @param user_data     Pointer to opaque data, specified by user for his
+ *                      callback,
+ *
+ * @return none 
+ */
 typedef void (*tapi_tad_trrecv_cb)(asn_value *packet,
                                    void      *user_data);
 
+/**
+ * Structure for with parameters for receiving packets
+ */
 typedef struct tapi_tad_trrecv_cb_data {
-    tapi_tad_trrecv_cb  callback;
-    void               *user_data;
+    tapi_tad_trrecv_cb  callback;   /**< Callback */
+    void               *user_data;  /**< Pointer to user data for it */
 } tapi_tad_trrecv_cb_data;
 
+/**
+ * Standard method to make struct with parameters for receiving packet.
+ *
+ * @param callback      User callback
+ * @param user_data     Pointer to user data for it
+ *
+ * @return pointer to new instance of structure.
+ */
 extern tapi_tad_trrecv_cb_data *tapi_tad_trrecv_make_cb_data(
                                     tapi_tad_trrecv_cb  callback,
                                     void               *user_data);
 
+/**
+ * Continue already started receiving process on CSAP. 
+ * Blocks until receive will be finished. 
+ *
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
+ * @param handle        CSAP handle
+ * @param cb_data       Struct with user-specified data for 
+ *                      catching packets
+ * @param num           Location for number of received packets
+ *
+ * @return status code
+ */
 extern te_errno tapi_tad_trrecv_wait(const char              *ta_name,
                                      int                      session,
                                      csap_handle_t            handle,
                                      tapi_tad_trrecv_cb_data *cb_data,
                                      unsigned int            *num);
 
+/**
+ * Stops already started receiving process on CSAP. 
+ *
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
+ * @param handle        CSAP handle
+ * @param cb_data       Struct with user-specified data for 
+ *                      catching packets
+ * @param num           Location for number of received packets
+ *
+ * @return status code
+ */
 extern te_errno tapi_tad_trrecv_stop(const char              *ta_name,
                                      int                      session,
                                      csap_handle_t            handle,
                                      tapi_tad_trrecv_cb_data *cb_data,
                                      unsigned int            *num);
 
+/**
+ * Get received packets from already started receiving process on CSAP. 
+ * Dont blocks, dont stop receiving process.
+ * Got packets are removed from cache on CSAP, and will not be received
+ * again, during call of _wait, _stop or _get method.
+ *
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
+ * @param handle        CSAP handle
+ * @param cb_data       Struct with user-specified data for 
+ *                      catching packets
+ * @param num           Location for number of received packets
+ *
+ * @return status code
+ */
 extern te_errno tapi_tad_trrecv_get(const char              *ta_name,
                                     int                      session,
                                     csap_handle_t            handle,
@@ -258,8 +318,8 @@ extern int tapi_tad_add_iterator_ints(asn_value *templ, int *array,
  * specified CSAP and forward them into another CSAP, without 
  * passing via RCF to test. 
  *
- * @param ta            TA name
- * @param sid           RCF session id
+ * @param ta_name       TA name
+ * @param session       RCF session id
  * @param csap_rcv      identifier of recieve CSAP
  * @param csap_fwd      identifier of CSAP which should obtain data
  * @param pattern       traffic Pattern to receive data
