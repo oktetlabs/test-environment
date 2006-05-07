@@ -52,9 +52,6 @@
 #include "logger_internal.h"
 
 
-/** Initial size of the log message buffer */
-#define LGR_PRC_MSG_BUF_INIT    0x100
-
 /** Mutual exclusion execution lock */
 static pthread_mutex_t  lgr_lock = PTHREAD_MUTEX_INITIALIZER;
 
