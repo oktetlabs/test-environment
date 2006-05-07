@@ -1179,6 +1179,9 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
 
     for (p = ifs->cqh_first; p != (void *)ifs; p = p->links.cqe_next)
     {
+        if (p->name == NULL)
+            continue;
+
         if (strcmp(p->name, "lo") != 0)
         {
             /* Get name of the interface from network node value */
