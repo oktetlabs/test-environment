@@ -1536,21 +1536,28 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
          {
              int *val_int = va_arg(list, int *);
 
-             *val_int = value.val_int;
+             if (val_int != NULL)
+                 *val_int = value.val_int;
              break;
          }
          case CVT_STRING:
          {
              char **val_str  = va_arg(list, char **);
 
-             *val_str = value.val_str;
+             if (val_str != NULL)
+                 *val_str = value.val_str;
+             else
+                free(value.val_str);
              break;
          }
          case CVT_ADDRESS:
          {
              struct sockaddr **val_addr = va_arg(list, struct sockaddr **);
 
-             *val_addr = value.val_addr;
+             if (val_addr != NULL)
+                 *val_addr = value.val_addr;
+             else
+                 free(value.val_addr);
              break;
          }
          case CVT_NONE:
