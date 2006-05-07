@@ -598,7 +598,7 @@ tapi_env_get_if(tapi_env *env, const char *name)
          p != (void *)&env->ifs;
          p = p->links.cqe_next)
     {
-        if (strcmp(p->name, name) == 0)
+        if (p->name != NULL && strcmp(p->name, name) == 0)
             return &p->info;
     }
 
