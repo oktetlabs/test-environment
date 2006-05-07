@@ -434,7 +434,7 @@ rpc_transport_send_pname(const char *pname)
 
     if (handle == INVALID_HANDLE_VALUE)
     {
-        ERROR("Connect timeout on auxiliary file");
+        ERROR("Connect timeout on auxiliary pipe");
         return TE_RC(TE_RCF_PCH, TE_EWIN);
     }
     
@@ -749,6 +749,9 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
     char     pipename[64];
     te_errno rc;
     int      i;
+    
+    SleepEx(5, TRUE); /* Let other thread send the response 
+                         on server creation */
     
     sprintf(pipename, PIPE_PREFIX "%s_%lu_%lu_%d", 
             name, GetCurrentProcessId(), GetCurrentThreadId(), time(NULL));
@@ -1065,46 +1068,50 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
 #if (RPC_TRANSPORT == RPC_TRANSPORT_WINPIPE)
     DWORD num;
     
+    OVERLAPPED ov;
+    
     if (handle >= max_pipe || !pipes[handle].valid)
         return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
+
+    memset(&ov, 0, sizeof(ov));
+    ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
         
     pipes[handle].read = TRUE;
     if (pipes[handle].wait)
     {
         pipes[handle].wait = FALSE;
         CancelIo(pipes[handle].in_handle);
-        SleepEx(10, TRUE);
     }
-    again:
-    ResetEvent(pipes[handle].ov.hEvent);
     
     if (!ReadFile(pipes[handle].in_handle, buf, *p_len, &num, 
-                  &pipes[handle].ov))
+                  &ov))
     {
-     
         if (GetLastError() != ERROR_IO_PENDING)
         {
             ERROR("Failed to read from the pipe: %d", GetLastError());
             pipes[handle].read = FALSE;
+            CloseHandle(ov.hEvent);
             return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
         }
         
         while (TRUE)
         {
-            num = WaitForSingleObjectEx(pipes[handle].ov.hEvent, 
+            num = WaitForSingleObjectEx(ov.hEvent, 
                                         timeout * 1000, TRUE);
             if (num == WAIT_TIMEOUT)
             {
                 CancelIo(pipes[handle].in_handle);
                 pipes[handle].read = FALSE;
+                CloseHandle(ov.hEvent);
                 return TE_RC(TE_RCF_PCH, TE_ETIMEDOUT);
             }
             if (num == WAIT_OBJECT_0)
                 break;
         }
+        CloseHandle(ov.hEvent);
     
         if (!GetOverlappedResult(pipes[handle].in_handle, 
-                                 &pipes[handle].ov, &num, FALSE))
+                                 &ov, &num, FALSE))
         {
             ERROR("Failed to read from the pipe: %d", GetLastError());
             pipes[handle].read = FALSE;
@@ -1114,7 +1121,7 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
         if (num == 0)
         {
             ERROR("0 bytes are received");
-            goto again;
+            return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
         }
     } 
 
