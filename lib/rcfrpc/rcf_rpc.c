@@ -130,7 +130,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
                    rcf_rpc_server **p_handle)
 {
     int   sid;
-    char *val0 = NULL, *tmp;
+    char *val0 = NULL;
     int   rc, rc1;
     
     rcf_rpc_server *rpcs = NULL;
@@ -149,10 +149,9 @@ rcf_rpc_server_get(const char *ta, const char *name,
     }
     
     /* Try to find existing RPC server */
-    rc = cfg_get_instance_fmt(NULL, &tmp, "/agent:%s/rpcserver:%s",
+    rc = cfg_get_instance_fmt(NULL, NULL, "/agent:%s/rpcserver:%s",
                               ta, name);
  
-
     if (rc != 0 && existing)
         return TE_RC(TE_RCF_API, TE_ENOENT);
     
