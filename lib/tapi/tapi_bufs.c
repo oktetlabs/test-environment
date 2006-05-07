@@ -184,6 +184,9 @@ tapi_log_buf_get(tapi_log_buf *buf)
 void
 tapi_log_buf_free(tapi_log_buf *buf)
 {
+    if (buf == NULL)
+        return;
+
     VALIDATE_LOG_BUF(buf);
 
     pthread_mutex_lock(&tapi_log_buf_mutex);
