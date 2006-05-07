@@ -49,10 +49,6 @@
 #include "tapi_rpc.h"
 
 
-/** Maximum length name used in configuration string */
-#define TAPI_ENV_NAME_MAX       32
-
-
 /**
  * Test suite specific variables with 'env' support.
  */
@@ -243,7 +239,7 @@ typedef TAILQ_HEAD(cfg_handle_tqh, cfg_handle_tqe) cfg_handle_tqh;
 typedef struct tapi_env_net {
     LIST_ENTRY(tapi_env_net)    links;  /**< Links of the networks list */
     
-    char name[TAPI_ENV_NAME_MAX];   /**< Name of the net */
+    char               *name;       /**< Name of the net */
 
     tapi_env_type       type;       /**< Type of the net */
 
@@ -274,10 +270,9 @@ typedef LIST_HEAD(tapi_env_processes, tapi_env_process)
 typedef struct tapi_env_host {
     LIST_ENTRY(tapi_env_host)   links;  /**< Links */
 
-    char    name[TAPI_ENV_NAME_MAX];    /**< Name of the host */
-
     tapi_env_processes  processes;  /** List of processes on a host */
 
+    char   *name;       /**< Name of the host */
     char   *ta;         /**< Name of TA located on the host */
     char   *libname;    /**< Name of dynamic library to be used on
                              the host as IUT */
@@ -292,8 +287,8 @@ typedef LIST_HEAD(tapi_env_hosts, tapi_env_host) tapi_env_hosts;
 typedef struct tapi_env_if {
     CIRCLEQ_ENTRY(tapi_env_if)  links;  /**< Links */
 
-    char name[TAPI_ENV_NAME_MAX];   /**< Name of the interface
-                                         in configuration string */
+    char           *name;       /**< Name of the interface in
+                                     configuration string */
 
     tapi_env_net   *net;        /**< Net the interface belongs to */
     tapi_env_host  *host;       /**< Host the interface is belongs to */
@@ -328,7 +323,7 @@ typedef struct tapi_env_process {
 typedef struct tapi_env_pco {
     TAILQ_ENTRY(tapi_env_pco) links;    /**< Links in the process */
 
-    char name[TAPI_ENV_NAME_MAX];       /**< Name of the PCO */
+    char               *name;           /**< Name of the PCO */
 
     tapi_env_type       type;           /**< Type of PCO */
     tapi_env_process   *process;        /**< Parent process */
@@ -342,7 +337,7 @@ typedef struct tapi_env_pco {
 typedef struct tapi_env_addr {
     CIRCLEQ_ENTRY(tapi_env_addr)    links;  /**< Links */
 
-    char name[TAPI_ENV_NAME_MAX];       /**< Name of the address */
+    char                   *name;       /**< Name of the address */
 
     tapi_env_if            *iface;      /**< Host interface the address
                                              belongs to */
@@ -366,8 +361,8 @@ typedef CIRCLEQ_HEAD(tapi_env_addrs, tapi_env_addr) tapi_env_addrs;
 typedef struct tapi_env_alias {
     LIST_ENTRY(tapi_env_alias)  links;  /**< Links */
 
-    char    alias[TAPI_ENV_NAME_MAX];   /**< Alias */
-    char    name[TAPI_ENV_NAME_MAX];    /**< Real name */
+    char   *alias;  /**< Alias */
+    char   *name;   /**< Real name */
 
 } tapi_env_alias;
 

@@ -323,12 +323,16 @@ tapi_env_free(tapi_env *env)
                     }
                 }
                 TAILQ_REMOVE(&proc->pcos, pco, links);
+                free(pco->name);
                 free(pco);
             }
             LIST_REMOVE(proc, links);
             free(proc);
         }
         LIST_REMOVE(host, links);
+        free(host->ta);
+        free(host->libname);
+        free(host->name);
         free(host);
     }
     /* Destroy list of addresses in reverse order */
@@ -347,6 +351,7 @@ tapi_env_free(tapi_env *env)
         CIRCLEQ_REMOVE(&env->addrs, addr, links);
         if (addr->addr != SA(&addr->addr_st))
             free(addr->addr);
+        free(addr->name);
         free(addr);
     }
     /* Destroy list of nets */
@@ -411,18 +416,23 @@ tapi_env_free(tapi_env *env)
             free(ip4_net_oid);
         }
         free(net->ip4addr);
+        free(net->name);
         free(net);
     }
     /* Destroy list of interfaces */
     while ((iface = env->ifs.cqh_first) != (void *)&env->ifs)
     {
         CIRCLEQ_REMOVE(&env->ifs, iface, links);
+        free(iface->info.if_name);
+        free(iface->name);
         free(iface);
     }
     /* Destroy list of aliases */
     while ((alias = env->aliases.lh_first) != NULL)
     {
         LIST_REMOVE(alias, links);
+        free(alias->alias);
+        free(alias->name);
         free(alias);
     }
 

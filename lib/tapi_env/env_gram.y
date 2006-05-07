@@ -19,6 +19,7 @@
 
 
 extern int yylex(void);
+extern int yylex_destroy(void);
 extern int yyparse(void);
 
 int yydebug = 0;
@@ -52,6 +53,7 @@ env_cfg_parse(tapi_env *e, const char *cfg)
     myindex = 0;
     
     yyparse();
+    yylex_destroy();
 
     return 0;
 }
@@ -177,32 +179,32 @@ net:
     |
     quotedname OBRACE hosts EBRACE
     {
-        const char *name = $1;
+        char *name = $1;
 
-        if (strlen(name) < TAPI_ENV_NAME_MAX)
+        if (curr_net == NULL)
+            curr_net = create_net();
+        if (curr_net != NULL)
         {
-            if (curr_net == NULL)
-                curr_net = create_net();
-            if (curr_net != NULL)
-                strcpy(curr_net->name, name);
+            curr_net->name = name;
+            name = NULL;
         }
+        free(name);
         curr_net = NULL;
     }
     |
     quotedname COLON ENTITY_TYPE OBRACE hosts EBRACE
     {
-        const char *name = $1;
+        char *name = $1;
 
-        if (strlen(name) < TAPI_ENV_NAME_MAX)
+        if (curr_net == NULL)
+            curr_net = create_net();
+        if (curr_net != NULL)
         {
-            if (curr_net == NULL)
-                curr_net = create_net();
-            if (curr_net != NULL)
-            {
-                strcpy(curr_net->name, name);
-                curr_net->type = $3;
-            }
+            curr_net->type = $3;
+            curr_net->name = name;
+            name = NULL;
         }
+        free(name);
         curr_net = NULL;
     }
     ;
@@ -228,49 +230,48 @@ host:
     |
     quotedname OBRACE host_items EBRACE
     {
-        const char *name = $1;
+        char *name = $1;
 
-        if (strlen(name) < TAPI_ENV_NAME_MAX)
+        if (curr_host_if == NULL)
+            curr_host_if = create_host_if();
+        if (curr_host_if != NULL && curr_host_if->host != NULL)
         {
-            if (curr_host_if == NULL)
-                curr_host_if = create_host_if();
-            if (curr_host_if != NULL && curr_host_if->host != NULL)
+            tapi_env_host  *p = NULL;
+
+            curr_host_if->host->name = name;
+            name = NULL;
+            if (*curr_host_if->host->name != '\0')
             {
-                tapi_env_host  *p = NULL;
+                for (p = env->hosts.lh_first;
+                     p != NULL &&
+                     strcmp(p->name, curr_host_if->host->name) != 0;
+                     p = p->links.le_next);
 
-                strcpy(curr_host_if->host->name, name);
-                if (*name != '\0')
+                if (p != NULL)
                 {
-                    for (p = env->hosts.lh_first;
-                         p != NULL &&
-                         strcmp(p->name, curr_host_if->host->name) != 0;
-                         p = p->links.le_next);
+                    tapi_env_process *proc;
 
-                    if (p != NULL)
+                    /* Host with the same name found: */
+                    /* - copy processes */
+                    while ((proc = curr_host_if->host->
+                                       processes.lh_first) != NULL)
                     {
-                        tapi_env_process *proc;
-
-                        /* Host with the same name found: */
-                        /* - copy processes */
-                        while ((proc = curr_host_if->host->
-                                           processes.lh_first) != NULL)
-                        {
-                            LIST_REMOVE(proc, links);
-                            LIST_INSERT_HEAD(&p->processes, proc, links);
-                        }
-                        /* - substitute reference in interface */
-                        free(curr_host_if->host);
-                        curr_host_if->host = p;
+                        LIST_REMOVE(proc, links);
+                        LIST_INSERT_HEAD(&p->processes, proc, links);
                     }
-                }
-                if (p == NULL)
-                {
-                    /* Host is unnamed or not found */
-                    LIST_INSERT_HEAD(&env->hosts, curr_host_if->host,
-                                     links);
+                    /* - substitute reference in interface */
+                    free(curr_host_if->host);
+                    curr_host_if->host = p;
                 }
             }
+            if (p == NULL)
+            {
+                /* Host is unnamed or not found */
+                LIST_INSERT_HEAD(&env->hosts, curr_host_if->host,
+                                 links);
+            }
         }
+        free(name);
         curr_host_if = NULL;
     }
     ;
@@ -308,71 +309,66 @@ pcos:
 pco:
     quotedname COLON ENTITY_TYPE
     {
-        const char *name = $1;
+        char         *name = $1;
+        tapi_env_pco *p = calloc(1, sizeof(*p));
 
         if (curr_proc == NULL)
             curr_proc = create_process();
 
-        if (strlen(name) < TAPI_ENV_NAME_MAX)
+        assert(p != NULL);
+        if (p != NULL)
         {
-            tapi_env_pco *p = calloc(1, sizeof(*p));
-
-            assert(p != NULL);
-            if (p != NULL)
+            p->name = name;
+            name = NULL;
+            p->type = $3;
+            p->process = curr_proc;
+            if (curr_proc != NULL)
             {
-                strcpy(p->name, name);
-                p->type = $3;
-                p->process = curr_proc;
-                if (curr_proc != NULL)
-                {
-                    TAILQ_INSERT_TAIL(&curr_proc->pcos, p, links);
-                }
+                TAILQ_INSERT_TAIL(&curr_proc->pcos, p, links);
             }
         }
+        free(name);
     }
     ;
 
 address:
     ADDRESS COLON quotedname COLON ADDR_FAMILY COLON ADDR_TYPE
     {
-        const char *name = $3;
+        char            *name = $3;
+        tapi_env_addr   *p = calloc(1, sizeof(*p));
 
         if (curr_host_if == NULL)
             curr_host_if = create_host_if();
 
-        if (strlen(name) < TAPI_ENV_NAME_MAX)
+        assert(p != NULL);
+        if (p != NULL)
         {
-            tapi_env_addr   *p = calloc(1, sizeof(*p));
-
-            assert(p != NULL);
-            if (p != NULL)
-            {
-                strcpy(p->name, name);
-                p->iface = curr_host_if;
-                p->family = $5;
-                p->type = $7;
-                p->handle = CFG_HANDLE_INVALID;
-                CIRCLEQ_INSERT_TAIL(&env->addrs, p, links);
-            }
+            p->name = name;
+            name = NULL;
+            p->iface = curr_host_if;
+            p->family = $5;
+            p->type = $7;
+            p->handle = CFG_HANDLE_INVALID;
+            CIRCLEQ_INSERT_TAIL(&env->addrs, p, links);
         }
+        free(name);
     }
     ;
 
 interface:
     INTERFACE COLON quotedname
     {
-        const char *name = $3;
+        char *name = $3;
 
-        if (strlen(name) < TAPI_ENV_NAME_MAX)
+        if (curr_host_if == NULL)
+            curr_host_if = create_host_if();
+
+        if (curr_host_if != NULL)
         {
-            if (curr_host_if == NULL)
-                curr_host_if = create_host_if();
-
-            if (curr_host_if != NULL)
-            {
-                strcpy(curr_host_if->name, name);
-            }
+            curr_host_if->name = name;
+            name = NULL;
         }
+        free(name);
     }
     ;
 
@@ -386,21 +382,21 @@ aliases:
 alias:
     quotedname EQUAL quotedname
     {
-        const char *alias = $1;
-        const char *name = $3;
+        char             *alias = $1;
+        char             *name = $3;
+        tapi_env_alias   *p = calloc(1, sizeof(*p));
 
-        if ((strlen(alias) < TAPI_ENV_NAME_MAX) ||
-            (strlen(name) < TAPI_ENV_NAME_MAX))
+        assert(p != NULL);
+        if (p != NULL)
         {
-            tapi_env_alias   *p = calloc(1, sizeof(*p));
-
-            assert(p != NULL);
-            if (p != NULL)
-            {
-                strcpy(p->alias, alias);
-                strcpy(p->name, name);
-                LIST_INSERT_HEAD(&env->aliases, p, links);
-            }
+            p->alias = alias;
+            p->name = name;
+            LIST_INSERT_HEAD(&env->aliases, p, links);
+        }
+        else
+        {
+            free(alias);
+            free(name);
         }
     }
     ;
