@@ -20,7 +20,12 @@ instance contains all information, necessary for BER encoding,
 whereas ASN.1 textual representation of value is insufficient for it --
 encoding requires information about ASN.1 type definition.
 
+According with ASN.1 specification, ASN value may be considered
+as tree hierarchy, in which . Constraint ASN values are consist of some 
+another values, which m
+
 User API: asn_usr.h
+
 Internal API: asn_impl.h
 
 
