@@ -99,6 +99,17 @@
             </arg>
         </run>
 
+        <run>
+            <script name="udp_socket">
+                <req id="TAD_UDP"/>
+            </script>
+            <arg name="env">
+                <value>{'host_csap'{addr:'csap_addr':inet:unicast,if:'csap_if'},
+                {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}
+                </value>
+            </arg>
+        </run>
+
         <!--
         <run>
             <script name="tcp_simple">
