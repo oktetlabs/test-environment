@@ -220,6 +220,7 @@ tapi_udp_ip4_eth_pattern_unit(const uint8_t *src_addr,
     return 0;
 }
 
+#if 0
 /**
  * Create file with udp.ip4 Traffic-Pattern-Unit from UDP datagram
  * parameters
@@ -275,6 +276,7 @@ tapi_udp4_prepare_tmpl_file(const char *fname, const udp4_datagram *dgram)
     fclose(f);
     return 0;
 }
+#endif
 
 
 /* see description in tapi_udp.h */
@@ -400,26 +402,6 @@ tapi_udp_ip4_eth_csap_create(const char *ta_name, int sid,
     return TE_RC(TE_TAPI, rc);
 }
 
-/* see description in tapi_udp.h */
-int
-tapi_udp4_dgram_send(const char *ta_name, int sid,
-                     csap_handle_t csap, const udp4_datagram *udp_dgram)
-{
-    int         rc;
-    const char  templ_fname[] = "/tmp/te_udp4_send.XXXXXX";
-
-    /* TODO! */
-
-    UNUSED(udp_dgram);
-
-
-    if ((rc = rcf_ta_trsend_start(ta_name, sid, csap, templ_fname,
-                                  RCF_MODE_BLOCKING)) != 0)
-    {
-        printf("rcf_ta_trsend_start returns %d\n", rc);
-    }
-    return rc;
-}
 
 /* see description in tapi_udp.h */
 static void
@@ -445,6 +427,7 @@ udp4_asn_pkt_handler(asn_value *pkt, void *user_param)
     asn_free_value(pkt);
 }
 
+#if 0
 /* see description in tapi_udp.h */
 static void
 udp4_pkt_handler(const char *pkt_fname, void *user_param)
@@ -463,6 +446,7 @@ udp4_pkt_handler(const char *pkt_fname, void *user_param)
 
     udp4_asn_pkt_handler(pkt, user_param);
 }
+#endif
 
 /* See description in tapi_udp.h */
 tapi_tad_trrecv_cb_data *
@@ -488,28 +472,6 @@ tapi_udp_ip4_eth_trrecv_cb_data(udp4_callback callback, void *user_data)
 }
 
 
-/* see description in tapi_udp.h */
-int
-tapi_udp4_dgram_recv_start(const char *ta_name,  int sid,
-                           csap_handle_t csap,
-                           const udp4_datagram *udp_dgram,
-                           rcf_trrecv_mode mode)
-{
-    char pattern_fname[] = "/tmp/te_udp4_pattern.XXXXXX";
-    int              rc;
-    unsigned int     timeout = TAD_TIMEOUT_INF; 
-
-    mktemp(pattern_fname);
-
-    /* TODO: here should be creation of pattern */
-    UNUSED(udp_dgram);
-
-    /** Recevie unlimited number of packets */
-    rc = rcf_ta_trrecv_start(ta_name, sid, csap, pattern_fname,
-                             timeout, 0, mode);
-    unlink(pattern_fname);
-    return rc;
-}
 
 /* See description in tapi_udp.h */
 int
@@ -556,6 +518,7 @@ tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
 }
 
 
+#if 0
 /* see description in tapi_udp.h */
 int
 tapi_udp4_dgram_send_recv(const char *ta_name, int sid, csap_handle_t csap,
@@ -581,5 +544,6 @@ tapi_udp4_dgram_send_recv(const char *ta_name, int sid, csap_handle_t csap,
 
     return rc;
 }
+#endif
 
 

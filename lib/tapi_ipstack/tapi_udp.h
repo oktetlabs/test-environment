@@ -80,58 +80,6 @@ extern int ndn_udp4_dgram_to_plain(asn_value *pkt,
 
 
 
-/**
- * Creates usual 'data.udp.ip4' CSAP on specified Test Agent and got its
- * handle.
- * 
- * @param ta_name       Test Agent name
- * @param sid           RCF SID
- * @param loc_addr_str  Character string with local IP address (or NULL)
- * @param rem_addr_str  Character string with remote IP address (or NULL)
- * @param loc_port      Local UDP port (may be zero)
- * @param rem_port      Remote UDP port (may be zero)
- * @param udp_csap      Identifier of an SNMP CSAP (OUT)
- * 
- * @return Zero on success or error code.
- */
-extern int tapi_udp4_csap_create(const char *ta_name, int sid,
-                                 const char *loc_addr_str,
-                                 const char *rem_addr_str,
-                                 uint16_t loc_port, uint16_t rem_port,
-                                 csap_handle_t *udp_csap);
-
-
-/**
- * Send UDP datagram via 'data.udp.ip4' CSAP.
- * 
- * @param ta_name       Test Agent name.
- * @param sid           RCF SID
- * @param csap          identifier of an SNMP CSAP (OUT).
- * @param udp_dgram     UDP datagram to be sent.
- * 
- * @return zero on success or error code.
- */
-extern int tapi_udp4_dgram_send(const char *ta_name, int sid,
-            csap_handle_t csap, const udp4_datagram *udp_dgram);
-
-
-
-/**
- * Start receiving of UDP datagrams via 'data.udp.ip4' CSAP, non-block
- * method.
- * 
- * @param ta_name       Test Agent name
- * @param sid           RCF SID
- * @param csap          Identifier of an SNMP CSAP (OUT)
- * @param udp_dgram     UDP datagram with pattern for filter
- * @param mode          Count received packets only or store packets
- *                      to get to the test side later
- * 
- * @return Zero on success or error code.
- */
-extern int tapi_udp4_dgram_recv_start(const char *ta_name,  int sid,
-            csap_handle_t csap, const  udp4_datagram *udp_dgram,
-            rcf_trrecv_mode mode);
 
 /**
  * Prepare callback data to be passed in tapi_tad_trrecv_{wait,stop,get}
@@ -186,7 +134,6 @@ extern int tapi_udp4_dgram_recv(const char *ta_name, int sid,
                                 int number, int timeout,
                                 const udp4_datagram *udp_dgram, 
                                 udp4_callback callback, void *user_data);
-#endif
 
 /**
  * Send UDP datagram via 'data.udp.ip4' CSAP and receive response to it
@@ -209,6 +156,8 @@ extern int tapi_udp4_dgram_send_recv(const char *ta_name, int sid,
                                      unsigned int timeout,
                                      const udp4_datagram *dgram_sent,
                                      udp4_datagram *dgram_recv);
+
+#endif
 
 /**
  * Create 'udp.ip4.eth' CSAP on the specified Agent

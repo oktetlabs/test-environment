@@ -111,24 +111,77 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
     return TE_RC(TE_TAPI, rc);
 }
 
-/* See description in tapi_tcp.h */
+int
+tapi_socket_csap_create(const char *ta_name, int sid, int type,
+                        in_addr_t loc_addr, in_addr_t rem_addr,
+                        uint16_t loc_port, uint16_t rem_port,
+                        csap_handle_t *csap)
+{
+    te_errno        rc;
+    asn_value      *csap_spec;
+    asn_value      *csap_level_spec;
+    asn_value      *csap_socket;
+
+    csap_spec       = asn_init_value(ndn_csap_spec);
+    csap_level_spec = asn_init_value(ndn_generic_csap_level);
+    csap_socket     = asn_init_value(ndn_socket_csap);
+
+    asn_write_value_field(csap_socket, NULL, 0, 
+                          type == NDN_TAG_SOCKET_TYPE_UDP ? 
+                          "type.#udp" : "type.#tcp-client");
+    asn_write_value_field(csap_socket,
+                          &loc_addr, sizeof(loc_addr),
+                          "local-addr.#plain");
+    asn_write_value_field(csap_socket,
+                          &rem_addr, sizeof(rem_addr),
+                          "remote-addr.#plain");
+    asn_write_int32(csap_socket, loc_port, "local-port.#plain");
+    asn_write_int32(csap_socket, rem_port, "remote-port.#plain");
+
+    asn_write_component_value(csap_level_spec, csap_socket, "#socket");
+
+    asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
+
+    rc = tapi_tad_csap_create(ta_name, sid, "socket", 
+                              csap_spec, csap);
+
+    asn_free_value(csap_spec);
+
+    return TE_RC(TE_TAPI, rc);
+}
+
+
+
+
+
+/* See description in tapi_socket.h */
 int
 tapi_tcp_client_csap_create(const char *ta_name, int sid, 
                             in_addr_t loc_addr, in_addr_t rem_addr,
                             uint16_t loc_port, uint16_t rem_port,
                             csap_handle_t *tcp_csap)
 {
-    UNUSED(ta_name);
-    UNUSED(sid);
-    UNUSED(loc_addr);
-    UNUSED(rem_addr);
-    UNUSED(loc_port);
-    UNUSED(rem_port);
-    UNUSED(tcp_csap);
-    return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+    return tapi_socket_csap_create(ta_name, sid, 
+                                   NDN_TAG_SOCKET_TYPE_TCP_CLIENT,
+                                   loc_addr, rem_addr, loc_port, rem_port,
+                                   tcp_csap);
 }
 
-/* See description in tapi_tcp.h */
+/* See description in tapi_socket.h */
+int
+tapi_udp_csap_create(const char *ta_name, int sid,
+                     in_addr_t loc_addr, in_addr_t rem_addr,
+                     uint16_t loc_port, uint16_t rem_port,
+                     csap_handle_t *udp_csap)
+{
+    return tapi_socket_csap_create(ta_name, sid, 
+                                   NDN_TAG_SOCKET_TYPE_UDP,
+                                   loc_addr, rem_addr, loc_port, rem_port,
+                                   udp_csap);
+}
+
+
+/* See description in tapi_socket.h */
 int
 tapi_tcp_socket_csap_create(const char *ta_name, int sid, 
                             int socket, csap_handle_t *tcp_csap)
@@ -248,10 +301,10 @@ struct data_message {
 }; 
 
 /* 
- * Pkt handler for TCP packets 
+ * Pkt handler for 'socket' CSAP incoming data
  */
 static void
-tcp_data_csap_handler(const char *pkt_fname, void *user_param)
+socket_csap_handler(const char *pkt_fname, void *user_param)
 {
     asn_value  *pkt = NULL;
     struct data_message *msg;
@@ -296,13 +349,11 @@ tcp_data_csap_handler(const char *pkt_fname, void *user_param)
 
 
 
-/* See description in tapi_tcp.h */
+/* See description in tapi_socket.h */
 int
-tapi_tcp_buffer_recv(const char *ta_name, int sid, 
-                     csap_handle_t tcp_csap, 
-                     unsigned int timeout, 
-                     csap_handle_t forward, te_bool len_exact,
-                     uint8_t *buf, size_t *length)
+tapi_socket_recv(const char *ta_name, int sid, csap_handle_t csap, 
+                 unsigned int timeout, csap_handle_t forward,
+                 te_bool len_exact, uint8_t *buf, size_t *length)
 {
     asn_value *pattern = NULL;
     struct data_message msg;
@@ -343,7 +394,7 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
             asn_write_int32(pattern, *length, "0.pdus.0.#socket.length");
     }
 
-    rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, pattern, timeout, 1,
+    rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern, timeout, 1,
                                buf == NULL ? RCF_TRRECV_COUNT
                                            : RCF_TRRECV_PACKETS);
     if (rc != 0)
@@ -352,8 +403,8 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
         goto cleanup;
     }
 
-    rc = rcf_ta_trrecv_wait(ta_name, sid, tcp_csap,
-                            buf == NULL ? NULL : tcp_data_csap_handler,
+    rc = rcf_ta_trrecv_wait(ta_name, sid, csap,
+                            buf == NULL ? NULL : socket_csap_handler,
                             buf == NULL ? NULL : &msg, &num);
     if (rc != 0)
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
@@ -368,11 +419,10 @@ cleanup:
     return rc;
 }
 
-/* See description in tapi_tcp.h */
+/* See description in tapi_socket.h */
 int
-tapi_tcp_buffer_send(const char *ta_name, int sid, 
-                     csap_handle_t tcp_csap, 
-                     uint8_t *buf, size_t length)
+tapi_socket_send(const char *ta_name, int sid, csap_handle_t csap, 
+                 uint8_t *buf, size_t length)
 {
     asn_value *template = NULL;
 
@@ -397,7 +447,7 @@ tapi_tcp_buffer_send(const char *ta_name, int sid,
         goto cleanup;
     } 
 
-    rc = tapi_tad_trsend_start(ta_name, sid, tcp_csap, template,
+    rc = tapi_tad_trsend_start(ta_name, sid, csap, template,
                                RCF_MODE_BLOCKING);
     if (rc != 0)
     {

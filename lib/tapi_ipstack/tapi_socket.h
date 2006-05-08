@@ -58,7 +58,8 @@ extern int tapi_tcp_server_csap_create(const char *ta_name, int sid,
                                        uint16_t loc_port,
                                        csap_handle_t *tcp_csap);
 /**
- * Creates 'data.tcp.ip4' CSAP, 'client' mode, connects to remote server.
+ * Creates 'socket' CSAP, 'TCP client' mode. 
+ * Connects to remote TCP server.
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
@@ -107,13 +108,17 @@ extern int tapi_tcp_server_recv(const char *ta_name, int sid,
                                 unsigned int timeout, int *socket);
 
 /**
- * Wait some data on connected (i.e. non-server) TCP data CSAP.
- * CSAP may wait for any non-zero amount of bytes or for 
- * exactly specified number. 
+ * Wait some data on connected (i.e. non-server) 'socket' CSAP.
+ *
+ * CSAP can wait for any non-zero amount of bytes or for 
+ * exactly specified number; use 'exact' argument to manage it. 
+ *
+ * For UDP socket pårameter 'exact' is ignored, since
+ * UDP socket receiveѕ data by datagrams. 
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
- * @param tcp_csap      TCP CSAP handle
+ * @param tcp_csap      CSAP handle
  * @param timeout       timeout in milliseconds
  * @param forward       id of CSAP to which forward recєived messages, 
  *                      may be CSAP_INVALID_HANDLE for disabled forward
@@ -125,29 +130,67 @@ extern int tapi_tcp_server_recv(const char *ta_name, int sid,
  *
  * @return  Status of the operation
  */
-extern int tapi_tcp_buffer_recv(const char *ta_name, int sid, 
-                                csap_handle_t tcp_csap, 
-                                unsigned int timeout, 
-                                csap_handle_t forward, te_bool exact,
-                                uint8_t *buf, size_t *length);
+extern int tapi_socket_recv(const char *ta_name, int sid, 
+                            csap_handle_t csap, 
+                            unsigned int timeout, 
+                            csap_handle_t forward, te_bool exact,
+                            uint8_t *buf, size_t *length);
 
 /**
- * Send data via connected (non-server) TCP data CSAP.
+ * Send data via connected (non-server) 'socket' CSAP.
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
- * @param tcp_csap      TCP CSAP handle
+ * @param tcp_csap      CSAP handle
  * @param buf           pointer to the data to be send 
  * @param length        length of data
  *
  * @return  Status of the operation
  */
-extern int tapi_tcp_buffer_send(const char *ta_name, int sid, 
-                                csap_handle_t tcp_csap, 
-                                uint8_t *buf, size_t length);
+extern int tapi_socket_send(const char *ta_name, int sid, 
+                            csap_handle_t csap, 
+                            uint8_t *buf, size_t length);
 
 
 
+/**
+ * Creates usual 'socket' CSAP of some network type.
+ * 
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param type          String, type of socket: 
+ *                      should be either @c NDN_TAG_SOCKET_TYPE_UDP
+ *                      or @c NDN_TAG_SOCKET_TYPE_TCP_CLIENT.
+ * @param loc_addr      Local IP address in network order
+ * @param rem_addr      Remote IP address in network order
+ * @param loc_port      Local TCP port in network byte order 
+ * @param rem_port      Remote TCP port in network byte order 
+ * @param csap      Identifier of an SNMP CSAP (OUT)
+ * 
+ * @return Zero on success or error code.
+ */
+extern int tapi_socket_csap_create(const char *ta_name, int sid, int type,
+                                   in_addr_t loc_addr, in_addr_t rem_addr,
+                                   uint16_t loc_port, uint16_t rem_port,
+                                   csap_handle_t *csap);
+
+/**
+ * Creates usual 'socket' CSAP of UDP type on specified Test Agent
+ * 
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param loc_addr      Local IP address in network order
+ * @param rem_addr      Remote IP address in network order
+ * @param loc_port      Local TCP port in network byte order 
+ * @param rem_port      Remote TCP port in network byte order 
+ * @param udp_csap      Identifier of an SNMP CSAP (OUT)
+ * 
+ * @return Zero on success or error code.
+ */
+extern int tapi_udp_csap_create(const char *ta_name, int sid,
+                                in_addr_t loc_addr, in_addr_t rem_addr,
+                                uint16_t loc_port, uint16_t rem_port,
+                                csap_handle_t *udp_csap);
 
 
 
