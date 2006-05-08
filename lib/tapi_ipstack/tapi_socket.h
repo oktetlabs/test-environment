@@ -113,8 +113,8 @@ extern int tapi_tcp_server_recv(const char *ta_name, int sid,
  * CSAP can wait for any non-zero amount of bytes or for 
  * exactly specified number; use 'exact' argument to manage it. 
  *
- * For UDP socket pårameter 'exact' is ignored, since
- * UDP socket receiveѕ data by datagrams. 
+ * For UDP socket parameter 'exact' is ignored, since
+ * UDP socket receives data by datagrams.
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
