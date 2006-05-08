@@ -83,7 +83,7 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
                             in_addr_t loc_addr, uint16_t loc_port,
                             csap_handle_t *tcp_csap)
 {
-    te_errno        rc;
+    te_errno        rc = 0;
     asn_value      *csap_spec;
     asn_value      *csap_level_spec;
     asn_value      *csap_socket;
@@ -92,20 +92,30 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
     csap_level_spec = asn_init_value(ndn_generic_csap_level);
     csap_socket     = asn_init_value(ndn_socket_csap);
 
-    asn_write_value_field(csap_socket, NULL, 0,
-                          "type.#tcp-server");
-    asn_write_value_field(csap_socket,
-                          &loc_addr, sizeof(loc_addr),
-                          "local-addr.#plain");
-    asn_write_int32(csap_socket, ntohs(loc_port), "local-port.#plain");
+    rc = asn_write_value_field(csap_socket, NULL, 0,
+                               "type.#tcp-server");
+    if (rc != 0) goto cleanup;
 
-    asn_write_component_value(csap_level_spec, csap_socket, "#socket");
+    rc = asn_write_value_field(csap_socket,
+                               &loc_addr, sizeof(loc_addr),
+                               "local-addr.#plain");
+    if (rc != 0) goto cleanup;
 
-    asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
+    rc = asn_write_int32(csap_socket, ntohs(loc_port),
+                         "local-port.#plain");
+    if (rc != 0) goto cleanup;
+
+    rc = asn_write_component_value(csap_level_spec, csap_socket,
+                                   "#socket");
+    if (rc != 0) goto cleanup;
+
+    rc = asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
+    if (rc != 0) goto cleanup;
 
     rc = tapi_tad_csap_create(ta_name, sid, "socket", 
                               csap_spec, tcp_csap);
 
+cleanup:
     asn_free_value(csap_spec);
 
     return TE_RC(TE_TAPI, rc);
@@ -117,7 +127,7 @@ tapi_socket_csap_create(const char *ta_name, int sid, int type,
                         uint16_t loc_port, uint16_t rem_port,
                         csap_handle_t *csap)
 {
-    te_errno        rc;
+    te_errno        rc = 0;
     asn_value      *csap_spec;
     asn_value      *csap_level_spec;
     asn_value      *csap_socket;
@@ -126,25 +136,43 @@ tapi_socket_csap_create(const char *ta_name, int sid, int type,
     csap_level_spec = asn_init_value(ndn_generic_csap_level);
     csap_socket     = asn_init_value(ndn_socket_csap);
 
-    asn_write_value_field(csap_socket, NULL, 0, 
-                          type == NDN_TAG_SOCKET_TYPE_UDP ? 
-                          "type.#udp" : "type.#tcp-client");
-    asn_write_value_field(csap_socket,
-                          &loc_addr, sizeof(loc_addr),
-                          "local-addr.#plain");
-    asn_write_value_field(csap_socket,
-                          &rem_addr, sizeof(rem_addr),
-                          "remote-addr.#plain");
-    asn_write_int32(csap_socket, loc_port, "local-port.#plain");
-    asn_write_int32(csap_socket, rem_port, "remote-port.#plain");
+    rc = asn_write_value_field(csap_socket, NULL, 0, 
+                               type == NDN_TAG_SOCKET_TYPE_UDP ? 
+                               "type.#udp" : "type.#tcp-client");
+    if (rc != 0) goto cleanup;
 
-    asn_write_component_value(csap_level_spec, csap_socket, "#socket");
+    if (loc_addr != INADDR_ANY)
+        rc = asn_write_value_field(csap_socket,
+                                   &loc_addr, sizeof(loc_addr),
+                                   "local-addr.#plain");
+    if (rc != 0) goto cleanup;
 
-    asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
+    if (rem_addr != INADDR_ANY)
+        rc = asn_write_value_field(csap_socket,
+                                   &rem_addr, sizeof(rem_addr),
+                                   "remote-addr.#plain");
+    if (rc != 0) goto cleanup;
+
+    if (loc_port != 0)
+        rc = asn_write_int32(csap_socket, ntohs(loc_port),
+                             "local-port.#plain");
+    if (rc != 0) goto cleanup;
+
+
+    if (rem_port != 0)
+        rc = asn_write_int32(csap_socket, ntohs(rem_port),
+                             "remote-port.#plain");
+
+    rc = asn_write_component_value(csap_level_spec, csap_socket, "#socket");
+    if (rc != 0) goto cleanup; 
+
+    rc = asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
+    if (rc != 0) goto cleanup; 
 
     rc = tapi_tad_csap_create(ta_name, sid, "socket", 
                               csap_spec, csap);
 
+cleanup:
     asn_free_value(csap_spec);
 
     return TE_RC(TE_TAPI, rc);
