@@ -194,6 +194,31 @@ tad_socket_rw_init_cb(csap_p csap)
         return rc;
 
     /*
+     * Set remote addr
+     */
+    addr_len = sizeof(spec_data->remote_addr.s_addr);
+    rc = ndn_du_read_plain_oct(csap_spec, NDN_TAG_SOCKET_REMOTE_ADDR, 
+                               (uint8_t *)&(spec_data->remote_addr.s_addr), 
+                               &addr_len);
+    if (rc == 0)
+        INFO(CSAP_LOG_FMT "set remote addr to %s", CSAP_LOG_ARGS(csap),
+             inet_ntoa(spec_data->remote_addr)); 
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    {
+        INFO("%s(): set TCP CSAP %d default remote address to zero", 
+             __FUNCTION__, csap->id);
+        spec_data->remote_addr.s_addr = INADDR_ANY;
+    }
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNOTHERCHOICE)
+    {
+        ERROR("%s(): TCP CSAP %d, non-plain remote address not supported",
+              __FUNCTION__, csap->id);
+        return TE_EOPNOTSUPP;
+    }
+    else
+        return rc;
+
+    /*
      * Set remote port
      */
     rc = ndn_du_read_plain_int(csap_spec, NDN_TAG_SOCKET_REMOTE_PORT,
@@ -219,7 +244,7 @@ tad_socket_rw_init_cb(csap_p csap)
     else
         return rc;
 
-    /* TODO: support of TCP over IPv6 */
+    /* TODO: support of TCP & UDP over IPv6 */
 
     local.sin_family = AF_INET;
     local.sin_addr = spec_data->local_addr;
@@ -255,7 +280,7 @@ tad_socket_rw_init_cb(csap_p csap)
               __FUNCTION__, csap->id, rc);
         return rc;
     }
-    INFO(CSAP_LOG_FMT "bound to %s:%u", CSAP_LOG_ARGS(csap),
+    RING(CSAP_LOG_FMT "bound to %s:%u", CSAP_LOG_ARGS(csap),
          inet_ntoa(local.sin_addr), ntohs(local.sin_port));
 
     switch (spec_data->data_tag)
@@ -271,8 +296,9 @@ tad_socket_rw_init_cb(csap_p csap)
             INFO(CSAP_LOG_FMT "listen() success", CSAP_LOG_ARGS(csap));
             break;
 
-#if 0
+#if 1
         case NDN_TAG_SOCKET_TYPE_TCP_CLIENT: 
+        case NDN_TAG_SOCKET_TYPE_UDP: 
             {
                 struct sockaddr_in remote;
 
@@ -284,8 +310,8 @@ tad_socket_rw_init_cb(csap_p csap)
                     return TE_ETADWRONGNDS;
                 }
                 remote.sin_family = AF_INET;
-                remote.sin_port = spec_data->remote_port;
-                remote.sin_addr = ip4_spec_data->remote_addr;
+                remote.sin_port = htons(spec_data->remote_port);
+                remote.sin_addr = spec_data->remote_addr;
 
                 if (connect(spec_data->socket, SA(&remote), 
                             sizeof(remote)) < 0)
@@ -295,6 +321,9 @@ tad_socket_rw_init_cb(csap_p csap)
                           __FUNCTION__, csap->id, rc);
                     return rc;
                 }
+    RING(CSAP_LOG_FMT "connected to %s:%u", CSAP_LOG_ARGS(csap),
+         inet_ntoa(remote.sin_addr), ntohs(remote.sin_port));
+
             }
             break;
 #endif
