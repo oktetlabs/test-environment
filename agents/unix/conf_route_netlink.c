@@ -105,12 +105,6 @@
 #endif
 
 
-/** Check that interface is locked for using of this TA */
-#define INTERFACE_IS_MINE(ifname) \
-    (strcmp(ifname, "lo") == 0 || \
-     rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
-
-
 static char buf[4096];
 
 
