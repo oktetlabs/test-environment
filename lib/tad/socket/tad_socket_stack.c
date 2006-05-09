@@ -280,7 +280,7 @@ tad_socket_rw_init_cb(csap_p csap)
               __FUNCTION__, csap->id, rc);
         return rc;
     }
-    RING(CSAP_LOG_FMT "bound to %s:%u", CSAP_LOG_ARGS(csap),
+    INFO(CSAP_LOG_FMT "bound to %s:%u", CSAP_LOG_ARGS(csap),
          inet_ntoa(local.sin_addr), ntohs(local.sin_port));
 
     switch (spec_data->data_tag)
@@ -321,9 +321,8 @@ tad_socket_rw_init_cb(csap_p csap)
                           __FUNCTION__, csap->id, rc);
                     return rc;
                 }
-    RING(CSAP_LOG_FMT "connected to %s:%u", CSAP_LOG_ARGS(csap),
-         inet_ntoa(remote.sin_addr), ntohs(remote.sin_port));
-
+                INFO(CSAP_LOG_FMT "connected to %s:%u", CSAP_LOG_ARGS(csap),
+                     inet_ntoa(remote.sin_addr), ntohs(remote.sin_port));
             }
             break;
 #endif
