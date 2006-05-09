@@ -31,6 +31,19 @@
 #ifndef __TE_TA_UNIX_INTERNAL_H__
 #define __TE_TA_UNIX_INTERNAL_H__
 
+#include <stdio.h>
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
+#include "rcf_pch.h"
+
 /** Fast conversion of the network mask to prefix */
 #define MASK2PREFIX(mask, prefix)            \
     switch (mask)                            \
@@ -74,6 +87,11 @@
 
 /** Fast conversion of the prefix to network mask */
 #define PREFIX2MASK(prefix) (prefix == 0 ? 0 : (~0) << (32 - (prefix)))
+
+/** Check that interface is locked for using of this TA */
+#define INTERFACE_IS_MINE(ifname) \
+    (strncmp(ifname, "lo", strlen("lo")) == 0 || \
+     rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
 
 #define PRINT(msg...) \
     do {                                                \

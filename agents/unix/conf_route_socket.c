@@ -71,6 +71,7 @@
 static int rt_seq = 0;
 
 
+#undef TA_UNIX_CONF_ROUTE_DEBUG
 #ifdef TA_UNIX_CONF_ROUTE_DEBUG
 
 /**
@@ -373,6 +374,12 @@ route_log(const char *title, const struct rt_msghdr *rtm)
                           addrs[i], sizeof(addrs[i]));
                 addrlen = sizeof(struct sockaddr_in6);
             }
+            else if (addr->sa_family == AF_LINK)
+            {
+                snprintf(addrs[i], sizeof(addrs[i]), " index=%u",
+                         ((const struct sockaddr_dl *)addr)->sdl_index);
+                addrlen = sizeof(struct sockaddr_dl);
+            }
             else
             {
                 ERROR("Unknown address family %u", addr->sa_family);
@@ -451,8 +458,9 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
 {
     const struct sockaddr  *addr = CONST_SA(msg + 1);
     socklen_t               addrlen;
+    te_errno                rc;
 
-    rt_info->flags = 0;
+    memset(rt_info, 0, sizeof(*rt_info));
 
     if (msg->rtm_addrs & RTA_DST)
     {
@@ -469,8 +477,30 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
     {
         addrlen = te_sockaddr_get_size(addr);
         memcpy(&rt_info->gw, addr, addrlen);
-        rt_info->flags |= TA_RT_INFO_FLG_GW;
         addr = CONST_SA(((const uint8_t *)addr) + addrlen);
+
+        if (msg->rtm_flags & RTF_GATEWAY)
+        {
+            /* Route via gateway */
+            rt_info->flags |= TA_RT_INFO_FLG_GW;
+        }
+        else
+        {
+            /* 
+             * Gateway address is used to specify interface of the
+             * direct route. Address should be own local address.
+             * Map address to interface name.
+             */
+            rc = ta_unix_conf_netaddr2ifname(CONST_SA(&rt_info->gw),
+                                             rt_info->ifname);
+            if (rc != 0)
+            {
+                ERROR("Failed to find interface by address %s",
+                      te_sockaddr_get_ipstr(CONST_SA(&rt_info->gw)));
+                return rc;
+            }
+            rt_info->flags |= TA_RT_INFO_FLG_IF;
+        }
     }
 
     if (msg->rtm_addrs & RTA_NETMASK)
@@ -533,8 +563,6 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
         addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
 #endif
-
-    rt_info->ifname[0] = '\0';
 
     rt_info->metric = (msg->rtm_inits & RTV_HOPCOUNT) ?
         (rt_info->flags |= TA_RT_INFO_FLG_METRIC,
@@ -650,6 +678,30 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         msg->rtm_flags |= RTF_GATEWAY;
         addr = SA(((const uint8_t *)addr) + addrlen);
     }
+    else if (rt_info->flags & TA_RT_INFO_FLG_IF)
+    {
+        const void *ifa;
+
+        addrlen = te_sockaddr_get_size_by_af(rt_info->dst.ss_family);
+        if (msglen < addrlen)
+            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+        msglen -= addrlen;
+        msg->rtm_msglen += addrlen;
+        rc = ta_unix_conf_get_addr(rt_info->ifname, rt_info->dst.ss_family,
+                                   &ifa);
+        if (rc != 0)
+        {
+            ERROR("Failed to get interface '%s' address: %r",
+                  rt_info->ifname, rc);
+            return rc;
+        }
+        memset(addr, 0, addrlen);
+        addr->sa_family = rt_info->dst.ss_family;
+        memcpy(te_sockaddr_get_netaddr(addr), ifa,
+               te_netaddr_get_size(addr->sa_family));
+        msg->rtm_addrs |= RTA_GATEWAY;
+        addr = SA(((const uint8_t *)addr) + addrlen);
+    }
 
     /* Netmask */
     addrlen = te_sockaddr_get_size_by_af(rt_info->dst.ss_family);
@@ -671,8 +723,24 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     /* Interface */
     if (rt_info->flags & TA_RT_INFO_FLG_IF)
     {
-        ERROR("Direct routes are not supported yet");
-        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+        struct sockaddr_dl *ifp = (struct sockaddr_dl *)addr;
+
+        addrlen = sizeof(*ifp);
+        if (msglen < addrlen)
+            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+        msglen -= addrlen;
+        msg->rtm_msglen += addrlen;
+        memset(ifp, 0, addrlen);
+        ifp->sdl_family = AF_LINK;
+        ifp->sdl_index = if_nametoindex(rt_info->ifname);
+        if (ifp->sdl_index == 0)
+        {
+            ERROR("Cannot convert interface name '%s' to index",
+                  rt_info->ifname);
+            return TE_RC(TE_TA_UNIX, TE_ESRCH);
+        }
+        msg->rtm_addrs |= RTA_IFP;
+        addr = SA(((const uint8_t *)addr) + addrlen);
     }
 
     if (rt_info->flags & TA_RT_INFO_FLG_METRIC)
@@ -786,7 +854,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
     } while ((rtm->rtm_type != RTM_GET) || (rtm->rtm_seq != rt_seq) ||
              (rtm->rtm_pid != rt_pid));
 
-#if 0
+#ifdef TA_UNIX_CONF_ROUTE_DEBUG
     /* Reply got */
     route_log(__FUNCTION__, rtm);
 #endif
@@ -845,6 +913,10 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
         rc = TE_OS_RC(TE_TA_UNIX, (ret < 0) ? errno : EIO);
         ERROR("%s(): Failed to send route request to kernel sent=%d: %r",
               __FUNCTION__, (int)ret, rc);
+#ifdef TA_UNIX_CONF_ROUTE_DEBUG
+        /* Reply got */
+        route_log(__FUNCTION__, rtm);
+#endif
         goto cleanup;
     }
 

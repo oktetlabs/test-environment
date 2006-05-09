@@ -200,11 +200,6 @@ static void free_nlmsg_list(agt_nlmsg_list *list);
 
 #endif
 
-/** Check that interface is locked for using of this TA */
-#define INTERFACE_IS_MINE(ifname) \
-    (strncmp(ifname, "lo", strlen("lo")) == 0 || \
-     rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
-
 /** Strip off .VLAN from interface name */
 static inline char *
 ifname_without_vlan(const char *ifname)
@@ -1449,15 +1444,14 @@ nl_ip_addr_modify(enum net_addr_ops cmd,
 /**
  * Get IPv4 address of the network interface using ioctl.
  *
- *
  * @param ifname        interface name (like "eth0")
  * @param af            address family
  * @param addr          location for the address pointer
  *
- * @return OS errno
+ * @return Error code.
  */
-static te_errno
-get_addr(const char *ifname, sa_family_t af, void **addr)
+te_errno
+ta_unix_conf_get_addr(const char *ifname, sa_family_t af, void **addr)
 {
     strcpy(req.my_ifr_name, ifname);
     CFG_IOCTL((af == AF_INET6) ? cfg6_socket : cfg_socket,
@@ -2015,7 +2009,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
                 continue;
         }
 
-        rc = get_addr(cur, family, &tmp_addr);
+        rc = ta_unix_conf_get_addr(cur, family, &tmp_addr);
         if (rc == 0 && memcmp(tmp_addr, &new_addr, addrlen) == 0)
             return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
@@ -2284,7 +2278,7 @@ find_net_addr(const char *ifname, const char *addr)
             continue;
         }
 
-        rc = get_addr(cur, family, &tmp_addr);
+        rc = ta_unix_conf_get_addr(cur, family, &tmp_addr);
         if (rc == 0 && memcmp(tmp_addr, &tgt_addr, addrlen) == 0)
         {
             return cur;
@@ -2599,6 +2593,70 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     return 0;
 }
 #endif
+
+te_errno
+ta_unix_conf_netaddr2ifname(const struct sockaddr *addr, char *ifname)
+{
+    char        my_addr[INET6_ADDRSTRLEN];
+    size_t      my_addrlen;
+    te_errno    rc;
+    char       *ifs;
+    char       *ifp;
+    char       *ifpn;
+    char       *addrs;
+    char       *addrp;
+    char       *addrpn;
+
+    if (inet_ntop(addr->sa_family, te_sockaddr_get_netaddr(addr),
+                  my_addr, sizeof(my_addr)) == NULL)
+    {
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    my_addrlen = strlen(my_addr);
+
+    rc = interface_list(0, NULL, &ifs);
+    if (rc != 0)
+        return rc;
+
+    for (ifp = ifs + strspn(ifs, " ");
+         ifp != NULL && *ifp != '\0';
+         ifp = ifpn + (ifpn == NULL ? 0 : strspn(ifpn, " ")))
+    {
+        ifpn = strchr(ifp, ' ');
+        if (ifpn != NULL)
+        {
+            *ifpn++ = '\0';
+        }
+        rc = net_addr_list(0, NULL, &addrs, ifp);
+        if (rc != 0)
+        {
+            free(ifs);
+            return rc;
+        }
+
+        for (addrp = addrs + strspn(addrs, " ");
+             addrp != NULL && *addrp != '\0';
+             addrp = addrpn + (addrpn == NULL ? 0 : strspn(addrpn, " ")))
+        {
+            addrpn = strchr(addrp, ' ');
+            if (addrpn != NULL)
+            {
+                *addrpn++ = '\0';
+            }
+            if ((strncmp(addrp, my_addr, my_addrlen) == 0) &&
+                (addrp[my_addrlen] == ' ' || addrp[my_addrlen] == '\0'))
+            {
+                strncpy(ifname, ifp, IF_NAMESIZE);
+                free(addrs);
+                free(ifs);
+                return 0;
+            }
+        }
+        free(addrs);
+    }
+    free(ifs);
+    return TE_RC(TE_TA_UNIX, TE_ESRCH);
+}
 
 
 /**
