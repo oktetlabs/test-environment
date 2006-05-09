@@ -708,6 +708,12 @@ RCF_PCH_CFG_NODE_NA(node_net_snmp_stats, "stats",
 te_errno
 ta_unix_conf_net_snmp_stats_init(void)
 {
+    int fd = open("/proc/net/snmp", O_RDONLY);
+
+    if (fd < 0)
+        return 0;
+    close(fd);
+
     return rcf_pch_add_node("/agent", &node_net_snmp_stats);
 }
 
@@ -715,5 +721,11 @@ ta_unix_conf_net_snmp_stats_init(void)
 te_errno
 ta_unix_conf_net_if_stats_init(void)
 {
+    int fd = open("/proc/net/dev", O_RDONLY);
+
+    if (fd < 0)
+        return 0;
+    close(fd);
+
     return rcf_pch_add_node("/agent/interface", &node_net_if_stats);
 }
