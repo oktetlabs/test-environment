@@ -820,8 +820,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
     rtm->rtm_pid = rt_pid;
     rtm->rtm_seq = ++rt_seq;
 
-    addrlen = (rt_info->dst.ss_family == AF_INET) ?
-        sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+    addrlen = te_sockaddr_get_size(CONST_SA(&rt_info->dst));
     memcpy(rt_buf + rtm->rtm_msglen, &rt_info->dst, addrlen);
     rtm->rtm_msglen += addrlen;
 
