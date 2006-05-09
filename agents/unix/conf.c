@@ -2594,69 +2594,44 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 }
 #endif
 
+#ifdef USE_IOCTL
 te_errno
 ta_unix_conf_netaddr2ifname(const struct sockaddr *addr, char *ifname)
 {
-    char        my_addr[INET6_ADDRSTRLEN];
-    size_t      my_addrlen;
-    te_errno    rc;
-    char       *ifs;
-    char       *ifp;
-    char       *ifpn;
-    char       *addrs;
-    char       *addrp;
-    char       *addrpn;
+    size_t           addrlen = te_netaddr_get_size(addr->sa_family);
+    void            *netaddr = te_sockaddr_get_netaddr(addr);
+    te_errno         rc;
+    void            *ifconf_buf = NULL;
+    struct my_ifreq *first_req;
+    struct my_ifreq *p;
 
-    if (inet_ntop(addr->sa_family, te_sockaddr_get_netaddr(addr),
-                  my_addr, sizeof(my_addr)) == NULL)
-    {
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-    my_addrlen = strlen(my_addr);
-
-    rc = interface_list(0, NULL, &ifs);
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&first_req);
     if (rc != 0)
-        return rc;
-
-    for (ifp = ifs + strspn(ifs, " ");
-         ifp != NULL && *ifp != '\0';
-         ifp = ifpn + (ifpn == NULL ? 0 : strspn(ifpn, " ")))
     {
-        ifpn = strchr(ifp, ' ');
-        if (ifpn != NULL)
-        {
-            *ifpn++ = '\0';
-        }
-        rc = net_addr_list(0, NULL, &addrs, ifp);
-        if (rc != 0)
-        {
-            free(ifs);
-            return rc;
-        }
-
-        for (addrp = addrs + strspn(addrs, " ");
-             addrp != NULL && *addrp != '\0';
-             addrp = addrpn + (addrpn == NULL ? 0 : strspn(addrpn, " ")))
-        {
-            addrpn = strchr(addrp, ' ');
-            if (addrpn != NULL)
-            {
-                *addrpn++ = '\0';
-            }
-            if ((strncmp(addrp, my_addr, my_addrlen) == 0) &&
-                (addrp[my_addrlen] == ' ' || addrp[my_addrlen] == '\0'))
-            {
-                strncpy(ifname, ifp, IF_NAMESIZE);
-                free(addrs);
-                free(ifs);
-                return 0;
-            }
-        }
-        free(addrs);
+        free(ifconf_buf);
+        return rc;
     }
-    free(ifs);
-    return TE_RC(TE_TA_UNIX, TE_ESRCH);
+
+    VERB("%s(): SEARCH %s", __FUNCTION__, te_sockaddr2str(addr));
+    rc = TE_RC(TE_TA_UNIX, TE_ESRCH);
+    for (p = first_req; *(p->my_ifr_name) != '\0'; p++)
+    {
+        VERB("%s(): CHECK name=%s addr=%s", __FUNCTION__, p->my_ifr_name,
+             te_sockaddr2str(CONST_SA(&p->my_ifr_addr)));
+        if (addr->sa_family == CONST_SA(&p->my_ifr_addr)->sa_family &&
+            memcmp(netaddr,
+                   te_sockaddr_get_netaddr(CONST_SA(&p->my_ifr_addr)),
+                   addrlen) == 0)
+        {
+            strncpy(ifname, p->my_ifr_name, IF_NAMESIZE);
+            rc = 0;
+            break;
+        }
+    }
+    free(ifconf_buf);
+    return rc;
 }
+#endif
 
 
 /**
@@ -2792,6 +2767,13 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
+    if (family == AF_INET6)
+    {
+        /* No broadcast addresses in IPv6 */
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+    assert(family == AF_INET);
+
     memset(&bcast, 0, sizeof(bcast));
 
 #if defined(USE_NETLINK)
@@ -2803,40 +2785,36 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     }
 #elif defined(USE_IOCTL)
     strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
-    if (family == AF_INET)
+    if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
     {
-        if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
-        {
-            ERROR("inet_pton(AF_INET) failed for '%s'", addr);
-            return TE_RC(TE_TA_UNIX, TE_EFMT);
-        }
-        if (ioctl(cfg_socket, MY_SIOCGIFBRDADDR, &req) < 0)
-        {
-            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("inet_pton(AF_INET) failed for '%s'", addr);
+        return TE_RC(TE_TA_UNIX, TE_EFMT);
+    }
+    if (ioctl(cfg_socket, MY_SIOCGIFBRDADDR, &req) < 0)
+    {
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
-            /* 
-             * Solaris2 (SunOS 5.11) returns EADDRNOTAVAIL on request for
-             * broadcast address on loopback.
-             */
-            if (TE_RC_GET_ERROR(rc) != TE_EADDRNOTAVAIL)
-            {
-                ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %r",
-                      ifname, addr, rc);
-                return rc;
-            }
-            else
-            {
-                bcast.ip4_addr.s_addr = htonl(INADDR_ANY);
-            }
+        /* 
+         * Solaris2 (SunOS 5.11) returns EADDRNOTAVAIL on request for
+         * broadcast address on loopback.
+         */
+        if (TE_RC_GET_ERROR(rc) != TE_EADDRNOTAVAIL)
+        {
+            ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %r",
+                  ifname, addr, rc);
+            return rc;
         }
         else
         {
-            bcast.ip4_addr.s_addr = SIN(&req.my_ifr_addr)->sin_addr.s_addr;
+#if 0
+            bcast.ip4_addr.s_addr = htonl(INADDR_ANY);
+#endif
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
     }
     else
     {
-        /* Keep broadcast unspecified for IPv6 */
+        bcast.ip4_addr.s_addr = SIN(&req.my_ifr_addr)->sin_addr.s_addr;
     }
 #else
 #error Way to work with network addresses is not defined.
@@ -2998,8 +2976,6 @@ static te_errno
 link_addr_get(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
-    const uint8_t   all_zeros[ETHER_ADDR_LEN] = { 0, };
-
     te_errno        rc;
     const uint8_t  *ptr = NULL;
 
@@ -3010,8 +2986,6 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, rc);
 
 #ifdef SIOCGIFHWADDR
-    UNUSED(all_zeros);
-
     memset(&req, 0, sizeof(req));
     strcpy(req.my_ifr_name, ifname);
     CFG_IOCTL(cfg_socket, SIOCGIFHWADDR, &req);
@@ -3021,7 +2995,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
 #elif HAVE_LIBDLPI_H
     if (strcmp(ifname, "lo0") == 0)
     {
-        ptr = all_zeros;
+        /* ptr is NULL - no link-layer address */
     }
     else
     {
@@ -3071,8 +3045,6 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
         }
         (void)dlpi_close(fd);
         ptr = (uint8_t *)buf;
-#else
-        ptr = all_zeros;
 #endif
     }
 #elif defined(__FreeBSD__)
@@ -3102,27 +3074,19 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
             }
             else
             {
-                ptr = all_zeros;
+                /* ptr is NULL - no link-layer address */
             }
             break;
         }
     }
     free(ifconf_buf);
-#else
-    UNUSED(all_zeros);
-    ERROR("%s(): %s", __FUNCTION__, strerror(EOPNOTSUPP));
-    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
-    if (ptr != NULL)
-    {
-        snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
-                 ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
-    }
-    else
-    {
-        ERROR("Not found link layer address of the interface %s", ifname);
+
+    if (ptr == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
+
+    snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
+             ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
     return 0;
 }
 
@@ -3366,12 +3330,8 @@ on_error:
     return rc;
 }
 #else
-    WARN("Retrieving of an interface broadcast link-layer address "
-         "is not supported");
-    strcpy(value, "ff:ff:ff:ff:ff:ff");
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
-
-    return rc;
 }
 
 
