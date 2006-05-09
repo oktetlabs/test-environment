@@ -378,7 +378,21 @@ ta_unix_conf_route_list(char **list)
          (void *)rt < (void *)((uint8_t *)getmsg_buf + miblen);
          rt = (mib2_ipRouteEntry_t *) ((uint8_t *)rt + ipRouteEntrySize))
     {
-        handle_route_entry(rt);
+        char ifname[LIFNAMSIZ + 1];
+
+        if (rt->ipRouteIfIndex.o_length >= (int)sizeof(ifname))
+        {
+            ERROR("%s(): Too long interface name", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+        }
+        memcpy(ifname, rt->ipRouteIfIndex.o_bytes,
+               rt->ipRouteIfIndex.o_length);
+        ifname[rt->ipRouteIfIndex.o_length] = '\0';
+        
+        if (INTERFACE_IS_MINE(ifname))
+        {
+            handle_route_entry(rt);
+        }
     }
 
     INFO("%s(): Routes: %s", __FUNCTION__, hugebuf);
