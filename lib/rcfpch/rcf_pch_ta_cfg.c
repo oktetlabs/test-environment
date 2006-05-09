@@ -307,6 +307,28 @@ ta_obj_del(const char *type, const char *name, void *user_data,
     return 0;
 }
 
+/* See the description in rcf_pch_ta_cfg.h */
+void
+ta_cfg_obj_log(const ta_cfg_obj_t *obj)
+{
+    ta_cfg_obj_attr_t  *attr;
+
+    if (!obj->in_use)
+    {
+        ERROR("%s(): called for an object not in use");
+        return;
+    }
+
+    RING("TA configuration object: type=%s name=%s value=%s user_data=%p "
+         "gid=%u action=%u", obj->type, obj->name, obj->value,
+         obj->user_data, obj->gid, obj->action);
+
+    for (attr = obj->attrs; attr != NULL; attr = attr->next)
+        RING("TA configuration object: type=%s name=%s %s=%s",
+             obj->type, obj->name, attr->name, attr->value);
+}
+
+
 /* Route-specific functions */
 
 /* See the description in rcf_pch_ta_cfg.h */

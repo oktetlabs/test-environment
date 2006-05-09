@@ -242,6 +242,14 @@ extern int ta_obj_set(const char *type, const char *name,
 extern int ta_obj_del(const char *type, const char *name, void *user_data,
                       unsigned int gid, ta_obj_cb cb_func);
 
+/**
+ * Log TA configuration object using RING logging level.
+ *
+ * @param obj       An object
+ */
+extern void ta_cfg_obj_log(const ta_cfg_obj_t *obj);
+
+
 /* Route-specific definitions */
 
 /** Name for object of type route */
