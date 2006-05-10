@@ -1896,7 +1896,7 @@ update_etc_hosts(char *ip)
         if (strstr(buf, "te_tester") == NULL)
             fwrite(buf, 1, strlen(buf), g);
     }
-    fprintf(g, "%s te_tester%u", ip, smarthost_name_index);
+    fprintf(g, "%s te_tester%u\n", ip, smarthost_name_index);
     fclose(f);
     fclose(g);
     
@@ -1904,6 +1904,9 @@ update_etc_hosts(char *ip)
     sync();
     ta_system("/usr/sbin/nscd -i hosts");
     sync();
+
+    /* XXX remove me after debugging SMTP failures! - Sasha */
+    ta_system("echo \"/etc/hosts updated:\"; cat /etc/hosts");
 
     return 0;
 }
