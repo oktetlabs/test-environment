@@ -75,7 +75,9 @@
 #include "te_errno.h"
 #include "te_sockaddr.h"
 #include "logger_api.h"
+#include "rcf_pch_ta_cfg.h"
 #include "unix_internal.h"
+#include "conf_route.h"
 
 
 #define PATH_GETMSG_DEV     "/dev/arp"
@@ -320,25 +322,109 @@ ta_unix_conf_neigh_list(const char *iface, te_bool is_static, char **list)
 }
 
 
+/**
+ * Log routing table entry using RING log level.
+ *
+ * @param rt    Routing table entry to be logged
+ */
 static void
-handle_route_entry(mib2_ipRouteEntry_t *routeEntry)
+route_entry_log(const mib2_ipRouteEntry_t *rt)
 {
+    const struct ipRouteInfo_s *rt_info = &rt->ipRouteInfo;
+
+    char buf1[INET_ADDRSTRLEN];
+    char buf2[INET_ADDRSTRLEN];
+    char buf3[INET_ADDRSTRLEN];
+    char ifname[LIFNAMSIZ + 1];
+
+    assert(rt->ipRouteIfIndex.o_length < (int)sizeof(ifname));
+    memcpy(ifname, rt->ipRouteIfIndex.o_bytes,
+           rt->ipRouteIfIndex.o_length);
+    ifname[rt->ipRouteIfIndex.o_length] = '\0';
+    RING("Route: dst=%s mask=%s gw=%s if=%s type=%d proto=%d age=%d "
+          "m1=%d m2=%d m3=%d m4=%d m5=%d",
+          inet_ntop(AF_INET, &rt->ipRouteDest, buf1, sizeof(buf1)),
+          inet_ntop(AF_INET, &rt->ipRouteMask, buf2, sizeof(buf2)),
+          inet_ntop(AF_INET, &rt->ipRouteNextHop, buf3, sizeof(buf3)),
+          ifname, rt->ipRouteType, rt->ipRouteProto, rt->ipRouteAge,
+          rt->ipRouteMetric1, rt->ipRouteMetric2, rt->ipRouteMetric3,
+          rt->ipRouteMetric4, rt->ipRouteMetric5);
+
+    assert(rt_info->re_in_ill.o_length < (int)sizeof(ifname));
+    memcpy(ifname, rt_info->re_in_ill.o_bytes,
+           rt_info->re_in_ill.o_length);
+    ifname[rt_info->re_in_ill.o_length] = '\0';
+    RING("Info: max_frag=%u rtt=%u ref=%u frag_flag=%d src=%s ire_type=%d "
+         "obpkt=%u ibpkt=%u flags=%d in_ill=%s in_src=%s",
+         (unsigned)rt_info->re_max_frag,
+         (unsigned)rt_info->re_rtt,
+         (unsigned)rt_info->re_ref,
+         rt_info->re_frag_flag,
+         inet_ntop(AF_INET, &rt_info->re_src_addr, buf1, sizeof(buf1)),
+         rt_info->re_ire_type, (unsigned)rt_info->re_obpkt,
+         (unsigned)rt_info->re_ibpkt, rt_info->re_flags, ifname,
+         inet_ntop(AF_INET, &rt_info->re_in_src_addr, buf2, sizeof(buf2)));
+}
+
+/**
+ * Process routing table entry (add it in the list of routes located
+ * in @b hugebuf buffer.
+ *
+ * @param rt    Routing table entry to be logged
+ *
+ * @return Status code.
+ */
+static te_errno
+route_entry_process(const mib2_ipRouteEntry_t *rt)
+{
+    char            ifname[LIFNAMSIZ + 1];
     char           *p = hugebuf + strlen(hugebuf);
     unsigned int    prefixlen;
+    te_errno        rc;
 
-    /* arybchik: I don't know what it means, but it is from Zebra src */
-    if (routeEntry->ipRouteInfo.re_ire_type & IRE_CACHETABLE)
-        return;
+    /* Discard cached, broadcast, local and loopback entries */
+    if (rt->ipRouteInfo.re_ire_type & IRE_CACHETABLE)
+        return 0;
 
-    MASK2PREFIX(ntohl(routeEntry->ipRouteMask), prefixlen);
+    route_entry_log(rt);
+
+    if (rt->ipRouteIfIndex.o_length >= (int)sizeof(ifname))
+    {
+        ERROR("%s(): Too long interface name", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+    }
+    memcpy(ifname, rt->ipRouteIfIndex.o_bytes,
+           rt->ipRouteIfIndex.o_length);
+    ifname[rt->ipRouteIfIndex.o_length] = '\0';
+
+    if (*ifname == '\0')
+    {
+        ta_rt_info_t    rt_info;
+
+        memset(&rt_info, 0, sizeof(rt_info));
+        rt_info.dst.ss_family = AF_INET;
+        SIN(&rt_info)->sin_addr.s_addr = rt->ipRouteNextHop;
+        rc = ta_unix_conf_outgoing_if(&rt_info);
+        if (rc != 0)
+            return rc;
+        assert(sizeof(ifname) > strlen(rt_info.ifname));
+        strcpy(ifname, rt_info.ifname);
+    }
+    
+    if (!INTERFACE_IS_MINE(ifname))
+        return 0;
+
+    MASK2PREFIX(ntohl(rt->ipRouteMask), prefixlen);
         
-    inet_ntop(AF_INET, &routeEntry->ipRouteDest, p, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &rt->ipRouteDest, p, INET_ADDRSTRLEN);
     p += strlen(p);
     p += sprintf(p, "|%u", prefixlen);
 
     /* No support for 'metric' and 'tos' yet, assume defaults */
 
     p += sprintf(p, " ");
+
+    return 0;
 }
 
 /* See the description in conf_route.h */
@@ -378,21 +464,8 @@ ta_unix_conf_route_list(char **list)
          (void *)rt < (void *)((uint8_t *)getmsg_buf + miblen);
          rt = (mib2_ipRouteEntry_t *) ((uint8_t *)rt + ipRouteEntrySize))
     {
-        char ifname[LIFNAMSIZ + 1];
-
-        if (rt->ipRouteIfIndex.o_length >= (int)sizeof(ifname))
-        {
-            ERROR("%s(): Too long interface name", __FUNCTION__);
-            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
-        }
-        memcpy(ifname, rt->ipRouteIfIndex.o_bytes,
-               rt->ipRouteIfIndex.o_length);
-        ifname[rt->ipRouteIfIndex.o_length] = '\0';
-        
-        if (INTERFACE_IS_MINE(ifname))
-        {
-            handle_route_entry(rt);
-        }
+        /* Ignore errors */
+        (void)route_entry_process(rt);
     }
 
     INFO("%s(): Routes: %s", __FUNCTION__, hugebuf);

@@ -65,6 +65,16 @@
 #include "logger_api.h"
 #include "rcf_pch_ta_cfg.h"
 #include "unix_internal.h"
+#include "conf_route.h"
+
+
+#define RETURN_RC(_rc) \
+    do {                        \
+        te_errno __rc = (_rc);  \
+                                \
+        EXIT("%r", __rc);       \
+        return __rc;            \
+    } while (0)
 
 
 /** Current route request sequence number */
@@ -460,6 +470,8 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
     socklen_t               addrlen;
     te_errno                rc;
 
+    ENTRY();
+
     memset(rt_info, 0, sizeof(*rt_info));
 
     if (msg->rtm_addrs & RTA_DST)
@@ -481,6 +493,27 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
 
         if (msg->rtm_flags & RTF_GATEWAY)
         {
+            ta_rt_info_t tmp_rt;
+
+            memcpy(&tmp_rt.dst, &rt_info->gw, addrlen);
+            VERB("%s(): Resolve outgoing interface for gateway %s",
+                 __FUNCTION__,
+                 te_sockaddr_get_ipstr(CONST_SA(&tmp_rt.dst)));
+            rc = ta_unix_conf_outgoing_if(&tmp_rt);
+            if (rc != 0)
+            {
+                char    buf[INET6_ADDRSTRLEN];
+
+                ERROR("Failed to resolve outgoing interface name "
+                      "for destination %s: %r",
+                      inet_ntop(rt_info->dst.ss_family,
+                          te_sockaddr_get_netaddr(CONST_SA(&rt_info->dst)),
+                          buf, sizeof(buf)), rc);
+                RETURN_RC(rc);
+            }
+            strncpy(rt_info->ifname, tmp_rt.ifname,
+                    sizeof(rt_info->ifname));
+
             /* Route via gateway */
             rt_info->flags |= TA_RT_INFO_FLG_GW;
         }
@@ -497,7 +530,7 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
             {
                 ERROR("Failed to find interface by address %s",
                       te_sockaddr_get_ipstr(CONST_SA(&rt_info->gw)));
-                return rc;
+                RETURN_RC(rc);
             }
             rt_info->flags |= TA_RT_INFO_FLG_IF;
         }
@@ -582,7 +615,7 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
     rt_info->type = (msg->rtm_flags & RTF_BLACKHOLE) ?
                         TA_RT_TYPE_BLACKHOLE : TA_RT_TYPE_UNICAST;
 
-    return 0;
+    RETURN_RC(0);
 }
 
 /**
@@ -605,8 +638,10 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     socklen_t           addrlen;
     te_errno            rc;
 
+    ENTRY();
+
     if (msglen < sizeof(*msg))
-        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+        RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
     msglen -= sizeof(*msg);
 
     memset(msg, 0, sizeof(*msg));
@@ -628,7 +663,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
 
         default:
             ERROR("Route action %u is supported", (unsigned)action);
-            return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+            RETURN_RC(TE_RC(TE_TA_UNIX, TE_ENOSYS));
     }
     /* msg->rtm_index is 0 */
     msg->rtm_pid = getpid();
@@ -652,13 +687,13 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
 
         default:
             ERROR("Routes of type %d are not supported yet");
-            return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+            RETURN_RC(TE_RC(TE_TA_UNIX, TE_ENOSYS));
     }
 
     /* Destination */
     addrlen = te_sockaddr_get_size(CONST_SA(&rt_info->dst));
     if (msglen < addrlen)
-        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+        RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
     msglen -= addrlen;
     msg->rtm_msglen += addrlen;
     memcpy(addr, &rt_info->dst, addrlen);
@@ -670,7 +705,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     {
         addrlen = te_sockaddr_get_size(CONST_SA(&rt_info->gw));
         if (msglen < addrlen)
-            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+            RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
         msglen -= addrlen;
         msg->rtm_msglen += addrlen;
         memcpy(addr, &rt_info->gw, addrlen);
@@ -684,7 +719,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
 
         addrlen = te_sockaddr_get_size_by_af(rt_info->dst.ss_family);
         if (msglen < addrlen)
-            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+            RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
         msglen -= addrlen;
         msg->rtm_msglen += addrlen;
         rc = ta_unix_conf_get_addr(rt_info->ifname, rt_info->dst.ss_family,
@@ -693,7 +728,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         {
             ERROR("Failed to get interface '%s' address: %r",
                   rt_info->ifname, rc);
-            return rc;
+            RETURN_RC(rc);
         }
         memset(addr, 0, addrlen);
         addr->sa_family = rt_info->dst.ss_family;
@@ -706,7 +741,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     /* Netmask */
     addrlen = te_sockaddr_get_size_by_af(rt_info->dst.ss_family);
     if (msglen < addrlen)
-        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+        RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
     msglen -= addrlen;
     msg->rtm_msglen += addrlen;
     rc = te_sockaddr_mask_by_prefix(addr, addrlen, rt_info->dst.ss_family,
@@ -715,7 +750,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     {
         ERROR("%s(): te_sockaddr_mask_by_prefix() failed: %r",
               __FUNCTION__, rc);
-        return TE_RC(TE_TA_UNIX, rc);
+        RETURN_RC(rc);
     }
     msg->rtm_addrs |= RTA_NETMASK;
     addr = SA(((const uint8_t *)addr) + addrlen);
@@ -727,7 +762,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
 
         addrlen = sizeof(*ifp);
         if (msglen < addrlen)
-            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+            RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
         msglen -= addrlen;
         msg->rtm_msglen += addrlen;
         memset(ifp, 0, addrlen);
@@ -737,7 +772,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         {
             ERROR("Cannot convert interface name '%s' to index",
                   rt_info->ifname);
-            return TE_RC(TE_TA_UNIX, TE_ESRCH);
+            RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESRCH));
         }
         msg->rtm_addrs |= RTA_IFP;
         addr = SA(((const uint8_t *)addr) + addrlen);
@@ -758,7 +793,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     if (rt_info->flags & TA_RT_INFO_FLG_WIN)
     {
         ERROR("Routes with 'win' specification are not supported");
-        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+        RETURN_RC(TE_RC(TE_TA_UNIX, TE_ENOSYS));
     }
 
     if (rt_info->flags & TA_RT_INFO_FLG_IRTT)
@@ -770,10 +805,10 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     if (rt_info->flags & TA_RT_INFO_FLG_TOS)
     {
         ERROR("Routes with TOS specification are not supported");
-        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+        RETURN_RC(TE_RC(TE_TA_UNIX, TE_ENOSYS));
     }
 
-    return 0;
+    RETURN_RC(0);
 }
 
 
@@ -791,6 +826,8 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
     struct rt_msghdr   *rtm;
     socklen_t           addrlen;
     ssize_t             ret;
+
+    ENTRY();
 
     /*
      * 'man -s 7P route' on SunOS 5.X suggests to use AF_* as the last
@@ -826,11 +863,18 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
 
     assert(rtm->rtm_msglen <= rt_buflen);
 
+    VERB("%s(): dst=%s seq=%u", __FUNCTION__,
+         te_sockaddr_get_ipstr(CONST_SA(&rt_info->dst)), rtm->rtm_seq);
+
     ret = write(rt_sock, rt_buf, rtm->rtm_msglen);
     if (ret != rtm->rtm_msglen)
     {
-        rc = TE_RC(TE_TA_UNIX, TE_EIO);
-        ERROR("Failed to send route request to kernel");
+        rc = TE_OS_RC(TE_TA_UNIX, (ret < 0) ? errno : EIO);
+        ERROR("%s(): Failed to send route request seq=%u to kernel: %r",
+              __FUNCTION__, rtm->rtm_seq, rc);
+#ifdef TA_UNIX_CONF_ROUTE_DEBUG
+        route_log("ta_unix_conf_route_find() failed", rtm);
+#endif
         goto cleanup;
     }
 
@@ -862,9 +906,10 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
 
 cleanup:
     free(rt_buf);
-    close(rt_sock);
+    if (rt_sock >= 0)
+        close(rt_sock);
 
-    return rc;
+    RETURN_RC(rc);
 }
 
 /* See the description in conf_route.h. */
@@ -883,12 +928,14 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     struct rt_msghdr   *rtm = (struct rt_msghdr *)rt_buf;
     ssize_t             ret;
 
+    ENTRY();
+
     rc = ta_rt_info_to_rt_msghdr(action, rt_info, rtm, rt_buflen);
     if (rc != 0)
     {
         ERROR("%s(): ta_rt_info_to_rt_msghdr() failed: %r",
               __FUNCTION__, rc);
-        return rc;
+        RETURN_RC(rc);
     }
 
     rt_cmd = rtm->rtm_type;
@@ -903,8 +950,11 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     {
         rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open routing socket: %r", rc);
-        return rc;
+        RETURN_RC(rc);
     }
+
+    VERB("%s(): dst=%s seq=%u", __FUNCTION__,
+         te_sockaddr_get_ipstr(CONST_SA(&rt_info->dst)), rtm->rtm_seq);
 
     ret = write(rt_sock, rt_buf, rtm->rtm_msglen);
     if (ret != rtm->rtm_msglen)
@@ -914,7 +964,7 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
               __FUNCTION__, (int)ret, rc);
 #ifdef TA_UNIX_CONF_ROUTE_DEBUG
         /* Reply got */
-        route_log(__FUNCTION__, rtm);
+        route_log("ta_unix_conf_route_change() failed", rtm);
 #endif
         goto cleanup;
     }
@@ -938,11 +988,15 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     } while ((rtm->rtm_type != rt_cmd) || (rtm->rtm_seq != rt_seq) ||
              (rtm->rtm_pid != rt_pid));
 
+#ifdef TA_UNIX_CONF_ROUTE_DEBUG
+    route_log(__FUNCTION__, rtm);
+#endif
+
 cleanup:
     if (rt_sock != -1)
         close(rt_sock);
 
-    return rc;
+    RETURN_RC(rc);
 }
 
 /* See the description in conf_route.h */
