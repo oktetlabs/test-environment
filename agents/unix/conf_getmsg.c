@@ -298,6 +298,7 @@ ta_unix_conf_neigh_list(const char *iface, te_bool is_static, char **list)
             /* Are static or dynamic entries requested? */
             (!(ip4->ipNetToMediaInfo.ntm_flags & ACE_F_PERMANENT) ==
                  !is_static) &&
+            /* Filter by interface name */
             (ip4->ipNetToMediaIfIndex.o_length == (int)iface_len) &&
             (memcmp(ip4->ipNetToMediaIfIndex.o_bytes, iface,
                     iface_len) == 0))
@@ -321,6 +322,8 @@ ta_unix_conf_neigh_list(const char *iface, te_bool is_static, char **list)
     return rc;
 }
 
+
+#ifdef TA_UNIX_CONF_ROUTE_DEBUG
 
 /**
  * Log routing table entry using RING log level.
@@ -366,6 +369,8 @@ route_entry_log(const mib2_ipRouteEntry_t *rt)
          inet_ntop(AF_INET, &rt_info->re_in_src_addr, buf2, sizeof(buf2)));
 }
 
+#endif /* TA_UNIX_CONF_ROUTE_DEBUG */
+
 /**
  * Process routing table entry (add it in the list of routes located
  * in @b hugebuf buffer.
@@ -386,7 +391,9 @@ route_entry_process(const mib2_ipRouteEntry_t *rt)
     if (rt->ipRouteInfo.re_ire_type & IRE_CACHETABLE)
         return 0;
 
+#if TA_UNIX_CONF_ROUTE_DEBUG
     route_entry_log(rt);
+#endif
 
     if (rt->ipRouteIfIndex.o_length >= (int)sizeof(ifname))
     {
