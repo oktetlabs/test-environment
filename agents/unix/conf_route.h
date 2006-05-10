@@ -104,6 +104,20 @@ extern te_errno ta_unix_conf_route_blackhole_add(ta_rt_info_t *rt_info);
  */
 extern te_errno ta_unix_conf_route_blackhole_del(ta_rt_info_t *rt_info);
 
+
+/**
+ * Resolve outgoing interface for destination.
+ *
+ * @param rt_info   Route information with specified destination
+ *
+ * @return Status code.
+ *
+ * @attention If destination is not directly reachable it is replaced
+ *            with gateway address.
+ */
+extern te_errno ta_unix_conf_outgoing_if(ta_rt_info_t *rt_info);
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

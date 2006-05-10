@@ -610,3 +610,55 @@ ta_unix_conf_route_init(void)
 {
     return rcf_pch_add_node("/agent", &node_route);
 }
+
+
+/* See the description in conf_route.h */
+te_errno
+ta_unix_conf_outgoing_if(ta_rt_info_t *rt_info)
+{
+    te_errno    rc;
+    char        buf[INET6_ADDRSTRLEN];
+
+    rc = ta_unix_conf_route_find(rt_info);
+    if (rc != 0)
+    {
+        WARN("Failed to find route to destination %s get outgoing "
+             "interface name: %r",
+             inet_ntop(rt_info->dst.ss_family,
+                       te_sockaddr_get_netaddr(CONST_SA(&rt_info->dst)),
+                       buf, sizeof(buf)), rc);
+        return rc;
+    }
+    if (~rt_info->flags & TA_RT_INFO_FLG_IF)
+    {
+        if (~rt_info->flags & TA_RT_INFO_FLG_GW)
+        {
+            ERROR("%s(): Invalid result of ta_unix_conf_route_find(), "
+                  "route entry contains neither outgoing interface nor "
+                  "gateway address", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+        
+        assert(sizeof(rt_info->dst) == sizeof(rt_info->gw));
+        memcpy(&rt_info->dst, &rt_info->gw, sizeof(rt_info->dst));
+        
+        rc = ta_unix_conf_route_find(rt_info);
+        if (rc != 0)
+        {
+            WARN("Failed to find route to gateway %s get outgoing "
+                 "interface name: %r",
+                 inet_ntop(rt_info->dst.ss_family,
+                     te_sockaddr_get_netaddr(CONST_SA(&rt_info->dst)),
+                     buf, sizeof(buf)), rc);
+            return rc;
+        }
+        if (~rt_info->flags & TA_RT_INFO_FLG_IF)
+        {
+            ERROR("Gateway %s is not directly reachable",
+                  inet_ntop(rt_info->dst.ss_family,
+                      te_sockaddr_get_netaddr(CONST_SA(&rt_info->dst)),
+                      buf, sizeof(buf)));
+        }
+    }
+    return 0;
+}
