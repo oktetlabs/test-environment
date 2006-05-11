@@ -376,12 +376,13 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit,
         i = 1;
     }
     
-    for (; i < 3; i++)
+    for (; i < TE_ARRAY_LEN(postfix); i++)
     {
         sprintf(tmp, postfix[i], name, net_init ? "net_init" : "");
         memset(&si, 0, sizeof(si));
         si.cb = sizeof(si);
         
+        RING("Passing '%s' to CreateProcess", cmdline);
         if (CreateProcess(NULL, cmdline, NULL, NULL, 
                           inherit, 0, NULL, NULL,
                           &si, &info))
