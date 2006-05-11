@@ -1955,17 +1955,6 @@ TARPC_FUNC(getsockopt,
                       func(in->s, socklevel_rpc2h(in->level),
                            sockopt_rpc2h(in->optname), buf, &len));
 
-#if 0
-        *(out->optlen.optlen_val) = optlen_out;
-        
-        if (out->optval.optval_val[0].opttype == OPT_MREQN &&
-            (unsigned)optlen_out <= sizeof(struct in_addr))
-        {
-            /* Adjust option type from OPT_MREQN to OPT_IPADDR */
-            out->optval.optval_val[0].opttype = OPT_IPADDR;
-        }
-#endif
-
         tarpc_getsockopt(in, out, buf);
         free(buf);
     }
