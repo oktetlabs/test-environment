@@ -376,7 +376,7 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit,
         i = 1;
     }
     
-    for (; i < TE_ARRAY_LEN(postfix); i++)
+    for (; i < (int)TE_ARRAY_LEN(postfix); i++)
     {
         sprintf(tmp, postfix[i], name, net_init ? "net_init" : "");
         memset(&si, 0, sizeof(si));
@@ -1792,15 +1792,6 @@ TARPC_FUNC(getsockopt,
                                  sockopt_rpc2h(in->optname),
                                  opt, &optlen_out));
 
-#if 0
-        if (out->optlen.optlen_val != NULL &&
-            !(in->optname == RPC_SO_SNDTIMEO || 
-              in->optname == RPC_SO_RCVTIMEO))
-        {
-            *(out->optlen.optlen_val) = optlen_out;
-        }
-#endif
-        
         switch (out->optval.optval_val[0].opttype)
         {
             case OPT_INT:
