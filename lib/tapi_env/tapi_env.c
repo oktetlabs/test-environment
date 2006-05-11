@@ -1521,8 +1521,8 @@ bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
                  * any binding.
                  */
                 if ((one_host != one_ta) &&
-                    ((iface->host->name[0] != '\0') ||
-                     (p->host->name[0] != '\0')))
+                    ((iface->host->name != NULL) ||
+                     (p->host->name != NULL)))
                 {
                     VERB("Hosts with %s names ('%s/%s' vs '%s/%s') "
                          "can't be bound to nodes %s",
