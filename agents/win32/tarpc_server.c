@@ -382,7 +382,6 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit,
         memset(&si, 0, sizeof(si));
         si.cb = sizeof(si);
         
-        RING("Passing '%s' to CreateProcess", cmdline);
         if (CreateProcess(NULL, cmdline, NULL, NULL, 
                           inherit, 0, NULL, NULL,
                           &si, &info))
