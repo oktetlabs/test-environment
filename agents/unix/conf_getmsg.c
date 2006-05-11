@@ -295,6 +295,8 @@ ta_unix_conf_neigh_list(const char *iface, te_bool is_static, char **list)
             (~ip4->ipNetToMediaInfo.ntm_flags & ACE_F_DYING) &&
             /* Filter out multicast mapping entries */
             (~ip4->ipNetToMediaInfo.ntm_flags & ACE_F_MAPPING) &&
+            /* Filter out incomplete entries */
+            (ip4->ipNetToMediaInfo.ntm_flags & ACE_F_RESOLVED) &&
             /* Are static or dynamic entries requested? */
             (!(ip4->ipNetToMediaInfo.ntm_flags & ACE_F_PERMANENT) ==
                  !is_static) &&
