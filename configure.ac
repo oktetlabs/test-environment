@@ -120,7 +120,7 @@ if test -e "${TE_BUILD}/builder.conf.processed" ; then
         if test -z "$TE_NO_PROMPT" ; then
             echo "Build configuration file is changed."
             echo "All files in build directory will be removed."
-            echo -n "Continue? (y/n) "
+            echo -n "Continue? (y/n) " >&2
             read answer
             if ! test "$answer" = "y" ; then
                 exit 1 ;
