@@ -129,11 +129,13 @@ strings.h \
 stropts.h \
 sys/errno.h \
 sys/ethernet.h \
+sys/filio.h \
 sys/ioctl.h \
 sys/poll.h \
 sys/resource.h \
 sys/select.h \
 sys/sendfile.h \
+sys/sockio.h \
 sys/stat.h \
 sys/sysctl.h \
 sys/tihdr.h \
