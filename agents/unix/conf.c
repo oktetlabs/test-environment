@@ -59,8 +59,13 @@
 #include <sys/socket.h>
 #endif
 #if HAVE_SYS_IOCTL_H
-#define BSD_COMP
 #include <sys/ioctl.h>
+#endif
+#if HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
+#endif
+#if HAVE_SYS_FILIO_H
+#include <sys/filio.h>
 #endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>

@@ -41,8 +41,6 @@
 #define _XOPEN_SOURCE           
 #define _XOPEN_SOURCE_EXTENDED  1
 #define __EXTENSIONS__
-/* Required on Solaris2 (SunOS 5.11) to see IOCTLs */
-#define BSD_COMP
 #endif
 
 #ifdef HAVE_STDIO_H
@@ -107,6 +105,12 @@
 
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
+#endif
+#if HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
+#endif
+#if HAVE_SYS_FILIO_H
+#include <sys/filio.h>
 #endif
 
 #ifdef HAVE_NETINET_IP_H
