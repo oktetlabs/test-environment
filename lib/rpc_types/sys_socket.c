@@ -39,9 +39,6 @@
 #include "config.h"
 #endif
 
-/* Required on Solaris2 (SunOS 5.11) to see IOCTLs */
-#define BSD_COMP
-
 #ifdef __CYGWIN__
 #ifndef WINDOWS
 #include "winsock2.h"
@@ -64,6 +61,12 @@ INCLUDE(te_win_defs.h)
 #endif
 #if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
+#endif
+#if HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
+#endif
+#if HAVE_SYS_FILIO_H
+#include <sys/filio.h>
 #endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
