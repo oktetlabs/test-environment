@@ -1,18 +1,19 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include @TE_CPPFLAGS@ \
-            -include te_config.h -include config.h -fno-strict-aliasing 
+MY_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../@host@/include @TE_CPPFLAGS@ \
+              -include te_config.h -include config.h
+MY_CFLAGS = -fno-strict-aliasing @TE_CFLAGS@
 
-AM_YFLAGS=-d
+AM_YFLAGS = -d
 
 #
 # -lrcfpch must be before -l@TAD@ since rcfpch contains references to
 # functions provided by -l@TAD@. @TE_LDADD@ must be after -l@TAD@,
 # since @TE_LDADD@ may contain ASN and NDN libraries.
 #
-MY_LDADD=symtbl.o @TE_LDADD@ -lrpc_types -lrcfpch -lrpcxdr -l@TAD@ \
-         -lconf_oid -lloggerta -lrcfpch -ltools
+MY_LDADD = symtbl.o -lrcfpch -l@TAD@ @TE_LDADD@ -lrpcxdr -lrpc_types \
+           -lconf_oid -lloggerta -lrcfpch -ltools
 
 noinst_HEADERS = \
 	unix_internal.h \
@@ -33,29 +34,33 @@ MY_SOURCES = \
 
 MY_SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o 
 
-CLEANFILES=symtbl.c
-BUILT_SOURCES=
+CLEANFILES = symtbl.c
+BUILT_SOURCES =
 
 if CFG_NETLINK_USE
-MY_LDADD+=-lnetlink
+MY_LDADD += -lnetlink
 endif
 
+
 if ISCSI_TARGET_USE
-MY_CPPFLAGS+=-I$(DESTDIR)/$(prefix)/../@host@/include/iscsi_unh_target 
-MY_SOURCES+=conf_iscsi_target.c 
-MY_LDADD+=-liscsi_unh_target -liscsi_initiator_conf
-MY_SYMTBL_OBJECTS+=$(DESTDIR)/$(prefix)/../@host@/lib/libiscsi_unh_target.a
+
+MY_CPPFLAGS += -I$(DESTDIR)/$(prefix)/../@host@/include/iscsi_unh_target 
+MY_SOURCES += conf_iscsi_target.c 
+MY_LDADD += -liscsi_unh_target -liscsi_initiator_conf
+MY_SYMTBL_OBJECTS += \
+	$(DESTDIR)/$(prefix)/../@host@/lib/libiscsi_unh_target.a
+
 endif
 
 
 if CFG_RCF_RPC
 
-MY_CPPFLAGS+=-DRCF_RPC
-MY_SOURCES+=tarpc_server.c 
-MY_NODIST_SOURCES=rpc_unsupported.c rpc_unsupported.h
-MY_SYMTBL_OBJECTS+=tarpc_server.o
+MY_CPPFLAGS += -DRCF_RPC
+MY_SOURCES += tarpc_server.c 
+MY_NODIST_SOURCES = rpc_unsupported.c rpc_unsupported.h
+MY_SYMTBL_OBJECTS += tarpc_server.o
 
-CLEANFILES+=rpc_unsupported.c rpc_supported.h
+CLEANFILES += rpc_unsupported.c rpc_supported.h
 
 rpc_unsupported.c: $(DESTDIR)/$(prefix)/../@host@/include/tarpc.h \
                    rpc_supported.h \
@@ -67,93 +72,79 @@ rpc_supported.h: tarpc_server.o @TE_DEPENDENCIES@
 
 else
 
-EXTRA_DIST=tarpc_server.c
+EXTRA_DIST = tarpc_server.c
         
 endif
 
 
 if CFG_UNIX_DAEMONS
 
-MY_CPPFLAGS+=@DAEMONS_CFLAGS@
+MY_CPPFLAGS += @DAEMONS_CFLAGS@
 
-noinst_HEADERS+=dhcp_server.h
+noinst_HEADERS += dhcp_server.h
 
-MY_SOURCES+=conf_daemons.c dhcp_server.c dns_server.c 
-MY_SYMTBL_OBJECTS+=conf_daemons.o
+MY_SOURCES += conf_daemons.c dhcp_server.c dns_server.c 
+MY_SYMTBL_OBJECTS += conf_daemons.o
 
-MY_LDADD+=@DAEMONS_LDADD@
+MY_LDADD += @DAEMONS_LDADD@
 
 if CFG_UNIX_DAEMONS_NAMED
 
-MY_SOURCES+=named.conf.y named.lex.l
+MY_SOURCES += named.conf.y named.lex.l
 
-BUILT_SOURCES+=named.conf.h
-CLEANFILES+=named.conf.h
-MY_LDADD+=-lfl
+BUILT_SOURCES += named.conf.h
+CLEANFILES += named.conf.h
+MY_LDADD += -lfl
 
 endif
 
 if CFG_UNIX_DAEMONS_ISC_DHCP_SERVER
-#MY_SOURCES+=isc-dhcp-server.conf.y isc-dhcp-server.lex.l
-#BUILT_SOURCES+=isc-dhcp-server.conf.h
-#MY_LDADD+=-lfl
+#MY_SOURCES += isc-dhcp-server.conf.y isc-dhcp-server.lex.l
+#BUILT_SOURCES += isc-dhcp-server.conf.h
+#MY_LDADD += -lfl
 endif
 
 endif
 
 if CFG_UNIX_DAEMONS_RADIUS
-MY_SOURCES+=radius.c
+MY_SOURCES += radius.c
 endif
 
 if CFG_UNIX_8021X
-MY_SOURCES+=conf_8021x.c
+MY_SOURCES += conf_8021x.c
 endif
 
 if CFG_UNIX_WIFI
-MY_SOURCES+=conf_wifi.c
+MY_SOURCES += conf_wifi.c
 endif
 
 if CFG_UNIX_DAEMONS_VTUND
-MY_SOURCES+=conf_vtund.c
+MY_SOURCES += conf_vtund.c
 endif
 
-LIBS=-Wl,-Bdynamic @TAD_LIBS@ @LIBS@
+LIBS = -Wl,-Bdynamic @TAD_LIBS@ @LIBS@
 
 AM_CPPFLAGS = $(MY_CPPFLAGS) @EXTRA_CPPFLAGS@
-AM_CFLAGS = @TE_CFLAGS@ 
+AM_CFLAGS = $(MY_CFLAGS)
 
-#
-# Static linkage may be required, since agent may be copied to another
-# host which does not have required dynamically linked libraries.
-# Use -static.
-#
-AM_LDFLAGS=-L$(DESTDIR)/$(prefix)/../@host@/lib -Wl,-Bstatic @TE_LDFLAGS@
+AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../@host@/lib -Wl,-Bstatic @TE_LDFLAGS@
 
-bin_PROGRAMS=taunixtmpl
+bin_PROGRAMS = ta@with_name@
 
-taunixtmpl_SOURCES=$(MY_SOURCES)
-nodist_taunixtmpl_SOURCES=$(MY_NODIST_SOURCES)
+ta@with_name@_SOURCES = $(MY_SOURCES)
+nodist_ta@with_name@_SOURCES = $(MY_NODIST_SOURCES)
 
-taunixtmpl_LDADD=$(MY_LDADD)
+ta@with_name@_LDADD = $(MY_LDADD)
 
-taunixtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
+SYMTBL_LIBS = \
+	$(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
+	$(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
+	$(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a
 
-SYMTBL_LIBS= \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a
+ta@with_name@_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
+	$(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
+	$(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
+	$(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
 symtbl.c: $(MY_SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
-
-install-exec-hook:
-	mv $(DESTDIR)/$(bindir)/taunixtmpl $(DESTDIR)/$(bindir)/ta@with_name@
-
-uninstall-hook:
-	rm -f $(DESTDIR)/$(bindir)/ta@with_name@
