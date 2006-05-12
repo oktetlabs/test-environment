@@ -175,6 +175,19 @@ extern int tapi_udp4_dgram_send_recv(const char *ta_name, int sid,
  *
  * @return Zero on success or error code
  */
+extern int tapi_udp_ip4_eth_mode_csap_create(const char *ta_name, int sid,
+                                             const char *eth_dev,
+                                             uint8_t eth_mode,
+                                             const uint8_t *loc_mac,
+                                             const uint8_t *rem_mac,
+                                             in_addr_t loc_addr,
+                                             in_addr_t rem_addr,
+                                             uint16_t loc_port,
+                                             uint16_t rem_port,
+                                             csap_handle_t *udp_csap);
+/**
+ * Create 'udp.ip4.eth' CSAP in default mode
+ */
 extern int tapi_udp_ip4_eth_csap_create(const char *ta_name, int sid,
                                         const char *eth_dev,
                                         const uint8_t *loc_mac,

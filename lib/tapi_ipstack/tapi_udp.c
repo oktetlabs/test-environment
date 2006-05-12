@@ -337,6 +337,24 @@ tapi_udp_ip4_eth_csap_create(const char *ta_name, int sid,
                              uint16_t loc_port, uint16_t rem_port,
                              csap_handle_t *udp_csap)
 {
+    return tapi_udp_ip4_eth_mode_csap_create(ta_name, sid, eth_dev, 0,
+                                             loc_mac, rem_mac,
+                                             loc_addr, rem_addr,
+                                             loc_port, rem_port,
+                                             udp_csap);
+}
+
+int
+tapi_udp_ip4_eth_mode_csap_create(const char *ta_name, int sid,
+                                  const char *eth_dev, uint8_t eth_mode,
+                                  const uint8_t *loc_mac,
+                                  const uint8_t *rem_mac, 
+                                  in_addr_t loc_addr,
+                                  in_addr_t rem_addr,
+                                  uint16_t loc_port,
+                                  uint16_t rem_port,
+                                  csap_handle_t *udp_csap)
+{
     int        rc;
     int        num = 0;
     asn_value *csap_spec = NULL;
@@ -347,6 +365,12 @@ tapi_udp_ip4_eth_csap_create(const char *ta_name, int sid,
         return rc;
 
     do {
+        if (eth_mode != 0)
+        {
+            rc = asn_write_int32(csap_spec, eth_mode,
+                                 "2.#eth.receive-mode");
+            if (rc != 0) break;
+        }                                    
         if (eth_dev != NULL)
         {
             rc = asn_write_value_field(csap_spec, eth_dev,
