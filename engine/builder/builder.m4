@@ -298,3 +298,14 @@ eval `echo TE_BS_SUITE_${SUITE_NAME}_CFLAGS=\"$4\"`
 eval `echo TE_BS_SUITE_${SUITE_NAME}_LDFLAGS=\"$5\"`
 ]
 )
+
+dnl Execute arbitrary shell script specified as the first argument.
+dnl
+dnl Parameters:
+dnl       shell script to be executed
+dnl
+define([TE_SHELL],
+[
+$1
+]
+)
