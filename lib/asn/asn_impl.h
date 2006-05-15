@@ -143,7 +143,7 @@ struct asn_value
 
     union {
         int          integer;   /**< for INTEGER-based syntaxes */
-        asn_value  **array;     /**< for CONSTRAINT syntaxes */
+        asn_value  **array;     /**< for COMPOUND syntaxes */
         void        *other;     /**< Other syntaxes: octet and character
                                      strings, long ints, etc. Pointer
                                      is casted explicitely in internal
@@ -158,7 +158,7 @@ struct asn_value
 
 /**
  * Find one-depth sub-type for passed ASN type tree by its label.
- * This function is applicable only for ASN types with CONSTRAINT syntax.
+ * This function is applicable only for ASN types with COMPOUND syntax.
  *
  * @param type       pointer to ASN value which leaf field is interested;
  * @param label      textual field label, specifying subvalue of 'type',
@@ -174,7 +174,7 @@ extern te_errno asn_impl_find_subtype(const asn_type * type,
 
 /**
  * Find one-depth subvalue in ASN value tree by its label.
- * This method is applicable only to values with CONSTRAINT syntax. 
+ * This method is applicable only to values with COMPOUND syntax. 
  *
  * @param container  pointer to ASN value which leaf field is interested;
  * @param label      textual field label, specifying subvalue of
@@ -212,7 +212,7 @@ extern te_errno asn_child_named_index(const asn_type *type,
 /**
  * Determine numeric index of field in structure presenting ASN.1 type
  * by tag of subvalue.
- * This method is applicable only to values with CONSTRAINT syntax with
+ * This method is applicable only to values with COMPOUND syntax with
  * named components: 'SEQUENCE', 'SET' and 'CHOICE'. 
  *
  * @param type       ASN type which subvalue is interested. 

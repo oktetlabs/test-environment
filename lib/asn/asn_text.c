@@ -1520,10 +1520,9 @@ asn_sprint_array_fields(const asn_value *value, char *buffer,
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0; 
 
-    /* codes of syntaxes which processed in this method 
-     * may have arbitrary last two bits*/
-    if ((value->syntax & ((-1)<<2) )!= SEQUENCE) 
-        return -1; 
+    if ((value->syntax & ASN_SYN_ARRAY) == 0 ||
+        (value->syntax & COMPOUND) == 0)
+        return -1;
 
 #define PUT_OCT_SYM(_byte) \
     do {                        \
@@ -1553,7 +1552,7 @@ asn_sprint_array_fields(const asn_value *value, char *buffer,
                 PUT_OCT_SYM(' ');
 
             /* Check if we have structure with named components. */
-            if (!(value->syntax & 1))
+            if (value->syntax & ASN_SYN_NAMED)
             {
                 used = snprintf(buffer, buf_len - all_used, "%s ",
                                 v_el->name);
@@ -1741,10 +1740,10 @@ asn_count_len_array_fields(const asn_value *value, unsigned int indent)
      * should have 'mutable' semantic */
     txt_len_p = (int *)&(value->txt_len);
 
-    /* codes of syntaxes which processed in this method 
-     * may have arbitrary last two bits*/
-    if ((value->syntax & ((-1)<<2) )!= SEQUENCE) 
-        return -1; 
+    if ((value->syntax & ASN_SYN_ARRAY) == 0 ||
+        (value->syntax & COMPOUND) == 0)
+        return -1;
+
     
     if (value->txt_len < 0)
     {
@@ -1759,7 +1758,7 @@ asn_count_len_array_fields(const asn_value *value, unsigned int indent)
 
             if (v_el)
             { 
-                if ( !(value->syntax & 1) )
+                if (value->syntax & ASN_SYN_NAMED)
                 { 
                     all_used += strlen(v_el->name) + 1;
                 } 

@@ -259,7 +259,7 @@ asn_copy_value(const asn_value *value)
 
     len = value->len;
 
-    if (value->syntax & CONSTRAINT)
+    if (value->syntax & COMPOUND)
     {
         int i;
         asn_value *src_elem;
@@ -333,7 +333,7 @@ asn_free_value(asn_value *value)
 {
     if (!value) return;
     
-    if (value->syntax & CONSTRAINT) 
+    if (value->syntax & COMPOUND) 
     {
         unsigned int i;
         asn_value **arr = value->data.array; 
@@ -500,7 +500,8 @@ asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
     if(!type || !index)
         return TE_EWRONGPTR; 
 
-    if( !(type->syntax & CONSTRAINT) || (type->syntax & 1))
+    if( (type->syntax & COMPOUND) == 0 ||
+        (type->syntax & ASN_SYN_NAMED) == 0)
     {
         return TE_EASNWRONGTYPE; 
     }
@@ -585,10 +586,10 @@ asn_impl_find_subtype(const asn_type *type, const char *label,
     if(!label || !type || !found_type)
         return TE_EWRONGPTR; 
 
-    if( !(type->syntax & CONSTRAINT) )
+    if ((type->syntax & COMPOUND) == 0)
         return TE_EASNWRONGTYPE;
 
-    if (!(type->syntax & 1))
+    if (type->syntax & ASN_SYN_NAMED)
     {
         te_errno rc;
         int index; 
@@ -964,7 +965,7 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
         const asn_named_entry_t *ne =
             (container->asn_type->sp.named_entries) + leaf_type_index;
 
-        if (new_value->syntax & CONSTRAINT)
+        if (new_value->syntax & COMPOUND)
             new_value->txt_len = -1;
 
         free(new_value->name); 
@@ -1069,7 +1070,7 @@ asn_put_descendent(asn_value *container, asn_value *subval,
                 {
                     const asn_type *new_type;
 
-                    if (!(par_value->syntax & 1))
+                    if (par_value->syntax & ASN_SYN_NAMED)
                         new_type = par_value->asn_type->
                                         sp.named_entries[index].type;
                     else
@@ -1186,9 +1187,10 @@ asn_impl_write_value_field(asn_value *container,
     asn_value      *subvalue;
     const asn_type *subtype;
 
-    if (!container || 
-        (! (container->syntax & CONSTRAINT) &&
-        container->syntax != PR_ASN_NULL && !data && d_len))
+    if (container  == NULL|| 
+        ((container->syntax & COMPOUND) == 0 &&
+        container->syntax != PR_ASN_NULL && 
+        data == NULL && d_len == 0))
         return TE_EWRONGPTR; 
 
     container->txt_len = -1;
@@ -1566,7 +1568,7 @@ asn_read_string(const asn_value *container, char **value,
 
 
 /**
- * Write component of CONSTRAINT subvalue in ASN value tree.
+ * Write component of COMPOUND subvalue in ASN value tree.
  *
  * @param container     Root of ASN value tree which subvalue to be changed.
  * @param elem_value    ASN value to be placed into the tree at place,
@@ -1595,7 +1597,7 @@ asn_write_component_value(asn_value *container,
 
 
 /**
- * Write component of CONSTRAINT subvalue in ASN value tree,
+ * Write component of COMPOUND subvalue in ASN value tree,
  * internal implementation.
  * 
  *
@@ -1624,7 +1626,7 @@ asn_impl_write_component_value(asn_value *container,
 
     if (!container || !elem_value || !subval_labels) return TE_EWRONGPTR; 
 
-    if (!(container->syntax & CONSTRAINT))
+    if (!(container->syntax & COMPOUND))
         return TE_EASNWRONGLABEL;
 
     container->txt_len = -1;
@@ -1842,7 +1844,7 @@ asn_get_field_data(const asn_value *container,
         return TE_EWRONGPTR;
     }
 
-    if (container->syntax & CONSTRAINT)
+    if (container->syntax & COMPOUND)
     {
         if ((rc = asn_get_subvalue(container, (asn_value **)&subval,
                                    subval_labels))
@@ -1996,23 +1998,16 @@ asn_read_indexed(const asn_value *container, int index,
 
     if ( (index < 0) || (index >= (int)value->len) ) return NULL;
 
-    switch (value->syntax)
-    {
-        case SEQUENCE_OF:
-        case SET_OF:
-        {
-            asn_value * subval = value->data.array[index];
-            while ((subval->syntax == CHOICE ) || (subval->syntax == TAGGED ))
-                if ((subval = subval->data.array[0]) == NULL) 
-                    return NULL;
+    if (value->syntax != SEQUENCE_OF &&
+        value->syntax != SET_OF)
+        return NULL;
 
-            return asn_copy_value(subval); 
-        }
-        default:
+    asn_value * subval = value->data.array[index];
+    while ((subval->syntax == CHOICE ) || (subval->syntax == TAGGED ))
+        if ((subval = subval->data.array[0]) == NULL) 
             return NULL;
-    }
 
-    return NULL;
+    return asn_copy_value(subval); 
 }
 
 /* see description in asn_usr.h */
@@ -2020,9 +2015,9 @@ te_errno
 asn_insert_indexed(asn_value *container, asn_value *elem_value, 
                    int index, const char *subval_labels)
 {
-    asn_value * value;
-    int r_c; 
-    int new_len;
+    asn_value  *value;
+    te_errno    r_c = 0; 
+    int         new_len;
 
     r_c = asn_impl_fall_down_to_tree_writable(container, subval_labels,
                                               &value); 
@@ -2039,36 +2034,36 @@ asn_insert_indexed(asn_value *container, asn_value *elem_value,
 
     new_len = value->len + 1;
 
-    if (index < 0) index += new_len;
+    if (index < 0)
+        index += new_len;
 
-    if ( (index < 0) || (index >= new_len) ) return TE_EASNWRONGLABEL;
+    if ((index < 0) || (index >= new_len))
+        return TE_EASNWRONGLABEL;
 
-    switch (value->syntax)
+    if (value->syntax != SEQUENCE_OF &&
+        value->syntax != SET_OF)
+        return TE_EASNWRONGTYPE;
+
     {
-        case SEQUENCE_OF:
-        case SET_OF:
-        {
-            asn_value * *arr = malloc(new_len * sizeof(asn_value *));
-            unsigned int i;
-            if (arr == NULL) return TE_ENOMEM;
+        asn_value **arr = malloc(new_len * sizeof(asn_value *));
 
-            for (i = 0; i < (unsigned)index; i++)
-                arr[i] = value->data.array[i];
+        unsigned int i;
 
-            arr[index] = elem_value; 
+        if (arr == NULL)
+            return TE_ENOMEM;
 
-            for (; i < value->len; i++)
-                arr[i+1] = value->data.array[i];
+        for (i = 0; i < (unsigned)index; i++)
+            arr[i] = value->data.array[i];
 
-            if (value->data.array)
-                free(value->data.array);
-            value->data.array = arr;
-            value->len = new_len;
-        }
+        arr[index] = elem_value; 
 
-            break;
-        default:
-            return TE_EASNWRONGTYPE;
+        for (; i < value->len; i++)
+            arr[i+1] = value->data.array[i];
+
+        if (value->data.array)
+            free(value->data.array);
+        value->data.array = arr;
+        value->len = new_len;
     }
 
     return 0;
@@ -2089,8 +2084,8 @@ asn_insert_indexed(asn_value *container, asn_value *elem_value,
 te_errno
 asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
 {
-    asn_value * value = container;
-    int r_c; 
+    asn_value *value = container;
+    te_errno   r_c = 0; 
 
     r_c = asn_impl_fall_down_to_tree_writable(container, subval_labels, &value); 
 
@@ -2098,41 +2093,38 @@ asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
 
     container->txt_len = -1;
 
-    if (index < 0) index += (int)value->len;
+    if (index < 0)
+        index += (int)value->len;
 
-    if ( (index < 0) || (index >= (int)value->len) ) return TE_EASNWRONGLABEL;
+    if ((index < 0) || (index >= (int)value->len))
+        return TE_EASNWRONGLABEL;
 
-    switch (value->syntax)
+    if (value->syntax != SEQUENCE_OF &&
+        value->syntax != SET_OF)
+        return TE_EASNWRONGTYPE;
+
     {
-        case SEQUENCE_OF:
-        case SET_OF:
+        asn_value * *arr = NULL;
+        unsigned int i;
+        
+        if (value->len > 1)
         {
-            asn_value * *arr = NULL;
-            unsigned int i;
-            
-            if (value->len > 1)
-            {
-                arr = malloc((value->len - 1) * sizeof(asn_value *)); 
-                if (arr == NULL) return TE_ENOMEM;
-            }
-
-            value->len --;
-
-            for (i = 0; i < (unsigned)index; i++)
-                arr[i] = value->data.array[i];
-
-            asn_free_value(value->data.array[index]); 
-
-            for (; i < value->len; i++)
-                arr[i] = value->data.array[i+1];
-
-            free(value->data.array);
-            value->data.array = arr;
+            arr = malloc((value->len - 1) * sizeof(asn_value *)); 
+            if (arr == NULL) return TE_ENOMEM;
         }
 
-            break;
-        default:
-            return TE_EASNWRONGTYPE;
+        value->len --;
+
+        for (i = 0; i < (unsigned)index; i++)
+            arr[i] = value->data.array[i];
+
+        asn_free_value(value->data.array[index]); 
+
+        for (; i < value->len; i++)
+            arr[i] = value->data.array[i+1];
+
+        free(value->data.array);
+        value->data.array = arr;
     }
 
     return 0;
@@ -2187,7 +2179,8 @@ asn_impl_fall_down_to_tree_nc(const asn_value *container, char *field_labels,
 
     char *rest_labels = field_labels; 
     char *cur_label;
-    int   r_c = 0; 
+
+    te_errno   r_c = 0; 
 
     value = container;
 
@@ -2224,7 +2217,7 @@ asn_impl_fall_down_to_tree_nc(const asn_value *container, char *field_labels,
 
 /**
  * Find one-depth subvalue in ASN value tree by its label.
- * This method is applicable only to values with CONSTRAINT syntax. 
+ * This method is applicable only to values with COMPOUND syntax. 
  *
  * @param container  pointer to ASN value which leaf field is interested;
  * @param label      textual field label, specifying subvalue of 'container'. 
@@ -2243,15 +2236,16 @@ asn_impl_find_subvalue(const asn_value *container, const char *label,
     if( !container || !found_val)
         return TE_EWRONGPTR; 
 
-    if( !(container->syntax & CONSTRAINT))
+    if( !(container->syntax & COMPOUND))
     {
         return TE_EASNGENERAL; 
     }
 
-    if (!(container->syntax & 1))
+    if (container->syntax & ASN_SYN_NAMED)
     { /* we have current node constraint with named subtrees */
-        int index;
-        int rc;
+        int      index;
+        te_errno rc;
+
         const asn_value **arr = (const asn_value **)container->data.array;
 
         switch (container->syntax)

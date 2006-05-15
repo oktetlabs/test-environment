@@ -74,7 +74,8 @@ main(void)
                               &val, &s_parsed);
     if (rc != 0)
     {
-        printf("parse failed rc %x, syms: %d\n", rc, s_parsed);
+        printf("parse failed rc %x, syms: %d\n",
+               rc, s_parsed);
         return 1;
     } 
 

@@ -78,24 +78,47 @@ typedef enum {
     PRIMITIVE_VAR_LEN = 0x10, /**< value to be bit-anded with tag
                                    to determine primitive syntax
                                    with variable length */
-    LONG_INT, /**< this syntax differs from "long int" in C! length of its
-                data in octets is specified by asn_type field 'size'. */
-    BIT_STRING,
-    OCT_STRING,
-    CHAR_STRING,
-    REAL,
-    OID, 
+    LONG_INT    = PRIMITIVE_VAR_LEN | 1, /**< This syntax differs from
+                                             "long int" in C! length of its
+                                              data in octets is specified
+                                              by asn_type field 'size'. */
+    BIT_STRING  = PRIMITIVE_VAR_LEN | 2,
+    OCT_STRING  = PRIMITIVE_VAR_LEN | 3,
+    CHAR_STRING = PRIMITIVE_VAR_LEN | 4,
+    REAL        = PRIMITIVE_VAR_LEN | 5,
+    OID         = PRIMITIVE_VAR_LEN | 6,
     
-    CONSTRAINT = 0x20, /**< flag of constraint syntax */
+    COMPOUND = 0x20, /**< flag of COMPOUND syntax */
+#define ASN_SYN_NAMED   1
+#define ASN_SYN_ORDER   2
+#define ASN_SYN_ARRAY   4
+    TAGGED      = COMPOUND, 
+    CHOICE      = COMPOUND | ASN_SYN_NAMED, 
 
-    SEQUENCE = CONSTRAINT, 
-    SEQUENCE_OF,
-    SET,
-    SET_OF,
-    CHOICE,
-    TAGGED
+    SET_OF      = COMPOUND    | ASN_SYN_ARRAY,
+    SET         = SET_OF      | ASN_SYN_NAMED,
+    SEQUENCE_OF = SET_OF      | ASN_SYN_ORDER,
+    SEQUENCE    = SEQUENCE_OF | ASN_SYN_NAMED,
+
 } asn_syntax;
 
+
+/**
+ * Test whether all bits 1 in mask are the same in syntax; 
+ * that is bitwise consequence mask => syntax have give all 1.
+ * Thus result is true when bitwise NOT for (bitwise mask => syntax)
+ * is zero. 
+ *
+ * @param syntax        Syntax to be tested.
+ * @param mask          Mask.
+ *
+ * @return non-zero if statement true and zero if false.
+ */
+static inline int
+asn_syntax_is_a(asn_syntax syntax, int mask)
+{
+    return !((~syntax) & mask);
+}
 
 /**
  * Enumerated type with ASN tag class codes. 
@@ -534,7 +557,7 @@ extern asn_value *asn_retrieve_descendant(asn_value *value,
 
 
 /**
- * Get descendent subvalue of some ASN value with CONSTRAINT syntax.
+ * Get descendent subvalue of some ASN value with COMPOUND syntax.
  * Got subvalue should NOT be freed!
  *
  * This method is much faster then "asn_read_component_value' because
@@ -554,7 +577,7 @@ extern te_errno asn_get_descendent(const asn_value *container,
 
 
 /**
- * Put descendent subvalue to some ASN value with CONSTRAINT syntax.
+ * Put descendent subvalue to some ASN value with COMPOUND syntax.
  * Passed ASN value simply inserted іnto tree without copy, old 
  * value on respective place is freed!
  *
@@ -825,7 +848,7 @@ extern te_errno asn_read_string(const asn_value *container,
 
 
 /**
- * Write component of CONSTRAINT subvalue in ASN value tree. 
+ * Write component of COMPOUND subvalue in ASN value tree. 
  *
  * @param container     root of ASN value tree which subvalue to be changed
  * @param elem_value    ASN value to be placed into the tree at place,
@@ -840,7 +863,7 @@ extern te_errno asn_write_component_value(asn_value *container,
                                           const char *labels);
 
 /**
- * Read component of CONSTRAINT subvalue in ASN value tree. 
+ * Read component of COMPOUND subvalue in ASN value tree. 
  *
  * @param container     root of ASN value tree which subvalue is interested
  * @param elem_value    read ASN value, copy of subtree specified by
@@ -962,7 +985,7 @@ extern const char *asn_get_name(const asn_value *container);
 
 
 /**
- * Get constant pointer to subvalue of some ASN value with CONSTRAINT
+ * Get constant pointer to subvalue of some ASN value with COMPOUND
  * syntax.
  * User may to try discard 'const' qualifier of obtained subvalue only 
  * if he (she) knows very well what he doing with ASN value. 
