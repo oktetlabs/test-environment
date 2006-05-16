@@ -3504,18 +3504,19 @@ TARPC_FUNC(wsa_recv_msg,
     COPY_ARG(bytes_received);
 },
 {
-    WSAMSG                msg;
+    WSAMSG               *msg;
     rpc_overlapped       *overlapped = IN_OVERLAPPED;
     rpc_overlapped        tmp;
     struct tarpc_msghdr  *rpc_msg;
-
-    memset(&msg, 0, sizeof(msg));
 
     if (overlapped == NULL)
     {
         memset(&tmp, 0, sizeof(tmp));
         overlapped = &tmp;    
     }
+
+    msg = &overlapped->msg;
+    memset(msg, 0, sizeof(*msg));
 
     rpc_msg = out->msg.msg_val;
 
@@ -3532,10 +3533,10 @@ TARPC_FUNC(wsa_recv_msg,
     {
         PREPARE_ADDR(rpc_msg->msg_name, rpc_msg->msg_namelen);
         
-        msg.namelen = rpc_msg->msg_namelen;
-        msg.name = a;
+        msg->namelen = rpc_msg->msg_namelen;
+        msg->name = a;
 
-        msg.dwBufferCount = rpc_msg->msg_iovlen;
+        msg->dwBufferCount = rpc_msg->msg_iovlen;
         if (rpc_msg->msg_iov.msg_iov_val != NULL)
         {
             if (iovec2overlapped(overlapped, rpc_msg->msg_iov.msg_iov_len,
@@ -3544,12 +3545,12 @@ TARPC_FUNC(wsa_recv_msg,
                 out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
                 goto finish;
             }
-            msg.lpBuffers = overlapped->buffers;
+            msg->lpBuffers = overlapped->buffers;
         }
     
         if (rpc_msg->msg_control.msg_control_len > 0)
         {
-            out->common._errno = wsa_recv_msg_control_in(rpc_msg, &msg);
+            out->common._errno = wsa_recv_msg_control_in(rpc_msg, msg);
             if (out->common._errno != 0)
             {
                 out->retval = -1;
@@ -3557,21 +3558,22 @@ TARPC_FUNC(wsa_recv_msg,
             }
         }
         
-        msg.dwFlags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
+        msg->dwFlags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
 
         /*
          * msg_name, msg_iov, msg_iovlen and msg_control MUST NOT be
          * changed.
          * msg_namelen, msg_controllen and msg_flags MAY be changed.
          */
-        INIT_CHECKED_ARG((char *)&msg.name, sizeof(msg.name), 0);
-        INIT_CHECKED_ARG((char *)&msg.lpBuffers, sizeof(msg.lpBuffers), 0);
-        INIT_CHECKED_ARG((char *)&msg.dwBufferCount,
-                         sizeof(msg.dwBufferCount), 0);
-        INIT_CHECKED_ARG((char *)&msg.Control, sizeof(msg.Control), 0);
+        INIT_CHECKED_ARG((char *)&msg->name, sizeof(msg->name), 0);
+        INIT_CHECKED_ARG((char *)&msg->lpBuffers, 
+                         sizeof(msg->lpBuffers), 0);
+        INIT_CHECKED_ARG((char *)&msg->dwBufferCount,
+                         sizeof(msg->dwBufferCount), 0);
+        INIT_CHECKED_ARG((char *)&msg->Control, sizeof(msg->Control), 0);
             
         MAKE_CALL(out->retval =
-            (*pf_wsa_recvmsg)(in->s, &msg,
+            (*pf_wsa_recvmsg)(in->s, msg,
                 out->bytes_received.bytes_received_len == 0 ? NULL :
                     (LPDWORD)(out->bytes_received.bytes_received_val),
                 in->overlapped == 0 ? NULL : (LPWSAOVERLAPPED)overlapped,
@@ -3595,13 +3597,13 @@ TARPC_FUNC(wsa_recv_msg,
                              &(rpc_msg->msg_iov.msg_iov_val));
 
             sockaddr_h2rpc(a, &(rpc_msg->msg_name));
-            rpc_msg->msg_namelen = msg.namelen;
-            rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.dwFlags);
+            rpc_msg->msg_namelen = msg->namelen;
+            rpc_msg->msg_flags = send_recv_flags_h2rpc(msg->dwFlags);
 
-            if (msg.Control.buf != NULL && out->retval >= 0)
+            if (msg->Control.buf != NULL && out->retval >= 0)
             {
                 out->common._errno = 
-                    wsa_recv_msg_control_out(rpc_msg, &msg);
+                    wsa_recv_msg_control_out(rpc_msg, msg);
                 if (out->common._errno != 0)
                 {
                     out->retval = -1;

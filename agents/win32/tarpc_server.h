@@ -462,6 +462,7 @@ typedef struct rpc_overlapped {
     WSAOVERLAPPED  overlapped; /**< WSAOVERLAPPED object itself */
     LPWSABUF       buffers;    /**< List of allocated buffers   */
     int            bufnum;     /**< Number of allocated buffers */
+    WSAMSG         msg;        /**< Memory for WSAMSG */
     
     /** Test-specific cookies */
     uint32_t       cookie1;
