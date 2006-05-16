@@ -59,6 +59,7 @@
 #include "te_shell_cmd.h"
 #include "ndn_iscsi.h"
 #include "te_iscsi.h"
+#include "te_tools.h"
 
 extern int ta_system(const char *cmd);
 
