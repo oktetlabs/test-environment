@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 TE_RUN_DIR="${PWD}"
 
