@@ -137,6 +137,16 @@ else
 
 # Built-in RPC server
 
+if CFG_ISCSI
+
+LDADD+=-liscsi_initiator_conf
+
+AM_CPPFLAGS+=-DWITH_ISCSI
+
+ta@with_name@_DEPENDENCIES += $(DESTDIR)/$(prefix)/../@host@/lib/libiscsi_initiator_conf.a
+
+endif
+
 bin_PROGRAMS=ta@with_name@ 
 
 EXTRA_DIST+=rpcserver.c

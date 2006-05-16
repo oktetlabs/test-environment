@@ -42,6 +42,7 @@ AC_SUBST([TAD_LIBS])
 AC_CONFIG_HEADERS([config.h])
 
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
+AM_CONDITIONAL(CFG_ISCSI, test -n "$with_iscsi")
 AM_CONDITIONAL(CFG_STANDALONE_RPCSERVER, 
                test -n "$with_standalone_rpcserver")
 

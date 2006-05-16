@@ -27,16 +27,24 @@
  */
 
 #ifdef __CYGWIN__
+
+#define TE_LGR_USER      "Configure iSCSI"
+
 #include "te_config.h"
 #include "package.h"
 
+#include <windows.h>
+/* In file "wingdi.h" ERROR is defined to 0 */
+#undef ERROR
+
+#include "te_defs.h"
 #include "te_errno.h"
 #include "logger_api.h"
 #include "logger_ta.h"
+#include "logfork.h"
 
 #include <sys/types.h>
 #include <regex.h>
-#include <windows.h>
 
 static void
 win32_report_error(const char *function, int line)
@@ -48,99 +56,70 @@ win32_report_error(const char *function, int line)
                       win_error, 0, buffer,
                       sizeof(buffer) - 1, NULL) == 0)
     {
-        usnigned long fmt_error = GetLastError();
-        ERROR("%s():%d: Win32 reported an error %lx", function, line, 
+        unsigned long fmt_error = GetLastError();
+        ERROR("%s():%d: Win32 reported an error %x", function, line, 
               win_error);
-        ERROR("Unable to format message string: %lx", fmt_error);
+        ERROR("Unable to format message string: %x", fmt_error);
     }
     else
     {
-        ERROR("%s():%d: Win32 error: %s (%lx)", function, line,
+        ERROR("%s():%d: Win32 error: %s (%x)", function, line,
               buffer, win_error);
     }
 }
 
 #define WIN32_REPORT_ERROR() win32_report_error(__FUNCTION__, __LINE__)
 
-static te_bool cli_started;
+static int cli_started;
 static HANDLE host_input, cli_output;
 static HANDLE host_output, cli_input;
 static PROCESS_INFORMATION process_info;
 
-void
-iscsi_write_to_win32_iscsicli(void *dest, char *what)
-{
-    DWORD written;
-    if (!WriteFile(host_ouput, what, strlen(what), &written, NULL))
-    {
-        WIN32_REPORT_ERROR();
-    }
-}
-
-te_errno
-iscsi_send_to_win32_iscsicli(const char *fmt, ...)
-{
-    static char buffer[1024];
-    ssize_t to_write;
-    unsigned long written;
-    va_list args;
-    int rc;
-
-    va_start(args, fmt);    
-    to_write = vsnprintf(buffer, sizeof(buffer) - 1, fmt, args);
-    va_end(args);
-    if (to_write < 0)
-    {
-        rc = TE_OS_RC(TE_TA_WIN32, errno);
-        ERROR("Cannot format string: %r", rc);
-        return rc;
-    }
-    if (to_write >= sizeof(buffer))
-    {
-        ERROR("Resulting string too long");
-        return TE_RC(TE_TA_WIN32, TE_ENOBUFS);
-    }
-
-    if (!WriteFile(host_ouput, what, strlen(what), &written, NULL))
-    {
-        WIN32_REPORT_ERROR();
-        return TE_RC(TE_TA_WIN32, TE_EIO);
-    }
-    return;
-}
-
-te_errno
-iscsi_win32_run_cli()
+static te_errno
+iscsi_win32_run_cli(const char *cmdline)
 {
     STARTUPINFO startup;
+    SECURITY_ATTRIBUTES attr;
 
     if (cli_started)
-        return 0;
+    {
+        iscsi_win32_finish_cli();
+    }
 
     startup.cb = sizeof(startup);
     startup.lpReserved = NULL;
     startup.lpDesktop  = NULL;
     startup.lpTitle    = NULL;
     startup.dwFlags    = STARTF_USESTDHANDLES;
-    startup.hStdInput  = cli_input;
-    startup.hStdOutput = cli_output;
-    startup.hStdError  = cli_output;
     startup.cbReserved2 = 0;
     startup.lpReserved2 = NULL;
 
-    if (!CreatePipe(&host_input, &cli_output, NULL, 0))
+    attr.nLength = sizeof(attr);
+    attr.lpSecurityDescriptor = NULL;
+    attr.bInheritHandle = TRUE;
+
+    if (!CreatePipe(&host_input, &cli_output, &attr, 0))
     {
         WIN32_REPORT_ERROR();
         return TE_RC(TE_TA_WIN32, TE_EFAIL);
     }
-    if (!CreatePipe(&host_output, &cli_input, NULL, 0))
+    SetHandleInformation(host_input, HANDLE_FLAG_INHERIT, 0);
+
+    if (!CreatePipe(&cli_input, &host_output, &attr, 0))
     {
         WIN32_REPORT_ERROR();
         CloseHandle(host_input);
         CloseHandle(cli_output);
         return TE_RC(TE_TA_WIN32, TE_EFAIL);
     }
-    if (!CreateProcess("iscsicli", NULL, NULL, NULL, TRUE,
+    SetHandleInformation(host_output, HANDLE_FLAG_INHERIT, 0);
+
+    startup.hStdInput  = GetStdHandle(STD_INPUT_HANDLE); // cli_input;
+    startup.hStdOutput = cli_output;
+    startup.hStdError  = cli_output;
+
+    RING("Running iSCSI CLI as '%s'", cmdline);
+    if (!CreateProcess(NULL, cmdline, NULL, NULL, TRUE,
                        CREATE_NO_WINDOW, NULL, NULL, 
                        &startup, &process_info))
     {
@@ -151,14 +130,33 @@ iscsi_win32_run_cli()
         CloseHandle(cli_input);
         return TE_RC(TE_TA_WIN32, TE_EFAIL);
     }
-    CloseHandle(cli_input);
-    CloseHandle(cli_output);
     cli_started = TRUE;
     return 0;
 }
 
 te_errno
-iscsi_win32_wait_for(regex_t *pattern, int first_part, int nparts, int maxsize, char **buffers)
+iscsi_send_to_win32_iscsicli(const char *fmt, ...)
+{
+    static char buffer[2048];
+    va_list args;
+    int rc;
+    int len;
+
+    va_start(args, fmt);
+    len = strlen("iscsicli.exe ");
+    memcpy(buffer, "iscsicli.exe ", len);
+    vsnprintf(buffer + len, sizeof(buffer) - 1 - len, fmt, args);
+    va_end(args);
+
+    return iscsi_win32_run_cli(buffer);
+}
+
+
+te_errno
+iscsi_win32_wait_for(regex_t *pattern, 
+                     regex_t *abort_pattern,
+                     regex_t *terminal_pattern,
+                     int first_part, int nparts, int maxsize, char **buffers)
 {
     static char buffer[2048];
     static char *new_line = NULL;
@@ -197,23 +195,41 @@ iscsi_win32_wait_for(regex_t *pattern, int first_part, int nparts, int maxsize, 
             if (read_size == 0)
             {
                 ERROR("%s(): The input line is too long", __FUNCTION__);
-                return TE_RC(TE_TA_WIN32, TE_ENOSPC)
+                return TE_RC(TE_TA_WIN32, TE_ENOSPC);
             }
+            RING("Waiting for %d bytes from iSCSI CLI", read_size);
             if (!ReadFile(host_input, free_ptr, read_size, &read_bytes, NULL))
             {
                 WIN32_REPORT_ERROR();
                 return TE_RC(TE_TA_WIN32, TE_EIO);
             }
+            free_ptr[read_bytes] = '\0';
         }
-        re_code = regexec(pattern, 10, matched, 0);
+        INFO("Probing line '%s'", buffer);
+        re_code = regexec(pattern, buffer, 10, matches, 0);
         if (re_code == 0)
             break;
-        if (re_code != RE_NOMATCH)
+        if (re_code != REG_NOMATCH)
         {
             char err_buf[64] = "";
-            regerror(pattern, re_code, err_buf, sizeof(err_buf) - 1);
+            regerror(re_code, pattern, err_buf, sizeof(err_buf) - 1);
             ERROR("Matching error: %s", err_buf);
             return TE_RC(TE_TA_WIN32, TE_EFAIL);
+        }
+        if (terminal_pattern != NULL)
+        {
+            re_code = regexec(terminal_pattern, buffer, 0, NULL, 0);
+            if (re_code == 0)
+                return TE_RC(TE_TA_WIN32, TE_ENODATA);
+        }
+        if (abort_pattern != NULL)
+        {
+            re_code = regexec(abort_pattern, buffer, 0, NULL, 0);
+            if (re_code == 0)
+            {
+                ERROR("iSCSI CLI reported an error: '%s'", buffer);
+                return TE_RC(TE_TA_WIN32, TE_ESHCMD);
+            }
         }
     }
     for (i = first_part, j = 0; i < first_part + nparts; i++, j++)
@@ -230,10 +246,11 @@ iscsi_win32_wait_for(regex_t *pattern, int first_part, int nparts, int maxsize, 
             buffers[j][size] = '\0';
         }
     }
+    return 0;
 }
 
 te_errno
-iscsi_win32_shutdown_cli()
+iscsi_win32_finish_cli(void)
 {
     te_bool success;
     
@@ -243,9 +260,10 @@ iscsi_win32_shutdown_cli()
     if (!success)
     {
         WARN("Killing iSCSI CLI process");
-        TerminateProcess(process_info.hProcess);
+        TerminateProcess(process_info.hProcess, (unsigned long)-1);
     }
     
+    CloseHandle(process_info.hThread);
     CloseHandle(process_info.hProcess);
     cli_started = FALSE;
     

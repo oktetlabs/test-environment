@@ -618,11 +618,19 @@ rcf_ch_conf_root()
         init = TRUE;
 #ifdef RCF_RPC
         rcf_pch_rpc_init();
-#endif        
+#endif
+#ifdef WITH_ISCSI
+        if (iscsi_initiator_conf_init(TE_TA_UNIX) != 0)
+        {
+            return NULL;
+        }
+#endif
         rcf_pch_rsrc_init();
         rcf_pch_rsrc_info("/agent/interface", 
                           rcf_pch_rsrc_grab_dummy,
                           rcf_pch_rsrc_release_dummy);
+
+
     }
 
     return &node_agent;

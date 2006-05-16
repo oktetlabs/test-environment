@@ -17,6 +17,8 @@ AM_LDFLAGS = @TE_LDFLAGS@
 
 lib_LIBRARIES = libiscsi_initiator_conf.a
 
-libiscsi_initiator_conf_a_SOURCES = conf_iscsi_initiator.c
+noinst_HEADERS = iscsi_initiator.h
+
+libiscsi_initiator_conf_a_SOURCES = conf_iscsi_initiator.c win32.c 
 
 all: install
