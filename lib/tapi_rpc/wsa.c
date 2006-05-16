@@ -2273,7 +2273,7 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_recv_msg, out.retval);
 
     snprintf(str_buf, sizeof(str_buf),
-             "RPC (%s,%s)%s: wsa_recv_msg(%d, %p(",
+             "RPC (%s,%s)%s: WSARecvMsg(%d, %p(",
              rpcs->ta, rpcs->name, rpcop2str(op), s, msg);
 
     if (RPC_IS_CALL_OK(rpcs)) {
