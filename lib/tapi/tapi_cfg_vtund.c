@@ -39,6 +39,7 @@
 
 #include "te_defs.h"
 #include "logger_api.h"
+#include "te_sleep.h"
 #include "tapi_sockaddr.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_vtund.h"
@@ -73,7 +74,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
                               ta_srv, srv_port);
     if (rc != 0)
         return rc;
-    SLEEP(1); /* Wait for server setup. */
+    te_sleep(1); /* Wait for server setup. */
 
     rc = cfg_add_instance_fmt(NULL, CFG_VAL(NONE, 0),
                               "/agent:%s/vtund:/server:%u/session:%s-%s",
@@ -111,7 +112,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
     if (rc != 0)
         return rc;
 
-    SLEEP(10);
+    te_sleep(10);
 
     /* 
      * Synchronize configuration trees and get assigned interfaces

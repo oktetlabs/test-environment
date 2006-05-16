@@ -6,6 +6,7 @@ AM_CFLAGS = @TE_CFLAGS@
 
 include_HEADERS = \
 	te_tools.h \
+	te_sleep.h \
 	te_bufs.h \
 	te_sockaddr.h \
 	te_shell_cmd.h \

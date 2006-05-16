@@ -90,8 +90,6 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 
 #endif
 
-HINSTANCE ta_hinstance;
-
 #include "../../lib/rcfpch/rcf_pch_rpc_server.c"
 
 int 
@@ -108,8 +106,6 @@ main(int argc, char **argv)
         printf("WSAStartup is not called!\n");
         fflush(stdout);
     }
-    
-    ta_hinstance = GetModuleHandle(NULL);
     
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);

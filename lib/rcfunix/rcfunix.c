@@ -188,7 +188,7 @@ system_with_timeout(const char *cmd, int timeout)
             if (killpg(getpgid(pid), SIGTERM) != 0)
                 ERROR("Failed to kill() process of the shell command: %r",
                       TE_OS_RC(TE_RCF_UNIX, errno));
-            MSLEEP(100);
+            te_msleep(100);
             if (killpg(getpgid(pid), SIGKILL) == 0)
                 RING("Process of the shell command killed by SIGKILL");
             return TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT);

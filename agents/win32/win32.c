@@ -30,21 +30,13 @@
 
 #define TE_LGR_USER      "Main"
 
-#include <winsock2.h>
-
-#ifdef HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
-#endif
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <signal.h>
 #include <string.h>
-#include <sys/un.h>
+#include <sys/wait.h>
+#include <pthread.h>
 #include <semaphore.h>
 
 #undef ERROR
@@ -606,9 +598,6 @@ sleep_ex(int msec)
 
 #endif
 
-
-HINSTANCE ta_hinstance;
-
 /**
  * Entry point of the Windows Test Agent.
  *
@@ -623,14 +612,8 @@ main(int argc, char **argv)
     char buf[16];
 
     pthread_t tid;
-
-    WSADATA data;
     
     UNUSED(argc);
-
-    WSAStartup(MAKEWORD(2,2), &data);
-
-    ta_hinstance = GetModuleHandle(NULL);
     
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);

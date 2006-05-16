@@ -469,6 +469,7 @@ _func##_proc(void *arg)                                             \
     checked_arg           **list_ptr = &list;                       \
                                                                     \
     UNUSED(list_ptr); /* Possibly unused */                         \
+    UNUSED(func); /* Possibly unused */                             \
                                                                     \
     logfork_register_user(#_func);                                  \
                                                                     \

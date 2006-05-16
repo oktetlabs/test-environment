@@ -622,20 +622,24 @@ shut_how_rpc2h(rpc_shut_how how)
  *
  * @param rpc_addr      RPC address location
  * @param addr          pointer to struct sockaddr_storage
+ * @param addrlen       Real length of the buffer under @a addr pointer
  *
  * @return struct sockaddr pointer
  */
 static inline struct sockaddr *
-sockaddr_rpc2h(struct tarpc_sa *rpc_addr, struct sockaddr_storage *addr)
+sockaddr_rpc2h(struct tarpc_sa *rpc_addr, struct sockaddr *addr, 
+               socklen_t addrlen)
 {
     uint32_t len = SA_DATA_MAX_LEN;
+    
+    UNUSED(addrlen);
 
     if (rpc_addr->sa_data.sa_data_val == NULL)
         return NULL;
 
     memset(addr, 0, sizeof(struct sockaddr_storage));
 
-    addr->ss_family = addr_family_rpc2h(rpc_addr->sa_family);
+    addr->sa_family = addr_family_rpc2h(rpc_addr->sa_family);
 
     if (len < rpc_addr->sa_data.sa_data_len)
     {
@@ -645,8 +649,7 @@ sockaddr_rpc2h(struct tarpc_sa *rpc_addr, struct sockaddr_storage *addr)
     else
         len = rpc_addr->sa_data.sa_data_len;
 
-    memcpy(((struct sockaddr *)addr)->sa_data,
-           rpc_addr->sa_data.sa_data_val, len);
+    memcpy(addr->sa_data, rpc_addr->sa_data.sa_data_val, len);
 
     return (struct sockaddr *)addr;
 }
@@ -746,7 +749,8 @@ check_args(checked_arg *list)
     struct sockaddr_storage addr;                                \
     struct sockaddr        *a;                                   \
                                                                  \
-    a = sockaddr_rpc2h(&(_address), &addr);                      \
+    a = sockaddr_rpc2h(&(_address), (struct sockaddr *)&addr,    \
+                       sizeof(addr));                            \
     INIT_CHECKED_ARG((char *)a, (_address).sa_data.sa_data_len + \
                      SA_COMMON_LEN, _vlen);
 
@@ -791,6 +795,9 @@ check_args(checked_arg *list)
     } while (0)
 
 
+/** Convert OS error to RPC one */
+#define RPC_ERRNO       win_rpc_errno(GetLastError())
+
 /**
  * Declare and initialise time variables; execute the code and store
  * duration and errno in the output argument.
@@ -805,7 +812,7 @@ check_args(checked_arg *list)
         gettimeofday(&t_start, NULL);                               \
         SetLastError(ERROR_UNSPEC);                                 \
         x;                                                          \
-        out->common._errno = win_rpc_errno(GetLastError());         \
+        out->common._errno = RPC_ERRNO;                             \
         gettimeofday(&t_finish, NULL);                              \
         out->common.duration =                                      \
             (t_finish.tv_sec - t_start.tv_sec) * 1000000 +          \

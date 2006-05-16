@@ -30,8 +30,6 @@
 
 #include "tarpc_server.h"
 
-extern HINSTANCE ta_hinstance;
-
 LPFN_CONNECTEX            pf_connect_ex;
 LPFN_DISCONNECTEX         pf_disconnect_ex;
 LPFN_ACCEPTEX             pf_accept_ex;
@@ -392,7 +390,7 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit,
     }
 
     ERROR("CreateProcess() failed with error %d", GetLastError());
-    return win_rpc_errno(GetLastError());
+    return RPC_ERRNO;
 }
 
 /*-------------- create_process() ---------------------------------*/
@@ -1166,14 +1164,14 @@ TARPC_FUNC(read,
         if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
                                      &rc, 1) == 0)
         {
-            out->common._errno = win_rpc_errno(GetLastError());
+            out->common._errno = RPC_ERRNO;
             ERROR("read(): GetOverlappedResult() failed with error %r (%d)",
                   out->common._errno, GetLastError());
             rc = -1;
             goto finish;
         }
 
-        out->common._errno = win_rpc_errno(GetLastError());
+        out->common._errno = RPC_ERRNO;
     }
 finish:    
     WSACloseEvent(overlapped.hEvent);
@@ -1211,14 +1209,14 @@ TARPC_FUNC(write, {},
         if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
                                      &rc, 1) == 0)
         {
-            out->common._errno = win_rpc_errno(GetLastError());
+            out->common._errno = RPC_ERRNO;
             ERROR("write(): GetOverlappedResult() failed with error %r "
                   "(%d)", out->common._errno, GetLastError());
             rc = -1;
             goto finish;
         }
 
-        out->common._errno = win_rpc_errno(GetLastError());
+        out->common._errno = RPC_ERRNO;
     }
 finish:    
     WSACloseEvent(overlapped.hEvent);
@@ -1481,7 +1479,7 @@ _fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
     }
     else
     {
-        out->common._errno = win_rpc_errno(GetLastError());
+        out->common._errno = RPC_ERRNO;
         out->retval = rcf_pch_mem_alloc(set);
     }
 
@@ -1502,7 +1500,7 @@ _fd_set_delete_1_svc(tarpc_fd_set_delete_in *in,
     errno = 0;
     free(IN_FDSET);
     rcf_pch_mem_free(in->set);
-    out->common._errno = win_rpc_errno(GetLastError());
+    out->common._errno = RPC_ERRNO;
 
     return TRUE;
 }
@@ -2750,7 +2748,7 @@ TARPC_FUNC(event_select, {},
     SetLastError(ERROR_UNSPEC);  
     out->retval = WSAEventSelect(in->fd, IN_HEVENT,
                                  network_event_rpc2h(in->event));
-    out->common._errno = win_rpc_errno(GetLastError());
+    out->common._errno = RPC_ERRNO;
 }
 )
 
@@ -2805,7 +2803,7 @@ _create_window_1_svc(tarpc_create_window_in *in,
         wcex.lpfnWndProc = (WNDPROC)message_callback;
         wcex.cbClsExtra = 0;
         wcex.cbWndExtra = 0;
-        wcex.hInstance = ta_hinstance;
+        wcex.hInstance = GetModuleHandle(NULL);
         wcex.hIcon = NULL;
         wcex.hCursor = NULL;
         wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
@@ -2826,7 +2824,7 @@ _create_window_1_svc(tarpc_create_window_in *in,
                     CreateWindow("MainWClass", "tawin32",
                                  WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
                                  0, CW_USEDEFAULT, 0, NULL, NULL,
-                                 ta_hinstance, NULL));
+                                 GetModuleHandle(NULL), NULL));
     return TRUE;
 }
 
@@ -2857,7 +2855,7 @@ _wsa_async_select_1_svc(tarpc_wsa_async_select_in *in,
     SetLastError(ERROR_UNSPEC);  
     out->retval = WSAAsyncSelect(in->sock, IN_HWND, WM_USER + 1,
                                  network_event_rpc2h(in->event));
-    out->common._errno = win_rpc_errno(GetLastError());
+    out->common._errno = RPC_ERRNO;
     return TRUE;
 }
 
@@ -2955,7 +2953,6 @@ void CALLBACK
 default_file_completion_callback(DWORD error, DWORD bytes, 
                                  LPOVERLAPPED overlapped)
 {
-    
     default_completion_callback(error, bytes, overlapped, 0);
 }
 
@@ -3167,7 +3164,7 @@ TARPC_FUNC(duplicate_handle, {},
     if ((src = OpenProcess(SYNCHRONIZE | PROCESS_DUP_HANDLE, 
                            FALSE, in->src)) == NULL)
     {
-        out->common._errno = win_rpc_errno(GetLastError());
+        out->common._errno = RPC_ERRNO;
         out->retval = FALSE;
         ERROR("Cannot open process, error = %d\n", GetLastError());
         goto finish;
@@ -3176,7 +3173,7 @@ TARPC_FUNC(duplicate_handle, {},
     if ((tgt = OpenProcess(SYNCHRONIZE | PROCESS_DUP_HANDLE, FALSE, 
                            in->tgt)) == NULL)
     {
-        out->common._errno = win_rpc_errno(GetLastError());
+        out->common._errno = RPC_ERRNO;
         out->retval = FALSE;
         ERROR("Cannot open process, error = %d\n", GetLastError());
         CloseHandle(src);
@@ -3633,7 +3630,7 @@ TARPC_FUNC(kill, {},
     if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE, 
                           in->pid)) == NULL)
     {
-        out->common._errno = win_rpc_errno(GetLastError());
+        out->common._errno = RPC_ERRNO;
         out->retval = -1;
         ERROR("Cannot open process, error = %d\n", GetLastError());
         goto finish;
@@ -4190,7 +4187,8 @@ TARPC_FUNC(wsa_ioctl,
             {
                 p->lpSockaddr = (LPSOCKADDR)
                                 malloc(sizeof(struct sockaddr_storage));
-                sockaddr_rpc2h(q, (struct sockaddr_storage *)p->lpSockaddr);
+                sockaddr_rpc2h(q, (struct sockaddr_storage *)p->lpSockaddr, 
+                               sizeof(struct sockaddr_storage));
                 p->iSockaddrLength = (q->sa_family == RPC_AF_INET)?
                                      sizeof(SOCKADDR_IN) :
                                      sizeof(SOCKADDR_IN6);
@@ -4205,7 +4203,8 @@ TARPC_FUNC(wsa_ioctl,
             break;
 
         case WSA_IOCTL_SA:
-            inbuf = sockaddr_rpc2h(&req->wsa_ioctl_request_u.req_sa, &addr);
+            inbuf = sockaddr_rpc2h(&req->wsa_ioctl_request_u.req_sa, &addr, 
+                                   sizeof(struct sockaddr_storage));
             inbuf_len = sizeof(addr);
             break;
 

@@ -1,12 +1,9 @@
 /** @file
  * @brief TE tools
  *
- * Functions implemented here may use services provided by the system
- * and definitions done in headers located in root include directory
- * of the Test Environment.
+ * Functions for different delays.
  *
- *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -30,15 +27,44 @@
  * $Id$
  */
 
-#ifndef __TE_TOOLS_H__
-#define __TE_TOOLS_H__
+#ifndef __TE_SLEEP_H__
+#define __TE_SLEEP_H__
 
-#include "te_bufs.h"
-#include "te_format.h"
-#ifndef WINDOWS
-#include "te_shell_cmd.h"
-#include "te_sleep.h"
-#endif
+/**
+ * Sleep specified number of seconds.
+ *
+ * @param to_sleep      number of seconds to sleep
+ */
+static inline void 
+te_sleep(unsigned int to_sleep)
+{
+    RING("Sleeping %u seconds", to_sleep); 
+    (void)sleep(to_sleep);
+}
+
+/**
+ * Sleep specified number of milliseconds.
+ *
+ * @param to_sleep      number of milliseconds to sleep
+ */
+static inline void
+te_msleep(unsigned int to_sleep)
+{
+    RING("Sleeping %u milliseconds", to_sleep); 
+    (void)usleep(to_sleep * 1000); 
+}
+
+/**
+ * Sleep specified number of microseconds.
+ *
+ * @param to_sleep      number of milliseconds to sleep
+ */
+static inline void
+te_usleep(unsigned int to_sleep)
+{
+    RING("Sleeping %u microseconds", to_sleep); 
+    (void)usleep(to_sleep); 
+}
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,4 +73,4 @@ extern "C" {
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_TOOLS_H__ */
+#endif /* !__TE_SLEEP_H__ */

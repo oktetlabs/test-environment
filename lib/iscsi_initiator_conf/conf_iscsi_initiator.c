@@ -954,7 +954,7 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
             {
                 WARN("Stale iscsid (pid = %d) found, killing, iscsid_pid");
                 ta_system("iscsiadm --stop");
-                USLEEP(1000);
+                te_usleep(1000);
                 kill(iscsid_pid, SIGKILL);
             }
             else
@@ -993,7 +993,7 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
         {
             return 0;
         }
-        USLEEP(1000);
+        te_usleep(1000);
     }
     ERROR("Cannot check that iscsid actually started");
     iscsi_openiscsi_stop_daemon();
@@ -1019,7 +1019,7 @@ iscsi_openiscsi_stop_daemon(void)
             if (kill(iscsid_pid, 0) == 0)
             {
                 ta_system("iscsiadm --stop");
-                USLEEP(1000);
+                te_usleep(1000);
                 kill(iscsid_pid, SIGKILL);
             }
         }
@@ -2164,7 +2164,7 @@ iscsi_initator_conn_request_thread(void *arg)
                                               current_req->target_id);
                     if (rc == 0 || TE_RC_GET_ERROR(rc) != TE_EAGAIN)
                         break;
-                    USLEEP(500000);
+                    te_usleep(500000);
                 }
                 if (rc != 0)
                 {

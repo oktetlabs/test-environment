@@ -64,6 +64,7 @@
 #include "logger_ta_lock.h"
 #include "logfork.h"
 #include "ta_common.h"
+#include "te_sleep.h"
 
 #include "unix_internal.h"
 
@@ -1419,7 +1420,7 @@ ta_kill_death(pid_t pid)
         return -1;
 
     /* Wait for termination. */
-    MSLEEP(500);
+    te_msleep(500);
     kill(pid, SIGKILL);
     ta_waitpid(pid, NULL, 0);
     return 0;

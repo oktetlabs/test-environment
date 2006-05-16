@@ -138,7 +138,7 @@ main(int argc, char *argv[])
          "cells", payload_len,
          (payload_len + AAL5_TRAILER_LEN + ATM_PAYLOAD_LEN - 1) /
              ATM_PAYLOAD_LEN);
-    SLEEP(1);
+    te_sleep(1);
 
     received = 0;
     while ((r = rpc_recv(pco_tst, tst_s, cell, sizeof(cell),

@@ -506,6 +506,60 @@ extern int test_split_param_list(const char *list, char ***array_p);
  */
 extern void sigint_handler(int signum);
 
+/* Scalable sleep primitives */
+
+/** Maximum allowed sleep scale */
+#define TE_MAX_SCALE    1000
+
+/**
+ * Function to get sleep scale.
+ *
+ * @return Scale.
+ */
+static inline unsigned int
+test_sleep_scale(void)
+{
+    const char         *var_name = "TE_SLEEP_SCALE";
+    const unsigned int  def_val = 1;
+    const char         *value;
+    const char         *end;
+    unsigned long       scale;
+
+    value = getenv(var_name);
+    if (value == NULL || *value == '\0')
+        return def_val; 
+
+    scale = strtoul(value, (char **)&end, 10);
+    if (*end != '\0' || scale >= TE_MAX_SCALE)
+    {
+        ERROR("Invalid value '%s' in Environment variable '%s'",
+              value, var_name);
+        return def_val;
+    }
+
+    return scale;
+}
+
+/**
+ * Scalable sleep (sleep scale times for _to_sleep seconds).
+ *
+ * @param _to_sleep     number of seconds to sleep is scale is 1
+ */
+#define SLEEP(_to_sleep)   te_sleep(test_sleep_scale() * (_to_sleep))
+
+/**
+ * Scalable sleep (sleep scale times for _to_sleep milliseconds).
+ *
+ * @param _to_sleep     number of seconds to sleep is scale is 1
+ */
+#define MSLEEP(_to_sleep)   te_msleep(test_sleep_scale() * (_to_sleep))
+
+/**
+ * Scalable sleep (sleep scale times for _to_sleep microseconds).
+ *
+ * @param _to_sleep     number of seconds to sleep is scale is 1
+ */
+#define USLEEP(_to_sleep)   te_usleep(test_sleep_scale() * (_to_sleep))
 
 #ifdef __cplusplus
 } /* extern "C" */

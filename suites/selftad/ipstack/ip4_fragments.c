@@ -207,7 +207,7 @@ main(int argc, char *argv[])
     if (rc != 0) 
         TEST_FAIL("send start failed %X", rc); 
     RPC_AWAIT_IUT_ERROR(pco);
-    SLEEP(1);
+    te_sleep(1);
     from_len = sizeof(from_sa);
     rc = rpc_recvfrom(pco, udp_socket,
                       rcv_buffer, sizeof(rcv_buffer), RPC_MSG_DONTWAIT, 

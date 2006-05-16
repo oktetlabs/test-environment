@@ -35,6 +35,7 @@
 #endif
 
 #include "te_shell_cmd.h"
+#include "te_sleep.h"
 
 
 /** Maximum number of attempts to wait a daemon in expected state */
@@ -589,7 +590,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     /* Commit all changes in config files before restart of the service */
     sync();
     /* I don't know why, but xinetd does not start without this sleep. */
-    SLEEP(1);
+    te_msleep(1);
 
     if ((rc = ta_system("/etc/init.d/xinetd start")) != 0)
     {
@@ -3375,7 +3376,7 @@ ds_slapd_del(unsigned int gid, const char *oid, const char *port)
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-    MSLEEP(100);
+    te_msleep(100);
 
     return 0;
 }
