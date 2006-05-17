@@ -113,7 +113,7 @@ thread_mutex_unlock(void *mutex)
 }
 
 /** Replaces cygwin function */
-int 
+int __cdecl
 setenv(const char *name, const char *value, int overwrite)
 {
     UNUSED(overwrite);
@@ -121,8 +121,9 @@ setenv(const char *name, const char *value, int overwrite)
 }
  
 /** Replaces cygwin function */
-void 
+int __cdecl
 unsetenv(const char *name)
 {
     SetEnvironmentVariable(name, NULL);
+    return 0;
 }
