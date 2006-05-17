@@ -2759,7 +2759,7 @@ tapi_snmp_get_integer(const char *ta, int sid, int csap_id,
         case TAPI_SNMP_NOSUCHOBJ:
         case TAPI_SNMP_NOSUCHINS:
         case TAPI_SNMP_ENDOFMIB:
-            rc = varbind.type;
+            rc = TE_ENOENT;
             tapi_log_buf_append(log_buf, "-> %s\n",
                                 tapi_snmp_val_type_h2str(varbind.type));
             break;
