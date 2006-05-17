@@ -46,6 +46,8 @@
 #include <sys/types.h>
 #include <regex.h>
 
+#include "iscsi_initiator.h"
+
 static void
 win32_report_error(const char *function, int line)
 {
