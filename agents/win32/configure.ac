@@ -42,7 +42,7 @@ AC_SUBST([TAD_LIBS])
 AC_CONFIG_HEADERS([config.h])
 
 AC_MSG_CHECKING([unsetenv() return type])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]],
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdlib.h>]],
                                    [[ int tmp = unsetenv(NULL); ]])],
                   [unsetenv_returns=int
                    AC_MSG_RESULT([int])],
