@@ -41,6 +41,17 @@ AC_SUBST([TAD_LIBS])
 
 AC_CONFIG_HEADERS([config.h])
 
+AC_MSG_CHECKING([unsetenv() return type])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]],
+                                   [[ int tmp = unsetenv(NULL); ]])],
+                  [unsetenv_returns=int
+                   AC_MSG_RESULT([int])],
+                  [unsetenv_returns=void
+                   AC_MSG_RESULT([void])])
+AC_DEFINE_UNQUOTED(UNSETENV_RETURN_TYPE, $unsetenv_returns, 
+                   [Defined if unsetenv() returns int, not void])
+                       
+
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 AM_CONDITIONAL(CFG_ISCSI, test -n "$with_iscsi")
 AM_CONDITIONAL(CFG_STANDALONE_RPCSERVER, 
