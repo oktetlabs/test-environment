@@ -51,6 +51,7 @@
 #include "tapi_jmp.h"
 #include "tapi_test_log.h"
 
+#include "te_tools.h"
 
 #ifdef __cplusplus
 extern "C" {
