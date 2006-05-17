@@ -121,7 +121,10 @@ setenv(const char *name, const char *value, int overwrite)
 }
  
 /** Replaces cygwin function */
-UNSETENV_RETURN_TYPE __cdecl
+#ifndef WINDOWS
+UNSETENV_RETURN_TYPE 
+#endif
+__cdecl
 unsetenv(const char *name)
 {
     SetEnvironmentVariable(name, NULL);
