@@ -50,7 +50,7 @@
 #include "tapi_rpcsock_macros.h"
 #include "tapi_env.h"
 #include "tapi_tad.h"
-#include "tapi_tcp.h"
+#include "tapi_socket.h"
 #include "tapi_atm.h"
 
 #include "tapi_test.h"
