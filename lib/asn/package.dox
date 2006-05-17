@@ -21,8 +21,20 @@ whereas ASN.1 textual representation of value is insufficient for it --
 encoding requires information about ASN.1 type definition.
 
 According with ASN.1 specification, ASN value may be considered
-as tree hierarchy, in which . Constraint ASN values are consist of some 
-another values, which m
+as tree hierarchy. 
+Compound ASN values are consist of some another values, 
+which may be either compound or simple.
+Some types of compound value contain only one subvalue, but 
+nevetheless they are considered as containers.
+
+
+@par Subvalues identification
+
+Some of compound types contains named subvalues,
+they are: 'SEQUENCE', 'CHOICE', 'SET'.
+Therefore, to access subvalue in instance of such type,
+one have to specify its symbolic label, which is set in
+definition of ASN.1 type this value belongs to.
 
 User API: asn_usr.h
 

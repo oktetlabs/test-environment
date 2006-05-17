@@ -55,6 +55,13 @@ struct asn_type;
 typedef struct asn_type asn_type;
 
 
+/** bit 'named syntax' for compound type syntacies. */
+#define ASN_SYN_NAMED   1
+/** bit 'ordered sequence' for compound type syntacies. */
+#define ASN_SYN_ORDER   2
+/** bit 'ordered sequence' for compound type syntacies. */
+#define ASN_SYN_ARRAY   4
+
 /**
  * Enumerated type with ASN syntax codes. All syntax codes are devided into
  * the following groups:
@@ -82,16 +89,14 @@ typedef enum {
                                              "long int" in C! length of its
                                               data in octets is specified
                                               by asn_type field 'size'. */
-    BIT_STRING  = PRIMITIVE_VAR_LEN | 2,
-    OCT_STRING  = PRIMITIVE_VAR_LEN | 3,
-    CHAR_STRING = PRIMITIVE_VAR_LEN | 4,
-    REAL        = PRIMITIVE_VAR_LEN | 5,
-    OID         = PRIMITIVE_VAR_LEN | 6,
+    BIT_STRING  = PRIMITIVE_VAR_LEN | 2, /** ASN.1 "BIT STRING" type */
+    OCT_STRING  = PRIMITIVE_VAR_LEN | 3, /** ASN.1 "OCTET STRING" type */
+    CHAR_STRING = PRIMITIVE_VAR_LEN | 4, /** ASN.1 "GeneralString" type */
+    REAL        = PRIMITIVE_VAR_LEN | 5, /** ASN.1 "REAL" type */
+    OID         = PRIMITIVE_VAR_LEN | 6, /** ASN.1 "OBJECT IDENTIFIER"
+                                           type */
     
     COMPOUND = 0x20, /**< flag of COMPOUND syntax */
-#define ASN_SYN_NAMED   1
-#define ASN_SYN_ORDER   2
-#define ASN_SYN_ARRAY   4
     TAGGED      = COMPOUND, 
     CHOICE      = COMPOUND | ASN_SYN_NAMED, 
 
