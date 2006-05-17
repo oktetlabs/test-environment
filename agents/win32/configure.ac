@@ -50,7 +50,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]],
                    AC_MSG_RESULT([void])])
 AC_DEFINE_UNQUOTED(UNSETENV_RETURN_TYPE, $unsetenv_returns, 
                    [Defined if unsetenv() returns int, not void])
-                       
+if test "$unsetenv_returns" = "int"; then
+   AC_DEFINE(UNSETENV_RETURNS_INT, 1, [Defined when unsetenv() returns int])
+fi                     
 
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 AM_CONDITIONAL(CFG_ISCSI, test -n "$with_iscsi")

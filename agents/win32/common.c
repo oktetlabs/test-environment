@@ -125,5 +125,7 @@ UNSETENV_RETURN_TYPE __cdecl
 unsetenv(const char *name)
 {
     SetEnvironmentVariable(name, NULL);
+#ifdef UNSETENV_RETURNS_INT
     return 0;
+#endif
 }
