@@ -472,6 +472,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         if (rpcs->tid0 != 0)
         {
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EBUSY);
+            rpcs->timed_out = TRUE;
             pthread_mutex_unlock(&rpcs->lock);
             return;
         }
@@ -482,6 +483,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         {
             ERROR("Try to wait not called RPC");
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EALREADY);
+            rpcs->timed_out = TRUE;
             pthread_mutex_unlock(&rpcs->lock);
             return;
         }
@@ -490,6 +492,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
             ERROR("Try to wait RPC %s instead called RPC %s", 
                   proc, rpcs->proc);
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EPERM);
+            rpcs->timed_out = TRUE;
             pthread_mutex_unlock(&rpcs->lock);
             return;
         }
