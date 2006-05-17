@@ -73,6 +73,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_shell_cmd.h"
+#include "te_sleep.h"
 #include "rcf_api.h"
 #include "rcf_methods.h"
 
