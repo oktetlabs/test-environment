@@ -156,6 +156,14 @@ cfg_ta_reboot_all(void)
     }
 }
 
+static te_bool do_log_syncing = FALSE;
+
+void
+cfg_ta_log_syncing(te_bool flag)
+{
+    do_log_syncing = flag;
+}
+
 /**
  * Synchronize one object instance on the TA.
  *
@@ -231,6 +239,11 @@ sync_ta_instance(const char *ta, const char *oid)
         if (handle != CFG_HANDLE_INVALID)
             cfg_db_del(handle);
         return 0;
+    }
+
+    if (do_log_syncing)
+    {
+        RING("Syncing %s on %s -> %s", ta, oid, cfg_get_buf);
     }
 
     if ((rc = cfg_types[obj->type].str2val(cfg_get_buf, &val)) != 0)

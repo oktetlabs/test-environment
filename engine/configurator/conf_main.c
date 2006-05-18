@@ -1251,7 +1251,9 @@ process_backup(cfg_backup_msg *msg)
             else
                 WARN("Restoring backup from history failed; "
                      "restore from the file");
+            cfg_ta_log_syncing(TRUE);
             msg->rc = parse_config(msg->filename, TRUE);
+            cfg_ta_log_syncing(FALSE);
             rcf_log_cfg_changes(FALSE);
             cfg_dh_release_after(msg->filename);
             

@@ -114,6 +114,15 @@ extern int cfg_tas_commit(const char *oid);
  */
 extern int cfg_ta_sync_dependants(cfg_instance *inst);
 
+
+/**
+ * Toggles logging of all sync operations
+ *
+ * @param flag Is logging enabled
+ *
+ */
+extern void cfg_ta_log_syncing(te_bool flag);
+
 #ifdef __cplusplus
 }
 #endif
