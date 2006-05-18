@@ -713,5 +713,26 @@ rpc_getpeername(rcf_rpc_server *rpcs,
                                (namelen == NULL) ? 0 : *namelen);
 }
 
+/**
+ * Join a multicasting group on specified interface.
+ * 
+ * @param  rpcs       RPC server handle
+ * @param  s          socket descriptor
+ * @param  mcast_addr multicast address (IPv4 or IPv6).
+ * @param  if_index   interface index
+ * 
+ * @return 0 on success, -1 on failure
+ */
+
+extern int rpc_mcast_join(rcf_rpc_server *rpcs, int s,
+                          const struct sockaddr *mcast_addr, int if_index);
+
+/**
+ * Leave a multicast group.
+ *
+ * Parameters are same as above
+ */
+extern int rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
+                           const struct sockaddr *mcast_addr, int if_index);
 
 #endif /* !__TE_TAPI_RPC_SOCKET_H__ */

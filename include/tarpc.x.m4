@@ -3288,6 +3288,21 @@ struct tarpc_set_var_out {
     tarpc_bool found; /**< If TRUE, variable is found */
 };
 
+/* mcast_join_leave() */
+struct tarpc_mcast_join_leave_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_int           fd;          /**< TA-local socket */
+    struct tarpc_sa     multiaddr;   /**< Multicast group address */
+    tarpc_int           ifindex;     /**< Interface index */
+    tarpc_bool          leave_group; /**< Leave the group */
+};
+
+struct tarpc_mcast_join_leave_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+};
+
 program tarpc
 {
     version ver0
@@ -3519,5 +3534,6 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(setrlimit)
         RPC_DEF(getrlimit)
 
+        RPC_DEF(mcast_join_leave)
     } = 1;
 } = 1;

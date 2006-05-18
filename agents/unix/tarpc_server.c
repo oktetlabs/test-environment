@@ -4969,7 +4969,7 @@ _get_buf_1_svc(tarpc_get_buf_in *in, tarpc_get_buf_out *out,
 
         buf = malloc(in->len);
         if (buf == NULL)
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         else
         {
             memcpy(buf, src_buf + (unsigned int)in->offset, in->len);
@@ -5055,4 +5055,88 @@ TARPC_FUNC(getrlimit,
     }
 }
 )
+
+/*------------ mcast_join_leave() ---------------------------*/
+void
+mcast_join_leave(tarpc_mcast_join_leave_in  *in,
+                 tarpc_mcast_join_leave_out *out)
+{
+    memset(out, 0, sizeof(tarpc_mcast_join_leave_out));
+    if (in->multiaddr.sa_family == RPC_AF_INET6)
+    {
+        struct ipv6_mreq mreq;
+
+        memcpy(&mreq.ipv6mr_multiaddr, in->multiaddr.sa_data.sa_data_val,
+               sizeof(struct in6_addr));
+        mreq.ipv6mr_interface = in->ifindex;
+        out->retval = setsockopt(in->fd, IPPROTO_IPV6,
+                                 in->leave_group?
+                                 IPV6_DROP_MEMBERSHIP :
+                                 IPV6_ADD_MEMBERSHIP,
+                                 &mreq, sizeof(mreq));
+        if (out->retval != 0)
+        {
+            ERROR("Attempt to join IPv6 multicast group failed");
+            out->common._errno = TE_RC(TE_TA_UNIX, errno);
+        }
+    }
+    else if (in->multiaddr.sa_family == RPC_AF_INET)
+    {
+#if HAVE_STRUCT_IP_MREQN
+        struct ip_mreqn mreq;
+        
+        memset(&mreq, 0, sizeof(mreq));
+        mreq.imr_ifindex = in->ifindex;
+#else
+        char              if_name[IFNAMSIZ];
+        struct ifreq      ifrequest;
+        struct ip_mreq    mreq;
+
+        memset(&mreq, 0, sizeof(mreq));
+    
+        if (if_indextoname(in->ifindex, if_name) == NULL)
+        {
+            ERROR("Invalid interface index specified");
+            out->retval = -1;
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENXIO);
+        }
+        else
+        {
+            memset(&ifrequest, 0, sizeof(struct ifreq));
+            memcpy(&(ifrequest.ifr_name), if_name, IFNAMSIZ);
+            if (ioctl(in->fd, SIOCGIFADDR, &ifrequest) < 0)
+            {
+                ERROR("No IPv4 address on interface %s", if_name);
+                out->retval = -1;
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENXIO);
+            }
+
+            memcpy(&mreq.imr_interface, &SIN(&ifrequest.ifr_addr)->sin_addr,
+                   sizeof(struct in_addr));
+        }
+#endif        
+        memcpy(&mreq.imr_multiaddr, in->multiaddr.sa_data.sa_data_val,
+               sizeof(struct in_addr));
+        out->retval = setsockopt(in->fd, IPPROTO_IP, in->leave_group?
+                                 IP_DROP_MEMBERSHIP : IP_ADD_MEMBERSHIP,
+                                 &mreq, sizeof(mreq));
+        if (out->retval != 0)
+        {
+            ERROR("Attempt to join IPv4 multicast group failed");
+            out->common._errno = TE_RC(TE_TA_UNIX, errno);
+        }
+    }
+    else
+    {
+        ERROR("Unknown multicast address family %d",
+              in->multiaddr.sa_family);
+        out->retval = -1;
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+}
+    
+TARPC_FUNC(mcast_join_leave, {}, 
+{
+    MAKE_CALL(func_ptr(in, out));
+})
 
