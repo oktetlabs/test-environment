@@ -704,14 +704,15 @@ tad_ip4_match_bin_cb(csap_p           csap,
 { 
     ip4_csap_specific_data_t *spec_data;
 
-    uint8_t    *data; 
-    size_t      data_len;
-    asn_value  *ip4_header_pdu = NULL;
-    te_errno    rc;
+    const uint8_t  *data; 
+    size_t          data_len;
+    asn_value      *ip4_header_pdu = NULL;
+    te_errno        rc;
 
     uint8_t  tmp8;
     size_t   h_len = 0;
     size_t   ip_len = 0;
+    uint16_t ip_off;
 
     UNUSED(ptrn_opaque);
 
@@ -730,10 +731,10 @@ tad_ip4_match_bin_cb(csap_p           csap,
 
     spec_data = csap_get_proto_spec_data(csap, layer); 
 
-#define CHECK_FIELD(_asn_label, _size) \
+#define CHECK_FIELD(_asn_label, _size, _data) \
     do {                                                        \
         rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu,     \
-                                  data, _size, _asn_label);     \
+                                  _data, _size, _asn_label);    \
         if (rc != 0)                                            \
         {                                                       \
             F_VERB("%s: csap %d field %s not match, rc %r",     \
@@ -763,11 +764,11 @@ tad_ip4_match_bin_cb(csap_p           csap,
     }
     data++;
 
-    CHECK_FIELD("type-of-service", 1); 
+    CHECK_FIELD("type-of-service", 1, data); 
 
     ip_len = ntohs(*(uint16_t *)data);
-    CHECK_FIELD("ip-len", 2);
-    CHECK_FIELD("ip-ident", 2);
+    CHECK_FIELD("ip-len", 2, data);
+    CHECK_FIELD("ip-ident", 2, data);
 
     tmp8 = (*data) >> 5;
     rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu, 
@@ -775,13 +776,14 @@ tad_ip4_match_bin_cb(csap_p           csap,
     if (rc != 0) 
         goto cleanup;
 
-    *data &= 0x1f; 
-    CHECK_FIELD("ip-offset", 2);
-    CHECK_FIELD("time-to-live", 1);
-    CHECK_FIELD("protocol", 1);
-    CHECK_FIELD("h-checksum", 2);
-    CHECK_FIELD("src-addr", 4);
-    CHECK_FIELD("dst-addr", 4);
+    memcpy(&ip_off, data, sizeof(ip_off));
+    ip_off = htons(ntohs(ip_off) & 0x1fff);
+    CHECK_FIELD("ip-offset", 2, (void *)&ip_off);
+    CHECK_FIELD("time-to-live", 1, data);
+    CHECK_FIELD("protocol", 1, data);
+    CHECK_FIELD("h-checksum", 2, data);
+    CHECK_FIELD("src-addr", 4, data);
+    CHECK_FIELD("dst-addr", 4, data);
  
 #undef CHECK_FIELD 
 
