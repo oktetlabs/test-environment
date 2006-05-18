@@ -302,7 +302,7 @@ extern int ndn_du_read_plain_oct(const asn_value *pdu, uint16_t tag,
  * @return zero if matches, errno otherwise.
  */ 
 extern int ndn_match_data_units(const asn_value *pat, asn_value *pkt_pdu,
-                                uint8_t *data, size_t d_len, 
+                                const uint8_t *data, size_t d_len, 
                                 const char *label);
 
 /**
@@ -315,7 +315,7 @@ extern int ndn_match_data_units(const asn_value *pat, asn_value *pkt_pdu,
  * @return zero if matches, errno otherwise.
  */ 
 extern int ndn_match_mask(const asn_value *mask_pat,
-                          uint8_t *data, size_t d_len);
+                          const uint8_t *data, size_t d_len);
 
 /**
  * Get timestamp from recieved Raw-Packet

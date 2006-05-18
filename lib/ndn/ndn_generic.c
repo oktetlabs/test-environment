@@ -445,7 +445,7 @@ const asn_type * const  ndn_raw_packet = &ndn_raw_packet_s;
 
 /* See description in ndn.h */ 
 int
-ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
+ndn_match_mask(const asn_value *mask_pat, const uint8_t *data, size_t d_len)
 {
     int exact_len_index = -1, pat_index, val_index;
     int rc = 0;
@@ -529,7 +529,7 @@ ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
 /* See description in ndn.h */ 
 int 
 ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
-                     uint8_t *data, size_t d_len, const char *label)
+                     const uint8_t *data, size_t d_len, const char *label)
 {
     int               field_index;
     asn_syntax        plain_syntax;
