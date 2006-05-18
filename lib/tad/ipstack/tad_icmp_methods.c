@@ -87,7 +87,6 @@ tad_icmp_error(csap_p csap, const char *usr_param,
         orig_pkt == NULL || pkt_len == 0)
         return TE_EWRONGPTR;
 
-
     type = strtol(usr_param, &endptr, 10);
     if ((endptr == NULL) || (*endptr != ':'))
     {
@@ -137,9 +136,14 @@ tad_icmp_error(csap_p csap, const char *usr_param,
         return rc;
     }
 
-#define ICMP_PLD_SIZE 28
+/* 
+ * RFC792 requires to send IP header + 64 bits of payload, however,
+ * 64 bits (8 bytes) are not sufficient even for TCP header without
+ * any options (Solaris requires to have full TCP header in ICMP error).
+ */
+#define ICMP_PLD_SIZE 32
     msg_len = 14 /* eth */ + 20 /* IP */ + 8 /* ICMP */
-            + ICMP_PLD_SIZE /* IP header + 8 bytes of orig pkt */;
+            + MIN(ICMP_PLD_SIZE, pkt_len - 14);
 
     pkt = tad_pkt_alloc(1, msg_len);
     if (pkt == NULL)
@@ -153,7 +157,7 @@ tad_icmp_error(csap_p csap, const char *usr_param,
     memcpy(p, orig_pkt + ETHER_ADDR_LEN, ETHER_ADDR_LEN); 
     memcpy(p + ETHER_ADDR_LEN, orig_pkt, ETHER_ADDR_LEN); 
     memcpy(p + 2 * ETHER_ADDR_LEN, orig_pkt + 2 * ETHER_ADDR_LEN, 2); 
-    p += 14; orig_pkt += 14;
+    p += 14; orig_pkt += 14; pkt_len -= 14;
 
     /* IP header, now leave orig_pkt unchanged */
     memcpy(p, orig_pkt, 2); /* vers, hlen, tos */
@@ -164,7 +168,7 @@ tad_icmp_error(csap_p csap, const char *usr_param,
     p += 2;
     *(uint16_t *)p = 0; /* flags & offset */
     p += 2;
-    *p++ = 64;
+    *p++ = 64; /* TTL */
     *p++ = IPPROTO_ICMP;
     *(uint16_t *)p = 0; /* initialize checksum as 0 */
     p += 2; /* leave place for header checksum */
@@ -185,7 +189,7 @@ tad_icmp_error(csap_p csap, const char *usr_param,
     *(uint32_t *)p = htonl(unused);
     p += 4; 
 
-    memcpy(p, orig_pkt, ICMP_PLD_SIZE);
+    memcpy(p, orig_pkt, MIN(ICMP_PLD_SIZE, pkt_len));
 
     /* set ICMP checksum */
     *(uint16_t *)(msg + 14 + 20 + 2) = 
