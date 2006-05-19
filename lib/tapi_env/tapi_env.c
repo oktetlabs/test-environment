@@ -1252,6 +1252,11 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
             {
                 p->info.if_name = strdup("lo0");
             }
+            /* FIXME: Dirty hack for Windows */
+            else if (cfg_find_fmt(NULL, oid_fmt, ta, "intf1") == 0)
+            {
+                p->info.if_name = strdup("intf1");
+            }
             else
             {
                 ERROR("Unable to get loopback interface");
