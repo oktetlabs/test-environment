@@ -177,7 +177,16 @@
                                 </xsd:documentation>
                             </xsd:annotation>
                         </xsd:attribute>                        
-                                                
+
+                        <xsd:attribute name="disabled" type="xsd:string"
+                            default="no">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    If 'yes', ignore this TA.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:attribute>                        
+
                     </xsd:complexType>
                 </xsd:element>
 
