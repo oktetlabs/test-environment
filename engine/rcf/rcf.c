@@ -434,6 +434,17 @@ parse_config(const char *filename)
         if (xmlStrcmp(cur->name , (const xmlChar *)"ta") != 0)
             continue;
 
+        attr = xmlGetProp_exp(cur, (const xmlChar *)"disabled");
+        if (attr != NULL)
+        {
+            if (strcmp(attr, "yes") == 0)
+            {
+                free(attr);
+                continue;
+            }
+            free(attr);
+        }
+
         if ((agent = (ta *)calloc(1, sizeof(ta))) == NULL)
             return -1;
 
