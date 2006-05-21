@@ -259,6 +259,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     char        cmd[RCFUNIX_SHELL_CMD_MAX];
     char       *installdir;
     char       *tmp;
+    char       *conf_str_dup;
     char       *dup;
     char       *shell;
 
@@ -331,7 +332,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     VERB("Executable name '%s'", ta->exec_name);
 
-    if ((dup = strdup(conf_str)) == NULL)
+    if ((dup = conf_str_dup = strdup(conf_str)) == NULL)
     {
         ERROR("Failed to duplicate string '%s'", conf_str);
         return TE_ENOMEM;
@@ -524,7 +525,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     strcat(cmd, " &");
 #endif
 
-    free(dup);
+    free(conf_str_dup);
 
     VERB("Command to start TA: %s", cmd);
     if (!(*flags & TA_FAKE) &&
@@ -540,7 +541,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     return 0;
 
 bad_confstr:
-    free(dup);
+    free(conf_str_dup);
     VERB("Bad configuration string for TA '%s'", ta_name);
     return TE_RC(TE_RCF_UNIX, TE_EINVAL);
 }
