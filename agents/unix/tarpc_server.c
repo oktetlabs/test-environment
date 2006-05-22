@@ -1628,6 +1628,7 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
             ERROR("'struct ip_mreqn' is not defined");
             out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
             out->retval = -1;
+            break;
 #endif
         }
         case OPT_MREQ6:
@@ -5064,6 +5065,7 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
     memset(out, 0, sizeof(tarpc_mcast_join_leave_out));
     if (in->multiaddr.sa_family == RPC_AF_INET6)
     {
+#ifdef IPV6_ADD_MEMBERSHIP
         struct ipv6_mreq mreq;
 
         memcpy(&mreq.ipv6mr_multiaddr, in->multiaddr.sa_data.sa_data_val,
@@ -5079,6 +5081,11 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
             ERROR("Attempt to join IPv6 multicast group failed");
             out->common._errno = TE_RC(TE_TA_UNIX, errno);
         }
+#else
+        ERROR("IPv6 multicasting is not supported for current Agent type");
+        out->retval = -1;
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+#endif        
     }
     else if (in->multiaddr.sa_family == RPC_AF_INET)
     {
