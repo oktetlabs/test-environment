@@ -5100,26 +5100,30 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
         struct ip_mreq    mreq;
 
         memset(&mreq, 0, sizeof(mreq));
-    
-        if (if_indextoname(in->ifindex, if_name) == NULL)
+
+        if (in->ifindex != 0)
         {
-            ERROR("Invalid interface index specified");
-            out->retval = -1;
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENXIO);
-        }
-        else
-        {
-            memset(&ifrequest, 0, sizeof(struct ifreq));
-            memcpy(&(ifrequest.ifr_name), if_name, IFNAMSIZ);
-            if (ioctl(in->fd, SIOCGIFADDR, &ifrequest) < 0)
+            if (if_indextoname(in->ifindex, if_name) == NULL)
             {
-                ERROR("No IPv4 address on interface %s", if_name);
+                ERROR("Invalid interface index specified");
                 out->retval = -1;
                 out->common._errno = TE_RC(TE_TA_UNIX, TE_ENXIO);
             }
+            else
+            {
+                memset(&ifrequest, 0, sizeof(struct ifreq));
+                memcpy(&(ifrequest.ifr_name), if_name, IFNAMSIZ);
+                if (ioctl(in->fd, SIOCGIFADDR, &ifrequest) < 0)
+                {
+                    ERROR("No IPv4 address on interface %s", if_name);
+                    out->retval = -1;
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENXIO);
+                }
 
-            memcpy(&mreq.imr_interface, &SIN(&ifrequest.ifr_addr)->sin_addr,
-                   sizeof(struct in_addr));
+                memcpy(&mreq.imr_interface,
+                       &SIN(&ifrequest.ifr_addr)->sin_addr,
+                       sizeof(struct in_addr));
+            }
         }
 #endif        
         memcpy(&mreq.imr_multiaddr, in->multiaddr.sa_data.sa_data_val,
