@@ -194,7 +194,6 @@ rcf_ch_tad_shutdown(void)
     /* The function continues shutdown even in the case of failures */
     tad_is_initialized = FALSE;
 
-
 #ifndef TAD_DUMMY 
     csap_spt_destroy();
     csap_id_destroy();
@@ -210,7 +209,6 @@ rcf_ch_tad_shutdown(void)
  * correct work if one or both arguments are NULL. 
  * If both arguments are empty strings or NULL (in any combination), they 
  * are considered as equal and zero is returned. 
- * 
  *
  * @param l        first string
  * @param r        second string
@@ -259,7 +257,6 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     return -1;
 #else
     csap_p          new_csap;
-
     csap_handle_t   new_csap_id; 
     unsigned int    layer;
     int             syms; 
