@@ -423,4 +423,26 @@ extern te_errno tapi_sigaction_simple(rcf_rpc_server *rpcs,
                                       const char *handler,
                                       struct rpc_struct_sigaction *oldact);
 
+/**
+ * Join a multicasting group on specified interface.
+ * 
+ * @param  rpcs       RPC server handle
+ * @param  s          socket descriptor
+ * @param  mcast_addr multicast address (IPv4 or IPv6).
+ * @param  if_index   interface index
+ * 
+ * @return 0 on success, -1 on failure
+ */
+
+extern int rpc_mcast_join(rcf_rpc_server *rpcs, int s,
+                          const struct sockaddr *mcast_addr, int if_index);
+
+/**
+ * Leave a multicasting group.
+ *
+ * Parameters are same as above
+ */
+extern int rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
+                           const struct sockaddr *mcast_addr, int if_index);
+
 #endif /* !__TE_TAPI_RPC_MISC_H__ */

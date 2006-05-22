@@ -1226,3 +1226,61 @@ tapi_sigaction_simple(rcf_rpc_server *rpcs,
 
     return 0;
 }
+
+/* 
+ * Join or leave multicast group.
+ * For description see tapi_rpc_misc.h
+ */
+int 
+rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
+                     const struct sockaddr *mcast_addr,
+                     int if_index, te_bool leave_group)
+{
+    struct tarpc_mcast_join_leave_in    in;
+    struct tarpc_mcast_join_leave_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(setsockopt, -1);
+    }
+
+    in.fd = s;
+    in.ifindex = if_index;
+    in.leave_group = leave_group;
+    in.multiaddr.sa_family = addr_family_h2rpc(mcast_addr->sa_family);
+    in.multiaddr.sa_data.sa_data_len = te_sockaddr_get_size(mcast_addr)
+                                       - SA_COMMON_LEN;
+    in.multiaddr.sa_data.sa_data_val = 
+        (uint8_t *)te_sockaddr_get_netaddr(mcast_addr); 
+
+    rcf_rpc_call(rpcs, "mcast_join_leave", &in, &out);
+    
+    TAPI_RPC_LOG("RPC (%s,%s): mcast_join_leave(%d, %s, %d, leave:%s) -> "
+                 " %d (%s)", rpcs->ta, rpcs->name, s,
+                 te_sockaddr2str(mcast_addr), if_index,
+                 leave_group? "TRUE" : "FALSE",
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(mcast_join_leave, out.retval);
+    
+    RETVAL_INT(mcast_join_leave, out.retval);
+}
+
+int 
+rpc_mcast_join(rcf_rpc_server *rpcs, int s,
+               const struct sockaddr *mcast_addr, int if_index)
+{
+    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, FALSE);
+}
+
+int 
+rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
+                const struct sockaddr *mcast_addr, int if_index)
+{
+    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, TRUE);
+}
+
