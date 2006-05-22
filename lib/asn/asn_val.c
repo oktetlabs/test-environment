@@ -1190,7 +1190,7 @@ asn_impl_write_value_field(asn_value *container,
     if (container  == NULL|| 
         ((container->syntax & COMPOUND) == 0 &&
         container->syntax != PR_ASN_NULL && 
-        data == NULL && d_len == 0))
+        data == NULL && d_len != 0))
         return TE_EWRONGPTR; 
 
     container->txt_len = -1;
@@ -1198,6 +1198,8 @@ asn_impl_write_value_field(asn_value *container,
     switch(container->syntax)
     {
     case BOOL:
+        if (d_len == 0) return TE_EINVAL;
+
         if (* (char*)data) /* TRUE */
         {
             container->data.integer = 0xff;
@@ -1216,6 +1218,7 @@ asn_impl_write_value_field(asn_value *container,
             long int val;
             switch (d_len)
             {
+                case 0: return TE_EINVAL; 
                 case sizeof(char) : val = *((const unsigned char *) data); break;
                 case sizeof(short): val = *((const short *)data); break;
                 case sizeof(long) : val = *((const long *) data); break;
@@ -1261,6 +1264,12 @@ asn_impl_write_value_field(asn_value *container,
     case LONG_INT:
     case REAL:
     case OCT_STRING:
+        if (d_len == 0) 
+        {
+            container->data.other = NULL;
+            container->len = 0;
+        }
+        else
         {
             void * val = malloc(m_len);
 
