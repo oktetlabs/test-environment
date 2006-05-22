@@ -1573,7 +1573,7 @@ tad_recv_op(csap_p csap, tad_recv_op_context *op_context)
          CSAP_LOG_ARGS(csap), op_context->op, rc, got);
 
     /* 
-     * We have no more chance to report and error (logged of course),
+     * We have no more chance to report an error (logged of course),
      * just ignore it.
      */
     (void)tad_task_reply(&op_context->task, "%u %u", rc, got);
