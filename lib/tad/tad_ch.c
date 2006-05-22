@@ -373,6 +373,37 @@ exit:
 #define PRINT(msg...) \
     do { printf(msg); printf("\n"); fflush(stdout); } while (0)
 
+/**
+ * Wait for exclusive use of the CSAP.
+ *
+ * @param csap          CSAP instance
+ *
+ * @return Status code.
+ */
+static inline te_errno
+csap_wait_exclusive_use(csap_p csap)
+{
+    te_errno    rc = 0;
+    int         ret;
+
+    CSAP_LOCK(csap);
+    while (csap->ref > 1)
+    {
+        ret = pthread_cond_wait(&csap->event, &csap->lock);
+        if (ret != 0)
+        {
+            rc = TE_OS_RC(TE_TAD_CH, ret);
+            assert(TE_RC_GET_ERROR(rc) != TE_ENOENT);
+            ERROR("%s(): pthread_cond_wait() failed: %r",
+                  __FUNCTION__, rc);
+            break;
+        }
+    }
+    CSAP_UNLOCK(csap);
+
+    return rc;
+}
+
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
@@ -413,10 +444,23 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
         return 0;
     }
 
-    if (~csap->state & CSAP_STATE_IDLE)
+    /* 
+     * If we get exclude use after destroy command, it is guaranteed
+     * that noone will start to use it again.
+     */
+    rc = csap_wait_exclusive_use(csap);
+    if (rc != 0)
     {
-        rc = csap_wait(csap, CSAP_STATE_DONE);
+        /*
+         * It is better to keep CSAP open rather than get segmentation
+         * fault because of invalid destruction.
+         */
+        SEND_ANSWER("%u", rc);
+        return 0;
     }
+    
+    /* CSAP should be either IDLE or DONE */
+    assert(csap->state & (CSAP_STATE_IDLE | CSAP_STATE_DONE));
 
     INFO(CSAP_LOG_FMT "Starting destruction", CSAP_LOG_ARGS(csap));
 

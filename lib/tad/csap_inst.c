@@ -209,6 +209,9 @@ csap_create(const char *type, csap_p *csap)
 
 #undef CSAP_CREATE_ERROR
 
+    /* Initialize CSAP reference count */
+    new_csap->ref = 1;
+
     *csap = new_csap;
 
     EXIT("ID=%u", new_csap->id);
@@ -234,6 +237,8 @@ csap_destroy(csap_handle_t csap_id)
 
     if (csap == NULL)
         return TE_RC(TE_TAD_CH, TE_ENOENT);
+
+    assert(csap->ref == 1);
 
     asn_free_value(csap->nds);
     csap_free(csap);

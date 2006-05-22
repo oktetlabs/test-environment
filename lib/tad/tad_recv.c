@@ -1629,6 +1629,8 @@ tad_recv_op_thread(void *arg)
         tad_recv_op_free(context);
     }
 
+    csap->ref--;
+
     /* 
      * Log exit under CSAP lock, since CSAP can be destroyed just after
      * unlocking.
@@ -1679,6 +1681,11 @@ tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
         {
             rc = te_rc_os2te(ret);
             TAILQ_REMOVE(&csap->recv_ops, context, links);
+        }
+        else
+        {
+            /* CSAP is used from started thread */
+            csap->ref++;
         }
     }
 

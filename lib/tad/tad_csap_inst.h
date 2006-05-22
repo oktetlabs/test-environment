@@ -153,6 +153,7 @@ enum {
  */
 typedef struct csap_instance {
     unsigned int    id;         /**< CSAP ID */
+    unsigned int    ref;        /**< CSAP reference count (have to be >0) */
     char           *csap_type;  /**< Pointer to original CSAP type, proto[]
                                      entries are blocks of this string */
     asn_value      *nds;        /**< ASN.1 value with CSAP specification */
