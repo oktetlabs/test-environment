@@ -5062,6 +5062,14 @@ void
 mcast_join_leave(tarpc_mcast_join_leave_in  *in,
                  tarpc_mcast_join_leave_out *out)
 {
+    api_func    setsockopt_func;
+
+    if (tarpc_find_func(in->common.lib, "setsockopt",
+                        &setsockopt_func) != 0)
+    {
+        ERROR("Cannot find setsockopt() implementation");
+    }
+
     memset(out, 0, sizeof(tarpc_mcast_join_leave_out));
     if (in->multiaddr.sa_family == RPC_AF_INET6)
     {
@@ -5071,11 +5079,11 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
         memcpy(&mreq.ipv6mr_multiaddr, in->multiaddr.sa_data.sa_data_val,
                sizeof(struct in6_addr));
         mreq.ipv6mr_interface = in->ifindex;
-        out->retval = setsockopt(in->fd, IPPROTO_IPV6,
-                                 in->leave_group?
-                                 IPV6_DROP_MEMBERSHIP :
-                                 IPV6_ADD_MEMBERSHIP,
-                                 &mreq, sizeof(mreq));
+        out->retval = setsockopt_func(in->fd, IPPROTO_IPV6,
+                                      in->leave_group?
+                                      IPV6_DROP_MEMBERSHIP :
+                                      IPV6_ADD_MEMBERSHIP,
+                                      &mreq, sizeof(mreq));
         if (out->retval != 0)
         {
             ERROR("Attempt to join IPv6 multicast group failed");
@@ -5128,9 +5136,10 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
 #endif        
         memcpy(&mreq.imr_multiaddr, in->multiaddr.sa_data.sa_data_val,
                sizeof(struct in_addr));
-        out->retval = setsockopt(in->fd, IPPROTO_IP, in->leave_group?
-                                 IP_DROP_MEMBERSHIP : IP_ADD_MEMBERSHIP,
-                                 &mreq, sizeof(mreq));
+        out->retval = setsockopt_func(in->fd, IPPROTO_IP, in->leave_group?
+                                      IP_DROP_MEMBERSHIP :
+                                      IP_ADD_MEMBERSHIP,
+                                      &mreq, sizeof(mreq));
         if (out->retval != 0)
         {
             ERROR("Attempt to join IPv4 multicast group failed");
