@@ -170,7 +170,7 @@ ta_unix_conf_dlpi_phys_addr_get(const char *name, void *addr,
     if (msg.len < (int)DL_INFO_ACK_SIZE)
     {
         ERROR("%s(): Reply for DL_INFO_REQ is too short", __FUNCTION__);
-        errno = TE_EBADMSG;
+        rc = TE_EBADMSG;
         goto exit;
     }
 
@@ -179,27 +179,27 @@ ta_unix_conf_dlpi_phys_addr_get(const char *name, void *addr,
         info_ack->dl_version != DL_VERSION_2)
     {
         ERROR("%s(): Unexpected reply for DL_INFO_REQ", __FUNCTION__);
-        errno = TE_EPROTO;
+        rc = TE_EPROTO;
         goto exit;
     }
 
     if (info_ack->dl_addr_length == 0)
     {
         ERROR("%s(): Zero address length in DL_INFO_ACK", __FUNCTION__);
-        errno = TE_EPROTO;
+        rc = TE_EPROTO;
         goto exit;
     }
     if (info_ack->dl_addr_length <= abs(info_ack->dl_sap_length))
     {
         ERROR("%s(): Invalid address length in DL_INFO_ACK", __FUNCTION__);
-        errno = TE_EPROTO;
+        rc = TE_EPROTO;
         goto exit;
     }
     if (*addrlen < info_ack->dl_addr_length - abs(info_ack->dl_sap_length))
     {
         ERROR("%s(): Too small buffer for physical address",
               __FUNCTION__);
-        errno = TE_ESMALLBUF;
+        rc = TE_ESMALLBUF;
         goto exit;
     }
     *addrlen = info_ack->dl_addr_length - abs(info_ack->dl_sap_length);
@@ -243,7 +243,7 @@ ta_unix_conf_dlpi_phys_addr_get(const char *name, void *addr,
 
             if (size < sizeof(t_uscalar_t))
             {
-                errno = TE_EBADMSG;
+                rc = TE_EBADMSG;
                 goto exit;
             }
 
@@ -388,7 +388,7 @@ ta_unix_conf_dlpi_phys_addr_set(const char *name, const void *addr,
 
     if (size < sizeof(t_uscalar_t))
     {
-        errno = TE_EBADMSG;
+        rc = TE_EBADMSG;
         goto exit;
     }
 
@@ -432,6 +432,121 @@ ta_unix_conf_dlpi_phys_addr_set(const char *name, const void *addr,
 
         default:
             rc = TE_EBADMSG;
+    }
+
+exit:
+    free(prim);
+    close(fd);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+
+/* See the description in conf_dlpi.h */
+te_errno
+ta_unix_conf_dlpi_phys_bcast_addr_get(const char *name, void *addr,
+                                      size_t *addrlen)
+{
+    te_errno                rc;
+    int                     res;
+    int                     fd = -1;
+    size_t                  size;
+    union DL_primitives    *prim = NULL;
+    dl_info_req_t           info_req = { DL_INFO_REQ };
+    dl_info_ack_t          *info_ack;
+    struct strbuf           msg;
+    int                     msg_flags = 0;
+
+
+    if (name == NULL || addrlen == NULL)
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
+    }
+
+    rc = dlpi_open(name, &fd);
+    if (rc != 0)
+        return rc;
+
+    size = DL_INFO_ACK_SIZE;
+    size += sizeof(union DL_qos_types) + sizeof(union DL_qos_types);
+    size += MAXADDRLEN + MAXSAPLEN;
+    size += MAXADDRLEN;
+
+    if ((prim = malloc(size)) == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto exit;
+    }
+
+    /* Send DL_INFO_REQ */
+    msg.buf = (char *)&info_req;
+    msg.len = sizeof(info_req);
+    if (putmsg(fd, &msg, NULL, RS_HIPRI) < 0)
+    {
+        rc = te_rc_os2te(errno);
+        assert(rc != 0);
+        ERROR("%s(): putmsg() failed: %r", __FUNCTION__, rc);
+        goto exit;
+    }
+
+    /* Receive reply */
+    msg.buf = (char *)prim;
+    msg.len = 0;
+    msg.maxlen = size;
+    if ((res = getmsg(fd, &msg, NULL, &msg_flags)) < 0)
+    {
+        rc = te_rc_os2te(errno);
+        assert(rc != 0);
+        ERROR("%s(): getmsg() failed: %r", __FUNCTION__, rc);
+        goto exit;
+    }
+    if (res & (MORECTL | MOREDATA))
+    {
+        ERROR("%s(): Invalid reply for DL_INFO_REQ", __FUNCTION__);
+        rc = TE_EPROTO;
+        goto exit;
+    }
+
+    if (msg.len < (int)DL_INFO_ACK_SIZE)
+    {
+        ERROR("%s(): Reply for DL_INFO_REQ is too short", __FUNCTION__);
+        rc = TE_EBADMSG;
+        goto exit;
+    }
+
+    info_ack = &prim->info_ack;
+    if (info_ack->dl_primitive != DL_INFO_ACK ||
+        info_ack->dl_version != DL_VERSION_2)
+    {
+        ERROR("%s(): Unexpected reply for DL_INFO_REQ", __FUNCTION__);
+        rc = TE_EPROTO;
+        goto exit;
+    }
+
+    if (info_ack->dl_brdcst_addr_length == 0)
+    {
+        ERROR("%s(): Zero broadcat address length in DL_INFO_ACK",
+              __FUNCTION__);
+        rc = TE_EPROTO;
+        goto exit;
+    }
+    *addrlen = info_ack->dl_brdcst_addr_length;
+
+    if (addr != NULL)
+    {
+        if (info_ack->dl_brdcst_addr_offset != 0)
+        {
+            /* Address is present in DL_INFO_ACK */
+            memcpy(addr, (char *)prim + info_ack->dl_brdcst_addr_offset,
+                   *addrlen);
+        }
+        else
+        {
+            ERROR("%s(): Physical broadcast address does not present "
+                  "in DL_INFO_ACK", __FUNCTION__);
+            rc = TE_EPROTO;
+        }
     }
 
 exit:

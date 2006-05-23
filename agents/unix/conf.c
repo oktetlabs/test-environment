@@ -2886,7 +2886,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
 }
 
 
-#ifdef USE_NETLINK
+#if defined(USE_NETLINK) || defined(HAVE_SYS_DLPI_H)
 /*
  * Next functions are pulled out from iproute internals
  * to be accessible here and renamed.
@@ -3286,11 +3286,9 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
 
         if (tb[IFLA_BROADCAST])
         {
-            char buf[64];
             link_addr_n2a(RTA_DATA(tb[IFLA_BROADCAST]),
                           RTA_PAYLOAD(tb[IFLA_BROADCAST]),
-                          buf, sizeof(buf));
-            sprintf(value, "%s", buf);
+                          value, RCF_MAX_VAL);
 #ifdef LOCAL_FUNC_DEBUGGING
             ERROR("IGORV: %s: tb[IFLA_BROADCAST] is TRUE - "
                   "%s: %s", __FUNCTION__, ifname, buf);
@@ -3309,6 +3307,26 @@ on_error:
 
     return rc;
 }
+#elif HAVE_SYS_DLPI_H
+    do {
+        size_t  len = sizeof(buf);
+
+        rc = ta_unix_conf_dlpi_phys_bcast_addr_get(ifname, buf, &len);
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        {
+            /* No link-layer or broadcast address */
+            break;
+        }
+        else if (rc != 0)
+        {
+            ERROR("Failed to get interface link-layer broadcast address "
+                  "using DLPI: %r", rc);
+            break;
+        }
+        link_addr_n2a((unsigned char *)buf, len, value, RCF_MAX_VAL);
+    } while (0);
+
+    return rc;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif

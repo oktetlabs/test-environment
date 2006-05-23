@@ -59,4 +59,17 @@ extern te_errno ta_unix_conf_dlpi_phys_addr_set(const char *name,
                                                 void       *addr, 
                                                 size_t      addrlen);
 
+/**
+ * Get physical broadcast address using DLPI.
+ *
+ * @param name          Interface name
+ * @param addr          Buffer for address
+ * @param addrlen       Buffer size (in), address length (out)
+ *
+ * @return Status code.
+ */
+extern te_errno ta_unix_conf_dlpi_phys_bcast_addr_get(const char *name,
+                                                      void       *addr, 
+                                                      size_t     *addrlen);
+
 #endif /* !__TE_TA_UNIX_CONF_DLPI_H__ */
