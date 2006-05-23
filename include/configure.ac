@@ -127,6 +127,7 @@ stdlib.h \
 string.h \
 strings.h \
 stropts.h \
+sys/dlpi.h \        
 sys/errno.h \
 sys/ethernet.h \
 sys/filio.h \
