@@ -1,5 +1,5 @@
 /** @file
- * @crief Unix Test Agent
+ * @brief Unix Test Agent
  *
  * Unix TA configuring support using getmsg()/putmsg() routines.
  *
