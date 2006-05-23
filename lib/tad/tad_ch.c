@@ -370,9 +370,8 @@ exit:
 #endif
 }
 
-#define PRINT(msg...) \
-    do { printf(msg); printf("\n"); fflush(stdout); } while (0)
 
+#ifndef TAD_DUMMY 
 /**
  * Wait for exclusive use of the CSAP.
  *
@@ -403,6 +402,7 @@ csap_wait_exclusive_use(csap_p csap)
 
     return rc;
 }
+#endif
 
 /* See description in rcf_ch_api.h */
 int
