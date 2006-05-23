@@ -1,5 +1,5 @@
 /** @file
- * @brief TE Testing Results Comparator
+ * @brief Testing Results Comparator
  *
  * Definition of data types and API to use TRC.
  *
