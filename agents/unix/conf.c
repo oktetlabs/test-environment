@@ -95,16 +95,6 @@
 #define BSD_IP_FW 1
 #endif
 
-
-/* Solaris/SunOS uses DLPI as interface to link-layer */
-#if HAVE_LIBDLPI
-#if HAVE_SYS_DLPI_H
-#include <sys/dlpi.h>
-#endif
-#if HAVE_LIBDLPI_H
-#include <libdlpi.h>
-#endif
-#endif /* HAVE_LIBDLPI */
 /* IP forwarding on Solaris: */
 #ifdef HAVE_STROPTS_H
 #include <stropts.h>
@@ -131,6 +121,7 @@
 #include "rcf_pch_ta_cfg.h"
 #include "logger_api.h"
 #include "unix_internal.h"
+#include "conf_dlpi.h"
 #include "conf_route.h"
 
 #ifdef CFG_UNIX_DAEMONS
@@ -2927,7 +2918,8 @@ link_addr_n2a(unsigned char *addr, int alen,
 }
 #endif
 
-#if defined(SIOCSIFHWADDR) || defined(SIOCSIFHWBROADCAST)
+#if defined(SIOCSIFHWADDR) || defined(SIOCSIFHWBROADCAST) || \
+    defined(HAVE_SYS_DLPI_H)
 static int
 link_addr_a2n(uint8_t *lladdr, int len, char *str)
 {
@@ -2997,61 +2989,30 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
 
     ptr = req.my_ifr_hwaddr.sa_data;
 
-#elif HAVE_LIBDLPI_H
-    if (strcmp(ifname, "lo0") == 0)
-    {
-        /* ptr is NULL - no link-layer address */
-    }
-    else
-    {
-#if HAVE_LIBDLPI
-        int             fd;
-        dlpi_if_attr_t  if_attr;
-        dl_info_ack_t   dl_info;
-        int             len;
+#elif HAVE_SYS_DLPI_H
+    do {
+        size_t  len = sizeof(buf);
 
-        /* Open DLPI interface */
-        fd = dlpi_if_open(ifname, &if_attr, FALSE);
-        if (fd < 0)
+        rc = ta_unix_conf_dlpi_phys_addr_get(ifname, buf, &len);
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
-            rc = te_rc_os2te(errno);
-            ERROR("%s(): dlpi_if_open() failed: %r", __FUNCTION__, rc);
-            assert(rc != 0);
+            /* No link-layer or address */
+            break;
+        }
+        else if (rc != 0)
+        {
+            ERROR("Failed to get interface link-layer address using "
+                  "DLPI: %r", rc);
             return TE_RC(TE_TA_UNIX, rc);
         }
-        /* Request generic information to get address length */
-        if (dlpi_info(fd, -1, &dl_info, NULL, NULL, NULL, NULL, NULL,
-                      NULL) < 0)
-        {
-            rc = te_rc_os2te(errno);
-            ERROR("%s(): dlpi_info() failed: %r", __FUNCTION__, rc);
-            (void)dlpi_close(fd);
-            assert(rc != 0);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
-        len = dl_info.dl_addr_length - abs(dl_info.dl_sap_length);
         if (len != ETHER_ADDR_LEN)
         {
-            ERROR("%s(): Unsupported link-layer address length %d",
-                  __FUNCTION__, len);
-            (void)dlpi_close(fd);
+            ERROR("%s(): Unsupported link-layer address length %u",
+                  __FUNCTION__, (unsigned)len);
             return TE_RC(TE_TA_UNIX, TE_ENOSYS);
         }
-        /* Get link-layer address */
-        if (dlpi_phys_addr(fd, -1, DL_CURR_PHYS_ADDR,
-                           (uint8_t *)buf, NULL) < 0)
-        {
-            rc = te_rc_os2te(errno);
-            ERROR("%s(): dlpi_phys_addr(DL_CURR_PHYS_ADDR) failed: %r",
-                  __FUNCTION__, rc);
-            (void)dlpi_close(fd);
-            assert(rc != 0);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
-        (void)dlpi_close(fd);
-        ptr = (uint8_t *)buf;
-#endif
-    }
+        ptr = (const uint8_t *)buf;
+    } while (0);
 #elif defined(__FreeBSD__)
 
     void           *ifconf_buf = NULL;
@@ -3135,7 +3096,8 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
     strcpy(req.my_ifr_name, ifname);
     req.my_ifr_hwaddr.sa_family = AF_LOCAL;
 
-    if ((rc = link_addr_a2n(req.my_ifr_hwaddr.sa_data, 6, aux)) == -1)
+    if ((rc = link_addr_a2n(req.my_ifr_hwaddr.sa_data,
+                            ETHER_ADDR_LEN, aux)) == -1)
     {
         ERROR("%s: Link layer address conversation issue", __FUNCTION__);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -3143,6 +3105,19 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
     rc = 0;
 
     CFG_IOCTL(cfg_socket, SIOCSIFHWADDR, &req);
+#elif HAVE_SYS_DLPI_H
+    if ((rc = link_addr_a2n((uint8_t *)buf, ETHER_ADDR_LEN, aux)) == -1)
+    {
+        ERROR("%s: Link layer address conversation issue", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = ta_unix_conf_dlpi_phys_addr_set(ifname, buf, ETHER_ADDR_LEN);
+    if (rc != 0)
+    {
+        ERROR("Failed to set interface link-layer address using "
+              "DLPI: %r", rc);
+    }
 #else
     ERROR("Set of link-layer address is not supported");
     rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);

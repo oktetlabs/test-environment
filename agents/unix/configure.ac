@@ -35,8 +35,6 @@ if test -n "$with_netlink" -o -n "$with_netlink_route" ; then
 fi
 
 AC_CHECK_HEADERS([\
-sys/dlpi.h \        
-libdlpi.h \
 inet/nd.h \
 ])
 
@@ -270,11 +268,6 @@ dnl - -lc on Linux;
 dnl - -lsendfile on Solaris2 (SunOS 5.11).
 dnl
 AC_SEARCH_LIBS([sendfile], [sendfile], [], [])
-
-dnl
-dnl DLPI interface is required for Solaris/SunOS configuration.
-dnl
-AC_CHECK_LIB([dlpi], [dlpi_open], [], [])
 
 dnl
 dnl POSIX threads are provided by:

@@ -18,6 +18,7 @@ TA_LDADD = symtbl.o -lrcfpch -l@TAD@ @TE_LDADD@ -lrpcxdr -lrpc_types \
 noinst_HEADERS = \
 	unix_internal.h \
 	conf_route.h \
+	conf_dlpi.h \
 	conf_daemons.h \
 	tarpc_server.h
 
@@ -29,6 +30,7 @@ TA_SOURCES = \
 	conf_route_netlink.c \
 	conf_route_socket.c \
 	conf_getmsg.c \
+	conf_dlpi.c \
 	ftp_routines.c \
 	log_serial.c
 
