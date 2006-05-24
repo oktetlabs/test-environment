@@ -37,9 +37,9 @@
 /** TCP interval between successfull keep-alive probes */
 #define TE_COMM_NET_ENGINE_KEEPIDLE     15
 /** TCP interval between failed keep-alive probes */
-#define TE_COMM_NET_ENGINE_KEEPINTVL    3
+#define TE_COMM_NET_ENGINE_KEEPINTVL    1
 /** Number of TCP keep-alive probes before failure */
-#define TE_COMM_NET_ENGINE_KEEPCNT      5
+#define TE_COMM_NET_ENGINE_KEEPCNT      15
 
 
 /** This structure is used to store some context for each connection. */
