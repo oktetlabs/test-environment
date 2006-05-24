@@ -194,6 +194,7 @@ typedef enum {
     TE_E_IO_PENDING,     /**< Overlapped I/O operation is in progress */
     TE_E_GEN_FAILURE,    /**< General failure */
     TE_E_LOG_FILE_FULL,  /**< Log file is full */
+    TE_E_PORT_UNREACHABLE, /**< Port is unreachable */
     TE_WSANOTINITIALISED, /**< WSAStartup() not called */
     
     /* TE-specific error codes */
@@ -604,6 +605,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(E_NETNAME_DELETED);
         ERR2STR(E_GEN_FAILURE);
         ERR2STR(E_LOG_FILE_FULL);
+        ERR2STR(E_PORT_UNREACHABLE);
         ERR2STR(EUNSPEC);
         ERR2STR(EUNKNOWN);
 

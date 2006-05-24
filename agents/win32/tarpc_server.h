@@ -340,6 +340,7 @@ win_rpc_errno(int err)
         case ERROR_NETNAME_DELETED: return RPC_E_NETNAME_DELETED;
         case ERROR_GEN_FAILURE: return RPC_E_GEN_FAILURE;
         case ERROR_LOG_FILE_FULL: return RPC_E_LOG_FILE_FULL;
+        case ERROR_PORT_UNREACHABLE: return RPC_E_PORT_UNREACHABLE;
         case WAIT_TIMEOUT: return RPC_E_WAIT_TIMEOUT;
 
         
