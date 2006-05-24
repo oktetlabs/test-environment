@@ -443,6 +443,20 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
         SEND_ANSWER("%u", rc);
         return 0;
     }
+    
+    if (~csap->state & CSAP_STATE_IDLE)
+    {
+        rc = csap_wait(csap, CSAP_STATE_DONE);
+        if (rc != 0)
+        {
+            /*
+             * It is better to keep CSAP open rather than get
+             * segmentation fault because of invalid destruction.
+             */
+            SEND_ANSWER("%u", rc);
+            return 0;
+        }
+    }
 
     /* 
      * If we get exclude use after destroy command, it is guaranteed
