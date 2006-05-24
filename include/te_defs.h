@@ -53,12 +53,11 @@
 
 /** Test Environment copyright to be used in applications output */
 #define TE_COPYRIGHT \
-"Copyright (C) 2004 Test Environment authors (see file AUTHORS in the " \
-    "root\n"                                                            \
-"directory of the distribution).\n"                                     \
-"This is free software; see the source for copying conditions.  There " \
-    "is NO\n"                                                           \
-"warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR "   \
+"Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS in\n" \
+"the root directory of the distribution).\n"                              \
+"This is free software; see the source for copying conditions.  There "   \
+    "is NO\n"                                                             \
+"warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR "     \
     "PURPOSE.\n"
     
 
