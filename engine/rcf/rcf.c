@@ -2087,7 +2087,7 @@ rcf_ta_check_all_done(void)
 
             if (agent->flags & TA_DEAD)
             {
-                ERROR("Reboot TA '%s'", agent->name);
+                ERROR("TA '%s' is dead, try to reboot...", agent->name);
                 rebooted = TRUE;
                 if (force_reboot(agent, NULL) != 0)
                     remain_dead = TRUE;
