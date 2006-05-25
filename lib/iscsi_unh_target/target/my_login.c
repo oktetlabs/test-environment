@@ -2632,7 +2632,7 @@ handle_nopin(SHARED struct iscsi_cmnd *cmnd,
     max_cmd_sn_delta = iscsi_get_custom_value(conn->custom, 
                                               "max_cmd_sn_delta");
 
-    RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
+    TRACE(DEBUG, "Using MaxCmdSN delta %d", max_cmd_sn_delta);
     hdr->max_cmd_sn = htonl(session->exp_cmd_sn + max_cmd_sn_delta);
     
 	if (!(cmnd->opcode_byte & I_BIT)) {
@@ -3757,7 +3757,7 @@ send_iscsi_response(SHARED struct iscsi_cmnd *cmnd,
 
     max_cmd_sn_delta = iscsi_get_custom_value(conn->custom, 
                                               "max_cmd_sn_delta");
-    RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
+    TRACE(DEBUG, "Using MaxCmdSN delta %d", max_cmd_sn_delta);
     rsp->max_cmd_sn = htonl(session->exp_cmd_sn + max_cmd_sn_delta);
     rsp->status = req->sr_result;
 
@@ -3847,8 +3847,8 @@ send_read_data(SHARED struct iscsi_cmnd *cmnd,
     int zero_dsl_counter = zero_dsl_interval;
 
 
-    RING("Sending zero-data-length PDU every %d packets", 
-         zero_dsl_interval);
+    TRACE(DEBUG, "Sending zero-data-length PDU every %d packets", 
+          zero_dsl_interval);
 /* Daren Hayward, darenh@4bridgeworks.com */
 #if defined(MANGLE_INQUIRY_DATA)
 	int miov, siov;
@@ -3975,7 +3975,7 @@ send_read_data(SHARED struct iscsi_cmnd *cmnd,
             max_cmd_sn_delta = iscsi_get_custom_value(conn->custom, 
                                                       "max_cmd_sn_delta");
 
-            RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
+            TRACE(DEBUG, "Using MaxCmdSN delta %d", max_cmd_sn_delta);
             hdr->max_cmd_sn = htonl(session->exp_cmd_sn + 
                                     max_cmd_sn_delta);
 
@@ -5639,7 +5639,7 @@ iscsi_reply(int sock, struct sockaddr_un *dest,
     int rc;
     va_list args;
     
-    RING("Sending reply '%s' (%s)", kind, fmt == NULL ? "" : fmt);
+    TRACE(DEBUG, "Sending reply '%s' (%s)", kind, fmt == NULL ? "" : fmt);
     va_start(args, fmt);
     rc = iscsi_send_control_msg(sock, dest, kind, fmt, args);
     va_end(args);
@@ -5935,8 +5935,8 @@ iscsi_cmnd_write(int sock, struct sockaddr_un *dest, int size, char *buffer)
         iscsi_reply_status(sock, dest, TE_EPROTO);
         return;
     }
-    RING("Got target write request: %u %u %u %u",
-         target, lun, offset, length);
+    TRACE(DEBUG, "Got target write request: %u %u %u %u",
+          target, lun, offset, length);
     rc = iscsi_write_to_device(target, lun, offset, filename, length);
     iscsi_reply_status(sock, dest, rc);
 }
@@ -6214,7 +6214,7 @@ iscsi_target_process_control_msg(int sock)
         ERROR("Error receiving control message: %s", strerror(errno));
         return;
     }
-    RING("Got control message '%s'", msg_buf);
+    TRACE(DEBUG, "Got control message '%s'", msg_buf);
     for (iter = commands; iter->name != NULL; iter++)
     {
         if (strcmp(iter->name, msg_buf) == 0)

@@ -157,7 +157,7 @@ ipc_mutex_alloc(void)
         }
         else
         {
-            RING("Allocated mutex id %d: %p", i - 1,
+            VERB("Allocated mutex id %d: %p", i - 1,
                  __builtin_return_address(0));
             if (semctl(master_sem_id, i, SETVAL, 1) != 0)
             {
@@ -182,7 +182,7 @@ ipc_mutex_free(ipc_mutex_t mutex)
 {
     int rc;
 
-    RING("Freeing mutex %d: %p", mutex, __builtin_return_address(0));
+    VERB("Freeing mutex %d: %p", mutex, __builtin_return_address(0));
     if (semctl(master_sem_id, mutex + 1, SETVAL, MUTEX_FREE_VALUE) != 0)
     {
         rc = errno;
@@ -279,14 +279,14 @@ ipc_sem_alloc(int initial_value)
         errno = rc;
         return -1;
     }
-    RING("Allocated semaphore %d at %p", mutex, __builtin_return_address(0));
+    VERB("Allocated semaphore %d at %p", mutex, __builtin_return_address(0));
     return (ipc_sem_t)mutex;
 }
 
 int
 ipc_sem_free(ipc_sem_t sem)
 {
-    RING("Freeing semaphore %d at %p", sem, __builtin_return_address(0));
+    VERB("Freeing semaphore %d at %p", sem, __builtin_return_address(0));
     if (semctl(master_sem_id, sem + 1, SETVAL, 0) != 0)
     {
         WARN("Unable to wake semaphore %d: %s", sem, 
