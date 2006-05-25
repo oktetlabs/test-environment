@@ -620,7 +620,7 @@ rcf_ch_conf_root()
         rcf_pch_rpc_init();
 #endif
 #ifdef WITH_ISCSI
-        if (iscsi_initiator_conf_init(TE_TA_UNIX) != 0)
+        if (iscsi_initiator_conf_init() != 0)
         {
             return NULL;
         }

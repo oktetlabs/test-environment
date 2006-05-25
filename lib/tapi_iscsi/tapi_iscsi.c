@@ -67,6 +67,7 @@
 #include "tapi_tcp.h"
 #include "tapi_test.h"
 #include "tapi_rpc.h"
+#include "tapi_rpc_winsock2.h"
 #include "tapi_socket.h"
 #include "tapi_file.h"
 
@@ -2760,8 +2761,54 @@ static te_errno
 command_open(iscsi_io_handle_t *ioh, int *fd, 
              void *data, ssize_t length)
 {
-    *fd = rpc_open(ioh->rpcs, data, length,
-                   RPC_S_IREAD | RPC_S_IWRITE);
+    if (*(char *)data == '\\') /* a filename is a Win32 filename */
+    {
+        int mode = 0;
+        int crmode = 0;
+        
+        if ((length & RPC_O_RDONLY) != 0)
+            mode |= RPC_CF_GENERIC_READ;
+        if ((length & RPC_O_WRONLY) != 0)
+            mode |= RPC_CF_GENERIC_WRITE;        
+        if ((length & RPC_O_RDWR) != 0)
+        {
+            mode |= RPC_CF_GENERIC_READ;
+            mode |= RPC_CF_GENERIC_WRITE;
+        }
+
+        if ((length & RPC_O_CREAT) != 0)
+        {
+            if ((length & RPC_O_EXCL) != 0)
+                crmode = RPC_CF_CREATE_NEW;
+            else if ((length & RPC_O_TRUNC) != 0)
+                crmode = RPC_CF_CREATE_ALWAYS;
+            else
+                crmode = RPC_CF_OPEN_ALWAYS;
+        }
+        else
+        {
+            if ((length & RPC_O_TRUNC) == 0)
+                crmode = RPC_CF_OPEN_EXISTING;
+            else
+                crmode = RPC_CF_TRUNCATE_EXISTING;
+        }
+
+        RING("Modes are %x %x", mode, crmode);
+        
+        *fd = rpc_create_file(ioh->rpcs, data,
+                              mode,
+                              RPC_CF_FILE_SHARE_READ | 
+                              RPC_CF_FILE_SHARE_WRITE,
+                              RPC_NULL,
+                              crmode,
+                              RPC_CF_FILE_ATTRIBUTE_NORMAL,
+                              0);
+    }
+    else
+    {
+        *fd = rpc_open(ioh->rpcs, data, length,
+                       RPC_S_IREAD | RPC_S_IWRITE);
+    }
     return (*fd < 0 ? RPC_ERRNO(ioh->rpcs) : 0);
 }
 
@@ -3166,34 +3213,12 @@ post_command(iscsi_io_handle_t *ioh, iscsi_io_cmd_t *src,
     return 0;
 }
 
-static te_errno
-tapi_iscsi_disable_read_ahead(iscsi_io_handle_t *ioh)
-{
-    iscsi_io_cmd_t cmd;
-    char           blockdev[128];
-
-    snprintf(blockdev, sizeof(blockdev),
-             "blockdev --setra 0 %s", ioh->device);
-    cmd.leader    = TRUE;
-    cmd.do_signal = FALSE;
-    cmd.cmd       = command_shell;
-    cmd.fd        = -1;
-    cmd.data      = strdup(blockdev);
-    cmd.length    = 0;
-    cmd.spread_fd = FALSE;
-    cmd.destroy   = free;
-    return post_command(ioh, &cmd, NULL);
-}
-
 te_errno
 tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, iscsi_io_taskid *taskid)
 {
     int rc;
     
     iscsi_io_cmd_t cmd;
-
-    if ((rc = tapi_iscsi_disable_read_ahead(ioh)) != 0)
-        return rc;
 
     cmd.leader    = TRUE;
     cmd.do_signal = (taskid != NULL);

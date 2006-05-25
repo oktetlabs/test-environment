@@ -179,7 +179,7 @@ extern te_errno ta_unix_conf_wifi_init();
 
 #ifdef WITH_ISCSI
 extern te_errno ta_unix_iscsi_target_init();
-extern te_errno iscsi_initiator_conf_init(int type);
+extern te_errno iscsi_initiator_conf_init();
 #endif
 
 #ifdef USE_NETLINK
@@ -598,7 +598,7 @@ rcf_ch_conf_root(void)
             return NULL;
         }
 
-        if (iscsi_initiator_conf_init(TE_TA_UNIX) != 0)
+        if (iscsi_initiator_conf_init() != 0)
         {
             close(cfg_socket);
             return NULL;

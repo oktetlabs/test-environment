@@ -1131,6 +1131,25 @@ TARPC_FUNC(wsa_recv_ex,
 }
 )
 
+/** This variable is used to minimize side-effects on tests
+ *  which do not call lseek()
+ */
+static te_bool lseek_has_been_called = FALSE;
+
+static void
+set_overlapped_filepos(WSAOVERLAPPED *ovr, HANDLE handle)
+{
+    if (lseek_has_been_called)
+    {
+        ovr->Offset = SetFilePointer(handle, 0, NULL, FILE_CURRENT);
+        if (ovr->Offset + 1 == 0)
+        {
+             WARN("Unable to get file position");
+             ovr->Offset = 0;
+        } 
+    }
+}
+
 /*-------------- read() ------------------------------*/
 
 TARPC_FUNC(read,
@@ -1145,7 +1164,8 @@ TARPC_FUNC(read,
     memset(&overlapped, 0, sizeof(overlapped));
 
     overlapped.hEvent = WSACreateEvent();
-    
+    set_overlapped_filepos(&overlapped, (HANDLE)in->fd);
+
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
 
     MAKE_CALL(out->retval = ReadFile((HANDLE)(in->fd), out->buf.buf_val, 
@@ -1190,6 +1210,7 @@ TARPC_FUNC(write, {},
     memset(&overlapped, 0, sizeof(overlapped));
     
     overlapped.hEvent = WSACreateEvent();
+    set_overlapped_filepos(&overlapped, (HANDLE)in->fd);
     
     INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, 0);
 
@@ -1223,6 +1244,125 @@ finish:
     out->retval = rc;
 }
 )
+
+/*-------------- readbuf() ------------------------------*/
+
+TARPC_FUNC(readbuf,
+{},
+{
+    DWORD rc;
+    
+    WSAOVERLAPPED overlapped;
+    
+    memset(&overlapped, 0, sizeof(overlapped));
+
+    overlapped.hEvent = WSACreateEvent();
+    set_overlapped_filepos(&overlapped, (HANDLE)in->fd);
+    
+    MAKE_CALL(out->retval = ReadFile((HANDLE)(in->fd), 
+                                     rcf_pch_mem_get(in->buf), 
+                                     in->len, &rc, &overlapped));
+
+    if (out->retval == 0)
+    {
+        if (out->common._errno != RPC_E_IO_PENDING)
+        {
+            INFO("read(): ReadFile() failed with error %r (%d)", 
+                  out->common._errno, GetLastError());
+            rc = -1;
+            goto finish;
+        }
+
+        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
+                                     &rc, 1) == 0)
+        {
+            out->common._errno = RPC_ERRNO;
+            ERROR("read(): GetOverlappedResult() failed with error %r (%d)",
+                  out->common._errno, GetLastError());
+            rc = -1;
+            goto finish;
+        }
+
+        out->common._errno = RPC_ERRNO;
+    }
+finish:    
+    WSACloseEvent(overlapped.hEvent);
+    out->retval = rc;
+}
+)
+
+/*-------------- write() ------------------------------*/
+
+TARPC_FUNC(writebuf, {},
+{
+    DWORD rc;
+    
+    WSAOVERLAPPED overlapped;
+    
+    memset(&overlapped, 0, sizeof(overlapped));
+    
+    overlapped.hEvent = WSACreateEvent();
+    set_overlapped_filepos(&overlapped, (HANDLE)in->fd);
+    
+    MAKE_CALL(out->retval = WriteFile((HANDLE)(in->fd), 
+                                      rcf_pch_mem_get(in->buf),
+                                      in->len, &rc, &overlapped));
+
+    if (out->retval == 0)
+    {
+        if (out->common._errno != RPC_E_IO_PENDING)
+        {
+            INFO("write(): WriteFile() failed with error %r (%d)", 
+                  out->common._errno, GetLastError());
+            rc = -1;
+            goto finish;
+        }
+
+        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
+                                     &rc, 1) == 0)
+        {
+            out->common._errno = RPC_ERRNO;
+            ERROR("write(): GetOverlappedResult() failed with error %r "
+                  "(%d)", out->common._errno, GetLastError());
+            rc = -1;
+            goto finish;
+        }
+
+        out->common._errno = RPC_ERRNO;
+    }
+finish:    
+    WSACloseEvent(overlapped.hEvent);
+    out->retval = rc;
+}
+)
+
+
+/*-------------- lseek() ------------------------------*/
+
+TARPC_FUNC(lseek, {},
+{
+    int mode;
+
+    lseek_has_been_called = TRUE;
+    switch (in->mode)
+    {
+        case RPC_SEEK_SET:
+            mode = FILE_BEGIN;
+            break;
+        case RPC_SEEK_CUR:
+            mode = FILE_CURRENT;
+            break;
+        case RPC_SEEK_END:
+            mode = FILE_END;
+            break;
+        default:
+            ERROR("Internal error: Invalid seek mode");
+            mode = 0;
+    }
+    MAKE_CALL(out->retval = SetFilePointer((HANDLE)in->fd, in->pos, NULL,
+              mode));
+})
+
 
 /*-------------- ReadFile() ------------------------------*/
 
@@ -3805,6 +3945,27 @@ TARPC_FUNC(free, {},
     rcf_pch_mem_free(in->buf);
 }
 )
+
+/*-------------- memalign() ------------------------------*/
+/** Note: this is a temporary solution. It does not
+ *  actually allocate aligned memory. 
+ *  We definitely need to do something with that and with
+ *  memalign() in *nix RPC server, if stability and portability
+ *  is to be achieved.
+ */
+TARPC_FUNC(memalign, {},
+{
+    void *buf;
+    
+    buf = malloc(in->size);
+
+    if (buf == NULL)
+        out->common._errno = TE_RC(TE_TA_UNIX, errno);
+    else
+        out->retval = rcf_pch_mem_alloc(buf);
+}
+)
+
 
 /**
  * Fill in the buffer.
