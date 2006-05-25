@@ -322,6 +322,7 @@ struct generic_pdu {
     uint16_t  rsvd2;
     uint32_t  offset;
     uint32_t  resid;
+    /* ignore: yes; */
     uint32_t  header_digest;
     uint8_t  *text;
     uint32_t  text_length;
@@ -850,6 +851,8 @@ typedef enum iscsi_connection_status
     ISCSI_CONNECTION_UP,           /**< Connection is up and ready */
     ISCSI_CONNECTION_CLOSING,      /**< Connection is being closed */
     ISCSI_CONNECTION_ABNORMAL,     /**< Connection is in abnormal state */
+    ISCSI_CONNECTION_RECOVER_DOWN, /**< Connection needs cleanup, then down */
+    ISCSI_CONNECTION_RECOVER_UP,   /**< Connection needs cleanup, then up */
 } iscsi_connection_status;
 
 /**
