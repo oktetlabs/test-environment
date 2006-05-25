@@ -369,7 +369,10 @@ sync_ta_subtree(const char *ta, const char *oid)
 
     cfg_handle    handle;
 
-    VERB("Synchronize TA '%s' subtree '%s'", ta, oid);
+    if (do_log_syncing)
+    {
+        RING("Synchronize TA '%s' subtree '%s'", ta, oid);
+    }
 
     /* Take all instances from the TA */
     if ((wildcard_oid = malloc(strlen(oid) + sizeof("/..."))) == NULL)
@@ -525,13 +528,19 @@ cfg_ta_sync_dependants(cfg_instance *inst)
     int rc;
 
     my_oid = cfg_convert_oid_str(inst->oid);
-    VERB("Syncing dependants for %s (%p)", inst->obj->oid, inst->obj);
+    if (do_log_syncing)
+    {
+        RING("Syncing dependants for %s", inst->obj->oid);
+    }
     for (dep = inst->obj->dependants; dep != NULL; dep = dep->next)
     {
         dep_oid = cfg_convert_oid_str(dep->depends->oid);
         to_sync = cfg_oid_common_root(dep_oid, my_oid);
         to_sync_str = cfg_convert_oid(to_sync);
-        VERB("Syncing dependant oid %s", to_sync_str);
+        if (do_log_syncing)
+        {
+            RING("Syncing dependant oid %s", to_sync_str);
+        }
         rc = cfg_ta_sync(to_sync_str, TRUE);
         if (rc != 0)
             ERROR("Cannot sync %s: %r", to_sync_str, TE_RC(TE_CS, rc));
