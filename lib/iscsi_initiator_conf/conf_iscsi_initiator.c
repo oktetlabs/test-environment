@@ -483,7 +483,7 @@ iscsi_change_conn_status(iscsi_target_data_t *target,
     else if (old_status > ISCSI_CONNECTION_DOWN && 
              status <= ISCSI_CONNECTION_DOWN)
     {
-        target->number_of_open_connections++;
+        target->number_of_open_connections--;
     }
     if (status == ISCSI_CONNECTION_UP)
     {
