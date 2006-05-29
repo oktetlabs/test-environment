@@ -194,7 +194,7 @@ iscsi_win32_wait_for(regex_t *pattern,
     regmatch_t matches[10];
 
 
-    timeout_value.QuadPart = -100000000LL; /* 10 sec */
+    timeout_value.QuadPart = -200000000LL; /* 10 sec */
     for (;;)
     {
         if (residual != 0)
@@ -406,8 +406,8 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
             PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
             PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  FALSE),
             PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  FALSE),
-            AUTH_PARAM(local_name, TRUE),
-            AUTH_PARAM(local_secret, TRUE),
+            AUTH_PARAM(peer_name, TRUE),
+            AUTH_PARAM(peer_secret, TRUE),
             XAUTH_PARAM(chap, TRUE, iscsi_not_none),
             CONSTANT(wildcard, TRUE),
             CONSTANT(zero, FALSE),
@@ -427,8 +427,8 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
             PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
             PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  FALSE),
             PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  FALSE),
-            AUTH_PARAM(local_name, TRUE),
-            AUTH_PARAM(local_secret, TRUE),
+            AUTH_PARAM(peer_name, TRUE),
+            AUTH_PARAM(peer_secret, TRUE),
             XAUTH_PARAM(chap, TRUE, iscsi_not_none),
             CONSTANT(wildcard, TRUE),
             ISCSI_END_PARAM_TABLE
@@ -468,7 +468,7 @@ static char   *iscsi_conditions[] = {
     "^Session Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
     "^Connection Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
     "^The operation completed successfully.", 
-    "Error:|The target has already been logged|Connection failed|cannot",
+    "Error:|The target has already been logged|[Ff]ailed|cannot|invalid",
     "Connection Id[[:space:]]*:[[:space:]]*([a-f0-9]*)-([a-f0-9]*)",
     "Device Number[[:space:]]*:[[:space:]]*(-?[0-9]*)"
 };
