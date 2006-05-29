@@ -145,7 +145,8 @@ SYMTBL_LIBS = \
 ta@with_name@_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
 	$(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
 	$(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
-	$(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
+	$(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a \
+	$(DESTDIR)/$(prefix)/../@host@/lib/libiscsi_initiator_conf.a
 
 symtbl.c: $(TA_SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
