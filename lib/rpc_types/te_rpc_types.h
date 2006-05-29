@@ -50,7 +50,6 @@ typedef rpc_ptr rpc_aiocb_p;
 #ifndef WINDOWS
 
 #include "te_rpc_aio.h"
-#include "te_rpc_fcntl.h"
 #include "te_rpc_netdb.h"
 #include "te_rpc_net_if_arp.h"
 #include "te_rpc_net_if.h"
@@ -70,6 +69,7 @@ typedef rpc_ptr rpc_aiocb_p;
 
 #include "te_rpc_wsa.h"
 #include "te_rpc_sys_socket.h"
+#include "te_rpc_fcntl.h"
 
 /** 
  * Pattern passed to set_buf_pattern to indicate that the buffer should

@@ -25,7 +25,7 @@ include_HEADERS = \
 
 if WINDOWS
 
-WIN_SRC=defs.c wsa.c sys_socket.c
+WIN_SRC=defs.c wsa.c sys_socket.c fcntl.c
 
 lib_LIBRARIES=librpc_types.a
 

@@ -213,51 +213,21 @@ fcntl_rpc2h(rpc_fcntl_command cmd)
 {
     switch(cmd)
     {
-#ifdef F_DUPFD
-        RPC2H(F_DUPFD);
-#endif
-#ifdef F_GETFD
-        RPC2H(F_GETFD);
-#endif
-#ifdef F_SETFD
-        RPC2H(F_SETFD);
-#endif
-#ifdef F_GETFL
-        RPC2H(F_GETFL);
-#endif
-#ifdef F_SETFL
-        RPC2H(F_SETFL);
-#endif
-#ifdef F_GETLK
-        RPC2H(F_GETLK);
-#endif
-#ifdef F_SETLK
-        RPC2H(F_SETLK);
-#endif
-#ifdef F_SETLKW
-        RPC2H(F_SETLKW);
-#endif
-#ifdef F_GETOWN
-        RPC2H(F_GETOWN);
-#endif
-#ifdef F_SETOWN
-        RPC2H(F_SETOWN);
-#endif
-#ifdef F_GETSIG
-        RPC2H(F_GETSIG);
-#endif
-#ifdef F_SETSIG
-        RPC2H(F_SETSIG);
-#endif
-#ifdef F_GETLEASE
-        RPC2H(F_GETLEASE);
-#endif
-#ifdef F_SETLEASE
-        RPC2H(F_SETLEASE);
-#endif
-#ifdef F_NOTIFY
-        RPC2H(F_NOTIFY);
-#endif
+        RPC2H_CHECK(F_DUPFD);
+        RPC2H_CHECK(F_GETFD);
+        RPC2H_CHECK(F_SETFD);
+        RPC2H_CHECK(F_GETFL);
+        RPC2H_CHECK(F_SETFL);
+        RPC2H_CHECK(F_GETLK);
+        RPC2H_CHECK(F_SETLK);
+        RPC2H_CHECK(F_SETLKW);
+        RPC2H_CHECK(F_GETOWN);
+        RPC2H_CHECK(F_SETOWN);
+        RPC2H_CHECK(F_GETSIG);
+        RPC2H_CHECK(F_SETSIG);
+        RPC2H_CHECK(F_GETLEASE);
+        RPC2H_CHECK(F_SETLEASE);
+        RPC2H_CHECK(F_NOTIFY);
         default: return F_UNKNOWN;
     }
 }
@@ -281,13 +251,13 @@ lseek_mode_rpc2h(rpc_lseek_mode mode)
     switch (mode)
     {
 #ifdef SEEK_SET
-        RPC2H(SEEK_SET);
+        RPC2H_CHECK(SEEK_SET);
 #endif
 #ifdef SEEK_CUR
-        RPC2H(SEEK_CUR);
+        RPC2H_CHECK(SEEK_CUR);
 #endif
 #ifdef SEEK_END
-        RPC2H(SEEK_END);
+        RPC2H_CHECK(SEEK_END);
 #endif
         default: return -1;
     }    
@@ -299,13 +269,13 @@ lseek_mode_h2rpc(int mode)
     switch (mode)
     {
 #ifdef SEEK_SET
-        H2RPC(SEEK_SET);
+        H2RPC_CHECK(SEEK_SET);
 #endif
 #ifdef SEEK_CUR
-        H2RPC(SEEK_CUR);
+        H2RPC_CHECK(SEEK_CUR);
 #endif
 #ifdef SEEK_END
-        H2RPC(SEEK_END);
+        H2RPC_CHECK(SEEK_END);
 #endif
         default: return RPC_SEEK_INVALID;
     }    
