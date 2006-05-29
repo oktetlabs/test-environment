@@ -286,7 +286,7 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
         if (strcmp(conn->session_type, "Normal") == 0)
             ISCSI_UNH_SET_UNNEGOTIATED("TargetName", target->target_name, req->target_id);
         
-        if (target->number_of_open_connections == 0)
+        if (req->cid == 0)
         {
             if (strcmp(conn->session_type, "Normal") == 0)
             {
@@ -336,7 +336,8 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
                               conn->error_recovery_level, req->target_id,
                               OFFER_ERROR_RECOVERY_LEVEL, offer);
             
-            ISCSI_UNH_SET_UNNEGOTIATED("SessionType", conn->session_type, req->target_id);
+            ISCSI_UNH_SET_UNNEGOTIATED("SessionType", conn->session_type, 
+                                       req->target_id);
             
             
             
