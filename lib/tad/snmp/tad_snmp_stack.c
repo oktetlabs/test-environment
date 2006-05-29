@@ -60,8 +60,6 @@
 
 #undef SNMPDEBUG
 
-#define NEW_SNMP_API 1
-
 /* AES defined as AES128 in NET-SNMP 5.1 */
 #undef WITHOUT_AES
 #ifndef USM_PRIV_PROTO_AES_LEN
@@ -324,11 +322,7 @@ tad_snmp_rw_init_cb(csap_p csap)
 
     VERB("Init callback\n");
 
-#if NEW_SNMP_API
     snmp_sess_init(&csap_session);
-#else
-    memset(&csap_session, 0, sizeof(csap_session));
-#endif
 
     /* Timeout */
     v_len = sizeof(timeout); 
@@ -659,7 +653,6 @@ tad_snmp_rw_init_cb(csap_p csap)
     snmp_spec_data->sock = -1;
 
     do {
-#if NEW_SNMP_API
         char buf[32];
         netsnmp_transport *transport = NULL; 
 
@@ -682,9 +675,6 @@ tad_snmp_rw_init_cb(csap_p csap)
         snmp_spec_data->sock = transport->sock;
         VERB("%s(): CSAP %d, sock = %d", __FUNCTION__, csap->id,
              snmp_spec_data->sock);
-#else
-        ss = snmp_open(&csap_session); 
-#endif
     } while(0);
 
     if (ss == NULL)
