@@ -833,10 +833,16 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
     s = socket(AF_UNIX, SOCK_STREAM, 0);
 #endif    
     if (s < 0)
-        RETERR("Failed to open socket");
+    {
+        perror("socket");
+        RETERR("%s: failed to open socket", __FUNCTION__);
+    }
 
     if (connect(s, (struct sockaddr *)&addr, sock_len) != 0)
-        RETERR("Failed to connect to TA");
+    {
+        perror("connect");
+        RETERR("Failed to connect to TA", __FUNCTION__);
+    }
     
     /* Enable linger with positive timeout on the socket  */
     {
