@@ -127,7 +127,7 @@ iscsi_get_cid(const char *oid)
 static void
 iscsi_init_default_connection_parameters(iscsi_connection_data_t *conn_data)
 {
-    memset(conn_data, 0, sizeof(conn_data));
+    memset(conn_data, 0, sizeof(*conn_data));
 
     conn_data->status = ISCSI_CONNECTION_REMOVED;
     strcpy(conn_data->initiator_name, DEFAULT_INITIATOR_NAME);
@@ -173,7 +173,7 @@ static void
 iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
 {
     int i;
-    memset(tgt_data, 0, sizeof(tgt_data));
+    memset(tgt_data, 0, sizeof(*tgt_data));
     
     strcpy(tgt_data->target_name, DEFAULT_TARGET_NAME);
     
@@ -200,8 +200,7 @@ static void *iscsi_initator_conn_request_thread(void *arg);
 static void
 iscsi_init_default_ini_parameters(int how)
 {
-    init_data = malloc(sizeof(iscsi_initiator_data_t));
-    memset(init_data, 0, sizeof(init_data));
+    init_data = calloc(1, sizeof(*init_data));
 
     pthread_mutex_init(&init_data->initiator_mutex, NULL);
     sem_init(&init_data->request_sem, 0, 0);
