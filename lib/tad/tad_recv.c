@@ -1634,6 +1634,19 @@ tad_recv_op_thread(void *arg)
     }
 
     csap->ref--;
+    {
+        int ret;
+
+        if ((ret = pthread_cond_broadcast(&csap->event)) != 0)
+        {
+            te_errno rc = TE_OS_RC(TE_TAD_CH, ret);
+            
+            assert(rc != 0);
+            ERROR(CSAP_LOG_FMT "Failed to broadcast CSAP event on "
+                  "reference decrement: %r - ignore",
+                  CSAP_LOG_ARGS(csap), rc);
+        }
+    }
 
     /* 
      * Log exit under CSAP lock, since CSAP can be destroyed just after
