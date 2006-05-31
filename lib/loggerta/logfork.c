@@ -390,6 +390,10 @@ open_sock(void)
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     addr.sin_port = htons(atoi(port));
+
+#ifndef WINDOWS
+    fcntl(sock, F_SETFD, FD_CLOEXEC);
+#endif
     
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
