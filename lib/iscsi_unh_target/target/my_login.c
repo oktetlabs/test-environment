@@ -3827,7 +3827,7 @@ send_read_data(SHARED struct iscsi_cmnd *cmnd,
 	uint32_t flags;
 	struct iscsi_targ_scsi_data_in *hdr;
 	struct scatterlist *st_list;
-	int residual_count;
+	int residual_count = 0;
 	unsigned prevsn;
 	struct iovec *iov;
 	int niov;

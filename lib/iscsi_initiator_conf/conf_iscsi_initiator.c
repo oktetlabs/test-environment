@@ -191,16 +191,15 @@ iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
 static void *iscsi_initator_conn_request_thread(void *arg);
 
 /**
- * Function configures the Initiator.
+ * Initialize all Initiator-related structures
  *
- * @param how     ISCSI_CONF_ALL_TARGETS or ISCSI_CONF_NO_TARGETS
- *                or ID of the target to configure with the Initiator.
- *                The target is Initalized with default parameters.
  */
 static void
-iscsi_init_default_ini_parameters(int how)
+iscsi_init_default_ini_parameters(void)
 {
-    init_data = calloc(1, sizeof(*init_data));
+    int i;
+    
+    init_data = TE_ALLOC(sizeof(*init_data));
 
     pthread_mutex_init(&init_data->initiator_mutex, NULL);
     sem_init(&init_data->request_sem, 0, 0);
@@ -211,31 +210,10 @@ iscsi_init_default_ini_parameters(int how)
     init_data->init_type = UNH;
     init_data->host_bus_adapter = DEFAULT_HOST_BUS_ADAPTER;
     
-    if (how == ISCSI_CONF_NO_TARGETS)
+    for (i = 0; i < MAX_TARGETS_NUMBER; i++)
     {
-        int j;
-
-        for (j = 0;j < MAX_TARGETS_NUMBER;j++)
-        {
-            init_data->targets[j].target_id = -1;
-        }
-
-        VERB("No targets were configured");
-    }
-    else if (how == ISCSI_CONF_ALL_TARGETS)
-    {
-        int j;
-
-        for (j = 0;j < MAX_TARGETS_NUMBER;j++)
-        {
-            iscsi_init_default_tgt_parameters(&init_data->targets[j]);
-            init_data->targets[j].target_id = j;
-        }
-    }
-    else
-    {
-         iscsi_init_default_tgt_parameters(&init_data->targets[how]);
-         init_data->targets[how].target_id = how;
+        iscsi_init_default_tgt_parameters(&init_data->targets[i]);
+        init_data->targets[i].target_id = -1;
     }
 }
 
@@ -293,7 +271,7 @@ ta_system_ex(const char *cmd, ...)
     int     status = 0;
     va_list ap;
 
-    if ((cmdline = (char *)malloc(MAX_CMD_SIZE)) == NULL)
+    if ((cmdline = (char *)TE_ALLOC(MAX_CMD_SIZE)) == NULL)
     {
         ERROR("Not enough memory\n");
         return TE_ENOMEM;
@@ -520,7 +498,7 @@ iscsi_post_connection_request(int target_id, int cid, int status, te_bool urgent
             return TE_RC(ISCSI_AGENT_TYPE, TE_EINVAL);
     }
 
-    req = malloc(sizeof(*req));
+    req = TE_ALLOC(sizeof(*req));
     if (req == NULL)
         return TE_OS_RC(ISCSI_AGENT_TYPE, errno);
     req->target_id = target_id;
@@ -2009,22 +1987,21 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
     int status;
     iscsi_target_data_t    *target = init_data->targets + 
         iscsi_get_target_id(oid);
-    iscsi_connection_data_t *conn  = target->conns + iscsi_get_cid(oid);
 
     UNUSED(gid);
     UNUSED(instance);
 
-    pthread_mutex_lock(&conn->status_mutex);
-    status = conn->status;
+    pthread_mutex_lock(&target->conns[0].status_mutex);
+    status = target->conns[0].status;
     if (status != ISCSI_CONNECTION_UP)
     {
         *value = '\0';
     }
     else
     {
-        strcpy(value, conn->device_name);
+        strcpy(value, target->conns[0].device_name);
     }
-    pthread_mutex_unlock(&conn->status_mutex);
+    pthread_mutex_unlock(&target->conns[0].status_mutex);
     return 0;
 }
 
@@ -2526,8 +2503,7 @@ RCF_PCH_CFG_NODE_RW(node_ds_iscsi_initiator, "iscsi_initiator",
 te_errno
 iscsi_initiator_conf_init(void)
 {
-    /* On Init there is only one target configured on the Initiator */
-    iscsi_init_default_ini_parameters(ISCSI_CONF_NO_TARGETS);
+    iscsi_init_default_ini_parameters();
 
 #ifdef __CYGWIN__
     if (!iscsi_win32_init_regexps())
