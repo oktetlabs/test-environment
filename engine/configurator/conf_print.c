@@ -184,12 +184,13 @@ cfg_db_tree_print(const char *filename,
 static char *
 obj_tree_bufprint(cfg_object *obj, const int indent)
 {
-    const size_t  sz_ini = 16 * 1024;
-    static char   *buf = NULL;
-    static int    offset = 0;
-    static size_t sz = sz_ini;
-    int           i;
-    char          *tmp;
+    const size_t    sz_ini = 16 * 1024;
+    static char    *buf    = NULL;
+    static int      offset = 0;
+    static size_t   sz     = sz_ini;
+    int             i;
+    char           *tmp;
+    cfg_dependency *dep;
 
     
     for (i = 0; i < indent; i++)
@@ -205,6 +206,17 @@ obj_tree_bufprint(cfg_object *obj, const int indent)
                     obj->type == CVT_ADDRESS ? "addr" : "str",
                     obj->vol == TRUE ? "V" : "")
           != NULL);
+    for (dep = obj->depends_on; dep != NULL; dep = dep->next)
+    {
+        for (i = 0; i < indent; i++)
+            CHECK(bufprintf(&buf, &offset, &sz, " ") != NULL);
+        if (strcmp_start(dep->depends->oid, obj->oid) != 0)
+        {
+            CHECK(bufprintf(&buf, &offset, &sz, "-> %s\n", 
+                            dep->depends->oid) != NULL);
+        }
+    }
+    
     for (obj = obj->son; obj != NULL; obj = obj->brother)
         CHECK(obj_tree_bufprint(obj, indent + 2) != NULL);
 

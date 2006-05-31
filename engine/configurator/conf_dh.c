@@ -572,6 +572,8 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
         free(val_s);
         val_s = NULL;
     }
+
+    cfg_ring_topological_order();
     
     return 0;
     

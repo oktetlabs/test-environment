@@ -116,45 +116,24 @@ static cfg_orphan *orphaned_objects;
  */
 static cfg_object *topological_order;
 
-
 /**
- * Create a dependency record.
+ * Find a place for a new record in the topologically sorted list.
+ * The idea is that when a new dependency is added, 
+ * we move a dependent object beyond all the objects with 
+ * the same or lesser number of master objects.
  *
- * @param master        Master object
- * @param obj           Dependant object
+ * Actually, this is a "real-time" version of an topological sorting
+ * algorithm given in Knuth 2.2.3 (Algorithm T).
+ *
+ * NOTE: there is no explicit checking for loops.
  */
 static void
-cfg_create_dep(cfg_object *master, cfg_object *obj)
+cfg_put_in_order_dep(cfg_object *obj)
 {
-    cfg_dependency *newdep;
-    cfg_object     *place, *prev;
-
-    VERB("Creating a dependency %s to %s", obj->oid, master->oid);
-
-    newdep = calloc(1, sizeof(*newdep));
-    if (newdep == NULL)
-    {
-        ERROR("%s(): calloc() failed", __FUNCTION__);
-        return;
-    }
-
-    newdep->next = obj->depends_on;
-    newdep->depends = master;
-    obj->depends_on = newdep;
-    if (master->ordinal_number >= obj->ordinal_number)
-        obj->ordinal_number = master->ordinal_number + 1;
-
-    /**
-     * Find a place for a new record in the topologically sorted list.
-     * The idea is that when a new dependency is added, 
-     * we move a dependent object beyond all the objects with 
-     * the same or lesser number of master objects.
-     *
-     * Actually, this is a "real-time" version of an topological sorting
-     * algorithm given in Knuth 2.2.3 (Algorithm T).
-     *
-     * NOTE: there is no explicit checking for loops.
-     */
+    cfg_object     *prev;
+    cfg_object     *place;
+    cfg_dependency *dep_iter;
+    
     if (obj->dep_next != NULL && 
         obj->dep_next->ordinal_number <= obj->ordinal_number)
     {
@@ -177,6 +156,47 @@ cfg_create_dep(cfg_object *master, cfg_object *obj)
         obj->dep_next = place;
         obj->dep_prev = prev;
     }
+    for (dep_iter = obj->dependants; 
+         dep_iter != NULL; 
+         dep_iter = dep_iter->next)
+    {
+        if (dep_iter->depends->ordinal_number <= obj->ordinal_number)
+        {
+            dep_iter->depends->ordinal_number = obj->ordinal_number + 1;
+            cfg_put_in_order_dep(dep_iter->depends);
+        }
+    }
+}
+
+
+/**
+ * Create a dependency record.
+ *
+ * @param master        Master object
+ * @param obj           Dependant object
+ */
+static void
+cfg_create_dep(cfg_object *master, cfg_object *obj)
+{
+    cfg_dependency *newdep;
+
+    VERB("Creating a dependency %s to %s", obj->oid, master->oid);
+
+    newdep = calloc(1, sizeof(*newdep));
+    if (newdep == NULL)
+    {
+        ERROR("%s(): calloc() failed", __FUNCTION__);
+        return;
+    }
+
+    newdep->next = obj->depends_on;
+    newdep->depends = master;
+    obj->depends_on = newdep;
+    if (master->ordinal_number >= obj->ordinal_number)
+    {
+        obj->ordinal_number = master->ordinal_number + 1;
+    }
+    cfg_put_in_order_dep(obj);
 
     /* 
      * Now we add the object to the dependants list of its master, keeping
@@ -320,7 +340,8 @@ cfg_maybe_adopt_objects (cfg_object *master, cfg_oid *oid)
         if (cfg_oid_cmp(oid, iter->master) == 0)
         {
             VERB("Adopting object '%s' by '%s'", 
-                 iter->object->oid, master->oid);
+                 iter->object->oid, 
+                 master->oid);
             cfg_create_dep(master, iter->object);
             cfg_free_oid(iter->master);
             if (iter->prev == NULL)

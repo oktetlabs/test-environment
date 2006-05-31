@@ -671,7 +671,7 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore)
 
     if ((rc = register_objects(&cur, !restore)) != 0)
         return rc;
-        
+
     if ((rc = parse_instances(cur, &list)) != 0)
         return rc;
     
