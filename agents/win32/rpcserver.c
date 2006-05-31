@@ -92,12 +92,15 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 
 #include "../../lib/rcfpch/rcf_pch_rpc_server.c"
 
+extern int win32_process_exec(int argc, char **argv);
+
 int 
 main(int argc, char **argv)
 {
     WSADATA data;
     
-    UNUSED(argc);
+    if (win32_process_exec(argc, argv) != 0)
+        return 1;
     
     if (argc > 2 && strcmp(argv[2], "net_init") == 0)
         WSAStartup(MAKEWORD(2,2), &data);

@@ -39,7 +39,7 @@ nodist_ta@with_name@_SOURCES=rpc_unsupported.c rpc_supported.h
 
 BUILT_SOURCES=rpc_unsupported.c rpc_supported.h
 
-SYMTBL_OBJECTS+=tarpc_server.o
+SYMTBL_OBJECTS+=tarpc_server.o common.o
 
 CLEANFILES+=rpc_unsupported.c rpc_supported.h
 
@@ -78,7 +78,7 @@ ta@with_name@_rpcserver_LDADD=rpcserver_symtbl.o $(TE_LDADD) -lrpcxdrta \
                               -lrpc_types -lrcfpch -lloggerta -ltools -lrpc \
                               -lws2_32 -lmswsock -lwsock32 -liphlpapi 
 
-rpcserver_symtbl.c: tarpc_server.o \
+rpcserver_symtbl.c: tarpc_server.o common.o \
                     $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 

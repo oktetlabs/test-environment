@@ -79,6 +79,9 @@ extern te_errno create_process_rpc_server(const char *name, int32_t *pid,
                                           te_bool net_init);
 #endif
 
+extern int win32_process_exec(int argc, char **argv);
+
+
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_init()
@@ -613,10 +616,11 @@ main(int argc, char **argv)
 
     pthread_t tid;
     
-    UNUSED(argc);
-    
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
+    
+    if (win32_process_exec(argc, argv) != 0)
+        return 1;
     
     ta_name = argv[1];
 

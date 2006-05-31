@@ -32,6 +32,7 @@
 INCLUDE(winsock2.h)
 #else
 #include <winsock2.h>
+#include <stdio.h>
 #endif
 #include "te_defs.h"
 #include "ta_common.h"
@@ -131,4 +132,46 @@ unsetenv(const char *name)
 #ifdef UNSETENV_RETURNS_INT
     return 0;
 #endif
+}
+
+/** 
+ * Check if exec is requested and call appropriate function.
+ *
+ * @param argc  argc passed to main()
+ * @param argv  argv passed to main()
+ *
+ * @return Status code.
+ * @retval 1    exec is processed
+ * @retval 0    exec is not requested
+ * @retval -1   failure is happened during exec processing
+ */
+int
+win32_process_exec(int argc, char **argv)
+{
+    void (* func)(int, char **);
+    
+    if (strcmp(argv[1], "exec") != 0)
+        return 0;
+        
+    argc -= 2;
+    argv += 2;
+    
+    if (strcmp(argv[0], "net_init") == 0)
+    {
+        WSADATA data;
+
+        WSAStartup(MAKEWORD(2,2), &data);
+        argc--;
+        argv++;
+    }
+    
+    func = rcf_ch_symbol_addr(argv[0], 1);
+        
+    if (func == NULL)
+    {
+        printf("Cannot resolve address of the function %s", argv[0]);
+        return -1;
+    }
+    func(argc - 1, argv + 1);
+    return 1;
 }
