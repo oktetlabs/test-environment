@@ -573,8 +573,6 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
         val_s = NULL;
     }
 
-    cfg_ring_topological_order();
-    
     return 0;
     
 #undef RETERR    
