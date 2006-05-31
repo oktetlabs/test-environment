@@ -8,11 +8,12 @@ include_HEADERS = \
 	te_tools.h \
 	te_sleep.h \
 	te_bufs.h \
+    te_alloc.h \
 	te_sockaddr.h \
 	te_shell_cmd.h \
 	te_log_fmt.h \
 	te_format.h \
-	te_iscsi.h
+	te_iscsi.h 
 
 if WINDOWS
 
@@ -40,6 +41,7 @@ lib_LTLIBRARIES = libtools.la
 
 libtools_la_SOURCES = \
 	te_bufs.c \
+    te_alloc.c \
 	te_sockaddr.c \
 	te_shell_cmd.c \
 	te_log_fmt.c \

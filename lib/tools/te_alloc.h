@@ -1,12 +1,10 @@
 /** @file
- * @brief TE tools
+ * @brief API to safely allocate memory
  *
- * Functions implemented here may use services provided by the system
- * and definitions done in headers located in root include directory
- * of the Test Environment.
+ * Safe memory allocation
  *
  *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -25,27 +23,45 @@
  * MA  02111-1307  USA
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
  * $Id$
  */
 
-#ifndef __TE_TOOLS_H__
-#define __TE_TOOLS_H__
+#ifndef __TE_TOOLS_ALLOC_H__
+#define __TE_TOOLS_ALLOC_H__
 
-#include "te_bufs.h"
-#include "te_alloc.h"
-#include "te_format.h"
-#ifndef WINDOWS
-#include "te_shell_cmd.h"
-#include "te_sleep.h"
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
 #endif
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/**
+ * Allocate memory filling it with zeroes.
+ * Logs an error if the memory cannot be allocated.
+ * This function should never be called directly,
+ * use TE_ALLOC() macro instead
+ *
+ * @param len      Buffer length
+ * @param filename Caller's filename
+ * @param line     Caller's line
+ */
+extern void *te_alloc_internal(size_t len, const char *filename, int line);
+
+
+/**
+ * Allocate memory filling it with zeroes
+ * Logs an error if the memory cannot be allocated.
+ *
+ * @param len      Buffer length
+ */
+#define TE_ALLOC(_size) (te_alloc_internal((_size), __FILE__, __LINE__))
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_TOOLS_H__ */
+#endif /* !__TE_TOOLS_ALLOC_H__ */
