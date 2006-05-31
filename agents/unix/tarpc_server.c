@@ -378,6 +378,7 @@ static type_info_t type_info[] =
     {"int", sizeof(int)},
     {"long", sizeof(long)},
     {"long long", sizeof(long long)},
+    {"te_errno", sizeof(te_errno)},
     {"size_t", sizeof(size_t)},
     {"socklen_t", sizeof(socklen_t)},
     {"struct timeval", sizeof(struct timeval)},
