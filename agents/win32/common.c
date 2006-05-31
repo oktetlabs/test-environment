@@ -166,10 +166,11 @@ win32_process_exec(int argc, char **argv)
     }
     
     func = rcf_ch_symbol_addr(argv[0], 1);
-        
+
     if (func == NULL)
     {
         printf("Cannot resolve address of the function %s", argv[0]);
+        fflush(stdout);
         return -1;
     }
     func(argc - 1, argv + 1);
