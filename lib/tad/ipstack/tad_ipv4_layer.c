@@ -88,9 +88,11 @@ tad_ip4_init_cb(csap_p csap, unsigned int layer)
     {
         switch (csap->layers[layer - 1].proto_tag)
         {
+#ifdef IPPROTO_IPIP
             case TE_PROTO_IP4:
                 spec_data->protocol = IPPROTO_IPIP;
                 break;
+#endif
 
             case TE_PROTO_UDP:
                 spec_data->protocol = IPPROTO_UDP;
