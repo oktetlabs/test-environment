@@ -34,21 +34,29 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_UNISTD_H
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_SYS_TIME_H
+#if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
+
+#ifdef PF_PACKET
 
 #include <netinet/in.h>
 #include <netinet/ether.h>
@@ -60,9 +68,7 @@
 #include <netpacket/packet.h>
 #include <sys/ioctl.h>
 
-#include <assert.h>
 
-#include <string.h>
 
 #include "logger_api.h"
 
@@ -404,3 +410,5 @@ eth_free_interface(eth_interface_p iface)
 #endif 
     return rc;
 }
+
+#endif
