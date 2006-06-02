@@ -65,7 +65,9 @@
 #if HAVE_ASSERT_H
 #include <assert.h>
 #endif
+#if HAVE_NETPACKET_PACKET_H
 #include <netpacket/packet.h>
+#endif
 
 #include "logger_api.h"
 #include "logger_ta_fast.h"
@@ -229,7 +231,11 @@ tad_eth_read_cb(csap_p csap, unsigned int timeout,
                 tad_pkt *pkt, size_t *pkt_len)
 {
     tad_eth_rw_data    *spec_data = csap_get_rw_data(csap);
+#if HAVE_NETPACKET_PACKET_H
     struct sockaddr_ll  from;
+#else
+    struct sockaddr_storage from;
+#endif
     socklen_t           fromlen = sizeof(from);
     te_errno            rc;
 
@@ -238,6 +244,7 @@ tad_eth_read_cb(csap_p csap, unsigned int timeout,
     if (rc != 0)
         return rc;
 
+#if HAVE_NETPACKET_PACKET_H
     switch (from.sll_pkttype)
     {
         case PACKET_HOST:
@@ -262,6 +269,7 @@ tad_eth_read_cb(csap_p csap, unsigned int timeout,
                 return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
             break;
     }
+#endif
 
     return 0;
 }
