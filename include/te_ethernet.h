@@ -31,6 +31,9 @@
 #ifndef __TE_ETHERNET_H__
 #define __TE_ETHERNET_H__
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #if HAVE_NET_ETHERNET_H
 #include <net/ethernet.h>
 #endif
@@ -44,10 +47,29 @@
 #include <sys/ethernet.h>
 #endif
 
-/* ETHER_TYPE_LEN is used for Ethernet address length */
 #ifndef ETHER_ADDR_LEN
 #ifdef ETHERADDRL
 #define ETHER_ADDR_LEN  ETHERADDRL
+#endif
+#endif
+
+#ifndef ETHER_TYPE_LEN
+#define ETHER_TYPE_LEN  (2) /* FIXME */
+#endif
+
+#ifndef ETHER_HDR_LEN
+#define ETHER_HDR_LEN   (2 * ETHER_ADDR_LEN + ETHER_TYPE_LEN) /* FIXME */
+#endif
+
+#ifndef ETHER_MIN_LEN
+#if defined(ETHERMIN) && defined(ETHERFCSL)
+#define ETHER_MIN_LEN   (ETHERMIN + ETHERFCSL)
+#endif
+#endif
+
+#ifndef ETHER_CRC_LEN
+#ifdef ETHERFCSL
+#define ETHER_CRC_LEN   ETHERFCSL
 #endif
 #endif
 
