@@ -76,11 +76,11 @@ typedef enum cli_sync_res {
 
 /** Mapping of cli_sync_res_t values into errno */
 #define MAP_SYN_RES2ERRNO(sync_res_) \
-    (((sync_res_) == SYNC_RES_OK) ? 0 :                 \
-     ((sync_res_) == SYNC_RES_FAILED) ? EREMOTEIO :     \
-     ((sync_res_) == SYNC_RES_ABORTED) ? ECONNABORTED : \
-     ((sync_res_) == SYNC_RES_INT_ERROR) ? EFAULT :     \
-     ((sync_res_) == SYNC_RES_TIMEOUT) ? ETIMEDOUT :    \
+    (((sync_res_) == SYNC_RES_OK) ? 0 :                     \
+     ((sync_res_) == SYNC_RES_FAILED) ? TE_EREMOTEIO :      \
+     ((sync_res_) == SYNC_RES_ABORTED) ? TE_ECONNABORTED :  \
+     ((sync_res_) == SYNC_RES_INT_ERROR) ? TE_EFAULT :      \
+     ((sync_res_) == SYNC_RES_TIMEOUT) ? TE_ETIMEDOUT :     \
          (assert(0), 0))
 
 
@@ -240,22 +240,23 @@ parent_wait_sync(cli_csap_specific_data_p spec_data)
  * @param tv         Time to wait for notification or data byte
  * @param data       Single byte read from Expect side (OUT)
  *
- * @return errno:
- *         ENOENT    No notification or data byte came in @a tv time
- *         errno mapped with MAP_SYN_RES2ERRNO() macro in case of
- *         message arriving.
- *         0         SYN_RES_OK notification or data byte came
+ * @return Status code.
+ * @retval 0            SYN_RES_OK notification or data byte came
+ * @retval TE_ENOENT    No notification or data byte came in @a tv time
+ * @retval other        errno mapped with MAP_SYN_RES2ERRNO() macro in
+ *                      case of message arriving.
  *
  * @se If it captures an error from Expect side, it logs error message
  * and return correspnding errno value as its return value.
  */
-static int 
+static te_errno
 parent_read_byte(cli_csap_specific_data_p spec_data,
                  struct timeval *tv, char *data)
 {
-    fd_set read_set;
-    int    max_descr;
-    int    rc;
+    fd_set      read_set;
+    int         max_descr;
+    te_errno    rc;
+    int         ret;
     
     max_descr = spec_data->sync_pipe > spec_data->data_sock ?
         spec_data->sync_pipe : spec_data->data_sock;
@@ -266,23 +267,22 @@ parent_read_byte(cli_csap_specific_data_p spec_data,
         FD_SET(spec_data->sync_pipe, &read_set);
         FD_SET(spec_data->data_sock, &read_set);
 
-        rc = select(max_descr + 1, &read_set, NULL, NULL, tv);
-        if (rc == -1 && errno == EINTR)
+        ret = select(max_descr + 1, &read_set, NULL, NULL, tv);
+        if (ret == -1 && errno == EINTR)
             continue;
 
-        if (rc < 0)
+        if (ret < 0)
         {
-            int err = errno;
-            
+            rc = te_rc_os2te(errno);
             ERROR("Reading single character from Expect side "
-                  "fails on select(), errno = 0x%X", err);
-            return err;
+                  "fails on select(), errno = %r", rc);
+            return rc;
         }
         
-        if (rc == 0)
+        if (ret == 0)
         {
             /* There is nothing in data socket and in sync pipe */
-            return ETIMEDOUT;
+            return TE_ETIMEDOUT;
         }
         
         if (FD_ISSET(spec_data->sync_pipe, &read_set))
@@ -302,20 +302,19 @@ parent_read_byte(cli_csap_specific_data_p spec_data,
         }
         else if (FD_ISSET(spec_data->data_sock, &read_set))
         {
-            if ((rc = read(spec_data->data_sock, data, 1)) != 1)
+            if ((ret = read(spec_data->data_sock, data, 1)) != 1)
             {
-                int err = errno;
-                
+                rc = te_rc_os2te(errno);
                 ERROR("Reading single character from Expect side "
-                      "fails on read(), rc = %d, errno = 0x%X", rc, err);
-                return (rc == 0) ? ECONNABORTED : err;
+                      "fails on read(), ret=%d, errno=%r", ret, rc);
+                return (ret == 0) ? TE_ECONNABORTED : rc;
             }
         }
         else
         {
             ERROR("select() returns non-zero value, but there is no "
                   "readable descriptor");
-            return EFAULT;
+            return TE_EFAULT;
         }
 
         return 0;
@@ -337,27 +336,27 @@ parent_read_byte(cli_csap_specific_data_p spec_data,
  * @se If the previous command has finished, function clears 
  * CLI_CSAP_STATUS_REPLY_WAITING bit from "status" of the CSAP.
  */
-static int
+static te_errno
 process_sync_pipe(cli_csap_specific_data_p spec_data)
 {
     struct timeval tv = { 0, 0 };
     char           data;
-    int            rc;
+    te_errno       rc;
 
     while ((rc = parent_read_byte(spec_data, &tv, &data)) != 0)
     {
-        if (rc == ETIMEDOUT)
+        if (rc == TE_ETIMEDOUT)
         {
             /* Try once again */
             continue;
         }
-        else if (rc == ENOENT)
+        else if (rc == TE_ENOENT)
         {
             /* 
              * Expect side still can't provide reply 
              * to the command, so think of the CSAP as still busy.
              */
-            return EBUSY;
+            return TE_EBUSY;
         }
         else
             return rc;
@@ -392,16 +391,16 @@ parent_read_reply(cli_csap_specific_data_p spec_data,
                   char *reply_buf, size_t reply_buf_len,
                   struct timeval *tv)
 {
-    int     rc;
-    char    data;
-    te_bool echo_stripped = FALSE;
-    size_t  bytes_read = 0;
-    size_t  echo_count = 0;
+    te_errno    rc;
+    char        data;
+    te_bool     echo_stripped = FALSE;
+    size_t      bytes_read = 0;
+    size_t      echo_count = 0;
 
     /* Wait for CLI response */
     do {
         rc = parent_read_byte(spec_data, tv, &data);
-        if (rc == ETIMEDOUT)
+        if (rc == TE_ETIMEDOUT)
         {
             /*
              * Keep in mind that we should get reply before running 
@@ -412,7 +411,7 @@ parent_read_reply(cli_csap_specific_data_p spec_data,
             return 0;
         }
         else if (rc != 0)
-            return -TE_OS_RC(TE_TAD_CSAP, rc);
+            return -TE_RC(TE_TAD_CSAP, rc);
 
         /* Remove echo characters (command + \r + \n) */
         if (echo_count < cmd_buf_len)
@@ -603,12 +602,10 @@ tad_cli_read_cb(csap_p csap, unsigned int timeout,
     cli_csap_specific_data_p spec_data;
 
     tad_pkt_seg    *seg;
-
-    int     my_timeout = timeout;
-    int     timeout_rate;
-    int     rc;
-
-    struct timeval tv;
+    int             my_timeout = timeout;
+    int             timeout_rate;
+    te_errno        rc;
+    struct timeval  tv;
 
     spec_data = csap_get_rw_data(csap); 
 
@@ -643,7 +640,7 @@ tad_cli_read_cb(csap_p csap, unsigned int timeout,
     {
         if ((rc = process_sync_pipe(spec_data)) != 0)
         {
-            if (rc == EBUSY && my_timeout != 0)
+            if (rc == TE_EBUSY && my_timeout != 0)
             {
                 /* Sleep for a while */
                 usleep(timeout_rate);
@@ -652,7 +649,7 @@ tad_cli_read_cb(csap_p csap, unsigned int timeout,
                 continue;
             }
             
-            return TE_OS_RC(TE_TAD_CSAP, rc);
+            return TE_RC(TE_TAD_CSAP, rc);
         }
         else
             break;
@@ -1091,7 +1088,7 @@ tad_cli_rw_init_cb(csap_p csap)
         VERB("password = %s", cli_spec_data->password);
     }
 
-    if (socketpair(PF_LOCAL, SOCK_STREAM, 0, sv) != 0)
+    if (socketpair(PF_UNIX, SOCK_STREAM, 0, sv) != 0)
     {
         rc = te_rc_os2te(errno);
         ERROR("Cannot create a pair of sockets, errno %d", rc);
@@ -1154,7 +1151,7 @@ tad_cli_rw_init_cb(csap_p csap)
         if ((sync_res = parent_wait_sync(cli_spec_data)) != SYNC_RES_OK)
         {
             tad_cli_rw_destroy_cb(csap);
-            return TE_OS_RC(TE_TAD_CSAP, MAP_SYN_RES2ERRNO(sync_res));
+            return TE_RC(TE_TAD_CSAP, MAP_SYN_RES2ERRNO(sync_res));
         }
 
         VERB("Child has just been initialised");
