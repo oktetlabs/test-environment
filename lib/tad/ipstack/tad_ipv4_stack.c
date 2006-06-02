@@ -177,13 +177,11 @@ tad_ip4_write_cb(csap_p csap, const tad_pkt *pkt)
         return rc;
     }
 
+    memset(&msg, 0, sizeof(msg));
     msg.msg_name = (struct sockaddr *)&spec_data->sa_op;
     msg.msg_namelen = sizeof(spec_data->sa_op);
     msg.msg_iov = iov;
     msg.msg_iovlen = iovlen;
-    msg.msg_control = NULL;
-    msg.msg_controllen = 0;
-    msg.msg_flags = 0;
 
     ret = sendmsg(spec_data->socket, &msg, 0);
     if (ret < 0) 
