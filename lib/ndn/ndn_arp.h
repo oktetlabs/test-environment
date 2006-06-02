@@ -30,6 +30,12 @@
 #ifndef __TE_NDN_ARP_H__
 #define __TE_NDN_ARP_H__
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 #if HAVE_NET_IF_ARP_H
 #include <net/if_arp.h>
 #endif
