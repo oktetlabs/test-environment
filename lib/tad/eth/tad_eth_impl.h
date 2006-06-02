@@ -30,20 +30,11 @@
 #ifndef __TE_TAD_ETH_IMPL_H__
 #define __TE_TAD_ETH_IMPL_H__ 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <linux/if.h>
-#include <netinet/in.h>
-#include <linux/if_packet.h>
-#include <netinet/if_ether.h>
-#include <unistd.h>
-#include <fcntl.h>
+#endif
 
+#include "te_stdint.h"
 #include "te_errno.h"
 
 #include "asn_usr.h" 
@@ -51,6 +42,7 @@
 
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
+#include "tad_pkt.h"
 #include "tad_utils.h"
 #include "pkt_socket.h"
 

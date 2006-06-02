@@ -65,6 +65,7 @@
 #if HAVE_ASSERT_H
 #include <assert.h>
 #endif
+#include <netpacket/packet.h>
 
 #include "logger_api.h"
 #include "logger_ta_fast.h"
