@@ -104,6 +104,7 @@ netinet/in_systm.h \
 netinet/ip.h \
 netinet/ip_icmp.h \
 netinet/tcp.h \
+netpacket/packet.h \
 obstack.h \
 poll.h \
 popt.h \
