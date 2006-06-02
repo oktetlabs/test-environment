@@ -36,12 +36,8 @@
 
 #include <string.h>
 #include <stdlib.h>
-#if HAVE_NET_ETHERNET_H
-#include <net/ethernet.h>
-#endif
-#if HAVE_NET_IF_ETHER_H
-#include <net/if_ether.h>
-#endif
+
+#include "te_ethernet.h"
 
 #include "tad_ipstack_impl.h"
 
