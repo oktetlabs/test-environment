@@ -285,7 +285,8 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
         goto exit;
     }
 
-    rc = asn_parse_value_text(ba, ndn_csap_spec, &new_csap->nds, &syms);
+    rc = asn_parse_value_text((const char *)ba, ndn_csap_spec,
+                              &new_csap->nds, &syms);
     if (rc != 0)
     {
         ERROR("CSAP NDS parse error sym=%d: %r", syms, rc);
@@ -568,7 +569,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
         return 0;
     }
 
-    rc = asn_parse_value_text(ba, ndn_traffic_template, &nds, &syms);
+    rc = asn_parse_value_text((const char *)ba, ndn_traffic_template,
+                              &nds, &syms);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
@@ -732,7 +734,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
         return 0;
     }
 
-    rc = asn_parse_value_text(ba, ndn_traffic_pattern, &nds, &syms);
+    rc = asn_parse_value_text((const char *)ba, ndn_traffic_pattern,
+                              &nds, &syms);
     if (rc != 0)
     { 
         ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
@@ -944,7 +947,8 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
         return 0;
     }
 
-    rc = asn_parse_value_text(ba, ndn_traffic_template, &tmpl, &syms);
+    rc = asn_parse_value_text((const char *)ba, ndn_traffic_template,
+                              &tmpl, &syms);
     if (rc != 0)
     { 
         ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
