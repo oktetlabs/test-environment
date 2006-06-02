@@ -29,17 +29,8 @@
 #ifndef __TE_NDN_ETH_H__
 #define __TE_NDN_ETH_H__
 
-#if HAVE_NETINET_ETHER_H
-#include <netinet/ether.h>
-#endif
-#if HAVE_NET_ETHERNET_H
-#include <net/ethernet.h>
-#endif
-#if HAVE_NET_IF_ETHER_H
-#include <net/if_ether.h>
-#endif
-
 #include "te_stdint.h"
+#include "te_ethernet.h"
 #include "asn_usr.h"
 #include "ndn.h"
 
