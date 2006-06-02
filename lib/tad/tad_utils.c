@@ -45,6 +45,9 @@
 #if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
+#if HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
 
 /* for ntohs, etc */
 #include <sys/socket.h> 
@@ -881,7 +884,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
 
         case NDN_DU_SCRIPT:
             {
-                const uint8_t *script;
+                const char *script;
                 char expr_label[] = "expr:";
 
                 rc = asn_get_field_data(du_field, &script, "");
@@ -1073,6 +1076,10 @@ tad_tcp_push_fin(int socket, const uint8_t *data, size_t length)
     ssize_t     sent;
     te_errno    rc;
 
+/* FIXME */
+#ifndef SOL_TCP
+#define SOL_TCP IPPROTO_TCP
+#endif
     if (setsockopt(socket, SOL_TCP, TCP_CORK, &opt, sizeof(opt)) < 0)
     {
         rc = te_rc_os2te(errno);
@@ -1508,8 +1515,7 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
     {
         size_t          iovlen = tad_pkt_seg_num(pkt);
         struct iovec    iov[iovlen];
-        struct msghdr   msg = { from, fromlen == NULL ? 0 : *fromlen,
-                                iov, iovlen, NULL, 0, 0 };
+        struct msghdr   msg;
         ssize_t         r;
 
         /* Convert packet segments to IO vector */
@@ -1519,6 +1525,12 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
             ERROR("Failed to convert segments to I/O vector: %r", rc);
             return rc;
         }
+
+        memset(&msg, 0, sizeof(msg));
+        msg.msg_name = from;
+        msg.msg_namelen = fromlen == NULL ? 0 : *fromlen;
+        msg.msg_iov = iov;
+        msg.msg_iovlen = iovlen;
 
         /* TODO: possibly MSG_TRUNC and other flags are required */
 
