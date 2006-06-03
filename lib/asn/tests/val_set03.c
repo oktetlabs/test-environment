@@ -12,17 +12,17 @@ const char te_lgr_entity[] = "u";
 
 
 asn_named_entry_t my_entry_array [] = {
-    { "number", &asn_base_integer_s },
-    { "string", &asn_base_charstring_s}
+    { "number", &asn_base_integer_s,    0 },
+    { "string", &asn_base_charstring_s, 0 }
 };
 
 
 asn_named_entry_t str_ea [] = {
-    { "string", &asn_base_charstring_s }
+    { "string", &asn_base_charstring_s, 0 }
 };
 
 asn_named_entry_t num_ea [] = {
-    { "number", &asn_base_integer_s }
+    { "number", &asn_base_integer_s, 0 }
 };
 
 asn_type my_sequence = {
@@ -53,8 +53,8 @@ asn_type my_num_sequence = {
 
 
 asn_named_entry_t compl_entry_array [] = {
-    { "nested", &my_sequence },
-    { "name", &asn_base_charstring }
+    { "nested", &my_sequence,       0 },
+    { "name", &asn_base_charstring, 0 }
 };
 
 asn_type complex_sequence = {

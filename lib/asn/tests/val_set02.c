@@ -2,25 +2,6 @@
 
 #include "test_types.h"
 
-extern asn_type asn_base_integer_s;
-extern asn_type asn_base_charstring_s;
-
-
-#if 0
-asn_named_entry_t my_entry_array [] = {
-    { "number", &asn_base_integer_s },
-    { "string", &asn_base_charstring_s }
-};
-
-asn_type my_sequence = {
-    "MySequence",
-    {APPLICATION, 1},
-    SEQUENCE,
-    2,
-    {&my_entry_array}
-};
-#endif
-
 
 char buffer [1000];
 
