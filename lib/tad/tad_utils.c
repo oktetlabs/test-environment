@@ -1625,14 +1625,6 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value *template,
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
 
-    rc = asn_write_component_value(pattern_unit, pdus, "pdus");
-    if (rc != 0) 
-    {
-        asn_free_value(pdus);
-        asn_free_value(pattern_unit);
-        return rc;
-    }
-    asn_free_value(pdus);
 
     for (layer = 0; layer < csap->depth; layer++)
     {
@@ -1661,14 +1653,16 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value *template,
              __FUNCTION__, layer, rc);
 
         if (rc == 0) 
-            rc = asn_write_component_value(gen_pattern_pdu, 
-                                           layer_pattern, "");
+            rc = asn_put_choice(gen_pattern_pdu, layer_pattern);
 
+        VERB("%s(): put choice: %r", __FUNCTION__, rc);
         if (rc == 0) 
             rc = asn_insert_indexed(pattern_unit, gen_pattern_pdu, 
                                     layer, "pdus");
         else
             asn_free_value(gen_pattern_pdu);
+
+        VERB("%s(): insert into pdus: %r", __FUNCTION__, rc);
 
         asn_free_value(layer_pattern);
         asn_free_value(layer_tmpl_pdu);
