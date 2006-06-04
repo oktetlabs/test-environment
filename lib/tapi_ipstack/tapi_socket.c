@@ -90,7 +90,14 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
 
     csap_spec       = asn_init_value(ndn_csap_spec);
     csap_level_spec = asn_init_value(ndn_generic_csap_level);
+#define EXP 1
+
+#if EXP
+    csap_socket     = asn_retrieve_descendant(csap_level_spec, &rc,
+                                              "#socket");
+#else
     csap_socket     = asn_init_value(ndn_socket_csap);
+#endif
 
     rc = asn_write_value_field(csap_socket, NULL, 0,
                                "type.#tcp-server");
@@ -105,9 +112,11 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
                          "local-port.#plain");
     if (rc != 0) goto cleanup;
 
+#if !EXP
     rc = asn_write_component_value(csap_level_spec, csap_socket,
                                    "#socket");
     if (rc != 0) goto cleanup;
+#endif
 
     rc = asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
     if (rc != 0) goto cleanup;
