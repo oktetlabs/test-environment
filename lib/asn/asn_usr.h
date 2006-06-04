@@ -312,6 +312,17 @@ extern asn_value *asn_init_value_tagged(const asn_type *type,
 extern asn_value *asn_copy_value(const asn_value *value);
 
 /**
+ * Move content of ASN value to another ASN value instance.
+ *
+ * @param dst       ASN value, which content should be changed
+ *                  to be identical to 'src'.
+ * @param src       ASN value to be copied.
+ *
+ * @return zero on success, otherwise error code.
+ */
+extern te_errno asn_assign_value(asn_value *dst, const asn_value *src);
+
+/**
  * Free memory allocalted by ASN value instance.
  *
  * @param value       ASN value to be destroyed
@@ -652,7 +663,37 @@ extern te_errno asn_get_indexed(const asn_value *container,
                                 int index, const char *labels);
 
 
+/**
+ * Write primitive syntax value. 
+ *
+ * @param value         ASN value with primitive syntax. 
+ * @param data          Data to be written, should be in nature 
+ *                      C format for data type respective to leaf syntax.
+ * @param d_len         Length of the data.
+ *                      Measured in octets for all types except OID and
+ *                      BIT_STRING; for OID measured in sizeof(int);
+ *                      for BIT_STRING measured in bits.
+ *
+ * @return zero on success or error code.
+ */ 
+extern te_errno asn_write_primitive(asn_value *value,
+                                    const void *data, size_t d_len);
 
+
+
+
+/**
+ * Put 'value' as CHOICE of 'container'. Free other subvalue of 
+ * 'container', if there is one. 
+ * Check that type of 'value' is one of possible choices in 'container'.
+ *
+ * @param value         ASN value of CHOICE syntax, which subvalue
+ *                      should be changed.
+ * @param value         ASN value to be put into 'container'.
+ *
+ * @return status code
+ */
+extern te_errno asn_put_choice(asn_value *container, asn_value *value);
 
 /* 
  * ======================================================================
@@ -733,6 +774,7 @@ extern te_errno asn_put_child_value(asn_value *container,
 extern te_errno asn_put_child_value_by_label(asn_value *container,
                                              asn_value *subvalue, 
                                              const char *label);
+
 
 /**
  * Write data into primitive syntax leaf in specified ASN value.

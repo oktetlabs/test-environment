@@ -66,11 +66,11 @@ main(void)
 #endif
 
     a = 1;
-    asn_write_value_field(for_ins, &a, sizeof(a), "");
+    asn_write_primitive(for_ins, &a, sizeof(a));
     r = asn_insert_indexed(seq_val, asn_copy_value(for_ins), 0, "");
     if (r) { fprintf(stderr, "insert error code: %6x\n", r); return r; }
 
-    a = 2;
+    a = 20;
     asn_write_value_field(for_ins, &a, sizeof(a), "");
     r = asn_insert_indexed(seq_val, asn_copy_value(for_ins), -1, "");
     if (r) { fprintf(stderr, "insert error code: %6x\n", r); return r; }
@@ -121,7 +121,7 @@ main(void)
     asn_remove_indexed(n_array, 0, "array");
 
     a = 55;
-    asn_write_value_field(for_ins, &a, sizeof(a), "");
+    asn_write_primitive(for_ins, &a, sizeof(a));
     r = asn_insert_indexed(n_array, asn_copy_value(for_ins), 1, "array");
 
     asn_free_value(for_ins);

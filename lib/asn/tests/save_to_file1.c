@@ -36,6 +36,7 @@ const char *test_strings[] = {
     "aaaa",
     "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"",
     "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+    "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
     "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"",
 };
 
@@ -82,7 +83,8 @@ main(void)
                                       &ret_p, &syms_parsed);
         if (rc != 0)
         {
-            TEST_FAIL("Cannot parse file %s", te_rc_err2str(rc));
+            TEST_FAIL("Iter %d, string %s; Cannot parse file %s",
+                      i, test_strings[i], te_rc_err2str(rc));
             return 4;
         }
 

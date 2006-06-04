@@ -1105,6 +1105,7 @@ asn_count_len_choice(const asn_value *value, unsigned int indent)
         v_el = value->data.array[0];
         if (v_el)
         { 
+            assert(v_el->name != NULL);
             all_used += strlen(v_el->name) + 1; /* ₁ symbol for ':'*/
             all_used += asn_count_txt_len(v_el, indent);
         } 
