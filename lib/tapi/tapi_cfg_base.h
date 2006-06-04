@@ -221,6 +221,9 @@ tapi_cfg_base_if_add_net_addr(const char *ta, const char *ifname,
  *                      If this parameter is NULL, then save
  *                      the first address in address list returned by
  *                      'ip addr list' output.
+ *                      If one need to delete all addresses on interface,
+ *                      he have to pass sockaddr with family 'AF_INET'
+ *                      and  address 'INADDR_ANY'.
  *
  * @return Status code
  */ 
