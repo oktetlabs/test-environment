@@ -4648,15 +4648,19 @@ do_task_mgt(struct iscsi_conn *conn,
 {
 	SHARED struct iscsi_cmnd *ref_command;
 
-	if (cmnd->ref_function == TMF_ABORT_TASK) {
+	if (cmnd->ref_function == TMF_ABORT_TASK) 
+    {
 		ref_command = search_tags(conn, cmnd->ref_task_tag, ALL_ONES, 1);
-		if (ref_command == NULL) {
+		if (ref_command == NULL) 
+        {
 			/* can't find command with this ITT, check the RefCmdSN field */
 			TRACE_ERROR("No command with ITT %u\n",
 						cmnd->ref_task_tag);
 			cmnd->response = get_abort_response(conn->session, cmnd);
 			cmnd->state = ISCSI_MGT_FN_DONE;
-		} else {
+		} 
+        else
+        {
 			TRACE_ERROR("Aborting opcode 0x%02x, ITT %u, xfer_len %u, "
 						"data_done %u, r2t_data %d, r2t_sn %u, state %u\n",
 						ref_command->opcode_byte,
@@ -4668,12 +4672,27 @@ do_task_mgt(struct iscsi_conn *conn,
 						ref_command->state);
 			cmnd->message = rx_task_mgmt_fn(conn->dev->device,
                                             cmnd->ref_function, ref_command->cmnd);
-			if (!cmnd->message) {
+			if (!cmnd->message)
+            {
 				cmnd->response = FUNCTION_REJECTED;
 				cmnd->state = ISCSI_MGT_FN_DONE;
 			}
 		}
-	} else {
+    }
+    else if (cmnd->ref_function == TMF_LUN_RESET)
+    {
+        TRACE_ERROR("Resetting LUN %Ld", cmnd->lun);
+        cmnd->message = rx_task_mgmt_fn(conn->dev->device,
+                                        cmnd->ref_function, 
+                                        &cmnd->lun);
+        if (!cmnd->message)
+        {
+            cmnd->response = FUNCTION_REJECTED;
+            cmnd->state = ISCSI_MGT_FN_DONE;
+        }
+    }
+	else 
+    {
 		/* we don't deal with this task management function (yet) */
 		cmnd->response = TASK_MANAGEMENT_FUNCTION_NOT_SUPPORTED;
 		cmnd->state = ISCSI_MGT_FN_DONE;

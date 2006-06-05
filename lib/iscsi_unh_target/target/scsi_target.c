@@ -1362,12 +1362,7 @@ rx_task_mgmt_fn(struct Scsi_Target_Device *dev, int fn, SHARED void *value)
 	}
     ipc_mutex_unlock(target_data->cmd_queue_lock);
 
-	/* wake up scsi_target_process_thread */
-#if 0
-	if (atomic_read(&target_data->target_sem.count) <= 0) {
-		up(&target_data->target_sem);
-	}
-#endif
+    scsi_target_process();
 
 	return msg;
 }
