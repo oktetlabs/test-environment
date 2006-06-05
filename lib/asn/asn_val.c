@@ -1237,7 +1237,7 @@ asn_get_indexed(const asn_value *container, asn_value **subval,
 
     if (indexed_value->syntax != SEQUENCE_OF && 
         indexed_value->syntax != SET_OF)
-        return TE_EINVAL;
+        return TE_EASNWRONGTYPE;
 
     if (index < 0) 
         index += (int)indexed_value->len;
