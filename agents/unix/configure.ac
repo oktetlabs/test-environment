@@ -366,7 +366,6 @@ AM_CONDITIONAL(CFG_UNIX_DAEMONS_VTUND,
     [expr "$with_cfg_unix_daemons" : ".*vtund" >/dev/null])
 AM_CONDITIONAL([CFG_UNIX_DAEMONS_RADIUS],
     [expr "$with_cfg_unix_daemons" : ".*radius" >/dev/null])
-AM_CONDITIONAL(ISCSI_TARGET_USE, test -n "$with_iscsi")
 
 if test -n "$ifcfg_via_netlink" ; then
     # On Linux netlink is default way to configure interfaces and IP
@@ -381,6 +380,7 @@ else
 fi
 AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$use_netlink")
 
+AM_CONDITIONAL(ISCSI_TARGET_USE, test -n "$with_iscsi")
 if test -n "$with_iscsi"; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_ISCSI"
     EXTRA_LDADD="$EXTRA_LDADD -liscsi_unh_target -liscsi_initiator_conf"

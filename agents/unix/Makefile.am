@@ -31,7 +31,11 @@ SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o
 SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
               $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
               $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
-              conf/libconf.a rpc/libtarpc.a
+              conf/libconf.a rpc/libtarpc.a 
+
+if ISCSI_TARGET_USE
+SYMTBL_LIBS+=$(DESTDIR)/$(prefix)/../@host@/lib/libiscsi_unh_target.a
+endif      
 
 ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
