@@ -1720,8 +1720,6 @@ main(int argc, char **argv)
         }
     }
 
-    unlink(argv[0]);
-
     /* FIXME Correct retval to return */
     return retval;
 }
