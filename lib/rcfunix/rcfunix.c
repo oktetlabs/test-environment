@@ -562,9 +562,9 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
     }
 
     if (ta->is_local)
-        sprintf(cmd, "rm -f /tmp/%s%s", ta->ta_type, ta->postfix);
+        sprintf(cmd, "rm -rf /tmp/%s%s", ta->ta_type, ta->postfix);
     else
-        sprintf(cmd, RCFUNIX_SSH "%s %s \"rm -f /tmp/%s%s\"",
+        sprintf(cmd, RCFUNIX_SSH "%s %s \"rm -rf /tmp/%s%s\"",
                 ta->key, ta->host, ta->ta_type, ta->postfix);
     rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
