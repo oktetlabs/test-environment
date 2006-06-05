@@ -405,7 +405,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
         fd = open(filename, O_RDONLY, S_IRWXU | S_IRWXG | S_IRWXO);
         if (fd < 0)
         {
-            ERROR("failed to open file '%s'", filename);
+            ERROR("Failed to open file '%s'", filename);
             rc = TE_RC(TE_RCF_PCH, TE_ENOENT);
             goto reject;
         }
