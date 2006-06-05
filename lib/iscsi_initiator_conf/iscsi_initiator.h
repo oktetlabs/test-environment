@@ -233,7 +233,9 @@ typedef struct iscsi_initiator_data {
     pthread_mutex_t       initiator_mutex;    /**< Request mutex */
     sem_t                 request_sem;
                           /**< Pending request semaphore */
+    te_bool               request_thread_started;
     pthread_t             request_thread;
+    pthread_t             timer_thread;
     iscsi_connection_req *request_queue_head; /**< Request queue head */
     iscsi_connection_req *request_queue_tail; /**< Request queue tail */
 } iscsi_initiator_data_t;
@@ -282,11 +284,14 @@ extern te_errno iscsi_win32_disable_readahead(const char *devname);
 
 extern te_errno iscsi_win32_finish_cli(void);
 
-extern void iscsi_win32_report_error(const char *function, int line);
+extern void iscsi_win32_report_error(const char *function, int line,
+                                     unsigned long errcode);
 
-#define ISCSI_WIN32_REPORT_ERROR() iscsi_win32_report_error(__FUNCTION__, __LINE__)
+#define ISCSI_WIN32_REPORT_ERROR() iscsi_win32_report_error(__FUNCTION__, __LINE__, 0)
+#define ISCSI_WIN32_REPORT_RESULT(_rc) iscsi_win32_report_error(__FUNCTION__, __LINE__, (_rc))
 
 #define ISCSI_AGENT_TYPE TE_TA_WIN32
+
 
 extern te_errno iscsi_initiator_win32_set(iscsi_connection_req *req);
 extern te_errno iscsi_win32_prepare_device(iscsi_connection_data_t *conn);

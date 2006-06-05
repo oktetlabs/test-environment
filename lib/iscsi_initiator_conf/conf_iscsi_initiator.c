@@ -813,12 +813,10 @@ iscsi_initator_conn_request_thread(void *arg)
     int old_status;
     int rc = 0;
 
-    pthread_t timer_thread;
-
     UNUSED(arg);
     
 
-    if (pthread_create(&timer_thread, NULL, 
+    if (pthread_create(&init_data->timer_thread, NULL, 
                        iscsi_initiator_timer_thread, NULL))
     {
         ERROR("Unable to start watchdog thread");
@@ -850,9 +848,8 @@ iscsi_initator_conn_request_thread(void *arg)
                 iscsi_openiscsi_stop_daemon();
             }
 #endif
-            pthread_cancel(timer_thread);
-            pthread_join(timer_thread, NULL);
-            return NULL;
+            free(current_req);
+            continue;
         }
 
         target = init_data->targets + current_req->target_id;
@@ -1011,6 +1008,18 @@ iscsi_initator_conn_request_thread(void *arg)
             }
         }
         free(current_req);    
+    }
+}
+
+static void
+kill_request_thread(void)
+{
+    if (init_data->request_thread)
+    {
+        pthread_cancel(init_data->timer_thread);
+        pthread_join(init_data->timer_thread, NULL);
+        pthread_cancel(init_data->request_thread);
+        pthread_join(init_data->request_thread, NULL);
     }
 }
 
@@ -1250,7 +1259,9 @@ iscsi_target_data_add(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(value);
 
-    if (init_data->n_targets == 0)
+    
+    if (!init_data->request_thread_started ||
+        pthread_kill(init_data->request_thread, 0) != 0)
     {
         int rc;
         rc = pthread_create(&init_data->request_thread, NULL, 
@@ -1260,6 +1271,11 @@ iscsi_target_data_add(unsigned int gid, const char *oid,
         {
             ERROR("Cannot create a connection request processing thread");
             return TE_OS_RC(ISCSI_AGENT_TYPE, rc);
+        }
+        if (!init_data->request_thread_started)
+        {
+            atexit(kill_request_thread);
+            init_data->request_thread_started = TRUE;
         }
     }
     
@@ -1290,7 +1306,6 @@ iscsi_target_data_del(unsigned int gid, const char *oid,
             /* to stop the thread and possibly a service daemon */
             iscsi_post_connection_request(ISCSI_ALL_CONNECTIONS, ISCSI_ALL_CONNECTIONS, 
                                           ISCSI_CONNECTION_REMOVED, FALSE);
-            pthread_join(init_data->request_thread, NULL);
         }
     }
 
