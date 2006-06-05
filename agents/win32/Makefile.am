@@ -161,3 +161,4 @@ endif
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) $(TE_DEPENDENCIES)
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
+install-data:
