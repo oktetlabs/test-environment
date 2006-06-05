@@ -345,10 +345,10 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit,
     char *val;
     
     const char *postfix[] = { 
-        "_rpcserver64 %s %s",
-        "_rpcserver32 %s %s",  
-        "_rpcserver %s %s",  
-        " rpcserver %s %s"
+        "rpcserver64 %s %s",
+        "rpcserver32 %s %s",  
+        "rpcserver %s %s",  
+        "ta rpcserver %s %s"
     };
     
     int i = 0;
@@ -358,11 +358,19 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit,
     SYSTEM_INFO         sys_info;
     
     strcpy(cmdline, GetCommandLine());
-    if ((tmp = strstr(cmdline, "_rpcserver")) == NULL &&
-        (tmp = strchr(cmdline, ' ')) == NULL)
+    if ((tmp = strstr(cmdline, " ")) == NULL)
     {
-        tmp = cmdline + strlen(cmdline);
+        ERROR("Failed to obtain pathname of the executable");
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
+    *tmp = 0;
+    if ((tmp = strrchr(cmdline, '/')) == NULL &&
+        (tmp = strrchr(cmdline, '\\')) == NULL)
+    {
+        ERROR("Unexpected pathname of the executable: %s", cmdline);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
+    }
+    tmp++;
 
     memset(&sys_info, 0, sizeof(sys_info));
     GetNativeSystemInfo(&sys_info);
