@@ -123,12 +123,12 @@
 
 /** UNIX Test Agent descriptor */
 typedef struct unix_ta {
-    char    ta_name[RCF_MAX_NAME];      /**< Test agent name */
-    char    ta_type[RCF_MAX_NAME];      /**< Test Agent type */
-    char    host[RCF_MAX_NAME];         /**< Test Agent host */
-    char    port[RCF_MAX_NAME];         /**< TCP port */
-    char    exec_name[RCF_MAX_PATH];    /**< Name of the started file */
-    char    key[RCF_MAX_PATH];          /**< Private ssh key file */
+    char    ta_name[RCF_MAX_NAME];  /**< Test agent name */
+    char    ta_type[RCF_MAX_NAME];  /**< Test Agent type */
+    char    host[RCF_MAX_NAME];     /**< Test Agent host */
+    char    port[RCF_MAX_NAME];     /**< TCP port */
+    char    postfix[RCF_MAX_PATH];  /**< Postfix appended to TA directory */
+    char    key[RCF_MAX_PATH];      /**< Private ssh key file */
 
     te_bool sudo;       /**< Manipulate process using sudo */
     te_bool notcopy;    /**< Do not copy TA image to remote host */
@@ -297,19 +297,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         VERB("FATAL ERROR: TE_INSTALL is not exported");
         return TE_ENOENT;
     }
-    sprintf(path, "%s/agents/bin/ta%s", installdir, ta_type);
-
-#if HAVE_SYS_STAT_H
-    {
-        struct stat statbuf;
-
-        if (stat(path, &statbuf) != 0 || !(statbuf.st_mode & S_IXOTH))
-        {
-            ERROR("Permission denied to execute %s", path);
-            return TE_ENOENT;
-        }
-    }
-#endif
+    sprintf(path, "%s/agents/%s", installdir, ta_type);
 
     if ((ta = *(unix_ta **)(handle)) == NULL &&
         (ta = (unix_ta *)calloc(1, sizeof(unix_ta))) == NULL)
@@ -327,10 +315,10 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     ta->flags = flags;
     tmp = getenv("LOGNAME");
-    sprintf(ta->exec_name, "ta%s_%s_%u_%u", ta_type,
+    sprintf(ta->postfix, "_%s_%u_%u", 
             (tmp == NULL) ? "" : tmp, (unsigned int)time(NULL), seqno++);
 
-    VERB("Executable name '%s'", ta->exec_name);
+    VERB("Unique postfix '%s'", ta->postfix);
 
     if ((dup = conf_str_dup = strdup(conf_str)) == NULL)
     {
@@ -400,16 +388,16 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * to see possible problems.
          */
         if (ta->notcopy)
-            sprintf(cmd, "ln -s %s /tmp/%s", path, ta->exec_name);
+            sprintf(cmd, "ln -s %s /tmp/%s%s", path, ta_type, ta->postfix);
         else
-            sprintf(cmd, "cp -a %s /tmp/%s", path, ta->exec_name);
+            sprintf(cmd, "cp -a %s /tmp/%s%s", path, ta_type, ta->postfix);
     }
     else
     {
         if (ta->notcopy)
         {
-            sprintf(cmd, RCFUNIX_SSH "%s %s ln -s %s /tmp/%s",
-                    ta->key, ta->host, path, ta->exec_name);
+            sprintf(cmd, RCFUNIX_SSH "%s %s ln -s %s /tmp/%s%s",
+                    ta->key, ta->host, path, ta_type, ta->postfix);
         }
         else
         {
@@ -419,8 +407,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
              * Be quite, but DO NOT suppress command output in order
              * to have to see possible problems.
              */
-            sprintf(cmd, "scp -Bpq %s %s %s:/tmp/%s",
-                    ta->key, path, ta->host, ta->exec_name);
+            sprintf(cmd, "scp -rBpq %s %s %s:/tmp/%s%s",
+                    ta->key, path, ta->host, ta_type, ta->postfix);
         }
     }
 
@@ -428,62 +416,10 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     if (!(*flags & TA_FAKE) &&
         ((rc = system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT)) != 0))
     {
-        ERROR("Failed to copy TA image %s to the %s:/tmp: %r",
-              ta->exec_name, ta->host, rc);
+        ERROR("Failed to copy TA images/data %s to the %s:/tmp: %r",
+              ta_type, ta->host, rc);
         free(dup);
         return rc;
-    }
-    
-    if (!(*flags & TA_FAKE) && strcmp_start("win32", ta->ta_type) == 0)
-    {
-        /* Copy RPC server image */
-        FILE *f;
-        
-        sprintf(cmd, "%s_rpcserver.exe", path);
-        if ((f = fopen(cmd, "r")) != NULL)
-        {
-            fclose(f);
-            sprintf(cmd, 
-                    "scp -Bpq %s %s_rpcserver.exe %s:/tmp/%s_rpcserver",
-                    ta->key, path, ta->host, ta->exec_name);
-                
-            if ((rc = system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT)) != 0)
-            {
-                ERROR("Failed to copy RPC server image %s_rpcserver "
-                      "to the %s:/tmp: %r", ta->exec_name, ta->host, rc);
-                sprintf(cmd, RCFUNIX_SSH "%s %s rm /tmp/%s", 
-                        ta->key, ta->host, ta->exec_name);
-                
-                if (system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT) != 0)
-                    ERROR("Failed to remove TA image from %s", ta->host);
-                    
-                free(dup);
-                return rc;
-            }
-        }
-
-        sprintf(cmd, "%s_rpcserver64.exe", path);
-        if ((f = fopen(cmd, "r")) != NULL)
-        {
-            fclose(f);
-            sprintf(cmd, 
-                    "scp -Bpq %s %s_rpcserver64.exe %s:/tmp/%s_rpcserver64",
-                    ta->key, path, ta->host, ta->exec_name);
-                
-            if ((rc = system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT)) != 0)
-            {
-                ERROR("Failed to copy RPC server image %s_rpcserver "
-                      "to the %s:/tmp: %r", ta->exec_name, ta->host, rc);
-                sprintf(cmd, RCFUNIX_SSH "%s %s rm /tmp/%s*", 
-                        ta->key, ta->host, ta->exec_name);
-                
-                if (system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT) != 0)
-                    ERROR("Failed to remove TA image from %s", ta->host);
-                    
-                free(dup);
-                return rc;
-            }
-        }
     }
     
     /* Clean up command string */
@@ -508,8 +444,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
      * Test Agent is always running in background, therefore it's
      * necessary to redirect its stdout and stderr to a file.
      */
-    sprintf(cmd + strlen(cmd), "/tmp/%s %s %s %s",
-            ta->exec_name, ta->ta_name, ta->port,
+    sprintf(cmd + strlen(cmd), "/tmp/%s%s/ta %s %s %s",
+            ta_type, ta->postfix, ta->ta_name, ta->port,
             (conf_str == NULL) ? "" : conf_str);
 
     /* Enquote command in double quotes for non-local agent */
@@ -519,11 +455,6 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
     sprintf(cmd + strlen(cmd), " 2>&1 | te_tee %s %s 10 >ta.%s ", 
             TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
-
-#if 0
-    /* Always run in background */
-    strcat(cmd, " &");
-#endif
 
     free(conf_str_dup);
 
@@ -603,45 +534,41 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
 
         if (ta->is_local)
             sprintf(cmd,
-                    "%skillall %s " RCFUNIX_REDIRECT,
-                    ta->sudo ? "sudo " : "" , ta->exec_name);
+                    "%skillall /tmp/%s%s/ta " RCFUNIX_REDIRECT,
+                    ta->sudo ? "sudo " : "" , ta->ta_type, 
+                    ta->postfix);
         else
             sprintf(cmd,
-                    RCFUNIX_SSH "%s %s \"%skillall %s\" " RCFUNIX_REDIRECT,
+                    RCFUNIX_SSH "%s %s \"%skillall /tmp/%s%s/ta\" " 
+                    RCFUNIX_REDIRECT,
                     ta->key, ta->host, ta->sudo ? "sudo " : "" , 
-                    ta->exec_name);
+                    ta->ta_type, ta->postfix);
         rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
 
         if (ta->is_local)
             sprintf(cmd,
-                    "%skillall -9 %s " RCFUNIX_REDIRECT,
-                    ta->sudo ? "sudo " : "" , ta->exec_name);
+                    "%skillall -9 /tmp/%s%s/ta " RCFUNIX_REDIRECT,
+                    ta->sudo ? "sudo " : "" , ta->ta_type, ta->postfix);
         else
             sprintf(cmd,
-                    RCFUNIX_SSH "%s %s \"%skillall -9 %s\" " 
+                    RCFUNIX_SSH "%s %s \"%skillall -9 /tmp/%s%s/ta\" " 
                     RCFUNIX_REDIRECT, ta->key, ta->host, 
-                    ta->sudo ? "sudo " : "" , ta->exec_name);
+                    ta->sudo ? "sudo " : "" , ta->ta_type, ta->postfix);
         rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
     }
 
-    /* FIXME */
-    if ((*(ta->flags) & TA_DEAD) ||
-        strcmp_start("win32", ta->ta_type) == 0 ||
-        strcmp_start("solaris2", ta->ta_type) == 0)
-    {
-        if (ta->is_local)
-            sprintf(cmd, "rm -f /tmp/%s*", ta->exec_name);
-        else
-            sprintf(cmd, RCFUNIX_SSH "%s %s \"rm -f /tmp/%s*\"",
-                    ta->key, ta->host, ta->exec_name);
-        rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
-        if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
-            return rc;
-    }
+    if (ta->is_local)
+        sprintf(cmd, "rm -f /tmp/%s%s", ta->ta_type, ta->postfix);
+    else
+        sprintf(cmd, RCFUNIX_SSH "%s %s \"rm -f /tmp/%s%s\"",
+                ta->key, ta->host, ta->ta_type, ta->postfix);
+    rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+    if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
+        return rc;
     
     if (ta->start_pid > 0)
     {

@@ -4,52 +4,40 @@ SUBDIRS=rpc conf
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../@host@/include $(TE_CPPFLAGS) \
-              -include te_config.h -include config.h @EXTRA_CPPFLAGS@
+              -include te_config.h -include config.h $(EXTRA_CPPFLAGS)
 
 AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS)
 
-#
-# -lrcfpch must be before -l@TAD@ since rcfpch contains references to
-# functions provided by -l@TAD@. @TE_LDADD@ must be after -l@TAD@,
-# since @TE_LDADD@ may contain ASN and NDN libraries.
-#
-TA_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch -l@TAD@ @TE_LDADD@ \
-           -lrpcxdr -lrpc_types -lconf_oid -lloggerta -lrcfpch -ltools
-
-noinst_HEADERS = \
-	unix_internal.h 
-
-TA_SOURCES = \
-	main.c \
-	ftp_routines.c \
-	log_serial.c
-
-TA_SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o 
-
-CLEANFILES = symtbl.c
+AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../@host@/lib -Wl,-Bstatic @TE_LDFLAGS@
 
 LIBS = -Wl,-Bdynamic @TAD_LIBS@ @LIBS@
 
-AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../@host@/lib -Wl,-Bstatic @TE_LDFLAGS@
+tadir=$(prefix)/@with_name@
 
-bin_PROGRAMS = ta@with_name@
+noinst_HEADERS = unix_internal.h 
 
-ta@with_name@_SOURCES = $(TA_SOURCES)
-nodist_ta@with_name@_SOURCES = $(TA_NODIST_SOURCES)
+ta_PROGRAMS = ta
 
-ta@with_name@_LDADD = $(TA_LDADD) @EXTRA_LDADD@
+ta_SOURCES = main.c ftp_routines.c log_serial.c
 
-SYMTBL_LIBS = \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
-    conf/libconf.a rpc/libtarpc.a
+ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch \
+           -l@TAD@ @TE_LDADD@ \
+           -lrpcxdr -lrpc_types -lconf_oid -lloggerta -lrcfpch -ltools \
+           $(EXTRA_LDADD)
 
-ta@with_name@_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
+CLEANFILES = symtbl.c
+
+SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o 
+SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
+              $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
+              $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
+              conf/libconf.a rpc/libtarpc.a
+
+ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a 
 
-symtbl.c: $(TA_SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
+symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 

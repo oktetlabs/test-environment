@@ -29,8 +29,4 @@ rpc_unsupported.c: $(DESTDIR)/$(prefix)/../@host@/include/tarpc.h \
 rpc_supported.h: tarpc_server.o @TE_DEPENDENCIES@
 	$(srcdir)/../../../engine/builder/te_rpc_supported "${NM}" $^
 
-else
-
-EXTRA_DIST = tarpc_server.c 
-        
 endif

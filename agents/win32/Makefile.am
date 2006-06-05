@@ -6,11 +6,13 @@ AM_CPPFLAGS=$(TE_CPPFLAGS) -I$(DESTDIR)/$(prefix)/../@host@/include \
 AM_CFLAGS=$(TE_CFLAGS)
 AM_LDFLAGS=$(TE_LDFLAGS) -L$(DESTDIR)/$(prefix)/../@host@/lib
 
+tadir=$(prefix)/@with_name@
+
 noinst_HEADERS=tarpc_server.h 
 
-ta@with_name@_SOURCES=win32.c win32conf.c inet_pton.c common.c
+ta_SOURCES=win32.c win32conf.c inet_pton.c common.c
 
-ta@with_name@_DEPENDENCIES=$(TE_DEPENDENCIES) symtbl.o \
+ta_DEPENDENCIES=$(TE_DEPENDENCIES) symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdrta.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpc_types.a \
@@ -19,12 +21,11 @@ ta@with_name@_DEPENDENCIES=$(TE_DEPENDENCIES) symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a
 
-EXTRA_DIST=
 CLEANFILES=symtbl.c
 
 SYMTBL_OBJECTS=win32.o 
 SYMTBL_LIBS= $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
-             $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a 
+             $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a
 
 if CFG_RCF_RPC
 
@@ -34,8 +35,8 @@ LDADD=symtbl.o \
 -lexpat
 
 AM_CPPFLAGS+=-DRCF_RPC -I.
-ta@with_name@_SOURCES+=tarpc_server.c 
-nodist_ta@with_name@_SOURCES=rpc_unsupported.c rpc_supported.h
+ta_SOURCES+=tarpc_server.c 
+nodist_ta_SOURCES=rpc_unsupported.c rpc_supported.h
 
 BUILT_SOURCES=rpc_unsupported.c rpc_supported.h
 
@@ -54,12 +55,11 @@ rpc_supported.h: tarpc_server.o @TE_DEPENDENCIES@
 
 if CFG_STANDALONE_RPCSERVER
 
-bin_PROGRAMS=ta@with_name@ ta@with_name@_rpcserver \
-             ta@with_name@_rpcserver32 ta@with_name@_rpcserver64
+ta_PROGRAMS=ta rpcserver rpcserver32 rpcserver64
  
 CLEANFILES+=rpcserver_symtbl.c
 
-ta@with_name@_rpcserver_DEPENDENCIES=\
+rpcserver_DEPENDENCIES=\
     rpcserver_symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a \
@@ -68,15 +68,15 @@ ta@with_name@_rpcserver_DEPENDENCIES=\
     $(DESTDIR)/$(prefix)/../@host@/lib/librpc_types.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdrta.a 
 
-ta@with_name@_rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c 
+rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c 
 
-nodist_ta@with_name@_rpcserver_SOURCES=rpc_unsupported.c rpc_supported.h
-ta@with_name@_rpcserver32_SOURCES=
-ta@with_name@_rpcserver64_SOURCES=
+nodist_rpcserver_SOURCES=rpc_unsupported.c rpc_supported.h
+rpcserver32_SOURCES=
+rpcserver64_SOURCES=
 
-ta@with_name@_rpcserver_LDADD=rpcserver_symtbl.o $(TE_LDADD) -lrpcxdrta \
-                              -lrpc_types -lrcfpch -lloggerta -ltools -lrpc \
-                              -lws2_32 -lmswsock -lwsock32 -liphlpapi 
+rpcserver_LDADD=rpcserver_symtbl.o $(TE_LDADD) -lrpcxdrta \
+                -lrpc_types -lrcfpch -lloggerta -ltools -lrpc \
+                -lws2_32 -lmswsock -lwsock32 -liphlpapi 
 
 rpcserver_symtbl.c: tarpc_server.o common.o \
                     $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a
@@ -84,47 +84,39 @@ rpcserver_symtbl.c: tarpc_server.o common.o \
 
 # Native build
 
-RPCSERVER_NAME=ta@with_name@_rpcserver$(EXEEXT)
-RPCSERVER32_NAME=ta@with_name@_rpcserver32$(EXEEXT)
-RPCSERVER64_NAME=ta@with_name@_rpcserver64$(EXEEXT)
-
 RPCSERVER_LIBS="librcfpch.a libloggerta.a libtools.a librpc.a librpc_types.a \
                 ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib user32.lib"
 
-RPCSERVER_SRC= \
-    $(ta@with_name@_rpcserver_SOURCES) \
-    rpcserver_symtbl.c rpc_unsupported.c \
-    ${srcdir}/../../lib/rpcxdr/rpc_xdr.c \
-    ../../lib/@_host_@_rpcxdr/tarpc_xdr.c \
-    @PRIV_LIB_DIR@/talib/rpc.c
+RPCSERVER_SRC= $(rpcserver_SOURCES) \
+               rpcserver_symtbl.c rpc_unsupported.c \
+               ${srcdir}/../../lib/rpcxdr/rpc_xdr.c \
+               ../../lib/@_host_@_rpcxdr/tarpc_xdr.c \
+               @PRIV_LIB_DIR@/talib/rpc.c
 
-ta@with_name@_rpcserver32$(EXEEXT): $(RPCSERVER_SRC) \
-                                    $(ta@with_name@_rpcserver_DEPENDENCIES)
+rpcserver32$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
         $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
         i686-pc-windows $@ \"$(RPCSERVER_LIBS)\" $^
         
-ta@with_name@_rpcserver64$(EXEEXT): $(RPCSERVER_SRC) \
-                                    $(ta@with_name@_rpcserver_DEPENDENCIES)
+rpcserver64$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
         $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
         x86_64-pc-windows $@ \"$(RPCSERVER_LIBS)\" $^
 
 install-exec-hook:
-	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
-	if test -e $(RPCSERVER32_NAME) -a ! -s $(RPCSERVER32_NAME) \
+	if test -e rpcserver32$(EXEEXT) -a ! -s rpcserver32$(EXEEXT) \
                 -a -n "$$TE_WIN32_BUILD_HOST" ; then \
-            rm ta@with_name@_rpcserver* ; $(MAKE) install ; \
+            rm rpcserver* ; $(MAKE) install ; \
         fi
-	if test ! -s $(DESTDIR)/$(bindir)/$(RPCSERVER32_NAME) ; then \
-            rm -f $(DESTDIR)/$(bindir)/$(RPCSERVER32_NAME) ; \
+	if test ! -s $(DESTDIR)/$(tadir)/rpcserver32$(EXEEXT) ; then \
+            rm -f $(DESTDIR)/$(tadir)/rpcserver32$(EXEEXT) ; \
         fi
-	if test ! -s $(DESTDIR)/$(bindir)/$(RPCSERVER64_NAME) ; then \
-            rm -f $(DESTDIR)/$(bindir)/$(RPCSERVER64_NAME) ; \
+	if test ! -s $(DESTDIR)/$(tadir)/rpcserver64$(EXEEXT) ; then \
+            rm -f $(DESTDIR)/$(tadir)/rpcserver64$(EXEEXT) ; \
         fi
-	if test -s $(DESTDIR)/$(bindir)/$(RPCSERVER32_NAME) ; then \
-            mv $(DESTDIR)/$(bindir)/$(RPCSERVER32_NAME) \
-               $(DESTDIR)/$(bindir)/$(RPCSERVER_NAME) ; \
+	if test -s $(DESTDIR)/$(tadir)/rpcserver32$(EXEEXT) ; then \
+            mv $(DESTDIR)/$(tadir)/rpcserver32$(EXEEXT) \
+               $(DESTDIR)/$(tadir)/rpcserver$(EXEEXT) ; \
         fi
 
 clean-local:
@@ -143,16 +135,11 @@ LDADD+=-liscsi_initiator_conf
 
 AM_CPPFLAGS+=-DWITH_ISCSI
 
-ta@with_name@_DEPENDENCIES += $(DESTDIR)/$(prefix)/../@host@/lib/libiscsi_initiator_conf.a
+ta_DEPENDENCIES += $(DESTDIR)/$(prefix)/../@host@/lib/libiscsi_initiator_conf.a
 
 endif
 
-bin_PROGRAMS=ta@with_name@ 
-
-EXTRA_DIST+=rpcserver.c
-
-install-exec-hook:
-	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
+ta_PROGRAMS=ta
 
 endif
 
@@ -160,18 +147,13 @@ else
 
 # No RPC
 
-bin_PROGRAMS=ta@with_name@ 
+ta_PROGRAMS=ta
 
 LDADD=symtbl.o \
 -lrcfpch -lrpcxdr -lrpc_types -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta \
 -lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools \
 -lcygwin -lexpat 
 
-EXTRA_DIST+=tarpc_server.c rpcserver.c
-
-install-exec-hook:
-	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
-        
 endif
 
 # TA symbol table
@@ -179,5 +161,3 @@ endif
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) $(TE_DEPENDENCIES)
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
-uninstall-hook:
-	rm -f $(DESTDIR)/$(bindir)/ta@with_name@ 

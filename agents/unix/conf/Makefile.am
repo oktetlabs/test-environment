@@ -12,10 +12,7 @@ AM_YFLAGS = -d
 
 tadir=$(prefix)/@with_name@
 
-#ta_DATA=daemons/ldap/slapd.conf
-
-BUILT_SOURCES=
-CLEANFILES=
+ta_DATA=daemons/ldap/slapd.conf
 
 noinst_HEADERS = \
 	route/conf_route.h \
@@ -31,6 +28,8 @@ libconf_a_SOURCES = \
 	route/conf_route_socket.c \
 	util/conf_getmsg.c \
 	util/conf_dlpi.c 
+
+CLEANFILES=
 
 if ISCSI_TARGET_USE
 
