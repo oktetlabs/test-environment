@@ -35,6 +35,7 @@
 
 #include <windows.h>
 #include <winioctl.h>
+#include <setupapi.h>
 /* In file "wingdi.h" ERROR is defined to 0 */
 #undef ERROR
 
@@ -50,11 +51,16 @@
 
 #include "iscsi_initiator.h"
 
+#define DEFAULT_INITIAL_R2T_WIN32    1
+#define DEFAULT_IMMEDIATE_DATA_WIN32 1
+
 void
-iscsi_win32_report_error(const char *function, int line)
+iscsi_win32_report_error(const char *function, int line, 
+                         unsigned long previous_error)
 {
     static char buffer[256];
-    unsigned long win_error = GetLastError();
+    unsigned long win_error = 
+        (previous_error != 0 ? previous_error : GetLastError());
     
     if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, 
                       win_error, 0, buffer,
@@ -72,11 +78,94 @@ iscsi_win32_report_error(const char *function, int line)
     }
 }
 
-static int cli_started;
-static HANDLE host_input, cli_output;
-static HANDLE host_output, cli_input;
+static int                 cli_started;
+static HANDLE              host_input, cli_output;
+static HANDLE              host_output, cli_input;
 static PROCESS_INFORMATION process_info;
-static HANDLE cli_timeout_timer = INVALID_HANDLE_VALUE;
+static HANDLE              cli_timeout_timer = INVALID_HANDLE_VALUE;
+static HKEY                driver_parameters = INVALID_HANDLE_VALUE;
+static HDEVINFO            scsi_adapters     = INVALID_HANDLE_VALUE;
+static SP_DEVINFO_DATA     iscsi_dev_info;
+
+static te_errno iscsi_win32_set_default_parameters(void);
+
+static te_errno
+iscsi_win32_find_initiator_registry(void)
+{
+    GUID            scsi_class_guid;
+    unsigned        index;
+    long            result;
+
+    static char   buffer[1024];
+    unsigned long buf_size;
+    unsigned long value_type;
+
+    if (driver_parameters != INVALID_HANDLE_VALUE)
+        return 0;
+
+    if (!SetupDiClassGuidsFromName("SCSIAdapter", &scsi_class_guid, 1, &buf_size))
+    {
+        ISCSI_WIN32_REPORT_ERROR();
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+    }
+
+    scsi_adapters = SetupDiGetClassDevs(&scsi_class_guid, NULL, NULL, 0);
+    if (scsi_adapters == INVALID_HANDLE_VALUE)
+    {
+        ISCSI_WIN32_REPORT_ERROR();
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+    }
+    for (index = 0;; index++)
+    {
+        iscsi_dev_info.cbSize = sizeof(iscsi_dev_info);
+        if (!SetupDiEnumDeviceInfo(scsi_adapters, index, &iscsi_dev_info))
+        {
+            ISCSI_WIN32_REPORT_ERROR();
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+        }
+        buf_size = sizeof(buffer);
+        memset(buffer, 0, buf_size);
+        if (!SetupDiGetDeviceRegistryProperty(scsi_adapters, &iscsi_dev_info,
+                                              SPDRP_HARDWAREID, &value_type,
+                                              buffer, buf_size, &buf_size))
+        {
+            ISCSI_WIN32_REPORT_ERROR();
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+        }
+        if (value_type != REG_MULTI_SZ)
+        {
+            ERROR("Registry seems to be corrupted, very bad");
+            return TE_RC(ISCSI_AGENT_TYPE, TE_ECORRUPTED);
+        }
+        if (strcasecmp(buffer, "Root\\iSCSIPrt") == 0)
+            break;
+    }
+
+    memset(buffer, 0, sizeof(buffer));
+    strcpy(buffer, "SYSTEM\\CurrentControlSet\\Control\\Class\\");
+    buf_size = sizeof(buffer) - strlen(buffer);
+    if (!SetupDiGetDeviceRegistryProperty(scsi_adapters, &iscsi_dev_info,
+                                          SPDRP_DRIVER, &value_type,
+                                          buffer + strlen(buffer), 
+                                          buf_size, &buf_size))
+    {
+        ISCSI_WIN32_REPORT_ERROR();
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+    }
+    if (value_type != REG_SZ)
+    {
+            ERROR("Registry seems to be corrupted, very bad");
+            return TE_RC(ISCSI_AGENT_TYPE, TE_ECORRUPTED);
+    }
+    strcat(buffer, "\\Parameters");
+    if ((result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, buffer,
+                               0, KEY_ALL_ACCESS, &driver_parameters)) != 0)
+    {
+        ISCSI_WIN32_REPORT_RESULT(result);
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+    }
+    return iscsi_win32_set_default_parameters();
+}
 
 static te_errno
 iscsi_win32_run_cli(const char *cmdline)
@@ -87,7 +176,7 @@ iscsi_win32_run_cli(const char *cmdline)
     if (cli_started)
     {
         iscsi_win32_finish_cli();
-    }
+    } 
 
     if (cli_timeout_timer == INVALID_HANDLE_VALUE)
     {
@@ -95,7 +184,7 @@ iscsi_win32_run_cli(const char *cmdline)
         if (cli_timeout_timer == NULL)
         {
             ISCSI_WIN32_REPORT_ERROR();
-            return TE_RC(TE_TA_WIN32, TE_EFAIL);
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
         }
     }
 
@@ -114,7 +203,7 @@ iscsi_win32_run_cli(const char *cmdline)
     if (!CreatePipe(&host_input, &cli_output, &attr, 0))
     {
         ISCSI_WIN32_REPORT_ERROR();
-        return TE_RC(TE_TA_WIN32, TE_EFAIL);
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
     SetHandleInformation(host_input, HANDLE_FLAG_INHERIT, 0);
 
@@ -123,7 +212,7 @@ iscsi_win32_run_cli(const char *cmdline)
         ISCSI_WIN32_REPORT_ERROR();
         CloseHandle(host_input);
         CloseHandle(cli_output);
-        return TE_RC(TE_TA_WIN32, TE_EFAIL);
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
     SetHandleInformation(host_output, HANDLE_FLAG_INHERIT, 0);
 
@@ -141,9 +230,103 @@ iscsi_win32_run_cli(const char *cmdline)
         CloseHandle(cli_output);
         CloseHandle(host_output);
         CloseHandle(cli_input);
-        return TE_RC(TE_TA_WIN32, TE_EFAIL);
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
     cli_started = TRUE;
+    return 0;
+}
+
+typedef struct iscsi_win32_registry_parameter
+{
+    int offer;
+    int offset;
+    char *name;
+    unsigned long (*transform)(void *);
+    unsigned long constant;
+} iscsi_win32_registry_parameter;
+
+static unsigned long
+iscsi_win32_bool2int(void *data)
+{
+    return strcasecmp((char *)data, "Yes") == 0;
+}
+
+static te_errno
+iscsi_win32_set_registry_parameter(iscsi_win32_registry_parameter *parm, 
+                                   void *data)
+{
+    unsigned long value;
+    long          result;
+
+    if (parm->offset < 0)
+        value = parm->constant;
+    else
+    {
+        data = (char *)data + parm->offset;
+        if (parm->transform != NULL)
+            value = parm->transform(data);
+        else
+            value = *(int *)data;
+    }
+    
+    RING("Setting %s to %u via registry", parm->name, (unsigned)value);
+    if ((result = RegSetValueEx(driver_parameters, 
+                                parm->name, 0, REG_DWORD, 
+                                (void *)&value, sizeof(value))) != 0)
+    {
+        ISCSI_WIN32_REPORT_RESULT(result);
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+    }
+    return 0;
+}
+
+static te_errno
+iscsi_win32_set_default_parameters(void)
+{
+#define RPARAMETER(name, value) {0, -1, name, NULL, value}
+    static iscsi_win32_registry_parameter rparams[] =
+        {
+            RPARAMETER("InitialR2T", DEFAULT_INITIAL_R2T_WIN32),
+            RPARAMETER("ImmediateData", DEFAULT_IMMEDIATE_DATA_WIN32),
+            RPARAMETER("MaxRecvDataSegmentLength",
+                       DEFAULT_MAX_RECV_DATA_SEGMENT_LENGTH),
+            RPARAMETER("FirstBurstLength", DEFAULT_FIRST_BURST_LENGTH),
+            RPARAMETER("MaxBurstLength", DEFAULT_MAX_BURST_LENGTH),
+            RPARAMETER("ErrorRecoveryLevel", 
+                       DEFAULT_ERROR_RECOVERY_LEVEL),
+            {0, 0, NULL, NULL, 0}
+        };
+    iscsi_win32_registry_parameter *rp;
+
+    for (rp = rparams; rp->name != NULL; rp++)
+    {
+        if (iscsi_win32_set_registry_parameter(rp, NULL) != 0)
+        {
+            ERROR("Cannot set default for '%s'", rp->name);
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+        }
+    }
+    return 0;
+#undef RPARAMETER
+}
+
+static te_errno
+iscsi_win32_restart_iscsi_service(void)
+{
+    SP_PROPCHANGE_PARAMS params;
+    
+    params.ClassInstallHeader.cbSize = sizeof(SP_CLASSINSTALL_HEADER);
+    params.ClassInstallHeader.InstallFunction = DIF_PROPERTYCHANGE;
+    params.StateChange = DICS_PROPCHANGE;
+    params.Scope       = DICS_FLAG_CONFIGSPECIFIC;
+    params.HwProfile   = 0;
+    if (!SetupDiSetClassInstallParams(scsi_adapters, &iscsi_dev_info,
+                                      (SP_CLASSINSTALL_HEADER *)&params,
+                                      sizeof(params)))
+    {
+        ISCSI_WIN32_REPORT_ERROR();
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+    }
     return 0;
 }
 
@@ -219,7 +402,7 @@ iscsi_win32_wait_for(regex_t *pattern,
             if (read_size == 0)
             {
                 ERROR("%s(): The input line is too long", __FUNCTION__);
-                return TE_RC(TE_TA_WIN32, TE_ENOSPC);
+                return TE_RC(ISCSI_AGENT_TYPE, TE_ENOSPC);
             }
 
             RING("Waiting for %d bytes from iSCSI CLI", read_size);
@@ -230,27 +413,27 @@ iscsi_win32_wait_for(regex_t *pattern,
                                   iscsi_cli_timeout, &timeout, FALSE))
             {
                 ISCSI_WIN32_REPORT_ERROR();
-                return TE_RC(TE_TA_WIN32, TE_EFAIL);
+                return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
             }
             while (available == 0 && !timeout)
             {
                 if (!PeekNamedPipe(host_input, NULL, 0, NULL, &available, NULL))
                 {
                     ISCSI_WIN32_REPORT_ERROR();
-                    return TE_RC(TE_TA_WIN32, TE_EIO);
+                    return TE_RC(ISCSI_AGENT_TYPE, TE_EIO);
                 }
                 SleepEx(0, TRUE);
             }
             if (timeout)
             {
                 ERROR("iSCSI CLI timed out...");
-                return TE_RC(TE_TA_WIN32, TE_ETIMEDOUT);
+                return TE_RC(ISCSI_AGENT_TYPE, TE_ETIMEDOUT);
             }
                                
             if (!ReadFile(host_input, free_ptr, read_size, &read_bytes, NULL))
             {
                 ISCSI_WIN32_REPORT_ERROR();
-                return TE_RC(TE_TA_WIN32, TE_EIO);
+                return TE_RC(ISCSI_AGENT_TYPE, TE_EIO);
             }
             free_ptr[read_bytes] = '\0';
         }
@@ -263,13 +446,13 @@ iscsi_win32_wait_for(regex_t *pattern,
             char err_buf[64] = "";
             regerror(re_code, pattern, err_buf, sizeof(err_buf) - 1);
             ERROR("Matching error: %s", err_buf);
-            return TE_RC(TE_TA_WIN32, TE_EFAIL);
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
         }
         if (terminal_pattern != NULL)
         {
             re_code = regexec(terminal_pattern, cli_buffer, 0, NULL, 0);
             if (re_code == 0)
-                return TE_RC(TE_TA_WIN32, TE_ENODATA);
+                return TE_RC(ISCSI_AGENT_TYPE, TE_ENODATA);
         }
         if (abort_pattern != NULL)
         {
@@ -277,7 +460,7 @@ iscsi_win32_wait_for(regex_t *pattern,
             if (re_code == 0)
             {
                 ERROR("iSCSI CLI reported an error: '%s'", cli_buffer);
-                return TE_RC(TE_TA_WIN32, TE_ESHCMD);
+                return TE_RC(ISCSI_AGENT_TYPE, TE_ESHCMD);
             }
         }
     }
@@ -314,7 +497,7 @@ iscsi_win32_disable_readahead(const char *devname)
     if (dev_handle == NULL)
     {
         ISCSI_WIN32_REPORT_ERROR();
-        return TE_RC(TE_TA_WIN32, TE_EFAIL);
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
     if (!DeviceIoControl(dev_handle,
                          IOCTL_DISK_GET_CACHE_INFORMATION,
@@ -327,7 +510,7 @@ iscsi_win32_disable_readahead(const char *devname)
     {
         ISCSI_WIN32_REPORT_ERROR();
         CloseHandle(dev_handle);
-        return TE_RC(TE_TA_WIN32, TE_EFAIL);
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
     cache_info.ReadCacheEnabled = FALSE;
     cache_info.WriteCacheEnabled = FALSE;
@@ -343,7 +526,7 @@ iscsi_win32_disable_readahead(const char *devname)
     {
         ISCSI_WIN32_REPORT_ERROR();
         CloseHandle(dev_handle);
-        return TE_RC(TE_TA_WIN32, TE_EFAIL);
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
     CloseHandle(dev_handle);
     return 0;
@@ -369,7 +552,7 @@ iscsi_win32_finish_cli(void)
     memset(cli_buffer, 0, sizeof(cli_buffer));
     residual = 0;
     
-    return success ? 0 : TE_RC(TE_TA_WIN32, TE_EFAIL);
+    return success ? 0 : TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
 }
 
 static int
@@ -377,7 +560,8 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
                                 iscsi_connection_data_t *connection,
                                 te_bool is_connection)
 {
-    iscsi_target_param_descr_t *p;
+    iscsi_target_param_descr_t     *p;
+    
 #define PARAMETER(field, offer, type) \
     {OFFER_##offer, #field, type, ISCSI_OPER_PARAM, offsetof(iscsi_connection_data_t, field), NULL, NULL}
 #define XPARAMETER(field, offer, type, fmt) \
@@ -390,6 +574,25 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
     {0, #field, type, ISCSI_SECURITY_PARAM, offsetof(iscsi_tgt_chap_data_t, field), fmt, NULL}
 #define CONSTANT(field, type) \
     {0, "", type, ISCSI_FIXED_PARAM, offsetof(iscsi_constant_t, field), NULL, NULL}
+#define RPARAMETER(field, name, offer, transform) \
+    {OFFER_##offer, offsetof(iscsi_connection_data_t, field), name, transform, 0}
+
+    static iscsi_win32_registry_parameter rparams[] =
+        {
+            RPARAMETER(first_burst_length, "FirstBurstLength", 
+                       FIRST_BURST_LENGTH, NULL),
+            RPARAMETER(max_burst_length, "MaxBurstLength", 
+                       FIRST_BURST_LENGTH, NULL),
+            RPARAMETER(max_recv_data_segment_length, "MaxRecvDataSegmentLength", 
+                       MAX_RECV_DATA_SEGMENT_LENGTH, NULL),
+            RPARAMETER(initial_r2t, "InitialR2T", 
+                       INITIAL_R2T, iscsi_win32_bool2int),
+            RPARAMETER(immediate_data, "ImmediateData",
+                       IMMEDIATE_DATA, iscsi_win32_bool2int),
+            RPARAMETER(error_recovery_level, "ErrorRecoveryLevel",
+                       ERROR_RECOVERY_LEVEL, NULL),
+            {0, NULL, 0, NULL}
+        };
 
     static iscsi_target_param_descr_t params[] =
         {
@@ -434,6 +637,35 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
             ISCSI_END_PARAM_TABLE
         };
     static char buffer[2048];
+    
+    if (iscsi_win32_find_initiator_registry() != 0)
+    {
+        ERROR("Unable to find registry branch for iSCSI parameters");
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+    }
+
+    if (!is_connection)
+    {
+        iscsi_win32_registry_parameter *rp;
+
+        for (rp = rparams; rp->name != NULL; rp++)
+        {
+            if (rp->offer == 0 || 
+                (connection->conf_params & rp->offer) == rp->offer)
+            {
+                if (iscsi_win32_set_registry_parameter(rp, connection) != 0)
+                {
+                    ERROR("Unable to set '%s'", rp->name);
+                    return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+                }
+            }
+        }
+        if (iscsi_win32_restart_iscsi_service() != 0)
+        {
+            ERROR("Unable to restart iSCSI service");
+            return 0;
+        }
+    }
 
     *buffer = '\0';
     for (p = is_connection ? conn_params : params; p->offset >= 0; p++)
@@ -456,6 +688,7 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
                                  is_connection ? "AddConnection" : "LoginTarget", 
                                  buffer);
     return 0;
+#undef RPARAMETER
 #undef PARAMETER
 #undef XPARAMETER
 #undef AUTH_PARAM
@@ -678,7 +911,7 @@ iscsi_win32_prepare_device(iscsi_connection_data_t *conn)
 te_bool
 iscsi_win32_init_regexps(void)
 {
-    int i;
+    unsigned i;
     int status;
     char err_buf[64];
     

@@ -131,7 +131,7 @@ else
 
 if CFG_ISCSI
 
-LDADD+=-liscsi_initiator_conf
+LDADD+=-liscsi_initiator_conf -lsetupapi
 
 AM_CPPFLAGS+=-DWITH_ISCSI
 
