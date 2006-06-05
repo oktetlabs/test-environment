@@ -147,6 +147,9 @@ static te_errno broadcast_set(unsigned int, const char *, const char *,
 static te_errno link_addr_get(unsigned int, const char *, char *,
                               const char *);
 
+static te_errno bcast_link_addr_get(unsigned int, const char *,
+                                    char *, const char *);
+
 static te_errno ifindex_get(unsigned int, const char *, char *,
                             const char *);
 
@@ -270,20 +273,24 @@ static rcf_pch_cfg_object node_neigh_dynamic =
       (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
       (rcf_ch_cfg_list)neigh_dynamic_list, NULL, NULL};
-      
+
 static rcf_pch_cfg_object node_neigh_static =
     { "neigh_static", 0, NULL, &node_neigh_dynamic,
       (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
       (rcf_ch_cfg_list)neigh_list, NULL, NULL};
-      
+
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_neigh_static,
                     status_get, status_set);
 
 RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
                     mtu_get, NULL);
 
-RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_mtu,
+RCF_PCH_CFG_NODE_RO(node_bcast_link_addr, "bcast_link_addr", NULL,
+                    &node_mtu, bcast_link_addr_get);
+
+RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL,
+                    &node_bcast_link_addr,
                     link_addr_get);
 
 RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
@@ -1186,6 +1193,40 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
 
     return 0;
 }
+
+
+/**
+ * Get broadcast hardware address of the interface.
+ * Because we can not manipulate broadcast MAC addresses on windows
+ * the ff:ff:ff:ff:ff:ff is returned for test purposes.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         broadcast hardware address (it should be
+ *                      provided as XX:XX:XX:XX:XX:XX string)
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+bcast_link_addr_get(unsigned int gid, const char *oid,
+                    char *value, const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    GET_IF_ENTRY;
+
+    if (value == NULL)
+    {
+        ERROR("A buffer for broadcast link layer address is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    snprintf(value, RCF_MAX_VAL, "ff:ff:ff:ff:ff:ff");
+    return 0;
+}
+
 
 /**
  * Get MTU of the interface.
