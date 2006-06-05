@@ -14,6 +14,8 @@ tadir=$(prefix)/@with_name@
 
 ta_DATA=daemons/ldap/slapd.conf
 
+EXTRA_DIST=daemons/ldap/slapd.conf
+
 noinst_HEADERS = \
 	route/conf_route.h \
 	util/conf_dlpi.h 
