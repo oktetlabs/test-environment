@@ -89,6 +89,7 @@ errno.h \
 expect.h \
 fcntl.h \
 inet/mib2.h \
+inet/nd.h \
 inttypes.h \
 limits.h \
 math.h \
