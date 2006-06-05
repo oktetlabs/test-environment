@@ -41,3 +41,4 @@ ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
+install-data:
