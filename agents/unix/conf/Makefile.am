@@ -48,7 +48,7 @@ if CFG_UNIX_DAEMONS
 
 AM_CPPFLAGS += @DAEMONS_CFLAGS@
 
-libconf_a_SOURCES += daemons/conf_daemons.c 
+libconf_a_SOURCES += daemons/conf_daemons.c daemons/ldap/ldap.c
 noinst_HEADERS += daemons/conf_daemons.h 
 
 if CFG_UNIX_DAEMONS_ISC_DHCP_SERVER

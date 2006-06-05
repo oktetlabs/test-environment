@@ -103,6 +103,8 @@
 extern const char *ta_name;
 /** Test Agent executable name */ 
 extern const char *ta_execname;
+/** Test Agent data and binaries location */ 
+extern char ta_dir[RCF_MAX_PATH];
 
 /**
  * Open FTP connection for reading/writing the file.

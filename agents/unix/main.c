@@ -116,6 +116,8 @@ DEFINE_LGR_ENTITY("(unix)");
 const char *ta_execname = NULL;
 /** Test Agent name */
 const char *ta_name = "(unix)";
+/** Test Agent data and binaries location */ 
+char ta_dir[RCF_MAX_PATH];
 
 /** Tasks to be killed during TA shutdown */
 static unsigned int     tasks_len = 0;
@@ -1607,7 +1609,8 @@ main(int argc, char **argv)
 
     struct sigaction    sigact;
     
-    char buf[16];
+    char  buf[16];
+    char *tmp;
     
     /* FIXME */
     chdir("/tmp");
@@ -1619,6 +1622,12 @@ main(int argc, char **argv)
     }
 
     ta_execname = argv[0];
+    strcpy(ta_dir, argv[0]);
+    tmp = strrchr(ta_dir, '/');
+    if (tmp == NULL)
+        ta_dir[0] = 0;
+    else
+        *(tmp + 1) = 0;
 
     /* FIXME */
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);    

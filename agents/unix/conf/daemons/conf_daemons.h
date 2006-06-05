@@ -303,6 +303,13 @@ extern te_errno vtund_grab(const char *name);
 extern te_errno vtund_release(const char *name);
 
 /**
+ * Add slapd node to the configuration tree.
+ *
+ * @return Status code.
+ */
+extern te_errno slapd_add(void);
+
+/**
  * Initializes conf_daemons support.
  *
  * @return Status code (see te_errno.h)
