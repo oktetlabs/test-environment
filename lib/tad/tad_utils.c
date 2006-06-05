@@ -1643,11 +1643,14 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value *template,
 
         csap_spt_descr = csap_get_proto_support(csap, layer);
 
-        layer_tmpl_pdu = asn_read_indexed(template, layer, "pdus"); 
 
-        rc = csap_spt_descr->generate_pattern_cb(csap, layer,
-                                                 layer_tmpl_pdu,
-                                                 &layer_pattern);
+        rc = asn_get_indexed(template, &layer_tmpl_pdu, layer, "pdus");
+
+        VERB("%s(): get layer pdu: %r", __FUNCTION__, rc);
+        if (rc == 0)
+            rc = csap_spt_descr->generate_pattern_cb(csap, layer,
+                                                     layer_tmpl_pdu,
+                                                     &layer_pattern);
 
         VERB("%s(): layer %u: generate pattern cb rc %r", 
              __FUNCTION__, layer, rc);
@@ -1663,9 +1666,6 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value *template,
             asn_free_value(gen_pattern_pdu);
 
         VERB("%s(): insert into pdus: %r", __FUNCTION__, rc);
-
-        asn_free_value(layer_pattern);
-        asn_free_value(layer_tmpl_pdu);
 
         if (rc != 0) 
             break;
