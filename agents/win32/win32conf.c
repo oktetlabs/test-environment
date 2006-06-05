@@ -230,6 +230,23 @@ static const char * const env_hidden[] = {
     "CYGWIN"
 };
 
+/** win32 statistics */
+#ifndef ENABLE_IFCONFIG_STATS
+#define ENABLE_IFCONFIG_STATS
+#endif
+
+#ifndef ENABLE_NET_SNMP_STATS
+#define ENABLE_NET_SNMP_STATS
+#endif
+
+#ifdef ENABLE_IFCONFIG_STATS
+extern te_errno ta_win32_conf_net_if_stats_init();
+#endif
+
+#ifdef ENABLE_NET_SNMP_STATS
+extern te_errno ta_win32_conf_net_snmp_stats_init();
+#endif
+
 /* win32 Test Agent configuration tree */
 
 
@@ -631,7 +648,17 @@ rcf_ch_conf_root()
                           rcf_pch_rsrc_release_dummy);
 
 
+#ifdef ENABLE_IFCONFIG_STATS
+        if (ta_win32_conf_net_if_stats_init() != 0)
+            return NULL;
+#endif
+#ifdef ENABLE_NET_SNMP_STATS
+        if (ta_win32_conf_net_snmp_stats_init() != 0)
+            return NULL;
+#endif
+
     }
+
 
     return &node_agent;
 }
@@ -2185,3 +2212,273 @@ env_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
+/*
+ * win32 Test Agent network statistics configuration tree.
+ */
+ 
+#define STATS_IFTABLE_COUNTER_GET(_counter_, _field_) \
+static te_errno net_if_stats_##_counter_##_get(unsigned int gid_,       \
+                                               const char  *oid_,       \
+                                               char        *value_,     \
+                                               const char  *ifname)     \
+{                                                                       \
+    int        rc = 0;                                                  \
+                                                                        \
+    UNUSED(gid_);                                                       \
+    UNUSED(oid_);                                                       \
+                                                                        \
+    GET_IF_ENTRY;                                                       \
+    snprintf((value_), RCF_MAX_VAL, "%lu", if_entry. _field_);          \
+                                                                        \
+                                                                        \
+    VERB("dev_counter_get(dev_name=%s, counter=%s) returns %s",         \
+         ifname, #_counter_, value_);                                   \
+                                                                        \
+    return rc;                                                          \
+}
+
+
+STATS_IFTABLE_COUNTER_GET(in_octets, dwInOctets);
+STATS_IFTABLE_COUNTER_GET(in_ucast_pkts, dwInUcastPkts);
+STATS_IFTABLE_COUNTER_GET(in_nucast_pkts, dwInNUcastPkts);
+STATS_IFTABLE_COUNTER_GET(in_discards, dwInDiscards);
+STATS_IFTABLE_COUNTER_GET(in_errors, dwInErrors);
+STATS_IFTABLE_COUNTER_GET(in_unknown_protos, dwInUnknownProtos);
+STATS_IFTABLE_COUNTER_GET(out_octets, dwOutOctets);
+STATS_IFTABLE_COUNTER_GET(out_ucast_pkts, dwOutUcastPkts);
+STATS_IFTABLE_COUNTER_GET(out_nucast_pkts, dwOutNUcastPkts);
+STATS_IFTABLE_COUNTER_GET(out_discards, dwOutDiscards);
+STATS_IFTABLE_COUNTER_GET(out_errors, dwOutErrors);
+
+#undef STATS_IFTABLE_COUNTER_GET
+
+#define STATS_NET_SNMP_IPV4_COUNTER_GET(_counter_, _field_)     \
+static te_errno                                                 \
+net_snmp_ipv4_stats_##_counter_##_get(unsigned int gid_,        \
+                                      const char  *oid_,        \
+                                      char        *value_)      \
+{                                                               \
+    int         rc = 0;                                         \
+    MIB_IPSTATS *table = NULL;                                  \
+                                                                \
+    UNUSED(gid_);                                               \
+    UNUSED(oid_);                                               \
+    if ((table = malloc(sizeof(MIB_IPSTATS))) == NULL   )       \
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);                   \
+                                                                \
+    if ((rc = GetIpStatistics(table)) != NO_ERROR)              \
+    {                                                           \
+        ERROR("GetIpStatistics failed, error %d", rc);          \
+        free(table);                                            \
+        return TE_RC(TE_TA_WIN32, TE_EWIN);                     \
+    }                                                           \
+                                                                \
+    snprintf((value_), RCF_MAX_VAL, "%lu",                      \
+             table->_field_);                                   \
+                                                                \
+    VERB("net_snmp_ipv4_counter_get(counter=%s) returns %s",    \
+         #_counter_, value_);                                   \
+                                                                \
+    free(table);                                                \
+    return 0;                                                   \
+}
+
+STATS_NET_SNMP_IPV4_COUNTER_GET(in_recvs, dwInReceives);
+STATS_NET_SNMP_IPV4_COUNTER_GET(in_hdr_errs, dwInHdrErrors);
+STATS_NET_SNMP_IPV4_COUNTER_GET(in_addr_errs, dwInAddrErrors);
+STATS_NET_SNMP_IPV4_COUNTER_GET(forw_dgrams, dwForwDatagrams);
+STATS_NET_SNMP_IPV4_COUNTER_GET(in_unknown_protos, dwInUnknownProtos);
+STATS_NET_SNMP_IPV4_COUNTER_GET(in_discards, dwInDiscards);
+STATS_NET_SNMP_IPV4_COUNTER_GET(in_delivers, dwInDelivers);
+STATS_NET_SNMP_IPV4_COUNTER_GET(out_requests, dwOutRequests);
+STATS_NET_SNMP_IPV4_COUNTER_GET(out_discards, dwOutDiscards);
+STATS_NET_SNMP_IPV4_COUNTER_GET(out_no_routes, dwOutNoRoutes);
+STATS_NET_SNMP_IPV4_COUNTER_GET(reasm_timeout, dwReasmTimeout);
+STATS_NET_SNMP_IPV4_COUNTER_GET(reasm_reqds, dwReasmReqds);
+STATS_NET_SNMP_IPV4_COUNTER_GET(reasm_oks, dwReasmOks);
+STATS_NET_SNMP_IPV4_COUNTER_GET(reasm_fails, dwReasmFails);
+STATS_NET_SNMP_IPV4_COUNTER_GET(frag_oks, dwFragOks);
+STATS_NET_SNMP_IPV4_COUNTER_GET(frag_fails, dwFragFails);
+STATS_NET_SNMP_IPV4_COUNTER_GET(frag_creates, dwFragCreates);
+
+#undef STATS_NET_SNMP_IPV4_COUNTER_GET
+
+#define STATS_NET_SNMP_ICMP_COUNTER_GET(_counter_, _field_) \
+static te_errno                                                 \
+net_snmp_icmp_stats_ ## _counter_ ## _get(unsigned int gid_,    \
+                                          const char  *oid_,    \
+                                          char        *value_)  \
+{                                                               \
+    int         rc = 0;                                         \
+    MIB_ICMP *table = NULL;                                     \
+                                                                \
+    UNUSED(gid_);                                               \
+    UNUSED(oid_);                                               \
+    if ((table = malloc(sizeof(MIB_ICMP))) == NULL   )          \
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);                   \
+                                                                \
+    if ((rc = GetIcmpStatistics(table)) != NO_ERROR)            \
+    {                                                           \
+        ERROR("GetIcmpStatistics failed, error %d", rc);        \
+        free(table);                                            \
+        return TE_RC(TE_TA_WIN32, TE_EWIN);                     \
+    }                                                           \
+                                                                \
+    snprintf((value_), RCF_MAX_VAL, "%lu",                      \
+             table->stats._field_);                             \
+                                                                \
+    VERB("net_snmp_icmp_counter_get(counter=%s) returns %s",    \
+         #_counter_, value_);                                   \
+                                                                \
+    free(table);                                                \
+    return 0;                                                   \
+}
+
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_msgs, icmpInStats.dwMsgs);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_errs, icmpInStats.dwErrors);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_dest_unreachs, 
+                                icmpInStats.dwDestUnreachs);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_time_excds, icmpInStats.dwTimeExcds);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_parm_probs, icmpInStats.dwParmProbs);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_src_quenchs, icmpInStats.dwSrcQuenchs);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_redirects, icmpInStats.dwRedirects);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_echos, icmpInStats.dwEchos);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_echo_reps, icmpInStats.dwEchoReps);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_timestamps, icmpInStats.dwTimestamps);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_timestamp_reps, 
+                                icmpInStats.dwTimestampReps);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_addr_masks, icmpInStats.dwAddrMasks);
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_addr_mask_reps, 
+                                icmpInStats.dwAddrMaskReps);
+
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_msgs, icmpOutStats.dwMsgs);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_errs, icmpOutStats.dwErrors);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_dest_unreachs, 
+                                icmpOutStats.dwDestUnreachs);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_time_excds, icmpOutStats.dwTimeExcds);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_parm_probs, icmpOutStats.dwParmProbs);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_src_quenchs, icmpOutStats.dwSrcQuenchs);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_redirects, icmpOutStats.dwRedirects);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_echos, icmpOutStats.dwEchos);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_echo_reps, icmpOutStats.dwEchoReps);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_timestamps, icmpOutStats.dwTimestamps);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_timestamp_reps, 
+                                icmpOutStats.dwTimestampReps);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_addr_masks, icmpOutStats.dwAddrMasks);
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_addr_mask_reps,
+                                icmpOutStats.dwAddrMaskReps);
+
+#undef STATS_NET_SNMP_ICMP_COUNTER_GET
+
+/* counters from MIB_IFROW structure */
+
+RCF_PCH_CFG_NODE_RO(node_stats_net_if_in_octets, "in_octets",
+                    NULL, NULL, net_if_stats_in_octets_get);
+
+#define STATS_NET_IF_ATTR(_name_, _next) \
+    RCF_PCH_CFG_NODE_RO(node_stats_net_if_##_name_, #_name_, \
+                        NULL, &node_stats_net_if_##_next,    \
+                        net_if_stats_##_name_##_get);
+
+STATS_NET_IF_ATTR(in_ucast_pkts, in_octets);
+STATS_NET_IF_ATTR(in_nucast_pkts, in_ucast_pkts);
+STATS_NET_IF_ATTR(in_discards, in_nucast_pkts);
+STATS_NET_IF_ATTR(in_errors, in_discards);
+STATS_NET_IF_ATTR(in_unknown_protos, in_errors);
+STATS_NET_IF_ATTR(out_octets, in_unknown_protos);
+STATS_NET_IF_ATTR(out_ucast_pkts, out_octets);
+STATS_NET_IF_ATTR(out_nucast_pkts, out_ucast_pkts);
+STATS_NET_IF_ATTR(out_discards, out_nucast_pkts);
+STATS_NET_IF_ATTR(out_errors, out_discards);
+
+#undef STATS_NET_IF_ATTR 
+/* counters from MIB_IPSTATS structure */
+
+RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_ipv4_in_recvs, "ipv4_in_recvs",
+                    NULL, NULL, net_snmp_ipv4_stats_in_recvs_get);
+
+#define STATS_NET_SNMP_IPV4_ATTR(_name_, _next) \
+    RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_ipv4_##_name_,          \
+                        "ipv4_" #_name_,                            \
+                        NULL, &node_stats_net_snmp_ipv4_##_next,    \
+                        net_snmp_ipv4_stats_##_name_##_get);
+
+STATS_NET_SNMP_IPV4_ATTR(in_hdr_errs, in_recvs);
+STATS_NET_SNMP_IPV4_ATTR(in_addr_errs, in_hdr_errs);
+STATS_NET_SNMP_IPV4_ATTR(forw_dgrams, in_addr_errs);
+STATS_NET_SNMP_IPV4_ATTR(in_unknown_protos, forw_dgrams);
+STATS_NET_SNMP_IPV4_ATTR(in_discards, in_unknown_protos);
+STATS_NET_SNMP_IPV4_ATTR(in_delivers, in_discards);
+STATS_NET_SNMP_IPV4_ATTR(out_requests, in_delivers);
+STATS_NET_SNMP_IPV4_ATTR(out_discards, out_requests);
+STATS_NET_SNMP_IPV4_ATTR(out_no_routes, out_discards);
+STATS_NET_SNMP_IPV4_ATTR(reasm_timeout, out_no_routes);
+STATS_NET_SNMP_IPV4_ATTR(reasm_reqds, reasm_timeout);
+STATS_NET_SNMP_IPV4_ATTR(reasm_oks, reasm_reqds);
+STATS_NET_SNMP_IPV4_ATTR(reasm_fails, reasm_oks);
+STATS_NET_SNMP_IPV4_ATTR(frag_oks, reasm_fails);
+STATS_NET_SNMP_IPV4_ATTR(frag_fails, frag_oks);
+STATS_NET_SNMP_IPV4_ATTR(frag_creates, frag_fails);
+
+
+/* counters from MIB_ICMP structure */
+
+RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_icmp_in_msgs, "icmp_in_msgs",
+                    NULL, &node_stats_net_snmp_ipv4_frag_creates,
+                    net_snmp_icmp_stats_in_msgs_get);
+
+#define STATS_NET_SNMP_ICMP_ATTR(_name_, _next) \
+    RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_icmp_##_name_,          \
+                        "icmp_" #_name_,                            \
+                        NULL, &node_stats_net_snmp_icmp_##_next,    \
+                        net_snmp_icmp_stats_##_name_##_get);
+
+STATS_NET_SNMP_ICMP_ATTR(in_errs, in_msgs);
+STATS_NET_SNMP_ICMP_ATTR(in_dest_unreachs, in_errs);
+STATS_NET_SNMP_ICMP_ATTR(in_time_excds, in_dest_unreachs);
+STATS_NET_SNMP_ICMP_ATTR(in_parm_probs, in_time_excds);
+STATS_NET_SNMP_ICMP_ATTR(in_src_quenchs, in_parm_probs);
+STATS_NET_SNMP_ICMP_ATTR(in_redirects, in_src_quenchs);
+STATS_NET_SNMP_ICMP_ATTR(in_echos, in_redirects);
+STATS_NET_SNMP_ICMP_ATTR(in_echo_reps, in_echos);
+STATS_NET_SNMP_ICMP_ATTR(in_timestamps, in_echo_reps);
+STATS_NET_SNMP_ICMP_ATTR(in_timestamp_reps, in_timestamps);
+STATS_NET_SNMP_ICMP_ATTR(in_addr_masks, in_timestamp_reps);
+STATS_NET_SNMP_ICMP_ATTR(in_addr_mask_reps, in_addr_masks);
+
+STATS_NET_SNMP_ICMP_ATTR(out_msgs, in_addr_mask_reps);
+STATS_NET_SNMP_ICMP_ATTR(out_errs, out_msgs);
+STATS_NET_SNMP_ICMP_ATTR(out_dest_unreachs, out_errs);
+STATS_NET_SNMP_ICMP_ATTR(out_time_excds, out_dest_unreachs);
+STATS_NET_SNMP_ICMP_ATTR(out_parm_probs, out_time_excds);
+STATS_NET_SNMP_ICMP_ATTR(out_src_quenchs, out_parm_probs);
+STATS_NET_SNMP_ICMP_ATTR(out_redirects, out_src_quenchs);
+STATS_NET_SNMP_ICMP_ATTR(out_echos, out_redirects);
+STATS_NET_SNMP_ICMP_ATTR(out_echo_reps, out_echos);
+STATS_NET_SNMP_ICMP_ATTR(out_timestamps, out_echo_reps);
+STATS_NET_SNMP_ICMP_ATTR(out_timestamp_reps, out_timestamps);
+STATS_NET_SNMP_ICMP_ATTR(out_addr_masks, out_timestamp_reps);
+STATS_NET_SNMP_ICMP_ATTR(out_addr_mask_reps, out_addr_masks);
+
+RCF_PCH_CFG_NODE_NA(node_net_if_stats, "stats",
+                    &node_stats_net_if_out_errors,
+                    NULL);
+
+RCF_PCH_CFG_NODE_NA(node_net_snmp_stats, "stats",
+                    &node_stats_net_snmp_icmp_out_addr_mask_reps,
+                    NULL);
+
+
+te_errno
+ta_win32_conf_net_snmp_stats_init(void)
+{
+
+    return rcf_pch_add_node("/agent", &node_net_snmp_stats);
+}
+
+te_errno
+ta_win32_conf_net_if_stats_init(void)
+{
+    
+    return rcf_pch_add_node("/agent/interface", &node_net_if_stats);
+}
