@@ -75,6 +75,27 @@ slapd_exists(char *port)
     return 0;
 }
 
+static te_errno
+ds_slapd_get(unsigned int gid, const char *oid, char *value, 
+             const char *port)
+{
+    FILE *f;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    TE_SPRINTF(buf, "/tmp/te_ldap_%s/ldif", port);
+    if ((f = fopen(buf, "r")) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        
+    memset(value, 0, RCF_MAX_VAL);
+    fread(value, 1, RCF_MAX_VAL - 1, f);
+    fclose(f);
+
+    return 0;
+}
+
+
 /**
  * Add a new slapd with specified port.
  *
@@ -95,7 +116,6 @@ ds_slapd_add(unsigned int gid, const char *oid, const char *value,
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
 
     p = strtol(port, &tmp, 10);
     if (tmp == port || *tmp != 0)
@@ -104,23 +124,7 @@ ds_slapd_add(unsigned int gid, const char *oid, const char *value,
     if (pid != 0)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    sprintf(buf, "rm -rf /tmp/ldap; mkdir /tmp/ldap");
-    if (ta_system(buf) != 0)
-    {
-        ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    sprintf(buf, "/usr/sbin/slapadd -f %s/slapd.conf "
-            "-l /tmp/sample.ldif", ta_dir);
-    if (ta_system(buf) != 0)
-    {
-        ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-
-    sprintf(buf, 
-            "/usr/sbin/slapd -4 -f %s/slapd.conf -h ldap://0.0.0.0:%s/", 
-            ta_dir, port);
+    TE_SPRINTF(buf, "%s/slapd_run.sh %s %s", ta_dir, port, value);
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
@@ -206,10 +210,13 @@ ds_slapd_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
-RCF_PCH_CFG_NODE_COLLECTION(node_ds_slapd, "slapd",
-                            NULL, NULL, 
-                            ds_slapd_add, ds_slapd_del, ds_slapd_list, 
-                            NULL);
+static rcf_pch_cfg_object node_ds_slapd = { "slapd", 0, NULL, NULL,                       
+                                            (rcf_ch_cfg_get)ds_slapd_get, 
+                                            NULL,
+                                            (rcf_ch_cfg_add)ds_slapd_add, 
+                                            (rcf_ch_cfg_del)ds_slapd_del, 
+                                            (rcf_ch_cfg_list)ds_slapd_list, 
+                                            NULL, NULL };
 
 /**
  * Add slapd node to the configuration tree.

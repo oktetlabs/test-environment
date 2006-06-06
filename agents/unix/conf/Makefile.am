@@ -14,6 +14,8 @@ tadir=$(prefix)/@with_name@
 
 ta_DATA=daemons/ldap/slapd.conf
 
+ta_SCRIPTS=daemons/ldap/slapd_run.sh
+
 EXTRA_DIST=daemons/ldap/slapd.conf
 
 noinst_HEADERS = \
