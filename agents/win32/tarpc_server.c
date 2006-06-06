@@ -1372,6 +1372,13 @@ TARPC_FUNC(lseek, {},
               mode));
 })
 
+/*-------------- fsync() ------------------------------*/
+
+TARPC_FUNC(fsync, {},
+{
+    MAKE_CALL(out->retval = !FlushFileBuffers((HANDLE)in->fd));
+})
+
 
 /*-------------- ReadFile() ------------------------------*/
 
