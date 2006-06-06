@@ -1648,7 +1648,7 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
         {
             memcpy(&param->addr, &in_optval->option_value_u.opt_ipaddr,
                    sizeof(struct in_addr));
-            *optlen = sizeof(&param->addr);
+            *optlen = sizeof(param->addr);
             break;
         }
 
@@ -1656,7 +1656,7 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
         {
             memcpy(&param->addr6, in_optval->option_value_u.opt_ipaddr6,
                    sizeof(struct in6_addr));
-            *optlen = sizeof(&param->addr6);
+            *optlen = sizeof(param->addr6);
             break;
         }
 
