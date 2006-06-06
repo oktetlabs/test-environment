@@ -103,7 +103,7 @@ rpcserver64$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
         $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
         x86_64-pc-windows $@ \"$(RPCSERVER_LIBS)\" $^
 
-install-exec-hook:
+install-data-hook:
 	if test -e rpcserver32$(EXEEXT) -a ! -s rpcserver32$(EXEEXT) \
                 -a -n "$$TE_WIN32_BUILD_HOST" ; then \
             rm rpcserver* ; $(MAKE) install ; \
@@ -161,4 +161,3 @@ endif
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) $(TE_DEPENDENCIES)
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
-install-data:
