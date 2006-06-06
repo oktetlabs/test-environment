@@ -327,6 +327,11 @@ iscsi_win32_restart_iscsi_service(void)
         ISCSI_WIN32_REPORT_ERROR();
         return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
+    if (!SetupDiChangeState(scsi_adapters, &iscsi_dev_info))
+    {
+        ISCSI_WIN32_REPORT_ERROR();
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+    }
     return 0;
 }
 
