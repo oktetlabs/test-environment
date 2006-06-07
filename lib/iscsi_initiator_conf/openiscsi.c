@@ -357,6 +357,17 @@ iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
         *target->session_id = '\0';
         return 0;
     }
+    else if (conn->status == ISCSI_CONNECTION_DISCOVERING)
+    {
+        rc = iscsi_openiscsi_start_daemon(target, 
+                                          iscsi_configuration()->n_connections == 0);
+        if (rc != 0)
+            return rc;
+        rc = ta_system_ex("iscsiadm -d255 -m discovery -t st --portal=%s:%d",
+                          target->target_addr, target->target_port);
+        return TE_RC(ISCSI_AGENT_TYPE, rc);
+
+    }
     else
     {
         rc = iscsi_openiscsi_start_daemon(target, 

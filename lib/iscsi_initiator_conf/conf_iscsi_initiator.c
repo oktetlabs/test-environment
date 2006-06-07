@@ -439,7 +439,8 @@ static const char *iscsi_status_names[] = {
     "CLOSING",      
     "ABNORMAL",     
     "RECOVER_DOWN",
-    "RECOVER_UP"
+    "RECOVER_UP",
+    "DISCOVERING"
 };
 
 
@@ -872,6 +873,7 @@ iscsi_initator_conn_request_thread(void *arg)
                 }
                 break;
             case ISCSI_CONNECTION_UP:
+            case ISCSI_CONNECTION_DISCOVERING:
             {
                 if (current_req->status == ISCSI_CONNECTION_UP)
                 {
@@ -945,10 +947,18 @@ iscsi_initator_conn_request_thread(void *arg)
             }
         }
 
-        iscsi_change_conn_status(target, conn, 
-                                 current_req->status == ISCSI_CONNECTION_UP ? 
-                                 ISCSI_CONNECTION_ESTABLISHING :
-                                 ISCSI_CONNECTION_CLOSING);
+        if (current_req->status == ISCSI_CONNECTION_UP)
+        {
+            iscsi_change_conn_status(target, conn, 
+                                     strcmp(conn->session_type, "Discovery") != 0 ? 
+                                     ISCSI_CONNECTION_ESTABLISHING :
+                                     ISCSI_CONNECTION_DISCOVERING);
+        }
+        else
+        {
+            iscsi_change_conn_status(target, conn, 
+                                     ISCSI_CONNECTION_CLOSING);
+        }
 
         switch (init_data->init_type)
         {
@@ -982,7 +992,12 @@ iscsi_initator_conn_request_thread(void *arg)
         }
         else
         {
-            if (current_req->status == ISCSI_CONNECTION_UP)
+            if (conn->status == ISCSI_CONNECTION_DISCOVERING)
+            {
+                iscsi_change_conn_status(target, conn, 
+                                         ISCSI_CONNECTION_DOWN);
+            }
+            else if (current_req->status == ISCSI_CONNECTION_UP)
             {
                 iscsi_change_conn_status(target, conn, 
                                          current_req->cid > 0 ? 
@@ -999,12 +1014,13 @@ iscsi_initator_conn_request_thread(void *arg)
             else
             {
                 iscsi_change_conn_status(target, conn, current_req->status);
-                pthread_mutex_lock(&conn->status_mutex);
+                /* no mutex protection needed here, because conn->status is
+                 * never modified in other threads
+                 */
                 if (conn->status == ISCSI_CONNECTION_REMOVED)
                 {
                     iscsi_init_default_connection_parameters(conn);
                 }
-                pthread_mutex_unlock(&conn->status_mutex);
             }
         }
         free(current_req);    

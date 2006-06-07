@@ -853,6 +853,7 @@ typedef enum iscsi_connection_status
     ISCSI_CONNECTION_ABNORMAL,     /**< Connection is in abnormal state */
     ISCSI_CONNECTION_RECOVER_DOWN, /**< Connection needs cleanup, then down */
     ISCSI_CONNECTION_RECOVER_UP,   /**< Connection needs cleanup, then up */
+    ISCSI_CONNECTION_DISCOVERING   /**< Doing discovery session */
 } iscsi_connection_status;
 
 /**

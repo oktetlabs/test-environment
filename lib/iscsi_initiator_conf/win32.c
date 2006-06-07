@@ -44,6 +44,7 @@
 #include "logger_api.h"
 #include "logger_ta.h"
 #include "logfork.h"
+#include "te_iscsi.h"
 
 #include <sys/types.h>
 #include <pthread.h>
@@ -560,13 +561,52 @@ iscsi_win32_finish_cli(void)
     return success ? 0 : TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
 }
 
-static int
-iscsi_win32_write_target_params(iscsi_target_data_t *target,
-                                iscsi_connection_data_t *connection,
-                                te_bool is_connection)
+static const char *
+iscsi_win32_format_params(iscsi_target_param_descr_t *table,
+                          iscsi_target_data_t *target, 
+                          iscsi_connection_data_t *connection)
 {
-    iscsi_target_param_descr_t     *p;
-    
+    static char buffer[2048];
+
+    *buffer = '\0';
+    for (; table->offset >= 0; table++)
+    {
+        if ((table->offer == 0 || (connection->conf_params & table->offer) == table->offer) &&
+            iscsi_is_param_needed(table, target, connection, 
+                                  &connection->chap))
+        {
+            strcat(buffer, " ");
+            iscsi_write_param(iscsi_append_to_buf, buffer,
+                              table, target, connection,
+                              &connection->chap);
+        }
+        else
+        {
+            strcat(buffer, " *");
+        }
+    }
+    return buffer;
+}
+
+static char   *iscsi_conditions[] = {
+    "^Session Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
+    "^Connection Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
+    "^The operation completed successfully.", 
+    "Error:|The target has already been logged|[Ff]ailed|cannot|invalid",
+    "Connection Id[[:space:]]*:[[:space:]]*([a-f0-9]*)-([a-f0-9]*)",
+    "Device Number[[:space:]]*:[[:space:]]*(-?[0-9]*)"
+};
+
+static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
+
+#define session_id_regexp (iscsi_regexps[0])
+#define connection_id_regexp (iscsi_regexps[1])
+#define success_regexp (iscsi_regexps[2])
+#define error_regexp (iscsi_regexps[3])
+#define existing_conn_regexp (iscsi_regexps[4])
+#define dev_number_regexp (iscsi_regexps[5])
+
+
 #define PARAMETER(field, offer, type) \
     {OFFER_##offer, #field, type, ISCSI_OPER_PARAM, offsetof(iscsi_connection_data_t, field), NULL, NULL}
 #define XPARAMETER(field, offer, type, fmt) \
@@ -582,6 +622,11 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
 #define RPARAMETER(field, name, offer, transform) \
     {OFFER_##offer, offsetof(iscsi_connection_data_t, field), name, transform, 0}
 
+static int
+iscsi_win32_write_target_params(iscsi_target_data_t *target,
+                                iscsi_connection_data_t *connection,
+                                te_bool is_connection)
+{
     static iscsi_win32_registry_parameter rparams[] =
         {
             RPARAMETER(first_burst_length, "FirstBurstLength", 
@@ -641,7 +686,6 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
             CONSTANT(wildcard, TRUE),
             ISCSI_END_PARAM_TABLE
         };
-    static char buffer[2048];
     
     if (iscsi_win32_find_initiator_registry() != 0)
     {
@@ -671,54 +715,77 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
             return 0;
         }
     }
-
-    *buffer = '\0';
-    for (p = is_connection ? conn_params : params; p->offset >= 0; p++)
-    {
-        if ((p->offer == 0 || (connection->conf_params & p->offer) == p->offer) &&
-            iscsi_is_param_needed(p, target, connection, 
-                                  &connection->chap))
-        {
-            strcat(buffer, " ");
-            iscsi_write_param(iscsi_append_to_buf, buffer,
-                              p, target, connection,
-                              &connection->chap);
-        }
-        else
-        {
-            strcat(buffer, " *");
-        }
-    }
     iscsi_send_to_win32_iscsicli("%s %s", 
                                  is_connection ? "AddConnection" : "LoginTarget", 
-                                 buffer);
+                                 iscsi_win32_format_params((is_connection ? 
+                                                            conn_params : 
+                                                            params),
+                                                           target, connection));
     return 0;
+}
+
+static te_errno
+iscsi_win32_do_discovery(iscsi_target_data_t *target,
+                         iscsi_connection_data_t *connection)
+{
+    static iscsi_target_param_descr_t params[] =
+        {
+            GPARAMETER(target_addr, TRUE),
+            GPARAMETER(target_port, FALSE),
+            CONSTANT(wildcard, TRUE),
+            CONSTANT(wildcard, TRUE),
+            CONSTANT(zero, FALSE),
+            CONSTANT(zero, FALSE),
+            XPARAMETER(header_digest, HEADER_DIGEST, TRUE, iscsi_not_none),
+            XPARAMETER(data_digest, DATA_DIGEST, TRUE, iscsi_not_none),
+            PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
+            PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  FALSE),
+            PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  FALSE),
+            AUTH_PARAM(peer_name, TRUE),
+            AUTH_PARAM(peer_secret, TRUE),
+            XAUTH_PARAM(chap, TRUE, iscsi_not_none),
+            ISCSI_END_PARAM_TABLE
+        };
+    int rc;
+
+    iscsi_send_to_win32_iscsicli("AddTargetPortal %s", 
+                                 iscsi_win32_format_params(params,
+                                                           target, connection));
+    rc = iscsi_win32_wait_for(&success_regexp, &error_regexp, NULL, 0, 0, 0, NULL);
+    if (rc != 0)
+    {
+        ERROR("Unable to add target portal for discovery: %r", rc);
+        return rc;
+    }
+#if 0
+    iscsi_send_to_win32_iscsicli("RefreshTargetPortal %s %d * *", 
+                                 target->target_addr, target->target_port);
+    rc = iscsi_win32_wait_for(&success_regexp, &error_regexp, NULL, 0, 0, 0, NULL);
+    if (rc != 0)
+    {
+        ERROR("Unable to refresh target portal: %r", rc);
+        return rc;
+    }
+#endif
+    iscsi_send_to_win32_iscsicli("RemoveTargetPortal %s %d * *", 
+                                 target->target_addr, target->target_port);
+    rc = iscsi_win32_wait_for(&success_regexp, &error_regexp, NULL, 0, 0, 0, NULL);
+    if (rc != 0)
+    {
+        ERROR("Unable to refresh target portal: %r", rc);
+        return rc;
+    }
+    iscsi_win32_finish_cli();
+    return 0;
+}
+
 #undef RPARAMETER
 #undef PARAMETER
 #undef XPARAMETER
 #undef AUTH_PARAM
 #undef XAUTH_PARAM
 #undef CONSTANT
-}
 
-
-static char   *iscsi_conditions[] = {
-    "^Session Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
-    "^Connection Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
-    "^The operation completed successfully.", 
-    "Error:|The target has already been logged|[Ff]ailed|cannot|invalid",
-    "Connection Id[[:space:]]*:[[:space:]]*([a-f0-9]*)-([a-f0-9]*)",
-    "Device Number[[:space:]]*:[[:space:]]*(-?[0-9]*)"
-};
-
-static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
-
-#define session_id_regexp (iscsi_regexps[0])
-#define connection_id_regexp (iscsi_regexps[1])
-#define success_regexp (iscsi_regexps[2])
-#define error_regexp (iscsi_regexps[3])
-#define existing_conn_regexp (iscsi_regexps[4])
-#define dev_number_regexp (iscsi_regexps[5])
 
 te_errno
 iscsi_initiator_win32_set(iscsi_connection_req *req)
@@ -780,10 +847,10 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
             }
             break;
         case ISCSI_CONNECTION_UP:
-            if (strcmp(conn->session_type, "Discovery") == 0)
+            if (target->conns[req->cid].status == ISCSI_CONNECTION_DISCOVERING)
             {
-                ERROR("Discovery is not yet supported for Windows iSCSI");
-                rc = TE_RC(ISCSI_AGENT_TYPE, TE_ENOSYS);
+                rc = iscsi_win32_do_discovery(target, 
+                                              &target->conns[req->cid]);
             }
             else
             {

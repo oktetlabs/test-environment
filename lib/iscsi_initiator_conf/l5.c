@@ -297,7 +297,7 @@ iscsi_initiator_l5_set(iscsi_connection_req *req)
                     return rc;
             }
 
-            if (strcmp(conn->session_type, "Discovery") != 0)
+            if (conn->status != ISCSI_CONNECTION_DISCOVERING)
             {
                 rc = ta_system_ex("cd %s; ./iscsi_startconns %s target%d_conn%d", 
                                   iscsi_configuration()->script_path,
@@ -306,18 +306,8 @@ iscsi_initiator_l5_set(iscsi_connection_req *req)
             }
             else
             {
-                if (target->number_of_open_connections == 0)
-                {
-                    rc = ta_system_ex("cd %s; ./iscsi_discover te", 
-                                         iscsi_configuration()->script_path);
-                    if (rc != 0)
-                        rc = TE_RC(ISCSI_AGENT_TYPE, TE_ESHCMD);
-                }
-                else
-                {
-                    WARN("Discovery session already in progress");
-                    rc = TE_RC(ISCSI_AGENT_TYPE, TE_EINPROGRESS);
-                }
+                rc = ta_system_ex("cd %s; ./iscsi_discover te", 
+                                  iscsi_configuration()->script_path);
             }
 
             if (rc != 0)
