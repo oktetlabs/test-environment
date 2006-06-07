@@ -870,11 +870,6 @@
          Value: smart host IP address -->
     <object oid="/agent/smtp/smarthost" access="read_create" type="address"/>
 
-    <!-- Environment variables.
-         Name: variable name
-         Value: variable value
-         Limit: any -->
-    <object oid="/agent/env" access="read_create" type="string"/>
 
     <!-- TELNET daemon enabling/disabling.
          Name:  empty
@@ -895,6 +890,20 @@
     <!-- VNC server password.
          Name: empty -->
     <object oid="/agent/vncpasswd" access="read_only" type="string"/>
+
+    <!-- LDAP daemon
+         Name: port
+         Value: name of file with LDIF
+    -->
+    <object oid="/agent/slapd" access="read_create" type="string">
+      <depends oid="/agent/rsrc"/>
+    </object>
+    
+    <!-- Environment variables.
+         Name: variable name
+         Value: variable value
+         Limit: any -->
+    <object oid="/agent/env" access="read_create" type="string"/>
     
     <!-- Tester user. 
          Name: te_tester_<uid> 
