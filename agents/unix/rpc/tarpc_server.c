@@ -3280,7 +3280,6 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 #endif
 
     out->bytes = 0;
-    in->size_max = 1500;
 
     RING("%s() started", __FUNCTION__);
 
