@@ -1444,7 +1444,7 @@ accumulate_text_input(SHARED struct iscsi_cmnd *cmnd, SHARED struct iscsi_cmnd *
 	if ((size = cmnd->first_burst_len)) {
 		/* command has some data attached, must accumulate it */
 		if (in_progress->in_progress_buffer == NULL) {
-			in_progress->in_progress_buffer = malloc(MAX_TEXT_LEN);
+			in_progress->in_progress_buffer = shalloc(MAX_TEXT_LEN);
 			if (in_progress->in_progress_buffer == NULL) {
 				return REASON_OUT_OF_RESOURCES;
 			}
@@ -1475,7 +1475,7 @@ generate_text_response(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 					   SHARED struct iscsi_session *session)
 {
 	enum text_types text_type;
-	char *buffer = NULL;
+	SHARED char *buffer = NULL;
     char *ptr;
     char *ip_ptr;
     SHARED char *equal;
@@ -1498,7 +1498,7 @@ generate_text_response(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 	}
 
 	/* now generate the SendTargets response in a new, "big" buffer */
-	if ((buffer = malloc(MAX_TEXT_LEN)) == NULL) {
+	if ((buffer = shalloc(MAX_TEXT_LEN)) == NULL) {
 		reason = REASON_OUT_OF_RESOURCES;
 		goto outbad;
 	}
@@ -1533,7 +1533,7 @@ generate_text_response(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 				TRACE_ERROR("Text Response to SendTargets is %d bytes, "
 							"max %d\n", size,
 							MAX_TEXT_LEN - TEXT_FUDGE_LEN);
-				ZFREE(buffer);
+				ZSHFREE(buffer);
 				reason = REASON_OUT_OF_RESOURCES;
 				goto outbad;
 			}
