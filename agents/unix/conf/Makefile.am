@@ -16,7 +16,7 @@ ta_DATA=daemons/ldap/slapd.conf
 
 ta_SCRIPTS=daemons/ldap/slapd_run.sh
 
-EXTRA_DIST=daemons/ldap/slapd.conf
+EXTRA_DIST=daemons/ldap/slapd.conf daemons/ldap/slapd_run.sh
 
 noinst_HEADERS = \
 	route/conf_route.h \
