@@ -44,6 +44,7 @@
 #endif
 
 #include "te_defs.h"
+#include "te_errno.h"
 #include "logger_api.h"
 #include "rcf_common.h"
 #include "rcf_rpc_defs.h"
