@@ -157,6 +157,7 @@ wifi_sta_info_t wifi_sta_info;
 #define GET_WIFI_STA_INFO(ifname_, ptr_) \
     (ptr_) = (&wifi_sta_info)
 
+#if 0
 #define CHECK_CONSISTENCY(ifname_, info_) \
     do                                                         \
     {                                                          \
@@ -167,6 +168,9 @@ wifi_sta_info_t wifi_sta_info;
                     __FUNCTION__, __LINE__);                   \
         assert(check_rc_);                                     \
     } while (0)
+#else
+#define CHECK_CONSISTENCY(ifname_, info_)
+#endif
 
 static te_errno sta_restore_encryption(const char *ifname, 
                                        wifi_sta_info_t *info);
