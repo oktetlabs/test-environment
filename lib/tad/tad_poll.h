@@ -33,6 +33,7 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#include <semaphore.h>
 
 #include "te_errno.h"
 #include "te_queue.h"
@@ -57,6 +58,7 @@ typedef struct tad_poll_context {
     unsigned int        timeout;    /**< Poll request timeout */
     pthread_t           thread;     /**< Thread ID */
     te_errno            status;     /**< Poll request status */
+    sem_t               sem;
 } tad_poll_context;
 
 
@@ -76,23 +78,6 @@ extern te_errno tad_poll_enqueue(csap_p                csap,
                                  rcf_comm_connection  *rcfc,
                                  const char           *answer_pfx,
                                  size_t                pfx_len);
-
-/**
- * Free TAD poll context.
- *
- * @param context       TAD poll context pointer
- */
-extern void tad_poll_free(tad_poll_context *context);
-
-/**
- * Start routine for Receiver thread. 
- *
- * @param arg           Start argument, should be pointer to 
- *                      TAD poll context
- *
- * @return NULL 
- */
-extern void *tad_poll_thread(void *arg);
 
 
 #ifdef __cplusplus
