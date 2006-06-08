@@ -46,6 +46,10 @@ if CFG_UNIX_WIFI
 libconf_a_SOURCES += base/conf_wifi.c
 endif
 
+if CFG_UNIX_8021X
+libconf_a_SOURCES += daemons/8021x/conf_8021x.c
+endif
+
 if CFG_UNIX_DAEMONS
 
 AM_CPPFLAGS += @DAEMONS_CFLAGS@
@@ -72,10 +76,6 @@ endif
 
 if CFG_UNIX_DAEMONS_RADIUS
 libconf_a_SOURCES += daemons/radius/radius.c
-endif
-
-if CFG_UNIX_8021X
-libconf_a_SOURCES += daemons/8021x/conf_8021x.c
 endif
 
 
