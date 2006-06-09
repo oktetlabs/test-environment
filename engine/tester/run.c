@@ -1687,15 +1687,19 @@ run_get_value(const test_entity_value *value,
 
     if (value->plain != NULL)
     {
+        VERB("%s(): plain", __FUNCTION__);
         return value->plain;
     }
     else if (value->ref != NULL)
     {
+        VERB("%s(): ref to %p", __FUNCTION__, value->ref);
         return run_get_value(value->ref, args, n_args, reqs);
     }
     else if (value->ext != NULL)
     {
         unsigned int i;
+
+        VERB("%s(): ext to %s", __FUNCTION__, value->ext);
 
         for (i = 0;
              i < n_args && strcmp(value->ext, args[i].name) != 0;
@@ -1759,6 +1763,9 @@ run_prepare_arg_value_cb(const test_entity_value *value, void *opaque)
               test_get_name(data->ri));
         return TE_RC(TE_TESTER, TE_ESRCH);
     }
+
+    VERB("%s(): arg=%s run_get_value() -> %s reqs=%p", __FUNCTION__,
+         data->arg->name, data->arg->value, data->arg->reqs.tqh_first);
 
     return TE_RC(TE_TESTER, TE_EEXIST);
 }
