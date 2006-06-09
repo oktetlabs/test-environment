@@ -12,11 +12,11 @@ AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../@host@/lib -Wl,-Bstatic @TE_LDFLAGS@
 
 LIBS = -Wl,-Bdynamic @TAD_LIBS@ @LIBS@
 
-tadir=$(prefix)/@with_name@
+taexecdir=$(prefix)/@with_name@
 
 noinst_HEADERS = unix_internal.h 
 
-ta_PROGRAMS = ta
+taexec_PROGRAMS = ta
 
 ta_SOURCES = main.c ftp_routines.c log_serial.c
 
@@ -44,5 +44,3 @@ ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
 
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
-
-install-data:
