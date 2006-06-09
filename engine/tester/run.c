@@ -1409,7 +1409,8 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     if ((TE_RC_GET_ERROR(status) != TE_ETESTPASS) && 
         (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
     {
-        if (TE_RC_GET_ERROR(status) == TE_ETESTSKIP)
+        if ((TE_RC_GET_ERROR(status) == TE_ETESTSKIP) ||
+            (TE_RC_GET_ERROR(status) == TE_ENOENT))
             ctx->group_status = TE_RC(TE_TESTER, TE_ETESTSKIP);
         else
             ctx->group_status = TE_RC(TE_TESTER, TE_ETESTPROLOG);
@@ -1484,7 +1485,11 @@ run_epilogue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     if ((TE_RC_GET_ERROR(status) != TE_ETESTPASS) && 
         (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
     {
-        ctx->group_status = TE_RC(TE_TESTER, TE_ETESTEPILOG);
+        if ((TE_RC_GET_ERROR(status) == TE_ETESTSKIP) ||
+            (TE_RC_GET_ERROR(status) == TE_ENOENT))
+            ctx->group_status = TE_RC(TE_TESTER, TE_ETESTSKIP);
+        else
+            ctx->group_status = TE_RC(TE_TESTER, TE_ETESTEPILOG);
         EXIT("SKIP");
         return TESTER_CFG_WALK_SKIP;
     }
@@ -2067,6 +2072,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         /* Silently skip without any logs */
         ctx->status = TE_RC(TE_TESTER, TE_ENOENT);
+        EXIT("SKIP - ENOENT");
         return TESTER_CFG_WALK_SKIP;
     }
 
@@ -2083,6 +2089,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                                 ri, ctx->args, ctx->flags, FALSE))
     {
         ctx->status = TE_RC(TE_TESTER, TE_ETESTSKIP);
+        EXIT("SKIP - ETESTSKIP");
         return TESTER_CFG_WALK_SKIP;
     }
     else
