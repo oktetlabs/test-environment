@@ -126,11 +126,6 @@ rcf_pch_rpc_server(const char *name)
             goto result;
         }
 
-#ifdef WINDOWS        
-        if (strcmp(rpc_name, "select") == 0)
-            RING("RPC \"select\"");
-#endif
-        
         info = rpc_find_info(rpc_name);
         assert(info != NULL);
         
@@ -160,17 +155,8 @@ rcf_pch_rpc_server(const char *name)
             rpc_xdr_free(info->out, out);
         free(out);
         
-#ifdef WINDOWS        
-        if (strcmp(rpc_name, "select") == 0)
-            RING("RPC \"select\" response");
-#endif
         if (rpc_transport_send(handle, buf, len) != 0)
             STOP("Sending data failed in main RPC server loop");
-
-#ifdef WINDOWS        
-        if (strcmp(rpc_name, "select") == 0)
-            RING("RPC \"select\" response is sent");
-#endif
     }
 
 cleanup:    
