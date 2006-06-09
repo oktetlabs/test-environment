@@ -1136,6 +1136,8 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
             const test_entity_value *tv =
                 tester_type_check_plain_value(p->type, p->plain);
 
+            VERB("%s(): Checked value '%s' by type '%s' -> %p",
+                 __FUNCTION__, p->plain, p->type->name, tv);
             if (tv == NULL)
             {
                 ERROR("Plain value '%s' does not conform to type '%s'",
@@ -1174,6 +1176,10 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
         assert(p->type != NULL);
         values->num += p->type->values.num;
     }
+
+    VERB("%s(): Got value plain=%s ref=%p ext=%s type=%s reqs=%p",
+         __FUNCTION__, p->plain, p->ref, p->ext,
+         (p->type == NULL) ? "" : p->type->name, p->reqs.tqh_first);
 
     return 0;
 }
