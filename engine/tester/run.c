@@ -1409,8 +1409,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     if ((TE_RC_GET_ERROR(status) != TE_ETESTPASS) && 
         (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
     {
-        if ((TE_RC_GET_ERROR(status) == TE_ETESTSKIP) ||
-            (TE_RC_GET_ERROR(status) == TE_ENOENT))
+        if (TE_RC_GET_ERROR(status) == TE_ETESTSKIP)
             ctx->group_status = TE_RC(TE_TESTER, TE_ETESTSKIP);
         else
             ctx->group_status = TE_RC(TE_TESTER, TE_ETESTPROLOG);
@@ -1485,8 +1484,7 @@ run_epilogue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     if ((TE_RC_GET_ERROR(status) != TE_ETESTPASS) && 
         (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
     {
-        if ((TE_RC_GET_ERROR(status) == TE_ETESTSKIP) ||
-            (TE_RC_GET_ERROR(status) == TE_ENOENT))
+        if (TE_RC_GET_ERROR(status) == TE_ETESTSKIP)
             ctx->group_status = TE_RC(TE_TESTER, TE_ETESTSKIP);
         else
             ctx->group_status = TE_RC(TE_TESTER, TE_ETESTEPILOG);
@@ -2126,15 +2124,19 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         tester_term_out_done(ri->type, test_get_name(ri),
                              ctx->parent_id, ctx->child_id, ctx->flags,
                              ctx->status);
+    }
+    else
+    {
+        ctx->status = TE_RC(TE_TESTER, TE_ETESTSKIP);
+    }
 
-        /* Update result of the group */
-        ctx->group_status =
-            tester_group_status(ctx->group_status, ctx->status);
-        if (!TEST_RESULT(ctx->group_status))
-        {
-            EXIT("FAULT");
-            return TESTER_CFG_WALK_FAULT;
-        }
+    /* Update result of the group */
+    ctx->group_status =
+        tester_group_status(ctx->group_status, ctx->status);
+    if (!TEST_RESULT(ctx->group_status))
+    {
+        EXIT("FAULT");
+        return TESTER_CFG_WALK_FAULT;
     }
 
     if (~flags & TESTER_CFG_WALK_SERVICE)
@@ -2150,7 +2152,6 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             step = 1;
         }
         else if (TE_RC_GET_ERROR(ctx->status) == TE_ETESTSKIP ||
-                 TE_RC_GET_ERROR(ctx->status) == TE_ENOENT ||
                  TE_RC_GET_ERROR(ctx->status) == TE_ETESTPROLOG)
         {
             step = ri->weight;
