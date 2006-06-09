@@ -1682,9 +1682,6 @@ run_get_value(const test_entity_value *value,
               const test_iter_arg *args, const unsigned int n_args,
               test_requirements *reqs)
 {
-    if (test_requirements_clone(&value->reqs, reqs) != 0)
-        return NULL;
-
     if (value->plain != NULL)
     {
         VERB("%s(): plain", __FUNCTION__);
@@ -1768,6 +1765,19 @@ run_prepare_arg_value_cb(const test_entity_value *value, void *opaque)
          data->arg->name, data->arg->value, data->arg->reqs.tqh_first);
 
     return TE_RC(TE_TESTER, TE_EEXIST);
+}
+
+static te_errno
+run_prepare_arg_value_cb2(const test_entity_value *value, te_errno status,
+                         void *opaque)
+{
+    test_requirements *reqs = opaque;
+
+    if (TE_RC_GET_ERROR(status) == TE_EEXIST)
+    {
+        return test_requirements_clone(&value->reqs, reqs); 
+    }
+    return 0;
 }
 
 /** Information about length of the list */
@@ -1888,7 +1898,9 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
     value_data.arg = data->arg;
 
     rc = test_var_arg_enum_values(data->ri, va, run_prepare_arg_value_cb,
-                                  &value_data);
+                                  &value_data,
+                                  run_prepare_arg_value_cb2,
+                                  &data->arg->reqs);
     if (rc == 0)
     {
         ERROR("Impossible happened - value by index not found");

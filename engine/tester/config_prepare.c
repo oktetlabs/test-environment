@@ -255,7 +255,7 @@ prepare_arg_cb(const test_var_arg *va, void *opaque)
     data->n_args++;
 
     rc = test_var_arg_enum_values(data->ri, va, prepare_arg_value_cb,
-                                  &n_values);
+                                  &n_values, NULL, NULL);
     if (rc != 0)
     {
         ERROR("Enumeration of values of argument '%s' of the test "

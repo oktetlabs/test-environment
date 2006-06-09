@@ -388,7 +388,8 @@ test_path_arg_cb(const test_var_arg *va, void *opaque)
         value_data.found = FALSE;
 
         rc = test_var_arg_enum_values(data->ri, va,
-                                      test_path_arg_value_cb, &value_data);
+                                      test_path_arg_value_cb, &value_data,
+                                      NULL, NULL);
         if (rc != 0)
         {
             ERROR("Failed to enumerate values of argument '%s' of "

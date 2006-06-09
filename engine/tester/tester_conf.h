@@ -429,6 +429,18 @@ typedef te_errno (* test_entity_value_enum_cb)(
                      const test_entity_value *value, void *opaque);
 
 /**
+ * Recovery callback to be used in the case of failure.
+ *
+ * @param status        Status code
+ * @param opaque        Recovery opaque data
+ *
+ * @return Status code.
+ */
+typedef te_errno (* test_entity_value_recovery_cb)(
+                     const test_entity_value *value,
+                     te_errno status, void *opaque);
+
+/**
  * Enumerate values from the list in current variables context.
  *
  * @param vars          Variables context or NULL
@@ -439,10 +451,12 @@ typedef te_errno (* test_entity_value_enum_cb)(
  * @return Status code.
  */
 extern te_errno test_entity_values_enum(
-                    const test_vars_args      *vars,
-                    const test_entity_values  *values,
-                    test_entity_value_enum_cb  callback,
-                    void                      *opaque);
+                    const test_vars_args          *vars,
+                    const test_entity_values      *values,
+                    test_entity_value_enum_cb      callback,
+                    void                          *opaque,
+                    test_entity_value_recovery_cb  recovery,
+                    void                          *rec_data);
 
 /**
  * Enumerate singleton values of the run item argument or session
@@ -459,7 +473,9 @@ extern te_errno test_var_arg_enum_values(
                     const run_item            *ri,
                     const test_var_arg        *va,
                     test_entity_value_enum_cb  callback,
-                    void                      *opaque);
+                    void                      *opaque,
+                    test_entity_value_recovery_cb  recovery,
+                    void                          *rec_data);
 
 
 /**

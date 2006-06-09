@@ -129,15 +129,24 @@ static te_errno
 test_entity_value_enum_values(const test_vars_args *vars,
                               const test_entity_value *value,
                               test_entity_value_enum_cb callback,
-                              void *opaque)
+                              void *opaque,
+                    test_entity_value_recovery_cb  recovery,
+                    void                          *rec_data)
 {
+    te_errno    rc;
+
     assert(value != NULL);
     assert(callback != NULL);
 
     if (value->plain != NULL)
     {
         /* Typical singleton */
-        return callback(value, opaque);
+        rc = callback(value, opaque);
+
+        if (rc != 0 && recovery != NULL)
+            recovery(value, rc, rec_data);
+            
+        return rc;
     }
     else if (value->ref != NULL)
     {
@@ -146,8 +155,14 @@ test_entity_value_enum_values(const test_vars_args *vars,
          * Forward variable to the reference since it is in the same
          * context.
          */
-        return test_entity_value_enum_values(vars, value->ref,
-                                             callback, opaque);
+        rc = test_entity_value_enum_values(vars, value->ref,
+                                           callback, opaque,
+                                           recovery, rec_data);
+
+        if (rc != 0 && recovery != NULL)
+            recovery(value, rc, rec_data);
+            
+        return rc;
     }
     else if (value->ext != NULL)
     {
@@ -157,7 +172,12 @@ test_entity_value_enum_values(const test_vars_args *vars,
              * No variables context, therefore, it is a singleton
              * with external value.
              */
-            return callback(value, opaque);
+            rc = callback(value, opaque);
+
+            if (rc != 0 && recovery != NULL)
+                recovery(value, rc, rec_data);
+                
+            return rc;
         }
         else
         {
@@ -173,8 +193,14 @@ test_entity_value_enum_values(const test_vars_args *vars,
                  * Found variable with required name, enumerate its
                  * values, but variable does not have any context.
                  */
-                return test_var_arg_enum_values(NULL, var,
-                                                callback, opaque);
+                rc = test_var_arg_enum_values(NULL, var,
+                                                callback, opaque,
+                                                recovery, rec_data);
+
+                if (rc != 0 && recovery != NULL)
+                    recovery(value, rc, rec_data);
+                    
+                return rc;
             }
             else
             {
@@ -191,8 +217,13 @@ test_entity_value_enum_values(const test_vars_args *vars,
          * Enumerate values of the specified type.
          * Type does not have variables context.
          */
-        return test_entity_values_enum(NULL, &value->type->values,
-                                       callback, opaque);
+        rc = test_entity_values_enum(NULL, &value->type->values,
+                                     callback, opaque, recovery, rec_data);
+
+        if (rc != 0 && recovery != NULL)
+            recovery(value, rc, rec_data);
+            
+        return rc;
     }
     else
     {
@@ -215,7 +246,9 @@ te_errno
 test_entity_values_enum(const test_vars_args *vars,
                         const test_entity_values *values,
                         test_entity_value_enum_cb callback,
-                        void *opaque)
+                        void *opaque,
+                    test_entity_value_recovery_cb  recovery,
+                    void                          *rec_data)
 {
     te_errno                    rc = TE_RC(TE_TESTER, TE_ENOENT);
     const test_entity_value    *v;
@@ -227,7 +260,8 @@ test_entity_values_enum(const test_vars_args *vars,
 
     for (v = values->head.tqh_first; v != NULL; v = v->links.tqe_next)
     {
-        rc = test_entity_value_enum_values(vars, v, callback, opaque);
+        rc = test_entity_value_enum_values(vars, v, callback, opaque,
+                                           recovery, rec_data);
         if (rc != 0)
             break;
     }
@@ -239,7 +273,9 @@ test_entity_values_enum(const test_vars_args *vars,
 /* See the description in tester_conf.h */
 te_errno
 test_var_arg_enum_values(const run_item *ri, const test_var_arg *va,
-                         test_entity_value_enum_cb callback, void *opaque)
+                         test_entity_value_enum_cb callback, void *opaque,
+                    test_entity_value_recovery_cb  recovery,
+                    void                          *rec_data)
 {
     assert(va != NULL);
 
@@ -247,13 +283,15 @@ test_var_arg_enum_values(const run_item *ri, const test_var_arg *va,
     {
         assert(va->type != NULL);
         return test_entity_values_enum(NULL, &va->type->values,
-                                       callback, opaque);
+                                       callback, opaque,
+                                       recovery, rec_data);
     }
     else
     {
         const test_vars_args   *vars =
             (ri != NULL && ri->context != NULL) ? &ri->context->vars : NULL;
 
-        return test_entity_values_enum(vars, &va->values, callback, opaque);
+        return test_entity_values_enum(vars, &va->values, callback, opaque,
+                                       recovery, rec_data);
     }
 }
