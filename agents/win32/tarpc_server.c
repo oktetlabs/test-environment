@@ -3064,7 +3064,7 @@ TARPC_FUNC(create_overlapped, {},
         tmp->cookie2 = in->cookie2;
         out->retval = rcf_pch_mem_alloc(tmp);
         RING("Overlapped structure %x (index %d) is allocated", tmp, 
-            out->retval);
+             out->retval);
     }
 }
 )
