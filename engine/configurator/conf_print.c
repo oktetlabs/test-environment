@@ -208,10 +208,10 @@ obj_tree_bufprint(cfg_object *obj, const int indent)
           != NULL);
     for (dep = obj->depends_on; dep != NULL; dep = dep->next)
     {
-        for (i = 0; i < indent; i++)
-            CHECK(bufprintf(&buf, &offset, &sz, " ") != NULL);
         if (strcmp_start(dep->depends->oid, obj->oid) != 0)
         {
+            for (i = 0; i < indent; i++)
+                CHECK(bufprintf(&buf, &offset, &sz, " ") != NULL);
             CHECK(bufprintf(&buf, &offset, &sz, "-> %s\n", 
                             dep->depends->oid) != NULL);
         }
