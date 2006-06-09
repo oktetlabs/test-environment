@@ -4,21 +4,21 @@
  * Requirements definitions.
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1 of
+ * Test Environment is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * Test Environment is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
@@ -33,7 +33,11 @@
 
 #include "te_defs.h"
 #include "te_queue.h"
+#include "te_errno.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /** Types of expression elements */
 typedef enum reqs_expr_type {
@@ -75,7 +79,7 @@ typedef TAILQ_HEAD(test_requirements, test_requirement) test_requirements;
 /* Forwards */
 struct tester_ctx;
 struct run_item;
-struct test_params;
+struct test_iter_arg;
 
 
 /**
@@ -86,7 +90,7 @@ struct test_params;
  *
  * @return Status code.
  */
-extern int tester_reqs_expr_parse(const char *str, reqs_expr **expr);
+extern te_errno tester_reqs_expr_parse(const char *str, reqs_expr **expr);
 
 /**
  * Create a new target requirement and insert it using logical 'and'
@@ -96,10 +100,11 @@ extern int tester_reqs_expr_parse(const char *str, reqs_expr **expr);
  * @param req       String requirement
  *
  * @return Status code.
- * @retval 0        Success.
- * @retval TE_ENOMEM   Memory allocation failure.
+ * @retval 0            Success.
+ * @retval TE_ENOMEM    Memory allocation failure.
  */
-extern int tester_new_target_reqs(reqs_expr **targets, const char *req);
+extern te_errno tester_new_target_reqs(reqs_expr **targets,
+                                       const char *req);
 
 /**
  * Create binary operation expression.
@@ -135,8 +140,8 @@ extern void tester_reqs_expr_free_nr(reqs_expr *p);
  *
  * @return Status code.
  */
-extern int test_requirements_clone(const test_requirements *reqs,
-                                   test_requirements *new_reqs);
+extern te_errno test_requirements_clone(const test_requirements *reqs,
+                                        test_requirements *new_reqs);
 
 /**
  * Free list of requirements.
@@ -148,28 +153,37 @@ extern void test_requirements_free(test_requirements *reqs);
 /**
  * Determine whether running of the test required.
  *
- * @param ctx       Tester context
- * @param test      Test to be checked
- * @param params    List of real test parameters
- * @param quiet     Be quiet
+ * @param targets       Target requirements expression
+ * @parma sticky_reqs   List of collected sticky requirements
+ * @param test          Test to be checked
+ * @param args          Array with test iteration arguments (run item
+ *                      has fixed number of arguments)
+ * @param flags         Current Tester context flags
+ * @param quiet         Be quiet
  *
- * @retval TRUE     Run is required
- * @retval FALSE    Run is not required
+ * @retval TRUE         Run is required
+ * @retval FALSE        Run is not required
  */
-extern te_bool tester_is_run_required(const struct tester_ctx  *ctx,
-                                      const struct run_item    *test,
-                                      const struct test_params *params,
-                                      te_bool                   quiet);
+extern te_bool tester_is_run_required(
+                   const reqs_expr            *targets,
+                   const test_requirements    *sticky_reqs,
+                   const struct run_item      *test,
+                   const struct test_iter_arg *args,
+                   unsigned int                flags,
+                   te_bool                     quiet);
 
 /**
  * Add sticky requirements to the context.
  *
- * @param ctx       Tester context
- * @param reqs      List of requirements
+ * @param sticky_reqs   List of requirements in the current context
+ * @param reqs          List of requirements
  *
- * @return Status code
+ * @return Status code.
  */
-extern int tester_ctx_get_sticky_reqs(struct tester_ctx       *ctx,
-                                      const test_requirements *reqs);
+extern te_errno tester_get_sticky_reqs(test_requirements *sticky_reqs,
+                                       const test_requirements *reqs);
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TESTER_REQS_H__ */

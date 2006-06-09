@@ -12,10 +12,12 @@
     <req id="TAD_SNMP"/> 
     <req id="TAD_IPSTACK"/> 
 
-    <session>
+    <session track_conf="silent">
 
         <prologue>
-            <script name="prologue"/>
+            <script name="prologue">
+                <objective>Assign IPv4 address in test networks.</objective>
+            </script>
         </prologue>
 
         <run>

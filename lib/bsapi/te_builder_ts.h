@@ -29,6 +29,9 @@
 
 #ifndef __TE_BUILDER_TS_H__
 #define __TE_BUILDER_TS_H__
+
+#include "te_errno.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,12 +52,12 @@ extern "C" {
  *                      absolute.  Otherwise it is considered as relative
  *                      from ${TE_BASE}.
  *
- * @return error code
+ * @return Status code.
  */
-extern int builder_build_test_suite(const char *suite, const char *sources);
-
+extern te_errno builder_build_test_suite(const char *suite,
+                                         const char *sources);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 #endif /* __TE_BUILDER_TS_H__ */

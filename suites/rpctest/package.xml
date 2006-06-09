@@ -2,7 +2,7 @@
 <package version="1.0">
     <description>Tests on RCF RPC functionality.</description>
     <author mailto="Elena.Vengerova@oktetlabs.ru"/>
-    <session>
+    <session track_conf="silent">
         <var name="env.peer2peer">
             <value>{
                 {

@@ -36,6 +36,28 @@
 extern "C" {
 #endif
 
+/* Forward declaration of the Testing Results Comparator instance */
+struct trc;
+
+/**
+ * Initialize TRC instance.
+ *
+ * @param db            Path to the database
+ * @param iut_id        IUT identification tags
+ * @param p_trci        Location for TRC instance handle
+ *
+ * @return Status code.
+ */
+extern te_errno trc_init(const char *db, const trc_tags *iut_id,
+                         struct trc **p_trci);
+
+/**
+ * Free TRC instance.
+ *
+ * @param trci          TRC instance handle
+ */
+extern void trc_free(struct trc *trci);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

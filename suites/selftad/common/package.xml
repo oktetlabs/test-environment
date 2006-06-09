@@ -9,10 +9,7 @@
 
         <run>
             <script name="poll_zero_csaps"/>
-            <arg name="csaps_null" type="boolean">
-                <value>FALSE</value>
-                <value>TRUE</value>
-            </arg>
+            <arg name="csaps_null" type="boolean"/>
         </run>
 
         <run>
@@ -25,27 +22,15 @@
                 <value>1</value>
                 <value>3</value>
             </arg>
-            <arg name="ta_null" type="boolean">
-                <value>FALSE</value>
-                <value>TRUE</value>
-            </arg>
-            <arg name="zero_timeout" type="boolean">
-                <value>FALSE</value>
-                <value>TRUE</value>
-            </arg>
-            <arg name="zero_status" type="boolean">
-                <value>FALSE</value>
-                <value>TRUE</value>
-            </arg>
+            <arg name="ta_null" type="boolean"/>
+            <arg name="zero_timeout" type="boolean"/>
+            <arg name="zero_status" type="boolean"/>
         </run>
 
         <run>
             <script name="poll_one"/>
             <arg name="env" value="{'iut_host'{if:'iut_if'}}"/>
-            <arg name="zero_timeout" type="boolean">
-                <value>FALSE</value>
-                <value>TRUE</value>
-            </arg>
+            <arg name="zero_timeout" type="boolean"/>
         </run>
 
    </session>

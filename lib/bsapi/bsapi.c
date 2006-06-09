@@ -32,6 +32,15 @@
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 
 #include "te_errno.h"
 #include "te_builder_ts.h"
@@ -57,13 +66,28 @@ static char cmd[MAX_SH_CMD];
  *                      absolute.  Otherwise it is considered as relative
  *                      from ${TE_BASE}.
  *
- * @return error code
+ * @return Status code.
  */
-int 
+te_errno
 builder_build_test_suite(const char *suite, const char *sources)
 {
+    te_errno            rc;
+#if HAVE_SIGNAL_H
+    struct sigaction    act;
+    struct sigaction    oldact;
+#endif
+
     if (suite == NULL || *suite == 0 || sources == NULL || *sources == 0)
         return TE_EINVAL;
+
+#if HAVE_SIGNAL_H
+    memset(&oldact, 0, sizeof(oldact));
+    memset(&act, 0, sizeof(act));
+    act.sa_handler = SIG_DFL;
+
+    if (sigaction(SIGINT, &act, &oldact) != 0)
+        return te_rc_os2te(errno);
+#endif
     
 #if 0
     sprintf(cmd, "te_stdouterr builder.log.%s.1 builder.log.%s.2 "
@@ -73,6 +97,12 @@ builder_build_test_suite(const char *suite, const char *sources)
                  ">builder.log.%s.1 2>builder.log.%s.2",
             suite, sources, suite, suite);
 #endif
-    return system(cmd) == 0 ? 0 : TE_ESHCMD;
-}
+    rc = system(cmd) == 0 ? 0 : TE_ESHCMD;
 
+#if HAVE_SIGNAL_H
+    if (sigaction(SIGINT, &oldact, NULL) != 0)
+        return te_rc_os2te(errno);
+#endif
+
+    return rc;
+}

@@ -4,21 +4,21 @@
  * Requirements management and usage.
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1 of
+ * Test Environment is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * Test Environment is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
@@ -47,12 +47,13 @@
 
 #include "logger_api.h"
 
-#include "internal.h"
-#include "reqs.h"
+#include "tester_conf.h"
+#include "tester_reqs.h"
+#include "tester_run.h"
 
 
-/* See description in reqs.h */
-int
+/* See description in tester_reqs.h */
+te_errno
 tester_new_target_reqs(reqs_expr **targets, const char *req)
 {
     int        rc;
@@ -101,19 +102,19 @@ tester_new_target_reqs(reqs_expr **targets, const char *req)
 /**
  * Clone a requirement. Reffered requirements are not supported.
  *
- * @param r     Requirement to be cloned
+ * @param req             Requirement to be cloned
  *
  * @return Pointer to allocated requirement clone or NULL.
  */
 static test_requirement *
-test_requirement_clone(const test_requirement *r)
+test_requirement_clone(const test_requirement *req)
 {
     test_requirement *p = calloc(1, sizeof(*p));
     
-    assert(r->ref == NULL);
+    assert(req->ref == NULL);
     if (p != NULL)
     {
-        p->id = strdup(r->id);
+        p->id = strdup(req->id);
         if (p->id != NULL)
         {
             return p;
@@ -127,7 +128,7 @@ test_requirement_clone(const test_requirement *r)
 /**
  * Free requirement.
  *
- * @param req       Requirement to be freed
+ * @param req           Requirement to be freed
  */
 static void
 test_requirement_free(test_requirement *req)
@@ -138,8 +139,8 @@ test_requirement_free(test_requirement *req)
 }
 
 
-/* See description in reqs.h */
-int
+/* See description in tester_reqs.h */
+te_errno
 test_requirements_clone(const test_requirements *reqs,
                         test_requirements *new_reqs)
 {
@@ -159,7 +160,7 @@ test_requirements_clone(const test_requirements *reqs,
     return 0;
 }
 
-/* See description in reqs.h */
+/* See description in tester_reqs.h */
 void
 test_requirements_free(test_requirements *reqs)
 {
@@ -173,7 +174,7 @@ test_requirements_free(test_requirements *reqs)
 }
 
 
-/* See description in reqs.h */
+/* See description in tester_reqs.h */
 reqs_expr *
 reqs_expr_binary(reqs_expr_type type, reqs_expr *lhv, reqs_expr *rhv)
 {
@@ -198,14 +199,14 @@ reqs_expr_binary(reqs_expr_type type, reqs_expr *lhv, reqs_expr *rhv)
 }
 
 
-/* See description in reqs.h */
+/* See description in tester_reqs.h */
 void
 tester_reqs_expr_free_nr(reqs_expr *p)
 {
     free(p);
 }
 
-/* See description in reqs.h */
+/* See description in tester_reqs.h */
 void
 tester_reqs_expr_free(reqs_expr *p)
 {
@@ -240,29 +241,29 @@ tester_reqs_expr_free(reqs_expr *p)
 /**
  * Get requirement identifier in specified context of parameters.
  *
- * @param r         A requirement
- * @param params    Parameters contex
+ * @param req           A requirement
+ * @param n_args        Number of arguments
+ * @param args          Test iteration arguments
  *
  * @return Requirement ID.
  */
 static const char *
-req_get(const test_requirement *r, const test_params *params)
+req_get(const test_requirement *req,
+        unsigned int n_args, const test_iter_arg *args)
 {
-    const test_param *p;
+    assert(req != NULL);
+    assert((args == NULL) == (n_args == 0));
 
-    assert(r != NULL);
-    assert(params != NULL);
-
-    if (r->id != NULL)
+    if (req->id != NULL)
     {
-        return r->id;
+        return req->id;
     }
 
-    assert(r->ref != NULL);
-    for (p = params->tqh_first; p != NULL; p = p->links.tqe_next)
+    assert(req->ref != NULL);
+    for (; n_args-- > 0; ++args)
     {
-        if (strcmp(p->name, r->ref) == 0)
-            return p->value;
+        if (strcmp(args->name, req->ref) == 0)
+            return args->value;
     }
     return "";
 }
@@ -270,13 +271,14 @@ req_get(const test_requirement *r, const test_params *params)
 /**
  * Has the set requirement with specified ID?
  *
- * @param req       Requirement ID
- * @param set       Set of requirements
- * @param params    Current parameters to interpret references
+ * @param req           Requirement ID
+ * @param set           Set of requirements
+ * @param n_args        Number of arguments
+ * @param args          Test iteration arguments
  */
 static te_bool
 is_req_in_set(const char *req, const test_requirements *set,
-              const test_params *params)
+              const unsigned int n_args, const test_iter_arg *args)
 {
     const test_requirement *s;
 
@@ -286,7 +288,7 @@ is_req_in_set(const char *req, const test_requirements *set,
          s != NULL;
          s = s->links.tqe_next)
     {
-        if (strcmp(req, req_get(s, params)) == 0)
+        if (strcmp(req, req_get(s, n_args, args)) == 0)
         {
             return TRUE;
         }
@@ -295,20 +297,22 @@ is_req_in_set(const char *req, const test_requirements *set,
 }
 
 /**
- * Has one of parameters specified requirments in its set?
+ * Has one of arguments specified requirments in its set?
  *
- * @param req       Requirement ID
- * @param params    Current parameters to interpret references
+ * @param req           Requirement ID
+ * @param n_args        Number of arguments
+ * @param args          Test iteration arguments
  */
 static te_bool
-is_req_in_params(const char *req, const test_params *params)
+is_req_in_args(const char *req, const unsigned int n_args,
+               const test_iter_arg *args)
 {
-    const test_param   *p;
+    const test_iter_arg   *p;
+    unsigned int            i;
 
-    assert(params != NULL);
-    for (p = params->tqh_first; p != NULL; p = p->links.tqe_next)
+    for (p = args, i = 0; i < n_args; ++i, ++p)
     {
-        if (is_req_in_set(req, p->reqs, params))
+        if (is_req_in_set(req, &p->reqs, n_args, args))
             return TRUE;
     }
     return FALSE;
@@ -318,17 +322,19 @@ is_req_in_params(const char *req, const test_params *params)
  * Is union of context, test and parameters requirements match logical
  * expression of requirements?
  *
- * @param re        Logical expression of requirements
- * @param ctx_set   Context set of requirements
- * @param test_set  Test set of requirements
- * @param params    Current parameters
- * @param force     Is the force verdict or weak?
+ * @param re            Logical expression of requirements
+ * @param ctx_set       Context set of requirements
+ * @param test_set      Test set of requirements
+ * @param n_args        Number of arguments
+ * @param args          Test iteration arguments
+ * @param force         Is the force verdict or weak?
  */
 static te_bool
 is_reqs_expr_match(const reqs_expr         *re,
                    const test_requirements *ctx_set,
                    const test_requirements *test_set,
-                   const test_params       *params,
+                   const unsigned int       n_args,
+                   const test_iter_arg     *args,
                    te_bool                 *force)
 {
     te_bool result;
@@ -337,16 +343,16 @@ is_reqs_expr_match(const reqs_expr         *re,
     switch (re->type)
     {
         case TESTER_REQS_EXPR_VALUE:
-            result = is_req_in_set(re->u.value, ctx_set, params) ||
-                     is_req_in_set(re->u.value, test_set, params) ||
-                     is_req_in_params(re->u.value, params);
+            result = is_req_in_set(re->u.value, ctx_set, n_args, args) ||
+                     is_req_in_set(re->u.value, test_set, n_args, args) ||
+                     is_req_in_args(re->u.value, n_args, args);
             VERB("%s(): %s -> %u(%u)", __FUNCTION__, re->u.value,
                  result, *force);
             break;
 
         case TESTER_REQS_EXPR_NOT:
             result = !is_reqs_expr_match(re->u.unary,
-                                         ctx_set, test_set, params,
+                                         ctx_set, test_set, n_args, args,
                                          force);
             if (!result)
                 *force = TRUE;
@@ -356,11 +362,12 @@ is_reqs_expr_match(const reqs_expr         *re,
         case TESTER_REQS_EXPR_AND:
         {
             te_bool lhr = is_reqs_expr_match(re->u.binary.lhv,
-                                             ctx_set, test_set, params,
-                                             force);
+                                             ctx_set, test_set,
+                                             n_args, args, force);
             te_bool rhr = (lhr || !*force) ?
                               is_reqs_expr_match(re->u.binary.rhv,
-                                                 ctx_set, test_set, params,
+                                                 ctx_set, test_set,
+                                                 n_args, args,
                                                  force) : FALSE;
 
             result = lhr && rhr;
@@ -370,11 +377,11 @@ is_reqs_expr_match(const reqs_expr         *re,
 
         case TESTER_REQS_EXPR_OR:
             result = is_reqs_expr_match(re->u.binary.lhv,
-                                        ctx_set, test_set, params,
-                                        force) ||
+                                        ctx_set, test_set,
+                                        n_args, args, force) ||
                      is_reqs_expr_match(re->u.binary.rhv,
-                                        ctx_set, test_set, params,
-                                        force);
+                                        ctx_set, test_set,
+                                        n_args, args, force);
             VERB("%s(): || -> %u(%u)", __FUNCTION__, result, *force);
             break;
 
@@ -491,14 +498,17 @@ reqs_expr_to_string(const reqs_expr *expr)
 /**
  * Print list of requirements into string.
  *
- * @param reqs      List of requirements
- * @param params    Parameters context to get referred requirements ID
- * @param buf       Location of the pointer to the buffer
- * @param left      Location of the space left in the buffer
+ * @param reqs          List of requirements
+ * @param n_args        Number of arguments
+ * @param args          Test iteration arguments to get indirect
+ *                      requirements ID
+ * @param buf           Location of the pointer to the buffer
+ * @param left          Location of the space left in the buffer
  */
 static void
 reqs_list_to_string_buf(const test_requirements  *reqs,
-                        const test_params        *params,
+                        const unsigned int        n_args,
+                        const test_iter_arg      *args,
                         char                    **buf,
                         ssize_t                  *left)
 {
@@ -512,7 +522,7 @@ reqs_list_to_string_buf(const test_requirements  *reqs,
     {
         out = snprintf(s, *left, "%s%s",
                        (p == reqs->tqh_first) ? "" : ", ",
-                       req_get(p, params));
+                       req_get(p, n_args, args));
     }
     *buf = s;
 }
@@ -520,15 +530,18 @@ reqs_list_to_string_buf(const test_requirements  *reqs,
 /**
  * Print list of requirements into string.
  *
- * @param reqs      List of requirements
- * @param params    Parameters context to get referred requirements ID
+ * @param reqs          List of requirements
+ * @param n_args        Number of arguments
+ * @param args          Test iteration arguments to get indirect
+ *                      requirements ID
  *
  * @return Pointer to one of few static buffers with printed
  *         requirements
  */
 static const char *
 reqs_list_to_string(const test_requirements *reqs,
-                    const test_params       *params)
+                    const unsigned int       n_args,
+                    const test_iter_arg     *args)
 {
     static char         bufs[4][1024];
     static unsigned int index = 0;
@@ -538,41 +551,45 @@ reqs_list_to_string(const test_requirements *reqs,
     ssize_t     left = sizeof(bufs[0]);
 
     out_buf[0] = '\0';
-    reqs_list_to_string_buf(reqs, params, &s, &left);
+    reqs_list_to_string_buf(reqs, n_args, args, &s, &left);
 
     return out_buf;
 }
 
 /**
- * Print requirements attached to each parameter in the list.
+ * Print requirements attached to each parameter of the test iteration.
  *
- * @param params        List of test parameters
+ * @param n_args        Number of arguments
+ * @param args          Test iteration arguments
  *
  * @return Pointer to the static buffer with printed requirements per
  *         test parameter. Parameter is skipped, if it has no attached
  *         requirements.
  */
 static const char *
-params_reqs_list_to_string(const test_params *params)
+params_reqs_list_to_string(const unsigned int   n_args,
+                           const test_iter_arg *args)
 {
     static char out_buf[1024];
 
-    const test_param   *p;
-    char               *s;
-    ssize_t             left; 
-    int                 out;
+    const test_iter_arg   *p;
+    unsigned int            i;
+    char                   *s;
+    ssize_t                 left; 
+    int                     out;
+
 
     out_buf[0] = '\0';
-    for (p = params->tqh_first, s = out_buf, left = sizeof(out_buf);
-         p != NULL && left > 0;
-         p = p->links.tqe_next)
+    for (p = args, s = out_buf, left = sizeof(out_buf), i = 0;
+         i < n_args && left > 0;
+         ++p, ++i)
     {
-        if (p->reqs != NULL)
+        if (p->reqs.tqh_first != NULL)
         {
             out = snprintf(s, left, " %s=", p->name);
             s += out;
             left -= out;
-            reqs_list_to_string_buf(p->reqs, params, &s, &left);
+            reqs_list_to_string_buf(&p->reqs, n_args, args, &s, &left);
         }
     }
 
@@ -580,10 +597,14 @@ params_reqs_list_to_string(const test_params *params)
 }
 
 
-/* See description in reqs.h */
+/* See description in tester_reqs.h */
 te_bool
-tester_is_run_required(const tester_ctx *ctx, const run_item *test,
-                       const test_params *params, te_bool quiet)
+tester_is_run_required(const reqs_expr         *targets,
+                       const test_requirements *sticky_reqs,
+                       const run_item          *test,
+                       const test_iter_arg     *args,
+                       unsigned int             flags,
+                       te_bool                  quiet)
 {
     te_bool                     result;
     te_bool                     force = FALSE;
@@ -608,23 +629,23 @@ tester_is_run_required(const tester_ctx *ctx, const run_item *test,
             return FALSE;
     }
 
-    if (ctx->targets != NULL)
+    if (targets != NULL)
     {
-        result = is_reqs_expr_match(ctx->targets, &ctx->reqs, reqs,
-                                    params, &force);
+        result = is_reqs_expr_match(targets, sticky_reqs, reqs,
+                                    test->n_args, args, &force);
         if (!force)
             result = result || (test->type != RUN_ITEM_SCRIPT) ||
-                     !!(ctx->flags & TESTER_INLOGUE);
+                     !!(flags & TESTER_INLOGUE);
         if (!result && !quiet)
         {
             RING("Skipped because of expression: %s\n"
                  "Collected sticky requirements: %s\n"
                  "Test node requirements: %s\n"
                  "Requirements attached to parameters:%s\n",
-                 reqs_expr_to_string(ctx->targets),
-                 reqs_list_to_string(&ctx->reqs, params),
-                 reqs_list_to_string(reqs, params),
-                 params_reqs_list_to_string(params));
+                 reqs_expr_to_string(targets),
+                 reqs_list_to_string(sticky_reqs, test->n_args, args),
+                 reqs_list_to_string(reqs, test->n_args, args),
+                 params_reqs_list_to_string(test->n_args, args));
         }
     }
     else
@@ -635,10 +656,11 @@ tester_is_run_required(const tester_ctx *ctx, const run_item *test,
     return result;
 }
 
-/* See description in reqs.h */
-int
-tester_ctx_get_sticky_reqs(struct tester_ctx       *ctx,
-                           const test_requirements *reqs)
+
+/* See description in tester_reqs.h */
+te_errno
+tester_get_sticky_reqs(test_requirements       *sticky_reqs,
+                       const test_requirements *reqs)
 {
     const test_requirement *p;
     test_requirement       *q;
@@ -650,7 +672,7 @@ tester_ctx_get_sticky_reqs(struct tester_ctx       *ctx,
             q = test_requirement_clone(p);
             if (q == NULL)
                 return TE_RC(TE_TESTER, TE_ENOMEM);
-            TAILQ_INSERT_TAIL(&ctx->reqs, q, links);
+            TAILQ_INSERT_TAIL(sticky_reqs, q, links);
         }
     }
 

@@ -4,21 +4,21 @@
  * Application main file
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1 of
+ * Test Environment is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * Test Environment is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
@@ -41,436 +41,264 @@
 #if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
+#if HAVE_TIME_H
+#include <time.h>
+#endif
 #if HAVE_POPT_H
 #include <popt.h>
 #else
 #error popt library (development version) is required for Tester
 #endif
 
-#include "te_builder_ts.h"
-#include "conf_api.h"
-
-#include "internal.h"
-
+#include "te_defs.h"
+#include "tester_build.h"
+#include "tester_conf.h"
+#include "test_path.h"
+#include "tester_term.h"
+#include "tester_run.h"
+#include "type_lib.h"
 
 /** Logging entity name of the Tester subsystem */
 DEFINE_LGR_ENTITY("Tester");
 
 
+extern int reqs_expr_lex_destroy(void);
+extern int test_path_lex_destroy(void);
+
+
+/** Is SIGINT signal received? */
+te_bool tester_sigint_received = FALSE;
+
+
+/** Tester global context */
+typedef struct tester_global {
+    unsigned int        rand_seed;  /**< Random seed */
+    unsigned int        flags;      /**< Flags (enum tester_flags) */
+    tester_cfgs         cfgs;       /**< Configuration files */
+    test_suites_info    suites;     /**< Information about test suites */
+    test_paths          paths;      /**< Paths specified by caller */
+    reqs_expr          *targets;    /**< Target requirements expression */
+    unsigned int        total;      /**< Total number of test iterations */
+    testing_scenario    scenario;   /**< Testing scenario */
+} tester_global;
+
+
 /**
- * Tester application command line options. Values must be started from
- * one, since zero has special meaning for popt.
- */
-enum {
-    TESTER_OPT_NOLOGUES = 1,
-    TESTER_OPT_NORANDOM,
-    TESTER_OPT_NOSIMULT,
-    TESTER_OPT_SUITE_PATH,
-    TESTER_OPT_RUN,
-    TESTER_OPT_VALGRIND,
-    TESTER_OPT_GDB,
-    TESTER_OPT_REQ,
-    TESTER_OPT_NOBUILD,
-    TESTER_OPT_FAKE,
-    TESTER_OPT_TIMEOUT,
-    TESTER_OPT_VERBOSE,
-    TESTER_OPT_QUIET,
-    TESTER_OPT_VERSION,
-    TESTER_OPT_NO_CS,
-    TESTER_OPT_NOCFGTRACK,
-    TESTER_OPT_QUIET_SKIP,
-};
-
-
-static void run_item_free(run_item *run);
-static void run_items_free(run_items *runs);
-
-    
-/**
- * Initialize Tester context.
+ * Initialize Tester global context.
  *
- * @param ctx           Context to be initialized
+ * @param global        Global context to be initialized
  *
  * @return Status code.
  */
-static int
-tester_ctx_init(tester_ctx *ctx)
+static te_errno
+tester_global_init(tester_global *global)
 {
-    memset(ctx, 0, sizeof(*ctx));
-    ctx->id = tester_get_id();
-    TAILQ_INIT(&ctx->suites);
-    TAILQ_INIT(&ctx->reqs);
-    ctx->path = calloc(1, sizeof(*(ctx->path)));
-    if (ctx->path == NULL)
-    {
-        ERROR("%s(): Memory allocation failure", __FUNCTION__);
-        return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
-    TAILQ_INIT(&ctx->path->params);
-    TAILQ_INIT(&ctx->path->paths);
+    memset(global, 0, sizeof(*global));
+
+    /* By default, random seed uses time from Epoch in seconds */
+    global->rand_seed = (unsigned int)time(NULL);
+
     /* By default verbosity level is set to 1 */
-    ctx->flags |= TESTER_VERBOSE;
+    global->flags |= TESTER_VERBOSE;
+
+    TAILQ_INIT(&global->cfgs);
+    TAILQ_INIT(&global->suites);
+    TAILQ_INIT(&global->paths);
+
+    global->targets = NULL;
+
+    TAILQ_INIT(&global->scenario);
 
     return 0;
 }
 
 /**
- * Allocatate and initialize Tester configuration.
+ * Free Tester global context.
  *
- * @param filename      Name of the file with configuration
+ * @param global        Global context to be freed
  *
- * @return Pointer to allocated and initialized Tester configuration or
- *         NULL.
+ * @return Status code.
  */
-static tester_cfg *
-tester_cfg_new(const char *filename)
+static void
+tester_global_free(tester_global *global)
 {
-    tester_cfg *p = malloc(sizeof(*p));
-
-    if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
-        return NULL;
-    }
-    memset(p, 0, sizeof(*p));
-    p->filename = filename;
-    TAILQ_INIT(&p->maintainers);
-    TAILQ_INIT(&p->suites);
-    TAILQ_INIT(&p->options);
-    TAILQ_INIT(&p->runs);
-
-    return p;
+    tester_cfgs_free(&global->cfgs);
+    test_suites_info_free(&global->suites);
+    test_paths_free(&global->paths);
+    tester_reqs_expr_free(global->targets);
+    scenario_free(&global->scenario);
 }
 
 
 /**
- * Free information about person.
+ * Handler of SIGINT signal.
  *
- * @param p         Information about person to be freed.
+ * @param signum        Signal number (unused)
  */
 static void
-person_info_free(person_info *p)
+tester_sigint_handler(int signum)
 {
-    free(p->name);
-    free(p->mailto);
-    free(p);
-}
-
-/**
- * Free list of information about persons.
- *
- * @param persons   List of persons to be freed
- */
-static void
-persons_info_free(persons_info *persons)
-{
-    person_info *p;
-
-    while ((p = persons->tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(persons, p, links);
-        person_info_free(p);
-    }
-}
-
-
-/**
- * Free test script.
- *
- * @param p         Test script to be freed
- */
-static void
-test_script_free(test_script *p)
-{
-    free(p->name);
-    free(p->objective);
-    free(p->execute);
-    test_requirements_free(&p->reqs);
-}
-
-
-/**
- * Free variable/argument value.
- *
- * @param p     Value to be freed
- */
-static void
-test_var_arg_value_free(test_var_arg_value *p)
-{
-    free(p->id);
-    free(p->ext);
-    free(p->value);
-    test_requirements_free(&p->reqs);
-    free(p);
-}
-
-/**
- * Free list of variable/argument values.
- *
- * @param values    List of variable/argument values to be freed
- */
-static void
-test_var_arg_values_free(test_var_arg_values *values)
-{
-    test_var_arg_value *p;
-
-    while ((p = values->tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(values, p, links);
-        test_var_arg_value_free(p);
-    }
-}
-
-/**
- * Free variable/argument attributes.
- *
- * @param attrs     Attributes to be freed
- */
-static void
-test_var_arg_attrs_free(test_var_arg_attrs *attrs)
-{
-    free(attrs->list);
-}
-
-/**
- * Free session variable.
- *
- * @param p         Session variable to be freed.
- */
-static void
-test_var_arg_free(test_var_arg *p)
-{
-    free(p->name);
-    test_var_arg_values_free(&p->values);
-    test_var_arg_attrs_free(&p->attrs);
-    free(p);
-}
-
-/**
- * Free list of session variables.
- *
- * @param vars      List of session variables to be freed
- */
-static void
-test_vars_args_free(test_vars_args *vars)
-{
-    test_var_arg *p;
-
-    while ((p = vars->tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(vars, p, links);
-        test_var_arg_free(p);
-    }
-}
-
-/**
- * Free test session.
- *
- * @param p         Test session to be freed
- */
-static void
-test_session_free(test_session *p)
-{
-    free(p->name);
-    test_vars_args_free(&p->vars);
-    run_item_free(p->exception);
-    run_item_free(p->keepalive);
-    run_item_free(p->prologue);
-    run_item_free(p->epilogue);
-    run_items_free(&p->run_items);
-}
-
-/**
- * Free test package.
- *
- * @param p         Test package to be freed
- */
-static void
-test_package_free(test_package *p)
-{
-    if (p == NULL)
-        return;
-
-    free(p->name);
-    free(p->path);
-    free(p->objective);
-    persons_info_free(&p->authors);
-    test_requirements_free(&p->reqs);
-    test_session_free(&p->session);
-    free(p);
-}
-
-/**
- * Free run item.
- *
- * @param run       Run item to be freed
- */
-static void
-run_item_free(run_item *run)
-{
-    if (run == NULL)
-        return;
-
-    free(run->name);
-    switch (run->type)
-    {
-        case RUN_ITEM_NONE:
-            break;
-
-        case RUN_ITEM_SCRIPT:
-            test_script_free(&run->u.script);
-            break;
-
-        case RUN_ITEM_SESSION:
-            test_session_free(&run->u.session);
-            break;
-
-        case RUN_ITEM_PACKAGE:
-            test_package_free(run->u.package);
-            break;
-
-        default:
-            assert(0);
-    }
-    test_vars_args_free(&run->args);
-    free(run);
-}
-
-
-/**
- * Free list of run items.
- *
- * @param runs      List of run items to be freed
- */
-static void
-run_items_free(run_items *runs)
-{
-    run_item *p;
-
-    while ((p = runs->tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(runs, p, links);
-        run_item_free(p);
-    }
-}
-
-/**
- * Free test suite information.
- *
- * @param p         Information about test suite
- */
-static void
-test_suite_info_free(test_suite_info *p)
-{
-    free(p->name);
-    free(p->src);
-    free(p->bin);
-    free(p);
-}
-
-/**
- * Free list of test suites information.
- *
- * @param suites    List of with test suites information
- */
-static void
-test_suites_info_free(test_suites_info *suites)
-{
-    test_suite_info *p;
-
-    while ((p = suites->tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(suites, p, links);
-        test_suite_info_free(p);
-    }
-}
-
-
-/**
- * Free Tester configuration.
- *
- * @param cfg       Tester configuration to be freed
- */
-static void
-tester_cfg_free(tester_cfg *cfg)
-{
-    persons_info_free(&cfg->maintainers);
-    free(cfg->descr);
-    test_suites_info_free(&cfg->suites);
-    tester_reqs_expr_free(cfg->targets);
-    run_items_free(&cfg->runs);
-    free(cfg);
+    UNUSED(signum);
+    WARN("SIGINT received");
+    tester_sigint_received = TRUE;
 }
 
 
 /**
  * Process command line options and parameters specified in argv.
- * The procedure contains "Option table" that should be updated 
+ * The procedure contains "Option table" that should be updated
  * if some new options are going to be added.
  *
- * @param ctx   Tester global context
- * @param cfgs  List of Tester configurations
- * @param argc  Number of elements in array "argv".
- * @param argv  Array of strings that represents all command line arguments.
+ * @param global        Tester global context
+ * @param argc          Number of elements in array "argv"
+ * @param argv          Array of strings that represents all command
+ *                      line arguments
  *
- * @return EXIT_SUCCESS or EXIT_FAILURE
+ * @return Status code.
  */
-static int
-process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
-                      int argc, char **argv)
+static te_errno
+process_cmd_line_opts(tester_global *global, int argc, char **argv)
 {
-    poptContext  optCon;
-    int          rc;
-    const char  *cfg_file;
+    /**
+     * Tester application command line options. Values must be started
+     * from one, since zero has special meaning for popt.
+     *
+     * @attention Order of TESTER_OPT_RUN..TESTER_OPT_MIX_SESSIONS
+     *            should be exactly the same as items of
+     *            test_path_type enumeration.
+     */
+    enum {
+        TESTER_OPT_VERSION = 1,
+
+        TESTER_OPT_QUIET,
+        TESTER_OPT_VERBOSE,
+
+        TESTER_OPT_NO_BUILD,
+        TESTER_OPT_NO_RUN,
+        TESTER_OPT_NO_CS,
+        TESTER_OPT_NO_CFG_TRACK,
+        TESTER_OPT_NO_LOGUES,
+        TESTER_OPT_NO_SIMULT,
+
+        TESTER_OPT_REQ,
+        TESTER_OPT_QUIET_SKIP,
+
+        TESTER_OPT_RUN,
+        TESTER_OPT_RUN_FORCE,
+        TESTER_OPT_RUN_FROM,
+        TESTER_OPT_RUN_TO,
+
+        TESTER_OPT_VALGRIND,
+        TESTER_OPT_GDB,
+
+        TESTER_OPT_MIX,
+        TESTER_OPT_MIX_VALUES,
+        TESTER_OPT_MIX_ARGS,
+        TESTER_OPT_MIX_TESTS,
+        TESTER_OPT_MIX_ITERS,
+        TESTER_OPT_MIX_SESSIONS,
+        TESTER_OPT_NO_MIX,
+
+        TESTER_OPT_FAKE,
+
+        TESTER_OPT_SUITE_PATH,
+    };
 
     /* Option Table */
-    struct poptOption options_table[] = {
+    const struct poptOption options_table[] = {
         { "suite", 's', POPT_ARG_STRING, NULL, TESTER_OPT_SUITE_PATH,
-          "Specify path to the Test Suite.", "NAME:PATH" },
+          "Specify path to the Test Suite.", "<name>:<path>" },
+
+        { "no-run", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_RUN,
+          "Don't run any tests.", NULL },
+
+        { "no-build", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_BUILD,
+          "Don't build any Test Suites.", NULL },
+        { "nobuild", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_BUILD,
+          "(obsolete) Don't build any Test Suites.", NULL },
+
+        { "no-cs", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_CS,
+          "Don't interact with Configurator.", NULL },
+        { "no-cfg-track", '\0', POPT_ARG_NONE, NULL,
+          TESTER_OPT_NO_CFG_TRACK,
+          "Don't track configuration changes.", NULL },
+
+        { "no-logues", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_LOGUES,
+          "Disable prologues and epilogues globally.", NULL },
+
+#if 0
+        { "no-simultaneous", '\0', POPT_ARG_NONE, NULL,
+          TESTER_OPT_NO_SIMULT,
+          "Force to run all tests in series. Usefull for debugging.",
+          NULL },
+#endif
 
         { "req", 'R', POPT_ARG_STRING, NULL, TESTER_OPT_REQ,
           "Requirements to be tested (logical expression).",
           "REQS" },
-
         { "quietskip", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_QUIET_SKIP,
           "Quietly skip tests which do not meet specified requirements.",
           NULL },
 
+        { "fake", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_FAKE,
+          "Don't run any test scripts, just emulate test scenario.",
+          "<testpath>" },
+
         { "run", 'r', POPT_ARG_STRING, NULL, TESTER_OPT_RUN,
-          "Run Test Suite with specified arguments.", "PATH" },
+          "Run test under the path.", "<testpath>" },
+        { "run-from", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_FROM,
+          "Run tests starting from the test path.",
+          "<testpath>" },
+        { "run-to", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_TO,
+          "Run tests up to the test path.",
+          "<testpath>" },
+#if 0
+        { "run-force", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_FORCE,
+          "Run test with specified arguments even if such values are "
+          "not mentioned in package.xml.", "<testpath>" },
+#endif
 
         { "vg", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_VALGRIND,
-          "Run test scripts in specified path under valgrind.", "PATH" },
-
+          "Run test scripts under specified path using valgrind.",
+          "<testpath>" },
         { "gdb", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_GDB,
-          "Run test scripts in specified path under gdb.", "PATH" },
+          "Run test scripts under specified path using gdb.",
+          "<testpath>" },
 
-        { "nobuild", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NOBUILD,
-          "Don't build any Test Suites.", NULL },
+#if 0
+        { "mix", '\0', POPT_ARG_STRING, NULL,
+          TESTER_OPT_MIX,
+          "Mix everything in boundaries of sessions.",
+          "<testpath>" },
+        { "mix-values", '\0', POPT_ARG_STRING, NULL,
+          TESTER_OPT_MIX_VALUES,
+          "Mix values of arguments.",
+          "<testpath>" },
+        { "mix-args", '\0', POPT_ARG_STRING, NULL,
+          TESTER_OPT_MIX_ARGS,
+          "Mix iteration order of arguments.",
+          "<testpath>" },
+        { "mix-tests", '\0', POPT_ARG_STRING, NULL,
+          TESTER_OPT_MIX_TESTS,
+          "Mix tests in boundaries of sessions.",
+          "<testpath>" },
+        { "mix-iters", '\0', POPT_ARG_STRING, NULL,
+          TESTER_OPT_MIX_ITERS,
+          "Mix iterations of different tests in boundaries of session",
+          "<testpath>" },
+        { "mix-sessions", '\0', POPT_ARG_STRING, NULL,
+          TESTER_OPT_MIX_SESSIONS,
+          "Mix elements of different sessions.",
+          "<testpath>" },
+        { "no-mix", '\0', POPT_ARG_STRING, NULL,
+          TESTER_OPT_NO_MIX,
+          "Disable all enabled mixture setting.",
+          "<testpath>" },
+#endif
 
-        { "no-cs", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_CS,
-          "Don't interact with Configurator.", NULL },
-
-        { "nocfgtrack", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NOCFGTRACK,
-          "Don't track configuration changes.", NULL },
-
-        { "norandom", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NORANDOM,
-          "Force to run all tests in defined order as well as to get "
-          "values of all arguments in defined order. Usefull for "
-          "debugging.", NULL },
-
-        { "nologues", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NOLOGUES,
-          "Disable prologues and epilogues globally.", NULL },
-
-        { "nosimultaneous", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NOSIMULT,
-          "Force to run all tests in series. Usefull for debugging.",
-          NULL },
-
-        { "fake", 'T', POPT_ARG_NONE, NULL, TESTER_OPT_FAKE,
-          "Don't run any test scripts, just emulate test failure.", NULL },
-
-        { "timeout", 't', POPT_ARG_INT, &ctx->timeout, TESTER_OPT_TIMEOUT, 
-          "Restrict execution time (in seconds).", NULL },
+        { "random-seed", '\0', POPT_ARG_INT, &global->rand_seed, 0,
+          "Random seed to initialize pseudo-random number generator",
+          "<number>" },
 
         { "verbose", 'v', POPT_ARG_NONE, NULL, TESTER_OPT_VERBOSE,
           "Increase verbosity of the Tester (the first level is set by "
@@ -479,17 +307,22 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
         { "quiet", 'q', POPT_ARG_NONE, NULL, TESTER_OPT_QUIET,
           "Decrease verbosity of the Tester.", NULL },
 
-        { "version", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_VERSION, 
+        { "version", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_VERSION,
           "Display version information.", NULL },
 
         POPT_AUTOHELP
         POPT_TABLEEND
     };
-    
+
+    poptContext  optCon;
+    int          rc;
+    const char  *cfg_file;
+
+
     /* Process command line options */
     optCon = poptGetContext(NULL, argc, (const char **)argv,
                             options_table, 0);
-  
+
     poptSetOtherOptionHelp(optCon,
                            "[OPTIONS] <cfg-file1> [<cfg-file2> ...]");
 
@@ -497,67 +330,54 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
     {
         switch (rc)
         {
-            case TESTER_OPT_NOLOGUES:
-                ctx->flags |= TESTER_NOLOGUES;
+            case TESTER_OPT_NO_LOGUES:
+                global->flags |= TESTER_NO_LOGUES;
                 break;
 
-            case TESTER_OPT_NORANDOM:
-                ctx->flags |= TESTER_NORANDOM;
+            case TESTER_OPT_NO_SIMULT:
+                global->flags |= TESTER_NO_SIMULT;
                 break;
 
-            case TESTER_OPT_NOSIMULT:
-                ctx->flags |= TESTER_NOSIMULT;
+            case TESTER_OPT_NO_RUN:
+                global->flags |= TESTER_NO_RUN;
                 break;
 
-            case TESTER_OPT_FAKE:
-                ctx->flags |= TESTER_FAKE;
-                break;
-
-            case TESTER_OPT_NOBUILD:
-                ctx->flags |= TESTER_NOBUILD;
+            case TESTER_OPT_NO_BUILD:
+                global->flags |= TESTER_NO_BUILD;
                 break;
 
             case TESTER_OPT_NO_CS:
-                ctx->flags |= TESTER_NO_CS;
+                global->flags |= (TESTER_NO_CS | TESTER_NO_CFG_TRACK);
                 break;
 
-            case TESTER_OPT_NOCFGTRACK:
-                ctx->flags |= TESTER_NOCFGTRACK;
+            case TESTER_OPT_NO_CFG_TRACK:
+                global->flags |= TESTER_NO_CFG_TRACK;
                 break;
 
             case TESTER_OPT_QUIET_SKIP:
-                ctx->flags |= TESTER_QUIET_SKIP;
+                global->flags |= TESTER_QUIET_SKIP;
                 break;
 
             case TESTER_OPT_VERBOSE:
-                if (!(ctx->flags & TESTER_VERBOSE))
-                    ctx->flags |= TESTER_VERBOSE;
-                else if (!(ctx->flags & TESTER_VVERB))
-                    ctx->flags |= TESTER_VVERB;
-                else if (!(ctx->flags & TESTER_VVVERB))
-                    ctx->flags |= TESTER_VVVERB;
+                if (!(global->flags & TESTER_VERBOSE))
+                    global->flags |= TESTER_VERBOSE;
+                else if (!(global->flags & TESTER_VVERB))
+                    global->flags |= TESTER_VVERB;
+                else if (!(global->flags & TESTER_VVVERB))
+                    global->flags |= TESTER_VVVERB;
                 else
                     WARN("Extra 'verbose' option is ignored");
                 break;
 
             case TESTER_OPT_QUIET:
-                if (ctx->flags & TESTER_VVVERB)
-                    ctx->flags &= ~TESTER_VVVERB;
-                else if (ctx->flags & TESTER_VVERB)
-                    ctx->flags &= ~TESTER_VVERB;
-                else if (ctx->flags & TESTER_VERBOSE)
-                    ctx->flags &= ~TESTER_VERBOSE;
+                if (global->flags & TESTER_VVVERB)
+                    global->flags &= ~TESTER_VVVERB;
+                else if (global->flags & TESTER_VVERB)
+                    global->flags &= ~TESTER_VVERB;
+                else if (global->flags & TESTER_VERBOSE)
+                    global->flags &= ~TESTER_VERBOSE;
                 else
                     WARN("Extra 'quiet' option is ignored");
-                break;
-
-            case TESTER_OPT_TIMEOUT:
-                if (ctx->timeout < 0)
-                {
-                    ERROR("Negative timeout was specified");
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
-                }
                 break;
 
             case TESTER_OPT_SUITE_PATH:
@@ -571,7 +391,7 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
                 {
                     ERROR("Invalid suite path info: %s", opt);
                     poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    return TE_EINVAL;
                 }
 
                 if (((p = calloc(1, sizeof(*p))) == NULL) ||
@@ -586,62 +406,63 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
 
                     ERROR("Memory allocation failed");
                     poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    return TE_ENOMEM;
                 }
                 memcpy(p->name, opt, name_len);
                 p->name[name_len] = '\0';
-                TAILQ_INSERT_TAIL(&ctx->suites, p, links);
+                TAILQ_INSERT_TAIL(&global->suites, p, links);
                 break;
             }
 
             case TESTER_OPT_RUN:
+            case TESTER_OPT_RUN_FORCE:
+            case TESTER_OPT_RUN_FROM:
+            case TESTER_OPT_RUN_TO:
             case TESTER_OPT_VALGRIND:
             case TESTER_OPT_GDB:
+            case TESTER_OPT_MIX:
+            case TESTER_OPT_MIX_VALUES:
+            case TESTER_OPT_MIX_ARGS:
+            case TESTER_OPT_MIX_TESTS:
+            case TESTER_OPT_MIX_ITERS:
+            case TESTER_OPT_MIX_SESSIONS:
+            case TESTER_OPT_NO_MIX:
+            case TESTER_OPT_FAKE:
             {
-                char *s = strdup(poptGetOptArg(optCon));
+                const char *s = poptGetOptArg(optCon);
 
-                if (s == NULL)
-                {
-                    ERROR("strdup() failed");
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
-                }
-                rc = tester_run_path_new(ctx->path, s,
-                                         (rc == TESTER_OPT_VALGRIND) ?
-                                             TESTER_VALGRIND :
-                                         (rc == TESTER_OPT_GDB) ?
-                                              TESTER_GDB :
-                                         TESTER_RUN);
+                rc = test_path_new(&global->paths, s,
+                                   TEST_PATH_RUN +
+                                       (rc - TESTER_OPT_RUN));
                 if (rc != 0)
                 {
-                    ERROR("Failed to add new run path '%s'", s);
-                    free(s);
+                    ERROR("Failed to add new test path '%s'", s);
                     poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    return rc;
                 }
                 break;
             }
 
             case TESTER_OPT_REQ:
-                rc = tester_new_target_reqs(&ctx->targets,
+                rc = tester_new_target_reqs(&global->targets,
                                             poptGetOptArg(optCon));
                 if (rc != 0)
                 {
                     poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    return rc;
                 }
                 break;
-            
+
             case TESTER_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,
                        TE_COPYRIGHT);
                 poptFreeContext(optCon);
-                return EXIT_FAILURE;
+                return TE_EINTR;
 
             default:
                 ERROR("Unexpected option number %d", rc);
                 poptFreeContext(optCon);
-                return EXIT_FAILURE;
+                return TE_EINVAL;
         }
     }
 
@@ -651,7 +472,7 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
         ERROR("%s: %s", poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
               poptStrerror(rc));
         poptFreeContext(optCon);
-        return EXIT_FAILURE;
+        return TE_EINVAL;
     }
 
     /* Get Tester configuration file names */
@@ -662,71 +483,14 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
         if (cfg == NULL)
         {
             poptFreeContext(optCon);
-            return EXIT_FAILURE;
+            return TE_ENOMEM;
         }
         VERB("Configuration file to be processed: %s", cfg_file);
-        TAILQ_INSERT_TAIL(cfgs, cfg, links);
+        TAILQ_INSERT_TAIL(&global->cfgs, cfg, links);
     }
 
     poptFreeContext(optCon);
 
-    return EXIT_SUCCESS;
-}
-
-
-/* See description in internal.h */
-int
-tester_build_suite(unsigned int flags, const test_suite_info *suite)
-{
-    int rc;
-
-    RING("Build Test Suite '%s' from '%s'",
-         suite->name, suite->src);
-    rc = builder_build_test_suite(suite->name, suite->src);
-    if (rc != 0)
-    {
-        const char *pwd = getenv("PWD");
-
-        ERROR("Build of Test Suite '%s' from '%s' failed, see "
-              "%s/builder.log.%s.{1,2}",
-              suite->name, suite->src, pwd, suite->name);
-        if (flags & TESTER_VERBOSE)
-        {
-            fprintf(stderr,
-                    "Build of Test Suite '%s' from '%s' failed, see\n"
-                    "%s/builder.log.%s.{1,2}\n",
-                    suite->name, suite->src, pwd, suite->name);
-        }
-        return rc;
-    }
-    return 0;
-}
-
-/**
- * Build list of Test Suites.
- *
- * @param ctx       Tester context
- * @param suites    List of Test Suites
- *
- * @return Status code.
- */
-static int
-tester_build_suites(const tester_ctx *ctx, const test_suites_info *suites)
-{
-    int                     rc;
-    const test_suite_info  *suite;
-
-    for (suite = suites->tqh_first;
-         suite != NULL;
-         suite = suite->links.tqe_next)
-    {
-        if (suite->src != NULL)
-        {
-            rc = tester_build_suite(ctx->flags, suite);
-            if (rc != 0)
-                return rc;
-        }
-    }
     return 0;
 }
 
@@ -743,76 +507,109 @@ tester_build_suites(const tester_ctx *ctx, const test_suites_info *suites)
 int
 main(int argc, char *argv[])
 {
-    int         result = EXIT_FAILURE;
-    int         rc;
-    tester_ctx  ctx;
-    tester_cfgs cfgs;
-    tester_cfg *cfg;
+    int             result = EXIT_FAILURE;
+    te_errno        rc;
+    tester_global   global;
 
 #if HAVE_SIGNAL_H
-    (void)signal(SIGINT, SIG_DFL);
+    (void)signal(SIGINT, tester_sigint_handler);
 #endif
 
-    TAILQ_INIT(&cfgs);
-    if (tester_ctx_init(&ctx) != 0)
+    if (tester_global_init(&global) != 0)
     {
         ERROR("Initialization of Tester context failed");
         goto exit;
     }
 
-    if (process_cmd_line_opts(&ctx, &cfgs, argc, argv) != EXIT_SUCCESS)
+    if (tester_init_types() != 0)
+    {
+        ERROR("Initialization of Tester types support failed");
+        goto exit;
+    }
+
+    if (process_cmd_line_opts(&global, argc, argv) != 0)
     {
         ERROR("Command line options processing failure");
         goto exit;
     }
-    
-    if ((~ctx.flags & TESTER_NOBUILD) &&
-        (ctx.suites.tqh_first != NULL))
+
+    /*
+     * Initialize pseudo-random number generator after command-line
+     * options processing, since random seed may be passed as
+     * command-line option.
+     */
+    srand(global.rand_seed);
+    RING("Random seed is %u", global.rand_seed);
+
+    /*
+     * Build Test Suites specified in command line.
+     */
+    if ((~global.flags & TESTER_NO_BUILD) &&
+        (global.suites.tqh_first != NULL))
     {
         RING("Building Test Suites specified in command line...");
-        rc = tester_build_suites(&ctx, &ctx.suites);
+        rc = tester_build_suites(&global.suites,
+                                 !!(global.flags & TESTER_VERBOSE));
         if (rc != 0)
         {
             goto exit;
         }
     }
 
-    for (cfg = cfgs.tqh_first; cfg != NULL; cfg = cfg->links.tqe_next)
+    /*
+     * Parse configuration files, build and parse test suites data.
+     */
+    rc = tester_parse_configs(&global.cfgs,
+                              !(global.flags & TESTER_NO_BUILD),
+                              !!(global.flags & TESTER_VERBOSE));
+    if (rc != 0)
     {
-        rc = tester_parse_config(cfg, &ctx);
-        if (rc != 0)
-        {
-            ERROR("Preprocessing of Tester configuration files failed");
-            goto exit;
-        }
+        goto exit;
     }
 
-    RING("Starting...");
-    for (cfg = cfgs.tqh_first; cfg != NULL; cfg = cfg->links.tqe_next)
+    /*
+     * Prepare configurations to be processed by testing scenario
+     * generator.
+     */
+    rc = tester_prepare_configs(&global.cfgs, &global.total);
+    if (rc != 0)
     {
-        rc = tester_run_config(&ctx, cfg);
-        if (TE_RC_GET_ERROR(rc) != TE_ETESTPASS)
-        {
-            ERROR("Run of configuration from file failed:\n%s",
-                  cfg->filename);
-        }
+        goto exit;
+    }
+    INFO("Total number of iteration is %u", global.total);
+
+    /*
+     * Create testing scenario.
+     */
+    rc = tester_process_test_paths(&global.cfgs, global.total,
+                                   &global.paths, &global.scenario);
+    if (rc != 0)
+    {
+        goto exit;
+    }
+
+    /*
+     * Execure testing scenario.
+     */
+    if ((~global.flags & TESTER_NO_RUN) &&
+        (global.cfgs.tqh_first != NULL))
+    {
+        RING("Starting...");
+        rc = tester_run(&global.scenario, global.targets, &global.cfgs,
+                        global.flags);
+        if (rc != 0)
+            goto exit;
     }
 
     result = EXIT_SUCCESS;
     RING("Done");
 
 exit:
-    while ((cfg = cfgs.tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(&cfgs, cfg, links);
-        tester_cfg_free(cfg);
-    }
-
-    /* TODO */
-    tester_reqs_expr_free(ctx.targets);
-    tester_run_path_free(ctx.path);
-    test_requirements_free(&ctx.reqs);
+    tester_global_free(&global);
     tester_term_cleanup();
-    
+
+    (void)reqs_expr_lex_destroy();
+    (void)test_path_lex_destroy();
+
     return result;
 }

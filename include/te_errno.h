@@ -292,12 +292,14 @@ typedef enum {
     TE_ETESTSKIP,   /**< Test skipped */
     TE_ETESTFAKE,   /**< Test not really run */
     TE_ETESTPASS,   /**< Test passed */
+    TE_ETESTSRCH,   /**< Test executable not found */
     TE_ETESTCONF,   /**< Test changed configuration */
     TE_ETESTKILL,   /**< Test killed by signal */
     TE_ETESTCORE,   /**< Test dumped core */
     TE_ETESTPROLOG, /**< Session prologue failed */
     TE_ETESTEPILOG, /**< Session epilogue failed */
     TE_ETESTALIVE,  /**< Session keep-alive failed */
+    TE_ETESTEXCEPT, /**< Session exception handler failed */
     TE_ETESTFAIL,   /**< Test failed */
     TE_ETESTUNEXP,  /**< Test unexpected results */
 

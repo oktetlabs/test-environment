@@ -2,7 +2,7 @@
 
 <schema targetNamespace="http://www.oktetlabs.ru/proteos"
         xmlns:proteos="http://www.oktetlabs.ru/proteos"
-        version="$Id: $"
+        version="$Id$"
         xml:lang="en"
         xmlns="http://www.w3.org/2001/XMLSchema">
 
@@ -110,7 +110,7 @@
         </annotation>
         <simpleContent>
             <extension base="string">
-                <attribute name="id" type="Name">
+                <attribute name="name" type="Name">
                     <annotation>
                         <documentation>
                             Identifier to be referred from 'preferred'
@@ -129,7 +129,7 @@
                         </documentation>
                     </annotation>
                 </attribute>
-                <attribute name="reqs" type="Name">
+                <attribute name="reqs" type="string">
                     <annotation>
                         <documentation>
                             Comman separated list of requirement IDs
@@ -165,6 +165,7 @@
                 </documentation>
             </annotation>
         </attribute>
+<!--
         <attribute name="random" type="boolean">
             <annotation>
                 <documentation>
@@ -174,6 +175,7 @@
                 </documentation>
             </annotation>
         </attribute>
+-->
         <attribute name="type" type="Name">
             <annotation>
                 <documentation>
@@ -248,18 +250,18 @@
                         argument.
                     </documentation>
                 </annotation>
-                <selector xpath="value[@id]">
+                <selector xpath="value[@name]">
                     <annotation>
                         <documentation>
-                            Select all 'value' elements with 'id'
+                            Select all 'value' elements with 'name'
                             attribute of the argument.
                         </documentation>
                     </annotation>
                 </selector>
-                <field xpath="@id">
+                <field xpath="@name">
                     <annotation>
                         <documentation>
-                            Use 'id' attribute as key.
+                            Use 'name' attribute as key.
                         </documentation>
                     </annotation>
                 </field>
@@ -420,7 +422,7 @@
         </restriction>
     </simpleType>
 
-    <complexType name="InheritableExacutable">
+    <complexType name="InheritableExecutable">
         <annotation>
             <documentation>
                 Type of elements which may be inherited by descendants.
@@ -487,18 +489,18 @@
                                 variable.
                             </documentation>
                         </annotation>
-                        <selector xpath="value[@id]">
+                        <selector xpath="value[@name]">
                             <annotation>
                                 <documentation>
-                                    Select all 'value' elements with 'id'
-                                    attribute of the variable.
+                                    Select all 'value' elements with
+                                    'name' attribute of the variable.
                                 </documentation>
                             </annotation>
                         </selector>
-                        <field xpath="@id">
+                        <field xpath="@name">
                             <annotation>
                                 <documentation>
-                                    Use 'id' attribute as key.
+                                    Use 'name' attribute as key.
                                 </documentation>
                             </annotation>
                         </field>
@@ -580,6 +582,7 @@
                 </documentation>
             </annotation>
         </attribute>
+<!--
         <attribute name="random" type="boolean">
             <annotation>
                 <documentation>
@@ -589,6 +592,7 @@
                 </documentation>
             </annotation>
         </attribute>
+-->
         <attributeGroup ref="RunItemAttributes"/>
     </complexType>
 
@@ -611,7 +615,6 @@
                 </documentation>
             </annotation>
         </attribute>
-        <attributeGroup ref="RunItemAttributes"/>
     </complexType>        
 
 <!--
@@ -695,20 +698,6 @@
             <annotation>
                 <documentation>
                     List of enabled debugging levels.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="configure" type="boolean"   default="true">
-            <annotation>
-                <documentation>
-                    Is configuring activity allowed for descendants?
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="keepalive" type="boolean"   default="true">
-            <annotation>
-                <documentation>
-                    Is keep-alive validation allowed for descendants?
                 </documentation>
             </annotation>
         </attribute>

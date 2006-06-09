@@ -24,14 +24,8 @@
             <arg name="vci">
                 <value>1000</value>
             </arg>
-            <arg name="congestion">
-                <value>FALSE</value>
-                <value>TRUE</value>
-            </arg>
-            <arg name="clp">
-                <value>FALSE</value>
-                <value>TRUE</value>
-            </arg>
+            <arg name="congestion" type="boolean"/>
+            <arg name="clp" type="boolean"/>
         </run>
 
         <run>
@@ -106,18 +100,20 @@
                 <value>1</value>
 <!--                <value>7</value> -->
             </arg>
-            <arg name="congestion">
+            <arg name="congestion" type="boolean">
                 <value>FALSE</value>
 <!--                <value>TRUE</value> -->
             </arg>
-            <arg name="clp">
+            <arg name="clp" type="boolean">
 <!--                <value>FALSE</value> -->
                 <value>TRUE</value>
             </arg>
         </run>
 
         <run>
-            <script name="aal5_send"/>
+            <script name="aal5_send">
+                <req id="ATM_AAL5"/>
+            </script>
             <arg name="gfc">
                 <value>8</value>
             </arg>
@@ -127,10 +123,10 @@
             <arg name="vci">
                 <value>1</value>
             </arg>
-            <arg name="congestion">
+            <arg name="congestion" type="boolean">
                 <value>FALSE</value>
             </arg>
-            <arg name="clp">
+            <arg name="clp" type="boolean">
                 <value>TRUE</value>
             </arg>
             <arg name="cpcs_uu">

@@ -61,6 +61,9 @@ Generic options:
   --cs-print-trees              Print configurator trees.
   --cs-log-diff                 Log backup diff unconditionally.
 
+  --build-only                  Build TE, do not run RCF and Configurator,
+                                build but do not run Test Suites
+                            
   --build=path                  Build package specified in the path.
   --build-log=path              Build package with log level 0xFFFF.
   --build-nolog=path            Build package with undefined log level.
@@ -73,27 +76,46 @@ Generic options:
   --build-log-xxx               Build package with log level 0xFFFF.
   --build-nolog-xxx             Build package with undefined log level.
 
-  --tester-fake                 Do not run any test scripts, just emulate
-                                Usefull for configuration debugging
-  --tester-nobuild              Do not build Test Suite sources
-  --tester-no-cs                Do not interact with Configurator
-  --tester-nocfgtrack           Do not track configuration changes
-  --tester-nologues             Disable prologues and epilogues globally
-  --tester-suite=NAME:PATH      Specify location of Test Sutie sources
-  --tester-req=[REQ|!REQ]       Requirement to be tested (or excluded,
-                                if its first symbol is !)
-  --tester-quietskip            Quietly skip tests which do not meet
-                                specified requirements
-  --tester-run=TEST_PATH        Run a test item defined by TEST_PATH:
-                                  TEST_PATH   := <test_path>
-                                  <test_path> := <test_spec>[/<test_path>]
-                                  <test_spec> := <test_name>[:<args>]
-                                  <args>      := <arg>[,<args>]
-                                  <arg>       := <arg_name>=<arg_value>
-  --tester-vg=TEST_PATH         Run test scripts in specified path (see 
-                                --tester-run) under valgrind
-  --tester-gdb=TEST_PATH        Run test scripts in specified path (see
-                                --tester-run) under gdb
+  --tester-suite=<name>:<path>  Specify path to the Test Suite.
+  --tester-no-run               Don't run any tests.
+  --tester-no-build             Don't build any Test Suites.
+  --tester-no-cs                Don't interact with Configurator.
+  --tester-no-cfg-track         Don't track configuration changes.
+  --tester-no-logues            Disable prologues and epilogues globally.
+  --tester-req=<reqs-expr>      Requirements to be tested (logical expression).
+  --tester-quietskip            Quietly skip tests which do not meet specified
+                                requirements.
+
+    The following Tester options get test path as a value:
+        <testpath>      :=  / | <path-item> | <testpath>/<path-item>
+        <path-item>     := <test-name>[:<args>][%<iter-select>][*<repeat>]
+        <args>          := <arg>[,<args>]
+        <arg>           := <param-name>=<values>
+        <values>        := <value> | { <values-list> }
+        <values-list>   := <value>[,<values-list>]
+        <iter-select>   := <iter-number>[+<step>]
+    For example,
+        --tester-run=mysuite/mypkg/mytest:p1={a1,a2}
+    requests to run all iterations of the test 'mytest' when its parameter
+    'p1' is equal to 'a1' or 'a2';
+        --tester-run=mysuite/mypkg/mytest%3*10
+    requests to run 10 times third iteration of the same test.
+
+  --tester-fake=<testpath>      Don't run any test scripts, just emulate test
+                                scenario.
+  --tester-run=<testpath>       Run test under the path.
+  --tester-run-from=<testpath>  Run tests starting from the test path.
+  --tester-run-to=<testpath>    Run tests up to the test path.
+  --tester-vg=<testpath>        Run test scripts under specified path using
+                                valgrind.
+  --tester-gdb=<testpath>       Run test scripts under specified path using
+                                gdb.
+
+  --tester-random-seed=<number> Random seed to initialize pseudo-random number
+                                generator
+  --tester-verbose              Increase verbosity of the Tester (the first
+                                level is set by default).
+  --tester-quiet                Decrease verbosity of the Tester.
 
   --trc-db=<filename>           TRC database to be used
   --trc-tag=<TAG>               Tag to get specific expected results
@@ -140,15 +162,6 @@ Generic options:
                                 or source file names (mode=sources)
 
 EOF
-#    echo -e '  '--log-dir='<directory>'\\t\\t'local directory for raw log (. by default)'
-#    echo -e '  '--log-online\\t\\t\\tconvert and print log on stdout during work
-#    echo
-
-#    echo -e '  --tester-norandom'\\t\\t'Force to run all tests in defined order as well'
-#    echo -e \\t\\t\\t\\t'as to get values of all arguments in defined'
-#    echo -e \\t\\t\\t\\t'order.  Usefull for debugging."'
-#    echo -e '  --tester-nosimultaneous'\\t'Force to run all tests in series.'
-#    echo -e \\t\\t\\t\\t'Usefull for debugging.'
 }
 
 exit_with_log()
@@ -341,6 +354,9 @@ process_opts()
             --trc-*) TRC_OPTS="${TRC_OPTS} --${1#--trc-}" ;;
     
             --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
+
+            --build-only) RCF= ; CS= ;
+                          TESTER_OPTS="${TESTER_OPTS} --no-run --no-cs" ;; 
 
             --build-log=*) 
                 BUILDER_OPTS="${BUILDER_OPTS} --pathlog=${1#--build-log=}"

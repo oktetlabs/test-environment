@@ -27,10 +27,7 @@
             <arg name="num_pkts">
                 <value>10</value>
             </arg>
-            <arg name="enum_iterator">
-                <value>FALSE</value>
-                <value>TRUE</value>
-            </arg>
+            <arg name="enum_iterator" type="boolean"/>
             <arg name="pld_len">
                 <value>50</value>
             </arg>
@@ -62,14 +59,8 @@
             <script name="tcp_conn">
                 <req id="TAD_TCP"/>
             </script>
-            <arg name="is_server">
-                <value>FALSE</value>
-                <value>TRUE</value>
-            </arg>
-            <arg name="init_close">
-                <value>FALSE</value>
-                <value>TRUE</value>
-            </arg>
+            <arg name="is_server" type="boolean"/>
+            <arg name="init_close" type="boolean"/>
             <arg name="env">
                 <value>{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},
                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}
