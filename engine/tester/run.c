@@ -170,7 +170,7 @@ tester_ctx_free(tester_ctx *ctx)
         tester_reqs_expr_free_nr((reqs_expr *)ctx->targets);
     }
     test_requirements_free(&ctx->reqs);
-    free(ctx->keepalive_ctx);
+    tester_ctx_free(ctx->keepalive_ctx);
     free(ctx);
 }
 
