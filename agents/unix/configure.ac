@@ -40,7 +40,7 @@ AC_CONFIG_HEADERS([config.h])
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 
 if test "$with_rcf_rpc" ; then
-    TE_CPPFLAGS=-DRCF_RPC
+    TE_CPPFLAGS="$TE_CPPFLAGS -DRCF_RPC"
 fi    
 
 dnl #######################################################################
