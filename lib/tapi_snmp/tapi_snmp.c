@@ -2739,7 +2739,6 @@ tapi_snmp_get_integer(const char *ta, int sid, int csap_id,
 
     rc = tapi_snmp_get(ta, sid, csap_id, oid,
                        TAPI_SNMP_EXACT, &varbind, errstatus);
-    RING("---------- %s() return %x, %r", __FUNCTION__, rc, rc);
 
     if (rc != 0)
     {
