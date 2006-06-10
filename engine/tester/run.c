@@ -99,6 +99,10 @@ typedef struct tester_ctx {
                                              executed in this context */
     te_errno            status;         /**< Status code */
 
+    te_bool             group_step;     /**< Is group step should be done
+                                             or group items have been
+                                             enumerated one by one */
+
     unsigned int        parent_id;      /**< ID of the test parent */
     unsigned int        child_id;       /**< ID of the test to execute */
     
@@ -1413,6 +1417,8 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
             ctx->group_status = TE_RC(TE_TESTER, TE_ETESTSKIP);
         else
             ctx->group_status = TE_RC(TE_TESTER, TE_ETESTPROLOG);
+        assert(ctx->links.le_next != NULL);
+        ctx->links.le_next->group_step = TRUE;
         EXIT("SKIP");
         return TESTER_CFG_WALK_SKIP;
     }
@@ -2089,6 +2095,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         /* Silently skip without any logs */
         ctx->status = TE_RC(TE_TESTER, TE_ENOENT);
+        ctx->group_step = TRUE;
         EXIT("SKIP - ENOENT");
         return TESTER_CFG_WALK_SKIP;
     }
@@ -2106,6 +2113,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                                 ri, ctx->args, ctx->flags, FALSE))
     {
         ctx->status = TE_RC(TE_TESTER, TE_ETESTSKIP);
+        ctx->group_step = TRUE;
         EXIT("SKIP - ETESTSKIP");
         return TESTER_CFG_WALK_SKIP;
     }
@@ -2168,11 +2176,12 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
         if (ri->type == RUN_ITEM_SCRIPT)
         {
+            ctx->group_step = FALSE;
             step = 1;
         }
-        else if (TE_RC_GET_ERROR(ctx->status) == TE_ETESTSKIP ||
-                 TE_RC_GET_ERROR(ctx->status) == TE_ETESTPROLOG)
+        else if (ctx->group_step)
         {
+            ctx->group_step = FALSE;
             step = ri->weight;
         }
         else
