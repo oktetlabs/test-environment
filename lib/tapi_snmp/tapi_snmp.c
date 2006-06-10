@@ -709,7 +709,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
     FILE *f;
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
-        return TE_RC(TE_TAPI, rc);
+        return TE_RC(TE_TAPI, TE_EFAULT);
 
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
@@ -1009,7 +1009,7 @@ tapi_snmp_operation(const char *ta, int sid, int csap_id,
     tapi_snmp_varbind_t  var_bind;
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
-        return TE_RC(TE_TAPI, rc);
+        return TE_RC(TE_TAPI, TE_EFAULT);
 
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
@@ -1105,7 +1105,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
     tapi_get_row_par_list_t *get_par;
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
-        return TE_RC(TE_TAPI, rc);
+        return TE_RC(TE_TAPI, TE_EFAULT);
 
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
@@ -1277,7 +1277,7 @@ tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
     tapi_snmp_message_t msg;
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
-        return TE_RC(TE_TAPI, rc);
+        return TE_RC(TE_TAPI, TE_EFAULT);
 
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
@@ -2739,6 +2739,8 @@ tapi_snmp_get_integer(const char *ta, int sid, int csap_id,
 
     rc = tapi_snmp_get(ta, sid, csap_id, oid,
                        TAPI_SNMP_EXACT, &varbind, errstatus);
+    RING("---------- %s() return %x, %r", __FUNCTION__, rc, rc);
+
     if (rc != 0)
     {
         tapi_snmp_log_op_end(log_buf, rc, *errstatus, 0);
