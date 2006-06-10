@@ -443,7 +443,10 @@ scenario_step(const testing_act **act, unsigned int *act_id,
 
     assert(act != NULL);
     if (*act == NULL)
+    {
+        VERB("step=%u -> STOP (nowhere)", *act, step);
         return TESTING_STOP;
+    }
 
     assert(act_id != NULL);
     assert((*act_id >= (*act)->first) && (*act_id <= (*act)->last));
@@ -452,6 +455,7 @@ scenario_step(const testing_act **act, unsigned int *act_id,
     if (next_id <= (*act)->last)
     {
         *act_id = next_id;
+        VERB("step=%u -> FORWARD", step);
         return TESTING_FORWARD;
     }
 
@@ -461,18 +465,21 @@ scenario_step(const testing_act **act, unsigned int *act_id,
         {
             /* Move backward */
             *act_id = (*act)->first;
+            VERB("step=%u -> BACKWARD", step);
             return TESTING_BACKWARD;
         }
         else if ((*act)->first >= next_id)
         {
             /* First ID of the action is greater or equal to next ID */
             *act_id = (*act)->first;
+            VERB("step=%u -> FORWARD", step);
             return TESTING_FORWARD;
         }
         else if ((*act)->last >= next_id)
         {
             /* Next ID is in the middle of this action */
             *act_id = next_id;
+            VERB("step=%u -> FORWARD", step);
             return TESTING_FORWARD;
         }
         else
@@ -482,6 +489,7 @@ scenario_step(const testing_act **act, unsigned int *act_id,
         }
     }
 
+    VERB("step=%u -> STOP (end-of-scenario)", step);
     return TESTING_STOP;
 }
 

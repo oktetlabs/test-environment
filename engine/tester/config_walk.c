@@ -61,6 +61,37 @@ static tester_cfg_walk_ctl walk_run_items(const tester_cfg_walk *walk,
 
 
 /**
+ * Convert Tester configuration walk control to string.
+ *
+ * @param ctl           Control
+ */
+static const char *
+tester_cfg_walk_ctl2str(tester_cfg_walk_ctl ctl)
+{
+    switch (ctl)
+    {
+#define TESTER_CFG_WALK_CTL2STR(_ctl) \
+        case TESTER_CFG_WALK_##_ctl:    return #_ctl
+
+        TESTER_CFG_WALK_CTL2STR(CONT);
+        TESTER_CFG_WALK_CTL2STR(BACK);
+        TESTER_CFG_WALK_CTL2STR(BREAK);
+        TESTER_CFG_WALK_CTL2STR(SKIP);
+        TESTER_CFG_WALK_CTL2STR(EXC);
+        TESTER_CFG_WALK_CTL2STR(FIN);
+        TESTER_CFG_WALK_CTL2STR(STOP);
+        TESTER_CFG_WALK_CTL2STR(INTR);
+        TESTER_CFG_WALK_CTL2STR(FAULT);
+
+#undef TESTER_CFG_WALK_CTL2STR
+
+        default:
+            assert(FALSE);
+            return "<UNKNOWN>";
+    }
+}
+
+/**
  * Update current walk control when a new is received.
  *
  * @param cur           Current control
@@ -77,19 +108,45 @@ walk_ctl_merge(tester_cfg_walk_ctl cur, tester_cfg_walk_ctl anew)
         case TESTER_CFG_WALK_FIN:
         case TESTER_CFG_WALK_STOP:
         case TESTER_CFG_WALK_INTR:
+            VERB("%s(): curr=%s anew=%s -> %s", __FUNCTION__,
+                 tester_cfg_walk_ctl2str(cur),
+                 tester_cfg_walk_ctl2str(anew),
+                 tester_cfg_walk_ctl2str(cur));
             return cur;
 
         case TESTER_CFG_WALK_BREAK:
             if (anew == TESTER_CFG_WALK_CONT)
+            {
+                VERB("%s(): curr=%s anew=%s -> BREAK", __FUNCTION__,
+                     tester_cfg_walk_ctl2str(cur),
+                     tester_cfg_walk_ctl2str(anew));
                 return TESTER_CFG_WALK_BREAK;
+            }
+            VERB("%s(): curr=%s anew=%s -> %s", __FUNCTION__,
+                 tester_cfg_walk_ctl2str(cur),
+                 tester_cfg_walk_ctl2str(anew),
+                 tester_cfg_walk_ctl2str(anew));
             return anew;
 
         case TESTER_CFG_WALK_BACK:
             if (anew == TESTER_CFG_WALK_CONT)
+            {
+                VERB("%s(): curr=%s anew=%s -> BACK", __FUNCTION__,
+                     tester_cfg_walk_ctl2str(cur),
+                     tester_cfg_walk_ctl2str(anew));
                 return TESTER_CFG_WALK_BACK;
+            }
+            VERB("%s(): curr=%s anew=%s -> %s", __FUNCTION__,
+                 tester_cfg_walk_ctl2str(cur),
+                 tester_cfg_walk_ctl2str(anew),
+                 tester_cfg_walk_ctl2str(anew));
             return anew;
 
         default:
+            VERB("%s(): curr=%s anew=%s -> %s", __FUNCTION__,
+                 tester_cfg_walk_ctl2str(cur),
+                 tester_cfg_walk_ctl2str(anew),
+                 tester_cfg_walk_ctl2str(anew));
             return anew;
     }
 }
@@ -115,7 +172,8 @@ walk_service(const tester_cfg_walk *walk, const void *opaque,
     tester_cfg_walk_ctl ctl;
     tester_cfg_walk_ctl ctl_tmp;
 
-    ENTRY();
+    ENTRY("run=%s id_off=%u start_cb=%p end_cb=%p",
+          test_get_name(run), id_off, start_cb, end_cb);
 
     if (start_cb != NULL)
         ctl = start_cb((run_item *)run, id_off, (void *)opaque);
@@ -135,7 +193,7 @@ walk_service(const tester_cfg_walk *walk, const void *opaque,
         ctl = walk_ctl_merge(ctl, ctl_tmp);
     }
 
-    EXIT("ctl=%u", ctl);
+    EXIT("ctl=%s", tester_cfg_walk_ctl2str(ctl));
     return ctl;
 }
 
@@ -159,7 +217,7 @@ walk_test_session(const tester_cfg_walk *walk, const void *opaque,
     tester_cfg_walk_ctl ctl;
     tester_cfg_walk_ctl ctl_tmp;
 
-    ENTRY();
+    ENTRY("run=%s id_off=%u flags=%#x", test_get_name(ri), id_off, flags);
 
     if (walk->session_start != NULL)
         ctl = walk->session_start((run_item *)ri, (test_session *)session,
@@ -201,7 +259,7 @@ walk_test_session(const tester_cfg_walk *walk, const void *opaque,
         ctl = walk_ctl_merge(ctl, ctl_tmp);
     }
 
-    EXIT("ctl=%u", ctl);
+    EXIT("ctl=%s", tester_cfg_walk_ctl2str(ctl));
     return ctl;
 }
 
@@ -225,7 +283,7 @@ walk_test_package(const tester_cfg_walk *walk, const void *opaque,
     tester_cfg_walk_ctl  ctl;
     tester_cfg_walk_ctl  ctl_tmp;
 
-    ENTRY();
+    ENTRY("run=%s id_off=%u flags=%#x", test_get_name(ri), id_off, flags);
 
     if (walk->pkg_start != NULL)
         ctl = walk->pkg_start((run_item *)ri, (test_package *)pkg,
@@ -246,7 +304,7 @@ walk_test_package(const tester_cfg_walk *walk, const void *opaque,
         ctl = walk_ctl_merge(ctl, ctl_tmp);
     }
 
-    EXIT("ctl=%u", ctl);
+    EXIT("ctl=%s", tester_cfg_walk_ctl2str(ctl));
     return ctl;
 }
 
@@ -276,7 +334,8 @@ walk_repeat(const tester_cfg_walk *walk, const void *opaque,
     tester_cfg_walk_ctl ctl_tmp;
     te_bool             do_exception = FALSE;
 
-    ENTRY();
+    ENTRY("run=%s id_off=%u flags=%#x keepalive=%p exception=%p",
+          test_get_name(run), id_off, flags, keepalive, exception);
 
     do {
         if (keepalive != NULL)
@@ -359,7 +418,7 @@ walk_repeat(const tester_cfg_walk *walk, const void *opaque,
     if (ctl == TESTER_CFG_WALK_BREAK)
         ctl = TESTER_CFG_WALK_CONT;
 
-    EXIT("ctl=%u", ctl);
+    EXIT("ctl=%s", tester_cfg_walk_ctl2str(ctl));
     return ctl;
 }
 
@@ -389,7 +448,8 @@ walk_iterate(const tester_cfg_walk *walk, const void *opaque,
     unsigned int        curr_id_off;
     unsigned int        i;
 
-    ENTRY();
+    ENTRY("run=%s id_off=%u flags=%#x keepalive=%p exception=%p",
+          test_get_name(run), id_off, flags, keepalive, exception);
 
     assert(run != NULL);
 
@@ -418,7 +478,7 @@ walk_iterate(const tester_cfg_walk *walk, const void *opaque,
     if (ctl == TESTER_CFG_WALK_BREAK)
         ctl = TESTER_CFG_WALK_CONT;
 
-    EXIT("ctl=%u", ctl);
+    EXIT("ctl=%s", tester_cfg_walk_ctl2str(ctl));
     return ctl;
 }
 
@@ -446,7 +506,8 @@ walk_run_item(const tester_cfg_walk *walk, const void *opaque,
     tester_cfg_walk_ctl ctl;
     tester_cfg_walk_ctl ctl_tmp;
 
-    ENTRY();
+    ENTRY("run=%s id_off=%u flags=%#x keepalive=%p exception=%p",
+          test_get_name(run), id_off, flags, keepalive, exception);
 
     if (walk->run_start != NULL)
         ctl = walk->run_start((run_item *)run, id_off, flags,
@@ -467,7 +528,7 @@ walk_run_item(const tester_cfg_walk *walk, const void *opaque,
         ctl = walk_ctl_merge(ctl, ctl_tmp);
     }
 
-    EXIT("ctl=%u", ctl);
+    EXIT("ctl=%s", tester_cfg_walk_ctl2str(ctl));
     return ctl;
 }
 
@@ -497,7 +558,8 @@ walk_run_items(const tester_cfg_walk *walk, const void *opaque,
     const run_item         *ri;
     const run_item         *ri_next;
 
-    ENTRY();
+    ENTRY("id_off=%u flags=%#x keepalive=%p exception=%p",
+          id_off, flags, keepalive, exception);
 
     for (ri = runs->tqh_first;
          ri != NULL && ctl == TESTER_CFG_WALK_CONT;
@@ -519,7 +581,7 @@ walk_run_items(const tester_cfg_walk *walk, const void *opaque,
         }
     }
 
-    EXIT("ctl=%u", ctl);
+    EXIT("ctl=%s", tester_cfg_walk_ctl2str(ctl));
     return ctl;
 }
 
@@ -535,7 +597,7 @@ tester_configs_walk(const tester_cfgs     *cfgs,
     const tester_cfg       *cfg;
     unsigned int            id_off;
 
-    ENTRY();
+    ENTRY("flags=%#x", walk_flags);
 
     for (id_off = 0, cfg = cfgs->tqh_first;
          cfg != NULL && ctl == TESTER_CFG_WALK_CONT;
@@ -560,6 +622,6 @@ tester_configs_walk(const tester_cfgs     *cfgs,
             ctl = TESTER_CFG_WALK_CONT;
     }
 
-    EXIT("ctl=%u", ctl);
+    EXIT("ctl=%s", tester_cfg_walk_ctl2str(ctl));
     return ctl;
 }
