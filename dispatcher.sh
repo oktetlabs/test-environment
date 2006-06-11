@@ -698,7 +698,7 @@ if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
     else
         te_tester ${TESTER_OPTS} "${CONF_TESTER}" 
     fi
-    START_OK=$?
+    #START_OK=$?
 fi
 
 test "${START_OK}" -ne 0 && SHUTDOWN=yes
