@@ -345,6 +345,9 @@ tad_snmp_match_bin_cb(csap_p           csap,
         CHECK_FIELD("agent-addr", my_pdu->agent_addr, sizeof(my_pdu->agent_addr));
     }
 
+    vars = my_pdu->variables;
+    VERB("%s(): varbind type: %d, len %d", __FUNCTION__, vars->type, vars->val_len);
+
 #undef CHECK_INT_FIELD
 #undef CHECK_FIELD
 
@@ -456,7 +459,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
                     if (pat_value_syntax != INTEGER &&
                         pat_value_syntax != ENUMERATED)
                     {
-                        VERB("SNMP VB match, got int syntax, not match");
+                        RING("SNMP VB match, got int syntax, not match");
                         rc = TE_ETADNOTMATCH;
                         break;
                     }
@@ -481,7 +484,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
 
                     if (rc != 0)
                     {
-                        VERB("SNMP VB match, got octet str syntax, rc %r",
+                        RING("SNMP VB match, got octet str syntax, rc %r",
                              rc);
                     } 
                     else 
@@ -495,7 +498,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
 
                         if (vb_data_len != vars->val_len)
                         {
-                            VERB("SNMP VB match, length not match"
+                            RING("SNMP VB match, length not match"
                                  "got len %d, pat len %d", 
                                  vars->val_len, vb_data_len);
                             rc = TE_ETADNOTMATCH;
@@ -541,7 +544,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
         asn_value  *var_bind = NULL;
         char        os_choice[100]; 
 
-        VERB("BEGIN of LOOP rc %r", rc);
+        VERB("%s(): BEGIN of LOOP rc %r", __FUNCTION__, rc);
 
         if ((var_bind = asn_init_value(ndn_snmp_var_bind)) == NULL)
         {
@@ -552,7 +555,15 @@ tad_snmp_match_bin_cb(csap_p           csap,
         asn_write_value_field(var_bind, vars->name, vars->name_length, 
                               "name.#plain");
 
-        VERB(" SNMP MATCH: vars type: %d\n", vars->type);
+        if (0)
+        {
+            char buf[100], *p = buf;
+            int i;
+            for (i = 0; i < vars->name_length; i++)
+                p += sprintf(p, ".%d", vars->name[i]);
+            VERB("%s(): varbind oid: %s", __FUNCTION__, buf);
+        }
+        VERB("%s(): varbind type: %d, len %d", __FUNCTION__, vars->type, vars->val_len);
 
         strcpy (os_choice, "value.#plain.");
         switch (vars->type)
@@ -608,8 +619,8 @@ tad_snmp_match_bin_cb(csap_p           csap,
                 asn_free_value(var_bind);
                 return 1;
         }
-        VERB("in SNMP MATCH, rc before varbind value write: %x", rc);
-        VERB("in SNMP MATCH, try to write for label: %s", os_choice);
+        VERB("%s(): rc before varbind value write: %r", __FUNCTION__, rc);
+        VERB("%s(): try to write for label: %s, val len %d", __FUNCTION__, os_choice, vars->val_len);
 
         if (rc != 0)
             break;
@@ -621,13 +632,13 @@ tad_snmp_match_bin_cb(csap_p           csap,
                                        vars->val_len / sizeof(oid),
                                    os_choice);
         
-        VERB("in SNMP MATCH, rc from varbind value write: %x", rc);
+        VERB("%s():  varbind value write: %r", __FUNCTION__, rc);
         if (rc != 0)
             break;
 
         rc = asn_insert_indexed(vb_seq, var_bind, -1, "");
 
-        VERB("in SNMP MATCH, rc from varbind insert: %x", rc);
+        VERB("%s(): varbind insert: %r", __FUNCTION__, rc);
 
         if (rc != 0)
             break;
@@ -638,6 +649,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
         assert(vb_seq != NULL);
         rc = asn_write_component_value(snmp_msg, vb_seq,
                                        "variable-bindings");
+        VERB("%s(): write var bind to msg: %r", __FUNCTION__, rc);
     }
 
     asn_free_value(vb_seq);
