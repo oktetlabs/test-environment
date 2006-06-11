@@ -886,7 +886,7 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
         rc = csap_spt_descr->match_do_cb(csap, layer, layer_pdu, 
                                          unit_data->layer_opaque[layer],
                                          meta_pkt, pdu, sdu);
-        INFO("match cb 0x%x for layer %u sdu_len=%u returned %r",
+        VERB("match cb 0x%x for layer %u sdu_len=%u returned %r",
              csap_spt_descr->match_do_cb, layer,
              (unsigned)tad_pkt_len(sdu), rc);
         if (rc != 0)
@@ -898,6 +898,7 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
         ((rc = tad_recv_match_payload(&unit_data->pld_spec,
                                       &meta_pkt->payload)) != 0))
     {
+        ERROR("%s(): match payload failed: %r", __FUNCTION__, rc);
         return rc;
     }
 
@@ -909,6 +910,7 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
                                  &meta_pkt->layers[csap->depth - 1].pkts,
                                  &meta_pkt->payload);
         /* Errors are logged in the called function */
+        VERB("%s(): do_actions: %r", __FUNCTION__, rc);
     }
 
     return rc; 
