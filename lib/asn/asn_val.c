@@ -1063,7 +1063,7 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
             break;
 
         default:
-            return TE_EASNGENERAL; 
+            return TE_EASNWRONGTYPE; 
     }
 
     /* now set name of new subvalue, if it is. */
@@ -1351,7 +1351,7 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
             if (value->asn_type->len > 0 &&
                 value->asn_type->len != d_len)
             {
-                return TE_EASNGENERAL;
+                return TE_EASNWRONGSIZE;
             }
 
             if (value->data.other)
