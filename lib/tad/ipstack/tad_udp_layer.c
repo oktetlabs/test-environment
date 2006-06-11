@@ -112,6 +112,14 @@ tad_udp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
         ERROR("%s: CSAP-specific data is NULL", __FUNCTION__);
         return TE_EWRONGPTR;
     } 
+    rc = tad_data_unit_convert(layer_pdu, NDN_TAG_UDP_CHECKSUM,
+                              &(udp_spec_data->du_checksum)); 
+    if (rc != 0)
+    {
+        ERROR("%s: failed to convert checksum from pattern: %r",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
 
     rc = tad_data_unit_convert(layer_pdu, NDN_TAG_UDP_SRC_PORT,
                               &(udp_spec_data->du_src_port)); 
@@ -318,7 +326,12 @@ tad_udp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
     /* Length in the UDP header includes length of the header itself */
     PUT_UINT16(tad_pkt_len(pkt)); 
     /* FIXME Checksum will be filled in later by IPv4 layer */
+#if 1
+    PUT_DU16(du_checksum, 0);
+#else
     PUT_UINT16(0);
+#endif
+
 
 #undef PUT_UINT16
 #undef PUT_DU16

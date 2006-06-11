@@ -341,13 +341,19 @@ tad_ip4_upper_checksum_pkt_cb(tad_pkt *pkt, void *opaque)
     assert(pkt->n_segs > 0);
     assert(tad_pkt_first_seg(pkt)->data_len >= pkt_data->offset + 2);
 
+    ptr = tad_pkt_first_seg(pkt)->data_ptr;
+
+    if (*((uint16_t *)(ptr + pkt_data->offset)) != 0)
+    {
+        return 0;
+    }
+
     /* FIXME: Not aligned memory access */
     *((uint16_t *)(pkt_data->pseudo_header + 10)) =
         htons(tad_pkt_len(pkt));
     seg_data.checksum = calculate_checksum(pkt_data->pseudo_header,
                                            sizeof(pkt_data->pseudo_header));
 
-    ptr = tad_pkt_first_seg(pkt)->data_ptr;
     /* FIXME: Not aligned memory access */
     *((uint16_t *)(ptr + pkt_data->offset)) = (uint16_t)0;
 

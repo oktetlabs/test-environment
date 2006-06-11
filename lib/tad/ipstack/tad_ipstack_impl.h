@@ -107,6 +107,7 @@ typedef struct udp_csap_specific_data
 
     tad_data_unit_t  du_src_port;
     tad_data_unit_t  du_dst_port;
+    tad_data_unit_t  du_checksum;
 
 } udp_csap_specific_data_t;
 
