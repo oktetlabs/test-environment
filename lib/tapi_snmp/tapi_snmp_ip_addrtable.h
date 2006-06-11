@@ -34,7 +34,7 @@ typedef struct tapi_snmp_ip_addrtable_row_t {
     tapi_snmp_oid_t *index_suffix;   /**< index_suffix */
 
     tapi_snmp_oct_string_t   *ipAdEntAddr;                /**< ipAddress,*/
-    int                      *ipAdEntIfIndex;           /**< INTEGER,*/
+    int                      *ipAdEntIfIndex;             /**< INTEGER,*/
     tapi_snmp_oct_string_t   *ipAdEntNetMask;             /**< ipAddress,*/
     int                      *ipAdEntBcastAddr;           /**< INTEGER,*/
     int                      *ipAdEntReasmMaxSize         /**< INTEGER */
