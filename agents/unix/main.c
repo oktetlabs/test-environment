@@ -1629,9 +1629,6 @@ main(int argc, char **argv)
     else
         *(tmp + 1) = 0;
 
-    /* FIXME */
-    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);    
-
     memset(&sigact, 0, sizeof(sigact));
     sigact.sa_flags = SA_RESTART;
     sigemptyset(&sigact.sa_mask);
