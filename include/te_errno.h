@@ -242,6 +242,7 @@ typedef enum {
     TE_EASNINCOMPLVAL,    /**< Imcomplete ASN.1 value */
     TE_EASNOTHERCHOICE,   /**< CHOICE in type is differ then asked */
     TE_EASNWRONGTYPE,     /**< Passed value has wrong type */
+    TE_EASNWRONGSIZE,     /**< Passed value has wrong size */
     TE_EASNNOTLEAF,       /**< Passed labels of subvalue does not
                                respond to plain-syntax leaf */
 
