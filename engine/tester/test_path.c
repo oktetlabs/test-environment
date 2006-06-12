@@ -310,7 +310,7 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
     else
     {
         assert(value->ext != NULL);
-        ERROR("%s:%d - not supported", __FILE__, __LINE__);
+        ERROR("FIXME %s:%d - not supported", __FILE__, __LINE__);
         return TE_EOPNOTSUPP;
     }
 
@@ -400,21 +400,24 @@ test_path_arg_cb(const test_var_arg *va, void *opaque)
         }
         if (!value_data.found)
         {
-            ERROR("Argument '%s' of the test '%s' does not have value "
-                  "'%s'", va->name, test_get_name(data->ri),
-                  path_arg_value->v);
-            EXIT("%r", TE_ENOENT);
-            return TE_ENOENT;
+            /* May be this value is used in other call of the test */
+            INFO("Argument '%s' of the test '%s' does not have value "
+                 "'%s'", va->name, test_get_name(data->ri),
+                 path_arg_value->v);
         }
-        empty = FALSE;
+        else
+        {
+            empty = FALSE;
+        }
     }
 
     if (empty)
     {
-        ERROR("Empty set of values is specified for argument '%s' "
-              "of the test '%s'", va->name, test_get_name(data->ri));
-        EXIT("%r", TE_ENOENT);
-        return TE_ENOENT;
+        /* May be these values are used in other call of the test */
+        INFO("Empty set of values is specified for argument '%s' "
+             "of the test '%s'", va->name, test_get_name(data->ri));
+        EXIT("0 - argument values do not match");
+        return 0;
     }
 
     if (test_var_arg_values(va)->num < data->n_values)
@@ -430,7 +433,7 @@ test_path_arg_cb(const test_var_arg *va, void *opaque)
         }
     }
 
-    EXIT("found");
+    EXIT("EEXIST - found");
     return TE_EEXIST;
 }
 
@@ -503,14 +506,11 @@ process_run_item(const test_path_item *item, const run_item *run,
         else
         {
             assert(run->type == RUN_ITEM_SESSION);
-            /* Transparently pass session without name */
+            /* Transparently bypass session without name */
             rc = process_run_items(item, &run->u.session.run_items,
                                    offset, scenario);
-            if (rc != 0)
-            {
-                EXIT("%r", rc);
-                return rc;
-            }
+            EXIT("%r", rc);
+            return rc;
         }
     }
 
