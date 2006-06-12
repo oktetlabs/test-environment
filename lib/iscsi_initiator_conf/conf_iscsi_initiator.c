@@ -530,11 +530,10 @@ iscsi_post_connection_request(int target_id, int cid, int status, te_bool urgent
 static te_errno
 iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
 {
-    char        dev_pattern[128];
     int         rc = 0;
 
 #ifndef __CYGWIN__
-
+    char        dev_pattern[128];
     char       *nameptr;
     FILE       *hba = NULL;
     glob_t      devices;
@@ -707,6 +706,7 @@ iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
         WARN("Unable to disable read-ahead on %s", conn->device_name);
     }
 #else
+    UNUSED(target_id);
     rc = iscsi_win32_prepare_device(conn);
 #endif
 

@@ -222,7 +222,8 @@ iscsi_win32_run_cli(const char *cmdline)
     startup.hStdError  = cli_output;
 
     RING("Running iSCSI CLI as '%s'", cmdline);
-    if (!CreateProcess(NULL, cmdline, NULL, NULL, TRUE,
+    if (!CreateProcess(NULL, (char *)cmdline, 
+                       NULL, NULL, TRUE,
                        CREATE_NO_WINDOW, NULL, NULL, 
                        &startup, &process_info))
     {
@@ -341,7 +342,6 @@ iscsi_send_to_win32_iscsicli(const char *fmt, ...)
 {
     static char buffer[2048];
     va_list args;
-    int rc;
     int len;
 
     va_start(args, fmt);
@@ -356,6 +356,8 @@ iscsi_send_to_win32_iscsicli(const char *fmt, ...)
 static void CALLBACK
 iscsi_cli_timeout(void *state, unsigned long low_timer, unsigned long high_timer)
 {
+    UNUSED(low_timer);
+    UNUSED(high_timer);
     *(te_bool *)state = TRUE;
 }
 
@@ -641,7 +643,7 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
                        IMMEDIATE_DATA, iscsi_win32_bool2int),
             RPARAMETER(error_recovery_level, "ErrorRecoveryLevel",
                        ERROR_RECOVERY_LEVEL, NULL),
-            {0, NULL, 0, NULL}
+            {0, 0, NULL, NULL, 0}
         };
 
     static iscsi_target_param_descr_t params[] =

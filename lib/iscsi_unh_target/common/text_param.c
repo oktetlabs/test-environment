@@ -932,7 +932,7 @@ param_tbl_cpy(SHARED struct parameter_type dst[MAX_CONFIG_PARAMS],
 
 	TRACE(DEBUG,
 	      "Enter param_tbl_cpy, dst %p, src %p, size %d", dst, src,
-	      sizeof (struct parameter_type) * MAX_CONFIG_PARAMS);
+	      (int)sizeof (struct parameter_type) * MAX_CONFIG_PARAMS);
 
 	/* copy everything in the src table to the dst table "as is" */
 	shmemcpy(dst, src, sizeof (struct parameter_type) * MAX_CONFIG_PARAMS);
@@ -968,7 +968,7 @@ param_tbl_uncpy(SHARED struct parameter_type dst[MAX_CONFIG_PARAMS])
 	int i;
 
 	TRACE(DEBUG, "Enter param_tbl_uncpy, dst %p, size %d",
-	      dst, sizeof (struct parameter_type) * MAX_CONFIG_PARAMS);
+	      dst, (int)sizeof (struct parameter_type) * MAX_CONFIG_PARAMS);
 
 	/* go thru and free all the strings that were "duped" during copy */
 	for (i = 0, dptr = dst; i < MAX_CONFIG_PARAMS; i++, dptr++) {
