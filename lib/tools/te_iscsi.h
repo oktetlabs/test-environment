@@ -73,8 +73,6 @@ enum iscsi_logout_responses {
 static inline int 
 iscsi_logout_resp_str2int(const char *resp)
 {
-    RING("Resp = %s", resp);
-
     if (strcmp(resp, "NO_CID") == 0)
         return ISCSI_LOGOUT_RESPONSE_NO_CID;
     

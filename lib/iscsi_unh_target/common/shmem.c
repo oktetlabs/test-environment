@@ -33,6 +33,7 @@
 #include "te_defs.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
@@ -78,7 +79,7 @@ te_bool shared_memory_cleanup_was_done;
 te_errno
 shared_mem_init(size_t size)
 {
-    int   rc;
+    int   rc = 0;
     key_t sh_key = ftok("/tmp", 'S');
     key_t shlock_key = ftok("/tmp", 'l');
 
@@ -221,14 +222,14 @@ shalloc(size_t size)
 te_errno
 shfree(SHARED void *addr)
 {
-    reserved_block *block;
-    reserved_block **prev_ptr;
+    SHARED reserved_block *block;
+    SHARED reserved_block **prev_ptr;
     struct sembuf op;
 
     if (addr == NULL)
         return 0;
 
-    if (addr < master_block || addr >= block_end)
+    if (addr < (void *)master_block || addr >= (void *)block_end)
     {
         ERROR("%p is not a shared address (%p:%p)", addr, 
               __builtin_return_address(0),

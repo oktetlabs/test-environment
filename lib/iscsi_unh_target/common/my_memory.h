@@ -4,6 +4,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include <stddef.h>
+#include <string.h>
 
 /* largest number of bytes malloc() will allocate as one block of memory */
 #define MAX_MALLOC_SIZE		131072

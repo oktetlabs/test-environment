@@ -3216,8 +3216,6 @@ post_command(iscsi_io_handle_t *ioh, iscsi_io_cmd_t *src,
 te_errno
 tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, iscsi_io_taskid *taskid)
 {
-    int rc;
-    
     iscsi_io_cmd_t cmd;
 
     cmd.leader    = TRUE;
