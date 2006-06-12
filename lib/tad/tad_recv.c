@@ -819,6 +819,8 @@ tad_recv_match_payload(tad_payload_spec_t *pattern, const tad_pkt *payload)
 
         default:
             rc = TE_EOPNOTSUPP;
+            ERROR("%s(): Match for pattern type %u is not supported",
+                  __FUNCTION__, pattern->type);
     }
 
     EXIT("%r", rc);
@@ -898,7 +900,8 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
         ((rc = tad_recv_match_payload(&unit_data->pld_spec,
                                       &meta_pkt->payload)) != 0))
     {
-        ERROR("%s(): match payload failed: %r", __FUNCTION__, rc);
+        /* If payload does not match, it is not an error */
+        VERB("%s(): match payload failed: %r", __FUNCTION__, rc);
         return rc;
     }
 
