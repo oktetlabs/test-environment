@@ -260,6 +260,43 @@ bit_mask_start_step(uint8_t *bm, unsigned int bm_len,
     return empty;
 }
 
+/**
+ * Do logical AND operation for bitmasks. Result is stored in
+ * left-hand value. Right-hand value is used specified number of
+ * times and expanded (every bit is considered as few bits) to
+ * match left-hand value bitmask length.
+ *
+ * For example,
+ *  lhv = 1 0 1 0 1 0 1 0
+ *  rhv = 0 1, times 2 -> 0 0 1 1 0 0 1 1
+ *  result = 0 0 1 0 0 0 1 0
+ *
+ * @param lhv           Left-hand value and result
+ * @param lhv_len       Length of the left-hand value bitmask
+ * @param rhv           Right-hand value
+ * @param rhv_len       Length of the right-hand value
+ * @param times         How many times right-hand value should be
+ *                      repeated
+ */
+static void
+bit_mask_and_expanded(uint8_t *lhv, unsigned int lhv_len,
+                      const uint8_t *rhv, unsigned int rhv_len,
+                      unsigned int times)
+{
+    unsigned int weight = lhv_len / (rhv_len * times);
+    unsigned int i;
+
+    assert(lhv_len % (rhv_len * times) == 0);
+    for (i = 0; i < lhv_len; ++i)
+    {
+        if (bit_mask_is_set(lhv, i) &&
+            !bit_mask_is_set(rhv, (i / weight) % rhv_len))
+        {
+            bit_mask_clear(lhv, i);
+        }
+    }
+}
+
 
 /**
  * Data to be passed as opaque to test_path_arg_value_cb() function.
@@ -430,25 +467,6 @@ test_path_arg_cb(const test_var_arg *va, void *opaque)
 
     EXIT("EEXIST - found");
     return TE_EEXIST;
-}
-
-void
-bit_mask_and_expanded(uint8_t *lhv, unsigned int lhv_len,
-                      const uint8_t *rhv, unsigned int rhv_len,
-                      unsigned int times)
-{
-    unsigned int weight = lhv_len / (rhv_len * times);
-    unsigned int i;
-
-    assert(lhv_len % (rhv_len * times) == 0);
-    for (i = 0; i < lhv_len; ++i)
-    {
-        if (bit_mask_is_set(lhv, i) &&
-            !bit_mask_is_set(rhv, (i / weight) % rhv_len))
-        {
-            bit_mask_clear(lhv, i);
-        }
-    }
 }
                       
 
