@@ -4,6 +4,8 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include <stddef.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 /* largest number of bytes malloc() will allocate as one block of memory */
@@ -84,6 +86,17 @@ shmemset(SHARED void *ptr, int c, size_t len)
     return memset((void *)ptr, c, len);
 }
 
+static inline int
+shsprintf(SHARED char *str, const char *fmt, ...)
+{
+    va_list args;
+    int     result;
+    
+    va_start(args, fmt);
+    result = vsprintf((char *)str, fmt, args);
+    va_end(args);
+    return result;
+}
 
 
 #endif

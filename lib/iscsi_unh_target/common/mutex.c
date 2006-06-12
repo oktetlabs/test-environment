@@ -70,7 +70,6 @@ te_errno
 ipc_mutexes_init(int nsems)
 {
     int rc;
-    ipc_mutex_t tmp = 0;
     int i;
     key_t mutex_key = ftok("/tmp", 'L');
 

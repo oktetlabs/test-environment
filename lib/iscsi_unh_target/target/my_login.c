@@ -57,6 +57,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <execinfo.h>
 
 #include "../common/list.h"
 #include <iscsi_common.h>
@@ -1310,14 +1311,14 @@ err_conn_out:
 
 /* helper routine for print_expanded_address_any() */
 static int
-convert_and_print_ip_stuff(char *ptr, struct sockaddr *real_ip_address,
-							struct portal_group *pg_ptr)
+convert_and_print_ip_stuff(SHARED char *ptr, struct sockaddr *real_ip_address,
+                           struct portal_group *pg_ptr)
 {
 	char ip_string[INET6_ADDRSTRLEN+2], port_string[8];
 	int k = 0;
 
 	if (cnv_inet_to_string(real_ip_address, ip_string, port_string) >= 0 ) {
-		k = 1 + sprintf(ptr, "TargetAddress=%s:%s,%u", ip_string, port_string,
+		k = 1 + shsprintf(ptr, "TargetAddress=%s:%s,%u", ip_string, port_string,
 						pg_ptr->tag);
 		TRACE(DEBUG, "Expand %s to %s", pg_ptr->ip_string, ptr);
 	}
@@ -1334,7 +1335,7 @@ convert_and_print_ip_stuff(char *ptr, struct sockaddr *real_ip_address,
  * the function ipv6_get_saddr() in the file net/ipv6/addrconf.c for IPV6.
  */
 static int
-print_expanded_address_any(char *ptr, struct portal_group *pg_ptr)
+print_expanded_address_any(SHARED char *ptr, struct portal_group *pg_ptr)
 {
     /* FIXME: add actual interface list */
     return convert_and_print_ip_stuff(ptr, pg_ptr->ip_address, pg_ptr);
@@ -1476,7 +1477,7 @@ generate_text_response(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 {
 	enum text_types text_type;
 	SHARED char *buffer = NULL;
-    char *ptr;
+    SHARED char *ptr;
     char *ip_ptr;
     SHARED char *equal;
 	int reason, size = 0, i, j, n, maxt;
@@ -1512,11 +1513,11 @@ generate_text_response(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 		if (!target_in_use(i) || (text_type == TEXT_ST_NULL
 									&& i != session->oper_param->TargetName))
 			continue;
-		n = 1 + sprintf(ptr, "TargetName=%s%d", TARGETNAME_HEADER, i);
+		n = 1 + shsprintf(ptr, "TargetName=%s%d", TARGETNAME_HEADER, i);
 		if (text_type == TEXT_ST_TN) {
 			/* need to match the name in SendTargets=<target-name> */
 			if ((equal = shstrchr(cmnd->ping_data, '=')) == NULL
-                || shstrcmp(equal, strchr(ptr, '=')) != 0) {
+                || shstrcmp(equal, shstrchr(ptr, '=')) != 0) {
 			continue;
 			}
 		}
@@ -1543,7 +1544,7 @@ generate_text_response(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 								|| strcmp(ip_ptr, IN6ADDR_ANY_STRING) == 0) {
 				n = print_expanded_address_any(ptr, pg_ptr);
 			} else {
-				n = 1 + sprintf(ptr, "TargetAddress=%s:%s,%u", ip_ptr,
+				n = 1 + shsprintf(ptr, "TargetAddress=%s:%s,%u", ip_ptr,
 								pg_ptr->port_string, pg_ptr->tag);
 			}
 			ptr += n;
@@ -2319,7 +2320,8 @@ out:
 #define LAST_SEQ_FLAG	0x0010
 
 static uint32_t
-do_command_status(SHARED struct iscsi_cmnd *cmnd, Scsi_Request *req,
+do_command_status(SHARED struct iscsi_cmnd *cmnd, 
+                  SHARED Scsi_Request *req,
 				  int *data_left, int *residual_count)
 {
 	int transfer = 0;
@@ -3715,7 +3717,7 @@ send_iscsi_response(SHARED struct iscsi_cmnd *cmnd,
 					SHARED struct iscsi_session *session)
 {
 	struct iscsi_targ_scsi_rsp *rsp;
-	Scsi_Request *req;
+	SHARED Scsi_Request *req;
 	uint8_t iscsi_hdr[ISCSI_HDR_LEN];
 	int data_length_left = 0;
 	struct sense_data_buf {
@@ -3769,14 +3771,14 @@ send_iscsi_response(SHARED struct iscsi_cmnd *cmnd,
 			sense_data.data[0] = 0xf0;		/* scsi valid bit, code 70h */
 			sense_data.data[2] = 0x20;		/* scsi ILI bit */
 			sense_data.data[7] = 0x07;		/* scsi additional length = 7 */
-			memcpy(sense_data.data + 3, req->sr_sense_buffer + 3, 4);
+			shmemcpy(sense_data.data + 3, req->sr_sense_buffer + 3, 4);
             sense_data_len = 8 + 7;
 		} else {
 			TRACE(DEBUG, "sense key 0x%x, length %d",
 				  req->sr_sense_buffer[2] & 0xf,
                   (int)req->sr_sense_length);
             sense_data_len = req->sr_sense_length;
-			memcpy(sense_data.data,
+			shmemcpy(sense_data.data,
                    req->sr_sense_buffer, 
                    req->sr_sense_length);
 		}
@@ -3831,7 +3833,7 @@ send_read_data(SHARED struct iscsi_cmnd *cmnd,
 	unsigned prevsn;
 	struct iovec *iov;
 	int niov;
-	Scsi_Request *req;
+	SHARED Scsi_Request *req;
 	uint8_t iscsi_hdr[ISCSI_HDR_LEN];
 	uint32_t pad_bytes = 0;
 	int padding;
@@ -4171,7 +4173,7 @@ handle_iscsi_done(SHARED struct iscsi_cmnd *cmnd,
 				  struct iscsi_conn *conn,
 				  SHARED struct iscsi_session *session)
 {
-	Scsi_Request *req;
+	SHARED Scsi_Request *req;
 	int err = 0;
 	int phase_collapse = 0;
 
@@ -5055,18 +5057,18 @@ static int
 out_of_order_cmnd(struct iscsi_conn *conn,
 				  SHARED struct iscsi_session *session,
 				  uint8_t *buffer,
-				  struct iscsi_cmnd *cmnd, int err)
+				  SHARED struct iscsi_cmnd *cmnd, int err)
 {
 	struct iscsi_init_scsi_cmnd *hdr = (struct iscsi_init_scsi_cmnd *) buffer;
 	int retval;
 
 	/* store "length" bytes of immediate data attached to this command */
 	if ((retval = save_unsolicited_data(cmnd, 0, (struct generic_pdu *)hdr))) {
-		free(cmnd);
+		shfree(cmnd);
 		goto out;
 	}
 
-	memcpy(cmnd->hdr, buffer, ISCSI_HDR_LEN);
+	shmemcpy(cmnd->hdr, buffer, ISCSI_HDR_LEN);
 	cmnd->state = ISCSI_QUEUE_CMND;
 
 	/* last param is 0 (don't queue) if cmnd is out of range (err == -1) */
@@ -5080,7 +5082,7 @@ out_of_order_cmnd(struct iscsi_conn *conn,
 					cmnd->init_task_tag, cmnd->opcode_byte);
 		/* command was not put into queue */
 		free_data_list(cmnd);
-		free(cmnd);
+		shfree(cmnd);
 	} else {		
 		/* within range but out of order, we queued it for later (above) */
 		TRACE(NORMAL, "out of order CmdSN %u bigger than ExpCmdSN %u",

@@ -112,7 +112,7 @@ typedef struct SM {
 	/* device: device that received the Task Management function */
 	struct Scsi_Target_Device	*device;
 	/* value: value relevant to the function, if any */
-	void		*value;
+	SHARED void		*value;
 } Target_Scsi_Message;
 
 

@@ -34,6 +34,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
@@ -223,7 +224,7 @@ te_errno
 shfree(SHARED void *addr)
 {
     SHARED reserved_block *block;
-    SHARED reserved_block **prev_ptr;
+    SHARED reserved_block * SHARED *prev_ptr;
     struct sembuf op;
 
     if (addr == NULL)
@@ -234,6 +235,7 @@ shfree(SHARED void *addr)
         ERROR("%p is not a shared address (%p:%p)", addr, 
               __builtin_return_address(0),
               __builtin_return_address(1));
+        free((void *)addr);
         return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
     }
     block = (void *)((char *)addr - 

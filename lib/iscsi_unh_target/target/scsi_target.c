@@ -38,6 +38,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/mman.h>
 
 #include <semaphore.h>
@@ -65,13 +66,13 @@ static void close_filp_table(void);
 static int get_inquiry_response(Scsi_Request *, int);
 static int get_read_capacity_response(Scsi_Request *);
 *****/
-static int get_inquiry_response(Scsi_Request *, int, int);
+static int get_inquiry_response(SHARED Scsi_Request *, int, int);
 static int get_read_capacity_response(Target_Scsi_Cmnd *);
 
 
 static int abort_notify(struct SM *);
 static void aen_notify(int, uint64_t);
-static int get_space(Scsi_Request *, int);
+static int get_space(SHARED Scsi_Request *, int);
 static int hand_to_front_end(Target_Scsi_Cmnd *);
 static int handle_cmd(struct SC *);
 
@@ -478,7 +479,7 @@ iscsi_set_device_failure_state(uint8_t target, uint8_t lun, uint32_t status,
 void
 scsi_target_cleanup(void)
 {
-	struct list_head *lptr, *next;
+	SHARED struct list_head *lptr, *next;
 	struct target_map_item *this_item;
     int i;
     int j;
@@ -788,7 +789,7 @@ scsi_target_process(void)
 	Scsi_Device *this_device = NULL;
 	struct target_map_item *this_item;
 # endif
-	struct list_head *lptr, *next;
+	SHARED struct list_head *lptr, *next;
 
     /* is message received */
     while (target_data->msgq_start) {
@@ -913,7 +914,7 @@ scsi_target_process(void)
             
             if (cmd_curr->req) 
             {
-                memset(cmd_curr->req, 0, sizeof(Scsi_Request));
+                shmemset(cmd_curr->req, 0, sizeof(Scsi_Request));
                 
                 if (lun >= MAX_LUNS)
                     cmd_curr->req->sr_allowed = 1;
@@ -950,7 +951,7 @@ scsi_target_process(void)
                 goto scsi_thread_out;
             }
             
-            memcpy(cmd_curr->req->sr_cmnd, cmd_curr->cmd, cmd_curr->len);
+            shmemcpy(cmd_curr->req->sr_cmnd, cmd_curr->cmd, cmd_curr->len);
             
             if (handle_cmd(cmd_curr)) 
             {
@@ -1058,7 +1059,7 @@ scsi_target_process(void)
                         free(st_list);
                     
                     /* free up Scsi_Request */
-                    free(cmd_curr->req);
+                    shfree(cmd_curr->req);
                 }
             }
             
@@ -1089,8 +1090,8 @@ scsi_thread_out:
  */
 SHARED Target_Scsi_Cmnd *
 rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
-	uint64_t lun, uint8_t *scsi_cdb, int len, int datalen, int in_flags,
-	SHARED Target_Scsi_Cmnd **result_command)
+        uint64_t lun, uint8_t *scsi_cdb, int len, int datalen, int in_flags,
+        SHARED Target_Scsi_Cmnd **result_command)
 {
 	SHARED Target_Scsi_Cmnd *command;
 #if 0
@@ -1485,7 +1486,7 @@ close_filp_table(void)
  * OUTPUT: 0 if everything is okay, < 0 if there is trouble
  */
 static int
-get_space(Scsi_Request * req, int space /* in bytes */ )
+get_space(SHARED Scsi_Request * req, int space /* in bytes */ )
 {
 	/* We assume that scatter gather is used universally */
 	struct scatterlist *st_buffer;
@@ -1599,7 +1600,7 @@ allocate_report_lun_space(Target_Scsi_Cmnd * cmnd)
  * OUTPUT: buffer needing to be allocated or < 0 if there is an error
  */
 static uint32_t 
-get_allocation_length(uint8_t *cmd)
+get_allocation_length(SHARED uint8_t *cmd)
 {
     uint32_t length = 0;
     
@@ -1666,7 +1667,7 @@ static int
 /*****
 get_inquiry_response(Scsi_Request * req, int len)
 *****/
-get_inquiry_response(Scsi_Request * req, int len, int type)
+get_inquiry_response(SHARED Scsi_Request * req, int len, int type)
 {
 	uint8_t *inq;
 	uint8_t *ptr, local_buffer[36];
@@ -1781,7 +1782,7 @@ get_read_capacity_response(Target_Scsi_Cmnd *cmnd)
  * OUTPUT: 0 if everything is okay, < 0 if there is trouble
  */
 static int
-get_mode_sense_response(Scsi_Request * req, uint32_t len)
+get_mode_sense_response(SHARED Scsi_Request * req, uint32_t len)
 {
 	uint8_t *buffer = ((struct scatterlist *) req->sr_buffer)->address;
 

@@ -265,7 +265,6 @@ int
 iscsi_initiator_l5_set(iscsi_connection_req *req)
 {
     int                  rc = -1;
-    int                  former_status;
     iscsi_target_data_t *target = iscsi_configuration()->targets + req->target_id;
     iscsi_connection_data_t *conn = target->conns + req->cid;
     
