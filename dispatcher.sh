@@ -161,6 +161,11 @@ Generic options:
                                 covered line percentage (mode=lines),
                                 or source file names (mode=sources)
 
+    The script exits with a status of zero if everything does smoothly and
+    all tests, if any tests are run, give expected results. A status of two
+    is returned, if some tests are run and give unexpected results.
+    A status of one indicates start up or any internal failure.
+
 EOF
 }
 
@@ -383,7 +388,7 @@ process_opts()
                 exit 1 ;;
         esac
         test -n "$opt" && cmd_line_opts_all="${cmd_line_opts_all} $opt"
-        shift 1 ;
+        shift 1
     done
 }
 
@@ -658,8 +663,11 @@ start_daemon() {
         if test ${START_OK} -eq 0 ; then
             myecho "done"
             eval $(echo $DAEMON'_OK')=yes
-        else
+        elif test ${START_OK} -eq 1 ; then
             myecho "failed"
+        else
+            myecho "unexpected"
+            START_OK=1
         fi
     fi
 }
@@ -698,10 +706,10 @@ if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
     else
         te_tester ${TESTER_OPTS} "${CONF_TESTER}" 
     fi
-    #START_OK=$?
+    START_OK=$?
 fi
 
-test "${START_OK}" -ne 0 && SHUTDOWN=yes
+test "${START_OK}" -eq 1 && SHUTDOWN=yes
 
 
 shutdown_daemon() {
@@ -728,7 +736,7 @@ if test -n "${LOGGER_OK}" -a -n "${RCF_OK}" ; then
     te_log_flush
 fi
 
-if test ${START_OK} -eq 0 -a -n "${DO_NUTS}" ; then
+if test ${START_OK} -ne 1 -a -n "${DO_NUTS}" ; then
     te_log_message Engine Dispatcher "Dumping TCE"
     myecho "--->>> Dump TCE"
     te_tce_dump.sh "${CONF_NUT}"
@@ -778,14 +786,14 @@ if test -n "${RGT_LOG_HTML}" ; then
     fi
 fi
 
-if test ${START_OK} -eq 0 -a -n "${DO_NUTS}" ; then
+if test ${START_OK} -ne 1 -a -n "${DO_NUTS}" ; then
     myecho "--->>> TCE processing"
     TCER_OPTS="${TCER_OPTS}" TCES_OPTS="${TCES_OPTS}" \
         te_tce_process "${CONF_NUT}"
 fi
 
 # Run TRC, if any its option is provided
-if test ${START_OK} -eq 0 -a -n "${TRC_OPTS}" ; then
+if test ${START_OK} -ne 1 -a -n "${TRC_OPTS}" ; then
     te_trc.sh ${TRC_OPTS} "${TE_LOG_RAW}"
 fi
 
