@@ -598,7 +598,16 @@ main(int argc, char *argv[])
         rc = tester_run(&global.scenario, global.targets, &global.cfgs,
                         global.flags);
         if (rc != 0)
+        {
+#if 1
+            /*
+             * Temporary override exit status before clean up to follow
+             * rules defined in dispatcher.sh.
+             */
+            result = EXIT_SUCCESS;
+#endif
             goto exit;
+        }
     }
 
     result = EXIT_SUCCESS;
