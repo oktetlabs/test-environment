@@ -45,6 +45,7 @@
 #include <strings.h>
 #endif
 
+#include "te_alloc.h"
 #include "logger_api.h"
 
 #include "tester_flags.h"
@@ -61,7 +62,7 @@ test_path_new(test_paths *paths, const char *path_str, test_path_type type)
 
     ENTRY("path_str=%s type=%u", path_str, type);
 
-    path = calloc(1, sizeof(*path));
+    path = TE_ALLOC(sizeof(*path));
     if (path == NULL)
         return TE_ENOMEM;
 
@@ -191,12 +192,6 @@ test_paths_free(test_paths *paths)
     }
 }
 
-
-
-static te_errno process_run_items(const test_path_item *item,
-                                  const run_items      *runs,
-                                  unsigned int          offset,
-                                  testing_scenario     *scenario);
 
 /**
  * Allocate a bit mask of specified length.
@@ -457,106 +452,189 @@ bit_mask_and_expanded(uint8_t *lhv, unsigned int lhv_len,
 }
                       
 
-static te_errno
-process_run_item(const test_path_item *item, const run_item *run,
-                 unsigned int offset, testing_scenario *scenario)
+/** Test path processing context */
+typedef struct test_path_proc_ctx {
+    LIST_ENTRY(test_path_proc_ctx)  links;  /**< List links */
+
+    const test_path_item   *item;   /**< Current test path item */
+
+    testing_scenario   *scenario;   /**< Testing scenario */
+    testing_scenario    ts_local;   /**< Local testing scenario storage */
+
+    const run_item *ri;     /**< Run item context when this instance
+                                 was created */
+    uint8_t        *bm;     /**< Bit mask with iterations to be run */
+    unsigned int    iter;   /**< Current iteration of the run item */
+
+} test_path_proc_ctx;
+
+/**
+ * Opaque data for all configuration traverse callbacks.
+ */
+typedef struct test_path_proc_data {
+
+    LIST_HEAD(, test_path_proc_ctx) ctxs;   /**< Stack of contexts */
+
+    testing_scenario   *scenario;   /**< Resulting testing scenario */
+    te_errno            rc;         /**< Status code */
+
+} test_path_proc_data;
+
+
+/**
+ * Clone the most recent (current) test path processing context.
+ *
+ * @param gctx          Test path processing global context
+ * @param path_item     Test path item to be processed
+ *
+ * @return Allocated context.
+ */
+static test_path_proc_ctx *
+test_path_proc_new_ctx(test_path_proc_data  *gctx,
+                       const test_path_item *path_item)
 {
-    te_errno            rc;
-    uint8_t            *bm = NULL;
-    unsigned int        i;
-    testing_scenario    subscenario;
+    test_path_proc_ctx *new_ctx;
+
+    assert(gctx != NULL);
+    assert(path_item != NULL);
+
+    new_ctx = TE_ALLOC(sizeof(*new_ctx));
+    if (new_ctx == NULL)
+    {
+        gctx->rc = TE_RC(TE_TESTER, TE_ENOMEM);
+        return NULL;
+    }
+
+    new_ctx->item = path_item;
+    
+    TAILQ_INIT(&new_ctx->ts_local);
+    /* By default, testing scenario points to the local storage */
+    new_ctx->scenario = &new_ctx->ts_local;
+    
+    LIST_INSERT_HEAD(&gctx->ctxs, new_ctx, links);
+
+    VERB("%s(): New context %p path_item=%s", __FUNCTION__, new_ctx,
+         path_item->name);
+
+    return new_ctx;
+}
+
+/**
+ * Destroy the most recent (current) test path processing context.
+ *
+ * @param gctx          Test path processing global context
+ *
+ * @return Status code.
+ */
+static void
+test_path_proc_destroy_ctx(test_path_proc_data *gctx)
+{
+    test_path_proc_ctx *ctx = gctx->ctxs.lh_first;
+
+    assert(ctx != NULL);
+
+    VERB("%s(): Destroy context %p", __FUNCTION__, ctx);
+
+    LIST_REMOVE(ctx, links);
+
+    scenario_free(&ctx->ts_local);
+    free(ctx->bm);
+    free(ctx);
+}
+
+
+static tester_cfg_walk_ctl
+test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
+                          unsigned int flags, void *opaque)
+{
+    test_path_proc_data    *gctx = opaque;
+    test_path_proc_ctx     *ctx;
+    const char             *name;
+    uint8_t                *bm = NULL;
+
+    /* Skip service entries */
+    if (flags & TESTER_CFG_WALK_SERVICE)
+        return TESTER_CFG_WALK_SKIP;
+
+    assert(gctx != NULL);
+    assert(gctx->rc == 0);
+    ctx = gctx->ctxs.lh_first;
+    assert(ctx != NULL);
 
     ENTRY("path_item=%s offset=%u run=%s test=%s",
-          item->name, offset, run->name, test_get_name(run));
-
-    assert(item != NULL);
-    assert(run != NULL);
-    assert(scenario != NULL);
+          ctx->item->name, cfg_id_off, run->name, test_get_name(run));
 
     /* Filter out too long path */
-    if (run->type == RUN_ITEM_SCRIPT && item->links.tqe_next != NULL)
+    if (run->type == RUN_ITEM_SCRIPT && ctx->item->links.tqe_next != NULL)
     {
         /* There is no chance to match - too long path */
-        return TE_ENOENT;
+        EXIT("SKIP - too long, no chance to match");
+        return TESTER_CFG_WALK_SKIP;
     }
 
     /*
      * Match name of the run/test and path item.
+     * If run item has no name or it does not match path, just ignore it.
      */
-    if (run->name != NULL && strcmp(run->name, item->name) == 0)
+    if (((name = run->name) != NULL) &&
+        (strcmp(name, ctx->item->name) == 0))
     {
-        /* Named run item match name of the path item */
+        /* Name of run item is specified and it matches path item */
     }
-    else
+    else if ((name = test_get_name(run)) == NULL)
     {
-        /* 
-         * If run item has no name or it does not match path,
-         * just ignore it.
-         */
-        const char *name = test_get_name(run);
-
-        if (name != NULL)
-        {
-            if (strcmp(name, item->name) != 0)
-            {
-                EXIT("ENOENT");
-                return TE_ENOENT;
-            }
-        }
-        else
-        {
-            assert(run->type == RUN_ITEM_SESSION);
-            /* Transparently bypass session without name */
-            rc = process_run_items(item, &run->u.session.run_items,
-                                   offset, scenario);
-            EXIT("%r", rc);
-            return rc;
-        }
+        assert(run->type == RUN_ITEM_SESSION);
+        /* Session without name */
+    }
+    else if (strcmp(name, ctx->item->name) != 0)
+    {
+        EXIT("SKIP - no match");
+        return TESTER_CFG_WALK_SKIP;
     }
 
     /* Allocate bit mask for all iterations */
     bm = bit_mask_alloc(run->n_iters, TRUE);
     if (bm == NULL)
     {
-        rc = TE_ENOMEM;
-        goto exit;
+        gctx->rc = TE_ENOMEM;
+        return TESTER_CFG_WALK_FAULT;
     }
 
-    /*
-     * Match arguments
-     */
+    if (name != NULL)
     {
+        /*
+         * Match arguments
+         */
         test_path_arg_cb_data   arg_cb_data;
 
         arg_cb_data.ri = run;
-        for (arg_cb_data.path_arg = item->args.tqh_first;
+        for (arg_cb_data.path_arg = ctx->item->args.tqh_first;
              arg_cb_data.path_arg != NULL;
              arg_cb_data.path_arg = arg_cb_data.path_arg->links.tqe_next)
         {
             arg_cb_data.n_iters = 1;
             arg_cb_data.bm = NULL;
 
-            rc = test_run_item_enum_args(run, test_path_arg_cb,
-                                         &arg_cb_data);
-            if (rc == 0)
+            gctx->rc = test_run_item_enum_args(run, test_path_arg_cb,
+                                               &arg_cb_data);
+            if (gctx->rc == 0)
             {
-                ERROR("Argument with name '%s' not found",
-                      arg_cb_data.path_arg->name);
-                rc = TE_ENOENT;
-                goto exit;
+                INFO("Argument with name '%s' and specified values not "
+                     "found", arg_cb_data.path_arg->name);
+                free(bm);
+                EXIT("SKIP - arg '%s' does not match",
+                     arg_cb_data.path_arg->name);
+                return TESTER_CFG_WALK_SKIP;
             }
-            else if (rc == TE_ENOENT)
-            {
-                /* Error has already been logged */
-                goto exit;
-            }
-            else if (rc != TE_EEXIST)
+            else if (TE_RC_GET_ERROR(gctx->rc) != TE_EEXIST)
             {
                 ERROR("Enumeration of run item arguments failed "
-                      "unexpectedly: %r", rc);
-                goto exit;
+                      "unexpectedly: %r", gctx->rc);
+                free(bm);
+                EXIT("FAULT - %r", gctx->rc);
+                return TESTER_CFG_WALK_FAULT;
             }
-            rc = 0;
+            gctx->rc = 0;
 
             assert(arg_cb_data.va != NULL);
             bit_mask_and_expanded(bm, run->n_iters, arg_cb_data.bm,
@@ -565,101 +643,155 @@ process_run_item(const test_path_item *item, const run_item *run,
 
             free(arg_cb_data.bm);
         }
-    }
 
-    /*
-     * Process selector by iteration number and step
-     */
-    if (item->select > 0)
-    {
-        if (bit_mask_start_step(bm, run->n_iters, item->select, item->step))
+        /*
+         * Process selector by iteration number and step
+         */
+        if (ctx->item->select > 0)
         {
-            ERROR("There is not iteration with number %u", item->select);
-            rc = TE_ENOENT;
-            goto exit;
+            if (bit_mask_start_step(bm, run->n_iters, ctx->item->select,
+                                    ctx->item->step))
+            {
+                INFO("There is no iteration with number %u",
+                      ctx->item->select);
+                /* 
+                 * May other time when the same test is called such
+                 * iteration will be found.
+                 */
+                free(bm);
+                EXIT("SKIP - no requested iteration number");
+                return TESTER_CFG_WALK_SKIP;
+            }
+        }
+
+        /*
+         * Check for end of test path specification
+         */
+        if (ctx->item->links.tqe_next == NULL)
+        {
+            /* End of path */
+            assert(gctx->rc == 0);
+            gctx->rc = scenario_by_bit_mask(ctx->scenario, cfg_id_off, bm,
+                                            run->n_iters, run->weight);
+
+            free(bm);
+
+            if (gctx->rc != 0)
+            {
+                EXIT("FAULT - %r", gctx->rc);
+                return TESTER_CFG_WALK_FAULT;
+            }
+
+            /* We don't want go into the depth */
+            EXIT("SKIP - end of run path");
+            return TESTER_CFG_WALK_SKIP;
         }
     }
 
-    TAILQ_INIT(&subscenario);
-
-    if (item->links.tqe_next == NULL)
+    assert(run->type != RUN_ITEM_SCRIPT);
+    ctx = test_path_proc_new_ctx(gctx, name == NULL ? ctx->item :
+                                           ctx->item->links.tqe_next);
+    if (ctx == NULL)
     {
-        /* End of path */
-        rc = scenario_by_bit_mask(&subscenario, offset, bm,
-                                  run->n_iters, run->weight);
-        if (rc != 0)
-            goto exit;
+        free(bm);
+        EXIT("FAULT - %r", gctx->rc);
+        return TESTER_CFG_WALK_FAULT;
+    }
+    ctx->ri = run;
+    ctx->bm = bm;
+
+    EXIT("CONT");
+    return TESTER_CFG_WALK_CONT;
+}
+
+static tester_cfg_walk_ctl
+test_path_proc_test_end(run_item *run, unsigned int cfg_id_off,
+                        unsigned int flags, void *opaque)
+{
+    test_path_proc_data    *gctx = opaque;
+    test_path_proc_ctx     *ctx;
+    test_path_proc_ctx     *parent;
+
+    if (flags & TESTER_CFG_WALK_SERVICE)
+        return TESTER_CFG_WALK_CONT;
+
+    assert(gctx != NULL);
+    ctx = gctx->ctxs.lh_first;
+    assert(ctx != NULL);
+
+    ENTRY("path_item=%s offset=%u run=%s test=%s",
+          ctx->item->name, cfg_id_off, run->name, test_get_name(run));
+
+    if (ctx->ri == run)
+    {
+        /*
+         * The context was created by start callback for this run item,
+         * destroy it.
+         */
+        test_path_proc_destroy_ctx(gctx);
+
+        ctx = gctx->ctxs.lh_first;
+        assert(ctx != NULL);
+    }
+
+    if (gctx->rc == 0)
+    {
+        parent = ctx->links.le_next;
+
+        /*
+         * Iterate and append sub-scenario to scenario
+         */
+        gctx->rc = scenario_append(parent != NULL ? parent->scenario :
+                                                    gctx->scenario,
+                                   ctx->scenario, ctx->item->iterate);
+        if (gctx->rc != 0)
+        {
+            EXIT("FAULT - %r", gctx->rc);
+            return TESTER_CFG_WALK_FAULT;
+        }
+    }
+
+    EXIT("CONT");
+    return TESTER_CFG_WALK_CONT;
+}
+
+static tester_cfg_walk_ctl
+test_path_proc_iter_start(run_item *ri, unsigned int cfg_id_off,
+                          unsigned int flags, unsigned int iter,
+                          void *opaque)
+{
+    test_path_proc_data    *gctx = opaque;
+    test_path_proc_ctx     *ctx;
+
+    UNUSED(cfg_id_off);
+
+    ENTRY("iter=%u", iter);
+
+    assert(~flags & TESTER_CFG_WALK_SERVICE);
+
+    if (ri->type == RUN_ITEM_SCRIPT)
+    {
+        EXIT("CONT - script");
+        return TESTER_CFG_WALK_CONT;
+    }
+
+    assert(gctx != NULL);
+    ctx = gctx->ctxs.lh_first;
+    assert(ctx != NULL);
+
+    if (bit_mask_is_set(ctx->bm, iter))
+    {
+        ctx->iter = iter;
+        EXIT("CONT");
+        return TESTER_CFG_WALK_CONT;
     }
     else
     {
-        const run_items    *children;
-
-        assert(run->type != RUN_ITEM_SCRIPT);
-        children = (run->type == RUN_ITEM_PACKAGE) ?
-                       &run->u.package->session.run_items :
-                       &run->u.session.run_items;
-        /* 
-         * We should process all iterations separately, since child
-         * parameters may depend on iteration number.
-         */
-        for (i = 0; i < run->n_iters; ++i)
-        {
-            if (bit_mask_is_set(bm, i))
-            {
-                rc = process_run_items(item->links.tqe_next, children,
-                                       offset + i * run->weight,
-                                       &subscenario);
-                if (rc != 0)
-                    goto exit;
-            }
-        }
+        EXIT("SKIP");
+        return TESTER_CFG_WALK_SKIP;
     }
-
-    /*
-     * Iterate and append sub-scenario to scenario
-     */
-    rc = scenario_append(scenario, &subscenario, item->iterate);
-    if (rc != 0)
-        goto exit;
-
-exit:
-    free(bm);
-    EXIT("%r", rc);
-    return rc;
 }
 
-static te_errno
-process_run_items(const test_path_item *item, const run_items *runs,
-                  unsigned int offset, testing_scenario *scenario)
-{
-    te_errno        result = TE_ENOENT;
-    te_errno        rc;
-    const run_item *run;
-
-    ENTRY("path_item=%s offset=%u", item->name, offset);
-
-    for (run = runs->tqh_first;
-         run != NULL;
-         offset += run->n_iters * run->weight,
-         run = run->links.tqe_next)
-    {
-        rc = process_run_item(item, run, offset, scenario);
-        if (rc == 0)
-        {
-            /* At least one run item match */
-            result = 0;
-        }
-        else if (rc != TE_ENOENT)
-        {
-            /* Unexpected error */
-            result = rc;
-            break;
-        }
-    }
-
-    EXIT("%r - offset=%u", result, offset);
-    return result;
-}
 
 /**
  * Process requested test path and generate testing scenario.
@@ -674,10 +806,32 @@ static te_errno
 process_test_path(const tester_cfgs *cfgs, const unsigned int total_iters,
                   test_path *path)
 {
-    te_errno                result = TE_ENOENT;
     te_errno                rc;
-    unsigned int            offset = 0;
-    const tester_cfg       *cfg;
+    tester_cfg_walk_ctl     ctl;
+    test_path_proc_data     gctx;
+    const tester_cfg_walk   cbs = {
+        NULL, /* cfg_start */
+        NULL, /* cfg_end */
+        NULL, /* pkg_start */
+        NULL, /* pkg_end */
+        NULL, /* session_start */
+        NULL, /* session_end */
+        NULL, /* prologue_start */
+        NULL, /* prologue_end */
+        NULL, /* epilogue_start */
+        NULL, /* epilogue_end */
+        NULL, /* keepalive_start */
+        NULL, /* keepalive_end */
+        NULL, /* exception_start */
+        NULL, /* exception_end */
+        test_path_proc_test_start,
+        test_path_proc_test_end,
+        test_path_proc_iter_start,
+        NULL, /* iter_end */
+        NULL, /* repeat_start */
+        NULL, /* repeat_end */
+        NULL, /* script */
+    };
 
     ENTRY("path=%s type=%d", path->str, path->type);
 
@@ -688,27 +842,38 @@ process_test_path(const tester_cfgs *cfgs, const unsigned int total_iters,
         return rc;
     }
 
-    for (cfg = cfgs->tqh_first;
-         cfg != NULL;
-         offset += cfg->total_iters, cfg = cfg->links.tqe_next)
+    /* Initialize global context */
+    LIST_INIT(&gctx.ctxs);
+    gctx.scenario = &path->scen;
+    gctx.rc = 0;
+
+    /* Create the first test path processing context */
+    if (test_path_proc_new_ctx(&gctx, path->head.tqh_first) == NULL)
     {
-        rc = process_run_items(path->head.tqh_first, &cfg->runs, offset,
-                               &path->scen);
-        if (rc == 0)
+        EXIT("%r", gctx.rc);
+        return gctx.rc;
+    }
+
+    /* Walk configurations */
+    ctl = tester_configs_walk(cfgs, &cbs, 0, &gctx);
+    if (ctl != TESTER_CFG_WALK_CONT)
+    {
+        ERROR("Walk of Tester configurations failed: %r", gctx.rc);
+    }
+    else 
+    {
+        assert(gctx.rc == 0);
+        if (path->scen.tqh_first == NULL)
         {
-            /* At least one run item match */
-            result = 0;
-        }
-        else if (rc != TE_ENOENT)
-        {
-            /* Unexpected error */
-            result = rc;
-            break;
+            gctx.rc = TE_RC(TE_TESTER, TE_ENOENT);
         }
     }
 
-    EXIT("%r - offset=%u", result, offset);
-    return result;
+    /* Destroy the first test path processing context */
+    test_path_proc_destroy_ctx(&gctx);
+    
+    EXIT("%r", gctx.rc);
+    return gctx.rc;
 }
 
 
@@ -867,7 +1032,7 @@ tester_process_test_paths(const tester_cfgs  *cfgs,
          path = path->links.tqe_next)
     {
         rc = process_test_path(cfgs, total_iters, path);
-        if (rc == TE_ENOENT)
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
             ERROR("Test path requested by user not found.\nPath: %s",
                   path->str);
