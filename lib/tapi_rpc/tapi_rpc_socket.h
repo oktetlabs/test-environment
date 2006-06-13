@@ -487,6 +487,9 @@ typedef union rpc_sockopt_value {
     int             v_int;
     tarpc_linger    v_linger;
     tarpc_timeval   v_tv;
+    tarpc_mreqn     v_mreqn;
+    struct in_addr  v_ip4addr;
+    struct in6_addr v_ip6addr;
 } rpc_sockopt_value;
 
 /**

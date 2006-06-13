@@ -282,6 +282,16 @@ extern te_errno completion_callback_register(const char *name,
                                              void *callback);
 
 /**
+ * Get an IPv4 address on specified interface.
+ *
+ * @param if_index      Network device index
+ * @param addr          Location for the obtained address
+ *
+ * @return Status code
+ */
+extern te_errno get_addr_by_ifindex(int if_index, struct in_addr *addr);
+
+/**
  * Converts the windows error to RPC one.
  */ 
 static inline te_errno 

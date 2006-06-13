@@ -1063,7 +1063,7 @@ TARPC_FUNC(vm_trasher, {},
 }
 )
 
-/*-------------- rpc_write_at_offset() -------------------*/
+/*-------------- write_at_offset() -------------------*/
 
 TARPC_FUNC(write_at_offset, {},
 {
@@ -1770,13 +1770,13 @@ TARPC_FUNC(setsockopt, {},
         struct in_addr          addr;
         struct timeval          tv;
         struct ip_mreq          mreq;
-        struct ipv6_mreq        mreq6;                         
+        struct ipv6_mreq        mreq6;
+        struct in6_addr         addr6;
         
         if (in->optname == RPC_SO_SNDTIMEO || 
             in->optname == RPC_SO_RCVTIMEO)
         {
             static int optval;
-            
             optval = 
                 in_optval->option_value_u.opt_timeval.tv_sec * 1000 + 
                 in_optval->option_value_u.opt_timeval.tv_usec / 1000;
@@ -1849,8 +1849,7 @@ TARPC_FUNC(setsockopt, {},
             }
 
             case OPT_MREQ6:
-            {
-                
+            {                
                 opt = (char *)&mreq6;
 
                 memcpy(&mreq6.ipv6mr_multiaddr,
@@ -1859,6 +1858,16 @@ TARPC_FUNC(setsockopt, {},
                 mreq6.ipv6mr_interface =
                     in_optval->option_value_u.opt_mreq6.ipv6mr_ifindex;
                 optlen = sizeof(mreq6);
+                break;
+            }
+
+            case OPT_IPADDR6:
+            {
+                opt = (char *)&addr6;
+
+                memcpy(&addr6, &in_optval->option_value_u.opt_ipaddr6,
+                       sizeof(struct in6_addr));
+                optlen = sizeof(addr6);
                 break;
             }
 
@@ -4733,6 +4742,55 @@ TARPC_FUNC(cmsg_data_parse_ip_pktinfo,
 }
 )
 
+TARPC_FUNC(mcast_join_leave,
+{},
+{
+    struct in_addr addr;
+    DWORD          rc;
+    
+    if (in->multiaddr.sa_family != RPC_AF_INET)
+    {
+        out->common._errno = RPC_EAFNOSUPPORT;
+        out->retval = -1;
+    }
+    if (in->leave_group)
+    {
+        out->common._errno = RPC_EOPNOTSUPP;
+        out->retval = -1;
+    }    
+    else if ((rc = get_addr_by_ifindex(in->ifindex, &addr)) != 0)
+    {
+        out->common._errno = rc;
+        out->retval = -1;
+    }
+    else
+    {
+        struct sockaddr_storage a;
+
+        rc = setsockopt(in->fd, IPPROTO_IP, IP_MULTICAST_IF,
+                        (void *)&addr, sizeof(addr));
+        if (rc != 0)
+        {
+            out->common._errno = TE_RC(TE_TA_WIN32, rc);
+            out->retval = -1;
+        }
+        else 
+        {
+            SOCKET rc;
+            
+            if (sockaddr_rpc2h(&in->multiaddr, SA(&a), sizeof(a)) == NULL)
+            {
+                out->common._errno = TE_RC(TE_TA_WIN32, TE_EADDRNOTAVAIL);
+                out->retval = -1;
+            }
+            MAKE_CALL(rc = WSAJoinLeaf(in->fd, SA(&a),
+                                       sizeof(struct sockaddr_in),
+                                       NULL, NULL, NULL, NULL, JL_BOTH));
+            out->retval = (rc == INVALID_SOCKET)? -1 : 0;
+        }
+    }        
+}
+)
 
 #define MAX_CALLBACKS   1024
 

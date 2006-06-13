@@ -1716,7 +1716,8 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                     
                     default:
                     {
-                        ERROR("Invalid argument type for socket option");
+                        ERROR("Invalid argument type %d for socket option",
+                              opt->type);
                         rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
                         RETVAL_INT(setsockopt, -1);
                     }

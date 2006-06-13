@@ -30,11 +30,15 @@
 
 #ifdef WINDOWS
 INCLUDE(winsock2.h)
+INCLUDE(iphlpapi.h)
 #else
 #include <winsock2.h>
+#include <w32api/iphlpapi.h>
 #include <stdio.h>
 #endif
 #include "te_defs.h"
+#include "te_errno.h"
+#include "te_stdint.h"
 #include "ta_common.h"
 
 extern void *rcf_ch_symbol_addr_auto(const char *name, int is_func);
@@ -176,3 +180,53 @@ win32_process_exec(int argc, char **argv)
     func(argc - 1, argv + 1);
     return 1;
 }
+
+/*
+ * Get an IPv4 address on specified interface.
+ * See description in tarpc_server.h
+ */
+te_errno
+get_addr_by_ifindex(int if_index, struct in_addr *addr)
+{
+    MIB_IPADDRTABLE *table;
+    int              i;
+
+    DWORD size = 0, rc;
+       
+    if ((table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IPADDRTABLE)))
+            == NULL)
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+    if ((rc = GetIpAddrTable(table, &size, 0)) != 0)
+    {
+        table = realloc(table, size);
+        rc = GetIpAddrTable(table, &size, 0);
+        if (rc != 0)
+        {
+            free(table);
+            return TE_RC(TE_TA_WIN32, TE_EWIN);
+        }
+    }
+     
+    if (table->dwNumEntries == 0)
+    {
+        free(table);
+        table = NULL;
+    }
+   
+    if (table == NULL)
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
+
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        if (table->table[i].dwIndex == (DWORD)if_index)
+        {
+            memcpy(addr, &table->table[i].dwAddr, sizeof(struct in_addr));
+            free(table);
+            return 0;
+        }
+    }
+
+    free(table);
+    return TE_RC(TE_TA_WIN32, TE_ENOENT);
+}
+
