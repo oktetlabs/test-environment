@@ -53,143 +53,94 @@
 #include "test_path.h"
 
 
-/* See the description in test_path.h */
-te_errno
-test_path_new(test_paths *paths, const char *path_str, test_path_type type)
+/** Test path processing context */
+typedef struct test_path_proc_ctx {
+    LIST_ENTRY(test_path_proc_ctx)  links;  /**< List links */
+
+    const test_path_item   *item;   /**< Current test path item */
+
+    testing_scenario   *scenario;   /**< Testing scenario */
+    testing_scenario    ts_local;   /**< Local testing scenario storage */
+
+    const run_item *ri;     /**< Run item context when this instance
+                                 was created */
+    uint8_t        *bm;     /**< Bit mask with iterations to be run */
+    unsigned int    iter;   /**< Current iteration of the run item */
+
+} test_path_proc_ctx;
+
+/**
+ * Opaque data for all configuration traverse callbacks.
+ */
+typedef struct test_path_proc_data {
+
+    LIST_HEAD(, test_path_proc_ctx) ctxs;   /**< Stack of contexts */
+
+    testing_scenario   *scenario;   /**< Resulting testing scenario */
+    te_errno            rc;         /**< Status code */
+
+} test_path_proc_data;
+
+
+/**
+ * Clone the most recent (current) test path processing context.
+ *
+ * @param gctx          Test path processing global context
+ * @param path_item     Test path item to be processed
+ *
+ * @return Allocated context.
+ */
+static test_path_proc_ctx *
+test_path_proc_new_ctx(test_path_proc_data  *gctx,
+                       const test_path_item *path_item)
 {
-    test_path *path;
-    te_errno   rc;
+    test_path_proc_ctx *new_ctx;
 
-    ENTRY("path_str=%s type=%u", path_str, type);
+    assert(gctx != NULL);
+    assert(path_item != NULL);
 
-    path = TE_ALLOC(sizeof(*path));
-    if (path == NULL)
-        return TE_ENOMEM;
-
-    TAILQ_INIT(&path->head);
-    TAILQ_INIT(&path->scen);
-    path->type = type;
-    path->str = strdup(path_str);
-    if (path->str == NULL)
+    new_ctx = TE_ALLOC(sizeof(*new_ctx));
+    if (new_ctx == NULL)
     {
-        ERROR("%s(): strdup(%s) failed", __FUNCTION__, path_str);
-        return TE_ENOMEM;
+        gctx->rc = TE_RC(TE_TESTER, TE_ENOMEM);
+        return NULL;
     }
 
-    TAILQ_INSERT_TAIL(paths, path, links);
+    new_ctx->item = path_item;
+    
+    TAILQ_INIT(&new_ctx->ts_local);
+    /* By default, testing scenario points to the local storage */
+    new_ctx->scenario = &new_ctx->ts_local;
+    
+    LIST_INSERT_HEAD(&gctx->ctxs, new_ctx, links);
 
-    rc = tester_test_path_parse(path);
-    if (rc == 0)
-    {
-        if (type != TEST_PATH_RUN && type != TEST_PATH_RUN_FORCE)
-        {
-            test_path_item *item;
+    VERB("%s(): New context %p path_item=%s", __FUNCTION__, new_ctx,
+         path_item->name);
 
-            for (item = path->head.tqh_first;
-                 item != NULL;
-                 item = item->links.tqe_next)
-            {
-                if (item->iterate != 1)
-                {
-                    WARN("Ignore iterators in neither --run nor "
-                         "--run-force options value.\n"
-                         "Path: %s", path_str);
-                    item->iterate = 1;
-                }
-                if (item->step != 0 &&
-                    (type == TEST_PATH_RUN_FROM ||
-                     type == TEST_PATH_RUN_TO))
-                {
-                    WARN("Ignore step in --run-%s=%s",
-                         (type == TEST_PATH_RUN_FROM) ? "from" : "to",
-                         path_str);
-                    item->step = 0;
-                }
-            }
-        }
-    }
-
-    return rc;
-}
-
-
-/* See the description in tester_defs.h */
-void
-tq_strings_free(tqh_strings *head, void (*value_free)(void *))
-{
-    tqe_string *p;
-
-    while ((p = head->tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(head, p, links);
-        if (value_free != NULL)
-            value_free(p->v);
-        free(p);
-    }
+    return new_ctx;
 }
 
 /**
- * Free resources allocated for test path argument.
+ * Destroy the most recent (current) test path processing context.
  *
- * @param arg           Path argument to be freed
+ * @param gctx          Test path processing global context
+ *
+ * @return Status code.
  */
 static void
-test_path_arg_free(test_path_arg *arg)
+test_path_proc_destroy_ctx(test_path_proc_data *gctx)
 {
-    tq_strings_free(&arg->values, free);
-    free(arg->name);
-    free(arg);
-}
+    test_path_proc_ctx *ctx = gctx->ctxs.lh_first;
 
-/**
- * Free resources allocated for test path item.
- *
- * @param item          Path item to be freed
- */
-static void
-test_path_item_free(test_path_item *item)
-{
-    test_path_arg  *p;
+    assert(ctx != NULL);
 
-    while ((p = item->args.tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(&item->args, p, links);
-        test_path_arg_free(p);
-    }
-    free(item->name);
-    free(item);
-}
+    VERB("%s(): Destroy context %p", __FUNCTION__, ctx);
 
-/**
- * Free resources allocated for test path.
- *
- * @param path          Path to be freed
- */
-static void
-test_path_free(test_path *path)
-{
-    test_path_item *p;
+    LIST_REMOVE(ctx, links);
 
-    while ((p = path->head.tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(&path->head, p, links);
-        test_path_item_free(p);
-    }
-    free(path->str);
-    free(path);
-}
-
-/* See the description in test_path.h */
-void
-test_paths_free(test_paths *paths)
-{
-    test_path *p;
-
-    while ((p = paths->tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(paths, p, links);
-        test_path_free(p);
-    }
+    scenario_free(&ctx->ts_local);
+    free(ctx->bm);
+    free(ctx);
 }
 
 
@@ -297,13 +248,110 @@ bit_mask_and_expanded(uint8_t *lhv, unsigned int lhv_len,
     }
 }
 
+/**
+ * Calculate index of the argument value.
+ *
+ * @param iter          Index of the iteration
+ * @param total_iters   Total number of iterations
+ * @param outer_iters   Number of outer iterations of this argument
+ * @param n_values      Number of values for this argument
+ */
+static inline unsigned int
+test_var_arg_value_index(unsigned int iter,
+                         unsigned int total_iters,
+                         unsigned int outer_iters,
+                         unsigned int n_values)
+{
+    assert(iter < total_iters);
+    assert(total_iters % (outer_iters * n_values) == 0);
+
+    return (iter % (total_iters / outer_iters)) /
+           (total_iters / (outer_iters * n_values));
+}
+
+/**
+ * Get value of the argument for specified iteration of the run item.
+ *
+ * @param ctx           Context with run item and iteration specified
+ *                      plus context to resolve further external
+ *                      referencies
+ * @param name          Name of the argument to find
+ * @param value         Location to found value pointer
+ *
+ * @return Status code.
+ */
+static te_errno
+get_iter_arg_value(const test_path_proc_ctx *ctx, const char *name,
+                   const char **value)
+{
+    const test_var_arg         *va;
+    unsigned int                n_values;
+    unsigned int                outer_iters;
+    const test_entity_value    *va_value;
+    te_errno                    rc;
+
+    assert(name != NULL);
+    assert(value != NULL);
+
+    ENTRY("name=%s", name);
+
+    if (ctx == NULL)
+    {
+        ERROR("No context to get argument '%s' value", name);
+        EXIT("EFAULT");
+        return TE_RC(TE_TESTER, TE_EFAULT);
+    }
+
+    va = test_run_item_find_arg(ctx->ri, name, &n_values, &outer_iters);
+    if (va == NULL)
+    {
+        ERROR("Argument '%s' not found in run item '%s' context",
+              name, test_get_name(ctx->ri));
+        EXIT("ESRCH");
+        return TE_RC(TE_TESTER, TE_ESRCH);
+    }
+
+    rc = test_var_arg_get_value(ctx->ri, va,
+                                test_var_arg_value_index(ctx->iter,
+                                                         ctx->ri->n_iters,
+                                                         outer_iters,
+                                                         n_values),
+                                NULL, NULL, &va_value);
+    if (rc != 0)
+    {
+        EXIT("%r", rc);
+        return rc;
+    }
+
+    if (va_value->plain != NULL)
+    {
+        *value = va_value->plain;
+    }
+    else
+    {
+        assert(va_value->ext != NULL);
+        rc = get_iter_arg_value(ctx->links.le_next, va_value->ext, value);
+        if (rc != 0)
+        {
+            ERROR("Failed to resolve external reference '%s': %r",
+                  va_value->ext, rc);
+        }
+    }
+
+    EXIT("%r", rc);
+    return rc;
+}
+
 
 /**
  * Data to be passed as opaque to test_path_arg_value_cb() function.
  */
 typedef struct test_path_arg_value_cb_data {
+    const test_path_proc_ctx   *ctx;    /**< Current test path
+                                             processing context */
+
+    tqh_strings    *values; /**< Values specified by user */
     uint8_t        *bm;     /**< Argument bit mask */
-    const char     *value;  /**< Value specified by user */
     unsigned int    index;  /**< Index of the current argument value */
     te_bool         found;  /**< Is at least one matching value found? */
     unsigned int    pref_i; /**< Index of the preferred value */
@@ -323,241 +371,50 @@ static te_errno
 test_path_arg_value_cb(const test_entity_value *value, void *opaque)
 {
     test_path_arg_value_cb_data *data = opaque;
+    const char                  *plain;
+    tqe_string                  *path_arg_value;
 
-    ENTRY("value=%s|%s search=%s index=%u found=%u",
-          value->plain, value->ext, data->value, data->index, data->found);
+    ENTRY("value=%s|%s index=%u found=%u",
+          value->plain, value->ext, data->index, data->found);
 
     if (data->pref_value == value)
         data->pref_i = data->index;
 
     if (value->plain != NULL)
     {
-        if (strcmp(data->value, value->plain) == 0)
+        plain = value->plain;
+    }
+    else
+    {
+        te_errno    rc;
+
+        assert(value->ext != NULL);
+        rc = get_iter_arg_value(data->ctx, value->ext, &plain);
+        if (rc != 0)
+        {
+            ERROR("Failed to resolve external reference '%s': %r",
+                  value->ext, rc);
+            EXIT("%r", rc);
+            return rc;
+        }
+    }
+
+    for (path_arg_value = data->values->tqh_first;
+         path_arg_value != NULL;
+         path_arg_value = path_arg_value->links.tqe_next)
+    {
+        if (strcmp(path_arg_value->v, plain) == 0)
         {
             data->found = TRUE;
             bit_mask_set(data->bm, data->index);
             /* Continue, since equal values are possible */
         }
     }
-    else
-    {
-        assert(value->ext != NULL);
-        ERROR("FIXME %s:%d - not supported", __FILE__, __LINE__);
-        return TE_EOPNOTSUPP;
-    }
 
     data->index++;
 
     EXIT();
     return 0;
-}
-
-/**
- * Data to be passed as opaque to test_path_arg_cb() function.
- */
-typedef struct test_path_arg_cb_data {
-    const run_item     *ri;         /**< Run item context */
-    test_path_arg      *path_arg;   /**< Current test path argument */
-    uint8_t            *bm;         /**< Matching argument values bit
-                                         mask */
-    unsigned int        n_iters;    /**< Number of outer iterations of
-                                         the argument */
-    const test_var_arg *va;         /**< Matching argument */
-    unsigned int        n_values;   /**< Number of values */
-} test_path_arg_cb_data;
-
-static te_errno
-test_path_arg_cb(const test_var_arg *va, void *opaque)
-{
-    test_path_arg_cb_data       *data = opaque;
-    tqe_string                  *path_arg_value;
-    test_path_arg_value_cb_data  value_data;
-    te_bool                      empty = TRUE;
-    te_errno                     rc;
-
-    ENTRY("va=%s search=%s n_iters=%u",
-          va->name, data->path_arg->name, data->n_iters);
-
-    if (va->list != NULL)
-    {
-        const test_var_arg_list *list;
-
-        for (list = data->ri->lists.lh_first;
-             list != NULL && strcmp(list->name, va->list) != 0;
-             list = list->links.le_next);
-
-        assert(list != NULL);
-        data->n_values = list->len;
-    }
-    else
-    {
-        data->n_values = test_var_arg_values(va)->num;
-    }
-
-    if (strcmp(data->path_arg->name, va->name) != 0)
-    {
-        data->n_iters *= data->n_values;
-        data->n_values = 0;
-        EXIT("no match");
-        return 0;
-    }
-
-    data->va = va;
-
-    data->bm = bit_mask_alloc(data->n_values, FALSE);
-    if (data->bm == NULL)
-        return TE_ENOMEM;
-
-    value_data.pref_i = 0;
-    value_data.pref_value = va->preferred;
-    value_data.bm = data->bm;
-    for (path_arg_value = data->path_arg->values.tqh_first;
-         path_arg_value != NULL;
-         path_arg_value = path_arg_value->links.tqe_next)
-    {
-        value_data.value = path_arg_value->v;
-        value_data.index = 0;
-        value_data.found = FALSE;
-
-        rc = test_var_arg_enum_values(data->ri, va,
-                                      test_path_arg_value_cb, &value_data,
-                                      NULL, NULL);
-        if (rc != 0)
-        {
-            ERROR("Failed to enumerate values of argument '%s' of "
-                  "the test '%s' to find '%s': %r", va->name,
-                  test_get_name(data->ri), path_arg_value->v, rc);
-            EXIT("%r", rc);
-            return rc;
-        }
-        if (!value_data.found)
-        {
-            /* May be this value is used in other call of the test */
-            INFO("Argument '%s' of the test '%s' does not have value "
-                 "'%s'", va->name, test_get_name(data->ri),
-                 path_arg_value->v);
-        }
-        else
-        {
-            empty = FALSE;
-        }
-    }
-
-    if (empty)
-    {
-        /* May be these values are used in other call of the test */
-        INFO("Empty set of values is specified for argument '%s' "
-             "of the test '%s'", va->name, test_get_name(data->ri));
-        EXIT("0 - argument values do not match");
-        return 0;
-    }
-
-    if (test_var_arg_values(va)->num < data->n_values)
-    {
-        unsigned int i;
-
-        if (bit_mask_is_set(data->bm, value_data.pref_i))
-        {
-            for (i = test_var_arg_values(va)->num; i < data->n_values; ++i)
-            {
-                bit_mask_set(data->bm, i);
-            }
-        }
-    }
-
-    EXIT("EEXIST - found");
-    return TE_EEXIST;
-}
-                      
-
-/** Test path processing context */
-typedef struct test_path_proc_ctx {
-    LIST_ENTRY(test_path_proc_ctx)  links;  /**< List links */
-
-    const test_path_item   *item;   /**< Current test path item */
-
-    testing_scenario   *scenario;   /**< Testing scenario */
-    testing_scenario    ts_local;   /**< Local testing scenario storage */
-
-    const run_item *ri;     /**< Run item context when this instance
-                                 was created */
-    uint8_t        *bm;     /**< Bit mask with iterations to be run */
-    unsigned int    iter;   /**< Current iteration of the run item */
-
-} test_path_proc_ctx;
-
-/**
- * Opaque data for all configuration traverse callbacks.
- */
-typedef struct test_path_proc_data {
-
-    LIST_HEAD(, test_path_proc_ctx) ctxs;   /**< Stack of contexts */
-
-    testing_scenario   *scenario;   /**< Resulting testing scenario */
-    te_errno            rc;         /**< Status code */
-
-} test_path_proc_data;
-
-
-/**
- * Clone the most recent (current) test path processing context.
- *
- * @param gctx          Test path processing global context
- * @param path_item     Test path item to be processed
- *
- * @return Allocated context.
- */
-static test_path_proc_ctx *
-test_path_proc_new_ctx(test_path_proc_data  *gctx,
-                       const test_path_item *path_item)
-{
-    test_path_proc_ctx *new_ctx;
-
-    assert(gctx != NULL);
-    assert(path_item != NULL);
-
-    new_ctx = TE_ALLOC(sizeof(*new_ctx));
-    if (new_ctx == NULL)
-    {
-        gctx->rc = TE_RC(TE_TESTER, TE_ENOMEM);
-        return NULL;
-    }
-
-    new_ctx->item = path_item;
-    
-    TAILQ_INIT(&new_ctx->ts_local);
-    /* By default, testing scenario points to the local storage */
-    new_ctx->scenario = &new_ctx->ts_local;
-    
-    LIST_INSERT_HEAD(&gctx->ctxs, new_ctx, links);
-
-    VERB("%s(): New context %p path_item=%s", __FUNCTION__, new_ctx,
-         path_item->name);
-
-    return new_ctx;
-}
-
-/**
- * Destroy the most recent (current) test path processing context.
- *
- * @param gctx          Test path processing global context
- *
- * @return Status code.
- */
-static void
-test_path_proc_destroy_ctx(test_path_proc_data *gctx)
-{
-    test_path_proc_ctx *ctx = gctx->ctxs.lh_first;
-
-    assert(ctx != NULL);
-
-    VERB("%s(): Destroy context %p", __FUNCTION__, ctx);
-
-    LIST_REMOVE(ctx, links);
-
-    scenario_free(&ctx->ts_local);
-    free(ctx->bm);
-    free(ctx);
 }
 
 
@@ -569,6 +426,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
     test_path_proc_ctx     *ctx;
     const char             *name;
     uint8_t                *bm = NULL;
+    te_errno                rc;
 
     /* Skip service entries */
     if (flags & TESTER_CFG_WALK_SERVICE)
@@ -623,43 +481,87 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
         /*
          * Match arguments
          */
-        test_path_arg_cb_data   arg_cb_data;
+        test_path_arg  *path_arg;
 
-        arg_cb_data.ri = run;
-        for (arg_cb_data.path_arg = ctx->item->args.tqh_first;
-             arg_cb_data.path_arg != NULL;
-             arg_cb_data.path_arg = arg_cb_data.path_arg->links.tqe_next)
+        for (path_arg = ctx->item->args.tqh_first;
+             path_arg != NULL;
+             path_arg = path_arg->links.tqe_next)
         {
-            arg_cb_data.n_iters = 1;
-            arg_cb_data.bm = NULL;
+            const test_var_arg             *va;
+            unsigned int                    n_values;
+            unsigned int                    outer_iters;
+            uint8_t                        *arg_bm;
+            test_path_arg_value_cb_data     value_data;
 
-            gctx->rc = test_run_item_enum_args(run, test_path_arg_cb,
-                                               &arg_cb_data);
-            if (gctx->rc == 0)
+            va = test_run_item_find_arg(run, path_arg->name,
+                                        &n_values, &outer_iters);
+            if (va == NULL)
             {
                 INFO("Argument with name '%s' and specified values not "
-                     "found", arg_cb_data.path_arg->name);
+                     "found", path_arg->name);
                 free(bm);
-                EXIT("SKIP - arg '%s' does not match",
-                     arg_cb_data.path_arg->name);
+                EXIT("SKIP - arg '%s' does not match", path_arg->name);
                 return TESTER_CFG_WALK_SKIP;
             }
-            else if (TE_RC_GET_ERROR(gctx->rc) != TE_EEXIST)
+
+            arg_bm = bit_mask_alloc(n_values, FALSE);
+            if (arg_bm == NULL)
             {
-                ERROR("Enumeration of run item arguments failed "
-                      "unexpectedly: %r", gctx->rc);
                 free(bm);
-                EXIT("FAULT - %r", gctx->rc);
-                return TESTER_CFG_WALK_FAULT;
+                return TE_ENOMEM;
             }
-            gctx->rc = 0;
 
-            assert(arg_cb_data.va != NULL);
-            bit_mask_and_expanded(bm, run->n_iters, arg_cb_data.bm,
-                                  arg_cb_data.n_values,
-                                  arg_cb_data.n_iters);
+            value_data.ctx = ctx;
+            value_data.values = &path_arg->values;
+            value_data.bm = arg_bm;
+            value_data.index = 0;
+            value_data.found = FALSE;
+            value_data.pref_i = 0;
+            value_data.pref_value = va->preferred;
+            rc = test_var_arg_enum_values(run, va,
+                                          test_path_arg_value_cb,
+                                          &value_data,
+                                          NULL, NULL);
+            if (rc != 0)
+            {
+                ERROR("Failed to enumerate values of argument '%s' of "
+                      "the test '%s': %r", va->name, test_get_name(run),
+                      rc);
+                free(arg_bm);
+                free(bm);
+                EXIT("%r", rc);
+                return rc;
+            }
+            if (!value_data.found)
+            {
+                /* May be these values are used in other call of the test */
+                INFO("Empty set of values is specified for argument '%s' "
+                     "of the test '%s'", va->name, test_get_name(run));
+                free(arg_bm);
+                free(bm);
+                EXIT("0 - argument values do not match");
+                return 0;
+            }
 
-            free(arg_cb_data.bm);
+            if (test_var_arg_values(va)->num < n_values)
+            {
+                unsigned int i;
+
+                if (bit_mask_is_set(arg_bm, value_data.pref_i))
+                {
+                    for (i = test_var_arg_values(va)->num;
+                         i < n_values;
+                         ++i)
+                    {
+                        bit_mask_set(arg_bm, i);
+                    }
+                }
+            }
+
+            bit_mask_and_expanded(bm, run->n_iters, arg_bm,
+                                  n_values, outer_iters);
+
+            free(arg_bm);
         }
 
         /*
@@ -1072,4 +974,145 @@ tester_process_test_paths(const tester_cfgs  *cfgs,
 
     EXIT("%r", rc);
     return rc;
+}
+
+
+
+/* See the description in test_path.h */
+te_errno
+test_path_new(test_paths *paths, const char *path_str, test_path_type type)
+{
+    test_path *path;
+    te_errno   rc;
+
+    ENTRY("path_str=%s type=%u", path_str, type);
+
+    path = TE_ALLOC(sizeof(*path));
+    if (path == NULL)
+        return TE_ENOMEM;
+
+    TAILQ_INIT(&path->head);
+    TAILQ_INIT(&path->scen);
+    path->type = type;
+    path->str = strdup(path_str);
+    if (path->str == NULL)
+    {
+        ERROR("%s(): strdup(%s) failed", __FUNCTION__, path_str);
+        return TE_ENOMEM;
+    }
+
+    TAILQ_INSERT_TAIL(paths, path, links);
+
+    rc = tester_test_path_parse(path);
+    if (rc == 0)
+    {
+        if (type != TEST_PATH_RUN && type != TEST_PATH_RUN_FORCE)
+        {
+            test_path_item *item;
+
+            for (item = path->head.tqh_first;
+                 item != NULL;
+                 item = item->links.tqe_next)
+            {
+                if (item->iterate != 1)
+                {
+                    WARN("Ignore iterators in neither --run nor "
+                         "--run-force options value.\n"
+                         "Path: %s", path_str);
+                    item->iterate = 1;
+                }
+                if (item->step != 0 &&
+                    (type == TEST_PATH_RUN_FROM ||
+                     type == TEST_PATH_RUN_TO))
+                {
+                    WARN("Ignore step in --run-%s=%s",
+                         (type == TEST_PATH_RUN_FROM) ? "from" : "to",
+                         path_str);
+                    item->step = 0;
+                }
+            }
+        }
+    }
+
+    return rc;
+}
+
+
+/* See the description in tester_defs.h */
+void
+tq_strings_free(tqh_strings *head, void (*value_free)(void *))
+{
+    tqe_string *p;
+
+    while ((p = head->tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(head, p, links);
+        if (value_free != NULL)
+            value_free(p->v);
+        free(p);
+    }
+}
+
+/**
+ * Free resources allocated for test path argument.
+ *
+ * @param arg           Path argument to be freed
+ */
+static void
+test_path_arg_free(test_path_arg *arg)
+{
+    tq_strings_free(&arg->values, free);
+    free(arg->name);
+    free(arg);
+}
+
+/**
+ * Free resources allocated for test path item.
+ *
+ * @param item          Path item to be freed
+ */
+static void
+test_path_item_free(test_path_item *item)
+{
+    test_path_arg  *p;
+
+    while ((p = item->args.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&item->args, p, links);
+        test_path_arg_free(p);
+    }
+    free(item->name);
+    free(item);
+}
+
+/**
+ * Free resources allocated for test path.
+ *
+ * @param path          Path to be freed
+ */
+static void
+test_path_free(test_path *path)
+{
+    test_path_item *p;
+
+    while ((p = path->head.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&path->head, p, links);
+        test_path_item_free(p);
+    }
+    free(path->str);
+    free(path);
+}
+
+/* See the description in test_path.h */
+void
+test_paths_free(test_paths *paths)
+{
+    test_path *p;
+
+    while ((p = paths->tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(paths, p, links);
+        test_path_free(p);
+    }
 }

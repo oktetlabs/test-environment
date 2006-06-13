@@ -115,6 +115,96 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
 
 
 /**
+ * Data to be passed as opaque to test_run_item_find_arg_cb() function.
+ */
+typedef struct test_run_item_find_arg_cb_data {
+    const run_item     *ri;         /**< Run item context */
+    const char         *name;       /**< Name of the argument to find */
+    unsigned int        n_iters;    /**< Number of outer iterations of
+                                         the argument */
+    unsigned int        n_values;   /**< Number of argument values */
+    const test_var_arg *found;      /**< Found argument */
+} test_run_item_find_arg_cb_data;
+
+/**
+ * Callback function for test_run_item_enum_args() routine to find
+ * argument by name.
+ *
+ * The function complies with test_var_arg_enum_cb() prototype.
+ *
+ * @retval 0            Argument does not match
+ * @retval TE_EEXIST    Argument found
+ */
+static te_errno
+test_run_item_find_arg_cb(const test_var_arg *va, void *opaque)
+{
+    test_run_item_find_arg_cb_data *data = opaque;
+
+    if (va->list != NULL)
+    {
+        const test_var_arg_list *list;
+
+        for (list = data->ri->lists.lh_first;
+             list != NULL && strcmp(list->name, va->list) != 0;
+             list = list->links.le_next);
+
+        assert(list != NULL);
+        data->n_values = list->len;
+    }
+    else
+    {
+        data->n_values = test_var_arg_values(va)->num;
+    }
+
+    if (strcmp(data->name, va->name) != 0)
+    {
+        data->n_iters *= data->n_values;
+        data->n_values = 0;
+        return 0;
+    }
+
+    data->found = va;
+
+    return TE_RC(TE_TESTER, TE_EEXIST);
+}
+
+/* See the description in tester_conf.h */
+const test_var_arg *
+test_run_item_find_arg(const run_item *ri, const char *name,
+                       unsigned int *n_values, unsigned int *outer_iters)
+{
+    test_run_item_find_arg_cb_data  data;
+    te_errno                        rc;
+
+    data.ri = ri;
+    data.name = name;
+    data.n_iters = 1;
+
+    rc = test_run_item_enum_args(ri, test_run_item_find_arg_cb, &data);
+    if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
+    {
+        if (n_values != NULL)
+            *n_values = data.n_values;
+        if (outer_iters != NULL)
+            *outer_iters = data.n_iters;
+
+        return data.found;
+    }
+    else if (rc == 0)
+    {
+        INFO("%s(): Argument '%s' not found in run item '%s' context",
+             __FUNCTION__, name, test_get_name(ri));
+    }
+    else
+    {
+        ERROR("%s(): test_run_item_enum_args() failed unexpectedly: %r",
+              __FUNCTION__, rc);
+    }
+    return NULL;
+}
+
+
+/**
  * Enumerate singleton values of the entity value in current variables
  * context.
  *
@@ -122,6 +212,10 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
  * @param value         Entity value which may be not a singleton
  * @param callback      Function to be called for each singleton value
  * @param opaque        Data to be passed in callback function
+ * @param enum_error_cb Function to be called on back path when
+ *                      enumeration error occur (for example, when
+ *                      value has been found)
+ * @param ee_opaque     Opaque data for @a enum_error_cb function
  *
  * @return Status code.
  */
@@ -130,8 +224,8 @@ test_entity_value_enum_values(const test_vars_args *vars,
                               const test_entity_value *value,
                               test_entity_value_enum_cb callback,
                               void *opaque,
-                    test_entity_value_recovery_cb  recovery,
-                    void                          *rec_data)
+                              test_entity_value_enum_error_cb enum_error_cb,
+                              void *ee_opaque)
 {
     te_errno    rc;
 
@@ -143,8 +237,8 @@ test_entity_value_enum_values(const test_vars_args *vars,
         /* Typical singleton */
         rc = callback(value, opaque);
 
-        if (rc != 0 && recovery != NULL)
-            recovery(value, rc, rec_data);
+        if (rc != 0 && enum_error_cb != NULL)
+            enum_error_cb(value, rc, ee_opaque);
             
         return rc;
     }
@@ -157,10 +251,10 @@ test_entity_value_enum_values(const test_vars_args *vars,
          */
         rc = test_entity_value_enum_values(vars, value->ref,
                                            callback, opaque,
-                                           recovery, rec_data);
+                                           enum_error_cb, ee_opaque);
 
-        if (rc != 0 && recovery != NULL)
-            recovery(value, rc, rec_data);
+        if (rc != 0 && enum_error_cb != NULL)
+            enum_error_cb(value, rc, ee_opaque);
             
         return rc;
     }
@@ -174,8 +268,8 @@ test_entity_value_enum_values(const test_vars_args *vars,
              */
             rc = callback(value, opaque);
 
-            if (rc != 0 && recovery != NULL)
-                recovery(value, rc, rec_data);
+            if (rc != 0 && enum_error_cb != NULL)
+                enum_error_cb(value, rc, ee_opaque);
                 
             return rc;
         }
@@ -195,10 +289,10 @@ test_entity_value_enum_values(const test_vars_args *vars,
                  */
                 rc = test_var_arg_enum_values(NULL, var,
                                                 callback, opaque,
-                                                recovery, rec_data);
+                                                enum_error_cb, ee_opaque);
 
-                if (rc != 0 && recovery != NULL)
-                    recovery(value, rc, rec_data);
+                if (rc != 0 && enum_error_cb != NULL)
+                    enum_error_cb(value, rc, ee_opaque);
                     
                 return rc;
             }
@@ -218,10 +312,11 @@ test_entity_value_enum_values(const test_vars_args *vars,
          * Type does not have variables context.
          */
         rc = test_entity_values_enum(NULL, &value->type->values,
-                                     callback, opaque, recovery, rec_data);
+                                     callback, opaque,
+                                     enum_error_cb, ee_opaque);
 
-        if (rc != 0 && recovery != NULL)
-            recovery(value, rc, rec_data);
+        if (rc != 0 && enum_error_cb != NULL)
+            enum_error_cb(value, rc, ee_opaque);
             
         return rc;
     }
@@ -232,23 +327,14 @@ test_entity_value_enum_values(const test_vars_args *vars,
     }
 }
 
-/**
- * Enumerate values from the list in current variables context.
- *
- * @param vars          Variables context or NULL
- * @param values        List of values
- * @param callback      Function to be called for each singleton value
- * @param opaque        Data to be passed in callback function
- *
- * @return Status code.
- */
+/* See the description in tester_conf.h */
 te_errno
-test_entity_values_enum(const test_vars_args *vars,
-                        const test_entity_values *values,
-                        test_entity_value_enum_cb callback,
-                        void *opaque,
-                    test_entity_value_recovery_cb  recovery,
-                    void                          *rec_data)
+test_entity_values_enum(const test_vars_args            *vars,
+                        const test_entity_values        *values,
+                        test_entity_value_enum_cb        callback,
+                        void                            *opaque,
+                        test_entity_value_enum_error_cb  enum_error_cb,
+                        void                            *ee_opaque)
 {
     te_errno                    rc = TE_RC(TE_TESTER, TE_ENOENT);
     const test_entity_value    *v;
@@ -261,7 +347,7 @@ test_entity_values_enum(const test_vars_args *vars,
     for (v = values->head.tqh_first; v != NULL; v = v->links.tqe_next)
     {
         rc = test_entity_value_enum_values(vars, v, callback, opaque,
-                                           recovery, rec_data);
+                                           enum_error_cb, ee_opaque);
         if (rc != 0)
             break;
     }
@@ -274,8 +360,8 @@ test_entity_values_enum(const test_vars_args *vars,
 te_errno
 test_var_arg_enum_values(const run_item *ri, const test_var_arg *va,
                          test_entity_value_enum_cb callback, void *opaque,
-                    test_entity_value_recovery_cb  recovery,
-                    void                          *rec_data)
+                         test_entity_value_enum_error_cb enum_error_cb,
+                         void *ee_opaque)
 {
     assert(va != NULL);
 
@@ -284,7 +370,7 @@ test_var_arg_enum_values(const run_item *ri, const test_var_arg *va,
         assert(va->type != NULL);
         return test_entity_values_enum(NULL, &va->type->values,
                                        callback, opaque,
-                                       recovery, rec_data);
+                                       enum_error_cb, ee_opaque);
     }
     else
     {
@@ -292,6 +378,129 @@ test_var_arg_enum_values(const run_item *ri, const test_var_arg *va,
             (ri != NULL && ri->context != NULL) ? &ri->context->vars : NULL;
 
         return test_entity_values_enum(vars, &va->values, callback, opaque,
-                                       recovery, rec_data);
+                                       enum_error_cb, ee_opaque);
     }
+}
+
+
+/** Opaque data for test_var_arg_get_plain_value_cb() function */
+typedef struct test_var_arg_get_plain_value_cb_data {
+
+    unsigned int    search; /**< Index of the value to get */
+    unsigned int    index;  /**< Index of the current value */
+
+    const test_entity_value    *value;  /**< Found value */
+
+} test_var_arg_get_plain_value_cb_data;
+
+/**
+ * Callback function to find argument value by index.
+ *
+ * The function complies with test_entity_value_enum_cb() prototype.
+ */
+static te_errno
+test_var_arg_get_plain_value_cb(const test_entity_value *value,
+                                void *opaque)
+{
+    test_var_arg_get_plain_value_cb_data   *data = opaque;
+
+    if (data->index < data->search)
+    {
+        data->index++;
+        return 0;
+    }
+
+    data->value = value;
+
+    return TE_RC(TE_TESTER, TE_EEXIST);
+}
+
+/* See the description in tester_conf.h */
+te_errno
+test_var_arg_get_value(const run_item                   *ri,
+                       const test_var_arg               *va,
+                       const unsigned int                index,
+                       test_entity_value_enum_error_cb   enum_error_cb,  
+                       void                             *ee_opaque,
+                       const test_entity_value         **value)
+{
+    test_var_arg_get_plain_value_cb_data    data;
+    te_errno                                rc;
+    unsigned int                            n_values;
+
+    /*
+     * Assume that request is corrent and try to find first.
+     */
+
+    data.search = index;
+    data.index = 0;
+
+    rc = test_var_arg_enum_values(ri, va,
+                                  test_var_arg_get_plain_value_cb,
+                                  &data, enum_error_cb, ee_opaque);
+    if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
+    {
+        *value = data.value;
+        /* It has to be either 'plain' or 'ext' */
+        assert((*value)->plain != NULL || (*value)->ext != NULL);
+        return 0;
+    }
+    else if (rc != 0)
+    {
+        ERROR("%s(): test_var_arg_enum_values() failed unexpectedly: %r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+
+    /*
+     * Opps, request seems to be incorrect or list preferred value
+     * should be used.
+     */
+
+    if (va->list != NULL)
+    {
+        const test_var_arg_list *list;
+
+        for (list = ri->lists.lh_first;
+             list != NULL && strcmp(list->name, va->list) != 0;
+             list = list->links.le_next);
+
+        assert(list != NULL);
+        n_values = list->len;
+    }
+    else
+    {
+        n_values = test_var_arg_values(va)->num;
+    }
+
+    if (index >= n_values)
+    {
+        ERROR("%s(): Run item '%s' argument '%s' value with too big "
+              "index %u is requested", __FUNCTION__, test_get_name(ri),
+              va->name, index);
+        return TE_RC(TE_TESTER, TE_E2BIG);
+    }
+
+    /* List preferred value should be used */
+    assert(va->list != NULL);
+    assert(index >= test_var_arg_values(va)->num);
+
+    if (va->preferred == NULL)
+        *value = test_var_arg_values(va)->head.tqh_first;
+    else
+        *value = va->preferred;
+
+    /* Preferred value has to be a singleton */
+    assert((*value)->plain != NULL || (*value)->ref != NULL ||
+           (*value)->ext != NULL);
+    while ((*value)->ref != NULL)
+    {
+        *value = (*value)->ref;
+        assert((*value)->plain != NULL || (*value)->ref != NULL ||
+               (*value)->ext != NULL);
+    }
+    /* Now it is either 'plain' or 'ext' */
+    assert((*value)->plain != NULL || (*value)->ext != NULL);
+
+    return 0;
 }

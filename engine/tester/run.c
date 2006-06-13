@@ -1729,53 +1729,17 @@ run_get_value(const test_entity_value *value,
     }
 }
 
-/** Data to be passed as opaque to run_prepare_arg_value_cb() function. */
-typedef struct run_prepare_arg_value_cb_data {
-    const test_iter_arg    *ctx_args;   /**< Context of arguments */
-    unsigned int            ctx_n_args; /**< Number of arguments
-                                             in the context */
-
-    const run_item *ri;         /**< Run item context */
-    unsigned int    i_value;    /**< Index of the required value */
-    unsigned int    i;          /**< Index of the current value */
-    test_iter_arg  *arg;        /**< The next argument to be filled in */
-} run_prepare_arg_value_cb_data;
 
 /**
- * Function to be called for each singleton value of the run item
- * argument (explicit or inherited) to calculate total number of values.
+ * Callback function to collect all requirements associated with
+ * argument value.
  *
- * The function complies with test_entity_value_enum_cb prototype.
+ * The function complies with test_entity_value_enum_error_cb()
+ * prototype.
  */
 static te_errno
-run_prepare_arg_value_cb(const test_entity_value *value, void *opaque)
-{
-    run_prepare_arg_value_cb_data  *data = opaque;
-
-    if (data->i < data->i_value)
-    {
-        data->i++;
-        return 0;
-    }
-
-    data->arg->value = run_get_value(value, data->ctx_args,
-                                     data->ctx_n_args, &data->arg->reqs);
-    if (data->arg->value == NULL)
-    {
-        ERROR("Unable to get value of the argument of the test '%s'",
-              test_get_name(data->ri));
-        return TE_RC(TE_TESTER, TE_ESRCH);
-    }
-
-    VERB("%s(): arg=%s run_get_value() -> %s reqs=%p", __FUNCTION__,
-         data->arg->name, data->arg->value, data->arg->reqs.tqh_first);
-
-    return TE_RC(TE_TESTER, TE_EEXIST);
-}
-
-static te_errno
-run_prepare_arg_value_cb2(const test_entity_value *value, te_errno status,
-                         void *opaque)
+run_prepare_arg_value_collect_reqs(const test_entity_value *value,
+                                   te_errno status, void *opaque)
 {
     test_requirements *reqs = opaque;
 
@@ -1823,7 +1787,7 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
     run_prepare_arg_list_data      *iter_list = NULL;
     unsigned int                    n_values;
     unsigned int                    i_value;
-    run_prepare_arg_value_cb_data   value_data;
+    const test_entity_value        *value;
     te_errno                        rc;
 
     data->arg->name = va->name;
@@ -1873,52 +1837,25 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
              __FUNCTION__, va->name, i_value);
     }
 
-    if ((iter_list != NULL) && (i_value >= test_var_arg_values(va)->num))
-    {
-        if (va->preferred == NULL)
-        {
-            i_value = 0;
-        }
-        else
-        {
-            data->arg->value = run_get_value(va->preferred,
-                                             data->ctx_args,
-                                             data->ctx_n_args,
-                                             &data->arg->reqs);
-            if (data->arg->value == NULL)
-            {
-                ERROR("Unable to get preferred value of the argument "
-                      "'%s' of the test '%s'", va->name,
-                      test_get_name(data->ri));
-                return TE_RC(TE_TESTER, TE_ESRCH);
-            }
-            goto exit_ok;
-        }
-    }
-
-    value_data.ctx_args = data->ctx_args;
-    value_data.ctx_n_args = data->ctx_n_args;
-    value_data.ri = data->ri;
-    value_data.i_value = i_value;
-    value_data.i = 0;
-    value_data.arg = data->arg;
-
-    rc = test_var_arg_enum_values(data->ri, va, run_prepare_arg_value_cb,
-                                  &value_data,
-                                  run_prepare_arg_value_cb2,
-                                  &data->arg->reqs);
-    if (rc == 0)
-    {
-        ERROR("Impossible happened - value by index not found");
-        return TE_RC(TE_TESTER, TE_ENOENT);
-    }
-    else if (TE_RC_GET_ERROR(rc) != TE_EEXIST)
-    {
-        ERROR("%s(): Unexpected failure %r", __FUNCTION__, rc);
+    rc = test_var_arg_get_value(data->ri, va, i_value,
+                                run_prepare_arg_value_collect_reqs,
+                                &data->arg->reqs,
+                                &value);
+    if (rc != 0)
         return rc;
+
+    data->arg->value = run_get_value(value, data->ctx_args,
+                                     data->ctx_n_args, &data->arg->reqs);
+    if (data->arg->value == NULL)
+    {
+        ERROR("Unable to get value of the argument of the test '%s'",
+              test_get_name(data->ri));
+        return TE_RC(TE_TESTER, TE_ESRCH);
     }
 
-exit_ok:
+    VERB("%s(): arg=%s run_get_value() -> %s reqs=%p", __FUNCTION__,
+         data->arg->name, data->arg->value, data->arg->reqs.tqh_first);
+
     /* Move to the next argument */
     data->arg++;
 

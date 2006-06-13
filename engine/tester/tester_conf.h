@@ -415,6 +415,26 @@ extern te_errno test_run_item_enum_args(const run_item       *ri,
                                         test_var_arg_enum_cb  callback,
                                         void                 *opaque);
 
+/**
+ * Find argument of the run item by name.
+ * The function takes into account lists when calculate @a n_values and
+ * @a outer_iters.
+ *
+ * @param ri            Run item
+ * @param name          Name of the argument to find
+ * @param n_values      Location for total number of values of the
+ *                      argument or NULL
+ * @param outer_iters   Location for total number of outer iterations
+ *                      because of argument before this one or NULL
+ *
+ * @return Pointer to found argument or NULL.
+ */
+extern const test_var_arg *test_run_item_find_arg(
+                               const run_item *ri,
+                               const char     *name,
+                               unsigned int   *n_values,
+                               unsigned int   *outer_iters);
+
 
 /**
  * Prototype of the function to be called for each singleton value
@@ -436,7 +456,7 @@ typedef te_errno (* test_entity_value_enum_cb)(
  *
  * @return Status code.
  */
-typedef te_errno (* test_entity_value_recovery_cb)(
+typedef te_errno (* test_entity_value_enum_error_cb)(
                      const test_entity_value *value,
                      te_errno status, void *opaque);
 
@@ -447,16 +467,20 @@ typedef te_errno (* test_entity_value_recovery_cb)(
  * @param values        List of values
  * @param callback      Function to be called for each singleton value
  * @param opaque        Data to be passed in callback function
+ * @param enum_error_cb Function to be called on back path when
+ *                      enumeration error occur (for example, when
+ *                      value has been found)
+ * @param ee_opaque     Opaque data for @a enum_error_cb function
  *
  * @return Status code.
  */
 extern te_errno test_entity_values_enum(
-                    const test_vars_args          *vars,
-                    const test_entity_values      *values,
-                    test_entity_value_enum_cb      callback,
-                    void                          *opaque,
-                    test_entity_value_recovery_cb  recovery,
-                    void                          *rec_data);
+                    const test_vars_args            *vars,
+                    const test_entity_values        *values,
+                    test_entity_value_enum_cb        callback,
+                    void                            *opaque,
+                    test_entity_value_enum_error_cb  enum_error_cb,
+                    void                            *ee_opaque);
 
 /**
  * Enumerate singleton values of the run item argument or session
@@ -466,16 +490,44 @@ extern te_errno test_entity_values_enum(
  * @param va            Varialbe/argument
  * @param callback      Function to be called for each singleton value
  * @param opaque        Data to be passed in callback function
+ * @param enum_error_cb Function to be called on back path when
+ *                      enumeration error occur (for example, when
+ *                      value has been found)
+ * @param ee_opaque     Opaque data for @a enum_error_cb function
  *
  * @return Status code.
  */
 extern te_errno test_var_arg_enum_values(
-                    const run_item            *ri,
-                    const test_var_arg        *va,
-                    test_entity_value_enum_cb  callback,
-                    void                      *opaque,
-                    test_entity_value_recovery_cb  recovery,
-                    void                          *rec_data);
+                    const run_item                  *ri,
+                    const test_var_arg              *va,
+                    test_entity_value_enum_cb        callback,
+                    void                            *opaque,
+                    test_entity_value_enum_error_cb  enum_error_cb,
+                    void                            *ee_opaque);
+
+
+/**
+ * Get value of the run item argument by index.
+ *
+ * @param ri            Run item context
+ * @param va            Argument
+ * @param index         Index of the value to get (0,...)
+ * @param enum_error_cb Function to be called on back path when
+ *                      enumeration error occur (for example, when
+ *                      value has been found)
+ * @param ee_opaque     Opaque data for @a enum_error_cb function
+ * @param value         Location for plain value pointer
+ *
+ * @return Status code.
+ */
+extern te_errno test_var_arg_get_value(
+                    const run_item                     *ri,
+                    const test_var_arg                 *va,
+                    const unsigned int                  index,
+                    test_entity_value_enum_error_cb     enum_error_cb,  
+                    void                               *ee_opaque,
+                    const test_entity_value           **value);
+
 
 
 /**
