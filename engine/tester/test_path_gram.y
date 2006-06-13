@@ -202,21 +202,18 @@ test_path_new_arg_value(char *value)
 
 %%
 
-path: 
+path_flexible: 
     SLASH
-    {
-        VERB("path -> /");
-    }
     |
+    path
+    |
+    path SLASH
+    ;
+
+path: 
     item_iter
-    {
-        VERB("path -> item_iter");
-    }
     |
     path SLASH item_iter
-    {
-        VERB("path -> path SLASH item_iter");
-    }
     ;
 
 item_iter:
