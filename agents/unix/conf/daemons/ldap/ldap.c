@@ -56,12 +56,12 @@ slapd_exists(char *port)
     buf[0] = 0;
     while (fgets(line, sizeof(line), f) != NULL)
     {
-        char *tmp = strstr(line, "slapd");
-
-        tmp = strstr(tmp, ":");
+        char *tmp = strstr(line, "ldap://0.0.0.0:");
+        
         if (tmp == NULL)
             continue;
-        tmp++;
+            
+        tmp += strlen("ldap://0.0.0.0:");
 
         if (strncmp(tmp, port, len) == 0 && !isdigit(*(tmp + len)))
         {
