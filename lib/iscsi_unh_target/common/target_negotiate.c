@@ -574,7 +574,13 @@ target_check_login(struct iscsi_conn *conn,
 		/* check whether all parameters that were sent in this stage
 		 * have received their responses 
 		 */
-		if (check_neg_responses(p_param_tbl, 0) < 0) {
+        if ((*login_flags & FIRST_FLAG) && 
+            (inputpdu->flags & CSG) == 0)
+        {
+            outputpdu->flags &= (~T_BIT);
+            outputpdu->flags &= (~NSG);
+        }
+		else if (check_neg_responses(p_param_tbl, 0) < 0) {
 			if (*count < LOOP_TIMES - 1) {	
 				/* reset the T bit to be 0 for more negotiations */
 				outputpdu->flags &= (~T_BIT);
