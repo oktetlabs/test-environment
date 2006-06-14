@@ -1833,8 +1833,9 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
             iter_list->index = i_value;
             LIST_INSERT_HEAD(&data->lists, iter_list, links);
         }
-        VERB("%s(): Index of the value of '%s' to get is %u",
-             __FUNCTION__, va->name, i_value);
+        VERB("%s(): Index of the value of '%s' to get is %u -> "
+             "n_iters=%u i_iter=%u", __FUNCTION__, va->name, i_value,
+             data->n_iters, data->i_iter);
     }
 
     rc = test_var_arg_get_value(data->ri, va, i_value,
