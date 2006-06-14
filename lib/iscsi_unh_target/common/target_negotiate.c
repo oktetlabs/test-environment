@@ -783,6 +783,13 @@ target_security_negotiate(struct iscsi_conn *conn,
 	*login_flags &= ~FIRST_FLAG;
 	check_authmethod(auth_p, outputpdu, &security_step);
 
+    if (security_step == ss_find_srp_u ||
+        security_step == ss_find_chap_a)
+    {
+        outputpdu->flags &= (~T_BIT);
+        outputpdu->flags &= (~NSG);
+    }
+
 	while ((outputpdu->flags & NSG) != NSG3) {
 		if (iscsi_recv_msg(sock, ISCSI_HDR_LEN, (char *) inputpdu,
 						   conn->connection_flags) < 0) {
@@ -1258,6 +1265,11 @@ target_security_negotiate(struct iscsi_conn *conn,
 
 		}						/* switch */
 
+        if (security_step != ss_done && security_step != ss_leave)
+        {
+            outputpdu->flags &= (~T_BIT);
+            outputpdu->flags &= (~NSG);
+        }
 
         if (iscsi_send_msg_ex(conn, sock, outputpdu) < 0) 
         {
