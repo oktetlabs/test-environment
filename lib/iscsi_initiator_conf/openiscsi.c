@@ -63,7 +63,7 @@ iscsi_openiscsi_set_param(const char *recid,
 
     RING("Setting %s to %s", param->name, buffer);
     rc = ta_system_ex("iscsiadm -m node --record=%s --op=update "
-                      "--name=%s --value=%s", recid,
+                      "--name=%s --value='%s'", recid,
                       param->name, buffer);
     return TE_RC(ISCSI_AGENT_TYPE, rc);
 }
