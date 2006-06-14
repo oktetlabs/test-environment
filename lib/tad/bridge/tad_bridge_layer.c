@@ -154,6 +154,7 @@ tad_bridge_gen_bin_cb(csap_p csap, unsigned int layer,
     UNUSED(args); 
     UNUSED(arg_num); 
     UNUSED(sdus);
+    UNUSED(pdus);
 
 
     /* At this moment only #plain choices should leave in template */
@@ -249,6 +250,10 @@ tad_bridge_match_bin_cb(csap_p csap,
    
     UNUSED(csap);
     UNUSED(layer);
+    UNUSED(ptrn_pdu);
+    UNUSED(ptrn_opaque);
+    UNUSED(meta_pkt);
+    UNUSED(pdu);
     UNUSED(sdu);
  
 #if 0
@@ -306,6 +311,11 @@ tad_bridge_match_bin_cb(csap_p csap,
     asn_free_value(bridge_pdu); 
     return rc; 
 #else
+    UNUSED(rc);
+    UNUSED(data);
+    UNUSED(f_len);
+    UNUSED(bridge_pdu);
+
     return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 #endif
 }
