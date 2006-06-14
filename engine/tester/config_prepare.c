@@ -278,7 +278,10 @@ prepare_arg_cb(const test_var_arg *va, void *opaque)
         {
             VERB("%s(): arg=%s: found list=%s len=%u n_values=%u",
                  __FUNCTION__, va->name, p->name, p->len, n_values);
+            assert(data->n_iters % p->len == 0);
+            data->n_iters /= p->len;
             p->len = MAX(p->len, n_values);
+            data->n_iters *= p->len;
         }
         else
         {
