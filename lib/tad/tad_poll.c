@@ -150,6 +150,9 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
     te_errno            rc;
     int                 ret;
 
+    fprintf(stderr, "Entering %s: %p %u %s %lu\n",
+            __FUNCTION__, csap, timeout, answer_pfx, pfx_len);
+
     context = malloc(sizeof(*context));
     if (context == NULL)
         return TE_RC(TE_TAD_CH, TE_ENOMEM);
@@ -160,6 +163,9 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
         free(context);
         return rc;
     }
+    
+    fprintf(stderr, "Task initialized %p\n",
+            csap);
 
     context->csap = csap;
     context->timeout = timeout;
@@ -184,6 +190,9 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
     if (ret != 0)
     {
         rc = te_rc_os2te(ret);
+        fprintf(stderr, "Task error %p\n",
+                csap);
+
         (void)sem_destroy(&context->sem);
         free(context);
     }
@@ -191,6 +200,9 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
     {
         if (sem_wait(&context->sem) != 0)
             assert(FALSE);
+
+        fprintf(stderr, "Task created %p\n", csap);
+
 
         rc = tad_task_reply(&context->task, "0 %u", context->id);
         if (rc != 0)

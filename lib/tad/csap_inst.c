@@ -261,6 +261,8 @@ csap_command_under_lock(csap_p csap, tad_traffic_op_t command)
     te_errno    rc = 0;
     int         ret;
 
+    assert(pthread_mutex_trylock(&csap->lock) == EBUSY);
+
     /* At first, check current state agains this command */
     switch (command)
     {
