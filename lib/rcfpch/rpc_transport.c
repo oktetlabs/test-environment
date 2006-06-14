@@ -100,6 +100,21 @@
 
 #include "logger_api.h"
 
+/** rpc_transport_log auxiliary variables */
+static char log[1024 * 16];
+static char *log_ptr = log;
+
+/** 
+ * A mechanism allowing to log messages without affecting any
+ * network-related state. The log may be printed in the case 
+ * of RPC server deapth.
+ */
+void
+rpc_transport_log(char *str)
+{
+    log_ptr += sprintf(log_ptr, str);
+}
+
 #if (RPC_TRANSPORT == RPC_TRANSPORT_TCP || \
      RPC_TRANSPORT == RPC_TRANSPORT_UNIX)
 /** Listening socket */
@@ -107,6 +122,7 @@ static int lsock = -1;
 
 /** Set for listening multiple sessions */
 static fd_set rset;
+
 
 /* 
  * MSG_MORE is used for performance reasons.
@@ -1095,6 +1111,8 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
         if (GetLastError() != ERROR_IO_PENDING)
         {
             ERROR("Failed to read from the pipe: %d", GetLastError());
+            if (*log != 0)
+                RING("Dead log:\n%s", log);
             pipes[handle].read = FALSE;
             CloseHandle(ov.hEvent);
             return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
@@ -1120,6 +1138,8 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
                                  &ov, &num, FALSE))
         {
             ERROR("Failed to read from the pipe: %d", GetLastError());
+            if (*log != 0)
+                RING("Dead log:\n%s", log);
             pipes[handle].read = FALSE;
             return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
         }
@@ -1185,6 +1205,9 @@ rpc_transport_send(rpc_transport_handle handle, const uint8_t *buf,
 
     if (handle >= max_pipe || !pipes[handle].valid)
         return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
+        
+    SleepEx(1, TRUE); /* windows bug work-around: sometimes 
+                         datagram is lost without this */
     
     if (!WriteFile(pipes[handle].out_handle, buf, len, &num, NULL))
     {
