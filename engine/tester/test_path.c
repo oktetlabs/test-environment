@@ -437,7 +437,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
     ctx = gctx->ctxs.lh_first;
     assert(ctx != NULL);
 
-    ENTRY("path_item=%s offset=%u run=%s test=%s",
+    ENTRY("run=%p path_item=%s offset=%u run-name=%s test=%s", run,
           ctx->item->name, cfg_id_off, run->name, test_get_name(run));
 
     /* Filter out too long path */
@@ -456,6 +456,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
         (strcmp(name, ctx->item->name) == 0))
     {
         /* Name of run item is specified and it matches path item */
+        VERB("%s(): Match run item name '%s'", __FUNCTION__, name);
     }
     else if ((name = test_get_name(run)) == NULL)
     {
