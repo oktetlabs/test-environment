@@ -466,6 +466,8 @@ walk_iterate(const tester_cfg_walk *walk, const void *opaque,
         if (ctl == TESTER_CFG_WALK_CONT)
             ctl = walk_repeat(walk, opaque, curr_id_off, flags, run,
                               keepalive, exception);
+        else if (ctl == TESTER_CFG_WALK_SKIP)
+            ctl = TESTER_CFG_WALK_CONT;
 
         if (walk->iter_end != NULL)
         {
