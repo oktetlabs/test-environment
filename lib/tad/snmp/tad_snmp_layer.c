@@ -558,9 +558,10 @@ tad_snmp_match_bin_cb(csap_p           csap,
         if (0)
         {
             char buf[100], *p = buf;
-            int i;
+            unsigned int i;
+
             for (i = 0; i < vars->name_length; i++)
-                p += sprintf(p, ".%d", vars->name[i]);
+                p += sprintf(p, ".%d", (int)vars->name[i]);
             VERB("%s(): varbind oid: %s", __FUNCTION__, buf);
         }
         VERB("%s(): varbind type: %d, len %d", __FUNCTION__, vars->type, vars->val_len);
