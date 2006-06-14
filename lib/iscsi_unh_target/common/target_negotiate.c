@@ -68,6 +68,21 @@
 #include "text_param.h"
 #include "target_negotiate.h"
 
+static te_bool
+check_padding(uint8_t *buf, uint32_t length, int padding)
+{
+    buf += length;
+    while (padding-- != 0)
+    {
+        if (*buf++ != '\0')
+        {
+            TRACE_ERROR("Non-zero padding detected");
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
 static int
 iscsi_send_msg_ex(struct iscsi_conn *conn, int sock,
                   struct generic_pdu *outputpdu)
@@ -788,6 +803,11 @@ target_security_negotiate(struct iscsi_conn *conn,
 				goto out;
 			}
 		}
+        if (!check_padding(inputpdu->text, inputpdu->text_length, padding))
+        {
+            retval = -1;
+            goto out;
+        }
 
 		/*  exit now if what we just read should not be in security stage */
 		if (security_step == ss_leave)
@@ -1258,6 +1278,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 	return retval;
 }
 
+
 /*
  * This function performs parameter negotiation on target side    
  * arguments: socket id, table of session parameters    
@@ -1298,6 +1319,10 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 			return -1;
 		}
 	}
+    if (!check_padding(inputpdu->text, inputpdu->text_length, padding))
+    {
+        return -1;
+    }
 
 	/* target always starts in the same state as initiator */
 	correct_CSG = (inputpdu->flags & CSG) >> CSG_SHIFT;
@@ -1404,6 +1429,11 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 				retval = -1;
 				goto out;
 			}
+            if (!check_padding(inputpdu->text, inputpdu->text_length, padding))
+            {
+                retval = -1;
+                goto out;
+            }
 		} else {
 			TRACE_ERROR
 				("DSL %u greater than default MaxRecvDataSegmentLength %d\n",

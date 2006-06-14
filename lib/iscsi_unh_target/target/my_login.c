@@ -308,7 +308,7 @@ read_single_data_seg(uint8_t *buffer, SHARED struct iscsi_cmnd *cmd,
 {
 	struct iovec iov[3];
 	int size, niov = 1, padding, err;
-	uint32_t digest, pad_bytes;
+	uint32_t digest, pad_bytes = 0;
 	SHARED char *data_buf;
 	struct targ_error_rec err_rec;
 
@@ -348,7 +348,15 @@ read_single_data_seg(uint8_t *buffer, SHARED struct iscsi_cmnd *cmd,
 			}
 			ZSHFREE(data_buf);
 		} else {
-			*result = data_buf;
+            if (padding && pad_bytes != 0)
+            {
+                TRACE_ERROR("Non-zero padding received...");
+                err = -1;
+            }
+            else
+            {
+                *result = data_buf;
+            }
 		}
 	} else {
 		err = -1;
@@ -432,7 +440,7 @@ read_list_data_seg(struct generic_pdu *hdr,
 	struct targ_error_rec err_rec;
 	struct iovec *iov;
 	int size, niov, padding, err, sgindex;
-	uint32_t digest, pad_bytes;
+	uint32_t digest, pad_bytes = 0;
 
 	size = hdr->length;
 	niov = find_iovec_needed(size, st_list, offset);
@@ -468,12 +476,20 @@ read_list_data_seg(struct generic_pdu *hdr,
 	err = iscsi_rx_data(cmd->conn, iov, niov, size);
 
 	if (err == size) {
-		/* we received everything we expected to receive
-		 * Store scatter list count and offset for recovery purposes - SAI
-		 */
-		cmd->scatter_list_count += sgindex;
-		cmd->scatter_list_offset = offset;
-		update_after_read(hdr, cmd);
+        if (padding && pad_bytes != 0)
+        {
+            TRACE_ERROR("Padding is not zero");
+            err = -1;
+        }
+        else
+        {
+            /* we received everything we expected to receive
+             * Store scatter list count and offset for recovery purposes - SAI
+             */
+            cmd->scatter_list_count += sgindex;
+            cmd->scatter_list_offset = offset;
+            update_after_read(hdr, cmd);
+        }
 	} else {
 		/* Payload Digest Error Recovery - SAI */
 		if (err == PAYLOAD_DIGERR) {

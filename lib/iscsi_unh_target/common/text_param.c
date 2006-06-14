@@ -1848,8 +1848,8 @@ scan_input_and_process(int sock,
 		 */
 		n = (input_string - this_key) - (key_value_len + 1);
 		if (n > 0) {
-            TRACE_WARNING("%d extra nulls (0x00) found after"
-                          " key \"%s\"\n", n, this_key);
+            TRACE_ERROR("%d extra nulls (0x00) found after"
+                        " key \"%s\"\n", n, this_key);
 		}
 	}
 

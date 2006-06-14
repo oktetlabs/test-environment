@@ -454,7 +454,7 @@ queue_data(struct targ_error_rec *err_rec)
 	int offset = 0, size = 0, list_offset = 0;
 	int count = 0;
 	int niov, padding, err, retval = 0, data_crc_len = 0;
-	uint32_t data_sn, digest, pad_bytes;
+	uint32_t data_sn, digest, pad_bytes = 0;
 
 	struct iscsi_conn *conn = NULL;
 	struct iscsi_cmnd *cmd;
@@ -525,6 +525,11 @@ queue_data(struct targ_error_rec *err_rec)
 			return err;
 
 	}
+    if (padding && pad_bytes != 0)
+    {
+        TRACE_ERROR("Non-zero padding");
+        return -1;
+    }
 
 	dataq = malloc(sizeof(struct iscsi_cookie));
 
