@@ -139,11 +139,10 @@ static te_errno
 test_run_item_find_arg_cb(const test_var_arg *va, void *opaque)
 {
     test_run_item_find_arg_cb_data *data = opaque;
+    const test_var_arg_list        *list = NULL;
 
     if (va->list != NULL)
     {
-        const test_var_arg_list *list;
-
         for (list = data->ri->lists.lh_first;
              list != NULL && strcmp(list->name, va->list) != 0;
              list = list->links.le_next);
@@ -158,9 +157,21 @@ test_run_item_find_arg_cb(const test_var_arg *va, void *opaque)
 
     if (strcmp(data->name, va->name) != 0)
     {
-        data->n_iters *= data->n_values;
+        if ((list == NULL) || (list->n_iters == data->n_iters))
+        {
+            data->n_iters *= data->n_values;
+        }
         data->n_values = 0;
         return 0;
+    }
+
+    if (list != NULL)
+    {
+        /* 
+         * Iteration of the list is started at position of the first
+         * member.
+         */
+        data->n_iters = list->n_iters;
     }
 
     data->found = va;

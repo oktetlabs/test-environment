@@ -243,8 +243,10 @@ typedef TAILQ_HEAD(test_packages, test_package) test_packages;
 typedef struct test_var_arg_list {
     LIST_ENTRY(test_var_arg_list)   links;  /**< Linked list links */
 
-    const char     *name;   /**< Name of the list */
-    unsigned int    len;    /**< Length of the list */
+    const char     *name;       /**< Name of the list */
+    unsigned int    len;        /**< Length of the list */
+    unsigned int    n_iters;    /**< Number of outer iterations of the
+                                     list */
 } test_var_arg_list;
 
 /**

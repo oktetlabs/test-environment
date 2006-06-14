@@ -233,10 +233,10 @@ prepare_arg_value_cb(const test_entity_value *value, void *opaque)
 
 /** Data to be passed as opaque to prepare_arg_cb() function. */
 typedef struct prepare_arg_cb_data {
-    run_item       *ri;                 /**< Run item context */
-    unsigned int    n_args;             /**< Number of arguments */
-    unsigned int    n_iters_wo_lists;   /**< Total number of iterations
-                                             without lists */
+    run_item       *ri;         /**< Run item context */
+    unsigned int    n_args;     /**< Number of arguments */
+    unsigned int    n_iters;    /**< Total number of iterations without
+                                     lists */
 } prepare_arg_cb_data;
 
 /**
@@ -265,9 +265,9 @@ prepare_arg_cb(const test_var_arg *va, void *opaque)
 
     if (va->list == NULL)
     {
-        data->n_iters_wo_lists *= n_values;
-        VERB("%s(): arg=%s: n_values=%u -> n_iters_wo_lists=%u",
-             __FUNCTION__, va->name, n_values, data->n_iters_wo_lists);
+        data->n_iters *= n_values;
+        VERB("%s(): arg=%s: n_values=%u -> n_iters =%u",
+             __FUNCTION__, va->name, n_values, data->n_iters);
     }
     else
     {
@@ -291,9 +291,13 @@ prepare_arg_cb(const test_var_arg *va, void *opaque)
 
             p->name = va->list;
             p->len = n_values;
+            p->n_iters = data->n_iters;
             LIST_INSERT_HEAD(&data->ri->lists, p, links);
-            VERB("%s(): arg=%s: new list=%s len=%u", __FUNCTION__,
-                 va->name, p->name, p->len);
+
+            data->n_iters *= n_values;
+
+            VERB("%s(): arg=%s: new list=%s len=%u -> n_iters=%u",
+                 __FUNCTION__, va->name, p->name, p->len, data->n_iters);
         }
     }
 
@@ -311,12 +315,11 @@ static te_errno
 prepare_calc_iters(run_item *ri)
 {
     prepare_arg_cb_data     data;
-    test_var_arg_list      *p;
     te_errno                rc;
 
     data.ri = ri;
     data.n_args = 0;
-    data.n_iters_wo_lists = 1;
+    data.n_iters = 1;
 
     rc = test_run_item_enum_args(ri, prepare_arg_cb, &data);
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
@@ -324,14 +327,8 @@ prepare_calc_iters(run_item *ri)
         return rc;
     }
 
-    for (p = ri->lists.lh_first; p != NULL; p = p->links.le_next)
-    {
-        VERB("%s(): list=%s len=%u", __FUNCTION__, p->name, p->len);
-        data.n_iters_wo_lists *= p->len;
-    }
-
     ri->n_args = data.n_args;
-    ri->n_iters = data.n_iters_wo_lists;
+    ri->n_iters = data.n_iters;
 
     return 0;
 }
@@ -503,6 +500,25 @@ prepare_test_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 }
 
 static tester_cfg_walk_ctl
+prepare_iter_start(run_item *ri, unsigned int cfg_id_off,
+                   unsigned int flags, unsigned int iter, void *opaque)
+{
+    UNUSED(ri);
+    UNUSED(cfg_id_off);
+    UNUSED(flags);
+    UNUSED(opaque);
+
+    /* 
+     * All iterations are equal from prepare point of view.
+     * Moreover, it is assumed that each run item processed only once.
+     */
+    if (iter == 0)
+        return TESTER_CFG_WALK_CONT;
+    else
+        return TESTER_CFG_WALK_SKIP;
+}
+
+static tester_cfg_walk_ctl
 prepare_script(run_item *ri, test_script *script,
                unsigned int cfg_id_off, void *opaque)
 {
@@ -538,7 +554,7 @@ tester_prepare_configs(tester_cfgs *cfgs, unsigned int *iters)
         NULL, /* exception_end */
         prepare_test_start,
         prepare_test_end,
-        NULL, /* iter_start */
+        prepare_iter_start,
         NULL, /* iter_end */
         NULL, /* repeat_start */
         NULL, /* repeat_end */
