@@ -173,8 +173,6 @@ inherit_executable(run_item **child_exec, unsigned int *child_flags,
                    run_item **inherit_exec, unsigned int *inherit_flags,
                    unsigned int inherit_do)
 {
-    ENTRY();
-
     assert(child_exec != NULL);
     assert(child_flags != NULL);
     assert(inherit_exec != NULL);
@@ -209,7 +207,6 @@ inherit_executable(run_item **child_exec, unsigned int *child_flags,
         if (~(*inherit_flags) & inherit_do)
             *inherit_exec = NULL;
     }
-    EXIT();
 }
 
 
