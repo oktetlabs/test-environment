@@ -1255,7 +1255,7 @@ rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
     in.multiaddr.sa_data.sa_data_len = te_sockaddr_get_size(mcast_addr)
                                        - SA_COMMON_LEN;
     in.multiaddr.sa_data.sa_data_val = 
-        (uint8_t *)mcast_addr->sa_data; 
+        (uint8_t *)te_sockaddr_get_netaddr(mcast_addr); 
 
     rcf_rpc_call(rpcs, "mcast_join_leave", &in, &out);
     
