@@ -910,7 +910,7 @@ scsi_target_process(void)
             lun = cmd_curr->lun;
             target_id = cmd_curr->target_id;
             
-            cmd_curr->req = (Scsi_Request *)malloc(sizeof(Scsi_Request));
+            cmd_curr->req = shalloc(sizeof(Scsi_Request));
             
             if (cmd_curr->req) 
             {
