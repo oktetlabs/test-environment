@@ -1081,7 +1081,7 @@ ioctl_rpc2str(rpc_ioctl_code code)
 
 /* Define some value for unknown IOCTL request */
 #ifndef IOCTL_MAX
-#define IOCTL_MAX 0xFFFFFFFF
+#define IOCTL_MAX 0x7FFFFFFF
 #endif
 
 int
