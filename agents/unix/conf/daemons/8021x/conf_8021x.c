@@ -382,45 +382,58 @@ wpa_supp_reload(const char *ifname)
 static void
 wpa_supp_write_config(FILE *f, const supplicant *supp)
 {
-    const char template[] =
-        "ctrl_interface=/var/run/wpa_supplicant\n"
-        "network={\n"
-        "  ssid=\"%s\"\n"
-        "  identity=\"%s\"\n"
-        "  eap=%s\n"
-        "  proto=%s\n"
-        "  pairwise=%s\n"
-        "  group=%s\n"
-        "  key_mgmt=WPA-EAP\n"
-        "  ca_cert=\"%s\"\n"
-        "  client_cert=\"%s\"\n"
-        "  private_key=\"%s\"\n"
-        "  private_key_passwd=\"%s\"\n"
-        "}\n";
-    const char *method;
     const char *s = supp_get_param(supp, SP_METHOD);
     const char *proto = supp_get_param(supp, SP_PROTO);
 
+    fprintf(f, "ctrl_interface=/var/run/wpa_supplicant\n"
+               "network={\n"
+               "  ssid=\"%s\"\n"
+               "  identity=\"%s\"\n",
+            supp_get_param(supp, SP_NETWORK),
+            supp_get_param(supp, SP_IDENTITY));
+
     if (strcmp(s, "eap-md5") == 0)
-        method = "MD5";
+    {
+        fprintf(f, "  eap=MD5\n"
+                   "  password=\"%s\"\n",
+                supp_get_param(supp, SP_MD5_PASSWORD));
+    }
     else if (strcmp(s, "eap-tls") == 0)
-        method = "TLS";
-    else
+    {
+        fprintf(f, "  eap=TLS\n"
+                   "  ca_cert=\"%s\"\n"
+                   "  client_cert=\"%s\"\n"
+                   "  private_key=\"%s\"\n"
+                   "  private_key_passwd=\"%s\"\n",
+                supp_get_param(supp, SP_TLS_ROOT_CERT_PATH),
+                supp_get_param(supp, SP_TLS_CERT_PATH),
+                supp_get_param(supp, SP_TLS_KEY_PATH),
+                supp_get_param(supp, SP_TLS_KEY_PASSWD)
+               );
+    }
+    else if (s[0] != '\0')
     {
         ERROR("%s(): unknown EAP method '%s'", __FUNCTION__, s);
-        method = "";
     }
-    fprintf(f, template,
-            supp_get_param(supp, SP_NETWORK),
-            supp_get_param(supp, SP_IDENTITY),
-            method, proto,
-            strcmp(proto, "WPA") == 0 ? "TKIP" : "CCMP",
-            strcmp(proto, "WPA") == 0 ? "TKIP" : "CCMP",
-            supp_get_param(supp, SP_TLS_ROOT_CERT_PATH),
-            supp_get_param(supp, SP_TLS_CERT_PATH),
-            supp_get_param(supp, SP_TLS_KEY_PATH),
-            supp_get_param(supp, SP_TLS_KEY_PASSWD)
-           );
+
+    if (proto[0] == '\0' )
+    {
+        /* No WPA */
+        fprintf(f, "  key_mgmt=IEEE8021X\n"
+                   "  eapol_flags=0\n");
+    }
+    else
+    {
+        fprintf(f, "  proto=%s\n"
+                   "  pairwise=%s\n"
+                   "  group=%s\n"
+                   "  key_mgmt=WPA-EAP\n",
+                proto,
+                strcmp(proto, "WPA") == 0 ? "TKIP" : "CCMP",
+                strcmp(proto, "WPA") == 0 ? "TKIP" : "CCMP");
+    }
+
+    fprintf(f, "}\n");
 }
 
 /** Callbacks for wpa_supplicant */
@@ -521,7 +534,11 @@ supp_create(const char *ifname)
     }
     ns->started = FALSE;
     ns->changed = TRUE;
+#ifdef USE_XSUPPLICANT
     ns->impl = &xsupplicant;
+#else
+    ns->impl = &wpa_supplicant;
+#endif
 
     snprintf(ns->confname, sizeof(ns->confname),
              "/tmp/te_supp_%s.conf", ifname);
@@ -604,7 +621,11 @@ supp_update(supplicant *supp)
     proto = supp_get_param(supp, SP_PROTO);
     method = supp_get_param(supp, SP_METHOD);
     if (proto[0] == '\0' || method[0] == '\0')
+#ifdef USE_XSUPPLICANT
         new_impl = &xsupplicant;
+#else
+        new_impl = &wpa_supplicant;
+#endif
     else if (strcmp(proto, "WPA") == 0 || strcmp(proto, "RSN") == 0 ||
              strcmp(proto, "WPA2") == 0)
         new_impl = &wpa_supplicant;
