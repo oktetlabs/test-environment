@@ -560,6 +560,8 @@ static void
 get_node_id_callback(gpointer key, gpointer value, gpointer user_data)
 {
     node_t **p_node = (node_t **)user_data;
+    
+    UNUSED(key);
 
     *p_node = (node_t *)value;
 }
@@ -568,8 +570,7 @@ get_node_id_callback(gpointer key, gpointer value, gpointer user_data)
 te_errno
 flow_tree_get_close_node(node_id_t *id, node_id_t *parent_id)
 {
-    node_t    *node = NULL;
-    node_id_t  id = FLOW_TREE_ROOT_ID;
+    node_t *node = NULL;
 
     g_hash_table_foreach(close_set, get_node_id_callback, &node);
     

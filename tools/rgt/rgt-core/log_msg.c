@@ -36,6 +36,7 @@
 #include <ctype.h>
 #endif
 
+#include "logger_defs.h"
 #include "log_msg.h"
 #include "flow_tree.h"
 #include "log_format.h"
@@ -223,7 +224,7 @@ rgt_emulate_accurate_close(uint32_t *latest_ts)
          */
         n = snprintf(fmt_str, sizeof(fmt_str), "%u %u %s",
                      id, parent_id, "INCOMPLETE");
-        assert(n < sizeof(fmt_str));
+        assert(n < (int)sizeof(fmt_str));
 
         msg->id = id;
         msg->entity = obstack_copy(msg->obstk, TE_LOG_CMSG_ENTITY_TESTER,
@@ -238,7 +239,7 @@ rgt_emulate_accurate_close(uint32_t *latest_ts)
         msg->level_str = te_log_level2str(msg->level);
         assert(msg->level_str != NULL);
 
-        rgt_process_tester_control_message(log_msg *msg);
+        rgt_process_tester_control_message(msg);
     }
 }
 

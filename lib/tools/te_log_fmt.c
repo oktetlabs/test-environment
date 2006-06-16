@@ -74,35 +74,6 @@
 
 #include "te_log_fmt.h"
 
-
-/**
- * Map TE log level to string.
- *
- * @param level     TE log level
- *
- * @return TE log level as string
- */
-static inline const char *
-te_log_level2str(te_log_level level)
-{
-    switch (level)
-    {
-#define CASE_TE_LL_TO_STR(_level) \
-        case TE_LL_##_level:    return #_level;
-
-        CASE_TE_LL_TO_STR(ERROR);
-        CASE_TE_LL_TO_STR(WARN);
-        CASE_TE_LL_TO_STR(RING);
-        CASE_TE_LL_TO_STR(INFO);
-        CASE_TE_LL_TO_STR(VERB);
-
-#undef CASE_TE_LL_TO_STR
-
-        default:
-            return "UNKNOWN";
-    }
-}
-
 #if 0
 void
 dump(const uint8_t *p, const uint8_t *q)

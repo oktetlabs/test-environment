@@ -36,6 +36,10 @@
 
 #include "te_raw_log.h"
 
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

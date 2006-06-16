@@ -38,6 +38,7 @@ extern "C" {
 
 #include "rgt_common.h"
 #include "log_msg.h"
+#include "te_errno.h"
 
 /* Define type that is used to node identification */
 typedef gint node_id_t;
