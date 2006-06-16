@@ -573,16 +573,14 @@ flow_tree_get_close_node(node_id_t *id, node_id_t *parent_id)
     node_t *node = NULL;
 
     g_hash_table_foreach(close_set, get_node_id_callback, &node);
-    
-    /* At least one node should always exist (root node in the end) */
-    assert(node != NULL);
-    assert(node->parent != NULL);
-    
-    if (node->id == FLOW_TREE_ROOT_ID)
+
+    if (node == NULL)
     {
-        /* Root node can be only when all the nodes are closed */
+        /* All the nodes are closed */
         return TE_ENOENT;
     }
+
+    assert(node->parent != NULL);
 
     *id = node->id;
     *parent_id = node->parent->id;
