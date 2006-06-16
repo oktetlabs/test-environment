@@ -54,7 +54,7 @@
 typedef struct tad_bps_pkt_frag {
     const char     *name;       /**< Name of the field in PDU NDS */
     unsigned int    len;        /**< Length of the field in bits
-                                    (0 means variable length) */
+                                     (0 means variable length) */
     asn_tag_value   tag;        /**< ASN.1 tag of the field in header */
     asn_tag_value   tag_tx_def; /**< ASN.1 tag of the field in CSAP
                                      parameters default for sending */
@@ -92,7 +92,7 @@ typedef struct tad_bps_pkt_frag_data {
 /**
  * Initialize TAD binary PDU support for the binary PDU type.
  *
- * There is no necessity to do any clean up in this routing in the case
+ * There is no necessity to do any clean up in this routine in the case
  * of failure. Thinks should be just consistent to allow
  * tad_bps_pkt_frag_free() to do its work.
  *
