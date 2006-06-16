@@ -154,7 +154,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
           "test flow structure.", NULL },
 
         { "incomplete-log", '\0', POPT_ARG_NONE, NULL, 'i',
-          "Do not shout on trancated log report, but complete it "
+          "Do not shout on truncated log report, but complete it "
           "automatically.", NULL },
 
         { NULL, 'V', POPT_ARG_NONE, NULL, 'V',

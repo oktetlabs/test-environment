@@ -65,7 +65,7 @@ Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
 
   --no-cntrl-msg           Process Tester control messages as ordinary.
 
-  --incomplete-log         Do not shout on trancated log report, but complete
+  --incomplete-log         Do not shout on truncated log report, but complete
                            it automatically.
 
   -c FILE,                 Specify XML filter configuration file. If no file
