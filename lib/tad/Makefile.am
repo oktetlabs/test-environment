@@ -9,6 +9,7 @@ AM_CFLAGS = @TE_CFLAGS@
 
 include_HEADERS = \
 	tad_csap_inst.h \
+	tad_csap_support.h \
 	tad_types.h \
 	tad_pkt.h \
 	tad_send_recv.h \
@@ -19,7 +20,6 @@ include_HEADERS = \
 
 noinst_HEADERS = \
 	csap_id.h \
-	tad_csap_support.h \
 	tad_utils.h \
 	pkt_socket.h \
 	tad_bps.h
