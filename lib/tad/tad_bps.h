@@ -93,7 +93,7 @@ typedef struct tad_bps_pkt_frag_data {
  * Initialize TAD binary PDU support for the binary PDU type.
  *
  * There is no necessity to do any clean up in this routine in the case
- * of failure. Thinks should be just consistent to allow
+ * of failure. Things should be just consistent to allow
  * tad_bps_pkt_frag_free() to do its work.
  *
  * @param descr         Binary PDU description
