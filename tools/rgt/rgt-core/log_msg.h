@@ -77,6 +77,7 @@ typedef enum result_status {
     RES_STATUS_FAKED, 
     RES_STATUS_FAILED, 
     RES_STATUS_EMPTY,
+    RES_STATUS_INCOMPLETE,
 } result_status_t;
 
 /** Structure for keeping session/package/test result information */
@@ -201,6 +202,15 @@ extern int rgt_process_tester_control_message(log_msg *msg);
  * @todo Don't free log message but rather use it for storing the next one.
  */
 extern void rgt_process_regular_message(log_msg *msg);
+
+/**
+ * Emulate a set of close messages from Tester in order to 
+ * correctly complete flow tree.
+ *
+ * @param latest_ts  Timestamp of the latest log message,
+ *                   which will be used in all close messages
+ */
+extern void rgt_emulate_accurate_close(uint32_t *latest_ts);
 
 /**
  * Processes event occured on a node of the flow tree.

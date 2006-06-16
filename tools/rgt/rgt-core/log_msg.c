@@ -120,7 +120,7 @@ rgt_process_tester_control_message(log_msg *msg)
     else if ((RGT_CMP_RESULT(PASSED) || RGT_CMP_RESULT(KILLED) ||
               RGT_CMP_RESULT(CORED) || RGT_CMP_RESULT(SKIPPED) ||
               RGT_CMP_RESULT(FAKED) || RGT_CMP_RESULT(EMPTY) ||
-              RGT_CMP_RESULT(FAILED)) &&
+              RGT_CMP_RESULT(FAILED) || RGT_CMP_RESULT(INCOMPLETE)) &&
              (fmt_str[len] == '\0' || isspace(fmt_str[len])))
 #undef RGT_CMP_RESULT
     {
@@ -201,6 +201,45 @@ rgt_process_regular_message(log_msg *msg)
     free_log_msg(msg);
 
     return;
+}
+
+/* See the description in log_msg.h */
+void
+rgt_emulate_accurate_close(uint32_t *latest_ts)
+{
+    node_id_t id;
+    node_id_t parent_id;
+    log_msg *msg;
+    int      n;
+    char     fmt_str[128];
+
+    while (flow_tree_get_close_node(&id, &parent_id) == 0)
+    {
+        msg = alloc_log_msg();
+
+        /*
+         * Fill in all the necessary fields to pretend being
+         * the message from Tester.
+         */
+        n = snprintf(fmt_str, sizeof(fmt_str), "%u %u %s",
+                     id, parent_id, "INCOMPLETE");
+        assert(n < sizeof(fmt_str));
+
+        msg->id = id;
+        msg->entity = obstack_copy(msg->obstk, TE_LOG_CMSG_ENTITY_TESTER,
+                                 strlen(TE_LOG_CMSG_ENTITY_TESTER) + 1);
+        msg->user = obstack_copy(msg->obstk, TE_LOG_CMSG_USER,
+                                 strlen(TE_LOG_CMSG_USER) + 1);
+
+        memcpy(&(msg->timestamp), latest_ts, sizeof(msg->timestamp));
+        msg->fmt_str = obstack_copy(msg->obstk, fmt_str, n + 1);
+
+        msg->level = TE_LL_RING;
+        msg->level_str = te_log_level2str(msg->level);
+        assert(msg->level_str != NULL);
+
+        rgt_process_tester_control_message(log_msg *msg);
+    }
 }
 
 void

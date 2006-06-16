@@ -149,7 +149,6 @@ static struct obstack *obstk;
 static uint32_t zero_timestamp[2] = {0, 0};
 static uint32_t max_timestamp[2]  = {UINT32_MAX, UINT32_MAX};
 
-#define ROOT_ID 0
 #define DEF_FILTER_MODE NFMODE_INCLUDE
 
 #define FILL_BRANCH_INFO(node_ptr) \
@@ -194,7 +193,7 @@ flow_tree_init()
     root = (node_t *)obstack_alloc(obstk, sizeof(node_t));
     root->parent = root->prev = root->next = NULL;
     root->type = NT_SESSION;
-    root->id   = ROOT_ID;
+    root->id   = FLOW_TREE_ROOT_ID;
     root->self = root;
     root->fmode = DEF_FILTER_MODE;
     root->name = "";
@@ -550,6 +549,45 @@ flow_tree_close_node(node_id_t parent_id, node_id_t node_id,
     return cur_node->user_data;
 }
 
+/**
+ * Callback function that copies node ID into user provided memory.
+ *
+ * @param key        Pointer to node key (node ID in our case)
+ * @param value      Pointer to node value
+ * @param user_data  Pointer to user data (placeholder for node ID)
+ */
+static void
+get_node_id_callback(gpointer key, gpointer value, gpointer user_data)
+{
+    node_t **p_node = (node_t **)user_data;
+
+    *p_node = (node_t *)value;
+}
+
+/* See the decription in flow_tree.h */
+te_errno
+flow_tree_get_close_node(node_id_t *id, node_id_t *parent_id)
+{
+    node_t    *node = NULL;
+    node_id_t  id = FLOW_TREE_ROOT_ID;
+
+    g_hash_table_foreach(close_set, get_node_id_callback, &node);
+    
+    /* At least one node should always exist (root node in the end) */
+    assert(node != NULL);
+    assert(node->parent != NULL);
+    
+    if (node->id == FLOW_TREE_ROOT_ID)
+    {
+        /* Root node can be only when all the nodes are closed */
+        return TE_ENOENT;
+    }
+
+    *id = node->id;
+    *parent_id = node->parent->id;
+
+    return 0;
+}
 
 enum node_fltr_mode
 closed_tree_get_mode(node_t *node, uint32_t *ts)

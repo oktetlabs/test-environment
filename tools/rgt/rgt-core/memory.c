@@ -76,7 +76,22 @@ alloc_log_msg()
     log_msg *msg;
 
     msg = (log_msg *)obstack_alloc(log_msg_obstk, sizeof(log_msg));
+    memset(msg, 0, sizeof(*msg));
     msg->obstk = log_msg_obstk;
+
+#ifdef BE_CAREFUL_WITH_POINTERS
+    /*
+     * It is not correct to do bzero, and think that all the pointers
+     * got right NULL values.
+     */
+    msg->entity = NULL;
+    msg->user = NULL;
+    msg->level_str = NULL;
+    msg->fmt_str = NULL;
+    msg->args = NULL;
+    msg->cur_arg = NULL;
+    msg->txt_msg = NULL;
+#endif
 
     return msg;
 }

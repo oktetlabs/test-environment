@@ -330,6 +330,7 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
         NODE_RES_CASE(FAKED);
         NODE_RES_CASE(FAILED);
         NODE_RES_CASE(EMPTY);
+        NODE_RES_CASE(INCOMPLETE);
 
 #undef NODE_RES_CASE
         default:

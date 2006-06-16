@@ -174,6 +174,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
     msg_arg **arg;
 
     struct obstack *obstk;
+
     /* 
      * Get offset of the log message from the beginning of the RLF.
      * It is used in the case of an error occurs.
@@ -306,28 +307,14 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
     (*msg)->cur_arg = (*msg)->args;
     (*msg)->txt_msg = NULL;
 
-
-    switch (log_level)
+    (*msg)->level_str = te_log_level2str(log_level);
+    if ((*msg)->level_str == NULL)
     {
-#define RGT_LL_CASE(lvl_) \
-        case TE_LL_ ## lvl_:                            \
-            (*msg)->level_str = TE_LL_ ## lvl_ ## _STR; \
-            break
+        /* Print error message but continue processing */
+        LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_UNKNOWN_LOGLEVEL);
+        PRINT_ERROR;
 
-        RGT_LL_CASE(ERROR);
-        RGT_LL_CASE(WARN);
-        RGT_LL_CASE(RING);
-        RGT_LL_CASE(INFO);
-        RGT_LL_CASE(VERB);
-        RGT_LL_CASE(ENTRY_EXIT);
-
-#undef RGT_LL_CASE
-        default:
-            /* Print error message but continue processing */
-            LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_UNKNOWN_LOGLEVEL);
-            PRINT_ERROR;
-
-            (*msg)->level_str = "UNKNOWN";
+        (*msg)->level_str = "UNKNOWN";
     }
 
     (*msg)->level = log_level;

@@ -34,6 +34,8 @@
 #ifndef __TE_LOGGER_DEFS_H__
 #define __TE_LOGGER_DEFS_H__
 
+#include "te_raw_log.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -133,6 +135,38 @@ extern const char *te_lgr_entity;
 #define TE_LOG_LEVEL    (TE_LL_ERROR | TE_LL_WARN | TE_LL_RING)
 #endif
 
+/**
+ * Convert Log level value from integer to readable string.
+ *
+ * @param level   Log level value
+ *
+ * @return string literal pointer
+ *
+ * @note In case of unknown Log level function returns NULL, so
+ * be careful using it.
+ */
+static inline const char *
+te_log_level2str(te_log_level level)
+{
+    switch (level)
+    {
+#define TE_LL_CASE(lvl_) \
+        case TE_LL_ ## lvl_:               \
+            return TE_LL_ ## lvl_ ## _STR; \
+            break
+
+        TE_LL_CASE(ERROR);
+        TE_LL_CASE(WARN);
+        TE_LL_CASE(RING);
+        TE_LL_CASE(INFO);
+        TE_LL_CASE(VERB);
+        TE_LL_CASE(ENTRY_EXIT);
+
+#undef TE_LL_CASE
+    }
+
+    return NULL;
+}
 
 /**
  * Logging backend function.

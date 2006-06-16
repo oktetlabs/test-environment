@@ -42,6 +42,8 @@ extern "C" {
 /* Define type that is used to node identification */
 typedef gint node_id_t;
 
+#define FLOW_TREE_ROOT_ID ((node_id_t)(0))
+
 /**
  * Initialize flow tree library.
  *
@@ -58,8 +60,7 @@ flow_tree_init();
  *
  * @return Nothing
  */
-void
-flow_tree_destroy();
+extern void flow_tree_destroy();
 
 /**
  * Try to add a new node into the execution flow tree.
@@ -72,11 +73,10 @@ flow_tree_destroy();
  * @retval 1 New node was successfully added.
  * @retval 0 The parent node can't get children.
  */
-void *
-flow_tree_add_node(node_id_t parent_id, node_id_t node_id, 
-                   node_type_t new_node_type,
-                   char *node_name, uint32_t *timestamp,
-                   void *user_data, int *err_code);
+extern void *flow_tree_add_node(node_id_t parent_id, node_id_t node_id, 
+                                node_type_t new_node_type,
+                                char *node_name, uint32_t *timestamp,
+                                void *user_data, int *err_code);
 
 /**
  * Try to close the node in execution flow tree.
@@ -89,9 +89,23 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
  * @retval Pointer if the node was successfully closed.
  * @retval NULL The node is unexpected.
  */
-void *flow_tree_close_node(node_id_t parent_id, node_id_t node_id,
-                           uint32_t *timestamp, int *err_code);
+extern void *flow_tree_close_node(node_id_t parent_id, node_id_t node_id,
+                                  uint32_t *timestamp, int *err_code);
 
+/**
+ * Returns ID (and parent ID) of a node that is waiting for close
+ * operation.
+ * Note that there could be more than one node in "close" set, 
+ * this function returns an arbitrary one because they all are
+ * not distinguishable
+ *
+ * @param id         ID of a node waiting for close
+ * @param parent_id  ID of parent node
+ * 
+ * @return 0 on success, TE_ENOENT if all the nodes are closed.
+ */
+extern te_errno flow_tree_get_close_node(node_id_t *id,
+                                         node_id_t *parent_id);
 
 /**
  * Filters message according to package/test filtering.

@@ -222,6 +222,10 @@ typedef struct rgt_gen_ctx {
         
     te_bool         proc_cntrl_msg; /**< Whether Rgt should process control 
                                          messages or not */
+
+    te_bool         proc_incomplete; /**< Whether Rgt should process 
+                                          incomplete log reports as normal
+                                          or give error message */
                                         
     te_bool         verb; /**< Whether to use verbose output or not */
 } rgt_gen_ctx_t;
@@ -271,21 +275,21 @@ typedef struct msg_arg {
 
 /** Structure that keeps log message in an universal format */
 typedef struct log_msg {
-    struct obstack *obstk;    /**< Internal field: 
-                                   Obstack for the message */
+    struct obstack *obstk;      /**< Internal field: 
+                                     Obstack for the message */
 
     unsigned      id;           /**< ID of the log message, which currently
-                                   defines which test is logged this 
-                                   message */
+                                     defines which test is logged this 
+                                     message */
     char         *entity;       /**< Entity name of the message */
     char         *user;         /**< User name of the message */
     uint32_t      timestamp[2]; /**< Timestamp value */
     te_log_level  level;        /**< Log level */
-    const char   *level_str;        /**< Log level in string format */
+    const char   *level_str;    /**< Log level in string format */
     char         *fmt_str;      /**< Raw format string */
     msg_arg      *args;         /**< List of arguments for format string */
     msg_arg      *cur_arg;      /**< Internal field: 
-                                   used by get_next_arg function */
+                                     used by get_next_arg function */
     int           args_count;   /**< Total number of the arguments */
 
     char         *txt_msg;

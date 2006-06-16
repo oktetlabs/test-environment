@@ -153,6 +153,10 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
           "Process TESTER control messages as ordinary: do not process "
           "test flow structure.", NULL },
 
+        { "incomplete-log", '\0', POPT_ARG_NONE, NULL, 'i',
+          "Do not shout on trancated log report, but complete it "
+          "automatically.", NULL },
+
         { NULL, 'V', POPT_ARG_NONE, NULL, 'V',
           "Verbose trace.", NULL },
           
@@ -204,6 +208,11 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         {
             /* User do not want us to process control messages */
             ctx->proc_cntrl_msg = FALSE;
+        }
+        else if (rc == 'i')
+        {
+            /* User ask us to complete log report automatically */
+            ctx->proc_incomplete = TRUE;
         }
         else if (rc == 'V')
         {
@@ -330,6 +339,7 @@ main(int argc, char **argv)
 {
     log_msg       *msg = NULL;
     char          *err_msg;
+    uint32_t       latest_ts[2] = { 0, 0 };
 
     rgt_ctx_set_defaults(&rgt_ctx);
     process_cmd_line_opts(argc, argv, &rgt_ctx);
@@ -374,11 +384,21 @@ main(int argc, char **argv)
                 msg->id = TE_LOG_ID_UNDEFINED;
             }
 
+            /* Update the latest timestamp value when needed */
+            if (rgt_ctx.proc_incomplete &&
+                TIMESTAMP_CMP(latest_ts, msg->timestamp) < 0)
+            {
+                memcpy(&latest_ts, &(msg->timestamp), sizeof(latest_ts));
+            }
+            
             rgt_core_process_log_msg(msg);
         }
 
         if (rgt_ctx.op_mode == RGT_OP_MODE_POSTPONED)
         {
+            if (rgt_ctx.proc_incomplete)
+                rgt_emulate_accurate_close(&latest_ts);
+
             /* Process flow tree (call callback routines for each node) */
             postponed_process_open();
             flow_tree_trace();
@@ -436,6 +456,7 @@ rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx)
     ctx->op_mode = RGT_OP_MODE_DEFAULT;
     ctx->op_mode_str = RGT_OP_MODE_DEFAULT_STR;
     ctx->proc_cntrl_msg = TRUE;
+    ctx->proc_incomplete = FALSE;
     ctx->verb = FALSE;
 }
 
