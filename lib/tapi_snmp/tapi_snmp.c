@@ -2277,18 +2277,18 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         if (rc == 0)
         {
             int i;
-            int ti_len = vb[0].name.length - ti_start;
-            /* table index length - number of index suboids.*/
 
             int row_num;
 
-            VERB("table entry oid: %s, ti_len %d",
-                 print_oid(&entry), ti_len);
 
             for (i = 0; i < table_cardinality; i ++)
             {
                 int table_offset;
+                /* table index length - number of index suboids.*/
+                int ti_len = vb[i].name.length - ti_start;
 
+                VERB("table entry oid: %s, ti_len %d",
+                     print_oid(&entry), ti_len);
 
                 VERB("try to add varbind with oid %s",
                      print_oid(&(vb[i].name)));
