@@ -223,7 +223,7 @@ rgt_emulate_accurate_close(uint32_t *latest_ts)
          * the message from Tester.
          */
         n = snprintf(fmt_str, sizeof(fmt_str), "%u %u %s",
-                     id, parent_id, "INCOMPLETE");
+                     parent_id, id, "INCOMPLETE");
         assert(n < (int)sizeof(fmt_str));
 
         msg->id = id;

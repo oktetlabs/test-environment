@@ -48,4 +48,5 @@ ftvPASSED2doc.gif \
 ftvCORED2doc.gif \
 ftvSKIPPED2doc.gif \
 ftvKILLED2doc.gif \
-ftvFAKED2doc.gif
+ftvFAKED2doc.gif \
+ftvINCOMPLETE2doc.gif

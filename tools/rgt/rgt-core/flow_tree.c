@@ -563,7 +563,7 @@ get_node_id_callback(gpointer key, gpointer value, gpointer user_data)
     
     UNUSED(key);
 
-    *p_node = (node_t *)value;
+    *p_node = *(node_t **)value;
 }
 
 /* See the decription in flow_tree.h */
@@ -574,9 +574,13 @@ flow_tree_get_close_node(node_id_t *id, node_id_t *parent_id)
 
     g_hash_table_foreach(close_set, get_node_id_callback, &node);
 
-    if (node == NULL)
+    if (node == NULL || node->id == FLOW_TREE_ROOT_ID)
     {
-        /* All the nodes are closed */
+        /*
+         * All the nodes are closed:
+         * Root node can present in "close" set, as a result of 
+         * common close processing algorithm, so do not care about it.
+         */
         return TE_ENOENT;
     }
 
