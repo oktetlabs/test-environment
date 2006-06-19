@@ -45,6 +45,15 @@
 
 /****** L5 Initiator specific stuff  ****/
 
+/**
+ * Write a single parameter to a L5 configuration file.
+ *
+ * @param destination   Configuration file
+ * @param param         Parameter description
+ * @param tgt_data      Target-wide parameters
+ * @param conn_data     iSCSI operational parameters
+ * @param auth_data     iSCSI security parameters
+ */
 static void
 iscsi_l5_write_param(FILE *destination, 
                      iscsi_target_param_descr_t *param,
@@ -68,6 +77,14 @@ iscsi_l5_write_param(FILE *destination,
     fputc('\n', destination);
 }
 
+/**
+ * Write all relevant parameters to a L5 config file.
+ *
+ * @return            Status code
+ *
+ * @param destination Configuration file
+ * @param target      Target data
+ */
 static int
 iscsi_l5_write_target_params(FILE *destination, 
                              iscsi_target_data_t *target)
@@ -75,15 +92,19 @@ iscsi_l5_write_target_params(FILE *destination,
     iscsi_target_param_descr_t *p;
     iscsi_connection_data_t    *connection = target->conns;
 
+/** Operational parameter template */
 #define PARAMETER(field, offer, type) \
     {OFFER_##offer, #field, type, ISCSI_OPER_PARAM, \
      offsetof(iscsi_connection_data_t, field), NULL, NULL}
+/** Target-wide parameter template */
 #define GPARAMETER(name, field, type) \
     {0, name, type, ISCSI_GLOBAL_PARAM, \
      offsetof(iscsi_target_data_t, field), NULL, NULL}
+/** Security parameter template */
 #define AUTH_PARAM(field, name, type, predicate) \
      {0, name, type, ISCSI_SECURITY_PARAM, \
       offsetof(iscsi_tgt_chap_data_t, field), NULL, predicate}
+/** Constant value template */
 #define CONSTANT(name, field, type, predicate) \
     {0, name, type, ISCSI_FIXED_PARAM, \
     offsetof(iscsi_constant_t, field), NULL, predicate}
@@ -168,6 +189,15 @@ iscsi_l5_write_target_params(FILE *destination,
 #undef AUTH_PARAM
 }
 
+/**
+ * Write L5 config file. 
+ * This function makes an appropriate file header,
+ * and then outputs information for all configured targets
+ * and associated connections
+ *
+ * @return              Status code
+ * @param iscsi_data    iSCSI parameter table
+ */
 static int
 iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
 {
@@ -261,6 +291,10 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
                            iscsi_configuration()->script_path);
 }
 
+/**
+ * See iscsi_initiator.h and iscsi_initator_conn_request_thread()
+ * for a complete description of the state machine involved.
+ */
 int
 iscsi_initiator_l5_set(iscsi_connection_req *req)
 {

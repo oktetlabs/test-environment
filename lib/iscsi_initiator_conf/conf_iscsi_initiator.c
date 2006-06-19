@@ -68,9 +68,15 @@ static te_errno iscsi_post_connection_request(int target_id, int cid,
 /** Initiator data */
 static iscsi_initiator_data_t *init_data = NULL;
 
+/** A time slice to wait for device readiness (usecs) */
 static unsigned long iscsi_retry_timeout = 500000;
+
+/** Number of times to probe iSCSI device readiness */
 static int iscsi_retry_attempts = 30;
 
+/**
+ * See description in iscsi_initiator.h
+ */
 iscsi_initiator_data_t *
 iscsi_configuration(void)
 {
@@ -118,11 +124,10 @@ iscsi_get_cid(const char *oid)
 }
 
 /**
- * Function initalize default parameters:
- * operational parameters and security parameters.
+ * Initalize operational parameters and security parameters
+ * to default values
  *
- * @param tgt_data    Structure of the target data to
- *                    initalize.
+ * @param conn_data    Connection parameters
  */
 static void
 iscsi_init_default_connection_parameters(iscsi_connection_data_t *conn_data)
@@ -162,9 +167,10 @@ iscsi_init_default_connection_parameters(iscsi_connection_data_t *conn_data)
     *(conn_data->chap.local_secret) = '\0';
     pthread_mutex_init(&conn_data->status_mutex, NULL);
 }
+
 /**
- * Function initalize default parameters:
- * operational parameters and security parameters.
+ * Initalize default parameters for all possible connections
+ * of a given target.
  *
  * @param tgt_data    Structure of the target data to
  *                    initalize.
@@ -182,13 +188,14 @@ iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
         iscsi_init_default_connection_parameters(&tgt_data->conns[i]);
     }
 }
+
 /** Configure all targets (id: 0..MAX_TARGETS_NUMBER */
 #define ISCSI_CONF_ALL_TARGETS -1
 
 /** Configure only general Initiator data */
 #define ISCSI_CONF_NO_TARGETS -2
 
-static void *iscsi_initator_conn_request_thread(void *arg);
+static void *iscsi_initiator_conn_request_thread(void *arg);
 
 /**
  * Initialize all Initiator-related structures
@@ -296,6 +303,9 @@ ta_system_ex(const char *cmd, ...)
 #endif
 
 
+/**
+ * See description in iscsi_initiator.h
+ */
 te_bool
 iscsi_is_param_needed(iscsi_target_param_descr_t *param,
                       iscsi_target_data_t *tgt_data,
@@ -307,6 +317,9 @@ iscsi_is_param_needed(iscsi_target_param_descr_t *param,
             TRUE);
 }
 
+/**
+ * See description in iscsi_initiator.h
+ */
 void
 iscsi_write_param(void (*outfunc)(void *, char *),
                   void *destination,
@@ -361,18 +374,27 @@ iscsi_write_param(void (*outfunc)(void *, char *),
     }
 }
 
+/**
+ * See description in iscsi_initiator.h
+ */
 void
 iscsi_write_to_file(void *destination, char *what)
 {
     fputs(what, destination);
 }
 
+/**
+ * See description in iscsi_initiator.h
+ */
 void
 iscsi_put_to_buf(void *destination, char *what)
 {
     strcpy(destination, what);
 }
 
+/**
+ * See description in iscsi_initiator.h
+ */
 void
 iscsi_append_to_buf(void *destination, char *what)
 {
@@ -381,6 +403,9 @@ iscsi_append_to_buf(void *destination, char *what)
     strcat(destination, "\"");
 }
 
+/**
+ * See description in iscsi_initiator.h
+ */
 char *
 iscsi_not_none (void *val)
 {
@@ -389,6 +414,9 @@ iscsi_not_none (void *val)
     return buf;
 }
 
+/**
+ * See description in iscsi_initiator.h
+ */
 char *
 iscsi_bool2int (void *val)
 {
@@ -397,6 +425,9 @@ iscsi_bool2int (void *val)
     return buf;
 }
 
+/**
+ * See description in iscsi_initiator.h
+ */
 te_bool
 iscsi_when_tgt_auth(iscsi_target_data_t *target_data,
                     iscsi_connection_data_t *conn_data,
@@ -408,6 +439,9 @@ iscsi_when_tgt_auth(iscsi_target_data_t *target_data,
     return auth_data->target_auth;
 }
 
+/**
+ * See description in iscsi_initiator.h
+ */
 te_bool
 iscsi_when_not_tgt_auth(iscsi_target_data_t *target_data,
                         iscsi_connection_data_t *conn_data,
@@ -419,6 +453,9 @@ iscsi_when_not_tgt_auth(iscsi_target_data_t *target_data,
     return !auth_data->target_auth;
 }
 
+/**
+ * See description in iscsi_initiator.h
+ */
 te_bool
 iscsi_when_chap(iscsi_target_data_t *target_data,
                 iscsi_connection_data_t *conn_data,
@@ -430,6 +467,7 @@ iscsi_when_chap(iscsi_target_data_t *target_data,
     return strstr(auth_data->chap, "CHAP") != NULL;
 }
 
+/** Names of iSCSI connection states */
 static const char *iscsi_status_names[] = {
     "REMOVED", 
     "DOWN",         
@@ -444,6 +482,15 @@ static const char *iscsi_status_names[] = {
 };
 
 
+/**
+ * Changes the status of a connection. 
+ * Counters for active connections are updated if
+ * necessary.
+ *
+ * @param target        Target data
+ * @param conn          Connection data
+ * @param status        New status
+ */
 void
 iscsi_change_conn_status(iscsi_target_data_t *target,
                          iscsi_connection_data_t *conn, 
@@ -479,6 +526,17 @@ iscsi_change_conn_status(iscsi_target_data_t *target,
          iscsi_status_names[status     + 1]);
 }
 
+/**
+ * Asynchronously posts a request to change state of a given connection.
+ * The request will be handled by iscsi_initiator_conn_request_thread().
+ *
+ * @return              Status code
+ * @param target_id     Target number
+ * @param cid           Connection number
+ * @param status        New status
+ * @param urgent        If TRUE, the request will be put into the head 
+ *                      of the queue, instead of the tail
+ */
 static te_errno
 iscsi_post_connection_request(int target_id, int cid, int status, te_bool urgent)
 {
@@ -527,6 +585,23 @@ iscsi_post_connection_request(int target_id, int cid, int status, te_bool urgent
     return 0;
 }
 
+
+/**
+ * Probe for a device readiness and obtain its name
+ * (on Win32, iscsi_win32_prepare_device() do the actual work)
+ * Then attempts to write to the device to notify tests that the
+ * device creation has completed.
+ * 
+ * On Linux this function searches inside /sys.
+ * FIXME: there are different mechanisms of SCSI device discovery
+ * for L5 and non-L5 initiators. This really should be unified.
+ *
+ * @return              Status code
+ * @retval EAGAIN       The device is not yet ready,
+ *                      another attempt is to be made
+ * @param conn          Connection data
+ * @param target_id     Target number 
+ */
 static te_errno
 iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
 {
@@ -758,6 +833,13 @@ iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
     return rc;
 }
 
+/**
+ * This thread wakes from time to time 
+ * (namely, every @p iscsi_retry_timeout usecs, and attempts:
+ * - to shutdown all connections in abnormal state 
+ *   (possibly bringing some them up again, if needed)
+ * - to probe for SCSI devices that are not yet ready
+ */
 static void *
 iscsi_initiator_timer_thread(void *arg)
 {
@@ -804,8 +886,80 @@ iscsi_initiator_timer_thread(void *arg)
     return NULL;
 }
 
+/**
+ * This is the main thread for handling connection status change requests.
+ * The behaviour is described by the following state machine
+ * (connection requests are in parentheses):
+ * 
+ * REMOVED 
+ * |
+ * V (ISCSI_CONNECTION_DOWN)
+ * DOWN
+ * |
+ * V (ISCSI_CONNECTION_UP)
+ * ESTABLISHING -(Error)-> ABNORMAL (see below)
+ * |
+ * V (Login Phase successful)
+ * WAITING_DEVICE  -(Error)-> ABNORMAL
+ *                 -(ISCSI_CONNECTION_UP by iscsi_initiator_timer_thread)
+ *                  -> WAITING_DEVICE
+ * |
+ * V (device is ready)
+ * UP - (ISCSI_CONNECTION_UP) -> UP
+ * |
+ * V (ISCSI_CONNECTION_DOWN)
+ * CLOSING -(Error)-> ABNORMAL
+ * |
+ * V (Logout is successful)
+ * DOWN - (ISCSI_CONNECTION_DOWN) -> DOWN
+ * |
+ * V (ISCSI_CONNECTION_REMOVED)
+ * REMOVED
+ *
+ * For discovery sessions states are a bit different:
+ * ...
+ * DOWN
+ * |
+ * V (ISCSI_CONNECTION_UP)
+ * DISCOVERING -(Error) -> ABNORMAL
+ * |
+ * V (Discovery session complete)
+ * DOWN
+ * ...
+ *
+ * Errorneous states are as follows:
+ *
+ * (a) ABNORMAL
+ *     |
+ *     V (by iscsi_initiator_timer_thread)
+ *     CLOSING - (Error) -> ABNORMAL
+ *     |
+ *     V 
+ *     DOWN
+ *     |
+ *     V (ISCSI_CONNECTION_REMOVED by iscsi_initiator_timer_thread)
+ *     REMOVED
+ *
+ * (b) ABNORMAL
+ *     |
+ *     V (ISCSI_CONNECTION_UP)
+ *     RECOVERY_UP
+ *     |
+ *     V (by iscsi_initiator_timer_thread)
+ *     ESTABLISHING
+ *
+ * (c) ABNORMAL
+ *     |
+ *     V (ISCSI_CONNECTION_DOWN)
+ *     |
+ *     V
+ *     RECOVERY_DOWN
+ *     |
+ *     V (by iscsi_initiator_timer_thread)
+ *     CLOSING
+ */
 static void *
-iscsi_initator_conn_request_thread(void *arg)
+iscsi_initiator_conn_request_thread(void *arg)
 {
     iscsi_connection_req *current_req = NULL;
     iscsi_target_data_t *target = NULL;
@@ -1027,6 +1181,9 @@ iscsi_initator_conn_request_thread(void *arg)
     }
 }
 
+/** 
+ * Kill connection request handling threads
+ */
 static void
 kill_request_thread(void)
 {
@@ -1281,7 +1438,7 @@ iscsi_target_data_add(unsigned int gid, const char *oid,
     {
         int rc;
         rc = pthread_create(&init_data->request_thread, NULL, 
-                            iscsi_initator_conn_request_thread,
+                            iscsi_initiator_conn_request_thread,
                             NULL);
         if (rc != 0)
         {

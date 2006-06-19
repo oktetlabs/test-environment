@@ -45,6 +45,16 @@
 #include "te_sleep.h"
 #include "iscsi_initiator.h"
 
+/**
+ * Sets an iSCSI parameter via `iscsiadm' tool.
+ *
+ * @return Status code
+ * @param recid Open-iSCSI record id
+ * @param param         Parameter description
+ * @param target        Target-wide parameters
+ * @param connection    iSCSI operational parameters
+ * @param auth_data     iSCSI security parameters
+ */
 static int
 iscsi_openiscsi_set_param(const char *recid,
                           iscsi_target_param_descr_t *param,
@@ -69,9 +79,27 @@ iscsi_openiscsi_set_param(const char *recid,
 }
 
 
+/** Name of the file where `iscsid' stores its PID */
 #define ISCSID_PID_FILE "/var/run/iscsid.pid"
+
+/** Name of Open-iSCSI parameter database */
 #define ISCSID_RECORD_FILE "/var/db/iscsi/node.db"
 
+/**
+ *  Start Open-iSCSI managing daemon `iscsid'.
+ *  If the daemon is already running, and @p force_start is TRUE,
+ *  the old daemon is killed.
+ *  Both ISCSID_PID_FILE and ISCSID_RECORD_FILE are deleted.
+ *  The function writes the Initiator name and alias to a file, since these
+ *  two parameters cannot be configured later via `iscsiadm'.
+ *  After spawning the daemon, it waits until ISCSI_PID_FILE is created,
+ *  or else we might encounter problems trying to configure `iscsid' before
+ *  it is ready.
+ *
+ *  @return Status code
+ *  @param  target      Target data
+ *  @param  force_start Force restarting the daemon if it's running
+ */
 static int
 iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
 {
@@ -81,7 +109,6 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
     int   i;   
 
     RING("Starting iscsid daemon");
-    fputs("> starting iscsid daemon\n", stderr);
 
     pid_file = fopen(ISCSID_PID_FILE, "r");
 
@@ -141,6 +168,11 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
     return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
 }
 
+/**
+ * Stop Open-iSCSI managing daemon if it's running
+ *
+ * @return Status code
+ */
 te_errno
 iscsi_openiscsi_stop_daemon(void)
 {
@@ -155,7 +187,6 @@ iscsi_openiscsi_stop_daemon(void)
         int iscsid_pid = 0;
         if (fscanf(pid_file, "%d", &iscsid_pid) == 1)
         {
-            fprintf(stderr, "< stopping iscsid daemon pid = %d\n", iscsid_pid);
             if (kill(iscsid_pid, 0) == 0)
             {
                 ta_system("iscsiadm --stop");
@@ -170,6 +201,12 @@ iscsi_openiscsi_stop_daemon(void)
     return 0;
 }
 
+/**
+ * Set iSCSI parameters via `iscsiadm'.
+ *
+ * @return              Status code
+ * @param  target       Target data
+ */
 static int
 iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
 {
@@ -276,6 +313,15 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
 #undef AUTH_PARAM
 }
 
+/**
+ * Allocate a record in Open-iSCSI configuration DB for
+ * a given target address and port
+ *
+ * @return              Record ID or NULL in case of an error
+ * @param data          iSCSI configuration table
+ * @param target        Target address
+ * @param target_port   Target port
+ */
 static const char *
 iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
                            const char *target, 
@@ -329,6 +375,10 @@ iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
 }
 
 
+/**
+ * See iscsi_initiator.h and iscsi_initator_conn_request_thread()
+ * for a complete description of the state machine involved.
+ */
 int
 iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
 {

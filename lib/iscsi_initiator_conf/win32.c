@@ -55,6 +55,9 @@
 #define DEFAULT_INITIAL_R2T_WIN32    1
 #define DEFAULT_IMMEDIATE_DATA_WIN32 1
 
+/**
+ * See description in iscsi_initiator.h
+ */
 void
 iscsi_win32_report_error(const char *function, int line, 
                          unsigned long previous_error)
@@ -79,17 +82,38 @@ iscsi_win32_report_error(const char *function, int line,
     }
 }
 
-static int                 cli_started;
+/** TRUE if `iscsicli' process is running */
+static te_bool             cli_started;
+
+/** Handles for pipes communicating with `iscsicli' process */
 static HANDLE              host_input, cli_output;
 static HANDLE              host_output, cli_input;
+
+/** Process info structure for `iscsicli' process */
 static PROCESS_INFORMATION process_info;
+
+/** Timer used to wait for `iscsicli' response */
 static HANDLE              cli_timeout_timer = INVALID_HANDLE_VALUE;
+
+/** Win32 registry branch handle which holds `hidden' iSCSI parameters */
 static HKEY                driver_parameters = INVALID_HANDLE_VALUE;
+
+/** So called `device information set' for SCSI adapters */
 static HDEVINFO            scsi_adapters     = INVALID_HANDLE_VALUE;
+
+/** Device info for a SCSI device associated with the Initiator */
 static SP_DEVINFO_DATA     iscsi_dev_info;
 
 static te_errno iscsi_win32_set_default_parameters(void);
 
+/**
+ * Find a registry branch holding `hidden' iSCSI parameters,
+ * using Win32 SetupAPI.
+ * This function is called once per agent run, and it resets
+ * all the `hidden' parameters to their default values.
+ *
+ * @return Status code
+ */
 static te_errno
 iscsi_win32_find_initiator_registry(void)
 {
@@ -168,6 +192,13 @@ iscsi_win32_find_initiator_registry(void)
     return iscsi_win32_set_default_parameters();
 }
 
+/**
+ * Starts a `iscsicli' process using @p cmdline.
+ * If the process is already running, it is killed.
+ *
+ * @return              Status code
+ * @param  cmdline      Command line (including the command name)
+ */
 static te_errno
 iscsi_win32_run_cli(const char *cmdline)
 {
@@ -238,21 +269,41 @@ iscsi_win32_run_cli(const char *cmdline)
     return 0;
 }
 
+/**
+ * Description of MS iSCSI `hidden' parameters 
+ * (i.e. those which are only configurable via the registry)
+ */
 typedef struct iscsi_win32_registry_parameter
 {
-    int offer;
-    int offset;
-    char *name;
-    unsigned long (*transform)(void *);
-    unsigned long constant;
+    int offer;  /**< OFFER_XXX mask */
+    int offset; /**< Offset in the data structure */  
+    char *name; /**< Registry value name */
+    unsigned long (*transform)(void *); 
+                /**< Function to translate our value to
+                 *   the one needed by MS iSCSI
+                 */
+    unsigned long constant; /**< If @p offset is less than 0,
+                             *   this value is taken instead of
+                             *   a structure field
+                             */
 } iscsi_win32_registry_parameter;
 
+/** 
+ * Transformation function for iscsi_win32_set_registry_parameter()
+ */
 static unsigned long
 iscsi_win32_bool2int(void *data)
 {
     return strcasecmp((char *)data, "Yes") == 0;
 }
 
+/**
+ * Sets an iSCSI parameter described by @p parm in the Win32 registry.
+ *
+ * @return      Status code
+ * @param parm  Parameter description
+ * @param data  Target/connection data
+ */
 static te_errno
 iscsi_win32_set_registry_parameter(iscsi_win32_registry_parameter *parm, 
                                    void *data)
@@ -282,6 +333,11 @@ iscsi_win32_set_registry_parameter(iscsi_win32_registry_parameter *parm,
     return 0;
 }
 
+/**
+ * Resets iSCSI `hidden' parameters to their default values
+ *
+ * @return Status code
+ */
 static te_errno
 iscsi_win32_set_default_parameters(void)
 {
@@ -312,6 +368,11 @@ iscsi_win32_set_default_parameters(void)
 #undef RPARAMETER
 }
 
+/**
+ * Reloads MS iSCSI device driver service
+ *
+ * @return Status code
+ */
 static te_errno
 iscsi_win32_restart_iscsi_service(void)
 {
@@ -337,6 +398,9 @@ iscsi_win32_restart_iscsi_service(void)
     return 0;
 }
 
+/**
+ * See description in iscsi_initiator.h
+ */
 te_errno
 iscsi_send_to_win32_iscsicli(const char *fmt, ...)
 {
@@ -353,6 +417,9 @@ iscsi_send_to_win32_iscsicli(const char *fmt, ...)
     return iscsi_win32_run_cli(buffer);
 }
 
+/**
+ * A callback used when cli_timeout_timer fires
+ */
 static void CALLBACK
 iscsi_cli_timeout(void *state, unsigned long low_timer, unsigned long high_timer)
 {
@@ -361,10 +428,31 @@ iscsi_cli_timeout(void *state, unsigned long low_timer, unsigned long high_timer
     *(te_bool *)state = TRUE;
 }
 
+/** 
+ * Buffer holding output from `iscsicli' process
+ */
 static char cli_buffer[2048];
+
+/**
+ * A pointer to the first new line in @p cli_buffer
+ */
 static char *new_line = NULL;
+
+/**
+ * Number of bytes forming an incomplete line in @p cli_buffer
+ */
 static unsigned long residual = 0;
 
+/**
+ * See description in iscsi_initiator.h
+ *
+ * This function reads output from `iscsicli' until a full line is read.
+ * It then matches it agains one of three patterns (@p pattern, 
+ * @p abort_pattern, @p terminal_pattern). If a match is found, the function
+ * returns filling @p buffers as necessary and leaving all remaining output
+ * (i.e. a beginning of the next line of the output) in the @p cli_buffer 
+ * for further examination.
+ */
 te_errno
 iscsi_win32_wait_for(regex_t *pattern, 
                      regex_t *abort_pattern,
@@ -489,6 +577,11 @@ iscsi_win32_wait_for(regex_t *pattern,
     return 0;
 }
 
+/**
+ * See description in iscsi_initiator.h
+ *
+ * NOTE: This function seems to have no useful effect with MS iSCSI :(
+ */
 te_errno
 iscsi_win32_disable_readahead(const char *devname)
 {
@@ -540,6 +633,12 @@ iscsi_win32_disable_readahead(const char *devname)
     return 0;
 }
 
+/**
+ * See description in iscsi_initiator.h
+ *
+ * The function terminates a running `iscsicli' process and 
+ * clears all pending data in @p cli_buffer.
+ */
 te_errno
 iscsi_win32_finish_cli(void)
 {
@@ -563,6 +662,14 @@ iscsi_win32_finish_cli(void)
     return success ? 0 : TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
 }
 
+/**
+ * Format command line parameters for `iscsicli' process
+ * 
+ * @return A pointer to a static buffer holding the command line
+ * @param table         iSCSI parameter descriptions
+ * @param target        Target-wide data
+ * @param connection    Connection-wide data
+ */
 static const char *
 iscsi_win32_format_params(iscsi_target_param_descr_t *table,
                           iscsi_target_data_t *target, 
@@ -590,6 +697,14 @@ iscsi_win32_format_params(iscsi_target_param_descr_t *table,
     return buffer;
 }
 
+/** Empirically discovered iscscli output patterns:
+ *   -# New session ID 
+ *   -# New connection ID 
+ *   -# Last line of output
+ *   -# Error messages
+ *   -# Existing connection ID
+ *   -# SCSI device number
+ */
 static char   *iscsi_conditions[] = {
     "^Session Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
     "^Connection Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
@@ -599,6 +714,7 @@ static char   *iscsi_conditions[] = {
     "Device Number[[:space:]]*:[[:space:]]*(-?[0-9]*)"
 };
 
+/** Compiled form of iscsi_conditions */
 static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
 
 #define session_id_regexp (iscsi_regexps[0])
@@ -609,21 +725,46 @@ static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
 #define dev_number_regexp (iscsi_regexps[5])
 
 
+/** Macros to facilitate writing parameter descriptions */
+
+/** Operational parameter template */
 #define PARAMETER(field, offer, type) \
     {OFFER_##offer, #field, type, ISCSI_OPER_PARAM, offsetof(iscsi_connection_data_t, field), NULL, NULL}
+
+/** Operational parameter template with custom formatter */
 #define XPARAMETER(field, offer, type, fmt) \
     {OFFER_##offer, #field, type, ISCSI_OPER_PARAM, offsetof(iscsi_connection_data_t, field), fmt, NULL}
+
+/** Target-wide parameter template */
 #define GPARAMETER(field, type) \
     {0, #field, type, ISCSI_GLOBAL_PARAM, offsetof(iscsi_target_data_t, field), NULL, NULL}
+
+/** Security parameter template */
 #define AUTH_PARAM(field, type) \
     {0, #field, type, ISCSI_SECURITY_PARAM, offsetof(iscsi_tgt_chap_data_t, field), NULL, NULL}
+
+/** Security parameter template with custom formatter */
 #define XAUTH_PARAM(field, type, fmt) \
     {0, #field, type, ISCSI_SECURITY_PARAM, offsetof(iscsi_tgt_chap_data_t, field), fmt, NULL}
+
+/** Constant value template */
 #define CONSTANT(field, type) \
     {0, "", type, ISCSI_FIXED_PARAM, offsetof(iscsi_constant_t, field), NULL, NULL}
+
+/** `Hidden' parameter template */
 #define RPARAMETER(field, name, offer, transform) \
     {OFFER_##offer, offsetof(iscsi_connection_data_t, field), name, transform, 0}
 
+/**
+ * This function actually initiates a login procedure for Win initiator.
+ * It first modifies registry values and restarts the iSCSI service 
+ * (when necessary) and then calls `iscsicli' process.
+ *
+ * @return Status code
+ * @param target        Target-wide data
+ * @param connection    Conncection data
+ * @param is_connection TRUE if it's not the leading connection
+ */
 static int
 iscsi_win32_write_target_params(iscsi_target_data_t *target,
                                 iscsi_connection_data_t *connection,
@@ -726,6 +867,13 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
     return 0;
 }
 
+/**
+ * Initiates a discovery session for MS Initiator.
+ *
+ * @return Status code
+ * @param target        Target-wide data
+ * @param connection    Conncection data
+ */
 static te_errno
 iscsi_win32_do_discovery(iscsi_target_data_t *target,
                          iscsi_connection_data_t *connection)
@@ -789,6 +937,10 @@ iscsi_win32_do_discovery(iscsi_target_data_t *target,
 #undef CONSTANT
 
 
+/**
+ * See iscsi_initiator.h and iscsi_initator_conn_request_thread()
+ * for a complete description of the state machine involved.
+ */
 te_errno
 iscsi_initiator_win32_set(iscsi_connection_req *req)
 {
@@ -910,6 +1062,12 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
     return rc;
 }
 
+/**
+ * Probe for a Win32 SCSI device readiness and obtain its name
+ *
+ * @return Status code
+ * @param conn  Connection data
+ */
 te_errno
 iscsi_win32_prepare_device(iscsi_connection_data_t *conn)
 {
@@ -982,6 +1140,11 @@ iscsi_win32_prepare_device(iscsi_connection_data_t *conn)
     return 0;
 }
 
+/**
+ * Compile iscsi_conditions into iscsi_regexps
+ *
+ * @return TRUE if successfully compiled, FALSE otherwise
+ */
 te_bool
 iscsi_win32_init_regexps(void)
 {
