@@ -3863,7 +3863,8 @@ send_read_data(SHARED struct iscsi_cmnd *cmnd,
     int zero_dsl_interval = iscsi_get_custom_value(conn->custom, 
                                                    "zero_dsl_interval");
     int zero_dsl_counter = zero_dsl_interval;
-
+    int nopin_after = iscsi_get_custom_value(conn->custom, "nopin_after");
+    int nopin_count = iscsi_get_custom_value(conn->custom, "nopin_count");
 
     TRACE(DEBUG, "Sending zero-data-length PDU every %d packets", 
           zero_dsl_interval);
@@ -3912,6 +3913,18 @@ send_read_data(SHARED struct iscsi_cmnd *cmnd,
 
 		/* once around this loop for each pdu in this sequence */
 		while (seq_length > 0) {
+            if (nopin_count != 0)
+            {
+                if (nopin_after != 0)
+                    nopin_after--;
+                else
+                {
+                    while (nopin_count-- != 0)
+                        generate_nopin(conn, session);
+                    nopin_count = 0;
+                }
+                
+            }
 			TRACE(DEBUG, "data_length_left: %d, seq_length: %d",
 				  data_length_left, seq_length);
 
