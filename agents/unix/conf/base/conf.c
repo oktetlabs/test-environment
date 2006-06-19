@@ -182,6 +182,8 @@ extern te_errno ta_unix_iscsi_target_init();
 extern te_errno iscsi_initiator_conf_init();
 #endif
 
+extern te_errno ta_unix_conf_sys_init();
+
 #ifdef USE_NETLINK
 /** Netlink message storage */
 typedef struct agt_nlmsg_entry {
@@ -620,6 +622,9 @@ rcf_ch_conf_root(void)
         if (ta_unix_conf_net_snmp_stats_init() != 0)
             return NULL;
 #endif
+
+        if (ta_unix_conf_sys_init() != 0)
+            return NULL;
 
         rcf_pch_rsrc_init();
     }

@@ -45,6 +45,18 @@
 #include <fcntl.h>
 #endif
 
+/* Solaris sream interface */
+#ifdef HAVE_STROPTS_H
+#include <stropts.h>
+#endif
+#ifdef HAVE_INET_ND_H
+#include <inet/nd.h>
+#endif
+#if defined(HAVE_STROPTS_H) && defined(HAVE_INET_ND_H) && \
+    !defined(SUN_I_STR)
+#define SUN_I_STR 1
+#endif
+
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -156,9 +168,9 @@ ta_unix_conf_sys_init(void)
  *
  * @return              Status code.
  */
-#if __solaris__
+#if SUN_I_STR
 static te_errno
-solaris_ioctl(char *drv, char *param, int cmd, char *value)
+sun_ioctl(char *drv, char *param, int cmd, char *value)
 {
     int             fd;
     struct strioctl si;
@@ -167,8 +179,6 @@ solaris_ioctl(char *drv, char *param, int cmd, char *value)
     char            cmd_req[80];
     int             flags;
 
-    RING("ENTER to %s", __FUNCTION__);
-    
     if (cmd == ND_GET)
     {
         si.ic_cmd = ND_GET;
@@ -190,7 +200,6 @@ solaris_ioctl(char *drv, char *param, int cmd, char *value)
     si.ic_len = sizeof(cmd_req);
     si.ic_dp = cmd_req;
 
-    RING("+++ cmd_req=%s", cmd_req);
     if ((rc = ioctl(fd, I_STR, &si)) < 0)
     {
         close(fd);
@@ -199,8 +208,7 @@ solaris_ioctl(char *drv, char *param, int cmd, char *value)
 
     if (cmd == ND_GET)
     {
-        RING("+++ returned cmd_req=%s", cmd_req);
-        strcpy(value, cmd_req, strlen(cmd_req));
+        strncpy(value, cmd_req, strlen(cmd_req));
     }
 
     close(fd);
@@ -335,8 +343,8 @@ tcp_sndbuf_max_set(unsigned int gid, const char *oid,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 #endif
-#if __solaris__
-    rc = solaris_ioctl("tcp", "tcp_max_buf", ND_SET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("tcp", "tcp_max_buf", ND_SET, (char *)value);
 #endif
     return rc;
 }
@@ -376,8 +384,8 @@ tcp_sndbuf_max_get(unsigned int gid, const char *oid,
     sprintf(value,"%d", bmem[2]);
 #endif
 
-#if __solaris__
-    rc = solaris_ioctl("tcp", "tcp_max_buf", ND_GET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("tcp", "tcp_max_buf", ND_GET, value);
 #endif
     return rc;
 }
@@ -423,8 +431,8 @@ tcp_sndbuf_def_set(unsigned int gid, const char *oid,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 #endif
-#if __solaris__
-    rc = solaris_ioctl("tcp", "tcp_xmit_hiwat", ND_SET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("tcp", "tcp_xmit_hiwat", ND_SET, (char *)value);
 #endif
     return rc;
 }
@@ -464,8 +472,8 @@ tcp_sndbuf_def_get(unsigned int gid, const char *oid,
     sprintf(value,"%d", bmem[1]);
 #endif
 
-#if __solaris__
-    rc = solaris_ioctl("tcp", "tcp_xmit_hiwat", ND_GET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("tcp", "tcp_xmit_hiwat", ND_GET, value);
 #endif
     return rc;
 }
@@ -511,8 +519,8 @@ tcp_rcvbuf_max_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 #endif
 
-#if __solaris__
-    rc = solaris_ioctl("tcp", "tcp_max_buf", ND_SET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("tcp", "tcp_max_buf", ND_SET, (char *)value);
 #endif
     return rc;
 }
@@ -543,7 +551,6 @@ tcp_rcvbuf_max_get(unsigned int gid, const char *oid,
         ERROR("A value to set is not provided");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-RING("ENTER to %s", __FUNCTION__);
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
     if (rc != 0)
@@ -553,11 +560,9 @@ RING("ENTER to %s", __FUNCTION__);
 
 #endif
 
-#if __solaris__
-    RING("%s():solaris_ioctl() called", __FUNCTION__);
-    rc = solaris_ioctl("tcp", "tcp_max_buf", ND_GET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("tcp", "tcp_max_buf", ND_GET, value);
 #endif
-RING("EXIT from %s", __FUNCTION__);
     return rc;
 }
 
@@ -600,8 +605,8 @@ tcp_rcvbuf_def_set(unsigned int gid, const char *oid,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 #endif
-#if __solaris__
-    rc = solaris_ioctl("tcp", "tcp_recv_hiwat", ND_SET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("tcp", "tcp_recv_hiwat", ND_SET, (char *)value);
 #endif
     return rc;
 }
@@ -640,8 +645,8 @@ tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
     sprintf(value,"%d", bmem[1]);
 #endif
 
-#if __solaris__
-    rc = solaris_ioctl("tcp", "tcp_recv_hiwat", ND_GET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("tcp", "tcp_recv_hiwat", ND_GET, value);
 #endif
     return rc;
 }
@@ -687,8 +692,8 @@ udp_sndbuf_max_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 #endif
 
-#if __solaris__
-    rc = solaris_ioctl("udp", "udp_max_buf", ND_SET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
 #endif
     return rc;
 }
@@ -727,8 +732,8 @@ udp_sndbuf_max_get(unsigned int gid, const char *oid,
     sprintf(value,"%d", bmem);
 #endif
 
-#if __solaris__
-    rc = solaris_ioctl("udp", "udp_max_buf", ND_GET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
 #endif
     return rc;
 }
@@ -773,8 +778,8 @@ udp_sndbuf_def_set(unsigned int gid, const char *oid,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 #endif
-#if __solaris__
-    rc = solaris_ioctl("udp", "udp_xmit_hiwat", ND_SET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_SET, (char *)value);
 #endif
     return rc;
 }
@@ -811,8 +816,8 @@ udp_sndbuf_def_get(unsigned int gid, const char *oid,
 
     sprintf(value,"%d", bmem);
 #endif
-#if __solaris__
-    rc = solaris_ioctl("udp", "udp_xmit_hiwat", ND_GET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_GET, value);
 #endif
     return rc;
 }
@@ -856,8 +861,8 @@ udp_rcvbuf_max_set(unsigned int gid, const char *oid,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 #endif
-#if __solaris__
-    rc = solaris_ioctl("udp", "udp_max_buf", ND_SET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
 #endif
     return rc;
 }
@@ -894,8 +899,8 @@ udp_rcvbuf_max_get(unsigned int gid, const char *oid,
 
     sprintf(value,"%d", bmem);
 #endif
-#if __solaris__
-    rc = solaris_ioctl("udp", "udp_max_buf", ND_GET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
 #endif
     return rc;
 }
@@ -940,8 +945,8 @@ udp_rcvbuf_def_set(unsigned int gid, const char *oid,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 #endif
-#if __solaris__
-    rc = solaris_ioctl("udp", "udp_recv_hiwat", ND_SET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("udp", "udp_recv_hiwat", ND_SET, (char *)value);
 #endif
     return rc;
 }
@@ -978,8 +983,8 @@ udp_rcvbuf_def_get(unsigned int gid, const char *oid,
 
     sprintf(value,"%d", bmem);
 #endif
-#if __solaris__
-    rc = solaris_ioctl("udp", "udp_recv_hiwat", ND_GET, value);
+#if SUN_I_STR
+    rc = sun_ioctl("udp", "udp_recv_hiwat", ND_GET, value);
 #endif
     return rc;
 }
