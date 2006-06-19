@@ -29,7 +29,7 @@ EOF
 
 XML_LOG_FILE=`mktemp /tmp/tmp.XXXXXX`
 
-rgt-conv -m postponed -c $RGT_FILTER -f $RAW_LOG_FILE \
+rgt-conv --incomplete-log -m postponed -c $RGT_FILTER -f $RAW_LOG_FILE \
          -o $XML_LOG_FILE
 if test $? -eq 0 ; then
     te_trc ${OPTS} $XML_LOG_FILE
