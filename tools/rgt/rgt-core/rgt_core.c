@@ -397,7 +397,7 @@ main(int argc, char **argv)
         if (rgt_ctx.op_mode == RGT_OP_MODE_POSTPONED)
         {
             if (rgt_ctx.proc_incomplete)
-                rgt_emulate_accurate_close(&latest_ts);
+                rgt_emulate_accurate_close(latest_ts);
 
             /* Process flow tree (call callback routines for each node) */
             postponed_process_open();
