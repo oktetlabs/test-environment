@@ -92,6 +92,7 @@ typedef enum trc_test_result {
     TRC_TEST_FAILED,      /**< Test should fail */
     TRC_TEST_CORED,
     TRC_TEST_KILLED,
+    TRC_TEST_INCOMPLETE,
     TRC_TEST_FAKED,
     TRC_TEST_EMPTY,
     TRC_TEST_SKIPPED,     /**< Test should be skipped */

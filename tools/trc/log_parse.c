@@ -254,6 +254,8 @@ get_result(xmlNodePtr node, trc_test_result *value)
         *value = TRC_TEST_FAKED;
     else if (xmlStrcmp(s, CONST_CHAR2XML("EMPTY")) == 0)
         *value = TRC_TEST_EMPTY;
+    else if (xmlStrcmp(s, CONST_CHAR2XML("INCOMPLETE")) == 0)
+        *value = TRC_TEST_INCOMPLETE;
     else
     {
         ERROR("Invalid value '%s' of the result", XML2CHAR(s));
