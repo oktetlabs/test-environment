@@ -39,6 +39,7 @@ endif
 
 ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librpc_types.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a 
 
