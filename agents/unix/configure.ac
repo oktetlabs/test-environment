@@ -165,6 +165,17 @@ dnl
 AC_SEARCH_LIBS([sem_init], [pthread c_r semaphore rt], [],
                AC_MSG_ERROR([No POSIX semaphores]))
 
+dnl
+dnl Pluggable Authentication Modules are provided by:
+dnl - -lpam on Linux;
+dnl - ? on FreeBSD;
+dnl - ? on NetBSD;
+dnl - -lpam on Solaris2 (SunOS 5.11).
+dnl
+AC_SEARCH_LIBS([pam_start], [pam], [],
+               AC_MSG_ERROR(
+               [No PAM (Pluggable Authentication Modules) support]))
+
 if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
     dnl
     dnl Dynamic linker functions are provided by:
