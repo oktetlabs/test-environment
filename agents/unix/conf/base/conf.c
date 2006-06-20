@@ -107,6 +107,31 @@
 #define SOLARIS_IP_FW 1
 #endif
 
+/* PAM (Pluggable Authentication Modules) support */
+#include <pwd.h>
+#include <security/pam_appl.h>
+
+/** Data passed between 'set_change_passwd' and 'conv_fun' callback fun */
+typedef struct {
+    char const *passwd;                    /**< Password string pointer */
+    char        err_msg[PAM_MAX_MSG_SIZE]; /**< Error message storage   */
+
+} appdata_t;
+
+typedef struct pam_response pam_response_t;
+
+/** Avoid slight differences between UNIX'es over typedef */
+#if defined linux
+#define PAM_FLAGS 0
+typedef struct pam_message const pam_message_t;
+#elif defined sun
+#define PAM_FLAGS PAM_NO_AUTHTOK_CHECK | PAM_SILENT
+typedef struct pam_message pam_message_t;
+#else
+#error Unknown platform (i.e. linux, sun, etc)
+#endif
+
+
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -4526,34 +4551,153 @@ user_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
-/** Check, if user with the specified name exists */
+/**
+ * Check, if user with the specified name exists.
+ *
+ * @param user          user name
+ *
+ * @return              TRUE if user exists, FALSE if does not
+ */
 static te_bool
 user_exists(const char *user)
 {
-    FILE *f;
+    return getpwnam(user) != NULL ? TRUE : FALSE;
+}
 
-    if ((f = fopen("/etc/passwd", "r")) == NULL)
+/**
+ * Callback function provided by user and called from within PAM library.
+ *
+ * @param num_msg       number of messages
+ * @param msg           array of 'num_msg' pointers to messages
+ * @param resp          address of pointer to returned array of responses
+ * @param data          pointer passed to PAM library pam_start function
+ *
+ * @return              Return code (PAM_SUCCESS on success,
+ *                      PAM_BUF_ERR when it is insufficient memory)
+ *
+ * @sa                  PAM library expects that response array
+ *                      itself and each its .resp member are allocated
+ *                      by malloc (calloc, realloc).
+ *                      PAM library is responsible for freeing them.
+ */
+static int
+conv_fun(int num_msg, pam_message_t **msg, pam_response_t **resp,
+         void *data)
+{
+    /* Try to allocate responses array to be returned */
+    struct pam_response *resp_array = calloc(num_msg, sizeof(*resp));
+    appdata_t           *appdata    = data;
+
+    unsigned full_len = strlen(appdata->passwd) + 1; /**< Password
+                                                       *  length + 1
+                                                       */
+    int      i;
+
+    /** If responses array is allocated successfully */
+    if (resp_array != NULL)
     {
-        ERROR("Failed to open file /etc/passwd; errno %d", errno);
-        return FALSE;
-    }
-
-    while (fgets(trash, sizeof(trash), f) != NULL)
-    {
-        char *tmp = strstr(trash, user);
-
-        if (tmp == NULL)
-            continue;
-
-        if (*(tmp + strlen(user)) == ':')
+        for (i = 0; i < num_msg; i++) /* Process each message */
         {
-            fclose(f);
-            return TRUE;
-        }
-    }
-    fclose(f);
+            /** PAM prompts for password */
+            if (msg[i]->msg_style == PAM_PROMPT_ECHO_ON ||
+                msg[i]->msg_style == PAM_PROMPT_ECHO_OFF)
+            {
+                /** Allocate memory for password and supply it to PAM */
+                if ((resp_array[i].resp = malloc(full_len)) != NULL)
+                    memcpy(resp_array[i].resp, appdata->passwd, full_len);
+                else
+                {
+                   /* Rollback allocation already
+                    * been done at the moment
+                    */
+                    while (i-- > 0)
+                        free(resp_array[i].resp);
 
-    return FALSE;
+                    free(resp_array);
+                    return PAM_BUF_ERR;
+                }
+            }
+            else
+                /** PAM assumes user should read this error message */
+                if (msg[i]->msg_style == PAM_ERROR_MSG)
+                {
+                    WARN("%s", msg[i]->msg);
+
+                   /* Save message in order to have opportunity
+                    * to display it later by main execution flow
+                    * (set_change_passwd) in case of a real error
+                    */
+                    strcpy(appdata->err_msg, msg[i]->msg);
+                }
+        }
+
+        *resp = resp_array; /* Assign responses array pointer for PAM */
+    }
+    else
+        return PAM_BUF_ERR;
+
+    return PAM_SUCCESS;
+}
+
+/**
+ * Set (change) user password over PAM (i. e. portably across UNIX'es).
+ *
+ * @param user          user name
+ * @param passwd        user password
+ *
+ * @return              Return code (0 on success, -1 on error)
+ */
+static int set_change_passwd(char const *user, char const *passwd)
+{
+    pam_handle_t       *handle;
+    appdata_t           appdata;  /**< Data passed to callback and back */
+    struct pam_conv     conv;     /**< Callback structure */
+
+    int pam_rc;
+    int rc = -1;
+
+    appdata.passwd     = passwd;
+    appdata.err_msg[0] = '\0';
+
+    conv.conv        = &conv_fun; /**< callback function */
+    conv.appdata_ptr = &appdata;  /**< data been passed to callback fun */
+
+    /** Initialize PAM library */
+    if ((pam_rc = pam_start("passwd", user, &conv, &handle)) == PAM_SUCCESS)
+    {
+        uid_t euid = geteuid();   /**< Save current effective user id */
+
+        if (setuid(0) == 0)       /* Get 'root' */
+        {
+            /** Try to set/change password */
+            if ((pam_rc = pam_chauthtok(handle, PAM_FLAGS)) == PAM_SUCCESS)
+                rc = 0;
+            else
+            {
+                ERROR("pam_chauthtok, user: '%s', passwd: '%s': %s",
+                     user, passwd, pam_strerror(handle, pam_rc));
+
+               /* If callback function received error message string
+                * then type it too
+                */
+                if (appdata.err_msg[0]) 
+                    ERROR("%s", appdata.err_msg);
+            }
+
+            /** Terminate PAM library */
+            if ((pam_rc = pam_end(handle, pam_rc)) != PAM_SUCCESS)
+                ERROR("pam_end: %s", pam_strerror(handle, pam_rc));
+
+            setuid(euid);        /* Restore saved previously user id */
+        }
+        else
+            ERROR("setuid: %s", strerror(errno));
+    }
+    else
+        ERROR("pam_start, user: '%s', passwd: '%s': %s", user, passwd,
+             pam_strerror(handle, pam_rc));
+
+    return rc;
 }
 
 /**
@@ -4610,10 +4754,10 @@ user_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
-    sprintf(buf, "echo %s:%s | /usr/sbin/chpasswd", user, user);
-    if ((rc = ta_system(buf)) != 0)
+    /** Set (change) password for just added user */
+    if (set_change_passwd(user, user) != 0)
     {
-        ERROR("\"%s\" command failed with %d", buf, rc);
+        ERROR("change_passwd failed");
         user_del(gid, oid, user);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
