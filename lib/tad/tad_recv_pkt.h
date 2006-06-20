@@ -79,6 +79,7 @@ typedef TAILQ_HEAD(, tad_recv_pkt)  tad_recv_pkts;
 extern void tad_recv_pkt_free(csap_p csap, tad_recv_pkt *pkt);
 extern void tad_recv_pkts_free(csap_p csap, tad_recv_pkts *pkts);
 extern tad_recv_pkt *tad_recv_pkt_alloc(csap_p csap);
+extern void tad_recv_pkt_cleanup_upper(csap_p csap, tad_recv_pkt *pkt);
 extern void tad_recv_pkt_cleanup(csap_p csap, tad_recv_pkt *pkt);
 
 

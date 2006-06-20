@@ -166,32 +166,62 @@ tad_recv_pkt_alloc(csap_p csap)
     return recv_pkt;
 }
 
+
+static void
+tad_recv_pkt_cleanup_layer(csap_p csap, tad_recv_pkt *pkt,
+                           unsigned int layer)
+{
+    assert(csap != NULL);
+    assert(pkt != NULL);
+    assert(pkt->layers != NULL);
+    assert(layer < csap->depth);
+
+    F_ENTRY(CSAP_LOG_FMT "recv_pkt=%p layer=%u", CSAP_LOG_ARGS(csap),
+            pkt, layer);
+
+    if (pkt->nds == NULL)
+    {
+        asn_free_value(pkt->layers[layer].nds);
+        pkt->layers[layer].nds = NULL;
+    }
+
+    tad_cleanup_pkts(&pkt->layers[layer].pkts);
+
+    /* TODO: Free opaque */
+}
+
 /* See the description in tad_recv_pkt.h */
 void
-tad_recv_pkt_cleanup(csap_p csap, tad_recv_pkt *pkt)
+tad_recv_pkt_cleanup_upper(csap_p csap, tad_recv_pkt *pkt)
 {
     unsigned int    layer;
 
     assert(csap != NULL);
     assert(pkt != NULL);
-    assert(pkt->layers != NULL);
 
     F_ENTRY(CSAP_LOG_FMT "recv_pkt=%p", CSAP_LOG_ARGS(csap), pkt);
 
     tad_pkt_cleanup(&pkt->payload);
 
-    for (layer = 0; layer < csap->depth; ++layer)
+    assert(csap->depth > 0);
+    for (layer = 0; layer < csap->depth - 1; ++layer)
     {
-        if (pkt->nds == NULL)
-        {
-            asn_free_value(pkt->layers[layer].nds);
-            pkt->layers[layer].nds = NULL;
-        }
-
-        tad_cleanup_pkts(&pkt->layers[layer].pkts);
-
-        /* TODO: Free opaque */
+        tad_recv_pkt_cleanup_layer(csap, pkt, layer);
     }
+}
+
+/* See the description in tad_recv_pkt.h */
+void
+tad_recv_pkt_cleanup(csap_p csap, tad_recv_pkt *pkt)
+{
+    assert(csap != NULL);
+    assert(pkt != NULL);
+
+    F_ENTRY(CSAP_LOG_FMT "recv_pkt=%p", CSAP_LOG_ARGS(csap), pkt);
+
+    tad_recv_pkt_cleanup_upper(csap, pkt);
+
+    tad_recv_pkt_cleanup_layer(csap, pkt, csap->depth - 1);
 
     tad_cleanup_pkts(&pkt->raw);
 

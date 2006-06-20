@@ -970,6 +970,8 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
             case TE_ETADNOTMATCH:
                 F_VERB(CSAP_LOG_FMT "Match packet with unit #%u - %r", 
                        CSAP_LOG_ARGS(csap), unit, rc);
+                /* Nothing is owned by match routine */
+                tad_recv_pkt_cleanup_upper(csap, meta_pkt);
                 continue;
 
             default: 
