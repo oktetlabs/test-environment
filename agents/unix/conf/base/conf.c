@@ -4647,7 +4647,8 @@ conv_fun(int num_msg, pam_message_t **msg, pam_response_t **resp,
  *
  * @return              Return code (0 on success, -1 on error)
  */
-static int set_change_passwd(char const *user, char const *passwd)
+static int
+set_change_passwd(char const *user, char const *passwd)
 {
     pam_handle_t       *handle;
     appdata_t           appdata;  /**< Data passed to callback and back */
