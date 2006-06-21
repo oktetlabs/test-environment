@@ -376,6 +376,8 @@ trc_test_result_to_string(trc_test_result result)
             return "faked";
         case TRC_TEST_SKIPPED:
             return "skipped";
+        case TRC_TEST_INCOMPLETE:
+            return "INCOMPLETE";
         case TRC_TEST_UNSPEC:
             return "UNSPEC";
         default:
