@@ -367,7 +367,7 @@ sync_ta_subtree(const char *ta, const char *oid)
     
     olist *list = NULL, *entry;
 
-    cfg_handle    handle;
+    cfg_handle handle;
 
     if (do_log_syncing)
     {
@@ -430,8 +430,22 @@ sync_ta_subtree(const char *ta, const char *oid)
         return rc;
     }
 
+    if (cfg_get_buf_len < strlen(cfg_get_buf) + strlen(oid) + 2)
+    {
+        cfg_get_buf_len <<= 1;
+
+        cfg_get_buf = (char *)realloc(cfg_get_buf, cfg_get_buf_len);
+        if (cfg_get_buf == NULL)
+        {
+            ERROR("Memory allocation failure");
+            rcf_ta_cfg_group(ta, 0, FALSE);
+            return TE_ENOMEM;
+        }
+    }
+    
     limit = cfg_get_buf + strlen(cfg_get_buf);
-    sprintf(limit, " %s", oid);
+    limit += sprintf(limit, " %s", oid);
+    
     if (rc == 0)
         remove_excessive(CFG_GET_INST(handle), cfg_get_buf);
     else
