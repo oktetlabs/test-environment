@@ -4588,10 +4588,10 @@ conv_fun(int num_msg, pam_message_t **msg, pam_response_t **resp,
     struct pam_response *resp_array = calloc(num_msg, sizeof(*resp));
     appdata_t           *appdata    = data;
 
+    int      i;
     unsigned full_len = strlen(appdata->passwd) + 1; /**< Password
                                                        *  length + 1
                                                        */
-    int      i;
 
     /** If responses array is allocated successfully */
     if (resp_array != NULL)
@@ -4685,14 +4685,14 @@ set_change_passwd(char const *user, char const *passwd)
                     ERROR("%s", appdata.err_msg);
             }
 
-            /** Terminate PAM library */
-            if ((pam_rc = pam_end(handle, pam_rc)) != PAM_SUCCESS)
-                ERROR("pam_end: %s", pam_strerror(handle, pam_rc));
-
             setuid(euid);        /* Restore saved previously user id */
         }
         else
             ERROR("setuid: %s", strerror(errno));
+
+        /** Terminate PAM library */
+        if ((pam_rc = pam_end(handle, pam_rc)) != PAM_SUCCESS)
+            ERROR("pam_end: %s", pam_strerror(handle, pam_rc));
     }
     else
         ERROR("pam_start, user: '%s', passwd: '%s': %s", user, passwd,
