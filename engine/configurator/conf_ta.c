@@ -444,7 +444,7 @@ sync_ta_subtree(const char *ta, const char *oid)
     }
     
     limit = cfg_get_buf + strlen(cfg_get_buf);
-    limit += sprintf(limit, " %s", oid);
+    sprintf(limit, " %s", oid);
     
     if (rc == 0)
         remove_excessive(CFG_GET_INST(handle), cfg_get_buf);
