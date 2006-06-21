@@ -179,7 +179,7 @@ typedef unsigned char te_bool;
  * @param _s        Structure name
  * @param _f        Field name
  */
-#define TE_OFFSET_OF(_s, _f)    (&(((_s *)NULL)->_f))
+#define TE_OFFSET_OF(_s, _f)    ((size_t)(&(((_s *)NULL)->_f)))
 
 /** 
  * Number of elements in array.
