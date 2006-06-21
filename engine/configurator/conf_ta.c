@@ -430,7 +430,7 @@ sync_ta_subtree(const char *ta, const char *oid)
         return rc;
     }
 
-    if (cfg_get_buf_len < strlen(cfg_get_buf) + strlen(oid) + 2)
+    if (cfg_get_buf_len < (int)strlen(cfg_get_buf) + (int)strlen(oid) + 2)
     {
         cfg_get_buf_len <<= 1;
 
