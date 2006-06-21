@@ -173,6 +173,14 @@ typedef unsigned char te_bool;
         (_p_tv)->tv_usec = (_us) % 1000000L;    \
     } while (0)
 
+/**
+ * Offset of the field in structure.
+ *
+ * @param _s        Structure name
+ * @param _f        Field name
+ */
+#define TE_OFFSET_OF(_s, _f)    (&(((_s *)NULL)->_f))
+
 /** 
  * Number of elements in array.
  *
