@@ -58,34 +58,34 @@
 #define LOG_MSG(_lvl, _fs...)   LGR_MESSAGE(_lvl, TE_LGR_USER, _fs)
 
 /** @name Logging abnormal/unexpected situations */
-#define LOG_ERROR(_us, _fs...)  LGR_MESSAGE(TE_LL_ERROR, _us, _fs)
-#define ERROR(_fs...)           LOG_ERROR(TE_LGR_USER, _fs)
+#define TE_LOG_ERROR(_us, _fs...)   LGR_MESSAGE(TE_LL_ERROR, _us, _fs)
+#define ERROR(_fs...)               TE_LOG_ERROR(TE_LGR_USER, _fs)
 /*@}*/
 
 /** 
  * @name Logging situations same failed initialization of the optional
  *       feature 
  */
-#define LOG_WARN(_us, _fs...)  LGR_MESSAGE(TE_LL_WARN, _us, _fs)
-#define WARN(_fs...)           LOG_WARN(TE_LGR_USER, _fs)
+#define TE_LOG_WARN(_us, _fs...)    LGR_MESSAGE(TE_LL_WARN, _us, _fs)
+#define WARN(_fs...)                TE_LOG_WARN(TE_LGR_USER, _fs)
 /*@}*/
 
 /**
  * @name Logging very important event in TE and tests required to
  *       undestand testing results
  */
-#define LOG_RING(_us, _fs...)  LGR_MESSAGE(TE_LL_RING, _us, _fs)
-#define RING(_fs...)           LOG_RING(TE_LGR_USER, _fs)
+#define TE_LOG_RING(_us, _fs...)    LGR_MESSAGE(TE_LL_RING, _us, _fs)
+#define RING(_fs...)                TE_LOG_RING(TE_LGR_USER, _fs)
 /*@}*/
 
 /** @name Logging important event for debugging of the test */
-#define LOG_INFO(_us, _fs...)  LGR_MESSAGE(TE_LL_INFO, _us, _fs)
-#define INFO(_fs...)           LOG_INFO(TE_LGR_USER, _fs)
+#define TE_LOG_INFO(_us, _fs...)    LGR_MESSAGE(TE_LL_INFO, _us, _fs)
+#define INFO(_fs...)                TE_LOG_INFO(TE_LGR_USER, _fs)
 /*@}*/
 
 /** @name Logging additional events for detalization of processing */
-#define LOG_VERB(_us, _fs...)  LGR_MESSAGE(TE_LL_VERB, _us, _fs)
-#define VERB(_fs...)           LOG_VERB(TE_LGR_USER, _fs)
+#define TE_LOG_VERB(_us, _fs...)    LGR_MESSAGE(TE_LL_VERB, _us, _fs)
+#define VERB(_fs...)                TE_LOG_VERB(TE_LGR_USER, _fs)
 /*@}*/
 
 /** @name Logging of entry to and exit from function */
@@ -96,7 +96,7 @@
                        "ENTRY to %s(): " _fs, __FUNCTION__, _args + 0); \
     } while (0)
 
-#define LOG_ENTRY(_us, _fs...) \
+#define TE_LOG_ENTRY(_us, _fs...) \
     do {                                                                \
         if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                            \
         {                                                               \
@@ -113,7 +113,7 @@
         }                                                               \
     } while (0)
 
-#define ENTRY(_fs...)  LOG_ENTRY(TE_LGR_USER, _fs)
+#define ENTRY(_fs...)  TE_LOG_ENTRY(TE_LGR_USER, _fs)
 
 #define _LOG_EXIT(_us, _fs, _args...) \
     do {                                                            \
@@ -124,7 +124,7 @@
     } while (0)
         
 
-#define LOG_EXIT(_us, _fs...) \
+#define TE_LOG_EXIT(_us, _fs...) \
     do {                                                            \
         if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                        \
         {                                                           \
@@ -142,7 +142,7 @@
         }                                                           \
     } while (0)
 
-#define EXIT(_fs...)  LOG_EXIT(TE_LGR_USER, _fs)
+#define EXIT(_fs...)  TE_LOG_EXIT(TE_LGR_USER, _fs)
 /*@}*/
 
 

@@ -74,7 +74,7 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define RING_VERDICT(fmt...) \
-    LOG_RING(TE_LOG_CMSG_USER, fmt)
+    TE_LOG_RING(TE_LOG_CMSG_USER, fmt)
 
 /**
  * Macro should be used to output verdict with WARN log level from tests.
@@ -82,7 +82,7 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define WARN_VERDICT(fmt...) \
-    LOG_WARN(TE_LOG_CMSG_USER, fmt)
+    TE_LOG_WARN(TE_LOG_CMSG_USER, fmt)
 
 /**
  * Macro should be used to output verdict with ERROR log level from tests.
@@ -90,7 +90,7 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define ERROR_VERDICT(fmt...) \
-    LOG_ERROR(TE_LOG_CMSG_USER, fmt)
+    TE_LOG_ERROR(TE_LOG_CMSG_USER, fmt)
 
 /**
  * Terminate a test with failure status, report an error as verdict.

@@ -485,37 +485,37 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
     switch (ri->type)
     {
         case RUN_ITEM_SCRIPT:
-            LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                     "TEST %s \"%s\" ARGs%s",
-                     parent, test, ri->u.script.name,
-                     PRINT_STRING(ri->u.script.objective),
-                     PRINT_STRING(params_str));
+            TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                        "TEST %s \"%s\" ARGs%s",
+                        parent, test, ri->u.script.name,
+                        PRINT_STRING(ri->u.script.objective),
+                        PRINT_STRING(params_str));
             break;
 
         case RUN_ITEM_SESSION:
-            LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                     "SESSION ARGs%s",
-                     parent, test, PRINT_STRING(params_str));
+            TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                        "SESSION ARGs%s",
+                        parent, test, PRINT_STRING(params_str));
             break;
 
         case RUN_ITEM_PACKAGE:
             authors = persons_info_to_string(&ri->u.package->authors);
             if (authors == NULL)
             {
-                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                         "PACKAGE %s \"%s\" ARGs%s",
-                         parent, test, ri->u.package->name,
-                         PRINT_STRING(ri->u.package->objective),
-                         PRINT_STRING(params_str));
+                TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                            "PACKAGE %s \"%s\" ARGs%s",
+                            parent, test, ri->u.package->name,
+                            PRINT_STRING(ri->u.package->objective),
+                            PRINT_STRING(params_str));
             }
             else
             {
-                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                         "PACKAGE %s \"%s\" AUTHORS%s ARGs%s",
-                         parent, test, ri->u.package->name,
-                         PRINT_STRING(ri->u.package->objective),
-                         PRINT_STRING(authors),
-                         PRINT_STRING(params_str));
+                TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                            "PACKAGE %s \"%s\" AUTHORS%s ARGs%s",
+                            parent, test, ri->u.package->name,
+                            PRINT_STRING(ri->u.package->objective),
+                            PRINT_STRING(authors),
+                            PRINT_STRING(params_str));
             }
             free(authors);
             break;
@@ -538,41 +538,41 @@ log_test_result(test_id parent, test_id test, int result)
 {
     if (TE_RC_GET_ERROR(result) == TE_ETESTPASS)
     {
-        LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "PASSED",
-                 parent, test);
+        TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "PASSED",
+                    parent, test);
     }
     else
     {
         switch (TE_RC_GET_ERROR(result))
         {
             case TE_ETESTKILL:
-                LOG_RING(TESTER_CONTROL,
-                         TESTER_CONTROL_MSG_PREFIX "KILLED",
-                         parent, test);
+                TE_LOG_RING(TESTER_CONTROL,
+                            TESTER_CONTROL_MSG_PREFIX "KILLED",
+                            parent, test);
                 break;
 
             case TE_ETESTCORE:
-                LOG_RING(TESTER_CONTROL,
-                         TESTER_CONTROL_MSG_PREFIX "CORED",
-                         parent, test);
+                TE_LOG_RING(TESTER_CONTROL,
+                            TESTER_CONTROL_MSG_PREFIX "CORED",
+                            parent, test);
                 break;
 
             case TE_ETESTSKIP:
-                LOG_RING(TESTER_CONTROL,
-                         TESTER_CONTROL_MSG_PREFIX "SKIPPED",
-                         parent, test);
+                TE_LOG_RING(TESTER_CONTROL,
+                            TESTER_CONTROL_MSG_PREFIX "SKIPPED",
+                            parent, test);
                 break;
 
             case TE_ETESTFAKE:
-                LOG_RING(TESTER_CONTROL,
-                         TESTER_CONTROL_MSG_PREFIX "FAKED",
-                         parent, test);
+                TE_LOG_RING(TESTER_CONTROL,
+                            TESTER_CONTROL_MSG_PREFIX "FAKED",
+                            parent, test);
                 break;
 
             case TE_ETESTEMPTY:
-                LOG_RING(TESTER_CONTROL,
-                         TESTER_CONTROL_MSG_PREFIX "EMPTY",
-                         parent, test);
+                TE_LOG_RING(TESTER_CONTROL,
+                            TESTER_CONTROL_MSG_PREFIX "EMPTY",
+                            parent, test);
                 break;
 
             default:
@@ -617,9 +617,9 @@ log_test_result(test_id parent, test_id test, int result)
                     default:
                         reason = "Unknown test result";
                 }
-                LOG_RING(TESTER_CONTROL,
-                         TESTER_CONTROL_MSG_PREFIX "FAILED %s",
-                         parent, test, reason);
+                TE_LOG_RING(TESTER_CONTROL,
+                            TESTER_CONTROL_MSG_PREFIX "FAILED %s",
+                            parent, test, reason);
                 break;
             }
         }
