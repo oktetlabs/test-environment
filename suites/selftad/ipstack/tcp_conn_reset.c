@@ -166,8 +166,7 @@ main(int argc, char *argv[])
     RING("connection inited, handle %d", conn_hand);
 
     sock_pco->op = RCF_RPC_WAIT;
-    rc = rpc_connect(sock_pco, socket,
-                     SA(&csap_addr), sizeof(csap_addr));
+    rc = rpc_connect(sock_pco, socket, csap_addr);
     if (rc != 0)
         TEST_FAIL("connect() 'wait' failed: %r", rc); 
 
