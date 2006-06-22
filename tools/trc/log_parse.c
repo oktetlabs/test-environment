@@ -430,7 +430,7 @@ get_meta(xmlNodePtr node, char **objective, test_args *args,
         rc = get_verdicts(xmlNodeChildren(node), verdicts);
         if (rc != 0)
         {
-            ERROR("Failed to parse parameters");
+            ERROR("Failed to parse verdicts");
             return rc;
         }
         node = xmlNodeNext(node);
@@ -509,7 +509,7 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
         rc = get_meta(node, &objective, &args, &verdicts);
         if (rc != 0)
         {
-            ERROR("Failed to get meta data");
+            ERROR("Failed to get meta data of '%s'", test->name);
             return rc;
         }
         node = xmlNodeNext(node);
