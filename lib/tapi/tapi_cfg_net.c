@@ -887,7 +887,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
     cfg_handle          ip4_net_hndl;
     char               *ip4_net_oid = NULL;
     unsigned int        ip4_net_pfx;
-    struct sockaddr    *ip4_net_addr;
+    struct sockaddr    *ip4_net_addr = NULL;
     cfg_handle          ip4_entry_hndl;
     cfg_handle          ip4_addr_hndl;
     struct sockaddr_in *ip4_addr;
@@ -1006,11 +1006,14 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
             {
                 /* Address already assigned - continue */
                 rc = 0;
-            } else if (rc != 0)
+            }
+            else if (rc != 0)
             {
+                free(str);
                 free(ip4_addr);
                 break;
             }
+            free(str);
 
             rc = cfg_add_instance_child_fmt(NULL, CVT_ADDRESS,
                                             SA(ip4_addr),
@@ -1040,6 +1043,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
     }
 
     free(ip4_net_oid);
+    free(ip4_net_addr);
 
     return rc;
 }
