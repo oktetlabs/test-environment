@@ -17,7 +17,8 @@ xdr_sizeof.c
 if WINDOWS
 
 librpc.a: $(librpc_a_SOURCES) 
-	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
+	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
+        $(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
         $(DESTDIR)/$(prefix) $(librpc_a_SOURCES)
 
 install-exec-hook:

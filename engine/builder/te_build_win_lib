@@ -43,7 +43,7 @@ BUILDER=`dirname $0`
 
 . $BUILDER/te_build_win_platform
 
-WIN_DIR=${USER}_build/${LIBNAME%%.lib}_$DIR_POSTFIX
+WIN_DIR=${USER}_build/${LIBNAME%%.lib}_${DIR_POSTFIX}
 
 if test -z "$TE_WIN32_BUILD_HOST" ; then
     echo "Warning: build host for $PLATFORM platform is not specified; \
@@ -78,27 +78,31 @@ done
 rm -f *~
 
 # Generate the script
+cd ..
 cat >build.sh <<EOF
-cd $WIN_DIR
 MSSDK_CYGWIN=\$( cygpath -u "\$MSSDK" ) 
 export PATH="\${MSSDK_CYGWIN}/Bin$PATH_POSTFIX:\$PATH"
-cl /nologo -D_WIN32_WINNT=0x0501 -D_CRT_SECURE_NO_DEPRECATE \
+rm src.tgz
+cd tmpsrc 
+cl /nologo -I../${PLATFORM}/include \
+           -D_WIN32_WINNT=0x0501 -D_CRT_SECURE_NO_DEPRECATE \
            -DSOL_IP=IPPROTO_IP -DSOL_IPV6=IPPROTO_IPV6 \
            -DSOL_TCP=IPPROTO_TCP -DSOL_UDP=IPPROTO_UDP \
    /Od *.c /c   
 lib /OUT:${LIBNAME} /nologo *.obj
 EOF
+
 chmod a+x build.sh
+ln -s ${TE_INSTALL}/${PLATFORM} ${PLATFORM}
+tar czhf src.tgz tmpsrc ${PLATFORM} build.sh
+scp $KEY src.tgz ${TE_WIN32_BUILD_HOST}:${WIN_DIR}
+rm -rf src.tgz tmpsrc ${PLATFORM} build.sh
+rm -rf tmpsrc ${PLATFORM} build.sh
 
-# Build the library
+ssh $KEY ${TE_WIN32_BUILD_HOST} \
+"bash -l -c \"cd $WIN_DIR ; tar xzf src.tgz ; ./build.sh\""
 
-scp $KEY * ${TE_WIN32_BUILD_HOST}:$WIN_DIR
-cd ..
-rm -rf tmpsrc build.sh
-
-ssh $KEY ${TE_WIN32_BUILD_HOST} "bash -l -c $WIN_DIR/build.sh"
-
-scp $KEY ${TE_WIN32_BUILD_HOST}:$WIN_DIR/${LIBNAME} .
+scp $KEY ${TE_WIN32_BUILD_HOST}:$WIN_DIR/tmpsrc/${LIBNAME} .
 
 if test -e ${LIBNAME} ; then
     exit 0

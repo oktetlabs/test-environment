@@ -33,7 +33,8 @@ librpc_types_a_CFLAGS=-DTE_DUMMY $(AM_CFLAGS)
 librpc_types_a_SOURCES=$(WIN_SRC)
 
 librpc_types.a: $(WIN_SRC) 
-	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
+	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
+        $(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
         $(DESTDIR)/$(prefix) $(WIN_SRC)
 
 install-exec-hook:

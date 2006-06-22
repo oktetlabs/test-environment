@@ -17,7 +17,8 @@ WIN_SRC = logfork.c
 EXTRA_DIST = logger_ta.c 
 
 libloggerta.a: $(WIN_SRC) 
-	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
+	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
+        $(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
         $(DESTDIR)/$(prefix) $(WIN_SRC)
 
 install-exec-hook:
