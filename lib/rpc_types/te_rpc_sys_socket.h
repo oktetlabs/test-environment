@@ -36,6 +36,9 @@
 #define __TE_RPC_SYS_SOCKET_H__
 
 #include "te_rpc_defs.h"
+#ifndef WINDOWS
+#include "tarpc.h"
+#endif
 
 
 #ifdef __cplusplus
@@ -72,6 +75,9 @@ extern int domain_rpc2h(rpc_socket_domain domain);
 /** Convert native domain to RPC domain */
 extern rpc_socket_domain domain_h2rpc(int domain);
 
+
+/** Special family for sockaddr structures filled in with tarpc_sa */
+#define TE_AF_TARPC_SA  254
 
 /**
  * TA-independent address families.
@@ -589,6 +595,48 @@ extern const char * ioctl_rpc2str(rpc_ioctl_code code);
 
 extern int ioctl_rpc2h(rpc_ioctl_code code);
 
+
+extern void sockaddr_h2rpc(const struct sockaddr *sa, socklen_t salen,
+                           tarpc_sa *rpc);
+
+extern te_errno sockaddr_rpc2h(const tarpc_sa *rpc,
+                               struct sockaddr *sa, socklen_t salen,
+                               struct sockaddr **sa_out,
+                               socklen_t *salen_out);
+
+/**
+ * Convert host sockaddr to host sockaddr with @c TE_AF_TARPC_SA address
+ * family.
+ *
+ * @param addr          Host sockaddr structure
+ * @param rpc_sa        NULL or location for pointer to @e tarpc_sa
+ *                      structure in the created host sockaddr structure
+ *
+ * @return Allocated memory or NULL.
+ */
+extern struct sockaddr * sockaddr_to_te_af(const struct sockaddr  *addr,
+                                           tarpc_sa              **rpc_sa);
+
+/**
+ * String representation of sockaddr structure including processing
+ * of special case for @c TE_AF_TARPC_SA address family.
+ *
+ * @param addr          Host sockaddr structure
+ *
+ * @return Pointer to static buffer.
+ */
+extern const char * sockaddr_h2str(const struct sockaddr *addr);
+
+
+/**
+ * Convert RPC address family to corresponding structure name.
+ *
+ * @param addr_family   Address family
+ *
+ * @return Name of corresponding sockaddr structure.
+ */
+extern const char * addr_family_sockaddr_str(
+                        rpc_socket_addr_family addr_family);
 
 #ifdef __cplusplus
 } /* extern "C" */

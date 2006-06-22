@@ -75,18 +75,15 @@ main(int argc, char *argv[])
     size_t len;
 
     const struct sockaddr *csap_addr;
-    size_t csap_addr_len;
-
     const struct sockaddr *sock_addr;
-    size_t sock_addr_len;
 
 
     TEST_START; 
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(sock_pco);
-    TEST_GET_ADDR(sock_addr, sock_addr_len);
-    TEST_GET_ADDR(csap_addr, csap_addr_len);
+    TEST_GET_ADDR(sock_addr);
+    TEST_GET_ADDR(csap_addr);
 
 
     if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_DGRAM, 
@@ -95,7 +92,7 @@ main(int argc, char *argv[])
         TEST_FAIL("Calling of RPC socket() failed %r", sock_pco->_errno);
 
 
-    rc = rpc_bind(sock_pco, socket, sock_addr, sock_addr_len);
+    rc = rpc_bind(sock_pco, socket, sock_addr);
     if (rc != 0)
         TEST_FAIL("bind failed");
 
@@ -118,8 +115,7 @@ main(int argc, char *argv[])
 
     te_fill_buf(tx_buffer, len);
     INFO("+++++++++++ Prepared data: %Tm", tx_buffer, len);
-    rc = rpc_sendto(sock_pco, socket, tx_buffer, len, 0,
-                    csap_addr, csap_addr_len); 
+    rc = rpc_sendto(sock_pco, socket, tx_buffer, len, 0, csap_addr); 
     RING("%d bytes sent from RPC socket", rc);
 
     memset(rx_buffer, 0, sizeof(rx_buffer));

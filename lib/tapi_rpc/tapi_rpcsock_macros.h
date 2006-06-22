@@ -165,27 +165,13 @@
  * @param len_      Length of the data to be sent
  * @param flags_    Operation flags
  * @param addr_     Destination address
- * @param addrlen_  Destination address length
  *
  * @se In case of failure it jumps to "cleanup" label
  */
-#define RPC_SENDTO(sent_, rpcs_, sockd_, buf_, len_, flags_, \
-                   addr_, addrlen_)                                 \
-    do {                                                            \
-        if ((((addr_) == NULL) && ((addrlen_) != 0)) ||             \
-            (((addr_) != NULL) && ((addrlen_) == 0)))               \
-        {                                                           \
-            ERROR("RPC_SENDTO(): Address and address length "       \
-                  "parameters should be either NULL and zero, "     \
-                  "or not NULL and not zero");                      \
-            MACRO_TEST_ERROR;                                       \
-            MACRO_ERROR_EXIT;                                       \
-        }                                                           \
-                                                                    \
-        RPC_FUNC_WITH_EXACT_RETVAL(rpcs_, sent_, len_, sendto,      \
-                                   sockd_, buf_, len_, flags_,      \
-                                   addr_, addrlen_);                \
-    } while (0)
+#define RPC_SENDTO(sent_, rpcs_, sockd_, buf_, len_, flags_, addr_) \
+    RPC_FUNC_WITH_EXACT_RETVAL(rpcs_, sent_, len_, sendto,      \
+                               sockd_, buf_, len_, flags_,      \
+                               addr_)
 
 /**
  * Call write() function on RPC server and check return value.

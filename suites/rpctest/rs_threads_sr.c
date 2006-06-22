@@ -212,10 +212,8 @@ main(int argc, char *argv[])
     int                      iut_s[CLIENTS_NUM];
     int                      tst_s[CLIENTS_NUM];
     const struct sockaddr   *iut_addr;
-    socklen_t                iut_addrlen;
     const struct sockaddr   *tst_addr;
     struct sockaddr         *tst_addrs[CLIENTS_NUM];
-    socklen_t                tst_addrlen;
 
     char          **st_name = NULL;   /* IUT RPC server threads names */
     char          **ct_name = NULL;   /* TST RPC server threads names */
@@ -232,8 +230,8 @@ main(int argc, char *argv[])
 
     TEST_GET_PCO(pco_iut);
     TEST_GET_PCO(pco_tst);
-    TEST_GET_ADDR(iut_addr, iut_addrlen);
-    TEST_GET_ADDR(tst_addr, tst_addrlen);
+    TEST_GET_ADDR(iut_addr);
+    TEST_GET_ADDR(tst_addr);
 
     for (i = 0; i < CLIENTS_NUM; i++)
     {
@@ -247,12 +245,12 @@ main(int argc, char *argv[])
         /* Create the client sockets */
         tst_s[i] = rpc_socket(pco_tst, RPC_PF_INET, RPC_SOCK_STREAM, 
                               RPC_PROTO_DEF);
-        rpc_bind(pco_tst, tst_s[i], tst_addrs[i], iut_addrlen);
+        rpc_bind(pco_tst, tst_s[i], tst_addrs[i]);
     }
 
     iut_sl = rpc_socket(pco_iut, RPC_PF_INET, RPC_SOCK_STREAM, 
                         RPC_PROTO_DEF);
-    rpc_bind(pco_iut, iut_sl, iut_addr, iut_addrlen);
+    rpc_bind(pco_iut, iut_sl, iut_addr);
     rpc_listen(pco_iut, iut_sl, 64);
 
     pco_iut_st =
@@ -273,7 +271,7 @@ main(int argc, char *argv[])
     for (i = 0; i < CLIENTS_NUM; i++)
     {
         /* Connect a client socket to server */
-        rpc_connect(pco_tst, tst_s[i], iut_addr, iut_addrlen);
+        rpc_connect(pco_tst, tst_s[i], iut_addr);
 
         iut_s[i] = rpc_accept(pco_iut, iut_sl, NULL, NULL);
 

@@ -146,15 +146,14 @@
  * in environment configuration string.
  *
  * @param addr_     address (const struct sockaddr *) (OUT)
- * @param addrlen_  address length (OUT)
  */
-#define TEST_GET_ADDR(addr_, addrlen_) \
-    do {                                                            \
-        (addr_) = tapi_env_get_addr(&env, #addr_, &(addrlen_));     \
-        if ((addr_) == NULL)                                        \
-        {                                                           \
-            TEST_STOP;                                              \
-        }                                                           \
+#define TEST_GET_ADDR(addr_) \
+    do {                                                    \
+        (addr_) = tapi_env_get_addr(&env, #addr_, NULL);    \
+        if ((addr_) == NULL)                                \
+        {                                                   \
+            TEST_STOP;                                      \
+        }                                                   \
     } while (0)
 
 /**

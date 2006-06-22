@@ -31,6 +31,7 @@
 #ifndef __TE_TOOLS_SOCKADDR_H__
 #define __TE_TOOLS_SOCKADDR_H__
 
+#ifndef __CYGWIN__
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -39,6 +40,7 @@
 #endif
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
 #endif
 
 #include "te_defs.h"
@@ -182,33 +184,7 @@ extern void *te_sockaddr_get_netaddr(const struct sockaddr *addr);
  * @note non-thread-safe
  * @note does not perform any checks
  */
-static inline const char *
-te_sockaddr_get_ipstr(const struct sockaddr *addr)
-{
-/* Number of buffers used in the function */
-#define N_BUFS 10
-
-    static char addr_buf[N_BUFS][INET6_ADDRSTRLEN];
-    static char (*cur_buf)[INET6_ADDRSTRLEN] = 
-                                (char (*)[INET6_ADDRSTRLEN])addr_buf[0];
-
-    char       *ptr;
-
-    /*
-     * Firt time the function is called we start from the second buffer,
-     * but then after a turn we'll use all N_BUFS buffer.
-     */
-    if (cur_buf == (char (*)[INET6_ADDRSTRLEN])addr_buf[N_BUFS - 1])
-        cur_buf = (char (*)[INET6_ADDRSTRLEN])addr_buf[0];
-    else
-        cur_buf++;
-
-    ptr = *cur_buf;
-    
-    return inet_ntop(addr->sa_family, 
-                     te_sockaddr_get_netaddr(addr), ptr, 
-                     INET6_ADDRSTRLEN);
-}
+extern const char * te_sockaddr_get_ipstr(const struct sockaddr *addr);
 
 /**
  * Update network address part of sockaddr structure according to

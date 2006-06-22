@@ -231,17 +231,7 @@ ai_rpc2h(struct tarpc_ai *ai_rpc, struct addrinfo *ai)
     ai->ai_protocol = proto_rpc2h(ai_rpc->protocol);
     ai->ai_addrlen = ai_rpc->addrlen + SA_COMMON_LEN;
 
-    if (ai_rpc->addr.sa_data.sa_data_val != NULL)
-    {
-        if ((ai->ai_addr = calloc(1, ai_rpc->addr.sa_data.sa_data_len +
-                                  SA_COMMON_LEN)) == NULL)
-        {
-            return -1;
-        }
-        ai->ai_addr->sa_family = addr_family_rpc2h(ai_rpc->addr.sa_family);
-        memcpy(ai->ai_addr->sa_data, ai_rpc->addr.sa_data.sa_data_val,
-               ai_rpc->addr.sa_data.sa_data_len);
-    }
+    sockaddr_rpc2h(&ai_rpc->addr, NULL, 0, &ai->ai_addr, NULL);
 
     if (ai_rpc->canonname.canonname_val != NULL)
     {
@@ -295,15 +285,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
         rpc_hints.protocol = proto_h2rpc(hints->ai_protocol);
         rpc_hints.addrlen = hints->ai_addrlen - SA_COMMON_LEN;
 
-        if (hints->ai_addr != NULL)
-        {
-            rpc_hints.addr.sa_family =
-                addr_family_h2rpc(hints->ai_addr->sa_family);
-            rpc_hints.addr.sa_data.sa_data_val = hints->ai_addr->sa_data;
-            rpc_hints.addr.sa_data.sa_data_len =
-                hints->ai_addrlen > SA_COMMON_LEN ?
-                hints->ai_addrlen - SA_COMMON_LEN : 0;
-        }
+        sockaddr_h2rpc(hints->ai_addr, 0, &rpc_hints.addr);
 
         if (hints->ai_canonname != NULL)
         {

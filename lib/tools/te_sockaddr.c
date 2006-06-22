@@ -28,11 +28,13 @@
  * $Id$
  */
 
-#ifndef __CYGWIN__
+//#ifndef __CYGWIN__
 
 #define TE_LGR_USER      "SockAddr"
 
 #include "te_config.h"
+
+#ifndef __CYGWIN__
 
 #include <stdio.h>
 #if HAVE_STRING_H
@@ -44,6 +46,20 @@
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
+
+#else /* __CYGWIN__ */
+
+#ifndef WINDOWS
+#include "winsock2.h"
+#include "mswsock.h"
+#include "ws2tcpip.h"
+#undef ERROR
+#else
+INCLUDE(te_win_defs.h)
+#endif
+#define _NETINET_IN_H 1
+
+#endif /* __CYGWIN__ */
 
 #include "logger_api.h"
 #include "te_sockaddr.h"
@@ -168,8 +184,15 @@ te_sockaddr_set_wildcard(struct sockaddr *addr)
             break;
 
         case AF_INET6:
+#if 1
+        {
+            char buf[16] = { 0, };
+            memcpy(&(SIN6(addr)->sin6_addr), buf, sizeof(buf));
+        }
+#else
             memcpy(&(SIN6(addr)->sin6_addr), &in6addr_any,
                    sizeof(in6addr_any));
+#endif
             break;
             
         default:
@@ -288,8 +311,11 @@ te_sockaddr_mask_by_prefix(struct sockaddr *mask, socklen_t masklen,
 
     ptr = te_sockaddr_get_netaddr(mask);
     assert(ptr != NULL);
-    if (masklen < ((ptr - (uint8_t *)mask) + ((prefix + 7) >> 3)))
+    if (masklen <
+        (socklen_t)((ptr - (uint8_t *)mask) + ((prefix + 7) >> 3)))
+    {
         return TE_ESMALLBUF;
+    }
 
     memset(ptr, 0xff, prefix >> 3);
     if (prefix & 7)
@@ -312,8 +338,8 @@ te_sockaddrcmp(const struct sockaddr *a1, socklen_t a1len,
         {
             case AF_INET:
             {
-                if (a1len < sizeof(struct sockaddr_in) ||
-                    a2len < sizeof(struct sockaddr_in))
+                if (a1len < (socklen_t)sizeof(struct sockaddr_in) ||
+                    a2len < (socklen_t)sizeof(struct sockaddr_in))
                 {
                     ERROR("One of sockaddr structures is shorter "
                           "than it should be");
@@ -331,8 +357,8 @@ te_sockaddrcmp(const struct sockaddr *a1, socklen_t a1len,
 
             case AF_INET6:
             {
-                if (a1len < sizeof(struct sockaddr_in6) ||
-                    a2len < sizeof(struct sockaddr_in6))
+                if (a1len < (socklen_t)sizeof(struct sockaddr_in6) ||
+                    a2len < (socklen_t)sizeof(struct sockaddr_in6))
                 {
                     ERROR("One of sockaddr structures is shorter "
                           "than it should be");
@@ -589,6 +615,34 @@ te_mreq_set_mr_ifindex(int af, void *mreq, int ifindex)
 }
 #endif
 
+/* See description in te_sockaddr.h */
+const char *
+te_sockaddr_get_ipstr(const struct sockaddr *addr)
+{
+/* Number of buffers used in the function */
+#define N_BUFS 10
+
+    static char addr_buf[N_BUFS][INET6_ADDRSTRLEN];
+    static char (*cur_buf)[INET6_ADDRSTRLEN] = 
+                                (char (*)[INET6_ADDRSTRLEN])addr_buf[0];
+
+    char       *ptr;
+
+    /*
+     * Firt time the function is called we start from the second buffer,
+     * but then after a turn we'll use all N_BUFS buffer.
+     */
+    if (cur_buf == (char (*)[INET6_ADDRSTRLEN])addr_buf[N_BUFS - 1])
+        cur_buf = (char (*)[INET6_ADDRSTRLEN])addr_buf[0];
+    else
+        cur_buf++;
+
+    ptr = *cur_buf;
+    
+    return inet_ntop(addr->sa_family, 
+                     te_sockaddr_get_netaddr(addr), ptr, 
+                     INET6_ADDRSTRLEN);
+}
 
 /* See description in te_sockaddr.h */
 te_errno
@@ -640,4 +694,4 @@ te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
 }
 #endif
 
-#endif /* __CYGWIN__ */
+//#endif /* __CYGWIN__ */

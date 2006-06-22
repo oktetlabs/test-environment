@@ -30,6 +30,8 @@
 
 #include "tarpc_server.h"
 
+#include "te_sockaddr.h"
+
 LPFN_CONNECTEX            pf_connect_ex;
 LPFN_DISCONNECTEX         pf_disconnect_ex;
 LPFN_ACCEPTEX             pf_accept_ex;
@@ -123,8 +125,10 @@ static type_info_t type_info[] =
     {"struct timeval", sizeof(struct timeval)},
     {"struct linger", sizeof(struct linger)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
-    {"struct sockaddr_storage", sizeof(struct sockaddr_storage)},
     {"struct sockaddr", sizeof(struct sockaddr)},
+    {"struct sockaddr_in", sizeof(struct sockaddr_in)},
+    {"struct sockaddr_in6", sizeof(struct sockaddr_in6)},
+    {"struct sockaddr_storage", sizeof(struct sockaddr_storage)},
     {"WSAPROTOCOL_INFOA", sizeof(WSAPROTOCOL_INFOA)},
     {"WSAPROTOCOL_INFOW", sizeof(WSAPROTOCOL_INFOW)},
     {"QOS", sizeof(QOS)}
@@ -486,8 +490,8 @@ TARPC_FUNC(close, {},
 
 TARPC_FUNC(bind, {},
 {
-    PREPARE_ADDR(in->addr, 0);
-    MAKE_CALL(out->retval = bind(in->fd, a, in->len));
+    PREPARE_ADDR(my_addr, in->addr, 0);
+    MAKE_CALL(out->retval = bind(in->fd, my_addr, my_addrlen));
 }
 )
 
@@ -495,9 +499,9 @@ TARPC_FUNC(bind, {},
 
 TARPC_FUNC(connect, {},
 {
-    PREPARE_ADDR(in->addr, 0);
+    PREPARE_ADDR(serv_addr, in->addr, 0);
 
-    MAKE_CALL(out->retval = connect(in->fd, a, in->len));
+    MAKE_CALL(out->retval = connect(in->fd, serv_addr, serv_addrlen));
 }
 )
 
@@ -507,13 +511,14 @@ TARPC_FUNC(connect_ex,
     COPY_ARG(len_sent);
 },
 {
-    PREPARE_ADDR(in->addr, 0);
-    MAKE_CALL(out->retval = (*pf_connect_ex)(in->fd, a, in->len,
-              rcf_pch_mem_get(in->send_buf),
-              in->buflen,
-              out->len_sent.len_sent_len == 0 ? NULL :
-              (LPDWORD)(out->len_sent.len_sent_val),
-              (LPWSAOVERLAPPED)IN_OVERLAPPED));
+    PREPARE_ADDR(serv_addr, in->addr, 0);
+    MAKE_CALL(out->retval = (*pf_connect_ex)(in->fd,
+                                serv_addr, serv_addrlen,
+                                rcf_pch_mem_get(in->send_buf),
+                                in->buflen,
+                                out->len_sent.len_sent_len == 0 ? NULL :
+                                    (LPDWORD)(out->len_sent.len_sent_val),
+                                (LPWSAOVERLAPPED)IN_OVERLAPPED));
 }
 )
 
@@ -546,12 +551,13 @@ TARPC_FUNC(accept,
     COPY_ARG_ADDR(addr);
 },
 {
-    PREPARE_ADDR(out->addr, out->len.len_len == 0 ? 0 : *out->len.len_val);
+    PREPARE_ADDR(addr, out->addr,
+                 out->len.len_len == 0 ? 0 : *out->len.len_val);
 
-    MAKE_CALL(out->retval = accept(in->fd, a,
+    MAKE_CALL(out->retval = accept(in->fd, addr,
                                    out->len.len_len == 0 ? NULL :
                                    (int *)(out->len.len_val)));
-    sockaddr_h2rpc(a, &(out->addr));
+    sockaddr_h2rpc(addr, 0, &(out->addr));
 }
 )
 
@@ -604,8 +610,9 @@ TARPC_FUNC(wsa_accept,
 },
 {
     accept_cond *cond = NULL;
-    PREPARE_ADDR(out->addr, out->len.len_len == 0 ? 0 : *out->len.len_val);
 
+    PREPARE_ADDR(addr, out->addr,
+                 out->len.len_len == 0 ? 0 : *out->len.len_val);
 
     if (in->cond.cond_len != 0)
     {
@@ -629,12 +636,13 @@ TARPC_FUNC(wsa_accept,
             cond[i].timeout = in->cond.cond_val[i].timeout;
         }
     }
-    MAKE_CALL(out->retval = WSAAccept(in->fd, a,
+    MAKE_CALL(out->retval = WSAAccept(in->fd, addr,
                                       out->len.len_len == 0 ? NULL :
-                                      (int *)(out->len.len_val),
+                                          (int *)(out->len.len_val),
                                       (LPCONDITIONPROC)accept_callback,
                                       (DWORD)cond));
-    sockaddr_h2rpc(a, &(out->addr));
+
+    sockaddr_h2rpc(addr, 0, &(out->addr));
     finish:
     ;
 }
@@ -686,19 +694,11 @@ TARPC_FUNC(get_accept_addr,
 
     if (!in->l_sa_null)
     {
-        out->laddr.sa_data.sa_data_len = 
-           sizeof(struct sockaddr_storage) - SA_COMMON_LEN;
-        out->laddr.sa_data.sa_data_val = 
-            calloc(sizeof(struct sockaddr_storage) - SA_COMMON_LEN, 1);
-        sockaddr_h2rpc(la, &(out->laddr));
+        sockaddr_h2rpc(la, 0, &(out->laddr));
     }
     if (!in->r_sa_null)
     {
-        out->raddr.sa_data.sa_data_len = 
-           sizeof(struct sockaddr_storage) - SA_COMMON_LEN;
-        out->raddr.sa_data.sa_data_val = 
-            calloc(sizeof(struct sockaddr_storage) - SA_COMMON_LEN, 1);
-        sockaddr_h2rpc(ra, &(out->raddr));
+        sockaddr_h2rpc(ra, 0, &(out->raddr));
     }
 }
 )
@@ -1086,17 +1086,18 @@ TARPC_FUNC(recvfrom,
     COPY_ARG_ADDR(from);
 },
 {
-    PREPARE_ADDR(out->from, out->fromlen.fromlen_len == 0 ? 0 :
-                            *out->fromlen.fromlen_val);
+    PREPARE_ADDR(from, out->from, out->fromlen.fromlen_len == 0 ? 0 :
+                                      *out->fromlen.fromlen_val);
 
 
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
 
     MAKE_CALL(out->retval = recvfrom(in->fd, out->buf.buf_val, in->len,
-                                     send_recv_flags_rpc2h(in->flags), a,
+                                     send_recv_flags_rpc2h(in->flags),
+                                     from,
                                      out->fromlen.fromlen_len == 0 ? NULL :
                                      (int *)(out->fromlen.fromlen_val)));
-    sockaddr_h2rpc(a, &(out->from));
+    sockaddr_h2rpc(from, 0, &(out->from));
 }
 )
 
@@ -1560,13 +1561,13 @@ TARPC_FUNC(shutdown, {},
 
 TARPC_FUNC(sendto, {},
 {
-    PREPARE_ADDR(in->to, 0);
+    PREPARE_ADDR(to, in->to, 0);
 
     INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->len);
 
     MAKE_CALL(out->retval = sendto(in->fd, in->buf.buf_val, in->len,
                                    send_recv_flags_rpc2h(in->flags),
-                                   a, in->tolen));
+                                   to, tolen));
 }
 )
 
@@ -1588,13 +1589,14 @@ TARPC_FUNC(getsockname,
     COPY_ARG_ADDR(addr);
 },
 {
-    PREPARE_ADDR(out->addr, out->len.len_len == 0 ? 0 : *out->len.len_val);
+    PREPARE_ADDR(name, out->addr,
+                 out->len.len_len == 0 ? 0 : *out->len.len_val);
 
-    MAKE_CALL(out->retval = getsockname(in->fd, a,
+    MAKE_CALL(out->retval = getsockname(in->fd, name,
                                         out->len.len_len == 0 ? NULL :
                                         (int *)(out->len.len_val)));
                                         
-    sockaddr_h2rpc(a, &(out->addr));
+    sockaddr_h2rpc(name, 0, &(out->addr));
 }
 )
 
@@ -1606,12 +1608,13 @@ TARPC_FUNC(getpeername,
     COPY_ARG_ADDR(addr);
 },
 {
-    PREPARE_ADDR(out->addr, out->len.len_len == 0 ? 0 : *out->len.len_val);
+    PREPARE_ADDR(name, out->addr,
+                 out->len.len_len == 0 ? 0 : *out->len.len_val);
 
-    MAKE_CALL(out->retval = getpeername(in->fd, a,
+    MAKE_CALL(out->retval = getpeername(in->fd, name,
                                         out->len.len_len == 0 ? NULL :
                                         (int *)(out->len.len_val)));
-    sockaddr_h2rpc(a, &(out->addr));
+    sockaddr_h2rpc(name, 0, &(out->addr));
 }
 )
 
@@ -3415,7 +3418,7 @@ TARPC_FUNC(wsa_send_to,
     rpc_overlapped *overlapped = IN_OVERLAPPED;
     rpc_overlapped  tmp;
 
-    PREPARE_ADDR(in->to, 0);
+    PREPARE_ADDR(to, in->to, 0);
 
     if (overlapped == NULL)
     {
@@ -3436,8 +3439,7 @@ TARPC_FUNC(wsa_send_to,
             out->bytes_sent.bytes_sent_len == 0 ? NULL :
                 (LPDWORD)(out->bytes_sent.bytes_sent_val),
             send_recv_flags_rpc2h(in->flags),
-            a,
-            in->tolen,
+            to, tolen,
             in->overlapped == 0 ? NULL : (LPWSAOVERLAPPED)overlapped,
             IN_CALLBACK));
 
@@ -3464,8 +3466,8 @@ TARPC_FUNC(wsa_recv_from,
     rpc_overlapped *overlapped = IN_OVERLAPPED;
     rpc_overlapped  tmp;
 
-    PREPARE_ADDR(out->from, out->fromlen.fromlen_len == 0 ? 0 :
-                                    *out->fromlen.fromlen_val);
+    PREPARE_ADDR(from, out->from, out->fromlen.fromlen_len == 0 ? 0 :
+                                      *out->fromlen.fromlen_val);
 
     if (overlapped == NULL)
     {
@@ -3490,7 +3492,7 @@ TARPC_FUNC(wsa_recv_from,
                 NULL : (LPDWORD)(out->bytes_received.bytes_received_val),
             out->flags.flags_len > 0 ?
                 (LPDWORD)(out->flags.flags_val) : NULL,
-            a,
+            from,
             out->fromlen.fromlen_len == 0 ? NULL :
                 (LPINT)out->fromlen.fromlen_val,
             in->overlapped == 0 ? NULL : (LPWSAOVERLAPPED)overlapped,
@@ -3504,16 +3506,18 @@ TARPC_FUNC(wsa_recv_from,
             out->flags.flags_val[0] =
                 send_recv_flags_h2rpc(out->flags.flags_val[0]);
 
-        sockaddr_h2rpc(a, &(out->from));    
+        sockaddr_h2rpc(from, 0, &(out->from));    
     }
     else if (in->overlapped == 0 ||
              out->common._errno != RPC_E_IO_PENDING)
     {
         rpc_overlapped_free_memory(overlapped);
     }
+PRINT("0");
 
     finish:
     ;
+PRINT("FINISH");
 }
 )
 
@@ -3697,10 +3701,10 @@ TARPC_FUNC(wsa_recv_msg,
     }
     else
     {
-        PREPARE_ADDR(rpc_msg->msg_name, rpc_msg->msg_namelen);
+        PREPARE_ADDR(name, rpc_msg->msg_name, rpc_msg->msg_namelen);
         
         msg->namelen = rpc_msg->msg_namelen;
-        msg->name = a;
+        msg->name = name;
 
         msg->dwBufferCount = rpc_msg->msg_iovlen;
         if (rpc_msg->msg_iov.msg_iov_val != NULL)
@@ -3762,7 +3766,7 @@ TARPC_FUNC(wsa_recv_msg,
             overlapped2iovec(overlapped, &(rpc_msg->msg_iov.msg_iov_len),
                              &(rpc_msg->msg_iov.msg_iov_val));
 
-            sockaddr_h2rpc(a, &(rpc_msg->msg_name));
+            sockaddr_h2rpc(name, 0, &(rpc_msg->msg_name));
             rpc_msg->msg_namelen = msg->namelen;
             rpc_msg->msg_flags = send_recv_flags_h2rpc(msg->dwFlags);
 
@@ -3900,9 +3904,9 @@ TARPC_FUNC(wsa_address_to_string,
     COPY_ARG(addrstr_len);
 },
 {
-    PREPARE_ADDR(in->addr, 0);
+    PREPARE_ADDR(addr, in->addr, 0);
 
-    MAKE_CALL(out->retval = WSAAddressToString(a, in->addrlen,
+    MAKE_CALL(out->retval = WSAAddressToString(addr, addrlen,
                                 (LPWSAPROTOCOL_INFO)(in->info.info_val),
                                 out->addrstr.addrstr_val,
                                 out->addrstr_len.addrstr_len_val));
@@ -3915,17 +3919,17 @@ TARPC_FUNC(wsa_string_to_address,
     COPY_ARG(addrlen);
 },
 {
-    PREPARE_ADDR(out->addr, out->addrlen.addrlen_len == 0 ? 0 :
-                                    *out->addrlen.addrlen_val);
+    PREPARE_ADDR(addr, out->addr, out->addrlen.addrlen_len == 0 ? 0 :
+                                      *out->addrlen.addrlen_val);
 
     MAKE_CALL(out->retval = WSAStringToAddress(in->addrstr.addrstr_val,
                                 domain_rpc2h(in->address_family),
                                 (LPWSAPROTOCOL_INFO)(in->info.info_val),
-                                a,
+                                addr,
                                 (LPINT)out->addrlen.addrlen_val));
 
     if (out->retval == 0)
-        sockaddr_h2rpc(a, &(out->addr));
+        sockaddr_h2rpc(addr, 0, &(out->addr));
 }
 )
 
@@ -4171,7 +4175,7 @@ TARPC_FUNC(wsa_connect, {},
 {
     QOS sqos;
     QOS *psqos;
-    PREPARE_ADDR(in->addr, 0);
+    PREPARE_ADDR(serv_addr, in->addr, 0);
 
     if (in->sqos_is_null == TRUE)
         psqos = NULL;
@@ -4187,7 +4191,7 @@ TARPC_FUNC(wsa_connect, {},
             in->sqos.provider_specific_buf.provider_specific_buf_len;
     }
 
-    MAKE_CALL(out->retval = WSAConnect(in->s, a, in->addrlen,
+    MAKE_CALL(out->retval = WSAConnect(in->s, serv_addr, serv_addrlen,
                                        (LPWSABUF)
                                        rcf_pch_mem_get(in->caller_wsabuf),
                                        (LPWSABUF)
@@ -4219,11 +4223,7 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
         
             for (i = 0; i < sal->iAddressCount; i++)
             {
-                tsa[i].sa_data.sa_data_len = sal->Address[i].
-                                                  iSockaddrLength;
-                tsa[i].sa_data.sa_data_val = (uint8_t *)malloc(sal->
-                                             Address[i].iSockaddrLength);
-                sockaddr_h2rpc(sal->Address[i].lpSockaddr, &tsa[i]);
+                sockaddr_h2rpc(sal->Address[i].lpSockaddr, 0, &tsa[i]);
             }
 
             res->wsa_ioctl_request_u.req_saa.req_saa_val = tsa;
@@ -4236,14 +4236,7 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
         case RPC_SIO_ROUTING_INTERFACE_QUERY:
             res->type = WSA_IOCTL_SA;
 
-            res->wsa_ioctl_request_u.req_sa.sa_data.sa_data_len =
-            (SA(buf)->sa_family == PF_INET6) ?
-             sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
-            res->wsa_ioctl_request_u.req_sa.sa_data.sa_data_val =
-            (uint8_t *)malloc(res->wsa_ioctl_request_u.
-                              req_sa.sa_data.sa_data_len);
-
-            sockaddr_h2rpc((struct sockaddr *)buf,
+            sockaddr_h2rpc((struct sockaddr *)buf, 0,
                 &res->wsa_ioctl_request_u.req_sa);
             break;
 
@@ -4376,8 +4369,9 @@ TARPC_FUNC(wsa_ioctl,
             {
                 p->lpSockaddr = (LPSOCKADDR)
                                 malloc(sizeof(struct sockaddr_storage));
-                sockaddr_rpc2h(q, (struct sockaddr_storage *)p->lpSockaddr, 
-                               sizeof(struct sockaddr_storage));
+                sockaddr_rpc2h(q, SA(p->lpSockaddr),
+                               sizeof(struct sockaddr_storage),
+                               NULL, NULL);
                 p->iSockaddrLength = (q->sa_family == RPC_AF_INET)?
                                      sizeof(SOCKADDR_IN) :
                                      sizeof(SOCKADDR_IN6);
@@ -4392,9 +4386,9 @@ TARPC_FUNC(wsa_ioctl,
             break;
 
         case WSA_IOCTL_SA:
-            inbuf = sockaddr_rpc2h(&req->wsa_ioctl_request_u.req_sa, &addr, 
-                                   sizeof(struct sockaddr_storage));
-            inbuf_len = sizeof(addr);
+            sockaddr_rpc2h(&req->wsa_ioctl_request_u.req_sa,
+                           SA(&addr), sizeof(struct sockaddr_storage),
+                           (struct sockaddr **)&inbuf, &inbuf_len);
             break;
 
         case WSA_IOCTL_GUID:
@@ -4577,7 +4571,7 @@ TARPC_FUNC(wsa_join_leaf, {},
 {
     QOS sqos;
     QOS *psqos;
-    PREPARE_ADDR(in->addr, 0);
+    PREPARE_ADDR(addr, in->addr, 0);
 
     if (in->sqos_is_null == TRUE)
         psqos = NULL;
@@ -4593,7 +4587,7 @@ TARPC_FUNC(wsa_join_leaf, {},
             in->sqos.provider_specific_buf.provider_specific_buf_len;
     }
 
-    MAKE_CALL(out->retval = WSAJoinLeaf(in->s, a, in->addrlen,
+    MAKE_CALL(out->retval = WSAJoinLeaf(in->s, addr, addrlen,
                                        (LPWSABUF)
                                        rcf_pch_mem_get(in->caller_wsabuf),
                                        (LPWSABUF)
@@ -4748,7 +4742,7 @@ TARPC_FUNC(mcast_join_leave,
     struct in_addr addr;
     DWORD          rc;
     
-    if (in->multiaddr.sa_family != RPC_AF_INET)
+    if (in->family != RPC_AF_INET)
     {
         out->common._errno = RPC_EAFNOSUPPORT;
         out->retval = -1;
@@ -4778,11 +4772,13 @@ TARPC_FUNC(mcast_join_leave,
         {
             SOCKET rc;
             
-            if (sockaddr_rpc2h(&in->multiaddr, SA(&a), sizeof(a)) == NULL)
-            {
-                out->common._errno = TE_RC(TE_TA_WIN32, TE_EADDRNOTAVAIL);
-                out->retval = -1;
-            }
+            memset(&a, 0, sizeof(a));
+            a.ss_family = addr_family_rpc2h(in->family);
+            assert(te_netaddr_get_size(a.ss_family) ==
+                   in->multiaddr.multiaddr_len);
+            memcpy(te_sockaddr_get_netaddr(SA(&a)),
+                   in->multiaddr.multiaddr_val,
+                   in->multiaddr.multiaddr_len);
             MAKE_CALL(rc = WSAJoinLeaf(in->fd, SA(&a),
                                        sizeof(struct sockaddr_in),
                                        NULL, NULL, NULL, NULL, JL_BOTH));

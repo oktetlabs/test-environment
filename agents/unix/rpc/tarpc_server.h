@@ -216,6 +216,7 @@ shut_how_rpc2h(rpc_shut_how how)
     }
 }
 
+#if 0
 /**
  * Convert RPC sockaddr to struct sockaddr.
  *
@@ -276,6 +277,7 @@ sockaddr_h2rpc(struct sockaddr *addr, struct tarpc_sa *rpc_addr)
                rpc_addr->sa_data.sa_data_len);
     }
 }
+#endif
 
 /**
  * Find the function by its name.
@@ -357,13 +359,23 @@ check_args(checked_arg *list)
 }
 
 /** Convert address and register it in the list of checked arguments */
-#define PREPARE_ADDR(_address, _vlen)                            \
-    struct sockaddr_storage addr;                                \
-    struct sockaddr        *a;                                   \
-                                                                 \
-    a = sockaddr_rpc2h(&(_address), SA(&addr), sizeof(addr));    \
-    INIT_CHECKED_ARG((char *)a, (_address).sa_data.sa_data_len + \
-                     SA_COMMON_LEN, _vlen);
+#define PREPARE_ADDR(_name, _value, _wlen) \
+    te_errno                _name ## _rc;                           \
+    struct sockaddr_storage _name ## _st;   /* Storage */           \
+    socklen_t               _name ## len;                           \
+    struct sockaddr        *_name;                                  \
+                                                                    \
+    _name ## _rc = sockaddr_rpc2h(&(_value), SA(&_name ## _st),     \
+                                  sizeof(_name ## _st),             \
+                                  &_name, &_name ## len);           \
+    if (_name ## _rc != 0)                                          \
+    {                                                               \
+         out->common._errno = _name ## _rc;                         \
+    }                                                               \
+    else                                                            \
+    {                                                               \
+        INIT_CHECKED_ARG((char *)_name, _name ## len, _wlen);       \
+    }
 
 /**
  * Copy in variable argument to out variable argument and zero in argument.
@@ -378,10 +390,9 @@ check_args(checked_arg *list)
     } while (0)
 
 #define COPY_ARG_ADDR(_a) \
-    do {                                   \
-        out->_a = in->_a;                  \
-        in->_a.sa_data.sa_data_len = 0;    \
-        in->_a.sa_data.sa_data_val = NULL; \
+    do {                                    \
+        out->_a = in->_a;                   \
+        memset(&in->_a, 0, sizeof(in->_a)); \
     } while (0)
 
 /**

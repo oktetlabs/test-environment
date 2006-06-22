@@ -89,8 +89,9 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
     rcf_rpc_call(rpcs, "get_sizeof", &in, &out);
 
     free(in.typename);
-
     rc = out.size;
+
+    CHECK_RETVAL_VAR(get_sizeof, rc, (rc < -1), -1);
 
     TAPI_RPC_LOG("RPC (%s,%s): get_sizeof(%s) -> %d",
                  rpcs->ta, rpcs->name, type_name, rc);
@@ -1251,11 +1252,9 @@ rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
     in.fd = s;
     in.ifindex = if_index;
     in.leave_group = leave_group;
-    in.multiaddr.sa_family = addr_family_h2rpc(mcast_addr->sa_family);
-    in.multiaddr.sa_data.sa_data_len = te_sockaddr_get_size(mcast_addr)
-                                       - SA_COMMON_LEN;
-    in.multiaddr.sa_data.sa_data_val = 
-        (uint8_t *)te_sockaddr_get_netaddr(mcast_addr); 
+    in.family = addr_family_h2rpc(mcast_addr->sa_family);
+    in.multiaddr.multiaddr_len = te_netaddr_get_size(mcast_addr->sa_family);
+    in.multiaddr.multiaddr_val = te_sockaddr_get_netaddr(mcast_addr); 
 
     rcf_rpc_call(rpcs, "mcast_join_leave", &in, &out);
     

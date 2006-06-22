@@ -92,8 +92,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
     ioctl_request   req;
     va_list         ap;
-    int             *arg;
-    const char      *req_val;
+    int            *arg;
+    const char     *req_val;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -178,15 +178,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_IFREQ;
-                in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_addr.
-                    sa_family =
-                        addr_family_h2rpc(
-                            ((struct ifreq *)arg)->ifr_addr.sa_family);
-                in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_addr.
-                    sa_data.sa_data_val =
-                        ((struct ifreq *)arg)->ifr_addr.sa_data;
-                in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_addr.
-                    sa_data.sa_data_len = sizeof(struct sockaddr);
+                sockaddr_h2rpc(&((struct ifreq *)arg)->ifr_addr, 0,
+                               &in.req.req_val[0].ioctl_request_u.
+                                   req_ifreq.rpc_ifr_addr);
                 in.req.req_val[0].ioctl_request_u.req_ifreq.
                     rpc_ifr_name.rpc_ifr_name_val =
                     ((struct ifreq *)arg)->ifr_name;
@@ -214,12 +208,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     rpc_ifr_name.rpc_ifr_name_len =
                     sizeof(((struct ifreq *)arg)->ifr_name);
 
-                in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_addr.
-                    sa_data.sa_data_val =
-                        ((struct ifreq *)arg)->ifr_addr.sa_data;
-                in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_addr.
-                    sa_data.sa_data_len = sizeof(struct sockaddr) -
-                                          SA_COMMON_LEN;
+                sockaddr_h2rpc(&((struct ifreq *)arg)->ifr_addr, 0,
+                               &in.req.req_val[0].ioctl_request_u.
+                                   req_ifreq.rpc_ifr_addr);
             }
             break;
 
@@ -261,11 +252,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                  req_arpreq.rpc_arp_##type_;            \
         struct sockaddr *addr = &((struct arpreq *)arg)->arp_##type_;   \
                                                                         \
-        rpc_addr->sa_family =                                           \
-            addr_family_h2rpc(addr->sa_family);                         \
-        rpc_addr->sa_data.sa_data_val = addr->sa_data;                  \
-        rpc_addr->sa_data.sa_data_len =                                 \
-            sizeof(struct sockaddr) - SA_COMMON_LEN;                    \
+        sockaddr_h2rpc(addr, 0, rpc_addr);                              \
     } while (0)
         case RPC_SIOCSARP:
             in.access = IOCTL_WR;
@@ -421,17 +408,12 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     case RPC_SIOCGIFBRDADDR:
                     case RPC_SIOCGIFDSTADDR:
                     case RPC_SIOCGIFHWADDR:
-                        ((struct ifreq *)arg)->ifr_addr.sa_family =
-                            addr_family_rpc2h(out.req.req_val[0].
-                            ioctl_request_u.req_ifreq.rpc_ifr_addr.
-                            sa_family);
-
-                        memcpy(((struct ifreq *)arg)->ifr_addr.sa_data,
-                               out.req.req_val[0].ioctl_request_u.
-                               req_ifreq.rpc_ifr_addr.sa_data.sa_data_val,
-                               out.req.req_val[0].ioctl_request_u.
-                               req_ifreq.rpc_ifr_addr.sa_data.sa_data_len);
-
+                        sockaddr_rpc2h(
+                             &out.req.req_val[0].ioctl_request_u.
+                                 req_ifreq.rpc_ifr_addr,
+                             &((struct ifreq *)arg)->ifr_addr,
+                             sizeof(((struct ifreq *)arg)->ifr_addr),
+                             NULL, NULL);
                         break;
 
                     case RPC_SIOCGIFMTU:
@@ -460,7 +442,6 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 struct ifreq *req = ((struct ifconf *)arg)->ifc_req;
                     
                 int n = out.req.req_val[0].ioctl_request_u.req_ifconf.nmemb;
-                int max_addrlen = sizeof(req->ifr_addr) - SA_COMMON_LEN;
                 
                 if (((struct ifconf *)arg)->ifc_len != 0 &&
                     (int)(n * sizeof(struct ifreq)) > 
@@ -481,34 +462,19 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 {
                     strcpy(req->ifr_name,
                            rpc_req->rpc_ifr_name.rpc_ifr_name_val);
-                    req->ifr_addr.sa_family =
-                        addr_family_rpc2h(rpc_req->rpc_ifr_addr.sa_family);
-
-                    if (rpc_req->rpc_ifr_addr.sa_data.sa_data_val != NULL)
-                    {
-                        int copy_len = rpc_req->rpc_ifr_addr.sa_data.
-                                       sa_data_len;
-
-                        if (copy_len > max_addrlen)
-                            copy_len = max_addrlen;
-
-                        memcpy(req->ifr_addr.sa_data,
-                               rpc_req->rpc_ifr_addr.sa_data.sa_data_val,
-                               copy_len);
-                    }
+                    sockaddr_rpc2h(&rpc_req->rpc_ifr_addr,
+                                   &req->ifr_addr, sizeof(req->ifr_addr),
+                                   NULL, NULL);
                 }
                 break;
             }
             case IOCTL_ARPREQ:
             {
-               ((struct arpreq *)arg)->arp_ha.sa_family =
-                    addr_family_rpc2h(out.req.req_val[0].ioctl_request_u.
-                        req_arpreq.rpc_arp_ha.sa_family);
-                memcpy(((struct arpreq *)arg)->arp_ha.sa_data,
-                         out.req.req_val[0].ioctl_request_u.
-                         req_arpreq.rpc_arp_ha.sa_data.sa_data_val,
-                         out.req.req_val[0].ioctl_request_u.
-                         req_arpreq.rpc_arp_ha.sa_data.sa_data_len);
+                sockaddr_rpc2h(&out.req.req_val[0].ioctl_request_u.
+                                   req_arpreq.rpc_arp_ha,
+                               &((struct arpreq *)arg)->arp_ha,
+                               sizeof(((struct arpreq *)arg)->arp_ha),
+                               NULL, NULL);
                 ((struct arpreq *)arg)->arp_flags =
                      arp_fl_rpc2h(out.req.req_val[0].ioctl_request_u.
                                   req_arpreq.rpc_arp_flags);

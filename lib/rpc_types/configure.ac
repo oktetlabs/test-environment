@@ -65,6 +65,16 @@ dnl
 AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],
                  [#include <signal.h>])
 
+dnl
+dnl Check for Solaris-specific extension '__sin6_src_id' members in
+dnl 'struct sockaddr_in6' structure.
+dnl
+AC_CHECK_MEMBERS([struct sockaddr_in6.__sin6_src_id], [], [], [
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE

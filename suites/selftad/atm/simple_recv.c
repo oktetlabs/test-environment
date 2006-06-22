@@ -137,7 +137,6 @@ main(int argc, char *argv[])
     rcf_rpc_server         *pco_tst = NULL;
 
     const struct sockaddr  *iut_addr = NULL;
-    socklen_t               iut_addrlen;
 
     uint8_t                 gfc_nomatch;
     uint16_t                vpi_nomatch;
@@ -165,7 +164,7 @@ main(int argc, char *argv[])
 
     TEST_GET_HOST(iut_host);
     TEST_GET_PCO(pco_tst);
-    TEST_GET_ADDR(iut_addr, iut_addrlen);
+    TEST_GET_ADDR(iut_addr);
 
     TEST_GET_STRING_PARAM(type);
 
@@ -229,7 +228,7 @@ main(int argc, char *argv[])
     tst_s = rpc_socket(pco_tst, rpc_socket_domain_by_addr(iut_addr),
                        RPC_SOCK_STREAM, RPC_PROTO_DEF);
     rpc_setsockopt(pco_tst, tst_s, RPC_TCP_NODELAY, &enable);
-    rpc_connect(pco_tst, tst_s, iut_addr, iut_addrlen);
+    rpc_connect(pco_tst, tst_s, iut_addr);
 
     CHECK_RC(tapi_tcp_server_recv(iut_host->ta, 0, tcp_srv_csap,
                                   1000000, &iut_s));

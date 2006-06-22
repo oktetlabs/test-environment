@@ -127,11 +127,54 @@ struct tarpc_out_arg {
 };
 
 
+/** IPv4-specific part of generic address */
+struct tarpc_sin {
+    uint16_t    port;       /**< Port in host byte order */
+    uint8_t     addr[4];    /**< Network address */
+};
+
+/** IPv6-specific part of generic address */
+struct tarpc_sin6 {
+    uint16_t    port;       /**< Port in host byte order */
+    uint32_t    flowinfo;   /**< Flow information */
+    uint8_t     addr[16];   /**< Network address */
+    uint32_t    scope_id;   /**< Scope identifier (since RFC 2553) */
+    uint32_t    src_id;     /**< Solaris extension */
+};
+
+enum tarpc_socket_addr_family {
+    TARPC_AF_UNSPEC = 0,
+    TARPC_AF_INET = 1,
+    TARPC_AF_INET6 = 2
+};
+
+enum tarpc_flags {
+    TARPC_SA_NULL = 0x1,
+    TARPC_SA_RAW = 0x2,
+    TARPC_SA_LEN_AUTO = 0x4
+};
+
+/** 'type' is the same as 'family', but defines real representation */
+union tarpc_sa_data switch (tarpc_socket_addr_family type) {
+    case TARPC_AF_INET:     struct tarpc_sin    in;     /**< IPv4 */
+    case TARPC_AF_INET6:    struct tarpc_sin6   in6;    /**< IPv6 */
+    default:                void;                       /**< Nothing by
+                                                             default */
+};
+
 /** Generic address */
 struct tarpc_sa {
-    tarpc_int     sa_family; /**< TA-independent domain */
-    uint8_t       sa_data<>;
+    tarpc_flags         flags;          /**< Flags */
+    tarpc_socklen_t     len;            /**< Address length parameter
+                                             value */
+#if 0
+    uint8_t             sa_len;         /**< 'sa_len' field value */
+#endif
+    tarpc_int           sa_family;      /**< 'sa_family' field value */
+    tarpc_sa_data       data;           /**< Family specific data */
+    uint8_t             raw<>;          /**< Sequence of bytes */
 };
+
 
 /** struct timeval */
 struct tarpc_timeval {
@@ -773,7 +816,6 @@ struct tarpc_connect_ex_in {
     
     tarpc_int               fd;       /**< TA-local socket */
     struct tarpc_sa         addr;     /**< Remote address */
-    tarpc_socklen_t         len;      /**< Length to be passed to connectEx() */
     tarpc_ptr               send_buf; /**< RPC pointer for data to be sent */
     tarpc_size_t            buflen;   /**< Size of data passed to connectEx() */
     tarpc_size_t            len_sent<>; /**< Returned by the function
@@ -1425,7 +1467,6 @@ struct tarpc_wsa_connect_in {
     struct tarpc_in_arg    common;
     tarpc_int              s;
     struct tarpc_sa        addr;
-    tarpc_size_t           addrlen;
     tarpc_ptr              caller_wsabuf; /**< A pointer to WSABUF structure
                                                in TA address space */
     tarpc_ptr              callee_wsabuf; /**< A pointer to WSABUF structure
@@ -3055,7 +3096,6 @@ struct tarpc_wsa_send_to_in {
     tarpc_ssize_t       bytes_sent<>;   /**< Location for sent bytes num */
     tarpc_int           flags;          /**< Flags */
     struct tarpc_sa     to;             /**< Target address */
-    tarpc_socklen_t     tolen;          /**< Target address lenght */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
     string              callback<>;     /**< Callback name */
 };
@@ -3293,7 +3333,8 @@ struct tarpc_mcast_join_leave_in {
     struct tarpc_in_arg common;
     
     tarpc_int           fd;          /**< TA-local socket */
-    struct tarpc_sa     multiaddr;   /**< Multicast group address */
+    tarpc_int           family;      /**< Address family */
+    uint8_t             multiaddr<>; /**< Multicast group address */
     tarpc_int           ifindex;     /**< Interface index */
     tarpc_bool          leave_group; /**< Leave the group */
 };

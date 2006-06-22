@@ -8,7 +8,7 @@ include_HEADERS = \
 	te_tools.h \
 	te_sleep.h \
 	te_bufs.h \
-    te_alloc.h \
+	te_alloc.h \
 	te_sockaddr.h \
 	te_shell_cmd.h \
 	te_log_fmt.h \
@@ -20,7 +20,7 @@ if WINDOWS
 lib_LIBRARIES = libtools.a
 
 libtools_a_CFLAGS = -DTE_DUMMY
-WIN_SRC = te_format.c 
+WIN_SRC = te_bufs.c te_alloc.c te_sockaddr.c te_format.c
 libtools_a_SOURCES=$(WIN_SRC)
 
 libtools.a: $(WIN_SRC) 
@@ -34,7 +34,7 @@ install-exec-hook:
             rm $(lib_LIBRARIES) ; $(MAKE) install ; \
         fi
 
-EXTRA_DIST=te_shell_cmd.c te_bufs.c te_log_fmt.c te_sockaddr.c
+EXTRA_DIST=te_shell_cmd.c te_log_fmt.c
 
 else
 
@@ -42,7 +42,7 @@ lib_LTLIBRARIES = libtools.la
 
 libtools_la_SOURCES = \
 	te_bufs.c \
-    te_alloc.c \
+	te_alloc.c \
 	te_sockaddr.c \
 	te_shell_cmd.c \
 	te_log_fmt.c \

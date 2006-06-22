@@ -48,6 +48,7 @@
 #else
 INCLUDE(te_win_defs.h)
 #endif
+#define _NETINET_IN_H 1
 #else
 
 #if HAVE_SYS_TYPES_H
@@ -86,12 +87,78 @@ INCLUDE(te_win_defs.h)
 #if HAVE_SCSI_SG_H
 #include <scsi/sg.h>
 #endif
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
 
 #endif
 
+#include "te_defs.h"
+#include "te_errno.h"
 #include "logger_api.h"
+#include "te_alloc.h"
+#include "te_sockaddr.h"
+
+#ifndef WINDOWS
+#include "tarpc.h"
+#else
+struct tarpc_sin {
+    uint16_t port;
+    uint8_t addr[4];
+};
+typedef struct tarpc_sin tarpc_sin;
+
+struct tarpc_sin6 {
+    uint16_t port;
+    uint32_t flowinfo;
+    uint8_t addr[16];
+    uint32_t scope_id;
+    uint32_t src_id;
+};
+typedef struct tarpc_sin6 tarpc_sin6;
+
+enum tarpc_socket_addr_family {
+    TARPC_AF_UNSPEC = 0,
+    TARPC_AF_INET = 1,
+    TARPC_AF_INET6 = 2,
+};
+typedef enum tarpc_socket_addr_family tarpc_socket_addr_family;
+
+enum tarpc_flags {
+    TARPC_SA_NULL = 0x1,
+    TARPC_SA_RAW = 0x2,
+    TARPC_SA_LEN_AUTO = 0x4,
+};
+typedef enum tarpc_flags tarpc_flags;
+
+struct tarpc_sa_data {
+    tarpc_socket_addr_family type;
+    union {
+        struct tarpc_sin in;
+        struct tarpc_sin6 in6;
+    } tarpc_sa_data_u;
+};
+typedef struct tarpc_sa_data tarpc_sa_data;
+
+typedef int32_t tarpc_int;
+typedef uint32_t tarpc_socklen_t;
+
+struct tarpc_sa {
+    tarpc_flags flags;
+    tarpc_socklen_t len;
+    tarpc_int sa_family;
+    tarpc_sa_data data;
+    struct {
+        u_int raw_len;
+        uint8_t *raw_val;
+    } raw;
+};
+typedef struct tarpc_sa tarpc_sa;
+#endif
+
 #include "te_rpc_defs.h"
 #include "te_rpc_sys_socket.h"
+
 
 /** Convert RPC domain to string */
 const char *
@@ -1148,5 +1215,294 @@ ioctl_rpc2h(rpc_ioctl_code code)
             WARN("%s is converted to IOCTL_MAX(%u)",
                  ioctl_rpc2str(code), IOCTL_MAX);
             return IOCTL_MAX;
+    }
+}
+
+
+/** See the description in ta_rpc_sys_socket.h */
+void
+sockaddr_h2rpc(const struct sockaddr *sa, socklen_t salen, tarpc_sa *rpc)
+{
+    assert(rpc != NULL);
+    memset(rpc, 0, sizeof(*rpc));
+
+    if (sa == NULL)
+    {
+        rpc->flags = TARPC_SA_NULL;
+        return;
+    }
+
+    if (salen > 0)
+    {
+        /* It just a buffer */
+        rpc->flags = TARPC_SA_RAW;
+        rpc->raw.raw_len = salen;
+        rpc->raw.raw_val = (uint8_t *)sa;
+        return;
+    }
+
+    if (sa->sa_family == TE_AF_TARPC_SA)
+    {
+        memcpy(rpc, sa->sa_data, sizeof(*rpc));
+        return;
+    }
+
+    rpc->flags = TARPC_SA_LEN_AUTO;
+    switch (sa->sa_family)
+    {
+        case AF_INET:
+        {
+            const struct sockaddr_in   *sin = CONST_SIN(sa);
+
+            rpc->sa_family = rpc->data.type = RPC_AF_INET;
+            rpc->data.tarpc_sa_data_u.in.port = ntohs(sin->sin_port);
+            assert(sizeof(rpc->data.tarpc_sa_data_u.in.addr) ==
+                   sizeof(sin->sin_addr));
+            memcpy(rpc->data.tarpc_sa_data_u.in.addr, &sin->sin_addr,
+                   sizeof(rpc->data.tarpc_sa_data_u.in.addr));
+            break;
+        }
+
+        case AF_INET6:
+        {
+            const struct sockaddr_in6  *sin6 = CONST_SIN6(sa);
+
+            rpc->sa_family = rpc->data.type = RPC_AF_INET6;
+            rpc->data.tarpc_sa_data_u.in6.port = ntohs(sin6->sin6_port);
+            rpc->data.tarpc_sa_data_u.in6.flowinfo = sin6->sin6_flowinfo;
+            assert(sizeof(rpc->data.tarpc_sa_data_u.in6.addr) ==
+                   sizeof(sin6->sin6_addr));
+            memcpy(rpc->data.tarpc_sa_data_u.in6.addr, &sin6->sin6_addr,
+                   sizeof(rpc->data.tarpc_sa_data_u.in6.addr));
+            rpc->data.tarpc_sa_data_u.in6.scope_id = sin6->sin6_scope_id;
+#if HAVE_STRUCT_SOCKADDR_IN6___SIN6_SRC_ID
+            rpc->data.tarpc_sa_data_u.in6.src_id = sin6->__sin6_src_id;
+#endif
+            break;
+        }
+
+        case AF_UNSPEC:
+            rpc->sa_family = rpc->data.type = RPC_AF_UNSPEC;
+            break;
+
+        default:
+            /* assert(FALSE); */
+            break;
+    }
+}
+
+/** See the description in ta_rpc_sys_socket.h */
+te_errno
+sockaddr_rpc2h(const tarpc_sa *rpc,
+               struct sockaddr *sa, socklen_t salen,
+               struct sockaddr **sa_out, socklen_t *salen_out)
+{
+    struct sockaddr    *res_sa;
+    socklen_t           len_auto;
+
+    assert(rpc != NULL);
+
+    if (rpc->flags & TARPC_SA_NULL)
+        res_sa = NULL;
+    else
+        res_sa = sa;
+
+    if (sa_out != NULL)
+    {
+        *sa_out = res_sa;
+    }
+    else if ((res_sa == NULL) && (sa != NULL))
+    {
+        ERROR("Unable to indicate that NULL address is returned");
+        return TE_EFAULT;
+    }
+
+    if (res_sa != NULL)
+    {
+        if (rpc->flags & TARPC_SA_RAW)
+        {
+            assert(rpc->raw.raw_val != NULL);
+            assert(rpc->raw.raw_len <= salen);
+            memcpy(res_sa, rpc->raw.raw_val, rpc->raw.raw_len);
+            if (salen_out != NULL)
+                *salen_out = rpc->raw.raw_len;
+            return 0;
+        }
+        memset(res_sa, 0, salen);
+        res_sa->sa_family = addr_family_rpc2h(rpc->sa_family);
+    }
+
+    switch (rpc->data.type)
+    {
+        case RPC_AF_INET:
+        {
+            struct sockaddr_in *sin = SIN(res_sa);
+
+            if (sin != NULL)
+            {
+                sin->sin_port =
+                    htons(rpc->data.tarpc_sa_data_u.in.port);
+                assert(sizeof(rpc->data.tarpc_sa_data_u.in.addr) ==
+                       sizeof(sin->sin_addr));
+                memcpy(&sin->sin_addr,
+                       rpc->data.tarpc_sa_data_u.in.addr,
+                       sizeof(sin->sin_addr));
+            }
+            len_auto = sizeof(struct sockaddr_in);
+            break;
+        }
+
+        case RPC_AF_INET6:
+        {
+            struct sockaddr_in6 *sin6 = SIN6(res_sa);
+
+            if (sin6 != NULL)
+            {
+                sin6->sin6_port=
+                    htons(rpc->data.tarpc_sa_data_u.in6.port);
+                sin6->sin6_flowinfo =
+                    rpc->data.tarpc_sa_data_u.in6.flowinfo;
+                assert(sizeof(rpc->data.tarpc_sa_data_u.in6.addr) ==
+                       sizeof(sin6->sin6_addr));
+                memcpy(&sin6->sin6_addr,
+                       rpc->data.tarpc_sa_data_u.in6.addr,
+                       sizeof(sin6->sin6_addr));
+                sin6->sin6_scope_id =
+                    rpc->data.tarpc_sa_data_u.in6.scope_id;
+#if HAVE_STRUCT_SOCKADDR_IN6___SIN6_SRC_ID
+                sin6->__sin6_src_id =
+                    rpc->data.tarpc_sa_data_u.in6.src_id;
+#endif
+            }
+            len_auto = sizeof(struct sockaddr_in6);
+            break;
+        }
+
+        case RPC_AF_UNSPEC:
+            len_auto = sizeof(struct sockaddr);
+            break;
+
+        default:
+            if (res_sa != NULL)
+            {
+                /*assert(FALSE);*/
+            }
+            else
+            {
+                len_auto = 0;
+            }
+            break;
+    }
+
+    if (salen_out != NULL)
+    {
+        if (rpc->flags & TARPC_SA_LEN_AUTO)
+            *salen_out = len_auto;
+        else
+            *salen_out = rpc->len;
+    }
+
+    return 0;
+}
+
+/** See the description in ta_rpc_sys_socket.h */
+struct sockaddr *
+sockaddr_to_te_af(const struct sockaddr *addr, tarpc_sa **rpc_sa)
+{
+    struct sockaddr *res;
+
+    res = TE_ALLOC(TE_OFFSET_OF(struct sockaddr, sa_data) +
+                   sizeof(tarpc_sa));
+    if (res == NULL)
+        return NULL;
+
+    res->sa_family = TE_AF_TARPC_SA;
+    sockaddr_h2rpc(addr, 0, (tarpc_sa *)res->sa_data);
+
+    if (rpc_sa != NULL)
+        *rpc_sa = (tarpc_sa *)res->sa_data;
+
+    return res;
+}
+
+/** See the description in ta_rpc_sys_socket.h */
+const char *
+sockaddr_h2str(const struct sockaddr *addr)
+{
+    static char  buf[1000];
+
+    const tarpc_sa *rpc_sa;
+
+    if (addr == NULL)
+        return "(nil)";
+
+    if (addr->sa_family != TE_AF_TARPC_SA)
+        return te_sockaddr2str(addr);
+
+    rpc_sa = (const tarpc_sa *)addr->sa_data;
+    if (rpc_sa->flags & TARPC_SA_NULL)
+    {
+        snprintf(buf, sizeof(buf), "NULL");
+    }
+    else
+    {
+        snprintf(buf, sizeof(buf), "family=%s",
+                 addr_family_rpc2str(rpc_sa->sa_family));
+
+        switch (rpc_sa->data.type)
+        {
+            case RPC_AF_INET:
+            {
+                char addr_buf[INET_ADDRSTRLEN];
+
+                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                         " %s:%u",
+                         inet_ntop(AF_INET,
+                                   rpc_sa->data.tarpc_sa_data_u.in.addr,
+                                   addr_buf, sizeof(addr_buf)),
+                         rpc_sa->data.tarpc_sa_data_u.in.port);
+                break;
+            }
+
+            case RPC_AF_INET6:
+            {
+                char addr_buf[INET6_ADDRSTRLEN];
+
+                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                         " %s:%u flowinfo=0x%x scope_id=%u src_id=%u",
+                         inet_ntop(AF_INET6,
+                                   rpc_sa->data.tarpc_sa_data_u.in6.addr,
+                                   addr_buf, sizeof(addr_buf)),
+                         rpc_sa->data.tarpc_sa_data_u.in6.port,
+                         rpc_sa->data.tarpc_sa_data_u.in6.flowinfo,
+                         rpc_sa->data.tarpc_sa_data_u.in6.scope_id,
+                         rpc_sa->data.tarpc_sa_data_u.in6.src_id);
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    if (rpc_sa->flags & TARPC_SA_LEN_AUTO)
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                 " len=AUTO");
+    else
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                 " len=%u", rpc_sa->len);
+
+    return buf;
+}
+
+/** Convert RPC address family to corresponding structrue name */
+const char *
+addr_family_sockaddr_str(rpc_socket_addr_family addr_family)
+{
+    switch (addr_family)
+    {
+        case RPC_AF_INET:   return "struct sockaddr_in";
+        case RPC_AF_INET6:  return "struct sockaddr_in6";
+        default:            return NULL;
     }
 }

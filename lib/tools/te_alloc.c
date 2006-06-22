@@ -32,14 +32,15 @@
 
 #include "te_config.h"
 
+#ifndef WINDOWS
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #endif
+#endif
 
-#include "te_defs.h"
 #include "logger_api.h"
 #include "te_alloc.h"
 
@@ -61,7 +62,13 @@ te_alloc_internal(size_t size, const char *filename, int line)
     {
         ERROR("Cannot allocate memory of size " SIZE_T_FMT " at %s:%d: %s",
               SIZE_T_CAST(size), 
-              filename, line, strerror(errno));
+              filename, line,
+#ifndef WINDOWS
+              strerror(errno)
+#else
+              "No enough memory"
+#endif
+              );
     }
     return result;
 }

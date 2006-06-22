@@ -89,10 +89,7 @@ main(int argc, char *argv[])
     int opt_val = 1;
 
     const struct sockaddr *csap_addr;
-    size_t csap_addr_len;
-
     const struct sockaddr *sock_addr;
-    size_t sock_addr_len;
 
     uint8_t csap_mac[6] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
     uint8_t sock_mac[6];
@@ -104,8 +101,8 @@ main(int argc, char *argv[])
     TEST_GET_PCO(sock_pco);
     TEST_GET_IF(sock_if);
     TEST_GET_IF(csap_if);
-    TEST_GET_ADDR(sock_addr, sock_addr_len);
-    TEST_GET_ADDR(csap_addr, csap_addr_len);
+    TEST_GET_ADDR(sock_addr);
+    TEST_GET_ADDR(csap_addr);
 
     CHECK_RC(tapi_cfg_get_hwaddr(sock_pco->ta, sock_if->if_name, 
                                  sock_mac, &sock_mac_len));
@@ -144,7 +141,7 @@ main(int argc, char *argv[])
     rpc_setsockopt(sock_pco, socket, RPC_SO_REUSEADDR, &opt_val);
 
 
-    rc = rpc_bind(sock_pco, socket, sock_addr, sock_addr_len);
+    rc = rpc_bind(sock_pco, socket, sock_addr);
     if (rc != 0)
         TEST_FAIL("bind failed");
 
@@ -158,8 +155,7 @@ main(int argc, char *argv[])
         TEST_FAIL("init connection failed: %r", rc); 
 
     sock_pco->op = RCF_RPC_CALL;
-    rc = rpc_connect(sock_pco, socket,
-                     csap_addr, csap_addr_len);
+    rc = rpc_connect(sock_pco, socket, csap_addr);
     if (rc != 0)
         TEST_FAIL("connect() 'call' failed: %r", rc); 
 

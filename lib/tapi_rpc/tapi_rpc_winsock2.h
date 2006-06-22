@@ -144,7 +144,6 @@ extern te_bool rpc_duplicate_handle(rcf_rpc_server *rpcs,
  * @param s            socket descriptor
  * @param addr         pointer to a @b sockaddr structure containing the 
  *                     address to connect to.
- * @param addrlen      length of sockaddr structure
  * @param buf          RPC pointer to buffer containing connect data
  * @param len_buf      length of the buffer @b buf
  * @param bytes_sent   pointer a the number of bytes sent 
@@ -154,7 +153,6 @@ extern te_bool rpc_duplicate_handle(rcf_rpc_server *rpcs,
  */
 extern te_bool rpc_connect_ex(rcf_rpc_server *rpcs,
                               int s, const struct sockaddr *addr,
-                              socklen_t addrlen,
                               rpc_ptr buf, ssize_t len_buf,
                               size_t *bytes_sent,
                               rpc_overlapped overlapped);
@@ -669,7 +667,6 @@ extern void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf);
  * @param s              Descriptor identifying an unconnected socket
  * @param addr           pointer to a @b sockaddr structure containing the 
  *                       address to connect to
- * @param addrlen        length of @b addr structure
  * @param caller_wsabuf  TA virtual address space valid pointer to a WSABUF
  *                       structure describing the user data that is to be
  *                       transferred to the other socket during connection
@@ -684,7 +681,7 @@ extern void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf);
  * @return   0 in case of success, nonzero otherwise.
  */
 extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
-                           const struct sockaddr *addr, socklen_t addrlen,
+                           const struct sockaddr *addr,
                            rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                            rpc_qos *sqos);
                            
@@ -765,7 +762,7 @@ extern te_bool rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
  *  @param wmsg    message to be received when asynchronous request
  *                 completes
  *  @param addr    pointer to the network address of the host
- *  @param addrlen length of address @b addr
+ *  @param addrlen size of @a addr
  *  @param type    type of the address
  *  @param buf     valid buffer pointer in the TA address space. 
  *                 Contain the host entry data
@@ -777,7 +774,7 @@ extern rpc_handle rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs,
                                                  rpc_hwnd hwnd,
                                                  unsigned int wmsg,
                                                  char *addr,
-                                                 ssize_t addrlen, 
+                                                 ssize_t addrlen,
                                                  rpc_socket_type type,
                                                  rpc_ptr buf, 
                                                  ssize_t buflen);
@@ -982,7 +979,6 @@ extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
  *                     (See @b rpc_send_recv_flags)
  * @param bytes_sent   pointer to the number of bytes sent
  * @param to           pointer to the address of the target socket
- * @param tolen        size of the address @b to
  * @param overlapped   @b overlapped object or RPC_NULL
  * @param callback     completion callback name
  *
@@ -992,7 +988,7 @@ extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
                            const struct rpc_iovec *iov,
                            size_t iovcnt, rpc_send_recv_flags flags,
                            ssize_t *bytes_sent, const struct sockaddr *to,
-                           socklen_t tolen, rpc_overlapped overlapped,
+                           rpc_overlapped overlapped,
                            const char *callback);
 
 /**
@@ -1283,7 +1279,6 @@ extern te_bool rpc_is_winsock2(rcf_rpc_server *rpcs);
  * @param s              Descriptor identifying an unconnected socket
  * @param addr           pointer to a @b sockaddr structure containing the 
  *                       address to connect to
- * @param addrlen        length of @b addr structure
  * @param caller_wsabuf  TA virtual address space valid pointer to a WSABUF
  *                       structure describing the user data that is to be
  *                       transferred to the other socket during connection
@@ -1303,7 +1298,7 @@ extern te_bool rpc_is_winsock2(rcf_rpc_server *rpcs);
  *                       success, a value of INVALID_SOCKET otherwise.
  */
 extern int rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s,
-                            struct sockaddr *addr, socklen_t addrlen,
+                            const struct sockaddr *addr,
                             rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                             rpc_qos *sqos, rpc_join_leaf_flags flags);
 

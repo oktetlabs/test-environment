@@ -94,10 +94,8 @@ main(int argc, char *argv[])
 
     struct sockaddr_in from_sa;
     const struct sockaddr *csap_addr;
-    size_t csap_addr_len;
 
     const struct sockaddr *pco_addr;
-    size_t pco_addr_len;
     size_t from_len = sizeof(from_sa);
 
     uint8_t rcv_buffer[2000];
@@ -107,8 +105,8 @@ main(int argc, char *argv[])
     TEST_GET_PCO(pco);
     TEST_GET_IF(pco_if);
     TEST_GET_IF(csap_if);
-    TEST_GET_ADDR(pco_addr, pco_addr_len);
-    TEST_GET_ADDR(csap_addr, csap_addr_len);
+    TEST_GET_ADDR(pco_addr);
+    TEST_GET_ADDR(csap_addr);
 
     CHECK_RC(tapi_cfg_get_hwaddr(pco->ta, pco_if->if_name, 
                                  pco_mac, &pco_mac_len));
@@ -141,7 +139,7 @@ main(int argc, char *argv[])
         TEST_FAIL("create socket failed");
     }
 
-    rc = rpc_bind(pco, udp_socket, pco_addr, pco_addr_len);
+    rc = rpc_bind(pco, udp_socket, pco_addr);
     if (rc != 0)
         TEST_FAIL("bind failed");
 

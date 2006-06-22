@@ -81,18 +81,15 @@ main(int argc, char *argv[])
     size_t len;
 
     const struct sockaddr *csap_addr;
-    size_t csap_addr_len;
-
     const struct sockaddr *sock_addr;
-    size_t sock_addr_len;
 
 
     TEST_START; 
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(sock_pco);
-    TEST_GET_ADDR(sock_addr, sock_addr_len);
-    TEST_GET_ADDR(csap_addr, csap_addr_len);
+    TEST_GET_ADDR(sock_addr);
+    TEST_GET_ADDR(csap_addr);
 
 
     if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_STREAM, 
@@ -101,7 +98,7 @@ main(int argc, char *argv[])
         TEST_FAIL("Calling of RPC socket() failed %r", sock_pco->_errno);
 
 
-    rc = rpc_bind(sock_pco, socket, sock_addr, sock_addr_len);
+    rc = rpc_bind(sock_pco, socket, sock_addr);
     if (rc != 0)
         TEST_FAIL("bind failed");
 
@@ -111,8 +108,7 @@ main(int argc, char *argv[])
                                      SIN(csap_addr)->sin_port, &csap);
     if (rc != 0)
         TEST_FAIL("server csap create failed: %r", rc); 
-    rc = rpc_connect(sock_pco, socket,
-                     csap_addr, csap_addr_len);
+    rc = rpc_connect(sock_pco, socket, csap_addr);
     if (rc != 0)
         TEST_FAIL("connect() 'call' failed: %r", rc); 
 

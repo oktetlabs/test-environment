@@ -169,7 +169,6 @@ extern ssize_t rpc_send(rcf_rpc_server *rpcs,
  *               Other supported flags can be found in
  *               te_rpc_sys_socket.h.
  * @param to     target address
- * @param tolen  size of target address
  *
  * @return Number of bytes sent, otherwise -1.
  *
@@ -179,7 +178,7 @@ extern ssize_t rpc_send(rcf_rpc_server *rpcs,
 extern ssize_t rpc_sendto(rcf_rpc_server *rpcs,
                           int s, const void *buf, size_t len,
                           rpc_send_recv_flags flags,
-                          const struct sockaddr *to, socklen_t tolen);
+                          const struct sockaddr *to);
 
 /**
  * Generic routine for receiving messages and store them in the buffer @b 
@@ -390,14 +389,12 @@ extern int rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
  * @param rpcs      RPC server handle
  * @param s         socket descriptor
  * @param my_addr   pointer to a @b sockaddr structure
- * @param addrlen   size of @b my_addr
  *
  * @return 0 on success or -1 on failure 
  * @note See @b bind manual page for more infrormation.
  */
 extern int rpc_bind(rcf_rpc_server *rpcs,
-                    int s, const struct sockaddr *my_addr,
-                    socklen_t addrlen);
+                    int s, const struct sockaddr *my_addr);
 
 /**
  * Attempt to associate a socket descriptor @b s with a peer process at 
@@ -406,14 +403,12 @@ extern int rpc_bind(rcf_rpc_server *rpcs,
  * @param rpcs      RPC server handle
  * @param s         socket descriptor
  * @param addr      peer address to which the socket has to be connected
- * @param addrlen   size of peer address @b addr
  *
  * @return   0 on success or -1 on failure
  * @note   See @b connect manual page for more information
  */
 extern int rpc_connect(rcf_rpc_server *rpcs,
-                       int s, const struct sockaddr *addr,
-                       socklen_t addrlen);
+                       int s, const struct sockaddr *addr);
 
 /**
  * Try to listen for incomming connections for connection oriented sockets

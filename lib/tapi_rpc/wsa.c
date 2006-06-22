@@ -156,7 +156,6 @@ rpc_wsa_socket(rcf_rpc_server *rpcs,
 te_bool
 rpc_connect_ex(rcf_rpc_server *rpcs,
                int s, const struct sockaddr *addr,
-               socklen_t addrlen,
                rpc_ptr buf, ssize_t len_buf,
                size_t *bytes_sent,
                rpc_overlapped overlapped)
@@ -178,23 +177,7 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
     op = rpcs->op;
     
     in.fd = s;
-    if (addr != NULL)
-    {
-        if (addrlen >= SA_COMMON_LEN)
-        {
-            in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
-            in.addr.sa_data.sa_data_len = addrlen - SA_COMMON_LEN;
-            in.addr.sa_data.sa_data_val = (uint8_t *)(addr->sa_data);
-        }
-        else
-        {
-            in.addr.sa_family = RPC_AF_UNSPEC;
-            in.addr.sa_data.sa_data_len = 0;
-            /* Any not-NULL pointer is suitable here */
-            in.addr.sa_data.sa_data_val = (uint8_t *)addr;
-        }
-    }
-    in.len = addrlen;
+    sockaddr_h2rpc(addr, 0, &in.addr);
 
     in.send_buf = buf;
     
@@ -212,9 +195,9 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
     
     CHECK_RETVAL_VAR_IS_BOOL(connect_ex, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: ConnectEx(%d, %s, %u, %u, %u, %d, %u) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: ConnectEx(%d, %s, %u, %u, %d, %u) "
                  "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, te_sockaddr2str(addr), addrlen, 
+                 s, sockaddr_h2str(addr), 
                  buf, len_buf, PTR_VAL(bytes_sent), 
                  overlapped,
                  out.retval ? "true" : "false",
@@ -305,21 +288,10 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
         in.len.len_len = 1;
         in.len.len_val = addrlen;
     }
-    if (addr != NULL && rpcs->op != RCF_RPC_WAIT)
+    if (rpcs->op != RCF_RPC_WAIT)
     {
-        if (raddrlen >= SA_COMMON_LEN)
-        {
-            in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
-            in.addr.sa_data.sa_data_len = raddrlen - SA_COMMON_LEN;
-            in.addr.sa_data.sa_data_val = addr->sa_data;
-        }
-        else
-        {
-            in.addr.sa_family = RPC_AF_UNSPEC;
-            in.addr.sa_data.sa_data_len = 0;
-            /* Any not-NULL pointer is suitable here */
-            in.addr.sa_data.sa_data_val = (uint8_t *)addr;
-        }
+        assert(addr == NULL || raddrlen > 0);
+        sockaddr_h2rpc(addr, raddrlen, &in.addr);
     }
 
     if (cond != NULL && rpcs->op != RCF_RPC_WAIT)
@@ -343,12 +315,8 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
 
     if (RPC_IS_CALL_OK(rpcs))
     {
-        if (addr != NULL && out.addr.sa_data.sa_data_val != NULL)
-        {
-            memcpy(addr->sa_data, out.addr.sa_data.sa_data_val,
-                   out.addr.sa_data.sa_data_len);
-            addr->sa_family = addr_family_rpc2h(out.addr.sa_family);
-        }
+        sockaddr_rpc2h(&out.addr, addr, raddrlen,
+                       NULL, addrlen);
 
         if (addrlen != NULL && out.len.len_val != NULL)
             *addrlen = out.len.len_val[0];
@@ -361,7 +329,7 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, addr, addrlen, PTR_VAL(addrlen),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 te_sockaddr2str(addr), PTR_VAL(addrlen));
+                 sockaddr_h2str(addr), PTR_VAL(addrlen));
 
     RETVAL_INT(wsa_accept, out.retval);
 }
@@ -472,24 +440,8 @@ rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
 
     if (RPC_IS_CALL_OK(rpcs))
     {
-        if ((laddr != NULL) && (out.laddr.sa_data.sa_data_val != NULL))
-        {
-            memcpy(laddr->sa_data, out.laddr.sa_data.sa_data_val,
-                   out.laddr.sa_data.sa_data_len);
-            laddr->sa_family = addr_family_rpc2h(out.laddr.sa_family);
-        }
-        if ((raddr != NULL) && (out.raddr.sa_data.sa_data_val != NULL))
-        {
-            memcpy(raddr->sa_data, out.raddr.sa_data.sa_data_val,
-                   out.raddr.sa_data.sa_data_len);
-            raddr->sa_family = addr_family_rpc2h(out.raddr.sa_family);
-        }
-
-        if (l_sa_len != NULL && out.l_sa_len.l_sa_len_val != NULL)
-            *l_sa_len = out.l_sa_len.l_sa_len_val[0];
-        
-        if (r_sa_len != NULL && out.r_sa_len.r_sa_len_val != NULL)
-            *r_sa_len = out.r_sa_len.r_sa_len_val[0];
+        sockaddr_rpc2h(&out.laddr, laddr, laddr_len, NULL, l_sa_len);
+        sockaddr_rpc2h(&out.raddr, raddr, raddr_len, NULL, r_sa_len);
     }
     
     TAPI_RPC_LOG("RPC (%s,%s): "
@@ -499,8 +451,8 @@ rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
                  s, buf, len, laddr_len, raddr_len, 
                  laddr, l_sa_len, raddr, r_sa_len, 
                  errno_rpc2str(RPC_ERRNO(rpcs)),
-                 laddr == NULL ? "NULL" : te_sockaddr2str(laddr),
-                 raddr == NULL ? "NULL" : te_sockaddr2str(raddr));
+                 laddr == NULL ? "NULL" : sockaddr_h2str(laddr),
+                 raddr == NULL ? "NULL" : sockaddr_h2str(raddr));
     
     RETVAL_VOID(get_accept_addr);
 }
@@ -1732,8 +1684,7 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
 int
 rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
                 size_t iovcnt, rpc_send_recv_flags flags, 
-                ssize_t *bytes_sent,
-                const struct sockaddr *to, socklen_t tolen,
+                ssize_t *bytes_sent, const struct sockaddr *to,
                 rpc_overlapped overlapped, const char *callback)
 {
     rcf_rpc_op            op;
@@ -1798,23 +1749,10 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
     }
     in.flags = flags;
 
-    if (to != NULL && rpcs->op != RCF_RPC_WAIT)
+    if (rpcs->op != RCF_RPC_WAIT)
     {
-        if (tolen >= SA_COMMON_LEN)
-        {
-            in.to.sa_family = addr_family_h2rpc(to->sa_family);
-            in.to.sa_data.sa_data_len = tolen - SA_COMMON_LEN;
-            in.to.sa_data.sa_data_val = (uint8_t *)(to->sa_data);
-        }
-        else
-        {
-            in.to.sa_family = RPC_AF_UNSPEC;
-            in.to.sa_data.sa_data_len = 0;
-            /* Any no-NULL pointer is suitable here */
-            in.to.sa_data.sa_data_val = (uint8_t *)to;
-        }
+        sockaddr_h2rpc(to, 0, &in.to);
     }
-    in.tolen = tolen;
 
     rcf_rpc_call(rpcs, "wsa_send_to", &in, &out);
 
@@ -1829,13 +1767,13 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_send_to, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSASendTo(%d, %s, %d, %s, %d, %s, %u, %u, %s) "
+                 "WSASendTo(%d, %s, %d, %s, %d, %s, %u, %s) "
                  "-> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, (*str_buf == '\0') ? "(nil)" : str_buf,
                  iovcnt, send_recv_flags_rpc2str(flags),
                  PTR_VAL(bytes_sent),
-                 te_sockaddr2str(to), tolen,         
+                 sockaddr_h2str(to),
                  overlapped, callback,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -1937,21 +1875,9 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
         in.fromlen.fromlen_len = 1;
         in.fromlen.fromlen_val = fromlen;
     }
-    if (from != NULL && rpcs->op != RCF_RPC_WAIT)
+    if (rpcs->op != RCF_RPC_WAIT)
     {
-        if ((fromlen != NULL) && (*fromlen >= SA_COMMON_LEN))
-        {
-            in.from.sa_family = addr_family_h2rpc(from->sa_family);
-            in.from.sa_data.sa_data_len = *fromlen - SA_COMMON_LEN;
-            in.from.sa_data.sa_data_val = from->sa_data;
-        }
-        else
-        {
-            in.from.sa_family = RPC_AF_UNSPEC;
-            in.from.sa_data.sa_data_len = 0;
-            /* Any not-NULL pointer is suitable here */
-            in.from.sa_data.sa_data_val = (uint8_t *)from;
-        }
+        sockaddr_h2rpc(from, fromlen == NULL ? 0 : *fromlen, &in.from);
     }
 
     rcf_rpc_call(rpcs, "wsa_recv_from", &in, &out);
@@ -1983,12 +1909,8 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
                 *flags = out.flags.flags_val[0];
         }
 
-        if (from != NULL && out.from.sa_data.sa_data_val != NULL)
-        {
-            memcpy(from->sa_data, out.from.sa_data.sa_data_val,
-                   out.from.sa_data.sa_data_len);
-            from->sa_family = addr_family_rpc2h(out.from.sa_family);
-        }
+        sockaddr_rpc2h(&out.from, from, fromlen == NULL ? 0 : *fromlen,
+                       NULL, fromlen);
 
         if (fromlen != NULL && out.fromlen.fromlen_val != NULL)
             *fromlen = out.fromlen.fromlen_val[0];    
@@ -2001,7 +1923,7 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
                  rpcs->ta, rpcs->name, rpcop2str(op), 
                  s, (*str_buf == '\0') ? "(nil)" : str_buf,
                  iovcnt, send_recv_flags_rpc2str(PTR_VAL(flags)), 
-                 PTR_VAL(bytes_received), te_sockaddr2str(from),
+                 PTR_VAL(bytes_received), sockaddr_h2str(from),
                  PTR_VAL(fromlen), 
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -2226,23 +2148,8 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 
         if (msg->msg_name != NULL)
         {
-            if (msg->msg_rnamelen >= SA_COMMON_LEN)
-            {
-                rpc_msg.msg_name.sa_family = addr_family_h2rpc(
-                    ((struct sockaddr *)(msg->msg_name))->sa_family);
-                rpc_msg.msg_name.sa_data.sa_data_len =
-                    msg->msg_rnamelen - SA_COMMON_LEN;
-                rpc_msg.msg_name.sa_data.sa_data_val =
-                    ((struct sockaddr *)(msg->msg_name))->sa_data;
-            }
-            else
-            {
-                rpc_msg.msg_name.sa_family = RPC_AF_UNSPEC;
-                rpc_msg.msg_name.sa_data.sa_data_len = 0;
-                /* Any not-NULL pointer is suitable here */
-                rpc_msg.msg_name.sa_data.sa_data_val =
-                    (uint8_t *)(msg->msg_name);
-            }
+            sockaddr_h2rpc(msg->msg_name, msg->msg_rnamelen,
+                           &rpc_msg.msg_name);
         }
         rpc_msg.msg_namelen = msg->msg_namelen;
         rpc_msg.msg_flags = msg->msg_flags;
@@ -2282,14 +2189,9 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
         {
             rpc_msg = out.msg.msg_val[0];
 
-            if (msg->msg_name != NULL)
-            {
-                ((struct sockaddr *)(msg->msg_name))->sa_family =
-                    addr_family_rpc2h(rpc_msg.msg_name.sa_family);
-                memcpy(((struct sockaddr *)(msg->msg_name))->sa_data,
-                       rpc_msg.msg_name.sa_data.sa_data_val,
-                       rpc_msg.msg_name.sa_data.sa_data_len);
-            }
+            sockaddr_rpc2h(&rpc_msg.msg_name, msg->msg_name,
+                           msg->msg_rnamelen,
+                           NULL, &msg->msg_namelen);
             msg->msg_namelen = rpc_msg.msg_namelen;
 
             for (i = 0; i < msg->msg_riovlen && msg->msg_iov != NULL; i++)
@@ -2712,22 +2614,7 @@ rpc_wsa_address_to_string(rcf_rpc_server *rpcs, struct sockaddr *addr,
 
     op = rpcs->op;
 
-    if (addr != NULL)
-    {
-        if (addrlen >= SA_COMMON_LEN)
-        {
-            in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
-            in.addr.sa_data.sa_data_len = addrlen - SA_COMMON_LEN;
-            in.addr.sa_data.sa_data_val = (uint8_t *)(addr->sa_data);
-        }
-        else
-        {
-            in.addr.sa_family = RPC_AF_UNSPEC;
-            in.addr.sa_data.sa_data_len = 0;
-            /* Any not-NULL pointer is suitable here */
-            in.addr.sa_data.sa_data_val = (uint8_t *)addr;
-        }
-    }
+    sockaddr_h2rpc(addr, 0, &in.addr);
     in.addrlen = addrlen;
 
     in.info.info_val = info;
@@ -2765,7 +2652,7 @@ rpc_wsa_address_to_string(rcf_rpc_server *rpcs, struct sockaddr *addr,
                  "WSAAddressToString(%s, %u, %p, %d, %s, %d) "
                  "-> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 te_sockaddr2str(addr), addrlen, info, info_len,
+                 sockaddr_h2str(addr), addrlen, info, info_len,
                  addrstr, *addrstr_len,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -2815,12 +2702,8 @@ rpc_wsa_string_to_address(rcf_rpc_server *rpcs, char *addrstr,
         if ((addrlen != NULL) && (out.addrlen.addrlen_val != NULL))
             *addrlen = *out.addrlen.addrlen_val;
 
-        if ((addr != NULL) && (out.addr.sa_data.sa_data_val != NULL))
-        {
-            memcpy(addr->sa_data, out.addr.sa_data.sa_data_val,
-                                 out.addr.sa_data.sa_data_len);
-            addr->sa_family = addr_family_rpc2h(out.addr.sa_family);
-        }
+        sockaddr_rpc2h(&out.addr, addr, addrlen == NULL ? 0 : *addrlen,
+                       NULL, NULL);
     }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_string_to_address,
@@ -2830,7 +2713,7 @@ rpc_wsa_string_to_address(rcf_rpc_server *rpcs, char *addrstr,
                  "WSAStringToAddress(%s, %s, %p, %d, %s, %u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  addrstr, domain_rpc2str(address_family),
-                 info, info_len, te_sockaddr2str(addr),
+                 info, info_len, sockaddr_h2str(addr),
                  *addrlen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -2953,8 +2836,8 @@ rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf)
  */
 int
 rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
-                socklen_t addrlen, rpc_ptr caller_wsabuf,
-                rpc_ptr callee_wsabuf, rpc_qos *sqos)
+                rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
+                rpc_qos *sqos)
 {
     rcf_rpc_op            op;
     tarpc_wsa_connect_in  in;
@@ -2973,23 +2856,7 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
     
     in.s = s;
 
-    if (addr != NULL)
-    {
-        if (addrlen >= SA_COMMON_LEN)
-        {
-            in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
-            in.addr.sa_data.sa_data_len = addrlen - SA_COMMON_LEN;
-            in.addr.sa_data.sa_data_val = (uint8_t *)(addr->sa_data);
-        }
-        else
-        {
-            in.addr.sa_family = RPC_AF_UNSPEC;
-            in.addr.sa_data.sa_data_len = 0;
-            /* Any not-NULL pointer is suitable here */
-            in.addr.sa_data.sa_data_val = (uint8_t *)addr;
-        }
-    }
-    in.addrlen = addrlen;
+    sockaddr_h2rpc(addr, 0, &in.addr);
 
     in.caller_wsabuf = caller_wsabuf;
     in.callee_wsabuf = callee_wsabuf;
@@ -3012,9 +2879,9 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_connect, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSAConnect(%d, %s, %u, %u, %u, %p) -> %d (%s)",
+                 "WSAConnect(%d, %s, %u, %u, %p) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, te_sockaddr2str(addr), addrlen,
+                 s, sockaddr_h2str(addr),
                  caller_wsabuf, callee_wsabuf, sqos,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -3033,7 +2900,6 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
         case RPC_SIO_ADDRESS_LIST_QUERY:
         case RPC_SIO_ADDRESS_LIST_SORT:
         {
-            struct sockaddr *addr;
             unsigned int    i;
             
             *(unsigned int *)buf = res->wsa_ioctl_request_u.req_saa.
@@ -3049,20 +2915,14 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
             for (i = 0; 
                  (i < res->wsa_ioctl_request_u.req_saa.req_saa_len) &&
                  ((i + 1) * sizeof(struct sockaddr_storage) <=
-                 (unsigned)buf_len);
+                     (unsigned)buf_len);
                  i++)
             {
-                addr = (struct sockaddr *)
-                           (((struct sockaddr_storage *)buf) + i);
-                addr->sa_family = addr_family_rpc2h(
-                    res->wsa_ioctl_request_u.req_saa.req_saa_val[i]
-                        .sa_family);
-
-                memcpy(addr->sa_data,
-                       res->wsa_ioctl_request_u.req_saa.req_saa_val[i].
-                           sa_data.sa_data_val,
-                       res->wsa_ioctl_request_u.req_saa.req_saa_val[i].
-                           sa_data.sa_data_len);
+                sockaddr_rpc2h(
+                    res->wsa_ioctl_request_u.req_saa.req_saa_val + i,
+                    SA(((struct sockaddr_storage *)buf) + i),
+                    sizeof(struct sockaddr_storage),
+                    NULL, NULL);
  
             }
 
@@ -3071,16 +2931,9 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
 
         case RPC_SIO_GET_BROADCAST_ADDRESS:
         case RPC_SIO_ROUTING_INTERFACE_QUERY:
-        {
-            struct sockaddr *addr = (struct sockaddr *)buf;
-
-            addr->sa_family = addr_family_rpc2h(
-                res->wsa_ioctl_request_u.req_sa.sa_family);
-            memcpy(addr->sa_data,
-                   res->wsa_ioctl_request_u.req_sa.sa_data.sa_data_val,
-                   res->wsa_ioctl_request_u.req_sa.sa_data.sa_data_len);
+            sockaddr_rpc2h(&res->wsa_ioctl_request_u.req_sa,
+                           SA(buf), buf_len, NULL, NULL);
             break;
-        }
 
         case RPC_SIO_GET_EXTENSION_FUNCTION_POINTER:
             *(rpc_ptr *)buf = res->wsa_ioctl_request_u.req_ptr;
@@ -3194,12 +3047,7 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
 
             for (i = 0; i < list_size; i++, p++, q++)
             {                
-                q->sa_family = addr_family_h2rpc(p->ss_family);
-                q->sa_data.sa_data_len = sizeof(struct sockaddr_storage) -
-                                         sizeof(q->sa_family);
-                q->sa_data.sa_data_val = malloc(q->sa_data.sa_data_len);
-                memcpy(q->sa_data.sa_data_val, SA(p)->sa_data,
-                       q->sa_data.sa_data_len);
+                sockaddr_h2rpc(SA(p), 0, q);
             }
 
             break;
@@ -3221,17 +3069,10 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
         case RPC_SIO_FIND_ROUTE:
         case RPC_SIO_ROUTING_INTERFACE_CHANGE:
         case RPC_SIO_ROUTING_INTERFACE_QUERY:
-        {
-            struct sockaddr *addr = (struct sockaddr *)inbuf;
-            tarpc_sa        *rpc_addr = &in_req.wsa_ioctl_request_u.req_sa;
-
             in_req.type = WSA_IOCTL_SA;
-            rpc_addr->sa_family = addr_family_h2rpc(addr->sa_family);
-            rpc_addr->sa_data.sa_data_val = addr->sa_data;
-            rpc_addr->sa_data.sa_data_len =
-                sizeof(struct sockaddr) - SA_COMMON_LEN;
+            sockaddr_h2rpc(SA(inbuf), 0,
+                           &in_req.wsa_ioctl_request_u.req_sa);
             break;
-        }
 
         case RPC_SIO_GET_EXTENSION_FUNCTION_POINTER:
             in_req.type = WSA_IOCTL_GUID;
@@ -3403,7 +3244,8 @@ rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
 rpc_handle
 rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, char *addr,
-                               ssize_t addrlen, rpc_socket_type type,
+                               ssize_t addrlen,
+                               rpc_socket_type type,
                                rpc_ptr buf, ssize_t buflen) 
 {
     rcf_rpc_op                           op;
@@ -3681,10 +3523,9 @@ rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  *                               TA virtual address space.
  */
 int 
-rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, struct sockaddr *addr, 
-                  socklen_t addrlen, rpc_ptr caller_wsabuf, 
-                  rpc_ptr callee_wsabuf, rpc_qos *sqos, 
-                  rpc_join_leaf_flags flags)
+rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr, 
+                  rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
+                  rpc_qos *sqos, rpc_join_leaf_flags flags)
 {
     rcf_rpc_op            op;
     tarpc_wsa_join_leaf_in  in;
@@ -3704,23 +3545,7 @@ rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, struct sockaddr *addr,
     in.s = s;
     in.flags = flags;
     
-    if (addr != NULL)
-    {
-        if (addrlen >= SA_COMMON_LEN)
-        {
-            in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
-            in.addr.sa_data.sa_data_len = addrlen - SA_COMMON_LEN;
-            in.addr.sa_data.sa_data_val = (uint8_t *)(addr->sa_data);
-        }
-        else
-        {
-            in.addr.sa_family = RPC_AF_UNSPEC;
-            in.addr.sa_data.sa_data_len = 0;
-            /* Any not-NULL pointer is suitable here */
-            in.addr.sa_data.sa_data_val = (uint8_t *)addr;
-        }
-    }
-    in.addrlen = addrlen;
+    sockaddr_h2rpc(addr, 0, &in.addr);
 
     in.caller_wsabuf = caller_wsabuf;
     in.callee_wsabuf = callee_wsabuf;
@@ -3743,9 +3568,9 @@ rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, struct sockaddr *addr,
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(wsa_join_leaf, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSAJoinLeaf(%d, %s, %u, %u, %u, %p, %s) -> %d (%s)",
+                 "WSAJoinLeaf(%d, %s, %u, %u, %p, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, te_sockaddr2str(addr), addrlen, 
+                 s, sockaddr_h2str(addr), 
                  caller_wsabuf, callee_wsabuf, sqos, 
                  join_leaf_flags_rpc2str(flags),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
