@@ -349,6 +349,13 @@ check_args(checked_arg *list)
         if (memcmp(cur->real_arg + cur->len_visible, cur->control,
                    cur->len - cur->len_visible) != 0)
         {
+            ERROR("Visible length is %u.\nControl is:%Tm"
+                  "Current is:%Tm + %Tm",
+                  cur->len_visible, cur->control,
+                  cur->len - cur->len_visible,
+                  cur->real_arg, cur->len_visible,
+                  cur->real_arg + cur->len_visible,
+                  cur->len - cur->len_visible);
             rc = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
         }
         free(cur->control);
