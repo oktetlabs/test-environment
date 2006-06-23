@@ -1889,7 +1889,6 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
         {
             ERROR("Cannot add address %s to '%s': does not fit",
                   buf, ip4_net_oid);
-            free(addr);
             free(ip4_net_oid);
             return TE_EINVAL;
         }
@@ -1899,7 +1898,6 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
         rc = cfg_get_instance_fmt(&val_type, &entry_state,
                                   "%s/pool:/entry:%s", ip4_net_oid, buf);
     }
-    free(addr);
 
     if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
