@@ -283,7 +283,8 @@ rpc_recvfrom(rcf_rpc_server *rpcs,
              struct sockaddr *from, socklen_t *fromlen)
 {
     return rpc_recvfrom_gen(rpcs, s, buf, len, flags, from, fromlen,
-                            len, (fromlen == NULL) ? 0 : *fromlen);
+                            len, (from == NULL ||
+                                  fromlen == NULL) ? 0 : *fromlen);
 }
 
 /** Store information about message */
@@ -473,7 +474,8 @@ rpc_accept(rcf_rpc_server *rpcs,
            int s, struct sockaddr *addr, socklen_t *addrlen)
 {
     return rpc_accept_gen(rpcs, s, addr, addrlen,
-                          (addrlen == NULL) ? 0 : *addrlen);
+                          (addr == NULL ||
+                           addrlen == NULL) ? 0 : *addrlen);
 }
 
 
@@ -666,7 +668,8 @@ rpc_getsockname(rcf_rpc_server *rpcs,
                 int s, struct sockaddr *name, socklen_t *namelen)
 {
     return rpc_getsockname_gen(rpcs, s, name, namelen,
-                               (namelen == NULL) ? 0 : *namelen);
+                               (name == NULL ||
+                                namelen == NULL) ? 0 : *namelen);
 }
 
 /**
@@ -708,7 +711,8 @@ rpc_getpeername(rcf_rpc_server *rpcs,
                 int s, struct sockaddr *name, socklen_t *namelen)
 {
     return rpc_getpeername_gen(rpcs, s, name, namelen,
-                               (namelen == NULL) ? 0 : *namelen);
+                               (name == NULL ||
+                                namelen == NULL) ? 0 : *namelen);
 }
 
 #endif /* !__TE_TAPI_RPC_SOCKET_H__ */

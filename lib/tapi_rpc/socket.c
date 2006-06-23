@@ -222,7 +222,7 @@ rpc_accept_gen(rcf_rpc_server *rpcs,
     }
 
     op = rpcs->op;
-    if (addrlen != NULL && *addrlen > raddrlen)
+    if (addr != NULL && addrlen != NULL && *addrlen > raddrlen)
     {
         rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(accept, -1);
@@ -287,7 +287,7 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
 
     op = rpcs->op;
 
-    if ((fromlen != NULL && *fromlen > rfrombuflen) ||
+    if ((from != NULL && fromlen != NULL && *fromlen > rfrombuflen) ||
         (buf != NULL && len > rbuflen))
     {
         rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
@@ -904,7 +904,7 @@ rpc_getsockname_gen(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(getsockname, -1);
     }
-    if (namelen != NULL && *namelen > rnamelen)
+    if (name != NULL && namelen != NULL && *namelen > rnamelen)
     {
         rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(getsockname, -1);
@@ -964,7 +964,7 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
         RETVAL_INT(getpeername, -1);
     }
 
-    if (namelen != NULL && *namelen > rnamelen)
+    if (name != NULL && namelen != NULL && *namelen > rnamelen)
     {
         rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(getpeername, -1);
