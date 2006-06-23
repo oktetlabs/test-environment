@@ -124,7 +124,7 @@ rpc_bind(rcf_rpc_server *rpcs,
     rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.fd = s;
-    sockaddr_h2rpc(my_addr, 0, &in.addr);
+    sockaddr_input_h2rpc(my_addr, &in.addr);
 
     rcf_rpc_call(rpcs, "bind", &in, &out);
 
@@ -157,7 +157,7 @@ rpc_connect(rcf_rpc_server *rpcs,
 
     op = rpcs->op;
     in.fd = s;
-    sockaddr_h2rpc(addr, 0, &in.addr);
+    sockaddr_input_h2rpc(addr, &in.addr);
 
     rcf_rpc_call(rpcs, "connect", &in, &out);
 
@@ -236,12 +236,12 @@ rpc_accept_gen(rcf_rpc_server *rpcs,
     }
     if (rpcs->op != RCF_RPC_WAIT)
     {
-        sockaddr_h2rpc(addr, raddrlen, &in.addr);
+        sockaddr_raw2rpc(addr, raddrlen, &in.addr);
     }
 
     rcf_rpc_call(rpcs, "accept", &in, &out);
 
-    if (RPC_IS_CALL_OK(rpcs))
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
     {
         sockaddr_rpc2h(&out.addr, addr, raddrlen,
                        NULL, addrlen);
@@ -303,7 +303,7 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
     }
     if (rpcs->op != RCF_RPC_WAIT)
     {
-        sockaddr_h2rpc(from, rfrombuflen, &in.from);
+        sockaddr_raw2rpc(from, rfrombuflen, &in.from);
     }
     if (buf != NULL && rpcs->op != RCF_RPC_WAIT)
     {
@@ -314,7 +314,7 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "recvfrom", &in, &out);
 
-    if (RPC_IS_CALL_OK(rpcs))
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
@@ -448,7 +448,7 @@ rpc_sendto(rcf_rpc_server *rpcs,
     in.len = len;
     if (rpcs->op != RCF_RPC_WAIT)
     {
-        sockaddr_h2rpc(to, 0, &in.to);
+        sockaddr_input_h2rpc(to, &in.to);
     }
     if (buf != NULL && rpcs->op != RCF_RPC_WAIT)
     {
@@ -580,7 +580,8 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
         }
         rpc_msg.msg_iovlen = msg->msg_iovlen;
 
-        sockaddr_h2rpc(msg->msg_name, 0, &rpc_msg.msg_name);
+        sockaddr_input_h2rpc(msg->msg_name, &rpc_msg.msg_name);
+
         rpc_msg.msg_flags = (int)msg->msg_flags;
 
         if (msg->msg_control != NULL)
@@ -736,8 +737,10 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
         }
         rpc_msg.msg_iovlen = msg->msg_iovlen;
 
-        sockaddr_h2rpc(msg->msg_name, msg->msg_rnamelen,
-                       &rpc_msg.msg_name);
+        rpc_msg.msg_namelen = msg->msg_namelen;
+        sockaddr_raw2rpc(msg->msg_name, msg->msg_rnamelen,
+                         &rpc_msg.msg_name);
+
         rpc_msg.msg_flags = msg->msg_flags;
 
         if (msg->msg_control != NULL)
@@ -759,7 +762,8 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
              "RPC (%s,%s)%s: recvmsg(%d, %p(",
              rpcs->ta, rpcs->name, rpcop2str(op), s, msg);
 
-    if (RPC_IS_CALL_OK(rpcs) && msg != NULL && out.msg.msg_val != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
+        msg != NULL && out.msg.msg_val != NULL)
     {
         rpc_msg = out.msg.msg_val[0];
         
@@ -913,11 +917,11 @@ rpc_getsockname_gen(rcf_rpc_server *rpcs,
         in.len.len_len = 1;
         in.len.len_val = namelen;
     }
-    sockaddr_h2rpc(name, rnamelen, &in.addr);
+    sockaddr_raw2rpc(name, rnamelen, &in.addr);
 
     rcf_rpc_call(rpcs, "getsockname", &in, &out);
 
-    if (RPC_IS_CALL_OK(rpcs))
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
     {
         sockaddr_rpc2h(&out.addr, name, rnamelen,
                        NULL, namelen);
@@ -973,11 +977,11 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
         in.len.len_len = 1;
         in.len.len_val = namelen;
     }
-    sockaddr_h2rpc(name, rnamelen, &in.addr);
+    sockaddr_raw2rpc(name, rnamelen, &in.addr);
 
     rcf_rpc_call(rpcs, "getpeername", &in, &out);
 
-    if (RPC_IS_CALL_OK(rpcs))
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
     {
         sockaddr_rpc2h(&out.addr, name, rnamelen,
                        NULL, namelen);

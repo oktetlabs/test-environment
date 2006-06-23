@@ -556,8 +556,11 @@ TARPC_FUNC(accept,
 
     MAKE_CALL(out->retval = accept(in->fd, addr,
                                    out->len.len_len == 0 ? NULL :
-                                   (int *)(out->len.len_val)));
-    sockaddr_h2rpc(addr, 0, &(out->addr));
+                                       (int *)(out->len.len_val)));
+
+    sockaddr_output_h2rpc(addr, addrlen,
+                          out->len.len_len == 0 ? 0 : *(out->len.len_val),
+                          &(out->addr));
 }
 )
 
@@ -636,13 +639,17 @@ TARPC_FUNC(wsa_accept,
             cond[i].timeout = in->cond.cond_val[i].timeout;
         }
     }
+
     MAKE_CALL(out->retval = WSAAccept(in->fd, addr,
                                       out->len.len_len == 0 ? NULL :
                                           (int *)(out->len.len_val),
                                       (LPCONDITIONPROC)accept_callback,
                                       (DWORD)cond));
 
-    sockaddr_h2rpc(addr, 0, &(out->addr));
+    sockaddr_output_h2rpc(addr, addrlen,
+                          out->len.len_len == 0 ? 0 : *(out->len.len_val),
+                          &(out->addr));
+
     finish:
     ;
 }
@@ -694,11 +701,21 @@ TARPC_FUNC(get_accept_addr,
 
     if (!in->l_sa_null)
     {
-        sockaddr_h2rpc(la, 0, &(out->laddr));
+        sockaddr_output_h2rpc(la,
+                              out->l_sa_len.l_sa_len_val == NULL ? 0 :
+                                  *(out->l_sa_len.l_sa_len_val),
+                              out->l_sa_len.l_sa_len_val == NULL ? 0 :
+                                  *(out->l_sa_len.l_sa_len_val),
+                              &(out->laddr));
     }
     if (!in->r_sa_null)
     {
-        sockaddr_h2rpc(ra, 0, &(out->raddr));
+        sockaddr_output_h2rpc(ra,
+                              out->r_sa_len.r_sa_len_val == NULL ? 0 :
+                                  *(out->r_sa_len.r_sa_len_val),
+                              out->r_sa_len.r_sa_len_val == NULL ? 0 :
+                                  *(out->r_sa_len.r_sa_len_val),
+                              &(out->raddr));
     }
 }
 )
@@ -1097,7 +1114,11 @@ TARPC_FUNC(recvfrom,
                                      from,
                                      out->fromlen.fromlen_len == 0 ? NULL :
                                      (int *)(out->fromlen.fromlen_val)));
-    sockaddr_h2rpc(from, 0, &(out->from));
+    
+    sockaddr_output_h2rpc(from, fromlen,
+                          out->fromlen.fromlen_len == 0 ? 0 :
+                              *(out->fromlen.fromlen_val),
+                          &(out->from));
 }
 )
 
@@ -1596,7 +1617,9 @@ TARPC_FUNC(getsockname,
                                         out->len.len_len == 0 ? NULL :
                                         (int *)(out->len.len_val)));
                                         
-    sockaddr_h2rpc(name, 0, &(out->addr));
+    sockaddr_output_h2rpc(name, namelen,
+                          out->len.len_len == 0 ? 0 : *(out->len.len_val),
+                          &(out->addr));
 }
 )
 
@@ -1614,7 +1637,10 @@ TARPC_FUNC(getpeername,
     MAKE_CALL(out->retval = getpeername(in->fd, name,
                                         out->len.len_len == 0 ? NULL :
                                         (int *)(out->len.len_val)));
-    sockaddr_h2rpc(name, 0, &(out->addr));
+                                        
+    sockaddr_output_h2rpc(name, namelen,
+                          out->len.len_len == 0 ? 0 : *(out->len.len_val),
+                          &(out->addr));
 }
 )
 
@@ -3506,18 +3532,19 @@ TARPC_FUNC(wsa_recv_from,
             out->flags.flags_val[0] =
                 send_recv_flags_h2rpc(out->flags.flags_val[0]);
 
-        sockaddr_h2rpc(from, 0, &(out->from));    
+        sockaddr_output_h2rpc(from, fromlen,
+                              out->fromlen.fromlen_len == 0 ? 0 :
+                                  *(out->fromlen.fromlen_val),
+                              &(out->from));
     }
     else if (in->overlapped == 0 ||
              out->common._errno != RPC_E_IO_PENDING)
     {
         rpc_overlapped_free_memory(overlapped);
     }
-PRINT("0");
 
     finish:
     ;
-PRINT("FINISH");
 }
 )
 
@@ -3766,7 +3793,8 @@ TARPC_FUNC(wsa_recv_msg,
             overlapped2iovec(overlapped, &(rpc_msg->msg_iov.msg_iov_len),
                              &(rpc_msg->msg_iov.msg_iov_val));
 
-            sockaddr_h2rpc(name, 0, &(rpc_msg->msg_name));
+            sockaddr_output_h2rpc(name, namelen, rpc_msg->msg_namelen,
+                                  &(rpc_msg->msg_name));
             rpc_msg->msg_namelen = msg->namelen;
             rpc_msg->msg_flags = send_recv_flags_h2rpc(msg->dwFlags);
 
@@ -3929,7 +3957,10 @@ TARPC_FUNC(wsa_string_to_address,
                                 (LPINT)out->addrlen.addrlen_val));
 
     if (out->retval == 0)
-        sockaddr_h2rpc(addr, 0, &(out->addr));
+        sockaddr_output_h2rpc(addr, addrlen,
+                              out->addrlen.addrlen_len == 0 ? 0 :
+                                  *out->addrlen.addrlen_val,
+                              &(out->addr));
 }
 )
 
@@ -4223,7 +4254,10 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
         
             for (i = 0; i < sal->iAddressCount; i++)
             {
-                sockaddr_h2rpc(sal->Address[i].lpSockaddr, 0, &tsa[i]);
+                sockaddr_output_h2rpc(sal->Address[i].lpSockaddr,
+                                      sizeof(*sal->Address[i].lpSockaddr),
+                                      sizeof(*sal->Address[i].lpSockaddr),
+                                      &tsa[i]);
             }
 
             res->wsa_ioctl_request_u.req_saa.req_saa_val = tsa;
@@ -4236,8 +4270,10 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
         case RPC_SIO_ROUTING_INTERFACE_QUERY:
             res->type = WSA_IOCTL_SA;
 
-            sockaddr_h2rpc((struct sockaddr *)buf, 0,
-                &res->wsa_ioctl_request_u.req_sa);
+            sockaddr_output_h2rpc((struct sockaddr *)buf,
+                                  sizeof(struct sockaddr), /* FIXME */
+                                  sizeof(struct sockaddr), /* FIXME */
+                                  &res->wsa_ioctl_request_u.req_sa);
             break;
 
         case RPC_SIO_GET_EXTENSION_FUNCTION_POINTER:

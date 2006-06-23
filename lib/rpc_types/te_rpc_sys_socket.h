@@ -596,14 +596,6 @@ extern const char * ioctl_rpc2str(rpc_ioctl_code code);
 extern int ioctl_rpc2h(rpc_ioctl_code code);
 
 
-extern void sockaddr_h2rpc(const struct sockaddr *sa, socklen_t salen,
-                           tarpc_sa *rpc);
-
-extern te_errno sockaddr_rpc2h(const tarpc_sa *rpc,
-                               struct sockaddr *sa, socklen_t salen,
-                               struct sockaddr **sa_out,
-                               socklen_t *salen_out);
-
 /**
  * Convert host sockaddr to host sockaddr with @c TE_AF_TARPC_SA address
  * family.
@@ -616,6 +608,48 @@ extern te_errno sockaddr_rpc2h(const tarpc_sa *rpc,
  */
 extern struct sockaddr * sockaddr_to_te_af(const struct sockaddr  *addr,
                                            tarpc_sa              **rpc_sa);
+
+/**
+ * Fill in 'tarpc_sa' structure to contain raw buffer of specified
+ * length.
+ *
+ * @param buf           Buffer (may be NULL)
+ * @param len           Length of the buffer (have to be @c 0, if @buf
+ *                      is @c NULL)
+ * @param rpc           Pointer to the structure to be filled in
+ */
+extern void sockaddr_raw2rpc(const void *buf, socklen_t len,
+                             tarpc_sa *rpc);
+
+/**
+ * Convert sockaddr structure from host representation to RPC.
+ * It should be either @c TE_AF_TARPC_SA or known address structure.
+ *
+ * @param sa            Sockaddr structure to be converted (may be NULL)
+ * @param rpc           Pointer to the structure to be filled in
+ */
+extern void sockaddr_input_h2rpc(const struct sockaddr *sa, tarpc_sa *rpc);
+
+/**
+ * Convert sockaddr structure from host representation to RPC.
+ * It does not recognize @c TE_AF_TARPC_SA address family.
+ *
+ * @param sa            Sockaddr structure to be converted (may be NULL)
+ * @param rlen          Real length of the buffer under @a sa
+ * @param len           Length returned by called function
+ * @param rpc           Pointer to the structure to be filled in
+ *                      (filled in by zeros or used to generate @a sa
+ *                      from RPC to host representation)
+ */
+extern void sockaddr_output_h2rpc(const struct sockaddr *sa,
+                                  socklen_t              rlen,
+                                  socklen_t              len,
+                                  tarpc_sa              *rpc);
+
+extern te_errno sockaddr_rpc2h(const tarpc_sa *rpc,
+                               struct sockaddr *sa, socklen_t salen,
+                               struct sockaddr **sa_out,
+                               socklen_t *salen_out);
 
 /**
  * String representation of sockaddr structure including processing

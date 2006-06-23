@@ -629,68 +629,6 @@ shut_how_rpc2h(rpc_shut_how how)
     }
 }
 
-#if 0
-/**
- * Convert RPC sockaddr to struct sockaddr.
- *
- * @param rpc_addr      RPC address location
- * @param addr          pointer to struct sockaddr_storage
- * @param addrlen       Real length of the buffer under @a addr pointer
- *
- * @return struct sockaddr pointer
- */
-static inline struct sockaddr *
-sockaddr_rpc2h(struct tarpc_sa *rpc_addr, struct sockaddr *addr, 
-               socklen_t addrlen)
-{
-    uint32_t len = SA_DATA_MAX_LEN;
-    
-    UNUSED(addrlen);
-
-    if (rpc_addr->sa_data.sa_data_val == NULL)
-        return NULL;
-
-    memset(addr, 0, sizeof(struct sockaddr_storage));
-
-    addr->sa_family = addr_family_rpc2h(rpc_addr->sa_family);
-
-    if (len < rpc_addr->sa_data.sa_data_len)
-    {
-        WARN("Strange tarpc_sa length %d is received",
-             rpc_addr->sa_data.sa_data_len);
-    }
-    else
-        len = rpc_addr->sa_data.sa_data_len;
-
-    memcpy(addr->sa_data, rpc_addr->sa_data.sa_data_val, len);
-
-    return (struct sockaddr *)addr;
-}
-
-/**
- * Convert RPC sockaddr to struct sockaddr. It's assumed that
- * memory allocated for RPC address has maximum possible length (i.e
- * SA_DATA_MAX_LEN).
- *
- * @param addr          pointer to struct sockaddr_storage
- * @param rpc_addr      RPC address location
- *
- * @return struct sockaddr pointer
- */
-static inline void
-sockaddr_h2rpc(struct sockaddr *addr, struct tarpc_sa *rpc_addr)
-{
-    if (addr == NULL || rpc_addr->sa_data.sa_data_val == NULL)
-        return;
-
-    rpc_addr->sa_family = addr_family_h2rpc(addr->sa_family);
-    if (rpc_addr->sa_data.sa_data_val != NULL)
-    {
-        memcpy(rpc_addr->sa_data.sa_data_val, addr->sa_data,
-               rpc_addr->sa_data.sa_data_len);
-    }
-}
-#endif
 
 /** Structure for checking of variable-length arguments safity */
 typedef struct checked_arg {

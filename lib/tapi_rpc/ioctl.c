@@ -178,9 +178,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_IFREQ;
-                sockaddr_h2rpc(&((struct ifreq *)arg)->ifr_addr, 0,
-                               &in.req.req_val[0].ioctl_request_u.
-                                   req_ifreq.rpc_ifr_addr);
+                sockaddr_input_h2rpc(&((struct ifreq *)arg)->ifr_addr,
+                                     &in.req.req_val[0].ioctl_request_u.
+                                         req_ifreq.rpc_ifr_addr);
                 in.req.req_val[0].ioctl_request_u.req_ifreq.
                     rpc_ifr_name.rpc_ifr_name_val =
                     ((struct ifreq *)arg)->ifr_name;
@@ -208,9 +208,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     rpc_ifr_name.rpc_ifr_name_len =
                     sizeof(((struct ifreq *)arg)->ifr_name);
 
-                sockaddr_h2rpc(&((struct ifreq *)arg)->ifr_addr, 0,
-                               &in.req.req_val[0].ioctl_request_u.
-                                   req_ifreq.rpc_ifr_addr);
+                sockaddr_input_h2rpc(&((struct ifreq *)arg)->ifr_addr,
+                                     &in.req.req_val[0].ioctl_request_u.
+                                         req_ifreq.rpc_ifr_addr);
             }
             break;
 
@@ -245,15 +245,16 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     sizeof(((struct ifreq *)arg)->ifr_name);
             }
             break;
+
 #define FILL_ARPREQ_ADDR(type_) \
-    do                                                                  \
-    {                                                                   \
+    do {                                                                \
         tarpc_sa *rpc_addr = &in.req.req_val[0].ioctl_request_u.        \
                                  req_arpreq.rpc_arp_##type_;            \
         struct sockaddr *addr = &((struct arpreq *)arg)->arp_##type_;   \
                                                                         \
-        sockaddr_h2rpc(addr, 0, rpc_addr);                              \
+        sockaddr_input_h2rpc(addr, rpc_addr);                           \
     } while (0)
+
         case RPC_SIOCSARP:
             in.access = IOCTL_WR;
             if (arg != NULL)
@@ -268,6 +269,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     arp_fl_h2rpc(((struct arpreq *)arg)->arp_flags);
             }
             break;
+
         case RPC_SIOCDARP:
             in.access = IOCTL_WR;
             if (arg != NULL)
@@ -276,6 +278,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 FILL_ARPREQ_ADDR(pa);
             }
             break;
+
         case RPC_SIOCGARP:
             in.access = IOCTL_RD;
             if (arg != NULL)
@@ -294,7 +297,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     sizeof(((struct arpreq *)arg)->arp_dev);
             }
             break;
+
 #undef FILL_ARPREQ_ADDR
+
         case RPC_SG_IO:
             in.access = IOCTL_RD;
 

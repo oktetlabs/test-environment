@@ -285,7 +285,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
         rpc_hints.protocol = proto_h2rpc(hints->ai_protocol);
         rpc_hints.addrlen = hints->ai_addrlen - SA_COMMON_LEN;
 
-        sockaddr_h2rpc(hints->ai_addr, 0, &rpc_hints.addr);
+        sockaddr_input_h2rpc(hints->ai_addr, &rpc_hints.addr);
 
         if (hints->ai_canonname != NULL)
         {

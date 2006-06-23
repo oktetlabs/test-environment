@@ -733,7 +733,10 @@ TARPC_FUNC(accept,
                                  out->len.len_len == 0 ? NULL :
                                  out->len.len_val));
 
-    sockaddr_h2rpc(addr, 0, &(out->addr));
+    sockaddr_output_h2rpc(addr, addrlen,
+                          out->len.len_len == 0 ? 0 :
+                              *(out->len.len_val),
+                          &(out->addr));
 }
 )
 
@@ -750,14 +753,17 @@ TARPC_FUNC(recvfrom,
     PREPARE_ADDR(from, out->from, out->fromlen.fromlen_len == 0 ? 0 :
                                   *out->fromlen.fromlen_val);
 
-
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
 
     MAKE_CALL(out->retval = func(in->fd, out->buf.buf_val, in->len,
                                  send_recv_flags_rpc2h(in->flags), from,
                                  out->fromlen.fromlen_len == 0 ? NULL :
                                  out->fromlen.fromlen_val));
-    sockaddr_h2rpc(from, 0, &(out->from));
+
+    sockaddr_output_h2rpc(from, fromlen,
+                          out->fromlen.fromlen_len == 0 ? 0 :
+                              *(out->fromlen.fromlen_val),
+                          &(out->from));
 }
 )
 
@@ -963,7 +969,11 @@ TARPC_FUNC(getsockname,
     MAKE_CALL(out->retval = func(in->fd, name,
                                  out->len.len_len == 0 ? NULL :
                                  out->len.len_val));
-    sockaddr_h2rpc(name, 0, &(out->addr));
+
+    sockaddr_output_h2rpc(name, namelen,
+                          out->len.len_len == 0 ? 0 :
+                              *(out->len.len_val),
+                          &(out->addr));
 }
 )
 
@@ -981,7 +991,11 @@ TARPC_FUNC(getpeername,
     MAKE_CALL(out->retval = func(in->fd, name,
                                  out->len.len_len == 0 ? NULL :
                                  out->len.len_val));
-    sockaddr_h2rpc(name, 0, &(out->addr));
+
+    sockaddr_output_h2rpc(name, namelen,
+                          out->len.len_len == 0 ? 0 :
+                              *(out->len.len_val),
+                          &(out->addr));
 }
 )
 
@@ -2259,10 +2273,12 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 case RPC_SIOCGIFDSTADDR:
                 case RPC_SIOCSIFDSTADDR:
                 case RPC_SIOCGIFHWADDR:
-                    sockaddr_h2rpc(&(req->ifreq.ifr_addr), 0,
-                                   &(out->req.req_val[0].
-                                     ioctl_request_u.
-                                     req_ifreq.rpc_ifr_addr));
+                    sockaddr_output_h2rpc(&(req->ifreq.ifr_addr),
+                                          sizeof(req->ifreq.ifr_addr),
+                                          sizeof(req->ifreq.ifr_addr),
+                                          &(out->req.req_val[0].
+                                              ioctl_request_u.
+                                              req_ifreq.rpc_ifr_addr));
                     break;
 
                 default:
@@ -2318,8 +2334,10 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 req_t->rpc_ifr_name.rpc_ifr_name_len =
                     sizeof(req_c->ifr_name);
 
-                sockaddr_h2rpc(&(req_c->ifr_addr), 0,
-                               &(req_t->rpc_ifr_addr));
+                sockaddr_output_h2rpc(&(req_c->ifr_addr),
+                                      sizeof(req_c->ifr_addr),
+                                      sizeof(req_c->ifr_addr),
+                                      &(req_t->rpc_ifr_addr));
             }
             free(req->ifconf.ifc_buf);
             break;
@@ -2330,13 +2348,17 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
             if (in->code == RPC_SIOCGARP)
             {
                 /* Copy protocol address */
-                sockaddr_h2rpc(&(req->arpreq.arp_pa), 0,
-                               &(out->req.req_val[0].ioctl_request_u.
-                               req_arpreq.rpc_arp_pa));
+                sockaddr_output_h2rpc(&(req->arpreq.arp_pa),
+                                      sizeof(req->arpreq.arp_pa),
+                                      sizeof(req->arpreq.arp_pa),
+                                      &(out->req.req_val[0].ioctl_request_u.
+                                          req_arpreq.rpc_arp_pa));
                 /* Copy HW address */
-                sockaddr_h2rpc(&(req->arpreq.arp_ha), 0,
-                               &(out->req.req_val[0].ioctl_request_u.
-                               req_arpreq.rpc_arp_ha));
+                sockaddr_output_h2rpc(&(req->arpreq.arp_ha),
+                                      sizeof(req->arpreq.arp_ha),
+                                      sizeof(req->arpreq.arp_ha),
+                                      &(out->req.req_val[0].ioctl_request_u.
+                                          req_arpreq.rpc_arp_ha));
 
                 /* Copy flags */
                 out->req.req_val[0].ioctl_request_u.req_arpreq.
@@ -2589,8 +2611,9 @@ TARPC_FUNC(recvmsg,
         struct tarpc_msghdr *rpc_msg = out->msg.msg_val;
 
         PREPARE_ADDR(name, rpc_msg->msg_name, rpc_msg->msg_namelen);
-        msg.msg_namelen = namelen;
+
         msg.msg_name = name;
+        msg.msg_namelen = rpc_msg->msg_namelen;
 
         msg.msg_iovlen = rpc_msg->msg_iovlen;
         if (rpc_msg->msg_iov.msg_iov_val != NULL)
@@ -2654,7 +2677,8 @@ TARPC_FUNC(recvmsg,
         VERB("recvmsg(): out msg=%s", msghdr2str(&msg));
 
         rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.msg_flags);
-        sockaddr_h2rpc(name, 0, &(rpc_msg->msg_name));
+        sockaddr_output_h2rpc(name, namelen, msg.msg_namelen,
+                              &(rpc_msg->msg_name));
         rpc_msg->msg_namelen = msg.msg_namelen;
         if (rpc_msg->msg_iov.msg_iov_val != NULL)
         {
@@ -2928,7 +2952,8 @@ ai_h2rpc(struct addrinfo *ai, struct tarpc_ai *ai_rpc)
     ai_rpc->protocol = proto_h2rpc(ai->ai_protocol);
     ai_rpc->addrlen = ai->ai_addrlen - SA_COMMON_LEN;
 
-    sockaddr_h2rpc(ai->ai_addr, 0, &ai_rpc->addr);
+    sockaddr_output_h2rpc(ai->ai_addr, sizeof(*ai->ai_addr),
+                          sizeof(*ai->ai_addr), &ai_rpc->addr);
 
     if (ai->ai_canonname != NULL)
     {

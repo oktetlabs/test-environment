@@ -510,7 +510,7 @@ parse_config(const char *filename)
             != NULL)
         {
             if (strcmp(attr, "yes") == 0)
-                agent->flags = TA_REBOOTABLE;
+                agent->flags |= TA_REBOOTABLE;
            free(attr);
         }
        

@@ -177,7 +177,7 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
     op = rpcs->op;
     
     in.fd = s;
-    sockaddr_h2rpc(addr, 0, &in.addr);
+    sockaddr_input_h2rpc(addr, &in.addr);
 
     in.send_buf = buf;
     
@@ -290,8 +290,7 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
     }
     if (rpcs->op != RCF_RPC_WAIT)
     {
-        assert(addr == NULL || raddrlen > 0);
-        sockaddr_h2rpc(addr, raddrlen, &in.addr);
+        sockaddr_raw2rpc(addr, raddrlen, &in.addr);
     }
 
     if (cond != NULL && rpcs->op != RCF_RPC_WAIT)
@@ -1751,7 +1750,7 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
 
     if (rpcs->op != RCF_RPC_WAIT)
     {
-        sockaddr_h2rpc(to, 0, &in.to);
+        sockaddr_input_h2rpc(to, &in.to);
     }
 
     rcf_rpc_call(rpcs, "wsa_send_to", &in, &out);
@@ -1877,7 +1876,7 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
     }
     if (rpcs->op != RCF_RPC_WAIT)
     {
-        sockaddr_h2rpc(from, fromlen == NULL ? 0 : *fromlen, &in.from);
+        sockaddr_raw2rpc(from, fromlen == NULL ? 0 : *fromlen, &in.from);
     }
 
     rcf_rpc_call(rpcs, "wsa_recv_from", &in, &out);
@@ -2148,8 +2147,8 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 
         if (msg->msg_name != NULL)
         {
-            sockaddr_h2rpc(msg->msg_name, msg->msg_rnamelen,
-                           &rpc_msg.msg_name);
+            sockaddr_raw2rpc(msg->msg_name, msg->msg_rnamelen,
+                             &rpc_msg.msg_name);
         }
         rpc_msg.msg_namelen = msg->msg_namelen;
         rpc_msg.msg_flags = msg->msg_flags;
@@ -2614,7 +2613,7 @@ rpc_wsa_address_to_string(rcf_rpc_server *rpcs, struct sockaddr *addr,
 
     op = rpcs->op;
 
-    sockaddr_h2rpc(addr, 0, &in.addr);
+    sockaddr_input_h2rpc(addr, &in.addr);
     in.addrlen = addrlen;
 
     in.info.info_val = info;
@@ -2856,7 +2855,7 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
     
     in.s = s;
 
-    sockaddr_h2rpc(addr, 0, &in.addr);
+    sockaddr_input_h2rpc(addr, &in.addr);
 
     in.caller_wsabuf = caller_wsabuf;
     in.callee_wsabuf = callee_wsabuf;
@@ -3047,7 +3046,7 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
 
             for (i = 0; i < list_size; i++, p++, q++)
             {                
-                sockaddr_h2rpc(SA(p), 0, q);
+                sockaddr_input_h2rpc(SA(p), q);
             }
 
             break;
@@ -3070,8 +3069,8 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
         case RPC_SIO_ROUTING_INTERFACE_CHANGE:
         case RPC_SIO_ROUTING_INTERFACE_QUERY:
             in_req.type = WSA_IOCTL_SA;
-            sockaddr_h2rpc(SA(inbuf), 0,
-                           &in_req.wsa_ioctl_request_u.req_sa);
+            sockaddr_input_h2rpc(SA(inbuf),
+                                 &in_req.wsa_ioctl_request_u.req_sa);
             break;
 
         case RPC_SIO_GET_EXTENSION_FUNCTION_POINTER:
@@ -3545,7 +3544,7 @@ rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
     in.s = s;
     in.flags = flags;
     
-    sockaddr_h2rpc(addr, 0, &in.addr);
+    sockaddr_input_h2rpc(addr, &in.addr);
 
     in.caller_wsabuf = caller_wsabuf;
     in.callee_wsabuf = callee_wsabuf;
