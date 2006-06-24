@@ -107,8 +107,10 @@
 #define SOLARIS_IP_FW 1
 #endif
 
-/* PAM (Pluggable Authentication Modules) support */
 #include <pwd.h>
+
+/* PAM (Pluggable Authentication Modules) support */
+#if defined HAVE_LIBPAM
 #include <security/pam_appl.h>
 
 /** Data passed between 'set_change_passwd' and 'conv_fun' callback fun */
@@ -119,6 +121,7 @@ typedef struct {
 } appdata_t;
 
 typedef struct pam_response pam_response_t;
+#endif
 
 /** Avoid slight differences between UNIX'es over typedef */
 #if defined linux
@@ -4209,6 +4212,9 @@ ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
     *list = NULL;
     return 0;
 }
+#else /* defined as external in util/conf_getmsg.c */
+te_errno
+ta_unix_conf_neigh_list(const char *iface, te_bool is_static, char **list);
 #endif
  
 /**
@@ -4564,6 +4570,7 @@ user_exists(const char *user)
     return getpwnam(user) != NULL ? TRUE : FALSE;
 }
 
+#if defined HAVE_LIBPAM
 /**
  * Callback function provided by user and called from within PAM library.
  *
@@ -4700,6 +4707,7 @@ set_change_passwd(char const *user, char const *passwd)
 
     return rc;
 }
+#endif
 
 /**
  * Add tester user.
@@ -4715,17 +4723,24 @@ static te_errno
 user_add(unsigned int gid, const char *oid, const char *value,
          const char *user)
 {
+#if defined HAVE_LIBPAM || defined linux
     char *tmp;
     char *tmp1;
 
     unsigned int uid;
 
     te_errno     rc;
+#endif
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
 
+#if !defined HAVE_LIBPAM && !defined linux
+    UNUSED(user);
+    ERROR("user_add failed (no user management facilities available)");
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#else
     if (user_exists(user))
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
@@ -4755,8 +4770,13 @@ user_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
+#if defined HAVE_LIBPAM
     /** Set (change) password for just added user */
     if (set_change_passwd(user, user) != 0)
+#else
+    sprintf(buf, "echo %s:%s | /usr/sbin/chpasswd", user, user);
+    if ((rc = ta_system(buf)) != 0)
+#endif
     {
         ERROR("change_passwd failed");
         user_del(gid, oid, user);
@@ -4778,6 +4798,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
     }
 
     return 0;
+#endif
 }
 
 /**

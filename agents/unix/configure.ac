@@ -172,8 +172,10 @@ dnl - ? on FreeBSD;
 dnl - ? on NetBSD;
 dnl - -lpam on Solaris2 (SunOS 5.11).
 dnl
-AC_SEARCH_LIBS([pam_start], [pam], [],
-               AC_MSG_ERROR(
+AC_SEARCH_LIBS([pam_start], [pam],
+               AC_DEFINE([HAVE_LIBPAM], [1],
+                         [PAM (Pluggable Authentication Modules) support]),
+               AC_MSG_WARN(
                [No PAM (Pluggable Authentication Modules) support]))
 
 if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
