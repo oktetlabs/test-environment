@@ -468,7 +468,7 @@ extern int tapi_snmp_set(const char *ta, int sid, int csap_id,
  *                      to all varbind's OIDs below; may be NULL. 
  * @param ...           Sequence of "varbind groups": label of MIB leaf
  *                      and value, which may be either integer, 
- *                      or pair <char *, int>, for OCTET_STRING types, 
+ *                      or tapi_snmp_oct_string_t*, for OCTET_STRING types,
  *                      or tapi_snmp_oid_t*;  ended by NULL.
  *                      Passed pointers are considered as 'const',
  *                      i.e. OID and data are not changed.
@@ -496,7 +496,7 @@ extern int tapi_snmp_set_row(const char *ta, int sid, int csap_id,
  *                      to all varbind's OIDs below; may be NULL. 
  * @param ...           Sequence of "varbind groups": label of MIB leaf
  *                      and value, which may be either integer, 
- *                      or pair <char *, int>, for OCTET_STRING types, 
+ *                      or tapi_snmp_oct_string_t*, for OCTET_STRING types,
  *                      or tapi_snmp_oid_t*;  ended by NULL.
  *                      Passed pointers are desired as 'const',
  *                      i.e. OID and data are not changed.

@@ -1507,8 +1507,11 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
                 break;
 
             case TAPI_SNMP_OCTET_STR:
-                vb->oct_string = va_arg(ap, unsigned char *);
-                vb->v_len = va_arg(ap, int);
+            {
+                tapi_snmp_oct_string_t *val_oct_str =
+                    va_arg(ap, tapi_snmp_oct_string_t *);
+                vb->oct_string  = val_oct_str->data;
+                vb->v_len       = val_oct_str->len;
 
                 if (vb->v_len == 0)
                     tapi_log_buf_append(log_buf, "NULL");
@@ -1518,6 +1521,7 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
                     tapi_log_buf_append(log_buf, "%02X ",
                                         vb->oct_string[i]);
                 }
+            }
 
                 break;
 
