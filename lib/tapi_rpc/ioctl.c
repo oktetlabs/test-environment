@@ -178,9 +178,20 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_IFREQ;
-                sockaddr_input_h2rpc(&((struct ifreq *)arg)->ifr_addr,
-                                     &in.req.req_val[0].ioctl_request_u.
-                                         req_ifreq.rpc_ifr_addr);
+                if (((struct ifreq *)arg)->ifr_addr.sa_family == AF_INET)
+                {
+                    sockaddr_input_h2rpc(&((struct ifreq *)arg)->ifr_addr,
+                                         &in.req.req_val[0].ioctl_request_u.
+                                             req_ifreq.rpc_ifr_addr);
+                }
+                else
+                {
+                    WARN("As-is converter is used for 'ifr_addr'");
+                    sockaddr_raw2rpc(&((struct ifreq *)arg)->ifr_addr,
+                        sizeof(((struct ifreq *)arg)->ifr_addr),
+                        &in.req.req_val[0].ioctl_request_u.req_ifreq.
+                            rpc_ifr_addr);
+                }
                 in.req.req_val[0].ioctl_request_u.req_ifreq.
                     rpc_ifr_name.rpc_ifr_name_val =
                     ((struct ifreq *)arg)->ifr_name;
