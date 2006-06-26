@@ -295,6 +295,7 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
     size_t ss_len;
     
     ss_len = rpc_get_sizeof(rpcs, "struct sockaddr_storage");
+    assert(ss_len >= sizeof(struct sockaddr_storage));
     
     return rpc_get_accept_addr_gen(rpcs, s, buf, len, 
                                    ss_len + 16, ss_len + 16, 
