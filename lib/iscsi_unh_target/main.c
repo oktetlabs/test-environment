@@ -36,7 +36,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
-#include <pthread.h>
+#include <sys/wait.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -95,17 +95,35 @@ te_log_message_f te_log_message = stderr_logging;
 
 extern int iscsi_server_init();
 
+void
+logfork_register_user(const char *name)
+{
+}
+
+static pid_t server_pid = (pid_t)-1;
+
+static void
+exit_handler(void)
+{
+    if (server_pid != (pid_t)-1)
+    {
+        int unused;
+        
+        kill(server_pid, SIGTERM);
+        wait(&unused);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     iscsi_target_thread_params_t *config;
 
-    int                server_socket;
-    int                data_socket;
+    int                tcp_listen_socket;
+    int                tcp_data_socket;
+    int                server_data_socket;
     struct sockaddr_in listen_to;
     char             **iter;
-    pthread_t          thread;
     int                int_val;
-    int                neg_mode = KEY_TO_BE_NEGOTIATED;
 
     UNUSED(argc);
 
@@ -116,148 +134,62 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
     TRACE(VERBOSE, "Initializing");
-    iscsi_server_init();
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, NULL, 0);
+    server_pid = fork();
+    if (server_pid == 0)
+    {
+        iscsi_server_init();
+        exit(0);
+    }
+    else if (server_pid == (pid_t)-1)
+    {
+        TRACE_ERROR("fork() failed");
+        exit(EXIT_FAILURE);
+    }
+    atexit(&exit_handler);
+    sleep(1);
+
+    tcp_listen_socket = socket(AF_INET, SOCK_STREAM, 0);
+    setsockopt(tcp_listen_socket, SOL_SOCKET, SO_REUSEADDR, NULL, 0);
     listen_to.sin_family = AF_INET;
     listen_to.sin_port   = htons(3260);
     listen_to.sin_addr.s_addr = INADDR_ANY;
-    if (bind(server_socket, (struct sockaddr *)&listen_to, 
+    if (bind(tcp_listen_socket, (struct sockaddr *)&listen_to, 
              sizeof(listen_to)) != 0)
     {
         perror("bind");
         return EXIT_FAILURE;
     }
-    listen(server_socket, 5);
+    listen(tcp_listen_socket, 5);
     fputs("\nListen for incoming connection\n", stderr);
 
-    for (iter = argv + 1; *iter != NULL; iter++)
+    
+    for (iter = argv + 1; *iter != NULL; iter += 2)
     {
-        if (strcmp(*iter, "force") == 0)
+        if (strcmp(*iter, "security") == 0)
         {
+            iscsi_target_send_msg(NULL, NULL, 
+                                  "security", 
+                                  "%s %s",
+                                  iter[1], iter[2]);
             iter++;
-            if (strcmp(*iter, "s") == 0)
-                devdata->force |= USE_SECURITY_PHASE;
-            else if (strcmp(*iter, "o") == 0)
-                devdata->force |= USE_OPERATIONAL_PHASE;
-            else if (strcmp(*iter, "r") == 0)
-                devdata->force |= USE_FULL_REPLIES;
-            else if (strcmp(*iter, "xok") == 0)
-                devdata->force |= USE_REFLECT_XKEYS;
-            else if (strcmp(*iter, "tk1") == 0)
-                devdata->force |= USE_ONE_KEY_PER_TEXT;
-            else if (strncmp(*iter, "n=", 2) == 0)
-                devdata->nop_period =
-                    strtoul(*iter + 2, NULL, 0) * 100;
-            else if (strncmp(*iter, "v=", 2) == 0) {	
-                /* formerly set draft number to enforce */
-                int_val = strtoul(*iter + 2, NULL, 0);
-                if (int_val != DRAFT20) {
-                    TRACE(NORMAL, "Draft number %u ignored\n",
-                          int_val / DRAFT_MULTIPLIER);
-                }
-            }
-
-            /* set phase-collapse choice */
-            else if (strncmp(*iter, "p=", 2) == 0) {
-                int_val = strtoul(*iter + 2, NULL, 0);
-                if (int_val > 2 || int_val < 0) {
-                    TRACE_ERROR("Bad value for phase-collapse "
-                                "setting: %d", int_val);
-                } else
-                    devdata->phase_collapse = int_val;
-            }
-            /* set the r2t period - SAI */
-            else if (strncmp(*iter, "r2tp=", 5) == 0) {
-                devdata->r2t_period =
-                    strtoul(*iter + 5, NULL, 0) * 100;
-            }
-            /* chap and srp support - CHONG */
-            else if (strcmp(*iter, "t") == 0) {
-                TRACE(NORMAL, "target confirmation enabled\n");
-                devdata->auth_parameter.auth_flags |=
-                    USE_TARGET_CONFIRMATION;
-            } else if (strcmp(*iter, "b") == 0) {
-                TRACE(NORMAL, "base64 number enabled\n");
-                devdata->auth_parameter.auth_flags |= USE_BASE64;
-                devdata->auth_parameter.chap_local_ctx->number_format =
-                    BASE64_FORMAT;
-                devdata->auth_parameter.chap_peer_ctx->number_format =
-                    BASE64_FORMAT;
-            } else if (strncmp(*iter, "px=", 3) == 0) {
-                TRACE(NORMAL, "CHAP peer secret set to %s\n",
-                      *iter + 3);
-                CHAP_SetSecret(*iter + 3,
-                               devdata->auth_parameter.chap_peer_ctx);
-            } else if (strncmp(*iter, "pn=", 3) == 0) {
-                TRACE(NORMAL, "CHAP peer name set to %s\n",
-                      *iter + 3);
-                CHAP_SetName(*iter + 3,
-                             devdata->auth_parameter.chap_peer_ctx);
-            } else if (strncmp(*iter, "lx=", 3) == 0) {
-                TRACE(NORMAL, "CHAP local secret set to %s\n",
-                      *iter + 3);
-                CHAP_SetSecret(*iter + 3,
-                               devdata->auth_parameter.chap_local_ctx);
-            } else if (strncmp(*iter, "ln=", 3) == 0) {
-                TRACE(NORMAL, "CHAP local name set to %s\n",
-                      *iter + 3);
-                CHAP_SetName(*iter + 3,
-                             devdata->auth_parameter.chap_local_ctx);
-            } else if (strncmp(*iter, "cl=", 3) == 0) {
-                int_val = strtoul(*iter + 3, NULL, 0);
-                if (int_val <= 0 || int_val > MAX_CHAP_BINARY_LENGTH) {
-                    TRACE_ERROR("invalid CHAP challenge length %d\n",
-                                int_val);
-                }
-                TRACE(NORMAL, "challenge length set to %d\n",
-                      int_val);
-                CHAP_SetChallengeLength(int_val,
-                                        devdata->auth_parameter.
-                                        chap_local_ctx);
-            } else if (strncmp(*iter, "sx=", 3) == 0) {
-                TRACE(NORMAL, "SRP secret set to \"%s\"\n",
-                      *iter + 3);
-                SRP_SetSecret(*iter + 3,
-                              devdata->auth_parameter.srp_ctx);
-            } else if (strncmp(*iter, "sn=", 3) == 0) {
-                TRACE(NORMAL, "SRP name set to \"%s\"\n",
-                      *iter + 3);
-                SRP_SetName(*iter + 3,
-                            devdata->auth_parameter.srp_ctx);
-            } 
-            else if (strncmp(*iter, "log=", 4) == 0) 
-            {
-                iscsi_set_verbose(*iter + 4);
-            }
-            else {
-                TRACE_ERROR("unknown force \"%s\"\n", 
-                            *iter);
-            }
         }
         else if (strcmp(*iter, "backfile") == 0)
         {
-            iter++;
-            if (iscsi_mmap_device(0, 0, *iter) != 0)
-                exit(EXIT_FAILURE);
+            iscsi_target_send_msg(NULL, NULL,
+                                  "mmap",
+                                  "0 0 %s", iter[1]);
         }
-        else if (strcmp(*iter, "permanent") == 0)
+        else if (strcmp(*iter, "verbosity") == 0)
         {
-            neg_mode = 0;
-        }
-        else if (strcmp(*iter, "fixed") == 0)
-        {
-            neg_mode = KEY_TO_BE_NEGOTIATED | KEY_BREAK_CONN_OR_RJT;
-        }
-        else if (strcmp(*iter, "negotiate") == 0)
-        {
-            neg_mode = KEY_TO_BE_NEGOTIATED;
+            iscsi_target_send_msg(NULL, NULL,
+                                  "verbosity", "%s",
+                                  iter[1]);
         }
         else
         {
-            configure_parameter(neg_mode,
-                                *iter,
-                                *devdata->param_tbl);
+            iscsi_target_send_msg(NULL, NULL,
+                                  "set", "%s=%s",
+                                  *iter, iter[1]);
         }
     }
     
@@ -269,32 +201,63 @@ int main(int argc, char *argv[])
         sigaction(SIGQUIT, &sa, NULL);
     }
     
-        
-    for(;;)
+    for (;;)
     {
-        data_socket = accept(server_socket, NULL, NULL);
-        if (data_socket < 0)
+        tcp_data_socket = accept(tcp_listen_socket, NULL, NULL);
+        if (tcp_data_socket < 0)
         {
-            if (errno == EINTR && need_async != 0)
+            TRACE_ERROR("accept() failed");
+            exit(EXIT_FAILURE);
+        }
+        server_data_socket = iscsi_target_connect();
+        if (server_data_socket < 0)
+        {
+            TRACE_ERROR("Cannot connect to the target process");
+            exit(EXIT_FAILURE);
+        }
+        for (;;)
+        {
+            static char buffer[4096];
+            ssize_t datasize;
+
+            fd_set readers;
+            
+            int result;
+
+            FD_ZERO(&readers);
+            
+            FD_SET(tcp_data_socket, &readers);
+            FD_SET(server_data_socket, &readers);
+            
+            result = select(MAX(tcp_data_socket, server_data_socket) + 1, 
+                            &readers, NULL, NULL, NULL);
+            if (result > 0)
             {
-                need_async = 0;
-                fputs("Requesting async message sending\n", stderr);
-                iscsi_set_custom_value(-1, "send_async", "logout_request");   
-                continue;
-            }
-            else
-            {
-                perror("accept");
-                return EXIT_FAILURE;
+                if (FD_ISSET(tcp_data_socket, &readers))
+                {
+                    datasize = read(tcp_data_socket, buffer, sizeof(buffer));
+                    if (datasize <= 0)
+                    {
+                        close(tcp_data_socket);
+                        close(server_data_socket);
+                        break;
+                    }
+                    write(server_data_socket, buffer, datasize);
+                }
+                if (FD_ISSET(server_data_socket, &readers))
+                {
+                    datasize = read(server_data_socket, buffer, sizeof(buffer));
+                    if (datasize <= 0)
+                    {
+                        close(tcp_data_socket);
+                        close(server_data_socket);
+                        break;
+                    }
+                    write(tcp_data_socket, buffer, datasize);
+                }
             }
         }
-        config = malloc(sizeof(*config)); 
-/** will be freed by iscsi_server_tx_thread **/
-        config->send_recv_sock = data_socket;
-        config->reject = 0;
-        fputs("Accepted\n", stderr);
-        if (pthread_create(&thread, NULL, iscsi_server_rx_thread, config) == 0)
-            fputs("thread created\n", stderr);
     }
+
     return 0;
 }

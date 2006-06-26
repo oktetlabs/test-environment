@@ -1,5 +1,5 @@
 
-SUBDIRS = common security target
+SUBDIRS = common security target .
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
@@ -9,14 +9,13 @@ AM_CFLAGS = @TE_CFLAGS@ -pthread
 AM_LDFLAGS = @TE_LDFLAGS@
 
 
-# noinst_PROGRAMS = unh_targetd
+noinst_PROGRAMS = unh_targetd
 
 
-# unh_targetd_SOURCES = main.c
+unh_targetd_SOURCES = main.c
 
-# unh_targetd_LDADD = target/libiscsi_target.a security/libiscsi_security.a \
-#                    common/libiscsi_common.a
-
+unh_targetd_LDADD = target/libiscsi_target.a security/libiscsi_security.a \
+                    common/libiscsi_common.a
 
 lib_LIBRARIES = libiscsi_unh_target.a
 
