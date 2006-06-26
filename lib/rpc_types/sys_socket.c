@@ -1377,8 +1377,9 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
     if (len < TE_OFFSET_OF(struct sockaddr, sa_family) +
               sizeof(sa->sa_family))
     {
-        ERROR("%s(): Address is too short, it does not contain even "
-              "'sa_family' - assertion failure", __FUNCTION__);
+        ERROR("%s(): Address is too short (%u), it does not contain "
+              "even 'sa_family' - assertion failure", __FUNCTION__,
+              (unsigned)len);
         assert(FALSE); /* Not supported yet */
         return;
     }
@@ -1391,8 +1392,10 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
 
             if (len < sizeof(struct sockaddr_in))
             {
-                ERROR("%s(): Address is to short to be 'struct "
-                      "sockaddr_in' - assertion failure", __FUNCTION__);
+                ERROR("%s(): Address is to short (%u) to be 'struct "
+                      "sockaddr_in' (%u) - assertion failure",
+                      __FUNCTION__, (unsigned)len,
+                      (unsigned)sizeof(struct sockaddr_in));
                 assert(FALSE); /* Not supported yet */
                 return;
             }
@@ -1411,8 +1414,10 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
 
             if (len < sizeof(struct sockaddr_in6))
             {
-                ERROR("%s(): Address is to short to be 'struct "
-                      "sockaddr_in6' - assertion failure", __FUNCTION__);
+                ERROR("%s(): Address is to short (%u) to be 'struct "
+                      "sockaddr_in6' (%u) - assertion failure",
+                      __FUNCTION__, (unsigned)len,
+                      (unsigned)sizeof(struct sockaddr_in6));
                 assert(FALSE); /* Not supported yet */
                 return;
             }
@@ -1434,8 +1439,10 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
         case AF_LOCAL:
             if (len < sizeof(struct sockaddr))
             {
-                ERROR("%s(): Address is to short to be 'struct "
-                      "sockaddr' - assertion failure", __FUNCTION__);
+                ERROR("%s(): Address is to short (%u) to be 'struct "
+                      "sockaddr' (%u) - assertion failure",
+                      __FUNCTION__, (unsigned)len,
+                      (unsigned)sizeof(struct sockaddr));
                 assert(FALSE); /* Not supported yet */
                 return;
             }
