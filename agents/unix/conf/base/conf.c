@@ -121,7 +121,6 @@ typedef struct {
 } appdata_t;
 
 typedef struct pam_response pam_response_t;
-#endif
 
 /** Avoid slight differences between UNIX'es over typedef */
 #if defined linux
@@ -134,6 +133,7 @@ typedef struct pam_message pam_message_t;
 #error Unknown platform (i.e. linux, sun, etc)
 #endif
 
+#endif /* HAVE_LIBPAM */
 
 #include "te_stdint.h"
 #include "te_errno.h"
