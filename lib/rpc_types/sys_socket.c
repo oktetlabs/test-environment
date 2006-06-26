@@ -1372,6 +1372,14 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
         }
         /* Raw data was specified on input, but it has been modified */
         rpc->flags &= ~TARPC_SA_RAW;
+        free(rpc->raw.raw_val);
+        rpc->raw.raw_val = NULL;
+        rpc->raw.raw_len = 0;
+    }
+    else
+    {
+        assert(rpc->raw.raw_val == NULL);
+        assert(rpc->raw.raw_len == 0);
     }
 
     if (len < TE_OFFSET_OF(struct sockaddr, sa_family) +
@@ -1590,6 +1598,7 @@ sockaddr_rpc2h(const tarpc_sa *rpc,
 
     if (res_sa != NULL && rpc->raw.raw_val != NULL)
     {
+        assert(salen >= len_auto + rpc->raw.raw_len);
         memcpy((uint8_t *)res_sa + len_auto, rpc->raw.raw_val,
                rpc->raw.raw_len);
         len_auto += rpc->raw.raw_len;
