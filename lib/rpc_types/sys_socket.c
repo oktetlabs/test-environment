@@ -1405,7 +1405,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                    sizeof(sin->sin_addr));
             memcpy(rpc->data.tarpc_sa_data_u.in.addr, &sin->sin_addr,
                    sizeof(rpc->data.tarpc_sa_data_u.in.addr));
-            return;
+            break;
         }
 
         case AF_INET6:
@@ -1432,7 +1432,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
 #if HAVE_STRUCT_SOCKADDR_IN6___SIN6_SRC_ID
             rpc->data.tarpc_sa_data_u.in6.src_id = sin6->__sin6_src_id;
 #endif
-            return;
+            break;
         }
 
 #ifdef AF_LOCAL
@@ -1451,22 +1451,26 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                    sizeof(rpc->data.tarpc_sa_data_u.local.data));
             memcpy(rpc->data.tarpc_sa_data_u.local.data, sa->sa_data,
                    sizeof(rpc->data.tarpc_sa_data_u.local.data));
-            return;
+            break;
 #endif
 
         default:
             WARN("%s(): Address family %u is not supported - use raw "
                  "representation", __FUNCTION__, sa->sa_family);
+            /* Raw representation */
+            rpc->flags |= TARPC_SA_RAW;
+            len = 0;
             break;
     }
 
-    /* Raw representation */
-    rpc->flags |= TARPC_SA_RAW;
-
-    rpc->raw.raw_val = malloc(rlen);
-    assert(rpc->raw.raw_val != NULL);
-    rpc->raw.raw_len = rlen;
-    memcpy(rpc->raw.raw_val, sa, rlen);
+    if (rlen > len)
+    {
+        /* Add trailer raw bytes */
+        rpc->raw.raw_val = malloc(rlen - len);
+        assert(rpc->raw.raw_val != NULL);
+        rpc->raw.raw_len = rlen - len;
+        memcpy(rpc->raw.raw_val, (uint8_t *)sa + len, rlen - len);
+    }
 }
 
 /** See the description in ta_rpc_sys_socket.h */
@@ -1582,6 +1586,13 @@ sockaddr_rpc2h(const tarpc_sa *rpc,
                 len_auto = 0;
             }
             break;
+    }
+
+    if (res_sa != NULL && rpc->raw.raw_val != NULL)
+    {
+        memcpy((uint8_t *)res_sa + len_auto, rpc->raw.raw_val,
+               rpc->raw.raw_len);
+        len_auto += rpc->raw.raw_len;
     }
 
     if (salen_out != NULL)
