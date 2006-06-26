@@ -156,7 +156,7 @@ enum tarpc_socket_addr_family {
 
 enum tarpc_flags {
     TARPC_SA_NOT_NULL = 0x1,
-    TARPC_SA_RAW = 0x2,
+    TARPC_SA_RAW      = 0x2,
     TARPC_SA_LEN_AUTO = 0x4
 };
 
