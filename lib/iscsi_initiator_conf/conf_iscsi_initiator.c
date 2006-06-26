@@ -135,26 +135,26 @@ iscsi_init_default_connection_parameters(iscsi_connection_data_t *conn_data)
     memset(conn_data, 0, sizeof(*conn_data));
 
     conn_data->status = ISCSI_CONNECTION_REMOVED;
-    strcpy(conn_data->initiator_name, DEFAULT_INITIATOR_NAME);
-    strcpy(conn_data->initiator_alias, DEFAULT_INITIATOR_ALIAS);
+    strcpy(conn_data->initiator_name, ISCSI_DEFAULT_INITIATOR_NAME);
+    strcpy(conn_data->initiator_alias, ISCSI_DEFAULT_INITIATOR_ALIAS);
     
-    conn_data->max_connections = DEFAULT_MAX_CONNECTIONS;
-    strcpy(conn_data->initial_r2t, DEFAULT_INITIAL_R2T);
-    strcpy(conn_data->header_digest, DEFAULT_HEADER_DIGEST);
-    strcpy(conn_data->data_digest, DEFAULT_DATA_DIGEST);
-    strcpy(conn_data->immediate_data, DEFAULT_IMMEDIATE_DATA);
+    conn_data->max_connections = ISCSI_DEFAULT_MAX_CONNECTIONS;
+    strcpy(conn_data->initial_r2t, ISCSI_DEFAULT_INITIAL_R2T);
+    strcpy(conn_data->header_digest, ISCSI_DEFAULT_HEADER_DIGEST);
+    strcpy(conn_data->data_digest, ISCSI_DEFAULT_DATA_DIGEST);
+    strcpy(conn_data->immediate_data, ISCSI_DEFAULT_IMMEDIATE_DATA);
     conn_data->max_recv_data_segment_length = 
-        DEFAULT_MAX_RECV_DATA_SEGMENT_LENGTH;
-    conn_data->first_burst_length = DEFAULT_FIRST_BURST_LENGTH;
-    conn_data->max_burst_length = DEFAULT_MAX_BURST_LENGTH;
-    conn_data->default_time2wait = DEFAULT_DEFAULT_TIME2WAIT;
-    conn_data->default_time2retain = DEFAULT_DEFAULT_TIME2RETAIN;
-    conn_data->max_outstanding_r2t = DEFAULT_MAX_OUTSTANDING_R2T;
-    strcpy(conn_data->data_pdu_in_order, DEFAULT_DATA_PDU_IN_ORDER);
+        ISCSI_DEFAULT_MAX_RECV_DATA_SEGMENT_LENGTH;
+    conn_data->first_burst_length = ISCSI_DEFAULT_FIRST_BURST_LENGTH;
+    conn_data->max_burst_length = ISCSI_DEFAULT_MAX_BURST_LENGTH;
+    conn_data->default_time2wait = ISCSI_DEFAULT_ISCSI_DEFAULT_TIME2WAIT;
+    conn_data->default_time2retain = ISCSI_DEFAULT_ISCSI_DEFAULT_TIME2RETAIN;
+    conn_data->max_outstanding_r2t = ISCSI_DEFAULT_MAX_OUTSTANDING_R2T;
+    strcpy(conn_data->data_pdu_in_order, ISCSI_DEFAULT_DATA_PDU_IN_ORDER);
     strcpy(conn_data->data_sequence_in_order, 
-           DEFAULT_DATA_SEQUENCE_IN_ORDER);
-    conn_data->error_recovery_level = DEFAULT_ERROR_RECOVERY_LEVEL;
-    strcpy(conn_data->session_type, DEFAULT_SESSION_TYPE);
+           ISCSI_DEFAULT_DATA_SEQUENCE_IN_ORDER);
+    conn_data->error_recovery_level = ISCSI_DEFAULT_ERROR_RECOVERY_LEVEL;
+    strcpy(conn_data->session_type, ISCSI_DEFAULT_SESSION_TYPE);
 
     /* target's chap */
     conn_data->chap.target_auth = FALSE;
@@ -162,7 +162,7 @@ iscsi_init_default_connection_parameters(iscsi_connection_data_t *conn_data)
     *(conn_data->chap.local_name) = '\0';
     strcpy(conn_data->chap.chap, "None");
     conn_data->chap.enc_fmt = BASE_16;
-    conn_data->chap.challenge_length = DEFAULT_CHALLENGE_LENGTH;
+    conn_data->chap.challenge_length = ISCSI_DEFAULT_CHALLENGE_LENGTH;
     *(conn_data->chap.peer_name) = '\0';
     *(conn_data->chap.local_secret) = '\0';
     pthread_mutex_init(&conn_data->status_mutex, NULL);
@@ -181,25 +181,18 @@ iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
     int i;
     memset(tgt_data, 0, sizeof(*tgt_data));
     
-    strcpy(tgt_data->target_name, DEFAULT_TARGET_NAME);
+    strcpy(tgt_data->target_name, ISCSI_DEFAULT_TARGET_NAME);
     
-    for (i = 0; i < MAX_CONNECTIONS_NUMBER; i++)
+    for (i = 0; i < ISCSI_MAX_CONNECTIONS_NUMBER; i++)
     {
         iscsi_init_default_connection_parameters(&tgt_data->conns[i]);
     }
 }
 
-/** Configure all targets (id: 0..MAX_TARGETS_NUMBER */
-#define ISCSI_CONF_ALL_TARGETS -1
-
-/** Configure only general Initiator data */
-#define ISCSI_CONF_NO_TARGETS -2
-
 static void *iscsi_initiator_conn_request_thread(void *arg);
 
 /**
  * Initialize all Initiator-related structures
- *
  */
 static void
 iscsi_init_default_ini_parameters(void)
@@ -208,16 +201,13 @@ iscsi_init_default_ini_parameters(void)
     
     init_data = TE_ALLOC(sizeof(*init_data));
 
-    pthread_mutex_init(&init_data->initiator_mutex, NULL);
+    pthread_mutex_init(&init_data->mutex, NULL);
     sem_init(&init_data->request_sem, 0, 0);
 
-    /* init_id */
-    /* init_type */
-    /* initiator name */
-    init_data->init_type = UNH;
-    init_data->host_bus_adapter = DEFAULT_HOST_BUS_ADAPTER;
+    init_data->init_type = ISCSI_DEFAULT_INITIATOR_TYPE;
+    init_data->host_bus_adapter = ISCSI_DEFAULT_HOST_BUS_ADAPTER;
     
-    for (i = 0; i < MAX_TARGETS_NUMBER; i++)
+    for (i = 0; i < ISCSI_MAX_TARGETS_NUMBER; i++)
     {
         iscsi_init_default_tgt_parameters(&init_data->targets[i]);
         init_data->targets[i].target_id = -1;
@@ -251,50 +241,39 @@ iscsi_initiator_get(const char *gid, const char *oid,
 static te_errno
 te_shell_cmd_ex(const char *cmd, ...)
 {
-    char    cmdline[MAX_CMD_SIZE];
+    char    cmdline[ISCSI_MAX_CMD_SIZE];
     va_list ap;
 
     va_start(ap, cmd);
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
 
-    IVERB("iSCSI Initiator: %s\n", cmdline);
+    VERB("iSCSI Initiator: %s\n", cmdline);
     return te_shell_cmd(cmdline, -1, NULL, NULL) > 0 ? 0 : TE_ESHCMD;
 }
 #endif
 
 #ifndef __CYGWIN__
-/**
- * Executes ta_system.
- *
- * @param cmd    format of the command followed by parameters
- *
- * @return -1 or result of the ta_system
- */
+/** See description in iscsi_initiator.h */
 int
-ta_system_ex(const char *cmd, ...)
+iscsi_unix_cli(const char *cmd, ...)
 {
     char   *cmdline;
     int     status = 0;
     va_list ap;
 
-    if ((cmdline = (char *)TE_ALLOC(MAX_CMD_SIZE)) == NULL)
+    if ((cmdline = (char *)TE_ALLOC(ISCSI_MAX_CMD_SIZE)) == NULL)
     {
-        ERROR("Not enough memory\n");
         return TE_ENOMEM;
     }
 
-    IVERB("fmt=\"%s\"\n", cmd);
-
     va_start(ap, cmd);
-    vsnprintf(cmdline, MAX_CMD_SIZE, cmd, ap);
+    vsnprintf(cmdline, ISCSI_MAX_CMD_SIZE, cmd, ap);
     va_end(ap);
 
-    IVERB("iSCSI Initiator: %s\n", cmdline);
-
+    VERB("%s() command line: %s\n", __FUNCTION__, cmdline);
     status = ta_system(cmdline);
-    IVERB("%s(): ta_system() call returns 0x%x\n", __FUNCTION__, status);
-    fflush(stderr);
+    VERB("%s(): ta_system() call returns 0x%x\n", __FUNCTION__, status);
 
     free(cmdline);
 
@@ -306,16 +285,6 @@ ta_system_ex(const char *cmd, ...)
 /**
  * See description in iscsi_initiator.h
  */
-te_bool
-iscsi_is_param_needed(iscsi_target_param_descr_t *param,
-                      iscsi_target_data_t *tgt_data,
-                      iscsi_connection_data_t *conn_data,
-                      iscsi_tgt_chap_data_t *auth_data)
-{
-    return (param->predicate != NULL ?
-            param->predicate(tgt_data, conn_data, auth_data) : 
-            TRUE);
-}
 
 /**
  * See description in iscsi_initiator.h
@@ -468,18 +437,23 @@ iscsi_when_chap(iscsi_target_data_t *target_data,
 }
 
 /** Names of iSCSI connection states */
-static const char *iscsi_status_names[] = {
-    "REMOVED", 
-    "DOWN",         
-    "ESTABLISHING", 
-    "WAITING_DEVICE", 
-    "UP",           
-    "CLOSING",      
-    "ABNORMAL",     
-    "RECOVER_DOWN",
-    "RECOVER_UP",
-    "DISCOVERING"
-};
+static inline const char *
+iscsi_status_name(iscsi_connection_status status)
+{
+    static const char *names[] = {
+        "REMOVED", 
+        "DOWN",         
+        "ESTABLISHING", 
+        "WAITING_DEVICE", 
+        "UP",           
+        "CLOSING",      
+        "ABNORMAL",     
+        "RECOVER_DOWN",
+        "RECOVER_UP",
+        "DISCOVERING"
+    };
+    return names[status + 1];
+}
 
 
 /**
@@ -491,12 +465,13 @@ static const char *iscsi_status_names[] = {
  * @param conn          Connection data
  * @param status        New status
  */
-void
+static void
 iscsi_change_conn_status(iscsi_target_data_t *target,
                          iscsi_connection_data_t *conn, 
                          iscsi_connection_status status)
 {
     iscsi_connection_status old_status;
+
     pthread_mutex_lock(&conn->status_mutex);
     old_status = conn->status;
     conn->status = status;
@@ -520,15 +495,20 @@ iscsi_change_conn_status(iscsi_target_data_t *target,
         init_data->n_connections--;
     }
     pthread_mutex_unlock(&conn->status_mutex);
+
     RING("Connection %d,%d: %s -> %s", 
          target->target_id, conn - target->conns,
-         iscsi_status_names[old_status + 1],
-         iscsi_status_names[status     + 1]);
+         iscsi_status_name(old_status),
+         iscsi_status_name(status));
 }
 
 /**
- * Asynchronously posts a request to change state of a given connection.
+ * Asynchronously posts a request to change a state of a given connection.
  * The request will be handled by iscsi_initiator_conn_request_thread().
+ * The only status values acceptable by this function are:
+ * - ISCSI_CONNECTION_UP
+ * - ISCSI_CONNECTION_DOWN
+ * - ISCSI_CONNECTION_REMOVED
  *
  * @return              Status code
  * @param target_id     Target number
@@ -544,7 +524,7 @@ iscsi_post_connection_request(int target_id, int cid, int status, te_bool urgent
 
     RING("Posting connection status change request: %d,%d -> %s",
          target_id, cid, 
-         iscsi_status_names[status + 1]);
+         iscsi_status_name(status));
 
     switch (status)
     {
@@ -554,6 +534,7 @@ iscsi_post_connection_request(int target_id, int cid, int status, te_bool urgent
             /* status is ok */
             break;
         default:
+            ERROR("Invalid connection status change request");
             return TE_RC(ISCSI_AGENT_TYPE, TE_EINVAL);
     }
 
@@ -564,7 +545,7 @@ iscsi_post_connection_request(int target_id, int cid, int status, te_bool urgent
     req->cid       = cid;
     req->status    = status;
     req->next      = NULL;
-    pthread_mutex_lock(&init_data->initiator_mutex);
+    pthread_mutex_lock(&init_data->mutex);
     if (urgent)
     {
         req->next = init_data->request_queue_head;
@@ -580,34 +561,77 @@ iscsi_post_connection_request(int target_id, int cid, int status, te_bool urgent
             init_data->request_queue_head = req;
         init_data->request_queue_tail = req;
     }
-    pthread_mutex_unlock(&init_data->initiator_mutex);
+    pthread_mutex_unlock(&init_data->mutex);
     sem_post(&init_data->request_sem);
     return 0;
 }
 
+#ifndef __CYGWIN__
+/**
+ *  Builds a glob_t list of files matching @p pattern.
+ *  Does appropriate logging in case of an error.
+ *
+ *  @return             Status code
+ *  @retval TE_EGAIN    No matching files have been found
+ *
+ *  @param  conn        Connection data
+ *  @param  pattern     glob()-style filename pattern
+ *  @param  entity_name Kind of logical entity being listed
+ *                      (used for logging)
+ *  @param  list (OUT)  Resulting list of files
+ */
+static te_errno
+iscsi_scan_directory(iscsi_connection_data_t *conn,
+                     const char *pattern, const char *entity_name,
+                     glob_t *list)
+{
+    int rc = 0;
+
+    if ((rc = glob(pattern, GLOB_ERR, NULL, list)) != 0)
+    {
+        switch(rc)
+        {
+            case GLOB_NOSPACE:
+                ERROR("Cannot read a list of %s: no memory", 
+                      entity_name);
+                return TE_RC(ISCSI_AGENT_TYPE, TE_ENOMEM);
+            case GLOB_ABORTED:
+                ERROR("Cannot read a list of %s: read error",
+                      entity_name);
+                return TE_RC(ISCSI_AGENT_TYPE, TE_EIO);
+            case GLOB_NOMATCH:
+                pthread_mutex_lock(&conn->status_mutex);
+                *conn->device_name = '\0';
+                pthread_mutex_unlock(&conn->status_mutex);
+                return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
+            default:
+                ERROR("unexpected error on glob()");
+                return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+        }
+    }
+    return 0;
+}
+                     
 
 /**
- * Probe for a device readiness and obtain its name
- * (on Win32, iscsi_win32_prepare_device() do the actual work)
- * Then attempts to write to the device to notify tests that the
- * device creation has completed.
- * 
- * On Linux this function searches inside /sys.
+ * Probe a SCSI device associated with a given iSCSI connection.
+ * This function looks inside /sys for necessary information.
+ * If the device is ready, its name is stored into @p conn->device_name,
+ *
  * FIXME: there are different mechanisms of SCSI device discovery
  * for L5 and non-L5 initiators. This really should be unified.
  *
  * @return              Status code
- * @retval EAGAIN       The device is not yet ready,
- *                      another attempt is to be made
+ * @retval 0            Device is ready
+ * @retval TE_EGAIN     Device is not yet ready, try again
+ * 
  * @param conn          Connection data
- * @param target_id     Target number 
+ * @param target_id     Target ID
  */
 static te_errno
-iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
+iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
 {
     int         rc = 0;
-
-#ifndef __CYGWIN__
     char        dev_pattern[128];
     char       *nameptr;
     FILE       *hba = NULL;
@@ -615,7 +639,7 @@ iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
 
     switch (init_data->init_type)
     {
-        case L5:
+        case ISCSI_L5:
             hba = popen("T=`grep -l efabiscsi "
                         "/sys/class/scsi_host/host*/proc_name` && "
                         "B=${T%/proc_name} && "
@@ -634,25 +658,13 @@ iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
             break;
         default:
         {
-            if ((rc = glob("/sys/bus/scsi/devices/*/vendor", GLOB_ERR, NULL, &devices)) != 0)
+            rc = iscsi_scan_directory(conn, 
+                                      "/sys/bus/scsi/devices/*/vendor",
+                                      "host bus adapters",
+                                      &devices);
+            if (rc != 0)
             {
-                switch(rc)
-                {
-                    case GLOB_NOSPACE:
-                        ERROR("Cannot read a list of host bus adpaters: no memory");
-                        return TE_RC(ISCSI_AGENT_TYPE, TE_ENOMEM);
-                    case GLOB_ABORTED:
-                        ERROR("Cannot read a list of host bus adapters: read error");
-                        return TE_RC(ISCSI_AGENT_TYPE, TE_EIO);
-                    case GLOB_NOMATCH:
-                        pthread_mutex_lock(&conn->status_mutex);
-                        *conn->device_name = '\0';
-                        pthread_mutex_unlock(&conn->status_mutex);
-                        return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
-                    default:
-                        ERROR("unexpected error on glob()");
-                        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
-                }
+                return rc;
             }
             else
             {
@@ -666,26 +678,26 @@ iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
                     {
                         WARN("Cannot open %s: %s", devices.gl_pathv[i], 
                              strerror(errno));
+                        continue;
                     }
-                    else
+                    *dev_pattern = '\0';
+                    fgets(dev_pattern, sizeof(dev_pattern) - 1, hba);
+                    RING("Vendor reported is %s", dev_pattern);
+                    fclose(hba);
+                    if (strstr(dev_pattern, "UNH") == NULL)
+                        continue;
+                    
+                    rc = sscanf(devices.gl_pathv[i], 
+                                "/sys/bus/scsi/devices/%d:", 
+                                &init_data->host_bus_adapter);
+                    if (rc != 1)
                     {
-                        *dev_pattern = '\0';
-                        fgets(dev_pattern, sizeof(dev_pattern) - 1, hba);
-                        RING("Vendor reported is %s", dev_pattern);
-                        fclose(hba);
-                        if (strstr(dev_pattern, "UNH") != NULL)
-                        {
-                            rc = sscanf(devices.gl_pathv[i], "/sys/bus/scsi/devices/%d:", 
-                                        &init_data->host_bus_adapter);
-                            if (rc != 1)
-                            {
-                                ERROR("Something strange with /sys/bus/scsi/devices");
-                                globfree(&devices);
-                                return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
-                            }
-                            break;
-                        }
+                        ERROR("Something strange with "
+                              "/sys/bus/scsi/devices");
+                        globfree(&devices);
+                        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
                     }
+                    break;
                 }
                 if (i == devices.gl_pathc)
                 {
@@ -701,27 +713,9 @@ iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
        
     sprintf(dev_pattern, "/sys/bus/scsi/devices/%d:*:%d/block*", 
             init_data->host_bus_adapter, target_id);
-    if ((rc = glob(dev_pattern, GLOB_ERR, NULL, &devices)) != 0)
-    {
-        switch(rc)
-        {
-            case GLOB_NOSPACE:
-                ERROR("Cannot read a list of devices: no memory");
-                return TE_RC(ISCSI_AGENT_TYPE, TE_ENOMEM);
-            case GLOB_ABORTED:
-                ERROR("Cannot read a list of devices: read error");
-                return TE_RC(ISCSI_AGENT_TYPE, TE_EIO);
-            case GLOB_NOMATCH:
-                RING("No items for %s", dev_pattern);
-                pthread_mutex_lock(&conn->status_mutex);
-                *conn->device_name = '\0';
-                pthread_mutex_unlock(&conn->status_mutex);
-                return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
-            default:
-                ERROR("unexpected error on glob()");
-                return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
-        }
-    }
+    rc = iscsi_scan_directory(conn, dev_pattern, "devices", &devices);
+    if (rc != 0)
+        return rc;
 
     if (devices.gl_pathc > 1)
     {
@@ -776,57 +770,69 @@ iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
         }
     }
     globfree(&devices);
-    if (ta_system_ex("blockdev --setra 0 %s", conn->device_name) != 0)
-    {
-        WARN("Unable to disable read-ahead on %s", conn->device_name);
-    }
-#else
-    UNUSED(target_id);
-    rc = iscsi_win32_prepare_device(conn);
-#endif
-
     if (rc == 0)
     {
-        int fd = open(conn->device_name, O_WRONLY | O_SYNC);
-        
-        if (fd < 0)
+        if (iscsi_unix_cli("blockdev --setra 0 %s", conn->device_name) != 0)
         {
-            rc = TE_OS_RC(ISCSI_AGENT_TYPE, errno);
-            if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-            {
-                RING("Device %s is not ready :(", conn->device_name);
-                pthread_mutex_lock(&conn->status_mutex);
-                *conn->device_name = '\0';
-                pthread_mutex_unlock(&conn->status_mutex);
-                rc = TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
-            }
-            else
-            {
-                ERROR("Cannot open a device %s: %r",
-                      conn->device_name, rc);
-            }
+            WARN("Unable to disable read-ahead on %s", conn->device_name);
+        }
+    }
+    return rc;
+}
+
+#endif /* ! __CYGWIN__ */
+
+/**
+ * Attempts to write a sample data to a SCSI device associated with @p conn.
+ *
+ * @return              Status code
+ * @retval TE_EAGAIN    Device is not yet ready, try again
+ *
+ * @param conn  Connection data
+ */
+static te_errno
+iscsi_write_sample_to_device(iscsi_connection_data_t *conn)
+{
+    te_errno rc = 0;
+    int      fd = open(conn->device_name, O_WRONLY | O_SYNC);
+        
+    if (fd < 0)
+    {
+        rc = TE_OS_RC(ISCSI_AGENT_TYPE, errno);
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        {
+            RING("Device %s is not ready :(", conn->device_name);
+            pthread_mutex_lock(&conn->status_mutex);
+            *conn->device_name = '\0';
+            pthread_mutex_unlock(&conn->status_mutex);
+            rc = TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
         }
         else
         {
-            const char buf[512] = "testing";
-            errno = 0;
-            if (write(fd, buf, sizeof(buf)) != sizeof(buf))
+            ERROR("Cannot open a device %s: %r",
+                  conn->device_name, rc);
+        }
+    }
+    else
+    {
+        const char buf[512] = "testing";
+        errno = 0;
+        if (write(fd, buf, sizeof(buf)) != sizeof(buf))
+        {
+            rc = (errno == 0 ? TE_RC(ISCSI_AGENT_TYPE, TE_ENOSPC) :
+                  TE_OS_RC(ISCSI_AGENT_TYPE, errno));
+            ISCSI_WIN32_REPORT_ERROR();
+            ERROR("Cannot write to device %s: %r",
+                  conn->device_name, rc);
+            close(fd);
+        }
+        else
+        {
+            if (close(fd) != 0)
             {
-                rc = (errno == 0 ? TE_RC(ISCSI_AGENT_TYPE, TE_ENOSPC) :
-                      TE_OS_RC(ISCSI_AGENT_TYPE, errno));
-                ISCSI_WIN32_REPORT_ERROR();
-                ERROR("Cannot write to device %s: %r",
+                rc = TE_OS_RC(ISCSI_AGENT_TYPE, errno);
+                ERROR("Error syncing data to %s: %r",
                       conn->device_name, rc);
-                close(fd);
-            }
-            else
-            {
-                if (close(fd) != 0)
-                {
-                    rc = TE_OS_RC(ISCSI_AGENT_TYPE, errno);
-                    ERROR("Error syncing data to %s: %r",
-                          conn->device_name, rc);
-                }
             }
         }
     }
@@ -834,7 +840,38 @@ iscsi_prepare_device (iscsi_connection_data_t *conn, int target_id)
 }
 
 /**
- * This thread wakes from time to time 
+ * Probe for a device readiness and obtain its name.
+ * Then attempts to write to the device to notify tests that the
+ * device creation has completed. 
+ *
+ * @return              Status code
+ * @retval TE_EAGAIN    The device is not yet ready,
+ *                      another attempt is to be made
+ *
+ * @param conn          Connection data
+ * @param target_id     Target number 
+ *
+ * @sa iscsi_linux_prepare_device()
+ * @sa iscsi_win32_prepare_device()
+ * @sa iscsi_write_sample_to_device()
+ */
+static te_errno
+iscsi_prepare_device(iscsi_connection_data_t *conn, int target_id)
+{
+    int         rc = 0;
+
+#ifndef __CYGWIN__
+    rc = iscsi_linux_prepare_device(conn, target_id);
+#else
+    UNUSED(target_id);
+    rc = iscsi_win32_prepare_device(conn);
+#endif
+
+    return rc != 0 ? rc : iscsi_write_sample_to_device(conn);
+}
+
+/**
+ * This thread wakes up from time to time 
  * (namely, every @p iscsi_retry_timeout usecs, and attempts:
  * - to shutdown all connections in abnormal state 
  *   (possibly bringing some them up again, if needed)
@@ -851,7 +888,7 @@ iscsi_initiator_timer_thread(void *arg)
     {
         for (i = 0; i < init_data->n_targets; i++)
         {
-            for (j = 0; j < MAX_CONNECTIONS_NUMBER; j++)
+            for (j = 0; j < ISCSI_MAX_CONNECTIONS_NUMBER; j++)
             {
                 pthread_mutex_lock(&init_data->targets[i].conns[j].status_mutex);
                 switch (init_data->targets[i].conns[j].status)
@@ -980,7 +1017,7 @@ iscsi_initiator_conn_request_thread(void *arg)
     for (;;)
     {
         sem_wait(&init_data->request_sem);
-        pthread_mutex_lock(&init_data->initiator_mutex);
+        pthread_mutex_lock(&init_data->mutex);
         current_req = init_data->request_queue_head;
         if (current_req != NULL)
         {
@@ -988,17 +1025,24 @@ iscsi_initiator_conn_request_thread(void *arg)
             if (init_data->request_queue_head == NULL)
                 init_data->request_queue_tail = NULL;
         }
-        pthread_mutex_unlock(&init_data->initiator_mutex);
+        pthread_mutex_unlock(&init_data->mutex);
         if (current_req == NULL)
             continue;
 
         RING("Got connection status change request: %d,%d %s",
              current_req->target_id, current_req->cid,
-             iscsi_status_names[current_req->status + 1]);
+             iscsi_status_name(current_req->status));
+        /** A request with cid == ISCSI_ALL_CONNECTIONS is sent
+         *  when a test is done so that the thread could do any
+         *  clean-up.
+         *  Currently, the only action performed 
+         *  is stopping Open-iSCSI managing daemon, if 
+         *  Open iSCSI is the initiator used.
+         */
         if (current_req->cid == ISCSI_ALL_CONNECTIONS)
         {
 #ifndef __CYGWIN__
-            if (init_data->init_type == OPENISCSI)
+            if (init_data->init_type == ISCSI_OPENISCSI)
             {
                 iscsi_openiscsi_stop_daemon();
             }
@@ -1117,19 +1161,19 @@ iscsi_initiator_conn_request_thread(void *arg)
         switch (init_data->init_type)
         {
 #ifndef __CYGWIN__
-            case UNH:
+            case ISCSI_UNH:
                 rc = iscsi_initiator_unh_set(current_req);
                 break;
-            case L5:
+            case ISCSI_L5:
                 rc = iscsi_initiator_l5_set(current_req);
                 break;
-            case OPENISCSI:
+            case ISCSI_OPENISCSI:
                 rc = iscsi_initiator_openiscsi_set(current_req);
                 break;
 #endif
 #ifdef __CYGWIN__
-            case MICROSOFT:
-            case L5:
+            case ISCSI_MICROSOFT:
+            case ISCSI_L5:
                 rc = iscsi_initiator_win32_set(current_req);
                 break;
 #endif
@@ -1361,7 +1405,7 @@ iscsi_conn_add(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(value);
 
-    IVERB("Adding connection with id=%d to target with id %d", 
+    VERB("Adding connection with id=%d to target with id %d", 
           conn - target->conns, target->target_id);
 
     pthread_mutex_lock(&conn->status_mutex);
@@ -1392,7 +1436,7 @@ iscsi_conn_list(unsigned int gid, const char *oid,
 {
     int   cid;
     int   tgt_id = iscsi_get_target_id(oid);
-    char  conns_list[MAX_CONNECTIONS_NUMBER * 15];
+    char  conns_list[ISCSI_MAX_CONNECTIONS_NUMBER * 15];
     char  conn[15];
     
     UNUSED(gid);
@@ -1400,7 +1444,7 @@ iscsi_conn_list(unsigned int gid, const char *oid,
     
     conns_list[0] = '\0';
     
-    for (cid = 0; cid < MAX_CONNECTIONS_NUMBER; cid++)
+    for (cid = 0; cid < ISCSI_MAX_CONNECTIONS_NUMBER; cid++)
     {
         if (init_data->targets[tgt_id].conns[cid].status != 
             ISCSI_CONNECTION_REMOVED)
@@ -1456,7 +1500,7 @@ iscsi_target_data_add(unsigned int gid, const char *oid,
     iscsi_init_default_tgt_parameters(&init_data->targets[tgt_id]);
     init_data->targets[tgt_id].target_id = tgt_id;
 
-    IVERB("Adding %s with value %s, id=%d\n", oid, value, tgt_id);
+    VERB("Adding %s with value %s, id=%d\n", oid, value, tgt_id);
 
     return 0;
 }
@@ -1470,7 +1514,7 @@ iscsi_target_data_del(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     
-    IVERB("Deleting %s\n", oid);
+    VERB("Deleting %s\n", oid);
     if (init_data->targets[tgt_id].target_id >= 0)
     {
         init_data->targets[tgt_id].target_id = -1;
@@ -1490,7 +1534,7 @@ iscsi_target_data_list(unsigned int gid, const char *oid,
                        char **list, const char *instance, ...)
 {
     int   id;
-    char  targets_list[MAX_TARGETS_NUMBER * 15];
+    char  targets_list[ISCSI_MAX_TARGETS_NUMBER * 15];
     char  tgt[15];
     
     UNUSED(gid);
@@ -1499,7 +1543,7 @@ iscsi_target_data_list(unsigned int gid, const char *oid,
     
     targets_list[0] = '\0';
     
-    for (id = 0; id < MAX_TARGETS_NUMBER; id++)
+    for (id = 0; id < ISCSI_MAX_TARGETS_NUMBER; id++)
     {
         if (init_data->targets[id].target_id != -1)
         {
@@ -2233,19 +2277,19 @@ iscsi_type_set(unsigned int gid, const char *oid,
     UNUSED(oid);
 
     if (strcmp(value, "unh") == 0)
-        init_data->init_type = UNH;
+        init_data->init_type = ISCSI_UNH;
     else if (strcmp(value, "l5") == 0)
-        init_data->init_type = L5;
+        init_data->init_type = ISCSI_L5;
     else if (strcmp(value, "microsoft") == 0)
-        init_data->init_type = MICROSOFT;
+        init_data->init_type = ISCSI_MICROSOFT;
     else if (strcmp(value, "open-iscsi") == 0)
-        init_data->init_type = OPENISCSI;
+        init_data->init_type = ISCSI_OPENISCSI;
     else
         return TE_RC(ISCSI_AGENT_TYPE, TE_EINVAL);
 
 #if 0
     if (previous_type != init_data->init_type &&
-        previous_type == OPENISCSI)
+        previous_type == ISCSI_OPENISCSI)
     {
         iscsi_openiscsi_stop_daemon();
     }

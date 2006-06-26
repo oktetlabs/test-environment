@@ -96,17 +96,17 @@ static const char *conf_iscsi_unh_force_flag_fmt =
  * @param target_id_        ID of the target for which the parameter
  *                          is set
  */
-#define ISCSI_UNH_SET_UNNEGOTIATED(param_, value_, target_id_) \
-    do {                                                                    \
-        IVERB("ISCSI_UNH_SET_UNNEGOTIATED(%s,%p,%d)\n",                    \
-                param_, value_, target_id_);                      \
-        CHECK_SHELL_CONFIG_RC(                                              \
-            ta_system_ex(conf_iscsi_unh_set_fmt,                            \
-                         "",                                                \
-                         (param_),                                          \
-                         (value_), (target_id_),                            \
-                         iscsi_configuration()->host_bus_adapter),                      \
-            (param_));                                                      \
+#define ISCSI_UNH_SET_UNNEGOTIATED(param_, value_, target_id_)      \
+    do {                                                            \
+        VERB("ISCSI_UNH_SET_UNNEGOTIATED(%s,%p,%d)\n",              \
+             param_, value_, target_id_);                           \
+        CHECK_SHELL_CONFIG_RC(                                      \
+            iscsi_unix_cli(conf_iscsi_unh_set_fmt,                    \
+                         "",                                        \
+                         (param_),                                  \
+                         (value_), (target_id_),                    \
+                         iscsi_configuration()->host_bus_adapter),  \
+            (param_));                                              \
     } while (0)
 
 /**
@@ -120,16 +120,16 @@ static const char *conf_iscsi_unh_force_flag_fmt =
  * @param offered_params_   Set of params that should be offered by the
  *                          Initiator during the login phase.
  */
-#define ISCSI_UNH_SET(param_, value_, target_id_, mask_, offered_params_) \
+#define ISCSI_UNH_SET(param_, value_, target_id_, mask_, offered_params_)   \
     do {                                                                    \
-        IVERB("ISCSI_UNH_SET(%s,%p,%d)\n",                                \
-                param_, value_, target_id_);                      \
+        VERB("ISCSI_UNH_SET(%s,%p,%d)\n",                                   \
+             param_, value_, target_id_);                                   \
         CHECK_SHELL_CONFIG_RC(                                              \
-            ta_system_ex(conf_iscsi_unh_set_fmt,                            \
-                         SHOULD_OFFER((offered_params_), (mask_)) ? "":"p",\
+            iscsi_unix_cli(conf_iscsi_unh_set_fmt,                            \
+                         SHOULD_OFFER((offered_params_), (mask_)) ? "":"p", \
                          (param_),                                          \
                          (value_), (target_id_),                            \
-                         iscsi_configuration()->host_bus_adapter),                      \
+                         iscsi_configuration()->host_bus_adapter),          \
             (param_));                                                      \
     } while (0)
 
@@ -144,18 +144,19 @@ static const char *conf_iscsi_unh_force_flag_fmt =
  * @param offered_params_   Set of params that should be offered by the
  *                          Initiator during the login phase.
  */
-#define ISCSI_UNH_SET_INT(param_, value_, target_id_, mask_, offered_params_) \
-    do {                                                                    \
-        IVERB("ISCSI_UNH_SET_INT(%s,%d,%d)\n",                            \
-                param_, value_, target_id_);                                \
-        CHECK_SHELL_CONFIG_RC(                                              \
-            ta_system_ex(conf_iscsi_unh_set_int_fmt,                        \
-                         SHOULD_OFFER((offered_params_), (mask_)) ? "":"p",\
-                         (param_),                                          \
-                         (value_), (target_id_),                            \
-                         iscsi_configuration()->host_bus_adapter),                      \
-            (param_));                                                      \
+#define ISCSI_UNH_SET_INT(param_, value_, target_id_, mask_, offered_params_)   \
+    do {                                                                        \
+        VERB("ISCSI_UNH_SET_INT(%s,%d,%d)\n",                                   \
+             param_, value_, target_id_);                                       \
+        CHECK_SHELL_CONFIG_RC(                                                  \
+            iscsi_unix_cli(conf_iscsi_unh_set_int_fmt,                            \
+                         SHOULD_OFFER((offered_params_), (mask_)) ? "":"p",     \
+                         (param_),                                              \
+                         (value_), (target_id_),                                \
+                         iscsi_configuration()->host_bus_adapter),              \
+            (param_));                                                          \
     } while (0)
+
 /**
  * "Forces" parameter of the UNH Initiator.
  * Is used for the security parameter due to the UNH notation.
@@ -165,15 +166,15 @@ static const char *conf_iscsi_unh_force_flag_fmt =
  * @param target_id_ ID of the target for which the parameter
  *                   is set.
  */
-#define ISCSI_UNH_FORCE(param_, value_, target_id_, info_) \
-    do {                                                                    \
-        IVERB("ISCSI_UNH_FORCE(%s,%p,%d)\n",                              \
-                param_, value_, target_id_);                                \
-        CHECK_SHELL_CONFIG_RC(                                              \
-            ta_system_ex(conf_iscsi_unh_force_fmt, (param_),                \
-                         (value_), (target_id_),                            \
-                         iscsi_configuration()->host_bus_adapter),                      \
-            (info_));                                                       \
+#define ISCSI_UNH_FORCE(param_, value_, target_id_, info_)          \
+    do {                                                            \
+        VERB("ISCSI_UNH_FORCE(%s,%p,%d)\n",                         \
+             param_, value_, target_id_);                           \
+        CHECK_SHELL_CONFIG_RC(                                      \
+            iscsi_unix_cli(conf_iscsi_unh_force_fmt, (param_),        \
+                         (value_), (target_id_),                    \
+                         iscsi_configuration()->host_bus_adapter),  \
+            (info_));                                               \
     } while (0)
 
 /**
@@ -186,16 +187,17 @@ static const char *conf_iscsi_unh_force_flag_fmt =
  * @param target_id_ ID of the target for which the parameter
  *                   is set.
  */
-#define ISCSI_UNH_FORCE_STRING(param_, value_, target_id_, info_) \
-    do {                                                                    \
-        IVERB("ISCSI_UNH_FORCE(%s,%p,%d)\n",                              \
-                param_, value_, target_id_);                                \
-        CHECK_SHELL_CONFIG_RC(                                              \
-            ta_system_ex(conf_iscsi_unh_force_string_fmt, (param_),         \
-                         (value_), (target_id_),                            \
-                         iscsi_configuration()->host_bus_adapter),                      \
-            (info_));                                                       \
+#define ISCSI_UNH_FORCE_STRING(param_, value_, target_id_, info_)   \
+    do {                                                            \
+        VERB("ISCSI_UNH_FORCE(%s,%p,%d)\n",                         \
+             param_, value_, target_id_);                           \
+        CHECK_SHELL_CONFIG_RC(                                      \
+            iscsi_unix_cli(conf_iscsi_unh_force_string_fmt, (param_), \
+                         (value_), (target_id_),                    \
+                         iscsi_configuration()->host_bus_adapter),  \
+            (info_));                                               \
     } while (0)
+
 /**
  * "Forces" int parameter of the UNH Initiator.
  * Is used for the security parameter due to the UNH notation.
@@ -205,15 +207,15 @@ static const char *conf_iscsi_unh_force_flag_fmt =
  * @param target_id_ ID of the target for which the parameter
  *                   is set.
  */
-#define ISCSI_UNH_FORCE_INT(param_, value_, target_id_, info_) \
-    do {                                                                    \
-        IVERB("ISCSI_UNH_FORCE_INT(%s,%d,%d)\n",                          \
-                param_, value_, target_id_);                                \
-        CHECK_SHELL_CONFIG_RC(                                              \
-            ta_system_ex(conf_iscsi_unh_force_int_fmt, (param_),            \
-                         (value_), (target_id_),                            \
-                         iscsi_configuration()->host_bus_adapter),                      \
-            (info_));                                                       \
+#define ISCSI_UNH_FORCE_INT(param_, value_, target_id_, info_)      \
+    do {                                                            \
+        VERB("ISCSI_UNH_FORCE_INT(%s,%d,%d)\n",                     \
+             param_, value_, target_id_);                           \
+        CHECK_SHELL_CONFIG_RC(                                      \
+            iscsi_unix_cli(conf_iscsi_unh_force_int_fmt, (param_),    \
+                         (value_), (target_id_),                    \
+                         iscsi_configuration()->host_bus_adapter),  \
+            (info_));                                               \
     } while (0)
 
 /**
@@ -225,22 +227,20 @@ static const char *conf_iscsi_unh_force_flag_fmt =
  * @param target_id_ ID of the target for which the parameter
  *                   is set.
  */
-#define ISCSI_UNH_FORCE_FLAG(flag_, target_id_, info_) \
-    do {                                                                    \
-        IVERB("ISCSI_UNH_FORCE_FLAG(%s,%d)\n",                              \
-                flag_, target_id_);                                         \
-        CHECK_SHELL_CONFIG_RC(                                              \
-            ta_system_ex(conf_iscsi_unh_force_flag_fmt, (flag_),            \
-                         (target_id_),                                      \
-                         iscsi_configuration()->host_bus_adapter),                      \
-            (info_));                                                       \
+#define ISCSI_UNH_FORCE_FLAG(flag_, target_id_, info_)              \
+    do {                                                            \
+        VERB("ISCSI_UNH_FORCE_FLAG(%s,%d)\n",                       \
+             flag_, target_id_);                                    \
+        CHECK_SHELL_CONFIG_RC(                                      \
+            iscsi_unix_cli(conf_iscsi_unh_force_flag_fmt, (flag_),    \
+                         (target_id_),                              \
+                         iscsi_configuration()->host_bus_adapter),  \
+            (info_));                                               \
     } while (0)
 
 /**
- * 
- * @param target_id The target with connection to which the operation should
- *                  be performed.
- * @param cid       CID of the new connection or ISCSI_CONNECTION_REMOVED
+ * See iscsi_initiator.h and iscsi_initator_conn_request_thread()
+ * for a complete description of the state machine involved. 
  */
 te_errno
 iscsi_initiator_unh_set(iscsi_connection_req *req)
@@ -256,13 +256,13 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
     
     offer = conn->conf_params;
 
-    IVERB("Current number of open connections: %d", 
+    VERB("Current number of open connections: %d", 
           target->number_of_open_connections);
     
     if (req->status == ISCSI_CONNECTION_DOWN || 
         req->status == ISCSI_CONNECTION_REMOVED)
     {
-        rc = ta_system_ex("iscsi_config down cid=%d target=%d host=%d",
+        rc = iscsi_unix_cli("iscsi_config down cid=%d target=%d host=%d",
                           req->cid, req->target_id, 
                           iscsi_configuration()->host_bus_adapter);
 
@@ -279,15 +279,23 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
         /* 1: configurating the Initiator */
         
         CHECK_SHELL_CONFIG_RC(
-            ta_system_ex("iscsi_manage init restore target=%d host=%d",
+            iscsi_unix_cli("iscsi_manage init restore target=%d host=%d",
                          req->target_id, iscsi_configuration()->host_bus_adapter),
             "Restoring");
         
         if (strcmp(conn->session_type, "Normal") == 0)
             ISCSI_UNH_SET_UNNEGOTIATED("TargetName", target->target_name, req->target_id);
-        
+
+        /**
+         *  The connection is the leading connection of a session,
+         *  so configure all session-wide parameters
+         */
         if (req->cid == 0)
         {
+            /**
+             * Some parameters are only meaningful for Normal sessions, 
+             * but not Discovery sessions.
+             */
             if (strcmp(conn->session_type, "Normal") == 0)
             {
                 ISCSI_UNH_SET_INT("MaxConnections", conn->max_connections,
@@ -383,13 +391,13 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
                                    target_id);
 #endif
         /* Now the connection should be opened */
-        rc = ta_system_ex("iscsi_config up ip=%s port=%d "
+        rc = iscsi_unix_cli("iscsi_config up ip=%s port=%d "
                           "cid=%d target=%d host=%d lun=%d",
                           target->target_addr,
                           target->target_port,
                           req->cid, req->target_id, 
                           iscsi_configuration()->host_bus_adapter,
-                          DEFAULT_LUN_NUMBER);
+                          ISCSI_DEFAULT_LUN_NUMBER);
         if (rc != 0)
         {
             ERROR("Failed to establish connection with cid=%d", req->cid);

@@ -55,7 +55,7 @@
  * @param connection    iSCSI operational parameters
  * @param auth_data     iSCSI security parameters
  */
-static int
+static te_errno
 iscsi_openiscsi_set_param(const char *recid,
                           iscsi_target_param_descr_t *param,
                           iscsi_target_data_t *target,
@@ -72,7 +72,7 @@ iscsi_openiscsi_set_param(const char *recid,
                       param, target, connection, auth_data);
 
     RING("Setting %s to %s", param->name, buffer);
-    rc = ta_system_ex("iscsiadm -m node --record=%s --op=update "
+    rc = iscsi_unix_cli("iscsiadm -m node --record=%s --op=update "
                       "--name=%s --value='%s'", recid,
                       param->name, buffer);
     return TE_RC(ISCSI_AGENT_TYPE, rc);
@@ -87,8 +87,11 @@ iscsi_openiscsi_set_param(const char *recid,
 
 /**
  *  Start Open-iSCSI managing daemon `iscsid'.
- *  If the daemon is already running, and @p force_start is TRUE,
- *  the old daemon is killed.
+ *  If the daemon is already running, then:
+ *  - if @p force_start is TRUE, the old daemon is killed and
+ *  a new one is started.
+ *  - otherwise, the function just returns.
+ *
  *  Both ISCSID_PID_FILE and ISCSID_RECORD_FILE are deleted.
  *  The function writes the Initiator name and alias to a file, since these
  *  two parameters cannot be configured later via `iscsiadm'.
@@ -100,7 +103,7 @@ iscsi_openiscsi_set_param(const char *recid,
  *  @param  target      Target data
  *  @param  force_start Force restarting the daemon if it's running
  */
-static int
+static te_errno
 iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
 {
     int   rc = 0;
@@ -151,7 +154,7 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
         fprintf(name_file, "InitiatorAlias=%s\n", target->conns[0].initiator_alias);
     fclose(name_file);
 
-    ta_system_ex("iscsid %s -c /dev/null -i /tmp/initiatorname.iscsi", 
+    iscsi_unix_cli("iscsid %s -c /dev/null -i /tmp/initiatorname.iscsi", 
              iscsi_configuration()->verbosity > 0 ? "-d255" : "");
 
     for (i = 10; i != 0; i--)
@@ -331,7 +334,7 @@ iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
     FILE     *nodelist;
     int       status;
 
-    static char recid[SESSION_ID_LENGTH];
+    static char recid[ISCSI_SESSION_ID_LENGTH];
 
     
     snprintf(buffer, sizeof(buffer), 
@@ -395,9 +398,9 @@ iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
             ERROR("Target %d has no associated record id", req->target_id);
             return TE_RC(ISCSI_AGENT_TYPE, TE_EINVAL);
         }
-        rc = ta_system_ex("iscsiadm -m node --record=%s --logout",
+        rc = iscsi_unix_cli("iscsiadm -m node --record=%s --logout",
                           target->session_id);
-        rc2 = ta_system_ex("iscsiadm -m node --record=%s --op=delete",
+        rc2 = iscsi_unix_cli("iscsiadm -m node --record=%s --op=delete",
                            target->session_id);
         if (rc != 0 || rc2 != 0)
         {
@@ -413,7 +416,7 @@ iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
                                           iscsi_configuration()->n_connections == 0);
         if (rc != 0)
             return rc;
-        rc = ta_system_ex("iscsiadm -d255 -m discovery -t st --portal=%s:%d",
+        rc = iscsi_unix_cli("iscsiadm -d255 -m discovery -t st --portal=%s:%d",
                           target->target_addr, target->target_port);
         return TE_RC(ISCSI_AGENT_TYPE, rc);
 
@@ -442,7 +445,7 @@ iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
             return rc;
         }
         
-        rc = ta_system_ex("iscsiadm -m node --record=%s --login",
+        rc = iscsi_unix_cli("iscsiadm -m node --record=%s --login",
                              target->session_id);
         return TE_RC(ISCSI_AGENT_TYPE, rc);
     }

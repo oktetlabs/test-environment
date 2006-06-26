@@ -128,7 +128,8 @@ iscsi_win32_find_initiator_registry(void)
     if (driver_parameters != INVALID_HANDLE_VALUE)
         return 0;
 
-    if (!SetupDiClassGuidsFromName("SCSIAdapter", &scsi_class_guid, 1, &buf_size))
+    if (!SetupDiClassGuidsFromName("SCSIAdapter", 
+                                   &scsi_class_guid, 1, &buf_size))
     {
         ISCSI_WIN32_REPORT_ERROR();
         return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
@@ -150,7 +151,8 @@ iscsi_win32_find_initiator_registry(void)
         }
         buf_size = sizeof(buffer);
         memset(buffer, 0, buf_size);
-        if (!SetupDiGetDeviceRegistryProperty(scsi_adapters, &iscsi_dev_info,
+        if (!SetupDiGetDeviceRegistryProperty(scsi_adapters, 
+                                              &iscsi_dev_info,
                                               SPDRP_HARDWAREID, &value_type,
                                               buffer, buf_size, &buf_size))
         {
@@ -347,11 +349,11 @@ iscsi_win32_set_default_parameters(void)
             RPARAMETER("InitialR2T", DEFAULT_INITIAL_R2T_WIN32),
             RPARAMETER("ImmediateData", DEFAULT_IMMEDIATE_DATA_WIN32),
             RPARAMETER("MaxRecvDataSegmentLength",
-                       DEFAULT_MAX_RECV_DATA_SEGMENT_LENGTH),
-            RPARAMETER("FirstBurstLength", DEFAULT_FIRST_BURST_LENGTH),
-            RPARAMETER("MaxBurstLength", DEFAULT_MAX_BURST_LENGTH),
+                       ISCSI_DEFAULT_MAX_RECV_DATA_SEGMENT_LENGTH),
+            RPARAMETER("FirstBurstLength", ISCSI_DEFAULT_FIRST_BURST_LENGTH),
+            RPARAMETER("MaxBurstLength", ISCSI_DEFAULT_MAX_BURST_LENGTH),
             RPARAMETER("ErrorRecoveryLevel", 
-                       DEFAULT_ERROR_RECOVERY_LEVEL),
+                       ISCSI_DEFAULT_ERROR_RECOVERY_LEVEL),
             {0, 0, NULL, NULL, 0}
         };
     iscsi_win32_registry_parameter *rp;
@@ -421,7 +423,8 @@ iscsi_send_to_win32_iscsicli(const char *fmt, ...)
  * A callback used when cli_timeout_timer fires
  */
 static void CALLBACK
-iscsi_cli_timeout(void *state, unsigned long low_timer, unsigned long high_timer)
+iscsi_cli_timeout(void *state, 
+                  unsigned long low_timer, unsigned long high_timer)
 {
     UNUSED(low_timer);
     UNUSED(high_timer);
@@ -457,7 +460,8 @@ te_errno
 iscsi_win32_wait_for(regex_t *pattern, 
                      regex_t *abort_pattern,
                      regex_t *terminal_pattern,
-                     int first_part, int nparts, int maxsize, char **buffers)
+                     int first_part, int nparts, 
+                     int maxsize, char **buffers)
 {
     
     char *free_ptr = cli_buffer;
@@ -513,7 +517,8 @@ iscsi_win32_wait_for(regex_t *pattern,
             }
             while (available == 0 && !timeout)
             {
-                if (!PeekNamedPipe(host_input, NULL, 0, NULL, &available, NULL))
+                if (!PeekNamedPipe(host_input, NULL, 0, NULL, 
+                                   &available, NULL))
                 {
                     ISCSI_WIN32_REPORT_ERROR();
                     return TE_RC(ISCSI_AGENT_TYPE, TE_EIO);
@@ -526,7 +531,8 @@ iscsi_win32_wait_for(regex_t *pattern,
                 return TE_RC(ISCSI_AGENT_TYPE, TE_ETIMEDOUT);
             }
                                
-            if (!ReadFile(host_input, free_ptr, read_size, &read_bytes, NULL))
+            if (!ReadFile(host_input, free_ptr, read_size, 
+                          &read_bytes, NULL))
             {
                 ISCSI_WIN32_REPORT_ERROR();
                 return TE_RC(ISCSI_AGENT_TYPE, TE_EIO);
@@ -646,7 +652,8 @@ iscsi_win32_finish_cli(void)
     
     CloseHandle(host_output);
     CloseHandle(host_input);
-    success = (WaitForSingleObject(process_info.hProcess, 100) != WAIT_OBJECT_0);
+    success = (WaitForSingleObject(process_info.hProcess, 100) != 
+               WAIT_OBJECT_0);
     if (!success)
     {
         WARN("Killing iSCSI CLI process");
@@ -680,7 +687,8 @@ iscsi_win32_format_params(iscsi_target_param_descr_t *table,
     *buffer = '\0';
     for (; table->offset >= 0; table++)
     {
-        if ((table->offer == 0 || (connection->conf_params & table->offer) == table->offer) &&
+        if ((table->offer == 0 || 
+             (connection->conf_params & table->offer) == table->offer) &&
             iscsi_is_param_needed(table, target, connection, 
                                   &connection->chap))
         {
@@ -728,32 +736,39 @@ static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
 /** Macros to facilitate writing parameter descriptions */
 
 /** Operational parameter template */
-#define PARAMETER(field, offer, type) \
-    {OFFER_##offer, #field, type, ISCSI_OPER_PARAM, offsetof(iscsi_connection_data_t, field), NULL, NULL}
+#define PARAMETER(field, offer, type)                       \
+    {OFFER_##offer, #field, type, ISCSI_OPER_PARAM,         \
+     offsetof(iscsi_connection_data_t, field), NULL, NULL}
 
 /** Operational parameter template with custom formatter */
-#define XPARAMETER(field, offer, type, fmt) \
-    {OFFER_##offer, #field, type, ISCSI_OPER_PARAM, offsetof(iscsi_connection_data_t, field), fmt, NULL}
+#define XPARAMETER(field, offer, type, fmt)                 \
+    {OFFER_##offer, #field, type, ISCSI_OPER_PARAM,         \
+     offsetof(iscsi_connection_data_t, field), fmt, NULL}
 
 /** Target-wide parameter template */
-#define GPARAMETER(field, type) \
-    {0, #field, type, ISCSI_GLOBAL_PARAM, offsetof(iscsi_target_data_t, field), NULL, NULL}
+#define GPARAMETER(field, type)                         \
+    {0, #field, type, ISCSI_GLOBAL_PARAM,               \
+    offsetof(iscsi_target_data_t, field), NULL, NULL}
 
 /** Security parameter template */
-#define AUTH_PARAM(field, type) \
-    {0, #field, type, ISCSI_SECURITY_PARAM, offsetof(iscsi_tgt_chap_data_t, field), NULL, NULL}
+#define AUTH_PARAM(field, type)                             \
+    {0, #field, type, ISCSI_SECURITY_PARAM,                 \
+     offsetof(iscsi_tgt_chap_data_t, field), NULL, NULL}
 
 /** Security parameter template with custom formatter */
-#define XAUTH_PARAM(field, type, fmt) \
-    {0, #field, type, ISCSI_SECURITY_PARAM, offsetof(iscsi_tgt_chap_data_t, field), fmt, NULL}
+#define XAUTH_PARAM(field, type, fmt)                   \
+    {0, #field, type, ISCSI_SECURITY_PARAM,             \
+    offsetof(iscsi_tgt_chap_data_t, field), fmt, NULL}
 
 /** Constant value template */
-#define CONSTANT(field, type) \
-    {0, "", type, ISCSI_FIXED_PARAM, offsetof(iscsi_constant_t, field), NULL, NULL}
+#define CONSTANT(field, type)                       \
+    {0, "", type, ISCSI_FIXED_PARAM,                \
+     offsetof(iscsi_constant_t, field), NULL, NULL}
 
 /** `Hidden' parameter template */
-#define RPARAMETER(field, name, offer, transform) \
-    {OFFER_##offer, offsetof(iscsi_connection_data_t, field), name, transform, 0}
+#define RPARAMETER(field, name, offer, transform)               \
+    {OFFER_##offer, offsetof(iscsi_connection_data_t, field),   \
+     name, transform, 0}
 
 /**
  * This function actually initiates a login procedure for Win initiator.
@@ -762,10 +777,10 @@ static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
  *
  * @return Status code
  * @param target        Target-wide data
- * @param connection    Conncection data
+ * @param connection    Connection data
  * @param is_connection TRUE if it's not the leading connection
  */
-static int
+static te_errno
 iscsi_win32_write_target_params(iscsi_target_data_t *target,
                                 iscsi_connection_data_t *connection,
                                 te_bool is_connection)
@@ -776,7 +791,8 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
                        FIRST_BURST_LENGTH, NULL),
             RPARAMETER(max_burst_length, "MaxBurstLength", 
                        FIRST_BURST_LENGTH, NULL),
-            RPARAMETER(max_recv_data_segment_length, "MaxRecvDataSegmentLength", 
+            RPARAMETER(max_recv_data_segment_length, 
+                       "MaxRecvDataSegmentLength", 
                        MAX_RECV_DATA_SEGMENT_LENGTH, NULL),
             RPARAMETER(initial_r2t, "InitialR2T", 
                        INITIAL_R2T, iscsi_win32_bool2int),
@@ -859,11 +875,14 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
         }
     }
     iscsi_send_to_win32_iscsicli("%s %s", 
-                                 is_connection ? "AddConnection" : "LoginTarget", 
+                                 is_connection ? 
+                                 "AddConnection" : 
+                                 "LoginTarget", 
                                  iscsi_win32_format_params((is_connection ? 
                                                             conn_params : 
                                                             params),
-                                                           target, connection));
+                                                           target, 
+                                                           connection));
     return 0;
 }
 
@@ -900,8 +919,10 @@ iscsi_win32_do_discovery(iscsi_target_data_t *target,
 
     iscsi_send_to_win32_iscsicli("AddTargetPortal %s", 
                                  iscsi_win32_format_params(params,
-                                                           target, connection));
-    rc = iscsi_win32_wait_for(&success_regexp, &error_regexp, NULL, 0, 0, 0, NULL);
+                                                           target, 
+                                                           connection));
+    rc = iscsi_win32_wait_for(&success_regexp, &error_regexp, 
+                              NULL, 0, 0, 0, NULL);
     if (rc != 0)
     {
         ERROR("Unable to add target portal for discovery: %r", rc);
@@ -910,7 +931,8 @@ iscsi_win32_do_discovery(iscsi_target_data_t *target,
 #if 0
     iscsi_send_to_win32_iscsicli("RefreshTargetPortal %s %d * *", 
                                  target->target_addr, target->target_port);
-    rc = iscsi_win32_wait_for(&success_regexp, &error_regexp, NULL, 0, 0, 0, NULL);
+    rc = iscsi_win32_wait_for(&success_regexp, &error_regexp, 
+                              NULL, 0, 0, 0, NULL);
     if (rc != 0)
     {
         ERROR("Unable to refresh target portal: %r", rc);
@@ -919,7 +941,8 @@ iscsi_win32_do_discovery(iscsi_target_data_t *target,
 #endif
     iscsi_send_to_win32_iscsicli("RemoveTargetPortal %s %d * *", 
                                  target->target_addr, target->target_port);
-    rc = iscsi_win32_wait_for(&success_regexp, &error_regexp, NULL, 0, 0, 0, NULL);
+    rc = iscsi_win32_wait_for(&success_regexp, &error_regexp, NULL, 
+                              0, 0, 0, NULL);
     if (rc != 0)
     {
         ERROR("Unable to refresh target portal: %r", rc);
@@ -945,7 +968,8 @@ te_errno
 iscsi_initiator_win32_set(iscsi_connection_req *req)
 {
     int                  rc = 0;
-    iscsi_target_data_t *target = iscsi_configuration()->targets + req->target_id;
+    iscsi_target_data_t *target = iscsi_configuration()->targets + 
+        req->target_id;
     iscsi_connection_data_t *conn = target->conns + req->cid;
 
     switch (req->status)
@@ -961,9 +985,10 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
                 {
                     if (conn->connection_id[0] != '\0')
                     {
-                        rc = iscsi_send_to_win32_iscsicli("RemoveConnection %s %s",
-                                                          target->session_id,
-                                                          conn->connection_id);
+                        rc = iscsi_send_to_win32_iscsicli \
+                            ("RemoveConnection %s %s",
+                             target->session_id,
+                             conn->connection_id);
                         do_logout = TRUE;
                     }
                 }
@@ -971,22 +996,26 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
                 {
                     if (target->session_id[0] != '\0')
                     {
-                        rc = iscsi_send_to_win32_iscsicli("LogoutTarget %s",
-                                                          target->session_id);
+                        rc = iscsi_send_to_win32_iscsicli \
+                            ("LogoutTarget %s",
+                             target->session_id);
                         do_logout = TRUE;
                     }
                 }
                 if (rc != 0)
                 {
-                    ERROR("Unable to stop connection %d, %d: %r", req->target_id, req->cid);
+                    ERROR("Unable to stop connection %d, %d: %r", 
+                          req->target_id, req->cid);
                 }
                 else if (do_logout)
                 {
-                    rc = iscsi_win32_wait_for(&success_regexp, &error_regexp, 
+                    rc = iscsi_win32_wait_for(&success_regexp, 
+                                              &error_regexp, 
                                               NULL, 0, 0, 0, NULL);
                     if (rc != 0)
                     {
-                        ERROR("Unable to stop connection %d, %d: %r", req->target_id, req->cid);
+                        ERROR("Unable to stop connection %d, %d: %r", 
+                              req->target_id, req->cid);
                     }
                 }
                 
@@ -1001,7 +1030,8 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
             }
             break;
         case ISCSI_CONNECTION_UP:
-            if (target->conns[req->cid].status == ISCSI_CONNECTION_DISCOVERING)
+            if (target->conns[req->cid].status == 
+                ISCSI_CONNECTION_DISCOVERING)
             {
                 rc = iscsi_win32_do_discovery(target, 
                                               &target->conns[req->cid]);
@@ -1011,7 +1041,8 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
                 char *buffers[1];
 
                 rc = iscsi_win32_write_target_params(target, 
-                                                     &target->conns[req->cid],
+                                                     &target->conns \
+                                                     [req->cid],
                                                      req->cid != 0);
                 if (rc != 0)
                 {
@@ -1028,7 +1059,9 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
                                               &error_regexp,
                                               &success_regexp,
                                               1, 1, 
-                                              sizeof(target->session_id) - 1, buffers);
+                                              sizeof(target->session_id) \
+                                              - 1, 
+                                              buffers);
                 }
                 if (rc == 0)
                 {
@@ -1038,13 +1071,16 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
                                               &error_regexp,
                                               &success_regexp,
                                               1, 1, 
-                                              sizeof(conn->connection_id) - 1, 
+                                              sizeof(conn->connection_id) \
+                                              - 1, 
                                               buffers);
                 }
                 if (rc == 0)
                 {
                     RING("Got Connection Id = %s", conn->connection_id);
-                    rc = iscsi_win32_wait_for(&success_regexp, &error_regexp, NULL, 0, 0, 0, NULL);
+                    rc = iscsi_win32_wait_for(&success_regexp, 
+                                              &error_regexp, 
+                                              NULL, 0, 0, 0, NULL);
                 }
                 iscsi_win32_finish_cli();
             }
@@ -1072,8 +1108,8 @@ te_errno
 iscsi_win32_prepare_device(iscsi_connection_data_t *conn)
 {
     char *buffers[2];
-    char  conn_id_first[SESSION_ID_LENGTH] = "0x";
-    char  conn_id_second[SESSION_ID_LENGTH] = "-0x";
+    char  conn_id_first[ISCSI_SESSION_ID_LENGTH] = "0x";
+    char  conn_id_second[ISCSI_SESSION_ID_LENGTH] = "-0x";
     char  drive_id[64];
     int   drive_no;
     int   rc;
@@ -1093,7 +1129,7 @@ iscsi_win32_prepare_device(iscsi_connection_data_t *conn)
         rc = iscsi_win32_wait_for(&existing_conn_regexp, 
                                   &error_regexp,
                                   &success_regexp, 
-                                  1, 2, SESSION_ID_LENGTH - 1, 
+                                  1, 2, ISCSI_SESSION_ID_LENGTH - 1, 
                                   buffers);
         if (rc == 0)
         {
@@ -1145,7 +1181,7 @@ iscsi_win32_prepare_device(iscsi_connection_data_t *conn)
  *
  * @return TRUE if successfully compiled, FALSE otherwise
  */
-te_bool
+te_errno
 iscsi_win32_init_regexps(void)
 {
     unsigned i;
@@ -1154,15 +1190,17 @@ iscsi_win32_init_regexps(void)
     
     for (i = 0 ; i < TE_ARRAY_LEN(iscsi_conditions); i++)
     {
-        status = regcomp(&iscsi_regexps[i], iscsi_conditions[i], REG_EXTENDED);
+        status = regcomp(&iscsi_regexps[i], iscsi_conditions[i], 
+                         REG_EXTENDED);
         if (status != 0)
         {
             regerror(status, NULL, err_buf, sizeof(err_buf) - 1);
-            ERROR("Cannot compile regexp '%s': %s", iscsi_conditions[i], err_buf);
-            return FALSE;
+            ERROR("Cannot compile regexp '%s': %s", 
+                  iscsi_conditions[i], err_buf);
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EINVAL);
         }
     }
-    return TRUE;
+    return 0;
 }
 
 #endif

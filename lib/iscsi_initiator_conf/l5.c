@@ -35,6 +35,11 @@
 
 #include <stddef.h>
 
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "te_defs.h"
 #include "te_errno.h"
 #include "logger_api.h"
@@ -80,7 +85,7 @@ iscsi_l5_write_param(FILE *destination,
 /**
  * Write all relevant parameters to a L5 config file.
  *
- * @return            Status code
+ * @return            Status code (currently always 0)
  *
  * @param destination Configuration file
  * @param target      Target data
@@ -110,6 +115,7 @@ iscsi_l5_write_target_params(FILE *destination,
     offsetof(iscsi_constant_t, field), NULL, predicate}
 
 
+    /** Session-wide parameter descriptions */
     static iscsi_target_param_descr_t session_params[] =
         {
             PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
@@ -127,6 +133,8 @@ iscsi_l5_write_target_params(FILE *destination,
             AUTH_PARAM(local_secret, "TargetCHAPSecret", TRUE, iscsi_when_tgt_auth),
             ISCSI_END_PARAM_TABLE
         };
+    
+    /** Connection-wide parameter descriptions */
     static iscsi_target_param_descr_t connection_params[] =
         {
             GPARAMETER("Host", target_addr, TRUE),
@@ -159,7 +167,7 @@ iscsi_l5_write_target_params(FILE *destination,
      *  the level of ioctls
      */
 
-    for (; connection < target->conns + MAX_CONNECTIONS_NUMBER;
+    for (; connection < target->conns + ISCSI_MAX_CONNECTIONS_NUMBER;
          connection++)
     {
         if (connection->status != ISCSI_CONNECTION_REMOVED)
@@ -190,10 +198,13 @@ iscsi_l5_write_target_params(FILE *destination,
 }
 
 /**
- * Write L5 config file. 
+ * Create a L5 config file.
+ * The file is located at SCRIPT_PATH/configs,
+ * where SCRIPT_PATH == @p iscsi_data->script_path.
+ *
  * This function makes an appropriate file header,
  * and then outputs information for all configured targets
- * and associated connections
+ * and associated connections.
  *
  * @return              Status code
  * @param iscsi_data    iSCSI parameter table
@@ -201,16 +212,17 @@ iscsi_l5_write_target_params(FILE *destination,
 static int
 iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
 {
-    static char filename[MAX_CMD_SIZE];
+    static char filename[ISCSI_MAX_CMD_SIZE];
     FILE *destination;
     iscsi_target_data_t *target;
     int conn_no;
     te_bool is_first;
     
     snprintf(filename, sizeof(filename),
-             "%s/configs/te",
+             "%s/configs",
              *iscsi_data->script_path != '\0' ? 
              iscsi_data->script_path : ".");
+    mkdir(filename, S_IRUSR | S_IWUSR | S_IXUSR);
     destination = fopen(filename, "w");
     if (destination == NULL)
     {
@@ -234,13 +246,16 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
                          "Name: %s\n"
                          "Targets:",
             target->conns[0].initiator_name);
+
     is_first = TRUE;
-    for (; target < iscsi_data->targets + MAX_TARGETS_NUMBER; target++)
+
+    /** Output a line containing all configured target ids */
+    for (; target < iscsi_data->targets + ISCSI_MAX_TARGETS_NUMBER; target++)
     {
         if (target->target_id >= 0)
         {
             target->is_active = FALSE;
-            for (conn_no = 0; conn_no < MAX_CONNECTIONS_NUMBER; conn_no++)
+            for (conn_no = 0; conn_no < ISCSI_MAX_CONNECTIONS_NUMBER; conn_no++)
             {
                 if (target->conns[conn_no].status != ISCSI_CONNECTION_REMOVED)
                 {
@@ -258,8 +273,10 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
         }
     }
 
-    target = iscsi_data->targets;
-    for (; target < iscsi_data->targets + MAX_TARGETS_NUMBER; target++)
+    /** Output parameters for each configured target */
+    for (target = iscsi_data->targets;
+         target < iscsi_data->targets + ISCSI_MAX_TARGETS_NUMBER; 
+         target++)
     {
         if (target->target_id >= 0 && target->is_active)
         {
@@ -270,7 +287,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
                     target->target_id,
                     target->target_name);
             is_first = TRUE;
-            for (conn_no = 0; conn_no < MAX_CONNECTIONS_NUMBER; conn_no++)
+            for (conn_no = 0; conn_no < ISCSI_MAX_CONNECTIONS_NUMBER; conn_no++)
             {
                 if (target->conns[conn_no].status != ISCSI_CONNECTION_REMOVED)
                 {
@@ -286,8 +303,11 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
         }
     }
     fclose(destination);
-    ta_system_ex("cat %s", filename);
-    return ta_system_ex("cd %s; ./iscsi_setconfig te", 
+
+    /** Dump the generated config file so that it appeared in TE logs */
+    iscsi_unix_cli("cat %s", filename);
+
+    return iscsi_unix_cli("cd %s; ./iscsi_setconfig te", 
                            iscsi_configuration()->script_path);
 }
 
@@ -309,7 +329,7 @@ iscsi_initiator_l5_set(iscsi_connection_req *req)
             
             if (strcmp(conn->session_type, "Discovery") != 0)
             {
-                rc = ta_system_ex("cd %s; ./iscsi_stopconns %s target%d_conn%d", 
+                rc = iscsi_unix_cli("cd %s; ./iscsi_stopconns %s target%d_conn%d", 
                                   iscsi_configuration()->script_path,
                                   iscsi_configuration()->verbosity != 0 ? "-v" : "",
                                   req->target_id, req->cid);
@@ -332,14 +352,14 @@ iscsi_initiator_l5_set(iscsi_connection_req *req)
 
             if (conn->status != ISCSI_CONNECTION_DISCOVERING)
             {
-                rc = ta_system_ex("cd %s; ./iscsi_startconns %s target%d_conn%d", 
+                rc = iscsi_unix_cli("cd %s; ./iscsi_startconns %s target%d_conn%d", 
                                   iscsi_configuration()->script_path,
                                   iscsi_configuration()->verbosity != 0 ? "-v" : "",
                                   req->target_id, req->cid);
             }
             else
             {
-                rc = ta_system_ex("cd %s; ./iscsi_discover te", 
+                rc = iscsi_unix_cli("cd %s; ./iscsi_discover te", 
                                   iscsi_configuration()->script_path);
             }
 
