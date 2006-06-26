@@ -25,6 +25,7 @@ Test Agent:
 - flex >= 2.5.31 from sourceforge; flex 2.5.4a from gnu.org does not work
 - libexpat
 - libpcap0.8-dev (for TAD PCAP only)
+- libpam (0.76-22) (For Linux it is not required but suggested)
 
 We are using versions of libraries specified in parentheses.
 
