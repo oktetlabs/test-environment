@@ -343,12 +343,12 @@
         GET_READABILITY(answer_, rpcs_, sockd_, 1);                     \
         if (should_be_readable_ == TRUE && answer_ == FALSE)            \
         {                                                               \
-            TEST_FAIL("Socket '" #sockd_ "' is expected to be "         \
+            TEST_VERDICT("Socket '" #sockd_ "' is expected to be "         \
                       "readable, but it is not");                       \
         }                                                               \
         else if (should_be_readable_ == FALSE && answer_ == TRUE)       \
         {                                                               \
-            TEST_FAIL("Socket '" #sockd_ "' is not expected to be "     \
+            TEST_VERDICT("Socket '" #sockd_ "' is not expected to be "     \
                       "readable, but it is");                           \
         }                                                               \
     } while (0)
