@@ -29,6 +29,10 @@
 #ifndef __TE_TAD_ETH_SAP_H__
 #define __TE_TAD_ETH_SAP_H__
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
 #include "te_stdint.h"
 #include "te_ethernet.h"
 #include "te_errno.h"
