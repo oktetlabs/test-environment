@@ -340,6 +340,7 @@ typedef enum {
     TE_TAD_CSAP,        /**< TAD CSAP support */
     TE_TAD_PKT,         /**< TAD Packets Representation */
     TE_TAD_BPS,         /**< TAD binary PDU support */
+    TE_TAD_DLPI,        /**< TAD DLPI support */
     TE_TARPC,           /**< RPC support in Test Agent */
     TE_LOGGER,          /**< Logger application */
     TE_CS,              /**< Configurator application */
