@@ -72,6 +72,18 @@
 /** Directory where xinetd service configuration files are located */
 #define XINETD_ETC_DIR      "/etc/xinetd.d/"
 
+/** Command line for all processes list */
+#if defined __linux__ || defined __sun__
+#define PS_ALL_COMM     "ps -eo 'comm'"     /**< command name only      */
+#define PS_ALL_ARGS     "ps -eo 'args'"     /**< command name with args */
+#define PS_ALL_PID_ARGS "ps -eo 'pid args'" /**< pid, cmd name, args    */
+#elif defined __FreeBSD__
+#define PS_ALL_COMM     "ps -axo 'comm'"
+#define PS_ALL_ARGS     "ps -axo 'args'"
+#define PS_ALL_PID_ARGS "ps -axo 'pid args'"
+#else
+#error Unknown platform (Linux, Sun, FreeBSD, etc)
+#endif
 
 #ifdef WITH_FTP_SERVER
 extern const char *get_ftp_daemon_name(void);

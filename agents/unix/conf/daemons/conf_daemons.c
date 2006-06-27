@@ -374,6 +374,7 @@ daemon_get(unsigned int gid, const char *oid, char *value)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
+#if defined __linux__
     if (strcmp(daemon_name, "sendmail") == 0)
     {
         if (ta_system("find /var/run/ -name sendmail.pid 2>/dev/null "
@@ -386,7 +387,7 @@ daemon_get(unsigned int gid, const char *oid, char *value)
     }
     else if (strcmp(daemon_name, "postfix") == 0)
     {
-        if (ta_system("ps ax | grep '/usr/lib/postfix/master'"
+        if (ta_system(PS_ALL_COMM " | grep '/usr/lib/postfix/master'"
                       "| grep -v grep >/dev/null") == 0)
         {
             sprintf(value, "1");
@@ -399,6 +400,14 @@ daemon_get(unsigned int gid, const char *oid, char *value)
         daemon_name = "qmail-send";
     
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", daemon_name);
+#elif defined __sun__
+    TE_SPRINTF(buf, "[ \"`/usr/bin/svcs -H -o STATE %s`\" = \"online\" ]",
+               daemon_name);
+#elif defined __FreeBSD__
+#error FreeBSD is not supported yet
+#else
+#error Unknown platform (Linux, Sun, FreeBSD, etc)
+#endif
     if (ta_system(buf) == 0)
     {
          sprintf(value, "1");
@@ -443,6 +452,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
     if (value0[0] == value[0])
         return 0;
         
+#if defined __linux__
     if (strncmp(daemon_name, "exim", strlen("exim")) == 0)
         sprintf(buf, "/etc/init.d/%s %s >/dev/null", daemon_name,
                *value == '0' ? "stop" : "start");
@@ -455,6 +465,14 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         sprintf(buf, "/etc/init.d/%s %s >/dev/null", daemon_name,
                *value == '0' ? "stop" : "start");
 
+#elif defined __sun__
+    TE_SPRINTF(buf, "/usr/sbin/svcadm %s %s",
+               *value == '0' ? "disable -st" : "enable -rst", daemon_name);
+#elif defined __FreeBSD__
+#error FreeBSD is not supported yet
+#else
+#error Unknown platform (Linux, Sun, FreeBSD, etc)
+#endif
     if ((rc = ta_system(buf)) != 0)
     {
         ERROR("Command '%s' failed with exit code %d", buf, rc);
@@ -472,7 +490,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
     {
         ERROR("After set %s to %s daemon is %srunning", 
               oid, value, *value0 == '0' ? "not " : "");
-        ta_system("ps ax");
+        ta_system(PS_ALL_PID_ARGS);
         return TE_RC(TE_TA_UNIX, TE_EFAIL);
     }
     
@@ -2438,7 +2456,7 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
     {
         ERROR("Cannot set smtp to %s: %s is running", oid, 
               smtp_current_daemon);
-        ta_system("ps -ax");
+        ta_system(PS_ALL_PID_ARGS);
         return TE_RC(TE_TA_UNIX, TE_EPERM);
     }
         
@@ -2924,7 +2942,8 @@ vncserver_release(const char *name)
 static uint32_t
 sshd_exists(char *port)
 {
-    FILE *f = popen("ps ax | grep 'sshd -p' | grep -v grep", "r");
+    FILE *f = popen(PS_ALL_PID_ARGS " | grep 'sshd -p' | grep -v grep",
+                    "r");
     char  line[128];
     int   len = strlen(port);
     
@@ -2932,7 +2951,7 @@ sshd_exists(char *port)
     while (fgets(line, sizeof(line), f) != NULL)
     {
         char *tmp = strstr(line, "sshd");
-        
+
         tmp = strstr(tmp, "-p") + 2;
         while (*++tmp == ' ');
         
@@ -2976,8 +2995,16 @@ ds_sshd_add(unsigned int gid, const char *oid, const char *value,
     
     if (pid != 0)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
-        
+
+#if defined __linux__
     sprintf(buf, "/usr/sbin/sshd -p %s", port);
+#elif defined __sun__
+    sprintf(buf, "/usr/lib/ssh/sshd -p %s", port);
+#elif defined __FreeBSD__
+#error FreeBSD is not supported yet
+#else
+#error Unknown platform (Linux, Sun, FreeBSD, etc)
+#endif
 
     if (ta_system(buf) != 0)
     {
@@ -3033,7 +3060,8 @@ ds_sshd_del(unsigned int gid, const char *oid, const char *port)
 static te_errno
 ds_sshd_list(unsigned int gid, const char *oid, char **list)
 {
-    FILE *f = popen("ps ax | grep 'sshd -p' | grep -v grep", "r");
+    FILE *f = popen(PS_ALL_ARGS " | grep 'sshd -p' | grep -v grep",
+                    "r");
     char  line[128];
     char *s = buf;
 
@@ -3044,7 +3072,7 @@ ds_sshd_list(unsigned int gid, const char *oid, char **list)
     while (fgets(line, sizeof(line), f) != NULL)
     {
         char *tmp = strstr(line, "sshd");
-        
+
         tmp = strstr(tmp, "-p") + 2;
         while (*++tmp == ' ');
         
@@ -3076,7 +3104,7 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_sshd, "sshd",
 static uint32_t
 xvfb_exists(char *number)
 {
-    FILE *f = popen("ps ax | grep 'Xvfb' | grep -v grep", "r");
+    FILE *f = popen(PS_ALL_PID_ARGS " | grep 'Xvfb' | grep -v grep", "r");
     char  line[128];
     int   len = strlen(number);
     
@@ -3208,7 +3236,7 @@ ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
 static te_errno
 ds_xvfb_list(unsigned int gid, const char *oid, char **list)
 {
-    FILE *f = popen("ps ax | grep 'Xvfb' | grep -v grep", "r");
+    FILE *f = popen(PS_ALL_ARGS " | grep 'Xvfb' | grep -v grep", "r");
     char  line[128];
     char *s = buf;
 

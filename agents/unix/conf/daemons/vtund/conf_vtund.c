@@ -547,7 +547,8 @@ vtund_server_stop(vtund_server *server)
     pid_t   pid;
 
     snprintf(buf, sizeof(buf),
-             "ps axw | grep 'vtund\\[s\\]' | grep '%s' | grep -v grep",
+             PS_ALL_PID_ARGS " | grep 'vtund\\[s\\]' | grep '%s' | "
+             "grep -v grep",
              server->port);
 
     f = popen(buf, "r");
@@ -912,7 +913,8 @@ vtund_client_stop(vtund_client *client)
     pid_t   pid;
 
     snprintf(buf, sizeof(buf),
-             "ps axw | grep 'vtund\\[c\\]' | grep '%s' | grep -v grep",
+             PS_ALL_PID_ARGS " | grep 'vtund\\[c\\]' | grep '%s' | "
+             "grep -v grep",
              client->name);
 
     f = popen(buf, "r");

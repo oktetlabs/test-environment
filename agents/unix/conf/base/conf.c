@@ -123,14 +123,17 @@ typedef struct {
 typedef struct pam_response pam_response_t;
 
 /** Avoid slight differences between UNIX'es over typedef */
-#if defined linux
+#if defined __linux__
 #define PAM_FLAGS 0
 typedef struct pam_message const pam_message_t;
-#elif defined sun
+#elif defined __sun__
 #define PAM_FLAGS PAM_NO_AUTHTOK_CHECK | PAM_SILENT
 typedef struct pam_message pam_message_t;
+#elif defined __FreeBSD__
+#define PAM_FLAGS PAM_SILENT
+typedef struct pam_message const pam_message_t;
 #else
-#error Unknown platform (i.e. linux, sun, etc)
+#error Unknown platform (Linux, Sun, FreeBSD, etc)
 #endif
 
 #endif /* HAVE_LIBPAM */
@@ -4723,7 +4726,7 @@ static te_errno
 user_add(unsigned int gid, const char *oid, const char *value,
          const char *user)
 {
-#if defined HAVE_LIBPAM || defined linux
+#if defined HAVE_LIBPAM || defined __linux__
     char *tmp;
     char *tmp1;
 
@@ -4736,7 +4739,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
 
-#if !defined HAVE_LIBPAM && !defined linux
+#if !defined HAVE_LIBPAM && !defined __linux__
     UNUSED(user);
     ERROR("user_add failed (no user management facilities available)");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);

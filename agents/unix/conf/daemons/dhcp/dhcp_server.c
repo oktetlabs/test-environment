@@ -337,7 +337,16 @@ ds_dhcpserver_save_conf(void)
 static te_bool
 ds_dhcpserver_is_run(void)
 {
+#if defined __linux__
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", dhcp_server_exec);
+#elif defined __sun__
+    TE_SPRINTF(buf, "[ \"`/usr/bin/svcs -H -o STATE dhcp-server`\" = \"online\" ]");
+#elif defined __FreeBSD__
+#error FreeBSD is not supported yet
+#else
+#error Unknown platform (Linux, Sun, FreeBSD, etc)
+#endif
+
     return (ta_system(buf) == 0);
 }
 
@@ -371,7 +380,15 @@ static te_errno
 ds_dhcpserver_stop(void)
 {
     ENTRY("%s()", __FUNCTION__);
+#if defined __linux__
     sprintf(buf, "killall %s", dhcp_server_exec);
+#elif defined __sun__
+    TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st dhcp-server");
+#elif defined __FreeBSD__
+#error FreeBSD is not supported yet
+#else
+#error Unknown platform (Linux, Sun, FreeBSD, etc)
+#endif
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
@@ -385,7 +402,15 @@ ds_dhcpserver_stop(void)
 static te_errno
 ds_dhcpserver_script_start(void)
 {
+#if defined __linux__
     sprintf(buf, "%s start >/dev/null 2>&1", dhcp_server_script);
+#elif defined __sun__
+    TE_SPRINTF(buf, "/usr/sbin/svcadm enable -rst dhcp-server");
+#elif defined __FreeBSD__
+#error FreeBSD is not supported yet
+#else
+#error Unknown platform (Linux, Sun, FreeBSD, etc)
+#endif
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
@@ -1464,9 +1489,11 @@ dhcpserver_grab(const char *name)
 
     TAILQ_INIT(&subnets);
 
+RING("dhcpserver_frab: rcf_pch_add_node");
     if ((rc = rcf_pch_add_node("/agent", &node_ds_dhcpserver)) != 0)
         return rc;
 
+RING("dhcpserver_frab: find_file(dhcp_server_n_execs, dhcp_server_execs, TRUE)");
     /* Find DHCP server executable */
     rc = find_file(dhcp_server_n_execs, dhcp_server_execs, TRUE);
     if (rc < 0)
@@ -1478,6 +1505,7 @@ dhcpserver_grab(const char *name)
     }
     dhcp_server_exec = dhcp_server_execs[rc];
 
+RING("dhcpserver_frab: find_file(dhcp_server_n_scripts, dhcp_server_scripts, TRUE)");
     /* Find DHCP server script */
     rc = find_file(dhcp_server_n_scripts, dhcp_server_scripts, TRUE);
     if (rc < 0)
@@ -1491,6 +1519,7 @@ dhcpserver_grab(const char *name)
 
 
 #if TA_UNIX_ISC_DHCPS_NATIVE_CFG
+RING("dhcpserver_frab: find_file(dhcp_server_n_confs, dhcp_server_confs, FALSE)");
     /* Find DHCP server configuration file */
     rc = find_file(dhcp_server_n_confs, dhcp_server_confs, FALSE);
     if (rc < 0)

@@ -49,7 +49,7 @@ static char buf[256];
 static uint32_t
 slapd_exists(char *port)
 {
-    FILE *f = popen("ps ax | grep 'slapd ' | grep -v grep", "r");
+    FILE *f = popen(PS_ALL_PID_ARGS " | grep 'slapd ' | grep -v grep", "r");
     char  line[128];
     int   len = strlen(port);
 
@@ -186,7 +186,7 @@ ds_slapd_del(unsigned int gid, const char *oid, const char *port)
 static te_errno
 ds_slapd_list(unsigned int gid, const char *oid, char **list)
 {
-    FILE *f = popen("ps ax | grep 'slapd ' | grep -v grep", "r");
+    FILE *f = popen(PS_ALL_ARGS " | grep 'slapd ' | grep -v grep", "r");
     char  line[128];
     char *s = buf;
 
