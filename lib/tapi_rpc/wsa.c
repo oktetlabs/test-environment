@@ -439,10 +439,12 @@ rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
 
     if (RPC_IS_CALL_OK(rpcs))
     {
-        assert(laddr_len >= 16);
-        sockaddr_rpc2h(&out.laddr, laddr, laddr_len - 16, NULL, l_sa_len);
-        assert(raddr_len >= 16);
-        sockaddr_rpc2h(&out.raddr, raddr, raddr_len - 16, NULL, r_sa_len);
+        sockaddr_rpc2h(&out.laddr, laddr,
+                       (laddr_len >= 16) ? laddr_len - 16 : 0,
+                       NULL, l_sa_len);
+        sockaddr_rpc2h(&out.raddr, raddr,
+                       (raddr_len >= 16) ? raddr_len - 16 : 0,
+                       NULL, r_sa_len);
     }
     
     TAPI_RPC_LOG("RPC (%s,%s): "
