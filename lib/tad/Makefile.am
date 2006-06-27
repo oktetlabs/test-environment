@@ -21,6 +21,7 @@ include_HEADERS = \
 noinst_HEADERS = \
 	csap_id.h \
 	tad_utils.h \
+	tad_eth_sap.h \
 	pkt_socket.h \
 	tad_bps.h
 
