@@ -4255,8 +4255,8 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
             for (i = 0; i < sal->iAddressCount; i++)
             {
                 sockaddr_output_h2rpc(sal->Address[i].lpSockaddr,
-                                      sizeof(*sal->Address[i].lpSockaddr),
-                                      sizeof(*sal->Address[i].lpSockaddr),
+                                      sal->Address[i].iSockaddrLength,
+                                      sal->Address[i].iSockaddrLength,
                                       &tsa[i]);
             }
 
