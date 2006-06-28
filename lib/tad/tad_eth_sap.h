@@ -83,6 +83,8 @@ extern te_errno tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap);
 
 /**
  * Open Ethernet service access point for sending.
+ * The function does nothing, if Ethernet service access point has
+ * already been open for sending.
  *
  * @param sap           SAP description structure
  * @param mode          Send mode
@@ -117,6 +119,8 @@ extern te_errno tad_eth_sap_send_close(tad_eth_sap *sap);
 
 /**
  * Open Ethernet service access point for receiving.
+ * The function does nothing, if Ethernet service access point has
+ * already been open for receiving.
  *
  * @param sap           SAP description structure
  * @param mode          Receive mode (see enum tad_eth_recv_mode in
