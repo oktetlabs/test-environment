@@ -2721,14 +2721,24 @@ RCF_PCH_CFG_NODE_RW(node_ds_iscsi_initiator, "iscsi_initiator",
 te_errno
 iscsi_initiator_conf_init(void)
 {
+    te_errno rc;
+
     iscsi_init_default_ini_parameters();
 
 #ifdef __CYGWIN__
-    if (!iscsi_win32_init_regexps())
+    if (iscsi_win32_init_regexps() != 0)
+    {
+        ERROR("Unable to compile regexps");
         return TE_RC(ISCSI_AGENT_TYPE, TE_EINVAL);
+    }
 
 #endif
 
-    return rcf_pch_add_node("/agent", &node_ds_iscsi_initiator);
+    rc = rcf_pch_add_node("/agent", &node_ds_iscsi_initiator);
+    if (rc != 0)
+    {
+        ERROR("Unable to add /agent/iscsi_initiator tree: %r", rc);
+    }
+    return rc;
 }
 
