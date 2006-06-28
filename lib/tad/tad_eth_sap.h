@@ -70,8 +70,7 @@ typedef struct tad_eth_sap {
                                                  service */
 
     /* Ancillary information */
-    unsigned int    ifindex;                /**< Interface index */
-    uint8_t         addr[ETHER_ADDR_LEN];   /**< Local address */
+    uint8_t addr[ETHER_ADDR_LEN];           /**< Local address */
 
     void   *data;   /**< Provider-specific data */
 
