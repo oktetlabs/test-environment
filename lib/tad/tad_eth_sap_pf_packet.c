@@ -208,7 +208,8 @@ tad_eth_sap_send_open(tad_eth_sap *sap, unsigned int mode)
     data = sap->data;
     assert(data != NULL);
 
-    assert(data->out == -1);
+    if (data->out >= 0)
+        return 0;
 
     /* 
      * Create PF_PACKET socket:
@@ -412,7 +413,8 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
     data = sap->data;
     assert(data != NULL);
 
-    assert(data->in == -1);
+    if (data->in >= 0)
+        return 0;
 
     /* 
      * Create PF_PACKET socket:
