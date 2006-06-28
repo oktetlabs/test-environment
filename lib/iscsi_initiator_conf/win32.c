@@ -107,7 +107,98 @@ static SP_DEVINFO_DATA     iscsi_dev_info;
 /** iSCSI Initiator instance name */
 static char iscsi_initiator_instance[256];
 
+/** Empirically discovered iscscli output patterns:
+ *   -# New session ID 
+ *   -# New connection ID 
+ *   -# Last line of output
+ *   -# Error messages
+ *   -# Existing connection ID
+ *   -# SCSI device number
+ *   -# Initiator instance name
+ */
+static char   *iscsi_conditions[] = {
+    "^Session Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
+    "^Connection Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
+    "^The operation completed successfully.", 
+    "Error:|The target has already been logged|[Ff]ailed|cannot|invalid|not found",
+    "Connection Id[[:space:]]*:[[:space:]]*([a-f0-9]*)-([a-f0-9]*)",
+    "Device Number[[:space:]]*:[[:space:]]*(-?[0-9]*)",
+};
+
+/** Compiled form of iscsi_conditions */
+static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
+
+#define session_id_regexp (iscsi_regexps[0])
+#define connection_id_regexp (iscsi_regexps[1])
+#define success_regexp (iscsi_regexps[2])
+#define error_regexp (iscsi_regexps[3])
+#define existing_conn_regexp (iscsi_regexps[4])
+#define dev_number_regexp (iscsi_regexps[5])
+
 static te_errno iscsi_win32_set_default_parameters(void);
+
+/**
+ *  Detect Initiator instance name for the current iSCSI device
+ *
+ *  @return TRUE if the detected instance name is in the list of Initiators
+ */
+static te_bool
+iscsi_win32_detect_initiator_name(void)
+{
+    te_errno      rc = 0;
+    char          service_name[128] = "";
+    unsigned long buf_size;
+    unsigned long value_type;
+    unsigned long result;
+    HKEY          all_services;
+    HKEY          iscsi_service;
+
+    buf_size = sizeof(service_name);
+    if (!SetupDiGetDeviceRegistryProperty(scsi_adapters, &iscsi_dev_info,
+                                          SPDRP_SERVICE, &value_type,
+                                          service_name, 
+                                          buf_size, &buf_size))
+    {
+        if (GetLastError() != ERROR_INVALID_DATA)
+            ISCSI_WIN32_REPORT_ERROR();
+        return FALSE;
+    }
+    if ((result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
+                               "SYSTEM\\CurrentControlSet\\Services",
+                               0, KEY_ALL_ACCESS, &all_services)) != 0)
+    {
+        ISCSI_WIN32_REPORT_RESULT(result);
+        return FALSE;
+    }
+    if ((result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
+                               "SYSTEM\\CurrentControlSet\\Services",
+                               0, KEY_ALL_ACCESS, &all_services)) != 0)
+    {
+        ISCSI_WIN32_REPORT_RESULT(result);
+        return FALSE;
+    }
+    strcat(service_name, "\\Enum");
+    if ((result = RegOpenKeyEx(all_services, service_name,
+                               0, KEY_ALL_ACCESS, &iscsi_service)) != 0)
+    {
+        RegCloseKey(all_services);
+        ISCSI_WIN32_REPORT_RESULT(result);
+        return FALSE;
+    }
+    RegCloseKey(all_services);
+    
+    memset(iscsi_initiator_instance, 0, sizeof(iscsi_initiator_instance));
+    buf_size = sizeof(iscsi_initiator_instance) - 1;
+    result = RegQueryValueEx(iscsi_service, "0", NULL, &value_type, 
+                             iscsi_initiator_instance, &buf_size);
+    if (result != 0)
+    {
+        ISCSI_WIN32_REPORT_RESULT(result);
+        return FALSE;
+    }
+    strcat(iscsi_initiator_instance, "_0");
+    return TRUE;
+}
 
 /**
  * Find a registry branch holding `hidden' iSCSI parameters,
@@ -135,8 +226,8 @@ iscsi_win32_find_initiator_registry(void)
         case ISCSI_MICROSOFT:
             manufacturer = "Microsoft";
             break;
-        case ISCSI_L5:
-            manufacturer = "L5";
+        case ISCSI_L5_WIN32:
+            manufacturer = "Level 5";
             break;
         default:
             ERROR("Unsupported iSCSI initiator");
@@ -174,6 +265,8 @@ iscsi_win32_find_initiator_registry(void)
                                               SPDRP_MFG, &value_type,
                                               buffer, buf_size, &buf_size))
         {
+            if (GetLastError() == ERROR_INVALID_DATA)
+                continue;
             ISCSI_WIN32_REPORT_ERROR();
             return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
         }
@@ -182,25 +275,12 @@ iscsi_win32_find_initiator_registry(void)
             ERROR("Registry seems to be corrupted, very bad");
             return TE_RC(ISCSI_AGENT_TYPE, TE_ECORRUPTED);
         }
-        if (strstr(buffer, manufacturer) == 0)
-            break;
-    }
-
-    buf_size = sizeof(iscsi_initiator_instance);
-    memset(iscsi_initiator_instance, 0, buf_size);
-    if (!SetupDiGetDeviceRegistryProperty(scsi_adapters, 
-                                          &iscsi_dev_info,
-                                          SPDRP_HARDWAREID, &value_type,
-                                          iscsi_initiator_instance, 
-                                          buf_size, &buf_size))
-    {
-        ISCSI_WIN32_REPORT_ERROR();
-        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
-    }
-    if (value_type != REG_MULTI_SZ)
-    {
-        ISCSI_WIN32_REPORT_ERROR();
-        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+        RING("Manufacturer is %s, looking for %s", buffer, manufacturer);
+        if (strstr(buffer, manufacturer) != NULL)
+        {
+            if (iscsi_win32_detect_initiator_name())
+                break;
+        }
     }
 
     memset(buffer, 0, sizeof(buffer));
@@ -220,9 +300,16 @@ iscsi_win32_find_initiator_registry(void)
             return TE_RC(ISCSI_AGENT_TYPE, TE_ECORRUPTED);
     }
     strcat(buffer, "\\Parameters");
+    RING("Trying to open %s", buffer);
     if ((result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, buffer,
                                0, KEY_ALL_ACCESS, &driver_parameters)) != 0)
     {
+        if (result == ERROR_FILE_NOT_FOUND)
+        {
+            WARN("The Initiator does not support extended configuration");
+            driver_parameters = INVALID_HANDLE_VALUE;
+            return 0;
+        }
         ISCSI_WIN32_REPORT_RESULT(result);
         return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
@@ -347,6 +434,13 @@ iscsi_win32_set_registry_parameter(iscsi_win32_registry_parameter *parm,
 {
     unsigned long value;
     long          result;
+
+    if (driver_parameters == INVALID_HANDLE_VALUE)
+    {
+        WARN("Setting %s is not supported by the Initiator",
+             parm->name);
+        return 0;
+    }
 
     if (parm->offset < 0)
         value = parm->constant;
@@ -740,34 +834,6 @@ iscsi_win32_format_params(iscsi_target_param_descr_t *table,
     return buffer;
 }
 
-/** Empirically discovered iscscli output patterns:
- *   -# New session ID 
- *   -# New connection ID 
- *   -# Last line of output
- *   -# Error messages
- *   -# Existing connection ID
- *   -# SCSI device number
- */
-static char   *iscsi_conditions[] = {
-    "^Session Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
-    "^Connection Id is (0x[a-f0-9]*-0x[a-f0-9]*)", 
-    "^The operation completed successfully.", 
-    "Error:|The target has already been logged|[Ff]ailed|cannot|invalid",
-    "Connection Id[[:space:]]*:[[:space:]]*([a-f0-9]*)-([a-f0-9]*)",
-    "Device Number[[:space:]]*:[[:space:]]*(-?[0-9]*)"
-};
-
-/** Compiled form of iscsi_conditions */
-static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
-
-#define session_id_regexp (iscsi_regexps[0])
-#define connection_id_regexp (iscsi_regexps[1])
-#define success_regexp (iscsi_regexps[2])
-#define error_regexp (iscsi_regexps[3])
-#define existing_conn_regexp (iscsi_regexps[4])
-#define dev_number_regexp (iscsi_regexps[5])
-
-
 /** Macros to facilitate writing parameter descriptions */
 
 /** Operational parameter template */
@@ -914,7 +980,7 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
         return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
 
-    if (!is_connection)
+    if (!is_connection && driver_parameters != INVALID_HANDLE_VALUE)
     {
         iscsi_win32_registry_parameter *rp;
 

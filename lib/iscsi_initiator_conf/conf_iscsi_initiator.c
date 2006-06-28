@@ -1175,7 +1175,7 @@ iscsi_initiator_conn_request_thread(void *arg)
 #endif
 #ifdef __CYGWIN__
             case ISCSI_MICROSOFT:
-            case ISCSI_L5:
+            case ISCSI_L5_WIN32:
                 rc = iscsi_initiator_win32_set(current_req);
                 break;
 #endif
@@ -2282,6 +2282,8 @@ iscsi_type_set(unsigned int gid, const char *oid,
         init_data->init_type = ISCSI_UNH;
     else if (strcmp(value, "l5") == 0)
         init_data->init_type = ISCSI_L5;
+    else if (strcmp(value, "l5_win32") == 0)
+        init_data->init_type = ISCSI_L5_WIN32;
     else if (strcmp(value, "microsoft") == 0)
         init_data->init_type = ISCSI_MICROSOFT;
     else if (strcmp(value, "open-iscsi") == 0)
@@ -2305,7 +2307,8 @@ iscsi_type_get(unsigned int gid, const char *oid,
                char *value, const char *instance, ...)
 {
     static char *types[] = {"unh", "l5", 
-                            "open-iscsi", "microsoft"};
+                            "open-iscsi", "microsoft",
+                            "l5_win32"};
             
     UNUSED(gid);
     UNUSED(instance);

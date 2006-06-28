@@ -98,6 +98,7 @@ typedef enum {
     ISCSI_L5,        /**< Level 5 Networks */
     ISCSI_OPENISCSI, /**< Open iSCSI */
     ISCSI_MICROSOFT, /**< Microsoft iSCSI */
+    ISCSI_L5_WIN32,  /**< Level 5 Networks on Windows */
     ISCSI_DEFAULT_INITIATOR_TYPE = ISCSI_UNH /**< Default initiator type */
 } iscsi_initiator_type;
 
