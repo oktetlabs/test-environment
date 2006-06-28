@@ -340,6 +340,7 @@ typedef enum {
     TE_TAD_CSAP,        /**< TAD CSAP support */
     TE_TAD_PKT,         /**< TAD Packets Representation */
     TE_TAD_BPS,         /**< TAD binary PDU support */
+    TE_TAD_PF_PACKET,   /**< TAD Ethernet over PF_PACKET sockets */
     TE_TAD_DLPI,        /**< TAD DLPI support */
     TE_TARPC,           /**< RPC support in Test Agent */
     TE_LOGGER,          /**< Logger application */
@@ -412,29 +413,31 @@ te_rc_mod2str(te_errno err)
 
     switch (TE_RC_GET_MODULE(err))
     {
-        MOD2STR(IPC);        
-        MOD2STR(COMM);        
-        MOD2STR(RCF);   
+        MOD2STR(IPC);
+        MOD2STR(COMM);
+        MOD2STR(RCF);
         MOD2STR(RCF_UNIX);
-        MOD2STR(RCF_API);    
-        MOD2STR(RCF_RPC);    
-        MOD2STR(RCF_PCH);     
-        MOD2STR(RCF_CH);     
-        MOD2STR(TAD_CH);   
+        MOD2STR(RCF_API);
+        MOD2STR(RCF_RPC);
+        MOD2STR(RCF_PCH);
+        MOD2STR(RCF_CH);
+        MOD2STR(TAD_CH);
         MOD2STR(TAD_CSAP);
-        MOD2STR(TAD_PKT);   
-        MOD2STR(TAD_BPS);   
+        MOD2STR(TAD_PKT);
+        MOD2STR(TAD_BPS);
+        MOD2STR(TAD_PF_PACKET);
+        MOD2STR(TAD_DLPI);
         MOD2STR(TARPC);
         MOD2STR(LOGGER);
         MOD2STR(CS);
         MOD2STR(CONF_API);
         MOD2STR(TESTER);
-        MOD2STR(TAPI);   
-        MOD2STR(TA);   
-        MOD2STR(TA_UNIX);   
+        MOD2STR(TAPI);
+        MOD2STR(TA);
+        MOD2STR(TA_UNIX);
         MOD2STR(TA_WIN32);
         MOD2STR(TA_SWITCH_CTL);
-        MOD2STR(NET_SNMP);     
+        MOD2STR(NET_SNMP);
         MOD2STR(TA_EXT);
         MOD2STR(RPC);
         MOD2STR(ISCSI_TARGET);
