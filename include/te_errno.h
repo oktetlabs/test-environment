@@ -340,8 +340,6 @@ typedef enum {
     TE_TAD_CSAP,        /**< TAD CSAP support */
     TE_TAD_PKT,         /**< TAD Packets Representation */
     TE_TAD_BPS,         /**< TAD binary PDU support */
-    TE_TAD_PF_PACKET,   /**< TAD Ethernet over PF_PACKET sockets */
-    TE_TAD_DLPI,        /**< TAD DLPI support */
     TE_TARPC,           /**< RPC support in Test Agent */
     TE_LOGGER,          /**< Logger application */
     TE_CS,              /**< Configurator application */
@@ -357,6 +355,8 @@ typedef enum {
     TE_RPC,             /**< System error returned by function called
                              via RPC */
     TE_ISCSI_TARGET,    /**< Error related to iSCSI target */   
+    TE_TAD_PF_PACKET,   /**< TAD Ethernet over PF_PACKET sockets */
+    TE_TAD_DLPI,        /**< TAD DLPI support */
 } te_module;                             
 /*@}*/
 
