@@ -223,6 +223,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
              *iscsi_data->script_path != '\0' ? 
              iscsi_data->script_path : ".");
     mkdir(filename, S_IRUSR | S_IWUSR | S_IXUSR);
+    strcat(filename, "/te");
     destination = fopen(filename, "w");
     if (destination == NULL)
     {
