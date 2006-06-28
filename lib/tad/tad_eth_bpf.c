@@ -33,3 +33,53 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+
+/* See the description in tad_eth_sap.h */
+te_errno
+tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
+{
+}
+
+/* See the description in tad_eth_sap.h */
+te_errno
+tad_eth_sap_send_open(tad_eth_sap *sap, tad_eth_sap_send_mode mode)
+{
+}
+
+/* See the description in tad_eth_sap.h */
+te_errno
+tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
+{
+}
+
+/* See the description in tad_eth_sap.h */
+te_errno
+tad_eth_sap_send_close(tad_eth_sap *sap)
+{
+}
+
+/* See the description in tad_eth_sap.h */
+te_errno
+tad_eth_sap_recv_open(tad_eth_sap *sap, tad_eth_sap_recv_mode mode)
+{
+}
+
+/* See the description in tad_eth_sap.h */
+te_errno
+tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
+                 const tad_pkt *pkt, size_t *pkt_len)
+{
+}
+
+/* See the description in tad_eth_sap.h */
+te_errno
+tad_eth_sap_recv_close(tad_eth_sap *sap)
+{
+}
+
+/* See the description in tad_eth_sap.h */
+te_errno
+tad_eth_sap_detach(tad_eth_sap *sap)
+{
+}
