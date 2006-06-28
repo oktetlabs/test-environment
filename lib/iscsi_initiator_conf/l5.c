@@ -82,6 +82,13 @@ iscsi_l5_write_param(FILE *destination,
     fputc('\n', destination);
 }
 
+static char *
+iscsi_constant_l5_tgt_auth(void *null)
+{
+    UNUSED(null);
+    return "CHAPWithTgtAuth";
+}
+
 /**
  * Write all relevant parameters to a L5 config file.
  *
@@ -110,9 +117,8 @@ iscsi_l5_write_target_params(FILE *destination,
      {0, name, type, ISCSI_SECURITY_PARAM, \
       offsetof(iscsi_tgt_chap_data_t, field), NULL, predicate}
 /** Constant value template */
-#define CONSTANT(name, field, type, predicate) \
-    {0, name, type, ISCSI_FIXED_PARAM, \
-    offsetof(iscsi_constant_t, field), NULL, predicate}
+#define CONSTANT(name, id, predicate) \
+    {0, name, 0, ISCSI_FIXED_PARAM, 0, iscsi_constant_##id, predicate}
 
 
     /** Session-wide parameter descriptions */
@@ -144,7 +150,7 @@ iscsi_l5_write_target_params(FILE *destination,
             PARAMETER(max_recv_data_segment_length, MAX_RECV_DATA_SEGMENT_LENGTH,  
                       FALSE),
             AUTH_PARAM(chap, "AuthMethod", TRUE, iscsi_when_not_tgt_auth),
-            CONSTANT("AuthMethod", l5_tgt_auth, TRUE, iscsi_when_tgt_auth),
+            CONSTANT("AuthMethod", l5_tgt_auth, iscsi_when_tgt_auth),
             AUTH_PARAM(peer_name, "CHAPName", TRUE, iscsi_when_chap),
             AUTH_PARAM(peer_secret, "CHAPSecret", TRUE, iscsi_when_chap),
             ISCSI_END_PARAM_TABLE

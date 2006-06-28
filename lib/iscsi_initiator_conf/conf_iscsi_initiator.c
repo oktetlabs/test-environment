@@ -297,15 +297,17 @@ iscsi_write_param(void (*outfunc)(void *, char *),
                   iscsi_connection_data_t *conn_data,
                   iscsi_tgt_chap_data_t *auth_data)
 {
-    static iscsi_constant_t constants = {0, "T", "*", 
-                                         "CHAPWithTargetAuth"
-    };
     void *dataptr;
 
     switch(param->kind)
     {
         case ISCSI_FIXED_PARAM:
-            dataptr = &constants;
+            if (param->formatter == NULL || param->offset != 0)
+            {
+                ERROR("Invalid fixed parameter description");
+                return;
+            }
+            dataptr = NULL;
             break;
         case ISCSI_GLOBAL_PARAM:
             dataptr = tgt_data;
@@ -2315,21 +2317,6 @@ iscsi_type_get(unsigned int gid, const char *oid,
 }
 
 
-/* Host Bus Adapter */
-static te_errno
-iscsi_host_bus_adapter_set(unsigned int gid, const char *oid,
-                           char *value, const char *instance, ...)
-{
-    UNUSED(gid);
-    UNUSED(instance);
-    UNUSED(oid);
-
-    init_data->host_bus_adapter = atoi(value);
-
-    return 0;
-}
-
-
 static te_errno
 iscsi_host_bus_adapter_get(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
@@ -2557,9 +2544,8 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_type, "type", NULL,
                     &node_iscsi_script_path, iscsi_type_get,
                     iscsi_type_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_host_bus_adapter, "host_bus_adapter", NULL, 
-                    &node_iscsi_type, iscsi_host_bus_adapter_get,
-                    iscsi_host_bus_adapter_set);
+RCF_PCH_CFG_NODE_RO(node_iscsi_host_bus_adapter, "host_bus_adapter", NULL, 
+                    &node_iscsi_type, iscsi_host_bus_adapter_get);
 
 RCF_PCH_CFG_NODE_RO(node_iscsi_initiator_host_device, "host_device",
                     NULL, NULL,

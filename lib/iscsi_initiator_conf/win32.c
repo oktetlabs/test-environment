@@ -104,6 +104,9 @@ static HDEVINFO            scsi_adapters     = INVALID_HANDLE_VALUE;
 /** Device info for a SCSI device associated with the Initiator */
 static SP_DEVINFO_DATA     iscsi_dev_info;
 
+/** iSCSI Initiator instance name */
+static char iscsi_initiator_instance[256];
+
 static te_errno iscsi_win32_set_default_parameters(void);
 
 /**
@@ -124,6 +127,21 @@ iscsi_win32_find_initiator_registry(void)
     static char   buffer[1024];
     unsigned long buf_size;
     unsigned long value_type;
+
+    const char *manufacturer;
+
+    switch (iscsi_configuration()->init_type)
+    {
+        case ISCSI_MICROSOFT:
+            manufacturer = "Microsoft";
+            break;
+        case ISCSI_L5:
+            manufacturer = "L5";
+            break;
+        default:
+            ERROR("Unsupported iSCSI initiator");
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EINVAL);
+    }
 
     if (driver_parameters != INVALID_HANDLE_VALUE)
         return 0;
@@ -153,19 +171,36 @@ iscsi_win32_find_initiator_registry(void)
         memset(buffer, 0, buf_size);
         if (!SetupDiGetDeviceRegistryProperty(scsi_adapters, 
                                               &iscsi_dev_info,
-                                              SPDRP_HARDWAREID, &value_type,
+                                              SPDRP_MFG, &value_type,
                                               buffer, buf_size, &buf_size))
         {
             ISCSI_WIN32_REPORT_ERROR();
             return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
         }
-        if (value_type != REG_MULTI_SZ)
+        if (value_type != REG_SZ)
         {
             ERROR("Registry seems to be corrupted, very bad");
             return TE_RC(ISCSI_AGENT_TYPE, TE_ECORRUPTED);
         }
-        if (strcasecmp(buffer, "Root\\iSCSIPrt") == 0)
+        if (strstr(buffer, manufacturer) == 0)
             break;
+    }
+
+    buf_size = sizeof(iscsi_initiator_instance);
+    memset(iscsi_initiator_instance, 0, buf_size);
+    if (!SetupDiGetDeviceRegistryProperty(scsi_adapters, 
+                                          &iscsi_dev_info,
+                                          SPDRP_HARDWAREID, &value_type,
+                                          iscsi_initiator_instance, 
+                                          buf_size, &buf_size))
+    {
+        ISCSI_WIN32_REPORT_ERROR();
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+    }
+    if (value_type != REG_MULTI_SZ)
+    {
+        ISCSI_WIN32_REPORT_ERROR();
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
 
     memset(buffer, 0, sizeof(buffer));
@@ -761,14 +796,41 @@ static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
     offsetof(iscsi_tgt_chap_data_t, field), fmt, NULL}
 
 /** Constant value template */
-#define CONSTANT(field, type)                       \
-    {0, "", type, ISCSI_FIXED_PARAM,                \
-     offsetof(iscsi_constant_t, field), NULL, NULL}
+#define CONSTANT(name)                                              \
+    {0, #name, 0, ISCSI_FIXED_PARAM, 0, iscsi_constant_##name, NULL}
 
 /** `Hidden' parameter template */
 #define RPARAMETER(field, name, offer, transform)               \
     {OFFER_##offer, offsetof(iscsi_connection_data_t, field),   \
      name, transform, 0}
+
+static char *
+iscsi_constant_zero(void *null)
+{
+    UNUSED(null);
+    return "0";
+}
+
+static char *
+iscsi_constant_true(void *null)
+{
+    UNUSED(null);
+    return "T";
+}
+
+static char *
+iscsi_constant_wildcard(void *null)
+{
+    UNUSED(null);
+    return "*";
+}
+
+static char *
+iscsi_constant_instance(void *null)
+{
+    UNUSED(null);
+    return iscsi_initiator_instance;
+}
 
 /**
  * This function actually initiates a login procedure for Win initiator.
@@ -806,13 +868,13 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
     static iscsi_target_param_descr_t params[] =
         {
             GPARAMETER(target_name, TRUE),
-            CONSTANT(true, TRUE),
+            CONSTANT(true),
             GPARAMETER(target_addr, TRUE),
             GPARAMETER(target_port, FALSE),
-            CONSTANT(wildcard, TRUE),
-            CONSTANT(wildcard, TRUE),
-            CONSTANT(zero, FALSE),
-            CONSTANT(zero, FALSE),
+            CONSTANT(instance),
+            CONSTANT(wildcard),
+            CONSTANT(zero),
+            CONSTANT(zero),
             XPARAMETER(header_digest, HEADER_DIGEST, TRUE, iscsi_not_none),
             XPARAMETER(data_digest, DATA_DIGEST, TRUE, iscsi_not_none),
             PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
@@ -821,19 +883,19 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
             AUTH_PARAM(peer_name, TRUE),
             AUTH_PARAM(peer_secret, TRUE),
             XAUTH_PARAM(chap, TRUE, iscsi_not_none),
-            CONSTANT(wildcard, TRUE),
-            CONSTANT(zero, FALSE),
+            CONSTANT(wildcard),
+            CONSTANT(zero),
             ISCSI_END_PARAM_TABLE
         };
     static iscsi_target_param_descr_t conn_params[] =
         {
             GPARAMETER(session_id, TRUE),
-            CONSTANT(wildcard, TRUE),
-            CONSTANT(wildcard, TRUE),
+            CONSTANT(wildcard),
+            CONSTANT(wildcard),
             GPARAMETER(target_addr, TRUE),
             GPARAMETER(target_port, FALSE),
-            CONSTANT(zero, FALSE),
-            CONSTANT(zero, FALSE),
+            CONSTANT(zero),
+            CONSTANT(zero),
             XPARAMETER(header_digest, HEADER_DIGEST, TRUE, iscsi_not_none),
             XPARAMETER(data_digest, DATA_DIGEST, TRUE, iscsi_not_none),
             PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
@@ -842,7 +904,7 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
             AUTH_PARAM(peer_name, TRUE),
             AUTH_PARAM(peer_secret, TRUE),
             XAUTH_PARAM(chap, TRUE, iscsi_not_none),
-            CONSTANT(wildcard, TRUE),
+            CONSTANT(wildcard),
             ISCSI_END_PARAM_TABLE
         };
     
@@ -901,10 +963,10 @@ iscsi_win32_do_discovery(iscsi_target_data_t *target,
         {
             GPARAMETER(target_addr, TRUE),
             GPARAMETER(target_port, FALSE),
-            CONSTANT(wildcard, TRUE),
-            CONSTANT(wildcard, TRUE),
-            CONSTANT(zero, FALSE),
-            CONSTANT(zero, FALSE),
+            CONSTANT(instance),
+            CONSTANT(wildcard),
+            CONSTANT(zero),
+            CONSTANT(zero),
             XPARAMETER(header_digest, HEADER_DIGEST, TRUE, iscsi_not_none),
             XPARAMETER(data_digest, DATA_DIGEST, TRUE, iscsi_not_none),
             PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
@@ -916,6 +978,12 @@ iscsi_win32_do_discovery(iscsi_target_data_t *target,
             ISCSI_END_PARAM_TABLE
         };
     int rc;
+
+    if (iscsi_win32_find_initiator_registry() != 0)
+    {
+        ERROR("Unable to find registry branch for iSCSI parameters");
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+    }
 
     iscsi_send_to_win32_iscsicli("AddTargetPortal %s", 
                                  iscsi_win32_format_params(params,

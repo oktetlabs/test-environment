@@ -295,14 +295,6 @@ typedef struct iscsi_target_param_descr_t
 /** Trailing element in iscsi_target_param_descr_t array */
 #define ISCSI_END_PARAM_TABLE {0, NULL, FALSE, 0, -1, NULL, NULL}
 
-/** Table of common constants for iSCSI used by iscsi_write_param() */
-typedef struct iscsi_constant_t
-{
-    int  zero;                  /**< 0 */
-    char true[2];               /**< "T" */
-    char wildcard[2];           /**< "*" */
-    char l5_tgt_auth[19];       /**< "CHAPWithTgtAuth */
-} iscsi_constant_t;
 
 /** Returns a pointer to master iSCSI initiator parameter table */
 extern iscsi_initiator_data_t *iscsi_configuration(void);
