@@ -55,11 +55,6 @@
 #define DEFAULT_ETH_TYPE 0
 #endif
 
-#ifndef IFNAME_SIZE
-#define IFNAME_SIZE 256
-#endif
-
-
 #ifndef ETH_COMPLETE_FREE
 #define ETH_COMPLETE_FREE 1
 #endif

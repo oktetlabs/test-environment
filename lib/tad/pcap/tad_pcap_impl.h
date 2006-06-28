@@ -54,7 +54,6 @@
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 #include "tad_utils.h"
-#include "pkt_socket.h"
 
 
 #ifdef __cplusplus

@@ -152,7 +152,7 @@ tad_eth_rw_init_cb(csap_p csap)
 {
     te_errno            rc; 
     unsigned int        layer = csap_get_rw_layer(csap);
-    char                device_id[IFNAME_SIZE];
+    char                device_id[TAD_ETH_SAP_IFNAME_SIZE];
     size_t              val_len;
     tad_eth_rw_data    *spec_data; 
     const asn_value    *eth_csap_spec; 

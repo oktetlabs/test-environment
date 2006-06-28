@@ -64,82 +64,106 @@
 
 #include <string.h>
 
+#include "te_alloc.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
-
-#include "tad_pcap_impl.h"
+#include "tad_common.h"
 #include "ndn_pcap.h" 
 
-
-/* Default recv mode: all except OUTGOING packets. */
-#define PCAP_RECV_MODE_DEF (PCAP_RECV_HOST      | PCAP_RECV_BROADCAST | \
-                            PCAP_RECV_MULTICAST | PCAP_RECV_OTHERHOST )
-
-#ifndef IFNAME_SIZE
-#define IFNAME_SIZE 256
-#endif
+#include "tad_eth_sap.h"
+#include "tad_pcap_impl.h"
 
 
+
+/** Ethernet layer read/write specific data */
 typedef struct tad_pcap_rw_data {
-    char       *ifname;         /**< Name of the net interface to filter
-                                     packet on */
-
-    int         in;             /**< Socket for receiving data */
-   
-    uint8_t     recv_mode;      /**< Receive mode, bit mask from values
-                                     in enum pcap_csap_receive_mode i
-                                     n ndn_pcap.h */
+    tad_eth_sap     sap;        /**< Ethernet service access point */
+    unsigned int    recv_mode;  /**< Default receive mode */
 } tad_pcap_rw_data;
+
+
+
+/* See description tad_pcap_impl.h */
+te_errno
+tad_pcap_prepare_recv(csap_p csap)
+{ 
+    tad_pcap_rw_data *spec_data = csap_get_rw_data(csap);
+
+    assert(spec_data != NULL);
+
+    return tad_eth_sap_recv_open(&spec_data->sap, spec_data->recv_mode);
+}
+
+/* See description tad_pcap_impl.h */
+te_errno
+tad_pcap_shutdown_recv(csap_p csap)
+{
+    tad_pcap_rw_data *spec_data = csap_get_rw_data(csap);
+
+    assert(spec_data != NULL);
+
+    return tad_eth_sap_recv_close(&spec_data->sap);
+}
+
+
+/* See description tad_pcap_impl.h */
+te_errno
+tad_pcap_read_cb(csap_p csap, unsigned int timeout,
+                tad_pkt *pkt, size_t *pkt_len)
+{
+    tad_pcap_rw_data *spec_data = csap_get_rw_data(csap);
+
+    assert(spec_data != NULL);
+
+    return tad_eth_sap_recv(&spec_data->sap, timeout, pkt, pkt_len);
+}
 
 
 /* See description tad_pcap_impl.h */
 te_errno
 tad_pcap_rw_init_cb(csap_p csap)
 {
-    int      rc; 
-    char     choice[100] = "";
-    char     ifname[IFNAME_SIZE];    /**< ethernet interface id
-                                          (e.g. eth0, eth1) */
-    size_t   val_len;                /**< stores corresponding value length */
-
+    te_errno            rc; 
+    unsigned int        layer = csap_get_rw_layer(csap);
+    char                device_id[TAD_ETH_SAP_IFNAME_SIZE];
+    size_t              val_len;
     tad_pcap_rw_data   *spec_data; 
-    const asn_value    *pcap_csap_spec; /**< ASN value with csap init
-                                                     parameters  */
-                        
+    const asn_value    *pcap_csap_spec; 
     
-    pcap_csap_spec = csap->layers[csap_get_rw_layer(csap)].nds;
 
-    rc = asn_get_choice(pcap_csap_spec, "", choice, sizeof(choice));
-    VERB("eth_single_init_cb called for csap %d, ndn with type %s\n", 
-                csap->id, choice);
+    pcap_csap_spec = csap->layers[layer].nds;
     
-    val_len = sizeof(ifname);
-    rc = asn_read_value_field(pcap_csap_spec, ifname, &val_len, "ifname");
-    if (rc) 
+    val_len = sizeof(device_id);
+    rc = asn_read_value_field(pcap_csap_spec, device_id, &val_len,
+                              "ifname");
+    if (rc != 0) 
     {
-        F_ERROR("device-id for ethernet not found: %r", rc);
+        ERROR("device-id for Ethernet not found: %r", rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
     
-    spec_data = calloc(1, sizeof(*spec_data));
+    spec_data = TE_ALLOC(sizeof(*spec_data));
     if (spec_data == NULL)
-    {
-        ERROR("Init, not memory for spec_data");
-        return TE_RC(TE_TAD_CSAP,  TE_ENOMEM);
-    }
-    csap_set_rw_data(csap, spec_data);
-    
-    spec_data->in = -1;
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
-    spec_data->ifname = strdup(ifname);
-    
+    rc = tad_eth_sap_attach(device_id, &spec_data->sap);
+    if (rc != 0)
+    {
+        ERROR("Failed to attach Ethernet read-write layer to media: %r",
+              rc);
+        return rc;
+    }
+    spec_data->sap.csap = csap;
+
     val_len = sizeof(spec_data->recv_mode);
     rc = asn_read_value_field(pcap_csap_spec, &spec_data->recv_mode, 
                               &val_len, "receive-mode");
     if (rc != 0)
     {
-        spec_data->recv_mode = PCAP_RECV_MODE_DEF;
+        spec_data->recv_mode = TAD_ETH_RECV_DEF;
     }
+
+    csap_set_rw_data(csap, spec_data);
 
     return 0;
 }
@@ -149,118 +173,19 @@ tad_pcap_rw_init_cb(csap_p csap)
 te_errno
 tad_pcap_rw_destroy_cb(csap_p csap)
 {
-    tad_pcap_rw_data   *spec_data; 
+    tad_pcap_rw_data    *spec_data = csap_get_rw_data(csap); 
+    te_errno            rc;
 
-    /* FIXME: Is it necessary to do it here */
-    (void)tad_pcap_shutdown_recv(csap);
-
-    spec_data = csap_get_rw_data(csap);
     if (spec_data == NULL)
     {
-        WARN("No PCAP CSAP %d special data found!", csap->id);
+        WARN("Not ethernet CSAP %d special data found!", csap->id);
         return 0;
     }
     csap_set_rw_data(csap, NULL); 
-    
-    free(spec_data);
 
-    return 0;
-}
+    rc = tad_eth_sap_detach(&spec_data->sap);
 
-
-/* See description tad_pcap_impl.h */
-te_errno
-tad_pcap_prepare_recv(csap_p csap)
-{ 
-    tad_pcap_rw_data   *spec_data = csap_get_rw_data(csap);
-    int                 buf_size, rc;
-
-    VERB("Before opened Socket %d", spec_data->in);
-
-    /* opening incoming socket */
-    if ((rc = open_packet_socket(spec_data->ifname, &spec_data->in)) != 0)
-    {
-        ERROR("open_packet_socket error %d", rc);
-        return TE_OS_RC(TE_TAD_CSAP, rc);
-    }
-
-    VERB("csap %d Opened Socket %d", csap->id, spec_data->in);
-
-    /* TODO: reasonable size of receive buffer to be investigated */
-    buf_size = 0x100000; 
-    if (setsockopt(spec_data->in, SOL_SOCKET, SO_RCVBUF,
-                   &buf_size, sizeof(buf_size)) < 0)
-    {
-        /* FIXME */
-        perror ("set RCV_BUF failed");
-        fflush (stderr);
-    }
-
-    return 0;
-}
-
-/* See description tad_pcap_impl.h */
-te_errno
-tad_pcap_shutdown_recv(csap_p csap)
-{
-    tad_pcap_rw_data   *spec_data = csap_get_rw_data(csap);
-    te_errno            rc = 0;
-
-    if (spec_data->in >= 0)
-    {
-        VERB("%s: CSAP %d, close input socket %d", 
-             __FUNCTION__, csap->id, spec_data->in);
-        if (close(spec_data->in) < 0)
-        {
-            rc = TE_OS_RC(TE_TAD_CSAP, errno);
-            WARN("%s: CLOSE input socket error %r", 
-                 __FUNCTION__, rc);
-        }
-        spec_data->in = -1;
-    }
+    free(spec_data);   
 
     return rc;
-}
-
-/* See description tad_pcap_impl.h */
-te_errno
-tad_pcap_read_cb(csap_p csap, unsigned int timeout,
-                 tad_pkt *pkt, size_t *pkt_len)
-{
-    tad_pcap_rw_data   *spec_data = csap_get_rw_data(csap);
-    struct sockaddr_ll  from;
-    socklen_t           fromlen = sizeof(from);
-    te_errno            rc;
-
-    rc = tad_common_read_cb_sock(csap, spec_data->in, MSG_TRUNC, timeout,
-                                 pkt, SA(&from), &fromlen, pkt_len);
-    if (rc != 0)
-        return rc;
-
-    switch (from.sll_pkttype)
-    {
-        case PACKET_HOST:
-            if ((spec_data->recv_mode & PCAP_RECV_HOST) == 0)
-                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
-            break;
-
-        case PACKET_BROADCAST:
-            if ((spec_data->recv_mode & PCAP_RECV_BROADCAST) == 0)
-                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
-            break;
-        case PACKET_MULTICAST:
-            if ((spec_data->recv_mode & PCAP_RECV_MULTICAST) == 0)
-                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
-            break;
-        case PACKET_OTHERHOST:
-            if ((spec_data->recv_mode & PCAP_RECV_OTHERHOST) == 0)
-                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
-            break;
-        case PACKET_OUTGOING:
-            if ((spec_data->recv_mode & PCAP_RECV_OUTGOING) == 0)
-                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
-            break;
-    }
-
-    return 0;
 }
