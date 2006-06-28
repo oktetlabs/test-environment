@@ -200,7 +200,8 @@ main(int argc, char *argv[])
             VERB ("csap created, id: %d\n", (int)eth_csap);
 
         CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, eth_device,
-                                         ETH_RECV_ALL, NULL, NULL, NULL));
+                                         TAD_ETH_RECV_ALL, NULL, NULL,
+                                         NULL));
         if ((rc = tapi_tad_csap_create(ta, sid, "eth", csap_spec,
                                        &eth_listen_csap)) != 0)
             TEST_FAIL("csap for listen create error: %x\n", rc);

@@ -37,27 +37,12 @@
 #include "te_ethernet.h"
 #include "te_errno.h"
 
+#include "tad_types.h"
 #include "tad_pkt.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**< Send modes */
-typedef enum tad_eth_sap_send_mode {
-    TAD_ETH_SAP_SEND_NORMAL = 0x01, /**< Normal mode of sending */
-} tad_eth_sap_send_mode;
-
-/**< Receive modes */
-typedef enum tad_eth_sap_recv_mode {
-    TAD_ETH_SAP_RECV_HOST  = 0x01,  /**< Receive frames destine to the
-                                         host */
-    TAD_ETH_SAP_RECV_BCAST = 0x02,  /**< Receive broadcast frames */
-    TAD_ETH_SAP_RECV_MCAST = 0x04,  /**< Receive multicast frames */
-    TAD_ETH_SAP_RECV_OTHER = 0x08,  /**< Receive frames destine to other
-                                         hosts */
-    TAD_ETH_SAP_RECV_OUT   = 0x10,  /**< Receive outgoing frames */
-} tad_eth_sap_recv_mode;
 
 
 /** Maximum length of the Ethernet interface (service provider) name */
@@ -70,6 +55,7 @@ typedef struct tad_eth_sap {
                                                  service */
 
     /* Ancillary information */
+    csap_p  csap;                           /**< CSAP handle */
     uint8_t addr[ETHER_ADDR_LEN];           /**< Local address */
 
     void   *data;   /**< Provider-specific data */
@@ -105,8 +91,8 @@ extern te_errno tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap);
  *
  * @sa tad_eth_sap_send_close(), tad_eth_sap_recv_open()
  */
-extern te_errno tad_eth_sap_send_open(tad_eth_sap           *sap,
-                                      tad_eth_sap_send_mode  mode);
+extern te_errno tad_eth_sap_send_open(tad_eth_sap  *sap,
+                                      unsigned int  mode);
 
 /**
  * Send Ethernet frame using service access point opened for sending.
@@ -133,14 +119,15 @@ extern te_errno tad_eth_sap_send_close(tad_eth_sap *sap);
  * Open Ethernet service access point for receiving.
  *
  * @param sap           SAP description structure
- * @param mode          Receive mode
+ * @param mode          Receive mode (see enum tad_eth_recv_mode in
+ *                      ndn_eth.h)
  *
  * @return Status code.
  *
  * @sa tad_eth_sap_recv_close(), tad_eth_sap_send_open()
  */
-extern te_errno tad_eth_sap_recv_open(tad_eth_sap           *sap,
-                                      tad_eth_sap_recv_mode  mode);
+extern te_errno tad_eth_sap_recv_open(tad_eth_sap  *sap,
+                                      unsigned int  mode);
 
 /**
  * Receive Ethernet frame using service access point opened for
@@ -156,7 +143,7 @@ extern te_errno tad_eth_sap_recv_open(tad_eth_sap           *sap,
  * @sa tad_eth_sap_recv_open(), tad_eth_sap_send()
  */
 extern te_errno tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
-                                 const tad_pkt *pkt, size_t *pkt_len);
+                                 tad_pkt *pkt, size_t *pkt_len);
 
 /**
  * Close Ethernet service access point for receiving.

@@ -201,20 +201,17 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
     {
         /* Source address is not specified, use local interface address */
         tad_eth_rw_data    *rw_data = csap_get_rw_data(csap);
-        eth_interface_p     iface;
         tad_data_unit_t    *du = proto_data->eth.tx_def + 1;
 
         assert(rw_data != NULL);
-        iface = rw_data->interface;
-        assert(rw_data != NULL);
 
-        du->val_data.len = sizeof(iface->local_addr);
+        du->val_data.len = sizeof(rw_data->sap.addr);
         du->val_data.oct_str = malloc(du->val_data.len);
         if (du->val_data.oct_str == NULL)
             return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
-        memcpy(du->val_data.oct_str, iface->local_addr,
-               sizeof(iface->local_addr));
+        memcpy(du->val_data.oct_str, rw_data->sap.addr,
+               sizeof(rw_data->sap.addr));
 
         /* Successfully got */
         du->du_type = TAD_DU_OCTS;

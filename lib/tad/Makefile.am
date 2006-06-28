@@ -34,6 +34,7 @@ else
 libtad_core_a_SOURCES = \
 	tad_pkt.c \
 	pkt_socket.c \
+	tad_eth_sap_pf_packet.c \
 	tad_utils.c \
 	tad_ch.c \
 	csap_id.c \

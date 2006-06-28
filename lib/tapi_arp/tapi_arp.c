@@ -72,7 +72,7 @@ tapi_arp_add_csap_layer_eth(asn_value      **csap_spec,
 {
     uint16_t    eth_type = ETHERTYPE_ARP;
 
-    return tapi_eth_add_csap_layer(csap_spec, device, ETH_RECV_DEF,
+    return tapi_eth_add_csap_layer(csap_spec, device, TAD_ETH_RECV_DEF,
                                    remote_addr, local_addr, &eth_type);
 }
 

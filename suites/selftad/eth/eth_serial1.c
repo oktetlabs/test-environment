@@ -150,8 +150,10 @@ main(int argc, char *argv[])
         TEST_FAIL("TX CSAP creation failure: %r", rc);
     } 
 
-    CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, agent_b_if, ETH_RECV_ALL,
-                                     src_bin_mac, dst_bin_mac, &eth_type));
+    CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, agent_b_if,
+                                     TAD_ETH_RECV_ALL,
+                                     src_bin_mac, dst_bin_mac,
+                                     &eth_type));
     if ((rc = tapi_tad_csap_create(agent_b, sid_b, "eth", csap_spec,
                                    &rx_csap)) != 0)
     {

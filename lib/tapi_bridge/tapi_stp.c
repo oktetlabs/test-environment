@@ -137,7 +137,7 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
 
     fprintf(f, "{ bridge:{ proto-id plain:0 },\n");
     fprintf(f, "  eth:{ device-id   plain:\"%s\"", ifname);
-    fprintf(f, ",\n        receive-mode %d", ETH_RECV_ALL);
+    fprintf(f, ",\n        receive-mode %d", TAD_ETH_RECV_ALL);
     fprintf(f, ",\n        remote-addr plain:");
     if (peer_mac_addr != NULL)
         tapi_eth_fprint_mac(f, peer_mac_addr);

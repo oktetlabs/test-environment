@@ -55,18 +55,6 @@ typedef struct ndn_eth_header_plain {
 } ndn_eth_header_plain;
 
 
-enum eth_csap_receive_mode {
-    ETH_RECV_HOST      = 0x01,
-    ETH_RECV_BROADCAST = 0x02,
-    ETH_RECV_MULTICAST = 0x04,
-    ETH_RECV_OTHERHOST = 0x08,
-    ETH_RECV_OUTGOING  = 0x10,
-    ETH_RECV_ALL       = ETH_RECV_HOST | ETH_RECV_BROADCAST |
-                         ETH_RECV_MULTICAST | ETH_RECV_OTHERHOST |
-                         ETH_RECV_OUTGOING,
-    ETH_RECV_DEF       = ETH_RECV_ALL & (~ETH_RECV_OUTGOING),
-};
-
 typedef enum {
 
     NDN_TAG_ETH_DEVICE = 0,

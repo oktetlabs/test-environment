@@ -584,8 +584,8 @@ tapi_tcp_reset_hack_init(const char *ta_name, int session,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
     rc = tapi_tcp_ip4_eth_mode_csap_create(ta_name, session, iface, 
-                                           dir_out ? ETH_RECV_OUTGOING : 
-                                           ETH_RECV_HOST, 
+                                           dir_out ? TAD_ETH_RECV_OUT : 
+                                           TAD_ETH_RECV_HOST, 
                                            NULL, NULL, 
                                            context->loc_ip_addr,
                                            context->rem_ip_addr,

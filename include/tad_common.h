@@ -139,4 +139,28 @@ calculate_checksum(const void *data, size_t length)
 typedef int (*tad_stream_callback)(uint64_t offset, uint32_t length,
                                    uint8_t *buffer);
 
+/**
+ * Receive mode flags.
+ *
+ * @note There is no good place to define these flags, since they are
+ *       common for Test Engine and Test Agent side and common for
+ *       Ethernet and PCAP CSAPs.
+ */
+enum tad_eth_recv_mode {
+    TAD_ETH_RECV_HOST  = 0x01,  /**< To us */
+    TAD_ETH_RECV_BCAST = 0x02,  /**< To all */
+    TAD_ETH_RECV_MCAST = 0x04,  /**< To multicast group */
+    TAD_ETH_RECV_OTHER = 0x08,  /**< To someone else */
+    TAD_ETH_RECV_OUT   = 0x10,  /**< Outgoing of any type */
+};
+
+/** Receive all packets */
+#define TAD_ETH_RECV_ALL    (TAD_ETH_RECV_HOST | TAD_ETH_RECV_OTHER |  \
+                             TAD_ETH_RECV_BCAST | TAD_ETH_RECV_MCAST | \
+                             TAD_ETH_RECV_OUT)
+
+/** Default mode is to receive everything except outgoing packets */
+#define TAD_ETH_RECV_DEF    (TAD_ETH_RECV_ALL & (~TAD_ETH_RECV_OUT))
+
+
 #endif /* !__TE_TAD_COMMON_H__ */

@@ -44,7 +44,7 @@
 #include "tad_csap_support.h"
 #include "tad_pkt.h"
 #include "tad_utils.h"
-#include "pkt_socket.h"
+#include "tad_eth_sap.h"
 
 
 #ifndef ETH_TAG_EXC_LEN  /* Extra tagging octets in eth. header */
@@ -75,13 +75,8 @@ extern "C" {
 
 /** Ethernet layer read/write specific data */
 typedef struct tad_eth_rw_data {
-    eth_interface_p interface;  /**< Ethernet interface data */
-
-    int     out;            /**< Socket for sending data to the media */
-    int     in;             /**< Socket for receiving data */
-
-    uint8_t recv_mode;      /**< Receive mode, bit mask from values in 
-                                 enum eth_csap_receive_mode in ndn_eth.h */
+    tad_eth_sap     sap;        /**< Ethernet service access point */
+    unsigned int    recv_mode;  /**< Default receive mode */
 } tad_eth_rw_data;
 
 

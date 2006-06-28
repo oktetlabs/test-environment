@@ -48,8 +48,8 @@
  * @param device        Interface name on TA host or NULL (have to
  *                      be not-NULL, if it is the bottom layer)
  * @param recv_mode     Receive mode (bit scale defined by elements of
- *                      'enum eth_csap_receive_mode' in ndn_eth.h).
- *                      Use ETH_RECV_DEF by default.
+ *                      'enum tad_eth_recv_mode' in tad_common.h).
+ *                      Use TAD_ETH_RECV_DEF by default.
  * @param remote_addr   Default remote MAC address, may be NULL - in this
  *                      case frames will be sent only dst is specified in
  *                      template, and frames from all src's will be
@@ -81,7 +81,7 @@ extern te_errno tapi_eth_add_csap_layer(asn_value      **csap_spec,
  *                      be not-NULL, if it is the bottom layer)
  * @param recv_mode     Receive mode (bit scale defined by elements of
  *                      'enum eth_csap_receive_mode' in ndn_eth.h).
- *                      Use ETH_RECV_DEF by default.
+ *                      Use TAD_ETH_RECV_DEF by default.
  * @param remote_addr   Default remote MAC address, may be NULL - in this
  *                      case frames will be sent only dst is specified in
  *                      template, and frames from all src's will be

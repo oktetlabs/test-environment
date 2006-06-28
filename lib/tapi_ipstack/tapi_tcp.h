@@ -89,9 +89,9 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param eth_dev       Name of Ethernet interface
- * @param eth_mode      Bitmask with receive mode, see enum
- *                      'eth_csap_receive_mode' in ndn_eth.h, 
- *                      zero for default value
+ * @param eth_mode      Bitmask with receive mode, see 'enum
+ *                      tad_eth_recv_mode' in tad_common.h.
+ *                      Use TAD_ETH_RECV_DEF by default.
  * @param loc_mac       Local MAC address  (or NULL)
  * @param rem_mac       Remote MAC address  (or NULL)
  * @param loc_addr      Local IP address in network order (or NULL)
