@@ -5,7 +5,7 @@ AC_PREREQ(2.59)
 AC_INIT([tad],[0.2],[konst@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([tad_ch.c])
-    
+
 AC_CONFIG_AUX_DIR([../../auxdir])
 AC_CONFIG_MACRO_DIR([../../auxdir])
 
@@ -91,6 +91,7 @@ fcntl.h \
 sys/time.h \
 sys/socket.h \
 sys/ioctl.h \
+sys/dlpi.h \
 arpa/inet.h \
 netinet/in.h \
 pthread.h \

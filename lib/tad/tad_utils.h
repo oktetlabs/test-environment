@@ -437,6 +437,25 @@ extern te_errno tad_common_read_cb_sock(csap_p csap, int sock,
                                         size_t *pkt_len);
 
 /**
+ * Generic implementation of read method over DLPI using poll and
+ * getmsg calls.
+ *
+ * @param csap           CSAP structure
+ * @param fd            File descriptor opened network device
+ * @param flags         Flags to be forwarded to recvmsg
+ * @param timeout       Timeout in microseconds
+ * @param pkt           Packet with location from received data
+ * @param pkt_len       Location for received packet length
+ *
+ * @return Status code.
+ */
+extern te_errno tad_common_read_cb_dlpi(csap_p csap, int fd,
+                                        unsigned int flags,
+                                        unsigned int timeout,
+                                        tad_pkt *pkt,
+                                        size_t *pkt_len);
+
+/**
  * Create detached thread.
  *
  * @param thread        Location for thread handle (may be NULL)
