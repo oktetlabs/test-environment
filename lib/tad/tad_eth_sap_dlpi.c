@@ -23,7 +23,7 @@
  *
  * @author Igor Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
- * $Id $
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD DLPI"
@@ -55,6 +55,9 @@
 #if HAVE_SYS_DLPI_H
 #include <sys/dlpi.h>
 #define DLPI_SUPPORT 1
+#endif
+#if HAVE_SYS_FILIO_H
+#include <sys/filio.h>
 #endif
 
 #include "te_stdint.h"
@@ -190,7 +193,7 @@ dlstrerror(uint32_t dl_errno)
 
 
 /**
- * Returns appropriate primitive string in dependence of int value.
+ * Returns an appropriate primitive string in dependence of int value.
  */
 static char *
 dlprim(uint32_t prim)
@@ -423,14 +426,8 @@ err_exit:
     return rc;
 }
 
-/**
- * Detach Ethernet service access point from service provider and
- * free all allocated resources.
- *
- * @param sap           SAP description structure
- *
- * @return Status code.
- */
+
+/* See the description in tad_eth_sap.h */
 te_errno
 tad_eth_sap_detach(tad_eth_sap *sap)
 {
@@ -522,18 +519,24 @@ dlpi_sap_open(tad_eth_sap *sap)
     if (rc < 0)
         goto err_exit;
 
-#if 0
-    /*
-     ** Try to enable multicast (you would have thought
-     ** promiscuous would be sufficient)
+    /**
+     * Try to enable multicast (you would have thought
+     * promiscuous would be sufficient)
      */
-    if (dlpromisconreq(fd, DL_PROMISC_MULTI, ebuf) < 0 ||
-        dlokack(fd, "promisc_multi", (char *)buf, ebuf) < 0)
+    memset(&dlp, 0, sizeof(dlp));
+    dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+    dlp.promiscon_req.dl_level = DL_PROMISC_MULTI;
+    rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+    if (rc < 0)
     {
-        printf("WARNING: DL_PROMISC_MULTI failed (%s)\n", ebuf);
+        ERROR("Attempt to set DL_PROMISC_MULTI failed");
         goto err_exit;
     }
-#endif
+
+    memset(&dlp, 0, sizeof(dlp));
+    rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+    if (rc < 0)
+        goto err_exit;
 
     /*
      ** This is a non standard SunOS hack to get the full raw link-layer
@@ -559,16 +562,7 @@ err_exit:
 }
 
 
-/**
- * Open Ethernet service access point for sending.
- *
- * @param sap           SAP description structure
- * @param mode          Send mode
- *
- * @return Status code.
- *
- * @sa tad_eth_sap_send_close(), tad_eth_sap_recv_open()
- */
+/* See the description in tad_eth_sap.h */
 te_errno
 tad_eth_sap_send_open(tad_eth_sap *sap,
                       unsigned int mode)
@@ -578,17 +572,9 @@ tad_eth_sap_send_open(tad_eth_sap *sap,
 }
 
 
-/**
- * Send Ethernet frame using service access point opened for sending.
- *
- * @param sap           SAP description structure
- * @param pkt           Frame to be sent
- *
- * @return Status code.
- *
- * @sa tad_eth_sap_send_open(), tad_eth_sap_recv()
- */
-te_errno tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
+/* See the description in tad_eth_sap.h */
+te_errno
+tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
 {
     dlpi_data          *dlpi = (dlpi_data *)sap->data;
     size_t              iovlen = tad_pkt_seg_num(pkt);
@@ -634,56 +620,156 @@ te_errno tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
 }
 
 
-/**
- * Open Ethernet service access point for receiving.
- *
- * @param sap           SAP description structure
- * @param mode          Receive mode
- *
- * @return Status code.
- *
- * @sa tad_eth_sap_recv_close(), tad_eth_sap_send_open()
- */
-te_errno tad_eth_sap_recv_open(tad_eth_sap *sap,
-                               unsigned int mode)
+/* See the description in tad_eth_sap.h */
+te_errno
+tad_eth_sap_recv_open(tad_eth_sap *sap,
+                      unsigned int mode)
 {
     UNUSED(mode);
     return dlpi_sap_open(sap);
 }
 
 
-/**
- * Receive Ethernet frame using service access point opened for
- * receiving.
- *
- * @param sap           SAP description structure
- * @param timeout       Receive operation timeout
- * @param pkt           Frame to be sent
- * @param pkt_len       Location for real packet length
- *
- * @return Status code.
- *
- * @sa tad_eth_sap_recv_open(), tad_eth_sap_send()
- */
+/* See the description in tad_eth_sap.h */
 te_errno
 tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
                  tad_pkt *pkt, size_t *pkt_len)
 {
-    dlpi_data   *dlpi = (dlpi_data *)sap->data;
+    dlpi_data          *dlpi = (dlpi_data *)sap->data;
+    struct pollfd       pfd = { dlpi->fd, POLLIN, 0 };
+    int                 ret_val;
+    te_errno            rc;
+    int                 nread;
+    int                 flags = 0;
 
-    return tad_common_read_cb_dlpi(sap->csap, dlpi->fd, 0, timeout,
-                                   pkt, pkt_len);
+    if (dlpi->fd < 0)
+    {
+        ERROR("File descriptor is not open");
+        return TE_RC(TE_TAD_DLPI, TE_EIO);
+    }
+
+    ret_val = poll(&pfd, 1, TE_US2MS(timeout));
+
+    if (ret_val == 0)
+    {
+        VERB("poll({%d, POLLIN}, %u) timed out",
+             dlpi->fd, TE_US2MS(timeout));
+        return TE_RC(TE_TAD_DLPI, TE_ETIMEDOUT);
+    }
+
+    if (ret_val < 0)
+    {
+        rc = TE_OS_RC(TE_TAD_DLPI, errno);
+        WARN("poll failed: fd=%d: %r", dlpi->fd, rc);
+        return rc;
+    }
+
+    if (ioctl(dlpi->fd, FIONREAD, &nread) != 0)
+    {
+        ERROR("FIONREAD failed");
+        nread = 0x10000;
+    }
+    if (nread > (int)tad_pkt_len(pkt))
+    {
+#if 1
+        tad_pkt_free_segs(pkt);
+#endif
+        size_t       len = nread - tad_pkt_len(pkt);
+        tad_pkt_seg *seg = tad_pkt_first_seg(pkt);
+
+        if ((seg != NULL) && (seg->data_ptr == NULL))
+        {
+            void *mem = malloc(len);
+
+            if (mem == NULL)
+            {
+                rc = TE_OS_RC(TE_TAD_CSAP, errno);
+                assert(rc != 0);
+                return rc;
+            }
+            VERB("%s(): reuse the first segment of packet",
+                 __FUNCTION__);
+            tad_pkt_put_seg_data(pkt, seg, mem, len,
+                                 tad_pkt_seg_data_free);
+        }
+        else
+        {
+            seg = tad_pkt_alloc_seg(NULL, len, NULL);
+            VERB("%s(): append segment with %u bytes space",
+                 __FUNCTION__, (unsigned)len);
+            tad_pkt_append_seg(pkt, seg);
+        }
+    }
+
+    /* Get input message and save it to provided vector */
+    {
+        size_t               i;
+        size_t               to_copy;
+        size_t               iovlen = tad_pkt_seg_num(pkt);
+        struct iovec         iov[iovlen];
+        ssize_t              r;
+        struct strbuf        data;
+        int                  data_rest = 0;
+        char                *auxp;
+
+        data.maxlen = MAXDLBUF;
+        data.len = 0;
+        data.buf = dlpi->buf;
+
+        memset(data.buf, 0, MAXDLBUF);
+        r = getmsg(dlpi->fd, (struct strbuf*)NULL, &data, &flags);
+        if (r < 0)
+        {
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            WARN("getmsg failed: fd=%d: %r", dlpi->fd, rc);
+            return rc;
+        }
+        if (data.len == 0)
+        {
+            return TE_RC(TE_TAD_DLPI, TE_ETADENDOFDATA);
+        }
+
+        /* Convert packet segments to IO vector */
+        rc = tad_pkt_segs_to_iov(pkt, iov, iovlen);
+        if (rc != 0)
+        {
+            ERROR("Failed to convert segments to I/O vector: %r", rc);
+            return rc;
+        }
+
+        /* Save returned data to prepared IO vector */
+        data_rest = data.len;
+        auxp= data.buf;
+        for (i = 0; i < iovlen; i++)
+        {
+            if (iov[i].iov_len < data_rest)
+            {
+                to_copy = iov[i].iov_len;
+                data_rest -= iov[i].iov_len;
+            }
+            else
+            {
+                to_copy = data_rest;
+                data_rest = 0;
+            }
+            memcpy(iov[i].iov_base, auxp, to_copy);
+            if (data_rest == 0)
+                break;
+            else
+                auxp += iov[i].iov_len;
+        }
+
+        if (pkt_len != NULL)
+            *pkt_len = data.len;
+    }
+    return 0;
 }
 
 
 /**
- * Close Ethernet service access point for sending.
+ * See the description in tad_eth_sap.h
  * Actually DLPI does not allow separate closing on send/recv and
  * possibly 'ppa' can be detached only.
- *
- * @param sap           SAP description structure
- *
- * @return Status code.
  */
 te_errno
 tad_eth_sap_send_close(tad_eth_sap *sap)
@@ -695,13 +781,9 @@ tad_eth_sap_send_close(tad_eth_sap *sap)
 
 
 /**
- * Close Ethernet service access point for receiving.
+ * See the description in tad_eth_sap.h
  * Actually DLPI does not allow separate closing on send/recv and
  * possibly 'ppa' can be detached only.
- *
- * @param sap           SAP description structure
- *
- * @return Status code.
  */
 te_errno
 tad_eth_sap_recv_close(tad_eth_sap *sap)

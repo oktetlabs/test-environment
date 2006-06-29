@@ -48,21 +48,12 @@
 #if HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
-#if HAVE_SYS_DLPI_H
-#include <sys/dlpi.h>
-#define DLPI_SUPPORT 1
-#endif
-#if HAVE_STROPTS_H
-#include <stropts.h>
-#endif
-
 
 
 /* for ntohs, etc */
 #include <sys/socket.h> 
 #include <netinet/in.h> 
 #include <netinet/tcp.h>
-
 
 
 #include "tad_csap_inst.h"
@@ -1565,159 +1556,6 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
 
     return 0;
 }
-
-
-#ifdef DLPI_SUPPORT
-/* See description tad_utils.h */
-te_errno
-tad_common_read_cb_dlpi(csap_p csap, int fd, unsigned int flags,
-                        unsigned int timeout, tad_pkt *pkt, size_t *pkt_len)
-{
-    struct pollfd       pfd = { fd, POLLIN, 0 };
-    int                 ret_val;
-    te_errno            rc;
-    int                 nread;
-    int                 fl = flags;
-
-    if (fd < 0)
-    {
-        ERROR(CSAP_LOG_FMT "Input file is not open",
-              CSAP_LOG_ARGS(csap));
-        return TE_RC(TE_TAD_CSAP, TE_EIO);
-    }
-
-    ret_val = poll(&pfd, 1, TE_US2MS(timeout));
-
-    if (ret_val == 0)
-    {
-        F_VERB(CSAP_LOG_FMT "poll({%d, POLLIN}, %u) timed out",
-               CSAP_LOG_ARGS(csap), fd, TE_US2MS(timeout));
-        return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
-    }
-
-    if (ret_val < 0)
-    {
-        rc = TE_OS_RC(TE_TAD_CSAP, errno);
-        WARN(CSAP_LOG_FMT "poll failed: sock=%d: %r",
-             CSAP_LOG_ARGS(csap), fd, rc);
-        return rc;
-    }
-
-    if (ioctl(fd, FIONREAD, &nread) != 0)
-    {
-        ERROR("FIONREAD failed");
-        nread = 0x10000;
-    }
-    if (nread > (int)tad_pkt_len(pkt))
-    {
-#if 1
-        tad_pkt_free_segs(pkt);
-#endif
-        size_t       len = nread - tad_pkt_len(pkt);
-        tad_pkt_seg *seg = tad_pkt_first_seg(pkt);
-
-        if ((seg != NULL) && (seg->data_ptr == NULL))
-        {
-            void *mem = malloc(len);
-
-            if (mem == NULL)
-            {
-                rc = TE_OS_RC(TE_TAD_CSAP, errno);
-                assert(rc != 0);
-                return rc;
-            }
-            VERB("%s(): reuse the first segment of packet", __FUNCTION__);
-            tad_pkt_put_seg_data(pkt, seg,
-                                 mem, len, tad_pkt_seg_data_free);
-        }
-        else
-        {
-            seg = tad_pkt_alloc_seg(NULL, len, NULL);
-            VERB("%s(): append segment with %u bytes space", __FUNCTION__,
-                 (unsigned)len);
-            tad_pkt_append_seg(pkt, seg);
-        }
-    }
-
-    /* Get input message and save it to provided vector */
-    {
-        size_t               i;
-        size_t               to_copy;
-        size_t               iovlen = tad_pkt_seg_num(pkt);
-        struct iovec         iov[iovlen];
-        ssize_t              r;
-        struct strbuf        data;
-        dl_unitdata_ind_t    ind;
-        int                  data_rest = 0;
-        char                *auxp;
-
-#define MAXDLBUF    8192
-
-        data.maxlen = MAXDLBUF;
-        data.len = 0;
-        data.buf = calloc(1, MAXDLBUF);
-
-        memset(data.buf, 0, MAXDLBUF);
-        r = getmsg(fd, (struct strbuf*)NULL, &data, &fl);
-        if (r < 0)
-        {
-            rc = TE_OS_RC(TE_TAD_CSAP, errno);
-            WARN(CSAP_LOG_FMT "getmsg failed: fd=%d: %r",
-                 CSAP_LOG_ARGS(csap), fd, rc);
-            free(data.buf);
-            return rc;
-        }
-        if (ind.dl_primitive != DL_UNITDATA_IND)
-        {
-            WARN(CSAP_LOG_FMT "getmsg(): unexpected dl_primitive");
-            free(data.buf);
-            return TE_RC(TE_TAD_CSAP, TE_EINVAL);
-        }
-        if (data.len == 0)
-        {
-            free(data.buf);
-            return TE_RC(TE_TAD_CSAP, TE_ETADENDOFDATA);
-        }
-
-        /* Convert packet segments to IO vector */
-        rc = tad_pkt_segs_to_iov(pkt, iov, iovlen);
-        if (rc != 0)
-        {
-            ERROR("Failed to convert segments to I/O vector: %r", rc);
-            free(data.buf);
-            return rc;
-        }
-
-        /* Save returned data to prepared IO vector */
-        data_rest = data.len;
-        auxp= data.buf;
-        for (i = 0; i < iovlen; i++)
-        {
-            if (iov[i].iov_len < data_rest)
-            {
-                to_copy = iov[i].iov_len;
-                data_rest -= iov[i].iov_len;
-            }
-            else
-            {
-                to_copy = data_rest;
-                data_rest = 0;
-            }
-            memcpy(iov[i].iov_base, auxp, to_copy);
-            if (data_rest == 0)
-                break;
-            else
-                auxp += iov[i].iov_len;
-        }
-
-        if (pkt_len != NULL)
-            *pkt_len = data.len;
-        free(data.buf);
-    }
-
-    return 0;
-}
-#endif
 
 /* See description in tad_utils.h */
 te_errno
