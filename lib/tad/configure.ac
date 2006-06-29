@@ -79,24 +79,6 @@ AC_CHECK_FUNCS([gettimeofday inet_ntoa memset select socket strdup strtol])
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS([\
-stdio.h \
-stdlib.h \
-string.h \
-strings.h \
-unistd.h\
-limits.h \
-errno.h \
-fcntl.h \
-sys/time.h \
-sys/socket.h \
-sys/ioctl.h \
-sys/dlpi.h \
-arpa/inet.h \
-netinet/in.h \
-pthread.h \
-semaphore.h \
-])
 
 
 AC_SUBST([with_name])
