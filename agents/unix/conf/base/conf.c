@@ -4673,40 +4673,49 @@ set_change_passwd(char const *user, char const *passwd)
     conv.conv        = &conv_fun; /**< callback function */
     conv.appdata_ptr = &appdata;  /**< data been passed to callback fun */
 
-    /** Initialize PAM library */
-    if ((pam_rc = pam_start("passwd", user, &conv, &handle)) == PAM_SUCCESS)
+    /** Check user existence */
+    if(getpwnam(user) != NULL)
     {
-        uid_t euid = geteuid();   /**< Save current effective user id */
-
-        if (setuid(0) == 0)       /* Get 'root' */
+        /** Initialize PAM library */
+        if ((pam_rc = pam_start("passwd", user, &conv, &handle))
+            == PAM_SUCCESS)
         {
-            /** Try to set/change password */
-            if ((pam_rc = pam_chauthtok(handle, PAM_FLAGS)) == PAM_SUCCESS)
-                rc = 0;
-            else
+            uid_t euid = geteuid(); /**< Save current effective user id */
+
+            if (setuid(0) == 0)     /**< Get 'root' */
             {
-                ERROR("pam_chauthtok, user: '%s', passwd: '%s': %s",
-                     user, passwd, pam_strerror(handle, pam_rc));
+                /** Try to set/change password */
+                if ((pam_rc = pam_chauthtok(handle, PAM_FLAGS))
+                    == PAM_SUCCESS)
+                    rc = 0;
+                else
+                {
+                    ERROR("pam_chauthtok, user: '%s', passwd: '%s': %s",
+                          user, passwd, pam_strerror(handle, pam_rc));
 
-               /* If callback function received error message string
-                * then type it too
-                */
-                if (appdata.err_msg[0]) 
-                    ERROR("%s", appdata.err_msg);
+                   /* If callback function received error message string
+                    * then type it too
+                    */
+                    if (appdata.err_msg[0]) 
+                        ERROR("%s", appdata.err_msg);
+                }
+
+                setuid(euid);       /* Restore saved previously user id */
             }
+            else
+                ERROR("setuid: %s", strerror(errno));
 
-            setuid(euid);        /* Restore saved previously user id */
+            /** Terminate PAM library */
+            if ((pam_rc = pam_end(handle, pam_rc)) != PAM_SUCCESS)
+                ERROR("pam_end: %s", pam_strerror(handle, pam_rc));
         }
         else
-            ERROR("setuid: %s", strerror(errno));
-
-        /** Terminate PAM library */
-        if ((pam_rc = pam_end(handle, pam_rc)) != PAM_SUCCESS)
-            ERROR("pam_end: %s", pam_strerror(handle, pam_rc));
+            ERROR("pam_start, user: '%s', passwd: '%s': %s", user, passwd,
+                 pam_strerror(handle, pam_rc));
     }
     else
-        ERROR("pam_start, user: '%s', passwd: '%s': %s", user, passwd,
-             pam_strerror(handle, pam_rc));
+        ERROR("getpwnam, user '%s': %s",
+              user, errno ? strerror(errno) : "User does not exist");
 
     return rc;
 }
@@ -4772,6 +4781,10 @@ user_add(unsigned int gid, const char *oid, const char *value,
         ERROR("\"%s\" command failed with %d", buf, rc);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
+
+    /* Fedora has very aggressive nscd cache */
+    /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
+    ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
 
 #if defined HAVE_LIBPAM
     /** Set (change) password for just added user */
