@@ -86,7 +86,7 @@ static char *
 iscsi_constant_l5_tgt_auth(void *null)
 {
     UNUSED(null);
-    return "CHAPWithTgtAuth";
+    return "CHAPWithTargetAuth";
 }
 
 /**
