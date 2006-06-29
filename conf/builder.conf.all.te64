@@ -60,6 +60,11 @@ TE_PLATFORM([i386-pc-solaris2.11], [],
             [-L${SOLARIS2_HOME}/lib],
             [tools loggerta comm_net_agent conf_oid rpcxdr rpc_types rcfpch tad])
 
+TE_LIB_PARMS([tad], [i386-pc-solaris2.11], [],
+             [--with-eth --with-arp --with-ipstack --with-cli \
+              --with-atm --with-socket],
+             [], [], [])
+
 TE_TA_TYPE([solaris2], [i386-pc-solaris2.11], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent])
 
@@ -70,6 +75,11 @@ TE_PLATFORM([x86_64-pc-solaris2.11], [],
              -Wl,-rpath-link,${SOLARIS2_HOME}/lib/amd64],
             [tools conf_oid rpcxdr rpc_types \
              comm_net_agent loggerta rcfpch tad])
+
+TE_LIB_PARMS([tad], [x86_64-pc-solaris2.11], [],
+             [--with-eth --with-arp --with-ipstack \
+              --with-atm --with-socket],
+             [], [], [])
 
 TE_TA_TYPE([solaris2_64], [x86_64-pc-solaris2.11], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent])
