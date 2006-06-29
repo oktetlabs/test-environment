@@ -62,6 +62,15 @@
 #include <errno.h>
 #endif
 
+#if HAVE_SYS_DLPI_H
+#include <sys/dlpi.h>
+#define DLPI_SUPPORT 1
+#endif
+
+
+
+#ifdef DLPI_SUPPORT
+
 
 #define MAXDLBUF    8192
 
@@ -110,7 +119,7 @@ split_dname_unmb(tad_eth_sap *sap)
 
 
 /**
- * Returns error string in accordance with passed errno.
+ * Return error string in accordance with passed errno.
  */
 static char *
 dlstrerror(uint32_t dl_errno)
@@ -263,11 +272,12 @@ dlprim(uint32_t prim)
  * @param req      Stream device request
  * @param req_len  Stream device request length
  *
- * Returns -1 on error, 0 on success.
+ * Returns errno on error, 0 on success.
  */
-static int
-send_request(int fd, char *req, int req_len)
+static te_errno
+dlpi_request(int fd, char *req, int req_len)
 {
+    te_errno              rc;
     union  DL_primitives *dlp = (union DL_primitives *)req;
     struct strbuf         ctl;
     int                   flags;
@@ -279,9 +289,10 @@ send_request(int fd, char *req, int req_len)
     flags = 0;
     if (putmsg(fd, &ctl, (struct strbuf *)NULL, flags) < 0)
     {
-        ERROR("putmsg(%s) failed with errno:%s",
-              dlprim(dlp->dl_primitive), strerror(errno));
-        return -1;
+        rc = TE_OS_RC(TE_TAD_DLPI, errno);
+        ERROR("putmsg(%s) failed, %r",
+              dlprim(dlp->dl_primitive), rc);
+        return rc;
     }
     return 0;
 }
@@ -294,11 +305,12 @@ send_request(int fd, char *req, int req_len)
  * @param resp      Stream device response
  * @param resp_len  The length of memory provided for response
  *
- * Returns -1 on error, actual response length on success.
+ * Returns errno on error, actual response length on success.
  */
-static int
-recv_ack(int fd, char *resp, int resp_len)
+static te_errno
+dlpi_ack(int fd, char *resp, int resp_len)
 {
+    te_errno             rc = 0;
     union DL_primitives *dlp = (union DL_primitives *)resp;
     struct strbuf        ctl;
     int                  flags;
@@ -310,9 +322,10 @@ recv_ack(int fd, char *resp, int resp_len)
     flags = 0;
     if (getmsg(fd, &ctl, (struct strbuf*)NULL, &flags) < 0)
     {
-        ERROR("getmsg(%s) failed with errno:%s",
-              dlprim(dlp->dl_primitive), strerror(errno));
-        return -1;
+        rc = TE_OS_RC(TE_TAD_DLPI, errno);
+        ERROR("getmsg(%s) failed, %r",
+              dlprim(dlp->dl_primitive), rc);
+        return rc;
     }
 
     switch (dlp->dl_primitive)
@@ -326,50 +339,33 @@ recv_ack(int fd, char *resp, int resp_len)
             switch (dlp->error_ack.dl_errno)
             {
                 case DL_SYSERR:
-                    ERROR("getmsg(%s) UNIX errno:%s",
-                          dlprim(dlp->dl_primitive),
-                          strerror(dlp->error_ack.dl_unix_errno));
+                    rc = TE_OS_RC(TE_TAD_DLPI,
+                                  dlp->error_ack.dl_unix_errno);
+                    ERROR("getmsg(%s), %r", 
+                          dlprim(dlp->dl_primitive), rc);
                     break;
                 default:
                     ERROR("getmsg(%s) dlerrno:%s",
                           dlprim(dlp->dl_primitive),
                           dlstrerror(dlp->error_ack.dl_errno));
+                          rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
                     break;
             }
-            return -1;
+            return rc;
 
             default:
                 ERROR("getmsg() unexpected primitive ack %s",
                       dlprim(dlp->dl_primitive));
-                return -1;
+                return TE_RC(TE_TAD_DLPI, TE_EINVAL);
     }
 
     if (ctl.len < resp_len)
     {
         ERROR("getmsg(%s) ack too small (%d < %d)",
               dlprim(dlp->dl_primitive), ctl.len, resp_len);
-        return -1;
+        return TE_RC(TE_TAD_DLPI, TE_EINVAL);
     }
     return ctl.len;
-}
-
-
-/**
- * Close DLPI stream device and allocated resources.
- *
- * @param sap           SAP description structure
- *
- * @return Status code.
- */
-static te_errno
-dlpi_close(tad_eth_sap *sap)
-{
-    int rc = 0;
-
-    close(sap->data->fd);
-    free(sap->data->buf);
-    free(sap->data);
-    return rc;
 }
 
 
@@ -392,7 +388,7 @@ dlpi_close(tad_eth_sap *sap)
 te_errno
 tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 {
-    int            rc = 0;
+    te_errno       rc = 0;
     dl_info_req_t *req;
 
     memset(sap, 0, sizeof(tad_eth_sap));
@@ -404,28 +400,21 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
     split_dname_unmb(sap);
 
     sap->data->fd = open(sap->data->name, O_RDWR);
-    if (sap->data->fd == -1)
+    if (sap->data->fd < 0)
     {
-       ERROR("Stream device opening failure");
-       rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+       rc = TE_OS_RC(TE_TAD_DLPI, errno);
+       ERROR("Stream device opening failure, %r", rc);
        goto err_exit;
     }
 
     req->dl_primitive = DL_INFO_REQ;
-    rc = send_request(sap->data->fd, (char *)req, MAXDLBUF);
-    if (rc == -1)
-    {
-       rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+    rc = dlpi_request(sap->data->fd, (char *)req, MAXDLBUF);
+    if (rc < 0)
        goto err_exit;
-    }
 
-    req->dl_primitive = DL_INFO_REQ;
-    rc = recv_ack(sap->data->fd, (char *)req, DL_INFO_ACK_SIZE);
-    if (rc == -1)
-    {
-       rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+    rc = dlpi_ack(sap->data->fd, (char *)req, DL_INFO_ACK_SIZE);
+    if (rc < 0)
        goto err_exit;
-    }
 
     sap->data->dl_info = *((dl_info_ack_t *)req);
 
@@ -449,14 +438,117 @@ err_exit:
 te_errno
 tad_eth_sap_detach(tad_eth_sap *sap)
 {
-    return dlpi_close(sap);
+    close(sap->data->fd);
+    free(sap->data->buf);
+    free(sap->data);
+    return 0;
 }
 
+static te_errno
+dlpi_sap_open(tad_eth_sap *sap)
+{
+    te_errno            rc = 0;
+    union DL_primitives dlp;
 
-QUESTIONS:
-(1) NO send/recv_open, NO tad_eth_sap_send/recv_mode
-    tad_eth_sap_open(tad_eth_sap *sap,
-                     tad_eth_sap_mode mode);
+    if (sap->data->dl_info.dl_provider_style == DL_STYLE1)
+    {
+        ERROR("DLS provider supports DL_STYLE1");
+        rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+        goto err_exit;
+    }
+    else if (infop.dl_provider_style == DL_STYLE2)
+    {
+        dlp.attach_req.dl_primitive = DL_ATTACH_REQ;
+        dlp.attach_req.dl_ppa = sap->data->unit;
+        rc = dlpi_request(sap->data->fd, (char *)&dlp, sizeof(dlp));
+        if (rc < 0)
+           goto err_exit;
+
+        memset(&dlp, 0, sizeof(dlp));
+        rc = dlpi_ack(sap->data->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+        if (rc < 0)
+           goto err_exit;
+    }
+    else
+    {
+        ERROR("Unknown DL_STYLE");
+        rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+        goto err_exit;
+    }
+
+    /* Bind DLSAP to the Stream */
+    memset(&dlp, 0, sizeof(dlp));
+    dlp.bind_req.dl_primitive = DL_BIND_REQ;
+    dlp.bind_req.dl_sap = 0;  /* I am not sure about it absolutely :( */
+    dlp.bind_req.dl_service_mode = DL_CLDLS;
+
+    rc = dlpi_request(sap->data->fd, (char *)&dlp, sizeof(dlp));
+    if (rc < 0)
+        goto err_exit;
+
+    memset(&dlp, 0, sizeof(dlp));
+    rc = dlpi_ack(sap->data->fd, (char *)&dlp, DL_BIND_ACK_SIZE);
+    if (rc < 0)
+        goto err_exit;
+
+    /* Enable promiscuous DL_PROMISC_PHYS */
+    memset(&dlp, 0, sizeof(dlp));
+    dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+    dlp.promiscon_req.dl_level = DL_PROMISC_PHYS;
+    rc = dlpi_request(sap->data->fd, (char *)&dlp, sizeof(dlp));
+    if (rc < 0)
+    {
+        ERROR("Attempt to set DL_PROMISC_PHYS failed");
+        goto err_exit;
+    }
+
+    memset(&dlp, 0, sizeof(dlp));
+    rc = dlpi_ack(sap->data->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+    if (rc < 0)
+        goto err_exit;
+
+    /* Enable promiscuous DL_PROMISC_SAP */
+    memset(&dlp, 0, sizeof(dlp));
+    dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+    dlp.promiscon_req.dl_level = DL_PROMISC_SAP;
+    rc = dlpi_request(sap->data->fd, (char *)&dlp, sizeof(dlp));
+    if (rc < 0)
+    {
+        ERROR("Attempt to set DL_PROMISC_SAP failed");
+        goto err_exit;
+    }
+
+    memset(&dlp, 0, sizeof(dlp));
+    rc = dlpi_ack(sap->data->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+    if (rc < 0)
+        goto err_exit;
+
+#if 0
+    /*
+     ** Try to enable multicast (you would have thought
+     ** promiscuous would be sufficient)
+     */
+    if (dlpromisconreq(fd, DL_PROMISC_MULTI, ebuf) < 0 ||
+        dlokack(fd, "promisc_multi", (char *)buf, ebuf) < 0)
+    {
+        printf("WARNING: DL_PROMISC_MULTI failed (%s)\n", ebuf);
+        goto err_exit;
+    }
+#endif
+
+    /*
+     ** This is a non standard SunOS hack to get the full raw link-layer
+     ** header.
+     */
+    if (strioctl(fd, DLIOCRAW, 0, NULL) < 0)
+    {
+        rc = TE_OS_RC(TE_TAD_DLPI, errno);
+        ERROR("DLIOCRAW: %r", rc);
+        goto err_exit;
+    }
+err_exit:
+    return rc;
+}
 
 
 /**
@@ -469,8 +561,13 @@ QUESTIONS:
  *
  * @sa tad_eth_sap_send_close(), tad_eth_sap_recv_open()
  */
-extern te_errno tad_eth_sap_send_open(tad_eth_sap           *sap,
-                                      tad_eth_sap_send_mode  mode);
+te_errno
+tad_eth_sap_send_open(tad_eth_sap *sap,
+                      tad_eth_sap_send_mode mode)
+{
+    return dlpi_sap_open(sap);
+}
+
 
 /**
  * Send Ethernet frame using service access point opened for sending.
@@ -482,8 +579,49 @@ extern te_errno tad_eth_sap_send_open(tad_eth_sap           *sap,
  *
  * @sa tad_eth_sap_send_open(), tad_eth_sap_recv()
  */
-extern te_errno tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt);
+extern te_errno tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
 
+    size_t              iovlen = tad_pkt_seg_num(pkt);
+    struct iovec        iov[iovlen];
+    size_t              pkt_len;
+    char               *buf = sap->data->buf;
+    te_errno            rc;
+    int                 i;
+
+    /* Convert packet segments to IO vector */
+    rc = tad_pkt_segs_to_iov(pkt, iov, iovlen);
+    if (rc != 0)
+    {
+        ERROR("Failed to convert segments to I/O vector: %r", rc);
+        return rc;
+    }
+
+    for (i = 0, pkt_len = 0; i < iovlen, i++)
+    {
+        pkt_len += iov[i].iov_len;
+        if (pkt_len < MAXDLBUF)
+        {
+            memcpy(buf, iov[i].iov_base, iov[i].iov_len);
+            buf += iov[i].iov_len;
+        }
+        else
+        {
+            ERROR("The length of DL buffer %d is less than sum "
+                  "of segments %d", MAXDLBUF, k);
+            return TE_RC(TE_TAD_DLPI, TE_ENOMEM);
+        }
+    }
+
+    rc = write(sap->data->fd, sap->data->buf, pkt_len);
+    if (rc != pkt_len)
+    {
+        ERROR("write() to DLPI file descriptor returns %d instead of %d"
+              rc, pkt_len);
+        return TE_RC(TE_TAD_DLPI, TE_ENOMEM);
+    }
+
+    return 0;
+}
 
 
 /**
@@ -497,7 +635,11 @@ extern te_errno tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt);
  * @sa tad_eth_sap_recv_close(), tad_eth_sap_send_open()
  */
 extern te_errno tad_eth_sap_recv_open(tad_eth_sap           *sap,
-                                      tad_eth_sap_recv_mode  mode);
+                                      tad_eth_sap_recv_mode  mode)
+{
+    return dlpi_sap_open(sap);
+}
+
 
 /**
  * Receive Ethernet frame using service access point opened for
@@ -512,14 +654,13 @@ extern te_errno tad_eth_sap_recv_open(tad_eth_sap           *sap,
  *
  * @sa tad_eth_sap_recv_open(), tad_eth_sap_send()
  */
-extern te_errno tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
-                                 const tad_pkt *pkt, size_t *pkt_len);
-
-
-
-
-
-
+te_errno
+tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
+                 const tad_pkt *pkt, size_t *pkt_len)
+{
+    return tad_common_read_cb_dlpi(sap->csap, sap->data->fd, 0, timeout,
+                                   pkt, pkt_len);
+}
 
 
 /**
@@ -557,256 +698,4 @@ tad_eth_sap_recv_close(tad_eth_sap *sap)
     return rc;
 }
 
-#if 0
-{
-    int rc = 0;
-
-    int ppa = 0;
-
-    char      *dev ="/dev/efge";
-//    char      *dev ="/dev/bge";
-    char       ebuf[EBUF_SIZE];
-    uint32_t   buf[MAXDLBUF];
-
-    dl_info_ack_t *infop;
-
-
-    printf("\nAttempt to open %s\n", dev);
-    fd = open(dev, O_RDWR);
-    if (fd == -1)
-    {
-       perror("open(dev)");
-       goto err_exit;
-    }
-    printf("\n device %s is opened: descr=%d\n", dev, fd);
-
-    if (dlinforeq(fd, ebuf) < 0 ||
-            dlinfoack(fd, (char *)buf, ebuf) < 0)
-    {
-        printf("\n DL_INFO_REQ || DL_INFO_ACK are failed \n");
-        goto err_exit;
-    }
-
-    infop = &((union DL_primitives *)buf)->info_ack;
-    if (infop->dl_provider_style == DL_STYLE1)
-    {
-        printf("\n+++ DL_STYLE1 +++\n");
-        goto err_exit;
-    }
-    else if (infop->dl_provider_style == DL_STYLE2)
-    {
-        printf("\n+++ DL_STYLE2 +++\n");
-        if ((dlattachreq(fd, ppa, ebuf) < 0 ||
-             dlokack(fd, "attach", (char *)buf, ebuf) < 0))
-        {
-            printf("\n DL_ATTACH_REQ || DL_OK_ACK are failed \n");
-            goto err_exit;
-        }
-    }
-    else
-    {
-        printf("\n+++ Unknown DL_STYLE +++\n");
-        goto err_exit;
-    }
-
-    if (dlbindreq(fd, 0, ebuf) < 0 ||
-        dlbindack(fd, (char *)buf, ebuf) < 0)
-    {
-        printf("\n DL_BIND_REQ || DL_BIND_ACK are failed \n");
-        goto err_exit;
-    }
-
-    /* Enable promiscuous */
-    if (dlpromisconreq(fd, DL_PROMISC_PHYS, ebuf) < 0 ||
-        dlokack(fd, "promisc_phys", (char *)buf, ebuf) < 0)
-    {
-        printf("\n+++ Set promiscuous failed +++\n");
-        goto err_exit;
-    }
-
-    if (dlpromisconreq(fd, DL_PROMISC_SAP, ebuf) < 0 ||
-        dlokack(fd, "promisc_sap", (char *)buf, ebuf) < 0)
-    {
-        /* Not fatal if promisc since the DL_PROMISC_PHYS worked */
-            printf("WARNING: DL_PROMISC_SAP failed (%s)\n", ebuf);
-    }
-
-
-#if 0
-    /*
-     ** Try to enable multicast (you would have thought
-     ** promiscuous would be sufficient)
-     */
-    if (dlpromisconreq(fd, DL_PROMISC_MULTI, ebuf) < 0 ||
-        dlokack(fd, "promisc_multi", (char *)buf, ebuf) < 0)
-    {
-        printf("WARNING: DL_PROMISC_MULTI failed (%s)\n", ebuf);
-        goto err_exit;
-    }
 #endif
-
-#if 1
-    /*
-     ** This is a non standard SunOS hack to get the full raw link-layer
-     ** header.
-     */
-    if (strioctl(fd, DLIOCRAW, 0, NULL) < 0)
-    {
-        printf("DLIOCRAW: %s", strerror(errno));
-        goto err_exit;
-    }
-#endif
-
-#if 0
-    /*
-     ** As the last operation flush the read side.
-     */
-    if (ioctl(fd, I_FLUSH, FLUSHR) != 0) 
-    {
-        printf("FLUSHR: %s", strerror(errno));
-        goto err_exit;
-    }
-#endif
-
-    do {
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(fd, &readfds);
-//            tv.tv_sec  = 0;
-//            tv.tv_usec = 100 * 1000;
-        printf("\n*** Enter to select() \n");
-        rc = select(fd+1, &readfds, NULL, NULL, NULL/*&tv*/);
-        printf("\n*** After select()  \n");
-        if (rc < 0)
-        {
-            if (errno != EINTR)
-            {
-                perror("select");
-                goto err_exit;
-            }
-        }
-    } while(0);
-
-    do {
-
-       uint8_t   dst[6];
-       uint8_t   src[6];
-       uint8_t   type[2];
-
-       long                  sndbuf[MAXDLBUF];
-       union DL_primitives  *dlp;
-       struct strbuf         snddata, sndctl;
-       uint8_t               datap[300];
-
-       int i;
-       int    flags;
-       struct strbuf data;
-       struct strbuf ctl;
-#define MSG_BUF_SIZE 4096
-       unsigned char       buffer[MSG_BUF_SIZE];
-       uint32_t            ctlbuf[MAXDLBUF];
-       dl_unitdata_ind_t  *ind = (dl_unitdata_ind_t *)ctlbuf;
-
-       ctl.maxlen = MAXDLBUF;
-       ctl.len = 0;
-       ctl.buf = (char*)ctlbuf;
-
-       data.maxlen = MSG_BUF_SIZE;
-       data.len = 0;
-       data.buf = buffer;
-       if (getmsg(fd, &ctl, &data, &flags) < 0)
-       {
-           /* Don't choke when we get ptraced */
-           if (errno == EINTR)
-           {
-                printf("\ngetmsg() interrupted\n");
-                continue;
-           }
-           printf("\ngetmsg() failed with errno %s\n", strerror(errno));
-                goto err_exit;
-       }
-
-       if (ctl.len == -1)
-       {
-           printf("\n No control info conveyed +++\n");
-       }
-       else  if (ind->dl_primitive == DL_UNITDATA_IND)
-       {
-           printf("\n_____ DL_UNITDATA_IND  ____\n");
-           printf(" dstaddr:");
-           for (i = 0; (unsigned int)i < ind->dl_dest_addr_length; i++)
-           {
-               printf("%02x", *(buffer + ind->dl_dest_addr_offset + i));
-           }
-           printf("\n srcaddr:");
-           for (i = 0; (unsigned int)i < ind->dl_src_addr_length; i++)
-           {
-               printf("%02x", *(buffer + ind->dl_src_addr_offset + i));
-           }
-           printf("\n");
-       }
-
-       printf("\n");
-       for (i = 0; i < data.len; i++)
-           printf("%02x", buffer[i]);
-       printf("\ngetmsg() returned %d bytes\n", data.len);
-
-
-       for (i = 0; i < 6; i++)
-           dst[i] = buffer[i];
-       for (i = 0; i < 6; i++)
-           src[i] = buffer[i + 6];
-       type[0] = buffer[12];
-       type[1] = buffer[13];
-
-       printf("\n dst=%02x:%02x:%02x:%02x:%02x:%02x "
-              " src=%02x:%02x:%02x:%02x:%02x:%02x type:[%02x][%02x]",
-              dst[0], dst[1], dst[2], dst[3], dst[4], dst[5],
-              src[0], src[1], src[2], src[3], src[4], src[5],
-              type[0], type[1]);
-
-
-       memset(datap, 'a', 300);
-       dlp = (union DL_primitives*) sndbuf;
-
-       dlp->unitdata_req.dl_primitive = DL_UNITDATA_REQ;
-       dlp->unitdata_req.dl_dest_addr_length = 8 /*addrlen=phys+ppa*/;
-       dlp->unitdata_req.dl_dest_addr_offset = sizeof (dl_unitdata_req_t);
-       dlp->unitdata_req.dl_priority.dl_min = 0;
-       dlp->unitdata_req.dl_priority.dl_max = 0;
-
-       (void) memcpy (dlp + sizeof(dl_unitdata_req_t),
-                      src, 6);
-
-       ctl.maxlen = 0;
-       ctl.len = sizeof (dl_unitdata_req_t) + 6;
-       ctl.buf = (char *) sndbuf;
-
-       data.maxlen = 0;
-       data.len = 300;
-       data.buf = (char *)datap;
-
-       if (putmsg (fd, &ctl, &data, 0) < 0)
-       {
-            print("dlunitdatareq: putmsg: %s",
-                   strerror(errno));
-            return (-1);
-       }
-
-    } while (1);
-
-#endif
-
-
-
-
-
-
-
-
-    
-};
-
-
-
-
