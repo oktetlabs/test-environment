@@ -242,17 +242,6 @@ if test x$w_snmp = xtrue; then
     fi
 fi
 
-if test x$w_cli = xtrue; then 
-    AC_CHECK_HEADERS([expect.h tcl8.4/expect.h])
-fi
-
-if test x$w_eth = xtrue; then 
-    AC_CHECK_HEADERS([netinet/ether.h])
-fi
-
-if test x$w_arp = xtrue; then 
-    AC_CHECK_HEADERS([net/if_arp.h])
-fi
 
 AC_SUBST([NET_SNMP_CFLAGS])
 AC_SUBST([NET_SNMP_LIBS])
