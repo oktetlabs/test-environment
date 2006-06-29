@@ -595,6 +595,7 @@ iscsi_release_session(SHARED struct iscsi_session *session)
 #endif
 
     /* free session structures */
+    param_tbl_uncpy(*session->session_params);
     shfree(session->session_params);
 
     shfree(session->oper_param);
@@ -2199,6 +2200,7 @@ build_conn_sess(int sock, SHARED iscsi_custom_data *custom, struct portal_group 
     conn = (struct iscsi_conn *)malloc(sizeof(struct iscsi_conn));
     if (!conn) 
     {
+        TRACE_ERROR("%s(): Aiye! Memory exhausted...", __FUNCTION__);
         return NULL;
     }
 
@@ -2222,7 +2224,7 @@ build_conn_sess(int sock, SHARED iscsi_custom_data *custom, struct portal_group 
     session = shalloc(sizeof(struct iscsi_session));
     if (!session) 
     {
-
+        TRACE_ERROR("%s(): Cannot allocate shared session data", __FUNCTION__);
         goto out4;
     }
 
@@ -2243,6 +2245,7 @@ build_conn_sess(int sock, SHARED iscsi_custom_data *custom, struct portal_group 
     if (!(session->session_params = shalloc(MAX_CONFIG_PARAMS *
                                            sizeof(struct parameter_type)))) {
 
+        TRACE_ERROR("%s(): Cannot allocate shared session parameters", __FUNCTION__);
         goto out6;
     }
 
@@ -2250,6 +2253,7 @@ build_conn_sess(int sock, SHARED iscsi_custom_data *custom, struct portal_group 
           shalloc(MAX_CONFIG_PARAMS *
                  sizeof(struct session_operational_parameters)))) {
 
+        TRACE_ERROR("%s(): Cannot allocate shared operational parameters", __FUNCTION__);
         goto out7;
     }
 
@@ -2262,22 +2266,25 @@ build_conn_sess(int sock, SHARED iscsi_custom_data *custom, struct portal_group 
 
     if ((session->cmnd_mutex = ipc_mutex_alloc()) < 0)
     {
+        TRACE_ERROR("%s(): Cannot allocate command mutex", __FUNCTION__);
         goto out7;
     }
 
     conn->custom = custom;
 
+    TRACE(DEBUG, "Connection pointer is %p", conn);
     return conn;
 
 out7:
+    TRACE(DEBUG, "error condition 7 reached");
     shfree(session->session_params);
 
-    printf("\n 1 \n");
 out6:
-
+    TRACE(DEBUG, "error condition 6 reached");
     shfree(session);
 
 out4:
+    TRACE(DEBUG, "error condition 4 reached");
     free(conn);
 
     return NULL;
@@ -6568,13 +6575,19 @@ iscsi_server_rx_main_loop(int send_recv_sock, SHARED iscsi_custom_data *custom)
                              conn->connection_flags);
 		if (err != ISCSI_HDR_LEN)
         {
-            if (errno == EINTR)
+            if (err < 0)
             {
-                while (iscsi_custom_pending_changes())
-                    iscsi_manager(conn);
-                continue;
+                if (errno == EINTR)
+                {
+                    while (iscsi_custom_pending_changes())
+                        iscsi_manager(conn);
+                    continue;
+                }
+                else   
+                {
+                    TRACE_ERROR("Cannot read iSCSI header: %d", err);
+                }
             }
-            TRACE_ERROR("Cannot read iSCSI header: %d", err);
             break;
         }
 
@@ -6618,7 +6631,10 @@ iscsi_server_rx_main_loop(int send_recv_sock, SHARED iscsi_custom_data *custom)
             if ((err = iscsi_recv_msg(conn->conn_socket, CRC_LEN, 
                                       (char *)&digest, 
                                       conn->connection_flags)) != CRC_LEN) 
+            {
+                TRACE_ERROR("Unable to read header digest");
                 break;
+            }
 
 			if (hdr_crc != digest) 
             {
