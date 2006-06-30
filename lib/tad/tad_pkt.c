@@ -361,8 +361,9 @@ tad_pkt_segs_to_iov_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
     
     UNUSED(pkt);
     assert(iov != NULL);
+
     iov[seg_num].iov_base = seg->data_ptr;
-    iov[seg_num].iov_len = seg->data_len;
+    iov[seg_num].iov_len  = seg->data_len;
 
     return 0;
 }
@@ -502,6 +503,7 @@ tad_pkts_add_new_seg(tad_pkts *pkts, te_bool header,
         }
         else if (data_len > 0)
         {
+            memset(data, 0x5a, data_len);
             tad_pkt_init_seg_data(seg, data, data_len, NULL);
             data += data_len;
         }
@@ -674,7 +676,7 @@ te_errno
 tad_pkt_enumerate(tad_pkts *pkts, tad_pkt_enum_cb func, void *opaque)
 {
     tad_pkt    *pkt;
-    te_errno    rc;
+    te_errno    rc = 0;
 
     TAD_PKT_FOR_EACH_PKT_FWD(&pkts->pkts, pkt)
     {
