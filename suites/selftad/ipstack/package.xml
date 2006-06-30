@@ -38,7 +38,7 @@
                 <req id="TAD_IP4"/>
             </script>
             <arg name="env">
-                <value>{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},
+                <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:fake,if:'csap_if'},
                 {{'pco':tester},addr:'pco_addr':inet:unicast,if:'pco_if'}}
                 </value>
             </arg>
@@ -49,12 +49,23 @@
                 <req id="TAD_IP4"/>
             </script>
             <arg name="env">
-                <value>{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},
-                {{'pco':tester},addr:'pco_addr':inet:unicast,if:'pco_if'}}
+                <value>{{{'pco':tester},addr:'pco_addr':inet:unicast,if:'pco_if'},
+                'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}
                 </value>
             </arg>
         </run> 
 
+        <run>
+            <script name="tcp_flood">
+                <req id="TAD_TCP"/>
+            </script>
+            <arg name="env">
+                <value>{
+                {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'},
+                 'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}
+                </value>
+            </arg>
+        </run> 
         <run>
             <script name="tcp_conn">
                 <req id="TAD_TCP"/>
