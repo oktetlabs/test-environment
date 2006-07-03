@@ -22,6 +22,7 @@ do {                                            \
 extern te_bool is_shared_ptr(SHARED void *addr);
 
 extern te_errno shared_mem_init(size_t size);
+extern size_t get_avail_shared_mem(void);
 extern SHARED void *shalloc(size_t size);
 extern SHARED void *shcalloc(size_t nmemb, size_t size);
 extern te_errno shfree(SHARED void *addr);

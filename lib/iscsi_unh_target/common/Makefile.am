@@ -22,7 +22,6 @@ noinst_HEADERS = \
 	scsi_cmnd.h \
     mutex.h
 
-
 noinst_LIBRARIES = libiscsi_common.a
 
 libiscsi_common_a_SOURCES = \

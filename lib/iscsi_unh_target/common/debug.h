@@ -47,7 +47,8 @@ enum iscsi_verbosity_levels {
     ISCSI_VERBOSITY_NORMAL,
     ISCSI_VERBOSITY_VERBOSE,
     ISCSI_VERBOSITY_DEBUG,
-    ISCSI_VERBOSITY_PRINTALL
+    ISCSI_VERBOSITY_PRINTALL,
+    ISCSI_VERBOSITY_DEBUG_MEMORY
 };
 
 /**
@@ -58,7 +59,8 @@ enum iscsi_verbosity_levels {
  * -# normal   Important events are reported
  * -# verbose  All non-debug info is reported
  * -# debug    All debug info is reported, excluding raw PDU dumps
- * -# printall Everything is reported
+ * -# printall Everything is reported (except shared memory allocations)
+ * -# debug_memory `printall' + shared memory allocations
  * 
  * @param level Verbosity level
  * 
@@ -84,7 +86,8 @@ extern te_bool iscsi_check_verbose(int level);
 #define TRACE_ERROR(args...) do {                           \
         if (iscsi_check_verbose(ISCSI_VERBOSITY_MINIMAL))   \
         /*  ERROR(args); */                                   \
-        { fputs("ERROR: ", stderr); fprintf(stderr, args); fputc('\n', stderr); } \
+        { fputs("ERROR: ", stderr); \
+          fprintf(stderr, args); fputc('\n', stderr); } \
     } while(0)
 
 #define TRACE_WARNING(args...) do {                           \

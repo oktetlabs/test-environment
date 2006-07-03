@@ -131,7 +131,7 @@ iscsi_send_msg_ex(struct iscsi_conn *conn, int sock,
                     memmove(outputpdu->text, outputpdu->text + outputpdu->text_length,
                             total - outputpdu->text_length);
                     if (iscsi_recv_msg(sock, ISCSI_HDR_LEN, (char *) &inputpdu,
-                                       conn->connection_flags) < 0) 
+                                       conn->connection_flags) <= 0) 
                     {
                         TRACE_ERROR("iscsi_recv_msg failed");
                         return -1;
@@ -792,8 +792,8 @@ target_security_negotiate(struct iscsi_conn *conn,
 
 	while ((outputpdu->flags & NSG) != NSG3) {
 		if (iscsi_recv_msg(sock, ISCSI_HDR_LEN, (char *) inputpdu,
-						   conn->connection_flags) < 0) {
-			TRACE(DEBUG, "iscsi_recv_msg failed");
+						   conn->connection_flags) <= 0) {
+			TRACE_ERROR("iscsi_recv_msg failed");
 			retval = -1;
 			goto out;
 		}
@@ -803,8 +803,8 @@ target_security_negotiate(struct iscsi_conn *conn,
 			padding = (-inputpdu->text_length) & 3;
 			if (inputpdu->text_length < MAX_TEXT_LEN) {
 				if (iscsi_recv_msg(sock, inputpdu->text_length + padding,
-							   	inputpdu->text, conn->connection_flags) < 0) {
-					TRACE(DEBUG, "iscsi_recv_msg failed");
+							   	inputpdu->text, conn->connection_flags) <= 0) {
+					TRACE_ERROR("iscsi_recv_msg failed");
 					retval = -1;
 					goto out;
 				}
@@ -1332,8 +1332,8 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 	if (inputpdu->text_length > 0) {
 		if (iscsi_recv_msg
 			(sock, inputpdu->text_length + padding, inputpdu->text,
-			 conn->connection_flags) < 0) {
-			TRACE(DEBUG, "iscsi_recv_msg failed");
+			 conn->connection_flags) <= 0) {
+			TRACE_ERROR("iscsi_recv_msg failed");
 			return -1;
 		}
 	}
@@ -1427,8 +1427,8 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 
 		/*  wait for input from initiator  */
 		if (iscsi_recv_msg(sock, ISCSI_HDR_LEN, (char *) inputpdu,
-						   conn->connection_flags) < 0) {
-			TRACE(DEBUG, "iscsi_recv_msg failed");
+						   conn->connection_flags) <= 0) {
+			TRACE_ERROR("iscsi_recv_msg failed");
 			return -1;
 		}
 
@@ -1442,8 +1442,8 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 
 		if (inputpdu->text_length <= MAX_TEXT_LEN) {
 			if (iscsi_recv_msg(sock, inputpdu->text_length + padding,
-							   inputpdu->text, conn->connection_flags) < 0) {
-				TRACE(DEBUG, "iscsi_recv_msg failed");
+							   inputpdu->text, conn->connection_flags) <= 0) {
+				TRACE_ERROR("iscsi_recv_msg failed");
 				retval = -1;
 				goto out;
 			}

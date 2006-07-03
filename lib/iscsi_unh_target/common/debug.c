@@ -40,7 +40,9 @@ static int verbosity_level = ISCSI_VERBOSITY_SILENT;
 static char *level_map[] = {
     "silent", "minimal",
     "normal", "verbose", 
-    "debug",  "printall", NULL
+    "debug",  "printall", 
+    "debug_memory",
+    NULL
 };
 
 te_bool

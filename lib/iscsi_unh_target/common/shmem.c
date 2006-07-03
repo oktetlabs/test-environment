@@ -98,18 +98,18 @@ shared_mem_init(size_t size)
             if ((tmp_id < 0) || (shmctl(tmp_id, IPC_STAT, &buf) != 0))
             {
                 rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
-                ERROR("Cannot cleanup stale shared memory: %r", rc);
+                TRACE_ERROR("Cannot cleanup stale shared memory: %r", rc);
                 return rc;
             }
             if (kill(buf.shm_cpid, 0) == 0)
             {
-                ERROR("Non-stale shared memory found owned by %u",
-                      (unsigned)buf.shm_cpid);
+                TRACE_ERROR("Non-stale shared memory found owned by %u",
+                            (unsigned)buf.shm_cpid);
                 return TE_RC(TE_ISCSI_TARGET, TE_EEXIST);
             }
             if (shmctl(tmp_id, IPC_RMID, NULL) != 0)
             {
-                ERROR("Unable to cleanup stale shared memory: %r", rc);
+                TRACE_ERROR("Unable to cleanup stale shared memory: %r", rc);
                 return rc;
             }
             tmp_id = semget(shlock_key, 1, S_IREAD | S_IWRITE);
@@ -118,7 +118,7 @@ shared_mem_init(size_t size)
                 if (semctl(tmp_id, 0, IPC_RMID) != 0)
                 {
                     rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
-                    ERROR("Cannot cleanup stale shared memory lock: %r", rc);
+                    TRACE_ERROR("Cannot cleanup stale shared memory lock: %r", rc);
                     return rc;
                 }
             }
@@ -129,7 +129,7 @@ shared_mem_init(size_t size)
         else
         {
             rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
-            ERROR("Cannot get a shared memory segment: %r", rc);
+            TRACE_ERROR("Cannot get a shared memory segment: %r", rc);
             return rc;
         }
     }
@@ -138,7 +138,7 @@ shared_mem_init(size_t size)
     if (shared_mem_lock < 0)
     {
         rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
-        ERROR("Cannot get a shared memory lock: %r", rc);
+        TRACE_ERROR("Cannot get a shared memory lock: %r", rc);
         return rc;
     }
     semctl(shared_mem_lock, 0, SETVAL, 1);
@@ -147,7 +147,7 @@ shared_mem_init(size_t size)
     if (master_block == NULL)
     {
         rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
-        ERROR("Cannot attach a shared memory segment: %r", rc);
+        TRACE_ERROR("Cannot attach a shared memory segment: %r", rc);
         shmctl(shared_mem_id, IPC_RMID, NULL);
         semctl(shared_mem_lock, 0, IPC_RMID);
         return TE_OS_RC(TE_ISCSI_TARGET, rc);
@@ -170,6 +170,12 @@ is_shared_ptr(SHARED void *addr)
             addr < master_block->free_area);
 }
 
+size_t
+get_avail_shared_mem(void)
+{
+    return (char *)block_end - (char *)master_block->free_area;
+}
+
 SHARED void *
 shalloc(size_t size)
 {
@@ -179,6 +185,13 @@ shalloc(size_t size)
     size = (size + sizeof(double) - 1) / sizeof(double) * sizeof(double);
     size += sizeof(reserved_block);
     size = (size + sizeof(double) - 1) / sizeof(double) * sizeof(double);
+
+    TRACE(DEBUG_MEMORY, 
+          "Allocating shared memory chunk %u, available %u (%p:%p)", 
+          (unsigned)size,
+          (unsigned)((char *)block_end - (char *)master_block->free_area),
+          __builtin_return_address(0),
+          __builtin_return_address(1));
     
     op.sem_num = 0;
     op.sem_op  = -1;
@@ -186,36 +199,63 @@ shalloc(size_t size)
     if (semop(shared_mem_lock, &op, 1) != 0)
     {
         int rc = errno;
-        ERROR("%s(): Aiye! Unable to lock a shared memory lock: %r",
-              __FUNCTION__,
-              TE_OS_RC(TE_ISCSI_TARGET, rc));
+        TRACE_ERROR("%s(): Aiye! Unable to lock a shared memory lock: %r",
+                    __FUNCTION__,
+                    TE_OS_RC(TE_ISCSI_TARGET, rc));
         errno = rc;
         return NULL;
     }
 
     if ((char *)master_block->free_area + size >= (char *)block_end)
     {
-        op.sem_num = 0;
-        op.sem_op  = 1;
-        op.sem_flg = 0;
-        semop(shared_mem_lock, &op, 1);
+        SHARED reserved_block *free_block;
+        SHARED reserved_block **prev_ptr = &master_block->reserved_list;
 
-        errno = ENOMEM;
-        return NULL;
+        for (free_block = master_block->reserved_list; 
+             free_block != NULL;
+             prev_ptr = &free_block->chain, free_block = free_block->chain)
+        {
+            if (free_block->size >= size)
+            {
+                TRACE(DEBUG_MEMORY, "Taking from reserved list %p", free_block);
+                *prev_ptr = free_block->chain;
+                free_block->chain = &the_block_is_occupied;
+                result = free_block;
+                break;
+            }
+        }
+
+        if (free_block == NULL)
+        {
+            op.sem_num = 0;
+            op.sem_op  = 1;
+            op.sem_flg = 0;
+            semop(shared_mem_lock, &op, 1);
+            
+            TRACE_ERROR("%s(): Cannot allocate a shared memory block of size %u",
+                        __FUNCTION__, (unsigned)size);
+            errno = ENOMEM;
+            return NULL;
+        }
     }
+    else
+    {
+        ((reserved_block *)master_block->free_area)->guardian  = SHARED_MEM_GUARDIAN;
+        ((reserved_block *)master_block->free_area)->chain = &the_block_is_occupied;
+        ((reserved_block *)master_block->free_area)->size  = size;
+        result = (char *)master_block->free_area;
+        master_block->free_area = (char *)master_block->free_area + size;
 
-    ((reserved_block *)master_block->free_area)->guardian  = SHARED_MEM_GUARDIAN;
-    ((reserved_block *)master_block->free_area)->chain = &the_block_is_occupied;
-    ((reserved_block *)master_block->free_area)->size  = size;
-    result = (char *)master_block->free_area + 
-        (sizeof(reserved_block) + sizeof(double) - 1) / sizeof(double) * sizeof(double);
-
-    master_block->free_area = (char *)master_block->free_area + size;
+    }
+    result += (sizeof(reserved_block) + sizeof(double) - 1) / sizeof(double) * sizeof(double);
 
     op.sem_num = 0;
     op.sem_op  = 1;
     op.sem_flg = 0;
     semop(shared_mem_lock, &op, 1);
+
+    TRACE(DEBUG_MEMORY, "Allocated %p at %p", result, 
+          __builtin_return_address(0));
 
     return result;
 }
@@ -227,14 +267,16 @@ shfree(SHARED void *addr)
     SHARED reserved_block * SHARED *prev_ptr;
     struct sembuf op;
 
+    TRACE(DEBUG_MEMORY, "Freeing %p at %p", addr,
+          __builtin_return_address(0));
+
     if (addr == NULL)
         return 0;
 
     if (addr < (void *)master_block || addr >= (void *)block_end)
     {
-        ERROR("%p is not a shared address (%p:%p)", addr, 
-              __builtin_return_address(0),
-              __builtin_return_address(1));
+        TRACE_ERROR("%p is not a shared address (%p)", addr, 
+                    __builtin_return_address(0));
         free((void *)addr);
         return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
     }
@@ -244,7 +286,7 @@ shfree(SHARED void *addr)
     if (block->chain != &the_block_is_occupied || 
         block->guardian != SHARED_MEM_GUARDIAN)
     {
-        ERROR("%p is not shalloc-allocated block", addr);
+        TRACE_ERROR("%p is not shalloc-allocated block", addr);
         return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
     }
 
@@ -254,22 +296,25 @@ shfree(SHARED void *addr)
     if (semop(shared_mem_lock, &op, 1) != 0)
     {
         int rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
-        ERROR("%s(): Aiye! Unable to lock a shared memory lock: %r, memory not freed", __FUNCTION__, rc);
+        TRACE_ERROR("%s(): Aiye! Unable to lock a shared memory lock: %r", 
+                    "memory not freed", __FUNCTION__, rc);
         return rc;
     }
     
     block->chain = master_block->reserved_list;
     prev_ptr = &master_block->reserved_list;
+    master_block->reserved_list = block;
         
     for (; block != NULL; block = block->chain)
     {
         if (block->guardian != SHARED_MEM_GUARDIAN)
         {
-            ERROR("Aiye! Shared memory heap is corrupted!!!");
+            TRACE_ERROR("Aiye! Shared memory heap is corrupted!!!");
             break;
         }
         if ((char *)block + block->size == master_block->free_area)
         {
+            TRACE(DEBUG_MEMORY, "Popping %u memory", (unsigned)block->size);
             master_block->free_area = block;
             *prev_ptr = block->chain;
         }
@@ -283,6 +328,9 @@ shfree(SHARED void *addr)
     op.sem_op  = 1;
     op.sem_flg = 0;
     semop(shared_mem_lock, &op, 1);
+
+    TRACE(DEBUG_MEMORY, "After freeing available %u",
+          (unsigned)((char *)block_end - (char *)master_block->free_area));
 
     return 0;
 }

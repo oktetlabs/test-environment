@@ -1231,7 +1231,6 @@ iscsi_recv_msg(int sock, int length, char *buffer, int flags)
         } else {
             TRACE_ERROR("recvmsg error %d\n", retval);
         }
-        retval = -1;
         goto out;
     }
     TRACE(DEBUG, "Received: %d", retval);
