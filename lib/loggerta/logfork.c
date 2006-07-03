@@ -316,8 +316,8 @@ logfork_entry(void)
                 {
                     name = "Unnamed";
                 }
-                sprintf(name_pid, "%s.%u.%u",
-                        name, (unsigned)msg.pid, (unsigned)msg.tid);
+                TE_SPRINTF(name_pid, "%s.%u.%u",
+                           name, (unsigned)msg.pid, (unsigned)msg.tid);
 
                 te_log_message(__FILE__, __LINE__,
                                msg.__log_level, TE_LGR_ENTITY, 
