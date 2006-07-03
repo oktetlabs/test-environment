@@ -453,4 +453,22 @@ iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
     return 0;
 }
 
+#else
+
+#include "te_config.h"
+#include "package.h"
+#include "te_defs.h"
+#include "te_stdint.h"
+#include "te_errno.h"
+#include "te_iscsi.h"
+#include "iscsi_initiator.h"
+
+te_errno
+iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
+{
+    UNUSED(req);
+    return TE_RC(ISCSI_AGENT_TYPE, TE_ENOSYS);
+}
+
+
 #endif

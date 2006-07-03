@@ -353,7 +353,7 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
         ISCSI_UNH_SET_UNNEGOTIATED("AuthMethod", conn->chap.chap, req->target_id);
         
         /* Target' CHAP */
-        if (conn->chap.target_auth)
+        if (conn->chap.need_target_auth)
         {
             ISCSI_UNH_FORCE_FLAG("t", req->target_id,
                                  "Target Authentication");
@@ -407,4 +407,21 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
     return rc;
 }
 
-#endif
+#else /* __CYGWIN__ */
+
+#include "te_config.h"
+#include "package.h"
+#include "te_defs.h"
+#include "te_stdint.h"
+#include "te_errno.h"
+#include "te_iscsi.h"
+#include "iscsi_initiator.h"
+
+te_errno
+iscsi_initiator_unh_set(iscsi_connection_req *req)
+{
+    UNUSED(req);
+    return TE_RC(ISCSI_AGENT_TYPE, TE_ENOSYS);
+}
+
+#endif /* __CYGWIN__ */

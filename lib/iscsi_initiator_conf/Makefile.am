@@ -9,7 +9,7 @@ lib_LIBRARIES = libiscsi_initiator_conf.a
 
 noinst_HEADERS = iscsi_initiator.h
 
-libiscsi_initiator_conf_a_SOURCES = conf_iscsi_initiator.c win32.c \
-	                                unh.c openiscsi.c l5.c 
+libiscsi_initiator_conf_a_SOURCES = conf_iscsi_initiator.c iscsi_initiator.c \
+	                                win32.c unh.c openiscsi.c l5.c 
 
 all: install

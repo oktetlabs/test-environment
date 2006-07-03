@@ -138,6 +138,22 @@ static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
 static te_errno iscsi_win32_set_default_parameters(void);
 
 /**
+ * Formatting function for iscsi_write_param().
+ *
+ * @return "0" if @p val is "None", "1" otherwise
+ * @param val   String value
+ */
+static char *
+iscsi_not_none (void *val)
+{
+    static char buf[2];
+    *buf = (strcmp(val, "None") == 0 ? '0' : '1');
+    return buf;
+}
+
+
+
+/**
  *  Detect Initiator instance name for the current iSCSI device
  *
  *  @return TRUE if the detected instance name is in the list of Initiators
@@ -145,7 +161,6 @@ static te_errno iscsi_win32_set_default_parameters(void);
 static te_bool
 iscsi_win32_detect_initiator_name(void)
 {
-    te_errno      rc = 0;
     char          service_name[128] = "";
     unsigned long buf_size;
     unsigned long value_type;
@@ -191,6 +206,8 @@ iscsi_win32_detect_initiator_name(void)
     buf_size = sizeof(iscsi_initiator_instance) - 1;
     result = RegQueryValueEx(iscsi_service, "0", NULL, &value_type, 
                              iscsi_initiator_instance, &buf_size);
+    RegCloseKey(iscsi_service);
+    
     if (result != 0)
     {
         ISCSI_WIN32_REPORT_RESULT(result);
@@ -781,7 +798,7 @@ iscsi_win32_finish_cli(void)
     
     CloseHandle(host_output);
     CloseHandle(host_input);
-    success = (WaitForSingleObject(process_info.hProcess, 100) != 
+    success = (WaitForSingleObject(process_info.hProcess, 100) == 
                WAIT_OBJECT_0);
     if (!success)
     {
@@ -1292,7 +1309,9 @@ iscsi_win32_prepare_device(iscsi_connection_data_t *conn)
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENODATA)
+        {
             return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
+        }
         ERROR("Unable to find drive number: %r", rc);
         return rc;
     }
@@ -1335,6 +1354,23 @@ iscsi_win32_init_regexps(void)
         }
     }
     return 0;
+}
+
+#else
+
+#include "te_config.h"
+#include "package.h"
+#include "te_defs.h"
+#include "te_stdint.h"
+#include "te_errno.h"
+#include "te_iscsi.h"
+#include "iscsi_initiator.h"
+
+te_errno
+iscsi_initiator_win32_set(iscsi_connection_req *req)
+{
+    UNUSED(req);
+    return TE_RC(ISCSI_AGENT_TYPE, TE_ENOSYS);
 }
 
 #endif
