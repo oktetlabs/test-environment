@@ -557,9 +557,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
         }
 
         if (((msg->msg_iov != NULL) &&
-             (msg->msg_iovlen > msg->msg_riovlen)) ||
-            ((msg->msg_name != NULL) &&
-             (msg->msg_namelen > msg->msg_rnamelen)))
+             (msg->msg_iovlen > msg->msg_riovlen)))
         {
             ERROR("Inconsistent real and declared lengths of buffers");
             rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
