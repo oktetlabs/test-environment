@@ -91,6 +91,7 @@ split_dname_unmb(tad_eth_sap *sap)
     dlpi_data *dlpi = (dlpi_data *)sap->data;
     char *cp;
     char *eos;
+    char *dn = "/dev/";
 
     /* Look for a number at the end of the device name string */
     cp = sap->name + strlen(sap->name) - 1;
@@ -105,7 +106,8 @@ split_dname_unmb(tad_eth_sap *sap)
           *(cp - 1) >= '0' && *(cp - 1) <= '9')
         cp--;
 
-    strncpy(dlpi->name, sap->name, (int)(cp - sap->name));
+    strcpy(dlpi->name, dn);
+    strncpy(dlpi->name + strlen(dn), sap->name, (int)(cp - sap->name));
     dlpi->unit = strtol(cp, &eos, 10);
     if (*eos != '\0')
     {
@@ -280,6 +282,8 @@ dlpi_request(int fd, char *req, int req_len)
     struct strbuf         ctl;
     int                   flags;
 
+    assert(req);
+
     ctl.maxlen = 0;
     ctl.len = req_len;
     ctl.buf = req;
@@ -313,7 +317,9 @@ dlpi_ack(int fd, char *resp, int resp_len)
     struct strbuf        ctl;
     int                  flags;
 
-    ctl.maxlen = resp_len;
+    assert(resp);
+
+    ctl.maxlen = MAXDLBUF;
     ctl.len = 0;
     ctl.buf = resp;
 
@@ -363,7 +369,7 @@ dlpi_ack(int fd, char *resp, int resp_len)
               dlprim(dlp->dl_primitive), ctl.len, resp_len);
         return TE_RC(TE_TAD_DLPI, TE_EINVAL);
     }
-    return ctl.len;
+    return rc;
 }
 
 
@@ -386,14 +392,22 @@ dlpi_ack(int fd, char *resp, int resp_len)
 te_errno
 tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 {
-    dlpi_data *dlpi = (dlpi_data *)sap->data;
+    dlpi_data     *dlpi;
     te_errno       rc = 0;
     dl_info_req_t *req;
+
+    assert(sap);
+    assert(ifname);
 
     memset(sap, 0, sizeof(tad_eth_sap));
     strncpy(sap->name, ifname, TAD_ETH_SAP_IFNAME_SIZE);
     sap->data = calloc(1, sizeof(struct dlpi_data));
+    assert(sap->data);
+
+    dlpi = (dlpi_data *)sap->data;
     dlpi->buf = calloc(1, MAXDLBUF);
+    assert(dlpi->buf);
+
     req = (dl_info_req_t *)dlpi->buf;
 
     split_dname_unmb(sap);
@@ -407,13 +421,20 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
     }
 
     req->dl_primitive = DL_INFO_REQ;
-    rc = dlpi_request(dlpi->fd, (char *)req, MAXDLBUF);
-    if (rc < 0)
+    rc = dlpi_request(dlpi->fd, (char *)req, sizeof(dl_info_req_t));
+    if (rc != 0)
+    {
+       ERROR("dlpi_request(DL_INFO_REQ) failed");
        goto err_exit;
+    }
 
+    memset(req, 0, sizeof(*req));
     rc = dlpi_ack(dlpi->fd, (char *)req, DL_INFO_ACK_SIZE);
-    if (rc < 0)
+    if (rc != 0)
+    {
+       ERROR("dlpi_ack(DL_INFO_REQ) failed");
        goto err_exit;
+    }
 
     dlpi->dl_info = *((dl_info_ack_t *)req);
 
@@ -432,7 +453,6 @@ te_errno
 tad_eth_sap_detach(tad_eth_sap *sap)
 {
     dlpi_data *dlpi = (dlpi_data *)sap->data;
-
     close(dlpi->fd);
     free(dlpi->buf);
     free(sap->data);
@@ -446,6 +466,7 @@ dlpi_sap_open(tad_eth_sap *sap)
     te_errno            rc = 0;
     union DL_primitives dlp;
 
+
     if (dlpi->dl_info.dl_provider_style == DL_STYLE1)
     {
         ERROR("DLS provider supports DL_STYLE1");
@@ -457,12 +478,12 @@ dlpi_sap_open(tad_eth_sap *sap)
         dlp.attach_req.dl_primitive = DL_ATTACH_REQ;
         dlp.attach_req.dl_ppa = dlpi->unit;
         rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-        if (rc < 0)
+        if (rc != 0)
            goto err_exit;
 
         memset(&dlp, 0, sizeof(dlp));
         rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-        if (rc < 0)
+        if (rc != 0)
            goto err_exit;
     }
     else
@@ -479,12 +500,12 @@ dlpi_sap_open(tad_eth_sap *sap)
     dlp.bind_req.dl_service_mode = DL_CLDLS;
 
     rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-    if (rc < 0)
+    if (rc != 0)
         goto err_exit;
 
     memset(&dlp, 0, sizeof(dlp));
     rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_BIND_ACK_SIZE);
-    if (rc < 0)
+    if (rc != 0)
         goto err_exit;
 
     /* Enable promiscuous DL_PROMISC_PHYS */
@@ -492,7 +513,7 @@ dlpi_sap_open(tad_eth_sap *sap)
     dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
     dlp.promiscon_req.dl_level = DL_PROMISC_PHYS;
     rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-    if (rc < 0)
+    if (rc != 0)
     {
         ERROR("Attempt to set DL_PROMISC_PHYS failed");
         goto err_exit;
@@ -500,7 +521,7 @@ dlpi_sap_open(tad_eth_sap *sap)
 
     memset(&dlp, 0, sizeof(dlp));
     rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-    if (rc < 0)
+    if (rc != 0)
         goto err_exit;
 
     /* Enable promiscuous DL_PROMISC_SAP */
@@ -508,7 +529,7 @@ dlpi_sap_open(tad_eth_sap *sap)
     dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
     dlp.promiscon_req.dl_level = DL_PROMISC_SAP;
     rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-    if (rc < 0)
+    if (rc != 0)
     {
         ERROR("Attempt to set DL_PROMISC_SAP failed");
         goto err_exit;
@@ -516,7 +537,7 @@ dlpi_sap_open(tad_eth_sap *sap)
 
     memset(&dlp, 0, sizeof(dlp));
     rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-    if (rc < 0)
+    if (rc != 0)
         goto err_exit;
 
     /**
@@ -527,7 +548,7 @@ dlpi_sap_open(tad_eth_sap *sap)
     dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
     dlp.promiscon_req.dl_level = DL_PROMISC_MULTI;
     rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-    if (rc < 0)
+    if (rc != 0)
     {
         ERROR("Attempt to set DL_PROMISC_MULTI failed");
         goto err_exit;
@@ -535,7 +556,7 @@ dlpi_sap_open(tad_eth_sap *sap)
 
     memset(&dlp, 0, sizeof(dlp));
     rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-    if (rc < 0)
+    if (rc != 0)
         goto err_exit;
 
     /*
@@ -607,7 +628,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
             return TE_RC(TE_TAD_DLPI, TE_ENOMEM);
         }
     }
-
+    ERROR("%s: before write()", __FUNCTION__);
     rc = write(dlpi->fd, dlpi->buf, pkt_len);
     if (rc != pkt_len)
     {
@@ -615,7 +636,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
               rc, pkt_len);
         return TE_RC(TE_TAD_DLPI, TE_ENOMEM);
     }
-
+    ERROR("%s: it was write() -> %d", __FUNCTION__);
     return 0;
 }
 
@@ -709,7 +730,7 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
         struct iovec         iov[iovlen];
         ssize_t              r;
         struct strbuf        data;
-        int                  data_rest = 0;
+        size_t               data_rest = 0; /* uint*/
         char                *auxp;
 
         data.maxlen = MAXDLBUF;
@@ -742,7 +763,7 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
         auxp= data.buf;
         for (i = 0; i < iovlen; i++)
         {
-            if (iov[i].iov_len < data_rest)
+            if ((size_t)(iov[i].iov_len) < data_rest)
             {
                 to_copy = iov[i].iov_len;
                 data_rest -= iov[i].iov_len;
@@ -776,6 +797,7 @@ tad_eth_sap_send_close(tad_eth_sap *sap)
 {
     int rc = 0;
     UNUSED(sap);
+
     return rc;
 }
 
@@ -790,6 +812,7 @@ tad_eth_sap_recv_close(tad_eth_sap *sap)
 {
     int rc = 0;
     UNUSED(sap);
+
     return rc;
 }
 
