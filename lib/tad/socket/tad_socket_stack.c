@@ -477,13 +477,17 @@ tad_socket_write_cb(csap_p csap, const tad_pkt *pkt)
         return rc;
     }
 
+#if 1
+    memset(&msg, 0, sizeof(msg));
+#else
     msg.msg_name = NULL;
     msg.msg_namelen = 0;
-    msg.msg_iov = iov;
-    msg.msg_iovlen = iovlen;
     msg.msg_control = NULL;
     msg.msg_controllen = 0;
     msg.msg_flags = 0;
+#endif
+    msg.msg_iov = iov;
+    msg.msg_iovlen = iovlen;
 
     ret = sendmsg(spec_data->socket, &msg, 0);
     if (ret < 0) 
