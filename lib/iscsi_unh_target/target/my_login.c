@@ -887,9 +887,9 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
 
             if (tx_loop <= 0) {
                 pdu = (struct generic_pdu *)iov[0].iov_base;
-                TRACE_ERROR("sock_sendmsg error %d, total_tx %d, data %d, niov "
+                TRACE_ERROR("sock_sendmsg error %s, total_tx %d, data %d, niov "
                             "%d, op 0x%02x, flags 0x%02x, ITT %u\n",
-                            tx_loop, total_tx, data, niov,
+                            strerror(errno), total_tx, data, niov,
                             pdu->opcode, pdu->flags,
                             ntohl(pdu->init_task_tag));
                 return tx_loop;
@@ -2080,38 +2080,22 @@ static int
 generate_nopin(struct iscsi_conn *conn,
 			   SHARED struct iscsi_session *session)
 {
-	SHARED struct iscsi_cmnd *cmnd;
-	SHARED struct iscsi_cmnd *temp;
+	struct iscsi_cmnd cmnd;
 
-	if ((cmnd = get_new_cmnd()) == NULL) {
-		return -1;
-	}
-
-	/* set up new command to look like an immediate NopOut sent by initiator */
-	cmnd->conn = conn;
-	cmnd->session = session;
-	cmnd->opcode_byte = ISCSI_INIT_NOP_OUT | I_BIT;
-	cmnd->init_task_tag = ALL_ONES;
-	cmnd->state = ISCSI_NOPIN_SENT;
+    memset(&cmnd, 0, sizeof(cmnd));
+	cmnd.conn = conn;
+	cmnd.session = session;
+	cmnd.opcode_byte = ISCSI_INIT_NOP_OUT | I_BIT;
+	cmnd.init_task_tag = ALL_ONES;
+	cmnd.state = ISCSI_NOPIN_SENT;
 
     ipc_mutex_lock(session->cmnd_mutex);
-	cmnd->target_xfer_tag = generate_next_ttt(session);
-
-	/* Add this command to end of the queue */
-	for (temp = session->cmnd_list; temp != NULL; temp = temp->next) {
-		if (temp->next == NULL)
-			break;
-	}
-
-	if (temp)
-		temp->next = cmnd;
-	else
-		session->cmnd_list = cmnd;
+	cmnd.target_xfer_tag = generate_next_ttt(session);
     ipc_mutex_unlock(session->cmnd_mutex);
 
-	TRACE(VERBOSE, "Send NopIn ping, TTT %u\n", cmnd->target_xfer_tag);
+	TRACE(VERBOSE, "Send NopIn ping, TTT %u\n", cmnd.target_xfer_tag);
 
-	return handle_nopin(cmnd, conn, session);
+	return handle_nopin(&cmnd, conn, session);
 }
 
 static void 
@@ -2170,7 +2154,14 @@ iscsi_manager (struct iscsi_conn *conn)
 #undef CUSTOM_BYTE
     else if (iscsi_is_changed_custom_value(conn->custom, "send_nopin"))
     {
-        generate_nopin(conn, conn->session);
+        int count = iscsi_get_custom_value(conn->custom, "nopin_count");
+
+        if (count == 0)
+            count = 1;
+        while (count-- != 0)
+        {
+            generate_nopin(conn, conn->session);
+        }
     }
 }
 
@@ -6191,6 +6182,8 @@ iscsi_cmnd_reset(int sock, struct sockaddr_un *dest, int size, char *buffer)
     ipc_mutex_unlock(devdata->session_mutex);
     iscsi_target_num_of_connections = 0;
     iscsi_reply_status(sock, dest, 0);
+
+    RING("Available shared memory: %u", (unsigned)get_avail_shared_mem());
 }
 
 static void
