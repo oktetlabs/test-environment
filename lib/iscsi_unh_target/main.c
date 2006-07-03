@@ -114,7 +114,8 @@ exit_handler(void)
     }
 }
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
     iscsi_target_thread_params_t *config;
 
