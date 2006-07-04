@@ -74,7 +74,7 @@ for i in $* ; do
         -I${TE_INSTALL}/${PLATFORM}/include \
         -I${SRCDIR} -I. -DWINDOWS -D__CYGWIN__ \
         -include ${TE_INSTALL}/${PLATFORM}/include/te_win.h \
-        -P -E $i -o ${FILENAME}.tmp ; 
+        -P -E -undef $i -o ${FILENAME}.tmp ; 
     cat ${FILENAME}.tmp | awk --posix '\
     /^INCLUDE/ { printf("#include <%s>\n", \
                  substr($1, 9, length($1) - 9)); next; } \

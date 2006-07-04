@@ -66,7 +66,7 @@ cd tmpsrc
 
 for i in $* ; do 
     gcc -I${INCLUDE} -I${SRCDIR} -include te_win.h -DWINDOWS \
-        -P -E ${SRCDIR}/${i} -o ${i}.tmp1 ; 
+        -P -E -undef ${SRCDIR}/${i} -o ${i}.tmp1 ; 
     cat ${i}.tmp1 | awk --posix '\
     /^INCLUDE/ { printf("#include <%s>\n", \
                  substr($1, 9, length($1) - 9)); next; } \
