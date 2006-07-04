@@ -127,7 +127,7 @@ ta_unix_conf_dlpi_phys_addr_get(const char *name, void *addr,
     {
         /** Zero ethernet address emulation for 'lo0' */
         if ((strcmp(name, "lo0") == 0) &&
-            (rc == TE_RC(TE_TA_UNIX, TE_ENOENT)))
+            (TE_RC_GET_ERROR(rc) == TE_ENOENT))
         {
             memset(addr, 0, (*addrlen = ETHER_ADDR_LEN));
             return 0;
@@ -480,7 +480,7 @@ ta_unix_conf_dlpi_phys_bcast_addr_get(const char *name, void *addr,
     {
         /** Zero ethernet broadcast address emulation for 'lo0' */
         if ((strcmp(name, "lo0") == 0) &&
-            (rc == TE_RC(TE_TA_UNIX, TE_ENOENT)))
+            (TE_RC_GET_ERROR(rc) == TE_ENOENT))
         {
             memset(addr, 0, (*addrlen = ETHER_ADDR_LEN));
             return 0;
