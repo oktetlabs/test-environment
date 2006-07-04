@@ -867,7 +867,7 @@ iscsi_initiator_timer_thread(void *arg)
                 pthread_mutex_unlock(&init_data->targets[i].conns[j].status_mutex);
             }
         }
-        te_usleep(init_data->retry_timeout);
+        usleep(init_data->retry_timeout);
     }
     return NULL;
 }
