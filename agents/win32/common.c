@@ -230,16 +230,16 @@ get_addr_by_ifindex(int if_index, struct in_addr *addr)
     return TE_RC(TE_TA_WIN32, TE_ENOENT);
 }
 
-#ifdef WINDOWS
+#ifndef HAVE_INET_PTON
 int
 inet_pton(int af, const char *src, void *dst)
 {
     return 1;
 }
+#endif
 
 const char *
-inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
+inet_ntop(int af, const void *src, char *dst, int cnt)
 {
     return "<NOT SUPPORTED>";
 }
-#endif

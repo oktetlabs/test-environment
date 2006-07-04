@@ -11,6 +11,7 @@ tadir=$(prefix)/@with_name@
 noinst_HEADERS=tarpc_server.h 
 
 ta_SOURCES=win32.c win32conf.c inet_pton.c common.c
+ta_CFLAGS=-DHAVE_INET_PTON
 
 ta_DEPENDENCIES=$(TE_DEPENDENCIES) symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
