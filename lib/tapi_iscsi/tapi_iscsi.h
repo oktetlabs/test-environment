@@ -354,6 +354,15 @@ extern te_errno tapi_iscsi_exchange_until_pattern(const char *ta,
                                                   size_t  *length,
                                                   unsigned int timeout);
 
+extern te_errno tapi_iscsi_exchange_until_stop(const char *ta, int session, 
+                                               csap_handle_t csap_a,
+                                               csap_handle_t csap_b,
+                                               unsigned int timeout);
+
+extern te_errno tapi_iscsi_exchange_stop(const char *ta, int session, 
+                                         csap_handle_t csap_a,
+                                         csap_handle_t csap_b);
+
 typedef enum {
     ISCSI_BIT_UNDEF,
     ISCSI_BIT_TRUE,

@@ -796,7 +796,120 @@ cleanup:
     return result; 
 }
 
+te_errno
+tapi_iscsi_exchange_until_stop(const char *ta, int session, 
+                               csap_handle_t csap_a,
+                               csap_handle_t csap_b,
+                               unsigned int timeout)
+{
+    te_errno    rc = 0;
+    te_errno    result = 0;
+    int         syms;
+    asn_value  *pattern_a = NULL;
+    asn_value  *pattern_b = NULL;
 
+    struct iscsi_data_message msg;
+
+    if (ta == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    if (csap_a == CSAP_INVALID_HANDLE || 
+        csap_b == CSAP_INVALID_HANDLE)
+    { 
+        ERROR("%s(): both CSAPs should be valid", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if ((rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
+                              ndn_traffic_pattern, &pattern_a, &syms)) != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    } 
+
+    msg.error  = 0;
+
+    pattern_b = asn_copy_value(pattern_a);
+
+    /*First, start receive on A */
+    asn_write_int32(pattern_a, csap_b, "0.actions.0.#forw-pld");
+    rc = asn_write_value_field(pattern_a, NULL, 0, 
+                               "0.actions.1.#no-report");
+    if (rc != 0)
+    {
+        ERROR("%s(): asn_write_value_field(actions.1.#no-report) "
+              "failed: %r", __FUNCTION__, rc);
+        result = rc;
+        goto cleanup;
+    }
+    asn_write_int32(pattern_b, csap_a, "0.actions.0.#forw-pld");
+    rc = asn_write_value_field(pattern_a, NULL, 0, 
+                               "0.actions.1.#no-report");
+    if (rc != 0)
+    {
+        ERROR("%s(): asn_write_value_field(actions.1.#no-report) "
+              "failed: %r", __FUNCTION__, rc);
+        result = rc;
+        goto cleanup;
+    }
+
+    rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern_a, 
+                               timeout, 0, RCF_TRRECV_PACKETS);
+    if (rc != 0)
+    {
+        ERROR("%s(): trrecv_start on csap A (%d) failed %r",
+              __FUNCTION__, csap_a, rc);
+        goto cleanup;
+    }
+
+    RING("Starting permanent traffic exchange");
+
+    rc = tapi_tad_trrecv_start(ta, session, csap_b, pattern_b, 
+                               TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
+    if (rc != 0)
+    {
+        ERROR("%s(): trrecv_start on csap B (%d) failed %r",
+              __FUNCTION__, csap_b, rc);
+        goto cleanup;
+    }
+
+cleanup:
+    asn_free_value(pattern_a);
+    asn_free_value(pattern_b);
+
+    return result; 
+}
+
+te_errno 
+tapi_iscsi_exchange_stop(const char *ta, int session, 
+                         csap_handle_t csap_a,
+                         csap_handle_t csap_b)
+
+{
+    int num_a;
+    int num_b;
+    int rc;
+ 
+    RING("Stopping permanent traffic exchange");
+
+    if ((rc = rcf_ta_trrecv_stop(ta, session, csap_a, NULL, NULL, &num_a))
+        != 0) 
+    {
+        WARN("%s() trrecv_stop failed: %r", __FUNCTION__, rc);
+        rc = 0;
+    }
+    
+    if ((rc = rcf_ta_trrecv_stop(ta, session, csap_b, NULL, NULL, &num_b))
+        != 0) 
+    {
+        WARN("%s() trrecv_stop failed: %r", __FUNCTION__, rc);
+        rc = 0;
+    }
+    RING("%d %d packets received", num_a, num_b);
+
+    return 0;
+}
 te_errno
 tapi_iscsi_prepare_pattern_unit(iscsi_bit_spec_t i_bit,
                                 uint8_t opcode,
