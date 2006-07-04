@@ -542,6 +542,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                 *result = expr->val_i64;
             else
                 *result = expr->val_i32;
+            VERB("%s(): const result %d", __FUNCTION__, (int)(*result));
             break;
 
         case TAD_EXPR_ARG_LINK:
@@ -566,6 +567,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                 }
                 *result = args[ar_n].arg_int;
             }
+            VERB("%s(): arg link result %d", __FUNCTION__, (int)(*result));
             break;
 
         default: 
@@ -584,6 +586,8 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                 if (rc != 0) 
                     return rc;
             }
+            VERB("%s(): left %d, right %d, op %d",
+                 __FUNCTION__, (int)r1, (int)r2, (int)expr->n_type);
 
             switch (expr->n_type)
             {
@@ -610,6 +614,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                           __FUNCTION__, expr->n_type);
                     return TE_EINVAL;
             }
+            VERB("%s(): arythm result %d", __FUNCTION__, (int)(*result));
         } /* end of 'default' sub-block */
     }
 
