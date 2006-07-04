@@ -499,7 +499,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             case IOCTL_SGIO:
             {
 
-                RING("### status=0x%x, host_status=0x%x, "
+                RING("IOCTL SG: status=0x%x, host_status=0x%x, "
                      "driver_status=0x%x",
                      out.req.req_val[0].ioctl_request_u.req_sgio.status, 
                      out.req.req_val[0].ioctl_request_u.
