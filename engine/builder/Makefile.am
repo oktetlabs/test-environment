@@ -31,7 +31,6 @@ dist_mybin_SCRIPTS = \
     te_builder_log \
     te_builder_opts \
     te_create_inst_dirs \
-    te_discover_host \
     te_configure_package \
     te_cross_build \
     te_cross_make \

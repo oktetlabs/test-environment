@@ -38,7 +38,7 @@ all:
 	. ../builder.conf.processed ; \
 	cd $${TE_BUILD} ; \
 	for i in $${TE_BS_SUITES} $(TE_BS_SUITES) ; do \
-	$${TE_INSTALL}/$(host)/bin/te_build_suite $$i \
+	$${TE_INSTALL}/default/bin/te_build_suite $$i \
 		$${TE_BASE}/suites/$$i yes || exit 1 ; \
 	done
 

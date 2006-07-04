@@ -40,10 +40,6 @@ pushd "$TE_BASE_DIR" >/dev/null
 export TE_BASE="$(pwd)"
 popd >/dev/null
 
-# Do not use config.guess to avoid problems with 64-bit architecture
-# and i686 tools.
-host=$("${TE_BASE}/engine/builder/te_discover_host")
-
 TE_BUILD="$(pwd)"
 
 if test "$prefix" = "NONE" ; then
@@ -83,7 +79,6 @@ echo TE_BUILD=$TE_BUILD >> ${TE_BUILD}/builder.conf.processed.new
 echo TE_INSTALL=$TE_INSTALL >> ${TE_BUILD}/builder.conf.processed.new
 echo TE_INSTALL_NUT=$TE_INSTALL_NUT >> ${TE_BUILD}/builder.conf.processed.new
 echo TE_INSTALL_SUITE=$TE_INSTALL_SUITE >> ${TE_BUILD}/builder.conf.processed.new
-echo host=$host >> ${TE_BUILD}/builder.conf.processed.new
 
 AC_ARG_VAR(with_config)
 
@@ -104,14 +99,12 @@ if test -n "$with_config" ; then
         m4 >> "${TE_BUILD}/builder.conf.processed.new"
 else        
     # Fill default configuration
-    HOST=$(echo $host | tr .- _)
-    TE_BS_PLATFORMS=$HOST
-    echo TE_BS_PLATFORMS=$TE_BS_PLATFORMS >> ${TE_BUILD}/builder.conf.processed.new
+    echo TE_BS_PLATFORMS=default >> ${TE_BUILD}/builder.conf.processed.new
     eval ${HOST}_LIBS="ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tad"
     echo ${HOST}_LIBS=\"ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tad\" >> ${TE_BUILD}/builder.conf.processed.new
     echo TE_BS_APPS=\"$TE_BS_APPS\" >> ${TE_BUILD}/builder.conf.processed.new
 fi
-echo 'TE_PATH=${TE_INSTALL}/${host}/bin' >> ${TE_BUILD}/builder.conf.processed.new
+echo 'TE_PATH=${TE_INSTALL}/default/bin' >> ${TE_BUILD}/builder.conf.processed.new
 
 if test -e "${TE_BUILD}/builder.conf.processed" ; then
     if ! diff -q "${TE_BUILD}/builder.conf.processed" \
@@ -174,14 +167,13 @@ DUMMY=
 LIB_SUBDIRS=
 LIB_DIST_SUBDIRS=
 for p in ${TE_BS_PLATFORMS} ; do
-    PLATFORM=`eval echo '$'${p}'_PLATFORM'`
-    
-    if test $PLATFORM == $host ; then 
+    if test $p = default ; then 
         "${TE_BASE}/engine/builder/te_configure_package" INCLUDE include \
-                include $host "${TE_BASE}/include" "$prefix" || exit 1
+                include default "${TE_BASE}/include" "$prefix" || exit 1
     fi
     
     LIBS=`eval echo '$'${p}'_LIBS'`
+    echo LIBS=$LIBS
     for package in $LIBS ; do
         PKGNAME=${p}_$package
         PKGSRC=`eval echo '$TE_BS_LIB_'${PKGNAME}'_SOURCES'`
@@ -197,11 +189,11 @@ for p in ${TE_BS_PLATFORMS} ; do
         fi
         cd ..
         
-        if test $PLATFORM != $host ; then continue ; fi
+        if test $p != default ; then continue ; fi
         
         if test -z "$no_create" ; then
             "${TE_BASE}/engine/builder/te_configure_package" LIB \
-                $package $PKGNAME $PLATFORM "$PKGSRC" "$prefix" || \
+                $package $PKGNAME default "$PKGSRC" "$prefix" || \
                 exit 1
             cd "lib/$PKGNAME"
             make install-data || exit 1
@@ -220,7 +212,7 @@ AC_SUBST([LIB_DIST_SUBDIRS])
 if test -z "$no_create" ; then
     for package in $DUMMY $TE_BS_APPS ; do
         "${TE_BASE}/engine/builder/te_configure_package" APP $package \
-            $package $host "${TE_BASE}/engine/$package" "$prefix" || \
+            $package default "${TE_BASE}/engine/$package" "$prefix" || \
             exit 1
     done
 fi    
@@ -231,7 +223,7 @@ AC_SUBST([APP_SUBDIRS])
 if test -z "$no_create" ; then
     for package in $DUMMY ${TE_BS_TOOLS} ; do
         "${TE_BASE}/engine/builder/te_configure_package" TOOL $package \
-            $package $host "${TE_BASE}/tools/$package" "$prefix" || \
+            $package default "${TE_BASE}/tools/$package" "$prefix" || \
             exit 1
     done
 fi    
@@ -259,11 +251,11 @@ for package in $DUMMY $TE_BS_TA ; do
     fi
     cd ..
 
-    if test "$PLATFORM" != "$host" ; then continue ; fi
+    if test "$PLATFORM" != default ; then continue ; fi
     
     if test -z "$no_create" ; then
         "${TE_BASE}/engine/builder/te_configure_package" TA $package \
-            $package $host "$PKGSRC" "$prefix" || exit 1
+            $package default "$PKGSRC" "$prefix" || exit 1
     fi
     TA_SUBDIRS="$TA_SUBDIRS $package"
 done
@@ -275,8 +267,6 @@ for i in $TMP ; do TA_DIST_SUBDIRS="$TA_DIST_SUBDIRS $i" ; done
 
 AC_SUBST([TA_SUBDIRS])
 AC_SUBST([TA_DIST_SUBDIRS])
-
-AC_SUBST([host])
 
 AM_CONDITIONAL(SUITE_SCRIPTS_PROVIDED, test -n "$SUITE_SCRIPTS")
 SUITE_SCRIPTS_EXTRA_DIST=

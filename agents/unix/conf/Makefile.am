@@ -1,7 +1,7 @@
 
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../@host@/include $(TE_CPPFLAGS) \
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
               -include te_config.h -include config.h \
               -I$(srcdir)/.. -I$(srcdir)/util -I$(srcdir)/route \
               -I$(srcdir)/daemons -I. @EXTRA_CPPFLAGS@
@@ -38,7 +38,7 @@ CLEANFILES=
 
 if ISCSI_TARGET_USE
 
-AM_CPPFLAGS += -I$(DESTDIR)/$(prefix)/../@host@/include/iscsi_unh_target 
+AM_CPPFLAGS += -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include/iscsi_unh_target 
 libconf_a_SOURCES += conf_iscsi_target.c 
 
 endif
@@ -89,7 +89,7 @@ AM_CPPFLAGS += @EXTRA_CPPFLAGS@
 
 if ISCSI_TARGET_USE
 libconf_a_DEPENDENCIES = \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libiscsi_initiator_conf.a
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_initiator_conf.a
 endif
 
 endif

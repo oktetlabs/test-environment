@@ -16,7 +16,7 @@ tetest_PROGRAMS = caught_any simple_recv_send vlan_recv_send \
 LDADD= -ltapi -ltapi_eth -ltapi_tad -lndn -lasn -lconfapi -lrcfapi \
        -lrpcxdr -lconf_oid -llogger_ten -lipc -ltools -lpthread
 
-MYDEPS = @SELFTAD_TE_DEPS@ @TE_INSTALL@/@host@/lib/libtapi_eth.a 
+MYDEPS = @SELFTAD_TE_DEPS@ @TE_INSTALL@/$(TE_PLATFORM)/lib/libtapi_eth.a 
 
 caught_any_DEPENDENCIES = $(MYDEPS)
 

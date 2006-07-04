@@ -17,14 +17,14 @@ tetest_PROGRAMS = rcftest tareboot
 
 rcftest_SOURCES = rcftest.c
 rcftest_LDADD = -lrcfapi -llogger_ten -lipc -ltools -lpthread
-rcftest_DEPENDENCIES = ${TE_INSTALL}/@host@/lib/librcfapi.a \
-                       ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
-                       ${TE_INSTALL}/@host@/lib/libipc.a \
-                       ${TE_INSTALL}/@host@/lib/libtools.a
+rcftest_DEPENDENCIES = ${TE_INSTALL}/$(TE_PLATFORM)/lib/librcfapi.a \
+                       ${TE_INSTALL}/$(TE_PLATFORM)/lib/liblogger_ten.a \
+                       ${TE_INSTALL}/$(TE_PLATFORM)/lib/libipc.a \
+                       ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtools.a
 
 tareboot_SOURCES = tareboot.c
 tareboot_LDADD = -lrcfapi -llogger_ten -lipc -ltools -lpthread
-tareboot_DEPENDENCIES = ${TE_INSTALL}/@host@/lib/librcfapi.a \
-                        ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
-                        ${TE_INSTALL}/@host@/lib/libipc.a \
-                        ${TE_INSTALL}/@host@/lib/libtools.a
+tareboot_DEPENDENCIES = ${TE_INSTALL}/$(TE_PLATFORM)/lib/librcfapi.a \
+                        ${TE_INSTALL}/$(TE_PLATFORM)/lib/liblogger_ten.a \
+                        ${TE_INSTALL}/$(TE_PLATFORM)/lib/libipc.a \
+                        ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtools.a

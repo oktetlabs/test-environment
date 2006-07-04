@@ -10,14 +10,14 @@ AC_CONFIG_AUX_DIR([../../auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 AC_CANONICAL_HOST
-AC_SUBST([host])
-
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_YACC
 AC_PROG_LEX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
+
+TE_APP_SET
 
 AC_SUBST([TE_CPPFLAGS])
 AC_SUBST([TE_CFLAGS])
@@ -78,18 +78,18 @@ else
     NET_SNMP_LIBS=`$NET_SNMP_CONFIG --libs`
 fi
 
-SELFTAD_TE_DEPS="${TE_INSTALL}/${host}/lib/libipc.a \
-${TE_INSTALL}/${host}/lib/librcfapi.a \
-${TE_INSTALL}/${host}/lib/libconfapi.a \
-${TE_INSTALL}/${host}/lib/libconf_oid.a \
-${TE_INSTALL}/${host}/lib/libconf_types.a \
-${TE_INSTALL}/${host}/lib/librcfrpc.a \
-${TE_INSTALL}/${host}/lib/librpc_types.a \
-${TE_INSTALL}/${host}/lib/librpcxdr.a \
-${TE_INSTALL}/${host}/lib/liblogger_ten.a \
-${TE_INSTALL}/${host}/lib/libtapi.a \
-${TE_INSTALL}/${host}/lib/libndn.a \
-${TE_INSTALL}/${host}/lib/libtapi_rpc.a"
+SELFTAD_TE_DEPS="${TE_INSTALL}/default/lib/libipc.a \
+${TE_INSTALL}/default/lib/librcfapi.a \
+${TE_INSTALL}/default/lib/libconfapi.a \
+${TE_INSTALL}/default/lib/libconf_oid.a \
+${TE_INSTALL}/default/lib/libconf_types.a \
+${TE_INSTALL}/default/lib/librcfrpc.a \
+${TE_INSTALL}/default/lib/librpc_types.a \
+${TE_INSTALL}/default/lib/librpcxdr.a \
+${TE_INSTALL}/default/lib/liblogger_ten.a \
+${TE_INSTALL}/default/lib/libtapi.a \
+${TE_INSTALL}/default/lib/libndn.a \
+${TE_INSTALL}/default/lib/libtapi_rpc.a"
 
 AC_SUBST([NET_SNMP_CFLAGS])
 AC_SUBST([NET_SNMP_LIBS])
@@ -109,5 +109,7 @@ snmp/Makefile \
 cli/Makefile \
 iscsi/Makefile \
 ])
+
+TE_APP_RESTORE
 
 AC_OUTPUT

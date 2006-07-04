@@ -16,7 +16,7 @@ tetest_PROGRAMS = wait_discover
 LDADD= -ltapi -ltapi_dhcp -ltapi_tad -lndn -lasn -lconfapi -lrcfapi \
        -lrpcxdr -lconf_oid -llogger_ten -lipc -ltools -lpthread 
 
-MYDEPS = @SELFTAD_TE_DEPS@ @TE_INSTALL@/@host@/lib/libtapi_dhcp.a 
+MYDEPS = @SELFTAD_TE_DEPS@ @TE_INSTALL@/$(TE_PLATFORM)/lib/libtapi_dhcp.a 
 
 wait_discover_DEPENDENCIES = $(MYDEPS)
 

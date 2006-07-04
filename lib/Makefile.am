@@ -25,7 +25,7 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AM_MAKEFLAGS="prefix=$(prefix)/@host@"
+AM_MAKEFLAGS="prefix=$(prefix)/default"
 
 SUBDIRS=@LIB_SUBDIRS@
 DIST_SUBDIRS=@LIB_DIST_SUBDIRS@

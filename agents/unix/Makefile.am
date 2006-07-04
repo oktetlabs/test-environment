@@ -3,12 +3,12 @@ SUBDIRS=rpc conf
 
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../@host@/include $(TE_CPPFLAGS) \
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
               -include te_config.h -include config.h $(EXTRA_CPPFLAGS)
 
 AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS)
 
-AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../@host@/lib -Wl,-Bstatic @TE_LDFLAGS@
+AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib -Wl,-Bstatic @TE_LDFLAGS@
 
 LIBS = -Wl,-Bdynamic @TAD_LIBS@ @LIBS@
 
@@ -28,20 +28,20 @@ ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch \
 CLEANFILES = symtbl.c
 
 SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o 
-SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
-              $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
-              $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
+SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
+              $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a \
+              $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib@TAD@.a \
               conf/libconf.a rpc/libtarpc.a 
 
 if ISCSI_TARGET_USE
-SYMTBL_LIBS+=$(DESTDIR)/$(prefix)/../@host@/lib/libiscsi_unh_target.a
+SYMTBL_LIBS+=$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_unh_target.a
 endif      
 
 ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
-    $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/librpc_types.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a 
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdr.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpc_types.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a 
 
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 

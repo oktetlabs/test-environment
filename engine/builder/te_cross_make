@@ -56,8 +56,7 @@ else
 fi    
 
 for p in ${TE_BS_PLATFORMS} ; do
-    PLATFORM=`eval echo '$'${p}'_PLATFORM'`
-    if test $PLATFORM = $host ; then continue ; fi
+    if test $p = default ; then continue ; fi
 
     cd ${p}_include; 
     if test -e Makefile ; then make $TARGET || exit 1 ; fi
@@ -75,7 +74,7 @@ DUMMY=
 
 for package in $DUMMY $TE_BS_TA ; do
     PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'` ;
-    if test "$PLATFORM" = "$host" ; then continue ; fi ;
+    if test "$PLATFORM" = default ; then continue ; fi ;
     cd agents/$package
     if test -e Makefile ; then make $TARGET || exit 1 ; fi
     cd ../..

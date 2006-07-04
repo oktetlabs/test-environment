@@ -39,7 +39,6 @@ if test -e builder.conf.processed ; then
     . builder.conf.processed
 else
     SCRIPT_DIR="`dirname $0`"
-    host=`${SCRIPT_DIR}/te_discover_host`
 fi
 
 SUITE="$1"
@@ -76,27 +75,30 @@ else
 fi
 
 if test ! -e Makefile ; then
-    PLATFORM_NAME=`echo ${host} | tr .- _`
     SUITE_NAME=`echo ${SUITE} | tr .- _`
     PARMS="`eval echo '$TE_BS_SUITE_'${SUITE_NAME}'_PARMS'`"
-    ADD_CPPFLAGS="`eval echo '$'${PLATFORM_NAME}'_CPPFLAGS'` \
+    ADD_CPPFLAGS="$default_CPPFLAGS \
                   `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_CPPFLAGS'`"
-    ADD_CFLAGS="`eval echo '$'${PLATFORM_NAME}'_CFLAGS'` \
+    ADD_CFLAGS="$default_CFLAGS \
                 `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_CFLAGS'`"
-    ADD_LDFLAGS="`eval echo '$'${PLATFORM_NAME}'_LDFLAGS'` \
+    ADD_LDFLAGS="$default_LDFLAGS \
                  `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_LDFLAGS'`"
-    echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} \
-         --build=${host}" $PARMS
+    if test "$default_CC" ; then
+        export CC="$default_CC"
+    fi
+                 
+    echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} $PARMS"
 
     TE_INSTALL="${TE_INSTALL}" \
     TE_PATH="${TE_PATH}" \
     TE_BASE="${TE_BASE}" \
     TE_CFLAGS="-O0 -ggdb -Wall -W ${ADD_CFLAGS} " \
-    TE_CPPFLAGS="-I${TE_INSTALL}/${host}/include ${ADD_CPPFLAGS}" \
-    TE_LDFLAGS="-L${TE_INSTALL}/${host}/lib ${ADD_LDFLAGS}" \
+    TE_CPPFLAGS="-I${TE_INSTALL}/default/include ${ADD_CPPFLAGS}" \
+    TE_LDFLAGS="-L${TE_INSTALL}/default/lib ${ADD_LDFLAGS}" \
+    TE_PLATFORM=default \
     CFLAGS="" \
     eval "${SOURCES}/configure" -q --prefix="${TE_INSTALL_SUITE}" \
-          --build=${host} $PARMS || exit 1
+          $PARMS || exit 1
 fi
 make install || exit 1
 

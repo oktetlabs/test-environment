@@ -486,22 +486,7 @@ if test -z "$TE_INSTALL" ; then
 fi
 
 if test -z "${TE_PATH}" ; then
-    if test -e "${CONF_BUILDER}" ; then
-        tmp=`cat "${CONF_BUILDER}" | grep TE_HOST`
-        tmp=`echo 'changequote([,]) define([TE_HOST], [host=$1])' "${tmp}" | m4 | grep 'host=' | tail -n 1`
-        eval $tmp
-    fi
-    if test -z "${host}" -a -n "${TE_BASE}" ; then
-        host=$("${TE_BASE}/engine/builder/te_discover_host")
-    fi
-    if test -z "${host}" -a -x "${DISPATCHER_DIR}/te_discover_host" ; then
-        host=$("${DISPATCHER_DIR}/te_discover_host")
-    fi
-    if test -z "$host" ; then
-        echo 'Cannot determine host platform.' >&2
-        exit_with_log
-    fi
-    TE_PATH="${TE_INSTALL}/${host}"
+    TE_PATH="${TE_INSTALL}/default"
 fi
 
 # Export PATH

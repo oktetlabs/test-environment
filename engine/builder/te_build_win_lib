@@ -46,7 +46,7 @@ BUILDER=`dirname $0`
 WIN_DIR=${USER}_build/${LIBNAME%%.lib}_${DIR_POSTFIX}
 
 if test -z "$TE_WIN32_BUILD_HOST" ; then
-    echo "Warning: build host for $PLATFORM platform is not specified; \
+    echo "Warning: build host for windows is not specified; \
           library $LIBNAME is not (re-)built"
     touch ${LIBNAME}
     exit 0

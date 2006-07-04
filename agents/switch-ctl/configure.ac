@@ -20,7 +20,6 @@ AC_CANONICAL_HOST
 
 TE_APP_SET
 
-AC_SUBST([host])
 
 if test -z "$with_tad" ; then
     with_tad=tad
@@ -41,7 +40,7 @@ semaphore.h \
 ])
 AC_C_INLINE
 
-export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/
+export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$TE_PLATFORM/lib/pkgconfig/
 
 PKG_CHECK_MODULES(TAD, te-$with_tad)
 

@@ -26,35 +26,16 @@ dnl $Id$
  
 changequote([,])
 
-TE_HOST_DEFINED=
-
-dnl Specifies a host platform. Should be the first macro in the
-dnl configuration file.
-dnl
-dnl Parameters:
-dnl       host platform or empty
-dnl
-define([TE_HOST],
-[
-if test "$TE_HOST_DEFINED" ; then
-    TE_BS_CONF_ERR="host platform is specified in the incorrect place" ; 
-    break ; 
-fi    
-if test "$1" ; then
-    host=$1
-fi    
-TE_HOST_DEFINED=yes
-])
-
-
 dnl Declares a platform for and specifies platform-specific 
 dnl parameters for configure script as well platform-specific 
 dnl CPPFLAGS, CFLAGS and LDFLAGS. 
 dnl May be called once for each platform (including host platform).
 dnl
 dnl Parameters:
-dnl       canonical host name
-dnl       configure parameters (may be empty)
+dnl       platform name; must be empty for host platform (name "default" 
+dnl           is used for it); shouldn't contain '-'
+dnl       configure parameters (including --host for cross-compiling and 
+dnl           variables in form VAR=VAL)
 dnl       additional preprocessor flags
 dnl       additional compiler flags
 dnl       additional linker flags
@@ -62,19 +43,22 @@ dnl       list of all libraries to be built
 dnl
 define([TE_PLATFORM],
 [
-TE_HOST_DEFINED=yes
 PLATFORM=$1
 if test -z "$PLATFORM" ; then
-    PLATFORM=$host
+    PLATFORM=default
 fi    
-PLATFORM_NAME=`echo $PLATFORM | tr .- _`
-TE_BS_PLATFORMS="$TE_BS_PLATFORMS $PLATFORM_NAME"
-eval `echo ${PLATFORM_NAME}_PARMS=\"$2\"`
-eval `echo ${PLATFORM_NAME}_CPPFLAGS=\"$3\"`
-eval `echo ${PLATFORM_NAME}_CFLAGS=\"$4\"`
-eval `echo ${PLATFORM_NAME}_LDFLAGS=\"$5\"`
-eval `echo ${PLATFORM_NAME}_LIBS=\"$6\"`
-eval `echo ${PLATFORM_NAME}_PLATFORM=$PLATFORM`
+for i in $TE_BS_PLATFORMS ; do
+    if test $i = $PLATFORM ; then
+        TE_BS_CONF_ERR="platform $1 is specified twice" ; 
+        break 2 ; 
+    fi
+done    
+TE_BS_PLATFORMS="$TE_BS_PLATFORMS $PLATFORM"
+eval `echo ${PLATFORM}_PARMS=\"$2\"`
+eval `echo ${PLATFORM}_CPPFLAGS=\"$3\"`
+eval `echo ${PLATFORM}_CFLAGS=\"$4\"`
+eval `echo ${PLATFORM}_LDFLAGS=\"$5\"`
+eval `echo ${PLATFORM}_LIBS=\"$6\"`
 ])
 
 dnl Specifies additional parameters to be passed to configure script of the
@@ -93,15 +77,11 @@ dnl
 define([TE_LIB_PARMS],
 [
 [
-TE_HOST_DEFINED=yes
 PLATFORM=$2
 SOURCES=$3
 if test -z "$PLATFORM" ; then
-    PLATFORM=$host
+    PLATFORM=default
 fi
-PLATFORM_NAME=`echo $PLATFORM | tr .- _`
-eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_PLATFORM=$PLATFORM`
-
 if test -z "$SOURCES" ; then 
     SOURCES=${TE_BASE}/lib/$1 ; 
 elif test "${SOURCES:0:1}" != "/" ; then 
@@ -114,11 +94,11 @@ if ! test -d "$SOURCES" ; then
     fi
 fi
 ]
-eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_SOURCES=$SOURCES`
-eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_PARMS=\"$4\"`
-eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_CPPFLAGS=\"$5\"`
-eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_CFLAGS=\"$6\"`
-eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_LDFLAGS=\"$7\"`
+eval `echo TE_BS_LIB_${PLATFORM}_$1_SOURCES=$SOURCES`
+eval `echo TE_BS_LIB_${PLATFORM}_$1_PARMS=\"$4\"`
+eval `echo TE_BS_LIB_${PLATFORM}_$1_CPPFLAGS=\"$5\"`
+eval `echo TE_BS_LIB_${PLATFORM}_$1_CFLAGS=\"$6\"`
+eval `echo TE_BS_LIB_${PLATFORM}_$1_LDFLAGS=\"$7\"`
 ])
 
 
@@ -131,7 +111,6 @@ dnl               separated by spaces (may be empty)
 dnl
 define([TE_APP],
 [
-TE_HOST_DEFINED=yes
 TE_BS_APPS="$1"
 ])
 
@@ -151,7 +130,6 @@ dnl
 define([TE_APP_PARMS],
 [
 [
-TE_HOST_DEFINED=yes
 if test "${TE_BS_$1_APP_PARMS_SPECIFIED}" = "yes";
 then
     TE_BS_CONF_ERR="parameters for the TEN application $1 are specified twice" ; 
@@ -175,7 +153,6 @@ dnl               separated by spaces (may be empty)
 dnl
 define([TE_TOOLS],
 [
-TE_HOST_DEFINED=yes
 TE_BS_TOOLS="$1"
 ])
 
@@ -192,7 +169,6 @@ dnl
 define([TE_TOOL_PARMS],
 [
 [
-TE_HOST_DEFINED=yes
 if test "${TE_BS_$1_TOOL_PARMS_SPECIFIED}" = "yes";
 then
     TE_BS_CONF_ERR="parameters for the tool $1 are specified twice" ; 
@@ -213,7 +189,6 @@ dnl       program name
 dnl
 define([TE_HOST_EXEC],
 [
-TE_HOST_DEFINED=yes
 TE_BS_HOST_EXEC="$TE_BS_HOST_EXEC $1"
 ])
 
@@ -222,7 +197,7 @@ dnl Specifies parameters for the Test Agent. Can be called once for each TA.
 dnl
 dnl Parameters:
 dnl       type of the Test Agent 
-dnl       platform (may be empty)
+dnl       platform (should be empty for host platform)
 dnl       sources location (name of the directory in ${TE_BASE}/agents or
 dnl               full absolute path to sources)
 dnl       additional parameters to configure script (may be empty)
@@ -235,7 +210,6 @@ dnl
 define([TE_TA_TYPE],
 [
 [
-TE_HOST_DEFINED=yes
 if test -n "${TE_BS_TA_$1_SOURCES}" ;
 then
     TE_BS_CONF_ERR="configuration for TA $1 is specified twice" ; 
@@ -263,7 +237,7 @@ TE_BS_TA_$1_LDFLAGS="$7"
 TE_BS_TA_$1_LIBS="$8"
 [
 if test -z "$2" ; then
-    PLATFORM=${host};
+    PLATFORM=default;
 else
     PLATFORM=$2;
 fi
@@ -283,7 +257,6 @@ dnl       additional linker flags
 dnl
 define([TE_SUITE],
 [
-TE_HOST_DEFINED=yes
 SUITE=$1
 SUITE_NAME=`echo $SUITE | tr .- _`
 DEFINED=`eval echo '$TE_BS_SUITE_'${SUITE_NAME}'_DEFINED'`

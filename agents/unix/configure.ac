@@ -17,15 +17,12 @@ AC_C_INLINE
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
-AC_CHECK_TOOL(NM, nm)
-
-if test -z "$host" ; then
 AC_CANONICAL_HOST
-fi
+
+AC_CHECK_TOOL(NM, nm)
 
 TE_APP_SET
 
-AC_SUBST([host])
 AC_SUBST([with_name])
 
 if test -z "$with_tad" ; then
@@ -245,10 +242,8 @@ if test -n "$with_rcf_rpc" ; then
             [AC_MSG_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 fi
 
-export PKG_CONFIG_PATH="$DESTDIR/$prefix/../$host/lib/pkgconfig/"
-
+export PKG_CONFIG_PATH="$DESTDIR/$prefix/../$TE_PLATFORM/lib/pkgconfig/"
 PKG_CHECK_MODULES(TAD, te-$with_tad)
-
 
 dnl util library is necessary for static linking of expect
 AC_SEARCH_LIBS([openpty], [util])

@@ -52,7 +52,7 @@
 #include "unix_internal.h"
 
 
-#if HAVE_AIO_H
+#ifdef LIO_READ
 void *dummy = aio_read;
 #endif
 
@@ -4624,7 +4624,7 @@ overfill_buffers_exit:
     return ret;
 }
 
-#ifdef HAVE_AIO_H
+#ifdef LIO_READ
 
 #ifdef HAVE_UNION_SIGVAL_SIVAL_PTR
 #define SIVAL_PTR sival_ptr

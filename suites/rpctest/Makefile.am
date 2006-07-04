@@ -12,18 +12,18 @@ MY_LDADD=-ltapi_rpc -lrpc_types -ltapi_env -ltapi -lrcfrpc \
          -lrcfapi -lrpcxdr -llogger_ten -lipc -ltools -lexpat -lpthread -lfl
 
 MY_DEPS= \
-    ${TE_INSTALL}/@host@/lib/libtapi_rpc.a \
-    ${TE_INSTALL}/@host@/lib/libtapi.a \
-    ${TE_INSTALL}/@host@/lib/libtapi_env.a \
-    ${TE_INSTALL}/@host@/lib/librpc_types.a \
-    ${TE_INSTALL}/@host@/lib/librcfrpc.a \
-    ${TE_INSTALL}/@host@/lib/libconfapi.a \
-    ${TE_INSTALL}/@host@/lib/libconf_oid.a \
-    ${TE_INSTALL}/@host@/lib/librcfapi.a \
-    ${TE_INSTALL}/@host@/lib/librpcxdr.a \
-    ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
-    ${TE_INSTALL}/@host@/lib/libipc.a \
-    ${TE_INSTALL}/@host@/lib/libtools.a
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtapi_rpc.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtapi.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtapi_env.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/librpc_types.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/librcfrpc.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libconfapi.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libconf_oid.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/librcfapi.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/librpcxdr.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/liblogger_ten.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libipc.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtools.a
 
 noinst_HEADERS=rpc_suite.h         
 

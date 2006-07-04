@@ -4,7 +4,8 @@
 # Build application using native compiler
 # Agruments: 
 #     source directory
-#     platform
+#     cygwin platform name 
+#     windows platform (windows or windows_64)
 #     application name
 #     list of libraries
 #     list of source files
@@ -36,11 +37,12 @@
 #
 
 SRCDIR=$1
-PLATFORM=$2
-APPNAME=$3
-LIBS=$4
+CYGWIN=$2
+PLATFORM=$3
+APPNAME=$4
+LIBS=$5
 LIBS=`eval "echo "$LIBS`
-shift 4
+shift 5
 
 . `dirname $0`/te_build_win_platform
 
@@ -70,7 +72,7 @@ for i in $* ; do
     if ! test "$FILENAME" = "${FILENAME%.a}" ; then break; fi
     if ! test "$FILENAME" = "${FILENAME%.o}" ; then break; fi
     FILES="${FILES} ${FILENAME}"
-    gcc -I${TE_INSTALL}/i686-pc-cygwin/include \
+    gcc -I${TE_INSTALL}/${CYGWIN}/include \
         -I${TE_INSTALL}/${PLATFORM}/include \
         -I${SRCDIR} -I. -DWINDOWS -D__CYGWIN__ \
         -include ${TE_INSTALL}/${PLATFORM}/include/te_win.h \

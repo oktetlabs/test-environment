@@ -1,7 +1,7 @@
 
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../@host@/include $(TE_CPPFLAGS) \
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
               -include te_config.h -include ../config.h -I$(srcdir)/..
               
 AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS)
@@ -21,7 +21,7 @@ BUILT_SOURCES = rpc_unsupported.c rpc_supported.h
 
 CLEANFILES = rpc_unsupported.c rpc_supported.h
 
-rpc_unsupported.c: $(DESTDIR)/$(prefix)/../@host@/include/tarpc.h \
+rpc_unsupported.c: $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include/tarpc.h \
                    rpc_supported.h \
                    $(srcdir)/../../../include/rpc_unsupported.m4
 	$(srcdir)/../../../engine/builder/te_rpc_unsupported $< 

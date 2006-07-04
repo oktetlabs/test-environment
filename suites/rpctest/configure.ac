@@ -7,12 +7,12 @@ AC_CONFIG_AUX_DIR([../../auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 AC_CANONICAL_HOST
-AC_SUBST([host])
-
 # Checks for programs.
 AC_PROG_CC
 
 AC_PROG_INSTALL
+
+TE_APP_SET
 
 AC_SUBST([TE_CPPFLAGS])
 AC_SUBST([TE_CFLAGS])
@@ -34,5 +34,7 @@ stdarg.h \
 ])
 
 AC_CONFIG_FILES([Makefile])
+
+TE_APP_RESTORE
 
 AC_OUTPUT

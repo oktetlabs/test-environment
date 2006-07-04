@@ -25,8 +25,6 @@ AC_CHECK_TOOL(OBJCOPY, objcopy)
 
 TE_APP_SET
 
-AC_SUBST([host])
-
 if test -z "$with_tad" ; then
     with_tad=tad
 fi 

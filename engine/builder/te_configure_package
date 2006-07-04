@@ -32,7 +32,6 @@
 . builder.conf.processed
 
 SCRIPT_DIR=`dirname $0`
-default_host=`${SCRIPT_DIR}/te_discover_host`
 
 KIND=$1
 PACKAGE=$2
@@ -63,34 +62,31 @@ autotool()
 # Call configure and make
 configure_package()
 {
-    echo ${PKGSRC}/configure -q --${option}=$PLATFORM $add_option \
-                             --prefix=$PREFIX ${PARMS}
-
     if test "$KIND" != "TA" ; then
-        MY_CPPFLAGS="-I${PREFIX}/include "
-        MY_LDFLAGS="-L${PREFIX}/lib "
-    else
-        MY_CPPFLAGS=
-        MY_LDFLAGS=
+        ADD_CPPFLAGS="$ADD_CPPFLAGS -I${PREFIX}/include "
+        ADD_LDFLAGS="$ADD_LDFLAGS -L${PREFIX}/lib "
     fi
+    PARMS="$PARMS --build=`gcc -dumpmachine` \
+           TE_BASE=\"$TE_BASE\" \
+           TE_M4=\"$TE_BASE/auxdir\" \
+           TE_CPPFLAGS=\"${MY_CPPFLAGS} ${ADD_CPPFLAGS}\" \
+           TE_CFLAGS=\"-O2 -ggdb -Wall -W ${ADD_CFLAGS} \" \
+           TE_LDFLAGS=\"${MY_LDFLAGS}${ADD_LDFLAGS}\" \
+           TE_LDADD=\"$LDADD\" \
+           TE_PLATFORM=$PLATFORM"
     
-    TE_BASE="$TE_BASE" \
-    TE_M4="$TE_BASE/auxdir" \
-    TE_CPPFLAGS="${MY_CPPFLAGS}${ADD_CPPFLAGS}" \
-    TE_CFLAGS="-O2 -ggdb -Wall -W ${ADD_CFLAGS} " \
-    TE_LDFLAGS="${MY_LDFLAGS}${ADD_LDFLAGS}" \
-    TE_LDADD="$LDADD" \
+    echo ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS}
+    
     TE_DEPENDENCIES="$DEPENDENCIES" \
-    CFLAGS="" \
-    eval ${PKGSRC}/configure --${option}=$PLATFORM $add_option \
-                             '-q --prefix=$PREFIX' ${PARMS}
+    CFLAGS= \
+    eval ${PKGSRC}/configure '-q --prefix=$PREFIX' ${PARMS}
 }
 
 # Create list of linked libraries and dependencies for the package
 process_libs()
 {
     PACKAGE_LIBS="`eval echo '$TE_BS_'${KIND}_${PKGNAME}'_LIBS'`"
-    BUILD_LIBS="`eval echo '$'${PLATFORM_NAME}'_LIBS'`"
+    BUILD_LIBS="`eval echo '$'${PLATFORM}'_LIBS'`"
     LDADD=
     DEPENDENCIES=
     for l in $PACKAGE_LIBS ; do
@@ -108,8 +104,6 @@ process_libs()
     done
 }
 
-
-PLATFORM_NAME=`echo $PLATFORM | tr .- _`
 
 if test "$KIND" = TA ; then
     cd agents
@@ -145,18 +139,15 @@ fi
 
 process_libs
 
-PARMS="--with-name=$PACKAGE `eval echo '$'${PLATFORM_NAME}'_PARMS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_PARMS'`"
+PARMS="--with-name=$PACKAGE `eval echo '$'${PLATFORM}'_PARMS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_PARMS'`"
 
-ADD_CPPFLAGS="`eval echo '$'${PLATFORM_NAME}'_CPPFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_CPPFLAGS'`"
-ADD_CFLAGS="`eval echo '$'${PLATFORM_NAME}'_CFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_CFLAGS'`"
-ADD_LDFLAGS="`eval echo '$'${PLATFORM_NAME}'_LDFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_LDFLAGS'`"
+ADD_CPPFLAGS="`eval echo '$'${PLATFORM}'_CPPFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_CPPFLAGS'`"
+ADD_CFLAGS="`eval echo '$'${PLATFORM}'_CFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_CFLAGS'`"
+ADD_LDFLAGS="`eval echo '$'${PLATFORM}'_LDFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_LDFLAGS'`"
 
-if test "$PLATFORM" = "$default_host" ; then
-    option="build"
-    add_option=
-else
-    option="host"
-    add_option="--build=$default_host"
+PACKAGE_CC="`eval echo '$'${PLATFORM}'_CC'`"
+if test "$PACKAGE_CC" ; then
+    PARMS="$PARMS CC=$PACKAGE_CC"
 fi
 
 configure_package

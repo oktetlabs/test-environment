@@ -15,12 +15,12 @@ TE_LIB_PARMS([forwarder], [], [${TAD_FORW_DIR}], [], [], [], [])
 TE_TA_TYPE([linux], [], [unix], [--with-rcf-rpc], [], [], [], 
            [forwarder ndn asn comm_net_agent])
 
-TE_PLATFORM([i686-pc-cygwin],[],
+TE_PLATFORM([cygwin], [--host=i686-pc-cygwin],
             [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api \
              -D__CYGWIN__],
             [],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
             [tools comm_net_agent loggerta conf_oid rpcxdr rpc_types rcfpch tad])
 
-TE_TA_TYPE([win32], [i686-pc-cygwin], [],
+TE_TA_TYPE([win32], [cygwin], [],
            [--with-rcf-rpc], [], [], [], [comm_net_agent])

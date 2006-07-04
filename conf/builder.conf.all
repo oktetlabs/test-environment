@@ -38,34 +38,34 @@ TE_TA_TYPE([linux_lite], [], [unix],
 #
 # Solaris2 platform
 #
-TE_PLATFORM([i386-pc-solaris2.11], [], 
+TE_PLATFORM([solaris], [--host=i386-pc-solaris2.11], 
             [-I${SOLARIS2_HOME}/sys-include], [-pthreads],
             [-L${SOLARIS2_HOME}/lib],
             [tools rpcxdr rpc_types conf_oid asn ndn \
              loggerta comm_net_agent rcfpch tad])
 
-TE_LIB_PARMS([tad], [i386-pc-solaris2.11], [],
+TE_LIB_PARMS([tad], [solaris], [],
              [--with-eth --with-arp --with-ipstack --with-cli \
               --with-atm --with-socket],
              [], [], [])
 
-TE_TA_TYPE([solaris2], [i386-pc-solaris2.11], [unix],
+TE_TA_TYPE([solaris2], [solaris], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent ndn asn])
 
 
-TE_PLATFORM([x86_64-pc-solaris2.11], [],
+TE_PLATFORM([solaris_64], [--host=x86_64-pc-solaris2.11],
             [-I${SOLARIS2_HOME}/sys-include], [-m64 -pthreads],
             [-L${SOLARIS2_HOME}/lib/amd64 \
              -Wl,-rpath-link,${SOLARIS2_HOME}/lib/amd64],
             [tools rpcxdr rpc_types conf_oid asn ndn \
              loggerta comm_net_agent rcfpch tad])
 
-TE_LIB_PARMS([tad], [x86_64-pc-solaris2.11], [],
+TE_LIB_PARMS([tad], [solaris_64], [],
              [--with-eth --with-arp --with-ipstack \
               --with-atm --with-socket],
              [], [], [])
 
-TE_TA_TYPE([solaris2_64], [x86_64-pc-solaris2.11], [unix],
+TE_TA_TYPE([solaris2_64], [solaris_64], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent ndn asn])
 
 
@@ -82,22 +82,22 @@ TE_TA_TYPE([freebsd6], [i386-pc-freebsd6], [unix],
 #
 # NetBSD platform
 #
-TE_PLATFORM([i386-pc-netbsdelf], [], 
+TE_PLATFORM([netbsd], [--host=i386-pc-netbsdelf], 
             [-I${NETBSD_HOME}/sys-include], [], [-L${NETBSD_HOME}/lib],
             [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
-TE_TA_TYPE([netbsd], [i386-pc-netbsdelf], [unix],
+TE_TA_TYPE([netbsd], [netbsd], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent])
 
 #
 # CygWin platform
 #
-TE_PLATFORM([i686-pc-cygwin], [],
+TE_PLATFORM([cygwin], [--host=i686-pc-cygwin],
             [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api -D__CYGWIN__],
             [],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
             [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
-TE_TA_TYPE([win32], [i686-pc-cygwin], [],
+TE_TA_TYPE([win32], [cygwin], [],
            [--with-rcf-rpc], [], [], [], [ws2_32 comm_net_agent])
 

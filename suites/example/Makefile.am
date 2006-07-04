@@ -29,11 +29,11 @@ example_LDADD = -llogger_ten -ltapi_rpc -lrcfapi -lipc -ltapi \
                 -lrcfrpc -lrpcxdr -lconf_types -lconf_oid -lpthread -ltools
                 
 example_DEPENDENCIES = \
-    ${TE_INSTALL}/@host@/lib/librcfapi.a \
-    ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
-    ${TE_INSTALL}/@host@/lib/libipc.a \
-    ${TE_INSTALL}/@host@/lib/libtapi.a \
-    ${TE_INSTALL}/@host@/lib/libconfapi.a \
-    ${TE_INSTALL}/@host@/lib/libconf_types.a 
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/librcfapi.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/liblogger_ten.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libipc.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtapi.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libconfapi.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libconf_types.a 
 
 
