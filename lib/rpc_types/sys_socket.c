@@ -1029,6 +1029,56 @@ sockopt_h2rpc(int opt_type, int opt)
     }
 }
 
+/** Has socket option boolean semantic? */
+te_bool
+sockopt_is_boolean(rpc_sockopt opt)
+{
+    switch (opt)
+    {
+        case RPC_SO_ACCEPTCONN:
+        case RPC_SO_ACCEPTFILTER:
+        case RPC_SO_BROADCAST:
+        case RPC_SO_DEBUG:
+        case RPC_SO_DONTROUTE:
+        case RPC_SO_KEEPALIVE:
+        case RPC_SO_OOBINLINE:
+        case RPC_SO_REUSEADDR:
+        case RPC_SO_DONTLINGER:
+        case RPC_SO_USELOOPBACK:
+        case RPC_SO_EXCLUSIVEADDRUSE:
+        case RPC_SO_DGRAM_ERRIND:
+
+        case RPC_IP_MULTICAST_LOOP:
+        case RPC_IP_PKTINFO:
+        case RPC_IP_RECVERR:
+        case RPC_IP_RECVOPTS:
+        case RPC_IP_RECVTOS:
+        case RPC_IP_RECVTTL:
+        case RPC_IP_ROUTER_ALERT:
+        case RPC_IP_MTU_DISCOVER:
+        case RPC_IP_RECEIVE_BROADCAST:
+        case RPC_IP_DONTFRAGMENT:
+
+        case RPC_IPV6_PKTINFO:
+        case RPC_IPV6_PKTOPTIONS:
+        case RPC_IPV6_CHECKSUM:
+        case RPC_IPV6_MULTICAST_LOOP:
+        case RPC_IPV6_MTU_DISCOVER:
+        case RPC_IPV6_RECVERR:
+        case RPC_IPV6_ROUTER_ALERT:
+        case RPC_IPV6_V6ONLY:
+
+        case RPC_TCP_NODELAY:
+        case RPC_TCP_CORK:
+
+        case RPC_UDP_NOCHECKSUM:
+            return TRUE;
+
+        default:
+            return FALSE;
+    }
+}
+
 
 /** Convert RPC socket option constants to string */
 const char *

@@ -475,6 +475,8 @@ extern int sockopt_rpc2h(rpc_sockopt opt);
 /** Convert native socket options to RPC one */
 extern rpc_sockopt sockopt_h2rpc(int opt_type, int opt);
 
+/** Has socket option boolean semantic? */
+extern te_bool sockopt_is_boolean(rpc_sockopt opt);
 
 /**
  * TA-independent socket options levels
