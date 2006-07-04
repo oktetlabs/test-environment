@@ -3769,8 +3769,11 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
         {
             te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
         
-            /* Temporary hack to avoid failures */
-            WARN("line %u: ioctl(SIOCGARP) failed: %r", __LINE__, rc);
+            if (TE_RC_GET_ERROR(rc) != TE_ENXIO)
+            {
+                /* Temporary hack to avoid failures */
+                WARN("line %u: ioctl(SIOCGARP) failed: %r", __LINE__, rc);
+            }
             return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
         if (mac_p != NULL)
