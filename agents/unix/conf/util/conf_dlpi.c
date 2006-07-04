@@ -58,6 +58,7 @@
 #define  MAXADDRLEN      64
 #define  MAXSAPLEN       64
 
+#define  ETHER_ADDR_LEN  6
 
 /**
  * Open STREAM.
@@ -123,7 +124,17 @@ ta_unix_conf_dlpi_phys_addr_get(const char *name, void *addr,
 
     rc = dlpi_open(name, &fd);
     if (rc != 0)
+    {
+        /** Zero ethernet address emulation for 'lo0' */
+        if ((strcmp(name, "lo0") == 0) &&
+            (rc == TE_RC(TE_TA_UNIX, TE_ENOENT)))
+        {
+            memset(addr, 0, (*addrlen = ETHER_ADDR_LEN));
+            return 0;
+        }
+
         return rc;
+    }
 
     size = DL_INFO_ACK_SIZE;
     size += sizeof(union DL_qos_types) + sizeof(union DL_qos_types);
@@ -466,7 +477,17 @@ ta_unix_conf_dlpi_phys_bcast_addr_get(const char *name, void *addr,
 
     rc = dlpi_open(name, &fd);
     if (rc != 0)
+    {
+        /** Zero ethernet broadcast address emulation for 'lo0' */
+        if ((strcmp(name, "lo0") == 0) &&
+            (rc == TE_RC(TE_TA_UNIX, TE_ENOENT)))
+        {
+            memset(addr, 0, (*addrlen = ETHER_ADDR_LEN));
+            return 0;
+        }
+
         return rc;
+    }
 
     size = DL_INFO_ACK_SIZE;
     size += sizeof(union DL_qos_types) + sizeof(union DL_qos_types);
