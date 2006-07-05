@@ -18,10 +18,12 @@ else
     AC_PROG_RANLIB
 fi    
 
+TE_LIB_SET
+
 AC_CONFIG_FILES([Makefile])
 
 AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
 
-AC_SUBST(host)
+TE_LIB_RESTORE
 
 AC_OUTPUT
