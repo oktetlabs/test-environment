@@ -27,7 +27,7 @@
 
 SUBDIRS = include doc lib tools engine agents suites
 
-mybindir=$(prefix)/$(TE_PLATFORM)/bin
+mybindir=$(prefix)/$(TE_HOST)/bin
 dist_mybin_SCRIPTS = dispatcher.sh
 
 DISTCLEANFILES = builder.conf builder.conf.processed 
