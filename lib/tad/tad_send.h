@@ -160,6 +160,23 @@ extern int tad_send_prepare_bin(csap_p csap, asn_value *nds,
                                 void **layer_opaque,
                                 tad_pkts *pkts_per_layer);
 
+
+
+/**
+ * Type for reference to user function for some magic processing 
+ * with matched pkt
+ *
+ * @param csap          CSAP descriptor structure.
+ * @param usr_param     String passed by user.
+ * @param pkts          List of binary packets.
+ *
+ * @return Status code.
+ */
+typedef te_errno (*tad_special_send_pkt_cb)(csap_p csap,
+                                            const char  *usr_param,
+                                            tad_pkts *pkts);
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -643,11 +643,14 @@ tad_send_free_packets(tad_pkts *pkts, unsigned int num)
  * @return Status code.
  */
 static te_errno
-tad_send_by_template_unit(csap_p csap,
-                                 tad_send_tmpl_unit_data *tu_data)
+tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
 {
     te_errno    rc;
     tad_pkts   *pkts;
+
+    tad_special_send_pkt_cb  send_cb = NULL;
+    char                    *send_cb_name = NULL;
+    char                    *send_cb_userdata = NULL;
 
     F_ENTRY();
 
@@ -655,7 +658,27 @@ tad_send_by_template_unit(csap_p csap,
     if (pkts == NULL)
         return TE_RC(TE_TAD_CH, TE_ENOMEM);
 
+    rc = asn_read_string(tu_data->nds, &send_cb_name, "send-func");
+    if (rc == 0)
+    {
+        send_cb_userdata = index(send_cb_name, ':');
+        if (send_cb_userdata != NULL)
+        {
+            *send_cb_userdata = '\0';
+            send_cb_userdata++;
+        }
+
+
+        send_cb = rcf_ch_symbol_addr(send_cb_name, 1);
+        if (send_cb == NULL)
+            ERROR("Not send method '%s' found, send via usual callback",
+                  send_cb_name);
+    }
+    else 
+        rc = 0;
+
     do { 
+
         /* Check CSAP state */
         if (csap->state & CSAP_STATE_STOP)
         {
@@ -685,7 +708,10 @@ tad_send_by_template_unit(csap_p csap,
         /* Send generated packets */
         if (rc == 0)
         {
-            rc = tad_send_packets(csap, pkts);
+            if (send_cb == NULL)
+                rc = tad_send_packets(csap, pkts);
+            else
+                rc = send_cb(csap, send_cb_userdata, pkts);
             F_VERB(CSAP_LOG_FMT "send done for a template unit "
                    "iteration: %r", CSAP_LOG_ARGS(csap), rc);
         }
@@ -700,6 +726,7 @@ tad_send_by_template_unit(csap_p csap,
 
     tad_send_free_packets(pkts, csap->depth + 1);
     free(pkts);
+    free(send_cb_name);
 
     F_EXIT("%r", rc);
 
@@ -845,6 +872,25 @@ tad_send_thread(void *arg)
     return NULL;
 }
 
+
+/**
+ * callback for default payload memset, prototype complies to
+ * type 'tad_pkt_seg_enum_cb'. 
+ */
+te_errno
+tad_send_payload_default_fill(const tad_pkt  *pkt,
+                              tad_pkt_seg    *seg,
+                              unsigned int    seg_num,
+                              void           *opaque)
+{ 
+    UNUSED(pkt);
+    UNUSED(seg_num);
+    UNUSED(opaque);
+
+    memset(seg->data_ptr, 0x5a, seg->data_len);
+    return 0;
+}
+
 /* See the description in tad_send.h */
 te_errno
 tad_send_prepare_bin(csap_p csap, asn_value *nds, 
@@ -915,6 +961,14 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
         case TAD_PLD_LENGTH:
             rc = tad_pkts_add_new_seg(pdus, TRUE, NULL,
                                       pld_data->plain.length, NULL);
+
+            if (rc != 0)
+                break;
+            /* We know here that payloads are fist segments in packets -
+             * since they are single yet, we start from payload. 
+             */
+            rc = tad_pkts_enumerate_first_segs(pdus,
+                       tad_send_payload_default_fill, NULL);
 #if 0 /* FIXME */
             memset(up_packets->data, 0x5a, up_packets->len);
 #endif
