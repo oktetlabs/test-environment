@@ -23,9 +23,8 @@ fi
 AC_ARG_VAR(PRIV_LIB_DIR)
 
 RPCSERVER_SYMTBL_ADD="\$(DESTDIR)/\$(prefix)/../\$(TE_PLATFORM)\
-/lib/lib${with_priv_rpc_lib}.a"
-#FIXME - build talib for windows
-RPCSERVER_SRC_ADD="${PRIV_LIB_DIR}/rpc.c"
+/lib/lib${with_priv_rpc_lib}.a" 
+RPCSERVER_SRC_ADD="${PRIV_LIB_DIR}/${with_priv_rpc_lib}/rpc.c"
 
 AC_SUBST(RPCSERVER_SYMTBL_ADD)
 AC_SUBST(RPCSERVER_SRC_ADD)
