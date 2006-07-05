@@ -72,11 +72,11 @@ TE_TA_TYPE([solaris2_64], [solaris_64], [unix],
 #
 # FreeBSD6 platform
 #
-TE_PLATFORM([i386-pc-freebsd6], [],
+TE_PLATFORM([freebsd], [--host=i386-pc-freebsd6],
             [-I${FREEBSD6_HOME}/sys-include], [], [-L${FREEBSD6_HOME}/lib],
             [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
-TE_TA_TYPE([freebsd6], [i386-pc-freebsd6], [unix],
+TE_TA_TYPE([freebsd6], [freebsd], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent])
 
 #
