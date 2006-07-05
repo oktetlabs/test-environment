@@ -395,6 +395,11 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
         rt_info->tos = atoi(ptr);
         rt_info->flags |= TA_RT_INFO_FLG_TOS;
     }
+    else
+    {
+        rt_info->tos = 0;
+        rt_info->flags |= TA_RT_INFO_FLG_TOS;
+    }
     
     return 0;
 }
