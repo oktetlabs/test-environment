@@ -34,6 +34,8 @@
 #include "config.h"
 #endif
 
+#include <fcntl.h>
+
 #include <string.h>
 #include <stdlib.h>
 #include <netinet/in.h>
@@ -89,25 +91,41 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
     size_t                      iovlen = tad_pkt_seg_num(pkt);
     struct iovec                iov[iovlen];
     int out_socket;
+    int flags;
 
-    RING("%s (file %s) started for %d pkts",
-         __FUNCTION__, __FILE__,  number_of_packets);
+    uint8_t *flat_frame;
+    size_t   frame_size;
+
+    uint16_t *chksum_place;
+    uint32_t *seq_place;
+
+
 
 
     data = spec_data->sap.data;
     out_socket = data->out;
 
-    rc = tad_pkt_segs_to_iov(pkt, iov, iovlen);
+    fcntl(out_socket, F_GETFL, &flags);
+    flags |= O_NONBLOCK;
+    fcntl(out_socket, F_SETFL, flags);
+
+    rc = tad_pkt_flatten_copy(pkt, &flat_frame, &frame_size);
     if (rc != 0)
     {
-        ERROR("Failed to convert segments to I/O vector: %r", rc);
+        ERROR("Failed to convert segments to flat data: %r", rc);
         return rc;
     }
+
+    // chksum_place = (flat_frame + );
 
 
     write_cb = csap_get_proto_support(csap,
                    csap_get_rw_layer(csap))->write_cb;
     rc = write_cb(csap, pkt); 
+
+    RING("%s (file %s) started for %d pkts",
+         __FUNCTION__, __FILE__,  number_of_packets);
+
 
     while ((--number_of_packets) > 0 && rc == 0)
     { 
@@ -127,9 +145,9 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
 
         new_pkt_chksum = (chksum & 0xffff) + (chksum >> 16);
 
-        *((uint16_t *)(tcp_hdr_seg->data_ptr + TCP_CHKSUM_OFFSET)) =
+        *((uint16_t *)(iov[iovlen-2].iov_base + TCP_CHKSUM_OFFSET)) =
             htons(new_pkt_chksum);
-        *((uint32_t *)(tcp_hdr_seg->data_ptr + TCP_SEQ_OFFSET)) =
+        *((uint32_t *)(iov[iovlen-2].iov_base + TCP_SEQ_OFFSET)) =
             htonl(new_seq);
 
 once_more:
@@ -139,18 +157,19 @@ once_more:
         if (ret_val < 0)
         {
             rc = te_rc_os2te(errno);
-            RING("%s() writev failed, errno %r, retry %d",
+            RING("%s() writev failed, errno %r",
                    __FUNCTION__, rc);
             switch (rc)
             {
                 case TE_ENOBUFS:
+                case TE_EAGAIN:
                 {
                     /* 
                      * It seems that 0..127 microseconds is enough
                      * to hope that buffers will be cleared and
                      * does not fall down performance.
                      */
-                    struct timeval clr_delay = { 0, rand() & 0x0f };
+                    struct timeval clr_delay = { 0, rand() & 0xfff };
 
                     select(0, NULL, NULL, NULL, &clr_delay);
                     goto once_more;
