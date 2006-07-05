@@ -92,7 +92,7 @@ if test ! -e Makefile ; then
 
     PARMS="$PARMS --build=`gcc -dumpmachine` \
            TE_BASE=\"$TE_BASE\" \
-           TE_PATH=\$TE_PATH\" \
+           TE_PATH=\"$TE_PATH\" \
            TE_M4=\"$TE_BASE/auxdir\" \
            TE_CPPFLAGS=\"-I${TE_INSTALL}/${TE_HOST}/include ${ADD_CPPFLAGS}\" \
            TE_CFLAGS=\"-O2 -ggdb -Wall -W ${ADD_CFLAGS} \" \
