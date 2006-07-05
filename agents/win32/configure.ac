@@ -16,11 +16,20 @@ AC_PROG_INSTALL
 AC_CHECK_TOOL(NM, nm)
 AC_CANONICAL_HOST
 
+if test "$with_priv_rpc_lib" ; then
 if test -z ${PRIV_LIB_DIR} ; then
     PRIV_LIB_DIR=${TE_BASE}/lib
 fi
-AC_ARG_VAR([PRIV_LIB_DIR])
-AC_SUBST(PRIV_LIB_DIR)
+AC_ARG_VAR(PRIV_LIB_DIR)
+
+RPCSERVER_SYMTBL_ADD="\$(DESTDIR)/\$(prefix)/../\$(TE_PLATFORM)\
+/lib/lib${with_priv_rpc_lib}.a"
+#FIXME - build talib for windows
+RPCSERVER_SRC_ADD="${PRIV_LIB_DIR}/rpc.c"
+
+AC_SUBST(RPCSERVER_SYMTBL_ADD)
+AC_SUBST(RPCSERVER_SRC_ADD)
+fi
     
 TE_APP_SET
 

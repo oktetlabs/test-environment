@@ -68,7 +68,7 @@ rpcserver_DEPENDENCIES=\
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdrta.a 
 
 rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c 
-
+ 
 nodist_rpcserver_SOURCES=rpc_unsupported.c rpc_supported.h
 rpcserver32_SOURCES=
 rpcserver64_SOURCES=
@@ -77,8 +77,7 @@ rpcserver_LDADD=rpcserver_symtbl.o $(TE_LDADD) -lrpcxdrta \
                 -lrpc_types -lrcfpch -lloggerta -ltools -lrpc \
                 -lws2_32 -lmswsock -lwsock32 -liphlpapi 
 
-rpcserver_symtbl.c: tarpc_server.o common.o \
-            $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtalib.a
+rpcserver_symtbl.c: tarpc_server.o common.o $(RPCSERVER_SYMTBL_ADD)
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
 # Native build
@@ -90,7 +89,7 @@ RPCSERVER_SRC= $(rpcserver_SOURCES) \
                rpcserver_symtbl.c rpc_unsupported.c \
                ${srcdir}/../../lib/rpcxdr/rpc_xdr.c \
                ../../lib/@TE_PLATFORM@_rpcxdr/tarpc_xdr.c \
-               @PRIV_LIB_DIR@/talib/rpc.c
+               $(RPCSERVER_SRC_ADD)
 
 rpcserver32$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
