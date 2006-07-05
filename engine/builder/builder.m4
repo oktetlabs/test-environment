@@ -23,6 +23,8 @@ dnl
 dnl Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 dnl
 dnl $Id$
+
+TE_HOST=
  
 changequote([,])
 
@@ -30,9 +32,10 @@ dnl Declares a platform for and specifies platform-specific
 dnl parameters for configure script as well platform-specific 
 dnl CPPFLAGS, CFLAGS and LDFLAGS. 
 dnl May be called once for each platform (including host platform).
+dnl Host platform should appear first.
 dnl
 dnl Parameters:
-dnl       platform name; must be empty for host platform (name "default" 
+dnl       platform name; may be empty for host platform (name "default" 
 dnl           is used for it); shouldn't contain '-'
 dnl       configure parameters (including --host for cross-compiling and 
 dnl           variables in form VAR=VAL)
@@ -53,6 +56,9 @@ for i in $TE_BS_PLATFORMS ; do
         break 2 ; 
     fi
 done    
+if test -z "$TE_HOST" ; then
+    TE_HOST=$PLATFORM
+fi    
 TE_BS_PLATFORMS="$TE_BS_PLATFORMS $PLATFORM"
 eval `echo ${PLATFORM}_PARMS=\"$2\"`
 eval `echo ${PLATFORM}_CPPFLAGS=\"$3\"`
@@ -80,7 +86,7 @@ define([TE_LIB_PARMS],
 PLATFORM=$2
 SOURCES=$3
 if test -z "$PLATFORM" ; then
-    PLATFORM=default
+    PLATFORM=${TE_HOST}
 fi
 if test -z "$SOURCES" ; then 
     SOURCES=${TE_BASE}/lib/$1 ; 
@@ -237,7 +243,7 @@ TE_BS_TA_$1_LDFLAGS="$7"
 TE_BS_TA_$1_LIBS="$8"
 [
 if test -z "$2" ; then
-    PLATFORM=default;
+    PLATFORM=${TE_HOST};
 else
     PLATFORM=$2;
 fi

@@ -103,8 +103,9 @@ else
     eval ${HOST}_LIBS="ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tad"
     echo ${HOST}_LIBS=\"ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tad\" >> ${TE_BUILD}/builder.conf.processed.new
     echo TE_BS_APPS=\"$TE_BS_APPS\" >> ${TE_BUILD}/builder.conf.processed.new
+    echo TE_HOST=default >> ${TE_BUILD}/builder.conf.processed.new
 fi
-echo 'TE_PATH=${TE_INSTALL}/default/bin' >> ${TE_BUILD}/builder.conf.processed.new
+echo 'TE_PATH=${TE_INSTALL}/${TE_HOST}/bin' >> ${TE_BUILD}/builder.conf.processed.new
 
 if test -e "${TE_BUILD}/builder.conf.processed" ; then
     if ! diff -q "${TE_BUILD}/builder.conf.processed" \
@@ -167,9 +168,9 @@ DUMMY=
 LIB_SUBDIRS=
 LIB_DIST_SUBDIRS=
 for p in ${TE_BS_PLATFORMS} ; do
-    if test $p = default ; then 
+    if test $p = ${TE_HOST} ; then 
         "${TE_BASE}/engine/builder/te_configure_package" INCLUDE include \
-                include default "${TE_BASE}/include" "$prefix" || exit 1
+                include ${TE_HOST} "${TE_BASE}/include" "$prefix" || exit 1
     fi
     
     LIBS=`eval echo '$'${p}'_LIBS'`
@@ -189,11 +190,11 @@ for p in ${TE_BS_PLATFORMS} ; do
         fi
         cd ..
         
-        if test $p != default ; then continue ; fi
+        if test $p != ${TE_HOST} ; then continue ; fi
         
         if test -z "$no_create" ; then
             "${TE_BASE}/engine/builder/te_configure_package" LIB \
-                $package $PKGNAME default "$PKGSRC" "$prefix" || \
+                $package $PKGNAME ${TE_HOST} "$PKGSRC" "$prefix" || \
                 exit 1
             cd "lib/$PKGNAME"
             make install-data || exit 1
@@ -212,7 +213,7 @@ AC_SUBST([LIB_DIST_SUBDIRS])
 if test -z "$no_create" ; then
     for package in $DUMMY $TE_BS_APPS ; do
         "${TE_BASE}/engine/builder/te_configure_package" APP $package \
-            $package default "${TE_BASE}/engine/$package" "$prefix" || \
+            $package ${TE_HOST} "${TE_BASE}/engine/$package" "$prefix" || \
             exit 1
     done
 fi    
@@ -223,7 +224,7 @@ AC_SUBST([APP_SUBDIRS])
 if test -z "$no_create" ; then
     for package in $DUMMY ${TE_BS_TOOLS} ; do
         "${TE_BASE}/engine/builder/te_configure_package" TOOL $package \
-            $package default "${TE_BASE}/tools/$package" "$prefix" || \
+            $package ${TE_HOST} "${TE_BASE}/tools/$package" "$prefix" || \
             exit 1
     done
 fi    
@@ -251,11 +252,11 @@ for package in $DUMMY $TE_BS_TA ; do
     fi
     cd ..
 
-    if test "$PLATFORM" != default ; then continue ; fi
+    if test "$PLATFORM" != ${TE_HOST} ; then continue ; fi
     
     if test -z "$no_create" ; then
         "${TE_BASE}/engine/builder/te_configure_package" TA $package \
-            $package default "$PKGSRC" "$prefix" || exit 1
+            $package ${TE_HOST} "$PKGSRC" "$prefix" || exit 1
     fi
     TA_SUBDIRS="$TA_SUBDIRS $package"
 done
@@ -286,6 +287,8 @@ if test -z "$no_create" ; then
             >"${TE_BUILD}/suites/Makefile.suites"
     fi
 fi    
+
+AC_SUBST(TE_HOST)
 
 AC_CONFIG_FILES(Makefile lib/Makefile engine/Makefile tools/Makefile
                 agents/Makefile suites/Makefile)

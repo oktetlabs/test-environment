@@ -69,9 +69,9 @@ configure_package()
     PARMS="$PARMS --build=`gcc -dumpmachine` \
            TE_BASE=\"$TE_BASE\" \
            TE_M4=\"$TE_BASE/auxdir\" \
-           TE_CPPFLAGS=\"${MY_CPPFLAGS} ${ADD_CPPFLAGS}\" \
+           TE_CPPFLAGS=\"${ADD_CPPFLAGS}\" \
            TE_CFLAGS=\"-O2 -ggdb -Wall -W ${ADD_CFLAGS} \" \
-           TE_LDFLAGS=\"${MY_LDFLAGS}${ADD_LDFLAGS}\" \
+           TE_LDFLAGS=\"${ADD_LDFLAGS}\" \
            TE_LDADD=\"$LDADD\" \
            TE_PLATFORM=$PLATFORM"
     

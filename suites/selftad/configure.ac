@@ -78,18 +78,18 @@ else
     NET_SNMP_LIBS=`$NET_SNMP_CONFIG --libs`
 fi
 
-SELFTAD_TE_DEPS="${TE_INSTALL}/default/lib/libipc.a \
-${TE_INSTALL}/default/lib/librcfapi.a \
-${TE_INSTALL}/default/lib/libconfapi.a \
-${TE_INSTALL}/default/lib/libconf_oid.a \
-${TE_INSTALL}/default/lib/libconf_types.a \
-${TE_INSTALL}/default/lib/librcfrpc.a \
-${TE_INSTALL}/default/lib/librpc_types.a \
-${TE_INSTALL}/default/lib/librpcxdr.a \
-${TE_INSTALL}/default/lib/liblogger_ten.a \
-${TE_INSTALL}/default/lib/libtapi.a \
-${TE_INSTALL}/default/lib/libndn.a \
-${TE_INSTALL}/default/lib/libtapi_rpc.a"
+SELFTAD_TE_DEPS="${TE_INSTALL}/${TE_PLATFORM}/lib/libipc.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/librcfapi.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/libconfapi.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/libconf_oid.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/libconf_types.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/librcfrpc.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/librpc_types.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/librpcxdr.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/liblogger_ten.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/libtapi.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/libndn.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/libtapi_rpc.a"
 
 AC_SUBST([NET_SNMP_CFLAGS])
 AC_SUBST([NET_SNMP_LIBS])

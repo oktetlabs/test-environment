@@ -77,25 +77,30 @@ fi
 if test ! -e Makefile ; then
     SUITE_NAME=`echo ${SUITE} | tr .- _`
     PARMS="`eval echo '$TE_BS_SUITE_'${SUITE_NAME}'_PARMS'`"
-    ADD_CPPFLAGS="$default_CPPFLAGS \
+
+    ADD_CPPFLAGS="`eval echo '$'${TE_HOST}'_CPPFLAGS'` \
                   `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_CPPFLAGS'`"
-    ADD_CFLAGS="$default_CFLAGS \
+    ADD_CFLAGS="`eval echo '$'${TE_HOST}'_CFLAGS'` \
                 `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_CFLAGS'`"
-    ADD_LDFLAGS="$default_LDFLAGS \
+    ADD_LDFLAGS="`eval echo '$'${TE_HOST}'_LDFLAGS'` \
                  `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_LDFLAGS'`"
-    if test "$default_CC" ; then
-        export CC="$default_CC"
+
+    HOST_CC="`eval echo '$'${TE_HOST}'_CC'`"
+    if test "$HOST_CC" ; then
+        PARMS="$PARMS CC=$HOST_CC"
     fi
+
+    PARMS="$PARMS --build=`gcc -dumpmachine` \
+           TE_BASE=\"$TE_BASE\" \
+           TE_M4=\"$TE_BASE/auxdir\" \
+           TE_CPPFLAGS=\"${ADD_CPPFLAGS}\" \
+           TE_CFLAGS=\"-O2 -ggdb -Wall -W ${ADD_CFLAGS} \" \
+           TE_LDFLAGS=\"${ADD_LDFLAGS}\" \
+           TE_LDADD=\"$LDADD\" \
+           TE_PLATFORM=$PLATFORM"
                  
     echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} $PARMS"
 
-    TE_INSTALL="${TE_INSTALL}" \
-    TE_PATH="${TE_PATH}" \
-    TE_BASE="${TE_BASE}" \
-    TE_CFLAGS="-O0 -ggdb -Wall -W ${ADD_CFLAGS} " \
-    TE_CPPFLAGS="-I${TE_INSTALL}/default/include ${ADD_CPPFLAGS}" \
-    TE_LDFLAGS="-L${TE_INSTALL}/default/lib ${ADD_LDFLAGS}" \
-    TE_PLATFORM=default \
     CFLAGS="" \
     eval "${SOURCES}/configure" -q --prefix="${TE_INSTALL_SUITE}" \
           $PARMS || exit 1

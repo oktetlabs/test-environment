@@ -2,6 +2,15 @@
 # This file contains ALL available Test Environment features
 #
 
+TE_SHELL([TE64=`gcc -dumpmachine | grep 64`])
+TE_SHELL([if test "$TE64" ; then \
+              OTHER_HOST=i386-pc-linux ; \
+              LINUX32_PLATFORM=linux_other ; \
+          else \
+              OTHER_HOST=x86_64-linux ; \
+              LINUX64_PLATFORM= ; \
+          fi])
+
 TE_TOOLS([rgt rpcgen trc tce millicom])
 
 #
@@ -24,14 +33,38 @@ TE_LIB_PARMS([tad], [], [],
               --with-snmp --with-cli --with-atm --with-socket],
              [], [], [])
 
-TE_TA_TYPE([linux], [], [unix],
+TE_TA_TYPE([linux], [${LINUX32_PLATFORM}], [unix],
            [--with-rcf-rpc  --with-iscsi\
             --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd'],
            [], [], [], [comm_net_agent ndn asn])
 
 TE_LIB_PARMS([tad_dummy], [], [tad], [], [], [], [])
 
-TE_TA_TYPE([linux_lite], [], [unix],
+TE_TA_TYPE([linux_lite], [${LINUX32_PLATFORM}], [unix],
+            [--with-tad=tad_dummy],
+            [], [], [], [comm_net_agent])
+
+
+# linux_other platform is either 32-bit for 64-bit engine or
+# 64-bit for 32-bit engine
+TE_PLATFORM([linux_other], [--host=${OTHER_HOST}], [], [], [],
+            [tools comm_net_agent loggerta conf_oid rpcxdr rpc_types rcfpch \
+             asn ndn tad iscsi_unh_target iscsi_initiator_conf])
+
+TE_LIB_PARMS([tad], [linux_other], [],
+             [-with-pcap --with-eth --with-bridge \
+              --with-arp --with-ipstack --with-dhcp --with-iscsi \
+              --with-snmp --with-cli --with-atm --with-socket],
+             [], [], [])
+
+TE_TA_TYPE([linux64], [${LINUX64_PLATFORM}], [unix],
+           [--with-rcf-rpc --with-iscsi \
+            --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd'],
+           [], [], [], [comm_net_agent ndn asn])
+
+TE_LIB_PARMS([tad_dummy], [linux_other], [tad], [], [], [], [])
+
+TE_TA_TYPE([linux64_lite], [${LINUX64_PLATFORM}], [unix],
             [--with-tad=tad_dummy],
             [], [], [], [comm_net_agent])
 

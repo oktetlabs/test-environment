@@ -25,11 +25,9 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-host=@host@
-
 SUBDIRS = include doc lib tools engine agents suites
 
-mybindir=$(prefix)/$(host)/bin
+mybindir=$(prefix)/$(TE_PLATFORM)/bin
 dist_mybin_SCRIPTS = dispatcher.sh
 
 DISTCLEANFILES = builder.conf builder.conf.processed 
@@ -47,7 +45,7 @@ EXTRA_DIST+=@SUITE_SCRIPTS_EXTRA_DIST@
 
 endif
 
-all: install-data
+all: configure.ac install-data
 
 dist-hook:
 	if test -n "@TE_CONF_DIR@" ; then \
@@ -64,7 +62,8 @@ dist-hook:
         fi
 
 install-exec-hook:
-	cd $(DESTDIR)/$(prefix) ; ln -sf $(host)/bin/dispatcher.sh dispatcher.sh
+	cd $(DESTDIR)/$(prefix) ; \
+        ln -sf $(TE_PLATFORM)/bin/dispatcher.sh dispatcher.sh
 	$(srcdir)/engine/builder/te_cross_build $(prefix)
 
 uninstall-hook:

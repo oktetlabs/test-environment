@@ -18,8 +18,8 @@ if WINDOWS
 
 librpc.a: $(librpc_a_SOURCES) 
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
-        $(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
-        $(DESTDIR)/$(prefix) $(librpc_a_SOURCES)
+        $(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) \
+        $(TE_PLATFORM) $@ $(DESTDIR)/$(prefix) $(librpc_a_SOURCES)
 
 install-exec-hook:
 	if test -e $(lib_LIBRARIES) -a ! -s $(lib_LIBRARIES) \

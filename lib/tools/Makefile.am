@@ -25,8 +25,8 @@ libtools_a_SOURCES=$(WIN_SRC)
 
 libtools.a: $(WIN_SRC) 
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
-        $(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
-        $(DESTDIR)/$(prefix) $(WIN_SRC)
+        $(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) \
+        $(TE_PLATFORM) $@ $(DESTDIR)/$(prefix) $(WIN_SRC)
         
 install-exec-hook:
 	if test -e $(lib_LIBRARIES) -a ! -s $(lib_LIBRARIES) \

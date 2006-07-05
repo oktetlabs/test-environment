@@ -34,7 +34,7 @@ PREFIX=$1
 DUMMY=
 
 for p in ${TE_BS_PLATFORMS} ; do
-    if test $p = default ; then continue ; fi
+    if test $p = ${TE_HOST} ; then continue ; fi
 
     ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
         ${p}_include $p ${TE_BASE}/include $PREFIX || exit 1
@@ -58,7 +58,7 @@ done
 
 for package in $DUMMY $TE_BS_TA ; do
     PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'` ;
-    if test "$PLATFORM" = default ; then continue ; fi ;
+    if test "$PLATFORM" = ${TE_HOST} ; then continue ; fi ;
     PKGSRC=`eval echo '$TE_BS_TA_'${package}'_SOURCES'` ;
     if test -z "$PKGSRC" ; then
         PKGSRC=${TE_BASE}/agents/$package ;
