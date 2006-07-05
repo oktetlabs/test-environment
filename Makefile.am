@@ -63,7 +63,7 @@ dist-hook:
 
 install-exec-hook:
 	cd $(DESTDIR)/$(prefix) ; \
-        ln -sf $(TE_PLATFORM)/bin/dispatcher.sh dispatcher.sh
+        ln -sf $(TE_HOST)/bin/dispatcher.sh dispatcher.sh
 	$(srcdir)/engine/builder/te_cross_build $(prefix)
 
 uninstall-hook:
