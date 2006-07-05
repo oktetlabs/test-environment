@@ -6,9 +6,11 @@ TE_SHELL([TE64=`gcc -dumpmachine | grep 64`])
 TE_SHELL([if test "$TE64" ; then \
               OTHER_HOST=i386-pc-linux ; \
               LINUX32_PLATFORM=linux_other ; \
+              LINUX64_PLATFORM= ; \
           else \
               OTHER_HOST=x86_64-linux ; \
-              LINUX64_PLATFORM= ; \
+              LINUX32_PLATFORM= ; \
+              LINUX64_PLATFORM=linux_other ; \
           fi])
 
 TE_TOOLS([rgt rpcgen trc tce millicom])
