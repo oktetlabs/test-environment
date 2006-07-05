@@ -48,6 +48,7 @@ tarpc.h tarpc_xdr.c tarpc_dummy.c: $(srcdir)/../../include/tarpc.x.m4 @RPCDEFS@
 
 install-exec-hook:
 	touch -c -r librpcxdr.la $(DESTDIR)/$(libdir)/librpcxdr.*
+	touch -c -r librpcxdr.la $(DESTDIR)/$(libdir)/librpcxdrta.*
 
 install-data-hook:
 	touch -c -r $(srcdir)/rpc_xdr.h \
