@@ -1214,7 +1214,7 @@ te_rc_os2te(int err)
         case EMEDIUMTYPE: return TE_EMEDIUMTYPE;
 #endif
                           
-#ifdef ECANCELED
+#if defined(ECANCELED) && (ECANCELED != ENOMEDIUM)
         case ECANCELED: return TE_ECANCELED;
 #endif  
  
