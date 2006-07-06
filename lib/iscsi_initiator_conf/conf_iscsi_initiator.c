@@ -419,20 +419,19 @@ iscsi_target_data_list(unsigned int gid, const char *oid,
 }
 
 /**
- * Get the name of a block or generic SCSI device associated with
- * a given connection
+ *  Get host device name
  *
- * @param oid           Configuration node OID
- * @param value         Resulting buffer (OUT)
- * @param is_generic    If TRUE, SCSI generic device name is obtained,
- *                      block device name otherwise
  */
-static void
-iscsi_device_name_get(const char *oid, char *value, te_bool is_generic)
+static te_errno
+iscsi_host_device_get(unsigned int gid, const char *oid,
+                      char *value, const char *instance, ...)
 {
     int status;
     iscsi_target_data_t    *target = 
         &iscsi_configuration()->targets[iscsi_get_target_id(oid)];
+
+    UNUSED(gid);
+    UNUSED(instance);
 
     pthread_mutex_lock(&target->conns[0].status_mutex);
     status = target->conns[0].status;
@@ -443,25 +442,10 @@ iscsi_device_name_get(const char *oid, char *value, te_bool is_generic)
     }
     else
     {
-        strcpy(value, is_generic ? 
-               target->conns[0].scsi_generic_device_name :
-               target->conns[0].device_name);
+        strcpy(value, target->conns[0].device_name);
     }
     pthread_mutex_unlock(&target->conns[0].status_mutex);
-}
 
-/**
- *  Get host device name
- *
- */
-static te_errno
-iscsi_host_device_get(unsigned int gid, const char *oid,
-                      char *value, const char *instance, ...)
-{
-    UNUSED(gid);
-    UNUSED(instance);
-
-    iscsi_device_name_get(oid, value, FALSE);
     return 0;
 }
 
@@ -473,10 +457,40 @@ static te_errno
 iscsi_generic_device_get(unsigned int gid, const char *oid,
                          char *value, const char *instance, ...)
 {
+    int status;
+    iscsi_target_data_t    *target = 
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];
+
     UNUSED(gid);
     UNUSED(instance);
 
-    iscsi_device_name_get(oid, value, TRUE);
+    
+    pthread_mutex_lock(&target->conns[0].status_mutex);
+    status = target->conns[0].status;
+    if (status != ISCSI_CONNECTION_UP)
+    {
+        WARN("Connection is not up, no generic device name available");
+        *value = '\0';
+    }
+    else
+    {
+        if (target->conns[0].scsi_generic_device_name[0] == '\0')
+        {
+            int rc;
+            pthread_mutex_unlock(&target->conns[0].status_mutex);
+            rc = iscsi_get_device_name(&target->conns[0], 
+                                       target->target_id,
+                                       TRUE,
+                                       target->conns[0]. \
+                                       scsi_generic_device_name);
+            if (rc != 0)
+                return rc;
+            pthread_mutex_lock(&target->conns[0].status_mutex);
+        }
+        strcpy(value, target->conns[0].scsi_generic_device_name);
+    }
+    pthread_mutex_unlock(&target->conns[0].status_mutex);
+
     return 0;
 }
 

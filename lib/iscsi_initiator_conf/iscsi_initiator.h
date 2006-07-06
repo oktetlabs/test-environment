@@ -659,4 +659,19 @@ extern te_bool iscsi_when_chap(iscsi_target_data_t *target_data,
                                iscsi_tgt_chap_data_t *auth_data);
 
 
+/**
+ * Detect SCSI device name 
+ *
+ * @param conn          Connection data
+ * @param target_id     Target ID
+ * @param is_generic    If TRUE, obtain SCSI generic device name,
+ *                      otherwise block device name
+ * @param outbuffer     Device name buffer (OUT)
+ *
+ * @return Status code
+ */
+extern te_errno iscsi_get_device_name(iscsi_connection_data_t *conn, 
+                                      int target_id, 
+                                      te_bool is_generic, char *outbuffer);
+
 #endif

@@ -562,11 +562,10 @@ iscsi_scan_directory(const char *pattern, const char *entity_name,
  * FIXME: there are different mechanisms of SCSI device discovery
  * for L5 and non-L5 initiators. This really should be unified.
  *
- * @param  conn  Connection data
  * @return Status code
  */
 static te_errno
-iscsi_linux_detect_hba(iscsi_connection_data_t *conn)
+iscsi_linux_detect_hba(void)
 {
     int         rc;
     char        dev_pattern[RCF_MAX_PATH];
@@ -649,26 +648,28 @@ iscsi_linux_detect_hba(iscsi_connection_data_t *conn)
 }
 
 /**
- * Detect SCSI device name 
- *
- * @param conn          Connection data
- * @param target_id     Target ID
- * @param kind          Device kind (`block' or `generic')
- * @param outbuffer     Device name buffer (OUT)
- *
- * @return Status code
+ * See description in iscsi_initiator.h
  */
-static te_errno
-iscsi_linux_get_device_name(iscsi_connection_data_t *conn, int target_id, 
-                            const char *kind, char *outbuffer)
+te_errno
+iscsi_get_device_name(iscsi_connection_data_t *conn, int target_id, 
+                      te_bool is_generic, char *outbuffer)
 {
     int         rc = 0;
     char        dev_pattern[RCF_MAX_PATH];
     char       *nameptr;
     glob_t      devices;
 
+    if (is_generic)
+    {
+        if (ta_system("modprobe sg") != 0)
+        {
+            WARN("Unable to load sg module");
+        }
+    }
+
     sprintf(dev_pattern, "/sys/bus/scsi/devices/%d:*:%d/%s*", 
-            init_data->host_bus_adapter, target_id, kind);
+            init_data->host_bus_adapter, target_id, 
+            is_generic ? "generic" : "block");
     rc = iscsi_scan_directory(dev_pattern, "devices", &devices);
     if (rc != 0)
     {
@@ -752,29 +753,36 @@ iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
 {
     int         rc = 0;
 
-    rc = iscsi_linux_detect_hba(conn);
+    rc = iscsi_linux_detect_hba();
     if (rc != 0)
         return rc;
 
-    rc = iscsi_linux_get_device_name(conn, target_id, 
-                                     "block", conn->device_name);
+    rc = iscsi_get_device_name(conn, target_id, 
+                               FALSE, conn->device_name);
     if (rc != 0)
         return rc;
-
-    rc = iscsi_linux_get_device_name(conn, target_id, 
-                                     "generic", 
-                                     conn->scsi_generic_device_name);
-    if (rc != 0)
-    {
-        WARN("Unable to detect SCSI generic device: %r", rc);
-    }
-       
+      
     if (iscsi_unix_cli("blockdev --setra 0 %s", conn->device_name) != 0)
     {
         WARN("Unable to disable read-ahead on %s", conn->device_name);
     }
     return 0;
 }
+
+#else /* ! __CYGWIN__ */
+
+te_errno
+iscsi_get_device_name(iscsi_connection_data_t *conn, int target_id, 
+                      te_bool is_generic, char *outbuffer)
+{
+    UNUSED(conn);
+    UNUSED(target_id);
+    UNUSED(is_generic);
+    
+    *outbuffer = '\0';
+    return TE_RC(ISCSI_AGENT_TYPE, TE_ENOSYS);
+}
+
 
 #endif /* ! __CYGWIN__ */
 
