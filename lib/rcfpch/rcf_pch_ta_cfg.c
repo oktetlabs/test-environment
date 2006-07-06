@@ -395,15 +395,6 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
         rt_info->tos = atoi(ptr);
         rt_info->flags |= TA_RT_INFO_FLG_TOS;
     }
-    else
-    {
-        /* if tos==0 (equal to situation when it's not set in name) 
-         * so it is thought to be the route with tos 0, but if ToS 
-         * flag is NOT set, then when finding route we can get back 
-         * any route, even not with tos 0 */
-        rt_info->tos = 0;
-        rt_info->flags |= TA_RT_INFO_FLG_TOS;
-    }
     
     return 0;
 }
