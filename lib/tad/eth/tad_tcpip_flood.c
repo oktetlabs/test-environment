@@ -71,8 +71,8 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
 
     int ret_val;
     te_errno     rc;
-    tad_pkt     *pkt = pkts->pkts.cqh_first;
-    tad_pkt_seg *tcp_hdr_seg = pkt->segs.cqh_last->links.cqe_prev;
+    tad_pkt     *pkt     = pkts->pkts.cqh_first;
+    tad_pkt_seg *hdr_seg = pkt->segs.cqh_first;
 
 #define TCP_SEQ_OFFSET 4
 #define TCP_CHKSUM_OFFSET 16
@@ -91,13 +91,16 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
     size_t                      iovlen = tad_pkt_seg_num(pkt);
     struct iovec                iov[iovlen];
     int out_socket;
-    int flags;
 
-    uint8_t *flat_frame;
-    size_t   frame_size;
+    uint8_t *flat_frame = NULL, *p;
+    size_t   frame_size = 0;
 
     uint16_t *chksum_place;
     uint32_t *seq_place;
+
+    int flags;
+
+    size_t tcp_payload_size = pkt->segs.cqh_last->data_len;
 
 
 
@@ -105,37 +108,64 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
     data = spec_data->sap.data;
     out_socket = data->out;
 
+#if 1
+    flags = 0;
     fcntl(out_socket, F_GETFL, &flags);
     flags |= O_NONBLOCK;
     fcntl(out_socket, F_SETFL, flags);
+#endif
+    tad_pkt_segs_to_iov(pkt, iov, iovlen);
 
     rc = tad_pkt_flatten_copy(pkt, &flat_frame, &frame_size);
+
     if (rc != 0)
     {
         ERROR("Failed to convert segments to flat data: %r", rc);
         return rc;
     }
 
-    // chksum_place = (flat_frame + );
+    p = flat_frame;
+    /* shift over Ethernet header: */
+    p += hdr_seg->data_len;
+    hdr_seg = hdr_seg->links.cqe_next;
 
+    /* shift over IP header: */
+    p += hdr_seg->data_len;
+    hdr_seg = hdr_seg->links.cqe_next; 
+
+    RING("%s(): frame begin %p, ETH and IP headers: %d", 
+         __FUNCTION__, flat_frame, (p - flat_frame));
+    /* shift in TCP header to our places: */
+    seq_place    = (uint32_t *)(p + TCP_SEQ_OFFSET);
+    chksum_place = (uint16_t *)(p + TCP_CHKSUM_OFFSET);
+
+    RING("%s(): seq_place %p, chksum place  %p", 
+         __FUNCTION__, seq_place, chksum_place);
 
     write_cb = csap_get_proto_support(csap,
                    csap_get_rw_layer(csap))->write_cb;
     rc = write_cb(csap, pkt); 
 
-    RING("%s (file %s) started for %d pkts",
-         __FUNCTION__, __FILE__,  number_of_packets);
+    chksum  = ntohs(*chksum_place);
+
+    RING("%s (file %s) started for %d pkts, init checksum %d(0x%x)",
+         __FUNCTION__, __FILE__,  number_of_packets, (int)chksum, (int)chksum);
 
 
-    while ((--number_of_packets) > 0 && rc == 0)
+    while ((--number_of_packets) > 0)
     { 
 
+#if 0
         chksum = ntohs(*((uint16_t *)
                          (iov[iovlen-2].iov_base + TCP_CHKSUM_OFFSET)));
         old_seq = ntohl(*((uint32_t *)
                           (iov[iovlen-2].iov_base + TCP_SEQ_OFFSET)));
+#else
+        chksum  = ntohs(*chksum_place);
+        old_seq = ntohl(*seq_place);
+#endif
 
-        new_seq = old_seq + iov[iovlen-1].iov_len;
+        new_seq = old_seq + tcp_payload_size;
 
         old_seq_chksum = (old_seq & 0xffff) + (old_seq >> 16);
         new_seq_chksum = (new_seq & 0xffff) + (new_seq >> 16);
@@ -145,19 +175,35 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
 
         new_pkt_chksum = (chksum & 0xffff) + (chksum >> 16);
 
+#if 0
         *((uint16_t *)(iov[iovlen-2].iov_base + TCP_CHKSUM_OFFSET)) =
             htons(new_pkt_chksum);
         *((uint32_t *)(iov[iovlen-2].iov_base + TCP_SEQ_OFFSET)) =
             htonl(new_seq);
+#else
+        *chksum_place = htons(new_pkt_chksum);
+        *seq_place = htonl(new_seq);
+#endif
 
 once_more:
+        if (1)
+        {
+                    struct timeval clr_delay = { 0, 20 };
 
-        ret_val = writev(out_socket, iov, iovlen);
+                    select(0, NULL, NULL, NULL, &clr_delay);
+        }
+
+#if 0
+        ret_val = writev(out_socket, iov, iovlen); 
+#else
+        // ret_val = send(out_socket, flat_frame, frame_size, 0);
+        ret_val = write(out_socket, flat_frame, frame_size);
+#endif
 
         if (ret_val < 0)
         {
             rc = te_rc_os2te(errno);
-            RING("%s() writev failed, errno %r",
+            RING("%s() write() failed, errno %r",
                    __FUNCTION__, rc);
             switch (rc)
             {
@@ -169,7 +215,7 @@ once_more:
                      * to hope that buffers will be cleared and
                      * does not fall down performance.
                      */
-                    struct timeval clr_delay = { 0, rand() & 0xfff };
+                    struct timeval clr_delay = { 0, 10 };
 
                     select(0, NULL, NULL, NULL, &clr_delay);
                     goto once_more;
