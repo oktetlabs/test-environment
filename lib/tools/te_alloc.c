@@ -60,15 +60,9 @@ te_alloc_internal(size_t size, const char *filename, int line)
     
     if (result == NULL)
     {
-        ERROR("Cannot allocate memory of size " SIZE_T_FMT " at %s:%d: %s",
+        ERROR("Cannot allocate memory of size " SIZE_T_FMT " at %s:%d",
               SIZE_T_CAST(size), 
-              filename, line,
-#ifndef WINDOWS
-              strerror(errno)
-#else
-              "No enough memory"
-#endif
-              );
+              filename, line);
     }
     return result;
 }
