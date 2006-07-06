@@ -446,8 +446,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
           ((user_data->rt_info->flags & TA_RT_INFO_FLG_METRIC) == 0 ||
            user_data->rt_info->metric ==
                *(uint32_t *)RTA_DATA(tb[RTA_PRIORITY])) &&
-          ((user_data->rt_info->flags & TA_RT_INFO_FLG_TOS) == 0 ||
-           user_data->rt_info->tos == r->rtm_tos)))
+          (user_data->rt_info->tos == r->rtm_tos)))
     {
         if (tb[RTA_OIF] != NULL)
         {            
