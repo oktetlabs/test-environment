@@ -229,23 +229,24 @@ extern "C" {
  * @param maps_      An array of mappings: string -> enum
  */
 #define TEST_GET_ENUM_PARAM(var_name_, maps_...) \
-    do {                                                               \
-        const char *val_;                                              \
-        int         mapped_val_;                                       \
-        struct param_map_entry maps[] = {                              \
-            maps_,                                                     \
-            { NULL, 0 },                                               \
-        };                                                             \
-                                                                       \
-        val_ = test_get_param(argc, argv, #var_name_);                 \
-        if (val_ != NULL &&                                            \
-            test_map_param_value(#var_name_, maps,                     \
-                                 val_, &mapped_val_) == 0)             \
-        {                                                              \
-            (var_name_) = mapped_val_;                                 \
-            break;                                                     \
-        }                                                              \
-        TEST_STOP;                                                     \
+    do {                                                    \
+        const char *val_;                                   \
+        int         mapped_val_;                            \
+        struct param_map_entry maps[] = {                   \
+            maps_,                                          \
+            { NULL, 0 },                                    \
+        };                                                  \
+                                                            \
+        val_ = test_get_param(argc, argv, #var_name_);      \
+        if (val_ != NULL &&                                 \
+            test_map_param_value(#var_name_, maps,          \
+                                 val_, &mapped_val_) == 0)  \
+        {                                                   \
+            (var_name_) = mapped_val_;                      \
+            break;                                          \
+        }                                                   \
+        memset(&(var_name_), 0, sizeof(var_name_));         \
+        TEST_STOP;                                          \
     } while (0)
 
 
