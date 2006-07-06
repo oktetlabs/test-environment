@@ -130,6 +130,7 @@ typedef enum {
     NDN_TMPL_DELAYS,
     NDN_TMPL_PDUS,
     NDN_TMPL_PAYLOAD,
+    NDN_TMPL_FUNCTION,
 } ndn_traffic_template_tags_t;
 
 /**

@@ -293,6 +293,8 @@ static asn_named_entry_t _ndn_traffic_template_ne_array[] =
         {PRIVATE, NDN_TMPL_PDUS} },
     { "payload",   &ndn_payload_s,
         {PRIVATE, NDN_TMPL_PAYLOAD} },
+    { "send-func",  &asn_base_charstring_s, 
+        {PRIVATE, NDN_TMPL_FUNCTION} },
 }; 
 
 asn_type ndn_traffic_template_s =
@@ -306,11 +308,12 @@ const asn_type * const  ndn_traffic_template = &ndn_traffic_template_s;
 
 /*
 Packet-Action ::= CHOICE {
-    echo        NULL,
     forw-pld    INTEGER,
     forw-raw    INTEGER,
     function    UniversalString,
-    file        UniversalString
+    file        UniversalString,
+    break       NULL,
+    no-report   NULL
 }
 */
 
