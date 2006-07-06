@@ -301,6 +301,8 @@ const char *te_lockdir = "/tmp";
 #define MY_SIOCSIFFLAGS     SIOCSLIFFLAGS
 #define MY_SIOCGIFADDR      SIOCGLIFADDR
 #define MY_SIOCSIFADDR      SIOCSLIFADDR
+#define MY_SIOCGIFMTU       SIOCGLIFMTU
+#define MY_SIOCSIFMTU       SIOCSLIFMTU
 #define MY_SIOCGIFNETMASK   SIOCGLIFNETMASK
 #define MY_SIOCSIFNETMASK   SIOCSLIFNETMASK
 #define MY_SIOCGIFBRDADDR   SIOCGLIFBRDADDR
@@ -316,6 +318,8 @@ const char *te_lockdir = "/tmp";
 #define MY_SIOCSIFFLAGS     SIOCSIFFLAGS
 #define MY_SIOCGIFADDR      SIOCGIFADDR
 #define MY_SIOCSIFADDR      SIOCSIFADDR
+#define MY_SIOCGIFMTU       SIOCGIFMTU
+#define MY_SIOCSIFMTU       SIOCSIFMTU
 #define MY_SIOCGIFNETMASK   SIOCGIFNETMASK
 #define MY_SIOCSIFNETMASK   SIOCSIFNETMASK
 #define MY_SIOCGIFBRDADDR   SIOCGIFBRDADDR
@@ -3391,26 +3395,16 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-#if defined(SIOCGIFMTU) && defined(HAVE_STRUCT_IFREQ_IFR_MTU)
+#if defined(SIOCGIFMTU)  && defined(HAVE_STRUCT_IFREQ_IFR_MTU)   || \
+    defined(SIOCGLIFMTU) && defined(HAVE_STRUCT_LIFREQ_LIFR_MTU)
     {
-        struct ifreq req;
+        struct my_ifreq req;
 
-        strncpy(req.ifr_name, ifname, sizeof(req.ifr_name));
-        CFG_IOCTL(cfg_socket, SIOCGIFMTU, &req);
-        sprintf(value, "%d", req.ifr_mtu);
+        strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
+        CFG_IOCTL(cfg_socket, MY_SIOCGIFMTU, &req);
+        sprintf(value, "%d", req.my_ifr_mtu);
     }
-#elif defined(SIOCGLIFMTU)
-    {
-        struct lifreq req;
-
-        strncpy(req.lifr_name, ifname, sizeof(req.lifr_name));
-        CFG_IOCTL(cfg_socket, SIOCGLIFMTU, &req);
-        sprintf(value, "%d", req.lifr_mtu);
-    }
-#else
-#error Cannot get interface MTU
 #endif
-
     return 0;
 }
 
@@ -3442,10 +3436,11 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     if (tmp == value || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-#if HAVE_STRUCT_IFREQ_IFR_MTU
+#if (defined(SIOCGIFMTU)  && defined(HAVE_STRUCT_IFREQ_IFR_MTU))   || \
+    (defined(SIOCGLIFMTU) && defined(HAVE_STRUCT_LIFREQ_LIFR_MTU))
     req.my_ifr_mtu = mtu;
     strcpy(req.my_ifr_name, ifname);
-    if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) != 0)
+    if (ioctl(cfg_socket, MY_SIOCSIFMTU, (int)&req) != 0)
     {
         rc = TE_OS_RC(TE_TA_UNIX, errno);
         
@@ -3462,7 +3457,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
                 WARN("Interface '%s' is pushed down/up to set a new MTU",
                      ifname);
 
-                if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) == 0)
+                if (ioctl(cfg_socket, MY_SIOCSIFMTU, (int)&req) == 0)
                 {
                     rc = 0;
                 }
