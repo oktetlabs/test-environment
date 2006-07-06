@@ -62,19 +62,6 @@ autotool()
 # Call configure and make
 configure_package()
 {
-    if test "$KIND" != "TA" ; then
-        ADD_CPPFLAGS="$ADD_CPPFLAGS -I${PREFIX}/include "
-        ADD_LDFLAGS="$ADD_LDFLAGS -L${PREFIX}/lib "
-    fi
-    PARMS="$PARMS --build=`gcc -dumpmachine` \
-           TE_BASE=\"$TE_BASE\" \
-           TE_M4=\"$TE_BASE/auxdir\" \
-           TE_CPPFLAGS=\"${ADD_CPPFLAGS}\" \
-           TE_CFLAGS=\"-O2 -ggdb -Wall -W ${ADD_CFLAGS} \" \
-           TE_LDFLAGS=\"${ADD_LDFLAGS}\" \
-           TE_LDADD=\"$LDADD\" \
-           TE_PLATFORM=$PLATFORM"
-    
     echo ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS}
     
     TE_DEPENDENCIES="$DEPENDENCIES" \
@@ -149,6 +136,19 @@ PACKAGE_CC="`eval echo '$'${PLATFORM}'_CC'`"
 if test "$PACKAGE_CC" ; then
     PARMS="$PARMS CC=$PACKAGE_CC"
 fi
+
+if test "$KIND" != "TA" ; then
+    ADD_CPPFLAGS="$ADD_CPPFLAGS -I${PREFIX}/include "
+    ADD_LDFLAGS="$ADD_LDFLAGS -L${PREFIX}/lib "
+fi
+PARMS="$PARMS --build=`gcc -dumpmachine` \
+       TE_BASE=\"$TE_BASE\" \
+       TE_M4=\"$TE_BASE/auxdir\" \
+       TE_CPPFLAGS=\"${ADD_CPPFLAGS}\" \
+       TE_CFLAGS=\"-O2 -ggdb -Wall -W ${ADD_CFLAGS} \" \
+       TE_LDFLAGS=\"${ADD_LDFLAGS}\" \
+       TE_LDADD=\"$LDADD\" \
+       TE_PLATFORM=$PLATFORM"
 
 configure_package
 
