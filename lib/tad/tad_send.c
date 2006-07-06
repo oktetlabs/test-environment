@@ -671,11 +671,12 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
             send_cb_userdata++;
         }
 
-
+        /* FIXME: Correct error processing here */ 
         send_cb = rcf_ch_symbol_addr(send_cb_name, 1);
         if (send_cb == NULL)
             ERROR("Not send method '%s' found, send via usual callback",
                   send_cb_name);
+        free(send_cb_name);
     }
     else 
 #endif
@@ -730,7 +731,6 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
 
     tad_send_free_packets(pkts, csap->depth + 1);
     free(pkts);
-    free(send_cb_name);
 
     F_EXIT("%r", rc);
 
