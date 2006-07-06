@@ -648,9 +648,11 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
     te_errno    rc;
     tad_pkts   *pkts;
 
+#if 1 /* FIXME: More part of this processing to prepare stage */
     tad_special_send_pkt_cb  send_cb = NULL;
     char                    *send_cb_name = NULL;
     char                    *send_cb_userdata = NULL;
+#endif
 
     F_ENTRY();
 
@@ -658,6 +660,7 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
     if (pkts == NULL)
         return TE_RC(TE_TAD_CH, TE_ENOMEM);
 
+#if 1 /* FIXME: More part of this processing to prepare stage */
     rc = asn_read_string(tu_data->nds, &send_cb_name, "send-func");
     if (rc == 0)
     {
@@ -675,6 +678,7 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
                   send_cb_name);
     }
     else 
+#endif
         rc = 0;
 
     do { 
