@@ -65,10 +65,20 @@ lio_opcode_rpc2h(rpc_lio_opcode opcode)
 {
     switch (opcode)
     {
-        RPC2H(LIO_READ);
-        RPC2H(LIO_WRITE);
-        RPC2H(LIO_NOP);   
-        default: return LIO_READ + LIO_WRITE + LIO_NOP + 1;
+        RPC2H_CHECK(LIO_READ);
+        RPC2H_CHECK(LIO_WRITE);
+        RPC2H_CHECK(LIO_NOP);   
+        default: return 
+#ifdef LIO_READ        
+            LIO_READ + 
+#endif            
+#ifdef LIO_WRITE
+            LIO_WRITE + 
+#endif            
+#ifdef LIO_NOP
+            LIO_NOP + 
+#endif            
+            1;
     }
 }
 
@@ -78,9 +88,9 @@ lio_opcode_h2rpc(int opcode)
 {
     switch (opcode)
     {
-        H2RPC(LIO_READ); 
-        H2RPC(LIO_WRITE);
-        H2RPC(LIO_NOP);  
+        H2RPC_CHECK(LIO_READ); 
+        H2RPC_CHECK(LIO_WRITE);
+        H2RPC_CHECK(LIO_NOP);  
         default: return RPC_LIO_UNKNOWN;
     }
 }
@@ -108,9 +118,16 @@ lio_mode_rpc2h(rpc_lio_mode mode)
 {
     switch (mode)
     {
-        RPC2H(LIO_WAIT);
-        RPC2H(LIO_NOWAIT);
-        default: return LIO_WAIT + LIO_NOWAIT + 1;
+        RPC2H_CHECK(LIO_WAIT);
+        RPC2H_CHECK(LIO_NOWAIT);
+        default: return 
+#ifdef LIO_WAIT        
+            LIO_WAIT + 
+#endif
+#ifdef LIO_NOWAIT            
+            LIO_NOWAIT + 
+#endif            
+            1;
     }
 }
 
@@ -120,8 +137,8 @@ lio_mode_h2rpc(int mode)
 {
     switch (mode)
     {
-        H2RPC(LIO_WAIT); 
-        H2RPC(LIO_NOWAIT);
+        H2RPC_CHECK(LIO_WAIT); 
+        H2RPC_CHECK(LIO_NOWAIT);
         default: return RPC_LIO_MODE_UNKNOWN;
     }
 }
@@ -150,9 +167,9 @@ aio_cancel_retval_rpc2h(rpc_aio_cancel_retval ret)
     switch (ret)
     {
         case -1: return -1;
-        RPC2H(AIO_CANCELED);
-        RPC2H(AIO_NOTCANCELED);
-        RPC2H(AIO_ALLDONE);
+        RPC2H_CHECK(AIO_CANCELED);
+        RPC2H_CHECK(AIO_NOTCANCELED);
+        RPC2H_CHECK(AIO_ALLDONE);
         default: return -1; /* FIXME */
     }
 }
@@ -164,9 +181,9 @@ aio_cancel_retval_h2rpc(int ret)
     switch (ret)
     {
         case -1: return -1;
-        H2RPC(AIO_CANCELED);
-        H2RPC(AIO_NOTCANCELED);
-        H2RPC(AIO_ALLDONE);
+        H2RPC_CHECK(AIO_CANCELED);
+        H2RPC_CHECK(AIO_NOTCANCELED);
+        H2RPC_CHECK(AIO_ALLDONE);
         default: return RPC_AIO_UNKNOWN;
     }
 }
