@@ -24,7 +24,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD TCP/IP misc" 
