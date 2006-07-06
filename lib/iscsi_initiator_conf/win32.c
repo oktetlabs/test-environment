@@ -490,6 +490,10 @@ static te_errno
 iscsi_win32_set_default_parameters(void)
 {
 #define RPARAMETER(name, value) {0, -1, name, NULL, value}
+    /** 
+     * Registry-configurable operational parameters, 
+     *  RFC3720 default values 
+     */
     static iscsi_win32_registry_parameter rparams[] =
         {
             RPARAMETER("InitialR2T", DEFAULT_INITIAL_R2T_WIN32),
@@ -930,6 +934,7 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
                                 iscsi_connection_data_t *connection,
                                 te_bool is_connection)
 {
+    /** Registry configurable operation parameters */
     static iscsi_win32_registry_parameter rparams[] =
         {
             RPARAMETER(first_burst_length, "FirstBurstLength", 
@@ -948,6 +953,7 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
             {0, 0, NULL, NULL, 0}
         };
 
+    /** CLI-configurable session-wide parameters */
     static iscsi_target_param_descr_t params[] =
         {
             GPARAMETER(target_name, TRUE),
@@ -970,6 +976,8 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
             CONSTANT(zero),
             ISCSI_END_PARAM_TABLE
         };
+
+    /** CLI-configurable connection-wide parameters */
     static iscsi_target_param_descr_t conn_params[] =
         {
             GPARAMETER(session_id, TRUE),
@@ -1042,6 +1050,7 @@ static te_errno
 iscsi_win32_do_discovery(iscsi_target_data_t *target,
                          iscsi_connection_data_t *connection)
 {
+    /** CLI-configurable parameters for Discovery sessions */
     static iscsi_target_param_descr_t params[] =
         {
             GPARAMETER(target_addr, TRUE),

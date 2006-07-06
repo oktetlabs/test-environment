@@ -860,6 +860,11 @@ typedef enum iscsi_connection_status
  */
 #define ISCSI_ALL_CONNECTIONS -1
 
+/**
+ * SCSI block size for iSCSI
+ */
+#define	ISCSI_SCSI_BLOCKSIZE 512
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -218,11 +218,11 @@ iscsi_l5_write_target_params(FILE *destination,
 static int
 iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
 {
-    static char filename[ISCSI_MAX_CMD_SIZE];
-    FILE *destination;
+    static char          filename[ISCSI_MAX_CMD_SIZE];
+    FILE                *destination;
     iscsi_target_data_t *target;
-    int conn_no;
-    te_bool is_first;
+    int                  conn_no;
+    te_bool              is_first;
     
     snprintf(filename, sizeof(filename),
              "%s/configs",
@@ -241,7 +241,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
     target = iscsi_data->targets;
     if (target->target_id < 0)
     {
-        ERROR("No targets configured");
+        ERROR("First target is not configured");
         return TE_RC(ISCSI_AGENT_TYPE, TE_ENOENT);
     }
     /** NOTE: L5 Initator seems to be unable 
@@ -249,6 +249,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
      *  different Targets/Connections.
      *  So we just using the first one
      */
+    
     fprintf(destination, "[INITIATOR]\n"
                          "Name: %s\n"
                          "Targets:",
@@ -262,10 +263,19 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
         if (target->target_id >= 0)
         {
             target->is_active = FALSE;
-            for (conn_no = 0; conn_no < ISCSI_MAX_CONNECTIONS_NUMBER; conn_no++)
+            for (conn_no = 0;
+                 conn_no < ISCSI_MAX_CONNECTIONS_NUMBER;
+                 conn_no++)
             {
                 if (target->conns[conn_no].status != ISCSI_CONNECTION_REMOVED)
                 {
+                    if (strcmp(target->conns[conn_no].initiator_name, 
+                               iscsi_data->targets[0].conns[0].initiator_name) != 0)
+                    {
+                        WARN("Several Initiator names configured, "
+                             "not supported by L5");
+                    }
+
                     target->is_active = TRUE;
                     break;
                 }
@@ -325,9 +335,10 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
 int
 iscsi_initiator_l5_set(iscsi_connection_req *req)
 {
-    int                  rc = -1;
-    iscsi_target_data_t *target = iscsi_configuration()->targets + req->target_id;
-    iscsi_connection_data_t *conn = target->conns + req->cid;
+    int                      rc      = -1;
+    iscsi_target_data_t     *target  = 
+        &iscsi_configuration()->targets[req->target_id];
+    iscsi_connection_data_t *conn    = target->conns + req->cid;
     
     switch (req->status)
     {

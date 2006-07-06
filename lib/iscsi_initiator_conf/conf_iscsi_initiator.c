@@ -62,20 +62,23 @@
 #include "te_tools.h"
 
 
-/**                                                                         \
- * A template for connection-wide Initiator string parameter accessors      \
- *                                                                          \
- * @param name  Parameter name                                              \
- * @param field Field name in iscsi_connection_data_t                       \
- */                                                                         \
+/**                                                                         
+ * A template for connection-wide Initiator string parameter accessors.
+ * Accessors are named `iscsi_parm_xxx_get' and `iscsi_parm_xxx_set',
+ * where `xxx' is @p name and are of types rcf_ch_cfg_get and rcf_ch_cfg_set.
+ *                                                                          
+ * @param name  Parameter name                                              
+ * @param field Field name in iscsi_connection_data_t
+ * 
+ */                                                                         
 #define ISCSI_INITIATOR_STR_CONN_PARAM(name, field)                         \
 static te_errno                                                             \
 iscsi_parm_##name##_set(unsigned int gid, const char *oid,                  \
                              char *value, const char *instance, ...)        \
 {                                                                           \
-    iscsi_target_data_t    *target = iscsi_configuration()->targets +       \
-        iscsi_get_target_id(oid);                                           \
-    iscsi_connection_data_t *conn  = target->conns + iscsi_get_cid(oid);    \
+    iscsi_target_data_t    *target =                                        \
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];          \
+    iscsi_connection_data_t *conn  = &target->conns[iscsi_get_cid(oid)];    \
                                                                             \
     UNUSED(gid);                                                            \
     UNUSED(instance);                                                       \
@@ -89,9 +92,9 @@ static te_errno                                                             \
 iscsi_parm_##name##_get(unsigned int gid, const char *oid,                  \
                              char *value, const char *instance, ...)        \
 {                                                                           \
-    iscsi_target_data_t    *target = iscsi_configuration()->targets +       \
-        iscsi_get_target_id(oid);                                           \
-    iscsi_connection_data_t *conn  = target->conns + iscsi_get_cid(oid);    \
+    iscsi_target_data_t    *target =                                        \
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];          \
+    iscsi_connection_data_t *conn = &target->conns[iscsi_get_cid(oid)];     \
                                                                             \
                                                                             \
     UNUSED(gid);                                                            \
@@ -103,20 +106,22 @@ iscsi_parm_##name##_get(unsigned int gid, const char *oid,                  \
 }                                                                           \
 struct iscsi_##name##_eating_semicolon
 
-/**                                                                         \
- * A template for connection-wide Initiator integral parameter accessors    \
- *                                                                          \
- * @param name  Parameter name                                              \
- * @param field Field name in iscsi_connection_data_t                       \
- */                                                                         \
+/**                                                                         
+ * A template for connection-wide Initiator integral parameter accessors    
+ * Accessors are named `iscsi_parm_xxx_get' and `iscsi_parm_xxx_set',
+ * where `xxx' is @p name and are of types rcf_ch_cfg_get and rcf_ch_cfg_set.
+ *                                                                          
+ * @param name  Parameter name                                              
+ * @param field Field name in iscsi_connection_data_t                       
+ */                                                                         
 #define ISCSI_INITIATOR_INT_CONN_PARAM(name, field)                         \
 static te_errno                                                             \
 iscsi_parm_##name##_set(unsigned int gid, const char *oid,                  \
                              char *value, const char *instance, ...)        \
 {                                                                           \
-    iscsi_target_data_t    *target = iscsi_configuration()->targets +       \
-        iscsi_get_target_id(oid);                                           \
-    iscsi_connection_data_t *conn  = target->conns + iscsi_get_cid(oid);    \
+    iscsi_target_data_t    *target =                                        \
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];          \
+    iscsi_connection_data_t *conn = &target->conns[iscsi_get_cid(oid)];     \
                                                                             \
     UNUSED(gid);                                                            \
     UNUSED(instance);                                                       \
@@ -130,10 +135,9 @@ static te_errno                                                             \
 iscsi_parm_##name##_get(unsigned int gid, const char *oid,                  \
                              char *value, const char *instance, ...)        \
 {                                                                           \
-    iscsi_target_data_t    *target = iscsi_configuration()->targets +       \
-        iscsi_get_target_id(oid);                                           \
-    iscsi_connection_data_t *conn  = target->conns + iscsi_get_cid(oid);    \
-                                                                            \
+    iscsi_target_data_t    *target =                                        \
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];          \
+    iscsi_connection_data_t *conn = &target->conns[iscsi_get_cid(oid)];     \
                                                                             \
     UNUSED(gid);                                                            \
     UNUSED(instance);                                                       \
@@ -144,18 +148,20 @@ iscsi_parm_##name##_get(unsigned int gid, const char *oid,                  \
 }                                                                           \
 struct iscsi_##name##_eating_semicolon
 
-/**                                                                     \
- * A template for target-wide Initiator string parameter accessors      \
- *                                                                      \
- * @param name  Parameter name and field name in iscsi_target_data_t    \
- */                                                                     \
+/**                                                                     
+ * A template for target-wide Initiator string parameter accessors.
+ * Accessors are named `iscsi_parm_xxx_get' and `iscsi_parm_xxx_set',
+ * where `xxx' is @p name and are of types rcf_ch_cfg_get and rcf_ch_cfg_set.
+ *                                                                      
+ * @param name  Parameter name and field name in iscsi_target_data_t    
+ */                                                                     
 #define ISCSI_INITIATOR_STR_TGT_PARAM(name)                             \
 static te_errno                                                         \
 iscsi_parm_##name##_set(unsigned int gid, const char *oid,              \
                              char *value, const char *instance, ...)    \
 {                                                                       \
-    iscsi_target_data_t    *target = iscsi_configuration()->targets +   \
-        iscsi_get_target_id(oid);                                       \
+    iscsi_target_data_t    *target =                                    \
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];      \
                                                                         \
     UNUSED(gid);                                                        \
     UNUSED(instance);                                                   \
@@ -169,8 +175,8 @@ static te_errno                                                         \
 iscsi_parm_##name##_get(unsigned int gid, const char *oid,              \
                              char *value, const char *instance, ...)    \
 {                                                                       \
-    iscsi_target_data_t    *target = iscsi_configuration()->targets +   \
-        iscsi_get_target_id(oid);                                       \
+    iscsi_target_data_t    *target =                                    \
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];      \
                                                                         \
     UNUSED(gid);                                                        \
     UNUSED(instance);                                                   \
@@ -181,18 +187,20 @@ iscsi_parm_##name##_get(unsigned int gid, const char *oid,              \
 }                                                                       \
 struct iscsi_##name##_eating_semicolon
 
-/**                                                                     \
- * A template for target-wide Initiator integral parameter accessors    \
- *                                                                      \
- * @param name  Parameter name and field name in iscsi_target_data_t    \
- */                                                                     \
+/**                                                                     
+ * A template for target-wide Initiator integral parameter accessors
+ * Accessors are named `iscsi_parm_xxx_get' and `iscsi_parm_xxx_set',
+ * where `xxx' is @p name and are of types rcf_ch_cfg_get and rcf_ch_cfg_set.
+ *                                                                      
+ * @param name  Parameter name and field name in iscsi_target_data_t    
+ */                                                                     
 #define ISCSI_INITIATOR_INT_TGT_PARAM(name)                             \
 static te_errno                                                         \
 iscsi_parm_##name##_set(unsigned int gid, const char *oid,              \
                              char *value, const char *instance, ...)    \
 {                                                                       \
-    iscsi_target_data_t    *target = iscsi_configuration()->targets +   \
-        iscsi_get_target_id(oid);                                       \
+    iscsi_target_data_t    *target =                                    \
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];      \
                                                                         \
     UNUSED(gid);                                                        \
     UNUSED(instance);                                                   \
@@ -206,8 +214,8 @@ static te_errno                                                         \
 iscsi_parm_##name##_get(unsigned int gid, const char *oid,              \
                              char *value, const char *instance, ...)    \
 {                                                                       \
-    iscsi_target_data_t    *target = iscsi_configuration()->targets +   \
-        iscsi_get_target_id(oid);                                       \
+    iscsi_target_data_t    *target =                                    \
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];      \
                                                                         \
     UNUSED(gid);                                                        \
     UNUSED(instance);                                                   \
@@ -255,10 +263,9 @@ static te_errno
 iscsi_conn_add(unsigned int gid, const char *oid,
                char *value, const char *instance, ...)
 {
-    iscsi_target_data_t    *target = iscsi_configuration()->targets + 
-        iscsi_get_target_id(oid);
-    iscsi_connection_data_t *conn  = target->conns + iscsi_get_cid(oid);
-
+    iscsi_target_data_t    *target =
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];
+    iscsi_connection_data_t *conn = &target->conns[iscsi_get_cid(oid)];
 
     UNUSED(gid);
     UNUSED(instance);
@@ -411,16 +418,21 @@ iscsi_target_data_list(unsigned int gid, const char *oid,
     return 0;
 }
 
-static te_errno
-iscsi_host_device_get(unsigned int gid, const char *oid,
-                      char *value, const char *instance, ...)
+/**
+ * Get the name of a block or generic SCSI device associated with
+ * a given connection
+ *
+ * @param oid           Configuration node OID
+ * @param value         Resulting buffer (OUT)
+ * @param is_generic    If TRUE, SCSI generic device name is obtained,
+ *                      block device name otherwise
+ */
+static void
+iscsi_device_name_get(const char *oid, char *value, te_bool is_generic)
 {
     int status;
-    iscsi_target_data_t    *target = iscsi_configuration()->targets + 
-        iscsi_get_target_id(oid);
-
-    UNUSED(gid);
-    UNUSED(instance);
+    iscsi_target_data_t    *target = 
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];
 
     pthread_mutex_lock(&target->conns[0].status_mutex);
     status = target->conns[0].status;
@@ -431,11 +443,43 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
     }
     else
     {
-        strcpy(value, target->conns[0].device_name);
+        strcpy(value, is_generic ? 
+               target->conns[0].scsi_generic_device_name :
+               target->conns[0].device_name);
     }
     pthread_mutex_unlock(&target->conns[0].status_mutex);
+}
+
+/**
+ *  Get host device name
+ *
+ */
+static te_errno
+iscsi_host_device_get(unsigned int gid, const char *oid,
+                      char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+
+    iscsi_device_name_get(oid, value, FALSE);
     return 0;
 }
+
+/**
+ *  Get SCSI generic device name
+ *
+ */
+static te_errno
+iscsi_generic_device_get(unsigned int gid, const char *oid,
+                         char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+
+    iscsi_device_name_get(oid, value, TRUE);
+    return 0;
+}
+
 
 /* Initiator's path to scripts (for L5) */
 static te_errno
@@ -690,9 +734,9 @@ iscsi_status_get(unsigned int gid, const char *oid,
                  char *value, const char *instance, ...)
 {
     int status;
-    iscsi_target_data_t    *target = iscsi_configuration()->targets +
-        iscsi_get_target_id(oid);
-    iscsi_connection_data_t *conn  = target->conns + iscsi_get_cid(oid);
+    iscsi_target_data_t    *target = 
+        &iscsi_configuration()->targets[iscsi_get_target_id(oid)];
+    iscsi_connection_data_t *conn  = &target->conns[iscsi_get_cid(oid)];
 
     UNUSED(gid);
     UNUSED(instance);
@@ -734,8 +778,12 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_type, "type", NULL,
 RCF_PCH_CFG_NODE_RO(node_iscsi_host_bus_adapter, "host_bus_adapter", NULL, 
                     &node_iscsi_type, iscsi_host_bus_adapter_get);
 
-RCF_PCH_CFG_NODE_RO(node_iscsi_initiator_host_device, "host_device",
+RCF_PCH_CFG_NODE_RO(node_iscsi_initiator_generic_device, "generic_device",
                     NULL, NULL,
+                    iscsi_generic_device_get);
+
+RCF_PCH_CFG_NODE_RO(node_iscsi_initiator_host_device, "host_device",
+                    NULL, &node_iscsi_initiator_generic_device,
                     iscsi_host_device_get);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_port, "target_port", NULL, 

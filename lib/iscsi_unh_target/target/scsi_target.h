@@ -48,8 +48,6 @@ typedef struct scsi_request Scsi_Request;
 typedef struct scsi_pointer Scsi_Pointer;
 /****/
 
-#define	SCSI_BLOCKSIZE	512
-
 #define	TWOBYTE		16
 #define	BYTE		8
 #define	FILESIZE	(4096 * 1024)	/* file size in blocks */

@@ -300,8 +300,8 @@ iscsi_mmap_device(uint8_t target, uint8_t lun, const char *fname)
         device->mmap_fd = -1;
         return TE_OS_RC(TE_ISCSI_TARGET, rc);
     }
-    device->storage_size = st.st_size / SCSI_BLOCKSIZE;
-    device->buffer_size  = device->storage_size * SCSI_BLOCKSIZE;
+    device->storage_size = st.st_size / ISCSI_SCSI_BLOCKSIZE;
+    device->buffer_size  = device->storage_size * ISCSI_SCSI_BLOCKSIZE;
     device->buffer       = mmap(NULL, device->buffer_size, 
                                 PROT_READ | PROT_WRITE, MAP_SHARED,
                                 device->mmap_fd, 0);
@@ -329,7 +329,7 @@ iscsi_get_device_param(uint8_t target, uint8_t lun,
         return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
     }
     *is_mmap = (target_map[target][lun].mmap_fd >= 0);
-    *storage_size = target_map[target][lun].storage_size * SCSI_BLOCKSIZE;
+    *storage_size = target_map[target][lun].storage_size * ISCSI_SCSI_BLOCKSIZE;
     return 0;
 }
 
@@ -378,11 +378,11 @@ iscsi_write_to_device(uint8_t target, uint8_t lun,
     device = &target_map[target][lun];
 
     if (offset + len > device->storage_size * 
-        SCSI_BLOCKSIZE)
+        ISCSI_SCSI_BLOCKSIZE)
     {
         ERROR("Offset (%u) or length (%u) are out of bounds: %u",
               (unsigned)offset, (unsigned)len,
-              device->storage_size * SCSI_BLOCKSIZE);
+              device->storage_size * ISCSI_SCSI_BLOCKSIZE);
         return TE_RC(TE_ISCSI_TARGET, TE_ENOSPC);
     }
     if (!iscsi_accomodate_buffer(device, offset + len))
@@ -430,7 +430,7 @@ iscsi_read_from_device(uint8_t target, uint8_t lun,
 
     device = &target_map[target][lun];
 
-    if (offset + len > device->storage_size * SCSI_BLOCKSIZE)
+    if (offset + len > device->storage_size * ISCSI_SCSI_BLOCKSIZE)
         return TE_RC(TE_ISCSI_TARGET, TE_ENXIO);
 
     if (offset + len > device->buffer_size)
@@ -1620,7 +1620,7 @@ get_allocation_length(SHARED uint8_t *cmd)
         case VERIFY:
 		{
             struct scsi_io10_payload *payload = (void *)cmd;
-            length = ntohs(payload->length) * SCSI_BLOCKSIZE;
+            length = ntohs(payload->length) * ISCSI_SCSI_BLOCKSIZE;
 			break;
 		}
         case REPORT_LUNS:
@@ -1633,7 +1633,7 @@ get_allocation_length(SHARED uint8_t *cmd)
         case WRITE_12:
         {
             struct scsi_io12_payload *payload = (void *)cmd;
-            length = ntohl(payload->length) * SCSI_BLOCKSIZE;
+            length = ntohl(payload->length) * ISCSI_SCSI_BLOCKSIZE;
             break;
         }
         
@@ -1641,7 +1641,7 @@ get_allocation_length(SHARED uint8_t *cmd)
         case WRITE_6:
 		{
             struct scsi_io6_payload *payload = (void *)cmd;
-            length = payload->length * SCSI_BLOCKSIZE;
+            length = payload->length * ISCSI_SCSI_BLOCKSIZE;
 			break;
 		}
         default:
@@ -1741,7 +1741,7 @@ get_read_capacity_response(Scsi_Request * req)
 *****/
 get_read_capacity_response(Target_Scsi_Cmnd *cmnd)
 {
-	uint32_t blocksize = SCSI_BLOCKSIZE, nblocks;
+	uint32_t blocksize = ISCSI_SCSI_BLOCKSIZE, nblocks;
 	uint8_t *buffer;
 
 /* RDR */
@@ -1973,8 +1973,8 @@ do_scsi_io(Target_Scsi_Cmnd *command,
         TRACE(VERBOSE, 
               "Got SCSI I/O request at %x, length = %d",
               lba, length);
-        offset = lba * SCSI_BLOCKSIZE;
-        length *= SCSI_BLOCKSIZE;
+        offset = lba * ISCSI_SCSI_BLOCKSIZE;
+        length *= ISCSI_SCSI_BLOCKSIZE;
         success = iscsi_accomodate_buffer(target, offset + length);
         if (success)
         {

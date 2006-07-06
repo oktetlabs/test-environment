@@ -222,6 +222,7 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
         {0, "node.session.auth." name, TRUE, ISCSI_SECURITY_PARAM, \
          offsetof(iscsi_tgt_chap_data_t, field), NULL, predicate}
 
+    /** Operational and security parameters */
     static iscsi_target_param_descr_t params[] =
         {
             TGT_PARAMETER(target_name, "node.name", TRUE),

@@ -196,6 +196,7 @@ typedef struct iscsi_connection_data {
 
     iscsi_tgt_chap_data_t chap; /**< Serurity related data */
     char              device_name[ISCSI_MAX_DEVICE_NAME_LEN];
+    char              scsi_generic_device_name[ISCSI_MAX_DEVICE_NAME_LEN];
     char              connection_id[ISCSI_SESSION_ID_LENGTH]; 
                       /**< Windows iSCSI connection ID */
     int               prepare_device_attempts; 

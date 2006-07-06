@@ -523,15 +523,13 @@ iscsi_post_connection_request(int target_id, int cid, int status, te_bool urgent
  *  @return             Status code
  *  @retval TE_EGAIN    No matching files have been found
  *
- *  @param  conn        Connection data
  *  @param  pattern     glob()-style filename pattern
  *  @param  entity_name Kind of logical entity being listed
  *                      (used for logging)
  *  @param  list (OUT)  Resulting list of files
  */
 static te_errno
-iscsi_scan_directory(iscsi_connection_data_t *conn,
-                     const char *pattern, const char *entity_name,
+iscsi_scan_directory(const char *pattern, const char *entity_name,
                      glob_t *list)
 {
     int rc = 0;
@@ -549,9 +547,6 @@ iscsi_scan_directory(iscsi_connection_data_t *conn,
                       entity_name);
                 return TE_RC(ISCSI_AGENT_TYPE, TE_EIO);
             case GLOB_NOMATCH:
-                pthread_mutex_lock(&conn->status_mutex);
-                *conn->device_name = '\0';
-                pthread_mutex_unlock(&conn->status_mutex);
                 return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
             default:
                 ERROR("unexpected error on glob()");
@@ -560,29 +555,21 @@ iscsi_scan_directory(iscsi_connection_data_t *conn,
     }
     return 0;
 }
-                     
-
+               
 /**
- * Probe a SCSI device associated with a given iSCSI connection.
- * This function looks inside /sys for necessary information.
- * If the device is ready, its name is stored into @p conn->device_name,
+ * Detect host bus adapter number
  *
  * FIXME: there are different mechanisms of SCSI device discovery
  * for L5 and non-L5 initiators. This really should be unified.
  *
- * @return              Status code
- * @retval 0            Device is ready
- * @retval TE_EGAIN     Device is not yet ready, try again
- * 
- * @param conn          Connection data
- * @param target_id     Target ID
+ * @param  conn  Connection data
+ * @return Status code
  */
 static te_errno
-iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
+iscsi_linux_detect_hba(iscsi_connection_data_t *conn)
 {
-    int         rc = 0;
-    char        dev_pattern[128];
-    char       *nameptr;
+    int         rc;
+    char        dev_pattern[RCF_MAX_PATH];
     FILE       *hba = NULL;
     glob_t      devices;
 
@@ -607,8 +594,7 @@ iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
             break;
         default:
         {
-            rc = iscsi_scan_directory(conn, 
-                                      "/sys/bus/scsi/devices/*/vendor",
+            rc = iscsi_scan_directory("/sys/bus/scsi/devices/*/vendor",
                                       "host bus adapters",
                                       &devices);
             if (rc != 0)
@@ -659,12 +645,38 @@ iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
             break;
         }
     }
-       
-    sprintf(dev_pattern, "/sys/bus/scsi/devices/%d:*:%d/block*", 
-            init_data->host_bus_adapter, target_id);
-    rc = iscsi_scan_directory(conn, dev_pattern, "devices", &devices);
+    return 0;
+}
+
+/**
+ * Detect SCSI device name 
+ *
+ * @param conn          Connection data
+ * @param target_id     Target ID
+ * @param kind          Device kind (`block' or `generic')
+ * @param outbuffer     Device name buffer (OUT)
+ *
+ * @return Status code
+ */
+static te_errno
+iscsi_linux_get_device_name(iscsi_connection_data_t *conn, int target_id, 
+                            const char *kind, char *outbuffer)
+{
+    int         rc = 0;
+    char        dev_pattern[RCF_MAX_PATH];
+    char       *nameptr;
+    glob_t      devices;
+
+    sprintf(dev_pattern, "/sys/bus/scsi/devices/%d:*:%d/%s*", 
+            init_data->host_bus_adapter, target_id, kind);
+    rc = iscsi_scan_directory(dev_pattern, "devices", &devices);
     if (rc != 0)
+    {
+        pthread_mutex_lock(&conn->status_mutex);
+        *outbuffer = '\0';
+        pthread_mutex_unlock(&conn->status_mutex);
         return rc;
+    }
 
     if (devices.gl_pathc > 1)
     {
@@ -688,8 +700,8 @@ iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
         else
         {
             pthread_mutex_lock(&conn->status_mutex);
-            strcpy(conn->device_name, "/dev/");
-            strcat(conn->device_name, nameptr + 1);
+            strcpy(outbuffer, "/dev/");
+            strcat(outbuffer, nameptr + 1);
             pthread_mutex_unlock(&conn->status_mutex);
         }
         /** Now checking that the device is active */
@@ -711,7 +723,7 @@ iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
             {
                 WARN("Device is present but not ready: %s", state);
                 pthread_mutex_lock(&conn->status_mutex);
-                *conn->device_name = '\0';
+                *outbuffer = '\0';
                 pthread_mutex_unlock(&conn->status_mutex);
                 rc = TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
             }
@@ -719,14 +731,49 @@ iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
         }
     }
     globfree(&devices);
-    if (rc == 0)
+    return 0;
+}
+
+
+/**
+ * Probe a SCSI device associated with a given iSCSI connection.
+ * This function looks inside /sys for necessary information.
+ * If the device is ready, its name is stored into @p conn->device_name,
+ *
+ * @return              Status code
+ * @retval 0            Device is ready
+ * @retval TE_EGAIN     Device is not yet ready, try again
+ * 
+ * @param conn          Connection data
+ * @param target_id     Target ID
+ */
+static te_errno
+iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
+{
+    int         rc = 0;
+
+    rc = iscsi_linux_detect_hba(conn);
+    if (rc != 0)
+        return rc;
+
+    rc = iscsi_linux_get_device_name(conn, target_id, 
+                                     "block", conn->device_name);
+    if (rc != 0)
+        return rc;
+
+    rc = iscsi_linux_get_device_name(conn, target_id, 
+                                     "generic", 
+                                     conn->scsi_generic_device_name);
+    if (rc != 0)
     {
-        if (iscsi_unix_cli("blockdev --setra 0 %s", conn->device_name) != 0)
-        {
-            WARN("Unable to disable read-ahead on %s", conn->device_name);
-        }
+        WARN("Unable to detect SCSI generic device: %r", rc);
     }
-    return rc;
+       
+    if (iscsi_unix_cli("blockdev --setra 0 %s", conn->device_name) != 0)
+    {
+        WARN("Unable to disable read-ahead on %s", conn->device_name);
+    }
+    return 0;
 }
 
 #endif /* ! __CYGWIN__ */
@@ -764,7 +811,7 @@ iscsi_write_sample_to_device(iscsi_connection_data_t *conn)
     }
     else
     {
-        const char buf[512] = "testing";
+        const char buf[ISCSI_SCSI_BLOCKSIZE] = "testing";
         errno = 0;
         if (write(fd, buf, sizeof(buf)) != sizeof(buf))
         {
@@ -1000,8 +1047,8 @@ iscsi_initiator_conn_request_thread(void *arg)
             continue;
         }
 
-        target = init_data->targets + current_req->target_id;
-        conn   = target->conns + current_req->cid;
+        target = &init_data->targets[current_req->target_id];
+        conn   = &target->conns[current_req->cid];
 
         old_status = conn->status;
 
