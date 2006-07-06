@@ -91,6 +91,15 @@ AC_CHECK_MEMBERS([struct ifreq.ifr_mtu], [], [], [
 ])
 
 dnl
+dnl Check for 'lifr_mtu' member in 'struct lifreq'.
+dnl
+AC_CHECK_MEMBERS([struct lifreq.lifr_mtu], [], [], [
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <net/if.h>
+])
+
+dnl
 dnl Check for 'sa_restorer' member in 'struct sigaction'.
 dnl
 AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],
