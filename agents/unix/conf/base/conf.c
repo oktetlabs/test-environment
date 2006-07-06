@@ -3763,6 +3763,9 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
         arp_req.arp_pa.sa_family = family;
         if (inet_pton(family, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
+#if HAVE_STRUCT_ARPREQ_ARP_DEV
+        strncpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
+#endif
 
 #ifdef SIOCGARP
         if (ioctl(cfg_socket, SIOCGARP, (caddr_t)&arp_req) != 0)
@@ -4056,6 +4059,9 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
         VERB("%s(): Add permanent ARP entry", __FUNCTION__);
         arp_req.arp_flags |= ATF_PERM;
     }
+#if HAVE_STRUCT_ARPREQ_ARP_DEV
+    strncpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
+#endif
 
 #ifdef SIOCSARP
     CFG_IOCTL(cfg_socket, SIOCSARP, &arp_req);
@@ -4105,6 +4111,9 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
         arp_req.arp_pa.sa_family = family;
         if (inet_pton(family, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
+#if HAVE_STRUCT_ARPREQ_ARP_DEV
+        strncpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
+#endif
 
 #ifdef SIOCDARP
 
