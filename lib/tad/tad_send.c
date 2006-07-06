@@ -878,14 +878,14 @@ tad_send_thread(void *arg)
 
 
 /**
- * callback for default payload memset, prototype complies to
+ * Callback for default payload memset, prototype complies to
  * type 'tad_pkt_seg_enum_cb'. 
  */
-te_errno
-tad_send_payload_default_fill(const tad_pkt  *pkt,
-                              tad_pkt_seg    *seg,
-                              unsigned int    seg_num,
-                              void           *opaque)
+static te_errno
+tad_send_payload_default_fill(const tad_pkt *pkt,
+                              tad_pkt_seg   *seg,
+                              unsigned int   seg_num,
+                              void          *opaque)
 { 
     UNUSED(pkt);
     UNUSED(seg_num);
@@ -965,17 +965,15 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
         case TAD_PLD_LENGTH:
             rc = tad_pkts_add_new_seg(pdus, TRUE, NULL,
                                       pld_data->plain.length, NULL);
-
             if (rc != 0)
                 break;
-            /* We know here that payloads are fist segments in packets -
-             * since they are single yet, we start from payload. 
+            /* 
+             * We know here that payloads are the first segments in
+             * packets - since they are single yet, we start from
+             * payload. 
              */
             rc = tad_pkts_enumerate_first_segs(pdus,
-                       tad_send_payload_default_fill, NULL);
-#if 0 /* FIXME */
-            memset(up_packets->data, 0x5a, up_packets->len);
-#endif
+                     tad_send_payload_default_fill, NULL);
             break;
 
         case TAD_PLD_STREAM: 
