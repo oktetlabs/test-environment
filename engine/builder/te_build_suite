@@ -95,7 +95,7 @@ if test ! -e Makefile ; then
            TE_PATH=\"$TE_PATH\" \
            TE_M4=\"$TE_BASE/auxdir\" \
            TE_CPPFLAGS=\"-I${TE_INSTALL}/${TE_HOST}/include ${ADD_CPPFLAGS}\" \
-           TE_CFLAGS=\"-O2 -ggdb -Wall -W ${ADD_CFLAGS} \" \
+           TE_CFLAGS=\"-O0 -ggdb -Wall -W ${ADD_CFLAGS} \" \
            TE_LDFLAGS=\"-L${TE_INSTALL}/${TE_HOST}/lib ${ADD_LDFLAGS}\" \
            TE_LDADD=\"$LDADD\" \
            TE_PLATFORM=$TE_HOST"
