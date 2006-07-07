@@ -395,6 +395,7 @@ tad_iscsi_dump_iscsi_pdu(const uint8_t *data, iscsi_dump_mode_t mode)
 {
     char  message[1000];
     char *p = message;
+    char *current_key;
 
     uint8_t opcode;
     te_bool dir_t_i;
@@ -433,6 +434,17 @@ tad_iscsi_dump_iscsi_pdu(const uint8_t *data, iscsi_dump_mode_t mode)
             p += sprintf(p, ", SCSI Status = 0x%02x",
                          data[ISCSI_SCSI_STATUS_OFFSET]);
             break;
+#define ISCSI_INI_LOGIN_PDU 0x43
+#define ISCSI_TGT_LOGIN_PDU 0x23
+        case ISCSI_INI_LOGIN_PDU:
+        case ISCSI_TGT_LOGIN_PDU:
+            current_key = (char *)(data + ISCSI_HDR_LEN);
+            do
+            {
+                p += sprintf(p, ", %s",
+                             (char *)(current_key));
+                current_key = current_key + strlen((char *)current_key);
+            } while (current_key++ != NULL && (*current_key) != 0);
         default:
             break;
     } 
