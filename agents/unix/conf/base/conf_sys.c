@@ -4,7 +4,7 @@
  * Unix TA system wide settings support
  *
  *
- * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -342,9 +342,10 @@ tcp_sndbuf_max_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#endif
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("tcp", "tcp_max_buf", ND_SET, (char *)value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
     return rc;
 }
@@ -382,10 +383,10 @@ tcp_sndbuf_max_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(value,"%d", bmem[2]);
-#endif
-
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("tcp", "tcp_max_buf", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
     return rc;
 }
@@ -430,9 +431,10 @@ tcp_sndbuf_def_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#endif
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("tcp", "tcp_xmit_hiwat", ND_SET, (char *)value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
     return rc;
 }
@@ -470,10 +472,10 @@ tcp_sndbuf_def_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(value,"%d", bmem[1]);
-#endif
-
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("tcp", "tcp_xmit_hiwat", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
     return rc;
 }
@@ -517,10 +519,10 @@ tcp_rcvbuf_max_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#endif
-
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("tcp", "tcp_max_buf", ND_SET, (char *)value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
     return rc;
 }
@@ -558,10 +560,10 @@ tcp_rcvbuf_max_get(unsigned int gid, const char *oid,
 
     sprintf(value,"%d", bmem[2]);
 
-#endif
-
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("tcp", "tcp_max_buf", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
     return rc;
 }
@@ -604,9 +606,10 @@ tcp_rcvbuf_def_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#endif
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("tcp", "tcp_recv_hiwat", ND_SET, (char *)value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
     return rc;
 }
@@ -643,10 +646,10 @@ tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(value,"%d", bmem[1]);
-#endif
-
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("tcp", "tcp_recv_hiwat", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
     return rc;
 }
@@ -690,10 +693,10 @@ udp_sndbuf_max_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/core/wmem_max", &bmem, 1);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#endif
-
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
     return rc;
 }
@@ -730,10 +733,10 @@ udp_sndbuf_max_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(value,"%d", bmem);
-#endif
-
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
     return rc;
 }
@@ -777,9 +780,10 @@ udp_sndbuf_def_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/core/wmem_default", &bmem, 1);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#endif
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_SET, (char *)value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
     return rc;
 }
@@ -815,9 +819,10 @@ udp_sndbuf_def_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(value,"%d", bmem);
-#endif
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
     return rc;
 }
@@ -860,9 +865,10 @@ udp_rcvbuf_max_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/core/rmem_max", &bmem, 1);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#endif
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
     return rc;
 }
@@ -898,9 +904,10 @@ udp_rcvbuf_max_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(value,"%d", bmem);
-#endif
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
     return rc;
 }
@@ -944,9 +951,10 @@ udp_rcvbuf_def_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/core/rmem_default", &bmem, 1);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#endif
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("udp", "udp_recv_hiwat", ND_SET, (char *)value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
     return rc;
 }
@@ -982,12 +990,10 @@ udp_rcvbuf_def_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(value,"%d", bmem);
-#endif
-#if SUN_I_STR
+#elif SUN_I_STR
     rc = sun_ioctl("udp", "udp_recv_hiwat", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
     return rc;
 }
-
-
-
