@@ -104,9 +104,8 @@
 #define RCFUNIX_SSH         "ssh -qxTn -o BatchMode=yes "
 #define RCFUNIX_REDIRECT    ">/dev/null 2>&1"
 
-#define RCFUNIX_KILL_TIMEOUT    60
-#define RCFUNIX_COPY_TIMEOUT    60
-#define RCFUNIX_START_TIMEOUT   40
+#define RCFUNIX_KILL_TIMEOUT    15
+#define RCFUNIX_COPY_TIMEOUT    30
 
 #define RCFUNIX_SHELL_CMD_MAX   2048
 
@@ -129,6 +128,10 @@ typedef struct unix_ta {
     char    port[RCF_MAX_NAME];     /**< TCP port */
     char    postfix[RCF_MAX_PATH];  /**< Postfix appended to TA directory */
     char    key[RCF_MAX_PATH];      /**< Private ssh key file */
+
+    unsigned int    copy_timeout;   /**< TA image copy timeout */
+    unsigned int    start_timeout;  /**< TA start-up timeout */
+    unsigned int    kill_timeout;   /**< TA kill timeout */
 
     te_bool sudo;       /**< Manipulate process using sudo */
     te_bool notcopy;    /**< Do not copy TA image to remote host */
@@ -310,6 +313,10 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     strcpy(ta->ta_name, ta_name);
     strcpy(ta->ta_type, ta_type);
 
+    /* Set default timeouts */
+    ta->copy_timeout = RCFUNIX_COPY_TIMEOUT;
+    ta->kill_timeout = RCFUNIX_KILL_TIMEOUT;
+
     if (strcmp(ta_type + strlen(ta_type) - strlen("ctl"), "ctl") == 0)
         *flags |= TA_PROXY;
 
@@ -356,6 +363,32 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         
         if (strlen(key) > 0)
             sprintf(ta->key, "-i %s", key); 
+        
+        GET_TOKEN;
+    }
+    if (token != NULL && strcmp_start("copy_timeout=", token) == 0)
+    {
+        char *value = token + strlen("copy_timeout=");
+        
+        if (strlen(value) > 0)
+        {
+            ta->copy_timeout = strtoul(value, &tmp, 0);
+            if (tmp == value || *tmp != 0)
+                goto bad_confstr;
+        }
+        
+        GET_TOKEN;
+    }
+    if (token != NULL && strcmp_start("kill_timeout=", token) == 0)
+    {
+        char *value = token + strlen("kill_timeout=");
+        
+        if (strlen(value) > 0)
+        {
+            ta->kill_timeout = strtoul(value, &tmp, 0);
+            if (tmp == value || *tmp != 0)
+                goto bad_confstr;
+        }
         
         GET_TOKEN;
     }
@@ -414,7 +447,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     VERB("%s", cmd);
     if (!(*flags & TA_FAKE) &&
-        ((rc = system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT)) != 0))
+        ((rc = system_with_timeout(cmd, ta->copy_timeout)) != 0))
     {
         ERROR("Failed to copy TA images/data %s to the %s:/tmp: %r",
               ta_type, ta->host, rc);
@@ -520,14 +553,14 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
             sprintf(cmd,
                     RCFUNIX_SSH "%s %s \"%skill %d\" " RCFUNIX_REDIRECT,
                     ta->key, ta->host, ta->sudo ? "sudo " : "" , ta->pid);
-            rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+            rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
     
             sprintf(cmd,
                     RCFUNIX_SSH "%s %s \"%skill -9 %d\" " RCFUNIX_REDIRECT,
                     ta->key, ta->host, ta->sudo ? "sudo " : "" , ta->pid);
-            rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+            rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
         }
@@ -543,7 +576,7 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
                     RCFUNIX_REDIRECT,
                     ta->key, ta->host, ta->sudo ? "sudo " : "" , 
                     ta->ta_type, ta->postfix);
-        rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+        rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
 
@@ -556,7 +589,7 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
                     RCFUNIX_SSH "%s %s \"%skillall -9 /tmp/%s%s/ta\" " 
                     RCFUNIX_REDIRECT, ta->key, ta->host, 
                     ta->sudo ? "sudo " : "" , ta->ta_type, ta->postfix);
-        rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+        rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
     }
@@ -566,7 +599,7 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
     else
         sprintf(cmd, RCFUNIX_SSH "%s %s \"rm -rf /tmp/%s%s\"",
                 ta->key, ta->host, ta->ta_type, ta->postfix);
-    rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+    rc = system_with_timeout(cmd, ta->kill_timeout);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         return rc;
     
