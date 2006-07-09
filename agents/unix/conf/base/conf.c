@@ -614,7 +614,7 @@ rcf_ch_conf_root(void)
                           rcf_pch_rsrc_release_dummy);
 
         if (ta_unix_conf_route_init() != 0)
-            return NULL;
+            goto fail;
 
 #ifdef RCF_RPC
         /* Link RPC nodes */
@@ -623,48 +623,51 @@ rcf_ch_conf_root(void)
 
 #ifdef CFG_UNIX_DAEMONS
         if (ta_unix_conf_daemons_init() != 0)
-        {
-            close(cfg_socket);
-            return NULL;
-        }
+            goto fail;
 #endif
 #ifdef WITH_ISCSI
         if (ta_unix_iscsi_target_init() != 0)
-        {
-            close(cfg_socket);
-            return NULL;
-        }
-
+            goto fail;
         if (iscsi_initiator_conf_init() != 0)
-        {
-            close(cfg_socket);
-            return NULL;
-        }
+            goto fail;
 #endif        
 #ifdef ENABLE_WIFI_SUPPORT
         if (ta_unix_conf_wifi_init() != 0)
-            return NULL;
+            goto fail;
 #endif
 #ifdef ENABLE_8021X
         if (ta_unix_conf_supplicant_init() != 0)
-            return NULL;
+            goto fail;
 #endif
 #ifdef ENABLE_IFCONFIG_STATS
         if (ta_unix_conf_net_if_stats_init() != 0)
-            return NULL;
+            goto fail;
 #endif
 #ifdef ENABLE_NET_SNMP_STATS
         if (ta_unix_conf_net_snmp_stats_init() != 0)
-            return NULL;
+            goto fail;
 #endif
 
         if (ta_unix_conf_sys_init() != 0)
-            return NULL;
+            goto fail;
 
         rcf_pch_rsrc_init();
     }
 
     return &node_agent;
+
+fail:
+    if (cfg_socket >= 0)
+    {
+        close(cfg_socket);
+        cfg_socket = -1;
+    }
+    if (cfg6_socket >= 0)
+    {
+        close(cfg6_socket);
+        cfg6_socket = -1;
+    }
+    return NULL;
 }
 
 /**
@@ -689,6 +692,8 @@ rcf_ch_conf_release()
 #endif
     if (cfg_socket >= 0)
         (void)close(cfg_socket);
+    if (cfg6_socket >= 0)
+        (void)close(cfg6_socket);
 }
 
 #if SOLARIS_IP_FW
