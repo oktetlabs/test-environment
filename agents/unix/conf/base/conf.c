@@ -715,7 +715,7 @@ ipforward_solaris(char *ipfw_str, int *p_val)
     int             rc;
 
 
-    if ((fd = open ("/dev/ip", O_RDWR)) < 0)
+    if ((fd = open("/dev/ip", O_RDWR)) < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
     
     strncpy(xbuf, ipfw_str, sizeof(xbuf));
@@ -738,6 +738,7 @@ ipforward_solaris(char *ipfw_str, int *p_val)
     }
 
     *p_val = atoi(xbuf);
+    close(fd);
     return 0;
 }
 #endif
@@ -3280,7 +3281,8 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
     {
         ERROR("%s: Device \"%s\" does not exist.\n",
               __FUNCTION__, ifname);
-        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        rc = TE_RC(TE_TA_UNIX, TE_ENODEV);
+        goto on_error;
     }
 
     if (rtnl_wilddump_request(&rth, AF_PACKET, RTM_GETLINK) < 0)
