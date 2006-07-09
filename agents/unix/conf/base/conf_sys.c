@@ -291,6 +291,7 @@ tcp_mem_set(const char *proc_file, int *par_array, int len)
     else
     {
         ERROR("%s(): %s format failure", __FUNCTION__, proc_file);
+        fclose(f);
         return -1;
     }
 
