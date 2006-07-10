@@ -34,22 +34,33 @@
 #include "config.h"
 #endif
 
+/* whole file have no any sence without these libraries */
+#if HAVE_NETPACKET_PACKET_H && HAVE_SYS_IOCTL_H && HAVE_NETINET_IN_H
+
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+
+#if HAVE_NETPACKET_PACKET_H
+#include <netpacket/packet.h>
+#endif
+
+#if HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+
 #include <fcntl.h>
 
 #include <string.h>
 #include <stdlib.h>
+
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
 
 #include "tad_eth_impl.h"
+#include "logger_ta_fast.h" 
 
-/** Internal data of Ethernet service access point via PF_PACKET sockets */
-typedef struct tad_eth_sap_pf_packet_data {
-    unsigned int    ifindex;    /**< Interface index */
-    int             in;         /**< Input socket (for receive) */
-    int             out;        /**< Output socket (for send) */
-    unsigned int    send_mode;  /**< Send mode */
-    unsigned int    recv_mode;  /**< Receive mode */
-} tad_eth_sap_pf_packet_data;
 
 
 /**
@@ -65,62 +76,129 @@ typedef struct tad_eth_sap_pf_packet_data {
 te_errno
 tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
 {
-    tad_eth_rw_data *spec_data = csap_get_rw_data(csap);
-    tad_eth_sap_pf_packet_data *data;
 
 
-    int ret_val;
-    te_errno     rc;
+    te_errno     rc = 0;
     tad_pkt     *pkt     = pkts->pkts.cqh_first;
     tad_pkt_seg *hdr_seg = pkt->segs.cqh_first;
 
-#define TCP_SEQ_OFFSET 4
-#define TCP_CHKSUM_OFFSET 16
     uint32_t old_seq;
     uint32_t new_seq;
-    uint16_t old_seq_chksum;
-    uint16_t new_seq_chksum;
-
+    uint32_t old_seq_chksum;
+    uint32_t new_seq_chksum;
+    uint16_t new_pkt_chksum;
     uint32_t chksum;
 
-    uint16_t new_pkt_chksum;
+    uint8_t    *flat_frame = NULL, *p;
+    size_t      frame_size = 0;
 
-    int number_of_packets = (usr_param == NULL) ? 1 : atoi(usr_param);
-
-    csap_write_cb_t write_cb;
-    size_t                      iovlen = tad_pkt_seg_num(pkt);
-    struct iovec                iov[iovlen];
-    int out_socket;
-
-    uint8_t *flat_frame = NULL, *p;
-    size_t   frame_size = 0;
-
-    uint16_t *chksum_place;
-    uint32_t *seq_place;
+    uint16_t   *chksum_place;
+    uint32_t   *seq_place;
+    size_t      tcp_payload_size = pkt->segs.cqh_last->data_len;
 
     int flags;
+    int ret_val;
+    int number_of_packets = (usr_param == NULL) ? 1 : atoi(usr_param);
+    int out_socket;
 
-    size_t tcp_payload_size = pkt->segs.cqh_last->data_len;
+    struct timeval tv_start, tv_end;
+
+    uint64_t frames_per_sec = number_of_packets;
 
 
 
+    /*
+     * ============== Prepare output packet socket =================
+     */
+    {
+        tad_eth_rw_data     *spec_data = csap_get_rw_data(csap);
+        struct sockaddr_ll   bind_addr;
+        struct ifreq         if_req;
+        int                  cfg_socket;
+        int                  buf_size;
 
-    data = spec_data->sap.data;
-    out_socket = data->out;
+        cfg_socket = socket(AF_INET, SOCK_DGRAM, 0);
+        if (cfg_socket < 0)
+        {
+            rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+            ERROR("%s(): socket(AF_INET, SOCK_DGRAM, 0) failed: %r",
+                  __FUNCTION__, rc);
+            return rc;
+        }
 
-#if 1
-    flags = 0;
-    fcntl(out_socket, F_GETFL, &flags);
-    flags |= O_NONBLOCK;
-    fcntl(out_socket, F_SETFL, flags);
-#endif
-    tad_pkt_segs_to_iov(pkt, iov, iovlen);
+        strncpy(if_req.ifr_name, spec_data->sap.name, sizeof(if_req.ifr_name));
+
+        if (ioctl(cfg_socket, SIOCGIFINDEX, &if_req))
+        {
+            rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+            ERROR("%s(): ioctl(%s, SIOCGIFINDEX) failed: %r",
+                  __FUNCTION__, spec_data->sap.name, rc);
+            close(cfg_socket);
+            return rc;
+        }
+
+        close(cfg_socket);
+
+        out_socket = socket(PF_PACKET, SOCK_RAW, htons(0));
+        if (out_socket < 0)
+        {
+            rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+            ERROR("%s(): socket(PF_PACKET, SOCK_RAW, 0) failed: %r",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+
+        /*
+         * Set send buffer size.
+         * TODO: reasonable size of send buffer to be investigated.
+         */
+        buf_size = 0x100000; 
+        if (setsockopt(out_socket, SOL_SOCKET, SO_SNDBUF,
+                       &buf_size, sizeof(buf_size)) < 0)
+        {
+            rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+            ERROR("%s(): setsockopt(SO_SNDBUF) failed: %r", rc);
+            return rc;
+        }
+
+        /* 
+         * Bind PF_PACKET socket:
+         *  - sll_protocol: 0 - do not receive any packets
+         *  - sll_hatype. sll_pkttype, sll_halen, sll_addr are not used for
+         *    binding
+         */
+        memset(&bind_addr, 0, sizeof(bind_addr));
+        bind_addr.sll_family = AF_PACKET;
+        bind_addr.sll_protocol = htons(0);
+        bind_addr.sll_ifindex = if_req.ifr_ifindex;
+
+        if (bind(out_socket, SA(&bind_addr), sizeof(bind_addr)) < 0)
+        {
+            rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+            ERROR("Failed to bind PF_PACKET socket: %r", rc);
+            return rc;
+        }
+
+        flags = 0;
+        fcntl(out_socket, F_GETFL, &flags);
+        flags |= O_NONBLOCK;
+        fcntl(out_socket, F_SETFL, flags);
+
+    }
+    /* ======== Prepare output packet socket finished ========= */
+
+
+    /* ============= Prepare frame for sending ================ */
+
+#define TCP_SEQ_OFFSET 4
+#define TCP_CHKSUM_OFFSET 16
 
     rc = tad_pkt_flatten_copy(pkt, &flat_frame, &frame_size);
 
     if (rc != 0)
     {
         ERROR("Failed to convert segments to flat data: %r", rc);
+        close(out_socket);
         return rc;
     }
 
@@ -142,94 +220,109 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
     RING("%s(): seq_place %p, chksum place  %p", 
          __FUNCTION__, seq_place, chksum_place);
 
-    write_cb = csap_get_proto_support(csap,
-                   csap_get_rw_layer(csap))->write_cb;
-    rc = write_cb(csap, pkt); 
+
 
     chksum  = ntohs(*chksum_place);
+
+    /* ===================== Start sending ===================== */
+
+    ret_val = write(out_socket, flat_frame, frame_size);
 
     RING("%s (file %s) started for %d pkts, init checksum %d(0x%x)",
          __FUNCTION__, __FILE__,  number_of_packets, (int)chksum, (int)chksum);
 
 
+    chksum  = ntohs(*chksum_place);
+    old_seq = ntohl(*seq_place);
+    old_seq_chksum = (old_seq & 0xffff) + (old_seq >> 16);
+    new_seq = old_seq;
+
+    gettimeofday(&tv_start, NULL);
+
     while ((--number_of_packets) > 0)
     { 
 
-#if 0
-        chksum = ntohs(*((uint16_t *)
-                         (iov[iovlen-2].iov_base + TCP_CHKSUM_OFFSET)));
-        old_seq = ntohl(*((uint32_t *)
-                          (iov[iovlen-2].iov_base + TCP_SEQ_OFFSET)));
-#else
-        chksum  = ntohs(*chksum_place);
-        old_seq = ntohl(*seq_place);
-#endif
+        new_seq += tcp_payload_size;
 
-        new_seq = old_seq + tcp_payload_size;
-
-        old_seq_chksum = (old_seq & 0xffff) + (old_seq >> 16);
         new_seq_chksum = (new_seq & 0xffff) + (new_seq >> 16);
 
         chksum += old_seq_chksum;
         chksum -= new_seq_chksum;
 
-        new_pkt_chksum = (chksum & 0xffff) + (chksum >> 16);
+        chksum = new_pkt_chksum = (chksum & 0xffff) + (chksum >> 16);
 
-#if 0
-        *((uint16_t *)(iov[iovlen-2].iov_base + TCP_CHKSUM_OFFSET)) =
-            htons(new_pkt_chksum);
-        *((uint32_t *)(iov[iovlen-2].iov_base + TCP_SEQ_OFFSET)) =
-            htonl(new_seq);
-#else
         *chksum_place = htons(new_pkt_chksum);
         *seq_place = htonl(new_seq);
-#endif
+        old_seq_chksum = new_seq_chksum;
 
 once_more:
-        if (1)
+#if 1
+        if ((number_of_packets & 0xff) == 0)
         {
-                    struct timeval clr_delay = { 0, 20 };
+            fd_set wr_set;
+            struct timeval clr_delay = { 0, 1 };
+            FD_ZERO(&wr_set);
+            FD_SET(out_socket, &wr_set);
 
-                    select(0, NULL, NULL, NULL, &clr_delay);
+            select(out_socket + 1, NULL, &wr_set, NULL, &clr_delay);
         }
-
-#if 0
-        ret_val = writev(out_socket, iov, iovlen); 
-#else
-        // ret_val = send(out_socket, flat_frame, frame_size, 0);
-        ret_val = write(out_socket, flat_frame, frame_size);
 #endif
+
+        ret_val = write(out_socket, flat_frame, frame_size);
 
         if (ret_val < 0)
         {
-            rc = te_rc_os2te(errno);
-            RING("%s() write() failed, errno %r",
-                   __FUNCTION__, rc);
-            switch (rc)
+            switch (errno)
             {
-                case TE_ENOBUFS:
-                case TE_EAGAIN:
+                case ENOBUFS:
+                case EAGAIN:
                 {
                     /* 
-                     * It seems that 0..127 microseconds is enough
+                     * It seems that 5 microseconds is enough
                      * to hope that buffers will be cleared and
                      * does not fall down performance.
                      */
-                    struct timeval clr_delay = { 0, 10 };
-
-                    select(0, NULL, NULL, NULL, &clr_delay);
+                    struct timeval clr_delay = { 0, 1 };
+                    fd_set wr_set;
+                    FD_ZERO(&wr_set);
+                    FD_SET(out_socket, &wr_set);
+                    F_RING("try once more: %d errno, %d pkt rest", 
+                           errno, number_of_packets); 
+#if 1
+                    select(out_socket + 1, NULL, &wr_set, NULL,
+                           &clr_delay);
+#endif
                     goto once_more;
                 }
 
                 default:
-                    ERROR("%s: internal error %r", 
-                          __FUNCTION__, rc);
-                    return rc;
+                    rc = te_rc_os2te(errno);
+                    ERROR("%s() write() failed, errno %r",
+                           __FUNCTION__, rc);
+                    break;
             }
+            if (rc != 0)
+                break;
         }
     }
-    RING("%s finished for %d pkts, rc %r",
-         __FUNCTION__, number_of_packets, rc);
+    gettimeofday(&tv_end, NULL);
 
+    {
+        uint64_t mcs_interval = (tv_end.tv_sec - tv_start.tv_sec) 
+                                * 1000000;
+        mcs_interval += tv_end.tv_usec;
+        mcs_interval -= tv_start.tv_usec;
+
+        frames_per_sec *= 1000000; 
+        frames_per_sec /= mcs_interval;
+
+        RING("%s finished rc %r, time %d mcs, speed %d frames/sec",
+             __FUNCTION__, rc, (int)mcs_interval, (int)frames_per_sec);
+    }
+
+    close(out_socket);
     return rc;
 }
+
+/* HAVE_NETPACKET_PACKET_H && HAVE_SYS_IOCTL_H && HAVE_NETINET_IN_H */
+#endif 
