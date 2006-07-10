@@ -85,7 +85,8 @@
  * Configuration string for UNIX TA should have format:
  *
  * [[user@]<IP address or hostname>]:<port>
- *     [:key=<ssh private key file>][:notcopy][:sudo][:<shell>][:parameters]
+ *     [:key=<ssh private key file>][:copy_timeout=<timeout>]
+ *     [:kill_timeout=<timeout>][:notcopy][:sudo][:<shell>][:parameters]
  *
  * If host is not specified, the Test Agent is started on the local
  * host.  It is assumed that user starting Dispatcher may use ssh/scp
@@ -130,7 +131,6 @@ typedef struct unix_ta {
     char    key[RCF_MAX_PATH];      /**< Private ssh key file */
 
     unsigned int    copy_timeout;   /**< TA image copy timeout */
-    unsigned int    start_timeout;  /**< TA start-up timeout */
     unsigned int    kill_timeout;   /**< TA kill timeout */
 
     te_bool sudo;       /**< Manipulate process using sudo */
