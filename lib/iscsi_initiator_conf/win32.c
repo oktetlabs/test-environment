@@ -52,6 +52,16 @@
 
 #include "iscsi_initiator.h"
 
+/* This is adapted from ddk/ntddstor.h, since that file cannot be
+ * included in a userland program, and there is _no_ other way to
+ * get that GUID. Blame Microsoft, not me.
+ */
+static GUID guid_devinterface_disk = {0x53f56307L, 
+                                      0xb6bf, 
+                                      0x11d0, 
+                                      {0x94, 0xf2, 0x00, 0xa0, 
+                                       0xc9, 0x1e, 0xfb, 0x8b}};
+
 #define DEFAULT_INITIAL_R2T_WIN32    1
 #define DEFAULT_IMMEDIATE_DATA_WIN32 1
 
@@ -122,7 +132,7 @@ static char   *iscsi_conditions[] = {
     "^The operation completed successfully.", 
     "Error:|The target has already been logged|[Ff]ailed|cannot|invalid|not found",
     "Connection Id[[:space:]]*:[[:space:]]*([a-f0-9]*)-([a-f0-9]*)",
-    "Device Number[[:space:]]*:[[:space:]]*(-?[0-9]*)",
+    "Device Interface Name[[:space:]]*:[[:space:]]*([^[:space:]]+)",
 };
 
 /** Compiled form of iscsi_conditions */
@@ -133,7 +143,7 @@ static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
 #define success_regexp (iscsi_regexps[2])
 #define error_regexp (iscsi_regexps[3])
 #define existing_conn_regexp (iscsi_regexps[4])
-#define dev_number_regexp (iscsi_regexps[5])
+#define dev_name_regexp (iscsi_regexps[5])
 
 static te_errno iscsi_win32_set_default_parameters(void);
 
@@ -152,6 +162,65 @@ iscsi_not_none (void *val)
 }
 
 
+/**
+ * See description in iscsi_initiator.h
+ */
+te_errno
+iscsi_win32_write_to_device(iscsi_connection_data_t *conn)
+{
+    te_errno rc         = 0;
+    HANDLE   dev_handle = CreateFile(conn->device_name,
+                                     GENERIC_READ | GENERIC_WRITE,
+                                     FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                     NULL,
+                                     OPEN_EXISTING,
+                                     0,
+                                     NULL);
+
+    if (dev_handle == NULL)
+    {
+        if (GetLastError() == ERROR_FILE_NOT_FOUND)
+        {
+            RING("Device %s is not ready :(", conn->device_name);
+            pthread_mutex_lock(&conn->status_mutex);
+            *conn->device_name = '\0';
+            pthread_mutex_unlock(&conn->status_mutex);
+            rc = TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
+        }
+        else
+        {
+            ISCSI_WIN32_REPORT_ERROR();
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+        }
+    }
+    else
+    {
+        unsigned long bytes_written = 0;
+        const char    buf[ISCSI_SCSI_BLOCKSIZE] = "testing";
+
+        if (!WriteFile(dev_handle, buf, sizeof(buf), &bytes_written, NULL))
+        {
+            ISCSI_WIN32_REPORT_ERROR();
+            rc = TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+            CloseHandle(dev_handle);
+        }
+        else
+        {
+            if (bytes_written != sizeof(buf))
+            {
+                rc = TE_RC(ISCSI_AGENT_TYPE, TE_ENOSPC);
+            }
+            if (!CloseHandle(dev_handle))
+            {
+                ISCSI_WIN32_REPORT_ERROR();
+                rc = TE_OS_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+                ERROR("Error syncing data to %s",
+                      conn->device_name);
+            }
+        }
+    }
+    return rc;
+}
 
 /**
  *  Detect Initiator instance name for the current iSCSI device
@@ -1259,19 +1328,129 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
 }
 
 /**
- * Probe for a Win32 SCSI device readiness and obtain its name
+ * Detect iSCSI device name w/o using iscsicli.exe.
  *
- * @return Status code
- * @param conn  Connection data
+ * @param target_id     Target ID
+ * @param device_name   Buffer to hold iSCSI device name (OUT)
+ * @return              Status code
+ */
+static te_errno
+iscsi_win32_detect_device_interface_name(int target_id, char *device_name)
+{
+    static char                      buffer[1024];
+    unsigned long                    buf_size;
+    unsigned                         dev_index   = 0;
+    unsigned                         index       = 0;
+    unsigned long                    value_type;
+    SP_DEVINFO_DATA                  drive_dev_info;
+    SP_DEVICE_INTERFACE_DATA         intf;
+    SP_DEVICE_INTERFACE_DETAIL_DATA *details;
+    HDEVINFO                         disk_drives = INVALID_HANDLE_VALUE;
+
+    RING("Trying to detect disk interfaces");
+
+    disk_drives = SetupDiGetClassDevs(&guid_devinterface_disk, NULL, NULL, 
+                                      DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
+    if (disk_drives == INVALID_HANDLE_VALUE)
+    {
+        ISCSI_WIN32_REPORT_ERROR();
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+    }
+
+
+    for (dev_index = 0; target_id >= 0; dev_index++)
+    {
+        drive_dev_info.cbSize = sizeof(drive_dev_info);
+        if (!SetupDiEnumDeviceInfo(disk_drives, dev_index, &drive_dev_info))
+        {
+            if (GetLastError() == ERROR_NO_MORE_ITEMS)
+                break;
+            ISCSI_WIN32_REPORT_ERROR();
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+        }
+
+        buf_size = sizeof(buffer);
+        memset(buffer, 0, buf_size);
+        if (!SetupDiGetDeviceRegistryProperty(disk_drives,
+                                              &drive_dev_info,
+                                              SPDRP_FRIENDLYNAME,
+                                              &value_type,
+                                              buffer, buf_size, &buf_size))
+        {
+            ISCSI_WIN32_REPORT_ERROR();
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+        }
+        if (value_type != REG_SZ)
+        {
+            ERROR("Registry seems to be corrupted, very bad");
+            return TE_RC(ISCSI_AGENT_TYPE, TE_ECORRUPTED);
+        }
+
+        if (strstr(buffer, "UNH") == NULL)
+            continue;
+        
+        for (index = 0; target_id >= 0; index++, target_id--)
+        {
+            intf.cbSize = sizeof(intf);
+            if (!SetupDiEnumDeviceInterfaces(disk_drives, &drive_dev_info,
+                                             &guid_devinterface_disk, index, &intf))
+            {
+                if (GetLastError() == ERROR_NO_MORE_ITEMS)
+                    break;
+                ISCSI_WIN32_REPORT_ERROR();
+                return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+            }
+        }
+    }
+    if (target_id >= 0)
+    {
+        RING("No devices detected yet");
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
+    }
+
+    SetupDiGetDeviceInterfaceDetail(disk_drives, &intf,
+                                    NULL, 0, &buf_size, NULL);
+
+    if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+    {
+        ISCSI_WIN32_REPORT_ERROR();
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);  
+    }
+    details = malloc(buf_size);
+    if (details == NULL)
+    {
+        ERROR("Unable to allocate details buffer of length %u",
+              (unsigned)buf_size);
+        return TE_RC(ISCSI_AGENT_TYPE, TE_ENOMEM);
+    }
+    details->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+    if (!SetupDiGetDeviceInterfaceDetail(disk_drives, &intf,
+                                         details, buf_size, &buf_size, NULL))
+    {
+        ISCSI_WIN32_REPORT_ERROR();
+        free(details);
+        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);            
+    }
+    RING("Detected interface name is %s", details->DevicePath);
+    strncpy(device_name, details->DevicePath, ISCSI_MAX_DEVICE_NAME_LEN - 1);
+    free(details);
+    return 0;
+}
+
+/**
+ * Probe for a Win32 SCSI device readiness and obtain its name.
+ *
+ * @return              Status code
+ * @param conn          Connection data
+ * @param target_id     Target ID
  */
 te_errno
-iscsi_win32_prepare_device(iscsi_connection_data_t *conn)
+iscsi_win32_prepare_device(iscsi_connection_data_t *conn, int target_id)
 {
     char *buffers[2];
     char  conn_id_first[ISCSI_SESSION_ID_LENGTH] = "0x";
     char  conn_id_second[ISCSI_SESSION_ID_LENGTH] = "-0x";
-    char  drive_id[64];
-    int   drive_no;
+    char  drive_id[ISCSI_MAX_DEVICE_NAME_LEN];
     int   rc;
     
     rc = iscsi_send_to_win32_iscsicli("SessionList");
@@ -1307,8 +1486,8 @@ iscsi_win32_prepare_device(iscsi_connection_data_t *conn)
         }
     }
     buffers[0] = drive_id;
-    RING("Waiting for device number");
-    rc = iscsi_win32_wait_for(&dev_number_regexp, 
+    RING("Waiting for device name");
+    rc = iscsi_win32_wait_for(&dev_name_regexp, 
                               &error_regexp,
                               &success_regexp,
                               1, 1, sizeof(drive_id) - 1,
@@ -1319,19 +1498,22 @@ iscsi_win32_prepare_device(iscsi_connection_data_t *conn)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENODATA)
         {
-            return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
+            rc = iscsi_win32_detect_device_interface_name(target_id, 
+                                                          drive_id);
+            if (rc != 0)
+                return rc;
         }
-        ERROR("Unable to find drive number: %r", rc);
-        return rc;
+        else
+        {
+            ERROR("Unable to find drive number: %r", rc);
+            return rc;
+        }
     }
-    drive_no = strtol(drive_id, NULL, 10);
-    if (drive_no < 0)
+    if (*drive_id == '\0')
         return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
 
     pthread_mutex_lock(&conn->status_mutex);
-    /* will not work on EBCDIC-based systems :P */
-    strcpy(conn->device_name, "\\\\.\\PHYSICALDRIVE0");
-    conn->device_name[strlen(conn->device_name) - 1] += drive_no;
+    strcpy(conn->device_name, drive_id);
     pthread_mutex_unlock(&conn->status_mutex);
 
     iscsi_win32_disable_readahead(conn->device_name);

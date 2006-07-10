@@ -83,7 +83,7 @@
 
 
 /** Maximum length of device name */
-#define ISCSI_MAX_DEVICE_NAME_LEN 32
+#define ISCSI_MAX_DEVICE_NAME_LEN 256
 
 /** LUN of the target to connect to. */
 #define ISCSI_DEFAULT_LUN_NUMBER 0
@@ -466,10 +466,21 @@ extern void iscsi_win32_report_error(const char *function, int line,
 /**
  * Wait for Win32 SCSI device associated with the Initiator is ready.
  * 
- * @return      Status code
- * @param conn  Connection data
+ * @return              Status code
+ * @param conn          Connection data
+ * @param target_id     Target ID
  */
-extern te_errno iscsi_win32_prepare_device(iscsi_connection_data_t *conn);
+extern te_errno iscsi_win32_prepare_device(iscsi_connection_data_t *conn,
+                                           int target_id);
+
+/**
+ * Attempt to write a sample to a SCSI device
+ *
+ * @return       Status codc
+ * @param        Connection data
+ */
+extern te_errno iscsi_win32_write_to_device(iscsi_connection_data_t *conn);
+
 
 /**
  * Compile response patterns as regexps

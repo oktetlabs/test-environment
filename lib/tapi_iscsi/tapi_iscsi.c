@@ -2701,9 +2701,9 @@ struct iscsi_io_handle_t
     sem_t           cmd_wait;   /**< Posted when a new request is added */
     int             next_cmd;   /**< Next request number */
     char            agent[RCF_MAX_NAME]; /**< Agent name */
-    char            mountpoint[RCF_MAX_NAME]; /**< A mount point on the
+    char            mountpoint[RCF_MAX_PATH]; /**< A mount point on the
                                                  initiator's side */
-    char            device[RCF_MAX_NAME]; /**< A SCSI device associated with
+    char            device[RCF_MAX_PATH]; /**< A SCSI device associated with
                                              an iSCSI initiator */
     te_bool         terminate;  /**< The thread must terminate when TRUE */
 };
@@ -2906,7 +2906,7 @@ command_open(iscsi_io_handle_t *ioh, int *fd,
                 crmode = RPC_CF_TRUNCATE_EXISTING;
         }
 
-        RING("Modes are %x %x", mode, crmode);
+        RING("Win32 filename is %s", data);
         
         *fd = rpc_create_file(ioh->rpcs, data,
                               mode,
@@ -3138,7 +3138,7 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
         return TE_OS_RC(TE_TAPI, errno);
     }
 
-    strncpy((*ioh)->agent, ta, RCF_MAX_NAME - 1);
+    strncpy((*ioh)->agent, ta, sizeof((*ioh)->agent) - 1);
     sprintf((*ioh)->mountpoint, 
             "/tmp/te_iscsi_fs_%s.%u", ta, id);
     dev = get_host_device(ta, id);
@@ -3151,7 +3151,7 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
         return TE_RC(TE_TAPI, TE_ENODEV);
     }
     RING("The device detected is %s", dev);
-    strcpy((*ioh)->device, dev);
+    strncpy((*ioh)->device, dev, sizeof((*ioh)->device) - 1);
     free(dev);
 
     (*ioh)->use_signal     = use_signal;

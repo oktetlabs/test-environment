@@ -769,23 +769,6 @@ iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
     return 0;
 }
 
-#else /* ! __CYGWIN__ */
-
-te_errno
-iscsi_get_device_name(iscsi_connection_data_t *conn, int target_id, 
-                      te_bool is_generic, char *outbuffer)
-{
-    UNUSED(conn);
-    UNUSED(target_id);
-    UNUSED(is_generic);
-    
-    *outbuffer = '\0';
-    return TE_RC(ISCSI_AGENT_TYPE, TE_ENOSYS);
-}
-
-
-#endif /* ! __CYGWIN__ */
-
 /**
  * Attempts to write a sample data to a SCSI device associated with @p conn.
  *
@@ -843,6 +826,24 @@ iscsi_write_sample_to_device(iscsi_connection_data_t *conn)
     return rc;
 }
 
+#else /* ! __CYGWIN__ */
+
+te_errno
+iscsi_get_device_name(iscsi_connection_data_t *conn, int target_id, 
+                      te_bool is_generic, char *outbuffer)
+{
+    UNUSED(conn);
+    UNUSED(target_id);
+    UNUSED(is_generic);
+    
+    *outbuffer = '\0';
+    return 0;
+}
+
+#define iscsi_write_sample_to_device(conn) iscsi_win32_write_to_device(conn)
+
+#endif /* ! __CYGWIN__ */
+
 /**
  * Probe for a device readiness and obtain its name.
  * Then attempts to write to the device to notify tests that the
@@ -868,7 +869,7 @@ iscsi_prepare_device(iscsi_connection_data_t *conn, int target_id)
     rc = iscsi_linux_prepare_device(conn, target_id);
 #else
     UNUSED(target_id);
-    rc = iscsi_win32_prepare_device(conn);
+    rc = iscsi_win32_prepare_device(conn, target_id);
 #endif
 
     return rc != 0 ? rc : iscsi_write_sample_to_device(conn);
