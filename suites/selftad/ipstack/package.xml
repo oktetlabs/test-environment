@@ -56,7 +56,7 @@
         </run> 
 
         <run>
-            <script name="tcp_flood">
+            <script name="tcp_flood_iter">
                 <req id="TAD_TCP"/>
             </script>
             <arg name="env">
@@ -64,6 +64,31 @@
                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'},
                  'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}
                 </value>
+            </arg>
+            <arg name="pld_len">
+                <value>30</value>
+                <value>100</value>
+                <value>500</value>
+                <value>1400</value>
+            </arg>
+        </run> 
+        <run>
+            <script name="tcp_flood_func">
+                <req id="TAD_TCP"/>
+            </script>
+            <arg name="env">
+                <value>{
+                {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'},
+                 'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}
+                </value>
+            </arg>
+            <arg name="pld_len">
+                <value>1400</value>
+                <value>500</value>
+                <value>30</value>
+                <value>100</value>
+                <value>500</value>
+                <value>1400</value>
             </arg>
         </run> 
         <run>

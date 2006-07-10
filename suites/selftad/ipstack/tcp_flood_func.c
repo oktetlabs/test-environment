@@ -62,7 +62,6 @@
 #include "ndn_eth.h"
 #include "ndn_ipstack.h"
 
-uint8_t buffer[10000];
 
 int
 main(int argc, char *argv[]) 
@@ -70,6 +69,7 @@ main(int argc, char *argv[])
     tapi_env_host *host_csap;
     const struct if_nameindex *sock_if;
     const struct if_nameindex *csap_if;
+    int pld_len;
 
     int syms = 0;
     tapi_tcp_handler_t conn_hand;
@@ -100,15 +100,15 @@ main(int argc, char *argv[])
     TEST_GET_IF(csap_if);
     TEST_GET_ADDR(sock_addr);
     TEST_GET_ADDR(csap_addr);
+    TEST_GET_INT_PARAM(pld_len);
 
     CHECK_RC(tapi_cfg_get_hwaddr(sock_pco->ta, sock_if->if_name, 
                                  sock_mac, &sock_mac_len));
 
     rc = asn_parse_value_text(
-              /* "{ arg-sets { simple-for:{begin 0, end 0} }," */ "{"
-              "  pdus { tcp:{flags plain:8}, "
+              "{  pdus { tcp:{flags plain:8}, "
               "         ip4:{}, eth:{}}"
-              "  , send-func \"tad_tcpip_flood:5000\""
+              "  , send-func \"tad_tcpip_flood:500\""
               "}",
               ndn_traffic_template, &tcp_template, &syms);
     if (rc != 0)
@@ -159,54 +159,32 @@ main(int argc, char *argv[])
     opt_val = 1;
     rpc_setsockopt(sock_pco, socket, RPC_SO_REUSEADDR, &opt_val);
 
-    opt_val = 200000;
+    opt_val = 500000;
     rpc_setsockopt(sock_pco, socket, RPC_SO_RCVBUF, &opt_val);
 
-    rc = tapi_tcp_send_msg(conn_hand, buffer, 20, TAPI_TCP_AUTO, 0, 
-                           TAPI_TCP_QUIET, 0, NULL, 0);
-    if (rc != 0)
-        TEST_FAIL("tapi_tcp_send_msg() failed: %r", rc); 
-
-    rpc_recv(sock_pco, socket, buffer, sizeof(buffer), 0);
 
     {
-        char seqn_expr[100];
         tapi_tcp_pos_t seqn = tapi_tcp_next_seqn(conn_hand);
-        uint32_t length = 10;
         uint64_t received = 0;
 
-#if 0
-        sprintf(seqn_expr, "expr:(%u + ($0 * %d))", seqn, length);
+        RING("Initial SEQ for serie: 0x%x", seqn);
 
-        rc = asn_write_string(tcp_template, seqn_expr,
-                              "pdus.0.#tcp.seqn.#script");
-        if (rc != 0)
-            TEST_FAIL("write seqn script failed %X", rc);
-#else
         rc = asn_write_int32(tcp_template, seqn,
                              "pdus.0.#tcp.seqn.#plain");
-#endif
-#if 1
-        rc = asn_write_int32(tcp_template, length, "payload.#length"); 
+        rc = asn_write_int32(tcp_template, pld_len, "payload.#length"); 
         if (rc != 0)
             TEST_FAIL("write arg len failed %X", rc);
-#endif
+
+        sock_pco->op = RCF_RPC_CALL;
+        rc = rpc_simple_receiver(sock_pco, socket, 5, &received);
 
         rc = tapi_tcp_send_template(conn_hand, tcp_template,
                                     RCF_MODE_NONBLOCKING);
         if (rc != 0)
             TEST_FAIL("send template failed %X", rc);
 
-        rc = rpc_simple_receiver(sock_pco, socket, 0, &received);
-#if 0
-        do {
-            te_bool readable;
-            GET_READABILITY(readable, sock_pco, socket, 10);
-            if (!readable)
-                break;
-            rc = rpc_recv(sock_pco, socket, buffer, sizeof(buffer), 0);
-        } while (rc > 0);
-#endif
+        sock_pco->op = RCF_RPC_WAIT;
+        rc = rpc_simple_receiver(sock_pco, socket, 5, &received);
 
         tapi_tcp_update_sent_seq(conn_hand, received);
     }
