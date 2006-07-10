@@ -805,17 +805,11 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         msg->rtm_inits |= RTV_RTT;
     }
 
-    /**
-      * TODO: Find out whether TOS specification for routes may be ignored
-      * for Solaris or otherwise how to handle this situation properly
-      */
-#if !defined __sun__
     if (rt_info->flags & TA_RT_INFO_FLG_TOS)
     {
         ERROR("Routes with TOS specification are not supported");
         RETURN_RC(TE_RC(TE_TA_UNIX, TE_ENOSYS));
     }
-#endif
 
     RETURN_RC(0);
 }
