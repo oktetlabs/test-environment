@@ -60,12 +60,12 @@
  */
 #define TEST_START_ENV \
     do {                                                                \
+        memset(&env, 0, sizeof(env));                                   \
         if (argc < 1)                                                   \
         {                                                               \
             TEST_FAIL("Incorrect number of arguments for the test");    \
             return EXIT_FAILURE;                                        \
         }                                                               \
-        memset(&env, 0, sizeof(env));                                   \
         {                                                               \
             const char *str_;                                           \
                                                                         \
@@ -80,6 +80,7 @@
                 TEST_FAIL("tapi_env_get() failed: %s : %r", str_, rc);  \
             }                                                           \
         }                                                               \
+        CFG_WAIT_CHANGES;                                               \
     } while (0)
 
 /**
