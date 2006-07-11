@@ -1103,22 +1103,39 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
             case RPC_IP_ADD_MEMBERSHIP:
             case RPC_IP_DROP_MEMBERSHIP:
+            case RPC_IP_MULTICAST_IF:
             {
                 tarpc_mreqn *opt = (tarpc_mreqn *)optval;
 
-                /* 
-                 * Default type is OPT_MREQN (as one containing data of
-                 * all types allowed for these options, but returned value
-                 * has type OPT_IPADDR. Type is changed on Agent.
-                 */
-                val.opttype = OPT_MREQN; 
-                   
-                memcpy(&val.option_value_u.opt_mreqn.imr_multiaddr,
-                       &opt->multiaddr, sizeof(opt->multiaddr));
-                memcpy(&val.option_value_u.opt_mreqn.imr_address,
-                       &opt->address, sizeof(opt->address));
-                val.option_value_u.opt_mreqn.imr_ifindex = opt->ifindex;
-                        
+                val.opttype = opt->type; 
+                switch (opt->type)
+                {
+                    case OPT_IPADDR:
+                        memcpy(&val.option_value_u.opt_ipaddr,
+                               &opt->address, sizeof(opt->address));
+                        break;
+
+                    case OPT_MREQ:
+                        memcpy(&val.option_value_u.opt_mreq.imr_multiaddr,
+                               &opt->multiaddr, sizeof(opt->multiaddr));
+                        memcpy(&val.option_value_u.opt_mreq.imr_address,
+                               &opt->address, sizeof(opt->address));
+                        break;
+
+                    case OPT_MREQN:
+                        memcpy(&val.option_value_u.opt_mreqn.imr_multiaddr,
+                               &opt->multiaddr, sizeof(opt->multiaddr));
+                        memcpy(&val.option_value_u.opt_mreqn.imr_address,
+                               &opt->address, sizeof(opt->address));
+                        val.option_value_u.opt_mreqn.imr_ifindex =
+                            opt->ifindex;
+                        break;
+
+                    default:
+                        ERROR("Unknown option type for %s get request",
+                              sockopt_rpc2str(optname));
+                        break;
+                }
                 break;
             }
 
@@ -1226,19 +1243,65 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 {
                     tarpc_mreqn *opt = (tarpc_mreqn *)optval;
                     char         addr_buf[INET_ADDRSTRLEN];
+                    char         addr_buf2[INET_ADDRSTRLEN];
  
                     memset(opt, 0, sizeof(*opt));
                     opt->type = out.optval.optval_val[0].opttype;
-                    memcpy(&opt->address, &out.optval.optval_val[0].
-                           option_value_u.opt_ipaddr,
-                           sizeof(opt->address));
-#if 0
-                    opt->len_diff = sizeof(opt->address) - sizeof(*opt);
-#endif
-                    tapi_log_buf_append(opt_val_str, "{ addr: %s }",
-                                        inet_ntop(AF_INET, &opt->address,
-                                                  addr_buf,
-                                                  sizeof(addr_buf)));
+                    switch (opt->type)
+                    {
+                        case OPT_IPADDR:
+                            memcpy(&opt->address,
+                                   &out.optval.optval_val[0].
+                                       option_value_u.opt_ipaddr,
+                                   sizeof(opt->address));
+                            tapi_log_buf_append(opt_val_str, "{ %s }",
+                                inet_ntop(AF_INET, &opt->address,
+                                          addr_buf, sizeof(addr_buf)));
+                            break;
+
+                        case OPT_MREQ:
+                            memcpy(&opt->multiaddr,
+                                   &out.optval.optval_val[0].
+                                     option_value_u.opt_mreq.imr_multiaddr,
+                                   sizeof(opt->multiaddr));
+                            memcpy(&opt->address,
+                                   &out.optval.optval_val[0].
+                                     option_value_u.opt_mreq.imr_address,
+                                   sizeof(opt->address));
+                            tapi_log_buf_append(opt_val_str,
+                                "{ imr_multiaddr: %s, imr_interface: %s }",
+                                inet_ntop(AF_INET, &opt->multiaddr,
+                                          addr_buf, sizeof(addr_buf)),
+                                inet_ntop(AF_INET, &opt->address,
+                                          addr_buf2, sizeof(addr_buf2)));
+                            break;
+
+                        case OPT_MREQN:
+                            memcpy(&opt->multiaddr,
+                                   &out.optval.optval_val[0].
+                                     option_value_u.opt_mreqn.imr_multiaddr,
+                                   sizeof(opt->multiaddr));
+                            memcpy(&opt->address,
+                                   &out.optval.optval_val[0].
+                                     option_value_u.opt_mreqn.imr_address,
+                                   sizeof(opt->address));
+                            opt->ifindex =
+                                val.option_value_u.opt_mreqn.imr_ifindex;
+                            tapi_log_buf_append(opt_val_str,
+                                "{ imr_multiaddr: %s, imr_address: %s, "
+                                "imr_ifindex: %d }",
+                                inet_ntop(AF_INET, &opt->multiaddr,
+                                          addr_buf, sizeof(addr_buf)),
+                                inet_ntop(AF_INET, &opt->address,
+                                          addr_buf2, sizeof(addr_buf2)),
+                                opt->ifindex);
+                            break;
+
+                        default:
+                            ERROR("Unknown option type for %s get reply",
+                                  sockopt_rpc2str(optname));
+                            break;
+                    }
                     break;
                 }
 
@@ -1506,7 +1569,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                         memcpy(&val.option_value_u.opt_ipaddr,
                                (char *)&(opt->address),
                                sizeof(opt->address));
-                        tapi_log_buf_append(opt_val_str, "{ address: %s }",
+                        tapi_log_buf_append(opt_val_str, "{ %s }",
                                             inet_ntop(AF_INET,
                                                 (char *)&(opt)->address,
                                                 addr_buf1,
@@ -1523,7 +1586,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                                sizeof(opt->address));
 
                         tapi_log_buf_append(opt_val_str, 
-                            "{ imr_multiaddr: %s, imr_address: %s }",
+                            "{ imr_multiaddr: %s, imr_interface: %s }",
                             inet_ntop(AF_INET,
                                       (char *)&(opt->multiaddr),
                                        addr_buf1, sizeof(addr_buf1)),
@@ -1545,7 +1608,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
 
                         tapi_log_buf_append(opt_val_str, 
                             "{ imr_multiaddr: %s, imr_address: %s, "
-                            "imr_ifindex: %d}",
+                            "imr_ifindex: %d }",
                             inet_ntop(AF_INET,
                                       (char *)&(opt->multiaddr),
                                        addr_buf1, sizeof(addr_buf1)),
@@ -1628,5 +1691,3 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
 
     RETVAL_INT(setsockopt, out.retval);
 }
-
-
