@@ -383,6 +383,7 @@ static type_info_t type_info[] =
     {"socklen_t", sizeof(socklen_t)},
     {"struct timeval", sizeof(struct timeval)},
     {"struct linger", sizeof(struct linger)},
+    {"struct in_addr", sizeof(struct in_addr)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
 #if HAVE_STRUCT_IP_MREQN
     {"struct ip_mreqn", sizeof(struct ip_mreqn)},
