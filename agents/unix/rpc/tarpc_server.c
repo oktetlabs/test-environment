@@ -1761,6 +1761,9 @@ tarpc_sockoptlen(const option_value *optval)
         case OPT_LINGER:
             return sizeof(struct linger);
 
+        case OPT_MREQ:
+            return sizeof(struct ip_mreq);
+
 #if HAVE_STRUCT_IP_MREQN
         case OPT_MREQN:
             return sizeof(struct ip_mreqn);
@@ -1789,9 +1792,23 @@ tarpc_sockoptlen(const option_value *optval)
 
 static void
 tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
-                 const void *opt)
+                 const void *opt, socklen_t optlen)
 {
     option_value   *out_optval = out->optval.optval_val;
+
+    if (out_optval->opttype == OPT_MREQN
+#if HAVE_STRUCT_IP_MREQN
+        && optlen < sizeof(struct ip_mreqn)
+#endif
+        )
+    {
+        out_optval->opttype = OPT_MREQ;
+    }
+    if (out_optval->opttype == OPT_MREQ &&
+        optlen < sizeof(struct ip_mreq))
+    {
+        out_optval->opttype = OPT_IPADDR;
+    }
 
     switch (out_optval->opttype)
     {
@@ -1977,7 +1994,7 @@ TARPC_FUNC(getsockopt,
                       func(in->s, socklevel_rpc2h(in->level),
                            sockopt_rpc2h(in->optname), buf, &len));
 
-        tarpc_getsockopt(in, out, buf);
+        tarpc_getsockopt(in, out, buf, len);
         free(buf);
     }
 }
