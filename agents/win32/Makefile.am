@@ -67,7 +67,7 @@ rpcserver_DEPENDENCIES=\
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpc_types.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdrta.a 
 
-rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c 
+rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c inet_pton.c inet_ntop.c
 
 nodist_rpcserver_SOURCES=rpc_unsupported.c rpc_supported.h
 rpcserver32_SOURCES=

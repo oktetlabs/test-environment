@@ -16,6 +16,19 @@
  * SOFTWARE.
  */
 
+#if defined(WINDOWS)
+
+int
+inet_pton(af, src, dst)
+	int af;
+	const char *src;
+	void *dst;
+{
+    return 1;
+}	
+
+#else
+
 #if defined(LIBC_SCCS) && !defined(lint)
 static const char rcsid[] = "$BINDId: inet_pton.c,v 1.7 1999/10/13 16:39:28 vixie Exp $";
 #endif /* LIBC_SCCS and not lint */
@@ -235,3 +248,5 @@ inet_pton6(src, dst)
 	memcpy(dst, tmp, NS_IN6ADDRSZ);
 	return (1);
 }
+
+#endif /* WINDOWS */
