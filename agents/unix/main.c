@@ -52,6 +52,10 @@
 #include <string.h>
 #include <sys/un.h>
 
+#ifdef __linux__
+#include <elf.h>
+#endif
+
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
@@ -118,6 +122,11 @@ const char *ta_execname = NULL;
 const char *ta_name = "(unix)";
 /** Test Agent data and binaries location */ 
 char ta_dir[RCF_MAX_PATH];
+
+#if __linux__
+/** Test Agent vsyscall page entrance */
+void *vsyscall_enter = NULL;
+#endif
 
 /** Tasks to be killed during TA shutdown */
 static unsigned int     tasks_len = 0;
@@ -1611,6 +1620,17 @@ main(int argc, char **argv)
     
     char  buf[16];
     char *tmp;
+    
+#ifdef __linux__
+    unsigned int *env = (unsigned int *)&argv[argc + 1];
+    unsigned int *av = env;
+/* Skip the environment */
+    for (; *av != 0; av++);
+/* Look for SYSINFO block in the auxiliary vector */
+    for (av++; *av != 0; av += 2)
+        if (av[0] == AT_SYSINFO)
+            vsyscall_enter = (void *)av[1];
+#endif
     
     /* FIXME */
     chdir("/tmp");
