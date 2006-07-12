@@ -2193,6 +2193,7 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 #ifdef __linux__
         case IOCTL_SGIO:
             {
+                size_t psz = getpagesize();
                 reqlen = sizeof(struct sg_io_hdr);
 
                 req->sg.interface_id = out->req.req_val[0].ioctl_request_u.
@@ -2208,7 +2209,19 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 
                 req->sg.dxfer_len = out->req.req_val[0].ioctl_request_u.
                     req_sgio.dxfer_len;
-                req->sg.dxferp = calloc(req->sg.dxfer_len, 1);
+                
+                req->sg.flags = out->req.req_val[0].ioctl_request_u.
+                    req_sgio.flags;
+
+                req->sg.dxferp = calloc(req->sg.dxfer_len + psz, 1);
+                if ((req->sg.flags & SG_FLAG_DIRECT_IO) == 
+                    SG_FLAG_DIRECT_IO)
+                {
+                    req->sg.dxferp = 
+                        (unsigned char *)
+                        (((unsigned long)req->sg.dxferp + psz - 1) &
+                                          (~(psz - 1)));
+                }
                 memcpy(req->sg.dxferp, out->req.req_val[0].ioctl_request_u.
                        req_sgio.dxferp.dxferp_val,
                        req->sg.dxfer_len);
@@ -2226,8 +2239,6 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 
                 req->sg.timeout = out->req.req_val[0].ioctl_request_u.
                     req_sgio.timeout;
-                req->sg.flags = out->req.req_val[0].ioctl_request_u.
-                    req_sgio.flags;
                 req->sg.pack_id = out->req.req_val[0].ioctl_request_u.
                     req_sgio.pack_id;
 
@@ -2405,7 +2416,6 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 duration = req->sg.duration;
             out->req.req_val[0].ioctl_request_u.req_sgio.
                 info = req->sg.info;
-            
             break;
         }
 #endif
