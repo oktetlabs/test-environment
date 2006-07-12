@@ -1377,6 +1377,8 @@ iscsi_win32_detect_device_interface_name(int target_id, char *device_name)
                                               &value_type,
                                               buffer, buf_size, &buf_size))
         {
+            if (GetLastError() == ERROR_INVALID_DATA)
+                continue;
             ISCSI_WIN32_REPORT_ERROR();
             return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
         }
