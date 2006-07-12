@@ -389,11 +389,12 @@ tad_iscsi_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 #define ISCSI_SN_OFFSET 24
 #define ISCSI_SCSI_OPCODE_OFFSET 32
 #define ISCSI_SCSI_STATUS_OFFSET 3
+#define MAX_PDU_DUMP_LENGTH 3000
 
 te_errno
 tad_iscsi_dump_iscsi_pdu(const uint8_t *data, iscsi_dump_mode_t mode)
 {
-    char  message[1000];
+    char  message[MAX_PDU_DUMP_LENGTH];
     char *p = message;
     char *current_key;
 
