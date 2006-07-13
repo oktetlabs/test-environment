@@ -64,19 +64,18 @@ static struct timeval tv_zero = {0,0};
 
 #define SEND_ANSWER(_fmt...) \
     do {                                                                   \
-        int r_c;                                                           \
+        te_errno _rc;                                                      \
                                                                            \
         if ((size_t)snprintf(cbuf + answer_plen, buflen - answer_plen,     \
                              _fmt) >= (buflen - answer_plen))              \
         {                                                                  \
             VERB("answer is truncated\n");                                 \
         }                                                                  \
-        rcf_ch_lock();                                                     \
-        pthread_cleanup_push((void (*)(void *))rcf_ch_unlock, NULL);       \
-        r_c = rcf_comm_agent_reply(rcfc, cbuf, strlen(cbuf) + 1);          \
-        pthread_cleanup_pop(1);                                            \
-        if (r_c)                                                           \
-            fprintf(stderr, "rc from rcf_comm_agent_reply: 0x%X\n", r_c);  \
+        RCF_CH_LOCK;                                                       \
+        _rc = rcf_comm_agent_reply(rcfc, cbuf, strlen(cbuf) + 1);          \
+        RCF_CH_UNLOCK;                                                     \
+        if (_rc)                                                           \
+            fprintf(stderr, "rc from rcf_comm_agent_reply: 0x%X\n", _rc);  \
     } while (0)
 
 #endif

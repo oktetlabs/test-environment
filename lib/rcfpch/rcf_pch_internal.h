@@ -89,9 +89,9 @@
             cbuf[buflen - 1] = '\0';                            \
             _len = buflen;                                      \
         }                                                       \
-        rcf_ch_lock();                                          \
+        RCF_CH_LOCK;                                            \
         _rc = rcf_comm_agent_reply(conn, cbuf, _len);           \
-        rcf_ch_unlock();                                        \
+        RCF_CH_UNLOCK;                                          \
         EXIT("%d", _rc);                                        \
         return _rc;                                             \
     } while (FALSE)

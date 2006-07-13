@@ -341,9 +341,9 @@ rpc_error(rpcserver *rpcs, int rc)
 
     n = snprintf(error_buf, sizeof(error_buf),
                  "SID %d %d", rpcs->last_sid, rc) + 1;
-    rcf_ch_lock();
+    RCF_CH_LOCK;
     rcf_comm_agent_reply(conn_saved, error_buf, n);
-    rcf_ch_unlock();
+    RCF_CH_UNLOCK;
 } 
 
 /**
@@ -419,9 +419,9 @@ dispatch(void *arg)
                 
                 s += sprintf(s, "SID %d 0 ", rpcs->last_sid);
                 write_str_in_quotes(s, (char *)rpc_buf, len);
-                rcf_ch_lock();
+                RCF_CH_LOCK;
                 rcf_comm_agent_reply(conn_saved, s0, strlen(s0) + 1);
-                rcf_ch_unlock();
+                RCF_CH_UNLOCK;
             }
             else
             {
@@ -430,10 +430,10 @@ dispatch(void *arg)
                 
                 snprintf(s, sizeof(s), "SID %d 0 attach %u",
                          rpcs->last_sid, (unsigned)len);
-                rcf_ch_lock();
+                RCF_CH_LOCK;
                 rcf_comm_agent_reply(conn_saved, s, strlen(s) + 1);
                 rcf_comm_agent_reply(conn_saved, rpc_buf, len);
-                rcf_ch_unlock();
+                RCF_CH_UNLOCK;
             }
             
             if (rpcs->timeout == 0xFFFFFFFF) /* execve() */
@@ -890,9 +890,9 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
         n = snprintf(buf, sizeof(buf),                          \
                           "SID %d %d", sid, _rc) + 1;           \
                                                                 \
-        rcf_ch_lock();                                          \
+        RCF_CH_LOCK;                                            \
         rc = rcf_comm_agent_reply(conn, buf, n);                \
-        rcf_ch_unlock();                                        \
+        RCF_CH_UNLOCK;                                          \
         return rc;                                              \
     } while (0)
     
@@ -932,9 +932,9 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     n = snprintf(buf, sizeof(buf), "SID %d %d", sid, 
                  TE_RC(TE_RCF_PCH, TE_EACK)) + 1;
                                                                 
-    rcf_ch_lock();                                     
+    RCF_CH_LOCK;                                     
     rc = rcf_comm_agent_reply(conn, buf, n);
-    rcf_ch_unlock(); 
+    RCF_CH_UNLOCK; 
     
     if (rc != 0)
         return rc;

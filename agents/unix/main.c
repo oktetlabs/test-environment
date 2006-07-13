@@ -83,10 +83,9 @@
         {                                                               \
             VERB("answer is truncated\n");                              \
         }                                                               \
-        rcf_ch_lock();                                                  \
-        pthread_cleanup_push((void (*)(void *))rcf_ch_unlock, NULL);      \
+        RCF_CH_LOCK;                                                    \
         _rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);     \
-        pthread_cleanup_pop(1);                                         \
+        RCF_CH_UNLOCK;                                                  \
         return _rc;                                                     \
     } while (FALSE)
 
@@ -261,8 +260,21 @@ rcf_ch_lock()
 void
 rcf_ch_unlock()
 {
-    int rc = pthread_mutex_unlock(&ta_lock);
+    int rc;
 
+    rc = pthread_mutex_trylock(&ta_lock);
+    if (rc == 0)
+    {
+        WARN("rcf_ch_unlock() without rcf_ch_lock()!\n"
+             "It may happen in the case of asynchronous cancellation.");
+    }
+    else if (rc != EBUSY)
+    {
+        PRINT("%s(): pthread_mutex_trylock() failed - rc=%d, errno=%d",
+              __FUNCTION__, rc, errno);
+    }
+
+    rc = pthread_mutex_unlock(&ta_lock);
     if (rc != 0)
         PRINT("%s(): pthread_mutex_unlock() failed - rc=%d, errno=%d",
               __FUNCTION__, rc, errno);
@@ -284,10 +296,9 @@ rcf_ch_reboot(struct rcf_comm_connection *handle,
     
     len += snprintf(cbuf + answer_plen,             
                      buflen - answer_plen, "0") + 1;
-    rcf_ch_lock();
-    pthread_cleanup_push((void (*)(void *))rcf_ch_unlock, NULL);
+    RCF_CH_LOCK;
     rcf_comm_agent_reply(handle, cbuf, len);         
-    pthread_cleanup_pop(1);
+    RCF_CH_UNLOCK;
     
     ta_system("/sbin/reboot");
     return 0;
@@ -449,8 +460,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
             goto reject;
         }
 
-        rcf_ch_lock();
-        pthread_cleanup_push((void (*)(void *))rcf_ch_unlock, NULL);
+        RCF_CH_LOCK;
         rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);
 
         auxbuf_p = auxbuf;
@@ -463,7 +473,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
             auxbuf_p += len;
             rc = rcf_comm_agent_reply(handle, cbuf, len);
         }
-        pthread_cleanup_pop(1);
+        RCF_CH_UNLOCK;
         close(fd);
 
         EXIT("%r", rc);

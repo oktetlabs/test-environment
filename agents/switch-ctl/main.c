@@ -73,9 +73,9 @@ static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
         {                                                               \
             VERB("Answer is truncated");                 \
         }                                                               \
-        rcf_ch_lock();                                                  \
+        RCF_CH_LOCK;                                                    \
         rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);      \
-        rcf_ch_unlock();                                                \
+        RCF_CH_UNLOCK;                                                  \
         return rc;                                                      \
     } while (FALSE)
 
@@ -104,6 +104,11 @@ void
 rcf_ch_unlock()
 {
 #ifdef HAVE_PTHREAD_H
+    if (pthread_mutex_trylock(&ta_lock) == 0)
+    {
+        WARN("rcf_ch_unlock() without rcf_ch_lock()!\n"
+             "It may happen in the case of asynchronous cancellation.");
+    }
     pthread_mutex_unlock(&ta_lock);
 #endif
 }

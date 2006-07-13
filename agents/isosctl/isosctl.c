@@ -76,9 +76,9 @@ static rcf_pch_conf_object node_agent =
         {                                                                 \
             VERB("answer is truncated\n");                                \
         }                                                                 \
-        rcf_ch_lock();                                                    \
+        RCF_CH_LOCK;                                                      \
         rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);        \
-        rcf_ch_unlock();                                                  \
+        RCF_CH_UNLOCK;                                                    \
         return rc;                                                        \
     } while (0)
 
@@ -109,6 +109,11 @@ rcf_ch_lock()
 void 
 rcf_ch_unlock()
 {
+    if (pthread_mutex_trylock(&ta_lock) == 0)
+    {
+        WARN("rcf_ch_unlock() without rcf_ch_lock()!\n"
+             "It may happen in the case of asynchronous cancellation.");
+    }
     pthread_mutex_unlock(&ta_lock);
 }
 

@@ -580,7 +580,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
         SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_E2BIG));
     }
 
-    rcf_ch_lock();
+    RCF_CH_LOCK;
     rc = rcf_comm_agent_reply(conn, cbuf, strlen(cbuf) + 1);
     VERB("Sent answer to wildcard request '%s' len=%u rc=%d",
          cbuf,  strlen(cbuf) + 1, rc);
@@ -589,7 +589,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
         rc = rcf_comm_agent_reply(conn, tmp, strlen(tmp) + 1);
         VERB("Sent binary attachment len=%u rc=%d", strlen(tmp) + 1, rc);
     }
-    rcf_ch_unlock();
+    RCF_CH_UNLOCK;
     
     free(tmp);
 

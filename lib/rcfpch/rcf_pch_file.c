@@ -197,11 +197,11 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
                 goto reject;
             }
 
-            rcf_ch_lock();
+            RCF_CH_LOCK;
             rc = rcf_comm_agent_reply(conn, cbuf, strlen(cbuf) + 1);
             if (rc == 0)
                 rc = rcf_comm_agent_reply(conn, addr, len);
-            rcf_ch_unlock();
+            RCF_CH_UNLOCK;
             EXIT("%r", rc);
             return rc;
         }
@@ -346,14 +346,14 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             rc = TE_RC(TE_RCF_PCH, TE_E2BIG);
             goto reject;
         }
-        rcf_ch_lock();
+        RCF_CH_LOCK;
         rc = rcf_comm_agent_reply(conn, cbuf, strlen(cbuf) + 1);
         while ((rc == 0) && ((len = read(fd, cbuf, buflen)) > 0))
         {
             stat_buf.st_size -= len;
             rc = rcf_comm_agent_reply(conn, cbuf, len);
         }
-        rcf_ch_unlock();
+        RCF_CH_UNLOCK;
         close(fd);
         if ((rc == 0) && (stat_buf.st_size != 0))
         {

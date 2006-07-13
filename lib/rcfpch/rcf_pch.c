@@ -354,13 +354,13 @@ transmit_log(struct rcf_comm_connection *conn, char *cbuf,
         assert(FALSE);
     }
 
-    rcf_ch_lock();
+    RCF_CH_LOCK;
     rc = rcf_comm_agent_reply(conn, cbuf, strlen(cbuf) + 1);
     if (rc == 0)
     {
         rc = rcf_comm_agent_reply(conn, log_data, len);
     }
-    rcf_ch_unlock();
+    RCF_CH_UNLOCK;
 
     return rc;
 }
@@ -418,9 +418,9 @@ rcf_pch_run(const char *confstr, const char *info)
             ERROR("Answer truncated");                              \
             cmd[cmd_buf_len - 1] = '\0';                            \
         }                                                           \
-        rcf_ch_lock();                                              \
+        RCF_CH_LOCK;                                                \
         rc = rcf_comm_agent_reply(conn, cmd, strlen(cmd) + 1);      \
-        rcf_ch_unlock();                                            \
+        RCF_CH_UNLOCK;                                              \
         if (rc != 0)                                                \
             goto communication_problem;                             \
     } while (FALSE)

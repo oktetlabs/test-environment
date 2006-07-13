@@ -1342,13 +1342,9 @@ tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
         return TE_EFAULT;
     } 
 
-    /* FIXME: if cleanup type is indeed asynchronous, a more subtle
-     * solution is needed here
-     */
-    rcf_ch_lock();
-    pthread_cleanup_push((void (*)(void *))rcf_ch_unlock, NULL);
+    RCF_CH_LOCK;
     rc = rcf_comm_agent_reply(rcfc, buffer, cmd_len + attach_len);
-    pthread_cleanup_pop(1);
+    RCF_CH_UNLOCK;
     free(buffer);
 
     return rc;

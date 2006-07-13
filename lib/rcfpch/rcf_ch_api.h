@@ -33,8 +33,11 @@
 #ifndef __TE_RCF_CH_API_H__
 #define __TE_RCF_CH_API_H__
 
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#if HAVE_PTHREAD_H
+#include <pthread.h>
 #endif
 
 #include "te_defs.h"
@@ -85,8 +88,49 @@ extern void rcf_ch_lock();
 
 /**
  * Unlock access to data connection.
+ *
+ * @attention To be asynchronous cancellation safe, unlock should work
+ *            fine in not locked state.
  */
 extern void rcf_ch_unlock();
+
+
+#if HAVE_PTHREAD_H
+
+/**
+ * POSIX thread cancellation-safe lock access to data connection.
+ *
+ * @attention The macro uses pthread_cleanup_push() and, therefore,
+ *            it has to occur together with RCF_CH_UNLOCK in the same
+ *            function, at the same level of block nesting.
+ */
+#define RCF_CH_LOCK \
+    pthread_cleanup_push((void (*)(void *))rcf_ch_unlock, NULL);    \
+    rcf_ch_lock()
+
+/**
+ * POSIX thread cancellation-safe unlock access to data connection.
+ *
+ * @attention The macro uses pthread_cleanup_pop() and, therefore,
+ *            it has to occur together with RCF_CH_LOCK in the same
+ *            function, at the same level of block nesting.
+ */
+#define RCF_CH_UNLOCK \
+    pthread_cleanup_pop(!0)
+
+#else /* !HAVE_PTHREAD_H */
+
+/**
+ * Wrapper for rcf_ch_lock() when there is no POSIX threads.
+ */
+#define RCF_CH_LOCK     rcf_ch_lock()
+
+/**
+ * Wrapper for rcf_ch_unlock() when there is no POSIX threads.
+ */
+#define RCF_CH_UNLOCK   rcf_ch_unlock()
+
+#endif /* !HAVE_PTHREAD_H */
 
 
 /**

@@ -61,9 +61,9 @@
         {                                                               \
             VERB("answer is truncated\n");                              \
         }                                                               \
-        rcf_ch_lock();                                                  \
+        RCF_CH_LOCK;                                                    \
         _rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);     \
-        rcf_ch_unlock();                                                \
+        RCF_CH_UNLOCK;                                                  \
         return _rc;                                                     \
     } while (FALSE)
 
@@ -101,6 +101,11 @@ rcf_ch_lock()
 void
 rcf_ch_unlock()
 {
+    if (pthread_mutex_trylock(&ta_lock) == 0)
+    {
+        WARN("rcf_ch_unlock() without rcf_ch_lock()!\n"
+             "It may happen in the case of asynchronous cancellation.");
+    }
     pthread_mutex_unlock(&ta_lock);
 }
 
@@ -119,9 +124,9 @@ rcf_ch_reboot(struct rcf_comm_connection *handle,
 
     len += snprintf(cbuf + answer_plen,             
                      buflen - answer_plen, "0") + 1;
-    rcf_ch_lock();                                  
+    RCF_CH_LOCK;                                  
     rcf_comm_agent_reply(handle, cbuf, len);         
-    rcf_ch_unlock();                                
+    RCF_CH_UNLOCK;                                
     system("reboot -f 0");
     return 0;
 }

@@ -180,10 +180,9 @@ power_set_outlet(unsigned int outlet_num, outlet_cmd_t command)
         {                                                                 \
             VERB("Answer is truncated\n");                                \
         }                                                                 \
-        rcf_ch_lock();                                                    \
-        pthread_cleanup_push((void (*)(void *))rcf_ch_unlock, NULL);      \
+        RCF_CH_LOCK;                                                      \
         _rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);       \
-        pthread_cleanup_pop(1);                                           \
+        RCF_CH_UNLOCK;                                                    \
         return _rc;                                                       \
     } while (FALSE)
 
@@ -209,10 +208,25 @@ rcf_ch_lock()
 void
 rcf_ch_unlock()
 {
-    int rc = pthread_mutex_unlock(&ta_lock);
+    int rc;
 
+    rc = pthread_mutex_trylock(&ta_lock);
+    if (rc == 0)
+    {
+        WARN("rcf_ch_unlock() without rcf_ch_lock()!\n"
+             "It may happen in the case of asynchronous cancellation.");
+    }
+    else if (rc != EBUSY)
+    {
+        fprintf(stderr,
+                "%s(): pthread_mutex_trylock() failed - rc=%d, errno=%d",
+                __FUNCTION__, rc, errno);
+    }
+
+    rc = pthread_mutex_unlock(&ta_lock);
     if (rc != 0)
-        fprintf(stderr, "%s(): pthread_mutex_unlock() failed - rc=%d, errno=%d",
+        fprintf(stderr,
+                "s(): pthread_mutex_unlock() failed - rc=%d, errno=%d",
                 __FUNCTION__, rc, errno);
 }
 
