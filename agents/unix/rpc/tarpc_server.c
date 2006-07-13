@@ -3016,11 +3016,6 @@ TARPC_FUNC(getaddrinfo, {},
         hints.ai_addrlen = in->hints.hints_val[0].addrlen + SA_COMMON_LEN;
         sockaddr_rpc2h(&(in->hints.hints_val[0].addr), SA(&addr),
                        sizeof(addr), &a, NULL);
-#if 0
-        INIT_CHECKED_ARG((char *)a,
-                         in->hints.hints_val[0].addr.sa_data.sa_data_len +
-                         SA_COMMON_LEN, 0);
-#endif
         hints.ai_addr = a;
         hints.ai_canonname = in->hints.hints_val[0].canonname.canonname_val;
         INIT_CHECKED_ARG(in->hints.hints_val[0].canonname.canonname_val,
@@ -3060,9 +3055,6 @@ TARPC_FUNC(getaddrinfo, {},
                 {
                     for (k--; k >= 0; k--)
                     {
-#if 0
-                        free(arr[k].addr.sa_data.sa_data_val);
-#endif
                         free(arr[k].canonname.canonname_val);
                     }
                     free(arr);
