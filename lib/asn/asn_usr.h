@@ -3,8 +3,8 @@
  *
  * Declarations of user API for processing ASN.1 values. 
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License as
