@@ -93,7 +93,8 @@ extern "C" {
     }
 
 /** Fast conversion of the IPv4 prefix to network mask */
-#define PREFIX2MASK(prefix) (prefix == 0 ? 0 : (~0) << (32 - (prefix)))
+#define PREFIX2MASK(prefix) \
+    (prefix == 0 ? 0U : (~0U) << (unsigned)(32 - (prefix)))
 
 
 /**
