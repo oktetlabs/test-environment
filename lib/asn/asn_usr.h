@@ -21,14 +21,17 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */ 
+
 #ifndef __TE_ASN_USR_H__
 #define __TE_ASN_USR_H__
 
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -1155,11 +1158,7 @@ extern size_t asn_count_txt_len(const asn_value *value,
                                 unsigned int indent);
 
 
-
-
-
 #ifdef __cplusplus
 } /* for 'extern "C" {' */
 #endif
-
 #endif /* __TE_ASN_USR_H__ */
