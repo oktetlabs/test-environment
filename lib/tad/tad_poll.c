@@ -103,7 +103,7 @@ tad_poll_thread(void *arg)
     {
         rc = TE_OS_RC(TE_TAD_CH, errno);
         ERROR("%s(): sem_post() failed: %r", __FUNCTION__, rc);
-	goto exit;
+        goto exit;
     }
 
     rc = csap_timedwait(csap, CSAP_STATE_DONE, context->timeout);
