@@ -796,7 +796,7 @@ rpc_create_io_completion_port(rcf_rpc_server *rpcs,
                      out.retval, out.retval <= 0, 0);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: CreateIoCompletionPort(%d, %d, %llu, %u)"
-                 " -> %x (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 " -> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  file_handle, existing_completion_port,
                  completion_key, number_of_concurrent_threads,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
