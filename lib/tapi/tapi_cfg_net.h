@@ -202,11 +202,19 @@ extern te_errno tapi_cfg_net_all_up(void);
  */
 extern te_errno tapi_cfg_net_delete_all_ip4_addresses(void);
 
+/**
+ * Delete IPv6 addresses (except link-local) from all nodes in networks
+ * configuration.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_delete_all_ip6_addresses(void);
+
 
 /** Information about made assignments */
 typedef struct tapi_cfg_net_assigned {
     cfg_handle  pool;      /**< subnet handle, i.e. handle of the object
-                                instance "/ip4_net_pool:/entry:X" */
+                                instance "/net_pool:X/entry:Y" */
     cfg_handle *entries;   /**< assigned pool entries */
 } tapi_cfg_net_assigned;
 
@@ -233,6 +241,13 @@ extern int tapi_cfg_net_assign_ip4(cfg_net_t *net,
  * @return Status code.
  */
 extern te_errno tapi_cfg_net_all_assign_ip4(void);
+
+/**
+ * Assign IPv6 subnets for all configuration network.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_all_assign_ip6(void);
 
 /**
  * Dirty hack, must be removed after sockts_get_host_addr() 

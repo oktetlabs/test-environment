@@ -1591,32 +1591,32 @@ tapi_cfg_free_entry(cfg_handle *entry)
     return rc;
 }
 
+
 /* See the description in tapi_cfg.h */
-int
-tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix, 
-                     int state, cfg_handle *entry)
+te_errno
+tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
+                 unsigned int prefix, int state, cfg_handle *entry)
 {
-    int        rc;
-    cfg_handle pool;
-    cfg_handle net;
-    cfg_handle handle;
-    char       buf[INET_ADDRSTRLEN];
-    char       oid[64];
-    struct sockaddr_in addr;
+    int                     rc;
+    cfg_handle              pool;
+    cfg_handle              net;
+    char                    buf[INET6_ADDRSTRLEN];
+    struct sockaddr_storage addr;
 
     *entry = CFG_HANDLE_INVALID;
-    rc = cfg_find_str("/ip4_net_pool:", &pool);
+
+    rc = cfg_find_str(net_pool, &pool);
     if (rc != 0)
     {
-        ERROR("%s: Failed to find /ip4_net_pool instance: %r",
-              __FUNCTION__, rc);
+        ERROR("%s: Failed to find '%s' instance: %r",
+              __FUNCTION__, net_pool, rc);
         return rc;
     }
 
-    memcpy(&addr, ip4_net_addr, sizeof(addr));
-    addr.sin_addr.s_addr = htonl(ntohl(addr.sin_addr.s_addr)
+    memcpy(&addr, net_addr, te_sockaddr_get_size(net_addr));
+    SIN(&addr)->sin_addr.s_addr = htonl(ntohl(SIN(&addr)->sin_addr.s_addr)
                                        & PREFIX2MASK(prefix));
-    inet_ntop(addr.sin_family, &addr.sin_addr, buf, sizeof(buf));
+    inet_ntop(addr.ss_family, &SIN(&addr)->sin_addr, buf, sizeof(buf));
 
     /* Check for interference with existing nets in the pool */
     for (rc = cfg_get_son(pool, &net);
@@ -1625,26 +1625,24 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
     {
         cfg_val_type        val_type;
         char               *net_oid;
-        struct sockaddr    *sa;
-        struct sockaddr_in *net_addr;
-        int                 net_prefix;
+        struct sockaddr    *net_sa;
+        unsigned int        net_prefix;
         struct in_addr      net_mask;
 
         rc = cfg_get_inst_name_type(net, CVT_ADDRESS, 
-                                    (cfg_inst_val *)&sa);
+                                    (cfg_inst_val *)&net_sa);
         if (rc != 0)
         {
             ERROR("%s: Cannot get pool net name by handle 0x%x "
                   "as address: %r", __FUNCTION__, net, rc);
             return rc;
         }
-        net_addr = SIN(sa);
         rc = cfg_get_oid_str(net, &net_oid);
         if (rc != 0)
         {
             ERROR("%s: Cannot get pool net OID by handle 0x%x: %r",
                   __FUNCTION__, net, rc);
-            free(net_addr);
+            free(net_sa);
             return rc;
         }
         val_type = CVT_INTEGER;
@@ -1654,59 +1652,61 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
         {
             ERROR("%s: Cannot get pool net prefix for %s: %r",
                   __FUNCTION__, net_oid, rc);
-            free(net_addr);
             free(net_oid);
+            free(net_sa);
             return rc;
         }
         
         /* Compare net from pool with net to be added */
         net_mask.s_addr = htonl(PREFIX2MASK(net_prefix < prefix ? 
                                             net_prefix : prefix));
-        if ((net_addr->sin_addr.s_addr & net_mask.s_addr) ==
-            (addr.sin_addr.s_addr & net_mask.s_addr))
+        if ((SIN(net_sa)->sin_addr.s_addr & net_mask.s_addr) ==
+            (SIN(&addr)->sin_addr.s_addr & net_mask.s_addr))
         {
-            ERROR("%s: Cannot add network %s/%d to pool: it interferes "
-                  "with %s", __FUNCTION__, buf, prefix, net_oid);
-            free(net_addr);
+            ERROR("%s: Cannot add network %s/%u to pool: it interferes "
+                  "with %s/%u", __FUNCTION__, buf, prefix, net_oid,
+                  net_prefix);
             free(net_oid);
+            free(net_sa);
             return TE_EEXIST;
         }
 
-        free(net_addr);
         free(net_oid);
+        free(net_sa);
     }
 
     /* Add new entry to the pool */
-    snprintf(oid, sizeof(oid), "/ip4_net_pool:/entry:%s", buf);
-    rc = cfg_add_instance_str(oid, &net, CVT_INTEGER, state);
+    rc = cfg_add_instance_fmt(&net, CFG_VAL(INTEGER, state),
+                              "%s/entry:%s", net_pool, buf);
     if (rc != 0)
     {
-        ERROR("%s: Failed to add %s to the pool: %r",
-              __FUNCTION__, oid, rc);
+        ERROR("%s: Failed to add '%s/entry:%s' to the pool: %r",
+              __FUNCTION__, net_pool, buf, rc);
         return rc;
     }
-    rc = cfg_add_instance_fmt(&handle, CFG_VAL(INTEGER, prefix),
-                              "%s/prefix:", oid);
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, prefix),
+                              "%s/entry:%s/prefix:", net_pool, buf);
     if (rc != 0)
     {
-        ERROR("%s: Failed to add %s/prefix to the pool: %r",
-              __FUNCTION__, oid, rc);
+        ERROR("%s: Failed to add '%s/entry:%s/prefix' to the pool: %r",
+              __FUNCTION__, net_pool, buf, rc);
         return rc;
     }
-    rc = cfg_add_instance_fmt(&handle, CFG_VAL(INTEGER, 0),
-                              "%s/n_entries:", oid);
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+                              "%s/entry:%s/n_entries:", net_pool, buf);
     if (rc != 0)
     {
-        ERROR("%s: Failed to add %s/n_instance to the pool: %r",
-              __FUNCTION__, oid, rc);
+        ERROR("%s: Failed to add %s/entry:%s/n_instance to the pool: %r",
+              __FUNCTION__, net_pool, buf, rc);
         return rc;
     }
 
     *entry = net;
-    RING("Network %s/%d is added to the pool", buf, prefix);
+    RING("Network %s/%u is added to the pool", buf, prefix);
 
     return 0;
 }
+
 
 /**
  * Internal implementation of tapi_cfg_add_ip4_addr() and
@@ -1956,147 +1956,4 @@ tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *p_entry,
                         struct sockaddr_in **addr)
 {
     return tapi_cfg_insert_ip4_addr(ip4_net, NULL, p_entry, addr);
-}
-
-
-/* See the description in tapi_cfg.h */
-te_errno
-tapi_cfg_env_local_to_agent(void)
-{
-    const char * const  pattern = "/local:*/env:*";
-
-    te_errno        rc;
-    unsigned int    num;
-    cfg_handle     *handles = NULL;
-    unsigned int    i;
-    cfg_oid        *oid = NULL;
-    cfg_val_type    type = CVT_STRING;
-    char           *new_value = NULL;
-    char           *old_value = NULL;
-
-    rc = cfg_find_pattern(pattern, &num, &handles);
-    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-    {
-        return 0;
-    }
-    else if (rc != 0)
-    {
-        ERROR("Failed to find by pattern '%s': %r", pattern, rc);
-        return rc;
-    }
-
-    for (i = 0; i < num; ++i)
-    {
-        rc = cfg_get_instance(handles[i], &type, &new_value);
-        if (rc != 0)
-        {
-            ERROR("%s(): cfg_get_instance() failed for #%u: %r",
-                  __FUNCTION__, i, rc);
-            break;
-        }
-        rc = cfg_get_oid(handles[i], &oid);
-        if (rc != 0)
-        {
-            ERROR("%s(): cfg_get_oid() failed for #%u: %r",
-                  __FUNCTION__, i, rc);
-            break;
-        }
-        rc = cfg_get_instance_fmt(&type, &old_value,
-                                  "/agent:%s/env:%s",
-                                  CFG_OID_GET_INST_NAME(oid, 1),
-                                  CFG_OID_GET_INST_NAME(oid, 2));
-        if (rc == 0)
-        {
-            if (strcmp(new_value, old_value) != 0)
-            {
-                rc = cfg_set_instance_fmt(type, new_value,
-                                          "/agent:%s/env:%s",
-                                          CFG_OID_GET_INST_NAME(oid, 1),
-                                          CFG_OID_GET_INST_NAME(oid, 2));
-            }
-        }
-        else if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-        {
-            rc = cfg_add_instance_fmt(NULL, type, new_value,
-                                      "/agent:%s/env:%s",
-                                      CFG_OID_GET_INST_NAME(oid, 1),
-                                      CFG_OID_GET_INST_NAME(oid, 2));
-        }
-        if (rc != 0)
-        {
-            ERROR("%s(): Failed on #%u: %r", __FUNCTION__, i, rc);
-            break;
-        }
-        free(new_value); new_value = NULL;
-        cfg_free_oid(oid); oid = NULL;
-        free(old_value); old_value = NULL;
-    }
-
-    free(new_value);
-    cfg_free_oid(oid);
-    free(old_value);
-    free(handles);
-
-    return rc;
-}
-
-/* See the description in tapi_cfg.h */
-te_errno
-tapi_cfg_rpcs_local_to_agent(void)
-{
-    const char * const  pattern = "/local:*/rpcserver:*";
-
-    te_errno        rc;
-    unsigned int    num;
-    cfg_handle     *handles = NULL;
-    unsigned int    i;
-    cfg_oid        *oid = NULL;
-    cfg_val_type    type = CVT_STRING;
-    char           *new_value = NULL;
-
-    rc = cfg_find_pattern(pattern, &num, &handles);
-    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-    {
-        return 0;
-    }
-    else if (rc != 0)
-    {
-        ERROR("Failed to find by pattern '%s': %r", pattern, rc);
-        return rc;
-    }
-
-    for (i = 0; i < num; ++i)
-    {
-        rc = cfg_get_instance(handles[i], &type, &new_value);
-        if (rc != 0)
-        {
-            ERROR("%s(): cfg_get_instance() failed for #%u: %r",
-                  __FUNCTION__, i, rc);
-            break;
-        }
-        rc = cfg_get_oid(handles[i], &oid);
-        if (rc != 0)
-        {
-            ERROR("%s(): cfg_get_oid() failed for #%u: %r",
-                  __FUNCTION__, i, rc);
-            break;
-        }
-        rc = cfg_add_instance_fmt(NULL, type, new_value,
-                                  "/agent:%s/rpcserver:%s",
-                                  CFG_OID_GET_INST_NAME(oid, 1),
-                                  CFG_OID_GET_INST_NAME(oid, 2));
-        if (rc != 0)
-        {
-            ERROR("%s(): Failed on #%u: %r", __FUNCTION__, i, rc);
-            break;
-        }
-        free(new_value); new_value = NULL;
-        cfg_free_oid(oid); oid = NULL;
-    }
-
-    free(new_value);
-    cfg_free_oid(oid);
-    free(handles);
-
-    return rc;
 }

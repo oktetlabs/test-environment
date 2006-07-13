@@ -525,8 +525,42 @@ extern int tapi_cfg_free_entry(cfg_handle *entry);
 static inline int
 tapi_cfg_alloc_ip4_net(cfg_handle *entry)
 {
-    return tapi_cfg_alloc_entry("/ip4_net_pool:", entry);
+    return tapi_cfg_alloc_entry("/net_pool:ip4", entry);
 }
+
+/**
+ * Allocate entry in IPv6 subnets pool.
+ *
+ * @param entry         Location for Cfgr handle
+ *
+ * @return Status code.
+ *
+ * @note Use #tapi_cfg_free_entry function to free allocated entry.
+ *
+ * @sa tapi_cfg_free_entry, tapi_cfg_alloc_ip6_addr
+ */
+static inline int
+tapi_cfg_alloc_ip6_net(cfg_handle *entry)
+{
+    return tapi_cfg_alloc_entry("/net_pool:ip6", entry);
+}
+
+
+/**
+ * Add entry to IPv4 or IPv6 subnets pool.
+ *
+ * @param net_pool      Name of the pool
+ * @param net_addr      Network address (or any network node address)
+ * @param prefix        Network address prefix
+ * @param state         Pool entry initial state (0 or 1)
+ * @param entry         Location for Cfgr handle of new entry
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_add_net(const char *net_pool,
+                                 const struct sockaddr *net_addr,
+                                 unsigned int prefix, int state,
+                                 cfg_handle *entry);
 
 /**
  * Add entry to IPv4 subnets pool.
@@ -538,9 +572,32 @@ tapi_cfg_alloc_ip4_net(cfg_handle *entry)
  *
  * @return Status code.
  */
-extern int tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr,
-                                int prefix, int state,
-                                cfg_handle *entry);
+static inline te_errno
+tapi_cfg_add_ip4_net(const struct sockaddr_in *ip4_net_addr,
+                     unsigned int prefix, int state, cfg_handle *entry)
+{
+    return tapi_cfg_add_net("/net_pool:ip4", CONST_SA(ip4_net_addr),
+                            prefix, state, entry);
+}
+
+/**
+ * Add entry to IPv6 subnets pool.
+ *
+ * @param ip6_net_addr  Network address (or any network node address)
+ * @param prefix        Network address prefix
+ * @param state         Pool entry initial state (0 or 1)
+ * @param entry         Location for Cfgr handle of new entry
+ *
+ * @return Status code.
+ */
+static inline te_errno
+tapi_cfg_add_ip6_net(const struct sockaddr_in6 *ip6_net_addr,
+                     unsigned int prefix, int state, cfg_handle *entry)
+{
+    return tapi_cfg_add_net("/net_pool:ip6", CONST_SA(ip6_net_addr),
+                            prefix, state, entry);
+}
+
 
 /**
  * Allocate IPv4 address from IPv4 subnet got from IPv4 subnets pool.

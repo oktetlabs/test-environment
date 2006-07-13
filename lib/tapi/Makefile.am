@@ -29,6 +29,7 @@ libtapi_la_SOURCES = \
 	tapi_bufs.c \
 	tapi_sockaddr.c \
 	tapi_cfg.c \
+	tapi_cfg_local_to_ta.c \
 	tapi_cfg_base.c \
 	tapi_cfg_net.c \
 	tapi_cfg_arl.c \
