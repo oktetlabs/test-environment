@@ -46,7 +46,7 @@
 #include "my_memory.h"
 #include "iscsi_custom.h"
 
-#define ISCSI_CUSTOM_MAX_PARAM 17
+#define ISCSI_CUSTOM_MAX_PARAM 18
 
 #define ISCSI_CUSTOM_MAGIC 0xeba1eba1
 
@@ -155,6 +155,7 @@ static iscsi_custom_descr param_descr[ISCSI_CUSTOM_MAX_PARAM + 1] =
     {"reject_reason", FALSE, reject_reasons},
     {"nopin_after", FALSE, NULL},
     {"nopin_count", FALSE, NULL},
+    {"max_send_length", TRUE, NULL},
     {NULL, FALSE, NULL},
 };
     
