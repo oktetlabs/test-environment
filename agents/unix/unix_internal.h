@@ -42,6 +42,7 @@
 #include <strings.h>
 #endif
 
+#include "te_sockaddr.h"
 #include "rcf_pch.h"
 
 /** Fast conversion of the network mask to prefix */
@@ -84,9 +85,6 @@
          /* Error indication */              \
         default: prefix = 33; break;         \
     }
-
-/** Fast conversion of the prefix to network mask */
-#define PREFIX2MASK(prefix) (prefix == 0 ? 0 : (~0) << (32 - (prefix)))
 
 /** Check that interface is locked for using of this TA */
 #define INTERFACE_IS_MINE(ifname) \
