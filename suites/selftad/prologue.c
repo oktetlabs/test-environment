@@ -29,7 +29,7 @@ main(void)
     te_lgr_entity = TE_TEST_NAME;
     TAPI_ON_JMP(TEST_ON_JMP_DO);
 
-    CHECK_RC(tapi_cfg_net_all_assign_ip4());
+    CHECK_RC(tapi_cfg_net_all_assign_ip(AF_INET));
 
     TEST_SUCCESS;
 

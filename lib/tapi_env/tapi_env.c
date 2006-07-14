@@ -154,8 +154,7 @@ tapi_env_allocate_addr(tapi_env_net *net, int af,
         return TE_ENOMEM;
     }
 
-    rc = tapi_cfg_alloc_ip4_addr(net->ip4net, &handle->handle,
-                                 (struct sockaddr_in **)addr);
+    rc = tapi_cfg_alloc_net_addr(net->ip4net, &handle->handle, addr);
     if (rc != 0)
     {
         ERROR("Failed to allocate IPv4 address in subnet 0x%x: %r",
