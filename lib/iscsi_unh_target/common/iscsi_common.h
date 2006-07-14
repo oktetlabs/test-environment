@@ -148,42 +148,6 @@ extern char *string_llx(uint64_t x, char *str);
 
 extern void print_payload(const void *buffer, int len);
 
-extern void print_init_scsi_cmnd(struct iscsi_init_scsi_cmnd *cmd);
-
-extern void print_targ_scsi_rsp(struct iscsi_targ_scsi_rsp *cmd);
-
-extern void print_init_text_cmnd(struct iscsi_init_text_cmnd *cmd);
-
-extern void print_targ_text_rsp(struct iscsi_targ_text_rsp *cmd);
-
-extern void print_init_login_cmnd(struct iscsi_init_login_cmnd *cmd);
-
-extern void print_targ_login_rsp(struct iscsi_targ_login_rsp *cmd);
-
-extern void print_init_logout_cmnd(struct iscsi_init_logout_cmnd *cmd);
-
-extern void print_targ_logout_rsp(struct iscsi_targ_logout_rsp *cmd);
-
-extern void print_init_scsi_data_out(struct iscsi_init_scsi_data_out *cmd);
-
-extern void print_targ_scsi_data_in(struct iscsi_targ_scsi_data_in *cmd);
-
-extern void print_targ_rjt(struct iscsi_targ_rjt *cmd);
-
-extern void print_init_nopout(struct iscsi_init_nopout *cmd);
-
-extern void print_targ_nopin(struct iscsi_targ_nopin *cmd);
-
-extern void print_targ_r2t(struct iscsi_targ_r2t *cmd);
-
-extern void print_targ_async_msg(struct iscsi_targ_async_msg *cmd);
-
-extern void print_init_task_mgt_command(struct iscsi_init_task_mgt_command *cmd);
-
-extern void print_targ_task_mgt_response(struct iscsi_targ_task_mgt_response *cmd);
-
-extern void print_init_snack(struct iscsi_init_snack *cmd);
-
 extern void print_iscsi_command(void *cmd);
 
 /*	returns pointer to printable name of SCSI op code */

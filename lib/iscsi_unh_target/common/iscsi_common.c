@@ -310,7 +310,7 @@ print_runlen(uint32_t runlen)
 	TRACE(DEBUG, "    RunLength: %u", ntohl(runlen));
 }
 
-void
+static void
 print_init_scsi_cmnd(struct iscsi_init_scsi_cmnd *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -329,7 +329,7 @@ print_init_scsi_cmnd(struct iscsi_init_scsi_cmnd *cmd)
 	     cmd->cdb[12], cmd->cdb[13], cmd->cdb[14], cmd->cdb[15]);
 }
 
-void
+static void
 print_targ_scsi_rsp(struct iscsi_targ_scsi_rsp *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -348,7 +348,7 @@ print_targ_scsi_rsp(struct iscsi_targ_scsi_rsp *cmd)
 	print_residual(cmd->resid);
 }
 
-void
+static void
 print_init_text_cmnd(struct iscsi_init_text_cmnd *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -363,7 +363,7 @@ print_init_text_cmnd(struct iscsi_init_text_cmnd *cmd)
 	print_rsvd_u64(5, cmd->rsvd5);
 }
 
-void
+static void
 print_targ_text_rsp(struct iscsi_targ_text_rsp *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -378,7 +378,7 @@ print_targ_text_rsp(struct iscsi_targ_text_rsp *cmd)
 	print_rsvd_u64(5, cmd->rsvd5);
 }
 
-void
+static void
 print_init_login_cmnd(struct iscsi_init_login_cmnd *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -395,7 +395,7 @@ print_init_login_cmnd(struct iscsi_init_login_cmnd *cmd)
 	print_rsvd_u64(3, cmd->rsvd3);
 }
 
-void
+static void
 print_targ_login_rsp(struct iscsi_targ_login_rsp *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -415,7 +415,7 @@ print_targ_login_rsp(struct iscsi_targ_login_rsp *cmd)
 	print_rsvd_u64(3, cmd->rsvd3);
 }
 
-void
+static void
 print_init_logout_cmnd(struct iscsi_init_logout_cmnd *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -431,7 +431,7 @@ print_init_logout_cmnd(struct iscsi_init_logout_cmnd *cmd)
 	print_rsvd_u64(5, cmd->rsvd5);
 }
 
-void
+static void
 print_targ_logout_rsp(struct iscsi_targ_logout_rsp *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -449,7 +449,7 @@ print_targ_logout_rsp(struct iscsi_targ_logout_rsp *cmd)
 	print_rsvd_u32(5, cmd->rsvd5);
 }
 
-void
+static void
 print_init_scsi_data_out(struct iscsi_init_scsi_data_out *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -467,7 +467,7 @@ print_init_scsi_data_out(struct iscsi_init_scsi_data_out *cmd)
 	print_rsvd_u32(5, cmd->rsvd5);
 }
 
-void
+static void
 print_targ_scsi_data_in(struct iscsi_targ_scsi_data_in *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -484,7 +484,7 @@ print_targ_scsi_data_in(struct iscsi_targ_scsi_data_in *cmd)
 	print_residual(cmd->resid);
 }
 
-void
+static void
 print_targ_rjt(struct iscsi_targ_rjt *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -502,7 +502,7 @@ print_targ_rjt(struct iscsi_targ_rjt *cmd)
 	print_rsvd_u64(5, cmd->rsvd5);
 }
 
-void
+static void
 print_init_nopout(struct iscsi_init_nopout *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -517,7 +517,7 @@ print_init_nopout(struct iscsi_init_nopout *cmd)
 /*	print_rsvd_u64(3, cmd->rsvd3); */
 }
 
-void
+static void
 print_targ_nopin(struct iscsi_targ_nopin *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -532,7 +532,7 @@ print_targ_nopin(struct iscsi_targ_nopin *cmd)
 	print_rsvd_u64(3, cmd->rsvd3);
 }
 
-void
+static void
 print_targ_r2t(struct iscsi_targ_r2t *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -548,7 +548,7 @@ print_targ_r2t(struct iscsi_targ_r2t *cmd)
 	TRACE(DEBUG, "    DDTL: %u", ntohl(cmd->xfer_len));
 }
 
-void
+static void
 print_targ_async_msg(struct iscsi_targ_async_msg *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -570,7 +570,7 @@ print_targ_async_msg(struct iscsi_targ_async_msg *cmd)
 	print_rsvd_u32(5, cmd->rsvd5);
 }
 
-void
+static void
 print_init_task_mgt_command(struct iscsi_init_task_mgt_command *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -587,7 +587,7 @@ print_init_task_mgt_command(struct iscsi_init_task_mgt_command *cmd)
 	print_rsvd_u64(4, cmd->rsvd4);
 }
 
-void
+static void
 print_targ_task_mgt_response(struct iscsi_targ_task_mgt_response *cmd)
 {
 	print_opcode(cmd->opcode);
@@ -603,7 +603,7 @@ print_targ_task_mgt_response(struct iscsi_targ_task_mgt_response *cmd)
 	print_rsvd_u64(5, cmd->rsvd5);
 }
 
-void
+static void
 print_init_snack(struct iscsi_init_snack *cmd)
 {
 	print_opcode(cmd->opcode);

@@ -1227,7 +1227,7 @@ iscsi_recv_msg(int sock, int length, char *buffer, int flags)
 
     if (retval <= 0) {
         if (retval == 0) {
-            TRACE_ERROR("remote peer disconnected\n");
+            TRACE(NORMAL, "remote peer disconnected\n");
         } else {
             TRACE_ERROR("recvmsg error %d\n", retval);
         }
@@ -1277,35 +1277,16 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
     uint8_t *buffer;
     size_t   length = ISCSI_HDR_LEN;
 
-    struct iscsi_targ_login_rsp *targ_login_rsp;
-
     UNUSED(flags);
 
     TRACE(DEBUG, "Enter iscsi_send_msg");
 
-    switch (outputpdu->opcode & (ISCSI_OPCODE)) 
+    if ((outputpdu->opcode & ISCSI_OPCODE) != ISCSI_TARG_LOGIN_RSP)
     {
-        case ISCSI_INIT_LOGIN_CMND:
-            /* Send the login Command */
-            print_init_login_cmnd((struct iscsi_init_login_cmnd *)
-                                  outputpdu);
-            break;
-        case ISCSI_TARG_LOGIN_RSP:
-            /* Send the Login Response */
-            targ_login_rsp = (struct iscsi_targ_login_rsp *) outputpdu;
-            
-            TRACE(NORMAL,
-                  "Send Login Response, CSG %d, NSG %d, T %d",
-                  (outputpdu->flags & CSG) >> CSG_SHIFT,
-                  outputpdu->flags & NSG, (outputpdu->flags & T_BIT) >> 7);
-
-            print_targ_login_rsp(targ_login_rsp);
-            break;
-        default:
-            TRACE_ERROR("sending bad opcode 0x%02X during Login phase\n",
-                        outputpdu->opcode & ISCSI_OPCODE);
-            return -1;
-    }			/* switch */
+        TRACE_ERROR("sending bad opcode 0x%02X during Login phase\n",
+                    outputpdu->opcode & ISCSI_OPCODE);
+        return -1;
+    }
         
     /********************************************************/
     
@@ -1330,7 +1311,7 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
                outputpdu->text_length);
     } 
 
-    TRACE_BUFFER(DEBUG, buffer, length, "sending PDU");
+    print_iscsi_command(buffer);
     tx_loop = send(sock, buffer, length, 0); 
     TRACE(VERBOSE, "sent %d bytes", tx_loop);
     

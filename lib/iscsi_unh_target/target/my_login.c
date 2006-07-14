@@ -877,7 +877,6 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
     {
         current_tx = 0;
         buffer = iov->iov_base;
-        TRACE_BUFFER(DEBUG, buffer, iov->iov_len, "sending PDU chunk");
         while (current_tx < iov->iov_len) 
         {
             TRACE(DEBUG, "iscsi_tx_data: niov %d, data %u, total_tx %u",
@@ -1043,13 +1042,13 @@ iscsi_tx_login_reject(struct iscsi_conn *conn,
     hdr->status_class = status_class;
     hdr->status_detail = status_detail;
 
+    print_iscsi_command(hdr);
+
     if (send_hdr_only(conn, iscsi_hdr) < 0) {
         return -1;
     }
 
     TRACE(NORMAL, "login response sent");
-
-    print_targ_login_rsp(hdr);
 
     return 0;
 }
@@ -1081,8 +1080,6 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
     SHARED struct parameter_type (*this_param_tbl)[MAX_CONFIG_PARAMS];
     SHARED struct parameter_type (*temp_params)[MAX_CONFIG_PARAMS];
     SHARED struct iscsi_global   *host;
-
-    print_init_login_cmnd(pdu);
 
     /* this will be non-NULL if the parameter table should be freed when done */
     temp_params = NULL;
@@ -1777,8 +1774,6 @@ handle_text_request(struct iscsi_conn *conn,
 	SHARED struct iscsi_cmnd *cmnd;
 	int err;
 
-    print_init_text_cmnd(pdu);
-
 	pdu->length = ntohl(pdu->length);
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
 	pdu->target_xfer_tag = ntohl(pdu->target_xfer_tag);
@@ -1859,8 +1854,6 @@ handle_nopout(struct iscsi_conn *conn,
 	struct iscsi_init_nopout *pdu = (struct iscsi_init_nopout *) buffer;
 	SHARED struct iscsi_cmnd *cmnd;
 	int err;
-
-    print_init_nopout(pdu);
 
 	pdu->length = ntohl(pdu->length);
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
@@ -1987,8 +1980,6 @@ handle_logout(struct iscsi_conn *conn,
 		(struct iscsi_init_logout_cmnd *) buffer;
 	SHARED struct iscsi_cmnd *cmnd;
 	int err;
-
-    print_init_logout_cmnd(pdu);
 
 	pdu->length = ntohl(pdu->length);
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
@@ -2163,6 +2154,11 @@ iscsi_manager (struct iscsi_conn *conn)
             generate_nopin(conn, conn->session);
         }
     }
+    else if (iscsi_is_changed_custom_value(conn->custom,
+                                           "max_send_length"))
+    {
+        conn->max_send_length = iscsi_get_custom_value(conn->custom, "max_send_length");
+    }
 }
 
 
@@ -2311,14 +2307,14 @@ iscsi_tx_rjt(struct iscsi_conn *conn, uint8_t *bad_hdr, uint8_t reason)
 		hdr->max_cmd_sn = htonl(conn->session->max_cmd_sn);
 	}
 
+    print_iscsi_command(hdr);
+
 	if (send_hdr_plus_1_data(conn, iscsi_hdr, bad_hdr, ISCSI_HDR_LEN) < 0) {
 		err = -1;
 		goto out;
 	}
 
 	TRACE_WARNING("Send Reject\n");
-
-    print_targ_rjt(hdr);
 
 out:
 	return err;
@@ -2477,14 +2473,14 @@ handle_discovery_rsp(SHARED struct iscsi_cmnd *cmnd,
 
 	conn->text_in_progress = next_in_progress;
 
+    print_iscsi_command(hdr);
+
 	if (send_hdr_plus_1_data(conn, iscsi_hdr, (void *)ptr, size) < 0) {
 		goto out1;
 	}
 
 	TRACE(NORMAL, "text response sent, ITT %u",
 		  cmnd->init_task_tag);
-    print_targ_text_rsp(hdr);
-
 out:
     ipc_mutex_unlock(conn->text_in_progress_mutex);
 	return retval;
@@ -2544,6 +2540,8 @@ ask_for_more_text(SHARED struct iscsi_cmnd *cmnd,
 
 	cmnd->state = ISCSI_AWAIT_MORE_TEXT;
 
+    print_iscsi_command(hdr);
+
 	if (send_hdr_plus_1_data(conn, iscsi_hdr, NULL, 0) < 0) {
 		retval = -1;
 		goto out1;
@@ -2551,8 +2549,6 @@ ask_for_more_text(SHARED struct iscsi_cmnd *cmnd,
 
 	TRACE(NORMAL, "text response sent, ITT %u", 
 		  cmnd->init_task_tag);
-    print_targ_text_rsp(hdr);
-
 out1:
     ipc_mutex_unlock(conn->text_in_progress_mutex);
 	return retval;
@@ -2595,13 +2591,13 @@ handle_logout_rsp(SHARED struct iscsi_cmnd *cmnd,
 	/* connection now logged out, do not send any more commands after this */
 	conn->connection_flags |= CONN_LOGGED_OUT;
 
+    print_iscsi_command(hdr);
+
 	if (send_hdr_only(conn, iscsi_hdr) < 0) {
 		return -1;
 	}
 
 	TRACE(NORMAL, "logout response sent");
-
-    print_targ_logout_rsp(hdr);
 
 	return 0;
 }
@@ -2662,6 +2658,8 @@ handle_nopin(SHARED struct iscsi_cmnd *cmnd,
 		cmnd->state = ISCSI_SENT;
 	}
 
+    print_iscsi_command(hdr);
+
 	if (send_hdr_plus_1_data(conn, iscsi_hdr, (void *)cmnd->ping_data,
                              cmnd->data_length) < 0) {
 		return -1;
@@ -2674,7 +2672,6 @@ handle_nopin(SHARED struct iscsi_cmnd *cmnd,
 
 	TRACE(NORMAL, "nopin sent");
 
-    print_targ_nopin(hdr);
 
 	ZSHFREE(cmnd->ping_data);
 
@@ -2721,13 +2718,13 @@ handle_iscsi_mgt_fn_done(SHARED struct iscsi_cmnd *cmnd,
 
 	cmnd->state = ISCSI_DEQUEUE;
 
+    print_iscsi_command(&rsp);
+
 	if (send_hdr_only(conn, &rsp) < 0) {
 		return -1;
 	}
 
 	TRACE(NORMAL, "task mgt response sent");
-
-    print_targ_task_mgt_response(&rsp);
 
 	aborted_command = search_tags(conn, cmnd->ref_task_tag, ALL_ONES, 0);
 
@@ -2821,8 +2818,6 @@ handle_data(struct iscsi_conn *conn,
 	uint32_t data_sn;
 
 	TRACE(DEBUG, "Entered handle_data");
-
-    print_init_scsi_data_out(hdr);
 
 	hdr->length = ntohl(hdr->length);
 	hdr->init_task_tag = ntohl(hdr->init_task_tag);
@@ -3098,8 +3093,6 @@ handle_snack(struct iscsi_conn *conn,
 	SHARED struct iscsi_cmnd *cmd = NULL;
 
 	TRACE(DEBUG, "Enter handle_snack");
-
-    print_init_snack(pdu);
 
 	pdu->length = ntohl(pdu->length);
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
@@ -3644,6 +3637,8 @@ iscsi_tx_r2t(SHARED struct iscsi_cmnd *cmnd,
 			cmnd->outstanding_r2t++;
 		}
 
+        print_iscsi_command(hdr);
+
 		if (send_hdr_only(conn, iscsi_hdr) < 0) {
 			err = -1;
 			goto r2t_out;
@@ -3652,8 +3647,6 @@ iscsi_tx_r2t(SHARED struct iscsi_cmnd *cmnd,
 		TRACE(NORMAL, "r2t sent, ITT %u, offset %d",
 			  cmnd->init_task_tag,
 			  ntohl(hdr->offset));
-
-        print_targ_r2t(hdr);
 
 		/* store the r2t time stamp - SAI */
 		/* error recovery ver ref18_04 */
@@ -3807,14 +3800,15 @@ send_iscsi_response(SHARED struct iscsi_cmnd *cmnd,
 
 	cmnd->retransmit_flg = 0;
 	cmnd->state = ISCSI_SENT;
+
+    print_iscsi_command(rsp);
+
 	if (send_hdr_plus_1_data(conn, iscsi_hdr, &sense_data, sense_data_len) < 0){
 		return -1;
 	}
 
 	TRACE(NORMAL, "scsi response sent, ITT %u",
 		  cmnd->init_task_tag);
-
-    print_targ_scsi_rsp(rsp);
 
 	return 0;
 }
@@ -4141,6 +4135,8 @@ send_read_data(SHARED struct iscsi_cmnd *cmnd,
 				goto out1;
 			}
 
+            print_iscsi_command(hdr);
+
 			err = iscsi_tx_data(conn, iov, niov, total_data_length);
 
 			if (err != total_data_length) {
@@ -4153,7 +4149,6 @@ send_read_data(SHARED struct iscsi_cmnd *cmnd,
 
             TRACE(VERBOSE, "DataIn sent, offset %u",
                   htonl(hdr->offset));
-            print_targ_scsi_data_in(hdr);
 
 			/* Added for error recovery - SAI */
 skip_transmission:
@@ -5131,8 +5126,6 @@ handle_cmnd(struct iscsi_conn *conn,
 
 	TRACE(DEBUG, "Enter handle_cmnd");
 
-    print_init_scsi_cmnd(pdu);
-
 	pdu->length = ntohl(pdu->length);
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
 	pdu->xfer_len = ntohl(pdu->xfer_len);
@@ -5325,9 +5318,6 @@ handle_task_mgt_command(struct iscsi_conn *conn,
 						= (struct iscsi_init_task_mgt_command *)buffer;
 	SHARED struct iscsi_cmnd *cmnd;
 	int err = 0;
-
-	/* turn on (almost) all tracing while processing a TM command */
-    print_init_task_mgt_command(pdu);
 
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
 	pdu->ref_task_tag = ntohl(pdu->ref_task_tag);
@@ -6584,8 +6574,7 @@ iscsi_server_rx_main_loop(int send_recv_sock, SHARED iscsi_custom_data *custom)
             break;
         }
 
-		TRACE_BUFFER(VERBOSE, buffer, ISCSI_HDR_LEN,
-					 "Got PDU header");
+        print_iscsi_command(buffer);
 
 		opcode = buffer[0] & ISCSI_OPCODE;
 

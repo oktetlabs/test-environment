@@ -1579,8 +1579,8 @@ allocate_report_lun_space(Target_Scsi_Cmnd * cmnd)
 		return -1;
 		}
 
-	TRACE_ERROR("REPORT_LUNS: target id %u reporting %d luns\n",
-                cmnd->target_id, luns);
+	TRACE(NORMAL, "REPORT_LUNS: target id %u reporting %d luns\n",
+          cmnd->target_id, luns);
 
 	/* allocate space */
 	size = luns * 8;
