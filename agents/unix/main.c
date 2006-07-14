@@ -599,7 +599,7 @@ rcf_ch_start_process(pid_t *pid,
     }
 
     /* Try shell process */
-    if (is_argv)
+    if (is_argv || argc == 0)
     {
         char check_cmd[RCF_MAX_PATH];
 
