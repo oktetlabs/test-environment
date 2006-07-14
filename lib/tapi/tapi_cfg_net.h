@@ -219,42 +219,38 @@ typedef struct tapi_cfg_net_assigned {
 } tapi_cfg_net_assigned;
 
 /**
- * Assign IPv4 subnet to specified configuration network.
+ * Assign IP subnet to specified configuration network.
  *
- * @param net       Configuration network
- * @param assigned  Information about done assignments
+ * @param af            Address family
+ * @param net           Configuration network
+ * @param assigned      Information about done assignments
  *
- * If assigned is NULL or assigned->pool is CFG_HANDLE_INVALID, IPv4
- * subnet is allocated using #tapi_cfg_alloc_ip4_net. Its handle is
- * returned in assigned->pool. Pool entries assigned to net nodes are
- * returned as array assigned->entries. Order of elements in the same
- * as order of nodes in net->nodes array.
+ * If assigned is NULL or assigned->pool is CFG_HANDLE_INVALID, IP
+ * subnet is allocated using #tapi_cfg_alloc_entry from /net_pool:ip4 or
+ * /net_pool:ip6. Its handle is returned in assigned->pool. Pool entries
+ * assigned to net nodes are returned as array assigned->entries.
+ * Order of elements in the same as order of nodes in net->nodes array.
  *
  * @return Status code.
  */
-extern int tapi_cfg_net_assign_ip4(cfg_net_t *net,
-                                   tapi_cfg_net_assigned *assigned);
+extern int tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
+                                  tapi_cfg_net_assigned *assigned);
 
 /**
- * Assign IPv4 subnets for all configuration network.
+ * Assign IP subnets for all configuration network.
+ *
+ * @param af            Address family
  *
  * @return Status code.
  */
-extern te_errno tapi_cfg_net_all_assign_ip4(void);
-
-/**
- * Assign IPv6 subnets for all configuration network.
- *
- * @return Status code.
- */
-extern te_errno tapi_cfg_net_all_assign_ip6(void);
+extern te_errno tapi_cfg_net_all_assign_ip(unsigned int af);
 
 /**
  * Dirty hack, must be removed after sockts_get_host_addr() 
  * will be repaired.
  */
-extern int tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net, 
-                                           tapi_cfg_net_assigned *assigned);
+extern int tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net, 
+                                          tapi_cfg_net_assigned *assigned);
 
 /**
  * Delete all nets from network configuration.

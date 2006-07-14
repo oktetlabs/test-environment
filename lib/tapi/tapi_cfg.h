@@ -520,7 +520,7 @@ extern int tapi_cfg_free_entry(cfg_handle *entry);
  *
  * @note Use #tapi_cfg_free_entry function to free allocated entry.
  *
- * @sa tapi_cfg_free_entry, tapi_cfg_alloc_ip4_addr
+ * @sa tapi_cfg_free_entry, tapi_cfg_alloc_net_addr
  */
 static inline int
 tapi_cfg_alloc_ip4_net(cfg_handle *entry)
@@ -537,7 +537,7 @@ tapi_cfg_alloc_ip4_net(cfg_handle *entry)
  *
  * @note Use #tapi_cfg_free_entry function to free allocated entry.
  *
- * @sa tapi_cfg_free_entry, tapi_cfg_alloc_ip6_addr
+ * @sa tapi_cfg_free_entry, tapi_cfg_alloc_net_addr
  */
 static inline int
 tapi_cfg_alloc_ip6_net(cfg_handle *entry)
@@ -602,9 +602,9 @@ tapi_cfg_add_ip6_net(const struct sockaddr_in6 *ip6_net_addr,
 /**
  * Allocate IPv4 address from IPv4 subnet got from IPv4 subnets pool.
  *
- * @param ip4_net       IPv4 subnet handle
- * @param p_entry       Location for Cfgr handle of new entry
- * @param addr          Location for allocated address
+ * @param net_pool_entry    Subnet handle
+ * @param p_entry           Location for Cfgr handle of new entry
+ * @param addr              Location for allocated address
  *
  * @return Status code.
  *
@@ -612,22 +612,22 @@ tapi_cfg_add_ip6_net(const struct sockaddr_in6 *ip6_net_addr,
  * 
  * @sa tapi_cfg_free_entry, tapi_cfg_alloc_ip4_net
  */
-extern int tapi_cfg_alloc_ip4_addr(cfg_handle           ip4_net,
-                                   cfg_handle          *p_entry,
-                                   struct sockaddr_in **addr);
+extern int tapi_cfg_alloc_net_addr(cfg_handle        net_pool_entry,
+                                   cfg_handle       *p_entry,
+                                   struct sockaddr **addr);
 
 /**
  * Add IPv4 address to IPv4 subnet from IPv4 subnets pool.
  *
- * @param ip4_net       IPv4 subnet handle
- * @param ip4_addr      IPv4 address to add in pool
- * @param p_entry       Location for Cfgr handle of new entry
+ * @param net_pool_entry    Subnet handle
+ * @param add_addr          Address to add in pool
+ * @param p_entry           Location for Cfgr handle of new entry
  *
  * @return Status code.
  */
-extern int tapi_cfg_add_ip4_addr(cfg_handle           ip4_net,
-                                 struct sockaddr_in  *ip4_addr,
-                                 cfg_handle          *p_entry);
+extern int tapi_cfg_add_net_addr(cfg_handle       net_pool_entry,
+                                 struct sockaddr *add_addr,
+                                 cfg_handle      *p_entry);
 
 /**
  * Set Environment variables specified in /local/env on corresponding
