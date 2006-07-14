@@ -324,6 +324,57 @@ te_sockaddr_mask_by_prefix(struct sockaddr *mask, socklen_t masklen,
     return 0;
 }
 
+/* See description in te_sockaaddr.h */
+te_errno
+te_sockaddr_cleanup_to_prefix(struct sockaddr *addr, unsigned int prefix)
+{
+    switch (addr->sa_family)
+    {
+        case AF_INET:
+            if (prefix > (sizeof(struct in_addr) << 3))
+            {
+                ERROR("%s: Too long IPv4 prefix length %u",
+                      __FUNCTION__, prefix);
+                return TE_RC(TE_TAPI, TE_E2BIG);
+            }
+            SIN(addr)->sin_addr.s_addr =
+                htonl(ntohl(SIN(addr)->sin_addr.s_addr) & 
+                      PREFIX2MASK(prefix));
+            break;
+
+        case AF_INET6:
+        {
+            unsigned int  i;
+            uint8_t      *p = (uint8_t *)&SIN6(addr)->sin6_addr;
+
+            if (prefix > (sizeof(struct in6_addr) << 3))
+            {
+                ERROR("%s: Too long IPv6 prefix length %u",
+                      __FUNCTION__, prefix);
+                return TE_RC(TE_TAPI, TE_E2BIG);
+            }
+            for (i = 0; i < sizeof(struct in6_addr); ++i)
+            {
+                if (prefix >= 8)
+                {
+                    prefix -= 8;
+                }
+                else
+                {
+                    *p &= ((~0) << (8 - prefix));
+                    prefix = 0;
+                }
+            }
+            break;
+        }
+
+        default:
+            ERROR("%s: Address family %u is not supported",
+                  __FUNCTION__, addr->sa_family);
+            return TE_RC(TE_TAPI, TE_ENOSYS);
+    }
+    return 0;
+}
 
 
 /* See description in tapi_sockaaddr.h */

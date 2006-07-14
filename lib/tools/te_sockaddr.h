@@ -273,6 +273,17 @@ extern te_errno te_sockaddr_mask_by_prefix(struct sockaddr *mask,
                                            int af, unsigned int prefix);
 
 /**
+ * Clean up network address part to be prefix of specified length.
+ *
+ * @param addr      address
+ * @param prefix    prefix length
+ *
+ * @return Status code.
+ */
+extern te_errno te_sockaddr_cleanup_to_prefix(struct sockaddr *addr,
+                                              unsigned int prefix);
+
+/**
  * Compare 'struct sockaddr'.
  *
  * @param a1        the first address
