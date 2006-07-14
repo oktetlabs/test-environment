@@ -397,10 +397,8 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
     *tmp ='\0';
     rt->dst.ss_family = family;
 
-    if ((family == AF_INET &&
-         inet_pton(family, inst_copy, &(SIN(&(rt->dst))->sin_addr)) <= 0) ||
-        (family == AF_INET6 &&
-         inet_pton(family, inst_copy, &(SIN6(&(rt->dst))->sin6_addr)) <= 0))
+    if (inet_pton(family, inst_copy,
+                  te_sockaddr_get_netaddr(SA(&(rt->dst)))) <= 0)
     {
         ERROR("Incorrect 'destination address' value in route %s",
               inst_name);
@@ -408,8 +406,7 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
     }
     tmp++;
     if (*tmp == '-' || (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1) ||
-         ((rt->dst.ss_family == AF_INET && prefix > 32) ||
-          (rt->dst.ss_family == AF_INET6 && prefix > 128)))
+        ((unsigned)prefix > (te_netaddr_get_size(rt->dst.ss_family) << 3)))
     {
         ERROR("Incorrect 'prefix length' value in route %s", inst_name);
         return TE_RC(TE_TAPI, TE_ENOENT);
@@ -1152,16 +1149,14 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                   te_bool *is_static, cs_neigh_entry_state *state)
 {
     cfg_handle handle;
-    char       net_addr_str[64];
+    char       net_addr_str[INET6_ADDRSTRLEN];
     int        rc = 0;
 
     if (ta == NULL || net_addr == NULL || ifname == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
     
     if (inet_ntop(net_addr->sa_family, 
-                  net_addr->sa_family == AF_INET ? 
-                      (void *)&SIN(net_addr)->sin_addr :
-                      (void *)&SIN6(net_addr)->sin6_addr,
+                  te_sockaddr_get_netaddr(net_addr),
                   net_addr_str, sizeof(net_addr_str)) == NULL)
     {
         ERROR("%s() fails converting binary IPv4 address  "
@@ -1280,8 +1275,8 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                     if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
                         break;
                                    
-                    RING("%s: there is no neighbour entry for %s"
-                         " on interface %s of TA %s", __FUNCTION__, 
+                    RING("%s: there is no neighbour entry for %s "
+                         "on interface %s of TA %s", __FUNCTION__, 
                          net_addr_str, ifname, ta);
                     rc = 0;
                     break;
@@ -1597,7 +1592,7 @@ te_errno
 tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
                  unsigned int prefix, int state, cfg_handle *entry)
 {
-    int                     rc;
+    te_errno                rc;
     cfg_handle              pool;
     cfg_handle              net;
     char                    buf[INET6_ADDRSTRLEN];
@@ -1613,10 +1608,19 @@ tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
         return rc;
     }
 
+    assert(sizeof(addr) >= te_sockaddr_get_size(net_addr));
     memcpy(&addr, net_addr, te_sockaddr_get_size(net_addr));
-    SIN(&addr)->sin_addr.s_addr = htonl(ntohl(SIN(&addr)->sin_addr.s_addr)
-                                       & PREFIX2MASK(prefix));
-    inet_ntop(addr.ss_family, &SIN(&addr)->sin_addr, buf, sizeof(buf));
+    rc = te_sockaddr_cleanup_to_prefix(SA(&addr), prefix);
+    if (rc != 0)
+        return rc;
+
+    if (inet_ntop(addr.ss_family, te_sockaddr_get_netaddr(SA(&addr)),
+                  buf, sizeof(buf)) == NULL)
+    {
+        rc = TE_OS_RC(TE_TAPI, errno);
+        ERROR("%s: Failed to convert address to string", __FUNCTION__);
+        return rc;
+    }
 
     /* Check for interference with existing nets in the pool */
     for (rc = cfg_get_son(pool, &net);
@@ -1637,6 +1641,14 @@ tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
                   "as address: %r", __FUNCTION__, net, rc);
             return rc;
         }
+        if (net_sa->sa_family != addr.ss_family)
+        {
+            ERROR("%s: Pool %s contains addresses of different family",
+                  __FUNCTION__, net_pool);
+            free(net_sa);
+            return rc;
+        }
+
         rc = cfg_get_oid_str(net, &net_oid);
         if (rc != 0)
         {
@@ -1840,20 +1852,44 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
 
     if (add_addr == NULL)
     {
+        uint32_t *p = te_sockaddr_get_netaddr(*addr);
+
         /* Dynamic allocation of IP */
         /* TODO: Optimize free address search */
-        do
-        {
+        do {
             /* Make address from subnet address */
-            SIN(*addr)->sin_addr.s_addr =
-                htonl(ntohl(SIN(*addr)->sin_addr.s_addr) + 1);
-            inet_ntop(AF_INET, &SIN(*addr)->sin_addr, buf, sizeof(buf));
+            switch ((*addr)->sa_family)
+            {
+                case AF_INET:
+                    *p = htonl(ntohl(*p) + 1);
+                    break;
 
-            /* Check if the entry already exists */
-            val_type = CVT_INTEGER;
-            rc = cfg_get_instance_fmt(&val_type, &entry_state,
-                                      "%s/pool:/entry:%s",
-                                      net_oid, buf);
+                case AF_INET6:
+                    p[sizeof(struct in6_addr) / sizeof(*p) - 1] =
+                        htonl(ntohl(p[sizeof(struct in6_addr) /
+                                      sizeof(*p) - 1]) + 1);
+                    break;
+
+                default:
+                    ERROR("%s: Address family %u is not supported",
+                          __FUNCTION__, (*addr)->sa_family);
+                    p = NULL;
+                    break;
+            }
+            if (inet_ntop((*addr)->sa_family, p, buf, sizeof(buf)) == NULL)
+            {
+                ERROR("%s: Failed to convert address to string",
+                      __FUNCTION__);
+                rc = TE_RC(TE_TAPI, TE_EINVAL);
+            }
+            else
+            {
+                /* Check if the entry already exists */
+                val_type = CVT_INTEGER;
+                rc = cfg_get_instance_fmt(&val_type, &entry_state,
+                                          "%s/pool:/entry:%s",
+                                          net_oid, buf);
+            }
         } while (rc == 0);
     }
     else
