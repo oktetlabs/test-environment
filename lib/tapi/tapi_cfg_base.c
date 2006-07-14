@@ -342,7 +342,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
         rc = cfg_add_instance_fmt(cfg_hndl, CFG_VAL(NONE, NULL),
                                   "%s/net_addr:%s", oid,
                                   inet_ntop(addr->sa_family,
-                                            &SIN(addr)->sin_addr,
+                                            te_sockaddr_get_netaddr(addr),
                                             buf, sizeof(buf)));
     }
     else
@@ -350,7 +350,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
         rc = cfg_add_instance_fmt(cfg_hndl, CFG_VAL(INTEGER, prefix),
                                   "%s/net_addr:%s", oid,
                                   inet_ntop(addr->sa_family,
-                                            &SIN(addr)->sin_addr,
+                                            te_sockaddr_get_netaddr(addr),
                                             buf, sizeof(buf)));
     }
     if (rc == 0)
@@ -411,7 +411,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
     else if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
     {
         WARN("%s already has address %s", oid,
-             inet_ntop(addr->sa_family, &SIN(addr)->sin_addr,
+             inet_ntop(addr->sa_family, te_sockaddr_get_netaddr(addr),
                        buf, sizeof(buf)));
     }
     else
