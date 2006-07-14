@@ -141,7 +141,7 @@ tapi_env_allocate_addr(tapi_env_net *net, int af,
         ERROR("Invalid location for address pointer");
         return TE_EINVAL;
     }
-    if (af != AF_INET)
+    if (af != AF_INET && af != AF_INET6)
     {
         ERROR("Address family %d is not supported", af);
         return TE_EINVAL;
@@ -154,18 +154,19 @@ tapi_env_allocate_addr(tapi_env_net *net, int af,
         return TE_ENOMEM;
     }
 
-    rc = tapi_cfg_alloc_net_addr(net->ip4net, &handle->handle, addr);
+    rc = tapi_cfg_alloc_net_addr(af == AF_INET ? net->ip4net : net->ip6net,
+                                 &handle->handle, addr);
     if (rc != 0)
     {
-        ERROR("Failed to allocate IPv4 address in subnet 0x%x: %r",
-              net->ip4net, rc);
+        ERROR("Failed to allocate address in subnet 0x%x: %r",
+              af == AF_INET ? net->ip4net : net->ip6net, rc);
         free(handle);
         return rc;
     }
     if (addrlen != NULL)
-        *addrlen = sizeof(struct sockaddr_in);
+        *addrlen = te_sockaddr_get_size_by_af(af); 
 
-    TAILQ_INSERT_TAIL(&net->ip4addrs, handle, links);
+    TAILQ_INSERT_TAIL(&net->net_addrs, handle, links);
 
     return 0;
 }
@@ -283,8 +284,8 @@ tapi_env_free(tapi_env *env)
     cfg_val_type      type;
     int               n_entries;
     int               n_deleted;
-    cfg_handle        ip4_net_hndl;
-    char             *ip4_net_oid;
+    cfg_handle        ip_net_hndl;
+    char             *ip_net_oid;
 
     if (env == NULL)
         return 0;
@@ -358,23 +359,23 @@ tapi_env_free(tapi_env *env)
     {
         LIST_REMOVE(net, links);
         n_deleted = 0;
-        ip4_net_oid = NULL;
-        while ((addr_hndl = net->ip4addrs.tqh_first) != NULL)
+        ip_net_oid = NULL;
+        while ((addr_hndl = net->net_addrs.tqh_first) != NULL)
         {
-            TAILQ_REMOVE(&net->ip4addrs, addr_hndl, links);
+            TAILQ_REMOVE(&net->net_addrs, addr_hndl, links);
             if (n_deleted == 0)
             {
                 if (((rc = cfg_get_father(addr_hndl->handle,
-                                          &ip4_net_hndl)) != 0) ||
-                    ((rc = cfg_get_father(ip4_net_hndl,
-                                          &ip4_net_hndl)) != 0))
+                                          &ip_net_hndl)) != 0) ||
+                    ((rc = cfg_get_father(ip_net_hndl,
+                                          &ip_net_hndl)) != 0))
 
                 {
                     ERROR("cfg_get_father() failed: %r", rc);
                     TE_RC_UPDATE(result, rc);
                 }
-                else if ((rc = cfg_get_oid_str(ip4_net_hndl,
-                                               &ip4_net_oid)) != 0)
+                else if ((rc = cfg_get_oid_str(ip_net_hndl,
+                                               &ip_net_oid)) != 0)
                 {
                     ERROR("cfg_get_oid_str() failed: %r", rc);
                     TE_RC_UPDATE(result, rc);
@@ -389,11 +390,11 @@ tapi_env_free(tapi_env *env)
             free(addr_hndl);
             ++n_deleted;
         }
-        if (ip4_net_oid != NULL)
+        if (ip_net_oid != NULL)
         {
             type = CVT_INTEGER;
             rc = cfg_get_instance_fmt(&type, &n_entries,
-                                      "%s/n_entries:", ip4_net_oid);
+                                      "%s/n_entries:", ip_net_oid);
             if (rc != 0)
             {
                 ERROR("Failed to get number of entries in the pool: %r",
@@ -404,7 +405,7 @@ tapi_env_free(tapi_env *env)
             {
                 n_entries -= n_deleted;
                 rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, n_entries),
-                                          "%s/n_entries:", ip4_net_oid);
+                                          "%s/n_entries:", ip_net_oid);
                 if (rc != 0)
                 {
                     ERROR("Failed to set number of entries in the pool: %r",
@@ -412,9 +413,10 @@ tapi_env_free(tapi_env *env)
                     TE_RC_UPDATE(result, rc);
                 }
             }
-            free(ip4_net_oid);
+            free(ip_net_oid);
         }
         free(net->ip4addr);
+        free(net->ip6addr);
         free(net->name);
         free(net);
     }
@@ -647,9 +649,9 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
     cfg_val_type    val_type;
     unsigned int    i;
     char           *net_oid;
-    unsigned int    n_ip4_nets;
-    cfg_handle     *ip4_nets;
-    char           *ip4_net_oid;
+    unsigned int    n_ip_nets;
+    cfg_handle     *ip_nets;
+    char           *ip_net_oid;
 
 
     for (env_net = nets->lh_first, i = 0;
@@ -666,8 +668,13 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
             break;
         }
 
+
+        /*
+         * IPv4 prepare
+         */
+
         /* Get IPv4 subnet for the network */
-        rc = cfg_find_pattern_fmt(&n_ip4_nets, &ip4_nets,
+        rc = cfg_find_pattern_fmt(&n_ip_nets, &ip_nets,
                                   "%s/ip4_subnet:*", net_oid);
         if (rc != 0)
         {
@@ -676,7 +683,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
             free(net_oid);
             break;
         }
-        if (n_ip4_nets <= 0)
+        if (n_ip_nets <= 0)
         {
             ERROR("No IPv4 networks are assigned to net '%s'", net_oid);
             free(net_oid);
@@ -686,48 +693,50 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         
         /* Get IPv4 subnet address */
         val_type = CVT_ADDRESS;
-        rc = cfg_get_instance(ip4_nets[0], &val_type, &env_net->ip4addr);
+        rc = cfg_get_instance(ip_nets[0], &val_type, &env_net->ip4addr);
         if (rc != 0)
         {
             ERROR("Failed to get IPv4 subnet for net '%s': %r",
                   net_oid, rc);
-            free(ip4_nets);
+            free(ip_nets);
             free(net_oid);
             break;
         }
-        free(net_oid);
 
         /* Get IPv4 subnet handle */
-        rc = cfg_get_inst_name_type(ip4_nets[0], CVT_INTEGER,
+        rc = cfg_get_inst_name_type(ip_nets[0], CVT_INTEGER,
                                     CFG_IVP(&env_net->ip4net));
         if (rc != 0)
         {
             ERROR("Failed to get IPv4 subnet handle: %r", rc);
-            free(ip4_nets);
+            free(ip_nets);
+            free(net_oid);
             break;
         }
         /* Get IPv4 subnet OID */
-        rc = cfg_get_oid_str(env_net->ip4net, &ip4_net_oid);
+        rc = cfg_get_oid_str(env_net->ip4net, &ip_net_oid);
         if (rc != 0)
         {
             ERROR("cfg_get_oid_str() failed: %r", rc);
-            free(ip4_nets);
+            free(ip_nets);
+            free(net_oid);
             break;
         }
-        free(ip4_nets);
+        free(ip_nets);
 
         /* Get IPv4 subnet for the network */
         val_type = CVT_INTEGER;
         rc = cfg_get_instance_fmt(&val_type, &env_net->ip4pfx,
-                                  "%s/prefix:", ip4_net_oid);
+                                  "%s/prefix:", ip_net_oid);
         if (rc != 0)
         {
             ERROR("Failed to get IPv4 prefix length for configuration "
-                  "network %s: %r", ip4_net_oid, rc);
-            free(ip4_net_oid);
+                  "network %s: %r", ip_net_oid, rc);
+            free(ip_net_oid);
+            free(net_oid);
             break;
         }
-        free(ip4_net_oid);
+        free(ip_net_oid);
 
         /*
          * Prepare IPv4 broadcast address in accordance with got
@@ -741,6 +750,76 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
             addr |= (1 << ((sizeof(in_addr_t) << 3) - env_net->ip4pfx)) - 1;
             env_net->ip4bcast.sin_addr.s_addr = htonl(addr);
         }
+
+
+        /*
+         * IPv6 prepare
+         */
+
+        /* Get IPv6 subnet for the network */
+        rc = cfg_find_pattern_fmt(&n_ip_nets, &ip_nets,
+                                  "%s/ip6_subnet:*", net_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to find IPv6 subnets assigned to net '%s': %r",
+                  net_oid, rc);
+            free(net_oid);
+            break;
+        }
+        if (n_ip_nets <= 0)
+        {
+            ERROR("No IPv6 networks are assigned to net '%s'", net_oid);
+            free(net_oid);
+            rc = TE_EENV;
+            break;
+        }
+        
+        /* Get IPv6 subnet address */
+        val_type = CVT_ADDRESS;
+        rc = cfg_get_instance(ip_nets[0], &val_type, &env_net->ip6addr);
+        if (rc != 0)
+        {
+            ERROR("Failed to get IPv6 subnet for net '%s': %r",
+                  net_oid, rc);
+            free(ip_nets);
+            free(net_oid);
+            break;
+        }
+
+        /* Get IPv6 subnet handle */
+        rc = cfg_get_inst_name_type(ip_nets[0], CVT_INTEGER,
+                                    CFG_IVP(&env_net->ip6net));
+        if (rc != 0)
+        {
+            ERROR("Failed to get IPv6 subnet handle: %r", rc);
+            free(ip_nets);
+            free(net_oid);
+            break;
+        }
+        /* Get IPv6 subnet OID */
+        rc = cfg_get_oid_str(env_net->ip6net, &ip_net_oid);
+        if (rc != 0)
+        {
+            ERROR("cfg_get_oid_str() failed: %r", rc);
+            free(ip_nets);
+            free(net_oid);
+            break;
+        }
+        free(ip_nets);
+
+        /* Get IPv6 subnet for the network */
+        val_type = CVT_INTEGER;
+        rc = cfg_get_instance_fmt(&val_type, &env_net->ip6pfx,
+                                  "%s/prefix:", ip_net_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to get IPv6 prefix length for configuration "
+                  "network %s: %r", ip_net_oid, rc);
+            free(ip_net_oid);
+            free(net_oid);
+            break;
+        }
+        free(ip_net_oid);
     }
 
     return rc;
@@ -820,21 +899,22 @@ prepare_hosts(tapi_env *env)
 
 
 te_errno
-prepare_ip4_unicast(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
-                    struct sockaddr **addr)
+prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
+                cfg_nets_t *cfg_nets, struct sockaddr **addr)
 {
     te_errno rc;
 
     assert(addr != NULL);
+    assert(af == AF_INET || af == AF_INET6);
 
-    if (env_addr->iface->ip4_unicast_used)
+    if (af == AF_INET ? env_addr->iface->ip4_unicast_used :
+                        env_addr->iface->ip6_unicast_used)
     {
         rc = tapi_env_allocate_addr(env_addr->iface->net,
-                                    AF_INET, addr, NULL);
+                                    af, addr, NULL);
         if (rc != 0)
         {
-            ERROR("Failed to allocate additional IPv4 "
-                  "address: %r", rc);
+            ERROR("Failed to allocate additional address: %r", rc);
             return rc;
         }
 
@@ -849,15 +929,15 @@ prepare_ip4_unicast(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
     {
         cfg_handle      handle;
         char           *node_oid;
-        int             ip4_addrs_num;
-        cfg_handle     *ip4_addrs;
+        int             ip_addrs_num;
+        cfg_handle     *ip_addrs;
         cfg_val_type    val_type;
 
         /* Handle of the assosiated network node */
         handle = cfg_nets->nets[env_addr->iface->net->i_net].
                      nodes[env_addr->iface->i_node].handle;
 
-        /* Get IPv4 address assigned to the node */
+        /* Get address assigned to the node */
         rc = cfg_get_oid_str(handle, &node_oid);
         if (rc != 0)
         {
@@ -865,21 +945,22 @@ prepare_ip4_unicast(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
             return rc;
         }
 
-        /* Get IPv4 addresses of the node */
-        rc = cfg_find_pattern_fmt(&ip4_addrs_num, &ip4_addrs,
-                                  "%s/ip4_address:*", node_oid);
+        /* Get IP addresses of the node */
+        rc = cfg_find_pattern_fmt(&ip_addrs_num, &ip_addrs,
+                                  "%s/ip%u_address:*", node_oid,
+                                  af == AF_INET ? 4 : 6);
         if (rc != 0)
         {
-            ERROR("Failed to find IPv4 addresses assigned "
+            ERROR("Failed to find IP addresses assigned "
                   "to node '%s': %r", node_oid, rc);
             free(node_oid);
             return rc;
         }
-        if (ip4_addrs_num <= 0)
+        if (ip_addrs_num <= 0)
         {
-            ERROR("No IPv4 addresses are assigned to node '%s'",
+            ERROR("No IP addresses are assigned to node '%s'",
                   node_oid);
-            free(ip4_addrs);
+            free(ip_addrs);
             free(node_oid);
             return TE_EENV;
         }
@@ -887,15 +968,18 @@ prepare_ip4_unicast(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
 
         /* Get IPv4 address */
         val_type = CVT_ADDRESS;
-        rc = cfg_get_instance(ip4_addrs[0], &val_type, addr);
-        free(ip4_addrs);
+        rc = cfg_get_instance(ip_addrs[0], &val_type, addr);
+        free(ip_addrs);
         if (rc != 0)
         {
-            ERROR("Failed to get node IPv4 address: %r", rc);
+            ERROR("Failed to get node IP address: %r", rc);
             return rc;
         }
 
-        env_addr->iface->ip4_unicast_used = TRUE;
+        if (af == AF_INET)
+            env_addr->iface->ip4_unicast_used = TRUE;
+        else
+            env_addr->iface->ip6_unicast_used = TRUE;
     }
 
     return 0;
@@ -1000,8 +1084,8 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             env_addr->addr->sa_family = AF_INET;
             if (env_addr->type == TAPI_ENV_ADDR_UNICAST)
             {
-                rc = prepare_ip4_unicast(env_addr, cfg_nets,
-                                         &env_addr->addr);
+                rc = prepare_unicast(AF_INET, env_addr, cfg_nets,
+                                     &env_addr->addr);
                 if (rc != 0)
                     break;
             }
@@ -1072,7 +1156,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             {
                 struct sockaddr *ip4;
 
-                rc = prepare_ip4_unicast(env_addr, cfg_nets, &ip4);
+                rc = prepare_unicast(AF_INET, env_addr, cfg_nets, &ip4);
                 if (rc != 0)
                     break;
 
@@ -1081,6 +1165,13 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
                     SIN(ip4)->sin_addr.s_addr;
 
                 free(ip4);
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_UNICAST)
+            {
+                rc = prepare_unicast(AF_INET6, env_addr, cfg_nets,
+                                     &env_addr->addr);
+                if (rc != 0)
+                    break;
             }
             else if (env_addr->type == TAPI_ENV_ADDR_LINKLOCAL)
             {
@@ -1169,7 +1260,9 @@ add_address(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
     /* All is logged inside the function */
     rc = tapi_cfg_base_add_net_addr(str,
                                     addr,
-                                    env_addr->iface->net->ip4pfx,
+                                    (addr->sa_family == AF_INET) ?
+                                        env_addr->iface->net->ip4pfx :
+                                        env_addr->iface->net->ip6pfx,
                                     TRUE,
                                     &env_addr->handle);
     if (TE_RC_GET_ERROR(rc) == TE_EEXIST)

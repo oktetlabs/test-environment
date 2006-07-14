@@ -66,7 +66,7 @@ create_net(void)
     assert(p != NULL);
     if (p != 0)
     {
-        TAILQ_INIT(&p->ip4addrs);
+        TAILQ_INIT(&p->net_addrs);
         env->n_nets++;
         LIST_INSERT_HEAD(&env->nets, p, links);
     }

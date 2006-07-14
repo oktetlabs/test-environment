@@ -251,7 +251,12 @@ typedef struct tapi_env_net {
     unsigned int        ip4pfx;     /**< IPV4 address prefix length */
     struct sockaddr_in  ip4bcast;   /**< IPv4 broadcast address
                                          of the net */
-    cfg_handle_tqh      ip4addrs;   /**< List of additional addresses */
+
+    cfg_handle          ip6net;     /**< Handle of IPv4 addresses pool */
+    struct sockaddr    *ip6addr;    /**< IPv4 address of the net */
+    unsigned int        ip6pfx;     /**< IPV4 address prefix length */
+
+    cfg_handle_tqh      net_addrs;  /**< List of additional addresses */
 
 } tapi_env_net;
 
@@ -298,6 +303,8 @@ typedef struct tapi_env_if {
     struct if_nameindex info;   /**< Interface info */
     
     te_bool ip4_unicast_used;   /**< Is IPv4 address assigned to
+                                     the host in this net used? */
+    te_bool ip6_unicast_used;   /**< Is IPv6 address assigned to
                                      the host in this net used? */
 
 } tapi_env_if;
