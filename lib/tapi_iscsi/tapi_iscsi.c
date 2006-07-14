@@ -3003,7 +3003,7 @@ command_read(iscsi_io_handle_t *ioh, int *fd,
 
     result_len = rpc_readbuf(ioh->rpcs, *fd, ioh->buffer, length);
     status = (result_len < 0 ? RPC_ERRNO(ioh->rpcs) : 
-              (result_len != length ? TE_RC(TE_TAPI, TE_EFAIL) : 0));
+              (result_len != length ? TE_RC(TE_TAPI, TE_EIO) : 0));
     if (status == 0)
     {
         rpc_get_buf(ioh->rpcs, ioh->buffer, 0, length, data);
