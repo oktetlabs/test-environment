@@ -331,9 +331,9 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
     int     rc;
 
 
-    if (addr->sa_family != AF_INET)
+    if (addr->sa_family != AF_INET && addr->sa_family != AF_INET6)
     {
-        ERROR("AF_INET address family is supported only.");
+        ERROR("AF_INET and AF_INET6 address families are supported only.");
         return TE_RC(TE_TAPI, TE_EAFNOSUPPORT);
     }
 
@@ -355,7 +355,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
     }
     if (rc == 0)
     {
-        if (set_bcast)
+        if (addr->sa_family == AF_INET && set_bcast)
         {
             struct sockaddr_in  bcast;
             uint32_t            nmask;
