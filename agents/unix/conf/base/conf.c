@@ -1354,13 +1354,13 @@ nl_ip_addr_add_del(int cmd, const char *ifname,
     if (family == AF_INET)
     {
         lcl.bytelen = AF_INET_DEFAULT_BYTELEN;
-        lcl.bitlen = (prefix != 0) ? prefix : AF_INET_DEFAULT_BITLEN;
+        lcl.bitlen = prefix;
     }
     else
     {
         assert(family == AF_INET6);
         lcl.bytelen = AF_INET6_DEFAULT_BYTELEN;
-        lcl.bitlen = (prefix != 0) ? prefix : AF_INET6_DEFAULT_BITLEN;
+        lcl.bitlen = prefix;
     }
     memcpy(lcl.data, addr, lcl.bytelen);
 
@@ -1437,7 +1437,7 @@ nl_ip_addr_modify(enum net_addr_ops cmd,
     sa_family_t     family;
     gen_ip_address  ip_addr;
 
-    /* If address contains ';', it is IPv6 address */
+    /* If address contains ':', it is IPv6 address */
     family = str_addr_family(addr);
 
     if (cmd == NET_ADDR_ADD)
@@ -1467,7 +1467,7 @@ nl_ip_addr_modify(enum net_addr_ops cmd,
     if (cmd != NET_ADDR_ADD)
     {
         rc = nl_ip_addr_add_del(RTM_DELADDR, ifname, family,
-                                &ip_addr, 0, 0);
+                                &ip_addr, prefix, 0);
     }
 
     if (rc == 0 && cmd != NET_ADDR_DELETE)
