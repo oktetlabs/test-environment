@@ -283,6 +283,7 @@ extern const char *ta_rt_type2name(ta_route_type type);
 /** Structure that keeps system independent representation of the route */
 typedef struct ta_rt_info_t {
     struct sockaddr_storage dst; /**< Route destination address */
+    struct sockaddr_storage src; /**< Route source address */
     uint32_t                prefix; /**< Route destination address prefix */
     /** Gateway address - for indirect routes */
     struct sockaddr_storage gw;
@@ -311,6 +312,8 @@ typedef struct ta_rt_info_t {
 #define TA_RT_INFO_FLG_IRTT   0x0020
 /** TOS is specified for the route */
 #define TA_RT_INFO_FLG_TOS    0x0040
+/** Source address is specified for the route */
+#define TA_RT_INFO_FLG_SRC    0x0080
 
 /**
  * Parses route instance name and fills in a part of rt_info 

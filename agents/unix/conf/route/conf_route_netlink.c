@@ -135,6 +135,10 @@ rt_info2nl_req(const ta_rt_info_t *rt_info, struct nl_request *req)
 
     req->r.rtm_dst_len = rt_info->prefix;
     family = req->r.rtm_family = rt_info->dst.ss_family;
+    if (family != AF_INET && family != AF_INET6)
+    {
+        return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
+    }
     
     if ((family == AF_INET && 
          addattr_l(&req->n, sizeof(*req), RTA_DST,
@@ -184,6 +188,22 @@ rt_info2nl_req(const ta_rt_info_t *rt_info, struct nl_request *req)
     if ((rt_info->flags & TA_RT_INFO_FLG_TOS) != 0)
     {
         req->r.rtm_tos = rt_info->tos;
+    }
+
+    if ((rt_info->flags & TA_RT_INFO_FLG_SRC) != 0)
+    {
+        if (family == AF_INET)
+        {
+            addattr_l(&req->n, sizeof(*req), RTA_PREFSRC,
+                      &SIN(&rt_info->src)->sin_addr,
+                      sizeof(struct in_addr));
+        }
+        else
+        {
+            addattr_l(&req->n, sizeof(*req), RTA_PREFSRC,
+                      &SIN6(&rt_info->src)->sin6_addr,
+                      sizeof(struct in6_addr));
+        }
     }
     
     if (mxrta->rta_len > RTA_LENGTH(0))
@@ -455,6 +475,22 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
             memcpy(user_data->rt_info->ifname,
                    ll_index_to_name(user_data->if_index),
                    IFNAMSIZ);
+        }
+
+        if (tb[RTA_PREFSRC] != NULL)
+        {
+            user_data->rt_info->flags |= TA_RT_INFO_FLG_SRC;
+            user_data->rt_info->src.ss_family = family;
+            if (family == AF_INET)
+            {
+                memcpy(&SIN(&user_data->rt_info->src)->sin_addr,
+                       RTA_DATA(tb[RTA_PREFSRC]), sizeof(struct in_addr));
+            }
+            else if (family == AF_INET6)
+            {
+                memcpy(&SIN6(&user_data->rt_info->src)->sin6_addr,
+                       RTA_DATA(tb[RTA_PREFSRC]), sizeof(struct in6_addr));
+            }
         }
         
         if (tb[RTA_GATEWAY] != NULL)

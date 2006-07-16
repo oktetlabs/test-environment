@@ -311,6 +311,27 @@ route_load_attrs(ta_cfg_obj_t *obj)
     ROUTE_LOAD_ATTR(WIN, win);
     ROUTE_LOAD_ATTR(IRTT, irtt);
 
+    switch (rt_info->dst.ss_family)
+    {
+        case AF_INET:
+            inet_ntop(AF_INET, &SIN(&rt_info->src)->sin_addr,
+                      val, sizeof(val));
+            break;
+        case AF_INET6:
+            inet_ntop(AF_INET6, &SIN6(&rt_info->src)->sin6_addr,
+                      val, sizeof(val));
+            break;
+        default:
+            return TE_EAFNOSUPPORT;
+    }
+    
+    if (rt_info->flags & TA_RT_INFO_FLG_SRC &&
+            (rc = ta_obj_attr_set(obj, "src", val) != 0))
+    {
+        ERROR("Invalid source address");
+        return rc;
+    }
+
     snprintf(val, sizeof(val), "%s", rt_info->ifname);
     if (rt_info->flags & TA_RT_INFO_FLG_IF &&
         (rc = ta_obj_attr_set(obj, "dev", val)) != 0)
@@ -385,6 +406,40 @@ DEF_ROUTE_GET_FUNC(win);
 DEF_ROUTE_SET_FUNC(win);
 DEF_ROUTE_GET_FUNC(irtt);
 DEF_ROUTE_SET_FUNC(irtt);
+
+static te_errno
+route_src_get(unsigned int gid, const char *oid,
+              char *value, const char *route)
+{
+    te_errno        rc;
+    ta_rt_info_t   *rt_info;
+    
+    UNUSED(oid);
+    
+    if ((rc = route_find(gid, route, &rt_info)) != 0)
+        return rc;
+   
+    /*
+     * Switch by destination address family in order to process
+     * zero (non-specified) source address correctly.
+     */
+    switch (rt_info->dst.ss_family)
+    {
+        case AF_INET:
+            inet_ntop(AF_INET, &SIN(&rt_info->src)->sin_addr,
+                      value, INET_ADDRSTRLEN);
+            break;
+        case AF_INET6:
+            inet_ntop(AF_INET6, &SIN6(&rt_info->src)->sin6_addr,
+                      value, INET6_ADDRSTRLEN);
+            break;
+        default:
+            return TE_EAFNOSUPPORT;
+    }
+    return 0;
+}
+
+DEF_ROUTE_SET_FUNC(src);
 DEF_ROUTE_SET_FUNC(dev);
 /* FIXME: Route types are disabled until Configurator is redesigned - A.A */
 #if 0
@@ -564,7 +619,6 @@ blackhole_del(unsigned int gid, const char *oid, const char *route)
     return ta_unix_conf_route_blackhole_del(&rt_info);
 }
 
-
 /*
  * Unix Test Agent routing configuration tree.
  */
@@ -597,8 +651,12 @@ RCF_PCH_CFG_NODE_RWC(node_route_mtu, "mtu", NULL, &node_route_win,
 RCF_PCH_CFG_NODE_RWC(node_route_dev, "dev", NULL, &node_route_mtu,
                      route_dev_get, route_dev_set, &node_route);
 
+RCF_PCH_CFG_NODE_RWC(node_route_src, "src", NULL, &node_route_dev,
+                     route_src_get, route_src_set, &node_route);
+
+
 static rcf_pch_cfg_object node_route =
-    {"route", 0, &node_route_dev, &node_blackhole,
+    {"route", 0, &node_route_src, &node_blackhole,
      (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
      (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
      (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit, NULL};

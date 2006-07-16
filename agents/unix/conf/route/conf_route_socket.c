@@ -1,5 +1,5 @@
 /** @file
- * @crief Unix Test Agent
+ * @brief Unix Test Agent
  *
  * Unix TA routing configuring support using routing sockets interface.
  *
@@ -488,6 +488,7 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
         WARN("Route without destination address specification");
     }
 
+    
     if (msg->rtm_addrs & RTA_GATEWAY)
     {
         addrlen = te_sockaddr_get_size(addr);
@@ -583,12 +584,13 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
         addrlen = te_sockaddr_get_size(addr);
         addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
-
 #ifdef RTA_SRC
     if (msg->rtm_addrs & RTA_SRC)
     {
         addrlen = te_sockaddr_get_size(addr);
+        memcpy(&rt_info->src, addr, addrlen);
         addr = CONST_SA(((const uint8_t *)addr) + addrlen);
+        rt_info->flags |= TA_RT_INFO_FLG_SRC;
     }
 #endif
 
@@ -780,6 +782,21 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         msg->rtm_addrs |= RTA_IFP;
         addr = SA(((const uint8_t *)addr) + addrlen);
     }
+#ifdef RTA_SRC
+    /* Source */
+    if (rt_info->flags & TA_RT_INFO_FLG_SRC)
+    {
+        addrlen = te_sockaddr_get_size(CONST_SA(&rt_info->src));
+        if (msglen < addrlen)
+            RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
+        msglen -= addrlen;
+        msg->rtm_msglen += addrlen;
+        memcpy(addr, &rt_info->src, addrlen);
+        addr = SA(((const uint8_t *)addr) + addrlen);
+        msg->rtm_addrs |= RTA_SRC;        
+        msg->rtm_flags |= RTF_SETSRC;
+    }
+#endif    
 
     if (rt_info->flags & TA_RT_INFO_FLG_METRIC)
     {
@@ -922,8 +939,8 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
 {
     int                 rt_sock = -1;
     size_t              rt_buflen = sizeof(struct rt_msghdr) +
-                                    sizeof(struct sockaddr_in6) * RTAX_MAX;
-                        /* Assume that IPv6 sockaddr is the biggest */
+                                    sizeof(struct sockaddr_storage) *
+                                        RTAX_MAX;
     uint8_t             rt_buf[rt_buflen];
     unsigned int        rt_cmd;
     pid_t               rt_pid;

@@ -442,6 +442,11 @@
          as children of route instance. -->
     <object oid="/agent/route" access="read_create" type="address"/>
     
+    <!-- Route source address.
+         Name: empty
+         Value: source IP address -->
+    <object oid="/agent/route/src" access="read_write" type="address"/>
+
     <!-- Route interface name.
          Name:  empty
          Value: Name of the interface -->
@@ -468,8 +473,8 @@
          Name:  empty
          Value: irtt value for the route -->
     <object oid="/agent/route/irtt" access="read_write" type="integer"/>
-
-
+    
+    
     <!-- Blackhole route
          Name: address+prefix -->
     <object oid="/agent/blackhole" access="read_create" type="none"/>

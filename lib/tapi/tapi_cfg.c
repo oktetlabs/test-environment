@@ -87,12 +87,12 @@ static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                              int addr_family,
                              const void *dst_addr, int prefix,
                              const void *gw_addr, const char *dev,
-                             const char *type,
+                             const void *src_addr, const char *type,
                              uint32_t flags, int metric, int tos, int mtu,
                              int win, int irtt, cfg_handle *cfg_hndl);
 
 static int tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
-                             const char *ifname, 
+                             const char *ifname,
                              const struct sockaddr *net_addr, 
                              const void *link_addr,
                              void *ret_addr, te_bool *is_static, 
@@ -592,11 +592,12 @@ int
 tapi_cfg_add_route(const char *ta, int addr_family,
                    const void *dst_addr, int prefix,
                    const void *gw_addr, const char *dev,
+                   const void *src_addr,
                    uint32_t flags, int metric, int tos, int mtu,
                    int win, int irtt, cfg_handle *cfg_hndl)
 {
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev, NULL,
+                             dst_addr, prefix, gw_addr, dev, src_addr, NULL,
                              flags, metric, tos, mtu, win, irtt, cfg_hndl);
 }
 
@@ -639,7 +640,7 @@ int
 tapi_cfg_add_typed_route(const char *ta, int addr_family,
                          const void *dst_addr, int prefix,
                          const void *gw_addr, const char *dev, 
-                         const char *type,
+                         const void *src_addr, const char *type,
                          uint32_t flags, int metric, int tos, int mtu,
                          int win, int irtt, cfg_handle *cfg_hndl)
 {
@@ -654,7 +655,7 @@ tapi_cfg_add_typed_route(const char *ta, int addr_family,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev, type,
+                             dst_addr, prefix, gw_addr, dev, src_addr, type,
                              flags, metric, tos, mtu, win, irtt, cfg_hndl);
 }
 
@@ -665,11 +666,12 @@ int
 tapi_cfg_modify_route(const char *ta, int addr_family,
                    const void *dst_addr, int prefix,
                    const void *gw_addr, const char *dev,
+                   const void *src_addr,
                    uint32_t flags, int metric, int tos, int mtu,
                    int win, int irtt, cfg_handle *cfg_hndl)
 {
     return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev, NULL,
+                             dst_addr, prefix, gw_addr, dev, src_addr, NULL,
                              flags, metric, tos, mtu, win, irtt, cfg_hndl);
 }
 
@@ -679,7 +681,7 @@ int
 tapi_cfg_modify_typed_route(const char *ta, int addr_family,
                             const void *dst_addr, int prefix,
                             const void *gw_addr, const char *dev,
-                            const char *type,
+                            const void *src_addr, const char *type,
                             uint32_t flags, int metric, int tos, int mtu,
                             int win, int irtt, cfg_handle *cfg_hndl)
 {
@@ -689,7 +691,7 @@ tapi_cfg_modify_typed_route(const char *ta, int addr_family,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
     return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev, type,
+                             dst_addr, prefix, gw_addr, dev, src_addr, type,
                              flags, metric, tos, mtu, win, irtt, cfg_hndl);
 }
 
@@ -698,11 +700,12 @@ int
 tapi_cfg_del_route_tmp(const char *ta, int addr_family,
                        const void *dst_addr, int prefix, 
                        const void *gw_addr, const char *dev,
+                       const void *src_addr,
                        uint32_t flags, int metric, int tos,
                        int mtu, int win, int irtt)
 {
     return tapi_cfg_route_op(OP_DEL, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev, NULL,
+                             dst_addr, prefix, gw_addr, dev, src_addr, NULL,
                              flags, metric, tos, mtu, win, irtt, NULL);
 }
 
@@ -834,9 +837,9 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
 static int
 tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                   const void *dst_addr, int prefix, const void *gw_addr,
-                  const char *dev, const char *type, uint32_t flags,
-                  int metric, int tos, int mtu, int win, int irtt,
-                  cfg_handle *cfg_hndl)
+                  const char *dev, const void *src_addr, const char *type,
+                  uint32_t flags, int metric, int tos, int mtu, int win,
+                  int irtt, cfg_handle *cfg_hndl)
 {
     cfg_handle  handle;
     char        dst_addr_str[INET6_ADDRSTRLEN];
@@ -850,6 +853,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     uint8_t     mask;
 
     struct sockaddr_storage ss;
+    struct sockaddr_storage src;
 
     UNUSED(flags);
 
@@ -940,11 +944,17 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 
     /* Prepare structure with gateway address */
     memset(&ss, 0, sizeof(ss));
-    ss.ss_family = addr_family;
-           
+    memset(&src, 0, sizeof(src));
+    src.ss_family = ss.ss_family = addr_family;
+
     if (gw_addr != NULL)
     {
         te_sockaddr_set_netaddr(SA(&ss), gw_addr);
+    }
+ 
+    if (src_addr != NULL)
+    {
+        te_sockaddr_set_netaddr(SA(&src), src_addr);
     }
     
     switch (op)
@@ -983,6 +993,18 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                     ERROR("%s() fails to set value of route %s on '%s'"
                            " Agent errno = %r",
                            __FUNCTION__, dev, route_inst_name, ta, rc);
+                    break;
+                }
+
+                if ((src_addr != NULL) &&
+                    ((rc = cfg_set_instance_local_fmt(
+                               CFG_VAL(ADDRESS, &src),
+                               "/agent:%s/route:%s/src:",
+                               ta, route_inst_name)) != 0))
+                {
+                    ERROR("%s() fails to set source for route %s on '%s'"
+                          " Agent errno = %r",
+                           __FUNCTION__, route_inst_name, ta, rc);
                     break;
                 }
 
@@ -1067,6 +1089,18 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                     ERROR("%s() fails to set dev to %s "
                           "on a new route %s on '%s' Agent errno = %r",
                           __FUNCTION__, dev, route_inst_name, ta, rc);
+                    break;
+                }
+                
+                if ((src_addr != NULL) &&
+                    ((rc = cfg_set_instance_local_fmt(
+                               CFG_VAL(ADDRESS, &src),
+                               "/agent:%s/route:%s/src:",
+                               ta, route_inst_name)) != 0))
+                {
+                    ERROR("%s() fails to set source address on a new "
+                          "route %s on '%s' Agent errno = %r",
+                           __FUNCTION__, route_inst_name, ta, rc);
                     break;
                 }
 

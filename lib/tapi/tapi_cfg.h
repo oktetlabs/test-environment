@@ -181,7 +181,7 @@ extern int tapi_cfg_get_route_table(const char *ta, int addr_family,
 extern int tapi_cfg_add_route(const char *ta, int addr_family,
                               const void *dst_addr, int prefix,
                               const void *gw_addr, const char *dev,
-                              uint32_t flags,
+                              const void *src_addr, uint32_t flags,
                               int metric, int tos, int mtu, int win,
                               int irtt,
                               cfg_handle *rt_hndl);
@@ -193,7 +193,7 @@ extern int tapi_cfg_add_route(const char *ta, int addr_family,
 extern int tapi_cfg_add_typed_route(const char *ta, int addr_family,
                                     const void *dst_addr, int prefix,
                                     const void *gw_addr, const char *dev, 
-                                    const char *type,
+                                    const void *src_addr, const char *type,
                                     uint32_t flags, int metric, 
                                     int tos, int mtu,
                                     int win, int irtt, 
@@ -229,7 +229,7 @@ extern int tapi_cfg_add_typed_route(const char *ta, int addr_family,
 extern int tapi_cfg_modify_route(const char *ta, int addr_family,
                                  const void *dst_addr, int prefix,
                                  const void *gw_addr, const char *dev,
-                                 uint32_t flags,
+                                 const void *src_addr, uint32_t flags,
                                  int metric, int tos, int mtu, int win,
                                  int irtt,
                                  cfg_handle *rt_hndl);
@@ -242,6 +242,7 @@ extern int tapi_cfg_modify_route(const char *ta, int addr_family,
 extern int tapi_cfg_modify_typed_route(const char *ta, int addr_family,
                                        const void *dst_addr, int prefix,
                                        const void *gw_addr, const char *dev,
+                                       const void *src_addr,
                                        const char *type,
                                        uint32_t flags, int metric, 
                                        int tos, int mtu,
@@ -277,7 +278,7 @@ extern int tapi_cfg_modify_typed_route(const char *ta, int addr_family,
 extern int tapi_cfg_del_route_tmp(const char *ta, int addr_family,
                                   const void *dst_addr, int prefix,
                                   const void *gw_addr, const char *dev,
-                                  uint32_t flags,
+                                  const void *src_addr, uint32_t flags,
                                   int metric, int tos, int mtu,
                                   int win, int irtt);
 
@@ -309,7 +310,8 @@ tapi_cfg_add_route_via_gw(const char *ta, int addr_family,
     cfg_handle cfg_hndl;
 
     return tapi_cfg_add_route(ta, addr_family, dst_addr, prefix,
-                              gw_addr, NULL, 0, 0, 0, 0, 0, 0, &cfg_hndl);
+                              gw_addr, NULL, NULL, 0, 0, 0, 0, 0, 0,
+                              &cfg_hndl);
 }
 
 /**
@@ -329,7 +331,7 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
                           const void *gw_addr)
 {
     return tapi_cfg_del_route_tmp(ta, addr_family, dst_addr, prefix,
-                                  gw_addr, NULL, 0, 0, 0, 0, 0, 0);
+                                  gw_addr, NULL, NULL, 0, 0, 0, 0, 0, 0);
 }
 
 /**

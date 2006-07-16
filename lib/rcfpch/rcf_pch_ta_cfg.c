@@ -561,6 +561,20 @@ ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
             }
             rt_info->type = type;
         }
+        else if (strcmp(attr->name, "src") == 0)
+        {
+            rt_info->src.ss_family = (strchr(attr->value, ':') != NULL) ?
+                                     AF_INET6 : AF_INET;
+            if (inet_pton(rt_info->src.ss_family, attr->value,
+                          (rt_info->src.ss_family == AF_INET)? 
+                          (void *)(&SIN(&rt_info->src)->sin_addr) :
+                          (void *)(&SIN6(&rt_info->src)->sin6_addr)) <= 0)
+            {
+                ERROR("Incorrect source address: %s", attr->value);
+                return TE_EINVAL;
+            }
+            rt_info->flags |= TA_RT_INFO_FLG_SRC;
+        }
         else
         {
             ERROR("Unknown attribute '%s' found in route object",
