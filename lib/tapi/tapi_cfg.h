@@ -112,7 +112,7 @@ typedef struct tapi_rt_entry {
     unsigned int            prefix; /**< Destination address prefix */
     struct sockaddr_storage gw; /**< Gateway address
                                      (in case RTF_GATEWAY flag is set) */
-
+    struct sockaddr_storage src; /**< Default source address */
     uint16_t flags; /**< Route flags */
     uint32_t metric; /**< Route metric */
     char     dev[IF_NAMESIZE]; /**< Output interface name */
@@ -132,6 +132,8 @@ typedef struct tapi_rt_entry {
 #define TAPI_RT_METRIC  0x0004
 /** Type of service is specified for the route */
 #define TAPI_RT_TOS     0x0008
+/** Default source address is specified for the route */
+#define TAPI_RT_SRC     0x0010
 /*@}*/
 
 /**
@@ -161,6 +163,7 @@ extern int tapi_cfg_get_route_table(const char *ta, int addr_family,
  * @param prefix       Prefix for destination address
  * @param gw_addr      Gateway address
  * @param dev          Interface name (for direct route)
+ * @param src_addr     Default source address
  * @param flags        Flags to be added for the route
  *                     (see route flags in net/route.h system header)
  * @param metric       Route metric
@@ -209,6 +212,7 @@ extern int tapi_cfg_add_typed_route(const char *ta, int addr_family,
  * @param prefix       Prefix for destination address
  * @param gw_addr      Gateway address
  * @param dev          Interface name (for direct route)
+ * @param src_addr     Default source address
  * @param flags        Flags to be added for the route
  *                     (see route flags in net/route.h system header)
  * @param metric       Route metric
@@ -259,6 +263,7 @@ extern int tapi_cfg_modify_typed_route(const char *ta, int addr_family,
  * @param prefix       Prefix for destination address
  * @param gw_addr      Gateway address
  * @param dev          Interface name (for direct route)
+ * @param src_addr     Default source address
  * @param flags        Flags to be added for the route
  *                     (see route flags in net/route.h system header)
  * @param metric       Route metric

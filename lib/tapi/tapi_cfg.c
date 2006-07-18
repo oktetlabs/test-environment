@@ -539,6 +539,12 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
                 val_p = &tbl[i].win;
             else if (strcmp(name, "irtt") == 0)
                 val_p = &tbl[i].irtt;
+            else if (strcmp(name, "src") == 0)
+            {
+                type = CVT_ADDRESS;
+                tbl[i].flags |= TAPI_RT_SRC;
+                val_p = &tbl[i].src;
+            }
             else
             {
                 ERROR("%s(): Unknown route attribute found %s",
