@@ -1359,9 +1359,9 @@ cli_session_open(cli_csap_specific_data_p spec_data)
 
 
             INFO("> %s %s %s %s",
-                 spec_data->program, spec_data->host, port_param, user_param);
+                 spec_data->program, user_param, spec_data->host, port_param);
             spec_data->io = exp_spawnl(spec_data->program, spec_data->program,
-                                       spec_data->host, port_param, user_param, NULL);
+                                       user_param, spec_data->host, port_param, NULL);
 
             INFO("returned %d\n", spec_data->io);
         }
