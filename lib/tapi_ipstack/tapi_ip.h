@@ -185,7 +185,7 @@ extern int tapi_pattern_unit_ip4_mask(asn_value *pattern_unit,
                                       size_t dst_mask_len);
 
 /**
- * Preapre ASN Traffic-Template value for 'ip4.eth' CSAP.
+ * Prepare ASN Traffic-Template value for 'ip4.eth' CSAP.
  *
  * @param src_mac_addr  source MAC address, or NULL;
  * @param dst_mac_addr  destination MAC address, or NULL;
