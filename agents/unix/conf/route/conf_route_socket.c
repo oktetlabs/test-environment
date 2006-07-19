@@ -702,6 +702,13 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     msglen -= addrlen;
     msg->rtm_msglen += addrlen;
     memcpy(addr, &rt_info->dst, addrlen);
+
+    /* If prefix is less than IP address length, if is route to host */
+    if (rt_info->prefix == te_netaddr_get_size(rt_info->dst.ss_family) << 3)
+    {
+        msg->rtm_flags |= RTF_HOST;
+    }
+
     msg->rtm_addrs |= RTA_DST;
     addr = SA(((const uint8_t *)addr) + addrlen);
 
@@ -791,7 +798,9 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
             RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
         msglen -= addrlen;
         msg->rtm_msglen += addrlen;
+
         memcpy(addr, &rt_info->src, addrlen);
+        
         addr = SA(((const uint8_t *)addr) + addrlen);
         msg->rtm_addrs |= RTA_SRC;        
         msg->rtm_flags |= RTF_SETSRC;
