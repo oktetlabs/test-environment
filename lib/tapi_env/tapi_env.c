@@ -957,8 +957,8 @@ prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
         }
         if (ip_addrs_num <= 0)
         {
-            ERROR("No IP addresses are assigned to node '%s'",
-                  node_oid);
+            ERROR("No IP%u addresses are assigned to node '%s'",
+                  af == AF_INET ? 4 : 6, node_oid);
             free(ip_addrs);
             free(node_oid);
             return TE_EENV;
