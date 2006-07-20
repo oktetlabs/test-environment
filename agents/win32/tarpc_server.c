@@ -125,6 +125,7 @@ static type_info_t type_info[] =
     {"struct timeval", sizeof(struct timeval)},
     {"struct linger", sizeof(struct linger)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
+    {"struct in_addr", sizeof(struct in_addr)},
     {"struct sockaddr", sizeof(struct sockaddr)},
     {"struct sockaddr_in", sizeof(struct sockaddr_in)},
     {"struct sockaddr_in6", sizeof(struct sockaddr_in6)},
@@ -138,16 +139,11 @@ static type_info_t type_info[] =
 };
 
 /*-------------- get_sizeof() ---------------------------------*/
-bool_t
-_get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
-                  struct svc_req *rqstp)
+int32_t
+get_sizeof(tarpc_get_sizeof_in *in)
 {
     uint32_t i;
     
-    UNUSED(rqstp);    
-    
-    out->size = -1;
-
     if (in->typename == NULL)
     {
         ERROR("Type name not specified");
@@ -156,21 +152,26 @@ _get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
 
     if (in->typename[0] == '*')
     {
-        out->size = sizeof(void *);
-        return TRUE;
+        return sizeof(void *);
     }
     
     for (i = 0; i < sizeof(type_info) / sizeof(type_info_t); i++)
     {
         if (strcmp(in->typename, type_info[i].type_name) == 0)
         {
-            out->size = type_info[i].type_size;
-            return TRUE;
+            return type_info[i].type_size;
         }
     }
-    ERROR("Unknown type (%s)", out->size);
-    return FALSE;
+    
+    ERROR("Unknown type (%s)", in->typename);
+    return -1;
 }
+
+TARPC_FUNC(get_sizeof, {},
+{        
+    MAKE_CALL(out->size = get_sizeof(in));
+}
+)
 
 /*-------------- protocol_info_cmp() ---------------------------------*/
 bool_t
@@ -1966,6 +1967,11 @@ TARPC_FUNC(getsockopt,
                 optlen_in = optlen_out = sizeof(struct timeval);
                 break;
 
+            case OPT_MREQ:
+            case OPT_MREQN:
+                optlen_in = optlen_out = sizeof(struct ip_mreq);
+                break;
+                
             case OPT_MREQ6:
                 optlen_in = optlen_out = sizeof(struct ipv6_mreq);
                 break;
@@ -1983,6 +1989,17 @@ TARPC_FUNC(getsockopt,
                       getsockopt(in->s, socklevel_rpc2h(in->level),
                                  sockopt_rpc2h(in->optname),
                                  opt, &optlen_out));
+
+        /*
+         * For such option as IP_MULTICAST_IF adjust OPT_MREQ type
+         * to OPT_IPADDR
+         */
+        if ((out->optval.optval_val[0].opttype == OPT_MREQ ||
+             out->optval.optval_val[0].opttype == OPT_MREQN) &&
+            optlen_out == sizeof(struct in_addr))
+        {
+            out->optval.optval_val[0].opttype = OPT_IPADDR;
+        }
 
         switch (out->optval.optval_val[0].opttype)
         {
@@ -4777,7 +4794,9 @@ TARPC_FUNC(mcast_join_leave,
 {
     struct in_addr addr;
     DWORD          rc;
-    
+   
+    memset(&addr, 0, sizeof(addr));
+
     if (in->family != RPC_AF_INET)
     {
         out->common._errno = RPC_EAFNOSUPPORT;
@@ -4787,8 +4806,9 @@ TARPC_FUNC(mcast_join_leave,
     {
         out->common._errno = RPC_EOPNOTSUPP;
         out->retval = -1;
-    }    
-    else if ((rc = get_addr_by_ifindex(in->ifindex, &addr)) != 0)
+    }
+    else if ((in->ifindex != 0) &&
+             (rc = get_addr_by_ifindex(in->ifindex, &addr)) != 0)
     {
         out->common._errno = rc;
         out->retval = -1;
@@ -4801,6 +4821,7 @@ TARPC_FUNC(mcast_join_leave,
                         (void *)&addr, sizeof(addr));
         if (rc != 0)
         {
+            ERROR("Setting interface for multicasting failed");
             out->common._errno = TE_RC(TE_TA_WIN32, rc);
             out->retval = -1;
         }
@@ -4815,9 +4836,14 @@ TARPC_FUNC(mcast_join_leave,
             memcpy(te_sockaddr_get_netaddr(SA(&a)),
                    in->multiaddr.multiaddr_val,
                    in->multiaddr.multiaddr_len);
+            
             MAKE_CALL(rc = WSAJoinLeaf(in->fd, SA(&a),
                                        sizeof(struct sockaddr_in),
                                        NULL, NULL, NULL, NULL, JL_BOTH));
+            if (rc == INVALID_SOCKET)
+            {
+                out->common._errno = TE_RC(TE_RPC, WSAGetLastError());
+            }
             out->retval = (rc == INVALID_SOCKET)? -1 : 0;
         }
     }        

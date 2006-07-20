@@ -422,9 +422,12 @@ _get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
         if (strcmp(in->typename, type_info[i].type_name) == 0)
         {
             out->size = type_info[i].type_size;
+            return TRUE;
         }
     }
-    return TRUE;
+
+    ERROR("Unknown type (%s)", in->typename);
+    return FALSE;
 }
 
 /*-------------- get_addrof() ---------------------------------*/
@@ -5125,7 +5128,8 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
         ERROR("IPv6 multicasting is not supported for current Agent type");
         out->retval = -1;
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-#endif        
+#endif
+        return;
     }
     else if (in->family == RPC_AF_INET)
     {
@@ -5148,6 +5152,7 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
                 ERROR("Invalid interface index specified");
                 out->retval = -1;
                 out->common._errno = TE_RC(TE_TA_UNIX, TE_ENXIO);
+                return;
             }
             else
             {
@@ -5158,6 +5163,7 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
                     ERROR("No IPv4 address on interface %s", if_name);
                     out->retval = -1;
                     out->common._errno = TE_RC(TE_TA_UNIX, TE_ENXIO);
+                    return;
                 }
 
                 memcpy(&mreq.imr_interface,
