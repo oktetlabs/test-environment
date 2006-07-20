@@ -791,13 +791,14 @@ target_security_negotiate(struct iscsi_conn *conn,
     }
 
 	while ((outputpdu->flags & NSG) != NSG3) {
+        padding = 0;
+
 		if (iscsi_recv_msg(sock, ISCSI_HDR_LEN, (char *) inputpdu,
 						   conn->connection_flags) <= 0) {
 			TRACE_ERROR("iscsi_recv_msg failed");
 			retval = -1;
 			goto out;
 		}
-
 		inputpdu->text_length = ntohl(inputpdu->length);
 		if (inputpdu->text_length > 0) {
 			padding = (-inputpdu->text_length) & 3;
@@ -816,6 +817,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 				goto out;
 			}
 		}
+
         if (!check_padding(inputpdu->text, inputpdu->text_length, padding))
         {
             retval = -1;
