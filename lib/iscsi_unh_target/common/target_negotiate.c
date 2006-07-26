@@ -1430,7 +1430,7 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 		/*  wait for input from initiator  */
 		if (iscsi_recv_msg(sock, ISCSI_HDR_LEN, (char *) inputpdu,
 						   conn->connection_flags) <= 0) {
-			TRACE_ERROR("iscsi_recv_msg failed");
+			TRACE_ERROR("iscsi_recv_msg failed do receive PDU header");
 			return -1;
 		}
 
@@ -1442,10 +1442,12 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 		/* Include the padding bytes too */
 		padding = -inputpdu->text_length & 3;
 
-		if (inputpdu->text_length <= MAX_TEXT_LEN) {
+        TRACE_ERROR("@@ %d + %d", inputpdu->text_length, padding);
+		if (inputpdu->text_length <= MAX_TEXT_LEN)
+        {
 			if (iscsi_recv_msg(sock, inputpdu->text_length + padding,
-							   inputpdu->text, conn->connection_flags) <= 0) {
-				TRACE_ERROR("iscsi_recv_msg failed");
+							   inputpdu->text, conn->connection_flags) < 0) {
+				TRACE_ERROR("iscsi_recv_msg failed to receive payload");
 				retval = -1;
 				goto out;
 			}

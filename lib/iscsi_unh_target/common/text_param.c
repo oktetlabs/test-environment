@@ -1219,7 +1219,11 @@ iscsi_recv_msg(int sock, int length, char *buffer, int flags)
 
     UNUSED(flags);
 
-    if (length == 0) return 0;
+    if (length == 0) 
+    {
+        *buffer = '\0';
+        return 0;
+    }
 
     TRACE(VERBOSE, "Attempting to read %d bytes", length);
     retval = recv(sock, buffer, length, MSG_WAITALL);
