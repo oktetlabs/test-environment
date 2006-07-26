@@ -109,8 +109,19 @@ static te_errno rpcserver_del(unsigned int, const char *,
                               const char *);
 static te_errno rpcserver_list(unsigned int, const char *, char **);
 
+static te_errno rpcserver_dead_get(unsigned int, const char *, char *,
+                                   const char *);
+static te_errno rpcserver_dead_set(unsigned int, const char *, char *,
+                                   const char *);
+
+static rcf_pch_cfg_object node_rpcserver_dead =
+    { "dead", 0, NULL, NULL,
+      (rcf_ch_cfg_get)rpcserver_dead_get, 
+      (rcf_ch_cfg_set)rpcserver_dead_set,
+      NULL, NULL, NULL, NULL, NULL};
+
 static rcf_pch_cfg_object node_rpcserver =
-    { "rpcserver", 0, NULL, NULL,
+    { "rpcserver", 0, &node_rpcserver_dead, NULL,
       (rcf_ch_cfg_get)rpcserver_get, NULL,
       (rcf_ch_cfg_add)rpcserver_add, (rcf_ch_cfg_del)rpcserver_del,
       (rcf_ch_cfg_list)rpcserver_list, NULL, NULL};
@@ -267,7 +278,7 @@ fork_child(rpcserver *rpcs)
     in.name.name_len = strlen(rpcs->name) + 1;
     in.name.name_val = rpcs->name;
     in.inherit = TRUE;
-    in.net_init = TRUE;
+    in.net_init = FALSE;
     
     if ((rc = call(rpcs->father, "create_process", &in, &out)) != 0)
         return rc;
@@ -540,6 +551,96 @@ rcf_pch_rpc_shutdown(void)
     rpc_buf = NULL;
 }
 
+/**
+ * Get RPC server state.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param name          RPC server name
+ *
+ * @return Status code
+ */
+static te_errno
+rpcserver_dead_get(unsigned int gid, const char *oid, char *value,
+                   const char *name)
+{
+    rpcserver *rpcs;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    pthread_mutex_lock(&lock);
+    for (rpcs = list; 
+         rpcs != NULL && strcmp(rpcs->name, name) != 0;
+         rpcs = rpcs->next);
+         
+    if (rpcs == NULL)
+    {
+        pthread_mutex_unlock(&lock);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+    }
+        
+    sprintf(value, "%d", rpcs->dead);
+
+    pthread_mutex_unlock(&lock);
+        
+    return 0;        
+}
+
+/**
+ * Change RPC server state.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param name          RPC server name
+ *
+ * @return Status code
+ */
+static te_errno
+rpcserver_dead_set(unsigned int gid, const char *oid, char *value,
+                   const char *name)
+{
+    rpcserver *rpcs;
+    te_bool    dead;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (strcmp(value, "1") == 0)
+        dead = 1;
+    else if (strcmp(value, "0") == 0)
+        dead = 0;
+    else
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
+    
+    pthread_mutex_lock(&lock);
+    for (rpcs = list; 
+         rpcs != NULL && strcmp(rpcs->name, name) != 0;
+         rpcs = rpcs->next);
+         
+    if (rpcs == NULL)
+    {
+        pthread_mutex_unlock(&lock);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+    }
+        
+    if (rpcs->dead != dead)
+    {
+        if (!dead)
+        {
+            pthread_mutex_unlock(&lock);
+            return TE_RC(TE_RCF_PCH, TE_EPERM);
+        }
+        rpcs->dead = TRUE;
+    }
+
+    pthread_mutex_unlock(&lock);
+        
+    return 0;        
+}
+
 
 /**
  * Get RPC server value (father name).
@@ -805,13 +906,13 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
         rpcs->father->ref--;
 
     /* Try soft shutdown first */
-    if (rpcs->sent > 0 || 
+    if (rpcs->sent > 0 || rpcs->dead || 
         rpc_transport_send(rpcs->handle, (uint8_t *)"FIN", 
                            sizeof("FIN")) != 0 ||
         rpc_transport_recv(rpcs->handle, buf, &len, 5) != 0 ||
         strcmp((char *)buf, "OK") != 0)
     {
-        WARN("Soft shutdown of RPC server '%s' failed", rpcs->name);
+        RING("Kill RPC server '%s'", rpcs->name);
         if (rpcs->tid > 0)
         {
             if (rpcs->local)

@@ -48,6 +48,7 @@
 #include "logger_api.h"
 #include "rcf_common.h"
 #include "rcf_rpc_defs.h"
+#include "conf_api.h"
 
 #include "tarpc.h"
 
@@ -365,6 +366,20 @@ extern te_errno rcf_rpc_servers_restart_all(void);
  */
 extern te_errno rcf_rpc_server_destroy(rcf_rpc_server *rpcs);
 
+/**
+ * Mark RPC server as dead to force its killing by rcf_rpc_server_destroy().
+ *
+ * @param rpcs          RPC server handle
+ *
+ * @return Status code
+ */
+static inline te_errno
+rcf_rpc_server_dead(rcf_rpc_server *rpcs)
+{
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 1), 
+                                "/agent:%s/rpcserver:%s/dead:", 
+                                rpcs->ta, rpcs->name);
+} 
 
 /**
  * Call SUN RPC on the TA via RCF. The function is also used for

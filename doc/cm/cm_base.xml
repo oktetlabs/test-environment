@@ -485,6 +485,13 @@
     <object oid="/agent/rpcserver" 
             access="read_create" type="string"/>
 
+    <!-- RPC server state. If it is set to "dead", TA shouldn't try to 
+         interact with it.
+         Name: empty
+         Value: 0 (alive) or 1 (dead) -->
+    <object oid="/agent/rpcserver/dead" 
+            access="read_write" type="integer"/>
+
     <!-- DNS server.
          Name:  empty    
          Limit: 1 -->
