@@ -60,6 +60,9 @@
 /** 802.1Q Tag Protocol Type (IEEE Std 802.1Q-2003 9.3.1) */
 #define TAD_802_1Q_TAG_TYPE     0x8100
 
+#ifndef ETH_CRC_LEN
+#define ETH_CRC_LEN     ETHER_CRC_LEN  
+#endif
 
 /** Type of Ethernet frame */
 typedef enum tad_eth_frame_type {
