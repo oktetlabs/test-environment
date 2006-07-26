@@ -634,6 +634,8 @@ rpcserver_dead_set(unsigned int gid, const char *oid, char *value,
             return TE_RC(TE_RCF_PCH, TE_EPERM);
         }
         rpcs->dead = TRUE;
+        if (rpcs->sent > 0)
+            rpc_error(rpcs, TE_RC(TE_RPC, TE_ERPCKILLED));
     }
 
     pthread_mutex_unlock(&lock);

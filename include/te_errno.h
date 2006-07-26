@@ -231,6 +231,7 @@ typedef enum {
     TE_ECORRUPTED,   /**< Data are corrupted by the software under test */
     TE_ERPCTIMEOUT,  /**< Timeout ocurred during RPC call */
     TE_ERPCDEAD,     /**< RPC server is dead */
+    TE_ERPCKILLED,   /**< RPC server is killed */
 /*@}*/
 
 /** @name ASN.1 text parse errors */
@@ -637,6 +638,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(ECORRUPTED);   
         ERR2STR(ERPCTIMEOUT);  
         ERR2STR(ERPCDEAD);     
+        ERR2STR(ERPCKILLED);     
 
         ERR2STR(EASNGENERAL);
         ERR2STR(EASNWRONGLABEL);    

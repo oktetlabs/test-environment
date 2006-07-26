@@ -44,6 +44,7 @@
 /** RPC errno values */
 typedef enum {
     RPC_EOK = 0,
+    RPC_ERPCKILLED = TE_RC(TE_RPC, TE_ERPCKILLED),
     RPC_EPERM = TE_RC(TE_RPC, TE_EPERM),
     RPC_ENOENT = TE_RC(TE_RPC, TE_ENOENT),
     RPC_ESRCH = TE_RC(TE_RPC, TE_ESRCH),
