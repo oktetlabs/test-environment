@@ -431,8 +431,11 @@ TARPC_FUNC(thread_create, {},
 /*-------------- thread_cancel() -----------------------------*/
 TARPC_FUNC(thread_cancel, {},
 {
-    MAKE_CALL(out->common._errno = thread_cancel(in->tid));
-    out->retval = out->common._errno != 0 ? -1 : 0;
+    te_errno err;
+    
+    MAKE_CALL(err = thread_cancel(in->tid));
+    out->common._errno = err;
+    out->retval = err != 0 ? -1 : 0;
 }
 )
 
