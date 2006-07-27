@@ -324,7 +324,6 @@ if test -n "$with_cfg_unix_daemons" ; then
             
         dns)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DNS_SERVER" 
-            EXTRA_LDADD="$EXTRA_LDADD -lfl"
             ;;
             
         echo)
