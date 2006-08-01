@@ -33,6 +33,17 @@ for i in $DIRS ; do
     if cd $i 2>/dev/null ; then
         DIR=`pwd`
 
+# FIXME: It is VERY dirty hack for solaris_64 platform
+# The reason is '${CC} --print-search-dirs' gives wrong dirs (32-bit ones)
+        if test "$TE_PLATFORM" = solaris_64; then
+            if test -d amd64; then
+                cd amd64
+                DIR=`pwd`
+            else
+                continue
+            fi
+        fi
+
         for j in `find $DIR -name lib$1\*.a` ; do
             name=`basename $j`;
             suffix=${name/lib$1/};
