@@ -345,6 +345,7 @@ efport2ifindex(void)
 
 #define NDIS            "dev_c101_ndis_"
 #define BUFSIZE         256
+#define AMOUNT_OF_GUIDS         5
 
     HKEY key, subkey;
     
@@ -352,8 +353,10 @@ efport2ifindex(void)
     static char subkey_path[BUFSIZE];
     static char value[BUFSIZE];
     
-    static char guid1[BUFSIZE] = { 0, };
-    static char guid2[BUFSIZE] = { 0, };
+    static char guid1[AMOUNT_OF_GUIDS][BUFSIZE];
+    static char guid2[AMOUNT_OF_GUIDS][BUFSIZE];
+
+    int guid1_amount = 0, guid2_amount = 0;
     
     DWORD subkey_size;
     DWORD value_size;
@@ -363,7 +366,7 @@ efport2ifindex(void)
     
     PIP_INTERFACE_INFO iftable;
     
-    int i;
+    int i, j;
     
     if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, NET_PATH, 0, 
                      KEY_READ, &key) != ERROR_SUCCESS) 
@@ -395,7 +398,7 @@ efport2ifindex(void)
         if (strstr(value, NDIS) != NULL)
         {
             unsigned char *guid = strstr(value, NDIS "0") != NULL ? 
-                                  guid1 : guid2;
+                          guid1[guid1_amount++] : guid2[guid2_amount++];
                 
             value_size = BUFSIZE;
             if (RegQueryValueEx(subkey, "NetCfgInstanceId", 
@@ -409,12 +412,10 @@ efport2ifindex(void)
             }
         }
         RegCloseKey(subkey);
-        if (*guid1 != 0 && *guid2 != 0)
-            break;
     } 
     RegCloseKey(key);
     
-    if (*guid1 == 0 && *guid2 == 0)
+    if (guid1_amount == 0 || guid2_amount == 0)
         return 0;
 
     if ((iftable = (PIP_INTERFACE_INFO)malloc(sizeof(*iftable))) == NULL) 
@@ -448,10 +449,16 @@ efport2ifindex(void)
 
     for (i = 0; i < iftable->NumAdapters; i++)
     {
-        if (strstr(w2a(iftable->Adapter[i].Name), guid1) != NULL)
+        for(j = 0; j < guid1_amount; j++)
+        {
+          if (strstr(w2a(iftable->Adapter[i].Name), guid1[j]) != NULL)
             ef_index[0] = iftable->Adapter[i].Index;
-        else if (strstr(w2a(iftable->Adapter[i].Name), guid2) != NULL)
+        }
+        for(j = 0; j < guid2_amount; j++)
+        {
+          if (strstr(w2a(iftable->Adapter[i].Name), guid2[j]) != NULL)
             ef_index[1] = iftable->Adapter[i].Index;
+        }
     }
     free(iftable); 
     
@@ -462,12 +469,12 @@ efport2ifindex(void)
         RING("Interface index for EF port 2 %d", ef_index[1]);
     
     return 0;
-    
+
+#undef AMOUNT_OF_GUIDS
 #undef BUFSIZE    
 #undef NET_PATH
 #undef NDIS
 }
-
 
 static MIB_IFROW if_entry;
 
