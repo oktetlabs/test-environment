@@ -8,9 +8,9 @@ AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
 
 AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS)
 
-AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib -Wl,-Bstatic @TE_LDFLAGS@
+AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib -Wl,-Bstatic $(TE_LDFLAGS)
 
-LIBS = -Wl,-Bdynamic @TAD_LIBS@ @LIBS@
+LIBS = $(TAD_LIBS) @LIBS@
 
 taexecdir=$(prefix)/@with_name@
 
@@ -21,7 +21,7 @@ taexec_PROGRAMS = ta
 ta_SOURCES = main.c ftp_routines.c log_serial.c
 
 ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch \
-           -l@TAD@ @TE_LDADD@ \
+           -l$(TAD) $(TE_LDADD) \
            -lrpcxdr -lrpc_types -lconf_oid -lloggerta -lrcfpch -ltools \
            $(EXTRA_LDADD)
 
@@ -30,7 +30,7 @@ CLEANFILES = symtbl.c
 SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o 
 SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a \
-              $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib@TAD@.a \
+              $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib$(TAD).a \
               conf/libconf.a rpc/libtarpc.a 
 
 if ISCSI_TARGET_USE

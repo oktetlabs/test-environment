@@ -405,6 +405,10 @@ fi
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 
+if ! test "$cross_compiling" = "yes" ; then
+LIBS="-Wl,-Bdynamic $LIBS"
+fi
+
 dnl end of "conf" staff
 
 AC_CONFIG_FILES([Makefile rpc/Makefile conf/Makefile])
