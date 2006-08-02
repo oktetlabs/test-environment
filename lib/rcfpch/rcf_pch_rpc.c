@@ -278,7 +278,7 @@ fork_child(rpcserver *rpcs)
     in.name.name_len = strlen(rpcs->name) + 1;
     in.name.name_val = rpcs->name;
     in.inherit = TRUE;
-    in.net_init = FALSE;
+    in.net_init = TRUE;
     
     if ((rc = call(rpcs->father, "create_process", &in, &out)) != 0)
         return rc;
