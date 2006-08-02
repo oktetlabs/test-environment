@@ -81,8 +81,9 @@
 #define PS_ALL_COMM     "ps -axo 'comm'"
 #define PS_ALL_ARGS     "ps -axo 'args'"
 #define PS_ALL_PID_ARGS "ps -axo 'pid args'"
+#error FreeBSD is not supported yet         /**< conf_daemons.c         */
 #else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
+#error Unknown platform (Linux, Solaris, FreeBSD, etc)
 #endif
 
 #ifdef WITH_FTP_SERVER

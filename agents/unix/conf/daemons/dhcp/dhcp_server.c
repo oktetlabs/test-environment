@@ -341,10 +341,6 @@ ds_dhcpserver_is_run(void)
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", dhcp_server_exec);
 #elif defined __sun__
     TE_SPRINTF(buf, "[ \"`/usr/bin/svcs -H -o STATE dhcp-server`\" = \"online\" ]");
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
 #endif
 
     return (ta_system(buf) == 0);
@@ -384,10 +380,6 @@ ds_dhcpserver_stop(void)
     sprintf(buf, "killall %s", dhcp_server_exec);
 #elif defined __sun__
     TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st dhcp-server");
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
 #endif
     if (ta_system(buf) != 0)
     {
@@ -406,10 +398,6 @@ ds_dhcpserver_script_start(void)
     sprintf(buf, "%s start >/dev/null 2>&1", dhcp_server_script);
 #elif defined __sun__
     TE_SPRINTF(buf, "/usr/sbin/svcadm enable -rst dhcp-server");
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
 #endif
     if (ta_system(buf) != 0)
     {

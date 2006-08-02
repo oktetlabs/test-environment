@@ -37,12 +37,10 @@
 #include "te_shell_cmd.h"
 #include "te_sleep.h"
 
-
 /** Maximum number of attempts to wait a daemon in expected state */
 #define TA_UNIX_DAEMON_WAIT_ATTEMPTS    1000
 /** Time to wait between checks of the daemon state, in microseconds */
 #define TA_UNIX_DAEMON_WAIT_USEC        10000
-
 
 /* Array of daemons/services names */
 static struct {
@@ -254,17 +252,10 @@ copy_or_rename(const char *config, char *backup)
 int
 ds_create_backup(const char *dir, const char *name, int *index)
 {
-    int         rc;
     int         i;
-#if defined __linux__
     const char *filename;
     FILE       *f;
-#elif defined __sun__
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
-#endif
+    int         rc;
 
     if (name == NULL)
     {
@@ -282,7 +273,6 @@ ds_create_backup(const char *dir, const char *name, int *index)
         return TE_RC(TE_TA_UNIX, TE_EMFILE);                         
     }
     
-#if defined __linux__
     filename = strrchr(name, '/');
     if (filename == NULL)
         filename = name;
@@ -291,16 +281,10 @@ ds_create_backup(const char *dir, const char *name, int *index)
         
     TE_SPRINTF(buf, "%s%s", dir ? : "", name);
     ds[i].config_file = strdup(buf);
-#elif defined __sun__
-    ds[i].config_file = strdup(name);
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
-#endif
+
     if (ds[i].config_file == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-#if defined __linux__
+
     if ((f = fopen(ds[i].config_file, "a")) == NULL)
     {
         WARN("Failed to create backup for %s - no such file", 
@@ -311,14 +295,6 @@ ds_create_backup(const char *dir, const char *name, int *index)
     fclose(f);
 
     TE_SPRINTF(buf, TE_TMP_PATH"%s"TE_TMP_BKP_SUFFIX, filename);
-#elif defined __sun__
-    TE_SPRINTF(buf, TE_TMP_PATH"%s"TE_TMP_BKP_SUFFIX".%d", name,
-               getpid());
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
-#endif
     
     /* Addition memory for pid */
     ds[i].backup = malloc(strlen(buf) + 16); 
@@ -329,7 +305,6 @@ ds_create_backup(const char *dir, const char *name, int *index)
     }
     strcpy(ds[i].backup, buf);
     
-#if defined __linux__
     if ((rc = copy_or_rename(ds[i].config_file, ds[i].backup)) != 0)
     {
         free(ds[i].config_file);
@@ -337,19 +312,10 @@ ds_create_backup(const char *dir, const char *name, int *index)
         return rc;
     }
 
-    TE_SPRINTF(buf, "diff -q %s %s >/dev/null 2>&1", 
+    TE_SPRINTF(buf, "diff %s %s >/dev/null 2>&1", 
                ds[i].config_file, ds[i].backup);
     
     ds[i].changed = (ta_system(buf) != 0);
-#elif defined __sun__
-    TE_SPRINTF(buf, "/usr/bin/svcs -Ho STATE %s > %s", name, ds[i].backup);
-    if (ta_system(buf) != 0)
-        ERROR("Command <%s> failed", buf);
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
-#endif
     
     if (index != NULL)                                        
         *index = i;
@@ -365,44 +331,19 @@ ds_create_backup(const char *dir, const char *name, int *index)
 void 
 ds_restore_backup(int index)
 {
-#if defined __linux__
-#elif defined __sun__
-    int rc;
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
-#endif
-
     if (index < 0 || index >= UNIX_SERVICE_MAX || ds[index].backup == NULL)
         return;
 
-#if defined __linux__
     if (ds[index].changed)
     {
-        sprintf(buf, "mv %s %s >/dev/null 2>&1", 
+        TE_SPRINTF(buf, "mv %s %s >/dev/null 2>&1", 
                 ds[index].backup, ds[index].config_file);
     }
     else
     {
-        sprintf(buf, "rm %s >/dev/null 2>&1", ds[index].backup);
+        TE_SPRINTF(buf, "rm %s >/dev/null 2>&1", ds[index].backup);
     }
-#elif defined __sun__
-    TE_SPRINTF(buf, "cat %s > /dev/null 2>&1", ds[index].backup);
-    if (ta_system(buf) != 0)
-        ERROR("Command <%s> failed", buf);
 
-    TE_SPRINTF(buf, "[ \"`cat %s`\" = \"online\" ]", ds[index].backup);
-    rc = ta_system(buf);
- 
-    TE_SPRINTF(buf, "/usr/sbin/svcadm %s %s",
-               rc == 0 ? "enable -rst" : "disable -st",
-               ds[index].config_file);
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
-#endif
     if (ta_system(buf) != 0)
         ERROR("Command <%s> failed", buf);
         
@@ -427,6 +368,9 @@ te_errno
 daemon_get(unsigned int gid, const char *oid, char *value)
 {
     const char *daemon_name = get_ds_name(oid);
+#if defined __sun__
+    int         rc;
+#endif
 
     UNUSED(gid);
 
@@ -460,22 +404,31 @@ daemon_get(unsigned int gid, const char *oid, char *value)
     if (strcmp(daemon_name, "qmail") == 0)
         daemon_name = "qmail-send";
     
-    sprintf(buf, "killall -CONT %s >/dev/null 2>&1", daemon_name);
-#elif defined __sun__
-    TE_SPRINTF(buf, "[ \"`/usr/bin/svcs -H -o STATE %s`\" = \"online\" ]",
-               daemon_name);
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
-#endif
+    TE_SPRINTF(buf, "killall -CONT %s >/dev/null 2>&1", daemon_name);
     if (ta_system(buf) == 0)
     {
-         sprintf(value, "1");
+         strcpy(value, "1");
          return 0;
     }
-    sprintf(value, "0");
-
+#elif defined __sun__
+    TE_SPRINTF(buf, "/usr/bin/svcs -Ho STATE %s > /dev/null 2>&1",
+               daemon_name);
+    if ((rc = ta_system(buf)) == 0)
+    {
+        TE_SPRINTF(buf,
+                   "[ \"`/usr/bin/svcs -Ho STATE %s`\" = \"online\" ]",
+                   daemon_name);
+        strcpy(value, ta_system(buf) == 0 ? "1" : "0");
+        return 0;
+    }
+    else
+    {
+        ERROR("Command '%s' (getting %s service status) "
+              "failed with exit code %d", buf, daemon_name, rc);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+#endif
+    strcpy(value, "0");
     return 0;
 }
 
@@ -530,10 +483,6 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
     TE_SPRINTF(buf, "/usr/sbin/svcadm %s %s",
                *value == '0' ? "disable -st" : "enable -rst",
                get_ds_name(oid));
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
 #endif
     if ((rc = ta_system(buf)) != 0)
     {
@@ -612,10 +561,6 @@ xinetd_get(unsigned int gid, const char *oid, char *value)
               "failed with exit code %d", buf, service_name, rc);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
 #endif
 
     return 0;
@@ -714,10 +659,6 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
               service_name, rc);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
 #endif
     
     return 0;
@@ -1059,12 +1000,15 @@ telnetd_grab(const char *name)
     if ((rc = rcf_pch_add_node("/agent", &node_ds_telnetd)) != 0)
         return rc;
 
+#if defined __linux__
     if ((rc = ds_create_backup(XINETD_ETC_DIR, get_ds_name(name), 
                                &telnetd_index)) != 0)
     {
         rcf_pch_del_node(&node_ds_telnetd);
         return rc;
     }
+#endif
+
     return 0;
 }
 
@@ -1076,16 +1020,11 @@ telnetd_release(const char *name)
     if (rcf_pch_del_node(&node_ds_telnetd) != 0)
         return 0;
         
-    ds_restore_backup(telnetd_index);
 #if defined __linux__
+    ds_restore_backup(telnetd_index);
     ta_system("/etc/init.d/xinetd restart >/dev/null");
-#elif defined __sun__
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
 #endif
-    
+
     return 0;
 }
 
@@ -1585,7 +1524,11 @@ static const char *const ftp_config_files[] = {VSFTPD_CONF,
                                                WUFTPD_CONF,
                                                PROFTPD_CONF};
 static const char *const ftp_config_dirs[]  = {"/etc/vsftpd/", 
+#if defined __linux__
                                                "/etc/wu-ftpd/",
+#elif defined __sun__
+                                               "/etc/ftpd/",
+#endif
                                                "/etc/proftpd/"};
 
 static const char *const ftpd_conf_names[][2] = 
@@ -1598,7 +1541,14 @@ const char *
 get_ftp_daemon_name(void)
 {
     static const char *const ftpd_names[] = 
-        {"vsftpd", "wu-ftpd", "proftpd"};
+        {"vsftpd",
+#if defined __linux__
+         "wu-ftpd",
+#elif defined __sun__
+         "ftp",
+#endif
+         "proftpd"};
+
     return ftpd_names[ftp_server_kind];
 }
 
@@ -1745,11 +1695,11 @@ static inline te_bool
 ftpserver_running()
 {
     char enable[2];
-    
+
     if (ds_ftpserver_get(0, "ftpserver", enable) != 0)
         return 0;
-        
-    return enable[0] == '1';        
+
+    return enable[0] == '1';
 }    
 
 static te_errno
@@ -3110,10 +3060,6 @@ ds_sshd_add(unsigned int gid, const char *oid, const char *value,
     sprintf(buf, "/usr/sbin/sshd -p %s", port);
 #elif defined __sun__
     sprintf(buf, "/usr/lib/ssh/sshd -p %s", port);
-#elif defined __FreeBSD__
-#error FreeBSD is not supported yet
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
 #endif
 
     if (ta_system(buf) != 0)

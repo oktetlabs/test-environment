@@ -132,8 +132,6 @@ typedef struct pam_message pam_message_t;
 #elif defined __FreeBSD__
 #define PAM_FLAGS PAM_SILENT
 typedef struct pam_message const pam_message_t;
-#else
-#error Unknown platform (Linux, Sun, FreeBSD, etc)
 #endif
 
 #endif /* HAVE_LIBPAM */
