@@ -220,6 +220,7 @@ dnsserver_grab(const char *name)
     if ((rc = rcf_pch_add_node("/agent", &node_ds_dnsserver)) != 0)
         return rc;
 
+#if defined __linux__
     if (dir != NULL)
     {
         if ((rc = ds_create_backup(dir, NAMED_CONF, &dns_index)) != 0)
@@ -234,6 +235,7 @@ dnsserver_grab(const char *name)
 
     named_conf_was_running = daemon_running("dnsserver");
 
+#endif
     return rc;
 }
 
@@ -241,14 +243,16 @@ te_errno
 dnsserver_release(const char *name)
 {
     UNUSED(name);
-    
+
+#if defined __linux__
     ds_restore_backup(dns_index);
     if (daemon_running("dnsserver"))
     {
         daemon_set(0, "dnsserver", "0");
         daemon_set(0, "dnsserver", "1");
     }
-    
+#endif
+
     return rcf_pch_del_node(&node_ds_dnsserver);
 }
 

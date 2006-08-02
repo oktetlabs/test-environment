@@ -1047,13 +1047,15 @@ rshd_grab(const char *name)
     if ((rc = rcf_pch_add_node("/agent", &node_ds_rshd)) != 0)
         return rc;
 
+#if defined __linux__
     if ((rc = ds_create_backup(XINETD_ETC_DIR, "rsh", 
                                &rshd_index)) != 0)
     {
         rcf_pch_del_node(&node_ds_rshd);
         return rc;
     }
-    
+#endif
+
     return 0;
 }
 
@@ -1064,10 +1066,12 @@ rshd_release(const char *name)
     
     if (rcf_pch_del_node(&node_ds_rshd) != 0)
         return 0;
-        
+
+#if defined __linux__
     ds_restore_backup(rshd_index);
     ta_system("/etc/init.d/xinetd restart >/dev/null");
-    
+#endif
+
     return 0;
 }
 
@@ -2634,7 +2638,8 @@ smtp_grab(const char *name)
 
     if ((rc = rcf_pch_add_node("/agent", &node_ds_smtp)) != 0)
         return rc;
-    
+
+#if defined __linux__
     if ((rc = ds_create_backup("/etc/", "hosts", &hosts_index)) != 0)
     {
         ERROR("SMTP server updates /etc/hosts and cannot be initialized");
@@ -2708,7 +2713,8 @@ smtp_grab(const char *name)
         }
         smtp_current = NULL;
     }
-    
+#endif
+
     return 0;
 }
 
@@ -2719,7 +2725,8 @@ smtp_release(const char *name)
 
     if (rcf_pch_del_node(&node_ds_smtp) != 0)
         return 0;
-    
+
+#if defined __linux__
     /* Restore backups */
     ds_restore_backup(hosts_index);
     ds_restore_backup(sendmail_index);
@@ -2747,7 +2754,8 @@ smtp_release(const char *name)
 
     free(smtp_current_smarthost);
     smtp_current_smarthost = NULL;
-    
+#endif
+
     return 0;
 }
 

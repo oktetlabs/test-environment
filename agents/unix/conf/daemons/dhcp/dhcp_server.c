@@ -1477,11 +1477,10 @@ dhcpserver_grab(const char *name)
 
     TAILQ_INIT(&subnets);
 
-RING("dhcpserver_frab: rcf_pch_add_node");
     if ((rc = rcf_pch_add_node("/agent", &node_ds_dhcpserver)) != 0)
         return rc;
 
-RING("dhcpserver_frab: find_file(dhcp_server_n_execs, dhcp_server_execs, TRUE)");
+#if defined __linux__
     /* Find DHCP server executable */
     rc = find_file(dhcp_server_n_execs, dhcp_server_execs, TRUE);
     if (rc < 0)
@@ -1493,7 +1492,6 @@ RING("dhcpserver_frab: find_file(dhcp_server_n_execs, dhcp_server_execs, TRUE)")
     }
     dhcp_server_exec = dhcp_server_execs[rc];
 
-RING("dhcpserver_frab: find_file(dhcp_server_n_scripts, dhcp_server_scripts, TRUE)");
     /* Find DHCP server script */
     rc = find_file(dhcp_server_n_scripts, dhcp_server_scripts, TRUE);
     if (rc < 0)
@@ -1507,7 +1505,6 @@ RING("dhcpserver_frab: find_file(dhcp_server_n_scripts, dhcp_server_scripts, TRU
 
 
 #if TA_UNIX_ISC_DHCPS_NATIVE_CFG
-RING("dhcpserver_frab: find_file(dhcp_server_n_confs, dhcp_server_confs, FALSE)");
     /* Find DHCP server configuration file */
     rc = find_file(dhcp_server_n_confs, dhcp_server_confs, FALSE);
     if (rc < 0)
@@ -1568,6 +1565,7 @@ RING("dhcpserver_frab: find_file(dhcp_server_n_confs, dhcp_server_confs, FALSE)"
     }
 #endif
 
+#endif
     return 0;
 }
 
@@ -1584,6 +1582,7 @@ dhcpserver_release(const char *name)
     if (rc != 0)
         return rc;
 
+#if defined __linux__
     /* Free old lists */
     for (host = hosts; host != NULL; host = host_tmp)
     {
@@ -1627,6 +1626,8 @@ dhcpserver_release(const char *name)
         ERROR("Failed to delete DHCP server temporary leases data base "
               "file '%s': %s", dhcp_server_leases, strerror(errno));
     }
+#endif
+
 #endif
     return 0;
 }
