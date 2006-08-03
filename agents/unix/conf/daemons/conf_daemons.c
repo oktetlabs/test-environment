@@ -1549,7 +1549,7 @@ get_ftp_daemon_name(void)
 #if defined __linux__
          "wu-ftpd",
 #elif defined __sun__
-         "ftp",
+         "svc:/network/ftp:default",
 #endif
          "proftpd"};
 
@@ -1673,7 +1673,7 @@ ds_ftpserver_set(unsigned int gid, const char *oid, const char *value)
                         "/usr/sbin/proftpd" : NULL;
         
     return ftp_standalone ? daemon_set(gid, "ftpserver", value) : 
-           xinetd_set(gid, "ftp", value);
+           xinetd_set(gid, "ftpserver", value);
 }
 
 static te_errno
@@ -1681,7 +1681,7 @@ ds_ftpserver_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(oid);
     return ftp_standalone ? daemon_get(gid, "ftpserver", value) :
-           xinetd_get(gid, "ftp", value);
+           xinetd_get(gid, "ftpserver", value);
 }
 #else
 #define ds_ftpserver_set daemon_set

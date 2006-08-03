@@ -89,7 +89,11 @@
 #ifdef WITH_FTP_SERVER
 extern const char *get_ftp_daemon_name(void);
 #else
+#if defined __linux__
 #define get_ftp_daemon_name() "ftpd"
+#elif defined __sun__
+#define get_ftp_daemon_name() "svc:/network/ftp:default"
+#endif
 #endif
 
 /** Get name of the service by the object identifier */
@@ -97,6 +101,7 @@ static inline const char *
 get_ds_name(const char *oid)
 {
     return
+#if defined __linux__
          (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :       
          (strstr(oid, "dnsserver") != NULL) ? "named" :        
          (strstr(oid, "todudpserver") != NULL) ? "daytime-udp" :  
@@ -105,6 +110,16 @@ get_ds_name(const char *oid)
          (strstr(oid, "telnetd") != NULL) ? "telnet" :         
          (strstr(oid, "rshd") != NULL) ? "rsh" :
          (strstr(oid, "echoserver") != NULL) ? "echo" : oid;
+#elif defined __sun__
+         (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :       
+         (strstr(oid, "dnsserver") != NULL) ? "named" :        
+         (strstr(oid, "todudpserver") != NULL) ? "daytime-udp" :  
+         (strstr(oid, "tftpserver") != NULL) ? "tftp" :        
+         (strstr(oid, "ftpserver") != NULL) ? get_ftp_daemon_name() :       
+         (strstr(oid, "telnetd") != NULL) ? "svc:/network/telnet:default" :         
+         (strstr(oid, "rshd") != NULL) ? "svc:/network/shell:default" :
+         (strstr(oid, "echoserver") != NULL) ? "echo" : oid;
+#endif
 }         
 
 /** Check, if the file exists and accessible */
