@@ -5199,3 +5199,34 @@ TARPC_FUNC(mcast_join_leave, {},
     MAKE_CALL(func_ptr(in, out));
 })
 
+#ifdef NO_DL
+void *
+dlopen(const char *filename, int flag)
+{
+    UNUSED(filename);
+    UNUSED(flag);
+    return NULL;
+}
+
+const char *
+dlerror(void)
+{
+    return "Unsupported";
+}
+
+void *
+dlsym(void *handle, const char *symbol)
+{
+    UNUSED(handle);
+    UNUSED(symbol);
+    
+    return NULL;
+}
+
+int 
+dlclose(void *handle)
+{
+    UNUSED(handle);
+    return 0;
+}
+#endif
