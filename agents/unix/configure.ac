@@ -405,9 +405,12 @@ fi
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 
-if ! test "$cross_compiling" = "yes" ; then
-LIBS="-Wl,-Bdynamic $LIBS"
-fi
+#if ! test "$cross_compiling" = "yes" ; then
+case "$host" in 
+   sparc*linux*) TE_CPPFLAGS="$TE_CPPFLAGS -DNO_DL" ;;
+   *uml*) ;;
+   *) LIBS="-Wl,-Bdynamic $LIBS" ;;
+esac
 
 dnl end of "conf" staff
 
