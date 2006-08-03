@@ -62,6 +62,25 @@ typedef enum rpc_network_event {
                                                   family of the socket */
 } rpc_network_event;
 
+/**
+ * network event flag bits. 
+ */
+typedef enum rpc_network_event_bit {
+    RPC_FD_READ_BIT      = 0,
+    RPC_FD_WRITE_BIT     = 1,     
+    RPC_FD_OOB_BIT       = 2,    
+    RPC_FD_ACCEPT_BIT    = 3,   
+    RPC_FD_CONNECT_BIT   = 4, 
+    RPC_FD_CLOSE_BIT     = 5,  
+    RPC_FD_QOS_BIT       = 6, 
+    RPC_FD_GROUP_QOS_BIT = 7,
+    RPC_FD_ROUTING_INTERFACE_CHANGE_BIT = 8,
+    RPC_FD_ADDRESS_LIST_CHANGE_BIT      = 9
+    
+} rpc_network_event_bit;
+
+#define RPC_FD_MAX_EVENTS 10
+
 #define NETW_EVENT_FLAGS_MAPPING_LIST \
             RPC_BIT_MAP_ENTRY(FD_READ),                      \
             RPC_BIT_MAP_ENTRY(FD_WRITE),                     \

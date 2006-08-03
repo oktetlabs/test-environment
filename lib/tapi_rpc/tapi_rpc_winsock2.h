@@ -1145,13 +1145,13 @@ extern int rpc_wsa_event_select(rcf_rpc_server *rpcs,
  * @param rpcs              RPC server
  * @param s                 socket descriptor
  * @param event_object      event object to be reset
- * @param event             network events that occurred
+ * @param events            network events that occurred
  *
  * @return Value returned by WSAEnumNetworkEvents() function
  */
 extern int rpc_enum_network_events(rcf_rpc_server *rpcs,
                                   int s, rpc_wsaevent event_object,
-                                  rpc_network_event *event);
+                                  struct tarpc_network_events *events);
 
 /** Return codes for rpc_wait_for_multiple_events */
 enum {

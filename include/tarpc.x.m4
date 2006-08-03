@@ -1695,6 +1695,13 @@ struct tarpc_event_select_in {
 
 typedef struct tarpc_int_retval_out tarpc_event_select_out;
 
+/* Windows WSANETWORKEVENTS structure */
+
+struct tarpc_network_events {
+    uint32_t network_events;
+    tarpc_int error_code[10];
+};
+        
 /* WSAEnumNetworkEvents() */
 
 struct tarpc_enum_network_events_in {
@@ -1702,16 +1709,16 @@ struct tarpc_enum_network_events_in {
 
     tarpc_int       fd;           /**< TA-local socket */ 
     tarpc_wsaevent  hevent;       /**< Event object to be reset */   
-    uint32_t        event<>;      /**< Bitmask that specifies the set
-                                       of network events occurred */      
+    struct tarpc_network_events events<>;    /**< Structure that specifies
+                                                  network events occurred */      
 };
 
 struct tarpc_enum_network_events_out {
     struct tarpc_out_arg common;
 
     tarpc_int            retval;
-    uint32_t             event<>;    /**< Bitmask that specifies the set
-                                          of network events occurred */      
+    struct tarpc_network_events events<>;    /**< Structure that specifies
+                                                  network events occurred */      
 };
 
 /* Create window */

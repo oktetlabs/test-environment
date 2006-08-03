@@ -1298,7 +1298,7 @@ rpc_wsa_event_select(rcf_rpc_server *rpcs,
 int
 rpc_enum_network_events(rcf_rpc_server *rpcs,
                         int s, rpc_wsaevent event_object,
-                        rpc_network_event *event)
+                        struct tarpc_network_events *events)
 {
     tarpc_enum_network_events_in  in;
     tarpc_enum_network_events_out out;
@@ -1315,28 +1315,29 @@ rpc_enum_network_events(rcf_rpc_server *rpcs,
 
     in.fd = s;
     in.hevent = (tarpc_wsaevent)event_object;
-    if (event == NULL)
-        in.event.event_len = 0;
+    if (events == NULL)
+        ERROR("%s(): Null pointer passed"
+              " to rpc_enum_network_events()", __FUNCTION__);
     else
-        in.event.event_len = 1;
-    in.event.event_val = (uint32_t *)event;
+        in.events.events_len = 1;
+    in.events.events_val = (tarpc_network_events *)events;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "enum_network_events", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
-        if (event != NULL && out.event.event_val != NULL)
-            *event = out.event.event_val[0];
+        if (events != NULL && out.events.events_len != 0)
+            *events = out.events.events_val[0];
     }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(enum_network_events, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s): WSAEnumNetworkEvents(%d, %u, %p) "
                  "-> %d (%s) returned event %s",
-                 rpcs->ta, rpcs->name, s, event_object, event,
+                 rpcs->ta, rpcs->name, s, event_object, events,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 network_event_rpc2str(PTR_VAL(event)));
+                 network_event_rpc2str(events->network_events));
 
     RETVAL_INT(enum_network_events, out.retval);
 }

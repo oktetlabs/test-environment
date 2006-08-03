@@ -2970,18 +2970,28 @@ TARPC_FUNC(event_select, {},
 
 TARPC_FUNC(enum_network_events,
 {
-    COPY_ARG(event);
+    COPY_ARG(events);
 },
 {
     WSANETWORKEVENTS  events_occured;
-
+    uint32_t i;
+    memset(&events_occured, 0, sizeof(events_occured));
     UNUSED(list);
+
     out->retval = WSAEnumNetworkEvents(in->fd, IN_HEVENT,
-                                       out->event.event_len == 0 ? NULL :
+                                       out->events.events_len == 0 ? NULL :
                                        &events_occured);
-    if (out->event.event_len != 0)
-        out->event.event_val[0] =
+    if (out->events.events_len != 0)
+    {
+    
+        out->events.events_val[0].network_events =
             network_event_h2rpc(events_occured.lNetworkEvents);
+        for(i = 0; i < 10; i++)
+        {
+            out->events.events_val[0].error_code[i] = 
+            te_rc_os2te(events_occured.iErrorCode[i]);
+        }
+    }
 }
 )
 /*-------------- CreateWindow ----------------------------*/
