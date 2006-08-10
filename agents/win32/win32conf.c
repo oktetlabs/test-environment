@@ -2186,21 +2186,18 @@ env_add(unsigned int gid, const char *oid, const char *value,
 static te_errno
 env_del(unsigned int gid, const char *oid, const char *name)
 {
+    te_errno rc;
+    
     UNUSED(gid);
     UNUSED(oid);
 
-    if (env_is_hidden(name, -1))
-        return TE_RC(TE_TA_UNIX, TE_EPERM);
+    if ((rc = env_get(0, NULL, buf, name)) != 0)
+        return rc;
+    
+    SetEnvironmentVariable(name, NULL);
+    unsetenv(name);
 
-    if (getenv(name) != NULL)
-    {
-        unsetenv(name);
-        return 0;
-    }
-    else
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
+    return 0;
 }
 
 /**
