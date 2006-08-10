@@ -1286,6 +1286,16 @@ struct tarpc_create_event_out {
     tarpc_wsaevent       retval;
 };
 
+/* WSACreateEvent() */
+struct tarpc_create_event_with_bit_in {
+    struct tarpc_in_arg common;
+};
+
+struct tarpc_create_event_with_bit_out {
+    struct tarpc_out_arg common;
+    tarpc_wsaevent       retval;
+};
+
 /* WSACloseEvent() */
 struct tarpc_close_event_in {
     struct tarpc_in_arg common;
@@ -3520,6 +3530,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(overfill_buffers)
 
         RPC_DEF(create_event)
+        RPC_DEF(create_event_with_bit)
         RPC_DEF(close_event)
         RPC_DEF(create_overlapped)
         RPC_DEF(delete_overlapped)

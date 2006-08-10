@@ -1056,6 +1056,32 @@ rpc_create_event(rcf_rpc_server *rpcs)
     RETVAL_RPC_PTR(create_event, out.retval);
 }
 
+rpc_wsaevent
+rpc_create_event_with_bit(rcf_rpc_server *rpcs)
+{
+    tarpc_create_event_with_bit_in  in;
+    tarpc_create_event_with_bit_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_RPC_PTR(create_event_with_bit, RPC_NULL);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    rcf_rpc_call(rpcs, "create_event_with_bit", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): WSACreateEvent() -> %u (%s)",
+                 rpcs->ta, rpcs->name,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_RPC_PTR(create_event_with_bit, out.retval);
+}
+
 te_bool
 rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
 {

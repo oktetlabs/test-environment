@@ -2927,6 +2927,17 @@ TARPC_FUNC(create_event, {},
 }
 )
 
+/*-------------- WSACreateEvent and set lower bit----------*/
+
+TARPC_FUNC(create_event_with_bit, {},
+{
+    UNUSED(list);
+    UNUSED(in);
+    out->retval = rcf_pch_mem_alloc(
+             (void*)(((unsigned int)WSACreateEvent())|1));
+}
+)
+
 /*-------------- WSACloseEvent ----------------------------*/
 
 TARPC_FUNC(close_event, {},
