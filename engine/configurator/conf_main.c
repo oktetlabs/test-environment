@@ -1251,6 +1251,13 @@ process_backup(cfg_backup_msg *msg)
             else
                 WARN("Restoring backup from history failed; "
                      "restore from the file");
+            
+            if (TE_RC_GET_ERROR(msg->rc) == TE_ETADEAD)
+            {
+                rcf_check_agents();
+                cfg_ta_sync("/:", TRUE);
+            }
+            
             cfg_ta_log_syncing(TRUE);
             msg->rc = parse_config(msg->filename, TRUE);
             cfg_ta_log_syncing(FALSE);
