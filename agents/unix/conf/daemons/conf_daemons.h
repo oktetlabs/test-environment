@@ -111,8 +111,8 @@ get_ds_name(const char *oid)
          (strstr(oid, "rshd") != NULL) ? "rsh" :
          (strstr(oid, "echoserver") != NULL) ? "echo" : oid;
 #elif defined __sun__
-         (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :       
-         (strstr(oid, "dnsserver") != NULL) ? "named" :        
+         (strstr(oid, "dhcpserver") != NULL) ? "svc:/network/dhcp-server:default" :       
+         (strstr(oid, "dnsserver") != NULL) ? "svc:/network/dns/server:default" :        
          (strstr(oid, "todudpserver") != NULL) ? "daytime-udp" :  
          (strstr(oid, "tftpserver") != NULL) ? "tftp" :        
          (strstr(oid, "ftpserver") != NULL) ? get_ftp_daemon_name() :       

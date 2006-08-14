@@ -379,7 +379,7 @@ ds_dhcpserver_stop(void)
 #if defined __linux__
     sprintf(buf, "killall %s", dhcp_server_exec);
 #elif defined __sun__
-    TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st dhcp-server");
+    TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st %s", get_ds_name("dhcpserver"));
 #endif
     if (ta_system(buf) != 0)
     {
@@ -397,7 +397,7 @@ ds_dhcpserver_script_start(void)
 #if defined __linux__
     sprintf(buf, "%s start >/dev/null 2>&1", dhcp_server_script);
 #elif defined __sun__
-    TE_SPRINTF(buf, "/usr/sbin/svcadm enable -rst dhcp-server");
+    TE_SPRINTF(buf, "/usr/sbin/svcadm enable -rst %s", get_ds_name("dhcpserver"));
 #endif
     if (ta_system(buf) != 0)
     {
