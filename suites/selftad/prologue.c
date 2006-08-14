@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 #include <signal.h>
+#include <sys/socket.h>
 
 #include "tapi_test.h"
 #include "tapi_cfg_net.h"
