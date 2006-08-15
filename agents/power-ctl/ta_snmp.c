@@ -59,9 +59,12 @@ snmp_pdu_type(int type)
         case SNMP_MSG_INFORM:
             return "INFORM";
         case SNMP_MSG_TRAP2:
-            return "TRAP2";                                                             case SNMP_MSG_REPORT:
+            return "TRAP2";
+        case SNMP_MSG_REPORT:
             return "REPORT";
-        default:                                                                            snprintf(unknown, sizeof(unknown), "?0x%2X?", type);                            return unknown;
+        default:
+            snprintf(unknown, sizeof(unknown), "?0x%2X?", type);
+            return unknown;
     }
 }
 #endif
