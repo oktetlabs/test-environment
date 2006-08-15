@@ -1,0 +1,7 @@
+#ifndef __TE_IF_MANGLE_H__
+#define __TE_IF_MANGLE_H__
+
+#define MANGLE_ENSLAVE     (SIOCDEVPRIVATE)
+#define MANGLE_EMANCIPATE  (SIOCDEVPRIVATE + 1)
+
+#endif /* __TE_IF_MANGLE_H__ */
