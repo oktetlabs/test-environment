@@ -1937,10 +1937,14 @@ static char *exim_name = "exim";
 
 /* Possible kinds of SMTP servers - do not change order */
 static char *smtp_servers[] = {
-    "exim",      
+#if defined __linux__
+    "exim",
     "sendmail",
     "postfix",
     "qmail"
+#elif defined __sun__
+    "sendmail"
+#endif
 };    
 
 /** 
@@ -1954,7 +1958,7 @@ update_etc_hosts(char *ip)
     FILE *f = NULL;
     FILE *g = NULL;
     int   rc;
-    
+
     if (strcmp(ip, SMTP_EMPTY_SMARTHOST) == 0)
         return 0;
 
@@ -1997,7 +2001,11 @@ update_etc_hosts(char *ip)
 /*---------------------- sendmail staff ------------------------------*/
 
 /** sendmail configuration location */
+#if defined __linux__
 #define SENDMAIL_CONF_DIR   "/etc/mail/"
+#elif defined __sun__
+#define SENDMAIL_CONF_DIR   "/etc/mail/cf/cf/"
+#endif
 
 /** Smarthost option format */
 #define SENDMAIL_SMARTHOST_OPT_S  "define(`SMART_HOST',`te_tester"
@@ -2079,14 +2087,22 @@ sendmail_smarthost_set(te_bool enable)
     /* Commit all changes in config files before restart of the service */
     sync();
 
+#if defined __linux__
     if ((rc = ta_system("make -C " SENDMAIL_CONF_DIR)) != 0)
     {
         ERROR("make -C " SENDMAIL_CONF_DIR " failed with code %d", rc);
+#elif defined __sun__
+    if ((rc = ta_system("cd " SENDMAIL_CONF_DIR " && make")) != 0)
+    {
+        ERROR("cd " SENDMAIL_CONF_DIR " && make failed with code %d", rc);
+#endif
         return -1;
     }
     
     return 0;
 }
+
+#if defined __linux__
 
 /*---------------------- postfix staff ------------------------------*/
 
@@ -2340,6 +2356,7 @@ qmail_smarthost_set(te_bool enable, const char *relay)
     
     return 0;
 }
+#endif
 
 
 /*------------------ Common mail staff --------------------------*/
@@ -2366,6 +2383,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
         if (enable)
             strcpy(value, smtp_current_smarthost);
     }
+#if defined __linux__
     else if (strcmp(smtp_current, "postfix") == 0)
     {
         te_bool enable;
@@ -2399,6 +2417,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
         if (enable)
             strcpy(value, smtp_current_smarthost);
     }
+#endif
 
     return 0;
 }
@@ -2437,6 +2456,7 @@ ds_smtp_smarthost_set(unsigned int gid, const char *oid,
         if ((rc = sendmail_smarthost_set(addr != 0)) != 0)
             goto error;
     }
+#if defined __linux__
     else if (strcmp(smtp_current, "postfix") == 0)
     {
         if ((rc = postfix_smarthost_set(addr != 0)) != 0)
@@ -2452,6 +2472,7 @@ ds_smtp_smarthost_set(unsigned int gid, const char *oid,
         if ((rc = qmail_smarthost_set(addr != 0, new_host)) != 0)
             goto error;
     }
+#endif
     else
         goto error;
         
@@ -2515,7 +2536,7 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
     
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (smtp_current != NULL && daemon_running(smtp_current_daemon))
     {
         ERROR("Cannot set smtp to %s: %s is running", oid, 
@@ -2581,9 +2602,10 @@ void
 flush_smtp_server_queue(void)
 {
     int rc = 0;
-    
+
     if (smtp_current == NULL)
         ERROR("No SMTP server running");
+#if defined __linux__
     else if (strcmp(smtp_current, "postfix") == 0)
     {
         rc = ta_system("/etc/init.d/postfix flush");
@@ -2592,12 +2614,14 @@ flush_smtp_server_queue(void)
     {
         rc = ta_system("killall -ALRM qmail-send");
     }
+#endif
     else if (strcmp(smtp_current, "sendmail") == 0)
     {
         rc = ta_system("sendmail-mta -q");
         if (rc != 0)
             rc = ta_system("sendmail -q");
     }
+#if defined __linux__
     else if (strcmp(smtp_current, "exim") == 0)
     {
         char buf[30];
@@ -2608,6 +2632,7 @@ flush_smtp_server_queue(void)
         else
             rc = -1;
     }
+#endif
     else
     {
         WARN("Flushing is not implemented for %s", smtp_current);
@@ -2639,7 +2664,6 @@ smtp_grab(const char *name)
     if ((rc = rcf_pch_add_node("/agent", &node_ds_smtp)) != 0)
         return rc;
 
-#if defined __linux__
     if ((rc = ds_create_backup("/etc/", "hosts", &hosts_index)) != 0)
     {
         ERROR("SMTP server updates /etc/hosts and cannot be initialized");
@@ -2655,6 +2679,7 @@ smtp_grab(const char *name)
         return rc;
     }
 
+#if defined __linux__
     if (file_exists(EXIM_CONF_DIR "update-exim.conf.conf"))
     {
         if ((rc = ds_create_backup(EXIM_CONF_DIR, "update-exim.conf.conf", 
@@ -2691,8 +2716,8 @@ smtp_grab(const char *name)
         smtp_release(NULL);
         return rc;
     }
+#endif
 
-        
     if ((smtp_current_smarthost = strdup(SMTP_EMPTY_SMARTHOST)) == NULL)
     {
         smtp_release(NULL);
@@ -2713,7 +2738,6 @@ smtp_grab(const char *name)
         }
         smtp_current = NULL;
     }
-#endif
 
     return 0;
 }
@@ -2726,26 +2750,35 @@ smtp_release(const char *name)
     if (rcf_pch_del_node(&node_ds_smtp) != 0)
         return 0;
 
-#if defined __linux__
     /* Restore backups */
     ds_restore_backup(hosts_index);
     ds_restore_backup(sendmail_index);
+#if defined __linux__
     ds_restore_backup(exim_index);
     ds_restore_backup(postfix_index);
     ds_restore_backup(qmail_index);
-    
+#endif
+
     if (sendmail_index >= 0 && ds_config_changed(sendmail_index))
     {
         if (file_exists(SENDMAIL_CONF_DIR))
         {
+#if defined __linux__
             ta_system("make -C " SENDMAIL_CONF_DIR);
+#elif defined __sun__
+            ta_system("cd " SENDMAIL_CONF_DIR " && make");
+#endif
         }
     }
+
+#if defined __linux__
     if (exim_index >= 0 && ds_config_changed(exim_index))
     {
         sprintf(buf, "update-%s.conf >/dev/null 2>&1", exim_name);
         ta_system(buf);
     }
+#endif
+
     if (smtp_current != NULL)
         daemon_set(0, smtp_current_daemon, "0");
 
@@ -2754,7 +2787,6 @@ smtp_release(const char *name)
 
     free(smtp_current_smarthost);
     smtp_current_smarthost = NULL;
-#endif
 
     return 0;
 }
