@@ -1279,7 +1279,7 @@ rpc_completion_callback(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(completion_callback, rc);
 
     TAPI_RPC_LOG("RPC (%s,%s): completion_callback() -> %s "
-                 "called %d times;  error %r; bytes %ld; overlapped %u",
+                 "called %d times;  error %r; bytes %d; overlapped %u",
                  rpcs->ta, rpcs->name, errno_rpc2str(RPC_ERRNO(rpcs)),
                  out.called, out.error, out.bytes, out.overlapped);
 
@@ -2482,7 +2482,7 @@ rpc_duplicate_handle(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_BOOL(duplicate_handle, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: DuplicateHandle(%u, %d, %u) -> "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: DuplicateHandle(%d, %d, %d) -> "
                  "%s (%s) New Handle %d",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  src, old_fd, tgt, 
@@ -2815,7 +2815,7 @@ rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
     rcf_rpc_call(rpcs, "alloc_wsabuf", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: alloc_wsabuf(%d, %p, %p) -> "
-                 "%u (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 "%d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  len, wsabuf, wsabuf_buf,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -3256,7 +3256,7 @@ rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
                  "WSAGetOverlappedResult(%d, %u, %s) for ioctl %s"
-                 "-> %s (%s) bytes transferred %u",
+                 "-> %s (%s) bytes transferred %d",
                  rpcs->ta, rpcs->name, rpcop2str(op), 
                  s, overlapped, wait? "wait" : "don't wait",
                  ioctl_rpc2str(control_code),

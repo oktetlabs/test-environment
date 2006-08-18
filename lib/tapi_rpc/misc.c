@@ -819,7 +819,7 @@ rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(socket_to_file, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: socket_to_file(%d, %s, %u) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: socket_to_file(%d, %s, %ld) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  sock, path, timeout,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));

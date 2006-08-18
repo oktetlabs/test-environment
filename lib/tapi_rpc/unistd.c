@@ -203,7 +203,7 @@ rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
 
     rcf_rpc_call(rpcs, "write_at_offset", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: write_at_offset(%d, %p, %d, %d)"
+    TAPI_RPC_LOG("RPC (%s,%s)%s: write_at_offset(%d, %p, %d, %lld)"
                  " -> %lld, %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  fd, buf, buflen, offset, 
@@ -1077,7 +1077,7 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(poll, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: poll(%p%s, %d, %d) -> %d (%s) %s",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: poll(%p%s, %u, %d) -> %d (%s) %s",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  ufds, str_buf_1, nfds, timeout,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)), str_buf_2);
@@ -1294,7 +1294,7 @@ rpc_seteuid(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(seteuid, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s): seteuid() -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): seteuid(%d) -> %d (%s)",
                  rpcs->ta, rpcs->name,
                  uid, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 

@@ -870,7 +870,7 @@ rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
         *ipi_ifindex = out.ipi_ifindex;
     }
     TAPI_RPC_LOG("RPC (%s,%s): "
-                 "cmsg_data_parse_ip_pktinfo(%p, %p, %p->%s, %p->%d)"
+                 "cmsg_data_parse_ip_pktinfo(%p, %u, %p->%s, %p->%d)"
                  " -> %d (%s)",
                  rpcs->ta, rpcs->name,
                  data, data_len, ipi_addr, 

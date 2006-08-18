@@ -70,7 +70,7 @@ rpc_if_nametoindex(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR(if_nametoindex, out.ifindex, FALSE, 0);
 
-    TAPI_RPC_LOG("RPC (%s,%s): if_nametoindex(%s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): if_nametoindex(%s) -> %u (%s)",
                  rpcs->ta, rpcs->name, ifname == NULL ? "" : ifname,
                  out.ifindex, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -107,7 +107,7 @@ rpc_if_indextoname(rcf_rpc_server *rpcs,
             memcpy(ifname, out.ifname.ifname_val, out.ifname.ifname_len);
     }
 
-    TAPI_RPC_LOG("RPC (%s,%s): if_indextoname(%d) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): if_indextoname(%u) -> %s (%s)",
                  rpcs->ta, rpcs->name,
                  ifindex, out.ifname.ifname_val != NULL ? ifname : "",
                  errno_rpc2str(RPC_ERRNO(rpcs)));
