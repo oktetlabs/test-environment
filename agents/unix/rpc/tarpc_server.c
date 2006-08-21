@@ -1764,13 +1764,13 @@ tarpc_sockoptlen(const option_value *optval)
         case OPT_LINGER:
             return sizeof(struct linger);
 
-        case OPT_MREQ:
-            return sizeof(struct ip_mreq);
-
-#if HAVE_STRUCT_IP_MREQN
         case OPT_MREQN:
+#if HAVE_STRUCT_IP_MREQN
             return sizeof(struct ip_mreqn);
 #endif
+
+        case OPT_MREQ:
+            return sizeof(struct ip_mreq);
 
         case OPT_MREQ6:
             return sizeof(struct ipv6_mreq);
