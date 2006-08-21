@@ -1418,6 +1418,87 @@ TARPC_FUNC(signal,
 }
 )
 
+/*-------------- bsd_signal() --------------------------------*/
+
+TARPC_FUNC(bsd_signal,
+{
+    if (in->signum == RPC_SIGINT)
+    {
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
+        return TRUE;
+    }
+},
+{
+    sighandler_t handler;
+    
+    if ((out->common._errno = name2handler(in->handler, 
+                                           (void **)&handler)) == 0)
+    {
+        int     signum = signum_rpc2h(in->signum);
+        void   *old_handler;
+        
+        MAKE_CALL(old_handler = func_ret_ptr(signum, handler));
+        
+        if (old_handler != SIG_ERR)
+        {
+            /* FIXME */
+            out->handler = handler2name(old_handler);
+
+            /*
+             * Delete signal from set of received signals when
+             * signal registrar is set for the signal.
+             */
+            if ((handler == signal_registrar) &&
+                RPC_IS_ERRNO_RPC(out->common._errno))
+            {
+                sigdelset(&rpcs_received_signals, signum);
+            }
+        }
+    }
+}
+)
+
+/*-------------- sysv_signal() --------------------------------*/
+
+TARPC_FUNC(sysv_signal,
+{
+    if (in->signum == RPC_SIGINT)
+    {
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
+        return TRUE;
+    }
+},
+{
+    sighandler_t handler;
+    
+    if ((out->common._errno = name2handler(in->handler, 
+                                           (void **)&handler)) == 0)
+    {
+        int     signum = signum_rpc2h(in->signum);
+        void   *old_handler;
+        
+        MAKE_CALL(old_handler = func_ret_ptr(signum, handler));
+        
+        if (old_handler != SIG_ERR)
+        {
+            /* FIXME */
+            out->handler = handler2name(old_handler);
+
+            /*
+             * Delete signal from set of received signals when
+             * signal registrar is set for the signal.
+             */
+            if ((handler == signal_registrar) &&
+                RPC_IS_ERRNO_RPC(out->common._errno))
+            {
+                sigdelset(&rpcs_received_signals, signum);
+            }
+        }
+    }
+}
+)
+
+
 /*-------------- sigaction() --------------------------------*/
 
 /** Return pointer to sa_restorer field of the structure or dummy address */

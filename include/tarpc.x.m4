@@ -2200,6 +2200,36 @@ struct tarpc_signal_out {
     string handler<>;  /**< Name of the old signal handler function */
 };
 
+/* bsd_signal() */
+
+struct tarpc_bsd_signal_in {
+    struct tarpc_in_arg common;
+
+    tarpc_signum    signum;     /**< Signal */
+    string          handler<>;  /**< Name of the signal handler function */
+};
+
+struct tarpc_bsd_signal_out {
+    struct tarpc_out_arg    common;
+
+    string handler<>;  /**< Name of the old signal handler function */
+};
+
+/* sysv_signal() */
+
+struct tarpc_sysv_signal_in {
+    struct tarpc_in_arg common;
+
+    tarpc_signum    signum;     /**< Signal */
+    string          handler<>;  /**< Name of the signal handler function */
+};
+
+struct tarpc_sysv_signal_out {
+    struct tarpc_out_arg    common;
+
+    string handler<>;  /**< Name of the old signal handler function */
+};
+
 /* sigaction() */
 struct tarpc_sigaction_in {
     struct tarpc_in_arg     common;
@@ -3469,6 +3499,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(if_freenameindex)
 
         RPC_DEF(signal)
+        RPC_DEF(bsd_signal)
+        RPC_DEF(sysv_signal)
         RPC_DEF(sigaction)
         RPC_DEF(kill)
         RPC_DEF(ta_kill_death)

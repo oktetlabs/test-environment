@@ -104,6 +104,110 @@ rpc_signal(rcf_rpc_server *rpcs,
     RETVAL_PTR(signal, res);
 }
 
+char *
+rpc_bsd_signal(rcf_rpc_server *rpcs,
+           rpc_signum signum, const char *handler)
+{
+    tarpc_bsd_signal_in  in;
+    tarpc_bsd_signal_out out;
+    
+    char *copy = NULL;
+
+    char *res = NULL;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_PTR(bsd_signal, NULL);
+    }
+    
+    if ((copy = strdup(handler != NULL ? handler : "")) == NULL)
+    {
+        ERROR("Out of memory");
+        rpcs->_errno = TE_ENOMEM;
+        RETVAL_PTR(bsd_signal, NULL);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.signum = signum;
+    in.handler = copy;
+
+    rcf_rpc_call(rpcs, "bsd_signal", &in, &out);
+                 
+    /* Yes, I know that it's memory leak, but what do you propose?! */
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        res = out.handler;
+        out.handler = NULL;
+    }
+    free(copy);
+    
+    TAPI_RPC_LOG("RPC (%s,%s): bsd_signal(%s, %s) -> %s (%s)",
+                 rpcs->ta, rpcs->name,
+                 signum_rpc2str(signum),
+                 (handler != NULL) ? handler : "(null)",
+                 res != NULL ? res : "(null)",
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+        
+    RETVAL_PTR(bsd_signal, res);
+}
+
+char *
+rpc_sysv_signal(rcf_rpc_server *rpcs,
+           rpc_signum signum, const char *handler)
+{
+    tarpc_sysv_signal_in  in;
+    tarpc_sysv_signal_out out;
+    
+    char *copy = NULL;
+
+    char *res = NULL;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_PTR(sysv_signal, NULL);
+    }
+    
+    if ((copy = strdup(handler != NULL ? handler : "")) == NULL)
+    {
+        ERROR("Out of memory");
+        rpcs->_errno = TE_ENOMEM;
+        RETVAL_PTR(sysv_signal, NULL);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.signum = signum;
+    in.handler = copy;
+
+    rcf_rpc_call(rpcs, "sysv_signal", &in, &out);
+                 
+    /* Yes, I know that it's memory leak, but what do you propose?! */
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        res = out.handler;
+        out.handler = NULL;
+    }
+    free(copy);
+    
+    TAPI_RPC_LOG("RPC (%s,%s): sysv_signal(%s, %s) -> %s (%s)",
+                 rpcs->ta, rpcs->name,
+                 signum_rpc2str(signum),
+                 (handler != NULL) ? handler : "(null)",
+                 res != NULL ? res : "(null)",
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+        
+    RETVAL_PTR(sysv_signal, res);
+}
+
 int
 rpc_kill(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_signum signum)
 {

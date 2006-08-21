@@ -55,6 +55,32 @@ extern char *rpc_signal(rcf_rpc_server *rpcs,
                         rpc_signum signum, const char *handler);
 
 /**
+ * Establish an action to be taken when a given signal @b signum occurs
+ * on RPC server.
+ *
+ * @param rpcs      RPC server handle
+ * @param signum    Signal whose behavior is controlled 
+ * @param handler   Signal handler
+ *
+ * return Pointer to the signal handler function.
+ */
+extern char *rpc_bsd_signal(rcf_rpc_server *rpcs,
+                            rpc_signum signum, const char *handler);
+
+/**
+ * Establish an action to be taken when a given signal @b signum occurs
+ * on RPC server.
+ *
+ * @param rpcs      RPC server handle
+ * @param signum    Signal whose behavior is controlled 
+ * @param handler   Signal handler
+ *
+ * return Pointer to the signal handler function.
+ */
+extern char *rpc_sysv_signal(rcf_rpc_server *rpcs,
+                            rpc_signum signum, const char *handler);
+
+/**
  * Send signal with number @b signum to process or process group 
  * whose pid's @b pid.
  *
