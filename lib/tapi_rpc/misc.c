@@ -1235,7 +1235,8 @@ tapi_sigaction_simple(rcf_rpc_server *rpcs,
 int 
 rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
                      const struct sockaddr *mcast_addr,
-                     int if_index, te_bool leave_group)
+                     int if_index, te_bool leave_group,
+                     tarpc_joining_method how)
 {
     struct tarpc_mcast_join_leave_in    in;
     struct tarpc_mcast_join_leave_out   out;
@@ -1254,7 +1255,8 @@ rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
     in.leave_group = leave_group;
     in.family = addr_family_h2rpc(mcast_addr->sa_family);
     in.multiaddr.multiaddr_len = te_netaddr_get_size(mcast_addr->sa_family);
-    in.multiaddr.multiaddr_val = te_sockaddr_get_netaddr(mcast_addr); 
+    in.multiaddr.multiaddr_val = te_sockaddr_get_netaddr(mcast_addr);
+    in.how = how;    
 
     rcf_rpc_call(rpcs, "mcast_join_leave", &in, &out);
     
@@ -1271,15 +1273,17 @@ rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
 
 int 
 rpc_mcast_join(rcf_rpc_server *rpcs, int s,
-               const struct sockaddr *mcast_addr, int if_index)
+               const struct sockaddr *mcast_addr, int if_index,
+               tarpc_joining_method how)
 {
-    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, FALSE);
+    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, FALSE, how);
 }
 
 int 
 rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
                 const struct sockaddr *mcast_addr, int if_index)
 {
-    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, TRUE);
+    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, TRUE,
+                                TARPC_MCAST_OPTIONS);
 }
 

@@ -5098,10 +5098,21 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
 {
     api_func    setsockopt_func;
 
+    if (in->how != TARPC_MCAST_OPTIONS)
+    {
+        ERROR("Unsupported joining method requested");
+        out->retval = -1;
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        return;
+    }
+
     if (tarpc_find_func(in->common.lib, "setsockopt",
                         &setsockopt_func) != 0)
     {
         ERROR("Cannot find setsockopt() implementation");
+        out->retval = -1;
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        return;
     }
 
     memset(out, 0, sizeof(tarpc_mcast_join_leave_out));
@@ -5175,6 +5186,10 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
         assert(in->multiaddr.multiaddr_len == sizeof(struct in_addr));
         memcpy(&mreq.imr_multiaddr, in->multiaddr.multiaddr_val,
                sizeof(struct in_addr));
+#if HAVE_STRUCT_IP_MREQN        
+        PRINT("Try to join a group (%d,%d)", mreq.imr_multiaddr,
+              mreq.imr_ifindex);
+#endif        
         out->retval = setsockopt_func(in->fd, IPPROTO_IP,
                                       in->leave_group ?
                                           IP_DROP_MEMBERSHIP :

@@ -4816,9 +4816,21 @@ TARPC_FUNC(cmsg_data_parse_ip_pktinfo,
 TARPC_FUNC(mcast_join_leave,
 {},
 {
-    struct in_addr addr;
-    DWORD          rc;
-   
+    struct in_addr          addr;
+    DWORD                   rc = 0;
+    struct sockaddr_storage a;
+    struct ip_mreq          mreq;
+/*  api_func                setsockopt_func;
+
+    if (tarpc_find_func(in->common.lib, "setsockopt",
+                        &setsockopt_func) != 0)
+    {
+        ERROR("Cannot find setsockopt() implementation");
+        out->retval = -1;
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        return;
+    }
+*/   
     memset(&addr, 0, sizeof(addr));
 
     if (in->family != RPC_AF_INET)
@@ -4826,51 +4838,81 @@ TARPC_FUNC(mcast_join_leave,
         out->common._errno = RPC_EAFNOSUPPORT;
         out->retval = -1;
     }
-    if (in->leave_group)
-    {
-        out->common._errno = RPC_EOPNOTSUPP;
-        out->retval = -1;
-    }
+    
     else if ((in->ifindex != 0) &&
              (rc = get_addr_by_ifindex(in->ifindex, &addr)) != 0)
     {
+        ERROR("Cannot get address for interface");
         out->common._errno = rc;
         out->retval = -1;
     }
-    else
+    else switch (in->how)
     {
-        struct sockaddr_storage a;
-
-        rc = setsockopt(in->fd, IPPROTO_IP, IP_MULTICAST_IF,
-                        (void *)&addr, sizeof(addr));
-        if (rc != 0)
-        {
-            ERROR("Setting interface for multicasting failed");
-            out->common._errno = TE_RC(TE_TA_WIN32, rc);
-            out->retval = -1;
-        }
-        else 
-        {
-            SOCKET rc;
-            
-            memset(&a, 0, sizeof(a));
-            a.ss_family = addr_family_rpc2h(in->family);
-            assert(te_netaddr_get_size(a.ss_family) ==
-                   in->multiaddr.multiaddr_len);
-            memcpy(te_sockaddr_get_netaddr(SA(&a)),
-                   in->multiaddr.multiaddr_val,
-                   in->multiaddr.multiaddr_len);
-            
-            MAKE_CALL(rc = WSAJoinLeaf(in->fd, SA(&a),
-                                       sizeof(struct sockaddr_in),
-                                       NULL, NULL, NULL, NULL, JL_BOTH));
-            if (rc == INVALID_SOCKET)
+        case TARPC_MCAST_WSA:
+            if (in->leave_group)
             {
-                out->common._errno = TE_RC(TE_RPC, WSAGetLastError());
+                out->common._errno = RPC_EOPNOTSUPP;
+                out->retval = -1;
             }
-            out->retval = (rc == INVALID_SOCKET)? -1 : 0;
-        }
-    }        
+            else
+            {
+                rc = setsockopt(in->fd, IPPROTO_IP, IP_MULTICAST_IF,
+                                (void *)&addr, sizeof(addr));
+                if (rc != 0)
+                {
+                    ERROR("Setting interface for multicasting failed");
+                    out->common._errno = TE_RC(TE_TA_WIN32, rc);
+                    out->retval = -1;
+                }
+                else 
+                {
+                    SOCKET rc;
+                    
+                    memset(&a, 0, sizeof(a));
+                    a.ss_family = addr_family_rpc2h(in->family);
+                    assert(te_netaddr_get_size(a.ss_family) ==
+                           in->multiaddr.multiaddr_len);
+                    memcpy(te_sockaddr_get_netaddr(SA(&a)),
+                           in->multiaddr.multiaddr_val,
+                           in->multiaddr.multiaddr_len);
+                    
+                    MAKE_CALL(rc = WSAJoinLeaf(in->fd, SA(&a),
+                                               sizeof(struct sockaddr_in),
+                                               NULL, NULL, NULL, NULL,
+                                               JL_BOTH));
+                    if (rc == INVALID_SOCKET)
+                    {
+                        out->common._errno = TE_RC(TE_RPC,
+                                                   WSAGetLastError());
+                    }
+                    out->retval = (rc == INVALID_SOCKET)? -1 : 0;
+                }
+            }
+            break;
+            
+        case TARPC_MCAST_OPTIONS:
+
+            memcpy(&mreq.imr_multiaddr, in->multiaddr.multiaddr_val,
+                   sizeof(struct in_addr));
+            memcpy(&mreq.imr_interface, &addr, sizeof(struct in_addr));
+            
+            MAKE_CALL(rc = setsockopt(in->fd, IPPROTO_IP,
+                                      in->leave_group?
+                                      IP_DROP_MEMBERSHIP :
+                                      IP_ADD_MEMBERSHIP,
+                                      (void *)&mreq, sizeof(mreq)));
+            if (rc != 0)
+            {
+                out->common._errno = TE_RC(TE_RPC, errno);
+            }
+            out->retval = rc;
+            break;
+            
+        default:
+            ERROR("Unsupported joining method requested");
+            out->common._errno = TE_RC(TE_RPC, TE_EOPNOTSUPP);
+            out->retval = rc;
+    }
 }
 )
 

@@ -3354,14 +3354,20 @@ struct tarpc_set_var_out {
 };
 
 /* mcast_join_leave() */
+enum tarpc_joining_method {
+    TARPC_MCAST_OPTIONS = 1,
+    TARPC_MCAST_WSA = 2
+};
+
 struct tarpc_mcast_join_leave_in {
     struct tarpc_in_arg common;
     
-    tarpc_int           fd;          /**< TA-local socket */
-    tarpc_int           family;      /**< Address family */
-    uint8_t             multiaddr<>; /**< Multicast group address */
-    tarpc_int           ifindex;     /**< Interface index */
-    tarpc_bool          leave_group; /**< Leave the group */
+    tarpc_int                  fd;          /**< TA-local socket */
+    tarpc_int                  family;      /**< Address family */
+    uint8_t                    multiaddr<>; /**< Multicast group address */
+    tarpc_int                  ifindex;     /**< Interface index */
+    tarpc_bool                 leave_group; /**< Leave the group */
+    tarpc_joining_method       how;         /**< How to join the group */
 };
 
 struct tarpc_mcast_join_leave_out {
