@@ -85,14 +85,9 @@ extern "C" {
 #define TE_IPC_AF_INET
 #endif
 
-/** Should connectionless (or connectin oriented) sockets be used */
-#define TE_IPC_CONNECTIONLESS
-
 #define IPC_RETRY   5   /**< Number of retries for connecting to server */
 #define IPC_SLEEP   1   /**< Interval (in seconds) between retries */
 
-
-#ifdef TE_IPC_CONNECTIONLESS
 
 /**
  * The maximal size of the datagram
@@ -142,7 +137,6 @@ extern int ipc_remember_datagram(struct ipc_datagrams *p_pool,
                                  struct sockaddr_un *addr,
                                  size_t addr_len);
 
-#else /* !TE_IPC_CONNECTIONLESS */
 
 /** @name
  * Sizes of the internal server/clent buffers. It is used to avoid
@@ -154,8 +148,6 @@ extern int ipc_remember_datagram(struct ipc_datagrams *p_pool,
 #define IPC_TCP_SERVER_BUFFER_SIZE 1000
 #define IPC_TCP_CLIENT_BUFFER_SIZE 500
 /*@}*/
-
-#endif /* !TE_IPC_CONNECTIONLESS */
 
 
 #ifndef TE_IPC_AF_UNIX

@@ -1588,7 +1588,8 @@ main(int argc, char **argv)
     VERB("Starting...");
 
     ipc_init();
-    if (ipc_register_server(CONFIGURATOR_SERVER, &server) != 0)
+    if (ipc_register_server(CONFIGURATOR_SERVER, CONFIGURATOR_IPC,
+                            &server) != 0)
     {
         ERROR("Failed to register IPC server");
         goto exit;

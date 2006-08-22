@@ -143,7 +143,7 @@ ten_log_message(const char *file, unsigned int line,
         {
             fprintf(stderr, "ERROR: Logger client name truncated");
         }
-        rc = ipc_init_client(name, &lgr_client);
+        rc = ipc_init_client(name, LOGGER_IPC, &lgr_client);
         if (rc != 0)
         {
 #ifdef HAVE_PTHREAD_H
@@ -234,7 +234,7 @@ log_flush_ten(const char *ta_name)
     
     snprintf(clnt_name, sizeof(clnt_name), "LOGGER_FLUSH_%s", ta_name);
 
-    rc = ipc_init_client(clnt_name, &log_client);
+    rc = ipc_init_client(clnt_name, LOGGER_IPC, &log_client);
     if (rc != 0)
     {
         ERROR("Failed to initialize log flush client: %r", rc);

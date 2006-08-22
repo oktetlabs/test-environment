@@ -485,7 +485,7 @@ rcf_emulate(void* param)
 
     /* Registering ipc server */
     ipc_init();
-    if (ipc_register_server(RCF_SERVER, &server) != 0)
+    if (ipc_register_server(RCF_SERVER, RCF_IPC, &server) != 0)
     {
         ERROR("Failed to register IPC RCF_SERVER\n");
         goto error;

@@ -52,6 +52,9 @@ cs_server_name()
 /** Configurator's server name */
 #define CONFIGURATOR_SERVER     cs_server_name()
 
+/** Type of IPC used by Configurator */
+#define CONFIGURATOR_IPC        (TRUE) /* Connection-oriented IPC */
+
 /** Message types */
 enum {
     CFG_REGISTER,  /**< Register object: IN: OID, description;

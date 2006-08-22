@@ -68,11 +68,13 @@ extern int ipc_init(void);
  * Register IPC server.
  *
  * @param name          Name of the server (must be less than UNIX_PATH_MAX)
+ * @param conn          FALSE - connectionless server,
+ *                      TRUE - connection-oriented server 
  * @param p_ipcs        Location for IPC server handle
  *
  * @return Status code.
  */
-extern int ipc_register_server(const char *name,
+extern int ipc_register_server(const char *name, te_bool conn,
                                struct ipc_server **p_ipcs);
 
 

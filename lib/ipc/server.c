@@ -75,6 +75,22 @@
 
 
 /**
+ * Prototype of the function to receive IPC message on the server.
+ */
+typedef int (*ipc_recv)(struct ipc_server *ipcs,
+                        void *buf, size_t *p_buf_len,
+                        struct ipc_server_client **p_ipcsc);
+
+/**
+ * Prototype of the function to send IPC message from the server to
+ * the client.
+ */
+typedef int (*ipc_send)(struct ipc_server *ipcs,
+                        struct ipc_server_client *ipcsc,
+                        const void *msg, size_t msg_len);
+
+
+/**
  * The ipc_server_client structure is used to store information about
  * sender of the message. This structure used in both UDP/UNIX and 
  * TCP/IP implementations of IPC, but has different fields.
@@ -88,23 +104,28 @@ struct ipc_server_client {
     socklen_t           sa_len;     /**< Length of the sockaddr_un struct */
 #endif
 
-#ifdef TE_IPC_CONNECTIONLESS
-    void               *buffer;     /**< Buffer for datagram */
-    size_t              frag_size;  /**< Size of current fragment */
-    size_t              frag_rest;  /**< Number of octets in the current
-                                         fragment not passed to the user */
-    size_t              msg_len;    /**< Length of the currently receiving
-                                         message, 0 if none */
-    size_t              msg_rest;   /**< Length of the rest fragment of
-                                         the current message */
-#else
-    int         socket;         /**< Connected socket to client */
-    te_bool     is_ready;       /**< Is client socket ready for reading? */
-    uint32_t    pending;        /**< Number of octets in current message
-                                     left to read from socket and to
-                                     return to user. This field MUST
-                                     be 4-octets long. */
-#endif
+    union {
+        struct {
+            void   *buffer;     /**< Buffer for datagram */
+            size_t  frag_size;  /**< Size of current fragment */
+            size_t  frag_rest;  /**< Number of octets in the current
+                                     fragment not passed to the user */
+            size_t  msg_len;    /**< Length of the currently receiving
+                                     message, 0 if none */
+            size_t  msg_rest;   /**< Length of the rest fragment of
+                                     the current message */
+        } dgram;
+        struct {
+            int         socket;     /**< Connected socket to client */
+            te_bool     is_ready;   /**< Is client socket ready for
+                                         reading? */
+            uint32_t    pending;    /**< Number of octets in current
+                                         message left to read from
+                                         socket and to return to user.
+                                         This field MUST be 4-octets
+                                         long. */
+        } stream;
+    };
 };
 
 
@@ -120,13 +141,21 @@ struct ipc_server {
 #ifndef TE_IPC_AF_UNIX
     uint16_t    port;           /**< Port number used for this server */
 #endif
-#ifdef TE_IPC_CONNECTIONLESS
-    char                   *buffer;     /**< Used to avoid data copying
-                                             on receiving datagrams */
-    struct ipc_datagrams    datagrams;  /**< Delayed datagrams */
-#else
-    char        *out_buffer;    /**< Buffer for outgoing messages */
-#endif
+    te_bool     conn;           /**< Is connection-oriented server? */
+    union {
+        struct {
+            char   *buffer;     /**< Used to avoid data copying
+                                     on receiving datagrams */
+
+            struct ipc_datagrams    datagrams;  /**< Delayed datagrams */
+        } dgram;
+        struct {
+            char   *out_buffer;    /**< Buffer for outgoing messages */
+        } stream;
+    };
+
+    ipc_recv    recv;   /**< Function to receive requests */
+    ipc_send    send;   /**< Function to send replies */
 };
 
 
@@ -144,8 +173,6 @@ static int ipc_pmap_unregister_server(const char *server_name,
 #endif /* !TE_IPC_AF_UNIX */
 
 
-#ifdef TE_IPC_CONNECTIONLESS
-
 #ifdef TE_IPC_AF_UNIX
 static struct ipc_server_client * ipc_int_client_by_addr(
                                       struct ipc_server *ipcs,
@@ -160,12 +187,22 @@ static int ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
 static int ipc_int_get_datagram(struct ipc_server *ipcs,
                                 struct ipc_server_client **p_ipcsc);
 
-#else /* !TE_IPC_CONNECTIONLESS */
 
 static int read_socket(int socket, void *buffer, size_t len);
 static int write_socket(int socket, const void *buffer, size_t len);
 
-#endif /* !TE_IPC_CONNECTIONLESS */
+static int ipc_dgram_receive_message(struct ipc_server *ipcs,
+                                     void *buf, size_t *p_buf_len,
+                                     struct ipc_server_client **p_ipcsc);
+static int ipc_dgram_send_answer(struct ipc_server *ipcs,
+                                 struct ipc_server_client *ipcsc,
+                                 const void *msg, size_t msg_len);
+static int ipc_stream_receive_message(struct ipc_server *ipcs,
+                                      void *buf, size_t *p_buf_len,
+                                      struct ipc_server_client **p_ipcsc);
+static int ipc_stream_send_answer(struct ipc_server *ipcs,
+                                  struct ipc_server_client *ipcsc,
+                                  const void *msg, size_t msg_len);
 
 
 /*
@@ -174,7 +211,8 @@ static int write_socket(int socket, const void *buffer, size_t len);
 
 /* See description in ipc_server.h */
 int
-ipc_register_server(const char *name, struct ipc_server **p_ipcs)
+ipc_register_server(const char *name, te_bool conn,
+                    struct ipc_server **p_ipcs)
 {
     struct ipc_server *ipcs;
     int                 rc;
@@ -199,6 +237,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
         perror("ipc_register_server(): calloc() error");
         return TE_OS_RC(TE_IPC, rc);
     }
+    ipcs->conn = conn;
 
     strcpy(ipcs->name, name);
     LIST_INIT(&ipcs->clients);
@@ -210,11 +249,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
 #else
                           PF_INET,
 #endif
-#ifdef TE_IPC_CONNECTIONLESS
-                          SOCK_DGRAM,
-#else
-                          SOCK_STREAM,
-#endif
+                          conn ? SOCK_STREAM : SOCK_DGRAM,
                           0);
     if (ipcs->socket < 0)
     {
@@ -246,8 +281,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
     }
 #endif /* TE_IPC_AF_UNIX */
 
-#ifndef TE_IPC_CONNECTIONLESS
-    if (listen(ipcs->socket, SOMAXCONN) != 0)
+    if (conn && (listen(ipcs->socket, SOMAXCONN) != 0))
     {
         rc = errno;
         perror("listen() error");
@@ -255,7 +289,6 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
         free(ipcs);
         return TE_OS_RC(TE_IPC, rc);
     }
-#endif /* !TE_IPC_CONNECTIONLESS */
 
 #ifndef TE_IPC_AF_UNIX
     {
@@ -290,26 +323,29 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
     (void)fcntl(ipcs->socket, F_SETFD, FD_CLOEXEC);
 #endif
     
-#ifdef TE_IPC_CONNECTIONLESS
-
-    TAILQ_INIT(&ipcs->datagrams);
-
-    ipcs->buffer = calloc(1, IPC_SEGMENT_SIZE);
-    if (ipcs->buffer == NULL)
+    if (conn)
     {
-        rc = errno;
-        perror("ipc_register_server(): calloc() error");
-        close(ipcs->socket);
-        free(ipcs);
-        return TE_OS_RC(TE_IPC, rc);
+        if (IPC_TCP_SERVER_BUFFER_SIZE != 0)
+        {
+            ipcs->stream.out_buffer = calloc(1, IPC_TCP_SERVER_BUFFER_SIZE);
+            if (ipcs->stream.out_buffer == NULL)
+            {
+                rc = errno;
+                perror("ipc_register_server(): calloc() error");
+                close(ipcs->socket);
+                free(ipcs);
+                return TE_OS_RC(TE_IPC, rc);
+            }
+        }
+        ipcs->recv = ipc_stream_receive_message;
+        ipcs->send = ipc_stream_send_answer;
     }
-
-#else /* !TE_IPC_CONNECTIONLESS */
-    
-    if (IPC_TCP_SERVER_BUFFER_SIZE != 0)
+    else
     {
-        ipcs->out_buffer = calloc(1, IPC_TCP_SERVER_BUFFER_SIZE);
-        if (ipcs->out_buffer == NULL)
+        TAILQ_INIT(&ipcs->dgram.datagrams);
+
+        ipcs->dgram.buffer = calloc(1, IPC_SEGMENT_SIZE);
+        if (ipcs->dgram.buffer == NULL)
         {
             rc = errno;
             perror("ipc_register_server(): calloc() error");
@@ -317,9 +353,9 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
             free(ipcs);
             return TE_OS_RC(TE_IPC, rc);
         }
+        ipcs->recv = ipc_dgram_receive_message;
+        ipcs->send = ipc_dgram_send_answer;
     }
-
-#endif /* !TE_IPC_AF_UNIX */
 
     *p_ipcs = ipcs;
 
@@ -339,24 +375,23 @@ int
 ipc_get_server_fds(const struct ipc_server *ipcs, fd_set *set)
 {
     int                             max_fd;
-#ifndef TE_IPC_CONNECTIONLESS
     const struct ipc_server_client *client;
-#endif
 
     if (ipcs == NULL)
         return -1;
 
     FD_SET(ipcs->socket, set);
     max_fd = ipcs->socket;
-#ifndef TE_IPC_CONNECTIONLESS
-    for (client = ipcs->clients.lh_first;
-         client != NULL;
-         client = client->links.le_next)
+    if (ipcs->conn)
     {
-        FD_SET(client->socket, set);
-        max_fd = MAX(max_fd, client->socket);
+        for (client = ipcs->clients.lh_first;
+             client != NULL;
+             client = client->links.le_next)
+        {
+            FD_SET(client->stream.socket, set);
+            max_fd = MAX(max_fd, client->stream.socket);
+        }
     }
-#endif
         
     return max_fd;
 }
@@ -366,9 +401,7 @@ te_bool
 ipc_is_server_ready(struct ipc_server *ipcs, const fd_set *set, int max_fd)
 {
     te_bool                     is_ready = FALSE;
-#ifndef TE_IPC_CONNECTIONLESS
     struct ipc_server_client   *client;
-#endif
 
     if (ipcs == NULL || set == NULL)
         return is_ready;
@@ -378,18 +411,20 @@ ipc_is_server_ready(struct ipc_server *ipcs, const fd_set *set, int max_fd)
         is_ready = is_ready ||
             (ipcs->is_ready = FD_ISSET(ipcs->socket, set));
     }
-#ifndef TE_IPC_CONNECTIONLESS
-    for (client = ipcs->clients.lh_first;
-         client != NULL;
-         client = client->links.le_next)
+    if (ipcs->conn)
     {
-        if (client->socket <= max_fd)
+        for (client = ipcs->clients.lh_first;
+             client != NULL;
+             client = client->links.le_next)
         {
-            is_ready = is_ready ||
-                (client->is_ready = FD_ISSET(client->socket, set));
+            if (client->stream.socket <= max_fd)
+            {
+                is_ready = is_ready ||
+                    (client->stream.is_ready =
+                         FD_ISSET(client->stream.socket, set));
+            }
         }
     }
-#endif
         
     return is_ready;
 }
@@ -398,16 +433,16 @@ ipc_is_server_ready(struct ipc_server *ipcs, const fd_set *set, int max_fd)
  * Close IPC server association with client.
  *
  * @param ipcsc     IPC server client
+ * @param conn      Is connection-oriented server client or not?
  */
 static void
-ipc_server_close_client(struct ipc_server_client *ipcsc)
+ipc_server_close_client(struct ipc_server_client *ipcsc, te_bool conn)
 {
     LIST_REMOVE(ipcsc, links);
-#ifdef TE_IPC_CONNECTIONLESS
-    free(ipcsc->buffer);
-#else
-    close(ipcsc->socket);
-#endif
+    if (conn)
+        close(ipcsc->stream.socket);
+    else
+        free(ipcsc->dgram.buffer);
     free(ipcsc);
 }
 
@@ -416,9 +451,7 @@ int
 ipc_close_server(struct ipc_server *ipcs)
 {
     struct ipc_server_client *ipcsc;
-#ifdef TE_IPC_CONNECTIONLESS
     struct ipc_datagram      *p;
-#endif
 
     if (ipcs == NULL)
         return 0;
@@ -434,25 +467,28 @@ ipc_close_server(struct ipc_server *ipcs)
     if (close(ipcs->socket) != 0)
         fprintf(stderr, "close() failed\n");
 
-#ifdef TE_IPC_CONNECTIONLESS
-    if (ipcs->datagrams.tqh_first != NULL)
-        fprintf(stderr, "IPC server: drop some datagrams\n");
-    /* Free datagram's buffer */
-    while ((p = ipcs->datagrams.tqh_first) != NULL)
+    if (ipcs->conn)
     {
-        TAILQ_REMOVE(&ipcs->datagrams, p, links);
-        free(p->buffer);
-        free(p);
+        free(ipcs->stream.out_buffer);
     }
-    free(ipcs->buffer);
-#else
-    free(ipcs->out_buffer);
-#endif
+    else
+    {
+        if (ipcs->dgram.datagrams.tqh_first != NULL)
+            fprintf(stderr, "IPC server: drop some datagrams\n");
+        /* Free datagram's buffer */
+        while ((p = ipcs->dgram.datagrams.tqh_first) != NULL)
+        {
+            TAILQ_REMOVE(&ipcs->dgram.datagrams, p, links);
+            free(p->buffer);
+            free(p);
+        }
+        free(ipcs->dgram.buffer);
+    }
 
     /* Free the pool */
     while ((ipcsc = ipcs->clients.lh_first) != NULL)
     {
-        ipc_server_close_client(ipcsc);
+        ipc_server_close_client(ipcsc, ipcs->conn);
     }
 
     /* Free instance */
@@ -476,14 +512,33 @@ ipc_server_client_name(const struct ipc_server_client *ipcsc)
 #endif
 }
 
-
-#ifdef TE_IPC_CONNECTIONLESS
-
 /* See description in ipc_server.h */
 int
 ipc_receive_message(struct ipc_server *ipcs,
                     void *buf, size_t *p_buf_len,
                     struct ipc_server_client **p_ipcsc)
+{
+    return ipcs->recv(ipcs, buf, p_buf_len, p_ipcsc);
+}
+
+/* See description in ipc_server.h */
+int
+ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
+                const void *msg, size_t msg_len)
+{
+    return ipcs->send(ipcs, ipcsc, msg, msg_len);
+}
+
+
+/*
+ * Local functions implementation
+ */
+
+/* See description of ipc_receive_message in ipc_server.h */
+static int
+ipc_dgram_receive_message(struct ipc_server *ipcs,
+                          void *buf, size_t *p_buf_len,
+                          struct ipc_server_client **p_ipcsc)
 {
     struct ipc_server_client *client;
 
@@ -504,7 +559,7 @@ ipc_receive_message(struct ipc_server *ipcs,
 
     KTRC("*p_buf_len=%u *p_ipcsc=%p\n", *p_buf_len, *p_ipcsc);
     do {
-        if ((client == NULL) || (client->frag_rest == 0))
+        if ((client == NULL) || (client->dgram.frag_rest == 0))
         {
             struct ipc_dgram_header   *ipch;
 
@@ -519,12 +574,12 @@ ipc_receive_message(struct ipc_server *ipcs,
                 return TE_RC(TE_IPC, rc);
             }
 
-            ipch = (struct ipc_dgram_header*)client->buffer;
+            ipch = (struct ipc_dgram_header*)client->dgram.buffer;
 
             KTRC("Datagram frag=%u len=%u left=%u\n",
-                 client->frag_size, ipch->length, ipch->left);
+                 client->dgram.frag_size, ipch->length, ipch->left);
 
-            data_size = client->frag_size -
+            data_size = client->dgram.frag_size -
                             sizeof(struct ipc_dgram_header);
             if (data_size > ipch->left)
             {
@@ -537,7 +592,7 @@ ipc_receive_message(struct ipc_server *ipcs,
                 return TE_RC(TE_IPC, TE_ESYNCFAILED);
             }
 
-            data = (uint8_t *)client->buffer +
+            data = (uint8_t *)client->dgram.buffer +
                    sizeof(struct ipc_dgram_header);
 
             if (*p_ipcsc == NULL)
@@ -546,25 +601,27 @@ ipc_receive_message(struct ipc_server *ipcs,
                      SUN_NAME(&client->sa));
                 *p_ipcsc = client;
                 /* It must be the first fragment of the message */
-                if (client->msg_len != 0)
+                if (client->dgram.msg_len != 0)
                 {
                     fprintf(stderr, "%s(): IPC internal error\n",
                             __FUNCTION__);
                     return TE_RC(TE_IPC, TE_ESYNCFAILED);
                 }
-                client->msg_len = client->msg_rest = ipch->length;
+                client->dgram.msg_len = client->dgram.msg_rest =
+                    ipch->length;
             }
             else
             {
                 KTRC("Continue with the client %s: msg_len=%u "
                      "msg_rest=%u\n", SUN_NAME(&client->sa),
-                     client->msg_len, client->msg_rest);
-                if (client->msg_len == 0)
+                     client->dgram.msg_len, client->dgram.msg_rest);
+                if (client->dgram.msg_len == 0)
                 {
                     /* New message for the client */
-                    client->msg_len = client->msg_rest = ipch->length;
+                    client->dgram.msg_len = client->dgram.msg_rest =
+                        ipch->length;
                 }
-                else if (client->msg_len != ipch->length)
+                else if (client->dgram.msg_len != ipch->length)
                 {
                     fprintf(stderr, "%s(): IPC protocol error:\n"
                             "Unexpected total message length in the "
@@ -572,7 +629,7 @@ ipc_receive_message(struct ipc_server *ipcs,
                     return TE_RC(TE_IPC, TE_ESYNCFAILED);
                 }
             }
-            if (client->msg_rest != ipch->left)
+            if (client->dgram.msg_rest != ipch->left)
             {
                 fprintf(stderr, "%s(): IPC protocol error:\n"
                         "Unexpected rest length of the message in the "
@@ -583,10 +640,10 @@ ipc_receive_message(struct ipc_server *ipcs,
         else
         {
             KTRC("Return the rest of the last fragment len=%u\n",
-                 client->frag_rest);
-            data_size = client->frag_rest;
-            data = (uint8_t *)client->buffer +
-                       (client->frag_size - client->frag_rest);
+                 client->dgram.frag_rest);
+            data_size = client->dgram.frag_rest;
+            data = (uint8_t *)client->dgram.buffer +
+                       (client->dgram.frag_size - client->dgram.frag_rest);
         }
 
         copy_len = MIN(data_size, buf_len);
@@ -597,17 +654,17 @@ ipc_receive_message(struct ipc_server *ipcs,
         /* Calculate number of octets rest in the provided buffer */
         buf_len -= copy_len;
         /* Calculate number of octets rest in the current message */
-        assert(client->msg_rest >= copy_len);
-        client->msg_rest -= copy_len;
+        assert(client->dgram.msg_rest >= copy_len);
+        client->dgram.msg_rest -= copy_len;
         /* Calculate number of octets rest in the current fragment */
-        client->frag_rest = data_size - copy_len;
+        client->dgram.frag_rest = data_size - copy_len;
 
-    } while ((buf_len > 0) && (client->msg_rest > 0));
+    } while ((buf_len > 0) && (client->dgram.msg_rest > 0));
 
-    if (client->msg_rest > 0)
+    if (client->dgram.msg_rest > 0)
     {
         assert(buf_len == 0);
-        *p_buf_len = client->msg_rest;
+        *p_buf_len = client->dgram.msg_rest;
         KTRC("IPC: Buffer provided by caller is too small for the "
              "message\n");
         return TE_RC(TE_IPC, TE_ESMALLBUF);
@@ -615,14 +672,14 @@ ipc_receive_message(struct ipc_server *ipcs,
     else
     {
         /* Buffer provided by caller is enought */
-        assert(client->msg_rest == 0);
-        assert(client->frag_rest == 0);
+        assert(client->dgram.msg_rest == 0);
+        assert(client->dgram.frag_rest == 0);
 
         /*
          * Current message is copied to buffer,
          * there is no current message for the client.
          */
-        client->msg_len = 0;
+        client->dgram.msg_len = 0;
 
         *p_buf_len -= buf_len;
 
@@ -630,11 +687,11 @@ ipc_receive_message(struct ipc_server *ipcs,
     }
 }
 
-
-/* See description in ipc_server.h */
-int
-ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
-                const void *msg, size_t msg_len)
+/* See description of ipc_send_answer in ipc_server.h */
+static int
+ipc_dgram_send_answer(struct ipc_server *ipcs,
+                      struct ipc_server_client *ipcsc,
+                      const void *msg, size_t msg_len)
 {
     struct ipc_dgram_header   *ipch;
     size_t                      octets_sent;
@@ -649,8 +706,8 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
         return TE_RC(TE_IPC, TE_EINVAL);
     }
 
-    /* We use ipcs->buffer to construct the datagram */
-    ipch = (struct ipc_dgram_header *)(ipcs->buffer);
+    /* We use ipcs->dgram.buffer to construct the datagram */
+    ipch = (struct ipc_dgram_header *)(ipcs->dgram.buffer);
     memset(ipch, 0, sizeof(*ipch));
     ipch->length = msg_len;
 
@@ -661,12 +718,13 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
         segm_size = MIN(IPC_SEGMENT_SIZE - sizeof(*ipch),
                         msg_len - octets_sent);
 
-        memcpy(ipcs->buffer + sizeof(*ipch), msg, segm_size);
+        memcpy(ipcs->dgram.buffer + sizeof(*ipch), msg, segm_size);
 
         ipch->left = msg_len - octets_sent;
 
-        r = sendto(ipcs->socket, ipcs->buffer, sizeof(*ipch) + segm_size,
-                   0 /* flags */, SA(&ipcsc->sa), ipcsc->sa_len);
+        r = sendto(ipcs->socket, ipcs->dgram.buffer,
+                   sizeof(*ipch) + segm_size, 0 /* flags */,
+                   SA(&ipcsc->sa), ipcsc->sa_len);
         if (r != (ssize_t)(sizeof(*ipch) + segm_size))
         {
             fprintf(stderr, "Send IPC message from server '%s' to "
@@ -681,9 +739,6 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
 
     return 0;
 }
-
-
-#else /* !TE_IPC_CONNECTIONLESS */
 
 
 /**
@@ -710,9 +765,9 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
  * @retval errno        Other failure
  */
 static int
-ipc_server_receive(struct ipc_server *ipcs,
-                       void *buf, size_t *p_buf_len,
-                       struct ipc_server_client *ipcsc)
+ipc_stream_server_receive(struct ipc_server *ipcs,
+                          void *buf, size_t *p_buf_len,
+                          struct ipc_server_client *ipcsc)
 {
     size_t octets_to_read;
     int    rc;
@@ -723,19 +778,19 @@ ipc_server_receive(struct ipc_server *ipcs,
     assert(*p_buf_len > 0);
     assert(ipcsc != NULL);
 
-    octets_to_read = MIN(*p_buf_len, ipcsc->pending);
-    rc = read_socket(ipcsc->socket, buf, octets_to_read);
+    octets_to_read = MIN(*p_buf_len, ipcsc->stream.pending);
+    rc = read_socket(ipcsc->stream.socket, buf, octets_to_read);
     if (rc != 0)
     {
-        fprintf(stderr, "ipc_server_receive(): read_socket() failed "
-                        "in the middle of message\n");
+        fprintf(stderr, "ipc_stream_server_receive(): read_socket() "
+                        "failed in the middle of message\n");
         return rc;
     }
 
-    ipcsc->pending -= octets_to_read;
-    if (ipcsc->pending > 0)
+    ipcsc->stream.pending -= octets_to_read;
+    if (ipcsc->stream.pending > 0)
     {
-        *p_buf_len = ipcsc->pending;
+        *p_buf_len = ipcsc->stream.pending;
         return TE_RC(TE_IPC, TE_ESMALLBUF);
     }
     else
@@ -745,11 +800,11 @@ ipc_server_receive(struct ipc_server *ipcs,
     }
 }
 
-/* See description in ipc_server.h */
-int
-ipc_receive_message(struct ipc_server *ipcs,
-                    void *buf, size_t *p_buf_len,
-                    struct ipc_server_client **p_ipcsc)
+/* See description of ipc_receive_message in ipc_server.h */
+static int
+ipc_stream_receive_message(struct ipc_server *ipcs,
+                           void *buf, size_t *p_buf_len,
+                           struct ipc_server_client **p_ipcsc)
 {
     fd_set                    my_set;
     struct ipc_server_client *client;
@@ -767,10 +822,11 @@ ipc_receive_message(struct ipc_server *ipcs,
     {
         client = *p_ipcsc;
 
-        if (client->pending == 0)
+        if (client->stream.pending == 0)
         {
-            rc = read_socket(client->socket, &(client->pending),
-                             sizeof(client->pending));
+            rc = read_socket(client->stream.socket,
+                             &(client->stream.pending),
+                             sizeof(client->stream.pending));
             if (rc != 0)
             {
                 if (rc != TE_RC(TE_IPC, TE_ECONNABORTED))
@@ -779,13 +835,13 @@ ipc_receive_message(struct ipc_server *ipcs,
                 }
                 else
                 {
-                    ipc_server_close_client(client);
+                    ipc_server_close_client(client, ipcs->conn);
                     return rc;
                 }
             }
         }
 
-        return ipc_server_receive(ipcs, buf, p_buf_len, client);
+        return ipc_stream_server_receive(ipcs, buf, p_buf_len, client);
     }
 
     while (TRUE)
@@ -797,19 +853,20 @@ ipc_receive_message(struct ipc_server *ipcs,
         {
             next_client = client->links.le_next;
 
-            if (client->is_ready)
+            if (client->stream.is_ready)
             {
-                client->is_ready = FALSE;
+                client->stream.is_ready = FALSE;
 
                 /*
                  * Connection with data found. Check that no pending data
                  * for them exists.
                  */
-                if (client->pending != 0)
+                if (client->stream.pending != 0)
                 {
                     fprintf(stderr, "IPC(%d): Unexpected client "
                             "connection state, pending=%u\n",
-                            (int)getpid(), (unsigned)client->pending);
+                            (int)getpid(),
+                            (unsigned)client->stream.pending);
                     return TE_RC(TE_IPC, TE_ESYNCFAILED);
                 }
 
@@ -817,8 +874,9 @@ ipc_receive_message(struct ipc_server *ipcs,
                  * Let's read the length of the message and call
                  * ipc_receive_rest_message.
                  */
-                rc = read_socket(client->socket, &(client->pending),
-                                 sizeof(client->pending));
+                rc = read_socket(client->stream.socket,
+                                 &(client->stream.pending),
+                                 sizeof(client->stream.pending));
                 if (rc != 0)
                 {
                     if (rc != TE_RC(TE_IPC, TE_ECONNABORTED))
@@ -827,14 +885,15 @@ ipc_receive_message(struct ipc_server *ipcs,
                     }
                     else
                     {
-                        ipc_server_close_client(client);
+                        ipc_server_close_client(client, ipcs->conn);
                         continue;
                     }
                 }
 
                 *p_ipcsc = client;
 
-                return ipc_server_receive(ipcs, buf, p_buf_len, client);
+                return ipc_stream_server_receive(ipcs, buf, p_buf_len,
+                                                 client);
             }
         }
 
@@ -851,14 +910,14 @@ ipc_receive_message(struct ipc_server *ipcs,
             client->sa_len = sizeof(client->sa);
 #endif
 
-            client->socket = accept(ipcs->socket,
+            client->stream.socket = accept(ipcs->socket,
 #ifdef TE_IPC_AF_UNIX
-                                    SA(&client->sa), &client->sa_len
+                                           SA(&client->sa), &client->sa_len
 #else
-                                    NULL, NULL
+                                           NULL, NULL
 #endif
                                     );
-            if (client->socket < 0)
+            if (client->stream.socket < 0)
             {
                 perror("accept() failed");
                 free(client);
@@ -895,11 +954,11 @@ ipc_receive_message(struct ipc_server *ipcs,
     /* Unreachable */
 }
 
-
-/* See description in ipc_server.h */
-int
-ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
-                const void *msg, size_t msg_len)
+/* See description of ipc_send_answer in ipc_server.h */
+static int
+ipc_stream_send_answer(struct ipc_server *ipcs,
+                       struct ipc_server_client *ipcsc,
+                       const void *msg, size_t msg_len)
 {
     uint32_t len = msg_len;
 
@@ -913,29 +972,24 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
     {
         /* Message is too long to fit into the internal buffer */
 
-        if (write_socket(ipcsc->socket, &len, sizeof(len)) != 0)
+        if (write_socket(ipcsc->stream.socket, &len, sizeof(len)) != 0)
         {
             return TE_OS_RC(TE_IPC, errno);
         }
 
-        return write_socket(ipcsc->socket, msg, msg_len);
+        return write_socket(ipcsc->stream.socket, msg, msg_len);
     }
     else
     {
-        memcpy(ipcs->out_buffer,               &len, sizeof(len));
-        memcpy(ipcs->out_buffer + sizeof(len), msg,  msg_len);
+        memcpy(ipcs->stream.out_buffer,               &len, sizeof(len));
+        memcpy(ipcs->stream.out_buffer + sizeof(len), msg,  msg_len);
 
-        return write_socket(ipcsc->socket, ipcs->out_buffer,
+        return write_socket(ipcsc->stream.socket, ipcs->stream.out_buffer,
                             msg_len + sizeof(len));
     }
 }
 
-#endif /* !TE_IPC_CONNECTIONLESS */
 
-
-/*
- * Local functions implementation
- */
 
 #ifndef TE_IPC_AF_UNIX
 
@@ -988,8 +1042,6 @@ ipc_pmap_unregister_server(const char *server_name, uint16_t port)
 #endif /* !TE_IPC_AF_UNIX */
 
 
-#ifdef TE_IPC_CONNECTIONLESS
-
 /**
  * Search in pool for the item with specified address and return
  * pointer to this item.  Allocate a new entry, if entry not found.
@@ -1023,8 +1075,8 @@ ipc_int_client_by_addr(struct ipc_server *ipcs,
         {
             ipcsc->sa     = *sa_ptr;
             ipcsc->sa_len = sa_len;
-            ipcsc->buffer = calloc(1, IPC_SEGMENT_SIZE);
-            if (ipcsc->buffer == NULL)
+            ipcsc->dgram.buffer = calloc(1, IPC_SEGMENT_SIZE);
+            if (ipcsc->dgram.buffer == NULL)
             {
                 free(ipcsc);
                 ipcsc = NULL;
@@ -1061,7 +1113,7 @@ ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
     assert(p_ipcsc != NULL);
 
     ipcsc = *p_ipcsc;
-    for (p = ipcs->datagrams.tqh_first;
+    for (p = ipcs->dgram.datagrams.tqh_first;
          p != NULL;
          p = p->links.tqe_next)
     {
@@ -1079,12 +1131,12 @@ ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
                 }
             }
 
-            free(ipcsc->buffer);
-            ipcsc->buffer = p->buffer;
-            ipcsc->frag_size = p->octets;
+            free(ipcsc->dgram.buffer);
+            ipcsc->dgram.buffer = p->buffer;
+            ipcsc->dgram.frag_size = p->octets;
 
             /* Free datagram */
-            TAILQ_REMOVE(&ipcs->datagrams, p, links);
+            TAILQ_REMOVE(&ipcs->dgram.datagrams, p, links);
             free(p);
 
             *p_ipcsc = ipcsc;
@@ -1100,8 +1152,8 @@ ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
 
 
 /**
- * Write datagram to the ipcs->pool pool from the ipcs->datagrams pool
- * or from the socket, this function may block.
+ * Write datagram to the ipcs->pool pool from the ipcs->dgram.datagrams
+ * pool or from the socket, this function may block.
  *
  * @param ipcs      - pointer to the ipc_server structure.
  * @param p_ipcsc   - location of the pointer to the ipc_server_client
@@ -1135,7 +1187,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
         ssize_t                     r;
         struct ipc_server_client   *ipcsc = *p_ipcsc;
 
-        r = recvfrom(ipcs->socket, ipcs->buffer, IPC_SEGMENT_SIZE,
+        r = recvfrom(ipcs->socket, ipcs->dgram.buffer, IPC_SEGMENT_SIZE,
                      0 /* flags */, SA(&sa), &sa_len);
         if (r < 0)
         {
@@ -1155,7 +1207,8 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
              * message, we've got the message from other client.
              * We have to save the datagram for future read.
              */
-            rc2 = ipc_remember_datagram(&ipcs->datagrams, ipcs->buffer,
+            rc2 = ipc_remember_datagram(&ipcs->dgram.datagrams,
+                                        ipcs->dgram.buffer,
                                         r, &sa, sa_len);
             if (rc2 != 0)
             {
@@ -1163,8 +1216,8 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
                 return TE_RC(TE_IPC, rc2);
             }
             /* IPC server buffer was owned by previous routine */
-            ipcs->buffer = calloc(1, IPC_SEGMENT_SIZE);
-            if (ipcs->buffer == NULL)
+            ipcs->dgram.buffer = calloc(1, IPC_SEGMENT_SIZE);
+            if (ipcs->dgram.buffer == NULL)
             {
                 return TE_RC(TE_IPC, TE_ENOMEM);
             }
@@ -1182,8 +1235,8 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
                 *p_ipcsc = ipcsc;
             }
 
-            SWAP_PTRS(ipcsc->buffer, ipcs->buffer);
-            ipcsc->frag_size = r;
+            SWAP_PTRS(ipcsc->dgram.buffer, ipcs->dgram.buffer);
+            ipcsc->dgram.frag_size = r;
 
             KTRC("Got datagram from net for client %s\n",
                  SUN_NAME(&ipcsc->sa));
@@ -1196,7 +1249,6 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
     return TE_RC(TE_IPC, TE_EFAULT);
 }
 
-#else /* !TE_IPC_CONNECTIONLESS */
 
 /**
  * Read specified number of octets (not less) from the connection.
@@ -1270,5 +1322,3 @@ write_socket(int socket, const void *buffer, size_t len)
 
     return 0;
 }
-
-#endif /* !TE_IPC_CONNECTIONLESS */

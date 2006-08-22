@@ -70,7 +70,7 @@ main(int argc, char **argv)
         return 1;
     }
 
-    if ((rc = ipc_init_client(name, &handle)) != 0)
+    if ((rc = ipc_init_client(name, RCF_IPC, &handle)) != 0)
     {
         fprintf(stderr, "ipc_init_client() for '%s' failed: %d\n",
                 name, rc);

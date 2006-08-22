@@ -85,7 +85,8 @@
             char name[CFG_NAME_MAX];                                \
                                                                     \
             sprintf(name, "cfg_client_%u", (unsigned int)getpid()); \
-            (void)ipc_init_client(name, &cfgl_ipc_client);          \
+            (void)ipc_init_client(name, CONFIGURATOR_IPC,           \
+                                  &cfgl_ipc_client);                \
             if (cfgl_ipc_client != NULL)                            \
                 atexit(cfg_api_cleanup);                            \
         }                                                           \

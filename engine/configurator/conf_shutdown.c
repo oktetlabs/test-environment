@@ -84,7 +84,7 @@ main(void)
 
     signal(SIGINT, sigint_handler);
 
-    if ((rc = ipc_init_client(name, &ipcc)) != 0)
+    if ((rc = ipc_init_client(name, CONFIGURATOR_IPC, &ipcc)) != 0)
     {
         ERROR("Failed to initialize IPC client '%s': %r", name, rc);
         return EXIT_FAILURE;

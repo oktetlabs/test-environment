@@ -330,7 +330,7 @@ ta_handler(void *ta)
 
     /* Register IPC Server for the TA */
     sprintf(srv_name, "%s%s", LGR_SRV_FOR_TA_PREFIX, inst->agent);
-    rc = ipc_register_server(srv_name, &srv);
+    rc = ipc_register_server(srv_name, LOGGER_IPC, &srv);
     if (rc != 0)
     {
         ERROR("Failed to register IPC server '%s': %r", srv_name, rc);
@@ -784,7 +784,7 @@ main(int argc, const char *argv[])
     }
 
     /* Register TEN server */
-    res = ipc_register_server(LGR_SRV_NAME, &logger_ten_srv);
+    res = ipc_register_server(LGR_SRV_NAME, LOGGER_IPC, &logger_ten_srv);
     if (res != 0)
     {
         ERROR("IPC server '%s' registration failed: %r",

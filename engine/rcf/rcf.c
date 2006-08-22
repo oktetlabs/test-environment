@@ -2494,7 +2494,7 @@ main(int argc, const char *argv[])
     signal(SIGPIPE, SIG_IGN);
 
     ipc_init();
-    if (ipc_register_server(RCF_SERVER, &server) != 0)
+    if (ipc_register_server(RCF_SERVER, RCF_IPC, &server) != 0)
         goto exit;
     assert(server != NULL);
 

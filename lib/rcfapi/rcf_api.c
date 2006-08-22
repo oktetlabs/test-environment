@@ -617,7 +617,7 @@ get_ctx_handle(te_bool create)
         sprintf(name, "rcf_client_%u_%u", (unsigned int)getpid(), 
                 (unsigned int)pthread_self());
 
-        rc = ipc_init_client(name, &(handle->ipc_handle));
+        rc = ipc_init_client(name, RCF_IPC, &(handle->ipc_handle));
         if (rc != 0)
         {
             free(handle);
@@ -693,7 +693,7 @@ get_ctx_handle(te_bool create)
                 snprintf(name, RCF_MAX_NAME, "rcf_client_%u_%u",
                          (unsigned int)getpid(), (unsigned int)mine);
                    
-                rc = ipc_init_client(name,
+                rc = ipc_init_client(name, RCF_IPC,
                                      &(handles[i].handle.ipc_handle));
                 if (rc != 0)
                 {

@@ -62,7 +62,7 @@ main(void)
     memcpy(mess, &nfl_net, sizeof(nfl_net));
     memcpy(mess + sizeof(nfl_net), LGR_SHUTDOWN, nfl);
 
-    rc = ipc_init_client("LOGGER_SHUTDOWN_CLIENT", &log_client);
+    rc = ipc_init_client("LOGGER_SHUTDOWN_CLIENT", LOGGER_IPC, &log_client);
     if (rc != 0)
     {
         fprintf(stderr, "ipc_init_client() failed: 0x%X\n", rc);

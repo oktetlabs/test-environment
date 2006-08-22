@@ -59,7 +59,11 @@ logger_server_name()
 
 
 /** Name of the Logger server */
-#define LGR_SRV_NAME            logger_server_name()
+#define LGR_SRV_NAME            (logger_server_name())
+
+/** Type of IPC used for Logger TEN API <-> Logger server */
+#define LOGGER_IPC              (FALSE) /* Connectionless IPC */
+
 
 /** Discover name of the Logger client for TA */
 static inline const char *
