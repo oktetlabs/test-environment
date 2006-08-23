@@ -137,7 +137,6 @@ colored_verdict(int color, const char *text)
     if (term == TESTER_TERM_UNKNOWN)
     {
         printf("%s\n", text);
-        fflush(stdout);
     }
     else
     {
@@ -149,7 +148,6 @@ colored_verdict(int color, const char *text)
 #else
     UNUSED(color);
     printf("%s\n", text);
-    fflush(stdout);
 #endif
 }
 
