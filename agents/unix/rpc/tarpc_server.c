@@ -5178,6 +5178,8 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
                  tarpc_mcast_join_leave_out *out)
 {
     api_func    setsockopt_func;
+    api_func    if_indextoname_func;
+    api_func    ioctl_func;
 
     if (in->how != TARPC_MCAST_OPTIONS)
     {
@@ -5188,9 +5190,13 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
     }
 
     if (tarpc_find_func(in->common.lib, "setsockopt",
-                        &setsockopt_func) != 0)
+                        &setsockopt_func) != 0 ||
+        tarpc_find_func(in->common.lib, "if_indextoname",
+                        &if_indextoname_func) != 0 ||
+        tarpc_find_func(in->common.lib, "ioctl",
+                        &ioctl_func) != 0)
     {
-        ERROR("Cannot find setsockopt() implementation");
+        ERROR("Cannot resolve function name");
         out->retval = -1;
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
         return;
@@ -5239,7 +5245,7 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
 
         if (in->ifindex != 0)
         {
-            if (if_indextoname(in->ifindex, if_name) == NULL)
+            if (if_indextoname_func(in->ifindex, if_name) == NULL)
             {
                 ERROR("Invalid interface index specified");
                 out->retval = -1;
@@ -5250,7 +5256,7 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
             {
                 memset(&ifrequest, 0, sizeof(struct ifreq));
                 memcpy(&(ifrequest.ifr_name), if_name, IFNAMSIZ);
-                if (ioctl(in->fd, SIOCGIFADDR, &ifrequest) < 0)
+                if (ioctl_func(in->fd, SIOCGIFADDR, &ifrequest) < 0)
                 {
                     ERROR("No IPv4 address on interface %s", if_name);
                     out->retval = -1;
