@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_TESTER_TOOLS_H__
-#define __TE_TESTER_TOOLS_H__
+#ifndef __TE_TESTER_DEFS_H__
+#define __TE_TESTER_DEFS_H__
 
 #include "te_queue.h"
 #include "te_defs.h"
@@ -111,4 +111,4 @@ bit_mask_is_set(const uint8_t *mem, unsigned int bit)
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_TESTER_TOOLS_H__ */
+#endif /* !__TE_TESTER_DEFS_H__ */
