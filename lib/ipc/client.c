@@ -1350,7 +1350,7 @@ ipc_stream_send_message(struct ipc_client *ipcc, const char *server_name,
     if (msg_len + 8 > IPC_TCP_CLIENT_BUFFER_SIZE)
     {
         /* Message is too long to fit into the internal buffer */
-        uint32_t len = msg_len;
+        size_t len = msg_len;
 
         if (write_socket(server->stream.socket,
                          (char *)&len, sizeof(len)) != 0)
@@ -1363,7 +1363,7 @@ ipc_stream_send_message(struct ipc_client *ipcc, const char *server_name,
     }
     else
     {
-        uint32_t len = msg_len;
+        size_t len = msg_len;
 
         memcpy(ipcc->stream.out_buffer, &len, sizeof(len));
         memcpy(ipcc->stream.out_buffer + sizeof(len), msg, msg_len);

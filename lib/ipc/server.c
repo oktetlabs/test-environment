@@ -119,7 +119,7 @@ struct ipc_server_client {
             int         socket;     /**< Connected socket to client */
             te_bool     is_ready;   /**< Is client socket ready for
                                          reading? */
-            uint32_t    pending;    /**< Number of octets in current
+            size_t      pending;    /**< Number of octets in current
                                          message left to read from
                                          socket and to return to user.
                                          This field MUST be 4-octets
@@ -960,7 +960,7 @@ ipc_stream_send_answer(struct ipc_server *ipcs,
                        struct ipc_server_client *ipcsc,
                        const void *msg, size_t msg_len)
 {
-    uint32_t len = msg_len;
+    size_t len = msg_len;
 
     if ((ipcs == NULL) || (ipcsc == NULL) ||
         ((msg == NULL) != (msg_len == 0)))
