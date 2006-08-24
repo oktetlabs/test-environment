@@ -808,8 +808,8 @@ ipc_dgram_receive_answer(struct ipc_client *ipcc, const char *server_name,
     struct ipc_client_server   *server;
 
 
-    if ((ipcc == NULL) || (server_name == NULL) || (buf == NULL) ||
-        (p_buf_len == NULL) || (*p_buf_len == 0))
+    if ((ipcc == NULL) || (server_name == NULL) || (p_buf_len == NULL) ||
+        ((buf == NULL) && (*p_buf_len != 0)))
     {
         return TE_RC(TE_IPC, TE_EINVAL);
     }
@@ -1390,8 +1390,8 @@ ipc_client_int_receive(struct ipc_client_server *server,
     size_t octets_to_read;
 
     assert(server != NULL);
-    assert(buf != NULL);
     assert(p_buf_len != NULL);
+    assert(buf != NULL || *p_buf_len == 0);
 
     octets_to_read = MIN(*p_buf_len, server->stream.pending);
     if (octets_to_read > 0)
@@ -1429,8 +1429,8 @@ ipc_stream_receive_answer(struct ipc_client *ipcc, const char *server_name,
     struct ipc_client_server *server;
     int                       rc;
 
-    if ((ipcc == NULL) || (server_name == NULL) || (buf == NULL) ||
-        (p_buf_len == NULL))
+    if ((ipcc == NULL) || (server_name == NULL) || (p_buf_len == NULL) ||
+        ((buf == NULL) && (*p_buf_len != 0)))
     {
         return TE_RC(TE_IPC, TE_EINVAL);
     }
