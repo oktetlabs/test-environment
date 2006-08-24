@@ -40,7 +40,7 @@
 /** Maximum number of attempts to wait a daemon in expected state */
 #define TA_UNIX_DAEMON_WAIT_ATTEMPTS    1000
 /** Time to wait between checks of the daemon state, in microseconds */
-#define TA_UNIX_DAEMON_WAIT_USEC        10000
+#define TA_UNIX_DAEMON_WAIT_USEC        50000
 
 /* Array of daemons/services names */
 static struct {
@@ -2863,7 +2863,7 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
     if (vncserver_exists((char *)number))
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
         
-    sprintf(buf, "HOME=/tmp vncserver :%s >/dev/null", number);
+    sprintf(buf, "HOME=/tmp vncserver :%s", number);
 
     if (ta_system(buf) != 0)
     {
@@ -2871,12 +2871,12 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
-    sprintf(buf, "HOME=/tmp DISPLAY=:%s xhost + >/dev/null", number);
+    sprintf(buf, "HOME=/tmp DISPLAY=:%s xhost +", number);
 
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        sprintf(buf, "HOME=/tmp vncserver -kill :%s >/dev/null 2>&1", 
+        sprintf(buf, "HOME=/tmp vncserver -kill :%s", 
                 number);
         ta_system(buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
@@ -3261,7 +3261,7 @@ ds_xvfb_add(unsigned int gid, const char *oid, const char *value,
     if (pid != 0)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
         
-    sprintf(buf, "Xvfb :%s -ac 2>/dev/null &", number);
+    sprintf(buf, "Xvfb :%s -ac &", number);
 
     if (ta_system(buf) != 0)
     {
