@@ -187,6 +187,8 @@ te_test_verdict(const char *fmt, ...)
         }
         assert(ipcc != NULL);
         atexit(te_test_verdict_close);
+
+        msg.hdr.id = te_test_id;
     }
 
     cm.offset = 0;
