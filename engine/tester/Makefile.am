@@ -41,6 +41,7 @@ te_tester_SOURCES = \
 	mix.c \
 	run.c \
 	scenario.c \
+	verdicts.c \
 	tester.c
 
 CLEANFILES = \
@@ -71,7 +72,8 @@ test_path_lex.h: test_path_lex.c
 
 
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid -llogger_ten \
-                  -lipc -ltools @XML2_LIBS@ -lpopt -lfl -lpthread 
+                  -lipc -lipcserver -ltools \
+                  @XML2_LIBS@ -lpopt -lfl -lpthread 
 
 te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
 	$(DESTDIR)/$(libdir)/libbsapi.a \
@@ -79,4 +81,5 @@ te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
 	$(DESTDIR)/$(libdir)/libconf_oid.a \
 	$(DESTDIR)/$(libdir)/liblogger_ten.a \
 	$(DESTDIR)/$(libdir)/libipc.a \
+	$(DESTDIR)/$(libdir)/libipcserver.a \
 	$(DESTDIR)/$(libdir)/libtools.a

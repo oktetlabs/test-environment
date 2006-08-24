@@ -58,6 +58,7 @@
 #include "tester_conf.h"
 #include "tester_term.h"
 #include "tester_run.h"
+#include "tester_result.h"
 
 
 /** Define it to enable support of timeouts in Tester */
@@ -137,6 +138,12 @@ typedef struct tester_run_data {
     const testing_act          *act;        /**< Current testing act */
     unsigned int                act_id;     /**< Configuration ID of
                                                  the current test to run */
+
+    tester_test_results         results;    /**< Global storage of
+                                                 results for tests
+                                                 which are in progress */
+    tester_verdicts_listener   *vl;         /**< Verdicts listener
+                                                 control data */
 
     LIST_HEAD(, tester_ctx)     ctxs;       /**< Stack of contexts */
 
@@ -2170,7 +2177,7 @@ tester_run(const testing_scenario *scenario,
            const tester_cfgs      *cfgs,
            const unsigned int      flags)
 {
-    te_errno                rc;
+    te_errno                rc, rc2;
     tester_run_data         data;
     tester_cfg_walk_ctl     ctl;
     const tester_cfg_walk   cbs = {
@@ -2208,6 +2215,16 @@ tester_run(const testing_scenario *scenario,
     data.targets = targets;
     data.act = scenario->tqh_first;
     data.act_id = data.act->first;
+    rc = tester_test_results_init(&data.results);
+    if (rc != 0)
+        return rc;
+
+    rc = tester_verdicts_listener_start(&data.vl, &data.results);
+    if (rc != 0)
+    {
+        ERROR("Failed to start verdicts listener: %r", rc);
+        return rc;
+    }
 
     if (tester_run_new_ctx(&data) == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
@@ -2253,6 +2270,13 @@ tester_run(const testing_scenario *scenario,
     }
 
     tester_run_destroy_ctx(&data);
+
+    rc2 = tester_verdicts_listener_stop(&data.vl);
+    if (rc2 != 0)
+    {
+        ERROR("Failed to stop verdicts listener: %r", rc2);
+        TE_RC_UPDATE(rc, rc2);
+    }
 
     return rc;
 }
