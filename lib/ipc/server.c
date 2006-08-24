@@ -396,39 +396,6 @@ ipc_get_server_fds(const struct ipc_server *ipcs, fd_set *set)
     return max_fd;
 }
 
-/* See description in ipc_server.h */
-te_bool
-ipc_is_server_ready(struct ipc_server *ipcs, const fd_set *set, int max_fd)
-{
-    te_bool                     is_ready = FALSE;
-    struct ipc_server_client   *client;
-
-    if (ipcs == NULL || set == NULL)
-        return is_ready;
-
-    if (ipcs->socket <= max_fd)
-    {
-        is_ready = is_ready ||
-            (ipcs->is_ready = FD_ISSET(ipcs->socket, set));
-    }
-    if (ipcs->conn)
-    {
-        for (client = ipcs->clients.lh_first;
-             client != NULL;
-             client = client->links.le_next)
-        {
-            if (client->stream.socket <= max_fd)
-            {
-                is_ready = is_ready ||
-                    (client->stream.is_ready =
-                         FD_ISSET(client->stream.socket, set));
-            }
-        }
-    }
-        
-    return is_ready;
-}
-
 /**
  * Close IPC server association with client.
  *
@@ -444,6 +411,55 @@ ipc_server_close_client(struct ipc_server_client *ipcsc, te_bool conn)
     else
         free(ipcsc->dgram.buffer);
     free(ipcsc);
+}
+
+/* See description in ipc_server.h */
+te_bool
+ipc_is_server_ready(struct ipc_server *ipcs, const fd_set *set, int max_fd)
+{
+    te_bool                     is_ready = FALSE;
+    struct ipc_server_client   *client, *next;
+
+    if (ipcs == NULL || set == NULL)
+        return is_ready;
+
+    if (ipcs->socket <= max_fd)
+    {
+        is_ready = is_ready ||
+            (ipcs->is_ready = FD_ISSET(ipcs->socket, set));
+    }
+    if (ipcs->conn)
+    {
+        for (client = ipcs->clients.lh_first;
+             client != NULL;
+             client = next)
+        {
+            next = client->links.le_next;
+            if (client->stream.socket <= max_fd)
+            {
+                client->stream.is_ready =
+                    FD_ISSET(client->stream.socket, set);
+                if (client->stream.is_ready)
+                {
+                    /*
+                     * select() returns read event when data are
+                     * available and when client closes its socket.
+                     * If non-blocking recv() returns 0, connection
+                     * is closed, otherwise (-1 with EINVAL) data are
+                     * available.
+                     * TODO: Better check is required.
+                     */
+                    if (recv(client->stream.socket, NULL, 0,
+                             MSG_DONTWAIT) == 0)
+                        ipc_server_close_client(client, ipcs->conn);
+                    else
+                        is_ready = TRUE;
+                }
+            }
+        }
+    }
+        
+    return is_ready;
 }
 
 /* See description in ipc_server.h */
