@@ -102,7 +102,8 @@ register_verdict(tester_test_results *results,
     
         if (test == NULL)
         {
-            ERROR("Verdict message from the test which is not running!");
+            ERROR("Verdict message from the test %u which is not "
+                  "running:\n%s", id, verdict);
             free(verdict);
         }
         else
@@ -223,13 +224,9 @@ tester_verdicts_listener_thread(void *opaque)
             ERROR("%s(): select() failed unexpectedly: %r",
                   __FUNCTION__, rc);
         }
-        else if (ret > 0)
+        else if (ret > 0 && ipc_is_server_ready(ctx->ipcs, &fds, max_fd))
         {
-            if (ipc_is_server_ready(ctx->ipcs, &fds, max_fd))
-            {
-    RING("RECEIVED");
-                receive_and_process_message(ctx->ipcs, ctx->results);
-            }
+            receive_and_process_message(ctx->ipcs, ctx->results);
         }
     }
 
