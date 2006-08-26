@@ -43,7 +43,8 @@
 typedef struct tester_test_result {
     LIST_ENTRY(tester_test_result)  links;  /**< List links */
 
-    test_id     id; /**< Test ID */
+    test_id         id;     /**< Test ID */
+    te_test_result  result; /**< Result */
 } tester_test_result;
 
 /** List of results of tests which are in progress. */
