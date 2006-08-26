@@ -1,105 +1,86 @@
---- dl2k.c	2006-08-23 22:19:13.000000000 +0400
-+++ /tmp/linux-2.6.8.1/drivers/net/dl2k.c	2004-08-14 14:55:19.000000000 +0400
-@@ -171,7 +171,6 @@
+--- /tmp/linux-2.6.8.1/drivers/net/dl2k.c	2004-08-14 14:55:19.000000000 +0400
++++ dl2k/dl2k.c	2006-08-26 18:28:45.000000000 +0400
+@@ -171,6 +171,7 @@
  	np = dev->priv;
  	np->chip_id = chip_idx;
  	np->pdev = pdev;
--        np->ignore_crc_err = 0;
++        np->ignore_crc_err = 0;
  	spin_lock_init (&np->tx_lock);
  	spin_lock_init (&np->rx_lock);
  
-@@ -651,8 +650,7 @@
+@@ -650,7 +651,8 @@
  	if (skb->ip_summed == CHECKSUM_HW) {
  		txdesc->status |=
  		    cpu_to_le64 (TCPChecksumEnable | UDPChecksumEnable |
--				 IPChecksumEnable | (FCSAppendDisable & 
--                                                     np->ignore_crc_err));
-+				 IPChecksumEnable);
+-				 IPChecksumEnable);
++				 IPChecksumEnable | (FCSAppendDisable & 
++                                                     np->ignore_crc_err));
  	}
  #endif
  	if (np->vlan) {
-@@ -672,15 +670,11 @@
+@@ -670,11 +672,15 @@
  		txdesc->status = cpu_to_le64 (entry | tfc_vlan_tag |
  					      WordAlignDisable | 
  					      TxDMAIndicate |
--					      (1 << FragCountShift) |
--                                              (FCSAppendDisable & 
--                                                     np->ignore_crc_err));
-+					      (1 << FragCountShift));
+-					      (1 << FragCountShift));
++					      (1 << FragCountShift) |
++                                              (FCSAppendDisable & 
++                                                     np->ignore_crc_err));
  	else
  		txdesc->status = cpu_to_le64 (entry | tfc_vlan_tag |
  					      WordAlignDisable | 
--					      (1 << FragCountShift) |
--                                              (FCSAppendDisable & 
--                                                     np->ignore_crc_err));
-+					      (1 << FragCountShift));
+-					      (1 << FragCountShift));
++					      (1 << FragCountShift) |
++                                              (FCSAppendDisable & 
++                                                     np->ignore_crc_err));
  
  	/* TxDMAPollNow */
  	writel (readl (ioaddr + DMACtrl) | 0x00001000, ioaddr + DMACtrl);
-@@ -886,20 +880,14 @@
- 			if (frame_status & (RxRuntFrame | RxLengthError))
- 				np->stats.rx_length_errors++;
- 			if (frame_status & RxFCSError)
--                        {
--                                printk(KERN_INFO "CRC error detected.\n");
- 				np->stats.rx_crc_errors++;
--                        }
- 			if (frame_status & RxAlignmentError && np->speed != 1000)
- 				np->stats.rx_frame_errors++;
- 			if (frame_status & RxFIFOOverrun)
- 	 			np->stats.rx_fifo_errors++;
--		}
--                if (!(frame_status & RFS_Errors) || 
--                   (np->ignore_crc_err && (frame_status & RxFCSError))) {
-+		} else {
- 			struct sk_buff *skb;
--                        if (frame_status & RFS_Errors) 
--                                printk(KERN_INFO "CRC error ignored.\n");
-+
- 			/* Small skbuffs for short packets */
- 			if (pkt_len > copy_thresh) {
- 				pci_unmap_single (np->pdev, desc->fraginfo,
-@@ -1338,9 +1326,8 @@
+@@ -1323,11 +1329,13 @@
+ static int
+ rio_ioctl (struct net_device *dev, struct ifreq *rq, int cmd)
+ {
++        int i;
  	int phy_addr;
  	struct netdev_private *np = dev->priv;
  	struct mii_data *miidata = (struct mii_data *) &rq->ifr_ifru;
--	struct sk_buff  *skb;
++	struct sk_buff  *skb;
  	
--        struct netdev_desc *desc;
-+	struct netdev_desc *desc;
+-	struct netdev_desc *desc;
++        struct netdev_desc *desc;
  	int i;
  
  	phy_addr = np->phy_addr;
-@@ -1348,7 +1335,8 @@
+@@ -1335,8 +1343,7 @@
  	case SIOCETHTOOL:
  		return rio_ethtool_ioctl(dev, rq->ifr_data);		
  	case SIOCDEVPRIVATE:
--    		break;	
-+		break;
-+	
+-		break;
+-	
++    		break;	
  	case SIOCDEVPRIVATE + 1:
  		miidata->out_value = mii_read (dev, phy_addr, miidata->reg_num);
  		break;
-@@ -1386,21 +1374,7 @@
+@@ -1374,7 +1381,21 @@
  		}
  		printk ("\n");
  		break;
--        case SIOCDEVPRIVATE + 9:
--            skb = dev_alloc_skb (np->rx_buf_sz);
--            if (skb != NULL)
--                start_xmit(skb, dev);
--            np->ignpre_crc_err = 0;
--            printk(KERN_INFO "The mode of ignoring CRC errors is off.\n");
--            break;
--	case SIOCDEVPRIVATE + 10:
--            skb = dev_alloc_skb (np->rx_buf_sz);
--            if (skb != NULL)
--                start_xmit(skb, dev);
--            np->ignpre_crc_err = 1;
--            printk(KERN_INFO "The mode of ignoring CRC errors is on.\n");
--            break;
--            
-+
+-
++        case SIOCDEVPRIVATE + 9:
++            spin_lock(&dev->queue_lock);
++            qdisc_run(dev);
++            spin_unlock(&dev->queue_lock)
++            np->ignore_crc_err = 0;
++            printk(KERN_INFO "The mode of ignoring CRC errors is off.\n");
++            break;
++	case SIOCDEVPRIVATE + 10:
++            spin_lock(&dev->queue_lock);
++            qdisc_run(dev);
++            spin_unlock(&dev->queue_lock)
++            np->ignore_crc_err = 1;
++            printk(KERN_INFO "The mode of ignoring CRC errors is on.\n");
++            break;
++            
  	default:
  		return -EOPNOTSUPP;
  	}
