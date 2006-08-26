@@ -34,6 +34,8 @@
 
 #include "te_queue.h"
 #include "logger_api.h"
+#include "te_test_result.h"
+
 #include "tester_defs.h"
 
 
