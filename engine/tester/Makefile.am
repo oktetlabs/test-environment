@@ -17,6 +17,7 @@ noinst_HEADERS = \
 	tester_defs.h \
 	tester_flags.h \
 	tester_reqs.h \
+	tester_result.h \
 	tester_run.h \
 	tester_term.h
 
