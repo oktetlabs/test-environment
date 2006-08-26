@@ -83,6 +83,15 @@ typedef struct te_test_result {
                                                      execution */
 } te_test_result;
 
+
+/** Initialize test result by defaults. */
+static inline void
+te_test_result_init(te_test_result *result)
+{
+    result->status = TE_TEST_INCOMPLETE;
+    TAILQ_INIT(&result->verdicts);
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
