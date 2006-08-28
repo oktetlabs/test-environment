@@ -32,6 +32,10 @@
 #ifndef __TE_TESTER_RESULT_H__
 #define __TE_TESTER_RESULT_H__
 
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
 #include "te_queue.h"
 #include "logger_api.h"
 #include "te_test_result.h"
@@ -45,8 +49,9 @@
 typedef struct tester_test_result {
     LIST_ENTRY(tester_test_result)  links;  /**< List links */
 
-    test_id         id;     /**< Test ID */
-    te_test_result  result; /**< Result */
+    test_id         id;         /**< Test ID */
+    te_test_result  result;     /**< Result */
+    trc_verdict     expected;   /**< Is the result expected? */
 } tester_test_result;
 
 /** List of results of tests which are in progress. */
@@ -88,6 +93,38 @@ tester_test_results_init(tester_test_results *results)
     }
 
     return 0;
+}
+
+/**
+ * Insert a new test results in the list.
+ *
+ * @param results       List with location for results of the tests
+ *                      which are in progress
+ * @param result        Location for a new test
+ */
+static inline void
+tester_test_result_add(tester_test_results *results,
+                       tester_test_result *result)
+{
+    pthread_mutex_lock(&results->lock);
+    LIST_INSERT_HEAD(&results->list, result, links);
+    pthread_mutex_unlock(&results->lock);
+}
+
+/**
+ * Delete test results from the list.
+ *
+ * @param results       List with location for results of the tests
+ *                      which are in progress
+ * @param result        Result to be extracted
+ */
+static inline void
+tester_test_result_del(tester_test_results *results,
+                       tester_test_result *result)
+{
+    pthread_mutex_lock(&results->lock);
+    LIST_REMOVE(result, links);
+    pthread_mutex_unlock(&results->lock);
 }
 
 /**

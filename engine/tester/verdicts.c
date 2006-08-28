@@ -109,9 +109,13 @@ register_verdict(tester_test_results *results,
         else
         {
             /* Add verdict to the list of verdicts */
-            RING("Verdict: %s", verdict);
-            free(verdict);
-            /* TODO */
+            te_test_verdict *p = TE_ALLOC(sizeof(*p));
+
+            if (p != NULL)
+            {
+                p->str = verdict;
+                TAILQ_INSERT_TAIL(&test->result.verdicts, p, links);
+            }
         }
 
         ret = pthread_mutex_unlock(&results->lock);
@@ -206,8 +210,6 @@ tester_verdicts_listener_thread(void *opaque)
     struct timeval              timeout;
     int                         ret;
     te_errno                    rc;
-
-    RING("EEEE");
 
     while (!ctx->stop)
     {

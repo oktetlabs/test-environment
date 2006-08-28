@@ -96,24 +96,22 @@ typedef struct tester_ctx {
 
     unsigned int        flags;          /**< Flags (enum tester_flags) */
 
-    te_errno            group_status;   /**< Status code of whole group
+    tester_test_result  group_result;   /**< Result for the group of test
                                              executed in this context */
-    te_errno            status;         /**< Status code */
+    tester_test_result  current_result; /**< Result of the current test
+                                             in this context */
 
     te_bool             group_step;     /**< Is group step should be done
                                              or group items have been
                                              enumerated one by one */
 
-    unsigned int        parent_id;      /**< ID of the test parent */
-    unsigned int        child_id;       /**< ID of the test to execute */
-    
     const reqs_expr    *targets;        /**< Target requirements
                                              expression */
     te_bool             targets_free;   /**< Should target requirements
                                              be freed? */
 
     test_requirements   reqs;           /**< List of collected sticky
-                                              requirements */
+                                             requirements */
 
     char               *backup;         /**< Configuration backup name */
     te_bool             backup_ok;      /**< Optimization to avoid
@@ -204,10 +202,15 @@ tester_ctx_clone(const tester_ctx *ctx)
         return NULL;
     }
     new_ctx->flags = ctx->flags;
-    new_ctx->group_status = TE_RC(TE_TESTER, TE_ETESTEMPTY);
-    /* new_ctx->status = 0; */
-    new_ctx->parent_id = ctx->parent_id;
-    new_ctx->child_id = ctx->child_id;
+
+    new_ctx->group_result.id = ctx->group_result.id;
+    te_test_result_init(&new_ctx->group_result.result);
+    new_ctx->group_result.result.status = TE_RC(TE_TESTER, TE_ETESTEMPTY);
+
+    new_ctx->current_result.id = ctx->current_result.id;
+    te_test_result_init(&new_ctx->current_result.result);
+    /* new_ctx->current_result.result.status = 0; */
+
     new_ctx->targets = ctx->targets;
     new_ctx->targets_free = FALSE;
 
@@ -246,10 +249,15 @@ tester_run_new_ctx(tester_run_data *data)
         return NULL;
 
     new_ctx->flags = data->flags;
-    new_ctx->group_status = TE_RC(TE_TESTER, TE_ETESTEMPTY);
-    /* new_ctx->status = 0; */
-    new_ctx->parent_id = tester_get_id();
-    /* new_ctx->child_id = 0; */
+
+    new_ctx->group_result.id = tester_get_id();
+    te_test_result_init(&new_ctx->group_result.result);
+    new_ctx->group_result.result.status = TE_RC(TE_TESTER, TE_ETESTEMPTY);
+
+    /* new_ctx->current_result.id = 0; */
+    te_test_result_init(&new_ctx->current_result.result);
+    /* new_ctx->current_result.result.status = 0; */
+
     new_ctx->targets = data->targets;
     new_ctx->targets_free = FALSE;
     TAILQ_INIT(&new_ctx->reqs);
@@ -261,7 +269,7 @@ tester_run_new_ctx(tester_run_data *data)
     LIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
 
     VERB("Initial context: flags=0x%x parent_id=%u",
-         new_ctx->flags, new_ctx->parent_id);
+         new_ctx->flags, new_ctx->group_result.id);
 
     return new_ctx;
 }
@@ -282,7 +290,8 @@ tester_run_clone_ctx(tester_run_data *data)
     new_ctx = tester_ctx_clone(data->ctxs.lh_first);
     if (new_ctx == NULL)
     {
-        data->ctxs.lh_first->status = TE_RC(TE_TESTER, TE_ENOMEM);
+        data->ctxs.lh_first->current_result.result.status =
+            TE_RC(TE_TESTER, TE_ENOMEM);
         return NULL;
     }
     
@@ -290,7 +299,7 @@ tester_run_clone_ctx(tester_run_data *data)
 
     VERB("Tester context %p clonned %p: flags=0x%x parent_id=%u "
          "child_id=%u", new_ctx->links.le_next, new_ctx, new_ctx->flags,
-         new_ctx->parent_id, new_ctx->child_id);
+         new_ctx->group_result.id, new_ctx->current_result.id);
 
     return new_ctx;
 }
@@ -311,11 +320,12 @@ tester_run_destroy_ctx(tester_run_data *data)
     assert(curr != NULL);
     prev = curr->links.le_next;
     if (prev != NULL)
-        prev->status = curr->group_status;
+        prev->current_result.result.status =
+            curr->group_result.result.status;
 
     VERB("Tester context %p deleted: flags=0x%x parent_id=%u child_id=%u "
-         "status=%r", curr, curr->flags, curr->parent_id, curr->child_id,
-         curr->status);
+         "status=%r", curr, curr->flags, curr->group_result.id,
+         curr->current_result.id, curr->current_result.result.status);
 
     LIST_REMOVE(curr, links);
     tester_ctx_free(curr);
@@ -870,12 +880,13 @@ run_script(run_item *ri, test_script *script,
 
     assert(ri != NULL);
     assert(ri->n_args == ctx->n_args);
-    ctx->status = run_test_script(script, ctx->child_id,
-                                  ctx->n_args, ctx->args,
-                                  gctx->act == NULL ? 0 : /* FIXME */
-                                      gctx->act->flags);
+    ctx->current_result.result.status =
+        run_test_script(script, ctx->current_result.id,
+                        ctx->n_args, ctx->args,
+                        gctx->act == NULL ? 0 : /* FIXME */
+                           gctx->act->flags);
 
-    switch (TE_RC_GET_ERROR(ctx->status))
+    switch (TE_RC_GET_ERROR(ctx->current_result.result.status))
     {
         case TE_ETESTSKIP:
         case TE_ETESTFAKE:
@@ -894,7 +905,8 @@ run_script(run_item *ri, test_script *script,
         case TE_ESHUTDOWN:
             ctl = TESTER_CFG_WALK_STOP;
             /* Override status as KILLED */
-            ctx->status = TE_RC(TE_TESTER, TE_ETESTKILL);
+            ctx->current_result.result.status =
+                TE_RC(TE_TESTER, TE_ETESTKILL);
             break;
 
         default:
@@ -930,8 +942,8 @@ run_create_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
         if (rc != 0)
         {
             ERROR("Cannot create configuration backup: %r", rc);
-            if (TEST_RESULT(ctx->group_status))
-                ctx->group_status = rc;
+            if (TEST_RESULT(ctx->group_result.result.status))
+                ctx->group_result.result.status = rc;
             EXIT("FAULT");
             return rc;
         }
@@ -970,16 +982,18 @@ run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
             if (rc != 0)
             {
                 ERROR("Cannot restore configuration backup: %r", rc);
-                if (TEST_RESULT(ctx->status))
-                    ctx->status = rc;
+                if (TEST_RESULT(ctx->current_result.result.status))
+                    ctx->current_result.result.status = rc;
             }
             else if (track_conf == TESTER_TRACK_CONF_YES)
             {
                 RING("Configuration successfully restored using backup");
-                if (TEST_RESULT(ctx->status) &&
-                    (ctx->status < TE_RC(TE_TESTER, TE_ETESTCONF)))
+                if (TEST_RESULT(ctx->current_result.result.status) &&
+                    (ctx->current_result.result.status <
+                         TE_RC(TE_TESTER, TE_ETESTCONF)))
                 {
-                    ctx->status = TE_RC(TE_TESTER, TE_ETESTCONF);
+                    ctx->current_result.result.status =
+                        TE_RC(TE_TESTER, TE_ETESTCONF);
                 }
             }
             else
@@ -990,8 +1004,8 @@ run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
         else if (rc != 0)
         {
             ERROR("Cannot verify configuration backup: %r", rc);
-            if (TEST_RESULT(ctx->status))
-                ctx->status = rc;
+            if (TEST_RESULT(ctx->current_result.result.status))
+                ctx->current_result.result.status = rc;
         }
         else
         {
@@ -1020,8 +1034,8 @@ run_release_cfg_backup(tester_ctx *ctx)
         if (rc != 0)
         {
             ERROR("cfg_release_backup() failed: %r", rc);
-            if (TEST_RESULT(ctx->group_status))
-                ctx->group_status = rc;
+            if (TEST_RESULT(ctx->group_result.result.status))
+                ctx->group_result.result.status = rc;
             ctx->backup = NULL;
         }
         else
@@ -1086,7 +1100,8 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
             if (ctx->targets == NULL)
             {
                 tester_run_destroy_ctx(gctx);
-                ctx->status = TE_RC(TE_TESTER, TE_ENOMEM);
+                ctx->current_result.result.status =
+                    TE_RC(TE_TESTER, TE_ENOMEM);
                 return TESTER_CFG_WALK_FAULT;
             }
             ctx->targets_free = TRUE;
@@ -1174,7 +1189,8 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         if (tester_sigint_received)
         {
-            ctx->status = TE_RC(TE_TESTER, TE_ETESTKILL);
+            ctx->current_result.result.status =
+                TE_RC(TE_TESTER, TE_ETESTKILL);
             return TESTER_CFG_WALK_STOP;
         }
 
@@ -1195,7 +1211,8 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
             default:
                 assert(FALSE);
-                ctx->status = TE_RC(TE_TESTER, TE_EFAULT);
+                ctx->current_result.result.status =
+                    TE_RC(TE_TESTER, TE_EFAULT);
                 return TESTER_CFG_WALK_FAULT;
         }
 
@@ -1213,7 +1230,8 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         ctx->args = calloc(ri->n_args, sizeof(*ctx->args));
         if (ctx->args == NULL)
         {
-            ctx->status = TE_RC(TE_TESTER, TE_ENOMEM);
+            ctx->current_result.result.status =
+                TE_RC(TE_TESTER, TE_ENOMEM);
             return TESTER_CFG_WALK_FAULT;
         }
         ctx->n_args = ri->n_args;
@@ -1281,14 +1299,14 @@ run_pkg_start(run_item *ri, test_package *pkg,
 
     assert(~ctx->flags & TESTER_INLOGUE);
 
-    ctx->parent_id = ctx->child_id;
+    ctx->group_result.id = ctx->current_result.id;
 
     rc = tester_get_sticky_reqs(&ctx->reqs, &pkg->reqs);
     if (rc != 0)
     {
         ERROR("%s(): tester_get_sticky_reqs() failed: %r",
               __FUNCTION__, rc);
-        ctx->status = rc;
+        ctx->current_result.result.status = rc;
         return TESTER_CFG_WALK_FAULT;
     }
 
@@ -1319,14 +1337,14 @@ run_session_start(run_item *ri, test_session *session,
      * 'parent_id' is equal to 'child_id', if context is cloned in
      * package_start callback.
      */
-    if (ctx->parent_id != ctx->child_id)
+    if (ctx->group_result.id != ctx->current_result.id)
     {
         ctx = tester_run_clone_ctx(gctx);
         if (ctx == NULL)
             return TESTER_CFG_WALK_FAULT;
-        ctx->parent_id = ctx->child_id;
+        ctx->group_result.id = ctx->current_result.id;
     }
-    ctx->child_id = 0; /* Just to catch errors */
+    ctx->current_result.id = 0; /* Just to catch errors */
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
@@ -1411,7 +1429,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
           gctx->act_id);
 
     assert(ctx->flags & TESTER_INLOGUE);
-    status = ctx->group_status;
+    status = ctx->group_result.result.status;
     tester_run_destroy_ctx(gctx);
     
     ctx = gctx->ctxs.lh_first;
@@ -1421,9 +1439,11 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
         (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
     {
         if (TE_RC_GET_ERROR(status) == TE_ETESTSKIP)
-            ctx->group_status = TE_RC(TE_TESTER, TE_ETESTSKIP);
+            ctx->group_result.result.status =
+                TE_RC(TE_TESTER, TE_ETESTSKIP);
         else
-            ctx->group_status = TE_RC(TE_TESTER, TE_ETESTPROLOG);
+            ctx->group_result.result.status =
+                TE_RC(TE_TESTER, TE_ETESTPROLOG);
         assert(ctx->links.le_next != NULL);
         ctx->links.le_next->group_step = TRUE;
         EXIT("SKIP");
@@ -1488,7 +1508,7 @@ run_epilogue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
           gctx->act_id);
 
     assert(ctx->flags & TESTER_INLOGUE);
-    status = ctx->status;
+    status = ctx->current_result.result.status;
     tester_run_destroy_ctx(gctx);
     
     ctx = gctx->ctxs.lh_first;
@@ -1498,9 +1518,11 @@ run_epilogue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
         (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
     {
         if (TE_RC_GET_ERROR(status) == TE_ETESTSKIP)
-            ctx->group_status = TE_RC(TE_TESTER, TE_ETESTSKIP);
+            ctx->group_result.result.status =
+                TE_RC(TE_TESTER, TE_ETESTSKIP);
         else
-            ctx->group_status = TE_RC(TE_TESTER, TE_ETESTEPILOG);
+            ctx->group_result.result.status =
+                TE_RC(TE_TESTER, TE_ETESTEPILOG);
         EXIT("SKIP");
         return TESTER_CFG_WALK_SKIP;
     }
@@ -1529,7 +1551,8 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         ctx->keepalive_ctx = tester_ctx_clone(ctx);
         if (ctx->keepalive_ctx == NULL)
         {
-            ctx->status = TE_RC(TE_TESTER, TE_ENOMEM);
+            ctx->current_result.result.status =
+                TE_RC(TE_TESTER, TE_ENOMEM);
             return TESTER_CFG_WALK_FAULT;
         }
     }
@@ -1575,7 +1598,7 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     }
 
     /* Remember status of the keep-alive validation */
-    status = ctx->group_status;
+    status = ctx->group_result.result.status;
 
     /* Remove keep-alive context (it is still stored in keepalive_ctx) */
     LIST_REMOVE(ctx, links);
@@ -1588,8 +1611,8 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
         (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
     {
         ERROR("Keep-alive validation failed: %r", status);
-        ctx->group_status =
-            tester_group_status(ctx->group_status, 
+        ctx->group_result.result.status =
+            tester_group_status(ctx->group_result.result.status, 
                                 TE_RC(TE_TESTER, TE_ETESTALIVE));
         EXIT("INTR");
         return TESTER_CFG_WALK_INTR;
@@ -1657,7 +1680,7 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     }
 
     /* Remember status of the exception handler */
-    status = ctx->group_status;
+    status = ctx->group_result.result.status;
 
     /* Destroy exception handler context */
     tester_run_destroy_ctx(gctx);
@@ -1670,8 +1693,8 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
         (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
     {
         ERROR("Exception handler failed: %r", status);
-        ctx->group_status =
-            tester_group_status(ctx->group_status, 
+        ctx->group_result.result.status =
+            tester_group_status(ctx->group_result.result.status, 
                                 TE_RC(TE_TESTER, TE_ETESTEXCEPT));
         EXIT("INTR");
         return TESTER_CFG_WALK_INTR;
@@ -1940,7 +1963,8 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         if (tester_sigint_received)
         {
-            ctx->status = TE_RC(TE_TESTER, TE_ETESTKILL);
+            ctx->current_result.result.status =
+                TE_RC(TE_TESTER, TE_ETESTKILL);
             return TESTER_CFG_WALK_STOP;
         }
 
@@ -1961,7 +1985,8 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
             default:
                 assert(FALSE);
-                ctx->status = TE_RC(TE_TESTER, TE_EFAULT);
+                ctx->current_result.result.status =
+                    TE_RC(TE_TESTER, TE_EFAULT);
                 return TESTER_CFG_WALK_FAULT;
         }
     }
@@ -1976,7 +2001,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                               ri, iter, ctx->args);
         if (rc != 0)
         {
-            ctx->status = rc;
+            ctx->current_result.result.status = rc;
             return TESTER_CFG_WALK_FAULT; 
         }
     }
@@ -2039,25 +2064,29 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                                 ri, ctx->args, ctx->flags, TRUE))
     {
         /* Silently skip without any logs */
-        ctx->status = TE_RC(TE_TESTER, TE_ENOENT);
+        ctx->current_result.result.status = TE_RC(TE_TESTER, TE_ENOENT);
         ctx->group_step = TRUE;
         EXIT("SKIP - ENOENT");
         return TESTER_CFG_WALK_SKIP;
     }
 
-    ctx->child_id = tester_get_id();
+    ctx->current_result.id = tester_get_id();
 
     /* Test is considered here as run, if such event is logged */
-    tester_term_out_start(ri->type, test_get_name(ri),
-                          ctx->parent_id, ctx->child_id, ctx->flags);
-    log_test_start(ri, ctx->parent_id, ctx->child_id, ctx->args);
+    tester_term_out_start(ctx->flags, ri->type, test_get_name(ri),
+                          ctx->group_result.id, ctx->current_result.id);
+    log_test_start(ri, ctx->group_result.id, ctx->current_result.id,
+                   ctx->args);
+
+    tester_test_result_add(&gctx->results, &ctx->current_result);
 
     /* FIXME: Optimize */
     if ((~ctx->flags & TESTER_QUIET_SKIP) &&
         !tester_is_run_required(ctx->targets, &ctx->reqs,
                                 ri, ctx->args, ctx->flags, FALSE))
     {
-        ctx->status = TE_RC(TE_TESTER, TE_ETESTSKIP);
+        ctx->current_result.result.status =
+            TE_RC(TE_TESTER, TE_ETESTSKIP);
         ctx->group_step = TRUE;
         EXIT("SKIP - ETESTSKIP");
         return TESTER_CFG_WALK_SKIP;
@@ -2088,24 +2117,45 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
           gctx->act != NULL ? gctx->act->flags : 0,
           gctx->act_id);
 
-    if (TE_RC_GET_ERROR(ctx->status) != TE_ENOENT)
+    if (TE_RC_GET_ERROR(ctx->current_result.result.status) != TE_ENOENT)
     {
         run_verify_cfg_backup(ctx, test_get_attrs(ri)->track_conf);
 
-        log_test_result(ctx->parent_id, ctx->child_id, ctx->status);
-        tester_term_out_done(ri->type, test_get_name(ri),
-                             ctx->parent_id, ctx->child_id, ctx->flags,
-                             ctx->status);
+        tester_test_result_del(&gctx->results, &ctx->current_result);
+
+        log_test_result(ctx->group_result.id, ctx->current_result.id,
+                        ctx->current_result.result.status);
+        tester_term_out_done(ctx->flags, ri->type, test_get_name(ri),
+                             ctx->group_result.id,
+                             ctx->current_result.id,
+                             ctx->current_result.result.status,
+                             ctx->current_result.expected);
+
+        /* FIXME: Implement function in appropriate place */
+        {
+            te_test_verdict *v;
+
+            while ((v = ctx->current_result.result.verdicts.tqh_first)
+                      != NULL)
+            {
+                TAILQ_REMOVE(&ctx->current_result.result.verdicts,
+                             v, links);
+                free(v->str);
+                free(v);
+            }
+        }
     }
     else
     {
-        ctx->status = TE_RC(TE_TESTER, TE_ETESTSKIP);
+        ctx->current_result.result.status =
+            TE_RC(TE_TESTER, TE_ETESTSKIP);
     }
 
     /* Update result of the group */
-    ctx->group_status =
-        tester_group_status(ctx->group_status, ctx->status);
-    if (!TEST_RESULT(ctx->group_status))
+    ctx->group_result.result.status =
+        tester_group_status(ctx->group_result.result.status,
+                            ctx->current_result.result.status);
+    if (!TEST_RESULT(ctx->group_result.result.status))
     {
         EXIT("FAULT");
         return TESTER_CFG_WALK_FAULT;
@@ -2115,7 +2165,8 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         if (tester_sigint_received)
         {
-            ctx->status = TE_RC(TE_TESTER, TE_ETESTKILL);
+            ctx->current_result.result.status =
+                TE_RC(TE_TESTER, TE_ETESTKILL);
             return TESTER_CFG_WALK_STOP;
         }
 
@@ -2238,7 +2289,7 @@ tester_run(const testing_scenario *scenario,
             break;
 
         case TESTER_CFG_WALK_FIN:
-            rc = data.ctxs.lh_first->group_status;
+            rc = data.ctxs.lh_first->group_result.result.status;
             if (TEST_RESULT(rc))
                 rc = 0;
             break;
@@ -2249,7 +2300,7 @@ tester_run(const testing_scenario *scenario,
             break;
 
         case TESTER_CFG_WALK_INTR:
-            rc = data.ctxs.lh_first->status;
+            rc = data.ctxs.lh_first->current_result.result.status;
             assert(rc != 0);
             ERROR("Execution of testing scenario interrupted: %r", rc);
             break;
@@ -2260,7 +2311,7 @@ tester_run(const testing_scenario *scenario,
             break;
 
         case TESTER_CFG_WALK_FAULT:
-            rc = data.ctxs.lh_first->status;
+            rc = data.ctxs.lh_first->current_result.result.status;
             assert(rc != 0);
             break;
 

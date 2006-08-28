@@ -136,26 +136,28 @@ colored_verdict(int color, const char *text)
 #ifdef HAVE_COLOR
     if (term == TESTER_TERM_UNKNOWN)
     {
-        printf("%s\n", text);
+        fputs(text, stdout);
+        fputc('\n', stdout);
     }
     else
     {
         putp(tparm(tigetstr("setaf"), color));
-        printf("%s", text);
+        fputs(text, stdout);
         putp(tparm(tigetstr("sgr0")));
-        printf("\n");
+        fputc('\n', stdout);
     }
 #else
     UNUSED(color);
-    printf("%s\n", text);
+    fputs(text, stdout);
+    fputc('\n', stdout);
 #endif
 }
 
 
 /* See description in tester_term.h */
 void
-tester_term_out_start(run_item_type type, const char *name,
-                      test_id parent, test_id self, unsigned int flags)
+tester_term_out_start(unsigned int flags, run_item_type type,
+                      const char *name, test_id parent, test_id self)
 {
     char ids[20] = "";
     char msg[256];
@@ -208,9 +210,10 @@ tester_term_out_start(run_item_type type, const char *name,
 
 /* See description in tester_term.h */
 void
-tester_term_out_done(run_item_type type, const char *name,
-                     test_id parent, test_id self, unsigned int flags,
-                     te_errno result)
+tester_term_out_done(unsigned int flags,
+                     run_item_type type, const char *name,
+                     test_id parent, test_id self,
+                     te_errno result, trc_verdict trcv)
 {
     char        ids[20] = "";
     char        msg_out[256];

@@ -42,29 +42,31 @@ extern "C" {
 /**
  * Log test start to terminal.
  *
+ * @param flags     Tester context flags
  * @param type      Type of run item
  * @param name      Name of the test
  * @param parent    Parent ID
  * @param self      Self ID of the test
- * @param flags     Tester context flags
  */
-extern void tester_term_out_start(run_item_type type, const char *name,
-                                  test_id parent, test_id self,
-                                  unsigned int flags);
+extern void tester_term_out_start(unsigned int flags,
+                                  run_item_type type, const char *name,
+                                  test_id parent, test_id self);
 
 /**
  * Log test done to terminal.
  *
+ * @param flags     Tester context flags
  * @param type      Type of run item
  * @param name      Name of the test
  * @param parent    Parent ID
  * @param self      Self ID of the test
- * @param flags     Tester context flags
  * @param result    Test result
+ * @param trcv      TRC result
  */
-extern void tester_term_out_done(run_item_type type, const char *name,
+extern void tester_term_out_done(unsigned int flags,
+                                 run_item_type type, const char *name,
                                  test_id parent, test_id self,
-                                 unsigned int flags, te_errno result);
+                                 te_errno result, trc_verdict trcv);
 
 /**
  * Cleanup curses structures to make valgrind happy. Should not be called
