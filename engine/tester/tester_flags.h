@@ -40,9 +40,12 @@ enum tester_flags {
     TESTER_VERBOSE      = (1 << 0),   /**< The first level of verbosity:
                                            output of run path to stdout */
     TESTER_VVERB        = (1 << 1),   /**< The second level of verbosity:
+                                           additional output of status
+                                           together with TRC verdict */
+    TESTER_VVVERB       = (1 << 2),   /**< The third level of verbosity:
                                            additional output of test IDs
                                            on run paths */
-    TESTER_VVVERB       = (1 << 2),   /**< The third level of verbosity */
+    TESTER_VVVVERB      = (1 << 3),   /**< The third level of verbosity */
 
     TESTER_FAKE         = (1 << 4),   /**< Fake run */
 
@@ -57,6 +60,7 @@ enum tester_flags {
     TESTER_NO_LOGUES    = (1 << 12),  /**< Prologues/epilogues are
                                            disabled */
     TESTER_NO_SIMULT    = (1 << 13),  /**< Disable simultaneousness */
+    TESTER_NO_TRC       = (1 << 14),  /**< Don't use TRC */
 
     TESTER_VALGRIND     = (1 << 16),  /**< Run scripts under valgrind */
     TESTER_GDB          = (1 << 17),  /**< Run scripts under GDB in
