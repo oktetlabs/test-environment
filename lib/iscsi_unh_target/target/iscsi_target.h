@@ -60,28 +60,73 @@ struct data_list
 };
 
 /* values for "state" in struct iscsi_cmnd */
-#define ISCSI_CMND_RECEIVED			1
-#define ISCSI_NEW_CMND				2
-#define ISCSI_BUFFER_RDY			3
-#define ISCSI_DONE				4
-#define ISCSI_SENT				5
-#define ISCSI_DEQUEUE				6
-#define ISCSI_ALL_R2TS_SENT			7
-#define ISCSI_IMMEDIATE_DATA_IN			8
-#define ISCSI_UNSOLICITED_DATA_IN		9
-#define ISCSI_DATA_IN				10
-#define ISCSI_MGT_FN_DONE			11
-#define ISCSI_SEND_TEXT_RESPONSE		12
-#define ISCSI_LOGOUT				13
-#define ISCSI_PING				14
-#define ISCSI_QUEUE_CMND			15
-#define ISCSI_QUEUE_CMND_RDY			16
-#define ISCSI_QUEUE_OTHER			17
-#define ISCSI_NOPIN_SENT			18
-#define ISCSI_RESEND_STATUS			19
-#define ISCSI_ASK_FOR_MORE_TEXT			20
-#define ISCSI_AWAIT_MORE_TEXT			21
-#define ISCSI_BLOCKED_SENDING_TEXT		22
+enum iscsi_cmnd_states {
+    ISCSI_CMND_RECEIVED,
+    ISCSI_NEW_CMND,
+    ISCSI_BUFFER_RDY,
+    ISCSI_DONE,
+    ISCSI_SENT,
+    ISCSI_DEQUEUE,
+    ISCSI_ALL_R2TS_SENT,
+    ISCSI_IMMEDIATE_DATA_IN,
+    ISCSI_UNSOLICITED_DATA_IN,
+    ISCSI_DATA_IN,
+    ISCSI_MGT_FN_DONE,
+    ISCSI_SEND_TEXT_RESPONSE,
+    ISCSI_LOGOUT,
+    ISCSI_PING,
+    ISCSI_QUEUE_CMND,
+    ISCSI_QUEUE_CMND_RDY,
+    ISCSI_QUEUE_OTHER,
+    ISCSI_NOPIN_SENT,
+    ISCSI_RESEND_STATUS,
+    ISCSI_ASK_FOR_MORE_TEXT,
+    ISCSI_AWAIT_MORE_TEXT,
+    ISCSI_BLOCKED_SENDING_TEXT,
+};
+
+static inline const char *
+iscsi_state_name(enum iscsi_cmnd_states state)
+{
+#define ISCSI_STATE_NAME(x) case ISCSI_##x: return #x
+    switch(state)
+    {
+        ISCSI_STATE_NAME(CMND_RECEIVED);
+        ISCSI_STATE_NAME(NEW_CMND);
+        ISCSI_STATE_NAME(BUFFER_RDY);
+        ISCSI_STATE_NAME(DONE);
+        ISCSI_STATE_NAME(SENT);
+        ISCSI_STATE_NAME(DEQUEUE);
+        ISCSI_STATE_NAME(ALL_R2TS_SENT);
+        ISCSI_STATE_NAME(IMMEDIATE_DATA_IN);
+        ISCSI_STATE_NAME(UNSOLICITED_DATA_IN);
+        ISCSI_STATE_NAME(DATA_IN);
+        ISCSI_STATE_NAME(MGT_FN_DONE);
+        ISCSI_STATE_NAME(SEND_TEXT_RESPONSE);
+        ISCSI_STATE_NAME(LOGOUT);
+        ISCSI_STATE_NAME(PING);
+        ISCSI_STATE_NAME(QUEUE_CMND);
+        ISCSI_STATE_NAME(QUEUE_CMND_RDY);
+        ISCSI_STATE_NAME(QUEUE_OTHER);
+        ISCSI_STATE_NAME(NOPIN_SENT);
+        ISCSI_STATE_NAME(RESEND_STATUS);
+        ISCSI_STATE_NAME(ASK_FOR_MORE_TEXT);
+        ISCSI_STATE_NAME(AWAIT_MORE_TEXT);
+        ISCSI_STATE_NAME(BLOCKED_SENDING_TEXT);
+        default:
+            return "<invalid state name>";
+    }
+#undef ISCSI_STATE_NAME
+}
+
+#define ISCSI_CHANGE_STATE(_command, _newstate) \
+do {                                            \
+    TRACE(DEBUG, "%s -> %s for command %x",     \
+          iscsi_state_name(_command->state),    \
+          iscsi_state_name(_newstate),          \
+          _command->uid);                       \
+    _command->state = _newstate;                \
+} while(0)
 
 /* stores everything related to a SCSI command received */
 struct iscsi_cmnd
@@ -97,6 +142,9 @@ struct iscsi_cmnd
     
     /* unsolicited_data_sem: to control receiving immediate data */
     ipc_sem_t    	unsolicited_data_sem;
+
+    /* unique internal identifier for this command */
+    uint32_t        uid;
     
     /* state: execution state of the command */
     uint8_t			state;

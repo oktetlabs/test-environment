@@ -146,7 +146,7 @@ struct session_operational_parameters {
 
 extern char *string_llx(uint64_t x, char *str); 
 
-extern void print_payload(const void *buffer, int len);
+extern void print_payload(const uint8_t *buffer, int len);
 
 extern void print_iscsi_command(void *cmd);
 

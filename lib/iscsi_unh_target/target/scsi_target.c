@@ -595,7 +595,7 @@ destroy_target_front_end(Scsi_Target_Device * the_device)
 
 	list_for_each_entry(cmnd, &target_data->cmd_queue, link) {
 		if (cmnd->dev_id == curr->id)
-			cmnd->state = ST_DEQUEUE;
+			SCSI_CHANGE_STATE(cmnd, ST_DEQUEUE);
 	}
 
 #if 0
@@ -754,7 +754,7 @@ signal_process_thread(void *param)
 		spin_lock_irqsave(&target_data->cmd_queue_lock, flags);
 		list_for_each_entry(cmd_curr, &target_data->cmd_queue, link) {
 			if (cmd_curr->state == ST_PROCESSING) {
-				cmd_curr->state = ST_PROCESSED;
+				SCSI_CHANGE_STATE(cmd_curr, ST_PROCESSED);
 				/* wake up scsi_target_process_thread */
 				if (atomic_read(&target_data->target_sem.count) <= 0) {
 					up(&target_data->target_sem);
@@ -822,7 +822,7 @@ scsi_target_process(void)
                 if (found) {
                     cmd_curr->abort_code = CMND_ABORTED;
                     //if (cmd_curr->state != ST_PROCESSING)
-                    //	cmd_curr->state = ST_DEQUEUE;
+                    //	SCSI_CHANGE_STATE(cmd_curr, ST_DEQUEUE);
                     if (abort_notify(msg)) {
                         TRACE_ERROR("err aborting command with id %d lun %d\n",
                                     cmd_curr->id, cmd_curr->lun);
@@ -846,6 +846,7 @@ scsi_target_process(void)
                 }
                 ipc_mutex_unlock(target_data->cmd_queue_lock);
                 
+                abort_notify(msg);
                 aen_notify(msg->message, lun);
                 break;
             }
@@ -1004,7 +1005,7 @@ scsi_target_process(void)
                 printk("%s read error %d\n", current->comm, i);
                 goto scsi_thread_out;
             }
-            cmd_curr->state = ST_DONE;
+            SCSI_CHANGE_STATE(cmd_curr, ST_DONE);
             }
         }
 # endif
@@ -1038,7 +1039,7 @@ scsi_target_process(void)
             {
                 if (kill(cmd_curr->pid, 0) != 0)
                 {
-                    WARN("Stale SCSI command %p detected", cmd_curr);
+                    WARN("Stale SCSI command %u detected", cmd_curr->id);
                 }
                 else
                 {
@@ -1212,7 +1213,7 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 int
 scsi_rx_data(SHARED Target_Scsi_Cmnd * the_command)
 {
-	the_command->state = ST_TO_PROCESS;
+	SCSI_CHANGE_STATE(the_command, ST_TO_PROCESS);
 
     scsi_target_process();
 #if 0
@@ -1241,7 +1242,7 @@ scsi_rx_data(SHARED Target_Scsi_Cmnd * the_command)
 int
 scsi_target_done(SHARED Target_Scsi_Cmnd * the_command)
 {
-	the_command->state = ST_DEQUEUE;
+	SCSI_CHANGE_STATE(the_command, ST_DEQUEUE);
 
 	/* awaken scsi_target_process_thread to dequeue stuff */
 #if 0
@@ -1279,7 +1280,7 @@ scsi_release(SHARED Target_Scsi_Cmnd * cmnd)
 	 * - Ashish
 	 */
 	if (cmnd->state != ST_PROCESSING)
-		cmnd->state = ST_DEQUEUE;
+		SCSI_CHANGE_STATE(cmnd, ST_DEQUEUE);
 
 	/* wake up scsi_process_target_thread so it can dequeue stuff */
 #if 0
@@ -1362,8 +1363,6 @@ rx_task_mgmt_fn(struct Scsi_Target_Device *dev, int fn, SHARED void *value)
 		target_data->msgq_end = msg;
 	}
     ipc_mutex_unlock(target_data->cmd_queue_lock);
-
-    scsi_target_process();
 
 	return msg;
 }
@@ -1853,7 +1852,7 @@ get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 # endif
 
 	/* change status */
-	cmnd->state = ST_DONE;
+	SCSI_CHANGE_STATE(cmnd, ST_DONE);
 	cmnd->req->sr_result = SAM_STAT_GOOD;
 	return 0;
 }
@@ -2109,13 +2108,13 @@ hand_to_front_end(Target_Scsi_Cmnd * the_command)
 	 * the command state is changed to ST_DEQUEUE and returned
 	 */
 	if (the_command->abort_code != CMND_OPEN) {
-		the_command->state = ST_DEQUEUE;
+		SCSI_CHANGE_STATE(the_command, ST_DEQUEUE);
 		return 0;
 	}
 
 	if (the_command->state == ST_DONE) 
     {
-        the_command->state = ST_HANDED;
+        SCSI_CHANGE_STATE(the_command, ST_HANDED);
         if (iscsi_xmit_response(the_command)) 
         {
             TRACE_ERROR("hand_to_front_end: error in xmit_response for %p "
@@ -2123,15 +2122,16 @@ hand_to_front_end(Target_Scsi_Cmnd * the_command)
             return -1;
         }
     } else if (the_command->state == ST_PENDING) {
-        the_command->state = ST_XFERRED;
+        SCSI_CHANGE_STATE(the_command, ST_XFERRED);
         if (iscsi_rdy_to_xfer(the_command)) {
             TRACE_ERROR("hand_to_front_end: error in rdy_to_xfer for %p "
                         "id %d\n", the_command, the_command->id);
             return -1;
         }
 	} else {
-		TRACE_ERROR("hand_to_front_end: command %p id: %d bad state %d\n",
-                    the_command, the_command->id, the_command->state);
+		TRACE_ERROR("hand_to_front_end: command %p id: %d bad state %s\n",
+                    the_command, the_command->id, 
+                    scsi_state_name(the_command->state));
 		return -1;
 	}
 
@@ -2351,7 +2351,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			}
             
 			/* change status */
-			cmnd->state = ST_DONE;
+			SCSI_CHANGE_STATE(cmnd, ST_DONE);
 			cmnd->req->sr_result = SAM_STAT_GOOD;
 
 			err = 0;
@@ -2398,7 +2398,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			}
             
 			/* change status */
-			cmnd->state = ST_DONE;
+			SCSI_CHANGE_STATE(cmnd, ST_DONE);
 			cmnd->req->sr_result = SAM_STAT_GOOD;
             
 			err = 0;
@@ -2412,7 +2412,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			cmnd->req->sr_use_sg = 0;
 			cmnd->req->sr_bufflen = 0;
 			cmnd->req->sr_result = SAM_STAT_GOOD;
-			cmnd->state = ST_DONE;
+			SCSI_CHANGE_STATE(cmnd, ST_DONE);
 			err = 0;
 			break;
 		}
@@ -2469,7 +2469,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			}
             
 			/* change status */
-			cmnd->state = ST_DONE;
+			SCSI_CHANGE_STATE(cmnd, ST_DONE);
 			cmnd->req->sr_result = SAM_STAT_GOOD;
 			err = 0;
 			break;
@@ -2483,7 +2483,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
 			cmnd->req->sr_use_sg = 0;
 			cmnd->req->sr_bufflen = 0;
-			cmnd->state = ST_DONE;
+			SCSI_CHANGE_STATE(cmnd, ST_DONE);
 			cmnd->req->sr_result = SAM_STAT_GOOD;
 			err = 0;
 			break;
@@ -2517,7 +2517,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
             
 			/* this data can just be returned from memory */
 			/* change_status */
-			cmnd->state = ST_DONE;
+			SCSI_CHANGE_STATE(cmnd, ST_DONE);
 			err = 0;
 			break;
 		}
@@ -2549,14 +2549,14 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 					err = -1;
 					break;
 				}
-				cmnd->state = ST_PENDING;
+				SCSI_CHANGE_STATE(cmnd, ST_PENDING);
 			} else if (cmnd->state == ST_TO_PROCESS) {
 				/*
 				 * in memory mode of processing we do not
 				 * care about the data received at all
 				 */
                 do_scsi_io(cmnd, do_scsi_write);
-				cmnd->state = ST_DONE;
+				SCSI_CHANGE_STATE(cmnd, ST_DONE);
 			}
 			err = 0;
 			break;
@@ -2568,7 +2568,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
 			TRACE_ERROR("MEMORYIO handle_cmd: unknown command 0x%02x\n",
                    cmnd->req->sr_cmnd[0]);
-            cmnd->state = ST_DONE;
+            SCSI_CHANGE_STATE(cmnd, ST_DONE);
             cmnd->req->sr_result = SAM_STAT_CHECK_CONDITION;
             sense->response            = 0xF0; /* current error + VALID bit */
             sense->sense_key_and_flags = ILLEGAL_REQUEST;

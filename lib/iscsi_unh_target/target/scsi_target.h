@@ -68,15 +68,47 @@ typedef struct scsi_pointer Scsi_Pointer;
 #define	REPORT_LUNS	0xa0
 
 /* various possible states of commands - state in Target_Scsi_Cmnd */
-#define	ST_NEW_CMND	1 /* command just arrived */
-#define	ST_PROCESSING	2 /* sent off to process */
-#define	ST_PENDING	3 /* waiting to get data */
-#define	ST_TO_PROCESS	4 /* command ready to process */
-#define	ST_DONE		5 /* response to command received */
-#define	ST_DEQUEUE	6 /* front end done with command */
-#define	ST_XFERRED	7 /* notified front end of buffers */
-#define	ST_HANDED	8 /* command given to front end */
-#define	ST_PROCESSED	9 /* SIGIO has been received */
+enum scsi_command_states {
+    ST_NEW_CMND, /* command just arrived */
+    ST_PROCESSING, /* sent off to process */
+    ST_PENDING, /* waiting to get data */
+    ST_TO_PROCESS, /* command ready to process */
+    ST_DONE, /* response to command received */
+    ST_DEQUEUE, /* front end done with command */
+    ST_XFERRED, /* notified front end of buffers */
+    ST_HANDED, /* command given to front end */
+    ST_PROCESSED, /* SIGIO has been received */
+};
+
+static inline const char *
+scsi_state_name(enum scsi_command_states state)
+{
+#define SCSI_STATE_NAME(x) case ST_##x: return #x
+    switch (state)
+    {
+        SCSI_STATE_NAME(NEW_CMND);
+        SCSI_STATE_NAME(PROCESSING);
+        SCSI_STATE_NAME(PENDING);
+        SCSI_STATE_NAME(TO_PROCESS);
+        SCSI_STATE_NAME(DONE);
+        SCSI_STATE_NAME(DEQUEUE);
+        SCSI_STATE_NAME(XFERRED);
+        SCSI_STATE_NAME(HANDED);
+        SCSI_STATE_NAME(PROCESSED);
+        default:
+    return "?????";
+    }
+#undef SCSI_STATE_NAME
+}
+
+#define SCSI_CHANGE_STATE(_command, _newstate)      \
+do {                                                \
+    TRACE(DEBUG, "%s -> %s for SCSI command %d",    \
+          scsi_state_name(_command->state),         \
+          scsi_state_name(_newstate),               \
+          _command->id);                            \
+    _command->state = _newstate;                    \
+} while(0)
 
 
 /* values for abort code */
@@ -460,6 +492,7 @@ extern const char *get_scsi_command_name(int code);
 
 extern int scsi_target_init(void);
 extern void scsi_target_cleanup(void);
+extern void scsi_target_process(void);
 
 extern int iscsi_free_device(uint8_t target, uint8_t lun);
 

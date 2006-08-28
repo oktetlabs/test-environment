@@ -363,7 +363,7 @@ send_recovery_r2t(SHARED struct iscsi_cmnd *cmnd, int data_offset,
 	} else {
 		cmnd->recovery_r2t = 1;
 	}
-	cmnd->state = ISCSI_BUFFER_RDY;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_BUFFER_RDY);
 
 out:
 	TRACE(DEBUG, "Leave send_recovery_r2t, recovery_r2t %u, "

@@ -72,26 +72,46 @@ string_llx(uint64_t x, char *str)
 }
 
 void
-print_payload(const void *buffer, int len)
+print_payload(const uint8_t *buffer, int len)
 {
     char format[80] = "";
     char *fptr;
-    int i;
-
+    int i, j;
+    te_bool skipped = FALSE;
+    
+#define CHUNK_LENGTH 16
     TRACE(DEBUG, "iSCSI Payload of length %d: ", len);
-    for (i = 0, fptr = format; i < len; i++)
+    for (i = 0; i < len - CHUNK_LENGTH; buffer += CHUNK_LENGTH, i += CHUNK_LENGTH)
     {
-        sprintf(fptr, "%2.2x ", ((const uint8_t *)buffer)[i]);
-        fptr += 3;
-        if (fptr >= format + sizeof(format))
+        if (i != 0 && memcmp(buffer - CHUNK_LENGTH, buffer, CHUNK_LENGTH) == 0)
         {
+            if (!skipped)
+            {
+                TRACE(DEBUG, "...");
+                skipped = TRUE;
+            }
+        }
+        else
+        {
+            sprintf(format, "%4.4x: ", i);
+            fptr = format + strlen(format);
+            for (j = 0; j < CHUNK_LENGTH; j++)
+            {
+                sprintf(fptr, "%2.2x ", buffer[j]);
+                fptr += 3;
+            }
             TRACE(DEBUG, "%s", format);
-            fptr = format;
-            memset(format, 0, sizeof(format));
         }
     }
-    if (fptr != format)
-        TRACE(DEBUG, "%s", format);
+    sprintf(format, "%4.4x: ", i);
+    fptr = format + strlen(format);
+    for (; i < len; i++, buffer++)
+    {
+        sprintf(fptr, "%2.2x ", *buffer);
+        fptr += 3;
+    }
+    TRACE(DEBUG, "%s", format);
+#undef CHUNK_LENGTH
 }
 
 static void

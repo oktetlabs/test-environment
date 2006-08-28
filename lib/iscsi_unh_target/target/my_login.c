@@ -122,15 +122,19 @@ static void iscsi_reply_status(int sock, struct sockaddr_un *dest, te_errno rc);
  * Returns pointer to the new struct if all ok, else NULL after error message
  */
 SHARED struct iscsi_cmnd *
-get_new_cmnd( void )
+get_new_cmnd(SHARED struct iscsi_session *session)
 {
 	SHARED struct iscsi_cmnd *cmnd;
+    static int serial_no;
 
 	cmnd = shcalloc(1, sizeof(*cmnd));
 
 	if (cmnd) 
     {
 		cmnd->state = ISCSI_NEW_CMND;
+        /* FIXME: real uniqueness is not ensured */
+        cmnd->uid   = ((uint32_t)session->tsih << 16) | ++serial_no;
+        TRACE(DEBUG, "allocated new cmnd %x", cmnd->uid);
 	}
 	return cmnd;
 }
@@ -543,8 +547,8 @@ iscsi_release_session(SHARED struct iscsi_session *session)
         return -1;
     }
     
-    TRACE(DEBUG, "iscsi_release_session(): %p, TSIH %u",
-          session, session->tsih);
+    TRACE(DEBUG, "iscsi_release_session(): TSIH %u",
+          session->tsih);
     print_isid_tsih_message(session, "Release session with ");
 
 
@@ -555,9 +559,9 @@ iscsi_release_session(SHARED struct iscsi_session *session)
         if (cmnd->cmnd != NULL) {
             if (scsi_release(cmnd->cmnd) < 0) {
                 TRACE_ERROR("Trouble releasing command, opcode 0x%02x, "
-                            "ITT %u, state 0x%x\n", 
+                            "ITT %u, state %s\n", 
                             cmnd->opcode_byte, cmnd->init_task_tag,
-                            cmnd->state);
+                            iscsi_state_name(cmnd->state));
             }
         }
         /* free data_list if any, cdeng */
@@ -659,7 +663,8 @@ search_iscsi_cmnd(Target_Scsi_Cmnd * cmnd, SHARED struct iscsi_session **result_
             ipc_mutex_lock(session->cmnd_mutex);
             for (cmd = session->cmnd_list; cmd != NULL; cmd = cmd->next) {
                 if (cmd->cmnd == cmnd) {
-                    TRACE(DEBUG, "found cmd %p in session %p for %p", cmd, session, cmnd);
+                    TRACE(DEBUG, "found cmd %x in session %u for %d", 
+                          cmd->uid, session->tsih, cmnd->id);
                     *result_sess = session;
                     /*** NOTE: The cmnd_mutex is released in the CALLER!!! ***/
                 /*** Blame the original target authors, not me - A.A.  ***/
@@ -762,9 +767,9 @@ search_tags(struct iscsi_conn *conn, uint32_t init_task_tag,
 	if (dumpall) {
 		for (cmd = session->cmnd_list; cmd != NULL; cmd = cmd->next) {
 			TRACE(DEBUG,
-                  "scsi cmnd %p opcode 0x%02x init_task_tag %d target_xfer_tag"
+                  "scsi cmnd %u opcode 0x%02x init_task_tag %d target_xfer_tag"
 				   " %d data_done %d xfer length %d stat_sn %u state %u\n",
-				   cmd->cmnd, cmd->opcode_byte,
+				   cmd->cmnd->id, cmd->opcode_byte,
 				   cmd->init_task_tag, cmd->target_xfer_tag,
 				   cmd->data_done, cmd->data_length, cmd->stat_sn, cmd->state);
 		}
@@ -776,8 +781,8 @@ search_tags(struct iscsi_conn *conn, uint32_t init_task_tag,
 					  || (target_xfer_tag == ALL_ONES))) {
 			TRACE(DEBUG, "Search found the command");
 			TRACE(DEBUG,
-				  "scsi cmnd %p, init_task_tag %d target_xfer_tag %d"
-				  " data_done %d xfer length %d\n", cmd->cmnd,
+				  "scsi cmnd %u, init_task_tag %d target_xfer_tag %d"
+				  " data_done %d xfer length %d\n", cmd->cmnd->id,
 				  cmd->init_task_tag, cmd->target_xfer_tag, cmd->data_done,
 				  cmd->data_length);
 
@@ -1314,8 +1319,8 @@ err_conn_out:
 
     /* put this session onto end of "bad-session" list for cleanup later */
     session = conn->session;
-    TRACE(DEBUG, "add to list bad session %p, conn %p",
-          session, conn);
+    TRACE(DEBUG, "add to list bad session %u, conn %p",
+          session->tsih, conn);
 
     list_add_tail(&session->sess_link, &host->bad_session_list);
 
@@ -1571,11 +1576,11 @@ outok:
 	cmnd->ping_data = buffer;
 	cmnd->data_length = size;
 	cmnd->data_done = 0;
-	cmnd->state = ISCSI_SEND_TEXT_RESPONSE;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_SEND_TEXT_RESPONSE);
 	return;
 
 outbad:
-	cmnd->state = ISCSI_DEQUEUE;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_DEQUEUE);
 	enqueue_reject(conn, reason);
 	return;
 }
@@ -1583,7 +1588,7 @@ outbad:
 static inline void __attribute__ ((no_instrument_function))
 copy_in_progress_stuff(SHARED struct iscsi_cmnd *cmnd, SHARED struct iscsi_cmnd *in_progress)
 {
-	cmnd->state = ISCSI_DEQUEUE;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_DEQUEUE);
 	in_progress->command_flags = cmnd->command_flags;
 	in_progress->cmd_sn = cmnd->cmd_sn;
 	in_progress->stat_sn = cmnd->stat_sn;
@@ -1667,7 +1672,7 @@ do_text_request(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 			else
 				which = "text request";
 			TRACE(VERBOSE, "iscsi %s ITT %u reset", which,in_progress->init_task_tag);
-			in_progress->state = ISCSI_DEQUEUE;
+			ISCSI_CHANGE_STATE(in_progress, ISCSI_DEQUEUE);
 			in_progress->init_task_tag = ALL_ONES;
 			conn->text_in_progress = in_progress = NULL;
 			/* now fall thru to start again as if a new command */
@@ -1702,7 +1707,7 @@ do_text_request(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 					goto outbadprotocol;
 				}
 				/* ok to send our next text response pdu (done with this pdu) */
-				in_progress->state = ISCSI_SEND_TEXT_RESPONSE;
+				ISCSI_CHANGE_STATE(in_progress, ISCSI_SEND_TEXT_RESPONSE);
 				copy_in_progress_stuff(cmnd, in_progress);
 				goto out;
 			}
@@ -1736,7 +1741,7 @@ do_text_request(SHARED struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 		copy_in_progress_stuff(cmnd, in_progress);
 	}
 	if (cmnd->command_flags & C_BIT) {
-		in_progress->state = ISCSI_ASK_FOR_MORE_TEXT;
+		ISCSI_CHANGE_STATE(in_progress, ISCSI_ASK_FOR_MORE_TEXT);
 	} else {
 		/* have accumulated a complete Text Request, generate response to it */
 		in_progress->ping_data = in_progress->in_progress_buffer;
@@ -1751,7 +1756,7 @@ out:
 outbadprotocol:
 	reason = REASON_PROTOCOL_ERR;
 outbad:
-	cmnd->state = ISCSI_DEQUEUE;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_DEQUEUE);
 	cmnd->init_task_tag = ALL_ONES;
 	enqueue_reject(conn, reason);
 	goto out;
@@ -1780,7 +1785,7 @@ handle_text_request(struct iscsi_conn *conn,
 	pdu->cmd_sn = ntohl(pdu->cmd_sn);
 	pdu->exp_stat_sn = ntohl(pdu->exp_stat_sn);
 
-	if( (cmnd = get_new_cmnd()) == NULL) {
+	if( (cmnd = get_new_cmnd(session)) == NULL) {
 		return -1;
 	}
 
@@ -1832,7 +1837,7 @@ handle_text_request(struct iscsi_conn *conn,
 			do_text_request(cmnd, conn, session);
 		} else {
 			/* within range but out of order, queue it for later */
-			cmnd->state = ISCSI_QUEUE_OTHER;
+			ISCSI_CHANGE_STATE(cmnd, ISCSI_QUEUE_OTHER);
 		}
 
 		ack_sent_cmnds(conn, cmnd, pdu->exp_stat_sn, 1);
@@ -1888,7 +1893,7 @@ handle_nopout(struct iscsi_conn *conn,
 			/* this is the reply we expected.  Check the LUN and then free
 			 * the cmnd (which should not have any ping data attached to it).
 			 */
-			 cmnd->state = ISCSI_DEQUEUE;
+			 ISCSI_CHANGE_STATE(cmnd, ISCSI_DEQUEUE);
 #if 0
 			 atomic_dec(&conn->outstanding_nopins);
 #endif
@@ -1899,11 +1904,11 @@ handle_nopout(struct iscsi_conn *conn,
 #endif
 	}
 
-	if ((cmnd = get_new_cmnd()) == NULL) {
+	if ((cmnd = get_new_cmnd(session)) == NULL) {
 		return -1;
 	}
 
-	cmnd->state = ISCSI_PING;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_PING);
 	cmnd->conn = conn;
 	cmnd->session = session;
 	cmnd->opcode_byte = pdu->opcode;
@@ -1952,13 +1957,15 @@ handle_nopout(struct iscsi_conn *conn,
 	} else {
 		if (err > 0) {
 			/* within range but out of order, queue it for later */
-			cmnd->state = ISCSI_QUEUE_OTHER;
+			ISCSI_CHANGE_STATE(cmnd, ISCSI_QUEUE_OTHER);
 		}
-		TRACE(DEBUG, "queueing CmdSN %u, ExpCmdSN %u, ITT %u "
-							"opcode 0x%02x, state %u, data_length %u\n",
-							cmnd->cmd_sn, session->exp_cmd_sn,
-							cmnd->init_task_tag, cmnd->opcode_byte, cmnd->state,
-							cmnd->data_length);
+		TRACE(DEBUG, 
+              "queueing CmdSN %u, ExpCmdSN %u, ITT %u "
+              "opcode 0x%02x, state %s, data_length %u\n",
+              cmnd->cmd_sn, session->exp_cmd_sn,
+              cmnd->init_task_tag, cmnd->opcode_byte, 
+              iscsi_state_name(cmnd->state),
+              cmnd->data_length);
 		ack_sent_cmnds(conn, cmnd, pdu->exp_stat_sn, 1);
 	}
 	return 0;
@@ -1991,7 +1998,7 @@ handle_logout(struct iscsi_conn *conn,
 			pdu->init_task_tag, pdu->cmd_sn, pdu->reason & LOGOUT_REASON,
 			pdu->cid);
 
-	if ((cmnd = get_new_cmnd()) == NULL) {
+	if ((cmnd = get_new_cmnd(session)) == NULL) {
 		return -1;
 	}
 
@@ -2032,10 +2039,10 @@ handle_logout(struct iscsi_conn *conn,
 	} else {
 		if (err == 0) {		
 			/* do immediate command or expected non-immediate command now */
-			cmnd->state = ISCSI_LOGOUT;
+			ISCSI_CHANGE_STATE(cmnd, ISCSI_LOGOUT);
 		} else {
 			/* within range but out of order, queue it for later */
-			cmnd->state = ISCSI_QUEUE_OTHER;
+			ISCSI_CHANGE_STATE(cmnd, ISCSI_QUEUE_OTHER);
 		}
 
 		ack_sent_cmnds(conn, cmnd, pdu->exp_stat_sn, 1);
@@ -2468,7 +2475,7 @@ handle_discovery_rsp(SHARED struct iscsi_cmnd *cmnd,
 		/* the text command pdu was not immediate, CmdSN advances */
 		session->max_cmd_sn++;
 	}
-	cmnd->state = next_state;
+	ISCSI_CHANGE_STATE(cmnd, next_state);
     ipc_mutex_unlock(session->cmnd_mutex);
 
 	conn->text_in_progress = next_in_progress;
@@ -2486,7 +2493,7 @@ out:
 	return retval;
 
 out1:
-	cmnd->state = ISCSI_DEQUEUE;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_DEQUEUE);
 	cmnd->init_task_tag = ALL_ONES;
 	conn->text_in_progress = NULL;
 	retval = -1;
@@ -2538,7 +2545,7 @@ ask_for_more_text(SHARED struct iscsi_cmnd *cmnd,
 	}
     ipc_mutex_unlock(session->cmnd_mutex);
 
-	cmnd->state = ISCSI_AWAIT_MORE_TEXT;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_AWAIT_MORE_TEXT);
 
     print_iscsi_command(hdr);
 
@@ -2586,7 +2593,7 @@ handle_logout_rsp(SHARED struct iscsi_cmnd *cmnd,
 	}
 	ipc_mutex_unlock(session->cmnd_mutex);
 
-	cmnd->state = ISCSI_SENT;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_SENT);
 
 	/* connection now logged out, do not send any more commands after this */
 	conn->connection_flags |= CONN_LOGGED_OUT;
@@ -2655,7 +2662,7 @@ handle_nopin(SHARED struct iscsi_cmnd *cmnd,
 
 	if (cmnd->target_xfer_tag == ALL_ONES) {
 		/* target not expecting a reply from initiator */
-		cmnd->state = ISCSI_SENT;
+		ISCSI_CHANGE_STATE(cmnd, ISCSI_SENT);
 	}
 
     print_iscsi_command(hdr);
@@ -2665,10 +2672,12 @@ handle_nopin(SHARED struct iscsi_cmnd *cmnd,
 		return -1;
 	}
 
-	TRACE(DEBUG, "sent NopIn CmdSN %u, ExpCmdSN %u, ITT %u "
-						"opcode 0x%02x, state %u\n",
-						cmnd->cmd_sn, session->exp_cmd_sn,
-						cmnd->init_task_tag, cmnd->opcode_byte, cmnd->state);
+	TRACE(DEBUG, 
+          "sent NopIn CmdSN %u, ExpCmdSN %u, ITT %u "
+          "opcode 0x%02x, state %s\n",
+          cmnd->cmd_sn, session->exp_cmd_sn,
+          cmnd->init_task_tag, cmnd->opcode_byte, 
+          iscsi_state_name(cmnd->state));
 
 	TRACE(NORMAL, "nopin sent");
 
@@ -2716,7 +2725,7 @@ handle_iscsi_mgt_fn_done(SHARED struct iscsi_cmnd *cmnd,
 	}
     ipc_mutex_unlock(session->cmnd_mutex);
 
-	cmnd->state = ISCSI_DEQUEUE;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_DEQUEUE);
 
     print_iscsi_command(&rsp);
 
@@ -2738,7 +2747,7 @@ handle_iscsi_mgt_fn_done(SHARED struct iscsi_cmnd *cmnd,
 
 	/* clear the aborted command struct entry by dequeue routine */
 	if (aborted_command != NULL)
-		aborted_command->state = ISCSI_DEQUEUE;
+		ISCSI_CHANGE_STATE(aborted_command, ISCSI_DEQUEUE);
 
     ipc_mutex_unlock(session->cmnd_mutex);
 
@@ -3051,7 +3060,7 @@ handle_data(struct iscsi_conn *conn,
 
 		/* tell the scsi midlevel that all the expected data has arrived */
         ipc_mutex_lock(session->cmnd_mutex);
-        cmd->state = ISCSI_DATA_IN;
+        ISCSI_CHANGE_STATE(cmd, ISCSI_DATA_IN);
         err = scsi_rx_data(cmd->cmnd);
         ipc_mutex_unlock(session->cmnd_mutex);
             
@@ -3242,7 +3251,7 @@ handle_snack(struct iscsi_conn *conn,
 					else
 						cmd->endsn = pdu->begrun + pdu->runlen - 1;
 					/* signal the tx thread to do the retransmission */
-					cmd->state = ISCSI_DONE;
+					ISCSI_CHANGE_STATE(cmd, ISCSI_DONE);
                     iscsi_tx(conn);
 				}
 			} else if (cmd->state == ISCSI_BUFFER_RDY) {
@@ -3283,7 +3292,7 @@ handle_snack(struct iscsi_conn *conn,
 						  "on SNACK Request\n");
 
 					cmd->retransmit_flg = 1;
-					cmd->state = ISCSI_RESEND_STATUS;
+					ISCSI_CHANGE_STATE(cmd, ISCSI_RESEND_STATUS);
                     iscsi_tx(conn);
 				}
 			}
@@ -3799,7 +3808,7 @@ send_iscsi_response(SHARED struct iscsi_cmnd *cmnd,
 		  cmnd->init_task_tag, cmnd->target_xfer_tag);
 
 	cmnd->retransmit_flg = 0;
-	cmnd->state = ISCSI_SENT;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_SENT);
 
     print_iscsi_command(rsp);
 
@@ -4199,11 +4208,11 @@ handle_iscsi_done(SHARED struct iscsi_cmnd *cmnd,
 	int err = 0;
 	int phase_collapse = 0;
 
-	TRACE(DEBUG, "Enter handle_iscsi_done, cmnd %p, state %d",
-		  cmnd, cmnd->state);
+	TRACE(DEBUG, "Enter handle_iscsi_done, cmnd %x, state %s",
+		  cmnd->uid, iscsi_state_name(cmnd->state));
 
 	if (cmnd->cmnd == NULL) {
-		TRACE_ERROR("cmnd is NULL for cmnd %p\n", cmnd);
+		TRACE_ERROR("cmnd is NULL for cmnd %x\n", cmnd->uid);
 		err = -1;
 		goto out;
 	}
@@ -4211,7 +4220,7 @@ handle_iscsi_done(SHARED struct iscsi_cmnd *cmnd,
 	req = cmnd->cmnd->req;
 
 	if (req == NULL) {
-		TRACE_ERROR("req is NULL for cmnd %p\n", cmnd);
+		TRACE_ERROR("req is NULL for cmnd %x\n", cmnd->uid);
 		err = -1;
 		goto out;
 	}
@@ -4237,14 +4246,14 @@ handle_iscsi_done(SHARED struct iscsi_cmnd *cmnd,
 	/* Separated Response for Error Recovery - SAI */
 	if (cmnd->retransmit_flg) {
 		cmnd->retransmit_flg = 0;
-		cmnd->state = ISCSI_SENT;
+		ISCSI_CHANGE_STATE(cmnd, ISCSI_SENT);
 	} else {
 		if (phase_collapse == 0)
 			err = send_iscsi_response(cmnd, conn, session);
 		else
         {
-			cmnd->state = ISCSI_SENT;
-            TRACE(DEBUG, "setting %p state to SENT", cmnd);
+			ISCSI_CHANGE_STATE(cmnd, ISCSI_SENT);
+            TRACE(DEBUG, "setting %x state to SENT", cmnd->uid);
         }
 	}
 
@@ -4312,14 +4321,15 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
     prev_cmnd = NULL;
     cmnd = session->cmnd_list;
     while (cmnd != NULL) {
-        TRACE(DEBUG, "pick up cmnd %p", cmnd);
+        TRACE(DEBUG, "pick up cmnd %x", cmnd->uid);
         if (cmnd->conn == conn && ++count >= skipover) {
             /* this command is for this connection, handle it */
             if (!(conn->connection_flags & CONN_LOGGED_OUT)) {
-				TRACE(DEBUG, "handle cmnd no. %d, ITT %u, "
-					  "opcode 0x%02x, state %d\n",
-					  count, cmnd->init_task_tag,
-					  cmnd->opcode_byte, cmnd->state);
+				TRACE(DEBUG, "handle cmnd no. %d (uid %x), ITT %u, "
+					  "opcode 0x%02x, state %s\n",
+					  count, cmnd->uid, cmnd->init_task_tag,
+					  cmnd->opcode_byte, 
+                      iscsi_state_name(cmnd->state));
 				TRACE(DEBUG, "ImmData %u, UnsolData %u, data_len %u, "
 					  "data_done %u, r2t_data %d\n",
 					  cmnd->immediate_data_present,
@@ -4501,7 +4511,7 @@ iscsi_xmit_response(Target_Scsi_Cmnd * cmnd)
 	SHARED struct iscsi_cmnd *cmd;
 	SHARED struct iscsi_session *session;
 
-    TRACE(DEBUG, "Transmitting response for %p", cmnd);
+    TRACE(DEBUG, "Transmitting response for SCSI command %d", cmnd->id);
 
 	cmd = search_iscsi_cmnd(cmnd, &session);
 
@@ -4515,9 +4525,9 @@ iscsi_xmit_response(Target_Scsi_Cmnd * cmnd)
 	session->exp_cmd_sn += cmd->cmd_sn_increment;
 	cmd->cmd_sn_increment = 0;
 
-	cmd->state = ISCSI_DONE;
-    TRACE(DEBUG, "%s: setting state of cmd %p to DONE", 
-          __FUNCTION__, cmd);
+	ISCSI_CHANGE_STATE(cmd, ISCSI_DONE);
+    TRACE(DEBUG, "%s: setting state of cmd %x to DONE", 
+          __FUNCTION__, cmd->uid);
 
 	TRACE(NORMAL, "CmdSN %u ITT %u done by target, ExpCmdSN %u",
 					  cmd->cmd_sn, cmd->init_task_tag, session->exp_cmd_sn);
@@ -4558,23 +4568,25 @@ iscsi_rdy_to_xfer(Target_Scsi_Cmnd * cmnd)
 	if (cmd->data_length == 0)
     {
 		/* this command expects no data from initiator, so it is done */
-        TRACE(DEBUG, "%s: setting state of cmd %p to DONE", 
-              __FUNCTION__, cmd);
-		cmd->state = ISCSI_DONE;
+        TRACE(DEBUG, "%s: setting state of cmd %x to DONE", 
+              __FUNCTION__, cmd->uid);
+		ISCSI_CHANGE_STATE(cmd, ISCSI_DONE);
     }
 	else if (cmd->state == ISCSI_QUEUE_CMND)
 		/* this command is queued, now it is queued and ready to receive */
-		cmd->state = ISCSI_QUEUE_CMND_RDY;
+		ISCSI_CHANGE_STATE(cmd, ISCSI_QUEUE_CMND_RDY);
 	else {
 		/* this command is ready to receive data from initiator */
 		if (cmd->state != ISCSI_NEW_CMND) {
 			TRACE_ERROR("iscsi_rdy_to_xfer for CmdSN %u ITT %u opcode 0x%02x"
-						" expected state %u, got state %u, setting state %u\n",
+						" expected state %s, got state %s, setting state %s\n",
 						cmd->cmd_sn, cmd->init_task_tag,
-						cmd->opcode_byte, ISCSI_NEW_CMND, cmd->state,
-						ISCSI_BUFFER_RDY);
+						cmd->opcode_byte, 
+                        iscsi_state_name(ISCSI_NEW_CMND),
+                        iscsi_state_name(cmd->state),
+						iscsi_state_name(ISCSI_BUFFER_RDY));
 		}
-		cmd->state = ISCSI_BUFFER_RDY;
+		ISCSI_CHANGE_STATE(cmd, ISCSI_BUFFER_RDY);
 	}
 
     /** the mutex has been locked in `search_iscsi_cmnd' **/
@@ -4605,7 +4617,7 @@ iscsi_task_mgt_fn_done(Target_Scsi_Message * msg)
 		return;
 	}
 
-	related_command->state = ISCSI_MGT_FN_DONE;
+	ISCSI_CHANGE_STATE(related_command, ISCSI_MGT_FN_DONE);
 
 	/* wake up the transmit thread */
     iscsi_tx(related_command->conn);
@@ -4681,26 +4693,31 @@ do_task_mgt(struct iscsi_conn *conn,
 			TRACE_ERROR("No command with ITT %u\n",
 						cmnd->ref_task_tag);
 			cmnd->response = get_abort_response(conn->session, cmnd);
-			cmnd->state = ISCSI_MGT_FN_DONE;
+			ISCSI_CHANGE_STATE(cmnd, ISCSI_MGT_FN_DONE);
 		} 
         else
         {
 			TRACE_ERROR("Aborting opcode 0x%02x, ITT %u, xfer_len %u, "
-						"data_done %u, r2t_data %d, r2t_sn %u, state %u\n",
+						"data_done %u, r2t_data %d, r2t_sn %u, state %s\n",
 						ref_command->opcode_byte,
 						ref_command->init_task_tag,
 						ref_command->data_length,
 						ref_command->data_done,
 						ref_command->r2t_data,
 						ref_command->r2t_sn,
-						ref_command->state);
+						iscsi_state_name(ref_command->state));
 			cmnd->message = rx_task_mgmt_fn(conn->dev->device,
                                             cmnd->ref_function, ref_command->cmnd);
 			if (!cmnd->message)
             {
 				cmnd->response = FUNCTION_REJECTED;
-				cmnd->state = ISCSI_MGT_FN_DONE;
+				ISCSI_CHANGE_STATE(cmnd, ISCSI_MGT_FN_DONE);
 			}
+            else
+            {
+                scsi_target_process();
+
+            }
 		}
     }
     else if (cmnd->ref_function == TMF_LUN_RESET)
@@ -4712,15 +4729,20 @@ do_task_mgt(struct iscsi_conn *conn,
         if (!cmnd->message)
         {
             cmnd->response = FUNCTION_REJECTED;
-            cmnd->state = ISCSI_MGT_FN_DONE;
+            ISCSI_CHANGE_STATE(cmnd, ISCSI_MGT_FN_DONE);
+        }
+        else
+        {
+            scsi_target_process();
         }
     }
 	else 
     {
 		/* we don't deal with this task management function (yet) */
 		cmnd->response = TASK_MANAGEMENT_FUNCTION_NOT_SUPPORTED;
-		cmnd->state = ISCSI_MGT_FN_DONE;
+		ISCSI_CHANGE_STATE(cmnd, ISCSI_MGT_FN_DONE);
 	}
+    iscsi_tx(cmnd->conn);
 }
 
 
@@ -4754,22 +4776,22 @@ deliver_queue_other(SHARED struct iscsi_cmnd *cmnd, SHARED struct iscsi_session 
 			/* NopOut pdu was not immediate, CmdSN was advanced */
 			session->max_cmd_sn++;
 			ZSHFREE(cmnd->ping_data);
-			cmnd->state = ISCSI_DEQUEUE;
+			ISCSI_CHANGE_STATE(cmnd, ISCSI_DEQUEUE);
 		} else {
-			cmnd->state = ISCSI_PING;
+			ISCSI_CHANGE_STATE(cmnd, ISCSI_PING);
 			TRACE(DEBUG, "ping back CmdSN %u, ExpCmdSN %u, ITT %u"
-							   " opcode 0x%02x, state %u, data_length "
+							   " opcode 0x%02x, state %s, data_length "
 							   "%u\n",
 								cmnd->cmd_sn, session->exp_cmd_sn,
 								cmnd->init_task_tag, cmnd->opcode_byte,
-								cmnd->state, cmnd->data_length);
+								iscsi_state_name(cmnd->state), cmnd->data_length);
 		}
 	} else if (opcode == ISCSI_INIT_TEXT_CMND) {
 		/* this was an out-of-order Text Request */
 		do_text_request(cmnd, cmnd->conn, session);
 	} else if (opcode == ISCSI_INIT_LOGOUT_CMND) {
 		/* this was an out-of-order Logout Request */
-		cmnd->state = ISCSI_LOGOUT;
+		ISCSI_CHANGE_STATE(cmnd, ISCSI_LOGOUT);
 	} else if (opcode == ISCSI_INIT_TASK_MGMT_CMND) {
 		/* this was an out-of-order Task Management Request */
 		do_task_mgt(cmnd->conn, cmnd);
@@ -4935,13 +4957,14 @@ ack_sent_cmnds(struct iscsi_conn *conn,
 		if (temp->conn == conn) {
 			count++;
 			if (temp->state == ISCSI_SENT) {
-                TRACE(DEBUG, "%p is in sent state", temp);
+                TRACE(DEBUG, "%x is in sent state", temp->uid);
 				delta = temp->stat_sn - exp_stat_sn;
 				if (delta < 0) {
 					TRACE(DEBUG, "set dequeue command statsn %d, "
-						  "received exp_stat_sn %d, command state %d\n",
-						  temp->stat_sn, exp_stat_sn, temp->state);
-					temp->state = ISCSI_DEQUEUE;
+						  "received exp_stat_sn %d, command state %s\n",
+						  temp->stat_sn, exp_stat_sn, 
+                          iscsi_state_name(temp->state));
+					ISCSI_CHANGE_STATE(temp, ISCSI_DEQUEUE);
 					changed_something = TRUE;
 				}
 			}
@@ -4953,9 +4976,10 @@ ack_sent_cmnds(struct iscsi_conn *conn,
 
 	if (add_cmnd_to_queue) {
 		/* Add this command to the queue */
-		TRACE(DEBUG, "add command %p to queue, ITT %u, CmdSN %u, "
-			  "state %d, count %d\n", cmnd, cmnd->init_task_tag,
-			  cmnd->cmd_sn, cmnd->state, count);
+		TRACE(DEBUG, "add command %x to queue, ITT %x, CmdSN %u, "
+			  "state %s, count %d\n", cmnd->uid, cmnd->init_task_tag,
+			  cmnd->cmd_sn, 
+              iscsi_state_name(cmnd->state), count);
 		count++;
 		if (temp)
 			temp->next = cmnd;
@@ -5052,13 +5076,13 @@ send_unsolicited_data(SHARED struct iscsi_cmnd *cmd,
 
 	if (cmd->data_done >= cmd->data_length) {
 		/* already read all the data, which was all unsolicited */
-		cmd->state = ISCSI_DATA_IN;
+		ISCSI_CHANGE_STATE(cmd, ISCSI_DATA_IN);
 		if ((err = scsi_rx_data(cmd->cmnd)) < 0) {
 			TRACE_ERROR("scsi_rx_data returned an error\n");
 		}
 	} else {
 		/* more data left to read, which is all solicited */
-		cmd->state = ISCSI_BUFFER_RDY;
+		ISCSI_CHANGE_STATE(cmd, ISCSI_BUFFER_RDY);
 		err = 0;
 	}
 
@@ -5091,7 +5115,7 @@ out_of_order_cmnd(struct iscsi_conn *conn,
 	}
 
 	shmemcpy(cmnd->hdr, buffer, ISCSI_HDR_LEN);
-	cmnd->state = ISCSI_QUEUE_CMND;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_QUEUE_CMND);
 
 	/* last param is 0 (don't queue) if cmnd is out of range (err == -1) */
 	ack_sent_cmnds(conn, cmnd, hdr->exp_stat_sn, err+1);
@@ -5140,7 +5164,7 @@ handle_cmnd(struct iscsi_conn *conn,
 		TRACE_WARNING("DSL %u too big\n", pdu->length);
 	}
 
-	if( (cmnd = get_new_cmnd()) == NULL) {
+	if( (cmnd = get_new_cmnd(session)) == NULL) {
 		err = -1;
 		goto out;
 	}
@@ -5238,8 +5262,9 @@ handle_cmnd(struct iscsi_conn *conn,
 
 		/* state MUST now be ISCSI_BUFFER_RDY !*/
 		if (cmnd->state != ISCSI_BUFFER_RDY) {
-			TRACE_ERROR("got cmnd->state %u, expected %u\n",
-						cmnd->state, ISCSI_BUFFER_RDY);
+			TRACE_ERROR("got cmnd->state %s, expected %s\n",
+						iscsi_state_name(cmnd->state), 
+                        iscsi_state_name(ISCSI_BUFFER_RDY));
 		}
 
 		/* now read immediate data directly into midlevel buffers */
@@ -5277,10 +5302,10 @@ handle_cmnd(struct iscsi_conn *conn,
 				free_range_list(&cmnd->pdu_range_list);
 			}
 
-			TRACE(DEBUG, "%d received for cmnd %p", pdu->length, cmnd);
+            TRACE(DEBUG, "%d received for cmnd %x", pdu->length, cmnd->uid);
 
             ipc_mutex_lock(session->cmnd_mutex);
-            cmnd->state = ISCSI_DATA_IN;
+            ISCSI_CHANGE_STATE(cmnd, ISCSI_DATA_IN);
             err = scsi_rx_data(cmnd->cmnd);
             ipc_mutex_unlock(session->cmnd_mutex);
 
@@ -5297,7 +5322,7 @@ out:
 
 out2:
 	/* here for errors that are detected after cmnd is added to queue */
-	cmnd->state = ISCSI_DEQUEUE;
+	ISCSI_CHANGE_STATE(cmnd, ISCSI_DEQUEUE);
 	goto out;
     return 0;
 }
@@ -5352,7 +5377,7 @@ handle_task_mgt_command(struct iscsi_conn *conn,
 					pdu->ref_task_tag, ALL_ONES, pdu->function);
 	}
 
-	if( (cmnd = get_new_cmnd()) == NULL) {
+	if( (cmnd = get_new_cmnd(session)) == NULL) {
 		err = -1;
 		goto out;
 	}
@@ -5396,13 +5421,15 @@ handle_task_mgt_command(struct iscsi_conn *conn,
 	} else {
 		if (err > 0) {		
 			/* within range but out of order, queue it for later */
-			cmnd->state = ISCSI_QUEUE_OTHER;
-		} else {
-			/* is immediate command or expected non-immediate command */
-			do_task_mgt(conn, cmnd);
+			ISCSI_CHANGE_STATE(cmnd, ISCSI_QUEUE_OTHER);
 		}
 
 		ack_sent_cmnds(conn, cmnd, pdu->exp_stat_sn, 1);
+        if (err == 0)
+        {
+			/* is immediate command or expected non-immediate command */
+			do_task_mgt(conn, cmnd);
+        }
 	}
 	err = 0;
 out:
