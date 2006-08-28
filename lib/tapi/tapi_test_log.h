@@ -53,7 +53,7 @@ extern "C" {
  * Terminate a test with failure status. It is assumed that error is
  * already reported.
  */
-#define TEST_STOP       (TAPI_JMP_DO(TE_ETESTFAIL))
+#define TEST_STOP       (TAPI_JMP_DO(TE_EFAIL))
 
 /**
  * Terminate a test with failure status, report an error.

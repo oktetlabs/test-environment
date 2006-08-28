@@ -35,7 +35,7 @@
 #ifndef MACRO_ERROR_EXIT
 
 /** Cleanup on test exit */
-#define MACRO_ERROR_EXIT        (TAPI_JMP_DO(TE_ETESTFAIL))
+#define MACRO_ERROR_EXIT        (TAPI_JMP_DO(TE_EFAIL))
 #endif
 
 #ifndef MACRO_TEST_ERROR
