@@ -99,7 +99,7 @@ tester_global_init(tester_global *global)
     global->rand_seed = (unsigned int)time(NULL);
 
     /* By default verbosity level is set to 1 */
-    global->flags |= TESTER_VERBOSE;
+    global->flags |= TESTER_VERBOSE | TESTER_NO_TRC;
 
     TAILQ_INIT(&global->cfgs);
     TAILQ_INIT(&global->suites);
@@ -365,12 +365,16 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     global->flags |= TESTER_VVERB;
                 else if (!(global->flags & TESTER_VVVERB))
                     global->flags |= TESTER_VVVERB;
+                else if (!(global->flags & TESTER_VVVVERB))
+                    global->flags |= TESTER_VVVVERB;
                 else
                     WARN("Extra 'verbose' option is ignored");
                 break;
 
             case TESTER_OPT_QUIET:
-                if (global->flags & TESTER_VVVERB)
+                if (global->flags & TESTER_VVVVERB)
+                    global->flags &= ~TESTER_VVVVERB;
+                else if (global->flags & TESTER_VVVERB)
                     global->flags &= ~TESTER_VVVERB;
                 else if (global->flags & TESTER_VVERB)
                     global->flags &= ~TESTER_VVERB;
