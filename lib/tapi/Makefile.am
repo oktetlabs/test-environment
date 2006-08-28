@@ -37,7 +37,8 @@ libtapi_la_SOURCES = \
 	tapi_cfg_vtund.c \
 	tapi_cfg_ip6.c \
 	tapi_cfg_stats.c \
-	tapi_file.c
+	tapi_file.c \
+	verdict.c
 
 
 install-exec-hook:

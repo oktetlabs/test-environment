@@ -74,7 +74,10 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define RING_VERDICT(fmt...) \
-    TE_LOG_RING(TE_LOG_CMSG_USER, fmt)
+    do {                                        \
+        TE_LOG_RING(TE_LOG_CMSG_USER, fmt);     \
+        te_test_verdict(fmt);                   \
+    } while (0)
 
 /**
  * Macro should be used to output verdict with WARN log level from tests.
@@ -82,7 +85,10 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define WARN_VERDICT(fmt...) \
-    TE_LOG_WARN(TE_LOG_CMSG_USER, fmt)
+    do {                                        \
+        TE_LOG_WARN(TE_LOG_CMSG_USER, fmt);     \
+        te_test_verdict(fmt);                   \
+    } while (0)
 
 /**
  * Macro should be used to output verdict with ERROR log level from tests.
@@ -90,7 +96,10 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define ERROR_VERDICT(fmt...) \
-    TE_LOG_ERROR(TE_LOG_CMSG_USER, fmt)
+    do {                                        \
+        TE_LOG_ERROR(TE_LOG_CMSG_USER, fmt);    \
+        te_test_verdict(fmt);                   \
+    } while (0)
 
 /**
  * Terminate a test with failure status, report an error as verdict.
@@ -98,11 +107,20 @@ extern "C" {
  * @param fmt       error message format string with parameters
  */
 #define TEST_VERDICT(fmt...) \
-    do {                    \
-        ERROR_VERDICT(fmt); \
-        TEST_STOP;          \
+    do {                        \
+        ERROR_VERDICT(fmt);     \
+        TEST_STOP;              \
     } while (0)
 
+
+/**
+ * Compose test verdict message and send it to Tester.
+ *
+ * @param fmt           printf()-like format string with TE extensions
+ *
+ * @note The function uses @e te_test_id global variable.
+ */
+extern void te_test_verdict(const char *fmt, ...);
 
 #ifdef __cplusplus
 } /* extern "C" */
