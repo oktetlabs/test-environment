@@ -57,12 +57,13 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "logger_api.h"
+#include "te_test_result.h"
 
 #include "tester_flags.h"
 #include "tester_term.h"
 
 
-/** Log, if the result is not zero. */
+/** Log, if the status is not zero. */
 #define CHECK_RC_ZERO(_x) \
     do {                            \
         int _rc = (_x);             \
@@ -107,6 +108,132 @@ static size_t  prev_len = 0;
 
 #endif
 
+/**
+ * How to output colored verdict on terminal?
+ */
+typedef struct colored_verdict_data {
+    int         color;
+    const char *text;
+    const char *no_color_text;
+} colored_verdict_data;
+
+/**
+ * Types of situations when verdict is generated.
+ */
+typedef enum colored_verdict_type {
+    COLORED_VERDICT_NO_TRC = 0,
+    COLORED_VERDICT_TRC_UNKNOWN,
+    COLORED_VERDICT_TRC_UNEXP,
+    COLORED_VERDICT_TRC_EXP,
+    COLORED_VERDICT_TRC_EXP_VERB,
+    COLORED_VERDICT_MAX
+} colored_verdict_type;
+
+/** Colored verdict when TRC is not used? */
+static const colored_verdict_data colored_verdicts[TE_TEST_STATUS_MAX]
+                                                  [COLORED_VERDICT_MAX] = {
+
+    { { COLOR_CYAN,             "INCOMPLETE",   "INCOMPLETE" },
+      { COLOR_CYAN,             "INCOMPLETE?",  "INCOMPLETE?" },
+      { COLOR_CYAN,             "INCOMPLETE",   "INCOMPLETE" },
+      { COLOR_CYAN,             "INCOMPLETE",   "INCOMPLETE" },
+      { COLOR_CYAN,             "INCOMPLETE",   "INCOMPLETE" } },
+
+    { { COLOR_CYAN,             "EMPTY",        "empty" },
+      { COLOR_CYAN,             "EMPTY?",       "empty?" },
+      { COLOR_CYAN,             "EMPTY",        "empty" },
+      { COLOR_CYAN,             "EMPTY",        "empty" },
+      { COLOR_CYAN,             "EMPTY",        "empty" } },
+
+    { { A_STANDOUT,             "SKIPPED",      "SKIPPED" },
+      { A_STANDOUT,             "SKIPPED?",     "SKIPPED?" },
+      { A_STANDOUT,             "SKIPPED",      "SKIPPED" },
+      { A_STANDOUT,             "OK",           "OK" },
+      { A_STANDOUT,             "OK skipped",   "OK skipped" } },
+
+    { { COLOR_CYAN,             "FAKED",        "faked" },
+      { COLOR_CYAN,             "FAKED?",       "faked?" },
+      { COLOR_CYAN,             "FAKED",        "faked" },
+      { COLOR_CYAN,             "FAKED",        "faked" },
+      { COLOR_CYAN,             "FAKED",        "faked" } },
+
+    { { COLOR_GREEN,            "PASSED",       "passed" },
+      { COLOR_RED,              "PASSED?",      "passed?" },
+      { COLOR_RED,              "PASSED",       "passed" },
+      { COLOR_GREEN,            "OK",           "OK" },
+      { COLOR_GREEN,            "OK PASSED",    "OK passed" } },
+
+    { { COLOR_RED,              "FAILED",       "FAILED" },
+      { COLOR_RED,              "FAILED?",      "FAILED?" },
+      { COLOR_RED,              "FAILED",       "FAILED" },
+      { COLOR_GREEN,            "OK",           "OK" },
+      { COLOR_GREEN,            "OK FAILED",    "OK failed" } },
+
+    { { COLOR_YELLOW,           "NOT FOUND",    "NOT FOUND" },
+      { COLOR_YELLOW,           "NOT FOUND?",   "NOT FOUND?" },
+      { COLOR_YELLOW,           "NOT FOUND",    "NOT FOUND" },
+      { COLOR_YELLOW,           "NOT FOUND",    "NOT FOUND" },
+      { COLOR_YELLOW,           "NOT FOUND",    "NOT FOUND" } },
+
+    /* Unexpected configuration changes */
+    { { COLOR_YELLOW,           "DIRTY",        "DIRTY" },
+      { COLOR_YELLOW,           "DIRTY?",       "DIRTY?" },
+      { COLOR_YELLOW,           "DIRTY",        "DIRTY" },
+      { COLOR_YELLOW,           "DIRTY",        "DIRTY" },
+      { COLOR_YELLOW,           "DIRTY",        "DIRTY" } },
+
+    { { COLOR_MAGENTA,          "KILLED",       "KILLED" },
+      { COLOR_MAGENTA,          "KILLED?",      "KILLED?" },
+      { COLOR_MAGENTA,          "KILLED",       "KILLED" },
+      { COLOR_MAGENTA,          "KILLED",       "KILLED" },
+      { COLOR_MAGENTA,          "KILLED",       "KILLED" } },
+
+    { { COLOR_MAGENTA,          "CORED",        "CORED" },
+      { COLOR_MAGENTA,          "CORED?",       "CORED?" },
+      { COLOR_MAGENTA,          "CORED",        "CORED" },
+      { COLOR_MAGENTA,          "CORED",        "CORED" },
+      { COLOR_MAGENTA,          "CORED",        "CORED" } },
+
+    /* Prologue failed */
+    { { COLOR_YELLOW,           "FAILED",       "FAILED" },
+      { COLOR_YELLOW,           "FAILED?",      "FAILED?" },
+      { COLOR_YELLOW,           "FAILED",       "FAILED" },
+      { COLOR_YELLOW,           "FAILED",       "FAILED" },
+      { COLOR_YELLOW,           "FAILED",       "FAILED" } },
+
+    /* Epilogue failed */
+    { { COLOR_BLUE,             "FAILED",       "FAILED" },
+      { COLOR_BLUE,             "FAILED?",      "FAILED?" },
+      { COLOR_BLUE,             "FAILED",       "FAILED" },
+      { COLOR_BLUE,             "FAILED",       "FAILED" },
+      { COLOR_BLUE,             "FAILED",       "FAILED" } },
+
+    /* Keep-alive validation handler failed */
+    { { COLOR_BLUE,             "FAILED",       "FAILED" },
+      { COLOR_BLUE,             "FAILED?",      "FAILED?" },
+      { COLOR_BLUE,             "FAILED",       "FAILED" },
+      { COLOR_BLUE,             "FAILED",       "FAILED" },
+      { COLOR_BLUE,             "FAILED",       "FAILED" } },
+
+    /* Exception handler failed */
+    { { COLOR_BLUE,             "FAILED",       "FAILED" },
+      { COLOR_BLUE,             "FAILED?",      "FAILED?" },
+      { COLOR_BLUE,             "FAILED",       "FAILED" },
+      { COLOR_BLUE,             "FAILED",       "FAILED" },
+      { COLOR_BLUE,             "FAILED",       "FAILED" } },
+
+    { { COLOR_BLUE,             "STOPPED",       "STOPPED" },
+      { COLOR_BLUE,             "STOPPED?",      "STOPPED?" },
+      { COLOR_BLUE,             "STOPPED",       "STOPPED" },
+      { COLOR_BLUE,             "STOPPED",       "STOPPED" },
+      { COLOR_BLUE,             "STOPPED",       "STOPPED" } },
+
+    { { COLOR_RED | A_BLINK,    "ERROR",        "ERROR" },
+      { COLOR_RED | A_BLINK,    "ERROR?",       "ERROR?" },
+      { COLOR_RED | A_BLINK,    "ERROR",        "ERROR" },
+      { COLOR_RED | A_BLINK,    "ERROR",        "ERROR" },
+      { COLOR_RED | A_BLINK,    "ERROR",        "ERROR" } }
+};
 
 /**
  * Return string by run item type.
@@ -131,24 +258,24 @@ run_item_type_to_string(run_item_type type)
  * Colored output.
  */
 static void
-colored_verdict(int color, const char *text)
+colored_verdict(const colored_verdict_data *what)
 {
 #ifdef HAVE_COLOR
     if (term == TESTER_TERM_UNKNOWN)
     {
-        fputs(text, stdout);
+        fputs(what->no_color_text, stdout);
         fputc('\n', stdout);
     }
     else
     {
-        putp(tparm(tigetstr("setaf"), color));
-        fputs(text, stdout);
+        putp(tparm(tigetstr("setaf"), what->color));
+        fputs(what->text, stdout);
         putp(tparm(tigetstr("sgr0")));
         fputc('\n', stdout);
     }
 #else
     UNUSED(color);
-    fputs(text, stdout);
+    fputs(what->no_color_text, stdout);
     fputc('\n', stdout);
 #endif
 }
@@ -163,10 +290,10 @@ tester_term_out_start(unsigned int flags, run_item_type type,
     char msg[256];
 
     if ((~flags & TESTER_VERBOSE) ||
-        ((~flags & TESTER_VVERB) && (type == RUN_ITEM_SESSION)))
+        ((~flags & TESTER_VVVERB) && (type == RUN_ITEM_SESSION)))
         return;
 
-    if (flags & TESTER_VVERB)
+    if (flags & TESTER_VVVERB)
     {
         if (snprintf(ids, sizeof(ids), " %d:%d", parent, self) >=
                 (int)sizeof(ids))
@@ -213,17 +340,18 @@ void
 tester_term_out_done(unsigned int flags,
                      run_item_type type, const char *name,
                      test_id parent, test_id self,
-                     te_errno result, trc_verdict trcv)
+                     te_test_status status, trc_verdict trcv)
 {
-    char        ids[20] = "";
-    char        msg_out[256];
-    char        msg_in[256];
-    char       *msg;
-    int         color = 0; /* To avoid varnings for non-color build */
-    const char *verdict;
+    char                    ids[20] = "";
+    char                    msg_out[256];
+    char                    msg_in[256];
+    char                   *msg;
+    colored_verdict_type    cvt;
+
+    assert(status < TE_TEST_STATUS_MAX);
 
     if ((~flags & TESTER_VERBOSE) ||
-        ((~flags & TESTER_VVERB) && (type == RUN_ITEM_SESSION)))
+        ((~flags & TESTER_VVVERB) && (type == RUN_ITEM_SESSION)))
         return;
 
     fflush(stdout);
@@ -259,7 +387,7 @@ tester_term_out_done(unsigned int flags,
     }
 #endif
 
-    if (flags & TESTER_VVERB)
+    if (flags & TESTER_VVVERB)
     {
         if (snprintf(ids, sizeof(ids), " %d:%d", parent, self) >=
                 (int)sizeof(ids))
@@ -293,86 +421,30 @@ tester_term_out_done(unsigned int flags,
         msg_in[n_spaces] = '\0';
     }
 
-    /* Map result to color and verdict */
-    if (TE_RC_GET_ERROR(result) == TE_ETESTPASS)
+    if (flags & TESTER_NO_TRC)
     {
-        verdict = tester_verdict_passed;
-#ifdef HAVE_COLOR
-        color = COLOR_GREEN;
-#endif
+        cvt = COLORED_VERDICT_NO_TRC;
     }
     else
     {
-        switch (TE_RC_GET_ERROR(result))
+        switch (trcv)
         {
-            case TE_ETESTKILL:
-                verdict = "KILLED";
-#ifdef HAVE_COLOR
-                color = COLOR_MAGENTA;
-#endif
+            case TRC_VERDICT_UNKNOWN:
+                cvt = COLORED_VERDICT_TRC_UNKNOWN;
                 break;
 
-            case TE_ETESTCORE:
-                verdict = "CORED";
-#ifdef HAVE_COLOR
-                color = COLOR_MAGENTA;
-#endif
+            case TRC_VERDICT_UNEXPECTED:
+                cvt = COLORED_VERDICT_TRC_UNEXP;
                 break;
 
-            case TE_ETESTSKIP:
-                verdict = "SKIPPED";
-#ifdef HAVE_COLOR
-                color = A_STANDOUT;
-#endif
-                break;
-
-            case TE_ETESTFAKE:
-                verdict = "FAKED";
-#ifdef HAVE_COLOR
-                color = COLOR_CYAN;
-#endif
-                break;
-
-            case TE_ETESTEMPTY:
-                verdict = "EMPTY";
-#ifdef HAVE_COLOR
-                color = COLOR_CYAN;
-#endif
+            case TRC_VERDICT_EXPECTED:
+                cvt = (flags & TESTER_VVERB) ?
+                           COLORED_VERDICT_TRC_EXP_VERB :
+                           COLORED_VERDICT_TRC_EXP;
                 break;
 
             default:
-            {
-                verdict = "FAILED";
-#ifdef HAVE_COLOR
-                switch (TE_RC_GET_ERROR(result))
-                {
-                    case TE_ETESTFAIL:
-                        color = COLOR_RED;
-                        break;
-
-                    case TE_ETESTCONF:
-                        color = COLOR_YELLOW;
-                        break;
-
-                    case TE_ETESTPROLOG:
-                        color = COLOR_YELLOW;
-                        break;
-
-                    case TE_ETESTEPILOG:
-                        color = COLOR_YELLOW;
-                        break;
-
-                    case TE_ETESTUNEXP:
-                        color = COLOR_BLUE;
-                        break;
-
-                    default:
-                        color = COLOR_BLUE;
-                        break;
-                }
-#endif
-                break;
-            }
+                assert(FALSE);
         }
     }
 
@@ -386,7 +458,7 @@ tester_term_out_done(unsigned int flags,
     {
         ERROR("Write to 'stdout' failed");
     }
-    colored_verdict(color, verdict);
+    colored_verdict(&colored_verdicts[status][cvt]);
     fflush(stdout);
     
     prev_id = -1;

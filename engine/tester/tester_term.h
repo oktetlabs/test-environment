@@ -32,6 +32,7 @@
 #define __TE_TESTER_TERM_H__
 
 #include "te_errno.h"
+#include "te_test_result.h"
 
 #include "tester_defs.h"
 
@@ -60,13 +61,13 @@ extern void tester_term_out_start(unsigned int flags,
  * @param name      Name of the test
  * @param parent    Parent ID
  * @param self      Self ID of the test
- * @param result    Test result
+ * @param status    Test status 
  * @param trcv      TRC result
  */
 extern void tester_term_out_done(unsigned int flags,
                                  run_item_type type, const char *name,
                                  test_id parent, test_id self,
-                                 te_errno result, trc_verdict trcv);
+                                 te_test_status status, trc_verdict trcv);
 
 /**
  * Cleanup curses structures to make valgrind happy. Should not be called

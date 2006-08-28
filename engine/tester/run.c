@@ -81,11 +81,6 @@
 /** Size of the bulk used to allocate space for a string */
 #define TESTER_STR_BULK 64
 
-/** Is return code a test result or TE error? */
-#define TEST_RESULT(_rc) \
-    (((TE_RC_GET_ERROR(_rc)) >= TE_ETESTRESULTMIN) && \
-     (TE_RC_GET_ERROR(_rc) <= TE_ETESTRESULTMAX))
-
 /** Print string which may be NULL. */
 #define PRINT_STRING(_str)  ((_str) ? : "")
 
@@ -205,7 +200,7 @@ tester_ctx_clone(const tester_ctx *ctx)
 
     new_ctx->group_result.id = ctx->group_result.id;
     te_test_result_init(&new_ctx->group_result.result);
-    new_ctx->group_result.result.status = TE_RC(TE_TESTER, TE_ETESTEMPTY);
+    new_ctx->group_result.result.status = TE_TEST_EMPTY;
 
     new_ctx->current_result.id = ctx->current_result.id;
     te_test_result_init(&new_ctx->current_result.result);
@@ -252,7 +247,7 @@ tester_run_new_ctx(tester_run_data *data)
 
     new_ctx->group_result.id = tester_get_id();
     te_test_result_init(&new_ctx->group_result.result);
-    new_ctx->group_result.result.status = TE_RC(TE_TESTER, TE_ETESTEMPTY);
+    new_ctx->group_result.result.status = TE_TEST_EMPTY;
 
     /* new_ctx->current_result.id = 0; */
     te_test_result_init(&new_ctx->current_result.result);
@@ -339,17 +334,14 @@ tester_run_destroy_ctx(tester_run_data *data)
  *
  * @return Updated group status.
  */
-static te_errno
-tester_group_status(te_errno group_status, te_errno iter_status)
+static te_test_status 
+tester_group_status(te_test_status group_status,
+                    te_test_status iter_status)
 {
-    if (!TEST_RESULT(iter_status))
+    if (group_status < iter_status)
     {
-        group_status = iter_status;
-    }
-    else if (group_status < iter_status)
-    {
-        if (TE_RC_GET_ERROR(iter_status) == TE_ETESTSRCH)
-            group_status = TE_RC(TE_TESTER, TE_ETESTFAIL);
+        if (iter_status == TE_TEST_SEARCH)
+            group_status = TE_TEST_FAILED;
         else
             group_status = iter_status;
     }
@@ -551,94 +543,92 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
  * @param result    Test result
  */
 static void
-log_test_result(test_id parent, test_id test, int result)
+log_test_result(test_id parent, test_id test, te_test_status status)
 {
-    if (TE_RC_GET_ERROR(result) == TE_ETESTPASS)
+    switch (status)
     {
-        TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "PASSED",
-                    parent, test);
-    }
-    else
-    {
-        switch (TE_RC_GET_ERROR(result))
+        case TE_TEST_PASSED:
+            TE_LOG_RING(TESTER_CONTROL,
+                        TESTER_CONTROL_MSG_PREFIX "PASSED",
+                        parent, test);
+            break;
+
+        case TE_TEST_SKIPPED:
+            TE_LOG_RING(TESTER_CONTROL,
+                        TESTER_CONTROL_MSG_PREFIX "SKIPPED",
+                        parent, test);
+            break;
+
+        case TE_TEST_FAKED:
+            TE_LOG_RING(TESTER_CONTROL,
+                        TESTER_CONTROL_MSG_PREFIX "FAKED",
+                        parent, test);
+            break;
+
+        case TE_TEST_EMPTY:
+            TE_LOG_RING(TESTER_CONTROL,
+                        TESTER_CONTROL_MSG_PREFIX "EMPTY",
+                        parent, test);
+            break;
+
+        default:
         {
-            case TE_ETESTKILL:
-                TE_LOG_RING(TESTER_CONTROL,
-                            TESTER_CONTROL_MSG_PREFIX "KILLED",
-                            parent, test);
-                break;
+            const char *reason;
 
-            case TE_ETESTCORE:
-                TE_LOG_RING(TESTER_CONTROL,
-                            TESTER_CONTROL_MSG_PREFIX "CORED",
-                            parent, test);
-                break;
-
-            case TE_ETESTSKIP:
-                TE_LOG_RING(TESTER_CONTROL,
-                            TESTER_CONTROL_MSG_PREFIX "SKIPPED",
-                            parent, test);
-                break;
-
-            case TE_ETESTFAKE:
-                TE_LOG_RING(TESTER_CONTROL,
-                            TESTER_CONTROL_MSG_PREFIX "FAKED",
-                            parent, test);
-                break;
-
-            case TE_ETESTEMPTY:
-                TE_LOG_RING(TESTER_CONTROL,
-                            TESTER_CONTROL_MSG_PREFIX "EMPTY",
-                            parent, test);
-                break;
-
-            default:
+            switch (status)
             {
-                const char *reason;
+                case TE_TEST_FAILED:
+                    reason = "";
+                    break;
 
-                switch (TE_RC_GET_ERROR(result))
-                {
-                    case TE_ETESTFAIL:
-                        /* TODO Reason from test */
-                        reason = "";
-                        break;
+                case TE_TEST_DIRTY:
+                    reason = "Unexpected configuration changes";
+                    break;
 
-                    case TE_ETESTCONF:
-                        reason = "Unexpected configuration changes";
-                        break;
+                case TE_TEST_SEARCH:
+                    reason = "Executable not found";
+                    break;
 
-                    case TE_ETESTSRCH:
-                        reason = "Executable not found";
-                        break;
+                case TE_TEST_KILLED:
+                    reason = "Test application died";
+                    break;
 
-                    case TE_ETESTPROLOG:
-                        reason = "Session prologue failed";
-                        break;
+                case TE_TEST_CORED:
+                    reason = "Test application core dumped";
+                    break;
 
-                    case TE_ETESTEPILOG:
-                        reason = "Session epilogue failed";
-                        break;
+                case TE_TEST_PROLOG:
+                    reason = "Session prologue failed";
+                    break;
 
-                    case TE_ETESTALIVE:
-                        reason = "Keep-alive validation failed";
-                        break;
+                case TE_TEST_EPILOG:
+                    reason = "Session epilogue failed";
+                    break;
 
-                    case TE_ETESTEXCEPT:
-                        reason = "Exception handler failed";
-                        break;
+                case TE_TEST_KEEPALIVE:
+                    reason = "Keep-alive validation failed";
+                    break;
 
-                    case TE_ETESTUNEXP:
-                        reason = "Unexpected failure type";
-                        break;
+                case TE_TEST_EXCEPTION:
+                    reason = "Exception handler failed";
+                    break;
 
-                    default:
-                        reason = "Unknown test result";
-                }
-                TE_LOG_RING(TESTER_CONTROL,
-                            TESTER_CONTROL_MSG_PREFIX "FAILED %s",
-                            parent, test, reason);
-                break;
+                case TE_TEST_STOPPED:
+                    reason = "Terminated by user";
+                    break;
+
+                case TE_TEST_INCOMPLETE:
+                case TE_TEST_ERROR:
+                    reason = "Internal error";
+                    break;
+
+                default:
+                    assert(FALSE);
             }
+            TE_LOG_RING(TESTER_CONTROL,
+                        TESTER_CONTROL_MSG_PREFIX "FAILED %s",
+                        parent, test, reason);
+            break;
         }
     }
 }
@@ -647,20 +637,20 @@ log_test_result(test_id parent, test_id test, int result)
 /**
  * Run test script in provided context with specified parameters.
  *
- * @param exec_id       Test execution ID
  * @param script        Test script to run
+ * @param exec_id       Test execution ID
  * @param n_args        Number of arguments
  * @param args          Arguments to be passed
  * @param flags         Flags
+ * @param status        Location for test status
  *
  * @return Status code.
  */
 static te_errno
 run_test_script(test_script *script, test_id exec_id,
                 const unsigned int n_args, const test_iter_arg *args,
-                const unsigned int flags)
+                const unsigned int flags, te_test_status *status)
 {
-    te_errno    result = 0;
     int         ret;
     char       *params_str = NULL;
     char       *cmd = NULL;
@@ -668,6 +658,8 @@ run_test_script(test_script *script, test_id exec_id,
     char        gdb_init[32] = "";
     char        postfix[32] = "";
     char        vg_filename[32] = "";
+
+    assert(status != NULL);
 
     ENTRY("name=%s exec_id=%u n_args=%u arg=%p flags=0x%x",
           script->name, exec_id, n_args, args, flags);
@@ -769,7 +761,7 @@ run_test_script(test_script *script, test_id exec_id,
 
     if (flags & TESTER_FAKE)
     {
-        result = TE_RC(TE_TESTER, TE_ETESTFAKE);
+        *status = TE_TEST_FAKED;
     }
     else
     {
@@ -786,14 +778,14 @@ run_test_script(test_script *script, test_id exec_id,
         if (WCOREDUMP(ret))
         {
             ERROR("Command '%s' executed in shell dumped core", cmd);
-            result = TE_RC(TE_TESTER, TE_ETESTCORE);
+            *status = TE_TEST_CORED;
         }
 #endif
         if (WIFSIGNALED(ret))
         {
             if (WTERMSIG(ret) == SIGINT)
             {
-                result = TE_RC(TE_TESTER, TE_ESHUTDOWN);
+                *status = TE_TEST_STOPPED;
                 ERROR("ID=%d was interrupted by SIGINT, shut down",
                       exec_id);
             }
@@ -801,47 +793,47 @@ run_test_script(test_script *script, test_id exec_id,
             {
                 ERROR("ID=%d was killed by the signal %d : %s", exec_id,
                       WTERMSIG(ret), strsignal(WTERMSIG(ret)));
-                /* TE_ETESTCORE may already be set */
-                if (result == 0)
-                    result = TE_RC(TE_TESTER, TE_ETESTKILL);
+                /* TE_TEST_CORED may already be set */
+                if (*status == TE_TEST_INCOMPLETE)
+                    *status = TE_TEST_KILLED;
             }
         }
         else if (!WIFEXITED(ret))
         {
             ERROR("ID=%d was abnormally terminated", exec_id);
-            /* TE_ETESTCORE may already be set */
-            if (result == 0)
-                result = TE_RC(TE_TESTER, TE_ETESTUNEXP);
+            /* TE_TEST_CORED may already be set */
+            if (*status == TE_TEST_INCOMPLETE)
+                *status = TE_TEST_FAILED;
         }
         else
         {
-            if (result != 0)
+            if (*status != TE_TEST_INCOMPLETE)
                 ERROR("Unexpected return value of system() call");
 
             switch (WEXITSTATUS(ret))
             {
                 case EXIT_FAILURE:
-                    result = TE_RC(TE_TESTER, TE_ETESTFAIL);
+                    *status = TE_TEST_FAILED;
                     break;
 
                 case EXIT_SUCCESS:
-                    result = TE_RC(TE_TESTER, TE_ETESTPASS);
+                    *status = TE_TEST_PASSED;
                     break;
 
                 case TE_EXIT_SIGINT:
-                    result = TE_RC(TE_TESTER, TE_ESHUTDOWN);
+                    *status = TE_TEST_STOPPED;
                     ERROR("ID=%d was interrupted by SIGINT, shut down",
                           exec_id);
                     break;
 
                 case TE_EXIT_NOT_FOUND:
-                    result = TE_RC(TE_TESTER, TE_ETESTSRCH);
+                    *status = TE_TEST_SEARCH;
                     ERROR("ID=%d was not run, executable not found",
                           exec_id);
                     break;
 
                 default:
-                    result = TE_RC(TE_TESTER, TE_ETESTUNEXP);
+                    *status = TE_TEST_FAILED;
             }
         }
         if (flags & TESTER_VALGRIND)
@@ -855,9 +847,9 @@ run_test_script(test_script *script, test_id exec_id,
 
     free(cmd);
 
-    EXIT("%r", result);
+    EXIT("%u", *status);
 
-    return result;
+    return 0;
 }
 
 
@@ -880,33 +872,31 @@ run_script(run_item *ri, test_script *script,
 
     assert(ri != NULL);
     assert(ri->n_args == ctx->n_args);
-    ctx->current_result.result.status =
-        run_test_script(script, ctx->current_result.id,
+    if (run_test_script(script, ctx->current_result.id,
                         ctx->n_args, ctx->args,
                         gctx->act == NULL ? 0 : /* FIXME */
-                           gctx->act->flags);
-
-    switch (TE_RC_GET_ERROR(ctx->current_result.result.status))
+                           gctx->act->flags,
+                        &ctx->current_result.result.status) != 0)
     {
-        case TE_ETESTSKIP:
-        case TE_ETESTFAKE:
-        case TE_ETESTPASS:
-        case TE_ETESTSRCH:
-        case TE_ETESTFAIL:
+        ctx->current_result.result.status = TE_TEST_ERROR;
+    }
+
+    switch (ctx->current_result.result.status)
+    {
+        case TE_TEST_FAKED:
+        case TE_TEST_PASSED:
+        case TE_TEST_FAILED:
+        case TE_TEST_SEARCH:
             ctl = TESTER_CFG_WALK_CONT;
             break;
 
-        case TE_ETESTKILL:
-        case TE_ETESTCORE:
-        case TE_ETESTUNEXP:
+        case TE_TEST_KILLED:
+        case TE_TEST_CORED:
             ctl = TESTER_CFG_WALK_EXC;
             break;
 
-        case TE_ESHUTDOWN:
+        case TE_TEST_STOPPED:
             ctl = TESTER_CFG_WALK_STOP;
-            /* Override status as KILLED */
-            ctx->current_result.result.status =
-                TE_RC(TE_TESTER, TE_ETESTKILL);
             break;
 
         default:
@@ -942,8 +932,7 @@ run_create_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
         if (rc != 0)
         {
             ERROR("Cannot create configuration backup: %r", rc);
-            if (TEST_RESULT(ctx->group_result.result.status))
-                ctx->group_result.result.status = rc;
+            ctx->group_result.result.status = TE_TEST_ERROR;
             EXIT("FAULT");
             return rc;
         }
@@ -982,19 +971,13 @@ run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
             if (rc != 0)
             {
                 ERROR("Cannot restore configuration backup: %r", rc);
-                if (TEST_RESULT(ctx->current_result.result.status))
-                    ctx->current_result.result.status = rc;
+                ctx->current_result.result.status = TE_TEST_ERROR;
             }
             else if (track_conf == TESTER_TRACK_CONF_YES)
             {
                 RING("Configuration successfully restored using backup");
-                if (TEST_RESULT(ctx->current_result.result.status) &&
-                    (ctx->current_result.result.status <
-                         TE_RC(TE_TESTER, TE_ETESTCONF)))
-                {
-                    ctx->current_result.result.status =
-                        TE_RC(TE_TESTER, TE_ETESTCONF);
-                }
+                if (ctx->current_result.result.status < TE_TEST_DIRTY)
+                    ctx->current_result.result.status = TE_TEST_DIRTY;
             }
             else
             {
@@ -1004,8 +987,7 @@ run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
         else if (rc != 0)
         {
             ERROR("Cannot verify configuration backup: %r", rc);
-            if (TEST_RESULT(ctx->current_result.result.status))
-                ctx->current_result.result.status = rc;
+            ctx->current_result.result.status = TE_TEST_ERROR;
         }
         else
         {
@@ -1034,8 +1016,7 @@ run_release_cfg_backup(tester_ctx *ctx)
         if (rc != 0)
         {
             ERROR("cfg_release_backup() failed: %r", rc);
-            if (TEST_RESULT(ctx->group_result.result.status))
-                ctx->group_result.result.status = rc;
+            ctx->group_result.result.status = TE_TEST_ERROR;
             ctx->backup = NULL;
         }
         else
@@ -1189,8 +1170,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         if (tester_sigint_received)
         {
-            ctx->current_result.result.status =
-                TE_RC(TE_TESTER, TE_ETESTKILL);
+            ctx->current_result.result.status = TE_TEST_STOPPED;
             return TESTER_CFG_WALK_STOP;
         }
 
@@ -1435,15 +1415,12 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     ctx = gctx->ctxs.lh_first;
     assert(ctx != NULL);
 
-    if ((TE_RC_GET_ERROR(status) != TE_ETESTPASS) && 
-        (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
+    if ((status != TE_TEST_PASSED) && (status != TE_TEST_FAKED))
     {
-        if (TE_RC_GET_ERROR(status) == TE_ETESTSKIP)
-            ctx->group_result.result.status =
-                TE_RC(TE_TESTER, TE_ETESTSKIP);
+        if (status == TE_TEST_SKIPPED)
+            ctx->group_result.result.status = TE_TEST_SKIPPED;
         else
-            ctx->group_result.result.status =
-                TE_RC(TE_TESTER, TE_ETESTPROLOG);
+            ctx->group_result.result.status = TE_TEST_PROLOG;
         assert(ctx->links.le_next != NULL);
         ctx->links.le_next->group_step = TRUE;
         EXIT("SKIP");
@@ -1514,15 +1491,12 @@ run_epilogue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     ctx = gctx->ctxs.lh_first;
     assert(ctx != NULL);
 
-    if ((TE_RC_GET_ERROR(status) != TE_ETESTPASS) && 
-        (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
+    if ((status != TE_TEST_PASSED) && (status != TE_TEST_FAKED))
     {
-        if (TE_RC_GET_ERROR(status) == TE_ETESTSKIP)
-            ctx->group_result.result.status =
-                TE_RC(TE_TESTER, TE_ETESTSKIP);
+        if (status == TE_TEST_SKIPPED)
+            ctx->group_result.result.status = TE_TEST_SKIPPED;
         else
-            ctx->group_result.result.status =
-                TE_RC(TE_TESTER, TE_ETESTEPILOG);
+            ctx->group_result.result.status = TE_TEST_EPILOG;
         EXIT("SKIP");
         return TESTER_CFG_WALK_SKIP;
     }
@@ -1577,7 +1551,7 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
 {
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
-    te_errno            status;
+    te_test_status      status;
 
     UNUSED(ri);
 
@@ -1607,13 +1581,12 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     ctx = gctx->ctxs.lh_first;
     assert(ctx != NULL);
 
-    if ((TE_RC_GET_ERROR(status) != TE_ETESTPASS) && 
-        (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
+    if ((status != TE_TEST_PASSED) && (status != TE_TEST_FAKED))
     {
-        ERROR("Keep-alive validation failed: %r", status);
+        ERROR("Keep-alive validation failed: %u", status);
         ctx->group_result.result.status =
             tester_group_status(ctx->group_result.result.status, 
-                                TE_RC(TE_TESTER, TE_ETESTALIVE));
+                                TE_TEST_KEEPALIVE);
         EXIT("INTR");
         return TESTER_CFG_WALK_INTR;
     }
@@ -1689,13 +1662,12 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     ctx = gctx->ctxs.lh_first;
     assert(ctx != NULL);
 
-    if ((TE_RC_GET_ERROR(status) != TE_ETESTPASS) && 
-        (TE_RC_GET_ERROR(status) != TE_ETESTFAKE))
+    if ((status != TE_TEST_PASSED) && (status != TE_TEST_FAKED))
     {
         ERROR("Exception handler failed: %r", status);
         ctx->group_result.result.status =
             tester_group_status(ctx->group_result.result.status, 
-                                TE_RC(TE_TESTER, TE_ETESTEXCEPT));
+                                TE_TEST_EXCEPTION);
         EXIT("INTR");
         return TESTER_CFG_WALK_INTR;
     }
@@ -1963,8 +1935,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         if (tester_sigint_received)
         {
-            ctx->current_result.result.status =
-                TE_RC(TE_TESTER, TE_ETESTKILL);
+            ctx->current_result.result.status = TE_TEST_STOPPED;
             return TESTER_CFG_WALK_STOP;
         }
 
@@ -2064,7 +2035,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                                 ri, ctx->args, ctx->flags, TRUE))
     {
         /* Silently skip without any logs */
-        ctx->current_result.result.status = TE_RC(TE_TESTER, TE_ENOENT);
+        ctx->current_result.result.status = TE_TEST_INCOMPLETE;
         ctx->group_step = TRUE;
         EXIT("SKIP - ENOENT");
         return TESTER_CFG_WALK_SKIP;
@@ -2085,10 +2056,9 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         !tester_is_run_required(ctx->targets, &ctx->reqs,
                                 ri, ctx->args, ctx->flags, FALSE))
     {
-        ctx->current_result.result.status =
-            TE_RC(TE_TESTER, TE_ETESTSKIP);
+        ctx->current_result.result.status = TE_TEST_SKIPPED;
         ctx->group_step = TRUE;
-        EXIT("SKIP - ETESTSKIP");
+        EXIT("SKIP - TE_TEST_SKIPPED");
         return TESTER_CFG_WALK_SKIP;
     }
     else
@@ -2117,7 +2087,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
           gctx->act != NULL ? gctx->act->flags : 0,
           gctx->act_id);
 
-    if (TE_RC_GET_ERROR(ctx->current_result.result.status) != TE_ENOENT)
+    if (ctx->current_result.result.status != TE_TEST_INCOMPLETE)
     {
         run_verify_cfg_backup(ctx, test_get_attrs(ri)->track_conf);
 
@@ -2147,15 +2117,14 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     }
     else
     {
-        ctx->current_result.result.status =
-            TE_RC(TE_TESTER, TE_ETESTSKIP);
+        ctx->current_result.result.status = TE_TEST_SKIPPED;
     }
 
     /* Update result of the group */
     ctx->group_result.result.status =
         tester_group_status(ctx->group_result.result.status,
                             ctx->current_result.result.status);
-    if (!TEST_RESULT(ctx->group_result.result.status))
+    if (ctx->group_result.result.status == TE_TEST_ERROR)
     {
         EXIT("FAULT");
         return TESTER_CFG_WALK_FAULT;
@@ -2165,8 +2134,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         if (tester_sigint_received)
         {
-            ctx->current_result.result.status =
-                TE_RC(TE_TESTER, TE_ETESTKILL);
+            ctx->current_result.result.status = TE_TEST_STOPPED;
             return TESTER_CFG_WALK_STOP;
         }
 
@@ -2289,9 +2257,7 @@ tester_run(const testing_scenario *scenario,
             break;
 
         case TESTER_CFG_WALK_FIN:
-            rc = data.ctxs.lh_first->group_result.result.status;
-            if (TEST_RESULT(rc))
-                rc = 0;
+            rc = 0;
             break;
 
         case TESTER_CFG_WALK_SKIP:
@@ -2300,9 +2266,8 @@ tester_run(const testing_scenario *scenario,
             break;
 
         case TESTER_CFG_WALK_INTR:
-            rc = data.ctxs.lh_first->current_result.result.status;
-            assert(rc != 0);
-            ERROR("Execution of testing scenario interrupted: %r", rc);
+            ERROR("Execution of testing scenario interrupted");
+            rc = TE_RC(TE_TESTER, TE_EFAULT);
             break;
 
         case TESTER_CFG_WALK_STOP:
@@ -2311,8 +2276,7 @@ tester_run(const testing_scenario *scenario,
             break;
 
         case TESTER_CFG_WALK_FAULT:
-            rc = data.ctxs.lh_first->current_result.result.status;
-            assert(rc != 0);
+            rc = TE_RC(TE_TESTER, TE_EFAULT);
             break;
 
         default:

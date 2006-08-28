@@ -284,31 +284,6 @@ typedef enum {
     TE_EBADTYPE, /**< Type specified by the user is incorrect */
 /*@}*/
 
-/** @name Tester errno's */
-/* 
- * Errno codes below are strictly ordered and
- * have ETESTRESULTMIN and ETESTRESULTMAX.
- */
-    TE_ETESTEMPTY = TE_MIN_ERRNO + 1000, 
-                    /**< Test session/pkg is empty */
-    TE_ETESTSKIP,   /**< Test skipped */
-    TE_ETESTFAKE,   /**< Test not really run */
-    TE_ETESTPASS,   /**< Test passed */
-    TE_ETESTSRCH,   /**< Test executable not found */
-    TE_ETESTCONF,   /**< Test changed configuration */
-    TE_ETESTKILL,   /**< Test killed by signal */
-    TE_ETESTCORE,   /**< Test dumped core */
-    TE_ETESTPROLOG, /**< Session prologue failed */
-    TE_ETESTEPILOG, /**< Session epilogue failed */
-    TE_ETESTALIVE,  /**< Session keep-alive failed */
-    TE_ETESTEXCEPT, /**< Session exception handler failed */
-    TE_ETESTFAIL,   /**< Test failed */
-    TE_ETESTUNEXP,  /**< Test unexpected results */
-
-    TE_ETESTRESULTMIN = TE_ETESTEMPTY,  /**< Minimum test result errno */
-    TE_ETESTRESULTMAX = TE_ETESTUNEXP,  /**< Maximum test result errno */
-/*@}*/
-
 /** @name TARPC errno's */
     TE_ERPC2H = TE_MIN_ERRNO + 1100,  /**< RPC to host conv failed */
     TE_EH2RPC,      /**< Host to RPC conv failed */
@@ -677,19 +652,6 @@ te_rc_err2str(te_errno err)
         ERR2STR(EHASSON);  
         ERR2STR(ENOCONF);  
         ERR2STR(EBADTYPE); 
-
-        ERR2STR(ETESTEMPTY);
-        ERR2STR(ETESTSKIP);    
-        ERR2STR(ETESTFAKE);    
-        ERR2STR(ETESTPASS);    
-        ERR2STR(ETESTCONF);    
-        ERR2STR(ETESTKILL);    
-        ERR2STR(ETESTCORE);    
-        ERR2STR(ETESTPROLOG);  
-        ERR2STR(ETESTEPILOG);  
-        ERR2STR(ETESTALIVE);   
-        ERR2STR(ETESTFAIL);    
-        ERR2STR(ETESTUNEXP);   
 
         ERR2STR(ERPCNOTSUPP);
         ERR2STR(ERPC2H);
