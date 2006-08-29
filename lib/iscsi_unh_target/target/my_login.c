@@ -6671,8 +6671,10 @@ iscsi_server_rx_main_loop(int send_recv_sock, SHARED iscsi_custom_data *custom)
         if (reject_reason != 0)
         {
             enqueue_reject(conn, reject_reason);
+#if 0
             targ_session_recovery(conn);
             terminate_target_process++;
+#endif
             continue;
         }
 
