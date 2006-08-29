@@ -71,6 +71,18 @@ typedef struct logic_expr {
 extern te_errno logic_expr_parse(const char *str, logic_expr **expr);
 
 /**
+ * Create binary logical expression.
+ *
+ * @param type      AND or OR
+ * @param lhv       Left hand value
+ * @param rhv       Right hand value
+ *
+ * @return Pointer to allocated value or NULL.
+ */
+extern logic_expr *logic_expr_binary(logic_expr_type type,
+                                     logic_expr *lhv, logic_expr *rhv);
+
+/**
  * Free logical expression.
  *
  * @param expr      Expression to be freed
@@ -87,6 +99,10 @@ extern void logic_expr_free(logic_expr *expr);
  */
 extern int logic_expr_match(const logic_expr *re, const tqh_strings *set);
 
+/**
+ * Destroy logical expressions lexer global context.
+ */
+extern int logic_expr_lex_destroy(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

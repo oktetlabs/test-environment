@@ -60,40 +60,6 @@ logic_expr_int_error(const char *str)
 {
     ERROR("%s", str);
 }
-
-
-/**
- * Create binary logical expression.
- *
- * @param type      AND or OR
- * @param lhv       Left hand value
- * @param rhv       Right hand value
- *
- * @return Pointer to allocated value or NULL.
- */
-static logic_expr *
-logic_expr_binary(logic_expr_type type, logic_expr *lhv, logic_expr *rhv)
-{
-    logic_expr *p;
-
-    assert(type == LOGIC_EXPR_AND ||
-           type == LOGIC_EXPR_OR);
-    assert(lhv != NULL);
-    assert(rhv != NULL);
-
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
-    {
-        ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed", 
-              __FUNCTION__, sizeof(*p));
-        return NULL;
-    }
-    p->type = type;
-    p->u.binary.lhv = lhv;
-    p->u.binary.rhv = rhv;
-    
-    return p;
-}
 %}
 
 %pure-parser

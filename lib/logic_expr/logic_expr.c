@@ -27,9 +27,6 @@
  */
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #if HAVE_STDLIB_H
 #include <stdlib.h>
@@ -45,7 +42,8 @@
 #endif
 
 #include "te_defs.h"
-#include "trc_log.h"
+#include "logger_api.h"
+
 #include "logic_expr.h"
 
 
@@ -91,6 +89,31 @@ logic_expr_free(logic_expr *expr)
     logic_expr_free_nr(expr);
 }
 
+/* See the description in logic_expr.h */
+logic_expr *
+logic_expr_binary(logic_expr_type type, logic_expr *lhv, logic_expr *rhv)
+{
+    logic_expr *p;
+
+    assert(type == LOGIC_EXPR_AND ||
+           type == LOGIC_EXPR_OR);
+    assert(lhv != NULL);
+    assert(rhv != NULL);
+
+    p = calloc(1, sizeof(*p));
+    if (p == NULL)
+    {
+        ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed", 
+              __FUNCTION__, sizeof(*p));
+        return NULL;
+    }
+    p->type = type;
+    p->u.binary.lhv = lhv;
+    p->u.binary.rhv = rhv;
+    
+    return p;
+}
+
 
 /**
  * Has the set of strings specified string?
@@ -112,7 +135,7 @@ is_str_in_set(const char *str, const tqh_strings *set)
          s != NULL;
          s = s->links.tqe_next, i++)
     {
-        if (strcmp(str, s->str) == 0)
+        if (strcmp(str, s->v) == 0)
         {
             return i;
         }
