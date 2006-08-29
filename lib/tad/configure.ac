@@ -21,6 +21,7 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
+
 # FIXME: make it AC macro
 find_lib()
 {
