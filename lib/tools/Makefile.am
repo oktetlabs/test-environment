@@ -47,7 +47,8 @@ libtools_la_SOURCES = \
 	te_sockaddr.c \
 	te_shell_cmd.c \
 	te_log_fmt.c \
-	te_format.c
+	te_format.c \
+	tq_string.c
 
 install-exec-hook:
 	touch -c -r libtools.la $(DESTDIR)/$(libdir)/libtools.*

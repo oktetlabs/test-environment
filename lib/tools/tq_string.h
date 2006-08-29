@@ -31,6 +31,7 @@
 #ifndef __TE_TOOLS_TQ_STRING_H__
 #define __TE_TOOLS_TQ_STRING_H__
 
+#include "te_defs.h"
 #include "te_queue.h"
 
 #ifdef __cplusplus
@@ -56,6 +57,19 @@ typedef TAILQ_HEAD(tqh_strings, tqe_string) tqh_strings;
  */
 extern void tq_strings_free(tqh_strings *head, void (*value_free)(void *));
 
+/**
+ * Compare two tail queue of strings. Queues are equal, if each element
+ * of the first queue is equal to the corresponding element of the
+ * second queue.
+ *
+ * @param s1        The first tail queue
+ * @param s1        The second tail queue
+ *
+ * @retval TRUE     Equal
+ * @retval FALSE    Not equal
+ */
+extern te_bool tq_strings_equal(const tqh_strings *s1,
+                                const tqh_strings *s2);
 
 
 #ifdef __cplusplus
