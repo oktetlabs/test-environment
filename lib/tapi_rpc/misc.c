@@ -1102,6 +1102,19 @@ rpc_create_child_process_socket(const char *method,
         return;
     }
     
+    if (strcmp(method, "inherit_no_net_init") == 0)    
+    {
+        rcf_rpc_cp_params        params;
+        memset(&params, 0, sizeof(params));
+        params.net_init = FALSE;
+        rcf_rpc_server_create_process(pco_father, process_name, &params, 
+                                      pco_child);
+        *child_s = father_s;
+        RING("Inherit socket %d from process %d to process %d",
+             father_s, rpc_getpid(pco_father), rpc_getpid(*pco_child));
+        return;        
+    }
+    
     if (strcmp(method, "DuplicateSocket") == 0)
     {
         pid_t pid;
