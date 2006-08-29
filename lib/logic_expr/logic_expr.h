@@ -83,6 +83,13 @@ extern logic_expr *logic_expr_binary(logic_expr_type type,
                                      logic_expr *lhv, logic_expr *rhv);
 
 /**
+ * Non-recursive free of logical expressions.
+ *
+ * @param expr      Expression to be freed
+ */
+extern void logic_expr_free_nr(logic_expr *expr);
+
+/**
  * Free logical expression.
  *
  * @param expr      Expression to be freed
@@ -102,7 +109,7 @@ extern int logic_expr_match(const logic_expr *re, const tqh_strings *set);
 /**
  * Destroy logical expressions lexer global context.
  */
-extern int logic_expr_lex_destroy(void);
+extern int logic_expr_int_lex_destroy(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

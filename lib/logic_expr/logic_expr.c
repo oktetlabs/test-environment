@@ -47,12 +47,8 @@
 #include "logic_expr.h"
 
 
-/**
- * Non-recursive free of logical expressions.
- *
- * @param expr      Expression to be freed
- */
-static void
+/* See the description in logic_expr.h */
+void
 logic_expr_free_nr(logic_expr *expr)
 {
     free(expr);
