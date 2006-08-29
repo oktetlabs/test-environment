@@ -79,6 +79,7 @@ Generic options:
   --tester-suite=<name>:<path>  Specify path to the Test Suite.
   --tester-no-run               Don't run any tests.
   --tester-no-build             Don't build any Test Suites.
+  --tester-no-trc               Don't use Testing Results Comparator.
   --tester-no-cs                Don't interact with Configurator.
   --tester-no-cfg-track         Don't track configuration changes.
   --tester-no-logues            Disable prologues and epilogues globally.
@@ -355,6 +356,11 @@ process_opts()
                     TRC_DB="${CONF_DIR}/${TRC_DB}" ;
                 fi ;
                 TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}" ;
+                TESTER_OPTS="${TESTER_OPTS} --trc-db=${TRC_DB}" ;
+                ;;
+            --trc-tag=*)
+                TRC_OPTS="${TRC_OPTS} --tag=${1#--trc-tag=}" ;
+                TESTER_OPTS="${TESTER_OPTS} $1"
                 ;;
             --trc-*) TRC_OPTS="${TRC_OPTS} --${1#--trc-}" ;;
     

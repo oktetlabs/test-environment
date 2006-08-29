@@ -175,6 +175,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         TESTER_OPT_NO_BUILD,
         TESTER_OPT_NO_RUN,
+        TESTER_OPT_NO_TRC,
         TESTER_OPT_NO_CS,
         TESTER_OPT_NO_CFG_TRACK,
         TESTER_OPT_NO_LOGUES,
@@ -202,6 +203,9 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_FAKE,
 
         TESTER_OPT_SUITE_PATH,
+
+        TESTER_OPT_TRC_DB,
+        TESTER_OPT_TRC_TAG,
     };
 
     /* Option Table */
@@ -216,6 +220,9 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
           "Don't build any Test Suites.", NULL },
         { "nobuild", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_BUILD,
           "(obsolete) Don't build any Test Suites.", NULL },
+
+        { "no-trc", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_TRC,
+          "Don't use Testing Results Comparator.", NULL },
 
         { "no-cs", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_CS,
           "Don't interact with Configurator.", NULL },
@@ -300,6 +307,11 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
           "Random seed to initialize pseudo-random number generator",
           "<number>" },
 
+        { "trc-db", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_TRC_DB,
+          "TRC database to be used.", NULL },
+        { "trc-tag", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_TRC_TAG,
+          "Tags to customize TRC expectations.", NULL },
+
         { "verbose", 'v', POPT_ARG_NONE, NULL, TESTER_OPT_VERBOSE,
           "Increase verbosity of the Tester (the first level is set by "
           "default).", NULL },
@@ -317,6 +329,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
     poptContext  optCon;
     int          rc;
     const char  *cfg_file;
+    te_bool      no_trc = FALSE;
 
 
     /* Process command line options */
@@ -344,6 +357,11 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
             case TESTER_OPT_NO_BUILD:
                 global->flags |= TESTER_NO_BUILD;
+                break;
+
+            case TESTER_OPT_NO_TRC:
+                global->flags |= TESTER_NO_TRC;
+                no_trc = TRUE;
                 break;
 
             case TESTER_OPT_NO_CS:
@@ -454,6 +472,18 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                 {
                     poptFreeContext(optCon);
                     return rc;
+                }
+                break;
+
+            case TESTER_OPT_TRC_DB:
+                if (!no_trc)
+                {
+                }
+                break;
+
+            case TESTER_OPT_TRC_TAG:
+                if (!no_trc)
+                {
                 }
                 break;
 
