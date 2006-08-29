@@ -103,7 +103,10 @@ main(int argc, char **argv)
         return 1;
     
     if (argc > 2 && strcmp(argv[2], "net_init") == 0)
+    {
         WSAStartup(MAKEWORD(2,2), &data);
+        wsa_func_handles_discover();        
+    }    
     else
     {
         printf("WSAStartup is not called!\n");
@@ -112,8 +115,6 @@ main(int argc, char **argv)
     
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
-    
-    wsa_func_handles_discover();
     
     rcf_pch_rpc_server(argv[1] == NULL ? "Unnamed" : argv[1]);
     
