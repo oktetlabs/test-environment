@@ -13,7 +13,8 @@ include_HEADERS = \
 	te_shell_cmd.h \
 	te_log_fmt.h \
 	te_format.h \
-	te_iscsi.h 
+	te_iscsi.h \
+	tq_string.h
 
 if WINDOWS
 
