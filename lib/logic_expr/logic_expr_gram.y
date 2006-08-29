@@ -1,8 +1,34 @@
+/** @file
+ * @brief Logical Expression Gramma
+ *
+ * Gramma for logical expressions specification.
+ *
+ *
+ * Copyright (C) 2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ *
+ * $Id$
+ */
 %{
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #if HAVE_STDLIB_H
 #include <stdlib.h>
@@ -14,9 +40,8 @@
 #include <assert.h>
 #endif
 
-#include "trc_log.h"
-
 #include "te_printf.h"
+#include "logger_api.h"
 
 #include "logic_expr.h"
 #include "logic_expr_gram.h"
@@ -147,7 +172,7 @@ const char *logic_expr_int_str;
 int logic_expr_int_str_pos;
 
 /* See the description in logic_expr.h */
-int
+te_errno
 logic_expr_parse(const char *str, logic_expr **expr)
 {
     logic_expr_int_str = str;
@@ -156,13 +181,12 @@ logic_expr_parse(const char *str, logic_expr **expr)
 
     if (logic_expr_int_parse() != 0)
     {
-        ERROR("Failed to parse requirements expression string '%s'",
+        ERROR("Failed to parse logical expression string '%s'",
               str);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     *expr = logic_expr_int_root;
 
     return 0;
 }
-

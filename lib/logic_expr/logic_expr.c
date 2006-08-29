@@ -101,7 +101,7 @@ logic_expr_free(logic_expr *expr)
  * @return Index in the set (starting from 1) or 0.
  */
 static int
-is_str_in_set(const char *str, const tqh_string *set)
+is_str_in_set(const char *str, const tqh_strings *set)
 {
     const tqe_string   *s;
     unsigned int        i;
@@ -122,7 +122,7 @@ is_str_in_set(const char *str, const tqh_string *set)
 
 /* See the description in logic_expr.h */
 int
-logic_expr_match(const logic_expr *re, const tqh_string *set)
+logic_expr_match(const logic_expr *re, const tqh_strings *set)
 {
     int result;
 

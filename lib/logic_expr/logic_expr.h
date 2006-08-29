@@ -29,23 +29,13 @@
 #ifndef __TE_LOGIC_EXPR_H__
 #define __TE_LOGIC_EXPR_H__
 
-#include "te_queue.h"
+#include "te_errno.h"
+#include "tq_string.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/** Entry of the queue of strings */
-typedef struct tqe_string {
-    TAILQ_ENTRY(tqe_string)     links;  /**< List links */
-
-    char                       *str;    /**< String */
-} tqe_string;
-
-/** Queue of strings */
-typedef TAILQ_HEAD(tqh_string, tqe_string) tqh_string;
 
 
 /** Types of expression elements */
@@ -69,9 +59,6 @@ typedef struct logic_expr {
     } u;    /**< Type specific data */
 } logic_expr;
 
-/** Target requirements expression */
-typedef logic_expr target_logic_expr;
-
 
 /**
  * Parse string-based logical expression.
@@ -81,7 +68,7 @@ typedef logic_expr target_logic_expr;
  *
  * @return Status code.
  */
-extern int logic_expr_parse(const char *str, logic_expr **expr);
+extern te_errno logic_expr_parse(const char *str, logic_expr **expr);
 
 /**
  * Free logical expression.
@@ -98,7 +85,7 @@ extern void logic_expr_free(logic_expr *expr);
  *
  * @return Index in the set (starting from 1) or 0.
  */
-extern int logic_expr_match(const logic_expr *re, const tqh_string *set);
+extern int logic_expr_match(const logic_expr *re, const tqh_strings *set);
 
 
 #ifdef __cplusplus
