@@ -60,7 +60,7 @@ typedef enum logic_expr_type {
 typedef struct logic_expr {
     logic_expr_type  type;    /**< Type of expression element */
     union {
-        char                       *value;  /**< Simple value */
+        char                     *value;  /**< Simple value */
         struct logic_expr        *unary;  /**< Unary expression */
         struct {
             struct logic_expr    *lhv;        /**< Left hand value */
