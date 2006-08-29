@@ -23,7 +23,7 @@ TE_PATH_LIBXML2
 
 AC_CONFIG_HEADERS([config.h])
 
-CPPFLAGS=${XML2_CFLAGS}
+CPPFLAGS=${CPPFLAGS}" "${XML2_CFLAGS}
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 
 AC_CHECK_LIB([curses], [start_color],
@@ -32,6 +32,7 @@ AC_CHECK_LIB([curses], [start_color],
                         [ Define if your curses library supports color. ])],
              [AC_MSG_WARN([Color terminal is not supported])])
 
+AC_CHECK_HEADERS([te_trc.h])
 
 AC_CONFIG_FILES([Makefile])
 
