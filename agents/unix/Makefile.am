@@ -1,5 +1,5 @@
 
-SUBDIRS=rpc conf
+SUBDIRS=rpc conf 
 
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
