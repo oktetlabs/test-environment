@@ -18,7 +18,13 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
+# Checks for libraries
+TE_PATH_LIBXML2
+
 AC_CONFIG_HEADERS([package.h])
+
+CPPFLAGS=${CPPFLAGS}" "${XML2_CFLAGS}
+AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 
 AC_CONFIG_FILES([Makefile])
 

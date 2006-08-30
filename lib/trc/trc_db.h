@@ -34,11 +34,15 @@
 #include <libxml/tree.h>
 
 #include "te_defs.h"
+#include "te_errno.h"
 #include "te_queue.h"
 #include "logic_expr.h"
 
 #include "te_trc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /** Test iteration argument */
 typedef struct trc_test_iter_arg {
@@ -86,7 +90,7 @@ typedef struct trc_test_iter {
     char               *notes;      /**< Common notes */
 
     /** The expected results */
-    LIST_HEAD(, trc_exp_result) exp_results;
+    trc_exp_results     exp_results;
 
     trc_tests           tests;      /**< Children tests of the session */
 
@@ -133,10 +137,20 @@ typedef struct trc_test {
 
 
 /** Testing results comparison database */
-typedef struct trc_database {
+struct te_trc_db {
     char       *filename;   /**< Location of the database file */
+    xmlDocPtr   xml_doc;    /**< XML document */
     char       *version;    /**< Database version */
     trc_tests   tests;      /**< Tree of tests */
-} trc_database;
+};
 
+
+extern te_errno trc_db_save(te_trc_db *db, const char *filename);
+
+extern void trc_db_free(te_trc_db *db);
+
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TRC_DB_H__ */
