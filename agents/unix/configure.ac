@@ -184,6 +184,8 @@ AC_SEARCH_LIBS([pam_start], [pam],
                AC_MSG_WARN(
                [No PAM (Pluggable Authentication Modules) support]))
 
+AC_CHECK_HEADERS(security/pam_appl.h)
+
 if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
     dnl
     dnl Dynamic linker functions are provided by:
@@ -408,7 +410,7 @@ AC_SUBST([EXTRA_LDADD])
 #if ! test "$cross_compiling" = "yes" ; then
 case "$host" in 
    sparc*linux*) TE_CPPFLAGS="$TE_CPPFLAGS -DNO_DL" ;;
-   *uml*) ;;
+   *uml*) LIBS="$LIBS -ldl";;
    *) LIBS="-Wl,-Bdynamic $LIBS" ;;
 esac
 
