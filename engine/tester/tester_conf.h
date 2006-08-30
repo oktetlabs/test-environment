@@ -296,7 +296,7 @@ typedef struct tester_cfg {
     char               *descr;          /**< Optional description */
     test_suites_info    suites;         /**< Information about test
                                              suites */
-    reqs_expr          *targets;        /**< Target requirements
+    logic_expr         *targets;        /**< Target requirements
                                              expression */
     test_options        options;        /**< List of options */
     run_items           runs;           /**< List of items to run */

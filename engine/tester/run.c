@@ -100,7 +100,7 @@ typedef struct tester_ctx {
                                              or group items have been
                                              enumerated one by one */
 
-    const reqs_expr    *targets;        /**< Target requirements
+    const logic_expr   *targets;        /**< Target requirements
                                              expression */
     te_bool             targets_free;   /**< Should target requirements
                                              be freed? */
@@ -124,7 +124,7 @@ typedef struct tester_ctx {
  */
 typedef struct tester_run_data {
     unsigned int                flags;      /**< Flags */
-    const reqs_expr            *targets;    /**< Target requirements
+    const logic_expr           *targets;    /**< Target requirements
                                                  expression specified
                                                  in command line */
 
@@ -171,7 +171,7 @@ tester_ctx_free(tester_ctx *ctx)
          * It is OK to discard 'const' qualifier here, since it exactly
          * specified that it should be freed.
          */
-        tester_reqs_expr_free_nr((reqs_expr *)ctx->targets);
+        logic_expr_free_nr((logic_expr *)ctx->targets);
     }
     test_requirements_free(&ctx->reqs);
     tester_ctx_free(ctx->keepalive_ctx);
@@ -1075,9 +1075,9 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
         if (ctx->targets != NULL)
         {
             /* Add configuration to context requirements */
-            ctx->targets = reqs_expr_binary(TESTER_REQS_EXPR_AND,
-                                            (reqs_expr *)ctx->targets,
-                                            cfg->targets);
+            ctx->targets = logic_expr_binary(LOGIC_EXPR_AND,
+                                             (logic_expr *)ctx->targets,
+                                             cfg->targets);
             if (ctx->targets == NULL)
             {
                 tester_run_destroy_ctx(gctx);
@@ -2192,7 +2192,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 /* See the description in tester_run.h */
 te_errno
 tester_run(const testing_scenario *scenario,
-           const reqs_expr        *targets,
+           const logic_expr       *targets,
            const tester_cfgs      *cfgs,
            const unsigned int      flags)
 {

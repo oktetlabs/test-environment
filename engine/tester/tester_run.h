@@ -263,7 +263,6 @@ extern const char * scenario_to_str(const testing_scenario *scenario);
 
 
 /* Forwards */
-struct reqs_expr;
 struct tester_cfgs;
 
 /**
@@ -277,7 +276,7 @@ struct tester_cfgs;
  * @return Status code.
  */
 extern te_errno tester_run(const testing_scenario   *scenario,
-                           const struct reqs_expr   *targets,
+                           const struct logic_expr  *targets,
                            const struct tester_cfgs *cfgs,
                            const unsigned int        flags);
 

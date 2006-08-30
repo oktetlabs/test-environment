@@ -54,11 +54,11 @@
 
 /* See description in tester_reqs.h */
 te_errno
-tester_new_target_reqs(reqs_expr **targets, const char *req)
+tester_new_target_reqs(logic_expr **targets, const char *req)
 {
-    int        rc;
-    reqs_expr *parent;
-    reqs_expr *parsed;
+    te_errno    rc;
+    logic_expr *parent;
+    logic_expr *parsed;
 
     if (targets == NULL || req == NULL)
     {
@@ -66,7 +66,7 @@ tester_new_target_reqs(reqs_expr **targets, const char *req)
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
-    rc = tester_reqs_expr_parse(req, &parsed);
+    rc = logic_expr_parse(req, &parsed);
     if (rc != 0)
     {
         ERROR("Failed to parse requirements expression '%s'", req);
@@ -83,13 +83,13 @@ tester_new_target_reqs(reqs_expr **targets, const char *req)
         if (parent == NULL)
         {
             rc = TE_OS_RC(TE_TESTER, errno);;
-            tester_reqs_expr_free(parsed);
+            logic_expr_free(parsed);
             ERROR("%s(): calloc(1, %u) failed",
                   __FUNCTION__, sizeof(*parent));
             return rc;
         } 
 
-        parent->type = TESTER_REQS_EXPR_AND;
+        parent->type = LOGIC_EXPR_AND;
         parent->u.binary.lhv = *targets;
         parent->u.binary.rhv = parsed;
         *targets = parent;
@@ -171,70 +171,6 @@ test_requirements_free(test_requirements *reqs)
         TAILQ_REMOVE(reqs, p, links);
         test_requirement_free(p);
     }
-}
-
-
-/* See description in tester_reqs.h */
-reqs_expr *
-reqs_expr_binary(reqs_expr_type type, reqs_expr *lhv, reqs_expr *rhv)
-{
-    reqs_expr *p;
-
-    assert(type == TESTER_REQS_EXPR_AND ||
-           type == TESTER_REQS_EXPR_OR);
-    assert(lhv != NULL);
-    assert(rhv != NULL);
-
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
-    {
-        ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, sizeof(*p));
-        return NULL;
-    }
-    p->type = type;
-    p->u.binary.lhv = lhv;
-    p->u.binary.rhv = rhv;
-    
-    return p;
-}
-
-
-/* See description in tester_reqs.h */
-void
-tester_reqs_expr_free_nr(reqs_expr *p)
-{
-    free(p);
-}
-
-/* See description in tester_reqs.h */
-void
-tester_reqs_expr_free(reqs_expr *p)
-{
-    if (p == NULL)
-        return;
-
-    switch (p->type)
-    {
-        case TESTER_REQS_EXPR_VALUE:
-            free(p->u.value);
-            break;
-
-        case TESTER_REQS_EXPR_NOT:
-            tester_reqs_expr_free(p->u.unary);
-            break;
-
-        case TESTER_REQS_EXPR_AND:
-        case TESTER_REQS_EXPR_OR:
-            tester_reqs_expr_free(p->u.binary.lhv);
-            tester_reqs_expr_free(p->u.binary.rhv);
-            break;
-
-        default:
-            ERROR("Invalid type of requirements expression");
-            assert(FALSE);
-            break;
-    }
-    tester_reqs_expr_free_nr(p);
 }
 
 
@@ -330,7 +266,7 @@ is_req_in_args(const char *req, const unsigned int n_args,
  * @param force         Is the force verdict or weak?
  */
 static te_bool
-is_reqs_expr_match(const reqs_expr         *re,
+is_reqs_expr_match(const logic_expr        *re,
                    const test_requirements *ctx_set,
                    const test_requirements *test_set,
                    const unsigned int       n_args,
@@ -342,7 +278,7 @@ is_reqs_expr_match(const reqs_expr         *re,
     assert(re != NULL);
     switch (re->type)
     {
-        case TESTER_REQS_EXPR_VALUE:
+        case LOGIC_EXPR_VALUE:
             result = is_req_in_set(re->u.value, ctx_set, n_args, args) ||
                      is_req_in_set(re->u.value, test_set, n_args, args) ||
                      is_req_in_args(re->u.value, n_args, args);
@@ -350,7 +286,7 @@ is_reqs_expr_match(const reqs_expr         *re,
                  result, *force);
             break;
 
-        case TESTER_REQS_EXPR_NOT:
+        case LOGIC_EXPR_NOT:
             result = !is_reqs_expr_match(re->u.unary,
                                          ctx_set, test_set, n_args, args,
                                          force);
@@ -359,7 +295,7 @@ is_reqs_expr_match(const reqs_expr         *re,
             VERB("%s(): ! -> %u(%u)", __FUNCTION__, result, *force);
             break;
 
-        case TESTER_REQS_EXPR_AND:
+        case LOGIC_EXPR_AND:
         {
             te_bool lhr = is_reqs_expr_match(re->u.binary.lhv,
                                              ctx_set, test_set,
@@ -375,7 +311,7 @@ is_reqs_expr_match(const reqs_expr         *re,
             break;
         }
 
-        case TESTER_REQS_EXPR_OR:
+        case LOGIC_EXPR_OR:
             result = is_reqs_expr_match(re->u.binary.lhv,
                                         ctx_set, test_set,
                                         n_args, args, force) ||
@@ -405,39 +341,39 @@ is_reqs_expr_match(const reqs_expr         *re,
  * @param prev_op   Previous operation
  */
 static void
-reqs_expr_to_string_buf(const reqs_expr *expr, char **buf, ssize_t *left,
-                        reqs_expr_type prev_op)
+reqs_expr_to_string_buf(const logic_expr *expr, char **buf, ssize_t *left,
+                        logic_expr_type prev_op)
 {
     int     out;
     te_bool enclose;
 
     switch (expr->type)
     {
-        case TESTER_REQS_EXPR_VALUE:
+        case LOGIC_EXPR_VALUE:
             out = snprintf(*buf, *left, "%s", expr->u.value);
             *buf += out; *left -= out;
             break;
 
-        case TESTER_REQS_EXPR_NOT:
+        case LOGIC_EXPR_NOT:
             out = snprintf(*buf, *left, "!");
             *buf += out; *left -= out;
             reqs_expr_to_string_buf(expr->u.unary, buf, left,
-                                    TESTER_REQS_EXPR_NOT);
+                                    LOGIC_EXPR_NOT);
             break;
 
-        case TESTER_REQS_EXPR_AND:
-            enclose = (prev_op == TESTER_REQS_EXPR_NOT);
+        case LOGIC_EXPR_AND:
+            enclose = (prev_op == LOGIC_EXPR_NOT);
             if (enclose)
             {
                 out = snprintf(*buf, *left, "(");
                 *buf += out; *left -= out;
             }
             reqs_expr_to_string_buf(expr->u.binary.lhv, buf, left,
-                                    TESTER_REQS_EXPR_AND);
+                                    LOGIC_EXPR_AND);
             out = snprintf(*buf, *left, " & ");
             *buf += out; *left -= out;
             reqs_expr_to_string_buf(expr->u.binary.rhv, buf, left,
-                                    TESTER_REQS_EXPR_AND);
+                                    LOGIC_EXPR_AND);
             if (enclose)
             {
                 out = snprintf(*buf, *left, ")");
@@ -445,20 +381,20 @@ reqs_expr_to_string_buf(const reqs_expr *expr, char **buf, ssize_t *left,
             }
             break;
 
-        case TESTER_REQS_EXPR_OR:
-            enclose = (prev_op == TESTER_REQS_EXPR_NOT ||
-                       prev_op == TESTER_REQS_EXPR_AND);
+        case LOGIC_EXPR_OR:
+            enclose = (prev_op == LOGIC_EXPR_NOT ||
+                       prev_op == LOGIC_EXPR_AND);
             if (enclose)
             {
                 out = snprintf(*buf, *left, "(");
                 *buf += out; *left -= out;
             }
             reqs_expr_to_string_buf(expr->u.binary.lhv, buf, left,
-                                    TESTER_REQS_EXPR_OR);
+                                    LOGIC_EXPR_OR);
             out = snprintf(*buf, *left, " | ");
             *buf += out; *left -= out;
             reqs_expr_to_string_buf(expr->u.binary.rhv, buf, left,
-                                    TESTER_REQS_EXPR_OR);
+                                    LOGIC_EXPR_OR);
             if (enclose)
             {
                 out = snprintf(*buf, *left, ")");
@@ -481,7 +417,7 @@ reqs_expr_to_string_buf(const reqs_expr *expr, char **buf, ssize_t *left,
  * @return Pointer to the static buffer with printed expression
  */
 static const char *
-reqs_expr_to_string(const reqs_expr *expr)
+reqs_expr_to_string(const logic_expr *expr)
 {
     static char buf[0x10000];
 
@@ -489,7 +425,7 @@ reqs_expr_to_string(const reqs_expr *expr)
     ssize_t     left = sizeof(buf);
 
     s[0] = '\0';
-    reqs_expr_to_string_buf(expr, &s, &left, TESTER_REQS_EXPR_VALUE);
+    reqs_expr_to_string_buf(expr, &s, &left, LOGIC_EXPR_VALUE);
 
     return buf;
 }
@@ -599,7 +535,7 @@ params_reqs_list_to_string(const unsigned int   n_args,
 
 /* See description in tester_reqs.h */
 te_bool
-tester_is_run_required(const reqs_expr         *targets,
+tester_is_run_required(const logic_expr        *targets,
                        const test_requirements *sticky_reqs,
                        const run_item          *test,
                        const test_iter_arg     *args,

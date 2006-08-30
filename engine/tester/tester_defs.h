@@ -49,27 +49,9 @@ typedef enum run_item_type {
 /** Test ID */
 typedef int test_id;
 
-/** Element of the list of strings */
-typedef struct tqe_string {
-    TAILQ_ENTRY(tqe_string)     links;  /**< List links */
-    char                       *v;      /**< Value */
-} tqe_string;
-
-/** Head of the list of strings */
-typedef TAILQ_HEAD(tqh_strings, tqe_string) tqh_strings;
-
 
 /** Is SIGINT signal received by Tester? */
 extern te_bool tester_sigint_received;
-
-
-/**
- * Free list of allocated strings.
- *
- * @param head          Head of the list
- * @param value_free    Function to be called to free value or NULL
- */
-extern void tq_strings_free(tqh_strings *head, void (*value_free)(void *));
 
 
 /**

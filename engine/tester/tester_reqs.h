@@ -34,34 +34,11 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_errno.h"
+#include "logic_expr.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** Types of expression elements */
-typedef enum reqs_expr_type {
-    TESTER_REQS_EXPR_VALUE,     /**< Simple value */
-    TESTER_REQS_EXPR_NOT,       /**< Logical 'not' */
-    TESTER_REQS_EXPR_AND,       /**< Logical 'and' */
-    TESTER_REQS_EXPR_OR,        /**< Logical 'or' */
-} reqs_expr_type;
-
-/** Element of the requirements expression */
-typedef struct reqs_expr {
-    reqs_expr_type  type;               /**< Type of expression element */
-    union {
-        char               *value;      /**< Simple value */
-        struct reqs_expr   *unary;      /**< Unary expression */
-        struct {
-            struct reqs_expr   *lhv;        /**< Left hand value */
-            struct reqs_expr   *rhv;        /**< Right hand value */
-        } binary;                       /**< Binary expression */
-    } u;                                /**< Type specific data */
-} reqs_expr;
-
-/** Target requirements expression */
-typedef reqs_expr target_reqs_expr;
 
 
 /** Element of the list of requirements */
@@ -83,16 +60,6 @@ struct test_iter_arg;
 
 
 /**
- * Parse requirements expression.
- *
- * @param str       String to be parsed
- * @param expr      Location for pointer to parsed expression
- *
- * @return Status code.
- */
-extern te_errno tester_reqs_expr_parse(const char *str, reqs_expr **expr);
-
-/**
  * Create a new target requirement and insert it using logical 'and'
  * with current target.
  *
@@ -103,34 +70,9 @@ extern te_errno tester_reqs_expr_parse(const char *str, reqs_expr **expr);
  * @retval 0            Success.
  * @retval TE_ENOMEM    Memory allocation failure.
  */
-extern te_errno tester_new_target_reqs(reqs_expr **targets,
-                                       const char *req);
+extern te_errno tester_new_target_reqs(logic_expr **targets,
+                                       const char  *req);
 
-/**
- * Create binary operation expression.
- *
- * @param type      Type of binary operation
- * @param lhv       Left hand value
- * @param rhv       Right hand value
- *
- * @return Pointer to the result or NULL
- */
-extern reqs_expr *reqs_expr_binary(reqs_expr_type type,
-                                   reqs_expr *lhv, reqs_expr *rhv);
-
-/**
- * Free requirements expression.
- *
- * @param p         Expression to be freed
- */
-extern void tester_reqs_expr_free(reqs_expr *p);
-
-/**
- * Free requirements expression (non-recursive).
- *
- * @param p         Expression to be freed without subexpressions
- */
-extern void tester_reqs_expr_free_nr(reqs_expr *p);
 
 /**
  * Clone list of requirements.
@@ -165,7 +107,7 @@ extern void test_requirements_free(test_requirements *reqs);
  * @retval FALSE        Run is not required
  */
 extern te_bool tester_is_run_required(
-                   const reqs_expr            *targets,
+                   const logic_expr           *targets,
                    const test_requirements    *sticky_reqs,
                    const struct run_item      *test,
                    const struct test_iter_arg *args,

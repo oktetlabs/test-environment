@@ -34,8 +34,6 @@ te_tester_SOURCES = \
 	config_walk.c \
 	config_prepare.c \
 	reqs.c \
-	reqs_expr_lex.l \
-	reqs_expr_gram.y \
 	test_path_lex.l \
 	test_path_gram.y \
 	test_path.c \
@@ -46,34 +44,26 @@ te_tester_SOURCES = \
 	tester.c
 
 CLEANFILES = \
-	reqs_expr_lex.h \
-	reqs_expr_lex.c \
-	reqs_expr_gram.h \
-	reqs_expr_gram.c \
 	test_path_lex.h \
 	test_path_lex.c \
 	test_path_gram.h \
 	test_path_gram.c
 
 BUILT_SOURCES = \
-	reqs_expr_lex.h \
-	reqs_expr_gram.h \
 	test_path_lex.h \
 	test_path_gram.h
 
-# reqs_expr_gram.h and test_path_gram.h are included in dist automatically
-EXTRA_DIST = reqs_expr_lex.h test_path_lex.h
+# test_path_gram.h are included in dist automatically
+EXTRA_DIST = test_path_lex.h
 
-.l.c:
-	$(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ $*.h $*.h -- $(LEXCOMPILE)
-
-reqs_expr_lex.h: reqs_expr_lex.c
+#.l.c:
+#	$(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ $*.h $*.h -- $(LEXCOMPILE)
 
 test_path_lex.h: test_path_lex.c
 
 
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid -llogger_ten \
-                  -lipc -lipcserver -ltools \
+                  -lipc -lipcserver -llogic_expr -ltools \
                   @XML2_LIBS@ -lpopt -lfl -lpthread 
 
 te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
@@ -83,4 +73,5 @@ te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
 	$(DESTDIR)/$(libdir)/liblogger_ten.a \
 	$(DESTDIR)/$(libdir)/libipc.a \
 	$(DESTDIR)/$(libdir)/libipcserver.a \
+	$(DESTDIR)/$(libdir)/liblogic_expr.a \
 	$(DESTDIR)/$(libdir)/libtools.a

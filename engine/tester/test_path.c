@@ -47,6 +47,7 @@
 
 #include "te_alloc.h"
 #include "logger_api.h"
+#include "tq_string.h"
 
 #include "tester_flags.h"
 #include "tester_conf.h"
@@ -1036,22 +1037,6 @@ test_path_new(test_paths *paths, const char *path_str, test_path_type type)
     }
 
     return rc;
-}
-
-
-/* See the description in tester_defs.h */
-void
-tq_strings_free(tqh_strings *head, void (*value_free)(void *))
-{
-    tqe_string *p;
-
-    while ((p = head->tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(head, p, links);
-        if (value_free != NULL)
-            value_free(p->v);
-        free(p);
-    }
 }
 
 /**

@@ -1879,7 +1879,7 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg,
  * @return Status code.
  */
 static te_errno
-get_target_reqs(xmlNodePtr *node, reqs_expr **targets)
+get_target_reqs(xmlNodePtr *node, logic_expr **targets)
 {
     te_errno rc;
 
@@ -2660,7 +2660,7 @@ tester_cfg_free(tester_cfg *cfg)
     persons_info_free(&cfg->maintainers);
     free(cfg->descr);
     test_suites_info_free(&cfg->suites);
-    tester_reqs_expr_free(cfg->targets);
+    logic_expr_free(cfg->targets);
     run_items_free(&cfg->runs);
     free(cfg);
 }

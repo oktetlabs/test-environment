@@ -62,7 +62,6 @@
 DEFINE_LGR_ENTITY("Tester");
 
 
-extern int reqs_expr_lex_destroy(void);
 extern int test_path_lex_destroy(void);
 
 
@@ -77,7 +76,7 @@ typedef struct tester_global {
     tester_cfgs         cfgs;       /**< Configuration files */
     test_suites_info    suites;     /**< Information about test suites */
     test_paths          paths;      /**< Paths specified by caller */
-    reqs_expr          *targets;    /**< Target requirements expression */
+    logic_expr         *targets;    /**< Target requirements expression */
     unsigned int        total;      /**< Total number of test iterations */
     testing_scenario    scenario;   /**< Testing scenario */
 } tester_global;
@@ -125,7 +124,7 @@ tester_global_free(tester_global *global)
     tester_cfgs_free(&global->cfgs);
     test_suites_info_free(&global->suites);
     test_paths_free(&global->paths);
-    tester_reqs_expr_free(global->targets);
+    logic_expr_free(global->targets);
     scenario_free(&global->scenario);
 }
 
@@ -476,16 +475,19 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                 break;
 
             case TESTER_OPT_TRC_DB:
-                if (!no_trc)
-                {
-                }
-                break;
-
             case TESTER_OPT_TRC_TAG:
                 if (!no_trc)
                 {
+                    global->flags &= ~TESTER_NO_TRC;
+                    /* Initialize TRC instance, if necessary */
+                    if (rc == TESTER_OPT_TRC_DB)
+                    {
+                    }
+                    else
+                    {
+                    }
                 }
-                break;
+                break; 
 
             case TESTER_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,
@@ -651,7 +653,7 @@ exit:
     tester_global_free(&global);
     tester_term_cleanup();
 
-    (void)reqs_expr_lex_destroy();
+    (void)logic_expr_int_lex_destroy();
     (void)test_path_lex_destroy();
 
     return result;
