@@ -49,9 +49,12 @@
 
 #include "te_defs.h"
 #include "te_queue.h"
-#include "trc_log.h"
+#include "logger_api.h"
 #include "trc_tag.h"
 #include "trc_db.h"
+
+
+DEFINE_LGR_ENTITY("TRC DIFF");
 
 
 /** TRC tool command line options */

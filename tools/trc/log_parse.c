@@ -42,7 +42,8 @@
 #include <errno.h>
 #endif
 
-#include "trc_log.h"
+#include "logger_api.h"
+
 #include "trc_db.h"
 #include "trc_xml.h"
 
@@ -349,7 +350,7 @@ get_test_params(xmlNodePtr node, test_args *args)
  * @return Status code
  */
 static int
-get_verdicts(xmlNodePtr node, tqh_string *verdicts)
+get_verdicts(xmlNodePtr node, tqh_strings *verdicts)
 {
     int         rc = 0;
     tqe_string *p;
@@ -368,7 +369,7 @@ get_verdicts(xmlNodePtr node, tqh_string *verdicts)
         if (p == NULL)
             return EINVAL;
         TAILQ_INSERT_TAIL(verdicts, p, links);
-        rc = get_text_content(node, "verdict", &p->str);
+        rc = get_text_content(node, "verdict", &p->v);
         if (rc != 0)
             break;
         node = xmlNodeNext(node);
@@ -379,7 +380,7 @@ get_verdicts(xmlNodePtr node, tqh_string *verdicts)
 
 static int
 get_meta(xmlNodePtr node, char **objective, test_args *args,
-         tqh_string *verdicts)
+         tqh_strings *verdicts)
 {
     int rc;
 
@@ -467,7 +468,7 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
     te_bool             new_test = FALSE;
     char               *objective = NULL;
     test_args           args;
-    tqh_string          verdicts;
+    tqh_strings         verdicts;
 
 
     name = xmlGetProp(root, CONST_CHAR2XML("name"));

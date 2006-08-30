@@ -46,7 +46,7 @@
 #endif
 
 #include "te_defs.h"
-#include "trc_log.h"
+#include "logger_api.h"
 #include "trc_tag.h"
 #include "trc_db.h"
 
@@ -1099,9 +1099,9 @@ trc_diff_tags_to_html(const trc_tags_list *tags_list)
              tag = tag->links.tqe_next)
         {
             if (tag->links.tqe_next != NULL ||
-                strcmp(tag->str, "result") != 0)
+                strcmp(tag->v, "result") != 0)
             {
-                fprintf(f, " %s", tag->str);
+                fprintf(f, " %s", tag->v);
             }
         }
         fprintf(f, "<BR/><BR/>");

@@ -49,10 +49,13 @@
 
 #include "te_defs.h"
 #include "te_queue.h"
+#include "logger_api.h"
 
-#include "trc_log.h"
 #include "trc_tag.h"
 #include "trc_db.h"
+
+
+DEFINE_LGR_ENTITY("TRC RG");
 
 
 /** TRC tool command line options */

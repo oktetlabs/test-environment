@@ -33,6 +33,7 @@
 
 #include "te_defs.h"
 #include "te_queue.h"
+#include "tq_string.h"
 #include "logic_expr.h"
 
 
@@ -44,7 +45,7 @@ typedef tqe_string trc_tag;
 /**
  * List of tags is just a order list of strings.
  */
-typedef tqh_string trc_tags;
+typedef tqh_strings trc_tags;
 
 
 /** Entry in the list of list of named tags */

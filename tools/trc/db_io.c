@@ -42,7 +42,8 @@
 #include <errno.h>
 #endif
 
-#include "trc_log.h"
+#include "logger_api.h"
+
 #include "trc_tag.h"
 #include "trc_db.h"
 #include "trc_xml.h"
@@ -358,7 +359,7 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
                 rc = ENOMEM;
                 goto exit;
             }
-            v->str = s;
+            v->v = s;
             TAILQ_INSERT_TAIL(&result->verdicts, v, links);
         }
     }
@@ -971,24 +972,6 @@ trc_free_test_args(test_args *args)
 }
 
 /**
- * Fre tail queue of strings.
- *
- * @param strings   Tail queue head
- */
-static void
-trc_free_tq_strings(tqh_string *strings)
-{
-    tqe_string *p;
-
-    while ((p = strings->tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(strings, p, links);
-        free(p->str);
-        free(p);
-    }
-}
-
-/**
  * Free resources allocated for the list of test iterations.
  *
  * @param iters     List of test iterations to be freed
@@ -1006,15 +989,15 @@ trc_free_test_iters(test_iters *iters)
         free(p->notes);
         free(p->exp_result.key);
         free(p->exp_result.notes);
-        trc_free_tq_strings(&p->exp_result.verdicts);
+        tq_strings_free(&p->exp_result.verdicts, free);
         for (i = 0; i < TRC_DIFF_IDS; ++i)
         {
             free(p->diff_exp[i].key);
             free(p->diff_exp[i].notes);
-            trc_free_tq_strings(&p->diff_exp[i].verdicts);
+            tq_strings_free(&p->diff_exp[i].verdicts, free);
         }
         trc_free_test_runs(&p->tests);
-        trc_free_tq_strings(&p->got_verdicts);
+        tq_strings_free(&p->got_verdicts, free);
         free(p);
     }
 }

@@ -56,35 +56,6 @@ typedef struct le_string {
 typedef LIST_HEAD(lh_string, le_string) lh_string;
 
 
-/**
- * Compare two tail queue of strings. Queues are equal, if each element
- * of the first queue is equal to the corresponding element of the
- * second queue.
- *
- * @param s1        The first tail queue
- * @param s1        The second tail queue
- *
- * @retval TRUE     Equal
- * @retval FALSE    Not equal
- */
-static inline te_bool
-tq_strings_equal(const tqh_string *s1, const tqh_string *s2)
-{
-    const tqe_string *p1;
-    const tqe_string *p2;
-
-    if (s1 == s2)
-        return TRUE;
-    if (s1 == NULL || s2 == NULL)
-        return FALSE;
-
-    for (p1 = s1->tqh_first, p2 = s2->tqh_first;
-         p1 != NULL && p2 != NULL && strcmp(p1->str, p2->str) == 0;
-         p1 = p1->links.tqe_next, p2 = p2->links.tqe_next);
-    
-    return (p1 == NULL) && (p2 == NULL);
-}
-
 
 /** Enumeration of possible test results */
 typedef enum trc_test_result {
@@ -106,7 +77,7 @@ typedef struct trc_exp_result {
     trc_test_result     value;      /**< The result itself */
     char               *key;        /**< BugID-like information */
     char               *notes;      /**< Some usefull notes */
-    tqh_string          verdicts;   /**< List of verdicts */
+    tqh_strings         verdicts;   /**< List of verdicts */
 } trc_exp_result;
 
 typedef enum trc_test_type {
@@ -188,7 +159,7 @@ typedef struct test_iter {
     test_runs       tests;          /**< Children tests of the session */
 
     trc_test_result got_result;     /**< Got test result */
-    tqh_string      got_verdicts;   /**< Got list of verdicts */
+    tqh_strings     got_verdicts;   /**< Got list of verdicts */
 
     te_bool         got_as_expect;  /**< Got result/verdicts is equal 
                                          to expected */
@@ -238,7 +209,7 @@ typedef struct test_run {
     /** The expected results */
     trc_test_result     diff_exp[TRC_DIFF_IDS];
     /** The expected verdicts */
-    tqh_string         *diff_verdicts[TRC_DIFF_IDS];
+    tqh_strings        *diff_verdicts[TRC_DIFF_IDS];
 } test_run;
 
 
@@ -334,7 +305,7 @@ extern int trc_diff_report_to_html(trc_database *db, unsigned int flags,
  * @param verdicts  Verdicts
  */
 static inline void
-trc_verdicts_to_html(FILE *f, const tqh_string *verdicts)
+trc_verdicts_to_html(FILE *f, const tqh_strings *verdicts)
 {
     const tqe_string   *v;
 
@@ -346,7 +317,7 @@ trc_verdicts_to_html(FILE *f, const tqh_string *verdicts)
     {
         if (v != verdicts->tqh_first)
             fputs("; ", f);
-        fputs(v->str, f);
+        fputs(v->v, f);
     }
 }
 

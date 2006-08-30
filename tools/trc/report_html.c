@@ -46,7 +46,7 @@
 #endif
 
 #include "te_defs.h"
-#include "trc_log.h"
+#include "logger_api.h"
 #include "trc_db.h"
 
 
