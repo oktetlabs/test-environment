@@ -56,7 +56,8 @@
 #define XML2CHAR_DUP(p) XML2CHAR(xmlStrdup(p))
 
 
-static te_errno get_tests(xmlNodePtr *node, trc_tests *tests);
+static te_errno get_tests(xmlNodePtr *node, trc_tests *tests,
+                          trc_test_iter *parent);
 
 
 /**
@@ -358,12 +359,13 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
  * @param node          XML node
  * @param test_name     Name of the test
  * @param iters         List of iterations to be filled in
+ * @param parent        Parent test
  *
  * @return Status code.
  */
 static te_errno
 alloc_and_get_test_iter(xmlNodePtr node, const char *test_name, 
-                        trc_test_iters *iters)
+                        trc_test_iters *iters, trc_test *parent)
 {
     te_errno        rc;
     trc_test_iter  *p;
@@ -377,6 +379,7 @@ alloc_and_get_test_iter(xmlNodePtr node, const char *test_name,
     if (p == NULL)
         return errno;
     p->node = p->tests.node = node;
+    p->parent = parent;
     TAILQ_INIT(&p->args.head);
     LIST_INIT(&p->exp_results);
     TAILQ_INIT(&p->tests.head);
@@ -422,7 +425,7 @@ alloc_and_get_test_iter(xmlNodePtr node, const char *test_name,
     }
 
     /* Get sub-tests */
-    rc = get_tests(&node, &p->tests);
+    rc = get_tests(&node, &p->tests, p);
     if (rc != 0)
         return rc;
 
@@ -441,12 +444,13 @@ alloc_and_get_test_iter(xmlNodePtr node, const char *test_name,
  * @param node          XML node
  * @param test_name     Name of the test
  * @param iters         List of iterations to be filled in
+ * @param parent        Parent test
  *
  * @return Status code
  */
 static te_errno
 get_test_iters(xmlNodePtr *node, const char *test_name, 
-               trc_test_iters *iters)
+               trc_test_iters *iters, trc_test *parent)
 {
     te_errno rc = 0;
 
@@ -455,7 +459,8 @@ get_test_iters(xmlNodePtr *node, const char *test_name,
 
     while (*node != NULL &&
            xmlStrcmp((*node)->name, CONST_CHAR2XML("iter")) == 0 &&
-           (rc = alloc_and_get_test_iter(*node, test_name, iters)) == 0)
+           (rc = alloc_and_get_test_iter(*node, test_name, iters,
+                                         parent)) == 0)
     {
         *node = xmlNodeNext(*node);
     }
@@ -468,11 +473,13 @@ get_test_iters(xmlNodePtr *node, const char *test_name,
  *
  * @param node          XML node
  * @param tests         List of tests to add the new test
+ * @param parent        Parent iteration
  *
  * @return Status code.
  */
 static te_errno
-alloc_and_get_test(xmlNodePtr node, trc_tests *tests)
+alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
+                   trc_test_iter *parent)
 {
     te_errno    rc;
     trc_test   *p;
@@ -484,6 +491,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests)
     if (p == NULL)
         return errno;
     p->node = p->iters.node = node;
+    p->parent = parent;
     TAILQ_INIT(&p->iters.head);
     TAILQ_INSERT_TAIL(&tests->head, p, links);
 
@@ -560,7 +568,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests)
         }
     }
 
-    rc = get_test_iters(&node, p->name, &p->iters);
+    rc = get_test_iters(&node, p->name, &p->iters, p);
     if (rc != 0)
     {
         ERROR("Failed to get iterations of the test '%s'", p->name);
@@ -581,11 +589,12 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests)
  *
  * @param node          XML node
  * @param tests         List of tests to be filled in
+ * @param parent        Parent iteration
  *
  * @return Status code
  */
 static te_errno
-get_tests(xmlNodePtr *node, trc_tests *tests)
+get_tests(xmlNodePtr *node, trc_tests *tests, trc_test_iter *parent)
 {
     te_errno rc = 0;
 
@@ -594,7 +603,7 @@ get_tests(xmlNodePtr *node, trc_tests *tests)
 
     while (*node != NULL &&
            xmlStrcmp((*node)->name, CONST_CHAR2XML("test")) == 0 &&
-           (rc = alloc_and_get_test(*node, tests)) == 0)
+           (rc = alloc_and_get_test(*node, tests, parent)) == 0)
     {
         *node = xmlNodeNext(*node);
     }
@@ -682,7 +691,7 @@ trc_db_open(const char *location, te_trc_db **db)
         }
 
         node = xmlNodeChildren(node);
-        rc = get_tests(&node, &(*db)->tests);
+        rc = get_tests(&node, &(*db)->tests, NULL);
         if (rc != 0)
         {
             ERROR("Preprocessing of DB with expected testing results in "

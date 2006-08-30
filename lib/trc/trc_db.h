@@ -93,6 +93,8 @@ typedef struct trc_test_iter {
     trc_exp_results     exp_results;
 
     trc_tests           tests;      /**< Children tests of the session */
+    
+    struct trc_test    *parent;     /**< Back reference */
 
 } trc_test_iter;
 
@@ -132,6 +134,8 @@ typedef struct trc_test {
                                          should be updated */
 
     trc_test_iters  iters;          /**< Iterations of the test */
+
+    trc_test_iter  *parent;         /**< Back reference */
 
 } trc_test;
 
