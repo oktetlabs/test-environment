@@ -44,14 +44,49 @@
 
 
 /**
+ * Statuses of test execution inside Tester.
+ */
+typedef enum tester_test_status {
+    TESTER_TEST_INCOMPLETE = 0, /**< Test execution has not been finished */
+
+    TESTER_TEST_EMPTY,      /**< Session is empty */
+    TESTER_TEST_SKIPPED,    /**< The test is skipped because of target
+                                 requirements specified by user */
+    TESTER_TEST_FAKED,      /**< Test execution is just faked by
+                                 the Tester */
+    TESTER_TEST_PASSED,     /**< Discovered IUT behaviour is correct
+                                 from the test point of view */
+    TESTER_TEST_FAILED,     /**< Discovered IUT behaviour is incorrect
+                                 from test point of view or some
+                                 internal error occur */
+    TESTER_TEST_SEARCH,     /**< Test to be executed is not found */
+    TESTER_TEST_DIRTY,      /**< Unexpected configuration changes after
+                                 test execution */
+    TESTER_TEST_KILLED,     /**< Test application is killed by some
+                                 signal */
+    TESTER_TEST_CORED,      /**< Test application is killed by SIGSEGV
+                                 signal and dumped core into a file */
+    TESTER_TEST_PROLOG,     /**< Session prologue is failed */
+    TESTER_TEST_EPILOG,     /**< Session epilogue is failed */
+    TESTER_TEST_KEEPALIVE,  /**< Session keep-alive validation is failed */
+    TESTER_TEST_EXCEPTION,  /**< Session exception handler is failed */
+    TESTER_TEST_STOPPED,    /**< Tests execution is interrupted by user */
+    TESTER_TEST_ERROR,      /**< Test status is unknown because of
+                                 Tester internal error */
+
+    TESTER_TEST_STATUS_MAX  /**< Dummy test status */
+} tester_test_status;
+
+/**
  * Result of the test execution.
  */
 typedef struct tester_test_result {
     LIST_ENTRY(tester_test_result)  links;  /**< List links */
 
-    test_id         id;         /**< Test ID */
-    te_test_result  result;     /**< Result */
-    trc_verdict     expected;   /**< Is the result expected? */
+    test_id             id;         /**< Test ID */
+    tester_test_status  status;     /**< Internal status */
+    te_test_result      result;     /**< Result */
+    trc_verdict         expected;   /**< Is the result expected? */
 } tester_test_result;
 
 /** List of results of tests which are in progress. */

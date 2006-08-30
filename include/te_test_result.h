@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
 /**
- * Statuses of test execution.
+ * Statuses of test execution visible for the world.
  */
 typedef enum te_test_status {
     TE_TEST_INCOMPLETE = 0, /**< Test execution has not been finished */
@@ -51,20 +51,8 @@ typedef enum te_test_status {
                              the test point of view */
     TE_TEST_FAILED,     /**< Discovered IUT behaviour is incorrect
                              from test point of view or some internal
-                             error occur */
-    TE_TEST_SEARCH,     /**< Test to be executed is not found */
-    TE_TEST_DIRTY,      /**< Unexpected configuration changes after
-                             test execution */
-    TE_TEST_KILLED,     /**< Test application is killed by some signal */
-    TE_TEST_CORED,      /**< Test application is killed by SIGSEGV
-                             signal and dumped core into a file */
-    TE_TEST_PROLOG,     /**< Session prologue is failed */
-    TE_TEST_EPILOG,     /**< Session epilogue is failed */
-    TE_TEST_KEEPALIVE,  /**< Session keep-alive validation is failed */
-    TE_TEST_EXCEPTION,  /**< Session exception handler is failed */
-    TE_TEST_STOPPED,    /**< Tests execution is interrupted by user */
-    TE_TEST_ERROR,      /**< Test status is unknown because of
-                             Tester internal error */
+                             error occur (test executable not found,
+                             unexpected configuration changes, etc) */
 
     TE_TEST_STATUS_MAX  /**< Dummy test status */
 } te_test_status;

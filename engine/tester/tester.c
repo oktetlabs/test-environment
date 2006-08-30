@@ -77,6 +77,7 @@ typedef struct tester_global {
     test_suites_info    suites;     /**< Information about test suites */
     test_paths          paths;      /**< Paths specified by caller */
     logic_expr         *targets;    /**< Target requirements expression */
+    te_trc_db          *trc_db;     /**< TRC database handle */
     unsigned int        total;      /**< Total number of test iterations */
     testing_scenario    scenario;   /**< Testing scenario */
 } tester_global;
@@ -125,6 +126,9 @@ tester_global_free(tester_global *global)
     test_suites_info_free(&global->suites);
     test_paths_free(&global->paths);
     logic_expr_free(global->targets);
+#if WITH_TRC 
+    trc_db_close(global->trc_db);
+#endif
     scenario_free(&global->scenario);
 }
 
@@ -328,7 +332,12 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
     poptContext  optCon;
     int          rc;
     const char  *cfg_file;
+#if WITH_TRC
     te_bool      no_trc = FALSE;
+#else
+    te_bool      no_trc = TRUE;
+#endif
+    te_bool      warn_no_trc = TRUE;
 
 
     /* Process command line options */
@@ -478,14 +487,32 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
             case TESTER_OPT_TRC_TAG:
                 if (!no_trc)
                 {
+#if WITH_TRC
                     global->flags &= ~TESTER_NO_TRC;
                     /* Initialize TRC instance, if necessary */
                     if (rc == TESTER_OPT_TRC_DB)
                     {
+                        rc = trc_db_open(poptGetOptArg(optCon),
+                                         &global->trc_db);
+                        if (rc != 0)
+                        {
+                            poptFreeContext(optCon);
+                            return rc;
+                        }
                     }
                     else
                     {
                     }
+#else
+                    /* Unreachable */
+                    assert(FALSE);
+#endif
+                }
+                else if (warn_no_trc)
+                {
+                    warn_no_trc = FALSE;
+                    WARN("No TRC, related command-line options are "
+                         "ignored");
                 }
                 break; 
 
@@ -632,7 +659,7 @@ main(int argc, char *argv[])
     {
         RING("Starting...");
         rc = tester_run(&global.scenario, global.targets, &global.cfgs,
-                        global.flags);
+                        global.trc_db, global.flags);
         if (rc != 0)
         {
 #if 1

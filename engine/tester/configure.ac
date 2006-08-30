@@ -18,6 +18,11 @@ AC_PROG_INSTALL
 
 TE_APP_SET
 
+AM_CONDITIONAL(WITH_TRC, test -n "$with_trc")
+if test -n "$with_trc" ; then
+    TE_CPPFLAGS="$TE_CPPFLAGS -DWITH_TRC"
+fi    
+
 # Checks for libraries
 TE_PATH_LIBXML2
 
@@ -31,8 +36,6 @@ AC_CHECK_LIB([curses], [start_color],
               AC_DEFINE(HAVE_COLOR, 1,
                         [ Define if your curses library supports color. ])],
              [AC_MSG_WARN([Color terminal is not supported])])
-
-AC_CHECK_HEADERS([te_trc.h])
 
 AC_CONFIG_FILES([Makefile])
 

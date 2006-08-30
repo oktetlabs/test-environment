@@ -57,9 +57,9 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "logger_api.h"
-#include "te_test_result.h"
 
 #include "tester_flags.h"
+#include "tester_result.h"
 #include "tester_term.h"
 
 
@@ -130,7 +130,7 @@ typedef enum colored_verdict_type {
 } colored_verdict_type;
 
 /** Colored verdict when TRC is not used? */
-static const colored_verdict_data colored_verdicts[TE_TEST_STATUS_MAX]
+static const colored_verdict_data colored_verdicts[TESTER_TEST_STATUS_MAX]
                                                   [COLORED_VERDICT_MAX] = {
 
     { { COLOR_CYAN,             "INCOMPLETE",   "INCOMPLETE" },
@@ -340,7 +340,7 @@ void
 tester_term_out_done(unsigned int flags,
                      run_item_type type, const char *name,
                      test_id parent, test_id self,
-                     te_test_status status, trc_verdict trcv)
+                     tester_test_status status, trc_verdict trcv)
 {
     char                    ids[20] = "";
     char                    msg_out[256];
@@ -348,7 +348,7 @@ tester_term_out_done(unsigned int flags,
     char                   *msg;
     colored_verdict_type    cvt;
 
-    assert(status < TE_TEST_STATUS_MAX);
+    assert(status < TESTER_TEST_STATUS_MAX);
 
     if ((~flags & TESTER_VERBOSE) ||
         ((~flags & TESTER_VVVERB) && (type == RUN_ITEM_SESSION)))

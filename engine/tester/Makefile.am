@@ -61,12 +61,19 @@ EXTRA_DIST = test_path_lex.h
 
 test_path_lex.h: test_path_lex.c
 
+if WITH_TRC
+	TRC_LDADD="-ltrc"
+	TRC_DEPS="$(DESTDIR)/$(libdir)/libtrc.a"
+else
+	TRC_LDADD=
+	TRC_DEPS=
+endif
 
-te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid -llogger_ten \
-                  -lipc -lipcserver -llogic_expr -ltools \
+te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid $(TRC_LDADD) \
+                  -llogger_ten -lipc -lipcserver -llogic_expr -ltools \
                   @XML2_LIBS@ -lpopt -lfl -lpthread 
 
-te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
+te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ $(TRC_DEPS) \
 	$(DESTDIR)/$(libdir)/libbsapi.a \
 	$(DESTDIR)/$(libdir)/libconfapi.a \
 	$(DESTDIR)/$(libdir)/libconf_oid.a \

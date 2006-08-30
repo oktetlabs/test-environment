@@ -31,6 +31,12 @@
 #ifndef __TE_TESTER_RUN_SCENARIO_H__
 #define __TE_TESTER_RUN_SCENARIO_H__
 
+#if WITH_TRC
+#include "te_trc.h"
+#else
+#define te_trc_db   void
+#endif
+
 #include "te_queue.h"
 
 #include "tester_reqs.h"
@@ -271,6 +277,7 @@ struct tester_cfgs;
  * @param scenario      Testing scenario
  * @param targets       Target requirements
  * @param cfgs          Tester configurations
+ * @param trc_db        TRC database handle
  * @param flags         Flags
  *
  * @return Status code.
@@ -278,6 +285,7 @@ struct tester_cfgs;
 extern te_errno tester_run(const testing_scenario   *scenario,
                            const struct logic_expr  *targets,
                            const struct tester_cfgs *cfgs,
+                           const te_trc_db          *trc_db,
                            const unsigned int        flags);
 
 
