@@ -8,6 +8,14 @@ AM_YFLAGS = -d
 
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir) 
 
+if WITH_TRC
+TRC_LDADD = -ltrc
+TRC_DEPS = $(DESTDIR)/$(libdir)/libtrc.a
+else
+TRC_LDADD=
+TRC_DEPS=
+endif
+
 
 noinst_HEADERS = \
 	type_lib.h \
@@ -60,14 +68,6 @@ EXTRA_DIST = test_path_lex.h
 #	$(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ $*.h $*.h -- $(LEXCOMPILE)
 
 test_path_lex.h: test_path_lex.c
-
-if WITH_TRC
-	TRC_LDADD="-ltrc"
-	TRC_DEPS="$(DESTDIR)/$(libdir)/libtrc.a"
-else
-	TRC_LDADD=
-	TRC_DEPS=
-endif
 
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid $(TRC_LDADD) \
                   -llogger_ten -lipc -lipcserver -llogic_expr -ltools \
