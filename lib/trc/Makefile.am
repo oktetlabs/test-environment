@@ -10,7 +10,8 @@ include_HEADERS = \
 lib_LTLIBRARIES = libtrc.la
 
 libtrc_la_SOURCES = \
-	db_io.c
+	db_io.c \
+	db_walker.c
 
 install-exec-hook:
 	touch -c -r libtrc.la $(DESTDIR)/$(libdir)/libtrc.*

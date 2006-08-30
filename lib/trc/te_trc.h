@@ -80,10 +80,9 @@ typedef LIST_HEAD(trc_exp_results, trc_exp_result) trc_exp_results;
  * Testing Results Comparator database interface
  */
 
-/* Forward declaration of the Testing Results Comparator instance */
-struct te_trc;
-/* Forward declaration of the TRC database instance */
+/* Forward declaration of the TRC database */
 struct te_trc_db;
+/** Short alias for TRC database type */
 typedef struct te_trc_db te_trc_db;
 
 /**
@@ -108,47 +107,75 @@ extern void trc_db_close(struct te_trc_db *trc_db);
 
 
 /*
- * Testing Results Comparator instance.
+ * Testing Results Comparator database walker 
  */
 
-/**
- * Initialize TRC instance.
- *
- * @param p_trci        Location for TRC instance handle
- *
- * @return Status code.
- */
-extern te_errno trc_init(struct te_trc **p_trci);
+/* Forward declaration of the position in TRC database tree */
+struct te_trc_db_walker;
+/** Short alias for type to represent position in TRC database tree */
+typedef struct te_trc_db_walker te_trc_db_walker;
 
 /**
- * Set TRC database.
+ * Allocate a new walker to traverse TRC database tree.
  *
- * @param trci          TRC instance handle
- * @param db            TRC database instance handle
+ * @param trc_db        TRC database instance
  *
- * @return Status code.
+ * @return Pointer to allocated walker.
  */
-extern te_errno trc_set_db(struct te_trc    *trci,
-                           struct te_trc_db *trc_db);
-
-#if 0
-/**
- * Initialize TRC instance.
- *
- * @param trci          TRC instance handle
- * @param iut_id        IUT identification tags
- *
- * @return Status code.
- */
-extern te_errno trc_add_iut_id(struct te_trc *trci, const trc_tags *iut_id);
-#endif
+extern te_trc_db_walker *trc_db_new_walker(struct te_trc_db  *trc_db);
 
 /**
- * Free TRC instance.
+ * Move walker from the current position to the child test with
+ * specified name.
  *
- * @param trci          TRC instance handle
+ * @attention The function has to be called from initial walker
+ *            position or iteration of any test.
+ *
+ * @param walker        Current walker position
+ * @param test_name     Name of the test
+ *
+ * @return Is walker in a known place in TRC database tree?
  */
-extern void trc_free(struct te_trc *trci);
+extern te_bool trc_db_walker_step_test(te_trc_db_walker *walker,
+                                       const char       *test_name);
+
+/**
+ * Move walker from the current position to the test iteration with
+ * specified arguments.
+ *
+ * @attention The function has to be called from the test entry
+ *            position only.
+ *
+ * @param walker        Current walker position
+ * @param n_args        Number of arguments
+ * @param names         Array with arguments names
+ * @param values        Array with arguments values 
+ *
+ * @return Is walker in a known place in TRC database tree?
+ */
+extern te_bool trc_db_walker_step_iter(te_trc_db_walker  *walker,
+                                       unsigned int       n_args,
+                                       const char       **names,
+                                       const char       **values);
+
+/**
+ * Move walker one step back.
+ *
+ * @param walker        Current walker position
+ */
+extern void trc_db_walker_step_back(te_trc_db_walker *walker);
+
+/**
+ * Get test iteration expected result at the current TRC database
+ * walker position.
+ *
+ * @param walker        Current walker position
+ *
+ * @return Expected result.
+ * @return NULL         The test/iteration is unknown for TRC database.
+ */
+extern const trc_exp_result *tester_db_walker_get_exp_result(
+                                 te_trc_db_walker *walker);
 
 #ifdef __cplusplus
 } /* extern "C" */
