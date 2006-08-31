@@ -79,7 +79,6 @@
 #include "te_bufs.h"
 #include "logger_api.h"
 #include "tapi_jmp.h"
-#include "tapi_bufs.h"
 #include "tapi_sockaddr.h"
 #include "tapi_rpc.h"
 #include "tapi_rpcsock_macros.h"

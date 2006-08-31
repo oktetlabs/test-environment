@@ -85,7 +85,6 @@
 #include "rcf_api.h"
 #include "logger_api.h"
 #include "tapi_test.h"
-#include "tapi_bufs.h"
 #include "tapi_sockaddr.h"
 #include "tapi_rpc.h"
 #include "tapi_rpcsock_macros.h"
