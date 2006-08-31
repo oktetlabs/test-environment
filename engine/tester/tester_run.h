@@ -38,6 +38,7 @@
 #endif
 
 #include "te_queue.h"
+#include "tq_string.h"
 
 #include "tester_reqs.h"
 
@@ -278,6 +279,7 @@ struct tester_cfgs;
  * @param targets       Target requirements
  * @param cfgs          Tester configurations
  * @param trc_db        TRC database handle
+ * @param trc_tags      List of TRC tags (IUT identification)
  * @param flags         Flags
  *
  * @return Status code.
@@ -286,6 +288,7 @@ extern te_errno tester_run(const testing_scenario   *scenario,
                            const struct logic_expr  *targets,
                            const struct tester_cfgs *cfgs,
                            const te_trc_db          *trc_db,
+                           const tqh_strings        *trc_tags,
                            const unsigned int        flags);
 
 

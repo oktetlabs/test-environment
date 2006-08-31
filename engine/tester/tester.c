@@ -51,6 +51,8 @@
 #endif
 
 #include "te_defs.h"
+#include "tq_string.h"
+
 #include "tester_build.h"
 #include "tester_conf.h"
 #include "test_path.h"
@@ -78,6 +80,7 @@ typedef struct tester_global {
     test_paths          paths;      /**< Paths specified by caller */
     logic_expr         *targets;    /**< Target requirements expression */
     te_trc_db          *trc_db;     /**< TRC database handle */
+    tqh_strings         trc_tags;   /**< TRC tags */
     unsigned int        total;      /**< Total number of test iterations */
     testing_scenario    scenario;   /**< Testing scenario */
 } tester_global;
@@ -107,6 +110,9 @@ tester_global_init(tester_global *global)
 
     global->targets = NULL;
 
+    global->trc_db = NULL;
+    TAILQ_INIT(&global->trc_tags);
+
     TAILQ_INIT(&global->scenario);
 
     return 0;
@@ -128,6 +134,7 @@ tester_global_free(tester_global *global)
     logic_expr_free(global->targets);
 #if WITH_TRC 
     trc_db_close(global->trc_db);
+    tq_strings_free(&global->trc_tags, free);
 #endif
     scenario_free(&global->scenario);
 }
@@ -502,6 +509,16 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     }
                     else
                     {
+                        tqe_string *entry = malloc(sizeof(*entry));
+                        
+                        if (entry == NULL)
+                            return TE_RC(TE_TESTER, TE_ENOMEM);
+                        TAILQ_INSERT_TAIL(&global->trc_tags, entry,
+                                          links);
+
+                        entry->v = strdup(poptGetOptArg(optCon));
+                        if (entry->v == NULL)
+                            return TE_RC(TE_TESTER, TE_ENOMEM);
                     }
 #else
                     /* Unreachable */
@@ -659,7 +676,7 @@ main(int argc, char *argv[])
     {
         RING("Starting...");
         rc = tester_run(&global.scenario, global.targets, &global.cfgs,
-                        global.trc_db, global.flags);
+                        global.trc_db, &global.trc_tags, global.flags);
         if (rc != 0)
         {
 #if 1

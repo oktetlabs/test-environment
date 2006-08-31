@@ -90,8 +90,7 @@ typedef struct tester_test_result {
     test_id                 id;         /**< Test ID */
     tester_test_status      status;     /**< Internal status */
     te_test_result          result;     /**< Result */
-    const char             *reason;     /**< Additional explanations
-                                             to test status */
+    const char             *error;      /**< Error string */
 #if WITH_TRC
     const trc_exp_result   *exp_result; /**< Expected result */
     trc_verdict             exp_status; /**< Is obtained result

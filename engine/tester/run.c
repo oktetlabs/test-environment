@@ -53,7 +53,9 @@
 #include <pthread.h>
 #endif
 
+#include "te_alloc.h"
 #include "conf_api.h"
+#include "log_bufs.h"
 
 #include "tester_conf.h"
 #include "tester_term.h"
@@ -117,6 +119,12 @@ typedef struct tester_ctx {
     unsigned int        n_args;         /**< Number of arguments */
 
     struct tester_ctx  *keepalive_ctx;  /**< Keep-alive context */
+
+#if WITH_TRC
+    te_trc_db_walker   *trc_walker;     /**< Current position in TRC
+                                             database */
+    te_bool             do_trc_walker;  /**< Move TRC walker or not? */
+#endif
 } tester_ctx;
 
 /**
@@ -137,6 +145,10 @@ typedef struct tester_run_data {
                                                  which are in progress */
     tester_verdicts_listener   *vl;         /**< Verdicts listener
                                                  control data */
+#if WITH_TRC
+    const te_trc_db            *trc_db;     /**< TRC database handle */
+    const tqh_strings          *trc_tags;   /**< TRC tags */
+#endif
 
     LIST_HEAD(, tester_ctx)     ctxs;       /**< Stack of contexts */
 
@@ -189,13 +201,10 @@ static tester_ctx *
 tester_ctx_clone(const tester_ctx *ctx)
 {
     int         rc;
-    tester_ctx *new_ctx = calloc(1, sizeof(*new_ctx));
+    tester_ctx *new_ctx = TE_ALLOC(sizeof(*new_ctx));
 
     if (new_ctx == NULL)
-    {
-        ERROR("%s(): calloc(1, %u)", __FUNCTION__, sizeof(*new_ctx));
         return NULL;
-    }
     new_ctx->flags = ctx->flags;
 
     new_ctx->group_result.id = ctx->group_result.id;
@@ -225,76 +234,10 @@ tester_ctx_clone(const tester_ctx *ctx)
 
     /* new_ctx->keepalive_ctx = NULL; */
 
-    return new_ctx;
-}
-
-/**
- * Allocate a new (the first) tester context.
- *
- * @param data          Global Tester context data
- *
- * @return Allocated context.
- */
-static tester_ctx *
-tester_run_new_ctx(tester_run_data *data)
-{
-    tester_ctx *new_ctx = calloc(1, sizeof(*new_ctx));
-    
-    if (new_ctx == NULL)
-        return NULL;
-
-    new_ctx->flags = data->flags;
-
-    new_ctx->group_result.id = tester_get_id();
-    te_test_result_init(&new_ctx->group_result.result);
-    new_ctx->group_result.status = TESTER_TEST_EMPTY;
-
-    /* new_ctx->current_result.id = 0; */
-    te_test_result_init(&new_ctx->current_result.result);
-    /* new_ctx->current_result.status = 0; */
-
-    new_ctx->targets = data->targets;
-    new_ctx->targets_free = FALSE;
-    TAILQ_INIT(&new_ctx->reqs);
-    /* new_ctx->backup = NULL; */
-    /* new_ctx->backup_ok = FALSE; */
-    /* new_ctx->args = NULL; */
-
-    assert(data->ctxs.lh_first == NULL);
-    LIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
-
-    VERB("Initial context: flags=0x%x parent_id=%u",
-         new_ctx->flags, new_ctx->group_result.id);
-
-    return new_ctx;
-}
-
-/**
- * Clone the most recent (current) Tester context.
- *
- * @param data          Global Tester context data
- *
- * @return Allocated context.
- */
-static tester_ctx *
-tester_run_clone_ctx(tester_run_data *data)
-{
-    tester_ctx *new_ctx;
-
-    assert(data->ctxs.lh_first != NULL);
-    new_ctx = tester_ctx_clone(data->ctxs.lh_first);
-    if (new_ctx == NULL)
-    {
-        data->ctxs.lh_first->current_result.status =
-            TE_RC(TE_TESTER, TE_ENOMEM);
-        return NULL;
-    }
-    
-    LIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
-
-    VERB("Tester context %p clonned %p: flags=0x%x parent_id=%u "
-         "child_id=%u", new_ctx->links.le_next, new_ctx, new_ctx->flags,
-         new_ctx->group_result.id, new_ctx->current_result.id);
+#if WITH_TRC
+    new_ctx->trc_walker = ctx->trc_walker;
+    new_ctx->do_trc_walker = ctx->do_trc_walker;
+#endif
 
     return new_ctx;
 }
@@ -324,6 +267,87 @@ tester_run_destroy_ctx(tester_run_data *data)
 
     LIST_REMOVE(curr, links);
     tester_ctx_free(curr);
+}
+
+/**
+ * Allocate a new (the first) tester context.
+ *
+ * @param data          Global Tester context data
+ *
+ * @return Allocated context.
+ */
+static tester_ctx *
+tester_run_new_ctx(tester_run_data *data)
+{
+    tester_ctx *new_ctx = TE_ALLOC(sizeof(*new_ctx));
+    
+    if (new_ctx == NULL)
+        return NULL;
+
+    new_ctx->flags = data->flags;
+
+    new_ctx->group_result.id = tester_get_id();
+    te_test_result_init(&new_ctx->group_result.result);
+    new_ctx->group_result.status = TESTER_TEST_EMPTY;
+
+    /* new_ctx->current_result.id = 0; */
+    te_test_result_init(&new_ctx->current_result.result);
+    /* new_ctx->current_result.status = 0; */
+
+    new_ctx->targets = data->targets;
+    new_ctx->targets_free = FALSE;
+    TAILQ_INIT(&new_ctx->reqs);
+    /* new_ctx->backup = NULL; */
+    /* new_ctx->backup_ok = FALSE; */
+    /* new_ctx->args = NULL; */
+
+    assert(data->ctxs.lh_first == NULL);
+    LIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
+
+#if WITH_TRC
+    new_ctx->trc_walker = trc_db_new_walker(data->trc_db);
+    if (new_ctx->trc_walker == NULL)
+    {
+        tester_run_destroy_ctx(data);
+        return NULL;
+    }
+    new_ctx->do_trc_walker = FALSE;
+#endif
+
+    VERB("Initial context: flags=0x%x parent_id=%u",
+         new_ctx->flags, new_ctx->group_result.id);
+
+    return new_ctx;
+}
+
+/**
+ * Clone the most recent (current) Tester context.
+ *
+ * @param data          Global Tester context data
+ *
+ * @return Allocated context.
+ */
+static tester_ctx *
+tester_run_clone_ctx(tester_run_data *data)
+{
+    tester_ctx *new_ctx;
+
+    assert(data->ctxs.lh_first != NULL);
+    new_ctx = tester_ctx_clone(data->ctxs.lh_first);
+    if (new_ctx == NULL)
+    {
+        data->ctxs.lh_first->current_result.status =
+            TESTER_TEST_ERROR;
+        return NULL;
+    }
+    
+    LIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
+
+    VERB("Tester context %p clonned %p: flags=0x%x parent_id=%u "
+         "child_id=%u", new_ctx->links.le_next, new_ctx, new_ctx->flags,
+         new_ctx->group_result.id, new_ctx->current_result.id);
+
+    return new_ctx;
 }
 
 /**
@@ -538,99 +562,142 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
 /**
  * Log test (script, package, session) result.
  *
- * @param parent    Parent ID
- * @param tr        Test result
+ * @param parent        Parent ID
+ * @param test          Test ID
+ * @param status        Test status
+ * @param error         Reason of failure
  */
 static void
-log_test_result(test_id parent, tester_test_result *tr)
+log_test_result(test_id parent, test_id test, te_test_status status,
+                const char *error)
 {
-    switch (tr->status)
+    TE_LOG_RING(TESTER_CONTROL,
+                TESTER_CONTROL_MSG_PREFIX "%s %s",
+                parent, test, te_test_status_to_str(status),
+                error == NULL ? "" : error);
+}
+
+
+/**
+ * Map tester test status to TE test status plus error string.
+ * If error string is not empty, it is added as verdict in test result.
+ *
+ * @param status        Tester internal test status
+ * @param result        TE test result
+ * @param error         Location for additional error string
+ */
+static void
+tester_test_status_to_te_test_result(tester_test_status status,
+                                     te_test_result *result,
+                                     const char **error)
+{
+    *error = NULL;
+
+    switch (status)
     {
         case TESTER_TEST_PASSED:
-            TE_LOG_RING(TESTER_CONTROL,
-                        TESTER_CONTROL_MSG_PREFIX "PASSED",
-                        parent, tr->id);
+            result->status = TE_TEST_PASSED;
             break;
 
         case TESTER_TEST_SKIPPED:
-            TE_LOG_RING(TESTER_CONTROL,
-                        TESTER_CONTROL_MSG_PREFIX "SKIPPED",
-                        parent, tr->id);
+            result->status = TE_TEST_SKIPPED;
             break;
 
         case TESTER_TEST_STOPPED:
-            TE_LOG_RING(TESTER_CONTROL,
-                        TESTER_CONTROL_MSG_PREFIX "INCOMPLETE",
-                        parent, tr->id);
+            result->status = TE_TEST_INCOMPLETE;
             break;
 
         case TESTER_TEST_FAKED:
-            TE_LOG_RING(TESTER_CONTROL,
-                        TESTER_CONTROL_MSG_PREFIX "FAKED",
-                        parent, tr->id);
+            result->status = TE_TEST_FAKED;
             break;
 
         case TESTER_TEST_EMPTY:
-            TE_LOG_RING(TESTER_CONTROL,
-                        TESTER_CONTROL_MSG_PREFIX "EMPTY",
-                        parent, tr->id);
+            result->status = TE_TEST_EMPTY;
             break;
 
         default:
         {
-            const char *reason;
-
-            switch (tr->status)
+            result->status = TE_TEST_FAILED;
+            switch (status)
             {
                 case TESTER_TEST_FAILED:
-                    reason = "";
                     break;
 
                 case TESTER_TEST_DIRTY:
-                    reason = "Unexpected configuration changes";
+                    *error = "Unexpected configuration changes";
                     break;
 
                 case TESTER_TEST_SEARCH:
-                    reason = "Executable not found";
+                    *error = "Executable not found";
                     break;
 
                 case TESTER_TEST_KILLED:
-                    reason = "Test application died";
+                    *error = "Test application died";
                     break;
 
                 case TESTER_TEST_CORED:
-                    reason = "Test application core dumped";
+                    *error = "Test application core dumped";
                     break;
 
                 case TESTER_TEST_PROLOG:
-                    reason = "Session prologue failed";
+                    *error = "Session prologue failed";
                     break;
 
                 case TESTER_TEST_EPILOG:
-                    reason = "Session epilogue failed";
+                    *error = "Session epilogue failed";
                     break;
 
                 case TESTER_TEST_KEEPALIVE:
-                    reason = "Keep-alive validation failed";
+                    *error = "Keep-alive validation failed";
                     break;
 
                 case TESTER_TEST_EXCEPTION:
-                    reason = "Exception handler failed";
+                    *error = "Exception handler failed";
                     break;
 
                 case TESTER_TEST_INCOMPLETE:
                 case TESTER_TEST_ERROR:
-                    reason = "Internal error";
+                    *error = "Internal error";
                     break;
 
                 default:
                     assert(FALSE);
             }
-            TE_LOG_RING(TESTER_CONTROL,
-                        TESTER_CONTROL_MSG_PREFIX "FAILED %s",
-                        parent, tr->id, reason);
             break;
         }
+    }
+
+    if (*error != NULL)
+    {
+        te_test_verdict *v = TE_ALLOC(sizeof(*v));
+
+        if (v == NULL)
+        {
+            /* 
+             * Make sure that test will report failed because of
+             * internal error.
+             */
+            result->status = TE_TEST_FAILED;
+            *error = "Internal error";
+            return;
+        }
+
+        v->str = strdup(*error);
+        if (v->str == NULL)
+        {
+            ERROR("%s(): strdup(%s) failed", __FUNCTION__, *error);
+            free(v);
+
+            /* 
+             * Make sure that test will report failed because of
+             * internal error.
+             */
+            result->status = TE_TEST_FAILED;
+            *error = "Internal error";
+            return;
+        }
+
+        TAILQ_INSERT_TAIL(&result->verdicts, v, links);
     }
 }
 
@@ -1082,8 +1149,7 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
             if (ctx->targets == NULL)
             {
                 tester_run_destroy_ctx(gctx);
-                ctx->current_result.status =
-                    TE_RC(TE_TESTER, TE_ENOMEM);
+                ctx->current_result.status = TESTER_TEST_ERROR;
                 return TESTER_CFG_WALK_FAULT;
             }
             ctx->targets_free = TRUE;
@@ -1167,6 +1233,10 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
           gctx->act != NULL ? gctx->act->flags : 0,
           gctx->act_id);
 
+#if WITH_TRC
+    ctx->do_trc_walker = FALSE;
+#endif
+
     if (~flags & TESTER_CFG_WALK_SERVICE)
     {
         if (tester_sigint_received)
@@ -1211,14 +1281,21 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         ctx->args = calloc(ri->n_args, sizeof(*ctx->args));
         if (ctx->args == NULL)
         {
-            ctx->current_result.status =
-                TE_RC(TE_TESTER, TE_ENOMEM);
+            ctx->current_result.status = TESTER_TEST_ERROR;
             return TESTER_CFG_WALK_FAULT;
         }
         ctx->n_args = ri->n_args;
         for (i = 0; i < ctx->n_args; ++i)
             TAILQ_INIT(&ctx->args[i].reqs);
     }
+
+#if WITH_TRC
+    if (test_get_name(ri) != NULL)
+    {
+        trc_db_walker_step_test(ctx->trc_walker, test_get_name(ri));
+        ctx->do_trc_walker = TRUE;
+    }
+#endif
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
@@ -1242,6 +1319,13 @@ run_item_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
           gctx->act != NULL ? (int)gctx->act->last : -1,
           gctx->act != NULL ? gctx->act->flags : 0,
           gctx->act_id);
+
+#if WITH_TRC
+    if (ctx->do_trc_walker && test_get_name(ri) != NULL)
+        trc_db_walker_step_back(ctx->trc_walker);
+    else
+        ctx->do_trc_walker = TRUE;
+#endif
 
     ctx->n_args = 0;
     free(ctx->args);
@@ -1526,8 +1610,7 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         ctx->keepalive_ctx = tester_ctx_clone(ctx);
         if (ctx->keepalive_ctx == NULL)
         {
-            ctx->current_result.status =
-                TE_RC(TE_TESTER, TE_ENOMEM);
+            ctx->current_result.status = TESTER_TEST_ERROR;
             return TESTER_CFG_WALK_FAULT;
         }
     }
@@ -1932,6 +2015,10 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
           gctx->act != NULL ? gctx->act->flags : 0,
           gctx->act_id);
 
+#if WITH_TRC
+    ctx->do_trc_walker = FALSE;
+#endif
+
     if (~flags & TESTER_CFG_WALK_SERVICE)
     {
         if (tester_sigint_received)
@@ -1978,6 +2065,27 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         }
     }
 
+#if WITH_TRC
+    if (test_get_name(ri) != NULL)
+    {
+        const char     *names[ctx->n_args];
+        const char     *values[ctx->n_args];
+        unsigned int    i;
+
+        for (i = 0; i < ctx->n_args; ++i)
+        {
+            names[i] = ctx->args[i].name;
+            values[i] = ctx->args[i].value;
+        }
+        trc_db_walker_step_iter(ctx->trc_walker,
+                                ctx->n_args, names, values);
+        ctx->do_trc_walker = TRUE;
+
+        ctx->current_result.exp_result =
+            trc_db_walker_get_exp_result(ctx->trc_walker, gctx->trc_tags);
+    }
+#endif
+
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
 }
@@ -2001,6 +2109,13 @@ run_iter_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
           gctx->act != NULL ? (int)gctx->act->last : -1,
           gctx->act != NULL ? gctx->act->flags : 0,
           gctx->act_id);
+
+#if WITH_TRC
+    if (ctx->do_trc_walker && test_get_name(ri) != NULL)
+        trc_db_walker_step_back(ctx->trc_walker);
+    else
+        ctx->do_trc_walker = TRUE;
+#endif
 
     /* TODO: Optimize arguments fill in */
     assert(ri->n_args == ctx->n_args);
@@ -2071,6 +2186,23 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     return TESTER_CFG_WALK_CONT;
 }
 
+#if WITH_TRC
+/* FIXME */
+static void
+te_test_result_to_log_buf(te_log_buf *lb, const te_test_result *result)
+{
+    te_test_verdict *v;
+
+    te_log_buf_append(lb, "%s\n", te_test_status_to_str(result->status));
+    for (v = result->verdicts.tqh_first;
+         v != NULL;
+         v = v->links.tqe_next)
+    {
+        te_log_buf_append(lb, "%s;\n", v->str);
+    }
+}
+#endif
+
 static tester_cfg_walk_ctl
 run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                void *opaque)
@@ -2090,31 +2222,71 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
     if (ctx->current_result.status != TESTER_TEST_INCOMPLETE)
     {
+        /* The last step in test executaion - verification of backup */
         run_verify_cfg_backup(ctx, test_get_attrs(ri)->track_conf);
 
+        /* Test execution has been finished */
         tester_test_result_del(&gctx->results, &ctx->current_result);
 
-        log_test_result(ctx->group_result.id, &ctx->current_result);
+        /* 
+         * Convert internal test status to TE test status.
+         * Do it before TRC processing, since it may cause verdicts
+         * addition.
+         */
+        tester_test_status_to_te_test_result(ctx->current_result.status,
+                                             &ctx->current_result.result,
+                                             &ctx->current_result.error);
+
+#if WITH_TRC
+        if (ctx->current_result.exp_result == NULL)
+        {
+            ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
+            ctx->current_result.error = "Unknown test/iteration";
+        }
+        else if (trc_is_result_expected(ctx->current_result.exp_result,
+                                        &ctx->current_result.result))
+        {
+            ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
+        }
+        else
+        {
+            const trc_exp_result_entry *p;
+            te_log_buf               *lb = te_log_buf_alloc();
+
+            ctx->current_result.exp_status = TRC_VERDICT_UNEXPECTED;
+            te_log_buf_append(lb, "Obtained test result is unexpected.\n");
+            te_log_buf_append(lb, "\nObtained result is:\n");
+            te_test_result_to_log_buf(lb, &ctx->current_result.result);
+            te_log_buf_append(lb, "\nExpected results are:\n");
+            for (p = ctx->current_result.exp_result->results.tqh_first;
+                 p != NULL;
+                 p = p->links.tqe_next)
+            {
+                te_test_result_to_log_buf(lb, &p->result);
+            }
+            RING("%s", te_log_buf_get(lb));
+            te_log_buf_free(lb);
+
+            ctx->current_result.error = "Unexpected test result";
+        }
+#endif
+
+        log_test_result(ctx->group_result.id, ctx->current_result.id,
+                        ctx->current_result.result.status,
+                        ctx->current_result.error);
 
         tester_term_out_done(ctx->flags, ri->type, test_get_name(ri),
                              ctx->group_result.id,
                              ctx->current_result.id,
                              ctx->current_result.status,
-                             ctx->current_result.expected);
+#if WITH_TRC
+                             ctx->current_result.exp_status
+#else
+                             TRC_VERDICT_UNKNOWN
+#endif
+                             );
 
-        /* FIXME: Implement function in appropriate place */
-        {
-            te_test_verdict *v;
-
-            while ((v = ctx->current_result.result.verdicts.tqh_first)
-                      != NULL)
-            {
-                TAILQ_REMOVE(&ctx->current_result.result.verdicts,
-                             v, links);
-                free(v->str);
-                free(v);
-            }
-        }
+        te_test_result_free_verdicts(&ctx->current_result.result);
     }
     else
     {
@@ -2196,6 +2368,7 @@ tester_run(const testing_scenario *scenario,
            const logic_expr       *targets,
            const tester_cfgs      *cfgs,
            const te_trc_db        *trc_db,
+           const tqh_strings      *trc_tags,
            const unsigned int      flags)
 {
     te_errno                rc, rc2;
@@ -2236,6 +2409,13 @@ tester_run(const testing_scenario *scenario,
     data.targets = targets;
     data.act = scenario->tqh_first;
     data.act_id = data.act->first;
+#if WITH_TRC
+    data.trc_db = trc_db;
+    data.trc_tags = trc_tags;
+#else
+    UNUSED(trc_db);
+    UNUSED(trc_tags);
+#endif
     rc = tester_test_results_init(&data.results);
     if (rc != 0)
         return rc;
