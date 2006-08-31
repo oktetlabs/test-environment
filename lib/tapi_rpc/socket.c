@@ -63,7 +63,7 @@
 #endif
 
 #include "te_printf.h"
-#include "tapi_bufs.h"
+#include "log_bufs.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_socket.h"
@@ -1010,7 +1010,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
     tarpc_getsockopt_in   in;
     tarpc_getsockopt_out  out;    
     struct option_value   val;
-    tapi_log_buf         *opt_val_str = NULL;
+    te_log_buf         *opt_val_str = NULL;
     char                  opt_len_str[32] = "(nil)";
     
     memset(&in, 0, sizeof(in));
@@ -1209,7 +1209,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
     {
         if (optval != NULL)
         {
-            opt_val_str = tapi_log_buf_alloc();
+            opt_val_str = te_log_buf_alloc();
             switch (optname)
             {
                 case RPC_SO_LINGER:
@@ -1219,7 +1219,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     ((tarpc_linger *)optval)->l_linger =
                        out.optval.optval_val[0].option_value_u.
                             opt_linger.l_linger;
-                    tapi_log_buf_append(opt_val_str,
+                    te_log_buf_append(opt_val_str,
                         "{ l_onoff: %d, l_linger: %d }",
                         ((tarpc_linger *)optval)->l_onoff,
                         ((tarpc_linger *)optval)->l_linger);
@@ -1230,7 +1230,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     *((tarpc_timeval *)optval) =
                         out.optval.optval_val[0].option_value_u.
                             opt_timeval;
-                    tapi_log_buf_append(opt_val_str,
+                    te_log_buf_append(opt_val_str,
                         "{ tv_sec: %" TE_PRINTF_64 "d, "
                         "tv_usec: %" TE_PRINTF_64 "d }",
                         ((tarpc_timeval *)optval)->tv_sec,
@@ -1254,7 +1254,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                    &out.optval.optval_val[0].
                                        option_value_u.opt_ipaddr,
                                    sizeof(opt->address));
-                            tapi_log_buf_append(opt_val_str, "{ %s }",
+                            te_log_buf_append(opt_val_str, "{ %s }",
                                 inet_ntop(AF_INET, &opt->address,
                                           addr_buf, sizeof(addr_buf)));
                             break;
@@ -1268,7 +1268,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                    &out.optval.optval_val[0].
                                      option_value_u.opt_mreq.imr_address,
                                    sizeof(opt->address));
-                            tapi_log_buf_append(opt_val_str,
+                            te_log_buf_append(opt_val_str,
                                 "{ imr_multiaddr: %s, imr_interface: %s }",
                                 inet_ntop(AF_INET, &opt->multiaddr,
                                           addr_buf, sizeof(addr_buf)),
@@ -1287,7 +1287,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                    sizeof(opt->address));
                             opt->ifindex =
                                 val.option_value_u.opt_mreqn.imr_ifindex;
-                            tapi_log_buf_append(opt_val_str,
+                            te_log_buf_append(opt_val_str,
                                 "{ imr_multiaddr: %s, imr_address: %s, "
                                 "imr_ifindex: %d }",
                                 inet_ntop(AF_INET, &opt->multiaddr,
@@ -1311,12 +1311,12 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
         ((struct tcp_info *)optval)->_name =             \
             out.optval.optval_val[0].option_value_u.     \
             opt_tcp_info._name;                          \
-        tapi_log_buf_append(opt_val_str, #_name ": %u ", \
+        te_log_buf_append(opt_val_str, #_name ": %u ", \
              out.optval.optval_val[0].                   \
                  option_value_u.opt_tcp_info._name);     \
     } while (0)
 
-                    tapi_log_buf_append(opt_val_str, "{ ");
+                    te_log_buf_append(opt_val_str, "{ ");
                     COPY_TCP_INFO_FIELD(tcpi_state);
                     COPY_TCP_INFO_FIELD(tcpi_ca_state);
                     COPY_TCP_INFO_FIELD(tcpi_retransmits);
@@ -1346,7 +1346,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     COPY_TCP_INFO_FIELD(tcpi_snd_cwnd);
                     COPY_TCP_INFO_FIELD(tcpi_advmss);
                     COPY_TCP_INFO_FIELD(tcpi_reordering);
-                    tapi_log_buf_append(opt_val_str, " }");
+                    te_log_buf_append(opt_val_str, " }");
 #undef COPY_TCP_INFO_FIELD
                     break;
                 
@@ -1357,7 +1357,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     memcpy(optval,
                            out.optval.optval_val[0].option_value_u.
                            opt_ipaddr6, sizeof(struct in6_addr));
-                    tapi_log_buf_append(opt_val_str, "{ %s }",
+                    te_log_buf_append(opt_val_str, "{ %s }",
                                         inet_ntop(AF_INET6, optval,
                                                   addr_buf,
                                                   sizeof(addr_buf)));
@@ -1370,12 +1370,12 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     if (level == RPC_SOL_SOCKET &&
                         optname == RPC_SO_ERROR)
                     {
-                        tapi_log_buf_append(opt_val_str, "%s",
+                        te_log_buf_append(opt_val_str, "%s",
                                             te_rc_err2str(*(int *)optval));
                     }
                     else
                     {
-                        tapi_log_buf_append(opt_val_str, "%d",
+                        te_log_buf_append(opt_val_str, "%d",
                                             *(int *)optval);
                     }
                     break;
@@ -1394,19 +1394,19 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                    out.raw_optval.raw_optval_len);
 
             if (opt_val_str == NULL)
-                opt_val_str = tapi_log_buf_alloc();
-            tapi_log_buf_append(opt_val_str, "[");
+                opt_val_str = te_log_buf_alloc();
+            te_log_buf_append(opt_val_str, "[");
             for (i = 0; i < out.raw_optval.raw_optval_len; ++i)
             {
                 if (i == (raw_optlen == NULL ? 0 : *raw_optlen))
                 {
                     show_hidden = TRUE;
-                    tapi_log_buf_append(opt_val_str, " (");
+                    te_log_buf_append(opt_val_str, " (");
                 }
-                tapi_log_buf_append(opt_val_str, " %#02x",
+                te_log_buf_append(opt_val_str, " %#02x",
                                     ((uint8_t *)raw_optval)[i]);
             }
-            tapi_log_buf_append(opt_val_str, "%s ]",
+            te_log_buf_append(opt_val_str, "%s ]",
                                 show_hidden ? " )" : "");
         }
     }
@@ -1420,10 +1420,10 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                  optval != NULL ? optval : raw_optval, opt_len_str,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  opt_val_str == NULL ? "(nil)" :
-                                       tapi_log_buf_get(opt_val_str),
+                                       te_log_buf_get(opt_val_str),
                  (raw_optlen == NULL) ? -1 : (int)*raw_optlen);
 
-    tapi_log_buf_free(opt_val_str);
+    te_log_buf_free(opt_val_str);
 
     RETVAL_INT(getsockopt, out.retval);
 }
@@ -1438,7 +1438,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
     tarpc_setsockopt_in     in;
     tarpc_setsockopt_out    out;
     struct option_value     val;
-    tapi_log_buf           *opt_val_str = NULL;
+    te_log_buf           *opt_val_str = NULL;
     char                    opt_len_str[32] = { 0, };
 
     memset(&in, 0, sizeof(in));
@@ -1480,7 +1480,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
 
     if (optval != NULL)
     {
-        opt_val_str = tapi_log_buf_alloc();
+        opt_val_str = te_log_buf_alloc();
 
         in.optval.optval_len = 1;
         in.optval.optval_val = &val;
@@ -1490,7 +1490,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 val.opttype = OPT_LINGER;
                 val.option_value_u.opt_linger =
                     *((tarpc_linger *)optval);
-                tapi_log_buf_append(opt_val_str, 
+                te_log_buf_append(opt_val_str, 
                     "{ l_onoff: %d, l_linger: %d }",
                     ((tarpc_linger *)optval)->l_onoff,
                     ((tarpc_linger *)optval)->l_linger);
@@ -1501,7 +1501,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 val.opttype = OPT_TIMEVAL;
                 val.option_value_u.opt_timeval =
                     *((tarpc_timeval *)optval);
-                tapi_log_buf_append(opt_val_str, 
+                te_log_buf_append(opt_val_str, 
                     "{ tv_sec: %" TE_PRINTF_64 "d, "
                     "tv_usec: %" TE_PRINTF_64 "d }",
                     ((tarpc_timeval *)optval)->tv_sec,
@@ -1536,7 +1536,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 val.option_value_u.opt_mreq6.ipv6mr_ifindex =
                     ((struct ipv6_mreq *)optval)->ipv6mr_interface;
 
-                tapi_log_buf_append(opt_val_str, 
+                te_log_buf_append(opt_val_str, 
                     "{ multiaddr: %s, ifindex: %d }",
                     buf, val.option_value_u.opt_mreq6.ipv6mr_ifindex);
                 break;
@@ -1569,7 +1569,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                         memcpy(&val.option_value_u.opt_ipaddr,
                                (char *)&(opt->address),
                                sizeof(opt->address));
-                        tapi_log_buf_append(opt_val_str, "{ %s }",
+                        te_log_buf_append(opt_val_str, "{ %s }",
                                             inet_ntop(AF_INET,
                                                 (char *)&(opt)->address,
                                                 addr_buf1,
@@ -1585,7 +1585,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                                (char *)&(opt->address),
                                sizeof(opt->address));
 
-                        tapi_log_buf_append(opt_val_str, 
+                        te_log_buf_append(opt_val_str, 
                             "{ imr_multiaddr: %s, imr_interface: %s }",
                             inet_ntop(AF_INET,
                                       (char *)&(opt->multiaddr),
@@ -1606,7 +1606,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                         val.option_value_u.opt_mreqn.imr_ifindex =
                         opt->ifindex;
 
-                        tapi_log_buf_append(opt_val_str, 
+                        te_log_buf_append(opt_val_str, 
                             "{ imr_multiaddr: %s, imr_address: %s, "
                             "imr_ifindex: %d }",
                             inet_ntop(AF_INET,
@@ -1646,7 +1646,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
             default:
                 val.opttype = OPT_INT;
                 val.option_value_u.opt_int = *(int *)optval;
-                tapi_log_buf_append(opt_val_str, "%d", *(int *)optval);
+                te_log_buf_append(opt_val_str, "%d", *(int *)optval);
                 break;
         }
     }
@@ -1657,22 +1657,22 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
         te_bool      show_hidden = FALSE;
 
         if (opt_val_str == NULL)
-            opt_val_str = tapi_log_buf_alloc();
+            opt_val_str = te_log_buf_alloc();
 
         in.raw_optval.raw_optval_len = raw_roptlen;
         in.raw_optval.raw_optval_val = (void *)raw_optval;
-        tapi_log_buf_append(opt_val_str, "[");
+        te_log_buf_append(opt_val_str, "[");
         for (i = 0; i < raw_roptlen; ++i)
         {
             if (i == raw_optlen)
             {
                 show_hidden = TRUE;
-                tapi_log_buf_append(opt_val_str, " (");
+                te_log_buf_append(opt_val_str, " (");
             }
-            tapi_log_buf_append(opt_val_str, " %#02x",
+            te_log_buf_append(opt_val_str, " %#02x",
                                 ((uint8_t *)raw_optval)[i]);
         }
-        tapi_log_buf_append(opt_val_str, "%s ]", show_hidden ? " )" : "");
+        te_log_buf_append(opt_val_str, "%s ]", show_hidden ? " )" : "");
     }
 
     rcf_rpc_call(rpcs, "setsockopt", &in, &out);
@@ -1683,11 +1683,11 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                  "-> %d (%s)", rpcs->ta, rpcs->name,
                  s, socklevel_rpc2str(level), sockopt_rpc2str(optname),
                  opt_val_str == NULL ? "(nil)" :
-                                       tapi_log_buf_get(opt_val_str),
+                                       te_log_buf_get(opt_val_str),
                  opt_len_str,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    tapi_log_buf_free(opt_val_str);
+    te_log_buf_free(opt_val_str);
 
     RETVAL_INT(setsockopt, out.retval);
 }

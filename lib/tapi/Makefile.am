@@ -9,7 +9,6 @@ include_HEADERS = \
 	tapi_test.h \
 	tapi_test_log.h \
 	tapi_jmp.h \
-	tapi_bufs.h \
 	tapi_sockaddr.h \
 	tapi_cfg.h \
 	tapi_cfg_base.h \
@@ -26,7 +25,6 @@ lib_LTLIBRARIES = libtapi.la
 libtapi_la_SOURCES = \
 	test_params.c \
 	tapi_jmp.c \
-	tapi_bufs.c \
 	tapi_sockaddr.c \
 	tapi_cfg.c \
 	tapi_cfg_local_to_ta.c \

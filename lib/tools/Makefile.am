@@ -15,7 +15,7 @@ include_HEADERS = \
 	te_format.h \
 	te_iscsi.h \
 	tq_string.h \
-	log_buf.h
+	log_bufs.h
 
 if WINDOWS
 
@@ -36,11 +36,11 @@ install-exec-hook:
             rm $(lib_LIBRARIES) ; $(MAKE) install ; \
         fi
 
-EXTRA_DIST=te_shell_cmd.c te_log_fmt.c log_buf.c
+EXTRA_DIST=te_shell_cmd.c te_log_fmt.c log_bufs.c
 
 else
 
-lib_LTLIBRARIES = libtools.la liblog_buf.la
+lib_LTLIBRARIES = libtools.la liblog_bufs.la
 
 libtools_la_SOURCES = \
 	te_bufs.c \
@@ -51,7 +51,7 @@ libtools_la_SOURCES = \
 	te_format.c \
 	tq_string.c
 
-liblog_buf_la_SOURCES = log_buf.c
+liblog_bufs_la_SOURCES = log_bufs.c
 
 install-exec-hook:
 	touch -c -r libtools.la $(DESTDIR)/$(libdir)/libtools.*

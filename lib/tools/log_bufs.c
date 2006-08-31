@@ -58,86 +58,86 @@
 
 
 /** Internal presentation of log buffer. */
-typedef struct te_log_bug {
+typedef struct te_log_buf {
     te_bool used; /**< Whether this buffer is already in use */
     char    ptr[LOG_BUF_LEN]; /**< Buffer data */
     size_t  cur_len; /**< The number of bytes currently used in buffer */
-} te_log_bug;
+} te_log_buf;
 
 /** Statically allocated pool of log buffers. */
-static te_log_bug te_log_bugs[LOG_BUF_NUM];
+static te_log_buf te_log_bufs[LOG_BUF_NUM];
 
 /** The index of the last freed buffer, or -1 if unknown. */
-static int te_log_bug_last_freed = 0;
+static int te_log_buf_last_freed = 0;
 
 /** Mutex used to protect shred log buffer pool. */
-static pthread_mutex_t te_log_bug_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t te_log_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** Check that 'ptr_' is a valid log buffer */
 #define VALIDATE_LOG_BUF(ptr_) \
     do {                                                            \
         assert((ptr_)->used == TRUE);                               \
-        assert(((ptr_) >= te_log_bugs));                          \
-        assert(((ptr_) - te_log_bugs) /                           \
-                   sizeof(te_log_bugs[0]) <=                      \
-               sizeof(te_log_bugs) / sizeof(te_log_bugs[0]));   \
-        assert(((ptr_) - te_log_bugs) %                           \
-                   sizeof(te_log_bugs[0]) == 0);                  \
+        assert(((ptr_) >= te_log_bufs));                          \
+        assert(((ptr_) - te_log_bufs) /                           \
+                   sizeof(te_log_bufs[0]) <=                      \
+               sizeof(te_log_bufs) / sizeof(te_log_bufs[0]));   \
+        assert(((ptr_) - te_log_bufs) %                           \
+                   sizeof(te_log_bufs[0]) == 0);                  \
     } while (0)
 
 
-/* See description in tapi_bufs.h */
-te_log_bug *
-te_log_bug_alloc()
+/* See description in log_bufs.h */
+te_log_buf *
+te_log_buf_alloc()
 {
     int i;
     int id;
 
-    pthread_mutex_lock(&te_log_bug_mutex);
+    pthread_mutex_lock(&te_log_buf_mutex);
 
-    if (te_log_bug_last_freed != -1)
+    if (te_log_buf_last_freed != -1)
     {
-        assert(te_log_bugs[te_log_bug_last_freed].used == FALSE &&
-               te_log_bugs[te_log_bug_last_freed].cur_len == 0);
+        assert(te_log_bufs[te_log_buf_last_freed].used == FALSE &&
+               te_log_bufs[te_log_buf_last_freed].cur_len == 0);
 
-        id = te_log_bug_last_freed;
-        te_log_bug_last_freed = -1;
-        te_log_bugs[id].used = TRUE;
-        pthread_mutex_unlock(&te_log_bug_mutex);
+        id = te_log_buf_last_freed;
+        te_log_buf_last_freed = -1;
+        te_log_bufs[id].used = TRUE;
+        pthread_mutex_unlock(&te_log_buf_mutex);
 
-        return &te_log_bugs[id];
+        return &te_log_bufs[id];
     }
     
     for (i = 0; i < LOG_BUF_NUM; i++)
     {
-        if (!te_log_bugs[i].used)
+        if (!te_log_bufs[i].used)
         {
-            assert(te_log_bugs[i].cur_len == 0);
+            assert(te_log_bufs[i].cur_len == 0);
 
-            te_log_bugs[i].used = TRUE;
-            pthread_mutex_unlock(&te_log_bug_mutex);
+            te_log_bufs[i].used = TRUE;
+            pthread_mutex_unlock(&te_log_buf_mutex);
 
-            return &te_log_bugs[i];
+            return &te_log_bufs[i];
         }
     }
-    pthread_mutex_unlock(&te_log_bug_mutex);
+    pthread_mutex_unlock(&te_log_buf_mutex);
 
     /* There is no available buffer, wait until one freed */
     do {
-        pthread_mutex_lock(&te_log_bug_mutex);
-        if (te_log_bug_last_freed != -1)
+        pthread_mutex_lock(&te_log_buf_mutex);
+        if (te_log_buf_last_freed != -1)
         {
-            assert(te_log_bugs[te_log_bug_last_freed].used == FALSE &&
-                   te_log_bugs[te_log_bug_last_freed].cur_len == 0);
+            assert(te_log_bufs[te_log_buf_last_freed].used == FALSE &&
+                   te_log_bufs[te_log_buf_last_freed].cur_len == 0);
 
-            id = te_log_bug_last_freed;
-            te_log_bug_last_freed = -1;
-            te_log_bugs[id].used = TRUE;
-            pthread_mutex_unlock(&te_log_bug_mutex);
+            id = te_log_buf_last_freed;
+            te_log_buf_last_freed = -1;
+            te_log_bufs[id].used = TRUE;
+            pthread_mutex_unlock(&te_log_buf_mutex);
             
-            return &te_log_bugs[id];
+            return &te_log_bufs[id];
         }
-        pthread_mutex_unlock(&te_log_bug_mutex);
+        pthread_mutex_unlock(&te_log_buf_mutex);
         
         RING("Waiting for a tapi log buffer");
         sleep(1);
@@ -147,9 +147,9 @@ te_log_bug_alloc()
     return NULL;
 }
 
-/* See description in tapi_bufs.h */
+/* See description in log_bufs.h */
 int
-te_log_bug_append(te_log_bug *buf, const char *fmt, ...)
+te_log_buf_append(te_log_buf *buf, const char *fmt, ...)
 {
     int      rc;
     va_list  ap;
@@ -170,7 +170,7 @@ te_log_bug_append(te_log_bug *buf, const char *fmt, ...)
 }
 
 const char *
-te_log_bug_get(te_log_bug *buf)
+te_log_buf_get(te_log_buf *buf)
 {
     VALIDATE_LOG_BUF(buf);
 
@@ -180,19 +180,19 @@ te_log_bug_get(te_log_bug *buf)
     return buf->ptr;
 }
 
-/* See description in tapi_bufs.h */
+/* See description in log_bufs.h */
 void
-te_log_bug_free(te_log_bug *buf)
+te_log_buf_free(te_log_buf *buf)
 {
     if (buf == NULL)
         return;
 
     VALIDATE_LOG_BUF(buf);
 
-    pthread_mutex_lock(&te_log_bug_mutex);
+    pthread_mutex_lock(&te_log_buf_mutex);
     buf->used = FALSE;
     buf->cur_len = 0;
-    te_log_bug_last_freed = 
-        (buf - te_log_bugs) / sizeof(te_log_bugs[0]);
-    pthread_mutex_unlock(&te_log_bug_mutex);
+    te_log_buf_last_freed = 
+        (buf - te_log_bufs) / sizeof(te_log_bufs[0]);
+    pthread_mutex_unlock(&te_log_buf_mutex);
 }

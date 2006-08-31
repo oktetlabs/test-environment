@@ -36,12 +36,12 @@ extern "C" {
 #endif
 
 /**
- * Declaration of te_log_bug type, which is defined 
+ * Declaration of te_log_buf type, which is defined 
  * in the implementation, so user can allocate and operate only 
  * with pointer to this data structure.
  */
-struct te_log_bug;
-typedef struct te_log_bug te_log_bug;
+struct te_log_buf;
+typedef struct te_log_buf te_log_buf;
 
 
 /* Log buffer related functions */
@@ -58,13 +58,13 @@ typedef struct te_log_bug te_log_bug;
  *
  * @note This is thread safe function
  */
-extern te_log_bug *te_log_bug_alloc();
+extern te_log_buf *te_log_buf_alloc();
 
 /**
  * Appends format string to the log message, the behaviour of
  * the function is the same as ordinary printf-like function.
  *
- * @param buf  Pointer to the buffer allocated with te_log_bug_alloc()
+ * @param buf  Pointer to the buffer allocated with te_log_buf_alloc()
  * @param fmt  Format string followed by parameters
  *
  * @return The number of characters appended
@@ -72,7 +72,7 @@ extern te_log_bug *te_log_bug_alloc();
  * @note This is NOT thread safe function, so you are not allowed 
  * to append the same buffer from different threads simultaneously.
  */
-extern int te_log_bug_append(te_log_bug *buf, const char *fmt, ...);
+extern int te_log_buf_append(te_log_buf *buf, const char *fmt, ...);
 
 /**
  * Returns current log message accumulated in the buffer.
@@ -81,16 +81,16 @@ extern int te_log_bug_append(te_log_bug *buf, const char *fmt, ...);
  *
  * @return log message
  */
-extern const char *te_log_bug_get(te_log_bug *buf);
+extern const char *te_log_buf_get(te_log_buf *buf);
 
 /**
- * Release buffer allocated by te_log_bug_alloc()
+ * Release buffer allocated by te_log_buf_alloc()
  *
  * @param ptr  Pointer to the buffer
  *
  * @note This is thread safe function
  */
-extern void te_log_bug_free(te_log_bug *buf);
+extern void te_log_buf_free(te_log_buf *buf);
 
 #ifdef __cplusplus
 } /* extern "C" */
