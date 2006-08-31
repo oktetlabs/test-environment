@@ -995,6 +995,50 @@ trc_free_test_args(trc_test_iter_args *args)
 }
 
 /**
+ * Free resources allocated for expected result.
+ *
+ * @param result        Result to be freed
+ */
+static void
+trc_free_exp_result(trc_exp_result *result)
+{
+    trc_exp_result_entry   *p;
+
+    free(result->tags_str);
+    logic_expr_free(result->tags_expr);
+
+    while ((p = result->results.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&result->results, p, links);
+        te_test_result_free_verdicts(&p->result);
+        free(p->key);
+        free(p->notes);
+        free(p);
+    }
+
+    free(result->key);
+    free(result->notes);
+}
+
+/**
+ * Free resources allocated for the list of expected results.
+ *
+ * @param iters     List of expected results to be freed
+ */
+static void
+trc_free_exp_results(trc_exp_results *results)
+{
+    trc_exp_result *p;
+
+    while ((p = results->lh_first) != NULL)
+    {
+        LIST_REMOVE(p, links);
+        trc_free_exp_result(p);
+        free(p);
+    }
+}
+
+/**
  * Free resources allocated for the list of test iterations.
  *
  * @param iters     List of test iterations to be freed
@@ -1009,11 +1053,7 @@ trc_free_test_iters(trc_test_iters *iters)
         TAILQ_REMOVE(&iters->head, p, links);
         trc_free_test_args(&p->args);
         free(p->notes);
-#if 0
-        free(p->exp_result.key);
-        free(p->exp_result.notes);
-        tq_strings_free(&p->exp_result.verdicts, free);
-#endif
+        trc_free_exp_results(&p->exp_results);
         trc_free_trc_tests(&p->tests);
         free(p);
     }
