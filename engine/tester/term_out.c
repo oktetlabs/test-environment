@@ -74,22 +74,15 @@
         }                           \
     } while (0)
 
-/** "PASSED" verdict for non-color terminal or non-terminal */
-#define TESTER_PASSED_VERDICT_NOCOLOR "passed"
 
 #ifdef HAVE_COLOR
+
 /** Special value for term when it can't be initialised. */
 #define TESTER_TERM_UNKNOWN             ((char *)(-1))
 
 /** Type of terminal used. To be initialized once. */
 static char *term = NULL;
 
-/** Passed verdict */
-static const char *tester_verdict_passed = "PASSED";
-#else
-/** Passed verdict */
-static const char *tester_verdict_passed = 
-    TESTER_PASSED_VERDICT_NOCOLOR;
 #endif
 
 /** Number of columns on terminal. 80 for hosts without curses. */
@@ -161,13 +154,13 @@ static const colored_verdict_data colored_verdicts[TESTER_TEST_STATUS_MAX]
       { COLOR_RED,              "PASSED?",      "passed?" },
       { COLOR_RED,              "PASSED",       "passed" },
       { COLOR_GREEN,            "OK",           "OK" },
-      { COLOR_GREEN,            "OK PASSED",    "OK passed" } },
+      { COLOR_GREEN,            "OK passed",    "OK passed" } },
 
     { { COLOR_RED,              "FAILED",       "FAILED" },
       { COLOR_RED,              "FAILED?",      "FAILED?" },
       { COLOR_RED,              "FAILED",       "FAILED" },
       { COLOR_GREEN,            "OK",           "OK" },
-      { COLOR_GREEN,            "OK FAILED",    "OK failed" } },
+      { COLOR_GREEN,            "OK failed",    "OK failed" } },
 
     { { COLOR_YELLOW,           "NOT FOUND",    "NOT FOUND" },
       { COLOR_YELLOW,           "NOT FOUND?",   "NOT FOUND?" },
@@ -369,7 +362,6 @@ tester_term_out_done(unsigned int flags,
             char *c = getenv("COLUMNS");
 
             term = TESTER_TERM_UNKNOWN;
-            tester_verdict_passed = TESTER_PASSED_VERDICT_NOCOLOR;
             if (c != NULL)
                 cols = atoi(c);
             if (rc != 0) /* Warn only if setupterm failed. */
@@ -408,7 +400,7 @@ tester_term_out_done(unsigned int flags,
     /* We have a chance to output in the same line, prepare offset string */
     if (self == prev_id)
     {
-        int n_spaces = cols - 10 - prev_len;
+        int n_spaces = cols - 11 - prev_len;
 
         if (n_spaces < 1)
             n_spaces = 1;
