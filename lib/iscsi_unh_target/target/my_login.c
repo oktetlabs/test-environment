@@ -2166,6 +2166,18 @@ iscsi_manager (struct iscsi_conn *conn)
     {
         conn->max_send_length = iscsi_get_custom_value(conn->custom, "max_send_length");
     }
+    else if (iscsi_is_changed_custom_value(conn->custom,
+                                           "force_status"))
+    {
+        int asc = iscsi_get_custom_value(conn->custom, "asc_value");
+        
+        /** FIXME: target and LUN should be configurable */
+        iscsi_set_device_failure_state(0, 0,
+                                       iscsi_get_custom_value(conn->custom, "force_status"),
+                                       iscsi_get_custom_value(conn->custom, "sense"),
+                                       (asc >> 8) & 0x0F,
+                                       asc & 0xF);
+    }
 }
 
 
@@ -6029,29 +6041,6 @@ iscsi_cmnd_read(int sock, struct sockaddr_un *dest, int size, char *buffer)
 }
 
 static void
-iscsi_cmnd_setfail(int sock, struct sockaddr_un *dest, int size, char *buffer)
-{
-    unsigned target;
-    unsigned lun;
-    unsigned status;
-    unsigned sense;
-    unsigned asc;
-    unsigned ascq;
-    int      rc;
-
-    UNUSED(size);
-
-    if (sscanf(buffer, "%u %u %u %u %u %u", 
-               &target, &lun, &status, &sense, &asc, &ascq) != 6)
-    {
-        iscsi_reply_status(sock, dest, TE_EPROTO);
-        return;
-    }
-    rc = iscsi_set_device_failure_state(target, lun, status, sense, asc, ascq);
-    iscsi_reply_status(sock, dest, rc);
-}
-
-static void
 iscsi_cmnd_status(int sock, struct sockaddr_un *dest, int size, char *buffer)
 {
     if (size == 0)
@@ -6257,7 +6246,6 @@ iscsi_target_process_control_msg(int sock)
             {"sync", iscsi_cmnd_sync},
             {"write", iscsi_cmnd_write},
             {"read", iscsi_cmnd_read},
-            {"setfail", iscsi_cmnd_setfail},
             {"tweak", iscsi_cmnd_tweak},
             {"status", iscsi_cmnd_status},
             {"reset", iscsi_cmnd_reset},

@@ -1773,10 +1773,10 @@ int
 tapi_iscsi_target_cause_logout(const char *ta, int id, int timeout)
 {
     int  rc;
-    char buf[16];
-    
-    sprintf(buf, "%d", timeout);
-    rc = tapi_iscsi_target_customize(ta, id, "async_logout_timeout", buf);
+
+    rc = tapi_iscsi_target_customize_intval(ta, id, 
+                                            "async_logout_timeout",
+                                            timeout);
     if (rc != 0)
         return rc;
     return tapi_iscsi_target_customize(ta, id, "send_async", 
@@ -1787,10 +1787,9 @@ int
 tapi_iscsi_target_cause_renegotiate(const char *ta, int id, int timeout)
 {
     int  rc;
-    char buf[16];
-    
-    sprintf(buf, "%d", timeout);
-    rc = tapi_iscsi_target_customize(ta, id, "async_text_timeout", buf);
+
+    rc = tapi_iscsi_target_customize_intval(ta, id, 
+                                            "async_text_timeout", timeout);
     if (rc != 0)
         return rc;
     return tapi_iscsi_target_customize(ta, id, "send_async", "renegotiate");
@@ -1802,14 +1801,14 @@ tapi_iscsi_target_will_drop(const char *ta, int id, te_bool drop_all,
                             int time2wait, int time2retain)
 {
     int  rc;
-    char buf[16];
-    
-    sprintf(buf, "%d", time2wait);
-    rc = tapi_iscsi_target_customize(ta, id, "async_drop_time2wait", buf);
+    rc = tapi_iscsi_target_customize_intval(ta, id, 
+                                            "async_drop_time2wait", 
+                                            time2wait);
     if (rc != 0)
         return rc;
-    sprintf(buf, "%d", time2retain);
-    rc = tapi_iscsi_target_customize(ta, id, "async_drop_time2retain", buf);
+    rc = tapi_iscsi_target_customize_intval(ta, id, 
+                                            "async_drop_time2retain", 
+                                            time2retain);
     if (rc != 0)
         return rc;
 
@@ -1820,110 +1819,30 @@ tapi_iscsi_target_will_drop(const char *ta, int id, te_bool drop_all,
 
 
 int
-tapi_iscsi_target_set_failure_state(const char *ta, const char *status,
+tapi_iscsi_target_set_failure_state(const char *ta, int id, 
+                                    const char *status,
                                     const char *sense, 
                                     const char *additional_code)
 {
-    typedef struct status_mapping
-    {
-        const char *name;
-        int         key;
-    } status_mapping;
-
-    typedef struct asc_mapping
-    {
-        const char *name;
-        int         asc;
-        int         ascq;
-    } asc_mapping;
-
-    /* The following are meant to match SCSI sense keys (see SPC-3, p.41) */
-    static char *senses[] = 
-        {"none", 
-         "recovered error",
-         "not ready",
-         "medium error",
-         "hardware error",
-         "illegal request",
-         "unit attention",
-         "data protect",
-         "blank check",
-         "vendor specific",
-         "copy aborted",
-         "aborted command",
-         NULL
-        };
-    char **found_sense = NULL;
-
-    static status_mapping statuses[] =
-        {{"good", SAM_STAT_GOOD},
-         {"check condition", SAM_STAT_CHECK_CONDITION},
-         {"busy", SAM_STAT_BUSY},
-         {"reservation conflict", SAM_STAT_RESERVATION_CONFLICT},
-         {NULL, 0}};
-    status_mapping *found_status = NULL;
-
-    static asc_mapping asc_values[] =
-        {{"protocol_service_crc_error", 0x47, 0x05},
-         {"unexpected_unsolicited_data", 0x0c, 0x0c},
-         {"not_enough_unsolicited_data", 0x0c, 0x0d},
-         {NULL, 0, 0}};
-    asc_mapping  custom_asc;
-    asc_mapping *found_asc = NULL;
-
-    for (found_status = statuses; 
-         found_status->name != NULL; 
-         found_status++)
-    {
-        if (strcmp(found_status->name, status) == 0)
-            break;
-    }
-    if (found_status == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL);
-
-    if (sense != NULL)
-    {
-        for (found_sense = senses; *found_sense != NULL; found_sense++)
-        {
-            if (strcmp(*found_sense, sense) == 0)
-                break;
-        }
-        if (found_sense == NULL)
-            return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-
+    int rc;
+    
     if (additional_code != NULL)
     {
-        for (found_asc = asc_values; found_asc->name != NULL; found_asc++)
-        {
-            if (strcmp(found_asc->name, additional_code) == 0)
-                break;
-        }
-        if (found_asc == NULL)
-        {
-            char *next;
-            custom_asc.asc =  strtol(additional_code, &next, 0);
-            custom_asc.ascq = strtol(next, &next, 0);
-            if (*next != '\0')
-                return TE_RC(TE_TAPI, TE_EINVAL);
-            found_asc = &custom_asc;
-        }
+        rc = tapi_iscsi_target_customize(ta, id, "asc_value", 
+                                         additional_code);
+        if (rc != 0)
+            return rc;
     }
-
-    RING("Setting device failure state to %x/%x/%x/%x",
-         found_status->key,
-         found_sense != NULL ? found_sense - senses : 0,
-         found_asc != NULL ? found_asc->asc : 0,
-         found_asc != NULL ? found_asc->ascq : 0);
-
-    return tapi_iscsi_send_target_msg(ta, "setfail", "0 0 %d %d %d %d",
-                                      found_status->key,
-                                      found_sense != NULL ? 
-                                      found_sense - senses : 0,
-                                      found_asc != NULL ? 
-                                      found_asc->asc : 0,
-                                      found_asc != NULL ? 
-                                      found_asc->ascq : 0);
+    
+    
+    if (sense != NULL)
+    {
+        rc = tapi_iscsi_target_customize(ta, id, "sense", sense);
+        if (rc != 0)
+            return rc;
+    }
+    
+    return tapi_iscsi_target_customize(ta, id, "force_status", status);
 }
 
 int

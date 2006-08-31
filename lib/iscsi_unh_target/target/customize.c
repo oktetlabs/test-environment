@@ -45,8 +45,9 @@
 #include "mutex.h"
 #include "my_memory.h"
 #include "iscsi_custom.h"
+#include "te_iscsi.h"
 
-#define ISCSI_CUSTOM_MAX_PARAM 18
+#define ISCSI_CUSTOM_MAX_PARAM 21
 
 #define ISCSI_CUSTOM_MAGIC 0xeba1eba1
 
@@ -109,6 +110,7 @@ typedef struct iscsi_custom_descr
     char   **enumeration;
 } iscsi_custom_descr;
 
+#define CUSTOM_ENUM_EXPLICIT(name, value) "=" name, (char *)value
 
 static char *async_messages[] = {"scsi_async_event",
                                  "logout_request",
@@ -136,6 +138,43 @@ static char *reject_reasons[] = {
     NULL,
 };
 
+/* The following are meant to match SCSI sense keys (see SPC-3, p.41) */
+static char *senses[] = {
+    "none", 
+    "recovered_error",
+    "not_ready",
+    "medium_error",
+    "hardware_error",
+    "illegal_request",
+    "unit_attention",
+    "data_protect",
+    "blank_check",
+    "vendor_specific",
+    "copy_aborted",
+    "aborted_command",
+    CUSTOM_ENUM_EXPLICIT("-", 0),
+    NULL
+};
+
+
+static char *statuses[] = {
+    CUSTOM_ENUM_EXPLICIT("good", SAM_STAT_GOOD),
+    CUSTOM_ENUM_EXPLICIT("check_condition", 
+                         SAM_STAT_CHECK_CONDITION),
+    CUSTOM_ENUM_EXPLICIT("busy", SAM_STAT_BUSY),
+    CUSTOM_ENUM_EXPLICIT("reservation_conflict", 
+                         SAM_STAT_RESERVATION_CONFLICT),
+    NULL
+};
+
+static char *asc_values[] = {
+    CUSTOM_ENUM_EXPLICIT("protocol_service_crc_error", 0x4705),
+    CUSTOM_ENUM_EXPLICIT("unexpected_unsolicited_data", 0x0c0c),
+    CUSTOM_ENUM_EXPLICIT("not_enough_unsolicited_data", 0x0c0d),
+    CUSTOM_ENUM_EXPLICIT("-", 0),
+    NULL
+};
+
 static iscsi_custom_descr param_descr[ISCSI_CUSTOM_MAX_PARAM + 1] = 
 {
     {"reject", FALSE, NULL},
@@ -156,6 +195,9 @@ static iscsi_custom_descr param_descr[ISCSI_CUSTOM_MAX_PARAM + 1] =
     {"nopin_after", FALSE, NULL},
     {"nopin_count", FALSE, NULL},
     {"max_send_length", TRUE, NULL},
+    {"force_status", TRUE, statuses},
+    {"sense", FALSE, senses},
+    {"asc_value", FALSE, asc_values},
     {NULL, FALSE, NULL},
 };
     
@@ -197,7 +239,13 @@ translate_custom_value(int idx, const char *value)
     }
     for (iter = param_descr[idx].enumeration; *iter != NULL; iter++)
     {
-        if (strcmp(*iter, value) == 0)
+        if (**iter == '=')
+        {
+            if (strcmp(*iter + 1, value) == 0)
+                return (int)iter[1];
+            iter++;
+        }
+        else if (strcmp(*iter, value) == 0)
         {
             return iter - param_descr[idx].enumeration;
         }

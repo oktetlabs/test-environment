@@ -668,7 +668,7 @@ extern int tapi_iscsi_target_will_drop(const char *ta, int id,
                                        te_bool drop_all,
                                        int time2wait, int time2retain);
 
-extern int tapi_iscsi_target_set_failure_state(const char *ta, 
+extern int tapi_iscsi_target_set_failure_state(const char *ta, int id,
                                                const char *status,
                                                const char *sense,
                                                const char *add_code);
