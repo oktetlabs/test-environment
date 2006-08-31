@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#define TE_LGR_ENTITY   "Config Walk"
+#define TE_LGR_USER     "Config Walk"
 
 #include "te_config.h"
 #ifdef HAVE_CONFIG_H
