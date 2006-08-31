@@ -56,8 +56,100 @@
 #define XML2CHAR_DUP(p) XML2CHAR(xmlStrdup(p))
 
 
+/** Widely used expected results */
+static trc_exp_results  exp_defaults;
+/** Are exp_defaults initialized? */
+static te_bool          exp_defaults_inited = FALSE;
+
+
 static te_errno get_tests(xmlNodePtr *node, trc_tests *tests,
                           trc_test_iter *parent);
+
+
+/**
+ * Free resourses allocated for widely used expected results.
+ */
+static void
+exp_defaults_free(void)
+{
+    if (exp_defaults_inited)
+    {
+        trc_exp_result *p;
+
+        while ((p = exp_defaults.lh_first) != NULL)
+        {
+            LIST_REMOVE(p, links);
+            assert(p->results.tqh_first != NULL);
+            assert(p->results.tqh_first->links.tqe_next == NULL);
+            assert(p->results.tqh_first->result.verdicts.tqh_first == NULL);
+            free(p->results.tqh_first);
+            free(p);
+        }
+        exp_defaults_inited = FALSE;
+    }
+}
+
+/**
+ * Initialize set of widely used expected results.
+ *
+ * @return Status code.
+ */
+static void 
+exp_defaults_init(void)
+{
+    if (!exp_defaults_inited)
+    {
+        LIST_INIT(&exp_defaults);
+        atexit(exp_defaults_free);
+        exp_defaults_inited = TRUE;
+    }
+}
+
+/**
+ * Get expected results from set of widely used singleton results
+ * without verdicts.
+ *
+ * @param status        Expected test status
+ *
+ * @return Pointer to expected result with signle entry with specified
+ *         status and no verdicts.
+ */
+static const trc_exp_result *
+exp_defaults_get(te_test_status status)
+{
+    trc_exp_result         *p;
+    trc_exp_result_entry   *entry;
+
+    exp_defaults_init();
+
+    for (p = exp_defaults.lh_first; p != NULL; p = p->links.le_next)
+    {
+        assert(p->results.tqh_first != NULL);
+        assert(p->results.tqh_first->links.tqe_next == NULL);
+        assert(p->results.tqh_first->result.verdicts.tqh_first == NULL);
+        if (p->results.tqh_first->result.status == status)
+            return p;
+    }
+
+    p = TE_ALLOC(sizeof(*p));
+    if (p == NULL)
+        return NULL;
+    TAILQ_INIT(&p->results);
+
+    entry = TE_ALLOC(sizeof(*entry));
+    if (entry == NULL)
+    {
+        free(p);
+        return NULL;
+    }
+    TAILQ_INIT(&entry->result.verdicts);
+    entry->result.status = status;
+    TAILQ_INSERT_HEAD(&p->results, entry, links);
+    
+    LIST_INSERT_HEAD(&exp_defaults, p, links);
+
+    return p;
+}
 
 
 /**
@@ -370,6 +462,7 @@ alloc_and_get_test_iter(xmlNodePtr node, const char *test_name,
     te_errno        rc;
     trc_test_iter  *p;
     char           *tmp;
+    te_test_status  def;
 
     UNUSED(test_name);
 
@@ -393,6 +486,13 @@ alloc_and_get_test_iter(xmlNodePtr node, const char *test_name,
         free(tmp);
         return TE_EINVAL;
     }
+
+    rc = get_result(node, "result", &def);
+    if (rc != 0)
+        return rc;
+    p->exp_default = exp_defaults_get(def);
+    if (p->exp_default == NULL)
+        return TE_ENOMEM;
 
     p->args.node = node;
 
