@@ -40,6 +40,10 @@
 #include "logger_api.h"
 #include "te_test_result.h"
 
+#if WITH_TRC
+#include "te_trc.h"
+#endif
+
 #include "tester_defs.h"
 
 
@@ -83,10 +87,16 @@ typedef enum tester_test_status {
 typedef struct tester_test_result {
     LIST_ENTRY(tester_test_result)  links;  /**< List links */
 
-    test_id             id;         /**< Test ID */
-    tester_test_status  status;     /**< Internal status */
-    te_test_result      result;     /**< Result */
-    trc_verdict         expected;   /**< Is the result expected? */
+    test_id                 id;         /**< Test ID */
+    tester_test_status      status;     /**< Internal status */
+    te_test_result          result;     /**< Result */
+    const char             *reason;     /**< Additional explanations
+                                             to test status */
+#if WITH_TRC
+    const trc_exp_result   *exp_result; /**< Expected result */
+    trc_verdict             exp_status; /**< Is obtained result
+                                             expected? */
+#endif
 } tester_test_result;
 
 /** List of results of tests which are in progress. */
