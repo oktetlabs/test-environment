@@ -311,13 +311,16 @@ tester_run_new_ctx(tester_run_data *data)
     LIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
 
 #if WITH_TRC
-    new_ctx->trc_walker = trc_db_new_walker(data->trc_db);
-    if (new_ctx->trc_walker == NULL)
+    if (~new_ctx->flags & TESTER_NO_TRC)
     {
-        tester_run_destroy_ctx(data);
-        return NULL;
+        new_ctx->trc_walker = trc_db_new_walker(data->trc_db);
+        if (new_ctx->trc_walker == NULL)
+        {
+            tester_run_destroy_ctx(data);
+            return NULL;
+        }
+        new_ctx->do_trc_walker = FALSE;
     }
-    new_ctx->do_trc_walker = FALSE;
 #endif
 
     VERB("Initial context: flags=0x%x parent_id=%u",
@@ -1299,7 +1302,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     }
 
 #if WITH_TRC
-    if (test_get_name(ri) != NULL)
+    if ((~ctx->flags & TESTER_NO_TRC) && (test_get_name(ri) != NULL))
     {
         trc_db_walker_step_test(ctx->trc_walker, test_get_name(ri));
         ctx->do_trc_walker = TRUE;
@@ -1332,7 +1335,7 @@ run_item_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #if WITH_TRC
     if (ctx->do_trc_walker && test_get_name(ri) != NULL)
         trc_db_walker_step_back(ctx->trc_walker);
-    else
+    else if (~ctx->flags & TESTER_NO_TRC)
         ctx->do_trc_walker = TRUE;
 #endif
 
@@ -2075,7 +2078,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     }
 
 #if WITH_TRC
-    if (test_get_name(ri) != NULL)
+    if ((~ctx->flags & TESTER_NO_TRC) && (test_get_name(ri) != NULL))
     {
         const char     *names[ctx->n_args];
         const char     *values[ctx->n_args];
@@ -2122,7 +2125,7 @@ run_iter_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #if WITH_TRC
     if (ctx->do_trc_walker && test_get_name(ri) != NULL)
         trc_db_walker_step_back(ctx->trc_walker);
-    else
+    else if (~ctx->flags & TESTER_NO_TRC)
         ctx->do_trc_walker = TRUE;
 #endif
 
@@ -2247,36 +2250,40 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                                              &ctx->current_result.error);
 
 #if WITH_TRC
-        if (ctx->current_result.exp_result == NULL)
+        if (~ctx->flags & TESTER_NO_TRC)
         {
-            ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
-            ctx->current_result.error = "Unknown test/iteration";
-        }
-        else if (trc_is_result_expected(ctx->current_result.exp_result,
-                                        &ctx->current_result.result))
-        {
-            ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
-        }
-        else
-        {
-            const trc_exp_result_entry *p;
-            te_log_buf               *lb = te_log_buf_alloc();
-
-            ctx->current_result.exp_status = TRC_VERDICT_UNEXPECTED;
-            te_log_buf_append(lb, "Obtained test result is unexpected.\n");
-            te_log_buf_append(lb, "\nObtained result is:\n");
-            te_test_result_to_log_buf(lb, &ctx->current_result.result);
-            te_log_buf_append(lb, "\nExpected results are:\n");
-            for (p = ctx->current_result.exp_result->results.tqh_first;
-                 p != NULL;
-                 p = p->links.tqe_next)
+            if (ctx->current_result.exp_result == NULL)
             {
-                te_test_result_to_log_buf(lb, &p->result);
+                ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
+                ctx->current_result.error = "Unknown test/iteration";
             }
-            RING("%s", te_log_buf_get(lb));
-            te_log_buf_free(lb);
+            else if (trc_is_result_expected(ctx->current_result.exp_result,
+                                            &ctx->current_result.result))
+            {
+                ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
+            }
+            else
+            {
+                const trc_exp_result_entry *p;
+                te_log_buf               *lb = te_log_buf_alloc();
 
-            ctx->current_result.error = "Unexpected test result";
+                ctx->current_result.exp_status = TRC_VERDICT_UNEXPECTED;
+                te_log_buf_append(lb, "Obtained test result is "
+                                      "unexpected.\n");
+                te_log_buf_append(lb, "\nObtained result is:\n");
+                te_test_result_to_log_buf(lb, &ctx->current_result.result);
+                te_log_buf_append(lb, "\nExpected results are:\n");
+                for (p = ctx->current_result.exp_result->results.tqh_first;
+                     p != NULL;
+                     p = p->links.tqe_next)
+                {
+                    te_test_result_to_log_buf(lb, &p->result);
+                }
+                RING("%s", te_log_buf_get(lb));
+                te_log_buf_free(lb);
+
+                ctx->current_result.error = "Unexpected test result";
+            }
         }
 #endif
 
