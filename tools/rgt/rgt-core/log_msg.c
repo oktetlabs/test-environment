@@ -121,11 +121,38 @@ rgt_process_tester_control_message(log_msg *msg)
     else if ((RGT_CMP_RESULT(PASSED) || RGT_CMP_RESULT(KILLED) ||
               RGT_CMP_RESULT(CORED) || RGT_CMP_RESULT(SKIPPED) ||
               RGT_CMP_RESULT(FAKED) || RGT_CMP_RESULT(EMPTY) ||
-              RGT_CMP_RESULT(FAILED) || RGT_CMP_RESULT(INCOMPLETE)) &&
+              RGT_CMP_RESULT(FAILED) || RGT_CMP_RESULT(INCOMPLETE) ||
+              (res = (enum result_status)-1, len = strlen("%s"),
+               strncmp(fmt_str, "%s", len) == 0)) &&
              (fmt_str[len] == '\0' || isspace(fmt_str[len])))
 #undef RGT_CMP_RESULT
     {
-        /** @todo Process trailing "%s" */
+        fmt_str += len;
+
+        if (res == (enum result_status)-1)
+        {
+            if ((arg = get_next_arg(msg)) == NULL)
+            {
+                FMT_TRACE("Missing argument with test status as "
+                          "string (format string is '%s')", msg->fmt_str);
+                THROW_EXCEPTION;
+            }
+#define RGT_CMP_RESULT(_result) \
+    (res = RES_STATUS_##_result, len = strlen(#_result), \
+     (size_t)arg->len != len || memcmp(arg->val, #_result, len) != 0)
+            if (RGT_CMP_RESULT(PASSED) && RGT_CMP_RESULT(KILLED) &&
+                RGT_CMP_RESULT(CORED) && RGT_CMP_RESULT(SKIPPED) &&
+                RGT_CMP_RESULT(FAKED) && RGT_CMP_RESULT(EMPTY) &&
+                RGT_CMP_RESULT(FAILED) && RGT_CMP_RESULT(INCOMPLETE))
+            {
+                FMT_TRACE("Unexpected test status '%s'", arg->val);
+                THROW_EXCEPTION;
+            }
+#undef RGT_CMP_RESULT
+        }
+
+        while (*fmt_str != '\0' && isspace(*fmt_str))
+            fmt_str++;
 
         if ((node = flow_tree_close_node(parent_id, node_id, 
                                          msg->timestamp,
@@ -140,9 +167,25 @@ rgt_process_tester_control_message(log_msg *msg)
 
         memcpy(node->end_ts, msg->timestamp, sizeof(node->end_ts));
         node->result.status = res;
-        if ((arg = get_next_arg(msg)) != NULL)
+
+        if (*fmt_str != '\0')
+        {
+            if (strcmp(fmt_str, "%s") != 0)
+            {
+                FMT_TRACE("Unrecognized message format (%s) - "
+                          "only %%s is expected after test status",
+                          msg->fmt_str);
+                THROW_EXCEPTION;
+            }
+            if ((arg = get_next_arg(msg)) == NULL)
+            {
+                FMT_TRACE("Missing argument with test error string "
+                          "for format string '%s'", msg->fmt_str);
+                THROW_EXCEPTION;
+            }
             node->result.err = node_info_obstack_copy0(arg->val,
                                                        arg->len);
+        }
 
         evt_type = CTRL_EVT_END;
     }
