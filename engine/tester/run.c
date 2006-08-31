@@ -266,6 +266,12 @@ tester_run_destroy_ctx(tester_run_data *data)
          curr->current_result.id, curr->current_result.status);
 
     LIST_REMOVE(curr, links);
+
+#if WITH_TRC
+    if (data->ctxs.lh_first == NULL)
+        trc_db_free_walker(curr->trc_walker);
+#endif
+
     tester_ctx_free(curr);
 }
 

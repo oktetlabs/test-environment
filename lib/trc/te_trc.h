@@ -123,6 +123,13 @@ typedef struct te_trc_db_walker te_trc_db_walker;
 extern te_trc_db_walker *trc_db_new_walker(const struct te_trc_db  *trc_db);
 
 /**
+ * Release resources allocated for TRC database tree walker.
+ *
+ * @param walker        TRC database tree walker
+ */
+extern void trc_db_free_walker(te_trc_db_walker *walker);
+
+/**
  * Move walker from the current position to the child test with
  * specified name.
  *

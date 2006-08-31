@@ -52,6 +52,13 @@ struct te_trc_db_walker {
 
 
 /* See the description in te_trc.h */
+void
+trc_db_free_walker(te_trc_db_walker *walker)
+{
+    free(walker);
+}
+
+/* See the description in te_trc.h */
 te_trc_db_walker *
 trc_db_new_walker(const struct te_trc_db *trc_db)
 {
