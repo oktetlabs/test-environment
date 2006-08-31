@@ -89,8 +89,8 @@ typedef struct trc_test_iter {
     trc_test_iter_args  args;       /**< Iteration arguments */
     char               *notes;      /**< Common notes */
 
-    /** The expected results */
-    trc_exp_results     exp_results;
+    const trc_exp_result   *exp_default;    /**< Default result */
+    trc_exp_results         exp_results;    /**< The expected results */
 
     trc_tests           tests;      /**< Children tests of the session */
     
