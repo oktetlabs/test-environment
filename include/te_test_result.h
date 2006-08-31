@@ -31,6 +31,10 @@
 #ifndef __TE_TEST_RESULT_H__
 #define __TE_TEST_RESULT_H__
 
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
 #include "te_queue.h"
 
 #ifdef __cplusplus
@@ -124,6 +128,20 @@ te_test_result_init(te_test_result *result)
 {
     result->status = TE_TEST_INCOMPLETE;
     TAILQ_INIT(&result->verdicts);
+}
+
+/** Free resourses allocated for test result verdicts. */
+static inline void
+te_test_result_free_verdicts(te_test_result *result)
+{
+    te_test_verdict *v;
+
+    while ((v = result->verdicts.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&result->verdicts, v, links);
+        free(v->str);
+        free(v);
+    }
 }
 
 #ifdef __cplusplus
