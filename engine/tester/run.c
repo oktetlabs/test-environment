@@ -833,6 +833,9 @@ run_test_script(test_script *script, test_id exec_id,
     }
     else
     {
+        /* Initialize as INCOMPLETE before processing */
+        *status = TESTER_TEST_INCOMPLETE;
+
         VERB("ID=%d system(%s)", exec_id, cmd);
         ret = system(cmd);
         if (ret == -1)
