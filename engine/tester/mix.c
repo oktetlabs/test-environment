@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#define TE_LGR_ENTITY   "Mix"
+#define TE_LGR_USER     "Mix"
 
 #include "te_config.h"
 #ifdef HAVE_CONFIG_H
