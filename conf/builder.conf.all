@@ -8,7 +8,7 @@ TE_SHELL([if test "$TE64" ; then \
               LINUX32_PLATFORM=linux_other ; \
               LINUX64_PLATFORM= ; \
           else \
-              OTHER_HOST=x86_64-linux ; \
+              OTHER_HOST=x86_64-pc-linux ; \
               LINUX32_PLATFORM= ; \
               LINUX64_PLATFORM=linux_other ; \
           fi])
