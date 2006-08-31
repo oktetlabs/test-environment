@@ -33,6 +33,7 @@
 
 #include "te_errno.h"
 #include "te_queue.h"
+#include "tq_string.h"
 #include "te_test_result.h"
 #include "logic_expr.h"
 
@@ -71,9 +72,6 @@ typedef struct trc_exp_result {
     char       *key;        /**< BugID-like information */
     char       *notes;      /**< Any kind of notes */
 } trc_exp_result;
-
-/** List of expected results */
-typedef LIST_HEAD(trc_exp_results, trc_exp_result) trc_exp_results;
 
 
 /*
@@ -122,7 +120,7 @@ typedef struct te_trc_db_walker te_trc_db_walker;
  *
  * @return Pointer to allocated walker.
  */
-extern te_trc_db_walker *trc_db_new_walker(struct te_trc_db  *trc_db);
+extern te_trc_db_walker *trc_db_new_walker(const struct te_trc_db  *trc_db);
 
 /**
  * Move walker from the current position to the child test with
@@ -170,12 +168,29 @@ extern void trc_db_walker_step_back(te_trc_db_walker *walker);
  * walker position.
  *
  * @param walker        Current walker position
+ * @param tags          Tags which identify IUT
  *
  * @return Expected result.
  * @return NULL         The test/iteration is unknown for TRC database.
  */
-extern const trc_exp_result *tester_db_walker_get_exp_result(
-                                 te_trc_db_walker *walker);
+extern const trc_exp_result *trc_db_walker_get_exp_result(
+                                 te_trc_db_walker  *walker,
+                                 const tqh_strings *tags);
+
+
+/*
+ * Comparison routines.
+ */
+
+/**
+ * Is obtained result equal to one of expected?
+ *
+ * @param expected      Expected results
+ * @param obtained      Obtained result
+ */
+extern te_bool trc_is_result_expected(const trc_exp_result *expected,
+                                      const te_test_result *obtained);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

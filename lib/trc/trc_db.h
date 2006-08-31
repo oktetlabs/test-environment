@@ -44,6 +44,11 @@
 extern "C" {
 #endif
 
+
+/** List of expected results */
+typedef LIST_HEAD(trc_exp_results, trc_exp_result) trc_exp_results;
+
+
 /** Test iteration argument */
 typedef struct trc_test_iter_arg {
     

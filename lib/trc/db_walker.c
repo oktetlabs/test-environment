@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TRC DB walker"
+
 #include "te_config.h"
 
 #include "te_errno.h"
@@ -40,17 +42,18 @@
 
 /** Internal data of the TRC database walker */
 struct te_trc_db_walker {
-    te_trc_db      *db;         /**< TRC database pointer */
-    te_bool         is_iter;    /**< Is current position an iteration? */
-    trc_test       *test;       /**< Test entry */
-    trc_test_iter  *iter;       /**< Test iteration */
-    unsigned int    unknown;    /**< Unknown depth counter */
+    const te_trc_db     *db;        /**< TRC database pointer */
+    te_bool              is_iter;   /**< Is current position an
+                                         iteration? */
+    const trc_test      *test;      /**< Test entry */
+    const trc_test_iter *iter;      /**< Test iteration */
+    unsigned int         unknown;   /**< Unknown depth counter */
 };
 
 
 /* See the description in te_trc.h */
 te_trc_db_walker *
-trc_db_new_walker(struct te_trc_db *trc_db)
+trc_db_new_walker(const struct te_trc_db *trc_db)
 {
     te_trc_db_walker   *walker;
 
@@ -62,6 +65,8 @@ trc_db_new_walker(struct te_trc_db *trc_db)
     walker->is_iter = TRUE;
     walker->test = NULL;
     walker->iter = NULL;
+
+    INFO("A new TRC DB walker allocated - 0x%p", walker);
 
     return walker;
 }
@@ -75,11 +80,14 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name)
     if (walker->unknown > 0)
     {
         walker->unknown++;
+        VERB("Step test '%s' - deep %u in unknown",
+             test_name, walker->unknown);
     }
     else
     {
-        trc_tests  *tests = (walker->iter == NULL) ? &walker->db->tests :
-                                                     &walker->iter->tests;
+        const trc_tests *tests =
+            (walker->iter == NULL) ? &walker->db->tests :
+                                     &walker->iter->tests;
 
         for (walker->test = tests->head.tqh_first;
              walker->test != NULL &&
@@ -87,7 +95,14 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name)
              walker->test = walker->test->links.tqe_next);
 
         if (walker->test == NULL)
+        {
             walker->unknown++;
+            VERB("Step test '%s' - unknown", test_name);
+        }
+        else
+        {
+            VERB("Step test '%s' - OK", test_name);
+        }
     }
 
     walker->is_iter = FALSE;
@@ -107,10 +122,10 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name)
  * @return Is arguments match?
  */
 static te_bool
-test_iter_args_match(trc_test_iter_args *db_args,
-                     unsigned int        n_args,
-                     const char        **names,
-                     const char        **values)
+test_iter_args_match(const trc_test_iter_args  *db_args,
+                     unsigned int               n_args,
+                     const char               **names,
+                     const char               **values)
 {
     uint8_t             match[n_args];
     trc_test_iter_arg  *arg;
@@ -153,6 +168,7 @@ trc_db_walker_step_iter(te_trc_db_walker  *walker,
     if (walker->unknown > 0)
     {
         walker->unknown++;
+        VERB("Step iteration - deep %u in unknown", walker->unknown);
     }
     else
     {
@@ -163,7 +179,14 @@ trc_db_walker_step_iter(te_trc_db_walker  *walker,
              walker->iter = walker->iter->links.tqe_next);
 
         if (walker->iter == NULL)
+        {
             walker->unknown++;
+            VERB("Step iteration - unknown");
+        }
+        else
+        {
+            VERB("Step iteration - OK");
+        }
     }
 
     walker->is_iter = TRUE;
@@ -178,25 +201,36 @@ trc_db_walker_step_back(te_trc_db_walker *walker)
     if (walker->unknown > 0)
     {
         walker->unknown--;
+        walker->is_iter = !walker->is_iter;
+        VERB("Step back from unknown -> %u", walker->unknown);
     }
     else if (walker->is_iter)
     {
         assert(walker->iter != NULL);
         walker->test = walker->iter->parent;
         walker->is_iter = FALSE;
+        VERB("Step back from iteration");
     }
     else
     {
         assert(walker->test != NULL);
         walker->iter = walker->test->parent;
         walker->is_iter = TRUE;
+        VERB("Step back from test");
     }
 }
 
 /* See the description in te_trc.h */
 const trc_exp_result *
-tester_db_walker_get_exp_result(te_trc_db_walker *walker)
+trc_db_walker_get_exp_result(te_trc_db_walker  *walker,
+                             const tqh_strings *tags)
 {
+    const trc_exp_result       *result;
+    int                         prio;
+    const trc_exp_result       *p;
+    int                         res;
+    const trc_exp_result_entry *q;
+
     assert(walker->is_iter);
 
     if (walker->unknown > 0)
@@ -205,5 +239,43 @@ tester_db_walker_get_exp_result(te_trc_db_walker *walker)
         return NULL;
     }
 
-    return NULL;
+    /* Do we have a tag with expected SKIPPED result? */
+    for (result = NULL, prio = 0, p = walker->iter->exp_results.lh_first;
+         p != NULL;
+         p = p ->links.le_next)
+    {
+        res = logic_expr_match(p->tags_expr, tags);
+        if (res != 0)
+        {
+            for (q = p->results.tqh_first;
+                 q != NULL;
+                 q = q->links.tqe_next)
+            {
+                if (q->result.status == TE_TEST_SKIPPED)
+                {
+                    /* Skipped results have top priority in any case */
+                    result = p;
+                    prio = res;
+                    break;
+                }
+            }
+            if (q != NULL)
+                break;
+
+            if (result == NULL || res < prio)
+            {
+                result = p;
+                prio = res;
+            }
+        }
+    }
+
+    /* We have not found matching tagged result */
+    if (result == NULL)
+    {
+        result = walker->iter->exp_default;
+    }
+
+    assert(result != NULL);
+    return result;
 }

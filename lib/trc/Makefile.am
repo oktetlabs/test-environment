@@ -10,6 +10,7 @@ include_HEADERS = \
 lib_LTLIBRARIES = libtrc.la
 
 libtrc_la_SOURCES = \
+	compare.c \
 	db_io.c \
 	db_walker.c
 
