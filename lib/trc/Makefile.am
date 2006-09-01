@@ -7,6 +7,9 @@ AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@
 include_HEADERS = \
 	te_trc.h
 
+noinst_HEADERS = \
+	trc_db.h
+
 lib_LTLIBRARIES = libtrc.la
 
 libtrc_la_SOURCES = \
