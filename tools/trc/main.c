@@ -482,7 +482,7 @@ main(int argc, char *argv[])
         goto exit;
     }
 
-    if (trc_parse_log(trc_xml_log_fn) != 0)
+    if (trc_parse_log(trc_xml_log_fn, &trc_db) != 0)
     {
         ERROR("Failed to parse XML log");
         goto exit;

@@ -650,7 +650,7 @@ get_logs(xmlNodePtr node, test_runs *tests)
 
 /* See description in trc_db.h */
 int
-trc_parse_log(const char *filename)
+trc_parse_log(const char *filename, trc_database *db)
 {
     xmlParserCtxtPtr    parser;
     xmlDocPtr           doc;
@@ -701,7 +701,7 @@ trc_parse_log(const char *filename)
     }
     else
     {
-        rc = get_logs(xmlNodeChildren(node), &trc_db.tests);
+        rc = get_logs(xmlNodeChildren(node), &db->tests);
     }
     
     xmlFreeDoc(doc);
