@@ -37,6 +37,8 @@
 #include "te_queue.h"
 #include "logic_expr.h"
 
+#include "trc_tag.h"
+
 
 /** Number of IDs supported by TRC-diff */
 #define TRC_DIFF_IDS    10
@@ -245,21 +247,50 @@ extern int trc_parse_db(const char *filename);
 extern int trc_dump_db(const char *filename, te_bool init);
 
 /**
- * Parse TE log in XML format.
- *
- * @param filename      Name of the file with log
- * @param db            TRC database
- *
- * @return Status code
- */
-extern int trc_parse_log(const char *filename, trc_database *db);
-
-/**
  * Free TRC resources allocated for TRC database.
  *
  * @param db        Database to be freed
  */
 extern void trc_free_db(trc_database *db);
+
+
+/**
+ * Parse TE log in XML format.
+ *
+ * @param filename      Name of the file with log
+ * @param log           Location for XML document pointer
+ *
+ * @return Status code
+ */
+extern int trc_parse_log(const char *filename, xmlDocPtr *log);
+
+/**
+ * Get tags from log.
+ *
+ * @param log           XML document with log
+ * @param tags          List to add tags from the log
+ *
+ * @return Status code.
+ */
+extern int trc_get_tags_from_log(xmlDocPtr log, trc_tags *tags);
+
+/**
+ * Process log.
+ *
+ * @param log           XML document with log
+ * @param db            TRC database
+ *
+ * @return Status code.
+ */
+extern int trc_process_log(xmlDocPtr log, trc_database *db);
+
+/**
+ * Free resources allocated for log.
+ *
+ * @param log           Log to be freed
+ */
+extern void trc_free_log(xmlDocPtr log);
+
 
 /** Output flags */
 enum trc_out_flags {

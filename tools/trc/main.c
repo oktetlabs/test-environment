@@ -53,6 +53,7 @@
 
 #include "trc_tag.h"
 #include "trc_db.h"
+#include "trc_xml.h"
 
 
 DEFINE_LGR_ENTITY("TRC RG");
@@ -78,6 +79,7 @@ enum {
     TRC_OPT_NO_EXP_PASSED,
     TRC_OPT_NO_EXPECTED,
     TRC_OPT_NO_STATS_NOT_RUN,
+    TRC_OPT_IGNORE_LOG_TAGS,
 };
 
 /** HTML report data */
@@ -95,6 +97,9 @@ te_bool trc_update_db = FALSE;
 te_bool trc_init_db = FALSE;
 
 te_bool trc_quiet = FALSE;
+
+/** Should tags from XML log be ignored? */
+static te_bool trc_ignore_log_tags = FALSE;
 
 /** Name of the file with XML log to be analyzed */
 static char *trc_xml_log_fn = NULL;
@@ -143,6 +148,8 @@ process_cmd_line_opts(int argc, char **argv)
         { "tag", 'T', POPT_ARG_STRING, NULL, TRC_OPT_TAG,
           "Name of the tag to get specific expected result.",
           "TAG" },
+        { "ignore-log-tags", 'I', POPT_ARG_NONE, NULL,
+          TRC_OPT_IGNORE_LOG_TAGS, "Ignore tags from log.", NULL },
 
         { "txt", 't', POPT_ARG_STRING, NULL, TRC_OPT_TXT,
           "Specify name of the file to report in text format.",
@@ -224,6 +231,10 @@ process_cmd_line_opts(int argc, char **argv)
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
+                break;
+
+            case TRC_OPT_IGNORE_LOG_TAGS:
+                trc_ignore_log_tags = TRUE;
                 break;
 
             case TRC_OPT_TXT:
@@ -447,6 +458,7 @@ main(int argc, char *argv[])
 {
     int                 result = EXIT_FAILURE;
     trc_html_report    *html_report;
+    xmlDocPtr           log = NULL;
 
     memset(&trc_db, 0, sizeof(trc_db));
     TAILQ_INIT(&trc_db.tests.head);
@@ -468,10 +480,17 @@ main(int argc, char *argv[])
         goto exit;
     }
 
-    /* Add tag of the default result */
-    if (trc_add_tag(&tags, "result") != 0)
+    /* At first, parse XML log, but do not process */
+    if (trc_parse_log(trc_xml_log_fn, &log) != 0)
     {
-        ERROR("Failed to add tag of the default result");
+        ERROR("Failed to parse XML log");
+        goto exit;
+    }
+    /* Optionally get tags from log */
+    if (!trc_ignore_log_tags &&
+        trc_get_tags_from_log(log, &tags) != 0)
+    {
+        ERROR("Failed to get tags from XML log");
         goto exit;
     }
 
@@ -482,9 +501,10 @@ main(int argc, char *argv[])
         goto exit;
     }
 
-    if (trc_parse_log(trc_xml_log_fn, &trc_db) != 0)
+    /* Process log */
+    if (trc_process_log(log, &trc_db) != 0)
     {
-        ERROR("Failed to parse XML log");
+        ERROR("Failed to process XML log");
         goto exit;
     }
 
@@ -551,6 +571,7 @@ exit:
         if (html_report->header != NULL)
             (void)fclose(html_report->header);
     }
+    trc_free_log(log);
 
     return result;
 }

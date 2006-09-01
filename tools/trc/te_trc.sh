@@ -48,7 +48,7 @@ cat <<EOF >"$RGT_FILTER"
   <entity-filter>
     <exclude entity=""/>
     <include entity="">
-        <user name="TRC Options"/>
+        <user name="TRC tags"/>
         <user name="Control"/>
     </include>
   </entity-filter>

@@ -148,6 +148,7 @@ Generic options:
 
   --trc-db=<filename>           TRC database to be used
   --trc-tag=<TAG>               Tag to get specific expected results
+  --trc-ignore-log-tags         Ignore tags from log
   --trc-html=<filename>         Name of the file for HTML report
   --trc-brief-html=<filename>   Name of the file for brief HTML report
   --trc-html-header=<filename>  Name of the file with header for all HTML
@@ -216,8 +217,9 @@ SHUTDOWN=yes
 
 # No additional Tester options by default
 TESTER_OPTS=
-# No additional TRC options by default
+# No additional TRC options and tags by default
 TRC_OPTS=
+TRC_TAGS=
 # No additional TCE report options by default
 TCER_OPTS=
 # No additional TCE summary options by default
@@ -387,7 +389,7 @@ process_opts()
                 TESTER_OPTS="${TESTER_OPTS} --trc-db=${TRC_DB}" ;
                 ;;
             --trc-tag=*)
-                TRC_OPTS="${TRC_OPTS} --tag=${1#--trc-tag=}" ;
+                TRC_TAGS="${TRC_TAGS} ${1#--trc-tag=}" ;
                 TESTER_OPTS="${TESTER_OPTS} $1"
                 ;;
             --trc-*) TRC_OPTS="${TRC_OPTS} --${1#--trc-}" ;;
@@ -556,9 +558,9 @@ te_log_message Dispatcher "Command-line options" "${cmd_line_opts}"
 te_log_message Dispatcher "Expanded command-line options" \
     "${cmd_line_opts_all}"
 
-# Log TRC tool options
-if test -n "${TRC_OPTS}" ; then
-    te_log_message Dispatcher "TRC Options" "${TRC_OPTS}"
+# Log TRC tags
+if test -n "${TRC_TAGS}" ; then
+    te_log_message Dispatcher "TRC tags" "${TRC_TAGS}"
 fi
 
 # Build Test Environment

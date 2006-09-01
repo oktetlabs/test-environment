@@ -48,7 +48,7 @@
 #include "trc_xml.h"
 
 
-static int get_logs(xmlNodePtr node, test_runs *tests);
+static int get_tests(xmlNodePtr node, test_runs *tests);
 
 
 /**
@@ -594,7 +594,7 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("branch")) == 0)
     {
-        rc = get_logs(xmlNodeChildren(node), tests);
+        rc = get_tests(xmlNodeChildren(node), tests);
         if (rc != 0)
             return rc;
         node = xmlNodeNext(node);
@@ -614,7 +614,7 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
 /**
  */
 static int
-get_logs(xmlNodePtr node, test_runs *tests)
+get_tests(xmlNodePtr node, test_runs *tests)
 {
     int rc = 0;
 
@@ -650,15 +650,12 @@ get_logs(xmlNodePtr node, test_runs *tests)
 
 /* See description in trc_db.h */
 int
-trc_parse_log(const char *filename, trc_database *db)
+trc_parse_log(const char *filename, xmlDocPtr *log)
 {
     xmlParserCtxtPtr    parser;
-    xmlDocPtr           doc;
-    xmlNodePtr          node;
 #if HAVE_XMLERROR
     xmlError           *err;
 #endif
-    int                 rc;
 
     if (filename == NULL)
     {
@@ -671,10 +668,10 @@ trc_parse_log(const char *filename, trc_database *db)
         ERROR("xmlNewParserCtxt() failed");
         return ENOMEM;
     }
-    if ((doc = xmlCtxtReadFile(parser, filename, NULL,
-                               XML_PARSE_NOBLANKS |
-                               XML_PARSE_XINCLUDE |
-                               XML_PARSE_NONET)) == NULL)
+    if ((*log = xmlCtxtReadFile(parser, filename, NULL,
+                                XML_PARSE_NOBLANKS |
+                                XML_PARSE_XINCLUDE |
+                                XML_PARSE_NONET)) == NULL)
     {
 #if HAVE_XMLERROR
         err = xmlCtxtGetLastError(parser);
@@ -687,8 +684,112 @@ trc_parse_log(const char *filename, trc_database *db)
         xmlFreeParserCtxt(parser);
         return EINVAL;
     }
+    
+    xmlFreeParserCtxt(parser);
+    xmlCleanupParser();
 
-    node = xmlDocGetRootElement(doc);
+    return 0;  
+}
+
+/**
+ * Parse string with TRC tags and add them into the list.
+ *
+ * @param tags_str      String with tags
+ * @param tags          List to add tags
+ *
+ * @return Status code.
+ */
+static int
+trc_tags_str_to_list(char *tags_str, trc_tags *tags)
+{
+    char *tag, *space;
+    int   rc = 0;
+
+    for (tag = tags_str + strspn(tags_str, " ");
+         rc == 0 && tag != NULL && *tag != '\0';
+         tag = (space == NULL) ? NULL : (space + strspn(space, " ")))
+    {
+        space = strchr(tag, ' ');
+        if (space != NULL)
+            *space++ = '\0';
+        rc = trc_add_tag(tags, tag);
+    }
+    return rc;
+}
+
+/* See description in trc_db.h */
+int
+trc_get_tags_from_log(xmlDocPtr log, trc_tags *tags)
+{
+    int         rc;
+    xmlNodePtr  node;
+    xmlChar    *user = NULL;
+    char       *tags_str; 
+
+    if (log == NULL)
+    {
+        ERROR("%s(): Invalid parameters", __FUNCTION__);
+        return EINVAL;
+    }
+
+    node = xmlDocGetRootElement(log);
+    if (node == NULL)
+    {
+        ERROR("Empty XML log file");
+        rc = ENOENT;
+    }
+    else if (xmlStrcmp(node->name, CONST_CHAR2XML("log_report")) != 0)
+    {
+        ERROR("Unexpected root element of the XML log file");
+        rc = EINVAL;
+    }
+    else if (node = xmlNodeChildren(node),
+             xmlStrcmp(node->name, CONST_CHAR2XML("logs")) != 0)
+    {
+        /* No log message with TRC tags */
+        rc = 0;
+    }
+    else if (node = xmlNodeChildren(node),
+             xmlStrcmp(node->name, CONST_CHAR2XML("msg")) != 0)
+    {
+        ERROR("Unexpected content in 'logs'");
+        rc = EINVAL;
+    }
+    else if ((user = xmlGetProp(node, CONST_CHAR2XML("user"))) == NULL ||
+             xmlStrcmp(user, CONST_CHAR2XML("TRC tags")) != 0)
+    {
+        ERROR("Log message from unexpected user '%s' XML log "
+              "passed to TRC report generator", XML2CHAR(user));
+        xmlFree(user);
+        rc = EINVAL;
+    }
+    else
+    {
+        xmlFree(user);
+        rc = get_text_content(node, "msg", &tags_str);
+        if (rc == 0)
+        {
+            rc = trc_tags_str_to_list(tags_str, tags);
+        }
+    }
+    
+    return rc;  
+}
+
+/* See description in trc_db.h */
+int
+trc_process_log(xmlDocPtr log, trc_database *db)
+{
+    xmlNodePtr  node;
+    int         rc;
+
+    if (log == NULL || db == NULL)
+    {
+        ERROR("%s(): Invalid parameters", __FUNCTION__);
+        return EINVAL;
+    }
+
+    node = xmlDocGetRootElement(log);
     if (node == NULL)
     {
         ERROR("Empty XML log file");
@@ -701,13 +802,15 @@ trc_parse_log(const char *filename, trc_database *db)
     }
     else
     {
-        rc = get_logs(xmlNodeChildren(node), &db->tests);
+        rc = get_tests(xmlNodeChildren(node), &db->tests);
     }
     
-    xmlFreeDoc(doc);
-    xmlFreeParserCtxt(parser);
-    xmlCleanupParser();
-
     return rc;  
 }
 
+/* See description in trc_db.h */
+void
+trc_free_log(xmlDocPtr log)
+{
+    xmlFreeDoc(log);
+}
