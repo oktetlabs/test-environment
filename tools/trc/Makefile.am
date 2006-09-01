@@ -10,15 +10,15 @@ noinst_HEADERS = trc_db.h trc_xml.h trc_tag.h
 
 dist_bin_SCRIPTS = te_trc.sh
 
-bin_PROGRAMS = te_trc te_trc_diff
+bin_PROGRAMS = te-trc-report te-trc-diff
 
 
-te_trc_SOURCES = main.c trc_tag.c db_io.c report_html.c log_parse.c
+te_trc_report_SOURCES = main.c trc_tag.c db_io.c report_html.c log_parse.c
 
-te_trc_LDADD = -llogic_expr -ltools -llogger_stderr \
-               -lpopt -lfl @XML2_LIBS@ @TE_LDADD@
+te_trc_report_LDADD = -llogic_expr -ltools -llogger_stderr \
+                      -lpopt -lfl @XML2_LIBS@ @TE_LDADD@
 
-te_trc_DEPENDENCIES = @TE_DEPENDENCIES@ \
+te_trc_report_DEPENDENCIES = @TE_DEPENDENCIES@ \
 	$(DESTDIR)/$(libdir)/liblogic_expr.a \
 	$(DESTDIR)/$(libdir)/libtools.a \
 	$(DESTDIR)/$(libdir)/liblogger_stderr.a
