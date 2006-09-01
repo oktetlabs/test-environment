@@ -110,7 +110,7 @@
 #include <pwd.h>
 
 /* PAM (Pluggable Authentication Modules) support */
-#if defined HAVE_SECURITY_PAM_APPL_H
+#if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
 #include <security/pam_appl.h>
 
 /** Data passed between 'set_change_passwd' and 'conv_fun' callback fun */
@@ -134,7 +134,7 @@ typedef struct pam_message pam_message_t;
 typedef struct pam_message const pam_message_t;
 #endif
 
-#endif /* HAVE_SECURITY_PAM_APPL_H */
+#endif /* HAVE_SECURITY_PAM_APPL_H && HAVE_LIBPAM */
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -260,7 +260,7 @@ str_addr_family(const char *str_addr)
     ((ifname == NULL)? TE_EINVAL :                                      \
      (strlen(ifname) > IFNAMSIZ)? TE_E2BIG :                            \
      (strchr(ifname, ':') != NULL ||                                    \
-      !INTERFACE_IS_MINE(ifname_without_vlan(ifname)))? TE_ENODEV : 0)  \
+      !INTERFACE_IS_MINE((ifname)))? TE_ENODEV : 0)  \
 
 /**
  * Configuration IOCTL request.
@@ -4585,7 +4585,7 @@ user_exists(const char *user)
     return getpwnam(user) != NULL ? TRUE : FALSE;
 }
 
-#if defined HAVE_SECURITY_PAM_APPL_H
+#if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
 /**
  * Callback function provided by user and called from within PAM library.
  *
@@ -4731,7 +4731,7 @@ set_change_passwd(char const *user, char const *passwd)
 
     return rc;
 }
-#endif /* HAVE_SECURITY_PAM_APPL_H */
+#endif /* HAVE_SECURITY_PAM_APPL_H && HAVE_LIBPAM */
 
 /**
  * Add tester user.
@@ -4747,7 +4747,8 @@ static te_errno
 user_add(unsigned int gid, const char *oid, const char *value,
          const char *user)
 {
-#if defined HAVE_SECURITY_PAM_APPL_H || defined __linux__
+#if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM) || \
+    defined(__linux__)
     char *tmp;
     char *tmp1;
 
@@ -4760,7 +4761,8 @@ user_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
 
-#if !defined HAVE_SECURITY_PAM_APPL_H && !defined __linux__
+#if (!defined(HAVE_SECURITY_PAM_APPL_H) || !defined(HAVE_LIBPAM)) && \
+    !defined(__linux__)
     UNUSED(user);
     ERROR("user_add failed (no user management facilities available)");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -4798,7 +4800,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
     /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
     ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
 
-#if defined HAVE_SECURITY_PAM_APPL_H
+#if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
     /** Set (change) password for just added user */
     if (set_change_passwd(user, user) != 0)
 #else
