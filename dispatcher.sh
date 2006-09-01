@@ -25,7 +25,7 @@
 # Author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 #
-# $Id:$
+# $Id$
 #
 
 TE_RUN_DIR="${PWD}"
@@ -552,13 +552,13 @@ fi
 
 # Intitialize log
 test -z "${DAEMON}" && te_log_init
-te_log_message Engine Dispatcher "Command-line options: ${cmd_line_opts}"
-te_log_message Engine Dispatcher \
-    "Expanded command-line options: ${cmd_line_opts_all}"
+te_log_message Dispatcher "Command-line options" "${cmd_line_opts}"
+te_log_message Dispatcher "Expanded command-line options" \
+    "${cmd_line_opts_all}"
 
 # Log TRC tool options
 if test -n "${TRC_OPTS}" ; then
-    te_log_message Engine Dispatcher "TRC options:${TRC_OPTS}"
+    te_log_message Dispatcher "TRC Options" "${TRC_OPTS}"
 fi
 
 # Build Test Environment
@@ -648,7 +648,7 @@ if test -n "${LIVE_LOG}" ; then
     LIVE_LOG_PID=$!
 fi
 
-te_log_message Engine Dispatcher "Starting TEN applications"
+te_log_message Dispatcher Start "Starting TEN applications"
 START_OK=0
 
 LOGGER_NAME=Logger
@@ -668,7 +668,7 @@ start_daemon() {
         DAEMON_EXEC="$(eval echo '${'$DAEMON'_EXEC}')"
         DAEMON_OPTS="$(eval echo '${'$DAEMON'_OPTS}')"
         DAEMON_CONF="$(eval echo '${CONF_'$DAEMON'}')"
-        te_log_message Engine Dispatcher \
+        te_log_message Dispatcher Start \
             "Start ${DAEMON_NAME}: ${DAEMON_OPTS} ${DAEMON_CONF}"
         myecho -n "--->>> Starting ${DAEMON_NAME}... "
         if test -n "$(eval echo '${VG_'$DAEMON'}')" ; then
@@ -716,7 +716,7 @@ else
 fi
 
 if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
-    te_log_message Engine Dispatcher \
+    te_log_message Dispatcher Start \
         "Start Tester:${TESTER_OPTS} ${CONF_TESTER}"
     myecho "--->>> Start Tester"
     if test -n "$VG_TESTER" ; then
@@ -736,7 +736,7 @@ shutdown_daemon() {
     if test -n "${SHUTDOWN}" -a -n "$(eval echo '${'$DAEMON'_OK}')" ; then
         DAEMON_NAME="$(eval echo '${'$DAEMON'_NAME}')"
         DAEMON_SHUT="$(eval echo '${'$DAEMON'_SHUT}')"
-        te_log_message Engine Dispatcher "Shutdown ${DAEMON_NAME}"
+        te_log_message Dispatcher Start "Shutdown ${DAEMON_NAME}"
         myecho -n "--->>> Shutdown ${DAEMON_NAME}... "
         ${DAEMON_SHUT}
         if test $? -eq 0 ; then
@@ -750,13 +750,13 @@ shutdown_daemon() {
 shutdown_daemon CS
 
 if test -n "${LOGGER_OK}" -a -n "${RCF_OK}" ; then
-    te_log_message Engine Dispatcher "Flush log"
+    te_log_message Dispatcher Start "Flush log"
     myecho "--->>> Flush Logs"
     te_log_flush
 fi
 
 if test ${START_OK} -ne 1 -a -n "${DO_NUTS}" ; then
-    te_log_message Engine Dispatcher "Dumping TCE"
+    te_log_message Dispatcher Start "Dumping TCE"
     myecho "--->>> Dump TCE"
     te_tce_dump.sh "${CONF_NUT}"
 fi
@@ -766,7 +766,7 @@ shutdown_daemon RCF
 shutdown_daemon LOGGER
 
 if test -z "${SHUTDOWN}" ; then
-    te_log_message Engine Dispatcher "Leave TE daemon ${TE_ID}"
+    te_log_message Dispatcher Start "Leave TE daemon ${TE_ID}"
     myecho "--->>> Leave TE deamon ${TE_ID}"
 fi
 
