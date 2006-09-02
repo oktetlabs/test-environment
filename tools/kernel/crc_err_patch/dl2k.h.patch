@@ -1,10 +1,10 @@
---- dl2k.h	2006-08-23 21:50:01.000000000 +0400
-+++ /tmp/linux-2.6.8.1/drivers/net/dl2k.h	2004-08-14 14:56:15.000000000 +0400
-@@ -680,7 +680,6 @@
+--- /tmp/linux-2.6.8.1/drivers/net/dl2k.h	2004-08-14 14:56:15.000000000 +0400
++++ dl2k.h	2006-09-02 13:13:28.000000000 +0400
+@@ -680,6 +680,7 @@
  	u16 advertising;	/* NWay media advertisement */
  	u16 negotiate;		/* Negotiated media */
  	int phy_addr;		/* PHY addresses. */
--        u8 ignore_crc_err;     /* CRC check ignoring */
++        u8 ignore_crc_err;     /* CRC check ignoring */
  };
  
  /* The station address location in the EEPROM. */

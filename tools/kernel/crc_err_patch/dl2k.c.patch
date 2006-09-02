@@ -1,6 +1,14 @@
 --- /tmp/linux-2.6.8.1/drivers/net/dl2k.c	2004-08-14 14:55:19.000000000 +0400
-+++ dl2k/dl2k.c	2006-08-26 18:28:45.000000000 +0400
-@@ -171,6 +171,7 @@
++++ dl2k.c	2006-09-02 13:30:09.000000000 +0400
+@@ -93,6 +93,7 @@
+ static int max_intrloop = 50;
+ static int multicast_filter_limit = 0x40;
+ 
++void qdisc_run(struct net_device *dev);
+ static int rio_open (struct net_device *dev);
+ static void rio_timer (unsigned long data);
+ static void rio_tx_timeout (struct net_device *dev);
+@@ -171,6 +172,7 @@
  	np = dev->priv;
  	np->chip_id = chip_idx;
  	np->pdev = pdev;
@@ -8,7 +16,7 @@
  	spin_lock_init (&np->tx_lock);
  	spin_lock_init (&np->rx_lock);
  
-@@ -650,7 +651,8 @@
+@@ -650,7 +652,8 @@
  	if (skb->ip_summed == CHECKSUM_HW) {
  		txdesc->status |=
  		    cpu_to_le64 (TCPChecksumEnable | UDPChecksumEnable |
@@ -18,7 +26,7 @@
  	}
  #endif
  	if (np->vlan) {
-@@ -670,11 +672,15 @@
+@@ -670,11 +673,15 @@
  		txdesc->status = cpu_to_le64 (entry | tfc_vlan_tag |
  					      WordAlignDisable | 
  					      TxDMAIndicate |
@@ -36,7 +44,7 @@
  
  	/* TxDMAPollNow */
  	writel (readl (ioaddr + DMACtrl) | 0x00001000, ioaddr + DMACtrl);
-@@ -1323,11 +1329,13 @@
+@@ -1323,20 +1330,19 @@
  static int
  rio_ioctl (struct net_device *dev, struct ifreq *rq, int cmd)
  {
@@ -44,14 +52,13 @@
  	int phy_addr;
  	struct netdev_private *np = dev->priv;
  	struct mii_data *miidata = (struct mii_data *) &rq->ifr_ifru;
-+	struct sk_buff  *skb;
  	
 -	struct netdev_desc *desc;
+-	int i;
 +        struct netdev_desc *desc;
- 	int i;
  
  	phy_addr = np->phy_addr;
-@@ -1335,8 +1343,7 @@
+ 	switch (cmd) {
  	case SIOCETHTOOL:
  		return rio_ethtool_ioctl(dev, rq->ifr_data);		
  	case SIOCDEVPRIVATE:
@@ -61,7 +68,7 @@
  	case SIOCDEVPRIVATE + 1:
  		miidata->out_value = mii_read (dev, phy_addr, miidata->reg_num);
  		break;
-@@ -1374,7 +1381,21 @@
+@@ -1374,7 +1380,21 @@
  		}
  		printk ("\n");
  		break;
@@ -69,14 +76,14 @@
 +        case SIOCDEVPRIVATE + 9:
 +            spin_lock(&dev->queue_lock);
 +            qdisc_run(dev);
-+            spin_unlock(&dev->queue_lock)
++            spin_unlock(&dev->queue_lock);
 +            np->ignore_crc_err = 0;
 +            printk(KERN_INFO "The mode of ignoring CRC errors is off.\n");
 +            break;
 +	case SIOCDEVPRIVATE + 10:
 +            spin_lock(&dev->queue_lock);
 +            qdisc_run(dev);
-+            spin_unlock(&dev->queue_lock)
++            spin_unlock(&dev->queue_lock);
 +            np->ignore_crc_err = 1;
 +            printk(KERN_INFO "The mode of ignoring CRC errors is on.\n");
 +            break;
