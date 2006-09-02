@@ -442,19 +442,22 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
         goto error_exit;
     }
 
-    /*
-     * Enable promiscuous mode for the socket on specified interface.
-     */
-    memset(&mr, 0, sizeof(mr));
-    mr.mr_ifindex = data->ifindex;
-    mr.mr_type = PACKET_MR_PROMISC;
-    if (setsockopt(data->in, SOL_PACKET, PACKET_ADD_MEMBERSHIP,
-                   &mr, sizeof(mr)) != 0)
+    if (mode & TAD_ETH_RECV_OTHER)
     {
-        rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
-        ERROR("%s(): setsockopt: PACKET_ADD_MEMBERSHIP failed: %r",
-              __FUNCTION__, rc); 
-        goto error_exit;
+        /*
+         * Enable promiscuous mode for the socket on specified interface.
+         */
+        memset(&mr, 0, sizeof(mr));
+        mr.mr_ifindex = data->ifindex;
+        mr.mr_type = PACKET_MR_PROMISC;
+        if (setsockopt(data->in, SOL_PACKET, PACKET_ADD_MEMBERSHIP,
+                       &mr, sizeof(mr)) != 0)
+        {
+            rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+            ERROR("%s(): setsockopt: PACKET_ADD_MEMBERSHIP failed: %r",
+                  __FUNCTION__, rc); 
+            goto error_exit;
+        }
     }
 
     /* 

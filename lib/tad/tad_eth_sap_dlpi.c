@@ -460,7 +460,7 @@ tad_eth_sap_detach(tad_eth_sap *sap)
 }
 
 static te_errno
-dlpi_sap_open(tad_eth_sap *sap)
+dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
 {
     dlpi_data          *dlpi = (dlpi_data *)sap->data;
     te_errno            rc = 0;
@@ -508,15 +508,21 @@ dlpi_sap_open(tad_eth_sap *sap)
     if (rc != 0)
         goto err_exit;
 
-    /* Enable promiscuous DL_PROMISC_PHYS */
-    memset(&dlp, 0, sizeof(dlp));
-    dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
-    dlp.promiscon_req.dl_level = DL_PROMISC_PHYS;
-    rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-    if (rc != 0)
+    if (mode & TAD_ETH_RECV_OTHER)
     {
-        ERROR("Attempt to set DL_PROMISC_PHYS failed");
-        goto err_exit;
+        /*
+         * To catch frames 'To someone else'
+         * enable promiscuous DL_PROMISC_PHYS
+         */
+        memset(&dlp, 0, sizeof(dlp));
+        dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+        dlp.promiscon_req.dl_level = DL_PROMISC_PHYS;
+        rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+        if (rc != 0)
+        {
+            ERROR("Attempt to set DL_PROMISC_PHYS failed");
+            goto err_exit;
+        }
     }
 
     memset(&dlp, 0, sizeof(dlp));
@@ -588,8 +594,7 @@ te_errno
 tad_eth_sap_send_open(tad_eth_sap *sap,
                       unsigned int mode)
 {
-    UNUSED(mode);
-    return dlpi_sap_open(sap);
+    return dlpi_sap_open(sap, mode);
 }
 
 
@@ -646,8 +651,7 @@ te_errno
 tad_eth_sap_recv_open(tad_eth_sap *sap,
                       unsigned int mode)
 {
-    UNUSED(mode);
-    return dlpi_sap_open(sap);
+    return dlpi_sap_open(sap, mode);
 }
 
 
