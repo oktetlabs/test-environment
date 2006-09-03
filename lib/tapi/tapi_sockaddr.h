@@ -58,6 +58,23 @@ extern te_errno tapi_allocate_port(uint16_t *p_port);
  */
 extern te_errno tapi_allocate_port_htons(uint16_t *p_port);
 
+/**
+ * Generate new sockaddr basing on existing one (copy data and 
+ * allocate new port).
+ *
+ * @param src   existing sockaddr
+ * @param dst   location for new sockaddr
+ *
+ * @return Status code.
+ */
+static inline te_errno
+tapi_sockaddr_clone(const struct sockaddr *src, 
+                    struct sockaddr_storage *dst)
+{
+    memcpy(dst, src, te_sockaddr_get_size(src));
+    return tapi_allocate_port_htons(te_sockaddr_get_port_ptr(SA(dst)));
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
