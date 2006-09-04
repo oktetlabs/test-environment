@@ -1296,11 +1296,13 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
             rc = cfg_find_fmt(&handle, 
                               "/agent:%s/interface:%s/neigh_static:%s",
                               ta, ifname, net_addr_str);
-            if (rc != 0)
+            if (rc == 0)
             {
-                if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
-                    break;
-
+                rc = cfg_del_instance(handle, FALSE);
+                /* Error is logged by CS */                
+            }
+            else if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+            {
                 rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s", 
                                          ta, ifname);
                 if (rc != 0)
@@ -1308,22 +1310,20 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                               
                 rc = cfg_find_fmt(&handle, 
                                   "/agent:%s/interface:%s/neigh_dynamic:%s",
-                                   ta, ifname, net_addr_str);
-                
-                if (rc != 0)
-                {                                   
-                    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
-                        break;
-                                   
-                    RING("%s: there is no neighbour entry for %s "
-                         "on interface %s of TA %s", __FUNCTION__, 
-                         net_addr_str, ifname, ta);
+                                  ta, ifname, net_addr_str);
+                if (rc == 0)
+                {
+                    rc = cfg_del_instance(handle, FALSE);
+                    /* Error is logged by CS */                
+                }
+
+                if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+                {
+                    RING("There is no neighbour entry for %s on "
+                         "interface %s of TA %s", net_addr_str, ifname, ta);
                     rc = 0;
-                    break;
                 }
             }
-            rc = cfg_del_instance(handle, FALSE);
-            /* Error is logged by CS */                
             break;
 
         default:
