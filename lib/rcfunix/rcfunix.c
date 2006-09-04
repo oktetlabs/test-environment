@@ -440,7 +440,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
              * Be quite, but DO NOT suppress command output in order
              * to have to see possible problems.
              */
-            sprintf(cmd, "scp -rBpq %s %s %s:/tmp/%s%s",
+            sprintf(cmd, "scp -rBpq %s %s %s:/tmp/%s%s >/dev/null 2>&1",
                     ta->key, path, ta->host, ta_type, ta->postfix);
         }
     }

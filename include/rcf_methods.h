@@ -58,6 +58,7 @@ typedef void *rcf_talib_handle;
                                      forward new requests */
 #define TA_DEAD         0x0400  /**< TA is dead, but can be recovered */
 #define TA_UNRECOVER    0x0800  /**< TA is dead, but can't be recovered */
+#define TA_REBOOTING    0x1000  /**< TA is performing cold reboot */
 /*@}*/
 
 

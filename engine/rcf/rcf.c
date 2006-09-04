@@ -106,6 +106,15 @@
 #define RCF_REBOOT_TIMEOUT      60  /**< TA reboot timeout in seconds */
 #define RCF_SHUTDOWN_TIMEOUT    5   /**< TA shutdown timeout in seconds */
 
+#define RCF_COLD_REBOOT_MIN_TIMEOUT 60  /**< Initial timeout for
+                                             cold reboot, in seconds */
+#define RCF_COLD_REBOOT_MAX_TIMEOUT 240 /**< Maximal timeout for
+                                             cold reboot, in seconds */
+#define RCF_COLD_REBOOT_INTERVAL    10  /**< Interval between agent
+                                             restarting attempts
+                                             after cold reboot,
+                                             in seconds */
+
 
 /** Special session identifiers */
 enum {
@@ -146,7 +155,7 @@ enum {
  *     send a shutdown command to TA with first free SID to all Test Aents;
  *     shutdown_num = ta_num;
  *     wait until time(NULL) - ta.reboot_timestamp > RCF_SHUTDOWN_TIMESTAMP
- *     or response from all TA is received (set flag TA_DOWN and decriment
+ *     or response from all TA is received (set flag TA_DOWN and decrement
  *     shutdown_num every time when response is received);
  *     for all TA with TA_DOWN flag clear ta.finish();
  *     response to all sent, waiting and pending requests (EIO);
@@ -192,8 +201,9 @@ typedef struct ta {
                                                  request with the same SID
                                                  is received */
     unsigned int        flags;              /**< Test Agent flags */
-    int                 reboot_timestamp;   /**< Time of reboot command
+    time_t              reboot_timestamp;   /**< Time of reboot command
                                                  sending (in seconds) */
+    time_t              restart_timestamp;
     int                 sid;                /**< Free session identifier 
                                                  (starts from 2) */
     te_bool             conn_locked;        /**< Connection is locked until
@@ -203,6 +213,8 @@ typedef struct ta {
                                                  locked the connection */
     void               *dlhandle;           /**< Dynamic library handle */
     ta_initial_task    *initial_tasks;      /**< Startup tasks */
+    char               *cold_reboot_ta;     /**< Cold reboot TA name */
+    const char         *cold_reboot_param;  /**< Cold reboot params */
 
     /** @name Methods */
     rcf_talib_start     start;              /**< Start TA */
@@ -255,10 +267,13 @@ static fd_set set0;
 static char *tmp_dir;
 
 
-/* Forward decraration */
+/* Forward declarations */
+static usrreq * alloc_usrreq(void);
 static int write_str(char *s, size_t len);
 static int send_cmd(ta *agent, usrreq *req);
 static void rcf_ta_check_done(usrreq *req);
+static te_errno cold_reboot(ta *agent);
+static void send_all_pending_commands(ta *agent);
 
 /*
  * Release memory allocated for Test Agents structures.
@@ -513,7 +528,22 @@ parse_config(const char *filename)
                 agent->flags |= TA_REBOOTABLE;
            free(attr);
         }
-       
+
+        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"cold_reboot"))
+            != NULL)
+        {
+            char *param;
+
+            if ((param = strchr(attr, ':')) != 0)
+            {
+                agent->cold_reboot_ta = attr;
+                *param = '\0';
+                agent->cold_reboot_param = param + 1;
+            }
+            else
+                free(attr);
+        }
+
         if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"fake")) != NULL)
         {
             if (strcmp(attr, "yes") == 0)
@@ -896,9 +926,11 @@ static int
 init_agent(ta *agent)
 {
     int rc;
+    te_bool is_reboot = ((agent->flags & TA_REBOOTING) != 0);
 
     INFO("Start TA '%s' type=%s confstr='%s'",
          agent->name, agent->type, agent->conf);
+    agent->restart_timestamp = time(NULL);
     if (agent->flags & TA_FAKE)
         RING("TA '%s' has been already started");
 
@@ -909,8 +941,12 @@ init_agent(ta *agent)
                              agent->conf, &(agent->handle),
                              &(agent->flags))) != 0)
     {
-        ERROR("Cannot (re-)initialize TA '%s' error=%r", agent->name, rc);
-        set_ta_unrecoverable(agent);
+        if (!is_reboot)
+        {
+            ERROR("Cannot (re-)initialize TA '%s' error=%r",
+                  agent->name, rc);
+            set_ta_unrecoverable(agent);
+        }
         return rc;
     }
     INFO("TA '%s' started, trying to connect", agent->name);
@@ -920,7 +956,7 @@ init_agent(ta *agent)
         set_ta_unrecoverable(agent);
         return rc;
     }
-    agent->flags &= ~TA_DEAD;
+    agent->flags &= ~(TA_DEAD | TA_REBOOTING);
     INFO("Connected with TA '%s'", agent->name);
 
     rc = (agent->enable_synch_time ? synchronize_time(agent) : 0);
@@ -936,8 +972,13 @@ init_agent(ta *agent)
     else
     {
         answer_all_requests(&(agent->sent), TE_ETAREBOOTED);
-        answer_all_requests(&(agent->pending), TE_ETAREBOOTED);
-        answer_all_requests(&(agent->waiting), TE_ETAREBOOTED);
+        if (is_reboot)
+            send_all_pending_commands(agent);
+        else
+        {
+            answer_all_requests(&(agent->pending), TE_ETAREBOOTED);
+            answer_all_requests(&(agent->waiting), TE_ETAREBOOTED);
+        }
         agent->conn_locked = FALSE;
     }
 
@@ -1005,17 +1046,121 @@ check_reboot()
 
     for (agent = agents; agent != NULL; agent = agent->next)
     {
-        if (agent->reboot_timestamp > 0 &&
-            t - agent->reboot_timestamp > RCF_REBOOT_TIMEOUT)
+        if (agent->reboot_timestamp > 0)
         {
-            usrreq *req;
-            for (req = agent->sent.next;
-                 req != &(agent->sent) &&
-                     req->message->opcode != RCFOP_REBOOT;
-                 req = req->next);
-            force_reboot(agent, req);
+            uint32_t reboot_time = t - agent->reboot_timestamp;
+
+            if ((agent->flags & TA_REBOOTING) != 0)
+            {
+                /* Hardware reboot */
+                if (reboot_time > RCF_COLD_REBOOT_MIN_TIMEOUT &&
+                    t - agent->restart_timestamp >=
+                                            RCF_COLD_REBOOT_INTERVAL)
+                {
+                    int rc;
+
+                    WARN("Trying to re-start '%s' at %d s after "
+                         "cold reboot", agent->name, reboot_time);
+                    if ((rc = init_agent(agent)) != 0)
+                    {
+                        if (reboot_time <= RCF_COLD_REBOOT_MAX_TIMEOUT)
+                        {
+                            WARN("Restart of '%s' at %d s failed, waiting",
+                                 agent->name, reboot_time);
+                            agent->flags &= (~TA_UNRECOVER);
+                            return;
+                        }
+                        else
+                        {
+                            ERROR("Failed to restart TA via cold reboot "
+                                  "in %d seconds",
+                                  RCF_COLD_REBOOT_MAX_TIMEOUT);
+                            agent->flags |= TA_UNRECOVER;
+                            agent->flags &= (~TA_REBOOTING);
+                        }
+                    }
+                    agent->reboot_timestamp = 0;
+                }
+            }
+            else if (reboot_time > RCF_REBOOT_TIMEOUT)
+            {
+                /* Software reboot */
+                usrreq *req;
+                for (req = agent->sent.next;
+                     req != &(agent->sent) &&
+                         req->message->opcode != RCFOP_REBOOT;
+                     req = req->next);
+                force_reboot(agent, req);
+            }
         }
     }
+}
+
+/**
+ * Sent cold_reboot() call for the agent specified if there exists
+ * corresponding power control agent
+ *
+ * @param agent  TA to reboot
+ * @return Status code.
+ */
+static te_errno
+cold_reboot(ta *agent)
+{
+    ta     *power_ta;
+    char   *tmp;
+    usrreq *req;
+    size_t  param_len;
+
+    if (agent->cold_reboot_ta == NULL)
+        return TE_ENOSYS;
+
+    RING("Cold rebooting TA '%s' using '%s', '%s'", agent->name,
+         agent->cold_reboot_ta, agent->cold_reboot_param);
+
+    if ((power_ta = find_ta_by_name(agent->cold_reboot_ta)) == NULL)
+    {
+        ERROR("Unexisting TA '%s' is specified for cold_reboot of '%s'",
+              agent->cold_reboot_ta, agent->name);
+        return TE_ENOENT;
+    }
+
+    if ((power_ta->flags & TA_DEAD) != 0)
+    {
+        ERROR("Power agent '%s' for TA '%s' is dead!",
+              power_ta->name, agent->name);
+        return TE_ETADEAD;
+    }
+
+    if ((req = alloc_usrreq()) == NULL)
+    {
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return TE_ENOMEM;
+    }
+
+    param_len = strlen(agent->cold_reboot_param) + 1;
+    if ((tmp = realloc(req->message, sizeof(rcf_msg) + param_len)) == NULL)
+    {
+        ERROR("%s(): failed to re-allocate memory", __FUNCTION__);
+        free(req->message);
+        free(req);
+        return TE_ENOMEM;
+    }
+    req->message = (rcf_msg *)tmp;
+
+    req->user = NULL;
+    req->timeout = RCF_CMD_TIMEOUT;
+    strcpy(req->message->ta, power_ta->name);
+    req->message->sid = ++(power_ta->sid);
+    req->message->opcode = RCFOP_EXECUTE;
+    req->message->intparm = RCF_FUNC;
+    strcpy(req->message->id, "cold_reboot");
+    req->message->num = 1;
+    req->message->flags |= PARAMETERS_ARGV;
+    strcpy(req->message->data, agent->cold_reboot_param);
+    req->message->data_len = param_len;
+
+    send_cmd(power_ta, req);
+    return 0;
 }
 
 
@@ -1255,7 +1400,6 @@ process_reply(ta *agent)
             ptr++;                                          \
     } while (0)
 
-    
     rc = (agent->receive)(agent->handle, cmd, &len, &ba);
 
     if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF)
@@ -2079,7 +2223,7 @@ rcf_ta_check_all_done(void)
 
         for (agent = agents; agent != NULL; agent = agent->next)
         {
-            if (agent->flags & TA_UNRECOVER)
+            if (agent->flags & (TA_UNRECOVER | TA_REBOOTING))
             {
                 remain_dead = TRUE;
                 continue;
@@ -2090,7 +2234,16 @@ rcf_ta_check_all_done(void)
                 ERROR("TA '%s' is dead, try to reboot...", agent->name);
                 rebooted = TRUE;
                 if (force_reboot(agent, NULL) != 0)
+                {
                     remain_dead = TRUE;
+                    if (cold_reboot(agent) == 0)
+                    {
+                        agent->flags &= (~TA_UNRECOVER);
+                        agent->flags |= TA_REBOOTING;
+                        agent->reboot_timestamp = time(NULL);
+                        reboot_num++;
+                    }
+                }
             }
         }
 
@@ -2233,7 +2386,7 @@ process_user_request(usrreq *req)
         return;
     }
     
-    if (agent->flags & TA_DEAD)
+    if ((agent->flags & TA_DEAD) && !(agents->flags & TA_REBOOTING))
     {
         ERROR("Request '%s' to dead TA '%s'",
               rcf_op_to_string(msg->opcode), msg->ta);
