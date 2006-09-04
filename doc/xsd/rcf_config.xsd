@@ -187,6 +187,19 @@
                             </xsd:annotation>
                         </xsd:attribute>                        
 
+                        <xsd:attribute name="cold_reboot" type="xsd:string">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Specifies power-ctl TA and its
+                                    parameters that can be used to perform
+                                    cold reboot ot this TA.
+                                    Usually has the form
+                                    '[power TA name]:[outlet name]',
+                                    e.g. 'Agt_A:5' or 'Agt_A:nori'
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:attribute>
+
                     </xsd:complexType>
                 </xsd:element>
 
