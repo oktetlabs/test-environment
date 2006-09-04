@@ -4,7 +4,7 @@
 #
 
 TE_PLATFORM([], [], [], [], [],
-            [tools logic_expr trc])
+            [tools logic_expr loggerten trc])
 
 TE_APP([])
 
