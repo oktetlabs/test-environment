@@ -4117,8 +4117,20 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 
 #ifdef SIOCDARP
 
-        CFG_IOCTL(cfg_socket, SIOCDARP, &arp_req);
+        if (ioctl(cfg_socket, SIOCDARP, (caddr_t)&arp_req) != 0)
+        {
+            te_errno rc = te_rc_os2te(errno);
 
+            if ((rc != TE_ENXIO) || (strstr(oid, "dynamic") == NULL))
+            {
+                ERROR("line %u: ioctl(SIOCDARP) failed: %r", __LINE__, rc);
+            }
+            else
+            {
+                rc = TE_ENOENT;
+            }
+            return TE_RC(TE_TA_UNIX, rc);
+        }
         return 0;
 #else
         return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
