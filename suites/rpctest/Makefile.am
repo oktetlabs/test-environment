@@ -8,8 +8,8 @@ AM_CFLAGS = @TE_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 MY_LDADD=-ltapi_rpc -lrpc_types -ltapi_env -ltapi -lrcfrpc \
-         -lconfapi -lconf_oid \
-         -lrcfapi -lrpcxdr -llogger_ten -lipc -ltools -lexpat -lpthread -lfl
+         -lconfapi -lconf_oid -lrcfapi -lrpcxdr -llogger_ten -lipc \
+         -llog_bufs -ltools -lexpat -lpthread -lfl
 
 MY_DEPS= \
     ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtapi_rpc.a \
@@ -23,6 +23,7 @@ MY_DEPS= \
     ${TE_INSTALL}/$(TE_PLATFORM)/lib/librpcxdr.a \
     ${TE_INSTALL}/$(TE_PLATFORM)/lib/liblogger_ten.a \
     ${TE_INSTALL}/$(TE_PLATFORM)/lib/libipc.a \
+    ${TE_INSTALL}/$(TE_PLATFORM)/lib/liblog_bufs.a \
     ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtools.a
 
 noinst_HEADERS=rpc_suite.h         
