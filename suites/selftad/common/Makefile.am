@@ -19,4 +19,4 @@ tetest_PROGRAMS = \
 
 LDADD = -ltapi_rpc -lrpc_types -ltapi_env -ltapi_tad -ltapi_ipstack -ltapi_atm \
 	-ltapi_arp -ltapi_eth -lndn -lasn -ltapi -lrcfrpc -lrcfapi -lrpcxdr \
-	-lconfapi -lconf_oid -llogger_ten -lipc -ltools -lpthread -lfl
+	-lconfapi -lconf_oid -llogger_ten -lipc -llog_bufs -ltools -lpthread -lfl

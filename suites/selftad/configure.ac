@@ -89,6 +89,7 @@ ${TE_INSTALL}/${TE_PLATFORM}/lib/librpcxdr.a \
 ${TE_INSTALL}/${TE_PLATFORM}/lib/liblogger_ten.a \
 ${TE_INSTALL}/${TE_PLATFORM}/lib/libtapi.a \
 ${TE_INSTALL}/${TE_PLATFORM}/lib/libndn.a \
+${TE_INSTALL}/${TE_PLATFORM}/lib/liblog_bufs.a \
 ${TE_INSTALL}/${TE_PLATFORM}/lib/libtapi_rpc.a"
 
 AC_SUBST([NET_SNMP_CFLAGS])
