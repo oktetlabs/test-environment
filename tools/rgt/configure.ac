@@ -31,7 +31,7 @@ then
     SC2_PATH_TCLCONFIG
     # Sources tclConfig.sh, substs TCL_{BIN,SRC,LIB}_DIR
     SC2_LOAD_TCLCONFIG
-    TCL_CFLAGS=-I$TCL_INC_DIR
+    test -n "$TCL_INC_DIR" && TCL_CFLAGS=-I$TCL_INC_DIR
 else
     TCL_LIB_SPEC=-ltcl
     TCL_CFLAGS=
