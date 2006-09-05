@@ -609,7 +609,7 @@ extern pid_t rpc_getpid(rcf_rpc_server *rpcs);
  *
  * @return The real user ID
  */
-extern uid_t rpc_getuid(rcf_rpc_server *rpcs);
+extern tarpc_uid_t rpc_getuid(rcf_rpc_server *rpcs);
 
 /**
  * Set the effective user ID of the RPC server process. If the 
@@ -626,7 +626,7 @@ extern uid_t rpc_getuid(rcf_rpc_server *rpcs);
  * @note   See @b setuid manual page for more information
  */
 extern int rpc_setuid(rcf_rpc_server *rpcs,
-                      uid_t uid);
+                      tarpc_uid_t uid);
 
 /**
  * Query information about the broken out fields of a line from 
@@ -651,7 +651,7 @@ extern struct passwd *rpc_getpwnam(rcf_rpc_server *rpcs,
  *
  * @return The effective user ID of the RPC server process
  */
-extern uid_t rpc_geteuid(rcf_rpc_server *rpcs);
+extern tarpc_uid_t rpc_geteuid(rcf_rpc_server *rpcs);
 
 /**
  * Set the effective user ID of the RPC server process. Unprivileged user
@@ -664,7 +664,7 @@ extern uid_t rpc_geteuid(rcf_rpc_server *rpcs);
  * @return Upon successful completion this function returns 0, otherwise
  * -1 is returned.
  */
-extern int rpc_seteuid(rcf_rpc_server *rpcs, uid_t uid);
+extern int rpc_seteuid(rcf_rpc_server *rpcs, tarpc_uid_t uid);
 
 /**
  * Allocate a buffer of specified size in the TA address space.

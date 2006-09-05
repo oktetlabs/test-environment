@@ -1186,7 +1186,7 @@ rpc_getpid(rcf_rpc_server *rpcs)
 }
 
 
-uid_t
+tarpc_uid_t
 rpc_getuid(rcf_rpc_server *rpcs)
 {
     tarpc_getuid_in  in;
@@ -1204,7 +1204,7 @@ rpc_getuid(rcf_rpc_server *rpcs)
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "getuid", &in, &out);
 
-    CHECK_RETVAL_VAR(getuid, out.uid, FALSE, 0);
+    CHECK_RETVAL_VAR(getuid, out.uid, FALSE, (tarpc_uid_t)-1);
 
     TAPI_RPC_LOG("RPC (%s,%s): getuid() -> %d (%s)",
                  rpcs->ta, rpcs->name,
@@ -1215,7 +1215,7 @@ rpc_getuid(rcf_rpc_server *rpcs)
 
 int
 rpc_setuid(rcf_rpc_server *rpcs,
-           uid_t uid)
+           tarpc_uid_t uid)
 {
     tarpc_setuid_in  in;
     tarpc_setuid_out out;
@@ -1243,7 +1243,7 @@ rpc_setuid(rcf_rpc_server *rpcs,
     RETVAL_INT(setuid, out.retval);
 }
 
-uid_t
+tarpc_uid_t
 rpc_geteuid(rcf_rpc_server *rpcs)
 {
     tarpc_geteuid_in  in;
@@ -1262,7 +1262,7 @@ rpc_geteuid(rcf_rpc_server *rpcs)
 
     rcf_rpc_call(rpcs, "geteuid", &in, &out);
 
-    CHECK_RETVAL_VAR(geteuid, out.uid, FALSE, 0);
+    CHECK_RETVAL_VAR(geteuid, out.uid, FALSE, (tarpc_uid_t)-1);
 
     TAPI_RPC_LOG("RPC (%s,%s): geteuid() -> %d (%s)",
                  rpcs->ta, rpcs->name,
@@ -1273,7 +1273,7 @@ rpc_geteuid(rcf_rpc_server *rpcs)
 
 int
 rpc_seteuid(rcf_rpc_server *rpcs,
-            uid_t uid)
+            tarpc_uid_t uid)
 {
     tarpc_seteuid_in  in;
     tarpc_seteuid_out out;

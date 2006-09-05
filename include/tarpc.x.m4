@@ -2690,7 +2690,7 @@ struct tarpc_getuid_in {
 struct tarpc_getuid_out {
     struct tarpc_out_arg common;
     
-    tarpc_uint  uid;
+    tarpc_uid_t uid;
 };
 
 /* geteuid */
@@ -2701,7 +2701,7 @@ typedef struct tarpc_getuid_out tarpc_geteuid_out;
 struct tarpc_setuid_in {
     struct tarpc_in_arg common;
     
-    tarpc_uint  uid;
+    tarpc_uid_t uid;
 };
 
 typedef struct tarpc_int_retval_out tarpc_setuid_out;
