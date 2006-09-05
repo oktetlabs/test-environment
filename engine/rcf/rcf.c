@@ -1112,7 +1112,10 @@ cold_reboot(ta *agent)
     size_t  param_len;
 
     if (agent->cold_reboot_ta == NULL)
+    {
+        RING("There is no cold rebooting support for '%s'", agent->name);
         return TE_ENOSYS;
+    }
 
     RING("Cold rebooting TA '%s' using '%s', '%s'", agent->name,
          agent->cold_reboot_ta, agent->cold_reboot_param);
@@ -2215,17 +2218,30 @@ alloc_usrreq(void)
 static void
 rcf_ta_check_all_done(void)
 {
+    VERB("%s()", __FUNCTION__);
     if (ta_checker.req != NULL && ta_checker.active == 0)
     {
+        te_bool     cold_rebooting = FALSE;
         te_bool     rebooted = FALSE;
         te_bool     remain_dead = FALSE;
         ta         *agent;
 
         for (agent = agents; agent != NULL; agent = agent->next)
         {
-            if (agent->flags & (TA_UNRECOVER | TA_REBOOTING))
+            VERB("%s(): '%s' [%c %c %c]", __FUNCTION__, agent->name,
+                 (agent->flags & TA_DEAD) ? 'D' : '-',
+                 (agent->flags & TA_UNRECOVER) ? 'U' : '-',
+                 (agent->flags & TA_REBOOTING) ? 'R' : '-'
+                );
+            if (agent->flags & TA_UNRECOVER)
             {
                 remain_dead = TRUE;
+                continue;
+            }
+
+            if (agent->flags & TA_REBOOTING)
+            {
+                cold_rebooting = TRUE;
                 continue;
             }
 
@@ -2236,22 +2252,27 @@ rcf_ta_check_all_done(void)
                 if (force_reboot(agent, NULL) != 0)
                 {
                     remain_dead = TRUE;
-                    if (cold_reboot(agent) == 0)
+                    if ((agent->flags & TA_REBOOTABLE) && 
+                        cold_reboot(agent) == 0)
                     {
                         agent->flags &= (~TA_UNRECOVER);
                         agent->flags |= TA_REBOOTING;
                         agent->reboot_timestamp = time(NULL);
                         reboot_num++;
+                        cold_rebooting = TRUE;
                     }
                 }
             }
         }
 
-        ta_checker.req->message->error =
-            remain_dead ? TE_ETADEAD : rebooted ? TE_ETAREBOOTED : 0;
+        if (!cold_rebooting)
+        {
+            ta_checker.req->message->error =
+                remain_dead ? TE_ETADEAD : rebooted ? TE_ETAREBOOTED : 0;
 
-        answer_user_request(ta_checker.req);
-        ta_checker.req = NULL;
+            answer_user_request(ta_checker.req);
+            ta_checker.req = NULL;
+        }
     }
 }
 
@@ -2271,6 +2292,7 @@ rcf_ta_check_done(usrreq *req)
         ERROR("Failed to find TA by name '%s'", req->message->ta);
         return;
     }
+    VERB("%s('%s')", __FUNCTION__, req->message->ta);
 
     ta_checker.active--;
     agent->flags &= ~TA_CHECKING;
@@ -2291,8 +2313,11 @@ rcf_ta_check_start(void)
     int             rc = 0;
 
     assert(ta_checker.active == 0);
+    VERB("%s()", __FUNCTION__);
     for (agent = agents; agent != NULL; agent = agent->next)
     {
+        VERB("%s('%s') [%c]", __FUNCTION__, agent->name,
+             (agent->flags & TA_DEAD) ? 'D' : '-');
         if (agent->flags & TA_DEAD)
             continue;
 
