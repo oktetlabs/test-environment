@@ -41,6 +41,9 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
 
 #include "te_sockaddr.h"
 #include "rcf_pch.h"
@@ -86,10 +89,27 @@
         default: prefix = 33; break;         \
     }
 
+/** Strip off .VLAN from interface name */
+static inline char *
+ifname_without_vlan(const char *ifname)
+{
+    static char tmp[IFNAMSIZ];
+    char       *s;
+    
+    strcpy(tmp, ifname);
+    if ((s = strchr(tmp, '.')) != NULL)
+        *s = 0;
+        
+    return tmp;
+}
+
 /** Check that interface is locked for using of this TA */
 #define INTERFACE_IS_MINE(ifname) \
-    (strncmp(ifname, "lo", strlen("lo")) == 0 || \
-     rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
+    (strncmp(ifname, "lo", strlen("lo")) == 0 ||                \
+     rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, \
+                             ifname) ||                         \
+     rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, \
+                             ifname_without_vlan(ifname)))
 
 #define PRINT(msg...) \
     do {                                                \

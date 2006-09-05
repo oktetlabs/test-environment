@@ -1137,6 +1137,27 @@ rcf_pch_rsrc_release_dummy(const char *name)
 }
 
 #ifndef __CYGWIN__
+/**
+ * Discard /agent:<name> prefix from resourse name.
+ *
+ * @param name          Name of the resource
+ *
+ * @return Name to be used to create lock.
+ */
+static const char *
+rsrc_lock_name(const char *name)
+{
+    const char *tmp;
+
+    if ((strcmp_start("/agent:", name) == 0) &&
+        ((tmp = strchr(name + 1, '/')) != NULL) &&
+        (*++tmp != '\0'))
+    {
+        return tmp;
+    }
+    return name;
+}
+
 /*
  * Create a lock for the resource with specified name.
  *
@@ -1147,16 +1168,17 @@ rcf_pch_rsrc_release_dummy(const char *name)
 static te_errno
 create_lock(const char *name)
 {
-    char  fname[RCF_MAX_PATH];
-    FILE *f;
-    int   i; 
-    int   rc = 0;
+    const char *lock_name = rsrc_lock_name(name);
+    char        fname[RCF_MAX_PATH];
+    FILE       *f;
+    int         i; 
+    int         rc = 0;
 
     if (snprintf(fname, RCF_MAX_PATH, "%s/te_ta_lock_%s", 
-                 te_lockdir, name) >= RCF_MAX_PATH)
+                 te_lockdir, lock_name) >= RCF_MAX_PATH)
     {
         ERROR("Too long pathname for lock: %s/te_ta_lock_%s", 
-                 te_lockdir, name);
+              te_lockdir, lock_name);
         return TE_RC(TE_RCF_PCH, TE_ENAMETOOLONG);
     }
     
@@ -1222,11 +1244,12 @@ create_lock(const char *name)
 static void
 delete_lock(const char *name)
 {
-    char fname[RCF_MAX_PATH];
-    int  rc;
-    int  i;
+    const char *lock_name = rsrc_lock_name(name);
+    char        fname[RCF_MAX_PATH];
+    int         rc;
+    int         i;
     
-    TE_SPRINTF(fname, "%s/te_ta_lock_%s", te_lockdir, name);
+    TE_SPRINTF(fname, "%s/te_ta_lock_%s", te_lockdir, lock_name);
 
     for (i = strlen(te_lockdir) + 1; fname[i] != 0; i++)
         if (fname[i] == '/')

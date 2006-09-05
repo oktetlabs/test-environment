@@ -227,20 +227,6 @@ static void free_nlmsg_list(agt_nlmsg_list *list);
 
 #endif
 
-/** Strip off .VLAN from interface name */
-static inline char *
-ifname_without_vlan(const char *ifname)
-{
-    static char tmp[IFNAMSIZ];
-    char       *s;
-    
-    strcpy(tmp, ifname);
-    if ((s = strchr(tmp, '.')) != NULL)
-        *s = 0;
-        
-    return tmp;
-}
-
 /**
  * Determine family of the address in string representation.
  *
@@ -256,11 +242,11 @@ str_addr_family(const char *str_addr)
     return (strchr(str_addr, ':') == NULL) ? AF_INET : AF_INET6;
 }
 
-#define CHECK_INTERFACE(ifname)                                         \
-    ((ifname == NULL)? TE_EINVAL :                                      \
-     (strlen(ifname) > IFNAMSIZ)? TE_E2BIG :                            \
-     (strchr(ifname, ':') != NULL ||                                    \
-      !INTERFACE_IS_MINE((ifname)))? TE_ENODEV : 0)  \
+#define CHECK_INTERFACE(ifname) \
+    ((ifname == NULL) ? TE_EINVAL :                 \
+     (strlen(ifname) > IFNAMSIZ) ? TE_E2BIG :       \
+     (strchr(ifname, ':') != NULL ||                \
+      !INTERFACE_IS_MINE(ifname)) ? TE_ENODEV : 0)
 
 /**
  * Configuration IOCTL request.
@@ -532,21 +518,27 @@ RCF_PCH_CFG_NODE_AGENT(node_agent, &node_user);
 
 static te_bool init = FALSE;
 
-#ifdef ENABLE_8021X
 /** Grab interface-specific resources */
 static te_errno
 interface_grab(const char *name)
 {
+#ifdef ENABLE_8021X
     return supplicant_grab(name);
+#else
+    return 0;
+#endif
 }
 
 /** Release interface-specific resources */
 static te_errno
 interface_release(const char *name)
 {
+#ifdef ENABLE_8021X
     return supplicant_release(name);
-}
+#else
+    return 0;
 #endif
+}
 
 /**
  * Get root of the tree of supported objects.
@@ -593,15 +585,9 @@ rcf_ch_conf_root(void)
 
         init = TRUE;
 
-#ifdef ENABLE_8021X
         rcf_pch_rsrc_info("/agent/interface", 
                           interface_grab,
                           interface_release);
-#else
-        rcf_pch_rsrc_info("/agent/interface", 
-                          rcf_pch_rsrc_grab_dummy,
-                          rcf_pch_rsrc_release_dummy);
-#endif
 
         rcf_pch_rsrc_info("/agent/ip4_fw", 
                           rcf_pch_rsrc_grab_dummy,
