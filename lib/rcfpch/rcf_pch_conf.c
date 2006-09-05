@@ -1171,7 +1171,8 @@ create_lock(const char *name)
         
         rc = fread(buf, 1, sizeof(buf) - 1, f);
         fclose(f);
-        if (rc <= 0 || (pid = atoi(buf)) == 0 || kill(pid, SIGCONT) == 0)
+        /* Zero signal just check a possibility to send signal */
+        if (rc <= 0 || (pid = atoi(buf)) == 0 || kill(pid, 0) == 0)
         {
             ERROR("Cannot grab resource %s - lock of %d is found",
                   name, pid);

@@ -216,7 +216,8 @@ copy_or_rename(const char *config, char *backup)
             return TE_RC(TE_TA_UNIX, TE_EEXIST);
         }
         
-        if (kill(pid, SIGCONT) == 0)
+        /* Zero signal just check a possibility to send signal */
+        if (kill(pid, 0) == 0)
         {
             ERROR("Backup '%s' of running TA with PID=%d is found - "
                   "corresponding service(s) are not usable",
