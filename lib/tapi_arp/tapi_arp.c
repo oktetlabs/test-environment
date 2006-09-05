@@ -67,12 +67,13 @@
 te_errno
 tapi_arp_add_csap_layer_eth(asn_value      **csap_spec,
                             const char      *device,
+                            unsigned int     receive_mode,
                             const uint8_t   *remote_addr,
                             const uint8_t   *local_addr)
 {
     uint16_t    eth_type = ETHERTYPE_ARP;
 
-    return tapi_eth_add_csap_layer(csap_spec, device, TAD_ETH_RECV_DEF,
+    return tapi_eth_add_csap_layer(csap_spec, device, receive_mode,
                                    remote_addr, local_addr, &eth_type);
 }
 
@@ -82,6 +83,7 @@ int
 tapi_arp_eth_csap_create(const char     *ta_name,
                          int             sid,
                          const char     *device,
+                         unsigned int    receive_mode,
                          const uint8_t  *remote_addr,
                          const uint8_t  *local_addr, 
                          const uint16_t *hw_type,
@@ -95,7 +97,7 @@ tapi_arp_eth_csap_create(const char     *ta_name,
 
     CHECK_RC(tapi_arp_add_csap_layer(&nds, hw_type, proto_type,
                                      hw_size, proto_size));
-    CHECK_RC(tapi_arp_add_csap_layer_eth(&nds, device,
+    CHECK_RC(tapi_arp_add_csap_layer_eth(&nds, device, receive_mode,
                                          remote_addr, local_addr));
 
     rc = tapi_tad_csap_create(ta_name, sid, "arp.eth", nds, arp_csap);

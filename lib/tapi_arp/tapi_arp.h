@@ -128,6 +128,7 @@ typedef struct tapi_arp_frame {
  * @param ta_name       Test Agent name
  * @param sid           RCF session
  * @param device        interface name on TA host
+ * @param receive_mode  Receive mode for Ethernet CSAP on the Interface
  * @param remote_addr   default remote MAC address, may be NULL - in this
  *                      case frames will be sent only if dst is specified in
  *                      template, and frames from all src's will be catched.
@@ -148,6 +149,7 @@ typedef struct tapi_arp_frame {
 extern te_errno tapi_arp_eth_csap_create(const char     *ta_name,
                                          int             sid,
                                          const char     *device,
+                                         unsigned int    receive_mode,
                                          const uint8_t  *remote_addr, 
                                          const uint8_t  *local_addr, 
                                          const uint16_t *hw_type,
@@ -165,6 +167,7 @@ static inline te_errno
 tapi_arp_eth_csap_create_ip4(const char     *ta_name,
                              int             sid,
                              const char     *device,
+                             unsigned int    receive_mode,
                              const uint8_t  *remote_addr, 
                              const uint8_t  *local_addr, 
                              csap_handle_t  *arp_csap)
@@ -175,6 +178,7 @@ tapi_arp_eth_csap_create_ip4(const char     *ta_name,
     uint8_t     proto_size = sizeof(in_addr_t);
 
     return tapi_arp_eth_csap_create(ta_name, sid, device,
+                                    receive_mode,
                                     remote_addr, local_addr,
                                     &hw_type, &proto_type,
                                     &hw_size, &proto_size,
@@ -187,6 +191,7 @@ tapi_arp_eth_csap_create_ip4(const char     *ta_name,
  * @param csap_spec     Location of CSAP specification pointer.
  * @param device        Interface name on TA host or NULL (have to
  *                      be not-NULL, if Ethernet is the bottom layer)
+ * @param receive_mode  Receive mode for Ethernet CSAP on the Interface
  * @param remote_addr   Default remote MAC address, may be NULL - in this
  *                      case frames will be sent only dst is specified in
  *                      template, and frames from all src's will be
@@ -203,6 +208,7 @@ tapi_arp_eth_csap_create_ip4(const char     *ta_name,
  */
 extern te_errno tapi_arp_add_csap_layer_eth(asn_value      **csap_spec,
                                             const char      *device,
+                                            unsigned int     receive_mode,
                                             const uint8_t   *remote_addr,
                                             const uint8_t   *local_addr);
 

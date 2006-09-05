@@ -49,11 +49,19 @@
 #include "ndn_pcap.h"
 #include "tapi_tad.h"
 
+/** Receive all packets mode */
+#define PCAP_RECV_MODE_ALL (PCAP_RECV_HOST      | PCAP_RECV_BROADCAST | \
+                            PCAP_RECV_MULTICAST | PCAP_RECV_OTHERHOST | \
+                            PCAP_RECV_OUTGOING)
 
-/* Default recv mode: all except OUTGOING packets. */
-#define PCAP_RECV_MODE_DEF (PCAP_RECV_HOST      | PCAP_RECV_BROADCAST | \
-                            PCAP_RECV_MULTICAST | PCAP_RECV_OTHERHOST )
+/** Default recv mode: all except OUTGOING packets. */
+#define PCAP_RECV_MODE_DEF (PCAP_RECV_ALL & (~PCAP_RECV_OUTGOING))
 
+
+/**
+ * Default PCAP link type is 10/100 MBit/s ethernet
+ * (see 'man 3 pcap' for other types)
+ */
 #define PCAP_LINKTYPE_DEFAULT   DLT_EN10MB
 
 

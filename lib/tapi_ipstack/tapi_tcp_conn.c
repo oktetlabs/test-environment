@@ -695,6 +695,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     trafic_param = ETH_P_ARP;
 
     rc = tapi_arp_eth_csap_create_ip4(agt, arp_sid, local_iface,
+                                      TAD_ETH_RECV_DEF,
                                       remote_mac, NULL, &arp_csap);
     CHECK_ERROR("%s(): create arp csap fails %r", __FUNCTION__, rc);
 
