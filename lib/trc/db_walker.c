@@ -144,18 +144,42 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
          arg_match && arg != NULL;
          arg = arg->links.tqe_next)
     {
+        VERB("Argument from TRC DB: %s=%s", arg->name, arg->value);
         arg_match = FALSE;
         for (i = 0; i < n_args; ++i)
         {
-            if (match[i] == 0 &&
-                strcmp(names[i], arg->name) == 0 &&
-                strcmp(values[i], arg->value) == 0)
+            VERB("Compare with: %s=%s", names[i], values[i]);
+            if (match[i] == 0 && strcmp(names[i], arg->name) == 0)
             {
-                match[i] = 1;
-                arg_match = TRUE;
-                break;
+                char       *value = (char *)values[i];
+                te_bool     value_match;
+
+                if (strchr(value, '\n') != NULL)
+                {
+                    char *tmp;
+
+                    value = strdup(value);
+                    assert(value != NULL);
+                    for (tmp = value;
+                         (tmp = strchr(tmp, '\n')) != NULL;
+                         *tmp = ' ');
+                }
+
+                value_match = (strcmp(value, arg->value) == 0);
+
+                if (value != (char *)values[i])
+                    free(value);
+
+                if (value_match)
+                {
+                    VERB("Match!");
+                    match[i] = 1;
+                    arg_match = TRUE;
+                    break;
+                }
             }
         }
+        VERB("Argument from TRC DB -> %smatch", arg_match ? "" : "no ");
     }
     if (!arg_match || memchr(match, 0, n_args) != NULL)
         return FALSE;
