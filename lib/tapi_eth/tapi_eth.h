@@ -153,6 +153,7 @@ extern te_errno tapi_eth_add_pdu(asn_value     **tmpl_or_ptrn,
  * @param ta_name       Test Agent name
  * @param sid           RCF session
  * @param device        Interface name on TA host
+ * @param receive_mode  Receive mode for Ethernet CSAP on the Interface
  * @param remote_addr   Default remote MAC address, may be NULL - in this
  *                      case frames will be sent only dst is specified in
  *                      template, and frames from all src's will be
@@ -176,6 +177,7 @@ extern te_errno tapi_eth_add_pdu(asn_value     **tmpl_or_ptrn,
 extern te_errno tapi_eth_csap_create(const char     *ta_name,
                                      int             sid,
                                      const char     *device,
+                                     unsigned int    receive_mode,
                                      const uint8_t  *remote_addr,
                                      const uint8_t  *local_addr,
                                      const uint16_t *len_type,

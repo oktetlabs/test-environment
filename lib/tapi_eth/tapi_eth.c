@@ -182,6 +182,7 @@ tapi_eth_add_pdu(asn_value     **tmpl_or_ptrn,
 te_errno
 tapi_eth_csap_create(const char *ta_name, int sid,
                      const char *device,
+                     unsigned int receive_mode,
                      const uint8_t *remote_addr,
                      const uint8_t *local_addr,
                      const uint16_t *len_type,
@@ -193,7 +194,7 @@ tapi_eth_csap_create(const char *ta_name, int sid,
     if ((ta_name == NULL) || (device == NULL) || (eth_csap == NULL))
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, device, TAD_ETH_RECV_DEF,
+    CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, device, receive_mode,
                                      remote_addr, local_addr,
                                      len_type));
 
