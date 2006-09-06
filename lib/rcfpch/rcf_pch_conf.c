@@ -36,20 +36,23 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
-#ifdef HAVE_STRINGS_H
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#ifdef HAVE_ASSERT_H
+#if HAVE_ASSERT_H
 #include <assert.h>
 #endif
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_STDARG_H
+#if HAVE_STDARG_H
 #include <stdarg.h>
 #endif
-#ifdef HAVE_SIGNAL_H
+#if HAVE_SIGNAL_H
 #include <signal.h>
+#endif
+#if HAVE_GLOB_H
+#include <glob.h>
 #endif
 
 #include "rcf_pch_internal.h"
@@ -1158,6 +1161,142 @@ rsrc_lock_name(const char *name)
     return name;
 }
 
+/**
+ * Generate path to lock requested resource.
+ *
+ * @param name          Resource to lock
+ * @param path          Location for path
+ * @param pathlen       Size of the location for path
+ *
+ * @return Pointer to @a path or NULL if @a pathlen is too short.
+ */
+static char *
+rsrc_lock_path(const char *name, char *path, size_t pathlen)
+{
+    const char     *lock_name = rsrc_lock_name(name);
+    unsigned int    i;
+
+    if (snprintf(path, pathlen, "%s/te_ta_lock_%s", 
+                 te_lockdir, lock_name) >= (int)pathlen)
+    {
+        ERROR("Too long pathname for lock: %s/te_ta_lock_%s", 
+              te_lockdir, lock_name);
+        return NULL;
+    }
+    
+    for (i = strlen(te_lockdir) + 1; path[i] != '\0'; i++)
+        if (path[i] == '/')
+            path[i] = '%';
+
+    return path;
+}
+
+/**
+ * Check if lock with specified path exists.
+ *
+ * @param fname         Path to lock file
+ * @param error         Generate error if lock is found or not
+ *
+ * @return Status code.
+ * @retval 0            Lock does not exist.
+ * @retval TE_EPERM     Lock of other process found.
+ * @retval other        Unexpected failure.
+ */
+te_errno
+check_lock(const char *fname, te_bool error)
+{
+    FILE   *f;
+    int     rc;
+    char    buf[16] = { 0, };
+    int     pid = 0;
+
+    if ((f = fopen(fname, "r")) == NULL)
+    {
+        if (errno == ENOENT)
+        {
+            return 0;
+        }
+        else
+        {
+            te_errno rc = te_rc_os2te(errno);
+
+            ERROR("%s(): fopen(%s, r) failed unexpectedly: %r",
+                  __FUNCTION__, fname, rc);
+            return TE_RC(TE_RCF_PCH, rc);
+        }
+    }
+        
+    rc = fread(buf, 1, sizeof(buf) - 1, f);
+    fclose(f);
+    if (rc <= 0 || (pid = atoi(buf)) == 0)
+    {
+        ERROR("Format of the lock file %s is not recognized", fname);
+        return TE_RC(TE_RCF_PCH, TE_EPERM);
+    }
+    /* Zero signal just check a possibility to send signal */
+    if (pid != getpid())
+    {
+        if (kill(pid, 0) == 0)
+        {
+            if (error)
+               ERROR("Lock of the PID %d is found for %s",
+                     (int)pid, fname);
+            return TE_RC(TE_RCF_PCH, TE_EPERM);
+        }
+        /* Lock of dead process */
+        if (unlink(fname) != 0)
+        {
+            rc = TE_OS_RC(TE_RCF_PCH, errno);
+        
+            ERROR("Failed to delete lock %s of dead TA: %r", fname, rc);
+            return TE_RC(TE_RCF_PCH, TE_EPERM);
+        }
+        WARN("Lock '%s' of dead TA with PID=%d is deleted", fname, pid);
+    }
+    return 0;
+}
+
+/* See the description in rcf_pch.h */
+te_errno
+rcf_pch_rsrc_check_locks(const char *rsrc_ptrn)
+{
+    char    path_ptrn[RCF_MAX_PATH];
+    glob_t  gb;
+    int     ret;
+
+    if (rsrc_lock_path(rsrc_ptrn, path_ptrn, sizeof(path_ptrn)) == NULL)
+        return TE_RC(TE_RCF_PCH, TE_ENAMETOOLONG);
+
+    memset(&gb, 0, sizeof(gb));
+    ret = glob(path_ptrn, GLOB_NOSORT, NULL, &gb);
+    if (ret == 0)
+    {
+        size_t   i;
+        te_errno rc = 0;
+
+        for (i = 0; i < gb.gl_pathc; ++i)
+        {
+            rc = check_lock(gb.gl_pathv[i], TRUE);
+            if (rc != 0)
+                break;
+        }
+        globfree(&gb);
+        return rc;
+    }
+    else if (ret == GLOB_NOMATCH)
+    {
+        return 0;
+    }
+    else if (ret == GLOB_NOSPACE)
+    {
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+    }
+    else
+    {
+        return TE_RC(TE_RCF_PCH, TE_EFAULT);
+    }
+}
+
 /*
  * Create a lock for the resource with specified name.
  *
@@ -1168,47 +1307,18 @@ rsrc_lock_name(const char *name)
 static te_errno
 create_lock(const char *name)
 {
-    const char *lock_name = rsrc_lock_name(name);
     char        fname[RCF_MAX_PATH];
     FILE       *f;
-    int         i; 
-    int         rc = 0;
+    te_errno    rc = 0;
 
-    if (snprintf(fname, RCF_MAX_PATH, "%s/te_ta_lock_%s", 
-                 te_lockdir, lock_name) >= RCF_MAX_PATH)
-    {
-        ERROR("Too long pathname for lock: %s/te_ta_lock_%s", 
-              te_lockdir, lock_name);
+    if (rsrc_lock_path(name, fname, sizeof(fname)) == NULL)
         return TE_RC(TE_RCF_PCH, TE_ENAMETOOLONG);
-    }
-    
-    for (i = strlen(te_lockdir) + 1; fname[i] != 0; i++)
-        if (fname[i] == '/')
-            fname[i] = '%';
-            
-    if ((f = fopen(fname, "r")) != NULL)
+
+    rc = check_lock(fname, TRUE);
+    if (rc != 0)
     {
-        char buf[16] = { 0, };
-        int  pid = 0;
-        
-        rc = fread(buf, 1, sizeof(buf) - 1, f);
-        fclose(f);
-        /* Zero signal just check a possibility to send signal */
-        if (rc <= 0 || (pid = atoi(buf)) == 0 || kill(pid, 0) == 0)
-        {
-            ERROR("Cannot grab resource %s - lock of %d is found",
-                  name, pid);
-            return TE_RC(TE_RCF_PCH, TE_EPERM);
-        }
-        rc = 0;
-        if (unlink(fname) != 0)
-        {
-            rc = TE_OS_RC(TE_RCF_PCH, errno);
-        
-            ERROR("Failed to delete lock %s of dead TA: %r", fname, rc);
-            return TE_RC(TE_RCF_PCH, TE_EPERM);
-        }
-        WARN("Lock '%s' of dead TA with PID=%d is deleted", fname, pid);
+        ERROR("Cannot grab resource %s", name);
+        return TE_RC(TE_RCF_PCH, TE_EPERM);
     }
     
     if ((f = fopen(fname, "w")) == NULL)
@@ -1244,16 +1354,11 @@ create_lock(const char *name)
 static void
 delete_lock(const char *name)
 {
-    const char *lock_name = rsrc_lock_name(name);
-    char        fname[RCF_MAX_PATH];
-    int         rc;
-    int         i;
+    char    fname[RCF_MAX_PATH];
+    int     rc;
     
-    TE_SPRINTF(fname, "%s/te_ta_lock_%s", te_lockdir, lock_name);
-
-    for (i = strlen(te_lockdir) + 1; fname[i] != 0; i++)
-        if (fname[i] == '/')
-            fname[i] = '%';
+    if (rsrc_lock_path(name, fname, sizeof(fname)) == NULL)
+        return;
 
     if ((rc = unlink(fname)) != 0)
         ERROR("Failed to delete lock %s: %r", fname,

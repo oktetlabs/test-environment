@@ -522,6 +522,45 @@ static te_bool init = FALSE;
 static te_errno
 interface_grab(const char *name)
 {
+    const char *ifname = strrchr(name, ':');
+    const char *dot;
+    te_errno    rc;
+
+    if (ifname == NULL)
+    {
+        ERROR("%s(): Invalid interface instance name %s", __FUNCTION__,
+              name);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    dot = strchr(ifname, '.');
+    if (dot == NULL)
+    {
+        /* Grab main interface with all its VLANs */
+        unsigned int len = strlen(name);
+        char         ptrn[len + 3];
+
+        memcpy(ptrn, name, len);
+        ptrn[len] = '.';
+        ptrn[len + 1] = '*';
+        ptrn[len + 2] = '\0';
+        rc = rcf_pch_rsrc_check_locks(ptrn);
+        if (rc != 0)
+            return rc;
+    }
+    else
+    {
+        /* Grab VLAN of the interface */
+        unsigned int len = dot - name;
+        char         parent[len + 1];
+
+        memcpy(parent, name, len);
+        parent[len] = '\0';
+        rc = rcf_pch_rsrc_check_locks(parent);
+        if (rc != 0)
+            return rc;
+    }
+
 #ifdef ENABLE_8021X
     return supplicant_grab(name);
 #else

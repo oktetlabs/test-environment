@@ -389,6 +389,16 @@ extern te_errno rcf_pch_rsrc_release_dummy(const char *name);
  */
 extern te_bool rcf_pch_rsrc_accessible(const char *fmt, ...);
 
+/**
+ * Check if one of resources specified by glob pattern is locked.
+ *
+ * @param rsrc_ptrn     Glob-style pattern of resourse name
+ * 
+ * @return Status code.
+ * @retval 0            No resources are locked.
+ */
+extern te_errno rcf_pch_rsrc_check_locks(const char *rsrc_ptrn);
+
 /** 
  * Link resource configuration tree.
  */
