@@ -210,10 +210,18 @@ tester_ctx_clone(const tester_ctx *ctx)
     new_ctx->group_result.id = ctx->group_result.id;
     te_test_result_init(&new_ctx->group_result.result);
     new_ctx->group_result.status = TESTER_TEST_EMPTY;
+#if WITH_TRC
+    new_ctx->group_result.exp_result = ctx->group_result.exp_result;
+    new_ctx->group_result.exp_status = ctx->group_result.exp_status;
+#endif
 
     new_ctx->current_result.id = ctx->current_result.id;
     te_test_result_init(&new_ctx->current_result.result);
     /* new_ctx->current_result.status = 0; */
+#if WITH_TRC
+    new_ctx->current_result.exp_result = ctx->current_result.exp_result;
+    new_ctx->current_result.exp_status = ctx->current_result.exp_status;
+#endif
 
     new_ctx->targets = ctx->targets;
     new_ctx->targets_free = FALSE;
@@ -258,8 +266,12 @@ tester_run_destroy_ctx(tester_run_data *data)
     assert(curr != NULL);
     prev = curr->links.le_next;
     if (prev != NULL)
-        prev->current_result.status =
-            curr->group_result.status;
+    {
+        prev->current_result.status = curr->group_result.status;
+#if WITH_TRC
+        prev->current_result.exp_status = curr->group_result.exp_status;
+#endif
+    }
 
     VERB("Tester context %p deleted: flags=0x%x parent_id=%u child_id=%u "
          "status=%r", curr, curr->flags, curr->group_result.id,
@@ -379,6 +391,38 @@ tester_group_status(te_test_status group_status,
             group_status = iter_status;
     }
     return group_status;
+}
+
+/**
+ * Update test group result.
+ * 
+ * @param group_result  Group result to be updated
+ * @param iter_result   Test iteration result
+ */
+static void 
+tester_group_result(tester_test_result *group_result,
+                    const tester_test_result *iter_result)
+{
+    group_result->status = tester_group_status(group_result->status,
+                                               iter_result->status);
+#if WITH_TRC
+    /* 
+     * If group does not have expected result, it is not mentioned in
+     * the database at all and its expectation status has to remain
+     * unknown.
+     */
+    if (group_result->exp_result != NULL)
+    {
+        /* 
+         * If group contains unknown or unexpected results, its
+         * status is unexpected.
+         */
+        if (iter_result->exp_status != TRC_VERDICT_EXPECTED)
+            group_result->exp_status = TRC_VERDICT_UNEXPECTED;
+        else if (group_result->exp_status == TRC_VERDICT_UNKNOWN)
+            group_result->exp_status = TRC_VERDICT_EXPECTED;
+    }
+#endif
 }
 
 /**
@@ -1377,6 +1421,10 @@ run_pkg_start(run_item *ri, test_package *pkg,
     assert(~ctx->flags & TESTER_INLOGUE);
 
     ctx->group_result.id = ctx->current_result.id;
+#if WITH_TRC
+    ctx->group_result.exp_result = ctx->current_result.exp_result;
+    ctx->group_result.exp_status = ctx->current_result.exp_status;
+#endif
 
     rc = tester_get_sticky_reqs(&ctx->reqs, &pkg->reqs);
     if (rc != 0)
@@ -1420,6 +1468,10 @@ run_session_start(run_item *ri, test_session *session,
         if (ctx == NULL)
             return TESTER_CFG_WALK_FAULT;
         ctx->group_result.id = ctx->current_result.id;
+#if WITH_TRC
+        ctx->group_result.exp_result = ctx->current_result.exp_result;
+        ctx->group_result.exp_status = ctx->current_result.exp_status;
+#endif
     }
     ctx->current_result.id = 0; /* Just to catch errors */
 
@@ -2095,6 +2147,8 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
         ctx->current_result.exp_result =
             trc_db_walker_get_exp_result(ctx->trc_walker, gctx->trc_tags);
+        /* Intialize as unknown by default */
+        ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
     }
 #endif
 
@@ -2252,15 +2306,36 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #if WITH_TRC
         if (~ctx->flags & TESTER_NO_TRC)
         {
+            /* Error string is overriden in any case */
             if (ctx->current_result.exp_result == NULL)
             {
-                ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
+                assert(ctx->current_result.exp_status ==
+                       TRC_VERDICT_UNKNOWN);
                 ctx->current_result.error = "Unknown test/iteration";
+            }
+            /*
+             * If expected result is know, but expected status is
+             * unknown for a group, therefore, it is empty and database
+             * expectations should be used. Otherwise expectation
+             * status for the group is derived from expectation
+             * statuses of its members.
+             */
+            else if (ri->type != RUN_ITEM_SCRIPT &&
+                     ctx->current_result.exp_status != TRC_VERDICT_UNKNOWN)
+            {
+                assert(ri->type == RUN_ITEM_SESSION ||
+                       ri->type == RUN_ITEM_PACKAGE);
+                if (ctx->current_result.exp_status == TRC_VERDICT_EXPECTED)
+                    ctx->current_result.error = NULL;
+                else
+                    ctx->current_result.error = "Unexpected test result(s)";
+                    
             }
             else if (trc_is_result_expected(ctx->current_result.exp_result,
                                             &ctx->current_result.result))
             {
                 ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
+                ctx->current_result.error = NULL;
             }
             else
             {
@@ -2310,9 +2385,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     }
 
     /* Update result of the group */
-    ctx->group_result.status =
-        tester_group_status(ctx->group_result.status,
-                            ctx->current_result.status);
+    tester_group_result(&ctx->group_result, &ctx->current_result);
     if (ctx->group_result.status == TESTER_TEST_ERROR)
     {
         EXIT("FAULT");
