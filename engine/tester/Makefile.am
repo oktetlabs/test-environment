@@ -72,7 +72,7 @@ test_path_lex.h: test_path_lex.c
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid $(TRC_LDADD) \
                   -llogger_ten -lipc -lipcserver -llogic_expr \
                   -llog_bufs -ltools \
-                  @XML2_LIBS@ -lpopt -lfl -lpthread 
+                  @XML2_LIBS@ -lpopt -lpthread 
 
 te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ $(TRC_DEPS) \
 	$(DESTDIR)/$(libdir)/libbsapi.a \

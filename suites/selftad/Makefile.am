@@ -13,7 +13,7 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 MY_LDADD=-ltapi_rpc -lrpc_types -ltapi_env -ltapi -lrcfrpc -lconfapi \
          -lconf_oid -lrcfapi -lrpcxdr -llogger_ten -lipc -llog_bufs \
-         -ltools -lexpat -lpthread -lfl
+         -ltools -lexpat -lpthread
 
 MYDEPS = @SELFTAD_TE_DEPS@
 

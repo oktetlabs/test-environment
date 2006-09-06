@@ -16,7 +16,7 @@ bin_PROGRAMS = te-trc-report te-trc-diff
 te_trc_report_SOURCES = main.c trc_tag.c db_io.c report_html.c log_parse.c
 
 te_trc_report_LDADD = -llogic_expr -ltools -llogger_stderr \
-                      -lpopt -lfl @XML2_LIBS@ @TE_LDADD@
+                      -lpopt @XML2_LIBS@ @TE_LDADD@
 
 te_trc_report_DEPENDENCIES = @TE_DEPENDENCIES@ \
 	$(DESTDIR)/$(libdir)/liblogic_expr.a \
@@ -27,7 +27,7 @@ te_trc_report_DEPENDENCIES = @TE_DEPENDENCIES@ \
 te_trc_diff_SOURCES = trc_diff.c trc_tag.c db_io.c diff_report.c
 
 te_trc_diff_LDADD = -llogic_expr -ltools -llogger_stderr \
-                    -lpopt -lfl @XML2_LIBS@ @TE_LDADD@
+                    -lpopt @XML2_LIBS@ @TE_LDADD@
 
 te_trc_diff_DEPENDENCIES = @TE_DEPENDENCIES@ \
 	$(DESTDIR)/$(libdir)/liblogic_expr.a \

@@ -23,6 +23,7 @@ extern int myindex;
 %}
 
 %option nounput
+%option noyywrap
 
 %%
 [[:space:]]+        {}

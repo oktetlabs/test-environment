@@ -24,6 +24,7 @@
 %}
 
 %option nounput
+%option noyywrap
 
 %%
 \#.*\n                  {}
