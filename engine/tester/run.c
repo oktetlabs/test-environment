@@ -2253,7 +2253,12 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 }
 
 #if WITH_TRC
-/* FIXME */
+/**
+ * Log TE test result to provided buffer.
+ *
+ * @param lb            Log buffer
+ * @param result        Result to be appended
+ */
 static void
 te_test_result_to_log_buf(te_log_buf *lb, const te_test_result *result)
 {
