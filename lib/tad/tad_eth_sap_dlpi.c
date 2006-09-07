@@ -508,7 +508,9 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
     if (rc != 0)
         goto err_exit;
 
+#if 0
     if (mode & TAD_ETH_RECV_OTHER)
+#endif
     {
         /*
          * To catch frames 'To someone else'
@@ -523,47 +525,52 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
             ERROR("Attempt to set DL_PROMISC_PHYS failed");
             goto err_exit;
         }
+
+        memset(&dlp, 0, sizeof(dlp));
+        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+        if (rc != 0)
+            goto err_exit;
+
+        /* Enable promiscuous DL_PROMISC_SAP */
+        memset(&dlp, 0, sizeof(dlp));
+        dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+        dlp.promiscon_req.dl_level = DL_PROMISC_SAP;
+        rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+        if (rc != 0)
+        {
+            ERROR("Attempt to set DL_PROMISC_SAP failed");
+            goto err_exit;
+        }
+
+        memset(&dlp, 0, sizeof(dlp));
+        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+        if (rc != 0)
+            goto err_exit;
     }
 
-    memset(&dlp, 0, sizeof(dlp));
-    rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-    if (rc != 0)
-        goto err_exit;
-
-    /* Enable promiscuous DL_PROMISC_SAP */
-    memset(&dlp, 0, sizeof(dlp));
-    dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
-    dlp.promiscon_req.dl_level = DL_PROMISC_SAP;
-    rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-    if (rc != 0)
+#if 0
+    if (mode & TAD_ETH_RECV_MCAST)
+#endif
     {
-        ERROR("Attempt to set DL_PROMISC_SAP failed");
-        goto err_exit;
+        /*
+         * Try to enable multicast (you would have thought
+         * promiscuous would be sufficient)
+         */
+        memset(&dlp, 0, sizeof(dlp));
+        dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+        dlp.promiscon_req.dl_level = DL_PROMISC_MULTI;
+        rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+        if (rc != 0)
+        {
+            ERROR("Attempt to set DL_PROMISC_MULTI failed");
+            goto err_exit;
+        }
+
+        memset(&dlp, 0, sizeof(dlp));
+        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+        if (rc != 0)
+            goto err_exit;
     }
-
-    memset(&dlp, 0, sizeof(dlp));
-    rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-    if (rc != 0)
-        goto err_exit;
-
-    /**
-     * Try to enable multicast (you would have thought
-     * promiscuous would be sufficient)
-     */
-    memset(&dlp, 0, sizeof(dlp));
-    dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
-    dlp.promiscon_req.dl_level = DL_PROMISC_MULTI;
-    rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-    if (rc != 0)
-    {
-        ERROR("Attempt to set DL_PROMISC_MULTI failed");
-        goto err_exit;
-    }
-
-    memset(&dlp, 0, sizeof(dlp));
-    rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-    if (rc != 0)
-        goto err_exit;
 
     /*
      ** This is a non standard SunOS hack to get the full raw link-layer
