@@ -8,7 +8,7 @@ AM_LDFLAGS = -L. @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 noinst_HEADERS = trc_db.h trc_xml.h trc_tag.h
 
 
-dist_bin_SCRIPTS = te_trc.sh
+dist_bin_SCRIPTS = te_trc.sh te-trc-log
 
 bin_PROGRAMS = te-trc-report te-trc-diff
 

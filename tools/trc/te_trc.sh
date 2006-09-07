@@ -27,41 +27,20 @@
 # $Id:$
 #
 
-OPTS=""
+opts=""
 while test "${1#-}" != "$1" ; do
-    OPTS="$OPTS $1"
+    opts="$opts $1"
     shift 1
 done
 
 if test -z "$1" -o -n "$2" ; then
-    echo "USAGE: te_trc.sh <te_trc options> <raw_log_file>"
-    te_trc --help
+    echo "USAGE: te_trc.sh [<te-trc-report options>] <raw_log_file>"
+    te-trc-report --help
     exit 1
 fi
 
-RAW_LOG_FILE="$1"
+raw_log_file="$1"
 
-RGT_FILTER="$(mktemp /tmp/tmp.XXXXXX)"
-cat <<EOF >"$RGT_FILTER"
-<?xml version="1.0"?>
-<filters>
-  <entity-filter>
-    <exclude entity=""/>
-    <include entity="">
-        <user name="TRC tags"/>
-        <user name="Control"/>
-    </include>
-  </entity-filter>
-</filters>
-EOF
+te-trc-log "$raw_log_file" | te-trc-report ${opts}
 
-XML_LOG_FILE=$(mktemp /tmp/tmp.XXXXXX)
-
-rgt-conv --incomplete-log -m postponed -c "$RGT_FILTER" \
-         -f "$RAW_LOG_FILE" -o "$XML_LOG_FILE"
-if test $? -eq 0 ; then
-    te-trc-report ${OPTS} "$XML_LOG_FILE"
-    rm "$XML_LOG_FILE"
-fi
-
-rm "$RGT_FILTER"
+exit $?

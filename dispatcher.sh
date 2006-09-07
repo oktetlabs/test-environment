@@ -146,6 +146,7 @@ Generic options:
                                 level is set by default).
   --tester-quiet                Decrease verbosity of the Tester.
 
+  --trc-log=<filename>          Generate bzip2-ed TRC log
   --trc-db=<filename>           TRC database to be used
   --trc-tag=<TAG>               Tag to get specific expected results
   --trc-ignore-log-tags         Ignore tags from log
@@ -380,6 +381,7 @@ process_opts()
 
             --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
 
+            --trc-log=*) TRC_LOG="${1#--trc-log=}" ;;
             --trc-db=*) 
                 TRC_DB="${1#--trc-db=}" ;
                 if test "${TRC_DB:0:1}" != "/" ; then 
@@ -814,8 +816,13 @@ if test ${START_OK} -ne 1 -a -n "${DO_NUTS}" ; then
 fi
 
 # Run TRC, if any its option is provided
-if test ${START_OK} -ne 1 -a -n "${TRC_OPTS}" ; then
-    te_trc.sh ${TRC_OPTS} "${TE_LOG_RAW}"
+if test ${START_OK} -ne 1 ; then
+    if test -n "${TRC_LOG}" ; then
+        te-trc-log -j "${TE_LOG_RAW}" "${TRC_LOG}"
+    fi
+    if test -n "${TRC_OPTS}" ; then
+        te_trc.sh ${TRC_OPTS} "${TE_LOG_RAW}"
+    fi
 fi
 
 test -n "${SHUTDOWN}" && rm -rf "${TE_TMP}"
