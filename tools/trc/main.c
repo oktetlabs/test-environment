@@ -330,8 +330,15 @@ process_cmd_line_opts(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    /* Get Tester configuration file names */
-    trc_xml_log_fn = strdup(poptGetArg(optCon));
+    /* Get name of the file with log */
+    trc_xml_log_fn = (char *)poptGetArg(optCon);
+    if (trc_xml_log_fn != NULL)
+    {
+        if (strcmp(trc_xml_log_fn, "-") == 0)
+            trc_xml_log_fn = NULL;
+        else
+            trc_xml_log_fn = strdup(trc_xml_log_fn);
+    }
 
     if (poptGetArg(optCon) != NULL)
     {
@@ -472,11 +479,6 @@ main(int argc, char *argv[])
     if (trc_db_fn == NULL)
     {
         ERROR("Missing name of the file with expected testing results");
-        goto exit;
-    }
-    if (trc_xml_log_fn == NULL)
-    {
-        ERROR("Missing name of the file with XML log to analyze");
         goto exit;
     }
 

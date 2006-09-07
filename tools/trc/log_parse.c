@@ -656,30 +656,32 @@ trc_parse_log(const char *filename, xmlDocPtr *log)
 #if HAVE_XMLERROR
     xmlError           *err;
 #endif
-
-    if (filename == NULL)
-    {
-        ERROR("Invalid file name");
-        return EINVAL;
-    }
+    const int           options = XML_PARSE_NOBLANKS | 
+                                  XML_PARSE_XINCLUDE |
+                                  XML_PARSE_NONET;
+                                
     parser = xmlNewParserCtxt();
     if (parser == NULL)
     {
         ERROR("xmlNewParserCtxt() failed");
         return ENOMEM;
     }
-    if ((*log = xmlCtxtReadFile(parser, filename, NULL,
-                                XML_PARSE_NOBLANKS |
-                                XML_PARSE_XINCLUDE |
-                                XML_PARSE_NONET)) == NULL)
+    if (filename == NULL)
+        *log = xmlCtxtReadFd(parser, STDIN_FILENO, NULL, NULL, options);
+    else
+        *log = xmlCtxtReadFile(parser, filename, NULL, options);
+
+    if (*log == NULL)
     {
 #if HAVE_XMLERROR
         err = xmlCtxtGetLastError(parser);
         ERROR("Error occured during parsing XML log file:\n"
-              "    %s:%d\n    %s", filename, err->line, err->message);
+              "    %s:%d\n    %s",
+              filename == NULL ? "<stdin>" : filename,
+              err->line, err->message);
 #else
         ERROR("Error occured during parsing XML log file:\n"
-              "%s", filename);
+              "%s", filename == NULL ? "<stdin>" : filename);
 #endif
         xmlFreeParserCtxt(parser);
         return EINVAL;
