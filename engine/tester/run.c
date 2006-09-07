@@ -2264,12 +2264,45 @@ te_test_result_to_log_buf(te_log_buf *lb, const te_test_result *result)
 {
     te_test_verdict *v;
 
-    te_log_buf_append(lb, "%s\n", te_test_status_to_str(result->status));
+    te_log_buf_append(lb, "%s%s\n",
+                      te_test_status_to_str(result->status),
+                      result->verdicts.tqh_first == NULL ? "" :
+                          " with verdicts:");
     for (v = result->verdicts.tqh_first;
          v != NULL;
          v = v->links.tqe_next)
     {
         te_log_buf_append(lb, "%s;\n", v->str);
+    }
+}
+
+/**
+ * Log TRC expected result to provided log buffer.
+ *
+ * @param lb            Log buffer
+ * @param result        Expected result
+ */
+static void
+trc_exp_result_to_log_buf(te_log_buf *lb, const trc_exp_result *result)
+{
+    const trc_exp_result_entry *p;
+
+    te_log_buf_append(lb, "%s\n", result->tags_str != NULL ?
+                                      result->tags_str : "default");
+    if (result->key != NULL)
+        te_log_buf_append(lb, "Key: %s\n", result->key);
+    if (result->notes != NULL)
+        te_log_buf_append(lb, "Notes: %s\n", result->notes);
+    for (p = result->results.tqh_first;
+         p != NULL;
+         p = p->links.tqe_next)
+    {
+        te_test_result_to_log_buf(lb, &p->result);
+        if (p->key != NULL)
+            te_log_buf_append(lb, "Key: %s\n", p->key);
+        if (p->notes != NULL)
+            te_log_buf_append(lb, "Notes: %s\n", p->notes);
+        te_log_buf_append(lb, "\n");
     }
 }
 #endif
@@ -2344,21 +2377,16 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             }
             else
             {
-                const trc_exp_result_entry *p;
-                te_log_buf               *lb = te_log_buf_alloc();
+                te_log_buf *lb = te_log_buf_alloc();
 
                 ctx->current_result.exp_status = TRC_VERDICT_UNEXPECTED;
                 te_log_buf_append(lb, "Obtained test result is "
                                       "unexpected.\n");
                 te_log_buf_append(lb, "\nObtained result is:\n");
                 te_test_result_to_log_buf(lb, &ctx->current_result.result);
-                te_log_buf_append(lb, "\nExpected results are:\n");
-                for (p = ctx->current_result.exp_result->results.tqh_first;
-                     p != NULL;
-                     p = p->links.tqe_next)
-                {
-                    te_test_result_to_log_buf(lb, &p->result);
-                }
+                te_log_buf_append(lb, "\nExpected results are: ");
+                trc_exp_result_to_log_buf(lb,
+                                          ctx->current_result.exp_result);
                 RING("%s", te_log_buf_get(lb));
                 te_log_buf_free(lb);
 
