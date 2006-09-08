@@ -1554,7 +1554,7 @@ get_ftp_daemon_name(void)
 #endif
          "proftpd"};
 
-    return ftpd_names[ftp_server_kind];
+    return ftp_standalone ? ftpd_names[ftp_server_kind] : "ftp";
 }
 
 
