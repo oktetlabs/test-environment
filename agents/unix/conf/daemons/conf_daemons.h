@@ -73,10 +73,18 @@
 #define XINETD_ETC_DIR      "/etc/xinetd.d/"
 
 /** Command line for all processes list */
-#if defined __linux__ || defined __sun__
-#define PS_ALL_COMM     "ps -eo 'comm'"     /**< command name only      */
-#define PS_ALL_ARGS     "ps -eo 'args'"     /**< command name with args */
-#define PS_ALL_PID_ARGS "ps -eo 'pid args'" /**< pid, cmd name, args    */
+#if defined __linux__
+/*
+ * On Linux, 'comm' does not provide full path to the executable which
+ * is important for us.
+ */
+#define PS_ALL_COMM     "ps -eo 'args'"
+#define PS_ALL_ARGS     "ps -eo 'args'"
+#define PS_ALL_PID_ARGS "ps -eo 'pid args'"
+#elif defined __sun__
+#define PS_ALL_COMM     "ps -eo 'comm'"
+#define PS_ALL_ARGS     "ps -eo 'args'"
+#define PS_ALL_PID_ARGS "ps -eo 'pid args'"
 #elif defined __FreeBSD__
 #define PS_ALL_COMM     "ps -axo 'comm'"
 #define PS_ALL_ARGS     "ps -axo 'args'"
