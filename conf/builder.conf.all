@@ -46,6 +46,11 @@ TE_TA_TYPE([linux_lite], [${LINUX32_PLATFORM}], [unix],
             [--with-tad=tad_dummy],
             [], [], [], [comm_net_agent])
 
+# Agent with Power Unit support
+TE_TA_TYPE([power_ctl], [], [power-ctl],
+           [--with-tad=tad_dummy],
+           [], [], [], [comm_net_agent])
+
 
 # linux_other platform is either 32-bit for 64-bit engine or
 # 64-bit for 32-bit engine
