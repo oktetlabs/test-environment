@@ -51,11 +51,13 @@
 #include "trc_diff.h"
 
 
-static te_bool trc_diff_tests_has_diff(const test_runs *tests);
+static te_bool trc_diff_tests_has_diff(trc_diff_ctx *ctx,
+                                       const test_runs *tests);
 
 /**
  * Add key used for specified tags set.
  *
+ * @param keys_stats    List with all information about keys
  * @param tags          Set of tags for which the key is used
  * @param key           Key value
  *
@@ -63,16 +65,17 @@ static te_bool trc_diff_tests_has_diff(const test_runs *tests);
  * @retval TE_ENOMEM    Memory allocation failure
  */
 static int
-tad_diff_key_add(trc_tags_entry *tags, const char *key)
+tad_diff_key_add(trc_diff_keys_stats *keys_stats,
+                 trc_tags_entry *tags, const char *key)
 {
     trc_diff_key_stats *p;
 
-    for (p = keys_stats.cqh_first;
-         (p != (void *)&keys_stats) &&
+    for (p = keys_stats->cqh_first;
+         (p != (void *)keys_stats) &&
          (p->tags != tags || strcmp(p->key, key) != 0);
          p = p->links.cqe_next);
 
-    if (p == (void *)&keys_stats)
+    if (p == (void *)keys_stats)
     {
         p = malloc(sizeof(*p));
         if (p == NULL)
@@ -82,7 +85,7 @@ tad_diff_key_add(trc_tags_entry *tags, const char *key)
         p->key = key;
         p->count = 0;
 
-        CIRCLEQ_INSERT_TAIL(&keys_stats, p, links);
+        CIRCLEQ_INSERT_TAIL(keys_stats, p, links);
     }
 
     p->count++;
@@ -237,11 +240,13 @@ trc_diff_iter_stats(trc_diff_stats       *stats,
 /**
  * Do test iterations have different expected results?
  *
+ * @param[in]  ctx          TRC diff tool context
  * @param[in]  test         Test
  * @param[out] all_equal    Do @e all iterations have output?
  */
 static te_bool
-trc_diff_iters_has_diff(test_run *test, te_bool *all_equal)
+trc_diff_iters_has_diff(trc_diff_ctx *ctx, test_run *test,
+                        te_bool *all_equal)
 {
     te_bool         has_diff;
     te_bool         iter_has_diff;
@@ -307,7 +312,7 @@ trc_diff_iters_has_diff(test_run *test, te_bool *all_equal)
         }
 
         /* The routine should be called first to be called in any case */
-        p->output = trc_diff_tests_has_diff(&p->tests) ||
+        p->output = trc_diff_tests_has_diff(ctx, &p->tests) ||
                     (test->type == TRC_TEST_SCRIPT && iter_has_diff &&
                      !trc_diff_exclude_by_key(p));
         /*<
@@ -328,10 +333,11 @@ trc_diff_iters_has_diff(test_run *test, te_bool *all_equal)
 /**
  * Do tests in the set have different expected results?
  *
+ * @param ctx           TRC diff tool context
  * @param tests         Set of tests
  */
 static te_bool
-trc_diff_tests_has_diff(const test_runs *tests)
+trc_diff_tests_has_diff(trc_diff_ctx *ctx, const test_runs *tests)
 {
     trc_tags_entry *entry;
     test_run       *p;
@@ -351,7 +357,7 @@ trc_diff_tests_has_diff(const test_runs *tests)
         }
 
         /* Output the test, if  iteration has differencies. */
-        p->diff_out = trc_diff_iters_has_diff(p, &all_iters_equal);
+        p->diff_out = trc_diff_iters_has_diff(ctx, p, &all_iters_equal);
 
         /**
          * Output test iterations if and only if test should be output
@@ -405,7 +411,7 @@ trc_diff_do(trc_diff_ctx *ctx, const te_trc_db *db)
     te_bool has_diff;
 
     /* Preprocess tests tree and gather statistics */
-    has_diff = trc_diff_tests_has_diff(&db->tests);
+    has_diff = trc_diff_tests_has_diff(ctx, &db->tests);
 
     return 0;
 }
