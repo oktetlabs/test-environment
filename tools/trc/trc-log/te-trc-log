@@ -1,0 +1,126 @@
+#! /bin/bash
+#
+# Test Environment: Testing Results Comparator
+#
+# Script to process TE raw log and generate log for further processing.
+#
+# Copyright (C) 2006 Test Environment authors (see file AUTHORS
+# in the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+#
+# $Id$
+#
+
+raw_log_file=
+output_file=
+
+usage()
+{
+    test -n "$1" && echo "$1" >&2
+cat <<EOF
+Usage: te-trc-log [<options>] [<raw-log-file> [<output-file>]]
+If <output-file> is unspecified, output is generated to stdout.
+If <raw-log-file> is unspecified, raw log is read from stdin.
+'--' may be used to terminate <options>.
+
+OPTIONS:
+  -o <output-file>  Specify output file name
+  -z                Compress output using gzip
+  -j                Compress output using bzip2
+
+  --help            Show this help message
+
+EOF
+    exit 1
+}
+
+compress=
+end_of_options=
+while test -z "$end_of_options" -a -n "$1" ; do
+    case "$1" in
+        --help) usage
+                ;;
+        -z)     which gzip >/dev/null || usage "gzip is not found"
+                test -z "$compress" ||\
+                    usage "Only one compression method may be specified"
+                compress="gzip --best --stdout"
+                ;;
+        -j)     which bzip2 >/dev/null || usage "gzip is not found"
+                test -z "$compress" ||\
+                    usage "Only one compression method may be specified"
+                compress="bzip2 --best --stdout"
+                ;;
+        -o)     shift 1
+                output_file="$1"
+                ;;
+        --)     end_of_options=yes
+                ;;
+        -*)     usage "Unknown option: $1"
+                ;;
+        *)      if test -z "$raw_log_file" ; then
+                    raw_log_file="$1"
+                elif test -z "$output_file" ; then
+                    output_file="$1"
+                else
+                    usage "Unexpected argument: $1"
+                fi
+                ;;
+    esac
+    shift 1
+done
+
+if test -n "$end_of_options" ; then
+    raw_log_file="$1"
+    output_file="$2"
+    test -z "$3" || usage "Unexpected argument: $3"
+fi
+
+
+rgt_filter="$(mktemp /tmp/tmp.XXXXXX)"
+cat <<EOF >"$rgt_filter"
+<?xml version="1.0"?>
+<filters>
+  <entity-filter>
+    <exclude entity=""/>
+    <include entity="">
+        <user name="TRC tags"/>
+        <user name="Control"/>
+    </include>
+  </entity-filter>
+</filters>
+EOF
+
+rgt_opts="--incomplete-log -m postponed"
+
+if test -z "$compress" ; then
+    rgt-conv $rgt_opts -c "$rgt_filter" \
+        ${raw_log_file:+-f} "$raw_log_file" \
+        ${output_file:+-o} "$output_file"
+elif test -z "$output_file" ; then
+    rgt-conv $rgt_opts -c "$rgt_filter" \
+        ${raw_log_file:+-f} "$raw_log_file" | $compress
+else
+    rgt-conv $rgt_opts -c "$rgt_filter" \
+        ${raw_log_file:+-f} "$raw_log_file" | $compress >"$output_file"
+fi
+status=$?
+
+rm "$rgt_filter"
+
+exit $?
