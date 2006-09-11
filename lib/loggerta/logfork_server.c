@@ -4,8 +4,7 @@
  * TA side Logger functionality for
  * forked TA processes and newly created threads
  * 
- *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -23,13 +22,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Mamadou Ngom <Mamadou.Ngom@oktetlabs.ru>
  *
  * $Id$
  */
 
-#define TE_LGR_USER     "LogFork"
+#define TE_LGR_USER     "LogFork Server"
 
 #include "te_config.h"
 
@@ -71,32 +70,11 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "logger_api.h"
-#include "logfork.h"
 #include "te_tools.h"
 #include "ta_common.h"
 
-/** Common information in the message */
-typedef struct udp_msg {
-    te_bool  is_notif;
-    pid_t    pid;
-    uint32_t tid;
-    union {
-        struct {
-            char name[LOGFORK_MAXUSER]; /** Logfork user name */
-        } notify;
-        struct {
-            int  log_level;                /**< Log level */
-            char lgr_user[32];             /**< Log user  */
-            char log_msg[LOGFORK_MAXLEN];  /**< Message   */
-        } log;
-    } msg;
-} udp_msg;
-
-/** Macros for fast access to structure fields */
-#define __log_level  msg.log.log_level
-#define __lgr_user   msg.log.lgr_user
-#define __log_msg    msg.log.log_msg 
-#define __name       msg.notify.name
+#include "logfork.h"
+#include "logfork_int.h"
 
 
 /** Structure to store process info */
@@ -108,10 +86,12 @@ typedef struct list {
     uint32_t tid;
 } list;
 
-/** Socket used by all client to register */
-static int logfork_clnt_sockd = -1;
+/** LogFork server data */
+typedef struct logfork_data {
+    int     sockd;
+    list   *proc_list;
+} logfork_data;
 
-static void *logfork_clnt_sockd_lock = NULL;
 
 /** 
  * Find process name by its pid and tid in the internal list of
@@ -200,13 +180,6 @@ logfork_destroy_list(list **list)
     }
 }
 
-
-/** LogFork server data */
-typedef struct logfork_data {
-    int     sockd;
-    list   *proc_list;
-} logfork_data;
-
 /**
  * Close opened socket and clear the list of process info.
  *
@@ -238,7 +211,7 @@ logfork_entry(void)
     char  name_pid[LOGFORK_MAXLEN];
     char  port[16];
     
-    udp_msg msg;
+    logfork_msg msg;
 
 #if HAVE_PTHREAD_H
     /* It seems, recv() is not a cancelation point on Solaris. */
@@ -350,160 +323,4 @@ logfork_entry(void)
 #else
     logfork_cleanup(&data);
 #endif
-}
-
-
-/**
- * Open client socket. 
- *
- * @retval 0    Success
- * @retval -1   Failure
- *
- * @note should be called under lock
- */
-static inline int
-open_sock(void)
-{
-    char *port;
-    int   sock;
-    
-    struct sockaddr_in addr;
-
-    if ((port = getenv("TE_LOG_PORT")) == NULL)
-    {
-        fprintf(stderr, "Failed to register logfork user: "
-                        "TE_LOG_PORT is not exported\n");
-        fflush(stderr);
-        return -1;
-    }
-
-    sock = socket(PF_INET, SOCK_DGRAM, 0);
-    if (sock < 0)
-    {
-        fprintf(stderr, 
-                "Failed to register logfork user: socket() failed\n");
-        fflush(stderr);
-        return -1;
-    }
-    
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    addr.sin_port = htons(atoi(port));
-
-#ifndef WINDOWS
-    fcntl(sock, F_SETFD, FD_CLOEXEC);
-#endif
-    
-    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        fprintf(stderr, 
-                "Failed to register logfork user: - connect() failed\n");
-        fflush(stderr);
-        close(sock);
-        return -1;
-    }
-
-    if (logfork_clnt_sockd_lock == NULL)
-        logfork_clnt_sockd_lock = thread_mutex_create();
-    thread_mutex_lock(logfork_clnt_sockd_lock);
-
-    if (logfork_clnt_sockd < 0)
-    {
-        logfork_clnt_sockd = sock;
-        thread_mutex_unlock(logfork_clnt_sockd_lock);
-    }
-    else
-    {
-        thread_mutex_unlock(&logfork_clnt_sockd_lock);
-        close(sock);
-    }
-
-    return 0;
-}
-
-/** See description in logfork.h */
-int
-logfork_register_user(const char *name)
-{
-    udp_msg msg;
-    
-    memset(&msg, 0, sizeof(msg));
-    strncpy(msg.__name, name, sizeof(msg.__name) - 1);
-    msg.pid = getpid();
-    msg.tid = thread_self();
-    msg.is_notif = TRUE;
-    
-    if (logfork_clnt_sockd_lock == NULL)
-        logfork_clnt_sockd_lock = thread_mutex_create();
-    
-    if (logfork_clnt_sockd == -1 && open_sock() != 0)
-    {
-        return -1;
-    }
-
-    if (send(logfork_clnt_sockd, (char *)&msg, sizeof(msg), 0) !=
-            (ssize_t)sizeof(msg))
-    {
-        fprintf(stderr, "logfork_register_user() - cannot send "
-                "notification: %s\n", strerror(errno));
-        fflush(stderr);
-        return -1;
-    }
-    
-    return 0;
-}
-
-/** 
- * Function for logging to be used by forked processes.
- *
- * This function complies with te_log_message_f prototype.
- */
-void 
-logfork_log_message(const char *file, unsigned int line,
-                    unsigned int level, const char *entity,
-                    const char *user, const char *fmt, ...)
-{
-    va_list ap;
-    udp_msg msg;
-    
-    static te_bool init = FALSE;
-
-    struct te_log_out_params cm =
-        { NULL, (uint8_t *)msg.__log_msg, sizeof(msg.__log_msg), 0 };
-
-    UNUSED(file);
-    UNUSED(line);
-    UNUSED(entity);
-
-    memset(&msg, 0, sizeof(msg));
-
-    va_start(ap, fmt);
-    (void)te_log_vprintf(&cm, fmt, ap);
-    va_end(ap);
-
-    msg.pid = getpid();
-    msg.tid = thread_self();
-    msg.is_notif = FALSE;
-    strncpy(msg.__lgr_user, user, sizeof(msg.__lgr_user) - 1);
-    msg.__log_level = level;
-    
-    if (!init && logfork_clnt_sockd == -1)
-        open_sock();
-
-    init = TRUE;
-
-    if (logfork_clnt_sockd == -1)
-    {
-        fprintf(stdout, "%s %s\n", user, msg.__log_msg);
-        fflush(stdout);
-        return;
-    }
-
-    if (send(logfork_clnt_sockd, (char *)&msg, sizeof(msg), 0) !=
-            (ssize_t)sizeof(msg))
-    {       
-        fprintf(stderr, "%s(): sendto() failed: %s\n",
-                __FUNCTION__, strerror(errno));
-    }
 }

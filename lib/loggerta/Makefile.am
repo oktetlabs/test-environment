@@ -7,12 +7,13 @@ AM_CFLAGS = @TE_CFLAGS@
 include_HEADERS = logger_ta.h logger_ta_fast.h logger_ta_lock.h \
                   logger_ta_internal.h logfork.h
 
+noinst_HEADERS = logfork_int.h
 
 lib_LIBRARIES = libloggerta.a
 
 if WINDOWS
 
-WIN_SRC = logfork.c
+WIN_SRC = logfork_server.c logfork_client.c
 
 EXTRA_DIST = logger_ta.c 
 
@@ -29,7 +30,7 @@ install-exec-hook:
 
 else
 
-libloggerta_a_SOURCES = logger_ta.c logfork.c
+libloggerta_a_SOURCES = logger_ta.c logfork_server.c logfork_client.c
 
 install-exec-hook:
 	touch -c -r libloggerta.* $(DESTDIR)/$(libdir)/libloggerta.*
