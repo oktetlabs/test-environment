@@ -17,7 +17,7 @@
  * has not to take care about validity of logged data.
  *
  *
- * Copyright (C) 2003-2005 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or

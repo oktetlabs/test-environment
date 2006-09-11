@@ -4,7 +4,7 @@
  * Macros and functions for fast logging.
  *
  *
- * Copyright (C) 2003-2005 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -36,6 +36,11 @@
 #include "logger_int.h"
 #include "logger_ta_lock.h"
 #include "logger_ta_internal.h"
+
+
+#if (TA_LOG_ARGS_MAX != 12)
+#error Number of arguments declared in TE_TA_LOG_ARGS_MAX is not supported!
+#endif
 
 
 #define LGRF_MESSAGE(_lvl, _lgruser, _fs, _args...) \
@@ -130,9 +135,6 @@
 #define F_EXIT(_fs...)  LOGF_EXIT(TE_LGR_USER, _fs)     
 
 
-/** Maximum arguments processed in this implementation */
-#define TA_LOG_FAST_MAX_ARGS    12
-
 /*
  * These macros carry out preliminary argument processing
  * at compilation time to make logging as quick as possible.
@@ -149,7 +151,8 @@
  * to 0 or 1 by means of !!.
  * So, this way  valid numbers of arguments can be known in advance.
  */
-#define LARG1(a, args...)  !!(#a[0]), (ta_log_arg)(a +0)
+#define LARG0(a, args...)  !!(#a[0])
+#define LARG1(a, args...)  !!(#a[0]), (ta_log_arg)(a +0), LARG0(args)
 #define LARG2(a, args...)  !!(#a[0]), (ta_log_arg)(a +0), LARG1(args)
 #define LARG3(a, args...)  !!(#a[0]), (ta_log_arg)(a +0), LARG2(args)
 #define LARG4(a, args...)  !!(#a[0]), (ta_log_arg)(a +0), LARG3(args)
@@ -177,6 +180,8 @@ extern "C" {
  *                      appropriate arg
  * @param arg1..arg12   Arguments passed into the function according to
  *                      message format string
+ * @param argl13        Additional argument length to detect too many
+ *                      arguments condition
  */
 static inline void
 ta_log_message_fast(unsigned int level, const char *user, const char *fmt,
@@ -191,7 +196,8 @@ ta_log_message_fast(unsigned int level, const char *user, const char *fmt,
                     int argl9,  ta_log_arg arg9,
                     int argl10, ta_log_arg arg10,
                     int argl11, ta_log_arg arg11,
-                    int argl12, ta_log_arg arg12)
+                    int argl12, ta_log_arg arg12,
+                    int argl13)
 {
     ta_log_lock_key     key;
     uint32_t            position;
@@ -199,13 +205,10 @@ ta_log_message_fast(unsigned int level, const char *user, const char *fmt,
 
     struct lgr_mess_header *msg;
 
-    if (log_buffer.rb == NULL)
-        return;
-
     if (ta_log_lock(&key) != 0)
         return;
 
-    res = lgr_rb_allocate_head(&log_buffer, LGR_RB_FORCE, &position);
+    res = lgr_rb_allocate_head(&log_buffer, TA_LOG_FORCE_NEW, &position);
     if (res == 0)
     {
         (void)ta_log_unlock(&key);
@@ -220,43 +223,46 @@ ta_log_message_fast(unsigned int level, const char *user, const char *fmt,
     msg->user   = user;
     msg->fmt    = fmt;
     msg->n_args = argl1 + argl2 + argl3 + argl4  + argl5  + argl6 +
-                  argl7 + argl8 + argl9 + argl10 + argl11 + argl12;
+                  argl7 + argl8 + argl9 + argl10 + argl11 + argl12 +
+                  argl13;
 
     if (argl1)
     {
-        msg->arg1 = arg1;
+        msg->args[0] = arg1;
         if (argl2)
         {
-            msg->arg2 = arg2;
+            msg->args[1] = arg2;
             if (argl3)
             {
-                msg->arg3 = arg3;
+                msg->args[2] = arg3;
                 if (argl4)
                 {
-                    msg->arg4 = arg4;
+                    msg->args[3] = arg4;
                     if (argl5)
                     {
-                        msg->arg5 = arg5;
+                        msg->args[4] = arg5;
                         if (argl6)
                         {
-                            msg->arg6 = arg6;
+                            msg->args[5] = arg6;
                             if (argl7)
                             {
-                                msg->arg7 = arg7;
+                                msg->arg[6] = arg7;
                                 if (argl8)
                                 {
-                                    msg->arg8 = arg8;
+                                    msg->arg[7] = arg8;
                                     if (argl9)
                                     {
-                                        msg->arg9 = arg9;
+                                        msg->arg[8] = arg9;
                                         if (argl10)
                                         {
-                                            msg->arg10 = arg10;
+                                            msg->arg[9] = arg10;
                                             if (argl11)
                                             {
-                                                msg->arg11 = arg11;
+                                                msg->arg[10] = arg11;
                                                 if (argl12)
-                                                    msg->arg12 = arg12;
+                                                {
+                                                    msg->arg[11] = arg12;
+                                                }
                                             }
                                         }
                                     }

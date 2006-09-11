@@ -4,7 +4,7 @@
  * TA side Logger functionality
  *
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@
  * MA  02111-1307  USA
  *
  *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
  * $Id$
@@ -45,6 +46,43 @@
 #include "logger_ta.h"
 
 
+/*
+ * Following macros are auxiliary for routine providing slow logging.
+ */
+
+#define LGR_PUT_MD_LIST(_mdl, _narg, _addr, _len) \
+    do {                                                          \
+            md_list *tmp_list =                                   \
+                (struct md_list *)malloc(sizeof(struct md_list)); \
+            (_mdl).last->next = tmp_list;                         \
+            (_mdl).last = tmp_list;                               \
+            tmp_list->narg = (_narg);                             \
+            tmp_list->addr = (_addr);                             \
+            tmp_list->length = (_len);                            \
+            tmp_list->next = &(_mdl);                             \
+    } while (0)
+
+#define LGR_FREE_MD_LIST(_mdl) \
+    do {                                       \
+        while ((_mdl).next != &(_mdl))         \
+        {                                      \
+            (_mdl).last = (_mdl).next;         \
+            (_mdl).next = (_mdl).next->next;   \
+            free((_mdl).last);                 \
+        }                                      \
+        (_mdl).next = &(_mdl);                 \
+        (_mdl).last = &(_mdl);                 \
+    } while (0)
+
+typedef struct md_list {
+    struct md_list *next;
+    struct md_list *last;
+    uint32_t        narg;
+    void           *addr;
+    uint32_t        length;
+} md_list;
+
+
 /** Local log buffer instance */
 struct lgr_rb log_buffer;
 
@@ -63,6 +101,9 @@ sem_t           ta_log_sem;
 
 /** Logging backend */
 te_log_message_f te_log_message = logfork_log_message;
+
+static const char  *skip_flags = "#-+ 0";
+static const char  *skip_width = "*0123456789";
 
 
 /**
@@ -88,7 +129,6 @@ ta_log_message(const char *file, unsigned int line,
     lgr_mess_header *hdr_addr = NULL;
     
     static char *null_str = "(NULL)";
-    static char *skip_flags, *skip_width;
     
     UNUSED(file);
     UNUSED(line);
@@ -96,9 +136,6 @@ ta_log_message(const char *file, unsigned int line,
     
     va_start(ap, fmt);
     
-    skip_flags = "#-+ 0";
-    skip_width = "*0123456789";
-
     memset(&header, 0, sizeof(struct lgr_mess_header));
     header.level = level;
     header.user = (user != NULL) ? user : null_str;
@@ -172,7 +209,7 @@ ta_log_message(const char *file, unsigned int line,
 
                     cp_list.length += length;
                     LGR_PUT_MD_LIST(cp_list, narg, addr, length);
-                    if ((++narg) > LGR_MAX_ARGS)
+                    if ((++narg) > TA_LOG_ARGS_MAX)
                         goto resume;
                     LGR_SET_ARG(header, narg, length);
                 }
@@ -182,14 +219,14 @@ ta_log_message(const char *file, unsigned int line,
                 break;
         }
 
-        if ((++narg) > LGR_MAX_ARGS)
+        if ((++narg) > TA_LOG_ARGS_MAX)
             goto resume;
     }
 
     if (ta_log_lock(&key) != 0)
         return;
 
-    res = lgr_rb_allocate_head(&log_buffer, LGR_RB_FORCE, &position);
+    res = lgr_rb_allocate_head(&log_buffer, TA_LOG_FORCE_NEW, &position);
     if (res == 0)
     {
         (void)ta_log_unlock(&key);
@@ -211,7 +248,7 @@ ta_log_message(const char *file, unsigned int line,
     {
         uint32_t    val;
         uint8_t    *arg_addr;
-        ta_log_arg *arg_location = (&hdr_addr->arg1) + tmp_list->narg;
+        ta_log_arg *arg_location = hdr_addr->args + tmp_list->narg;
 
         res = lgr_rb_allocate_and_copy(&log_buffer, tmp_list->addr,
                                        tmp_list->length, &arg_addr);
@@ -267,15 +304,8 @@ log_get_message(uint32_t length, uint8_t *buffer)
     uint32_t            tmp_length;
     ta_log_lock_key     key;
     uint8_t            *tmp_buf;
-    static char        *skip_flags, *skip_width;
-    static int          n_calls = 0;
     lgr_mess_header     header;
     uint8_t            *ring_last = log_buffer.rb + LGR_TOTAL_RB_BYTES;
-
-    n_calls++;
-
-    skip_flags = "#-+ 0";
-    skip_width = "*0123456789";
 
     if (length < LGR_RB_ELEMENT_LEN)
         return 0;

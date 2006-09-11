@@ -4,7 +4,7 @@
  * Macros and functions for internal using by Logger subsystem itself.
  *
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@
  * MA  02111-1307  USA
  *
  *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
  * $Id$
@@ -60,15 +61,25 @@ extern "C" {
 #endif
 
 
-/** Maximum arguments processed in this implementation */
-#define LGR_MAX_ARGS  12
+/**
+ * Maximum arguments processed in this implementation.
+ * Implementation of the fast log has a lot of dependencies
+ * from this number.
+ */
+#define TA_LOG_ARGS_MAX     12
+
+#ifndef TA_LOG_FORCE_NEW
+/* 
+ * Drop a new or the oldest message, if no enough space:
+ * 0 - drop a new message, !0 - drop the oldest message.
+ */
+#define TA_LOG_FORCE_NEW    0
+#endif
+
 
 /*
  * Following macros provide the means for ring buffer processing.
  */
-
-/* Wait until unused resources in ring buffer */
-#define LGR_RB_FORCE            0
 
 /* Length of separate element into the ring buffer  */
 #define LGR_RB_ELEMENT_LEN      sizeof(struct lgr_mess_header)
@@ -110,8 +121,8 @@ extern "C" {
 #define LGR_RB_TAIL(_rb)    ((_rb)->tail)
 
 /** Get/Set header argument */
-#define LGR_GET_ARG(_hdr, _narg)        *(&((_hdr).arg1) + (_narg))
-#define LGR_SET_ARG(_hdr, _narg, _val)  *(&((_hdr).arg1) + (_narg)) = (_val)
+#define LGR_GET_ARG(_hdr, _narg)        ((_hdr).args[_narg])
+#define LGR_SET_ARG(_hdr, _narg, _val)  ((_hdr).args[_narg] = (_val))
 
 /** This macro for using in following macros only */
 #define LGR_GET_MESSAGE_ADDR(_rb, _pos) \
@@ -137,67 +148,6 @@ extern "C" {
 #define LGR_SET_SEQUENCE_FIELD(_rb, _pos, _val) \
     LGR_GET_MESSAGE_ADDR((_rb), (_pos))->sequence = (_val)
 
-/*
- * Following macros are auxiliary for routine providing the debugging print.
- */
-#define LGR_AUX_STR_LEN  10
-
-#define LGR_DEBUG_PRT(_b, _e, _t) \
-    do {                                           \
-        memset(tmp_str, 0, TE_LOG_FIELD_MAX);  \
-        strncpy(tmp_str, (_b), ((_e) - (_b) + 1)); \
-        fprintf(stdout, tmp_str, va_arg(ap, _t));  \
-        (_b) = (_e);                               \
-        (_b)++;                                    \
-    } while (0)
-
-#define LGR_GET_DIGITS(_aux, _b, _e) \
-    do {                                      \
-        int res;                              \
-        do {                                  \
-            ++(_e);                           \
-            res = *(_e) - 0x30;               \
-        } while ((res >= 0) && (res <= 9));   \
-        memset((_aux), 0, LGR_AUX_STR_LEN);   \
-        strncpy((_aux), (_b), ((_e) - (_b))); \
-        (_b) = (_e); (_b)++;                  \
-    } while (0)
-
-/*
- * Following macros are auxiliary for routine providing slow logging.
- */
-
-#define LGR_PUT_MD_LIST(_mdl, _narg, _addr, _len) \
-    do {                                                          \
-            md_list *tmp_list =                                   \
-                (struct md_list *)malloc(sizeof(struct md_list)); \
-            (_mdl).last->next = tmp_list;                         \
-            (_mdl).last = tmp_list;                               \
-            tmp_list->narg = (_narg);                             \
-            tmp_list->addr = (_addr);                             \
-            tmp_list->length = (_len);                            \
-            tmp_list->next = &(_mdl);                             \
-    } while (0)
-
-#define LGR_FREE_MD_LIST(_mdl) \
-    do {                                       \
-        while ((_mdl).next != &(_mdl))         \
-        {                                      \
-            (_mdl).last = (_mdl).next;         \
-            (_mdl).next = (_mdl).next->next;   \
-            free((_mdl).last);                 \
-        }                                      \
-        (_mdl).next = &(_mdl);                 \
-        (_mdl).last = &(_mdl);                 \
-    } while (0)
-
-typedef struct md_list {
-    struct md_list *next;
-    struct md_list *last;
-    uint32_t        narg;
-    void           *addr;
-    uint32_t        length;
-} md_list;
 
 /** Type of argument native for a stack */
 typedef long ta_log_arg;
@@ -223,19 +173,10 @@ typedef struct lgr_mess_header {
                                          in raw log*/
     const char     *user;           /**< User_name string location */
     const char     *fmt;            /**< Format string location */
-    unsigned int    n_args;         /**< Number of arguments */
-    ta_log_arg      arg1;
-    ta_log_arg      arg2;
-    ta_log_arg      arg3;
-    ta_log_arg      arg4;
-    ta_log_arg      arg5;
-    ta_log_arg      arg6;
-    ta_log_arg      arg7;
-    ta_log_arg      arg8;
-    ta_log_arg      arg9;
-    ta_log_arg      arg10;
-    ta_log_arg      arg11;
-    ta_log_arg      arg12;
+
+    unsigned int    n_args;                 /**< Number of arguments */
+    ta_log_arg      args[TA_LOG_ARGS_MAX];  /**< Arguments */
+
 } lgr_mess_header;
 
 
@@ -273,9 +214,6 @@ struct lgr_rb {
 
 extern struct lgr_rb log_buffer;
 extern uint32_t      log_sequence;
-
-extern int log_entries_fast;
-extern int log_entries_slow;
 
 
 /**
@@ -533,20 +471,6 @@ extern void logfork_log_message(const char *file, unsigned int line,
                                 const char *entity,
                                 const char *user,
                                 const char *fmt, ...);
-
-
-#if TALOGDEBUG
-/*
- * Print message in stdout (debug mode).
- *
- * @param  user_name      Arbitrary "user name";
- * @param  form_str       Raw log format string. This string should contain
- *                        conversion specifiers if some arguments following;
- * @param  ...            Arguments passed into the function according to
- *                        raw log format string description.
- */
-extern void log_message_print(const char *us, const char *fs, ...);
-#endif
 
 #ifdef __cplusplus
 } /* extern "C" */
