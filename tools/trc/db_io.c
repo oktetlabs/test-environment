@@ -249,7 +249,7 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
                     trc_tags *tags, trc_exp_result *result)
 {
     int         rc = 0;
-    xmlNodePtr  result_node;
+    xmlNodePtr  result_node, p;
     int         tagged_result_prio;
 
     struct trc_tagged_result {
@@ -271,8 +271,16 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
     /* Get all tagged results and remember corresponding XML node */
     LIST_INIT(&tagged_results);
     while (*node != NULL &&
-           xmlStrcmp((*node)->name, CONST_CHAR2XML("result")) == 0)
+           xmlStrcmp((*node)->name, CONST_CHAR2XML("results")) == 0)
     {
+        p = xmlNodeChildren(*node);
+        if (xmlStrcmp(p->name, CONST_CHAR2XML("result")) != 0)
+        {
+            ERROR("Unexpected node '%s' in results", XML2CHAR(p->name));
+            rc = EINVAL;
+            goto exit;
+        }
+            
         if (tags->tqh_first != NULL)
         {
             tagged_result = calloc(1, sizeof(*tagged_result));
@@ -284,14 +292,14 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
             LIST_INSERT_HEAD(&tagged_results, tagged_result, links);
             tagged_result->node = *node;
             tagged_result->tags_expr_str =
-                XML2CHAR(xmlGetProp(*node, CONST_CHAR2XML("tag")));
+                XML2CHAR(xmlGetProp(*node, CONST_CHAR2XML("tags")));
             if (logic_expr_parse(tagged_result->tags_expr_str,
                                  &tagged_result->tags_expr) != 0)
             {
                 rc = EINVAL;
                 goto exit;
             }
-            rc = get_result(*node, "value", &tagged_result->value);
+            rc = get_result(p, "value", &tagged_result->value);
             if (rc != 0)
                 goto exit;
             INFO("Tagged result %#08x: tag='%s' value=%d",
@@ -341,7 +349,7 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
 
         result->value = tagged_result->value;
         result_node = tagged_result->node;
-        p = xmlNodeChildren(result_node);
+        p = xmlNodeChildren(xmlNodeChildren(result_node));
         while (p != NULL)
         {
             rc = get_node_with_text_content(&p, "verdict", &s);

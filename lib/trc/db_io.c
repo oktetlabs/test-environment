@@ -383,7 +383,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
     te_errno                rc = 0;
     trc_exp_result         *result;
     trc_exp_result_entry   *entry;
-    xmlNodePtr              p;
+    xmlNodePtr              p, q;
     te_test_verdict        *v;
 
     assert(node != NULL);
@@ -391,7 +391,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
 
     /* Get all tagged results and remember corresponding XML node */
     while (*node != NULL &&
-           xmlStrcmp((*node)->name, CONST_CHAR2XML("result")) == 0)
+           xmlStrcmp((*node)->name, CONST_CHAR2XML("results")) == 0)
     {
         result = TE_ALLOC(sizeof(*result));
         if (result == NULL)
@@ -399,44 +399,59 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
         TAILQ_INIT(&result->results);
         LIST_INSERT_HEAD(results, result, links);
 
-        entry = TE_ALLOC(sizeof(*entry));
-        if (entry == NULL)
-            return TE_ENOMEM;
-        te_test_result_init(&entry->result);
-        TAILQ_INSERT_TAIL(&result->results, entry, links);
-
         result->tags_str = XML2CHAR(xmlGetProp(*node,
-                                               CONST_CHAR2XML("tag")));
+                                               CONST_CHAR2XML("tags")));
         if (logic_expr_parse(result->tags_str, &result->tags_expr) != 0)
             return TE_EINVAL;
-
-        rc = get_result(*node, "value", &entry->result.status);
-        if (rc != 0)
-            return rc;
 
         result->key = XML2CHAR(xmlGetProp(*node, CONST_CHAR2XML("key")));
         result->notes = XML2CHAR(xmlGetProp(*node,
                                             CONST_CHAR2XML("notes")));
 
-        p = xmlNodeChildren(*node);
-        while (p != NULL)
+        for (p = xmlNodeChildren(*node); p != NULL; p = xmlNodeNext(p))
         {
-            char *s;
-
-            rc = get_node_with_text_content(&p, "verdict", &s);
-            if (rc == ENOENT)
+            if (xmlStrcmp(p->name, CONST_CHAR2XML("result")) != 0)
             {
-                ERROR("Unexpected node '%s' in the tagged result", p->name);
+                ERROR("Unexpected node '%s' in the tagged result",
+                      p->name);
                 return TE_EINVAL;
             }
-            v = TE_ALLOC(sizeof(*v));
-            if (v == NULL)
-            {
-                free(s);
+
+            entry = TE_ALLOC(sizeof(*entry));
+            if (entry == NULL)
                 return TE_ENOMEM;
+            te_test_result_init(&entry->result);
+            TAILQ_INSERT_TAIL(&result->results, entry, links);
+
+            rc = get_result(p, "value", &entry->result.status);
+            if (rc != 0)
+                return rc;
+
+            entry->key = XML2CHAR(xmlGetProp(p, CONST_CHAR2XML("key")));
+            entry->notes = XML2CHAR(xmlGetProp(p,
+                                               CONST_CHAR2XML("notes")));
+
+            q = xmlNodeChildren(p);
+            while (q != NULL)
+            {
+                char *s;
+
+                rc = get_node_with_text_content(&q, "verdict", &s);
+                if (rc == ENOENT)
+                {
+                    ERROR("Unexpected node '%s' in the tagged result "
+                          "entry", q->name);
+                    return TE_EINVAL;
+                }
+                v = TE_ALLOC(sizeof(*v));
+                if (v == NULL)
+                {
+                    free(s);
+                    return TE_ENOMEM;
+                }
+                v->str = s;
+                TAILQ_INSERT_TAIL(&entry->result.verdicts, v, links);
             }
-            v->str = s;
-            TAILQ_INSERT_TAIL(&entry->result.verdicts, v, links);
         }
 
         *node = xmlNodeNext(*node); 
@@ -1084,6 +1099,9 @@ trc_free_trc_tests(trc_tests *tests)
 void
 trc_db_close(te_trc_db *db)
 {
+    if (db == NULL)
+        return;
+
     free(db->filename);
     xmlFreeDoc(db->xml_doc);
     free(db->version);
