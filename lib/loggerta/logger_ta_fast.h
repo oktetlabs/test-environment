@@ -2,7 +2,12 @@
  * @brief Logger subsystem API - TA side
  *
  * Macros and functions for fast logging.
- *
+ * Fast logging has few restrictions in comparison with slow logging:
+ *  - format string has to be string literal;
+ *  - string literals may be logged only;
+ *  - non volatile files and memory regions may be logged.
+ * If one of this restriction is broke, the result is unpredictable
+ * up to segmentation fault and system crash.
  *
  * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -246,22 +251,22 @@ ta_log_message_fast(unsigned int level, const char *user, const char *fmt,
                             msg->args[5] = arg6;
                             if (argl7)
                             {
-                                msg->arg[6] = arg7;
+                                msg->args[6] = arg7;
                                 if (argl8)
                                 {
-                                    msg->arg[7] = arg8;
+                                    msg->args[7] = arg8;
                                     if (argl9)
                                     {
-                                        msg->arg[8] = arg9;
+                                        msg->args[8] = arg9;
                                         if (argl10)
                                         {
-                                            msg->arg[9] = arg10;
+                                            msg->args[9] = arg10;
                                             if (argl11)
                                             {
-                                                msg->arg[10] = arg11;
+                                                msg->args[10] = arg11;
                                                 if (argl12)
                                                 {
-                                                    msg->arg[11] = arg12;
+                                                    msg->args[11] = arg12;
                                                 }
                                             }
                                         }
