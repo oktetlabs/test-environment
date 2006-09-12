@@ -5,5 +5,10 @@ TD {font-size: 10pt;
     white-space:nowrap;}
 A  {text-decoration: none;
     color: black}
+.err {
+        padding-left: 2px;
+        padding-right: 2px;
+        border: 2px dotted black;
+     }
 
 .specialClass {font-family:garamond; font-size:12pt;color:green;font-weight:bold;text-decoration:underline}

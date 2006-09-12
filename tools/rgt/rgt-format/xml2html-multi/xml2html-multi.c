@@ -73,6 +73,10 @@ typedef struct log_msg_name {
     GHashTable *entity_hash; /**< Pointer to entity name hash */
 } log_msg_name_t;
 
+/* Values for node class (now - only by presence of 'err' attribute) */
+#define NODE_CLASS_STD  "std"
+#define NODE_CLASS_ERR  "err"
+
 /* Forward declaration */
 static depth_ctx_user_t *alloc_depth_user_data(uint32_t depth);
 static void free_depth_user_data();
@@ -82,7 +86,8 @@ static void add_log_user(gen_ctx_user_t *gen_user,
 static void output_log_names(GHashTable **entity_hash,
                              uint32_t depth, uint32_t seq);
 static void lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
-                     const char *result, rgt_depth_ctx_t *prev_depth_ctx);
+                     const char *result, const char *node_class,
+                     rgt_depth_ctx_t *prev_depth_ctx);
 
 static te_log_level te_log_level_str2h(const char *ll);
 
@@ -168,7 +173,7 @@ RGT_DEF_FUNC(proc_document_start)
         exit(1);
     }
 
-    lf_start(ctx, depth_ctx, NULL, NULL);
+    lf_start(ctx, depth_ctx, NULL, NULL, NULL);
 
     attrs = rgt_tmpls_attrs_new(NULL);
     rgt_tmpls_attrs_add_fstr(attrs, "reporter", "TE start-up");
@@ -380,7 +385,7 @@ RGT_DEF_FUNC(proc_document_end)
 
 static void
 lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx, const char *result,
-     rgt_depth_ctx_t *prev_depth_ctx)
+     const char *node_class, rgt_depth_ctx_t *prev_depth_ctx)
 {
     depth_ctx_user_t *depth_user = depth_ctx->user_data;
     te_bool           is_test = depth_user->is_test;
@@ -431,6 +436,7 @@ lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx, const char *result,
             rgt_tmpls_attrs_set_uint32(attrs, "depth", ctx->depth - 1);
             rgt_tmpls_attrs_set_uint32(attrs, "seq", prev_depth_ctx->seq);
             rgt_tmpls_attrs_set_fstr(attrs, "name", "..");
+            rgt_tmpls_attrs_set_fstr(attrs, "class", NODE_CLASS_STD);
             rgt_tmpls_output(depth_user->dir_fd,
                              &xml2fmt_tmpls[LF_ROW_FOLDER], attrs);
         }
@@ -443,6 +449,7 @@ lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx, const char *result,
         rgt_tmpls_attrs_set_uint32(attrs, "depth", ctx->depth);
         rgt_tmpls_attrs_set_uint32(attrs, "seq", depth_ctx->seq);
         rgt_tmpls_attrs_set_fstr(attrs, "name", depth_user->name);
+        rgt_tmpls_attrs_set_fstr(attrs, "class", node_class);
         if (is_test)
         {
             rgt_tmpls_attrs_add_fstr(attrs, "result", result);
@@ -492,6 +499,8 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     rgt_depth_ctx_t  *prev_depth_ctx;
     const char       *name = rgt_tmpls_xml_attrs_get(xml_attrs, "name");
     const char       *result = rgt_tmpls_xml_attrs_get(xml_attrs, "result");
+    const char       *err = rgt_tmpls_xml_attrs_get(xml_attrs, "err");
+    const char       *node_class;
     char              fname[255];
     rgt_attrs_t      *attrs;
 
@@ -504,6 +513,11 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
         name = "session";
     
     depth_user->is_test = strcmp(node_type, "Test") == 0;
+
+    if (err != NULL && err[0] != '\0')
+        node_class = NODE_CLASS_ERR;
+    else
+        node_class = NODE_CLASS_STD;
 
     prev_depth_ctx = &g_array_index(ctx->depth_info,
                                     rgt_depth_ctx_t, (ctx->depth - 2));
@@ -519,7 +533,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     }
 
     depth_user->name = strdup(name);
-    lf_start(ctx, depth_ctx, result, prev_depth_ctx);
+    lf_start(ctx, depth_ctx, result, node_class, prev_depth_ctx);
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
     rgt_tmpls_attrs_add_fstr(attrs, "reporter", "%s %s", node_type,
@@ -531,10 +545,12 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     rgt_tmpls_attrs_add_fstr(attrs, "node_type", node_type);
     rgt_tmpls_attrs_add_fstr(attrs, "name", name);
     rgt_tmpls_attrs_add_fstr(attrs, "result", result);
+    rgt_tmpls_attrs_add_fstr(attrs, "err", err);
     rgt_tmpls_output(depth_user->fd,
                      &xml2fmt_tmpls[DOC_CNTRL_NODE_TITLE], attrs);
 
     rgt_tmpls_attrs_add_fstr(attrs, "fname", fname);
+    rgt_tmpls_attrs_add_fstr(attrs, "class", node_class);
 
     fname[0] = '\0';
     if (depth_user->is_test)
