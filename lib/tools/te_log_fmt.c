@@ -697,10 +697,10 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
 #if 0
     int         spec_size;
 #endif
-    char       *s;
-    char       *fmt_dup;
-    char       *fmt_start;
-    char       *spec_start;
+    const char *s;
+    const char *fmt_dup;
+    const char *fmt_start;
+    const char *spec_start;
     te_bool     fmt_needed = FALSE;
     va_list     ap_start;
     
@@ -732,9 +732,9 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
         {                                                   \
             char _tmp = *spec_start;                        \
                                                             \
-            *spec_start = '\0';                             \
+            *(char *)spec_start = '\0';                     \
             out->fmt(out, fmt_start, ap_start);             \
-            *spec_start = _tmp;                             \
+            *(char *)spec_start = _tmp;                     \
             fmt_start = spec_start;                         \
             fmt_needed = FALSE;                             \
         }                                                   \
@@ -936,7 +936,7 @@ case mod_:\
                  * to avoid issues with difference of length modifiers
                  * meaning on different architectures.
                  *
-                 * When mentioned issues are coped in RGT, it may be
+                 * When mentioned issues are copied in RGT, it may be
                  * reasonable pass through TE raw log to avoid
                  * dependency on host's snprintf() (possibly very dummy)
                  * support.
@@ -1012,7 +1012,7 @@ case mod_:\
     spec_start = s--;
     TE_LOG_VPRINTF_RAW_ARG(TE_LOG_MSG_FMT_ARG_EOR, NULL, 0);
 
-    free(fmt_dup);
+    free((char *)fmt_dup);
 
 #undef TE_LOG_VPRINTF_RAW_ARG
 
