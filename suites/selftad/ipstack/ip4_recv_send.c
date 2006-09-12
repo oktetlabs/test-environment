@@ -190,25 +190,34 @@ main(int argc, char *argv[])
 
         int num;
 
-        rc = tapi_ip4_eth_csap_create(agt_a, sid_a, "eth0", mac_a, mac_b,
+        rc = tapi_ip4_eth_csap_create(agt_a, sid_a, "eth0",
+                                      TAD_ETH_RECV_DEF &
+                                      ~TAD_ETH_RECV_OTHER,
+                                      mac_a, mac_b,
                                       ip_a, ip_b, &ip4_send_csap);
         if (rc != 0)
             TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
-        rc = tapi_ip4_eth_csap_create(agt_b, sid_b, "eth0", mac_b, mac_a,
+        rc = tapi_ip4_eth_csap_create(agt_b, sid_b, "eth0",
+                                      TAD_ETH_RECV_DEF,
+                                      mac_b, mac_a,
                                       ip_b, ip_a, &ip4_listen_csap);
         if (rc != 0)
             TEST_FAIL("CSAP create failed, rc from mod %d is %r\n", 
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
-        rc = tapi_eth_csap_create(agt_b, sid_b, "eth0", mac_a, mac_b,
+        rc = tapi_eth_csap_create(agt_b, sid_b, "eth0",
+                                  TAD_ETH_RECV_DEF,
+                                  mac_a, mac_b,
                                   NULL, &eth_listen_csap_1);
         if (rc != 0)
             TEST_FAIL("ETH CSAP create failed, rc from mod %d is %r\n",
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
-        rc = tapi_eth_csap_create(agt_b, sid_b, "eth0", mac_a, mac_b,
+        rc = tapi_eth_csap_create(agt_b, sid_b, "eth0",
+                                  TAD_ETH_RECV_DEF,
+                                  mac_a, mac_b,
                                   NULL, &eth_listen_csap_2);
         if (rc != 0)
             TEST_FAIL("ETH CSAP create failed, rc from mod %d is %r\n",

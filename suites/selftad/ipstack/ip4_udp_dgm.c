@@ -171,6 +171,7 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("set payload to template failed %X", rc);
     rc = tapi_ip4_eth_csap_create(agt_a, sid_a, csap_if->if_name, 
+                                  TAD_ETH_RECV_DEF & ~TAD_ETH_RECV_OTHER,
                                   NULL, NULL,
                                   SIN(csap_addr)->sin_addr.s_addr, 
                                   SIN(pco_addr)->sin_addr.s_addr,

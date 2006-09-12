@@ -77,6 +77,7 @@ typedef void (*ip4_callback)(const tapi_ip4_packet_t *pkt, void *userdata);
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param eth_dev       Name of Ethernet interface
+ * @param receive_mode  Receive mode for Ethernet Layer on the Interface
  * @param loc_mac_addr  Local MAC address (or NULL)
  * @param rem_mac_addr  Remote MAC address (or NULL)
  * @param loc_ip4_addr  Local IP address in network order (or NULL)
@@ -85,8 +86,10 @@ typedef void (*ip4_callback)(const tapi_ip4_packet_t *pkt, void *userdata);
  *
  * @return  Status of the operation
  */
-extern int tapi_ip4_eth_csap_create(const char *ta_name, int sid, 
-                                    const char *eth_dev,
+extern int tapi_ip4_eth_csap_create(const char    *ta_name,
+                                    int            sid, 
+                                    const char    *eth_dev,
+                                    unsigned int   receive_mode,
                                     const uint8_t *loc_mac_addr, 
                                     const uint8_t *rem_mac_addr, 
                                     in_addr_t      loc_ip4_addr,

@@ -159,8 +159,9 @@ main(int argc, char *argv[])
         TEST_FAIL("template create error %X", rc);
     VERB("template created successfully");
 
-    rc = tapi_eth_csap_create(ta_A, sid_a, eth_device, mac_b, 
-                              send_src_csap ? mac_a : NULL, 
+    rc = tapi_eth_csap_create(ta_A, sid_a, eth_device,
+                              TAD_ETH_RECV_DEF & ~TAD_ETH_RECV_OTHER,
+                              mac_b, send_src_csap ? mac_a : NULL, 
                               &eth_type, &eth_csap);
 
     if (rc)
@@ -170,6 +171,7 @@ main(int argc, char *argv[])
 
 
     rc = tapi_eth_csap_create(ta_B, sid_b, eth_device, 
+                              TAD_ETH_RECV_DEF,
                               (send_src_csap || send_src_tmpl) ? 
                                   mac_a : NULL,  
                               mac_b, &eth_type, &eth_listen_csap); 

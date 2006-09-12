@@ -124,7 +124,7 @@
 
 #define PDU_CONTAINS_KEY_VALUE_PAIR(segment_data_, \
                                     key_name_,     \
-                                   key_value_)    \
+                                    key_value_)    \
     (!tapi_iscsi_find_key_and_value(segment_data_, (char *)key_name_, 1, \
                                     key_value_))
 #define PDU_CONTAINS_KEY(segment_data_, key_name_) \

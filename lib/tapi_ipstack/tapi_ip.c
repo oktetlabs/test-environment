@@ -137,6 +137,7 @@ ip4_pkt_handler(asn_value *pkt, void *user_param)
 /* see description in tapi_ip.h */
 int
 tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
+                         unsigned int receive_mode,
                          const uint8_t *loc_mac_addr,
                          const uint8_t *rem_mac_addr,
                          in_addr_t      loc_ip4_addr, 
@@ -187,6 +188,9 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
         if (rc != 0) break;
         rc = asn_write_int32(csap_eth_level, ip_eth,
                              "eth-type.#plain");
+        if (receive_mode != 0) break;
+        rc = asn_write_int32(csap_eth_level, receive_mode,
+                             "receive-mode.#plain");
         if (loc_mac_addr) 
             rc = asn_write_value_field(csap_eth_level,
                                        loc_mac_addr, 6,

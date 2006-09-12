@@ -58,6 +58,7 @@
 
 #include "ndn_eth.h"
 #include "ndn_ipstack.h"
+#include "ndn_iscsi.h"
 
 uint8_t tx_buffer[10000];
 uint8_t rx_buffer[10000];

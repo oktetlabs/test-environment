@@ -191,8 +191,10 @@ main(int argc, char *argv[])
         if (rc)
             TEST_FAIL("template create error %x\n", rc);
         VERB ("template created successfully \n");
-        rc = tapi_eth_csap_create(ta, sid, eth_device, rem_addr, NULL, 
-                              &eth_type, &eth_csap);
+        rc = tapi_eth_csap_create(ta, sid, eth_device,
+                                  TAD_ETH_RECV_DEF,
+                                  rem_addr, NULL, 
+                                  &eth_type, &eth_csap);
 
         if (rc)
             TEST_FAIL("csap create error: %x\n", rc);

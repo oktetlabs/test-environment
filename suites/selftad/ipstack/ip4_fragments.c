@@ -191,6 +191,7 @@ main(int argc, char *argv[])
 
     /***************** Create 'ip4.eth' CSAP *****************/
     rc = tapi_ip4_eth_csap_create(agt_a, sid, csap_if->if_name,
+                                  TAD_ETH_RECV_DEF & ~TAD_ETH_RECV_OTHER,
                                   NULL, NULL, INADDR_ANY, INADDR_ANY,
                                   &ip4_send_csap);
     if (rc != 0)

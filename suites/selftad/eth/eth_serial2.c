@@ -142,6 +142,7 @@ int main()
     memcpy (src_bin_mac, ether_aton(src_mac), ETHER_ADDR_LEN);
 
     if (tapi_eth_csap_create(agent_a, sid_a, agent_a_if, 
+                             TAD_ETH_RECV_DEF & ~TAD_ETH_RECV_OTHER,
                              dst_bin_mac, src_bin_mac, 
                              &eth_type, &tx_csap))
     {
@@ -163,8 +164,9 @@ int main()
     else
     {
         if (tapi_eth_csap_create(agent_b, sid_b, agent_b_if,
-                                NULL, NULL, 
-                                NULL, &rx_csap))
+                                 TAD_ETH_RECV_DEF,
+                                 NULL, NULL, 
+                                 NULL, &rx_csap))
         {
             TEST_TERMINATION(" RX CSAP creation failure");
         }

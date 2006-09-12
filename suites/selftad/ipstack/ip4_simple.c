@@ -121,7 +121,8 @@ main(int argc, char *argv[])
         }
 #endif
 
-        rc = tapi_ip4_eth_csap_create(ta, sid, "eth0", NULL, NULL,
+        rc = tapi_ip4_eth_csap_create(ta, sid, "eth0",
+                                      TAD_ETH_RECV_DEF, NULL, NULL,
                                       htonl(INADDR_ANY), htonl(INADDR_ANY),
                                       &csap);
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)

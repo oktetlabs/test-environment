@@ -62,6 +62,9 @@ typedef uint32_t tapi_tcp_pos_t;
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param eth_dev       Name of Ethernet interface
+ * @param receive_mode  Bitmask with receive mode, see 'enum
+ *                      tad_eth_recv_mode' in tad_common.h.
+ *                      Use TAD_ETH_RECV_DEF by default.
  * @param loc_mac       Local MAC address  (or NULL)
  * @param rem_mac       Remote MAC address  (or NULL)
  * @param loc_addr      Local IP address in network order (or NULL)
@@ -74,6 +77,7 @@ typedef uint32_t tapi_tcp_pos_t;
  */
 extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid, 
                                         const char *eth_dev,
+                                        unsigned int receive_mode,
                                         const uint8_t *loc_mac,
                                         const uint8_t *rem_mac,
                                         in_addr_t loc_addr,
@@ -89,7 +93,7 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param eth_dev       Name of Ethernet interface
- * @param eth_mode      Bitmask with receive mode, see 'enum
+ * @param receive_mode  Bitmask with receive mode, see 'enum
  *                      tad_eth_recv_mode' in tad_common.h.
  *                      Use TAD_ETH_RECV_DEF by default.
  * @param loc_mac       Local MAC address  (or NULL)
@@ -104,7 +108,7 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
  */
 extern int tapi_tcp_ip4_eth_mode_csap_create(const char *ta_name, int sid, 
                                              const char *eth_dev,
-                                             uint8_t eth_mode,
+                                             unsigned int receive_mode,
                                              const uint8_t *loc_mac,
                                              const uint8_t *rem_mac,
                                              in_addr_t loc_addr,

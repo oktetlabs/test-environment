@@ -120,8 +120,10 @@ main(int argc, char *argv[])
     VERB("Test: Created session: %d\n", sid); 
 
                     
-    rc = tapi_eth_csap_create(ta, sid, eth_device, NULL, NULL, 
-                          NULL, &eth_listen_csap); 
+    rc = tapi_eth_csap_create(ta, sid, eth_device,
+                              TAD_ETH_RECV_DEF,
+                              NULL, NULL, 
+                              NULL, &eth_listen_csap); 
     if (rc)
         TEST_FAIL("csap for listen create error: %x\n", rc);
     else 

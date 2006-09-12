@@ -702,6 +702,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     INFO("%s(): created arp csap: %d", __FUNCTION__, arp_csap);
 
     rc = tapi_tcp_ip4_eth_csap_create(agt, rcv_sid, local_iface,
+                                      TAD_ETH_RECV_DEF,
                                       local_mac, remote_mac,
                                       local_in_addr->sin_addr.s_addr,
                                       remote_in_addr->sin_addr.s_addr,
@@ -712,6 +713,8 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                 __FUNCTION__, rc);
 
     rc = tapi_tcp_ip4_eth_csap_create(agt, snd_sid, local_iface,
+                                      TAD_ETH_RECV_DEF &
+                                      ~TAD_ETH_RECV_OTHER,
                                       local_mac, remote_mac,
                                       local_in_addr->sin_addr.s_addr,
                                       remote_in_addr->sin_addr.s_addr,

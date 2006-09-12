@@ -144,8 +144,9 @@ main(int argc, char *argv[])
     memcpy (src_bin_mac, ether_aton(src_mac), ETHER_ADDR_LEN);
 
     if ((rc = tapi_eth_csap_create(agent_a, sid_a, agent_a_if, 
-                             dst_bin_mac, src_bin_mac, 
-                             &eth_type, &tx_csap)) != 0)
+                                   TAD_ETH_RECV_DEF & ~TAD_ETH_RECV_OTHER,
+                                   dst_bin_mac, src_bin_mac, 
+                                   &eth_type, &tx_csap)) != 0)
     {
         TEST_FAIL("TX CSAP creation failure: %r", rc);
     } 
