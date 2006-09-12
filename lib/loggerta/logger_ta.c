@@ -140,7 +140,7 @@ ta_log_message(const char *file, unsigned int line,
     header.level = level;
     header.user = (user != NULL) ? user : null_str;
     header.fmt = (fmt != NULL) ? fmt : null_str;
-    for (p_str = fmt; *p_str; p_str++)
+    for (p_str = header.fmt; *p_str; p_str++)
     {
         if (*p_str != '%')
             continue;
