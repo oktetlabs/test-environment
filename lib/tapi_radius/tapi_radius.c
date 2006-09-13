@@ -634,7 +634,9 @@ tapi_radius_csap_create(const char *ta, int sid, const char *device,
                         const in_addr_t net_addr, uint16_t port,
                         csap_handle_t *csap)
 {
-    return tapi_udp_ip4_eth_csap_create(ta, sid, device, NULL, NULL,
+    return tapi_udp_ip4_eth_csap_create(ta, sid, device,
+                                        TAD_ETH_RECV_DEF,
+                                        NULL, NULL,
                                         net_addr, INADDR_ANY,
                                         port, 0, csap);
 }
