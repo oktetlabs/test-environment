@@ -220,64 +220,6 @@ tapi_udp_ip4_eth_pattern_unit(const uint8_t *src_addr,
     return 0;
 }
 
-#if 0
-/**
- * Create file with udp.ip4 Traffic-Pattern-Unit from UDP datagram
- * parameters
- *
- * @param fname     Name of file to create
- * @param dgram     Parameters of UDP endpoints
- *
- * @return Zero on success or error code
- */
-static int
-tapi_udp4_prepare_tmpl_file(const char *fname, const udp4_datagram *dgram)
-{
-    FILE *f;
-    uint8_t *ip_addr_p;
-    int i;
-
-    if (fname == NULL || dgram == NULL)
-        return TE_RC(TE_TAPI, TE_EWRONGPTR);
-
-    f = fopen(fname, "w");
-    if (f == NULL)
-    {
-        ERROR("%s: failed to open file '%s' for UDP pattern writing",
-              __FUNCTION__, fname);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-
-    fprintf(f, "{ pdus { udp: {src-port plain:%d, dst-port plain:%d}\n",
-            (int)dgram->src_port, (int)dgram->dst_port);
-
-    ip_addr_p = (uint8_t*) &(dgram->src_addr.s_addr);
-    fprintf(f, "         ip4: {src-addr plain:{%02x, %02x, %02x, %02x},\n",
-            ip_addr_p[0], ip_addr_p[1], ip_addr_p[2], ip_addr_p[3]);
-
-    ip_addr_p = (uint8_t*) &(dgram->dst_addr.s_addr);
-    fprintf(f,
-            "               dst-addr plain:{%02x, %02x, %02x, %02x} } }",
-            ip_addr_p[0], ip_addr_p[1], ip_addr_p[2], ip_addr_p[3]);
-
-    if (dgram->payload_len > 0)
-    {
-        fprintf (f, ",\n  payload bytes:{");
-        for (i = 0; i < dgram->payload_len; i++)
-        {
-            fprintf (f, " %02x", dgram->payload[i]);
-            if (i != 0)
-                fprintf (f, ",");
-        }
-        fprintf(f, "}");
-    }
-    fprintf(f, "\n}\n");
-
-    fclose(f);
-    return 0;
-}
-#endif
-
 
 /* see description in tapi_udp.h */
 int
@@ -437,27 +379,6 @@ udp4_asn_pkt_handler(asn_value *pkt, void *user_param)
     asn_free_value(pkt);
 }
 
-#if 0
-/* see description in tapi_udp.h */
-static void
-udp4_pkt_handler(const char *pkt_fname, void *user_param)
-{
-    te_errno    rc;
-    asn_value  *pkt = NULL;
-    int         s_parsed;
-
-    if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
-                                       &pkt, &s_parsed)) != 0)
-    {
-        fprintf(stderr, "asn_parse_dvalue_in_file fails, rc = %x"
-                ", s_parsed=%d\n", rc, s_parsed);
-        return;
-    }
-
-    udp4_asn_pkt_handler(pkt, user_param);
-}
-#endif
-
 /* See description in tapi_udp.h */
 tapi_tad_trrecv_cb_data *
 tapi_udp_ip4_eth_trrecv_cb_data(udp4_callback callback, void *user_data)
@@ -526,34 +447,3 @@ tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
 
     return rc;
 }
-
-
-#if 0
-/* see description in tapi_udp.h */
-int
-tapi_udp4_dgram_send_recv(const char *ta_name, int sid, csap_handle_t csap,
-                          unsigned int timeout,
-                          const udp4_datagram *dgram_sent,
-                          udp4_datagram *dgram_recv)
-{
-    char            template_fname[] = "/tmp/te_udp4_send_recv.XXXXXX";
-    udp4_cb_data_t *cb_data = calloc(1, sizeof(*cb_data));
-    int             rc;
-
-    mktemp(template_fname);
-
-    tapi_udp4_prepare_tmpl_file(template_fname, dgram_sent);
-
-    rc = rcf_ta_trsend_recv(ta_name, sid, csap, template_fname,
-                            udp4_pkt_handler, cb_data, timeout, NULL);
-
-    unlink(template_fname);
-
-    /* TODO usage */
-    UNUSED(dgram_recv);
-
-    return rc;
-}
-#endif
-
-

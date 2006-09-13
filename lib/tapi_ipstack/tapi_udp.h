@@ -112,53 +112,6 @@ extern int tapi_udp_ip4_eth_recv_start(const char *ta_name, int sid,
                                        const udp4_datagram *udp_dgram,
                                        rcf_trrecv_mode mode);
 
-#if 0
-/**
- * Receive some number of UDP datagrams via 'data.udp.ip4' CSAP, block
- * method.
- * 
- * @param ta_name       Test Agent name
- * @param sid           RCF SID
- * @param csap          Identifier of an SNMP CSAP (OUT)
- * @param number        Number of dgrams to be received
- * @param timeout       Total timeout for receive, in seconds
- * @param udp_dgram     UDP datagram with pattern for filter 
- * @param callback      Callback function, which will be call for each 
- *                      received packet
- * @param user_data     Opaque data to be passed into the callback function
- * 
- * @return Zero on success or error code.
- */
-extern int tapi_udp4_dgram_recv(const char *ta_name, int sid,
-                                csap_handle_t csap,
-                                int number, int timeout,
-                                const udp4_datagram *udp_dgram, 
-                                udp4_callback callback, void *user_data);
-
-/**
- * Send UDP datagram via 'data.udp.ip4' CSAP and receive response to it
- * (that is first received UDP datagram with reverse to the sent 
- * source/destination addresses and ports).
- * 
- * @param ta_name       Test Agent name
- * @param sid           RCF SID
- * @param csap          Identifier of an SNMP CSAP (OUT)
- * @param timeout       Timeout for receive, in seconds
- * @param dgram_sent    UDP datagram to be sent
- * @param dgram_recv    Location for received UDP datagram; memory for
- *                      payload will be allocated by TAPI and should be
- *                      freed by user
- * 
- * @return Zero on success or error code.
- */
-extern int tapi_udp4_dgram_send_recv(const char *ta_name, int sid, 
-                                     csap_handle_t csap,
-                                     unsigned int timeout,
-                                     const udp4_datagram *dgram_sent,
-                                     udp4_datagram *dgram_recv);
-
-#endif
-
 /**
  * Create 'udp.ip4.eth' CSAP on the specified Agent
  *
