@@ -87,38 +87,6 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
                                         csap_handle_t *tcp_csap);
 
 /**
- * Creates 'tcp.ip4.eth' CSAP, allows to specifie receive mode of 
- * low level packet socket.
- *
- * @param ta_name       Test Agent name
- * @param sid           RCF SID
- * @param eth_dev       Name of Ethernet interface
- * @param receive_mode  Bitmask with receive mode, see 'enum
- *                      tad_eth_recv_mode' in tad_common.h.
- *                      Use TAD_ETH_RECV_DEF by default.
- * @param loc_mac       Local MAC address  (or NULL)
- * @param rem_mac       Remote MAC address  (or NULL)
- * @param loc_addr      Local IP address in network order (or NULL)
- * @param rem_addr      Remote IP address in network order (or NULL)
- * @param loc_port      Local TCP port in network byte order 
- * @param rem_port      Remote TCP port in network byte order 
- * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
- *
- * @return  Status of the operation
- */
-extern int tapi_tcp_ip4_eth_mode_csap_create(const char *ta_name, int sid, 
-                                             const char *eth_dev,
-                                             unsigned int receive_mode,
-                                             const uint8_t *loc_mac,
-                                             const uint8_t *rem_mac,
-                                             in_addr_t loc_addr,
-                                             in_addr_t rem_addr,
-                                             uint16_t loc_port,
-                                             uint16_t rem_port,
-                                             csap_handle_t *tcp_csap);
-
-
-/**
  * Start receiving of IPv4 packets 'tcp.ip4.eth' CSAP, non-block
  * method. It cannot report received packets, only count them.
  *

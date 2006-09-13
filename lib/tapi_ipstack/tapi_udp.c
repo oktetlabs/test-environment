@@ -328,35 +328,18 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
 }
 
 /* See description in tapi_udp.h */
+
 int
 tapi_udp_ip4_eth_csap_create(const char *ta_name, int sid,
                              const char *eth_dev,
                              unsigned int receive_mode,
                              const uint8_t *loc_mac,
-                             const uint8_t *rem_mac,
-                             in_addr_t loc_addr, in_addr_t rem_addr,
-                             uint16_t loc_port, uint16_t rem_port,
+                             const uint8_t *rem_mac, 
+                             in_addr_t loc_addr,
+                             in_addr_t rem_addr,
+                             uint16_t loc_port,
+                             uint16_t rem_port,
                              csap_handle_t *udp_csap)
-{
-    return tapi_udp_ip4_eth_mode_csap_create(ta_name, sid, eth_dev,
-                                             receive_mode,
-                                             loc_mac, rem_mac,
-                                             loc_addr, rem_addr,
-                                             loc_port, rem_port,
-                                             udp_csap);
-}
-
-int
-tapi_udp_ip4_eth_mode_csap_create(const char *ta_name, int sid,
-                                  const char *eth_dev,
-                                  unsigned int receive_mode,
-                                  const uint8_t *loc_mac,
-                                  const uint8_t *rem_mac, 
-                                  in_addr_t loc_addr,
-                                  in_addr_t rem_addr,
-                                  uint16_t loc_port,
-                                  uint16_t rem_port,
-                                  csap_handle_t *udp_csap)
 {
     int        rc;
     int        num = 0;

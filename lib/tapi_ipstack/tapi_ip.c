@@ -188,9 +188,12 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
         if (rc != 0) break;
         rc = asn_write_int32(csap_eth_level, ip_eth,
                              "eth-type.#plain");
-        if (receive_mode != 0) break;
-        rc = asn_write_int32(csap_eth_level, receive_mode,
-                             "receive-mode.#plain");
+        if (receive_mode != 0)
+        {
+            rc = asn_write_int32(csap_eth_level, receive_mode,
+                                 "receive-mode");
+            if (rc != 0) break;
+        }
         if (loc_mac_addr) 
             rc = asn_write_value_field(csap_eth_level,
                                        loc_mac_addr, 6,
