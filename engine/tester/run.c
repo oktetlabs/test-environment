@@ -211,16 +211,16 @@ tester_ctx_clone(const tester_ctx *ctx)
     te_test_result_init(&new_ctx->group_result.result);
     new_ctx->group_result.status = TESTER_TEST_EMPTY;
 #if WITH_TRC
-    new_ctx->group_result.exp_result = ctx->group_result.exp_result;
-    new_ctx->group_result.exp_status = ctx->group_result.exp_status;
+    new_ctx->group_result.exp_result = ctx->current_result.exp_result;
+    new_ctx->group_result.exp_status = ctx->current_result.exp_status;
 #endif
 
     new_ctx->current_result.id = ctx->current_result.id;
     te_test_result_init(&new_ctx->current_result.result);
     /* new_ctx->current_result.status = 0; */
 #if WITH_TRC
-    new_ctx->current_result.exp_result = ctx->current_result.exp_result;
-    new_ctx->current_result.exp_status = ctx->current_result.exp_status;
+    new_ctx->current_result.exp_result = NULL;
+    new_ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
 #endif
 
     new_ctx->targets = ctx->targets;
@@ -307,10 +307,18 @@ tester_run_new_ctx(tester_run_data *data)
     new_ctx->group_result.id = tester_get_id();
     te_test_result_init(&new_ctx->group_result.result);
     new_ctx->group_result.status = TESTER_TEST_EMPTY;
+#if WITH_TRC
+    new_ctx->group_result.exp_result = NULL;
+    new_ctx->group_result.exp_status = TRC_VERDICT_UNKNOWN;
+#endif
 
     /* new_ctx->current_result.id = 0; */
     te_test_result_init(&new_ctx->current_result.result);
     /* new_ctx->current_result.status = 0; */
+#if WITH_TRC
+    new_ctx->current_result.exp_result = NULL;
+    new_ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
+#endif
 
     new_ctx->targets = data->targets;
     new_ctx->targets_free = FALSE;
@@ -1420,10 +1428,6 @@ run_pkg_start(run_item *ri, test_package *pkg,
     assert(~ctx->flags & TESTER_INLOGUE);
 
     ctx->group_result.id = ctx->current_result.id;
-#if WITH_TRC
-    ctx->group_result.exp_result = ctx->current_result.exp_result;
-    ctx->group_result.exp_status = ctx->current_result.exp_status;
-#endif
 
     rc = tester_get_sticky_reqs(&ctx->reqs, &pkg->reqs);
     if (rc != 0)
@@ -1467,10 +1471,6 @@ run_session_start(run_item *ri, test_session *session,
         if (ctx == NULL)
             return TESTER_CFG_WALK_FAULT;
         ctx->group_result.id = ctx->current_result.id;
-#if WITH_TRC
-        ctx->group_result.exp_result = ctx->current_result.exp_result;
-        ctx->group_result.exp_status = ctx->current_result.exp_status;
-#endif
     }
     ctx->current_result.id = 0; /* Just to catch errors */
 
@@ -2344,7 +2344,17 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         if (~ctx->flags & TESTER_NO_TRC)
         {
             /* Error string is overriden in any case */
-            if (ctx->current_result.exp_result == NULL)
+            /* 
+             * Sessions without name are not tracked by TRC and does not
+             * have expected result.
+             */
+            if (test_get_name(ri) == NULL)
+            {
+                assert(ri->type == RUN_ITEM_SESSION);
+                ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
+                ctx->current_result.error = NULL; 
+            }
+            else if (ctx->current_result.exp_result == NULL)
             {
                 assert(ctx->current_result.exp_status ==
                        TRC_VERDICT_UNKNOWN);
@@ -2366,7 +2376,6 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                     ctx->current_result.error = NULL;
                 else
                     ctx->current_result.error = "Unexpected test result(s)";
-                    
             }
             else if (trc_is_result_expected(ctx->current_result.exp_result,
                                             &ctx->current_result.result))
