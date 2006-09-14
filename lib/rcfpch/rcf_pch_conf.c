@@ -1271,10 +1271,10 @@ rcf_pch_rsrc_check_locks(const char *rsrc_ptrn)
     ret = glob(path_ptrn, GLOB_NOSORT, NULL, &gb);
     if (ret == 0)
     {
-        size_t   i;
+        int      i;
         te_errno rc = 0;
 
-        for (i = 0; i < gb.gl_pathc; ++i)
+        for (i = 0; i < (int)gb.gl_pathc; ++i)
         {
             rc = check_lock(gb.gl_pathv[i], TRUE);
             if (rc != 0)
