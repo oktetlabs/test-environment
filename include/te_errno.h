@@ -333,6 +333,7 @@ typedef enum {
     TE_ISCSI_TARGET,    /**< Error related to iSCSI target */   
     TE_TAD_PF_PACKET,   /**< TAD Ethernet over PF_PACKET sockets */
     TE_TAD_DLPI,        /**< TAD DLPI support */
+    TE_TOOL_EXT,        /**< External tools */
 } te_module;                             
 /*@}*/
 
@@ -417,6 +418,7 @@ te_rc_mod2str(te_errno err)
         MOD2STR(TA_EXT);
         MOD2STR(RPC);
         MOD2STR(ISCSI_TARGET);
+        MOD2STR(TOOL_EXT);
         case 0: return "";
         default:
             snprintf(unknown_module, sizeof(unknown_module),
