@@ -28,5 +28,5 @@ save_to_file1.c
 noinst_HEADERS=test_types.h
 
 # link flags for tests. 
-LDADD=-lndn -lasn 
+LDADD=-lndn -lasn -llogger_file -ltools
 

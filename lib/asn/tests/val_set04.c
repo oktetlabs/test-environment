@@ -1,9 +1,9 @@
 #include <stdio.h>
 
 #include "asn_impl.h"
+#include "logger_api.h"
 
-void te_log_message_va(void) {return;} 
-const char te_lgr_entity[] = "u";
+DEFINE_LGR_ENTITY("val_set04");
 
 
 asn_type my_sequence_of = {

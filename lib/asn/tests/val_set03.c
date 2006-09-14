@@ -1,14 +1,9 @@
 #include <stdio.h>
 
 #include "asn_impl.h"
+#include "logger_api.h"
 
-void te_log_message_va(void) {return;}
-
-
-
-
-
-const char te_lgr_entity[] = "u";
+DEFINE_LGR_ENTITY("val_set03");
 
 
 asn_named_entry_t my_entry_array [] = {

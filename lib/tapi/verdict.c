@@ -194,7 +194,7 @@ te_test_verdict(const char *fmt, ...)
     cm.offset = 0;
 
     va_start(ap, fmt);
-    rc = te_log_vprintf(&cm, fmt, ap);
+    rc = te_log_vprintf_old(&cm, fmt, ap);
     va_end(ap);
 
     if (rc == 0)

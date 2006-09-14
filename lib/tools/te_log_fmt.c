@@ -112,8 +112,6 @@ dump(const uint8_t *p, const uint8_t *q)
 #define TE_LOG_MSG_RAW_ARGS_GROW    4
 
 
-
-
 /**
  * Helper to call out->fmt when arguments should be specified by caller.
  *
@@ -134,90 +132,6 @@ te_log_msg_fmt(te_log_msg_out *out, const char *fmt, ...)
 
     return rc;
 }
-
-
-#if 0
-typedef struct te_log_msg_fmt_to_file {
-    struct te_log_msg_out   common;
-    FILE                   *file;
-} te_log_msg_fmt_to_file;
-
-
-#define TE_LOG_MSG_OUT_AS_FILE(_out) \
-    (((te_log_msg_fmt_to_file *)(_out))->file)
-
-
-static te_errno
-te_log_msg_fmt_file(te_log_msg_out *out, const char *fmt, va_list ap)
-{
-    FILE *f = TE_LOG_MSG_OUT_AS_FILE(out);
-
-    (void)vfprintf(f, fmt, ap);
-
-    return 0;
-}
-#if 0
-                    if (out->fmt != NULL)
-                    {
-                        TE_LOG_VPRINTF_FMT_FLUSH("\n");
-                        for (i = 0; i < len; i++)
-                        {
-                            TE_LOG_VPRINTF_FMT_FLUSH("%02hhX", base[i]);
-                            if ((i & 0xf) == 0xf)
-                            {
-                                TE_LOG_VPRINTF_FMT_FLUSH("\n");
-                            }
-                            else 
-                            {
-                                TE_LOG_VPRINTF_FMT_FLUSH(" ");
-                            }
-                        }
-                        TE_LOG_VPRINTF_FMT_FLUSH("\n");
-                    }
-                    fmt_start = s + 1;
-#endif
-                    {
-                        FILE   *fp;
-                        char    buf[1024];
-
-                        if ((fp = fopen(filename, "r")) == NULL)
-                        {
-                            TE_LOG_VPRINTF_FMT_FLUSH(
-                                " CANNOT OPEN FILE %s ", filename);
-                        }
-                        else
-                        {
-                            while (fgets(buf, sizeof(buf), fp) != NULL)
-                            {
-                                TE_LOG_VPRINTF_FMT_FLUSH("%s", buf);
-                            }
-                            (void)fclose(fp);
-                        }
-                    }
-                    fmt_start = s + 1;
-                if (TE_RC_GET_MODULE(arg) == 0)
-                {
-                     TE_LOG_VPRINTF_FMT_FLUSH("%s", te_rc_err2str(arg));
-                }
-                else
-                {
-                     TE_LOG_VPRINTF_FMT_FLUSH("%s-%s",
-                                              te_rc_mod2str(arg),
-                                              te_rc_err2str(arg));
-                }
-                fmt_start = s + 1;
-
-
-static const struct te_log_msg_out te_log_msg_out_file = {
-    te_log_msg_fmt_file,
-    NULL
-};
-
-
-static struct te_log_msg_to_file te_log_msg_to_stderr =
-    { te_log_msg_out_file, stderr };
-#endif
-
 
 
 /**
@@ -556,7 +470,7 @@ te_log_msg_raw_put_no_check(te_log_msg_raw_data *data,
         case TE_LOG_MSG_FMT_ARG_FILE:
         {
             int         fd = *(int *)addr;
-            char        buf[1];
+            char        buf[256];
             ssize_t     r;
 
             while ((len > 0) &&
@@ -679,15 +593,15 @@ te_log_msg_raw_put_string(te_log_msg_raw_data *data, const char *str)
 
 
 /**
-  * Preprocess and output message to log with special features parsing
-  *
-  * @param out      Output parameters
-  * @param fmt      Format string
-  * @param ap       Arguments for the format string
-  *
-  * @return Error code (see te_errno.h)
-  */
-static te_errno
+ * Preprocess and output message to log with special features parsing.
+ *
+ * @param out      Output parameters
+ * @param fmt      Format string
+ * @param ap       Arguments for the format string
+ *
+ * @return Error code (see te_errno.h)
+ */
+te_errno
 te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
 {
     const char * const flags = "#0+- '";
@@ -740,8 +654,12 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
         }                                                   \
         if (out->raw != NULL)                               \
         {                                                   \
+            char _tmp = s[1];                               \
+                                                            \
+            ((char *)s)[1] = '\0';                          \
             out->raw(out, fmt_start, s - fmt_start + 1,     \
                      _type, _addr, _len);                   \
+            ((char *)s)[1] = _tmp;                          \
         }                                                   \
         fmt_start = s + 1;                                  \
         va_end(ap_start);                                   \
@@ -1088,97 +1006,3 @@ te_log_message_raw_va(te_log_msg_raw_data *data,
 
     return 0;
 }
-
-#if 0
-/**
-  * Preprocess and output message to log with special features parsing
-  *
-  * @param out      Output parameters
-  * @param level    Log levelt
-  * @param ts_sec   Timestamp seconds
-  * @param ts_usec  Timestamp microseconds
-  * @param entity   Entity name
-  * @param user     User name
-  * @param fmt      Format string
-  * @param ap       Arguments for the format string
-  *
-  * @return Error code (see te_errno.h)
-  */
-te_errno
-te_log_message_file_va(te_log_msg_out *out, te_log_level level,
-                       te_log_ts_sec ts_sec, te_log_ts_usec ts_usec,
-                       const char *entity, const char *user,
-                       const char *fmt, va_list ap)
-{
-    FILE *f;
-
-    if (out == NULL)
-        return TE_EINVAL;
-
-    f = TE_LOG_MSG_OUT_AS_FILE(out);
-
-    fputc('\n', f);
-    fputs(te_log_level2str(level), f);
-    fputs("  ", f);
-    fputs(entity, f);
-    fputs("  ", f);
-    fputs(user, f);
-    fputs("  ", f);
-    fprintf(f, "%u.%u", ts_sec, ts_usec);
-    fputc('\n', f);
-
-    te_log_vprintf(out, fmt, ap);
-
-    fputc('\n', f);
-}
-#endif
-
-#if 0
-te_errno
-te_log_message_int(te_log_level level,
-                   te_log_ts_sec ts_sec, te_log_ts_usec ts_usec,
-                   const char *entity, const char *user,
-                   const char *fmt, ...)
-{
-    te_errno    rc;
-    va_list     ap;
-
-    va_start(ap, fmt);
-    rc = te_log_message_raw_va(level, ts_sec, ts_usec, entity, user,
-                           fmt, ap);
-    va_end(ap);
-
-    return rc;
-}
-#endif
-#if 0
-te_errno
-te_log_message_int2(te_log_msg_out *out, te_log_level level,
-                   te_log_ts_sec ts_sec, te_log_ts_usec ts_usec,
-                   const char *entity, const char *user,
-                   const char *fmt, ...)
-{
-    te_errno    rc;
-    va_list     ap;
-
-    va_start(ap, fmt);
-    rc = te_log_message_file_va(out, level, ts_sec, ts_usec, entity, user,
-                           fmt, ap);
-    va_end(ap);
-
-    return rc;
-}
-#endif
-
-#if 0
-int
-main(void)
-{
-    uint8_t mem[] = { 1, 2, 4, 5 };
-
-    te_log_message_int(2, 1, 1, "Entity", "User",
-                       "Log %d %Tm %10s %Tf",
-                       10, mem, sizeof(mem), "kuku", "/etc/resolv.conf");
-    return 0;
-}
-#endif

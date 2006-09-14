@@ -2,11 +2,10 @@
 
 #include "asn_usr.h"
 #include "ndn.h"
+#include "logger_api.h"
 
-char te_lgr_entity[] = "test";
+DEFINE_LGR_ENTITY("parse00");
 
-void te_log_message_va(void)
-{ ; }
 
 char buffer [10000];
 

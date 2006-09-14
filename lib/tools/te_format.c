@@ -185,8 +185,8 @@ msg_end_process(struct te_log_out_params *param)
   * FIXME: Many switches below do not have 'default'. It is not good.
   */
 te_errno
-te_log_vprintf(struct te_log_out_params *param,
-               const char *fmt, va_list ap)
+te_log_vprintf_old(struct te_log_out_params *param,
+                   const char *fmt, va_list ap)
 {
     const char * const flags = "#0+- '";
 

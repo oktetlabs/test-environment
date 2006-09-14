@@ -12,6 +12,7 @@ include_HEADERS = \
 	te_sockaddr.h \
 	te_shell_cmd.h \
 	te_log_fmt.h \
+	logger_file.h \
 	te_format.h \
 	te_iscsi.h \
 	tq_string.h \
@@ -36,11 +37,12 @@ install-exec-hook:
             rm $(lib_LIBRARIES) ; $(MAKE) install ; \
         fi
 
-EXTRA_DIST=te_shell_cmd.c te_log_fmt.c log_bufs.c
+EXTRA_DIST = te_shell_cmd.c te_log_fmt.c te_log_file.c log_bufs.c \
+             tq_string.c logger_file.c
 
 else
 
-lib_LTLIBRARIES = libtools.la liblog_bufs.la
+lib_LTLIBRARIES = libtools.la liblog_bufs.la liblogger_file.la
 
 libtools_la_SOURCES = \
 	te_bufs.c \
@@ -48,13 +50,18 @@ libtools_la_SOURCES = \
 	te_sockaddr.c \
 	te_shell_cmd.c \
 	te_log_fmt.c \
+	te_log_file.c \
 	te_format.c \
 	tq_string.c
 
 liblog_bufs_la_SOURCES = log_bufs.c
 
+liblogger_file_la_SOURCES = logger_file.c
+
 install-exec-hook:
-	touch -c -r libtools.la $(DESTDIR)/$(libdir)/libtools.*
+	for i in $(lib_LTLIBRARIES) ; do \
+		touch -c -r $$i $(DESTDIR)/$(libdir)/$${i/.la/}.* ; \
+	done
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

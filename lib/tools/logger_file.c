@@ -37,5 +37,5 @@
 #include "logger_file.h"
 
 
-/** Logging backend */
+/** Logging backend for standalone TE off-line applications */
 te_log_message_f te_log_message_va = te_log_message_file;

@@ -9,11 +9,11 @@ bin_PROGRAMS = te-trc-report
 
 te_trc_report_SOURCES = main.c log_parse.c report_html.c
 
-te_trc_report_LDADD = -ltrc -llogic_expr -ltools -llogger_stderr \
+te_trc_report_LDADD = -ltrc -llogic_expr -llogger_file -ltools \
                       -lpopt @XML2_LIBS@ @TE_LDADD@
 
 te_trc_report_DEPENDENCIES = @TE_DEPENDENCIES@ \
 	$(DESTDIR)/$(libdir)/libtrc.a \
 	$(DESTDIR)/$(libdir)/liblogic_expr.a \
-	$(DESTDIR)/$(libdir)/libtools.a \
-	$(DESTDIR)/$(libdir)/liblogger_stderr.a
+	$(DESTDIR)/$(libdir)/liblogger_file.a \
+	$(DESTDIR)/$(libdir)/libtools.a

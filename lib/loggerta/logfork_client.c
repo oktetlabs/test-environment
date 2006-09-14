@@ -208,7 +208,7 @@ logfork_log_message(const char *file, unsigned int line,
 
     memset(&msg, 0, sizeof(msg));
 
-    (void)te_log_vprintf(&cm, fmt, ap);
+    (void)te_log_vprintf_old(&cm, fmt, ap);
 
     msg.pid = getpid();
     msg.tid = thread_self();

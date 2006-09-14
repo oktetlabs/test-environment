@@ -105,6 +105,21 @@ struct te_log_msg_out {
                                          with one argument in raw mode */
 };
 
+/**
+ * Preprocess and output message to log with special features parsing.
+ *
+ * @param out      Output parameters
+ * @param fmt      Format string
+ * @param ap       Arguments for the format string
+ *
+ * @return Error code (see te_errno.h)
+ */
+extern te_errno te_log_vprintf(te_log_msg_out *out,
+                               const char *fmt, va_list ap);
+
+
+
+
 /** Raw log version of backend common parameters */
 extern const struct te_log_msg_out te_log_msg_out_raw;
 

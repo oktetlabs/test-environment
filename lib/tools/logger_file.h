@@ -41,11 +41,11 @@
 extern "C" {
 #endif
 
-/** File to write log messages. */
+/** File stream to write log messages. */
 extern FILE *te_log_message_file_out;
 
 /**
- * Log message to the file @e te_log_message_file_out.
+ * Log message to the file stream @e te_log_message_file_out.
  *
  * This function complies with te_log_message_f prototype.
  */

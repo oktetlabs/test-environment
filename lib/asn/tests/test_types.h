@@ -30,10 +30,9 @@
 
 #include "te_errno.h"
 #include "asn_impl.h"
+#include "logger_api.h"
 
-char *te_lgr_entity = "test";
-
-void te_log_message_va(void) {return ;}
+DEFINE_LGR_ENTITY("(test)");
 
 enum {
     SEQ_NUMBER_TAG,

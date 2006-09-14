@@ -9,16 +9,13 @@ AM_LDFLAGS = @TE_LDFLAGS@
 include_HEADERS = logger_ten.h logger_ten_int.h
 
 
-lib_LTLIBRARIES = liblogger_ten.la liblogger_stderr.la
+lib_LTLIBRARIES = liblogger_ten.la
 
 liblogger_ten_la_SOURCES = logger_ten.c
-
-liblogger_stderr_la_SOURCES = logger_stderr.c
 
 
 install-exec-hook:
 	touch -c -r liblogger_ten.la $(DESTDIR)/$(libdir)/liblogger_ten.*
-	touch -c -r liblogger_stderr.la $(DESTDIR)/$(libdir)/liblogger_stderr.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

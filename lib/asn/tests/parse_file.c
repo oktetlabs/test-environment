@@ -1,12 +1,9 @@
 #include <stdio.h>
 
 #include "ndn.h"
+#include "logger_api.h"
 
-char te_lgr_entity[] = "test";
-
-int te_log_message_va(void)
-{ ; }
-
+DEFINE_LGR_ENTITY("parse_file");
 
 
 int 

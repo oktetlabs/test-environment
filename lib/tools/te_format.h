@@ -44,7 +44,7 @@
 #include "te_errno.h"
 
 
-/** Parameters for te_log_vprintf() function */
+/** Parameters for te_log_vprintf_old() function */
 struct te_log_out_params {
     FILE       *fp;     /**< Output file; if NULL, no file output */
     uint8_t    *buf;    /**< Output buffer; if NULL, no buffer output */
@@ -61,7 +61,7 @@ struct te_log_out_params {
   *
   * @return             N/A
   */
-extern te_errno te_log_vprintf(struct te_log_out_params *param,
-                              const char *fmt, va_list ap);
+extern te_errno te_log_vprintf_old(struct te_log_out_params *param,
+                                   const char *fmt, va_list ap);
 
 #endif /* !__TE_TOOLS_FORMAT_H__ */
