@@ -33,7 +33,7 @@
 
 char *te_lgr_entity = "test";
 
-void te_log_message(void) {return ;}
+void te_log_message_va(void) {return ;}
 
 enum {
     SEQ_NUMBER_TAG,

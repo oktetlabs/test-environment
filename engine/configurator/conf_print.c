@@ -117,9 +117,8 @@ cfg_db_tree_print(const char *filename,
         root = (void *)cfg_get_ins_by_ins_id_str(id);
     if (root == NULL)
     {
-        te_log_message(__FILE__, __LINE__,
-                       log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
-                       "no node with id string: %s\n", id);
+        TE_LOG(log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
+               "no node with id string: %s\n", id);
         return TE_RC(TE_CS, TE_EINVAL);
     }
 
@@ -134,9 +133,8 @@ cfg_db_tree_print(const char *filename,
     }
     /* Wanted to keep the "title" separate from the buffer: */
     if (log_lvl != 0)
-        te_log_message(__FILE__, __LINE__,
-                       log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
-                       "tree of %s %s:\n%s", title[which], id, buf);
+        TE_LOG(log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
+               "tree of %s %s:\n%s", title[which], id, buf);
     if (filename != NULL)
     {
         if ((f = fopen(filename, "w")) == NULL)
@@ -311,9 +309,8 @@ cfg_db_obj_print_deps(const char *filename,
     obj = cfg_get_obj_by_obj_id_str(id);
     if (obj == NULL)
     {
-        te_log_message(__FILE__, __LINE__,
-                       log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
-                       "no node with id string: %s\n", id);
+        TE_LOG(log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
+               "no node with id string: %s\n", id);
         return TE_RC(TE_CS, TE_EINVAL);
     }
 
@@ -325,8 +322,7 @@ cfg_db_obj_print_deps(const char *filename,
     }
 
     if (log_lvl != 0)
-        te_log_message(__FILE__, __LINE__,
-                       log_lvl, TE_LGR_ENTITY, TE_LGR_USER, "%s", buf);
+        TE_LOG(log_lvl, TE_LGR_ENTITY, TE_LGR_USER, "%s", buf);
     if (filename != NULL)
     {
         if ((f = fopen(filename, "w")) == NULL)

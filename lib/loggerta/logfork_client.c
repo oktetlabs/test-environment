@@ -191,10 +191,10 @@ logfork_register_user(const char *name)
  */
 void 
 logfork_log_message(const char *file, unsigned int line,
+                    te_log_ts_sec sec, te_log_ts_usec usec,
                     unsigned int level, const char *entity,
-                    const char *user, const char *fmt, ...)
+                    const char *user, const char *fmt, va_list ap) 
 {
-    va_list     ap;
     logfork_msg msg;
     
     static te_bool init = FALSE;
@@ -208,14 +208,14 @@ logfork_log_message(const char *file, unsigned int line,
 
     memset(&msg, 0, sizeof(msg));
 
-    va_start(ap, fmt);
     (void)te_log_vprintf(&cm, fmt, ap);
-    va_end(ap);
 
     msg.pid = getpid();
     msg.tid = thread_self();
     msg.is_notif = FALSE;
     strncpy(msg.__lgr_user, user, sizeof(msg.__lgr_user) - 1);
+    msg.__log_sec = sec;
+    msg.__log_usec = usec;
     msg.__log_level = level;
     
     if (!init && logfork_clnt_sockd == -1)

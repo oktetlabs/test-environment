@@ -100,7 +100,7 @@ sem_t           ta_log_sem;
 #endif
 
 /** Logging backend */
-te_log_message_f te_log_message = logfork_log_message;
+te_log_message_f te_log_message_va = logfork_log_message;
 
 static const char  *skip_flags = "#-+ 0";
 static const char  *skip_width = "*0123456789";
@@ -113,10 +113,10 @@ static const char  *skip_width = "*0123456789";
  */
 static void
 ta_log_message(const char *file, unsigned int line,
-               unsigned int level, const char *entity, 
-               const char *user, const char *fmt, ...)
+               te_log_ts_sec sec, te_log_ts_usec usec,
+               unsigned int level, const char *entity, const char *user,
+               const char *fmt, va_list ap) 
 {
-    va_list             ap;
     ta_log_lock_key     key;
     uint32_t            position;
     int                 res;
@@ -133,8 +133,6 @@ ta_log_message(const char *file, unsigned int line,
     UNUSED(file);
     UNUSED(line);
     UNUSED(entity);
-    
-    va_start(ap, fmt);
     
     memset(&header, 0, sizeof(struct lgr_mess_header));
     header.level = level;
@@ -238,7 +236,8 @@ ta_log_message(const char *file, unsigned int line,
     header.sequence = hdr_addr->sequence;
     header.mark = hdr_addr->mark;
 
-    ta_log_timestamp(&header.sec, &header.usec);
+    header.sec = sec;
+    header.usec = usec;
 
     *hdr_addr = header;
 
@@ -268,7 +267,6 @@ ta_log_message(const char *file, unsigned int line,
 
 resume:
     LGR_FREE_MD_LIST(cp_list);
-    va_end(ap);
 }
 
 
@@ -565,7 +563,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
 static void
 log_atfork_child(void)
 {
-    te_log_message = logfork_log_message;
+    te_log_message_va = logfork_log_message;
 }
 
 /**
@@ -591,7 +589,7 @@ ta_log_init(void)
     if (lgr_rb_init(&log_buffer) != 0)
         return -1;
 
-    te_log_message = ta_log_message;
+    te_log_message_va = ta_log_message;
 
     return 0;
 }

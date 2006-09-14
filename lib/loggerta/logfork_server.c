@@ -292,10 +292,12 @@ logfork_entry(void)
                 TE_SPRINTF(name_pid, "%s.%u.%u",
                            name, (unsigned)msg.pid, (unsigned)msg.tid);
 
-                te_log_message(__FILE__, __LINE__,
-                               msg.__log_level, TE_LGR_ENTITY, 
-                               strdup(msg.__lgr_user), 
-                               "%s: %s", name_pid, msg.__log_msg);
+                /* FIXME: Memory leak here */
+                te_log_message_ts(__FILE__, __LINE__, 
+                                  msg.__log_sec, msg.__log_usec,
+                                  msg.__log_level, TE_LGR_ENTITY, 
+                                  strdup(msg.__lgr_user), 
+                                  "%s: %s", name_pid, msg.__log_msg);
             }
             else 
             {

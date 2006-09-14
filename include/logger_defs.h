@@ -34,11 +34,20 @@
 #ifndef __TE_LOGGER_DEFS_H__
 #define __TE_LOGGER_DEFS_H__
 
-#include "te_raw_log.h"
-
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#if HAVE_TIME_H
+#include <time.h>
+#endif
+
+#include "te_raw_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -177,23 +186,70 @@ te_log_level2str(te_log_level level)
  *
  * @param file      Name of the file with the log message
  * @param line      Line in the @a file with the log message
+ * @param sec       Timestamp seconds
+ * @param usec      Timestamp microseconds
  * @param level     Log level
  * @param entity    Entity name whose user generates this message
  * @param user      Arbitrary "user name"
  * @param fmt       Log message format string. This string should contain
  *                  conversion specifiers if some arguments follows
- * @param ...       Arguments passed into the function according
+ * @param ap        Arguments passed into the function according
  *                  to log message format string
  */
-typedef void (* te_log_message_f)(const char   *file,
-                                  unsigned int  line,
-                                  unsigned int  level,
-                                  const char   *entity,
-                                  const char   *user,
-                                  const char   *fmt, ...);
+typedef void (* te_log_message_f)(const char       *file,
+                                  unsigned int      line,
+                                  te_log_ts_sec     sec,
+                                  te_log_ts_usec    usec,
+                                  unsigned int      level,
+                                  const char       *entity,
+                                  const char       *user,
+                                  const char       *fmt,
+                                  va_list           ap);
 
 /** Logging backend */
-extern te_log_message_f te_log_message;
+extern te_log_message_f te_log_message_va;
+
+/**
+ * Wrapper for te_log_message_va().
+ *
+ * All parameters are transparently forwarded to te_log_message_va()
+ * which complies to te_log_message_f prototype.
+ */
+static inline void
+te_log_message_ts(const char *file, unsigned int line,
+                  te_log_ts_sec sec, te_log_ts_usec usec,
+                  unsigned int level,
+                  const char *entity, const char *user,
+                  const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    te_log_message_va(file, line, sec, usec, level, entity, user,
+                      fmt, ap);
+    va_end(ap);
+}
+
+/**
+ * Wrapper for te_log_message_va() to get log message timestamp.
+ *
+ * All parameters are transparently forwarded to te_log_message_va()
+ * which complies to te_log_message_f prototype.
+ */
+static inline void
+te_log_message(const char *file, unsigned int line, unsigned int level,
+               const char *entity, const char *user, const char *fmt, ...)
+{
+    struct timeval  tv;
+    va_list         ap;
+
+    (void)gettimeofday(&tv, NULL);
+
+    va_start(ap, fmt);
+    te_log_message_va(file, line, tv.tv_sec, tv.tv_usec, level,
+                      entity, user, fmt, ap);
+    va_end(ap);
+}
 
 
 #ifdef __cplusplus

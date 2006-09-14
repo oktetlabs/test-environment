@@ -70,11 +70,10 @@ static te_log_msg_raw_data lgr_out;
  */
 static void
 lgr_log_message(const char *file, unsigned int line,
+                te_log_ts_sec sec, te_log_ts_usec usec,
                 unsigned int level, const char *entity, 
-                const char *user, const char *fmt, ...)
+                const char *user, const char *fmt, va_list ap)
 {
-    va_list ap;
-
     pthread_mutex_lock(&lgr_lock);
 
     if (te_log_message_tx == NULL)
@@ -88,12 +87,11 @@ lgr_log_message(const char *file, unsigned int line,
         lgr_out.args = NULL;
     }
 
-    va_start(ap, fmt);
-    log_message_va(&lgr_out, file, line, level, entity, user, fmt, ap);
-    va_end(ap);
+    log_message_va(&lgr_out, file, line, sec, usec, level, entity, user,
+                   fmt, ap);
 
     pthread_mutex_unlock(&lgr_lock);
 }
 
 /** Logging backend */
-te_log_message_f te_log_message = lgr_log_message;
+te_log_message_f te_log_message_va = lgr_log_message;

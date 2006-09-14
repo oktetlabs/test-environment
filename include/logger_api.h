@@ -36,6 +36,13 @@
 
 
 /**
+ * Unconditional logging.
+ */
+#define TE_LOG(_level, _entity, _user, _fs...) \
+    te_log_message(__FILE__, __LINE__, _level, _entity, _user, _fs)
+        
+
+/**
  * Log message of the specified level from the user.
  *
  * @note This macro is intended for internal purposes and should not
@@ -46,12 +53,11 @@
  * @param _fs       - format string and arguments
  */
 #define LGR_MESSAGE(_lvl, _lgruser, _fs...) \
-    do {                                                        \
-        if (TE_LOG_LEVEL & (_lvl))                              \
-        {                                                       \
-            te_log_message(__FILE__, __LINE__,                  \
-                           _lvl, TE_LGR_ENTITY, _lgruser, _fs); \
-        }                                                       \
+    do {                                                \
+        if (TE_LOG_LEVEL & (_lvl))                      \
+        {                                               \
+            TE_LOG(_lvl, TE_LGR_ENTITY, _lgruser, _fs); \
+        }                                               \
     } while (0)
 
 /** Log message from default user with specified level. */
@@ -89,57 +95,56 @@
 /*@}*/
 
 /** @name Logging of entry to and exit from function */
+/**
+ * Auxiliary macro to insert __FUNCTION__ just after
+ * format string before arguments.
+ */
 #define _LOG_ENTRY(_us, _fs, _args...) \
-    do {                            \
-        te_log_message(__FILE__, __LINE__,                              \
-                       TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,            \
-                       "ENTRY to %s(): " _fs, __FUNCTION__, _args + 0); \
-    } while (0)
+    TE_LOG(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,                \
+           "ENTRY to %s(): " _fs, __FUNCTION__, _args + 0)
 
 #define TE_LOG_ENTRY(_us, _fs...) \
-    do {                                                                \
-        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                            \
-        {                                                               \
-            if (!!(#_fs[0]))                                            \
-            {                                                           \
-                _LOG_ENTRY(_us, _fs);                                   \
-            }                                                           \
-            else                                                        \
-            {                                                           \
-                te_log_message(__FILE__, __LINE__,                      \
-                               TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,    \
-                               "ENTRY to %s()", __FUNCTION__);          \
-            }                                                           \
-        }                                                               \
+    do {                                                        \
+        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                    \
+        {                                                       \
+            if (!!(#_fs[0]))                                    \
+            {                                                   \
+                _LOG_ENTRY(_us, _fs);                           \
+            }                                                   \
+            else                                                \
+            {                                                   \
+                TE_LOG(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,    \
+                       "ENTRY to %s()", __FUNCTION__);          \
+            }                                                   \
+        }                                                       \
     } while (0)
 
 #define ENTRY(_fs...)  TE_LOG_ENTRY(TE_LGR_USER, _fs)
 
+/**
+ * Auxiliary macro to insert __LINE__ and __FUNCTION__ just after
+ * format string before arguments.
+ */
 #define _LOG_EXIT(_us, _fs, _args...) \
-    do {                                                            \
-        te_log_message(__FILE__, __LINE__,                          \
-                       TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,        \
-                       "EXIT in line %d from %s(): " _fs,           \
-                       __LINE__, __FUNCTION__, _args + 0);          \
-    } while (0)
-        
+    TE_LOG(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,                \
+           "EXIT in line %d from %s(): " _fs,                   \
+           __LINE__, __FUNCTION__, _args + 0)
 
 #define TE_LOG_EXIT(_us, _fs...) \
-    do {                                                            \
-        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                        \
-        {                                                           \
-            if (!!(#_fs[0]))                                        \
-            {                                                       \
-                _LOG_EXIT(_us, _fs);                                \
-            }                                                       \
-            else                                                    \
-            {                                                       \
-                te_log_message(__FILE__, __LINE__,                  \
-                               TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,\
-                               "EXIT in line %d from %s()",         \
-                                __LINE__, __FUNCTION__);            \
-            }                                                       \
-        }                                                           \
+    do {                                                        \
+        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                    \
+        {                                                       \
+            if (!!(#_fs[0]))                                    \
+            {                                                   \
+                _LOG_EXIT(_us, _fs);                            \
+            }                                                   \
+            else                                                \
+            {                                                   \
+                TE_LOG(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,    \
+                       "EXIT in line %d from %s()",             \
+                       __LINE__, __FUNCTION__);                 \
+            }                                                   \
+        }                                                       \
     } while (0)
 
 #define EXIT(_fs...)  TE_LOG_EXIT(TE_LGR_USER, _fs)

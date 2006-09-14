@@ -55,31 +55,30 @@ const char *te_lgr_entity = "iSCSI standalone target";
 static FILE *logfile;
 
 static void
-stderr_logging(const char   *file,
-               unsigned int  line,
-               unsigned int  level,
-               const char   *entity,
-               const char   *user,
-               const char   *fmt, ...)
+stderr_logging(const char *file, unsigned int line,
+               te_log_ts_sec sec, te_log_ts_usec usec,
+               unsigned int level, const char *entity, const char *user,
+               const char *fmt, va_list ap)
 {
-    time_t  curtime;
+    time_t  curtime = sec;
     va_list args;
 
-    va_start(args, fmt);
     UNUSED(file);
     UNUSED(line);
     UNUSED(entity);
     UNUSED(user);
-    fprintf(stderr, "[%d] ", level);
+
+    fprintf(stderr, "[%d %s %u us] ",
+            level, ctime(&curtime), (unsigned)usec);
+    va_copy(args, ap);
     vfprintf(stderr, fmt, args);
+    va_end(args);
     fputc('\n', stderr);
-    va_end(args);
-    va_start(args, fmt);
-    time(&curtime);
-    fprintf(logfile, "[%d %s] ", level, ctime(&curtime));
-    vfprintf(logfile, fmt, args);
+
+    fprintf(logfile, "[%d %s %u us] ",
+            level, ctime(&curtime), (unsigned)usec);
+    vfprintf(logfile, fmt, ap);
     fputc('\n', logfile);
-    va_end(args);
 }
 
 static sig_atomic_t need_async;
@@ -91,7 +90,7 @@ send_async_message(int signo)
     need_async = 1;
 }
 
-te_log_message_f te_log_message = stderr_logging;
+te_log_message_f te_log_message_va = stderr_logging;
 
 extern int iscsi_server_init();
 

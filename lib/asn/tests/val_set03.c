@@ -2,7 +2,7 @@
 
 #include "asn_impl.h"
 
-void te_log_message(void) {return;}
+void te_log_message_va(void) {return;}
 
 
 

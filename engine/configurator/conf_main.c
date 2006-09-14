@@ -1186,9 +1186,8 @@ verify_backup(const char *backup, te_bool log, const char *msg)
         else if (log)
         {
             if (cs_flags & CS_LOG_DIFF)
-                te_log_message(__FILE__, __LINE__,
-                               TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
-                               "Backup diff:\n%Tf", diff_file);
+                TE_LOG(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
+                       "Backup diff:\n%Tf", diff_file);
             else
                 INFO("Backup diff:\n%Tf", diff_file);
         }

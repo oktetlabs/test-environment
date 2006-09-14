@@ -93,11 +93,13 @@ static te_log_msg_raw_data lgr_out;
 
 
 static void ten_log_message(const char *file, unsigned int line,
-                            unsigned int level, const char *entity,
-                            const char *user, const char *fmt, ...);
+                            te_log_ts_sec sec, te_log_ts_usec usec,
+                            unsigned int level,
+                            const char *entity, const char *user,
+                            const char *fmt, va_list ap); 
 
 /** Logging backend */
-te_log_message_f te_log_message = ten_log_message;
+te_log_message_f te_log_message_va = ten_log_message;
 
 
 /**
@@ -124,11 +126,11 @@ log_message_ipc(const void *msg, size_t len)
  */
 static void
 ten_log_message(const char *file, unsigned int line,
-                unsigned int level, const char *entity,
-                const char *user, const char *fmt, ...)
+                te_log_ts_sec sec, te_log_ts_usec usec,
+                unsigned int level,
+                const char *entity, const char *user,
+                const char *fmt, va_list ap) 
 {
-    va_list ap;
-
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&lgr_lock);
 #endif
@@ -162,9 +164,8 @@ ten_log_message(const char *file, unsigned int line,
         lgr_out.args = NULL;
     }
 
-    va_start(ap, fmt);
-    log_message_va(&lgr_out, file, line, level, entity, user, fmt, ap);
-    va_end(ap);
+    log_message_va(&lgr_out, file, line, sec, usec, level, entity, user,
+                   fmt, ap);
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&lgr_lock);

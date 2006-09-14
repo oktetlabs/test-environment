@@ -58,17 +58,21 @@ typedef struct logfork_msg {
             char name[LOGFORK_MAXUSER]; /** Logfork user name */
         } notify;
         struct {
-            int  log_level;                /**< Log level */
-            char lgr_user[32];             /**< Log user  */
-            char log_msg[LOGFORK_MAXLEN];  /**< Message   */
+            te_log_ts_sec   sec;                  /**< Seconds */
+            te_log_ts_usec  usec;                 /**< Microseconds */
+            unsigned int    level;                /**< Log level */
+            char            user[32];             /**< Log user */
+            char            msg[LOGFORK_MAXLEN];  /**< Message */
         } log;
     } msg;
 } logfork_msg;
 
 /** Macros for fast access to structure fields */
-#define __log_level  msg.log.log_level
-#define __lgr_user   msg.log.lgr_user
-#define __log_msg    msg.log.log_msg 
+#define __log_sec    msg.log.sec
+#define __log_usec   msg.log.usec
+#define __log_level  msg.log.level
+#define __lgr_user   msg.log.user
+#define __log_msg    msg.log.msg 
 #define __name       msg.notify.name
 
 #ifdef __cplusplus

@@ -33,14 +33,15 @@
 
 DEFINE_LGR_ENTITY("(win32_rpcserver)");
 
+/* FIXME: Include header */
 extern void logfork_log_message(const char *file, unsigned int line,
+                                te_log_ts_sec sec, te_log_ts_usec usec,
                                 unsigned int level,
-                                const char *entity,
-                                const char *user,
-                                const char *fmt, ...);
+                                const char *entity, const char *user,
+                                const char *fmt, va_list ap);
 
 
-te_log_message_f te_log_message = logfork_log_message;
+te_log_message_f te_log_message_va = logfork_log_message;
 
 #ifdef WINDOWS
 

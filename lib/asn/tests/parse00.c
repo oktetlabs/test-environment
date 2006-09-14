@@ -5,7 +5,7 @@
 
 char te_lgr_entity[] = "test";
 
-int te_log_message(void)
+void te_log_message_va(void)
 { ; }
 
 char buffer [10000];

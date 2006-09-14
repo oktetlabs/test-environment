@@ -962,10 +962,9 @@ run_test_script(test_script *script, test_id exec_id,
         }
         if (flags & TESTER_VALGRIND)
         {
-            te_log_message(__FILE__, __LINE__,
-                           TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
-                           "Standard error output of the script with "
-                           "ID=%d:\n%Tf", exec_id, vg_filename);
+            TE_LOG(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
+                   "Standard error output of the script with ID=%d:\n"
+                   "%Tf", exec_id, vg_filename);
         }
     }
 

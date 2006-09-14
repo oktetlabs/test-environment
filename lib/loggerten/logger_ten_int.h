@@ -75,6 +75,7 @@ static te_log_message_tx_f te_log_message_tx = NULL;
 /* See description below */
 static void log_message_va(te_log_msg_raw_data *out,
                            const char *file, unsigned int line,
+                           te_log_ts_sec sec, te_log_ts_usec usec,
                            unsigned int level,
                            const char *entity, const char *user,
                            const char *fmt, va_list ap);
@@ -93,10 +94,14 @@ log_message_int(te_log_msg_raw_data *out,
                 const char *entity, const char *user,
                 const char *fmt, ...)
 {
-    va_list ap;
+    va_list         ap;
+    struct timeval  tv;
+
+    (void)gettimeofday(&tv, NULL);
 
     va_start(ap, fmt);
-    log_message_va(out, file, line, level, entity, user, fmt, ap);
+    log_message_va(out, file, line, tv.tv_sec, tv.tv_usec,
+                   level, entity, user, fmt, ap);
     va_end(ap);
 }
 
@@ -112,22 +117,18 @@ log_message_int(te_log_msg_raw_data *out,
 static void
 log_message_va(te_log_msg_raw_data *out, 
                const char *file, unsigned int line,
+               te_log_ts_sec sec, te_log_ts_usec usec,
                unsigned int level,
                const char *entity, const char *user,
                const char *fmt, va_list ap)
 {
-    te_bool         msg_trunc = FALSE;
-    struct timeval  tv;
-
-    gettimeofday(&tv, NULL);
-
-    te_log_message_raw_va(out, tv.tv_sec, tv.tv_usec, level,
+    te_log_message_raw_va(out, sec, usec, level,
                           te_test_id, entity, user, fmt, ap);
 
     assert(te_log_message_tx != NULL);
     te_log_message_tx(out->buf, out->ptr - out->buf);
 
-    if (msg_trunc)
+    if (out->trunc)
     {
         log_message_int(out, __FILE__, __LINE__,
                         TE_LL_WARN, te_lgr_entity, TE_LGR_USER,

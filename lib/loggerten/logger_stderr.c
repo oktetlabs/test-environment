@@ -55,11 +55,13 @@
 
 
 static void stderr_log_message(const char *file, unsigned int line,
-                               unsigned int level, const char *entity,
-                               const char *user, const char *fmt, ...);
+                               te_log_ts_sec sec, te_log_ts_usec usec,
+                               unsigned int level,
+                               const char *entity, const char *user,
+                               const char *fmt, va_list ap); 
 
 /** Logging backend */
-te_log_message_f te_log_message = stderr_log_message;
+te_log_message_f te_log_message_va = stderr_log_message;
 
 
 /**
@@ -69,13 +71,18 @@ te_log_message_f te_log_message = stderr_log_message;
  */
 static void
 stderr_log_message(const char *file, unsigned int line,
-                   unsigned int level, const char *entity,
-                   const char *user, const char *fmt, ...)
+                   te_log_ts_sec sec, te_log_ts_usec usec,
+                   unsigned int level,
+                   const char *entity, const char *user,
+                   const char *fmt, va_list ap) 
 {
     UNUSED(file);
     UNUSED(line);
+    UNUSED(sec);
+    UNUSED(usec);
     UNUSED(level);
     UNUSED(entity);
     UNUSED(user);
     UNUSED(fmt);
+    UNUSED(ap);
 }
