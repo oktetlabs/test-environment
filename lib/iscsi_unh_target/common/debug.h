@@ -36,6 +36,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdarg.h>
 #include "te_defs.h"
 #include "logger_api.h"
 #include "logger_defs.h"
