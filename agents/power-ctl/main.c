@@ -582,7 +582,7 @@ main(int argc, char **argv)
     char        buf[16];
     const char *unit_netaddr_str;
 
-    fprintf(stderr, "Starting power agent");
+    fprintf(stderr, "Starting power agent\n");
     if (argc < 4)
     {
         fprintf(stderr, "Invalid number of arguments\n");
