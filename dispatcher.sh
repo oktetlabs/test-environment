@@ -496,6 +496,11 @@ if test -z "$TE_BUILD" ; then
             fi
         fi
     fi
+elif test ! -e "${TE_BUILD}" ; then
+    mkdir -p "${TE_BUILD}" || exit 1
+elif test ! -d "${TE_BUILD}" ; then
+    echo "${TE_BUILD} is not a directory" >&2
+    exit 1
 fi
 export TE_BUILD
 pushd "${TE_BUILD}" >/dev/null
