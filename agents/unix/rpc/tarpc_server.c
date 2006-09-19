@@ -105,6 +105,11 @@ tarpc_setlibname(const char *libname)
                                     RTLD_LAZY);
     if (dynamic_library_handle == NULL)
     {
+        if (*libname == 0)
+        {
+            dynamic_library_set = TRUE;
+            return 0;
+        }    
         ERROR("Cannot load shared library '%s': %s", libname, dlerror());
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
@@ -158,7 +163,9 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
     te_errno    rc;
     void       *handle;
     te_bool     use_libc = FALSE;
-
+    
+    *func = NULL;
+    
     /* FIXME */
     if (strcmp(name, "getpid") == 0)
     {
@@ -187,13 +194,17 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
     if (use_libc)
     {
         static void *libc_handle = NULL;
-
+        static te_bool dlopen_null = FALSE;
+        
+        if (dlopen_null)
+            goto try_ta_symtbl;
+            
         if (libc_handle == NULL)
         {
             if ((libc_handle = dlopen(NULL, RTLD_LAZY)) == NULL)
             {
-                ERROR("dlopen() failed for myself: %s", dlerror());
-                return TE_RC(TE_TA_UNIX, TE_ENOENT);
+                dlopen_null = TRUE;
+                goto try_ta_symtbl;
             }
         }
         handle = libc_handle;
@@ -232,9 +243,9 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
     if (*lib != '\0' && !use_libc)
         dlclose(handle);
     
+    try_ta_symtbl:
     if (*func == NULL)
     {
-        VERB("Cannot resolve symbol %s in libraries: %s", name, dlerror());
         if ((*func = rcf_ch_symbol_addr(name, 1)) == NULL)
         {
             ERROR("Cannot resolve symbol %s", name);
@@ -5274,8 +5285,8 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
         memcpy(&mreq.imr_multiaddr, in->multiaddr.multiaddr_val,
                sizeof(struct in_addr));
 #if HAVE_STRUCT_IP_MREQN        
-        PRINT("Try to join a group (%d,%d)", mreq.imr_multiaddr,
-              mreq.imr_ifindex);
+        PRINT("Try to join a group (%x,%d)", 
+              *(unsigned int *)&mreq.imr_multiaddr, mreq.imr_ifindex);
 #endif        
         out->retval = setsockopt_func(in->fd, IPPROTO_IP,
                                       in->leave_group ?

@@ -44,4 +44,5 @@ ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a 
 
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
-	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
+	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" \
+            empty $(srcdir)/symtbl_funcs $@ $^ 

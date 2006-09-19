@@ -78,7 +78,8 @@ rpcserver_LDADD=rpcserver_symtbl.o $(TE_LDADD) -lrpcxdrta \
                 -lws2_32 -lmswsock -lwsock32 -liphlpapi 
 
 rpcserver_symtbl.c: tarpc_server.o common.o $(RPCSERVER_SYMTBL_ADD)
-	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
+	$(srcdir)/../../engine/builder/te_generate_symtbl \
+            "${NM}" empty empty $@ $^ 
 
 # Native build
 
@@ -157,5 +158,6 @@ endif
 # TA symbol table
 
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) $(TE_DEPENDENCIES)
-	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
+	$(srcdir)/../../engine/builder/te_generate_symtbl \
+            "${NM}" empty empty $@ $^ 
 

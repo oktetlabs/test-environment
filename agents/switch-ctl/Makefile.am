@@ -27,5 +27,5 @@ taswitch_ctl_DEPENDENCIES = @TE_DEPENDENCIES@ symtbl.o \
 
 
 symtbl.o: main.o conf.o @TE_DEPENDENCIES@
-	te_generate_symtbl ${NM} symtbl.c $^ 
+	te_generate_symtbl ${NM} empty empty symtbl.c $^ 
 	${CC} -c -o $@ symtbl.c

@@ -4,10 +4,14 @@
 #
 # Script for symbol table generation.
 #
-# Usage: builder_generate_symtbl "$(NM)" <out C file name> <list of TA objects>
+# Usage: builder_generate_symtbl "$(NM)" 
+#                                <file with names of additional variables> \
+#                                <file with names of additional functions> \
+#                                <out C file name> <list of TA objects>
 #
 # List of TA object may contain libraryies as well.
-#
+# If no additional variables/functions should be in symbol table 
+# use "empty" instead of corresponding file names.
 #
 # Copyright (C) 2003 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
@@ -34,8 +38,10 @@
 #
 
 NM=$1
-RESULT=$2
-shift 2
+ADD_VARS=$2
+ADD_FUNCS=$3
+RESULT=$4
+shift 4
 
 rm -f te_bs_symtbl.tmp
 $NM --demangle --format=bsd --extern-only --defined-only $* \
@@ -81,6 +87,17 @@ awk --posix '
         printf("extern int %s();\n", $3); \
 } ' te_bs_symtbl.tmp >> $RESULT
 
+if ! test ${ADD_VARS} = empty ; then
+    for i in `cat ${ADD_VARS}` ; do
+        echo "extern int "$i";" >> $RESULT
+    done
+fi    
+
+if ! test ${ADD_FUNCS} = empty ; then
+    for i in `cat ${ADD_FUNCS}` ; do
+        echo "extern int "$i"();" >> $RESULT
+    done
+fi    
 
 cat >> $RESULT <<\EOF
 
@@ -100,6 +117,18 @@ awk --posix '
     else                                             \
         printf("    { \"%s\", 1, %s },\n", $3, $3);  \
 } ' te_bs_symtbl.tmp >> $RESULT
+
+if ! test ${ADD_VARS} = empty ; then
+    for i in `cat ${ADD_VARS}` ; do
+        echo "    { "$i", 0, &"$i" }," >> $RESULT
+    done
+fi    
+
+if ! test ${ADD_FUNCS} = empty ; then
+    for i in `cat ${ADD_FUNCS}` ; do
+        echo "    { \""$i"\", 1, "$i" }," >> $RESULT
+    done
+fi    
 
 cat >> $RESULT <<\EOF
     { "", 0, (void *)0 }
