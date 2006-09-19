@@ -49,6 +49,7 @@ typedef struct gen_ctx_user {
     rgt_row_colour_t  col; /**< The colour of the current log message */
 } gen_ctx_user_t;
 
+RGT_PROCESS_CMDLINE_DUMMY();
 
 RGT_DEF_FUNC(proc_document_start)
 {

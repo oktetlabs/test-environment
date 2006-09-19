@@ -109,6 +109,7 @@ AC_CONFIG_FILES([Makefile
                  rgt-format/Makefile
                  rgt-format/xml2html-multi/Makefile
                  rgt-format/xml2html-multi/tmpls/Makefile
+                 rgt-format/xml2html-multi/tmpls-simple/Makefile
                  rgt-format/xml2html-multi/images/Makefile
                  rgt-format/xml2html-multi/misc/Makefile
                  rgt-format/xml2html/Makefile

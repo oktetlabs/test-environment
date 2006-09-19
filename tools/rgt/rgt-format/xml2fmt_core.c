@@ -707,6 +707,9 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         { "version", 'v', POPT_ARG_NONE, NULL, 'v', 
           "Display version information.", NULL },
 
+        { NULL, '\0', POPT_ARG_INCLUDE_TABLE, rgt_options_table, 0,
+          "Format-specific options:", NULL },
+
         POPT_AUTOHELP
         POPT_TABLEEND
     };
@@ -741,6 +744,8 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
             poptFreeContext(optCon);
             exit(0);
         }
+        else
+            rgt_process_cmdline(optCon, rc);
     }
 
     if (rc < -1)

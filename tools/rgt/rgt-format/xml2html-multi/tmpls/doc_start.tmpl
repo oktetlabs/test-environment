@@ -1,7 +1,7 @@
 <html>
 <head>
 <title>Logs from @@%s:reporter@@</title>
-<link rel='stylesheet' type='text/css' href='style.css'>
+<link rel='stylesheet' type='text/css' href='@@%s:shared_url@@style.css'>
 
 <script src="node_@@%u:depth@@_@@%u:seq@@_log_names.js">
 </script>
@@ -27,7 +27,7 @@ function getAllLogs()
 function open_filter_window()
 {
     window.top.filter_win = window.open(
-        "filter_conf.html",
+        "@@%s:shared_url@@filter_conf.html",
         "parwin",
         "dependent,toolbar=no,menubar=no,status=no," +
         "width=400,height=300,top=0,left=1000,scrollbars=no");

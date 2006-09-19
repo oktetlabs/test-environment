@@ -40,6 +40,7 @@ extern "C" {
 
 #include <libxml/parser.h>
 #include <glib.h>
+#include <popt.h>
 
 #include "rgt_tmpls_lib.h"
 #include "te_defs.h"
@@ -129,6 +130,24 @@ typedef struct rgt_gen_ctx {
 extern const char *xml2fmt_files[];
 extern rgt_tmpl_t  xml2fmt_tmpls[];
 extern size_t      xml2fmt_tmpls_num;
+
+/* Additional format-specific options table */
+extern struct poptOption rgt_options_table[];
+
+/* Process additional format-specific options */
+extern void rgt_process_cmdline(poptContext con, int val);
+
+/* Template for formatter programs without specific options */
+#define RGT_PROCESS_CMDLINE_DUMMY() \
+    struct poptOption rgt_options_table[] = {           \
+        POPT_TABLEEND                                   \
+    };                                                  \
+                                                        \
+    void rgt_process_cmdline(poptContext con, int val)  \
+    {                                                   \
+        UNUSED(con);                                    \
+        UNUSED(val);                                    \
+    }
 
 
 #define RGT_XML2CHAR(x_) ((const char **)(x_))

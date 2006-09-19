@@ -77,6 +77,13 @@ typedef struct log_msg_name {
 #define NODE_CLASS_STD  "std"
 #define NODE_CLASS_ERR  "err"
 
+/*
+ * URL for common files (images, styles etc.)
+ * If this value is NULL, all of the files are copied
+ * to report output directory.
+ */
+const char *shared_url = NULL;
+
 /* Forward declaration */
 static depth_ctx_user_t *alloc_depth_user_data(uint32_t depth);
 static void free_depth_user_data();
@@ -90,6 +97,36 @@ static void lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
                      rgt_depth_ctx_t *prev_depth_ctx);
 
 static te_log_level te_log_level_str2h(const char *ll);
+
+/* RGT format-specific options table */
+struct poptOption rgt_options_table[] = {
+    { "shared-url", 'i', POPT_ARG_STRING, NULL, 'i',
+      "URL of directory for shared files (images etc.)", NULL },
+    POPT_TABLEEND
+};
+
+/* Process format-specific options */
+void rgt_process_cmdline(poptContext con, int val)
+{
+    if (val == 'i')
+    {
+        size_t len;
+
+        shared_url = poptGetOptArg(con);
+        len = strlen(shared_url);
+        if (len > 0 && shared_url[len - 1] != '/')
+        {
+            fprintf(stderr, "Warning: URL for shared files is not "
+                    "a directory (or trailing '/' is missing)");
+        }
+    }
+}
+
+/* Add common global template parameters */
+void rgt_tmpls_attrs_add_globals(rgt_attrs_t *attrs)
+{
+    rgt_tmpls_attrs_add_fstr(attrs, "shared_url", shared_url);
+}
 
 RGT_DEF_FUNC(proc_document_start)
 {
@@ -148,15 +185,25 @@ RGT_DEF_FUNC(proc_document_start)
             exit(1);
         }
 
-        if (stat("images", &stat_buf) != 0)
+        if (shared_url == NULL)
         {
-            system("mkdir images");
+            snprintf(buf, sizeof(buf), "cp %s/misc/* .", INSTALL_DIR);
+            system(buf);
+
+            if (stat("images", &stat_buf) != 0)
+            {
+                system("mkdir images");
+            }
+
+            snprintf(buf, sizeof(buf), "cp %s/images/* images",
+                     INSTALL_DIR);
+            system(buf);
         }
 
-        snprintf(buf, sizeof(buf), "cp %s/misc/* .", INSTALL_DIR);
-        system(buf);
-
-        snprintf(buf, sizeof(buf), "cp %s/images/* images", INSTALL_DIR);
+        snprintf(buf, sizeof(buf), "for i in %s/tmpls-simple/* ; do "
+                 "cat $i | sed -e 's;@@SHARED_URL@@;%s;g' "
+                 "> `basename $i` ; done",
+                 INSTALL_DIR, (shared_url == NULL) ? "" : shared_url);
         system(buf);
     }
 
@@ -176,6 +223,7 @@ RGT_DEF_FUNC(proc_document_start)
     lf_start(ctx, depth_ctx, NULL, NULL, NULL);
 
     attrs = rgt_tmpls_attrs_new(NULL);
+    rgt_tmpls_attrs_add_globals(attrs);
     rgt_tmpls_attrs_add_fstr(attrs, "reporter", "TE start-up");
     rgt_tmpls_attrs_add_uint32(attrs, "depth", ctx->depth);
     rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
@@ -189,6 +237,7 @@ RGT_DEF_FUNC(proc_document_start)
     }
 
     attrs = rgt_tmpls_attrs_new(NULL);
+    rgt_tmpls_attrs_add_globals(attrs);
     rgt_tmpls_attrs_add_uint32(attrs, "depth", ctx->depth);
     rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
     rgt_tmpls_output(gen_user->js_fd, &xml2fmt_tmpls[JS_DOC_START], attrs);
@@ -394,6 +443,7 @@ lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx, const char *result,
     unsigned int      i;
 
     attrs = rgt_tmpls_attrs_new(NULL);
+    rgt_tmpls_attrs_add_globals(attrs);
 
     if (!is_test)
     {
@@ -536,6 +586,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     lf_start(ctx, depth_ctx, result, node_class, prev_depth_ctx);
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
+    rgt_tmpls_attrs_add_globals(attrs);
     rgt_tmpls_attrs_add_fstr(attrs, "reporter", "%s %s", node_type,
                              name == NULL ? "<anonimous>" : name);
     rgt_tmpls_attrs_add_uint32(attrs, "depth", ctx->depth);

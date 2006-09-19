@@ -24,4 +24,4 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-SUBDIRS = . misc images tmpls
+SUBDIRS = . misc images tmpls tmpls-simple

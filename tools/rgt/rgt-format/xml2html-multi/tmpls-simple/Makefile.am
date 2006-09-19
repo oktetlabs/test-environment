@@ -26,9 +26,5 @@
 
 miscdatadir = $(datadir)/$(subdir)
 
-dist_miscdata_DATA = right_frame.html \
-                     filter_conf.html \
-                     lframe_style.css \
-                     style.css \
-                     ftiens4.js \
-                     ua.js
+dist_miscdata_DATA = index.html \
+                     left_frame.html

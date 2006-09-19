@@ -42,6 +42,7 @@ typedef struct gen_ctx_user {
                                the result */
 } gen_ctx_user_t;
 
+RGT_PROCESS_CMDLINE_DUMMY();
 
 RGT_DEF_FUNC(proc_document_start)
 {
