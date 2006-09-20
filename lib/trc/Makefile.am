@@ -5,9 +5,7 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@
 
 include_HEADERS = \
-	te_trc.h
-
-noinst_HEADERS = \
+	te_trc.h \
 	trc_db.h
 
 lib_LTLIBRARIES = libtrc.la
