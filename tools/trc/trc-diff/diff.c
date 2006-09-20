@@ -302,12 +302,14 @@ trc_diff_iters_has_diff(trc_diff_ctx *ctx, test_run *test,
                 iter_has_diff = TRUE;
             }
 
-            for (tags_j = tags_diff.tqh_first;
-                 tags_j != NULL;
-                 tags_j = tags_j->links.tqe_next)
+            if (!test->aux)
             {
-                if (!test->aux)
-                    trc_diff_iter_stats(p, tags_i, tags_j);
+                for (tags_j = tags_diff.tqh_first;
+                     tags_j != NULL;
+                     tags_j = tags_j->links.tqe_next)
+                {
+                    trc_diff_iter_stats(&ctx->stats, p, tags_i, tags_j);
+                }
             }
         }
 
@@ -362,13 +364,11 @@ trc_diff_tests_has_diff(trc_diff_ctx *ctx, const test_runs *tests)
         /**
          * Output test iterations if and only if test should be output
          * itself and:
-         *  - set of iterations is empty, or
          *  - all iterations are not equal, or
          *  - it is not leaf of the tests tree.
          */
         p->diff_out_iters = p->diff_out &&
-            (p->iters.head.tqh_first == NULL ||
-             !all_iters_equal ||
+            (!all_iters_equal ||
              p->iters.head.tqh_first->tests.head.tqh_first != NULL);
     }
 
