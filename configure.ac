@@ -96,7 +96,7 @@ if test -n "$with_config" ; then
         AC_MSG_ERROR([Cannot find $with_config])
     fi
     cat "${TE_BASE}/engine/builder/builder.m4" "$with_config" | \
-        m4 >> "${TE_BUILD}/builder.conf.processed.new"
+        m4 -I${TE_CONF_DIR} >> "${TE_BUILD}/builder.conf.processed.new"
 else        
     # Fill default configuration
     echo TE_BS_PLATFORMS=default >> ${TE_BUILD}/builder.conf.processed.new
