@@ -228,6 +228,13 @@ extern te_bool trc_is_result_expected(const trc_exp_result *expected,
 extern te_bool trc_is_exp_result_equal(const trc_exp_result *lhv,
                                        const trc_exp_result *rhv);
 
+/**
+ * Is expected result equal to skipped (without any verdicts).
+ *
+ * @param result        Expected result to check
+ */
+extern te_bool trc_is_exp_result_skipped(const trc_exp_result *result);
+
 
 #ifdef __cplusplus
 } /* extern "C" */
