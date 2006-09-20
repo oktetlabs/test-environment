@@ -1,4 +1,8 @@
 socket
 bind
 connect
+send
+recv
+read
+write
 te_shell_cmd
