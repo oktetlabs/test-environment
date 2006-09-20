@@ -173,10 +173,10 @@ extern void trc_db_walker_step_back(te_trc_db_walker *walker);
 
 /** Types of motion of the TRC database walker */
 typedef enum trc_db_walker_motion {
-    TRC_DB_WALKER_DOWN,     /**< To son */
-    TRC_DB_WALKER_ASIDE,    /**< To brother */
-    TRC_DB_WALKER_UP,       /**< To farther */
-    TRC_DB_WALKER_STOP,     /**< Nowhere */
+    TRC_DB_WALKER_SON,      /**< To son */
+    TRC_DB_WALKER_BROTHER,  /**< To brother */
+    TRC_DB_WALKER_PARENT,   /**< To farther */
+    TRC_DB_WALKER_ROOT,     /**< Nowhere */
 } trc_db_walker_motion;
 
 /**

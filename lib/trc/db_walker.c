@@ -73,7 +73,7 @@ trc_db_new_walker(const struct te_trc_db *trc_db)
     walker->is_iter = TRUE;
     walker->test = NULL;
     walker->iter = NULL;
-    walker->motion = TRC_DB_WALKER_STOP;
+    walker->motion = TRC_DB_WALKER_ROOT;
 
     INFO("A new TRC DB walker allocated - 0x%p", walker);
 
@@ -260,28 +260,28 @@ trc_db_walker_move(te_trc_db_walker *walker)
 {
     switch (walker->motion)
     {
-        case TRC_DB_WALKER_STOP:
+        case TRC_DB_WALKER_ROOT:
             walker->test = walker->db->tests.head.tqh_first;
             if (walker->test == NULL)
             {
-                return TRC_DB_WALKER_STOP;
+                return TRC_DB_WALKER_ROOT;
             }
             else
             {
                 walker->is_iter = FALSE;
-                return (walker->motion = TRC_DB_WALKER_DOWN);
+                return (walker->motion = TRC_DB_WALKER_SON);
             }
             break;
 
-        case TRC_DB_WALKER_DOWN:
-        case TRC_DB_WALKER_ASIDE:
+        case TRC_DB_WALKER_SON:
+        case TRC_DB_WALKER_BROTHER:
             if (walker->is_iter)
             {
                 walker->test = walker->iter->tests.head.tqh_first;
                 if (walker->test != NULL)
                 {
                     walker->is_iter = FALSE;
-                    return (walker->motion = TRC_DB_WALKER_DOWN);
+                    return (walker->motion = TRC_DB_WALKER_SON);
                 }
             }
             else
@@ -290,25 +290,25 @@ trc_db_walker_move(te_trc_db_walker *walker)
                 if (walker->iter != NULL)
                 {
                     walker->is_iter = TRUE;
-                    return (walker->motion = TRC_DB_WALKER_DOWN);
+                    return (walker->motion = TRC_DB_WALKER_SON);
                 }
             }
             /*@fallthrough@*/
 
-        case TRC_DB_WALKER_UP:
+        case TRC_DB_WALKER_PARENT:
             if (walker->is_iter)
             {
                 if (walker->iter->links.tqe_next != NULL)
                 {
                     walker->iter = walker->iter->links.tqe_next;
-                    return (walker->motion = TRC_DB_WALKER_ASIDE);
+                    return (walker->motion = TRC_DB_WALKER_BROTHER);
                 }
                 else
                 {
                     walker->test = walker->iter->parent;
                     assert(walker->test != NULL);
                     walker->is_iter = FALSE;
-                    return (walker->motion = TRC_DB_WALKER_UP);
+                    return (walker->motion = TRC_DB_WALKER_PARENT);
                 }
             }
             else
@@ -316,21 +316,21 @@ trc_db_walker_move(te_trc_db_walker *walker)
                 if (walker->test->links.tqe_next != NULL)
                 {
                     walker->test = walker->test->links.tqe_next;
-                    return (walker->motion = TRC_DB_WALKER_ASIDE);
+                    return (walker->motion = TRC_DB_WALKER_BROTHER);
                 }
                 else
                 {
                     walker->is_iter = TRUE;
                     return (walker->motion =
                         ((walker->iter = walker->test->parent) == NULL) ?
-                            TRC_DB_WALKER_STOP : TRC_DB_WALKER_UP);
+                            TRC_DB_WALKER_ROOT : TRC_DB_WALKER_PARENT);
                 }
             }
             break;
 
         default:
             assert(FALSE);
-            return (walker->motion = TRC_DB_WALKER_STOP);
+            return (walker->motion = TRC_DB_WALKER_ROOT);
     }
     /* Unreachable */
     assert(FALSE);
