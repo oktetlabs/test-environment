@@ -48,6 +48,7 @@ struct te_trc_db_walker {
     const trc_test      *test;      /**< Test entry */
     const trc_test_iter *iter;      /**< Test iteration */
     unsigned int         unknown;   /**< Unknown depth counter */
+    trc_db_walker_motion motion;    /**< The last motion */
 };
 
 
@@ -72,6 +73,7 @@ trc_db_new_walker(const struct te_trc_db *trc_db)
     walker->is_iter = TRUE;
     walker->test = NULL;
     walker->iter = NULL;
+    walker->motion = TRC_DB_WALKER_STOP;
 
     INFO("A new TRC DB walker allocated - 0x%p", walker);
 
@@ -250,6 +252,90 @@ trc_db_walker_step_back(te_trc_db_walker *walker)
         VERB("Step back from test");
     }
 }
+
+
+/* See the description in te_trc.h */
+trc_db_walker_motion
+trc_db_walker_move(te_trc_db_walker *walker)
+{
+    switch (walker->motion)
+    {
+        case TRC_DB_WALKER_STOP:
+            walker->test = walker->db->tests.head.tqh_first;
+            if (walker->test == NULL)
+            {
+                return TRC_DB_WALKER_STOP;
+            }
+            else
+            {
+                walker->is_iter = FALSE;
+                return (walker->motion = TRC_DB_WALKER_DOWN);
+            }
+            break;
+
+        case TRC_DB_WALKER_DOWN:
+        case TRC_DB_WALKER_ASIDE:
+            if (walker->is_iter)
+            {
+                walker->test = walker->iter->tests.head.tqh_first;
+                if (walker->test != NULL)
+                {
+                    walker->is_iter = FALSE;
+                    return (walker->motion = TRC_DB_WALKER_DOWN);
+                }
+            }
+            else
+            {
+                walker->iter = walker->test->iters.head.tqh_first;
+                if (walker->iter != NULL)
+                {
+                    walker->is_iter = TRUE;
+                    return (walker->motion = TRC_DB_WALKER_DOWN);
+                }
+            }
+            /*@fallthrough@*/
+
+        case TRC_DB_WALKER_UP:
+            if (walker->is_iter)
+            {
+                if (walker->iter->links.tqe_next != NULL)
+                {
+                    walker->iter = walker->iter->links.tqe_next;
+                    return (walker->motion = TRC_DB_WALKER_ASIDE);
+                }
+                else
+                {
+                    walker->test = walker->iter->parent;
+                    assert(walker->test != NULL);
+                    walker->is_iter = FALSE;
+                    return (walker->motion = TRC_DB_WALKER_UP);
+                }
+            }
+            else
+            {
+                if (walker->test->links.tqe_next != NULL)
+                {
+                    walker->test = walker->test->links.tqe_next;
+                    return (walker->motion = TRC_DB_WALKER_ASIDE);
+                }
+                else
+                {
+                    walker->is_iter = TRUE;
+                    return (walker->motion =
+                        ((walker->iter = walker->test->parent) == NULL) ?
+                            TRC_DB_WALKER_STOP : TRC_DB_WALKER_UP);
+                }
+            }
+            break;
+
+        default:
+            assert(FALSE);
+            return (walker->motion = TRC_DB_WALKER_STOP);
+    }
+    /* Unreachable */
+    assert(FALSE);
+}
+
 
 /* See the description in te_trc.h */
 const trc_exp_result *

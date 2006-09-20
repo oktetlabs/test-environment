@@ -170,6 +170,27 @@ extern te_bool trc_db_walker_step_iter(te_trc_db_walker  *walker,
  */
 extern void trc_db_walker_step_back(te_trc_db_walker *walker);
 
+
+/** Types of motion of the TRC database walker */
+typedef enum trc_db_walker_motion {
+    TRC_DB_WALKER_DOWN,     /**< To son */
+    TRC_DB_WALKER_ASIDE,    /**< To brother */
+    TRC_DB_WALKER_UP,       /**< To farther */
+    TRC_DB_WALKER_STOP,     /**< Nowhere */
+} trc_db_walker_motion;
+
+/**
+ * If previous motion is to nowhere, move to the root.
+ * If previous motion is not to the parent, try to move to the first son.
+ * Otherwise, move to the next brother, or to the parent, or nowhere.
+ *
+ * @param walker        Current walker position
+ *
+ * @return Made motion.
+ */
+extern trc_db_walker_motion trc_db_walker_move(te_trc_db_walker *walker);
+
+
 /**
  * Get test iteration expected result at the current TRC database
  * walker position.
