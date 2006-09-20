@@ -219,6 +219,15 @@ extern const trc_exp_result *trc_db_walker_get_exp_result(
 extern te_bool trc_is_result_expected(const trc_exp_result *expected,
                                       const te_test_result *obtained);
 
+/**
+ * Are two expected results equal?
+ *
+ * @param lhv           Left hand value
+ * @param rhv           Right hand value
+ */
+extern te_bool trc_is_exp_result_equal(const trc_exp_result *lhv,
+                                       const trc_exp_result *rhv);
+
 
 #ifdef __cplusplus
 } /* extern "C" */
