@@ -12,6 +12,8 @@ AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib -Wl,-Bstatic $(TE_LDFL
 
 LIBS = $(TAD_LIBS) @LIBS@
 
+EXTRA_DIST=symtbl_funcs
+
 taexecdir=$(prefix)/@with_name@
 
 noinst_HEADERS = unix_internal.h 
@@ -43,6 +45,9 @@ ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a 
 
+symtbl.c: $(srcdir)/symtbl_funcs
+
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" \
             empty $(srcdir)/symtbl_funcs $@ $^ 
+
