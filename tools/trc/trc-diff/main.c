@@ -38,9 +38,6 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
-#if HAVE_ERRNO_H
-#include <errno.h>
-#endif
 #if HAVE_POPT_H
 #include <popt.h>
 #else
