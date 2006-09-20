@@ -28,7 +28,7 @@
 # $Id:  $
 #
 
-if test $PLATFORM != ${PLATFORM#x86_64} ; then
+if test $PLATFORM != ${PLATFORM%64} ; then
 
 DIR_POSTFIX=64
 PATH_POSTFIX=/win64/x86/AMD64
