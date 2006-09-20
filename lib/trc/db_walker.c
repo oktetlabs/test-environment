@@ -339,8 +339,8 @@ trc_db_walker_move(te_trc_db_walker *walker)
 
 /* See the description in te_trc.h */
 const trc_exp_result *
-trc_db_walker_get_exp_result(te_trc_db_walker  *walker,
-                             const tqh_strings *tags)
+trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
+                             const tqh_strings      *tags)
 {
     const trc_exp_result       *result;
     int                         prio;

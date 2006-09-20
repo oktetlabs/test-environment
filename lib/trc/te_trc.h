@@ -202,8 +202,8 @@ extern trc_db_walker_motion trc_db_walker_move(te_trc_db_walker *walker);
  * @return NULL         The test/iteration is unknown for TRC database.
  */
 extern const trc_exp_result *trc_db_walker_get_exp_result(
-                                 te_trc_db_walker  *walker,
-                                 const tqh_strings *tags);
+                                 const te_trc_db_walker *walker,
+                                 const tqh_strings      *tags);
 
 
 /*
