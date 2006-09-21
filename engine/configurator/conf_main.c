@@ -801,12 +801,25 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
 
         msg->rc = rcf_ta_cfg_del(inst->name, 0, CFG_GET_INST(handle)->oid);
 
-        if (msg->rc != 0)
+        if (msg->rc == 0)
+        {
+            VERB("Instance %s successfully deleted from the Agent",
+                 inst->name);
+        }
+        else if (TE_RC_GET_ERROR(msg->rc) == TE_ENOENT && obj->vol)
+        {
+            VERB("Instance %s of volatile object has disappeared from "
+                 "the Agent", inst->name);
+            msg->rc = 0;
+        }
+        else
         {
             ERROR("%s: rcf_ta_cfg_del returns %r", __FUNCTION__, msg->rc);
             if (update_dh)
+            {
                 cfg_dh_delete_last_command();
-            else if (TE_RC_GET_ERROR(msg->rc) == ENOENT)
+            }
+            else if (TE_RC_GET_ERROR(msg->rc) == TE_ENOENT)
             {
                 msg->rc = 0;
                 cfg_db_del(handle); /* During restoring backup the entry
@@ -814,7 +827,6 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
             }
             return;
         }
-        VERB("Instance %s successfully deleted from the Agent", inst->name);
     }
 
     cfg_db_del(handle);
