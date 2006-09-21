@@ -814,7 +814,8 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
     {
         if ((rc = cfg_del_instance(hndls[i], FALSE)) != 0)
         {
-            TE_RC_UPDATE(result, rc);
+            if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+                TE_RC_UPDATE(result, rc);
         }
     }
 
