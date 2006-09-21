@@ -5284,10 +5284,6 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
         assert(in->multiaddr.multiaddr_len == sizeof(struct in_addr));
         memcpy(&mreq.imr_multiaddr, in->multiaddr.multiaddr_val,
                sizeof(struct in_addr));
-#if HAVE_STRUCT_IP_MREQN        
-        PRINT("Try to join a group (%x,%d)", 
-              *(unsigned int *)&mreq.imr_multiaddr, mreq.imr_ifindex);
-#endif        
         out->retval = setsockopt_func(in->fd, IPPROTO_IP,
                                       in->leave_group ?
                                           IP_DROP_MEMBERSHIP :
