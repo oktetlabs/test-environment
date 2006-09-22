@@ -1117,7 +1117,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
                     cfg_val_type     type = CVT_ADDRESS;
 
                     rc = cfg_get_instance_fmt(&type, &tmp,
-                                              "/local/ip4_alien");
+                                              "/local:/ip4_alien:");
                     if (rc != 0)
                         break;
                     alien_addr = ntohl(SIN(tmp)->sin_addr.s_addr);
