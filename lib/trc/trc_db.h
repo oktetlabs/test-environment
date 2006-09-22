@@ -158,6 +158,10 @@ extern te_errno trc_db_save(te_trc_db *db, const char *filename);
 
 extern void trc_db_free(te_trc_db *db);
 
+extern const trc_test *trc_db_walker_get_test(
+                           const te_trc_db_walker *walker);
+extern const trc_test_iter *trc_db_walker_get_iter(
+                                const te_trc_db_walker *walker);
 
 #ifdef __cplusplus
 } /* extern "C" */

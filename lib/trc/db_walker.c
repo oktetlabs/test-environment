@@ -52,6 +52,23 @@ struct te_trc_db_walker {
 };
 
 
+/* See the description in trc_db.h */
+const trc_test *
+trc_db_walker_get_test(const te_trc_db_walker *walker)
+{
+    assert(!walker->is_iter);
+    return walker->test;
+}
+
+/* See the description in trc_db.h */
+const trc_test_iter *
+trc_db_walker_get_iter(const te_trc_db_walker *walker)
+{
+    assert(walker->is_iter);
+    return walker->iter;
+}
+
+
 /* See the description in te_trc.h */
 void
 trc_db_free_walker(te_trc_db_walker *walker)
