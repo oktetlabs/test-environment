@@ -28,8 +28,6 @@
  * $Id$
  */
 
-#define _GNU_SOURCE
-
 #include "te_config.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -342,11 +340,7 @@ trc_diff_tags_to_html(FILE *f, const trc_diff_tags_list *tags_list)
 
     for (p = tags_list->tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if (p->name != NULL)
-            fprintf(f, "<b>%s: </b>", p->name);
-        else
-            fprintf(f, "<b>Set %d: </b>", p->id);
-
+        fprintf(f, "<b>%s: </b>", p->name);
         for (tag = p->tags.tqh_first;
              tag != NULL;
              tag = tag->links.tqe_next)
@@ -743,9 +737,6 @@ trc_diff_result_to_html(const trc_diff_result    *result,
          tags != NULL;
          tags = tags->links.tqe_next)
     {
-        if ((tags->name == NULL) &&
-            (asprintf(&tags->name, "Set %u", tags->id) == -1))
-            return TE_ENOMEM;
         fprintf(f, trc_diff_table_heading_entry, tags->name);
     }
     WRITE_STR(trc_diff_table_heading_end);
