@@ -1109,9 +1109,20 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             }
             else if (env_addr->type == TAPI_ENV_ADDR_ALIEN)
             {
-                static uint32_t alien_addr = 0x21212121;
+                static uint32_t alien_addr = 0;
     
-                /* TODO - get it from Configurator */
+                if (alien_addr == 0)
+                {
+                    struct sockaddr *tmp;
+                    cfg_val_type     type = CVT_ADDRESS;
+
+                    rc = cfg_get_instance_fmt(&type, &tmp,
+                                              "/local/ip4_alien");
+                    if (rc != 0)
+                        break;
+                    alien_addr = ntohl(SIN(tmp)->sin_addr.s_addr);
+                    free(tmp);
+                }
                 SIN(env_addr->addr)->sin_addr.s_addr = htonl(alien_addr);
                 alien_addr += 0x01000000;
             }
