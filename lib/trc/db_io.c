@@ -259,7 +259,7 @@ get_node_with_text_content(xmlNodePtr *node, const char *name,
     te_errno rc;
 
     if (xmlStrcmp((*node)->name, CONST_CHAR2XML(name)) != 0)
-        return ENOENT;
+        return TE_ENOENT;
 
     rc = get_text_content(*node, name, content);
     if (rc == 0)
@@ -267,6 +267,37 @@ get_node_with_text_content(xmlNodePtr *node, const char *name,
 
     return rc;
 }
+
+/**
+ * Get property. If value is empty string, override as NULL.
+ *
+ * @param node      XML node pointer
+ * @param name      Name of the property to get
+ * @param value     Location for value
+ *
+ * @return Status code.
+ */
+static te_errno
+get_node_property(xmlNodePtr node, const char *name, char **value)
+{
+    xmlChar *xml_value = xmlGetProp(node, CONST_CHAR2XML(name));
+
+    if (xml_value == NULL)
+        return TE_ENOENT;
+
+    assert(value != NULL);
+    *value = XML2CHAR(xml_value);
+    assert(*value != NULL);
+
+    if (**value == '\0')
+    {
+        xmlFree(xml_value);
+        *value = NULL;
+    }
+
+    return 0;
+}
+
 
 /**
  * Allocate and get test iteration argument.
@@ -404,9 +435,8 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
         if (logic_expr_parse(result->tags_str, &result->tags_expr) != 0)
             return TE_EINVAL;
 
-        result->key = XML2CHAR(xmlGetProp(*node, CONST_CHAR2XML("key")));
-        result->notes = XML2CHAR(xmlGetProp(*node,
-                                            CONST_CHAR2XML("notes")));
+        get_node_property(*node, "key", &result->key);
+        get_node_property(*node, "notes", &result->notes);
 
         for (p = xmlNodeChildren(*node); p != NULL; p = xmlNodeNext(p))
         {
@@ -427,9 +457,8 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
             if (rc != 0)
                 return rc;
 
-            entry->key = XML2CHAR(xmlGetProp(p, CONST_CHAR2XML("key")));
-            entry->notes = XML2CHAR(xmlGetProp(p,
-                                               CONST_CHAR2XML("notes")));
+            get_node_property(p, "key", &entry->key);
+            get_node_property(p, "notes", &entry->notes);
 
             q = xmlNodeChildren(p);
             while (q != NULL)
@@ -437,7 +466,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
                 char *s;
 
                 rc = get_node_with_text_content(&q, "verdict", &s);
-                if (rc == ENOENT)
+                if (rc == TE_ENOENT)
                 {
                     ERROR("Unexpected node '%s' in the tagged result "
                           "entry", q->name);
@@ -523,7 +552,7 @@ alloc_and_get_test_iter(xmlNodePtr node, const char *test_name,
         xmlStrcmp(node->name, CONST_CHAR2XML("notes")) == 0)
     {
         rc = get_node_with_text_content(&node, "notes", &p->notes);
-        if ((rc != 0) && (rc != ENOENT))
+        if ((rc != 0) && (rc != TE_ENOENT))
         {
             ERROR("Failed to get notes for the test iteration");
             return rc;
@@ -676,7 +705,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
     if (xmlStrcmp(node->name, CONST_CHAR2XML("notes")) == 0)
     {
         rc = get_node_with_text_content(&node, "notes", &p->notes);
-        if ((rc != 0) && (rc != ENOENT))
+        if ((rc != 0) && (rc != TE_ENOENT))
         {
             ERROR("Failed to get objective of the test '%s'", p->name);
             return rc;
