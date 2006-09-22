@@ -120,7 +120,7 @@ te_string_append(te_string *str, const char *fmt, ...)
 
         va_start(ap, fmt);
         printed = vsnprintf(s, rest, fmt, ap);
-        assert(printed > 0);
+        assert(printed >= 0);
         va_end(ap);
 
         if ((size_t)printed >= rest)
@@ -758,13 +758,12 @@ trc_diff_result_to_html(const trc_diff_result    *result,
                 if (rc != 0)
                     return rc;
 
-                /* 
-                 * Test is not output in brief mode, if its iterations
-                 * follow.
+                /*
+                 * Only leaves are output in brief mode
                  */
-                if ((next != NULL) && (next->is_iter))
+                if ((next != NULL) && (next->level > curr->level))
                 {
-                    assert(curr->level == next->level);
+                    assert(next->level - curr->level == 1);
                     continue;
                 }
 
@@ -777,7 +776,8 @@ trc_diff_result_to_html(const trc_diff_result    *result,
             }
             else
             {
-                rc = te_string_append(&str_buf, "*-");
+                rc = te_string_append(&str_buf,
+                                      (curr->level > 0) ? "*-" : "");
                 if (rc != 0)
                     return rc;
 
@@ -811,6 +811,15 @@ trc_diff_result_to_html(const trc_diff_result    *result,
         {
             if (flags & TRC_DIFF_BRIEF)
             {
+                /*
+                 * Only leaves are output in brief mode
+                 */
+                if ((next != NULL) && (next->level > curr->level))
+                {
+                    assert(next->level - curr->level == 1);
+                    continue;
+                }
+
                 fprintf(f, trc_diff_brief_table_test_row_start,
                         i, str_buf.ptr);
 
@@ -832,20 +841,27 @@ trc_diff_result_to_html(const trc_diff_result    *result,
         }
 
         /* If level of the next entry is less */
-        if (next != NULL && next->level < curr->level)
+        if (next != NULL && 
+            ((next->level < curr->level) ||
+             (next->level == curr->level && (curr->level & 1) == 0)))
         {
             if (flags & TRC_DIFF_BRIEF)
             {
-                for (j = curr->level - next->level; j-- > 0; )
+                char *slash;
+
+                for (j = ((curr->level - next->level) >> 1) + 1; j-- > 0; )
                 {
-                    str_buf.ptr[strrchr(str_buf.ptr, '/') -
-                                str_buf.ptr] = '\0';
+                    slash = strrchr(str_buf.ptr, '/');
+                    if (slash == NULL)
+                        slash = str_buf.ptr;
+                    str_buf.ptr[slash - str_buf.ptr] = '\0'; 
                 }
+                str_buf.len = slash - str_buf.ptr;
             }
             else
             {
-                str_buf.ptr[str_buf.len -
-                            (curr->level - next->level) * 2] = '\0';
+                str_buf.len -= ((curr->level - next->level) >> 1 << 1) + 2;
+                str_buf.ptr[str_buf.len] = '\0';
             }
         }
     }
