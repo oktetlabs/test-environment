@@ -367,20 +367,20 @@ trc_diff_tags_to_html(FILE *f, const trc_diff_tags_list *tags_list)
  */
 static void
 trc_diff_one_stats_to_html(FILE                      *f,
-                           const trc_diff_stats      *stats,
+                           trc_diff_stats            *stats,
                            const trc_diff_tags_entry *tags_x,
                            const trc_diff_tags_entry *tags_y,
                            unsigned int               flags)
 {
-    const trc_diff_stats_counters  *counters;
-    trc_diff_stats_counter          total_match;
-    trc_diff_stats_counter          total_no_match;
-    trc_diff_stats_counter          total_excluded;
-    trc_diff_stats_counter          total;
+    trc_diff_stats_counters    *counters;
+    trc_diff_stats_counter      total_match;
+    trc_diff_stats_counter      total_no_match;
+    trc_diff_stats_counter      total_excluded;
+    trc_diff_stats_counter      total;
 
     UNUSED(flags);
 
-    counters = &stats[tags_x->id][tags_y->id - 1];
+    counters = stats[tags_x->id][tags_y->id - 1];
 
     total_match =
         (*counters)[TRC_DIFF_STATS_PASSED][TRC_DIFF_STATS_PASSED] +
@@ -849,13 +849,13 @@ trc_diff_result_to_html(const trc_diff_result    *result,
             {
                 char *slash;
 
-                for (j = ((curr->level - next->level) >> 1) + 1; j-- > 0; )
-                {
+                j = ((curr->level - next->level) >> 1);
+                do {
                     slash = strrchr(str_buf.ptr, '/');
                     if (slash == NULL)
                         slash = str_buf.ptr;
                     str_buf.ptr[slash - str_buf.ptr] = '\0'; 
-                }
+                } while (j-- > 0);
                 str_buf.len = slash - str_buf.ptr;
             }
             else
