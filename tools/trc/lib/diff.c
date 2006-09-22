@@ -514,6 +514,96 @@ trc_diff_iter_stats(trc_diff_stats       *stats,
 }
 #endif
 
+/**
+ * Derive group result from its items.
+ *
+ * @param diffs         Compared sets
+ * @param group         Group entry
+ * @param item          Item of the group entry
+ * @param init          Initialize unset or not
+ */
+static void
+trc_diff_group_exp_result(const trc_diff_tags_list *diffs,
+                          trc_diff_entry           *group,
+                          const trc_diff_entry     *item,
+                          te_bool                   init)
+{
+    const trc_diff_tags_entry *p;
+
+    assert(diffs != NULL);
+    assert(group != NULL);
+    assert(item != NULL);
+
+    for (p = diffs->tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        /* Item result may be NULL if it is a group itself */
+        if (item->results[p->id] == NULL)
+        {
+            group->results[p->id] = NULL;
+        }
+        else if (group->results[p->id] != NULL)
+        {
+            if (!trc_is_exp_result_equal(item->results[p->id],
+                                         group->results[p->id]))
+            {
+                group->results[p->id] = NULL;
+            }
+        }
+        else if (init)
+        {
+            group->results[p->id] = item->results[p->id];
+        }
+    }
+}
+
+/**
+ * Compare expected results.
+ *
+ * @param diffs         Compared sets
+ * @parma entry         Test or iteration entry
+ *
+ * @return Comparison status.
+ * @retval -1           All expected results are SKIPPED
+ * @retval 0            No differences
+ * @retval 1            There are some differences
+ */
+static int
+trc_diff_entry_has_diff(const trc_diff_tags_list *diffs,
+                        trc_diff_entry           *entry)
+{
+    const trc_diff_tags_entry  *p;
+    const trc_exp_result       *result;
+    te_bool                     diff = FALSE;
+
+    if ((p = diffs->tqh_first) == NULL)
+        return 0;
+
+    result = entry->results[p->id]; 
+    assert(result != NULL);
+
+    while ((p = p->links.tqe_next) != NULL)
+    {
+        if (!trc_is_exp_result_equal(result, entry->results[p->id]))
+        {
+            diff = TRUE;
+            break;
+        }
+    }
+
+    if (!diff)
+    {
+        if (trc_is_exp_result_skipped(result))
+            return -1;
+        else
+            return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+
 /* See descriptino in trc_diff.h */
 te_errno
 trc_diff_do(trc_diff_ctx *ctx)
@@ -533,6 +623,7 @@ trc_diff_do(trc_diff_ctx *ctx)
     trc_diff_entry         *entry;
     te_bool                 entry_to_result = FALSE; /* Just to make
                                                         compiler happy */
+    int                     res;
 
     if (ctx == NULL || ctx->db == NULL)
         return TE_EINVAL;
@@ -552,6 +643,8 @@ trc_diff_do(trc_diff_ctx *ctx)
     while ((rc == 0) &&
            ((motion = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
     {
+        printf("M=%u, l=%u, p=%p, e=%p, to_result=%u\n",
+               motion, level, parent, entry, entry_to_result);
         assert(!start || motion == TRC_DB_WALKER_SON);
         switch (motion)
         {
@@ -618,28 +711,51 @@ trc_diff_do(trc_diff_ctx *ctx)
                 if (entry->is_iter)
                 {
                     trc_diff_entry_exp_results(&ctx->sets, walker, entry);
-#if 0
-                    if (trc_diff_entry_has_diff(entry))
+                    switch (trc_diff_entry_has_diff(&ctx->sets, entry))
                     {
-                        entry_to_result = has_diff = TRUE;
+                        case -1:
+                            break;
+
+                        case 0:
+                            hide_children = FALSE;
+                            break;
+
+                        case 1:
+                            entry->ptr.iter =
+                                trc_db_walker_get_iter(walker);
+                            entry_to_result = has_diff = TRUE;
+                            trc_diff_group_exp_result(&ctx->sets, parent,
+                                entry, motion == TRC_DB_WALKER_SON);
+                            break;
+
+                        default:
+                            assert(FALSE);
                     }
-                    else if ()
-                    {
-                    }
-                    else
-                    {
-                        hide_children = FALSE;
-                    }
-#endif
                 }
                 break;
 
             case TRC_DB_WALKER_PARENT:
-                /* Free extra entry allocated to process children */
-                free(entry); entry = NULL;
+                if (entry_to_result && entry != NULL)
+                {
+                    /* The last child should be added in the result */
+                    entry->level = level;
+                    TAILQ_INSERT_TAIL(&ctx->result, entry, links);
+                    /* Keep 'entry_to_result' to force allocation */
+                }
+                else
+                {
+                    /* Free extra entry allocated to process children */
+                    free(entry);
+                }
+                entry = NULL;
                 if (has_diff)
                 {
                     /* Some differences have been discovered */
+                    if (parent->is_iter)
+                        parent->ptr.iter = trc_db_walker_get_iter(walker);
+                    else
+                        parent->ptr.test = trc_db_walker_get_test(walker);
+
                     if (hide_children)
                     {
                         /* 
@@ -652,6 +768,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                             free(entry);
                         }
                     }
+                    entry_to_result = TRUE;
                 }
                 else
                 {
@@ -662,6 +779,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                     TAILQ_REMOVE(&ctx->result, parent, links);
                     /* Reuse this parent entry for its brothers */
                     entry = parent;
+                    assert(!entry_to_result);
                 }
                 
                 /* Extract state from the stack and restore */
