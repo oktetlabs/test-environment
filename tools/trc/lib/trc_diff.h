@@ -120,15 +120,17 @@ typedef struct trc_diff_entry {
 
     te_bool         is_iter;    /**< Is a test or an iteration? */
     union {
-        trc_test       *test;   /**< Test entry data */
-        trc_test_iter  *iter;   /**< Test iteration data */
+        const trc_test      *test;   /**< Test entry data */
+        const trc_test_iter *iter;   /**< Test iteration data */
     } ptr;                      /**< Pointer to test or iteration data */
     unsigned int    level;      /**< Level of the entry in the tree */
 
     /** Expected result for each diff ID */
     const trc_exp_result   *results[TRC_DIFF_IDS];
-    /** Expected result inheritance flag */
-    te_bool                 inherit[TRC_DIFF_IDS];
+    /** Expected result inheritance flags */
+    unsigned int            inherit[TRC_DIFF_IDS];
+#define TRC_DIFF_INHERIT    0x1 /**< Result should be inherited */
+#define TRC_DIFF_INHERITED  0x2 /**< Result is inherited */
     
 } trc_diff_entry;
 

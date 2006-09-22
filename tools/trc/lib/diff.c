@@ -99,8 +99,14 @@ trc_diff_entry_cleanup(trc_diff_entry *entry)
         entry->ptr.test = NULL;
 
     for (i = 0; i < TE_ARRAY_LEN(entry->results); ++i)
-        if (!entry->inherit[i])
+    {
+        /* If result is not inherited, clean up */
+        if (~entry->inherit[i] & TRC_DIFF_INHERITED)
+        {
             entry->results[i] = NULL;
+            entry->inherit[i] &= ~TRC_DIFF_INHERIT;
+        }
+    }
 }
 
 /**
@@ -120,10 +126,10 @@ trc_diff_entry_inherit(const trc_diff_entry *parent,
 
     for (i = 0; i < TE_ARRAY_LEN(entry->results); ++i)
     {
-        if (parent->inherit[i])
+        if (parent->inherit[i] & TRC_DIFF_INHERIT)
         {
             entry->results[i] = parent->results[i];
-            entry->inherit[i] = parent->inherit[i];
+            entry->inherit[i] = parent->inherit[i] | TRC_DIFF_INHERITED;
             assert(entry->results[i] != NULL);
         }
     }
@@ -426,6 +432,11 @@ trc_diff_entry_exp_results(const trc_diff_tags_list *diffs,
             entry->results[tags->id] =
                 trc_db_walker_get_exp_result(walker, &tags->tags);
             assert(entry->results[tags->id] != NULL);
+            if (trc_is_exp_result_skipped(entry->results[tags->id]))
+            {
+                /* Skipped results should be inherited */
+                entry->inherit[tags->id] = TRC_DIFF_INHERIT;
+            }
         }
     }
 }
@@ -521,14 +532,17 @@ trc_diff_iter_stats(trc_diff_stats       *stats,
  * @param group         Group entry
  * @param item          Item of the group entry
  * @param init          Initialize unset or not
+ *
+ * @return Is group homogeneous?
  */
-static void
+static te_bool
 trc_diff_group_exp_result(const trc_diff_tags_list *diffs,
                           trc_diff_entry           *group,
                           const trc_diff_entry     *item,
                           te_bool                   init)
 {
-    const trc_diff_tags_entry *p;
+    const trc_diff_tags_entry  *p;
+    te_bool                     all_equal = TRUE;
 
     assert(diffs != NULL);
     assert(group != NULL);
@@ -553,7 +567,9 @@ trc_diff_group_exp_result(const trc_diff_tags_list *diffs,
         {
             group->results[p->id] = item->results[p->id];
         }
+        all_equal = all_equal && (group->results[p->id] != NULL);
     }
+    return all_equal;
 }
 
 /**
@@ -623,7 +639,6 @@ trc_diff_do(trc_diff_ctx *ctx)
     trc_diff_entry         *entry;
     te_bool                 entry_to_result = FALSE; /* Just to make
                                                         compiler happy */
-    int                     res;
 
     if (ctx == NULL || ctx->db == NULL)
         return TE_EINVAL;
@@ -643,8 +658,9 @@ trc_diff_do(trc_diff_ctx *ctx)
     while ((rc == 0) &&
            ((motion = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
     {
-        printf("M=%u, l=%u, p=%p, e=%p, to_result=%u\n",
-               motion, level, parent, entry, entry_to_result);
+        printf("M=%u, l=%u, p=%p, e=%p, to_result=%u hide_children=%u\n",
+               motion, level, parent, entry, entry_to_result,
+               hide_children);
         assert(!start || motion == TRC_DB_WALKER_SON);
         switch (motion)
         {
@@ -711,6 +727,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                 if (entry->is_iter)
                 {
                     trc_diff_entry_exp_results(&ctx->sets, walker, entry);
+
                     switch (trc_diff_entry_has_diff(&ctx->sets, entry))
                     {
                         case -1:
@@ -724,13 +741,22 @@ trc_diff_do(trc_diff_ctx *ctx)
                             entry->ptr.iter =
                                 trc_db_walker_get_iter(walker);
                             entry_to_result = has_diff = TRUE;
-                            trc_diff_group_exp_result(&ctx->sets, parent,
-                                entry, motion == TRC_DB_WALKER_SON);
+                            if (!trc_diff_group_exp_result(&ctx->sets,
+                                     parent, entry,
+                                     motion == TRC_DB_WALKER_SON))
+                            {
+                                /* Group is not homogeneous */
+                                hide_children = FALSE;
+                            }
                             break;
 
                         default:
                             assert(FALSE);
                     }
+                }
+                else
+                {
+                    printf("%s\n", trc_db_walker_get_test(walker)->name);
                 }
                 break;
 
