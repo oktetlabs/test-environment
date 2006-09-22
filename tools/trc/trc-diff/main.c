@@ -28,6 +28,9 @@
  * $Id$
  */
 
+/* To have asprintf() */
+#define _GNU_SOURCE
+
 #include "te_config.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -312,8 +315,9 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
 int
 main(int argc, char *argv[])
 {
-    int             result = EXIT_FAILURE;
-    trc_diff_ctx    ctx;
+    int                  result = EXIT_FAILURE;
+    trc_diff_ctx         ctx;
+    trc_diff_tags_entry *diff_set;
 
     /* Initialize diff context */
     trc_diff_ctx_init(&ctx);
@@ -321,6 +325,19 @@ main(int argc, char *argv[])
     /* Process and validate command-line options */
     if (process_cmd_line_opts(argc, argv, &ctx) != EXIT_SUCCESS)
         goto exit;
+
+    /* Make sure that all sets have name */
+    for (diff_set = ctx.sets.tqh_first;
+         diff_set != NULL;
+         diff_set = diff_set->links.tqe_next)
+    {
+        if ((diff_set->name == NULL) &&
+            (asprintf(&(diff_set->name), "Set %u", diff_set->id) == -1))
+        {
+            ERROR("asprintf() failed");
+            goto exit;
+        }
+    }
 
     if (trc_diff_db_fn == NULL)
     {
