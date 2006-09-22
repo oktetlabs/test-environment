@@ -36,6 +36,7 @@
 #include "te_errno.h"
 #include "tq_string.h"
 #include "te_trc.h"
+#include "trc_db.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -112,20 +113,44 @@ typedef struct trc_diff_key_stats {
 typedef CIRCLEQ_HEAD(trc_diff_keys_stats, trc_diff_key_stats)
     trc_diff_keys_stats;
 
+
+/** Element of the list with TRC diff results. */
+typedef struct trc_diff_entry {
+    TAILQ_ENTRY(trc_diff_entry) links;  /**< List links */
+
+    te_bool         is_iter;    /**< Is a test or an iteration? */
+    union {
+        trc_test       *test;   /**< Test entry data */
+        trc_test_iter  *iter;   /**< Test iteration data */
+    } ptr;                      /**< Pointer to test or iteration data */
+    unsigned int    level;      /**< Level of the entry in the tree */
+
+    /** Expected result for each diff ID */
+    const trc_exp_result   *results[TRC_DIFF_IDS];
+    /** Expected result inheritance flag */
+    te_bool                 inherit[TRC_DIFF_IDS];
+    
+} trc_diff_entry;
+
+/** Result of the TRC diff processing */
+typedef TAILQ_HEAD(trc_diff_result, trc_diff_entry) trc_diff_result;
+
+
 /**
  * TRC diff tool context.
  */
 typedef struct trc_diff_ctx {
     /* Input */
     unsigned int        flags;          /**< Processing control flags */
+    te_trc_db          *db;
     trc_diff_tags_list  sets;           /**< Sets to compare */
     tqh_strings         exclude_keys;   /**< Templates for keys to exclude
                                              some differencies from 
                                              consideration */
-
     /* Output */
     trc_diff_stats      stats;          /**< Statistics */
     trc_diff_keys_stats keys_stats;     /**< Per-key statistics */
+    trc_diff_result     result;         /**< Result details */
 } trc_diff_ctx;
 
 
@@ -194,11 +219,10 @@ extern void trc_diff_ctx_free(trc_diff_ctx *ctx);
  * Process TRC database and generate in-memory report.
  *
  * @param ctx           TRC diff tool context
- * @param db            TRC database to be used
  *
  * @return Status code.
  */
-extern te_errno trc_diff_do(trc_diff_ctx *ctx, const te_trc_db *db);
+extern te_errno trc_diff_do(trc_diff_ctx *ctx);
 
 /**
  * Prepare TRC diff report in HTML format.

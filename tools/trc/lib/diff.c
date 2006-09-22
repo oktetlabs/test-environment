@@ -38,22 +38,127 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
-#if HAVE_ERRNO_H
-#include <errno.h>
-#endif
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #include "te_defs.h"
+#include "te_errno.h"
 #include "logger_api.h"
+#include "te_alloc.h"
 
 #include "trc_diff.h"
 
 
-static te_bool trc_diff_tests_has_diff(trc_diff_ctx *ctx,
-                                       const test_runs *tests);
+/**
+ * Element of the stack with TRC diff states.
+ */
+typedef struct trc_diff_state {
+    LIST_ENTRY(trc_diff_state)  links;  /**< List links */
+    trc_diff_entry     *entry;      /**< Pointer to the entry in
+                                         result list */
+    te_bool             has_diff;   /**< Have children differences? */
+} trc_diff_state;
 
+
+/**
+ * Initialize TRC diff result entry.
+ *
+ * @param entry         Pointer to an entry to be initialized
+ * @param is_iter       Is a test or an iteration?
+ */
+static void
+trc_diff_entry_init(trc_diff_entry *entry, te_bool is_iter)
+{
+    unsigned int    i;
+
+    assert(entry != NULL);
+
+    entry->is_iter = is_iter;
+    if (entry->is_iter)
+        entry->ptr.iter = NULL;
+    else
+        entry->ptr.test = NULL;
+
+    for (i = 0; i < TE_ARRAY_LEN(entry->results); ++i)
+        entry->results[i] = NULL;
+}
+
+/**
+ * Clean up TRC diff result entry.
+ *
+ * @param entry         Pointer to an entry to clean up 
+ */
+static void
+trc_diff_entry_cleanup(trc_diff_entry *entry)
+{
+    unsigned int    i;
+
+    assert(entry != NULL);
+
+    if (entry->is_iter)
+        entry->ptr.iter = NULL;
+    else
+        entry->ptr.test = NULL;
+
+    for (i = 0; i < TE_ARRAY_LEN(entry->results); ++i)
+        if (!entry->inherit[i])
+            entry->results[i] = NULL;
+}
+
+/**
+ * Inherit requested expected results from parent to entry.
+ *
+ * @param parent        Parent entry 
+ * @param entry         Entry to fill in
+ */
+static void
+trc_diff_entry_inherit(const trc_diff_entry *parent,
+                       trc_diff_entry       *entry)
+{
+    unsigned int    i;
+
+    assert(parent != NULL);
+    assert(entry != NULL);
+
+    for (i = 0; i < TE_ARRAY_LEN(entry->results); ++i)
+    {
+        if (parent->inherit[i])
+        {
+            entry->results[i] = parent->results[i];
+            entry->inherit[i] = parent->inherit[i];
+            assert(entry->results[i] != NULL);
+        }
+    }
+}
+
+/**
+ * Allocate a new TRC diff result entry and inherit requested results
+ * from parent.
+ *
+ * @param parent        Parent entry 
+ *
+ * @return Pointer to an allocated entry.
+ */
+static trc_diff_entry *
+trc_diff_entry_new(const trc_diff_entry *parent)
+{
+    trc_diff_entry *p = TE_ALLOC(sizeof(*p));
+
+    if (p != NULL)
+    {
+        if (parent == NULL)
+        {
+            trc_diff_entry_init(p, FALSE);
+        }
+        else
+        {
+            trc_diff_entry_init(p, !parent->is_iter);
+            trc_diff_entry_inherit(parent, p);
+        }
+    }
+
+    return p;
+}
+
+#if 0
 /**
  * Add key used for specified tags set.
  *
@@ -149,91 +254,6 @@ trc_diff_exclude_by_key(const test_iter *iter)
         }
     }
     return exclude;
-}
-
-
-/**
- * Map test result, match and exclude status to statistics index.
- *
- * @param result        Result
- * @param match         Do results match?
- * @param exclude       Does exclude of such differencies requested?
- *
- * @return Index of statistics counter.
- */
-static trc_diff_stats_index
-trc_diff_result_to_stats_index(trc_test_result result,
-                               te_bool match, te_bool exclude)
-{
-    switch (result)
-    {
-        case TRC_TEST_PASSED:
-            if (match)
-                return TRC_DIFF_STATS_PASSED;
-            else if (exclude)
-                return TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE;
-            else
-                return TRC_DIFF_STATS_PASSED_DIFF;
-
-        case TRC_TEST_FAILED:
-            if (match)
-                return TRC_DIFF_STATS_FAILED;
-            else if (exclude)
-                return TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE;
-            else
-                return TRC_DIFF_STATS_FAILED_DIFF;
-
-        case TRC_TEST_SKIPPED:
-            return TRC_DIFF_STATS_SKIPPED;
-
-        default:
-            return TRC_DIFF_STATS_OTHER;
-    }
-}
-
-/**
- * Update total statistics for sets X and Y based on an iteration data.
- *
- * @param iter          Test iteration
- * @param tags_x        Set X of tags
- * @param tags_y        Set Y of tags
- */
-static void
-trc_diff_iter_stats(trc_diff_stats       *stats,
-                    const test_iter      *iter,
-                    const trc_tags_entry *tags_x,
-                    const trc_tags_entry *tags_y)
-{
-    te_bool match;
-    te_bool exclude;
-
-    /* 
-     * Do nothing if an index of the first set is greater or equal to the
-     * index of the second set.
-     */
-    if (tags_x->id >= tags_y->id)
-        return;
-
-    /*
-     * Exclude iterations of test packages
-     */
-    if (iter->tests.head.tqh_first != NULL)
-        return;
-
-    match = (iter->diff_exp[tags_x->id].value ==
-             iter->diff_exp[tags_y->id].value) &&
-            tq_strings_equal(&iter->diff_exp[tags_x->id].verdicts,
-                             &iter->diff_exp[tags_y->id].verdicts);
-
-    exclude = !match && trc_diff_exclude_by_key(iter);
-
-    assert(tags_y->id > 0);
-
-    stats[tags_x->id][tags_y->id - 1]
-         [trc_diff_result_to_stats_index(iter->diff_exp[tags_x->id].value,
-                                         match, exclude)]
-         [trc_diff_result_to_stats_index(iter->diff_exp[tags_y->id].value,
-                                         match, exclude)]++;
 }
                     
 
@@ -374,44 +394,335 @@ trc_diff_tests_has_diff(trc_diff_ctx *ctx, const test_runs *tests)
 
     return has_diff;
 }
+#endif
+
+
 
 /**
- * Initialize TRC diff context.
+ * Get expected results for all sets to compare.
  *
- * @param ctx           Context to be initialized 
+ * @param diffs         Sets to compare
+ * @param walker        Current position in DB
+ * @param entry         Entry to fill in
  */
+static void
+trc_diff_entry_exp_results(const trc_diff_tags_list *diffs,
+                           const te_trc_db_walker   *walker,
+                           trc_diff_entry           *entry)
+{
+    trc_diff_tags_entry *tags;
+
+    assert(walker != NULL);
+    assert(diffs != NULL);
+    assert(entry != NULL);
+
+    for (tags = diffs->tqh_first;
+         tags != NULL;
+         tags = tags->links.tqe_next)
+    {
+        /* Check if the result is not inherited from parent */
+        if (entry->results[tags->id] == NULL)
+        {
+            entry->results[tags->id] =
+                trc_db_walker_get_exp_result(walker, &tags->tags);
+            assert(entry->results[tags->id] != NULL);
+        }
+    }
+}
+
+#if 0
+/**
+ * Map test result, match and exclude status to statistics index.
+ *
+ * @param result        Result
+ * @param match         Do results match?
+ * @param exclude       Does exclude of such differencies requested?
+ *
+ * @return Index of statistics counter.
+ */
+static trc_diff_stats_index
+trc_diff_result_to_stats_index(trc_test_result result,
+                               te_bool match, te_bool exclude)
+{
+    switch (result)
+    {
+        case TRC_TEST_PASSED:
+            if (match)
+                return TRC_DIFF_STATS_PASSED;
+            else if (exclude)
+                return TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE;
+            else
+                return TRC_DIFF_STATS_PASSED_DIFF;
+
+        case TRC_TEST_FAILED:
+            if (match)
+                return TRC_DIFF_STATS_FAILED;
+            else if (exclude)
+                return TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE;
+            else
+                return TRC_DIFF_STATS_FAILED_DIFF;
+
+        case TRC_TEST_SKIPPED:
+            return TRC_DIFF_STATS_SKIPPED;
+
+        default:
+            return TRC_DIFF_STATS_OTHER;
+    }
+}
+
+/**
+ * Update total statistics for sets X and Y based on an iteration data.
+ *
+ * @param iter          Test iteration
+ * @param diff_i        Set X of tags
+ * @param diff_j        Set Y of tags
+ */
+static void
+trc_diff_iter_stats(trc_diff_stats       *stats,
+                    const test_iter      *iter,
+                    const unsigned int    diff_i,
+                    const unsigned int    diff_j)
+{
+    te_bool match;
+    te_bool exclude;
+
+    /* 
+     * Do nothing if an index of the first set is greater or equal to the
+     * index of the second set.
+     */
+    if (diff_i >= diff_j)
+        return;
+
+    /*
+     * Exclude iterations of test packages
+     */
+    if (iter->tests.head.tqh_first != NULL)
+        return;
+
+    match = trc_is_exp_result_equal(iter->results[diff_i],
+                                    iter->results[diff_j]);
+
+    exclude = !match && trc_diff_exclude_by_key(iter);
+
+    assert(diff_j > 0);
+
+    stats[diff_i][diff_j - 1]
+         [trc_diff_result_to_stats_index(iter->results[diff_i],
+                                         match, exclude)]
+         [trc_diff_result_to_stats_index(iter->results[diff_j],
+                                         match, exclude)]++;
+}
+#endif
+
+/* See descriptino in trc_diff.h */
+te_errno
+trc_diff_do(trc_diff_ctx *ctx)
+{
+    LIST_HEAD(, trc_diff_state) states;
+
+    te_errno                rc;
+    te_bool                 start;
+    unsigned int            level;
+    trc_diff_state         *state;
+    te_trc_db_walker       *walker;
+    trc_db_walker_motion    motion;
+    trc_diff_entry         *parent;
+    te_bool                 has_diff;
+    te_bool                 hide_children = FALSE; /* Just to make
+                                                      compiler happy */
+    trc_diff_entry         *entry;
+    te_bool                 entry_to_result = FALSE; /* Just to make
+                                                        compiler happy */
+
+    if (ctx == NULL || ctx->db == NULL)
+        return TE_EINVAL;
+
+    walker = trc_db_new_walker(ctx->db);
+    if (walker == NULL)
+        return TE_ENOMEM;
+
+    LIST_INIT(&states);
+
+    /* Traverse the tree */
+    rc = 0;
+    start = TRUE;
+    level = 0;
+    parent = entry = NULL;
+    has_diff = FALSE;
+    while ((rc == 0) &&
+           ((motion = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
+    {
+        assert(!start || motion == TRC_DB_WALKER_SON);
+        switch (motion)
+        {
+            case TRC_DB_WALKER_SON:
+                if (start)
+                {
+                    start = FALSE;
+                }
+                else
+                {
+                    /* 
+                     * Save current 'parent' and its 'has_diff' in the
+                     * stack.
+                     */
+                    state = TE_ALLOC(sizeof(*state));
+                    if (state == NULL)
+                    {
+                        rc = TE_ENOMEM;
+                        break;
+                    }
+                    state->entry = parent;
+                    state->has_diff = has_diff;
+                    LIST_INSERT_HEAD(&states, state, links);
+
+                    /* Current 'entry' is a parent to a new one */
+                    assert(entry != NULL);
+                    parent = entry;
+                    entry = NULL;
+                    parent->level = level;
+                    TAILQ_INSERT_TAIL(&ctx->result, parent, links);
+                    /* Ignore 'entry_to_result' for non-leaf nodes */
+                    has_diff = FALSE;
+                    /* May be its children are leaves of the tree */
+                    hide_children = TRUE;
+                    /* Moved to the next level */
+                    level++;
+                }
+                /* Fake 'entry_to_result' condition to force allocation */
+                assert(entry == NULL);
+                entry_to_result = TRUE;
+                /*@fallthrough@*/
+
+            case TRC_DB_WALKER_BROTHER:
+                if (entry_to_result)
+                {
+                    if (entry != NULL)
+                    {
+                        entry->level = level;
+                        TAILQ_INSERT_TAIL(&ctx->result, entry, links);
+                    }
+
+                    entry = trc_diff_entry_new(parent);
+                    if (entry == NULL)
+                    {
+                        rc = TE_ENOMEM;
+                        break;
+                    }
+                    entry_to_result = FALSE;
+                }
+                else
+                {
+                    trc_diff_entry_cleanup(entry);
+                }
+                if (entry->is_iter)
+                {
+                    trc_diff_entry_exp_results(&ctx->sets, walker, entry);
+#if 0
+                    if (trc_diff_entry_has_diff(entry))
+                    {
+                        entry_to_result = has_diff = TRUE;
+                    }
+                    else if ()
+                    {
+                    }
+                    else
+                    {
+                        hide_children = FALSE;
+                    }
+#endif
+                }
+                break;
+
+            case TRC_DB_WALKER_PARENT:
+                /* Free extra entry allocated to process children */
+                free(entry); entry = NULL;
+                if (has_diff)
+                {
+                    /* Some differences have been discovered */
+                    if (hide_children)
+                    {
+                        /* 
+                         * It is allowed to hide all children,
+                         * therefore remove them from result.
+                         */
+                        while ((entry = parent->links.tqe_next) != NULL)
+                        {
+                            TAILQ_REMOVE(&ctx->result, entry, links);
+                            free(entry);
+                        }
+                    }
+                }
+                else
+                {
+                    /* No differences in children */
+                    /* Nothing should be added after the parent */
+                    assert(parent->links.tqe_next == NULL);
+                    /* Remove the parent from result */
+                    TAILQ_REMOVE(&ctx->result, parent, links);
+                    /* Reuse this parent entry for its brothers */
+                    entry = parent;
+                }
+                
+                /* Extract state from the stack and restore */
+                state = states.lh_first;
+                assert(state != NULL);
+                LIST_REMOVE(state, links);
+                parent = state->entry;
+                has_diff = has_diff || state->has_diff;
+                /* Never hide children who have own children */
+                hide_children = FALSE;
+                free(state);
+                /* Previous level */
+                assert(level > 0);
+                level--;
+                break;
+
+            default:
+                assert(FALSE);
+        }
+    }
+
+    if (entry_to_result && entry != NULL)
+    {
+        entry->level = level;
+        TAILQ_INSERT_TAIL(&ctx->result, entry, links);
+    }
+    else
+        free(entry);
+
+    trc_db_free_walker(walker);
+
+    return rc;
+}
+
+
+/* See descriptino in trc_diff.h */
 void
 trc_diff_ctx_init(trc_diff_ctx *ctx)
 {
-    flags = 0;
+    ctx->flags = 0;
+    ctx->db = NULL;
     TAILQ_INIT(&ctx->sets);
     TAILQ_INIT(&ctx->exclude_keys);
 
     memset(&ctx->stats, 0, sizeof(ctx->stats));
     CIRCLEQ_INIT(&ctx->keys_stats);
+    TAILQ_INIT(&ctx->result);
 }
 
-/**
- * Free resources allocated in TRC diff context.
- *
- * @param ctx           Context to be freed
- */
+/* See descriptino in trc_diff.h */
 void
 trc_diff_ctx_free(trc_diff_ctx *ctx)
 {
-    trc_diff_free_tags(&trc->sets);
+    trc_diff_entry *p;
+
+    trc_diff_free_tags(&ctx->sets);
     tq_strings_free(&ctx->exclude_keys, free);
-}
 
-
-/** See descriptino in trc_diff.h */
-te_errno
-trc_diff_do(trc_diff_ctx *ctx, const te_trc_db *db)
-{
-    te_bool has_diff;
-
-    /* Preprocess tests tree and gather statistics */
-    has_diff = trc_diff_tests_has_diff(ctx, &db->tests);
-
-    return 0;
+    while ((p = ctx->result.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&ctx->result, p, links);
+        free(p);
+    }
 }

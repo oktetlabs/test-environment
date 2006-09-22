@@ -314,7 +314,6 @@ main(int argc, char *argv[])
 {
     int             result = EXIT_FAILURE;
     trc_diff_ctx    ctx;
-    te_trc_db      *trc_db = NULL;
 
     /* Initialize diff context */
     trc_diff_ctx_init(&ctx);
@@ -330,14 +329,14 @@ main(int argc, char *argv[])
     }
 
     /* Parse expected testing results database */
-    if (trc_db_open(trc_diff_db_fn, &trc_db) != 0)
+    if (trc_db_open(trc_diff_db_fn, &ctx.db) != 0)
     {
         ERROR("Failed to load expected testing results database");
         goto exit;
     }
 
     /* Generate reports in HTML format */
-    if (trc_diff_do(&ctx, trc_db) != 0)
+    if (trc_diff_do(&ctx) != 0)
     {
         ERROR("Failed to generate diff");
         goto exit;
@@ -355,7 +354,7 @@ main(int argc, char *argv[])
 
 exit:
 
-    trc_db_close(trc_db);
+    trc_db_close(ctx.db);
     free(trc_diff_db_fn);
     free(trc_diff_html_fn);
     free(trc_diff_title);
