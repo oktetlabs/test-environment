@@ -25,6 +25,8 @@
  *	products derived from this software without specific prior 
  * 	written permission.
 */
+#include "te_config.h"
+
 #include <inttypes.h>
 #include <string.h>
 
