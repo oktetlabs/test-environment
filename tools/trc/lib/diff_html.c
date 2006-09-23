@@ -764,7 +764,9 @@ trc_diff_result_to_html(const trc_diff_result    *result,
              */
             if ((next != NULL) && (next->level > curr->level))
             {
-                assert(next->level - curr->level == 1);
+                assert((next->level - curr->level == 1) ||
+                       (!curr->is_iter &&
+                        (next->level - curr->level == 2)));
                 /*
                  * It is OK to skip cutting of accumulated name,
                  * since we go in the deep.

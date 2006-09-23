@@ -55,6 +55,7 @@ typedef struct trc_diff_state {
     trc_diff_entry     *entry;      /**< Pointer to the entry in
                                          result list */
     te_bool             has_diff;   /**< Have children differences? */
+    unsigned int        children;   /**< Number of children */
 } trc_diff_state;
 
 
@@ -633,6 +634,7 @@ trc_diff_do(trc_diff_ctx *ctx)
     te_trc_db_walker       *walker;
     trc_db_walker_motion    motion;
     trc_diff_entry         *parent;
+    unsigned int            children;
     te_bool                 has_diff;
     te_bool                 hide_children = FALSE; /* Just to make
                                                       compiler happy */
@@ -655,6 +657,7 @@ trc_diff_do(trc_diff_ctx *ctx)
     level = 0;
     parent = entry = NULL;
     has_diff = FALSE;
+    children = 0;
     while ((rc == 0) &&
            ((motion = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
     {
@@ -683,6 +686,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                     }
                     state->entry = parent;
                     state->has_diff = has_diff;
+                    state->children = children;
                     LIST_INSERT_HEAD(&states, state, links);
 
                     /* Current 'entry' is a parent to a new one */
@@ -693,6 +697,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                     TAILQ_INSERT_TAIL(&ctx->result, parent, links);
                     /* Ignore 'entry_to_result' for non-leaf nodes */
                     has_diff = FALSE;
+                    children = 0;
                     /* May be its children are leaves of the tree */
                     hide_children = TRUE;
                     /* Moved to the next level */
@@ -704,6 +709,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                 /*@fallthrough@*/
 
             case TRC_DB_WALKER_BROTHER:
+                children++;
                 if (entry_to_result)
                 {
                     if (entry != NULL)
@@ -794,6 +800,14 @@ trc_diff_do(trc_diff_ctx *ctx)
                             free(entry);
                         }
                     }
+                    else if (children == 1 && !parent->is_iter)
+                    {
+                        entry = parent->links.tqe_next;
+                        assert(entry != NULL);
+                        TAILQ_REMOVE(&ctx->result, entry, links);
+                        free(entry);
+                        entry = NULL;
+                    }
                     entry_to_result = TRUE;
                 }
                 else
@@ -814,6 +828,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                 LIST_REMOVE(state, links);
                 parent = state->entry;
                 has_diff = has_diff || state->has_diff;
+                children = state->children;
                 /* Never hide children who have own children */
                 hide_children = FALSE;
                 free(state);
