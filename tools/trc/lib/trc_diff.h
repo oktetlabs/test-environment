@@ -140,6 +140,9 @@ typedef TAILQ_HEAD(trc_diff_result, trc_diff_entry) trc_diff_result;
 
 /**
  * TRC diff tool context.
+ *
+ * @note The object is quiet big and it is highly not recommented to
+ *       allocate it on stack.
  */
 typedef struct trc_diff_ctx {
     /* Input */
@@ -203,11 +206,9 @@ extern void trc_diff_free_tags(trc_diff_tags_list *tags);
 
 
 /**
- * Initialize TRC diff context.
- *
- * @param ctx           Context to be initialized 
+ * Allocate a new TRC diff context.
  */
-extern void trc_diff_ctx_init(trc_diff_ctx *ctx);
+extern trc_diff_ctx *trc_diff_ctx_new(void);
 
 /**
  * Free resources allocated in TRC diff context.

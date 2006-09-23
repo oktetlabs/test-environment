@@ -842,17 +842,23 @@ trc_diff_do(trc_diff_ctx *ctx)
 
 
 /* See descriptino in trc_diff.h */
-void
-trc_diff_ctx_init(trc_diff_ctx *ctx)
+trc_diff_ctx *
+trc_diff_ctx_new(void)
 {
-    ctx->flags = 0;
-    ctx->db = NULL;
-    TAILQ_INIT(&ctx->sets);
-    TAILQ_INIT(&ctx->exclude_keys);
+    trc_diff_ctx *ctx = TE_ALLOC(sizeof(*ctx));
 
-    memset(&ctx->stats, 0, sizeof(ctx->stats));
-    CIRCLEQ_INIT(&ctx->keys_stats);
-    TAILQ_INIT(&ctx->result);
+    if (ctx != NULL)
+    {
+        ctx->flags = 0;
+        ctx->db = NULL;
+        TAILQ_INIT(&ctx->sets);
+        TAILQ_INIT(&ctx->exclude_keys);
+
+        memset(&ctx->stats, 0, sizeof(ctx->stats));
+        CIRCLEQ_INIT(&ctx->keys_stats);
+        TAILQ_INIT(&ctx->result);
+    }
+    return ctx;
 }
 
 /* See descriptino in trc_diff.h */
@@ -869,4 +875,5 @@ trc_diff_ctx_free(trc_diff_ctx *ctx)
         TAILQ_REMOVE(&ctx->result, p, links);
         free(p);
     }
+    free(ctx);
 }

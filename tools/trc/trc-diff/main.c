@@ -316,18 +316,20 @@ int
 main(int argc, char *argv[])
 {
     int                  result = EXIT_FAILURE;
-    trc_diff_ctx         ctx;
+    trc_diff_ctx        *ctx;
     trc_diff_tags_entry *diff_set;
 
     /* Initialize diff context */
-    trc_diff_ctx_init(&ctx);
+    ctx = trc_diff_ctx_new();
+    if (ctx == NULL)
+        goto exit;
 
     /* Process and validate command-line options */
-    if (process_cmd_line_opts(argc, argv, &ctx) != EXIT_SUCCESS)
+    if (process_cmd_line_opts(argc, argv, ctx) != EXIT_SUCCESS)
         goto exit;
 
     /* Make sure that all sets have name */
-    for (diff_set = ctx.sets.tqh_first;
+    for (diff_set = ctx->sets.tqh_first;
          diff_set != NULL;
          diff_set = diff_set->links.tqe_next)
     {
@@ -346,21 +348,21 @@ main(int argc, char *argv[])
     }
 
     /* Parse expected testing results database */
-    if (trc_db_open(trc_diff_db_fn, &ctx.db) != 0)
+    if (trc_db_open(trc_diff_db_fn, &ctx->db) != 0)
     {
         ERROR("Failed to load expected testing results database");
         goto exit;
     }
 
     /* Generate reports in HTML format */
-    if (trc_diff_do(&ctx) != 0)
+    if (trc_diff_do(ctx) != 0)
     {
         ERROR("Failed to generate diff");
         goto exit;
     }
 
     /* Generate reports in HTML format */
-    if (trc_diff_report_to_html(&ctx, trc_diff_html_fn,
+    if (trc_diff_report_to_html(ctx, trc_diff_html_fn,
                                 trc_diff_title) != 0)
     {
         ERROR("Failed to generate report in HTML format");
@@ -371,11 +373,11 @@ main(int argc, char *argv[])
 
 exit:
 
-    trc_db_close(ctx.db);
+    trc_db_close(ctx->db);
     free(trc_diff_db_fn);
     free(trc_diff_html_fn);
     free(trc_diff_title);
-    trc_diff_ctx_free(&ctx);
+    trc_diff_ctx_free(ctx);
 
     return result;
 }

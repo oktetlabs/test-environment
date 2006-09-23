@@ -380,7 +380,7 @@ trc_diff_one_stats_to_html(FILE                      *f,
 
     UNUSED(flags);
 
-    counters = stats[tags_x->id][tags_y->id - 1];
+    counters = &((*stats)[tags_x->id][tags_y->id - 1]);
 
     total_match =
         (*counters)[TRC_DIFF_STATS_PASSED][TRC_DIFF_STATS_PASSED] +
@@ -713,7 +713,7 @@ trc_diff_result_to_html(const trc_diff_result    *result,
     const trc_diff_entry       *curr;
     const trc_diff_entry       *next;
     unsigned int                i, j;
-    te_string                   str_buf = { NULL, 0, 0 };
+    te_string                   test_name = { NULL, 0, 0 };
 
 
     /*
@@ -748,47 +748,68 @@ trc_diff_result_to_html(const trc_diff_result    *result,
     {
         next = curr->links.tqe_next;
 
-        if (!curr->is_iter)
+        if (flags & TRC_DIFF_BRIEF)
         {
-            if (flags & TRC_DIFF_BRIEF)
+            if (!curr->is_iter)
             {
-                rc = te_string_append(&str_buf, "%s%s",
+                rc = te_string_append(&test_name, "%s%s",
                                       curr->level == 0 ? "" : "/",
                                       curr->ptr.test->name);
                 if (rc != 0)
-                    return rc;
-
-                /*
-                 * Only leaves are output in brief mode
-                 */
-                if ((next != NULL) && (next->level > curr->level))
-                {
-                    assert(next->level - curr->level == 1);
-                    continue;
-                }
-
-                fprintf(f, trc_diff_brief_table_test_row_start,
-                        i, str_buf.ptr);
-
-                rc = trc_diff_exp_results_to_html(f, diffs, curr, flags);
-                if (rc != 0)
                     goto cleanup;
             }
-            else
+
+            /*
+             * Only leaves are output in brief mode
+             */
+            if ((next != NULL) && (next->level > curr->level))
             {
-                rc = te_string_append(&str_buf,
-                                      (curr->level > 0) ? "*-" : "");
-                if (rc != 0)
-                    return rc;
-
-                fprintf(f, trc_diff_full_table_test_row_start,
-                        i, str_buf.ptr, curr->ptr.test->name,
-                        PRINT_STR(curr->ptr.test->objective));
-
-                rc = trc_diff_exp_results_to_html(f, diffs, curr, flags);
-                if (rc != 0)
-                    goto cleanup;
+                assert(next->level - curr->level == 1);
+                /*
+                 * It is OK to skip cutting of accumulated name,
+                 * since we go in the deep.
+                 */
+                continue;
             }
+
+            /*
+             * In brief output for tests and iterations is similar:
+             *  - accumulated test name;
+             *  - expected results;
+             *  - keys;
+             *  - notes.
+             */
+            fprintf(f, trc_diff_brief_table_test_row_start,
+                    i, test_name.ptr);
+            rc = trc_diff_exp_results_to_html(f, diffs, curr, flags);
+            if (rc != 0)
+                goto cleanup;
+        }
+        else if (curr->is_iter)
+        {
+            fprintf(f, trc_diff_table_iter_row_start, i);
+            trc_test_iter_args_to_html(f, &curr->ptr.iter->args,
+                                       flags);
+            WRITE_STR(trc_diff_table_row_col_end);
+
+            rc = trc_diff_exp_results_to_html(f, diffs, curr, flags);
+            if (rc != 0)
+                goto cleanup;
+        }
+        else
+        {
+            rc = te_string_append(&test_name,
+                                  (curr->level > 0) ? "*-" : "");
+            if (rc != 0)
+                goto cleanup;
+
+            fprintf(f, trc_diff_full_table_test_row_start,
+                    i, test_name.ptr, curr->ptr.test->name,
+                    PRINT_STR(curr->ptr.test->objective));
+
+            rc = trc_diff_exp_results_to_html(f, diffs, curr, flags);
+            if (rc != 0)
+                goto cleanup;
 
 #if 0
             buf[0] = '\0';
@@ -807,38 +828,6 @@ trc_diff_result_to_html(const trc_diff_result    *result,
             fprintf(f, trc_diff_table_row_end, buf, PRINT_STR(p->notes));
 #endif
         }
-        else
-        {
-            if (flags & TRC_DIFF_BRIEF)
-            {
-                /*
-                 * Only leaves are output in brief mode
-                 */
-                if ((next != NULL) && (next->level > curr->level))
-                {
-                    assert(next->level - curr->level == 1);
-                    continue;
-                }
-
-                fprintf(f, trc_diff_brief_table_test_row_start,
-                        i, str_buf.ptr);
-
-                rc = trc_diff_exp_results_to_html(f, diffs, curr, flags);
-                if (rc != 0)
-                    goto cleanup;
-            }
-            else
-            {
-                fprintf(f, trc_diff_table_iter_row_start, i);
-                trc_test_iter_args_to_html(f, &curr->ptr.iter->args,
-                                           flags);
-                WRITE_STR(trc_diff_table_row_col_end);
-
-                rc = trc_diff_exp_results_to_html(f, diffs, curr, flags);
-                if (rc != 0)
-                    goto cleanup;
-            }
-        }
 
         /* If level of the next entry is less */
         if (next != NULL && 
@@ -851,17 +840,18 @@ trc_diff_result_to_html(const trc_diff_result    *result,
 
                 j = ((curr->level - next->level) >> 1);
                 do {
-                    slash = strrchr(str_buf.ptr, '/');
+                    slash = strrchr(test_name.ptr, '/');
                     if (slash == NULL)
-                        slash = str_buf.ptr;
-                    str_buf.ptr[slash - str_buf.ptr] = '\0'; 
+                        slash = test_name.ptr;
+                    test_name.ptr[slash - test_name.ptr] = '\0'; 
                 } while (j-- > 0);
-                str_buf.len = slash - str_buf.ptr;
+                test_name.len = slash - test_name.ptr;
             }
             else
             {
-                str_buf.len -= ((curr->level - next->level) >> 1 << 1) + 2;
-                str_buf.ptr[str_buf.len] = '\0';
+                test_name.len -=
+                    ((curr->level - next->level) >> 1 << 1) + 2;
+                test_name.ptr[test_name.len] = '\0';
             }
         }
     }
