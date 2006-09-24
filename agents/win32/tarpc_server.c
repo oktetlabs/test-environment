@@ -3000,7 +3000,7 @@ TARPC_FUNC(enum_network_events,
         for(i = 0; i < 10; i++)
         {
             out->events.events_val[0].error_code[i] = 
-            te_rc_os2te(events_occured.iErrorCode[i]);
+            win_rpc_errno(events_occured.iErrorCode[i]);
         }
     }
 }
