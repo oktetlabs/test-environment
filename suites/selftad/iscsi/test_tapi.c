@@ -28,7 +28,7 @@
 
 #define TE_TEST_NAME    "iscsi/test_tapi"
 
-#include "config.h"
+#include "te_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

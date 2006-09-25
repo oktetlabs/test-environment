@@ -29,7 +29,7 @@
 
 #define TE_TEST_NAME    "cli/serial"
 
-#include "config.h"
+#include "te_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

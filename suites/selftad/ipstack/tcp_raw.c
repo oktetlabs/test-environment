@@ -28,7 +28,7 @@
 
 #define TE_TEST_NAME    "ipstack/tcp_raw"
 
-#include "config.h"
+#include "te_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

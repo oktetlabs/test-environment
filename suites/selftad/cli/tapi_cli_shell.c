@@ -29,7 +29,7 @@
 
 #define TE_TEST_NAME    "cli/shell"
 
-#include "config.h"
+#include "te_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

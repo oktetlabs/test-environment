@@ -19,7 +19,7 @@
 
 #define TE_LOG_LEVEL 255
 
-#include "config.h"
+#include "te_config.h"
 #include <linux/if_ether.h>
 
 #include "tapi_test.h"

@@ -29,7 +29,7 @@
 
 #define TE_TEST_NAME    "eth/caught_any"
 
-#include "config.h"
+#include "te_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -33,7 +33,7 @@
 #define TE_LOG_LEVEL 0xff
 #endif
 
-#include "config.h"
+#include "te_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
