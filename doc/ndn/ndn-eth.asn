@@ -29,8 +29,8 @@ Ethernet-Header ::= IMPLICIT SEQUENCE {
 }
 
 Ethernet-CSAP ::= IMPLICIT SEQUENCE { 
-    device-id   [0] DATA-UNIT{UniversalString},
-    receive-mode[1] DATA-UNIT{INTEGER(0..31)}, 
+    device-id   [0] DATA-UNIT{UniversalString} OPTIONAL,
+    receive-mode[1] DATA-UNIT{INTEGER(0..31)} OPTIONAL,
     local-addr  [2] DATA-UNIT{EthernetAddress} OPTIONAL,
     remote-addr [3] DATA-UNIT{EthernetAddress} OPTIONAL,
     eth-type    [6] DATA-UNIT{OCTET STRING (SIZE 2)}OPTIONAL, 
