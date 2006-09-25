@@ -31,6 +31,7 @@ ATM-Coding-Scheme ::= INTEGER {
 }
 
 ATM-CSAP ::= SEQUENCE { 
+    device-id       DATA-UNIT{UniversalString} OPTIONAL,
     type            ATM-Coding-Scheme,
     vpi             DATA-UNIT{INTEGER (0..4095)} OPTIONAL,
     vci             DATA-UNIT{INTEGER (0..65535)} OPTIONAL,

@@ -63,6 +63,7 @@ typedef enum ndn_atm_type {
 
 /** ASN.1 tags for ATM */
 typedef enum {
+    NDN_TAG_ATM_DEVICE,
     NDN_TAG_ATM_TYPE,
     NDN_TAG_ATM_GFC,
     NDN_TAG_ATM_VPI,

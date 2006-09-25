@@ -83,6 +83,8 @@ asn_type ndn_atm_type_s =
 
 static asn_named_entry_t _ndn_atm_csap_ne_array[] = 
 {
+    { "device-id",      &ndn_data_unit_char_string_s,
+      { PRIVATE, NDN_TAG_ATM_DEVICE } },
     { "type",           &ndn_atm_type_s,
       { PRIVATE, NDN_TAG_ATM_TYPE } },
     { "vpi",            &ndn_data_unit_int12_s,

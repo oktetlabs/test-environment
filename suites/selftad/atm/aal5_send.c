@@ -120,7 +120,7 @@ main(int argc, char *argv[])
     tcp_srv_csap = CSAP_INVALID_HANDLE;
 
     CHECK_RC(tapi_atm_aal5_add_csap_layer(&csap_spec, &cpcs_uu, &cpi));
-    CHECK_RC(tapi_atm_add_csap_layer(&csap_spec,
+    CHECK_RC(tapi_atm_add_csap_layer(&csap_spec, NULL,
                                      type, &vpi, &vci, &congestion, &clp));
     CHECK_RC(tapi_tad_socket_add_csap_layer(&csap_spec, iut_s));
     CHECK_RC(tapi_tad_csap_create(iut_host->ta, 0, "aal5.atm.socket",

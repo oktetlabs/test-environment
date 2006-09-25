@@ -236,7 +236,7 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_ta_csap_destroy(iut_host->ta, 0, tcp_srv_csap));
     tcp_srv_csap = CSAP_INVALID_HANDLE;
 
-    CHECK_RC(tapi_atm_add_csap_layer(&csap_spec,
+    CHECK_RC(tapi_atm_add_csap_layer(&csap_spec, NULL,
                  (strcmp(type, "uni") == 0) ?  NDN_ATM_UNI : NDN_ATM_NNI,
                  (csap_vpi == CSAP_PARAM_UNSPEC) ?  NULL :
                  (csap_vpi == CSAP_PARAM_MATCH) ?  &vpi : &vpi_nomatch,

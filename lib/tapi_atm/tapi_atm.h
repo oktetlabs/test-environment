@@ -44,6 +44,8 @@ extern "C" {
  * Add ATM layer in CSAP specification.
  *
  * @param csap_spec     Location of CSAP specification pointer.
+ * @param device        Interface name on TA host or NULL (have to
+ *                      be not-NULL, if it is the bottom layer)
  * @param type          ATM cell header format.
  * @param vpi           Pointer to Virtual Path Identifier or NULL.
  *                      If NULL, it have to be specified in traffic
@@ -63,6 +65,7 @@ extern "C" {
  * @retval Status code.
  */
 extern te_errno tapi_atm_add_csap_layer(asn_value      **csap_spec,
+                                        const char      *device,
                                         ndn_atm_type     type,
                                         const uint16_t  *vpi,
                                         const uint16_t  *vci,

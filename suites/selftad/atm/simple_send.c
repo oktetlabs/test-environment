@@ -112,7 +112,7 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_ta_csap_destroy(iut_host->ta, 0, tcp_srv_csap));
     tcp_srv_csap = CSAP_INVALID_HANDLE;
 
-    CHECK_RC(tapi_atm_add_csap_layer(&csap_spec,
+    CHECK_RC(tapi_atm_add_csap_layer(&csap_spec, NULL,
                                      type, &vpi, &vci, &congestion, &clp));
     CHECK_RC(tapi_tad_socket_add_csap_layer(&csap_spec, iut_s));
     CHECK_RC(tapi_tad_csap_create(iut_host->ta, 0, "atm.socket",

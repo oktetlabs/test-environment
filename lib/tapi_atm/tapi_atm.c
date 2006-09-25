@@ -55,6 +55,7 @@
 /* See the description in tapi_atm.h */
 te_errno 
 tapi_atm_add_csap_layer(asn_value      **csap_spec,
+                        const char      *device,
                         ndn_atm_type     type,
                         const uint16_t  *vpi,
                         const uint16_t  *vci,
@@ -65,6 +66,9 @@ tapi_atm_add_csap_layer(asn_value      **csap_spec,
 
     CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_atm_csap, "#atm",
                                      &layer));
+
+    if (device != NULL)
+        CHECK_RC(asn_write_string(layer, device, "device-id.#plain"));
 
     CHECK_RC(asn_write_int32(layer, type, "type"));
 
