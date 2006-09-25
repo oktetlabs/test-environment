@@ -425,7 +425,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
     if (data->in < 0)
     {
         rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
-        ERROR("socket(PF_PACKET, SOCK_RAW, ETH_P_ALL) failed: %r", rc);
+        ERROR("socket(PF_PACKET, SOCK_RAW, 0) failed: %r", rc);
         return rc;
     }
 
