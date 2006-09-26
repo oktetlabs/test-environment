@@ -1,5 +1,5 @@
 /** @file
- * @brief RPC Test Suite
+ * @brief SelfTAD Test Suite
  *
  * Test Suite prologue.
  *
@@ -13,22 +13,22 @@
 /** Logging subsystem entity name */
 #define TE_TEST_NAME    "prologue"
 
-#include <stdlib.h>
-#include <signal.h>
+#include "te_config.h"
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
 
 #include "tapi_test.h"
 #include "tapi_cfg_net.h"
 
 
 int
-main(void)
+main(int argc, char *argv[])
 {
-    int result = EXIT_FAILURE;
-
-    signal(SIGINT, sigint_handler);
-    te_lgr_entity = TE_TEST_NAME;
-    TAPI_ON_JMP(TEST_ON_JMP_DO);
+    TEST_START;
 
     CHECK_RC(tapi_cfg_net_all_assign_ip(AF_INET));
 
@@ -37,5 +37,5 @@ main(void)
 cleanup:
     CFG_WAIT_CHANGES;
 
-    return result;
+    TEST_END;
 }
