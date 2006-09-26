@@ -13,10 +13,13 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 tetest_PROGRAMS = caught_any simple_recv_send vlan_recv_send \
                   eth_serial1 eth_serial2
 
-LDADD= -ltapi -ltapi_eth -ltapi_tad -lndn -lasn -lconfapi -lrcfapi \
-       -lrpcxdr -lconf_oid -llogger_ten -lipc -ltools -lpthread
+LDADD= -ltapi -ltapi_eth -ltapi_tad -lndn -lasn -ltapi_env -lrcfrpc \
+       -lrpc_types -lconfapi -lrcfapi -lrpcxdr -lconf_oid -llogger_ten \
+       -lipc -ltools -lpthread
 
-MYDEPS = @SELFTAD_TE_DEPS@ @TE_INSTALL@/$(TE_PLATFORM)/lib/libtapi_eth.a 
+MYDEPS = @SELFTAD_TE_DEPS@ \
+	@TE_INSTALL@/$(TE_PLATFORM)/lib/libtapi_eth.a \
+	@TE_INSTALL@/$(TE_PLATFORM)/lib/libtapi_env.a
 
 caught_any_DEPENDENCIES = $(MYDEPS)
 

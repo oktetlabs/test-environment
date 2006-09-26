@@ -3,8 +3,8 @@
  *
  * Simple RCF test
  * 
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,7 +28,9 @@
 
 #define TE_TEST_NAME    "eth/vlan_recv_send"
 
-#define TE_LOG_LEVEL 0xff
+#define TEST_START_VARS         TEST_START_ENV_VARS
+#define TEST_START_SPECIFIC     TEST_START_ENV
+#define TEST_END_SPECIFIC       TEST_END_ENV
 
 #include "te_config.h"
 
@@ -44,6 +46,7 @@
 #include "rcf_api.h"
 
 #include "tapi_test.h"
+#include "tapi_env.h"
 
 #include "ndn_eth.h"
 #include "tapi_eth.h" 
@@ -57,274 +60,139 @@ local_eth_frame_handler(const asn_value *packet, int layer,
                         const uint8_t *payload, uint16_t plen, 
                         void *userdata)
 {
-    int i;
-    char buffer [100];
+    int  i;
+    char buffer[100];
     
     UNUSED(packet);
     UNUSED(layer);
     UNUSED(payload);
     UNUSED(userdata);
 
-    VERB ("++++ Ethernet frame received\n");
+    RING("Ethernet frame received");
     sprintf(buffer, "dst: ");
     for (i = 0; i < ETHER_ADDR_LEN; i ++ )
         sprintf(buffer, "%02x ", header->dst_addr[i]);
     sprintf(buffer, "src: ");
     for (i = 0; i < ETHER_ADDR_LEN; i ++ )
         sprintf(buffer, "%02x ", header->src_addr[i]);
-    VERB("addrs: %s", buffer);
+    RING("addrs: %s", buffer);
 
-    VERB("len_type: 0x%x = %d", header->len_type, header->len_type);
+    RING("len_type: 0x%x = %d", header->len_type, header->len_type);
 
-    if(header->is_tagged)
+    if (header->is_tagged)
     {
-        VERB("cfi:     %d", (int)header->cfi);
-        VERB("prio:    %d", (int)header->priority);
-        VERB("vlan-id: %d", (int)header->vlan_id);
+        RING("cfi:     %d", (int)header->cfi);
+        RING("prio:    %d", (int)header->priority);
+        RING("vlan-id: %d", (int)header->vlan_id);
     }
 
-    VERB("payload len: %d", plen);
+    RING("payload len: %d", plen);
 }
-
-#define EXAMPLE_MULT_PKTS 0
 
 int
 main(int argc, char *argv[])
 {
-    char   ta[32];
-    size_t len = sizeof(ta);
-    int  sid;
+    tapi_env_host              *host_a = NULL;
+    const struct if_nameindex  *if_a = NULL;
+    const void                 *hwaddr = NULL;
 
-    int  num;
+    csap_handle_t   send_csap = CSAP_INVALID_HANDLE;
+    csap_handle_t   recv_csap = CSAP_INVALID_HANDLE;
 
-    csap_handle_t eth_csap = CSAP_INVALID_HANDLE;
-    csap_handle_t eth_listen_csap = CSAP_INVALID_HANDLE;
+    ndn_eth_header_plain    plain_hdr;
+    uint16_t                eth_type = ETH_P_IP;
+    asn_value              *asn_eth_hdr = NULL;
+    uint8_t                 payload[100];
+
+    asn_value  *template = NULL;
+    asn_value  *csap_spec = NULL;
+    asn_value  *pattern = NULL;
+
+    int         num;
 
 
     TEST_START;
-    
-    if (rcf_get_ta_list(ta, &len) != 0)
-    {
-        TEST_FAIL("rcf_get_ta_list failed");
-    }
-    VERB("Agent: %s\n", ta);
-       
-    if (rcf_ta_create_session(ta, &sid) != 0)
-        TEST_FAIL("rcf_ta_create_session failed");
-    VERB("Test: Created session: %d\n", sid); 
-
-    do {
-        int       syms = 4;
-        uint16_t  eth_type = ETH_P_IP;
-        uint8_t   payload [2000];
-
-        ndn_eth_header_plain plain_hdr;
-
-        asn_value *csap_spec = NULL;
-        asn_value *asn_eth_hdr;
-        asn_value *template;
-        asn_value *asn_pdus;
-        asn_value *asn_pdu;
-        asn_value *pattern;
-
-        char eth_device[] = "eth0";
-#if 0
-        char payload_fill_method[100] = "eth_udp_payload";
-#endif
-
-#if 0
-        uint8_t rem_addr[6] = {0x01,0x02,0x03,0x04,0x05,0x06};
-#else
-        uint8_t rem_addr[6] = {0x20,0x03,0x20,0x04,0x14,0x30};
-#endif
-
-                    
-        memset (&plain_hdr, 0, sizeof(plain_hdr));
-        memcpy (plain_hdr.dst_addr, rem_addr, ETHER_ADDR_LEN);  
-        memset (payload, 0, sizeof(payload));
-        plain_hdr.len_type = ETH_P_IP; 
-
-        plain_hdr.is_tagged = 1;
-        plain_hdr.vlan_id = 16;
-
-        if ((asn_eth_hdr = ndn_eth_plain_to_packet(&plain_hdr)) == NULL)
-            TEST_FAIL("eth header not converted\n");
-
-        template = asn_init_value(ndn_traffic_template);
-        asn_pdus = asn_init_value(ndn_generic_pdu_sequence);
-        asn_pdu = asn_init_value(ndn_generic_pdu); 
-
-#if EXAMPLE_MULT_PKTS
-        rc = asn_parse_value_text("{simple-for:{begin 1}}",
-                 ndn_template_parameter_sequence, &arg_sets, &syms);
-
-        num_pkts = 20;
-        rc = asn_write_value_field (arg_sets, &num_pkts, sizeof(num_pkts), 
-                                        "0.#simple-for.end");
-        if (rc == 0)
-            rc = asn_write_component_value(template, arg_sets, "arg-sets");
-#endif
-
-        rc = asn_write_component_value(asn_pdu, asn_eth_hdr, "#eth");
-        if (rc == 0)
-            rc = asn_insert_indexed(asn_pdus, asn_pdu, -1, "");
-        if (rc == 0)
-            rc = asn_write_component_value(template, asn_pdus, "pdus");
+    TEST_GET_HOST(host_a);
+    TEST_GET_IF(if_a);
+    TEST_GET_LINK_ADDR(hwaddr);
 
 
-#if 0
-        if (rc == 0)
-            rc = asn_write_value_field (template, payload_fill_method, 
-                    strlen(payload_fill_method) + 1, 
-                "payload.#function");
-#else
-        if (rc == 0)
-            rc = asn_write_value_field(template, payload, 
-                                       100 /* sizeof(payload) */,
-                                       "payload.#bytes");
-#endif
+    /* Prepare plain representation of Ethernet frame header */
+    memset(&plain_hdr, 0, sizeof(plain_hdr));
+    memcpy(plain_hdr.dst_addr, hwaddr, ETHER_ADDR_LEN);  
+    plain_hdr.len_type = ETH_P_IP; 
+    plain_hdr.is_tagged = 1;
+    plain_hdr.vlan_id = 16;
 
-#if 1
-    VERB("come data from addr: %Tm", rem_addr,  ETHER_ADDR_LEN);
-#endif
+    /* Convert plain representation of Ethernet header to ASN.1 value.*/
+    CHECK_NOT_NULL(asn_eth_hdr = ndn_eth_plain_to_packet(&plain_hdr));
 
-        if (rc)
-            TEST_FAIL("template create error %x\n", rc);
-        VERB ("template created successfully \n");
-        rc = tapi_eth_csap_create(ta, sid, eth_device,
-                                  TAD_ETH_RECV_DEF,
-                                  rem_addr, NULL, 
-                                  &eth_type, &eth_csap);
+    /* Create traffic template with Ethernet PDU */
+    CHECK_RC(tapi_eth_add_pdu(&template, FALSE, NULL, NULL, NULL));
 
-        if (rc)
-            TEST_FAIL("csap create error: %x\n", rc);
-        else 
-            VERB ("csap created, id: %d\n", (int)eth_csap);
+    /* Rewrite Ethernet PDU by ASN.1 value created by plain data */
+    CHECK_RC(asn_write_component_value(template, asn_eth_hdr,
+                                       "pdus.0.#eth"));
 
-        CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, eth_device,
-                                         TAD_ETH_RECV_ALL, NULL, NULL,
-                                         NULL));
-        if ((rc = tapi_tad_csap_create(ta, sid, "eth", csap_spec,
-                                       &eth_listen_csap)) != 0)
-            TEST_FAIL("csap for listen create error: %x\n", rc);
-        else 
-            VERB("csap for listen created, id: %d\n",
-                 (int)eth_listen_csap);
-        asn_free_value(csap_spec); csap_spec = NULL;
+    /* Add some payload to traffic template */
+    memset(payload, 0, sizeof(payload));
+    CHECK_RC(asn_write_value_field(template, payload, 
+                                   sizeof(payload),
+                                   "payload.#bytes"));
+
+    RING("Ethernet frame template to send created successfully");
+
+    /* Create traffic pattern with Ethernet PDU */
+    CHECK_RC(tapi_eth_add_pdu(&pattern, TRUE, hwaddr, NULL, NULL));
+    RING("Ethernet frame pattern to receive created successfully");
 
 
-        rc = asn_parse_value_text("{{ pdus { eth:{ }}}}", 
-                            ndn_traffic_pattern, &pattern, &syms); 
-        if (rc)
-            TEST_FAIL("parse value text fails, %r", rc);
+    /* Create send CSAP */
+    CHECK_RC(tapi_eth_csap_create(host_a->ta, 0, if_a->if_name,
+                                  TAD_ETH_RECV_NO,
+                                  hwaddr, NULL, &eth_type,
+                                  &send_csap));
 
-        rc = asn_write_value_field(pattern, rem_addr, sizeof(rem_addr), 
-                 "0.pdus.0.#eth.dst-addr.#plain"); 
-        if (rc)
-            TEST_FAIL("write dst to pattern failed %r", rc);
+    /* Create receive CSAP */
+    CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, if_a->if_name,
+                                     TAD_ETH_RECV_ALL, NULL, NULL,
+                                     NULL));
+    CHECK_RC(tapi_tad_csap_create(host_a->ta, 0, "eth", csap_spec,
+                                  &recv_csap));
+    asn_free_value(csap_spec); csap_spec = NULL;
 
 
-#if 0
-        do {
-            asn_free_subvalue(pattern,
-                              "0.pdus.0.#eth.frame-type.#tagged.vlan-id");
-            asn_value *interval;
-            asn_value *ints_seq = asn_init_value(ndn_interval_sequence);
-            const asn_type *type = NULL;
-            int parsed = 0;
+    /* Start receiver */
+    CHECK_RC(tapi_tad_trrecv_start(host_a->ta, 0, recv_csap, pattern, 
+                                   TAD_TIMEOUT_INF, 1 /* one packet */,
+                                   RCF_TRRECV_PACKETS));
 
-            rc = asn_get_subtype(ndn_generic_pdu, &type,
-                                 "#eth.frame-type.#tagged.vlan-id");
-            if (rc)
-            {
-                ERROR("get subtype for vlan-id failed %x", rc);
-                type = ndn_data_unit_int16;
-                rc = 0;
-            }
-#if 0
-            int val = 10; 
+    /* Start sender */
+    CHECK_RC(tapi_tad_trsend_start(host_a->ta, 0, send_csap, template,
+                                   RCF_MODE_BLOCKING));
 
-            rc = asn_write_value_field(pattern, &val, sizeof(val), 
-                    "0.pdus.0.#eth.vlan-id.#intervals.0.b");
-            if (rc) 
-            {
-               ERROR(stderr, "write intervals value field rc %x\n", rc);
-               rc = 0;
-            }
-#endif
+    /* Sleep 100 milliseconds */
+    MSLEEP(100);
 
-#if 1
-            rc = asn_parse_value_text("intervals: { { b 16, e 20} }", 
-                    type,  &ints_seq, &parsed);
-            if (rc != 0) break;
-            VERB("parse intervals ok");
-            rc = asn_write_component_value(pattern, ints_seq,
-                     "0.pdus.0.#eth.frame-type.#tagged.vlan-id");
-            if (rc) break;
-            VERB("write intervals seq ok"); 
-            UNUSED(interval);
-#else
-            rc = asn_parse_value_text("{b 18, e 20}",
-                        ndn_interval, &interval, &parsed);
-            if (rc) break;
-            VERB("parse intervals ok");
-            rc = asn_insert_indexed(ints_seq, interval, 0, "");
-            if (rc) break;
-            VERB("insert indexed ok");
-            rc = asn_write_component_value(pattern, ints_seq,
-                     "0.pdus.0.#eth.frame-type.#tagged.vlan-id.#intervals");
-            if (rc) break;
-            VERB("write intervals seq ok");
-#endif
-
-        } while(0);
-
-        if (rc)
-            TEST_FAIL("write intervals to pattern failed, rc %r\n", rc);
-
-#endif
-
-        rc = tapi_tad_trrecv_start(ta, sid, eth_listen_csap, pattern, 
-                                   0, 1, RCF_TRRECV_PACKETS);
-        if (rc != 0)
-            TEST_FAIL("failed %r, catched %d", rc, syms);
-
-        rc = tapi_tad_trsend_start(ta, sid, eth_csap, template,
-                                   RCF_MODE_BLOCKING);
-
-        if (rc)
-            TEST_FAIL("ETH send fails, rc %r", rc);
-
-        VERB("Eth pkt sent");
-
-        sleep(2);
-
-        num = 0;
-        rc = tapi_tad_trrecv_stop(ta, sid, eth_listen_csap,
+    /* Stop receiver with processing of received frames by callback */
+    num = 0;
+    CHECK_RC(tapi_tad_trrecv_stop(host_a->ta, 0, recv_csap,
                                   tapi_eth_trrecv_cb_data(
                                       local_eth_frame_handler, NULL),
-                                  &num);
+                                  &num));
 
-        if (rc != 0)
-            TEST_FAIL("ETH recv_stop fails, rc %r", rc);
-
-        INFO("trrecv stop rc: %r, num of pkts: %d", rc, num);
-
-        if (num <= 0)
-            TEST_FAIL("no received packets");
-
-    } while (0);
+    if (num <= 0)
+        TEST_FAIL("No received packets");
 
     TEST_SUCCESS;
 
 cleanup:
-    if (eth_csap != CSAP_INVALID_HANDLE &&
-        (rc = rcf_ta_csap_destroy(ta, sid, eth_csap) != 0) )
-        ERROR("ETH csap destroy fails, rc %r", rc);
+    CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_a->ta, 0, send_csap));
+    CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_a->ta, 0, recv_csap));
 
-    if (eth_listen_csap != CSAP_INVALID_HANDLE &&
-        (rc = rcf_ta_csap_destroy(ta, sid, eth_listen_csap) != 0) )
-        ERROR("ETH listen csap destroy fails, rc %r", rc);
+    asn_free_value(csap_spec); csap_spec = NULL;
+    asn_free_value(template); template = NULL;
+    asn_free_value(pattern); pattern = NULL;
 
     TEST_END; 
 }

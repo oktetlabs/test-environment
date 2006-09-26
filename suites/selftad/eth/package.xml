@@ -33,6 +33,9 @@
             <script name="vlan_recv_send">
                 <req id="TAD_ETH"/> 
             </script>
+            <arg name="env">
+                <value>{'host_a'{if:'if_a',addr:'hwaddr':ether:alien}}</value>
+            </arg>
         </run>
         <run>
             <script name="eth_serial1">
