@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  * 
- * $Id: example.c 18619 2005-09-22 16:47:08Z artem $
+ * $Id$
  */
 
 /** @page common-poll_one Call traffic poll operation for one CSAP
@@ -80,7 +80,7 @@ main(int argc, char *argv[])
     {
         asn_value *pattern = NULL;
 
-        int rc = 0, syms, num;
+        int rc = 0, syms;
 
         rc = asn_parse_value_text("{ { pdus { socket:{} } } }",
                                   ndn_traffic_pattern, &pattern, &syms);
@@ -109,7 +109,7 @@ main(int argc, char *argv[])
     {
         TEST_FAIL("rcf_trpoll() unexpectedly failed: %r", rc);
     }
-    if (TE_RC_GET_ERROR(csapd.status) != TE_ETADCSAPNOTEX)
+    if (TE_RC_GET_ERROR(csapd.status) != TE_ETIMEDOUT)
     {
         TEST_FAIL("rcf_trpoll() with request set status to %r instead "
                   "of %r", csapd.status, TE_ETADCSAPNOTEX);
