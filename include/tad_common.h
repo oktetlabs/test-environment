@@ -162,5 +162,8 @@ enum tad_eth_recv_mode {
 /** Default mode is to receive everything except outgoing packets */
 #define TAD_ETH_RECV_DEF    (TAD_ETH_RECV_ALL & (~TAD_ETH_RECV_OUT))
 
+/** Receive nothing */
+#define TAD_ETH_RECV_NO     (0)
+
 
 #endif /* !__TE_TAD_COMMON_H__ */
