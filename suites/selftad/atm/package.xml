@@ -32,62 +32,62 @@
             <script name="simple_recv"/>
             <arg name="type">
                 <value>uni</value>
-<!--                <value>nni</value> -->
+                <value reqs="TIME_CONSUMING">nni</value>
             </arg>
             <arg name="csap_vpi"> 
                 <value>unspec</value>
-<!--                <value>match</value> -->
-                <value>nomatch</value>
+                <value reqs="TIME_CONSUMING">match</value>
+                <value reqs="TIME_CONSUMING">nomatch</value>
             </arg>
             <arg name="csap_vci"> 
-                <value>unspec</value>
-<!--                <value>match</value> -->
-                <value>nomatch</value>
+                <value reqs="TIME_CONSUMING">unspec</value>
+                <value>match</value>
+                <value reqs="TIME_CONSUMING">nomatch</value>
             </arg>
             <arg name="csap_congestion"> 
-                <value>unspec</value>
-<!--                <value>match</value> -->
+                <value reqs="TIME_CONSUMING">unspec</value>
+                <value reqs="TIME_CONSUMING">match</value>
                 <value>nomatch</value>
             </arg>
             <arg name="csap_clp"> 
                 <value>unspec</value>
-<!--                <value>match</value> -->
-                <value>nomatch</value>
+                <value reqs="TIME_CONSUMING">match</value>
+                <value reqs="TIME_CONSUMING">nomatch</value>
             </arg>
             <arg name="ptrn_gfc"> 
-                <value>unspec</value>
-<!--                <value>match</value>
-                <value>nomatch</value> -->
+                <value reqs="TIME_CONSUMING">unspec</value>
+                <value>match</value>
+                <value reqs="TIME_CONSUMING">nomatch</value>
             </arg>
             <arg name="ptrn_vpi"> 
-                <value>unspec</value>
-                <value>match</value>
-<!--                <value>nomatch</value> -->
+                <value reqs="TIME_CONSUMING">unspec</value>
+                <value reqs="TIME_CONSUMING">match</value>
+                <value>nomatch</value>
             </arg>
             <arg name="ptrn_vci"> 
                 <value>unspec</value>
-<!--                <value>match</value>
-                <value>nomatch</value> -->
+                <value reqs="TIME_CONSUMING">match</value>
+                <value reqs="TIME_CONSUMING">nomatch</value>
             </arg>
             <arg name="ptrn_payload_type"> 
-                <value>unspec</value>
-<!--                <value>match</value>
-                <value>nomatch</value> -->
+                <value reqs="TIME_CONSUMING">unspec</value>
+                <value>match</value>
+                <value reqs="TIME_CONSUMING">nomatch</value>
             </arg>
             <arg name="ptrn_congestion"> 
-                <value>unspec</value>
-<!--                <value>match</value>
-                <value>nomatch</value> -->
+                <value reqs="TIME_CONSUMING">unspec</value>
+                <value reqs="TIME_CONSUMING">match</value>
+                <value>nomatch</value>
             </arg>
             <arg name="ptrn_clp"> 
                 <value>unspec</value>
-<!--                <value>match</value>
-                <value>nomatch</value> -->
+                <value reqs="TIME_CONSUMING">match</value>
+                <value reqs="TIME_CONSUMING">nomatch</value>
             </arg>
             <arg name="gfc">
                 <value>0</value>
-<!--                <value>1</value>
-                <value>8</value> -->
+                <value>1</value>
+                <value>8</value>
             </arg>
             <arg name="vpi"> 
                 <value>129</value>
@@ -96,16 +96,16 @@
                 <value>32769</value>
             </arg>
             <arg name="payload_type">
-<!--                <value>0</value> -->
+                <value>0</value>
                 <value>1</value>
-<!--                <value>7</value> -->
+                <value>7</value>
             </arg>
             <arg name="congestion" type="boolean">
                 <value>FALSE</value>
-<!--                <value>TRUE</value> -->
+                <value>TRUE</value>
             </arg>
             <arg name="clp" type="boolean">
-<!--                <value>FALSE</value> -->
+                <value>FALSE</value>
                 <value>TRUE</value>
             </arg>
         </run>
