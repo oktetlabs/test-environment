@@ -23,7 +23,7 @@
  *
  * @author: Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  *
- * $Id: tapi_iscsi.c 30203 2006-07-14 16:32:31Z artem $
+ * $Id$
  */
 
 

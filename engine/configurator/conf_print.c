@@ -25,7 +25,7 @@
  * @author Igor Baryshev <Igor.Baryshev@oktetlabs.ru>
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id: conf_db.h 24124 2006-02-15 15:46:57Z artem $
+ * $Id$
  */
 
 #include <stdio.h>

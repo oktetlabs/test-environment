@@ -25,7 +25,7 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAPI CFG VTund"

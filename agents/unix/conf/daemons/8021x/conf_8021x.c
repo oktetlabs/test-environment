@@ -23,7 +23,7 @@
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  *
- * $Id: radius.c 25144 2006-03-11 15:19:13Z mis $
+ * $Id$
  */
 
 #ifdef ENABLE_8021X
