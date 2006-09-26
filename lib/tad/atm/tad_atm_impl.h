@@ -57,6 +57,65 @@ typedef struct tad_atm_cell_ctrl_data {
 
 
 /**
+ * Callback for init 'atm' CSAP layer if single in stack.
+ *
+ * The function complies with csap_rw_init_cb_t prototype.
+ */ 
+extern te_errno tad_atm_rw_init_cb(csap_p csap);
+
+/**
+ * Callback for destroy 'atm' CSAP layer if single in stack.
+ *
+ * The function complies with csap_rw_destroy_cb_t prototype.
+ */ 
+extern te_errno tad_atm_rw_destroy_cb(csap_p csap);
+
+
+/**
+ * Open transmit socket for ATM CSAP. 
+ *
+ * The function complies with csap_low_resource_cb_t prototype.
+ */
+extern te_errno tad_atm_prepare_send(csap_p csap);
+
+/**
+ * Close transmit socket for ATM CSAP.
+ *
+ * The function complies with csap_low_resource_cb_t prototype.
+ */
+extern te_errno tad_atm_shutdown_send(csap_p csap);
+
+/**
+ * Callback for write data to media of ATM CSAP. 
+ *
+ * The function complies with csap_write_cb_t prototype.
+ */ 
+extern te_errno tad_atm_write_cb(csap_p csap, const tad_pkt *pkt);
+
+/**
+ * Open receive socket for ATM CSAP.
+ *
+ * The function complies with csap_low_resource_cb_t prototype.
+ */
+extern te_errno tad_atm_prepare_recv(csap_p csap);
+
+/**
+ * Close receive socket for ATM CSAP.
+ *
+ * The function complies with csap_low_resource_cb_t prototype.
+ */
+extern te_errno tad_atm_shutdown_recv(csap_p csap);
+
+/**
+ * Callback for read data from media of ATM CSAP. 
+ *
+ * The function complies with csap_read_cb_t prototype.
+ */ 
+extern te_errno tad_atm_read_cb(csap_p csap, unsigned int timeout,
+                                tad_pkt *pkt, size_t *pkt_len);
+
+
+/**
  * Callback to initialize 'atm' CSAP layer.
  *
  * The function complies with csap_layer_init_cb_t prototype.

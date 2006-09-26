@@ -64,7 +64,18 @@ static csap_spt_type_t atm_csap_spt =
 
     generate_pattern_cb : NULL,
 
-    CSAP_SUPPORT_NO_RW,
+    rw_init_cb          : tad_atm_rw_init_cb,
+    rw_destroy_cb       : tad_atm_rw_destroy_cb,
+
+    prepare_send_cb     : tad_atm_prepare_send,
+    write_cb            : tad_atm_write_cb,
+    shutdown_send_cb    : tad_atm_shutdown_send,
+    
+    prepare_recv_cb     : tad_atm_prepare_recv,
+    read_cb             : tad_atm_read_cb,
+    shutdown_recv_cb    : tad_atm_shutdown_recv,
+
+    write_read_cb       : tad_common_write_read_cb,
 };
 
 
