@@ -200,6 +200,7 @@ main(int argc, char *argv[])
         TEST_FAIL("Too big payload-type parameter");
     payload_type_nomatch = (payload_type + 1) & 0x7;
     TEST_GET_BOOL_PARAM(congestion);
+    payload_type |= !!congestion << 1;
     congestion_nomatch = !congestion;
     TEST_GET_BOOL_PARAM(clp);
     clp_nomatch = !clp;
@@ -209,7 +210,6 @@ main(int argc, char *argv[])
     cell_hdr |= vpi << 20;
     cell_hdr |= vci << 4;
     cell_hdr |= payload_type << 1;
-    cell_hdr |= ((congestion) ? 1 : 0) << 2;
     cell_hdr |= (clp) ? 1 : 0;
     cell_hdr = htonl(cell_hdr);
 
