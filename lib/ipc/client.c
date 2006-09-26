@@ -518,8 +518,12 @@ read_socket(int socket, void *buffer, size_t len)
 
         if (r < 0)
         {
-            perror("read_socket(): recv() error");
-            return TE_OS_RC(TE_IPC, errno);;
+            te_errno rc = TE_OS_RC(TE_IPC, errno);
+
+            /* ECONNRESET errno is set when server closes its socket */
+            if (TE_RC_GET_ERROR(rc) != TE_ECONNRESET)
+                perror("read_socket(): recv() error");
+            return rc;
         }
 
         len -= r;
@@ -1458,8 +1462,11 @@ ipc_stream_receive_answer(struct ipc_client *ipcc, const char *server_name,
                      sizeof(server->stream.pending));
     if (rc != 0)
     {
-        fprintf(stderr, "ipc_receive_answer(): read_socket() failed: %s\n",
-                strerror(rc));
+        /* ECONNRESET errno is set when server closes its socket */
+        if (TE_RC_GET_ERROR(rc) != TE_ECONNRESET)
+            fprintf(stderr, "ipc_receive_answer(): client '%s' "
+                    "read_socket() failed: %s\n", ipcc->name,
+                    te_rc_err2str(rc));
         return TE_RC(TE_IPC, rc);
     }
 
