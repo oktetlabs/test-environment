@@ -46,6 +46,8 @@ extern "C" {
 
 /**
  * Statuses of test execution visible for the world.
+ *
+ * @attention Order of statuses is important and used by TE modules.
  */
 typedef enum te_test_status {
     TE_TEST_INCOMPLETE = 0, /**< Test execution has not been finished */
