@@ -432,11 +432,8 @@ extern int tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
                              size_t num_vars, int *errstat, int *errindex);
 
 /**
- * The same as tapi_snmp_set_vbs, but gets sequence of "varbind groups":
- * label of MIB leaf and value, which is either integer or pair
- * <char *, int>, for OCTET_STRING types; ended by NULL.
- * Passed pointers are considered as 'const',
- * i.e. OID and data are not changed.
+ * The same as tapi_snmp_set_vbs, but gets sequence of "varbind groups"
+ * from free arguments sequence after 'errindex'.
  *
  * @param ta            Test Agent name
  * @param sid           RCF Session id.
@@ -445,6 +442,14 @@ extern int tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
  *                      message (OUT), may be zero if not need.
  * @param errindex      The value of error-index field in response
  *                      message (OUT), may be zero if not need.
+ * @param ...           Sequence of "varbind groups": 
+ *                      Symbolic label of MIB leaf (usually literal contant)
+ *                      and value, which may be either integer 
+ *                      (for INTEGER syntax leafs),
+ *                      or tapi_snmp_oct_string_t* for OCTET_STRING types,
+ *                      or tapi_snmp_oid_t*;  ended by NULL.
+ *                      Passed pointers are considered as 'const',
+ *                      i.e. OID and data are not changed.
  * 
  * @return zero on success or error code.
  */
