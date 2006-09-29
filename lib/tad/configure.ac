@@ -122,6 +122,8 @@ AC_ARG_WITH([eth],,
 [if test "${withval}" = yes; then
    w_eth=true;
    proto_specific eth;
+   AC_CHECK_LIB([pcap], [pcap_open_live],
+                [TA_TAD_LIBS="$TA_TAD_LIBS -lpcap"])
    AC_CONFIG_FILES([eth/Makefile])
  fi
 ], [w_eth=false])
