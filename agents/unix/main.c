@@ -1099,7 +1099,7 @@ ta_sigchld_handler(void)
                 }
                 if (logger)
                 {
-                    WARN("Removing oldest entry with pid = %d, "
+                    RING("Removing oldest entry with pid = %d, "
                          "status = 0x%x from the list of dead children.", 
                          ta_children_dead_heap[dead].pid,
                          ta_children_dead_heap[dead].status);
