@@ -195,6 +195,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
         return rc;
     }
 
+#ifdef SIOCGIFHWADDR /* FIXME */
     memset(&if_req, 0, sizeof(if_req));
     strncpy(if_req.ifr_name, ifname, sizeof(if_req.ifr_name));
     if (ioctl(cfg_socket, SIOCGIFHWADDR, &if_req))
@@ -210,6 +211,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
         return rc;
     }
     memcpy(sap->addr, if_req.ifr_hwaddr.sa_data, ETHER_ADDR_LEN);
+#endif
 
 #ifdef USE_PF_PACKET
     memset(&if_req, 0, sizeof(if_req));
@@ -735,7 +737,11 @@ tad_eth_sap_recv_close(tad_eth_sap *sap)
 #ifdef USE_PF_PACKET
     return close_socket(&data->in);
 #else
+#ifdef __NetBSD__ /* FIXME */
+    /* pcap_freecode(data->in, &(data->fp)); */
+#else
     pcap_freecode(&(data->fp));
+#endif
     pcap_close(data->in);
     data->in = NULL;
     return 0;
