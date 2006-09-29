@@ -508,9 +508,7 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
     if (rc != 0)
         goto err_exit;
 
-#if 0
-    if (mode & TAD_ETH_RECV_OTHER)
-#endif
+    if (mode & (TAD_ETH_RECV_OUT | TAD_ETH_RECV_OTHER))
     {
         /*
          * To catch frames 'To someone else'
@@ -548,9 +546,7 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
             goto err_exit;
     }
 
-#if 0
     if (mode & TAD_ETH_RECV_MCAST)
-#endif
     {
         /*
          * Try to enable multicast (you would have thought
