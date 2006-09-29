@@ -14,7 +14,7 @@
 #ifndef	__TE_QUEUE_H__
 #define	__TE_QUEUE_H__
 
-#if HAVE_SYS_QUEUE_H
+#if 0 /* HAVE_SYS_QUEUE_H */
 #include <sys/queue.h>
 #else
 
