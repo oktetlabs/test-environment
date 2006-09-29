@@ -32,7 +32,7 @@ libtad_core_a_SOURCES = tad_ch.c
 else 
 libtad_core_a_SOURCES = \
 	tad_pkt.c \
-	tad_eth_sap_pf_packet.c \
+	tad_eth_sap.c \
 	tad_eth_sap_dlpi.c \
 	tad_utils.c \
 	tad_ch.c \

@@ -1,7 +1,8 @@
 /** @file
  * @brief TAD Data Link Provider Interface
  *
- * Implementation routines to access media through AF_PACKET sockets.
+ * Implementation routines to access media through BPF (Berkley Packet
+ * Filter) or through AF_PACKET sockets.
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -22,11 +23,12 @@
  * MA  02111-1307  USA
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  *
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD PF_PACKET"
+#define TE_LGR_USER     "TAD PF_PACKET/BPF"
 
 #include "te_config.h"
 #if HAVE_CONFIG_H
@@ -41,7 +43,17 @@
 #endif
 
 #ifdef PF_PACKET
+#define USE_PF_PACKET   1
+#elif HAVE_PCAP_H
+#include <pcap.h>
+#define USE_BPF         1
+#endif
 
+#if defined(USE_PF_PACKET) || defined(USE_BPF)
+
+#if HAVE_NETINET_IP_H
+#include <netinet/ip.h>
+#endif
 #if HAVE_STRING_H
 #include <string.h>
 #endif
@@ -76,11 +88,10 @@
 #include "tad_utils.h"
 #include "tad_eth_sap.h"
 
-
 /**
  * Number of retries to write data in low layer
  */
-#define TAD_WRITE_RETRIES           128
+#define TAD_WRITE_RETRIES           (128)
 
 /**
  * Default timeout for waiting write possibility. This macro should 
@@ -88,17 +99,30 @@
  */
 #define TAD_WRITE_TIMEOUT_DEFAULT   { 1, 0 }
 
+#ifdef USE_BPF
+#define TAD_ETH_SAP_FEXP_SIZE       (128)
+#define TAD_ETH_SAP_SNAP_LEN        (0xffff)
+#endif
 
-/** Internal data of Ethernet service access point via PF_PACKET sockets */
-typedef struct tad_eth_sap_pf_packet_data {
-    unsigned int    ifindex;    /**< Interface index */
+/** Internal data of Ethernet service access point via BPF or AF_SOCKET */
+typedef struct tad_eth_sap_data {
+#ifdef USE_PF_PACKET
     int             in;         /**< Input socket (for receive) */
     int             out;        /**< Output socket (for send) */
+    unsigned int    ifindex;    /**< Interface index */
+#else
+    pcap_t         *in;         /**< Input handle (for receive) */
+    pcap_t         *out;        /**< Output handle (for send) */
+    char            errbuf[PCAP_ERRBUF_SIZE]; /**< Error buffer for pcap
+                                                   calls error messages */
+    struct bpf_program fp;      /**< Compiled filter program */
+#endif
     unsigned int    send_mode;  /**< Send mode */
     unsigned int    recv_mode;  /**< Receive mode */
-} tad_eth_sap_pf_packet_data;
 
+} tad_eth_sap_data;
 
+#ifdef USE_PF_PACKET
 /**
  * Close PF_PACKET socket.
  *
@@ -124,33 +148,45 @@ close_socket(int *sock)
     }
     return 0;
 }
-
+#endif
 
 /* See the description in tad_eth_sap.h */
 te_errno
 tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 {
-    tad_eth_sap_pf_packet_data *data;
-    int                         cfg_socket;
-    struct ifreq                if_req;
-    te_errno                    rc;
+    tad_eth_sap_data   *data;
+    int                 cfg_socket;
+    struct ifreq        if_req;
+    te_errno            rc;
 
     if (ifname == NULL || sap == NULL) 
     {
         ERROR("%s(): Invalid arguments", __FUNCTION__);
+#ifdef USE_PF_PACKET
         return TE_RC(TE_TAD_PF_PACKET, TE_EFAULT);
+#else
+        return TE_RC(TE_TAD_BPF, TE_EFAULT);
+#endif
     }
     if (strlen(ifname) >= MIN(sizeof(if_req.ifr_name),
                               sizeof(sap->name)))
     {
         ERROR("%s(): Too long interface name", __FUNCTION__);
+#ifdef USE_PF_PACKET
         return TE_RC(TE_TAD_PF_PACKET, TE_E2BIG);
+#else
+        return TE_RC(TE_TAD_BPF, TE_E2BIG);
+#endif
     }
 
     cfg_socket = socket(AF_INET, SOCK_DGRAM, 0);
     if (cfg_socket < 0)
     {
+#ifdef USE_PF_PACKET
         rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+#else
+        rc = TE_OS_RC(TE_TAD_BPF, errno);
+#endif
         ERROR("%s(): socket(AF_INET, SOCK_DGRAM, 0) failed: %r",
               __FUNCTION__, rc);
         return rc;
@@ -158,19 +194,23 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 
     memset(&if_req, 0, sizeof(if_req));
     strncpy(if_req.ifr_name, ifname, sizeof(if_req.ifr_name));
-
     if (ioctl(cfg_socket, SIOCGIFHWADDR, &if_req))
     {
+#ifdef USE_PF_PACKET
         rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+#else
+        rc = TE_OS_RC(TE_TAD_BPF, errno);
+#endif
         ERROR("%s(): ioctl(%s, SIOCGIFHWADDR) failed: %r",
               __FUNCTION__, ifname, rc);
         close(cfg_socket);
         return rc;
     }
-
     memcpy(sap->addr, if_req.ifr_hwaddr.sa_data, ETHER_ADDR_LEN);
-    strncpy(if_req.ifr_name, ifname, sizeof(if_req.ifr_name));
 
+#ifdef USE_PF_PACKET
+    memset(&if_req, 0, sizeof(if_req));
+    strncpy(if_req.ifr_name, ifname, sizeof(if_req.ifr_name));
     if (ioctl(cfg_socket, SIOCGIFINDEX, &if_req))
     {
         rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
@@ -179,16 +219,25 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
         close(cfg_socket);
         return rc;
     }
+#endif
 
     close(cfg_socket);
 
     assert(sap->data == NULL);
     sap->data = data = TE_ALLOC(sizeof(*data));
     if (data == NULL)
+#ifdef USE_PF_PACKET
         return TE_RC(TE_TAD_PF_PACKET, TE_ENOMEM);
+#else
+        return TE_RC(TE_TAD_BPF, TE_ENOMEM);
+#endif
 
+#ifdef USE_PF_PACKET
     data->ifindex = if_req.ifr_ifindex;
     data->in = data->out = -1;
+#else
+    data->in = data->out = NULL;
+#endif
     
     strcpy(sap->name, ifname);
 
@@ -199,18 +248,26 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 te_errno
 tad_eth_sap_send_open(tad_eth_sap *sap, unsigned int mode)
 {
-    tad_eth_sap_pf_packet_data *data;
-    te_errno                    rc;
-    int                         buf_size;
-    struct sockaddr_ll          bind_addr;
+    tad_eth_sap_data   *data;
+    te_errno            rc;
+#ifdef USE_PF_PACKET
+    int                 buf_size;
+    struct sockaddr_ll  bind_addr;
+#endif
 
     assert(sap != NULL);
     data = sap->data;
     assert(data != NULL);
 
+#ifdef USE_PF_PACKET
     if (data->out >= 0)
         return 0;
+#else
+    if (data->out != NULL)
+        return 0;
+#endif
 
+#ifdef USE_PF_PACKET
     /* 
      * Create PF_PACKET socket:
      *  - type: SOCK_RAW - full control over Ethernet header
@@ -255,43 +312,78 @@ tad_eth_sap_send_open(tad_eth_sap *sap, unsigned int mode)
         ERROR("Failed to bind PF_PACKET socket: %r", rc);
         goto error_exit;
     }
+#else
+    /* 
+     *  Obtain a packet capture descriptor
+     */
+    if ((data->out = pcap_open_live(sap->name, TAD_ETH_SAP_SNAP_LEN,
+                                    0, 0, data->errbuf)) == NULL)
+    {
+        rc = TE_OS_RC(TE_TAD_BPF, errno);
+        ERROR("%s(): pcap_open_live(%s, %d, %d, %d, %d) failed: %r",
+              __FUNCTION__, sap->name, TAD_ETH_SAP_SNAP_LEN, 1,
+              0, data->errbuf, rc);
+
+        return rc;
+    }
+#endif
 
     data->send_mode = mode;
 
+#ifdef USE_PF_PACKET
     INFO("PF_PACKET socket %d opened and bound for send", data->out);
+#else
+    INFO("BPF opened for send");
+#endif
 
     return 0;
-    
+#ifdef USE_PF_PACKET
 error_exit:
     if (close(data->out) < 0)
         assert(FALSE);
     data->out = -1;
     return rc;
+#endif
 }
 
 /* See the description in tad_eth_sap.h */
 te_errno
 tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
 {
-    tad_eth_sap_pf_packet_data *data;
-    size_t                      iovlen = tad_pkt_seg_num(pkt);
-    struct iovec                iov[iovlen];
-    te_errno                    rc;
-    unsigned int                retries = TAD_WRITE_RETRIES;
-    int                         ret_val;
-    fd_set                      write_set;
+    tad_eth_sap_data   *data;
+    size_t              iovlen = tad_pkt_seg_num(pkt);
+    struct iovec        iov[iovlen];
+    te_errno            rc;
+    unsigned int        retries = TAD_WRITE_RETRIES;
+    int                 ret_val;
+    fd_set              write_set;
+    int                 fd;
     
     assert(sap != NULL);
     data = sap->data;
     assert(data != NULL);
-
-    F_VERB("%s: writing data to socket: %d", __FUNCTION__, data->out);
-
+#ifdef USE_PF_PACKET
     if (data->out < 0)
     {
         ERROR("%s(): no output socket", __FUNCTION__);
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
+    fd = data->out;
+#else
+    if (data->out == NULL)
+    {
+        ERROR("%s(): no output socket", __FUNCTION__);
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    }
+    if ((fd = pcap_fileno(data->in)) < 0)
+    {
+        ERROR("%s(): pcap_fileno() returned %d",
+              __FUNCTION__, fd);
+        return -1;
+    }
+#endif
+
+    F_VERB("%s: writing data to socket: %d", __FUNCTION__, fd);
 
     /* Convert packet segments to IO vector */
     rc = tad_pkt_segs_to_iov(pkt, iov, iovlen);
@@ -308,9 +400,9 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
         struct timeval timeout = TAD_WRITE_TIMEOUT_DEFAULT; 
     
         FD_ZERO(&write_set);
-        FD_SET(data->out, &write_set);
+        FD_SET(fd, &write_set);
 
-        ret_val = select(data->out + 1, NULL, &write_set, NULL, &timeout);
+        ret_val = select(fd + 1, NULL, &write_set, NULL, &timeout);
         if (ret_val == 0)
         {
             F_INFO("%s(): select to write timed out, retry %u", retries);
@@ -318,7 +410,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
         }
 
         if (ret_val == 1)
-            ret_val = writev(data->out, iov, iovlen);
+            ret_val = writev(fd, iov, iovlen);
 
         if (ret_val < 0)
         {
@@ -342,7 +434,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
 
                 default:
                     ERROR("%s(CSAP %d): internal error %r, socket %d", 
-                          __FUNCTION__, sap->csap->id, rc, data->out);
+                          __FUNCTION__, sap->csap->id, rc, fd);
                     return rc;
             }
         } 
@@ -366,56 +458,85 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
 te_errno
 tad_eth_sap_send_close(tad_eth_sap *sap)
 {
-    tad_eth_sap_pf_packet_data *data;
-    fd_set                      write_set;
-    struct timeval              timeout = TAD_WRITE_TIMEOUT_DEFAULT; 
-    int                         ret_val;
+    tad_eth_sap_data   *data;
+    fd_set              write_set;
+    struct timeval      timeout = TAD_WRITE_TIMEOUT_DEFAULT; 
+    int                 ret_val;
+    int                 fd;
     
     assert(sap != NULL);
     data = sap->data;
     assert(data != NULL);
 
-    if (data->out >= 0)
+#ifdef USE_PF_PACKET
+    fd = data->out;
+#else
+    if ((fd = pcap_fileno(data->in)) < 0)
+    {
+        ERROR("%s(): pcap_fileno() returned %d",
+              __FUNCTION__, fd);
+        return -1;
+    }
+#endif
+
+    if (fd >= 0)
     {
         /* check that all data in socket is sent */
         FD_ZERO(&write_set);
-        FD_SET(data->out, &write_set);
+        FD_SET(fd, &write_set);
 
-        ret_val = select(data->out + 1, NULL, &write_set, NULL, &timeout);
+        ret_val = select(fd + 1, NULL, &write_set, NULL, &timeout);
         if (ret_val == 0)
         {
-            WARN("Ethernet PF_PACKET (socket %d) SAP is still sending",
-                 data->out);
+            WARN("Ethernet (socket %d) SAP is still sending", fd);
         }
         else if (ret_val < 0)
         {
+#ifdef USE_PF_PACKET
             te_errno    rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+#else
+            te_errno    rc = TE_OS_RC(TE_TAD_BPF, errno);
+#endif
 
             ERROR("%s(): select() failed: %r", __FUNCTION__, rc);
         }
         /* Close in any case */
     }
 
+#ifdef USE_PF_PACKET
     return close_socket(&data->out);
+#else
+    pcap_close(data->out);
+    data->out = NULL;
+    return 0;
+#endif
 }
 
 /* See the description in tad_eth_sap.h */
 te_errno
 tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
 {
-    tad_eth_sap_pf_packet_data *data;
-    te_errno                    rc;
-    int                         buf_size;
-    struct sockaddr_ll          bind_addr;
-    struct packet_mreq          mr;
+    tad_eth_sap_data   *data;
+    te_errno            rc;
+#ifdef USE_PF_PACKET
+    int                 buf_size;
+    struct sockaddr_ll  bind_addr;
+    struct packet_mreq  mr;
+#endif
 
     assert(sap != NULL);
     data = sap->data;
     assert(data != NULL);
 
+#ifdef USE_PF_PACKET
     if (data->in >= 0)
         return 0;
+#else
+    if (data->in != NULL)
+        return 0;
+#endif
 
+#ifdef USE_PF_PACKET
     /* 
      * Create PF_PACKET socket:
      *  - type: SOCK_RAW - full control over Ethernet header
@@ -477,18 +598,55 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
         ERROR("Failed to bind PF_PACKET socket: %r", rc);
         goto error_exit;
     }
+#else
+    /*  Obtain a packet capture descriptor */
+    data->in = pcap_open_live(sap->name, TAD_ETH_SAP_SNAP_LEN,
+                              (mode & TAD_ETH_RECV_OTHER) ? 1 : 0,
+                              0 /* forever */, data->errbuf);
+    if (data->in == NULL)
+    {
+        rc = TE_OS_RC(TE_TAD_BPF, errno);
+        ERROR("%s(): pcap_open_live(%s, %d, %d, %d, %d) failed: %r",
+              __FUNCTION__, sap->name, TAD_ETH_SAP_SNAP_LEN, 1,
+              0, data->errbuf, rc);
+        return rc;
+    }
+
+    /* Compile the filter expression */
+    if (pcap_compile(data->in, &(data->fp), "", 0, 0) == -1)
+    {
+        rc = TE_OS_RC(TE_TAD_BPF, errno);
+        ERROR("%s(): pcap_compile(%s, %d, %d) failed: %r",
+              __FUNCTION__, sap->name, 0, 0, rc);
+        return rc;
+    }
+    
+    /* Apply the compiled filter */
+    if (pcap_setfilter(data->in, &(data->fp)) == -1)
+    {
+        rc = TE_OS_RC(TE_TAD_BPF, errno);
+        ERROR("%s(): pcap_setfilter() failed: %r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+#endif
 
     data->recv_mode = mode;
-
+#ifdef USE_PF_PACKET
     INFO("PF_PACKET socket %d opened and bound for receive", data->in);
+#else
+    INFO("BPF opened and bound for receive");
+#endif
 
     return 0;
 
+#ifdef USE_PF_PACKET
 error_exit:
     if (close(data->in) < 0)
         assert(FALSE);
     data->in = -1;
     return rc;
+#endif
 }
 
 /* See the description in tad_eth_sap.h */
@@ -496,15 +654,20 @@ te_errno
 tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
                  tad_pkt *pkt, size_t *pkt_len)
 {
-    tad_eth_sap_pf_packet_data *data;
-    struct sockaddr_ll          from;
-    socklen_t                   fromlen = sizeof(from);
-    te_errno                    rc;
-    
+    tad_eth_sap_data   *data;
+    te_errno            rc;
+#ifdef USE_PF_PACKET
+    struct sockaddr_ll  from;
+    socklen_t           fromlen = sizeof(from);
+#elif
+    int                 fd;
+#endif
+
     assert(sap != NULL);
     data = sap->data;
     assert(data != NULL);
 
+#ifdef USE_PF_PACKET
     rc = tad_common_read_cb_sock(sap->csap, data->in, MSG_TRUNC, timeout,
                                  pkt, SA(&from), &fromlen, pkt_len);
     if (rc != 0)
@@ -544,34 +707,54 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
     }
 
     return 0;
+#else
+    if ((fd = pcap_fileno(data->in)) < 0)
+    {
+        ERROR("%s(): pcap_fileno() returned %d",
+              __FUNCTION__, fd);
+        return -1;
+    }
+    rc = tad_common_read_cb_sock(sap->csap, fd, MSG_TRUNC, timeout, pkt,
+                                 NULL, NULL, pkt_len);
+    return rc;
+#endif
 }
 
 /* See the description in tad_eth_sap.h */
 te_errno
 tad_eth_sap_recv_close(tad_eth_sap *sap)
 {
-    tad_eth_sap_pf_packet_data *data;
+    tad_eth_sap_data *data;
     
     assert(sap != NULL);
     data = sap->data;
     assert(data != NULL);
-
+#ifdef USE_PF_PACKET
     return close_socket(&data->in);
+#else
+    pcap_freecode(&(data->fp));
+    pcap_close(data->in);
+    data->in = NULL;
+    return 0;
+#endif
 }
 
 /* See the description in tad_eth_sap.h */
 te_errno
 tad_eth_sap_detach(tad_eth_sap *sap)
 {
-    tad_eth_sap_pf_packet_data *data;
-    te_errno                    result = 0;
-    te_errno                    rc;
-    
+    tad_eth_sap_data   *data;
+    te_errno            result = 0;
+#ifdef USE_PF_PACKET
+    te_errno            rc;
+#endif
+
     assert(sap != NULL);
     data = sap->data;
     sap->data = NULL;
     assert(data != NULL);
 
+#ifdef USE_PF_PACKET
     if (data->in != -1)
     {
         WARN("Force close of input PF_PACKET socket on detach");
@@ -584,10 +767,22 @@ tad_eth_sap_detach(tad_eth_sap *sap)
         rc = close_socket(&data->out);
         TE_RC_UPDATE(result, rc);
     }
+#else
+    if (data->in != NULL)
+    {
+        WARN("Force close of input BPF on detach");
+        pcap_close(data->in);
+    }
+    if (data->out != NULL)
+    {
+        WARN("Force close of output BPF on detach");
+        pcap_close(data->out);
+    }
+#endif
 
     free(data);
 
     return result;
 }
 
-#endif /* PF_PACKET */
+#endif /* defined(USE_PF_PACKET) || defined(USE_BPF) */
