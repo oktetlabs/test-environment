@@ -42,14 +42,9 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#if HAVE_NET_ETHERNET_H
-#include <net/ethernet.h>
-#endif
-#if HAVE_NET_IF_ETHER_H
-#include <net/if_ether.h>
-#endif
 
 #include "te_defs.h"
+#include "te_ethernet.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
