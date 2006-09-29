@@ -51,9 +51,6 @@
 
 #if defined(USE_PF_PACKET) || defined(USE_BPF)
 
-#if HAVE_NETINET_IP_H
-#include <netinet/ip.h>
-#endif
 #if HAVE_STRING_H
 #include <string.h>
 #endif
@@ -77,6 +74,12 @@
 #endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+#if HAVE_NETINET_IN_SYSTM_H
+#include <netinet/in_systm.h>
+#endif
+#if HAVE_NETINET_IP_H
+#include <netinet/ip.h>
 #endif
 
 #include "te_errno.h"
@@ -659,7 +662,7 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
 #ifdef USE_PF_PACKET
     struct sockaddr_ll  from;
     socklen_t           fromlen = sizeof(from);
-#elif
+#else
     int                 fd;
 #endif
 
