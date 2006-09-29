@@ -29,20 +29,9 @@
 
 #include "te_config.h"
 
-#if HAVE_NET_ETHERNET_H
-#include <net/ethernet.h>
-#endif
-#if 0
-#if HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
-#include "te_defs.h"
-
-#endif
-
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "te_ethernet.h"
 #include "asn_impl.h"
 #include "ndn_internal.h"
 #include "ndn_arp.h"
