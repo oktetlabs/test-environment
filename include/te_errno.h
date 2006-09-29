@@ -334,6 +334,7 @@ typedef enum {
     TE_TAD_PF_PACKET,   /**< TAD Ethernet over PF_PACKET sockets */
     TE_TAD_DLPI,        /**< TAD DLPI support */
     TE_TOOL_EXT,        /**< External tools */
+    TE_TAD_BPF,         /**< TAD Ethernet using BPF */
 } te_module;                             
 /*@}*/
 
@@ -404,6 +405,7 @@ te_rc_mod2str(te_errno err)
         MOD2STR(TAD_BPS);
         MOD2STR(TAD_PF_PACKET);
         MOD2STR(TAD_DLPI);
+        MOD2STR(TAD_BPF);
         MOD2STR(TARPC);
         MOD2STR(LOGGER);
         MOD2STR(CS);
