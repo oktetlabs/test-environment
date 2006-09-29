@@ -34,6 +34,9 @@
 #include "config.h"
 #endif
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -1077,6 +1080,7 @@ tad_dump_hex(csap_p csap, const char *usr_param,
 te_errno
 tad_tcp_push_fin(int socket, const uint8_t *data, size_t length)
 {
+#ifdef TCP_CORK
     int         opt = 1;
     ssize_t     sent;
     te_errno    rc;
@@ -1112,8 +1116,14 @@ tad_tcp_push_fin(int socket, const uint8_t *data, size_t length)
         F_ERROR("SHUT_WR of %d fail: errno %r", socket, rc);
         return rc;
     }
-
     return 0;
+#else
+    UNUSED(socket);
+    UNUSED(data);
+    UNUSED(length);
+    ERROR("%s() is not supported", __FUNCTION__);
+    return TE_RC(TE_TAD_CH, TE_EOPNOTSUPP);
+#endif
 }
 
 
