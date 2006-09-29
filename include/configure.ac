@@ -109,6 +109,7 @@ netinet/udp.h \
 netinet/tcp.h \
 netpacket/packet.h \
 obstack.h \
+pcap.h \
 poll.h \
 popt.h \
 pthread.h \
