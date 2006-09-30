@@ -34,23 +34,19 @@
 #include "config.h"
 #endif
 
-#include <stdio.h>
-#include <string.h>
+#if HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+#if HAVE_STRING_H
 #include <string.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <linux/if.h>
-#include <netinet/in.h>
-#include <linux/if_packet.h>
-#include <netinet/if_ether.h>
+#endif
 
-
-#include "tad_bridge_impl.h"
 #include "te_defs.h"
+#include "te_stdint.h"
+#include "te_errno.h"
 #include "logger_ta_fast.h"
+#include "tad_bridge_impl.h"
+
 
 #define LLC_BPDU_DSAP_SSAP  (0x42)
 #define LLC_BPDU_CONTROL    (0x03)
