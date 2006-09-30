@@ -23,7 +23,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: conf.c 24823 2006-03-05 07:24:43Z arybchik $
+ * $Id$
  */
 
 #ifdef USE_ROUTE_SOCKET
@@ -370,10 +370,11 @@ route_log(const char *title, const struct rt_msghdr *rtm)
     const struct sockaddr  *addr = CONST_SA(rtm + 1);
     socklen_t               addrlen;
     unsigned int            i;
+    te_bool                 unknown;
 
-    for (i = 0; i < RTAX_MAX; i++)
+    for (unknown = FALSE, i = 0; i < RTAX_MAX; i++)
     {
-        if (rtm->rtm_addrs & (1 << i))
+        if (!unknown && rtm->rtm_addrs & (1 << i))
         {
             if (addr->sa_family == AF_INET)
             {
@@ -395,9 +396,18 @@ route_log(const char *title, const struct rt_msghdr *rtm)
             }
             else
             {
-                ERROR("Unknown address family %u", addr->sa_family);
-                break;
+                snprintf(addrs[i], sizeof(addrs[i]), "<Unknown AF=%u>",
+                         addr->sa_family);
+                addrlen = 0;
             }
+#if HAVE_STRUCT_SOCKADDR_SA_LEN
+            /* Override length, if it is specified in address */
+            if (addr->sa_len != 0)
+                addrlen = addr->sa_len;
+#endif
+            if (addrlen == 0)
+                addrlen = sizeof(struct sockaddr);
+
             addr = CONST_SA(((uint8_t *)addr) + addrlen);
         }
         else
@@ -521,6 +531,20 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
             /* Route via gateway */
             rt_info->flags |= TA_RT_INFO_FLG_GW;
         }
+        else if (rt_info->gw.ss_family == AF_LINK)
+        {
+            unsigned int ifi =
+                ((const struct sockaddr_dl *)&rt_info->gw)->sdl_index;
+
+            /* FreeBSD6 provides link-layer address as gateway */
+            if (if_indextoname(ifi, rt_info->ifname) == NULL)
+            {
+                rc = TE_OS_RC(TE_TA_UNIX, errno);
+                ERROR("Failed to map interface index %u to name", ifi);
+                RETURN_RC(rc);
+            }
+            rt_info->flags |= TA_RT_INFO_FLG_IF;
+        }
         else
         {
             /* 
@@ -549,9 +573,15 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
                         rt_info->prefix);
         }
         else if (addr->sa_family == AF_INET6)
+        {
             rt_info->prefix = 0; /* FIXME */
+        }
         else
-            assert(FALSE);
+        {
+            rt_info->prefix = 0; /* FIXME */
+            if (addrlen == 0)
+                addrlen = sizeof(struct sockaddr);
+        }
         addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
 
