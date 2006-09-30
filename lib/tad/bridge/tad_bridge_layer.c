@@ -34,7 +34,20 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <linux/if.h>
+#include <netinet/in.h>
+#include <linux/if_packet.h>
+#include <netinet/if_ether.h>
+
+
 #include "tad_bridge_impl.h"
 #include "te_defs.h"
 #include "logger_ta_fast.h"
