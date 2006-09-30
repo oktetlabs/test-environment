@@ -113,6 +113,8 @@
 #if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
 #include <security/pam_appl.h>
 
+#define TA_USE_PAM  1
+
 /** Data passed between 'set_change_passwd' and 'conv_fun' callback fun */
 typedef struct {
     char const *passwd;                    /**< Password string pointer */
@@ -127,12 +129,16 @@ typedef struct pam_response pam_response_t;
 #define PAM_FLAGS 0
 typedef struct pam_message const pam_message_t;
 #elif defined __sun__
-#define PAM_FLAGS PAM_NO_AUTHTOK_CHECK | PAM_SILENT
+#define PAM_FLAGS (PAM_NO_AUTHTOK_CHECK | PAM_SILENT)
 typedef struct pam_message pam_message_t;
 #elif defined __FreeBSD__
 #define PAM_FLAGS PAM_SILENT
 typedef struct pam_message const pam_message_t;
 #endif
+
+#else
+
+#define TA_USE_PAM  0
 
 #endif /* HAVE_SECURITY_PAM_APPL_H && HAVE_LIBPAM */
 
@@ -575,6 +581,7 @@ interface_release(const char *name)
 #ifdef ENABLE_8021X
     return supplicant_release(name);
 #else
+    UNUSED(name);
     return 0;
 #endif
 }
@@ -1518,7 +1525,7 @@ nl_ip_addr_modify(enum net_addr_ops cmd,
 te_errno
 ta_unix_conf_get_addr(const char *ifname, sa_family_t af, void **addr)
 {
-    strcpy(req.my_ifr_name, ifname);
+    strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
     CFG_IOCTL((af == AF_INET6) ? cfg6_socket : cfg_socket,
               MY_SIOCGIFADDR, &req);
     if (af == AF_INET)
@@ -1564,7 +1571,9 @@ set_prefix(const char *ifname, unsigned int prefix)
 }
 #endif
 
+
 #ifdef USE_IOCTL
+
 /**
  * Get interfaces configuration via SIOCGIFCONF/SIOCGLIFCONF to 'buf'.
  * Be carefull, if HAVE_STRUCT_LIFREQ, 'buf' contains array of
@@ -1572,13 +1581,14 @@ set_prefix(const char *ifname, unsigned int prefix)
  *
  * @param buf       Location for pointer to the allocated buffer.
  * @param p_req     Location for pointer to the first interface data.
+ * @param p_len     Location for length of returned data
  *
  * @return Status code.
  */
 static te_errno
-get_ifconf_to_buf(void **buf, void **p_req)
+get_ifconf_to_buf(void **buf, void **p_req, size_t *p_len)
 {
-#if defined(HAVE_STRUCT_LIFREQ)
+#if HAVE_STRUCT_LIFREQ
     {
         struct lifnum   ifnum;
         struct lifconf  conf;
@@ -1597,8 +1607,9 @@ get_ifconf_to_buf(void **buf, void **p_req)
         CFG_IOCTL(cfg_socket, SIOCGLIFCONF, &conf);
 
         *p_req = conf.lifc_req;
+        *p_len = conf.lifc_len;
     }
-#else
+#else /* !HAVE_STRUCT_LIFREQ */
     {
         struct ifconf   conf;
 
@@ -1606,17 +1617,65 @@ get_ifconf_to_buf(void **buf, void **p_req)
         if (*buf == NULL)
             return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-        conf.ifc_len = sizeof(buf);
+        conf.ifc_len = sizeof(struct ifreq) * 32;
         conf.ifc_buf = (caddr_t)*buf;
 
         CFG_IOCTL(cfg_socket, SIOCGIFCONF, &conf);
 
         *p_req = conf.ifc_req;
+        *p_len = conf.ifc_len;
     }
-#endif
+#endif /* !HAVE_STRUCT_LIFREQ */
     return 0;
 }
+
+/**
+ * Call function provided by user for each 'struct ifreq'-like entry
+ * in 'struct ifconf'-like buffer.
+ *
+ * @param ifr           Pointer to 'struct ifreq'-like structure to start
+ * @param length        Length of the 'struct ifconf'-like buffer
+ * @param ifreq_cb      Function to be called for each entry
+ * @param opaque        Opaque data to be passed in callback
+ *
+ * @return Status code.
+ */
+static te_errno
+ifconf_foreach_ifreq(struct my_ifreq *ifr, size_t length,
+                     te_errno (*ifreq_cb)(struct my_ifreq *, void *),
+                     void *opaque)
+{
+    te_errno    rc = 0;
+    size_t      step;
+
+    assert(ifr != NULL);
+    while (rc == 0 && length >= sizeof(struct my_ifreq))
+    {
+#ifdef _SIZEOF_ADDR_IFREQ
+        /* 
+         * The check may be done, iff avaialbe length is greater or
+         * equal to minimum entry size which is checked by while
+         * condition.
+         */
+        step = _SIZEOF_ADDR_IFREQ(*ifr);
+#else
+        step = sizeof(struct my_ifreq);
 #endif
+        /* Re-check step vs length once more */
+        if (step > length)
+            break;
+
+        rc = ifreq_cb(ifr, opaque);
+
+        ifr = (struct my_ifreq *)((caddr_t)ifr + step);
+        length -= step;
+    }
+
+    return rc;
+}
+
+#endif /* USE_IOCTL */
+
 
 /**
  * Check, if the interface with specified name exists.
@@ -1664,6 +1723,52 @@ interface_exists(const char *ifname)
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
+
+#if !defined(__linux__) && defined(SIOCGIFCONF)
+
+static te_errno
+ifreq_ifname_search_cb(struct my_ifreq *ifr, void *opaque)
+{
+    if (ifr == opaque)
+        return TE_ENOENT;
+    else if (strcmp(ifr->my_ifr_name,
+                    ((const struct my_ifreq *)opaque)->my_ifr_name) == 0)
+        return TE_EEXIST;
+    else
+        return 0;
+}
+
+/** Opaque data for interface_list_ifreq_cb() */
+struct interface_list_ifreq_cb_data {
+    struct my_ifreq    *first;      /**< First entry to check dups */
+    size_t              length;     /**< Total length to check dups */
+    char               *buf;        /**< Buffer to print names */
+    size_t              buf_len;    /**< Total length of the buffer */
+    size_t              buf_off;    /**< Current offset in the buffer */
+};
+
+static te_errno 
+interface_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
+{
+    struct interface_list_ifreq_cb_data *data = opaque;
+
+    /* Aliases, logical and alien interfaces are skipped here */
+    if (CHECK_INTERFACE(ifr->my_ifr_name) != 0)
+        return 0;
+
+    /* Skip duplicates */
+    if (ifconf_foreach_ifreq(data->first, data->length,
+                             ifreq_ifname_search_cb, ifr) == TE_EEXIST)
+        return 0;
+
+    data->buf_off += snprintf(data->buf + data->buf_off,
+                              data->buf_len - data->buf_off,
+                              "%s ", ifr->my_ifr_name);
+
+    return 0;
+}
+
+#endif
 
 /**
  * Get instance list for object "agent/interface".
@@ -1721,34 +1826,27 @@ interface_list(unsigned int gid, const char *oid, char **list)
     }
 #elif defined(SIOCGIFCONF)
     {
-        te_errno         rc;
-        void            *ifconf_buf = NULL;
-        struct my_ifreq *first_req;
-        struct my_ifreq *p, *q;
+        te_errno                                rc;
+        void                                   *ifconf_buf = NULL;
+        size_t                                  ifconf_len;
+        struct my_ifreq                        *first_req;
+        struct interface_list_ifreq_cb_data     data;
 
-        rc = get_ifconf_to_buf(&ifconf_buf, (void **)&first_req);
+        rc = get_ifconf_to_buf(&ifconf_buf, (void **)&first_req,
+                               &ifconf_len);
         if (rc != 0)
         {
             free(ifconf_buf);
             return rc;
         }
 
-        for (p = first_req; *(p->my_ifr_name) != '\0'; p++)
-        {
-            /* Aliases/logical interfaces are skipped here */
-            if (CHECK_INTERFACE(p->my_ifr_name) != 0)
-                continue;
-
-            /* Skip duplicates */
-            for (q = first_req; q != p; q++)
-                if (strcmp(p->my_ifr_name, q->my_ifr_name) == 0)
-                    break;
-            if (q != p)
-                continue;
-
-            off += snprintf(buf + off, sizeof(buf) - off,
-                            "%s ", p->my_ifr_name);
-        }
+        data.first = first_req;
+        data.length = ifconf_len;
+        data.buf = buf;
+        data.buf_len = sizeof(buf);
+        data.buf_off = 0;
+        rc = ifconf_foreach_ifreq(first_req, ifconf_len,
+                                  interface_list_ifreq_cb, &data);
         free(ifconf_buf);
     }
 #else
@@ -1793,13 +1891,14 @@ aliases_list()
 {
     te_errno            rc;
     void               *ifconf_buf = NULL;
+    size_t              ifconf_len;
     struct my_ifreq    *req;
 
     te_bool     first = TRUE;
     char       *name = NULL;
     char       *ptr = buf;
 
-    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&req);
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&req, &ifconf_len);
     if (rc != 0)
     {
         free(ifconf_buf);
@@ -2571,20 +2670,79 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     free_nlmsg_list(&addr_list);
     return 0;
 }
-#endif
-#ifdef USE_IOCTL
+
+#elif USE_IOCTL
+
+/** Opaque data for net_addr_list_ifreq_cb() */
+struct net_addr_list_ifreq_cb_data {
+    const char *ifname;     /**< Interface name */
+    char       *buf;        /**< Buffer to print address to */
+    size_t      buf_len;    /**< Size of the buffer */
+    size_t      buf_off;    /**< Current offset in the buffer */
+};
+
+static te_errno
+net_addr_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
+{
+    struct net_addr_list_ifreq_cb_data *data = opaque;
+
+    size_t  str_addrlen;
+    void   *net_addr;
+
+    if (strcmp(ifr->my_ifr_name, data->ifname) != 0 &&
+        !is_alias_of(ifr->my_ifr_name, data->ifname))
+        return 0;
+
+    if (SA(&ifr->my_ifr_addr)->sa_family == AF_INET)
+    {
+        str_addrlen = INET_ADDRSTRLEN;
+        net_addr = &SIN(&ifr->my_ifr_addr)->sin_addr;
+    }
+    else if (SA(&ifr->my_ifr_addr)->sa_family == AF_INET6)
+    {
+        str_addrlen = INET6_ADDRSTRLEN;
+        net_addr = &SIN6(&ifr->my_ifr_addr)->sin6_addr;
+    }
+    else
+    {
+        return 0;
+    }
+
+    while (data->buf_len - data->buf_off <= str_addrlen + 1)
+    {
+        data->buf_len += ADDR_LIST_BULK;
+        data->buf = realloc(data->buf, data->buf_len);
+        if (data->buf == NULL)
+        {
+            ERROR("realloc() failed");
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        }
+    }
+
+    if (inet_ntop(SA(&ifr->my_ifr_addr)->sa_family, net_addr,
+                  data->buf + data->buf_off, str_addrlen) == NULL)
+    {
+        ERROR("Failed to convert address to string");
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
+    }
+    data->buf_off += strlen(data->buf + data->buf_off);
+    data->buf[data->buf_off++] = ' ';
+    data->buf[data->buf_off] = '\0';
+    assert(data->buf_off < data->buf_len);
+
+    return 0;
+}
+
 static te_errno
 net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
 {
+    struct net_addr_list_ifreq_cb_data  cb_data;
+
     struct my_ifreq    *req;
     void               *ifconf_buf = NULL;
-
-    int         len = ADDR_LIST_BULK;
-    te_errno    rc;
-    char       *p;
-    size_t      str_addrlen;
-    void       *net_addr;
+    size_t              ifconf_len;
+    te_errno            rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2594,68 +2752,39 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&req);
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&req, &ifconf_len);
     if (rc != 0)
     {
         free(ifconf_buf);
         return rc;
     }
 
-    *list = (char *)calloc(ADDR_LIST_BULK, 1);
-    if (*list == NULL)
+    cb_data.ifname = ifname;
+    cb_data.buf_len = ADDR_LIST_BULK;
+    cb_data.buf = malloc(cb_data.buf_len);
+    if (cb_data.buf == NULL)
     {
         free(ifconf_buf);
         ERROR("calloc() failed");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    for (p = *list; *(req->my_ifr_name) != '\0'; req++)
+    cb_data.buf[0] = '\0';
+    cb_data.buf_off = 0;
+
+    rc = ifconf_foreach_ifreq(req, ifconf_len, net_addr_list_ifreq_cb,
+                              &cb_data);
+    if (rc != 0)
     {
-        if (strcmp(req->my_ifr_name, ifname) != 0 &&
-            !is_alias_of(req->my_ifr_name, ifname))
-            continue;
-
-        if (SA(&req->my_ifr_addr)->sa_family == AF_INET)
-        {
-            str_addrlen = INET_ADDRSTRLEN;
-            net_addr = &SIN(&req->my_ifr_addr)->sin_addr;
-        }
-        else if (SA(&req->my_ifr_addr)->sa_family == AF_INET6)
-        {
-            str_addrlen = INET6_ADDRSTRLEN;
-            net_addr = &SIN6(&req->my_ifr_addr)->sin6_addr;
-        }
-        else
-            continue;
-
-        while ((size_t)(len - (p - *list)) <= (str_addrlen + 1))
-        {
-            char *tmp;
-
-            len += ADDR_LIST_BULK;
-            tmp = (char *)realloc(*list, len);
-            if (tmp == NULL)
-            {
-                free(*list);
-                ERROR("realloc() failed");
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            }
-            p = tmp + (p - *list);
-            *list = tmp;
-        }
-
-        if (inet_ntop(SA(&req->my_ifr_addr)->sa_family, net_addr,
-                      p, str_addrlen) == NULL)
-        {
-            free(ifconf_buf);
-            ERROR("Failed to convert address to string");
-            return TE_RC(TE_TA_UNIX, TE_EFAULT);
-        }
-        p += strlen(p);
-
-        strcat(p++, " ");
+        free(cb_data.buf);
     }
+    else
+    {
+        *list = cb_data.buf;
+    }
+
     free(ifconf_buf);
-    return 0;
+
+    return rc;
 }
 #endif
 
@@ -2667,10 +2796,11 @@ ta_unix_conf_netaddr2ifname(const struct sockaddr *addr, char *ifname)
     void            *netaddr = te_sockaddr_get_netaddr(addr);
     te_errno         rc;
     void            *ifconf_buf = NULL;
+    size_t           ifconf_len;
     struct my_ifreq *first_req;
     struct my_ifreq *p;
 
-    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&first_req);
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&first_req, &ifconf_len);
     if (rc != 0)
     {
         free(ifconf_buf);
@@ -2752,6 +2882,20 @@ prefix_get(unsigned int gid, const char *oid, char *value,
         }
         CFG_IOCTL(cfg6_socket, SIOCGLIFSUBNET, &req);
         prefix = req.lifr_addrlen;
+#elif defined(SIOCGLIFADDR)
+        struct if_laddrreq lreq;
+
+        memset(&lreq, 0, sizeof(lreq));
+        strncpy(lreq.iflr_name, ifname, sizeof(lreq.iflr_name));
+        lreq.addr.ss_family = AF_INET6;
+        lreq.addr.ss_len = 0;
+        if (inet_pton(AF_INET6, addr, &SIN6(&lreq.addr)->sin6_addr) <= 0)
+        {
+            ERROR("inet_pton(AF_INET6) failed for '%s'", addr);
+            return TE_RC(TE_TA_UNIX, TE_EFMT);
+        }
+        CFG_IOCTL(cfg6_socket, SIOCGLIFADDR, &lreq);
+        prefix = lreq.prefixlen;
 #else
         ERROR("Unable to get IPv6 address prefix");
         return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -2862,20 +3006,15 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
         /* 
          * Solaris2 (SunOS 5.11) returns EADDRNOTAVAIL on request for
          * broadcast address on loopback.
+         * FreeBSD6 returns EINVAL on request for broadcast address
+         * on loopback.
          */
-        if (TE_RC_GET_ERROR(rc) != TE_EADDRNOTAVAIL)
-        {
-            ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %r",
-                  ifname, addr, rc);
-            return rc;
-        }
-        else
-        {
-#if 0
-            bcast.ip4_addr.s_addr = htonl(INADDR_ANY);
-#endif
+        if (INTERFACE_IS_LOOPBACK(ifname))
             return TE_RC(TE_TA_UNIX, TE_ENOENT);
-        }
+
+        ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %r",
+              ifname, addr, rc);
+        return rc;
     }
     else
     {
@@ -3085,9 +3224,10 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
 #elif defined(__FreeBSD__)
 
     void           *ifconf_buf = NULL;
+    size_t          ifconf_len;
     struct ifreq   *p;
 
-    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&p);
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&p, &ifconf_len);
     if (rc != 0)
     {
         free(ifconf_buf);
@@ -4622,7 +4762,7 @@ user_exists(const char *user)
     return getpwnam(user) != NULL ? TRUE : FALSE;
 }
 
-#if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
+#if TA_USE_PAM
 /**
  * Callback function provided by user and called from within PAM library.
  *
@@ -4768,7 +4908,7 @@ set_change_passwd(char const *user, char const *passwd)
 
     return rc;
 }
-#endif /* HAVE_SECURITY_PAM_APPL_H && HAVE_LIBPAM */
+#endif /* TA_USE_PAM */
 
 /**
  * Add tester user.
@@ -4784,8 +4924,7 @@ static te_errno
 user_add(unsigned int gid, const char *oid, const char *value,
          const char *user)
 {
-#if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM) || \
-    defined(__linux__)
+#if TA_USE_PAM || defined(__linux__)
     char *tmp;
     char *tmp1;
 
@@ -4798,8 +4937,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
 
-#if (!defined(HAVE_SECURITY_PAM_APPL_H) || !defined(HAVE_LIBPAM)) && \
-    !defined(__linux__)
+#if !TA_USE_PAM && !defined(__linux__)
     UNUSED(user);
     ERROR("user_add failed (no user management facilities available)");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -4837,7 +4975,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
     /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
     ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
 
-#if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
+#if TA_USE_PAM
     /** Set (change) password for just added user */
     if (set_change_passwd(user, user) != 0)
 #else
@@ -4865,7 +5003,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
     }
 
     return 0;
-#endif /* !defined HAVE_SECURITY_PAM_APPL_H && !defined __linux__ */
+#endif /* !TA_USE_PAM */
 }
 
 /**
