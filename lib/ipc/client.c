@@ -1406,8 +1406,9 @@ ipc_client_int_receive(struct ipc_client_server *server,
         if (rc != 0)
         {
             /* Error occured */
-            fprintf(stderr, "ipc_client_int_receive(): read_socket() "
-                            "failed: %s\n", strerror(rc));
+            if (TE_RC_GET_ERROR(rc) != TE_ECONNRESET)
+                fprintf(stderr, "%s(): read_socket() failed: %s\n",
+                                __FUNCTION__, te_rc_err2str(rc));
             return TE_RC(TE_IPC, rc);
         }
     }
@@ -1464,9 +1465,9 @@ ipc_stream_receive_answer(struct ipc_client *ipcc, const char *server_name,
     {
         /* ECONNRESET errno is set when server closes its socket */
         if (TE_RC_GET_ERROR(rc) != TE_ECONNRESET)
-            fprintf(stderr, "ipc_receive_answer(): client '%s' "
-                    "read_socket() failed: %s\n", ipcc->name,
-                    te_rc_err2str(rc));
+            fprintf(stderr, "%s(): client '%s' read_socket() failed: "
+                            "%s\n", __FUNCTION__, ipcc->name,
+                            te_rc_err2str(rc));
         return TE_RC(TE_IPC, rc);
     }
 
