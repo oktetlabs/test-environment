@@ -40,6 +40,9 @@
 #if HAVE_STRING_H
 #include <string.h>
 #endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
