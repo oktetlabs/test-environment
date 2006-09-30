@@ -87,7 +87,7 @@ TE_PLATFORM([solaris], [--host=i386-pc-solaris2.11],
 
 TE_LIB_PARMS([tad], [solaris], [],
              [--with-atm --with-eth --with-bridge --with-arp \
-              --with-ipstack --with-dhcp --with-cli --with-socket])
+              --with-ipstack --with-cli --with-socket])
 
 TE_TA_TYPE([solaris2], [solaris], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent ndn asn])
@@ -102,7 +102,7 @@ TE_PLATFORM([solaris_64], [--host=i386-pc-solaris2.11],
 
 TE_LIB_PARMS([tad], [solaris_64], [],
              [--with-atm --with-eth --with-bridge --with-arp \
-              --with-ipstack --with-dhcp --with-cli --with-socket])
+              --with-ipstack --with-cli --with-socket])
 
 TE_TA_TYPE([solaris2_64], [solaris_64], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent ndn asn])
@@ -118,7 +118,7 @@ TE_PLATFORM([freebsd], [--host=i386-pc-freebsd6],
 
 TE_LIB_PARMS([tad], [freebsd], [],
              [--with-pcap --with-atm --with-eth --with-bridge \
-              --with-arp --with-ipstack --with-dhcp --with-socket])
+              --with-arp --with-ipstack --with-socket])
 
 
 TE_TA_TYPE([freebsd6], [freebsd], [unix],
@@ -134,7 +134,7 @@ TE_PLATFORM([netbsd], [--host=i386-pc-netbsdelf],
 
 TE_LIB_PARMS([tad], [netbsd], [],
              [--with-pcap --with-atm --with-eth --with-bridge \
-              --with-arp --with-ipstack --with-dhcp --with-socket])
+              --with-arp --with-ipstack --with-socket])
 
 TE_TA_TYPE([netbsd], [netbsd], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent ndn asn])
