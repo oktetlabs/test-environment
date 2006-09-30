@@ -380,11 +380,12 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
         ERROR("%s(): no output socket", __FUNCTION__);
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
-    if ((fd = pcap_fileno(data->in)) < 0)
+    if ((fd = pcap_fileno(data->out)) < 0)
     {
-        ERROR("%s(): pcap_fileno() returned %d",
-              __FUNCTION__, fd);
-        return -1;
+        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+        ERROR("%s(): pcap_fileno() returned %d : %r",
+              __FUNCTION__, fd, rc);
+        return rc;
     }
 #endif
 
@@ -476,11 +477,14 @@ tad_eth_sap_send_close(tad_eth_sap *sap)
 #ifdef USE_PF_PACKET
     fd = data->out;
 #else
-    if ((fd = pcap_fileno(data->in)) < 0)
+    assert(data->out != NULL);
+    if ((fd = pcap_fileno(data->out)) < 0)
     {
-        ERROR("%s(): pcap_fileno() returned %d",
-              __FUNCTION__, fd);
-        return -1;
+        te_errno rc = TE_OS_RC(TE_TAD_CSAP, errno);
+
+        ERROR("%s(): pcap_fileno() returned %d : %r",
+              __FUNCTION__, fd, rc);
+        return rc;
     }
 #endif
 
