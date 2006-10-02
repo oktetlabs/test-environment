@@ -33,10 +33,10 @@
 # $Id:  $
 #
 
-SRCDIR=$1
-PLATFORM=$2
-LIBNAME=$3
-INCLUDE=$4/include
+SRCDIR="$1"
+PLATFORM="$2"
+LIBNAME="$3"
+INCLUDE="$4/include"
 shift 4
 
 BUILDER=`dirname $0`
@@ -58,7 +58,7 @@ if ! ssh $KEY $TE_WIN32_BUILD_HOST \
     exit 1
 fi
 
-rm -rf tmpsrc ${LIBNAME}
+rm -rf tmpsrc "${LIBNAME}"
 mkdir tmpsrc
 cd tmpsrc
 
