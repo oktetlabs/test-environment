@@ -48,28 +48,6 @@
 
 
 /* See description in trc_tag.h */
-te_errno
-trc_add_tag(tqh_strings *tags, const char *name)
-{
-    tqe_string *p = calloc(1, sizeof(*p));
-
-    if (p == NULL)
-    {
-        ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
-        return TE_ENOMEM;
-    }
-    TAILQ_INSERT_TAIL(tags, p, links);
-    p->v = strdup(name);
-    if (p->v == NULL)
-    {
-        ERROR("strdup(%s) failed", name);
-        return TE_ENOMEM;
-    }
-    return 0;
-}
-
-
-/* See description in trc_tag.h */
 static trc_diff_tags_entry *
 trc_diff_find_tags(trc_diff_tags_list *tags, unsigned int id,
                    te_bool create)
