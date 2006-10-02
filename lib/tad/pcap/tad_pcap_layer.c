@@ -55,6 +55,7 @@
 #include "asn_usr.h"
 #include "tad_csap_inst.h"
 #include "tad_pkt.h"
+#include "tad_utils.h"
 
 #include "tad_pcap_impl.h"
 
