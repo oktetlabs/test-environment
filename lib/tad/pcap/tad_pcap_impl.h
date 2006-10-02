@@ -31,29 +31,7 @@
 #ifndef __TE_TAD_PCAP_IMPL_H__
 #define __TE_TAD_PCAP_IMPL_H__ 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <linux/if.h>
-#include <netinet/in.h>
-#include <linux/if_packet.h>
-#include <netinet/if_ether.h>
-
-#include <pcap.h>
-#include <pcap-bpf.h>
-
-#include "te_errno.h"
-
-#include "asn_usr.h" 
-#include "ndn_pcap.h"
-
-#include "tad_csap_inst.h"
 #include "tad_csap_support.h"
-#include "tad_utils.h"
 
 
 #ifdef __cplusplus
