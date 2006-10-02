@@ -38,41 +38,18 @@
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#if HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#if HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#if HAVE_SYS_IF_ETHER_H
-#include <sys/sys_ether.h>
-#endif
-#if HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-#if HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-
+#if HAVE_ASSERT_H
 #include <assert.h>
+#endif
 
-#include <string.h>
-
+#include "te_errno.h"
 #include "te_alloc.h"
-#include "logger_api.h"
-#include "logger_ta_fast.h"
 #include "tad_common.h"
-#include "ndn_pcap.h" 
-
+#include "logger_api.h"
+#include "asn_usr.h"
 #include "tad_eth_sap.h"
+#include "tad_csap_inst.h"
 #include "tad_pcap_impl.h"
-
 
 
 /** Ethernet layer read/write specific data */
