@@ -4,7 +4,7 @@
  * Main module
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -38,22 +38,19 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
-#if HAVE_ERRNO_H
-#include <errno.h>
-#endif
 #if HAVE_POPT_H
 #include <popt.h>
 #else
 #error popt library (development version) is required for TRC tool
 #endif
 
-#include <libxml/tree.h>
-
 #include "te_defs.h"
 #include "te_queue.h"
+#include "te_alloc.h"
 #include "tq_string.h"
 #include "logger_api.h"
 #include "te_trc.h"
+#include "trc_report.h"
 
 
 DEFINE_LGR_ENTITY("TRC RG");
@@ -82,38 +79,33 @@ enum {
     TRC_OPT_IGNORE_LOG_TAGS,
 };
 
-/** HTML report data */
-typedef struct trc_html_report {
-    TAILQ_ENTRY(trc_html_report)    links;  /**< List links */
+/** HTML report configuration */
+typedef struct trc_report_html {
+    TAILQ_ENTRY(trc_report_html)    links;  /**< List links */
 
-    char           *filename;   /**< Name of the file for report */
+    const char     *filename;   /**< Name of the file for report */
     unsigned int    flags;      /**< Report options */
     FILE           *header;     /**< File with header */
-} trc_html_report;
+} trc_report_html;
 
-/** List of tags to get specific expected result */
-static tqh_strings tags;
 
-/** Should database be update */
-static te_bool trc_update_db = FALSE;
 /** Should database be initialized from scratch */
-static te_bool trc_init_db = FALSE;
-
+static te_bool init_db = FALSE;
 /** Be quiet, do not output grand total statistics to stdout */
-static te_bool trc_quiet = FALSE;
+static te_bool quiet = FALSE;
 
-/** Should tags from XML log be ignored? */
-static te_bool trc_ignore_log_tags = FALSE;
-
-/** Name of the file with XML log to be analyzed */
-static char *trc_xml_log_fn = NULL;
 /** Name of the file with expected testing result database */
-static char *trc_db_fn = NULL;
+static const char *db_fn = NULL;
+/** Name of the file with XML log to be analyzed */
+static const char *xml_log_fn = NULL;
 /** Name of the file with report in TXT format */
-static char *trc_txt_fn = NULL;
+static const char *txt_fn = NULL;
 
 /** List of HTML reports to generate */
-static TAILQ_HEAD(trc_html_reports, trc_html_report) html_reports;
+static TAILQ_HEAD(trc_report_htmls, trc_report_html) reports;
+
+/** TRC report context */
+static trc_report_ctx ctx;
 
 
 /**
@@ -127,11 +119,11 @@ static TAILQ_HEAD(trc_html_reports, trc_html_report) html_reports;
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 static int
-process_cmd_line_opts(int argc, char **argv)
+trc_report_process_cmd_line_opts(int argc, char **argv)
 {
     poptContext         optCon;
-    int                 rc;
-    trc_html_report    *html_report = NULL;
+    int                 opt;
+    trc_report_html    *report = NULL;
 
     /* Option Table */
     struct poptOption options_table[] = {
@@ -144,7 +136,7 @@ process_cmd_line_opts(int argc, char **argv)
         { "quiet", 'q', POPT_ARG_NONE, NULL, TRC_OPT_QUIET,
           "Be quiet.", NULL },
 
-        { "db", 'd', POPT_ARG_STRING, NULL, TRC_OPT_DB,
+        { "ctx.db", 'd', POPT_ARG_STRING, NULL, TRC_OPT_DB,
           "Specify name of the file with expected testing results "
           "database.",
           "FILENAME" },
@@ -208,56 +200,65 @@ process_cmd_line_opts(int argc, char **argv)
   
     poptSetOtherOptionHelp(optCon, "<xml-log>");
 
-    while ((rc = poptGetNextOpt(optCon)) >= 0)
+    while ((opt = poptGetNextOpt(optCon)) >= 0)
     {
-        switch (rc)
+        switch (opt)
         {
             case TRC_OPT_QUIET:
-                trc_quiet = TRUE;
+                quiet = TRUE;
                 break;
 
             case TRC_OPT_INIT:
-                trc_init_db = TRUE;
+                init_db = TRUE;
                 /* Fall throught */
 
             case TRC_OPT_UPDATE:
-                trc_update_db = TRUE;
+                ctx.flags |= TRC_REPORT_UPDATE_DB;
                 break;
 
             case TRC_OPT_DB:
-                free(trc_db_fn);
-                trc_db_fn = strdup(poptGetOptArg(optCon));
+                db_fn = poptGetOptArg(optCon);
                 break;
             
             case TRC_OPT_TAG:
-                if (trc_add_tag(&tags, poptGetOptArg(optCon)) != 0)
+            {
+                tqe_string *p = TE_ALLOC(sizeof(*p));
+
+                if (p == NULL)
                 {
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
+                TAILQ_INSERT_TAIL(&ctx.tags, p, links);
+                p->v = strdup(poptGetOptArg(optCon));
+                if (p->v == NULL)
+                {
+                    ERROR("strdup(%s) failed", poptGetOptArg(optCon));
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
                 break;
+            }
 
             case TRC_OPT_IGNORE_LOG_TAGS:
-                trc_ignore_log_tags = TRUE;
+                ctx.flags |= TRC_REPORT_IGNORE_LOG_TAGS;
                 break;
 
             case TRC_OPT_TXT:
-                free(trc_txt_fn);
-                trc_txt_fn = strdup(poptGetOptArg(optCon));
+                txt_fn = poptGetOptArg(optCon);
                 break;
 
             case TRC_OPT_HTML:
             {
-                html_report = calloc(1, sizeof(*html_report));
-                if (html_report == NULL)
+                report = TE_ALLOC(sizeof(*report));
+                if (report == NULL)
                 {
-                    ERROR("calloc() failed");
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
-                TAILQ_INSERT_TAIL(&html_reports, html_report, links);
-                html_report->filename = strdup(poptGetOptArg(optCon));
-                html_report->flags = 0;
+                TAILQ_INSERT_TAIL(&reports, report, links);
+                report->filename = poptGetOptArg(optCon);
+                report->flags = 0;
                 break;
             }
 
@@ -265,21 +266,21 @@ process_cmd_line_opts(int argc, char **argv)
             {
                 const char *trc_html_header_fn = poptGetOptArg(optCon);
 
-                if (html_report == NULL)
+                if (report == NULL)
                 {
                     ERROR("HTML report header should be specified after "
                           "the file name for report");
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
-                if (html_report->header != NULL)
+                if (report->header != NULL)
                 {
                     ERROR("File with HTML header is already specified");
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
-                html_report->header = fopen(trc_html_header_fn, "r");
-                if (html_report->header == NULL)
+                report->header = fopen(trc_html_header_fn, "r");
+                if (report->header == NULL)
                 {
                     ERROR("Failed to open file '%s'", trc_html_header_fn);
                     poptFreeContext(optCon);
@@ -290,14 +291,14 @@ process_cmd_line_opts(int argc, char **argv)
 
 #define TRC_OPT_FLAG(flag_) \
             case TRC_OPT_##flag_:                                       \
-                if (html_report == NULL)                                \
+                if (report == NULL)                                     \
                 {                                                       \
                     ERROR("HTML report modifiers should be specified "  \
                           "after the file name for report");            \
                     poptFreeContext(optCon);                            \
                     return EXIT_FAILURE;                                \
                 }                                                       \
-                html_report->flags |= TRC_OUT_##flag_;                  \
+                report->flags |= TRC_REPORT_##flag_;                    \
                 break;
 
             TRC_OPT_FLAG(NO_TOTAL_STATS);
@@ -319,29 +320,26 @@ process_cmd_line_opts(int argc, char **argv)
                 return EXIT_FAILURE;
 
             default:
-                ERROR("Unexpected option number %d", rc);
+                ERROR("Unexpected option number %d", opt);
                 poptFreeContext(optCon);
                 return EXIT_FAILURE;
         }
     }
 
-    if (rc < -1)
+    if (opt < -1)
     {
         /* An error occurred during option processing */
         ERROR("%s: %s", poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
-              poptStrerror(rc));
+              poptStrerror(opt));
         poptFreeContext(optCon);
         return EXIT_FAILURE;
     }
 
     /* Get name of the file with log */
-    trc_xml_log_fn = (char *)poptGetArg(optCon);
-    if (trc_xml_log_fn != NULL)
+    xml_log_fn = poptGetArg(optCon);
+    if ((xml_log_fn != NULL) && (strcmp(xml_log_fn, "-") == 0))
     {
-        if (strcmp(trc_xml_log_fn, "-") == 0)
-            trc_xml_log_fn = NULL;
-        else
-            trc_xml_log_fn = strdup(trc_xml_log_fn);
+        xml_log_fn = NULL;
     }
 
     if (poptGetArg(optCon) != NULL)
@@ -356,69 +354,6 @@ process_cmd_line_opts(int argc, char **argv)
     return EXIT_SUCCESS;
 }
 
-
-static void trc_collect_iters_stats(test_iters *iters, trc_stats *stats);
-static void trc_collect_tests_stats(test_runs *tests, trc_stats *stats);
-
-/**
- * Add one statistics to another.
- *
- * @param stats     Total statistics
- * @param add       Statistics to add
- */
-static void
-trc_stats_add(trc_stats *stats, const trc_stats *add)
-{
-    stats->pass_exp += add->pass_exp;
-    stats->pass_une += add->pass_une;
-    stats->fail_exp += add->fail_exp;
-    stats->fail_une += add->fail_une;
-    stats->aborted += add->aborted;
-    stats->new_run += add->new_run;
-
-    stats->not_run += add->not_run;
-    stats->skip_exp += add->skip_exp;
-    stats->skip_une += add->skip_une;
-    stats->new_not_run += add->new_not_run;
-}
-
-/**
- * Collect statistics for list of iterations.
- *
- * @param iters     List of iterations
- * @param stats     Statistics to be updated
- */
-static void
-trc_collect_iters_stats(test_iters *iters, trc_stats *stats)
-{
-    test_iter *p;
-
-    for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
-    {
-        trc_collect_tests_stats(&p->tests, &p->stats);
-        trc_stats_add(stats, &p->stats);
-    }
-}
-
-/**
- * Collect statistics for list of tests.
- *
- * @param tests     List of tests
- * @param stats     Statistics to be updated
- */
-static void
-trc_collect_tests_stats(test_runs *tests, trc_stats *stats)
-{
-    test_run *p;
-
-    for (p = tests->head.tqh_first; p != NULL; p = p->links.tqe_next)
-    {
-        trc_collect_iters_stats(&p->iters, &p->stats);
-        trc_stats_add(stats, &p->stats);
-    }
-}
-
-
 /**
  * Output statistics in plain format to a file.
  *
@@ -428,20 +363,20 @@ trc_collect_tests_stats(test_runs *tests, trc_stats *stats)
  * @retval Status code (always 0).
  */
 static int
-trc_stats_to_txt(FILE *f, const trc_stats *stats)
+trc_report_stats_to_txt(FILE *f, const trc_report_stats *stats)
 {
     static const char * const fmt =
 "\n"
-"Run (total)                            %4u\n"
-"  Passed, as expected                  %4u\n"
-"  Failed, as expected                  %4u\n"
-"  Passed unexpectedly                  %4u\n"
-"  Failed unexpectedly                  %4u\n"
-"  Aborted (no useful result)           %4u\n"
-"  New (expected result is not known)   %4u\n"
-"Not Run (total)                        %4u\n"
-"  Skipped, as expected                 %4u\n"
-"  Skipped unexpectedly                 %4u\n"
+"Run (total)                          %6u\n"
+"  Passed, as expected                %6u\n"
+"  Failed, as expected                %6u\n"
+"  Passed unexpectedly                %6u\n"
+"  Failed unexpectedly                %6u\n"
+"  Aborted (no useful result)         %6u\n"
+"  New (expected result is not known) %6u\n"
+"Not Run (total)                      %6u\n"
+"  Skipped, as expected               %6u\n"
+"  Skipped unexpectedly               %6u\n"
 "\n";
 
     fprintf(f, fmt,
@@ -468,88 +403,76 @@ int
 main(int argc, char *argv[])
 {
     int                 result = EXIT_FAILURE;
-    trc_html_report    *html_report;
-    xmlDocPtr           log = NULL;
+    trc_report_html    *report;
 
-    memset(&trc_db, 0, sizeof(trc_db));
-    TAILQ_INIT(&trc_db.tests.head);
-    TAILQ_INIT(&tags);
-    TAILQ_INIT(&tags_diff);
-    TAILQ_INIT(&html_reports);
+    TAILQ_INIT(&reports);
+
+    trc_report_init_ctx(&ctx);
 
     /* Process and validate command-line options */
-    if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
+    if (trc_report_process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
         goto exit;
-    if (trc_db_fn == NULL)
+    if (db_fn == NULL)
     {
-        ERROR("Missing name of the file with expected testing results");
-        goto exit;
-    }
-
-    /* At first, parse XML log, but do not process */
-    if (trc_parse_log(trc_xml_log_fn, &log) != 0)
-    {
-        ERROR("Failed to parse XML log");
-        goto exit;
-    }
-    /* Optionally get tags from log */
-    if (!trc_ignore_log_tags &&
-        trc_get_tags_from_log(log, &tags) != 0)
-    {
-        ERROR("Failed to get tags from XML log");
+        ERROR("Missing name of the file with TRC database");
         goto exit;
     }
 
-    /* Parse expected testing results database */
-    if (!trc_init_db && (trc_parse_db(trc_db_fn) != 0))
+    /* Initialize a new or open existing TRC database */
+    if (init_db)
     {
-        ERROR("Failed to parse expected testing results database");
+        if (trc_db_init(&ctx.db) != 0)
+        {
+            ERROR("Failed to initialize a new TRC database");
+            goto exit;
+        }
+    }
+    else if (trc_db_open(db_fn, &ctx.db) != 0)
+    {
+        ERROR("Failed to open TRC database '%s'", db_fn);
         goto exit;
     }
 
     /* Process log */
-    if (trc_process_log(log, &trc_db) != 0)
+    if (trc_report_process_log(&ctx, xml_log_fn) != 0)
     {
         ERROR("Failed to process XML log");
         goto exit;
     }
 
-    /* Collect total statistics */
-    trc_collect_tests_stats(&trc_db.tests, &trc_db.stats);
-
     /* Output grand total statistics to stdout */
-    if (!trc_quiet && trc_stats_to_txt(stdout, &trc_db.stats) != 0)
+    if (!quiet && trc_report_stats_to_txt(stdout, &ctx.stats) != 0)
     {
         ERROR("Failed to output grand total statistics to stdout");
         /* Try to continue */
     }
-    if (trc_txt_fn != NULL)
+    if (txt_fn != NULL)
     {
-        FILE *f = fopen(trc_txt_fn, "w");
+        FILE *f = fopen(txt_fn, "w");
 
         if (f != NULL)
         {
-            if (trc_stats_to_txt(f, &trc_db.stats) != 0)
+            if (trc_report_stats_to_txt(f, &ctx.stats) != 0)
             {
                 ERROR("Failed to output grand total statistics to %s",
-                      trc_txt_fn);
+                      txt_fn);
                 /* Continue */
             }
         }
         else
         {
-            ERROR("Failed to open file '%s' for writing", trc_txt_fn);
+            ERROR("Failed to open file '%s' for writing", txt_fn);
             /* Continue */
         }
     }
 
     /* Generate reports in HTML format */
-    for (html_report = html_reports.tqh_first;
-         html_report != NULL;
-         html_report = html_report->links.tqe_next)
+    for (report = reports.tqh_first;
+         report != NULL;
+         report = report->links.tqe_next)
     {
-        if (trc_report_to_html(html_report->filename, html_report->header,
-                               &trc_db, html_report->flags) != 0)
+        if (trc_report_to_html(&ctx, report->filename, report->header,
+                               report->flags) != 0)
         {
             ERROR("Failed to generate report in HTML format");
             goto exit;
@@ -557,9 +480,10 @@ main(int argc, char *argv[])
     }
 
     /* Update expected testing results database, if requested */
-    if (trc_update_db && (trc_dump_db(trc_db_fn, trc_init_db) != 0))
+    if ((ctx.flags & TRC_REPORT_UPDATE_DB) &&
+        (trc_db_save(ctx.db, db_fn) != 0))
     {
-        ERROR("Failed to update expected testing results database");
+        ERROR("Failed to save TRC database to '%s'", db_fn);
         goto exit;
     }
 
@@ -567,17 +491,15 @@ main(int argc, char *argv[])
 
 exit:
 
-    tq_strings_free(&tags, free);
-    free(trc_db_fn);
-    free(trc_xml_log_fn);
-    while ((html_report = html_reports.tqh_first) != NULL)
+    trc_db_close(ctx.db);
+    tq_strings_free(&ctx.tags, free);
+
+    while ((report = reports.tqh_first) != NULL)
     {
-        TAILQ_REMOVE(&html_reports, html_report, links);
-        free(html_report->filename);
-        if (html_report->header != NULL)
-            (void)fclose(html_report->header);
+        TAILQ_REMOVE(&reports, report, links);
+        if (report->header != NULL)
+            (void)fclose(report->header);
     }
-    trc_free_log(log);
 
     return result;
 }
