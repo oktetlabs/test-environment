@@ -164,7 +164,15 @@ tad_pcap_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     }
 
     rc = pcap_compile_nopcap(TAD_PCAP_SNAPLEN, layer_data->iftype,
-                             bpf_program, pcap_str, TRUE, 0);
+                             bpf_program, pcap_str, TRUE, 0
+#ifdef __NetBSD__
+                             /*
+                              * FIXME
+                              * NetBSD 2.0 has a bit different prototype
+                              */
+                             , NULL
+#endif
+                             );
     if (rc != 0)
     {
         ERROR("%s(): pcap_compile_nopcap() failed, rc=%d", __FUNCTION__, rc);
@@ -207,7 +215,10 @@ tad_pcap_release_ptrn_cb(csap_p csap, unsigned int layer, void *opaque)
     {
         if (layer_data->bpfs[bpf_id] != NULL)
         {
+#ifndef __NetBSD__
+            /* FIXME: NetBSD 2.0 does not have such symbol */
             pcap_freecode(layer_data->bpfs[bpf_id]);
+#endif
             free(layer_data->bpfs[bpf_id]);
             layer_data->bpfs[bpf_id] = NULL;
         }
