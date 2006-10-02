@@ -69,7 +69,7 @@
     <!-- Network interface index
          Name: "eth0"-like -->
     <object oid="/agent/interface/index" access="read_only" type="integer"/>
-    
+   
     <!-- Network address (IPv4 or IPv6) of the interface.
          Name:   address in human notation: 
                      dotted notation for IPv4
@@ -84,6 +84,11 @@
     <object oid="/agent/interface/net_addr/broadcast"
             access="read_write" type="address"/>
     
+    <!-- Multicasting MAC address.
+         Name:   MAC address in human notation (with colons)
+         Value:  None -->
+    <object oid="/agent/interface/mcast_link_addr" access="read_create" type="none"/>    
+
     <!-- Link layer address for the interface (MAC, NSAP, E.164, VPI/VCI, DLCI).
          Name:  empty
          Limit: 1 -->

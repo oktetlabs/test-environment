@@ -359,7 +359,15 @@ static te_errno interface_list(unsigned int, const char *, char **);
 static te_errno interface_add(unsigned int, const char *, const char *,
                               const char *);
 static te_errno interface_del(unsigned int, const char *, const char *);
-
+#ifdef __linux__
+static te_errno mcast_link_addr_add(unsigned int, const char *,
+                                    const char *, const char *,
+                                    const char *);
+static te_errno mcast_link_addr_del(unsigned int, const char *,
+                                    const char *, const char *);
+static te_errno mcast_link_addr_list(unsigned int, const char *, char **,
+                                     const char *);
+#endif
 static te_errno net_addr_add(unsigned int, const char *, const char *,
                              const char *, const char *);
 static te_errno net_addr_del(unsigned int, const char *,
@@ -476,10 +484,19 @@ static rcf_pch_cfg_object node_net_addr =
       (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
       (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
       (rcf_ch_cfg_list)net_addr_list, NULL, NULL };
+#ifdef __linux__
+static rcf_pch_cfg_object node_mcast_link_addr = 
+    { "mcast_link_addr", 0, NULL, &node_net_addr,
+      NULL, NULL, (rcf_ch_cfg_add)mcast_link_addr_add,
+      (rcf_ch_cfg_del)mcast_link_addr_del,
+      (rcf_ch_cfg_list)mcast_link_addr_list, NULL, NULL };
 
+RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_mcast_link_addr,
+                    status_get, status_set);
+#else
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_net_addr,
                     status_get, status_set);
-
+#endif
 RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
                     mtu_get, mtu_set);
 
@@ -2103,6 +2120,105 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
+#ifdef __linux__
+te_errno
+mcast_link_addr_change(const char *ifname, const char *addr, int op)
+{
+    struct ifreq request;
+    int    s;
+    int    i = 0;
+    char  *p;
+
+    memset(&request, 0, sizeof(request));
+    strncpy(request.ifr_name, ifname, IFNAMSIZ);
+    /* Read MAC address */
+    for (i = 0, p = addr; i < 6 && p != NULL; i++)
+    {
+        if (p == NULL ||
+            sscanf(p, "%02x", (char *)&request.ifr_hwaddr.sa_data[i]) < 1)
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        p = strchr(p, ':');
+        /* Skip the semicolon */
+        if (p != NULL)
+            p++;
+    }
+    if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+    {
+        ERROR("Cannot open socket for ioctl()");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    if (ioctl(s, op, &request) != 0)
+    {
+        ERROR("ioctl() failed");
+        close(s);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    
+    close(s);
+    return 0;
+}
+
+static te_errno
+mcast_link_addr_add(unsigned int gid, const char *oid,
+                    const char *value, const char *ifname, const char *addr)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    return mcast_link_addr_change(ifname, addr, SIOCADDMULTI);
+}
+    
+static te_errno
+mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
+                    const char *addr)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    return mcast_link_addr_change(ifname, addr, SIOCDELMULTI);
+}
+
+static te_errno
+mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
+                     const char *ifname)
+{
+    char        s[1024] = "";
+    FILE       *fd;
+    char        ifn[IFNAMSIZ];
+    char        addrstr[ETH_ALEN * 3];
+    char       *p = s;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    if ((fd = fopen("/proc/net/dev_mcast", "r")) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EACCES);
+
+    while (fscanf(fd, "%*d %s %*d %*d %s\n", ifn, addrstr) > 0)
+    {
+        /*
+         * Read file and copy items with appropriate interface name
+         * to the buffer, adding semicolons to MAC addresses.
+         */
+            
+        if (strcmp(ifn, ifname) == 0)
+        {
+            int i;
+
+            for (i = 0; i < 6; i++)
+            {
+                strncpy(p, &addrstr[i * 2], 2);
+                p += strlen(p);
+                sprintf(p++, i < 5 ? ":" : " ");
+            }
+        }
+    }
+    
+    *list = strdup(s);
+    fclose(fd);
+    return 0;
+}
+
+#endif
 /**
  * Configure IPv4 address for the interface.
  * If the address does not exist, alias interface is created.
@@ -2456,7 +2572,7 @@ find_net_addr(const char *ifname, const char *addr)
  * Clear interface address of the down interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
  *
