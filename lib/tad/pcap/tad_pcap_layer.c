@@ -35,11 +35,26 @@
 #include "config.h"
 #endif
 
-#include "te_defs.h"
-#include "te_printf.h"
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
+#if HAVE_PCAP_H
+#include <pcap.h>
+#endif
 
+#include "te_defs.h"
+#include "te_stdint.h"
+#include "te_errno.h"
+#include "te_alloc.h"
+#include "te_printf.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
+#include "asn_usr.h"
+#include "tad_csap_inst.h"
+#include "tad_pkt.h"
 
 #include "tad_pcap_impl.h"
 
@@ -69,12 +84,10 @@ tad_pcap_init_cb(csap_p csap, unsigned int layer)
 {
     tad_pcap_layer_data    *layer_data;
 
-    layer_data = calloc(1, sizeof(*layer_data));
+    layer_data = TE_ALLOC(sizeof(*layer_data));
     if (layer_data == NULL)
-    {
-        ERROR("Init, not memory for layer_data");
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
+
     csap_set_proto_spec_data(csap, layer, layer_data);
 
     layer_data->iftype = PCAP_LINKTYPE_DEFAULT;
