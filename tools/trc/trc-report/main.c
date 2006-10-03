@@ -67,6 +67,7 @@ enum {
     TRC_OPT_TXT,
     TRC_OPT_HTML,
     TRC_OPT_HTML_HEADER,
+    TRC_OPT_HTML_TITLE,
     TRC_OPT_NO_TOTAL_STATS,
     TRC_OPT_NO_PACKAGES_ONLY,
     TRC_OPT_STATS_ONLY,
@@ -84,6 +85,7 @@ typedef struct trc_report_html {
     TAILQ_ENTRY(trc_report_html)    links;  /**< List links */
 
     const char     *filename;   /**< Name of the file for report */
+    const char     *title;      /**< Report title */
     unsigned int    flags;      /**< Report options */
     FILE           *header;     /**< File with header */
 } trc_report_html;
@@ -154,8 +156,11 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,
           "Name of the file for report in HTML format.",
           "FILENAME" },
+        { "html-title", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_TITLE,
+          "Title of the HTML report.",
+          "FILENAME" },
         { "html-header", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_HEADER,
-          "Name of the file with header for a HTML report.",
+          "Name of the file with header for the HTML report.",
           "FILENAME" },
         { "no-total", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_TOTAL_STATS,
           "Do not include grand total statistics.",
@@ -262,6 +267,24 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 break;
             }
 
+            case TRC_OPT_HTML_TITLE:
+                if (report == NULL)
+                {
+                    ERROR("HTML report title should be specified after "
+                          "the file name for report");
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                if (report->title != NULL)
+                {
+                    ERROR("Title of the HTML report '%s' has already "
+                          "been specified", report->filename);
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                report->title = poptGetOptArg(optCon);
+                break;
+
             case TRC_OPT_HTML_HEADER:
             {
                 const char *trc_html_header_fn = poptGetOptArg(optCon);
@@ -275,7 +298,8 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 }
                 if (report->header != NULL)
                 {
-                    ERROR("File with HTML header is already specified");
+                    ERROR("File with HTML header has already been "
+                          "specified");
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
@@ -433,6 +457,9 @@ main(int argc, char *argv[])
         goto exit;
     }
 
+    /* Allocate TRC database user ID */
+    ctx.db_uid = trc_db_new_user(ctx.db);
+
     /* Process log */
     if (trc_report_process_log(&ctx, xml_log_fn) != 0)
     {
@@ -471,8 +498,8 @@ main(int argc, char *argv[])
          report != NULL;
          report = report->links.tqe_next)
     {
-        if (trc_report_to_html(&ctx, report->filename, report->header,
-                               report->flags) != 0)
+        if (trc_report_to_html(&ctx, report->filename, report->title,
+                               report->header, report->flags) != 0)
         {
             ERROR("Failed to generate report in HTML format");
             goto exit;
@@ -491,6 +518,7 @@ main(int argc, char *argv[])
 
 exit:
 
+    trc_db_free_user(ctx.db, ctx.db_uid);
     trc_db_close(ctx.db);
     tq_strings_free(&ctx.tags, free);
 
