@@ -495,7 +495,6 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                 if (!no_trc)
                 {
 #if WITH_TRC
-                    global->flags &= ~TESTER_NO_TRC;
                     /* Initialize TRC instance, if necessary */
                     if (rc == TESTER_OPT_TRC_DB)
                     {
@@ -506,6 +505,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                             poptFreeContext(optCon);
                             return rc;
                         }
+                        global->flags &= ~TESTER_NO_TRC;
                     }
                     else
                     {
