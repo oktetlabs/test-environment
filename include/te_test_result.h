@@ -52,6 +52,7 @@ extern "C" {
 typedef enum te_test_status {
     TE_TEST_INCOMPLETE = 0, /**< Test execution has not been finished */
 
+    TE_TEST_UNSPEC,     /**< Unspecified result in term of TRC */
     TE_TEST_EMPTY,      /**< Session is empty */
     TE_TEST_SKIPPED,    /**< The test is skipped because of target
                              requirements specified by user */
@@ -82,6 +83,7 @@ te_test_status_to_str(te_test_status status)
         case TE_TEST_ ## _status:   return #_status;
 
         TE_TEST_STATUS_TO_STR(INCOMPLETE);
+        TE_TEST_STATUS_TO_STR(UNSPEC);
         TE_TEST_STATUS_TO_STR(EMPTY);
         TE_TEST_STATUS_TO_STR(SKIPPED);
         TE_TEST_STATUS_TO_STR(FAKED);
