@@ -335,6 +335,7 @@ typedef enum {
     TE_TAD_DLPI,        /**< TAD DLPI support */
     TE_TOOL_EXT,        /**< External tools */
     TE_TAD_BPF,         /**< TAD Ethernet using BPF */
+    TE_TRC,             /**< Testing Results Comparator library */
 } te_module;                             
 /*@}*/
 
@@ -421,6 +422,7 @@ te_rc_mod2str(te_errno err)
         MOD2STR(RPC);
         MOD2STR(ISCSI_TARGET);
         MOD2STR(TOOL_EXT);
+        MOD2STR(TRC);
         case 0: return "";
         default:
             snprintf(unknown_module, sizeof(unknown_module),
