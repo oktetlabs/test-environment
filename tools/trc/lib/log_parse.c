@@ -190,30 +190,9 @@ te_test_str2status(const char *str, te_test_status *status)
 static void
 trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
 {
-    trc_report_test_iter_entry *entry;
-
-    te_bool name_found = FALSE;
-    te_bool status_found = FALSE;
-
-    /* Pre-allocate entry for result */
-    entry = TE_ALLOC(sizeof(*entry));
-    if (entry == NULL)
-    {
-        ctx->rc = TE_ENOMEM;
-        return;
-    }
-    te_test_result_init(&entry->result);
-
-    assert(ctx->iter_data == NULL);
-    ctx->iter_data = TE_ALLOC(sizeof(*ctx->iter_data));
-    if (ctx->iter_data == NULL)
-    {
-        free(entry);
-        ctx->rc = TE_ENOMEM;
-        return;
-    }
-    TAILQ_INIT(&ctx->iter_data->runs);
-    TAILQ_INSERT_TAIL(&ctx->iter_data->runs, entry, links);
+    te_bool         name_found = FALSE;
+    te_bool         status_found = FALSE;
+    te_test_status  status;
 
     while (ctx->rc == 0 && attrs[0] != NULL && attrs[1] != NULL)
     {
@@ -230,8 +209,7 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         else if (strcmp(attrs[0], "result") == 0)
         {
             status_found = TRUE;
-            ctx->rc = te_test_str2status(attrs[1],
-                          &ctx->iter_data->runs.tqh_first->result.status);
+            ctx->rc = te_test_str2status(attrs[1], &status);
         }
         attrs += 2;
     }
@@ -242,13 +220,37 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
     }
     else if (!name_found)
     {
-        ERROR("Name of the test/package/session not found");
-        ctx->rc = TE_EFMT;
+        INFO("Name of the test/package/session not found - ignore");
+        assert(ctx->iter_data == NULL);
     }
     else if (!status_found)
     {
         ERROR("Status of the test/package/session not found");
         ctx->rc = TE_EFMT;
+    }
+    else
+    {
+        trc_report_test_iter_entry *entry;
+
+        /* Pre-allocate entry for result */
+        entry = TE_ALLOC(sizeof(*entry));
+        if (entry == NULL)
+        {
+            ctx->rc = TE_ENOMEM;
+            return;
+        }
+        te_test_result_init(&entry->result);
+
+        assert(ctx->iter_data == NULL);
+        ctx->iter_data = TE_ALLOC(sizeof(*ctx->iter_data));
+        if (ctx->iter_data == NULL)
+        {
+            free(entry);
+            ctx->rc = TE_ENOMEM;
+            return;
+        }
+        TAILQ_INIT(&ctx->iter_data->runs);
+        TAILQ_INSERT_TAIL(&ctx->iter_data->runs, entry, links);
     }
 }
 
@@ -265,8 +267,10 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
     if (ctx->args_n == ctx->args_max)
     {
         ctx->args_max++;
-        ctx->args_name = realloc(ctx->args_name, ctx->args_max);
-        ctx->args_value = realloc(ctx->args_value, ctx->args_max);
+        ctx->args_name = realloc(ctx->args_name,
+                             sizeof(*(ctx->args_name)) * ctx->args_max);
+        ctx->args_value = realloc(ctx->args_value,
+                             sizeof(*(ctx->args_value)) * ctx->args_max);
         if (ctx->args_name == NULL || ctx->args_value == NULL)
         {
             ctx->rc = TE_ENOMEM;
@@ -499,7 +503,17 @@ trc_report_log_start_element(void *user_data,
         case TRC_REPORT_LOG_PARSE_TEST:
             if (strcmp(tag, "meta") == 0)
             {
-                ctx->state = TRC_REPORT_LOG_PARSE_META;
+                if (ctx->iter_data == NULL)
+                {
+                    /* Ignore metadata of ignored tests */
+                    ctx->skip_state = ctx->state;
+                    ctx->skip_depth = 1;
+                    ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
+                }
+                else
+                {
+                    ctx->state = TRC_REPORT_LOG_PARSE_META;
+                }
             }
             else if (strcmp(tag, "branch") == 0)
             {
@@ -693,6 +707,7 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
 
             assert(strcmp(tag, "meta") == 0);
             ctx->state = TRC_REPORT_LOG_PARSE_TEST;
+
             if (!trc_db_walker_step_iter(ctx->db_walker, ctx->args_n,
                                          (const char **)ctx->args_name,
                                          (const char **)ctx->args_value,
