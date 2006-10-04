@@ -221,6 +221,10 @@ trc_report_collect_stats(trc_report_ctx *ctx)
                 break;
         }
     }
+    if (rc == 0 && sum != NULL && add != NULL)
+    {
+        trc_report_stats_add(sum, add);
+    }
 
     trc_db_free_walker(walker);
 
