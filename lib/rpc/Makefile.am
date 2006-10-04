@@ -1,4 +1,6 @@
 
+ACLOCAL_AMFLAGS = -I @TE_M4@
+
 rpcdir=$(includedir)/rpc
 
 rpc_HEADERS=rpc.h types.h xdr.h
