@@ -138,7 +138,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         { "quiet", 'q', POPT_ARG_NONE, NULL, TRC_OPT_QUIET,
           "Be quiet.", NULL },
 
-        { "ctx.db", 'd', POPT_ARG_STRING, NULL, TRC_OPT_DB,
+        { "db", 'd', POPT_ARG_STRING, NULL, TRC_OPT_DB,
           "Specify name of the file with expected testing results "
           "database.",
           "FILENAME" },
