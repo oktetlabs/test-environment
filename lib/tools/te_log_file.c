@@ -258,7 +258,7 @@ te_log_message_file(const char *file, unsigned int line,
     }
 
     fprintf(te_log_message_file_out,
-            "%s %s:%s %02d:%02d:%02d %u us\n", te_log_level2str(level),
+            "%s  %s  %s  %02d:%02d:%02d %u us\n", te_log_level2str(level),
             entity == NULL ? "(nil)" : entity,
             user == NULL ? "(nil)" : user,
             tm_time.tm_hour, tm_time.tm_min, tm_time.tm_sec,
