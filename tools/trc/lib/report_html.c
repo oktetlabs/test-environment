@@ -4,7 +4,7 @@
  * Generator of comparison report in HTML format.
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -38,16 +38,13 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
-#if HAVE_ERRNO_H
-#include <errno.h>
-#endif
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #include "te_defs.h"
+#include "te_alloc.h"
 #include "logger_api.h"
 #include "trc_db.h"
+#include "trc_tags.h"
+#include "trc_html.h"
 #include "trc_report.h"
 
 
@@ -65,13 +62,16 @@
 #define PRINT_STR(str_)  (((str_) != NULL) ? (str_) : "")
 
 
+static const char * const trc_html_title_def =
+    "Testing Results Comparison Report";
+
 static const char * const trc_html_doc_start =
 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n"
 "<html>\n"
 "<head>\n"
 "  <meta http-equiv=\"content-type\" content=\"text/html; "
 "charset=utf-8\">\n"
-"  <title>Testing Results Comparison Report</title>\n"
+"  <title>%s</title>\n"
 "  <style type=\"text/css\">\n"
 "    .A {padding-left: 0.14in; padding-right: 0.14in}\n"
 "    .B {padding-left: 0.24in; padding-right: 0.04in}\n"
@@ -81,7 +81,9 @@ static const char * const trc_html_doc_start =
 "padding-left: 0.14in; padding-right: 0.14in}\n"
 "  </style>\n"
 "</head>\n"
-"<body lang=\"en-US\" dir=\"ltr\">\n";
+"<body lang=\"en-US\" dir=\"ltr\">\n"
+"<h1 align=center>%s</h1>\n"
+"<h2 align=center>%s</h2>\n";
 
 static const char * const trc_html_doc_end =
 "</body>\n"
@@ -177,7 +179,7 @@ static const char * const trc_stats_table =
 "  </tr>\n"
 "</TABLE>\n";
 
-static const char * const trc_tests_stats_start =
+static const char * const trc_report_html_tests_stats_start =
 "<table border=1 cellpadding=4 cellspacing=3>\n"
 "  <thead>\n"
 "    <tr>\n"
@@ -275,7 +277,7 @@ static const char * const trc_tests_stats_row =
 "      <td>%s</td>\n"
 "    </tr>\n";
 
-static const char * const trc_test_exp_got_start =
+static const char * const trc_report_html_test_exp_got_start =
 "<table border=1 cellpadding=4 cellspacing=3>\n"
 "  <thead>\n"
 "    <tr>\n"
@@ -310,7 +312,6 @@ static const char * const trc_test_exp_got_row_start =
 "      <td>\n"
 "        %s<b><a %s%s%shref=\"#OBJECTIVE%s\">%s</a></b>\n"
 "      </td>\n"
-"      <td>%s</td>\n"
 "      <td>";
 
 static const char * const trc_test_exp_got_row_mid =
@@ -323,11 +324,6 @@ static const char * const trc_test_exp_got_row_end =
 "    </tr>\n";
 
 
-static int tests_to_html(FILE *f, te_bool stats, unsigned int flags,
-                         const test_run *parent, test_runs *tests,
-                         unsigned int level);
-
-
 /**
  * Output grand total statistics to HTML.
  *
@@ -336,7 +332,7 @@ static int tests_to_html(FILE *f, te_bool stats, unsigned int flags,
  * @return Status code.
  */
 static int
-trc_report_stats_to_html(FILE *f, const trc_stats *stats)
+trc_report_stats_to_html(FILE *f, const trc_report_stats *stats)
 {
     fprintf(f, trc_stats_table,
             TRC_STATS_RUN(stats),
@@ -350,102 +346,147 @@ trc_report_stats_to_html(FILE *f, const trc_stats *stats)
 }
 
 /**
- * Should test iteration be output in accordance with expected/got
- * result and current output flags.
+ * Should test iteration instance be output in accordance with
+ * expected/obtained result and current output flags?
  *
  * @param test      Test
- * @param iter      Test iteration
+ * @param iter      Test iteration entry in TRC report
  * @param flag      Output flags
  */
 static te_bool
-test_iter_output(const test_run *test, test_iter *iter, unsigned int flags)
+trc_report_test_iter_entry_output(
+    const trc_test                   *test,
+    const trc_report_test_iter_entry *iter_data,
+    unsigned int                      flags)
 {
-    if (!iter->processed || flags != iter->proc_flags)
-    {
-        iter->processed = TRUE;
-        iter->proc_flags = flags;
-        iter->output = 
-           (/* NO_SCRIPTS is clear or it is NOT a script */
+    te_test_status status =
+        (iter_data == NULL) ? TE_TEST_UNSPEC : iter_data->result.status;
+
+    return (/* NO_SCRIPTS is clear or it is NOT a script */
             (~flags & TRC_REPORT_NO_SCRIPTS) ||
              (test->type != TRC_TEST_SCRIPT)) &&
-            (/* NO_UNSPEC is clear or got result is not UNSPEC */
+            (/* NO_UNSPEC is clear or obtained result is not UNSPEC */
              (~flags & TRC_REPORT_NO_UNSPEC) ||
-             (iter->got_result != TE_TEST_UNSPEC)) &&
-            (/* NO_SKIPPED is clear or got result is not SKIPPED */
+             (status != TE_TEST_UNSPEC)) &&
+            (/* NO_SKIPPED is clear or obtained result is not SKIPPED */
              (~flags & TRC_REPORT_NO_SKIPPED) ||
-             (iter->got_result != TE_TEST_SKIPPED)) &&
+             (status != TE_TEST_SKIPPED)) &&
             (/*
               * NO_EXP_PASSED is clear or
-              * got result is not PASSED as expected
+              * obtained result is not PASSED as expected
               */
              (~flags & TRC_REPORT_NO_EXP_PASSED) ||
-             (iter->got_result != TE_TEST_PASSED) ||
-             (!iter->got_as_expect)) &&
-            (/* NO_EXPECTED is clear or got result is equal to expected */
-             (~flags & TRC_REPORT_NO_EXPECTED) ||
-             (!iter->got_as_expect));
-    }
-    return iter->output;
+             (status != TE_TEST_PASSED) || (!iter_data->is_exp)) &&
+            (/* 
+              * NO_EXPECTED is clear or obtained result is equal
+              * to expected
+              */
+             (~flags & TRC_REPORT_NO_EXPECTED) || (!iter_data->is_exp));
 }
 
 /**
- * Output test iterations to HTML report.
+ * Output test iteration expected/obtained results to HTML report.
  *
- * @param stats     Is it statistics or details mode?
- * @param flags     Output flags
- * @param test      Test
- * @param level     Level of the test in the suite
+ * @param f             File stream to write to
+ * @param ctx           TRC report context
+ * @param walker        TRC database walker position
+ * @param flags         Current output flags
+ * @param anchor        Should HTML anchor be created?
+ * @param test_path     Full test path for anchor
+ * @param level_str     String to represent depth of the test in the
+ *                      suite
  *
  * @return Status code.
  */
-static int
-test_iters_to_html(te_bool stats, unsigned int flags,
-                   test_run *test, unsigned int level)
+static te_errno
+trc_report_exp_got_to_html(FILE                *f,
+                           trc_report_ctx      *ctx,
+                           te_trc_db_walker    *walker,
+                           unsigned int         flags,
+                           te_bool             *anchor,
+                           const char          *test_path,
+                           const char          *level_str)
 {
-    int             rc;
-    test_iter      *p;
-    char            level_str[64] = { 0, };
-    char           *s;
-    unsigned int    i;
-    te_bool         name_anchor = TRUE;
+    const trc_test                   *test;
+    const trc_test_iter              *iter;
+    trc_report_test_iter_data        *iter_data;
+    const trc_report_test_iter_entry *iter_entry;
+    te_errno                           rc = 0;
 
-    for (s = level_str, i = 0; i < level; ++i)
-        s += sprintf(s, "*-");
+    assert(anchor != NULL);
+    assert(test_path != NULL);
+    assert(level_str != NULL);
 
-    for (p = test->iters.head.tqh_first; p != NULL; p = p->links.tqe_next)
-    {
-        if ((!stats) && /* It is NOT a statistics report */
-            test_iter_output(test, p, flags))
+    iter = trc_db_walker_get_iter(walker);
+    test = iter->parent;
+    iter_data = trc_db_get_user_data(walker, ctx->db_uid);
+    iter_entry = (iter_data == NULL) ? NULL : iter_data->runs.tqh_first;
+
+    do {
+        if (trc_report_test_iter_entry_output(test, iter_entry, flags))
         {
+            if (iter_data == NULL)
+            {
+                iter_data = TE_ALLOC(sizeof(*iter_data));
+                if (iter_data == NULL)
+                {
+                    rc = TE_ENOMEM;
+                    break;
+                }
+                TAILQ_INIT(&iter_data->runs);
+                iter_data->exp_result =
+                    trc_db_walker_get_exp_result(walker, &ctx->tags);
+
+                rc = trc_db_set_user_data(walker, ctx->db_uid, iter_data);
+                if (rc != 0)
+                {
+                    free(iter_data);
+                    break;
+                }
+            }
+            assert(iter_data != NULL);
+
             fprintf(f, trc_test_exp_got_row_start,
-                    level_str,
-                    name_anchor ? "name=\"" : "",
-                    name_anchor ? test->test_path : "",
-                    name_anchor ? "\" " : "",
-                    test->test_path ? : "ERROR",
-                    test->name,
-                    trc_test_args_to_string(&p->args));
+                    PRINT_STR(level_str),
+                    anchor ? "name=\"" : "",
+                    anchor ? test_path : "",
+                    anchor ? "\" " : "",
+                    test_path,
+                    test->name);
+            *anchor = FALSE;
+
+            rc = trc_test_iter_args_to_html(f, &iter->args, 0);
+            if (rc != 0)
+                break;
+
+            WRITE_STR(trc_test_exp_got_row_mid);
+
+            rc = trc_exp_result_to_html(f, iter_data->exp_result, 0);
+            if (rc != 0)
+                break;
             
-            trc_exp_result_to_html(f, /* expected */);
+            WRITE_STR(trc_test_exp_got_row_mid);
             
-            fputs(trc_test_exp_got_row_mid, f);
-            
-            trc_test_result_to_html(f, /* obtained */);
+            rc = trc_test_result_to_html(f, (iter_entry == NULL) ? NULL :
+                                                &iter_entry->result);
+            if (rc != 0)
+                break;
             
             fprintf(f, trc_test_exp_got_row_end,
-                    PRINT_STR(p->exp_result.key),
-                    PRINT_STR(p->exp_result.notes),
-                    PRINT_STR(p->notes));
-
-            name_anchor = FALSE;
+                    (iter_data->exp_result == NULL) ? "" :
+                        PRINT_STR(iter_data->exp_result->key),
+                    (iter_data->exp_result == NULL) ? "" :
+                        PRINT_STR(iter_data->exp_result->notes),
+                    PRINT_STR(iter->notes));
         }
-        rc = tests_to_html(f, stats, flags, test, &p->tests, level);
-        if (rc != 0)
-            return rc;
-    }
-    return 0;
+    } while (iter_entry != NULL &&
+             (iter_entry = iter_entry->links.tqe_next) != NULL);
+
+cleanup:
+    return rc;
 }
 
+#if 0
 /**
  * Generate a list (in a string separated by HTML new line) of unique
  * (as strings) keys for iterations to be output.
@@ -458,19 +499,19 @@ test_iters_to_html(te_bool stats, unsigned int flags,
  * @return Pointer a generated string (static buffer).
  */
 static const char *
-test_iters_check_output_and_get_keys(test_run *test, unsigned int flags)
+test_iters_check_output_and_get_keys(trc_test *test, unsigned int flags)
 {
     static char buf[0x10000];
 
-    test_iter  *p;
-    test_iter  *q;
-    char       *s = buf;
+    const trc_test_iter    *p;
+    const trc_test_iter    *q;
+    char                   *s = buf;
 
 
     buf[0] = '\0';
     for (p = test->iters.head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if (test_iter_output(test, p, flags) &&
+        if (trc_report_test_iter_entry_output(test, p, flags) &&
             (p->exp_result.key != NULL))
         {
             for (q = test->iters.head.tqh_first;
@@ -486,134 +527,200 @@ test_iters_check_output_and_get_keys(test_run *test, unsigned int flags)
 
     return buf;
 }
+#endif
 
 /**
- * Output tests to HTML report.
+ * Should test entry be output in accordance with expected/obtained
+ * result statistics and current output flags?
  *
- * @param f         File stream to write to
- * @param stats     Is it statistics or details mode?
- * @param flags     Output flags
- * @param parent    Parent test
- * @param tests     List of tests to output
- * @param level     Level of the test in the suite
+ * @param stats     Statistics
+ * @param flag      Output flags
+ */
+static te_bool
+trc_report_test_output(const trc_report_stats *stats, unsigned int flags)
+{
+    return
+        (/* It is a script. Do output, if ... */
+         /* NO_SCRIPTS is clear */
+         (~flags & TRC_REPORT_NO_SCRIPTS) &&
+         /* NO_UNSPEC is clear or tests with specified result */
+         ((~flags & TRC_REPORT_NO_UNSPEC) ||
+          (TRC_STATS_SPEC(stats) != 0)) &&
+         /* NO_SKIPPED is clear or tests are run or unspec */
+         ((~flags & TRC_REPORT_NO_SKIPPED) ||
+          (TRC_STATS_RUN(stats) != 0) ||
+          ((~flags & TRC_REPORT_NO_STATS_NOT_RUN) &&
+           (TRC_STATS_NOT_RUN(stats) != 
+            (stats->skip_exp + stats->skip_une)))) &&
+         /* NO_EXP_PASSED or not all tests are passed as expected */
+         ((~flags & TRC_REPORT_NO_EXP_PASSED) ||
+          (TRC_STATS_RUN(stats) != stats->pass_exp) ||
+          ((TRC_STATS_NOT_RUN(stats) != 0) &&
+           ((TRC_STATS_NOT_RUN(stats) != stats->not_run) ||
+            (~flags & TRC_REPORT_NO_STATS_NOT_RUN)))) &&
+         /* NO_EXPECTED or unexpected results are obtained */
+         ((~flags & TRC_REPORT_NO_EXPECTED) ||
+          ((TRC_STATS_UNEXP(stats) != 0) &&
+           ((TRC_STATS_UNEXP(stats) != stats->not_run) ||
+            (~flags & TRC_REPORT_NO_STATS_NOT_RUN)))));
+}
+
+/**
+ * Output test entry to HTML report.
+ *
+ * @param f             File stream to write to
+ * @param ctx           TRC report context
+ * @param walker        TRC database walker position
+ * @param flags         Current output flags
+ * @param test_path     Test path
+ * @param level_str     String to represent depth of the test in the
+ *                      suite
  *
  * @return Status code.
  */
-static int
-tests_to_html(FILE *f, te_bool stats, unsigned int flags,
-              const test_run *parent, test_runs *tests,
-              unsigned int level)
+static te_errno
+trc_report_test_stats_to_html(FILE             *f,
+                              trc_report_ctx   *ctx,
+                              te_trc_db_walker *walker,
+                              unsigned int      flags,
+                              const char       *test_path,
+                              const char       *level_str)
 {
-    int         rc;
-    test_run   *p;
-    char        level_str[64] = { 0, };
-    char       *s;
-    unsigned int i;
+    const trc_test             *test;
+    const trc_report_test_data *test_data;
+    const trc_report_stats     *stats;
 
-    if (level == 0)
+    test = trc_db_walker_get_test(walker);
+    test_data = trc_db_get_user_data(walker, ctx->db_uid);
+    assert(test_data != NULL);
+    stats = &test_data->stats;
+
+    if (((test->type == TRC_TEST_PACKAGE) &&
+         (flags & TRC_REPORT_NO_SCRIPTS)) ||
+        trc_report_test_output(stats, flags))
     {
-        if (stats)
-            WRITE_STR(trc_tests_stats_start);
-        else
-            WRITE_STR(trc_test_exp_got_start);
+        te_bool     name_link;
+        const char *keys = NULL; /*
+            test_iters_check_output_and_get_keys(test, flags); */
+
+        name_link = ((flags & TRC_REPORT_NO_SCRIPTS) ||
+                     ((~flags & TRC_REPORT_NO_SCRIPTS) &&
+                     (test->type == TRC_TEST_SCRIPT)));
+
+        fprintf(f, trc_tests_stats_row,
+                PRINT_STR(level_str),
+                name_link ? "href" : "name",
+                name_link ? "#" : "",
+                test_path,
+                test->name,
+                test_path != NULL ? "<a name=\"OBJECTIVE" : "",
+                PRINT_STR(test_path),
+                test_path != NULL ? "\">": "",
+                PRINT_STR(test->objective),
+                test_path != NULL ? "</a>": "",
+                TRC_STATS_RUN(stats),
+                stats->pass_exp, stats->fail_exp,
+                stats->pass_une, stats->fail_une,
+                stats->aborted + stats->new_run,
+                TRC_STATS_NOT_RUN(stats),
+                stats->skip_exp, stats->skip_une,
+                PRINT_STR(keys), PRINT_STR(test->notes));
     }
-    for (s = level_str, i = 0; i < level; ++i)
-        s += sprintf(s, "*-");
-    for (p = tests->head.tqh_first; p != NULL; p = p->links.tqe_next)
-    {
-        te_bool output = 
-            (/* It is a script. Do output, if ... */
-             /* NO_SCRIPTS is clear */
-             (~flags & TRC_REPORT_NO_SCRIPTS) &&
-             /* NO_UNSPEC is clear or tests with specified result */
-             ((~flags & TRC_REPORT_NO_UNSPEC) ||
-              (TRC_STATS_SPEC(&p->stats) != 0)) &&
-             /* NO_SKIPPED is clear or tests are run or unspec */
-             ((~flags & TRC_REPORT_NO_SKIPPED) ||
-              (TRC_STATS_RUN(&p->stats) != 0) ||
-              ((~flags & TRC_REPORT_NO_STATS_NOT_RUN) &&
-               (TRC_STATS_NOT_RUN(&p->stats) != 
-                (p->stats.skip_exp + p->stats.skip_une)))) &&
-             /* NO_EXP_PASSED or not all tests are passed as expected */
-             ((~flags & TRC_REPORT_NO_EXP_PASSED) ||
-              (TRC_STATS_RUN(&p->stats) != p->stats.pass_exp) ||
-              ((TRC_STATS_NOT_RUN(&p->stats) != 0) &&
-               ((TRC_STATS_NOT_RUN(&p->stats) != p->stats.not_run) ||
-                (~flags & TRC_REPORT_NO_STATS_NOT_RUN)))) &&
-             /* NO_EXPECTED or unexpected results are got */
-             ((~flags & TRC_REPORT_NO_EXPECTED) ||
-              ((TRC_STATS_UNEXP(&p->stats) != 0) &&
-               ((TRC_STATS_UNEXP(&p->stats) != p->stats.not_run) ||
-                (~flags & TRC_REPORT_NO_STATS_NOT_RUN)))));
 
-        if (stats &&
-            (((p->type == TRC_TEST_PACKAGE) &&
-              (flags & TRC_REPORT_NO_SCRIPTS)) || output))
-        {
-            te_bool     name_link;
-            char       *test_path = NULL;
-            const char *keys =
-                test_iters_check_output_and_get_keys(p, flags);
-
-            name_link = ((flags & TRC_REPORT_NO_SCRIPTS) ||
-                         ((~flags & TRC_REPORT_NO_SCRIPTS) &&
-                         (p->type == TRC_TEST_SCRIPT)));
-
-            if (p->test_path == NULL)
-            {
-                size_t len;
-
-                len = strlen(p->name) + 2 +
-                      ((parent == NULL) ? strlen("OBJ") :
-                                          strlen(parent->test_path));
-                test_path = malloc(len);
-                if (test_path == NULL)
-                {
-                    ERROR("malloc(%u) failed", (unsigned)len);
-                    return ENOMEM;
-                }
-                sprintf(test_path, "%s-%s",
-                        (parent) ? parent->test_path : "", p->name);
-                p->test_path = test_path;
-            }
-
-            fprintf(f, trc_tests_stats_row,
-                    level_str,
-                    name_link ? "href" : "name",
-                    name_link ? "#" : "",
-                    p->test_path,
-                    p->name,
-                    test_path != NULL ? "<a name=\"OBJECTIVE" : "",
-                    PRINT_STR(test_path),
-                    test_path != NULL ? "\">": "",
-                    PRINT_STR(p->objective),
-                    test_path != NULL ? "</a>": "",
-                    TRC_STATS_RUN(&p->stats),
-                    p->stats.pass_exp, p->stats.fail_exp,
-                    p->stats.pass_une, p->stats.fail_une,
-                    p->stats.aborted + p->stats.new_run,
-                    TRC_STATS_NOT_RUN(&p->stats),
-                    p->stats.skip_exp, p->stats.skip_une,
-                    keys, PRINT_STR(p->notes));
-        }
-        if ((p->type != TRC_TEST_SCRIPT) ||
-            (~flags & TRC_REPORT_NO_SCRIPTS))
-        {
-            rc = test_iters_to_html(stats, flags, p, level + 1);
-            if (rc != 0)
-                goto cleanup;
-        }
-    }
-    if (level == 0)
-    {
-        if (stats)
-            WRITE_STR(trc_tests_stats_end);
-        else
-            WRITE_STR(trc_test_exp_got_end);
-    }
     return 0;
+}
+
+/**
+ * Generate one table in HTML report.
+ *
+ * @param f         File stream to write to
+ * @param ctx       TRC report context
+ * @param stats     Is it statistics or details mode?
+ * @param flags     Output flags
+ *
+ * @return Status code.
+ */
+static te_errno
+trc_report_html_table(FILE *f, trc_report_ctx *ctx, 
+                      te_bool is_stats, unsigned int flags)
+{
+    te_errno                rc = 0;
+    te_trc_db_walker       *walker;
+    trc_db_walker_motion    mv;
+    unsigned int            level = 0;
+    te_bool                 anchor = FALSE; /* FIXME */
+    te_string               test_path = TE_STRING_INIT;
+    te_string               level_str = TE_STRING_INIT;
+
+    walker = trc_db_new_walker(ctx->db);
+    if (walker == NULL)
+        return TE_ENOMEM;
+
+    if (is_stats)
+        WRITE_STR(trc_report_html_tests_stats_start);
+    else
+        WRITE_STR(trc_report_html_test_exp_got_start);
+
+    while ((rc == 0) &&
+           ((mv = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
+    {
+        switch (mv)
+        {
+            case TRC_DB_WALKER_SON:
+                level++;
+                if ((level & 1) == 1)
+                {
+                    /* Test entry */
+                    if (level > 1)
+                    {
+                        rc = te_string_append(&level_str, "*-");
+                        if (rc != 0)
+                            break;
+                    }
+                }
+                /*@fallthrou@*/
+
+            case TRC_DB_WALKER_BROTHER:
+                if ((level & 1) == 1)
+                {
+                    /* Test entry */
+                    rc = te_string_append(&test_path, "-%s",
+                             trc_db_walker_get_test(walker)->name);
+                    if (rc != 0)
+                        break;
+                    if (is_stats)
+                        rc = trc_report_test_stats_to_html(f, ctx, walker,
+                                                           flags,
+                                                           test_path.ptr,
+                                                           level_str.ptr);
+                }
+                else
+                {
+                    if (!is_stats)
+                        rc = trc_report_exp_got_to_html(f, ctx, walker,
+                                                        flags, &anchor,
+                                                        test_path.ptr,
+                                                        level_str.ptr);
+                }
+                break;
+
+            case TRC_DB_WALKER_FATHER:
+                level--;
+                break;
+
+            default:
+                assert(FALSE);
+                break;
+        }
+    }
+
+    if (is_stats)
+        WRITE_STR(trc_tests_stats_end);
+    else
+        WRITE_STR(trc_test_exp_got_end);
 
 cleanup:
+    trc_db_free_walker(walker);
     return rc;
 }
 
@@ -646,9 +753,12 @@ file_to_file(FILE *dst, FILE *src)
 /** See the description in trc_report.h */
 te_errno
 trc_report_to_html(trc_report_ctx *gctx, const char *filename,
-                   FILE *header, unsigned int flags)
+                   const char *title, FILE *header,
+                   unsigned int flags)
 {
+    FILE       *f;
     te_errno    rc;
+    tqe_string *tag;
 
     f = fopen(filename, "w");
     if (f == NULL)
@@ -659,8 +769,21 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
     }
 
     /* HTML header */
-    WRITE_STR(trc_html_doc_start);
+    fprintf(f, trc_html_doc_start,
+            (title != NULL) ? title : trc_html_title_def,
+            (title != NULL) ? title : trc_html_title_def,
+            gctx->db->version);
 
+    /* TRC tags */
+    WRITE_STR("Tags:");
+    for (tag = gctx->tags.tqh_first;
+         tag != NULL;
+         tag = tag->links.tqe_next)
+    {
+        fprintf(f, " <b>%s</b>", tag->v);
+    }
+
+    /* Header provided by user */
     if (header != NULL)
     {
         rc = file_to_file(f, header);
@@ -679,11 +802,11 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
             goto cleanup;
     }
 
-    /* Report for packages */
     if (~flags & TRC_REPORT_NO_PACKAGES_ONLY)
     {
-        rc = tests_to_html(f, TRUE, flags | TRC_REPORT_NO_SCRIPTS,
-                           NULL, &db->tests, 0);
+        /* Report for packages */
+        rc = trc_report_html_table(f, gctx, TRUE,
+                                   flags | TRC_REPORT_NO_SCRIPTS);
         if (rc != 0)
             goto cleanup;
     }
@@ -691,7 +814,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
     if (~flags & TRC_REPORT_NO_SCRIPTS)
     {
         /* Report with iterations of packages and w/o iterations of tests */
-        rc = tests_to_html(f, TRUE, flags, NULL, &db->tests, 0);
+        rc = trc_report_html_table(f, gctx, TRUE, flags);
         if (rc != 0)
             goto cleanup;
     }
@@ -700,7 +823,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         (~flags & TRC_REPORT_NO_SCRIPTS))
     {
         /* Full report */
-        rc = tests_to_html(f, FALSE, flags, NULL, &db->tests, 0);
+        rc = trc_report_html_table(f, gctx, FALSE, flags);
         if (rc != 0)
             goto cleanup;
     }

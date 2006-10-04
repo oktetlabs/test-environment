@@ -66,3 +66,18 @@ trc_report_stats_add(trc_report_stats *stats, const trc_report_stats *add)
     stats->skip_une += add->skip_une;
     stats->new_not_run += add->new_not_run;
 }
+
+/* See the description in trc_report.h */
+void
+trc_report_free_test_iter_data(trc_report_test_iter_data *data)
+{
+    trc_report_test_iter_entry *p;
+
+    while ((p = data->runs.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&data->runs, p, links);
+        te_test_result_free_verdicts(&p->result);
+        free(p);
+    }
+    free(data);
+}

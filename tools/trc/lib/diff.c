@@ -442,23 +442,22 @@ trc_diff_entry_exp_results(const trc_diff_tags_list *diffs,
     }
 }
 
-#if 0
 /**
  * Map test result, match and exclude status to statistics index.
  *
- * @param result        Result
+ * @param status        Test status
  * @param match         Do results match?
  * @param exclude       Does exclude of such differencies requested?
  *
  * @return Index of statistics counter.
  */
 static trc_diff_stats_index
-trc_diff_result_to_stats_index(trc_test_result result,
+trc_diff_result_to_stats_index(te_test_status status,
                                te_bool match, te_bool exclude)
 {
-    switch (result)
+    switch (status)
     {
-        case TRC_TEST_PASSED:
+        case TE_TEST_PASSED:
             if (match)
                 return TRC_DIFF_STATS_PASSED;
             else if (exclude)
@@ -466,7 +465,7 @@ trc_diff_result_to_stats_index(trc_test_result result,
             else
                 return TRC_DIFF_STATS_PASSED_DIFF;
 
-        case TRC_TEST_FAILED:
+        case TE_TEST_FAILED:
             if (match)
                 return TRC_DIFF_STATS_FAILED;
             else if (exclude)
@@ -474,7 +473,7 @@ trc_diff_result_to_stats_index(trc_test_result result,
             else
                 return TRC_DIFF_STATS_FAILED_DIFF;
 
-        case TRC_TEST_SKIPPED:
+        case TE_TEST_SKIPPED:
             return TRC_DIFF_STATS_SKIPPED;
 
         default:
@@ -482,6 +481,7 @@ trc_diff_result_to_stats_index(trc_test_result result,
     }
 }
 
+#if 0
 /**
  * Update total statistics for sets X and Y based on an iteration data.
  *
@@ -511,8 +511,8 @@ trc_diff_iter_stats(trc_diff_stats       *stats,
     if (iter->tests.head.tqh_first != NULL)
         return;
 
-    match = trc_is_exp_result_equal(iter->results[diff_i],
-                                    iter->results[diff_j]);
+    match = trc_diff_is_exp_result_equal(iter->results[diff_i],
+                                         iter->results[diff_j]);
 
     exclude = !match && trc_diff_exclude_by_key(iter);
 
@@ -525,6 +525,79 @@ trc_diff_iter_stats(trc_diff_stats       *stats,
                                          match, exclude)]++;
 }
 #endif
+
+
+/**
+ * Are two expected results equal?
+ *
+ * @param lhv           Left hand value
+ * @param rhv           Right hand value
+ */
+static te_bool
+trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
+                             const trc_exp_result *rhv)
+{
+    const trc_exp_result_entry *p;
+    te_bool                     result = TRUE;
+    te_bool                     diffs_match = TRUE;
+    te_bool                     set_key_used;
+    te_test_status              lhv_status = TE_TEST_EMPTY;
+    te_test_status              rhv_status = TE_TEST_EMPTY;
+
+    assert(lhv != NULL);
+    assert(rhv != NULL);
+
+    if (lhv == rhv)
+        return TRUE;
+
+    /* 
+     * Check that each entry in left-hand value has equal entry in
+     * right-hand value.
+     */
+    for (set_key_used = FALSE, p = lhv->results.tqh_first;
+         p != NULL;
+         p = p->links.tqe_next)
+    {
+        if (!trc_is_result_expected(rhv, &p->result))
+        {
+            /* 
+             * The expected result entry does not correspond to any
+             * in another expected result. Therefore, this entry is 
+             * unexpected.
+             */
+            result = FALSE;
+            if (p->key != NULL || !set_key_used)
+            {
+                const char *key = (p->key != NULL) ? p->key : lhv->key;
+            }
+        }
+        if (lhv_status < p->result.status)
+            lhv_status = p->result.status;
+    }
+
+    /* 
+     * Check that each entry in right-hand value has equal entry in
+     * left-hand value.
+     */
+    for (set_key_used = FALSE, p = rhv->results.tqh_first;
+         p != NULL;
+         p = p->links.tqe_next)
+    {
+        if (!trc_is_result_expected(lhv, &p->result))
+        {
+            /* 
+             * The expected result entry does not correspond to any
+             * in another expected result. Therefore, this entry is 
+             * unexpected.
+             */
+            result = FALSE;
+        }
+        if (rhv_status < p->result.status)
+            rhv_status = p->result.status;
+    }
+
+    return result;
+}
 
 /**
  * Derive group result from its items.
@@ -558,8 +631,8 @@ trc_diff_group_exp_result(const trc_diff_tags_list *diffs,
         }
         else if (group->results[p->id] != NULL)
         {
-            if (!trc_is_exp_result_equal(item->results[p->id],
-                                         group->results[p->id]))
+            if (!trc_diff_is_exp_result_equal(item->results[p->id],
+                                              group->results[p->id]))
             {
                 group->results[p->id] = NULL;
             }
@@ -600,7 +673,7 @@ trc_diff_entry_has_diff(const trc_diff_tags_list *diffs,
 
     while ((p = p->links.tqe_next) != NULL)
     {
-        if (!trc_is_exp_result_equal(result, entry->results[p->id]))
+        if (!trc_diff_is_exp_result_equal(result, entry->results[p->id]))
         {
             diff = TRUE;
             break;
@@ -766,7 +839,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                 }
                 break;
 
-            case TRC_DB_WALKER_PARENT:
+            case TRC_DB_WALKER_FATHER:
                 if (entry_to_result && entry != NULL)
                 {
                     /* The last child should be added in the result */

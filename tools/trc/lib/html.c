@@ -56,19 +56,19 @@
     } while (0)
 
 
-/**
- * Output verdicts to HTML file.
- *
- * @param f             File stream to write
- * @param result        Test result
- *
- * @return Status code.
- */
-static te_errno
+/* See the description in trc_html.h */
+te_errno
 trc_test_result_to_html(FILE *f, const te_test_result *result)
 {
     te_errno                rc = 0;
     const te_test_verdict  *v;
+
+    assert(f != NULL);
+    if (result == NULL)
+    {
+        WRITE_STR(te_test_status_to_str(TE_TEST_UNSPEC));
+        return 0;
+    }
 
     WRITE_STR(te_test_status_to_str(result->status));
 
@@ -97,9 +97,13 @@ trc_exp_result_to_html(FILE *f, const trc_exp_result *result,
 
     UNUSED(flags);
 
+    assert(f != NULL);
+
     if (result == NULL)
     {
+#if 0
         WRITE_STR("(see iterations)");
+#endif
         return 0;
     }
     if (result->tags_str != NULL)

@@ -42,6 +42,17 @@ extern "C" {
 #endif
 
 /**
+ * Output TE test result to HTML file.
+ *
+ * @param f             File stream to write
+ * @param result        Result to output
+ *
+ * @return Status code.
+ */
+extern te_errno trc_test_result_to_html(FILE                 *f,
+                                        const te_test_result *result);
+
+/**
  * Output expected result to HTML file.
  *
  * @param f             File stream to write

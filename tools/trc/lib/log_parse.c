@@ -77,32 +77,30 @@ typedef enum trc_report_log_parse_state {
 
 /** TRC report TE log parser context. */
 typedef struct trc_report_log_parse_ctx {
+
+    te_errno            rc;         /**< Status of processing */
+
     unsigned int        flags;      /**< Processing flags */
     te_trc_db          *db;         /**< TRC database handle */
+    unsigned int        db_uid;     /**< TRC database user ID */
     const char         *log;        /**< Name of the file with log */
     tqh_strings         tags;       /**< List of tags */
+
+    te_trc_db_walker   *db_walker;  /**< TRC database walker */
 
     trc_report_log_parse_state  state;  /**< Log parse state */
 
     unsigned int                skip_depth; /**< Skip depth */
     trc_report_log_parse_state  skip_state; /**< State to return */
 
-    te_trc_db_walker   *db_walker;  /**< TRC database walker */
-
-    char               *tags_str;   /**< Temporary storage for TRC tags
-                                         encountered in the log */
-    te_test_result      result;     /**< Temporary storage for parsed 
-                                         test result */
-    te_test_verdict    *verdict;    /**< Temporary storage for parsed
-                                         test verdict */
+    trc_report_test_iter_data  *iter_data;  /**< Current test iteration
+                                                 data */
 
     unsigned int        args_max;   /**< Maximum number of arguments
                                          the space is allocated for */
     unsigned int        args_n;     /**< Current number of arguments */
     char              **args_name;   /**< Names of arguments */
     char              **args_value;  /**< Values of arguments */
-
-    te_errno            rc;         /**< Status of processing */
 
 } trc_report_log_parse_ctx;
 
@@ -146,9 +144,6 @@ trc_report_log_end_document(void *user_data)
     tq_strings_free(&ctx->tags, free);
     trc_db_free_walker(ctx->db_walker);
     ctx->db_walker = NULL;
-    free(ctx->verdict);   
-    ctx->verdict = NULL;
-    te_test_result_free_verdicts(&ctx->result);
 }
 
 
@@ -196,8 +191,30 @@ te_test_str2status(const char *str, te_test_status *status)
 static void
 trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
 {
+    trc_report_test_iter_entry *entry;
+
     te_bool name_found = FALSE;
     te_bool status_found = FALSE;
+
+    /* Pre-allocate entry for result */
+    entry = TE_ALLOC(sizeof(*entry));
+    if (entry == NULL)
+    {
+        ctx->rc = TE_ENOMEM;
+        return;
+    }
+    te_test_result_init(&entry->result);
+
+    assert(ctx->iter_data == NULL);
+    ctx->iter_data = TE_ALLOC(sizeof(*ctx->iter_data));
+    if (ctx->iter_data == NULL)
+    {
+        free(entry);
+        ctx->rc = TE_ENOMEM;
+        return;
+    }
+    TAILQ_INIT(&ctx->iter_data->runs);
+    TAILQ_INSERT_TAIL(&ctx->iter_data->runs, entry, links);
 
     while (ctx->rc == 0 && attrs[0] != NULL && attrs[1] != NULL)
     {
@@ -213,7 +230,8 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         else if (strcmp(attrs[0], "result") == 0)
         {
             status_found = TRUE;
-            ctx->rc = te_test_str2status(attrs[1], &ctx->result.status);
+            ctx->rc = te_test_str2status(attrs[1],
+                          &ctx->iter_data->runs.tqh_first->result.status);
         }
         attrs += 2;
     }
@@ -296,115 +314,118 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
     }
 }
 
-#if 0
 /**
- * Updated iteration statistics by expected and got results.
+ * Updated iteration statistics by expected and obtained results.
  *
- * @param iter      Test iteration
+ * @param stats         Statistics to update
+ * @param exp_result    Expected result
+ * @param result        Obtained result
+ *
+ * @return Is obtained result expected?
+ */
+static te_bool
+trc_report_test_iter_stats_update(trc_report_stats     *stats,
+                                  const trc_exp_result *exp_result,
+                                  const te_test_result *result)
+{
+    te_bool is_expected;
+
+    if (result->status == TE_TEST_UNSPEC)
+    {
+        ERROR("Unexpected value of obtained result");
+        return FALSE;
+    }
+
+    if (result->status == TE_TEST_FAKED ||
+        result->status == TE_TEST_EMPTY)
+    {
+        return TRUE;
+    }
+
+    if (exp_result == NULL)
+    {
+        /* Expected result is unknown */
+        is_expected = FALSE;
+
+        switch (result->status)
+        {
+            case TE_TEST_SKIPPED:
+                stats->new_not_run++;
+                break;
+
+            case TE_TEST_PASSED:
+            case TE_TEST_FAILED:
+                stats->new_run++;
+                break;
+
+            default:
+                stats->aborted++;
+                break;
+        }
+    }
+    else
+    {
+        is_expected = trc_is_result_expected(exp_result, result);
+
+        switch (result->status)
+        {
+            case TE_TEST_PASSED:
+                if (is_expected)
+                    stats->pass_exp++;
+                else
+                    stats->pass_une++;
+                break;
+
+            case TE_TEST_FAILED:
+                if (is_expected)
+                    stats->fail_exp++;
+                else
+                    stats->fail_une++;
+                break;
+
+            case TE_TEST_SKIPPED:
+                if (is_expected)
+                    stats->skip_exp++;
+                else
+                    stats->skip_une++;
+                break;
+
+            default:
+                stats->aborted++;
+                break;
+        }
+    }
+    return is_expected;
+}
+
+/**
+ * Merge more information about test iteration executions in
+ * already known information.
+ *
+ * @param result        Already known information
+ * @param more          A new information (owned by the routine)
+ *
+ * @note Statistics are not merged. It is assumed that it is either
+ *       unnecessary or has already been done by the caller.
  */
 static void
-iter_stats_update_by_result(test_iter *iter)
+trc_report_merge_test_iter_data(trc_report_test_iter_data *result,
+                                trc_report_test_iter_data *more)
 {
-    if (iter->got_result == TRC_TEST_UNSPEC)
-    {
-        ERROR("Unexpected got result value");
-        return;
-    }
-    if (iter->got_result == TRC_TEST_FAKED ||
-        iter->got_result == TRC_TEST_EMPTY)
-    {
-        return;
-    }
-#if 1 /* Temporary fix */
-    if (iter->stats.not_run > 0)
-#endif
-        iter->stats.not_run--;
+    trc_report_test_iter_entry *entry;
 
-    switch (iter->exp_result.value)
-    {
-        case TRC_TEST_UNSPEC:
-            switch (iter->got_result)
-            {
-                case TRC_TEST_SKIPPED:
-                    iter->stats.new_not_run++;
-                    break;
-                default:
-                    iter->stats.new_run++;
-            }
-            break;
+    assert(result != NULL);
+    assert(more != NULL);
 
-        case TRC_TEST_PASSED:
-            switch (iter->got_result)
-            {
-                case TRC_TEST_PASSED:
-                    if (tq_strings_equal(&iter->got_verdicts,
-                                         &iter->exp_result.verdicts))
-                    {
-                        iter->stats.pass_exp++;
-                        iter->got_as_expect = TRUE;
-                    }
-                    else
-                        iter->stats.pass_une++;
-                    break;
-                case TRC_TEST_FAILED:
-                    iter->stats.fail_une++;
-                    break;
-                case TRC_TEST_SKIPPED:
-                    iter->stats.skip_une++;
-                    break;
-                default:
-                    iter->stats.aborted++;
-            }
-            break;
+    entry = more->runs.tqh_first;
+    assert(entry != NULL);
+    assert(entry->links.tqe_next == NULL);
 
-        case TRC_TEST_FAILED:
-            switch (iter->got_result)
-            {
-                case TRC_TEST_PASSED:
-                    iter->stats.pass_une++;
-                    break;
-                case TRC_TEST_FAILED:
-                    if (tq_strings_equal(&iter->got_verdicts,
-                                         &iter->exp_result.verdicts))
-                    {
-                        iter->stats.fail_exp++;
-                        iter->got_as_expect = TRUE;
-                    }
-                    else
-                        iter->stats.fail_une++;
-                    break;
-                case TRC_TEST_SKIPPED:
-                    iter->stats.skip_une++;
-                    break;
-                default:
-                    iter->stats.aborted++;
-            }
-            break;
+    TAILQ_REMOVE(&more->runs, entry, links);
+    TAILQ_INSERT_TAIL(&result->runs, entry, links);
 
-        case TRC_TEST_SKIPPED:
-            switch (iter->got_result)
-            {
-                case TRC_TEST_PASSED:
-                    iter->stats.pass_une++;
-                    break;
-                case TRC_TEST_FAILED:
-                    iter->stats.fail_une++;
-                    break;
-                case TRC_TEST_SKIPPED:
-                    iter->stats.skip_exp++;
-                    iter->got_as_expect = TRUE;
-                    break;
-                default:
-                    iter->stats.aborted++;
-            }
-            break;
-
-        default:
-            ERROR("Invalid expected testing result %u",
-                  iter->exp_result.value);
-    }
+    trc_report_free_test_iter_data(more);
 }
-#endif
 
 /**
  * Callback function that is called when XML parser meets an opening tag.
@@ -531,13 +552,6 @@ trc_report_log_start_element(void *user_data,
             if (strcmp(tag, "verdict") == 0)
             {
                 ctx->state = TRC_REPORT_LOG_PARSE_VERDICT;
-                assert(ctx->verdict == NULL);
-                ctx->verdict = TE_ALLOC(sizeof(*ctx->verdict));
-                if (ctx->verdict == NULL)
-                {
-                    ERROR("Memory allocation failure");
-                    ctx->rc = TE_ENOMEM;
-                }
             }
             else
             {
@@ -638,6 +652,13 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
             break;
 
         case TRC_REPORT_LOG_PARSE_TEST:
+            if (ctx->iter_data != NULL)
+            {
+                trc_report_free_test_iter_data(ctx->iter_data);
+                ctx->iter_data = NULL;
+                ERROR("No meta data for the test entry!");
+                ctx->rc = TE_EFMT;
+            }
             /* Step iteration back */
             trc_db_walker_step_back(ctx->db_walker);
             /* Step test entry back */
@@ -646,7 +667,7 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
 
         case TRC_REPORT_LOG_PARSE_META:
         {
-            const trc_exp_result *exp_result;
+            trc_report_test_iter_data  *iter_data;
 
             assert(strcmp(tag, "meta") == 0);
             ctx->state = TRC_REPORT_LOG_PARSE_TEST;
@@ -660,8 +681,34 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
                 break;
             }
             ctx->args_n = 0;
-            exp_result = trc_db_walker_get_exp_result(ctx->db_walker,
-                                                      &ctx->tags);
+            iter_data = trc_db_get_user_data(ctx->db_walker, ctx->db_uid);
+            if (iter_data == NULL)
+            {
+                /* Get expected result */
+                ctx->iter_data->exp_result =
+                    trc_db_walker_get_exp_result(ctx->db_walker,
+                                                 &ctx->tags);
+                /* Update statistics */
+                trc_report_test_iter_stats_update(&ctx->iter_data->stats,
+                    ctx->iter_data->exp_result,
+                    &ctx->iter_data->runs.tqh_first->result);
+                /* Attach iteration data to TRC database */
+                ctx->rc = trc_db_set_user_data(ctx->db_walker, ctx->db_uid,
+                                               ctx->iter_data);
+                if (ctx->rc != 0)
+                    break;
+            }
+            else
+            {
+                /* Update statistics */
+                trc_report_test_iter_stats_update(&iter_data->stats,
+                    iter_data->exp_result,
+                    &ctx->iter_data->runs.tqh_first->result);
+                /* Merge a new entry */
+                trc_report_merge_test_iter_data(iter_data,
+                                                ctx->iter_data);
+            }
+            ctx->iter_data = NULL;
             break;
         }
 
@@ -682,13 +729,16 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
 
         case TRC_REPORT_LOG_PARSE_VERDICT:
             assert(strcmp(tag, "verdict") == 0);
-            assert(ctx->verdict != NULL);
-            TAILQ_INSERT_TAIL(&ctx->result.verdicts, ctx->verdict, links);
-            ctx->verdict = NULL;
             ctx->state = TRC_REPORT_LOG_PARSE_VERDICTS;
             break;
 
+        case TRC_REPORT_LOG_PARSE_TAGS:
+            assert(strcmp(tag, "msg") == 0);
+            ctx->state = TRC_REPORT_LOG_PARSE_LOGS;
+            break;
+
         default:
+            ERROR("%s(): Unexpected state %u", __FUNCTION__, ctx->state);
             assert(FALSE);
             break;
     }
@@ -708,9 +758,9 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
 {
     trc_report_log_parse_ctx   *ctx = user_data;
     char                      **location;
-    char                       *tags_str;
+    char                       *tags_str = NULL;
 
-    trc_test   *test;
+    trc_test   *test = NULL;
     char       *save = NULL;
 
     assert(ctx != NULL);
@@ -736,9 +786,22 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
             break;
 
         case TRC_REPORT_LOG_PARSE_VERDICT:
-            assert(ctx->verdict != NULL);
-            location = &ctx->verdict->str;
+        {
+            te_test_verdict *verdict = TE_ALLOC(sizeof(*verdict));
+
+            if (verdict == NULL)
+            {
+                ERROR("Memory allocation failure");
+                ctx->rc = TE_ENOMEM;
+                return;
+            }
+            assert(ctx->iter_data != NULL);
+            TAILQ_INSERT_TAIL(
+                &ctx->iter_data->runs.tqh_first->result.verdicts,
+                verdict, links);
+            location = &verdict->str;
             break;
+        }
 
         case TRC_REPORT_LOG_PARSE_TAGS:
             location = &tags_str;
@@ -855,10 +918,11 @@ trc_report_process_log(trc_report_ctx *gctx, const char *log)
     };
 
     memset(&ctx, 0, sizeof(ctx));
-    te_test_result_init(&ctx.result);
     ctx.flags = gctx->flags;
     ctx.db = gctx->db;
+    ctx.db_uid = gctx->db_uid;
     ctx.log = log;
+    TAILQ_INIT(&ctx.tags);
 
     if (xmlSAXUserParseFile(&sax_handler, &ctx, ctx.log) != 0)
     {

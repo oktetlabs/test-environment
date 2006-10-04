@@ -44,6 +44,7 @@
 #include "te_queue.h"
 #include "logger_api.h"
 
+#include "trc_tags.h"
 #include "trc_diff.h"
 
 

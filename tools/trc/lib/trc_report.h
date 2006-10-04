@@ -104,12 +104,37 @@ enum trc_report_flags {
                                               from the log */
 };
 
+/** Result of test iteration run */
+typedef struct trc_report_test_iter_entry {
+    TAILQ_ENTRY(trc_report_test_iter_entry) links;  /**< List links */
+
+    te_test_result  result;     /**< Obtained result */
+    te_bool         is_exp;     /**< Does obtained result match one of
+                                     expected? */
+} trc_report_test_iter_entry;
+
+/** Data attached to test iterations */
+typedef struct trc_report_test_iter_data {
+    const trc_exp_result   *exp_result; /**< Expected result */
+    trc_report_stats        stats;      /**< Statistics */
+
+    /** Head of the list with results of test iteration executions */
+    TAILQ_HEAD(, trc_report_test_iter_entry)    runs;
+
+} trc_report_test_iter_data;
+
+/** Data attached to test entry */
+typedef struct trc_report_test_data {
+    trc_report_stats        stats;      /**< Statistics */
+} trc_report_test_data;
+
 /** TRC report context */
 typedef struct trc_report_ctx {
     unsigned int        flags;  /**< Report options */
     te_trc_db          *db;     /**< TRC database handle */
     tqh_strings         tags;   /**< TRC tags specified by user */
     trc_report_stats    stats;  /**< Grand total statistics */
+    unsigned int        db_uid; /**< TRC database user ID */
 } trc_report_ctx;
 
 /**
@@ -135,13 +160,16 @@ extern te_errno trc_report_process_log(trc_report_ctx *ctx,
  *
  * @param ctx           TRC report context
  * @param filename      Name of the file for HTML report
- * @param header        File with header to be added in HTML report
+ * @param title         Report title or NULL
+ * @param header        File with header to be added in HTML report or
+ *                      NULL
  * @param flags         Report options
  *
  * @return Status code.
  */
 extern te_errno trc_report_to_html(trc_report_ctx *ctx,
                                    const char     *filename,
+                                   const char     *title,
                                    FILE           *header,
                                    unsigned int    flags);
 
@@ -153,6 +181,15 @@ extern te_errno trc_report_to_html(trc_report_ctx *ctx,
  */
 extern void trc_report_stats_add(trc_report_stats       *stats,
                                  const trc_report_stats *add);
+
+
+/**
+ * Free resources allocated for test iteration in TRC report.
+ *
+ * @param data          Test iteration data to be freed
+ */
+extern void trc_report_free_test_iter_data(trc_report_test_iter_data *data);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

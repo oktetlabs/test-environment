@@ -90,3 +90,60 @@ trc_tags_str_to_list(tqh_strings *tags, char *tags_str)
     }
     return rc;
 }
+
+
+
+te_errno
+te_string_append(te_string *str, const char *fmt, ...)
+{
+    char       *s;
+    size_t      rest;
+    int         printed;
+    va_list     ap;
+    te_bool     again;
+
+    if (str->ptr == NULL)
+    {
+        str->ptr = malloc(TE_STRING_INIT_LEN);
+        if (str->ptr == NULL)
+        {
+            ERROR("%s(): Memory allocation failure", __FUNCTION__);
+            return TE_ENOMEM;
+        }
+        str->size = TE_STRING_INIT_LEN;
+        str->len = 0;
+    }
+
+    assert(str->size > str->len);
+    rest = str->size - str->len;
+    do  {
+        s = str->ptr + str->len;
+
+        va_start(ap, fmt);
+        printed = vsnprintf(s, rest, fmt, ap);
+        assert(printed >= 0);
+        va_end(ap);
+
+        if ((size_t)printed >= rest)
+        {
+            /* We are going to extend buffer */
+            rest = printed + 1 /* '\0' */ + TE_STRING_EXTRA_LEN;
+            str->size = str->len + rest;
+            str->ptr = realloc(str->ptr, str->size);
+            if (str->ptr == NULL)
+            {
+                ERROR("%s(): Memory allocation failure", __FUNCTION__);
+                return TE_ENOMEM;
+            }
+            /* Print again */
+            again = TRUE;
+        }
+        else
+        {
+            str->len += printed;
+            again = FALSE;
+        }
+    } while (again);
+
+    return 0;
+}

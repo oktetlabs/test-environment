@@ -58,6 +58,37 @@ extern te_errno trc_add_tag(tqh_strings *tags, const char *name);
  */
 extern te_errno trc_tags_str_to_list(tqh_strings *tags, char *tags_str);
 
+
+
+/** Initial length of the dynamically allocated string */
+#define TE_STRING_INIT_LEN  1
+
+/** Additional length when dynamically allocated string is reallocated */
+#define TE_STRING_EXTRA_LEN 0
+
+/**
+ * Dynamically allocated string.
+ */
+typedef struct te_string {
+    char   *ptr;    /**< Pointer to the buffer */
+    size_t  size;   /**< Size of the buffer */
+    size_t  len;    /**< Length of the string */
+} te_string;
+
+/** On-stack te_string initializer */
+#define TE_STRING_INIT  { NULL, 0, 0 }
+
+/**
+ * Append to the string results of the sprintf(fmt, ...);
+ *
+ * @param str           Dynamic string
+ * @param fmt           Format string
+ * @param ...           Format string arguments
+ *
+ * @return Status code.
+ */
+extern te_errno te_string_append(te_string *str, const char *fmt, ...);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
