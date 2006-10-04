@@ -240,6 +240,7 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
             return;
         }
         te_test_result_init(&entry->result);
+        entry->result.status = status;
 
         assert(ctx->iter_data == NULL);
         ctx->iter_data = TE_ALLOC(sizeof(*ctx->iter_data));
