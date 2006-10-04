@@ -81,9 +81,7 @@ static const char * const trc_html_doc_start =
 "padding-left: 0.14in; padding-right: 0.14in}\n"
 "  </style>\n"
 "</head>\n"
-"<body lang=\"en-US\" dir=\"ltr\">\n"
-"<h1 align=center>%s</h1>\n"
-"<h2 align=center>%s</h2>\n";
+"<body lang=\"en-US\" dir=\"ltr\">\n";
 
 static const char * const trc_html_doc_end =
 "</body>\n"
@@ -787,18 +785,21 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
 
     /* HTML header */
     fprintf(f, trc_html_doc_start,
-            (title != NULL) ? title : trc_html_title_def,
-            (title != NULL) ? title : trc_html_title_def,
-            gctx->db->version);
+            (title != NULL) ? title : trc_html_title_def);
+    if (title != NULL)
+        fprintf(f, "<h1 align=center>%s</h1>\n", title);
+    if (gctx->db->version != NULL)
+        fprintf(f, "<h2 align=center>%s</h2>\n", gctx->db->version);
 
     /* TRC tags */
-    WRITE_STR("Tags:");
+    WRITE_STR("<b>Tags:</b>");
     for (tag = gctx->tags.tqh_first;
          tag != NULL;
          tag = tag->links.tqe_next)
     {
-        fprintf(f, " <b>%s</b>", tag->v);
+        fprintf(f, "  %s", tag->v);
     }
+    WRITE_STR("<p/>");
 
     /* Header provided by user */
     if (header != NULL)
