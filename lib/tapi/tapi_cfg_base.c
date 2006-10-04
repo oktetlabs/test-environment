@@ -291,6 +291,73 @@ tapi_cfg_base_if_set_bcast_mac(const char *oid,
     return rc;
 }
 
+
+static const char *
+tapi_cfg_mac2str(const uint8_t *mac)
+{
+    static char macbuf[ETHER_ADDR_LEN * 3];
+
+    int  i;
+    
+    for (i = 0; i < ETHER_ADDR_LEN; i++)
+    {
+        sprintf(macbuf + 3 * i, "%2.2x:", mac[i]);
+    }
+    macbuf[ETHER_ADDR_LEN * 3 - 1] = '\0';
+    
+    return macbuf;
+}
+
+/* See description in tapi_cfg_base.h */
+int
+tapi_cfg_base_if_add_mcast_mac(const char *oid,
+                               const uint8_t *mcast_mac)
+{
+    return cfg_add_instance_fmt(NULL, CFG_VAL(NONE, NULL),
+                                "%s/mcast_link_addr:%s", oid,
+                                tapi_cfg_mac2str(mcast_mac));
+}
+
+
+/* See description in tapi_cfg_base.h */
+int
+tapi_cfg_base_if_del_mcast_mac(const char *oid,
+                               const uint8_t *mcast_mac)
+{
+    if (mcast_mac != NULL)
+    {
+        return cfg_del_instance_fmt(TRUE, "%s/mcast_link_addr:%s", oid,
+                                    tapi_cfg_mac2str(mcast_mac));
+    }
+    else
+    {
+        int         rc = 0;
+        cfg_handle *addrs;
+        int         addr_num;
+        int         i;
+        
+        if ((rc = cfg_find_pattern_fmt(&addr_num, &addrs,
+                                       "%s/mcast_link_addr:*",
+                                       oid)) != 0)
+        {    
+            ERROR("Failed to get mcast_link_addr list for %s", oid);
+            return rc;
+        }
+        for (i = 0; i < addr_num; i++)
+        {
+            if ((rc = cfg_del_instance(addrs[i], TRUE)) != 0)
+            {
+                ERROR("Failed to delete address with handle %#x: %r",
+                      addrs[i], rc);
+                break;
+            }
+        }
+        free(addrs);
+        
+        return rc;
+    }
+}
+
 /* See description in tapi_cfg_base.h */
 int
 tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu)

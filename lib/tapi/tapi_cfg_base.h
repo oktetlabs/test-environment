@@ -145,6 +145,37 @@ extern int tapi_cfg_base_if_get_bcast_mac(const char *oid,
  */
 extern int tapi_cfg_base_if_set_bcast_mac(const char *oid,
                                           const uint8_t *bcast_mac);
+
+
+/**
+ * Add multicast MAC address to a TA interface
+ *
+ * @param oid           instance OID of TA interface
+ * @param mcast_mac     multicast MAC address to be added
+ *                      (at least ETHER_ADDR_LEN)
+ *
+ * @return              Status code.
+ */
+extern int tapi_cfg_base_if_add_mcast_mac(const char *oid,
+                                                const uint8_t *mcast_mac);
+    
+
+/**
+ * Delete multicast MAC address from a TA interface
+ *
+ * @param oid           instance OID of TA interface
+ * @param mcast_mac     multicast MAC address to be deleted
+ *                      (at least ETHER_ADDR_LEN)
+ *                      If NULL, then all multicast addresses are deleted
+ *
+ * @return              Status code.
+ */
+
+extern int tapi_cfg_base_if_del_mcast_mac(const char *oid,
+                                          const uint8_t *mcast_mac);
+    
+
+
 /**
  * Get link address of TA interface.
  *
