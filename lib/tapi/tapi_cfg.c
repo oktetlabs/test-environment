@@ -920,11 +920,11 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
         inet_ntop(addr_family, dst_addr_copy, dst_addr_str, 
                   sizeof(dst_addr_str));
 
-        WARN("Destination address specified in the route does not "
+        WARN("Destination address specified in the route is not "
              "cleared according to the prefix: prefix length %d, "
              "addr: %s expected to be %s. "
-             "[The address is cleared anyway]",
-             prefix, dst_addr_str_orig, dst_addr_str);
+             "[The address %s is used as destination]",
+             prefix, dst_addr_str_orig, dst_addr_str, dst_addr_str);
     }
 
     if (inet_ntop(addr_family, dst_addr_copy, dst_addr_str, 
