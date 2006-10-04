@@ -156,6 +156,15 @@ extern te_errno trc_report_process_log(trc_report_ctx *ctx,
                                        const char     *log);
 
 /**
+ * Collect statistics after processing of TE log.
+ *
+ * @param ctx           TRC report context
+ *
+ * @return Status code.
+ */
+extern te_errno trc_report_collect_stats(trc_report_ctx *ctx);
+
+/**
  * Output TRC report in HTML format.
  *
  * @param ctx           TRC report context

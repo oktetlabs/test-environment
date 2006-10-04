@@ -38,8 +38,13 @@
 #include <string.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_queue.h"
 #include "trc_report.h"
+
+
+/** Single not run iteration statistics */
+static trc_report_stats not_run = { 0, 0, 0, 0, 0, 0, 1, 0, 0, 0 };
 
 
 /* See the description in trc_report.h */
@@ -54,6 +59,9 @@ trc_report_init_ctx(trc_report_ctx *ctx)
 void
 trc_report_stats_add(trc_report_stats *stats, const trc_report_stats *add)
 {
+    assert(stats != NULL);
+    assert(add != NULL);
+
     stats->pass_exp += add->pass_exp;
     stats->pass_une += add->pass_une;
     stats->fail_exp += add->fail_exp;
@@ -80,4 +88,141 @@ trc_report_free_test_iter_data(trc_report_test_iter_data *data)
         free(p);
     }
     free(data);
+}
+
+/* See the description in trc_report.h */
+te_errno
+trc_report_collect_stats(trc_report_ctx *ctx)
+{
+    te_errno                rc = 0;
+    te_trc_db_walker       *walker;
+    trc_db_walker_motion    mv;
+    te_bool                 is_iter = TRUE;
+    trc_report_stats       *sum = NULL;
+    trc_report_stats       *add = NULL;
+
+    walker = trc_db_new_walker(ctx->db);
+    if (walker == NULL)
+        return TE_ENOMEM;
+
+    while ((rc == 0) &&
+           ((mv = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
+    {
+        if (mv != TRC_DB_WALKER_SON)
+        {
+            /* 
+             * Brother and father movements mean end-of-branch.
+             * Therefore, add statistics of the branch to its parent
+             * statistics.
+             */
+            trc_report_stats_add(sum, add);
+            add = NULL; /* DEBUG */
+        }
+
+        switch (mv)
+        {
+            case TRC_DB_WALKER_SON:
+                is_iter = !is_iter;
+                sum = add;
+                /*@fallthrou@*/
+
+            case TRC_DB_WALKER_BROTHER:
+                if (is_iter)
+                {
+                    trc_report_test_iter_data *iter_data;
+
+                    iter_data = trc_db_walker_get_user_data(walker,
+                                                            ctx->db_uid);
+                    if (iter_data == NULL)
+                    {
+                        const trc_test *test =
+                            trc_db_walker_get_test(walker);
+
+                        if (test->type != TRC_TEST_SCRIPT)
+                        {
+                            iter_data = TE_ALLOC(sizeof(*iter_data));
+                            if (iter_data == NULL)
+                            {
+                                rc = TE_ENOMEM;
+                                break;
+                            }
+                            TAILQ_INIT(&iter_data->runs);
+                            rc = trc_db_walker_set_user_data(walker,
+                                                             ctx->db_uid,
+                                                             iter_data);
+                            if (rc != 0)
+                                break;
+                            add = &iter_data->stats;
+                        }
+                        else
+                        {
+                            /* It is a script not run iteration */
+                            add = &not_run;
+                        }
+                    }
+                    else
+                    {
+                        add = &iter_data->stats;
+                    }
+                }
+                else
+                {
+                    trc_report_test_data *test_data;
+
+                    test_data = TE_ALLOC(sizeof(*test_data));
+                    if (test_data == NULL)
+                    {
+                        rc = TE_ENOMEM;
+                        break;
+                    }
+                    rc = trc_db_walker_set_user_data(walker, ctx->db_uid,
+                                                     test_data);
+                    if (rc != 0)
+                        break;
+                    add = &test_data->stats;
+                }
+                break;
+
+            case TRC_DB_WALKER_FATHER:
+                is_iter = !is_iter;
+                add = sum;
+                if (is_iter)
+                {
+                    trc_report_test_data *test_data;
+
+                    test_data = trc_db_test_get_user_data(
+                                    trc_db_walker_get_test(walker),
+                                    ctx->db_uid);
+                    assert(test_data != NULL);
+                    sum = &test_data->stats;
+                }
+                else
+                {
+                    trc_test_iter             *iter;
+                    trc_report_test_iter_data *iter_data;
+
+                    iter = trc_db_walker_get_iter(walker);
+                    if (iter != NULL)
+                    {
+                        iter_data = trc_db_iter_get_user_data(iter,
+                                                              ctx->db_uid);
+                        assert(iter_data != NULL);
+                        sum = &iter_data->stats;
+                    }
+                    else
+                    {
+                        sum = &ctx->stats;
+                    }
+                }
+                break;
+
+            default:
+                assert(FALSE);
+                break;
+        }
+    }
+
+    trc_db_free_walker(walker);
+
+    return rc;
 }

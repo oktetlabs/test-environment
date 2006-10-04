@@ -415,11 +415,10 @@ trc_report_exp_got_to_html(FILE                *f,
 
     assert(anchor != NULL);
     assert(test_path != NULL);
-    assert(level_str != NULL);
 
     iter = trc_db_walker_get_iter(walker);
     test = iter->parent;
-    iter_data = trc_db_get_user_data(walker, ctx->db_uid);
+    iter_data = trc_db_walker_get_user_data(walker, ctx->db_uid);
     iter_entry = (iter_data == NULL) ? NULL : iter_data->runs.tqh_first;
 
     do {
@@ -437,7 +436,8 @@ trc_report_exp_got_to_html(FILE                *f,
                 iter_data->exp_result =
                     trc_db_walker_get_exp_result(walker, &ctx->tags);
 
-                rc = trc_db_set_user_data(walker, ctx->db_uid, iter_data);
+                rc = trc_db_walker_set_user_data(walker, ctx->db_uid,
+                                                 iter_data);
                 if (rc != 0)
                 {
                     free(iter_data);
@@ -591,7 +591,7 @@ trc_report_test_stats_to_html(FILE             *f,
     const trc_report_stats     *stats;
 
     test = trc_db_walker_get_test(walker);
-    test_data = trc_db_get_user_data(walker, ctx->db_uid);
+    test_data = trc_db_walker_get_user_data(walker, ctx->db_uid);
     assert(test_data != NULL);
     stats = &test_data->stats;
 
@@ -649,6 +649,7 @@ trc_report_html_table(FILE *f, trc_report_ctx *ctx,
     trc_db_walker_motion    mv;
     unsigned int            level = 0;
     te_bool                 anchor = FALSE; /* FIXME */
+    const char             *last_test_name = NULL;
     te_string               test_path = TE_STRING_INIT;
     te_string               level_str = TE_STRING_INIT;
 
@@ -684,8 +685,16 @@ trc_report_html_table(FILE *f, trc_report_ctx *ctx,
                 if ((level & 1) == 1)
                 {
                     /* Test entry */
+                    if (mv != TRC_DB_WALKER_SON)
+                    {
+                        te_string_cut(&test_path,
+                                      strlen(last_test_name) + 1);
+                    }
+
+                    last_test_name = trc_db_walker_get_test(walker)->name;
+
                     rc = te_string_append(&test_path, "-%s",
-                             trc_db_walker_get_test(walker)->name);
+                                          last_test_name);
                     if (rc != 0)
                         break;
                     if (is_stats)
@@ -706,6 +715,14 @@ trc_report_html_table(FILE *f, trc_report_ctx *ctx,
 
             case TRC_DB_WALKER_FATHER:
                 level--;
+                if ((level & 1) == 0)
+                {
+                    /* Back from the test to parent iteration */
+                    te_string_cut(&level_str, strlen("*-"));
+                    te_string_cut(&test_path,
+                                  strlen(last_test_name) + 1);
+                    last_test_name = trc_db_walker_get_test(walker)->name;
+                }
                 break;
 
             default:

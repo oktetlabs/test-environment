@@ -89,6 +89,14 @@ typedef struct te_string {
  */
 extern te_errno te_string_append(te_string *str, const char *fmt, ...);
 
+/**
+ * Cut from the string specified number of characters.
+ *
+ * @param str           Dynamic string
+ * @param len           Number of characters to cut
+ */
+extern void te_string_cut(te_string *str, size_t len); 
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

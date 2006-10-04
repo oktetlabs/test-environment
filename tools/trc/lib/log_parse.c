@@ -681,7 +681,8 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
                 break;
             }
             ctx->args_n = 0;
-            iter_data = trc_db_get_user_data(ctx->db_walker, ctx->db_uid);
+            iter_data = trc_db_walker_get_user_data(ctx->db_walker,
+                                                    ctx->db_uid);
             if (iter_data == NULL)
             {
                 /* Get expected result */
@@ -693,8 +694,9 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
                     ctx->iter_data->exp_result,
                     &ctx->iter_data->runs.tqh_first->result);
                 /* Attach iteration data to TRC database */
-                ctx->rc = trc_db_set_user_data(ctx->db_walker, ctx->db_uid,
-                                               ctx->iter_data);
+                ctx->rc = trc_db_walker_set_user_data(ctx->db_walker,
+                                                      ctx->db_uid,
+                                                      ctx->iter_data);
                 if (ctx->rc != 0)
                     break;
             }
@@ -926,13 +928,17 @@ trc_report_process_log(trc_report_ctx *gctx, const char *log)
 
     if (xmlSAXUserParseFile(&sax_handler, &ctx, ctx.log) != 0)
     {
-        ERROR("Cannot parse XML document with TE log");
+        ERROR("Cannot parse XML document with TE log '%s'", ctx.log);
         rc = TE_EFMT;
     }
     else if ((rc = ctx.rc) != 0)
     {
         ERROR("Processing of the XML document with TE log '%s' "
               "failed: %r", ctx.log, rc);
+    }
+    else if ((rc = trc_report_collect_stats(gctx)) != 0)
+    {
+        ERROR("Collect of TRC report statistics failed: %r", rc);
     }
 
     return rc;

@@ -147,3 +147,12 @@ te_string_append(te_string *str, const char *fmt, ...)
 
     return 0;
 }
+
+void
+te_string_cut(te_string *str, size_t len)
+{
+    assert(str != NULL);
+    assert(str->len >= len);
+    str->len -= len;
+    str->ptr[str->len] = '\0';
+}
