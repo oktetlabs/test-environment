@@ -84,7 +84,7 @@ typedef struct trc_report_log_parse_ctx {
     te_trc_db          *db;         /**< TRC database handle */
     unsigned int        db_uid;     /**< TRC database user ID */
     const char         *log;        /**< Name of the file with log */
-    tqh_strings         tags;       /**< List of tags */
+    tqh_strings        *tags;       /**< List of tags */
 
     te_trc_db_walker   *db_walker;  /**< TRC database walker */
 
@@ -141,7 +141,6 @@ trc_report_log_end_document(void *user_data)
 {
     trc_report_log_parse_ctx   *ctx = user_data;
 
-    tq_strings_free(&ctx->tags, free);
     trc_db_free_walker(ctx->db_walker);
     ctx->db_walker = NULL;
 }
@@ -226,6 +225,7 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
                 ERROR("Unable to create a new test entry");
                 ctx->rc = TE_ENOMEM;
             }
+            INFO("Found test: %s", attrs[1]);
         }
         else if (strcmp(attrs[0], "result") == 0)
         {
@@ -279,7 +279,7 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
     {
         if (strcmp(attrs[0], "name") == 0)
         {
-            assert(ctx->args_name[ctx->args_n] == NULL);
+            /* FIXME assert(ctx->args_name[ctx->args_n] == NULL);*/
             ctx->args_name[ctx->args_n] = strdup(attrs[1]);
             if (ctx->args_name[ctx->args_n] == NULL)
             {
@@ -290,7 +290,7 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         }
         else if (strcmp(attrs[0], "value") == 0)
         {
-            assert(ctx->args_value[ctx->args_n] == NULL);
+            /* FIXME assert(ctx->args_value[ctx->args_n] == NULL); */
             ctx->args_value[ctx->args_n] = strdup(attrs[1]);
             if (ctx->args_value[ctx->args_n] == NULL)
             {
@@ -441,6 +441,8 @@ trc_report_log_start_element(void *user_data,
     trc_report_log_parse_ctx   *ctx = user_data;
 
     assert(ctx != NULL);
+    ENTRY("state=%u rc=%r tag=%s", ctx->state, ctx->rc, tag);
+
     if (ctx->rc != 0)
         return;
 
@@ -470,9 +472,9 @@ trc_report_log_start_element(void *user_data,
                 if (ctx->flags & TRC_REPORT_IGNORE_LOG_TAGS)
                 {
                     /* Ignore logs inside tests */
-                    ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
                     ctx->skip_state = ctx->state;
                     ctx->skip_depth = 1;
+                    ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
                 }
                 else
                 {
@@ -506,9 +508,9 @@ trc_report_log_start_element(void *user_data,
             else if (strcmp(tag, "logs") == 0)
             {
                 /* Ignore logs inside tests */
-                ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
                 ctx->skip_state = ctx->state;
                 ctx->skip_depth = 1;
+                ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
             }
             else
             {
@@ -527,9 +529,9 @@ trc_report_log_start_element(void *user_data,
                 }
                 else
                 {
-                    ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
                     ctx->skip_state = ctx->state;
                     ctx->skip_depth = 1;
+                    ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
                 }
             }
             else if (strcmp(tag, "verdicts") == 0)
@@ -542,9 +544,9 @@ trc_report_log_start_element(void *user_data,
             }
             else 
             {
-                ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
                 ctx->skip_state = ctx->state;
                 ctx->skip_depth = 1;
+                ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
             }
             break;
             
@@ -564,6 +566,10 @@ trc_report_log_start_element(void *user_data,
             if (strcmp(tag, "param") == 0)
             {
                 trc_report_test_param(ctx, attrs);
+                /* FIXME */
+                ctx->skip_state = ctx->state;
+                ctx->skip_depth = 1;
+                ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
             }
             else
             {
@@ -605,9 +611,9 @@ trc_report_log_start_element(void *user_data,
                 }
                 else
                 {
-                    ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
                     ctx->skip_state = ctx->state;
                     ctx->skip_depth = 1;
+                    ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
                 }
             }
             else
@@ -636,6 +642,8 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
     trc_report_log_parse_ctx   *ctx = user_data;
 
     assert(ctx != NULL);
+    ENTRY("state=%u rc=%r tag=%s", ctx->state, ctx->rc, tag);
+
     if (ctx->rc != 0)
         return;
 
@@ -644,6 +652,18 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
         case TRC_REPORT_LOG_PARSE_SKIP:
             if (--(ctx->skip_depth) == 0)
                 ctx->state = ctx->skip_state;
+            break;
+
+        case TRC_REPORT_LOG_PARSE_ROOT:
+            if (strcmp(tag, "branch") == 0)
+            {
+                ctx->state = TRC_REPORT_LOG_PARSE_TEST;
+            }
+            else
+            {
+                assert(strcmp(tag, "proteos:log_report") == 0);
+                ctx->state = TRC_REPORT_LOG_PARSE_INIT;
+            }
             break;
 
         case TRC_REPORT_LOG_PARSE_LOGS:
@@ -663,6 +683,8 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
             trc_db_walker_step_back(ctx->db_walker);
             /* Step test entry back */
             trc_db_walker_step_back(ctx->db_walker);
+
+            ctx->state = TRC_REPORT_LOG_PARSE_ROOT;
             break;
 
         case TRC_REPORT_LOG_PARSE_META:
@@ -688,7 +710,7 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
                 /* Get expected result */
                 ctx->iter_data->exp_result =
                     trc_db_walker_get_exp_result(ctx->db_walker,
-                                                 &ctx->tags);
+                                                 ctx->tags);
                 /* Update statistics */
                 trc_report_test_iter_stats_update(&ctx->iter_data->stats,
                     ctx->iter_data->exp_result,
@@ -766,6 +788,8 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
     char       *save = NULL;
 
     assert(ctx != NULL);
+    ENTRY("state=%u rc=%r len=%u", ctx->state, ctx->rc, len);
+
     if (ctx->rc != 0)
         return;
 
@@ -832,7 +856,7 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
         (*location)[len] = '\0';
         if (ctx->state == TRC_REPORT_LOG_PARSE_TAGS)
         {
-            trc_tags_str_to_list(&ctx->tags, tags_str);
+            trc_tags_str_to_list(ctx->tags, tags_str);
         }
         else if (save != NULL && strcpy(save, *location) != 0)
         {
@@ -924,7 +948,7 @@ trc_report_process_log(trc_report_ctx *gctx, const char *log)
     ctx.db = gctx->db;
     ctx.db_uid = gctx->db_uid;
     ctx.log = log;
-    TAILQ_INIT(&ctx.tags);
+    ctx.tags = &gctx->tags;
 
     if (xmlSAXUserParseFile(&sax_handler, &ctx, ctx.log) != 0)
     {
