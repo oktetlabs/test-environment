@@ -83,6 +83,18 @@ struct te_trc_db;
 /** Short alias for TRC database type */
 typedef struct te_trc_db te_trc_db;
 
+
+/**
+ * Initialize a new TRC database.
+ *
+ * @param p_trc_db      Location for TRC database instance handle
+ *
+ * @return Status code.
+ *
+ * @sa trc_db_save, trc_db_close
+ */
+extern te_errno trc_db_init(te_trc_db **p_trc_db);
+
 /**
  * Open TRC database.
  *
@@ -91,17 +103,16 @@ typedef struct te_trc_db te_trc_db;
  *
  * @return Status code.
  *
- * @sa trc_db_close
+ * @sa trc_db_save, trc_db_close
  */
-extern te_errno trc_db_open(const char *location,
-                            struct te_trc_db **p_trc_db);
+extern te_errno trc_db_open(const char *location, te_trc_db **p_trc_db);
 
 /**
  * Close TRC database.
  *
  * @param trc_db        TRC database instance handle
  */
-extern void trc_db_close(struct te_trc_db *trc_db);
+extern void trc_db_close(te_trc_db *trc_db);
 
 
 /*
@@ -120,7 +131,7 @@ typedef struct te_trc_db_walker te_trc_db_walker;
  *
  * @return Pointer to allocated walker.
  */
-extern te_trc_db_walker *trc_db_new_walker(const struct te_trc_db  *trc_db);
+extern te_trc_db_walker *trc_db_new_walker(te_trc_db *trc_db);
 
 /**
  * Release resources allocated for TRC database tree walker.
@@ -138,11 +149,15 @@ extern void trc_db_free_walker(te_trc_db_walker *walker);
  *
  * @param walker        Current walker position
  * @param test_name     Name of the test
+ * @param force         Force to create DB entry, if it does not
+ *                      exist (if resources allocation fails, FALSE is
+ *                      returned, else TRUE is returned)
  *
  * @return Is walker in a known place in TRC database tree?
  */
 extern te_bool trc_db_walker_step_test(te_trc_db_walker *walker,
-                                       const char       *test_name);
+                                       const char       *test_name,
+                                       te_bool           force);
 
 /**
  * Move walker from the current position to the test iteration with
@@ -154,14 +169,23 @@ extern te_bool trc_db_walker_step_test(te_trc_db_walker *walker,
  * @param walker        Current walker position
  * @param n_args        Number of arguments
  * @param names         Array with arguments names
- * @param values        Array with arguments values 
+ * @param values        Array with arguments values
+ * @param force         Force to create DB entry, if it does not
+ *                      exist (if resources allocation fails, FALSE is
+ *                      returned, else TRUE is returned)
+ *
+ * @note If @a force is @c TRUE and iteration is not found, @a names[]
+ *       and @a values[] are owned by the function and corresponding
+ *       pointers are substituted by @c NULL. It is assumed that
+ *       @a names[] and @a values[] are dynamically allocated from heap.
  *
  * @return Is walker in a known place in TRC database tree?
  */
 extern te_bool trc_db_walker_step_iter(te_trc_db_walker  *walker,
                                        unsigned int       n_args,
-                                       const char       **names,
-                                       const char       **values);
+                                       char             **names,
+                                       char             **values,
+                                       te_bool            force);
 
 /**
  * Move walker one step back.
@@ -175,7 +199,7 @@ extern void trc_db_walker_step_back(te_trc_db_walker *walker);
 typedef enum trc_db_walker_motion {
     TRC_DB_WALKER_SON,      /**< To son */
     TRC_DB_WALKER_BROTHER,  /**< To brother */
-    TRC_DB_WALKER_PARENT,   /**< To farther */
+    TRC_DB_WALKER_FATHER,   /**< To father */
     TRC_DB_WALKER_ROOT,     /**< Nowhere */
 } trc_db_walker_motion;
 
@@ -220,21 +244,84 @@ extern te_bool trc_is_result_expected(const trc_exp_result *expected,
                                       const te_test_result *obtained);
 
 /**
- * Are two expected results equal?
- *
- * @param lhv           Left hand value
- * @param rhv           Right hand value
- */
-extern te_bool trc_is_exp_result_equal(const trc_exp_result *lhv,
-                                       const trc_exp_result *rhv);
-
-/**
  * Is expected result equal to skipped (without any verdicts).
  *
  * @param result        Expected result to check
  */
 extern te_bool trc_is_exp_result_skipped(const trc_exp_result *result);
 
+
+/*
+ * Attached user data management.
+ */
+
+/**
+ * Allocate a new user ID.
+ *
+ * @param db            TRC database handle
+ *
+ * @return Allocated user ID.
+ */
+extern unsigned int trc_db_new_user(te_trc_db *db);
+
+/**
+ * Free user ID.
+ *
+ * @param db            TRC database handle
+ * @param user_id       User ID to free
+ */
+extern void trc_db_free_user(te_trc_db *db, unsigned int user_id);
+
+/**
+ * Get data associated by user with current position in TRC database.
+ *
+ * @param walker        TRC database walker
+ * @param user_id       User ID
+ *
+ * @return Data associated by user or NULL.
+ */
+extern void *trc_db_walker_get_user_data(const te_trc_db_walker *walker,
+                                         unsigned int            user_id);
+
+/**
+ * Set data associated by user with current position in TRC database.
+ *
+ * @param walker        TRC database walker
+ * @param user_id       User ID
+ * @param user_data     User data to associate
+ *
+ * @return Status code.
+ */
+extern te_errno trc_db_walker_set_user_data(
+                    const te_trc_db_walker *walker,
+                    unsigned int            user_id,
+                    void                   *user_data);
+
+/**
+ * Free user data associated by user with current position in TRC
+ * database.
+ *
+ * @param walker        TRC database walker
+ * @param user_id       User ID
+ * @param user_free     Function to be used to free user data or NULL
+ */
+extern void trc_db_walker_free_user_data(te_trc_db_walker *walker,
+                                         unsigned int user_id,
+                                         void (*user_free)(void *));
+
+/**
+ * Free all data of specified user associated with elements of TRC
+ * database.
+ *
+ * @param db            TRC database handle
+ * @param user_id       User ID
+ * @param user_free     Function to be used to free user data or NULL
+ *
+ * @return Status code.
+ */
+extern te_errno trc_db_free_user_data(te_trc_db *db, 
+                                      unsigned int user_id,
+                                      void (*user_free)(void *));
 
 #ifdef __cplusplus
 } /* extern "C" */

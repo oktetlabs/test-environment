@@ -42,32 +42,36 @@
 
 /** Internal data of the TRC database walker */
 struct te_trc_db_walker {
-    const te_trc_db     *db;        /**< TRC database pointer */
+    te_trc_db           *db;        /**< TRC database pointer */
     te_bool              is_iter;   /**< Is current position an
                                          iteration? */
-    const trc_test      *test;      /**< Test entry */
-    const trc_test_iter *iter;      /**< Test iteration */
+    trc_test            *test;      /**< Test entry */
+    trc_test_iter       *iter;      /**< Test iteration */
     unsigned int         unknown;   /**< Unknown depth counter */
     trc_db_walker_motion motion;    /**< The last motion */
 };
 
 
 /* See the description in trc_db.h */
-const trc_test *
+trc_test *
 trc_db_walker_get_test(const te_trc_db_walker *walker)
 {
-    assert(!walker->is_iter);
-    return walker->test;
+    return walker->is_iter ? walker->iter->parent : walker->test;
 }
 
 /* See the description in trc_db.h */
-const trc_test_iter *
+trc_test_iter *
 trc_db_walker_get_iter(const te_trc_db_walker *walker)
 {
-    assert(walker->is_iter);
-    return walker->iter;
+    return walker->is_iter ? walker->iter : walker->test->parent;
 }
 
+/* See the description in trc_db.h */
+trc_users_data *
+trc_db_walker_users_data(const te_trc_db_walker *walker)
+{
+    return walker->is_iter ? &walker->iter->users : &walker->test->users;
+}
 
 /* See the description in te_trc.h */
 void
@@ -78,7 +82,7 @@ trc_db_free_walker(te_trc_db_walker *walker)
 
 /* See the description in te_trc.h */
 te_trc_db_walker *
-trc_db_new_walker(const struct te_trc_db *trc_db)
+trc_db_new_walker(te_trc_db *trc_db)
 {
     te_trc_db_walker   *walker;
 
@@ -99,7 +103,8 @@ trc_db_new_walker(const struct te_trc_db *trc_db)
 
 /* See the description in te_trc.h */
 te_bool
-trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name)
+trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
+                        te_bool force)
 {
     assert(walker->is_iter);
 
@@ -111,9 +116,8 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name)
     }
     else
     {
-        const trc_tests *tests =
-            (walker->iter == NULL) ? &walker->db->tests :
-                                     &walker->iter->tests;
+        trc_tests *tests = (walker->iter == NULL) ? &walker->db->tests :
+                                                    &walker->iter->tests;
 
         for (walker->test = tests->head.tqh_first;
              walker->test != NULL &&
@@ -122,8 +126,22 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name)
 
         if (walker->test == NULL)
         {
-            walker->unknown++;
-            VERB("Step test '%s' - unknown", test_name);
+            if (force)
+            {
+                VERB("Step test '%s' - force to create", test_name);
+                walker->test = trc_db_new_test(tests, walker->iter,
+                                               test_name);
+                if (walker->test == NULL)
+                {
+                    ERROR("Cannot allocate a new test '%s'", test_name);
+                    return FALSE;
+                }
+            }
+            else
+            {
+                VERB("Step test '%s' - unknown", test_name);
+                walker->unknown++;
+            }
         }
         else
         {
@@ -210,8 +228,9 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
 te_bool
 trc_db_walker_step_iter(te_trc_db_walker  *walker,
                         unsigned int       n_args,
-                        const char       **names,
-                        const char       **values)
+                        char             **names,
+                        char             **values,
+                        te_bool            force)
 {
     assert(!walker->is_iter);
 
@@ -225,13 +244,30 @@ trc_db_walker_step_iter(te_trc_db_walker  *walker,
         for (walker->iter = walker->test->iters.head.tqh_first;
              walker->iter != NULL &&
              !test_iter_args_match(&walker->iter->args,
-                                   n_args, names, values);
+                                   n_args, (const char **)names,
+                                   (const char **)values);
              walker->iter = walker->iter->links.tqe_next);
 
         if (walker->iter == NULL)
         {
-            walker->unknown++;
-            VERB("Step iteration - unknown");
+            if (force)
+            {
+                VERB("Step iteration - force to create");
+                walker->iter = trc_db_new_test_iter(walker->test,
+                                                    n_args,
+                                                    names, values);
+                if (walker->iter == NULL)
+                {
+                    ERROR("Cannot allocate a new test '%s' iteration",
+                          walker->test->name);
+                    return FALSE;
+                }
+            }
+            else
+            {
+                VERB("Step iteration - unknown");
+                walker->unknown++;
+            }
         }
         else
         {
@@ -312,7 +348,7 @@ trc_db_walker_move(te_trc_db_walker *walker)
             }
             /*@fallthrough@*/
 
-        case TRC_DB_WALKER_PARENT:
+        case TRC_DB_WALKER_FATHER:
             if (walker->is_iter)
             {
                 if (walker->iter->links.tqe_next != NULL)
@@ -325,7 +361,7 @@ trc_db_walker_move(te_trc_db_walker *walker)
                     walker->test = walker->iter->parent;
                     assert(walker->test != NULL);
                     walker->is_iter = FALSE;
-                    return (walker->motion = TRC_DB_WALKER_PARENT);
+                    return (walker->motion = TRC_DB_WALKER_FATHER);
                 }
             }
             else
@@ -340,7 +376,7 @@ trc_db_walker_move(te_trc_db_walker *walker)
                     walker->is_iter = TRUE;
                     return (walker->motion =
                         ((walker->iter = walker->test->parent) == NULL) ?
-                            TRC_DB_WALKER_ROOT : TRC_DB_WALKER_PARENT);
+                            TRC_DB_WALKER_ROOT : TRC_DB_WALKER_FATHER);
                 }
             }
             break;
@@ -407,9 +443,9 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
     /* We have not found matching tagged result */
     if (result == NULL)
     {
+        /* May be default expected result exists? */
         result = walker->iter->exp_default;
     }
 
-    assert(result != NULL);
     return result;
 }

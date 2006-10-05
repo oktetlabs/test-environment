@@ -219,25 +219,25 @@ get_text_content(xmlNodePtr node, const char *name, char **content)
     {
         ERROR("Too many children in the node '%s' with text content",
               name);
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFMT);
     }
     if (xmlStrcmp(node->children->name, CONST_CHAR2XML("text")) != 0)
     {
         ERROR("Unexpected element '%s' in the node '%s' with text "
               "content", node->children->name, name);
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFMT);
     }
     if (node->children->content == NULL)
     {
         ERROR("Empty content of the node '%s'", name);
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFMT);
     }
 
     *content = XML2CHAR_DUP(node->children->content);
     if (*content == NULL)
     {
         ERROR("String duplication failed");
-        return TE_ENOMEM;
+        return TE_RC(TE_TRC, TE_ENOMEM);
     }
 
     return 0;
@@ -315,7 +315,7 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
 
     p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
-        return errno;
+        return TE_RC(TE_TRC, TE_ENOMEM);
     p->node = node;
     TAILQ_INSERT_TAIL(&args->head, p, links);
 
@@ -323,7 +323,7 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
     if (p->name == NULL)
     {
         ERROR("Name of the argument is missing");
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFMT);
     }
 
     rc = get_text_content(node, "arg", &p->value);
@@ -386,12 +386,12 @@ get_result(xmlNodePtr node, const char *name, te_test_status *result)
     else if (strcmp(tmp, "SKIPPED") == 0)
         *result = TE_TEST_SKIPPED;
     else if (strcmp(tmp, "UNSPEC") == 0)
-        *result = TE_TEST_INCOMPLETE; /* FIXME */
+        *result = TE_TEST_UNSPEC;
     else
     {
         ERROR("Unknown result '%s' of the test iteration", tmp);
         free(tmp);
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFMT);
     }
     free(tmp);
 
@@ -433,7 +433,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
         result->tags_str = XML2CHAR(xmlGetProp(*node,
                                                CONST_CHAR2XML("tags")));
         if (logic_expr_parse(result->tags_str, &result->tags_expr) != 0)
-            return TE_EINVAL;
+            return TE_RC(TE_TRC, TE_EINVAL);
 
         get_node_property(*node, "key", &result->key);
         get_node_property(*node, "notes", &result->notes);
@@ -444,7 +444,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
             {
                 ERROR("Unexpected node '%s' in the tagged result",
                       p->name);
-                return TE_EINVAL;
+                return TE_RC(TE_TRC, TE_EFMT);
             }
 
             entry = TE_ALLOC(sizeof(*entry));
@@ -470,7 +470,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
                 {
                     ERROR("Unexpected node '%s' in the tagged result "
                           "entry", q->name);
-                    return TE_EINVAL;
+                    return TE_RC(TE_TRC, TE_EFMT);
                 }
                 v = TE_ALLOC(sizeof(*v));
                 if (v == NULL)
@@ -493,42 +493,31 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
  * Allocate and get test iteration.
  *
  * @param node          XML node
- * @param test_name     Name of the test
- * @param iters         List of iterations to be filled in
- * @param parent        Parent test
+ * @param test          Parent test
  *
  * @return Status code.
  */
 static te_errno
-alloc_and_get_test_iter(xmlNodePtr node, const char *test_name, 
-                        trc_test_iters *iters, trc_test *parent)
+alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
 {
     te_errno        rc;
     trc_test_iter  *p;
     char           *tmp;
     te_test_status  def;
 
-    UNUSED(test_name);
+    INFO("New iteration of the test %s", test->name);
 
-    INFO("New iteration of the test %s", test_name);
-
-    p = TE_ALLOC(sizeof(*p));
+    p = trc_db_new_test_iter(test, 0, NULL, NULL);
     if (p == NULL)
-        return errno;
+        return TE_RC(TE_TRC, TE_ENOMEM);
     p->node = p->tests.node = node;
-    p->parent = parent;
-    TAILQ_INIT(&p->args.head);
-    LIST_INIT(&p->exp_results);
-    TAILQ_INIT(&p->tests.head);
-
-    TAILQ_INSERT_TAIL(&iters->head, p, links);
     
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("n")));
     if (tmp != NULL)
     {
         ERROR("Number of iterations is not supported yet");
         free(tmp);
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_ENOSYS);
     }
 
     rc = get_result(node, "result", &def);
@@ -576,7 +565,7 @@ alloc_and_get_test_iter(xmlNodePtr node, const char *test_name,
     if (node != NULL)
     {
         ERROR("Unexpected element '%s' in test iteration", node->name);
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFMT);
     }
 
     return 0;
@@ -586,25 +575,21 @@ alloc_and_get_test_iter(xmlNodePtr node, const char *test_name,
  * Get test iterations.
  *
  * @param node          XML node
- * @param test_name     Name of the test
- * @param iters         List of iterations to be filled in
- * @param parent        Parent test
+ * @param test          Parent test
  *
  * @return Status code
  */
 static te_errno
-get_test_iters(xmlNodePtr *node, const char *test_name, 
-               trc_test_iters *iters, trc_test *parent)
+get_test_iters(xmlNodePtr *node, trc_test *parent)
 {
     te_errno rc = 0;
 
     assert(node != NULL);
-    assert(iters != NULL);
+    assert(parent != NULL);
 
     while (*node != NULL &&
            xmlStrcmp((*node)->name, CONST_CHAR2XML("iter")) == 0 &&
-           (rc = alloc_and_get_test_iter(*node, test_name, iters,
-                                         parent)) == 0)
+           (rc = alloc_and_get_test_iter(*node, parent)) == 0)
     {
         *node = xmlNodeNext(*node);
     }
@@ -631,19 +616,16 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
 
     assert(tests != NULL);
 
-    p = TE_ALLOC(sizeof(*p));
+    p = trc_db_new_test(tests, parent, NULL);
     if (p == NULL)
-        return errno;
+        return TE_RC(TE_TRC, TE_ENOMEM);
     p->node = p->iters.node = node;
-    p->parent = parent;
-    TAILQ_INIT(&p->iters.head);
-    TAILQ_INSERT_TAIL(&tests->head, p, links);
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
     if (p->name == NULL)
     {
         ERROR("Name of the test is missing");
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFMT);
     }
 
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("type")));
@@ -667,7 +649,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
     {
         ERROR("Invalid type '%s' of the test '%s'", tmp, p->name);
         free(tmp);
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFMT);
     }
     free(tmp);
 
@@ -686,7 +668,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
         ERROR("Invalid auxiliary property value '%s' of the test '%s'",
               tmp, p->name);
         free(tmp);
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFMT);
     }
     free(tmp);
 
@@ -712,7 +694,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
         }
     }
 
-    rc = get_test_iters(&node, p->name, &p->iters, p);
+    rc = get_test_iters(&node, p);
     if (rc != 0)
     {
         ERROR("Failed to get iterations of the test '%s'", p->name);
@@ -722,7 +704,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
     if (node != NULL)
     {
         ERROR("Unexpected element '%s' in test entry", node->name);
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFMT);
     }
 
     return 0;
@@ -754,7 +736,7 @@ get_tests(xmlNodePtr *node, trc_tests *tests, trc_test_iter *parent)
     if (*node != NULL)
     {
         ERROR("Unexpected element '%s'", (*node)->name);
-        rc = TE_EINVAL;
+        rc = TE_RC(TE_TRC, TE_EFMT);
     }
 
     return rc;
@@ -775,7 +757,7 @@ trc_db_open(const char *location, te_trc_db **db)
     if (location == NULL)
     {
         ERROR("Invalid location of the TRC database");
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFAULT);
     }
 
     *db = TE_ALLOC(sizeof(**db));
@@ -808,7 +790,7 @@ trc_db_open(const char *location, te_trc_db **db)
               "%s", (*db)->filename);
 #endif
         xmlFreeParserCtxt(parser);
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFMT);
     }
 
     node = xmlDocGetRootElement((*db)->xml_doc);
@@ -817,12 +799,12 @@ trc_db_open(const char *location, te_trc_db **db)
     {
         ERROR("Empty XML document of the DB with expected testing "
               "results");
-        rc = TE_EINVAL;
+        rc = TE_RC(TE_TRC, TE_EINVAL);
     }
     else if (xmlStrcmp(node->name, CONST_CHAR2XML("trc_db")) != 0)
     {
         ERROR("Unexpected root element of the DB XML file");
-        rc = TE_EINVAL;
+        rc = TE_RC(TE_TRC, TE_EFMT);
     }
     else
     {
@@ -830,8 +812,7 @@ trc_db_open(const char *location, te_trc_db **db)
                                           CONST_CHAR2XML("version")));
         if ((*db)->version == NULL)
         {
-            ERROR("Version of the TRC DB is missing");
-            return TE_EINVAL;
+            INFO("Version of the TRC DB is missing");
         }
 
         node = xmlNodeChildren(node);
@@ -1005,7 +986,7 @@ trc_db_save(te_trc_db *db, const char *filename)
     if (xmlSaveFormatFileEnc(fn, db->xml_doc, "UTF-8", 1) == -1)
     {
         ERROR("xmlSaveFormatFileEnc(%s) failed", fn);
-        return TE_EINVAL;
+        return TE_RC(TE_TRC, TE_EFAULT);
     }
     else
     {
@@ -1014,126 +995,4 @@ trc_db_save(te_trc_db *db, const char *filename)
     }
 
     return 0;
-}
-
-
-static void trc_free_trc_tests(trc_tests *tests);
-
-/**
- * Free resources allocated for the list of test arguments.
- *
- * @param args      List of test arguments to be freed
- */
-static void
-trc_free_test_args(trc_test_iter_args *args)
-{
-    trc_test_iter_arg   *p;
-
-    while ((p = args->head.tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(&args->head, p, links);
-        free(p->name);
-        free(p->value);
-        free(p);
-    }
-}
-
-/**
- * Free resources allocated for expected result.
- *
- * @param result        Result to be freed
- */
-static void
-trc_free_exp_result(trc_exp_result *result)
-{
-    trc_exp_result_entry   *p;
-
-    free(result->tags_str);
-    logic_expr_free(result->tags_expr);
-
-    while ((p = result->results.tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(&result->results, p, links);
-        te_test_result_free_verdicts(&p->result);
-        free(p->key);
-        free(p->notes);
-        free(p);
-    }
-
-    free(result->key);
-    free(result->notes);
-}
-
-/**
- * Free resources allocated for the list of expected results.
- *
- * @param iters     List of expected results to be freed
- */
-static void
-trc_free_exp_results(trc_exp_results *results)
-{
-    trc_exp_result *p;
-
-    while ((p = results->lh_first) != NULL)
-    {
-        LIST_REMOVE(p, links);
-        trc_free_exp_result(p);
-        free(p);
-    }
-}
-
-/**
- * Free resources allocated for the list of test iterations.
- *
- * @param iters     List of test iterations to be freed
- */
-static void
-trc_free_test_iters(trc_test_iters *iters)
-{
-    trc_test_iter  *p;
-
-    while ((p = iters->head.tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(&iters->head, p, links);
-        trc_free_test_args(&p->args);
-        free(p->notes);
-        trc_free_exp_results(&p->exp_results);
-        trc_free_trc_tests(&p->tests);
-        free(p);
-    }
-}
-
-/**
- * Free resources allocated for the list of tests.
- *
- * @param tests     List of tests to be freed
- */
-static void
-trc_free_trc_tests(trc_tests *tests)
-{
-    trc_test   *p;
-
-    while ((p = tests->head.tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(&tests->head, p, links);
-        free(p->name);
-        free(p->notes);
-        free(p->objective);
-        trc_free_test_iters(&p->iters);
-        free(p);
-    }
-}
-
-/* See description in trc_db.h */
-void
-trc_db_close(te_trc_db *db)
-{
-    if (db == NULL)
-        return;
-
-    free(db->filename);
-    xmlFreeDoc(db->xml_doc);
-    free(db->version);
-    trc_free_trc_tests(&db->tests);
-    free(db);
 }

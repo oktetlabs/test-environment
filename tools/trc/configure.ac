@@ -26,8 +26,20 @@ AC_CONFIG_HEADERS([config.h])
 
 CPPFLAGS=${XML2_CFLAGS}
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
+AC_CHECK_MEMBERS([\
+struct _xmlSAXHandler._private, \
+struct _xmlSAXHandler.startElementNs, \
+struct _xmlSAXHandler.endElementNs, \
+struct _xmlSAXHandler.serror \
+], [], [], [#include <libxml/parser.h>])
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([
+Makefile
+lib/Makefile
+trc-log/Makefile
+trc-report/Makefile
+trc-diff/Makefile
+])
 
 TE_APP_RESTORE
 

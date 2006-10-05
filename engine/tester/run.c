@@ -333,7 +333,9 @@ tester_run_new_ctx(tester_run_data *data)
 #if WITH_TRC
     if (~new_ctx->flags & TESTER_NO_TRC)
     {
-        new_ctx->trc_walker = trc_db_new_walker(data->trc_db);
+        /* FIXME: Avoid type cast here */
+        new_ctx->trc_walker =
+            trc_db_new_walker((te_trc_db *)data->trc_db);
         if (new_ctx->trc_walker == NULL)
         {
             tester_run_destroy_ctx(data);
@@ -1355,7 +1357,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #if WITH_TRC
     if ((~ctx->flags & TESTER_NO_TRC) && (test_get_name(ri) != NULL))
     {
-        trc_db_walker_step_test(ctx->trc_walker, test_get_name(ri));
+        trc_db_walker_step_test(ctx->trc_walker, test_get_name(ri), FALSE);
         ctx->do_trc_walker = TRUE;
     }
 #endif
@@ -2140,8 +2142,15 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             names[i] = ctx->args[i].name;
             values[i] = ctx->args[i].value;
         }
-        trc_db_walker_step_iter(ctx->trc_walker,
-                                ctx->n_args, names, values);
+        /* 
+         * It is guaranteed that trc_db_walker_step_iter() does not
+         * touch names and values with the last parameter equal to
+         * FALSE.
+         */
+        (void)trc_db_walker_step_iter(ctx->trc_walker,
+                                      ctx->n_args,
+                                      (char **)names, (char **)values,
+                                      FALSE);
         ctx->do_trc_walker = TRUE;
 
         ctx->current_result.exp_result =

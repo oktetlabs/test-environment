@@ -45,6 +45,17 @@ extern "C" {
 #endif
 
 
+/** User data associated with TRC database element */
+typedef struct trc_user_data {
+    LIST_ENTRY(trc_user_data)   links;
+    unsigned int                user_id;
+    void                       *data;
+} trc_user_data;
+
+/** List with users' data associated with TRC database element */
+typedef LIST_HEAD(, trc_user_data)  trc_users_data;
+
+
 /** List of expected results */
 typedef LIST_HEAD(trc_exp_results, trc_exp_result) trc_exp_results;
 
@@ -90,6 +101,8 @@ typedef struct trc_test_iter {
     xmlNodePtr  node;   /**< XML node with this element */
     
     TAILQ_ENTRY(trc_test_iter)  links;  /**< List links */
+    
+    struct trc_test    *parent;     /**< Back reference */
 
     trc_test_iter_args  args;       /**< Iteration arguments */
     char               *notes;      /**< Common notes */
@@ -98,8 +111,8 @@ typedef struct trc_test_iter {
     trc_exp_results         exp_results;    /**< The expected results */
 
     trc_tests           tests;      /**< Children tests of the session */
-    
-    struct trc_test    *parent;     /**< Back reference */
+
+    trc_users_data      users;      /**< Users data */
 
 } trc_test_iter;
 
@@ -115,10 +128,11 @@ typedef struct trc_test_iters {
 
 /** Types of tests */
 typedef enum trc_test_type {
-    TRC_TEST_SCRIPT,    /**< Standalone script-executable */
-    TRC_TEST_SESSION,   /**< Group of tests */
-    TRC_TEST_PACKAGE,   /**< Group of tests described in a separate
-                             file */
+    TRC_TEST_UNKNOWN = 0,   /**< Unknown (not initialized) test type */
+    TRC_TEST_SCRIPT,        /**< Standalone script-executable */
+    TRC_TEST_SESSION,       /**< Group of tests */
+    TRC_TEST_PACKAGE,       /**< Group of tests described in a separate
+                                 file */
 } trc_test_type;
 
 /** Test run */
@@ -127,6 +141,8 @@ typedef struct trc_test {
     xmlNodePtr  node;   /**< XML node with this element */
 
     TAILQ_ENTRY(trc_test)   links;  /**< List links */
+
+    trc_test_iter  *parent;         /**< Back reference */
 
     trc_test_type   type;           /**< Type of the test */
     te_bool         aux;            /**< Is test auxiliary? */
@@ -140,28 +156,67 @@ typedef struct trc_test {
 
     trc_test_iters  iters;          /**< Iterations of the test */
 
-    trc_test_iter  *parent;         /**< Back reference */
+    trc_users_data  users;          /**< Users data */
 
 } trc_test;
 
 
 /** Testing results comparison database */
 struct te_trc_db {
-    char       *filename;   /**< Location of the database file */
-    xmlDocPtr   xml_doc;    /**< XML document */
-    char       *version;    /**< Database version */
-    trc_tests   tests;      /**< Tree of tests */
+    char           *filename;   /**< Location of the database file */
+    xmlDocPtr       xml_doc;    /**< XML document */
+    char           *version;    /**< Database version */
+    trc_tests       tests;      /**< Tree of tests */
+    unsigned int    user_id;    /**< ID of the next user */
 };
+
+
+/**
+ * Allocate and initialize control structure for a new test entry.
+ *
+ * @param tests         List of tests to add a new
+ * @param parent        Parent test iteration
+ * @param name          Name of the test or NULL
+ */
+extern trc_test *trc_db_new_test(trc_tests *tests, trc_test_iter *parent,
+                                 const char *name);
+
+/**
+ * Allocate and initialize control structure for a new test iteration.
+ *
+ * @param parent        Test a new iteration belongs to
+ * @param n_args        Number of arguments
+ * @param names         Array with argument names
+ * @param values        Array with argument values
+ *
+ * @note If @a names[] and @a values[] are owned by the function,
+ *       the pointers in @a names and @a values are set to @c NULL.
+ *       It is assumed that this memory is allocated from heap and
+ *       should be deallocated using @p free().
+ */
+extern trc_test_iter *trc_db_new_test_iter(trc_test      *test,
+                                           unsigned int   n_args,
+                                           char         **names,
+                                           char         **values);
 
 
 extern te_errno trc_db_save(te_trc_db *db, const char *filename);
 
 extern void trc_db_free(te_trc_db *db);
 
-extern const trc_test *trc_db_walker_get_test(
+extern trc_test *trc_db_walker_get_test(const te_trc_db_walker *walker);
+extern trc_test_iter *trc_db_walker_get_iter(
+                          const te_trc_db_walker *walker);
+
+extern trc_users_data *trc_db_walker_users_data(
                            const te_trc_db_walker *walker);
-extern const trc_test_iter *trc_db_walker_get_iter(
-                                const te_trc_db_walker *walker);
+
+
+extern void *trc_db_test_get_user_data(const trc_test *test,
+                                       unsigned int    user_id);
+
+extern void *trc_db_iter_get_user_data(const trc_test_iter *iter,
+                                       unsigned int         user_id);
 
 #ifdef __cplusplus
 } /* extern "C" */

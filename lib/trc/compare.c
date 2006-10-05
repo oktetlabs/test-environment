@@ -89,38 +89,6 @@ trc_is_result_expected(const trc_exp_result *expected,
 
 /* See the description in te_trc.h */
 te_bool
-trc_is_exp_result_equal(const trc_exp_result *lhv,
-                        const trc_exp_result *rhv)
-{
-    const trc_exp_result_entry *p;
-
-    assert(lhv != NULL);
-    assert(rhv != NULL);
-
-    if (lhv == rhv)
-        return TRUE;
-
-    for (p = lhv->results.tqh_first;
-         p != NULL;
-         p = p->links.tqe_next)
-    {
-        if (!trc_is_result_expected(rhv, &p->result))
-            return FALSE;
-    }
-
-    for (p = rhv->results.tqh_first;
-         p != NULL;
-         p = p->links.tqe_next)
-    {
-        if (!trc_is_result_expected(lhv, &p->result))
-            return FALSE;
-    }
-
-    return TRUE;
-}
-
-/* See the description in te_trc.h */
-te_bool
 trc_is_exp_result_skipped(const trc_exp_result *result)
 {
     const trc_exp_result_entry *p;
