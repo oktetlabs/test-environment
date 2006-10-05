@@ -230,8 +230,8 @@ rpc_transport_init()
 
     conn_mutex = CreateMutex(NULL, FALSE, NULL);
 
-    sprintf(port, PIPE_PREFIX "tarpc_%lu_%d", 
-            GetCurrentProcessId(), time(NULL));
+    sprintf(port, PIPE_PREFIX "tarpc_%lu_%u", 
+            GetCurrentProcessId(), (unsigned)time(NULL));
 
     if (setenv("TE_RPC_PORT", port, 1) < 0)
         return TE_RC(TE_RCF_PCH, TE_EWIN); 
@@ -769,8 +769,9 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
     SleepEx(5, TRUE); /* Let other thread send the response 
                          on server creation */
     
-    sprintf(pipename, PIPE_PREFIX "%s_%lu_%lu_%d", 
-            name, GetCurrentProcessId(), GetCurrentThreadId(), time(NULL));
+    sprintf(pipename, PIPE_PREFIX "%s_%lu_%lu_%u", 
+            name, GetCurrentProcessId(), GetCurrentThreadId(),
+            (unsigned)time(NULL));
 
     if ((rc = rpc_transport_send_pname(pipename)) != 0)
         return rc;
