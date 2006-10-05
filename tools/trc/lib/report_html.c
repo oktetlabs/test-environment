@@ -289,7 +289,7 @@ static const char * const trc_report_html_test_exp_got_start =
 "        <b>Expected</b>\n"
 "      </td>\n"
 "      <td>\n"
-"        <b>Got</b>\n"
+"        <b>Obtained</b>\n"
 "      </td>\n"
 "      <td>"
 "        <b>Key</b>\n"
