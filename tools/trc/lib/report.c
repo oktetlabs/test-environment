@@ -169,16 +169,22 @@ trc_report_collect_stats(trc_report_ctx *ctx)
                 {
                     trc_report_test_data *test_data;
 
-                    test_data = TE_ALLOC(sizeof(*test_data));
+                    test_data = trc_db_walker_get_user_data(walker,
+                                                            ctx->db_uid);
                     if (test_data == NULL)
                     {
-                        rc = TE_ENOMEM;
-                        break;
+                        test_data = TE_ALLOC(sizeof(*test_data));
+                        if (test_data == NULL)
+                        {
+                            rc = TE_ENOMEM;
+                            break;
+                        }
+                        rc = trc_db_walker_set_user_data(walker,
+                                                         ctx->db_uid,
+                                                         test_data);
+                        if (rc != 0)
+                            break;
                     }
-                    rc = trc_db_walker_set_user_data(walker, ctx->db_uid,
-                                                     test_data);
-                    if (rc != 0)
-                        break;
                     add = &test_data->stats;
                 }
                 break;
