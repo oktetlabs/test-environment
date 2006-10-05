@@ -949,8 +949,13 @@ flow_tree_attach_message(log_msg *msg)
     node_t **p_cur_node;
     node_t  *cur_node;
 
+    assert(msg->flags != 0);
+
     if (msg->id == TE_LOG_ID_UNDEFINED)
     {
+        /* There could be no verdicts until we start test or package */
+        assert((msg->flags & RGT_MSG_FLG_VERDICT) == 0);
+
         flow_tree_attach_from_node(root, msg);
         return;
     }
@@ -976,10 +981,11 @@ flow_tree_attach_message(log_msg *msg)
     }
     cur_node = *p_cur_node;
 
-    flow_tree_attach_from_node(cur_node, msg);
+    if (msg->flags & RGT_MSG_FLG_NORMAL)
+        flow_tree_attach_from_node(cur_node, msg);
 
     /* Check if we are processing Test Control message */
-    if (strcmp(msg->user, TE_LOG_CMSG_USER) == 0)
+    if (msg->flags & RGT_MSG_FLG_VERDICT)
     {
         /* Currently Control messages can be generated only for tests */
         assert(cur_node->type == NT_TEST);

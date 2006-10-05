@@ -68,11 +68,13 @@ extern void rgt_filter_destroy();
 /**
  * Validates if log message with a particular tuple (entity name, 
  * user name and timestamp) passes through user defined filter.
+ * The function updates message flags.
  *
  * @param level      Log level
  * @param entity     Entity name
  * @param user_name  User name
  * @param timestamp  Timestamp
+ * @param flags      Log message flags (OUT)
  *
  * @return  Returns filtering mode for the tuple.
  *          It never returns NFMODE_DEFAULT value.
@@ -84,7 +86,8 @@ extern enum node_fltr_mode rgt_filter_check_message(
                                 const char *entity,
                                 const char *user,
                                 te_log_level level,
-                                const uint32_t *timestamp);
+                                const uint32_t *timestamp,
+                                uint32_t *flags);
 
 /**
  * Verifies if the whole branch of execution flow should be excluded or 

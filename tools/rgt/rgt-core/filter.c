@@ -153,11 +153,13 @@ run_tcl_cmd(const char *cmd, const char *func_name)
 /**
  * Validates if log message with a particular tuple (level, entity name, 
  * user name and timestamp) passes through user defined filter.
+ * The function updates message flags.
  *
  * @param entity        Entity name
  * @param user          User name
  * @param level         Log level
  * @param timestamp     Timestamp
+ * @param flags         Log message flags (OUT)
  *
  * @return Returns filtering mode for the tuple.
  *         It never returns NFMODE_DEFAULT value.
@@ -168,14 +170,25 @@ run_tcl_cmd(const char *cmd, const char *func_name)
 enum node_fltr_mode
 rgt_filter_check_message(const char *entity, const char *user,
                          te_log_level level,
-                         const uint32_t *timestamp)
+                         const uint32_t *timestamp, uint32_t *flags)
 {
     char cmd[MAX_CMD_LEN];
+
+    if (strcmp(user, TE_LOG_CMSG_USER) == 0)
+        *flags |= RGT_MSG_FLG_VERDICT;
 
     snprintf(cmd, sizeof(cmd), "rgt_msg_filter {%s} {%s} %u %d",
              entity, user, level, *timestamp);
 
-    return run_tcl_cmd(cmd, "rgt_msg_filter");
+    if (run_tcl_cmd(cmd, "rgt_msg_filter") == NFMODE_INCLUDE)
+        *flags |= RGT_MSG_FLG_NORMAL;
+
+    /*
+     * Include ordinary log messages if they pass through the filter
+     * and any verdicts even if they do not pass through the filter.
+     */
+    return (*flags & (RGT_MSG_FLG_VERDICT | RGT_MSG_FLG_NORMAL)) ?
+                NFMODE_INCLUDE : NFMODE_EXCLUDE;
 }
 
 /**

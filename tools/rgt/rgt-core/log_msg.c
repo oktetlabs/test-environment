@@ -221,7 +221,8 @@ rgt_process_regular_message(log_msg *msg)
              * timestamp.
              */
             if (rgt_filter_check_message(msg->entity, msg->user,
-                        msg->level, msg->timestamp) == NFMODE_INCLUDE)
+                                         msg->level, msg->timestamp,
+                                         &msg->flags) == NFMODE_INCLUDE)
             {
                 reg_msg_proc(msg);
             }
@@ -234,7 +235,8 @@ rgt_process_regular_message(log_msg *msg)
          * timestamp. Then we can attach message to execution flow tree.
          */
         if (rgt_filter_check_message(msg->entity, msg->user,
-                    msg->level, msg->timestamp) == NFMODE_INCLUDE)
+                                     msg->level, msg->timestamp,
+                                     &msg->flags) == NFMODE_INCLUDE)
         {
             /* Don't expand message, but just attach it to the flow tree */
             flow_tree_attach_message(msg);

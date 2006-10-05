@@ -272,6 +272,9 @@ typedef struct msg_arg {
     int             len;  /**< Number of bytes allocated for the argument */
 } msg_arg;
 
+/** Message flag values */
+#define RGT_MSG_FLG_NORMAL   1 /**< An ordinary message */
+#define RGT_MSG_FLG_VERDICT  2 /**< A message is verdict */
 
 /** Structure that keeps log message in an universal format */
 typedef struct log_msg {
@@ -281,6 +284,7 @@ typedef struct log_msg {
     unsigned      id;           /**< ID of the log message, which currently
                                      defines which test is logged this 
                                      message */
+    uint32_t      flags;        /**< Message flags */
     char         *entity;       /**< Entity name of the message */
     char         *user;         /**< User name of the message */
     uint32_t      timestamp[2]; /**< Timestamp value */
