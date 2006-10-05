@@ -174,7 +174,7 @@ rgt_filter_check_message(const char *entity, const char *user,
 {
     char cmd[MAX_CMD_LEN];
 
-    if (strcmp(user, TE_LOG_CMSG_USER) == 0)
+    if (rgt_ctx.proc_cntrl_msg && strcmp(user, TE_LOG_CMSG_USER) == 0)
         *flags |= RGT_MSG_FLG_VERDICT;
 
     snprintf(cmd, sizeof(cmd), "rgt_msg_filter {%s} {%s} %u %d",
