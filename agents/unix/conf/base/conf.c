@@ -2121,22 +2121,24 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
 }
 
 #ifdef __linux__
-te_errno
+static te_errno
 mcast_link_addr_change(const char *ifname, const char *addr, int op)
 {
-    struct ifreq request;
-    int    s;
-    int    i = 0;
-    char  *p;
+    struct ifreq    request;
+    int             s;
+    int             i;
+    const char     *p;
 
     memset(&request, 0, sizeof(request));
     strncpy(request.ifr_name, ifname, IFNAMSIZ);
     /* Read MAC address */
-    for (i = 0, p = addr; i < 6 && p != NULL; i++)
+    for (i = 0, p = addr; i < ETHER_ADDR_LEN; i++)
     {
-        if (p == NULL ||
-            sscanf(p, "%02x", (char *)&request.ifr_hwaddr.sa_data[i]) < 1)
+        unsigned int tmp;
+
+        if (p == NULL || (sscanf(p, "%02x", &tmp) < 1) || tmp > 0xff)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        request.ifr_hwaddr.sa_data[i] = tmp;
         p = strchr(p, ':');
         /* Skip the semicolon */
         if (p != NULL)
