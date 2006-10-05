@@ -771,9 +771,11 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
                     trc_db_walker_get_exp_result(ctx->db_walker,
                                                  ctx->tags);
                 /* Update statistics */
-                trc_report_test_iter_stats_update(&ctx->iter_data->stats,
-                    ctx->iter_data->exp_result,
-                    &ctx->iter_data->runs.tqh_first->result);
+                ctx->iter_data->runs.tqh_first->is_exp = 
+                    trc_report_test_iter_stats_update(
+                        &ctx->iter_data->stats,
+                        ctx->iter_data->exp_result,
+                        &ctx->iter_data->runs.tqh_first->result);
                 /* Attach iteration data to TRC database */
                 ctx->rc = trc_db_walker_set_user_data(ctx->db_walker,
                                                       ctx->db_uid,
@@ -784,9 +786,10 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
             else
             {
                 /* Update statistics */
-                trc_report_test_iter_stats_update(&iter_data->stats,
-                    iter_data->exp_result,
-                    &ctx->iter_data->runs.tqh_first->result);
+                ctx->iter_data->runs.tqh_first->is_exp = 
+                    trc_report_test_iter_stats_update(
+                        &iter_data->stats, iter_data->exp_result,
+                        &ctx->iter_data->runs.tqh_first->result);
                 /* Merge a new entry */
                 trc_report_merge_test_iter_data(iter_data,
                                                 ctx->iter_data);
