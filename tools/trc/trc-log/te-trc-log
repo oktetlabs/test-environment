@@ -100,7 +100,6 @@ cat <<EOF >"$rgt_filter"
     <exclude entity=""/>
     <include entity="">
         <user name="TRC tags"/>
-        <user name="Control"/>
     </include>
   </entity-filter>
 </filters>
