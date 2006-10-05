@@ -1635,6 +1635,7 @@ main(int argc, char **argv)
 #ifdef __linux__
     unsigned int *env = (unsigned int *)&argv[argc + 1];
     unsigned int *av = env;
+
 /* Skip the environment */
     for (; *av != 0; av++);
 /* Look for SYSINFO block in the auxiliary vector */
