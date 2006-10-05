@@ -710,8 +710,7 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
             ctx->state = TRC_REPORT_LOG_PARSE_TEST;
 
             if (!trc_db_walker_step_iter(ctx->db_walker, ctx->args_n,
-                                         (const char **)ctx->args_name,
-                                         (const char **)ctx->args_value,
+                                         ctx->args_name, ctx->args_value,
                                          TRUE))
             {
                 ERROR("Unable to create a new iteration");
