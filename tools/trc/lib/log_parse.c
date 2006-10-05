@@ -91,6 +91,7 @@ typedef struct trc_report_log_parse_ctx {
     te_trc_db_walker   *db_walker;  /**< TRC database walker */
 
     trc_report_log_parse_state  state;  /**< Log parse state */
+    trc_test_type               type;   /**< Type of the test */
 
     unsigned int                skip_depth; /**< Skip depth */
     trc_report_log_parse_state  skip_state; /**< State to return */
@@ -251,7 +252,25 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
             }
             else
             {
-                INFO("Found test: %s", attrs[1]);
+                trc_test *test = trc_db_walker_get_test(ctx->db_walker);
+
+                if (test->type == TRC_TEST_UNKNOWN)
+                {
+                    test->type = ctx->type;
+                    INFO("A new test: %s", attrs[1]);
+                }
+                else if (test->type != ctx->type)
+                {
+                    ERROR("Inconsistency in test type from the log and "
+                          "TRC database");
+                    ctx->rc = TE_EINVAL;
+                }
+                else
+                {
+                    INFO("Found test: %s", attrs[1]);
+                }
+
+                /* It is harless to set it in the case of failure */
                 ctx->rc = trc_report_log_parse_stack_push(ctx, TRUE);
             }
         }
@@ -536,19 +555,28 @@ trc_report_log_start_element(void *user_data,
                     ctx->state = TRC_REPORT_LOG_PARSE_LOGS;
                 }
             }
-            else if (strcmp(tag, "test") == 0 ||
-                     strcmp(tag, "pkg") == 0 ||
-                     strcmp(tag, "session") == 0)
+            else if (strcmp(tag, "test") == 0)
             {
-                trc_report_test_entry(ctx, attrs);
-                /* FIXME: Set type for a new entries */
                 ctx->state = TRC_REPORT_LOG_PARSE_TEST;
+                ctx->type = TRC_TEST_SCRIPT;
+            }
+            else if (strcmp(tag, "pkg") == 0)
+            {
+                ctx->state = TRC_REPORT_LOG_PARSE_TEST;
+                ctx->type = TRC_TEST_PACKAGE;
+            }
+            else if (strcmp(tag, "session") == 0)
+            {
+                ctx->state = TRC_REPORT_LOG_PARSE_TEST;
+                ctx->type = TRC_TEST_SESSION;
             }
             else
             {
                 ERROR("Unexpected element '%s' in the root state", tag);
                 ctx->rc = TE_EFMT;
             }
+            if (ctx->state == TRC_REPORT_LOG_PARSE_TEST)
+                trc_report_test_entry(ctx, attrs);
             break;
 
         case TRC_REPORT_LOG_PARSE_TEST:
@@ -771,11 +799,12 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
                     trc_db_walker_get_exp_result(ctx->db_walker,
                                                  ctx->tags);
                 /* Update statistics */
-                ctx->iter_data->runs.tqh_first->is_exp = 
-                    trc_report_test_iter_stats_update(
-                        &ctx->iter_data->stats,
-                        ctx->iter_data->exp_result,
-                        &ctx->iter_data->runs.tqh_first->result);
+                if (ctx->type == TRC_TEST_SCRIPT)
+                    ctx->iter_data->runs.tqh_first->is_exp = 
+                        trc_report_test_iter_stats_update(
+                            &ctx->iter_data->stats,
+                            ctx->iter_data->exp_result,
+                            &ctx->iter_data->runs.tqh_first->result);
                 /* Attach iteration data to TRC database */
                 ctx->rc = trc_db_walker_set_user_data(ctx->db_walker,
                                                       ctx->db_uid,
@@ -786,10 +815,11 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
             else
             {
                 /* Update statistics */
-                ctx->iter_data->runs.tqh_first->is_exp = 
-                    trc_report_test_iter_stats_update(
-                        &iter_data->stats, iter_data->exp_result,
-                        &ctx->iter_data->runs.tqh_first->result);
+                if (ctx->type == TRC_TEST_SCRIPT)
+                    ctx->iter_data->runs.tqh_first->is_exp = 
+                        trc_report_test_iter_stats_update(
+                            &iter_data->stats, iter_data->exp_result,
+                            &ctx->iter_data->runs.tqh_first->result);
                 /* Merge a new entry */
                 trc_report_merge_test_iter_data(iter_data,
                                                 ctx->iter_data);
