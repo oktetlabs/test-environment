@@ -172,14 +172,6 @@ rgt_filter_check_message(const char *entity, const char *user,
 {
     char cmd[MAX_CMD_LEN];
 
-    /*
-     * All control messages should be included unconditionally.
-     * For instance it might be verdicts, or smth. and this is 
-     * a task of rgt-core to decide what to do with them.
-     */
-    if (strcmp(user, TE_LOG_CMSG_USER) == 0)
-        return NFMODE_INCLUDE;
-
     snprintf(cmd, sizeof(cmd), "rgt_msg_filter {%s} {%s} %u %d",
              entity, user, level, *timestamp);
 

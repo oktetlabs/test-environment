@@ -976,12 +976,10 @@ flow_tree_attach_message(log_msg *msg)
     }
     cur_node = *p_cur_node;
 
-    /* Check if we are processing ordinary or Test Control message */
-    if (strcmp(msg->user, TE_LOG_CMSG_USER) != 0)
-    {
-        flow_tree_attach_from_node(cur_node, msg);
-    }
-    else
+    flow_tree_attach_from_node(cur_node, msg);
+
+    /* Check if we are processing Test Control message */
+    if (strcmp(msg->user, TE_LOG_CMSG_USER) == 0)
     {
         /* Currently Control messages can be generated only for tests */
         assert(cur_node->type == NT_TEST);
