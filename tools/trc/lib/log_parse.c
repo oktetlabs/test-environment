@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "Log Parser"
+
 #include "te_config.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -96,14 +98,57 @@ typedef struct trc_report_log_parse_ctx {
     trc_report_test_iter_data  *iter_data;  /**< Current test iteration
                                                  data */
 
-    unsigned int        args_max;   /**< Maximum number of arguments
-                                         the space is allocated for */
-    unsigned int        args_n;     /**< Current number of arguments */
-    char              **args_name;   /**< Names of arguments */
-    char              **args_value;  /**< Values of arguments */
+    unsigned int    args_max;   /**< Maximum number of arguments
+                                     the space is allocated for */
+    unsigned int    args_n;     /**< Current number of arguments */
+    char          **args_name;  /**< Names of arguments */
+    char          **args_value; /**< Values of arguments */
+
+    unsigned int    stack_size; /**< Size of the stack in elements */
+    te_bool        *stack_info; /**< Stack */
+    unsigned int    stack_pos;  /**< Current position in the stack */
 
 } trc_report_log_parse_ctx;
 
+
+/**
+ * Push value into the stack.
+ * 
+ * @param ctx           TRC report log parser context
+ * @param value         Value to put on the stack
+ *
+ * @return Status code.
+ */
+static te_errno
+trc_report_log_parse_stack_push(trc_report_log_parse_ctx *ctx,
+                                te_bool value)
+{
+    if (ctx->stack_pos == ctx->stack_size)
+    {
+        ctx->stack_info = realloc(ctx->stack_info, ++(ctx->stack_size));
+        if (ctx->stack_info == NULL)
+        {
+            ERROR("%s(): realloc() failed", __FUNCTION__);
+            return TE_ENOMEM;
+        }
+    }
+    ctx->stack_info[ctx->stack_pos++] = value;
+    return 0;
+}
+
+/**
+ * Pop value from the stack.
+ * 
+ * @param ctx           TRC report log parser context
+ *
+ * @return Value from the stack.
+ */
+static te_bool
+trc_report_log_parse_stack_pop(trc_report_log_parse_ctx *ctx)
+{
+    assert(ctx->stack_pos > 0);
+    return ctx->stack_info[--(ctx->stack_pos)];
+}
 
 /**
  * Callback function that is called before parsing the document.
@@ -204,7 +249,11 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
                 ERROR("Unable to create a new test entry");
                 ctx->rc = TE_ENOMEM;
             }
-            INFO("Found test: %s", attrs[1]);
+            else
+            {
+                INFO("Found test: %s", attrs[1]);
+                ctx->rc = trc_report_log_parse_stack_push(ctx, TRUE);
+            }
         }
         else if (strcmp(attrs[0], "result") == 0)
         {
@@ -222,6 +271,7 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
     {
         INFO("Name of the test/package/session not found - ignore");
         assert(ctx->iter_data == NULL);
+        ctx->rc = trc_report_log_parse_stack_push(ctx, FALSE);
     }
     else if (!status_found)
     {
@@ -538,16 +588,7 @@ trc_report_log_start_element(void *user_data,
         case TRC_REPORT_LOG_PARSE_META:
             if (strcmp(tag, "objective") == 0)
             {
-                if (ctx->flags & TRC_REPORT_UPDATE_DB)
-                {
-                    ctx->state = TRC_REPORT_LOG_PARSE_OBJECTIVE;
-                }
-                else
-                {
-                    ctx->skip_state = ctx->state;
-                    ctx->skip_depth = 1;
-                    ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
-                }
+                ctx->state = TRC_REPORT_LOG_PARSE_OBJECTIVE;
             }
             else if (strcmp(tag, "verdicts") == 0)
             {
@@ -694,11 +735,13 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
                 ERROR("No meta data for the test entry!");
                 ctx->rc = TE_EFMT;
             }
-            /* Step iteration back */
-            trc_db_walker_step_back(ctx->db_walker);
-            /* Step test entry back */
-            trc_db_walker_step_back(ctx->db_walker);
-
+            if (trc_report_log_parse_stack_pop(ctx))
+            {
+                /* Step iteration back */
+                trc_db_walker_step_back(ctx->db_walker);
+                /* Step test entry back */
+                trc_db_walker_step_back(ctx->db_walker);
+            }
             ctx->state = TRC_REPORT_LOG_PARSE_ROOT;
             break;
 
@@ -717,6 +760,7 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
                 ctx->rc = TE_ENOMEM;
                 break;
             }
+
             ctx->args_n = 0;
             iter_data = trc_db_walker_get_user_data(ctx->db_walker,
                                                     ctx->db_uid);
@@ -803,7 +847,6 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
     char       *save = NULL;
 
     assert(ctx != NULL);
-    ENTRY("state=%u rc=%r len=%u", ctx->state, ctx->rc, len);
 
     if (ctx->rc != 0)
         return;
@@ -873,9 +916,9 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
         {
             trc_tags_str_to_list(ctx->tags, tags_str);
         }
-        else if (save != NULL && strcpy(save, *location) != 0)
+        else if (save != NULL && strcmp(save, *location) != 0)
         {
-            /* TODO: Set flag to update test objective in DB */
+            test->obj_update = TRUE;
         }
         free(save);
     }
@@ -979,6 +1022,8 @@ trc_report_process_log(trc_report_ctx *gctx, const char *log)
     {
         ERROR("Collect of TRC report statistics failed: %r", rc);
     }
+
+    free(ctx.stack_info);
 
     return rc;
 }
