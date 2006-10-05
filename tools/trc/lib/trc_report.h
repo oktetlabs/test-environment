@@ -68,10 +68,14 @@ typedef struct trc_report_stats {
 #define TRC_STATS_SPEC(s) \
     (TRC_STATS_RUN(s) + (s)->skip_exp + (s)->skip_une)
 
-/** Number of test iterations with unexpected results */
-#define TRC_STATS_UNEXP(s) \
+/** Number of test iterations with obtained unexpected results */
+#define TRC_STATS_RUN_UNEXP(s) \
     ((s)->pass_une + (s)->fail_une + (s)->skip_une + (s)->aborted + \
-     (s)->new_run + (s)->not_run + (s)->new_not_run)
+     (s)->new_run)
+
+/** Number of test iterations with unexpected results (including not run) */
+#define TRC_STATS_UNEXP(s) \
+    (TRC_STATS_RUN_UNEXP(s) + (s)->not_run + (s)->new_not_run)
 
 /** Number of test iterations which have not been run in fact */
 #define TRC_STATS_NOT_RUN(s) \
@@ -181,15 +185,6 @@ extern te_errno trc_report_to_html(trc_report_ctx *ctx,
                                    const char     *title,
                                    FILE           *header,
                                    unsigned int    flags);
-
-/**
- * Add one statistics to another.
- *
- * @param stats     Total statistics
- * @param add       Statistics to add
- */
-extern void trc_report_stats_add(trc_report_stats       *stats,
-                                 const trc_report_stats *add);
 
 
 /**
