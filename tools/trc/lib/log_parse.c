@@ -1038,7 +1038,7 @@ trc_report_process_log(trc_report_ctx *gctx, const char *log)
     ctx.flags = gctx->flags;
     ctx.db = gctx->db;
     ctx.db_uid = gctx->db_uid;
-    ctx.log = log;
+    ctx.log = (log != NULL) ? log : "-";
     ctx.tags = &gctx->tags;
 
     if (xmlSAXUserParseFile(&sax_handler, &ctx, ctx.log) != 0)
