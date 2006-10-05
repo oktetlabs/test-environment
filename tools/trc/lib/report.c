@@ -55,8 +55,14 @@ trc_report_init_ctx(trc_report_ctx *ctx)
     TAILQ_INIT(&ctx->tags);
 }
 
-/* See the description in trc_report.h */
-void
+
+/**
+ * Add one statistics to another.
+ *
+ * @param stats     Total statistics
+ * @param add       Statistics to add
+ */
+static void
 trc_report_stats_add(trc_report_stats *stats, const trc_report_stats *add)
 {
     assert(stats != NULL);
@@ -194,7 +200,20 @@ trc_report_collect_stats(trc_report_ctx *ctx)
                 add = sum;
                 if (is_iter)
                 {
-                    trc_report_test_data *test_data;
+                    trc_report_test_iter_data *iter_data;
+                    trc_report_test_data      *test_data;
+
+                    /* Get the iteration data */
+                    iter_data = trc_db_walker_get_user_data(walker,
+                                                            ctx->db_uid);
+                    assert(iter_data != NULL);
+                    if (iter_data->runs.tqh_first != NULL)
+                    {
+                        /* Set 'is_exp' flag using collected statistics */
+                        /* FIXME: What to do with more iteration? */
+                        iter_data->runs.tqh_first->is_exp =
+                            (TRC_STATS_RUN_UNEXP(&iter_data->stats) == 0);
+                    }
 
                     test_data = trc_db_test_get_user_data(
                                     trc_db_walker_get_test(walker),
