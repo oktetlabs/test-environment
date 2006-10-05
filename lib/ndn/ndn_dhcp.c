@@ -47,11 +47,23 @@ static asn_named_entry_t _ndn_dhcpv4_option_ne_array [] =
     { "options", &ndn_dhcpv4_options_s, {PRIVATE, NDN_DHCP_OPTIONS} },
 };
 
+static asn_named_entry_t _ndn_dhcpv4_end_pad_option_ne_array [] = 
+{
+    { "type",    &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_TYPE} },
+};
+
 static asn_type ndn_dhcpv4_option_s = 
 {
     "DHCPv4-Option", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE, 
     sizeof(_ndn_dhcpv4_option_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_dhcpv4_option_ne_array}
+};
+
+static asn_type ndn_dhcpv4_end_pad_option_s = 
+{
+    "DHCPv4-Option", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE, 
+    sizeof(_ndn_dhcpv4_end_pad_option_ne_array)/sizeof(asn_named_entry_t),
+    {_ndn_dhcpv4_end_pad_option_ne_array}
 };
 
 static asn_type ndn_dhcpv4_options_s =
@@ -62,6 +74,7 @@ static asn_type ndn_dhcpv4_options_s =
 
 
 asn_type *ndn_dhcpv4_option  = &ndn_dhcpv4_option_s;
+asn_type *ndn_dhcpv4_end_pad_option  = &ndn_dhcpv4_end_pad_option_s;
 asn_type * ndn_dhcpv4_options = &ndn_dhcpv4_options_s;
 
 

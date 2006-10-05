@@ -239,11 +239,12 @@ ndn_dhcpv4_option_to_plain(const asn_value *dhcp_opt,
 {
     int rc = 0;
     uint8_t len_buf;
-    size_t len;
+    size_t len = sizeof(len_buf);
+    uint8_t opt_type;
+    size_t opt_type_len = sizeof(opt_type);
     int i;
     int n_subopts;
 
-    len = sizeof(len_buf);
     rc = asn_read_value_field(dhcp_opt, &len_buf, &len, "length.#plain");
     if (rc == 0)
     {
@@ -399,33 +400,42 @@ ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
 static int
 ndn_dhcpv4_add_opts(asn_value *container, struct dhcp_option *opt)
 {
-    asn_value  *dhcp_opt, *opts;
-
-    opts = asn_init_value(ndn_dhcpv4_options);
-    dhcp_opt = asn_init_value(ndn_dhcpv4_option);
-
     if (opt != NULL)
+    {
+        asn_value *opts = asn_init_value(ndn_dhcpv4_options);
+
         CHECK_RC(asn_write_component_value(container, opts, "options"));
 
-    for (; opt != NULL; opt = opt->next)
-    {
-        CHECK_RC(asn_write_int32(dhcp_opt, opt->type, "type.#plain"));
-        CHECK_RC(asn_write_int32(dhcp_opt, opt->len, "length.#plain"));
-        CHECK_RC(asn_write_value_field(dhcp_opt,
-                                       opt->val, opt->val_len,
-                                       "value.#plain"));
+        for (; opt != NULL; opt = opt->next)
+        {
+            asn_value *dhcp_opt =
+                asn_init_value((opt->type == 255 || opt->type == 0) ?
+                               ndn_dhcpv4_end_pad_option :
+                               ndn_dhcpv4_option);
 
-        CHECK_RC(ndn_dhcpv4_add_opts(dhcp_opt, opt->subopts));
+            CHECK_RC(asn_write_int32(dhcp_opt, opt->type, "type.#plain"));
 
-        CHECK_RC(asn_insert_indexed(container, 
-                                    asn_copy_value(dhcp_opt), -1,
-                                    "options"));
+            /* Options 255 and 0 don't have length and value parts */
+            if (opt->type != 255 && opt->type != 0)
+            {
+                CHECK_RC(asn_write_int32(dhcp_opt, opt->len,
+                                         "length.#plain"));
+                CHECK_RC(asn_write_value_field(dhcp_opt, opt->val,
+                                               opt->val_len,
+                                               "value.#plain"));
+            }
+
+            CHECK_RC(ndn_dhcpv4_add_opts(dhcp_opt, opt->subopts));
+            CHECK_RC(asn_insert_indexed(container, 
+                                        asn_copy_value(dhcp_opt), -1,
+                                        "options"));
         
-        if (opt->subopts)
-            CHECK_RC(asn_free_subvalue(dhcp_opt, "options"));
-    }
+            if (opt->subopts)
+                CHECK_RC(asn_free_subvalue(dhcp_opt, "options"));
 
-    asn_free_value(dhcp_opt);
+            asn_free_value(dhcp_opt);
+        }
+    }
 
     return 0;
 }

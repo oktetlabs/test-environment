@@ -63,6 +63,7 @@ typedef enum {
 extern asn_type *ndn_dhcpv4_message;
 extern asn_type *ndn_dhcpv4_options;
 extern asn_type *ndn_dhcpv4_option;
+extern asn_type *ndn_dhcpv4_end_pad_option;
 extern asn_type *ndn_dhcpv4_csap;
 
 typedef enum dhcp_csap_mode {

@@ -94,39 +94,62 @@ tad_dhcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
     return 0;
 }
 
-
 /**
  * Calculate amount of data necessary for all options in DHCP message.
  *
  * @param options       asn_value with sequence of DHCPv4-Option
+ * @param len           calculated number of octets is written here
  *
- * @return number of octets or -1 if error occured.
+ * @return 0 if success or error code if failed.
  */
-int
-dhcp_calculate_options_data(asn_value *options)
+static te_errno
+dhcp_calculate_options_data(asn_value *options, size_t *len)
 {
     asn_value *sub_opts;
     int n_opts = asn_get_length(options, "");
     int i;
-    int data_len = 0;
+    size_t data_len = 0;
     char label_buf [10];
 
     for (i = 0; i < n_opts; i++)
-    { 
-        data_len += 2;  /* octets for type and len */
-        snprintf (label_buf, sizeof(label_buf), "%d.options", i);
-        if (asn_read_component_value(options, &sub_opts, label_buf) == 0)
+    {
+        uint8_t    opt_type;
+        size_t     len = sizeof(opt_type);
+        asn_value *opt = asn_read_indexed(options, i, "");
+        te_errno   rc = asn_read_value_field(opt, &opt_type, &len,
+                                             "type.#plain");
+
+        if (rc != 0)
+            return rc;
+
+        /* Options 255 and 0 don't have 'length' and 'value' parts       */
+        if(opt_type != 255 && opt_type != 0)
         {
-            data_len += dhcp_calculate_options_data(sub_opts);
-            asn_free_value(sub_opts);
+            data_len += 2;             /* octets for 'type' and 'length' */
+
+            snprintf (label_buf, sizeof(label_buf), "%d.options", i);
+            if (asn_read_component_value(options, &sub_opts, label_buf) == 0)
+            {
+                rc = dhcp_calculate_options_data(sub_opts, &len);
+                asn_free_value(sub_opts);
+
+                if (rc != 0)
+                    return rc;
+
+                data_len += len;
+            }
+            else
+            {
+                snprintf (label_buf, sizeof(label_buf), "%d.value", i);
+                data_len += asn_get_length(options, label_buf);
+            }
         }
         else
-        {
-            snprintf (label_buf, sizeof(label_buf), "%d.value", i);
-            data_len += asn_get_length(options, label_buf);
-        }
+            data_len += 1; /* octets for 'type' only (255 and 0 options) */
     } 
-    return data_len;
+
+    *len = data_len;
+    return 0;
 }
 
 static int
@@ -205,9 +228,18 @@ tad_dhcp_gen_bin_cb(csap_p csap, unsigned int layer,
     msg_len = 236;
 
 #if OPTIONS_IMPL
-    rc = asn_read_component_value(tmpl_pdu, &options, "options"); 
-    msg_len += (rc != 0) ? 0 :
-        (sizeof(magic_dhcp) + dhcp_calculate_options_data(options));
+    if (asn_read_component_value(tmpl_pdu, &options, "options") == 0)
+    {
+        size_t len;
+
+        if ((rc = dhcp_calculate_options_data(options, &len)) != 0)
+        {
+            asn_free_value(options);
+            return rc;
+        }
+
+        msg_len += sizeof(magic_dhcp) + len;
+    }
 #endif
 
     msg = calloc(1, msg_len);
@@ -271,6 +303,7 @@ tad_dhcp_gen_bin_cb(csap_p csap, unsigned int layer,
     PUT_DHCP_LONG_FIELD("sname",  0,  64);
     PUT_DHCP_LONG_FIELD("file",   0, 128); 
 
+#if OPTIONS_IMPL
     if (options != NULL)
     {
         memcpy(p, magic_dhcp, sizeof(magic_dhcp));
@@ -278,10 +311,12 @@ tad_dhcp_gen_bin_cb(csap_p csap, unsigned int layer,
 
         if ((rc = fill_dhcp_options(p, options)) != 0)
         {
+            asn_free_value(options);
             free(msg);
             return rc;
         }
     }
+#endif
 
     /* DHCP message is ready */
 
@@ -293,6 +328,10 @@ tad_dhcp_gen_bin_cb(csap_p csap, unsigned int layer,
         free(msg);
         return rc;
     }
+
+#if OPTIONS_IMPL
+    asn_free_value(options);
+#endif
 
     return 0;
 }
