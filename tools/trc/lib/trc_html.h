@@ -1,5 +1,5 @@
 /** @file
- * @brief Testing Results Comparator: diff tool
+ * @brief Testing Results Comparator
  *
  * Helper functions to prepare HTML reports.
  *
