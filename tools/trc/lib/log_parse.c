@@ -353,7 +353,7 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
     {
         if (strcmp(attrs[0], "name") == 0)
         {
-            /* FIXME assert(ctx->args_name[ctx->args_n] == NULL);*/
+            free(ctx->args_name[ctx->args_n]);
             ctx->args_name[ctx->args_n] = strdup(attrs[1]);
             if (ctx->args_name[ctx->args_n] == NULL)
             {
@@ -364,7 +364,7 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         }
         else if (strcmp(attrs[0], "value") == 0)
         {
-            /* FIXME assert(ctx->args_value[ctx->args_n] == NULL); */
+            free(ctx->args_value[ctx->args_n]);
             ctx->args_value[ctx->args_n] = strdup(attrs[1]);
             if (ctx->args_value[ctx->args_n] == NULL)
             {
@@ -948,12 +948,14 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
         if (ctx->state == TRC_REPORT_LOG_PARSE_TAGS)
         {
             trc_tags_str_to_list(ctx->tags, tags_str);
+            free(tags_str);
         }
-        else if (save != NULL && strcmp(save, *location) != 0)
+        else if (save != NULL)
         {
-            test->obj_update = TRUE;
+            if (strcmp(save, *location) != 0)
+                test->obj_update = TRUE;
+            free(save);
         }
-        free(save);
     }
 }
 
@@ -1057,6 +1059,13 @@ trc_report_process_log(trc_report_ctx *gctx, const char *log)
     }
 
     free(ctx.stack_info);
+    for (ctx.args_n = 0; ctx.args_n < ctx.args_max; ctx.args_n++)
+    {
+        free(ctx.args_name[ctx.args_n]);
+        free(ctx.args_value[ctx.args_n]);
+    }
+    free(ctx.args_name);
+    free(ctx.args_value);
 
     return rc;
 }
