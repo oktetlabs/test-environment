@@ -97,6 +97,13 @@ extern te_errno te_string_append(te_string *str, const char *fmt, ...);
  */
 extern void te_string_cut(te_string *str, size_t len); 
 
+/**
+ * Free dynamic string.
+ *
+ * @param str           Dynamic string
+ */
+extern void te_string_free(te_string *str);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

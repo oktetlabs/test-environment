@@ -92,6 +92,13 @@ trc_tags_str_to_list(tqh_strings *tags, char *tags_str)
 }
 
 
+void
+te_string_free(te_string *str)
+{
+    str->len = str->size = 0;
+    free(str->ptr);
+    str->ptr = NULL;
+}
 
 te_errno
 te_string_append(te_string *str, const char *fmt, ...)

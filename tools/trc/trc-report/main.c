@@ -84,8 +84,8 @@ enum {
 typedef struct trc_report_html {
     TAILQ_ENTRY(trc_report_html)    links;  /**< List links */
 
-    const char     *filename;   /**< Name of the file for report */
-    const char     *title;      /**< Report title */
+    char           *filename;   /**< Name of the file for report */
+    char           *title;      /**< Report title */
     unsigned int    flags;      /**< Report options */
     FILE           *header;     /**< File with header */
 } trc_report_html;
@@ -97,11 +97,11 @@ static te_bool init_db = FALSE;
 static te_bool quiet = FALSE;
 
 /** Name of the file with expected testing result database */
-static const char *db_fn = NULL;
+static char *db_fn = NULL;
 /** Name of the file with XML log to be analyzed */
 static const char *xml_log_fn = NULL;
 /** Name of the file with report in TXT format */
-static const char *txt_fn = NULL;
+static char *txt_fn = NULL;
 
 /** List of HTML reports to generate */
 static TAILQ_HEAD(trc_report_htmls, trc_report_html) reports;
@@ -223,7 +223,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 break;
 
             case TRC_OPT_DB:
-                db_fn = poptGetOptArg(optCon);
+                db_fn = (char *)poptGetOptArg(optCon);
                 break;
             
             case TRC_OPT_TAG:
@@ -235,10 +235,10 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                     goto exit;
                 }
                 TAILQ_INSERT_TAIL(&ctx.tags, p, links);
-                p->v = strdup(poptGetOptArg(optCon));
+                p->v = (char *)poptGetOptArg(optCon);
                 if (p->v == NULL)
                 {
-                    ERROR("strdup(%s) failed", poptGetOptArg(optCon));
+                    ERROR("Empty option value of --tag option");
                     goto exit;
                 }
                 break;
@@ -249,7 +249,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 break;
 
             case TRC_OPT_TXT:
-                txt_fn = poptGetOptArg(optCon);
+                txt_fn = (char *)poptGetOptArg(optCon);
                 break;
 
             case TRC_OPT_HTML:
@@ -260,7 +260,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                     goto exit;
                 }
                 TAILQ_INSERT_TAIL(&reports, report, links);
-                report->filename = poptGetOptArg(optCon);
+                report->filename = (char *)poptGetOptArg(optCon);
                 report->flags = 0;
                 break;
             }
@@ -278,7 +278,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                           "been specified", report->filename);
                     goto exit;
                 }
-                report->title = poptGetOptArg(optCon);
+                report->title = (char *)poptGetOptArg(optCon);
                 break;
 
             case TRC_OPT_HTML_HEADER:
@@ -295,14 +295,17 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 {
                     ERROR("File with HTML header has already been "
                           "specified");
+                    free((void *)trc_html_header_fn);
                     goto exit;
                 }
                 report->header = fopen(trc_html_header_fn, "r");
                 if (report->header == NULL)
                 {
                     ERROR("Failed to open file '%s'", trc_html_header_fn);
+                    free((void *)trc_html_header_fn);
                     goto exit;
                 }
+                free((void *)trc_html_header_fn);
                 break;
             }
 
@@ -481,6 +484,7 @@ main(int argc, char *argv[])
             ERROR("Failed to open file '%s' for writing", txt_fn);
             /* Continue */
         }
+        (void)fclose(f);
     }
 
     /* Generate reports in HTML format */
@@ -508,10 +512,13 @@ main(int argc, char *argv[])
 
 exit:
 
-    trc_db_free_user_data(ctx.db, ctx.db_uid, free,
-         (void (*)(void *))trc_report_free_test_iter_data);
-    trc_db_free_user(ctx.db, ctx.db_uid);
-    trc_db_close(ctx.db);
+    if (ctx.db != NULL)
+    {
+        trc_db_free_user_data(ctx.db, ctx.db_uid, free,
+             (void (*)(void *))trc_report_free_test_iter_data);
+        trc_db_free_user(ctx.db, ctx.db_uid);
+        trc_db_close(ctx.db);
+    }
     tq_strings_free(&ctx.tags, free);
 
     while ((report = reports.tqh_first) != NULL)
@@ -519,7 +526,13 @@ exit:
         TAILQ_REMOVE(&reports, report, links);
         if (report->header != NULL)
             (void)fclose(report->header);
+        free(report->filename);
+        free(report->title);
+        free(report);
     }
+
+    free(db_fn);
+    free(txt_fn);
     
     xmlCleanupParser();
     logic_expr_int_lex_destroy();

@@ -736,6 +736,8 @@ trc_report_html_table(FILE *f, trc_report_ctx *ctx,
 
 cleanup:
     trc_db_free_walker(walker);
+    te_string_free(&test_path);
+    te_string_free(&level_str);
     return rc;
 }
 
