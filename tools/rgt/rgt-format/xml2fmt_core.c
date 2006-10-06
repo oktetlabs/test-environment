@@ -265,6 +265,13 @@ rgt_log_end_element(void *user_data, const xmlChar *tag)
             ctx->state = RGT_XML2HTML_STATE_META;
             break;
 
+        case RGT_XML2HTML_STATE_PAGE:
+            assert(strcmp(tag, "page") == 0);
+            assert(ctx->depth >= 1);
+            /* TODO */
+            ctx->state = RGT_XML2HTML_STATE_META;
+            break;
+
         case RGT_XML2HTML_STATE_AUTHORS:
             assert(strcmp(tag, "authors") == 0);
             assert(ctx->depth >= 1);
@@ -398,6 +405,11 @@ rgt_log_start_element(void *user_data,
                                           RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_OBJECTIVE;
             }
+            else if (strcmp(tag, "page") == 0)
+            {
+                /* TODO */
+                ctx->state = RGT_XML2HTML_STATE_PAGE;
+            }
             else if (strcmp(tag, "authors") == 0)
             {
                 proc_meta_authors_start(ctx, depth_ctx,
@@ -520,6 +532,7 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
         case RGT_XML2HTML_STATE_END_TS:
         case RGT_XML2HTML_STATE_DURATION:
         case RGT_XML2HTML_STATE_OBJECTIVE:
+        case RGT_XML2HTML_STATE_PAGE:
         case RGT_XML2HTML_STATE_VERDICT:
         case RGT_XML2HTML_STATE_LOG_MSG:
         case RGT_XML2HTML_STATE_MEM_DUMP_ELEM:

@@ -361,6 +361,12 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
         fwrite_string(NULL, node->descr.objective);
         fputs("</objective>\n", rgt_ctx.out_fd);
     }
+    if (node->descr.page != NULL)
+    {
+        fputs("<page>", rgt_ctx.out_fd);
+        fwrite_string(NULL, node->descr.page);
+        fputs("</page>\n", rgt_ctx.out_fd);
+    }
     if (node->descr.authors)
     {
         char *author = node->descr.authors;
