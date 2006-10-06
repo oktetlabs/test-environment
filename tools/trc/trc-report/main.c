@@ -123,6 +123,7 @@ static trc_report_ctx ctx;
 static int
 trc_report_process_cmd_line_opts(int argc, char **argv)
 {
+    int                 result = EXIT_FAILURE;
     poptContext         optCon;
     int                 opt;
     trc_report_html    *report = NULL;
@@ -231,16 +232,14 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
 
                 if (p == NULL)
                 {
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    goto exit;
                 }
                 TAILQ_INSERT_TAIL(&ctx.tags, p, links);
                 p->v = strdup(poptGetOptArg(optCon));
                 if (p->v == NULL)
                 {
                     ERROR("strdup(%s) failed", poptGetOptArg(optCon));
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    goto exit;
                 }
                 break;
             }
@@ -258,8 +257,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 report = TE_ALLOC(sizeof(*report));
                 if (report == NULL)
                 {
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    goto exit;
                 }
                 TAILQ_INSERT_TAIL(&reports, report, links);
                 report->filename = poptGetOptArg(optCon);
@@ -272,15 +270,13 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 {
                     ERROR("HTML report title should be specified after "
                           "the file name for report");
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    goto exit;
                 }
                 if (report->title != NULL)
                 {
                     ERROR("Title of the HTML report '%s' has already "
                           "been specified", report->filename);
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    goto exit;
                 }
                 report->title = poptGetOptArg(optCon);
                 break;
@@ -293,22 +289,19 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 {
                     ERROR("HTML report header should be specified after "
                           "the file name for report");
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    goto exit;
                 }
                 if (report->header != NULL)
                 {
                     ERROR("File with HTML header has already been "
                           "specified");
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    goto exit;
                 }
                 report->header = fopen(trc_html_header_fn, "r");
                 if (report->header == NULL)
                 {
                     ERROR("Failed to open file '%s'", trc_html_header_fn);
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
+                    goto exit;
                 }
                 break;
             }
@@ -319,8 +312,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 {                                                       \
                     ERROR("HTML report modifiers should be specified "  \
                           "after the file name for report");            \
-                    poptFreeContext(optCon);                            \
-                    return EXIT_FAILURE;                                \
+                    goto exit;                                          \
                 }                                                       \
                 report->flags |= TRC_REPORT_##flag_;                    \
                 break;
@@ -340,13 +332,11 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             case TRC_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,
                        TE_COPYRIGHT);
-                poptFreeContext(optCon);
-                return EXIT_FAILURE;
+                goto exit;
 
             default:
                 ERROR("Unexpected option number %d", opt);
-                poptFreeContext(optCon);
-                return EXIT_FAILURE;
+                goto exit;
         }
     }
 
@@ -355,8 +345,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         /* An error occurred during option processing */
         ERROR("%s: %s", poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
               poptStrerror(opt));
-        poptFreeContext(optCon);
-        return EXIT_FAILURE;
+        goto exit;
     }
 
     /* Get name of the file with log */
@@ -369,13 +358,14 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
     if (poptGetArg(optCon) != NULL)
     {
         ERROR("Unexpected arguments in command line");
-        poptFreeContext(optCon);
-        return EXIT_FAILURE;
+        goto exit;
     }
 
-    poptFreeContext(optCon);
+    result = EXIT_SUCCESS;
 
-    return EXIT_SUCCESS;
+exit:
+    poptFreeContext(optCon);
+    return result;
 }
 
 /**
@@ -518,6 +508,8 @@ main(int argc, char *argv[])
 
 exit:
 
+    trc_db_free_user_data(ctx.db, ctx.db_uid, free,
+         (void (*)(void *))trc_report_free_test_iter_data);
     trc_db_free_user(ctx.db, ctx.db_uid);
     trc_db_close(ctx.db);
     tq_strings_free(&ctx.tags, free);
@@ -528,6 +520,9 @@ exit:
         if (report->header != NULL)
             (void)fclose(report->header);
     }
+    
+    xmlCleanupParser();
+    logic_expr_int_lex_destroy();
 
     return result;
 }
