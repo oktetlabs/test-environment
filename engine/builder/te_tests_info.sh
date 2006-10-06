@@ -2,10 +2,9 @@
 #
 # Test Environment Builder
 #
-# Script for extracting of the test objective from .c file.
+# Script for extracting of the test objective from .c files.
 #
-# Usage: te_tests_info.sh <c file> <output file>
-#
+# Usage: te_tests_info.sh <directory> 
 #
 # Copyright (C) 2005 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
@@ -35,7 +34,7 @@ echo -en \
 "<?xml version=\"1.0\"?>\\n"\
 "<tests-info>\\n"
 
-for i in `find $1 -maxdepth 1 -name *.c` ; do
+for i in `find $1 -maxdepth 1 -name \*.c` ; do
     OBJECTIVE=`awk --posix '
     BEGIN { put = 0; }                               \
     {                                                \
@@ -58,10 +57,11 @@ for i in `find $1 -maxdepth 1 -name *.c` ; do
     OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@c //g"`
     OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@e //g"`
     OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@p //g"`
+    PAGE=`awk --posix ' /@page/ { printf(" page=\"%s\"", $3); }' $i`
     if test -n "${OBJECTIVE}" ; then
         TEST_NAME=`basename $i`
         TEST_NAME=${TEST_NAME/.c/}
-        echo "  <test name=\"${TEST_NAME}\">"
+        echo "  <test name=\"${TEST_NAME}\"$PAGE>"
         echo "    <objective>${OBJECTIVE}</objective>"
         echo "  </test>"
     fi
