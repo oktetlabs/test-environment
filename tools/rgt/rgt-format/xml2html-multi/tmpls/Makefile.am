@@ -60,6 +60,8 @@ dist_pkgdata_DATA = \
     meta_verdict_end.tmpl\
     meta_params_start.tmpl\
     meta_params_end.tmpl\
+    meta_page_start.tmpl\
+    meta_page_end.tmpl\
     mem_dump_start.tmpl\
     mem_dump_end.tmpl\
     mem_row_start.tmpl\

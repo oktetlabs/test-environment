@@ -268,7 +268,7 @@ rgt_log_end_element(void *user_data, const xmlChar *tag)
         case RGT_XML2HTML_STATE_PAGE:
             assert(strcmp(tag, "page") == 0);
             assert(ctx->depth >= 1);
-            /* TODO */
+            proc_meta_page_end(ctx, depth_ctx, NULL);
             ctx->state = RGT_XML2HTML_STATE_META;
             break;
 
@@ -407,7 +407,8 @@ rgt_log_start_element(void *user_data,
             }
             else if (strcmp(tag, "page") == 0)
             {
-                /* TODO */
+                proc_meta_page_start(ctx, depth_ctx,
+                                     RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_PAGE;
             }
             else if (strcmp(tag, "authors") == 0)

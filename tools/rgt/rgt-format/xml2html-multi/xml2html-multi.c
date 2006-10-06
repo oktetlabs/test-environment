@@ -84,6 +84,11 @@ typedef struct log_msg_name {
  */
 const char *shared_url = NULL;
 
+/*
+ * Base URL for doxygen-generated documentation for tests
+ */
+const char *docs_url = NULL;
+
 /* Forward declaration */
 static depth_ctx_user_t *alloc_depth_user_data(uint32_t depth);
 static void free_depth_user_data();
@@ -102,21 +107,33 @@ static te_log_level te_log_level_str2h(const char *ll);
 struct poptOption rgt_options_table[] = {
     { "shared-url", 'i', POPT_ARG_STRING, NULL, 'i',
       "URL of directory for shared files (images etc.)", NULL },
+    { "docs-url", 'd', POPT_ARG_STRING, NULL, 'd',
+      "URL of directory for test descriptions", NULL },
     POPT_TABLEEND
 };
 
 /* Process format-specific options */
 void rgt_process_cmdline(poptContext con, int val)
 {
+    size_t len;
+
     if (val == 'i')
     {
-        size_t len;
-
         shared_url = poptGetOptArg(con);
         len = strlen(shared_url);
         if (len > 0 && shared_url[len - 1] != '/')
         {
             fprintf(stderr, "Warning: URL for shared files is not "
+                    "a directory (or trailing '/' is missing)");
+        }
+    }
+    else if (val == 'd')
+    {
+        docs_url = poptGetOptArg(con);
+        len = strlen(docs_url);
+        if (len > 0 && docs_url[len - 1] != '/')
+        {
+            fprintf(stderr, "Warning: URL for test descriptions is not "
                     "a directory (or trailing '/' is missing)");
         }
     }
@@ -126,6 +143,7 @@ void rgt_process_cmdline(poptContext con, int val)
 void rgt_tmpls_attrs_add_globals(rgt_attrs_t *attrs)
 {
     rgt_tmpls_attrs_add_fstr(attrs, "shared_url", shared_url);
+    rgt_tmpls_attrs_add_fstr(attrs, "docs_url", docs_url);
 }
 
 RGT_DEF_FUNC(proc_document_start)
@@ -790,6 +808,21 @@ DEF_FUNC_WITHOUT_ATTRS(proc_meta_duration_start, META_DURATION_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_duration_end, META_DURATION_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_objective_start, META_OBJ_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_objective_end, META_OBJ_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_page_end, META_PAGE_END)
+
+RGT_DEF_FUNC(proc_meta_page_start)
+{
+    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
+    rgt_attrs_t      *attrs;
+
+    RGT_FUNC_UNUSED_PRMS();
+
+    attrs = rgt_tmpls_attrs_new(xml_attrs);
+    rgt_tmpls_attrs_add_globals(attrs);
+    rgt_tmpls_output(depth_user->fd,
+                     &xml2fmt_tmpls[META_PAGE_START], attrs);
+    rgt_tmpls_attrs_free(attrs);
+}
 
 RGT_DEF_FUNC(proc_meta_author_start)
 {

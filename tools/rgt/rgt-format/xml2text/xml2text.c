@@ -141,6 +141,8 @@ RGT_DEF_DUMMY_FUNC(proc_meta_verdicts_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_verdicts_end)
 RGT_DEF_DUMMY_FUNC(proc_meta_params_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_params_end)
+RGT_DEF_DUMMY_FUNC(proc_meta_page_start)
+RGT_DEF_DUMMY_FUNC(proc_meta_page_end)
 
 DEF_FUNC_WITHOUT_ATTRS(proc_mem_dump_start, MEM_DUMP_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_mem_dump_end, MEM_DUMP_END)

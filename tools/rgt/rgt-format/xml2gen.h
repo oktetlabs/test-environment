@@ -223,6 +223,8 @@ RGT_EXTERN_FUNC(proc_meta_verdicts_start);
 RGT_EXTERN_FUNC(proc_meta_verdicts_end);
 RGT_EXTERN_FUNC(proc_meta_verdict_start);
 RGT_EXTERN_FUNC(proc_meta_verdict_end);
+RGT_EXTERN_FUNC(proc_meta_page_start);
+RGT_EXTERN_FUNC(proc_meta_page_end);
 RGT_EXTERN_FUNC(proc_mem_dump_start);
 RGT_EXTERN_FUNC(proc_mem_dump_end);
 RGT_EXTERN_FUNC(proc_mem_row_start);

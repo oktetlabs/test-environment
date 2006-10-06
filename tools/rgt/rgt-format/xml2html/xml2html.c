@@ -156,6 +156,8 @@ RGT_DEF_DUMMY_FUNC(proc_meta_verdicts_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_verdicts_end)
 RGT_DEF_DUMMY_FUNC(proc_meta_params_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_params_end)
+RGT_DEF_DUMMY_FUNC(proc_meta_page_start)
+RGT_DEF_DUMMY_FUNC(proc_meta_page_end)
 
 #define DEF_FUNC_WITHOUT_ATTRS(name_, enum_const_) \
 RGT_DEF_FUNC(name_)                                          \
