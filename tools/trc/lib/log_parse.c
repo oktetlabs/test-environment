@@ -93,8 +93,8 @@ typedef struct trc_report_log_parse_ctx {
     trc_report_log_parse_state  state;  /**< Log parse state */
     trc_test_type               type;   /**< Type of the test */
 
-    te_bool more;   /**< More characters flag (used when single string
-                         is reported by few trc_report_log_characters()
+    char   *str;    /**< Accumulated string (used when single string is
+                         reported by few trc_report_log_characters()
                          calls because of entities in it) */
 
     unsigned int                skip_depth; /**< Skip depth */
@@ -621,7 +621,7 @@ trc_report_log_start_element(void *user_data,
             if (strcmp(tag, "objective") == 0)
             {
                 ctx->state = TRC_REPORT_LOG_PARSE_OBJECTIVE;
-                ctx->more = FALSE;
+                assert(ctx->str == NULL);
             }
             else if (strcmp(tag, "verdicts") == 0)
             {
@@ -643,7 +643,7 @@ trc_report_log_start_element(void *user_data,
             if (strcmp(tag, "verdict") == 0)
             {
                 ctx->state = TRC_REPORT_LOG_PARSE_VERDICT;
-                ctx->more = FALSE;
+                assert(ctx->str == NULL);
             }
             else
             {
@@ -698,7 +698,7 @@ trc_report_log_start_element(void *user_data,
                 if (entity_match && user_match)
                 {
                     ctx->state = TRC_REPORT_LOG_PARSE_TAGS;
-                    ctx->more = FALSE;
+                    assert(ctx->str == NULL);
                 }
                 else
                 {
@@ -837,6 +837,21 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
 
         case TRC_REPORT_LOG_PARSE_OBJECTIVE:
             assert(strcmp(tag, "objective") == 0);
+            if (ctx->str != NULL)
+            {
+                trc_test   *test = NULL;
+
+                test = trc_db_walker_get_test(ctx->db_walker);
+                assert(test != NULL);
+                if (test->objective == NULL ||
+                    strcmp(test->objective, ctx->str) != 0)
+                {
+                    test->obj_update = TRUE;
+                }
+                free(test->objective);
+                test->objective = ctx->str;
+                ctx->str = NULL;
+            }
             ctx->state = TRC_REPORT_LOG_PARSE_META;
             break;
 
@@ -852,11 +867,34 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
 
         case TRC_REPORT_LOG_PARSE_VERDICT:
             assert(strcmp(tag, "verdict") == 0);
+            if (ctx->str != NULL)
+            {
+                te_test_verdict *verdict;
+
+                verdict = TE_ALLOC(sizeof(*verdict));
+                if (verdict == NULL)
+                {
+                    ERROR("Memory allocation failure");
+                    free(ctx->str);
+                    ctx->str = NULL;
+                    ctx->rc = TE_ENOMEM;
+                    return;
+                }
+                verdict->str = ctx->str;
+                ctx->str = NULL;
+                assert(ctx->iter_data != NULL);
+                TAILQ_INSERT_TAIL(
+                    &ctx->iter_data->runs.tqh_first->result.verdicts,
+                    verdict, links);
+            }
             ctx->state = TRC_REPORT_LOG_PARSE_VERDICTS;
             break;
 
         case TRC_REPORT_LOG_PARSE_TAGS:
             assert(strcmp(tag, "msg") == 0);
+            trc_tags_str_to_list(ctx->tags, ctx->str);
+            free(ctx->str);
+            ctx->str = NULL;
             ctx->state = TRC_REPORT_LOG_PARSE_LOGS;
             break;
 
@@ -880,12 +918,7 @@ static void
 trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
 {
     trc_report_log_parse_ctx   *ctx = user_data;
-    char                      **location;
     size_t                      init_len;
-    char                       *tags_str = NULL;
-
-    trc_test   *test = NULL;
-    char       *save = NULL;
 
     assert(ctx != NULL);
 
@@ -902,44 +935,9 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
 
     switch (ctx->state)
     {
-        case TRC_REPORT_LOG_PARSE_OBJECTIVE:
-            test = trc_db_walker_get_test(ctx->db_walker);
-            assert(test != NULL);
-            save = test->objective;
-            test->objective = NULL;
-            location = &test->objective;
-            break;
-
         case TRC_REPORT_LOG_PARSE_VERDICT:
-        {
-            te_test_verdict *verdict;
-
-            if (ctx->more)
-            {
-                verdict =
-                    *(((te_test_verdicts *)(ctx->iter_data->runs.
-                        tqh_first->result.verdicts.tqh_last))->tqh_last);
-            }
-            else
-            {
-                verdict = TE_ALLOC(sizeof(*verdict));
-                if (verdict == NULL)
-                {
-                    ERROR("Memory allocation failure");
-                    ctx->rc = TE_ENOMEM;
-                    return;
-                }
-                assert(ctx->iter_data != NULL);
-                TAILQ_INSERT_TAIL(
-                    &ctx->iter_data->runs.tqh_first->result.verdicts,
-                    verdict, links);
-            }
-            location = &verdict->str;
-            break;
-        }
-
+        case TRC_REPORT_LOG_PARSE_OBJECTIVE:
         case TRC_REPORT_LOG_PARSE_TAGS:
-            location = &tags_str;
             break;
 
         default:
@@ -947,40 +945,18 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
             return;
     }
 
-    /* More is not supported for tags and objective */
-    assert(!ctx->more || ctx->state == TRC_REPORT_LOG_PARSE_VERDICT);
-
-    assert((*location == NULL) == (!ctx->more));
-    init_len = (ctx->more) ? strlen(*location) : 0;
-    *location = realloc(*location, init_len + len + 1);
-    if (*location == NULL)
+    init_len = (ctx->str != NULL) ? strlen(ctx->str) : 0;
+    ctx->str = realloc(ctx->str, init_len + len + 1);
+    if (ctx->str == NULL)
     {
         ERROR("Memory allocation failure");
         ctx->rc = TE_ENOMEM;
-        if (save != NULL)
-        {
-            assert(test != NULL);
-            test->objective = save;
-        }
     }
     else
     {
-        memcpy(*location + init_len, ch, len);
-        (*location)[init_len + len] = '\0';
-        if (ctx->state == TRC_REPORT_LOG_PARSE_TAGS)
-        {
-            trc_tags_str_to_list(ctx->tags, tags_str);
-            free(tags_str);
-        }
-        else if (save != NULL)
-        {
-            if (strcmp(save, *location) != 0)
-                test->obj_update = TRUE;
-            free(save);
-        }
+        memcpy(ctx->str + init_len, ch, len);
+        ctx->str[init_len + len] = '\0';
     }
-
-    ctx->more = TRUE;
 }
 
 /**
