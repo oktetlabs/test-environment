@@ -435,6 +435,37 @@ create_node_by_msg(log_msg *msg, node_type_t type,
         SKIP_SPACES(fmt_str);
     }
 
+    if (strncmp(fmt_str, "PAGE", strlen("PAGE")) == 0)
+    {
+        /* Process "page" clause */
+        fmt_str += strlen("PAGE");
+
+        SKIP_SPACES(fmt_str);
+
+        if (strncmp(fmt_str, "%s", strlen("%s")) != 0)
+        {
+            FMT_TRACE("Missing \"%%s\" after PAGE clause in "
+                      "control message %s (%d %d)",
+                      msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
+
+        if ((arg = get_next_arg(msg)) == NULL)
+        {
+            FMT_TRACE("Missing \"page\" argument in control message "
+                      "%s (%d %d)", msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
+        node->descr.page =
+            (char *)node_info_obstack_copy0(arg->val, arg->len);
+
+        SKIP_SPACES(node->descr.page);
+
+        fmt_str += strlen("%s");
+
+        SKIP_SPACES(fmt_str);
+    }
+
     if (strncmp(fmt_str, "AUTHORS", strlen("AUTHORS")) == 0)
     {
         /* Process "authors" clause */

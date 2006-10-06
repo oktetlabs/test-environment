@@ -52,12 +52,15 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if HAVE_STRINGS_H
 #include <strings.h>
+#endif
 
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 #include <libxml/xinclude.h>
 
+#include "te_alloc.h"
 #include "tester_conf.h"
 #include "type_lib.h"
 
@@ -109,11 +112,10 @@ static void run_items_free(run_items *runs);
 tester_cfg *
 tester_cfg_new(const char *filename)
 {
-    tester_cfg *p = calloc(1, sizeof(*p));
+    tester_cfg *p = TE_ALLOC(sizeof(*p));
 
     if (p == NULL)
     {
-        ERROR("malloc(%u) failed", sizeof(*p));
         return NULL;
     }
     p->filename = filename;
@@ -393,12 +395,10 @@ alloc_and_get_tqe_string(xmlNodePtr node, tqh_strings *strs)
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
-    p = calloc(1, sizeof(*p));
+    p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
+
     p->v = XML2CHAR_DUP(node->content);
 
     TAILQ_INSERT_TAIL(strs, p, links);
@@ -432,12 +432,9 @@ alloc_and_get_test_suite_info(xmlNodePtr        node,
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
-    p = calloc(1, sizeof(*p));
+    p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
     TAILQ_INSERT_TAIL(suites_info, p, links);
 
     /* Name is mandatory */
@@ -503,12 +500,10 @@ alloc_and_get_person_info(xmlNodePtr node, persons_info *persons)
     }
 #endif
 
-    p = calloc(1, sizeof(*p));
+    p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
+
     TAILQ_INSERT_TAIL(persons, p, links);
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
@@ -583,12 +578,11 @@ alloc_and_get_option(xmlNodePtr node, test_options *opts)
     /* Path is optional */
     value = xmlGetProp(node, CONST_CHAR2XML("value"));
 
-    p = calloc(1, sizeof(*p));
+    p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
     {
         xmlFree(name);
         xmlFree(value);
-        ERROR("malloc(%u) failed", sizeof(*p));
         return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     p->name = XML2CHAR(name);
@@ -757,12 +751,9 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
-    p = calloc(1, sizeof(*p));
+    p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
     TAILQ_INSERT_TAIL(reqs, p, links);
 
     p->id = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("id")));
@@ -906,7 +897,8 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
 static te_errno
 get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
 {
-    te_errno rc;
+    te_errno            rc;
+    const test_info    *ti;
 
     /* 'name' is mandatory */
     script->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
@@ -931,17 +923,32 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
         if (rc != TE_ENOENT)
             return rc;
     }
-    if (script->objective == NULL)
-    {
-        const test_info *ti = find_test_info(cfg->cur_pkg->ti,
-                                             script->name);
 
-        if (ti != NULL)
+    ti = find_test_info(cfg->cur_pkg->ti, script->name);
+    if (ti != NULL)
+    {
+        if (script->objective != NULL && ti->objective != NULL &&
+            strcmp(script->objective, ti->objective) != 0)
         {
+            WARN("Inconsitency in test '%s' objective from package.xml "
+                 "and tests-info.xml", script->name);
+        }
+        if (ti->objective != NULL)
+        {
+            free(script->objective);
             script->objective = strdup(ti->objective);
             if (script->objective == NULL)
             {
                 ERROR("strdup(%s) failed", ti->objective);
+                return TE_RC(TE_TESTER, TE_ENOMEM);
+            }
+        }
+        if (ti->page != NULL)
+        {
+            script->page = strdup(ti->page);
+            if (script->page == NULL)
+            {
+                ERROR("strdup(%s) failed", ti->page);
                 return TE_RC(TE_TESTER, TE_ENOMEM);
             }
         }
@@ -1021,12 +1028,9 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
     test_entity_value  *p;
     char               *tmp;
 
-    p = calloc(1, sizeof(*p));
+    p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
     TAILQ_INIT(&p->reqs);
     TAILQ_INSERT_TAIL(&values->head, p, links);
     
@@ -1092,11 +1096,10 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
 
         do {
             size_t              len = strcspn(s, ",");
-            test_requirement   *req = calloc(1, sizeof(*req));
+            test_requirement   *req = TE_ALLOC(sizeof(*req));
 
             if (req == NULL)
             {
-                ERROR("malloc(%u) failed", sizeof(*req));
                 free(tmp);
                 return TE_RC(TE_TESTER, TE_ENOMEM);
             }
@@ -1201,12 +1204,9 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
     test_value_type    *p;
     char               *tmp;
 
-    p = calloc(1, sizeof(*p));
+    p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
     TAILQ_INIT(&p->values.head);
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
@@ -1303,12 +1303,9 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
     char               *value;
     char               *s;
 
-    p = calloc(1, sizeof(*p));
+    p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
     p->handdown = !is_var;
     TAILQ_INIT(&p->values.head);
     TAILQ_INSERT_TAIL(list, p, links);
@@ -1398,12 +1395,9 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
     {
         test_entity_value *v;
 
-        v = calloc(1, sizeof(*v));
+        v = TE_ALLOC(sizeof(*v));
         if (v == NULL)
-        {
-            ERROR("malloc(%u) failed", sizeof(*v));
             return TE_RC(TE_TESTER, TE_ENOMEM);
-        }
         TAILQ_INIT(&v->reqs);
         TAILQ_INSERT_TAIL(&p->values.head, v, links);
         p->values.num++;
@@ -1587,12 +1581,9 @@ get_package(xmlNodePtr node, tester_cfg *cfg, const test_session *session,
     te_errno        rc;
     test_package   *p;
 
-    p = calloc(1, sizeof(*p));
+    p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
     TAILQ_INIT(&p->authors);
     TAILQ_INIT(&p->reqs);
 
@@ -1642,12 +1633,9 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     te_errno     rc;
 
     assert((runs == NULL) != (p_run == NULL));
-    p = calloc(1, sizeof(*p));
+    p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
     TAILQ_INIT(&p->args);
     LIST_INIT(&p->lists);
     p->context = session;
@@ -2065,12 +2053,9 @@ alloc_and_get_test_info(xmlNodePtr node, tests_info *ti)
 {
     test_info  *p;
 
-    p = calloc(1, sizeof(*p));
+    p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
     TAILQ_INSERT_TAIL(ti, p, links);
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
@@ -2079,6 +2064,9 @@ alloc_and_get_test_info(xmlNodePtr node, tests_info *ti)
         ERROR("Missing name of the test in info");
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
+
+    /* Page is optional */
+    p->page = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("page")));
 
     node = xmlNodeChildren(node);
 
@@ -2193,6 +2181,7 @@ tests_info_free(tests_info *ti)
     {
         TAILQ_REMOVE(ti, p, links);
         free(p->name);
+        free(p->page);
         free(p->objective);
         free(p);
     }
@@ -2447,6 +2436,7 @@ test_script_free(test_script *p)
 {
     free(p->name);
     free(p->objective);
+    free(p->page);
     free(p->execute);
     test_requirements_free(&p->reqs);
 }

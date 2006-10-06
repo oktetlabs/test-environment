@@ -581,11 +581,23 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
     switch (ri->type)
     {
         case RUN_ITEM_SCRIPT:
-            TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                        "TEST %s \"%s\" ARGs%s",
-                        parent, test, ri->u.script.name,
-                        PRINT_STRING(ri->u.script.objective),
-                        PRINT_STRING(params_str));
+            if (ri->u.script.page == NULL)
+            {
+                TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                            "TEST %s \"%s\" ARGs%s",
+                            parent, test, ri->u.script.name,
+                            PRINT_STRING(ri->u.script.objective),
+                            PRINT_STRING(params_str));
+            }
+            else
+            {
+                TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                            "TEST %s \"%s\" PAGE %s ARGs%s",
+                            parent, test, ri->u.script.name,
+                            PRINT_STRING(ri->u.script.objective),
+                            ri->u.script.page,
+                            PRINT_STRING(params_str));
+            }
             break;
 
         case RUN_ITEM_SESSION:

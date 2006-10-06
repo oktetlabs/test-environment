@@ -158,6 +158,7 @@ typedef struct test_attrs {
 typedef struct test_script {
     char               *name;       /**< Name of the script */
     char               *objective;  /**< Objective */
+    char               *page;       /**< HTML page with documentation */
     char               *execute;    /**< Full path to executable */
     test_requirements   reqs;       /**< Set of requirements */
     test_attrs          attrs;      /**< Test attributes */
@@ -215,6 +216,7 @@ typedef struct test_info {
     TAILQ_ENTRY(test_info)  links;  /**< List links */
 
     char   *name;                   /**< Test name */
+    char   *page;                   /**< HTML page with documentation */
     char   *objective;              /**< Objective of the test */
 } test_info;
 
