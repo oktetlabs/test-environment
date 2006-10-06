@@ -51,6 +51,12 @@ struct te_trc_db_walker {
     trc_db_walker_motion motion;    /**< The last motion */
 };
 
+/* See the description in te_trc.h */
+te_bool
+trc_db_walker_is_iter(const te_trc_db_walker *walker)
+{
+    return walker->is_iter;
+}
 
 /* See the description in trc_db.h */
 trc_test *

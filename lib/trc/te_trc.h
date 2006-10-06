@@ -141,6 +141,13 @@ extern te_trc_db_walker *trc_db_new_walker(te_trc_db *trc_db);
 extern void trc_db_free_walker(te_trc_db_walker *walker);
 
 /**
+ * Is walker located on a test iteration (or test itself)?
+ * 
+ * @param walker        Current walker position
+ */
+extern te_bool trc_db_walker_is_iter(const te_trc_db_walker *walker);
+
+/**
  * Move walker from the current position to the child test with
  * specified name.
  *
@@ -315,13 +322,17 @@ extern void trc_db_walker_free_user_data(te_trc_db_walker *walker,
  *
  * @param db            TRC database handle
  * @param user_id       User ID
- * @param user_free     Function to be used to free user data or NULL
+ * @param test_free     Function to be used to free user data 
+ *                      associated with test entries or NULL
+ * @param iter_free     Function to be used to free user data 
+ *                      associated with test iterations or NULL
  *
  * @return Status code.
  */
 extern te_errno trc_db_free_user_data(te_trc_db *db, 
                                       unsigned int user_id,
-                                      void (*user_free)(void *));
+                                      void (*test_free)(void *),
+                                      void (*iter_free)(void *));
 
 #ifdef __cplusplus
 } /* extern "C" */

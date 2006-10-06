@@ -409,7 +409,8 @@ trc_db_walker_free_user_data(te_trc_db_walker *walker,
 /* See the description in te_trc.h */
 te_errno
 trc_db_free_user_data(te_trc_db *db, unsigned int user_id,
-                      void (*user_free)(void *))
+                      void (*test_free)(void *),
+                      void (*iter_free)(void *))
 {
     te_trc_db_walker       *walker;
     trc_db_walker_motion    mv;
@@ -421,7 +422,8 @@ trc_db_free_user_data(te_trc_db *db, unsigned int user_id,
     while ((mv = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT)
     {
         if (mv != TRC_DB_WALKER_FATHER)
-            trc_db_walker_free_user_data(walker, user_id, user_free);
+            trc_db_walker_free_user_data(walker, user_id,
+                trc_db_walker_is_iter(walker) ? iter_free : test_free);
     }
 
     trc_db_free_walker(walker);
