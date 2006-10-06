@@ -93,6 +93,10 @@ typedef struct trc_report_log_parse_ctx {
     trc_report_log_parse_state  state;  /**< Log parse state */
     trc_test_type               type;   /**< Type of the test */
 
+    te_bool more;   /**< More characters flag (used when single string
+                         is reported by few trc_report_log_characters()
+                         calls because of entities in it) */
+
     unsigned int                skip_depth; /**< Skip depth */
     trc_report_log_parse_state  skip_state; /**< State to return */
 
@@ -617,6 +621,7 @@ trc_report_log_start_element(void *user_data,
             if (strcmp(tag, "objective") == 0)
             {
                 ctx->state = TRC_REPORT_LOG_PARSE_OBJECTIVE;
+                ctx->more = FALSE;
             }
             else if (strcmp(tag, "verdicts") == 0)
             {
@@ -638,6 +643,7 @@ trc_report_log_start_element(void *user_data,
             if (strcmp(tag, "verdict") == 0)
             {
                 ctx->state = TRC_REPORT_LOG_PARSE_VERDICT;
+                ctx->more = FALSE;
             }
             else
             {
@@ -692,6 +698,7 @@ trc_report_log_start_element(void *user_data,
                 if (entity_match && user_match)
                 {
                     ctx->state = TRC_REPORT_LOG_PARSE_TAGS;
+                    ctx->more = FALSE;
                 }
                 else
                 {
@@ -874,6 +881,7 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
 {
     trc_report_log_parse_ctx   *ctx = user_data;
     char                      **location;
+    size_t                      init_len;
     char                       *tags_str = NULL;
 
     trc_test   *test = NULL;
@@ -904,18 +912,28 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
 
         case TRC_REPORT_LOG_PARSE_VERDICT:
         {
-            te_test_verdict *verdict = TE_ALLOC(sizeof(*verdict));
+            te_test_verdict *verdict;
 
-            if (verdict == NULL)
+            if (ctx->more)
             {
-                ERROR("Memory allocation failure");
-                ctx->rc = TE_ENOMEM;
-                return;
+                verdict =
+                    *(((te_test_verdicts *)(ctx->iter_data->runs.
+                        tqh_first->result.verdicts.tqh_last))->tqh_last);
             }
-            assert(ctx->iter_data != NULL);
-            TAILQ_INSERT_TAIL(
-                &ctx->iter_data->runs.tqh_first->result.verdicts,
-                verdict, links);
+            else
+            {
+                verdict = TE_ALLOC(sizeof(*verdict));
+                if (verdict == NULL)
+                {
+                    ERROR("Memory allocation failure");
+                    ctx->rc = TE_ENOMEM;
+                    return;
+                }
+                assert(ctx->iter_data != NULL);
+                TAILQ_INSERT_TAIL(
+                    &ctx->iter_data->runs.tqh_first->result.verdicts,
+                    verdict, links);
+            }
             location = &verdict->str;
             break;
         }
@@ -929,8 +947,12 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
             return;
     }
 
-    assert(*location == NULL);
-    *location = malloc(len + 1);
+    /* More is not supported for tags and objective */
+    assert(!ctx->more || ctx->state == TRC_REPORT_LOG_PARSE_VERDICT);
+
+    assert((*location == NULL) == (!ctx->more));
+    init_len = (ctx->more) ? strlen(*location) : 0;
+    *location = realloc(*location, init_len + len + 1);
     if (*location == NULL)
     {
         ERROR("Memory allocation failure");
@@ -943,8 +965,8 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
     }
     else
     {
-        memcpy(*location, ch, len);
-        (*location)[len] = '\0';
+        memcpy(*location + init_len, ch, len);
+        (*location)[init_len + len] = '\0';
         if (ctx->state == TRC_REPORT_LOG_PARSE_TAGS)
         {
             trc_tags_str_to_list(ctx->tags, tags_str);
@@ -957,6 +979,8 @@ trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
             free(save);
         }
     }
+
+    ctx->more = TRUE;
 }
 
 /**
