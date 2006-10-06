@@ -358,8 +358,10 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     if (rpcs == NULL)
         return TE_RC(TE_RCF, TE_EINVAL);
 
+#ifdef HAVE_PTHREAD_H
     if (pthread_mutex_lock(&rpcs->lock) != 0)
         ERROR("pthread_mutex_lock() failed");
+#endif
         
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -369,9 +371,11 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     rpcs->op = RCF_RPC_CALL_WAIT;
     rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name, 0xFFFFFFFF, 
                          "execve", &in, &out);
-                         
+
+#ifdef HAVE_PTHREAD_H
     if (pthread_mutex_unlock(&rpcs->lock) != 0)
         ERROR("pthread_mutex_unlock() failed");
+#endif
 
     if (rc == 0)
         RING("RPC (%s,%s): execve() -> (%s)",
@@ -401,16 +405,21 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
     
     VERB("Destroy RPC server %s", rpcs->name);
     
+#ifdef HAVE_PTHREAD_H
     if (pthread_mutex_lock(&rpcs->lock) != 0)
         ERROR("pthread_mutex_lock() failed");
+#endif
 
     if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/rpcserver:%s",
                                    rpcs->ta, rpcs->name)) != 0 &&
         TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
         ERROR("Failed to delete RPC server %s: error=%r", rpcs->name, rc);
+
+#ifdef HAVE_PTHREAD_H
         if (pthread_mutex_unlock(&rpcs->lock) != 0)
             ERROR("pthread_mutex_unlock() failed");
+#endif
         
         return rc;
     }
@@ -461,7 +470,9 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
 
     VERB("Calling RPC %s", proc);
         
+#ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rpcs->lock);
+#endif    
     rpcs->_errno = 0;
     rpcs->err_log = FALSE;
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
@@ -473,7 +484,9 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         {
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EBUSY);
             rpcs->timed_out = TRUE;
+#ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&rpcs->lock);
+#endif            
             return;
         }
     }
@@ -484,7 +497,9 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
             ERROR("Try to wait not called RPC");
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EALREADY);
             rpcs->timed_out = TRUE;
+#ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&rpcs->lock);
+#endif            
             return;
         }
         else if (strcmp(rpcs->proc, proc) != 0 && !op_is_done)
@@ -493,7 +508,9 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
                   proc, rpcs->proc);
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EPERM);
             rpcs->timed_out = TRUE;
+#ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&rpcs->lock);
+#endif            
             return;
         }
     }
@@ -544,7 +561,9 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         }
     }
 
+#ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&rpcs->lock);
+#endif    
 }
 
 /* See description in rcf_rpc.h */
