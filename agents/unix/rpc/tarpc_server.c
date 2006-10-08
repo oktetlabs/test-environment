@@ -438,7 +438,10 @@ _get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
     }
 
     ERROR("Unknown type (%s)", in->typename);
-    return FALSE;
+#if 0    
+    out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+#endif    
+    return TRUE;
 }
 
 /*-------------- get_addrof() ---------------------------------*/

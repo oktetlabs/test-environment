@@ -2125,7 +2125,6 @@ static te_errno
 mcast_link_addr_change(const char *ifname, const char *addr, int op)
 {
     struct ifreq    request;
-    int             s;
     int             i;
     const char     *p;
 
@@ -2140,24 +2139,16 @@ mcast_link_addr_change(const char *ifname, const char *addr, int op)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         request.ifr_hwaddr.sa_data[i] = tmp;
         p = strchr(p, ':');
-        /* Skip the semicolon */
+        /* Skip the colon */
         if (p != NULL)
             p++;
     }
-    if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-    {
-        ERROR("Cannot open socket for ioctl()");
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    if (ioctl(s, op, &request) != 0)
+    if (ioctl(cfg_socket, op, &request) != 0)
     {
         ERROR("ioctl() failed");
-        close(s);
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
     
-    close(s);
     return 0;
 }
 
