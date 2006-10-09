@@ -1,0 +1,12 @@
+#! /usr/bin/awk -f
+
+# This script extracts comments from a `package.xml' file and converts them
+# to the form suitable for Doxygen processing
+
+/<!----/ { sub(/^.*<!----/, ""); print "/** ", $0; in_dox_comment = 1; next }
+in_dox_comment && /-->/ { sub(/-->.*/, ""); 
+        if ($0) print; 
+        print "*/"; 
+        in_dox_comment = 0; 
+        next; }
+in_dox_comment { print "* " $0; next }
