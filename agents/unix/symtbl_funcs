@@ -1,8 +1,12 @@
 socket
 bind
 connect
+listen
+accept
 send
 recv
 read
 write
+close
+waitpid
 te_shell_cmd
