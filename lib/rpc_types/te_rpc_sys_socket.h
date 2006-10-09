@@ -558,6 +558,7 @@ typedef enum rpc_ioctl_code {
     RPC_SIOCDARP,           /**< Delete ARP mapping */ 
     RPC_SIOCGARP,           /**< Get ARP mapping */
     RPC_SG_IO,
+    RPC_SIOCETHTOOL,        /**< Linux-specific Ethtool */
     
     /* Winsock2-specific codes */
     RPC_SIO_ADDRESS_LIST_CHANGE,
@@ -673,6 +674,32 @@ extern const char * sockaddr_h2str(const struct sockaddr *addr);
  */
 extern const char * addr_family_sockaddr_str(
                         rpc_socket_addr_family addr_family);
+
+#if HAVE_LINUX_ETHTOOL_H
+
+
+/** Convert ethtool command to TARPC_ETHTOOL_* types of its data. */
+extern tarpc_ethtool_type ethtool_cmd2type(tarpc_ethtool_command cmd);
+/** Returns a string with ethtool command name. */
+const char * ethtool_cmd2str(tarpc_ethtool_command cmd);
+
+/**
+ * Copy ethtool data from RPC data structure to host. 
+ *
+ * @param rpc_edata RPC ethtool data structure
+ * @param edata_p   pointer to return host ethtool structure;
+ *                  this structure is allocated if the pointer is
+ *                  initialised to NULL
+ */
+void ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p);
+/**
+ * Copy ethtool data from the host data structure to RPC. 
+ *
+ * @param rpc_edata RPC ethtool data structure
+ * @param edata     ethtool command structure
+ */
+void ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata);
+#endif
 
 #ifdef __cplusplus
 } /* extern "C" */

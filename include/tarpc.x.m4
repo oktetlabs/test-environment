@@ -80,6 +80,9 @@ typedef tarpc_ptr   tarpc_handle;
 
 typedef uint32_t    tarpc_op;
 
+/** Ethtool command, should be u32 on any Linux */
+typedef uint32_t tarpc_ethtool_command;
+
 /**
  * Input arguments common for all RPC calls.
  *
@@ -214,6 +217,35 @@ struct tarpc_gettimeofday_out {
     struct tarpc_timezone   tz<>;
 };
 
+/* Ethtool data types */
+enum tarpc_ethtool_type {
+    TARPC_ETHTOOL_CMD = 1       /**< struct ethtool_cmd */
+};
+
+struct tarpc_ethtool_cmd {
+    uint32_t supported;
+    uint32_t advertising;
+    uint16_t speed;
+    uint8_t  duplex;
+    uint8_t  port;
+    uint8_t  phy_address;
+    uint8_t  transceiver;
+    uint8_t  autoneg;
+    uint32_t maxtxpkt;
+    uint32_t maxrxpkt;
+};
+
+/** struct ethtool_* */
+union tarpc_ethtool_data
+    switch (tarpc_ethtool_type type)
+{
+    case TARPC_ETHTOOL_CMD: tarpc_ethtool_cmd cmd;
+};
+
+struct tarpc_ethtool {
+    tarpc_ethtool_command   command;
+    tarpc_ethtool_data      data;
+};
 
 /** struct ifreq */
 struct tarpc_ifreq {
@@ -221,6 +253,7 @@ struct tarpc_ifreq {
     struct tarpc_sa rpc_ifr_addr;   /**< Different interface addresses */
     tarpc_int       rpc_ifr_flags;  /**< Interface flags */
     uint32_t        rpc_ifr_mtu;    /**< Interface MTU */
+    tarpc_ethtool   rpc_ifr_ethtool; /**< Ethtool command structure */
 };
 
 /** struct ifconf */

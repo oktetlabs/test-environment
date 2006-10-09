@@ -203,6 +203,18 @@ unistd.h \
 ])
 
 dnl
+dnl Check for Linux kernel interfaces
+dnl
+AC_CHECK_HEADERS([linux/ethtool.h], [], [], [
+/* linux/ethtool.h */
+#include <sys/types.h>
+typedef unsigned long long u64;
+typedef __uint32_t u32;
+typedef __uint16_t u16;
+typedef __uint8_t  u8;
+])
+
+dnl
 dnl Check for 'sa_len'-like members in 'struct sockaddr'-like structures.
 dnl
 AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [], [

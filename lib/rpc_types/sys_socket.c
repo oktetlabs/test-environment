@@ -90,6 +90,14 @@ INCLUDE(te_win_defs.h)
 #if HAVE_ASSERT_H
 #include <assert.h>
 #endif
+#if HAVE_LINUX_ETHTOOL_H
+#include "te_stdint.h"
+typedef uint64_t u64;
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t  u8;
+#include <linux/ethtool.h>
+#endif
 
 #endif
 
@@ -1170,6 +1178,7 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(SIOCGARP);
         
         RPC2STR(SG_IO);
+        RPC2STR(SIOCETHTOOL);
 
         RPC2STR(SIO_ADDRESS_LIST_CHANGE);
         RPC2STR(SIO_ADDRESS_LIST_QUERY);
@@ -1239,6 +1248,7 @@ ioctl_rpc2h(rpc_ioctl_code code)
         RPC2H_CHECK(SIOCDARP);
         RPC2H_CHECK(SIOCGARP);
         RPC2H_CHECK(SG_IO);
+        RPC2H_CHECK(SIOCETHTOOL);
 
         RPC2H_CHECK(SIO_ADDRESS_LIST_CHANGE);
         RPC2H_CHECK(SIO_ADDRESS_LIST_QUERY);
@@ -1746,3 +1756,127 @@ addr_family_sockaddr_str(rpc_socket_addr_family addr_family)
         default:            return NULL;
     }
 }
+
+#if HAVE_LINUX_ETHTOOL_H
+/** Convert ethtool command to TARPC_ETHTOOL_* types of its data */
+tarpc_ethtool_type
+ethtool_cmd2type(tarpc_ethtool_command cmd)
+{
+    switch (cmd)
+    {
+        case ETHTOOL_SSET:
+        case ETHTOOL_GSET:
+            return TARPC_ETHTOOL_CMD;
+        default:
+            return 0;
+    }
+    return 0;
+}
+
+/** Returns a string with ethtool command name. */
+const char *
+ethtool_cmd2str(tarpc_ethtool_command cmd)
+{
+    switch (cmd)
+    {
+        case ETHTOOL_SSET:
+            return "ETHTOOL_SSET";
+        case ETHTOOL_GSET:
+            return "ETHTOOL_GSET";
+        default:
+            return "(unknown)";
+    }
+    return NULL; /* unreachable */
+}
+
+#define COPY_FIELD(to, from, fname) \
+    (to)->fname = (from)->fname;
+/**
+ * Copy ethtool data from RPC data structure to host. 
+ *
+ * @param rpc_edata RPC ethtool data structure
+ * @param edata_p   pointer to return host ethtool structure;
+ *                  this structure is allocated if the pointer is
+ *                  initialised to NULL
+ */
+void 
+ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
+{
+    switch (ethtool_cmd2type(rpc_edata->command))
+    {
+        case TARPC_ETHTOOL_CMD:
+            {
+                struct ethtool_cmd *ecmd = *edata_p;
+                tarpc_ethtool_cmd  *rpc_ecmd = 
+                        &rpc_edata->data.tarpc_ethtool_data_u.cmd;
+
+                if (ecmd == NULL)
+                {
+                    ecmd = calloc(sizeof(struct ethtool_cmd), 1);
+                    if (ecmd == NULL)
+                        break;
+                    *edata_p = ecmd;
+                }
+
+                COPY_FIELD(ecmd, rpc_ecmd, supported);
+                COPY_FIELD(ecmd, rpc_ecmd, advertising);
+                COPY_FIELD(ecmd, rpc_ecmd, speed);
+                COPY_FIELD(ecmd, rpc_ecmd, duplex);
+                COPY_FIELD(ecmd, rpc_ecmd, port);
+                COPY_FIELD(ecmd, rpc_ecmd, phy_address);
+                COPY_FIELD(ecmd, rpc_ecmd, transceiver);
+                COPY_FIELD(ecmd, rpc_ecmd, autoneg);
+                COPY_FIELD(ecmd, rpc_ecmd, maxtxpkt);
+                COPY_FIELD(ecmd, rpc_ecmd, maxrxpkt);
+
+                    break;
+            }
+
+        default:
+            ERROR("%s: Unknown ethtool command.", __FUNCTION__);
+            break;
+    }
+    *((tarpc_ethtool_command *)(*edata_p)) = rpc_edata->command;
+}
+
+/**
+ * Copy ethtool data from the host data structure to RPC. 
+ *
+ * @param edata     ethtool command structure
+ * @param rpc_edata RPC ethtool data structure
+ */
+void 
+ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
+{
+    rpc_edata->command = *((tarpc_ethtool_command *)edata);
+    rpc_edata->data.type = ethtool_cmd2type(rpc_edata->command);
+    switch (rpc_edata->data.type)
+    {
+        case TARPC_ETHTOOL_CMD:
+            {
+                struct ethtool_cmd *ecmd = edata;
+                tarpc_ethtool_cmd  *rpc_ecmd = 
+                        &rpc_edata->data.tarpc_ethtool_data_u.cmd;
+
+                COPY_FIELD(rpc_ecmd, ecmd, supported);
+                COPY_FIELD(rpc_ecmd, ecmd, advertising);
+                COPY_FIELD(rpc_ecmd, ecmd, speed);
+                COPY_FIELD(rpc_ecmd, ecmd, duplex);
+                COPY_FIELD(rpc_ecmd, ecmd, port);
+                COPY_FIELD(rpc_ecmd, ecmd, phy_address);
+                COPY_FIELD(rpc_ecmd, ecmd, transceiver);
+                COPY_FIELD(rpc_ecmd, ecmd, autoneg);
+                COPY_FIELD(rpc_ecmd, ecmd, maxtxpkt);
+                COPY_FIELD(rpc_ecmd, ecmd, maxrxpkt);
+
+                break;
+            }
+
+        default:
+            ERROR("%s: Unknown ethtool command.", __FUNCTION__);
+            break;
+    }
+
+}
+#undef COPY_FIELD
+#endif /* HAVE_LINUX_ETHTOOL_H */

@@ -75,6 +75,14 @@
 #if HAVE_SCSI_SG_H
 #include <scsi/sg.h>
 #endif
+#if HAVE_LINUX_ETHTOOL_H
+#include "te_stdint.h"
+typedef uint64_t u64;
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t  u8;
+#include <linux/ethtool.h>
+#endif
 
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
@@ -393,6 +401,41 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 break;
             }
 
+#if HAVE_LINUX_ETHTOOL_H
+        case RPC_SIOCETHTOOL:
+        {
+            struct ifreq *ifr = (struct ifreq *)arg;
+            tarpc_ifreq  *rpc_ifreq = 
+                    &in.req.req_val[0].ioctl_request_u.req_ifreq;
+
+            in.req.req_val[0].type = IOCTL_IFREQ;
+            if (ifr == NULL)
+                break;
+            rpc_ifreq->rpc_ifr_name.rpc_ifr_name_val = ifr->ifr_name;
+            rpc_ifreq->rpc_ifr_name.rpc_ifr_name_len = 
+                    sizeof(ifr->ifr_name);
+
+            if (ifr->ifr_data == NULL)
+                break;
+            ethtool_data_h2rpc(&rpc_ifreq->rpc_ifr_ethtool, ifr->ifr_data);
+
+            switch (rpc_ifreq->rpc_ifr_ethtool.command)
+            {
+                case ETHTOOL_GSET:
+                    in.access = IOCTL_RW;
+                    break;
+
+                case ETHTOOL_SSET:
+                    in.access = IOCTL_WR;
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+        }
+#endif /* HAVE_LINUX_ETHTOOL_H */
+
         default:
             ERROR("Unsupported ioctl code: %d", request);
             rpcs->_errno = TE_RC(TE_RCF, TE_EOPNOTSUPP);
@@ -403,6 +446,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
     if (out.retval == 0 && out.req.req_val != NULL && in.access == IOCTL_RD)
     {
+        assert(arg != NULL);
+
         switch (in.req.req_val[0].type)
         {
             case IOCTL_INT:
@@ -417,6 +462,11 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 break;
 
             case IOCTL_IFREQ:
+            {
+                struct ifreq        *ifreq = (struct ifreq *)arg;
+                struct tarpc_ifreq  *rpc_ifreq = 
+                        &out.req.req_val[0].ioctl_request_u.req_ifreq;
+
                 switch (request)
                 {
                     case RPC_SIOCGIFADDR:
@@ -424,30 +474,36 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     case RPC_SIOCGIFBRDADDR:
                     case RPC_SIOCGIFDSTADDR:
                     case RPC_SIOCGIFHWADDR:
-                        sockaddr_rpc2h(
-                             &out.req.req_val[0].ioctl_request_u.
-                                 req_ifreq.rpc_ifr_addr,
-                             &((struct ifreq *)arg)->ifr_addr,
-                             sizeof(((struct ifreq *)arg)->ifr_addr),
-                             NULL, NULL);
+                        sockaddr_rpc2h(&rpc_ifreq->rpc_ifr_addr,
+                                       &ifreq->ifr_addr,
+                                       sizeof(ifreq->ifr_addr),
+                                       NULL, NULL);
                         break;
 
                     case RPC_SIOCGIFMTU:
-                        ((struct ifreq *)arg)->ifr_mtu = out.req.req_val[0].
-                            ioctl_request_u.req_ifreq.rpc_ifr_mtu;
+                        ifreq->ifr_mtu = rpc_ifreq->rpc_ifr_mtu;
                         break;
 
                     case RPC_SIOCGIFFLAGS:
-                        ((struct ifreq *)arg)->ifr_flags =
+                        ifreq->ifr_flags =
                             if_fl_rpc2h((uint32_t)(unsigned short int)
-                                out.req.req_val[0].ioctl_request_u.
-                                    req_ifreq.rpc_ifr_flags);
+                                        rpc_ifreq->rpc_ifr_flags);
                         break;
+
+#if HAVE_LINUX_ETHTOOL_H
+                    case RPC_SIOCETHTOOL:
+                        *(tarpc_ethtool_command *)(ifreq->ifr_data) = 
+                                rpc_ifreq->rpc_ifr_ethtool.command;
+                        ethtool_data_rpc2h(&rpc_ifreq->rpc_ifr_ethtool,
+                                           &ifreq->ifr_data);
+                        break;
+#endif
 
                     default:
                         break;
                 }
                 break;
+            }
 
             case IOCTL_IFCONF:
             {
@@ -642,6 +698,44 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                  (uint32_t)(unsigned short int)
                                      ((struct ifreq *)arg)->ifr_flags)));
                     break;
+
+#if HAVE_LINUX_ETHTOOL_H
+                case RPC_SIOCETHTOOL:
+                {
+                    struct ifreq            *ifr = (struct ifreq *)arg;
+                    tarpc_ethtool_command    cmd = 
+                            *((tarpc_ethtool_command *)ifr->ifr_data);
+                    tarpc_ethtool_type       type = ethtool_cmd2type(cmd);
+                    
+                    snprintf(ifreq_buf + strlen(ifreq_buf),
+                             sizeof(ifreq_buf) - strlen(ifreq_buf),
+                             "ethtool %s: ", ethtool_cmd2str(cmd));
+                    switch (type)
+                    {
+                        TARPC_ETHTOOL_CMD:
+                        {
+                            struct ethtool_cmd *ecmd = 
+                                (struct ethtool_cmd *)ifr->ifr_data;
+
+                            snprintf(ifreq_buf + strlen(ifreq_buf),
+                                     sizeof(ifreq_buf) - strlen(ifreq_buf),
+                                     "supported %u, advertising %u, "
+                                     "speed %u, duplex %u, port %u, "
+                                     "phy_address %u, transceiver %u, "
+                                     "autoneg %u, maxtxpkt %u, "
+                                     "maxrxpkt %u",
+                                     ecmd->supported, ecmd->advertising,
+                                     ecmd->speed, ecmd->duplex, ecmd->port,
+                                     ecmd->phy_address, ecmd->transceiver,
+                                     ecmd->autoneg, ecmd->maxtxpkt,
+                                     ecmd->maxrxpkt);
+                            break;
+                        }
+
+                    }
+                    break;
+                }
+#endif /* HAVE_LINUX_ETHTOOL_H */
 
                 default:
                     req_val = " unknown request ";

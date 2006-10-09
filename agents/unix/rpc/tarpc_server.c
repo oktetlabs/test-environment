@@ -32,6 +32,7 @@
 
 #include "tarpc_server.h"
 
+#include "te_config.h"
 #include "config.h"
 
 #ifdef HAVE_DLFCN_H
@@ -44,6 +45,15 @@
 
 #if HAVE_SCSI_SG_H && defined (__linux__)
 #include <scsi/sg.h>
+#endif
+
+#if HAVE_LINUX_ETHTOOL_H
+#include "te_stdint.h"
+typedef uint64_t u64;
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t  u8;
+#include <linux/ethtool.h>
 #endif
 
 #include "te_defs.h"
@@ -2229,6 +2239,16 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                         &(req->ifreq.ifr_addr),
                         sizeof(req->ifreq.ifr_addr), NULL, NULL);
                    break;
+
+#if HAVE_LINUX_ETHTOOL_H
+                case RPC_SIOCETHTOOL:
+                    ethtool_data_rpc2h(
+                                    &(out->req.req_val[0].ioctl_request_u.
+                                      req_ifreq.rpc_ifr_ethtool),
+                                    &req->ifreq.ifr_data);
+                    break;
+#endif /* HAVE_LINUX_ETHTOOL_H */
+
             }
             break;
         }
@@ -2407,6 +2427,16 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                                               ioctl_request_u.
                                               req_ifreq.rpc_ifr_addr));
                     break;
+
+#if HAVE_LINUX_ETHTOOL_H
+                case RPC_SIOCETHTOOL:
+                    ethtool_data_h2rpc(
+                                    &(out->req.req_val[0].ioctl_request_u.
+                                      req_ifreq.rpc_ifr_ethtool),
+                                    req->ifreq.ifr_data);
+                    free(req->ifreq.ifr_data);
+                    break;
+#endif /* HAVE_LINUX_ETHTOOL_H */
 
                 default:
                     ERROR("Unsupported IOCTL request %d of type IFREQ",
