@@ -56,6 +56,9 @@
 #endif
 #include <net/if_arp.h>
 #endif
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
 #include <netinet/if_ether.h>
 #endif
 
