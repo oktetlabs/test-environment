@@ -31,6 +31,9 @@
 
 #include "te_config.h"
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #if HAVE_STDARG_H
 #include <stdarg.h>
 #endif
