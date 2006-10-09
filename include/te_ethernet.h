@@ -47,6 +47,9 @@
 #if HAVE_NETINET_ETHER_H
 #include <netinet/ether.h>
 #endif
+#if HAVE_NETINET_IF_ETHER_H
+#include <netinet/if_ether.h>
+#endif
 #if HAVE_SYS_ETHERNET_H
 #include <sys/ethernet.h>
 #endif
