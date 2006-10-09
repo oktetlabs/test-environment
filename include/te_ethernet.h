@@ -47,13 +47,18 @@
 #if HAVE_NETINET_ETHER_H
 #include <netinet/ether.h>
 #endif
+
 #if HAVE_NETINET_IF_ETHER_H
 /* Required on OpenBSD */
 #if HAVE_NET_IF_ARP_H
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 #include <net/if_arp.h>
 #endif
 #include <netinet/if_ether.h>
 #endif
+
 #if HAVE_SYS_ETHERNET_H
 #include <sys/ethernet.h>
 #endif
