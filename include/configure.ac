@@ -78,6 +78,15 @@ AC_CHECK_HEADERS([net/if.h], [], [], [
 #endif
 ])
 
+AC_CHECK_HEADERS([netinet/in.h], [], [], [
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+])
+
 AC_CHECK_HEADERS([\
 aio.h \
 arpa/inet.h \
@@ -102,7 +111,6 @@ net/route.h \
 netdb.h \
 netinet/ether.h \
 netinet/if_ether.h \
-netinet/in.h \
 netinet/in_systm.h \
 netinet/ip.h \
 netinet/ip_icmp.h \
