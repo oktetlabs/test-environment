@@ -35,6 +35,9 @@
 #endif
 
 /* To get ntohl(),... */
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
