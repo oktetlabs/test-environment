@@ -120,7 +120,6 @@ TE_LIB_PARMS([tad], [freebsd], [],
              [--with-pcap --with-atm --with-eth --with-bridge \
               --with-arp --with-ipstack --with-socket])
 
-
 TE_TA_TYPE([freebsd6], [freebsd], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent ndn asn])
 
@@ -137,6 +136,21 @@ TE_LIB_PARMS([tad], [netbsd], [],
               --with-arp --with-ipstack --with-socket])
 
 TE_TA_TYPE([netbsd], [netbsd], [unix],
+           [--with-rcf-rpc], [], [], [], [comm_net_agent ndn asn])
+
+#
+# OpenBSD platform
+#
+TE_PLATFORM([openbsd], [--host=i386-pc-openbsd],
+            [-I${OPENBSD_HOME}/sys-include], [], [-L${OPENBSD_HOME}/lib],
+            [tools conf_oid rpcxdr rpc_types asn ndn \
+             loggerta comm_net_agent rcfpch tad])
+
+TE_LIB_PARMS([tad], [openbsd], [],
+             [--with-pcap --with-atm --with-eth --with-bridge \
+              --with-arp --with-ipstack --with-socket])
+
+TE_TA_TYPE([openbsd], [openbsd], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent ndn asn])
 
 #
