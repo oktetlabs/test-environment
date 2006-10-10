@@ -72,6 +72,7 @@
 #include "rcf_api.h"
 #include "ndn.h"
 #include "ndn_dhcp.h"
+#include "tapi_tad.h"
 #include "tapi_dhcp.h"
 
 
@@ -240,8 +241,6 @@ ndn_dhcpv4_option_to_plain(const asn_value *dhcp_opt,
     int rc = 0;
     uint8_t len_buf;
     size_t len = sizeof(len_buf);
-    uint8_t opt_type;
-    size_t opt_type_len = sizeof(opt_type);
     int i;
     int n_subopts;
 
