@@ -145,7 +145,6 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
                          csap_handle_t *ip4_csap)
 {
     int         rc = 0;
-    char        csap_fname[100] = "/tmp/te_ip4_csap.XXXXXX";
     asn_value  *csap_ip4_level = NULL;
     asn_value  *csap_eth_level = NULL;
     asn_value  *csap_spec = NULL;
@@ -211,22 +210,13 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
         rc = asn_insert_indexed(csap_spec, csap_level_spec, 1, "");
         if (rc != 0) break;
 
-        mktemp(csap_fname);
-        rc = asn_save_to_file(csap_spec, csap_fname);
-        VERB("TAPI: ip4.eth create csap, save to file %s, rc: %x\n",
-                csap_fname, rc);
-        if (rc != 0) break;
-
-
-        rc = rcf_ta_csap_create(ta_name, sid, "ip4.eth", 
-                                csap_fname, ip4_csap); 
+        rc = tapi_tad_csap_create(ta_name, sid, "ip4.eth", 
+                                  csap_spec, ip4_csap); 
     } while (0);
 
     asn_free_value(csap_spec);
     asn_free_value(csap_ip4_level);
     asn_free_value(csap_eth_level);
-
-    unlink(csap_fname); 
 
     return TE_RC(TE_TAPI, rc);
 }

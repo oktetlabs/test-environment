@@ -85,15 +85,12 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
                              uint16_t rem_port,
                              csap_handle_t *tcp_csap)
 {
-    char  csap_fname[] = "/tmp/te_tcp_csap.XXXXXX";
     int   rc;
 
     asn_value *csap_spec = NULL;
 
     do {
         int num = 0;
-
-        mktemp(csap_fname);
 
         rc = asn_parse_value_text("{ tcp:{}, ip4:{}, eth:{}}", 
                                       ndn_csap_spec, &csap_spec, &num); 
@@ -141,18 +138,11 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
                                  "0.#tcp.remote-port.#plain");
         if (rc) break;
 
-        rc = asn_save_to_file(csap_spec, csap_fname);
-        VERB("TAPI: udp create csap, save to file %s, rc: %r\n",
-                csap_fname, rc);
-        if (rc) break;
-
-
-        rc = rcf_ta_csap_create(ta_name, sid, "tcp.ip4.eth", 
-                                csap_fname, tcp_csap); 
+        rc = tapi_tad_csap_create(ta_name, sid, "tcp.ip4.eth", 
+                                  csap_spec, tcp_csap); 
     } while (0);
 
     asn_free_value(csap_spec);
-    unlink(csap_fname);
 
     return TE_RC(TE_TAPI, rc);
 }

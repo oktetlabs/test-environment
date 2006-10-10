@@ -815,7 +815,6 @@ tapi_dhcpv4_plain_csap_create(const char *ta_name,
                               csap_handle_t *dhcp_csap)
 {
     int         rc;
-    const char *csap_fname;
     asn_value  *asn_dhcp_csap;
     asn_value  *csap_spec;
     asn_value  *csap_level_spec;
@@ -833,26 +832,15 @@ tapi_dhcpv4_plain_csap_create(const char *ta_name,
         rc = asn_insert_indexed(csap_spec, csap_level_spec, -1, "");
     }
 
-    /* @todo Generate temporary file name */
-    csap_fname = "./tmp_dhcp_csap.dat";
     if (rc == 0)
     {
-        rc = asn_save_to_file(csap_spec, csap_fname);
+        rc = tapi_tad_csap_create(ta_name, 0, "dhcp", csap_spec, dhcp_csap);
     }
 
     asn_free_value(csap_spec);
     asn_free_value(asn_dhcp_csap);
 
-    if (rc != 0)
-        return rc;
-
-    rc = rcf_ta_csap_create(ta_name, 0, "dhcp", csap_fname, dhcp_csap);
-    if (rc != 0)
-    {
-        return rc;
-    }
-    fflush(stdout);
-    return 0;
+    return rc;
 }
 
 /**
