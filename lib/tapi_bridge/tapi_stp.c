@@ -59,36 +59,36 @@
 #endif
 
 #include "te_errno.h"
+#include "logger_api.h"
 #include "rcf_api.h"
 #include "ndn_bridge.h"
+#include "tapi_ndn.h"
+#include "tapi_tad.h"
 #include "tapi_stp.h"
 #include "tapi_eth.h"
 
-#include "logger_api.h"
+#include "tapi_test.h"
 
 
 /** Bridge Group Address according to IEEE 802.1D, Table 7.9 */
 static uint8_t bridge_group_addr[ETHER_ADDR_LEN] =
     {0x01, 0x80, 0xC2, 0x00, 0x00, 0x00};
 
-/**
- * Print ethernet address to the specified file stream
- *
- * @param f     File stream handle
- * @param addr  Pointer to the array with Ethernet MAC address
- *
- * @return nothing.
- */
-static void
-tapi_eth_fprint_mac (FILE *f, const uint8_t *addr)
-{
-    if ((f != NULL) && (addr != NULL))
-    {
-        fprintf(f, "'%02x %02x %02x %02x %02x %02x'H",
-                addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
-    }
-}
 
+static te_errno 
+tapi_bridge_add_csap_layer(asn_value          **csap_spec,
+                           const unsigned int  *proto)
+{
+    asn_value  *layer;
+
+    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_bridge_csap,
+                                     "#bridge", &layer));
+
+    if (proto != NULL)
+        CHECK_RC(asn_write_int32(layer, *proto, "proto-id.#plain"));
+
+    return 0;
+}
 
 /**
  * Creates STP CSAP that can be used for sending/receiving
@@ -116,56 +116,29 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
                            const uint8_t *peer_mac_addr,
                            csap_handle_t *stp_csap)
 {
-    FILE *f;
-    char  tmp_name[] = "/tmp/te_stp_csap_create.XXXXXX";
-    int   rc = 0;
+    asn_value    *csap_spec = NULL;
+    unsigned int  proto = 0;
+    te_errno      rc;
 
-    if ((ta_name == NULL) || (ifname == NULL) || (stp_csap == NULL) ||
-         (own_mac_addr != NULL && peer_mac_addr != NULL))
-    {
-        /* CSAP cannot be simultaneously RX and TX */
+    if ((ifname == NULL) ||
+        (own_mac_addr != NULL && peer_mac_addr != NULL))
         return TE_RC(TE_TAPI, TE_EINVAL);
-    }
 
-    if ((rc = te_make_tmp_file(tmp_name)) != 0)
-        return TE_RC(TE_TAPI, rc);
+    CHECK_RC(tapi_bridge_add_csap_layer(&csap_spec, &proto));
 
-    if ((f = fopen(tmp_name, "w+")) == NULL)
-    {
-        return TE_OS_RC(TE_TAPI, errno); /* return system errno */
-    }
+    CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, ifname, TAD_ETH_RECV_ALL,
+                                     (peer_mac_addr != NULL) ?
+                                         peer_mac_addr : bridge_group_addr,
+                                     (own_mac_addr != NULL) ?
+                                         own_mac_addr :
+                                     (peer_mac_addr != NULL) ?
+                                          bridge_group_addr : NULL,
+                                     NULL));
 
-    fprintf(f, "{ bridge:{ proto-id plain:0 },\n");
-    fprintf(f, "  eth:{ device-id   plain:\"%s\"", ifname);
-    fprintf(f, ",\n        receive-mode %d", TAD_ETH_RECV_ALL);
-    fprintf(f, ",\n        remote-addr plain:");
-    if (peer_mac_addr != NULL)
-        tapi_eth_fprint_mac(f, peer_mac_addr);
-    else
-        tapi_eth_fprint_mac(f, bridge_group_addr);
+    rc = tapi_tad_csap_create(ta_name, sid, "bridge.eth", csap_spec,
+                              stp_csap);
 
-    if (own_mac_addr != NULL)
-    {
-        fprintf(f, ",\n        local-addr plain:");
-        tapi_eth_fprint_mac(f, own_mac_addr);
-    }
-    else if (peer_mac_addr != NULL) 
-    {
-        /* Remote is specified, CSAP is RX, local should be Bridge Group */
-        fprintf(f, ",\n        local-addr plain:");
-        tapi_eth_fprint_mac(f, bridge_group_addr);
-    }
-    fprintf(f, "}\n}\n"); 
-
-    fclose(f);
-
-    VERB("Before rcf_csap_create");
-
-    rc = rcf_ta_csap_create(ta_name, sid, "bridge.eth", tmp_name, stp_csap);
-
-    VERB("rc from rcf_csap_create: %x", rc);
-
-    unlink(tmp_name);
+    asn_free_value(csap_spec);
 
     return rc;
 }
