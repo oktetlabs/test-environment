@@ -55,58 +55,53 @@
 #include "rcf_api.h"
 #include "ndn_pcap.h"
 #include "logger_api.h"
+#include "tapi_ndn.h"
+#include "tapi_tad.h"
 #include "tapi_pcap.h"
 
+#include "tapi_test.h"
 
-/**
- * Create common Ethernet-PCAP CSAP.
- *
- * @param ta_name       Test Agent name
- * @param sid           RCF session
- * @param ifname        Interface name on TA host
- * @param iftype        Interface datalink type (see man pcap)
- * @param recv_mode     Receive mode, bit scale defined by elements of
- *                      'enum pcap_csap_receive_mode' in ndn_pcap.h.
- * @param pcap_csap     Identifier of created CSAP (OUT)
- *
- * @return Zero on success, otherwise standard or common TE error code.
- */
-int
+
+/* See the description in tapi_pcap.h */
+te_errno
+tapi_pcap_add_csap_layer(asn_value     **csap_spec,
+                         const char     *ifname,
+                         unsigned int    iftype,
+                         unsigned int    recv_mode)
+{
+    asn_value  *layer;
+    
+    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_pcap_csap, "#pcap",
+                                     &layer));
+
+    if (ifname != NULL)
+        CHECK_RC(asn_write_string(layer, ifname, "ifname.#plain"));
+
+    CHECK_RC(asn_write_int32(layer, iftype, "iftype"));
+    CHECK_RC(asn_write_int32(layer, recv_mode, "receive-mode"));
+
+    return 0;
+}
+
+/* See the description in tapi_pcap.h */
+te_errno
 tapi_pcap_csap_create(const char *ta_name, int sid,
-                      const char *ifname, int iftype, int recv_mode,
+                      const char *ifname, unsigned int iftype,
+                      unsigned int recv_mode,
                       csap_handle_t *pcap_csap)
 {
-    int     rc;
-    char    tmp_name[] = "/tmp/te_pcap_csap_create.XXXXXX";
-    FILE   *f;
+    asn_value  *csap_spec = NULL;
+    te_errno    rc;
 
     if ((ta_name == NULL) || (ifname == NULL) || (pcap_csap == NULL))
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    if ((rc = te_make_tmp_file(tmp_name)) != 0)
-        return TE_RC(TE_TAPI, rc);
+    CHECK_RC(tapi_pcap_add_csap_layer(&csap_spec, ifname, iftype,
+                                      recv_mode));
 
-    VERB("%s() file: %s", __FUNCTION__, tmp_name);
+    rc = tapi_tad_csap_create(ta_name, sid, "pcap", csap_spec, pcap_csap);
 
-    if ((f = fopen(tmp_name, "w+")) == NULL)
-    {
-        ERROR("fopen() of %s failed(%d)", tmp_name, errno);
-        return TE_OS_RC(TE_TAPI, errno); /* return system errno */
-    }
-
-    fprintf(f, "{ pcap:{ ifname plain:\"%s\", "
-               "iftype %d, receive-mode %d } }",
-            ifname, iftype, recv_mode);
-    fclose(f);
-
-    rc = rcf_ta_csap_create(ta_name, sid, "pcap", tmp_name, pcap_csap);
-    if (rc != 0)
-    {
-        ERROR("rcf_ta_csap_create() failed(%r) on TA %s:%d file %s",
-              rc, ta_name, sid, tmp_name);
-    }
-
-    unlink(tmp_name);
+    asn_free_value(csap_spec);
 
     return rc;
 }

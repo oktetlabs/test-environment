@@ -66,6 +66,22 @@
 
 
 /**
+ * Add Ethernet-PCAP CSAP layer.
+ *
+ * @param csap_spec     Location of the CSAP specification
+ * @param ifname        Interface name on TA host
+ * @param iftype        Interface datalink type (see man pcap)
+ * @param recv_mode     Receive mode, bit scale defined by elements of
+ *                      'enum pcap_csap_receive_mode' in ndn_pcap.h.
+ *
+ * @return Status code.
+ */
+extern int tapi_pcap_add_csap_layer(asn_value    **csap_spec,
+                                    const char    *ifname,
+                                    unsigned int   iftype,
+                                    unsigned int   recv_mode);
+
+/**
  * Create common Ethernet-PCAP CSAP.
  *
  * @param ta_name       Test Agent name
@@ -76,11 +92,11 @@
  *                      'enum pcap_csap_receive_mode' in ndn_pcap.h.
  * @param pcap_csap     Identifier of created CSAP (OUT)
  *
- * @return Zero on success, otherwise standard or common TE error code.
+ * @return Status code.
  */
 extern int tapi_pcap_csap_create(const char *ta_name, int sid,
-                                 const char *ifname, int iftype, 
-                                 int recv_mode,
+                                 const char *ifname, unsigned int iftype,
+                                 unsigned int recv_mode,
                                  csap_handle_t *pcap_csap);
 
 
