@@ -240,6 +240,7 @@ union tarpc_ethtool_data
     switch (tarpc_ethtool_type type)
 {
     case TARPC_ETHTOOL_CMD: tarpc_ethtool_cmd cmd;
+    default:                void;
 };
 
 struct tarpc_ethtool {
