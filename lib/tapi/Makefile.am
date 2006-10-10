@@ -18,7 +18,8 @@ include_HEADERS = \
 	tapi_cfg_vtund.h \
 	tapi_cfg_ip6.h \
 	tapi_cfg_stats.h \
-	tapi_file.h
+	tapi_file.h \
+	tapi_reqs.h
 
 lib_LTLIBRARIES = libtapi.la
 
@@ -36,7 +37,8 @@ libtapi_la_SOURCES = \
 	tapi_cfg_ip6.c \
 	tapi_cfg_stats.c \
 	tapi_file.c \
-	verdict.c
+	verdict.c \
+	tapi_reqs.c
 
 
 install-exec-hook:
