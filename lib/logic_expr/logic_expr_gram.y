@@ -77,6 +77,7 @@ logic_expr_int_error(const char *str)
 
 %token OPEN CLOSE
 %token <str> TOKEN
+%token NOMATCH 
 
 %type <expr> expr
 

@@ -65,5 +65,5 @@ extern int logic_expr_int_str_pos;
                                     yylval->str = strdup(yytext);
                                     return TOKEN;
                                 }
-.*                              { REJECT; }
+.                               { return NOMATCH; }
 %%
