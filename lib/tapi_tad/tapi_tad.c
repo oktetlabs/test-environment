@@ -51,6 +51,7 @@
 
 #include "logger_api.h"
 #include "rcf_api.h"
+#include "conf_api.h"
 #include "ndn.h"
 #include "ndn_socket.h"
 
@@ -264,20 +265,33 @@ tapi_csap_get_status(const char *ta_name, int ta_sid, csap_handle_t csap_id,
 }
 
 /* Description in tapi_tad.h */
-int 
+te_errno
 tapi_tad_csap_create(const char *ta_name, int session,
                      const char *stack_id, 
                      const asn_value *csap_spec, int *handle)
 {
-    int  rc;
-    char tmp_name[] = "/tmp/te_tapi_tad_csap_create.XXXXXX";
+    te_errno    rc;
+    char        tmp_name[] = "/tmp/te_tapi_tad_csap_create.XXXXXX";
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
 
-    asn_save_to_file(csap_spec, tmp_name); 
+    rc = asn_save_to_file(csap_spec, tmp_name);
+    if (rc != 0)
+    {
+        ERROR("%s(): asn_save_to_file() failed: %r", __FUNCTION__, rc);
+        (void)unlink(tmp_name);
+        return rc;
+    }
 
     rc = rcf_ta_csap_create(ta_name, session, stack_id, tmp_name, handle);
+    if ((rc == 0) &&
+        ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*",
+                                   ta_name)) != 0))
+    {
+        ERROR("%s(): cfg_synchronize_fmt(/agent:%s/csap:*) failed: %r",
+              __FUNCTION__, ta_name, rc);
+    }
 
     unlink(tmp_name);
     if (rc != 0)
@@ -286,18 +300,43 @@ tapi_tad_csap_create(const char *ta_name, int session,
 }
 
 /* Description in tapi_tad.h */
-int 
+te_errno
+tapi_tad_csap_destroy(const char *ta_name, int session,
+                      csap_handle_t handle)
+{
+    te_errno    rc;
+
+    rc = rcf_ta_csap_destroy(ta_name, session, handle);
+    if ((rc == 0) &&
+        ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*",
+                                   ta_name)) != 0))
+    {
+        ERROR("%s(): cfg_synchronize_fmt(/agent:%s/csap:*) failed: %r",
+              __FUNCTION__, ta_name, rc);
+    }
+
+    return rc;
+}
+
+/* Description in tapi_tad.h */
+te_errno 
 tapi_tad_trsend_start(const char *ta_name, int session, 
                       csap_handle_t csap, const asn_value *templ,
                       rcf_call_mode_t blk_mode)
 {
-    int  rc;
-    char tmp_name[] = "/tmp/te_tapi_tad_trsend_start.XXXXXX";
+    te_errno    rc;
+    char        tmp_name[] = "/tmp/te_tapi_tad_trsend_start.XXXXXX";
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
 
-    asn_save_to_file(templ, tmp_name);
+    rc = asn_save_to_file(templ, tmp_name);
+    if (rc != 0)
+    {
+        ERROR("%s(): asn_save_to_file() failed: %r", __FUNCTION__, rc);
+        (void)unlink(tmp_name);
+        return rc;
+    }
 
     rc = rcf_ta_trsend_start(ta_name, session, csap, tmp_name, blk_mode);
     unlink(tmp_name);
@@ -322,8 +361,8 @@ tapi_tad_trrecv_start(const char *ta_name, int session,
     rc = asn_save_to_file(pattern, tmp_name);
     if (rc != 0)
     {
-        (void)unlink(tmp_name);
         ERROR("Failed to save pattern to file: %r", rc);
+        (void)unlink(tmp_name);
         return rc;
     }
 

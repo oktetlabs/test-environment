@@ -58,6 +58,7 @@
 #include "tad_csap_support.h"
 #include "tad_utils.h"
 #include "tad_send_recv.h"
+#include "tad_agent_csap.h"
 
 
 static struct timeval tv_zero = {0,0};
@@ -174,6 +175,8 @@ rcf_ch_tad_init(void)
     CHECK_RC(csap_support_socket_register());
 #endif
 
+    CHECK_RC(tad_agent_csap_init());
+
 #undef CHECK_RC
 
     return 0;
@@ -194,6 +197,7 @@ rcf_ch_tad_shutdown(void)
     tad_is_initialized = FALSE;
 
 #ifndef TAD_DUMMY 
+    tad_agent_csap_fini();
     csap_spt_destroy();
     csap_id_destroy();
 #endif
@@ -402,46 +406,29 @@ csap_wait_exclusive_use(csap_p csap)
 
     return rc;
 }
-#endif
 
-/* See description in rcf_ch_api.h */
-int
-rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
-                    char *cbuf, size_t buflen, size_t answer_plen,
-                    csap_handle_t csap_id)
+/* See the description in tad_agent_csap.h */
+te_errno
+tad_csap_destroy(csap_handle_t csap_id)
 {
-#ifdef TAD_DUMMY 
-    UNUSED(rcfc);
-    UNUSED(cbuf);
-    UNUSED(buflen);
-    UNUSED(answer_plen);
-
-    VERB("CSAP destroy: CSAP %u\n", csap_id);
-    return -1;
-#else
     csap_p          csap;
     csap_spt_type_p csap_spt_descr; 
 
     unsigned int layer;
     te_errno     rc; 
-    
-    TAD_CHECK_INIT;
 
     VERB("%s: CSAP %u\n", __FUNCTION__, csap_id); 
-    VERB("%s(CSAP %u), answer prefix %s", __FUNCTION__, csap_id,  cbuf);
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
         WARN("%s: CSAP %u not exists", __FUNCTION__, csap_id);
-        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
-        return 0;
+        return TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX);
     }
 
     rc = csap_command(csap, TAD_OP_DESTROY);
     if (rc != 0)
     {
-        SEND_ANSWER("%u", rc);
-        return 0;
+        return rc;
     }
     
     if (~csap->state & CSAP_STATE_IDLE)
@@ -453,8 +440,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
              * It is better to keep CSAP open rather than get
              * segmentation fault because of invalid destruction.
              */
-            SEND_ANSWER("%u", rc);
-            return 0;
+            return rc;
         }
     }
 
@@ -466,11 +452,10 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
     if (rc != 0)
     {
         /*
-         * It is better to keep CSAP open rather than get segmentation
-         * fault because of invalid destruction.
+         * It is better to keep CSAP open rather than get
+         * segmentation fault because of invalid destruction.
          */
-        SEND_ANSWER("%u", rc);
-        return 0;
+        return rc;
     }
     
     /* CSAP should be either IDLE or DONE */
@@ -503,10 +488,31 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
     }
     csap_destroy(csap_id);
 
-    cbuf[answer_plen] = 0;
-    VERB("%s(CSAP %u), answer prefix %s", __FUNCTION__, csap_id,  cbuf);
+    return rc;
+}
+#endif
 
-    SEND_ANSWER("0");
+/* See description in rcf_ch_api.h */
+int
+rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
+                    char *cbuf, size_t buflen, size_t answer_plen,
+                    csap_handle_t csap_id)
+{
+#ifdef TAD_DUMMY 
+    UNUSED(rcfc);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+
+    VERB("CSAP destroy: CSAP %u\n", csap_id);
+    return -1;
+#else
+    TAD_CHECK_INIT;
+
+    VERB("%s(CSAP %u), answer prefix %s", __FUNCTION__, csap_id,  cbuf);
+    cbuf[answer_plen] = '\0';
+
+    SEND_ANSWER("%u", tad_csap_destroy(csap_id));
 
     return 0;
 #endif

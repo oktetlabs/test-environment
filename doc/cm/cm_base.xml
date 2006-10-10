@@ -40,6 +40,11 @@
                 should not contain '/' -->
     <object oid="/agent/rsrc" access="read_create" type="string"/>
     
+    <!-- CSAP (Communication Service Access Point) created on
+         the Test Agent
+         Name: CSAP ID -->
+    <object oid="/agent/csap" access="read_create" type="none"/>
+    
     <!-- Configuration changes accomodation delay.
          The object is used to specify the time necessary for
          accepting by OS changes done via Configurator on the Test Agent

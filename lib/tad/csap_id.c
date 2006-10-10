@@ -238,13 +238,13 @@ csap_id_delete(csap_handle_t csap_id)
 
 /* See description in csap_id.h */
 void
-csap_id_enum(csap_id_enum_cb cb)
+csap_id_enum(csap_id_enum_cb cb, void *opaque)
 {
     csap_id_entry  *p, *q;
 
     for (p = csap_id_db.lh_first; p != NULL; p = q)
     {
         q = p->links.le_next;
-        cb(p->id, p->ptr);
+        cb(p->id, p->ptr, opaque);
     }
 }

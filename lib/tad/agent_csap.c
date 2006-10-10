@@ -24,7 +24,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: csap_id.c 24879 2006-03-06 14:00:33Z arybchik $
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD CSAPs"
@@ -111,8 +111,9 @@ agent_csap_list_cb(csap_handle_t csap_id, void *ptr, void *opaque)
         return;
 
     do {
-        int p = snprintf(data->list, data->len - data->off,
-                         " %u", csap_id) + sizeof('\0');
+        int p = snprintf(data->list, data->len - data->off, "%s%u", 
+                         (data->off != 0) ? " " : "", csap_id) +
+                sizeof('\0');
         
         again = (p > (int)(data->len - data->off));
         if (again)

@@ -83,20 +83,23 @@ extern void *csap_id_delete(csap_handle_t csap_id);
  *
  * @param csap_id   CSAP ID
  * @param ptr       Associated pointer
+ * @param opaque    User opaque data
  *
  * @retval TRUE     Continue
  * @retval FALSE    Break
  */
-typedef void (*csap_id_enum_cb)(csap_handle_t csap_id, void *ptr);
+typedef void (*csap_id_enum_cb)(csap_handle_t csap_id, void *ptr,
+                                void *opaque);
 
 /**
  * Enumerate all known CSAP IDs.
  *
  * @param cb        Function to be called for each CSAP ID
+ * @param opaque    User opaque data
  *
  * It is allowed to delete enumerated item from callback.
  */
-extern void csap_id_enum(csap_id_enum_cb cb);
+extern void csap_id_enum(csap_id_enum_cb cb, void *opaque);
 
 
 #ifdef __cplusplus

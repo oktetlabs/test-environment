@@ -55,6 +55,7 @@
 #include "rcf_api.h"
 #include "ndn_cli.h"
 #include "logger_api.h"
+#include "conf_api.h"
 
 #include "tapi_cli.h"
 
@@ -418,6 +419,12 @@ tapi_cli_csap_create(const char *ta_name, int sid,
     {
         ERROR("rcf_ta_csap_create() failed(%r) on TA %s:%d file %s",
               rc, ta_name, sid, tmp_name);
+    }
+    else if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*",
+                                       ta_name)) != 0)
+    {
+        ERROR("%s(): cfg_synchronize_fmt(/agent:%s/csap:*) failed: %r",
+              __FUNCTION__, ta_name, rc);
     }
 
     unlink(tmp_name);

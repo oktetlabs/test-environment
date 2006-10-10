@@ -142,6 +142,22 @@ extern int tapi_tad_csap_create(const char *ta_name, int session,
                                 const asn_value *csap_spec, int *handle);
 
 /**
+ * Destroys CSAP (communication service access point) on the Test Agent.
+ *
+ * @note In comparison with rcf_ta_csap_destroy() the function
+ *       synchronizes /agent/csap subtree of the corresponding
+ *       Test Agent.
+ *
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
+ * @param handle        CSAP handle
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tad_csap_destroy(const char *ta_name, int session,
+                                      csap_handle_t handle);
+
+/**
  * This function is used to force sending of traffic via already created
  * CSAP.
  * Started sending process may be managed via standard function rcf_ta_*.

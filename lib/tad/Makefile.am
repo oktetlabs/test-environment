@@ -20,6 +20,7 @@ include_HEADERS = \
 
 noinst_HEADERS = \
 	csap_id.h \
+	tad_agent_csap.h \
 	tad_utils.h \
 	tad_eth_sap.h \
 	tad_bps.h
@@ -37,6 +38,7 @@ libtad_core_a_SOURCES = \
 	tad_utils.c \
 	tad_ch.c \
 	csap_id.c \
+	agent_csap.c \
 	csap_spt_db.c \
 	csap_inst.c \
 	tad_send.c \
