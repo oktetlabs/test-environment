@@ -106,6 +106,8 @@ typedef struct tester_ctx {
                                              expression */
     te_bool             targets_free;   /**< Should target requirements
                                              be freed? */
+    logic_expr         *dyn_targets;    /**< Dynamic target requirements
+                                             expression */
 
     test_requirements   reqs;           /**< List of collected sticky
                                              requirements */
@@ -185,6 +187,7 @@ tester_ctx_free(tester_ctx *ctx)
          */
         logic_expr_free_nr((logic_expr *)ctx->targets);
     }
+    logic_expr_free(ctx->dyn_targets);
     test_requirements_free(&ctx->reqs);
     tester_ctx_free(ctx->keepalive_ctx);
     free(ctx);
@@ -225,6 +228,7 @@ tester_ctx_clone(const tester_ctx *ctx)
 
     new_ctx->targets = ctx->targets;
     new_ctx->targets_free = FALSE;
+    new_ctx->dyn_targets = NULL;
 
     TAILQ_INIT(&new_ctx->reqs);
     rc = test_requirements_clone(&ctx->reqs, &new_ctx->reqs);
@@ -322,6 +326,7 @@ tester_run_new_ctx(tester_run_data *data)
 
     new_ctx->targets = data->targets;
     new_ctx->targets_free = FALSE;
+    new_ctx->dyn_targets = NULL;
     TAILQ_INIT(&new_ctx->reqs);
     /* new_ctx->backup = NULL; */
     /* new_ctx->backup_ok = FALSE; */
@@ -1558,6 +1563,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
     te_errno            status;
+    test_id             id;
 
     UNUSED(ri);
 
@@ -1572,12 +1578,54 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     assert(ctx->flags & TESTER_INLOGUE);
     status = ctx->group_result.status;
+    id = ctx->current_result.id;
     tester_run_destroy_ctx(gctx);
     
     ctx = gctx->ctxs.lh_first;
     assert(ctx != NULL);
 
-    if ((status != TESTER_TEST_PASSED) && (status != TESTER_TEST_FAKED))
+    if (status == TESTER_TEST_PASSED)
+    {
+        cfg_val_type    type = CVT_STRING; 
+        char           *reqs = NULL;
+        te_errno        rc = cfg_get_instance_fmt(&type, &reqs,
+                                                  "/local:/reqs:%u", id);
+
+        if (rc == 0)
+        {
+            rc = logic_expr_parse(reqs, &ctx->dyn_targets);
+            if (rc != 0)
+            {
+                ERROR("Failed to parse target requirements expression "
+                      "populated by test with ID=%u: %r", id, rc);
+                ctx->group_result.status = TESTER_TEST_PROLOG;
+                assert(ctx->links.le_next != NULL);
+                ctx->links.le_next->group_step = TRUE;
+                EXIT("SKIP");
+                return TESTER_CFG_WALK_SKIP;
+            }
+            ctx->targets = logic_expr_binary(LOGIC_EXPR_AND,
+                                             (logic_expr *)ctx->targets,
+                                             ctx->dyn_targets);
+            if (ctx->targets == NULL)
+            {
+                tester_run_destroy_ctx(gctx);
+                ctx->group_result.status = TESTER_TEST_ERROR;
+                EXIT("FAULT");
+                return TESTER_CFG_WALK_FAULT;
+            }
+            ctx->targets_free = TRUE;
+        }
+        else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        {
+            ERROR("Get of /local:/reqs:%u failed unexpectedly: %r",
+                  id, rc);
+            ctx->group_result.status = TESTER_TEST_ERROR;
+            EXIT("FAULT");
+            return TESTER_CFG_WALK_FAULT;
+        }
+    }
+    else if (status != TESTER_TEST_FAKED)
     {
         if (status == TESTER_TEST_SKIPPED)
             ctx->group_result.status = TESTER_TEST_SKIPPED;
