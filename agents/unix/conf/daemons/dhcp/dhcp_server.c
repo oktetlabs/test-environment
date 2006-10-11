@@ -29,7 +29,6 @@
  */
 
 /* Still debugging, it switches off debug messages */
-#define DRING
 
 #ifdef WITH_DHCP_SERVER
 
@@ -73,7 +72,7 @@ static unsigned int dhcp_server_n_execs =
     sizeof(dhcp_server_execs) / sizeof(dhcp_server_execs[0]);
 
 
-#ifdef TA_UNIX_ISC_DHCPS_NATIVE_CFG
+#if defined TA_UNIX_ISC_DHCPS_NATIVE_CFG || defined __sun__
 
 /** List of known possible locations of DHCP server configuration file */
 static const char *dhcp_server_confs[] = {
@@ -86,6 +85,9 @@ static const char *dhcp_server_confs[] = {
 static unsigned int dhcp_server_n_confs =
     sizeof(dhcp_server_confs) / sizeof(dhcp_server_confs[0]);
 
+#endif /* !TA_UNIX_ISC_DHCPS_NATIVE_CFG || __sun__ */
+
+#ifdef TA_UNIX_ISC_DHCPS_NATIVE_CFG
 
 /**
  * List of known possible locations of DHCP server auxilury
@@ -105,8 +107,6 @@ static unsigned int dhcp_server_n_aux_confs =
 
 #endif /* !TA_UNIX_ISC_DHCPS_NATIVE_CFG */
 
-
-
 /** DHCP server script name */
 static const char *dhcp_server_script = NULL;
 
@@ -123,10 +123,14 @@ static const char *dhcp_server_leases = NULL;
 static char *dhcp_server_ifs = NULL;
 
 
-#ifdef TA_UNIX_ISC_DHCPS_NATIVE_CFG
+#if defined TA_UNIX_ISC_DHCPS_NATIVE_CFG || defined __sun__
 
 /** Index of the DHCP server configuration file backup */
 static int dhcp_server_conf_backup = -1;
+
+#endif /* !TA_UNIX_ISC_DHCPS_NATIVE_CFG || __sun__ */
+
+#ifdef TA_UNIX_ISC_DHCPS_NATIVE_CFG
 
 /** DHCP server auxilury configuration file name */
 static const char *dhcp_server_aux_conf = NULL;
@@ -188,8 +192,6 @@ is_quoted(const char *opt_name)
 {
     unsigned int i;
 
-DRING("XA! is_quoted");
-    
     for (i = 0; i < sizeof(isc_dhcp_quoted_options)/sizeof(char *); i++)
         if (strcmp(opt_name, isc_dhcp_quoted_options[i]) == 0)
             return TRUE;
@@ -203,8 +205,6 @@ find_host(const char *name)
 {
     host *h;
 
-DRING("XA! find_host");
-
     for (h = hosts; h != NULL && strcmp(h->name, name) != 0; h = h->next);
 
     return h;
@@ -216,8 +216,6 @@ find_group(const char *name)
 {
     group *g;
 
-DRING("XA! find_group");
-
     for (g = groups; g != NULL && strcmp(g->name, name) != 0; g = g->next);
 
     return g;
@@ -227,8 +225,6 @@ DRING("XA! find_group");
 static te_dhcp_option *
 find_option(te_dhcp_option *opt, const char *name)
 {
-DRING("XA! find_option");
-
     for (; opt != NULL && strcmp(opt->name, name) != 0; opt = opt->next);
 
     return opt;
@@ -239,8 +235,6 @@ static void
 free_host(host *h)
 {
     te_dhcp_option *opt, *next;
-
-DRING("XA! free_host");
 
     free(h->name);
     free(h->chaddr);
@@ -260,8 +254,6 @@ free_group(group * g)
 {
     te_dhcp_option *opt, *next;
 
-DRING("XA! free_group");
-
     free(g->name);
     free(g->next_server);
     free(g->filename);
@@ -280,8 +272,7 @@ ds_dhcpserver_save_conf(void)
     host                   *h;
     te_dhcp_option         *opt;
     FILE                   *f = fopen(dhcp_server_conf, "w");
-
-RING("ds_dhcpserver_save_conf");
+    int                    rc;
 
     if (f == NULL)
     {
@@ -289,51 +280,15 @@ RING("ds_dhcpserver_save_conf");
               dhcp_server_conf, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
+#if defined __sun__
+    ds_config_touch(dhcp_server_conf_backup);
 
-    fprintf(f, "deny unknown-clients;\n\n");
-    
-    fprintf(f, "\n");
-    for (s = subnets.tqh_first; s != NULL; s = s->links.tqe_next)
-    {
-        struct in_addr  mask;
-
-        mask.s_addr = htonl(PREFIX2MASK(s->prefix_len));
-        fprintf(f, "subnet %s netmask %s {\n",
-                s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
-        for (opt = s->options; opt != NULL; opt = opt->next)
-        {
-            te_bool quoted = is_quoted(opt->name);
-
-            fprintf(f, "\toption %s %s%s%s;\n", opt->name,
-                    quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
-        }
-        fprintf(f, "}\n");
-    }
-
-    fprintf(f, "\n");
-    for (h = hosts; h != NULL; h = h->next)
-    {
-        fprintf(f, "host %s {\n", h->name);
-        if (h->chaddr)
-            fprintf(f, "\thardware ethernet %s;\n", h->chaddr);
-        if (h->client_id)
-            fprintf(f, "\tclient-id %s;\n", h->client_id);
-        if (h->ip_addr)
-            fprintf(f, "\tfixed-address %s;\n", h->ip_addr);
-        if (h->next_server)
-            fprintf(f, "\tnext-server %s;\n", h->next_server);
-        if (h->filename)
-            fprintf(f, "\tfilename \"%s\";\n", h->filename);
-        for (opt = h->options; opt != NULL; opt = opt->next)
-        {
-            te_bool quoted = is_quoted(opt->name);
-
-            fprintf(f, "\toption %s %s%s%s;\n", opt->name,
-                    quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
-        }
-        fprintf(f, "}\n");
-    }
-    fprintf(f, "\n");
+    fprintf(f,
+            "DAEMON_ENABLED=TRUE\n"
+            "RESOURCE=SUNWbinfiles\n"
+            "RUN_MODE=server\n"
+            "PATH=/var/mydhcp\n"
+            "CONVER=1\n");
 
     if (fsync(fileno(f)) != 0)
     {
@@ -349,6 +304,106 @@ RING("ds_dhcpserver_save_conf");
         ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
+#endif
+
+#if defined __linux__
+    fprintf(f, "deny unknown-clients;\n\n");
+    fprintf(f, "\n");
+#endif
+    for (s = subnets.tqh_first; s != NULL; s = s->links.tqe_next)
+    {
+        struct in_addr  mask;
+
+        mask.s_addr = htonl(PREFIX2MASK(s->prefix_len));
+#if defined __linux__
+        fprintf(f, "subnet %s netmask %s {\n",
+                s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
+#elif defined __sun__
+        TE_SPRINTF(buf, "/usr/sbin/pntadm -C %s", s->subnet);
+
+        if ((rc = ta_system(buf)) != 0)
+            return rc;
+
+        /* FIXME ('/etc/inet/netmasks' must be maintained) */
+//        add_(s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
+#endif
+#if defined __linux__
+        for (opt = s->options; opt != NULL; opt = opt->next)
+        {
+            te_bool quoted = is_quoted(opt->name);
+
+            fprintf(f, "\toption %s %s%s%s;\n", opt->name,
+                    quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
+        }
+        fprintf(f, "}\n");
+#endif
+    }
+
+#if defined __linux__
+    fprintf(f, "\n");
+#endif
+    for (h = hosts; h != NULL; h = h->next)
+    {
+#if defined __linux__
+        fprintf(f, "host %s {\n", h->name);
+        if (h->chaddr)
+            fprintf(f, "\thardware ethernet %s;\n", h->chaddr);
+        if (h->client_id)
+            fprintf(f, "\tclient-id %s;\n", h->client_id);
+#endif
+	if (h->ip_addr)
+#if defined __linux__
+            fprintf(f, "\tfixed-address %s;\n", h->ip_addr);
+#elif defined __sun__
+        {
+            char *p;
+
+	    TE_SPRINTF(buf, "pntadm -A %s %s", h->ip_addr, h->ip_addr);
+            if ((p = strrchr(buf, '.')) != NULL)
+	    {
+                p[1] = '0';
+                p[2] = '\0';
+	    }
+            if ((rc = ta_system(buf)) != 0)
+                return rc;
+        }
+#endif
+
+#if defined __linux__
+	if (h->next_server)
+            fprintf(f, "\tnext-server %s;\n", h->next_server);
+        if (h->filename)
+            fprintf(f, "\tfilename \"%s\";\n", h->filename);
+        for (opt = h->options; opt != NULL; opt = opt->next)
+        {
+            te_bool quoted = is_quoted(opt->name);
+
+            fprintf(f, "\toption %s %s%s%s;\n", opt->name,
+                    quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
+        }
+        fprintf(f, "}\n");
+#endif
+    }
+#if defined __linux__
+    fprintf(f, "\n");
+#endif
+
+#if defined __linux__
+    if (fsync(fileno(f)) != 0)
+    {
+        int err = errno;
+
+        ERROR("%s(): fsync() failed: %s", __FUNCTION__, strerror(err));
+        (void)fclose(f);
+        return TE_OS_RC(TE_TA_UNIX, err);
+    }
+
+    if (fclose(f) != 0)
+    {
+        ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+#endif
 
     return 0;
 }
@@ -357,8 +412,6 @@ RING("ds_dhcpserver_save_conf");
 static te_bool
 ds_dhcpserver_is_run(void)
 {
-DRING("XA! ds_dhcpserver_is_run");
-
 #if defined __linux__
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", dhcp_server_exec);
 #elif defined __sun__
@@ -375,10 +428,8 @@ ds_dhcpserver_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-DRING("XA! ds_dhcpserver_get");
-
     strcpy(value, ds_dhcpserver_is_run() ? "1" : "0");
-
+	
     return 0;
 }
 
@@ -386,18 +437,12 @@ DRING("XA! ds_dhcpserver_get");
 static te_errno
 ds_dhcpserver_script_stop(void)
 {
-DRING("XA! ds_dhcpserver_script_stop");
-
     TE_SPRINTF(buf, "%s stop >/dev/null 2>&1", dhcp_server_script);
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-
-#if defined __sun__
-ta_system("svcs -a | grep dhcp");
-#endif
 
     return 0;
 }
@@ -407,8 +452,6 @@ static te_errno
 ds_dhcpserver_stop(void)
 {
     ENTRY("%s()", __FUNCTION__);
-
-DRING("XA! ds_dhcpserver_stop");
 
 #if defined __linux__
     TE_SPRINTF(buf, "killall %s", dhcp_server_exec);
@@ -421,10 +464,6 @@ DRING("XA! ds_dhcpserver_stop");
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
-#if defined __sun__
-ta_system("svcs -a | grep dhcp");
-#endif
-
     return 0;
 }
 
@@ -433,18 +472,12 @@ ta_system("svcs -a | grep dhcp");
 static te_errno
 ds_dhcpserver_script_start(void)
 {
-DRING("XA! ds_dhcpserver_script_start");
-
     TE_SPRINTF(buf, "%s start >/dev/null 2>&1", dhcp_server_script);
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-
-#if defined __sun__
-ta_system("svcs -a | grep dhcp");
-#endif
 
     return 0;
 }
@@ -456,8 +489,6 @@ ds_dhcpserver_start(void)
     te_errno rc;
 
     ENTRY("%s()", __FUNCTION__);
-
-DRING("XA! ds_dhcpserver_start");
 
     rc = ds_dhcpserver_save_conf();
     if (rc != 0)
@@ -495,10 +526,6 @@ DRING("XA! ds_dhcpserver_start");
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
-#if defined __sun__
-ta_system("svcs -a | grep dhcp");
-#endif
-
     return 0;
 }
 
@@ -513,8 +540,6 @@ ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(gid);
     UNUSED(oid);
     ENTRY("%s(): value=%s", __FUNCTION__, value);
-
-DRING("XA! ds_dhcpserver_set");
 
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -555,8 +580,6 @@ ds_dhcpserver_ifs_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-DRING("XA! ds_dhcpserver_ifs_get");
-
     strcpy(value, dhcp_server_ifs ? : "");
 
     return 0;
@@ -570,8 +593,6 @@ ds_dhcpserver_ifs_set(unsigned int gid, const char *oid, const char *value)
 
     UNUSED(gid);
     UNUSED(oid);
-
-DRING("XA! dsdhcp_server_ifs_set");
 
     /* TODO Check value */
 
@@ -591,8 +612,6 @@ DRING("XA! dsdhcp_server_ifs_set");
 static void
 free_subnet(te_dhcp_server_subnet *s)
 {
-DRING("XA! free_subnet");
-
     free(s->subnet);
     /*  TODO: free options here */
     free(s);
@@ -602,8 +621,6 @@ static te_dhcp_server_subnet *
 find_subnet(const char *subnet)
 {
     te_dhcp_server_subnet  *s;
-
-DRING("XA! find_subnet");
 
     for (s = subnets.tqh_first;
          s != NULL && strcmp(s->subnet, subnet) != 0;
@@ -621,8 +638,6 @@ ds_subnet_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dhcpserver);
-
-DRING("XA! ds_subnet_get");
 
     if ((s = find_subnet(subnet)) == NULL)
         return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
@@ -643,8 +658,6 @@ ds_subnet_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dhcpserver);
-
-DRING("XA! ds_subnet_set");
 
     if ((s = find_subnet(subnet)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -669,8 +682,6 @@ ds_subnet_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dhcpserver);
-
-DRING("XA! ds_subnet_add");
 
     if ((s = find_subnet(subnet)) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -704,8 +715,6 @@ ds_subnet_del(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(dhcpserver);
 
-DRING("XA! ds_subnet_del");
-
     if ((s = find_subnet(subnet)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -724,8 +733,6 @@ ds_subnet_list(unsigned int gid, const char *oid, char **list)
     UNUSED(gid);
     UNUSED(oid);
 
-DRING("XA! ds_subnet_list");
-    
     *buf = '\0';
     for (s = subnets.tqh_first; s != NULL; s = s->links.tqe_next)
     {
@@ -746,8 +753,6 @@ ds_##_gh##_list(unsigned int gid, const char *oid, char **list) \
                                                                 \
     UNUSED(oid);                                                \
     UNUSED(gid);                                                \
-                                                                \
-DRING("XA! ds_" #_gh "_list");                                   \
                                                                 \
     *buf = '\0';                                                \
                                                                 \
@@ -775,8 +780,6 @@ ds_##_gh##_add(unsigned int gid, const char *oid, const char *value,    \
     UNUSED(oid);                                                        \
     UNUSED(dhcpserver);                                                 \
     UNUSED(value);                                                      \
-                                                                        \
-DRING("XA! ds_" #_gh "_add");                                            \
                                                                         \
     if ((gh = find_##_gh(name)) != NULL)                                \
         return TE_RC(TE_TA_UNIX, TE_EEXIST);                            \
@@ -812,8 +815,6 @@ ds_##_gh##_del(unsigned int gid, const char *oid,       \
     UNUSED(oid);                                        \
     UNUSED(dhcpserver);                                 \
                                                         \
-DRING("XA! ds_" #_gh "_del");                            \
-                                                        \
     for (gh = _gh##s, prev = NULL;                      \
          gh != NULL && strcmp(gh->name, name) != 0;     \
          prev = gh, gh = gh->next);                     \
@@ -844,8 +845,6 @@ ds_host_group_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(dhcpserver);
 
-DRING("XA! ds_host_group_get");
-
     if ((h = find_host(name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -868,8 +867,6 @@ ds_host_group_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dhcpserver);
-
-DRING("XA! ds_host_group_set");
 
     if ((h = find_host(name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -902,8 +899,6 @@ ds_##_gh##_##_attr##_get(unsigned int gid, const char *oid,     \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-DRING("XA! ds_" #_gh "_" #_attr "_get");                         \
-                                                                \
     if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
@@ -928,8 +923,6 @@ ds_##_gh##_##_attr##_set(unsigned int gid, const char *oid,     \
     UNUSED(gid);                                                \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
-                                                                \
-DRING("XA! ds_" #_gh "_" #_attr "_set");                         \
                                                                 \
     if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
@@ -983,8 +976,6 @@ ds_##_gh##_option_list(unsigned int gid, const char *oid,       \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-DRING("XA! ds_" #_gh "_option_list");                            \
-                                                                \
     if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
@@ -1015,8 +1006,6 @@ ds_##_gh##_option_add(unsigned int gid, const char *oid,        \
     UNUSED(gid);                                                \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
-                                                                \
-DRING("XA! ds_" #_gh "_option_add");                             \
                                                                 \
     if (*value == 0)                                            \
         return TE_RC(TE_TA_UNIX, TE_EINVAL);                    \
@@ -1059,8 +1048,6 @@ ds_##_gh##_option_get(unsigned int gid, const char *oid,        \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-DRING("XA! ds_" #_gh "_option_get");                             \
-                                                                \
     if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
@@ -1091,8 +1078,6 @@ ds_##_gh##_option_set(unsigned int gid, const char *oid,        \
     UNUSED(gid);                                                \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
-                                                                \
-DRING("XA! ds_" #_gh "_option_set");                             \
                                                                 \
     if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
@@ -1136,8 +1121,6 @@ ds_##_gh##_option_del(unsigned int gid, const char *oid,        \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-DRING("XA! ds_" #_gh "_option_del");                             \
-                                                                \
     if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
@@ -1175,8 +1158,6 @@ ds_lease_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
-
-DRING("XA! ds_lease_list");
 
     if ((f = fopen("/var/lib/dhcp/dhcpd.leases", "r")) == NULL)
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -1228,8 +1209,6 @@ open_lease(const char *name)
     isc_result_t rc;
     unsigned int addr;
 
-DRING("XA! open_lease");
-
     if (conn == NULL)
         return TE_RC(TE_TA_UNIX, TE_EPERM);
 
@@ -1256,8 +1235,6 @@ ds_lease_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(dhcpserver);
-
-DRING("XA! ds_lease_get");
 
     return open_lease(name);
 }
@@ -1304,8 +1281,6 @@ ds_lease_client_id_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dhcpserver);
-
-DRING("XA! ds_lease_client_id_get");
 
     if ((rc = open_lease(name)) != 0)
         return rc;
@@ -1355,8 +1330,6 @@ ds_lease_hostname_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(dhcpserver);
 
-DRING("XA! ds_lease_hostname_get");
-
     if ((rc = open_lease(name)) != 0)
         return rc;
 
@@ -1384,8 +1357,6 @@ ds_lease_host_get(unsigned int gid, const char *oid, char *value,
     UNUSED(value);
     UNUSED(dhcpserver);
 
-DRING("XA! ds_lease_host_get");
-
     if ((rc = open_lease(name)) != 0)
         return rc;
 
@@ -1409,8 +1380,6 @@ ds_lease_chaddr_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dhcpserver);
-
-DRING("XA! ds_lease_chaddr_get");
 
     if ((rc = open_lease(name)) != 0)
         return rc;
@@ -1585,14 +1554,11 @@ dhcpserver_grab(const char *name)
     
     UNUSED(name);
 
-DRING("XA! dhcpserver_grab");
-
     TAILQ_INIT(&subnets);
 
     if ((rc = rcf_pch_add_node("/agent", &node_ds_dhcpserver)) != 0)
         return rc;
 
-#if defined __linux__ || defined __sun__
     /* Find DHCP server executable */
     rc = find_file(dhcp_server_n_execs, dhcp_server_execs, TRUE);
     if (rc < 0)
@@ -1603,8 +1569,6 @@ DRING("XA! dhcpserver_grab");
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     dhcp_server_exec = dhcp_server_execs[rc];
-
-DRING("XA! dhcp_server_exec = %s", dhcp_server_exec);
 
     /* Find DHCP server script */
     rc = find_file(dhcp_server_n_scripts, dhcp_server_scripts, TRUE);
@@ -1617,9 +1581,16 @@ DRING("XA! dhcp_server_exec = %s", dhcp_server_exec);
     }
     dhcp_server_script = dhcp_server_scripts[rc];
 
-DRING("XA! dhcp_server_script = %s", dhcp_server_script);
+    /* FIXME (original 'dhcpsvc.conf' gets erased after epilog) */
+#if defined __sun__
+    if ((rc = ta_system("touch /etc/inet/dhcpsvc.conf")) != 0)
+        return rc;
+    if ((rc = ta_system("if test ! -d /var/mydhcp; "
+                        "then mkdir -p /var/mydhcp; fi")) != 0)
+        return rc;
+#endif /* !__sun__ */
 
-#if TA_UNIX_ISC_DHCPS_NATIVE_CFG
+#if defined TA_UNIX_ISC_DHCPS_NATIVE_CFG || defined __sun__
     /* Find DHCP server configuration file */
     rc = find_file(dhcp_server_n_confs, dhcp_server_confs, FALSE);
     if (rc < 0)
@@ -1630,9 +1601,12 @@ DRING("XA! dhcp_server_script = %s", dhcp_server_script);
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     dhcp_server_conf = dhcp_server_confs[rc];
+#endif /* !(defined TA_UNIX_ISC_DHCPS_NATIVE_CFG || defined __sun__) */
 
-DRING("XA! dhcp_server_conf = %s", dhcp_server_conf);
-
+#if defined __sun__
+    rc = ds_create_backup("/etc/inet/", "dhcpsvc.conf", &dhcp_server_conf_backup);
+#elif defined __linux__
+#if defined TA_UNIX_ISC_DHCPS_NATIVE_CFG
     /* Test existing configuration file and leases DB */
     snprintf(buf, sizeof(buf), "%s -q -t -T", dhcp_server_exec);
     if (ta_system(buf) != 0)
@@ -1651,6 +1625,7 @@ DRING("XA! dhcp_server_conf = %s", dhcp_server_conf);
         ds_shutdown_dhcp_server();
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
+
 #else
     /* FIXME */
     dhcp_server_conf = "/tmp/te.dhcpd.conf";
@@ -1680,11 +1655,9 @@ DRING("XA! dhcp_server_conf = %s", dhcp_server_conf);
         }
         dhcp_server_was_run = TRUE;
     }
+#endif /* TA_UNIX_ISC_DHCPS_NATIVE_CFG */
 #endif
 
-#endif
-
-RING("Axa");
     return 0;
 }
 
@@ -1697,13 +1670,10 @@ dhcpserver_release(const char *name)
     
     UNUSED(name);
 
-DRING("XA! dhcpserver_release");
-
     rc = rcf_pch_del_node(&node_ds_dhcpserver);
     if (rc != 0)
         return rc;
 
-#if defined __linux__
     /* Free old lists */
     for (host = hosts; host != NULL; host = host_tmp)
     {
@@ -1718,6 +1688,14 @@ DRING("XA! dhcpserver_release");
         free_group(group);
     }
     groups = NULL;
+
+#if defined __sun__
+    ds_restore_backup(dhcp_server_conf_backup);
+
+    /* FIXME */
+    if ((rc = ta_system("rm -fr /var/mydhcp")) != 0)
+        return rc;
+#endif
 
 #ifndef TA_UNIX_ISC_DHCPS_NATIVE_CFG
     if (dhcp_server_was_run)
@@ -1742,6 +1720,8 @@ DRING("XA! dhcpserver_release");
         ERROR("Failed to delete DHCP server temporary configuration "
               "file '%s': %s", dhcp_server_conf, strerror(errno));
     }
+
+#if defined __linux__
     if (dhcp_server_leases != NULL && unlink(dhcp_server_leases) != 0)
     {
         ERROR("Failed to delete DHCP server temporary leases data base "
@@ -1750,6 +1730,7 @@ DRING("XA! dhcpserver_release");
 #endif
 
 #endif
+
     return 0;
 }
 
