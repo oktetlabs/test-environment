@@ -518,6 +518,13 @@ ds_dhcpserver_start(void)
                dhcp_server_exec, dhcp_server_conf,
                dhcp_server_leases, dhcp_server_ifs ? : "");
 #elif defined __sun__
+    TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st %s", get_ds_name("dhcpserver"));
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
     TE_SPRINTF(buf, "/usr/sbin/svcadm enable -rst %s", get_ds_name("dhcpserver"));
 #endif
     if (ta_system(buf) != 0)
