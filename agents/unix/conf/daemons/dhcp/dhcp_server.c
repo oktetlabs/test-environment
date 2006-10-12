@@ -351,26 +351,26 @@ ds_dhcpserver_save_conf(void)
         if (h->client_id)
             fprintf(f, "\tclient-id %s;\n", h->client_id);
 #endif
-	if (h->ip_addr)
+        if (h->ip_addr)
 #if defined __linux__
             fprintf(f, "\tfixed-address %s;\n", h->ip_addr);
 #elif defined __sun__
         {
             char *p;
 
-	    TE_SPRINTF(buf, "pntadm -A %s %s", h->ip_addr, h->ip_addr);
+            TE_SPRINTF(buf, "pntadm -A %s %s", h->ip_addr, h->ip_addr);
             if ((p = strrchr(buf, '.')) != NULL)
-	    {
+            {
                 p[1] = '0';
                 p[2] = '\0';
-	    }
+            }
             if ((rc = ta_system(buf)) != 0)
                 return rc;
         }
 #endif
 
 #if defined __linux__
-	if (h->next_server)
+        if (h->next_server)
             fprintf(f, "\tnext-server %s;\n", h->next_server);
         if (h->filename)
             fprintf(f, "\tfilename \"%s\";\n", h->filename);
@@ -429,7 +429,7 @@ ds_dhcpserver_get(unsigned int gid, const char *oid, char *value)
     UNUSED(oid);
 
     strcpy(value, ds_dhcpserver_is_run() ? "1" : "0");
-	
+
     return 0;
 }
 
