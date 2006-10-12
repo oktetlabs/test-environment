@@ -6078,3 +6078,122 @@ AC_DEFUN([TE_PATH_LIBXML2], [
     AC_SUBST([XML2_CFLAGS])
     AC_SUBST([XML2_LIBS])
 ])
+
+# TE_BINUTIL
+# ----------------
+# The macro should be called in configure.ac file 
+# if you want to get a full path of desired utility not depending
+# wheter you are cross-compiling or not.
+# In case of cross-compiling a utility may be different for different
+# platforms and so can be located in different places.
+#
+# Parameters:
+#       utility name which you are interested in
+#       variable name where a full path is written
+#
+# Algorithm:
+#       If a caller specifies --with-binutil-path configure option like
+#       --with-binutil-path=DIR1:DIR2:...:DIRn, it first goes through
+#       the list of directories provided (DIR1, ..., DIRn) to find 
+#       a utility there.
+#
+#       If it is not found in specified path, or user does not provide
+#       the option, it checks if we are cross compiling.
+#
+#       If we are it tries to find a utility in the following dir:
+#       $(basename $(basename $(which $CC)))/<host platform>/bin
+#
+#       In case of failure to find it there, or when we do a native build,
+#       it just search for the utility in PATH.
+#
+# Usage example:
+# - To put a full path of net-snmp-config utility in
+#   NET_SNMP_CONFIG_FULL_PATH variable you should add the following line:
+#
+# TE_BINUTIL([net-snmp-config], [NET_SNMP_CONFIG_FULL_PATH])
+#
+AC_DEFUN([TE_BINUTIL], [
+TE_UTILITY_NAME=$1
+if test -z "$TE_UTILITY_NAME" ; then
+    AC_MSG_ERROR([[TE_BINUTIL] the first argument is missing "Utility Name"])
+fi
+if test -z "$2" ; then
+    AC_MSG_ERROR([[TE_BINUTIL] the second argument is missing "Variable Name"])
+fi
+
+AC_ARG_WITH([binutil-path],
+            [AC_HELP_STRING([--with-binutil-path=PATH],
+                            [Path where to search binutils specified in \
+                             TE_BINUTIL macros])],
+            [te_binutil_path="$withval"])
+
+UTIL_FULL_PATH_LOCATION=
+
+# 
+# Check if possible utility location is explicitly specified.
+# 
+if test -n "$te_binutil_path"; then
+    if test -z "$AWK"; then
+      AC_PROG_AWK
+    fi
+
+    for i in `echo $te_binutil_path | $AWK -v RS=: '{ print [$]1 }'`; do
+        AC_MSG_CHECKING([for $i/$TE_UTILITY_NAME])
+        if test -x "$i/$TE_UTILITY_NAME"; then
+            UTIL_FULL_PATH_LOCATION="$i/$TE_UTILITY_NAME"
+            AC_MSG_RESULT([yes])
+            break
+        else
+            AC_MSG_RESULT([no])
+        fi
+    done
+
+    if test -z "$UTIL_FULL_PATH_LOCATION"; then
+      AC_MSG_WARN([Utility $1 is not found in PATH specified with --with-binutil-path configure option. Continue checking based on $CC location...])
+    fi
+fi
+
+if test -z "$UTIL_FULL_PATH_LOCATION"; then
+    #
+    # We did not find a utility in specified user path, let's try to find it
+    # based on Compiler location.
+    #  
+    if test -n "$host_alias"; then
+        TE_CC_BASE_DIR=$(dirname $(dirname $(which $CC)))
+        TE_UTIL_DIR=$TE_CC_BASE_DIR/$host_alias/bin
+        AC_MSG_CHECKING([for $TE_UTIL_DIR/$TE_UTILITY_NAME])
+        if test -x "$TE_UTIL_DIR/$TE_UTILITY_NAME"; then
+            UTIL_FULL_PATH_LOCATION="$TE_UTIL_DIR/$TE_UTILITY_NAME"
+            chk_val_="yes"
+        else
+            chk_val_="no"
+        fi
+        AC_MSG_RESULT([$chk_val_])
+
+        if test x"$chk_val_"=x"no"; then
+            AC_MSG_WARN([Utility $1 is not found in $host_alias platform location, although you are cross building.])
+        fi
+    fi
+fi
+
+if test -z "$UTIL_FULL_PATH_LOCATION"; then
+    #
+    # We did not find a utility yet, so try to find out if it is
+    # location specified in PATH.
+    #
+    AC_MSG_CHECKING([for $TE_UTILITY_NAME])
+    if which $TE_UTILITY_NAME > /dev/null 2>&1; then
+        UTIL_FULL_PATH_LOCATION=$(which $TE_UTILITY_NAME)
+        chk_val_="yes"
+    else
+        chk_val_="no"
+    fi
+    AC_MSG_RESULT([$chk_val_])
+fi
+
+if test -z "$UTIL_FULL_PATH_LOCATION"; then
+    AC_MSG_ERROR([[TE_BINUTIL] for $TE_UTILITY_NAME utility failed to find it any possible location.])
+fi
+
+$2=${UTIL_FULL_PATH_LOCATION}
+])

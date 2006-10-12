@@ -19,13 +19,12 @@ AC_PROG_INSTALL
 TE_LIB_SET
 
 AC_MSG_CHECKING(for net-snmp library)
-AC_PATH_PROG(NET_SNMP_CONFIG, net-snmp-config, no)
-if test "$NET_SNMP_CONFIG" = "no" ; then
-    AC_MSG_ERROR([net-snmp-config is required but not found])
-else
-    NET_SNMP_CFLAGS=`$NET_SNMP_CONFIG --cflags`
-    NET_SNMP_LIBS=`$NET_SNMP_CONFIG --libs`
-fi
+
+TE_BINUTIL([net-snmp-config], [NET_SNMP_CONFIG_FULL_PATH])
+
+NET_SNMP_CFLAGS=`$NET_SNMP_CONFIG_FULL_PATH --cflags`
+NET_SNMP_LIBS=`$NET_SNMP_CONFIG_FULL_PATH --libs`
+
 AC_SUBST([NET_SNMP_CFLAGS])
 AC_SUBST([NET_SNMP_LIBS])
  

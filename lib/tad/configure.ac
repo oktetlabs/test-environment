@@ -171,7 +171,9 @@ AC_ARG_WITH([snmp],,
     w_snmp=true
     proto_specific snmp
 
-    for i in `net-snmp-config --libs`; do
+    TE_BINUTIL([net-snmp-config], [NET_SNMP_CONFIG_FULL_PATH])
+
+    for i in `$NET_SNMP_CONFIG_FULL_PATH --libs`; do
         if test ${i:0:2} = "-l"; then
             find_lib ${i:2}
             if test -z "${LIB_PATHNAME}" ; then
@@ -189,7 +191,9 @@ AC_ARG_WITH([snmp],,
 # we should take care about this.
 #
     LIB_PATHNAME=
-    net-snmp-config --libs | grep crypto >/dev/null || find_lib crypto
+    $NET_SNMP_CONFIG_FULL_PATH --libs | grep crypto >/dev/null ||
+         find_lib crypto
+
     if test -n "${LIB_PATHNAME}" ; then
         TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}"
     fi
@@ -248,14 +252,14 @@ if test x$w_snmp = xtrue; then
     AC_CHECK_HEADERS([net-snmp/session_api.h], , ,
     [#include <net-snmp/net-snmp-config.h>]
     )
-    AC_PATH_PROG(NET_SNMP_CONFIG, net-snmp-config, no)
-    if test "$NET_SNMP_CONFIG" = "no" ; then
-        AC_MSG_ERROR([net-snmp-config is required but not found])
-    else
-        NET_SNMP_CFLAGS=`$NET_SNMP_CONFIG --cflags`
-    fi
-fi
 
+    if test -z "$NET_SNMP_CONFIG_FULL_PATH"; then
+        AC_MSG_ERROR([Impossible happens, we should have found \
+net-snmp-config earlier])
+    fi
+
+    NET_SNMP_CFLAGS=`$NET_SNMP_CONFIG_FULL_PATH --cflags`
+fi
 
 AC_SUBST([NET_SNMP_CFLAGS])
 AC_SUBST([NET_SNMP_LIBS])
