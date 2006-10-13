@@ -33,6 +33,7 @@
 
 #include "te_defs.h"
 #include "te_queue.h"
+#include "te_errno.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,6 +72,16 @@ extern void tq_strings_free(tqh_strings *head, void (*value_free)(void *));
 extern te_bool tq_strings_equal(const tqh_strings *s1,
                                 const tqh_strings *s2);
 
+/**
+ * Add a new string into the list, if no such string is already present
+ * there.
+ *
+ * @param list      Head of the list
+ * @param value     A new string to add
+ *
+ * @return Status code.
+ */
+extern te_errno tq_strings_add_uniq(tqh_strings *list, const char *value);
 
 #ifdef __cplusplus
 } /* extern "C" */

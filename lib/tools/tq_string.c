@@ -35,7 +35,14 @@
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
 
+#include "te_alloc.h"
 #include "tq_string.h"
 
 
@@ -71,4 +78,30 @@ tq_strings_equal(const tqh_strings *s1, const tqh_strings *s2)
          p1 = p1->links.tqe_next, p2 = p2->links.tqe_next);
     
     return (p1 == NULL) && (p2 == NULL);
+}
+
+/* See the description in tq_string.h */
+te_errno
+tq_strings_add_uniq(tqh_strings *list, const char *value)
+{
+    tqe_string *p;
+
+    assert(list != NULL);
+    assert(value != NULL);
+
+    for (p = list->tqh_first;
+         p != NULL && strcmp(value, p->v) != 0;
+         p = p->links.tqe_next);
+
+    if (p == NULL)
+    {
+        p = TE_ALLOC(sizeof(*p));
+        if (p == NULL)
+            return TE_ENOMEM;
+
+        p->v = (char *)value;
+        TAILQ_INSERT_TAIL(list, p, links);
+    }
+
+    return 0;
 }
