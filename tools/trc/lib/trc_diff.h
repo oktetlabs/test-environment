@@ -46,48 +46,72 @@ extern "C" {
 #define TRC_DIFF_IDS    10
 
 
-/** Entry in the list of list of named tags */
-typedef struct trc_diff_tags_entry {
-    TAILQ_ENTRY(trc_diff_tags_entry)    links; /**< List links */
+/** Statistics for each key which makes differences */
+typedef struct trc_diff_key_stats {
+    CIRCLEQ_ENTRY(trc_diff_key_stats)   links;  /**< List links */
+
+    const char     *key;    /**< Key */
+    unsigned int    count;  /**< How many times this key is used to
+                                 explain the difference */
+} trc_diff_key_stats;
+
+/** List of statistics for all keys */
+typedef CIRCLEQ_HEAD(trc_diff_keys_stats, trc_diff_key_stats)
+    trc_diff_keys_stats;
+
+
+/** Set of tags to compare */
+typedef struct trc_diff_set {
+    TAILQ_ENTRY(trc_diff_set)   links; /**< List links */
 
     unsigned int    id;         /**< ID of the list */
     tqh_strings     tags;       /**< List of tags */
     char           *name;       /**< Name of the set */
     te_bool         show_keys;  /**< Show table with keys which explain
                                      differences */
-} trc_diff_tags_entry;
+    tqh_strings     exclude;    /**< List of exclusions */
 
-/** List of lists of named tags */
-typedef TAILQ_HEAD(trc_diff_tags_list, trc_diff_tags_entry)
-    trc_diff_tags_list;
+    trc_diff_keys_stats keys_stats; /**< Per-key statistics */
+
+} trc_diff_set;
+
+/** List with set of tags to compare */
+typedef TAILQ_HEAD(trc_diff_sets, trc_diff_set) trc_diff_sets;
 
 
-/**
- * Types of statistics collected per set X vs set Y.
- */
-typedef enum trc_diff_stats_index {
-    TRC_DIFF_STATS_PASSED = 0,
-    TRC_DIFF_STATS_PASSED_DIFF,
-    TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE,
-    TRC_DIFF_STATS_FAILED,
-    TRC_DIFF_STATS_FAILED_DIFF,
-    TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE,
-    TRC_DIFF_STATS_SKIPPED,
-    TRC_DIFF_STATS_OTHER,
+/** Status of expected testing result from TRC point of view. */
+typedef enum trc_test_status {
+    TRC_TEST_PASSED = 0,    /**< PASSED results are expected */
+    TRC_TEST_FAILED,        /**< FAILED results are expected */
+    TRC_TEST_UNSTABLE,      /**< PASSED and FAILED results are expected */
+    TRC_TEST_SKIPPED,       /**< SKIPPD result is expected */
+    TRC_TEST_UNSPECIFIED,   /**< Expected result is unspecified */
 
-    TRC_DIFF_STATS_MAX
-} trc_diff_stats_index;
+    TRC_TEST_STATUS_MAX     /**< Total number of statuses */
+} trc_test_status;
+
+/** Status of expected testing result comparison. */
+typedef enum trc_diff_status {
+    TRC_DIFF_MATCH = 0,         /**< Expected results match */
+    TRC_DIFF_NO_MATCH,          /**< Expected results do not match */
+    TRC_DIFF_NO_MATCH_IGNORE,   /**< Expected results do not match
+                                     (but ignore is requested) */
+
+    TRC_DIFF_STATUS_MAX         /**< Total number of statuses */
+} trc_diff_status;
 
 /** Type of simple counter. */
 typedef unsigned int trc_diff_stats_counter;
 
 /**
- * Set X vs set Y statistics are two dimension array of simple
+ * Set X vs set Y statistics are three dimension array of simple
  * counters. Indices are the results of the corresponding set together
  * with equal/different knowledge, when main result is the same.
  */
-typedef trc_diff_stats_counter trc_diff_stats_counters[TRC_DIFF_STATS_MAX]
-                                                      [TRC_DIFF_STATS_MAX];
+typedef trc_diff_stats_counter
+    trc_diff_stats_counters[TRC_TEST_STATUS_MAX]
+                           [TRC_TEST_STATUS_MAX]
+                           [TRC_DIFF_STATUS_MAX];
 
 /**
  * TRC differencies statistics are two dimension array of statistics per
@@ -100,30 +124,16 @@ typedef trc_diff_stats_counters trc_diff_stats[TRC_DIFF_IDS]
                                               [TRC_DIFF_IDS - 1];
 
 
-/** Statistics for each key which makes differences */
-typedef struct trc_diff_key_stats {
-    CIRCLEQ_ENTRY(trc_diff_key_stats)   links;  /**< List links */
-
-    tqh_strings    *tags;   /**< Set of tags for which this key is used */
-    const char     *key;    /**< Key */
-    unsigned int    count;  /**< How many times this key is added */
-} trc_diff_key_stats;
-
-/** List of statistics for all keys */
-typedef CIRCLEQ_HEAD(trc_diff_keys_stats, trc_diff_key_stats)
-    trc_diff_keys_stats;
-
-
 /** Element of the list with TRC diff results. */
 typedef struct trc_diff_entry {
     TAILQ_ENTRY(trc_diff_entry) links;  /**< List links */
 
+    unsigned int    level;      /**< Level of the entry in the tree */
     te_bool         is_iter;    /**< Is a test or an iteration? */
     union {
         const trc_test      *test;   /**< Test entry data */
         const trc_test_iter *iter;   /**< Test iteration data */
     } ptr;                      /**< Pointer to test or iteration data */
-    unsigned int    level;      /**< Level of the entry in the tree */
 
     /** Expected result for each diff ID */
     const trc_exp_result   *results[TRC_DIFF_IDS];
@@ -145,64 +155,73 @@ typedef TAILQ_HEAD(trc_diff_result, trc_diff_entry) trc_diff_result;
  *       allocate it on stack.
  */
 typedef struct trc_diff_ctx {
-    /* Input */
-    unsigned int        flags;          /**< Processing control flags */
-    te_trc_db          *db;
-    trc_diff_tags_list  sets;           /**< Sets to compare */
-    tqh_strings         exclude_keys;   /**< Templates for keys to exclude
-                                             some differencies from 
-                                             consideration */
-    /* Output */
-    trc_diff_stats      stats;          /**< Statistics */
-    trc_diff_keys_stats keys_stats;     /**< Per-key statistics */
-    trc_diff_result     result;         /**< Result details */
+
+    unsigned int        flags;      /**< Processing control flags */
+    te_trc_db          *db;         /**< TRC database handle */
+    trc_diff_sets       sets;       /**< Sets to compare */
+
+    trc_diff_stats      stats;      /**< Grand total statistics */
+    trc_diff_result     result;     /**< Result details */
+
 } trc_diff_ctx;
 
 
 /**
- * Set name of the TRC tags set with specified ID.
+ * Set name of the compared set with specified ID.
  *
- * @param tags      List of sets of tags
- * @param id        Identifier of the list to be used
- * @param name      Name of the tags set
- *
- * @return Status code.
- */
-extern te_errno trc_diff_set_name(trc_diff_tags_list *tags,
-                                  unsigned int        id,
-                                  const char         *name);
-
-/**
- * Enable showing keys of the TRC tags set with specified ID.
- *
- * @param tags      List of sets of tags
- * @param id        Identifier of the list to be used
+ * @param sets          List of compared sets
+ * @param id            Identifier of the set
+ * @param name          New name of the set
  *
  * @return Status code.
  */
-extern te_errno trc_diff_show_keys(trc_diff_tags_list *tags,
-                                   unsigned int        id);
-
+extern te_errno trc_diff_set_name(trc_diff_sets *sets,
+                                  unsigned int   id,
+                                  const char    *name);
 
 /**
- * Add tag in the end of the TRC tags set with specified ID.
+ * Enable showing keys of the compared set with specified ID.
  *
- * @param tags      List of lists of tags
- * @param id        Identifier of the list to be used
- * @param tag       Name of the tag
+ * @param sets          List of compared sets
+ * @param id            Identifier of the set
  *
  * @return Status code.
  */
-extern te_errno trc_diff_add_tag(trc_diff_tags_list *tags,
-                                 unsigned int        id,
-                                 const char         *tag);
+extern te_errno trc_diff_show_keys(trc_diff_sets *sets,
+                                   unsigned int   id);
 
 /**
- * Free TRC tags lists.
+ * Add tag in the compared set with specified ID.
  *
- * @param tags      List of list of tags to be freed
+ * @param sets          List of compared sets
+ * @param id            Identifier of the set
+ * @param tag           Name of a new tag
+ *
+ * @return Status code.
  */
-extern void trc_diff_free_tags(trc_diff_tags_list *tags);
+extern te_errno trc_diff_add_tag(trc_diff_sets *sets,
+                                 unsigned int   id,
+                                 const char    *tag);
+
+/**
+ * Add exclude pattern for the compared set with specified ID.
+ *
+ * @param sets          List of compared sets
+ * @param id            Identifier of the set
+ * @param exclude       A new exclude pattern
+ *
+ * @return Status code.
+ */
+extern te_errno trc_diff_add_exclude(trc_diff_sets *sets,
+                                     unsigned int   id,
+                                     const char    *exclude);
+
+/**
+ * Free compared sets
+ *
+ * @param sets          List of compared sets
+ */
+extern void trc_diff_free_sets(trc_diff_sets *sets);
 
 
 /**

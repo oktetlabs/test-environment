@@ -102,11 +102,12 @@ static const char * const trc_diff_stats_table =
 "      <td rowspan=2>\n"
 "        <b>%s</b>\n"
 "      </td>\n"
-"      <td colspan=4 align=center>\n"
+"      <td colspan=5 align=center>\n"
 "        <b>%s</b>\n"
 "      </td>\n"
 "    </tr>\n"
 "    <tr>\n"
+"      <td align=center><b>%s</b></td>\n"
 "      <td align=center><b>%s</b></td>\n"
 "      <td align=center><b>%s</b></td>\n"
 "      <td align=center><b>%s</b></td>\n"
@@ -121,6 +122,7 @@ static const char * const trc_diff_stats_table =
 "      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
 "      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
 "      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
+"      <td><font class=\"U\">%u</font></td>\n"
 "    </tr>\n"
 "    <tr>\n"
 "      <td align=left><b>%s</b></td>\n"
@@ -129,9 +131,20 @@ static const char * const trc_diff_stats_table =
           "<font class=\"E\">%u</font></td>\n"
 "      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
 "      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
+"      <td><font class=\"U\">%u</font></td>\n"
 "    </tr>\n"
 "    <tr>\n"
 "      <td align=left><b>%s</b></td>\n"
+"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
+"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
+"      <td><font class=\"S\">%u</font>+<font class=\"U\">%u</font>+"
+          "<font class=\"E\">%u</font></td>\n"
+"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
+"      <td><font class=\"U\">%u</font></td>\n"
+"    </tr>\n"
+"    <tr>\n"
+"      <td align=left><b>%s</b></td>\n"
+"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
 "      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
 "      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
 "      <td><font class=\"S\">%u</font></td>\n"
@@ -139,18 +152,19 @@ static const char * const trc_diff_stats_table =
 "    </tr>\n"
 "    <tr>\n"
 "      <td align=left><b>%s</b></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
+"      <td><font class=\"U\">%u</font></td>\n"
+"      <td><font class=\"U\">%u</font></td>\n"
+"      <td><font class=\"U\">%u</font></td>\n"
 "      <td><font class=\"U\">%u</font></td>\n"
 "      <td><font class=\"U\">%u</font></td>\n"
 "    </tr>\n"
 "    <tr>\n"
-"      <td align=left colspan=5><h3>Total run: <font class=\"S\">%u</font>+"
+"      <td align=left colspan=6><h3>Total run: <font class=\"S\">%u</font>+"
           "<font class=\"U\">%u</font>+<font class=\"E\">%u</font>=%u"
           "</h3></td>"
 "    </tr>\n"
 "    <tr>\n"
-"      <td align=left colspan=5>[<font class=\"S\">X</font>+]"
+"      <td align=left colspan=6>[<font class=\"S\">X</font>+]"
                                 "<font class=\"U\">Y</font>+"
                                 "<font class=\"E\">Z</font><br/>"
 "X - result match, Y - result does not match (to be fixed), "
@@ -165,7 +179,7 @@ static const char * const trc_diff_key_table_heading =
 "  <thead>\n"
 "    <tr>\n"
 "      <td>\n"
-"        <b>Key</b>\n"
+"        <b>%s Key</b>\n"
 "      </td>\n"
 "      <td>\n"
 "        <b>Number of caused differences</b>\n"
@@ -249,15 +263,15 @@ static const char * const trc_diff_table_row_col_end =
  * Output set of tags used for comparison to HTML report.
  *
  * @param f             File stream to write
- * @param tags_list     List of tags
+ * @param sets          List of tags
  */
 static void
-trc_diff_tags_to_html(FILE *f, const trc_diff_tags_list *tags_list)
+trc_diff_tags_to_html(FILE *f, const trc_diff_sets *sets)
 {
-    const trc_diff_tags_entry  *p;
-    const tqe_string           *tag;
+    const trc_diff_set *p;
+    const tqe_string   *tag;
 
-    for (p = tags_list->tqh_first; p != NULL; p = p->links.tqe_next)
+    for (p = sets->tqh_first; p != NULL; p = p->links.tqe_next)
     {
         fprintf(f, "<b>%s: </b>", p->name);
         for (tag = p->tags.tqh_first;
@@ -282,137 +296,179 @@ trc_diff_tags_to_html(FILE *f, const trc_diff_tags_list *tags_list)
  * @param stats         Calculated statistics
  * @param tags_x        The first set of tags
  * @param tags_y        The second set of tags
- * @param flags         Processing flags
  */
 static void
-trc_diff_one_stats_to_html(FILE                      *f,
-                           trc_diff_stats            *stats,
-                           const trc_diff_tags_entry *tags_x,
-                           const trc_diff_tags_entry *tags_y,
-                           unsigned int               flags)
+trc_diff_one_stats_to_html(FILE               *f,
+                           trc_diff_stats     *stats,
+                           const trc_diff_set *tags_x,
+                           const trc_diff_set *tags_y)
 {
     trc_diff_stats_counters    *counters;
     trc_diff_stats_counter      total_match;
     trc_diff_stats_counter      total_no_match;
-    trc_diff_stats_counter      total_excluded;
+    trc_diff_stats_counter      total_no_match_ignored;
     trc_diff_stats_counter      total;
-
-    UNUSED(flags);
 
     counters = &((*stats)[tags_x->id][tags_y->id - 1]);
 
     total_match =
-        (*counters)[TRC_DIFF_STATS_PASSED][TRC_DIFF_STATS_PASSED] +
-        (*counters)[TRC_DIFF_STATS_FAILED][TRC_DIFF_STATS_FAILED];
+        (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED][TRC_DIFF_MATCH] +
+        (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED][TRC_DIFF_MATCH];
+        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE][TRC_DIFF_MATCH];
     total_no_match =
-        (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
-                   [TRC_DIFF_STATS_PASSED_DIFF] +
-        (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
-                   [TRC_DIFF_STATS_FAILED_DIFF] +
-        (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
-                   [TRC_DIFF_STATS_PASSED_DIFF] +
-        (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
-                   [TRC_DIFF_STATS_FAILED_DIFF];
-    total_excluded =
-        (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
-                   [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE] +
-        (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
-                   [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE] +
-        (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
-                   [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE] +
-        (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
-                   [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE];
-    total = total_match + total_no_match + total_excluded;
+        (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED][TRC_DIFF_NO_MATCH] +
+        (*counters)[TRC_TEST_PASSED][TRC_TEST_FAILED][TRC_DIFF_NO_MATCH] +
+        (*counters)[TRC_TEST_PASSED][TRC_TEST_UNSTABLE][TRC_DIFF_NO_MATCH] +
+        (*counters)[TRC_TEST_FAILED][TRC_TEST_PASSED][TRC_DIFF_NO_MATCH] +
+        (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED][TRC_DIFF_NO_MATCH] +
+        (*counters)[TRC_TEST_FAILED][TRC_TEST_UNSTABLE][TRC_DIFF_NO_MATCH] +
+        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_PASSED][TRC_DIFF_NO_MATCH] +
+        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_FAILED][TRC_DIFF_NO_MATCH] +
+        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE]
+                   [TRC_DIFF_NO_MATCH];
+    total_no_match_ignored =
+        (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED]
+                   [TRC_DIFF_NO_MATCH_IGNORE] +
+        (*counters)[TRC_TEST_PASSED][TRC_TEST_FAILED]
+                   [TRC_DIFF_NO_MATCH_IGNORE] +
+        (*counters)[TRC_TEST_PASSED][TRC_TEST_UNSTABLE]
+                   [TRC_DIFF_NO_MATCH_IGNORE] +
+        (*counters)[TRC_TEST_FAILED][TRC_TEST_PASSED]
+                   [TRC_DIFF_NO_MATCH_IGNORE] +
+        (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED]
+                   [TRC_DIFF_NO_MATCH_IGNORE] +
+        (*counters)[TRC_TEST_FAILED][TRC_TEST_UNSTABLE]
+                   [TRC_DIFF_NO_MATCH_IGNORE] +
+        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_PASSED]
+                   [TRC_DIFF_NO_MATCH_IGNORE] +
+        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_FAILED]
+                   [TRC_DIFF_NO_MATCH_IGNORE] +
+        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE]
+                   [TRC_DIFF_NO_MATCH_IGNORE];
+    total = total_match + total_no_match + total_no_match_ignored;
 
     fprintf(f, trc_diff_stats_table,
             tags_x->name, tags_y->name,
-            "PASSED", "FAILED", "SKIPPED", "other",
+            "PASSED", "FAILED", "unstable", "SKIPPED", "unspecified",
             "PASSED",
-            (*counters)[TRC_DIFF_STATS_PASSED][TRC_DIFF_STATS_PASSED],
-            (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
-                       [TRC_DIFF_STATS_PASSED_DIFF],
-            (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
-                       [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE],
-            (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
-                       [TRC_DIFF_STATS_FAILED_DIFF],
-            (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
-                       [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE],
-            (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
-                       [TRC_DIFF_STATS_SKIPPED],
-            (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
-                       [TRC_DIFF_STATS_SKIPPED],
-            (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
-                       [TRC_DIFF_STATS_OTHER],
-            (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
-                       [TRC_DIFF_STATS_OTHER],
+            (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED]
+                       [TRC_DIFF_MATCH],
+            (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_PASSED][TRC_TEST_FAILED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_PASSED][TRC_TEST_FAILED]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_PASSED][TRC_TEST_UNSTABLE]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_PASSED][TRC_TEST_UNSTABLE]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_PASSED][TRC_TEST_SKIPPED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_PASSED][TRC_TEST_SKIPPED]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_PASSED][TRC_TEST_UNSPECIFIED]
+                       [TRC_DIFF_NO_MATCH],
             "FAILED",
-            (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
-                       [TRC_DIFF_STATS_PASSED_DIFF],
-            (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
-                       [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE],
-            (*counters)[TRC_DIFF_STATS_FAILED][TRC_DIFF_STATS_FAILED],
-            (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
-                       [TRC_DIFF_STATS_FAILED_DIFF],
-            (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
-                       [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE],
-            (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
-                       [TRC_DIFF_STATS_SKIPPED],
-            (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
-                       [TRC_DIFF_STATS_SKIPPED],
-            (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
-                       [TRC_DIFF_STATS_OTHER],
-            (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
-                       [TRC_DIFF_STATS_OTHER],
+            (*counters)[TRC_TEST_FAILED][TRC_TEST_PASSED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_FAILED][TRC_TEST_PASSED]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED]
+                       [TRC_DIFF_MATCH],
+            (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_FAILED][TRC_TEST_UNSTABLE]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_FAILED][TRC_TEST_UNSTABLE]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_FAILED][TRC_TEST_SKIPPED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_FAILED][TRC_TEST_SKIPPED]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_FAILED][TRC_TEST_UNSPECIFIED]
+                       [TRC_DIFF_NO_MATCH],
+            "unstable",
+            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_PASSED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_PASSED]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_FAILED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_FAILED]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE]
+                       [TRC_DIFF_MATCH],
+            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_SKIPPED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_SKIPPED]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSPECIFIED]
+                       [TRC_DIFF_NO_MATCH],
             "SKIPPED",
-            (*counters)[TRC_DIFF_STATS_SKIPPED]
-                       [TRC_DIFF_STATS_PASSED_DIFF],
-            (*counters)[TRC_DIFF_STATS_SKIPPED]
-                       [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE],
-            (*counters)[TRC_DIFF_STATS_SKIPPED]
-                       [TRC_DIFF_STATS_FAILED_DIFF],
-            (*counters)[TRC_DIFF_STATS_SKIPPED]
-                       [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE],
-            (*counters)[TRC_DIFF_STATS_SKIPPED][TRC_DIFF_STATS_SKIPPED],
-            (*counters)[TRC_DIFF_STATS_SKIPPED][TRC_DIFF_STATS_OTHER],
-            "other",
-            (*counters)[TRC_DIFF_STATS_OTHER]
-                       [TRC_DIFF_STATS_PASSED_DIFF],
-            (*counters)[TRC_DIFF_STATS_OTHER]
-                       [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE],
-            (*counters)[TRC_DIFF_STATS_OTHER]
-                       [TRC_DIFF_STATS_FAILED_DIFF],
-            (*counters)[TRC_DIFF_STATS_OTHER]
-                       [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE],
-            (*counters)[TRC_DIFF_STATS_OTHER][TRC_DIFF_STATS_SKIPPED],
-            (*counters)[TRC_DIFF_STATS_OTHER][TRC_DIFF_STATS_OTHER],
-            total_match, total_no_match, total_excluded, total);
+            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_PASSED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_PASSED]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_FAILED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_FAILED]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_UNSTABLE]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_UNSTABLE]
+                       [TRC_DIFF_NO_MATCH_IGNORE],
+            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_SKIPPED]
+                       [TRC_DIFF_MATCH],
+            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_UNSPECIFIED]
+                       [TRC_DIFF_NO_MATCH],
+            "unspecified",
+            (*counters)[TRC_TEST_UNSPECIFIED][TRC_TEST_PASSED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_UNSPECIFIED][TRC_TEST_FAILED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_UNSPECIFIED][TRC_TEST_UNSTABLE]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_UNSPECIFIED][TRC_TEST_SKIPPED]
+                       [TRC_DIFF_NO_MATCH],
+            (*counters)[TRC_TEST_UNSPECIFIED][TRC_TEST_UNSPECIFIED]
+                       [TRC_DIFF_MATCH],
+            total_match, total_no_match, total_no_match_ignored, total);
 }
 
 /**
  * Output all statistics to HTML report
  *
  * @param f             File stream to write
- * @param diffs         Compared sets
+ * @param sets          Compared sets
  * @param stats         Calculated statistics
  * @param flags         Processing flags
  */
 static void
-trc_diff_stats_to_html(FILE *f, const trc_diff_tags_list *diffs,
-                       trc_diff_stats *stats, unsigned int flags)
+trc_diff_stats_to_html(FILE *f, const trc_diff_sets *sets,
+                       trc_diff_stats *stats)
 {
-    const trc_diff_tags_entry *tags_i;
-    const trc_diff_tags_entry *tags_j;
+    const trc_diff_set *tags_i;
+    const trc_diff_set *tags_j;
 
-    for (tags_i = diffs->tqh_first;
+    for (tags_i = sets->tqh_first;
          tags_i != NULL;
          tags_i = tags_i->links.tqe_next)
     {
-        for (tags_j = diffs->tqh_first;
+        for (tags_j = sets->tqh_first;
              tags_j != NULL;
              tags_j = tags_j->links.tqe_next)
         {
             if (tags_i->id < tags_j->id)
-                trc_diff_one_stats_to_html(f, stats, tags_i, tags_j, flags);
+                trc_diff_one_stats_to_html(f, stats, tags_i, tags_j);
         }
     }
 }
@@ -448,37 +504,37 @@ trc_diff_keys_sort(trc_diff_keys_stats *keys_stats)
 }
 
 /**
- * Output per-key statistics to HTML.
+ * Output per-key statistics for all sets.
  *
  * @param f             File stream to write
- * @param keys_stats    Per-key statistics
+ * @param sets          Compared sets
  *
  * @return Status code.
  */
 static te_errno
-trc_diff_key_to_html(FILE *f, trc_diff_keys_stats *keys_stats)
+trc_diff_keys_stats_to_html(FILE *f, trc_diff_sets *sets)
 {
-    int                 rc = 0;
-    trc_diff_key_stats *p;
+    te_errno                    rc = 0;
+    trc_diff_set               *p;
+    const trc_diff_key_stats   *q;
 
-    if (keys_stats->cqh_first == (void *)keys_stats)
-        return 0;
-
-    trc_diff_keys_sort(keys_stats);
-
-    WRITE_STR(trc_diff_key_table_heading);
-    for (p = keys_stats->cqh_first;
-         p != (void *)keys_stats;
-         p = p->links.cqe_next)
+    for (p = sets->tqh_first; p != NULL; p = p->links.tqe_next)
     {
-#if 0
-        if (p->tags->show_keys)
-#endif
+        if (p->show_keys &&
+            p->keys_stats.cqh_first != (void *)&(p->keys_stats))
         {
-            fprintf(f, trc_diff_key_table_row, p->key, p->count);
+            trc_diff_keys_sort(&p->keys_stats);
+
+            fprintf(f, trc_diff_key_table_heading, p->name);
+            for (q = p->keys_stats.cqh_first;
+                 q != (void *)&(p->keys_stats);
+                 q = q->links.cqe_next)
+            {
+                fprintf(f, trc_diff_key_table_row, q->key, q->count);
+            }
+            WRITE_STR(trc_diff_table_end);
         }
     }
-    WRITE_STR(trc_diff_table_end);
 
 cleanup:
     return rc;
@@ -585,21 +641,21 @@ trc_diff_test_iters_get_keys(test_run *test, unsigned int id)
  * Output expected results to HTML file.
  *
  * @param f             File stream to write
- * @param diffs         Compared sets
+ * @param sets         Compared sets
  * @param flags         Processing flags
  *
  * @return Status code.
  */
 static te_errno
-trc_diff_exp_results_to_html(FILE                      *f,
-                             const trc_diff_tags_list  *diffs,
-                             const trc_diff_entry      *entry,
-                             unsigned int               flags)
+trc_diff_exp_results_to_html(FILE                 *f,
+                             const trc_diff_sets  *sets,
+                             const trc_diff_entry *entry,
+                             unsigned int          flags)
 {
-    te_errno                    rc = 0;
-    const trc_diff_tags_entry  *tags;
+    te_errno            rc = 0;
+    const trc_diff_set *tags;
 
-    for (tags = diffs->tqh_first;
+    for (tags = sets->tqh_first;
          tags != NULL && rc == 0;
          tags = tags->links.tqe_next)
     {
@@ -616,23 +672,23 @@ cleanup:
  * Output differences into a file @a f (global variable).
  *
  * @param result        List with results
- * @param diffs         Compared sets
+ * @param sets         Compared sets
  * @param flags         Processing flags
  *
  * @return Status code.
  */
 static te_errno
-trc_diff_result_to_html(const trc_diff_result    *result,
-                        const trc_diff_tags_list *diffs,
-                        unsigned int              flags,
-                        FILE                     *f)
+trc_diff_result_to_html(const trc_diff_result *result,
+                        const trc_diff_sets   *sets,
+                        unsigned int           flags,
+                        FILE                  *f)
 {
-    te_errno                    rc = 0;
-    const trc_diff_tags_entry  *tags;
-    const trc_diff_entry       *curr;
-    const trc_diff_entry       *next;
-    unsigned int                i, j;
-    te_string                   test_name = { NULL, 0, 0 };
+    te_errno                rc = 0;
+    const trc_diff_set     *tags;
+    const trc_diff_entry   *curr;
+    const trc_diff_entry   *next;
+    unsigned int            i, j;
+    te_string               test_name = { NULL, 0, 0 };
 
 
     /*
@@ -652,7 +708,7 @@ trc_diff_result_to_html(const trc_diff_result    *result,
     {
         WRITE_STR(trc_diff_full_table_heading_start);
     }
-    for (tags = diffs->tqh_first;
+    for (tags = sets->tqh_first;
          tags != NULL;
          tags = tags->links.tqe_next)
     {
@@ -702,7 +758,7 @@ trc_diff_result_to_html(const trc_diff_result    *result,
              */
             fprintf(f, trc_diff_brief_table_test_row_start,
                     i, test_name.ptr);
-            rc = trc_diff_exp_results_to_html(f, diffs, curr, flags);
+            rc = trc_diff_exp_results_to_html(f, sets, curr, flags);
             if (rc != 0)
                 goto cleanup;
         }
@@ -713,7 +769,7 @@ trc_diff_result_to_html(const trc_diff_result    *result,
                                        flags);
             WRITE_STR(trc_diff_table_row_col_end);
 
-            rc = trc_diff_exp_results_to_html(f, diffs, curr, flags);
+            rc = trc_diff_exp_results_to_html(f, sets, curr, flags);
             if (rc != 0)
                 goto cleanup;
         }
@@ -728,7 +784,7 @@ trc_diff_result_to_html(const trc_diff_result    *result,
                     i, test_name.ptr, curr->ptr.test->name,
                     PRINT_STR(curr->ptr.test->objective));
 
-            rc = trc_diff_exp_results_to_html(f, diffs, curr, flags);
+            rc = trc_diff_exp_results_to_html(f, sets, curr, flags);
             if (rc != 0)
                 goto cleanup;
 
@@ -818,11 +874,11 @@ trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
     /* Compared sets */
     trc_diff_tags_to_html(f, &ctx->sets);
 
-    /* Output statistics */
-    trc_diff_stats_to_html(f, &ctx->sets, &ctx->stats, ctx->flags);
+    /* Output grand total statistics */
+    trc_diff_stats_to_html(f, &ctx->sets, &ctx->stats);
 
     /* Output per-key summary */
-    trc_diff_key_to_html(f, &ctx->keys_stats);
+    trc_diff_keys_stats_to_html(f, &ctx->sets);
     
     /* Report */
     if ((rc = trc_diff_result_to_html(&ctx->result, &ctx->sets,

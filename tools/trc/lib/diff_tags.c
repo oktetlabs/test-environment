@@ -37,10 +37,13 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
-#if HAVE_ERRNO_H
-#include <errno.h>
+#if HAVE_ASSERT_H
+#include <assert.h>
 #endif
 
+#include "te_defs.h"
+#include "te_errno.h"
+#include "te_alloc.h"
 #include "te_queue.h"
 #include "logger_api.h"
 
@@ -48,72 +51,69 @@
 #include "trc_diff.h"
 
 
-/* See description in trc_tag.h */
-static trc_diff_tags_entry *
-trc_diff_find_tags(trc_diff_tags_list *tags, unsigned int id,
-                   te_bool create)
+static trc_diff_set *
+trc_diff_find_set(trc_diff_sets *sets, unsigned int id, te_bool create)
 {
-    trc_diff_tags_entry *p;
+    trc_diff_set *p;
 
-    assert(tags != NULL);
+    assert(sets != NULL);
     assert(id < TRC_DIFF_IDS);
 
-    for (p = tags->tqh_first;
+    for (p = sets->tqh_first;
          p != NULL && p->id != id;
          p = p->links.tqe_next);
 
     if (p == NULL && create)
     {
-        p = calloc(1, sizeof(*p));
+        p = TE_ALLOC(sizeof(*p));
         if (p == NULL)
-        {
-            ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
             return NULL;
-        }
-        TAILQ_INSERT_TAIL(tags, p, links);
 
         p->id = id;
         TAILQ_INIT(&p->tags);
+        TAILQ_INIT(&p->exclude);
+        CIRCLEQ_INIT(&p->keys_stats);
+
+        TAILQ_INSERT_TAIL(sets, p, links);
     }
  
     return p;
 }
 
-/* See description in trc_tag.h */
+/* See the description in trc_diff.h */
 te_errno
-trc_diff_set_name(trc_diff_tags_list *tags, unsigned int id,
+trc_diff_set_name(trc_diff_sets *sets, unsigned int id,
                   const char *name)
 {
-    trc_diff_tags_entry *p;
+    trc_diff_set *p;
 
-    if (tags == NULL || id >= TRC_DIFF_IDS || name == NULL)
+    if (sets == NULL || id >= TRC_DIFF_IDS || name == NULL)
         return TE_EINVAL;
 
-    p = trc_diff_find_tags(tags, id, TRUE);
+    p = trc_diff_find_set(sets, id, TRUE);
     if (p == NULL)
         return TE_ENOMEM;
 
-    free(p->name);
     p->name = strdup(name);
     if (p->name == NULL)
     {
-        ERROR("strdup(%s) failed", name);
+        ERROR("%s(): strdup(%s) failed", __FUNCTION__, name);
         return TE_ENOMEM;
     }
  
     return 0;
 }
 
-/* See description in trc_tag.h */
+/* See the description in trc_diff.h */
 te_errno
-trc_diff_show_keys(trc_diff_tags_list *tags, unsigned int id)
+trc_diff_show_keys(trc_diff_sets *sets, unsigned int id)
 {
-    trc_diff_tags_entry *p;
+    trc_diff_set *p;
 
-    if (tags == NULL || id >= TRC_DIFF_IDS)
+    if (sets == NULL || id >= TRC_DIFF_IDS)
         return TE_EINVAL;
 
-    p = trc_diff_find_tags(tags, id, TRUE);
+    p = trc_diff_find_set(sets, id, TRUE);
     if (p == NULL)
         return TE_ENOMEM;
 
@@ -122,33 +122,73 @@ trc_diff_show_keys(trc_diff_tags_list *tags, unsigned int id)
     return 0;
 }
 
-/* See description in trc_tag.h */
+/* See the description in trc_diff.h */
 te_errno
-trc_diff_add_tag(trc_diff_tags_list *tags, unsigned int id,
-                 const char *tag)
+trc_diff_add_tag(trc_diff_sets *sets, unsigned int id, const char *tag)
 {
-    trc_diff_tags_entry *p;
+    trc_diff_set *p;
+    tqe_string   *e;
 
-    if (tags == NULL || id >= TRC_DIFF_IDS || tag == NULL)
+    if (sets == NULL || id >= TRC_DIFF_IDS || tag == NULL)
         return TE_EINVAL;
 
-    p = trc_diff_find_tags(tags, id, TRUE);
+    p = trc_diff_find_set(sets, id, TRUE);
     if (p == NULL)
         return TE_ENOMEM;
 
-    return trc_add_tag(&p->tags, tag);
+    e = TE_ALLOC(sizeof(*e));
+    if (e == NULL)
+        return TE_ENOMEM;
+
+    /* Discard 'const' qualifier, but take it into account on free */
+    e->v = (char *)tag;
+    TAILQ_INSERT_TAIL(&p->tags, e, links);
+
+    return 0;
 }
 
-/* See description in trc_tag.h */
-void
-trc_diff_free_tags(trc_diff_tags_list *tags)
+/* See the description in trc_diff.h */
+te_errno
+trc_diff_add_exclude(trc_diff_sets *sets, unsigned int id,
+                     const char *exclude)
 {
-    trc_diff_tags_entry *p;
+    trc_diff_set *p;
+    tqe_string   *e;
 
-    while ((p = tags->tqh_first) != NULL)
+    if (sets == NULL || id >= TRC_DIFF_IDS || exclude == NULL)
+        return TE_EINVAL;
+
+    p = trc_diff_find_set(sets, id, TRUE);
+    if (p == NULL)
+        return TE_ENOMEM;
+
+    e = TE_ALLOC(sizeof(*e));
+    if (e == NULL)
+        return TE_ENOMEM;
+
+    /* Discard 'const' qualifier, but take it into account on free */
+    e->v = (char *)exclude;
+    TAILQ_INSERT_TAIL(&p->exclude, e, links);
+
+    return 0;
+}
+
+/* See the description in trc_diff.h */
+void
+trc_diff_free_sets(trc_diff_sets *sets)
+{
+    trc_diff_set   *p;
+
+    while ((p = sets->tqh_first) != NULL)
     {
-        TAILQ_REMOVE(tags, p, links);
+        TAILQ_REMOVE(sets, p, links);
+
+        /* Tag names are not duplicated */
+        tq_strings_free(&p->tags, NULL);
         free(p->name);
-        tq_strings_free(&p->tags, free);
+        /* Exclude patterns are not duplicated */
+        tq_strings_free(&p->exclude, NULL);
+
+        free(p);
     }
 }

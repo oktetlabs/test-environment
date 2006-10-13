@@ -61,7 +61,6 @@ DEFINE_LGR_ENTITY("TRC DIFF");
 /** TRC tool command line options */
 enum {
     TRC_DIFF_OPT_VERSION = 1,
-    TRC_DIFF_OPT_EXCLUDE,
     TRC_DIFF_OPT_TAG0,
     TRC_DIFF_OPT_TAG1,
     TRC_DIFF_OPT_TAG2,
@@ -92,15 +91,25 @@ enum {
     TRC_DIFF_OPT_SHOW_KEYS7,
     TRC_DIFF_OPT_SHOW_KEYS8,
     TRC_DIFF_OPT_SHOW_KEYS9,
+    TRC_DIFF_OPT_EXCLUDE0,
+    TRC_DIFF_OPT_EXCLUDE1,
+    TRC_DIFF_OPT_EXCLUDE2,
+    TRC_DIFF_OPT_EXCLUDE3,
+    TRC_DIFF_OPT_EXCLUDE4,
+    TRC_DIFF_OPT_EXCLUDE5,
+    TRC_DIFF_OPT_EXCLUDE6,
+    TRC_DIFF_OPT_EXCLUDE7,
+    TRC_DIFF_OPT_EXCLUDE8,
+    TRC_DIFF_OPT_EXCLUDE9,
 };
 
 
 /** Name of the file with expected testing result database */
-static char *trc_diff_db_fn = NULL;
+static const char *trc_diff_db_fn = NULL;
 /** Name of the file with report in HTML format */
-static char *trc_diff_html_fn = NULL;
+static const char *trc_diff_html_fn = NULL;
 /** Title of the report in HTML format */
-static char *trc_diff_title = NULL;
+static const char *trc_diff_title = NULL;
 
 
 /**
@@ -126,70 +135,40 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
           "database.",
           "FILENAME" },
 
-        { "title", 't', POPT_ARG_STRING, &trc_diff_title, 0,
-          "Title of the HTML report to be generate.", "TITLE" },
-
         { "html", 'h', POPT_ARG_STRING, &trc_diff_html_fn, 0,
           "Name of the file for report in HTML format.",
           "FILENAME" },
 
-        { "exclude", 'e', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_EXCLUDE,
-          "Exclude from report entries with key by template or all "
-          "(if template is empty).", NULL },
+        { "title", 't', POPT_ARG_STRING, &trc_diff_title, 0,
+          "Title of the HTML report to be generate.", "TITLE" },
 
-#define TRC_DIFF_TAG_OPT(id_) \
-        { "tag" #id_, '0' + id_,                            \
-          POPT_ARG_STRING, NULL, TRC_DIFF_OPT_TAG##id_,     \
-          "Name of the tag from corresponding set.", "TAG" }
+#define TRC_DIFF_SET_OPTS(id_) \
+        { #id_ "-tag", '0' + id_, POPT_ARG_STRING, NULL,            \
+          TRC_DIFF_OPT_TAG##id_,                                    \
+          "Name of the tag from corresponding set.", "TAG" },       \
+        { #id_ "-name", '\0', POPT_ARG_STRING, NULL,                \
+          TRC_DIFF_OPT_NAME##id_,                                   \
+          "Name of the corresponding set of tags.", "NAME" },       \
+        { #id_ "-show-keys", '\0', POPT_ARG_NONE, NULL,             \
+          TRC_DIFF_OPT_SHOW_KEYS##id_,                              \
+          "Show table with keys which cause differences.",  NULL }, \
+        { #id_ "-exclude", '\0', POPT_ARG_STRING, NULL,             \
+          TRC_DIFF_OPT_EXCLUDE##id_,                                \
+          "Exclude from report entries with key by pattern.",       \
+          "PATTERN" }
 
-        TRC_DIFF_TAG_OPT(0),
-        TRC_DIFF_TAG_OPT(1),
-        TRC_DIFF_TAG_OPT(2),
-        TRC_DIFF_TAG_OPT(3),
-        TRC_DIFF_TAG_OPT(4),
-        TRC_DIFF_TAG_OPT(5),
-        TRC_DIFF_TAG_OPT(6),
-        TRC_DIFF_TAG_OPT(7),
-        TRC_DIFF_TAG_OPT(8),
-        TRC_DIFF_TAG_OPT(9),
+        TRC_DIFF_SET_OPTS(0),
+        TRC_DIFF_SET_OPTS(1),
+        TRC_DIFF_SET_OPTS(2),
+        TRC_DIFF_SET_OPTS(3),
+        TRC_DIFF_SET_OPTS(4),
+        TRC_DIFF_SET_OPTS(5),
+        TRC_DIFF_SET_OPTS(6),
+        TRC_DIFF_SET_OPTS(7),
+        TRC_DIFF_SET_OPTS(8),
+        TRC_DIFF_SET_OPTS(9),
 
-#undef TRC_DIFF_TAG_OPT
-
-#define TRC_DIFF_NAME_OPT(id_) \
-        { "name" #id_, '\0',                                \
-          POPT_ARG_STRING, NULL, TRC_DIFF_OPT_NAME##id_,    \
-          "Name of the corresponding set of tags.", "NAME" }
-
-        TRC_DIFF_NAME_OPT(0),
-        TRC_DIFF_NAME_OPT(1),
-        TRC_DIFF_NAME_OPT(2),
-        TRC_DIFF_NAME_OPT(3),
-        TRC_DIFF_NAME_OPT(4),
-        TRC_DIFF_NAME_OPT(5),
-        TRC_DIFF_NAME_OPT(6),
-        TRC_DIFF_NAME_OPT(7),
-        TRC_DIFF_NAME_OPT(8),
-        TRC_DIFF_NAME_OPT(9),
-
-#undef TRC_DIFF_NAME_OPT
-
-#define TRC_DIFF_SHOW_KEYS_OPT(id_) \
-        { "show-keys" #id_, '\0',                                  \
-          POPT_ARG_NONE, NULL, TRC_DIFF_OPT_SHOW_KEYS##id_,        \
-          "Show table with keys which cause differences.",  NULL }
-
-        TRC_DIFF_SHOW_KEYS_OPT(0),
-        TRC_DIFF_SHOW_KEYS_OPT(1),
-        TRC_DIFF_SHOW_KEYS_OPT(2),
-        TRC_DIFF_SHOW_KEYS_OPT(3),
-        TRC_DIFF_SHOW_KEYS_OPT(4),
-        TRC_DIFF_SHOW_KEYS_OPT(5),
-        TRC_DIFF_SHOW_KEYS_OPT(6),
-        TRC_DIFF_SHOW_KEYS_OPT(7),
-        TRC_DIFF_SHOW_KEYS_OPT(8),
-        TRC_DIFF_SHOW_KEYS_OPT(9),
-
-#undef TRC_DIFF_SHOW_KEYS_OPT
+#undef TRC_DIFF_SET_OPTS
 
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_DIFF_OPT_VERSION, 
           "Display version information.", NULL },
@@ -206,21 +185,6 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
     {
         switch (rc)
         {
-            case TRC_DIFF_OPT_EXCLUDE:
-            {
-                tqe_string *exclude_key = calloc(1, sizeof(*exclude_key));
-
-                if (exclude_key == NULL)
-                {
-                    ERROR("calloc() failed");
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
-                }
-                TAILQ_INSERT_TAIL(&ctx->exclude_keys, exclude_key, links);
-                exclude_key->v = strdup(poptGetOptArg(optCon));
-                break;
-            }
-
             case TRC_DIFF_OPT_TAG0:
             case TRC_DIFF_OPT_TAG1:
             case TRC_DIFF_OPT_TAG2:
@@ -275,6 +239,25 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
                 }
                 break;
 
+            case TRC_DIFF_OPT_EXCLUDE0:
+            case TRC_DIFF_OPT_EXCLUDE1:
+            case TRC_DIFF_OPT_EXCLUDE2:
+            case TRC_DIFF_OPT_EXCLUDE3:
+            case TRC_DIFF_OPT_EXCLUDE4:
+            case TRC_DIFF_OPT_EXCLUDE5:
+            case TRC_DIFF_OPT_EXCLUDE6:
+            case TRC_DIFF_OPT_EXCLUDE7:
+            case TRC_DIFF_OPT_EXCLUDE8:
+            case TRC_DIFF_OPT_EXCLUDE9:
+                if (trc_diff_add_exclude(&ctx->sets,
+                                         rc - TRC_DIFF_OPT_EXCLUDE0,
+                                         poptGetOptArg(optCon)) != 0)
+                {
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                break;
+
             case TRC_DIFF_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,
                        TE_COPYRIGHT);
@@ -315,9 +298,9 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
 int
 main(int argc, char *argv[])
 {
-    int                  result = EXIT_FAILURE;
-    trc_diff_ctx        *ctx;
-    trc_diff_tags_entry *diff_set;
+    int             result = EXIT_FAILURE;
+    trc_diff_ctx   *ctx;
+    trc_diff_set   *diff_set;
 
     /* Initialize diff context */
     ctx = trc_diff_ctx_new();
@@ -374,9 +357,6 @@ main(int argc, char *argv[])
 exit:
 
     trc_db_close(ctx->db);
-    free(trc_diff_db_fn);
-    free(trc_diff_html_fn);
-    free(trc_diff_title);
     trc_diff_ctx_free(ctx);
 
     return result;
