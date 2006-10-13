@@ -167,104 +167,6 @@ trc_diff_entry_new(const trc_diff_entry *parent)
 
 #if 0
 /**
- * Add key used for specified tags set.
- *
- * @param keys_stats    List with all information about keys
- * @param tags          Set of tags for which the key is used
- * @param key           Key value
- *
- * @retval 0            Success
- * @retval TE_ENOMEM    Memory allocation failure
- */
-static int
-tad_diff_key_add(trc_diff_keys_stats *keys_stats,
-                 trc_tags_entry *tags, const char *key)
-{
-    trc_diff_key_stats *p;
-
-    for (p = keys_stats->cqh_first;
-         (p != (void *)keys_stats) &&
-         (p->tags != tags || strcmp(p->key, key) != 0);
-         p = p->links.cqe_next);
-
-    if (p == (void *)keys_stats)
-    {
-        p = malloc(sizeof(*p));
-        if (p == NULL)
-            return TE_ENOMEM;
-
-        p->tags = tags;
-        p->key = key;
-        p->count = 0;
-
-        CIRCLEQ_INSERT_TAIL(keys_stats, p, links);
-    }
-
-    p->count++;
-
-    return 0;
-}
-
-/**
- * Add iterations keys in set of keys with make differencies.
- *
- * @param iter          Test iteration
- *
- * @retval 0            Success
- * @retval TE_ENOMEM    Memory allocation failure
- */
-static int
-trc_diff_key_add_iter(const test_iter *iter)
-{
-    trc_tags_entry *tags;
-    int             rc;
-
-    for (tags = tags_diff.tqh_first;
-         tags != NULL;
-         tags = tags->links.tqe_next)
-    {
-        const char *key = iter->diff_exp[tags->id].key;
-
-        if (key == NULL)
-            key = "";
-
-        rc = tad_diff_key_add(tags, key);
-        if (rc != 0)
-            return rc;
-    }
-    return 0;
-}
-
-static te_bool
-trc_diff_exclude_by_key(const test_iter *iter)
-{
-    tqe_string     *p;
-    trc_tags_entry *tags;
-    te_bool         exclude = FALSE;
-
-    for (p = trc_diff_exclude_keys.tqh_first;
-         p != NULL && !exclude;
-         p = p->links.tqe_next)
-    {
-        for (tags = tags_diff.tqh_first;
-             tags != NULL;
-             tags = tags->links.tqe_next)
-        {
-            if (iter->diff_exp[tags->id].key != NULL &&
-                strlen(iter->diff_exp[tags->id].key) > 0)
-            {
-                exclude = (strncmp(iter->diff_exp[tags->id].key,
-                                   p->v, strlen(p->v)) == 0);
-                if (!exclude)
-                    break;
-            }
-        }
-    }
-    return exclude;
-}
-                    
-
-/**
  * Do test iterations have different expected results?
  *
  * @param[in]  ctx          TRC diff tool context
@@ -343,11 +245,11 @@ trc_diff_iters_has_diff(trc_diff_ctx *ctx, test_run *test,
         /* The routine should be called first to be called in any case */
         p->output = trc_diff_tests_has_diff(ctx, &p->tests) ||
                     (test->type == TRC_TEST_SCRIPT && iter_has_diff &&
-                     !trc_diff_exclude_by_key(p));
+                     !trc_diff_ignore_by_key(p));
         /*<
          * Iteration is output, if its tests have differencies or
          * expected results of the test iteration are different and it
-         * shouldn't be excluded because of keys pattern.
+         * shouldn't be ignored because of keys pattern.
          */
 
         if (p->output && test->type == TRC_TEST_SCRIPT)
@@ -546,6 +448,76 @@ trc_diff_group_exp_result(const trc_diff_sets  *sets,
 }
 
 /**
+ * Increment statistics for the key.
+ *
+ * @param keys_stats    List with per-key statistics
+ * @param key           Key
+ *
+ * @retval 0            Success
+ * @retval TE_ENOMEM    Memory allocation failure
+ */
+static te_errno
+tad_diff_key_stat_inc(trc_diff_keys_stats *keys_stats, const char *key)
+{
+    trc_diff_key_stats *p;
+
+    assert(keys_stats != NULL);
+
+    if (key == NULL)
+        key = "";
+
+    for (p = keys_stats->cqh_first;
+         (p != (void *)keys_stats) && (strcmp(p->key, key) != 0);
+         p = p->links.cqe_next);
+
+    if (p == (void *)keys_stats)
+    {
+        p = TE_ALLOC(sizeof(*p));
+        if (p == NULL)
+            return TE_ENOMEM;
+
+        p->key = key;
+        p->count = 0;
+
+        CIRCLEQ_INSERT_TAIL(keys_stats, p, links);
+    }
+
+    p->count++;
+
+    return 0;
+}
+
+/**
+ * Check key of the found difference against patterns to ignore.
+ *
+ * @param set           Set which participate in comparison
+ * @param key           Key which explains the difference
+ *
+ * @return Should the difference be ignored?
+ */
+static te_bool
+trc_diff_check_key(trc_diff_set *set, const char *key)
+{
+    tqe_string     *p;
+    te_bool         ignore = FALSE;
+
+    if (key == NULL)
+        key = "";
+ 
+    for (p = set->ignore.tqh_first;
+         p != NULL && !ignore;
+         p = p->links.tqe_next)
+    {
+        assert(p->v != NULL);
+        ignore = (strncmp(key, p->v, strlen(p->v)) == 0);
+        VERB("%s(): key=%s vs ignore=%s -> %u\n",
+             __FUNCTION__, key, p->v, ignore);
+    }
+
+    return ignore;
+}
+
+/**
  * Map TE test status to TRC test status.
  *
  * @param status        TE test status
@@ -690,6 +662,8 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
     trc_test_status             status1 = TRC_TEST_STATUS_MAX;
     trc_test_status             status2 = TRC_TEST_STATUS_MAX;
     trc_diff_status             diff = TRC_DIFF_MATCH;
+    te_bool                     ignore;
+    te_bool                     main_key_used;
 
     assert(set1 != NULL);
     assert(result1 != NULL);
@@ -700,7 +674,9 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
      * Check that each entry in the expecred result for the first set
      * has equal entry in the expected result for the second set.
      */
-    for (p = result1->results.tqh_first; p != NULL; p = p->links.tqe_next)
+    for (main_key_used = FALSE, p = result1->results.tqh_first;
+         p != NULL;
+         p = p->links.tqe_next)
     {
         /* 
          * If pointers to expected result for the first and the second
@@ -712,8 +688,31 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
             /* 
              * The expected result entry from the first set does not
              * match any entry from the second set.
+             * Check key and collect per-key statistics.
              */
-            diff = TRC_DIFF_NO_MATCH;
+            ignore = trc_diff_check_key(set1, (p->key != NULL) ?
+                                                  p->key : result1->key);
+            if (!ignore)
+            {
+                if (p->key != NULL)
+                {
+                    tad_diff_key_stat_inc(&set1->keys_stats, p->key);
+                }
+                else if (!main_key_used)
+                {
+                    main_key_used = TRUE;
+                    tad_diff_key_stat_inc(&set1->keys_stats, result1->key);
+                }
+                diff = TRC_DIFF_NO_MATCH;
+            }
+            else if (diff == TRC_DIFF_NO_MATCH)
+            {
+                /* Nothing can change it */
+            }
+            else if (diff == TRC_DIFF_MATCH)
+            {
+                diff = TRC_DIFF_NO_MATCH_IGNORE;
+            }
         }
         status1 = trc_test_status_merge(status1,
                       test_status_te2trc(p->result.status));
@@ -743,7 +742,9 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
      * Check that each entry in the expecred result for the second set
      * has equal entry in the expected result for the first set.
      */
-    for (p = result2->results.tqh_first; p != NULL; p = p->links.tqe_next)
+    for (main_key_used = FALSE, p = result2->results.tqh_first;
+         p != NULL;
+         p = p->links.tqe_next)
     {
         if (!trc_is_result_expected(result1, &p->result))
         {
@@ -752,7 +753,29 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
              * in another expected result. Therefore, this entry is 
              * unexpected.
              */
-            diff = TRC_DIFF_NO_MATCH;
+            ignore = trc_diff_check_key(set2, (p->key != NULL) ?
+                                                  p->key : result2->key);
+            if (!ignore)
+            {
+                if (p->key != NULL)
+                {
+                    tad_diff_key_stat_inc(&set2->keys_stats, p->key);
+                }
+                else if (!main_key_used)
+                {
+                    main_key_used = TRUE;
+                    tad_diff_key_stat_inc(&set2->keys_stats, result2->key);
+                }
+                diff = TRC_DIFF_NO_MATCH;
+            }
+            else if (diff == TRC_DIFF_NO_MATCH)
+            {
+                /* Nothing can change it */
+            }
+            else if (diff == TRC_DIFF_MATCH)
+            {
+                diff = TRC_DIFF_NO_MATCH_IGNORE;
+            }
         }
         status2 = trc_test_status_merge(status2,
                       test_status_te2trc(p->result.status));
@@ -875,9 +898,9 @@ trc_diff_do(trc_diff_ctx *ctx)
     while ((rc == 0) &&
            ((motion = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
     {
-        printf("M=%u, l=%u, p=%p, e=%p, to_result=%u hide_children=%u\n",
-               motion, level, parent, entry, entry_to_result,
-               hide_children);
+        VERB("M=%u, l=%u, p=%p, e=%p, to_result=%u hide_children=%u\n",
+             motion, level, parent, entry, entry_to_result,
+             hide_children);
         assert(!start || motion == TRC_DB_WALKER_SON);
         switch (motion)
         {
@@ -984,7 +1007,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                 }
                 else
                 {
-                    printf("%s\n", trc_db_walker_get_test(walker)->name);
+                    VERB("%s\n", trc_db_walker_get_test(walker)->name);
                 }
                 break;
 

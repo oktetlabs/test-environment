@@ -71,7 +71,7 @@ trc_diff_find_set(trc_diff_sets *sets, unsigned int id, te_bool create)
 
         p->id = id;
         TAILQ_INIT(&p->tags);
-        TAILQ_INIT(&p->exclude);
+        TAILQ_INIT(&p->ignore);
         CIRCLEQ_INIT(&p->keys_stats);
 
         TAILQ_INSERT_TAIL(sets, p, links);
@@ -149,13 +149,13 @@ trc_diff_add_tag(trc_diff_sets *sets, unsigned int id, const char *tag)
 
 /* See the description in trc_diff.h */
 te_errno
-trc_diff_add_exclude(trc_diff_sets *sets, unsigned int id,
-                     const char *exclude)
+trc_diff_add_ignore(trc_diff_sets *sets, unsigned int id,
+                    const char *ignore)
 {
     trc_diff_set *p;
     tqe_string   *e;
 
-    if (sets == NULL || id >= TRC_DIFF_IDS || exclude == NULL)
+    if (sets == NULL || id >= TRC_DIFF_IDS || ignore == NULL)
         return TE_EINVAL;
 
     p = trc_diff_find_set(sets, id, TRUE);
@@ -167,8 +167,10 @@ trc_diff_add_exclude(trc_diff_sets *sets, unsigned int id,
         return TE_ENOMEM;
 
     /* Discard 'const' qualifier, but take it into account on free */
-    e->v = (char *)exclude;
-    TAILQ_INSERT_TAIL(&p->exclude, e, links);
+    e->v = (char *)ignore;
+    TAILQ_INSERT_TAIL(&p->ignore, e, links);
+
+    VERB("New ignroe for ID=%u: '%s'\n", id, ignore);
 
     return 0;
 }
@@ -187,7 +189,7 @@ trc_diff_free_sets(trc_diff_sets *sets)
         tq_strings_free(&p->tags, NULL);
         free(p->name);
         /* Exclude patterns are not duplicated */
-        tq_strings_free(&p->exclude, NULL);
+        tq_strings_free(&p->ignore, NULL);
 
         free(p);
     }

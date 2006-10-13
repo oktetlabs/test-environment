@@ -168,7 +168,7 @@ static const char * const trc_diff_stats_table =
                                 "<font class=\"U\">Y</font>+"
                                 "<font class=\"E\">Z</font><br/>"
 "X - result match, Y - result does not match (to be fixed), "
-"Z - result does not match (excluded)</td>"
+"Z - result does not match (ignored)</td>"
 "    </tr>\n"
 "  </tbody>\n"
 "</table>\n";

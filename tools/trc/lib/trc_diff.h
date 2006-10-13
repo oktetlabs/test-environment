@@ -69,7 +69,7 @@ typedef struct trc_diff_set {
     char           *name;       /**< Name of the set */
     te_bool         show_keys;  /**< Show table with keys which explain
                                      differences */
-    tqh_strings     exclude;    /**< List of exclusions */
+    tqh_strings     ignore;     /**< List of exclusions */
 
     trc_diff_keys_stats keys_stats; /**< Per-key statistics */
 
@@ -204,17 +204,17 @@ extern te_errno trc_diff_add_tag(trc_diff_sets *sets,
                                  const char    *tag);
 
 /**
- * Add exclude pattern for the compared set with specified ID.
+ * Add ignore pattern for the compared set with specified ID.
  *
  * @param sets          List of compared sets
  * @param id            Identifier of the set
- * @param exclude       A new exclude pattern
+ * @param ignore        A new ignore pattern
  *
  * @return Status code.
  */
-extern te_errno trc_diff_add_exclude(trc_diff_sets *sets,
-                                     unsigned int   id,
-                                     const char    *exclude);
+extern te_errno trc_diff_add_ignore(trc_diff_sets *sets,
+                                    unsigned int   id,
+                                    const char    *ignore);
 
 /**
  * Free compared sets

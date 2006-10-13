@@ -249,9 +249,9 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
             case TRC_DIFF_OPT_EXCLUDE7:
             case TRC_DIFF_OPT_EXCLUDE8:
             case TRC_DIFF_OPT_EXCLUDE9:
-                if (trc_diff_add_exclude(&ctx->sets,
-                                         rc - TRC_DIFF_OPT_EXCLUDE0,
-                                         poptGetOptArg(optCon)) != 0)
+                if (trc_diff_add_ignore(&ctx->sets,
+                                        rc - TRC_DIFF_OPT_EXCLUDE0,
+                                        poptGetOptArg(optCon)) != 0)
                 {
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
