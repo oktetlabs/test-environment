@@ -970,39 +970,52 @@ trc_diff_do(trc_diff_ctx *ctx)
 
                 if (entry->is_iter)
                 {
+                    /* 
+                     * We have to get expected results for packages,
+                     * since it may be skipped and should be inhireted
+                     * by its tests.
+                     */
                     trc_diff_entry_exp_results(&ctx->sets, walker, entry);
 
-                    switch (trc_diff_entry_has_diff(&ctx->sets, entry,
-                                (trc_db_walker_get_test(walker)->aux) ?
-                                    NULL : &ctx->stats))
+                    /*
+                     * Analisys of differences is interesting for
+                     * test scripts only (leaves of the tree).
+                     */
+                    if (trc_db_walker_get_test(walker)->type ==
+                            TRC_TEST_SCRIPT)
                     {
-                        case -1:
-                            break;
+                        switch (trc_diff_entry_has_diff(&ctx->sets, entry,
+                                    (trc_db_walker_get_test(walker)->aux) ?
+                                        NULL : &ctx->stats))
+                        {
+                            case -1:
+                                break;
 
-                        case 0:
-                            /* 
-                             * Some children does not have differences.
-                             * Therefore, it is necessary to show which
-                             * one has differences.
-                             */
-                            hide_children = FALSE;
-                            break;
-
-                        case 1:
-                            entry->ptr.iter =
-                                trc_db_walker_get_iter(walker);
-                            entry_to_result = has_diff = TRUE;
-                            if (!trc_diff_group_exp_result(&ctx->sets,
-                                     parent, entry,
-                                     motion == TRC_DB_WALKER_SON))
-                            {
-                                /* Group is not homogeneous */
+                            case 0:
+                                /* 
+                                 * Some children does not have differences.
+                                 * Therefore, it is necessary to show which
+                                 * one has differences.
+                                 */
                                 hide_children = FALSE;
-                            }
-                            break;
+                                break;
 
-                        default:
-                            assert(FALSE);
+                            case 1:
+                                entry->ptr.iter =
+                                    trc_db_walker_get_iter(walker);
+                                entry_to_result = has_diff = TRUE;
+                                if (!trc_diff_group_exp_result(&ctx->sets,
+                                         parent, entry,
+                                         motion == TRC_DB_WALKER_SON))
+                                {
+                                    /* Group is not homogeneous */
+                                    hide_children = FALSE;
+                                }
+                                break;
+
+                            default:
+                                assert(FALSE);
+                        }
                     }
                 }
                 else
