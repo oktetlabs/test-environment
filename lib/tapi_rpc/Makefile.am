@@ -18,7 +18,8 @@ include_HEADERS= \
     tapi_rpc_unistd.h \
     tapi_rpc_winsock2.h \
     tapi_rpcsock_macros.h \
-    tapi_rpc_internal.h
+    tapi_rpc_params.h \
+    tapi_rpc_internal.h 
 
 lib_LTLIBRARIES=libtapi_rpc.la
 
