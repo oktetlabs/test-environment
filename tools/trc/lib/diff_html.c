@@ -313,7 +313,7 @@ trc_diff_one_stats_to_html(FILE               *f,
 
     total_match =
         (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED][TRC_DIFF_MATCH] +
-        (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED][TRC_DIFF_MATCH];
+        (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED][TRC_DIFF_MATCH] +
         (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE][TRC_DIFF_MATCH];
     total_no_match =
         (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED][TRC_DIFF_NO_MATCH] +
