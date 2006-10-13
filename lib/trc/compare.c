@@ -67,7 +67,7 @@ te_test_results_equal(const te_test_result *lhv,
 }
 
 /* See the description in te_trc.h */
-te_bool
+const trc_exp_result_entry *
 trc_is_result_expected(const trc_exp_result *expected,
                        const te_test_result *obtained)
 {
@@ -77,14 +77,10 @@ trc_is_result_expected(const trc_exp_result *expected,
     assert(obtained != NULL);
 
     for (p = expected->results.tqh_first;
-         p != NULL;
-         p = p->links.tqe_next)
-    {
-        if (te_test_results_equal(obtained, &p->result))
-            return TRUE;
-    }
+         p != NULL && !te_test_results_equal(obtained, &p->result);
+         p = p->links.tqe_next);
 
-    return FALSE;
+    return p;
 }
 
 /* See the description in te_trc.h */

@@ -246,9 +246,13 @@ extern const trc_exp_result *trc_db_walker_get_exp_result(
  *
  * @param expected      Expected results
  * @param obtained      Obtained result
+ *
+ * @return Pointer to the entry in expected result which is equal
+ *         to obtained result.
  */
-extern te_bool trc_is_result_expected(const trc_exp_result *expected,
-                                      const te_test_result *obtained);
+extern const trc_exp_result_entry *trc_is_result_expected(
+                                       const trc_exp_result *expected,
+                                       const te_test_result *obtained);
 
 /**
  * Is expected result equal to skipped (without any verdicts).

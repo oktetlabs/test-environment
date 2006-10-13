@@ -2446,8 +2446,9 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 else
                     ctx->current_result.error = "Unexpected test result(s)";
             }
-            else if (trc_is_result_expected(ctx->current_result.exp_result,
-                                            &ctx->current_result.result))
+            else if (trc_is_result_expected(
+                         ctx->current_result.exp_result,
+                         &ctx->current_result.result) != NULL)
             {
                 ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
                 ctx->current_result.error = NULL;
