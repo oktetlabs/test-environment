@@ -1250,6 +1250,8 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
         rc = alloc_and_get_value(node, session, p->type, &p->values);
         if (rc != 0)
         {
+            ERROR("Processing of the type '%s' value failed: %r",
+                  p->name, rc);
             /* 
              * Do not insert before tester_find_type() including indirect
              * from alloc_and_get_value(), but required for clean up.
@@ -1338,7 +1340,11 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
     {
         rc = alloc_and_get_value(node, session, p->type, &p->values);
         if (rc != 0)
+        {
+            ERROR("Processing of the %s '%s' value failed: %r",
+                  is_var ? "variable" : "argument", p->name, rc);
             return rc;
+        }
         node = xmlNodeNext(node);
     }
 
@@ -1723,7 +1729,11 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     {
         rc = alloc_and_get_var_arg(node, FALSE, session, &p->args);
         if (rc != 0)
+        {
+            ERROR("Processing of the run item '%s' arguments "
+                  "failed: %r", test_get_name(p), rc);
             return rc;
+        }
         node = xmlNodeNext(node);
     }
     
