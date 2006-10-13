@@ -6170,7 +6170,7 @@ if test -z "$UTIL_FULL_PATH_LOCATION"; then
         fi
         AC_MSG_RESULT([$chk_val_])
 
-        if test x"$chk_val_"=x"no"; then
+        if test x"$chk_val_" = x"no" ; then
             AC_MSG_WARN([Utility $1 is not found in $host_alias platform location, although you are cross building.])
         fi
     fi
