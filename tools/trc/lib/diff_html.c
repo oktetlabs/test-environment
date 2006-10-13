@@ -744,17 +744,11 @@ trc_diff_result_to_html(const trc_diff_result *result,
             }
 
             /*
-             * In brief output for tests and iterations is similar:
-             *  - accumulated test name;
-             *  - expected results;
-             *  - keys;
-             *  - notes.
+             * In brief output for tests and iterations the first
+             * column is the same - long test name.
              */
             fprintf(f, trc_diff_brief_table_test_row_start,
                     i, test_name.ptr);
-            rc = trc_diff_exp_results_to_html(f, sets, curr, flags);
-            if (rc != 0)
-                goto cleanup;
         }
         else if (curr->is_iter)
         {
@@ -762,11 +756,25 @@ trc_diff_result_to_html(const trc_diff_result *result,
             trc_test_iter_args_to_html(f, &curr->ptr.iter->args,
                                        flags);
             WRITE_STR(trc_diff_table_row_col_end);
-
-            rc = trc_diff_exp_results_to_html(f, sets, curr, flags);
+        }
+        else
+        {
+            rc = te_string_append(&test_name,
+                                  (curr->level > 0) ? "*-" : "");
             if (rc != 0)
                 goto cleanup;
 
+            fprintf(f, trc_diff_full_table_test_row_start,
+                    i, test_name.ptr, curr->ptr.test->name,
+                    PRINT_STR(curr->ptr.test->objective));
+        }
+
+        rc = trc_diff_exp_results_to_html(f, sets, curr, flags);
+        if (rc != 0)
+            goto cleanup;
+
+        if (curr->is_iter)
+        {
             WRITE_STR(trc_diff_table_row_col_start);
             rc = trc_diff_test_iter_keys_to_html(f, sets, curr);
             if (rc != 0)
@@ -782,19 +790,6 @@ trc_diff_result_to_html(const trc_diff_result *result,
         }
         else
         {
-            rc = te_string_append(&test_name,
-                                  (curr->level > 0) ? "*-" : "");
-            if (rc != 0)
-                goto cleanup;
-
-            fprintf(f, trc_diff_full_table_test_row_start,
-                    i, test_name.ptr, curr->ptr.test->name,
-                    PRINT_STR(curr->ptr.test->objective));
-
-            rc = trc_diff_exp_results_to_html(f, sets, curr, flags);
-            if (rc != 0)
-                goto cleanup;
-
             WRITE_STR(trc_diff_table_row_col_start);
             trc_diff_test_keys_to_html(f, sets, curr);
             WRITE_STR(trc_diff_table_row_col_end);
