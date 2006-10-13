@@ -219,7 +219,8 @@ struct tarpc_gettimeofday_out {
 
 /* Ethtool data types */
 enum tarpc_ethtool_type {
-    TARPC_ETHTOOL_CMD = 1       /**< struct ethtool_cmd */
+    TARPC_ETHTOOL_CMD = 1,      /**< struct ethtool_cmd */
+    TARPC_ETHTOOL_VALUE = 2     /**< struct ethtool_value */
 };
 
 struct tarpc_ethtool_cmd {
@@ -235,12 +236,17 @@ struct tarpc_ethtool_cmd {
     uint32_t maxrxpkt;
 };
 
+struct tarpc_ethtool_value {
+    uint32_t data;
+};
+
 /** struct ethtool_* */
 union tarpc_ethtool_data
     switch (tarpc_ethtool_type type)
 {
-    case TARPC_ETHTOOL_CMD: tarpc_ethtool_cmd cmd;
-    default:                void;
+    case TARPC_ETHTOOL_CMD:     tarpc_ethtool_cmd cmd;
+    case TARPC_ETHTOOL_VALUE:   tarpc_ethtool_value value;
+    default:                    void;
 };
 
 struct tarpc_ethtool {
@@ -2102,9 +2108,8 @@ enum ioctl_type {
 
 /* Access type of ioctl requests */
 enum ioctl_access {
-    IOCTL_RD,
-    IOCTL_WR,
-    IOCTL_RW
+    IOCTL_RD,   /* read access (may include write) */
+    IOCTL_WR    /* write-only access (no read) */
 };    
 
 union ioctl_request switch (ioctl_type type) {

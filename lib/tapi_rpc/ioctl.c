@@ -422,10 +422,28 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             switch (rpc_ifreq->rpc_ifr_ethtool.command)
             {
                 case ETHTOOL_GSET:
-                    in.access = IOCTL_RW;
+                case ETHTOOL_GMSGLVL:
+                case ETHTOOL_GLINK:
+                case ETHTOOL_GRXCSUM:
+                case ETHTOOL_GTXCSUM:
+                case ETHTOOL_GSG:
+                case ETHTOOL_GTSO:
+                case ETHTOOL_PHYS_ID:
+#ifdef ETHTOOL_GUFO
+                case ETHTOOL_GUFO:
+#endif
+                    in.access = IOCTL_RD;
                     break;
 
                 case ETHTOOL_SSET:
+                case ETHTOOL_SMSGLVL:
+                case ETHTOOL_SRXCSUM:
+                case ETHTOOL_STXCSUM:
+                case ETHTOOL_SSG:
+                case ETHTOOL_STSO:
+#ifdef ETHTOOL_SUFO
+                case ETHTOOL_SUFO:
+#endif
                     in.access = IOCTL_WR;
                     break;
 
@@ -712,7 +730,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                              "ethtool %s: ", ethtool_cmd2str(cmd));
                     switch (type)
                     {
-                        TARPC_ETHTOOL_CMD:
+                        case TARPC_ETHTOOL_CMD:
                         {
                             struct ethtool_cmd *ecmd = 
                                 (struct ethtool_cmd *)ifr->ifr_data;
@@ -732,6 +750,20 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                             break;
                         }
 
+                        case TARPC_ETHTOOL_VALUE:
+                        {
+                            struct ethtool_value *evalue = 
+                                (struct ethtool_value *)ifr->ifr_data;
+
+                            snprintf(ifreq_buf + strlen(ifreq_buf),
+                                     sizeof(ifreq_buf) - strlen(ifreq_buf),
+                                     "data %u", evalue->data);
+                        }
+
+                        default:
+                            snprintf(ifreq_buf + strlen(ifreq_buf),
+                                     sizeof(ifreq_buf) - strlen(ifreq_buf),
+                                     "unknown ethtool type");
                     }
                     break;
                 }

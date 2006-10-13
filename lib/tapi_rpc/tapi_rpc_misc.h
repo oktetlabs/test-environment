@@ -450,4 +450,18 @@ extern int rpc_mcast_join(rcf_rpc_server *rpcs, int s,
 extern int rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
                            const struct sockaddr *mcast_addr, int if_index);
 
+#if HAVE_LINUX_ETHTOOL_H
+/**
+ * Perform ethtool ioctl
+ *
+ * @param rpcs      RPC server handle
+ * @param s         socket descriptor
+ * @param ifname    interface name to work with
+ * @param edata     ethtool data structure
+ *
+ * @return ioctl return code
+ */
+int rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd, 
+                      const char *ifname, void *edata);
+#endif /* HAVE_LINUX_ETHTOOL_H */
 #endif /* !__TE_TAPI_RPC_MISC_H__ */

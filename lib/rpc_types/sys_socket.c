@@ -90,6 +90,9 @@ INCLUDE(te_win_defs.h)
 #if HAVE_ASSERT_H
 #include <assert.h>
 #endif
+#if HAVE_LINUX_SOCKIOS_H
+#include <linux/sockios.h>
+#endif
 #if HAVE_LINUX_ETHTOOL_H
 #include "te_stdint.h"
 typedef uint64_t u64;
@@ -1764,9 +1767,28 @@ ethtool_cmd2type(tarpc_ethtool_command cmd)
 {
     switch (cmd)
     {
-        case ETHTOOL_SSET:
         case ETHTOOL_GSET:
+        case ETHTOOL_SSET:
             return TARPC_ETHTOOL_CMD;
+
+        case ETHTOOL_GMSGLVL:
+        case ETHTOOL_SMSGLVL:
+        case ETHTOOL_GLINK:
+        case ETHTOOL_GRXCSUM:
+        case ETHTOOL_SRXCSUM:
+        case ETHTOOL_GTXCSUM:
+        case ETHTOOL_STXCSUM:
+        case ETHTOOL_GSG:
+        case ETHTOOL_SSG:
+        case ETHTOOL_GTSO:
+        case ETHTOOL_STSO:
+        case ETHTOOL_PHYS_ID:
+#ifdef ETHTOOL_GUFO
+        case ETHTOOL_GUFO:
+        case ETHTOOL_SUFO:
+#endif
+            return TARPC_ETHTOOL_VALUE;
+
         default:
             return 0;
     }
@@ -1779,10 +1801,29 @@ ethtool_cmd2str(tarpc_ethtool_command cmd)
 {
     switch (cmd)
     {
-        case ETHTOOL_SSET:
-            return "ETHTOOL_SSET";
-        case ETHTOOL_GSET:
-            return "ETHTOOL_GSET";
+#define MACRO2STR(_macro) \
+    case ETHTOOL_ ## _macro:            \
+        return #_macro;
+
+        MACRO2STR(GSET);
+        MACRO2STR(SSET);
+        MACRO2STR(GMSGLVL);
+        MACRO2STR(SMSGLVL);
+        MACRO2STR(GLINK);
+        MACRO2STR(GRXCSUM);
+        MACRO2STR(SRXCSUM);
+        MACRO2STR(GTXCSUM);
+        MACRO2STR(STXCSUM);
+        MACRO2STR(GSG);
+        MACRO2STR(SSG);
+        MACRO2STR(GTSO);
+        MACRO2STR(STSO);
+        MACRO2STR(PHYS_ID);
+#ifdef ETHTOOL_GUFO
+        MACRO2STR(GUFO);
+        MACRO2STR(SUFO);
+#endif
+#undef MACRO2STR
         default:
             return "(unknown)";
     }
@@ -1806,7 +1847,8 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
     {
         case TARPC_ETHTOOL_CMD:
             {
-                struct ethtool_cmd *ecmd = *edata_p;
+                struct ethtool_cmd *ecmd = 
+                        *(struct ethtool_cmd **)edata_p;
                 tarpc_ethtool_cmd  *rpc_ecmd = 
                         &rpc_edata->data.tarpc_ethtool_data_u.cmd;
 
@@ -1815,7 +1857,7 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                     ecmd = calloc(sizeof(struct ethtool_cmd), 1);
                     if (ecmd == NULL)
                         break;
-                    *edata_p = ecmd;
+                    *edata_p = (caddr_t)ecmd;
                 }
 
                 COPY_FIELD(ecmd, rpc_ecmd, supported);
@@ -1829,7 +1871,27 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                 COPY_FIELD(ecmd, rpc_ecmd, maxtxpkt);
                 COPY_FIELD(ecmd, rpc_ecmd, maxrxpkt);
 
-                    break;
+                break;
+            }
+
+        case TARPC_ETHTOOL_VALUE:
+            {
+                struct ethtool_value *evalue = 
+                        *(struct ethtool_value **)edata_p;
+                tarpc_ethtool_value  *rpc_evalue = 
+                        &rpc_edata->data.tarpc_ethtool_data_u.value;
+
+                if (evalue == NULL)
+                {
+                    evalue = calloc(sizeof(struct ethtool_value), 1);
+                    if (evalue == NULL)
+                        break;
+                    *edata_p = (caddr_t)evalue;
+                }
+
+                COPY_FIELD(evalue, rpc_evalue, data);
+
+                break;
             }
 
         default:
@@ -1854,7 +1916,8 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
     {
         case TARPC_ETHTOOL_CMD:
             {
-                struct ethtool_cmd *ecmd = edata;
+                struct ethtool_cmd *ecmd = 
+                        (struct ethtool_cmd *)edata;
                 tarpc_ethtool_cmd  *rpc_ecmd = 
                         &rpc_edata->data.tarpc_ethtool_data_u.cmd;
 
@@ -1868,6 +1931,18 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
                 COPY_FIELD(rpc_ecmd, ecmd, autoneg);
                 COPY_FIELD(rpc_ecmd, ecmd, maxtxpkt);
                 COPY_FIELD(rpc_ecmd, ecmd, maxrxpkt);
+
+                break;
+            }
+
+        case TARPC_ETHTOOL_VALUE:
+            {
+                struct ethtool_value *evalue = 
+                        (struct ethtool_value *)edata;
+                tarpc_ethtool_value  *rpc_evalue = 
+                        &rpc_edata->data.tarpc_ethtool_data_u.value;
+
+                COPY_FIELD(rpc_evalue, evalue, data);
 
                 break;
             }

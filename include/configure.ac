@@ -222,6 +222,7 @@ typedef __uint32_t u32;
 typedef __uint16_t u16;
 typedef __uint8_t  u8;
 ])
+AC_CHECK_HEADERS([linux/sockios.h], [], [], [])
 
 dnl
 dnl Check for 'sa_len'-like members in 'struct sockaddr'-like structures.

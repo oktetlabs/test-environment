@@ -50,6 +50,9 @@
 #if HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
 
 #include "te_defs.h"
 #include "te_printf.h"
@@ -1299,4 +1302,19 @@ rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
     return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, TRUE,
                                 TARPC_MCAST_OPTIONS);
 }
+
+
+#if HAVE_LINUX_ETHTOOL_H
+int
+rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd, 
+                  const char *ifname, void *edata)
+{
+    struct ifreq    ifreq;
+
+    memset(&ifreq, 0, sizeof(ifreq));
+    strncpy(ifreq.ifr_name, ifname, sizeof(ifreq.ifr_name));
+    ifreq.ifr_data = (caddr_t)edata;
+    return rpc_ioctl(rpcs, fd, RPC_SIOCETHTOOL, &ifreq);
+}
+#endif /* HAVE_LINUX_ETHTOOL_H */
 
