@@ -443,7 +443,7 @@ trc_report_test_iter_stats_update(trc_report_stats     *stats,
     }
     else
     {
-        is_expected = trc_is_result_expected(exp_result, result);
+        is_expected = (trc_is_result_expected(exp_result, result) != NULL);
 
         switch (result->status)
         {

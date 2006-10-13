@@ -208,18 +208,36 @@ trc_diff_entry_exp_results(const trc_diff_sets    *sets,
     }
 }
 
+/**
+ * Analogue of strcmp() with posibility to compare NULL strings.
+ * If both strings are NULL, 0 is returned.
+ * If only one stirng is NULL, -1 or 1 is returned correspondingly.
+ */
+static int
+str_or_null_cmp(const char *s1, const char *s2)
+{
+    if (s1 == NULL && s2 == NULL)
+        return 0;
+    if (s1 == NULL)
+        return 1;
+    if (s2 == NULL)
+        return -1;
+
+    return strcmp(s1, s2);
+}
 
 /**
- * Are two expected results equal?
+ * Are two expected results equal (including keys and notes)?
  *
  * @param lhv           Left hand value
  * @param rhv           Right hand value
  */
-static te_bool
+te_bool
 trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
                              const trc_exp_result *rhv)
 {
     const trc_exp_result_entry *p;
+    const trc_exp_result_entry *q;
 
     assert(lhv != NULL);
     assert(rhv != NULL);
@@ -227,18 +245,24 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
     if (lhv == rhv)
         return TRUE;
 
+    if ((str_or_null_cmp(lhv->key, rhv->key) != 0) ||
+        (str_or_null_cmp(lhv->notes, rhv->notes) != 0))
+        return FALSE;
+
     /* 
      * Check that each entry in left-hand value has equal entry in
      * right-hand value.
      */
     for (p = lhv->results.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if (!trc_is_result_expected(rhv, &p->result))
+        q = trc_is_result_expected(rhv, &p->result);
+        if ((q == NULL) ||
+            (str_or_null_cmp(p->key, q->key) != 0) ||
+            (str_or_null_cmp(p->notes, q->notes) != 0))
         {
             /* 
              * The expected result entry does not correspond to any
-             * in another expected result. Therefore, this entry is 
-             * unexpected.
+             * in another expected result or key/notes do not match.
              */
             return FALSE;
         }
@@ -250,12 +274,14 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
      */
     for (p = rhv->results.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if (!trc_is_result_expected(lhv, &p->result))
+        q = trc_is_result_expected(lhv, &p->result);
+        if ((q == NULL) ||
+            (str_or_null_cmp(p->key, q->key) != 0) ||
+            (str_or_null_cmp(p->notes, q->notes) != 0))
         {
             /* 
              * The expected result entry does not correspond to any
-             * in another expected result. Therefore, this entry is 
-             * unexpected.
+             * in another expected result or key/notes do not match.
              */
             return FALSE;
         }
@@ -551,7 +577,7 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
          * sets are equal, expected results are definitely equal.
          */
         if ((result1 != result2) &&
-            !trc_is_result_expected(result2, &p->result))
+            trc_is_result_expected(result2, &p->result) == NULL)
         {
             /* 
              * The expected result entry from the first set does not
@@ -617,7 +643,7 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
          p != NULL;
          p = p->links.tqe_next)
     {
-        if (!trc_is_result_expected(result1, &p->result))
+        if (trc_is_result_expected(result1, &p->result) == NULL)
         {
             /* 
              * The expected result entry does not correspond to any

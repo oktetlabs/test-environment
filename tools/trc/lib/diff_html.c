@@ -638,7 +638,7 @@ trc_diff_test_iter_notes_to_html(FILE                 *f,
  * @return Status code.
  */
 static te_errno
-trc_diff_test_keys_to_html(FILE *f, const trc_diff_sets  *sets,
+trc_diff_test_keys_to_html(FILE *f, const trc_diff_sets *sets,
                            const trc_diff_entry *entry)
 {
     const trc_diff_set *set;
@@ -660,6 +660,37 @@ trc_diff_test_keys_to_html(FILE *f, const trc_diff_sets  *sets,
         }
     }
     return 0;
+}
+
+/**
+ * Find an iteration of this test before this iteration with the same
+ * expected result and keys.
+ *
+ * @param sets          Compared sets
+ * @param entry         TRC diff entry for current iteration
+ */
+static const trc_diff_entry *
+trc_diff_html_brief_find_dup_iter(const trc_diff_sets  *sets,
+                                  const trc_diff_entry *entry)
+{
+    const trc_diff_entry   *p = entry;
+    const trc_diff_set     *set;
+
+    assert(entry->is_iter);
+    while (((p = (*(((trc_diff_result *)
+                         ((p)->links.tqe_prev))->tqh_last))) != NULL) &&
+           (p->level == entry->level))
+    {
+        for (set = sets->tqh_first;
+             set != NULL &&
+             trc_diff_is_exp_result_equal(entry->results[set->id],
+                                          p->results[set->id]);
+             set = set->links.tqe_next);
+
+        if (set == NULL)
+            return p;
+    }
+    return NULL;
 }
 
 /**
@@ -742,6 +773,15 @@ trc_diff_result_to_html(const trc_diff_result *result,
                  */
                 continue;
             }
+            /*
+             * Don't want to see iterations with equal verdicts and
+             * keys in brief mode.
+             */
+            if (curr->is_iter &&
+                trc_diff_html_brief_find_dup_iter(sets, curr) != NULL)
+            {
+                goto cut;
+            }
 
             /*
              * In brief output for tests and iterations the first
@@ -798,6 +838,7 @@ trc_diff_result_to_html(const trc_diff_result *result,
                     PRINT_STR(curr->ptr.test->notes));
         }
 
+cut:
         /* If level of the next entry is less */
         if (next != NULL && 
             ((next->level < curr->level) ||

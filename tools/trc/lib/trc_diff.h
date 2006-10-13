@@ -239,6 +239,14 @@ extern trc_diff_ctx *trc_diff_ctx_new(void);
  */
 extern void trc_diff_ctx_free(trc_diff_ctx *ctx);
 
+/**
+ * Are two expected results equal (including keys and notes)?
+ *
+ * @param lhv           Left hand value
+ * @param rhv           Right hand value
+ */
+extern te_bool trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
+                                            const trc_exp_result *rhv);
 
 /**
  * Process TRC database and generate in-memory report.
