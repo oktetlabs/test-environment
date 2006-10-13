@@ -58,7 +58,7 @@
 
 /* See the description in trc_html.h */
 te_errno
-trc_test_result_to_html(FILE *f, const te_test_result *result)
+te_test_result_to_html(FILE *f, const te_test_result *result)
 {
     te_errno                rc = 0;
     const te_test_verdict  *v;
@@ -85,6 +85,27 @@ trc_test_result_to_html(FILE *f, const te_test_result *result)
 
 cleanup:
     return rc;
+}
+
+/* See the description in trc_html.h */
+te_errno
+trc_test_result_to_html(FILE *f, const trc_exp_result_entry *result)
+{
+    te_errno    rc;
+
+    assert(f != NULL);
+    assert(result != NULL);
+
+    rc = te_test_result_to_html(f, &result->result);
+    if (rc != 0)
+        return rc;
+
+    if (result->key != NULL)
+        fprintf(f, "<br/>Key: %s", result->key);
+    if (result->notes != NULL)
+        fprintf(f, "<br/>Notes: %s", result->notes);
+
+    return 0;
 }
 
 /* See the description in trc_html.h */
@@ -118,7 +139,7 @@ trc_exp_result_to_html(FILE *f, const trc_exp_result *result,
     {
         if (p != result->results.tqh_first)
             WRITE_STR("<br/><br/>");
-        rc = trc_test_result_to_html(f, &p->result);
+        rc = trc_test_result_to_html(f, p);
     }
 
 cleanup:

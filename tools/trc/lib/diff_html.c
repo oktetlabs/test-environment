@@ -248,7 +248,6 @@ static const char * const trc_diff_table_iter_row_start =
 "      <td colspan=2><a name=\"%u\"/>";
 
 static const char * const trc_diff_table_row_end =
-"      <td>%s</td>\n"           /* Key */
 "      <td>%s</td>\n"           /* Notes */
 "    </tr>\n";
 
@@ -540,108 +539,13 @@ cleanup:
     return rc;
 }
 
-#if 0
-
-/**
- * String representation (with HTML markers) of test iteration keys
- * for all tags.
- *
- * @param iter          Test iteration
- *
- * @return Pointer to a static buffer with HTML text string.
- */
-static const char *
-trc_diff_test_iter_keys(const test_iter *iter)
-{
-    char           *s = buf;
-    trc_tags_entry *tags;
-
-    buf[0] = '\0';
-    for (tags = tags_diff.tqh_first;
-         tags != NULL;
-         tags = tags->links.tqe_next)
-    {
-        if (iter->diff_exp[tags->id].key != NULL &&
-            strlen(iter->diff_exp[tags->id].key) > 0)
-        {
-            s += sprintf(s, "<em>%s</em> - %s<br/>",
-                         tags->name, iter->diff_exp[tags->id].key);
-        }
-    }
-
-    return buf;
-}
-
-/**
- * String representation (with HTML markers) of test iteration notes
- * for all tags.
- *
- * @param iter          Test iteration
- *
- * @return Pointer to a static buffer with HTML text string.
- */
-static const char *
-trc_diff_test_iter_notes(const test_iter *iter)
-{
-    char           *s = buf;
-    trc_tags_entry *tags;
-
-    buf[0] = '\0';
-    if (iter->notes != NULL && strlen(iter->notes) > 0)
-    {
-        s += sprintf(s, "%s<br/>", iter->notes);
-    }
-    for (tags = tags_diff.tqh_first;
-         tags != NULL;
-         tags = tags->links.tqe_next)
-    {
-        if (iter->diff_exp[tags->id].notes != NULL &&
-            strlen(iter->diff_exp[tags->id].notes) > 0)
-        {
-            s += sprintf(s, "<em>%s</em> - %s<br/>",
-                         tags->name, iter->diff_exp[tags->id].notes);
-        }
-    }
-
-    return buf;
-}
-
-static const char *
-trc_diff_test_iters_get_keys(test_run *test, unsigned int id)
-{
-    test_iter  *p;
-    test_iter  *q;
-    char       *s = buf;
-
-
-    buf[0] = '\0';
-    for (p = test->iters.head.tqh_first; p != NULL; p = p->links.tqe_next)
-    {
-        if (p->output && (p->diff_exp[id].key != NULL) &&
-            (strlen(p->diff_exp[id].key) > 0))
-        {
-            for (q = test->iters.head.tqh_first;
-                 (q != p) &&
-                 ((q->diff_exp[id].key == NULL) || (!q->output) ||
-                  (strcmp(p->diff_exp[id].key, q->diff_exp[id].key) != 0));
-                 q = q->links.tqe_next);
-
-            if (p == q)
-                s += sprintf(s, "%s%s", (s == buf) ? "" : ", ",
-                             p->diff_exp[id].key);
-        }
-    }
-
-    return buf;
-}
-#endif
-
 
 /**
  * Output expected results to HTML file.
  *
  * @param f             File stream to write
- * @param sets         Compared sets
+ * @param sets          Compared sets
+ * @param entry         TRC diff result entry
  * @param flags         Processing flags
  *
  * @return Status code.
@@ -653,19 +557,109 @@ trc_diff_exp_results_to_html(FILE                 *f,
                              unsigned int          flags)
 {
     te_errno            rc = 0;
-    const trc_diff_set *tags;
+    const trc_diff_set *set;
 
-    for (tags = sets->tqh_first;
-         tags != NULL && rc == 0;
-         tags = tags->links.tqe_next)
+    for (set = sets->tqh_first;
+         set != NULL && rc == 0;
+         set = set->links.tqe_next)
     {
         WRITE_STR(trc_diff_table_row_col_start);
-        rc = trc_exp_result_to_html(f, entry->results[tags->id], flags);
+        rc = trc_exp_result_to_html(f, entry->results[set->id], flags);
         WRITE_STR(trc_diff_table_row_col_end);
     }
 
 cleanup:
     return rc;
+}
+
+/**
+ * Output test iteration keys to HTML.
+ *
+ * @param f             File stream to write
+ * @param sets          Compared sets
+ * @param entry         TRC diff result entry
+ *
+ * @return Status code.
+ */
+static te_errno
+trc_diff_test_iter_keys_to_html(FILE                 *f,
+                                const trc_diff_sets  *sets,
+                                const trc_diff_entry *entry)
+{
+    const trc_diff_set *set;
+
+    for (set = sets->tqh_first;
+         set != NULL;
+         set = set->links.tqe_next)
+    {
+        if (entry->results[set->id]->key != NULL)
+            fprintf(f, "<em>%s</em> - %s<br/>",
+                    set->name, entry->results[set->id]->key);
+    }
+
+    return 0;
+}
+
+/**
+ * Output test iteration notes to HTML.
+ *
+ * @param f             File stream to write
+ * @param sets          Compared sets
+ * @param entry         TRC diff result entry
+ *
+ * @return Status code.
+ */
+static te_errno
+trc_diff_test_iter_notes_to_html(FILE                 *f,
+                                 const trc_diff_sets  *sets,
+                                 const trc_diff_entry *entry)
+{
+    const trc_diff_set *set;
+
+    for (set = sets->tqh_first;
+         set != NULL;
+         set = set->links.tqe_next)
+    {
+        if (entry->results[set->id]->notes != NULL)
+            fprintf(f, "<em>%s</em> - %s<br/>",
+                    set->name, entry->results[set->id]->notes);
+    }
+
+    return 0;
+}
+
+/**
+ * Output collected keys for the test by its iterations to HTML report.
+ *
+ * @param f             File stream to write to
+ * @param sets          Compared sets
+ * @param entry         TRC diff result entry
+ *
+ * @return Status code.
+ */
+static te_errno
+trc_diff_test_keys_to_html(FILE *f, const trc_diff_sets  *sets,
+                           const trc_diff_entry *entry)
+{
+    const trc_diff_set *set;
+    const tqe_string   *str;
+
+    for (set = sets->tqh_first;
+         set != NULL;
+         set = set->links.tqe_next)
+    {
+        if (entry->keys[set->id].tqh_first != NULL)
+            fprintf(f, "<em>%s</em> - ", set->name);
+        for (str = entry->keys[set->id].tqh_first;
+             str != NULL;
+             str = str->links.tqe_next)
+        {
+            fprintf(f, "%s%s",
+                    (str == entry->keys[set->id].tqh_first) ? "" : ", ",
+                    str->v);
+        }
+    }
+    return 0;
 }
 
 /**
@@ -772,6 +766,19 @@ trc_diff_result_to_html(const trc_diff_result *result,
             rc = trc_diff_exp_results_to_html(f, sets, curr, flags);
             if (rc != 0)
                 goto cleanup;
+
+            WRITE_STR(trc_diff_table_row_col_start);
+            rc = trc_diff_test_iter_keys_to_html(f, sets, curr);
+            if (rc != 0)
+                goto cleanup;
+            WRITE_STR(trc_diff_table_row_col_end);
+
+            WRITE_STR(trc_diff_table_row_col_start);
+            fprintf(f, "%s<br/>", PRINT_STR(curr->ptr.iter->notes));
+            rc = trc_diff_test_iter_notes_to_html(f, sets, curr);
+            if (rc != 0)
+                goto cleanup;
+            WRITE_STR(trc_diff_table_row_col_end);
         }
         else
         {
@@ -788,22 +795,12 @@ trc_diff_result_to_html(const trc_diff_result *result,
             if (rc != 0)
                 goto cleanup;
 
-#if 0
-            buf[0] = '\0';
-            s = buf;
-            for (entry = tags_diff.tqh_first;
-                 entry != NULL;
-                 entry = entry->links.tqe_next)
-            {
-                keys = trc_diff_test_iters_get_keys(p, entry->id);
-                if (strlen(keys) > 0)
-                {
-                    s += sprintf(s, "<em>%s</em> - %s<br/>",
-                                 entry->name, keys);
-                }
-            }
-            fprintf(f, trc_diff_table_row_end, buf, PRINT_STR(p->notes));
-#endif
+            WRITE_STR(trc_diff_table_row_col_start);
+            trc_diff_test_keys_to_html(f, sets, curr);
+            WRITE_STR(trc_diff_table_row_col_end);
+
+            fprintf(f, trc_diff_table_row_end,
+                    PRINT_STR(curr->ptr.test->notes));
         }
 
         /* If level of the next entry is less */

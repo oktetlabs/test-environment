@@ -79,7 +79,11 @@ trc_diff_entry_init(trc_diff_entry *entry, te_bool is_iter)
         entry->ptr.test = NULL;
 
     for (i = 0; i < TE_ARRAY_LEN(entry->results); ++i)
+    {
         entry->results[i] = NULL;
+        entry->inherit[i] = 0;
+        TAILQ_INIT(entry->keys + i);
+    }
 }
 
 /**
@@ -107,6 +111,7 @@ trc_diff_entry_cleanup(trc_diff_entry *entry)
             entry->results[i] = NULL;
             entry->inherit[i] &= ~TRC_DIFF_INHERIT;
         }
+        assert(entry->keys[i].tqh_first == NULL);
     }
 }
 
@@ -504,17 +509,21 @@ trc_diff_stats_inc(trc_diff_stats *stats,
 /**
  * Are two expected results equal?
  *
- * @param set1          Left hand set to compare
- * @param result1       Left hand set expected result
- * @param set           Right hand set to compare
- * @param result2       Right hand set expected result
+ * @param set1          The first set to compare
+ * @param result1       Expected result for the first set
+ * @param keys1         List of keys for the first set
+ * @param set2          The second set to compare
+ * @param result2       Expected result for the second set
+ * @param keys1         List of keys for the second set
  * @param stats         Statistics to update or NULL
  *
  * @return 
  */
 static te_bool
 trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
+                 tqh_strings *keys1,
                  trc_diff_set *set2, const trc_exp_result *result2,
+                 tqh_strings *keys2,
                  trc_diff_stats *stats)
 {
     const trc_exp_result_entry *p;
@@ -556,11 +565,14 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
                 if (p->key != NULL)
                 {
                     tad_diff_key_stat_inc(&set1->keys_stats, p->key);
+                    tq_strings_add_uniq(keys1, p->key);
                 }
                 else if (!main_key_used)
                 {
                     main_key_used = TRUE;
                     tad_diff_key_stat_inc(&set1->keys_stats, result1->key);
+                    if (result1->key != NULL)
+                        tq_strings_add_uniq(keys1, result1->key);
                 }
                 diff = TRC_DIFF_NO_MATCH;
             }
@@ -619,11 +631,14 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
                 if (p->key != NULL)
                 {
                     tad_diff_key_stat_inc(&set2->keys_stats, p->key);
+                    tq_strings_add_uniq(keys2, p->key);
                 }
                 else if (!main_key_used)
                 {
                     main_key_used = TRUE;
                     tad_diff_key_stat_inc(&set2->keys_stats, result2->key);
+                    if (result2->key != NULL)
+                        tq_strings_add_uniq(keys2, result2->key);
                 }
                 diff = TRC_DIFF_NO_MATCH;
             }
@@ -658,7 +673,8 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
  * Compare expected results.
  *
  * @param sets          Compared sets
- * @parma entry         Test or iteration entry
+ * @param parent        Parent test entry
+ * @parma entry         Test iteration entry
  * @param stats         Grand total statistics to update
  *
  * @return Comparison status.
@@ -669,6 +685,7 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
  */
 static int
 trc_diff_entry_has_diff(const trc_diff_sets *sets,
+                        trc_diff_entry      *parent,
                         trc_diff_entry      *entry,
                         trc_diff_stats      *stats)
 {
@@ -676,13 +693,19 @@ trc_diff_entry_has_diff(const trc_diff_sets *sets,
     trc_diff_set   *q;
     te_bool         diff = FALSE;
 
+    assert(sets != NULL);
+    assert(parent != NULL);
+    assert(entry != NULL);
+
     for (p = sets->tqh_first; p != NULL; p = p->links.tqe_next)
     {
         for (q = p->links.tqe_next; q != NULL; q = q->links.tqe_next)
         {
             diff = diff ||
                    (trc_diff_compare(p, entry->results[p->id],
+                                     parent->keys + p->id,
                                      q, entry->results[q->id],
+                                     parent->keys + q->id,
                                      stats) == TRC_DIFF_NO_MATCH);
             /* 
              * Do not terminate comparison if the difference is found.
@@ -843,7 +866,8 @@ trc_diff_do(trc_diff_ctx *ctx)
                     if (trc_db_walker_get_test(walker)->type ==
                             TRC_TEST_SCRIPT)
                     {
-                        switch (trc_diff_entry_has_diff(&ctx->sets, entry,
+                        switch (trc_diff_entry_has_diff(&ctx->sets,
+                                    parent, entry,
                                     (trc_db_walker_get_test(walker)->aux) ?
                                         NULL : &ctx->stats))
                         {

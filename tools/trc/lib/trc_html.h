@@ -49,8 +49,19 @@ extern "C" {
  *
  * @return Status code.
  */
-extern te_errno trc_test_result_to_html(FILE                 *f,
-                                        const te_test_result *result);
+extern te_errno te_test_result_to_html(FILE                 *f,
+                                       const te_test_result *result);
+
+/**
+ * Output TRC test expected result entry to HTML file.
+ *
+ * @param f             File stream to write
+ * @param result        Expected result entry to output
+ *
+ * @return Status code.
+ */
+extern te_errno trc_test_result_to_html(FILE                       *f,
+                                        const trc_exp_result_entry *result);
 
 /**
  * Output expected result to HTML file.

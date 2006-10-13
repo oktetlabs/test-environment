@@ -465,8 +465,8 @@ trc_report_exp_got_to_html(FILE                *f,
             
             WRITE_STR(trc_test_exp_got_row_mid);
             
-            rc = trc_test_result_to_html(f, (iter_entry == NULL) ? NULL :
-                                                &iter_entry->result);
+            rc = te_test_result_to_html(f, (iter_entry == NULL) ? NULL :
+                                               &iter_entry->result);
             if (rc != 0)
                 break;
             

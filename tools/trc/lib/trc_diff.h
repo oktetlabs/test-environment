@@ -141,6 +141,9 @@ typedef struct trc_diff_entry {
     unsigned int            inherit[TRC_DIFF_IDS];
 #define TRC_DIFF_INHERIT    0x1 /**< Result should be inherited */
 #define TRC_DIFF_INHERITED  0x2 /**< Result is inherited */
+
+    /** Lists of keys per set which explain the differences */
+    tqh_strings             keys[TRC_DIFF_IDS];
     
 } trc_diff_entry;
 
