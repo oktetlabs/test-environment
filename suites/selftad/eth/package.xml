@@ -1,46 +1,62 @@
 <?xml version="1.0"?>
 <package version="1.0">
     
-    <description>CLI CSAP tests</description>
+  <description>Ethernet CSAP tests</description>
     
-    <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
-    <req id="TAD_ETH" sticky="true"/>
+  <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
 
-    <session>
-        <run>
-            <script name="caught_any">
-                <req id="TAD_ETH"/> 
-            </script>
-            <arg name="num_pkts">
-                <value>2</value>
-                <value>5</value>
-            </arg>
-            <arg name="timeout"> 
-                <value>2000</value><!-- in milliseconds -->
-            </arg>
-            <arg name="pass_results" type="boolean"/>
-            <arg name="dump_packets" type="boolean"/>
-            <arg name="blocked_mode" type="boolean"/>
-        </run>
-        <run>
-            <script name="simple_recv_send">
-                <req id="TAD_ETH"/> 
-            </script>
-            <arg name="send_src_csap" type="boolean"/>
-            <arg name="send_src_tmpl" type="boolean"/>
-        </run>
-        <run>
-            <script name="vlan_recv_send">
-                <req id="TAD_ETH"/> 
-            </script>
-            <arg name="env">
-                <value>{'host_a'{if:'if_a',addr:'hwaddr':ether:alien}}</value>
-            </arg>
-        </run>
-        <run>
-            <script name="eth_serial1">
-                <req id="TAD_ETH"/> 
-            </script>
-        </run>
-   </session>
+  <req id="TAD_ETH" sticky="true"/>
+
+  <session>
+    <enum name="boolean3">
+      <value type="boolean"/>
+      <value>UNKNOWN</value>
+    </enum>
+
+    <run>
+      <script name="send_recv"/>
+      <arg name="env">
+        <value>
+          {'host_send'{if:'if_send',addr:'hwaddr_send':ether:alien},
+           'host_recv'{if:'if_recv',addr:'hwaddr_recv':ether:alien}}
+        </value>
+      </arg>
+      <arg name="tagged" type="boolean3"/>
+      <arg name="llc_snap" type="boolean3"/>
+      <arg name="ethertype" type="boolean"/>
+    </run>
+
+    <run>
+      <script name="caught_any"/>
+      <arg name="num_pkts">
+        <value>2</value>
+        <value>5</value>
+      </arg>
+      <arg name="timeout"> 
+        <value>2000</value><!-- in milliseconds -->
+      </arg>
+      <arg name="pass_results" type="boolean"/>
+      <arg name="dump_packets" type="boolean"/>
+      <arg name="blocked_mode" type="boolean"/>
+    </run>
+
+    <run>
+      <script name="simple_recv_send"/>
+      <arg name="send_src_csap" type="boolean"/>
+      <arg name="send_src_tmpl" type="boolean"/>
+    </run>
+
+    <run>
+      <script name="vlan_recv_send"/>
+      <arg name="env">
+        <value>{'host_a'{if:'if_a',addr:'hwaddr':ether:alien}}</value>
+      </arg>
+    </run>
+
+    <run>
+      <script name="eth_serial1"/>
+    </run>
+
+  </session>
+
 </package>
