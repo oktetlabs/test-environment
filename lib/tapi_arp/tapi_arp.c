@@ -362,7 +362,8 @@ tapi_arp_prepare_pattern_eth_only(const uint8_t *src_mac,
 {
     uint16_t eth_type = ETHERTYPE_ARP;
 
-    return tapi_eth_add_pdu(pattern, TRUE, dst_mac, src_mac, &eth_type,
+    return tapi_eth_add_pdu(pattern, NULL, TRUE, dst_mac, src_mac,
+                            &eth_type,
                             TE_BOOL3_ANY /* tagged/untagged */,
                             TE_BOOL3_ANY /* Ethernet2/LLC */);
 }

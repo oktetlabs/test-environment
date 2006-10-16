@@ -128,7 +128,7 @@ main(int argc, char *argv[])
     CHECK_NOT_NULL(asn_eth_hdr = ndn_eth_plain_to_packet(&plain_hdr));
 
     /* Create traffic template with Ethernet PDU */
-    CHECK_RC(tapi_eth_add_pdu(&template, FALSE, NULL, NULL, NULL,
+    CHECK_RC(tapi_eth_add_pdu(&template, NULL, FALSE, NULL, NULL, NULL,
                               TE_BOOL3_ANY /* tagged/untagged */,
                               TE_BOOL3_ANY /* Ethernet2/LLC */));
 
@@ -145,7 +145,7 @@ main(int argc, char *argv[])
     RING("Ethernet frame template to send created successfully");
 
     /* Create traffic pattern with Ethernet PDU */
-    CHECK_RC(tapi_eth_add_pdu(&pattern, TRUE, hwaddr, NULL, NULL,
+    CHECK_RC(tapi_eth_add_pdu(&pattern, NULL, TRUE, hwaddr, NULL, NULL,
                               TE_BOOL3_ANY /* tagged/untagged */,
                               TE_BOOL3_ANY /* Ethernet2/LLC */));
     RING("Ethernet frame pattern to receive created successfully");

@@ -129,7 +129,7 @@ main(int argc, char *argv[])
     else 
         VERB("csap for listen created, id: %d\n", (int)eth_listen_csap);
 
-    rc = tapi_eth_add_pdu(&pattern, TRUE, NULL, NULL, &eth_type,
+    rc = tapi_eth_add_pdu(&pattern, NULL, TRUE, NULL, NULL, &eth_type,
                           TE_BOOL3_ANY /* tagged/untagged */,
                           TE_BOOL3_ANY /* Ethernet2/LLC */);
     if (rc != 0)

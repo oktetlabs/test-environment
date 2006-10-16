@@ -85,6 +85,7 @@ extern te_errno tapi_eth_add_csap_layer(asn_value      **csap_spec,
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
  *                      pattern
+ * @param pdu           Location for ASN.1 value pointer with added PDU
  * @param is_pattern    Is the first argument template or pattern
  * @param dst_addr      Pointer to destination address or NULL.
  *                      If NULL, default value is specified during CSAP
@@ -104,13 +105,45 @@ extern te_errno tapi_eth_add_csap_layer(asn_value      **csap_spec,
  *
  * @return Status code.
  */
-extern te_errno tapi_eth_add_pdu(asn_value     **tmpl_or_ptrn,
-                                 te_bool         is_pattern,
-                                 const uint8_t  *dst_addr,
-                                 const uint8_t  *src_addr,
-                                 const uint16_t *len_type,
+extern te_errno tapi_eth_add_pdu(asn_value      **tmpl_or_ptrn,
+                                 asn_value      **pdu,
+                                 te_bool          is_pattern,
+                                 const uint8_t   *dst_addr,
+                                 const uint8_t   *src_addr,
+                                 const uint16_t  *len_type,
                                  te_bool3         tagged,
                                  te_bool3         llc);
+
+/**
+ * Add IEEE Std 802.1Q tag header.
+ *
+ * @note CFI is not specified here, since it affects E-RIF presence.
+ *       By default, CFI is zero on send and match any on receive.
+ *
+ * @param pdu           ANS.1 PDU to add tag header
+ * @param priority      Pointer to priority or NULL.
+ *                      If NULL, default value is specified during CSAP
+ *                      creation. Otherwise, match any on receive and
+ *                      use 0 on send.
+ * @param vlan_id       Pointer to VLAN identifier or NULL.
+ *                      If NULL, default value is specified during CSAP
+ *                      creation. Otherwise, match any on receive and
+ *                      use 0 on send.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_eth_pdu_tag_header(asn_value      *pdu,
+                                        const uint8_t  *priority,
+                                        const uint16_t *vlan_id);
+
+/**
+ * Add IEEE Std 802.2 LLC and 802 SNAP sublayer headers.
+ *
+ * @param pdu           ANS.1 PDU to add sublayer headers
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_eth_pdu_llc_snap(asn_value *pdu);
 
 
 /**

@@ -116,28 +116,30 @@ tapi_eth_add_csap_layer(asn_value      **csap_spec,
 
 /* See the description in tapi_eth.h */
 te_errno
-tapi_eth_add_pdu(asn_value     **tmpl_or_ptrn,
-                 te_bool         is_pattern,
-                 const uint8_t  *dst_addr,
-                 const uint8_t  *src_addr,
-                 const uint16_t *len_type,
-                 te_bool3        tagged,
-                 te_bool3        llc)
+tapi_eth_add_pdu(asn_value      **tmpl_or_ptrn,
+                 asn_value      **pdu,
+                 te_bool          is_pattern,
+                 const uint8_t   *dst_addr,
+                 const uint8_t   *src_addr,
+                 const uint16_t  *len_type,
+                 te_bool3         tagged,
+                 te_bool3         llc)
 {
-    asn_value  *pdu;
+    asn_value  *tmp_pdu;
 
     CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
                                           ndn_eth_header, "#eth",
-                                          &pdu));
+                                          &tmp_pdu));
 
     if (dst_addr != NULL)
-        CHECK_RC(asn_write_value_field(pdu, dst_addr, ETHER_ADDR_LEN,
+        CHECK_RC(asn_write_value_field(tmp_pdu, dst_addr, ETHER_ADDR_LEN,
                                        "dst-addr.#plain"));
     if (src_addr != NULL)
-        CHECK_RC(asn_write_value_field(pdu, src_addr, ETHER_ADDR_LEN,
+        CHECK_RC(asn_write_value_field(tmp_pdu, src_addr, ETHER_ADDR_LEN,
                                        "src-addr.#plain"));
     if (len_type != NULL)
-        CHECK_RC(asn_write_int32(pdu, *len_type, "length-type.#plain"));
+        CHECK_RC(asn_write_int32(tmp_pdu, *len_type,
+                                 "length-type.#plain"));
 
     if (tagged == TE_BOOL3_ANY)
     {
@@ -145,12 +147,12 @@ tapi_eth_add_pdu(asn_value     **tmpl_or_ptrn,
     }
     else if (tagged == TE_BOOL3_FALSE)
     {
-        CHECK_NOT_NULL(asn_retrieve_descendant(pdu, NULL,
+        CHECK_NOT_NULL(asn_retrieve_descendant(tmp_pdu, NULL,
                                                "tagged.#untagged"));
     }
     else if (tagged == TE_BOOL3_TRUE)
     {
-        CHECK_NOT_NULL(asn_retrieve_descendant(pdu, NULL,
+        CHECK_NOT_NULL(asn_retrieve_descendant(tmp_pdu, NULL,
                                                "tagged.#tagged"));
     }
     else
@@ -164,18 +166,52 @@ tapi_eth_add_pdu(asn_value     **tmpl_or_ptrn,
     }
     else if (llc == TE_BOOL3_FALSE)
     {
-        CHECK_NOT_NULL(asn_retrieve_descendant(pdu, NULL,
+        CHECK_NOT_NULL(asn_retrieve_descendant(tmp_pdu, NULL,
                                                "encap.#ethernet2"));
     }
     else if (llc == TE_BOOL3_TRUE)
     {
-        CHECK_NOT_NULL(asn_retrieve_descendant(pdu, NULL,
+        CHECK_NOT_NULL(asn_retrieve_descendant(tmp_pdu, NULL,
                                                "encap.#llc"));
     }
     else
     {
         assert(FALSE);
     }
+
+    if (pdu != NULL)
+        *pdu = tmp_pdu;
+
+    return 0;
+}
+
+/* See the description in tapi_eth.h */
+te_errno
+tapi_eth_pdu_tag_header(asn_value      *pdu,
+                        const uint8_t  *priority,
+                        const uint16_t *vlan_id)
+{
+    if (priority != NULL)
+        CHECK_RC(asn_write_int32(pdu, *priority,
+                                 "tagged.#tagged.priority.#plain"));
+    if (vlan_id != NULL)
+        CHECK_RC(asn_write_int32(pdu, *vlan_id,
+                                 "tagged.#tagged.vlan-id.#plain"));
+
+    return 0;
+}
+
+/* See the description in tapi_eth.h */
+te_errno
+tapi_eth_pdu_llc_snap(asn_value *pdu)
+{
+    CHECK_RC(asn_write_int32(pdu, 0,    "encap.#llc.i-g.#plain"));
+    CHECK_RC(asn_write_int32(pdu, 0x55, "encap.#llc.dsap.#plain"));
+    CHECK_RC(asn_write_int32(pdu, 0,    "encap.#llc.c-r.#plain"));
+    CHECK_RC(asn_write_int32(pdu, 0x55, "encap.#llc.ssap.#plain"));
+    CHECK_RC(asn_write_int32(pdu, 0x03, "encap.#llc.ctl.#plain"));
+
+    CHECK_RC(asn_write_int32(pdu, 0, "encap.#llc.snap.oui.#plain"));
 
     return 0;
 }
