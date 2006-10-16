@@ -156,7 +156,7 @@ static asn_named_entry_t _ndn_llc_header_ne_array[] =
 
 asn_type ndn_llc_header_s =
 {
-    "IEEE-Std-802.2-LLC-Header", {PRIVATE, 102}, CHOICE,
+    "IEEE-Std-802.2-LLC-Header", {PRIVATE, 102}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_llc_header_ne_array),
     { _ndn_llc_header_ne_array }
 };
