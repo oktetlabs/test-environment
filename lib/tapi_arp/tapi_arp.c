@@ -74,7 +74,9 @@ tapi_arp_add_csap_layer_eth(asn_value      **csap_spec,
     uint16_t    eth_type = ETHERTYPE_ARP;
 
     return tapi_eth_add_csap_layer(csap_spec, device, receive_mode,
-                                   remote_addr, local_addr, &eth_type);
+                                   remote_addr, local_addr, &eth_type,
+                                   TE_BOOL3_ANY /* tagged/untagged */,
+                                   TE_BOOL3_ANY /* Ethernet2/LLC */);
 }
 
 
@@ -360,7 +362,9 @@ tapi_arp_prepare_pattern_eth_only(const uint8_t *src_mac,
 {
     uint16_t eth_type = ETHERTYPE_ARP;
 
-    return tapi_eth_add_pdu(pattern, TRUE, dst_mac, src_mac, &eth_type);
+    return tapi_eth_add_pdu(pattern, TRUE, dst_mac, src_mac, &eth_type,
+                            TE_BOOL3_ANY /* tagged/untagged */,
+                            TE_BOOL3_ANY /* Ethernet2/LLC */);
 }
 
 

@@ -128,7 +128,9 @@ main(int argc, char *argv[])
     CHECK_NOT_NULL(asn_eth_hdr = ndn_eth_plain_to_packet(&plain_hdr));
 
     /* Create traffic template with Ethernet PDU */
-    CHECK_RC(tapi_eth_add_pdu(&template, FALSE, NULL, NULL, NULL));
+    CHECK_RC(tapi_eth_add_pdu(&template, FALSE, NULL, NULL, NULL,
+                              TE_BOOL3_ANY /* tagged/untagged */,
+                              TE_BOOL3_ANY /* Ethernet2/LLC */));
 
     /* Rewrite Ethernet PDU by ASN.1 value created by plain data */
     CHECK_RC(asn_write_component_value(template, asn_eth_hdr,
@@ -143,7 +145,9 @@ main(int argc, char *argv[])
     RING("Ethernet frame template to send created successfully");
 
     /* Create traffic pattern with Ethernet PDU */
-    CHECK_RC(tapi_eth_add_pdu(&pattern, TRUE, hwaddr, NULL, NULL));
+    CHECK_RC(tapi_eth_add_pdu(&pattern, TRUE, hwaddr, NULL, NULL,
+                              TE_BOOL3_ANY /* tagged/untagged */,
+                              TE_BOOL3_ANY /* Ethernet2/LLC */));
     RING("Ethernet frame pattern to receive created successfully");
 
 
@@ -155,8 +159,10 @@ main(int argc, char *argv[])
 
     /* Create receive CSAP */
     CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, if_a->if_name,
-                                     TAD_ETH_RECV_ALL, NULL, NULL,
-                                     NULL));
+                                     TAD_ETH_RECV_ALL,
+                                     NULL, NULL, NULL,
+                                     TE_BOOL3_ANY /* tagged/untagged */,
+                                     TE_BOOL3_ANY /* Ethernet2/LLC */));
     CHECK_RC(tapi_tad_csap_create(host_a->ta, 0, "eth", csap_spec,
                                   &recv_csap));
     asn_free_value(csap_spec); csap_spec = NULL;

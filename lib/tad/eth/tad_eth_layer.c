@@ -94,28 +94,29 @@ typedef struct tad_eth_proto_pdu_data {
 
 
 /**
- * Definition of 802.3 Ethernet header.
+ * Definition of IEEE Std 802.3 MAC header.
  */
 static const tad_bps_pkt_frag tad_eth_addrs_bps_hdr[] =
 {
-    { "dst-addr", 48, NDN_TAG_ETH_DST,
+    { "dst-addr", 48, NDN_TAG_802_3_DST,
       NDN_TAG_ETH_REMOTE, NDN_TAG_ETH_LOCAL, 0, TAD_DU_OCTS, FALSE },
-    { "src-addr", 48, NDN_TAG_ETH_SRC,
+    { "src-addr", 48, NDN_TAG_802_3_SRC,
       NDN_TAG_ETH_LOCAL, NDN_TAG_ETH_REMOTE, 0, TAD_DU_OCTS, FALSE },
 };
 
 /**
  * Definition of Length-Type field which can follow after sources MAC
- * address or TCI in the case of 802.1Q.
+ * address or TCI in the case of IEEE Std 802.1Q.
  */
 static const tad_bps_pkt_frag tad_eth_length_type_bps_hdr[] =
 {
-    { "length-type", 16, BPS_FLD_SIMPLE(NDN_TAG_ETH_LENGTH_TYPE),
+    { "length-type", 16, BPS_FLD_SIMPLE(NDN_TAG_802_3_LENGTH_TYPE),
       TAD_DU_I32, FALSE },
 };
 
 /**
- * Definition of Tag Protocol Identifier (TPID) in the case of 802.1Q.
+ * Definition of Tag Protocol Identifier (TPID) in the case of
+ * IEEE Std 802.1Q.
  */
 static const tad_bps_pkt_frag tad_802_1q_tpid_bps_hdr[] =
 {
@@ -123,47 +124,78 @@ static const tad_bps_pkt_frag tad_802_1q_tpid_bps_hdr[] =
 };
 
 /**
- * Definition of 802.1q Tag Control Information.
+ * Definition of IEEE Std 802.1Q Tag Control Information.
  */
 static const tad_bps_pkt_frag tad_802_1q_tci_bps_hdr[] =
 {
-    { "priority",  3, BPS_FLD_CONST_DEF(NDN_TAG_ETH_PRIO, 0),
+    { "priority",  3, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_PRIO, 0),
       TAD_DU_I32, FALSE },
-    { "cfi",       1, BPS_FLD_CONST_DEF(NDN_TAG_ETH_CFI, 0),
+    { "cfi",       1, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_CFI, 0),
       TAD_DU_I32, FALSE },
-    { "vlan-id",  12, BPS_FLD_CONST_DEF(NDN_TAG_ETH_VLAN_ID, 0),
+    { "vlan-id",  12, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_VID, 0),
       TAD_DU_I32, FALSE },
 };
 
 /**
- * Definition of 802.1q E-RIF.
+ * Definition of IEEE Std 802.1q Embedded RIF (E-RIF).
  */
 static const tad_bps_pkt_frag tad_802_1q_e_rif_bps_hdr[] =
 {
-    { "e-rif-rc-rt",   3, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RC_RT),
+    /* Be default (see IEEE 802.1q 9.3.3.6) */
+    /* - frame is transparent (010 binary) */
+    { "e-rif-rc-rt",   3,
+      BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_RT, 2),
       TAD_DU_I32, FALSE },
-    { "e-rif-rc-lth",  5, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RC_LTH),
+    /* - length is minimum length of the header w/o RD */
+    { "e-rif-rc-lth",  5,
+      BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_LTH, 2),
       TAD_DU_I32, FALSE },
-    { "e-rif-rc-d",    1, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RC_D),
+    /* - forward direction */
+    { "e-rif-rc-d",    1,
+      BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_D, 0),
       TAD_DU_I32, FALSE },
-    { "e-rif-rc-lf",   6, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RC_LF),
+    /* - largest frame is unset */
+    { "e-rif-rc-lf",   6,
+      BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_LF, 0),
       TAD_DU_I32, FALSE },
-    { "e-rif-rc-ncfi", 1, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RC_NCFI),
+    /* - NCFI is reset to indicate that the format is Non-canonical */
+    { "e-rif-rc-ncfi", 1,
+      BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_NCFI, 0),
       TAD_DU_I32, FALSE },
-    { "e-rif-rd",      0, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RD),
+    /* - route descriptors are empty */
+    { "e-rif-rd",      0,
+      BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RD, 0),
       TAD_DU_OCTS, FALSE },
 };
 
 /**
- * Definition of 802 LLC/SNAP header.
+ * Definition of IEEE Std 802.2 LLC PDU header.
+ */
+static const tad_bps_pkt_frag tad_802_2_llc_bps_hdr[] =
+{
+    /* By default, DSAP is individual */
+    { "i-g",  1, BPS_FLD_CONST_DEF(NDN_TAG_LLC_DSAP_IG, 0),
+      TAD_DU_I32, FALSE },
+    { "dsap", 7, BPS_FLD_NO_DEF(NDN_TAG_LLC_DSAP),
+      TAD_DU_I32, FALSE },
+    /* By default, command (not response) */
+    { "c-r",  1, BPS_FLD_CONST_DEF(NDN_TAG_LLC_SSAP_CR, 0),
+      TAD_DU_I32, FALSE },
+    { "ssap", 7, BPS_FLD_NO_DEF(NDN_TAG_LLC_SSAP),
+      TAD_DU_I32, FALSE },
+    /* Minimum length of the Control is 8bit */
+    { "ctl",  8, BPS_FLD_NO_DEF(NDN_TAG_LLC_CTL),
+      TAD_DU_I32, FALSE },
+};
+
+/**
+ * Definition of IEEE Std 802 SNAP header.
  */
 static const tad_bps_pkt_frag tad_802_snap_bps_hdr[] =
 {
-    { "llc-addr", 24, BPS_FLD_CONST(0xaaaa03),             
+    { "oui", 24, BPS_FLD_CONST_DEF(NDN_TAG_SNAP_OUI, 0),
       TAD_DU_I32, FALSE },
-    { "snap-oui", 24, BPS_FLD_NO_DEF(NDN_TAG_ETH_SNAP_OUI),
-      TAD_DU_I32, FALSE },
-    { "snap-pid", 16, BPS_FLD_NO_DEF(NDN_TAG_ETH_SNAP_PID),
+    { "pid", 16, BPS_FLD_NO_DEF(NDN_TAG_SNAP_PID),
       TAD_DU_I32, FALSE },
 };
 
@@ -423,7 +455,7 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
         return rc;
 
     rc = asn_get_child_value(layer_pdu, &frame_type,
-                             PRIVATE, NDN_TAG_ETH_FRAME_TYPE);
+                             PRIVATE, NDN_TAG_VLAN_TAGGED);
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         rc = 0;
@@ -471,7 +503,7 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
             F_VERB(CSAP_LOG_FMT "Untagged frame format",
                    CSAP_LOG_ARGS(csap));
         }
-        else if (tag == NDN_TAG_ETH_TAGGED)
+        else if (tag == NDN_TAG_VLAN_TAG_HEADER)
         {
             pdu_data->type = TAD_ETH_FRAME_TYPE_TAGGED;
             F_VERB(CSAP_LOG_FMT "Tagged frame format",
@@ -492,6 +524,7 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
             if (rc != 0)
                 return rc;
         }
+#if 0
         else if (tag == NDN_TAG_ETH_SNAP)
         {
             pdu_data->type = TAD_ETH_FRAME_TYPE_SNAP;
@@ -505,6 +538,7 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
             if (rc != 0)
                 return rc;
         }
+#endif
         else
         {
             ERROR("%s(): Invalid choice tag in 'frame-type'",
@@ -933,15 +967,6 @@ tad_eth_match_post_cb(csap_p              csap,
 
     if (pkt_data->type == TAD_ETH_FRAME_TYPE_UNTAGGED)
     {
-#if 0
-        if (asn_retrieve_descendant(meta_pkt_layer->nds, &rc,
-                                    "frame-type.#untagged") == NULL)
-        {
-            ERROR(CSAP_LOG_FMT "Failed to retrieve "
-                  "frame-type.#untagged: %r", CSAP_LOG_ARGS(csap), rc);
-            return TE_RC(TE_TAD_CSAP, rc);
-        }
-#endif
         /* Nothing to add here */
     }
     else if (pkt_data->type == TAD_ETH_FRAME_TYPE_TAGGED)
@@ -959,12 +984,12 @@ tad_eth_match_post_cb(csap_p              csap,
         {
             asn_value *frame_type_gen;
 
-            frame_type_gen = asn_init_value(ndn_eth_frame_type);
+            frame_type_gen = asn_init_value(ndn_vlan_tagged);
             asn_put_child_value(meta_pkt_layer->nds, frame_type_gen,
-                                PRIVATE, NDN_TAG_ETH_FRAME_TYPE);
-            frame_type = asn_init_value(ndn_eth_tagged);
+                                PRIVATE, NDN_TAG_VLAN_TAGGED);
+            frame_type = asn_init_value(ndn_vlan_tag_header);
             asn_put_child_value(frame_type_gen, frame_type,
-                                PRIVATE, NDN_TAG_ETH_TAGGED);
+                                PRIVATE, NDN_TAG_VLAN_TAG_HEADER);
         }
 #endif
         /* Skip TPID */
@@ -995,6 +1020,7 @@ tad_eth_match_post_cb(csap_p              csap,
             return rc;
     }
 
+#if 0
     if (pkt_data->type == TAD_ETH_FRAME_TYPE_SNAP)
     {
 #if 0
@@ -1010,9 +1036,9 @@ tad_eth_match_post_cb(csap_p              csap,
         {
             asn_value *frame_type_gen;
 
-            frame_type_gen = asn_init_value(ndn_eth_frame_type);
+            frame_type_gen = asn_init_value(ndn_vlan_tagged);
             asn_put_child_value(meta_pkt_layer->nds, frame_type_gen,
-                                PRIVATE, NDN_TAG_ETH_FRAME_TYPE);
+                                PRIVATE, NDN_TAG_VLAN_TAGGED);
             frame_type = asn_init_value(ndn_eth_snap);
             asn_put_child_value(frame_type_gen, frame_type,
                                 PRIVATE, NDN_TAG_ETH_SNAP);
@@ -1025,6 +1051,7 @@ tad_eth_match_post_cb(csap_p              csap,
         if (rc != 0)
             return rc;
     }
+#endif
 
     return 0;
 }

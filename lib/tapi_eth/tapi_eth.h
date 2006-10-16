@@ -61,6 +61,10 @@
  *                      be caugth.
  * @param len_type      Pointer to default Ethernet Length/Type field.
  *                      See description in IEEE 802.3.
+ * @param tagged        Whether frames should be VLAN tagged, any or
+ *                      untagged.
+ * @param llc           Whether frames should be 802.2 LLC, any or 
+ *                      Ethernet2.
  *
  * @retval Status code.
  *
@@ -71,53 +75,9 @@ extern te_errno tapi_eth_add_csap_layer(asn_value      **csap_spec,
                                         unsigned int     recv_mode,
                                         const uint8_t   *remote_addr,
                                         const uint8_t   *local_addr,
-                                        const uint16_t  *len_type);
-
-/**
- * Add Ethernet/802.1Q layer in CSAP specification.
- *
- * @param csap_spec     Location of CSAP specification pointer.
- * @param device        Interface name on TA host or NULL (have to
- *                      be not-NULL, if it is the bottom layer)
- * @param recv_mode     Receive mode (bit scale defined by elements of
- *                      'enum eth_csap_receive_mode' in ndn_eth.h).
- *                      Use TAD_ETH_RECV_DEF by default.
- * @param remote_addr   Default remote MAC address, may be NULL - in this
- *                      case frames will be sent only dst is specified in
- *                      template, and frames from all src's will be
- *                      catched.
- * @param local_addr    Default local MAC address, may be NULL - in this
- *                      case frames will be sent with src specifed in
- *                      template or native for outgoing device (if not
- *                      present in template), frames to all dst's will
- *                      be caugth.
- * @param len_type      Pointer to default Ethernet Length/Type field.
- *                      See description in IEEE 802.3.
- * @param priority      Pointer to priority field in 802.1Q header
- *                      extension or NULL (0 on transmit by default,
- *                      match any on receive)
- * @param cfi           Pointer to CFI field in 802.1Q header extension or
- *                      NULL (0 on transmit by default, match any on
- *                      receive)
- * @param vlan_id       Pointer to VLAN identifier field in 802.1Q header
- *                      extension or NULL (0 on transmit by default,
- *                      match any on receive)
- *
- * @retval Status code.
- *
- * @sa tapi_eth_add_csap_layer
- */
-extern te_errno tapi_eth_add_csap_layer_tagged(
-                    asn_value      **csap_spec,
-                    const char      *device,
-                    unsigned int     recv_mode,
-                    const uint8_t   *remote_addr,
-                    const uint8_t   *local_addr,
-                    const uint16_t  *len_type,
-                    const uint8_t   *priority,
-                    te_bool         *cfi,
-                    const uint16_t  *vlan_id);
-
+                                        const uint16_t  *len_type,
+                                        te_bool3         tagged,
+                                        te_bool3         llc);
 
 /**
  * Add Ethernet PDU as the last PDU to the last unit of the traffic 
@@ -137,6 +97,10 @@ extern te_errno tapi_eth_add_csap_layer_tagged(
  * @param len_type      Pointer to Length/Type or NULL.
  *                      If NULL, default value is specified during CSAP
  *                      creation (otherwise, match any on receive).
+ * @param tagged        Whether frames should be VLAN tagged, any or
+ *                      untagged.
+ * @param llc           Whether frames should be 802.2 LLC, any or
+ *                      Ethernet2.
  *
  * @return Status code.
  */
@@ -144,7 +108,9 @@ extern te_errno tapi_eth_add_pdu(asn_value     **tmpl_or_ptrn,
                                  te_bool         is_pattern,
                                  const uint8_t  *dst_addr,
                                  const uint8_t  *src_addr,
-                                 const uint16_t *len_type);
+                                 const uint16_t *len_type,
+                                 te_bool3         tagged,
+                                 te_bool3         llc);
 
 
 /**

@@ -153,7 +153,9 @@ int main()
     {
         CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, agent_b_if,
                                          TAD_ETH_RECV_ALL, NULL,
-                                         dst_bin_mac, NULL));
+                                         dst_bin_mac, NULL,
+                                         TE_BOOL3_ANY /* tagged/untagged */,
+                                         TE_BOOL3_ANY /* Ethernet2/LLC */));
         if ((rc = tapi_tad_csap_create(agent_b, sid_b, "eth", csap_spec,
                                        &rx_csap)) != 0)
         {

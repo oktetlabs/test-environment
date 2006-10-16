@@ -59,26 +59,22 @@
 #include "tapi_test.h"
 
 
-/**
- * Implementation of tapi_eth_add_csap_layer_tagged() and
- * tapi_eth_add_csap_layer() functions with additional parameter
- * @a is_tagged to specify that frame have to be tagged even if none
- * of 802.1Q header parameters are not specified.
- */
-static te_errno
-tapi_eth_add_csap_layer_int(asn_value      **csap_spec,
-                            const char      *device,
-                            unsigned int     recv_mode,
-                            const uint8_t   *remote_addr,
-                            const uint8_t   *local_addr,
-                            const uint16_t  *len_type,
-                            te_bool          is_tagged,
-                            const uint8_t   *priority,
-                            te_bool         *cfi,
-                            const uint16_t  *vlan_id)
+/* See the description in tapi_eth.h */
+te_errno
+tapi_eth_add_csap_layer(asn_value      **csap_spec,
+                        const char      *device,
+                        unsigned int     recv_mode,
+                        const uint8_t   *remote_addr,
+                        const uint8_t   *local_addr,
+                        const uint16_t  *len_type,
+                        te_bool3         tagged,
+                        te_bool3         llc)
 {
     asn_value  *layer;
     
+    UNUSED(tagged);
+    UNUSED(llc);
+#if 0
     if (!is_tagged &&
         (priority != NULL || cfi != NULL || vlan_id != NULL))
     {
@@ -86,6 +82,17 @@ tapi_eth_add_csap_layer_int(asn_value      **csap_spec,
               "untagged frame", __FUNCTION__);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
+    if (is_tagged)
+    {
+        /* FIXME: Add frame-type.#tagged container */
+        if (priority != NULL)
+            CHECK_RC(asn_write_int32(layer, *priority, "priority.#plain"));
+        if (cfi != NULL)
+            CHECK_RC(asn_write_int32(layer, *cfi, "cfi.#plain"));
+        if (vlan_id != NULL)
+            CHECK_RC(asn_write_int32(layer, *vlan_id, "vlan-id.#plain"));
+    }
+#endif
 
     CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_eth_csap, "#eth",
                                      &layer));
@@ -103,51 +110,7 @@ tapi_eth_add_csap_layer_int(asn_value      **csap_spec,
     if (len_type != NULL)
         CHECK_RC(asn_write_int32(layer, *len_type, "eth-type.#plain"));
 
-    if (is_tagged)
-    {
-        /* FIXME: Add frame-type.#tagged container */
-        if (priority != NULL)
-            CHECK_RC(asn_write_int32(layer, *priority, "priority.#plain"));
-        if (cfi != NULL)
-            CHECK_RC(asn_write_int32(layer, *cfi, "cfi.#plain"));
-        if (vlan_id != NULL)
-            CHECK_RC(asn_write_int32(layer, *vlan_id, "vlan-id.#plain"));
-    }
-
     return 0;
-}
-
-/* See the description in tapi_eth.h */
-te_errno
-tapi_eth_add_csap_layer_tagged(asn_value      **csap_spec,
-                               const char      *device,
-                               unsigned int     recv_mode,
-                               const uint8_t   *remote_addr,
-                               const uint8_t   *local_addr,
-                               const uint16_t  *len_type,
-                               const uint8_t   *priority,
-                               te_bool         *cfi,
-                               const uint16_t  *vlan_id)
-{
-    return tapi_eth_add_csap_layer_int(csap_spec, device, recv_mode,
-                                       remote_addr, local_addr,
-                                       len_type, TRUE,
-                                       priority, cfi, vlan_id);
-}
-
-/* See the description in tapi_eth.h */
-te_errno
-tapi_eth_add_csap_layer(asn_value      **csap_spec,
-                        const char      *device,
-                        unsigned int     recv_mode,
-                        const uint8_t   *remote_addr,
-                        const uint8_t   *local_addr,
-                        const uint16_t  *len_type)
-{
-    return tapi_eth_add_csap_layer_int(csap_spec, device, recv_mode,
-                                       remote_addr, local_addr,
-                                       len_type, FALSE,
-                                       NULL, NULL, NULL);
 }
 
 
@@ -157,7 +120,9 @@ tapi_eth_add_pdu(asn_value     **tmpl_or_ptrn,
                  te_bool         is_pattern,
                  const uint8_t  *dst_addr,
                  const uint8_t  *src_addr,
-                 const uint16_t *len_type)
+                 const uint16_t *len_type,
+                 te_bool3        tagged,
+                 te_bool3        llc)
 {
     asn_value  *pdu;
 
@@ -173,6 +138,44 @@ tapi_eth_add_pdu(asn_value     **tmpl_or_ptrn,
                                        "src-addr.#plain"));
     if (len_type != NULL)
         CHECK_RC(asn_write_int32(pdu, *len_type, "length-type.#plain"));
+
+    if (tagged == TE_BOOL3_ANY)
+    {
+        /* Nothing to do */
+    }
+    else if (tagged == TE_BOOL3_FALSE)
+    {
+        CHECK_NOT_NULL(asn_retrieve_descendant(pdu, NULL,
+                                               "tagged.#untagged"));
+    }
+    else if (tagged == TE_BOOL3_TRUE)
+    {
+        CHECK_NOT_NULL(asn_retrieve_descendant(pdu, NULL,
+                                               "tagged.#tagged"));
+    }
+    else
+    {
+        assert(FALSE);
+    }
+
+    if (llc == TE_BOOL3_ANY)
+    {
+        /* Nothing to do */
+    }
+    else if (llc == TE_BOOL3_FALSE)
+    {
+        CHECK_NOT_NULL(asn_retrieve_descendant(pdu, NULL,
+                                               "encap.#ethernet2"));
+    }
+    else if (llc == TE_BOOL3_TRUE)
+    {
+        CHECK_NOT_NULL(asn_retrieve_descendant(pdu, NULL,
+                                               "encap.#llc"));
+    }
+    else
+    {
+        assert(FALSE);
+    }
 
     return 0;
 }
@@ -196,7 +199,9 @@ tapi_eth_csap_create(const char *ta_name, int sid,
 
     CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, device, receive_mode,
                                      remote_addr, local_addr,
-                                     len_type));
+                                     len_type,
+                                     TE_BOOL3_ANY /* tagged/untagged */,
+                                     TE_BOOL3_ANY /* Ethernet2/LLC */));
 
     rc = tapi_tad_csap_create(ta_name, sid, "eth", csap_spec, eth_csap);
 

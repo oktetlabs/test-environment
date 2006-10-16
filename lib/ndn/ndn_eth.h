@@ -57,33 +57,41 @@ typedef struct ndn_eth_header_plain {
 
 typedef enum {
 
-    NDN_TAG_ETH_DEVICE = 0,
+    NDN_TAG_ETH_DEVICE,
     NDN_TAG_ETH_RECV_MODE,
     NDN_TAG_ETH_LOCAL,
     NDN_TAG_ETH_REMOTE,
 
-    NDN_TAG_ETH_FRAME_TYPE,
+    NDN_TAG_802_3_DST,
+    NDN_TAG_802_3_SRC,
+    NDN_TAG_802_3_LENGTH_TYPE,
+
     NDN_TAG_ETH_UNTAGGED,
-    NDN_TAG_ETH_TAGGED,
-    NDN_TAG_ETH_SNAP,
+    NDN_TAG_VLAN_TAGGED,
+    NDN_TAG_VLAN_TAG_HEADER,
+    NDN_TAG_VLAN_TAG_HEADER_PRIO,
+    NDN_TAG_VLAN_TAG_HEADER_CFI,
+    NDN_TAG_VLAN_TAG_HEADER_VID,
+    NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_RT,
+    NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_LTH,
+    NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_D,
+    NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_LF,
+    NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_NCFI,
+    NDN_TAG_VLAN_TAG_HEADER_ERIF_RD,
 
-    NDN_TAG_ETH_DST,
-    NDN_TAG_ETH_SRC,
-    NDN_TAG_ETH_LENGTH_TYPE,
+    NDN_TAG_802_3_ENCAP,
+    NDN_TAG_ETHERNET2,
 
-    NDN_TAG_ETH_SNAP_OUI,
-    NDN_TAG_ETH_SNAP_PID,
+    NDN_TAG_LLC_HEADER,
+    NDN_TAG_LLC_DSAP_IG,
+    NDN_TAG_LLC_DSAP,
+    NDN_TAG_LLC_SSAP_CR,
+    NDN_TAG_LLC_SSAP,
+    NDN_TAG_LLC_CTL,
 
-    NDN_TAG_ETH_PRIO,
-    NDN_TAG_ETH_CFI,
-    NDN_TAG_ETH_VLAN_ID,
-
-    NDN_TAG_ETH_ERIF_RC_RT,
-    NDN_TAG_ETH_ERIF_RC_LTH,
-    NDN_TAG_ETH_ERIF_RC_D,
-    NDN_TAG_ETH_ERIF_RC_LF,
-    NDN_TAG_ETH_ERIF_RC_NCFI,
-    NDN_TAG_ETH_ERIF_RD,
+    NDN_TAG_LLC_SNAP_HEADER,
+    NDN_TAG_SNAP_OUI,
+    NDN_TAG_SNAP_PID,
 
 } ndn_eth_tags_t;
 
@@ -112,9 +120,9 @@ extern asn_value *ndn_eth_plain_to_packet(const ndn_eth_header_plain
                                           *eth_header);
 
 
-extern const asn_type * const ndn_eth_tagged;
 extern const asn_type * const ndn_eth_snap;
-extern const asn_type * const ndn_eth_frame_type;
+extern const asn_type * const ndn_vlan_tagged;
+extern const asn_type * const ndn_vlan_tag_header;
 
 extern const asn_type * const ndn_eth_header;
 extern const asn_type * const ndn_eth_csap;

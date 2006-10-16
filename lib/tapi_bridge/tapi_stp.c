@@ -133,7 +133,9 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
                                          own_mac_addr :
                                      (peer_mac_addr != NULL) ?
                                           bridge_group_addr : NULL,
-                                     NULL));
+                                     NULL,
+                                     TE_BOOL3_ANY /* tagged/untagged */,
+                                     TE_BOOL3_FALSE /* LLC */));
 
     rc = tapi_tad_csap_create(ta_name, sid, "bridge.eth", csap_spec,
                               stp_csap);

@@ -676,7 +676,8 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                   (uint8_t *)&(local_in_addr->sin_addr));
     CHECK_ERROR("%s(); create arp pattern fails %r", __FUNCTION__, rc);
     rc = tapi_eth_add_pdu(&arp_pattern, TRUE, broadcast_mac, remote_mac,
-                          NULL);
+                          NULL, TE_BOOL3_ANY /* tagged/untagged */,
+                          TE_BOOL3_ANY /* Ethernet2/LLC */);
     CHECK_ERROR("%s(); create arp/eth pattern fails %r",
                 __FUNCTION__, rc);
 
