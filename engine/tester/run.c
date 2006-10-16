@@ -394,18 +394,25 @@ tester_run_clone_ctx(tester_run_data *data)
  *
  * @return Updated group status.
  */
-static te_test_status 
-tester_group_status(te_test_status group_status,
-                    te_test_status iter_status)
+static tester_test_status 
+tester_group_status(tester_test_status group_status,
+                    tester_test_status iter_status)
 {
+    tester_test_status result;
+
     if (group_status < iter_status)
     {
         if (iter_status == TESTER_TEST_SEARCH)
-            group_status = TESTER_TEST_FAILED;
+            result = TESTER_TEST_FAILED;
         else
-            group_status = iter_status;
+            result = iter_status;
     }
-    return group_status;
+    else
+    {
+        result = group_status;
+    }
+    VERB("gs=%u is=%u -> %u", group_status, iter_status, result);
+    return result;
 }
 
 /**
@@ -421,12 +428,15 @@ tester_group_result(tester_test_result *group_result,
     group_result->status = tester_group_status(group_result->status,
                                                iter_result->status);
 #if WITH_TRC
+    ENTRY("group-exp=%u item-exp=%u",
+          group_result->exp_status, iter_result->exp_status);
     /* 
      * If group does not have expected result, it is not mentioned in
      * the database at all and its expectation status has to remain
      * unknown.
      */
-    if (group_result->exp_result != NULL)
+    if (group_result->exp_result != NULL &&
+        iter_result->status != TESTER_TEST_EMPTY)
     {
         /* 
          * If group contains unknown or unexpected results, its
@@ -437,6 +447,7 @@ tester_group_result(tester_test_result *group_result,
         else if (group_result->exp_status == TRC_VERDICT_UNKNOWN)
             group_result->exp_status = TRC_VERDICT_EXPECTED;
     }
+    EXIT("%u", group_result->exp_status);
 #endif
 }
 
@@ -2417,17 +2428,25 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
              * Sessions without name are not tracked by TRC and does not
              * have expected result.
              */
-            if (test_get_name(ri) == NULL)
-            {
-                assert(ri->type == RUN_ITEM_SESSION);
-                ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
-                ctx->current_result.error = NULL; 
-            }
-            else if (ctx->current_result.exp_result == NULL)
+            if (ctx->current_result.exp_result == NULL &&
+                test_get_name(ri) != NULL)
             {
                 assert(ctx->current_result.exp_status ==
                        TRC_VERDICT_UNKNOWN);
                 ctx->current_result.error = "Unknown test/iteration";
+            }
+            else if (ctx->current_result.result.status == TE_TEST_EMPTY)
+            {
+                assert(ri->type == RUN_ITEM_SESSION ||
+                       ri->type == RUN_ITEM_PACKAGE);
+                assert(ctx->current_result.exp_status ==
+                       TRC_VERDICT_UNKNOWN);
+                /* 
+                 * No tests have been run in this package/session,
+                 * we don't want to scream that result is unexpected.
+                 */
+                ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
+                ctx->current_result.error = "";
             }
             /*
              * If expected result is know, but expected status is
@@ -2436,16 +2455,25 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
              * status for the group is derived from expectation
              * statuses of its members.
              */
-            else if (ri->type != RUN_ITEM_SCRIPT &&
-                     ctx->current_result.exp_status != TRC_VERDICT_UNKNOWN)
+            else if (ri->type != RUN_ITEM_SCRIPT)
             {
-                assert(ri->type == RUN_ITEM_SESSION ||
-                       ri->type == RUN_ITEM_PACKAGE);
+                /* 
+                 * Expectations status can't be unknown, since we have
+                 * run something in this session (run status is not
+                 * empty).
+                 */
+                assert(ctx->current_result.exp_status !=
+                       TRC_VERDICT_UNKNOWN);
+                /* 
+                 * Do not override expectations status derived from
+                 * session members results.
+                 */
                 if (ctx->current_result.exp_status == TRC_VERDICT_EXPECTED)
                     ctx->current_result.error = NULL;
                 else
                     ctx->current_result.error = "Unexpected test result(s)";
             }
+            /* assert(ctx->current_result.exp_result != NULL) */
             else if (trc_is_result_expected(
                          ctx->current_result.exp_result,
                          &ctx->current_result.result) != NULL)
@@ -2492,7 +2520,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     }
     else
     {
-        ctx->current_result.status = TESTER_TEST_SKIPPED;
+        ctx->current_result.status = TESTER_TEST_EMPTY;
     }
 
     /* Update result of the group */
