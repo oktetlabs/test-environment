@@ -74,6 +74,7 @@ typedef unsigned char te_bool;
 typedef enum te_bool3 {
     TE_BOOL3_FALSE = -1,
     TE_BOOL3_UNKNOWN = 0,
+    TE_BOOL3_ANY = TE_BOOL3_UNKNOWN,
     TE_BOOL3_TRUE = 1,
 } te_bool3;
 
