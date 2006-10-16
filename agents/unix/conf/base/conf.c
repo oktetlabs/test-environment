@@ -359,7 +359,7 @@ static te_errno interface_list(unsigned int, const char *, char **);
 static te_errno interface_add(unsigned int, const char *, const char *,
                               const char *);
 static te_errno interface_del(unsigned int, const char *, const char *);
-#ifdef __linux__
+
 static te_errno mcast_link_addr_add(unsigned int, const char *,
                                     const char *, const char *,
                                     const char *);
@@ -367,7 +367,13 @@ static te_errno mcast_link_addr_del(unsigned int, const char *,
                                     const char *, const char *);
 static te_errno mcast_link_addr_list(unsigned int, const char *, char **,
                                      const char *);
+#ifndef __linux__
+struct mma_list_el {
+    char                value[ETHER_ADDR_LEN * 3];
+    struct mma_list_el *next;
+} *mcast_mac_addr_list = NULL;
 #endif
+
 static te_errno net_addr_add(unsigned int, const char *, const char *,
                              const char *, const char *);
 static te_errno net_addr_del(unsigned int, const char *,
@@ -484,7 +490,7 @@ static rcf_pch_cfg_object node_net_addr =
       (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
       (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
       (rcf_ch_cfg_list)net_addr_list, NULL, NULL };
-#ifdef __linux__
+
 static rcf_pch_cfg_object node_mcast_link_addr = 
     { "mcast_link_addr", 0, NULL, &node_net_addr,
       NULL, NULL, (rcf_ch_cfg_add)mcast_link_addr_add,
@@ -493,10 +499,7 @@ static rcf_pch_cfg_object node_mcast_link_addr =
 
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_mcast_link_addr,
                     status_get, status_set);
-#else
-RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_net_addr,
-                    status_get, status_set);
-#endif
+
 RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
                     mtu_get, mtu_set);
 
@@ -2120,7 +2123,6 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
-#ifdef __linux__
 static te_errno
 mcast_link_addr_change(const char *ifname, const char *addr, int op)
 {
@@ -2137,7 +2139,11 @@ mcast_link_addr_change(const char *ifname, const char *addr, int op)
 
         if (p == NULL || (sscanf(p, "%02x", &tmp) < 1) || tmp > 0xff)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
+#ifdef ifr_hwaddr        
         request.ifr_hwaddr.sa_data[i] = tmp;
+#else
+        request.ifr_enaddr[i] = tmp;
+#endif        
         p = strchr(p, ':');
         /* Skip the colon */
         if (p != NULL)
@@ -2156,19 +2162,56 @@ static te_errno
 mcast_link_addr_add(unsigned int gid, const char *oid,
                     const char *value, const char *ifname, const char *addr)
 {
+    te_errno rc;
+    
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
-    return mcast_link_addr_change(ifname, addr, SIOCADDMULTI);
+    rc = mcast_link_addr_change(ifname, addr, SIOCADDMULTI);
+#ifdef mcast_mac_addr_list
+    if (rc == 0)
+    {
+        mma_list_el *p = (mma_list_el *)malloc(sizeof(mma_list_el));
+        p->value = strdup(value);
+        p->next = mcast_mac_addr_list;
+        mcast_mac_addr_list = p->next;
+    }
+#endif
+    return rc;
 }
     
 static te_errno
 mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
                     const char *addr)
 {
+    te_errno rc;
+    
     UNUSED(gid);
     UNUSED(oid);
-    return mcast_link_addr_change(ifname, addr, SIOCDELMULTI);
+    rc = mcast_link_addr_change(ifname, addr, SIOCDELMULTI);
+#ifdef mcast_mac_addr_list
+    if (rc == 0)
+    {
+        if (strcmp(mcast_mac_addr_list->value, value) == 0)
+        {
+            mma_list_el *p = mcast_mac_addr_list->next;
+            free(mcast_mac_addr_list);
+            mcast_mac_addr_list = p;
+        }
+        else
+        {
+            mma_list_el *p,
+                        *pp;
+            for (p = mcast_mac_addr_list;
+                 p->next != NULL && strcmp(p->next->value, value) != 0;
+                 p = p->next);
+            pp = p->next->next;
+            free(p->next);
+            p->next = pp;
+        }
+    }
+#endif
+    return rc;
 }
 
 static te_errno
@@ -2176,10 +2219,18 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
                      const char *ifname)
 {
     char        s[1024] = "";
+    char       *p = s;
+#ifdef mcast_mac_addr_list
+    mma_list_el *tmp;
+
+    for (tmp = mcast_mac_addr_list; tmp != NULL; tmp = tmp->next)
+    {
+        sprintf(p, "%s ", tmp->value);
+    }
+#else        
     FILE       *fd;
     char        ifn[IFNAMSIZ];
-    char        addrstr[ETH_ALEN * 3];
-    char       *p = s;
+    char        addrstr[ETHER_ADDR_LEN * 3];
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2205,13 +2256,12 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
             }
         }
     }
-    
-    *list = strdup(s);
     fclose(fd);
+#endif
+    *list = strdup(s);
     return 0;
 }
 
-#endif
 /**
  * Configure IPv4 address for the interface.
  * If the address does not exist, alias interface is created.
