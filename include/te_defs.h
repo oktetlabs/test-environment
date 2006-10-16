@@ -70,6 +70,14 @@ typedef unsigned char te_bool;
 #endif
 
 
+/** Ternary (tree-valued, trivalent) logic base type */
+typedef enum te_bool3 {
+    TE_BOOL3_FALSE = -1,
+    TE_BOOL3_UNKNOWN = 0,
+    TE_BOOL3_TRUE = 1,
+} te_bool3;
+
+
 #define C_ASSERT(x)
 
 /** Exit from application because of caught SIGINT signal */

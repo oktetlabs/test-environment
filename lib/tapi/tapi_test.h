@@ -398,6 +398,25 @@ extern "C" {
 #define TEST_GET_BOOL_PARAM(var_name_) \
     TEST_GET_ENUM_PARAM(var_name_, BOOL_MAPPING_LIST)
 
+
+/**
+ * The list of values allowed for parameter of type 'te_bool3'
+ */
+#define BOOL3_MAPPING_LIST \
+    { "TRUE",    TE_BOOL3_TRUE },   \
+    { "FALSE",   TE_BOOL3_FALSE },  \
+    { "UNKNOWN", TE_BOOL3_UNKNOWN }
+
+/**
+ * Get the value of parameter of type 'te_bool3'
+ *
+ * @param var_name_  Name of the variable used to get the value of
+ *                   "var_name_" parameter of type 'te_bool3' (OUT)
+ */
+#define TEST_GET_BOOL3_PARAM(var_name_) \
+    TEST_GET_ENUM_PARAM(var_name_, BOOL3_MAPPING_LIST)
+
+
 /** Abstaract enum to 'buf_size' parameter */
 typedef enum sapi_buf_size {
     SIZE_ZERO,
