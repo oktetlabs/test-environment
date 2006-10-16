@@ -424,11 +424,21 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 case ETHTOOL_GSET:
                 case ETHTOOL_GMSGLVL:
                 case ETHTOOL_GLINK:
+#ifdef ETHTOOL_GRXCSUM
                 case ETHTOOL_GRXCSUM:
+#endif
+#ifdef ETHTOOL_GTXCSUM
                 case ETHTOOL_GTXCSUM:
+#endif
+#ifdef ETHTOOL_GSG
                 case ETHTOOL_GSG:
+#endif
+#ifdef ETHTOOL_GTSO
                 case ETHTOOL_GTSO:
+#endif
+#ifdef ETHTOOL_PHYS_ID
                 case ETHTOOL_PHYS_ID:
+#endif
 #ifdef ETHTOOL_GUFO
                 case ETHTOOL_GUFO:
 #endif
@@ -437,10 +447,18 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
                 case ETHTOOL_SSET:
                 case ETHTOOL_SMSGLVL:
+#ifdef ETHTOOL_SRXCSUM
                 case ETHTOOL_SRXCSUM:
+#endif
+#ifdef ETHTOOL_STXCSUM
                 case ETHTOOL_STXCSUM:
+#endif
+#ifdef ETHTOOL_SSG
                 case ETHTOOL_SSG:
+#endif
+#ifdef ETHTOOL_STSO
                 case ETHTOOL_STSO:
+#endif
 #ifdef ETHTOOL_SUFO
                 case ETHTOOL_SUFO:
 #endif
