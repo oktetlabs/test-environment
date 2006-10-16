@@ -1774,17 +1774,37 @@ ethtool_cmd2type(tarpc_ethtool_command cmd)
         case ETHTOOL_GMSGLVL:
         case ETHTOOL_SMSGLVL:
         case ETHTOOL_GLINK:
+#ifdef ETHTOOL_GRXCSUM
         case ETHTOOL_GRXCSUM:
+#endif
+#ifdef ETHTOOL_SRXCSUM
         case ETHTOOL_SRXCSUM:
+#endif
+#ifdef ETHTOOL_GTXCSUM
         case ETHTOOL_GTXCSUM:
+#endif
+#ifdef ETHTOOL_STXCSUM
         case ETHTOOL_STXCSUM:
+#endif
+#ifdef ETHTOOL_GSG
         case ETHTOOL_GSG:
+#endif
+#ifdef ETHTOOL_SSG
         case ETHTOOL_SSG:
+#endif
+#ifdef ETHTOOL_GTSO
         case ETHTOOL_GTSO:
+#endif
+#ifdef ETHTOOL_STSO
         case ETHTOOL_STSO:
+#endif
+#ifdef ETHTOOL_PHYS_ID
         case ETHTOOL_PHYS_ID:
+#endif
 #ifdef ETHTOOL_GUFO
         case ETHTOOL_GUFO:
+#endif
+#ifdef ETHTOOL_SUFO
         case ETHTOOL_SUFO:
 #endif
             return TARPC_ETHTOOL_VALUE;
@@ -1810,17 +1830,37 @@ ethtool_cmd2str(tarpc_ethtool_command cmd)
         MACRO2STR(GMSGLVL);
         MACRO2STR(SMSGLVL);
         MACRO2STR(GLINK);
+#ifdef ETHTOOL_GRXCSUM
         MACRO2STR(GRXCSUM);
+#endif
+#ifdef ETHTOOL_SRXCSUM
         MACRO2STR(SRXCSUM);
+#endif
+#ifdef ETHTOOL_GTXCSUM
         MACRO2STR(GTXCSUM);
+#endif
+#ifdef ETHTOOL_STXCSUM
         MACRO2STR(STXCSUM);
+#endif
+#ifdef ETHTOOL_GSG
         MACRO2STR(GSG);
+#endif
+#ifdef ETHTOOL_SSG
         MACRO2STR(SSG);
+#endif
+#ifdef ETHTOOL_GTSO
         MACRO2STR(GTSO);
+#endif
+#ifdef ETHTOOL_STSO
         MACRO2STR(STSO);
+#endif
+#ifdef ETHTOOL_PHYS_ID
         MACRO2STR(PHYS_ID);
+#endif
 #ifdef ETHTOOL_GUFO
         MACRO2STR(GUFO);
+#endif
+#ifdef ETHTOOL_SUFO
         MACRO2STR(SUFO);
 #endif
 #undef MACRO2STR
