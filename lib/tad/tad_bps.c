@@ -92,8 +92,25 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
         /* FIXME: Is it necessary to check it */
         if (bps->descr[i].tag_tx_def == ASN_TAG_CONST)
         {
-            bps->tx_def[i].du_type = TAD_DU_I32; 
-            bps->tx_def[i].val_i32 = bps->descr[i].value;
+            if (bps->descr[i].plain_du == TAD_DU_I32)
+            {
+                bps->tx_def[i].du_type = TAD_DU_I32; 
+                bps->tx_def[i].val_i32 = bps->descr[i].value;
+            }
+            else if (bps->descr[i].plain_du == TAD_DU_OCTS)
+            {
+                bps->tx_def[i].du_type = TAD_DU_OCTS;
+                /* Empty octet string is supported only */
+                assert(bps->tx_def[i].val_data.len == 0);
+                assert(bps->tx_def[i].val_data.oct_str == NULL);
+            }
+            else
+            {
+                ERROR("%s(): Constant default value for Tx is "
+                      "supported for integers and empty octet "
+                      "string only", __FUNCTION__);
+                return TE_RC(TE_TAD_CSAP, TE_ENOSYS);
+            }
         }
         else if (bps->descr[i].tag_tx_def != ASN_TAG_INVALID &&
                  bps->descr[i].tag_tx_def != ASN_TAG_USER &&
