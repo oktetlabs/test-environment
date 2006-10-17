@@ -174,7 +174,7 @@ tester_get_id(void)
  * @param ctx       Tester context to be freed
  */
 static void
-tester_ctx_free(tester_ctx *ctx)
+tester_run_free_ctx(tester_ctx *ctx)
 {
     if (ctx == NULL)
         return;
@@ -189,62 +189,106 @@ tester_ctx_free(tester_ctx *ctx)
     }
     logic_expr_free(ctx->dyn_targets);
     test_requirements_free(&ctx->reqs);
-    tester_ctx_free(ctx->keepalive_ctx);
+    tester_run_free_ctx(ctx->keepalive_ctx);
     free(ctx);
 }
 
 /**
- * Clone Tester context.
+ * Allocate a new Tester context.
  *
- * @param ctx       Tester context to be cloned.
+ * @param flags         Initial flags
+ * @param targets       Initial target requirements expression
  *
- * @return Pointer to new Tester context.
+ * @return Allocated context.
  */
 static tester_ctx *
-tester_ctx_clone(const tester_ctx *ctx)
+tester_run_new_ctx(unsigned int flags, const logic_expr *targets)
 {
-    int         rc;
     tester_ctx *new_ctx = TE_ALLOC(sizeof(*new_ctx));
-
+    
     if (new_ctx == NULL)
         return NULL;
-    new_ctx->flags = ctx->flags;
 
-    new_ctx->group_result.id = ctx->group_result.id;
+    new_ctx->flags = flags;
+
+    /* new_ctx->current_result.id = 0; */
     te_test_result_init(&new_ctx->group_result.result);
     new_ctx->group_result.status = TESTER_TEST_EMPTY;
 #if WITH_TRC
-    new_ctx->group_result.exp_result = ctx->current_result.exp_result;
-    new_ctx->group_result.exp_status = ctx->current_result.exp_status;
+    new_ctx->group_result.exp_result = NULL;
+    new_ctx->group_result.exp_status = TRC_VERDICT_UNKNOWN;
 #endif
 
-    new_ctx->current_result.id = ctx->current_result.id;
+    /* new_ctx->current_result.id = 0; */
     te_test_result_init(&new_ctx->current_result.result);
-    /* new_ctx->current_result.status = 0; */
+    new_ctx->current_result.status = TESTER_TEST_INCOMPLETE;
 #if WITH_TRC
     new_ctx->current_result.exp_result = NULL;
     new_ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
 #endif
 
-    new_ctx->targets = ctx->targets;
+    new_ctx->targets = targets;
     new_ctx->targets_free = FALSE;
     new_ctx->dyn_targets = NULL;
-
     TAILQ_INIT(&new_ctx->reqs);
+    
+    new_ctx->backup = NULL;
+    new_ctx->backup_ok = FALSE;
+    new_ctx->args = NULL;
+    /* new_ctx->n_args = 0; */
+
+    new_ctx->keepalive_ctx = NULL;
+
+#if WITH_TRC
+    new_ctx->trc_walker = NULL;
+    new_ctx->do_trc_walker = FALSE;
+#endif
+
+    return new_ctx;
+}
+
+/**
+ * Allocate a new Tester context.
+ *
+ * @param ctx           Tester context to be cloned.
+ * @param new_group     Clone context for a new group
+ *
+ * @return Pointer to new Tester context.
+ */
+static tester_ctx *
+tester_run_clone_ctx(const tester_ctx *ctx, te_bool new_group)
+{
+    te_errno    rc;
+    tester_ctx *new_ctx = tester_run_new_ctx(ctx->flags, ctx->targets);
+
+    if (new_ctx == NULL)
+        return NULL;
+
+    if (new_group)
+    {
+        new_ctx->group_result.id = ctx->current_result.id;
+#if WITH_TRC
+        new_ctx->group_result.exp_result = ctx->current_result.exp_result;
+        new_ctx->group_result.exp_status = ctx->current_result.exp_status;
+#endif
+    }
+    else
+    {
+        new_ctx->group_result.id = ctx->group_result.id;
+        new_ctx->group_result.status = ctx->group_result.status;
+#if WITH_TRC
+        new_ctx->group_result.exp_result = ctx->group_result.exp_result;
+        new_ctx->group_result.exp_status = ctx->group_result.exp_status;
+#endif
+    }
+
     rc = test_requirements_clone(&ctx->reqs, &new_ctx->reqs);
     if (rc != 0)
     {
         ERROR("%s(): failed to clone requirements: %r", __FUNCTION__, rc);
-        free(new_ctx);
+        tester_run_free_ctx(new_ctx);
         return NULL;
     }
-
-    /* new_ctx->backup = NULL; */
-    /* new_ctx->backup_ok = FALSE; */
-
-    /* new_ctx->args = NULL; */
-
-    /* new_ctx->keepalive_ctx = NULL; */
 
 #if WITH_TRC
     new_ctx->trc_walker = ctx->trc_walker;
@@ -271,10 +315,22 @@ tester_run_destroy_ctx(tester_run_data *data)
     prev = curr->links.le_next;
     if (prev != NULL)
     {
-        prev->current_result.status = curr->group_result.status;
+        if (prev->group_result.id == curr->group_result.id)
+        {
+            prev->group_result.status = curr->group_result.status;
 #if WITH_TRC
-        prev->current_result.exp_status = curr->group_result.exp_status;
+            prev->group_result.exp_status =
+                curr->group_result.exp_status;
 #endif
+        }
+        else
+        {
+            prev->current_result.status = curr->group_result.status;
+#if WITH_TRC
+            prev->current_result.exp_status =
+                curr->group_result.exp_status;
+#endif
+        }
     }
 
     VERB("Tester context %p deleted: flags=0x%x parent_id=%u child_id=%u "
@@ -288,7 +344,7 @@ tester_run_destroy_ctx(tester_run_data *data)
         trc_db_free_walker(curr->trc_walker);
 #endif
 
-    tester_ctx_free(curr);
+    tester_run_free_ctx(curr);
 }
 
 /**
@@ -299,41 +355,14 @@ tester_run_destroy_ctx(tester_run_data *data)
  * @return Allocated context.
  */
 static tester_ctx *
-tester_run_new_ctx(tester_run_data *data)
+tester_run_first_ctx(tester_run_data *data)
 {
-    tester_ctx *new_ctx = TE_ALLOC(sizeof(*new_ctx));
+    tester_ctx *new_ctx = tester_run_new_ctx(data->flags, data->targets);
     
     if (new_ctx == NULL)
         return NULL;
 
-    new_ctx->flags = data->flags;
-
     new_ctx->group_result.id = tester_get_id();
-    te_test_result_init(&new_ctx->group_result.result);
-    new_ctx->group_result.status = TESTER_TEST_EMPTY;
-#if WITH_TRC
-    new_ctx->group_result.exp_result = NULL;
-    new_ctx->group_result.exp_status = TRC_VERDICT_UNKNOWN;
-#endif
-
-    /* new_ctx->current_result.id = 0; */
-    te_test_result_init(&new_ctx->current_result.result);
-    /* new_ctx->current_result.status = 0; */
-#if WITH_TRC
-    new_ctx->current_result.exp_result = NULL;
-    new_ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
-#endif
-
-    new_ctx->targets = data->targets;
-    new_ctx->targets_free = FALSE;
-    new_ctx->dyn_targets = NULL;
-    TAILQ_INIT(&new_ctx->reqs);
-    /* new_ctx->backup = NULL; */
-    /* new_ctx->backup_ok = FALSE; */
-    /* new_ctx->args = NULL; */
-
-    assert(data->ctxs.lh_first == NULL);
-    LIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
 
 #if WITH_TRC
     if (~new_ctx->flags & TESTER_NO_TRC)
@@ -343,14 +372,17 @@ tester_run_new_ctx(tester_run_data *data)
             trc_db_new_walker((te_trc_db *)data->trc_db);
         if (new_ctx->trc_walker == NULL)
         {
-            tester_run_destroy_ctx(data);
+            tester_run_free_ctx(new_ctx);
             return NULL;
         }
         new_ctx->do_trc_walker = FALSE;
     }
 #endif
 
-    VERB("Initial context: flags=0x%x parent_id=%u",
+    assert(data->ctxs.lh_first == NULL);
+    LIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
+
+    VERB("Initial context: flags=0x%x group_id=%u",
          new_ctx->flags, new_ctx->group_result.id);
 
     return new_ctx;
@@ -360,16 +392,17 @@ tester_run_new_ctx(tester_run_data *data)
  * Clone the most recent (current) Tester context.
  *
  * @param data          Global Tester context data
+ * @param new_group     Clone context for a new group
  *
  * @return Allocated context.
  */
 static tester_ctx *
-tester_run_clone_ctx(tester_run_data *data)
+tester_run_more_ctx(tester_run_data *data, te_bool new_group)
 {
     tester_ctx *new_ctx;
 
     assert(data->ctxs.lh_first != NULL);
-    new_ctx = tester_ctx_clone(data->ctxs.lh_first);
+    new_ctx = tester_run_clone_ctx(data->ctxs.lh_first, new_group);
     if (new_ctx == NULL)
     {
         data->ctxs.lh_first->current_result.status =
@@ -379,9 +412,10 @@ tester_run_clone_ctx(tester_run_data *data)
     
     LIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
 
-    VERB("Tester context %p clonned %p: flags=0x%x parent_id=%u "
-         "child_id=%u", new_ctx->links.le_next, new_ctx, new_ctx->flags,
-         new_ctx->group_result.id, new_ctx->current_result.id);
+    VERB("Tester context %p clonned %p: flags=0x%x group_id=%u "
+         "current_id=%u", new_ctx->links.le_next, new_ctx,
+         new_ctx->flags, new_ctx->group_result.id,
+         new_ctx->current_result.id);
 
     return new_ctx;
 }
@@ -428,15 +462,10 @@ tester_group_result(tester_test_result *group_result,
     group_result->status = tester_group_status(group_result->status,
                                                iter_result->status);
 #if WITH_TRC
-    ENTRY("group-exp=%u item-exp=%u",
-          group_result->exp_status, iter_result->exp_status);
-    /* 
-     * If group does not have expected result, it is not mentioned in
-     * the database at all and its expectation status has to remain
-     * unknown.
-     */
-    if (group_result->exp_result != NULL &&
-        iter_result->status != TESTER_TEST_EMPTY)
+    ENTRY("iter-status=%u group-exp-status=%u item-exp-status=%u",
+          iter_result->status, group_result->exp_status,
+          iter_result->exp_status);
+    if (iter_result->status != TESTER_TEST_EMPTY)
     {
         /* 
          * If group contains unknown or unexpected results, its
@@ -1227,7 +1256,7 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
         WARN("Options in Tester configuration files are ignored.");
 
     /* Clone Tester context */
-    ctx = tester_run_clone_ctx(gctx);
+    ctx = tester_run_more_ctx(gctx, FALSE);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
 
@@ -1451,13 +1480,11 @@ run_pkg_start(run_item *ri, test_package *pkg,
           gctx->act != NULL ? gctx->act->flags : 0,
           gctx->act_id);
 
-    ctx = tester_run_clone_ctx(gctx);
+    ctx = tester_run_more_ctx(gctx, TRUE);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
 
     assert(~ctx->flags & TESTER_INLOGUE);
-
-    ctx->group_result.id = ctx->current_result.id;
 
     rc = tester_get_sticky_reqs(&ctx->reqs, &pkg->reqs);
     if (rc != 0)
@@ -1491,18 +1518,17 @@ run_session_start(run_item *ri, test_session *session,
           gctx->act != NULL ? gctx->act->flags : 0,
           gctx->act_id);
 
-    /*
-     * 'parent_id' is equal to 'child_id', if context is cloned in
-     * package_start callback.
+    /* 
+     * If it is a standalone session (not a primary session of a test
+     * package), create own context. Otherwise, context has been
+     * created in run_pkg_start() routine.
      */
-    if (ctx->group_result.id != ctx->current_result.id)
+    if (ri->type == RUN_ITEM_SESSION)
     {
-        ctx = tester_run_clone_ctx(gctx);
+        ctx = tester_run_more_ctx(gctx, TRUE);
         if (ctx == NULL)
             return TESTER_CFG_WALK_FAULT;
-        ctx->group_result.id = ctx->current_result.id;
     }
-    ctx->current_result.id = 0; /* Just to catch errors */
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
@@ -1557,7 +1583,7 @@ run_prologue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         return TESTER_CFG_WALK_SKIP;
     }
 
-    ctx = tester_run_clone_ctx(gctx);
+    ctx = tester_run_more_ctx(gctx, FALSE);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
 
@@ -1676,7 +1702,7 @@ run_epilogue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         return TESTER_CFG_WALK_SKIP;
     }
 
-    ctx = tester_run_clone_ctx(gctx);
+    ctx = tester_run_more_ctx(gctx, FALSE);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
 
@@ -1743,7 +1769,7 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     if (ctx->keepalive_ctx == NULL)
     {
-        ctx->keepalive_ctx = tester_ctx_clone(ctx);
+        ctx->keepalive_ctx = tester_run_clone_ctx(ctx, FALSE);
         if (ctx->keepalive_ctx == NULL)
         {
             ctx->current_result.status = TESTER_TEST_ERROR;
@@ -1829,7 +1855,7 @@ run_exception_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
           gctx->act_id);
 
     /* Exceptin handler is always run in a new context */
-    ctx = tester_run_clone_ctx(gctx);
+    ctx = tester_run_more_ctx(gctx, FALSE);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
 
@@ -2226,9 +2252,13 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
         ctx->current_result.exp_result =
             trc_db_walker_get_exp_result(ctx->trc_walker, gctx->trc_tags);
-        /* Intialize as unknown by default */
-        ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
     }
+    else
+    {
+        ctx->current_result.exp_result = NULL;
+    }
+    /* Intialize as unknown by default */
+    ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
 #endif
 
     EXIT("CONT");
@@ -2655,7 +2685,7 @@ tester_run(const testing_scenario *scenario,
         return rc;
     }
 
-    if (tester_run_new_ctx(&data) == NULL)
+    if (tester_run_first_ctx(&data) == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
 
     ctl = tester_configs_walk(cfgs, &cbs, 0, &data);
