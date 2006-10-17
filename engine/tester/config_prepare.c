@@ -491,7 +491,8 @@ prepare_test_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     if (gctx->rc == 0)
     {
         assert(ri->n_iters > 0);
-        assert(ri->weight > 0);
+        /* Empty package/session may have zero weight */
+        assert(ri->weight > 0 || ri->type != RUN_ITEM_SCRIPT);
         if (~flags & TESTER_CFG_WALK_SERVICE)
             ctx->total_iters += ri->n_iters * ri->weight;
     }
