@@ -654,6 +654,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
     char       *tmp;
     size_t      len = 16;
     char       *host;
+    int         tries = 10;
     
     (void)select_tm;
 
@@ -667,11 +668,16 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
 
     VERB("Connecting to TA '%s'", ta->ta_name);
 
-    if ((rc = rcf_net_engine_connect(host, ta->port, &ta->conn, 
-                                     select_set)) != 0)
+    while ((rc = rcf_net_engine_connect(host, ta->port, &ta->conn, 
+                                        select_set)) != 0 && tries-- > 0)
     {
-        return rc;
+       WARN("Connecting to TA failed (%r) - connect again after delay\n", 
+            rc);
+       te_sleep(5);
     }
+    
+    if (rc != 0)
+        return rc;
 
     if ((rc = rcf_net_engine_receive(ta->conn, buf, &len, &tmp)) != 0)
     {
