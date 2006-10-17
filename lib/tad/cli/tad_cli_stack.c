@@ -473,6 +473,9 @@ cli_session_alive(cli_csap_specific_data_p spec_data)
     pid_t pid;
     int   status;
 
+    if (spec_data->expect_pid == 0)
+        return FALSE;
+
     if (spec_data->kernel_like_2_4)
     {
         /*
@@ -484,7 +487,7 @@ cli_session_alive(cli_csap_specific_data_p spec_data)
         return TRUE;
     }
 
-    pid = waitpid(spec_data->expect_pid, &status, WNOHANG);
+    pid = ta_waitpid(spec_data->expect_pid, &status, WNOHANG);
     if (pid < 0)
     {
         ERROR("waitpid(%d) failed, errno = %d",
@@ -498,6 +501,7 @@ cli_session_alive(cli_csap_specific_data_p spec_data)
     }
     else
     {
+        assert(pid == spec_data->expect_pid);
         VERB("The child with PID %d is finished", spec_data->expect_pid);
         return FALSE;
     }
@@ -1176,11 +1180,6 @@ error:
 te_errno
 tad_cli_rw_destroy_cb(csap_p csap)
 {
-#if 0
-    int    status;
-    int    child_pid;
-#endif
-
     cli_csap_specific_data_p spec_data = csap_get_rw_data(csap);
 
     VERB("%s() started, CSAP %d", __FUNCTION__, csap->id);
@@ -1194,35 +1193,9 @@ tad_cli_rw_destroy_cb(csap_p csap)
     if (spec_data->expect_pid > 0)
     {
         VERB("kill CLI session, pid=%d", spec_data->expect_pid);
-        kill(spec_data->expect_pid, SIGKILL);
+        ta_kill_death(spec_data->expect_pid);
+        spec_data->expect_pid = 0;
     }
-    
-#if 0
-    /* On agent, ta_waitpid() should be called. As temporary solution,
-     * disable it as sigchild handler will log any problems. */
-    VERB("waitpid() for CLI session: PID = %d", spec_data->expect_pid);
-
-    child_pid = waitpid(spec_data->expect_pid, &status, 0);
-    if (child_pid < 0)
-    {
-        ERROR("%s(): waitpid() failed, errno %d", __FUNCTION__, errno);
-    }
-    
-    if (WIFEXITED(status))
-    {
-        INFO("CLI session, PID %d finished with code %d",
-             child_pid, WEXITSTATUS(status));
-    }
-    else if (WIFSIGNALED(status))
-    {
-        INFO("CLI session, PID %d was killed with %d signal",
-             child_pid, WTERMSIG(status));
-    }
-    else
-    {
-        INFO("CLI session finished not by signal nor itself");
-    }
-#endif
     
     VERB("%s(): try to free CLI CSAP specific data", __FUNCTION__);
     free_cli_csap_data(spec_data);
@@ -1436,11 +1409,10 @@ cli_session_close(cli_csap_specific_data_p spec_data)
     /* Terminate CLI session */
     if (spec_data->session_pid != 0)
     {
-        kill(spec_data->session_pid, SIGKILL);
+        ta_kill_death(spec_data->session_pid);
+        spec_data->session_pid = 0;
     }
     close(spec_data->io);
-
-    waitpid(spec_data->session_pid, NULL, 0);
 
 #ifdef EXP_DEBUG
     fclose(exp_debugfile);
