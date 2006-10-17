@@ -2454,10 +2454,6 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         if (~ctx->flags & TESTER_NO_TRC)
         {
             /* Error string is overriden in any case */
-            /* 
-             * Sessions without name are not tracked by TRC and does not
-             * have expected result.
-             */
             if (ctx->current_result.exp_result == NULL &&
                 test_get_name(ri) != NULL)
             {
@@ -2478,14 +2474,10 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
                 ctx->current_result.error = "";
             }
-            /*
-             * If expected result is know, but expected status is
-             * unknown for a group, therefore, it is empty and database
-             * expectations should be used. Otherwise expectation
-             * status for the group is derived from expectation
-             * statuses of its members.
-             */
-            else if (ri->type != RUN_ITEM_SCRIPT)
+            else if (ri->type != RUN_ITEM_SCRIPT &&
+                     ((test_get_name(ri) == NULL) ||
+                      (ctx->current_result.result.status !=
+                           TE_TEST_SKIPPED)))
             {
                 /* 
                  * Expectations status can't be unknown, since we have
@@ -2493,12 +2485,15 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                  * empty).
                  */
                 assert(ctx->current_result.exp_status !=
-                       TRC_VERDICT_UNKNOWN);
+                           TRC_VERDICT_UNKNOWN ||
+                       ctx->current_result.result.status ==
+                           TE_TEST_SKIPPED);
                 /* 
                  * Do not override expectations status derived from
                  * session members results.
                  */
-                if (ctx->current_result.exp_status == TRC_VERDICT_EXPECTED)
+                if (ctx->current_result.exp_status !=
+                        TRC_VERDICT_UNEXPECTED)
                     ctx->current_result.error = NULL;
                 else
                     ctx->current_result.error = "Unexpected test result(s)";
