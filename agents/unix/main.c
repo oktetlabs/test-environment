@@ -1435,6 +1435,9 @@ ta_kill_death(pid_t pid)
         return -1;
     errno = saved_errno;
 
+    /* Wait for termination. */
+    te_msleep(500);
+
     /* Check if the process exited. If kill failed, waitpid can't fail */
     if (ta_waitpid(pid, NULL, WNOHANG) == pid)
         return 0;
