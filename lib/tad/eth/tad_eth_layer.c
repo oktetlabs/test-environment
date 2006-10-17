@@ -55,26 +55,25 @@
 /** 802.1Q Tag Protocol Type (IEEE Std 802.1Q-2003 9.3.1) */
 #define TAD_802_1Q_TAG_TYPE     0x8100
 
-
-/** Type of Ethernet frame */
-typedef enum tad_eth_frame_type {
-    TAD_ETH_FRAME_TYPE_ANY,
-    TAD_ETH_FRAME_TYPE_UNTAGGED,
-    TAD_ETH_FRAME_TYPE_TAGGED,
-    TAD_ETH_FRAME_TYPE_SNAP,
-} tad_eth_frame_type;
-
+#define PRINT(fmt_...) \
+    do {                        \
+        fprintf(stderr, fmt_);  \
+        fputc('\n', stderr);    \
+        fflush(stderr);         \
+    } while (0)
 
 /**
  * Ethernet layer specific data
  */
 typedef struct tad_eth_proto_data {
-    tad_eth_frame_type      type;
+    te_bool3                tagged;
+    te_bool3                is_llc;
     tad_bps_pkt_frag_def    eth;
     tad_bps_pkt_frag_def    len_type;
     tad_bps_pkt_frag_def    tpid;
     tad_bps_pkt_frag_def    tci;
     tad_bps_pkt_frag_def    e_rif;
+    tad_bps_pkt_frag_def    llc;
     tad_bps_pkt_frag_def    snap;
 } tad_eth_proto_data;
 
@@ -83,12 +82,14 @@ typedef struct tad_eth_proto_data {
  * receive).
  */
 typedef struct tad_eth_proto_pdu_data {
-    tad_eth_frame_type      type;
+    te_bool3                tagged;
+    te_bool3                is_llc;
     tad_bps_pkt_frag_data   eth;
     tad_bps_pkt_frag_data   len_type;
     tad_bps_pkt_frag_data   tpid;
     tad_bps_pkt_frag_data   tci;
     tad_bps_pkt_frag_data   e_rif;
+    tad_bps_pkt_frag_data   llc;
     tad_bps_pkt_frag_data   snap;
 } tad_eth_proto_pdu_data;
 
@@ -107,11 +108,14 @@ static const tad_bps_pkt_frag tad_eth_addrs_bps_hdr[] =
 /**
  * Definition of Length-Type field which can follow after sources MAC
  * address or TCI in the case of IEEE Std 802.1Q.
+ *
+ * Force to read it from received frame in any case, since if affects
+ * processing of other subleayer headers.
  */
 static const tad_bps_pkt_frag tad_eth_length_type_bps_hdr[] =
 {
     { "length-type", 16, BPS_FLD_SIMPLE(NDN_TAG_802_3_LENGTH_TYPE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, TRUE },
 };
 
 /**
@@ -174,14 +178,14 @@ static const tad_bps_pkt_frag tad_802_1q_e_rif_bps_hdr[] =
 static const tad_bps_pkt_frag tad_802_2_llc_bps_hdr[] =
 {
     /* By default, DSAP is individual */
-    { "i-g",  1, BPS_FLD_CONST_DEF(NDN_TAG_LLC_DSAP_IG, 0),
-      TAD_DU_I32, FALSE },
     { "dsap", 7, BPS_FLD_NO_DEF(NDN_TAG_LLC_DSAP),
       TAD_DU_I32, FALSE },
-    /* By default, command (not response) */
-    { "c-r",  1, BPS_FLD_CONST_DEF(NDN_TAG_LLC_SSAP_CR, 0),
+    { "i-g",  1, BPS_FLD_CONST_DEF(NDN_TAG_LLC_DSAP_IG, 0),
       TAD_DU_I32, FALSE },
+    /* By default, command (not response) */
     { "ssap", 7, BPS_FLD_NO_DEF(NDN_TAG_LLC_SSAP),
+      TAD_DU_I32, FALSE },
+    { "c-r",  1, BPS_FLD_CONST_DEF(NDN_TAG_LLC_SSAP_CR, 0),
       TAD_DU_I32, FALSE },
     /* Minimum length of the Control is 8bit */
     { "ctl",  8, BPS_FLD_NO_DEF(NDN_TAG_LLC_CTL),
@@ -215,6 +219,9 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
     csap_set_proto_spec_data(csap, layer, proto_data);
 
     layer_nds = csap->layers[layer].nds;
+
+    proto_data->tagged = TE_BOOL3_ANY;
+    proto_data->is_llc = TE_BOOL3_ANY;
 
     rc = tad_bps_pkt_frag_init(tad_eth_addrs_bps_hdr,
                                TE_ARRAY_LEN(tad_eth_addrs_bps_hdr),
@@ -383,6 +390,11 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
              NULL, &proto_data->e_rif);
     if (rc != 0)
         return rc;
+    rc = tad_bps_pkt_frag_init(tad_802_2_llc_bps_hdr,
+             TE_ARRAY_LEN(tad_802_2_llc_bps_hdr),
+             NULL, &proto_data->llc);
+    if (rc != 0)
+        return rc;
     rc = tad_bps_pkt_frag_init(tad_802_snap_bps_hdr,
              TE_ARRAY_LEN(tad_802_snap_bps_hdr),
              NULL, &proto_data->snap);
@@ -407,6 +419,7 @@ tad_eth_destroy_cb(csap_p csap, unsigned int layer)
     tad_bps_pkt_frag_free(&proto_data->tpid);
     tad_bps_pkt_frag_free(&proto_data->tci);
     tad_bps_pkt_frag_free(&proto_data->e_rif);
+    tad_bps_pkt_frag_free(&proto_data->llc);
     tad_bps_pkt_frag_free(&proto_data->snap);
 
     free(proto_data);
@@ -434,7 +447,7 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
 {
     te_errno                    rc;
     tad_eth_proto_pdu_data     *pdu_data;
-    const asn_value            *frame_type;
+    const asn_value            *tmp;
 
     assert(proto_data != NULL);
     assert(layer_pdu != NULL);
@@ -454,19 +467,19 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
     if (rc != 0)
         return rc;
 
-    rc = asn_get_child_value(layer_pdu, &frame_type,
+    rc = asn_get_child_value(layer_pdu, &tmp,
                              PRIVATE, NDN_TAG_VLAN_TAGGED);
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         rc = 0;
-        pdu_data->type = proto_data->type;
-        F_VERB(CSAP_LOG_FMT "'frame-type' is not specified in PDU - "
-               "inherit from CSAP parameters %u", CSAP_LOG_ARGS(csap),
-               pdu_data->type);
+        pdu_data->tagged = proto_data->tagged;
+        F_VERB(CSAP_LOG_FMT "'tagged' is not specified in PDU - "
+               "inherit from CSAP parameters %d", CSAP_LOG_ARGS(csap),
+               pdu_data->tagged);
     }
     else if (rc != 0)
     {
-        ERROR("%s(): Failed to get 'frame-type' from NDS: %r",
+        ERROR("%s(): Failed to get 'tagged' from NDS: %r",
               __FUNCTION__, rc);
         return rc;
     }
@@ -475,73 +488,130 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
         asn_tag_class   class;
         asn_tag_value   tag;
 
-        rc = asn_get_choice_value(frame_type, (asn_value **)&frame_type,
-                                  &class, &tag);
+        rc = asn_get_choice_value(tmp, (asn_value **)&tmp, &class, &tag);
         if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
             rc = 0;
-            pdu_data->type = proto_data->type;
-            F_VERB(CSAP_LOG_FMT "'frame-type' is not specified in PDU - "
-                   "inherit from CSAP parameters %u", CSAP_LOG_ARGS(csap),
-                   pdu_data->type);
+            pdu_data->tagged = proto_data->tagged;
+            F_VERB(CSAP_LOG_FMT "'tagged' is not specified in PDU - "
+                   "inherit from CSAP parameters %d", CSAP_LOG_ARGS(csap),
+                   pdu_data->tagged);
         }
         else if (rc != 0)
         {
-            ERROR("%s(): Failed to get 'frame-type' choice from NDS: %r",
+            ERROR("%s(): Failed to get 'tagged' choice from NDS: %r",
                   __FUNCTION__, rc);
             return rc;
         }
         else if (class != PRIVATE)
         {
-            ERROR("%s(): Invalid choice tag class in 'frame-type'",
+            ERROR("%s(): Invalid choice tag class in 'tagged'",
                   __FUNCTION__);
             return TE_RC(TE_TAD_CSAP, TE_ETADWRONGNDS);
         }
         else if (tag == NDN_TAG_ETH_UNTAGGED)
         {
-            pdu_data->type = TAD_ETH_FRAME_TYPE_UNTAGGED;
+            pdu_data->tagged = TE_BOOL3_FALSE;
             F_VERB(CSAP_LOG_FMT "Untagged frame format",
                    CSAP_LOG_ARGS(csap));
         }
         else if (tag == NDN_TAG_VLAN_TAG_HEADER)
         {
-            pdu_data->type = TAD_ETH_FRAME_TYPE_TAGGED;
+            pdu_data->tagged = TE_BOOL3_TRUE;
             F_VERB(CSAP_LOG_FMT "Tagged frame format",
                    CSAP_LOG_ARGS(csap));
 
-            rc = tad_bps_nds_to_data_units(&proto_data->tpid, frame_type,
+            rc = tad_bps_nds_to_data_units(&proto_data->tpid, tmp,
                                            &pdu_data->tpid);
             if (rc != 0)
                 return rc;
 
-            rc = tad_bps_nds_to_data_units(&proto_data->tci, frame_type,
+            rc = tad_bps_nds_to_data_units(&proto_data->tci, tmp,
                                            &pdu_data->tci);
             if (rc != 0)
                 return rc;
 
-            rc = tad_bps_nds_to_data_units(&proto_data->e_rif, frame_type,
+            rc = tad_bps_nds_to_data_units(&proto_data->e_rif, tmp,
                                            &pdu_data->e_rif);
             if (rc != 0)
                 return rc;
         }
-#if 0
-        else if (tag == NDN_TAG_ETH_SNAP)
+        else
         {
-            pdu_data->type = TAD_ETH_FRAME_TYPE_SNAP;
-            F_VERB(CSAP_LOG_FMT "SNAP frame format",
+            ERROR("%s(): Invalid choice tag in 'tagged'", __FUNCTION__);
+            return TE_RC(TE_TAD_CSAP, TE_ETADWRONGNDS);
+        }
+    }
+
+    rc = asn_get_child_value(layer_pdu, &tmp,
+                             PRIVATE, NDN_TAG_802_3_ENCAP);
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    {
+        rc = 0;
+        pdu_data->is_llc = proto_data->is_llc;
+        F_VERB(CSAP_LOG_FMT "'encap' is not specified in PDU - "
+               "inherit from CSAP parameters %d", CSAP_LOG_ARGS(csap),
+               pdu_data->is_llc);
+    }
+    else if (rc != 0)
+    {
+        ERROR("%s(): Failed to get 'encap' from NDS: %r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+    else
+    {
+        asn_tag_class   class;
+        asn_tag_value   tag;
+
+        rc = asn_get_choice_value(tmp, (asn_value **)&tmp, &class, &tag);
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+        {
+            rc = 0;
+            pdu_data->is_llc = proto_data->is_llc;
+            F_VERB(CSAP_LOG_FMT "'encap' is not specified in PDU - "
+                   "inherit from CSAP parameters %d", CSAP_LOG_ARGS(csap),
+                   pdu_data->is_llc);
+        }
+        else if (rc != 0)
+        {
+            ERROR("%s(): Failed to get 'encap' choice from NDS: %r",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+        else if (class != PRIVATE)
+        {
+            ERROR("%s(): Invalid choice tag class in 'encap'",
+                  __FUNCTION__);
+            return TE_RC(TE_TAD_CSAP, TE_ETADWRONGNDS);
+        }
+        else if (tag == NDN_TAG_ETHERNET2)
+        {
+            pdu_data->is_llc = TE_BOOL3_FALSE;
+            F_VERB(CSAP_LOG_FMT "Ethernet2 frame encapsulation",
+                   CSAP_LOG_ARGS(csap));
+        }
+        else if (tag == NDN_TAG_LLC_HEADER)
+        {
+            pdu_data->is_llc = TE_BOOL3_TRUE;
+            F_VERB(CSAP_LOG_FMT "LLC frame encapsulation",
                    CSAP_LOG_ARGS(csap));
 
-            /* FIXME: Check length-type in header */
+            rc = tad_bps_nds_to_data_units(&proto_data->llc, tmp,
+                                           &pdu_data->llc);
+            if (rc != 0)
+                return rc;
 
-            rc = tad_bps_nds_to_data_units(&proto_data->snap, frame_type,
+#if 0
+            rc = tad_bps_nds_to_data_units(&proto_data->snap, tmp,
                                            &pdu_data->snap);
             if (rc != 0)
                 return rc;
-        }
 #endif
+        }
         else
         {
-            ERROR("%s(): Invalid choice tag in 'frame-type'",
+            ERROR("%s(): Invalid choice tag in 'encap'",
                   __FUNCTION__);
             return TE_RC(TE_TAD_CSAP, TE_ETADWRONGNDS);
         }
@@ -568,6 +638,7 @@ tad_eth_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
         tad_bps_free_pkt_frag_data(&proto_data->tpid, &pdu_data->tpid);
         tad_bps_free_pkt_frag_data(&proto_data->tci, &pdu_data->tci);
         tad_bps_free_pkt_frag_data(&proto_data->e_rif, &pdu_data->e_rif);
+        tad_bps_free_pkt_frag_data(&proto_data->llc, &pdu_data->llc);
         tad_bps_free_pkt_frag_data(&proto_data->snap, &pdu_data->snap);
         free(pdu_data);
     }
@@ -592,9 +663,12 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 
     tmpl_data = *p_opaque;
 
-    /* By default send untagged Ethernet frames */
-    if (tmpl_data->type == TAD_ETH_FRAME_TYPE_ANY)
-        tmpl_data->type = TAD_ETH_FRAME_TYPE_UNTAGGED;
+    /* By default, frames are not tagged */
+    if (tmpl_data->tagged == TE_BOOL3_ANY)
+        tmpl_data->tagged = TE_BOOL3_FALSE;
+    /* By default, use Ethernet2 encapsulation */
+    if (tmpl_data->is_llc == TE_BOOL3_ANY)
+        tmpl_data->is_llc = TE_BOOL3_FALSE;
 
     rc = tad_bps_confirm_send(&proto_data->eth, &tmpl_data->eth);
     if (rc != 0)
@@ -604,16 +678,13 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     if (rc != 0)
         return rc;
 
-    if (tmpl_data->type == TAD_ETH_FRAME_TYPE_UNTAGGED)
+    if (tmpl_data->tagged == TE_BOOL3_TRUE)
     {
-        /* Nothing special to confirm in this case */
-    }
-    else if (tmpl_data->type == TAD_ETH_FRAME_TYPE_TAGGED)
-    {
-        /* Nothing to check for TPID - it is a constant */
         tad_data_unit_t *cfi_du =
             (tmpl_data->tci.dus[1].du_type == TAD_DU_UNDEF) ?
             (proto_data->tci.tx_def + 1) : (tmpl_data->tci.dus + 1);
+
+        /* Nothing to check for TPID - it is a constant */
 
         rc = tad_bps_confirm_send(&proto_data->tci, &tmpl_data->tci);
         if (rc != 0)
@@ -636,16 +707,12 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                 return rc;
         }
     }
-    else if (tmpl_data->type == TAD_ETH_FRAME_TYPE_SNAP)
+
+    if (tmpl_data->is_llc == TE_BOOL3_TRUE)
     {
-        rc = tad_bps_confirm_send(&proto_data->snap, &tmpl_data->snap);
+        rc = tad_bps_confirm_send(&proto_data->llc, &tmpl_data->llc);
         if (rc != 0)
             return rc;
-    }
-    else
-    {
-        /* Impossible */
-        assert(FALSE);
     }
 
     return rc;
@@ -709,11 +776,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
                                           &tmpl_data->eth) +
              tad_bps_pkt_frag_data_bitlen(&proto_data->len_type,
                                           &tmpl_data->len_type);
-    if (tmpl_data->type == TAD_ETH_FRAME_TYPE_UNTAGGED)
-    {
-        /* Nothing special to add in this case */
-    }
-    else if (tmpl_data->type == TAD_ETH_FRAME_TYPE_TAGGED)
+    if (tmpl_data->tagged == TE_BOOL3_TRUE)
     {
         bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->tpid,
                                                &tmpl_data->tpid) +
@@ -721,22 +784,21 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
                                                &tmpl_data->tci);
 
         /* If CFI bit is set, confirm E-RIF */
-        if (tmpl_data->tci.dus[1].du_type == TAD_DU_I32 &&
-            tmpl_data->tci.dus[1].val_i32 == 1)
+        assert(tmpl_data->tci.dus[1].du_type == TAD_DU_I32 ||
+               (tmpl_data->tci.dus[1].du_type == TAD_DU_UNDEF &&
+                proto_data->tci.tx_def[1].du_type == TAD_DU_I32));
+        if ((tmpl_data->tci.dus[1].du_type == TAD_DU_I32 &&
+             tmpl_data->tci.dus[1].val_i32 == 1) ||
+            proto_data->tci.tx_def[1].val_i32 == 1)
         {
             bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->e_rif,
                                                    &tmpl_data->e_rif);
         }
     }
-    else if (tmpl_data->type == TAD_ETH_FRAME_TYPE_SNAP)
+    if (tmpl_data->is_llc == TE_BOOL3_TRUE)
     {
-        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->snap,
-                                               &tmpl_data->snap);
-    }
-    else
-    {
-        /* Impossible */
-        assert(FALSE);
+        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->llc,
+                                               &tmpl_data->llc);
     }
 
     assert((bitlen & 7) == 0);
@@ -758,7 +820,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
         return rc;
     }
 
-    if (tmpl_data->type == TAD_ETH_FRAME_TYPE_TAGGED)
+    if (tmpl_data->tagged == TE_BOOL3_TRUE)
     {
         rc = tad_bps_pkt_frag_gen_bin(&proto_data->tpid, &tmpl_data->tpid,
                                       args, arg_num,
@@ -795,8 +857,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
         return rc;
     }
 
-    if (tmpl_data->type == TAD_ETH_FRAME_TYPE_TAGGED &&
-        tmpl_data->tci.dus[1].du_type == TAD_DU_I32 &&
+    if (tmpl_data->tagged == TE_BOOL3_TRUE &&
         tmpl_data->tci.dus[1].val_i32 == 1)
     {
         /* CFI bit is set, confirm E-RIF */
@@ -813,9 +874,9 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
         }
     }
 
-    if (tmpl_data->type == TAD_ETH_FRAME_TYPE_SNAP)
+    if (tmpl_data->is_llc == TE_BOOL3_TRUE)
     {
-        rc = tad_bps_pkt_frag_gen_bin(&proto_data->snap, &tmpl_data->snap,
+        rc = tad_bps_pkt_frag_gen_bin(&proto_data->llc, &tmpl_data->llc,
                                       args, arg_num,
                                       data, &bitoff, bitlen);
         if (rc != 0)
@@ -871,13 +932,14 @@ tad_eth_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     rc = tad_eth_nds_to_pdu_data(csap, proto_data, layer_pdu, &ptrn_data);
     *p_opaque = ptrn_data;
 
-    if (ptrn_data->type == TAD_ETH_FRAME_TYPE_ANY)
-    {
-        rc = tad_bps_nds_to_data_units(&proto_data->tpid, NULL,
-                                       &ptrn_data->tpid);
-        if (rc != 0)
-            return rc;
+    /* Prepare TPID in any case since it is used in any case */
+    rc = tad_bps_nds_to_data_units(&proto_data->tpid, NULL,
+                                   &ptrn_data->tpid);
+    if (rc != 0)
+        return rc;
 
+    if (ptrn_data->tagged != TE_BOOL3_FALSE)
+    {
         rc = tad_bps_nds_to_data_units(&proto_data->tci, NULL,
                                        &ptrn_data->tci);
         if (rc != 0)
@@ -885,6 +947,14 @@ tad_eth_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 
         rc = tad_bps_nds_to_data_units(&proto_data->e_rif, NULL,
                                        &ptrn_data->e_rif);
+        if (rc != 0)
+            return rc;
+    }
+
+    if (ptrn_data->is_llc != TE_BOOL3_FALSE)
+    {
+        rc = tad_bps_nds_to_data_units(&proto_data->llc, NULL,
+                                       &ptrn_data->llc);
         if (rc != 0)
             return rc;
 
@@ -929,6 +999,9 @@ tad_eth_match_pre_cb(csap_p              csap,
         rc = tad_bps_pkt_frag_match_pre(&proto_data->e_rif,
                                         &pkt_data->e_rif);
     if (rc == 0)
+        rc = tad_bps_pkt_frag_match_pre(&proto_data->llc,
+                                        &pkt_data->llc);
+    if (rc == 0)
         rc = tad_bps_pkt_frag_match_pre(&proto_data->snap,
                                         &pkt_data->snap);
 
@@ -944,7 +1017,7 @@ tad_eth_match_post_cb(csap_p              csap,
     tad_eth_proto_data     *proto_data;
     tad_eth_proto_pdu_data *pkt_data = meta_pkt_layer->opaque;
     tad_pkt                *pkt;
-    asn_value              *frame_type = NULL;
+    asn_value              *tmp = NULL;
     te_errno                rc;
     unsigned int            bitoff = 0;
 
@@ -965,39 +1038,22 @@ tad_eth_match_post_cb(csap_p              csap,
     if (rc != 0)
         return rc;
 
-    if (pkt_data->type == TAD_ETH_FRAME_TYPE_UNTAGGED)
+    if (pkt_data->tagged == TE_BOOL3_TRUE)
     {
-        /* Nothing to add here */
-    }
-    else if (pkt_data->type == TAD_ETH_FRAME_TYPE_TAGGED)
-    {
-#if 0
-        frame_type = asn_retrieve_descendant(meta_pkt_layer->nds, &rc,
-                                             "frame-type.#tagged");
-        if (frame_type == NULL)
+        tmp = asn_retrieve_descendant(meta_pkt_layer->nds, &rc,
+                                      "tagged.#tagged");
+        if (tmp == NULL)
         {
-            ERROR(CSAP_LOG_FMT "Failed to retrieve "
-                  "frame-type.#tagged: %r", CSAP_LOG_ARGS(csap), rc);
+            ERROR(CSAP_LOG_FMT "Failed to retrieve tagged.#tagged: %r",
+                  CSAP_LOG_ARGS(csap), rc);
             return TE_RC(TE_TAD_CSAP, rc);
         }
-#else
-        {
-            asn_value *frame_type_gen;
-
-            frame_type_gen = asn_init_value(ndn_vlan_tagged);
-            asn_put_child_value(meta_pkt_layer->nds, frame_type_gen,
-                                PRIVATE, NDN_TAG_VLAN_TAGGED);
-            frame_type = asn_init_value(ndn_vlan_tag_header);
-            asn_put_child_value(frame_type_gen, frame_type,
-                                PRIVATE, NDN_TAG_VLAN_TAG_HEADER);
-        }
-#endif
         /* Skip TPID */
         bitoff += tad_bps_pkt_frag_data_bitlen(&proto_data->tpid,
                                                &pkt_data->tpid);
         /* Fill in TCI */
         rc = tad_bps_pkt_frag_match_post(&proto_data->tci, &pkt_data->tci,
-                                         pkt, &bitoff, frame_type);
+                                         pkt, &bitoff, tmp);
         if (rc != 0)
             return rc;
     }
@@ -1008,50 +1064,36 @@ tad_eth_match_post_cb(csap_p              csap,
     if (rc != 0)
         return rc;
 
-    if (pkt_data->type == TAD_ETH_FRAME_TYPE_TAGGED &&
-        pkt_data->tci.dus[1].val_i32 == 1)
+    if (pkt_data->tagged == TE_BOOL3_TRUE &&
+        ((pkt_data->tci.dus[1].du_type == TAD_DU_I32 &&
+          pkt_data->tci.dus[1].val_i32 == 1) ||
+         (proto_data->tci.tx_def[1].du_type == TAD_DU_I32 &&
+          proto_data->tci.tx_def[1].val_i32 == 1)))
     {
-        assert(pkt_data->tci.dus[1].du_type == TAD_DU_I32);
-
         rc = tad_bps_pkt_frag_match_post(&proto_data->e_rif,
                                          &pkt_data->e_rif,
-                                         pkt, &bitoff, frame_type);
+                                         pkt, &bitoff, tmp);
         if (rc != 0)
             return rc;
     }
 
-#if 0
-    if (pkt_data->type == TAD_ETH_FRAME_TYPE_SNAP)
+    if (pkt_data->is_llc == TE_BOOL3_TRUE)
     {
-#if 0
-        frame_type = asn_retrieve_descendant(meta_pkt_layer->nds, &rc,
-                                             "frame-type.#snap");
-        if (frame_type == NULL)
+        tmp = asn_retrieve_descendant(meta_pkt_layer->nds, &rc,
+                                      "encap.#llc");
+        if (tmp == NULL)
         {
-            ERROR(CSAP_LOG_FMT "Failed to retrieve "
-                  "frame-type.#snap: %r", CSAP_LOG_ARGS(csap), rc);
+            ERROR(CSAP_LOG_FMT "Failed to retrieve encap.#llc: %r",
+                  CSAP_LOG_ARGS(csap), rc);
             return TE_RC(TE_TAD_CSAP, rc);
         }
-#else
-        {
-            asn_value *frame_type_gen;
 
-            frame_type_gen = asn_init_value(ndn_vlan_tagged);
-            asn_put_child_value(meta_pkt_layer->nds, frame_type_gen,
-                                PRIVATE, NDN_TAG_VLAN_TAGGED);
-            frame_type = asn_init_value(ndn_eth_snap);
-            asn_put_child_value(frame_type_gen, frame_type,
-                                PRIVATE, NDN_TAG_ETH_SNAP);
-        }
-#endif
-
-        rc = tad_bps_pkt_frag_match_post(&proto_data->len_type,
-                                         &pkt_data->len_type,
-                                         pkt, &bitoff, frame_type);
+        rc = tad_bps_pkt_frag_match_post(&proto_data->llc,
+                                         &pkt_data->llc,
+                                         pkt, &bitoff, tmp);
         if (rc != 0)
             return rc;
     }
-#endif
 
     return 0;
 }
@@ -1087,8 +1129,6 @@ tad_eth_match_do_cb(csap_p           csap,
     assert(ptrn_data != NULL);
     assert(pkt_data != NULL);
 
-    pkt_data->type = TAD_ETH_FRAME_TYPE_UNTAGGED;
-
     rc = tad_bps_pkt_frag_match_do(&proto_data->eth, &ptrn_data->eth,
                                    &pkt_data->eth, pdu, &bitoff);
     if (rc != 0)
@@ -1098,38 +1138,39 @@ tad_eth_match_do_cb(csap_p           csap,
         return rc;
     }
 
-    if (ptrn_data->type == TAD_ETH_FRAME_TYPE_TAGGED ||
-        ptrn_data->type == TAD_ETH_FRAME_TYPE_ANY)
+    rc = tad_bps_pkt_frag_match_do(&proto_data->tpid, &ptrn_data->tpid,
+                                   &pkt_data->tpid, pdu, &bitoff);
+    if (rc != 0)
     {
-        rc = tad_bps_pkt_frag_match_do(&proto_data->tpid, &ptrn_data->tpid,
-                                       &pkt_data->tpid, pdu, &bitoff);
+        /* Frame is not tagged */
+        F_VERB(CSAP_LOG_FMT "Match PDU vs TPID failed on bit offset "
+               "%u: %r", CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
+        if (ptrn_data->tagged == TE_BOOL3_TRUE)
+        {
+            /* Tagged frames are required only */
+            return rc;
+        }
+        pkt_data->tagged = TE_BOOL3_FALSE;
+    }
+    else if (ptrn_data->tagged == TE_BOOL3_FALSE)
+    {
+        /* Untagged frames are required only */
+        return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
+    }
+    else
+    {
+        pkt_data->tagged = TE_BOOL3_TRUE;
+
+        rc = tad_bps_pkt_frag_match_do(&proto_data->tci,
+                                       &ptrn_data->tci,
+                                       &pkt_data->tci,
+                                       pdu, &bitoff);
         if (rc != 0)
         {
-            /* Frame is not tagged */
-            F_VERB(CSAP_LOG_FMT "Match PDU vs TPID failed on bit offset "
-                   "%u: %r", CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
-            if (ptrn_data->type == TAD_ETH_FRAME_TYPE_TAGGED)
-            {
-                /* Tagged frames are required only */
-                return rc;
-            }
-        }
-        else
-        {
-            /* Frame is tagged, match TCI */
-            pkt_data->type = TAD_ETH_FRAME_TYPE_TAGGED;
-
-            rc = tad_bps_pkt_frag_match_do(&proto_data->tci,
-                                           &ptrn_data->tci,
-                                           &pkt_data->tci,
-                                           pdu, &bitoff);
-            if (rc != 0)
-            {
-                F_VERB(CSAP_LOG_FMT "Match PDU vs TCI failed on bit "
-                       "offset %u: %r", CSAP_LOG_ARGS(csap),
-                       (unsigned)bitoff, rc);
-                return rc;
-            }
+            F_VERB(CSAP_LOG_FMT "Match PDU vs TCI failed on bit "
+                   "offset %u: %r", CSAP_LOG_ARGS(csap),
+                   (unsigned)bitoff, rc);
+            return rc;
         }
     }
 
@@ -1144,42 +1185,37 @@ tad_eth_match_do_cb(csap_p           csap,
         return rc;
     }
 
-    if (ptrn_data->type == TAD_ETH_FRAME_TYPE_TAGGED &&
-        ptrn_data->tci.dus[1].du_type == TAD_DU_I32 &&
-        ptrn_data->tci.dus[1].val_i32 == 1)
+    assert(pkt_data->len_type.dus[0].du_type == TAD_DU_I32);
+    /* 
+     * If Length/Type is greater or equal to 1536 (0x0600), the frame is
+     * Ethernet2.
+     */
+    if (pkt_data->len_type.dus[0].val_i32 >= 0x0600)
     {
-        /* CFI bit is set, match E-RIF */
-        rc = tad_bps_pkt_frag_match_do(&proto_data->e_rif,
-                                       &ptrn_data->e_rif,
-                                       &pkt_data->e_rif,
-                                       pdu, &bitoff);
-        if (rc != 0)
+        if (ptrn_data->is_llc == TE_BOOL3_TRUE)
         {
-            F_VERB(CSAP_LOG_FMT "Match PDU vs E-RIF failed on bit "
-                   "offset %u: %r", CSAP_LOG_ARGS(csap),
-                   (unsigned)bitoff, rc);
-            return rc;
+            /* LLC frames are interesting only */
+            return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
         }
+        pkt_data->is_llc = TE_BOOL3_FALSE;
     }
-
-    if (ptrn_data->type == TAD_ETH_FRAME_TYPE_SNAP)
+    else if (ptrn_data->is_llc == TE_BOOL3_FALSE)
     {
-        rc = tad_bps_pkt_frag_match_do(&proto_data->snap, &ptrn_data->snap,
-                                       &pkt_data->snap, pdu, &bitoff);
+        /* Ethernet2 frames are interesting only */
+        return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
+    }
+    else
+    {
+        rc = tad_bps_pkt_frag_match_do(&proto_data->llc, &ptrn_data->llc,
+                                       &pkt_data->llc, pdu, &bitoff);
         if (rc != 0)
         {
-            F_VERB(CSAP_LOG_FMT "Match PDU vs SNAP failed on bit "
+            F_VERB(CSAP_LOG_FMT "Match PDU vs LLC header failed on bit "
                    "offset %u: %r", CSAP_LOG_ARGS(csap),
                    (unsigned)bitoff, rc);
             return rc;
         }
-        if (pkt_data->type == TAD_ETH_FRAME_TYPE_TAGGED)
-        {
-            ERROR(CSAP_LOG_FMT "Tagged SNAP frames are not supported yet",
-                  CSAP_LOG_ARGS(csap));
-            return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
-        }
-        pkt_data->type = TAD_ETH_FRAME_TYPE_SNAP;
+        pkt_data->is_llc = TE_BOOL3_TRUE;
     }
 
     rc = tad_pkt_get_frag(sdu, pdu, bitoff >> 3,
