@@ -168,6 +168,10 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
         msg->def_val = len;
         memcpy(msg->oid + len, descr->def_val, def_val_len);
     }
+    else
+    {
+        msg->def_val = 0;
+    }
     msg->len = sizeof(cfg_register_msg) + len + def_val_len;
 
     len = CFG_MSG_MAX;
