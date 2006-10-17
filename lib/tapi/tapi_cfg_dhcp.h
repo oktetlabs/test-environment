@@ -76,6 +76,7 @@ extern int tapi_cfg_dhcps_add_subnet(const char            *ta,
  * @param fixed_ip      Fixed IP address or NULL
  * @param next_server   Next server or NULL
  * @param filename      File name or NULL
+ * @param flags         Flags for Solaris 'dhcp' server lease type (bootp)
  * @param handle        Location for handle of the created instance or
  *                      NULL
  *
@@ -97,6 +98,7 @@ extern int tapi_cfg_dhcps_add_host(const char            *ta,
                                    const struct sockaddr *fixed_ip,
                                    const char            *next_server,
                                    const char            *filename,
+                                   const char            *flags,
                                    cfg_handle            *handle);
 
 #ifdef __cplusplus

@@ -794,6 +794,15 @@
      <object oid="/agent/dhcpserver/host/file" access="read_write"
              type="string"/>
 
+     <!-- Flags for Solaris 'dhcp' server in order to specify
+          type of leases allocated for the host: bootp or dhcp.
+          Name:  empty
+          Value: the "9" string for bootp lease type
+                 or the "3" string for dhcp one
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/host/flags" access="read_write"
+             type="string"/>
+
      <!-- Value of the DHCP option to be provided to the client.
      
           Name:  Identification of opion/suboption either using their

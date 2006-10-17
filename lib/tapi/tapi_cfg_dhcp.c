@@ -96,6 +96,7 @@ tapi_cfg_dhcps_add_host(const char            *ta,
                         const struct sockaddr *fixed_ip,
                         const char            *next_server,
                         const char            *filename,
+                        const char            *flags,
                         cfg_handle            *handle)
 {
     int             rc;
@@ -258,6 +259,15 @@ tapi_cfg_dhcps_add_host(const char            *ta,
     {
         rc = cfg_set_instance_fmt(CFG_VAL(STRING, filename),
                  TE_CFG_TA_DHCP_SERVER_FMT "/host:%s/file:",
+                 ta, name);
+        if (rc != 0)
+            return rc;
+    }
+
+    if (flags != NULL)
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(STRING, flags),
+                 TE_CFG_TA_DHCP_SERVER_FMT "/host:%s/flags:",
                  ta, name);
         if (rc != 0)
             return rc;

@@ -41,6 +41,7 @@ typedef struct host {
     char         *ip_addr;
     char         *next_server;
     char         *filename;
+    char         *flags;
     te_dhcp_option  *options;
 } host;
 

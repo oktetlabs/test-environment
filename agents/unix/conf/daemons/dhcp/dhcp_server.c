@@ -242,6 +242,7 @@ free_host(host *h)
     free(h->ip_addr);
     free(h->next_server);
     free(h->filename);
+    free(h->flags);
     for (opt = h->options; opt != NULL; opt = next)
     {
         next = opt->next;
@@ -268,6 +269,7 @@ free_group(group * g)
 static int
 ds_dhcpserver_save_conf(void)
 {
+    char                   *p = dhcp_server_ifs;
     te_dhcp_server_subnet  *s;
     host                   *h;
     te_dhcp_option         *opt;
@@ -283,12 +285,18 @@ ds_dhcpserver_save_conf(void)
 #if defined __sun__
     ds_config_touch(dhcp_server_conf_backup);
 
+    if (p != NULL)
+        for (p = strchr(p, ' '); p != NULL; p = strchr(p, ' '))
+          *p = ',';
+
     fprintf(f,
+            "BOOTP_COMPAT=automatic\n"
             "DAEMON_ENABLED=TRUE\n"
             "RESOURCE=SUNWbinfiles\n"
             "RUN_MODE=server\n"
-            "PATH=/var/mydhcp\n"
-            "CONVER=1\n");
+            "PATH=/var/mydhcp\n" /** FIXME */
+            "CONVER=1\n"
+            "INTERFACES=%s\n", dhcp_server_ifs != NULL ? dhcp_server_ifs : "");
 
     if (fsync(fileno(f)) != 0)
     {
@@ -304,6 +312,8 @@ ds_dhcpserver_save_conf(void)
         ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
+
+    ta_system("rm -f /var/mydhcp/*"); /** FIXME */
 #endif
 
 #if defined __linux__
@@ -319,13 +329,12 @@ ds_dhcpserver_save_conf(void)
         fprintf(f, "subnet %s netmask %s {\n",
                 s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
 #elif defined __sun__
-        TE_SPRINTF(buf, "/usr/sbin/pntadm -C %s", s->subnet);
-
+	TE_SPRINTF(buf, "/usr/sbin/pntadm -C %s", s->subnet);
         if ((rc = ta_system(buf)) != 0)
             return rc;
 
         /* FIXME ('/etc/inet/netmasks' must be maintained) */
-//        add_(s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
+//        add_xxx(s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
 #endif
 #if defined __linux__
         for (opt = s->options; opt != NULL; opt = opt->next)
@@ -351,14 +360,14 @@ ds_dhcpserver_save_conf(void)
         if (h->client_id)
             fprintf(f, "\tclient-id %s;\n", h->client_id);
 #endif
-        if (h->ip_addr)
+	if (h->ip_addr)
 #if defined __linux__
             fprintf(f, "\tfixed-address %s;\n", h->ip_addr);
 #elif defined __sun__
         {
             char *p;
 
-            TE_SPRINTF(buf, "pntadm -A %s %s", h->ip_addr, h->ip_addr);
+            TE_SPRINTF(buf, "pntadm -f %s -A %s %s", h->flags, h->ip_addr, h->ip_addr);
             if ((p = strrchr(buf, '.')) != NULL)
             {
                 p[1] = '0';
@@ -384,6 +393,7 @@ ds_dhcpserver_save_conf(void)
         fprintf(f, "}\n");
 #endif
     }
+
 #if defined __linux__
     fprintf(f, "\n");
 #endif
@@ -917,6 +927,8 @@ ds_##_gh##_##_attr##_get(unsigned int gid, const char *oid,     \
     return 0;                                                   \
 }
 
+#define SSS(S) #S
+
 #define ATTR_SET(_attr, _gh) \
 static te_errno \
 ds_##_gh##_##_attr##_set(unsigned int gid, const char *oid,     \
@@ -935,6 +947,7 @@ ds_##_gh##_##_attr##_set(unsigned int gid, const char *oid,     \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
     old_val = gh->_attr;                                        \
+                                                                \
     if (*value == 0)                                            \
         gh->_attr = NULL;                                       \
     else                                                        \
@@ -960,6 +973,8 @@ ATTR_GET(next_server, host)
 ATTR_SET(next_server, host)
 ATTR_GET(filename, host)
 ATTR_SET(filename, host)
+ATTR_GET(flags, host)
+ATTR_SET(flags, host)
 ATTR_GET(next_server, group)
 ATTR_SET(next_server, group)
 ATTR_GET(filename, group)
@@ -1508,8 +1523,12 @@ static rcf_pch_cfg_object node_ds_host_option =
       (rcf_ch_cfg_del)ds_host_option_del,
       (rcf_ch_cfg_list)ds_host_option_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(node_ds_host_file, "file",
+RCF_PCH_CFG_NODE_RW(node_ds_host_flags, "flags",
                     NULL, &node_ds_host_option,
+                    ds_host_flags_get, ds_host_flags_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_host_file, "file",
+                    NULL, &node_ds_host_flags,
                     ds_host_filename_get, ds_host_filename_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_host_next, "next",
