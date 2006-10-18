@@ -193,12 +193,15 @@ static asn_named_entry_t ndn_802_3_header_ne_array[] =
     /** Is frame tagged or not? */
     { "tagged", &ndn_vlan_tagged_s,
       { PRIVATE, NDN_TAG_VLAN_TAGGED } },
-    /** Length/Type field */
+    /** Length/Type field exactly */
     { "length-type", &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_802_3_LENGTH_TYPE } },
     /** Interpretation of Length/Type field */
     { "encap", &ndn_802_3_encap_s,
       { PRIVATE, NDN_TAG_802_3_ENCAP } },
+    /** EtherType (regardless encapsulation) */
+    { "ether-type", &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_802_3_ETHER_TYPE } },
 };
 
 asn_type ndn_eth_header_s =
@@ -222,8 +225,8 @@ static asn_named_entry_t _ndn_eth_csap_ne_array [] =
       { PRIVATE, NDN_TAG_ETH_LOCAL } },
     { "remote-addr", &ndn_data_unit_eth_address_s,
       { PRIVATE, NDN_TAG_ETH_REMOTE } },
-    { "eth-type", &ndn_data_unit_int16_s,
-      { PRIVATE, NDN_TAG_802_3_LENGTH_TYPE} },
+    { "ether-type", &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_802_3_ETHER_TYPE} },
     { "priority", &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_VLAN_TAG_HEADER_PRIO } },
     { "vlan-id", &ndn_data_unit_int16_s,

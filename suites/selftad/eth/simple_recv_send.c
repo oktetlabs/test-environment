@@ -201,7 +201,7 @@ main(int argc, char *argv[])
     if (rc)
         TEST_FAIL("Eth frame send error: %x", rc);
 
-    sleep(2);
+    MSLEEP(500);
 
     num_pkts = 0;
     rc = tapi_tad_trrecv_wait(ta_B, sid_b, eth_listen_csap,

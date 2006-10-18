@@ -95,7 +95,7 @@ extern te_errno tapi_eth_add_csap_layer(asn_value      **csap_spec,
  *                      If NULL, default value is specified during CSAP
  *                      creation (as local address for sending, as
  *                      remote address for receiving).
- * @param len_type      Pointer to Length/Type or NULL.
+ * @param ether_type    Pointer to EtherType or NULL.
  *                      If NULL, default value is specified during CSAP
  *                      creation (otherwise, match any on receive).
  * @param tagged        Whether frames should be VLAN tagged, any or
@@ -110,9 +110,21 @@ extern te_errno tapi_eth_add_pdu(asn_value      **tmpl_or_ptrn,
                                  te_bool          is_pattern,
                                  const uint8_t   *dst_addr,
                                  const uint8_t   *src_addr,
-                                 const uint16_t  *len_type,
+                                 const uint16_t  *ether_type,
                                  te_bool3         tagged,
                                  te_bool3         llc);
+
+/**
+ * Add exact specification of the Length/Type field of the IEEE 802.3
+ * frame.
+ *
+ * @param pdu           ANS.1 PDU to add tag header
+ * @param len_type      Length/Type value
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_eth_pdu_len_type(asn_value      *pdu,
+                                      const uint16_t  len_type);
 
 /**
  * Add IEEE Std 802.1Q tag header.

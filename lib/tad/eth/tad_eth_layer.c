@@ -70,6 +70,7 @@ typedef struct tad_eth_proto_data {
     te_bool3                is_llc;
     tad_bps_pkt_frag_def    eth;
     tad_bps_pkt_frag_def    len_type;
+    tad_bps_pkt_frag_def    ether_type;
     tad_bps_pkt_frag_def    tpid;
     tad_bps_pkt_frag_def    tci;
     tad_bps_pkt_frag_def    e_rif;
@@ -86,6 +87,7 @@ typedef struct tad_eth_proto_pdu_data {
     te_bool3                is_llc;
     tad_bps_pkt_frag_data   eth;
     tad_bps_pkt_frag_data   len_type;
+    tad_bps_pkt_frag_data   ether_type;
     tad_bps_pkt_frag_data   tpid;
     tad_bps_pkt_frag_data   tci;
     tad_bps_pkt_frag_data   e_rif;
@@ -114,7 +116,7 @@ static const tad_bps_pkt_frag tad_eth_addrs_bps_hdr[] =
  */
 static const tad_bps_pkt_frag tad_eth_length_type_bps_hdr[] =
 {
-    { "length-type", 16, BPS_FLD_SIMPLE(NDN_TAG_802_3_LENGTH_TYPE),
+    { "length-type", 16, BPS_FLD_NO_DEF(NDN_TAG_802_3_LENGTH_TYPE),
       TAD_DU_I32, TRUE },
 };
 
@@ -177,29 +179,42 @@ static const tad_bps_pkt_frag tad_802_1q_e_rif_bps_hdr[] =
  */
 static const tad_bps_pkt_frag tad_802_2_llc_bps_hdr[] =
 {
-    /* By default, DSAP is individual */
     { "dsap", 7, BPS_FLD_NO_DEF(NDN_TAG_LLC_DSAP),
       TAD_DU_I32, FALSE },
+    /* By default, DSAP is individual (LSB of the first byte) */
     { "i-g",  1, BPS_FLD_CONST_DEF(NDN_TAG_LLC_DSAP_IG, 0),
       TAD_DU_I32, FALSE },
-    /* By default, command (not response) */
     { "ssap", 7, BPS_FLD_NO_DEF(NDN_TAG_LLC_SSAP),
       TAD_DU_I32, FALSE },
+    /* By default, command (not response) (LSB of the second byte) */
     { "c-r",  1, BPS_FLD_CONST_DEF(NDN_TAG_LLC_SSAP_CR, 0),
       TAD_DU_I32, FALSE },
-    /* Minimum length of the Control is 8bit */
+    /* 
+     * Minimum length of the Control is 8bit. We have to get it from
+     * the received packet in any case to understand the real length of
+     * this field.
+     */
     { "ctl",  8, BPS_FLD_NO_DEF(NDN_TAG_LLC_CTL),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, TRUE },
 };
 
 /**
  * Definition of IEEE Std 802 SNAP header.
+ * FIXME: Investigate structure of SNAP header.
  */
 static const tad_bps_pkt_frag tad_802_snap_bps_hdr[] =
 {
     { "oui", 24, BPS_FLD_CONST_DEF(NDN_TAG_SNAP_OUI, 0),
       TAD_DU_I32, FALSE },
-    { "pid", 16, BPS_FLD_NO_DEF(NDN_TAG_SNAP_PID),
+};
+
+/**
+ * Auxiluary analogue of Length-Type field to be used when LLC/SNAP
+ * encapsulation is used.
+ */
+static const tad_bps_pkt_frag tad_eth_ether_type_bps_hdr[] =
+{
+    { "ether-type", 16, BPS_FLD_SIMPLE(NDN_TAG_802_3_ETHER_TYPE),
       TAD_DU_I32, FALSE },
 };
 
@@ -257,14 +272,20 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
     if (rc != 0)
         return rc;
 
+    rc = tad_bps_pkt_frag_init(tad_eth_ether_type_bps_hdr,
+                               TE_ARRAY_LEN(tad_eth_ether_type_bps_hdr),
+                               layer_nds, &proto_data->ether_type);
+    if (rc != 0)
+        return rc;
+
     /* FIXME */
     if (layer > 0 &&
-        proto_data->len_type.tx_def[0].du_type == TAD_DU_UNDEF &&
-        proto_data->len_type.rx_def[0].du_type == TAD_DU_UNDEF)
+        proto_data->ether_type.tx_def[0].du_type == TAD_DU_UNDEF &&
+        proto_data->ether_type.rx_def[0].du_type == TAD_DU_UNDEF)
     {
         uint16_t    eth_type;
 
-        VERB("%s(): eth-type is not defined, try to guess", __FUNCTION__);
+        VERB("%s(): ether-type is not defined, try to guess", __FUNCTION__);
         switch (csap->layers[layer - 1].proto_tag)
         {
             case TE_PROTO_IP4:
@@ -282,10 +303,10 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
         if (eth_type != 0)
         {
             INFO("%s(): Guessed eth-type is 0x%x", __FUNCTION__, eth_type);
-            proto_data->len_type.tx_def[0].du_type = TAD_DU_I32;
-            proto_data->len_type.tx_def[0].val_i32 = eth_type;
-            proto_data->len_type.rx_def[0].du_type = TAD_DU_I32;
-            proto_data->len_type.rx_def[0].val_i32 = eth_type;
+            proto_data->ether_type.tx_def[0].du_type = TAD_DU_I32;
+            proto_data->ether_type.tx_def[0].val_i32 = eth_type;
+            proto_data->ether_type.rx_def[0].du_type = TAD_DU_I32;
+            proto_data->ether_type.rx_def[0].val_i32 = eth_type;
         }
     }
 
@@ -416,6 +437,7 @@ tad_eth_destroy_cb(csap_p csap, unsigned int layer)
 
     tad_bps_pkt_frag_free(&proto_data->eth);
     tad_bps_pkt_frag_free(&proto_data->len_type);
+    tad_bps_pkt_frag_free(&proto_data->ether_type);
     tad_bps_pkt_frag_free(&proto_data->tpid);
     tad_bps_pkt_frag_free(&proto_data->tci);
     tad_bps_pkt_frag_free(&proto_data->e_rif);
@@ -464,6 +486,11 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
 
     rc = tad_bps_nds_to_data_units(&proto_data->len_type, layer_pdu,
                                    &pdu_data->len_type);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_nds_to_data_units(&proto_data->ether_type, layer_pdu,
+                                   &pdu_data->ether_type);
     if (rc != 0)
         return rc;
 
@@ -602,12 +629,26 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
             if (rc != 0)
                 return rc;
 
-#if 0
-            rc = tad_bps_nds_to_data_units(&proto_data->snap, tmp,
-                                           &pdu_data->snap);
-            if (rc != 0)
+            rc = asn_get_child_value(tmp, &tmp,
+                                     PRIVATE, NDN_TAG_LLC_SNAP_HEADER);
+            if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+            {
+                /* No SNAP header */
+                rc = 0;
+            }
+            else if (rc != 0)
+            {
+                ERROR("%s(): Failed to get 'snap' from NDS: %r",
+                      __FUNCTION__, rc);
                 return rc;
-#endif
+            }
+            else
+            {
+                rc = tad_bps_nds_to_data_units(&proto_data->snap, tmp,
+                                               &pdu_data->snap);
+                if (rc != 0)
+                    return rc;
+            }
         }
         else
         {
@@ -635,6 +676,8 @@ tad_eth_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
         tad_bps_free_pkt_frag_data(&proto_data->eth, &pdu_data->eth);
         tad_bps_free_pkt_frag_data(&proto_data->len_type,
                                    &pdu_data->len_type);
+        tad_bps_free_pkt_frag_data(&proto_data->ether_type,
+                                   &pdu_data->ether_type);
         tad_bps_free_pkt_frag_data(&proto_data->tpid, &pdu_data->tpid);
         tad_bps_free_pkt_frag_data(&proto_data->tci, &pdu_data->tci);
         tad_bps_free_pkt_frag_data(&proto_data->e_rif, &pdu_data->e_rif);
@@ -674,9 +717,21 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     if (rc != 0)
         return rc;
 
-    rc = tad_bps_confirm_send(&proto_data->len_type, &tmpl_data->len_type);
-    if (rc != 0)
-        return rc;
+    /*
+     * LLC frames have length in Length/Type field of the IEEE Std
+     * 802.3 frame. It may be filled in automatically.
+     */
+    if (tmpl_data->is_llc == TE_BOOL3_FALSE)
+    {
+        if (tmpl_data->len_type.dus[0].du_type != TAD_DU_UNDEF)
+            rc = tad_bps_confirm_send(&proto_data->len_type,
+                                      &tmpl_data->len_type);
+        else
+            rc = tad_bps_confirm_send(&proto_data->ether_type,
+                                      &tmpl_data->ether_type);
+        if (rc != 0)
+            return rc;
+    }
 
     if (tmpl_data->tagged == TE_BOOL3_TRUE)
     {
@@ -713,11 +768,19 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
         rc = tad_bps_confirm_send(&proto_data->llc, &tmpl_data->llc);
         if (rc != 0)
             return rc;
+        rc = tad_bps_confirm_send(&proto_data->snap, &tmpl_data->snap);
+        if (rc != 0)
+            return rc;
     }
 
     return rc;
 }
 
+/** Data to be passed as opaque to tad_eth_frame_check() callback. */
+typedef struct tad_eth_frame_check_data {
+    tad_eth_proto_data     *proto_data;
+    tad_eth_proto_pdu_data *tmpl_data;
+} tad_eth_frame_check_data;
 
 /**
  * Check length of packet as Ethernet frame. If frame is too small,
@@ -726,12 +789,13 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
  * This function complies with tad_pkt_enum_cb prototype.
  */
 static te_errno
-tad_eth_check_frame_len(tad_pkt *pkt, void *opaque)
+tad_eth_frame_check(tad_pkt *pkt, void *opaque)
 {
-    ssize_t tailer_len = (ETHER_MIN_LEN - ETHER_CRC_LEN) -
-                         tad_pkt_len(pkt);
+    tad_eth_frame_check_data   *data = opaque;
 
-    UNUSED(opaque);
+    size_t  len = tad_pkt_len(pkt);
+    ssize_t tailer_len = (ETHER_MIN_LEN - ETHER_CRC_LEN) - len;
+
     if (tailer_len > 0)
     {
         tad_pkt_seg *seg = tad_pkt_alloc_seg(NULL, tailer_len, NULL);
@@ -745,7 +809,47 @@ tad_eth_check_frame_len(tad_pkt *pkt, void *opaque)
         memset(seg->data_ptr, 0, seg->data_len);
         tad_pkt_append_seg(pkt, seg);
     }
-    return 0;
+
+    if (data->tmpl_data->is_llc == TE_BOOL3_TRUE &&
+        data->tmpl_data->len_type.dus[0].du_type == TAD_DU_UNDEF)
+    {
+        /* It is LLC frame and we need to fill in Length/Type */
+        tad_pkt_seg        *seg = tad_pkt_first_seg(pkt);
+        size_t              tag_hdr_len;
+        size_t              len_type_off;
+        size_t              mac_hdr_len;
+        tad_data_unit_t     my_du;
+
+         /* FIXME: 4 is length of TPID+TCI. */
+        tag_hdr_len = (data->tmpl_data->tagged == TE_BOOL3_TRUE) ? 4 : 0;
+
+        /* 
+         * Length/type is located either just after addresses or
+         * after 802.1Q tag header.
+         */
+        len_type_off = ETHER_ADDR_LEN * 2 + tag_hdr_len;
+
+        assert(seg->data_len >= len_type_off + ETHER_TYPE_LEN);
+
+        /* 
+         * Length does not include header of IEEE Std 802.3 frame and
+         * IEEE Std 802.1Q tag.
+         * FIXME: What about E-RIF?
+         */
+        mac_hdr_len = len_type_off + ETHER_TYPE_LEN;
+
+        /* Prepare plain data unit to write */
+        my_du.du_type = TAD_DU_I32;
+        my_du.val_i32 = len - mac_hdr_len;
+
+        return tad_data_unit_to_bin(&my_du, NULL, 0,
+                   (uint8_t *)(seg->data_ptr) + len_type_off,
+                   ETHER_TYPE_LEN);
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 /* See description in tad_eth_impl.h */
@@ -755,8 +859,9 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
                    const tad_tmpl_arg_t *args, size_t arg_num, 
                    tad_pkts *sdus, tad_pkts *pdus)
 {
-    tad_eth_proto_data     *proto_data;
-    tad_eth_proto_pdu_data *tmpl_data = opaque;
+    tad_eth_proto_data         *proto_data;
+    tad_eth_proto_pdu_data     *tmpl_data = opaque;
+    tad_eth_frame_check_data    cb_data;
 
     te_errno        rc;
     size_t          bitlen;
@@ -799,6 +904,10 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
     {
         bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->llc,
                                                &tmpl_data->llc);
+        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->snap,
+                                               &tmpl_data->snap);
+        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->ether_type,
+                                               &tmpl_data->ether_type);
     }
 
     assert((bitlen & 7) == 0);
@@ -845,10 +954,20 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
         }
     }
 
-    rc = tad_bps_pkt_frag_gen_bin(&proto_data->len_type,
-                                  &tmpl_data->len_type,
-                                  args, arg_num,
-                                  data, &bitoff, bitlen);
+    if (tmpl_data->len_type.dus[0].du_type != TAD_DU_UNDEF)
+    {
+        rc = tad_bps_pkt_frag_gen_bin(&proto_data->len_type,
+                                      &tmpl_data->len_type,
+                                      args, arg_num,
+                                      data, &bitoff, bitlen);
+    }
+    else
+    {
+        rc = tad_bps_pkt_frag_gen_bin(&proto_data->ether_type,
+                                      &tmpl_data->ether_type,
+                                      args, arg_num,
+                                      data, &bitoff, bitlen);
+    }
     if (rc != 0)
     {
         ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for "
@@ -881,8 +1000,29 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
                                       data, &bitoff, bitlen);
         if (rc != 0)
         {
-            ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for SNAP: %r",
+            ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for LLC: %r",
                   __FUNCTION__, rc);
+            free(data);
+            return rc;
+        }
+        rc = tad_bps_pkt_frag_gen_bin(&proto_data->snap, &tmpl_data->snap,
+                                      args, arg_num,
+                                      data, &bitoff, bitlen);
+        if (rc != 0)
+        {
+            ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for "
+                  "SNAP-OUT: %r", __FUNCTION__, rc);
+            free(data);
+            return rc;
+        }
+        rc = tad_bps_pkt_frag_gen_bin(&proto_data->ether_type,
+                                      &tmpl_data->ether_type,
+                                      args, arg_num,
+                                      data, &bitoff, bitlen);
+        if (rc != 0)
+        {
+            ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for "
+                  "ether-type in SNAP header: %r", __FUNCTION__, rc);
             free(data);
             return rc;
         }
@@ -904,10 +1044,12 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
         return rc;
     }
 
-    rc = tad_pkt_enumerate(pdus, tad_eth_check_frame_len, NULL);
+    cb_data.proto_data = proto_data;
+    cb_data.tmpl_data = tmpl_data;
+    rc = tad_pkt_enumerate(pdus, tad_eth_frame_check, &cb_data);
     if (rc != 0)
     {
-        ERROR("Failed to check length of Ethernet frames to send: %r", rc);
+        ERROR("Failed to check Ethernet frames to send: %r", rc);
         return rc;
     }
 
@@ -989,6 +1131,9 @@ tad_eth_match_pre_cb(csap_p              csap,
     if (rc == 0)
         rc = tad_bps_pkt_frag_match_pre(&proto_data->len_type,
                                         &pkt_data->len_type);
+    if (rc == 0)
+        rc = tad_bps_pkt_frag_match_pre(&proto_data->ether_type,
+                                        &pkt_data->ether_type);
     if (rc == 0)
         rc = tad_bps_pkt_frag_match_pre(&proto_data->tpid,
                                         &pkt_data->tpid);

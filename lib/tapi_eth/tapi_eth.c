@@ -108,7 +108,7 @@ tapi_eth_add_csap_layer(asn_value      **csap_spec,
         CHECK_RC(asn_write_value_field(layer, local_addr, ETHER_ADDR_LEN,
                                        "local-addr.#plain"));
     if (len_type != NULL)
-        CHECK_RC(asn_write_int32(layer, *len_type, "eth-type.#plain"));
+        CHECK_RC(asn_write_int32(layer, *len_type, "ether-type.#plain"));
 
     return 0;
 }
@@ -121,7 +121,7 @@ tapi_eth_add_pdu(asn_value      **tmpl_or_ptrn,
                  te_bool          is_pattern,
                  const uint8_t   *dst_addr,
                  const uint8_t   *src_addr,
-                 const uint16_t  *len_type,
+                 const uint16_t  *ether_type,
                  te_bool3         tagged,
                  te_bool3         llc)
 {
@@ -137,9 +137,9 @@ tapi_eth_add_pdu(asn_value      **tmpl_or_ptrn,
     if (src_addr != NULL)
         CHECK_RC(asn_write_value_field(tmp_pdu, src_addr, ETHER_ADDR_LEN,
                                        "src-addr.#plain"));
-    if (len_type != NULL)
-        CHECK_RC(asn_write_int32(tmp_pdu, *len_type,
-                                 "length-type.#plain"));
+    if (ether_type != NULL)
+        CHECK_RC(asn_write_int32(tmp_pdu, *ether_type,
+                                 "ether-type.#plain"));
 
     if (tagged == TE_BOOL3_ANY)
     {
@@ -183,6 +183,14 @@ tapi_eth_add_pdu(asn_value      **tmpl_or_ptrn,
         *pdu = tmp_pdu;
 
     return 0;
+}
+
+/* See the description in tapi_eth.h */
+te_errno
+tapi_eth_pdu_length_type(asn_value      *pdu,
+                         const uint16_t  len_type)
+{
+    return asn_write_int32(pdu, len_type, "length-type.#plain");
 }
 
 /* See the description in tapi_eth.h */
