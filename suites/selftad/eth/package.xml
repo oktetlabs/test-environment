@@ -23,7 +23,6 @@
       </arg>
       <arg name="tagged" type="boolean3"/>
       <arg name="llc_snap" type="boolean3"/>
-      <arg name="ethertype" type="boolean"/>
     </run>
 
     <run>

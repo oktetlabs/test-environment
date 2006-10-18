@@ -80,7 +80,6 @@ main(int argc, char **argv)
 
     te_bool3    tagged;
     te_bool3    llc_snap;
-    te_bool     ethertype;
 
     csap_handle_t   send_csap = CSAP_INVALID_HANDLE;
     csap_handle_t   recv_csap = CSAP_INVALID_HANDLE;
@@ -101,7 +100,6 @@ main(int argc, char **argv)
     TEST_GET_LINK_ADDR(hwaddr_recv);
     TEST_GET_BOOL3_PARAM(tagged);
     TEST_GET_BOOL3_PARAM(llc_snap);
-    TEST_GET_BOOL_PARAM(ethertype);
 
     /* Create send CSAP */
     CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, if_send->if_name,
