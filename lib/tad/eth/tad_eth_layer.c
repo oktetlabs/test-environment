@@ -1238,6 +1238,27 @@ tad_eth_match_post_cb(csap_p              csap,
                                          pkt, &bitoff, tmp);
         if (rc != 0)
             return rc;
+
+        tmp = asn_retrieve_descendant(tmp, &rc, "snap");
+        if (tmp == NULL)
+        {
+            ERROR(CSAP_LOG_FMT "Failed to retrieve 'snap': %r",
+                  CSAP_LOG_ARGS(csap), rc);
+            return TE_RC(TE_TAD_CSAP, rc);
+        }
+
+        rc = tad_bps_pkt_frag_match_post(&proto_data->snap,
+                                         &pkt_data->snap,
+                                         pkt, &bitoff, tmp);
+        if (rc != 0)
+            return rc;
+
+        rc = tad_bps_pkt_frag_match_post(&proto_data->ether_type,
+                                         &pkt_data->ether_type,
+                                         pkt, &bitoff,
+                                         meta_pkt_layer->nds);
+        if (rc != 0)
+            return rc;
     }
 
     return 0;
@@ -1361,6 +1382,27 @@ tad_eth_match_do_cb(csap_p           csap,
             return rc;
         }
         pkt_data->is_llc = TE_BOOL3_TRUE;
+
+        rc = tad_bps_pkt_frag_match_do(&proto_data->snap, &ptrn_data->snap,
+                                       &pkt_data->snap, pdu, &bitoff);
+        if (rc != 0)
+        {
+            F_VERB(CSAP_LOG_FMT "Match PDU vs SNAP header failed on bit "
+                   "offset %u: %r", CSAP_LOG_ARGS(csap),
+                   (unsigned)bitoff, rc);
+            return rc;
+        }
+
+        rc = tad_bps_pkt_frag_match_do(&proto_data->ether_type,
+                                       &ptrn_data->ether_type,
+                                       &pkt_data->ether_type, pdu, &bitoff);
+        if (rc != 0)
+        {
+            F_VERB(CSAP_LOG_FMT "Match PDU vs SNAP header failed on bit "
+                   "offset %u: %r", CSAP_LOG_ARGS(csap),
+                   (unsigned)bitoff, rc);
+            return rc;
+        }
     }
 
     rc = tad_pkt_get_frag(sdu, pdu, bitoff >> 3,
