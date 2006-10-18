@@ -85,9 +85,11 @@ main(int argc, char **argv)
     csap_handle_t   send_csap = CSAP_INVALID_HANDLE;
     csap_handle_t   recv_csap = CSAP_INVALID_HANDLE;
 
-    asn_value  *template = NULL;
     asn_value  *csap_spec = NULL;
     asn_value  *pattern = NULL;
+    asn_value  *pdu = NULL;
+
+    unsigned int    num;
 
 
     TEST_START;
@@ -121,6 +123,18 @@ main(int argc, char **argv)
                                   &recv_csap));
     asn_free_value(csap_spec); csap_spec = NULL;
 
+    /* Prepare receive pattern and start receiver */
+    CHECK_RC(tapi_eth_add_pdu(&pattern, &pdu, TRUE, NULL, NULL,
+                              &tst_eth_type, tagged, llc_snap));
+    if (tagged == TE_BOOL3_TRUE)
+        CHECK_RC(tapi_eth_pdu_tag_header(pdu, &tst_priority, NULL));
+    if (llc_snap == TE_BOOL3_TRUE)
+        CHECK_RC(tapi_eth_pdu_llc_snap(pdu));
+
+    CHECK_RC(tapi_tad_trrecv_start(host_recv->ta, 0, recv_csap,
+                                   pattern, 1000, 0, RCF_TRRECV_PACKETS));
+
+    /* Send various frames */
     test_send_eth_frame(host_send->ta, send_csap,
                         TE_BOOL3_FALSE, TE_BOOL3_FALSE);
     test_send_eth_frame(host_send->ta, send_csap,
@@ -130,11 +144,23 @@ main(int argc, char **argv)
     test_send_eth_frame(host_send->ta, send_csap,
                         TE_BOOL3_TRUE, TE_BOOL3_TRUE);
 
+    rc = tapi_tad_trrecv_wait(host_recv->ta, 0, recv_csap, NULL, &num);
+    if (TE_RC_GET_ERROR(rc) != TE_ETIMEDOUT)
+        TEST_FAIL("Unexpected status of wait operation: %r", rc);
+
+    if ((int)num != 1 + (tagged == TE_BOOL3_ANY) +
+                    (llc_snap == TE_BOOL3_ANY) +
+                    (tagged == TE_BOOL3_ANY && llc_snap == TE_BOOL3_ANY))
+    {
+        TEST_FAIL("Unexpected number of packets is received");
+    }
+
     TEST_SUCCESS;
 
 cleanup:
 
     asn_free_value(csap_spec); csap_spec = NULL;
+    asn_free_value(pattern); pattern = NULL;
 
     if (host_send != NULL)
         CLEANUP_CHECK_RC(tapi_tad_csap_destroy(host_send->ta, 0,
