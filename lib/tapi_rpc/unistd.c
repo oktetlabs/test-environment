@@ -198,7 +198,7 @@ rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
 
     in.fd = fd;
     in.buf.buf_len = buflen;
-    in.buf.buf_val = buf;
+    in.buf.buf_val = (uint8_t *)buf;
     in.offset = offset;
 
     rcf_rpc_call(rpcs, "write_at_offset", &in, &out);
@@ -359,7 +359,7 @@ rpc_write(rcf_rpc_server *rpcs,
     if (buf != NULL && rpcs->op != RCF_RPC_WAIT)
     {
         in.buf.buf_len = count;
-        in.buf.buf_val = (char *)buf;
+        in.buf.buf_val = (uint8_t *)buf;
     }
 
     rcf_rpc_call(rpcs, "write", &in, &out);

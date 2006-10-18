@@ -453,7 +453,7 @@ rpc_sendto(rcf_rpc_server *rpcs,
     if (buf != NULL && rpcs->op != RCF_RPC_WAIT)
     {
         in.buf.buf_len = len;
-        in.buf.buf_val = (char *)buf;
+        in.buf.buf_val = (uint8_t *)buf;
     }
     in.flags = flags;
 
@@ -495,7 +495,7 @@ rpc_send(rcf_rpc_server *rpcs,
     if (buf != NULL && rpcs->op != RCF_RPC_WAIT)
     {
         in.buf.buf_len = len;
-        in.buf.buf_val = (char *)buf;
+        in.buf.buf_val = (uint8_t *)buf;
     }
     in.flags = flags;
 
@@ -595,9 +595,9 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
                  i < RCF_RPC_MAX_CMSGHDR && c != NULL;
                  i++, c = CMSG_NXTHDR((struct msghdr *)msg, c))
             {
-                char *data = CMSG_DATA(c);
+                uint8_t *data = CMSG_DATA(c);
                 
-                if ((int)(c->cmsg_len) < (char *)c - data)
+                if ((int)(c->cmsg_len) < (uint8_t *)c - data)
                 {
                     ERROR("Incorrect content of cmsg is not supported");
                     rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
@@ -607,7 +607,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
                 rpc_c->level = socklevel_h2rpc(c->cmsg_level);
                 rpc_c->type = sockopt_h2rpc(c->cmsg_level, c->cmsg_type);
                 if ((rpc_c->data.data_len = 
-                         c->cmsg_len - ((char *)c - data)) > 0)
+                         c->cmsg_len - ((uint8_t *)c - data)) > 0)
                 {
                     rpc_c->data.data_val = data;
                 }
