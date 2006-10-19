@@ -101,9 +101,9 @@ asn_type *ndn_ip4_pld_chksm = &ndn_ip4_pld_chksm_s;
 
 static asn_named_entry_t _ndn_ip4_header_ne_array [] = 
 {
-    { "version",         &ndn_data_unit_int8_s,
+    { "version",         &ndn_data_unit_int4_s,
         {PRIVATE, NDN_TAG_IP4_VERSION} },
-    { "header-len",      &ndn_data_unit_int8_s,
+    { "header-len",      &ndn_data_unit_int4_s,
         {PRIVATE, NDN_TAG_IP4_HLEN} },
     { "type-of-service", &ndn_data_unit_int8_s, 
         {PRIVATE, NDN_TAG_IP4_TOS} },
@@ -111,7 +111,7 @@ static asn_named_entry_t _ndn_ip4_header_ne_array [] =
         {PRIVATE, NDN_TAG_IP4_LEN} },
     { "ip-ident",        &ndn_data_unit_int16_s, 
         {PRIVATE, NDN_TAG_IP4_IDENT} },
-    { "flags",           &ndn_data_unit_int8_s, 
+    { "flags",           &ndn_data_unit_int3_s, 
         {PRIVATE, NDN_TAG_IP4_FLAGS} },
     { "ip-offset",       &ndn_data_unit_int16_s, 
         {PRIVATE, NDN_TAG_IP4_OFFSET} },
@@ -150,12 +150,8 @@ asn_type *ndn_ip4_header = &ndn_ip4_header_s;
 
 static asn_named_entry_t _ndn_ip4_csap_ne_array [] = 
 {
-    { "version",         &ndn_data_unit_int8_s,
-        {PRIVATE, NDN_TAG_IP4_VERSION} },
     { "type-of-service", &ndn_data_unit_int8_s,
         {PRIVATE, NDN_TAG_IP4_TOS} },
-    { "ip-ident",        &ndn_data_unit_int16_s,
-        {PRIVATE, NDN_TAG_IP4_IDENT} },
     { "flags",           &ndn_data_unit_int8_s,
         {PRIVATE, NDN_TAG_IP4_FLAGS} },
     { "time-to-live",    &ndn_data_unit_int8_s,
