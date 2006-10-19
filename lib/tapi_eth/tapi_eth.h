@@ -59,7 +59,7 @@
  *                      template or native for outgoing device (if not
  *                      present in template), frames to all dst's will
  *                      be caugth.
- * @param len_type      Pointer to default Ethernet Length/Type field.
+ * @param ether_type    Pointer to default EtherType.
  *                      See description in IEEE 802.3.
  * @param tagged        Whether frames should be VLAN tagged, any or
  *                      untagged.
@@ -75,7 +75,7 @@ extern te_errno tapi_eth_add_csap_layer(asn_value      **csap_spec,
                                         unsigned int     recv_mode,
                                         const uint8_t   *remote_addr,
                                         const uint8_t   *local_addr,
-                                        const uint16_t  *len_type,
+                                        const uint16_t  *ether_type,
                                         te_bool3         tagged,
                                         te_bool3         llc);
 
@@ -177,9 +177,9 @@ extern te_errno tapi_eth_pdu_llc_snap(asn_value *pdu);
  *                      present in template).
  *                      If NULL, CSAP will have remote address unconfigured
  *                      and will require it in traffic template.
- * @param len_type      Default Ethernet type/length field.
- *                      See description in IEEE 802.3.
- *                      If NULL, CSAP will have eth-type/len unconfigured
+ * @param len_type      Default Ethernet Length/Type field.
+ *                      See description in IEEE Std 802.3.
+ *                      If NULL, CSAP will have Length/Type unconfigured
  *                      and will require it in traffic template.
  * @param eth_csap      Identifier of created CSAP (OUT)
  *
