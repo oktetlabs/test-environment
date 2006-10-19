@@ -175,6 +175,7 @@ main(int argc, char *argv[])
                                   NULL, NULL,
                                   SIN(csap_addr)->sin_addr.s_addr, 
                                   SIN(pco_addr)->sin_addr.s_addr,
+                                  -1 /* unspecified protocol */,
                                   &ip4_send_csap);
     if (rc != 0)
         TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 

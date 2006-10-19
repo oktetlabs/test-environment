@@ -1064,12 +1064,12 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
                   tapi_tcp_pos_t seqn,
                   tapi_tcp_protocol_mode_t ack_mode, 
                   tapi_tcp_pos_t ackn, 
-                  tapi_ip_frag_spec_t *frags, size_t frag_num)
+                  tapi_ip_frag_spec *frags, size_t frag_num)
 {
     tapi_tcp_connection_t *conn_descr;
 
     asn_value *msg_template = NULL;
-    asn_value *ip_pdu = NULL;
+    asn_value *ip4_pdu;
     int rc;
 
     tapi_tcp_pos_t new_seq = 0;
@@ -1125,18 +1125,18 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
 
     if (frags != NULL)
     {
-        rc = tapi_ip4_pdu(INADDR_ANY, INADDR_ANY, frags, frag_num, 64,
-                          IPPROTO_TCP, &ip_pdu);
-        if (rc != 0)
+        ip4_pdu = asn_find_descendant(msg_template, &rc, "pdus.1.#ip4");
+        if (ip4_pdu == NULL)
         {
-            ERROR("%s: make ip pdu error %r", __FUNCTION__, rc);
+            ERROR("Failed to get IPv4 PDU from template: %r", rc);
             return rc;
         }
-
-        rc = asn_write_indexed(msg_template, ip_pdu, 1, "pdus");
+        rc = tapi_ip4_pdu_tmpl_fragments(NULL, &ip4_pdu,
+                                         frags, frag_num);
         if (rc != 0)
         {
-            ERROR("%s: insert ip pdu error %r", __FUNCTION__, rc);
+            ERROR("Failed to add fragments specification in IPv4 PDU "
+                  "template: %r", rc);
             return rc;
         }
     }

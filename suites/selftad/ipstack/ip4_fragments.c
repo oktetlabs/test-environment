@@ -77,7 +77,7 @@ main(int argc, char *argv[])
     struct sockaddr_in from_sa;
     size_t from_len = sizeof(from_sa);
 
-    tapi_ip_frag_spec_t frags[] = {
+    tapi_ip_frag_spec frags[] = {
             { hdr_offset:0, real_offset:0,
                 hdr_length:44, real_length:24, 1, 0},
 #if 1
@@ -90,8 +90,8 @@ main(int argc, char *argv[])
 
     rcf_rpc_server *pco = NULL;
 
-    asn_value *template; /* template for traffic generation */ 
-    asn_value *ip4_pdu; 
+    asn_value *template = NULL; /* template for traffic generation */ 
+    asn_value *ip4_pdu = NULL;
 
     /* src port = 20000, dst port = 20001, checksum = 0 */
     uint8_t udp_dgm_image[] = {0x4e, 0x20, 0x4e, 0x21,
@@ -161,28 +161,25 @@ main(int argc, char *argv[])
         20 + (frags[1].real_length = 
               (sizeof(udp_dgm_image) - frags[0].real_length));
 
-    rc = asn_parse_value_text("{ pdus { eth:{}} }",
-                              ndn_traffic_template,
-                              &template, &syms);
+    rc = tapi_ip4_add_pdu(&template, &ip4_pdu, FALSE,
+                          SIN(csap_addr)->sin_addr.s_addr,
+                          SIN(pco_addr)->sin_addr.s_addr,
+                          IPPROTO_UDP, -1 /* default TTL */,
+                          -1 /* default TOS */);
     if (rc != 0)
-        TEST_FAIL("parse of template failed %X, syms %d", rc, syms);
+        TEST_FAIL("Failed to add IPv4 PDU to template: %r", rc);
 
-    rc = asn_write_value_field(template, pco_mac, pco_mac_len, 
-                          "pdus.0.#eth.dst-addr.#plain");
+    rc = tapi_ip4_pdu_tmpl_fragments(NULL, &ip4_pdu,
+                                     frags, TE_ARRAY_LEN(frags));
     if (rc != 0)
-        TEST_FAIL("write dst MAC fail %r", rc);
+        TEST_FAIL("Failed to fragments specification to IPv4 PDU: %r", rc); 
 
-    rc = tapi_ip4_pdu(SIN(csap_addr)->sin_addr.s_addr, 
-                      SIN(pco_addr)->sin_addr.s_addr, 
-                      frags, sizeof(frags)/sizeof(frags[0]), 
-                      64, IPPROTO_UDP, &ip4_pdu); 
+    rc = tapi_eth_add_pdu(&template, NULL, FALSE /* template */, 
+                          pco_mac, NULL, NULL,
+                          TE_BOOL3_FALSE /* untagged */,
+                          TE_BOOL3_FALSE /* Ethernet2 */);
     if (rc != 0)
-        TEST_FAIL("make IP PDU failed: %x", rc); 
-
-    rc = asn_insert_indexed(template, ip4_pdu, 0, "pdus");
-    if (rc != 0)
-        TEST_FAIL("insert ip4 pdu failed: %x", rc);
-  
+        TEST_FAIL("Failed to add Ethernet PDU to template: %r", rc);
 
     rc = asn_write_value_field(template, udp_dgm_image,
                                sizeof(udp_dgm_image), "payload.#bytes");
@@ -193,6 +190,7 @@ main(int argc, char *argv[])
     rc = tapi_ip4_eth_csap_create(agt_a, sid, csap_if->if_name,
                                   TAD_ETH_RECV_DEF & ~TAD_ETH_RECV_OTHER,
                                   NULL, NULL, INADDR_ANY, INADDR_ANY,
+                                  -1 /* unspecified protocol */,
                                   &ip4_send_csap);
     if (rc != 0)
         TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 

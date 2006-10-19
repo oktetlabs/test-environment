@@ -385,7 +385,7 @@ extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
                              tapi_tcp_pos_t seqn,
                              tapi_tcp_protocol_mode_t ack_mode, 
                              tapi_tcp_pos_t ackn, 
-                             tapi_ip_frag_spec_t *frags,
+                             tapi_ip_frag_spec *frags,
                              size_t frag_num);
 
 /**

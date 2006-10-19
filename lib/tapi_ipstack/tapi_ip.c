@@ -1,10 +1,10 @@
 /** @file
- * @brief Test API for TAD. ipstack CSAP
+ * @brief Test API for TAD. IP stack CSAP
  *
  * Implementation of Test API
  * 
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License as
@@ -21,7 +21,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$
  */
@@ -30,40 +31,243 @@
 
 #include "te_config.h"
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_STDIO_H
 #include <stdio.h>
-#ifdef HAVE_STDLIB_H
+#endif
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif
-
-#include <assert.h>
-
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
-#include <netinet/ether.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <unistd.h>
+#endif
 
-#include "rcf_api.h"
-#include "conf_api.h"
-
+#include "te_stdint.h"
+#include "te_defs.h"
+#include "te_errno.h"
 #include "logger_api.h"
-
-#include "tapi_ip.h"
-#include "ndn_ipstack.h"
+#include "asn_usr.h"
+#include "tapi_ndn.h"
+#include "tapi_tad.h"
 #include "ndn_eth.h"
+#include "tapi_eth.h"
+#include "ndn_ipstack.h"
+#include "tapi_ip.h"
+
+#include "tapi_test.h"
+
+
+/* See the description in tapi_ip.h */
+te_errno
+tapi_ip4_add_csap_layer(asn_value **csap_spec,
+                        in_addr_t   local_addr,
+                        in_addr_t   remote_addr,
+                        int         ip_proto,
+                        int         ttl,
+                        int         tos)
+{
+    asn_value  *layer;
+
+    if (ip_proto > 0xff || ttl > 0xff || tos > 0xff)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_ip4_csap, "#ip4",
+                                     &layer));
+
+    if (local_addr != htonl(INADDR_ANY))
+        CHECK_RC(asn_write_value_field(layer,
+                                       &local_addr, sizeof(local_addr),
+                                       "local-addr.#plain"));
+    if (remote_addr != htonl(INADDR_ANY))
+        CHECK_RC(asn_write_value_field(layer,
+                                       &remote_addr, sizeof(remote_addr),
+                                       "remote-addr.#plain"));
+    if (ip_proto >= 0)
+        CHECK_RC(asn_write_int32(layer, ip_proto, "protocol.#plain"));
+    if (ttl >= 0)
+        CHECK_RC(asn_write_int32(layer, ttl, "time-to-live.#plain"));
+    if (tos >= 0)
+        CHECK_RC(asn_write_int32(layer, tos, "type-of-service.#plain"));
+
+    return 0;
+}
+
+
+/* See the description in tapi_eth.h */
+te_errno
+tapi_ip4_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
+                 te_bool is_pattern,
+                 in_addr_t src_addr, in_addr_t dst_addr,
+                 int ip_proto, int ttl, int tos)
+{
+    asn_value  *tmp_pdu;
+
+    if (ip_proto > 0xff || ttl > 0xff || tos > 0xff)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
+                                          ndn_ip4_header, "#ip4",
+                                          &tmp_pdu));
+
+    if (src_addr != htonl(INADDR_ANY))
+        CHECK_RC(asn_write_value_field(tmp_pdu,
+                                       &src_addr, sizeof(src_addr),
+                                       "src-addr.#plain"));
+    if (dst_addr != htonl(INADDR_ANY))
+        CHECK_RC(asn_write_value_field(tmp_pdu,
+                                       &dst_addr, sizeof(dst_addr),
+                                       "dst-addr.#plain"));
+    if (ip_proto >= 0)
+        CHECK_RC(asn_write_int32(tmp_pdu, ip_proto, "protocol.#plain"));
+    if (ttl >= 0)
+        CHECK_RC(asn_write_int32(tmp_pdu, ttl, "time-to-live.#plain"));
+    if (tos >= 0)
+        CHECK_RC(asn_write_int32(tmp_pdu, ttl, "type-of-service.#plain"));
+
+    if (pdu != NULL)
+        *pdu = tmp_pdu;
+
+    return 0;
+}
+
+/* See the description in tapi_ip.h */
+te_errno
+tapi_ip4_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
+                            tapi_ip_frag_spec *fragments,
+                            unsigned int num_frags)
+{
+    asn_value         *tmp_pdu;
+    te_errno           rc; 
+    unsigned int       i; 
+    tapi_ip_frag_spec *frag;
+    asn_value         *frag_seq = NULL;
+
+    if (tmpl != NULL)
+    {
+        CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl,
+                                              FALSE /* template */,
+                                              ndn_ip4_header, "#ip4",
+                                              &tmp_pdu));
+    }
+    else if (pdu == NULL)
+    {
+        ERROR("%s(): Neither template nor PDU location is specified",
+              __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    else if (*pdu == NULL)
+    {
+        ERROR("%s(): PDU location has to have some PDU when parent "
+              "template is not specified", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    else
+    {
+        tmp_pdu = *pdu;
+    }
+
+    if (num_frags == 0)
+    {
+        /* Nothing to do */
+    }
+    else if (fragments == NULL)
+    {
+        ERROR("%s(): Fragements specification pointer is NULL, but "
+              "number of fragments is positive", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
+    }
+    else
+    {
+        rc = tapi_tad_init_asn_value(&frag_seq, ndn_ip4_frag_seq);
+        if (rc != 0)
+            return rc;
+
+        rc = asn_put_child_value(tmp_pdu, frag_seq,
+                                 PRIVATE, NDN_TAG_IP4_FRAGMENTS);
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed to put 'fragment-spec' in IPv4 PDU: %r",
+                  __FUNCTION__, rc);
+            asn_free_value(frag_seq);
+            return rc;
+        }
+
+        /* FIXME: Check returns code below */
+        for (i = 0, frag = fragments; i < num_frags; i++, frag++)
+        {
+            asn_value *frag_val = asn_init_value(ndn_ip4_frag_spec);
+
+            asn_write_int32(frag_val, frag->hdr_offset,  "hdr-offset");
+            asn_write_int32(frag_val, frag->real_offset, "real-offset");
+            asn_write_int32(frag_val, frag->hdr_length,  "hdr-length");
+            asn_write_int32(frag_val, frag->real_length, "real-length");
+            asn_write_bool(frag_val,  frag->more_frags,  "more-frags");
+            asn_write_bool(frag_val,  frag->dont_frag,   "dont-frag");
+
+            asn_insert_indexed(frag_seq, frag_val, i, "");
+        }
+    }
+
+    if (pdu != NULL)
+        *pdu = tmp_pdu;
+
+    return 0; 
+}
+
+
+/* See the description in tapi_ip.h */
+te_errno
+tapi_ip4_eth_csap_create(const char *ta_name, int sid,
+                         const char *eth_dev, unsigned int receive_mode,
+                         const uint8_t *loc_mac_addr,
+                         const uint8_t *rem_mac_addr,
+                         in_addr_t      loc_ip4_addr, 
+                         in_addr_t      rem_ip4_addr,
+                         int            ip_proto,
+                         csap_handle_t *ip4_csap)
+{
+    const uint16_t  ip_eth = ETHERTYPE_IP;
+    te_errno        rc = 0;
+    asn_value      *csap_spec = NULL;
+
+    rc = tapi_ip4_add_csap_layer(&csap_spec,
+                                 loc_ip4_addr, rem_ip4_addr,
+                                 ip_proto, -1 /* default TTL */,
+                                 -1 /* default TOS */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        return rc;
+    }
+    rc = tapi_eth_add_csap_layer(&csap_spec, eth_dev, receive_mode,
+                                 rem_mac_addr, loc_mac_addr, &ip_eth,
+                                 TE_BOOL3_ANY /* tagged/untagged */,
+                                 TE_BOOL3_ANY /* Ethernet2/LLC+SNAP */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        return rc;
+    }
+
+    rc = tapi_tad_csap_create(ta_name, sid, "ip4.eth", 
+                              csap_spec, ip4_csap); 
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        return rc;
+    }
+
+    return 0;
+}
+
 
 
 typedef struct tapi_ip4_eth_pkt_handler_data {
     ip4_callback  callback;
     void         *user_data;
 } tapi_ip4_eth_pkt_handler_data;
-
 
 /* 
  * Pkt handler for IP packets 
@@ -135,165 +339,6 @@ ip4_pkt_handler(asn_value *pkt, void *user_param)
 }
 
 /* see description in tapi_ip.h */
-int
-tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
-                         unsigned int receive_mode,
-                         const uint8_t *loc_mac_addr,
-                         const uint8_t *rem_mac_addr,
-                         in_addr_t      loc_ip4_addr, 
-                         in_addr_t      rem_ip4_addr,
-                         csap_handle_t *ip4_csap)
-{
-    int         rc = 0;
-    asn_value  *csap_ip4_level = NULL;
-    asn_value  *csap_eth_level = NULL;
-    asn_value  *csap_spec = NULL;
-    asn_value  *csap_level_spec = NULL;
-
-    unsigned short ip_eth = 0x0800;
-
-    csap_spec       = asn_init_value(ndn_csap_spec);
-    csap_level_spec = asn_init_value(ndn_generic_csap_level);
-    csap_ip4_level  = asn_init_value(ndn_ip4_csap);
-    csap_eth_level  = asn_init_value(ndn_eth_csap);
-
-
-    do {
-        if ((loc_ip4_addr != 0) && 
-            (rc = asn_write_value_field(csap_ip4_level,
-                                        &loc_ip4_addr, 4,
-                                        "local-addr.#plain")) != 0)
-            break;
-
-        if ((rem_ip4_addr != 0) &&
-            (rc = asn_write_value_field(csap_ip4_level,
-                                        &rem_ip4_addr, 4,
-                                        "remote-addr.#plain")) != 0)
-            break;
-
-        rc = asn_write_component_value(csap_level_spec,
-                                       csap_ip4_level, "#ip4");
-        if (rc != 0) break;
-
-        rc = asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
-        if (rc != 0) break;
-
-        csap_level_spec = asn_init_value(ndn_generic_csap_level);
-
-        if (eth_dev)
-            rc = asn_write_value_field(csap_eth_level, 
-                                eth_dev, strlen(eth_dev),
-                                    "device-id.#plain"); 
-        if (rc != 0) break;
-        rc = asn_write_int32(csap_eth_level, ip_eth,
-                             "eth-type.#plain");
-        if (receive_mode != 0)
-        {
-            rc = asn_write_int32(csap_eth_level, receive_mode,
-                                 "receive-mode");
-            if (rc != 0) break;
-        }
-        if (loc_mac_addr) 
-            rc = asn_write_value_field(csap_eth_level,
-                                       loc_mac_addr, 6,
-                                       "local-addr.#plain");
-        if (rem_mac_addr) 
-            rc = asn_write_value_field(csap_eth_level,
-                                       rem_mac_addr, 6,
-                                       "remote-addr.#plain");
-
-        if (rc != 0) break;
-        rc = asn_write_component_value(csap_level_spec,
-                                       csap_eth_level, "#eth"); 
-        if (rc != 0) break;
-
-        rc = asn_insert_indexed(csap_spec, csap_level_spec, 1, "");
-        if (rc != 0) break;
-
-        rc = tapi_tad_csap_create(ta_name, sid, "ip4.eth", 
-                                  csap_spec, ip4_csap); 
-    } while (0);
-
-    asn_free_value(csap_spec);
-    asn_free_value(csap_ip4_level);
-    asn_free_value(csap_eth_level);
-
-    return TE_RC(TE_TAPI, rc);
-}
-
-
-/* See description in tapi_ip.h */
-te_errno
-tapi_ip4_eth_recv_start(const char      *ta_name,
-                        int              sid,
-                        csap_handle_t    csap,
-                        const uint8_t   *src_mac_addr,
-                        const uint8_t   *dst_mac_addr,
-                        in_addr_t        src_ip4_addr,
-                        in_addr_t        dst_ip4_addr,
-                        unsigned int     timeout,
-                        unsigned int     num,
-                        rcf_trrecv_mode  mode)
-{
-    char        template_fname[] = "/tmp/te_ip4_eth_recv.XXXXXX";
-    te_errno    rc;
-    FILE       *f;
-
-    const uint8_t      *b;
-
-    mktemp(template_fname);
-
-    f = fopen(template_fname, "w+");
-    if (f == NULL)
-    {
-        ERROR("fopen() of %s failed(%d)", template_fname, errno);
-        return TE_OS_RC(TE_TAPI, errno); /* return system errno */
-    }
-
-    fprintf(f, "{{ pdus { ip4:{" );
-    
-    if (src_ip4_addr != INADDR_ANY)
-    {
-        b = (uint8_t *)&(src_ip4_addr);
-        fprintf(f, "src-addr plain:'%02x %02x %02x %02x'H", 
-                b[0], b[1], b[2], b[3]);
-    }
-
-    if (src_ip4_addr && dst_ip4_addr)
-        fprintf(f, ",\n   ");
-
-    if (dst_ip4_addr != INADDR_ANY)
-    {
-        b = (uint8_t *)&(dst_ip4_addr);
-        fprintf(f, " dst-addr plain:'%02x %02x %02x %02x'H", 
-                b[0], b[1], b[2], b[3]);
-    }
-
-    fprintf(f, "   },\n" ); /* closing  'ip4' */
-    fprintf(f, "   eth:{length-type plain:2048");
-
-    if ((b = src_mac_addr))
-        fprintf(f, ",\n    "
-                "src-addr plain:'%02x %02x %02x %02x %02x %02x'H", 
-                b[0], b[1], b[2], b[3], b[4], b[5]);
-
-    if ((b = dst_mac_addr))
-        fprintf(f, ",\n    "
-                "dst-addr plain:'%02x %02x %02x %02x %02x %02x'H", 
-                b[0], b[1], b[2], b[3], b[4], b[5]);
-    fprintf(f, "}\n");
-    fprintf(f, "}}}\n");
-    fclose(f);
-
-    rc = rcf_ta_trrecv_start(ta_name, sid, csap, template_fname,
-                             timeout, num, mode);
-
-    unlink(template_fname); 
-
-    return rc;
-}
-
-/* see description in tapi_ip.h */
 tapi_tad_trrecv_cb_data *
 tapi_ip4_eth_trrecv_cb_data(ip4_callback  callback,
                             void         *user_data)
@@ -317,181 +362,26 @@ tapi_ip4_eth_trrecv_cb_data(ip4_callback  callback,
     return res;
 }
 
-/* see description in tapi_ip.h */
-int
-tapi_ip4_pdu(in_addr_t  src_ip4_addr, in_addr_t  dst_ip4_addr,
-             tapi_ip_frag_spec_t *fragments, size_t num_frags,
-             int ttl, int protocol, asn_value **result_value)
-{
-    int          rc, syms; 
-    unsigned int fr_i; 
-    asn_value   *ip4_pdu;
-
-    tapi_ip_frag_spec_t *frag;
-
-    if (result_value == NULL)
-        return TE_RC(TE_TAPI, TE_EWRONGPTR);
-
-    if ((rc = asn_parse_value_text("ip4:{}", ndn_generic_pdu,
-                                   result_value, &syms)) != 0)
-        return TE_RC(TE_TAPI, rc);
-
-    if ((rc = asn_get_choice_value(*result_value, &ip4_pdu, NULL, NULL))
-            != 0)
-    {
-        ERROR("%s(): get ip4 pdu subvalue failed %r", __FUNCTION__, rc);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    if (src_ip4_addr != INADDR_ANY &&
-        (rc = ndn_du_write_plain_oct(ip4_pdu, NDN_TAG_IP4_SRC_ADDR,
-                                     (uint8_t *)&src_ip4_addr, 4)) != 0)
-    {
-        ERROR("%s(): set IP4 src failed %r", __FUNCTION__, rc);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    if (dst_ip4_addr != INADDR_ANY &&
-        (rc = ndn_du_write_plain_oct(ip4_pdu, NDN_TAG_IP4_DST_ADDR,
-                                     (uint8_t *)&dst_ip4_addr, 4)) != 0)
-    {
-        ERROR("%s(): set IP4 dst failed %r", __FUNCTION__, rc);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    if (ttl >= 0 &&
-        (rc = ndn_du_write_plain_int(ip4_pdu, NDN_TAG_IP4_TTL,
-                                     ttl)) != 0)
-    {
-        ERROR("%s(): set IP4 ttl failed %r", __FUNCTION__, rc);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    if (protocol >= 0 &&
-        (rc = ndn_du_write_plain_int(ip4_pdu, NDN_TAG_IP4_PROTOCOL,
-                                     protocol)) != 0)
-    {
-        ERROR("%s(): set IP4 protocol failed %r", __FUNCTION__, rc);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    if (fragments != NULL)
-    {
-        asn_value *frag_seq = asn_init_value(ndn_ip4_frag_seq);
-
-        for (fr_i = 0, frag = fragments; fr_i < num_frags; fr_i++, frag++)
-        {
-            asn_value *frag_val = asn_init_value(ndn_ip4_frag_spec);
-
-            asn_write_int32(frag_val, frag->hdr_offset,  "hdr-offset");
-            asn_write_int32(frag_val, frag->real_offset, "real-offset");
-            asn_write_int32(frag_val, frag->hdr_length,  "hdr-length");
-            asn_write_int32(frag_val, frag->real_length, "real-length");
-            asn_write_bool(frag_val,  frag->more_frags,  "more-frags");
-            asn_write_bool(frag_val,  frag->dont_frag,   "dont-frag");
-
-            asn_insert_indexed(frag_seq, frag_val, fr_i, "");
-        }
-
-        asn_put_child_value(ip4_pdu, frag_seq, 
-                            PRIVATE, NDN_TAG_IP4_FRAGMENTS);
-        /* do NOT free frag_seq here! */
-    }
-
-    return 0; 
-}
-
-/* see description in tapi_ip.h */
-int
-tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
-                          const uint8_t *dst_mac_addr,
-                          in_addr_t      src_ip4_addr,
-                          in_addr_t      dst_ip4_addr,
-                          asn_value **pattern_unit)
-{
-    int rc = 0;
-    int num = 0;
-
-    if (pattern_unit == NULL)
-        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
 
-    rc = asn_parse_value_text("{ pdus { ip4:{}, eth:{}}}", 
-                              ndn_traffic_pattern_unit,
-                              pattern_unit, &num); 
-    if (rc != 0)
-    {
-        ERROR("%s: parse simple pattern unit fails %X, sym %d",
-              __FUNCTION__, rc, num);
-    }
-
-#define CHECK_ERROR(dir_, atype_) \
-    do {                                                            \
-        if (rc != 0)                                                \
-        {                                                           \
-            ERROR("%s(): write " #dir_ " " #atype_ " addr fails %X",\
-                  __FUNCTION__, rc);                                \
-            asn_free_value(*pattern_unit);                          \
-            *pattern_unit = NULL;                                   \
-            return TE_RC(TE_TAPI, rc);                              \
-        }                                                           \
-    } while (0)
-
-#define FILL_IP4_ADDR(dir_) \
-    do {                                                        \
-        if (dir_ ## _ip4_addr != INADDR_ANY)                    \
-        {                                                       \
-            rc = asn_write_value_field(*pattern_unit,           \
-                                       &( dir_ ## _ip4_addr),   \
-                                       4, "pdus.0.#ip4."        \
-                                       #dir_ "-addr.#plain");   \
-            CHECK_ERROR(dir_, ip4);                             \
-        }                                                       \
-    } while (0)
-
-#define FILL_MAC_ADDR(dir_) \
-    do {                                                        \
-        if (dir_ ## _mac_addr != NULL)                          \
-        {                                                       \
-            rc = asn_write_value_field(*pattern_unit,           \
-                                       dir_ ## _mac_addr,       \
-                                       6, "pdus.1.#eth."        \
-                                       #dir_ "-addr.#plain");   \
-            CHECK_ERROR(dir_, mac);                             \
-        }                                                       \
-    } while (0)
-
-    FILL_IP4_ADDR(src);
-    FILL_IP4_ADDR(dst); 
-    FILL_MAC_ADDR(src);
-    FILL_MAC_ADDR(dst);
-
-#undef CHECK_ERROR
-#undef FILL_IP4_ADDR
-#undef FILL_MAC_ADDR
-
-    return TE_RC(TE_TAPI, rc);
-}
 
 
-/* see description in tapi_ip.h */
-int
-tapi_ip4_eth_template(const uint8_t *src_mac_addr,
-                      const uint8_t *dst_mac_addr,
-                      in_addr_t      src_ip4_addr,
-                      in_addr_t      dst_ip4_addr,
-                      tapi_ip_frag_spec_t *fragments,
-                      size_t num_frags,
-                      int ttl, int protocol, 
-                      const uint8_t *payload,
-                      size_t pld_len,
-                      asn_value **result_value)
+
+/* 
+ * See the description in tapi_ip.h.
+ *
+ * Avoid usage of this function.
+ */
+te_errno
+tapi_ip4_template(tapi_ip_frag_spec *fragments, unsigned int num_frags,
+                  int ttl, int protocol, 
+                  const uint8_t *payload, size_t pld_len,
+                  asn_value **result_value)
 { 
-    int rc, syms;
-
+    te_errno    rc;
     asn_value *ip4_pdu;
 
-#define CHECK_RC(msg_...) \
+#define MY_CHECK_RC(msg_...) \
     do {                                \
         if (rc != 0)                    \
         {                               \
@@ -503,43 +393,20 @@ tapi_ip4_eth_template(const uint8_t *src_mac_addr,
     if (result_value == NULL)
         return TE_RC(TE_TAPI, TE_EWRONGPTR); 
 
-    rc = asn_parse_value_text("{ pdus { eth:{} } }",
-                              ndn_traffic_template, result_value, &syms); 
-    CHECK_RC("%s(): init of traffic template from text failed %X, sym %d",
-              __FUNCTION__, rc, syms);
+    rc = tapi_ip4_add_pdu(result_value, &ip4_pdu, FALSE /* template */,
+                          htonl(INADDR_ANY), htonl(INADDR_ANY),
+                          protocol, ttl, -1 /* default TOS */);
+    MY_CHECK_RC("%s(): tapi_ip4_add_pdu() failed: %r", __FUNCTION__, rc);
 
-    if ((src_mac_addr != NULL) && 
-        ((rc = asn_write_value_field(*result_value,
-                                     src_mac_addr, ETHER_ADDR_LEN,
-                                     "pdus.0.#eth.src-addr.#plain")) != 0)) 
-    {
-        ERROR("%s(): src MAC specified, but write error %X", 
-              __FUNCTION__, rc);
-        return TE_RC(TE_TAPI, rc);
-    } 
+    rc = tapi_ip4_pdu_tmpl_fragments(NULL, &ip4_pdu, fragments, num_frags);
+    MY_CHECK_RC("%s(): tapi_ip4_pdu_tmpl_fragments() failed: %r",
+                __FUNCTION__, rc);
 
-    if ((dst_mac_addr != NULL) && 
-        ((rc = asn_write_value_field(*result_value,
-                                     dst_mac_addr, ETHER_ADDR_LEN,
-                                     "pdus.0.#eth.dst-addr.#plain")) != 0)) 
-    {
-        ERROR("%s(): dst MAC specified, but write error %X", 
-              __FUNCTION__, rc);
-        return TE_RC(TE_TAPI, rc);
-    } 
     rc = asn_write_value_field(*result_value, payload, pld_len,
                                "payload.#bytes");
-    CHECK_RC("%s(): write payload error %X", __FUNCTION__, rc);
+    MY_CHECK_RC("%s(): write payload error %X", __FUNCTION__, rc);
 
-    rc = tapi_ip4_pdu(src_ip4_addr, dst_ip4_addr,
-                      fragments, num_frags, ttl, protocol, &ip4_pdu);
-    CHECK_RC("%s(): construct IP4 pdu error %X", __FUNCTION__, rc);
-
-    rc = asn_insert_indexed(*result_value, ip4_pdu, 0, "pdus");
-    CHECK_RC("%s(): insert IP4 pdu error %X", __FUNCTION__, rc);
-
+#undef MY_CHECK_RC
 
     return 0;
 }
-
-

@@ -123,7 +123,8 @@ main(int argc, char *argv[])
 
         rc = tapi_ip4_eth_csap_create(ta, sid, "eth0",
                                       TAD_ETH_RECV_DEF, NULL, NULL,
-                                      htonl(INADDR_ANY), htonl(INADDR_ANY),
+                                      my_addr, htonl(INADDR_ANY),
+                                      -1 /* unspecified protocol */,
                                       &csap);
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)
         {
@@ -132,10 +133,8 @@ main(int argc, char *argv[])
 
         } 
 
-        
-        rc = tapi_ip4_eth_recv_start(ta, sid, csap, NULL, NULL,
-                                     htonl(INADDR_ANY), my_addr,
-                                     5000, 4, RCF_TRRECV_PACKETS);
+        rc = tapi_tad_trrecv_start(ta, sid, csap, NULL,
+                                   5000, 4, RCF_TRRECV_PACKETS);
 
         if (rc) break;
 

@@ -21,32 +21,37 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$
  */
 
-
 #ifndef __TE_TAPI_IP_H__
 #define __TE_TAPI_IP_H__
 
-#include <assert.h>
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
 
 #include "te_stdint.h"
+#include "te_defs.h"
 #include "tad_common.h"
 #include "asn_usr.h"
 #include "tapi_tad.h"
 
 
-typedef struct tapi_ip_frag_spec_t {
+typedef struct tapi_ip_frag_spec {
     uint32_t    hdr_offset;     /**< value for "offset" in IP header */
     uint32_t    real_offset;    /**< begin of frag data in real payload */
     size_t      hdr_length;     /**< vlaue for "length" in IP header */
     size_t      real_length;    /**< length of frag data in real payload */
     te_bool     more_frags;     /**< value for "more frags" flag */
     te_bool     dont_frag;      /**< value for "dont frag" flag */
-} tapi_ip_frag_spec_t;
+} tapi_ip_frag_spec;
 
 
 typedef struct tapi_ip4_packet_t {
@@ -60,6 +65,108 @@ typedef struct tapi_ip4_packet_t {
 } tapi_ip4_packet_t;
 
 
+/**
+ * Add IPv4 layer in CSAP specification.
+ *
+ * @param csap_spec     Location of CSAP specification pointer.
+ * @param local_addr    Default local IPv4 address in network byte order
+ *                      or htonl(INADDR_ANY)
+ * @param remote_addr   Default remote IPv4 address in network byte order
+ *                      or htonl(INADDR_ANY)
+ * @param ip_proto      Protocol or negative to keep unspecified.
+ * @param ttl           Time-to-live or negative to keep unspecified.
+ * @param tos           Type-of-service or negative to keep unspecified.
+ *
+ * @retval Status code.
+ */
+extern te_errno tapi_ip4_add_csap_layer(asn_value **csap_spec,
+                                        in_addr_t   local_addr,
+                                        in_addr_t   remote_addr,
+                                        int         ip_proto,
+                                        int         ttl,
+                                        int         tos);
+
+/**
+ * Add IPv4 PDU as the last PDU to the last unit of the traffic 
+ * template or pattern.
+ *
+ * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
+ *                      pattern
+ * @param pdu           Location for ASN.1 value pointer with added PDU
+ * @param is_pattern    Is the first argument template or pattern
+ * @param src_addr      Source IPv4 address in network byte order or
+ *                      htonl(INADDR_ANY). If htonl(INADDR_ANY), default
+ *                      value is specified during CSAP creation (as
+ *                      local address for sending, as remote address for
+ *                      receiving).
+ * @param dst_addr      Destination IPv4 address in network byte order or
+ *                      htonl(INADDR_ANY). If htonl(INADDR_ANY), default
+ *                      value is specified during CSAP creation (as
+ *                      remote address for sending, as local address for
+ *                      receiving).
+ * @param ip_proto      Protocol or negative to keep unspecified.
+ * @param ttl           Time-to-live or negative to keep unspecified.
+ * @param tos           Type-of-service or negative to keep unspecified.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ip4_add_pdu(asn_value **tmpl_or_ptrn,
+                                 asn_value **pdu,
+                                 te_bool     is_pattern,
+                                 in_addr_t   src_addr,
+                                 in_addr_t   dst_addr,
+                                 int         ip_proto,
+                                 int         ttl,
+                                 int         tos);
+
+/**
+ * Add fragments specification to IPv4 PDU.
+ *
+ * @param tmpl          NULL or location of ASN.1 value with traffic
+ *                      template to add a new IPv4 PDU
+ * @param pdu           NULL or location of the ASN.1 value with
+ *                      IPv4 PDU to be created (if tmpl is not NULL) or
+ *                      existing
+ * @param fragments     Array with IP fragments specifictaions
+ * @param num_frags     Number of IP fragments (if 0, nothing is done)
+ * 
+ * @return Status code.
+ */
+extern te_errno tapi_ip4_pdu_tmpl_fragments(asn_value         **tmpl,
+                                            asn_value         **pdu,
+                                            tapi_ip_frag_spec  *fragments,
+                                            unsigned int        num_frags);
+
+/**
+ * Creates 'ip4.eth' CSAP
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
+ * @param receive_mode  Receive mode for Ethernet Layer on the Interface
+ * @param loc_mac_addr  Local MAC address (or NULL)
+ * @param rem_mac_addr  Remote MAC address (or NULL)
+ * @param loc_ip4_addr  Local IPv4 address in network order or
+ *                      htonl(INADDR_ANY)
+ * @param rem_ip4_addr  Remote IPv4 address in network order or
+ *                      htonl(INADDR_ANY)
+ * @param proto         Protocol over IPv4 or negative number
+ * @param ip4_csap      Location for the IPv4 CSAP handle (OUT)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ip4_eth_csap_create(const char    *ta_name,
+                                         int            sid, 
+                                         const char    *eth_dev,
+                                         unsigned int   receive_mode,
+                                         const uint8_t *loc_mac_addr, 
+                                         const uint8_t *rem_mac_addr, 
+                                         in_addr_t      loc_ip4_addr,
+                                         in_addr_t      rem_ip4_addr,
+                                         int            ip_proto,
+                                         csap_handle_t *ip4_csap);
+
+
 /** 
  * Callback function for the receiving IP datagrams.
  *
@@ -71,129 +178,18 @@ typedef struct tapi_ip4_packet_t {
  */
 typedef void (*ip4_callback)(const tapi_ip4_packet_t *pkt, void *userdata);
 
-/**
- * Creates 'ip4.eth' CSAP
- *
- * @param ta_name       Test Agent name
- * @param sid           RCF SID
- * @param eth_dev       Name of Ethernet interface
- * @param receive_mode  Receive mode for Ethernet Layer on the Interface
- * @param loc_mac_addr  Local MAC address (or NULL)
- * @param rem_mac_addr  Remote MAC address (or NULL)
- * @param loc_ip4_addr  Local IP address in network order (or NULL)
- * @param rem_ip4_addr  Remote IP address in network order (or NULL)
- * @param ip4_csap      Location for the IPv4 CSAP handle (OUT)
- *
- * @return  Status of the operation
- */
-extern int tapi_ip4_eth_csap_create(const char    *ta_name,
-                                    int            sid, 
-                                    const char    *eth_dev,
-                                    unsigned int   receive_mode,
-                                    const uint8_t *loc_mac_addr, 
-                                    const uint8_t *rem_mac_addr, 
-                                    in_addr_t      loc_ip4_addr,
-                                    in_addr_t      rem_ip4_addr,
-                                    csap_handle_t *ip4_csap);
-
-/**
- * Start receiving of IPv4 packets 'ip4.eth' CSAP, non-block
- * method. 
- *
- * Started receiving process may be controlled by rcf_ta_trrecv_get, 
- * rcf_ta_trrecv_wait, and rcf_ta_trrecv_stop methods.
- * 
- * @param ta_name       test Agent name
- * @param sid           RCF SID
- * @param csap          identifier of CSAP
- * @param src_mac_addr  source MAC address (or NULL)
- * @param dst_mac_addr  destination MAC address (or NULL)
- * @param src_ip4_addr  source IP address in network order (or NULL)
- * @param dst_ip4_addr  destination IP address in network order (or NULL)
- * @param timeout       timeout of operation (in milliseconds, 
- *                      zero for infinitive)
- * @param num           nubmer of packets to be caugth
- * @param mode          Count received packets only or store packets
- *                      to get to the test side later
- *
- * @return Zero on success or error code.
- */
-extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid, 
-                                   csap_handle_t csap,
-                                   const uint8_t *src_mac_addr,
-                                   const uint8_t *dst_mac_addr,
-                                   in_addr_t      src_ip4_addr,
-                                   in_addr_t      dst_ip4_addr,
-                                   unsigned int timeout,
-                                   unsigned int num,
-                                   rcf_trrecv_mode mode);
-
 extern tapi_tad_trrecv_cb_data *tapi_ip4_eth_trrecv_cb_data(
                                     ip4_callback  callback,
                                     void         *user_data);
 
-/**
- * Prepare ASN PDU value of IPv4 CSAP layer type for Traffic-Template. 
- *
- * @param src_ip4_addr  source IP address in network order, or NULL;
- * @param dst_ip4_addr  destination IP address in network order, or NULL;
- * @param fragments     array with IP fragments specifictaions, or NULL;
- * @param num_frags     number of IP fragments;
- * @param ttl           time-to-live field, or negative for CSAP default;
- * @param protocol      protocol field, or negative for CSAP default;
- * @param result_value  location for pointer to new ASN value (OUT);
- * 
- * @return status code.
- */
-extern int tapi_ip4_pdu(in_addr_t            src_ip4_addr,
-                        in_addr_t            dst_ip4_addr,
-                        tapi_ip_frag_spec_t *fragments,
-                        size_t num_frags,
-                        int ttl, int protocol, 
-                        asn_value **result_value);
 
 
 /**
- * Prepare ASN Pattern-Unit value for 'ip4.eth' CSAP.
- * 
- * @param src_mac_addr  source MAC address, or NULL;
- * @param dst_mac_addr  destination MAC address, or NULL;
- * @param src_ip4_addr  source IP address in network order, or NULL;
- * @param dst_ip4_addr  destination IP address in network order, or NULL;
- * @param result_value  location for pointer to new ASN value (OUT);
- * 
- * @return status code.
- */
-extern int tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
-                                     const uint8_t *dst_mac_addr,
-                                     in_addr_t      src_ip4_addr,
-                                     in_addr_t      dst_ip4_addr,
-                                     asn_value **result_value);
-
-
-
-
-/**
- * Find in passed ASN value of Pattern-Unit type IPv4 PDU in 'pdus' array
- * and set in it specified masks for src and/or dst addresses.
+ * Prepare ASN Traffic-Template value for CSAP with 'ip4' layer.
  *
- * @param pattern_unit  ASN value of type Traffic-Pattern-Unit (IN/OUT)
- * @param src_mask_len  Length of mask for IPv4 source address or zero
- * @param dst_mask_len  Length of mask for IPv4 dest. address or zero
+ * @attention Avoid usage of this function, since it should be removed
+ *            in the future.
  *
- * @return Zero on success or error code.
- */
-extern int tapi_pattern_unit_ip4_mask(asn_value *pattern_unit, 
-                                      size_t src_mask_len,
-                                      size_t dst_mask_len);
-
-/**
- * Prepare ASN Traffic-Template value for 'ip4.eth' CSAP.
- *
- * @param src_mac_addr  source MAC address, or NULL;
- * @param dst_mac_addr  destination MAC address, or NULL;
- * @param src_ip4_addr  source IP address in network order, or NULL;
- * @param dst_ip4_addr  destination IP address in network order, or NULL;
  * @param fragments     array with IP fragments specifictaions, or NULL;
  * @param num_frags     number of IP fragments;
  * @param ttl           time-to-live field, or negative for CSAP default;
@@ -204,16 +200,11 @@ extern int tapi_pattern_unit_ip4_mask(asn_value *pattern_unit,
  *
  * @return status code
  */ 
-extern int tapi_ip4_eth_template(const uint8_t *src_mac_addr,
-                                 const uint8_t *dst_mac_addr,
-                                 in_addr_t      src_ip4_addr,
-                                 in_addr_t      dst_ip4_addr,
-                                 tapi_ip_frag_spec_t *fragments,
-                                 size_t num_frags,
-                                 int ttl, int protocol, 
-                                 const uint8_t *payload,
-                                 size_t pld_len,
-                                 asn_value **result_value);
-
+extern te_errno tapi_ip4_template(tapi_ip_frag_spec *fragments,
+                                  unsigned int num_frags,
+                                  int ttl, int protocol, 
+                                  const uint8_t *payload,
+                                  size_t pld_len,
+                                  asn_value **result_value);
 
 #endif /* !__TE_TAPI_IP_H__ */

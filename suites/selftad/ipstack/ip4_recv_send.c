@@ -85,6 +85,9 @@ main(int argc, char *argv[])
     int pld_len;
     int delay;
 
+    uint8_t tst_proto = 0;
+
+
     TEST_START; 
 
     TEST_GET_INT_PARAM(num_pkts);
@@ -194,7 +197,8 @@ main(int argc, char *argv[])
                                       TAD_ETH_RECV_DEF &
                                       ~TAD_ETH_RECV_OTHER,
                                       mac_a, mac_b,
-                                      ip_a, ip_b, &ip4_send_csap);
+                                      ip_a, ip_b, tst_proto,
+                                      &ip4_send_csap);
         if (rc != 0)
             TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
@@ -202,7 +206,8 @@ main(int argc, char *argv[])
         rc = tapi_ip4_eth_csap_create(agt_b, sid_b, "eth0",
                                       TAD_ETH_RECV_DEF,
                                       mac_b, mac_a,
-                                      ip_b, ip_a, &ip4_listen_csap);
+                                      ip_b, ip_a, tst_proto,
+                                      &ip4_listen_csap);
         if (rc != 0)
             TEST_FAIL("CSAP create failed, rc from mod %d is %r\n", 
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
@@ -223,9 +228,8 @@ main(int argc, char *argv[])
             TEST_FAIL("ETH CSAP create failed, rc from mod %d is %r\n",
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
         
-        rc = tapi_ip4_eth_recv_start(agt_b, sid_b, ip4_listen_csap,
-                                     NULL, NULL, INADDR_ANY, INADDR_ANY,
-                                     5000, num_pkts, RCF_TRRECV_COUNT);
+        rc = tapi_tad_trrecv_start(agt_b, sid_b, ip4_listen_csap, NULL,
+                                   5000, num_pkts, RCF_TRRECV_COUNT);
         if (rc != 0) 
             TEST_FAIL("recv start failed %X", rc); 
 

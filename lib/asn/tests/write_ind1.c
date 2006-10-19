@@ -55,7 +55,7 @@ main (int argc, char *argv[])
             return 2; 
 
         rc = asn_write_value_field(level_pdu, &eth_type, sizeof(eth_type), 
-                                    "eth-type.#plain");
+                                    "ether-type.#plain");
 
         if (rc == 0)
         {
