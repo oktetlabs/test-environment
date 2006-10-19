@@ -368,10 +368,11 @@ static te_errno mcast_link_addr_del(unsigned int, const char *,
 static te_errno mcast_link_addr_list(unsigned int, const char *, char **,
                                      const char *);
 #ifndef __linux__
-struct mma_list_el {
+typedef struct mma_list_el {
     char                value[ETHER_ADDR_LEN * 3];
     struct mma_list_el *next;
-} *mcast_mac_addr_list = NULL;
+} mma_list_el;
+static mma_list_el *mcast_mac_addr_list = NULL;
 #endif
 
 static te_errno net_addr_add(unsigned int, const char *, const char *,
@@ -2172,7 +2173,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     if (rc == 0)
     {
         mma_list_el *p = (mma_list_el *)malloc(sizeof(mma_list_el));
-        p->value = strdup(value);
+        strncpy(p->value, addr, sizeof(p->value));
         p->next = mcast_mac_addr_list;
         mcast_mac_addr_list = p->next;
     }
@@ -2192,7 +2193,7 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
 #ifndef __linux__ 
     if (rc == 0)
     {
-        if (strcmp(mcast_mac_addr_list->value, value) == 0)
+        if (strcmp(mcast_mac_addr_list->value, addr) == 0)
         {
             mma_list_el *p = mcast_mac_addr_list->next;
             free(mcast_mac_addr_list);
@@ -2203,7 +2204,7 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
             mma_list_el *p,
                         *pp;
             for (p = mcast_mac_addr_list;
-                 p->next != NULL && strcmp(p->next->value, value) != 0;
+                 p->next != NULL && strcmp(p->next->value, addr) != 0;
                  p = p->next);
             pp = p->next->next;
             free(p->next);
@@ -2222,6 +2223,10 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
     char       *p = s;
 #ifndef __linux__
     mma_list_el *tmp;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ifname);
 
     for (tmp = mcast_mac_addr_list; tmp != NULL; tmp = tmp->next)
     {
