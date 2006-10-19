@@ -2168,7 +2168,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     rc = mcast_link_addr_change(ifname, addr, SIOCADDMULTI);
-#ifdef mcast_mac_addr_list
+#ifndef __linux__
     if (rc == 0)
     {
         mma_list_el *p = (mma_list_el *)malloc(sizeof(mma_list_el));
@@ -2189,7 +2189,7 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     UNUSED(gid);
     UNUSED(oid);
     rc = mcast_link_addr_change(ifname, addr, SIOCDELMULTI);
-#ifdef mcast_mac_addr_list
+#ifndef __linux__ 
     if (rc == 0)
     {
         if (strcmp(mcast_mac_addr_list->value, value) == 0)
@@ -2220,7 +2220,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 {
     char        s[1024] = "";
     char       *p = s;
-#ifdef mcast_mac_addr_list
+#ifndef __linux__
     mma_list_el *tmp;
 
     for (tmp = mcast_mac_addr_list; tmp != NULL; tmp = tmp->next)
