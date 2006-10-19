@@ -302,7 +302,8 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
         }
         if (eth_type != 0)
         {
-            INFO("%s(): Guessed eth-type is 0x%x", __FUNCTION__, eth_type);
+            INFO("%s(): Guessed ether-type is 0x%x",
+                 __FUNCTION__, eth_type);
             proto_data->ether_type.tx_def[0].du_type = TAD_DU_I32;
             proto_data->ether_type.tx_def[0].val_i32 = eth_type;
             proto_data->ether_type.rx_def[0].du_type = TAD_DU_I32;
