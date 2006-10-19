@@ -288,7 +288,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
         }
         else
         {
-            char *dup = parsed == NULL ? NULL : strdup(parsed);
+            char *dup = (parsed == NULL) ? NULL : strdup(parsed);
             char *tmp;
             char *inst_names[RCF_MAX_PARAMS];
             int   i = -1;
