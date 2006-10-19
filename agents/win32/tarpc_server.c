@@ -3885,6 +3885,85 @@ TARPC_FUNC(kill, {},
     ;
 }
 )
+#if 0
+/*-------------- ta_kill_death() --------------------------------*/
+
+TARPC_FUNC(ta_kill_death, {},
+{
+
+    HANDLE hp;
+    DWORD ev;
+    DWORD ex_code; 
+
+    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE,
+                          in->pid)) == NULL)
+    {
+        out->common._errno = RPC_ERRNO;
+        out->retval = -1;
+        ERROR("Cannot open process, error = %d\n", GetLastError());
+        goto finish;
+    }
+
+    ev = WaitForSingleObject(hp, INFINITE);
+    if (ev == WAIT_FAILED)
+    {
+        ERROR("WaitForSingleObject failed with error %d", GetLastError());
+        out->retval = -1;
+        goto finish;
+    }
+    else if (ev != WAIT_OBJECT_0)
+        ERROR("WaitForSingleObject indicated unexpected event %d", ev);
+
+    /*GetExitCodeProcess(hp, &ex_code);
+    if (ex_code == STILL_ACTIVE)
+        RING("Still active!");*/
+
+    if (!TerminateProcess(hp, -1))
+    {
+        ERROR("TerminateProcess failed with error %d", GetLastError());
+        out->retval = -1;
+    }
+
+    finish:
+    CloseHandle(hp);
+}
+)
+
+/*-------------- te_shell_cmd() --------------------------------*/
+TARPC_FUNC(te_shell_cmd,{},
+{
+    PROCESS_INFORMATION info;
+    STARTUPINFO         si;
+
+    if (in->uid != 0)
+        RING("%d is given as uid instead of 0. "
+             "It isn't supported in Windows", in->uid);
+
+    memset(&si, 0, sizeof(si));
+    memset(&info, 0, sizeof(info));
+    si.cb = sizeof(si);
+
+    RING("Agent: te_shell_cmd(%s)", in->cmd.cmd_val);
+    RING("before CreateProcess: pid = %d", info.dwProcessId);
+
+    if (CreateProcess(NULL, in->cmd.cmd_val, NULL, NULL,
+                      TRUE, 0, NULL, NULL,
+                      &si, &info))
+    {
+        RING("CreateProcess: pid = %d", info.dwProcessId);
+        out->pid = info.dwProcessId;
+        RING("out->pid = %d", out->pid);
+        //out->in_fd = in->in_fd;
+        //out->out_fd = in->out_fd;
+        goto finish;
+    }
+    else
+        ERROR("CreateProcess() failed with error %d", GetLastError());
+finish:
+    ;
+}
+)
+#endif
 
 /*-------------- overfill_buffers() --------------------------*/
 int
