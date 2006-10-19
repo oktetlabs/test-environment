@@ -402,8 +402,9 @@ tad_bps_pkt_frag_gen_bin(const tad_bps_pkt_frag_def *def,
             du = def->tx_def + i;
         else
         {
-            du = NULL;
-            assert(FALSE);
+            ERROR("%s(): Missing specification for '%s' to send",
+                  __FUNCTION__, def->descr[i].name);
+            return TE_RC(TE_TAD_CSAP, TE_ETADMISSNDS);
         }
 
         if (def->descr[i].len > 0)
