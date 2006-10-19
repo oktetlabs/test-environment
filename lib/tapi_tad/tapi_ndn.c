@@ -23,7 +23,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: tapi_arp.c 20870 2005-11-14 13:04:46Z arybchik $
+ * $Id$
  */ 
 
 #define TE_LGR_USER     "TAPI NDN"
@@ -136,6 +136,55 @@ tapi_tad_csap_add_layer(asn_value       **csap_spec,
 
 /* See the description in tapi_ndn.h */
 te_errno
+tapi_tad_new_ptrn_unit(asn_value **obj_spec, asn_value **unit_spec)
+{
+    te_errno    rc;
+    asn_value  *unit;
+    asn_value  *pdus;
+
+    rc = tapi_tad_init_asn_value(obj_spec, ndn_traffic_pattern);
+    if (rc != 0)
+        return rc;
+
+    unit = asn_init_value(ndn_traffic_pattern_unit);
+    if (unit == NULL)
+    {
+        ERROR("Failed to initialize traffic pattern unit");
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+
+    rc = asn_insert_indexed(*obj_spec, unit, 0, "");
+    if (rc != 0)
+    {
+        ERROR("Failed to add a new unit in traffic pattern: "
+              "%r", rc);
+        asn_free_value(unit);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    pdus = asn_init_value(ndn_generic_pdu_sequence);
+    if (pdus == NULL)
+    {
+        ERROR("Failed to initiaze ASN.1 value for generic PDUs "
+              "sequence");
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+    rc = asn_put_child_value_by_label(unit, pdus, "pdus");
+    if (rc != 0)
+    {
+        ERROR("Failed to put 'pdus' in ASN.1 value: %r", rc);
+        asn_free_value(pdus);
+        return rc;
+    }
+
+    if (unit_spec != NULL)
+        *unit_spec = unit;
+
+    return 0;
+}
+
+/* See the description in tapi_ndn.h */
+te_errno
 tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
                              te_bool           is_pattern,
                              const asn_type   *pdu_type,
@@ -180,21 +229,9 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
 
         if (len == 0)
         {
-            unit_spec = asn_init_value(ndn_traffic_pattern_unit);
-            if (unit_spec == NULL)
-            {
-                ERROR("Failed to initialize traffic pattern unit");
-                return TE_RC(TE_TAPI, TE_ENOMEM);
-            }
-
-            rc = asn_insert_indexed(*obj_spec, unit_spec, 0, "");
+            rc = tapi_tad_new_ptrn_unit(obj_spec, &unit_spec);
             if (rc != 0)
-            {
-                ERROR("Failed to add a new unit in traffic pattern: "
-                      "%r", rc);
-                asn_free_value(unit_spec);
                 return TE_RC(TE_TAPI, rc);
-            }
             len = 1;
         }
 

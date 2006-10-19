@@ -23,7 +23,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: tapi_arp.h 20428 2005-11-01 18:54:10Z arybchik $
+ * $Id$
  */ 
 
 #ifndef __TE_TAPI_NDN_H__
@@ -92,6 +92,20 @@ extern te_errno tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
                                              const asn_type   *pdu_type,
                                              const char       *pdu_choice,
                                              asn_value       **pdu_spec);
+
+/**
+ * Add a new unit in the traffic pattern specification.
+ *
+ * @param obj_spec      Location of ASN.1 value with Template of pattern spec
+ *                      (if NULL pointer is stored in location, a new
+ *                      CSAP specification is initialized)
+ * @param unit_spec     Location for a pointer to a new pattern unit or
+ *                      NULL
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tad_new_ptrn_unit(asn_value **obj_spec,
+                                       asn_value **unit_spec);
 
 #ifdef __cplusplus
 } /* extern "C" */

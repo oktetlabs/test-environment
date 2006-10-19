@@ -352,19 +352,35 @@ tapi_tad_trrecv_start(const char *ta_name, int session,
                       unsigned int timeout, unsigned int num,
                       rcf_trrecv_mode mode)
 {
-    te_errno rc = 0;
-    char     tmp_name[] = "/tmp/te_tapi_tad_trrecv_start.XXXXXX";
+    te_errno    rc = 0;
+    char        tmp_name[] = "/tmp/te_tapi_tad_trrecv_start.XXXXXX";
+    asn_value  *my_ptrn = NULL;
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
+
+    if (pattern == NULL)
+    {
+        rc = tapi_tad_new_ptrn_unit(&my_ptrn, NULL);
+        if (rc != 0)
+        {
+            ERROR("Failed to create wildcard pattern with single "
+                  "pattern unit: %r", rc);
+            return rc;
+        }
+        pattern = my_ptrn;
+    }
 
     rc = asn_save_to_file(pattern, tmp_name);
     if (rc != 0)
     {
         ERROR("Failed to save pattern to file: %r", rc);
         (void)unlink(tmp_name);
+        asn_free_value(my_ptrn);
         return rc;
     }
+
+    asn_free_value(my_ptrn);
 
     rc = rcf_ta_trrecv_start(ta_name, session, handle, 
                              tmp_name, timeout, num, mode);
