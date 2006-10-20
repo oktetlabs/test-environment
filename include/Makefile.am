@@ -51,7 +51,8 @@ te_headers = \
 	te_ethernet.h \
 	te_queue.h \
 	te_test_result.h \
-	tester_internal.h
+	tester_internal.h \
+	te_ethtool.h
 
 include_HEADERS = te_config_internal.h $(te_headers)
 
