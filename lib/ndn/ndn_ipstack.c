@@ -102,33 +102,39 @@ asn_type *ndn_ip4_pld_chksm = &ndn_ip4_pld_chksm_s;
 static asn_named_entry_t _ndn_ip4_header_ne_array [] = 
 {
     { "version",         &ndn_data_unit_int4_s,
-        {PRIVATE, NDN_TAG_IP4_VERSION} },
-    { "header-len",      &ndn_data_unit_int4_s,
-        {PRIVATE, NDN_TAG_IP4_HLEN} },
+      { PRIVATE, NDN_TAG_IP4_VERSION } },
+    { "h-length",        &ndn_data_unit_int4_s,
+      { PRIVATE, NDN_TAG_IP4_HLEN } },
     { "type-of-service", &ndn_data_unit_int8_s, 
-        {PRIVATE, NDN_TAG_IP4_TOS} },
-    { "ip-len",          &ndn_data_unit_int16_s, 
-        {PRIVATE, NDN_TAG_IP4_LEN} },
+      { PRIVATE, NDN_TAG_IP4_TOS } },
+    { "total-length",    &ndn_data_unit_int16_s, 
+      { PRIVATE, NDN_TAG_IP4_LEN } },
     { "ip-ident",        &ndn_data_unit_int16_s, 
-        {PRIVATE, NDN_TAG_IP4_IDENT} },
-    { "flags",           &ndn_data_unit_int3_s, 
-        {PRIVATE, NDN_TAG_IP4_FLAGS} },
-    { "ip-offset",       &ndn_data_unit_int16_s, 
-        {PRIVATE, NDN_TAG_IP4_OFFSET} },
+      { PRIVATE, NDN_TAG_IP4_IDENT } },
+    { "flag-reserved",   &ndn_data_unit_int1_s, 
+      { PRIVATE, NDN_TAG_IP4_FLAG_RESERVED } },
+    { "dont-frag",       &ndn_data_unit_int1_s, 
+      { PRIVATE, NDN_TAG_IP4_DONT_FRAG } },
+    { "more-frags",      &ndn_data_unit_int1_s, 
+      { PRIVATE, NDN_TAG_IP4_MORE_FRAGS } },
+    { "frag-offset",     &ndn_data_unit_int16_s, 
+      { PRIVATE, NDN_TAG_IP4_FRAG_OFFSET } },
     { "time-to-live",    &ndn_data_unit_int8_s, 
-        {PRIVATE, NDN_TAG_IP4_TTL} },
+      { PRIVATE, NDN_TAG_IP4_TTL } },
     { "protocol",        &ndn_data_unit_int8_s, 
-        {PRIVATE, NDN_TAG_IP4_PROTOCOL} },
+      { PRIVATE, NDN_TAG_IP4_PROTOCOL } },
     { "h-checksum",      &ndn_data_unit_int16_s, 
-        {PRIVATE, NDN_TAG_IP4_H_CHECKSUM} },
+      { PRIVATE, NDN_TAG_IP4_H_CHECKSUM } },
     { "src-addr",        &ndn_data_unit_ip_address_s, 
-        {PRIVATE, NDN_TAG_IP4_SRC_ADDR} },
+      { PRIVATE, NDN_TAG_IP4_SRC_ADDR } },
     { "dst-addr",        &ndn_data_unit_ip_address_s, 
-        {PRIVATE, NDN_TAG_IP4_DST_ADDR} }, 
+      { PRIVATE, NDN_TAG_IP4_DST_ADDR } }, 
+
     { "fragment-spec",   &ndn_ip4_frag_seq_s, 
-        {PRIVATE, NDN_TAG_IP4_FRAGMENTS} }, 
+      { PRIVATE, NDN_TAG_IP4_FRAGMENTS } }, 
+
     { "pld-checksum",    &ndn_ip4_pld_chksm_s, 
-        {PRIVATE, NDN_TAG_IP4_PLD_CHECKSUM} }, 
+      { PRIVATE, NDN_TAG_IP4_PLD_CHECKSUM } },
 };
 
 asn_type ndn_ip4_header_s =
@@ -152,8 +158,6 @@ static asn_named_entry_t _ndn_ip4_csap_ne_array [] =
 {
     { "type-of-service", &ndn_data_unit_int8_s,
         {PRIVATE, NDN_TAG_IP4_TOS} },
-    { "flags",           &ndn_data_unit_int8_s,
-        {PRIVATE, NDN_TAG_IP4_FLAGS} },
     { "time-to-live",    &ndn_data_unit_int8_s,
         {PRIVATE, NDN_TAG_IP4_TTL} },
     { "protocol",        &ndn_data_unit_int8_s,
@@ -240,13 +244,12 @@ asn_type ndn_udp_header_s =
 asn_type *ndn_udp_header = &ndn_udp_header_s;
 
 
-
-
-
 static asn_named_entry_t _ndn_udp_csap_ne_array [] = 
 {
-    { "local-port",     &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "remote-port",    &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "local-port",  &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_UDP_LOCAL_PORT } },
+    { "remote-port", &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_UDP_REMOTE_PORT } },
 };
 
 asn_type ndn_udp_csap_s =
@@ -257,9 +260,6 @@ asn_type ndn_udp_csap_s =
 };
 
 asn_type *ndn_udp_csap = &ndn_udp_csap_s;
-
-
-
 
 
 

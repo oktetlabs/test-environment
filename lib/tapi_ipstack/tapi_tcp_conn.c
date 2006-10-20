@@ -470,14 +470,16 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     tapi_tcp_connection_t *conn_descr = (tapi_tcp_connection_t *)user_param;
     asn_value             *tcp_message = NULL;
     const asn_value       *tcp_pdu;
+    const asn_value       *ip4_pdu;
     const asn_value       *val, *subval;
     tapi_tcp_msg_queue_t  *pkt;
 
-    int     rc, 
-            syms; 
-    uint8_t flags;
-    int32_t pdu_field;
-    size_t  pld_len = 0;
+    int         rc, 
+                syms; 
+    uint8_t     flags;
+    int32_t     pdu_field;
+    size_t      pld_len = 0;
+    int         data_len;
 
     tapi_tcp_pos_t seq_got, 
                    ack_got;
@@ -516,14 +518,27 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     CHECK_ERROR("get pdus error");
 
     val = subval;
+
+    rc = asn_get_indexed(val, (asn_value **)&subval, 1, NULL);
+    CHECK_ERROR("get IPv4 gen pdu error");
+    rc = asn_get_choice_value(subval, (asn_value **)&ip4_pdu, NULL, NULL);
+    CHECK_ERROR("get IPv4 special choice error");
+
+    rc = ndn_du_read_plain_int(ip4_pdu, NDN_TAG_IP4_LEN, &pdu_field);
+    CHECK_ERROR("read IPv4 total length error");
+    data_len = pdu_field;
+    rc = ndn_du_read_plain_int(ip4_pdu, NDN_TAG_IP4_HLEN, &pdu_field);
+    CHECK_ERROR("read IPv4 header length error");
+    data_len -= (pdu_field << 2);
+
     rc = asn_get_indexed(val, (asn_value **)&subval, 0, NULL);
     CHECK_ERROR("get TCP gen pdu error");
-
-    val = subval;
-    rc = asn_get_choice_value(val, (asn_value **)&subval, NULL, NULL);
+    rc = asn_get_choice_value(subval, (asn_value **)&tcp_pdu, NULL, NULL);
     CHECK_ERROR("get TCP special choice error");
 
-    tcp_pdu = subval;
+    rc = ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_HLEN, &pdu_field);
+    CHECK_ERROR("read TCP header length error");
+    data_len -= (pdu_field << 2);
 
     rc = ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_FLAGS, &pdu_field);
     CHECK_ERROR("read TCP flag error");
@@ -538,11 +553,6 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     ack_got = pdu_field;
 
     pkt = calloc(1, sizeof(*pkt)); 
-
-    if ((rc = asn_get_length(tcp_message, "payload")) > 0)
-        pld_len = rc;
-
-    INFO("length of payload: %d, new pld_len var %d", rc, pld_len);
 
     conn_descr->last_len_got = 0;
 
@@ -573,14 +583,18 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
         CIRCLEQ_INIT(conn_descr->messages);
     }
 
-    if (pld_len > 0)
+    if (data_len > 0)
     {
-        pkt->data = malloc(pld_len);
+        conn_descr->last_len_got = pkt->len = data_len;
 
+        pkt->data = malloc(pld_len = data_len);
         rc = asn_read_value_field(tcp_message, pkt->data, &pld_len,
                                   "payload.#bytes");
         CHECK_ERROR("read TCP payload error");
-        conn_descr->last_len_got = pkt->len = pld_len;
+        if ((int)pld_len < data_len)
+        {
+            WARN("Truncated TCP/IPv4 packet is received");
+        }
     }
 
     pkt->flags = flags;

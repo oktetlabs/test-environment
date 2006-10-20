@@ -38,12 +38,12 @@ char packet_asn_string[] =
     },\
     ip4:{\
       version plain:4,\
-      header-len plain:5,\
+      h-length plain:5,\
       type-of-service plain:0,\
-      ip-len plain:44,\
+      total-length plain:44,\
       ip-ident plain:0,\
-      flags plain:2,\
-      ip-offset plain:0,\
+      dont-frag plain:true,\
+      frag-offset plain:0,\
       time-to-live plain:64,\
       protocol plain:6,\
       h-checksum plain:4772,\

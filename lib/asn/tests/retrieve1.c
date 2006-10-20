@@ -33,7 +33,7 @@ char packet_asn_string[] =
     },\
     ip4:{\
       version plain:4,\
-      header-len plain:5,\
+      h-length plain:5,\
       src-addr plain:'0A 12 0A 02 'H,\
       dst-addr plain:'0A 12 0A 03 'H\
     }\
