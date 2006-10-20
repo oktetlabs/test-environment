@@ -296,6 +296,7 @@ tapi_eth_pkt_handler(asn_value *packet, void *user_param)
         return;
     }
 
+    memset(&header, 0, sizeof(header));
     rc = ndn_eth_packet_to_plain(eth_hdr_val, &header);
     if (rc != 0)
     {
