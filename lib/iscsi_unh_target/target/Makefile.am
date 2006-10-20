@@ -23,3 +23,9 @@ libiscsi_target_a_SOURCES = \
 	iscsi_portal_group.c \
 	target_error_rec.c \
 	customize.c
+
+
+install-data-hook:
+	for i in $(include_HEADERS) ; do \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+	done
