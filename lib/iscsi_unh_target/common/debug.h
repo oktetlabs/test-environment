@@ -72,8 +72,7 @@ extern te_bool iscsi_check_verbose(int level);
 
 #define TRACE(level, args...) do {                          \
         if (iscsi_check_verbose(ISCSI_VERBOSITY_ ## level)) \
-        /*    RING(args);    */                              \
-        { fprintf(stderr, "%d: ", ISCSI_VERBOSITY_ ## level); fprintf(stderr, args); fputc('\n', stderr); } \
+             RING(args);                                    \
     } while(0)
 
 #define TRACE_BUFFER(level, buffer, len, args...)               \
@@ -85,15 +84,12 @@ extern te_bool iscsi_check_verbose(int level);
 
 #define TRACE_ERROR(args...) do {                           \
         if (iscsi_check_verbose(ISCSI_VERBOSITY_MINIMAL))   \
-        /*  ERROR(args); */                                   \
-        { fputs("ERROR: ", stderr); \
-          fprintf(stderr, args); fputc('\n', stderr); } \
+            ERROR(args);                                    \
     } while(0)
 
 #define TRACE_WARNING(args...) do {                           \
         if (iscsi_check_verbose(ISCSI_VERBOSITY_MINIMAL))   \
-        /*    WARN(args); */                                    \
-        { fputs("WARNING: ", stderr); fprintf(stderr, args); fputc('\n', stderr); } \
+             WARN(args);                                    \
     } while(0)
 
 
