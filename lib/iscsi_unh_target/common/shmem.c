@@ -179,7 +179,7 @@ get_avail_shared_mem(void)
 SHARED void *
 shalloc(size_t size)
 {
-    void *result;
+    SHARED void *result;
     struct sembuf op;
 
     size = (size + sizeof(double) - 1) / sizeof(double) * sizeof(double);
@@ -209,7 +209,7 @@ shalloc(size_t size)
     if ((char *)master_block->free_area + size >= (char *)block_end)
     {
         SHARED reserved_block *free_block;
-        SHARED reserved_block **prev_ptr = &master_block->reserved_list;
+        SHARED reserved_block * SHARED *prev_ptr = &master_block->reserved_list;
 
         for (free_block = master_block->reserved_list; 
              free_block != NULL;

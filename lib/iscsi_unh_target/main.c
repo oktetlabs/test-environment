@@ -97,6 +97,7 @@ extern int iscsi_server_init();
 void
 logfork_register_user(const char *name)
 {
+    UNUSED(name);
 }
 
 static pid_t server_pid = (pid_t)-1;
@@ -116,14 +117,11 @@ exit_handler(void)
 int
 main(int argc, char *argv[])
 {
-    iscsi_target_thread_params_t *config;
-
     int                tcp_listen_socket;
     int                tcp_data_socket;
     int                server_data_socket;
     struct sockaddr_in listen_to;
     char             **iter;
-    int                int_val;
 
     UNUSED(argc);
 
