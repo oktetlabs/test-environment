@@ -215,16 +215,13 @@ dnl
 dnl Check for Linux kernel interfaces
 dnl
 AC_CHECK_HEADERS([linux/ethtool.h], [], [], [
-/* linux/ethtool.h */
+/* linux/ethtool.h: see te_ethtool.h for comments */
+#include <asm/types.h>
 #include <sys/types.h>
 typedef unsigned long long u64;
 typedef __uint32_t u32;
 typedef __uint16_t u16;
 typedef __uint8_t  u8;
-typedef unsigned long long __u64;
-typedef __uint32_t __u32;
-typedef __uint16_t __u16;
-typedef __uint8_t  __u8;
 ])
 AC_CHECK_HEADERS([linux/sockios.h], [], [], [])
 
