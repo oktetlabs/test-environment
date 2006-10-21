@@ -142,7 +142,7 @@ main (void)
       type-of-service plain:0,\
       total-length plain:44,\
       ip-ident plain:0,\
-      dont-frag plain:true,\
+      dont-frag plain:1,\
       frag-offset plain:0,\
       time-to-live plain:64,\
       protocol plain:6,\
