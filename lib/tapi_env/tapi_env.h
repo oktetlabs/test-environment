@@ -396,6 +396,15 @@ extern "C" {
 #endif
 
 /**
+ * Initialize environment variable.
+ *
+ * @param env       Location for environment
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_env_init(tapi_env *env);
+
+/**
  * Get Socket API test suite environment for the test.
  *
  * @param cfg       Environment configuration string

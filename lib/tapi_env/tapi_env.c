@@ -172,6 +172,28 @@ tapi_env_allocate_addr(tapi_env_net *net, int af,
 }
 
 
+
+/* See description in tapi_env.h */
+te_errno
+tapi_env_init(tapi_env *env)
+{
+    if (env == NULL)
+    {
+        ERROR("Invalid argument: %s(%p)", __FUNCTION__, env);
+        return TE_EINVAL;
+    }
+
+    /* Initialize lists */
+    env->n_nets = 0;
+    LIST_INIT(&env->nets);
+    LIST_INIT(&env->hosts);
+    CIRCLEQ_INIT(&env->ifs);
+    CIRCLEQ_INIT(&env->addrs);
+    LIST_INIT(&env->aliases);
+
+    return 0;
+}
+
 /* See description in tapi_env.h */
 te_errno
 tapi_env_get(const char *cfg, tapi_env *env)
@@ -186,20 +208,19 @@ tapi_env_get(const char *cfg, tapi_env *env)
         return TE_EINVAL;
     }
 
-    /* Initialize lists */
-    env->n_nets = 0;
-    LIST_INIT(&env->nets);
-    LIST_INIT(&env->hosts);
-    CIRCLEQ_INIT(&env->ifs);
-    CIRCLEQ_INIT(&env->addrs);
-    LIST_INIT(&env->aliases);
+    rc = tapi_env_init(env);
+    if (rc != 0)
+    {
+        ERROR("%s(): tapi_env_init() failed: %r", __FUNCTION__, rc);
+        return rc;
+    }
 
     /* Parse environment configuration string */
     rc = env_cfg_parse(env, cfg);
     if (rc != 0)
     {
         ERROR("Invalid environment configuration string: %s", cfg);
-        return TE_EFMT;
+        return rc;
     }
     VERB("Environment configuration string '%s' successfully parsed", cfg);
 
