@@ -35,6 +35,9 @@
 #include "config.h"
 #endif
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #if HAVE_STRING_H
 #include <string.h>
 #endif
