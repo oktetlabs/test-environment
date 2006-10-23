@@ -103,10 +103,11 @@ typedef struct ta_children_dead {
 
 /** Reclaim to get status of child. */
 typedef struct ta_children_wait {
-    pid_t                    pid;    /**< PID to wait for */
-    sem_t                    sem;    /**< semaphore to wake reclaimer */
-    struct ta_children_wait *prev;   /**< pointer to the prev entry */
-    struct ta_children_wait *next;   /**< pointer to the next entry */
+    pid_t                    pid;       /**< PID to wait for */
+    sem_t                    sem;       /**< semaphore to wake reclaimer */
+    te_bool                  sem_alloc; /**< was semaphore created? */
+    struct ta_children_wait *prev;      /**< pointer to the prev entry */
+    struct ta_children_wait *next;      /**< pointer to the next entry */
 } ta_children_wait;
 
 
@@ -1254,6 +1255,7 @@ ta_waitpid(pid_t pid, int *p_status, int options)
 {
     te_bool found = FALSE;
     int     rc;
+    int     wp_rc;
     int     status;
 
 
@@ -1322,6 +1324,8 @@ ta_waitpid(pid_t pid, int *p_status, int options)
 #define IMPOSSIBLE_LOG_AND_RET(_func) \
     do {                                \
         LOG_IMPOSSIBLE(_func);          \
+        if (wake->sem_alloc)            \
+            sem_destroy(&wake->sem);    \
         free(wake);                     \
         return -1;                      \
     } while(0)
@@ -1345,9 +1349,11 @@ ta_waitpid(pid_t pid, int *p_status, int options)
             return -1;
         }
         wake->pid = pid;
+        wake->sem_alloc = FALSE;
         rc = sem_init(&wake->sem, 0, 0);
         if (rc != 0)
             IMPOSSIBLE_LOG_AND_RET(sem_init);
+        wake->sem_alloc = TRUE;
 
         /* 
          * Add an entry to ta_children_wait, so signal handler can wake us
@@ -1358,9 +1364,33 @@ ta_waitpid(pid_t pid, int *p_status, int options)
         ta_children_wait_list = wake;
         if (wake->next != NULL)
             wake->next->prev = wake;
+
+        /* Check if we really have a child with such PID */
+        wp_rc = waitpid(pid, NULL, WNOHANG);
+        if (wp_rc != 0 && (wp_rc == -1 && errno != ECHILD))
+        {
+            /** @todo Review - is that right assumption?
+             *
+             * Here we assume that our signal handler will be 
+             * called first and the situation might be one of 
+             * the following:
+             * 1) A child is still alive (rc == 0);
+             * 2) A child has been already handled in sighandler, so
+             *    the next waitpid() call returns -1 and errno ECHILD;
+             * 3) There was no child with such a PID (just a dummy PID).
+             */
+            UNLOCK;
+            rc = wp_rc;
+            IMPOSSIBLE_LOG_AND_RET(waitpid);
+        }
+
         found = find_dead_child(pid, &status);
 
-        if (!found)
+        /*
+         * Wait on semaphore only if there is a child with specified PID
+         * otherwise it will be dead lock.
+         */
+        if (!found && wp_rc == 0)
         {
             int saved_errno = errno;
 
@@ -1387,6 +1417,9 @@ ta_waitpid(pid_t pid, int *p_status, int options)
         if (!found)
             found = find_dead_child(pid, &status);
         UNLOCK;
+
+        if (sem_destroy(&wake->sem) != 0)
+            LOG_IMPOSSIBLE(sem_destroy);
         free(wake);
     }
 
