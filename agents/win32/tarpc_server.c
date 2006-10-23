@@ -3892,10 +3892,9 @@ TARPC_FUNC(ta_kill_death, {},
 {
 
     HANDLE hp;
-    DWORD ev;
-    DWORD ex_code; 
+    DWORD *ex_code;
 
-    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE,
+    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE, 
                           in->pid)) == NULL)
     {
         out->common._errno = RPC_ERRNO;
@@ -3903,27 +3902,21 @@ TARPC_FUNC(ta_kill_death, {},
         ERROR("Cannot open process, error = %d\n", GetLastError());
         goto finish;
     }
-
-    ev = WaitForSingleObject(hp, INFINITE);
-    if (ev == WAIT_FAILED)
+    
+    GetExitCodeProcess(hp, &ex_code);
+    if (ex_code != STILL_ACTIVE)
     {
-        ERROR("WaitForSingleObject failed with error %d", GetLastError());
-        out->retval = -1;
+        RING("The process was already terminated");
         goto finish;
     }
-    else if (ev != WAIT_OBJECT_0)
-        ERROR("WaitForSingleObject indicated unexpected event %d", ev);
-
-    /*GetExitCodeProcess(hp, &ex_code);
-    if (ex_code == STILL_ACTIVE)
-        RING("Still active!");*/
-
-    if (!TerminateProcess(hp, -1))
+                
+    if (!TerminateProcess(hp, ex_code))
     {
         ERROR("TerminateProcess failed with error %d", GetLastError());
+        out->common._errno = RPC_ERRNO;
         out->retval = -1;
     }
-
+                                                
     finish:
     CloseHandle(hp);
 }
