@@ -3892,7 +3892,7 @@ TARPC_FUNC(ta_kill_death, {},
 {
 
     HANDLE hp;
-    DWORD *ex_code;
+    DWORD ex_code;
 
     if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE, 
                           in->pid)) == NULL)
