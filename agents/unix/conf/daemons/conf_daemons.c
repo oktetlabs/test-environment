@@ -2012,6 +2012,11 @@ update_etc_hosts(char *ip)
 #define SENDMAIL_SMARTHOST_OPT_S  "define(`SMART_HOST',`te_tester"
 #define SENDMAIL_SMARTHOST_OPT_F  "%u')\n"
 
+#define SENDMAIL_ACCESSDB_FEATURE "FEATURE(`access_db')\n"
+#define SENDMAIL_LISTEN_ALL_IFS   "DAEMON_OPTIONS(`Family=inet, " \
+                                  "Name=MTA-v4, Port=smtp')\n"
+#define SENDMAIL_ACPT_UNRES_DOMN  "FEATURE(`accept_unresolvable_domains')\n"
+
 static int sendmail_index = -1;
 
 /** Check if smarthost option presents in the sendmail configuration file */
@@ -2075,12 +2080,43 @@ sendmail_smarthost_set(te_bool enable)
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
-        if (strstr(buf, "SMART_HOST") == NULL)
+        /** Remove old 'smarthost' specification */
+        if (strstr(buf, "SMART_HOST") == NULL &&
+
+            /** Remove old listen on interaces specification */
+            (strstr(buf, "DAEMON_OPTIONS") == NULL ||
+             strstr(buf, "Family=inet") == NULL ||
+             strstr(buf, "Port=smtp") == NULL) &&
+
+            /** Remove old 'access_db' specification */
+            (strstr(buf, "FEATURE") == NULL ||
+             strstr(buf, "access_db") == NULL) &&
+
+            /** Remove smarthost-related specification */
+            (strstr(buf, "define") == NULL ||
+             strstr(buf, "confFALLBACK_SMARTHOST") == NULL)
+           )
             fwrite(buf, 1, strlen(buf), g);
     }
     if (enable != 0)
+    {
+        /** Provide new 'access_db' specification */
+        fprintf(g, SENDMAIL_ACCESSDB_FEATURE);
+
+        /** Provide sendmail to listen on all interfaces (OL Bug 435 fix)
+         *  ('Addr=127.0.0.1' specification is removed)
+         */
+        fprintf(g, SENDMAIL_LISTEN_ALL_IFS);
+
+        /** Accept unresolvable domains option is needed because
+         * 'client@tester' is unresolvable
+         */
+        fprintf(g, SENDMAIL_ACPT_UNRES_DOMN);
+
+        /** Provide new 'smarthost' specification */
         fprintf(g, SENDMAIL_SMARTHOST_OPT_S SENDMAIL_SMARTHOST_OPT_F, 
                 smarthost_name_index);
+    }
 
     fclose(f);
     fclose(g);
