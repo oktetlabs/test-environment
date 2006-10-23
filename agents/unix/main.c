@@ -1367,26 +1367,29 @@ ta_waitpid(pid_t pid, int *p_status, int options)
 
         /* Check if we really have a child with such PID */
         wp_rc = waitpid(pid, NULL, WNOHANG);
-        if (wp_rc != 0 && (wp_rc == -1 && errno != ECHILD))
+        if (wp_rc == -1 && errno != ECHILD)
         {
-            /** @todo Review - is that right assumption?
-             *
-             * Here we assume that our signal handler will be 
-             * called first and the situation might be one of 
-             * the following:
-             * 1) A child is still alive (rc == 0);
-             * 2) A child has been already handled in sighandler, so
-             *    the next waitpid() call returns -1 and errno ECHILD;
-             * 3) There was no child with such a PID (just a dummy PID).
-             */
+            /** Some unpredictable error happened */
             UNLOCK;
             rc = wp_rc;
             IMPOSSIBLE_LOG_AND_RET(waitpid);
         }
+        else if (wp_rc > 0)
+        {
+            /*
+             * We've got a real status, althought we have sighandler
+             * registered - this might happen sometimes.
+             */
+            log_child_death(pid, status);
+            if (p_status != NULL)
+                *p_status = status;
+            return wp_rc;
+        }
 
         found = find_dead_child(pid, &status);
 
-        /*
+        /* 
+         * A child is still alive:
          * Wait on semaphore only if there is a child with specified PID
          * otherwise it will be dead lock.
          */
