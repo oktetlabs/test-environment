@@ -8,7 +8,7 @@
  * $Id: prologue.c 31899 2006-09-26 10:01:19Z arybchik $
  */
 
-/** @page prologue Prologue
+/** @page prologue Prepare testing networks
  *
  * @objective Prepare testing networks.
  *
