@@ -998,7 +998,7 @@ is_logger_available(void)
 }
 
 /**
- * Logs death of a child. This function SHOULD be called ater waitpid() to
+ * Logs death of a child. This function SHOULD be called after waitpid() to
  * log exist status.
  *
  * @param pid       pid of the dead child
@@ -1257,6 +1257,7 @@ ta_waitpid(pid_t pid, int *p_status, int options)
     int     rc;
     int     wp_rc;
     int     status;
+    int     saved_errno;
 
 
     if (!ta_children_dead_heap_inited)
@@ -1366,6 +1367,7 @@ ta_waitpid(pid_t pid, int *p_status, int options)
             wake->next->prev = wake;
 
         /* Check if we really have a child with such PID */
+        saved_errno = errno;
         wp_rc = waitpid(pid, NULL, WNOHANG);
         if (wp_rc == -1 && errno != ECHILD)
         {
@@ -1385,6 +1387,8 @@ ta_waitpid(pid_t pid, int *p_status, int options)
                 *p_status = status;
             return wp_rc;
         }
+        else
+            errno = saved_errno; /* Remove ECHILD errno */
 
         found = find_dead_child(pid, &status);
 
@@ -1395,7 +1399,7 @@ ta_waitpid(pid_t pid, int *p_status, int options)
          */
         if (!found && wp_rc == 0)
         {
-            int saved_errno = errno;
+            saved_errno = errno;
 
             /* Sleep in unlocked state */
             UNLOCK;
