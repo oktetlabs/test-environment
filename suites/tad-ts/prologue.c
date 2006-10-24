@@ -5,12 +5,22 @@
  *
  * Copyright (C) 2006 OKTET Labs Ltd., St.-Petersburg, Russia
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
  * $Id: prologue.c 31899 2006-09-26 10:01:19Z arybchik $
  */
 
-/** Logging subsystem entity name */
+/** @page prologue Prologue
+ *
+ * @objective Prepare testing networks.
+ *
+ * @par Scenario:
+ * 
+ * -# Up all interfaces mentioned in /net/node configuration.
+ *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ */
+
+#ifndef DOXYGEN_TEST_SPEC
+
 #define TE_TEST_NAME    "prologue"
 
 #include "te_config.h"
@@ -39,3 +49,5 @@ cleanup:
 
     TEST_END;
 }
+
+#endif /* !DOXYGEN_TEST_SPEC */
