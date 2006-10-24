@@ -29,8 +29,43 @@
  * @objective Check possibility of CSAP ATM layer creation and
  *            receiving/matching cells using created CSAP.
  *
+ * @reference @ref ITU-T-Std-I361
+ *
+ * @param iut_host      Host with TA with tested TAD implementation
+ * @param iut_addr      IPv4 address assigned to some interface
+ *                      of the host @p iut_host
+ * @param pco_tst       Auxiliary RPC server
+ * @param csap_*        Whether corresponding CSAP parameter should
+ *                      be unspecified, match or do not match sent
+ *                      data
+ * @param ptrn_*        Whether corresponding traffic pattern parameter
+ *                      should be unspecified, match or do not match sent
+ *                      data
+ *
  * @par Scenario:
  *
+ * -# Create socket CSAP with TCP listening socket on @p iut_host bound
+ *    to @p iut_addr IPv4 address and some @p port.
+ * -# Create TCP over IPv4 socket on @p pco_tst and connect it to
+ *    @p iut_addr : @p port.
+ * -# Receive accepted socket from CSAP with listening socket and close
+ *    csap with listening socket.
+ * \n @htmlonly &nbsp; @endhtmlonly
+ * -# Create atm.socket CSAP over accepted socket using @p type and
+ *    @p csap_* parameters passed to the test.
+ * -# Prepare ATM layer pattern using @p ptrn_* parameters of the test
+ *    and start receive operation on created CSAP using this pattern
+ *    with 1 second timeout.
+ * -# Send 53-bytes of prepared ATM cell to the socket on @p pco_tst
+ *    using @b write() function.
+ * -# Wait for receive operation completion. If any cell is received,
+ *    check that its fields match fields of sent cell. Check that no
+ *    cells are received, if at least or @p ptrn_* parameter is
+ *    @c nomatch, or @p ptrn_* parameter is @c unspec and corresponding
+ *    @p csap_* parameter is @c nomatch.
+ * \n @htmlonly &nbsp; @endhtmlonly
+ * -# Close socket on @p pco_tst.
+ * -# Destroy all created CSAPs.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */

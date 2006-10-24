@@ -29,8 +29,36 @@
  * @objective Check possibility of CSAP AAL5 layer creation and sending
  *            data using created CSAP.
  *
+ * @reference @ref ITU-T-Std-I363_5, @ref ITU-T-Std-I361
+ *
+ * @param iut_host      Host with TA with tested TAD implementation
+ * @param iut_addr      IPv4 address assigned to some interface
+ *                      of the host @p iut_host
+ * @param pco_tst       Auxiliary RPC server
+ *
  * @par Scenario:
  *
+ * -# Create socket CSAP with TCP listening socket on @p iut_host bound
+ *    to @p iut_addr IPv4 address and some @p port.
+ * -# Create TCP over IPv4 socket on @p pco_tst and connect it to
+ *    @p iut_addr : @p port.
+ * -# Receive accepted socket from CSAP with listening socket and close
+ *    csap with listening socket.
+ * \n @htmlonly &nbsp; @endhtmlonly
+ * -# Create aal5.atm.socket CSAP over accepted socket using parameters
+ *    for corresponding layers: @p cpcs_uu, @p cpi, @p vpi, @p vci,
+ *    @p congestion, @p clp, @p gfc.
+ * -# Send random amount (0..255) of random data via created CSAP.
+ * \n @htmlonly &nbsp; @endhtmlonly
+ * -# Receive cells one by one using @p recv() function from the socket
+ *    on @p pco_tst and check that:
+ *     - integer number of cells is received;
+ *     - payload of cells match send data;
+ *     - if required, padding filled in by zeros is inserted before AAL5
+ *       CPCS PDU trayler.
+ * \n @htmlonly &nbsp; @endhtmlonly
+ * -# Close socket on @p pco_tst.
+ * -# Destroy all created CSAPs.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */

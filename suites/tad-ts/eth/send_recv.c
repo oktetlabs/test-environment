@@ -27,6 +27,51 @@
  * $Id$
  */
 
+/** @page eth-send_recv Send/receive of untagged/tagged Ethernet2/LLC+SNAP encapsulated frames
+ *
+ * @objective Check possibility of Ethernet CSAP to send and receive
+ *            802.1Q untagged/tagged frames, Ethernet2 vs LLC/SNAP
+ *            encapsulated frames.
+ *
+ * @reference @ref IEEE802_1Q
+ *
+ * @param host_send     Host to send data
+ * @param if_send       Interface of the @p host_send to send data to
+ * @param hwaddr_send   IEEE 802.3 MAC address of the sender
+ * @param host_recv     Host to receive data
+ * @param if_recv       Interface of the @p host_recv to receive data from
+ * @param hwaddr_recv   IEEE 802.3 MAC address of the receiver
+ * @param tagged        Whether any/untagged/tagged frames should be
+ *                      accepted by traffic pattern
+ * @param llc_snap      Whether any/Ethernet2/LLC+SNAP frames should be
+ *                      accepted by traffic pattern
+ *
+ * @par Scenario:
+ *
+ * -# Create eth CSAPs on @p host_send and @p host_recv with
+ *    corresponding interfaces and MAC addresses. CSAPs should accept
+ *    any types of tagged/untagged and encapsulation.
+ * -# Prepare eth layer traffic pattern with one unit using @p tagged
+ *    and @p llc_snap parameters.
+ * -# Start to receive on corresponding CSAP using prepared pattern and
+ *    1 second timeout.
+ * -# Send four 802.3 frames:
+ *      - untagged with Ethernet2 encapsulation;
+ *      - tagged with Ethernet2 encapsulation;
+ *      - untagged with LLC/SNAP encapsulation;
+ *      - tagged with LLC/SNAP encapsulation.
+ * -# Wait for receive operation completion and check number of received
+ *    frames:
+ *      - If both @p tagged and @p llc_snap parameters are @c any,
+ *        four frames should be received;
+ *      - If either @p tagged or @p llc_snap parameter is @c any,
+ *        two frames should be received;
+ *      - Otherwise, only one frame should be received.
+ * -# Destroy created CSAPs.
+ *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ */
+
 #ifndef DOXYGEN_TEST_SPEC
 
 #define TE_TEST_NAME    "eth/send_recv"

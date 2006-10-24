@@ -29,8 +29,36 @@
  * @objective Check possibility of CSAP ATM layer creation and sending
  *            a cell using created CSAP.
  *
+ * @reference @ref ITU-T-Std-I361
+ *
+ * @param iut_host      Host with TA with tested TAD implementation
+ * @param iut_addr      IPv4 address assigned to some interface
+ *                      of the host @p iut_host
+ * @param pco_tst       Auxiliary RPC server
+ *
  * @par Scenario:
  *
+ * -# Create socket CSAP with TCP listening socket on @p iut_host bound
+ *    to @p iut_addr IPv4 address and some @p port.
+ * -# Create TCP over IPv4 socket on @p pco_tst and connect it to
+ *    @p iut_addr : @p port.
+ * -# Receive accepted socket from CSAP with listening socket and close
+ *    csap with listening socket.
+ * \n @htmlonly &nbsp; @endhtmlonly
+ * -# Create atm.socket CSAP over accepted socket using of UNI type and
+ *    corresponding parameters passed to the test.
+ * -# Prepare traffic template with specified @p gfc (the rest fields
+ *    are unspecified in template and should be derifed from CSAP
+ *    parameters) and some payload (may be shorter than ATM cell
+ *    payload).
+ * -# Send ATM cell using prepared template via created atm.socket CSAP.
+ * -# Receive sent cell from the socket on @p pco_tst using @p recv()
+ *    function. Check that payload of the cell match sent data. If
+ *    length of the sent payload is less that ATM cell payload, check
+ *    that the rest of octets are zeros. Check ATM cell header.
+ * \n @htmlonly &nbsp; @endhtmlonly
+ * -# Close socket on @p pco_tt.
+ * -# Destroy all created CSAPs.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */

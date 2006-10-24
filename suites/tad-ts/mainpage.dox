@@ -102,17 +102,17 @@ No issues are identified yet.
 @ref_title      RFC-2131: Dynamic Host Configuration Protocol
 @ref_identifier http://www.ietf.org/rfc/rfc2131.txt
 
-@ref_ref        IEEE-Std-802-1Q IEEE-Std-802-1Q
+@ref_ref        IEEE802_1Q IEEE802_1Q
 @ref_title      Virtual Bridged Local Area Networks
 @ref_identifier https://oktetlabs.ru/storage/standards/ieee/802/802.1Q-2003.pdf
 
-@ref_ref        ITU-T-Std-I-361 ITU-T-Std-I-361
+@ref_ref        ITU-T-Std-I361 ITU-T-Std-I361
 @ref_title      Integrated services digital network (ISDN).
                 Overall network aspects and functions.
                 B-ISDN ATM layer specification.
 @ref_identifier https://oktetlabs.ru/storage/standards/itu/itu-t/200512/pdf/I/I.361-199902-I.pdf
 
-@ref_ref        ITU-T-Std-I-363-5 ITU-T-Std-I-363-5
+@ref_ref        ITU-T-Std-I363_5 ITU-T-Std-I363_5
 @ref_title      Integrated services digital network (ISDN).
                 Overall network aspects and functions - Protocol layer
                 requirements.
