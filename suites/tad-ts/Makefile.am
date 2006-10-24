@@ -1,5 +1,5 @@
 
-SUBDIRS = . common eth ipstack
+SUBDIRS = . common atm eth ipstack
 
 EXTRA_DIST = Doxyfile mainpage.dox
 
@@ -20,10 +20,6 @@ AM_CFLAGS = @TS_CFLAGS@
 
 AM_LDFLAGS = @TS_LDFLAGS@
 
+LDADD = @TS_LIBS@
 
 tetest_PROGRAMS = prologue
-
-
-prologue_SOURCES = prologue.c
-prologue_LDADD = @TS_LIBS@
-prologue_DEPENDENCIES = @TS_DEPS@

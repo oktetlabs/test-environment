@@ -18,6 +18,7 @@ AM_CFLAGS = @TS_CFLAGS@
 
 AM_LDFLAGS = @TS_LDFLAGS@
 
-LDADD = @TS_LIBS@
+LDADD = -ltapi_eth @TS_LIBS@
 
-tetest_PROGRAMS =
+tetest_PROGRAMS = \
+	send_recv

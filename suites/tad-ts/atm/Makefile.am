@@ -18,7 +18,7 @@ AM_CFLAGS = @TS_CFLAGS@
 
 AM_LDFLAGS = @TS_LDFLAGS@
 
-LDADD = -ltapi_atm -ltapi_ipstack @TS_LIBS@
+LDADD = -ltapi_atm -ltapi_ipstack -ltapi_arp -ltapi_eth @TS_LIBS@
 
 tetest_PROGRAMS = \
 	simple_send \

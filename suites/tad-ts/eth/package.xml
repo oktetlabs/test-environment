@@ -1,13 +1,29 @@
 <?xml version="1.0"?>
 <package version="1.0">
 
-  <description>Tests on TAD Ethernet functionality.</description>
+  <description>Ethernet CSAP testing.</description>
 
   <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
 
   <req id="TAD_ETH" sticky="true"/> 
 
   <session>
+    <enum name="boolean3">
+      <value type="boolean"/>
+      <value>UNKNOWN</value>
+    </enum>
+
+    <run>
+      <script name="send_recv"/>
+      <arg name="env">
+        <value>
+          {'host_send'{if:'if_send',addr:'hwaddr_send':ether:alien},
+           'host_recv'{if:'if_recv',addr:'hwaddr_recv':ether:alien}}
+        </value>
+      </arg>
+      <arg name="tagged" type="boolean3"/>
+      <arg name="llc_snap" type="boolean3"/>
+    </run>
 
   </session>
 

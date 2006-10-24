@@ -66,6 +66,7 @@ AC_CONFIG_HEADERS([package.h])
 AC_CONFIG_FILES([\
 Makefile \
 common/Makefile \
+atm/Makefile \
 eth/Makefile \
 ipstack/Makefile \
 ])

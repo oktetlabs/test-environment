@@ -29,6 +29,8 @@
  * @objective Check possibility of CSAP AAL5 layer creation and sending
  *            data using created CSAP.
  *
+ * @par Scenario:
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
@@ -118,7 +120,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_tcp_server_recv(iut_host->ta, 0, tcp_srv_csap,
                                   1000000, &iut_s));
 
-    CHECK_RC(rcf_ta_csap_destroy(iut_host->ta, 0, tcp_srv_csap));
+    CHECK_RC(tapi_tad_csap_destroy(iut_host->ta, 0, tcp_srv_csap));
     tcp_srv_csap = CSAP_INVALID_HANDLE;
 
     CHECK_RC(tapi_atm_aal5_add_csap_layer(&csap_spec, &cpcs_uu, &cpi));
@@ -201,10 +203,10 @@ cleanup:
 
     if (iut_host != NULL)
     {
-        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(iut_host->ta, 0,
-                                             tcp_srv_csap));
-        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(iut_host->ta, 0,
-                                             csap));
+        CLEANUP_CHECK_RC(tapi_tad_csap_destroy(iut_host->ta, 0,
+                                               tcp_srv_csap));
+        CLEANUP_CHECK_RC(tapi_tad_csap_destroy(iut_host->ta, 0,
+                                               csap));
     }
 
     TEST_END;
