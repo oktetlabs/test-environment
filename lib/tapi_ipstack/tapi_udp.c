@@ -54,11 +54,121 @@
 #include "conf_api.h"
 #include "logger_api.h"
 
-#include "tapi_udp.h"
-#include "tapi_tad.h"
 #include "ndn_ipstack.h"
 #include "ndn_eth.h"
 #include "ndn_socket.h"
+#include "tapi_ndn.h"
+#include "tapi_tad.h"
+#include "tapi_eth.h"
+#include "tapi_ip4.h"
+#include "tapi_udp.h"
+
+#include "tapi_test.h"
+
+
+/* See the description in tapi_udp.h */
+te_errno
+tapi_udp_add_csap_layer(asn_value **csap_spec,
+                        int         local_port,
+                        int         remote_port)
+{
+    asn_value  *layer;
+
+    if (local_port > 0xffff || remote_port > 0xffff)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_udp_csap, "#udp",
+                                     &layer));
+
+    if (local_port >= 0)
+        CHECK_RC(asn_write_int32(layer, local_port, "local-port.#plain"));
+    if (remote_port >= 0)
+        CHECK_RC(asn_write_int32(layer, remote_port, "remote-port.#plain"));
+
+    return 0;
+}
+
+/* See the description in tapi_udp.h */
+te_errno
+tapi_udp_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
+                 te_bool is_pattern,
+                 int src_port, int dst_port)
+{
+    asn_value  *tmp_pdu;
+
+    if (src_port > 0xffff || dst_port > 0xffff)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
+                                          ndn_udp_header, "#udp",
+                                          &tmp_pdu));
+
+    if (src_port >= 0)
+        CHECK_RC(asn_write_int32(tmp_pdu, src_port, "src-port.#plain"));
+    if (dst_port >= 0)
+        CHECK_RC(asn_write_int32(tmp_pdu, dst_port, "dst-port.#plain"));
+
+    if (pdu != NULL)
+        *pdu = tmp_pdu;
+
+    return 0;
+}
+
+/* See the description in tapi_udp.h */
+te_errno
+tapi_udp_ip4_eth_csap_create(const char    *ta_name,
+                             int            sid,
+                             const char    *eth_dev,
+                             unsigned int   receive_mode,
+                             const uint8_t *loc_mac,
+                             const uint8_t *rem_mac, 
+                             in_addr_t      loc_addr,
+                             in_addr_t      rem_addr,
+                             int            loc_port,
+                             int            rem_port,
+                             csap_handle_t *udp_csap)
+{
+    te_errno    rc;
+    asn_value  *csap_spec = NULL;
+
+    rc = tapi_udp_add_csap_layer(&csap_spec, loc_port, rem_port);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        return rc;
+    }
+
+    rc = tapi_ip4_add_csap_layer(&csap_spec, loc_addr, rem_addr,
+                                 -1 /* default proto */,
+                                 -1 /* default ttl */,
+                                 -1 /* default tos */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        return rc;
+    }
+
+    rc = tapi_eth_add_csap_layer(&csap_spec, eth_dev, receive_mode,
+                                 rem_mac, loc_mac,
+                                 NULL /* automatic length/type */,
+                                 TE_BOOL3_ANY /* untagged/tagged */,
+                                 TE_BOOL3_ANY /* Ethernet2/LLC+SNAP */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        return rc;
+    }
+
+
+    rc = tapi_tad_csap_create(ta_name, sid, "udp.ip4.eth", csap_spec,
+                              udp_csap);
+
+    asn_free_value(csap_spec);
+
+    return TE_RC(TE_TAPI, rc);
+}
+
+
 
 
 /**
@@ -263,91 +373,6 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
 
     rc = tapi_tad_csap_create(ta_name, sid, "socket", 
                               csap_spec, udp_csap);
-
-    asn_free_value(csap_spec);
-
-    return TE_RC(TE_TAPI, rc);
-}
-
-/* See description in tapi_udp.h */
-
-int
-tapi_udp_ip4_eth_csap_create(const char *ta_name, int sid,
-                             const char *eth_dev,
-                             unsigned int receive_mode,
-                             const uint8_t *loc_mac,
-                             const uint8_t *rem_mac, 
-                             in_addr_t loc_addr,
-                             in_addr_t rem_addr,
-                             uint16_t loc_port,
-                             uint16_t rem_port,
-                             csap_handle_t *udp_csap)
-{
-    int        rc;
-    int        num = 0;
-    asn_value *csap_spec = NULL;
-
-    rc = asn_parse_value_text("{ udp:{}, ip4:{}, eth:{}}",
-                              ndn_csap_spec, &csap_spec, &num);
-    if (rc != 0)
-        return rc;
-
-    do {
-        if (receive_mode != 0)
-        {
-            rc = asn_write_int32(csap_spec, receive_mode,
-                                 "2.#eth.receive-mode");
-            if (rc != 0) break;
-        }                                    
-        if (eth_dev != NULL)
-        {
-            rc = asn_write_value_field(csap_spec, eth_dev,
-                                       strlen(eth_dev),
-                                       "2.#eth.device-id.#plain");
-            if (rc != 0) break;
-        }
-        if (loc_mac != NULL)
-        {
-            rc = asn_write_value_field(csap_spec, loc_mac, ETHER_ADDR_LEN,
-                                       "2.#eth.local-addr.#plain");
-            if (rc != 0) break;
-        }
-        if (rem_mac != NULL)
-        {
-            rc = asn_write_value_field(csap_spec, rem_mac, ETHER_ADDR_LEN,
-                                       "2.#eth.remote-addr.#plain");
-            if (rc != 0) break;
-        }
-        if (loc_addr != INADDR_ANY)
-        {
-            rc = asn_write_value_field(csap_spec, &loc_addr,
-                                       sizeof(loc_addr),
-                                       "1.#ip4.local-addr.#plain");
-            if (rc != 0) break;
-        }
-        if (rem_addr != INADDR_ANY)
-        {
-            rc = asn_write_value_field(csap_spec, &rem_addr,
-                                       sizeof(rem_addr),
-                                       "1.#ip4.remote-addr.#plain");
-            if (rc != 0) break;
-        }
-        if (loc_port != 0)
-        {
-            rc = asn_write_int32(csap_spec, loc_port,
-                                 "0.#udp.local-port.#plain");
-            if (rc != 0) break;
-        }
-        if (rem_port != 0)
-        {
-            rc = asn_write_int32(csap_spec, rem_port,
-                                 "0.#udp.remote-port.#plain");
-            if (rc != 0) break;
-        }
-
-        rc = tapi_tad_csap_create(ta_name, sid, "udp.ip4.eth",
-                                  csap_spec, udp_csap);
-    } while (0);
 
     asn_free_value(csap_spec);
 

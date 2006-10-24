@@ -39,6 +39,82 @@
 #include "tapi_tad.h"
 #include "tapi_ip4.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * Add UDP layer in CSAP specification.
+ *
+ * @param csap_spec     Location of CSAP specification pointer.
+ * @param local_port    Default local port in network byte order
+ *                      or -1 to keep unspecified
+ * @param remote_port   Default remote port in network byte order
+ *                      or -1  to keep unspecified
+ *
+ * @retval Status code.
+ */
+extern te_errno tapi_udp_add_csap_layer(asn_value **csap_spec,
+                                        int         local_port,
+                                        int         remote_port);
+
+/**
+ * Add UDP PDU as the last PDU to the last unit of the traffic 
+ * template or pattern.
+ *
+ * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
+ *                      pattern
+ * @param pdu           Location for ASN.1 value pointer with added PDU
+ * @param is_pattern    Is the first argument template or pattern
+ * @param src_port      Source port in network byte order or -1. 
+ *                      If -1, default value is specified during CSAP
+ *                      creation (as local port for sending, as remote
+ *                      port for receiving).
+ * @param dst_addr      Destination port in network byte order or -1.
+ *                      If -1, default value is specified during CSAP
+ *                      creation (as remote port for sending, as local
+ *                      port for receiving).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_udp_add_pdu(asn_value **tmpl_or_ptrn,
+                                 asn_value **pdu,
+                                 te_bool     is_pattern,
+                                 int         src_port,
+                                 int         dst_port);
+
+/**
+ * Create 'udp.ip4.eth' CSAP on the specified Agent
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
+ * @param receive_mode  Bitmask with receive mode, see 'enum
+ *                      tad_eth_recv_mode' in tad_common.h.
+ *                      Use TAD_ETH_RECV_DEF by default.
+ * @param loc_mac       Local MAC address (or NULL)
+ * @param rem_mac       Remote MAC address (or NULL)
+ * @param loc_addr      Local IP address in network byte order (or NULL)
+ * @param rem_addr      Remote IP address in network byte order (or NULL)
+ * @param loc_port      Local UDP port in network byte order or -1
+ * @param rem_port      Remote UDP port in network byte order or -1
+ * @param udp_csap      Location for the CSAP handle (OUT)
+ *
+ * @return Zero on success or error code
+ */
+extern te_errno tapi_udp_ip4_eth_csap_create(const char    *ta_name,
+                                             int            sid,
+                                             const char    *eth_dev,
+                                             unsigned int   receive_mode,
+                                             const uint8_t *loc_mac,
+                                             const uint8_t *rem_mac,
+                                             in_addr_t      loc_addr,
+                                             in_addr_t      rem_addr,
+                                             int            loc_port,
+                                             int            rem_port,
+                                             csap_handle_t *udp_csap);
+
+
 
 /** Structure of UDP/IPv4 datagram */
 typedef struct udp4_datagram {
@@ -80,7 +156,6 @@ extern int ndn_udp4_dgram_to_plain(asn_value *pkt,
 
 
 
-
 /**
  * Prepare callback data to be passed in tapi_tad_trrecv_{wait,stop,get}
  * to process received UDP packet.
@@ -112,34 +187,7 @@ extern int tapi_udp_ip4_eth_recv_start(const char *ta_name, int sid,
                                        const udp4_datagram *udp_dgram,
                                        rcf_trrecv_mode mode);
 
-/**
- * Create 'udp.ip4.eth' CSAP on the specified Agent
- *
- * @param ta_name       Test Agent name
- * @param sid           RCF SID
- * @param eth_dev       Name of Ethernet interface
- * @param receive_mode  Bitmask with receive mode, see 'enum
- *                      tad_eth_recv_mode' in tad_common.h.
- *                      Use TAD_ETH_RECV_DEF by default.
- * @param loc_mac       Local MAC address (or NULL)
- * @param rem_mac       Remote MAC address (or NULL)
- * @param loc_addr      Local IP address in network byte order (or NULL)
- * @param rem_addr      Remote IP address in network byte order (or NULL)
- * @param loc_port      Local UDP port in network byte order
- * @param rem_port      Remote UDP port in network byte order
- * @param udp_csap      Location for the CSAP handle (OUT)
- *
- * @return Zero on success or error code
- */
-extern int tapi_udp_ip4_eth_csap_create(const char *ta_name, int sid,
-                                        const char *eth_dev,
-                                        unsigned int receive_mode,
-                                        const uint8_t *loc_mac,
-                                        const uint8_t *rem_mac,
-                                        in_addr_t loc_addr,
-                                        in_addr_t rem_addr,
-                                        uint16_t loc_port,
-                                        uint16_t rem_port,
-                                        csap_handle_t *udp_csap);
-
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_UDP_H__ */
