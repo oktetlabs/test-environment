@@ -750,7 +750,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
                             snprintf(ifreq_buf + strlen(ifreq_buf),
                                      sizeof(ifreq_buf) - strlen(ifreq_buf),
-                                     "supported %u, advertising %u, "
+                                     "supported %x, advertising %x, "
                                      "speed %u, duplex %u, port %u, "
                                      "phy_address %u, transceiver %u, "
                                      "autoneg %u, maxtxpkt %u, "
