@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    
+    <description>Tests on generic TAD functionality.</description>
+    
+    <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
+
+    <session>
+
+        <run>
+            <script name="poll_zero_csaps"/>
+            <arg name="csaps_null" type="boolean"/>
+        </run>
+
+        <run>
+            <script name="poll_null_csaps"/>
+        </run>
+
+        <run>
+            <script name="poll_invalid_only"/>
+            <arg name="n_csaps">
+                <value>1</value>
+                <value>3</value>
+            </arg>
+            <arg name="ta_null" type="boolean"/>
+            <arg name="zero_timeout" type="boolean"/>
+            <arg name="zero_status" type="boolean"/>
+        </run>
+
+        <run>
+            <script name="poll_one"/>
+            <arg name="env" value="{'iut_host'{if:'iut_if'}}"/>
+            <arg name="zero_timeout" type="boolean"/>
+        </run>
+
+   </session>
+
+</package>

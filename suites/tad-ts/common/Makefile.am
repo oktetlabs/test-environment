@@ -1,0 +1,22 @@
+
+#EXTRA_DIST = package.dox
+
+tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
+
+dist_tetest_DATA = package.xml
+
+
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
+AM_CFLAGS = @TE_CFLAGS@
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
+
+
+tetest_PROGRAMS = \
+	poll_zero_csaps \
+	poll_null_csaps \
+	poll_invalid_only \
+	poll_one
+
+LDADD = -ltapi_rpc -lrpc_types -ltapi_env -ltapi_tad -ltapi_ipstack -ltapi_atm \
+	-ltapi_arp -ltapi_eth -lndn -lasn -ltapi -lrcfrpc -lrcfapi -lrpcxdr \
+	-lconfapi -lconf_oid -llogger_ten -lipc -llog_bufs -ltools -lpthread

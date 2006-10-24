@@ -1,0 +1,225 @@
+/** @mainpage
+
+@section abstract Abstract
+
+<!-- Specify here the purpose of the document. -->
+Test harness for Test Environment Traffic Application Domain.
+
+
+@section copyright_notice Copyright Notice
+
+<!-- Add copyright notice of the project customer. -->
+Copyright (c) 2006 OKTET Labs, St.-Petersburg, Russia
+
+
+@section audience Audience
+
+<!--
+  - Specify the audience of the document and confidentiality restrictions,
+  - if exist. Specify assumed skills of the reader as well.
+  -->
+
+This document is intended for engineers who wish to modify existing
+functionality in TAD and/or add a new features.
+
+
+@section contact_information Contact Information
+
+Unit 7H, 5A Konstantinovskaya ul, St.-Petersburg, 198152 Russia
+
+Phone: +7(812)783-9121
+
+Questions regarding this document may be forwarded to support@oktetlabs.ru
+
+
+<!--
+@section issues Issues
+
+  - Type here all unclear questions as well as issues, which are not
+  - described at the moment but should appear in the document.
+  -->
+
+
+
+@section abbreviations Abbreviations
+
+<!--
+  - List abbreviations used in the document (note, definitions
+  - should be provided in the next section). Keep abbreviations
+  - in the alphabetical order.
+  -->
+
+@tdt_start
+
+@tdt_term AAL
+@tdt_def  ATM Adaptation Layer
+
+@tdt_term ATM
+@tdt_def  Asynchronous Transfer Mode
+
+@tdt_term IPv4
+@tdt_def  Internet Protocol version 4
+
+@tdt_term IPv6
+@tdt_def  Internet Protocol version 6
+
+@tdt_term RPC
+@tdt_def  Remote Procedure Call
+
+@tdt_term TAD
+@tdt_def  Traffic Application Domain
+
+@tdt_term TCP
+@tdt_def  Transmission Control Protocol
+
+@tdt_term UDP
+@tdt_def  User Datagram Protocol
+
+@tdt_end
+ 
+
+@section terminology Terminology
+
+<!--
+  - Define specific terms used in the document.
+  - Keep terms in alphabetical order.
+  -->
+
+@tdt_start
+
+@tdt_term Dynamic Host Configuration Protocol
+@tdt_def  Network protocol described in @ref RFC2113, which allows
+          automatic configuration of hosts in a sub-network.
+
+@tdt_end
+
+
+@section references References
+
+<!--
+  - List documents by their identifier and title. Assure that all
+  - documents in the "Reference Documents" table are actually referenced.
+  - List major documents only. References to the following documents are
+  - required (when they exist):
+  -  - Requirements document;
+  -  - Relevant standards;
+  -  - High Level Design;
+  -  - Test plan document.
+  -->
+
+@refs_start
+
+@ref_ref        RFC2113 RFC2113
+@ref_title      RFC-2113: Dynamic Host Configuration Protocol
+@ref_identifier http://www.ietf.org/rfc/rfc2113.txt
+
+@ref_ref        8021Q IEEE-Std-802.1Q
+@ref_title      Virtual Bridged Local Area Networks
+@ref_identifier https://oktetlabs.ru/storage/standards/ieee/802/802.1Q-2003.pdf
+
+@refs_end
+
+
+
+@section introduction Introduction
+
+<!--
+  - Provide introductory descriptive information about context and
+  - purpose of the document, allowing reader to better understand
+  - its meaning.
+  -
+  - Identify test plan document, if it exists, in which conditions this
+  - specification was written.
+  -
+  - Any general information, which should be provided before another
+  - sections, may be written here.
+  -
+  - State briefly what this Test Specification covers.
+  -->
+
+
+@subsection constrains What is tested and will not be tested
+
+<!--
+  - List identifiers of the requirements directly verified by this Test
+  - Specification. If requirement is partly tested, mark out the aspects
+  - to be verified by this Test Specification and not to be verified.
+  - Try to provide reasons why some aspect/feature is not tested.
+  -->
+
+ 
+@subsection quality_goals Quality goals
+
+<!--
+  - Specify the quality goals:
+  -  - code coverage (in percents);
+  -  - compatibility;
+  -  - reliability in normal use;
+  -  - boundary value testing;
+  -  - robustness under stress;
+  -  - performance.
+  -->
+
+
+
+@section applicability_constrains Applicability Constrains
+
+<!-- The last two subsections may be omitted for black box testing. -->
+
+
+@subsection environmental_requirements Environmental Requirements
+
+<!--
+  - Specify configuration(s) necessary to use this Test Specification.
+  -
+  - If different configurations are necessary for different tests,
+  - it's recommended to describe all configurations here and structure
+  - tests by used configuration. Also it's possible to describe
+  - configurations in the package description file, if many
+  - configurations must be tested with small number of tests for each
+  - configuration.
+  -
+  - Also static target configuration (software) must be described here.
+  -
+  - In fact it's rarely when each test uses all configuration items.
+  - Hence some of them may be marked as optional with AC-ER-<number>
+  - identifier to be referenced from detailed description of packages
+  - and tests.
+  -->
+
+
+@subsection target_configure Target configure
+
+<!--
+  - Specify necessary capabilities to configure target dynamically.
+  - Each item must have identifier AC-TC-<number> to be referenced
+  - in Tests Specification below.
+  -->
+
+
+@subsection specifics Implementation specific constants and algorithms
+
+<!--
+  - Specify constants and algorithms which may be implementation
+  - specific and default values used for them (if it's possible).
+  - Each item must have identifier AC-IS-<number> to be referenced
+  - in Tests Specification below.
+  -->
+
+
+
+@section specification Test Specification
+
+<!--
+  - Test identifier must contain only letters [a..zA..Z], numbers [0..9]
+  - and underscore '_'. Symbol '-' is used to divided identifier into
+  - parent test identifier and local subtest identifier. Local subtest
+  - identifier must not contain it.
+  -
+  - Provide reference to the root of the described here test package.
+  -->
+
+@ref eth
+@ref ipstack
+
+*/
