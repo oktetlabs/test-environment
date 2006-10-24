@@ -8,7 +8,25 @@
   <req id="TAD_IPSTACK" sticky="true"/> 
 
   <session>
-
+  
+        <run>
+            <script name="check_sent_data">
+                <req id="TAD_IP4"/>
+            </script>
+            <arg name="env">
+                <value>{{{'pco_csap':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco_sock':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}
+                </value>
+            </arg>
+            <arg name="pld_len">
+                <value>50</value>
+            </arg>
+            <arg name="proto" list="">
+                <value>IPPROTO_UDP</value>
+                <value>IPPROTO_TCP</value>
+                <value>IPPROTO_ICMP</value>
+            </arg>
+        </run> 
+        
   </session>
 
 </package>

@@ -16,5 +16,6 @@ A brief description (objective) of the test package.
 
 @par Items:
 
+-# @ref ipstack-check_sent_data
 
 */
