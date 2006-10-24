@@ -771,6 +771,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                             snprintf(ifreq_buf + strlen(ifreq_buf),
                                      sizeof(ifreq_buf) - strlen(ifreq_buf),
                                      "data %u", evalue->data);
+                            break;
                         }
 
                         default:

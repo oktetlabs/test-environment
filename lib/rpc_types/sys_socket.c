@@ -1768,6 +1768,7 @@ ethtool_cmd2type(tarpc_ethtool_command cmd)
 
         case ETHTOOL_GMSGLVL:
         case ETHTOOL_SMSGLVL:
+        case ETHTOOL_NWAY_RST:
         case ETHTOOL_GLINK:
 #ifdef ETHTOOL_GRXCSUM
         case ETHTOOL_GRXCSUM:
@@ -1824,6 +1825,7 @@ ethtool_cmd2str(tarpc_ethtool_command cmd)
         MACRO2STR(SSET);
         MACRO2STR(GMSGLVL);
         MACRO2STR(SMSGLVL);
+        MACRO2STR(NWAY_RST);
         MACRO2STR(GLINK);
 #ifdef ETHTOOL_GRXCSUM
         MACRO2STR(GRXCSUM);
@@ -1983,7 +1985,7 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
             }
 
         default:
-            ERROR("%s: Unknown ethtool command.", __FUNCTION__);
+            ERROR("%s: Unknown ethtool command type.", __FUNCTION__);
             break;
     }
 
