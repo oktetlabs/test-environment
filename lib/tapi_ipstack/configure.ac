@@ -4,7 +4,7 @@
 AC_PREREQ(2.53)
 AC_INIT([tapi_ipstack], [0.02], [konst@oktetlabs.ru])
 
-AC_CONFIG_SRCDIR([tapi_ip.c])
+AC_CONFIG_SRCDIR([tapi_ip4.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 AC_CONFIG_MACRO_DIR([../../auxdir])
