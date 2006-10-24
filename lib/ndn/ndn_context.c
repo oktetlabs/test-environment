@@ -54,7 +54,6 @@ extern asn_type ndn_eth_csap_s;
 extern asn_type ndn_bridge_csap_s;
 extern asn_type ndn_arp_csap_s;
 extern asn_type ndn_ip4_csap_s;
-extern asn_type ndn_icmp4_csap_s;
 extern asn_type ndn_udp_csap_s;
 extern asn_type ndn_dhcpv4_csap_s;
 extern asn_type ndn_tcp_csap_s;
@@ -75,7 +74,7 @@ static asn_named_entry_t _ndn_generic_csap_level_ne_array[] =
     { "bridge", &ndn_bridge_csap_s,     {PRIVATE, TE_PROTO_BRIDGE} },
     { "arp",    &ndn_arp_csap_s,        {PRIVATE, TE_PROTO_ARP} },
     { "ip4",    &ndn_ip4_csap_s,        {PRIVATE, TE_PROTO_IP4} },
-    { "icmp4",  &ndn_icmp4_csap_s,      {PRIVATE, TE_PROTO_ICMP4} },
+    { "icmp4",  &asn_base_null_s,       {PRIVATE, TE_PROTO_ICMP4} },
     { "udp",    &ndn_udp_csap_s,        {PRIVATE, TE_PROTO_UDP} },
     { "dhcp",   &ndn_dhcpv4_csap_s,     {PRIVATE, TE_PROTO_DHCP} }, 
     { "tcp",    &ndn_tcp_csap_s,        {PRIVATE, TE_PROTO_TCP} }, 

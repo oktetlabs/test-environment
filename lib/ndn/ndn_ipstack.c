@@ -62,8 +62,7 @@ asn_type ndn_ip4_frag_spec_s =
     {_ndn_ip4_frag_spec_ne_array}
 };
 
-
-asn_type *ndn_ip4_frag_spec = &ndn_ip4_frag_spec_s;
+const asn_type * const ndn_ip4_frag_spec = &ndn_ip4_frag_spec_s;
 
 asn_type ndn_ip4_frag_seq_s =
 {
@@ -71,7 +70,7 @@ asn_type ndn_ip4_frag_seq_s =
     {subtype: &ndn_ip4_frag_spec_s}
 };
 
-asn_type *ndn_ip4_frag_seq = &ndn_ip4_frag_seq_s;
+const asn_type * const ndn_ip4_frag_seq = &ndn_ip4_frag_seq_s;
 
 /*
 IP-Payload-Checksum ::= CHOICE {
@@ -145,12 +144,7 @@ asn_type ndn_ip4_header_s =
     {_ndn_ip4_header_ne_array}
 };
 
-asn_type *ndn_ip4_header = &ndn_ip4_header_s;
-
-
-
-
-
+const asn_type * const ndn_ip4_header = &ndn_ip4_header_s;
 
 
 
@@ -177,7 +171,7 @@ asn_type ndn_ip4_csap_s =
     {_ndn_ip4_csap_ne_array}
 };
 
-asn_type *ndn_ip4_csap = &ndn_ip4_csap_s;
+const asn_type * const ndn_ip4_csap = &ndn_ip4_csap_s;
 
 
 
@@ -187,38 +181,24 @@ asn_type *ndn_ip4_csap = &ndn_ip4_csap_s;
 
 static asn_named_entry_t _ndn_icmp4_message_ne_array [] = 
 {
-    { "version",  &ndn_data_unit_int8_s, {PRIVATE, 1} },
-    { "ip-len", &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "src-addr",  &ndn_data_unit_int32_s, {PRIVATE, 1} },
+    { "type",     &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_ICMP4_TYPE } },
+    { "code",     &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_ICMP4_CODE } },
+    { "checksum", &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_ICMP4_CHECKSUM } },
 };
 
 asn_type ndn_icmp4_message_s =
 {
-    "ICMPv4-Header", {PRIVATE, 100}, SEQUENCE, 
+    "ICMPv4-Message", {PRIVATE, 100}, SEQUENCE, 
     sizeof(_ndn_icmp4_message_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_icmp4_message_ne_array}
 };
 
-asn_type *ndn_icmp4_message = &ndn_icmp4_message_s;
+const asn_type * const ndn_icmp4_message = &ndn_icmp4_message_s;
 
-
-
-
-
-static asn_named_entry_t _ndn_icmp4_csap_ne_array [] = 
-{
-    { "remote-port",    &ndn_data_unit_int16_s,
-        {PRIVATE, NDN_TAG_UDP_REMOTE_PORT} },
-    { "local-port",     &ndn_data_unit_int16_s,
-        {PRIVATE, NDN_TAG_UDP_LOCAL_PORT} },
-};
-
-asn_type ndn_icmp4_csap_s =
-{
-    "ICMPv4-CSAP", {PRIVATE, 101}, SEQUENCE, 
-    sizeof(_ndn_icmp4_csap_ne_array)/sizeof(asn_named_entry_t),
-    {_ndn_icmp4_csap_ne_array}
-};
+const asn_type * const ndn_icmp4_csap = &asn_base_null_s;
 
 
 
@@ -241,7 +221,7 @@ asn_type ndn_udp_header_s =
     {_ndn_udp_header_ne_array}
 };
 
-asn_type *ndn_udp_header = &ndn_udp_header_s;
+const asn_type * const ndn_udp_header = &ndn_udp_header_s;
 
 
 static asn_named_entry_t _ndn_udp_csap_ne_array [] = 
@@ -259,7 +239,7 @@ asn_type ndn_udp_csap_s =
     {_ndn_udp_csap_ne_array}
 };
 
-asn_type *ndn_udp_csap = &ndn_udp_csap_s;
+const asn_type * const ndn_udp_csap = &ndn_udp_csap_s;
 
 
 
@@ -289,7 +269,7 @@ asn_type ndn_tcp_header_s =
     {_ndn_tcp_header_ne_array}
 };
 
-asn_type *ndn_tcp_header = &ndn_tcp_header_s;
+const asn_type * const ndn_tcp_header = &ndn_tcp_header_s;
 
 
 
@@ -329,5 +309,4 @@ asn_type ndn_tcp_csap_s =
     {_ndn_tcp_csap_ne_array}
 };
 
-asn_type *ndn_tcp_csap = &ndn_tcp_csap_s;
-
+const asn_type * const ndn_tcp_csap = &ndn_tcp_csap_s;

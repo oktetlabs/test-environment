@@ -12,6 +12,7 @@ libtad_ipstack_a_SOURCES = \
 	tad_ipstack_csaps.c \
 	tad_ip4_stack.c \
 	tad_ip4_layer.c \
+	tad_icmp4_layer.c \
 	tad_udp_layer.c \
 	tad_tcp_layer.c \
 	tad_icmp_methods.c

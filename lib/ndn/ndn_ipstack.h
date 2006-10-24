@@ -62,6 +62,19 @@ typedef enum {
     NDN_TAG_IP4_PLD_CH_DISABLE,
 } ndn_ip4_tags_t;
 
+typedef enum {
+    NDN_TAG_ICMP4_TYPE,
+    NDN_TAG_ICMP4_CODE,
+    NDN_TAG_ICMP4_CHECKSUM,
+    NDN_TAG_ICMP4_UNUSED,
+    NDN_TAG_ICMP4_PP_PTR,
+    NDN_TAG_ICMP4_REDIRECT_GW,
+    NDN_TAG_ICMP4_ID,
+    NDN_TAG_ICMP4_SEQ,
+    NDN_TAG_ICMP4_ORIG_TS,
+    NDN_TAG_ICMP4_RX_TS,
+    NDN_TAG_ICMP4_TX_TS,
+} ndn_icmp4_tags_t;
 
 typedef enum {
     NDN_TAG_TCP_SRC_PORT,
@@ -96,25 +109,22 @@ typedef enum {
 extern "C" {
 #endif
 
-extern asn_type *ndn_ip4_header;
-extern asn_type *ndn_ip4_csap; 
+extern const asn_type * const ndn_ip4_header;
+extern const asn_type * const ndn_ip4_csap; 
 
-extern asn_type *ndn_ip4_frag_spec;
-extern asn_type *ndn_ip4_frag_seq;
+extern const asn_type * const ndn_ip4_frag_spec;
+extern const asn_type * const ndn_ip4_frag_seq;
 
+extern const asn_type * const ndn_icmp4_message;
+extern const asn_type * const ndn_icmp4_csap;
 
-extern asn_type *ndn_icmp4_message;
-extern asn_type *ndn_icmp4_csap;
+extern const asn_type * const ndn_udp_header;
+extern const asn_type * const ndn_udp_csap;
 
+extern const asn_type * const ndn_tcp_header;
+extern const asn_type * const ndn_tcp_csap;
 
-extern asn_type *ndn_udp_header;
-extern asn_type *ndn_udp_csap;
-
-
-extern asn_type *ndn_tcp_header;
-extern asn_type *ndn_tcp_csap;
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
 #endif /* __TE_NDN_IPSTACK_H__ */
