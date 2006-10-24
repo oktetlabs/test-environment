@@ -20,8 +20,4 @@ AM_LDFLAGS = @TS_LDFLAGS@
 
 LDADD = @TS_LIBS@
 
-tetest_PROGRAMS = \
-	poll_zero_csaps \
-	poll_null_csaps \
-	poll_invalid_only \
-	poll_one
+tetest_PROGRAMS =
