@@ -1,6 +1,4 @@
 
-#EXTRA_DIST = package.dox
-
 tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 
 dist_tetest_DATA = package.xml 
@@ -17,4 +15,3 @@ LDADD = -ltapi_rpc -lrpc_types -ltapi_iscsi -ltapi_ipstack -ltapi_arp \
 		-ltapi_eth -ltapi_tad -lndn -lasn -ltapi -lrcfrpc -lrcfapi \
 		-lrpcxdr -lconfapi -lconf_oid -llogger_ten -lipc -llog_bufs -ltools \
 		-lpthread
-
