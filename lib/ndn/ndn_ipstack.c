@@ -181,12 +181,30 @@ const asn_type * const ndn_ip4_csap = &ndn_ip4_csap_s;
 
 static asn_named_entry_t _ndn_icmp4_message_ne_array [] = 
 {
-    { "type",     &ndn_data_unit_int8_s,
+    { "type",           &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_ICMP4_TYPE } },
-    { "code",     &ndn_data_unit_int8_s,
+    { "code",           &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_ICMP4_CODE } },
-    { "checksum", &ndn_data_unit_int16_s,
+    { "checksum",       &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_ICMP4_CHECKSUM } },
+
+    /* In general, the following fields should be structured */
+    { "unused",         &ndn_data_unit_int32_s,
+      { PRIVATE, NDN_TAG_ICMP4_UNUSED } },
+    { "ptr",            &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_ICMP4_PP_PTR } },
+    { "id",             &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_ICMP4_ID } },
+    { "seq",            &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_ICMP4_SEQ } },
+    { "redirect-gw",    &ndn_data_unit_int32_s,
+      { PRIVATE, NDN_TAG_ICMP4_REDIRECT_GW } },
+    { "orig-ts",        &ndn_data_unit_int32_s,
+      { PRIVATE, NDN_TAG_ICMP4_ORIG_TS } },
+    { "rx-ts",          &ndn_data_unit_int32_s,
+      { PRIVATE, NDN_TAG_ICMP4_RX_TS } },
+    { "tx-ts",          &ndn_data_unit_int32_s,
+      { PRIVATE, NDN_TAG_ICMP4_TX_TS } },
 };
 
 asn_type ndn_icmp4_message_s =
