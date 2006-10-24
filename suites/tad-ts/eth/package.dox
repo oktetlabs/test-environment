@@ -1,85 +1,12 @@
 /** @page eth Ethernet (IEEE Std 802.3, 802.1Q, 802.2)
 
-<!--
-  - Specify full package name of the test package node after 'page'
-  - keyword (from root package to the node with '_' separator between
-  - names).
-  -
-  - The rest of the string in title of the test package.
-  -
-  - State brief description of the node in the next paragraph.
-  -->
-
 Tests on support of generation and matching of IEEE Std 802.3 frames
 with optional VLAN headers (IEEE 802.1Q), Ethernet v2.0, LLC and SNAP
 encapsulations.
 
-<!-- Provide name and email of the node, if it's necessary -->
 @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 
-<!-- Specify list of requirements verified by the test package 
-@requirement OKTL-QMS-TMPL
--->
-
-<!--
-  - Describe session provided by the package.
-  -
-  - If an item is not used, skip corresponding paragraph.
-  -
-  - Detailed description may provide specification of parameters which
-  - are used for each item.
-  -->
-
-<!-- Describe parameters which may be passed to the package 
-@param param1 - description of the first parameter
-@param param2 - description of the second parameter
--->
-
-<!--
-  - Refer to exception handler which catches package specific
-  - exceptions and tries to resolve problem.
-  -
-  
-@exception_handler exception.c
-
-  -->
-
-<!--
-  - Refer to prologue of the test package which configures
-  - environment as well as verifies package preconditions.
-  
-@prologue prologue.c
-
-  -->
-
-<!--
-  - Refer to keep-alive script which verifies state of the
-  - environment before and after each test.
-
-@keepalive keepalive.c
-
-  -->
-
-<!--
-  - Refer to epilogue of the test package which undo configuration
-  - changes as well as verifies package post conditions.
-
-@epilogue epilogue.c
-
-  -->
-
-
-<!--
-  - Use @ref to refer to sub-packages and files with tests.
-  -
-  - Use bullet list '-', if order of the items is not restricted.
-  - Use numbered list '-#', if items must be run in defined order
-  - only.
-  -->
 @par Items:
 
--# @ref package_subpackage1
--# @ref package_subpackage2
--# @ref example.c
 
 */

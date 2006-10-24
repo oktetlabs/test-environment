@@ -2,22 +2,15 @@
 
 @section abstract Abstract
 
-<!-- Specify here the purpose of the document. -->
 Test harness for Test Environment Traffic Application Domain.
 
 
 @section copyright_notice Copyright Notice
 
-<!-- Add copyright notice of the project customer. -->
 Copyright (c) 2006 OKTET Labs, St.-Petersburg, Russia
 
 
 @section audience Audience
-
-<!--
-  - Specify the audience of the document and confidentiality restrictions,
-  - if exist. Specify assumed skills of the reader as well.
-  -->
 
 This document is intended for engineers who wish to modify existing
 functionality in TAD and/or add a new features.
@@ -32,13 +25,9 @@ Phone: +7(812)783-9121
 Questions regarding this document may be forwarded to support@oktetlabs.ru
 
 
-<!--
 @section issues Issues
 
-  - Type here all unclear questions as well as issues, which are not
-  - described at the moment but should appear in the document.
-  -->
-
+No issues are identified yet.
 
 
 @section abbreviations Abbreviations
@@ -88,7 +77,7 @@ Questions regarding this document may be forwarded to support@oktetlabs.ru
 @tdt_start
 
 @tdt_term Dynamic Host Configuration Protocol
-@tdt_def  Network protocol described in @ref RFC2113, which allows
+@tdt_def  Network protocol described in @ref RFC2131, which allows
           automatic configuration of hosts in a sub-network.
 
 @tdt_end
@@ -109,13 +98,26 @@ Questions regarding this document may be forwarded to support@oktetlabs.ru
 
 @refs_start
 
-@ref_ref        RFC2113 RFC2113
-@ref_title      RFC-2113: Dynamic Host Configuration Protocol
-@ref_identifier http://www.ietf.org/rfc/rfc2113.txt
+@ref_ref        RFC2131 RFC2131
+@ref_title      RFC-2131: Dynamic Host Configuration Protocol
+@ref_identifier http://www.ietf.org/rfc/rfc2131.txt
 
-@ref_ref        8021Q IEEE-Std-802.1Q
+@ref_ref        IEEE-Std-802-1Q IEEE-Std-802-1Q
 @ref_title      Virtual Bridged Local Area Networks
 @ref_identifier https://oktetlabs.ru/storage/standards/ieee/802/802.1Q-2003.pdf
+
+@ref_ref        ITU-T-Std-I-361 ITU-T-Std-I-361
+@ref_title      Integrated services digital network (ISDN).
+                Overall network aspects and functions.
+                B-ISDN ATM layer specification.
+@ref_identifier https://oktetlabs.ru/storage/standards/itu/itu-t/200512/pdf/I/I.361-199902-I.pdf
+
+@ref_ref        ITU-T-Std-I-363-5 ITU-T-Std-I-363-5
+@ref_title      Integrated services digital network (ISDN).
+                Overall network aspects and functions - Protocol layer
+                requirements.
+                B-ISDN ATM Adaptation Layer specification: Type 5 AAL
+@ref_identifier https://oktetlabs.ru/storage/standards/itu/itu-t/200512/pdf/I/I.363.5-199608-I.pdf
 
 @refs_end
 
@@ -219,7 +221,9 @@ Questions regarding this document may be forwarded to support@oktetlabs.ru
   - Provide reference to the root of the described here test package.
   -->
 
-@ref eth
-@ref ipstack
+- @ref common
+- @ref atm
+- @ref eth
+- @ref ipstack
 
 */

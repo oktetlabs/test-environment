@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package version="1.0">
+
+  <description>Tests on TAD IP stack (IPv4, ICMPv4, IPv6, ICMPv6, UDP, TCP functionality.</description>
+
+  <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
+
+  <req id="TAD_IPSTACK" sticky="true"/> 
+
+  <session>
+
+  </session>
+
+</package>

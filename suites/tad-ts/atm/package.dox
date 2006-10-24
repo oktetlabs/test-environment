@@ -1,0 +1,13 @@
+/** @page atm ATM traffic generation and matching
+
+Tests on support of generation and matching of ATM cells, AAL5 PDUs.
+
+@author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+
+@par Items:
+
+-# @ref atm-simple_send
+-# @ref atm-simple_recv
+-# @ref atm-aal5_send
+
+*/

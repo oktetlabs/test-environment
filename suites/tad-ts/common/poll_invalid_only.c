@@ -46,6 +46,8 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
+#ifndef DOXYGEN_TEST_SPEC
+
 #define TE_TEST_NAME    "common/poll_invalid_only"
 
 #include "te_config.h"
@@ -105,3 +107,5 @@ cleanup:
 
     TEST_END;
 }
+
+#endif /* !DOXYGEN_TEST_SPEC */

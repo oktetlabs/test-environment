@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package version="1.0">
+
+  <description>Tests on TAD Ethernet functionality.</description>
+
+  <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
+
+  <req id="TAD_ETH" sticky="true"/> 
+
+  <session>
+
+  </session>
+
+</package>

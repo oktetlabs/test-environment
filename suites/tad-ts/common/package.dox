@@ -1,0 +1,14 @@
+/** @page common Generic TAD functionality
+
+Tests on generatic TAD functionality like poll, delays, etc.
+
+@author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+
+@par Items:
+
+-# @ref common-poll_zero_csaps
+-# @ref common-poll_null_csaps
+-# @ref common-poll_invalid_only
+-# @ref common-poll_one
+
+*/

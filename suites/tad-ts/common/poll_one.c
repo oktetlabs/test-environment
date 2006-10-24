@@ -35,6 +35,8 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
+#ifndef DOXYGEN_TEST_SPEC
+
 #define TE_TEST_NAME    "common/poll_one"
 
 #define TEST_START_VARS     TEST_START_ENV_VARS
@@ -102,3 +104,5 @@ cleanup:
 
     TEST_END;
 }
+
+#endif /* !DOXYGEN_TEST_SPEC */

@@ -39,6 +39,8 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
+#ifndef DOXYGEN_TEST_SPEC
+
 #define TE_TEST_NAME    "common/poll_zero_csaps"
 
 #include "te_config.h"
@@ -68,3 +70,5 @@ cleanup:
 
     TEST_END;
 }
+
+#endif /* !DOXYGEN_TEST_SPEC */
