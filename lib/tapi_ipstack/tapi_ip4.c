@@ -54,12 +54,12 @@
 #include "ndn_eth.h"
 #include "tapi_eth.h"
 #include "ndn_ipstack.h"
-#include "tapi_ip.h"
+#include "tapi_ip4.h"
 
 #include "tapi_test.h"
 
 
-/* See the description in tapi_ip.h */
+/* See the description in tapi_ip4.h */
 te_errno
 tapi_ip4_add_csap_layer(asn_value **csap_spec,
                         in_addr_t   local_addr,
@@ -132,7 +132,7 @@ tapi_ip4_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
     return 0;
 }
 
-/* See the description in tapi_ip.h */
+/* See the description in tapi_ip4.h */
 te_errno
 tapi_ip4_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
                             tapi_ip_frag_spec *fragments,
@@ -217,7 +217,7 @@ tapi_ip4_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
 }
 
 
-/* See the description in tapi_ip.h */
+/* See the description in tapi_ip4.h */
 te_errno
 tapi_ip4_eth_csap_create(const char *ta_name, int sid,
                          const char *eth_dev, unsigned int receive_mode,
@@ -338,7 +338,7 @@ ip4_pkt_handler(asn_value *pkt, void *user_param)
 #undef CHECK_FAIL
 }
 
-/* see description in tapi_ip.h */
+/* see description in tapi_ip4.h */
 tapi_tad_trrecv_cb_data *
 tapi_ip4_eth_trrecv_cb_data(ip4_callback  callback,
                             void         *user_data)
@@ -368,7 +368,7 @@ tapi_ip4_eth_trrecv_cb_data(ip4_callback  callback,
 
 
 /* 
- * See the description in tapi_ip.h.
+ * See the description in tapi_ip4.h.
  *
  * Avoid usage of this function.
  */

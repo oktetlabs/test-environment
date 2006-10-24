@@ -54,7 +54,7 @@
 
 #include "tapi_env.h"
 #include "tapi_test.h"
-#include "tapi_ip.h"
+#include "tapi_ip4.h"
 #include "tapi_udp.h"
 #include "tapi_tcp.h"
 #include "tapi_cfg.h"

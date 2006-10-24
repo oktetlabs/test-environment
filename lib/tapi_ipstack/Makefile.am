@@ -5,7 +5,7 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ 
 
 include_HEADERS = \
-	tapi_ip.h \
+	tapi_ip4.h \
 	tapi_icmp4.h \
 	tapi_tcp.h \
 	tapi_udp.h \

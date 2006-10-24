@@ -35,7 +35,7 @@
 #include "te_stdint.h"
 #include "tad_common.h"
 #include "asn_usr.h"
-#include "tapi_ip.h"
+#include "tapi_ip4.h"
 
 /*
  * ===================== DATA-TCP methods ======================
