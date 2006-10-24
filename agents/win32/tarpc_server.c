@@ -3885,7 +3885,7 @@ TARPC_FUNC(kill, {},
     ;
 }
 )
-#if 0
+
 /*-------------- ta_kill_death() --------------------------------*/
 
 TARPC_FUNC(ta_kill_death, {},
@@ -3921,7 +3921,7 @@ TARPC_FUNC(ta_kill_death, {},
     CloseHandle(hp);
 }
 )
-
+#if 0
 /*-------------- te_shell_cmd() --------------------------------*/
 TARPC_FUNC(te_shell_cmd,{},
 {
@@ -3935,24 +3935,29 @@ TARPC_FUNC(te_shell_cmd,{},
     memset(&si, 0, sizeof(si));
     memset(&info, 0, sizeof(info));
     si.cb = sizeof(si);
+    
 
-    RING("Agent: te_shell_cmd(%s)", in->cmd.cmd_val);
-    RING("before CreateProcess: pid = %d", info.dwProcessId);
+    if (in->in_fd || in->out_fd)
+        si.dwFlags = STARTF_USESTDHANDLES;
+
+    if (in->in_fd) 
+        si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+  
+    if (in->out_fd)
+        si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
     if (CreateProcess(NULL, in->cmd.cmd_val, NULL, NULL,
                       TRUE, 0, NULL, NULL,
                       &si, &info))
     {
-        RING("CreateProcess: pid = %d", info.dwProcessId);
         out->pid = info.dwProcessId;
-        RING("out->pid = %d", out->pid);
-        //out->in_fd = in->in_fd;
-        //out->out_fd = in->out_fd;
+        out->in_fd = *((int *)si.hStdInput);
+        out->out_fd = *((int *)si.hStdOutput);
         goto finish;
     }
     else
         ERROR("CreateProcess() failed with error %d", GetLastError());
-finish:
+finish:    
     ;
 }
 )
