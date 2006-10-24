@@ -384,7 +384,7 @@ tad_udp_match_do_cb(csap_p           csap,
 
     UNUSED(ptrn_pdu);
 
-    if (tad_pkt_len(pdu) < 8)
+    if (tad_pkt_len(pdu) < TAD_UDP_HDR_LEN)
     {
         F_VERB(CSAP_LOG_FMT "PDU is too small to be UDP datagram",
                CSAP_LOG_ARGS(csap));
