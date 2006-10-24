@@ -43,6 +43,9 @@
 #include "asn_usr.h"
 #include "tapi_tad.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct tapi_ip_frag_spec {
     uint32_t    hdr_offset;     /**< value for "offset" in IP header */
@@ -207,4 +210,7 @@ extern te_errno tapi_ip4_template(tapi_ip_frag_spec *fragments,
                                   size_t pld_len,
                                   asn_value **result_value);
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_IP_H__ */
