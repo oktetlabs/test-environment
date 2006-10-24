@@ -95,7 +95,7 @@ tapi_ip4_add_csap_layer(asn_value **csap_spec,
 }
 
 
-/* See the description in tapi_eth.h */
+/* See the description in tapi_ip4.h */
 te_errno
 tapi_ip4_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
                  te_bool is_pattern,
