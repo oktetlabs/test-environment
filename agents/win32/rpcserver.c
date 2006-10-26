@@ -108,11 +108,6 @@ main(int argc, char **argv)
         WSAStartup(MAKEWORD(2,2), &data);
         wsa_func_handles_discover();        
     }    
-    else
-    {
-        printf("WSAStartup is not called!\n");
-        fflush(stdout);
-    }
     
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
