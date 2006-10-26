@@ -20,9 +20,7 @@
         <value>50</value>
       </arg>
       <arg name="proto">
-        <value>IPPROTO_UDP</value>
-        <value>IPPROTO_TCP</value>
-        <value>IPPROTO_ICMP</value>
+        <value>0</value>
       </arg>
    </run> 
         
