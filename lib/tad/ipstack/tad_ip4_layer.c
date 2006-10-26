@@ -344,7 +344,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
         tad_pkt_seg    *seg = tad_pkt_first_seg(sdu);
 
         if (seg == NULL ||
-            seg->data_len <= (size_t)data->upper_chksm_offset + 2)
+            seg->data_len < (size_t)data->upper_chksm_offset + 2)
         {
             WARN("Skip calculation of upper layer checksum, since "
                  "the first segment of IPv4 SDU is too short");
