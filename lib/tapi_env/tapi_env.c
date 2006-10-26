@@ -190,6 +190,7 @@ tapi_env_init(tapi_env *env)
     CIRCLEQ_INIT(&env->ifs);
     CIRCLEQ_INIT(&env->addrs);
     LIST_INIT(&env->aliases);
+    memset(&env->cfg_nets, 0, sizeof(env->cfg_nets));
 
     return 0;
 }
