@@ -38,6 +38,10 @@
 
 #include "rcf_rpc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** Maximum resulting command length for rpc_shell() */
 #define RPC_SHELL_CMDLINE_MAX   256
 
@@ -211,4 +215,7 @@ extern int rpc_setenv(rcf_rpc_server *rpcs,
 extern int rpc_read_all(rcf_rpc_server *rpcs, int fd, 
                         char **pbuf, size_t *bytes);
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_RPC_STDIO_H__ */

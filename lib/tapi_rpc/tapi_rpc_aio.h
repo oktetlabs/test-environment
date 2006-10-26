@@ -35,6 +35,10 @@
 #include "rcf_rpc.h"
 #include "te_rpc_aio.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Allocate a AIO control block.
  *
@@ -196,4 +200,7 @@ extern int rpc_lio_listio(rcf_rpc_server *rpcs,
                           rpc_lio_mode mode, const rpc_aiocb_p *cblist,
                           int nent, const tarpc_sigevent *sigevent);
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_RPC_AIO_H__ */

@@ -43,6 +43,10 @@
 #include "tarpc.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Open a file or device.
  *
@@ -748,4 +752,7 @@ extern int rpc_setrlimit(rcf_rpc_server *rpcs,
 extern int rpc_getrlimit(rcf_rpc_server *rpcs,
                          int resource, tarpc_rlimit *rlim);
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_RPC_UNISTD_H__ */

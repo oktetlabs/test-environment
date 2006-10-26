@@ -57,6 +57,10 @@
 #include "te_rpc_sys_resource.h"
 #include "tapi_rpc_signal.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Get host value of sizeof(type_name).
  *
@@ -464,4 +468,8 @@ extern int rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
 int rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd, 
                       const char *ifname, void *edata);
 #endif /* HAVE_LINUX_ETHTOOL_H */
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_RPC_MISC_H__ */

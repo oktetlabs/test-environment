@@ -42,6 +42,10 @@
 #include "rcf_rpc.h"
 #include "te_rpc_netdb.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Get network host entry by given name.
  *
@@ -81,4 +85,7 @@ extern void rpc_freeaddrinfo(rcf_rpc_server *handle,
                              struct addrinfo *res);
 #endif
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_RPC_NETDB_H__ */

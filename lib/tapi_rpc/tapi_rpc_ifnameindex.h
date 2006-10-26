@@ -40,6 +40,10 @@
 
 #include "rcf_rpc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Convert network interface name to index.
  *
@@ -90,4 +94,7 @@ extern void rpc_if_freenameindex(rcf_rpc_server *handle,
                                  struct if_nameindex *ptr);
 #endif
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_RPC_IFNAMEINDEX_H__ */

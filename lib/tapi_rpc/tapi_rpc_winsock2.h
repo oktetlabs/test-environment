@@ -38,6 +38,10 @@
 #include "tapi_rpc_misc.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** Windows Event Objects */
 typedef rpc_ptr rpc_wsaevent;
 
@@ -1426,4 +1430,7 @@ wsa_name_convert(const char *name)
         return name;
 }
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_RPC_WINSOCK2_H__ */

@@ -45,6 +45,10 @@
 #include "te_rpc_types.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Get socket domain native for the address family.
  *
@@ -715,4 +719,7 @@ rpc_getpeername(rcf_rpc_server *rpcs,
                                 namelen == NULL) ? 0 : *namelen);
 }
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_RPC_SOCKET_H__ */
