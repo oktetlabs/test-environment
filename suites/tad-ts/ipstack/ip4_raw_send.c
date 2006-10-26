@@ -40,10 +40,14 @@
  *
  * @par Scenario:
  *
- * -# Create CSAP IP4/ETH on @p pco_csap.
- * -# Create RAW socket on @p pco_sock.
+ * -# Create ip4.eth CSAP on @p pco_csap. Specify local/remote addresses
+ *    and protocol to use.
+ * -# Create IPv4 raw socket with protocol @p proto on @p pco_sock.
  * -# Send IP4 datagrem with specified payload length and protocol.
  * -# Receive datagram via socket.
+ * -# Check that correct IPv4 addresses and protocol are set in IPv4
+ *    header.
+ * -# Check that received IPv4 packet payload is equal to send one.
  * -# Destroy CSAP and close socket
  *
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
