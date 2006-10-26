@@ -341,23 +341,24 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
 
 /* See the description in tapi_ndn.h */
 te_errno
-tapi_tad_tmpl_ptrn_add_payload_bytes(asn_value  **obj_spec,
+tapi_tad_tmpl_ptrn_add_payload_plain(asn_value  **obj_spec,
                                      te_bool      is_pattern,
                                      const void  *payload,
                                      size_t       length)
 {
     te_errno    rc;
     asn_value  *unit_spec;
-
-    if (payload == NULL && length != 0)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     rc = tapi_tad_tmpl_ptrn_get_unit(obj_spec, is_pattern, &unit_spec);
     if (rc != 0)
         return rc;
 
-    rc = asn_write_value_field(unit_spec, payload, length,
-                               "payload.#bytes");
+    if (payload == NULL && length != 0)
+        rc = asn_write_int32(unit_spec, length, "payload.#length");
+    else
+        rc = asn_write_value_field(unit_spec, payload, length,
+                                   "payload.#bytes");
     if (rc != 0)
     {
         ERROR("Addition of payload failed: %r", rc);

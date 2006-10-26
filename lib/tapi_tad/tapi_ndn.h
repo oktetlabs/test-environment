@@ -117,9 +117,13 @@ extern te_errno tapi_tad_new_ptrn_unit(asn_value **obj_spec,
  * @param payload       Pointer to payload data
  * @param length        Payload length
  *
+ * @note If @a payload is @c NULL and @a length is not @c 0, random
+ *       payload contents is generate for sending and any payload of
+ *       specified length is matched.
+ *
  * @return Status code.
  */
-extern te_errno tapi_tad_tmpl_ptrn_add_payload_bytes(
+extern te_errno tapi_tad_tmpl_ptrn_add_payload_plain(
                     asn_value  **obj_spec,
                     te_bool      is_pattern,
                     const void  *payload,
