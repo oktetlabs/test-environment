@@ -183,26 +183,16 @@ tapi_tad_new_ptrn_unit(asn_value **obj_spec, asn_value **unit_spec)
     return 0;
 }
 
+
 /* See the description in tapi_ndn.h */
-te_errno
-tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
-                             te_bool           is_pattern,
-                             const asn_type   *pdu_type,
-                             const char       *pdu_choice,
-                             asn_value       **pdu_spec)
+static te_errno
+tapi_tad_tmpl_ptrn_get_unit(asn_value **obj_spec,
+                            te_bool     is_pattern,
+                            asn_value **unit_spec)
 {
     te_errno    rc;
-    asn_value  *unit_spec;
-    asn_value  *pdus;
-    asn_value  *gen_pdu;
-    asn_value  *pdu;
 
-    if (pdu_type == NULL || pdu_choice == NULL)
-    {
-        ERROR("%s(): ASN.1 type of the layer have to be specified",
-              __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
+    assert(unit_spec != NULL);
 
     /*
      * Check the root object and initialize it, if it is necessary.
@@ -229,24 +219,56 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
 
         if (len == 0)
         {
-            rc = tapi_tad_new_ptrn_unit(obj_spec, &unit_spec);
+            rc = tapi_tad_new_ptrn_unit(obj_spec, unit_spec);
             if (rc != 0)
                 return TE_RC(TE_TAPI, rc);
-            len = 1;
         }
-
-        rc = asn_get_indexed(*obj_spec, &unit_spec, len - 1, NULL);
-        if (rc != 0)
+        else
         {
-            ERROR("Failed to get ASN.1 value by index %d: %r",
-                  len - 1, rc);
-            return TE_RC(TE_TAPI, rc);
+            rc = asn_get_indexed(*obj_spec, unit_spec, len - 1, NULL);
+            if (rc != 0)
+            {
+                ERROR("Failed to get ASN.1 value by index %d: %r",
+                      len - 1, rc);
+                return TE_RC(TE_TAPI, rc);
+            }
         }
     }
     else
     {
-        unit_spec = *obj_spec;
+        *unit_spec = *obj_spec;
     }
+
+    return 0;
+}
+
+/* See the description in tapi_ndn.h */
+te_errno
+tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
+                             te_bool           is_pattern,
+                             const asn_type   *pdu_type,
+                             const char       *pdu_choice,
+                             asn_value       **pdu_spec)
+{
+    te_errno    rc;
+    asn_value  *unit_spec;
+    asn_value  *pdus;
+    asn_value  *gen_pdu;
+    asn_value  *pdu;
+
+    if (pdu_type == NULL || pdu_choice == NULL)
+    {
+        ERROR("%s(): ASN.1 type of the layer have to be specified",
+              __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    /*
+     * Check the root object and initialize it, if it is necessary.
+     */
+    rc = tapi_tad_tmpl_ptrn_get_unit(obj_spec, is_pattern, &unit_spec);
+    if (rc != 0)
+        return rc;
 
     /*
      * Get or create PDUs sequence
@@ -315,4 +337,31 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
         *pdu_spec = pdu;
 
     return 0;
+}
+
+/* See the description in tapi_ndn.h */
+te_errno
+tapi_tad_tmpl_ptrn_add_payload_bytes(asn_value  **obj_spec,
+                                     te_bool      is_pattern,
+                                     const void  *payload,
+                                     size_t       length)
+{
+    te_errno    rc;
+    asn_value  *unit_spec;
+
+    if (payload == NULL && length != 0)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    rc = tapi_tad_tmpl_ptrn_get_unit(obj_spec, is_pattern, &unit_spec);
+    if (rc != 0)
+        return rc;
+
+    rc = asn_write_value_field(unit_spec, payload, length,
+                               "payload.#bytes");
+    if (rc != 0)
+    {
+        ERROR("Addition of payload failed: %r", rc);
+    }
+
+    return TE_RC(TE_TAPI, rc);
 }

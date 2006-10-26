@@ -107,6 +107,24 @@ extern te_errno tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
 extern te_errno tapi_tad_new_ptrn_unit(asn_value **obj_spec,
                                        asn_value **unit_spec);
 
+/**
+ * Add a new unit in the traffic pattern specification.
+ *
+ * @param obj_spec      Location of ASN.1 value with Template of Pattern
+ *                      specification (if NULL pointer is stored in
+ *                      location, a new one is initialized)
+ * @param is_pattern    Flag wheather required NDN is traffic pattern
+ * @param payload       Pointer to payload data
+ * @param length        Payload length
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tad_tmpl_ptrn_add_payload_bytes(
+                    asn_value  **obj_spec,
+                    te_bool      is_pattern,
+                    const void  *payload,
+                    size_t       length);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
