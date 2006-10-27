@@ -2140,7 +2140,7 @@ mcast_link_addr_change(const char *ifname, const char *addr, int op)
 
         if (p == NULL || (sscanf(p, "%02x", &tmp) < 1) || tmp > 0xff)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#ifdef ifr_hwaddr        
+#ifdef HAVE_STRUCT_IFREQ_IFR_HWADDR        
         request.ifr_hwaddr.sa_data[i] = tmp;
 #else
         request.ifr_enaddr[i] = tmp;
