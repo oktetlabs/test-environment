@@ -59,6 +59,9 @@ INCLUDE(te_win_defs.h)
 #endif
 #define _NETINET_IN_H 1
 
+extern int inet_pton (int, const char *, void *);
+extern const char *inet_ntop (int, const void *, char *, size_t);
+
 #endif /* __CYGWIN__ */
 
 #include "logger_api.h"
@@ -469,7 +472,7 @@ te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
 
 #define CMP_FIELD(field_name_, field_addr_, field_size_) \
     do {                                                                \
-        unsigned int i;                                                 \
+        socklen_t   i;                                                  \
                                                                         \
         if ((socklen_t)((uint8_t *)(field_addr_) - (uint8_t *)a1) >=    \
                 min_len)                                                \
@@ -479,8 +482,8 @@ te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
             return 0;                                                   \
         }                                                               \
         for (i = ((uint8_t *)(field_addr_) - (uint8_t *)a1);            \
-             i < (((uint8_t *)(field_addr_) - (uint8_t *)a1) +          \
-                     (field_size_)) &&                                  \
+             i < (socklen_t)(((uint8_t *)(field_addr_) -                \
+                              (uint8_t *)a1) + (field_size_)) &&        \
              i < min_len;                                               \
              i++)                                                       \
         {                                                               \
