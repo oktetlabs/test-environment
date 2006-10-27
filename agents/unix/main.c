@@ -1452,7 +1452,7 @@ ta_waitpid(pid_t pid, int *p_status, int options)
 int 
 ta_system(const char *cmd)
 {
-    pid_t   pid = te_shell_cmd(cmd, -1, NULL, NULL);
+    pid_t   pid = te_shell_cmd(cmd, -1, NULL, NULL, NULL);
     int     status;
         
     if (pid < 0)

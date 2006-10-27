@@ -3302,7 +3302,8 @@ TARPC_FUNC(te_shell_cmd, {},
     MAKE_CALL(out->pid = 
               func_ptr(in->cmd.cmd_val, in->uid, 
                        in->in_fd ? &out->in_fd : NULL,
-                       in->out_fd ? &out->out_fd : NULL));
+                       in->out_fd ? &out->out_fd : NULL,
+                       in->err_fd ? &out->err_fd : NULL));
 }
 )
 

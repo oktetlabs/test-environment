@@ -2663,7 +2663,7 @@ flush_smtp_server_queue(void)
     {
         char buf[30];
         snprintf(buf, sizeof(buf), "%s -qff", exim_name);
-        rc = te_shell_cmd(buf, -1, NULL, NULL);
+        rc = te_shell_cmd(buf, -1, NULL, NULL, NULL);
         if (rc > 0)
             rc = 0;
         else

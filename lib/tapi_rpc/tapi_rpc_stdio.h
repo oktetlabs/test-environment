@@ -114,7 +114,7 @@ extern rpc_wait_status rpc_system(rcf_rpc_server *rpcs, const char *cmd);
  * Open a process by creating a pipe, forking, and invoking the shell.
  *
  * @note Do not use this function unless you test it - use 
- *       rpc_ta_shell_cmd_ex instead.
+ *       rpc_te_shell_cmd instead.
  *
  * @param rpcs     RPC server handle
  * @param cmd      NULL-terminated shell command line
@@ -155,6 +155,23 @@ extern rpc_wait_status rpc_shell_get_all(rcf_rpc_server *rpcs,
                                          tarpc_uid_t uid, ...);
 
 /**
+ * Execute shell command on the IPC server and read the output.
+ * The routine allocates memory for the output buffer and places
+ * null-terminated string to it.
+ * @b pbuf pointer is initialized by NULL if no buffer is allocated.
+ *
+ * @param rpcs          RPC server handle
+ * @param buf           location for the command output and stderr buffers
+ * @param cmd           format of the command to be executed
+ * @param ...           parameters for command
+ *
+ * @return status of the process
+ */
+extern rpc_wait_status rpc_shell_get_all2(rcf_rpc_server *rpcs,
+                                          char *buf[2], 
+                                          const char *cmd, ...);
+
+/**
  * Execute command on the RPC server as a given user and redirect
  * stdin/stdout to pipe(s) if necessary.
  * You MUST use uid parameter instead of "su - user -c", because su makes
@@ -166,14 +183,16 @@ extern rpc_wait_status rpc_shell_get_all(rcf_rpc_server *rpcs,
  * @param cmd       command format to execute
  * @param uid       user to run as
  * @param in_fd     location to store pipe to stdin or NULL
- * @param out_fd    location to stdin pipe to stdout or NULL
+ * @param out_fd    location to store pipe to stdout or NULL
+ * @param err_fd    location to store pipe to stderr or NULL
  * @param ...       parameters to command format
  *
  * @return pid of spawned process or -1 on failure
  */
-extern tarpc_pid_t rpc_ta_shell_cmd_ex(rcf_rpc_server *rpcs, 
+extern tarpc_pid_t rpc_te_shell_cmd(rcf_rpc_server *rpcs, 
                                        const char *cmd, tarpc_uid_t uid, 
-                                       int *in_fd, int *out_fd, ...);
+                                       int *in_fd, int *out_fd, int *err_fd,
+                                       ...);
 
 /**
  * Get environment variable.
@@ -198,22 +217,6 @@ extern char *rpc_getenv(rcf_rpc_server *rpcs, const char *name);
  */
 extern int rpc_setenv(rcf_rpc_server *rpcs, 
                       const char *name, const char *value, int overwrite);
-
-/**
- * Read all data from file descriptor in the RPC.
- * The routine allocates memory for the output buffer and places
- * null-terminated string to it.
- * @b pbuf pointer is initialized by NULL if no buffer is allocated.
- *
- * @param rpcs          RPC server handle
- * @param fd            file descriptor to read from
- * @param pbuf          location for the command output buffer
- * @param bytes         location for the number of bytes read
- *
- * @return 0 on success or -1 on failure
- */
-extern int rpc_read_all(rcf_rpc_server *rpcs, int fd, 
-                        char **pbuf, size_t *bytes);
 
 #ifdef __cplusplus
 } /* extern "C" */

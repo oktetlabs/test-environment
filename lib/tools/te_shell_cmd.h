@@ -41,6 +41,7 @@
 #include <errno.h>
 #endif
 
+#include "te_defs.h"
 #include "logger_api.h"
 
 #ifdef __cplusplus
@@ -65,10 +66,11 @@ extern "C" {
  * @return pid value, positive on success, negative on failure
  */
 static inline pid_t
-te_shell_cmd_inline(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
+te_shell_cmd_inline(const char *cmd, uid_t uid, 
+                    int *in_fd, int *out_fd, int *err_fd)
 {
     int   pid;
-    int   in_pipe[2], out_pipe[2];
+    int   in_pipe[2], out_pipe[2], err_pipe[2];
 
     if (cmd == NULL)
     {
@@ -86,55 +88,106 @@ te_shell_cmd_inline(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
         }
         return -1;
     }
-
-    pid = fork();
-    if (pid == 0)
+    if (err_fd != NULL && pipe(err_pipe) != 0)
     {
-        setpgid(getpid(), getpid());
         if (in_fd != NULL)
         {
+            close(in_pipe[0]);
             close(in_pipe[1]);
-            if (in_pipe[0] != STDIN_FILENO && 
-                (out_fd == NULL || out_pipe[1] != STDIN_FILENO))
-            {
-                close(STDIN_FILENO);
-                dup2(in_pipe[0], STDIN_FILENO);
-            }
         }
         if (out_fd != NULL)
         {
             close(out_pipe[0]);
-            if (out_pipe[1] != STDOUT_FILENO &&
-                (in_fd == NULL || out_pipe[1] != STDIN_FILENO))
-            {
-                close(STDOUT_FILENO);
-                dup2(out_pipe[1], STDOUT_FILENO);
-            }
+            close(out_pipe[1]);
         }
-        if (in_fd != NULL && out_fd != NULL && out_pipe[1] == STDIN_FILENO)
-        {
-            if (in_pipe[0] != STDOUT_FILENO)
-            {
-                close(STDOUT_FILENO);
-                dup2(out_pipe[1], STDOUT_FILENO);
-                close(STDIN_FILENO);
-                dup2(in_pipe[0], STDIN_FILENO);
-            }
-            else
-            {
-                int fd = dup(out_pipe[1]);
+        return -1;
+    }
 
-                close(out_pipe[1]);
-                dup2(in_pipe[0], out_pipe[1]);
-                close(in_pipe[0]);
-                dup2(fd, in_pipe[0]);
-            }
-        }
+    pid = fork();
+    if (pid == 0)
+    {
+        int pipe_fd[3] = { 0, 1, 2};
+        int busy_fd[6] = { -1, -1, -1, -1, -1, -1};
+        int i;
+
+        /* Set us to be the process leader */
+        setpgid(getpid(), getpid());
         if (uid != (uid_t)(-1) && setuid(uid) != 0)
         {
             ERROR("Failed to set user %d before runing command \"%s\"",
                   uid, cmd);
         }
+
+        /* Find file descriptors */
+        if (in_fd != NULL )
+        {
+            close(in_pipe[1]);
+            pipe_fd[0] = in_pipe[0];
+        }
+        if (out_fd != NULL )
+        {
+            close(out_pipe[0]);
+            pipe_fd[1] = out_pipe[1];
+        }
+        if (err_fd != NULL )
+        {
+            close(err_pipe[0]);
+            pipe_fd[2] = err_pipe[1];
+        }
+        for (i = 0; i < 3; i++)
+        {
+            if (pipe_fd[i] >= 0 && pipe_fd[i] < 6)
+                busy_fd[pipe_fd[i]] = i;
+        }
+
+        /* Dup file descriptors where necessary */
+        for (i = 0; i < 3; i++)
+        {
+            if (busy_fd[i] == -1)
+            {
+                dup2(pipe_fd[i], i);
+                close(pipe_fd[i]);
+                pipe_fd[i] = i;
+            }
+        }
+
+        /* Most likely, all pipe fds are duped correctly at this point */
+        if (pipe_fd[0] != 0 || pipe_fd[1] != 1 || pipe_fd[2] != 2)
+        {
+            WARN("This part of code in %s is not debugged properly. "
+                 "Tell sasha@oktetlabs.ru if it is really triggered",
+                 __FUNCTION__);
+            for (i = 0; i < 3; i++)
+            {
+                if (pipe_fd[i] != i && pipe_fd[i] < 3)
+                {
+                    /* Free 0,1,2 fds by duping them into 4,5,6
+                     * busy_fd is now correct in 3-5 interval only */
+                    int j;
+
+                    for (j = 3; j < 6; j++)
+                    {
+                        if (busy_fd[j] == -1)
+                        {
+                            dup2(pipe_fd[i], j);
+                            close(pipe_fd[i]);
+                            busy_fd[j] = i;
+                            pipe_fd[i] = j;
+                            break;
+                        }
+                    }
+                }
+            }
+            for (i = 0; i < 3; i++)
+            {
+                if (pipe_fd[i] != i)
+                {
+                    dup2(pipe_fd[i], i);
+                    close(pipe_fd[i]);
+                }
+            }
+        }
+
         execl("/bin/sh", "sh", "-c", cmd, (char *) 0);
         return 0;
     }
@@ -143,6 +196,8 @@ te_shell_cmd_inline(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
         close(in_pipe[0]);
     if (out_fd != NULL)
         close(out_pipe[1]);
+    if (err_fd != NULL)
+        close(err_pipe[1]);
     if (pid < 0)
     {
         if (in_fd != NULL)
@@ -155,6 +210,11 @@ te_shell_cmd_inline(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
             close(out_pipe[0]);
             *out_fd = -1;
         }
+        if (err_fd != NULL)
+        {
+            close(err_pipe[0]);
+            *err_fd = -1;
+        }
     }
     else
     {
@@ -162,12 +222,14 @@ te_shell_cmd_inline(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
             *in_fd = in_pipe[1];
         if (out_fd != NULL)
             *out_fd = out_pipe[0];
+        if (err_fd != NULL)
+            *err_fd = err_pipe[0];
     }
     return pid;
 }
 
 extern pid_t te_shell_cmd(const char *cmd, uid_t uid,
-                          int *in_fd, int *out_fd);
+                          int *in_fd, int *out_fd, int *err_fd);
 
 #ifdef __cplusplus
 } /* extern "C" */

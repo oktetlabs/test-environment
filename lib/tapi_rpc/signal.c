@@ -265,6 +265,7 @@ rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status,
     in.options = (rpc_waitpid_opts)options;
 
     rcf_rpc_call(rpcs, "waitpid", &in, &out);
+    memset(&stat, 0, sizeof(stat));
     if (out.pid > 0)
     {
         stat.value = out.status_value;

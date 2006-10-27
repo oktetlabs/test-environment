@@ -2630,6 +2630,7 @@ struct tarpc_te_shell_cmd_in {
     tarpc_uid_t uid;
     tarpc_bool  in_fd;
     tarpc_bool  out_fd;
+    tarpc_bool  err_fd;
 };
 
 struct tarpc_te_shell_cmd_out {
@@ -2638,6 +2639,7 @@ struct tarpc_te_shell_cmd_out {
     tarpc_pid_t pid;
     tarpc_int   in_fd;
     tarpc_int   out_fd;
+    tarpc_int   err_fd;
 };
 
 /* system() */

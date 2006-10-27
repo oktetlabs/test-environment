@@ -52,7 +52,8 @@
  * avoid issues with rcfunix dynamic linkage.
  */
 pid_t
-te_shell_cmd(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
+te_shell_cmd(const char *cmd, uid_t uid, 
+             int *in_fd, int *out_fd, int *err_fd)
 {
-    return te_shell_cmd_inline(cmd, uid, in_fd, out_fd);
+    return te_shell_cmd_inline(cmd, uid, in_fd, out_fd, err_fd);
 }

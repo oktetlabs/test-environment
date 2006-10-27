@@ -243,8 +243,8 @@ rpc_pclose(rcf_rpc_server *rpcs, rpc_file_p file)
  * cmd parameter should not be changed after call.
  */
 static tarpc_pid_t
-rpc_te_shell_cmd(rcf_rpc_server *rpcs, const char *cmd, 
-                 tarpc_uid_t uid, int *in_fd, int *out_fd)
+rpc_te_shell_cmd_gen(rcf_rpc_server *rpcs, const char *cmd, 
+                 tarpc_uid_t uid, int *in_fd, int *out_fd, int *err_fd)
 {
     tarpc_te_shell_cmd_in  in;
     tarpc_te_shell_cmd_out out;
@@ -264,6 +264,7 @@ rpc_te_shell_cmd(rcf_rpc_server *rpcs, const char *cmd,
     in.uid = uid;
     in.in_fd = (in_fd != NULL);
     in.out_fd = (out_fd != NULL);
+    in.err_fd = (err_fd != NULL);
 
     rcf_rpc_call(rpcs, "te_shell_cmd", &in, &out);
                  
@@ -271,12 +272,15 @@ rpc_te_shell_cmd(rcf_rpc_server *rpcs, const char *cmd,
         *in_fd = out.in_fd;
     if (out_fd != NULL)
         *out_fd = out.out_fd;
+    if (err_fd != NULL)
+        *err_fd = out.err_fd;
 
-    TAPI_RPC_LOG("RPC (%s,%s): te_shell_cmd(\"%s\", %d, %p(%d), %p(%d)) "
-                 "-> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): te_shell_cmd(\"%s\", %d, "
+                 "%p(%d), %p(%d), %p(%d)) -> %d (%s)",
                  rpcs->ta, rpcs->name, cmd, uid, 
                  in_fd, (in_fd == NULL) ? 0 : *in_fd,
                  out_fd, (out_fd == NULL) ? 0 : *out_fd,
+                 err_fd, (err_fd == NULL) ? 0 : *err_fd,
                  out.pid, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(te_shell_cmd, out.pid);
@@ -284,23 +288,36 @@ rpc_te_shell_cmd(rcf_rpc_server *rpcs, const char *cmd,
 
 /* See description in tapi_rpc_stdio.h */
 tarpc_pid_t
-rpc_ta_shell_cmd_ex(rcf_rpc_server *rpcs, const char *cmd, 
-                    tarpc_uid_t uid, int *in_fd, int *out_fd, ...)
+rpc_te_shell_cmd(rcf_rpc_server *rpcs, const char *cmd, tarpc_uid_t uid, 
+                 int *in_fd, int *out_fd, int *err_fd, ...)
 {
     char    cmdline[RPC_SHELL_CMDLINE_MAX];
     va_list ap;
 
-    va_start(ap, out_fd);
+    va_start(ap, err_fd);
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
 
-    return rpc_te_shell_cmd(rpcs, cmdline, uid, in_fd, out_fd);
+    return rpc_te_shell_cmd_gen(rpcs, cmdline, uid, in_fd, out_fd, err_fd);
 }
 
 /** Chunk for memory allocation in rpc_read_all */
 #define RPC_READ_ALL_BUF_CHUNK     1024          
 
-int
+/**
+ * Read all data from file descriptor in the RPC.
+ * The routine allocates memory for the output buffer and places
+ * null-terminated string to it.
+ * @b pbuf pointer is initialized by NULL if no buffer is allocated.
+ *
+ * @param rpcs          RPC server handle
+ * @param fd            file descriptor to read from
+ * @param pbuf          location for the command output buffer
+ * @param bytes         location for the number of bytes read (OUT)
+ *
+ * @return 0 on success or -1 on failure
+ */
+static int
 rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, size_t *bytes)
 {
     char   *buf = NULL;
@@ -357,6 +374,86 @@ rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, size_t *bytes)
     return rc;
 }
 
+/**
+ * Read all data from file descriptors in the RPC.
+ * The routine allocates memory for the output buffers and places
+ * null-terminated string to it.
+ *
+ * @param rpcs          RPC server handle
+ * @param fd            file descriptors to read from
+ * @param buf          location for the command output buffer
+ * @param bytes         location for the number of bytes read (OUT)
+ *
+ * @return 0 on success or -1 on failure
+ */
+static int
+rpc_read_all2(rcf_rpc_server *rpcs, int fd[2], char *buf[2], 
+              size_t bytes[2])
+{
+    size_t  buflen[2] = {RPC_READ_ALL_BUF_CHUNK, RPC_READ_ALL_BUF_CHUNK};
+    int     rc = 0;
+    te_bool all_read[2] = {FALSE, FALSE};
+
+    rpc_fd_set_p fdset;
+
+    bytes[0] = bytes[1] = 0;
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid parameters", __FUNCTION__);
+        return  -1;
+    }
+
+    buf[0] = calloc(1, buflen[0]);
+    buf[1] = calloc(1, buflen[1]);
+    if (buf[0] == NULL || buf[1] == NULL)
+    {
+        ERROR("Out of memory");
+        free(buf[0]);
+        free(buf[1]);
+        return -1;
+    }
+
+    do {
+        int used;
+        int i;
+
+        fdset = rpc_fd_set_new(rpcs);
+        rpc_do_fd_zero(rpcs, fdset);
+        rpc_do_fd_set(rpcs, fd[0], fdset);
+        rpc_do_fd_set(rpcs, fd[1], fdset);
+        rpc_select(rpcs, MAX(fd[0], fd[1]) + 1, fdset, RPC_NULL, RPC_NULL, 
+                   RPC_NULL);
+        for (i = 0; i < 2; i++)
+        {
+            if (all_read[i] || !rpc_do_fd_isset(rpcs, fd[i], fdset))
+                continue;
+            used = rpc_read(rpcs, fd[i], buf[i] + bytes[i], 
+                            buflen[i] - bytes[i]);
+            if (used < 0)
+            {
+                ERROR("Cannot read from file descriptor: rpc_read failed");
+                return -1;
+            }
+            if (used == 0)
+                all_read[i] = TRUE;
+
+            bytes[i] += used;
+            if (bytes[i] == buflen[i])
+            {
+                buflen[i] = buflen[i] * 2;
+                if ((buf[i] = realloc(buf[i], buflen[i])) == NULL)
+                {
+                    ERROR("Out of memory");
+                    return -1;
+                }
+                memset(buf[i] + bytes[i], 0, buflen[i] - bytes[i]);
+            }
+        }
+    } while (!all_read[0] || !all_read[1]);
+    
+    return rc;
+}
+
 rpc_wait_status
 rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, 
                   tarpc_uid_t uid, ...)
@@ -375,6 +472,7 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
 
+    memset(&rc, 0, sizeof(rc));
     rc.flag = RPC_WAIT_STATUS_UNKNOWN;
     if (rpcs == NULL || pbuf == NULL)
     {
@@ -383,16 +481,74 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,
     }
     
     iut_err_jump = rpcs->iut_err_jump;
-    if ((pid = rpc_te_shell_cmd(rpcs, cmdline, uid, NULL, &fd)) < 0)
+    pid = rpc_te_shell_cmd_gen(rpcs, cmdline, uid, NULL, &fd, NULL);
+    if (pid < 0)
     {
-        ERROR("Cannot execute the command: rpc_te_shell_cmd() failed");
+        ERROR("Cannot execute the command: rpc_te_shell_cmd_gen() failed");
         return rc;
     }
 
+    *pbuf = NULL;
     if (rpc_read_all(rpcs, fd, pbuf, &bytes) != 0)
         rpc_kill(rpcs, pid, RPC_SIGKILL);
 
     rpc_close(rpcs, fd);
+
+    /* Restore jump setting to avoid jump after command crash. */
+    rpcs->iut_err_jump = iut_err_jump;
+    /* 
+     * @todo if we will jump, we'd better free(buf).
+     * As test is failed in any way, this memory leak is not important.
+     * Let's think that its test responsibility to free the buf in any
+     * case.
+     */
+    rpc_waitpid(rpcs, pid, &rc, 0);
+
+    return rc;
+}
+
+rpc_wait_status
+rpc_shell_get_all2(rcf_rpc_server *rpcs, char *buf[2],
+                   const char *cmd, ...)
+{
+    size_t  bytes[2];
+    size_t  read1, read2;
+    char    cmdline[RPC_SHELL_CMDLINE_MAX];
+    int     fd[2];
+
+    tarpc_pid_t     pid;
+    rpc_wait_status rc;
+    int iut_err_jump;
+
+    va_list ap;
+
+    va_start(ap, cmd);
+    vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
+    va_end(ap);
+
+    memset(&rc, 0, sizeof(rc));
+    rc.flag = RPC_WAIT_STATUS_UNKNOWN;
+    if (rpcs == NULL || buf == NULL)
+    {
+        ERROR("%s(): Invalid parameters", __FUNCTION__);
+        return rc;
+    }
+    
+    iut_err_jump = rpcs->iut_err_jump;
+    pid = rpc_te_shell_cmd_gen(rpcs, cmdline, -1, NULL, &fd[0], &fd[1]);
+    if (pid < 0)
+    {
+        ERROR("Cannot execute the command: rpc_te_shell_cmd_gen() failed");
+        return rc;
+    }
+
+    read1 = read2 = 0;
+    buf[0] = buf[1] = NULL;
+    if (rpc_read_all2(rpcs, fd, buf, bytes) != 0)
+        rpc_kill(rpcs, pid, RPC_SIGKILL);
+
+    rpc_close(rpcs, fd[0]);
+    rpc_close(rpcs, fd[1]);
 
     /* Restore jump setting to avoid jump after command crash. */
     rpcs->iut_err_jump = iut_err_jump;
@@ -416,6 +572,7 @@ rpc_system(rcf_rpc_server *rpcs, const char *cmd)
 
     char *cmd_dup = strdup(cmd);
 
+    memset(&rc, 0, sizeof(rc));
     rc.flag = RPC_WAIT_STATUS_UNKNOWN;
 
     memset(&in, 0, sizeof(in));

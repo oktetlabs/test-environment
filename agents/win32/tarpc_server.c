@@ -3946,6 +3946,9 @@ TARPC_FUNC(te_shell_cmd,{},
     if (in->out_fd)
         si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
+    if (in->err_fd)
+        si.hErrOutput = GetStdHandle(STD_ERROR_HANDLE);
+
     if (CreateProcess(NULL, in->cmd.cmd_val, NULL, NULL,
                       TRUE, 0, NULL, NULL,
                       &si, &info))
@@ -3953,6 +3956,7 @@ TARPC_FUNC(te_shell_cmd,{},
         out->pid = info.dwProcessId;
         out->in_fd = *((int *)si.hStdInput);
         out->out_fd = *((int *)si.hStdOutput);
+        out->err_fd = *((int *)si.hErrOutput);
         goto finish;
     }
     else
