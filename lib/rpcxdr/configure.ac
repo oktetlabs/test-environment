@@ -61,6 +61,7 @@ AC_CHECK_MEMBER(struct XDR.x_ops->x_getint32, [],
 AM_CONDITIONAL(DIST_RPCDEFS, test -n "$with_rpcdefs")
 RPCDEFS=
 RPCDEFS_DIST_FILES=
+with_rpcdefs="${with_rpcdefs//,/ }"
 for i in $with_rpcdefs ; do 
     TMP=`basename $i`
     if test ! -e $i -a -e ${srcdir}/$TMP ; then
