@@ -73,7 +73,7 @@
 #define TESTER_GDB_FILENAME_FMT "gdb.%d"
 
 /** Tester run path log user */
-#define TESTER_CONTROL             "Control"
+#define TESTER_CONTROL             TE_LOG_CMSG_USER
 /** Prefix of all messages from Tester:Flow user */
 #define TESTER_CONTROL_MSG_PREFIX  "%u %u "
 
@@ -789,8 +789,15 @@ tester_test_status_to_te_test_result(tester_test_status status,
 
     if (*error != NULL)
     {
-        te_test_verdict *v = TE_ALLOC(sizeof(*v));
+        te_test_verdict *v;
 
+        /* 
+         * Put additional verdict into the log to have correct
+         * results with off-line TRC tools.
+         */
+        TE_LOG_ERROR(TE_LOG_CMSG_USER, "%s", *error);
+
+        v = TE_ALLOC(sizeof(*v));
         if (v == NULL)
         {
             /* 
