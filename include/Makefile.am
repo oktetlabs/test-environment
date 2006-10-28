@@ -60,11 +60,12 @@ EXTRA_DIST=tarpc.x.m4 rpc_unsupported.m4
 
 if WINDOWS
 
+include_HEADERS+=te_win_sizeof.h
 include_HEADERS+=te_win.h
 
 else
 
-EXTRA_DIST+=te_win.h.in
+EXTRA_DIST+=te_win_sizeof.h.in te_win.h
 
 endif
 

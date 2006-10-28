@@ -89,24 +89,7 @@ INCLUDE(limits.h)
 #define HAVE_STRING_H 1
 #define STDC_HEADERS 1
 
-#define SIZEOF_CHAR             1
-#define SIZEOF_INT              4
-#define SIZEOF_LONG             4
-#define SIZEOF_LONG_LONG        8
-#define SIZEOF_SHORT            2
-#define SIZEOF_SOCKLEN_T        4
-
-#define SIZEOF_SIZE_T           @SIZEOF_SIZE_T@
-#define SIZEOF_VOID_P           @SIZEOF_VOID_P@
-
-#define SIZEOF_TE_LOG_ID        4
-#define SIZEOF_TE_LOG_LEVEL     2
-#define SIZEOF_TE_LOG_NFL       2
-#define SIZEOF_TE_LOG_SEQNO     4
-#define SIZEOF_TE_LOG_TS_SEC    4
-#define SIZEOF_TE_LOG_TS_USEC   4
-#define SIZEOF_TE_LOG_VERSION   1
-
+#include "te_win_sizeof.h"
 #include "te_win_defs.h"
 
 #endif
