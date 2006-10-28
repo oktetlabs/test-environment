@@ -16,21 +16,19 @@ AC_PROG_INSTALL
 AC_CHECK_TOOL(NM, nm)
 AC_CANONICAL_HOST
 
-if test "$with_priv_rpc_lib" ; then
-if test -z ${PRIV_LIB_DIR} ; then
-    PRIV_LIB_DIR=${TE_BASE}/lib
-fi
-AC_ARG_VAR(PRIV_LIB_DIR)
-
-RPCSERVER_SYMTBL_ADD="\$(DESTDIR)/\$(prefix)/../\$(TE_PLATFORM)\
-/lib/lib${with_priv_rpc_lib}.a" 
-RPCSERVER_SRC_ADD="${PRIV_LIB_DIR}/${with_priv_rpc_lib}/rpc.c"
-
-AC_SUBST(RPCSERVER_SYMTBL_ADD)
-AC_SUBST(RPCSERVER_SRC_ADD)
-fi
-    
 TE_APP_SET
+
+RPCSERVER_SYMTBL_ADD=
+RPCSERVER_LIBS_ADD=
+with_rpc_libs="${with_rpc_libs//,/ }"
+for i in $with_rpc_libs ; do 
+    RPCSERVER_SYMTBL_ADD="$RPCSERVER_SYMTBL_ADD \
+        \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/lib${i}.a"
+    RPCSERVER_LIBS_ADD="$RPCSERVER_LIBS_ADD lib${i}.a"
+done
+AC_SUBST(RPCSERVER_SYMTBL_ADD)
+AC_SUBST(RPCSERVER_LIBS_ADD)
+    
 
 AC_SUBST([with_name])
 

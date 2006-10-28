@@ -83,24 +83,21 @@ rpcserver_symtbl.c: tarpc_server.o common.o $(RPCSERVER_SYMTBL_ADD)
 
 # Native build
 
-RPCSERVER_LIBS="librcfpch.a libloggerta.a libtools.a librpc.a librpc_types.a \
+RPCSERVER_LIBS="librcfpch.a libloggerta.a libtools.a librpc_types.a \
+                $(RPCSERVER_LIBS_ADD) librpcxdrta.a librpc.a  \
                 ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib user32.lib"
 
-RPCSERVER_SRC= $(rpcserver_SOURCES) \
-               rpcserver_symtbl.c rpc_unsupported.c \
-               ${srcdir}/../../lib/rpcxdr/rpc_xdr.c \
-               ../../lib/@TE_PLATFORM@_rpcxdr/tarpc_xdr.c \
-               $(RPCSERVER_SRC_ADD)
+RPCSERVER_SRC= $(rpcserver_SOURCES) rpcserver_symtbl.c rpc_unsupported.c 
 
 rpcserver32$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
-        $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
-        $(TE_PLATFORM) windows $@ \"$(RPCSERVER_LIBS)\" $^
+        $(TE_PATH)/te_build_win_app $(srcdir) $(TE_PLATFORM) windows $@ \
+                                    \"$(RPCSERVER_LIBS)\" $^
         
 rpcserver64$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
-        $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
-        $(TE_PLATFORM) windows_64 $@ \"$(RPCSERVER_LIBS)\" $^
+        $(TE_PATH)/te_build_win_app $(srcdir) $(TE_PLATFORM) windows_64 $@ \
+                                    \"$(RPCSERVER_LIBS)\" $^
 
 install-data-hook:
 	if test -e rpcserver32$(EXEEXT) -a ! -s rpcserver32$(EXEEXT) \

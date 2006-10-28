@@ -31,46 +31,53 @@
 #ifndef __TARPC_SERVER_H__
 #define __TARPC_SERVER_H__
 
-#ifndef WINDOWS
-#include <winsock2.h>
-#include <winerror.h>
-#include <mswsock.h>
-#include <ws2tcpip.h>
-#define _SYS_SOCKET_H
-#define _NETINET_IN_H
-#else
-INCLUDE(te_win_defs.h)
-#endif
-
-#include "tarpc.h"
-#include "ta_common.h"
-
-#if defined(_WINSOCK_H) || defined(__CYGWIN__)
+#if defined(_WINSOCK_H) || defined(__CYGWIN__) || defined(WINDOWS)
 struct timezone {
   int tz_minuteswest;
   int tz_dsttime;
 };
 #endif
 
-#define TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
+#ifndef WINDOWS
 
-#undef ERROR
+#include <winsock2.h>
+#include <winerror.h>
+#include <mswsock.h>
+#include <ws2tcpip.h>
+#undef   ERROR
+#define _SYS_SOCKET_H
+#define _NETINET_IN_H
 #include "te_errno.h"
-#include "rcf_pch.h"
-#include "logger_api.h"
-#include "logfork.h"
+#include "tarpc.h"
 #include "rcf_rpc_defs.h"
 #include "te_rpc_errno.h"
+#include "rcf_pch.h"
 
-#ifndef WINDOWS
-#include "te_rpc_types.h"
 #else
-INCLUDE(te_rpc_types.h)
+
+#define __TE_ERRNO_H__
+INCLUDE(te_win_sizeof.h)
+INCLUDE(te_win_defs.h)
+INCLUDE(te_errno.h)
+INCLUDE(tarpc.h)
+INCLUDE(rcf_rpc_defs.h)
+INCLUDE(te_rpc_errno.h)
+
+extern void *rcf_pch_rpc_server(const char *name);
+
 #endif
+
+#include "te_defs.h"
+#include "te_rpc_types.h"
+#include "logger_api.h"
+#include "logfork.h"
+#include "ta_common.h"
+
+
+#define TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
 
 /** Discover addresses of *Ex functions */
 extern void wsa_func_handles_discover();
-
 
 /** Try to get both cygwin and windows environment; non-reenterable */
 static inline char *
