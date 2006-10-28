@@ -21,4 +21,5 @@ AM_LDFLAGS = @TS_LDFLAGS@
 LDADD = -ltapi_ipstack -ltapi_arp -ltapi_eth @TS_LIBS@
 
 tetest_PROGRAMS = \
-	ip4_raw_send
+	ip4_raw_send_udp \
+	ip4_raw_send_icmp
