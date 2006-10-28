@@ -795,7 +795,8 @@ tester_test_status_to_te_test_result(tester_test_status status,
          * Put additional verdict into the log to have correct
          * results with off-line TRC tools.
          */
-        TE_LOG_ERROR(TE_LOG_CMSG_USER, "%s", *error);
+        TE_LOG(TE_LL_ERROR, "Tester Verdict", TE_LOG_CMSG_USER,
+               "%s", *error);
 
         v = TE_ALLOC(sizeof(*v));
         if (v == NULL)
