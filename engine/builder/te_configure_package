@@ -148,6 +148,7 @@ PARMS="$PARMS --build=`gcc -dumpmachine` \
        TE_CFLAGS=\"-O2 -ggdb -Wall -W ${ADD_CFLAGS} \" \
        TE_LDFLAGS=\"${ADD_LDFLAGS}\" \
        TE_LDADD=\"$LDADD\" \
+       TE_PATH=\"$TE_PATH\" \
        TE_PLATFORM=$PLATFORM"
 
 configure_package
