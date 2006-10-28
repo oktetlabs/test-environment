@@ -3,11 +3,12 @@
 # Windows Test Agent
 # Build library using native compiler
 # Agruments: 
-#     source directory
 #     platform
 #     library name
 #     installation prefix for the platform
 #     list of source files (basenames only)
+#
+# Variable TE_BUILD_WIN_LIB_CPPFLAGS may be set to pass to pre-processor.
 #     
 # Copyright (C) 2006 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
@@ -33,11 +34,10 @@
 # $Id:  $
 #
 
-SRCDIR="$1"
-PLATFORM="$2"
-LIBNAME="$3"
-INCLUDE="$4/include"
-shift 4
+PLATFORM="$1"
+LIBNAME="$2"
+INCLUDE="$3/include"
+shift 3
 
 BUILDER=`dirname $0`
 
@@ -60,25 +60,26 @@ fi
 
 rm -rf tmpsrc "${LIBNAME}"
 mkdir tmpsrc
-cd tmpsrc
 
 # Apply pre-processor
 
 for i in $* ; do 
-    gcc -I${INCLUDE} -I${SRCDIR} -include te_win.h -DWINDOWS \
-        -P -E -undef ${SRCDIR}/${i} -o ${i}.tmp1 ; 
-    cat ${i}.tmp1 | awk --posix '\
+    j=`basename $i`
+    gcc -I${INCLUDE} ${TE_BUILD_WIN_LIB_CPPFLAGS} -I. \
+        -include te_win.h -DWINDOWS \
+        -P -E -undef ${i} -o ${j}.tmp1 ; 
+    cat ${j}.tmp1 | awk --posix '\
     /^INCLUDE/ { printf("#include <%s>\n", \
                  substr($1, 9, length($1) - 9)); next; } \
-    { print $0; }'  > ${i}.tmp2 ; 
-    $BUILDER/te_rpc_conv ${i}.tmp2 ${i}
-    rm ${i}.tmp* ; 
-    indent ${i} ;
+    { print $0; }' > ${j}.tmp2 ; 
+    $BUILDER/te_rpc_conv ${j}.tmp2 ${j}
+    rm ${j}.tmp* ; 
+    indent $j ;
+    mv $j tmpsrc
 done
 rm -f *~
 
 # Generate the script
-cd ..
 cat >build.sh <<EOF
 MSSDK_CYGWIN=\$( cygpath -u "\$MSSDK" ) 
 export PATH="\${MSSDK_CYGWIN}/Bin$PATH_POSTFIX:\$PATH"

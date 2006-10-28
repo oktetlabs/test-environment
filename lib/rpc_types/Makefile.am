@@ -25,17 +25,15 @@ include_HEADERS = \
 
 if WINDOWS
 
-WIN_SRC=defs.c wsa.c sys_socket.c fcntl.c
-
 lib_LIBRARIES=librpc_types.a
 
 librpc_types_a_CFLAGS=-DTE_DUMMY $(AM_CFLAGS)
-librpc_types_a_SOURCES=$(WIN_SRC)
+librpc_types_a_SOURCES=defs.c wsa.c sys_socket.c fcntl.c
 
-librpc_types.a: $(WIN_SRC) 
+librpc_types.a: $(librpc_types_a_SOURCES) 
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
-        $(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) \
-        $(TE_PLATFORM) $@ $(DESTDIR)/$(prefix) $(WIN_SRC)
+        $(TE_PATH)/te_build_win_lib $(TE_PLATFORM) $@ \
+                                    $(DESTDIR)/$(prefix) $^
 
 install-exec-hook:
 	if test -e $(lib_LIBRARIES) -a ! -s $(lib_LIBRARIES) \

@@ -17,6 +17,14 @@ AC_PROG_RANLIB
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
+if test x$host != x${host%windows} ; then
+    RANLIB=touch
+else    
+    AC_PROG_RANLIB
+fi    
+
+AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
+
 TE_LIB_SET
 
 AC_CHECK_HEADERS([expat.h rpc/types.h])
