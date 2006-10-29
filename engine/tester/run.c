@@ -791,12 +791,15 @@ tester_test_status_to_te_test_result(tester_test_status status,
     {
         te_test_verdict *v;
 
+#if 0
+        /* TODO: Verdict message has to have correct ID */
         /* 
          * Put additional verdict into the log to have correct
          * results with off-line TRC tools.
          */
         TE_LOG(TE_LL_ERROR, "Tester Verdict", TE_LOG_CMSG_USER,
                "%s", *error);
+#endif
 
         v = TE_ALLOC(sizeof(*v));
         if (v == NULL)
