@@ -190,9 +190,9 @@ extern rpc_wait_status rpc_shell_get_all2(rcf_rpc_server *rpcs,
  * @return pid of spawned process or -1 on failure
  */
 extern tarpc_pid_t rpc_te_shell_cmd(rcf_rpc_server *rpcs, 
-                                       const char *cmd, tarpc_uid_t uid, 
-                                       int *in_fd, int *out_fd, int *err_fd,
-                                       ...);
+                                    const char *cmd, tarpc_uid_t uid, 
+                                    int *in_fd, int *out_fd, int *err_fd,
+                                    ...);
 
 /**
  * Get environment variable.
