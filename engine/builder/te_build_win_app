@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Windows Test Agent
 # Build application using native compiler

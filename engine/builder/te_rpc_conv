@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # RPC support
 # Substitute RPC2H and H2RPC by proper code

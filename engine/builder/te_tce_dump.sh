@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Test Coverage Estimation
 # Gather TCE dumps for all NUT images

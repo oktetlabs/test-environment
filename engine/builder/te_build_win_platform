@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Windows Test Agent
 # Calculates some variables for the Windows platform
