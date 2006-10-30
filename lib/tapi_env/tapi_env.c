@@ -744,7 +744,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
             free(net_oid);
             break;
         }
-        free(ip_nets);
+        free(ip_nets); ip_nets = NULL;
 
         /* Get IPv4 subnet for the network */
         val_type = CVT_INTEGER;
@@ -791,6 +791,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         if (n_ip_nets <= 0)
         {
             INFO("No IPv6 networks are assigned to net '%s'", net_oid);
+            free(ip_nets);
             free(net_oid);
             continue;
         }
