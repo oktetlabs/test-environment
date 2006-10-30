@@ -807,16 +807,23 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         *num = (msg->len - sizeof(cfg_pattern_msg)) / sizeof(cfg_handle);
-        *set = (cfg_handle *)calloc(*num, sizeof(cfg_handle));
-        if (set == NULL)
+        if (*num > 0)
         {
-            *num = 0;
-            ret_val = TE_ENOMEM;
+            *set = (cfg_handle *)calloc(*num, sizeof(cfg_handle));
+            if (set == NULL)
+            {
+                *num = 0;
+                ret_val = TE_ENOMEM;
+            }
+            else
+            {
+                memcpy((void *)(*set), (void *)(msg->handles),
+                       *num * sizeof(cfg_handle));
+            }
         }
         else
         {
-            memcpy((void *)(*set), (void *)(msg->handles),
-                   *num * sizeof(cfg_handle));
+            *set = NULL;
         }
     }
 #ifdef HAVE_PTHREAD_H
