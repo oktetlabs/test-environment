@@ -2130,21 +2130,33 @@ mcast_link_addr_change(const char *ifname, const char *addr, int op)
     struct ifreq    request;
     int             i;
     const char     *p;
+    uint8_t        *q;
 
     memset(&request, 0, sizeof(request));
     strncpy(request.ifr_name, ifname, IFNAMSIZ);
     /* Read MAC address */
+#ifdef HAVE_STRUCT_IFREQ_IFR_HWADDR        
+    q = request.ifr_hwaddr.sa_data;
+#elif HAVE_STRUCT_IFREQ_IFR_ENADDR
+    q = request.ifr_enaddr;
+#else
+    request.ifr_addr.sa_family = AF_LINK;
+    {
+        struct sockaddr_dl *sdl =
+            (struct sockaddr_dl *)&(request.ifr_addr);
+
+        sdl->sdl_alen = ETHER_ADDR_LEN;
+        q = (uint8_t *)sdl->sdl_data;
+    }
+#endif            
+
     for (i = 0, p = addr; i < ETHER_ADDR_LEN; i++)
     {
-        unsigned int tmp;
+        unsigned tmp;
 
         if (p == NULL || (sscanf(p, "%02x", &tmp) < 1) || tmp > 0xff)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#ifdef HAVE_STRUCT_IFREQ_IFR_HWADDR        
-        request.ifr_hwaddr.sa_data[i] = tmp;
-#else
-        request.ifr_enaddr[i] = tmp;
-#endif        
+        q[i] = (uint8_t)tmp;
         p = strchr(p, ':');
         /* Skip the colon */
         if (p != NULL)

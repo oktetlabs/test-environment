@@ -100,6 +100,15 @@ AC_CHECK_MEMBERS([struct ifreq.ifr_hwaddr], [], [], [
 ])
 
 dnl
+dnl Check for 'ifr_enaddr' member in 'struct ifreq'.
+dnl
+AC_CHECK_MEMBERS([struct ifreq.ifr_enaddr], [], [], [
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <net/if.h>
+])
+
+dnl
 dnl Check for 'lifr_mtu' member in 'struct lifreq'.
 dnl
 AC_CHECK_MEMBERS([struct lifreq.lifr_mtu], [], [], [
