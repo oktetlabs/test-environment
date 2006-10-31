@@ -759,18 +759,31 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     {
         const void *ifa;
 
-        addrlen = te_sockaddr_get_size_by_af(rt_info->dst.ss_family);
-        if (msglen < addrlen)
-            RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
-        msglen -= addrlen;
-        msg->rtm_msglen += addrlen;
-        rc = ta_unix_conf_get_addr(rt_info->ifname, rt_info->dst.ss_family,
-                                   &ifa);
-        if (rc != 0)
+        if (rt_info->flags & TA_RT_INFO_FLG_SRC)
         {
-            ERROR("Failed to get interface '%s' address: %r",
-                  rt_info->ifname, rc);
-            RETURN_RC(rc);
+            if (rt_info->dst.ss_family != rt_info->src.ss_family)
+            {
+                ERROR("Destination and sources address families mismatch");
+                RETURN_RC(TE_RC(TE_TA_UNIX, TE_EINVAL));
+            }
+            ifa = te_sockaddr_get_netaddr(CONST_SA(&rt_info->src));
+        }
+        else
+        {
+            addrlen = te_sockaddr_get_size_by_af(rt_info->dst.ss_family);
+            if (msglen < addrlen)
+                RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
+            msglen -= addrlen;
+            msg->rtm_msglen += addrlen;
+            rc = ta_unix_conf_get_addr(rt_info->ifname,
+                                       rt_info->dst.ss_family,
+                                       &ifa);
+            if (rc != 0)
+            {
+                ERROR("Failed to get interface '%s' address: %r",
+                      rt_info->ifname, rc);
+                RETURN_RC(rc);
+            }
         }
         memset(addr, 0, addrlen);
         addr->sa_family = rt_info->dst.ss_family;
@@ -819,7 +832,14 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         msg->rtm_addrs |= RTA_IFP;
         addr = SA(((const uint8_t *)addr) + addrlen);
     }
-#ifdef RTA_SRC
+#if 0 /* def RTA_SRC */
+    /* 
+     * Currently source address is used as GW for direct routes,
+     * it guaranties that this address is used as a source for such
+     * routes. If this code is enabled, Solaris returns EADDRNOTAVAIL
+     * on attempt to add route with specified source address. It
+     * requires further investigation.
+     */
     /* Source */
     if (rt_info->flags & TA_RT_INFO_FLG_SRC)
     {
