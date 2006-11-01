@@ -659,7 +659,7 @@ struct tarpc_lseek_out {
     tarpc_off_t          retval;
 };
 
-/* lseek() */
+/* fsync() */
 
 struct tarpc_fsync_in {
     struct tarpc_in_arg common;
