@@ -412,6 +412,11 @@ static te_errno status_get(unsigned int, const char *, char *,
 static te_errno status_set(unsigned int, const char *, const char *,
                            const char *);
 
+static te_errno promisc_get(unsigned int, const char *, char *,
+                            const char *);
+static te_errno promisc_set(unsigned int, const char *, const char *,
+                            const char *);
+
 static te_errno arp_get(unsigned int, const char *, char *,
                         const char *);
 static te_errno arp_set(unsigned int, const char *, const char *,
@@ -498,7 +503,10 @@ static rcf_pch_cfg_object node_mcast_link_addr =
       (rcf_ch_cfg_del)mcast_link_addr_del,
       (rcf_ch_cfg_list)mcast_link_addr_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_mcast_link_addr,
+RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_mcast_link_addr,
+                    promisc_get, promisc_set);
+
+RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
                     status_get, status_set);
 
 RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
@@ -3964,6 +3972,76 @@ status_set(unsigned int gid, const char *oid, const char *value,
 
     return 0;
 }
+
+
+/**
+ * Get promiscuous mode of the interface ("0" - normal or "1" - promiscuous)
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+promisc_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+    te_errno rc;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    strcpy(req.my_ifr_name, ifname);
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+
+    sprintf(value, "%d", (req.my_ifr_flags & IFF_PROMISC) != 0);
+
+    return 0;
+}
+
+/**
+ * Change the promiscuous mode of the interface 
+ * ("1" - enable, "0" - disable)
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+promisc_set(unsigned int gid, const char *oid, const char *value,
+           const char *ifname)
+{
+    te_errno rc;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+
+    if (strcmp(value, "0") == 0)
+        req.my_ifr_flags &= ~IFF_PROMISC;
+    else if (strcmp(value, "1") == 0)
+        req.my_ifr_flags |= IFF_PROMISC;
+    else
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
+
+    return 0;
+}
+
 
 #ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
 /** Find neighbour entry and return its parameters */

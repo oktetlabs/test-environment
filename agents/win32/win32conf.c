@@ -158,6 +158,11 @@ static te_errno status_get(unsigned int, const char *, char *,
 static te_errno status_set(unsigned int, const char *, const char *,
                            const char *);
 
+static te_errno promisc_get(unsigned int, const char *, char *,
+                            const char *);
+static te_errno promisc_set(unsigned int, const char *, const char *,
+                            const char *);
+
 static te_errno mtu_get(unsigned int, const char *, char *,
                         const char *);
 
@@ -280,7 +285,10 @@ static rcf_pch_cfg_object node_neigh_static =
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
       (rcf_ch_cfg_list)neigh_list, NULL, NULL};
 
-RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_neigh_static,
+RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_neigh_static,
+                    promisc_get, promisc_set);
+
+RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
                     status_get, status_set);
 
 RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
@@ -1319,6 +1327,58 @@ status_set(unsigned int gid, const char *oid, const char *value,
 
     return 0;
 }
+
+
+/**
+ * Get promiscuous mode of the interface ("0" - disabled or "1" - enabled).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return status code
+ */
+static te_errno
+promisc_get(unsigned int gid, const char *oid, char *value,
+           const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    /* TODO */
+    *value = '0';
+    value[1] = '\0';
+
+    return 0;
+}
+
+/**
+ * Change status of the interface. If virtual interface is put to down
+ * state, it is de-installed and information about it is stored in the
+ * list of down interfaces.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return status code
+ */
+static te_errno
+promisc_set(unsigned int gid, const char *oid, const char *value,
+           const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    /* TODO */
+    if (strcmp(value, "0") == 0)
+        return 0;
+
+    return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
+}
+
 
 /** Find neighbour entry and return its parameters */
 static te_errno

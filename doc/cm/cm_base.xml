@@ -115,7 +115,14 @@
          Value: 0 (disabled) or 1 (enabled)
          Limit: 1 -->
     <object oid="/agent/interface/status" access="read_write" type="integer"/>
-    
+  
+    <!-- Check whether the interface is in promiscuous mode
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/interface/promisc" access="read_write" type="integer"/>
+  
+  
     <!-- Enable/disable use of ARP protocol on the interface.
          Name:  empty
          Value: 0 (disabled) or 1 (enabled)
