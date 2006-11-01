@@ -206,7 +206,7 @@ extern const asn_type *const ndn_traffic_pattern;
 extern const asn_type *const ndn_traffic_pattern_unit;
 extern const asn_type *const ndn_raw_packet;
 
-extern const asn_type *const ndn_generic_csap_level;
+extern const asn_type *const ndn_generic_csap_layer;
 extern const asn_type *const ndn_generic_pdu; 
 
 

@@ -199,7 +199,7 @@ const asn_type * const ndn_payload = &ndn_payload_s;
 
 static asn_type ndn_csap_spec_s =
 { "CSAP-spec", {PRIVATE, NDN_CSAP_SPEC}, SEQUENCE_OF, 0,
-    {subtype: &ndn_generic_csap_level_s} };
+    {subtype: &ndn_generic_csap_layer_s} };
 
 const asn_type * const ndn_csap_spec = &ndn_csap_spec_s;
 

@@ -76,7 +76,7 @@ main (void)
     test_string_parse ("{ number 1, string \"aa\" }", &at_plain_seq1);
     test_string_parse ("{ number 1 }", &at_plain_seq1);
 #endif
-    test_string_parse ("snmp:{ version plain:1 }", ndn_generic_csap_level);
+    test_string_parse ("snmp:{ version plain:1 }", ndn_generic_csap_layer);
     test_string_parse ("{ version plain:1 }", ndn_snmp_csap);
 #if 1
 

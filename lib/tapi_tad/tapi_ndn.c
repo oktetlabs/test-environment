@@ -93,7 +93,7 @@ tapi_tad_csap_add_layer(asn_value       **csap_spec,
     if (rc != 0)
         return rc;
 
-    gen_layer = asn_init_value(ndn_generic_csap_level);
+    gen_layer = asn_init_value(ndn_generic_csap_layer);
     if (gen_layer == NULL)
     {
         ERROR("Failed to initialize ASN.1 value for CSAP specification "

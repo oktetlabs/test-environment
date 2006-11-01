@@ -90,6 +90,6 @@ extern asn_type ndn_ip_address_s;
 extern asn_type ndn_octet_string6_s;
 
 extern asn_type ndn_generic_pdu_s;
-extern asn_type ndn_generic_csap_level_s;
+extern asn_type ndn_generic_csap_layer_s;
 
 #endif /* __TE_NDN_INTERNAL_H__ */

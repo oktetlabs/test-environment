@@ -340,7 +340,7 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
 {
     te_errno        rc;
     asn_value      *csap_spec;
-    asn_value      *csap_level_spec;
+    asn_value      *csap_layer_spec;
     asn_value      *csap_socket;
 
     struct in_addr  loc_addr = { 0 };
@@ -353,7 +353,7 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
     }
 
     csap_spec       = asn_init_value(ndn_csap_spec);
-    csap_level_spec = asn_init_value(ndn_generic_csap_level);
+    csap_layer_spec = asn_init_value(ndn_generic_csap_layer);
     csap_socket     = asn_init_value(ndn_socket_csap);
 
     asn_write_value_field(csap_socket, NULL, 0,
@@ -367,9 +367,9 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
     asn_write_int32(csap_socket, loc_port, "local-port.#plain");
     asn_write_int32(csap_socket, rem_port, "remote-port.#plain");
 
-    asn_write_component_value(csap_level_spec, csap_socket, "#socket");
+    asn_write_component_value(csap_layer_spec, csap_socket, "#socket");
 
-    asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
+    asn_insert_indexed(csap_spec, csap_layer_spec, 0, "");
 
     rc = tapi_tad_csap_create(ta_name, sid, "socket", 
                               csap_spec, udp_csap);
