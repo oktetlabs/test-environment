@@ -98,44 +98,44 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
 
         if (receive_mode != 0)
             rc = asn_write_int32(csap_spec, receive_mode,
-                                 "2.#eth.receive-mode");
+                                 "layers.2.#eth.receive-mode");
         if (rc) break; 
 
         if (eth_dev)
-            rc = asn_write_value_field(csap_spec, 
-                    eth_dev, strlen(eth_dev), "2.#eth.device-id.#plain");
+            rc = asn_write_value_field(csap_spec, eth_dev, strlen(eth_dev),
+                                       "layers.2.#eth.device-id.#plain");
         if (rc) break; 
 
         if (loc_mac)
             rc = asn_write_value_field(csap_spec, 
-                    loc_mac, 6, "2.#eth.local-addr.#plain");
+                    loc_mac, 6, "layers.2.#eth.local-addr.#plain");
         if (rc) break; 
 
         if (rem_mac)
             rc = asn_write_value_field(csap_spec, 
-                    rem_mac, 6, "2.#eth.remote-addr.#plain");
+                    rem_mac, 6, "layers.2.#eth.remote-addr.#plain");
         if (rc) break; 
 
         if(loc_addr)
             rc = asn_write_value_field(csap_spec,
                                        &loc_addr, sizeof(loc_addr),
-                                       "1.#ip4.local-addr.#plain");
+                                       "layers.1.#ip4.local-addr.#plain");
         if (rc) break; 
 
         if(rem_addr)
             rc = asn_write_value_field(csap_spec,
                                        &rem_addr, sizeof(rem_addr),
-                                       "1.#ip4.remote-addr.#plain");
+                                       "layers.1.#ip4.remote-addr.#plain");
         if (rc) break; 
 
         if(loc_port)
             rc = asn_write_int32(csap_spec, ntohs(loc_port),
-                                 "0.#tcp.local-port.#plain");
+                                 "layers.0.#tcp.local-port.#plain");
         if (rc) break; 
 
         if(rem_port)
             rc = asn_write_int32(csap_spec, ntohs(rem_port), 
-                                 "0.#tcp.remote-port.#plain");
+                                 "layers.0.#tcp.remote-port.#plain");
         if (rc) break;
 
         rc = tapi_tad_csap_create(ta_name, sid, "tcp.ip4.eth", 
