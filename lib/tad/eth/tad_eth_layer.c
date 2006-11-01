@@ -1365,6 +1365,20 @@ tad_eth_match_do_cb(csap_p           csap,
             return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
         }
         pkt_data->is_llc = TE_BOOL3_FALSE;
+
+        /* Move back: FIXME Optimize */
+        bitoff -= tad_bps_pkt_frag_data_bitlen(&proto_data->len_type,
+                                               NULL);
+        /* Match Length/Type vs EtherType */
+        rc = tad_bps_pkt_frag_match_do(&proto_data->ether_type,
+                                       &ptrn_data->ether_type,
+                                       &pkt_data->ether_type, pdu, &bitoff);
+        if (rc != 0)
+        {
+            F_VERB(CSAP_LOG_FMT "Match Length/Type vs EtherType failed: %r",
+                   CSAP_LOG_ARGS(csap), rc);
+            return rc;
+        }
     }
     else if (ptrn_data->is_llc == TE_BOOL3_FALSE)
     {
