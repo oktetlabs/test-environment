@@ -70,7 +70,8 @@ main (void)
     printf ("count txt syms: %d\n", rc);
 
 
-    test_string_parse (" { snmp:{ version plain:1 } }", ndn_csap_spec);
+    test_string_parse (" { layers { snmp:{ version plain:1 } } }",
+                       ndn_csap_spec);
 
 
     test_string_parse ("{ number 1, string \"aa\" }", &at_plain_seq1);

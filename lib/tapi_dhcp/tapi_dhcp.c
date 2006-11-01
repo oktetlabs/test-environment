@@ -816,19 +816,22 @@ tapi_dhcpv4_plain_csap_create(const char *ta_name,
     int         rc;
     asn_value  *asn_dhcp_csap;
     asn_value  *csap_spec;
+    asn_value  *csap_layers;
     asn_value  *csap_layer_spec;
 
     csap_spec       = asn_init_value(ndn_csap_spec);
+    csap_layers     = asn_init_value(ndn_csap_layers);
     csap_layer_spec = asn_init_value(ndn_generic_csap_layer);
     asn_dhcp_csap   = asn_init_value(ndn_dhcpv4_csap);
 
+    asn_put_child_value(csap_spec, csap_layers, PRIVATE, NDN_CSAP_LAYERS);
     asn_write_int32(asn_dhcp_csap, mode, "mode");
     asn_write_value_field(asn_dhcp_csap, iface, strlen(iface) + 1, "iface");
 
     rc = asn_write_component_value(csap_layer_spec, asn_dhcp_csap, "#dhcp");
     if (rc == 0)
     {
-        rc = asn_insert_indexed(csap_spec, csap_layer_spec, -1, "");
+        rc = asn_insert_indexed(csap_layers, csap_layer_spec, -1, "");
     }
 
     if (rc == 0)

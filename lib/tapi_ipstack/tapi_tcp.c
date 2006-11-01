@@ -92,8 +92,8 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
     do {
         int num = 0;
 
-        rc = asn_parse_value_text("{ tcp:{}, ip4:{}, eth:{}}", 
-                                      ndn_csap_spec, &csap_spec, &num); 
+        rc = asn_parse_value_text("{ layers { tcp:{}, ip4:{}, eth:{} } }", 
+                                  ndn_csap_spec, &csap_spec, &num); 
         if (rc) break; 
 
         if (receive_mode != 0)

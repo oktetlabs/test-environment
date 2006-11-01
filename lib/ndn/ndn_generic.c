@@ -197,9 +197,37 @@ const asn_type * const ndn_payload = &ndn_payload_s;
 
 
 
-static asn_type ndn_csap_spec_s =
-{ "CSAP-spec", {PRIVATE, NDN_CSAP_SPEC}, SEQUENCE_OF, 0,
+static asn_type ndn_csap_layers_s =
+{ "CSAP-layers", {PRIVATE, NDN_CSAP_LAYERS}, SEQUENCE_OF, 0,
     {subtype: &ndn_generic_csap_layer_s} };
+
+const asn_type * const ndn_csap_layers = &ndn_csap_layers_s;
+
+
+static asn_named_entry_t _ndn_csap_params_ne_array[] = 
+{
+    { "read-timeout-ms", &asn_base_integer_s,
+      { PRIVATE, NDN_CSAP_READ_TIMEOUT } },
+    { "stop-latency-timeout-ms", &asn_base_integer_s,
+      { PRIVATE, NDN_CSAP_STOP_LATENCY_TIMEOUT } },
+}; 
+
+static asn_type ndn_csap_params_s =
+{ "CSAP-params", { PRIVATE, NDN_CSAP_PARAMS }, SEQUENCE,
+  TE_ARRAY_LEN(_ndn_csap_params_ne_array), { _ndn_csap_params_ne_array } };
+
+const asn_type * const ndn_csap_params = &ndn_csap_params_s;
+
+
+static asn_named_entry_t _ndn_csap_spec_ne_array[] = 
+{
+    { "layers", &ndn_csap_layers_s, { PRIVATE, NDN_CSAP_LAYERS } },
+    { "params", &ndn_csap_params_s, { PRIVATE, NDN_CSAP_PARAMS } },
+}; 
+
+static asn_type ndn_csap_spec_s =
+{ "CSAP-spec", { PRIVATE, NDN_CSAP_SPEC }, SEQUENCE,
+  TE_ARRAY_LEN(_ndn_csap_spec_ne_array), { _ndn_csap_spec_ne_array } };
 
 const asn_type * const ndn_csap_spec = &ndn_csap_spec_s;
 

@@ -134,9 +134,9 @@ main(int argc, char *argv[])
             TEST_FAIL("Calling of RPC socket() failed %r", srv_dst->_errno);
         }
 
-        rc = asn_parse_value_text("{tcp:{local-port plain:0}, "
+        rc = asn_parse_value_text("{layers {tcp:{local-port plain:0}, "
                                   " ip4:{max-packet-size plain:100000},"
-                                  " eth:{device-id plain:\"eth0\"}}", 
+                                  " eth:{device-id plain:\"eth0\"}}}", 
                                   ndn_csap_spec, &csap_spec, &num);
         VERB("CSAP spec parse rc %X, syms %d", rc, num);
         if (rc)

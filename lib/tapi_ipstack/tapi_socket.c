@@ -85,10 +85,14 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
 {
     te_errno        rc = 0;
     asn_value      *csap_spec;
+    asn_value      *csap_layers;
     asn_value      *csap_layer_spec;
     asn_value      *csap_socket;
 
     csap_spec       = asn_init_value(ndn_csap_spec);
+    csap_layers     = asn_init_value(ndn_csap_layers);
+    asn_put_child_value(csap_spec, csap_layers, PRIVATE, NDN_CSAP_LAYERS);
+
     csap_layer_spec = asn_init_value(ndn_generic_csap_layer);
 #define EXP 1
 
@@ -118,7 +122,7 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
     if (rc != 0) goto cleanup;
 #endif
 
-    rc = asn_insert_indexed(csap_spec, csap_layer_spec, 0, "");
+    rc = asn_insert_indexed(csap_layers, csap_layer_spec, 0, "");
     if (rc != 0) goto cleanup;
 
     rc = tapi_tad_csap_create(ta_name, sid, "socket", 
@@ -138,10 +142,14 @@ tapi_socket_csap_create(const char *ta_name, int sid, int type,
 {
     te_errno        rc = 0;
     asn_value      *csap_spec;
+    asn_value      *csap_layers;
     asn_value      *csap_layer_spec;
     asn_value      *csap_socket;
 
     csap_spec       = asn_init_value(ndn_csap_spec);
+    csap_layers     = asn_init_value(ndn_csap_layers);
+    asn_put_child_value(csap_spec, csap_layers, PRIVATE, NDN_CSAP_LAYERS);
+
     csap_layer_spec = asn_init_value(ndn_generic_csap_layer);
     csap_socket     = asn_init_value(ndn_socket_csap);
 
@@ -225,10 +233,14 @@ tapi_tcp_socket_csap_create(const char *ta_name, int sid,
 {
     te_errno        rc;
     asn_value      *csap_spec;
+    asn_value      *csap_layers;
     asn_value      *csap_layer_spec;
     asn_value      *csap_socket;
 
     csap_spec       = asn_init_value(ndn_csap_spec);
+    csap_layers     = asn_init_value(ndn_csap_layers);
+    asn_put_child_value(csap_spec, csap_layers, PRIVATE, NDN_CSAP_LAYERS);
+
     csap_layer_spec = asn_init_value(ndn_generic_csap_layer);
     csap_socket     = asn_init_value(ndn_socket_csap);
 

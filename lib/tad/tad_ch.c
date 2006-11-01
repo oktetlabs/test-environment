@@ -259,11 +259,12 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     VERB("CSAP create: stack <%s> params <%s>\n", stack, params);
     return -1;
 #else
-    csap_p          new_csap;
-    csap_handle_t   new_csap_id; 
-    unsigned int    layer;
-    int             syms; 
-    te_errno        rc; 
+    csap_p           new_csap;
+    csap_handle_t    new_csap_id; 
+    unsigned int     layer;
+    int              syms; 
+    te_errno         rc; 
+    const asn_value *csap_layers;
 
     UNUSED(cmdlen);
     UNUSED(params);
@@ -297,13 +298,22 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     }
     assert(new_csap->nds != NULL);
 
+    rc = asn_get_child_value(new_csap->nds, &csap_layers,
+                             PRIVATE, NDN_CSAP_LAYERS);
+    if (rc != 0)
+    {
+        ERROR("Failed to get CSAP layers: %r", rc);
+        goto exit;
+    }
+    assert(csap_layers != NULL);
+
     /*
      * Get CSAP specification parameters for each layer 
      */
     for (layer = 0; layer < new_csap->depth; ++layer)
     {
-        rc = asn_get_indexed(new_csap->nds,
-                             &new_csap->layers[layer].nds, layer, NULL);
+        rc = asn_get_indexed(csap_layers, &new_csap->layers[layer].nds,
+                             layer, NULL);
         if (rc != 0)
         {
             ERROR("Get %u layer generic PDU from CSAP NDS failed: %r",

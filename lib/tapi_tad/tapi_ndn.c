@@ -79,6 +79,7 @@ tapi_tad_csap_add_layer(asn_value       **csap_spec,
                         asn_value       **layer_spec)
 {
     te_errno    rc;
+    asn_value  *layers;
     asn_value  *gen_layer;
     asn_value  *layer;
 
@@ -93,6 +94,36 @@ tapi_tad_csap_add_layer(asn_value       **csap_spec,
     if (rc != 0)
         return rc;
 
+    /*
+     * Get or create CSAP layers sequence
+     */
+    /* FIXME: Remove type cast */
+    rc = asn_get_child_value(*csap_spec, (const asn_value **)&layers,
+                             PRIVATE, NDN_CSAP_LAYERS);
+    if (rc == TE_EASNINCOMPLVAL)
+    {
+        layers = asn_init_value(ndn_csap_layers);
+        if (layers == NULL)
+        {
+            ERROR("Failed to initiaze ASN.1 value for CSAP layers "
+                  "sequence");
+            return TE_RC(TE_TAPI, TE_ENOMEM);
+        }
+        rc = asn_put_child_value(*csap_spec, layers,
+                                 PRIVATE, NDN_CSAP_LAYERS);
+        if (rc != 0)
+        {
+            ERROR("Failed to put 'layers' in ASN.1 value: %r", rc);
+            asn_free_value(layers);
+            return rc;
+        }
+    }
+    else if (rc != 0)
+    {
+        ERROR("Failed to get 'layers' from ASN.1 value: %r", rc);
+        return TE_RC(TE_TAPI, rc);
+    }
+
     gen_layer = asn_init_value(ndn_generic_csap_layer);
     if (gen_layer == NULL)
     {
@@ -100,8 +131,7 @@ tapi_tad_csap_add_layer(asn_value       **csap_spec,
               "generic layer");
         return TE_RC(TE_TAPI, TE_ENOMEM);
     }
-
-    rc = asn_insert_indexed(*csap_spec, gen_layer, -1, "");
+    rc = asn_insert_indexed(layers, gen_layer, -1, "");
     if (rc != 0)
     {
         ERROR("Failed to add a new generic layer in CSAP specification: "
@@ -109,7 +139,6 @@ tapi_tad_csap_add_layer(asn_value       **csap_spec,
         asn_free_value(gen_layer);
         return TE_RC(TE_TAPI, rc);
     }
-
     
     layer = asn_init_value(layer_type);
     if (layer == NULL)
@@ -118,7 +147,6 @@ tapi_tad_csap_add_layer(asn_value       **csap_spec,
               "layer by type");
         return TE_RC(TE_TAPI, TE_ENOMEM);
     }
-
     rc = asn_put_child_value_by_label(gen_layer, layer, layer_choice);
     if (rc != 0)
     {

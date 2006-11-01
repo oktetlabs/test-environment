@@ -125,11 +125,14 @@ tapi_iscsi_sock_csap_create(const char        *ta_name,
     if (ta_name == NULL || socket < 0 || csap == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    CHECK_RC(asn_parse_value_text("{ iscsi:{} }",
+    CHECK_RC(asn_parse_value_text("{ layers { iscsi:{} } }",
                                   ndn_csap_spec, &csap_spec, &syms));
-    CHECK_RC(asn_write_int32(csap_spec, socket, "0.#iscsi.socket"));
-    CHECK_RC(asn_write_int32(csap_spec, hdr_dig, "0.#iscsi.header-digest"));
-    CHECK_RC(asn_write_int32(csap_spec, data_dig, "0.#iscsi.data-digest"));
+    CHECK_RC(asn_write_int32(csap_spec, socket,
+                             "layers.0.#iscsi.socket"));
+    CHECK_RC(asn_write_int32(csap_spec, hdr_dig,
+                             "layers.0.#iscsi.header-digest"));
+    CHECK_RC(asn_write_int32(csap_spec, data_dig,
+                             "layers.0.#iscsi.data-digest"));
 
     rc = tapi_tad_csap_create(ta_name, 0 /* sid */, "iscsi", 
                               csap_spec, csap); 

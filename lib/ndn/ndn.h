@@ -48,6 +48,10 @@ typedef enum {
     NDN_TRAFFIC_PATTERN,
     NDN_TRAFFIC_PATTERN_UNIT,
     NDN_CSAP_SPEC,
+    NDN_CSAP_LAYERS,
+    NDN_CSAP_PARAMS,
+    NDN_CSAP_READ_TIMEOUT,
+    NDN_CSAP_STOP_LATENCY_TIMEOUT,
 } ndn_message_tags_t;
 
 
@@ -198,6 +202,8 @@ extern const asn_type *const ndn_generic_pdu_sequence;
 extern const asn_type *const ndn_payload;
 extern const asn_type *const ndn_interval;
 extern const asn_type *const ndn_interval_sequence;
+extern const asn_type *const ndn_csap_params;
+extern const asn_type *const ndn_csap_layers;
 extern const asn_type *const ndn_csap_spec;
 extern const asn_type *const ndn_traffic_template;
 extern const asn_type *const ndn_template_parameter;
