@@ -183,7 +183,7 @@ tapi_socket_csap_create(const char *ta_name, int sid, int type,
     rc = asn_write_component_value(csap_layer_spec, csap_socket, "#socket");
     if (rc != 0) goto cleanup; 
 
-    rc = asn_insert_indexed(csap_spec, csap_layer_spec, 0, "");
+    rc = asn_insert_indexed(csap_layers, csap_layer_spec, 0, "");
     if (rc != 0) goto cleanup; 
 
     rc = tapi_tad_csap_create(ta_name, sid, "socket", 
@@ -248,7 +248,7 @@ tapi_tcp_socket_csap_create(const char *ta_name, int sid,
 
     asn_write_component_value(csap_layer_spec, csap_socket, "#socket");
 
-    asn_insert_indexed(csap_spec, csap_layer_spec, 0, "");
+    asn_insert_indexed(csap_layers, csap_layer_spec, 0, "");
 
     rc = tapi_tad_csap_create(ta_name, sid, "socket", 
                               csap_spec, tcp_csap);
