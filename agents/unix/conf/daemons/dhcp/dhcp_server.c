@@ -275,14 +275,16 @@ free_group(group * g)
 static int
 ds_dhcpserver_save_conf(void)
 {
+#if defined __sun__
+    int                    rc;
     char                   *p = dhcp_server_ifs;
+#endif
     te_dhcp_server_subnet  *s;
     host                   *h;
 #if defined __linux__
     te_dhcp_option         *opt;
 #endif
     FILE                   *f = fopen(dhcp_server_conf, "w");
-    int                    rc;
 
     if (f == NULL)
     {
