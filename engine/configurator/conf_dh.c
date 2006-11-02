@@ -28,6 +28,7 @@
  */
 
 #include "conf_defs.h"
+#define TE_EXPAND_XML 1
 #include "te_expand.h"
 
 /* defined in conf_backup.c */

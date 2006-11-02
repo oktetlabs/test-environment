@@ -33,14 +33,17 @@
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #endif
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 
+#ifdef TE_EXPAND_XML
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
+#endif
 
 #include "te_defs.h"
 
@@ -59,6 +62,8 @@
  * @note The length of anything between ${...} must be less than 128
  *
  * @param src     Source string
+ * @param posargs Positional parameters (expandable via ${[0-9]})
+ *                (may be NULL)
  * @param retval  Resulting string (OUT)
  *
  * @return 0 if success, an error code otherwise
@@ -66,7 +71,7 @@
  * @retval EINVAL Unmatched ${ found
  */
 static inline int
-cfg_expand_env_vars(const char *src, char **retval)
+te_expand_env_vars(const char *src, char **posargs, char **retval)
 {
     const char *next = NULL;
     char       *result = NULL;
@@ -137,13 +142,22 @@ cfg_expand_env_vars(const char *src, char **retval)
                 default_value = NULL;
             }
         }
-        env_var = getenv(env_var_name);
+        if (isdigit(*env_var_name) && env_var_name[1] == '\0')
+        {
+            env_var = (posargs == NULL ? NULL : 
+                       posargs[*env_var_name - '0']);
+        }
+        else
+        {
+            env_var = getenv(env_var_name);
+        }
         if (default_value != NULL)
         {
             if ((*default_value == '+' && env_var != NULL) ||
                 (*default_value == '-' && env_var == NULL))
             {
-                int rc = cfg_expand_env_vars(default_value + 1, &env_var);
+                int rc = te_expand_env_vars(default_value + 1, NULL, 
+                                            &env_var);
 
                 if (rc != 0)
                 {
@@ -174,6 +188,7 @@ cfg_expand_env_vars(const char *src, char **retval)
 }
 
 
+#ifdef TE_EXPAND_XML
 /**
  * A wrapper around xmlGetProp that expands environment variable
  * references.
@@ -196,7 +211,7 @@ xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
         char *result = NULL;
         int   rc;
 
-        rc = cfg_expand_env_vars((const char *)value, &result);
+        rc = te_expand_env_vars((const char *)value, NULL, &result);
         if (rc == 0)
         {
             xmlFree(value);
@@ -212,5 +227,7 @@ xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
     }
     return (char *)value;
 }
+#endif /* TE_EXPAND_XML */
+
 
 #endif /* !__TE_EXPAND_H__ */

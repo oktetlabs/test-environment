@@ -93,6 +93,7 @@
 #include "logger_api.h"
 #include "logger_ten.h"
 
+#define TE_EXPAND_XML 1
 #include "te_expand.h"
 
 
