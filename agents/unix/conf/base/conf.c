@@ -2260,7 +2260,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 
     for (tmp = mcast_mac_addr_list; tmp != NULL; tmp = tmp->next)
     {
-        if (strcmp(tmp->ifname, ifname, 0) == 0)
+        if (strcmp(tmp->ifname, ifname) == 0)
         {
             if (p >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
             {
