@@ -47,6 +47,7 @@
 #include <netinet/in.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "logger_api.h"
@@ -100,9 +101,19 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
             else if (bps->descr[i].plain_du == TAD_DU_OCTS)
             {
                 bps->tx_def[i].du_type = TAD_DU_OCTS;
-                /* Empty octet string is supported only */
-                assert(bps->tx_def[i].val_data.len == 0);
-                assert(bps->tx_def[i].val_data.oct_str == NULL);
+                assert((bps->descr[i].len & 7) == 0);
+                bps->tx_def[i].val_data.len = bps->descr[i].len >> 3;
+                if (bps->tx_def[i].val_data.len > 0)
+                {
+                    bps->tx_def[i].val_data.oct_str =
+                        TE_ALLOC(bps->tx_def[i].val_data.len);
+                    if (bps->tx_def[i].val_data.oct_str == NULL)
+                        return TE_RC(TE_TAD_BPS, TE_ENOMEM);
+                }
+                else
+                {
+                    assert(bps->tx_def[i].val_data.oct_str == NULL);
+                }
             }
             else
             {
@@ -423,8 +434,8 @@ tad_bps_pkt_frag_gen_bin(const tad_bps_pkt_frag_def *def,
                                       bin + (*bitoff >> 3), len >> 3);
             if (rc != 0)
             {
-                ERROR("%s(): tad_data_unit_to_bin() failed: %r",
-                      __FUNCTION__, rc);
+                ERROR("%s(): tad_data_unit_to_bin() failed for '%s': "
+                      "%r", __FUNCTION__, def->descr[i].name, rc);
                 return rc;
             }
         }
