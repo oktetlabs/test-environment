@@ -116,8 +116,10 @@ static const char *dhcp_server_exec = NULL;
 /** DHCP server configuration file name */
 static const char *dhcp_server_conf = NULL;
 
+#if defined __linux__
 /** DHCP server leases database file name */
 static const char *dhcp_server_leases = NULL;
+#endif
 
 /** DHCP server interfaces */
 static char *dhcp_server_ifs = NULL;
@@ -149,6 +151,7 @@ static te_bool dhcp_server_was_run = FALSE;
 /** Auxiliary buffer */
 static char buf[2048];
 
+#if defined __linux__
 /**
  * List of options, which should be quoted automatilally; for other
  * option quotes should be specified in value, if necessary.
@@ -166,6 +169,7 @@ static char *isc_dhcp_quoted_options[] = {
     "uap-servers",
     "fqdn.fqdn"
 };
+#endif
 
 /** Release all memory allocated for option structure */
 #define FREE_OPTION(_opt) \
@@ -186,18 +190,20 @@ static FILE *f = NULL;  /* Pointer to opened /etc/dhcpd.conf */
 #endif
 
 
+#if defined __linux__
 /* Check, if the option should be quoted */
 static te_bool
 is_quoted(const char *opt_name)
 {
     unsigned int i;
 
-    for (i = 0; i < sizeof(isc_dhcp_quoted_options)/sizeof(char *); i++)
+    for (i = 0; i < sizeof(isc_dhcp_quoted_options) / sizeof(char *); i++)
         if (strcmp(opt_name, isc_dhcp_quoted_options[i]) == 0)
             return TRUE;
 
     return FALSE;
 }
+#endif
 
 /* Find the host in the list */
 static host *
@@ -445,6 +451,7 @@ ds_dhcpserver_get(unsigned int gid, const char *oid, char *value)
     return 0;
 }
 
+#if defined __linux__
 /** Stop DHCP server using script from /etc/init.d */
 static te_errno
 ds_dhcpserver_script_stop(void)
@@ -458,6 +465,7 @@ ds_dhcpserver_script_stop(void)
 
     return 0;
 }
+#endif
 
 /** Stop DHCP server */
 static te_errno

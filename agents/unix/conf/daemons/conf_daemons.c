@@ -989,7 +989,9 @@ todudpserver_release(const char *name)
 RCF_PCH_CFG_NODE_RW(node_ds_telnetd, "telnetd",
                     NULL, NULL, xinetd_get, xinetd_set);
 
+#if defined __linux__
 static int telnetd_index;
+#endif
 
 te_errno 
 telnetd_grab(const char *name)
@@ -1036,7 +1038,9 @@ telnetd_release(const char *name)
 RCF_PCH_CFG_NODE_RW(node_ds_rshd, "rshd",
                     NULL, NULL, xinetd_get, xinetd_set);
 
+#if defined __linux__
 static int rshd_index;
+#endif
 
 te_errno 
 rshd_grab(const char *name)
@@ -2039,11 +2043,11 @@ sendmail_smarthost_get(te_bool *enable)
         if (strcmp_start(SENDMAIL_SMARTHOST_OPT_S, buf) == 0)
         {
             fclose(f);
-            *enable = 1;
+            *enable = TRUE;
             return 0;
         }
     }
-    *enable = 0;
+    *enable = FALSE;
     fclose(f);
     return 0;
 }
@@ -2411,7 +2415,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
         
     if (strcmp(smtp_current, "sendmail") == 0)
     {
-        te_bool enable;
+        te_bool enable = FALSE;
         int     rc;
         
         if ((rc = sendmail_smarthost_get(&enable)) != 0)
