@@ -165,9 +165,12 @@ typedef struct csap_instance {
                                      operations, usually lower */
     void           *rw_data;    /**< Private data of read/write layer */
 
-    unsigned int    timeout;    /**< Maximum timeout for read operations
-                                     in microseconds (it affects latency
-                                     of stop/destroy operations) */
+    unsigned int    stop_latency_timeout;   /**< Maximum timeout for read
+                                                 operations in 
+                                                 microseconds (it affects
+                                                 latency of stop/destroy
+                                                 operations) */
+    unsigned int    recv_timeout;   /**< Default receive timeout */
 
     struct timeval  wait_for;   /**< Zero or moment of timeout
                                      current CSAP operation */

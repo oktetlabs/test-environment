@@ -265,6 +265,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     int              syms; 
     te_errno         rc; 
     const asn_value *csap_layers;
+    int32_t          i32_tmp;
 
     UNUSED(cmdlen);
     UNUSED(params);
@@ -298,6 +299,42 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     }
     assert(new_csap->nds != NULL);
 
+    /* 'stop-latency-timeout-ms' parameter processing */
+    rc = asn_read_int32(new_csap->nds, &i32_tmp,
+                        "params.stop-latency-timeout-ms");
+    if (rc == 0)
+    {
+        new_csap->stop_latency_timeout = TE_MS2US(i32_tmp);
+    }
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    {
+        /* Unspecified, keep the default value */
+    }
+    else
+    {
+        ERROR("Failed to read 'stop-latency-timeout-ms' from CSAP "
+              "NDS: %r", rc);
+        goto exit;
+    }
+
+    /* 'receive-timeout-ms' parameter processing */
+    rc = asn_read_int32(new_csap->nds, &i32_tmp,
+                        "params.receive-timeout-ms");
+    if (rc == 0)
+    {
+        new_csap->recv_timeout = TE_MS2US(i32_tmp);
+    }
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    {
+        /* Unspecified, keep the default value */
+    }
+    else
+    {
+        ERROR("Failed to read 'receive-timeout-ms' from CSAP NDS: %r", rc);
+        goto exit;
+    }
+
+    /* Get layers specification */
     rc = asn_get_child_value(new_csap->nds, &csap_layers,
                              PRIVATE, NDN_CSAP_LAYERS);
     if (rc != 0)

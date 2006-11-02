@@ -539,8 +539,8 @@ tad_recv_init_context(tad_recv_context *context)
 /* See description in tad_recv.h */
 te_errno
 tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num, 
-                     unsigned int timeout, rcf_comm_connection *rcfc,
-                     const char *answer_pfx, size_t pfx_len)
+                 unsigned int timeout, rcf_comm_connection *rcfc,
+                 const char *answer_pfx, size_t pfx_len)
 {
     tad_recv_context       *my_ctx = csap_get_recv_context(csap);
     te_errno                rc;
@@ -555,21 +555,26 @@ tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num,
     my_ctx->wait_pkts = num;
     my_ctx->match_pkts = my_ctx->got_pkts = 0;
 
-    if (timeout != TAD_TIMEOUT_INF)
+    if (timeout == TAD_TIMEOUT_INF)
     { 
-        gettimeofday(&csap->wait_for, NULL);
-        csap->wait_for.tv_usec += timeout * 1000;
-        csap->wait_for.tv_sec += 
-            (csap->wait_for.tv_usec / 1000000);
-        csap->wait_for.tv_usec %= 1000000;
-
-        VERB("%s(): csap %u, wait_for set to %u.%u", __FUNCTION__,
-             csap->id,
-             csap->wait_for.tv_sec,
-             csap->wait_for.tv_usec);
-    }
-    else 
         memset(&csap->wait_for, 0, sizeof(struct timeval));
+    }
+    else
+    {
+        gettimeofday(&csap->wait_for, NULL);
+        if (timeout == TAD_TIMEOUT_DEF)
+        {
+            csap->wait_for.tv_usec += csap->recv_timeout;
+        }
+        else
+        {
+            csap->wait_for.tv_usec += TE_MS2US(timeout);
+        }
+        csap->wait_for.tv_sec += (csap->wait_for.tv_usec / 1000000);
+        csap->wait_for.tv_usec %= 1000000;
+        VERB("%s(): csap %u, wait_for set to %u.%u", __FUNCTION__,
+             csap->id, csap->wait_for.tv_sec, csap->wait_for.tv_usec);
+    }
 
     rc = tad_task_init(&my_ctx->task, rcfc, answer_pfx, pfx_len);
     if (rc != 0)
@@ -1108,7 +1113,7 @@ tad_recv_thread(void *arg)
         }
 
         /* Check for timeout */
-        timeout = csap->timeout;
+        timeout = csap->stop_latency_timeout;
         if (csap->wait_for.tv_sec != 0)
         {
             struct timeval  current;

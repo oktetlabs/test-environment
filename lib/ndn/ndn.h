@@ -50,7 +50,7 @@ typedef enum {
     NDN_CSAP_SPEC,
     NDN_CSAP_LAYERS,
     NDN_CSAP_PARAMS,
-    NDN_CSAP_READ_TIMEOUT,
+    NDN_CSAP_RECV_TIMEOUT,
     NDN_CSAP_STOP_LATENCY_TIMEOUT,
 } ndn_message_tags_t;
 

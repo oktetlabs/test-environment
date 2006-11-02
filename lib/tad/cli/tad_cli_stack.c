@@ -740,7 +740,7 @@ tad_cli_write_cb(csap_p csap, const tad_pkt *pkt)
             return TE_RC(TE_TAD_CSAP, TE_EIO);
     }
 
-    timeout = csap->timeout;
+    timeout = csap->stop_latency_timeout;
 
     ret = write(spec_data->data_sock, &timeout, sizeof(timeout));
     bytes_written = write(spec_data->data_sock, buf, buf_len);

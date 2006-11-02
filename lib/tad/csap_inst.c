@@ -48,8 +48,10 @@
 #include "tad_utils.h"
 
 
-/** Default CSAP read timeout, it affects latency of stop command */
-#define TAD_CSAP_DEFAULT_TIMEOUT    100000
+/** Default CSAP stop latency timeout in milliseconds. */
+#define TAD_CSAP_STOP_LATENCY_TIMEOUT_DEF   100
+/** Default CSAP receive timeout in milliseconds. */
+#define TAD_CSAP_RECV_TIMEOUT_DEF           1000
 
 /** Max number of CSAP layers */
 #define MAX_CSAP_DEPTH 200
@@ -117,7 +119,10 @@ csap_create(const char *type, csap_p *csap)
         LIST_INIT(&new_csap->poll_ops);
         tad_recv_init_context(&new_csap->receiver);
         new_csap->csap_type = csap_type = strdup(type);
-        new_csap->timeout = TAD_CSAP_DEFAULT_TIMEOUT;
+        new_csap->stop_latency_timeout =
+            TE_MS2US(TAD_CSAP_STOP_LATENCY_TIMEOUT_DEF);
+        new_csap->recv_timeout =
+            TE_MS2US(TAD_CSAP_RECV_TIMEOUT_DEF);
     }
     else
     {

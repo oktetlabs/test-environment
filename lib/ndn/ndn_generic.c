@@ -206,8 +206,8 @@ const asn_type * const ndn_csap_layers = &ndn_csap_layers_s;
 
 static asn_named_entry_t _ndn_csap_params_ne_array[] = 
 {
-    { "read-timeout-ms", &asn_base_integer_s,
-      { PRIVATE, NDN_CSAP_READ_TIMEOUT } },
+    { "receive-timeout-ms", &asn_base_integer_s,
+      { PRIVATE, NDN_CSAP_RECV_TIMEOUT } },
     { "stop-latency-timeout-ms", &asn_base_integer_s,
       { PRIVATE, NDN_CSAP_STOP_LATENCY_TIMEOUT } },
 }; 

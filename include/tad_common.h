@@ -44,6 +44,13 @@
  */
 #define TAD_TIMEOUT_INF     (unsigned int)(-1)
 
+/**
+ * Default receive timeout of the CSAP.
+ *
+ * @todo Put it in appropriate place.
+ */
+#define TAD_TIMEOUT_DEF     (unsigned int)(-2)
+
 
 #define CSAP_PARAM_STATUS               "status"
 #define CSAP_PARAM_TOTAL_BYTES          "total_bytes"
