@@ -329,7 +329,7 @@ ds_dhcpserver_save_conf(void)
         fprintf(f, "subnet %s netmask %s {\n",
                 s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
 #elif defined __sun__
-	TE_SPRINTF(buf, "/usr/sbin/pntadm -C %s", s->subnet);
+        TE_SPRINTF(buf, "/usr/sbin/pntadm -C %s", s->subnet);
         if ((rc = ta_system(buf)) != 0)
             return rc;
 
@@ -360,7 +360,7 @@ ds_dhcpserver_save_conf(void)
         if (h->client_id)
             fprintf(f, "\tclient-id %s;\n", h->client_id);
 #endif
-	if (h->ip_addr)
+        if (h->ip_addr)
 #if defined __linux__
             fprintf(f, "\tfixed-address %s;\n", h->ip_addr);
 #elif defined __sun__
