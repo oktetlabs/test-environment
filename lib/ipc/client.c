@@ -525,6 +525,10 @@ read_socket(int socket, void *buffer, size_t len)
                 perror("read_socket(): recv() error");
             return rc;
         }
+        else if (r == 0)
+        {
+            return TE_RC(TE_IPC, TE_ECONNRESET);
+        }
 
         len -= r;
         buffer += r;
