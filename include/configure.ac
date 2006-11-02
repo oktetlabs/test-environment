@@ -157,13 +157,13 @@ sys/tihdr.h \
 sys/time.h \
 sys/uio.h \
 sys/un.h \
+sys/utsname.h \
 sys/wait.h \
 tcl.h \
 tcl8.4/expect.h \
 termio.h \
 time.h \
 ucd-snmp/snmp_impl.h \
-sys/utsname.h \
 unistd.h \
 ], [], [], [
 #if HAVE_SYS_TYPES_H
