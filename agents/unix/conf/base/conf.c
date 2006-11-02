@@ -2247,8 +2247,9 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
     char       *s = NULL;
     int         p = 0;
     int         buf_segs = 1;
-#ifndef __linux__
+
 #define MMAC_ADDR_BUF_SIZE 16384 
+#ifndef __linux__
     mma_list_el *tmp;
 
     UNUSED(gid);
