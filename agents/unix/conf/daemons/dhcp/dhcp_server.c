@@ -272,7 +272,9 @@ ds_dhcpserver_save_conf(void)
     char                   *p = dhcp_server_ifs;
     te_dhcp_server_subnet  *s;
     host                   *h;
+#if defined __linux__
     te_dhcp_option         *opt;
+#endif
     FILE                   *f = fopen(dhcp_server_conf, "w");
     int                    rc;
 
