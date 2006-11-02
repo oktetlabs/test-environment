@@ -100,15 +100,54 @@ extern te_errno tad_dhcp_read_cb(csap_p csap, unsigned int timeout,
 extern te_errno tad_dhcp_write_cb(csap_p csap, const tad_pkt *pkt);
 
 
+
 /**
- * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
+ * Callback for read parameter value of DHCP CSAP.
  *
- * The function complies with csap_layer_confirm_send_cb_t prototype.
+ * The function complies with csap_layer_get_param_cb_t prototype.
  */ 
-extern te_errno tad_dhcp_confirm_pdu_cb(csap_p        csap,
-                                        unsigned int  layer,
-                                        asn_value    *layer_pdu,
-                                        void         **p_opaque); 
+extern char *tad_dhcp_get_param_cb(csap_p        csap,
+                                   unsigned int  layer,
+                                   const char    *param);
+
+
+/**
+ * Callback for init 'dhcp' CSAP layer.
+ *
+ * The function complies with csap_layer_init_cb_t prototype.
+ */ 
+extern te_errno tad_dhcp_init_cb(csap_p csap, unsigned int layer);
+
+/**
+ * Callback for destroy 'dhcp' CSAP layer.
+ *
+ * The function complies with csap_layer_destroy_cb_t prototype.
+ */ 
+extern te_errno tad_dhcp_destroy_cb(csap_p csap, unsigned int layer);
+
+
+/**
+ * Callback for confirm template PDU with IPv4 CSAP
+ * parameters and possibilities.
+ *
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ */ 
+extern te_errno tad_dhcp_confirm_tmpl_cb(csap_p         csap,
+                                         unsigned int   layer,
+                                         asn_value     *layer_pdu,
+                                         void         **p_opaque); 
+
+/**
+ * Callback for confirm pattern PDU with IPv4 CSAP
+ * arameters and possibilities.
+ *
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ */ 
+extern te_errno tad_dhcp_confirm_ptrn_cb(csap_p         csap,
+                                         unsigned int   layer,
+                                         asn_value     *layer_pdu,
+                                         void         **p_opaque); 
+
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -120,22 +159,41 @@ extern te_errno tad_dhcp_gen_bin_cb(csap_p                csap,
                                     const asn_value      *tmpl_pdu,
                                     void                 *opaque,
                                     const tad_tmpl_arg_t *args,
-                                    size_t                arg_num,
+                                    size_t                arg_num, 
                                     tad_pkts             *sdus,
                                     tad_pkts             *pdus);
+
+
+extern te_errno tad_dhcp_match_pre_cb(csap_p              csap,
+                                      unsigned int        layer,
+                                      tad_recv_pkt_layer *meta_pkt_layer);
+
+extern te_errno tad_dhcp_match_post_cb(csap_p              csap,
+                                       unsigned int        layer,
+                                       tad_recv_pkt_layer *meta_pkt_layer);
 
 /**
  * Callback for parse received packet and match it with pattern. 
  *
- * The function complies with csap_layer_match_bin_cb_t prototype.
+ * The function complies with csap_layer_match_do_cb_t prototype.
  */
-extern te_errno tad_dhcp_match_bin_cb(csap_p           csap,
-                        unsigned int     layer,
-                        const asn_value *ptrn_pdu,
-                        void            *ptrn_opaque,
-                        tad_recv_pkt    *meta_pkt,
-                        tad_pkt         *pdu,
-                        tad_pkt         *sdu);
+extern te_errno tad_dhcp_match_do_cb(csap_p           csap,
+                                     unsigned int     layer,
+                                     const asn_value *ptrn_pdu,
+                                     void            *ptrn_opaque,
+                                     tad_recv_pkt    *meta_pkt,
+                                     tad_pkt         *pdu,
+                                     tad_pkt         *sdu);
+
+
+/**
+ * Callback to release data prepared by confirm callback or packet match.
+ *
+ * The function complies with csap_layer_release_opaque_cb_t prototype.
+ */
+extern void tad_dhcp_release_pdu_cb(csap_p csap, unsigned int layer,
+                                    void *opaque);
+
 
 /**
  * Callback for generating pattern to filter 
@@ -148,16 +206,6 @@ extern te_errno tad_dhcp_gen_pattern_cb(csap_p            csap,
                                         unsigned int      layer,
                                         const asn_value  *tmpl_pdu, 
                                         asn_value       **ptrn_pdu);
-
-
-/**
- * Callback for read parameter value of DHCP CSAP.
- *
- * The function complies with csap_layer_get_param_cb_t prototype.
- */ 
-extern char *tad_dhcp_get_param_cb(csap_p        csap,
-                                   unsigned int  layer,
-                                   const char    *param);
 
 #ifdef __cplusplus
 } /* extern "C" */

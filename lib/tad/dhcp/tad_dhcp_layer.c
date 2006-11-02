@@ -4,9 +4,7 @@
  * Traffic Application Domain Command Handler.
  * DHCP CSAP layer-related callbacks.
  *
- * See RFC 2131.
- *
- * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -24,6 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
@@ -36,9 +35,27 @@
 #include "config.h"
 #endif
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_STRING_H
 #include <string.h>
-#include <stdlib.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#if HAVE_NETINET_IN_SYSTM_H
+#include <netinet/in_systm.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_NETINET_IP_H
+#include <netinet/ip.h>
+#endif
 
+#include "te_defs.h"
+#include "te_alloc.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
@@ -46,370 +63,382 @@
 #include "tad_dhcp_impl.h"
 
 
+/**
+ * DHCP layer specific data
+ */
+typedef struct tad_dhcp_proto_data {
+    tad_bps_pkt_frag_def    hdr;
+} tad_dhcp_proto_data;
 
+/**
+ * DHCP layer specific data for PDU processing (both send and
+ * receive).
+ */
+typedef struct tad_dhcp_proto_pdu_data {
+    tad_bps_pkt_frag_data   hdr;
+} tad_dhcp_proto_pdu_data;
+
+
+/**
+ * Definition of Dynamic Host Configuration Protocol (DHCP) header.
+ */
+static const tad_bps_pkt_frag tad_dhcp_bps_hdr[] =
+{
+    { "op",        8, BPS_FLD_NO_DEF(NDN_DHCP_OP),
+      TAD_DU_I32, FALSE },
+    { "htype",     8, BPS_FLD_NO_DEF(NDN_DHCP_HTYPE),
+      TAD_DU_I32, FALSE },
+    { "hlen",      8, BPS_FLD_NO_DEF(NDN_DHCP_HLEN),
+      TAD_DU_I32, TRUE },
+    { "hops",      8, BPS_FLD_CONST_DEF(NDN_DHCP_HOPS, 0),
+      TAD_DU_I32, FALSE },
+    { "xid",      32, BPS_FLD_CONST_DEF(NDN_DHCP_XID, 0),
+      TAD_DU_I32, FALSE },
+    { "secs",     16, BPS_FLD_CONST_DEF(NDN_DHCP_SECS, 0),
+      TAD_DU_I32, FALSE },
+    { "flags" ,   16, BPS_FLD_NO_DEF(NDN_DHCP_FLAGS),
+      TAD_DU_I32, FALSE },
+    { "ciaddr",   32, BPS_FLD_CONST_DEF(NDN_DHCP_CIADDR, 0),
+      TAD_DU_OCTS, FALSE },
+    { "yiaddr",   32, BPS_FLD_CONST_DEF(NDN_DHCP_YIADDR, 0),
+      TAD_DU_OCTS, FALSE },
+    { "siaddr",   32, BPS_FLD_CONST_DEF(NDN_DHCP_SIADDR, 0),
+      TAD_DU_OCTS, FALSE },
+    { "giaddr",   32, BPS_FLD_CONST_DEF(NDN_DHCP_GIADDR, 0),
+      TAD_DU_OCTS, FALSE },
+    { "chaddr",  128, BPS_FLD_NO_DEF(NDN_DHCP_CHADDR),
+      TAD_DU_OCTS, FALSE },
+    { "sname",   512, BPS_FLD_CONST_DEF(NDN_DHCP_SNAME, 0),
+      TAD_DU_OCTS, FALSE },
+    { "file",   1024, BPS_FLD_CONST_DEF(NDN_DHCP_FILE, 0),
+      TAD_DU_OCTS, FALSE },
+};
+
+#define TAD_DHCP_OPTIONS
+
+#ifdef TAD_DHCP_OPTIONS
 /**
  * The first four octets of the 'options' field of the DHCP message
  * RFC 2131 section 3.
  */
 static unsigned char magic_dhcp[] = { 99, 130, 83, 99 };
 
+static te_errno dhcp_calculate_options_data(const asn_value *options,
+                                            size_t *len);
+static te_errno fill_dhcp_options(void *buf, const asn_value *options);
+#endif
 
-/* See description in tad_dhcp_impl.h */
-char *
-tad_dhcp_get_param_cb(csap_p csap, unsigned int layer, const char *param)
-{
-    dhcp_csap_specific_data_t *spec_data; 
-    
-    spec_data = csap_get_proto_spec_data(csap, layer); 
 
-    if (strcmp (param, "ipaddr") == 0)
-    { 
-        return spec_data->ipaddr;
-    }
-    return NULL;
+/* See description tad_ipstack_impl.h */
+te_errno
+tad_dhcp_init_cb(csap_p csap, unsigned int layer)
+{ 
+    te_errno                rc;
+    tad_dhcp_proto_data    *proto_data;
+    const asn_value        *layer_nds;
+
+    proto_data = TE_ALLOC(sizeof(*proto_data));
+    if (proto_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
+    csap_set_proto_spec_data(csap, layer, proto_data);
+
+    layer_nds = csap->layers[layer].nds;
+
+    rc = tad_bps_pkt_frag_init(tad_dhcp_bps_hdr,
+                               TE_ARRAY_LEN(tad_dhcp_bps_hdr),
+                               layer_nds, &proto_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    return 0; 
 }
 
-/* See description in tad_dhcp_impl.h */
+/* See description tad_ipstack_impl.h */
 te_errno
-tad_dhcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
-                        asn_value *layer_pdu, void **p_opaque)
-{ 
-    te_errno    rc;
-    int         xid;
-    size_t      len = sizeof (xid);
+tad_dhcp_destroy_cb(csap_p csap, unsigned int layer)
+{
+    tad_dhcp_proto_data *proto_data;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+    csap_set_proto_spec_data(csap, layer, NULL);
+
+    tad_bps_pkt_frag_free(&proto_data->hdr);
+
+    free(proto_data);
+
+    return 0;
+}
+
+/**
+ * Convert traffic template/pattern NDS to BPS internal data.
+ *
+ * @param csap          CSAP instance
+ * @param proto_data    Protocol data prepared during CSAP creation
+ * @param layer_pdu     Layer NDS
+ * @param p_pdu_data    Location for PDU data pointer (updated in any
+ *                      case and should be released by caller even in
+ *                      the case of failure)
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_dhcp_nds_to_pdu_data(csap_p csap, tad_dhcp_proto_data *proto_data,
+                         const asn_value *layer_pdu,
+                         tad_dhcp_proto_pdu_data **p_pdu_data)
+{
+    te_errno                    rc;
+    tad_dhcp_proto_pdu_data    *pdu_data;
 
     UNUSED(csap);
-    UNUSED(layer);
-    UNUSED(p_opaque);
+
+    assert(proto_data != NULL);
+    assert(layer_pdu != NULL);
+    assert(p_pdu_data != NULL);
+
+    *p_pdu_data = pdu_data = TE_ALLOC(sizeof(*pdu_data));
+    if (pdu_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
+    rc = tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
+                                   &pdu_data->hdr);
+
+    return rc;
+}
+
+/* See description in tad_ipstack_impl.h */
+void
+tad_dhcp_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
+{
+    tad_dhcp_proto_data     *proto_data;
+    tad_dhcp_proto_pdu_data *pdu_data = opaque;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+    assert(proto_data != NULL);
+
+    if (pdu_data != NULL)
+    {
+        tad_bps_free_pkt_frag_data(&proto_data->hdr, &pdu_data->hdr);
+        free(pdu_data);
+    }
+}
+
+
+/* See description in tad_ipstack_impl.h */
+te_errno
+tad_dhcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
+                         asn_value *layer_pdu, void **p_opaque)
+{
+    te_errno                    rc;
+    tad_dhcp_proto_data        *proto_data;
+    tad_dhcp_proto_pdu_data    *tmpl_data;
+
+    int     xid;
+    size_t  len = sizeof (xid);
 
     rc = asn_read_value_field(layer_pdu, &xid, &len, "xid.#plain");
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         xid = random();
         rc = asn_write_int32(layer_pdu, xid, "xid.#plain");
-        if (rc) 
+        if (rc != 0) 
             return rc;
     }
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
     
-    return 0;
-}
+    rc = tad_dhcp_nds_to_pdu_data(csap, proto_data, layer_pdu, &tmpl_data);
+    *p_opaque = tmpl_data;
+    if (rc != 0)
+        return rc;
 
-/**
- * Calculate amount of data necessary for all options in DHCP message.
- *
- * @param options       asn_value with sequence of DHCPv4-Option
- * @param len           calculated number of octets is written here
- *
- * @return 0 if success or error code if failed.
- */
-static te_errno
-dhcp_calculate_options_data(asn_value *options, size_t *len)
-{
-    asn_value *sub_opts;
-    int n_opts = asn_get_length(options, "");
-    int i;
-    size_t data_len = 0;
-    char label_buf [10];
+    tmpl_data = *p_opaque;
 
-    for (i = 0; i < n_opts; i++)
-    {
-        uint8_t    opt_type;
-        size_t     len = sizeof(opt_type);
-        asn_value *opt = asn_read_indexed(options, i, "");
-        te_errno   rc = asn_read_value_field(opt, &opt_type, &len,
-                                             "type.#plain");
+    rc = tad_bps_confirm_send(&proto_data->hdr, &tmpl_data->hdr);
 
-        if (rc != 0)
-            return rc;
-
-        /* Options 255 and 0 don't have 'length' and 'value' parts       */
-        if(opt_type != 255 && opt_type != 0)
-        {
-            data_len += 2;             /* octets for 'type' and 'length' */
-
-            snprintf (label_buf, sizeof(label_buf), "%d.options", i);
-            if (asn_read_component_value(options, &sub_opts, label_buf) == 0)
-            {
-                rc = dhcp_calculate_options_data(sub_opts, &len);
-                asn_free_value(sub_opts);
-
-                if (rc != 0)
-                    return rc;
-
-                data_len += len;
-            }
-            else
-            {
-                snprintf (label_buf, sizeof(label_buf), "%d.value", i);
-                data_len += asn_get_length(options, label_buf);
-            }
-        }
-        else
-            data_len += 1; /* octets for 'type' only (255 and 0 options) */
-    } 
-
-    *len = data_len;
-    return 0;
-}
-
-static int
-fill_dhcp_options(void *buf, asn_value *options)
-{
-    asn_value  *opt;
-    int         i;
-    size_t      len;
-    int         n_opts;
-    int         rc = 0;
-    uint8_t     opt_type;
-
-    if (options == NULL)
-        return 0;
-
-    n_opts = asn_get_length(options, "");
-    for (i = 0; i < n_opts && rc == 0; i++)
-    { 
-        opt = asn_read_indexed(options, i, "");
-        len = 1;
-        if ((rc = asn_read_value_field(opt, &opt_type, &len, "type.#plain")) != 0)
-            return rc;
-        memcpy(buf, &opt_type, len);
-        buf += len;
-        /* Options 255 and 0 don't have length and value parts */
-        if (opt_type == 255 || opt_type == 0)
-            continue;
-
-        len = 1;
-        if ((rc = asn_read_value_field(opt, buf, &len, "length.#plain")) != 0)
-            return rc;
-        buf += len;
-        if (asn_get_length(opt, "options") > 0)
-        {
-            asn_value *sub_opts;
-
-            if ((rc = asn_read_component_value(opt, &sub_opts, "options")) != 0)
-                return rc;
-            rc = fill_dhcp_options(buf, sub_opts);
-        }
-        else
-        {
-            len = asn_get_length(opt, "value.#plain");
-            if ((rc = asn_read_value_field(opt, buf, &len, "value.#plain")) != 0)
-                return rc;
-            buf += len;
-        }
-    }
     return rc;
 }
 
 
-#define OPTIONS_IMPL 1
-/* See description in tad_dhcp_impl.h */
+/* See description in tad_ipstack_impl.h */
 te_errno
 tad_dhcp_gen_bin_cb(csap_p csap, unsigned int layer,
                     const asn_value *tmpl_pdu, void *opaque,
                     const tad_tmpl_arg_t *args, size_t arg_num, 
                     tad_pkts *sdus, tad_pkts *pdus)
 {
-    te_errno    rc;
-    size_t      msg_len;
-    uint8_t    *msg;
-    uint8_t    *p; 
-#if OPTIONS_IMPL
-    asn_value  *options = NULL;
+    tad_dhcp_proto_data                 *proto_data;
+    tad_dhcp_proto_pdu_data             *tmpl_data = opaque;
+
+    te_errno        rc;
+    size_t          bitlen;
+    unsigned int    bitoff;
+    uint8_t        *msg;
+
+#ifdef TAD_DHCP_OPTIONS
+    const asn_value    *options;
 #endif
 
-    UNUSED(csap); 
-    UNUSED(layer); 
-    UNUSED(opaque);
-    UNUSED(args); 
-    UNUSED(arg_num); 
-    
-    /* Total length of mandatory fields in DHCP message */
-    msg_len = 236;
 
-#if OPTIONS_IMPL
-    if (asn_read_component_value(tmpl_pdu, &options, "options") == 0)
+    assert(csap != NULL);
+    F_ENTRY("(%d:%u) tmpl_pdu=%p args=%p arg_num=%u sdus=%p pdus=%p",
+            csap->id, layer, (void *)tmpl_pdu, (void *)args,
+            (unsigned)arg_num, sdus, pdus);
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+
+    /* Calculate length of the header */
+    bitlen = tad_bps_pkt_frag_data_bitlen(&proto_data->hdr,
+                                          &tmpl_data->hdr);
+    assert((bitlen & 7) == 0);
+
+#ifdef TAD_DHCP_OPTIONS
+    if (asn_get_child_value(tmpl_pdu, &options,
+                            PRIVATE, NDN_DHCP_OPTIONS) == 0)
     {
         size_t len;
 
-        if ((rc = dhcp_calculate_options_data(options, &len)) != 0)
-        {
-            asn_free_value(options);
+        rc = dhcp_calculate_options_data(options, &len);
+        if (rc != 0)
             return rc;
-        }
 
-        msg_len += sizeof(magic_dhcp) + len;
+        bitlen += (sizeof(magic_dhcp) + len) << 3;
     }
 #endif
 
-    msg = calloc(1, msg_len);
+    /* Allocate memory for binary template of the header */
+    msg = malloc(bitlen >> 3);
     if (msg == NULL)
-    {
-        ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, msg_len);
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
+    /* Generate binary template of the DHCP message */
+    bitoff = 0;
+    rc = tad_bps_pkt_frag_gen_bin(&proto_data->hdr, &tmpl_data->hdr,
+                                  args, arg_num, msg, &bitoff, bitlen);
+    if (rc != 0)
+    {
+        ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for header: %r",
+              __FUNCTION__, rc);
+        free(msg);
+        return rc;
     }
-    
-    p = msg;
+    assert((bitoff & 7) == 0);
 
-#define PUT_DHCP_FIELD(_label, _defval, _type, _conv) \
-    do {                                                               \
-        _type  value;                                                  \
-        size_t val_len = sizeof(value);                                \
-                                                                       \
-        rc = asn_read_value_field(tmpl_pdu, &value, &val_len, _label); \
-        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)                  \
-        {                                                              \
-            value = _conv(_defval);                                    \
-        }                                                              \
-        else if (rc != 0)                                              \
-        {                                                              \
-            free(msg);                                                 \
-            return rc;                                                 \
-        }                                                              \
-        *((_type *)p) = _conv(value);                                  \
-        p += sizeof(_type);                                            \
-    } while (0)
-
-    PUT_DHCP_FIELD("op",     0, uint8_t, (uint8_t));
-    PUT_DHCP_FIELD("htype",  0, uint8_t, (uint8_t));
-    PUT_DHCP_FIELD("hlen",   0, uint8_t, (uint8_t));
-    PUT_DHCP_FIELD("hops",   0, uint8_t, (uint8_t));
-    PUT_DHCP_FIELD("xid",    0, uint32_t, htonl);
-    PUT_DHCP_FIELD("secs",   0, uint16_t, htons);
-    PUT_DHCP_FIELD("flags",  0, uint16_t, htons);
-    PUT_DHCP_FIELD("ciaddr", 0, uint32_t, (uint32_t));
-    PUT_DHCP_FIELD("yiaddr", 0, uint32_t, (uint32_t));
-    PUT_DHCP_FIELD("siaddr", 0, uint32_t, (uint32_t));
-    PUT_DHCP_FIELD("giaddr", 0, uint32_t, (uint32_t));
-
-#define PUT_DHCP_LONG_FIELD(_label, _defval, _length) \
-    do {                                                            \
-        size_t val_len = (_length);                                 \
-                                                                    \
-        rc = asn_read_value_field(tmpl_pdu, p, &val_len, _label);   \
-        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)               \
-        {                                                           \
-            memset(p, (_defval), (_length));                        \
-        }                                                           \
-        else if (rc != 0)                                           \
-        {                                                           \
-            free(msg);                                              \
-            return rc;                                              \
-        }                                                           \
-        p += (_length);                                             \
-    } while (0) 
-
-    PUT_DHCP_LONG_FIELD("chaddr", 0,  16);
-    PUT_DHCP_LONG_FIELD("sname",  0,  64);
-    PUT_DHCP_LONG_FIELD("file",   0, 128); 
-
-#if OPTIONS_IMPL
+#ifdef TAD_DHCP_OPTIONS
     if (options != NULL)
     {
+        uint8_t    *p = msg + (bitoff >> 3);
+
         memcpy(p, magic_dhcp, sizeof(magic_dhcp));
         p += sizeof(magic_dhcp);
 
         if ((rc = fill_dhcp_options(p, options)) != 0)
         {
-            asn_free_value(options);
             free(msg);
             return rc;
         }
     }
 #endif
 
-    /* DHCP message is ready */
-
+    /* Move SDUs to PDUs and add DHCP message header */
     tad_pkts_move(pdus, sdus);
     rc = tad_pkts_add_new_seg(pdus, TRUE,
-                              msg, msg_len, tad_pkt_seg_data_free);
+                              msg, bitlen >> 3, tad_pkt_seg_data_free);
     if (rc != 0)
     {
         free(msg);
         return rc;
     }
 
-#if OPTIONS_IMPL
-    asn_free_value(options);
-#endif
-
     return 0;
 }
 
 
-/* See description in tad_dhcp_impl.h */
+
+/* See description in tad_ipstack_impl.h */
 te_errno
-tad_dhcp_match_bin_cb(csap_p csap,
-                        unsigned int     layer,
-                        const asn_value *ptrn_pdu,
-                        void            *ptrn_opaque,
-                        tad_recv_pkt    *meta_pkt,
-                        tad_pkt         *pdu,
-                        tad_pkt         *sdu)
-{ 
+tad_dhcp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
+                         asn_value *layer_pdu, void **p_opaque)
+{
+    te_errno                    rc;
+    tad_dhcp_proto_data        *proto_data;
+    tad_dhcp_proto_pdu_data    *ptrn_data;
+
+    F_ENTRY("(%d:%u) layer_pdu=%p", csap->id, layer,
+            (void *)layer_pdu);
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+
+    rc = tad_dhcp_nds_to_pdu_data(csap, proto_data, layer_pdu, &ptrn_data);
+    *p_opaque = ptrn_data;
+
+    return rc;
+}
+
+
+/* See description in tad_ipstack_impl.h */
+te_errno
+tad_dhcp_match_pre_cb(csap_p              csap,
+                      unsigned int        layer,
+                      tad_recv_pkt_layer *meta_pkt_layer)
+{
+    tad_dhcp_proto_data        *proto_data;
+    tad_dhcp_proto_pdu_data    *pkt_data;
+    te_errno                    rc;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+
+    pkt_data = malloc(sizeof(*pkt_data));
+    if (pkt_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    meta_pkt_layer->opaque = pkt_data;
+
+    rc = tad_bps_pkt_frag_match_pre(&proto_data->hdr, &pkt_data->hdr);
+
+    return rc;
+}
+
+/* See description in tad_ipstack_impl.h */
+te_errno
+tad_dhcp_match_post_cb(csap_p              csap,
+                       unsigned int        layer,
+                       tad_recv_pkt_layer *meta_pkt_layer)
+{
+    tad_dhcp_proto_data        *proto_data;
+    tad_dhcp_proto_pdu_data    *pkt_data = meta_pkt_layer->opaque;
+    tad_pkt                    *pkt;
+    te_errno                    rc;
+    unsigned int                bitoff = 0;
+
+    if (~csap->state & CSAP_STATE_RESULTS)
+        return 0;
+
+    if ((meta_pkt_layer->nds = asn_init_value(ndn_dhcpv4_message)) == NULL)
+    {
+        ERROR_ASN_INIT_VALUE(ndn_dhcpv4_message);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+    pkt = tad_pkts_first_pkt(&meta_pkt_layer->pkts);
+
+    rc = tad_bps_pkt_frag_match_post(&proto_data->hdr, &pkt_data->hdr,
+                                     pkt, &bitoff, meta_pkt_layer->nds);
+    if (rc != 0)
+        return rc;
+
+#ifdef TAD_DHCP_OPTIONS
     uint8_t    *data_ptr; 
     uint8_t    *data; 
     size_t      data_len;
     asn_value  *opt_list;
-    asn_value  *dhcp_message_pdu = NULL;
-    te_errno    rc;
 
-    UNUSED(ptrn_opaque);
-    UNUSED(sdu); /* DHCP does not carry any payload */
+    assert(tad_pkt_seg_num(pkt) == 1);
+    assert(tad_pkt_first_seg(pkt) != NULL);
+    data_ptr = data = tad_pkt_first_seg(pkt)->data_ptr;
+    data_len = tad_pkt_first_seg(pkt)->data_len;
 
-    if (ptrn_pdu == NULL || pdu == NULL)
-        return TE_EWRONGPTR;
-
-    assert(tad_pkt_seg_num(pdu) == 1);
-    assert(tad_pkt_first_seg(pdu) != NULL);
-    data_ptr = data = tad_pkt_first_seg(pdu)->data_ptr;
-    data_len = tad_pkt_first_seg(pdu)->data_len;
-
-    ENTRY("%s: CSAP %d, layer %d, pkt len: %d", 
-          __FUNCTION__, csap->id, layer, data_len);
-
-    VERB("DHCP match callback called: %Tm", data_ptr, data_len);
-
-    if (csap->state & CSAP_STATE_RESULTS)
-    {
-        dhcp_message_pdu = meta_pkt->layers[layer].nds =
-            asn_init_value(ndn_dhcpv4_message);
-        if (dhcp_message_pdu == NULL)
-        {
-            ERROR_ASN_INIT_VALUE(ndn_dhcpv4_message);
-            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-        }
-    }
-
-#define FILL_DHCP_HEADER_FIELD(_asn_label, _size) \
-    do {                                                        \
-        rc = ndn_match_data_units(ptrn_pdu, dhcp_message_pdu,   \
-                                  data, _size, _asn_label);     \
-        if (rc != 0)                                            \
-        {                                                       \
-            F_VERB("%s: field %s not match, rc %r",             \
-                    __FUNCTION__, _asn_label, rc);              \
-            return rc;                                          \
-        }                                                       \
-        data += _size;                                          \
-    } while(0)
-
-    FILL_DHCP_HEADER_FIELD("op",      1);
-    FILL_DHCP_HEADER_FIELD("htype",   1);
-    FILL_DHCP_HEADER_FIELD("hlen",    1);
-    FILL_DHCP_HEADER_FIELD("hops",    1);
-    FILL_DHCP_HEADER_FIELD("xid",     4);
-    FILL_DHCP_HEADER_FIELD("secs",    2);
-    FILL_DHCP_HEADER_FIELD("flags",   2);
-    FILL_DHCP_HEADER_FIELD("ciaddr",  4);
-    FILL_DHCP_HEADER_FIELD("yiaddr",  4);
-    FILL_DHCP_HEADER_FIELD("siaddr",  4);
-    FILL_DHCP_HEADER_FIELD("giaddr",  4); 
-    FILL_DHCP_HEADER_FIELD("chaddr", 16);
-    FILL_DHCP_HEADER_FIELD("sname",  64);
-    FILL_DHCP_HEADER_FIELD("file",  128); 
-
-#undef FILL_DHCP_HEADER_FIELD
+    data += 236;
 
     /* check for magic DHCP cookie, see RFC2131, section 3. */
     if ((data + sizeof(magic_dhcp)) > (data_ptr + data_len) || 
@@ -422,10 +451,7 @@ tad_dhcp_match_bin_cb(csap_p csap,
     { 
         data += sizeof(magic_dhcp); 
 
-        if (dhcp_message_pdu != NULL)
-            opt_list = asn_init_value(ndn_dhcpv4_options); 
-        else
-            opt_list = NULL;
+        opt_list = asn_init_value(ndn_dhcpv4_options); 
 
         while (data < (data_ptr + data_len))
         {
@@ -434,10 +460,10 @@ tad_dhcp_match_bin_cb(csap_p csap,
             uint8_t     opt_type;
         
 #define FILL_DHCP_OPT_FIELD(_obj, _label, _size) \
-            do {                                                \
-                rc = asn_write_value_field(_obj, data, _size,   \
-                                           _label ".#plain");   \
-                data += _size;                                  \
+            do {                                            \
+                asn_write_value_field(_obj, data, _size,    \
+                                      _label ".#plain");    \
+                data += _size;                              \
             } while(0);
 
             opt_type = *data;
@@ -445,8 +471,7 @@ tad_dhcp_match_bin_cb(csap_p csap,
             if (opt_type == 255 || opt_type == 0)
             {
                 /* END and PAD options don't have length and value */
-                if (opt_list != NULL)
-                    rc = asn_insert_indexed(opt_list, opt, -1, "");
+                asn_insert_indexed(opt_list, opt, -1, "");
                 continue;
             }
 
@@ -480,26 +505,82 @@ tad_dhcp_match_bin_cb(csap_p csap,
 
                         asn_insert_indexed(sub_opt_list, sub_opt, -1, "");
                     }
-                    rc = asn_write_component_value(opt, sub_opt_list,
-                                                   "options");
+                    asn_put_child_value(opt, sub_opt_list,
+                                        PRIVATE, NDN_DHCP_OPTIONS);
                     break;
                 }
             }
-            if (opt_list != NULL)
-                rc = asn_insert_indexed(opt_list, opt, -1, "");
+            asn_insert_indexed(opt_list, opt, -1, "");
         }
-        if (dhcp_message_pdu != NULL)
-        {
-            asn_write_component_value(dhcp_message_pdu, opt_list,
-                                      "options");
-        }
-        asn_free_value(opt_list);
+
+        asn_put_child_value(meta_pkt_layer->nds, opt_list,
+                            PRIVATE, NDN_DHCP_OPTIONS);
     }
 
     VERB("MATCH CALLBACK OK\n");
 
+#endif /* TAD_DHCP_OPTIONS */
+
+    return rc;
+}
+
+/* See description in tad_ipstack_impl.h */
+te_errno
+tad_dhcp_match_do_cb(csap_p           csap,
+                     unsigned int     layer,
+                     const asn_value *ptrn_pdu,
+                     void            *ptrn_opaque,
+                     tad_recv_pkt    *meta_pkt,
+                     tad_pkt         *pdu,
+                     tad_pkt         *sdu)
+{
+    tad_dhcp_proto_data        *proto_data;
+    tad_dhcp_proto_pdu_data    *ptrn_data = ptrn_opaque;
+    tad_dhcp_proto_pdu_data    *pkt_data = meta_pkt->layers[layer].opaque;
+    te_errno                    rc;
+    unsigned int                bitoff = 0;
+
+    UNUSED(ptrn_pdu);
+
+    if (tad_pkt_len(pdu) < 20)
+    {
+        F_VERB(CSAP_LOG_FMT "PDU is too small to be DHCP packet",
+               CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
+    }
+  
+    proto_data = csap_get_proto_spec_data(csap, layer);
+
+    assert(proto_data != NULL);
+    assert(ptrn_data != NULL);
+    assert(pkt_data != NULL);
+
+    rc = tad_bps_pkt_frag_match_do(&proto_data->hdr, &ptrn_data->hdr,
+                                   &pkt_data->hdr, pdu, &bitoff);
+    if (rc != 0)
+    {
+        F_VERB(CSAP_LOG_FMT "Match PDU vs DHCP header failed on bit "
+               "offset %u: %r", CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
+        return rc;
+    }
+
+    /* TODO: DHCP options processing */
+
+    rc = tad_pkt_get_frag(sdu, pdu, bitoff >> 3,
+                          tad_pkt_len(pdu) - (bitoff >> 3),
+                          TAD_PKT_GET_FRAG_ERROR);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to prepare DHCP SDU: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    EXIT(CSAP_LOG_FMT "OK", CSAP_LOG_ARGS(csap));
+
     return 0;
 }
+
 
 /* See description in tad_dhcp_impl.h */
 te_errno
@@ -528,3 +609,143 @@ tad_dhcp_gen_pattern_cb(csap_p csap, unsigned int layer,
 
     return rc;
 }
+
+/* See description in tad_dhcp_impl.h */
+char *
+tad_dhcp_get_param_cb(csap_p csap, unsigned int layer, const char *param)
+{
+    dhcp_csap_specific_data_t *spec_data; 
+
+    UNUSED(layer);
+    
+    spec_data = csap_get_rw_data(csap); 
+
+    if (strcmp (param, "ipaddr") == 0)
+    { 
+        return spec_data->ipaddr;
+    }
+
+    return NULL;
+}
+
+#ifdef TAD_DHCP_OPTIONS
+/**
+ * Calculate amount of data necessary for all options in DHCP message.
+ *
+ * @param options       asn_value with sequence of DHCPv4-Option
+ * @param len           calculated number of octets is written here
+ *
+ * @return 0 if success or error code if failed.
+ */
+static te_errno
+dhcp_calculate_options_data(const asn_value *options, size_t *len)
+{
+    size_t              data_len = 0;
+    int                 n_opts = asn_get_length(options, "");
+    int                 i;
+    asn_value          *opt;
+    uint8_t             opt_type;
+    size_t              l;
+    const asn_value    *sub_opts;
+    te_errno            rc;
+
+    for (i = 0; i < n_opts; i++)
+    {
+        rc = asn_get_indexed(options, &opt, i, "");
+        if (rc != 0)
+            return rc;
+
+        l = sizeof(opt_type);
+        rc = asn_read_value_field(opt, &opt_type, &l, "type.#plain");
+        if (rc != 0)
+            return rc;
+
+        /* Options 255 and 0 don't have 'length' and 'value' parts */
+        if (opt_type != 255 && opt_type != 0)
+        {
+            data_len += 2;  /* octets for 'type' and 'length' */
+
+            if (asn_get_child_value(opt, &sub_opts,
+                                    PRIVATE, NDN_DHCP_OPTIONS) == 0)
+            {
+                rc = dhcp_calculate_options_data(sub_opts, &l);
+                if (rc != 0)
+                    return rc;
+
+                data_len += l;
+            }
+            else
+            {
+                data_len += asn_get_length(opt, "value");
+            }
+        }
+        else
+        {
+            data_len += 1; /* octets for 'type' only (255 and 0 options) */
+        }
+    } 
+
+    *len = data_len;
+
+    return 0;
+}
+
+static te_errno
+fill_dhcp_options(void *buf, const asn_value *options)
+{
+    asn_value  *opt;
+    int         i;
+    size_t      len;
+    int         n_opts;
+    te_errno    rc = 0;
+    uint8_t     tmp;
+
+    if (options == NULL)
+        return 0;
+
+    n_opts = asn_get_length(options, "");
+    for (i = 0; i < n_opts; i++)
+    { 
+        rc = asn_get_indexed(options, &opt, i, "");
+        if (rc != 0)
+            break;
+
+        len = sizeof(tmp);
+        if ((rc = asn_read_value_field(opt, &tmp, &len,
+                                       "type.#plain")) != 0)
+            break;
+
+        memcpy(buf, &tmp, len);
+        buf += len;
+        /* Options 255 and 0 don't have length and value parts */
+        if (tmp == 255 || tmp == 0)
+            continue;
+
+        len = sizeof(tmp);
+        if ((rc = asn_read_value_field(opt, buf, &len, "length.#plain")) != 0)
+            break;
+
+        buf += len;
+        if (asn_get_length(opt, "options") > 0)
+        {
+            const asn_value *sub_opts;
+
+            if ((rc = asn_get_child_value(opt, &sub_opts,
+                                          PRIVATE, NDN_DHCP_OPTIONS)) != 0)
+                break;
+            rc = fill_dhcp_options(buf, sub_opts);
+            if (rc != 0)
+                break;
+        }
+        else
+        {
+            len = asn_get_length(opt, "value.#plain");
+            if ((rc = asn_read_value_field(opt, buf, &len,
+                                           "value.#plain")) != 0)
+                break;
+            buf += len;
+        }
+    }
+    return rc;
+}
+#endif /* TAD_DHCP_OPTIONS */
