@@ -519,8 +519,6 @@ xinetd_get(unsigned int gid, const char *oid, char *value)
     int   index = ds_lookup(XINETD_ETC_DIR, get_ds_name(oid));
     FILE *f;
 
-    UNUSED(gid);
-
     if (index < 0)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
         
@@ -564,6 +562,8 @@ xinetd_get(unsigned int gid, const char *oid, char *value)
     }
 #endif
 
+    UNUSED(gid);
+
     return 0;
 }
 
@@ -586,8 +586,6 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     
     te_bool inside = FALSE;
     char   *server = xinetd_server;
-    
-    UNUSED(gid);
 
     xinetd_server = NULL;
     
@@ -661,6 +659,8 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 #endif
+    
+    UNUSED(gid);
     
     return 0;
 }
