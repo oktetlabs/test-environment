@@ -2280,6 +2280,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
         return TE_RC(TE_TA_UNIX, TE_EACCES);
     
     s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
+    *s = '\0';
 
     while (fscanf(fd, "%*d %s %*d %*d %s\n", ifn, addrstr) > 0)
     {
