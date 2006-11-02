@@ -2686,6 +2686,27 @@ struct tarpc_setenv_out {
     tarpc_int retval;
 };
 
+/* uname() */
+
+struct tarpc_utsname {
+    char sysname<>;
+    char nodename<>;
+    char release<>;
+    char osversion<>;
+    char machine<>;
+};
+
+struct tarpc_uname_in {
+    struct tarpc_in_arg common;
+};
+
+struct tarpc_uname_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_int     retval;
+    tarpc_utsname buf;
+};
+
 /* fileno() */
 struct tarpc_fileno_in {
     struct tarpc_in_arg common;
@@ -3581,6 +3602,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(seteuid)
         RPC_DEF(getenv)
         RPC_DEF(setenv)
+        RPC_DEF(uname)
         
         RPC_DEF(create_aiocb)
         RPC_DEF(fill_aiocb)

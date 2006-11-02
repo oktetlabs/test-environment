@@ -163,6 +163,7 @@ tcl8.4/expect.h \
 termio.h \
 time.h \
 ucd-snmp/snmp_impl.h \
+sys/utsname.h \
 unistd.h \
 ], [], [], [
 #if HAVE_SYS_TYPES_H

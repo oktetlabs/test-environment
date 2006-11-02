@@ -202,7 +202,8 @@ AC_SEARCH_LIBS([pam_start], [pam],
                AC_MSG_WARN(
                [No PAM (Pluggable Authentication Modules) support]))
 
-AC_CHECK_HEADERS(security/pam_appl.h)
+AC_CHECK_HEADERS([security/pam_appl.h])
+AC_CHECK_HEADERS([sys/utsname.h])
 
 if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
     dnl

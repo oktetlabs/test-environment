@@ -3339,6 +3339,7 @@ TARPC_FUNC(setenv, {},
 }
 )
 
+
 /*-------------- getpwnam() --------------------------------*/
 #define PUT_STR(_field) \
         do {                                                            \
@@ -3353,6 +3354,7 @@ TARPC_FUNC(setenv, {},
             out->passwd._field._field##_len =                           \
                 strlen(out->passwd._field._field##_val) + 1;            \
         } while (0)
+
 TARPC_FUNC(getpwnam, {}, 
 { 
     struct passwd *pw;
@@ -3389,6 +3391,56 @@ finish:
     ;
 }
 )
+
+#undef PUT_STR
+
+/*-------------- uname() --------------------------------*/
+
+#define PUT_STR(_dst, _field)                                       \
+        do {                                                        \
+            out->buf._dst._dst##_val = strdup(uts._field);          \
+            if (out->buf._dst._dst##_val == NULL)                   \
+            {                                                       \
+                ERROR("Failed to duplicate string '%s'",            \
+                      uts._field);                                  \
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);  \
+                goto finish;                                        \
+            }                                                       \
+            out->buf._dst._dst##_len =                              \
+                strlen(out->buf._dst._dst##_val) + 1;               \
+        } while (0)
+
+TARPC_FUNC(uname, {}, 
+{ 
+    struct utsname uts;
+    
+    MAKE_CALL(out->retval = func_ptr(&uts));
+    if (out->retval == 0)
+    {
+        PUT_STR(sysname, sysname);
+        PUT_STR(nodename, nodename);
+        PUT_STR(release, release);
+        PUT_STR(osversion, version);
+        PUT_STR(machine, machine);
+    } 
+    else
+    {
+        ERROR("getpwnam() returned NULL");
+    }
+finish:
+    if (!RPC_IS_ERRNO_RPC(out->common._errno))
+    {
+        free(out->buf.sysname.sysname_val);
+        free(out->buf.nodename.nodename_val);
+        free(out->buf.release.release_val);
+        free(out->buf.osversion.osversion_val);
+        free(out->buf.machine.machine_val);
+        memset(&(out->buf), 0, sizeof(out->buf));
+    }
+    ;
+}
+)
+
 #undef PUT_STR
 
 /*-------------- getuid() --------------------------------*/

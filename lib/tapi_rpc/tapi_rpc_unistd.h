@@ -647,6 +647,19 @@ extern struct passwd *rpc_getpwnam(rcf_rpc_server *rpcs,
                                    const char *name);
 
 
+struct utsname;
+
+/**
+ * Query information about the host on RPC server site
+ *
+ * @param rpcs    RPC server handle
+ * @param buf     Buffer to hold host info (OUT)
+ *
+ * @return 0 in case of success, -1 in case of error
+ */
+extern int rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf);
+
+
 /**
  * Get the effective user ID of the RPC server process. The effective user
  * ID corresponds to the set ID bit of the file currently executed.

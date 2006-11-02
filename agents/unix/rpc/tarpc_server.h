@@ -153,6 +153,10 @@
 #include <sys/resource.h>
 #endif
 
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
+
 #define TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
 
 #include "te_stdint.h"

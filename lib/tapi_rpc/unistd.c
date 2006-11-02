@@ -49,6 +49,9 @@
 #if HAVE_PWD_H
 #include <pwd.h>
 #endif
+#if HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
 
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
@@ -1362,6 +1365,57 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
 
     RETVAL_PTR(getpwnam, res);
 }
+
+int
+rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
+{
+    tarpc_uname_in  in;
+    tarpc_uname_out out;
+    
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(uname, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    rcf_rpc_call(rpcs, "uname", &in, &out);
+                 
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(uname, out.retval);
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        memset(buf, 0, sizeof(*buf));
+#define GET_STR(_dst, _field)                               \
+        do {                                                \
+            strncpy(buf->_dst, out.buf._field._field##_val, \
+                    sizeof(buf->_dst));                     \
+            free(out.buf._field._field##_val);              \
+        } while(0)
+        
+        GET_STR(sysname, sysname);
+        GET_STR(nodename, nodename);
+        GET_STR(release, release);
+        GET_STR(version, osversion);
+        GET_STR(machine, machine);
+#undef GET_STR
+        memset(&out, 0, sizeof(out));
+    }
+    
+    TAPI_RPC_LOG("RPC (%s,%s): uname() -> %d "
+                 "(\"%s\",\"%s\",\"%s\",\"%s\",\"%s\") (%s)",
+                 rpcs->ta, rpcs->name, out.retval,
+                 buf->sysname, buf->nodename, 
+                 buf->release, buf->version, buf->machine,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(uname, out.retval);
+}
+
 
 int
 rpc_gettimeofday(rcf_rpc_server *rpcs,
