@@ -2146,7 +2146,7 @@ mcast_link_addr_change(const char *ifname, const char *addr, int op)
 #ifdef HAVE_STRUCT_IFREQ_IFR_HWADDR        
     q = request.ifr_hwaddr.sa_data;
 #elif HAVE_STRUCT_IFREQ_IFR_ENADDR
-    q = request.ifr_enaddr;
+    q = (uint8_t *)request.ifr_enaddr;
 #else
     request.ifr_addr.sa_family = AF_LINK;
     {
@@ -2239,18 +2239,26 @@ static te_errno
 mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
                      const char *ifname)
 {
-    char        s[1024] = "";
-    char       *p = s;
+    char       *s = NULL;
+    int         p = 0;
 #ifndef __linux__
+#define MMAC_ADDR_BUF_SIZE 16384    
     mma_list_el *tmp;
+    int          buf_segs = 1;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(ifname);
 
+    s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
+
     for (tmp = mcast_mac_addr_list; tmp != NULL; tmp = tmp->next)
     {
-        sprintf(p, "%s ", tmp->value);
+        if (p >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
+        {
+            s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
+        }
+        p += sprintf(&s[p], "%s ", tmp->value);
     }
 #else        
     FILE       *fd;
@@ -2275,15 +2283,15 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 
             for (i = 0; i < 6; i++)
             {
-                strncpy(p, &addrstr[i * 2], 2);
-                p += strlen(p);
-                sprintf(p++, i < 5 ? ":" : " ");
+                strncpy(&s[p], &addrstr[i * 2], 2);
+                p += 2;
+                sprintf(&s[p], i < 5 ? ":" : " ");
             }
         }
     }
     fclose(fd);
 #endif
-    *list = strdup(s);
+    *list = s;
     return 0;
 }
 
