@@ -369,6 +369,7 @@ static te_errno mcast_link_addr_list(unsigned int, const char *, char **,
                                      const char *);
 #ifndef __linux__
 typedef struct mma_list_el {
+    char                ifname[IFNAMSIZ];
     char                value[ETHER_ADDR_LEN * 3];
     struct mma_list_el *next;
 } mma_list_el;
@@ -2193,6 +2194,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     if (rc == 0)
     {
         mma_list_el *p = (mma_list_el *)malloc(sizeof(mma_list_el));
+        strncpy(p->ifname, ifname, IFNAMSIZ);
         strncpy(p->value, addr, sizeof(p->value));
         p->next = mcast_mac_addr_list;
         mcast_mac_addr_list = p->next;
@@ -2213,7 +2215,8 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
 #ifndef __linux__ 
     if (rc == 0)
     {
-        if (strcmp(mcast_mac_addr_list->value, addr) == 0)
+        if (strcmp(mcast_mac_addr_list->value, addr) == 0 &&
+            strcmp(mcast_mac_addr_list->ifname, ifname) == 0)
         {
             mma_list_el *p = mcast_mac_addr_list->next;
             free(mcast_mac_addr_list);
@@ -2224,7 +2227,9 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
             mma_list_el *p,
                         *pp;
             for (p = mcast_mac_addr_list;
-                 p->next != NULL && strcmp(p->next->value, addr) != 0;
+                 p->next != NULL && 
+                 (strcmp(p->next->value, addr) != 0 ||
+                  strcmp(p->next->ifname, ifname) != 0);
                  p = p->next);
             pp = p->next->next;
             free(p->next);
@@ -2241,10 +2246,10 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 {
     char       *s = NULL;
     int         p = 0;
+    int         buf_segs = 1;
 #ifndef __linux__
-#define MMAC_ADDR_BUF_SIZE 16384    
+#define MMAC_ADDR_BUF_SIZE 16384 
     mma_list_el *tmp;
-    int          buf_segs = 1;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2254,13 +2259,16 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 
     for (tmp = mcast_mac_addr_list; tmp != NULL; tmp = tmp->next)
     {
-        if (p >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
+        if (strcmp(tmp->ifname, ifname, 0) == 0)
         {
-            s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
+            if (p >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
+            {
+                s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
+            }
+            p += sprintf(&s[p], "%s ", tmp->value);
         }
-        p += sprintf(&s[p], "%s ", tmp->value);
     }
-#else        
+#else
     FILE       *fd;
     char        ifn[IFNAMSIZ];
     char        addrstr[ETHER_ADDR_LEN * 3];
@@ -2269,12 +2277,14 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
     UNUSED(oid);
     if ((fd = fopen("/proc/net/dev_mcast", "r")) == NULL)
         return TE_RC(TE_TA_UNIX, TE_EACCES);
+    
+    s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
 
     while (fscanf(fd, "%*d %s %*d %*d %s\n", ifn, addrstr) > 0)
     {
         /*
          * Read file and copy items with appropriate interface name
-         * to the buffer, adding semicolons to MAC addresses.
+         * to the buffer, adding colons to MAC addresses.
          */
             
         if (strcmp(ifn, ifname) == 0)
@@ -2283,9 +2293,14 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 
             for (i = 0; i < 6; i++)
             {
+                if (p >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
+                {
+                    s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
+                }
                 strncpy(&s[p], &addrstr[i * 2], 2);
                 p += 2;
-                sprintf(&s[p], i < 5 ? ":" : " ");
+                s[p++] = (i < 5) ? ':' : ' ';
+                s[p] = '\0';
             }
         }
     }
