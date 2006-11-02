@@ -1853,7 +1853,7 @@ te_errno
 asn_parse_dvalue_in_file(const char *filename, const asn_type *type, 
                          asn_value **parsed_value, int *syms_parsed) 
 { 
-    size_t flen;
+    size_t flen = 0; /* Initialize to make GCC happy */
     char *buf;
     int   fd;
     int   read_sz;
