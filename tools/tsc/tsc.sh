@@ -431,6 +431,8 @@ create_test()
  * @author ${AUTHOR_NAME} ${AUTHOR_FNAME} <${AUTHOR_NAME}.${AUTHOR_FNAME}@oktetlabs.ru>
  */
 
+#ifndef DOXYGEN_TEST_SPEC
+
 #define TE_TEST_NAME  "${DIR}${TEST_NAME}"
 
 int
@@ -439,6 +441,8 @@ main(int argc, char *argv[])
     (void)(argc); (void)(argv);
     return 0;
 }
+
+#endif /* !DOXYGEN_TEST_SPEC */
 EOF
 
     fi
