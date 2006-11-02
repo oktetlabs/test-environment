@@ -292,7 +292,6 @@ extern "C" {
         }                                                       \
     } while (0)
 
-
 /**
  * The macro to get parameters of type 'int64'
  *
@@ -309,15 +308,13 @@ extern "C" {
         {                                                       \
             TEST_STOP;                                          \
         }                                                       \
-        (var_name_) = (int)strtoll(str_val_, &end_ptr, 10);     \
-        if (end_ptr == str_val_ || *end_ptr != '\0')            \
+        if (sscanf(str_val_, "%lld", &(var_name_)) != 1)        \
         {                                                       \
             TEST_FAIL("The value of '%s' parameter should be "  \
                       "an integer, but it is %s", #var_name_,   \
                       str_val_);                                \
         }                                                       \
     } while (0)
-
 
 /**
  * The macro to get parameter of type 'octet string' 
