@@ -294,6 +294,32 @@ extern "C" {
 
 
 /**
+ * The macro to get parameters of type 'int64'
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_INT64_PARAM(var_name_) \
+    do {                                                        \
+        const char *str_val_;                                   \
+        char       *end_ptr;                                    \
+                                                                \
+        str_val_ = test_get_param(argc, argv, #var_name_);      \
+        if (str_val_ == NULL)                                   \
+        {                                                       \
+            TEST_STOP;                                          \
+        }                                                       \
+        (var_name_) = (int)strtoll(str_val_, &end_ptr, 10);     \
+        if (end_ptr == str_val_ || *end_ptr != '\0')            \
+        {                                                       \
+            TEST_FAIL("The value of '%s' parameter should be "  \
+                      "an integer, but it is %s", #var_name_,   \
+                      str_val_);                                \
+        }                                                       \
+    } while (0)
+
+
+/**
  * The macro to get parameter of type 'octet string' 
  *
  * @param var_name_  Variable whose name is the same as the name of
