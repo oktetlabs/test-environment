@@ -88,6 +88,32 @@ typedef enum cli_sync_res {
 static int cli_expect_main(cli_csap_specific_data_p spec_data);
 
 
+#if 1
+/* 
+ * FIXME:
+ * The following extern declarations are copied from unix_internal.h
+ * to avoid build-time warnings. It will not work with non-unix TA's.
+ * Good solution is required.
+ */
+/**
+ * waitpid() analogue, with the same parameters/return value.
+ * Only WNOHANG option is supported for now.
+ * Process groups are not supported for now.
+ */
+extern pid_t ta_waitpid(pid_t pid, int *status, int options);
+
+/**
+ * Kill a child process.
+ *
+ * @param pid PID of the child to be killed
+ *
+ * @retval 0 child was exited or killed successfully
+ * @retval -1 there is no such child.
+ */
+extern int ta_kill_death(pid_t pid);
+#endif
+
+
 /**
  * Convert CLI conection type into string representation.
  *
