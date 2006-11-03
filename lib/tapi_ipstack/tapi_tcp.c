@@ -603,23 +603,23 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
         goto cleanup;
     }
 
-    rc = asn_read_int32(pkt, &(context->loc_start_seq), 
-                        "pdus.0.#tcp.seqn.#plain");
+    rc = asn_read_int32(pkt, &i32_tmp, "pdus.0.#tcp.seqn.#plain");
     if (rc != 0)
     {
         ERROR("%s(): read loc seq failed %r", __FUNCTION__, rc);
         goto cleanup;
     }
+    context->loc_start_seq = i32_tmp;
     INFO("%s(): read loc start seq: %u",
          __FUNCTION__, context->loc_start_seq);
 
-    rc = asn_read_int32(pkt, &(context->rem_start_seq), 
-                        "pdus.0.#tcp.ackn.#plain");
+    rc = asn_read_int32(pkt, &i32_tmp, "pdus.0.#tcp.ackn.#plain");
     if (rc != 0)
     {
         ERROR("%s(): read rem seq failed %r", __FUNCTION__, rc);
         goto cleanup;
     }
+    context->rem_start_seq = i32_tmp;
     INFO("%s(): read rem start seq: %u",
          __FUNCTION__, context->rem_start_seq);
 
