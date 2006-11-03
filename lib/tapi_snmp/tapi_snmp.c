@@ -1035,7 +1035,7 @@ tapi_snmp_operation(const char *ta, int sid, int csap_id,
         {
             case TAPI_SNMP_OBJECT_ID:
             case TAPI_SNMP_OCTET_STR:
-                var_bind.oct_string = (char *)data;
+                var_bind.oct_string = (uint8_t *)data;
                 break;
 
             default:
