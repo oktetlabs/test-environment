@@ -97,7 +97,7 @@ ta_snmp_open_session(const struct sockaddr *net_addr, long int version,
         session.community_len = COMMUNITY_MAX_LEN;
         comm[COMMUNITY_MAX_LEN] = '\0';
     }
-    session.community = comm;
+    session.community = (u_char *)comm;
     strncpy(peer, te_sockaddr_get_ipstr(net_addr), sizeof(peer));
     session.peername = peer;
 
