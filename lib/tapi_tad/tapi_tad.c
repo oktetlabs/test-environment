@@ -268,7 +268,7 @@ tapi_csap_get_status(const char *ta_name, int ta_sid, csap_handle_t csap_id,
 te_errno
 tapi_tad_csap_create(const char *ta_name, int session,
                      const char *stack_id, 
-                     const asn_value *csap_spec, int *handle)
+                     const asn_value *csap_spec, csap_handle_t *handle)
 {
     te_errno    rc;
     char        tmp_name[] = "/tmp/te_tapi_tad_csap_create.XXXXXX";
