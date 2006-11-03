@@ -673,7 +673,7 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
     te_errno    rc = 0;
     te_errno    result = 0;
     int         syms;
-    int         num;
+    unsigned    num;
     asn_value  *pattern_a = NULL;
     asn_value  *pattern_b = NULL;
 
@@ -880,9 +880,9 @@ tapi_iscsi_exchange_stop(const char *ta, int session,
                          csap_handle_t csap_b)
 
 {
-    int num_a;
-    int num_b;
-    int rc;
+    unsigned int    num_a;
+    unsigned int    num_b;
+    te_errno        rc;
  
     RING("Stopping permanent traffic exchange");
 
@@ -899,7 +899,7 @@ tapi_iscsi_exchange_stop(const char *ta, int session,
         WARN("%s() trrecv_stop failed: %r", __FUNCTION__, rc);
         rc = 0;
     }
-    RING("%d %d packets received", num_a, num_b);
+    RING("%u %u packets received", num_a, num_b);
 
     return 0;
 }
