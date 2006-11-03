@@ -300,28 +300,18 @@ tapi_tcp_server_recv(const char *ta_name, int sid,
                      csap_handle_t tcp_csap, 
                      unsigned int timeout, int *socket)
 {
-    asn_value *pattern = NULL;
-
-    int rc = 0, syms, num;
+    te_errno        rc;
+    unsigned int    num;
 
     if (ta_name == NULL || socket == NULL)
-        return TE_EWRONGPTR;
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
-    rc = asn_parse_value_text("{ { pdus { socket:{} } } }",
-                              ndn_traffic_pattern, &pattern, &syms);
-    if (rc != 0)
-    {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
-              __FUNCTION__, rc, syms);
-        return rc;
-    }
-
-    rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, pattern, 
+    rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, NULL, 
                                timeout, 1, RCF_TRRECV_PACKETS);
     if (rc != 0)
     {
         ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
-        goto cleanup;
+        return rc;
     }
 
     rc = rcf_ta_trrecv_wait(ta_name, sid, tcp_csap,
@@ -329,8 +319,6 @@ tapi_tcp_server_recv(const char *ta_name, int sid,
     if (rc != 0)
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
 
-cleanup: 
-    asn_free_value(pattern);
     return rc;
 } 
 
