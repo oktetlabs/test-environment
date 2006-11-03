@@ -526,10 +526,11 @@ extern int tapi_tcp_update_sent_seq(tapi_tcp_handler_t handler,
  *
  * @return status code
  */
-extern int tapi_tcp_forward_all(const char *ta_name, int session,
-                                csap_handle_t csap_rcv,
-                                csap_handle_t csap_fwd,
-                                unsigned int timeout, int *forwarded);
+extern te_errno tapi_tcp_forward_all(const char *ta_name, int session,
+                                     csap_handle_t csap_rcv,
+                                     csap_handle_t csap_fwd,
+                                     unsigned int timeout,
+                                     unsigned int *forwarded);
 
 
 typedef struct {
