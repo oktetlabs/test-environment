@@ -275,7 +275,7 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
 
     int rc = 0, syms, num;
 
-    if (ta_name == NULL || socket == NULL)
+    if (ta_name == NULL)
         return TE_EWRONGPTR;
 
     msg.error  = 0;
@@ -352,28 +352,15 @@ tapi_iscsi_start_poll_recv_pkt(unsigned n_csaps,
                                rcf_trpoll_csap *csaps,
                                int timeout)
 {
-    asn_value *pattern = NULL;
-
-    int rc = 0, syms, num;
-    unsigned i;
+    te_errno        rc = 0;
+    unsigned int    num;
+    unsigned int    i;
  
-    if (socket == NULL)
-        return TE_EWRONGPTR;
-
-    rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
-                              ndn_traffic_pattern, &pattern, &syms);
-    if (rc != 0)
-    {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
-              __FUNCTION__, rc, syms);
-        return rc;
-    } 
-
     for (i = 0; i < n_csaps; i++)
     {
         rc = tapi_tad_trrecv_start(csaps[i].ta, 0, 
                                    csaps[i].csap_id, 
-                                   pattern, timeout, 1,
+                                   NULL, timeout, 1,
                                    RCF_TRRECV_PACKETS);
         if (rc != 0)
         {
@@ -388,7 +375,6 @@ tapi_iscsi_start_poll_recv_pkt(unsigned n_csaps,
         }
     }
 
-    asn_free_value(pattern);
     return rc;
 }
 
