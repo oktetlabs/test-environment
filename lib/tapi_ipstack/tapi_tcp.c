@@ -582,7 +582,7 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
 {
     int      rc;
     int      syms = 0;
-    int32_t  port;
+    int32_t  i32_tmp;
     size_t   v_len;
 
     tapi_tcp_reset_hack_t *context = user_param;
@@ -624,20 +624,20 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
          __FUNCTION__, context->rem_start_seq);
 
 
-    rc = asn_read_int32(pkt, &port, "pdus.0.#tcp.dst-port.#plain");
+    rc = asn_read_int32(pkt, &i32_tmp, "pdus.0.#tcp.dst-port.#plain");
     if (rc != 0)
     {
         ERROR("%s(): read dst-port for 'ini' side failed %r",
               __FUNCTION__, rc);
         goto cleanup;
     }
-    INFO("%s(): read rem port: %u", __FUNCTION__, port);
-    context->rem_port = port;
+    INFO("%s(): read rem port: %d", __FUNCTION__, i32_tmp);
+    context->rem_port = i32_tmp;
 
     if (context->loc_port == 0)
     {
-        asn_read_int32(pkt, &port, "pdus.0.#tcp.src-port.#plain");
-        context->loc_port = port;
+        asn_read_int32(pkt, &i32_tmp, "pdus.0.#tcp.src-port.#plain");
+        context->loc_port = i32_tmp;
     }
     v_len = sizeof(context->rem_mac);
     asn_read_value_field(pkt, context->rem_mac, &v_len, 
