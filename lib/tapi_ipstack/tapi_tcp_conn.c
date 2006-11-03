@@ -916,9 +916,9 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
     asn_value             *fin_template = NULL;
     tapi_tcp_pos_t         new_ackn;
 
-    int     num;
-    int     rc; 
-    uint8_t flags;
+    unsigned int    num;
+    te_errno        rc; 
+    uint8_t         flags;
 
     tapi_tcp_conns_db_init();
 
