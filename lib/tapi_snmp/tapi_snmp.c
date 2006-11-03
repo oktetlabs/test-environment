@@ -652,10 +652,11 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 }
 
 /* See description in tapi_snmp.h */
-int
+te_errno
 tapi_snmp_csap_create(const char *ta, int sid, const char *snmp_agent,
                       const char *community, 
-                      tapi_snmp_version_t snmp_version, int *csap_id)
+                      tapi_snmp_version_t snmp_version,
+                      csap_handle_t *csap_id)
 {
     tapi_snmp_security_t security;
 
@@ -696,16 +697,16 @@ tapi_snmp_version_to_netsnmp_version(tapi_snmp_version_t version)
 }
 
 /* See description in tapi_snmp.h */
-int
+te_errno
 tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
                           tapi_snmp_security_t *security,
                           tapi_snmp_version_t snmp_version,
                           uint16_t rem_port, uint16_t loc_port,
-                          int timeout, int *csap_id)
+                          int timeout, csap_handle_t *csap_id)
 {
-    int   rc;
-    char  tmp_name[] = "/tmp/te_snmp_csap_create.XXXXXX";
-    FILE *f;
+    te_errno    rc;
+    char        tmp_name[] = "/tmp/te_snmp_csap_create.XXXXXX";
+    FILE       *f;
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, TE_EFAULT);

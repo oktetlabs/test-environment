@@ -378,11 +378,11 @@ extern int tapi_snmp_packet_to_plain(asn_value *pkt,
  * 
  * @return zero on success or error code.
  */
-extern int tapi_snmp_csap_create(const char *ta, int sid, 
-                                 const char *snmp_agent,
-                                 const char *community,
-                                 tapi_snmp_version_t snmp_version,
-                                 int *csap_id);
+extern te_errno tapi_snmp_csap_create(const char *ta, int sid, 
+                                      const char *snmp_agent,
+                                      const char *community,
+                                      tapi_snmp_version_t snmp_version,
+                                      csap_handle_t *csap_id);
 
 
 /**
@@ -400,13 +400,14 @@ extern int tapi_snmp_csap_create(const char *ta, int sid,
  * 
  * @return zero on success or error code.
  */
-extern int tapi_snmp_gen_csap_create(const char *ta, int sid, 
-                                     const char *snmp_agent, 
-                                     tapi_snmp_security_t *security, 
-                                     tapi_snmp_version_t snmp_version,
-                                     uint16_t rem_port,
-                                     uint16_t loc_port,
-                                     int timeout, int *csap_id);
+extern te_errno tapi_snmp_gen_csap_create(const char *ta, int sid, 
+                                          const char *snmp_agent, 
+                                          tapi_snmp_security_t *security, 
+                                          tapi_snmp_version_t snmp_version,
+                                          uint16_t rem_port,
+                                          uint16_t loc_port,
+                                          int timeout,
+                                          csap_handle_t *csap_id);
 
 
 /**
