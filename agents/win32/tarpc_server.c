@@ -3921,7 +3921,7 @@ TARPC_FUNC(ta_kill_death, {},
     CloseHandle(hp);
 }
 )
-#if 0
+
 /*-------------- te_shell_cmd() --------------------------------*/
 TARPC_FUNC(te_shell_cmd,{},
 {
@@ -3936,36 +3936,46 @@ TARPC_FUNC(te_shell_cmd,{},
     memset(&info, 0, sizeof(info));
     si.cb = sizeof(si);
     
-
-    if (in->in_fd || in->out_fd)
+/* This possibility has not been debugged yet */
+#if 0  
+    if (in->in_fd || in->out_fd || in->err_fd)
         si.dwFlags = STARTF_USESTDHANDLES;
 
     if (in->in_fd) 
         si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
-  
+
     if (in->out_fd)
         si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
     if (in->err_fd)
-        si.hErrOutput = GetStdHandle(STD_ERROR_HANDLE);
+        si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+#endif
 
     if (CreateProcess(NULL, in->cmd.cmd_val, NULL, NULL,
                       TRUE, 0, NULL, NULL,
                       &si, &info))
     {
         out->pid = info.dwProcessId;
-        out->in_fd = *((int *)si.hStdInput);
-        out->out_fd = *((int *)si.hStdOutput);
-        out->err_fd = *((int *)si.hErrOutput);
+#if 0
+        if (in->in_fd)
+            out->in_fd = ((int *)(si.hStdInput));
+        if (in->out_fd)
+            out->out_fd = ((int *)(si.hStdOutput));
+        if (in->err_fd)
+            out->err_fd = ((int *)(si.hStdError));
+#endif
         goto finish;
     }
     else
+    {
         ERROR("CreateProcess() failed with error %d", GetLastError());
+        out->common._errno = RPC_ERRNO;
+    }
 finish:    
     ;
 }
 )
-#endif
+
 
 /*-------------- overfill_buffers() --------------------------*/
 int
