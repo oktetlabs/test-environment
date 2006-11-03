@@ -348,9 +348,7 @@ get_datagram(struct ipc_client *ipcc,
 
     assert(ipcc != NULL);
 
-    for (ptr = ipcc->dgram.datagrams.tqh_first;
-         ptr != NULL;
-         ptr = ptr->links.tqe_next)
+    TAILQ_FOREACH(ptr, &ipcc->dgram.datagrams, links)
     {
         if (pool_item == NULL ||
             ((pool_item->sa_len == ptr->sa_len) &&

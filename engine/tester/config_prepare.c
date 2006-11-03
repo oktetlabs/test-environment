@@ -60,7 +60,7 @@
 
 /** Tester context */
 typedef struct config_prepare_ctx {
-    LIST_ENTRY(config_prepare_ctx)  links;  /**< List links */
+    SLIST_ENTRY(config_prepare_ctx) links;  /**< List links */
 
     unsigned int        total_iters;
 
@@ -85,7 +85,7 @@ typedef struct config_prepare_ctx {
  */
 typedef struct config_prepare_data {
 
-    LIST_HEAD(, config_prepare_ctx) ctxs;   /**< Stack of contexts */
+    SLIST_HEAD(, config_prepare_ctx) ctxs;   /**< Stack of contexts */
 
     te_errno                        rc;     /**< Status code */
 
@@ -102,7 +102,7 @@ typedef struct config_prepare_data {
 static config_prepare_ctx *
 config_prepare_new_ctx(config_prepare_data *gctx)
 {
-    config_prepare_ctx *cur_ctx = gctx->ctxs.lh_first;
+    config_prepare_ctx *cur_ctx = SLIST_FIRST(&gctx->ctxs);
     config_prepare_ctx *new_ctx;
 
     new_ctx = calloc(1, sizeof(*new_ctx));
@@ -127,7 +127,7 @@ config_prepare_new_ctx(config_prepare_data *gctx)
         new_ctx->track_conf = TESTER_TRACK_CONF_UNSPEC;
     }
     
-    LIST_INSERT_HEAD(&gctx->ctxs, new_ctx, links);
+    SLIST_INSERT_HEAD(&gctx->ctxs, new_ctx, links);
 
     return new_ctx;
 }
@@ -142,15 +142,15 @@ config_prepare_new_ctx(config_prepare_data *gctx)
 static void
 config_prepare_destroy_ctx(config_prepare_data *gctx)
 {
-    config_prepare_ctx *curr = gctx->ctxs.lh_first;
+    config_prepare_ctx *curr = SLIST_FIRST(&gctx->ctxs);
     config_prepare_ctx *prev;
 
     assert(curr != NULL);
-    prev = curr->links.le_next;
+    prev = SLIST_NEXT(curr, links);
     if (prev != NULL)
         prev->total_iters += curr->total_iters;
 
-    LIST_REMOVE(curr, links);
+    SLIST_REMOVE(&gctx->ctxs, curr, config_prepare_ctx, links);
     free(curr);
 }
 
@@ -270,9 +270,9 @@ prepare_arg_cb(const test_var_arg *va, void *opaque)
     {
         test_var_arg_list  *p;
 
-        for (p = data->ri->lists.lh_first;
+        for (p = SLIST_FIRST(&data->ri->lists);
              p != NULL && strcmp(p->name, va->list) != 0;
-             p = p->links.le_next);
+             p = SLIST_NEXT(p, links));
 
         if (p != NULL)
         {
@@ -292,7 +292,7 @@ prepare_arg_cb(const test_var_arg *va, void *opaque)
             p->name = va->list;
             p->len = n_values;
             p->n_iters = data->n_iters;
-            LIST_INSERT_HEAD(&data->ri->lists, p, links);
+            SLIST_INSERT_HEAD(&data->ri->lists, p, links);
 
             data->n_iters *= n_values;
 
@@ -344,7 +344,7 @@ prepare_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     UNUSED(cfg_id_off);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     if (config_prepare_new_ctx(gctx) == NULL)
@@ -362,7 +362,7 @@ prepare_cfg_end(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     UNUSED(cfg_id_off);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     cfg->total_iters = ctx->total_iters;
@@ -427,7 +427,7 @@ prepare_session_end(run_item *ri, test_session *session,
     UNUSED(cfg_id_off);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     ri->weight = ctx->total_iters;
@@ -450,7 +450,7 @@ prepare_test_start(run_item *ri, unsigned int cfg_id_off,
     UNUSED(flags);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     /* 'track_conf' attribute inheritance */
@@ -482,7 +482,7 @@ prepare_test_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     UNUSED(cfg_id_off);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     VERB("%s(): test=%s n_iters=%u weight=%u", __FUNCTION__,
@@ -565,7 +565,7 @@ tester_prepare_configs(tester_cfgs *cfgs, unsigned int *iters)
     ENTRY();
 
     gctx.rc = 0;
-    LIST_INIT(&gctx.ctxs);
+    SLIST_INIT(&gctx.ctxs);
     if (config_prepare_new_ctx(&gctx) == NULL)
     {
         EXIT("ENOMEM");
@@ -575,12 +575,12 @@ tester_prepare_configs(tester_cfgs *cfgs, unsigned int *iters)
     if (tester_configs_walk(cfgs, &cbs, TESTER_CFG_WALK_FORCE_EXCEPTION,
                             &gctx) == TESTER_CFG_WALK_CONT)
     {
-        assert(gctx.ctxs.lh_first != NULL);
+        assert(!SLIST_EMPTY(&gctx.ctxs));
 
-        *iters = gctx.ctxs.lh_first->total_iters;
+        *iters = SLIST_FIRST(&gctx.ctxs)->total_iters;
 
         config_prepare_destroy_ctx(&gctx);
-        assert(gctx.ctxs.lh_first == NULL);
+        assert(SLIST_EMPTY(&gctx.ctxs));
 
         EXIT("0 - total_iters=%u", *iters);
         return 0;
@@ -589,7 +589,7 @@ tester_prepare_configs(tester_cfgs *cfgs, unsigned int *iters)
     {
         te_errno    rc = gctx.rc;
 
-        while (gctx.ctxs.lh_first != NULL)
+        while (!SLIST_EMPTY(&gctx.ctxs))
             config_prepare_destroy_ctx(&gctx);
         
         return rc;

@@ -59,7 +59,7 @@ typedef struct trc_exp_result_entry {
  * Expected test result.
  */
 typedef struct trc_exp_result {
-    LIST_ENTRY(trc_exp_result)  links;  /**< List links */
+    SLIST_ENTRY(trc_exp_result) links;  /**< List links */
 
     char       *tags_str;   /**< String representation of tags logical
                                  expression */

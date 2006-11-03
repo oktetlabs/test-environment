@@ -66,9 +66,9 @@ create_net(void)
     assert(p != NULL);
     if (p != 0)
     {
-        TAILQ_INIT(&p->net_addrs);
+        STAILQ_INIT(&p->net_addrs);
         env->n_nets++;
-        LIST_INSERT_HEAD(&env->nets, p, links);
+        SLIST_INSERT_HEAD(&env->nets, p, links);
     }
     
     return p;
@@ -87,7 +87,7 @@ create_host_if(void)
         assert(host != NULL);
         if (host != NULL)
         {
-            LIST_INIT(&host->processes);
+            SLIST_INIT(&host->processes);
         }
 
         CIRCLEQ_INSERT_TAIL(&env->ifs, iface, links);
@@ -113,11 +113,11 @@ create_process(void)
     assert(p != NULL);
     if (p != NULL)
     {
-        TAILQ_INIT(&p->pcos);
+        STAILQ_INIT(&p->pcos);
         if (curr_host_if == NULL)
             curr_host_if = create_host_if();
         if (curr_host_if != NULL && curr_host_if->host != NULL)
-            LIST_INSERT_HEAD(&curr_host_if->host->processes, p, links);
+            SLIST_INSERT_HEAD(&curr_host_if->host->processes, p, links);
     }
 
     return p;
@@ -223,7 +223,7 @@ host:
         if (curr_host_if != NULL && curr_host_if->host != NULL)
         {
             /* Host is unnamed, so it does not match any other */
-            LIST_INSERT_HEAD(&env->hosts, curr_host_if->host, links);
+            SLIST_INSERT_HEAD(&env->hosts, curr_host_if->host, links);
         }
         curr_host_if = NULL;
     }
@@ -242,11 +242,11 @@ host:
             name = NULL;
             if (*curr_host_if->host->name != '\0')
             {
-                for (p = env->hosts.lh_first;
+                for (p = SLIST_FIRST(&env->hosts);
                      p != NULL &&
                      (p->name == NULL ||
                       strcmp(p->name, curr_host_if->host->name) != 0);
-                     p = p->links.le_next);
+                     p = SLIST_NEXT(p, links));
 
                 if (p != NULL)
                 {
@@ -254,11 +254,12 @@ host:
 
                     /* Host with the same name found: */
                     /* - copy processes */
-                    while ((proc = curr_host_if->host->
-                                       processes.lh_first) != NULL)
+                    while ((proc = SLIST_FIRST(&curr_host_if->host->
+                                                   processes)) != NULL)
                     {
-                        LIST_REMOVE(proc, links);
-                        LIST_INSERT_HEAD(&p->processes, proc, links);
+                        SLIST_REMOVE(&curr_host_if->host->processes,
+                                     proc, tapi_env_process, links);
+                        SLIST_INSERT_HEAD(&p->processes, proc, links);
                     }
                     /* - substitute reference in interface */
                     free(curr_host_if->host);
@@ -268,8 +269,8 @@ host:
             if (p == NULL)
             {
                 /* Host is unnamed or not found */
-                LIST_INSERT_HEAD(&env->hosts, curr_host_if->host,
-                                 links);
+                SLIST_INSERT_HEAD(&env->hosts, curr_host_if->host,
+                                  links);
             }
         }
         free(name);
@@ -325,7 +326,7 @@ pco:
             p->process = curr_proc;
             if (curr_proc != NULL)
             {
-                TAILQ_INSERT_TAIL(&curr_proc->pcos, p, links);
+                STAILQ_INSERT_TAIL(&curr_proc->pcos, p, links);
             }
         }
         free(name);
@@ -392,7 +393,7 @@ alias:
         {
             p->alias = alias;
             p->name = name;
-            LIST_INSERT_HEAD(&env->aliases, p, links);
+            SLIST_INSERT_HEAD(&env->aliases, p, links);
         }
         else
         {

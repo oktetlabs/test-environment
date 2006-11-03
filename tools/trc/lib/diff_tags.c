@@ -59,9 +59,9 @@ trc_diff_find_set(trc_diff_sets *sets, unsigned int id, te_bool create)
     assert(sets != NULL);
     assert(id < TRC_DIFF_IDS);
 
-    for (p = sets->tqh_first;
+    for (p = TAILQ_FIRST(sets);
          p != NULL && p->id != id;
-         p = p->links.tqe_next);
+         p = TAILQ_NEXT(p, links));
 
     if (p == NULL && create)
     {
@@ -181,7 +181,7 @@ trc_diff_free_sets(trc_diff_sets *sets)
 {
     trc_diff_set   *p;
 
-    while ((p = sets->tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(sets)) != NULL)
     {
         TAILQ_REMOVE(sets, p, links);
 

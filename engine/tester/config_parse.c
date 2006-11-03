@@ -319,7 +319,7 @@ name_to_path(tester_cfg *cfg, const char *name, te_bool is_package)
         test_suite_info *p;
         const char      *base_path = NULL;
 
-        for (p = cfg->suites.tqh_first; p != NULL; p = p->links.tqe_next)
+        TAILQ_FOREACH(p, &cfg->suites, links)
         {
             if (strcmp(p->name, name) == 0)
             {
@@ -996,7 +996,7 @@ find_value(const test_entity_values *values, const char *name)
 {
     const test_entity_value *p;
 
-    for (p = values->head.tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, &values->head, links)
     {
         if (p->name != NULL && strcmp(p->name, name) == 0)
             return p;
@@ -1174,7 +1174,7 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
 
     VERB("%s(): Got value plain=%s ref=%p ext=%s type=%s reqs=%p",
          __FUNCTION__, p->plain, p->ref, p->ext,
-         (p->type == NULL) ? "" : p->type->name, p->reqs.tqh_first);
+         (p->type == NULL) ? "" : p->type->name, TAILQ_FIRST(&p->reqs));
 
     return 0;
 }
@@ -1209,7 +1209,7 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
          * Do not insert before tester_find_type() including indirect
          * from alloc_and_get_value(), but required for clean up.
          */
-        LIST_INSERT_HEAD(list, p, links);
+        SLIST_INSERT_HEAD(list, p, links);
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
@@ -1227,7 +1227,7 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
              * Do not insert before tester_find_type() including indirect
              * from alloc_and_get_value(), but required for clean up.
              */
-            LIST_INSERT_HEAD(list, p, links);
+            SLIST_INSERT_HEAD(list, p, links);
             return TE_RC(TE_TESTER, TE_ESRCH);
         }
         free(tmp);
@@ -1248,7 +1248,7 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
              * Do not insert before tester_find_type() including indirect
              * from alloc_and_get_value(), but required for clean up.
              */
-            LIST_INSERT_HEAD(list, p, links);
+            SLIST_INSERT_HEAD(list, p, links);
             return rc;
         }
         node = xmlNodeNext(node);
@@ -1258,9 +1258,9 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
      * Do not insert before tester_find_type() including indirect
      * from alloc_and_get_value(), but required for clean up.
      */
-    LIST_INSERT_HEAD(list, p, links);
+    SLIST_INSERT_HEAD(list, p, links);
 
-    if (p->values.head.tqh_first == NULL)
+    if (TAILQ_EMPTY(&p->values.head))
     {
         ERROR("Enum '%s' is empty", p->name);
         return TE_RC(TE_TESTER, TE_EINVAL);
@@ -1378,18 +1378,18 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
     value = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("value")));
 
     if (((ref != NULL) + (value != NULL) +
-         (p->values.head.tqh_first != NULL)) > 1)
+         !TAILQ_EMPTY(&p->values.head)) > 1)
     {
         ERROR("Too many sources of %s '%s' value: ref=%s value=%s "
                "values=%s", (is_var) ? "variable" : "argument", p->name,
                (ref) ? : "(empty)", (value) ? : "(empty)",
-               (p->values.head.tqh_first) ? "(not empty)" : "(empty)");
+               TAILQ_EMPTY(&p->values.head) ? "(empty)" : "(not empty)");
         free(ref);
         free(value);
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
-    if (p->values.head.tqh_first == NULL && p->type == NULL)
+    if (TAILQ_EMPTY(&p->values.head) && p->type == NULL)
     {
         test_entity_value *v;
 
@@ -1635,7 +1635,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     if (p == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
     TAILQ_INIT(&p->args);
-    LIST_INIT(&p->lists);
+    SLIST_INIT(&p->lists);
     p->context = session;
     p->iterate = 1;
 
@@ -1965,7 +1965,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg,
               "maintainer(s)");
         return rc;
     }
-    if (cfg->maintainers.tqh_first == NULL)
+    if (TAILQ_EMPTY(&cfg->maintainers))
     {
         ERROR("The first element of the Tester configuration must be "
               "'maintainer' (not %s)",
@@ -2022,7 +2022,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg,
         node = xmlNodeNext(node);
     }
 #ifndef XML_DOC_ASSUME_VALID
-    if (cfg->runs.tqh_first == NULL)
+    if (TAILQ_EMPTY(&cfg->runs))
     {
         ERROR("No 'run' items are specified in the configuration file");
         if (node == NULL)
@@ -2159,9 +2159,9 @@ find_test_info(const tests_info *ti, const char *name)
 {
     const test_info *p;
 
-    for (p = (ti != NULL) ? ti->tqh_first : NULL;
+    for (p = (ti != NULL) ? TAILQ_FIRST(ti) : NULL;
          p != NULL;
-         p = p->links.tqe_next)
+         p = TAILQ_NEXT(p, links))
     {
         if (strcmp(p->name, name) == 0)
             return p;
@@ -2179,7 +2179,7 @@ tests_info_free(tests_info *ti)
 {
     test_info *p;
 
-    while ((p = ti->tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(ti)) != NULL)
     {
         TAILQ_REMOVE(ti, p, links);
         free(p->name);
@@ -2387,7 +2387,7 @@ tester_parse_configs(tester_cfgs *cfgs, te_bool build, te_bool verbose)
     te_errno    rc;
     tester_cfg *cfg;
 
-    for (cfg = cfgs->tqh_first; cfg != NULL; cfg = cfg->links.tqe_next)
+    TAILQ_FOREACH(cfg, cfgs, links)
     {
         rc = tester_parse_config(cfg, build, verbose);
         if (rc != 0)
@@ -2420,7 +2420,7 @@ persons_info_free(persons_info *persons)
 {
     person_info *p;
 
-    while ((p = persons->tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(persons)) != NULL)
     {
         TAILQ_REMOVE(persons, p, links);
         person_info_free(p);
@@ -2469,7 +2469,7 @@ test_var_arg_values_free(test_entity_values *values)
 {
     test_entity_value *p;
 
-    while ((p = values->head.tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(&values->head)) != NULL)
     {
         TAILQ_REMOVE(&values->head, p, links);
         test_var_arg_value_free(p);
@@ -2499,9 +2499,9 @@ test_value_types_free(test_value_types *types)
 {
     test_value_type *p;
 
-    while ((p = types->lh_first) != NULL)
+    while ((p = SLIST_FIRST(types)) != NULL)
     {
-        LIST_REMOVE(p, links);
+        SLIST_REMOVE(types, p, test_value_type, links);
         test_value_type_free(p);
     }
 }
@@ -2530,7 +2530,7 @@ test_vars_args_free(test_vars_args *vars)
 {
     test_var_arg *p;
 
-    while ((p = vars->tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(vars)) != NULL)
     {
         TAILQ_REMOVE(vars, p, links);
         test_var_arg_free(p);
@@ -2614,9 +2614,9 @@ run_item_free(run_item *run)
 
     test_vars_args_free(&run->args);
 
-    while ((list = run->lists.lh_first) != NULL)
+    while ((list = SLIST_FIRST(&run->lists)) != NULL)
     {
-        LIST_REMOVE(list, links);
+        SLIST_REMOVE(&run->lists, list, test_var_arg_list, links);
         free(list);
     }
 
@@ -2634,7 +2634,7 @@ run_items_free(run_items *runs)
 {
     run_item *p;
 
-    while ((p = runs->tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(runs)) != NULL)
     {
         TAILQ_REMOVE(runs, p, links);
         run_item_free(p);
@@ -2663,7 +2663,7 @@ tester_cfgs_free(tester_cfgs *cfgs)
 {
     tester_cfg *cfg;
 
-    while ((cfg = cfgs->tqh_first) != NULL)
+    while ((cfg = TAILQ_FIRST(cfgs)) != NULL)
     {
         TAILQ_REMOVE(cfgs, cfg, links);
         tester_cfg_free(cfg);

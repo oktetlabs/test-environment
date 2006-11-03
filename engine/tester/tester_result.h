@@ -26,7 +26,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: tester_defs.h 29007 2006-06-09 15:12:42Z arybchik $
+ * $Id$
  */
 
 #ifndef __TE_TESTER_RESULT_H__
@@ -85,7 +85,7 @@ typedef enum tester_test_status {
  * Result of the test execution.
  */
 typedef struct tester_test_result {
-    LIST_ENTRY(tester_test_result)  links;  /**< List links */
+    SLIST_ENTRY(tester_test_result) links;  /**< List links */
 
     test_id                 id;         /**< Test ID */
     tester_test_status      status;     /**< Internal status */
@@ -101,7 +101,7 @@ typedef struct tester_test_result {
 /** List of results of tests which are in progress. */
 typedef struct tester_test_results {
     /** Head of the list */
-    LIST_HEAD(, tester_test_result) list;
+    SLIST_HEAD(, tester_test_result) list;
     /**
      * Mutual exclusion device to protect the list used in Tester main
      * thread and verdicts listener.
@@ -125,7 +125,7 @@ typedef struct tester_verdicts_listener tester_verdicts_listener;
 static inline te_errno
 tester_test_results_init(tester_test_results *results)
 {
-    LIST_INIT(&results->list);
+    SLIST_INIT(&results->list);
 
     if (pthread_mutex_init(&results->lock, NULL) != 0)
     {
@@ -151,7 +151,7 @@ tester_test_result_add(tester_test_results *results,
                        tester_test_result *result)
 {
     pthread_mutex_lock(&results->lock);
-    LIST_INSERT_HEAD(&results->list, result, links);
+    SLIST_INSERT_HEAD(&results->list, result, links);
     pthread_mutex_unlock(&results->lock);
 }
 
@@ -167,7 +167,7 @@ tester_test_result_del(tester_test_results *results,
                        tester_test_result *result)
 {
     pthread_mutex_lock(&results->lock);
-    LIST_REMOVE(result, links);
+    SLIST_REMOVE(&results->list, result, tester_test_result, links);
     pthread_mutex_unlock(&results->lock);
 }
 

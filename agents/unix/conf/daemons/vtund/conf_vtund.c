@@ -99,7 +99,7 @@ typedef TAILQ_HEAD(vtund_server_sessions, vtund_server_session)
 
 typedef struct vtund_server {
     
-    LIST_ENTRY(vtund_server)    links;
+    SLIST_ENTRY(vtund_server)   links;
 
     vtund_server_sessions       sessions;
 
@@ -110,12 +110,12 @@ typedef struct vtund_server {
 
 } vtund_server;
 
-static LIST_HEAD(vtund_servers, vtund_server) servers;
+static SLIST_HEAD(vtund_servers, vtund_server) servers;
 
 
 typedef struct vtund_client {
 
-    LIST_ENTRY(vtund_client)    links;
+    SLIST_ENTRY(vtund_client)   links;
 
     char   *cfg_file;
     char   *name;
@@ -131,7 +131,7 @@ typedef struct vtund_client {
 
 } vtund_client;
 
-static LIST_HEAD(vtund_clients, vtund_client) clients;
+static SLIST_HEAD(vtund_clients, vtund_client) clients;
 
 
 /** Auxiliary buffer */
@@ -161,9 +161,9 @@ vtund_server_session_find(unsigned int gid, const char *oid,
     if (server != NULL)
         *server = srv;
 
-    for (p = srv->sessions.tqh_first;
+    for (p = TAILQ_FIRST(&srv->sessions);
          p != NULL && strcmp(p->name, session) != 0;
-         p = p->links.tqe_next);
+         p = TAILQ_NEXT(p, links));
         
     return p;
 }
@@ -416,9 +416,7 @@ vtund_server_session_list(unsigned int gid, const char *oid, char **list,
     srv = vtund_server_find(gid, oid, vtund, server_port);
     if (srv != NULL)
     {
-        for (p = srv->sessions.tqh_first;
-             p != NULL;
-             p = p->links.tqe_next)
+        TAILQ_FOREACH(p, &srv->sessions, links)
         {
             sprintf(buf + strlen(buf), "%s ",  p->name);
         }
@@ -443,9 +441,9 @@ vtund_server_find(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(vtund);
 
-    for (p = servers.lh_first;
+    for (p = SLIST_FIRST(&servers);
          p != NULL && strcmp(p->port, port) != 0;
-         p = p->links.le_next);
+         p = SLIST_NEXT(p, links));
         
     return p;
 }
@@ -485,9 +483,7 @@ vtund_server_start(vtund_server *server)
         return TE_OS_RC(TE_TA_UNIX, err);
     }
 
-    for (p = server->sessions.tqh_first;
-         p != NULL;
-         p = p->links.tqe_next)
+    TAILQ_FOREACH(p, &server->sessions, links)
     {
         const char * const vtund_server_session_fmt =
             "\n"
@@ -607,7 +603,7 @@ vtund_server_free(vtund_server *server)
             return rc;
     }
 
-    LIST_REMOVE(server, links);
+    SLIST_REMOVE(&servers, server, vtund_server, links);
 
     if (server->cfg_file != NULL)
         unlink(server->cfg_file);
@@ -615,7 +611,7 @@ vtund_server_free(vtund_server *server)
     free(server->cfg_file);
     free(server->port);
 
-    while ((session = server->sessions.tqh_first) != NULL)
+    while ((session = TAILQ_FIRST(&server->sessions)) != NULL)
         vtund_server_session_free(server, session);
 
     free(server);
@@ -639,7 +635,7 @@ vtund_server_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     TAILQ_INIT(&p->sessions);
 
-    LIST_INSERT_HEAD(&servers, p, links);
+    SLIST_INSERT_HEAD(&servers, p, links);
 
     p->cfg_file = strdup(VTUND_TMP_FILE_TEMPLATE);
     p->port = strdup(port);
@@ -661,7 +657,7 @@ vtund_server_add(unsigned int gid, const char *oid, const char *value,
 
     rc = vtund_server_set(gid, oid, value, vtund, port);
     if (rc != 0)
-        LIST_REMOVE(p, links);
+        SLIST_REMOVE(&servers, p, vtund_server, links);
 
     return rc;
 }
@@ -688,7 +684,7 @@ vtund_server_list(unsigned int gid, const char *oid, char **list)
     UNUSED(oid);
     
     *buf = '\0';
-    for (p = servers.lh_first; p != NULL; p = p->links.le_next)
+    SLIST_FOREACH(p, &servers, links)
     {
         sprintf(buf + strlen(buf), "%s ",  p->port);
     }
@@ -712,9 +708,9 @@ vtund_client_find(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(vtund);
 
-    for (p = clients.lh_first;
+    for (p = SLIST_FIRST(&clients);
          p != NULL && strcmp(p->name, client) != 0;
-         p = p->links.le_next);
+         p = SLIST_NEXT(p, links));
         
     return p;
 }
@@ -988,7 +984,7 @@ vtund_client_free(vtund_client *client)
             return rc;
     }
 
-    LIST_REMOVE(client, links);
+    SLIST_REMOVE(&clients, client, vtund_client, links);
 
     if (client->cfg_file != NULL)
         unlink(client->cfg_file);
@@ -1021,7 +1017,7 @@ vtund_client_add(unsigned int gid, const char *oid, const char *value,
     p = calloc(1, sizeof(*p));
     if (p == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    LIST_INSERT_HEAD(&clients, p, links);
+    SLIST_INSERT_HEAD(&clients, p, links);
 
     p->cfg_file = strdup(VTUND_TMP_FILE_TEMPLATE);
     p->name     = strdup(client);
@@ -1051,7 +1047,7 @@ vtund_client_add(unsigned int gid, const char *oid, const char *value,
 
     rc = vtund_client_set(gid, oid, value, vtund, client);
     if (rc != 0)
-        LIST_REMOVE(p, links);
+        SLIST_REMOVE(&clients, p, vtund_client, links);
 
     return rc;
 }
@@ -1078,7 +1074,7 @@ vtund_client_list(unsigned int gid, const char *oid, char **list)
     UNUSED(oid);
     
     *buf = '\0';
-    for (p = clients.lh_first; p != NULL; p = p->links.le_next)
+    SLIST_FOREACH(p, &clients, links)
     {
         sprintf(buf + strlen(buf), "%s ",  p->name);
     }
@@ -1176,8 +1172,8 @@ vtund_grab(const char *name)
 {
     UNUSED(name);
     
-    LIST_INIT(&clients);
-    LIST_INIT(&servers);
+    SLIST_INIT(&clients);
+    SLIST_INIT(&servers);
 
     return rcf_pch_add_node("/agent", &node_ds_vtund);
 }
@@ -1190,9 +1186,9 @@ vtund_release(const char *name)
     
     UNUSED(name);
 
-    while ((server = servers.lh_first) != NULL)
+    while ((server = SLIST_FIRST(&servers)) != NULL)
         vtund_server_free(server);
-    while ((client = clients.lh_first) != NULL)
+    while ((client = SLIST_FIRST(&clients)) != NULL)
         vtund_client_free(client);
         
     rcf_pch_del_node(&node_ds_vtund);

@@ -549,7 +549,7 @@ tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num,
     assert(csap != NULL);
     assert(pattern != NULL);
 
-    assert(my_ctx->packets.tqh_first == NULL);
+    assert(TAILQ_EMPTY(&my_ctx->packets));
 
     my_ctx->status = 0;
     my_ctx->wait_pkts = num;
@@ -1041,7 +1041,7 @@ tad_recv_thread(void *arg)
     context = csap_get_recv_context(csap);
     assert(context != NULL);
     assert(context->match_pkts == 0);
-    assert(context->packets.tqh_first == NULL);
+    assert(TAILQ_EMPTY(&context->packets));
 
     ENTRY(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
 
@@ -1376,7 +1376,7 @@ tad_recv_get_packet(csap_p csap, te_bool wait, tad_recv_pkt **pkt)
     int                 ret;
 
     CSAP_LOCK(csap);
-    while (((*pkt = ctx->packets.tqh_first) == NULL) && wait &&
+    while (((*pkt = TAILQ_FIRST(&ctx->packets)) == NULL) && wait &&
            (~csap->state & CSAP_STATE_DONE))
     {
         ret = pthread_cond_wait(&csap->event, &csap->lock);
@@ -1560,7 +1560,7 @@ tad_recv_op(csap_p csap, tad_recv_op_context *op_context)
         /* It is not a get request and all go smoothly */
 
         /* Received packets queue has to be empty */
-        assert(recv_context->packets.tqh_first == NULL);
+        assert(TAILQ_EMPTY(&recv_context->packets));
 
         (void)csap_command(csap, TAD_OP_IDLE);
 
@@ -1628,7 +1628,7 @@ tad_recv_op_thread(void *arg)
 
     CSAP_LOCK(csap);
 
-    while ((context = csap->recv_ops.tqh_first) != NULL)
+    while ((context = TAILQ_FIRST(&csap->recv_ops)) != NULL)
     {
         CSAP_UNLOCK(csap);
 
@@ -1636,7 +1636,7 @@ tad_recv_op_thread(void *arg)
 
         CSAP_LOCK(csap);
 
-        assert(context == csap->recv_ops.tqh_first);
+        assert(context == TAILQ_FIRST(&csap->recv_ops));
         TAILQ_REMOVE(&csap->recv_ops, context, links);
         tad_recv_op_free(context);
     }
@@ -1695,7 +1695,7 @@ tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
 
     CSAP_LOCK(csap);
 
-    start_thread = (csap->recv_ops.tqh_first == NULL);
+    start_thread = TAILQ_EMPTY(&csap->recv_ops);
 
     TAILQ_INSERT_TAIL(&csap->recv_ops, context, links);
 

@@ -52,7 +52,7 @@ tq_strings_free(tqh_strings *head, void (*value_free)(void *))
 {
     tqe_string *p;
 
-    while ((p = head->tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(head)) != NULL)
     {
         TAILQ_REMOVE(head, p, links);
         if (value_free != NULL)
@@ -73,9 +73,9 @@ tq_strings_equal(const tqh_strings *s1, const tqh_strings *s2)
     if (s1 == NULL || s2 == NULL)
         return FALSE;
 
-    for (p1 = s1->tqh_first, p2 = s2->tqh_first;
+    for (p1 = TAILQ_FIRST(s1), p2 = TAILQ_FIRST(s2);
          p1 != NULL && p2 != NULL && strcmp(p1->v, p2->v) == 0;
-         p1 = p1->links.tqe_next, p2 = p2->links.tqe_next);
+         p1 = TAILQ_NEXT(p1, links), p2 = TAILQ_NEXT(p2, links));
     
     return (p1 == NULL) && (p2 == NULL);
 }
@@ -89,9 +89,9 @@ tq_strings_add_uniq(tqh_strings *list, const char *value)
     assert(list != NULL);
     assert(value != NULL);
 
-    for (p = list->tqh_first;
+    for (p = TAILQ_FIRST(list);
          p != NULL && strcmp(value, p->v) != 0;
-         p = p->links.tqe_next);
+         p = TAILQ_NEXT(p, links));
 
     if (p == NULL)
     {

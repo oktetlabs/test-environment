@@ -417,7 +417,7 @@ trc_report_exp_got_to_html(FILE                *f,
     iter = trc_db_walker_get_iter(walker);
     test = iter->parent;
     iter_data = trc_db_walker_get_user_data(walker, ctx->db_uid);
-    iter_entry = (iter_data == NULL) ? NULL : iter_data->runs.tqh_first;
+    iter_entry = (iter_data == NULL) ? NULL : TAILQ_FIRST(&iter_data->runs);
 
     do {
         if (trc_report_test_iter_entry_output(test, iter_entry, flags))
@@ -478,7 +478,7 @@ trc_report_exp_got_to_html(FILE                *f,
                     PRINT_STR(iter->notes));
         }
     } while (iter_entry != NULL &&
-             (iter_entry = iter_entry->links.tqe_next) != NULL);
+             (iter_entry = TAILQ_NEXT(iter_entry, links)) != NULL);
 
 cleanup:
     return rc;
@@ -507,16 +507,16 @@ test_iters_check_output_and_get_keys(trc_test *test, unsigned int flags)
 
 
     buf[0] = '\0';
-    for (p = test->iters.head.tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, &test->iters.head, links)
     {
         if (trc_report_test_iter_entry_output(test, p, flags) &&
             (p->exp_result.key != NULL))
         {
-            for (q = test->iters.head.tqh_first;
+            for (q = TAILQ_FIRST(&test->iters.head);
                  (q != p) &&
                  ((q->exp_result.key == NULL) || (!q->output) ||
                   (strcmp(p->exp_result.key, q->exp_result.key) != 0));
-                 q = q->links.tqe_next);
+                 q = TAILQ_NEXT(q, links));
 
             if (p == q)
                 s += sprintf(s, "%s<BR/>", p->exp_result.key);
@@ -795,9 +795,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
 
     /* TRC tags */
     WRITE_STR("<b>Tags:</b>");
-    for (tag = gctx->tags.tqh_first;
-         tag != NULL;
-         tag = tag->links.tqe_next)
+    TAILQ_FOREACH(tag, &gctx->tags, links)
     {
         fprintf(f, "  %s", tag->v);
     }

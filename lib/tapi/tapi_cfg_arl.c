@@ -254,7 +254,7 @@ tapi_arl_free_table(arl_table_t *p_table)
 {
     arl_entry_t *p;
 
-    while ((p = p_table->tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(p_table)) != NULL)
     {
         TAILQ_REMOVE(p_table, p, links);
         tapi_arl_free_entry(p);
@@ -273,7 +273,7 @@ tapi_arl_find(const arl_table_t *p_table, const uint8_t *mac,
 
     VERB("Find %x:%x:%x:%x:%x:%x VLAN=%s port=%u type=%d", mac[0],
         mac[1], mac[2], mac[3], mac[4], mac[5], vlan, port, type);
-    for (p = p_table->tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, p_table, links)
     {
         VERB("CMP with %x:%x:%x:%x:%x:%x VLAN=%s port=%u type=%d",
             p->mac[0], p->mac[1], p->mac[2], p->mac[3], p->mac[4],
@@ -299,7 +299,7 @@ tapi_arl_print_table(const arl_table_t *p_table)
 
     VERB("ARL Table:");
 
-    for (p = p_table->tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, p_table, links)
     {
         VERB("\tMac: %x:%x:%x:%x:%x:%x\n"
             "\tPort: %d"

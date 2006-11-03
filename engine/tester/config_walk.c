@@ -563,23 +563,23 @@ walk_run_items(const tester_cfg_walk *walk, const void *opaque,
     ENTRY("id_off=%u flags=%#x keepalive=%p exception=%p",
           id_off, flags, keepalive, exception);
 
-    for (ri = runs->tqh_first;
+    for (ri = TAILQ_FIRST(runs);
          ri != NULL && ctl == TESTER_CFG_WALK_CONT;
          ri = ri_next)
     {
         ctl = walk_run_item(walk, (void *)opaque, curr_id_off, flags,
                             ri, keepalive, exception);
-        if (ctl == TESTER_CFG_WALK_BACK && ri != runs->tqh_first)
+        if (ctl == TESTER_CFG_WALK_BACK && ri != TAILQ_FIRST(runs))
         {
             VERB("%s(): Try the first run item", __FUNCTION__);
-            ri_next = runs->tqh_first;
+            ri_next = TAILQ_FIRST(runs);
             curr_id_off = id_off;
             ctl = TESTER_CFG_WALK_CONT;
         }
         else
         {
             curr_id_off += ri->n_iters * ri->weight;
-            ri_next = ri->links.tqe_next;
+            ri_next = TAILQ_NEXT(ri, links);
         }
     }
 
@@ -601,9 +601,9 @@ tester_configs_walk(const tester_cfgs     *cfgs,
 
     ENTRY("flags=%#x", walk_flags);
 
-    for (id_off = 0, cfg = cfgs->tqh_first;
+    for (id_off = 0, cfg = TAILQ_FIRST(cfgs);
          cfg != NULL && ctl == TESTER_CFG_WALK_CONT;
-         id_off += cfg->total_iters, cfg = cfg->links.tqe_next)
+         id_off += cfg->total_iters, cfg = TAILQ_NEXT(cfg, links))
     {
         if (walk_cbs->cfg_start != NULL)
             ctl = walk_cbs->cfg_start((tester_cfg *)cfg, id_off,

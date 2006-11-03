@@ -67,7 +67,7 @@ scenario_free(testing_scenario *scenario)
 {
     testing_act *act;
 
-    while ((act = scenario->tqh_first) != NULL)
+    while ((act = TAILQ_FIRST(scenario)) != NULL)
     {
         TAILQ_REMOVE(scenario, act, links);
         scenario_act_free(act);
@@ -126,7 +126,7 @@ scenario_copy(testing_scenario *dst, const testing_scenario *src)
     te_errno            rc;
     const testing_act  *act;
 
-    for (act = src->tqh_first; act != NULL; act = act->links.tqe_next)
+    TAILQ_FOREACH(act, src, links)
     {
         rc = scenario_act_copy(dst, act);
         if (rc != 0)
@@ -204,7 +204,7 @@ scenario_append(testing_scenario *scenario, testing_scenario *subscenario,
     }
 
     /* Move subscenario to scenario */
-    while ((act = subscenario->tqh_first) != NULL)
+    while ((act = TAILQ_FIRST(subscenario)) != NULL)
     {
         TAILQ_REMOVE(subscenario, act, links);
         TAILQ_INSERT_TAIL(scenario, act, links);
@@ -217,19 +217,19 @@ scenario_append(testing_scenario *scenario, testing_scenario *subscenario,
 void
 scenario_apply_to(testing_scenario *scenario, unsigned int from)
 {
-    testing_act *act = scenario->tqh_first;
+    testing_act *act = TAILQ_FIRST(scenario);
     testing_act *cur;
     testing_act *next;
 
     if (act != NULL)
     {
         act->first = from;
-        next = act->links.tqe_next;
+        next = TAILQ_NEXT(act, links);
         while ((cur = next) != NULL)
         {
             assert(act->last < cur->last);
             act->last = cur->last;
-            next = cur->links.tqe_next;
+            next = TAILQ_NEXT(cur, links);
             TAILQ_REMOVE(scenario, cur, links);
             scenario_act_free(cur);
         }
@@ -245,17 +245,17 @@ scenario_apply_to(testing_scenario *scenario, unsigned int from)
 void
 scenario_apply_from(testing_scenario *scenario, unsigned int to)
 {
-    testing_act *act = scenario->tqh_first;
+    testing_act *act = TAILQ_FIRST(scenario);
     testing_act *cur;
     testing_act *next;
 
     if (act != NULL)
     {
         act->last = to;
-        next = act->links.tqe_next;
+        next = TAILQ_NEXT(act, links);
         while ((cur = next) != NULL)
         {
-            next = cur->links.tqe_next;
+            next = TAILQ_NEXT(cur, links);
             TAILQ_REMOVE(scenario, cur, links);
             scenario_act_free(cur);
         }
@@ -273,7 +273,7 @@ scenario_add_flags(testing_scenario *scenario, const unsigned int flags)
 {
     testing_act *act;
 
-    for (act = scenario->tqh_first; act != NULL; act = act->links.tqe_next)
+    TAILQ_FOREACH(act, scenario, links)
     {
         act->flags |= flags;
     }
@@ -286,9 +286,8 @@ scenario_glue(testing_scenario *scenario)
     testing_act *cur;
     testing_act *next;
 
-    for (cur = scenario->tqh_first; cur != NULL; cur = next)
+    TAILQ_FOREACH_SAFE(cur, scenario, links, next)
     {
-        next = cur->links.tqe_next;
         assert(next->first > cur->last);
         if (cur->flags == next->flags && next->first - cur->last == 1)
         {
@@ -319,23 +318,23 @@ scenario_merge(testing_scenario *scenario, testing_scenario *add,
     testing_act *add_p;
     testing_act *add_p_next;
 
-    if (scenario->tqh_first == 0)
+    if (TAILQ_EMPTY(scenario))
     {
         scenario_append(scenario, add, 1);
         scenario_add_flags(scenario, flags);
         return 0;
     }
 
-    for (cur = scenario->tqh_first, prev = NULL, add_p = add->tqh_first;
+    for (cur = TAILQ_FIRST(scenario), prev = NULL, add_p = TAILQ_FIRST(add);
          add_p != NULL;
          add_p = add_p_next)
     {
-        add_p_next = add_p->links.tqe_next;
+        add_p_next = TAILQ_NEXT(add_p, links);
 
         while (cur != NULL && add_p->first > cur->last)
         {
             prev = cur;
-            cur = cur->links.tqe_next;
+            cur = TAILQ_NEXT(cur, links);
         }
 
         if (cur == NULL)
@@ -370,13 +369,9 @@ scenario_apply_flags(testing_scenario *scenario,
     testing_act        *act;
     testing_act        *new_act;
 
-    for (flag_act = flags->tqh_first;
-         flag_act != NULL;
-         flag_act = flag_act->links.tqe_next)
+    TAILQ_FOREACH(flag_act, flags, links)
     {
-        for (act = scenario->tqh_first;
-             act != NULL;
-             act = act->links.tqe_next)
+        TAILQ_FOREACH(act, scenario, links)
         {
             if (act->first <= flag_act->last &&
                 act->last >= flag_act->first)
@@ -459,7 +454,7 @@ scenario_step(const testing_act **act, unsigned int *act_id,
         return TESTING_FORWARD;
     }
 
-    while ((*act = (*act)->links.tqe_next) != NULL)
+    while ((*act = TAILQ_NEXT(*act, links)) != NULL)
     {
         if ((*act)->first <= *act_id)
         {
@@ -503,7 +498,7 @@ scenario_to_str(const testing_scenario *scenario)
     const testing_act  *act;
 
     *buf = '\0';
-    for (act = scenario->tqh_first; act != NULL; act = act->links.tqe_next)
+    TAILQ_FOREACH(act, scenario, links)
     {
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
                  "(%u,%u,0x%x)-", act->first, act->last, act->flags);

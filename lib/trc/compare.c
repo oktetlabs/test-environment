@@ -59,9 +59,10 @@ te_test_results_equal(const te_test_result *lhv,
     if (lhv->status != rhv->status)
         return FALSE;
 
-    for (v1 = lhv->verdicts.tqh_first, v2 = rhv->verdicts.tqh_first;
+    for (v1 = TAILQ_FIRST(&lhv->verdicts),
+         v2 = TAILQ_FIRST(&rhv->verdicts);
          v1 != NULL && v2 != NULL && strcmp(v1->str, v2->str) == 0;
-         v1 = v1->links.tqe_next, v2 = v2->links.tqe_next);
+         v1 = TAILQ_NEXT(v1, links), v2 = TAILQ_NEXT(v2, links));
     
     return (v1 == NULL) && (v2 == NULL);
 }
@@ -76,9 +77,9 @@ trc_is_result_expected(const trc_exp_result *expected,
     assert(expected != NULL);
     assert(obtained != NULL);
 
-    for (p = expected->results.tqh_first;
+    for (p = TAILQ_FIRST(&expected->results);
          p != NULL && !te_test_results_equal(obtained, &p->result);
-         p = p->links.tqe_next);
+         p = TAILQ_NEXT(p, links));
 
     return p;
 }
@@ -91,12 +92,10 @@ trc_is_exp_result_skipped(const trc_exp_result *result)
 
     assert(result != NULL);
 
-    for (p = result->results.tqh_first;
-         p != NULL;
-         p = p->links.tqe_next)
+    TAILQ_FOREACH(p, &result->results, links)
     {
         if (p->result.status != TE_TEST_SKIPPED ||
-            p->result.verdicts.tqh_first != NULL)
+            TAILQ_FIRST(&p->result.verdicts) != NULL)
         {
             return FALSE;
         }

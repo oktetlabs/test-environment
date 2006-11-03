@@ -495,9 +495,9 @@ trc_report_merge_test_iter_data(trc_report_test_iter_data *result,
     assert(result != NULL);
     assert(more != NULL);
 
-    entry = more->runs.tqh_first;
+    entry = TAILQ_FIRST(&more->runs);
     assert(entry != NULL);
-    assert(entry->links.tqe_next == NULL);
+    assert(TAILQ_NEXT(entry, links) == NULL);
 
     TAILQ_REMOVE(&more->runs, entry, links);
     TAILQ_INSERT_TAIL(&result->runs, entry, links);
@@ -807,11 +807,11 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
                                                  ctx->tags);
                 /* Update statistics */
                 if (ctx->type == TRC_TEST_SCRIPT)
-                    ctx->iter_data->runs.tqh_first->is_exp = 
+                    TAILQ_FIRST(&ctx->iter_data->runs)->is_exp = 
                         trc_report_test_iter_stats_update(
                             &ctx->iter_data->stats,
                             ctx->iter_data->exp_result,
-                            &ctx->iter_data->runs.tqh_first->result);
+                            &TAILQ_FIRST(&ctx->iter_data->runs)->result);
                 /* Attach iteration data to TRC database */
                 ctx->rc = trc_db_walker_set_user_data(ctx->db_walker,
                                                       ctx->db_uid,
@@ -823,10 +823,10 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
             {
                 /* Update statistics */
                 if (ctx->type == TRC_TEST_SCRIPT)
-                    ctx->iter_data->runs.tqh_first->is_exp = 
+                    TAILQ_FIRST(&ctx->iter_data->runs)->is_exp = 
                         trc_report_test_iter_stats_update(
                             &iter_data->stats, iter_data->exp_result,
-                            &ctx->iter_data->runs.tqh_first->result);
+                            &TAILQ_FIRST(&ctx->iter_data->runs)->result);
                 /* Merge a new entry */
                 trc_report_merge_test_iter_data(iter_data,
                                                 ctx->iter_data);
@@ -884,7 +884,7 @@ trc_report_log_end_element(void *user_data, const xmlChar *tag)
                 ctx->str = NULL;
                 assert(ctx->iter_data != NULL);
                 TAILQ_INSERT_TAIL(
-                    &ctx->iter_data->runs.tqh_first->result.verdicts,
+                    &TAILQ_FIRST(&ctx->iter_data->runs)->result.verdicts,
                     verdict, links);
             }
             ctx->state = TRC_REPORT_LOG_PARSE_VERDICTS;

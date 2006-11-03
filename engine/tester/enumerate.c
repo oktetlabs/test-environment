@@ -72,9 +72,7 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
         /*
          * First, enumerate session variables.
          */
-        for (var = ri->context->vars.tqh_first;
-             var != NULL;
-             var = var->links.tqe_next)
+        TAILQ_FOREACH(var, &ri->context->vars, links)
         {
             /* Session variable with true 'handdown' are arguments */
             if (var->handdown)
@@ -83,9 +81,9 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
                  * Check that handdown variable is not overridden by
                  * argument with the same name.
                  */
-                for (arg = ri->args.tqh_first;
+                for (arg = TAILQ_FIRST(&ri->args);
                      arg != NULL && strcmp(var->name, arg->name) != 0;
-                     arg = arg->links.tqe_next);
+                     arg = TAILQ_NEXT(arg, links));
 
                 if (arg == NULL)
                 {
@@ -101,9 +99,7 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
     /*
      * Second, enumerate run item arguments.
      */
-    for (arg = ri->args.tqh_first;
-         arg != NULL;
-         arg = arg->links.tqe_next)
+    TAILQ_FOREACH(arg, &ri->args, links)
     {
         rc = callback(arg, opaque);
         if (rc != 0)
@@ -143,9 +139,9 @@ test_run_item_find_arg_cb(const test_var_arg *va, void *opaque)
 
     if (va->list != NULL)
     {
-        for (list = data->ri->lists.lh_first;
+        for (list = SLIST_FIRST(&data->ri->lists);
              list != NULL && strcmp(list->name, va->list) != 0;
-             list = list->links.le_next);
+             list = SLIST_NEXT(list, links));
 
         assert(list != NULL);
         data->n_values = list->len;
@@ -288,9 +284,9 @@ test_entity_value_enum_values(const test_vars_args *vars,
         {
             test_var_arg *var;
 
-            for (var = vars->tqh_first;
+            for (var = TAILQ_FIRST(vars);
                  var != NULL && strcmp(value->ext, var->name) != 0;
-                 var = var->links.tqe_next);
+                 var = TAILQ_NEXT(var, links));
 
             if (var != NULL)
             {
@@ -355,7 +351,7 @@ test_entity_values_enum(const test_vars_args            *vars,
 
     assert(values != NULL);
 
-    for (v = values->head.tqh_first; v != NULL; v = v->links.tqe_next)
+    TAILQ_FOREACH(v, &values->head, links)
     {
         rc = test_entity_value_enum_values(vars, v, callback, opaque,
                                            enum_error_cb, ee_opaque);
@@ -376,7 +372,7 @@ test_var_arg_enum_values(const run_item *ri, const test_var_arg *va,
 {
     assert(va != NULL);
 
-    if (va->values.head.tqh_first == NULL)
+    if (TAILQ_EMPTY(&va->values.head))
     {
         assert(va->type != NULL);
         return test_entity_values_enum(NULL, &va->type->values,
@@ -472,9 +468,9 @@ test_var_arg_get_value(const run_item                   *ri,
     {
         const test_var_arg_list *list;
 
-        for (list = ri->lists.lh_first;
+        for (list = SLIST_FIRST(&ri->lists);
              list != NULL && strcmp(list->name, va->list) != 0;
-             list = list->links.le_next);
+             list = SLIST_NEXT(list, links));
 
         assert(list != NULL);
         n_values = list->len;
@@ -497,7 +493,7 @@ test_var_arg_get_value(const run_item                   *ri,
     assert(index >= test_var_arg_values(va)->num);
 
     if (va->preferred == NULL)
-        *value = test_var_arg_values(va)->head.tqh_first;
+        *value = TAILQ_FIRST(&test_var_arg_values(va)->head);
     else
         *value = va->preferred;
 

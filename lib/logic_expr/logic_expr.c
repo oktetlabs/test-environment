@@ -127,9 +127,9 @@ is_str_in_set(const char *str, const tqh_strings *set)
 
     assert(str != NULL);
 
-    for (s = (set != NULL) ? set->tqh_first : NULL, i = 1;
+    for (s = (set != NULL) ? TAILQ_FIRST(set) : NULL, i = 1;
          s != NULL;
-         s = s->links.tqe_next, i++)
+         s = TAILQ_NEXT(s, links), i++)
     {
         if (strcmp(str, s->v) == 0)
         {

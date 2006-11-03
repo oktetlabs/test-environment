@@ -1198,7 +1198,7 @@ rcf_ch_trpoll_cancel(struct rcf_comm_connection *rcfc,
     }
 
     CSAP_LOCK(csap);
-    for (p = csap->poll_ops.lh_first; p != NULL; p = p->links.le_next)
+    LIST_FOREACH(p, &csap->poll_ops, links)
     {
         if (p->id == poll_id)
         {

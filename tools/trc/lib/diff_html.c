@@ -270,14 +270,12 @@ trc_diff_tags_to_html(FILE *f, const trc_diff_sets *sets)
     const trc_diff_set *p;
     const tqe_string   *tag;
 
-    for (p = sets->tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, sets, links)
     {
         fprintf(f, "<b>%s: </b>", p->name);
-        for (tag = p->tags.tqh_first;
-             tag != NULL;
-             tag = tag->links.tqe_next)
+        TAILQ_FOREACH(tag, &p->tags, links)
         {
-            if (tag->links.tqe_next != NULL ||
+            if (TAILQ_NEXT(tag, links) != NULL ||
                 strcmp(tag->v, "result") != 0)
             {
                 fprintf(f, " %s", tag->v);
@@ -458,13 +456,9 @@ trc_diff_stats_to_html(FILE *f, const trc_diff_sets *sets,
     const trc_diff_set *tags_i;
     const trc_diff_set *tags_j;
 
-    for (tags_i = sets->tqh_first;
-         tags_i != NULL;
-         tags_i = tags_i->links.tqe_next)
+    TAILQ_FOREACH(tags_i, sets, links)
     {
-        for (tags_j = sets->tqh_first;
-             tags_j != NULL;
-             tags_j = tags_j->links.tqe_next)
+        TAILQ_FOREACH(tags_j, sets, links)
         {
             if (tags_i->id < tags_j->id)
                 trc_diff_one_stats_to_html(f, stats, tags_i, tags_j);
@@ -517,7 +511,7 @@ trc_diff_keys_stats_to_html(FILE *f, trc_diff_sets *sets)
     trc_diff_set               *p;
     const trc_diff_key_stats   *q;
 
-    for (p = sets->tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, sets, links)
     {
         if (p->show_keys &&
             p->keys_stats.cqh_first != (void *)&(p->keys_stats))
@@ -559,9 +553,9 @@ trc_diff_exp_results_to_html(FILE                 *f,
     te_errno            rc = 0;
     const trc_diff_set *set;
 
-    for (set = sets->tqh_first;
+    for (set = TAILQ_FIRST(sets);
          set != NULL && rc == 0;
-         set = set->links.tqe_next)
+         set = TAILQ_NEXT(set, links))
     {
         WRITE_STR(trc_diff_table_row_col_start);
         rc = trc_exp_result_to_html(f, entry->results[set->id], flags);
@@ -588,9 +582,7 @@ trc_diff_test_iter_keys_to_html(FILE                 *f,
 {
     const trc_diff_set *set;
 
-    for (set = sets->tqh_first;
-         set != NULL;
-         set = set->links.tqe_next)
+    TAILQ_FOREACH(set, sets, links)
     {
         if (entry->results[set->id]->key != NULL)
             fprintf(f, "<em>%s</em> - %s<br/>",
@@ -616,9 +608,7 @@ trc_diff_test_iter_notes_to_html(FILE                 *f,
 {
     const trc_diff_set *set;
 
-    for (set = sets->tqh_first;
-         set != NULL;
-         set = set->links.tqe_next)
+    TAILQ_FOREACH(set, sets, links)
     {
         if (entry->results[set->id]->notes != NULL)
             fprintf(f, "<em>%s</em> - %s<br/>",
@@ -644,18 +634,14 @@ trc_diff_test_keys_to_html(FILE *f, const trc_diff_sets *sets,
     const trc_diff_set *set;
     const tqe_string   *str;
 
-    for (set = sets->tqh_first;
-         set != NULL;
-         set = set->links.tqe_next)
+    TAILQ_FOREACH(set, sets, links)
     {
-        if (entry->keys[set->id].tqh_first != NULL)
+        if (!TAILQ_EMPTY(entry->keys + set->id))
             fprintf(f, "<em>%s</em> - ", set->name);
-        for (str = entry->keys[set->id].tqh_first;
-             str != NULL;
-             str = str->links.tqe_next)
+        TAILQ_FOREACH(str, entry->keys + set->id, links)
         {
             fprintf(f, "%s%s",
-                    (str == entry->keys[set->id].tqh_first) ? "" : ", ",
+                    (str == TAILQ_FIRST(entry->keys + set->id)) ? "" : ", ",
                     str->v);
         }
     }
@@ -677,15 +663,14 @@ trc_diff_html_brief_find_dup_iter(const trc_diff_sets  *sets,
     const trc_diff_set     *set;
 
     assert(entry->is_iter);
-    while (((p = (*(((trc_diff_result *)
-                         ((p)->links.tqe_prev))->tqh_last))) != NULL) &&
+    while (((p = TAILQ_PREV(p, trc_diff_result, links)) != NULL) &&
            (p->level == entry->level))
     {
-        for (set = sets->tqh_first;
+        for (set = TAILQ_FIRST(sets);
              set != NULL &&
              trc_diff_is_exp_result_equal(entry->results[set->id],
                                           p->results[set->id]);
-             set = set->links.tqe_next);
+             set = TAILQ_NEXT(set, links));
 
         if (set == NULL)
             return p;
@@ -719,7 +704,7 @@ trc_diff_result_to_html(const trc_diff_result *result,
     /*
      * Do nothing if no differences
      */
-    if (result->tqh_first == NULL)
+    if (TAILQ_EMPTY(result))
         return 0;
 
     /*
@@ -733,9 +718,7 @@ trc_diff_result_to_html(const trc_diff_result *result,
     {
         WRITE_STR(trc_diff_full_table_heading_start);
     }
-    for (tags = sets->tqh_first;
-         tags != NULL;
-         tags = tags->links.tqe_next)
+    TAILQ_FOREACH(tags, sets, links)
     {
         fprintf(f, trc_diff_table_heading_entry, tags->name);
     }
@@ -744,9 +727,9 @@ trc_diff_result_to_html(const trc_diff_result *result,
     /*
      * Table content
      */
-    for (i = 0, curr = result->tqh_first; curr != NULL; ++i, curr = next)
+    for (i = 0, curr = TAILQ_FIRST(result); curr != NULL; ++i, curr = next)
     {
-        next = curr->links.tqe_next;
+        next = TAILQ_NEXT(curr, links);
 
         if (flags & TRC_DIFF_BRIEF)
         {

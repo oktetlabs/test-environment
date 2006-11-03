@@ -89,7 +89,7 @@
 
 /** Tester context */
 typedef struct tester_ctx {
-    LIST_ENTRY(tester_ctx)  links;  /**< List links */
+    SLIST_ENTRY(tester_ctx) links;  /**< List links */
 
     unsigned int        flags;          /**< Flags (enum tester_flags) */
 
@@ -152,7 +152,7 @@ typedef struct tester_run_data {
     const tqh_strings          *trc_tags;   /**< TRC tags */
 #endif
 
-    LIST_HEAD(, tester_ctx)     ctxs;       /**< Stack of contexts */
+    SLIST_HEAD(, tester_ctx)    ctxs;       /**< Stack of contexts */
 
 } tester_run_data;
 
@@ -308,11 +308,11 @@ tester_run_clone_ctx(const tester_ctx *ctx, te_bool new_group)
 static void
 tester_run_destroy_ctx(tester_run_data *data)
 {
-    tester_ctx *curr = data->ctxs.lh_first;
+    tester_ctx *curr = SLIST_FIRST(&data->ctxs);
     tester_ctx *prev;
 
     assert(curr != NULL);
-    prev = curr->links.le_next;
+    prev = SLIST_NEXT(curr, links);
     if (prev != NULL)
     {
         if (prev->group_result.id == curr->group_result.id)
@@ -337,10 +337,10 @@ tester_run_destroy_ctx(tester_run_data *data)
          "status=%r", curr, curr->flags, curr->group_result.id,
          curr->current_result.id, curr->current_result.status);
 
-    LIST_REMOVE(curr, links);
+    SLIST_REMOVE(&data->ctxs, curr, tester_ctx, links);
 
 #if WITH_TRC
-    if (data->ctxs.lh_first == NULL)
+    if (SLIST_EMPTY(&data->ctxs))
         trc_db_free_walker(curr->trc_walker);
 #endif
 
@@ -379,8 +379,8 @@ tester_run_first_ctx(tester_run_data *data)
     }
 #endif
 
-    assert(data->ctxs.lh_first == NULL);
-    LIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
+    assert(SLIST_EMPTY(&data->ctxs));
+    SLIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
 
     VERB("Initial context: flags=0x%x group_id=%u",
          new_ctx->flags, new_ctx->group_result.id);
@@ -401,19 +401,19 @@ tester_run_more_ctx(tester_run_data *data, te_bool new_group)
 {
     tester_ctx *new_ctx;
 
-    assert(data->ctxs.lh_first != NULL);
-    new_ctx = tester_run_clone_ctx(data->ctxs.lh_first, new_group);
+    assert(!SLIST_EMPTY(&data->ctxs));
+    new_ctx = tester_run_clone_ctx(SLIST_FIRST(&data->ctxs), new_group);
     if (new_ctx == NULL)
     {
-        data->ctxs.lh_first->current_result.status =
+        SLIST_FIRST(&data->ctxs)->current_result.status =
             TESTER_TEST_ERROR;
         return NULL;
     }
     
-    LIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
+    SLIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
 
     VERB("Tester context %p clonned %p: flags=0x%x group_id=%u "
-         "current_id=%u", new_ctx->links.le_next, new_ctx,
+         "current_id=%u", SLIST_NEXT(new_ctx, links), new_ctx,
          new_ctx->flags, new_ctx->group_result.id,
          new_ctx->current_result.id);
 
@@ -505,7 +505,7 @@ persons_info_to_string(const persons_info *persons)
     }
 
     s[0] = '\0';
-    for (p = persons->tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, persons, links)
     {
         do  {
             printed = snprintf(s, rest, " %s%smailto:%s",
@@ -1063,7 +1063,7 @@ run_script(run_item *ri, test_script *script,
     tester_cfg_walk_ctl     ctl;
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u script=%s", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1237,7 +1237,7 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     char               *maintainers;
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1263,7 +1263,7 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     /*
      * Process options. Put options in appropriate context.
      */
-    if (cfg->options.tqh_first != NULL)
+    if (!TAILQ_EMPTY(&cfg->options))
         WARN("Options in Tester configuration files are ignored.");
 
     /* Clone Tester context */
@@ -1315,7 +1315,7 @@ run_cfg_end(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
 
     tester_run_destroy_ctx(gctx);
 
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     EXIT("CONT");
@@ -1358,7 +1358,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     te_errno            rc;
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1445,7 +1445,7 @@ run_item_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     UNUSED(flags);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1521,7 +1521,7 @@ run_session_start(run_item *ri, test_session *session,
     UNUSED(session);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u, (%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1556,7 +1556,7 @@ run_session_end(run_item *ri, test_session *session,
     UNUSED(session);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1579,7 +1579,7 @@ run_prologue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     UNUSED(ri);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1616,7 +1616,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     UNUSED(ri);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1629,7 +1629,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     id = ctx->current_result.id;
     tester_run_destroy_ctx(gctx);
     
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     if (status == TESTER_TEST_PASSED)
@@ -1647,8 +1647,8 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
                 ERROR("Failed to parse target requirements expression "
                       "populated by test with ID=%u: %r", id, rc);
                 ctx->group_result.status = TESTER_TEST_PROLOG;
-                assert(ctx->links.le_next != NULL);
-                ctx->links.le_next->group_step = TRUE;
+                assert(SLIST_NEXT(ctx, links) != NULL);
+                SLIST_NEXT(ctx, links)->group_step = TRUE;
                 EXIT("SKIP");
                 return TESTER_CFG_WALK_SKIP;
             }
@@ -1679,8 +1679,8 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
             ctx->group_result.status = TESTER_TEST_SKIPPED;
         else
             ctx->group_result.status = TESTER_TEST_PROLOG;
-        assert(ctx->links.le_next != NULL);
-        ctx->links.le_next->group_step = TRUE;
+        assert(SLIST_NEXT(ctx, links) != NULL);
+        SLIST_NEXT(ctx, links)->group_step = TRUE;
         EXIT("SKIP");
         return TESTER_CFG_WALK_SKIP;
     }
@@ -1698,7 +1698,7 @@ run_epilogue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     UNUSED(ri);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1734,7 +1734,7 @@ run_epilogue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     UNUSED(ri);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1746,7 +1746,7 @@ run_epilogue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     status = ctx->current_result.status;
     tester_run_destroy_ctx(gctx);
     
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     if ((status != TESTER_TEST_PASSED) && (status != TESTER_TEST_FAKED))
@@ -1770,7 +1770,7 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     tester_ctx         *ctx;
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1795,7 +1795,7 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         return TESTER_CFG_WALK_FAULT;
     }
 
-    LIST_INSERT_HEAD(&gctx->ctxs, ctx, links);
+    SLIST_INSERT_HEAD(&gctx->ctxs, ctx, links);
 
     VERB("Running test session keep-alive validation...");
 
@@ -1813,7 +1813,7 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     UNUSED(ri);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1832,10 +1832,10 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     status = ctx->group_result.status;
 
     /* Remove keep-alive context (it is still stored in keepalive_ctx) */
-    LIST_REMOVE(ctx, links);
+    SLIST_REMOVE(&gctx->ctxs, ctx, tester_ctx, links);
  
     /* Get current context and update its group status */
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     if ((status != TESTER_TEST_PASSED) && (status != TESTER_TEST_FAKED))
@@ -1893,7 +1893,7 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     UNUSED(ri);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -1916,7 +1916,7 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     tester_run_destroy_ctx(gctx);
  
     /* Get current context and update its group status */
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     if ((status != TESTER_TEST_PASSED) && (status != TESTER_TEST_FAKED))
@@ -2011,7 +2011,7 @@ run_prepare_arg_value_collect_reqs(const test_entity_value *value,
 
 /** Information about length of the list */
 typedef struct run_prepare_arg_list_data {
-    LIST_ENTRY(run_prepare_arg_list_data)   links;  /**< List links */
+    SLIST_ENTRY(run_prepare_arg_list_data)  links;  /**< List links */
 
     const char     *name;   /**< Name of the list */
     unsigned int    index;  /**< Index of the value */
@@ -2028,7 +2028,7 @@ typedef struct run_prepare_arg_cb_data {
     unsigned int    i_iter;     /**< Index of the required iteration */
     test_iter_arg  *arg;        /**< The next argument to be filled in */
 
-    LIST_HEAD(, run_prepare_arg_list_data)  lists;  /**< Lists */
+    SLIST_HEAD(, run_prepare_arg_list_data) lists;  /**< Lists */
 
 } run_prepare_arg_cb_data;
 
@@ -2053,15 +2053,15 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
 
     if (va->list != NULL)
     {
-        for (ri_list = data->ri->lists.lh_first;
+        for (ri_list = SLIST_FIRST(&data->ri->lists);
              ri_list != NULL && strcmp(ri_list->name, va->list) != 0;
-             ri_list = ri_list->links.le_next);
+             ri_list = SLIST_NEXT(ri_list, links));
 
         assert(ri_list != NULL);
 
-        for (iter_list = data->lists.lh_first;
+        for (iter_list = SLIST_FIRST(&data->lists);
              iter_list != NULL && strcmp(iter_list->name, va->list) != 0;
-             iter_list = iter_list->links.le_next);
+             iter_list = SLIST_NEXT(iter_list, links));
     }
 
     if (iter_list != NULL)
@@ -2090,7 +2090,7 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
 
             iter_list->name = ri_list->name;
             iter_list->index = i_value;
-            LIST_INSERT_HEAD(&data->lists, iter_list, links);
+            SLIST_INSERT_HEAD(&data->lists, iter_list, links);
         }
         VERB("%s(): Index of the value of '%s' to get is %u -> "
              "n_iters=%u i_iter=%u", __FUNCTION__, va->name, i_value,
@@ -2114,7 +2114,7 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
     }
 
     VERB("%s(): arg=%s run_get_value() -> %s reqs=%p", __FUNCTION__,
-         data->arg->name, data->arg->value, data->arg->reqs.tqh_first);
+         data->arg->name, data->arg->value, TAILQ_FIRST(&data->arg->reqs));
 
     /* Move to the next argument */
     data->arg++;
@@ -2147,7 +2147,7 @@ run_prepare_args(const test_iter_arg *ctx_args,
     data.n_iters = ri->n_iters;
     data.i_iter = i_iter;
     data.arg = args;
-    LIST_INIT(&data.lists);
+    SLIST_INIT(&data.lists);
 
     rc = test_run_item_enum_args(ri, run_prepare_arg_cb, &data);
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
@@ -2155,9 +2155,9 @@ run_prepare_args(const test_iter_arg *ctx_args,
         return rc;
     }
 
-    while ((p = data.lists.lh_first) != NULL)
+    while ((p = SLIST_FIRST(&data.lists)) != NULL)
     {
-        LIST_REMOVE(p, links);
+        SLIST_REMOVE(&data.lists, p, run_prepare_arg_list_data, links);
         free(p);
     }
 
@@ -2174,13 +2174,13 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     te_errno            rc;
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    parent_ctx = ctx->links.le_next;
+    parent_ctx = SLIST_NEXT(ctx, links);
     if (flags & TESTER_CFG_WALK_SERVICE)
     {
         assert(parent_ctx != NULL);
-        parent_ctx = parent_ctx->links.le_next;
+        parent_ctx = SLIST_NEXT(parent_ctx, links);
     }
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -2288,7 +2288,7 @@ run_iter_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     UNUSED(iter);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -2323,7 +2323,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     UNUSED(flags);
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -2386,11 +2386,9 @@ te_test_result_to_log_buf(te_log_buf *lb, const te_test_result *result)
 
     te_log_buf_append(lb, "%s%s\n",
                       te_test_status_to_str(result->status),
-                      result->verdicts.tqh_first == NULL ? "" :
+                      TAILQ_EMPTY(&result->verdicts) ? "" :
                           " with verdicts:");
-    for (v = result->verdicts.tqh_first;
-         v != NULL;
-         v = v->links.tqe_next)
+    TAILQ_FOREACH(v, &result->verdicts, links)
     {
         te_log_buf_append(lb, "%s;\n", v->str);
     }
@@ -2413,9 +2411,7 @@ trc_exp_result_to_log_buf(te_log_buf *lb, const trc_exp_result *result)
         te_log_buf_append(lb, "Key: %s\n", result->key);
     if (result->notes != NULL)
         te_log_buf_append(lb, "Notes: %s\n", result->notes);
-    for (p = result->results.tqh_first;
-         p != NULL;
-         p = p->links.tqe_next)
+    TAILQ_FOREACH(p, &result->results, links)
     {
         te_test_result_to_log_buf(lb, &p->result);
         if (p->key != NULL)
@@ -2436,7 +2432,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     unsigned int        step;
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
@@ -2662,7 +2658,7 @@ tester_run(const testing_scenario *scenario,
         run_script,
     };
 
-    if (scenario->tqh_first == NULL)
+    if (TAILQ_EMPTY(scenario))
     {
         ERROR("Testing scenario is empty");
         return TE_RC(TE_TESTER, TE_ENOENT);
@@ -2671,7 +2667,7 @@ tester_run(const testing_scenario *scenario,
     memset(&data, 0, sizeof(data));
     data.flags = flags;
     data.targets = targets;
-    data.act = scenario->tqh_first;
+    data.act = TAILQ_FIRST(scenario);
     data.act_id = data.act->first;
 #if WITH_TRC
     data.trc_db = trc_db;

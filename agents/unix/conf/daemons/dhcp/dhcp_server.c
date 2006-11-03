@@ -330,7 +330,7 @@ ds_dhcpserver_save_conf(void)
     fprintf(f, "deny unknown-clients;\n\n");
     fprintf(f, "\n");
 #endif
-    for (s = subnets.tqh_first; s != NULL; s = s->links.tqe_next)
+    TAILQ_FOREACH(s, &subnets, links)
     {
         struct in_addr  mask;
 
@@ -651,9 +651,9 @@ find_subnet(const char *subnet)
 {
     te_dhcp_server_subnet  *s;
 
-    for (s = subnets.tqh_first;
+    for (s = TAILQ_FIRST(&subnets);
          s != NULL && strcmp(s->subnet, subnet) != 0;
-         s = s->links.tqe_next);
+         s = TAILQ_NEXT(s, links));
 
     return s;
 }
@@ -763,7 +763,7 @@ ds_subnet_list(unsigned int gid, const char *oid, char **list)
     UNUSED(oid);
 
     *buf = '\0';
-    for (s = subnets.tqh_first; s != NULL; s = s->links.tqe_next)
+    TAILQ_FOREACH(s, &subnets, links)
     {
         sprintf(buf + strlen(buf), "%s ",  s->subnet);
     }

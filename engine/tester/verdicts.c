@@ -96,9 +96,9 @@ register_verdict(tester_test_results *results,
     }
     else
     {
-        for (test = results->list.lh_first;
+        for (test = SLIST_FIRST(&results->list);
              test != NULL && test->id != id;
-             test = test->links.le_next);
+             test = SLIST_NEXT(test, links));
     
         if (test == NULL)
         {

@@ -312,9 +312,7 @@ main(int argc, char *argv[])
         goto exit;
 
     /* Make sure that all sets have name */
-    for (diff_set = ctx->sets.tqh_first;
-         diff_set != NULL;
-         diff_set = diff_set->links.tqe_next)
+    TAILQ_FOREACH(diff_set, &ctx->sets, links)
     {
         if ((diff_set->name == NULL) &&
             (asprintf(&(diff_set->name), "Set %u", diff_set->id) == -1))

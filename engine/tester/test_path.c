@@ -56,7 +56,7 @@
 
 /** Test path processing context */
 typedef struct test_path_proc_ctx {
-    LIST_ENTRY(test_path_proc_ctx)  links;  /**< List links */
+    SLIST_ENTRY(test_path_proc_ctx) links;  /**< List links */
 
     const test_path_item   *item;   /**< Current test path item */
 
@@ -75,7 +75,7 @@ typedef struct test_path_proc_ctx {
  */
 typedef struct test_path_proc_data {
 
-    LIST_HEAD(, test_path_proc_ctx) ctxs;   /**< Stack of contexts */
+    SLIST_HEAD(, test_path_proc_ctx) ctxs;   /**< Stack of contexts */
 
     testing_scenario   *scenario;   /**< Resulting testing scenario */
     te_errno            rc;         /**< Status code */
@@ -113,7 +113,7 @@ test_path_proc_new_ctx(test_path_proc_data  *gctx,
     /* By default, testing scenario points to the local storage */
     new_ctx->scenario = &new_ctx->ts_local;
     
-    LIST_INSERT_HEAD(&gctx->ctxs, new_ctx, links);
+    SLIST_INSERT_HEAD(&gctx->ctxs, new_ctx, links);
 
     VERB("%s(): New context %p path_item=%s", __FUNCTION__, new_ctx,
          path_item->name);
@@ -131,13 +131,13 @@ test_path_proc_new_ctx(test_path_proc_data  *gctx,
 static void
 test_path_proc_destroy_ctx(test_path_proc_data *gctx)
 {
-    test_path_proc_ctx *ctx = gctx->ctxs.lh_first;
+    test_path_proc_ctx *ctx = SLIST_FIRST(&gctx->ctxs);
 
     assert(ctx != NULL);
 
     VERB("%s(): Destroy context %p", __FUNCTION__, ctx);
 
-    LIST_REMOVE(ctx, links);
+    SLIST_REMOVE(&gctx->ctxs, ctx, test_path_proc_ctx, links);
 
     scenario_free(&ctx->ts_local);
     free(ctx->bm);
@@ -331,7 +331,8 @@ get_iter_arg_value(const test_path_proc_ctx *ctx, const char *name,
     else
     {
         assert(va_value->ext != NULL);
-        rc = get_iter_arg_value(ctx->links.le_next, va_value->ext, value);
+        rc = get_iter_arg_value(SLIST_NEXT(ctx, links), va_value->ext,
+                                value);
         if (rc != 0)
         {
             ERROR("Failed to resolve external reference '%s': %r",
@@ -400,9 +401,7 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
         }
     }
 
-    for (path_arg_value = data->values->tqh_first;
-         path_arg_value != NULL;
-         path_arg_value = path_arg_value->links.tqe_next)
+    TAILQ_FOREACH(path_arg_value, data->values, links)
     {
         if (strcmp(path_arg_value->v, plain) == 0)
         {
@@ -435,14 +434,15 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
 
     assert(gctx != NULL);
     assert(gctx->rc == 0);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     ENTRY("run=%p path_item=%s offset=%u run-name=%s test=%s", run,
           ctx->item->name, cfg_id_off, run->name, test_get_name(run));
 
     /* Filter out too long path */
-    if (run->type == RUN_ITEM_SCRIPT && ctx->item->links.tqe_next != NULL)
+    if (run->type == RUN_ITEM_SCRIPT &&
+        TAILQ_NEXT(ctx->item, links) != NULL)
     {
         /* There is no chance to match - too long path */
         EXIT("SKIP - too long, no chance to match");
@@ -485,9 +485,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
          */
         test_path_arg  *path_arg;
 
-        for (path_arg = ctx->item->args.tqh_first;
-             path_arg != NULL;
-             path_arg = path_arg->links.tqe_next)
+        TAILQ_FOREACH(path_arg, &ctx->item->args, links)
         {
             const test_var_arg             *va;
             unsigned int                    n_values;
@@ -589,7 +587,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
         /*
          * Check for end of test path specification
          */
-        if (ctx->item->links.tqe_next == NULL)
+        if (TAILQ_NEXT(ctx->item, links) == NULL)
         {
             /* End of path */
             assert(gctx->rc == 0);
@@ -612,7 +610,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
 
     assert(run->type != RUN_ITEM_SCRIPT);
     ctx = test_path_proc_new_ctx(gctx, name == NULL ? ctx->item :
-                                           ctx->item->links.tqe_next);
+                                           TAILQ_NEXT(ctx->item, links));
     if (ctx == NULL)
     {
         free(bm);
@@ -638,7 +636,7 @@ test_path_proc_test_end(run_item *run, unsigned int cfg_id_off,
         return TESTER_CFG_WALK_CONT;
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     ENTRY("path_item=%s offset=%u run=%s test=%s",
@@ -652,13 +650,13 @@ test_path_proc_test_end(run_item *run, unsigned int cfg_id_off,
          */
         test_path_proc_destroy_ctx(gctx);
 
-        ctx = gctx->ctxs.lh_first;
+        ctx = SLIST_FIRST(&gctx->ctxs);
         assert(ctx != NULL);
     }
 
     if (gctx->rc == 0)
     {
-        parent = ctx->links.le_next;
+        parent = SLIST_NEXT(ctx, links);
 
         /*
          * Iterate and append sub-scenario to scenario
@@ -698,7 +696,7 @@ test_path_proc_iter_start(run_item *ri, unsigned int cfg_id_off,
     }
 
     assert(gctx != NULL);
-    ctx = gctx->ctxs.lh_first;
+    ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
     if (bit_mask_is_set(ctx->bm, iter))
@@ -757,7 +755,7 @@ process_test_path(const tester_cfgs *cfgs, const unsigned int total_iters,
 
     ENTRY("path=%s type=%d", path->str, path->type);
 
-    if (path->head.tqh_first == NULL)
+    if (TAILQ_EMPTY(&path->head))
     {
         rc = scenario_add_act(&path->scen, 0, total_iters - 1, 0);
         EXIT("%r", rc);
@@ -765,12 +763,12 @@ process_test_path(const tester_cfgs *cfgs, const unsigned int total_iters,
     }
 
     /* Initialize global context */
-    LIST_INIT(&gctx.ctxs);
+    SLIST_INIT(&gctx.ctxs);
     gctx.scenario = &path->scen;
     gctx.rc = 0;
 
     /* Create the first test path processing context */
-    if (test_path_proc_new_ctx(&gctx, path->head.tqh_first) == NULL)
+    if (test_path_proc_new_ctx(&gctx, TAILQ_FIRST(&path->head)) == NULL)
     {
         EXIT("%r", gctx.rc);
         return gctx.rc;
@@ -785,7 +783,7 @@ process_test_path(const tester_cfgs *cfgs, const unsigned int total_iters,
     else 
     {
         assert(gctx.rc == 0);
-        if (path->scen.tqh_first == NULL)
+        if (TAILQ_EMPTY(&path->scen))
         {
             gctx.rc = TE_RC(TE_TESTER, TE_ENOENT);
         }
@@ -823,9 +821,8 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
     TAILQ_INIT(&gdb);
     TAILQ_INIT(&mix);
 
-    for (run_spec = FALSE, path = paths->tqh_first;
-         path != NULL;
-         path = path->links.tqe_next)
+    run_spec = FALSE;
+    TAILQ_FOREACH(path, paths, links)
     {
         rc = 0;
         run_scen = FALSE;
@@ -841,13 +838,14 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
 
             case TEST_PATH_RUN_FROM:
                 run_scen = TRUE;
-                if (path->links.tqe_next != NULL &&
-                    path->links.tqe_next->type == TEST_PATH_RUN_TO)
+                if (TAILQ_NEXT(path, links) != NULL &&
+                    TAILQ_NEXT(path, links)->type == TEST_PATH_RUN_TO)
                 {
-                    scenario_apply_to(&path->links.tqe_next->scen,
-                                      (path->scen.tqh_first != NULL) ?
-                                        path->scen.tqh_first->first : 0);
-                    path = path->links.tqe_next;
+                    scenario_apply_to(&TAILQ_NEXT(path, links)->scen,
+                                      !TAILQ_EMPTY(&path->scen) ?
+                                          TAILQ_FIRST(&path->scen)->first :
+                                          0);
+                    path = TAILQ_NEXT(path, links);
                 }
                 else
                 {
@@ -922,7 +920,7 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
     if (!run_spec)
     {
         /* No test paths to run are specified, scenarion is still empty */
-        assert(scenario->tqh_first == NULL);
+        assert(TAILQ_EMPTY(scenario));
         /* Add act with all items and apply flags */
         rc = scenario_add_act(scenario, 0, total_iters - 1, 0);
         rc = scenario_apply_flags(scenario, &vg);
@@ -949,9 +947,9 @@ tester_process_test_paths(const tester_cfgs  *cfgs,
     
     ENTRY();
 
-    for (path = paths->tqh_first, rc = 0;
+    for (path = TAILQ_FIRST(paths), rc = 0;
          path != NULL && rc == 0;
-         path = path->links.tqe_next)
+         path = TAILQ_NEXT(path, links))
     {
         rc = process_test_path(cfgs, total_iters, path);
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
@@ -1012,9 +1010,7 @@ test_path_new(test_paths *paths, const char *path_str, test_path_type type)
         {
             test_path_item *item;
 
-            for (item = path->head.tqh_first;
-                 item != NULL;
-                 item = item->links.tqe_next)
+            TAILQ_FOREACH(item, &path->head, links)
             {
                 if (item->iterate != 1)
                 {
@@ -1062,7 +1058,7 @@ test_path_item_free(test_path_item *item)
 {
     test_path_arg  *p;
 
-    while ((p = item->args.tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(&item->args)) != NULL)
     {
         TAILQ_REMOVE(&item->args, p, links);
         test_path_arg_free(p);
@@ -1081,7 +1077,7 @@ test_path_free(test_path *path)
 {
     test_path_item *p;
 
-    while ((p = path->head.tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(&path->head)) != NULL)
     {
         TAILQ_REMOVE(&path->head, p, links);
         test_path_item_free(p);
@@ -1096,7 +1092,7 @@ test_paths_free(test_paths *paths)
 {
     test_path *p;
 
-    while ((p = paths->tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(paths)) != NULL)
     {
         TAILQ_REMOVE(paths, p, links);
         test_path_free(p);

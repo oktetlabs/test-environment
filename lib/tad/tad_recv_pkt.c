@@ -90,7 +90,7 @@ tad_recv_pkts_free(csap_p csap, tad_recv_pkts *pkts)
 
     F_ENTRY(CSAP_LOG_FMT "recv_pkts=%p", CSAP_LOG_ARGS(csap), pkts);
 
-    while ((pkt = pkts->tqh_first) != NULL)
+    while ((pkt = TAILQ_FIRST(pkts)) != NULL)
     {
         TAILQ_REMOVE(pkts, pkt, links);
         tad_recv_pkt_free(csap, pkt);

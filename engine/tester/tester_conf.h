@@ -98,14 +98,14 @@ typedef struct test_entity_values {
 
 /** Description of value's type */
 typedef struct test_value_type {
-    LIST_ENTRY(test_value_type)     links;  /**< List links */
+    SLIST_ENTRY(test_value_type)    links;  /**< List links */
     char                           *name;   /**< Type name */
     const struct test_value_type   *type;   /**< Parent type */
     test_entity_values              values; /**< Values */
 } test_value_type;
 
 /** List of value's types */
-typedef LIST_HEAD(test_value_types, test_value_type) test_value_types;
+typedef SLIST_HEAD(test_value_types, test_value_type) test_value_types;
 
 
 /** Value of the variable or argument */
@@ -243,7 +243,7 @@ typedef TAILQ_HEAD(test_packages, test_package) test_packages;
 
 /** Information about run item variable/argument list. */
 typedef struct test_var_arg_list {
-    LIST_ENTRY(test_var_arg_list)   links;  /**< Linked list links */
+    SLIST_ENTRY(test_var_arg_list)  links;  /**< Linked list links */
 
     const char     *name;       /**< Name of the list */
     unsigned int    len;        /**< Length of the list */
@@ -255,7 +255,8 @@ typedef struct test_var_arg_list {
  * Head of the list with information about run item variable/argument
  * lists.
  */
-typedef LIST_HEAD(test_var_arg_lists, test_var_arg_list) test_var_arg_lists;
+typedef SLIST_HEAD(test_var_arg_lists, test_var_arg_list)
+    test_var_arg_lists;
 
 
 /** Unified run item */
@@ -381,7 +382,7 @@ test_get_name(const run_item *ri)
 static inline test_entity_values *
 test_var_arg_values(const test_var_arg *va)
 {
-    if (va->values.head.tqh_first == NULL)
+    if (TAILQ_EMPTY(&va->values.head))
     {
         assert(va->type != NULL);
         return (test_entity_values *)&va->type->values;

@@ -41,22 +41,3 @@
 #include "tester_run.h"
 
 
-#if 0
-typedef struct tester_mix_data {
-} tester_mix_data;
-
-
-te_errno
-tester_scenario_mix(testing_scenario *scenario, tester_cfgs *cfgs)
-{
-    testing_act         *act;
-    tester_cfg_walk_ctl  ctl;
-    tester_cfg_walk      mix_cbs;
-    tester_mix_data      data;
-
-    for (act = scenario->tqh_first; act != NULL; act = act->links.tqe_next)
-    {
-        ctl = tester_configs_walk(cfgs, &mix_cbs, &data);
-    }
-}
-#endif

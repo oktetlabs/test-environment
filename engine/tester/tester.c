@@ -625,7 +625,7 @@ main(int argc, char *argv[])
      * Build Test Suites specified in command line.
      */
     if ((~global.flags & TESTER_NO_BUILD) &&
-        (global.suites.tqh_first != NULL))
+        !TAILQ_EMPTY(&global.suites))
     {
         RING("Building Test Suites specified in command line...");
         rc = tester_build_suites(&global.suites,
@@ -672,7 +672,7 @@ main(int argc, char *argv[])
      * Execure testing scenario.
      */
     if ((~global.flags & TESTER_NO_RUN) &&
-        (global.cfgs.tqh_first != NULL))
+        !TAILQ_EMPTY(&global.cfgs))
     {
         RING("Starting...");
         rc = tester_run(&global.scenario, global.targets, &global.cfgs,

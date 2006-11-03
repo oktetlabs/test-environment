@@ -55,22 +55,22 @@
  * CSAP protocol layer support DB entry
  */
 typedef struct csap_spt_entry { 
-    TAILQ_ENTRY(csap_spt_entry) links;  /**< List links */
+    STAILQ_ENTRY(csap_spt_entry) links;  /**< List links */
 
     csap_spt_type_p   spt_data; /**< Pointer to support descriptor */ 
 
-} csap_spt_entry_t;
+} csap_spt_entry;
 
 
 /** Head of the CSAP protocol support list */
-static TAILQ_HEAD(, csap_spt_entry) csap_spt_root;
+static STAILQ_HEAD(, csap_spt_entry) csap_spt_root;
 
 
 /* See the description in tad_csap_support.h */
 te_errno
 csap_spt_init(void)
 {
-    TAILQ_INIT(&csap_spt_root);
+    STAILQ_INIT(&csap_spt_root);
     return 0;
 }
 
@@ -86,7 +86,7 @@ csap_spt_init(void)
 te_errno
 csap_spt_add(csap_spt_type_p spt_descr)
 {
-    csap_spt_entry_t   *new_spt_entry;
+    csap_spt_entry   *new_spt_entry;
 
     if (spt_descr == NULL)
         return TE_EINVAL;
@@ -96,7 +96,7 @@ csap_spt_add(csap_spt_type_p spt_descr)
         return TE_ENOMEM;
 
     new_spt_entry->spt_data = spt_descr;
-    TAILQ_INSERT_TAIL(&csap_spt_root, new_spt_entry, links);
+    STAILQ_INSERT_TAIL(&csap_spt_root, new_spt_entry, links);
 
     INFO("Registered '%s' protocol support", spt_descr->proto);
 
@@ -107,13 +107,11 @@ csap_spt_add(csap_spt_type_p spt_descr)
 csap_spt_type_p 
 csap_spt_find(const char *proto)
 {
-    csap_spt_entry_t   *spt_entry;
+    csap_spt_entry   *spt_entry;
 
     VERB("%s(): asked proto %s", __FUNCTION__, proto);
 
-    for (spt_entry = csap_spt_root.tqh_first; 
-         spt_entry != NULL; 
-         spt_entry = spt_entry->links.tqe_next)
+    STAILQ_FOREACH(spt_entry, &csap_spt_root, links)
     { 
         assert(spt_entry->spt_data != NULL);
         VERB("%s(): test proto %s", __FUNCTION__,
@@ -129,11 +127,11 @@ csap_spt_find(const char *proto)
 void
 csap_spt_destroy(void)
 {
-    csap_spt_entry_t   *entry;
+    csap_spt_entry   *entry;
 
-    while ((entry = csap_spt_root.tqh_first) != NULL)
+    while ((entry = STAILQ_FIRST(&csap_spt_root)) != NULL)
     {
-        TAILQ_REMOVE(&csap_spt_root, entry, links);
+        STAILQ_REMOVE(&csap_spt_root, entry, csap_spt_entry, links);
 
         assert(entry->spt_data != NULL);
         if (entry->spt_data->unregister_cb != NULL)

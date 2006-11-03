@@ -78,7 +78,8 @@ static test_entity_value boolean_true = {
 
 /** Boolean type */
 static test_value_type boolean = {
-    { NULL, NULL }, "boolean", NULL, { { NULL, NULL }, 0 }
+    { NULL }, "boolean", NULL,
+    { TAILQ_HEAD_INITIALIZER(boolean.values.head), 0 }
 };
 
 /** List of predefined types */
@@ -89,7 +90,7 @@ static test_value_types predefined_types;
 te_errno
 tester_init_types(void)
 {
-    LIST_INIT(&predefined_types);
+    SLIST_INIT(&predefined_types);
 
     /* Initialize boolean type values */
     TAILQ_INIT(&boolean_false.reqs);
@@ -99,7 +100,7 @@ tester_init_types(void)
     TAILQ_INSERT_TAIL(&boolean.values.head, &boolean_false, links);
     TAILQ_INSERT_TAIL(&boolean.values.head, &boolean_true, links);
     boolean.values.num = 2;
-    LIST_INSERT_HEAD(&predefined_types, &boolean, links);
+    SLIST_INSERT_HEAD(&predefined_types, &boolean, links);
 
     return 0;
 }
@@ -117,7 +118,7 @@ types_find_type(const test_value_types *types, const char *name)
 {
     const test_value_type  *p;
 
-    for (p = types->lh_first; p != NULL; p = p->links.le_next)
+    SLIST_FOREACH(p, types, links)
     {
         assert(p->name != NULL);
         if (strcmp(name, p->name) == 0)
@@ -148,7 +149,7 @@ tester_find_type(const test_session *session, const char *name)
 void
 tester_add_type(test_session *session, test_value_type *type)
 {
-    LIST_INSERT_HEAD(&session->types, type, links);
+    SLIST_INSERT_HEAD(&session->types, type, links);
 }
 
 

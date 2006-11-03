@@ -63,7 +63,7 @@ extern char *ta_name;
 
 /** CSAP ID database entry. */
 typedef struct csap_id_entry {
-    LIST_ENTRY(csap_id_entry)   links;  /**< List links */
+    SLIST_ENTRY(csap_id_entry)  links;  /**< List links */
 
     csap_handle_t   id;     /**< CSAP ID */
     void           *ptr;    /**< Associated pointer */
@@ -71,7 +71,7 @@ typedef struct csap_id_entry {
 
 
 /** Head of the CSAP ID database */
-static LIST_HEAD(csap_id_list, csap_id_entry) csap_id_db;
+static SLIST_HEAD(csap_id_list, csap_id_entry) csap_id_db;
 
 /** The first CSAP ID */
 static unsigned int csap_id_start;
@@ -81,7 +81,7 @@ static unsigned int csap_id_start;
 void
 csap_id_init(void)
 {
-    LIST_INIT(&csap_id_db);
+    SLIST_INIT(&csap_id_db);
 
 #if SIMPLE_CSAP_IDS
     csap_id_start = CSAP_INVALID_HANDLE + 1;
@@ -114,11 +114,11 @@ csap_id_destroy(void)
 {
     csap_id_entry  *entry;
     
-    while ((entry = csap_id_db.lh_first) != NULL)
+    while ((entry = SLIST_FIRST(&csap_id_db)) != NULL)
     {
         WARN("Destroy CSAP IDs database entry: ID=%u PTR=%p",
              entry->id, entry->ptr);
-        LIST_REMOVE(entry, links);
+        SLIST_REMOVE(&csap_id_db, entry, csap_id_entry, links);
         free(entry);
     }
 }
@@ -139,9 +139,10 @@ csap_id_new(void *ptr)
         return CSAP_INVALID_HANDLE;
     }
 
-    for (curr = csap_id_db.lh_first, prev = NULL, new_id = csap_id_start; 
+    for (curr = SLIST_FIRST(&csap_id_db), prev = NULL,
+             new_id = csap_id_start; 
          (curr != NULL) && (new_id >= curr->id);
-         prev = curr, curr = curr->links.le_next)
+         prev = curr, curr = SLIST_NEXT(curr, links))
     {
         new_id++;
         if (new_id == CSAP_INVALID_HANDLE)
@@ -165,11 +166,11 @@ csap_id_new(void *ptr)
     new_entry->ptr = ptr;
     if (prev == NULL)
     {
-        LIST_INSERT_HEAD(&csap_id_db, new_entry, links);
+        SLIST_INSERT_HEAD(&csap_id_db, new_entry, links);
     }
     else
     {
-        LIST_INSERT_AFTER(prev, new_entry, links);
+        SLIST_INSERT_AFTER(prev, new_entry, links);
     }
 
     return new_id;
@@ -187,9 +188,9 @@ csap_id_find(csap_handle_t csap_id)
 {
     csap_id_entry  *p;
 
-    for (p = csap_id_db.lh_first;
+    for (p = SLIST_FIRST(&csap_id_db);
          p != NULL && p->id < csap_id;
-         p = p->links.le_next);
+         p = SLIST_NEXT(p, links));
 
     return (p != NULL && p->id == csap_id) ? p : NULL;
 }
@@ -222,7 +223,7 @@ csap_id_delete(csap_handle_t csap_id)
     entry = csap_id_find(csap_id);
     if (entry != NULL)
     {
-        LIST_REMOVE(entry, links);
+        SLIST_REMOVE(&csap_id_db, entry, csap_id_entry, links);
         ptr = entry->ptr;
         free(entry);
 
@@ -242,9 +243,8 @@ csap_id_enum(csap_id_enum_cb cb, void *opaque)
 {
     csap_id_entry  *p, *q;
 
-    for (p = csap_id_db.lh_first; p != NULL; p = q)
+    SLIST_FOREACH_SAFE(p, &csap_id_db, links, q)
     {
-        q = p->links.le_next;
         cb(p->id, p->ptr, opaque);
     }
 }

@@ -80,7 +80,7 @@ test_suites_info_free(test_suites_info *suites)
 {
     test_suite_info *p;
 
-    while ((p = suites->tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(suites)) != NULL)
     {
         TAILQ_REMOVE(suites, p, links);
         test_suite_info_free(p);

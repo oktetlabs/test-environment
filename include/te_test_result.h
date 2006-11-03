@@ -144,7 +144,7 @@ te_test_result_free_verdicts(te_test_result *result)
 {
     te_test_verdict *v;
 
-    while ((v = result->verdicts.tqh_first) != NULL)
+    while ((v = TAILQ_FIRST(&result->verdicts)) != NULL)
     {
         TAILQ_REMOVE(&result->verdicts, v, links);
         free(v->str);

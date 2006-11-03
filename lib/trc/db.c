@@ -58,7 +58,7 @@ trc_free_test_args(trc_test_iter_args *args)
 {
     trc_test_iter_arg   *p;
 
-    while ((p = args->head.tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(&args->head)) != NULL)
     {
         TAILQ_REMOVE(&args->head, p, links);
         free(p->name);
@@ -80,7 +80,7 @@ trc_free_exp_result(trc_exp_result *result)
     free(result->tags_str);
     logic_expr_free(result->tags_expr);
 
-    while ((p = result->results.tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(&result->results)) != NULL)
     {
         TAILQ_REMOVE(&result->results, p, links);
         te_test_result_free_verdicts(&p->result);
@@ -103,9 +103,9 @@ trc_free_exp_results(trc_exp_results *results)
 {
     trc_exp_result *p;
 
-    while ((p = results->lh_first) != NULL)
+    while ((p = SLIST_FIRST(results)) != NULL)
     {
-        LIST_REMOVE(p, links);
+        SLIST_REMOVE(results, p, trc_exp_result, links);
         trc_free_exp_result(p);
         free(p);
     }
@@ -121,7 +121,7 @@ trc_free_test_iters(trc_test_iters *iters)
 {
     trc_test_iter  *p;
 
-    while ((p = iters->head.tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(&iters->head)) != NULL)
     {
         TAILQ_REMOVE(&iters->head, p, links);
         trc_free_test_args(&p->args);
@@ -142,7 +142,7 @@ trc_free_trc_tests(trc_tests *tests)
 {
     trc_test   *p;
 
-    while ((p = tests->head.tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(&tests->head)) != NULL)
     {
         TAILQ_REMOVE(&tests->head, p, links);
         free(p->name);
@@ -226,13 +226,13 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
     unsigned int        i;
     trc_test_iter_arg  *arg;
 
-    assert(args->head.tqh_first == NULL);
+    assert(TAILQ_EMPTY(&args->head));
     for (i = 0; i < n_args; ++i)
     {
         arg = TE_ALLOC(sizeof(*arg));
         if (arg == NULL)
         {
-            while ((arg = args->head.tqh_first) != NULL)
+            while ((arg = TAILQ_FIRST(&args->head)) != NULL)
             {
                 TAILQ_REMOVE(&args->head, arg, links);
                 /* Do not free name and value */
@@ -264,7 +264,7 @@ trc_db_new_test_iter(trc_test *test, unsigned int n_args,
     if (p != NULL)
     {
         TAILQ_INIT(&p->args.head);
-        LIST_INIT(&p->exp_results);
+        SLIST_INIT(&p->exp_results);
         TAILQ_INIT(&p->tests.head);
         LIST_INIT(&p->users);
         p->parent = test;
@@ -311,9 +311,9 @@ trc_db_find_user_data(const trc_users_data *users_data,
     const trc_user_data *p;
 
     assert(users_data != NULL);
-    for (p = users_data->lh_first;
+    for (p = LIST_FIRST(users_data);
          p != NULL && p->user_id != user_id;
-         p = p->links.le_next);
+         p = LIST_NEXT(p, links));
 
     /* 
      * Discard 'const' qualifier inherited from the list, since it

@@ -147,7 +147,7 @@ test_requirements_clone(const test_requirements *reqs,
     test_requirement  *p;
     test_requirement  *q;
 
-    for (p = reqs->tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, reqs, links)
     {
         q = test_requirement_clone(p);
         if (q == NULL)
@@ -166,7 +166,7 @@ test_requirements_free(test_requirements *reqs)
 {
     test_requirement  *p;
 
-    while ((p = reqs->tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(reqs)) != NULL)
     {
         TAILQ_REMOVE(reqs, p, links);
         test_requirement_free(p);
@@ -220,9 +220,9 @@ is_req_in_set(const char *req, const test_requirements *set,
 
     assert(req != NULL);
 
-    for (s = (set != NULL) ? set->tqh_first : NULL;
+    for (s = (set != NULL) ? TAILQ_FIRST(set) : NULL;
          s != NULL;
-         s = s->links.tqe_next)
+         s = TAILQ_NEXT(s, links))
     {
         if (strcmp(req, req_get(s, n_args, args)) == 0)
         {
@@ -452,12 +452,12 @@ reqs_list_to_string_buf(const test_requirements  *reqs,
     char                   *s = *buf;
     int                     out;
 
-    for (p = (reqs != NULL) ? reqs->tqh_first : NULL;
+    for (p = (reqs != NULL) ? TAILQ_FIRST(reqs) : NULL;
          p != NULL && *left > 0;
-         p = p->links.tqe_next, s += out, *left -= out)
+         p = TAILQ_NEXT(p, links), s += out, *left -= out)
     {
         out = snprintf(s, *left, "%s%s",
-                       (p == reqs->tqh_first) ? "" : ", ",
+                       (p == TAILQ_FIRST(reqs)) ? "" : ", ",
                        req_get(p, n_args, args));
     }
     *buf = s;
@@ -520,7 +520,7 @@ params_reqs_list_to_string(const unsigned int   n_args,
          i < n_args && left > 0;
          ++p, ++i)
     {
-        if (p->reqs.tqh_first != NULL)
+        if (!TAILQ_EMPTY(&p->reqs))
         {
             out = snprintf(s, left, " %s=", p->name);
             s += out;
@@ -601,7 +601,7 @@ tester_get_sticky_reqs(test_requirements       *sticky_reqs,
     const test_requirement *p;
     test_requirement       *q;
 
-    for (p = reqs->tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, reqs, links)
     {
         if (p->sticky)
         {

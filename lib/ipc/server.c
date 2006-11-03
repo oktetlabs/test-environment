@@ -384,9 +384,7 @@ ipc_get_server_fds(const struct ipc_server *ipcs, fd_set *set)
     max_fd = ipcs->socket;
     if (ipcs->conn)
     {
-        for (client = ipcs->clients.lh_first;
-             client != NULL;
-             client = client->links.le_next)
+        LIST_FOREACH(client, &ipcs->clients, links)
         {
             FD_SET(client->stream.socket, set);
             max_fd = MAX(max_fd, client->stream.socket);
@@ -430,11 +428,8 @@ ipc_is_server_ready(struct ipc_server *ipcs, const fd_set *set, int max_fd)
     }
     if (ipcs->conn)
     {
-        for (client = ipcs->clients.lh_first;
-             client != NULL;
-             client = next)
+        LIST_FOREACH_SAFE(client, &ipcs->clients, links, next)
         {
-            next = client->links.le_next;
             if (client->stream.socket <= max_fd)
             {
                 client->stream.is_ready =
@@ -489,10 +484,10 @@ ipc_close_server(struct ipc_server *ipcs)
     }
     else
     {
-        if (ipcs->dgram.datagrams.tqh_first != NULL)
+        if (!TAILQ_EMPTY(&ipcs->dgram.datagrams))
             fprintf(stderr, "IPC server: drop some datagrams\n");
         /* Free datagram's buffer */
-        while ((p = ipcs->dgram.datagrams.tqh_first) != NULL)
+        while ((p = TAILQ_FIRST(&ipcs->dgram.datagrams)) != NULL)
         {
             TAILQ_REMOVE(&ipcs->dgram.datagrams, p, links);
             free(p->buffer);
@@ -502,7 +497,7 @@ ipc_close_server(struct ipc_server *ipcs)
     }
 
     /* Free the pool */
-    while ((ipcsc = ipcs->clients.lh_first) != NULL)
+    while ((ipcsc = LIST_FIRST(&ipcs->clients)) != NULL)
     {
         ipc_server_close_client(ipcsc, ipcs->conn);
     }
@@ -863,12 +858,8 @@ ipc_stream_receive_message(struct ipc_server *ipcs,
     while (TRUE)
     {
         /* Data in the connection? */
-        for (client = ipcs->clients.lh_first;
-             client != NULL;
-             client = next_client)
+        LIST_FOREACH_SAFE(client, &ipcs->clients, links, next_client)
         {
-            next_client = client->links.le_next;
-
             if (client->stream.is_ready)
             {
                 client->stream.is_ready = FALSE;
@@ -1077,11 +1068,11 @@ ipc_int_client_by_addr(struct ipc_server *ipcs,
 {
     struct ipc_server_client *ipcsc;
 
-    for (ipcsc = ipcs->clients.lh_first;
+    for (ipcsc = LIST_FIRST(&ipcs->clients);
          (ipcsc != NULL) &&
          ((sa_len != ipcsc->sa_len) ||
           (memcmp(sa_ptr, &ipcsc->sa, sa_len) != 0));
-         ipcsc = ipcsc->links.le_next);
+         ipcsc = LIST_NEXT(ipcsc, links));
 
     if (ipcsc == NULL)
     {
@@ -1129,9 +1120,7 @@ ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
     assert(p_ipcsc != NULL);
 
     ipcsc = *p_ipcsc;
-    for (p = ipcs->dgram.datagrams.tqh_first;
-         p != NULL;
-         p = p->links.tqe_next)
+    TAILQ_FOREACH(p, &ipcs->dgram.datagrams, links)
     {
         if ((ipcsc == NULL) ||
             ((ipcsc->sa_len == p->sa_len) &&

@@ -227,17 +227,17 @@ typedef enum {
 
 /** Tail queue of Cfgr handles */
 typedef struct cfg_handle_tqe {
-    TAILQ_ENTRY(cfg_handle_tqe) links;  /**< List links */
-    cfg_handle                  handle; /**< Cfgr handle */
+    STAILQ_ENTRY(cfg_handle_tqe)    links;  /**< List links */
+    cfg_handle                      handle; /**< Cfgr handle */
 } cfg_handle_tqe;
 
 /** Head of the tail queue with Cfgr handles */
-typedef TAILQ_HEAD(cfg_handle_tqh, cfg_handle_tqe) cfg_handle_tqh;
+typedef STAILQ_HEAD(cfg_handle_tqh, cfg_handle_tqe) cfg_handle_tqh;
 
 
 /** Network entry */
 typedef struct tapi_env_net {
-    LIST_ENTRY(tapi_env_net)    links;  /**< Links of the networks list */
+    SLIST_ENTRY(tapi_env_net)   links;  /**< Links of the networks list */
     
     char               *name;       /**< Name of the net */
 
@@ -261,19 +261,19 @@ typedef struct tapi_env_net {
 } tapi_env_net;
 
 /** List of required networks in environment */
-typedef LIST_HEAD(tapi_env_nets, tapi_env_net) tapi_env_nets;
+typedef SLIST_HEAD(tapi_env_nets, tapi_env_net) tapi_env_nets;
 
 
 /* Forward */
 struct tapi_env_process;
 /** List of processes on a host */
-typedef LIST_HEAD(tapi_env_processes, tapi_env_process)
+typedef SLIST_HEAD(tapi_env_processes, tapi_env_process)
             tapi_env_processes;
 
 
 /** Host entry in environment */
 typedef struct tapi_env_host {
-    LIST_ENTRY(tapi_env_host)   links;  /**< Links */
+    SLIST_ENTRY(tapi_env_host)  links;  /**< Links */
 
     tapi_env_processes  processes;  /** List of processes on a host */
 
@@ -285,7 +285,7 @@ typedef struct tapi_env_host {
 } tapi_env_host;
 
 /** List of required hosts in environment */
-typedef LIST_HEAD(tapi_env_hosts, tapi_env_host) tapi_env_hosts;
+typedef SLIST_HEAD(tapi_env_hosts, tapi_env_host) tapi_env_hosts;
 
 
 /** Host/interface entry in environment */
@@ -316,11 +316,11 @@ typedef CIRCLEQ_HEAD(tapi_env_ifs, tapi_env_if) tapi_env_ifs;
 /* Forward */
 struct tapi_env_pco;
 /** List of PCOs */
-typedef TAILQ_HEAD(tapi_env_pcos, tapi_env_pco) tapi_env_pcos;
+typedef STAILQ_HEAD(tapi_env_pcos, tapi_env_pco) tapi_env_pcos;
 
 /** Process entry on a host */
 typedef struct tapi_env_process {
-    LIST_ENTRY(tapi_env_process)    links;  /**< Links */
+    SLIST_ENTRY(tapi_env_process)   links;  /**< Links */
 
     tapi_env_pcos pcos; /**< Tail queue of PCOs in process */
 } tapi_env_process;
@@ -328,7 +328,7 @@ typedef struct tapi_env_process {
 
 /** Entry of PCO name to RPC server mapping */
 typedef struct tapi_env_pco {
-    TAILQ_ENTRY(tapi_env_pco) links;    /**< Links in the process */
+    STAILQ_ENTRY(tapi_env_pco)  links;  /**< Links in the process */
 
     char               *name;           /**< Name of the PCO */
 
@@ -366,7 +366,7 @@ typedef CIRCLEQ_HEAD(tapi_env_addrs, tapi_env_addr) tapi_env_addrs;
 
 /** Alias in Socket API testing environment */
 typedef struct tapi_env_alias {
-    LIST_ENTRY(tapi_env_alias)  links;  /**< Links */
+    SLIST_ENTRY(tapi_env_alias) links;  /**< Links */
 
     char   *alias;  /**< Alias */
     char   *name;   /**< Real name */
@@ -374,7 +374,7 @@ typedef struct tapi_env_alias {
 } tapi_env_alias;
 
 /** List of aliases in environment */
-typedef LIST_HEAD(tapi_env_aliases, tapi_env_alias) tapi_env_aliases;
+typedef SLIST_HEAD(tapi_env_aliases, tapi_env_alias) tapi_env_aliases;
 
 
 /** Environment for the test */

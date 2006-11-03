@@ -488,9 +488,7 @@ main(int argc, char *argv[])
     }
 
     /* Generate reports in HTML format */
-    for (report = reports.tqh_first;
-         report != NULL;
-         report = report->links.tqe_next)
+    TAILQ_FOREACH(report, &reports, links)
     {
         if (trc_report_to_html(&ctx, report->filename, report->title,
                                report->header, report->flags) != 0)
@@ -521,7 +519,7 @@ exit:
     }
     tq_strings_free(&ctx.tags, free);
 
-    while ((report = reports.tqh_first) != NULL)
+    while ((report = TAILQ_FIRST(&reports)) != NULL)
     {
         TAILQ_REMOVE(&reports, report, links);
         if (report->header != NULL)

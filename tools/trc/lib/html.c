@@ -72,14 +72,14 @@ te_test_result_to_html(FILE *f, const te_test_result *result)
 
     WRITE_STR(te_test_status_to_str(result->status));
 
-    if (result->verdicts.tqh_first == NULL)
+    if (TAILQ_EMPTY(&result->verdicts))
         return 0;
 
     WRITE_STR("<br/><br/>");
-    for (v = result->verdicts.tqh_first; v != NULL; v = v->links.tqe_next)
+    TAILQ_FOREACH(v, &result->verdicts, links)
     {
         WRITE_STR(v->str);
-        if (v->links.tqe_next != NULL)
+        if (TAILQ_NEXT(v, links) != NULL)
             WRITE_STR("; ");
     }
 
@@ -133,11 +133,11 @@ trc_exp_result_to_html(FILE *f, const trc_exp_result *result,
         WRITE_STR(result->tags_str);
         WRITE_STR("</b><br/><br/>");
     }
-    for (p = result->results.tqh_first;
+    for (p = TAILQ_FIRST(&result->results);
          p != NULL && rc == 0;
-         p = p->links.tqe_next)
+         p = TAILQ_NEXT(p, links))
     {
-        if (p != result->results.tqh_first)
+        if (p != TAILQ_FIRST(&result->results))
             WRITE_STR("<br/><br/>");
         rc = trc_test_result_to_html(f, p);
     }
@@ -156,7 +156,7 @@ trc_test_iter_args_to_html(FILE *f, const trc_test_iter_args *args,
 
     UNUSED(flags);
 
-    for (p = args->head.tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, &args->head, links)
     {
         fprintf(f, "%s=%s<BR/>", p->name, p->value);
     }

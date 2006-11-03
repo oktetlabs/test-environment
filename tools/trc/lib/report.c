@@ -87,7 +87,7 @@ trc_report_free_test_iter_data(trc_report_test_iter_data *data)
 {
     trc_report_test_iter_entry *p;
 
-    while ((p = data->runs.tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(&data->runs)) != NULL)
     {
         TAILQ_REMOVE(&data->runs, p, links);
         te_test_result_free_verdicts(&p->result);
@@ -207,11 +207,11 @@ trc_report_collect_stats(trc_report_ctx *ctx)
                     iter_data = trc_db_walker_get_user_data(walker,
                                                             ctx->db_uid);
                     assert(iter_data != NULL);
-                    if (iter_data->runs.tqh_first != NULL)
+                    if (!TAILQ_EMPTY(&iter_data->runs))
                     {
                         /* Set 'is_exp' flag using collected statistics */
                         /* FIXME: What to do with more iteration? */
-                        iter_data->runs.tqh_first->is_exp =
+                        TAILQ_FIRST(&iter_data->runs)->is_exp =
                             (TRC_STATS_RUN_UNEXP(&iter_data->stats) == 0);
                     }
 

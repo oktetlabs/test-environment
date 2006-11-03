@@ -76,13 +76,14 @@ exp_defaults_free(void)
     {
         trc_exp_result *p;
 
-        while ((p = exp_defaults.lh_first) != NULL)
+        while ((p = SLIST_FIRST(&exp_defaults)) != NULL)
         {
-            LIST_REMOVE(p, links);
-            assert(p->results.tqh_first != NULL);
-            assert(p->results.tqh_first->links.tqe_next == NULL);
-            assert(p->results.tqh_first->result.verdicts.tqh_first == NULL);
-            free(p->results.tqh_first);
+            SLIST_REMOVE(&exp_defaults, p, trc_exp_result, links);
+            assert(TAILQ_FIRST(&p->results) != NULL);
+            assert(TAILQ_NEXT(TAILQ_FIRST(&p->results), links) == NULL);
+            assert(TAILQ_FIRST(
+                       &TAILQ_FIRST(&p->results)->result.verdicts) == NULL);
+            free(TAILQ_FIRST(&p->results));
             free(p);
         }
         exp_defaults_inited = FALSE;
@@ -99,7 +100,7 @@ exp_defaults_init(void)
 {
     if (!exp_defaults_inited)
     {
-        LIST_INIT(&exp_defaults);
+        SLIST_INIT(&exp_defaults);
         atexit(exp_defaults_free);
         exp_defaults_inited = TRUE;
     }
@@ -122,12 +123,13 @@ exp_defaults_get(te_test_status status)
 
     exp_defaults_init();
 
-    for (p = exp_defaults.lh_first; p != NULL; p = p->links.le_next)
+    SLIST_FOREACH(p, &exp_defaults, links)
     {
-        assert(p->results.tqh_first != NULL);
-        assert(p->results.tqh_first->links.tqe_next == NULL);
-        assert(p->results.tqh_first->result.verdicts.tqh_first == NULL);
-        if (p->results.tqh_first->result.status == status)
+        assert(TAILQ_FIRST(&p->results) != NULL);
+        assert(TAILQ_NEXT(TAILQ_FIRST(&p->results), links) == NULL);
+        assert(TAILQ_FIRST(
+                   &TAILQ_FIRST(&p->results)->result.verdicts) == NULL);
+        if (TAILQ_FIRST(&p->results)->result.status == status)
             return p;
     }
 
@@ -146,7 +148,7 @@ exp_defaults_get(te_test_status status)
     entry->result.status = status;
     TAILQ_INSERT_HEAD(&p->results, entry, links);
     
-    LIST_INSERT_HEAD(&exp_defaults, p, links);
+    SLIST_INSERT_HEAD(&exp_defaults, p, links);
 
     return p;
 }
@@ -428,7 +430,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
         if (result == NULL)
             return TE_ENOMEM;
         TAILQ_INIT(&result->results);
-        LIST_INSERT_HEAD(results, result, links);
+        SLIST_INSERT_HEAD(results, result, links);
 
         result->tags_str = XML2CHAR(xmlGetProp(*node,
                                                CONST_CHAR2XML("tags")));
@@ -843,12 +845,12 @@ trc_update_iters(trc_test_iters *iters)
     te_errno    rc;
     trc_test_iter  *p;
 
-    for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, &iters->head, links)
     {
         if (p->node == NULL)
         {
-            trc_test_iter_arg   *a;
-            xmlNodePtr  node;
+            trc_test_iter_arg  *a;
+            xmlNodePtr          node;
 
             INFO("Add node for iteration %p node=%p", iters, iters->node);
             p->tests.node = xmlNewChild(iters->node, NULL,
@@ -860,9 +862,7 @@ trc_update_iters(trc_test_iters *iters)
             }
             xmlNewProp(p->tests.node, BAD_CAST "result",
                        BAD_CAST "PASSED");
-            for (a = p->args.head.tqh_first;
-                 a != NULL;
-                 a = a->links.tqe_next)
+            TAILQ_FOREACH(a, &p->args.head, links)
             {
                 xmlNodePtr arg = xmlNewChild(p->tests.node, NULL,
                                             BAD_CAST "arg",
@@ -908,7 +908,7 @@ trc_update_tests(trc_tests *tests)
     trc_test   *p;
     xmlNodePtr  node;
 
-    for (p = tests->head.tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, &tests->head, links)
     {
         if (p->node == NULL)
         {

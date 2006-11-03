@@ -125,10 +125,10 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
         trc_tests *tests = (walker->iter == NULL) ? &walker->db->tests :
                                                     &walker->iter->tests;
 
-        for (walker->test = tests->head.tqh_first;
+        for (walker->test = TAILQ_FIRST(&tests->head);
              walker->test != NULL &&
              strcmp(walker->test->name, test_name) != 0;
-             walker->test = walker->test->links.tqe_next);
+             walker->test = TAILQ_NEXT(walker->test, links));
 
         if (walker->test == NULL)
         {
@@ -183,9 +183,9 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
     unsigned int        i;
 
     memset(match, 0, sizeof(match));
-    for (arg = db_args->head.tqh_first, arg_match = TRUE;
+    for (arg = TAILQ_FIRST(&db_args->head), arg_match = TRUE;
          arg_match && arg != NULL;
-         arg = arg->links.tqe_next)
+         arg = TAILQ_NEXT(arg, links))
     {
         VERB("Argument from TRC DB: %s=%s", arg->name, arg->value);
         arg_match = FALSE;
@@ -247,12 +247,12 @@ trc_db_walker_step_iter(te_trc_db_walker  *walker,
     }
     else
     {
-        for (walker->iter = walker->test->iters.head.tqh_first;
+        for (walker->iter = TAILQ_FIRST(&walker->test->iters.head);
              walker->iter != NULL &&
              !test_iter_args_match(&walker->iter->args,
                                    n_args, (const char **)names,
                                    (const char **)values);
-             walker->iter = walker->iter->links.tqe_next);
+             walker->iter = TAILQ_NEXT(walker->iter, links));
 
         if (walker->iter == NULL)
         {
@@ -320,7 +320,7 @@ trc_db_walker_move(te_trc_db_walker *walker)
     switch (walker->motion)
     {
         case TRC_DB_WALKER_ROOT:
-            walker->test = walker->db->tests.head.tqh_first;
+            walker->test = TAILQ_FIRST(&walker->db->tests.head);
             if (walker->test == NULL)
             {
                 return TRC_DB_WALKER_ROOT;
@@ -336,7 +336,7 @@ trc_db_walker_move(te_trc_db_walker *walker)
         case TRC_DB_WALKER_BROTHER:
             if (walker->is_iter)
             {
-                walker->test = walker->iter->tests.head.tqh_first;
+                walker->test = TAILQ_FIRST(&walker->iter->tests.head);
                 if (walker->test != NULL)
                 {
                     walker->is_iter = FALSE;
@@ -345,7 +345,7 @@ trc_db_walker_move(te_trc_db_walker *walker)
             }
             else
             {
-                walker->iter = walker->test->iters.head.tqh_first;
+                walker->iter = TAILQ_FIRST(&walker->test->iters.head);
                 if (walker->iter != NULL)
                 {
                     walker->is_iter = TRUE;
@@ -357,9 +357,9 @@ trc_db_walker_move(te_trc_db_walker *walker)
         case TRC_DB_WALKER_FATHER:
             if (walker->is_iter)
             {
-                if (walker->iter->links.tqe_next != NULL)
+                if (TAILQ_NEXT(walker->iter, links) != NULL)
                 {
-                    walker->iter = walker->iter->links.tqe_next;
+                    walker->iter = TAILQ_NEXT(walker->iter, links);
                     return (walker->motion = TRC_DB_WALKER_BROTHER);
                 }
                 else
@@ -372,9 +372,9 @@ trc_db_walker_move(te_trc_db_walker *walker)
             }
             else
             {
-                if (walker->test->links.tqe_next != NULL)
+                if (TAILQ_NEXT(walker->test, links) != NULL)
                 {
-                    walker->test = walker->test->links.tqe_next;
+                    walker->test = TAILQ_NEXT(walker->test, links);
                     return (walker->motion = TRC_DB_WALKER_BROTHER);
                 }
                 else
@@ -416,16 +416,13 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
     }
 
     /* Do we have a tag with expected SKIPPED result? */
-    for (result = NULL, prio = 0, p = walker->iter->exp_results.lh_first;
-         p != NULL;
-         p = p ->links.le_next)
+    result = NULL; prio = 0;
+    SLIST_FOREACH(p, &walker->iter->exp_results, links)
     {
         res = logic_expr_match(p->tags_expr, tags);
         if (res != 0)
         {
-            for (q = p->results.tqh_first;
-                 q != NULL;
-                 q = q->links.tqe_next)
+            TAILQ_FOREACH(q, &p->results, links)
             {
                 if (q->result.status == TE_TEST_SKIPPED)
                 {

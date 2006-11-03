@@ -85,9 +85,7 @@ tester_build_suites(const test_suites_info *suites, te_bool verbose)
     te_errno                rc;
     const test_suite_info  *suite;
 
-    for (suite = suites->tqh_first;
-         suite != NULL;
-         suite = suite->links.tqe_next)
+    TAILQ_FOREACH(suite, suites, links)
     {
         if (suite->src != NULL)
         {

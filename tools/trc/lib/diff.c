@@ -51,7 +51,7 @@
  * Element of the stack with TRC diff states.
  */
 typedef struct trc_diff_state {
-    LIST_ENTRY(trc_diff_state)  links;  /**< List links */
+    SLIST_ENTRY(trc_diff_state) links;  /**< List links */
     trc_diff_entry     *entry;      /**< Pointer to the entry in
                                          result list */
     te_bool             has_diff;   /**< Have children differences? */
@@ -111,7 +111,7 @@ trc_diff_entry_cleanup(trc_diff_entry *entry)
             entry->results[i] = NULL;
             entry->inherit[i] &= ~TRC_DIFF_INHERIT;
         }
-        assert(entry->keys[i].tqh_first == NULL);
+        assert(TAILQ_EMPTY(entry->keys + i));
     }
 }
 
@@ -189,9 +189,7 @@ trc_diff_entry_exp_results(const trc_diff_sets    *sets,
     assert(sets != NULL);
     assert(entry != NULL);
 
-    for (set = sets->tqh_first;
-         set != NULL;
-         set = set->links.tqe_next)
+    TAILQ_FOREACH(set, sets, links)
     {
         /* Check if the result is not inherited from parent */
         if (entry->results[set->id] == NULL)
@@ -253,7 +251,7 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
      * Check that each entry in left-hand value has equal entry in
      * right-hand value.
      */
-    for (p = lhv->results.tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, &lhv->results, links)
     {
         q = trc_is_result_expected(rhv, &p->result);
         if ((q == NULL) ||
@@ -272,7 +270,7 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
      * Check that each entry in right-hand value has equal entry in
      * left-hand value.
      */
-    for (p = rhv->results.tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, &rhv->results, links)
     {
         q = trc_is_result_expected(lhv, &p->result);
         if ((q == NULL) ||
@@ -313,7 +311,7 @@ trc_diff_group_exp_result(const trc_diff_sets  *sets,
     assert(group != NULL);
     assert(item != NULL);
 
-    for (p = sets->tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, sets, links)
     {
         /* Item result may be NULL if it is a group itself */
         if (item->results[p->id] == NULL)
@@ -394,9 +392,9 @@ trc_diff_check_key(trc_diff_set *set, const char *key)
     if (key == NULL)
         key = "";
  
-    for (p = set->ignore.tqh_first;
+    for (p = TAILQ_FIRST(&set->ignore);
          p != NULL && !ignore;
-         p = p->links.tqe_next)
+         p = TAILQ_NEXT(p, links))
     {
         assert(p->v != NULL);
         ignore = (strncmp(key, p->v, strlen(p->v)) == 0);
@@ -568,9 +566,8 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
      * Check that each entry in the expecred result for the first set
      * has equal entry in the expected result for the second set.
      */
-    for (main_key_used = FALSE, p = result1->results.tqh_first;
-         p != NULL;
-         p = p->links.tqe_next)
+    main_key_used = FALSE;
+    TAILQ_FOREACH(p, &result1->results, links)
     {
         /* 
          * If pointers to expected result for the first and the second
@@ -639,9 +636,8 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
      * Check that each entry in the expecred result for the second set
      * has equal entry in the expected result for the first set.
      */
-    for (main_key_used = FALSE, p = result2->results.tqh_first;
-         p != NULL;
-         p = p->links.tqe_next)
+    main_key_used = FALSE;
+    TAILQ_FOREACH(p, &result2->results, links)
     {
         if (trc_is_result_expected(result1, &p->result) == NULL)
         {
@@ -723,9 +719,9 @@ trc_diff_entry_has_diff(const trc_diff_sets *sets,
     assert(parent != NULL);
     assert(entry != NULL);
 
-    for (p = sets->tqh_first; p != NULL; p = p->links.tqe_next)
+    TAILQ_FOREACH(p, sets, links)
     {
-        for (q = p->links.tqe_next; q != NULL; q = q->links.tqe_next)
+        for (q = TAILQ_NEXT(p, links); q != NULL; q = TAILQ_NEXT(q, links))
         {
             diff = diff ||
                    (trc_diff_compare(p, entry->results[p->id],
@@ -752,9 +748,10 @@ trc_diff_entry_has_diff(const trc_diff_sets *sets,
     }
     else
     {
-        if (sets->tqh_first != NULL &&
-            entry->results[sets->tqh_first->id] != NULL &&
-            trc_is_exp_result_skipped(entry->results[sets->tqh_first->id]))
+        if (!TAILQ_EMPTY(sets) &&
+            entry->results[TAILQ_FIRST(sets)->id] != NULL &&
+            trc_is_exp_result_skipped(
+                entry->results[TAILQ_FIRST(sets)->id]))
         {
             return -1;
         }
@@ -770,7 +767,7 @@ trc_diff_entry_has_diff(const trc_diff_sets *sets,
 te_errno
 trc_diff_do(trc_diff_ctx *ctx)
 {
-    LIST_HEAD(, trc_diff_state) states;
+    SLIST_HEAD(, trc_diff_state) states;
 
     te_errno                rc;
     te_bool                 start;
@@ -794,7 +791,7 @@ trc_diff_do(trc_diff_ctx *ctx)
     if (walker == NULL)
         return TE_ENOMEM;
 
-    LIST_INIT(&states);
+    SLIST_INIT(&states);
 
     /* Traverse the tree */
     rc = 0;
@@ -832,7 +829,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                     state->entry = parent;
                     state->has_diff = has_diff;
                     state->children = children;
-                    LIST_INSERT_HEAD(&states, state, links);
+                    SLIST_INSERT_HEAD(&states, state, links);
 
                     /* Current 'entry' is a parent to a new one */
                     assert(entry != NULL);
@@ -961,7 +958,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                          * It is allowed to hide all children,
                          * therefore remove them from result.
                          */
-                        while ((entry = parent->links.tqe_next) != NULL)
+                        while ((entry = TAILQ_NEXT(parent, links)) != NULL)
                         {
                             TAILQ_REMOVE(&ctx->result, entry, links);
                             free(entry);
@@ -973,7 +970,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                          * Test group has only one iteration. Therefore,
                          * it is not interesting to look at parameters.
                          */
-                        entry = parent->links.tqe_next;
+                        entry = TAILQ_NEXT(parent, links);
                         assert(entry != NULL);
                         TAILQ_REMOVE(&ctx->result, entry, links);
                         free(entry);
@@ -985,7 +982,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                 {
                     /* No differences in children */
                     /* Nothing should be added after the parent */
-                    assert(parent->links.tqe_next == NULL);
+                    assert(TAILQ_NEXT(parent, links) == NULL);
                     /* Remove the parent from result */
                     TAILQ_REMOVE(&ctx->result, parent, links);
                     /* Reuse this parent entry for its brothers */
@@ -994,9 +991,9 @@ trc_diff_do(trc_diff_ctx *ctx)
                 }
                 
                 /* Extract state from the stack and restore */
-                state = states.lh_first;
+                state = SLIST_FIRST(&states);
                 assert(state != NULL);
-                LIST_REMOVE(state, links);
+                SLIST_REMOVE(&states, state, trc_diff_state, links);
                 parent = state->entry;
                 has_diff = has_diff || state->has_diff;
                 children = state->children;
@@ -1053,7 +1050,7 @@ trc_diff_ctx_free(trc_diff_ctx *ctx)
 
     trc_diff_free_sets(&ctx->sets);
 
-    while ((p = ctx->result.tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(&ctx->result)) != NULL)
     {
         TAILQ_REMOVE(&ctx->result, p, links);
         free(p);

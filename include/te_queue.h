@@ -18,10 +18,6 @@
 #ifndef	__TE_QUEUE_H__
 #define	__TE_QUEUE_H__
 
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
-
 #if HAVE_SYS_CDEFS_H
 #include <sys/cdefs.h>
 #endif

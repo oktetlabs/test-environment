@@ -75,13 +75,13 @@ extern int env_cfg_parse(tapi_env *e, const char *cfg);
 
 /** Entry of the list with network node indexes */
 typedef struct node_index {
-    LIST_ENTRY(node_index)  links;  /**< Links */
+    SLIST_ENTRY(node_index) links;  /**< Links */
     unsigned int            net;    /**< Net index */
     unsigned int            node;   /**< Node in the net index */
 } node_index;
 
 /** List of the network node indexes */
-typedef LIST_HEAD(node_indexes, node_index) node_indexes;
+typedef SLIST_HEAD(node_indexes, node_index) node_indexes;
 
 
 static te_errno prepare_nets(tapi_env_nets *nets,
@@ -166,7 +166,7 @@ tapi_env_allocate_addr(tapi_env_net *net, int af,
     if (addrlen != NULL)
         *addrlen = te_sockaddr_get_size_by_af(af); 
 
-    TAILQ_INSERT_TAIL(&net->net_addrs, handle, links);
+    STAILQ_INSERT_TAIL(&net->net_addrs, handle, links);
 
     return 0;
 }
@@ -185,11 +185,11 @@ tapi_env_init(tapi_env *env)
 
     /* Initialize lists */
     env->n_nets = 0;
-    LIST_INIT(&env->nets);
-    LIST_INIT(&env->hosts);
+    SLIST_INIT(&env->nets);
+    SLIST_INIT(&env->hosts);
     CIRCLEQ_INIT(&env->ifs);
     CIRCLEQ_INIT(&env->addrs);
-    LIST_INIT(&env->aliases);
+    SLIST_INIT(&env->aliases);
     memset(&env->cfg_nets, 0, sizeof(env->cfg_nets));
 
     return 0;
@@ -313,13 +313,13 @@ tapi_env_free(tapi_env *env)
         return 0;
 
     /* Destroy list of hosts */
-    while ((host = env->hosts.lh_first) != NULL)
+    while ((host = SLIST_FIRST(&env->hosts)) != NULL)
     {
         /* Destroy list of processes */
-        while ((proc = host->processes.lh_first) != NULL)
+        while ((proc = SLIST_FIRST(&host->processes)) != NULL)
         {
             /* Destroy PCOs */
-            while ((pco = proc->pcos.tqh_first) != NULL)
+            while ((pco = STAILQ_FIRST(&proc->pcos)) != NULL)
             {
                 if (pco->rpcs != NULL)
                 {
@@ -344,14 +344,14 @@ tapi_env_free(tapi_env *env)
                         free(pco->rpcs);
                     }
                 }
-                TAILQ_REMOVE(&proc->pcos, pco, links);
+                STAILQ_REMOVE(&proc->pcos, pco, tapi_env_pco, links);
                 free(pco->name);
                 free(pco);
             }
-            LIST_REMOVE(proc, links);
+            SLIST_REMOVE(&host->processes, proc, tapi_env_process, links);
             free(proc);
         }
-        LIST_REMOVE(host, links);
+        SLIST_REMOVE(&env->hosts, host, tapi_env_host, links);
         free(host->ta);
         free(host->libname);
         free(host->name);
@@ -377,14 +377,15 @@ tapi_env_free(tapi_env *env)
         free(addr);
     }
     /* Destroy list of nets */
-    while ((net = env->nets.lh_first) != NULL)
+    while ((net = SLIST_FIRST(&env->nets)) != NULL)
     {
-        LIST_REMOVE(net, links);
+        SLIST_REMOVE(&env->nets, net, tapi_env_net, links);
         n_deleted = 0;
         ip_net_oid = NULL;
-        while ((addr_hndl = net->net_addrs.tqh_first) != NULL)
+        while ((addr_hndl = STAILQ_FIRST(&net->net_addrs)) != NULL)
         {
-            TAILQ_REMOVE(&net->net_addrs, addr_hndl, links);
+            STAILQ_REMOVE(&net->net_addrs, addr_hndl, cfg_handle_tqe,
+                          links);
             if (n_deleted == 0)
             {
                 if (((rc = cfg_get_father(addr_hndl->handle,
@@ -451,9 +452,9 @@ tapi_env_free(tapi_env *env)
         free(iface);
     }
     /* Destroy list of aliases */
-    while ((alias = env->aliases.lh_first) != NULL)
+    while ((alias = SLIST_FIRST(&env->aliases)) != NULL)
     {
-        LIST_REMOVE(alias, links);
+        SLIST_REMOVE(&env->aliases, alias, tapi_env_alias, links);
         free(alias->alias);
         free(alias->name);
         free(alias);
@@ -478,7 +479,7 @@ tapi_env_get_net(tapi_env *env, const char *name)
         return NULL;
     }
 
-    for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
+    SLIST_FOREACH(a, &env->aliases, links)
     {
         if (strcmp(a->alias, name) == 0)
         {
@@ -487,7 +488,7 @@ tapi_env_get_net(tapi_env *env, const char *name)
             break;
         }
     }
-    for (p = env->nets.lh_first; p != NULL; p = p->links.le_next)
+    SLIST_FOREACH(p, &env->nets, links)
     {
         if (p->name != NULL && strcmp(p->name, name) == 0)
             return p;
@@ -511,7 +512,7 @@ tapi_env_get_host(tapi_env *env, const char *name)
         return NULL;
     }
 
-    for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
+    SLIST_FOREACH(a, &env->aliases, links)
     {
         if (strcmp(a->alias, name) == 0)
         {
@@ -520,7 +521,7 @@ tapi_env_get_host(tapi_env *env, const char *name)
             break;
         }
     }
-    for (p = env->hosts.lh_first; p != NULL; p = p->links.le_next)
+    SLIST_FOREACH(p, &env->hosts, links)
     {
         if (p->name != NULL && strcmp(p->name, name) == 0)
             return p;
@@ -546,7 +547,7 @@ tapi_env_get_pco(tapi_env *env, const char *name)
         return NULL;
     }
 
-    for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
+    SLIST_FOREACH(a, &env->aliases, links)
     {
         if (strcmp(a->alias, name) == 0)
         {
@@ -556,17 +557,11 @@ tapi_env_get_pco(tapi_env *env, const char *name)
         }
     }
 
-    for (host = env->hosts.lh_first;
-         host != NULL;
-         host = host->links.le_next)
+    SLIST_FOREACH(host, &env->hosts, links)
     {
-        for (proc = host->processes.lh_first;
-             proc != NULL;
-             proc = proc->links.le_next)
+        SLIST_FOREACH(proc, &host->processes, links)
         {
-            for (pco = proc->pcos.tqh_first;
-                 pco != NULL;
-                 pco = pco->links.tqe_next)
+            STAILQ_FOREACH(pco, &proc->pcos, links)
             {
                 if (pco->name != NULL && strcmp(pco->name, name) == 0)
                     return pco->rpcs;
@@ -593,7 +588,7 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
         return NULL;
     }
 
-    for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
+    SLIST_FOREACH(a, &env->aliases, links)
     {
         if (strcmp(a->alias, name) == 0)
         {
@@ -633,7 +628,7 @@ tapi_env_get_if(tapi_env *env, const char *name)
         return NULL;
     }
 
-    for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
+    SLIST_FOREACH(a, &env->aliases, links)
     {
         if (strcmp(a->alias, name) == 0)
         {
@@ -676,9 +671,9 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
     char           *ip_net_oid;
 
 
-    for (env_net = nets->lh_first, i = 0;
+    for (env_net = SLIST_FIRST(nets), i = 0;
          env_net != NULL;
-         env_net = env_net->links.le_next, ++i)
+         env_net = SLIST_NEXT(env_net, links), ++i)
     {
         env_net->cfg_net = cfg_nets->nets + env_net->i_net;
 
@@ -864,9 +859,7 @@ prepare_hosts(tapi_env *env)
     cfg_handle      handle;
     cfg_val_type    type;
 
-    for (host = env->hosts.lh_first;
-         host != NULL;
-         host = host->links.le_next)
+    SLIST_FOREACH(host, &env->hosts, links)
     {
         /* Find any interface instance which refers to the host */
         for (iface = env->ifs.cqh_first;
@@ -1452,19 +1445,17 @@ prepare_pcos(tapi_env_hosts *hosts)
     }
     rc = 0;
 
-    for (host = hosts->lh_first;
+    for (host = SLIST_FIRST(hosts);
          host != NULL && rc == 0;
-         host = host->links.le_next)
+         host = SLIST_NEXT(host, links))
     {
-        for (proc = host->processes.lh_first;
+        for (proc = SLIST_FIRST(&host->processes);
              proc != NULL && rc == 0;
-             proc = proc->links.le_next)
+             proc = SLIST_NEXT(proc, links))
         {
             main_thread = TRUE;
 
-            for (pco = proc->pcos.tqh_first;
-                 pco != NULL;
-                 pco = pco->links.tqe_next)
+            STAILQ_FOREACH(pco, &proc->pcos, links)
             {
                 if (main_thread)
                 {
@@ -1509,7 +1500,7 @@ prepare_pcos(tapi_env_hosts *hosts)
                 else
                 {
                     rc = rcf_rpc_server_thread_create(
-                             proc->pcos.tqh_first->rpcs,
+                             STAILQ_FIRST(&proc->pcos)->rpcs,
                              pco->name, &(pco->rpcs));
                     if (rc != 0)
                     {
@@ -1525,10 +1516,11 @@ prepare_pcos(tapi_env_hosts *hosts)
              * thread in the tail for correct destruction.
              */
             if (!main_thread &&
-                ((pco = proc->pcos.tqh_first)->links.tqe_next != NULL))
+                (STAILQ_NEXT(pco = STAILQ_FIRST(&proc->pcos),
+                             links) != NULL))
             {
-                TAILQ_REMOVE(&proc->pcos, pco, links);
-                TAILQ_INSERT_TAIL(&proc->pcos, pco, links);
+                STAILQ_REMOVE(&proc->pcos, pco, tapi_env_pco, links);
+                STAILQ_INSERT_TAIL(&proc->pcos, pco, links);
             }
         }
     }
@@ -1544,7 +1536,7 @@ bind_env_to_cfg_nets(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
     node_index     *p;
 
     /* Initialize empty list with used nodes */
-    LIST_INIT(&used_nodes);
+    SLIST_INIT(&used_nodes);
 
     /* Recursively bind all hosts */
     if (!bind_host_if(ifs->cqh_first, ifs, cfg_nets, &used_nodes))
@@ -1555,9 +1547,9 @@ bind_env_to_cfg_nets(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
     }
 
     /* Free list of used indexes */
-    while ((p = used_nodes.lh_first) != NULL)
+    while ((p = SLIST_FIRST(&used_nodes)) != NULL)
     {
-        LIST_REMOVE(p, links);
+        SLIST_REMOVE(&used_nodes, p, node_index, links);
         free(p);
     }
     
@@ -1777,7 +1769,7 @@ node_mark_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
     p->net = net;
     p->node = node;
     
-    LIST_INSERT_HEAD(used_nodes, p, links);
+    SLIST_INSERT_HEAD(used_nodes, p, links);
     
     return 0;
 }
@@ -1794,12 +1786,12 @@ node_unmark_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
 {
     node_index *p;
 
-    for (p = used_nodes->lh_first;
+    for (p = SLIST_FIRST(used_nodes);
          (p != NULL) && ((net != p->net) || (node != p->node));
-         p = p->links.le_next);
+         p = SLIST_NEXT(p, links));
 
     if (p != NULL)    
-        LIST_REMOVE(p, links);
+        SLIST_REMOVE(used_nodes, p, node_index, links);
 }
 
 /**
@@ -1817,9 +1809,9 @@ node_is_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
 {
     node_index *p;
 
-    for (p = used_nodes->lh_first;
+    for (p = SLIST_FIRST(used_nodes);
          (p != NULL) && ((net != p->net) || (node != p->node));
-         p = p->links.le_next);
+         p = SLIST_NEXT(p, links));
 
     return (p != NULL);
 }
@@ -1839,11 +1831,9 @@ get_pcos_type(tapi_env_processes *procs)
     tapi_env_process *proc;
     tapi_env_pco     *pco;
 
-    for (proc = procs->lh_first; proc != NULL; proc = proc->links.le_next)
+    SLIST_FOREACH(proc, procs, links)
     {
-        for (pco = proc->pcos.tqh_first;
-             pco != NULL;
-             pco = pco->links.tqe_next)
+        STAILQ_FOREACH(pco, &proc->pcos, links)
         {
             if (pco->type == TAPI_ENV_IUT)
             {

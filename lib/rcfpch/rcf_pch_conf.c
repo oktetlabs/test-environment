@@ -613,10 +613,10 @@ find_commit_op(rcf_ch_cfg_commit f_commit, const cfg_oid *p_oid)
 {
     rcf_pch_commit_op_t *p;
 
-    for (p = commits.tqh_first;
+    for (p = TAILQ_FIRST(&commits);
          (p != NULL) &&
          ((p->func != f_commit) || (cfg_oid_cmp(p->oid, p_oid) != 0));
-         p = p->links.tqe_next);
+         p = TAILQ_NEXT(p, links));
 
     return p;
 }
@@ -683,7 +683,7 @@ commit_all_postponed(void)
 
     ENTRY();
     VERB("Postponed commit of group %u", gid);
-    while ((p = commits.tqh_first) != NULL)
+    while ((p = TAILQ_FIRST(&commits)) != NULL)
     {
         TAILQ_REMOVE(&commits, p, links);
 

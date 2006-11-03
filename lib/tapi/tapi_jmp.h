@@ -47,7 +47,7 @@ extern "C" {
 
 /** Jump point (stack context to jump to) */
 typedef struct tapi_jmp_point {
-    LIST_ENTRY(tapi_jmp_point)  links;      /**< List links */
+    SLIST_ENTRY(tapi_jmp_point) links;      /**< List links */
 
     jmp_buf         env;        /**< Stack context, if jumps are
                                      enabled */

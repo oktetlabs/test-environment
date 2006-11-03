@@ -57,7 +57,7 @@ typedef LIST_HEAD(, trc_user_data)  trc_users_data;
 
 
 /** List of expected results */
-typedef LIST_HEAD(trc_exp_results, trc_exp_result) trc_exp_results;
+typedef SLIST_HEAD(trc_exp_results, trc_exp_result) trc_exp_results;
 
 
 /** Test iteration argument */

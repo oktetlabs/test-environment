@@ -55,7 +55,7 @@
 
 
 /** List of jump points */
-typedef LIST_HEAD(tapi_jmp_stack, tapi_jmp_point) tapi_jmp_stack;
+typedef SLIST_HEAD(tapi_jmp_stack, tapi_jmp_point) tapi_jmp_stack;
 
 /** Jumps context */
 typedef struct tapi_jmp_ctx {
@@ -82,9 +82,9 @@ tapi_jmp_ctx_free_garbage(tapi_jmp_ctx *ctx)
     tapi_jmp_point *p;
 
     assert(ctx != NULL);
-    while ((p = ctx->garbage.lh_first) != NULL)
+    while ((p = SLIST_FIRST(&ctx->garbage)) != NULL)
     {
-        LIST_REMOVE(p, links);
+        SLIST_REMOVE(&ctx->garbage, p, tapi_jmp_point, links);
         free(p);
     }
 }
@@ -104,9 +104,9 @@ tapi_jmp_thread_ctx_destroy(void *handle)
         return;
 
     tapi_jmp_ctx_free_garbage(ctx);
-    while ((p = ctx->stack.lh_first) != NULL)
+    while ((p = SLIST_FIRST(&ctx->stack)) != NULL)
     {
-        LIST_REMOVE(p, links);
+        SLIST_REMOVE(&ctx->stack, p, tapi_jmp_point, links);
         ERROR("Jump point destructed: %s:%u", p->file, p->lineno);
         free(p);
     }
@@ -163,8 +163,8 @@ tapi_jmp_get_ctx(te_bool create)
         }
         else
         {
-            LIST_INIT(&ctx->stack);
-            LIST_INIT(&ctx->garbage);
+            SLIST_INIT(&ctx->stack);
+            SLIST_INIT(&ctx->garbage);
             if (pthread_setspecific(jmp_key, ctx) != 0)
             {
                 ERROR("%s(): pthread_setspecific() failed", __FUNCTION__);
@@ -198,7 +198,7 @@ tapi_jmp_push(const char *file, unsigned int lineno)
         ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, sizeof(*p));
         return NULL;
     }
-    LIST_INSERT_HEAD(&ctx->stack, p, links);
+    SLIST_INSERT_HEAD(&ctx->stack, p, links);
     p->file    = file;
     p->lineno  = lineno;
 
@@ -221,12 +221,12 @@ tapi_jmp_pop(const char *file, unsigned int lineno)
     }
     tapi_jmp_ctx_free_garbage(ctx);
 
-    if ((p = ctx->stack.lh_first) == NULL)
+    if ((p = SLIST_FIRST(&ctx->stack)) == NULL)
     {
         ERROR("%s(): Jumps stack is empty", __FUNCTION__);
         return TE_RC(TE_TAPI, TE_ENOENT);
     }
-    LIST_REMOVE(p, links);
+    SLIST_REMOVE(&ctx->stack, p, tapi_jmp_point, links);
 
     INFO("Remove jump point %s:%u at %s:%u",
          p->file, p->lineno, file, lineno);
@@ -262,18 +262,18 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
     }
     tapi_jmp_ctx_free_garbage(ctx);
 
-    if ((p = ctx->stack.lh_first) == NULL)
+    if ((p = SLIST_FIRST(&ctx->stack)) == NULL)
     {
         ERROR("%s(): Jumps stack is empty", __FUNCTION__);
         return TE_RC(TE_TAPI, TE_ENOENT);
     }
-    LIST_REMOVE(p, links);
+    SLIST_REMOVE(&ctx->stack, p, tapi_jmp_point, links);
 
     /* 
      * We can't free point here, since 'env' should be used
      * in the function which never returns.
      */
-    LIST_INSERT_HEAD(&ctx->garbage, p, links);
+    SLIST_INSERT_HEAD(&ctx->garbage, p, links);
 
     INFO("Jump from %s:%u to %s:%u rc=%r",
          file, lineno, p->file, p->lineno, (unsigned int)val);
@@ -291,5 +291,5 @@ tapi_jmp_stack_is_empty(void)
 
     ctx = tapi_jmp_get_ctx(FALSE);
 
-    return (ctx == NULL) || (ctx->stack.lh_first == NULL);
+    return (ctx == NULL) || SLIST_EMPTY(&ctx->stack);
 }

@@ -1184,7 +1184,7 @@ free_nlmsg_list(agt_nlmsg_list *list)
 {
     agt_nlmsg_entry *entry;
 
-    while ((entry = list->tqh_first) != NULL)
+    while ((entry = TAILQ_FIRST(list)) != NULL)
     {
         TAILQ_REMOVE(list, entry, links);
         free(entry);
@@ -1296,7 +1296,7 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
         return NULL;
     }
 
-    for (a = addr_list.tqh_first; a != NULL; a = a->links.tqe_next)
+    TAILQ_FOREACH(a, &addr_list, links)
     {
         n = a->hdr;
         ifa = NLMSG_DATA(n);
@@ -2801,9 +2801,9 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    for (a = addr_list.tqh_first, cur_family = AF_INET, cur_ptr = *list;
-         a != NULL;
-         a = a->links.tqe_next)
+    cur_family = AF_INET;
+    cur_ptr = *list;
+    TAILQ_FOREACH(a, &addr_list, links)
     {
         struct nlmsghdr  *hdr = a->hdr;
         struct ifaddrmsg *ifa = NLMSG_DATA(hdr);
@@ -3678,9 +3678,7 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
         goto on_error;
     }
 
-    for (a_aux = info_list.tqh_first;
-         a_aux != NULL;
-         a_aux = a_aux->links.tqe_next)
+    TAILQ_FOREACH(a_aux, &info_list, links)
     {
         n_aux = a_aux->hdr;
         len = n_aux->nlmsg_len;
