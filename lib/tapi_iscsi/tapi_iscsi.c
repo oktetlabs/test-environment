@@ -273,7 +273,9 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
     asn_value *pattern = NULL;
     struct iscsi_data_message msg;
 
-    int rc = 0, syms, num;
+    te_errno        rc;
+    int             syms;
+    unsigned int    num;
 
     if (ta_name == NULL)
         return TE_EWRONGPTR;
