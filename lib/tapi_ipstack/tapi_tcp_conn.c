@@ -261,20 +261,20 @@ tapi_tcp_clear_msg(tapi_tcp_connection_t *conn_descr)
 static inline int
 tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 { 
+    te_errno        rc;
+    unsigned int    num;
+
     tapi_tcp_conns_db_init();
-    int num;
 
     if (conn_descr == NULL || conn_descr == (void *)conns_root)
         return 0;
 
-
     if (conn_descr->rcv_csap != CSAP_INVALID_HANDLE)
     {
-        int rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->rcv_sid,
-                                    conn_descr->rcv_csap,
-                                    tcp_conn_pkt_handler, conn_descr,
-                                    &num);
-
+        rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->rcv_sid,
+                                conn_descr->rcv_csap,
+                                tcp_conn_pkt_handler, conn_descr,
+                                &num);
         if (rc != 0)
         {
             WARN("%s(conn %d): rcv CSAP %d on agt %s stop failed %r",
@@ -298,8 +298,8 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 
     if (conn_descr->snd_csap != CSAP_INVALID_HANDLE)
     {
-        int rc = rcf_ta_csap_destroy(conn_descr->agt, conn_descr->snd_sid,
-                                     conn_descr->snd_csap);
+        rc = rcf_ta_csap_destroy(conn_descr->agt, conn_descr->snd_sid,
+                                 conn_descr->snd_csap);
         if (rc != 0)
         {
             WARN("%s(conn %d): snd CSAP %d on agt %s destroy failed %r", 
@@ -314,11 +314,10 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 
     if (conn_descr->arp_csap != CSAP_INVALID_HANDLE)
     {
-        int rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->arp_sid,
-                                    conn_descr->arp_csap,
-                                    tcp_conn_pkt_handler, conn_descr,
-                                    &num);
-
+        rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->arp_sid,
+                                conn_descr->arp_csap,
+                                tcp_conn_pkt_handler, conn_descr,
+                                &num);
         if (rc != 0)
         {
             WARN("%s(id %d): arp CSAP %d on agt %s stop failed %r",
