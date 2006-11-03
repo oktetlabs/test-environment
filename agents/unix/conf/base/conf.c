@@ -2145,7 +2145,7 @@ mcast_link_addr_change(const char *ifname, const char *addr, int op)
     strncpy(request.ifr_name, ifname, IFNAMSIZ);
     /* Read MAC address */
 #ifdef HAVE_STRUCT_IFREQ_IFR_HWADDR        
-    q = request.ifr_hwaddr.sa_data;
+    q = (uint8_t *)request.ifr_hwaddr.sa_data;
 #elif HAVE_STRUCT_IFREQ_IFR_ENADDR
     q = (uint8_t *)request.ifr_enaddr;
 #else
