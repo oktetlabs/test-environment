@@ -364,9 +364,9 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 static inline int
 conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
 {
-    int rc;
-    int num = 0;
-    tapi_tcp_pos_t seq;
+    te_errno        rc;
+    unsigned int    num = 0;
+    tapi_tcp_pos_t  seq;
 
     if (conn_descr == NULL)
         return TE_EINVAL;
