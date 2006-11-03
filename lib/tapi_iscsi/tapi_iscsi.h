@@ -306,7 +306,8 @@ extern int tapi_iscsi_send_pkt_last(const char   *ta_name,
 extern int tapi_iscsi_forward_all(const char *ta_name, int session,
                                   csap_handle_t csap_rcv,
                                   csap_handle_t csap_fwd,
-                                  unsigned int timeout, int *forwarded);
+                                  unsigned int timeout,
+                                  unsigned int *forwarded);
 
 
 /**

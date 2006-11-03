@@ -2287,9 +2287,10 @@ tapi_iscsi_get_param_map(const char *param)
 int
 tapi_iscsi_forward_all(const char *ta_name, int session,
                        csap_handle_t csap_rcv, csap_handle_t csap_fwd,
-                       unsigned int timeout, int *forwarded)
+                       unsigned int timeout, unsigned int *forwarded)
 {
-    int rc, syms;
+    te_errno    rc;
+    int         syms;
 
     asn_value *pattern;
     rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
