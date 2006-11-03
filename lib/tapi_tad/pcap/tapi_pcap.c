@@ -193,7 +193,7 @@ tapi_pcap_pkt_handler(asn_value *frame_val, void *user_param)
     asn_free_value(pcap_filtered_pdu);
 }
 
-/* See description in tapi_eth.h */
+/* See description in tapi_pcap.h */
 tapi_tad_trrecv_cb_data *
 tapi_pcap_trrecv_cb_data(tapi_pcap_recv_callback  callback,
                          void                    *user_data)

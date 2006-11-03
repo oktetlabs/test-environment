@@ -23,7 +23,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: tapi_arp.c 20870 2005-11-14 13:04:46Z arybchik $
+ * $Id$
  */ 
 
 #define TE_LGR_USER     "TAPI ATM"

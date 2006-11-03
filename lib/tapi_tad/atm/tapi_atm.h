@@ -23,7 +23,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: tapi_arp.h 20428 2005-11-01 18:54:10Z arybchik $
+ * $Id$
  */ 
 
 #ifndef __TE_TAPI_ATM_H__
