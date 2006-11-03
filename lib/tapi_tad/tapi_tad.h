@@ -349,7 +349,8 @@ extern int tapi_tad_forward_all(const char *ta_name, int session,
                                 csap_handle_t csap_rcv,
                                 csap_handle_t csap_fwd,
                                 asn_value *pattern,
-                                unsigned int timeout, int *forwarded);
+                                unsigned int timeout,
+                                csap_handle_t *forwarded);
 
 /**
  * Add socket layer over existing file descriptor in CSAP specification.
