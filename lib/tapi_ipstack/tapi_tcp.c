@@ -519,17 +519,6 @@ cleanup:
 
 
 
-/* See description in tapi_tcp.h */
-te_errno
-tapi_tcp_forward_all(const char *ta_name, int session,
-                     csap_handle_t csap_rcv, csap_handle_t csap_fwd,
-                     unsigned int timeout, unsigned int *forwarded)
-{
-    return tapi_tad_forward_all(ta_name, session, csap_rcv, csap_fwd, 
-                                pattern, timeout, forwarded);
-}
-
-
 int
 tapi_tcp_reset_hack_init(const char *ta_name, int session,
                          const char *iface, te_bool dir_out,
