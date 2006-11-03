@@ -371,9 +371,9 @@ tad_atm_gen_bin_cb(csap_p                csap,
     tad_atm_proto_data     *proto_data;
     tad_atm_proto_pdu_data *tmpl_data = opaque;
 
-    te_errno    rc;
-    uint8_t     header[ATM_HEADER_LEN];
-    size_t      bitoff = 0;
+    te_errno        rc;
+    uint8_t         header[ATM_HEADER_LEN];
+    unsigned int    bitoff = 0;
 
     UNUSED(tmpl_pdu);
 

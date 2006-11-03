@@ -342,9 +342,9 @@ tad_aal5_gen_bin_cb(csap_p                csap,
     tad_aal5_proto_tmpl_data   *tmpl_data = opaque;
     tad_aal5_prepare_pdus_data  cb_data;
 
-    te_errno    rc;
-    uint8_t     trailer[AAL5_TRAILER_LEN];
-    size_t      bitoff = 0;
+    te_errno        rc;
+    uint8_t         trailer[AAL5_TRAILER_LEN];
+    unsigned int    bitoff = 0;
 
     UNUSED(tmpl_pdu);
 
