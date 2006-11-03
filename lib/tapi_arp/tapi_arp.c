@@ -273,7 +273,7 @@ tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
 
     if (rc != 0 || info.rc != 0)
     {
-        int i;
+        unsigned int i;
         
         ERROR("rcf_ta_trrecv_wait() returns %X, info.rc %r", rc, info.rc);
         for (i = 0; i < info.num; i++)
