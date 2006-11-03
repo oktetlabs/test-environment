@@ -387,8 +387,8 @@ tapi_iscsi_recv_polled_pkt(rcf_trpoll_csap *the_csap,
                            uint8_t *buffer, 
                            size_t  *length)
 {
-    int rc;
-    int num;
+    te_errno        rc;
+    unsigned int    num;
 
     struct iscsi_data_message msg;
 
@@ -447,7 +447,8 @@ tapi_iscsi_send_pkt(const char *ta_name, int sid, csap_handle_t csap,
 {
     asn_value *template = NULL;
 
-    int rc = 0, syms;
+    te_errno    rc;
+    int         syms;
 
     if (ta_name == NULL || socket == NULL)
         return TE_EWRONGPTR;
@@ -491,7 +492,8 @@ tapi_iscsi_send_pkt_last(const char   *ta_name, int sid,
 {
     asn_value *template = NULL;
 
-    int rc = 0, syms;
+    te_errno    rc;
+    int         syms;
 
     if (ta_name == NULL || socket == NULL)
         return TE_EWRONGPTR;
