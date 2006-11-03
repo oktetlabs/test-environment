@@ -432,7 +432,7 @@ tapi_tad_trrecv_pkt_handler(const char *filename, void *my_data)
     }
 }
 
-/* See the description in tapi_eth.h */
+/* See the description in tapi_tad.h */
 tapi_tad_trrecv_cb_data *
 tapi_tad_trrecv_make_cb_data(tapi_tad_trrecv_cb  callback,
                              void               *user_data)
