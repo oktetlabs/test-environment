@@ -686,7 +686,8 @@ int
 tapi_tcp_reset_hack_catch(const char *ta_name, int session,
                           tapi_tcp_reset_hack_t *context)
 {
-    int syn_ack_num = 0;
+    unsigned int syn_ack_num = 0;
+
     if (context == NULL)
     {
         ERROR("%s(): null context passed", __FUNCTION__);
