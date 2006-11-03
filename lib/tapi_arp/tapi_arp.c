@@ -195,8 +195,8 @@ tapi_arp_trrecv_cb_data(tapi_arp_frame_callback  callback,
 
 typedef struct arp_frame_cb_info {
     tapi_arp_frame_t *frames;
-    int               num;
-    int               rc;
+    unsigned int      num;
+    te_errno          rc;
 } arp_frame_cb_info_t;
 
 static void
@@ -246,11 +246,11 @@ arp_frame_callback(const tapi_arp_frame_t *arp_frame, void *userdata)
 int
 tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
               const asn_value *pattern, unsigned int timeout,
-              tapi_arp_frame_t **frames, int *num)
+              tapi_arp_frame_t **frames, unsigned int *num)
 {
     int                 rc;
     arp_frame_cb_info_t info;
-    int                 num_tmp;
+    unsigned int        num_tmp;
     
     if (frames == NULL || num == NULL)
         return TE_EINVAL;
@@ -284,7 +284,7 @@ tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
 
         return (rc != 0) ? rc : info.rc;
     }
-    WARN("info.num = %d, num_tmp = %d", info.num, num_tmp);
+    WARN("info.num = %d, num_tmp = %u", info.num, num_tmp);
     
     assert(info.num == num_tmp);
 

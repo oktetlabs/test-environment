@@ -406,7 +406,8 @@ extern te_errno tapi_arp_recv(const char *ta_name, int sid,
                               csap_handle_t arp_csap,
                               const asn_value *pattern,
                               unsigned int timeout,
-                              tapi_arp_frame_t **frames, int *num);
+                              tapi_arp_frame_t **frames,
+                              unsigned int *num);
 
 
 #endif /* __TE_TAPI_ARP_H__ */
