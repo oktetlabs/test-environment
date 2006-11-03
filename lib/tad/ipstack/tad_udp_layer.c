@@ -227,7 +227,7 @@ tad_udp_gen_bin_cb_per_pdu(tad_pkt *pdu, void *hdr)
 
     /* Set correct length in the header template */
     tmp = htons(len);
-    memcpy(hdr + 6, &tmp, 2);
+    memcpy(hdr + 4, &tmp, 2);
 
     /* Copy header template to packet */
     assert(seg->data_ptr != NULL);
