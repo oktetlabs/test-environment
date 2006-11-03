@@ -551,7 +551,7 @@ int
 tapi_tad_forward_all(const char *ta_name, int session,
                      csap_handle_t csap_rcv, csap_handle_t csap_fwd,
                      asn_value *pattern, 
-                     unsigned int timeout, csap_handle_t *forwarded)
+                     unsigned int timeout, unsigned int *forwarded)
 {
     int rc;
 
