@@ -951,7 +951,7 @@ prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
     {
         cfg_handle      handle;
         char           *node_oid;
-        int             ip_addrs_num;
+        unsigned int    ip_addrs_num;
         cfg_handle     *ip_addrs;
         cfg_val_type    val_type;
 
@@ -978,7 +978,7 @@ prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
             free(node_oid);
             return rc;
         }
-        if (ip_addrs_num <= 0)
+        if (ip_addrs_num == 0)
         {
             ERROR("No IP%u addresses are assigned to node '%s'",
                   af == AF_INET ? 4 : 6, node_oid);
@@ -1069,7 +1069,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
                 }
 
                 rc = tapi_cfg_base_if_get_mac(str,
-                                              env_addr->addr->sa_data);
+                         (uint8_t *)env_addr->addr->sa_data);
                 if (rc != 0)
                 {
                     ERROR("Failed to get link layer address of '%s': %r",
