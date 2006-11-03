@@ -315,7 +315,9 @@ tad_snmp_rw_init_cb(csap_p csap)
     ndn_snmp_auth_proto_t       auth_proto;
 
     uint8_t const              *auth_pass = NULL;
+    int                         auth_pass_len;
     uint8_t const              *priv_pass = NULL;
+    int                         priv_pass_len;
     char                        security_name[SNMP_MAX_SEC_NAME_SIZE + 1];
     size_t                      security_name_len;
 
@@ -441,7 +443,7 @@ tad_snmp_rw_init_cb(csap_p csap)
         }
 
         csap_session.securityModel = SNMP_SEC_MODEL_SNMPv2c;
-        csap_session.community = community;
+        csap_session.community = (u_char *)community;
         csap_session.community_len = strlen(community);
     }
 
@@ -539,13 +541,21 @@ tad_snmp_rw_init_cb(csap_p csap)
                       __FUNCTION__, rc);
                 return rc;
             }
+            auth_pass_len = asn_get_length(snmp_csap_spec,
+                                           "security.#usm.auth-pass");
+            if (auth_pass_len < 0)
+            {
+                ERROR("%s: asn_get_length() failed unexpectedly",
+                      __FUNCTION__);
+                return TE_RC(TE_TAD_CSAP, TE_EFAULT);
+            }
 
             /* Key generation */
             csap_session.securityAuthKeyLen = 
                 sizeof(csap_session.securityAuthKey);
             if (generate_Ku(csap_session.securityAuthProto,
                             csap_session.securityAuthProtoLen,
-                            (unsigned char *)auth_pass, strlen(auth_pass),
+                            (unsigned char *)auth_pass, auth_pass_len,
                             csap_session.securityAuthKey,
                             &csap_session.securityAuthKeyLen)
                     != SNMPERR_SUCCESS)
@@ -611,13 +621,21 @@ tad_snmp_rw_init_cb(csap_p csap)
                       __FUNCTION__, rc);
                 return rc;
             }
+            priv_pass_len = asn_get_length(snmp_csap_spec,
+                                           "security.#usm.priv-pass");
+            if (priv_pass_len < 0)
+            {
+                ERROR("%s: asn_get_length() failed unexpectedly",
+                      __FUNCTION__);
+                return TE_RC(TE_TAD_CSAP, TE_EFAULT);
+            }
 
             /* Key generation */
             csap_session.securityPrivKeyLen =
                 sizeof(csap_session.securityPrivKey);
             if (generate_Ku(csap_session.securityAuthProto,
                             csap_session.securityAuthProtoLen,
-                            (unsigned char *)priv_pass, strlen(priv_pass),
+                            (unsigned char *)priv_pass, priv_pass_len,
                             csap_session.securityPrivKey,
                             &csap_session.securityPrivKeyLen)
                     != SNMPERR_SUCCESS)
