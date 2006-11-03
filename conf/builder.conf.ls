@@ -10,8 +10,7 @@ TE_PLATFORM([], [], [], [], [], \
             [tools logic_expr ipc bsapi loggerten rpcxdr rpc_types \
              rcfapi conf_oid confapi tapi comm_net_engine rcfunix \
              loggerta comm_net_agent rcfpch rcfrpc tce asn ndn \
-             tapi_rpc tapi_env tapi_tad tapi_eth tapi_bridge tapi_arp \
-             tapi_ipstack tapi_dhcp tapi_snmp tapi_cli tapi_iscsi tad \
+             tapi_rpc tapi_env tapi_tad tad \
              iscsi_unh_target iscsi_initiator_conf])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [], [])
