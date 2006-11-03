@@ -653,24 +653,22 @@ get_bool_prop(xmlNodePtr node, const char *name, te_bool *value)
  *
  * @param node      Node with 'int' property
  * @param name      Name of the property to get
- * @param is_signed Is signed value expected
  * @param value     Location for value
  *
  * @return Status code.
  * @retval TE_ENOENT    Property does not exists. Value is not modified.
  */
 static te_errno
-get_int_prop(xmlNodePtr node, const char *name, te_bool is_signed,
-             int *value)
+get_uint_prop(xmlNodePtr node, const char *name, unsigned int *value)
 {
-    xmlChar *s = xmlGetProp(node, CONST_CHAR2XML(name));
-    long     v;
-    char    *end;
+    xmlChar        *s = xmlGetProp(node, CONST_CHAR2XML(name));
+    unsigned long   v;
+    char           *end;
 
     if (s == NULL)
         return TE_RC(TE_TESTER, TE_ENOENT);
 
-    v = strtol(XML2CHAR(s), &end, 10);
+    v = strtoul(XML2CHAR(s), &end, 10);
     if (XML2CHAR(s) == end)
     {
         ERROR("Invalid value '%s' of the integer property '%s'",
@@ -679,12 +677,6 @@ get_int_prop(xmlNodePtr node, const char *name, te_bool is_signed,
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
     xmlFree(s);
-    if (!is_signed && v < 0)
-    {
-        ERROR("Attribute '%s' may have unsigned integer value, "
-              "but signed is specified (%d)", name, v);
-        return TE_RC(TE_TESTER, TE_EINVAL);
-    }
     *value = v;
 
     return 0;
@@ -703,11 +695,11 @@ static te_errno
 get_handdown_attr(xmlNodePtr node, const char *name,
                   tester_handdown *value)
 {
-    char *s;
+    xmlChar *s;
 
     /* 'handdown' is optional */
     *value = TESTER_HANDDOWN_DEF;
-    s = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML(name)));
+    s = xmlGetProp(node, CONST_CHAR2XML(name));
     if (s != NULL)
     {
         if (xmlStrcmp(s, CONST_CHAR2XML("none")) == 0)
@@ -837,9 +829,9 @@ get_requirements(xmlNodePtr *node, test_requirements *reqs,
 static te_errno
 get_test_attrs(xmlNodePtr node, test_attrs *attrs)
 {
-    te_errno    rc;
-    int         timeout;
-    char       *s;
+    te_errno        rc;
+    unsigned int    timeout;
+    xmlChar        *s;
 
     /* Main session of the test package is not direct run item */
     if (attrs == NULL)
@@ -849,7 +841,7 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
 
     /* 'timeout' is optional */
     timeout = TESTER_TIMEOUT_DEF;
-    rc = get_int_prop(node, "timeout", FALSE, &timeout);
+    rc = get_uint_prop(node, "timeout", &timeout);
     if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
         return rc;
     attrs->timeout.tv_sec = timeout;
@@ -857,7 +849,7 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
 
     /* 'track_conf' is optional, default value is 'yes' */
     attrs->track_conf = TESTER_TRACK_CONF_UNSPEC;
-    s = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("track_conf")));
+    s = xmlGetProp(node, CONST_CHAR2XML("track_conf"));
     if (s != NULL)
     {
         if (xmlStrcmp(s, CONST_CHAR2XML("yes")) == 0)
@@ -1035,9 +1027,9 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
     TAILQ_INSERT_TAIL(&values->head, p, links);
     
     /* 'name' is optional */
-    p->name = xmlGetProp(node, CONST_CHAR2XML("name"));
+    p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
     /* 'type' is optional */
-    tmp = xmlGetProp(node, CONST_CHAR2XML("type"));
+    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("type")));
     if (tmp != NULL)
     {
         /* Allow to override type specified for all values */
@@ -1061,7 +1053,7 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
     VERB("%s(): New value '%s' of type '%s'", __FUNCTION__,
          p->name, p->type == NULL ? "" : p->type->name);
     /* 'ref' is optional */
-    tmp = xmlGetProp(node, CONST_CHAR2XML("ref"));
+    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("ref")));
     if (tmp != NULL)
     {
         /*
@@ -1088,7 +1080,7 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
         }
     }
     /* 'reqs' is optional */
-    tmp = xmlGetProp(node, CONST_CHAR2XML("reqs"));
+    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("reqs")));
     if (tmp != NULL)
     {
         char       *s = tmp;
@@ -1665,7 +1657,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         VERB("Preprocessing 'run' item '%s'", p->name ? : "(noname)");
 
         /* 'iterate' is optional */
-        rc = get_int_prop(node, "iterate", FALSE, &p->iterate);
+        rc = get_uint_prop(node, "iterate", &p->iterate);
         if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
             return rc;
     }
@@ -1679,7 +1671,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
 
     /* 'loglevel' is optional */
     p->loglevel = 0;
-    rc = get_int_prop(node, "loglevel", FALSE, &p->loglevel);
+    rc = get_uint_prop(node, "loglevel", &p->loglevel);
     if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
         return rc;
 

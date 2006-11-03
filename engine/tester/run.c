@@ -848,7 +848,7 @@ tester_test_status_to_te_test_result(tester_test_status status,
 static te_errno
 run_test_script(test_script *script, test_id exec_id,
                 const unsigned int n_args, const test_iter_arg *args,
-                const unsigned int flags, te_test_status *status)
+                const unsigned int flags, tester_test_status *status)
 {
     int         ret;
     char       *params_str = NULL;
