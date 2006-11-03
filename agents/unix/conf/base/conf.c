@@ -3338,26 +3338,31 @@ link_addr_n2a(unsigned char *addr, int alen,
 #if defined(SIOCSIFHWADDR) || defined(SIOCSIFHWBROADCAST) || \
     defined(HAVE_SYS_DLPI_H)
 static int
-link_addr_a2n(uint8_t *lladdr, int len, char *str)
+link_addr_a2n(uint8_t *lladdr, int len, const char *str)
 {
-    char *arg = str;
-    int i;
+    const char *arg = str;
+    int         i;
 
     for (i = 0; i < len; i++)
     {
         unsigned int  temp;
         char         *cp = strchr(arg, ':');
-        if (cp)
-        {
-            *cp = 0;
-            cp++;
-        }
+
+        if (cp != NULL)
+            *cp = '\0';
+
         if (sscanf(arg, "%x", &temp) != 1)
         {
             ERROR("%s: \"%s\" is invalid lladdr",
                   __FUNCTION__, arg);
+            if (cp != NULL)
+                *cp = ':';
             return -1;
         }
+
+        if (cp != NULL)
+            *cp = ':';
+
         if (temp > 255)
         {
             ERROR("%s:\"%s\" is invalid lladdr",
@@ -3366,9 +3371,11 @@ link_addr_a2n(uint8_t *lladdr, int len, char *str)
         }
 
         lladdr[i] = (uint8_t)temp;
-        if (!cp)
+
+        if (cp == NULL)
             break;
-        arg = cp;
+
+        arg = ++cp;
     }
     return i + 1;
 }
@@ -3514,7 +3521,7 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
     strcpy(req.my_ifr_name, ifname);
     req.my_ifr_hwaddr.sa_family = AF_LOCAL;
 
-    if ((rc = link_addr_a2n(req.my_ifr_hwaddr.sa_data,
+    if ((rc = link_addr_a2n((uint8_t *)req.my_ifr_hwaddr.sa_data,
                             ETHER_ADDR_LEN, aux)) == -1)
     {
         ERROR("%s: Link layer address conversation issue", __FUNCTION__);
@@ -3577,8 +3584,8 @@ bcast_link_addr_set(unsigned int gid, const char *oid,
     strcpy(req.my_ifr_name, ifname);
     req.my_ifr_hwaddr.sa_family = AF_LOCAL;
 
-    if ((rc = link_addr_a2n(req.my_ifr_hwaddr.sa_data, 6,
-                            (char *)value)) == -1)
+    if ((rc = link_addr_a2n((uint8_t *)req.my_ifr_hwaddr.sa_data, 6,
+                            value)) == -1)
     {
         ERROR("%s: Link layer address conversation issue", __FUNCTION__);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
