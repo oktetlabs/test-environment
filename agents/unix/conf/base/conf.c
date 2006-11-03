@@ -3411,7 +3411,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     strcpy(req.my_ifr_name, ifname);
     CFG_IOCTL(cfg_socket, SIOCGIFHWADDR, &req);
 
-    ptr = req.my_ifr_hwaddr.sa_data;
+    ptr = (const uint8_t *)req.my_ifr_hwaddr.sa_data;
 
 #elif HAVE_SYS_DLPI_H
     do {
