@@ -141,6 +141,7 @@ stdlib.h \
 string.h \
 strings.h \
 stropts.h \
+sys/cdefs.h \        
 sys/dlpi.h \        
 sys/errno.h \
 sys/ethernet.h \
