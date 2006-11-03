@@ -1086,8 +1086,8 @@ dhcpv4_message_capture(const char *ta_name, csap_handle_t dhcp_csap,
                        unsigned int *timeout)
 {
     struct dhcp_message *msg;
-    int                  num = 0;
-    int                  rc;
+    unsigned int         num = 0;
+    te_errno             rc;
     unsigned int         tv = *timeout;
 
     assert(timeout != NULL);
