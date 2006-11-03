@@ -139,7 +139,8 @@ extern int tapi_csap_param_get_timestamp(const char *ta_name, int ta_sid,
  */
 extern int tapi_tad_csap_create(const char *ta_name, int session,
                                 const char *stack_id, 
-                                const asn_value *csap_spec, int *handle);
+                                const asn_value *csap_spec,
+                                csap_handle_t *handle);
 
 /**
  * Destroys CSAP (communication service access point) on the Test Agent.
