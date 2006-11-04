@@ -850,10 +850,11 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         msg->rtm_msglen += addrlen;
 
         memcpy(addr, &rt_info->src, addrlen);
-        
-        addr = SA(((const uint8_t *)addr) + addrlen);
+
         msg->rtm_addrs |= RTA_SRC;        
         msg->rtm_flags |= RTF_SETSRC;
+        
+        addr = SA(((const uint8_t *)addr) + addrlen);
     }
 #endif    
 
