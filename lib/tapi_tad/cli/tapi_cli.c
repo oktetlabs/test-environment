@@ -219,8 +219,9 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
     len += snprintf(buf + len, buf_size - len,
-                    "{ cli : { conn-type %d,"
-                    "          conn-params serial : { device plain : \"%s\" }",
+                    "{ layers { cli : { conn-type %d,"
+                    "          conn-params serial : "
+                    "{ device plain : \"%s\" }",
                     type, device);
 
     len += tapi_cli_csap_add_prompts(buf + len, buf_size - len,
@@ -230,7 +231,7 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
                                      password_prompt_type,
                                      password_prompt, password);
 
-    len += snprintf(buf + len, buf_size - len, " } }");
+    len += snprintf(buf + len, buf_size - len, " } } }");
 
     rc = tapi_cli_csap_create (ta_name, sid, buf, cli_csap);
     
@@ -289,7 +290,7 @@ tapi_cli_csap_remote_create(const char *ta_name, int sid,
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
     len += snprintf(buf + len, buf_size - len,
-                    "{ cli : { conn-type %d,"
+                    "{ layers { cli : { conn-type %d,"
                     "          conn-params telnet : { host plain : \"%s\","
                     "                                 port plain : %d }",
                     type, host, port);
@@ -301,7 +302,7 @@ tapi_cli_csap_remote_create(const char *ta_name, int sid,
                                      password_prompt_type,
                                      password_prompt, password);
 
-    len += snprintf(buf + len, buf_size - len, " } }");
+    len += snprintf(buf + len, buf_size - len, " } } }");
 
     rc = tapi_cli_csap_create (ta_name, sid, buf, cli_csap);
     
@@ -360,7 +361,7 @@ tapi_cli_csap_shell_create(const char *ta_name, int sid,
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
     len += snprintf(buf + len, buf_size - len,
-                    "{ cli : { conn-type %d,"
+                    "{ layers { cli : { conn-type %d,"
                     "          conn-params shell : { args plain : \"%s\" }",
                     type, shell_args);
 
@@ -371,7 +372,7 @@ tapi_cli_csap_shell_create(const char *ta_name, int sid,
                                      password_prompt_type,
                                      password_prompt, password);
 
-    len += snprintf(buf + len, buf_size - len, " } }");
+    len += snprintf(buf + len, buf_size - len, " } } }");
 
     rc = tapi_cli_csap_create (ta_name, sid, buf, cli_csap);
     
