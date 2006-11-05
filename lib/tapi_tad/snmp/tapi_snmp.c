@@ -718,7 +718,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
     if (f == NULL)
         return TE_OS_RC(TE_TAPI, errno); /* return system errno */
 
-    fprintf(f, "{ snmp:{ version plain:%d ",
+    fprintf(f, "{ layers { snmp:{ version plain:%d ",
              tapi_snmp_version_to_netsnmp_version(snmp_version)
              );
 
@@ -803,7 +803,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
     if (snmp_agent)
         fprintf(f, ", snmp-agent plain:\"%s\" ", snmp_agent);
 
-    fprintf(f,"}}\n");
+    fprintf(f,"}}}\n");
 
     fclose(f);
     
