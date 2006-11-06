@@ -75,7 +75,11 @@ tapi_udp_add_csap_layer(asn_value **csap_spec,
     asn_value  *layer;
 
     if (local_port > 0xffff || remote_port > 0xffff)
+    {
+        WARN("%s() EINVAL: local port %d, remote port %d", 
+             __FUNCTION__, local_port, remote_port);
         return TE_RC(TE_TAPI, TE_EINVAL);
+    }
 
     CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_udp_csap, "#udp",
                                      &layer));
@@ -135,6 +139,7 @@ tapi_udp_ip4_eth_csap_create(const char    *ta_name,
     if (rc != 0)
     {
         asn_free_value(csap_spec);
+        WARN("%s(): add UDP csap layer failed %r", __FUNCTION__, rc);
         return rc;
     }
 
@@ -145,6 +150,7 @@ tapi_udp_ip4_eth_csap_create(const char    *ta_name,
     if (rc != 0)
     {
         asn_free_value(csap_spec);
+        WARN("%s(): add IP4 csap layer failed %r", __FUNCTION__, rc);
         return rc;
     }
 
@@ -156,6 +162,7 @@ tapi_udp_ip4_eth_csap_create(const char    *ta_name,
     if (rc != 0)
     {
         asn_free_value(csap_spec);
+        WARN("%s(): add ETH csap layer failed %r", __FUNCTION__, rc);
         return rc;
     }
 
