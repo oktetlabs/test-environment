@@ -204,8 +204,11 @@ main(int argc, char *argv[])
                               cell + ATM_HEADER_LEN + useful, rest);
                 }
             }
-            else if (rest > AAL5_TRAILER_LEN)
+            else
             {
+                uint16_t len;
+
+                /* Check padding */
                 if (memcmp(idle, cell + ATM_HEADER_LEN + useful,
                            rest - AAL5_TRAILER_LEN) != 0)
                 {
@@ -213,12 +216,45 @@ main(int argc, char *argv[])
                               cell + ATM_HEADER_LEN + useful,
                               rest - AAL5_TRAILER_LEN);
                 }
+
+                /* Check Length field */
+                memcpy(&len, cell + ATM_CELL_LEN - 6, sizeof(len));
+                len = ntohs(len);
+                if (payload_len != len)
+                {
+                    TEST_FAIL("Unexpected length in CPCS-PDU trailer: "
+                              "%u vs expected %u", len, payload_len);
+                }
+
+                /* TODO: Check CRC-32 */
+
+                /* Check ATM-user-to-ATM-user indication */
+                if (~cell[3] & 2)
+                {
+                    TEST_FAIL("Missing ATM-user-to-ATM-user indication "
+                              "in the last ATM cell for CPCS-PDU");
+                }
             }
         }
 
         received += (r - ATM_HEADER_LEN);
 
+        if (received < payload_len + AAL5_TRAILER_LEN)
+        {
+            /* Check ATM-user-to-ATM-user indication */
+            if (cell[3] & 2)
+            {
+                TEST_FAIL("Unexpected ATM-user-to-ATM-user indication "
+                          "in the non-last ATM cell for CPCS-PDU");
+            }
+        }
+
         RPC_AWAIT_IUT_ERROR(pco_tst);
+    }
+
+    if (received < payload_len + AAL5_TRAILER_LEN)
+    {
+        TEST_FAIL("Not all ATM cells are received");
     }
 
     TEST_SUCCESS;
