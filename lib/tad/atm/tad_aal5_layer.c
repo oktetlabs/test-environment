@@ -34,6 +34,10 @@
 #include "config.h"
 #endif
 
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 #include "te_errno.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
@@ -244,6 +248,25 @@ tad_aal5_confirm_ptrn_cb(csap_p csap, unsigned int  layer,
 
 
 /**
+ * Calculate CRC-32 of the segment data.
+ *
+ * This function complies with tad_pkt_seg_enum_cb prototype.
+ */
+static te_errno
+tad_all5_crc32(const tad_pkt *pkt, tad_pkt_seg *seg,
+               unsigned int seg_num, void *opaque)
+{
+    uint32_t   *crc32 = opaque;
+
+    UNUSED(pkt);
+    UNUSED(seg_num);
+
+    *crc32 = calculate_crc32(*crc32, seg->data_ptr, seg->data_len);
+
+    return 0;
+}
+
+/**
  * Data for callback to prepare AAL5 PDUs.
  */
 typedef struct tad_aal5_prepare_pdus_data {
@@ -271,6 +294,8 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
     size_t                  pad_len;
     te_errno                rc;
     tad_atm_cell_ctrl_data *cell_ctrl;
+    uint16_t                len;
+    uint32_t                crc = 0;
 
     /* Remember actual length of the payload */
     assert(tad_pkt_len(pkt) >= AAL5_TRAILER_LEN);
@@ -297,10 +322,13 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
     /*
      * Write length of the payload to trailer
      */
-    /* TODO */
+    len = htons(pld_len);
+    memcpy((uint8_t *)trailer->data_ptr + 2, &len, sizeof(len));
 
     /* Calculate CRC and write it to trailer */
-    /* TODO: Implement CRC calculation */
+    (void)tad_pkt_enumerate_seg(pkt, tad_all5_crc32, &crc);
+    crc = htonl(~crc);
+    memcpy((uint8_t *)trailer->data_ptr + 4, &crc, sizeof(crc));
 
     /*
      * CPCS-PDU is ready for 'segmentation'
