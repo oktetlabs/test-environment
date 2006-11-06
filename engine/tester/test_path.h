@@ -68,13 +68,20 @@ typedef enum test_path_type {
     TEST_PATH_FAKE,
 } test_path_type;
 
+/** Style of the test path matching */
+typedef enum test_path_match {
+    TEST_PATH_EXACT,    /**< Exact match */
+    TEST_PATH_GLOB,     /**< Glob-style match */
+} test_path_match;
+
 
 /** Test argument with set of values */
 typedef struct test_path_arg {
     TAILQ_ENTRY(test_path_arg) links;   /**< List links */
 
-    char        *name;      /**< Parameter name */
-    tqh_strings  values;    /**< List of values */
+    char               *name;   /**< Parameter name */
+    test_path_match     match;  /**< Match style */
+    tqh_strings         values; /**< List of values */
 } test_path_arg;
 
 /** Element of the test path */

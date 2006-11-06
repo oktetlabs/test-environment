@@ -44,6 +44,9 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#if HAVE_FNMATCH_H
+#include <fnmatch.h>
+#endif
 
 #include "te_alloc.h"
 #include "logger_api.h"
@@ -352,7 +355,9 @@ typedef struct test_path_arg_value_cb_data {
     const test_path_proc_ctx   *ctx;    /**< Current test path
                                              processing context */
 
-    tqh_strings    *values; /**< Values specified by user */
+    test_path_arg  *path_arg;   /**< Test path argument with match
+                                     style and values */
+
     uint8_t        *bm;     /**< Argument bit mask */
     unsigned int    index;  /**< Index of the current argument value */
     te_bool         found;  /**< Is at least one matching value found? */
@@ -375,6 +380,7 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
     test_path_arg_value_cb_data *data = opaque;
     const char                  *plain;
     tqe_string                  *path_arg_value;
+    te_bool                      match;
 
     ENTRY("value=%s|%s index=%u found=%u",
           value->plain, value->ext, data->index, data->found);
@@ -401,9 +407,29 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
         }
     }
 
-    TAILQ_FOREACH(path_arg_value, data->values, links)
+    TAILQ_FOREACH(path_arg_value, &data->path_arg->values, links)
     {
-        if (strcmp(path_arg_value->v, plain) == 0)
+        switch (data->path_arg->match)
+        {
+            case TEST_PATH_EXACT:
+                match = (strcmp(path_arg_value->v, plain) == 0);
+                break;
+
+            case TEST_PATH_GLOB:
+#if HAVE_FNMATCH_H
+                match = (fnmatch(path_arg_value->v, plain,
+                                 FNM_NOESCAPE) == 0);
+#else
+                WARN("Glob-style matching is not supported");
+                match = FALSE;
+#endif
+                break;
+
+            default:
+                assert(FALSE);
+                match = FALSE;
+        }
+        if (match)
         {
             data->found = TRUE;
             bit_mask_set(data->bm, data->index);
@@ -512,7 +538,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
             }
 
             value_data.ctx = ctx;
-            value_data.values = &path_arg->values;
+            value_data.path_arg = path_arg;
             value_data.bm = arg_bm;
             value_data.index = 0;
             value_data.found = FALSE;

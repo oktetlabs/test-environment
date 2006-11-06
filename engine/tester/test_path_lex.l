@@ -103,6 +103,7 @@ extern int test_path_str_pos;
 "/"                     { return SLASH; }
 ":"                     { return COLON; }
 "="                     { return EQUAL; }
+"~="                    { return GLOB; }
 ","                     { return COMMA; }
 "{"                     { return OPEN; }
 "}"                     { return CLOSE; }

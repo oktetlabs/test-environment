@@ -196,7 +196,7 @@ test_path_new_arg_value(char *value)
     unsigned int    num;
 }
 
-%token SLASH COLON EQUAL COMMA OPEN CLOSE ITERATE SELECT STEP
+%token SLASH COLON EQUAL GLOB COMMA OPEN CLOSE ITERATE SELECT STEP
 %token <num> NUMBER
 %token <str> STRING
 
@@ -308,13 +308,31 @@ args:
     ;
 
 arg:
-    STRING EQUAL values
+    STRING arg_match values
     {
         VERB("arg=%s", $1);
         assert(item_arg != NULL);
         assert(item_arg->name == NULL);
         item_arg->name = $1;
         item_arg = NULL;
+    }
+    ;
+
+arg_match:
+    EQUAL
+    {
+        if (test_path_new_arg(NULL) != 0)
+            YYABORT;
+        assert(item_arg != NULL);
+        item_arg->match = TEST_PATH_EXACT;
+    }
+    |
+    GLOB
+    {
+        if (test_path_new_arg(NULL) != 0)
+            YYABORT;
+        assert(item_arg != NULL);
+        item_arg->match = TEST_PATH_GLOB;
     }
     ;
 
