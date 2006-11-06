@@ -119,7 +119,7 @@ Generic options:
         <testpath>      :=  / | <path-item> | <testpath>/<path-item>
         <path-item>     := <test-name>[:<args>][%<iter-select>][*<repeat>]
         <args>          := <arg>[,<args>]
-        <arg>           := <param-name>=<values>
+        <arg>           := <param-name>=<values> | <param-name>~=<values>
         <values>        := <value> | { <values-list> }
         <values-list>   := <value>[,<values-list>]
         <iter-select>   := <iter-number>[+<step>]
