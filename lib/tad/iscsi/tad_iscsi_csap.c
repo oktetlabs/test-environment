@@ -43,39 +43,39 @@
 
 static csap_spt_type_t iscsi_csap_spt = 
 {
-    proto               : "iscsi",
-    unregister_cb       : NULL,
+    .proto               = "iscsi",
+    .unregister_cb       = NULL,
 
-    init_cb             : tad_iscsi_init_cb,
-    destroy_cb          : tad_iscsi_destroy_cb,
-    get_param_cb        : tad_iscsi_get_param_cb,
+    .init_cb             = tad_iscsi_init_cb,
+    .destroy_cb          = tad_iscsi_destroy_cb,
+    .get_param_cb        = tad_iscsi_get_param_cb,
 
-    confirm_tmpl_cb     : NULL,
-    generate_pkts_cb    : tad_iscsi_gen_bin_cb,
-    release_tmpl_cb     : NULL,
+    .confirm_tmpl_cb     = NULL,
+    .generate_pkts_cb    = tad_iscsi_gen_bin_cb,
+    .release_tmpl_cb     = NULL,
 
-    confirm_ptrn_cb     : NULL,
-    match_pre_cb        : NULL,
-    match_do_cb         : tad_iscsi_match_bin_cb,
-    match_done_cb       : NULL,
-    match_post_cb       : NULL,
-    match_free_cb       : NULL,
-    release_ptrn_cb     : NULL,
+    .confirm_ptrn_cb     = NULL,
+    .match_pre_cb        = NULL,
+    .match_do_cb         = tad_iscsi_match_bin_cb,
+    .match_done_cb       = NULL,
+    .match_post_cb       = NULL,
+    .match_free_cb       = NULL,
+    .release_ptrn_cb     = NULL,
 
-    generate_pattern_cb : tad_iscsi_gen_pattern_cb,
+    .generate_pattern_cb = tad_iscsi_gen_pattern_cb,
 
-    rw_init_cb          : tad_iscsi_rw_init_cb,
-    rw_destroy_cb       : tad_iscsi_rw_destroy_cb,
+    .rw_init_cb          = tad_iscsi_rw_init_cb,
+    .rw_destroy_cb       = tad_iscsi_rw_destroy_cb,
 
-    prepare_send_cb     : NULL,
-    write_cb            : tad_iscsi_write_cb,
-    shutdown_send_cb    : NULL,
+    .prepare_send_cb     = NULL,
+    .write_cb            = tad_iscsi_write_cb,
+    .shutdown_send_cb    = NULL,
     
-    prepare_recv_cb     : NULL,
-    read_cb             : tad_iscsi_read_cb,
-    shutdown_recv_cb    : NULL,
+    .prepare_recv_cb     = NULL,
+    .read_cb             = tad_iscsi_read_cb,
+    .shutdown_recv_cb    = NULL,
 
-    write_read_cb       : NULL,
+    .write_read_cb       = NULL,
 };
 
 

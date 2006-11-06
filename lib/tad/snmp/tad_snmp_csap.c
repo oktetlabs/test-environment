@@ -46,39 +46,39 @@ static void tad_snmp_unregister_cb(void);
 
 static csap_spt_type_t snmp_csap_spt = 
 {
-    proto               : "snmp",
-    unregister_cb       : tad_snmp_unregister_cb,
+    .proto               = "snmp",
+    .unregister_cb       = tad_snmp_unregister_cb,
 
-    init_cb             : NULL,
-    destroy_cb          : NULL,
-    get_param_cb        : NULL,
+    .init_cb             = NULL,
+    .destroy_cb          = NULL,
+    .get_param_cb        = NULL,
 
-    confirm_tmpl_cb     : NULL,
-    generate_pkts_cb    : tad_snmp_gen_bin_cb,
-    release_tmpl_cb     : NULL,
+    .confirm_tmpl_cb     = NULL,
+    .generate_pkts_cb    = tad_snmp_gen_bin_cb,
+    .release_tmpl_cb     = NULL,
 
-    confirm_ptrn_cb     : NULL,
-    match_pre_cb        : NULL,
-    match_do_cb         : tad_snmp_match_bin_cb,
-    match_done_cb       : NULL,
-    match_post_cb       : NULL,
-    match_free_cb       : NULL,
-    release_ptrn_cb     : NULL,
+    .confirm_ptrn_cb     = NULL,
+    .match_pre_cb        = NULL,
+    .match_do_cb         = tad_snmp_match_bin_cb,
+    .match_done_cb       = NULL,
+    .match_post_cb       = NULL,
+    .match_free_cb       = NULL,
+    .release_ptrn_cb     = NULL,
 
-    generate_pattern_cb : tad_snmp_gen_pattern_cb,
+    .generate_pattern_cb = tad_snmp_gen_pattern_cb,
 
-    rw_init_cb          : tad_snmp_rw_init_cb,
-    rw_destroy_cb       : tad_snmp_rw_destroy_cb,
+    .rw_init_cb          = tad_snmp_rw_init_cb,
+    .rw_destroy_cb       = tad_snmp_rw_destroy_cb,
 
-    prepare_send_cb     : NULL,
-    write_cb            : tad_snmp_write_cb,
-    shutdown_send_cb    : tad_snmp_release_cb,
+    .prepare_send_cb     = NULL,
+    .write_cb            = tad_snmp_write_cb,
+    .shutdown_send_cb    = tad_snmp_release_cb,
     
-    prepare_recv_cb     : NULL,
-    read_cb             : tad_snmp_read_cb,
-    shutdown_recv_cb    : tad_snmp_release_cb,
+    .prepare_recv_cb     = NULL,
+    .read_cb             = tad_snmp_read_cb,
+    .shutdown_recv_cb    = tad_snmp_release_cb,
 
-    write_read_cb       : NULL, /* tad_common_write_read_cb */
+    .write_read_cb       = NULL, /* tad_common_write_read_cb */
 };
 
 

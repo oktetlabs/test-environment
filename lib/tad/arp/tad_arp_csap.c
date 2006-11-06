@@ -43,26 +43,26 @@
 
 static csap_spt_type_t arp_csap_spt = 
 {
-    proto               : "arp",
-    unregister_cb       : NULL,
+    .proto               = "arp",
+    .unregister_cb       = NULL,
 
-    init_cb             : tad_arp_init_cb,
-    destroy_cb          : tad_arp_destroy_cb,
-    get_param_cb        : NULL,
+    .init_cb             = tad_arp_init_cb,
+    .destroy_cb          = tad_arp_destroy_cb,
+    .get_param_cb        = NULL,
 
-    confirm_tmpl_cb     : tad_arp_confirm_tmpl_cb,
-    generate_pkts_cb    : tad_arp_gen_bin_cb,
-    release_tmpl_cb     : NULL,
+    .confirm_tmpl_cb     = tad_arp_confirm_tmpl_cb,
+    .generate_pkts_cb    = tad_arp_gen_bin_cb,
+    .release_tmpl_cb     = NULL,
 
-    confirm_ptrn_cb     : tad_arp_confirm_ptrn_cb,
-    match_pre_cb        : tad_arp_match_pre_cb,
-    match_do_cb         : tad_arp_match_do_cb,
-    match_done_cb       : NULL,
-    match_post_cb       : tad_arp_match_post_cb,
-    match_free_cb       : NULL,
-    release_ptrn_cb     : NULL,
+    .confirm_ptrn_cb     = tad_arp_confirm_ptrn_cb,
+    .match_pre_cb        = tad_arp_match_pre_cb,
+    .match_do_cb         = tad_arp_match_do_cb,
+    .match_done_cb       = NULL,
+    .match_post_cb       = tad_arp_match_post_cb,
+    .match_free_cb       = NULL,
+    .release_ptrn_cb     = NULL,
 
-    generate_pattern_cb : NULL,
+    .generate_pattern_cb = NULL,
 
     CSAP_SUPPORT_NO_RW,
 };

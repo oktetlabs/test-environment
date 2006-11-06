@@ -422,18 +422,18 @@ typedef struct csap_spt_type_t {
  * if layer does not provide read/write functions.
  */
 #define CSAP_SUPPORT_NO_RW \
-    rw_init_cb       : NULL,    \
-    rw_destroy_cb    : NULL,    \
+    .rw_init_cb       = NULL,   \
+    .rw_destroy_cb    = NULL,   \
                                 \
-    prepare_send_cb  : NULL,    \
-    write_cb         : NULL,    \
-    shutdown_send_cb : NULL,    \
+    .prepare_send_cb  = NULL,   \
+    .write_cb         = NULL,   \
+    .shutdown_send_cb = NULL,   \
                                 \
-    prepare_recv_cb  : NULL,    \
-    read_cb          : NULL,    \
-    shutdown_recv_cb : NULL,    \
+    .prepare_recv_cb  = NULL,   \
+    .read_cb          = NULL,   \
+    .shutdown_recv_cb = NULL,   \
                                 \
-    write_read_cb    : NULL
+    .write_read_cb    = NULL
 
 
 /**

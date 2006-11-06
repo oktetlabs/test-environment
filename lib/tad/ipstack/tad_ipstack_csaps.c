@@ -46,39 +46,39 @@
  */
 static csap_spt_type_t ip4_csap_spt = 
 {
-    proto               : "ip4",
-    unregister_cb       : NULL,
+    .proto               = "ip4",
+    .unregister_cb       = NULL,
 
-    init_cb             : tad_ip4_init_cb,
-    destroy_cb          : tad_ip4_destroy_cb,
-    get_param_cb        : NULL,
+    .init_cb             = tad_ip4_init_cb,
+    .destroy_cb          = tad_ip4_destroy_cb,
+    .get_param_cb        = NULL,
 
-    confirm_tmpl_cb     : tad_ip4_confirm_tmpl_cb,
-    generate_pkts_cb    : tad_ip4_gen_bin_cb,
-    release_tmpl_cb     : tad_ip4_release_pdu_cb,
+    .confirm_tmpl_cb     = tad_ip4_confirm_tmpl_cb,
+    .generate_pkts_cb    = tad_ip4_gen_bin_cb,
+    .release_tmpl_cb     = tad_ip4_release_pdu_cb,
 
-    confirm_ptrn_cb     : tad_ip4_confirm_ptrn_cb,
-    match_pre_cb        : tad_ip4_match_pre_cb,
-    match_do_cb         : tad_ip4_match_do_cb,
-    match_done_cb       : NULL,
-    match_post_cb       : tad_ip4_match_post_cb,
-    match_free_cb       : tad_ip4_release_pdu_cb,
-    release_ptrn_cb     : tad_ip4_release_pdu_cb,
+    .confirm_ptrn_cb     = tad_ip4_confirm_ptrn_cb,
+    .match_pre_cb        = tad_ip4_match_pre_cb,
+    .match_do_cb         = tad_ip4_match_do_cb,
+    .match_done_cb       = NULL,
+    .match_post_cb       = tad_ip4_match_post_cb,
+    .match_free_cb       = tad_ip4_release_pdu_cb,
+    .release_ptrn_cb     = tad_ip4_release_pdu_cb,
 
-    generate_pattern_cb : NULL,
+    .generate_pattern_cb = NULL,
 
-    rw_init_cb          : tad_ip4_rw_init_cb,
-    rw_destroy_cb       : tad_ip4_rw_destroy_cb,
+    .rw_init_cb          = tad_ip4_rw_init_cb,
+    .rw_destroy_cb       = tad_ip4_rw_destroy_cb,
 
-    prepare_send_cb     : NULL,
-    write_cb            : tad_ip4_write_cb,
-    shutdown_send_cb    : NULL,
+    .prepare_send_cb     = NULL,
+    .write_cb            = tad_ip4_write_cb,
+    .shutdown_send_cb    = NULL,
     
-    prepare_recv_cb     : NULL,
-    read_cb             : tad_ip4_read_cb,
-    shutdown_recv_cb    : NULL,
+    .prepare_recv_cb     = NULL,
+    .read_cb             = tad_ip4_read_cb,
+    .shutdown_recv_cb    = NULL,
 
-    write_read_cb       : tad_common_write_read_cb,
+    .write_read_cb       = tad_common_write_read_cb,
 };
 
 /**
@@ -86,26 +86,26 @@ static csap_spt_type_t ip4_csap_spt =
  */
 static csap_spt_type_t icmp4_csap_spt = 
 {
-    proto               : "icmp4",
-    unregister_cb       : NULL,
+    .proto               = "icmp4",
+    .unregister_cb       = NULL,
 
-    init_cb             : tad_icmp4_init_cb,
-    destroy_cb          : tad_icmp4_destroy_cb,
-    get_param_cb        : NULL,
+    .init_cb             = tad_icmp4_init_cb,
+    .destroy_cb          = tad_icmp4_destroy_cb,
+    .get_param_cb        = NULL,
 
-    confirm_tmpl_cb     : tad_icmp4_confirm_tmpl_cb,
-    generate_pkts_cb    : tad_icmp4_gen_bin_cb,
-    release_tmpl_cb     : tad_icmp4_release_pdu_cb,
+    .confirm_tmpl_cb     = tad_icmp4_confirm_tmpl_cb,
+    .generate_pkts_cb    = tad_icmp4_gen_bin_cb,
+    .release_tmpl_cb     = tad_icmp4_release_pdu_cb,
 
-    confirm_ptrn_cb     : tad_icmp4_confirm_ptrn_cb,
-    match_pre_cb        : tad_icmp4_match_pre_cb,
-    match_do_cb         : tad_icmp4_match_do_cb,
-    match_done_cb       : NULL,
-    match_post_cb       : tad_icmp4_match_post_cb,
-    match_free_cb       : tad_icmp4_release_pdu_cb,
-    release_ptrn_cb     : tad_icmp4_release_pdu_cb,
+    .confirm_ptrn_cb     = tad_icmp4_confirm_ptrn_cb,
+    .match_pre_cb        = tad_icmp4_match_pre_cb,
+    .match_do_cb         = tad_icmp4_match_do_cb,
+    .match_done_cb       = NULL,
+    .match_post_cb       = tad_icmp4_match_post_cb,
+    .match_free_cb       = tad_icmp4_release_pdu_cb,
+    .release_ptrn_cb     = tad_icmp4_release_pdu_cb,
 
-    generate_pattern_cb : NULL,
+    .generate_pattern_cb = NULL,
 
     CSAP_SUPPORT_NO_RW,
 };
@@ -115,26 +115,26 @@ static csap_spt_type_t icmp4_csap_spt =
  */
 static csap_spt_type_t udp_csap_spt = 
 {
-    proto               : "udp",
-    unregister_cb       : NULL,
+    .proto               = "udp",
+    .unregister_cb       = NULL,
 
-    init_cb             : tad_udp_init_cb,
-    destroy_cb          : tad_udp_destroy_cb,
-    get_param_cb        : NULL,
+    .init_cb             = tad_udp_init_cb,
+    .destroy_cb          = tad_udp_destroy_cb,
+    .get_param_cb        = NULL,
 
-    confirm_tmpl_cb     : tad_udp_confirm_tmpl_cb,
-    generate_pkts_cb    : tad_udp_gen_bin_cb,
-    release_tmpl_cb     : tad_udp_release_pdu_cb,
+    .confirm_tmpl_cb     = tad_udp_confirm_tmpl_cb,
+    .generate_pkts_cb    = tad_udp_gen_bin_cb,
+    .release_tmpl_cb     = tad_udp_release_pdu_cb,
 
-    confirm_ptrn_cb     : tad_udp_confirm_ptrn_cb,
-    match_pre_cb        : tad_udp_match_pre_cb,
-    match_do_cb         : tad_udp_match_do_cb,
-    match_done_cb       : NULL,
-    match_post_cb       : tad_udp_match_post_cb,
-    match_free_cb       : tad_udp_release_pdu_cb,
-    release_ptrn_cb     : tad_udp_release_pdu_cb,
+    .confirm_ptrn_cb     = tad_udp_confirm_ptrn_cb,
+    .match_pre_cb        = tad_udp_match_pre_cb,
+    .match_do_cb         = tad_udp_match_do_cb,
+    .match_done_cb       = NULL,
+    .match_post_cb       = tad_udp_match_post_cb,
+    .match_free_cb       = tad_udp_release_pdu_cb,
+    .release_ptrn_cb     = tad_udp_release_pdu_cb,
 
-    generate_pattern_cb : NULL,
+    .generate_pattern_cb = NULL,
 
     CSAP_SUPPORT_NO_RW,
 };
@@ -144,26 +144,26 @@ static csap_spt_type_t udp_csap_spt =
  */
 static csap_spt_type_t tcp_csap_spt = 
 {
-    proto               : "tcp",
-    unregister_cb       : NULL,
+    .proto               = "tcp",
+    .unregister_cb       = NULL,
 
-    init_cb             : tad_tcp_init_cb,
-    destroy_cb          : tad_tcp_destroy_cb,
-    get_param_cb        : tad_tcp_get_param_cb,
+    .init_cb             = tad_tcp_init_cb,
+    .destroy_cb          = tad_tcp_destroy_cb,
+    .get_param_cb        = tad_tcp_get_param_cb,
 
-    confirm_tmpl_cb     : tad_tcp_confirm_pdu_cb,
-    generate_pkts_cb    : tad_tcp_gen_bin_cb,
-    release_tmpl_cb     : NULL,
+    .confirm_tmpl_cb     = tad_tcp_confirm_pdu_cb,
+    .generate_pkts_cb    = tad_tcp_gen_bin_cb,
+    .release_tmpl_cb     = NULL,
 
-    confirm_ptrn_cb     : tad_tcp_confirm_pdu_cb,
-    match_pre_cb        : NULL,
-    match_do_cb         : tad_tcp_match_bin_cb,
-    match_done_cb       : NULL,
-    match_post_cb       : NULL,
-    match_free_cb       : NULL,
-    release_ptrn_cb     : NULL,
+    .confirm_ptrn_cb     = tad_tcp_confirm_pdu_cb,
+    .match_pre_cb        = NULL,
+    .match_do_cb         = tad_tcp_match_bin_cb,
+    .match_done_cb       = NULL,
+    .match_post_cb       = NULL,
+    .match_free_cb       = NULL,
+    .release_ptrn_cb     = NULL,
 
-    generate_pattern_cb : NULL,
+    .generate_pattern_cb = NULL,
 
     CSAP_SUPPORT_NO_RW,
 };

@@ -43,26 +43,26 @@
 
 static csap_spt_type_t bridge_csap_spt = 
 {
-    proto               : "bridge",
-    unregister_cb       : NULL,
+    .proto               = "bridge",
+    .unregister_cb       = NULL,
 
-    init_cb             : NULL,
-    destroy_cb          : NULL,
-    get_param_cb        : NULL,
+    .init_cb             = NULL,
+    .destroy_cb          = NULL,
+    .get_param_cb        = NULL,
 
-    confirm_tmpl_cb     : tad_bridge_confirm_tmpl_cb,
-    generate_pkts_cb    : tad_bridge_gen_bin_cb,
-    release_tmpl_cb     : NULL,
+    .confirm_tmpl_cb     = tad_bridge_confirm_tmpl_cb,
+    .generate_pkts_cb    = tad_bridge_gen_bin_cb,
+    .release_tmpl_cb     = NULL,
 
-    confirm_ptrn_cb     : tad_bridge_confirm_ptrn_cb,
-    match_pre_cb        : NULL,
-    match_do_cb         : tad_bridge_match_bin_cb,
-    match_done_cb       : NULL,
-    match_post_cb       : NULL,
-    match_free_cb       : NULL,
-    release_ptrn_cb     : NULL,
+    .confirm_ptrn_cb     = tad_bridge_confirm_ptrn_cb,
+    .match_pre_cb        = NULL,
+    .match_do_cb         = tad_bridge_match_bin_cb,
+    .match_done_cb       = NULL,
+    .match_post_cb       = NULL,
+    .match_free_cb       = NULL,
+    .release_ptrn_cb     = NULL,
 
-    generate_pattern_cb : NULL,
+    .generate_pattern_cb = NULL,
 
     CSAP_SUPPORT_NO_RW,
 };

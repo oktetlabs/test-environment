@@ -43,39 +43,39 @@
 
 static csap_spt_type_t eth_csap_spt =
 {
-    proto               : "eth",
-    unregister_cb       : NULL,
+    .proto               = "eth",
+    .unregister_cb       = NULL,
 
-    init_cb             : tad_eth_init_cb,
-    destroy_cb          : tad_eth_destroy_cb,
-    get_param_cb        : NULL,
+    .init_cb             = tad_eth_init_cb,
+    .destroy_cb          = tad_eth_destroy_cb,
+    .get_param_cb        = NULL,
 
-    confirm_tmpl_cb     : tad_eth_confirm_tmpl_cb,
-    generate_pkts_cb    : tad_eth_gen_bin_cb,
-    release_tmpl_cb     : tad_eth_release_pdu_cb,
+    .confirm_tmpl_cb     = tad_eth_confirm_tmpl_cb,
+    .generate_pkts_cb    = tad_eth_gen_bin_cb,
+    .release_tmpl_cb     = tad_eth_release_pdu_cb,
 
-    confirm_ptrn_cb     : tad_eth_confirm_ptrn_cb,
-    match_pre_cb        : tad_eth_match_pre_cb,
-    match_do_cb         : tad_eth_match_do_cb,
-    match_done_cb       : NULL,
-    match_post_cb       : tad_eth_match_post_cb,
-    match_free_cb       : tad_eth_release_pdu_cb,
-    release_ptrn_cb     : tad_eth_release_pdu_cb,
+    .confirm_ptrn_cb     = tad_eth_confirm_ptrn_cb,
+    .match_pre_cb        = tad_eth_match_pre_cb,
+    .match_do_cb         = tad_eth_match_do_cb,
+    .match_done_cb       = NULL,
+    .match_post_cb       = tad_eth_match_post_cb,
+    .match_free_cb       = tad_eth_release_pdu_cb,
+    .release_ptrn_cb     = tad_eth_release_pdu_cb,
 
-    generate_pattern_cb : NULL,
+    .generate_pattern_cb = NULL,
 
-    rw_init_cb          : tad_eth_rw_init_cb,
-    rw_destroy_cb       : tad_eth_rw_destroy_cb,
+    .rw_init_cb          = tad_eth_rw_init_cb,
+    .rw_destroy_cb       = tad_eth_rw_destroy_cb,
 
-    prepare_send_cb     : tad_eth_prepare_send,
-    write_cb            : tad_eth_write_cb,
-    shutdown_send_cb    : tad_eth_shutdown_send,
+    .prepare_send_cb     = tad_eth_prepare_send,
+    .write_cb            = tad_eth_write_cb,
+    .shutdown_send_cb    = tad_eth_shutdown_send,
     
-    prepare_recv_cb     : tad_eth_prepare_recv,
-    read_cb             : tad_eth_read_cb,
-    shutdown_recv_cb    : tad_eth_shutdown_recv,
+    .prepare_recv_cb     = tad_eth_prepare_recv,
+    .read_cb             = tad_eth_read_cb,
+    .shutdown_recv_cb    = tad_eth_shutdown_recv,
 
-    write_read_cb       : tad_common_write_read_cb,
+    .write_read_cb       = tad_common_write_read_cb,
 };
 
 
