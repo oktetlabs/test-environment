@@ -97,6 +97,7 @@ dlfcn.h \
 errno.h \
 expect.h \
 fcntl.h \
+fnmatch.h \
 glob.h \
 inet/mib2.h \
 inet/nd.h \
