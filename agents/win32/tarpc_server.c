@@ -3923,19 +3923,6 @@ TARPC_FUNC(ta_kill_death, {},
 )
 
 /*-------------- te_shell_cmd() --------------------------------*/
-TARPC_FUNC(te_shell_cmd,{},
-{
-    PROCESS_INFORMATION info;
-    STARTUPINFO         si;
-
-    if (in->uid != 0)
-        RING("%d is given as uid instead of 0. "
-             "It isn't supported in Windows", in->uid);
-
-    memset(&si, 0, sizeof(si));
-    memset(&info, 0, sizeof(info));
-    si.cb = sizeof(si);
-    
 /* This possibility has not been debugged yet */
 #if 0  
     if (in->in_fd || in->out_fd || in->err_fd)
@@ -3950,12 +3937,6 @@ TARPC_FUNC(te_shell_cmd,{},
     if (in->err_fd)
         si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 #endif
-
-    if (CreateProcess(NULL, in->cmd.cmd_val, NULL, NULL,
-                      TRUE, 0, NULL, NULL,
-                      &si, &info))
-    {
-        out->pid = info.dwProcessId;
 #if 0
         if (in->in_fd)
             out->in_fd = ((int *)(si.hStdInput));
@@ -3964,6 +3945,27 @@ TARPC_FUNC(te_shell_cmd,{},
         if (in->err_fd)
             out->err_fd = ((int *)(si.hStdError));
 #endif
+TARPC_FUNC(te_shell_cmd,{},
+{
+    PROCESS_INFORMATION info;
+    STARTUPINFO         si;
+
+    if (in->uid != 0)
+        RING("%d is given as uid instead of 0. "
+             "It isn't supported in Windows", in->uid);
+
+    memset(&si, 0, sizeof(si));
+    memset(&info, 0, sizeof(info));
+    si.cb = sizeof(si);
+    
+    /* INSERT content of the first #if 0 here */
+
+    if (CreateProcess(NULL, in->cmd.cmd_val, NULL, NULL,
+                      TRUE, 0, NULL, NULL,
+                      &si, &info))
+    {
+        out->pid = info.dwProcessId;
+        /* INSERT content of the second #if 0 here */
         goto finish;
     }
     else
