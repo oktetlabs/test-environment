@@ -15,6 +15,6 @@ tetest_PROGRAMS = \
 	eth_serial1 \
 	eth_serial2
 
-LDADD= -ltapi -ltapi_eth -ltapi_tad -lndn -lasn -ltapi_env -lrcfrpc \
+LDADD= -ltapi -ltapi_tad -lndn -lasn -ltapi_env -lrcfrpc \
        -lrpc_types -lconfapi -lrcfapi -lrpcxdr -lconf_oid -llogger_ten \
        -lipc -ltools -lpthread
