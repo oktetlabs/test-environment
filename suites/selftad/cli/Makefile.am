@@ -11,7 +11,7 @@ dist_tetest_DATA = \
 
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
-AM_CFLAGS = @TE_CFLAGS@
+AM_CFLAGS = @TE_CFLAGS@ @NET_SNMP_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 
@@ -22,6 +22,7 @@ tetest_PROGRAMS = \
     tapi_cli_serial \
     tapi_cli_shell
 
-LDADD = -ltapi -ltapi_cli -lndn -lasn -lrcfapi -lrpcxdr -lconfapi \
-        -lconf_oid -llogger_ten -lipc -ltools -lpthread
+LDADD = -ltapi -ltapi_tad -lndn -lasn -ltapi_rpc -lrpc_types -lrcfrpc \
+        -lrcfapi -lrpcxdr -lconfapi -lconf_oid -llogger_ten -lipc \
+        -llog_bufs -ltools -lpthread @NET_SNMP_LIBS@
  

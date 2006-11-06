@@ -4,7 +4,7 @@ tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 dist_tetest_DATA = package.xml
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
-AM_CFLAGS = @TE_CFLAGS@
+AM_CFLAGS = @TE_CFLAGS@ @NET_SNMP_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 
@@ -15,6 +15,6 @@ tetest_PROGRAMS = \
 	eth_serial1 \
 	eth_serial2
 
-LDADD= -ltapi -ltapi_tad -lndn -lasn -ltapi_env -lrcfrpc \
+LDADD= -ltapi -ltapi_tad -lndn -lasn -ltapi_env -ltapi_rpc -lrcfrpc \
        -lrpc_types -lconfapi -lrcfapi -lrpcxdr -lconf_oid -llogger_ten \
-       -lipc -ltools -lpthread
+       -lipc -llog_bufs -ltools -lpthread @NET_SNMP_LIBS@
