@@ -2273,19 +2273,22 @@ rcf_ta_trrecv_wait(const char *ta_name, int session,
                    rcf_pkt_handler handler, void *user_param, 
                    unsigned int *num)
 {
-    te_errno rc;
+    te_errno        rc;
+    unsigned int    n;
 
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
             "Waiting for receive operation on the CSAP %d (%s:%d) ...",
              csap_id, ta_name, session);
 
     rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
-                          user_param, num, RCFOP_TRRECV_WAIT);
+                          user_param, &n, RCFOP_TRRECV_WAIT);
 
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
-            "Finished receive operation on the CSAP %d (%s:%d) got %d "
-            "packets : %r", csap_id, ta_name, session,
-            (num == NULL) ? -1 : (int)*num, rc);
+            "Finished receive operation on the CSAP %d (%s:%d) got %u "
+            "packets : %r", csap_id, ta_name, session, n, rc);
+
+    if (num != NULL)
+        *num = n;
 
     return rc;
 }
@@ -2297,19 +2300,22 @@ rcf_ta_trrecv_stop(const char *ta_name, int session,
                    rcf_pkt_handler handler, void *user_param, 
                    unsigned int *num)
 {
-    te_errno rc;
+    te_errno        rc;
+    unsigned int    n;
 
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
             "Stopping receive operation on the CSAP %d (%s:%d) ...",
             csap_id, ta_name, session);
 
     rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
-                          user_param, num, RCFOP_TRRECV_STOP); 
+                          user_param, &n, RCFOP_TRRECV_STOP); 
 
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
-            "Stopped receive operation on the CSAP %d (%s:%d) got %d "
-            "packets : %r", csap_id, ta_name, session,
-            (num == NULL) ? -1 : (int)*num, rc);
+            "Stopped receive operation on the CSAP %d (%s:%d) got %u "
+            "packets : %r", csap_id, ta_name, session, n, rc);
+
+    if (num != NULL)
+        *num = n;
 
     return rc;
 }
@@ -2321,18 +2327,21 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
                   rcf_pkt_handler handler, void *user_param, 
                   unsigned int *num)
 {
-    te_errno rc;
+    te_errno        rc;
+    unsigned int    n;
 
     VERB("%s(ta %s, csap %d, *num  %p) called", 
          ta_name, csap_id, num);
 
     rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
-                          user_param, num, RCFOP_TRRECV_GET);
+                          user_param, &n, RCFOP_TRRECV_GET);
 
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
-            "Traffic receive operation on the CSAP %d (%s:%d) got %d "
-            "packets : %r", csap_id, ta_name, session,
-            (num == NULL) ? -1 : (int)*num, rc);
+            "Traffic receive operation on the CSAP %d (%s:%d) got %u "
+            "packets : %r", csap_id, ta_name, session, n, rc);
+
+    if (num != NULL)
+        *num = n;
 
     return rc;
 }
