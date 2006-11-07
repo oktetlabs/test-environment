@@ -198,6 +198,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_RUN_FORCE,
         TESTER_OPT_RUN_FROM,
         TESTER_OPT_RUN_TO,
+        TESTER_OPT_RUN_EXCLUDE,
 
         TESTER_OPT_VALGRIND,
         TESTER_OPT_GDB,
@@ -263,17 +264,21 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         { "run", 'r', POPT_ARG_STRING, NULL, TESTER_OPT_RUN,
           "Run test under the path.", "<testpath>" },
+#if 0
+        { "run-force", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_FORCE,
+          "Run test with specified arguments even if such values are "
+          "not mentioned in package.xml.", "<testpath>" },
+#endif
         { "run-from", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_FROM,
           "Run tests starting from the test path.",
           "<testpath>" },
         { "run-to", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_TO,
           "Run tests up to the test path.",
           "<testpath>" },
-#if 0
-        { "run-force", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_FORCE,
-          "Run test with specified arguments even if such values are "
-          "not mentioned in package.xml.", "<testpath>" },
-#endif
+        { "run-exclude", '\0', POPT_ARG_STRING, NULL,
+          TESTER_OPT_RUN_EXCLUDE,
+          "Exclude tests specified by path from testing campaign.",
+          "<testpath>" },
 
         { "vg", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_VALGRIND,
           "Run test scripts under specified path using valgrind.",
@@ -455,6 +460,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
             case TESTER_OPT_RUN_FORCE:
             case TESTER_OPT_RUN_FROM:
             case TESTER_OPT_RUN_TO:
+            case TESTER_OPT_RUN_EXCLUDE:
             case TESTER_OPT_VALGRIND:
             case TESTER_OPT_GDB:
             case TESTER_OPT_MIX:

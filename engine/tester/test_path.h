@@ -54,6 +54,7 @@ typedef enum test_path_type {
                                  not mentioned in description */
     TEST_PATH_RUN_FROM,     /**< Start position of test(s) to run */
     TEST_PATH_RUN_TO,       /**< End position of test(s) to run */
+    TEST_PATH_RUN_EXCLUDE,  /**< Tests to be excluded (not run) */
 
     TEST_PATH_VG,           /**< Test(s) be debugged using Valgrind */
     TEST_PATH_GDB,          /**< Test(s) be debugged using GDB */

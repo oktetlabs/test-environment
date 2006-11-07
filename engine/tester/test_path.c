@@ -838,6 +838,7 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
     testing_scenario    vg;
     testing_scenario    gdb;
     testing_scenario    mix;
+    testing_scenario    exclude;
     te_bool             run_scen;
     te_bool             run_spec;
     test_path          *path;
@@ -846,6 +847,7 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
     TAILQ_INIT(&vg);
     TAILQ_INIT(&gdb);
     TAILQ_INIT(&mix);
+    TAILQ_INIT(&exclude);
 
     run_spec = FALSE;
     TAILQ_FOREACH(path, paths, links)
@@ -882,6 +884,10 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
             case TEST_PATH_RUN_TO:
                 run_scen = TRUE;
                 scenario_apply_to(&path->scen, 0);
+                break;
+
+            case TEST_PATH_RUN_EXCLUDE:
+                rc = scenario_merge(&exclude, &path->scen, 0);
                 break;
 
             case TEST_PATH_VG:
@@ -952,6 +958,11 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
         rc = scenario_apply_flags(scenario, &vg);
         rc = scenario_apply_flags(scenario, &gdb);
         rc = scenario_apply_flags(scenario, &mix);
+    }
+
+    if (!TAILQ_EMPTY(&exclude))
+    {
+        scenario_exclude(scenario, &exclude);
     }
 
     return rc;
