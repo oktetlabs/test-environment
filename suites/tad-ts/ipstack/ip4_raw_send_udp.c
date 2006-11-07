@@ -24,10 +24,10 @@
  * $Id:$
  */
 
-/** @page ipstack-ip4_raw_send Send ud datagram via ip4.eth CSAP and receive it via RAW socket
+/** @page ipstack-ip4_raw_send Send udp datagram via ip4.eth CSAP and receive it via RAW socket
  *
  * @objective Check that ip4.eth CSAP can send correctly formed
- *            udp datagrams to receive them via IPv4 raw socket.
+ *            udp datagrams.
  *
  * @param pco_csap      TA with CSAP
  * @param pco_sock      TA with RAW socket
@@ -41,12 +41,15 @@
  *
  * -# Create ip4.eth CSAP on @p pco_csap. Specify local/remote addresses
  *    and udp protocol to use.
- * -# Create IPv4 raw socket with protocol @p proto on @p pco_sock.
- * -# Send IP4 datagrem with specified payload length and protocol.
+ * -# Create IPv4 raw socket on @p pco_sock.
+ * -# Send IP4 datagrem with specified payload length and UDP protocol.
  * -# Receive datagram via socket.
  * -# Check that correct IPv4 addresses and protocol are set in IPv4
  *    header.
- * -# Check that received IPv4 packet payload is equal to send one.
+ * -# Check that IPv4 header has correct checksum
+ * -# Check that datagram's UDP header is correctly formed with 
+ *    port, length and checksum fields having no corruptions
+ * -# Check that received datagram's  payload is equal to the send one.
  * -# Destroy CSAP and close socket
  *
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
@@ -88,6 +91,10 @@ main(int argc, char *argv[])
     uint8_t                     ip_header_len;
     uint8_t                     ip_opts_len;
 
+    uint16_t                    ip_checksum;
+    uint16_t                    udp_checksum;
+    uint16_t                    calculated_checksum;
+
     rcf_rpc_server              *pco_csap = NULL;
     rcf_rpc_server              *pco_sock = NULL;
     const struct sockaddr       *csap_addr;
@@ -103,8 +110,10 @@ main(int argc, char *argv[])
     
     void                       *send_buf;
     void                       *recv_buf;
+    void                       *chksum_buf;
     size_t                      send_buf_len;
     size_t                      recv_buf_len;
+    size_t                      chksum_buf_len;
 
 
     TEST_START; 
@@ -121,8 +130,10 @@ main(int argc, char *argv[])
     /* Create send-recv buffers */
     send_buf_len = pld_len + UDP_HEAD_LEN;
     recv_buf_len = pld_len + UDP_HEAD_LEN + IP_HEAD_LEN + MAX_OPTIONS_LEN;
+    chksum_buf_len = pld_len + UDP_FULL_HEAD_LEN;
     send_buf = te_make_buf_by_len(send_buf_len);
     recv_buf = te_make_buf_by_len(recv_buf_len);
+    chksum_buf = te_make_buf_by_len(chksum_buf_len);
 
     /* Fill udp datagram length */
     ((udp_header *)send_buf)->udp_length = htons((short)send_buf_len);
@@ -182,7 +193,13 @@ main(int argc, char *argv[])
     if ( ((ip_header *)recv_buf)->protocol != IPPROTO_UDP )
         TEST_FAIL("Protocol field was corrupted");
 
-    /* TODO IP checksum */
+    /* IP checksum test */
+    ip_checksum = ((ip_header *)recv_buf)->chksum;
+    ((ip_header *)recv_buf)->chksum = 0;
+    calculated_checksum = ~calculate_checksum(recv_buf, 
+            ((size_t)ip_header_len) * 4);
+    if (calculated_checksum != ip_checksum)
+        TEST_FAIL("IP header's checksum was corrupted");
     
     /* Check IP addresses */
     if (SIN(csap_addr)->sin_addr.s_addr != 
@@ -192,7 +209,7 @@ main(int argc, char *argv[])
             ((ip_header *)recv_buf)->dstaddr)
         TEST_FAIL("Destination IP field was corrupted");
         
-    /* Check protocol header */
+    /* Check udp header */
     /* Check ports */
     if (((udp_header *)send_buf)->src_port !=
             ((udp_header *)(recv_buf + IP_HEAD_LEN + 
@@ -203,13 +220,68 @@ main(int argc, char *argv[])
                                        ip_opts_len * 4))->dst_port)
         TEST_FAIL("Destination port was corrupted");
 
-    /* TODO udp checksum */
-    
+    /* Check udp checksum */
+    udp_checksum = ((udp_header *)(recv_buf + IP_HEAD_LEN +
+                                              ip_opts_len * 4))->chksum;
+    if (udp_checksum != 0)
+    {
+        /* Fill buffer to calculate checksum */
+        /* Fill UDP pseudoheader */
+        ((udp_full_header *)chksum_buf)->pseudoheader.srcaddr =
+            ((ip_header *)recv_buf)->srcaddr;
+        
+        ((udp_full_header *)chksum_buf)->pseudoheader.dstaddr =
+            ((ip_header *)recv_buf)->dstaddr;
+        
+        ((udp_full_header *)chksum_buf)->pseudoheader.ttl = 0;
+        
+        ((udp_full_header *)chksum_buf)->pseudoheader.protocol =
+            ((ip_header *)recv_buf)->protocol;
+        
+        ((udp_full_header *)chksum_buf)->pseudoheader.udp_length =
+            ((udp_header *)(recv_buf + IP_HEAD_LEN +
+                            ip_opts_len * 4))->udp_length;
+        
+        /* Fill UDP header with checksum set to 0 */
+        ((udp_full_header *)chksum_buf)->header.src_port =
+            ((udp_header *)(recv_buf + IP_HEAD_LEN +
+                            ip_opts_len * 4))->src_port;
+        
+        ((udp_full_header *)chksum_buf)->header.dst_port =
+            ((udp_header *)(recv_buf + IP_HEAD_LEN +
+                            ip_opts_len * 4))->dst_port;
+        
+        ((udp_full_header *)chksum_buf)->header.udp_length =
+            ((udp_header *)(recv_buf + IP_HEAD_LEN +
+                            ip_opts_len * 4))->udp_length;
+        
+        ((udp_full_header *)chksum_buf)->header.chksum = 0;
+        
+        /* Fill UDP datagram's payload */
+        memcpy(chksum_buf + UDP_FULL_HEAD_LEN, 
+               recv_buf + IP_HEAD_LEN + UDP_HEAD_LEN +
+               ip_opts_len * 4, + pld_len);
+        
+        /* Calculate UDP checksum */
+        calculated_checksum = ~calculate_checksum(chksum_buf, 
+                                                    chksum_buf_len);
+        
+        if (calculated_checksum != udp_checksum)
+            TEST_FAIL("UDP checksum was corrupted");
+    }
+    else
+        WARN("Sender-side doesn't calculate UDP checksum, "
+                "skip checksum test");
+
     /* Check payload */
-    if (memcmp(send_buf + UDP_HEAD_LEN, recv_buf + UDP_HEAD_LEN + IP_HEAD_LEN + ip_opts_len * 4, pld_len) != 0)
+    if (memcmp(send_buf + UDP_HEAD_LEN, 
+                recv_buf + UDP_HEAD_LEN + 
+                IP_HEAD_LEN + ip_opts_len * 4, pld_len) != 0)
     {
         RING("Received payload does not match the send one:%Tm%Tm",
-                  send_buf + UDP_HEAD_LEN, pld_len, recv_buf + UDP_HEAD_LEN + IP_HEAD_LEN + ip_opts_len * 4, pld_len);
+                  send_buf + UDP_HEAD_LEN, pld_len, 
+                  recv_buf + UDP_HEAD_LEN + IP_HEAD_LEN + 
+                  ip_opts_len * 4, pld_len);
         RING_VERDICT("Received payload does not match the send one");
     }
 
@@ -227,6 +299,7 @@ cleanup:
 
     free(send_buf);
     free(recv_buf);
+    free(chksum_buf);
 
     TEST_END;
 }
