@@ -40,13 +40,15 @@
  * @par Scenario:
  *
  * -# Create ip4.eth CSAP on @p pco_csap. Specify local/remote addresses
- *    and icmp protocol to use.
- * -# Create IPv4 raw socket with protocol icmp on @p pco_sock.
- * -# Send IP4 datagrem with specified payload length and protocol.
+ *    and ICMP protocol to use.
+ * -# Create IPv4 raw socket on @p pco_sock.
+ * -# Send IP4 datagrem with specified payload length and icmp protocol.
  * -# Receive datagram via socket.
- * -# Check that correct IPv4 addresses and protocol are set in IPv4
- *    header.
- * -# Check that received IPv4 packet payload is equal to send one.
+ * -# Check that address, protocol and checksum fields of IPv4
+ *    header are set correctly.
+ * -# Check that received ICMP message has correctly set
+ *    type-code and checksum fields of ICMP header.
+ * -# Check that ICMP message's payload is not corrupted.
  * -# Destroy CSAP and close socket
  *
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
@@ -87,6 +89,10 @@ main(int argc, char *argv[])
 
     uint8_t                     ip_header_len;
     uint8_t                     ip_opts_len;
+
+    uint16_t                    ip_checksum;
+    uint16_t                    icmp_checksum;
+    uint16_t                    calculated_checksum;
 
     rcf_rpc_server              *pco_csap = NULL;
     rcf_rpc_server              *pco_sock = NULL;
@@ -138,7 +144,7 @@ main(int argc, char *argv[])
                                   SIN(sock_addr)->sin_addr.s_addr,
                                   IPPROTO_ICMP,
                                   &ip4_send_csap));
-    
+
     /* Prepare data-sending template */
     CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, FALSE,
                                           ndn_ip4_header,
@@ -178,7 +184,13 @@ main(int argc, char *argv[])
     if ( ((ip_header *)recv_buf)->protocol != IPPROTO_ICMP )
         TEST_FAIL("Protocol field was corrupted");
 
-    /* TODO IP checksum */
+    /* IP checksum */
+    ip_checksum = ((ip_header *)recv_buf)->chksum;
+    ((ip_header *)recv_buf)->chksum = 0;
+    calculated_checksum = ~calculate_checksum(recv_buf, 
+            ((size_t)ip_header_len) * 4);
+    if (calculated_checksum != ip_checksum)
+        TEST_FAIL("IP header's checksum was corrupted");
     
     /* Check IP addresses */
     if (SIN(csap_addr)->sin_addr.s_addr != 
@@ -195,13 +207,26 @@ main(int argc, char *argv[])
                                        ip_opts_len * 4))->message)
         TEST_FAIL("ICMP message was corrupted");
 
-    /* TODO icmp checksum */
+    /* icmp checksum */
+    icmp_checksum = ((icmp_header *)(recv_buf +
+                                    IP_HEAD_LEN +
+                                    ip_opts_len * 4))->chksum;
+    ((icmp_header *)(recv_buf + IP_HEAD_LEN +
+                                ip_opts_len * 4))->chksum = 0;
+    calculated_checksum = ~calculate_checksum(recv_buf + IP_HEAD_LEN +
+                                              ip_opts_len * 4, send_buf_len);
+    if (calculated_checksum != icmp_checksum)
+        TEST_FAIL("ICMP checksum was corrupted");
     
     /* Check payload */
-    if (memcmp(send_buf + ICMP_HEAD_LEN, recv_buf + ICMP_HEAD_LEN + IP_HEAD_LEN + ip_opts_len * 4, pld_len) != 0)
+    if (memcmp(send_buf + ICMP_HEAD_LEN, recv_buf + 
+                ICMP_HEAD_LEN + IP_HEAD_LEN + 
+                ip_opts_len * 4, pld_len) != 0)
     {
         RING("Received payload does not match the send one:%Tm%Tm",
-                  send_buf + ICMP_HEAD_LEN, pld_len, recv_buf + ICMP_HEAD_LEN + IP_HEAD_LEN + ip_opts_len * 4, pld_len);
+                  send_buf + ICMP_HEAD_LEN, pld_len, recv_buf + 
+                  ICMP_HEAD_LEN + IP_HEAD_LEN + 
+                  ip_opts_len * 4, pld_len);
         RING_VERDICT("Received payload does not match the send one");
     }
 
