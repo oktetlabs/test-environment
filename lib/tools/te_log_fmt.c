@@ -926,6 +926,8 @@ case mod_:\
         /* Skip conversion specifier in for loop step */
     }
 
+    /* Force output */
+    fmt_needed = (fmt_start != '\0');
     /* Move 's' 1 symbol back to have correct calculations in macro */
     spec_start = s--;
     TE_LOG_VPRINTF_RAW_ARG(TE_LOG_MSG_FMT_ARG_EOR, NULL, 0);
