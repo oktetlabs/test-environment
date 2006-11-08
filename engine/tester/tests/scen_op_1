@@ -1,2 +1,2 @@
 #! /bin/sh
-echo "test sequence" | ./scen_op_test 
+echo -n "[[1,5,VG+GDB],[8,10,GDB]] or [[2,6,0],[7,8,VG]] = [[1,5,VG+GDB],[7,7,VG],[8,8,VG+GDB],[9,10,GDB]]" | ./scen_op_test 
