@@ -37,7 +37,7 @@ AC_CHECK_LIB([curses], [start_color],
                         [ Define if your curses library supports color. ])],
              [AC_MSG_WARN([Color terminal is not supported])])
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile tests/Makefile])
 
 TE_APP_RESTORE
 

@@ -1,4 +1,6 @@
 
+SUBDIRS = . tests
+
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) 
