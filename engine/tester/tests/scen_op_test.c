@@ -50,23 +50,23 @@ DEFINE_LGR_ENTITY("scen_op_test");
 #ifdef ERROR
 #undef ERROR
 #endif
-#define ERROR(args...) DBG_ERR("ERROR: " args);
+#define ERROR(args...) DBG_ERR("  ERROR: " args);
 
 #ifdef WARN
 #undef WARN
 #endif
-#define WARN(args...) DBG_ERR("WARN: " args);
+#define WARN(args...) DBG_ERR("  WARN: " args);
 
 #ifdef RING
 #undef RING
 #endif
-#define RING(args...) DBG_MSG("RING: " args);
+#define RING(args...) DBG_MSG("  RING: " args);
 
 #ifdef VERB
 #undef VERB
 #endif
 #if 0
-#define VERB(args...) DBG_MSG("VERB: " args);
+#define VERB(args...) DBG_MSG("  VERB: " args);
 #else
 #define VERB(args...)
 #endif
