@@ -15,7 +15,15 @@ TESTS = scen_op_1 \
 	scen_op_07 \
 	scen_op_08 \
 	scen_op_09 \
-	scen_op_10
+	scen_op_10 \
+	scen_op_11 \
+	scen_op_12 \
+	scen_op_sub_01 \
+	scen_op_sub_02 \
+	scen_op_sub_03 \
+	scen_op_sub_04 \
+	scen_op_sub_05 \
+	scen_op_sub_06
 
 dist_noinst_SCRIPTS = $(TESTS)
 

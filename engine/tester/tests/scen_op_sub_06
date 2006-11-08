@@ -1,0 +1,2 @@
+#! /bin/sh
+echo -n "[[] sub [2,8,A]] = []" | ./scen_op_test 
