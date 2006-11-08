@@ -1,0 +1,2 @@
+#! /bin/sh
+echo -n "[[1,6,A]] or [[5,9,A+B]] = [[1,4,A],[5,9,A+B]]" | ./scen_op_test 

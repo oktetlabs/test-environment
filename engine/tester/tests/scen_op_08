@@ -1,0 +1,2 @@
+#! /bin/sh
+echo -n "[[1,9,A]] or [[2,3,A]] = [[1,9,A]]" | ./scen_op_test 
