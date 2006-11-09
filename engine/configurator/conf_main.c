@@ -766,7 +766,17 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
     }
 
-    if ((msg->rc = cfg_db_del_check(handle)) != 0)
+    msg->rc = cfg_db_del_check(handle);
+    if (msg->rc == TE_EHASSON)
+    {
+        /*
+         * Temporary ignore TE_EHASSON errors in order to pass VLAN
+         * deletion (it has automatic children in mcast_link_addr and
+         * net_addr in the case of enabled IPv6 support).
+         */
+        msg->rc = 0;
+    }
+    else if (msg->rc != 0)
     {
         ERROR("%s: cfg_db_del_check fails %r", __FUNCTION__, msg->rc);
         return;
