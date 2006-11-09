@@ -199,6 +199,31 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     testing_scenario    h_rslt; /* resulting list */
     te_bool             result_replace; /* put result into h0 */
 
+#if 1
+    if (TAILQ_EMPTY(h1))
+    {
+        assert(h0 == h_rslt_p);
+        return 0;
+    }
+    else if (TAILQ_EMPTY(h0))
+    {
+        if (op_code == TESTING_ACT_OR)
+        {
+            *h_rslt_p = *h1;
+            TAILQ_INIT(h1);
+        }
+        else if (op_code == TESTING_ACT_SUBTRACT)
+        {
+            /* Result should be empty */
+            TAILQ_INIT(h_rslt_p);
+        }
+        else
+        {
+            assert(FALSE);
+        }
+        return 0;
+    }
+#endif
 
     result_replace = (h_rslt_p == h0); /* result should replace h0 */
 
@@ -303,11 +328,9 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     free(gap1);
     free(overlap);
 
-    if (result_replace)
-    {   
-        assert(h0->tqh_first == NULL);
-        free(h0);
-    }
+#if 0
+    assert(!result_replace || h0->tqh_first == NULL);
+#endif
     
     *h_rslt_p = h_rslt;
 
@@ -542,6 +565,23 @@ scenario_add_flags(testing_scenario *scenario, const unsigned int flags)
 
 /* See the description in tester_run.h */
 void
+scenario_cleanup(testing_scenario *scenario, const unsigned int flags)
+{
+    testing_act *cur, *nxt;
+
+    TAILQ_FOREACH_SAFE(cur, scenario, links, nxt)
+    {
+        if ((flags == 0 && cur->flags == 0) ||
+            (cur->flags & flags) == flags)
+        {
+            TAILQ_REMOVE(scenario, cur, links);
+            scenario_act_free(cur);
+        }
+    }
+}
+
+/* See the description in tester_run.h */
+void
 scenario_glue(testing_scenario *scenario)
 {
     testing_act *cur;
@@ -561,16 +601,20 @@ scenario_glue(testing_scenario *scenario)
 }
 
 /* See the description in tester_run.h */
-void
-scenario_exclude(testing_scenario *scenario, testing_scenario *exclude)
+te_errno
+scenario_exclude(testing_scenario *scenario, testing_scenario *exclude,
+                 unsigned int flags)
 {
-#if 0
+    te_errno    rc;
+
+    scenario_add_flags(exclude, flags);
+
     rc = testing_scenarios_op(scenario, exclude, scenario,
-                              TESTER_ACT_EXCLUDE);
-#else
-    UNUSED(scenario);
-    UNUSED(exclude);
-#endif
+                              TESTING_ACT_SUBTRACT);
+    if (rc == 0)
+        scenario_cleanup(scenario, 0);
+
+    return rc;
 }
 
 /* See the description in tester_run.h */
@@ -578,51 +622,10 @@ te_errno
 scenario_merge(testing_scenario *scenario, testing_scenario *add,
                unsigned int flags)
 {
-    testing_act *cur;
-    testing_act *prev;
-    testing_act *add_p;
-    testing_act *add_p_next;
+    scenario_add_flags(add, flags);
 
-    if (TAILQ_EMPTY(scenario))
-    {
-        scenario_append(scenario, add, 1);
-        scenario_add_flags(scenario, flags);
-        return 0;
-    }
-
-    for (cur = TAILQ_FIRST(scenario), prev = NULL, add_p = TAILQ_FIRST(add);
-         add_p != NULL;
-         add_p = add_p_next)
-    {
-        add_p_next = TAILQ_NEXT(add_p, links);
-
-        while (cur != NULL && add_p->first > cur->last)
-        {
-            prev = cur;
-            cur = TAILQ_NEXT(cur, links);
-        }
-
-        if (cur == NULL)
-        {
-            /* New act is after the last act of the scenario */
-            TAILQ_REMOVE(add, add_p, links);
-            add_p->flags |= flags;
-            TAILQ_INSERT_TAIL(scenario, add_p, links);
-        }
-        else if (cur->first > add_p->last)
-        {
-            /* New act is between two acts of the scenario */
-            TAILQ_REMOVE(add, add_p, links);
-            add_p->flags |= flags;
-            TAILQ_INSERT_AFTER(scenario, prev, add_p, links);
-        }
-        else
-        {
-            /* New act has intersection with some acts of the scenario */
-            assert(FALSE); /* TODO */
-        }
-    }
-    return 0;
+    return testing_scenarios_op(scenario, add, scenario,
+                                TESTING_ACT_OR);
 }
 
 /* See the description in tester_run.h */

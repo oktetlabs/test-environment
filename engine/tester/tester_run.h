@@ -25,7 +25,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: tester_conf.h 28469 2006-05-26 07:58:32Z arybchik $
+ * $Id$
  */
 
 #ifndef __TE_TESTER_RUN_SCENARIO_H__
@@ -198,6 +198,16 @@ extern void scenario_add_flags(testing_scenario *scenario,
                                const unsigned int flags);
 
 /**
+ * Remove acts which have all specified flags (if @a flags is not @c 0)
+ * or empty flags (if @a flags is @c 0).
+ *
+ * @param scenario      A testing scenario
+ * @param flags         Flags to remove acts
+ */
+extern void scenario_cleanup(testing_scenario *scenario,
+                             const unsigned int flags);
+
+/**
  * Glue testing scenario acts with equal flags.
  *
  * @param scenario      Sorted testing scenario to be processed
@@ -205,15 +215,17 @@ extern void scenario_add_flags(testing_scenario *scenario,
 extern void scenario_glue(testing_scenario *scenario);
 
 /**
- * Exclude one testing scenario from another.
+ * Remove some flags from testing scenario.
  *
  * @param scenario      Sorted testing scenario to exclude from
  * @param exclude       Sorted testing scenario to be excluded
+ * @param flags         Flags which have to have all item from @a exclude
  *
  * @return Status code.
  */
-extern void scenario_exclude(testing_scenario *scenario,
-                             testing_scenario *exclude);
+extern te_errno scenario_exclude(testing_scenario *scenario,
+                                 testing_scenario *exclude,
+                                 unsigned int      flags);
 
 /**
  * Merge one testing scenario description into another.
@@ -226,7 +238,7 @@ extern void scenario_exclude(testing_scenario *scenario,
  */
 extern te_errno scenario_merge(testing_scenario *scenario,
                                testing_scenario *add,
-                               unsigned int flags);
+                               unsigned int      flags);
 
 /**
  * Apply flags from scenario @a flags to testing scenario.

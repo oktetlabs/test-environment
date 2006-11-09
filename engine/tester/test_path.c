@@ -835,18 +835,14 @@ static te_errno
 merge_test_paths(test_paths *paths, const unsigned int total_iters,
                  testing_scenario *scenario)
 {
-    testing_scenario    vg;
-    testing_scenario    gdb;
-    testing_scenario    mix;
+    testing_scenario    flags;
     testing_scenario    exclude;
     te_bool             run_scen;
     te_bool             run_spec;
     test_path          *path;
     te_errno            rc;
 
-    TAILQ_INIT(&vg);
-    TAILQ_INIT(&gdb);
-    TAILQ_INIT(&mix);
+    TAILQ_INIT(&flags);
     TAILQ_INIT(&exclude);
 
     run_spec = FALSE;
@@ -887,19 +883,23 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
                 break;
 
             case TEST_PATH_RUN_EXCLUDE:
-                rc = scenario_merge(&exclude, &path->scen, 0);
+                rc = scenario_merge(&exclude, &path->scen, TESTER_SHUTDOWN);
+                break;
+
+            case TEST_PATH_FAKE:
+                rc = scenario_merge(&flags, &path->scen, TESTER_FAKE);
                 break;
 
             case TEST_PATH_VG:
-                rc = scenario_merge(&vg, &path->scen, TESTER_VALGRIND);
+                rc = scenario_merge(&flags, &path->scen, TESTER_VALGRIND);
                 break;
 
             case TEST_PATH_GDB:
-                rc = scenario_merge(&gdb, &path->scen, TESTER_GDB);
+                rc = scenario_merge(&flags, &path->scen, TESTER_GDB);
                 break;
 
             case TEST_PATH_MIX:
-                rc = scenario_merge(&mix, &path->scen,
+                rc = scenario_merge(&flags, &path->scen,
                                     TESTER_MIX_VALUES |
                                     TESTER_MIX_ARGS |
                                     TESTER_MIX_TESTS |
@@ -907,45 +907,52 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
                 break;
 
             case TEST_PATH_MIX_VALUES:
-                rc = scenario_merge(&mix, &path->scen, TESTER_MIX_VALUES);
+                rc = scenario_merge(&flags, &path->scen, TESTER_MIX_VALUES);
                 break;
 
             case TEST_PATH_MIX_ARGS:
-                rc = scenario_merge(&mix, &path->scen, TESTER_MIX_ARGS);
+                rc = scenario_merge(&flags, &path->scen, TESTER_MIX_ARGS);
                 break;
 
             case TEST_PATH_MIX_TESTS:
-                rc = scenario_merge(&mix, &path->scen, TESTER_MIX_TESTS);
+                rc = scenario_merge(&flags, &path->scen, TESTER_MIX_TESTS);
                 break;
 
             case TEST_PATH_MIX_ITERS:
-                rc = scenario_merge(&mix, &path->scen, TESTER_MIX_ITERS);
+                rc = scenario_merge(&flags, &path->scen, TESTER_MIX_ITERS);
                 break;
 
             case TEST_PATH_MIX_SESSIONS:
-                rc = scenario_merge(&mix, &path->scen, TESTER_MIX_SESSIONS);
+                rc = scenario_merge(&flags, &path->scen,
+                                    TESTER_MIX_SESSIONS);
                 break;
 
             case TEST_PATH_NO_MIX:
-                scenario_exclude(&mix, &path->scen);
-                break;
-
-            case TEST_PATH_FAKE:
-                rc = scenario_merge(&gdb, &path->scen, TESTER_FAKE);
+                rc = scenario_exclude(&flags, &path->scen,
+                                      TESTER_MIX_VALUES |
+                                      TESTER_MIX_ARGS |
+                                      TESTER_MIX_TESTS |
+                                      TESTER_MIX_ITERS |
+                                      TESTER_MIX_SESSIONS);
                 break;
 
             default:
                 assert(FALSE);
         }
+        if (rc != 0)
+            goto exit;
+
         if (run_scen)
         {
             run_spec = TRUE;
-            rc = scenario_apply_flags(&path->scen, &vg);
-            rc = scenario_apply_flags(&path->scen, &gdb);
-            rc = scenario_apply_flags(&path->scen, &mix);
+            rc = scenario_apply_flags(&path->scen, &flags);
+            if (rc != 0)
+                goto exit;
 
             /* Append results test path scenario to whole scenario */
-            scenario_append(scenario, &path->scen, 1);
+            rc = scenario_append(scenario, &path->scen, 1);
+            /* Append can't fail with @a iterate == 1 */
+            assert(rc == 0);
         }
     }
 
@@ -953,17 +960,29 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
     {
         /* No test paths to run are specified, scenarion is still empty */
         assert(TAILQ_EMPTY(scenario));
-        /* Add act with all items and apply flags */
+        /* Add act with all items */
         rc = scenario_add_act(scenario, 0, total_iters - 1, 0);
-        rc = scenario_apply_flags(scenario, &vg);
-        rc = scenario_apply_flags(scenario, &gdb);
-        rc = scenario_apply_flags(scenario, &mix);
+        if (rc != 0)
+            goto exit;
+        /* Apply collected flags */
+        rc = scenario_apply_flags(scenario, &flags);
+        if (rc != 0)
+            goto exit;
     }
 
+    /* Take excludes into account */
     if (!TAILQ_EMPTY(&exclude))
     {
-        scenario_exclude(scenario, &exclude);
+        rc = scenario_apply_flags(scenario, &exclude);
+        if (rc != 0)
+            goto exit;
+
+        /* Remove all acts with SHUTDOWN flag set */
+        scenario_cleanup(scenario, TESTER_SHUTDOWN);
     }
+
+exit:
+    /* TODO: Release resources */
 
     return rc;
 }
