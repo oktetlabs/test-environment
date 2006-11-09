@@ -3655,27 +3655,27 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
 
     ll_init_map(&rth);
 
-    ifindex = ll_name_to_index(ifname);
+    ifindex = if_nametoindex(ifname);
     if (ifindex <= 0)
     {
         ERROR("%s: Device \"%s\" does not exist.\n",
               __FUNCTION__, ifname);
         rc = TE_RC(TE_TA_UNIX, TE_ENODEV);
-        goto on_error;
+        goto exit;
     }
 
     if (rtnl_wilddump_request(&rth, AF_PACKET, RTM_GETLINK) < 0)
     {
         ERROR("%s: Cannot send dump request", __FUNCTION__);
         rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        goto on_error;
+        goto exit;
     }
 
     if (rtnl_dump_filter(&rth, store_nlmsg, &info_list, NULL, NULL) < 0)
     {
         ERROR("%s: Dump terminated ", __FUNCTION__);
         rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        goto on_error;
+        goto exit;
     }
 
     TAILQ_FOREACH(a_aux, &info_list, links)
@@ -3705,7 +3705,7 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
             ERROR("%s: BUG! For ifindex %d ifname is not "
                   "set into returned info", __FUNCTION__, ifindex);
             rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
-            goto on_error;
+            goto exit;
         }
 
         if (tb[IFLA_BROADCAST])
@@ -3717,15 +3717,14 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
             ERROR("IGORV: %s: tb[IFLA_BROADCAST] is TRUE - "
                   "%s: %s", __FUNCTION__, ifname, buf);
 #endif
-        }
-        else
-        {
-            rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
-            goto on_error;
+            /* Success */
+            goto exit;
         }
         break;
     }
-on_error:
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+exit:
     rtnl_close(&rth);
     free_nlmsg_list(&info_list);
 
