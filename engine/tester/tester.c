@@ -275,8 +275,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         { "run-to", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_TO,
           "Run tests up to the test path.",
           "<testpath>" },
-        { "run-exclude", '\0', POPT_ARG_STRING, NULL,
-          TESTER_OPT_RUN_EXCLUDE,
+        { "exclude", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_EXCLUDE,
           "Exclude tests specified by path from testing campaign.",
           "<testpath>" },
 
