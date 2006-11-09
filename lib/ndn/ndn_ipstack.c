@@ -129,6 +129,9 @@ static asn_named_entry_t _ndn_ip4_header_ne_array [] =
     { "dst-addr",        &ndn_data_unit_ip_address_s, 
       { PRIVATE, NDN_TAG_IP4_DST_ADDR } }, 
 
+    { "options",         &ndn_data_unit_octet_string_s,
+      { PRIVATE, NDN_TAG_IP4_OPTIONS } } ,
+
     { "fragment-spec",   &ndn_ip4_frag_seq_s, 
       { PRIVATE, NDN_TAG_IP4_FRAGMENTS } }, 
 
