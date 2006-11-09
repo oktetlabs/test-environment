@@ -68,6 +68,7 @@
  */
 typedef struct tad_ip4_proto_data {
     tad_bps_pkt_frag_def    hdr;
+    tad_bps_pkt_frag_def    opts;
 } tad_ip4_proto_data;
 
 /**
@@ -76,6 +77,7 @@ typedef struct tad_ip4_proto_data {
  */
 typedef struct tad_ip4_proto_pdu_data {
     tad_bps_pkt_frag_data   hdr;
+    tad_bps_pkt_frag_data   opts;
 } tad_ip4_proto_pdu_data;
 
 
@@ -116,6 +118,15 @@ static const tad_bps_pkt_frag tad_ip4_bps_hdr[] =
       TAD_DU_OCTS, FALSE },
 };
 
+/**
+ * Definition of Internet Protocol version 4 (IPv4) header options.
+ */
+static const tad_bps_pkt_frag tad_ip4_bps_opts[] =
+{
+    { "options",          0, BPS_FLD_CONST_DEF(NDN_TAG_IP4_OPTIONS, 0),
+      TAD_DU_OCTS, FALSE },
+};
+
 
 /* See description tad_ipstack_impl.h */
 te_errno
@@ -136,6 +147,12 @@ tad_ip4_init_cb(csap_p csap, unsigned int layer)
     rc = tad_bps_pkt_frag_init(tad_ip4_bps_hdr,
                                TE_ARRAY_LEN(tad_ip4_bps_hdr),
                                layer_nds, &proto_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_init(tad_ip4_bps_opts,
+                               TE_ARRAY_LEN(tad_ip4_bps_opts),
+                               layer_nds, &proto_data->opts);
     if (rc != 0)
         return rc;
 
@@ -194,6 +211,7 @@ tad_ip4_destroy_cb(csap_p csap, unsigned int layer)
     csap_set_proto_spec_data(csap, layer, NULL);
 
     tad_bps_pkt_frag_free(&proto_data->hdr);
+    tad_bps_pkt_frag_free(&proto_data->opts);
 
     free(proto_data);
 
@@ -232,6 +250,11 @@ tad_ip4_nds_to_pdu_data(csap_p csap, tad_ip4_proto_data *proto_data,
 
     rc = tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
                                    &pdu_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_nds_to_data_units(&proto_data->opts, layer_pdu,
+                                   &pdu_data->opts);
 
     return rc;
 }
@@ -249,6 +272,7 @@ tad_ip4_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
     if (pdu_data != NULL)
     {
         tad_bps_free_pkt_frag_data(&proto_data->hdr, &pdu_data->hdr);
+        tad_bps_free_pkt_frag_data(&proto_data->opts, &pdu_data->opts);
         free(pdu_data);
     }
 }
@@ -273,6 +297,10 @@ tad_ip4_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     tmpl_data = *p_opaque;
 
     rc = tad_bps_confirm_send(&proto_data->hdr, &tmpl_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_confirm_send(&proto_data->opts, &tmpl_data->opts);
 
     return rc;
 }
@@ -565,10 +593,25 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     /* Calculate length of the header */
     bitlen = tad_bps_pkt_frag_data_bitlen(&proto_data->hdr,
                                           &tmpl_data->hdr);
+    bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->opts,
+                                           &tmpl_data->opts);
     assert((bitlen & 7) == 0);
 
+    /* IPv4 header length should multiple of 4 */
+    cb_data.hlen = (((bitlen >> 3) + 3) >> 2) << 2;
+
+    /* FIXME: Override 'h-length' */
+    tmpl_data->hdr.dus[1].du_type = TAD_DU_I32;
+    tmpl_data->hdr.dus[1].val_i32 = cb_data.hlen >> 2;
+    if (tmpl_data->hdr.dus[1].val_i32 > 0xf)
+    {
+        ERROR("%s(): Too big IPv4 header - %u octets", __FUNCTION__,
+              (unsigned)cb_data.hlen);
+        return TE_RC(TE_TAD_CSAP, TE_E2BIG);
+    }
+
     /* Allocate memory for binary template of the header */
-    cb_data.hdr = malloc(cb_data.hlen = (bitlen >> 3));
+    cb_data.hdr = malloc(cb_data.hlen);
     if (cb_data.hdr == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
@@ -579,7 +622,17 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
                                   &bitoff, bitlen);
     if (rc != 0)
     {
-        ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for addresses: %r",
+        ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for header: %r",
+              __FUNCTION__, rc);
+        free(cb_data.hdr);
+        return rc;
+    }
+    rc = tad_bps_pkt_frag_gen_bin(&proto_data->opts, &tmpl_data->opts,
+                                  args, arg_num, cb_data.hdr,
+                                  &bitoff, bitlen);
+    if (rc != 0)
+    {
+        ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for options: %r",
               __FUNCTION__, rc);
         free(cb_data.hdr);
         return rc;
