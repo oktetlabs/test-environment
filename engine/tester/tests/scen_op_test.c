@@ -104,7 +104,7 @@ extern te_errno testing_scenarios_op(testing_scenario *h0,
  *
  * @return bit-field corresponding to the flags described in the buffer
  */
-unsigned int
+static unsigned int
 parse_flags(const char *buf)
 {
     char         *ptr = (char *)buf;
@@ -180,7 +180,7 @@ parse_flags(const char *buf)
  *
  * @return amount of symbols printed to the storage buffer
  */
-int
+static int
 sprint_flags(char *buf, int size, unsigned int flags)
 {
     char *ptr = buf;
@@ -218,7 +218,7 @@ sprint_flags(char *buf, int size, unsigned int flags)
  *
  * @return local buffer with printed flags bit-field
  */
-const char *
+static const char *
 flags_to_str(unsigned int flags)
 {
     static char flags_str_buf[FLAGS_TO_STR_BUF_SIZE];
@@ -237,7 +237,7 @@ flags_to_str(unsigned int flags)
  *
  * @return amount of symbols printed to the storage buffer
  */
-int
+static int
 sprint_testing_act(char *buf, int size, const testing_act *act)
 {
     char *ptr = buf;
@@ -262,7 +262,7 @@ sprint_testing_act(char *buf, int size, const testing_act *act)
  *
  * @return local buffer with printed flags bit-field
  */
-const char *
+static const char *
 testing_act_to_str(const testing_act *act)
 {
     static char scenario_act_buf[SCENARIO_ACT_TO_STR_BUF_SIZE];
@@ -281,7 +281,7 @@ testing_act_to_str(const testing_act *act)
  *
  * @return amount of symbols printed to the storage buffer
  */
-int
+static int
 sprint_testing_scenario(char *buf, int size, const testing_scenario *scenario)
 {
     char *ptr = buf;
@@ -315,7 +315,7 @@ sprint_testing_scenario(char *buf, int size, const testing_scenario *scenario)
  *
  * @return local buffer with printed flags bit-field
  */
-const char *
+static const char *
 testing_scenario_to_str(const testing_scenario *scenario)
 {
     static char scenario_str_buf[SCENARIO_TO_STR_BUF_SIZE];
@@ -335,7 +335,7 @@ testing_scenario_to_str(const testing_scenario *scenario)
  * @return pointer to the first unparsed symbol
  *         (next to Testing Act description)
  */
-char *
+static char *
 parse_scenario_act(const char *buf, testing_scenario *ts)
 {
     char *ptr = (char *)buf;
@@ -409,7 +409,7 @@ parse_scenario_act(const char *buf, testing_scenario *ts)
  * @return pointer to the first unparsed symbol
  *         (next to Testing Scenario sequence description)
  */
-char *
+static char *
 parse_scenario(const char *buf, testing_scenario *ts)
 {
     char *ptr;
@@ -468,7 +468,7 @@ parse_scenario(const char *buf, testing_scenario *ts)
  *
  * @return 0, on success, -1 on failure
  */
-int
+static int
 parse_input(const char *buf,
             testing_scenario *ts1,
             testing_scenario *ts2,
@@ -545,7 +545,7 @@ parse_input(const char *buf,
  *
  * @return 0, if equal, -1 if not
  */
-int
+static int
 compare_scenarios(const testing_scenario *ts1, const testing_scenario *ts2)
 {
     int          act_no = 0;
