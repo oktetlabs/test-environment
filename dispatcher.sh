@@ -222,6 +222,8 @@ TESTER_OPTS=
 # No additional TRC options and tags by default
 TRC_OPTS=
 TRC_TAGS=
+# No additional option for rgt-xml2html-multi tool
+RGT_X2HM_OPTS=
 # No additional TCE report options by default
 TCER_OPTS=
 # No additional TCE summary options by default
@@ -396,6 +398,9 @@ process_opts()
                 TESTER_OPTS="${TESTER_OPTS} $1"
                 ;;
             --trc-*) TRC_OPTS="${TRC_OPTS} --${1#--trc-}" ;;
+
+            --rgt-xml2html-multi-*)
+                RGT_X2HM_OPTS="${RGT_X2HM_OPTS} --${1#--rgt-xml2html-multi-}" ;;
     
             --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
 
@@ -811,7 +816,8 @@ if test -n "${RGT_LOG_HTML}" ; then
     rgt-conv -m postponed ${CONF_RGT} \
         -f "${TE_LOG_RAW}" -o "${LOG_XML_STRUCT}"
     if test $? -eq 0 -a -e "${LOG_XML_STRUCT}" ; then
-        rgt-xml2html-multi "${LOG_XML_STRUCT}" "${RGT_LOG_HTML}"
+        rgt-xml2html-multi ${RGT_X2HM_OPTS} "${LOG_XML_STRUCT}" \
+            "${RGT_LOG_HTML}"
     fi
 fi
 
