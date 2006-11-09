@@ -30,9 +30,11 @@
 #define __TAD_TS_IPSTACK_H__
 
 #define IP_HEAD_LEN             20  /* Length of IP header */
-#define ICMP_HEAD_LEN           4   /* Legth of ICMP header */
-#define UDP_HEAD_LEN            8   /* Legth of UDP header */
-#define TCP_HEAD_LEN            20  /* Legth of TCP header */
+#define ICMP_HEAD_LEN           4   /* Length of ICMP header */
+#define UDP_HEAD_LEN            8   /* Length of UDP header */
+#define UDP_PSEUDO_HEAD_LEN     12  /* Length of UDP pseudo header */
+#define UDP_FULL_HEAD_LEN       20  /* Length of UDP full header */
+#define TCP_HEAD_LEN            20  /* Length of TCP header */
 #define MAX_OPTIONS_LEN         40  /* Maximal length of options field */
 
 typedef struct ip_header {
@@ -59,6 +61,19 @@ typedef struct udp_header {
     uint16_t    udp_length;
     uint16_t    chksum;
 } udp_header;
+
+typedef struct udp_pseudoheader {
+    uint32_t    srcaddr;
+    uint32_t    dstaddr;
+    uint8_t     ttl;
+    uint8_t     protocol;
+    uint16_t    udp_length;
+} udp_pseudoheader;
+
+typedef struct udp_full_header {
+    udp_pseudoheader    pseudoheader;
+    udp_header          header;
+} udp_full_header;
 
 typedef struct tcp_header {
     uint16_t    src_port;
