@@ -1,0 +1,2 @@
+#! /bin/sh
+echo -n "[[2,8,A+B]] sub [[7,8,B]] = [[2,6,A+B],[7,8,A]]" | ./scen_op_test 
