@@ -66,14 +66,11 @@
  * Subtract: 0-flag=0; flag-0=flag; AB-B=A, thus: flag0^(flag0&flag1)
  * The result:
  * [1 AB 2] [3 B 5] [8 B 13]
- *
- * @todo: Definition of exclude.
  */
 typedef enum {
     /* operation codes */
     TESTING_ACT_OR,
     TESTING_ACT_SUBTRACT,
-    TESTING_ACT_EXCLUDE,
 } testing_act_op;
 
 #ifndef INTRVL_TQ_POSTV_BIG
