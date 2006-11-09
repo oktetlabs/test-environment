@@ -1002,17 +1002,20 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
     if (du_tmpl == NULL || data_place == NULL)
         return TE_EWRONGPTR;
     if (d_len == 0)
-        return TE_EINVAL;
+        return 0;
 
     switch (du_tmpl->du_type)
     {
         case TAD_DU_EXPR:
         {               
             int64_t iterated, no_iterated;
+
             rc = tad_int_expr_calculate(du_tmpl->val_int_expr,
                                         args, arg_num, &iterated);
             if (rc != 0)                                    
+            {
                 ERROR("%s(): int expr calc error %x", __FUNCTION__, rc);
+            }
             else
             {
                 no_iterated = tad_ntohll(iterated);
@@ -1020,8 +1023,8 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
                             sizeof(no_iterated) - d_len,
                        d_len);
             }
-        }
             break;
+        }
 
         case TAD_DU_OCTS:
             if (du_tmpl->val_data.oct_str == NULL)
@@ -1030,16 +1033,21 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
                 rc = TE_ETADLESSDATA;
             }
             else
+            {
                 memcpy(data_place, du_tmpl->val_data.oct_str, d_len);
+            }
             break;
+
         case TAD_DU_I32:
             {
                 int32_t no_int = htonl(du_tmpl->val_i32);
+
                 memcpy(data_place,
                        ((uint8_t *)&no_int) + sizeof(no_int) - d_len,
                        d_len);
             }
             break;
+
         default:
             ERROR("%s(): wrong type %d of DU for send",
                   __FUNCTION__, du_tmpl->du_type);
