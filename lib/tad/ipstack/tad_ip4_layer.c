@@ -774,6 +774,10 @@ tad_ip4_match_pre_cb(csap_p              csap,
     meta_pkt_layer->opaque = pkt_data;
 
     rc = tad_bps_pkt_frag_match_pre(&proto_data->hdr, &pkt_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_match_pre(&proto_data->opts, &pkt_data->opts);
 
     return rc;
 }
@@ -804,6 +808,13 @@ tad_ip4_match_post_cb(csap_p              csap,
 
     rc = tad_bps_pkt_frag_match_post(&proto_data->hdr, &pkt_data->hdr,
                                      pkt, &bitoff, meta_pkt_layer->nds);
+    if (rc != 0)
+        return rc;
+
+#if 0
+    rc = tad_bps_pkt_frag_match_post(&proto_data->opts, &pkt_data->opts,
+                                     pkt, &bitoff, meta_pkt_layer->nds);
+#endif
 
     return rc;
 }
