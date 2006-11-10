@@ -343,6 +343,8 @@ typedef struct tad_ip4_gen_bin_cb_per_sdu_data {
 
     int         upper_chksm_offset; /**< Offset of the upper layer
                                          checksum in the IPv4 SDU */
+    te_bool     use_phdr;           /**< Should pseudo-header be included
+                                         in checksum calculation */
     uint32_t    phdr_chksm;         /**< Precalculated checksum of the
                                          pseudo-header with 0 length */
 
@@ -390,9 +392,16 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
             }
             tmp = htons(sdu_len);
 
-            /* Pseudo-header checksum */
-            seg_data.checksum = data->phdr_chksm +
-                calculate_checksum(&tmp, sizeof(tmp));
+            if (data->use_phdr)
+            {
+                /* Pseudo-header checksum */
+                seg_data.checksum = data->phdr_chksm +
+                    calculate_checksum(&tmp, sizeof(tmp));
+            }
+            else
+            {
+                seg_data.checksum = 0;
+            }
 
             /* Preset checksum field by zeros */
             memset((uint8_t *)seg->data_ptr + data->upper_chksm_offset,
@@ -652,14 +661,17 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
         {
             case IPPROTO_TCP:
                 cb_data.upper_chksm_offset = 16;
+                cb_data.use_phdr = TRUE;
                 break;
 
             case IPPROTO_UDP:
                 cb_data.upper_chksm_offset = 6;
+                cb_data.use_phdr = TRUE;
                 break;
 
             case IPPROTO_ICMP:
                 cb_data.upper_chksm_offset = 2;
+                cb_data.use_phdr = FALSE;
                 break;
 
             default:
@@ -712,7 +724,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     }
 
     /* Precalculate checksum of the pseudo-header */
-    if (cb_data.upper_chksm_offset != -1)
+    if (cb_data.upper_chksm_offset != -1 && cb_data.use_phdr)
     {
         uint8_t proto[2] = { 0, cb_data.hdr[9] };
 
