@@ -1,9 +1,11 @@
 socket
 bind
+select
 connect
 listen
 accept
 send
+sendto
 recv
 read
 write
