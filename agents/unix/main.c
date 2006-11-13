@@ -31,6 +31,8 @@
 
 #define TE_LGR_USER      "Main"
 
+#define _LARGEFILE64_SOURCE
+#define _FILE_OFFSET_BITS   64
 
 #include "te_config.h"
 #include "config.h"
@@ -72,7 +74,6 @@
 #include "te_sleep.h"
 
 #include "unix_internal.h"
-
 
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
@@ -123,6 +124,12 @@ const char *ta_execname = NULL;
 const char *ta_name = "(unix)";
 /** Test Agent data and binaries location */ 
 char ta_dir[RCF_MAX_PATH];
+
+#if __linux__
+const char *ta_tmp_path = "/tmp/";
+#else
+const char *ta_tmp_path = "/usr/tmp/";
+#endif
 
 #if __linux__
 /** Test Agent vsyscall page entrance */
@@ -930,6 +937,202 @@ create_data_file(char *pathname, char c, int len)
 
     return 0;
 }
+
+#ifndef TA_USE_SLOW_LSEEK
+#define TA_USE_SLOW_LSEEK   1
+#endif
+
+#ifndef TA_LSEEK_STEP_SIZE
+#undef TA_LSEEK_STEP_SIZE
+#endif
+#define TA_LSEEK_STEP_SIZE  0x10000000
+
+/**
+ * Work around 32-bit offset limits
+ * (llseek() sometimes does not work properly)
+ *
+ * @return 0 (success) or system error
+ */
+static int64_t
+long_lseek_set(int fd, int64_t offset)
+{
+#if TA_USE_SLOW_LSEEK
+    off_t off;
+    
+    if (lseek(fd, 0, SEEK_SET) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    while (offset > 0)
+    {
+        off = (offset < TA_LSEEK_STEP_SIZE) ? offset : TA_LSEEK_STEP_SIZE;
+
+        if (lseek(fd, off, SEEK_CUR) < 0)
+            return TE_OS_RC(TE_TA_UNIX, errno);
+
+        offset -= off;
+    }
+    return offset;
+    
+#else
+    return llseek(fd, offset, SEEK_SET);
+#endif
+}
+
+#ifdef TA_SPARSE_BUF_SIZE
+#undef TA_SPARSE_BUF_SIZE
+#endif
+#define TA_SPARSE_BUF_SIZE  1024
+
+/**
+ * Create a sparse file (with holes), where the real data of specified
+ * length filled with specified pattern starts from specified offset only.
+ *
+ * @return 0 (success) or system error
+ */
+int
+create_sparse_file(char *path_name, int64_t offset,
+                   int64_t payload_length, char ptrn)
+{
+    char  buf[TA_SPARSE_BUF_SIZE];
+    int   fd;
+    int   flags = O_CREAT | O_RDWR;
+    int   mode = S_IRWXU | S_IRWXG | S_IRWXO;
+#if 0
+    int   mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP;
+#endif
+
+#if !__linux__
+    flags |= O_LARGEFILE;
+#endif
+
+    if ((fd = open(path_name, flags, mode)) < 0)
+    {
+        ERROR("Failed to create sparse file \"%s\"", path_name);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    memset(buf, ptrn, TA_SPARSE_BUF_SIZE);
+
+    if (long_lseek_set(fd, offset) < 0)
+    {
+        ERROR("Failed to lseek() to %lld offset", offset);
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    
+    while (payload_length > 0)
+    {
+        int copy_len = (payload_length > TA_SPARSE_BUF_SIZE) ?
+                       TA_SPARSE_BUF_SIZE : payload_length;
+
+        if ((copy_len = write(fd, (void *)buf, copy_len)) < 0)
+        {
+            ERROR("Failed to write() to file \"%s\"", path_name);
+            close(fd);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+        payload_length -= copy_len;
+    }
+
+    close(fd);
+
+    return 0;
+}
+
+#ifdef TA_CMP_BUF_SIZE
+#undef TA_CMP_BUF_SIZE
+#endif
+#define TA_CMP_BUF_SIZE  1024
+
+int
+compare_files(char *path_name1, int64_t offset1,
+              char *path_name2, int64_t offset2,
+              int64_t cmp_length)
+{
+    int fd1 = -1;
+    int fd2 = -1;
+    
+    int size1;
+    int size2;
+    
+    char buf1[TA_CMP_BUF_SIZE];
+    char buf2[TA_CMP_BUF_SIZE];
+
+    int len;
+    
+    if ((fd1 = open(path_name1, O_RDONLY)) < 0)
+    {
+        ERROR("Failed to create sparse file \"%s\"", path_name1);
+        goto error;
+    }
+
+    if (long_lseek_set(fd1, offset1) < 0)
+    {
+        ERROR("Failed to lseek() on file \"%s\" to %lld offset",
+              path_name1, offset1);
+        goto error;
+    }
+
+    if ((fd2 = open(path_name2, O_RDONLY)) < 0)
+    {
+        ERROR("Failed to create sparse file \"%s\"", path_name2);
+        goto error;
+    }
+
+    if (long_lseek_set(fd2, offset2) < 0)
+    {
+        ERROR("Failed to lseek() on file \"%s\" to %lld offset",
+              path_name2, offset2);
+        goto error;
+    }
+
+    while (cmp_length > 0)
+    {
+        len = (cmp_length < TA_CMP_BUF_SIZE) ? cmp_length : TA_CMP_BUF_SIZE;
+
+        if ((size1 = read(fd1, buf1, len)) < 0)
+        {
+            ERROR("Failed to read() from file \"%s\"", path_name1);
+            goto error;
+        }
+
+        if ((size2 = read(fd2, buf2, len)) < 0)
+        {
+            ERROR("Failed to read() from file \"%s\"", path_name2);
+            goto error;
+        }
+
+        if (size1 != size2)
+        {
+            break;
+        }
+        if (size1 == 0)
+        {
+            cmp_length = 0;
+            break;
+        }
+        if (memcmp(buf1, buf2, size1) != 0)
+        {
+            break;
+        }
+        
+        cmp_length -= len;
+    }
+
+    close(fd1);
+    close(fd2);
+    
+    return (cmp_length > 0) ? -1 : 0;
+
+error:
+    if (fd1 >= 0)
+        close(fd1);
+    if (fd2 >= 0)
+        close(fd2);
+    return TE_OS_RC(TE_TA_UNIX, errno);
+}
+
+
 
 /* Declarations of routines to be linked with the agent */
 int
