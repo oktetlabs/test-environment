@@ -780,13 +780,13 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
          
     if (father == NULL && !local)
     {
-        char *argv[1];
+        void *argv[1];
         
         argv[0] = rpcs->name;
         
         if ((rc = rcf_ch_start_process((pid_t *)&rpcs->pid, 0, 
                                        "rcf_pch_rpc_server_argv",
-                                       TRUE, 1, (void **)argv)) != 0)
+                                       TRUE, 1, argv)) != 0)
         {
             pthread_mutex_unlock(&lock);
             free(rpcs);
@@ -798,13 +798,13 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     
     if (local)
     {
-        char *argv[1];
+        void *argv[1];
         
         argv[0] = rpcs->name;
         
         if ((rc = rcf_ch_start_thread((int *)&rpcs->tid, 0, 
                                       "rcf_ch_rpc_server_thread",
-                                      TRUE, 1, (void **)argv)) != 0)
+                                      TRUE, 1, argv)) != 0)
         {
             pthread_mutex_unlock(&lock);
             free(rpcs);
