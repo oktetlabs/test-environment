@@ -242,7 +242,7 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
 {
     te_bool         name_found = FALSE;
     te_bool         status_found = FALSE;
-    te_test_status  status;
+    te_test_status  status = TE_TEST_UNSPEC;
 
     while (ctx->rc == 0 && attrs[0] != NULL && attrs[1] != NULL)
     {
