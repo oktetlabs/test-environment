@@ -730,9 +730,10 @@ trc_report_log_start_element(void *user_data,
  * @param name          The element name
  */
 static void
-trc_report_log_end_element(void *user_data, const xmlChar *tag)
+trc_report_log_end_element(void *user_data, const xmlChar *name)
 {
     trc_report_log_parse_ctx   *ctx = user_data;
+    const char                 *tag = XML2CHAR(name);
 
     assert(ctx != NULL);
     ENTRY("state=%u rc=%r tag=%s", ctx->state, ctx->rc, tag);
