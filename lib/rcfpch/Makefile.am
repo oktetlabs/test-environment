@@ -2,11 +2,7 @@
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
-
-# -Wno-uninitialized is used to suppress warnings:
-#   variable '...' might be clobbered by `longjmp' or `vfork'
-# TODO: Investigate whether it can cause any issues.
-AM_CFLAGS = @TE_CFLAGS@ -Wno-uninitialized
+AM_CFLAGS = @TE_CFLAGS@ 
 
 include_HEADERS=rcf_ch_api.h rcf_pch.h rcf_pch_ta_cfg.h rcf_pch_mem.h \
                 rpc_transport.h

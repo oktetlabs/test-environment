@@ -1347,9 +1347,9 @@ tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
         return TE_EFAULT;
     } 
 
-    RCF_CH_LOCK;
+    RCF_CH_SAFE_LOCK;
     rc = rcf_comm_agent_reply(rcfc, buffer, cmd_len + attach_len);
-    RCF_CH_UNLOCK;
+    RCF_CH_SAFE_UNLOCK;
     free(buffer);
 
     return rc;

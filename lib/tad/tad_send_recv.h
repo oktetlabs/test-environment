@@ -110,10 +110,10 @@ tad_task_reply(tad_task_context *task, const char *fmt, ...)
         /* Try to continue */
     }
     INFO("Sending reply: '%s'", task->answer_buf);
-    RCF_CH_LOCK;
+    RCF_CH_SAFE_LOCK;
     rc = rcf_comm_agent_reply(task->rcfc, task->answer_buf,
                               strlen(task->answer_buf) + 1);
-    RCF_CH_UNLOCK;
+    RCF_CH_SAFE_UNLOCK;
 
     return rc;
 }
