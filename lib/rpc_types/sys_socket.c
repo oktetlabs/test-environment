@@ -49,6 +49,8 @@
 INCLUDE(te_win_defs.h)
 #endif
 #define _NETINET_IN_H 1
+extern const char *inet_ntop(int af, const void *src, char *dst,
+                             socklen_t cnt);
 #else
 
 #if HAVE_SYS_TYPES_H
@@ -1422,7 +1424,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
 
     if (rpc->flags & TARPC_SA_RAW)
     {
-        assert(rpc->raw.raw_len == rlen);
+        assert((socklen_t)rpc->raw.raw_len == rlen);
         if (memcmp(rpc->raw.raw_val, sa, rlen) == 0)
         {
             /* Raw data specified by caller has not been modified */
@@ -1440,8 +1442,8 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
         assert(rpc->raw.raw_len == 0);
     }
 
-    if (len < TE_OFFSET_OF(struct sockaddr, sa_family) +
-              sizeof(sa->sa_family))
+    if (len < (socklen_t)(TE_OFFSET_OF(struct sockaddr, sa_family) +
+                          sizeof(sa->sa_family)))
     {
         ERROR("%s(): Address is too short (%u), it does not contain "
               "even 'sa_family' - assertion failure", __FUNCTION__,
@@ -1456,7 +1458,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
         {
             const struct sockaddr_in   *sin = CONST_SIN(sa);
 
-            if (len < sizeof(struct sockaddr_in))
+            if (len < (socklen_t)sizeof(struct sockaddr_in))
             {
                 ERROR("%s(): Address is to short (%u) to be 'struct "
                       "sockaddr_in' (%u) - assertion failure",
@@ -1478,7 +1480,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
         {
             const struct sockaddr_in6  *sin6 = CONST_SIN6(sa);
 
-            if (len < sizeof(struct sockaddr_in6))
+            if (len < (socklen_t)sizeof(struct sockaddr_in6))
             {
                 ERROR("%s(): Address is to short (%u) to be 'struct "
                       "sockaddr_in6' (%u) - assertion failure",
@@ -1503,7 +1505,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
 
 #ifdef AF_LOCAL
         case AF_LOCAL:
-            if (len < sizeof(struct sockaddr))
+            if (len < (socklen_t)sizeof(struct sockaddr))
             {
                 ERROR("%s(): Address is to short (%u) to be 'struct "
                       "sockaddr' (%u) - assertion failure",
@@ -1570,7 +1572,7 @@ sockaddr_rpc2h(const tarpc_sa *rpc,
         if (rpc->flags & TARPC_SA_RAW)
         {
             assert(rpc->raw.raw_val != NULL);
-            assert(rpc->raw.raw_len <= salen);
+            assert((socklen_t)rpc->raw.raw_len <= salen);
             memcpy(res_sa, rpc->raw.raw_val, rpc->raw.raw_len);
             if (salen_out != NULL)
                 *salen_out = rpc->raw.raw_len;
@@ -1656,7 +1658,7 @@ sockaddr_rpc2h(const tarpc_sa *rpc,
 
     if (res_sa != NULL && rpc->raw.raw_val != NULL)
     {
-        assert(salen >= len_auto + rpc->raw.raw_len);
+        assert(salen >= len_auto + (socklen_t)rpc->raw.raw_len);
         memcpy((uint8_t *)res_sa + len_auto, rpc->raw.raw_val,
                rpc->raw.raw_len);
         len_auto += rpc->raw.raw_len;
@@ -1704,7 +1706,7 @@ sockaddr_h2str(const struct sockaddr *addr)
                          inet_ntop(AF_INET,
                                    rpc_sa->data.tarpc_sa_data_u.in.addr,
                                    addr_buf, sizeof(addr_buf)),
-                         rpc_sa->data.tarpc_sa_data_u.in.port);
+                         (unsigned)rpc_sa->data.tarpc_sa_data_u.in.port);
                 break;
             }
 
@@ -1713,14 +1715,14 @@ sockaddr_h2str(const struct sockaddr *addr)
                 char addr_buf[INET6_ADDRSTRLEN];
 
                 snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-                         " %s:%u flowinfo=0x%x scope_id=%u src_id=%u",
-                         inet_ntop(AF_INET6,
-                                   rpc_sa->data.tarpc_sa_data_u.in6.addr,
-                                   addr_buf, sizeof(addr_buf)),
-                         rpc_sa->data.tarpc_sa_data_u.in6.port,
-                         rpc_sa->data.tarpc_sa_data_u.in6.flowinfo,
-                         rpc_sa->data.tarpc_sa_data_u.in6.scope_id,
-                         rpc_sa->data.tarpc_sa_data_u.in6.src_id);
+                    " %s:%u flowinfo=0x%x scope_id=%u src_id=%u",
+                    inet_ntop(AF_INET6,
+                              rpc_sa->data.tarpc_sa_data_u.in6.addr,
+                              addr_buf, sizeof(addr_buf)),
+                    (unsigned)rpc_sa->data.tarpc_sa_data_u.in6.port,
+                    (unsigned)rpc_sa->data.tarpc_sa_data_u.in6.flowinfo,
+                    (unsigned)rpc_sa->data.tarpc_sa_data_u.in6.scope_id,
+                    (unsigned)rpc_sa->data.tarpc_sa_data_u.in6.src_id);
                 break;
             }
 
@@ -1738,7 +1740,7 @@ sockaddr_h2str(const struct sockaddr *addr)
                  " len=AUTO");
     else
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-                 " len=%u", rpc_sa->len);
+                 " len=%u", (unsigned)rpc_sa->len);
 
     return buf;
 }
