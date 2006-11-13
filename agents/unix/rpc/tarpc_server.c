@@ -3246,6 +3246,16 @@ TARPC_FUNC(open, {},
 }
 )
 
+/*-------------- open64() --------------------------------*/
+TARPC_FUNC(open64, {},
+{
+    MAKE_CALL(out->fd = func_ptr((in->path.path_len == 0) ? NULL :
+                                     in->path.path_val,
+                                 fcntl_flags_rpc2h(in->flags),
+                                 file_mode_flags_rpc2h(in->mode)));
+}
+)
+
 /*-------------- fopen() --------------------------------*/
 TARPC_FUNC(fopen, {},
 {
@@ -4430,17 +4440,63 @@ TARPC_FUNC(sendfile,
     COPY_ARG(offset);
 },
 {
-    off_t offset = 0;
-    
-    if (out->offset.offset_len > 0)
-        offset = *out->offset.offset_val;
+    if (in->force64 == TRUE)
+    {
+        do
+        {
+            int rc;
+            api_func func64;
 
-    MAKE_CALL(out->retval =
-        func(in->out_fd, in->in_fd,
-             out->offset.offset_len == 0 ? NULL : &offset,
-             in->count));
-    if (out->offset.offset_len > 0)
-        out->offset.offset_val[0] = (tarpc_off_t)offset;
+            off64_t offset = 0;
+
+            if ((rc = tarpc_find_func(in->common.lib,
+                                      "sendfile64", &func64)) == 0)
+            {
+                func = func64;
+            }
+            else
+            {
+                WARN("Cannot find sendfile64() function, using sendfile()");
+            }
+
+            if ((api_func)func == NULL)
+            {
+                ERROR("Cannot find 'sendfile64/sendfile' routine");
+                break;
+            }
+
+            if (out->offset.offset_len > 0)
+                offset = *out->offset.offset_val;
+
+            RING("Call sendfile64(out=%d, int=%d, offset=%lld, count=%d)",
+                 in->out_fd, in->in_fd, offset, in->count);
+
+            MAKE_CALL(out->retval =
+                func(in->out_fd, in->in_fd,
+                     out->offset.offset_len == 0 ? NULL : &offset,
+                     in->count));
+
+            RING("sendfile64() returns %d, errno=%d, offset=%lld",
+                 out->retval, errno, offset);
+
+            if (out->offset.offset_len > 0)
+                out->offset.offset_val[0] = (tarpc_off_t)offset;
+        } while (0);
+    }
+    else
+    {
+        off_t offset = 0;
+    
+        if (out->offset.offset_len > 0)
+            offset = *out->offset.offset_val;
+
+        MAKE_CALL(out->retval =
+            func(in->out_fd, in->in_fd,
+                 out->offset.offset_len == 0 ? NULL : &offset,
+                 in->count));
+        if (out->offset.offset_len > 0)
+            out->offset.offset_val[0] = (tarpc_off_t)offset;
+    }
 }
 )
 

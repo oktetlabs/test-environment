@@ -31,10 +31,14 @@
 #ifndef __TARPC_SERVER_H__
 #define __TARPC_SERVER_H__
 
+#define _LARGEFILE64_SOURCE
+#define _FILE_OFFSET_BITS   64
+
 #include "te_config.h"
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 
 #if __sun__
 /* Required on Solaris2 (SunOS 5.11) to get msg_control etc. */
