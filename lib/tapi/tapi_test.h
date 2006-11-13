@@ -301,7 +301,6 @@ extern "C" {
 #define TEST_GET_INT64_PARAM(var_name_) \
     do {                                                        \
         const char *str_val_;                                   \
-        char       *end_ptr;                                    \
                                                                 \
         str_val_ = test_get_param(argc, argv, #var_name_);      \
         if (str_val_ == NULL)                                   \
