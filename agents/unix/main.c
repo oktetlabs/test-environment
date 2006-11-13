@@ -404,7 +404,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
     int        fd = -1;
     int8_t    *auxbuf = NULL;
     int8_t    *auxbuf_p = NULL;
-    size_t    procfile_len = 0;
+    size_t     procfile_len = 0;
 
     if ((auxbuf = malloc(AUX_BUFFER_LEN)) == NULL)
     {
