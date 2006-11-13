@@ -331,10 +331,10 @@ tapi_cfg_base_if_del_mcast_mac(const char *oid,
     }
     else
     {
-        int         rc = 0;
-        cfg_handle *addrs;
-        int         addr_num;
-        int         i;
+        te_errno        rc = 0;
+        cfg_handle     *addrs;
+        unsigned int    addr_num;
+        unsigned int    i;
         
         if ((rc = cfg_find_pattern_fmt(&addr_num, &addrs,
                                        "%s/mcast_link_addr:*",
