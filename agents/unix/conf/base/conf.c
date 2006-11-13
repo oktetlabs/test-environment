@@ -3461,7 +3461,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
 
             if (sdl->sdl_alen == ETHER_ADDR_LEN)
             {
-                ptr = sdl->sdl_data + sdl->sdl_nlen;
+                ptr = (const uint8_t *)sdl->sdl_data + sdl->sdl_nlen;
             }
             else
             {
