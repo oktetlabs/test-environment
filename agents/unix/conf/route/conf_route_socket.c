@@ -79,6 +79,30 @@
         return __rc;            \
     } while (0)
 
+#ifdef USE_IOCTL
+/**
+ * Find interface an address is assigned to.
+ *
+ * @param addr          Address
+ * @param ifname        Location for interface name
+ *
+ * @return Status code.
+ */
+extern te_errno ta_unix_conf_netaddr2ifname(const struct sockaddr *addr,
+                                            char *ifname);
+
+/**
+ * Get IPv4 address of the network interface using ioctl.
+ *
+ * @param ifname        interface name (like "eth0")
+ * @param af            address family
+ * @param addr          location for the address pointer
+ *
+ * @return Error code.
+ */
+extern te_errno ta_unix_conf_get_addr(const char *ifname, sa_family_t af,
+                                      void **addr);
+#endif
 
 /** Current route request sequence number */
 static int rt_seq = 0;

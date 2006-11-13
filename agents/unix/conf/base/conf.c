@@ -1543,15 +1543,6 @@ nl_ip_addr_modify(enum net_addr_ops cmd,
 
 
 #ifdef USE_IOCTL
-/**
- * Get IPv4 address of the network interface using ioctl.
- *
- * @param ifname        interface name (like "eth0")
- * @param af            address family
- * @param addr          location for the address pointer
- *
- * @return Error code.
- */
 te_errno
 ta_unix_conf_get_addr(const char *ifname, sa_family_t af, void **addr)
 {
