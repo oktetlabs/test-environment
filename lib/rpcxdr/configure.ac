@@ -45,19 +45,14 @@ AC_SEARCH_LIBS([xdr_bytes], [rpc nsl], [],
                AC_MSG_ERROR([No RPC library found]))
 
 AH_TEMPLATE([x_putint32], [Put 32-bit integer to the stream])
-AC_CHECK_MEMBER(struct XDR.x_ops->x_putint32, [],
-    [AC_DEFINE([x_putint32],[x_putlong])], [
-#if HAVE_RPC_TYPES_H
-#include <rpc/types.h>
-#endif
-#if HAVE_RPC_XDR_H
-#include <rpc/xdr.h>
-#endif
-])
-
-AH_TEMPLATE([x_getint32], [Get 32-bit integer to the stream])
-AC_CHECK_MEMBER(struct XDR.x_ops->x_getint32, [],
-    [AC_DEFINE([x_getint32],[x_getlong])], [
+AH_TEMPLATE([x_getint32], [Get 32-bit integer from the stream])
+AH_TEMPLATE([x_int32_arg_t],
+    [Type of the second arguments to get/put 32-bit integer from/to the stream])
+AC_CHECK_MEMBER(struct XDR.x_ops->x_putint32,
+    [AC_DEFINE([x_int32_arg_t], [int32_t])],
+    [AC_DEFINE([x_putint32], [x_putlong])
+     AC_DEFINE([x_getint32], [x_getlong])
+     AC_DEFINE([x_int32_arg_t], [long])], [
 #if HAVE_RPC_TYPES_H
 #include <rpc/types.h>
 #endif
