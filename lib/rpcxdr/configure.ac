@@ -123,10 +123,9 @@ AC_CHECK_FUNC([xdr_uint64_t], [],
         [AC_DEFINE([xdr_uint64_t], [xdr_u_int64_t])],
         [AC_MSG_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 
-AC_CHECK_LIB([expat], [XML_ParserCreate], [],
-             AC_MSG_WARN([Cannot find expat]))
+AC_CHECK_LIB([expat], [XML_ParserCreate])
 
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADER([config.h])
 
 AC_CONFIG_FILES([Makefile])
 
