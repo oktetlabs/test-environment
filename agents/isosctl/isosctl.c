@@ -71,6 +71,7 @@ static rcf_pch_conf_object node_agent =
 #define SEND_ANSWER(_fmt...) \
     do {                                                                  \
         int rc;                                                           \
+                                                                          \
         if (snprintf(cbuf + answer_plen,                                  \
                      buflen - answer_plen, _fmt) >= buflen - answer_plen) \
         {                                                                 \
