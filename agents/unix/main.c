@@ -126,7 +126,7 @@ char ta_dir[RCF_MAX_PATH];
 
 #if __linux__
 /** Test Agent vsyscall page entrance */
-void *vsyscall_enter = NULL;
+const void *vsyscall_enter = NULL;
 #endif
 
 /** Tasks to be killed during TA shutdown */
@@ -1676,15 +1676,20 @@ main(int argc, char **argv)
     char *tmp;
     
 #ifdef __linux__
-    unsigned int *env = (unsigned int *)&argv[argc + 1];
-    unsigned int *av = env;
+    const void **av = (const void **)&argv[argc + 1];
 
-/* Skip the environment */
-    for (; *av != 0; av++);
-/* Look for SYSINFO block in the auxiliary vector */
-    for (av++; *av != 0; av += 2)
-        if (av[0] == AT_SYSINFO)
-            vsyscall_enter = (void *)av[1];
+    /* Skip the environment */
+    for (; *av != NULL; av++);
+
+    /* Look for SYSINFO block in the auxiliary vector */
+    for (av++; *av != NULL; av += 2)
+    {
+        if (((const unsigned int *)av)[0] == AT_SYSINFO)
+        {
+            vsyscall_enter = av[1];
+            break;
+        }
+    }
 #endif
     
     /* FIXME */
