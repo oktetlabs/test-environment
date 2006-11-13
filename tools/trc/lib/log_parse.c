@@ -246,10 +246,11 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
 
     while (ctx->rc == 0 && attrs[0] != NULL && attrs[1] != NULL)
     {
-        if (strcmp(attrs[0], "name") == 0)
+        if (xmlStrcmp(attrs[0], CONST_CHAR2XML("name")) == 0)
         {
             name_found = TRUE;
-            if (!trc_db_walker_step_test(ctx->db_walker, attrs[1], TRUE))
+            if (!trc_db_walker_step_test(ctx->db_walker,
+                                         XML2CHAR(attrs[1]), TRUE))
             {
                 ERROR("Unable to create a new test entry");
                 ctx->rc = TE_ENOMEM;
@@ -278,10 +279,10 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
                 ctx->rc = trc_report_log_parse_stack_push(ctx, TRUE);
             }
         }
-        else if (strcmp(attrs[0], "result") == 0)
+        else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("result")) == 0)
         {
             status_found = TRUE;
-            ctx->rc = te_test_str2status(attrs[1], &status);
+            ctx->rc = te_test_str2status(XML2CHAR(attrs[1]), &status);
         }
         attrs += 2;
     }
@@ -355,10 +356,10 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
 
     while (attrs[0] != NULL && attrs[1] != NULL)
     {
-        if (strcmp(attrs[0], "name") == 0)
+        if (xmlStrcmp(attrs[0], CONST_CHAR2XML("name")) == 0)
         {
             free(ctx->args_name[ctx->args_n]);
-            ctx->args_name[ctx->args_n] = strdup(attrs[1]);
+            ctx->args_name[ctx->args_n] = strdup(XML2CHAR(attrs[1]));
             if (ctx->args_name[ctx->args_n] == NULL)
             {
                 ERROR("strdup(%s) failed", attrs[1]);
@@ -366,13 +367,13 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
                 return;
             }
         }
-        else if (strcmp(attrs[0], "value") == 0)
+        else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("value")) == 0)
         {
             free(ctx->args_value[ctx->args_n]);
-            ctx->args_value[ctx->args_n] = strdup(attrs[1]);
+            ctx->args_value[ctx->args_n] = strdup(XML2CHAR(attrs[1]));
             if (ctx->args_value[ctx->args_n] == NULL)
             {
-                ERROR("strdup(%s) failed", attrs[1]);
+                ERROR("strdup(%s) failed", XML2CHAR(attrs[1]));
                 ctx->rc = TE_ENOMEM;
                 return;
             }
@@ -514,9 +515,10 @@ trc_report_merge_test_iter_data(trc_report_test_iter_data *result,
  */
 static void
 trc_report_log_start_element(void *user_data,
-                             const xmlChar *tag, const xmlChar **attrs)
+                             const xmlChar *name, const xmlChar **attrs)
 {
     trc_report_log_parse_ctx   *ctx = user_data;
+    const char                 *tag = XML2CHAR(name);
 
     assert(ctx != NULL);
     ENTRY("state=%u rc=%r tag=%s", ctx->state, ctx->rc, tag);
