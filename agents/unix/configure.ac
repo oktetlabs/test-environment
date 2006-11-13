@@ -166,7 +166,7 @@ dnl sendfile() is provided by:
 dnl - -lc on Linux;
 dnl - -lsendfile on Solaris2 (SunOS 5.11).
 dnl
-AC_SEARCH_LIBS([sendfile], [sendfile], [], [])
+AC_SEARCH_LIBS([sendfile], [sendfile])
 
 dnl
 dnl POSIX threads are provided by:
@@ -181,9 +181,9 @@ AC_SEARCH_LIBS([pthread_atfork], [pthread kse c_r], [],
 
 dnl
 dnl POSIX semaphores are provided by:
-dnl - -lpthread on Linux;
+dnl - -lpthread on Linux and NetBSD 3.1;
 dnl - -lc_r on FreeBSD (5, 6);
-dnl - -lsemaphore on NetBSD ('pthread-sem' package);
+dnl - -lsemaphore on NetBSD 2.0 ('pthread-sem' package);
 dnl - -lrt on Solaris2 (SunOS 5.11).
 dnl
 AC_SEARCH_LIBS([sem_init], [pthread c_r semaphore rt], [],
@@ -191,10 +191,8 @@ AC_SEARCH_LIBS([sem_init], [pthread c_r semaphore rt], [],
 
 dnl
 dnl Pluggable Authentication Modules are provided by:
-dnl - -lpam on Linux;
-dnl - ? on FreeBSD;
-dnl - ? on NetBSD;
-dnl - -lpam on Solaris2 (SunOS 5.11).
+dnl - -lpam on Linux, NetBSD, Solaris2 (SunOS 5.11);
+dnl - ? on FreeBSD.
 dnl
 AC_SEARCH_LIBS([pam_start], [pam],
                AC_DEFINE([HAVE_LIBPAM], [1],
