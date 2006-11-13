@@ -799,9 +799,10 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
                 RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
             msglen -= addrlen;
             msg->rtm_msglen += addrlen;
+            /* FIXME: Avoid type cast below */
             rc = ta_unix_conf_get_addr(rt_info->ifname,
                                        rt_info->dst.ss_family,
-                                       &ifa);
+                                       (void **)&ifa);
             if (rc != 0)
             {
                 ERROR("Failed to get interface '%s' address: %r",
