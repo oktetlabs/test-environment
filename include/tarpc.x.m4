@@ -2559,6 +2559,20 @@ struct tarpc_open_out {
     tarpc_int   fd;
 };
 
+/* open64() */
+struct tarpc_open64_in {
+    struct tarpc_in_arg common;
+    
+    char        path<>;
+    tarpc_int   flags;
+    tarpc_int   mode;
+};
+
+struct tarpc_open64_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_int   fd;
+};
 
 /* fopen() */
 struct tarpc_fopen_in {
@@ -3092,6 +3106,7 @@ struct tarpc_sendfile_in {
     tarpc_int           in_fd;
     tarpc_off_t         offset<>;
     tarpc_size_t        count;
+    tarpc_bool          force64;
 };
 
 struct tarpc_sendfile_out {
@@ -3588,6 +3603,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(pipe)
         RPC_DEF(socketpair)
         RPC_DEF(open)
+        RPC_DEF(open64)
         RPC_DEF(fopen)
         RPC_DEF(fdopen)
         RPC_DEF(fclose)
