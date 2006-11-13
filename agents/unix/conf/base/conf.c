@@ -131,7 +131,7 @@ typedef struct pam_message const pam_message_t;
 #elif defined __sun__
 #define PAM_FLAGS (PAM_NO_AUTHTOK_CHECK | PAM_SILENT)
 typedef struct pam_message pam_message_t;
-#elif defined __FreeBSD__
+#elif defined __FreeBSD__ || defined __netbsd__
 #define PAM_FLAGS PAM_SILENT
 typedef struct pam_message const pam_message_t;
 #endif
