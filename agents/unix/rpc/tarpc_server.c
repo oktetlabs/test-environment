@@ -5269,9 +5269,9 @@ void
 mcast_join_leave(tarpc_mcast_join_leave_in  *in,
                  tarpc_mcast_join_leave_out *out)
 {
-    api_func    setsockopt_func;
-    api_func    if_indextoname_func;
-    api_func    ioctl_func;
+    api_func            setsockopt_func;
+    api_func_ret_ptr    if_indextoname_func;
+    api_func            ioctl_func;
 
     if (in->how != TARPC_MCAST_OPTIONS)
     {
@@ -5284,7 +5284,7 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
     if (tarpc_find_func(in->common.lib, "setsockopt",
                         &setsockopt_func) != 0 ||
         tarpc_find_func(in->common.lib, "if_indextoname",
-                        &if_indextoname_func) != 0 ||
+                        (api_func *)&if_indextoname_func) != 0 ||
         tarpc_find_func(in->common.lib, "ioctl",
                         &ioctl_func) != 0)
     {
