@@ -1341,7 +1341,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
  */
 static te_errno
 promisc_get(unsigned int gid, const char *oid, char *value,
-           const char *ifname)
+            const char *ifname)
 {
     UNUSED(gid);
     UNUSED(oid);
@@ -1349,6 +1349,7 @@ promisc_get(unsigned int gid, const char *oid, char *value,
     /* TODO */
     *value = '0';
     value[1] = '\0';
+    UNUSED(ifname);
 
     return 0;
 }
@@ -1367,7 +1368,7 @@ promisc_get(unsigned int gid, const char *oid, char *value,
  */
 static te_errno
 promisc_set(unsigned int gid, const char *oid, const char *value,
-           const char *ifname)
+            const char *ifname)
 {
     UNUSED(gid);
     UNUSED(oid);
@@ -1375,6 +1376,7 @@ promisc_set(unsigned int gid, const char *oid, const char *value,
     /* TODO */
     if (strcmp(value, "0") == 0)
         return 0;
+    UNUSED(ifname);
 
     return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
 }
