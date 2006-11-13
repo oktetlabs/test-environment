@@ -1125,6 +1125,44 @@ rpc_open(rcf_rpc_server *rpcs,
     RETVAL_INT(open, out.fd);
 }
 
+int
+rpc_open64(rcf_rpc_server *rpcs,
+           const char *path, rpc_fcntl_flags flags,
+           rpc_file_mode_flags mode)
+{
+    tarpc_open64_in  in;
+    tarpc_open64_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(open64, -1);
+    }
+
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = (char *)strdup(path); /* FIXME */
+    }
+    in.flags = flags;
+    in.mode  = mode;
+
+    rcf_rpc_call(rpcs, "open64", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(open64, out.fd);
+
+    TAPI_RPC_LOG("RPC (%s,%s): open64(%s, %s, %s) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 path, fcntl_flags_rpc2str(flags),
+                 file_mode_flags_rpc2str(mode),
+                 out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(open64, out.fd);
+}
+
 
 int
 rpc_fcntl(rcf_rpc_server *rpcs, int fd,

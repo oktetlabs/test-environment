@@ -63,6 +63,21 @@ extern int rpc_open(rcf_rpc_server         *rpcs,
                     rpc_file_mode_flags     mode);
 
 /**
+ * Open a large file or device.
+ *
+ * @param rpcs      RPC server handle
+ * @param path      File or device name
+ * @param flags     How to open
+ * @param mode      The permissions to use in case a new file is created
+ * 
+ * @return File descriptor on success or -1 on failure
+ */
+extern int rpc_open64(rcf_rpc_server         *rpcs,
+                      const char             *path,
+                      rpc_fcntl_flags         flags,
+                      rpc_file_mode_flags     mode);
+
+/**
  *  Close file descriptor on RPC server side.
  *
  *  @param rpcs     RPC server handle
@@ -517,13 +532,14 @@ rpc_poll(rcf_rpc_server *rpcs,
  * @param in_fd         file descriptor opened for reading
  * @param offset        pointer to input file pointer position
  * @param count         number of bytes to copy between file descriptors
+ * @param force64       boolean value, whether to force sendfile64 call
  *
  * @return    Number of bytes written to out_fd
  *            or -1 in the case of failure and appropriate errno
  */
-extern ssize_t rpc_sendfile(rcf_rpc_server *rpcs,
-                            int out_fd, int in_fd,
-                            tarpc_off_t *offset, size_t count);
+extern ssize_t rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
+                            tarpc_off_t *offset, size_t count,
+                            tarpc_bool force64);
 
 
 /**

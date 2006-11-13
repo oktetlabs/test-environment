@@ -739,12 +739,14 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
 
 ssize_t
 rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
-             tarpc_off_t *offset, size_t count)
+             tarpc_off_t *offset, size_t count, tarpc_bool force64)
 {
     rcf_rpc_op         op;
     tarpc_off_t        start = (offset != NULL) ? *offset : 0;
     tarpc_sendfile_in  in;
     tarpc_sendfile_out out;
+
+    RING("sizeof(tarpc_off_t)=%d", sizeof(tarpc_off_t));
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -759,6 +761,7 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
     in.out_fd = out_fd;
     in.in_fd = in_fd;
     in.count = count;
+    in.force64 = force64;
     if (offset != NULL && rpcs->op != RCF_RPC_WAIT)
     {
         in.offset.offset_len = 1;
@@ -766,6 +769,7 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
     }
 
     rcf_rpc_call(rpcs, "sendfile", &in, &out);
+
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -776,9 +780,9 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(sendfile, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "sendfile(%d, %d, %p(%d), %u) -> %d (%s) offset=%d",
+                 "sendfile(%d, %d, %p(%lld), %u) -> %d (%s) offset=%lld",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 out_fd, in_fd, offset, (int)start, (unsigned)count,
+                 out_fd, in_fd, offset, start, (unsigned)count,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  (offset != NULL) ? (int)*offset : 0);
 
