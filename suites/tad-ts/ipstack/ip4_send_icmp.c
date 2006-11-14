@@ -65,6 +65,14 @@
 #include <string.h>
 #endif
 
+#if HAVE_NETINET_IP_H
+#include <netinet/ip.h>
+#endif
+
+#if HAVE_NETINET_IP_ICMP_H
+#include <netinet/ip_icmp.h>
+#endif
+
 #include "tad_common.h"
 #include "rcf_rpc.h"
 #include "asn_usr.h"
@@ -99,6 +107,12 @@ main(int argc, char *argv[])
     asn_value                  *template = NULL;
     
     int                         recv_socket = -1;
+
+    void                       *recv_buf = NULL;
+    size_t                      recv_buf_len = 0;
+    ssize_t                     r;
+
+    uint8_t                     ip_header_len;
     
     TEST_START; 
 
@@ -111,6 +125,12 @@ main(int argc, char *argv[])
     TEST_GET_IF(csap_if);
     TEST_GET_INT_PARAM(type);
     TEST_GET_INT_PARAM(code);
+
+    /* Create buffer to receive ICMP message */
+    recv_buf_len = sizeof(struct icmphdr) + 
+                   sizeof(struct iphdr) + 
+                   MAX_IPOPTLEN;
+    recv_buf = te_make_buf_by_len(recv_buf_len);
 
     /* Create RAW socket */
     recv_socket = rpc_socket(pco, RPC_PF_INET, 
@@ -161,10 +181,43 @@ main(int argc, char *argv[])
                               TE_BOOL3_ANY,
                               TE_BOOL3_ANY));
 
+    /* Start sending data via CSAP */
     CHECK_RC(tapi_tad_trsend_start(host_csap->ta, 0, send_csap,
                                template, RCF_MODE_NONBLOCKING));
 
-    /* TODO Start sending data */
+    MSLEEP(100);
+
+    /* Start receiving data via socket */
+    RPC_AWAIT_IUT_ERROR(pco);
+    r = rpc_recv(pco, recv_socket, recv_buf, recv_buf_len,
+                 RPC_MSG_DONTWAIT);
+
+    if (r < sizeof(struct icmphdr) + sizeof(struct iphdr))
+        TEST_FAIL("Number of received bytes is less than "
+                  "minimal expected %d", 
+                  sizeof(struct icmphdr) + sizeof(struct iphdr));
+
+    /* Check received data */
+    /* Check header length */
+    ip_header_len = ((struct iphdr *)recv_buf)->ihl;
+    if (ip_header_len > 5)
+        WARN("IP header has %d fields of "
+             "additional options", ip_header_len - 5);
+
+    /* Check ICMP header's fields */
+    /* Check type field */
+    if (((struct icmphdr *)(recv_buf + ip_header_len * 4))->type != type)
+        TEST_FAIL("ICMP message was received with "
+                  "corrupted type field");
+    /* Check code field */
+    if (((struct icmphdr *)(recv_buf + ip_header_len * 4))->code != code)
+        TEST_FAIL("ICMP message was received with "
+                  "corrupted code field");
+    /* Check checksum field */
+    if (~(short)calculate_checksum(recv_buf + ip_header_len * 4, 
+                                    sizeof(struct icmphdr)))
+        TEST_FAIL("ICMP message was received with "
+                  "corrupted checksum field");
 
     TEST_SUCCESS;
 
@@ -179,6 +232,8 @@ cleanup:
         CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta, 
                                              0, 
                                              send_csap));
+
+    free(recv_buf);
 
     TEST_END;
 }
