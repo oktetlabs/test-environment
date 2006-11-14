@@ -81,9 +81,11 @@ IP-Payload-Checksum ::= CHOICE {
 static asn_named_entry_t _ndn_ip4_pld_chksm_ne_array [] = 
 {
     { "offset", &asn_base_integer_s, 
-        { PRIVATE, NDN_TAG_IP4_PLD_CH_OFFSET } },
+      { PRIVATE, NDN_TAG_IP4_PLD_CH_OFFSET } },
     { "disable", &asn_base_null_s, 
-        { PRIVATE, NDN_TAG_IP4_PLD_CH_DISABLE } },
+      { PRIVATE, NDN_TAG_IP4_PLD_CH_DISABLE } },
+    { "diff", &asn_base_integer_s, 
+      { PRIVATE, NDN_TAG_IP4_PLD_CH_DIFF } },
 };
 
 asn_type ndn_ip4_pld_chksm_s =

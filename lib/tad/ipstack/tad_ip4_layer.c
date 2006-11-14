@@ -346,8 +346,11 @@ typedef struct tad_ip4_gen_bin_cb_per_sdu_data {
                                          checksum in the IPv4 SDU */
     te_bool     use_phdr;           /**< Should pseudo-header be included
                                          in checksum calculation */
-    uint32_t    phdr_chksm;         /**< Precalculated checksum of the
-                                         pseudo-header with 0 length */
+    uint32_t    init_chksm;         /**< Initial checksum value
+                                         (includes requested checksum
+                                         difference and precalculated
+                                         checksum of the pseudo-header
+                                         with zero length) */
 
 } tad_ip4_gen_bin_cb_per_sdu_data;
 
@@ -393,15 +396,11 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
             }
             tmp = htons(sdu_len);
 
+            seg_data.checksum = data->init_chksm;
             if (data->use_phdr)
             {
                 /* Pseudo-header checksum */
-                seg_data.checksum = data->phdr_chksm +
-                    calculate_checksum(&tmp, sizeof(tmp));
-            }
-            else
-            {
-                seg_data.checksum = 0;
+                seg_data.checksum += calculate_checksum(&tmp, sizeof(tmp));
             }
 
             /* Preset checksum field by zeros */
@@ -677,6 +676,29 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     }
     assert(bitoff == bitlen);
 
+    cb_data.init_chksm = 0;
+    /* Checksum field offset */
+    switch (cb_data.hdr[9])
+    {
+        case IPPROTO_TCP:
+            cb_data.upper_chksm_offset = 16;
+            cb_data.use_phdr = TRUE;
+            break;
+
+        case IPPROTO_UDP:
+            cb_data.upper_chksm_offset = 6;
+            cb_data.use_phdr = TRUE;
+            break;
+
+        case IPPROTO_ICMP:
+            cb_data.upper_chksm_offset = 2;
+            cb_data.use_phdr = FALSE;
+            break;
+
+        default:
+            cb_data.upper_chksm_offset = -1; /* Do nothing */
+            break;
+    }
     /* 
      * Location of the upper protocol checksum which uses IP
      * pseudo-header.
@@ -685,28 +707,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
                              PRIVATE, NDN_TAG_IP4_PLD_CHECKSUM);
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        /* Not specified exactly, determine using protocol */
-        switch (cb_data.hdr[9])
-        {
-            case IPPROTO_TCP:
-                cb_data.upper_chksm_offset = 16;
-                cb_data.use_phdr = TRUE;
-                break;
-
-            case IPPROTO_UDP:
-                cb_data.upper_chksm_offset = 6;
-                cb_data.use_phdr = TRUE;
-                break;
-
-            case IPPROTO_ICMP:
-                cb_data.upper_chksm_offset = 2;
-                cb_data.use_phdr = FALSE;
-                break;
-
-            default:
-                cb_data.upper_chksm_offset = -1; /* Do nothing */
-                break;
-        }
+        /* Nothing special */
     }
     else if (rc != 0)
     {
@@ -729,6 +730,10 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
         }
         switch (tv)
         {
+            case NDN_TAG_IP4_PLD_CH_DISABLE:
+                cb_data.upper_chksm_offset = -1;
+                break;
+
             case NDN_TAG_IP4_PLD_CH_OFFSET:
                 rc = asn_read_int32(pld_checksum,
                                     &cb_data.upper_chksm_offset,
@@ -741,9 +746,20 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
                 }
                 break;
 
-            case NDN_TAG_IP4_PLD_CH_DISABLE:
-                cb_data.upper_chksm_offset = -1;
+            case NDN_TAG_IP4_PLD_CH_DIFF:
+            {
+                int32_t tmp;
+
+                rc = asn_read_int32(pld_checksum, &tmp, NULL);
+                if (rc != 0)
+                {
+                    ERROR("%s(): asn_read_int32() failed for "
+                          "'pld-checksum.#diff': %r", __FUNCTION__, rc);
+                    return rc;
+                }
+                cb_data.init_chksm += tmp;
                 break;
+            }
 
             default:
                 ERROR("%s(): Unexpected choice tag value for "
@@ -757,8 +773,8 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     {
         uint8_t proto[2] = { 0, cb_data.hdr[9] };
 
-        cb_data.phdr_chksm = calculate_checksum(cb_data.hdr + 12, 8) +
-                             calculate_checksum(proto, sizeof(proto));
+        cb_data.init_chksm += calculate_checksum(cb_data.hdr + 12, 8) +
+                              calculate_checksum(proto, sizeof(proto));
     }
 
     /* Per-SDU processing */
