@@ -340,6 +340,7 @@ typedef struct tad_ip4_gen_bin_cb_per_sdu_data {
     tad_pkts   *pdus;   /**< List to put generated IPv4 PDUs */
     uint8_t    *hdr;    /**< Binary template of the IPv4 header */
     size_t      hlen;   /**< Length of the IPv4 header */
+    te_bool     hcsum;  /**< Should header checksum be calculated */
 
     int         upper_chksm_offset; /**< Offset of the upper layer
                                          checksum in the IPv4 SDU */
@@ -540,9 +541,15 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
         /* TTL and protocol are kept unchanged */
 
         /* Calculate header checksum */
-        assert(hdr[10] == 0 && hdr[11] == 0);
-        i16_tmp = ~(calculate_checksum(hdr, data->hlen));
-        memcpy(hdr + 10, &i16_tmp, 2);
+        if (data->hcsum)
+        {
+            /*
+             * Header checksum may be already initialized to non-zero,
+             * if packet with incorrect checksum is required.
+             */
+            i16_tmp = ~(calculate_checksum(hdr, data->hlen));
+            memcpy(hdr + 10, &i16_tmp, 2);
+        }
 
         /* Addresses are kept unchanged */
 
@@ -598,6 +605,28 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
             (unsigned)arg_num, sdus, pdus);
 
     proto_data = csap_get_proto_spec_data(csap, layer);
+
+    /* IP header checksum */
+    switch (tmpl_data->hdr.dus[11].du_type)
+    {
+        case TAD_DU_OCTS:
+        case TAD_DU_I32:
+            /* Exact specification of IP header checksum */
+            cb_data.hcsum = FALSE;
+            break;
+
+        case TAD_DU_UNDEF:
+            /* Be default, correct checksum */
+        case TAD_DU_EXPR:
+            /* Expression is considered as checksum difference */
+            cb_data.hcsum = TRUE;
+            break;
+
+        default:
+            ERROR("%s(): Unexpected data-unit type %u for 'h-checksum'",
+                  __FUNCTION__, tmpl_data->hdr.dus[11].du_type);
+            return TE_RC(TE_TAD_CSAP, TE_ENOSYS);
+    }
 
     /* Calculate length of the header */
     bitlen = tad_bps_pkt_frag_data_bitlen(&proto_data->hdr,
