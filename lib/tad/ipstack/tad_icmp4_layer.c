@@ -34,11 +34,23 @@
 #include "config.h"
 #endif
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #if HAVE_STRING_H
 #include <string.h>
 #endif
 #if HAVE_STRINGS_H
 #include <strings.h>
+#endif
+#if HAVE_NETINET_IN_SYSTM_H
+#include <netinet/in_systm.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_NETINET_IP_H
+#include <netinet/ip.h>
 #endif
 #if HAVE_NETINET_IP_ICMP_H
 #include <netinet/ip_icmp.h>
@@ -321,6 +333,99 @@ tad_icmp4_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
     }
 }
 
+/**
+ * ICMP message fragment control structures by ICMP message type.
+ */
+static void
+tad_icmp4_frag_structs_by_type(const unsigned int         type,
+                               tad_icmp4_proto_data      *proto_data,
+                               tad_icmp4_proto_pdu_data  *tmpl_data,
+                               tad_bps_pkt_frag_def     **def,
+                               tad_bps_pkt_frag_data    **data)
+{
+    switch (type)
+    {
+        default:
+#ifdef ICMP_DEST_UNREACH
+        case ICMP_DEST_UNREACH:
+#elif defined(ICMP_UNREACH)
+        case ICMP_UNREACH:
+#else
+#error Dont know type for ICMP destination unreachable message
+#endif
+#ifdef ICMP_TIME_EXCEEDED
+        case ICMP_TIME_EXCEEDED:
+#elif defined(ICMP_TIMXCEED)
+        case ICMP_TIMXCEED:
+#else
+#error Dont know type for ICMP time exceeded message
+#endif
+#ifdef ICMP_SOURCE_QUENCH
+        case ICMP_SOURCE_QUENCH:
+#elif defined(ICMP_SOURCEQUENCH)
+        case ICMP_SOURCEQUENCH:
+#else
+#error Dont know type for ICMP source quench message
+#endif
+            *def = &proto_data->unused;
+            *data = &tmpl_data->unused;
+            break;
+
+        case ICMP_REDIRECT:
+            *def = &proto_data->redirect;
+            *data = &tmpl_data->redirect;
+            break;
+
+        case ICMP_ECHO:
+        case ICMP_ECHOREPLY:
+#ifdef ICMP_INFO_REQUEST
+        case ICMP_INFO_REQUEST:
+#elif defined(ICMP_IREQ)
+        case ICMP_IREQ:
+#else
+#error Dont know type for ICMP information request
+#endif
+#ifdef ICMP_INFO_REPLY 
+        case ICMP_INFO_REPLY:
+#elif defined(ICMP_IREQREPLY)
+        case ICMP_IREQREPLY:
+#else
+#error Dont know type for ICMP information reply
+#endif
+            *def = &proto_data->echo_info;
+            *data = &tmpl_data->echo_info;
+            break;
+
+#ifdef ICMP_PARAMETERPROB
+        case ICMP_PARAMETERPROB:
+#elif defined(ICMP_PARAMPROB)
+        case ICMP_PARAMPROB:
+#else
+#error Dont know type for ICMP parameter problem message
+#endif
+            *def = &proto_data->pp;
+            *data = &tmpl_data->pp;
+            break;
+
+#ifdef ICMP_TIMESTAMP
+        case ICMP_TIMESTAMP:
+#elif defined(ICMP_TSTAMP)
+        case ICMP_TSTAMP:
+#else
+#error Dont know type for ICMP timestamp request 
+#endif
+#ifdef ICMP_TIMESTAMPREPLY
+        case ICMP_TIMESTAMPREPLY:
+#elif defined(ICMP_TSTAMPREPLY)
+        case ICMP_TSTAMPREPLY:
+#else
+#error Dont know type for ICMP timestamp reply 
+#endif
+            *def = &proto_data->ts;
+            *data = &tmpl_data->ts;
+            break;
+    }
+}
 
 /* See description in tad_ipstack_impl.h */
 te_errno
@@ -352,40 +457,9 @@ tad_icmp4_confirm_tmpl_cb(csap_p csap, unsigned int layer,
               "the type is not supported yet");
         return TE_RC(TE_TAD_CSAP, TE_ENOSYS);
     }
-    switch (tmpl_data->hdr.dus[0].val_i32)
-    {
-        default:
-        case ICMP_DEST_UNREACH:
-        case ICMP_TIME_EXCEEDED:
-        case ICMP_SOURCE_QUENCH:
-            add_def = &proto_data->unused;
-            add_data = &tmpl_data->unused;
-            break;
-
-        case ICMP_REDIRECT:
-            add_def = &proto_data->redirect;
-            add_data = &tmpl_data->redirect;
-            break;
-
-        case ICMP_ECHO:
-        case ICMP_ECHOREPLY:
-        case ICMP_INFO_REQUEST:
-        case ICMP_INFO_REPLY:
-            add_def = &proto_data->echo_info;
-            add_data = &tmpl_data->echo_info;
-            break;
-
-        case ICMP_PARAMETERPROB:
-            add_def = &proto_data->pp;
-            add_data = &tmpl_data->pp;
-            break;
-
-        case ICMP_TIMESTAMP:
-        case ICMP_TIMESTAMPREPLY:
-            add_def = &proto_data->ts;
-            add_data = &tmpl_data->ts;
-            break;
-    }
+    tad_icmp4_frag_structs_by_type(tmpl_data->hdr.dus[0].val_i32,
+                                   proto_data, tmpl_data,
+                                   &add_def, &add_data);
     rc = tad_bps_confirm_send(add_def, add_data);
 
     return rc;
@@ -443,40 +517,8 @@ tad_icmp4_gen_bin_cb(csap_p csap, unsigned int layer,
               __FUNCTION__, rc);
         return rc;
     }
-    switch (hdr[0])
-    {
-        default:
-        case ICMP_DEST_UNREACH:
-        case ICMP_TIME_EXCEEDED:
-        case ICMP_SOURCE_QUENCH:
-            add_def = &proto_data->unused;
-            add_data = &tmpl_data->unused;
-            break;
-
-        case ICMP_REDIRECT:
-            add_def = &proto_data->redirect;
-            add_data = &tmpl_data->redirect;
-            break;
-
-        case ICMP_ECHO:
-        case ICMP_ECHOREPLY:
-        case ICMP_INFO_REQUEST:
-        case ICMP_INFO_REPLY:
-            add_def = &proto_data->echo_info;
-            add_data = &tmpl_data->echo_info;
-            break;
-
-        case ICMP_PARAMETERPROB:
-            add_def = &proto_data->pp;
-            add_data = &tmpl_data->pp;
-            break;
-
-        case ICMP_TIMESTAMP:
-        case ICMP_TIMESTAMPREPLY:
-            add_def = &proto_data->ts;
-            add_data = &tmpl_data->ts;
-            break;
-    }
+    tad_icmp4_frag_structs_by_type(hdr[0], proto_data, tmpl_data,
+                                   &add_def, &add_data);
     rc = tad_bps_pkt_frag_gen_bin(add_def, add_data,
                                   args, arg_num, hdr,
                                   &bitoff, sizeof(hdr) << 3);
