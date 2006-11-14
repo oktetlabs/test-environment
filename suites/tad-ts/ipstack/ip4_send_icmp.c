@@ -160,11 +160,12 @@ main(int argc, char *argv[])
                               &ip_eth,
                               TE_BOOL3_ANY,
                               TE_BOOL3_ANY));
-#if 0
-    /* TODO Start sending data */
+
     CHECK_RC(tapi_tad_trsend_start(host_csap->ta, 0, send_csap,
                                template, RCF_MODE_NONBLOCKING));
-#endif
+
+    /* TODO Start sending data */
+
     TEST_SUCCESS;
 
 cleanup:
