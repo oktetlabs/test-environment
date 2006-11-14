@@ -2248,6 +2248,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
     UNUSED(ifname);
 
     s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
+    *s = '\0';
 
     for (tmp = mcast_mac_addr_list; tmp != NULL; tmp = tmp->next)
     {
