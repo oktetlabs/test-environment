@@ -118,7 +118,6 @@ typedef struct tad_eth_sap_data {
     pcap_t         *out;        /**< Output handle (for send) */
     char            errbuf[PCAP_ERRBUF_SIZE]; /**< Error buffer for pcap
                                                    calls error messages */
-    struct bpf_program fp;      /**< Compiled filter program */
 #endif
     unsigned int    send_mode;  /**< Send mode */
     unsigned int    recv_mode;  /**< Receive mode */
@@ -150,6 +149,94 @@ close_socket(int *sock)
         *sock = -1;
     }
     return 0;
+}
+#else
+/**
+ * Struct to pass to pcap_dispatch() as the last parameter
+ */ 
+typedef struct pkt_len_pkt {
+    tad_pkt *pkt;     /**< Frame to be sent */
+    size_t  *pkt_len; /**< Location for real packet length */
+} pkt_len_pkt;
+
+/**
+ * Callback for pcap_loop() function.
+ *
+ *  @param ptr     Location of some tad_eth_sap_recv() function parameters
+ *  @param header  Location of pcap_pkthdr
+ *  @param packet  Location of the first packet
+ *
+ */ 
+static void 
+pkt_handl(u_char *ptr, const struct pcap_pkthdr *header,
+          const u_char *packet)
+{
+    bpf_u_int32   pktlen = header->caplen;
+    pkt_len_pkt  *pktptr = (pkt_len_pkt *)ptr;
+    te_errno      rc;
+
+    if (header->len != pktlen)
+        WARN("Frame has been trunced");
+
+    if (pktlen > tad_pkt_len(pktptr->pkt))
+    {
+        tad_pkt_free_segs(pktptr->pkt);
+
+        size_t       len = pktlen - tad_pkt_len(pktptr->pkt);
+        tad_pkt_seg *seg = tad_pkt_first_seg(pktptr->pkt);
+
+        if ((seg != NULL) && (seg->data_ptr == NULL))
+        {
+            void *mem = malloc(len);
+
+            if (mem == NULL)
+            {
+                rc = TE_OS_RC(TE_TAD_CSAP, errno);
+                assert(rc != 0);
+                return;
+            }
+            VERB("%s(): reuse the first segment of packet", __FUNCTION__);
+            tad_pkt_put_seg_data(pktptr->pkt, seg,
+                                 mem, len, tad_pkt_seg_data_free);
+        }
+        else
+        {
+            seg = tad_pkt_alloc_seg(NULL, len, NULL);
+            VERB("%s(): append segment with %u bytes space", __FUNCTION__,
+                 (unsigned)len);
+            tad_pkt_append_seg(pktptr->pkt, seg);
+        }
+    }
+
+    /* Logical block to allocate iov of volatile length on the stack */
+    {
+        size_t          iovlen = tad_pkt_seg_num(pktptr->pkt);
+        struct iovec    iov[iovlen];
+        int             i;
+        int             rest = pktlen;
+        u_char         *ptr = (u_char *)packet;
+
+        /* Convert packet segments to IO vector */
+        rc = tad_pkt_segs_to_iov(pktptr->pkt, iov, iovlen);
+        if (rc != 0)
+        {
+            ERROR("Failed to convert segments to I/O vector: %r", rc);
+            return;
+        }
+
+        /* Copy packet into IO vector */
+        for (i = 0; rest > 0; i++)
+        {
+            memcpy(iov[i].iov_base, ptr, iov[i].iov_len);
+            rest -= iov[i].iov_len;
+            ptr += iov[i].iov_len;
+        }
+
+        if (pktptr->pkt_len != NULL)
+            *(pktptr->pkt_len) = (ssize_t)pktlen;
+    }
+
+    return;
 }
 #endif
 
@@ -611,31 +698,13 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
     /*  Obtain a packet capture descriptor */
     data->in = pcap_open_live(sap->name, TAD_ETH_SAP_SNAP_LEN,
                               (mode & TAD_ETH_RECV_OTHER) ? 1 : 0,
-                              0 /* forever */, data->errbuf);
+                              10, data->errbuf);
     if (data->in == NULL)
     {
         rc = TE_OS_RC(TE_TAD_BPF, errno);
-        ERROR("%s(): pcap_open_live(%s, %d, %d, %d, %d) failed: %r",
+        ERROR("%s(): pcap_open_live(%s, %d, %d, %d, %s) failed: %r",
               __FUNCTION__, sap->name, TAD_ETH_SAP_SNAP_LEN, 1,
               0, data->errbuf, rc);
-        return rc;
-    }
-
-    /* Compile the filter expression */
-    if (pcap_compile(data->in, &(data->fp), "", 0, 0) == -1)
-    {
-        rc = TE_OS_RC(TE_TAD_BPF, errno);
-        ERROR("%s(): pcap_compile(%s, %d, %d) failed: %r",
-              __FUNCTION__, sap->name, 0, 0, rc);
-        return rc;
-    }
-    
-    /* Apply the compiled filter */
-    if (pcap_setfilter(data->in, &(data->fp)) == -1)
-    {
-        rc = TE_OS_RC(TE_TAD_BPF, errno);
-        ERROR("%s(): pcap_setfilter() failed: %r",
-              __FUNCTION__, rc);
         return rc;
     }
 #endif
@@ -644,7 +713,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
 #ifdef USE_PF_PACKET
     INFO("PF_PACKET socket %d opened and bound for receive", data->in);
 #else
-    INFO("BPF opened and bound for receive");
+    INFO("BPF opened and bound for receive on %s", sap->name);
 #endif
 
     return 0;
@@ -670,6 +739,10 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
     socklen_t           fromlen = sizeof(from);
 #else
     int                 fd;
+    struct timeval      tv = { 0, timeout};
+    int                 ret_val;
+    fd_set              readfds;
+    pkt_len_pkt         ptr;
 #endif
 
     assert(sap != NULL);
@@ -717,15 +790,44 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
 
     return 0;
 #else
-    if ((fd = pcap_fileno(data->in)) < 0)
+    if ((fd = pcap_get_selectable_fd(data->in)) < 0)
     {
-        ERROR("%s(): pcap_fileno() returned %d",
+        ERROR("%s(): pcap_get_selectable_fd() returned %d",
               __FUNCTION__, fd);
         return -1;
     }
-    rc = tad_common_read_cb_sock(sap->csap, fd, MSG_TRUNC, timeout, pkt,
-                                 NULL, NULL, pkt_len);
-    return rc;
+
+    
+    FD_ZERO(&readfds);
+    FD_SET(fd, &readfds);
+    ret_val = select(fd + 1, &readfds, NULL, NULL, &tv);
+    if (ret_val == 0)
+    {
+        F_VERB(CSAP_LOG_FMT "select(%d, {%d}, NULL, NULL, {%d, %d}) timed "
+               "out", CSAP_LOG_ARGS(sap->csap), fd + 1, fd, tv.tv_sec,
+               tv.tv_usec);
+        return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
+    }
+
+    if (ret_val < 0)
+    {
+        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+        WARN(CSAP_LOG_FMT "select() failed: sock=%d: %r",
+             CSAP_LOG_ARGS(sap->csap), fd, rc);
+        return rc;
+    }
+   
+    ptr.pkt = pkt;
+    ptr.pkt_len = pkt_len;
+    rc = pcap_dispatch(data->in, 1, pkt_handl, (u_char *)&ptr);
+    if (rc < 0)
+    {
+        ERROR("%s(): pcap_dispatch() returned %d",
+              __FUNCTION__, rc);
+        return -1;
+    }
+    
+    return 0;
 #endif
 }
 
@@ -741,11 +843,6 @@ tad_eth_sap_recv_close(tad_eth_sap *sap)
 #ifdef USE_PF_PACKET
     return close_socket(&data->in);
 #else
-#ifdef __NetBSD__ /* FIXME */
-    /* pcap_freecode(data->in, &(data->fp)); */
-#else
-    pcap_freecode(&(data->fp));
-#endif
     pcap_close(data->in);
     data->in = NULL;
     return 0;
