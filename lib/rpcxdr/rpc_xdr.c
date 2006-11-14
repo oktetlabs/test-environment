@@ -29,6 +29,21 @@
 
 #include "te_config.h"
 
+#ifdef WINDOWS
+/* 
+ * It's not possible to define it in config.h and include it explicitly 
+ * because a lot of shit like HAVE_UNISTD_H is defined there automatically.
+ */
+#define x_int32_arg_t long
+#define xdr_int16_t xdr_short
+#define xdr_int32_t xdr_int
+#define xdr_int8_t xdr_char
+#define xdr_uint16_t xdr_u_short
+#define xdr_uint32_t xdr_u_int
+#define xdr_uint64_t xdr_u_int64_t
+#define xdr_uint8_t xdr_u_char
+#endif
+
 #include <stdio.h>
 
 #ifdef HAVE_SYS_TYPES_H

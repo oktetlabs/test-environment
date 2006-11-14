@@ -27,6 +27,23 @@ AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
 
 TE_LIB_SET
 
+AM_CONDITIONAL(DIST_RPCDEFS, test -n "$with_rpcdefs")
+RPCDEFS=
+RPCDEFS_DIST_FILES=
+with_rpcdefs="${with_rpcdefs//,/ }"
+for i in $with_rpcdefs ; do 
+    TMP=`basename $i`
+    if test ! -e $i -a -e ${srcdir}/$TMP ; then
+        i=${srcdir}/$TMP ;
+    fi
+    RPCDEFS="$RPCDEFS $i"
+    RPCDEFS_DIST_FILES="$RPCDEFS_DIST_FILES $TMP"
+done
+AC_SUBST(RPCDEFS)
+AC_SUBST(RPCDEFS_DIST_FILES)
+ 
+if test x$host == x${host%windows} ; then
+
 AC_CHECK_HEADERS([expat.h rpc/types.h])
 AC_CHECK_HEADERS([rpc/xdr.h], [], [], [
 #if HAVE_RPC_TYPES_H
@@ -61,21 +78,6 @@ AC_CHECK_MEMBER(struct XDR.x_ops->x_putint32,
 #endif
 ])
 
-AM_CONDITIONAL(DIST_RPCDEFS, test -n "$with_rpcdefs")
-RPCDEFS=
-RPCDEFS_DIST_FILES=
-with_rpcdefs="${with_rpcdefs//,/ }"
-for i in $with_rpcdefs ; do 
-    TMP=`basename $i`
-    if test ! -e $i -a -e ${srcdir}/$TMP ; then
-        i=${srcdir}/$TMP ;
-    fi
-    RPCDEFS="$RPCDEFS $i"
-    RPCDEFS_DIST_FILES="$RPCDEFS_DIST_FILES $TMP"
-done
-AC_SUBST(RPCDEFS)
-AC_SUBST(RPCDEFS_DIST_FILES)
- 
 AH_TEMPLATE([xdr_int8_t], [RPC XDR for signed 8bit width type])
 AC_CHECK_FUNC([xdr_int8_t], [],
     [AC_CHECK_FUNC([xdr_char],
@@ -119,6 +121,8 @@ AC_CHECK_FUNC([xdr_uint64_t], [],
         [AC_MSG_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 
 AC_CHECK_LIB([expat], [XML_ParserCreate])
+
+fi
 
 AC_CONFIG_HEADER([config.h])
 
