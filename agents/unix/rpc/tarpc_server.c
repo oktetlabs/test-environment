@@ -4435,6 +4435,12 @@ echoer(tarpc_echoer_in *in)
 
 /*-------------- sendfile() ------------------------------*/
 
+#if (SIZEOF_OFF_T == 8)
+typedef off_t   ta_off64_t;
+#else
+typedef off64_t ta_off64_t;
+#endif
+
 TARPC_FUNC(sendfile,
 {
     COPY_ARG(offset);
@@ -4445,11 +4451,11 @@ TARPC_FUNC(sendfile,
         do {
             int         rc;
             api_func    func64;
-            off64_t     offset = 0;
+            ta_off64_t  offset = 0;
             const char *real_func_name = "sendfile64";
 
             if ((rc = tarpc_find_func(in->common.lib,
-                                      "sendfile64", &func64)) == 0)
+                                      real_func_name, &func64)) == 0)
             {
                 func = func64;
             }
