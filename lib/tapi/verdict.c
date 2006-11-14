@@ -25,7 +25,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: logger_ten.c 30831 2006-08-22 06:48:27Z arybchik $
+ * $Id$
  */
 
 #define TE_LGR_USER     "Verdict TAPI"
@@ -65,7 +65,7 @@
 
 
 /** Maximum length of the test verdict */
-#define TEST_VERDICT_LEN_MAX    500
+#define TEST_VERDICT_LEN_MAX    1000
 
 
 #ifdef HAVE_PTHREAD_H
