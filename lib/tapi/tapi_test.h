@@ -44,6 +44,8 @@
 #include <time.h>
 #endif
 
+#include <math.h> /* For the TEST_GET_DOUBLE_PARAM error handling */
+
 #include "rcf_api.h"
 #include "conf_api.h"
 #include "logger_api.h"
@@ -311,6 +313,40 @@ extern "C" {
         {                                                       \
             TEST_FAIL("The value of '%s' parameter should be "  \
                       "an integer, but it is %s", #var_name_,   \
+                      str_val_);                                \
+        }                                                       \
+    } while (0)
+
+/**
+ * The macro to get parameters of type 'double' ('float' also may be used)
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_DOUBLE_PARAM(var_name_) \
+    do {                                                        \
+        const char *str_val_;                                   \
+        char       *end_ptr;                                    \
+                                                                \
+        str_val_ = test_get_param(argc, argv, #var_name_);      \
+        if (str_val_ == NULL)                                   \
+        {                                                       \
+            TEST_STOP;                                          \
+        }                                                       \
+        (var_name_) = strtod(str_val_, &end_ptr);               \
+        if (end_ptr == str_val_ || *end_ptr != '\0')            \
+        {                                                       \
+            TEST_FAIL("The value of '%s' parameter should be "  \
+                      "a double, but it is %s", #var_name_,     \
+                      str_val_);                                \
+        }                                                       \
+        if (((var_name_) == 0 ||                                \
+             (var_name_) == + HUGE_VAL ||                       \
+             (var_name_) == - HUGE_VAL) &&                      \
+            errno == ERANGE)                                    \
+        {                                                       \
+            TEST_FAIL("The value of '%s' parameter is too "     \
+                      "large or too small: %s", #var_name_,     \
                       str_val_);                                \
         }                                                       \
     } while (0)
