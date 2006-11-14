@@ -1001,7 +1001,7 @@ create_sparse_file(char *path_name, int64_t offset,
     int   mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP;
 #endif
 
-#if !__linux__
+#if !__linux__ && defined(O_LARGEFILE)
     flags |= O_LARGEFILE;
 #endif
 
