@@ -269,6 +269,11 @@ AC_CHECK_SIZEOF([socklen_t], [], [
 #include <sys/socket.h>
 #endif
 ])
+AC_CHECK_SIZEOF([off_t], [], [
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+])
 
 CPPFLAGS="-I${srcdir} ${CPPFLAGS}"
 
