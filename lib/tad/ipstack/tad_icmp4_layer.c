@@ -40,6 +40,9 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#if HAVE_NETINET_IP_ICMP_H
+#include <netinet/ip_icmp.h>
+#endif
 
 #include "te_defs.h"
 #include "te_alloc.h"
@@ -50,6 +53,9 @@
 #include "tad_ipstack_impl.h"
 
 
+/** Maximum of ICMP header length (Timestamp message) */
+#define TE_TAD_ICMP4_MAXLEN     (20)
+
 /**
  * ICMPv4 layer specific data
  */
@@ -58,7 +64,7 @@ typedef struct tad_icmp4_proto_data {
     tad_bps_pkt_frag_def    unused;
     tad_bps_pkt_frag_def    pp;
     tad_bps_pkt_frag_def    redirect;
-    tad_bps_pkt_frag_def    echo;
+    tad_bps_pkt_frag_def    echo_info;
     tad_bps_pkt_frag_def    ts;
 } tad_icmp4_proto_data;
 
@@ -71,7 +77,7 @@ typedef struct tad_icmp4_proto_pdu_data {
     tad_bps_pkt_frag_data   unused;
     tad_bps_pkt_frag_data   pp;
     tad_bps_pkt_frag_data   redirect;
-    tad_bps_pkt_frag_data   echo;
+    tad_bps_pkt_frag_data   echo_info;
     tad_bps_pkt_frag_data   ts;
 } tad_icmp4_proto_pdu_data;
 
@@ -190,7 +196,7 @@ tad_icmp4_init_cb(csap_p csap, unsigned int layer)
 
     rc = tad_bps_pkt_frag_init(tad_icmp4_echo_bps_hdr,
                                TE_ARRAY_LEN(tad_icmp4_echo_bps_hdr),
-                               NULL, &proto_data->echo);
+                               NULL, &proto_data->echo_info);
     if (rc != 0)
         return rc;
 
@@ -216,7 +222,7 @@ tad_icmp4_destroy_cb(csap_p csap, unsigned int layer)
     tad_bps_pkt_frag_free(&proto_data->unused);
     tad_bps_pkt_frag_free(&proto_data->pp);
     tad_bps_pkt_frag_free(&proto_data->redirect);
-    tad_bps_pkt_frag_free(&proto_data->echo);
+    tad_bps_pkt_frag_free(&proto_data->echo_info);
     tad_bps_pkt_frag_free(&proto_data->ts);
 
     free(proto_data);
@@ -256,8 +262,35 @@ tad_icmp4_nds_to_pdu_data(csap_p csap, tad_icmp4_proto_data *proto_data,
 
     rc = tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
                                    &pdu_data->hdr);
+    if (rc != 0)
+        return rc;
 
-    return rc;
+    rc = tad_bps_nds_to_data_units(&proto_data->unused, layer_pdu,
+                                   &pdu_data->unused);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_nds_to_data_units(&proto_data->pp, layer_pdu,
+                                   &pdu_data->pp);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_nds_to_data_units(&proto_data->echo_info, layer_pdu,
+                                   &pdu_data->echo_info);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_nds_to_data_units(&proto_data->ts, layer_pdu,
+                                   &pdu_data->ts);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_nds_to_data_units(&proto_data->redirect, layer_pdu,
+                                   &pdu_data->redirect);
+    if (rc != 0)
+        return rc;
+
+    return 0;
 }
 
 /* See description in tad_ipstack_impl.h */
@@ -280,8 +313,8 @@ tad_icmp4_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
                                    &pdu_data->pp);
         tad_bps_free_pkt_frag_data(&proto_data->redirect,
                                    &pdu_data->redirect);
-        tad_bps_free_pkt_frag_data(&proto_data->echo,
-                                   &pdu_data->echo);
+        tad_bps_free_pkt_frag_data(&proto_data->echo_info,
+                                   &pdu_data->echo_info);
         tad_bps_free_pkt_frag_data(&proto_data->ts,
                                    &pdu_data->ts);
         free(pdu_data);
@@ -297,6 +330,8 @@ tad_icmp4_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     te_errno                    rc;
     tad_icmp4_proto_data       *proto_data;
     tad_icmp4_proto_pdu_data   *tmpl_data;
+    tad_bps_pkt_frag_def       *add_def;
+    tad_bps_pkt_frag_data      *add_data;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
@@ -308,8 +343,69 @@ tad_icmp4_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     tmpl_data = *p_opaque;
 
     rc = tad_bps_confirm_send(&proto_data->hdr, &tmpl_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    if (tmpl_data->hdr.dus[0].du_type != TAD_DU_I32)
+    {
+        ERROR("Sending ICMP messages with not plain specification of "
+              "the type is not supported yet");
+        return TE_RC(TE_TAD_CSAP, TE_ENOSYS);
+    }
+    switch (tmpl_data->hdr.dus[0].val_i32)
+    {
+        default:
+        case ICMP_DEST_UNREACH:
+        case ICMP_TIME_EXCEEDED:
+        case ICMP_SOURCE_QUENCH:
+            add_def = &proto_data->unused;
+            add_data = &tmpl_data->unused;
+            break;
+
+        case ICMP_REDIRECT:
+            add_def = &proto_data->redirect;
+            add_data = &tmpl_data->redirect;
+            break;
+
+        case ICMP_ECHO:
+        case ICMP_ECHOREPLY:
+        case ICMP_INFO_REQUEST:
+        case ICMP_INFO_REPLY:
+            add_def = &proto_data->echo_info;
+            add_data = &tmpl_data->echo_info;
+            break;
+
+        case ICMP_PARAMETERPROB:
+            add_def = &proto_data->pp;
+            add_data = &tmpl_data->pp;
+            break;
+
+        case ICMP_TIMESTAMP:
+        case ICMP_TIMESTAMPREPLY:
+            add_def = &proto_data->ts;
+            add_data = &tmpl_data->ts;
+            break;
+    }
+    rc = tad_bps_confirm_send(add_def, add_data);
 
     return rc;
+}
+
+/**
+ * Callback to generate binary data per PDU.
+ *
+ * This function complies with tad_pkt_enum_cb prototype.
+ */
+static te_errno
+tad_icmp4_gen_bin_cb_per_pdu(tad_pkt *pdu, void *hdr)
+{
+    tad_pkt_seg    *seg = tad_pkt_first_seg(pdu);
+
+    /* Copy header template to packet */
+    assert(seg->data_ptr != NULL);
+    memcpy(seg->data_ptr, hdr, seg->data_len);
+
+    return 0;
 }
 
 /* See description in tad_ipstack_impl.h */
@@ -321,10 +417,12 @@ tad_icmp4_gen_bin_cb(csap_p csap, unsigned int layer,
 {
     tad_icmp4_proto_data     *proto_data;
     tad_icmp4_proto_pdu_data *tmpl_data = opaque;
+    tad_bps_pkt_frag_def     *add_def;
+    tad_bps_pkt_frag_data    *add_data;
 
     te_errno        rc;
     unsigned int    bitoff;
-    uint8_t         hdr[0]; /* FIXME */
+    uint8_t         hdr[TE_TAD_ICMP4_MAXLEN];
 
 
     assert(csap != NULL);
@@ -338,22 +436,73 @@ tad_icmp4_gen_bin_cb(csap_p csap, unsigned int layer,
     bitoff = 0;
     rc = tad_bps_pkt_frag_gen_bin(&proto_data->hdr, &tmpl_data->hdr,
                                   args, arg_num, hdr,
-                                  &bitoff, 0 /* FIXME */);
+                                  &bitoff, sizeof(hdr) << 3);
     if (rc != 0)
     {
         ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for addresses: %r",
               __FUNCTION__, rc);
         return rc;
     }
-    assert(bitoff == 0 /* FIXME */);
+    switch (hdr[0])
+    {
+        default:
+        case ICMP_DEST_UNREACH:
+        case ICMP_TIME_EXCEEDED:
+        case ICMP_SOURCE_QUENCH:
+            add_def = &proto_data->unused;
+            add_data = &tmpl_data->unused;
+            break;
+
+        case ICMP_REDIRECT:
+            add_def = &proto_data->redirect;
+            add_data = &tmpl_data->redirect;
+            break;
+
+        case ICMP_ECHO:
+        case ICMP_ECHOREPLY:
+        case ICMP_INFO_REQUEST:
+        case ICMP_INFO_REPLY:
+            add_def = &proto_data->echo_info;
+            add_data = &tmpl_data->echo_info;
+            break;
+
+        case ICMP_PARAMETERPROB:
+            add_def = &proto_data->pp;
+            add_data = &tmpl_data->pp;
+            break;
+
+        case ICMP_TIMESTAMP:
+        case ICMP_TIMESTAMPREPLY:
+            add_def = &proto_data->ts;
+            add_data = &tmpl_data->ts;
+            break;
+    }
+    rc = tad_bps_pkt_frag_gen_bin(add_def, add_data,
+                                  args, arg_num, hdr,
+                                  &bitoff, sizeof(hdr) << 3);
+    if (rc != 0)
+    {
+        ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for addition: %r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+    assert((bitoff & 7) == 0);
 
     /* ICMPv4 layer does no fragmentation, just copy all SDUs to PDUs */
     tad_pkts_move(pdus, sdus);
 
     /* Allocate and add ICMPv4 header to all packets */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, 0 /* FIXME */, NULL);
+    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, bitoff >> 3, NULL);
     if (rc != 0)
         return rc;
+
+    /* Per-PDU processing - set correct length */
+    rc = tad_pkt_enumerate(pdus, tad_icmp4_gen_bin_cb_per_pdu, hdr);
+    if (rc != 0)
+    {
+        ERROR("Failed to process ICMPv4 PDUs: %r", rc);
+        return rc;
+    }
 
     return 0;
 }
