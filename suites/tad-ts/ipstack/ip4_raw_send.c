@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * $Id: $
+ * $Id$
  */
 
 /** @page ipstack-ip4_raw_send Send IP datagram via ip4.eth CSAP and receive it via RAW socket
@@ -30,6 +30,8 @@
  *            IP datagrams.
  *
  * @param host_csap     TA with CSAP
+ * @param csap_if       Interface on @p host_csap connected to the host
+ *                      with @p pco
  * @param pco           TA with RAW socket
  * @param csap_addr     CSAP local IPv4 address
  * @param sock_addr     CSAP remote IPv4 address
@@ -37,12 +39,22 @@
  * @param sock_hwaddr   CSAP remote MAC address
  * @param pld_len       Datagram's payload length
  * @param proto         IP header's protocol field
+ * @param hcsum         IP header checksum (correct, =<value>, +<diff>)
  *
  * @par Scenario:
  *
- * -# Create ip4.eth CSAP on @p pco_csap. 
- * -# Create IPv4 raw socket on @p pco_sock.
- * -# Send IP4 datagrem with specified payload length and protocol.
+ * -# Create ip4.eth CSAP on @p host_csap TA and @p csap_if interface.
+ *    Specify @p proto as IPv4 protocol to be used, @p csap_addr as
+ *    local IPv4 address, @p sock_addr as remote IPv4 address,
+ *    @p csap_hwaddr as local Ethernet address,
+ *    @p sock_hwaddr as remote Ethernet address.
+ * -# Create IPv4 raw socket with @p proto protocol on @p pco_sock.
+ * -# Prepare ip4.eth traffic template with payload of @p pld_len length:
+ *      - if @p hcsum is @c correct, skip 'h-checksum' specification;
+ *      - if @p hcsum is @c =<value>, specify 'h-checksum' as plain value;
+ *      - if @p hcsum is @c +<diff>, specify 'h-checksum' as script
+ *        "expr:<diff>".
+ * -# Send prepared IPv4 datagrem via created CSAP.
  * -# Receive datagram via socket.
  * -# Check that correct IPv4 addresses and protocol are set in IPv4
  *    header.
@@ -87,6 +99,7 @@ int
 main(int argc, char *argv[])
 {
     int                         pld_len;
+    const char                 *hcsum;
 
     uint8_t                     ip_header_len;
 
@@ -105,10 +118,13 @@ main(int argc, char *argv[])
 
     asn_value                   *template = NULL;
     
-    void                       *send_buf;
-    void                       *recv_buf;
+    void                       *send_buf = NULL;
+    void                       *recv_buf = NULL;
     size_t                      send_buf_len;
     size_t                      recv_buf_len;
+
+    te_bool3                    receive;
+    ssize_t                     r;
 
 
     TEST_START; 
@@ -122,6 +138,7 @@ main(int argc, char *argv[])
     TEST_GET_IF(csap_if);
     TEST_GET_INT_PARAM(pld_len);
     TEST_GET_PROTOCOL(proto);
+    TEST_GET_STRING_PARAM(hcsum);
 
     /* Create send-recv buffers */
     send_buf_len = pld_len;
@@ -152,12 +169,65 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_tad_tmpl_ptrn_add_payload_plain(&template, FALSE,
                                                   send_buf, send_buf_len));
 
+    /* 'hcsum' parameter processing */
+    if (strcmp(hcsum, "correct") == 0)
+    {
+        /* Nothing to do */
+        receive = TE_BOOL3_TRUE;
+    }
+    else if (hcsum[0] == '=' || hcsum[0] == '+')
+    {
+        char           *end;
+        unsigned long   v = strtoul(hcsum + 1, &end, 0);
+
+        if (end == hcsum + 1 || *end != '\0')
+            TEST_FAIL("Invalide 'hcsum' parameter value '%s'", hcsum);
+
+        if (hcsum[0] == '=')
+        {
+            CHECK_RC(asn_write_int32(template, v,
+                                     "pdus.0.#ip4.h-checksum.#plain"));
+            receive = TE_BOOL3_ANY;
+        }
+        else
+        {
+            char buf[32];
+
+            snprintf(buf, sizeof(buf), "expr:%lu", v);
+            CHECK_RC(asn_write_string(template, buf,
+                                      "pdus.0.#ip4.h-checksum.#script"));
+            receive = TE_BOOL3_FALSE;
+        }
+    }
+    else
+    {
+        TEST_FAIL("Invalide 'hcsum' parameter value '%s'", hcsum);
+    }
+
     /* Start sending data */
     CHECK_RC(tapi_tad_trsend_start(host_csap->ta, 0, ip4_send_csap,
                                template, RCF_MODE_BLOCKING));
 
+    MSLEEP(100);
+
     /* Start receiving data */
-    rpc_recv(pco, recv_socket, recv_buf, recv_buf_len, 0);
+    RPC_AWAIT_IUT_ERROR(pco);
+    r = rpc_recv(pco, recv_socket, recv_buf, recv_buf_len,
+                 RPC_MSG_DONTWAIT);
+    if (r == -1)
+    {
+        CHECK_RPC_ERRNO(pco, RPC_EAGAIN, "recv() with MSG_DONTWAIT");
+        if (receive == TE_BOOL3_TRUE)
+            TEST_FAIL("IPv4 packet is expected to be received, "
+                      "but it is not");
+        TEST_SUCCESS;
+    }
+    else
+    {
+        if (receive == TE_BOOL3_FALSE)
+            TEST_FAIL("IPv4 packet is expected to be not received, "
+                      "but it is");
+    }
     
     /* Check IP header */
     /* Check header length */

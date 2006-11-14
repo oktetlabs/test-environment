@@ -19,9 +19,14 @@
       <arg name="pld_len">
         <value>50</value>
       </arg>
-      <arg name="proto" list="">
+      <arg name="proto">
         <value>IPPROTO_UDP</value>
         <value>IPPROTO_ICMP</value>
+      </arg>
+      <arg name="hcsum">
+        <value>correct</value>
+        <value>=1</value>
+        <value>+1</value>
       </arg>
     </run> 
    
