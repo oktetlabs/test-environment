@@ -4442,45 +4442,52 @@ TARPC_FUNC(sendfile,
 {
     if (in->force64 == TRUE)
     {
-        do
-        {
-            int rc;
-            api_func func64;
-
-            off64_t offset = 0;
+        do {
+            int         rc;
+            api_func    func64;
+            off64_t     offset = 0;
+            const char *real_func_name = "sendfile64";
 
             if ((rc = tarpc_find_func(in->common.lib,
                                       "sendfile64", &func64)) == 0)
             {
                 func = func64;
             }
+            else if (sizeof(off_t) == 8)
+            {
+                INFO("Using sendfile() instead of sendfile64() since "
+                     "sizeof(off_t) is 8");
+                real_func_name = "sendfile";
+            }
             else
             {
-                WARN("Cannot find sendfile64() function, using sendfile()");
-            }
-
-            if ((api_func)func == NULL)
-            {
-                ERROR("Cannot find 'sendfile64/sendfile' routine");
+                ERROR("Cannot find sendfile64() function.\n"
+                      "Unable to use sendfile() since sizeof(off_t) "
+                      "is %u", (unsigned)sizeof(off_t));
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOENT);
                 break;
             }
+
+            assert(func != NULL);
 
             if (out->offset.offset_len > 0)
                 offset = *out->offset.offset_val;
 
-            RING("Call sendfile64(out=%d, int=%d, offset=%lld, count=%d)",
-                 in->out_fd, in->in_fd, offset, in->count);
+            VERB("Call %s(out=%d, int=%d, offset=%lld, count=%d)",
+                 real_func_name, in->out_fd, in->in_fd,
+                 (long long)offset, in->count);
 
             MAKE_CALL(out->retval =
                 func(in->out_fd, in->in_fd,
                      out->offset.offset_len == 0 ? NULL : &offset,
                      in->count));
 
-            RING("sendfile64() returns %d, errno=%d, offset=%lld",
-                 out->retval, errno, offset);
+            VERB("%s() returns %d, errno=%d, offset=%lld",
+                 real_func_name, out->retval, errno, (long long)offset);
 
             if (out->offset.offset_len > 0)
                 out->offset.offset_val[0] = (tarpc_off_t)offset;
+
         } while (0);
     }
     else
