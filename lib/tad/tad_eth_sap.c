@@ -698,7 +698,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
     /*  Obtain a packet capture descriptor */
     data->in = pcap_open_live(sap->name, TAD_ETH_SAP_SNAP_LEN,
                               (mode & TAD_ETH_RECV_OTHER) ? 1 : 0,
-                              10, data->errbuf);
+                              10 /* read timeout in ms */, data->errbuf);
     if (data->in == NULL)
     {
         rc = TE_OS_RC(TE_TAD_BPF, errno);
@@ -792,9 +792,10 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
 #else
     if ((fd = pcap_get_selectable_fd(data->in)) < 0)
     {
+        rc = TE_OS_RC(TE_TAD_BPF, errno);
         ERROR("%s(): pcap_get_selectable_fd() returned %d",
               __FUNCTION__, fd);
-        return -1;
+        return rc;
     }
 
     
@@ -822,9 +823,10 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
     rc = pcap_dispatch(data->in, 1, pkt_handl, (u_char *)&ptr);
     if (rc < 0)
     {
+        rc = TE_OS_RC(TE_TAD_BPF, errno);
         ERROR("%s(): pcap_dispatch() returned %d",
               __FUNCTION__, rc);
-        return -1;
+        return rc;
     }
     
     return 0;
