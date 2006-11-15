@@ -23,6 +23,8 @@
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  */
 
+#include "te_config.h"
+
 #include <stdio.h>
 #include <unistd.h>
 

@@ -5,6 +5,8 @@
  * Parse plain syntax values. 
  *
  */
+#include "te_config.h"
+
 #include <stdio.h>
 
 #include "asn_usr.h"

@@ -4,6 +4,8 @@
  * self test, for put and get methods 
  *
  */
+#include "te_config.h"
+
 #include <stdio.h>
 
 #include "asn_usr.h"
