@@ -204,7 +204,7 @@ EOF
 exit_with_log()
 {
     rm -rf "${TE_TMP}"
-    popd >/dev/null
+    cd "${TE_RUN_DIR}"
     exit 1
 }
 
@@ -298,17 +298,17 @@ process_opts()
 
             --opts=* )
                 EXT_OPTS_PROCESSED=yes
-                OPTS="${1#--opts=}" ;
+                OPTS="${1#--opts=}"
                 if test "${OPTS:0:1}" != "/" ; then 
-                    OPTS="${CONF_DIR}/${OPTS}" ;
-                fi ;
+                    OPTS="${CONF_DIR}/${OPTS}"
+                fi
                 if test -f ${OPTS} ; then
-                    process_opts $(cat ${OPTS}) ;
+                    process_opts $(cat ${OPTS})
                     # Don't want to see the option after expansion
                     opt=
                 else
-                    echo "File with options ${OPTS} not found" >&2 ;
-                    exit 1 ;
+                    echo "File with options ${OPTS} not found" >&2
+                    exit 1
                 fi
                 ;;
 
@@ -325,7 +325,7 @@ process_opts()
                 done
                 if test "${script_file:0:1}" != "/" ; then 
                     script_file="${CONF_DIR}/${script_file}"
-                fi ;
+                fi
                 if test -f "${script_file}" ; then
                     TE_EXTRA_OPTS=
                     . "${script_file}"
@@ -350,9 +350,9 @@ process_opts()
             --vg-cs)     VG_CS=yes ;;
             --vg-logger) VG_LOGGER=yes ;;
             --vg-tester) VG_TESTER=yes ;;
-            --vg-engine) VG_RCF=yes ;
-                         VG_CS=yes ;
-                         VG_LOGGER=yes ;
+            --vg-engine) VG_RCF=yes
+                         VG_CS=yes
+                         VG_LOGGER=yes
                          VG_TESTER=yes ;;
         
             --tcer-*) TCER_OPTS="${TCER_OPTS} --${1#--tcer-}" ;;
@@ -386,15 +386,15 @@ process_opts()
 
             --trc-log=*) TRC_LOG="${1#--trc-log=}" ;;
             --trc-db=*) 
-                TRC_DB="${1#--trc-db=}" ;
+                TRC_DB="${1#--trc-db=}"
                 if test "${TRC_DB:0:1}" != "/" ; then 
-                    TRC_DB="${CONF_DIR}/${TRC_DB}" ;
-                fi ;
-                TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}" ;
-                TESTER_OPTS="${TESTER_OPTS} --trc-db=${TRC_DB}" ;
+                    TRC_DB="${CONF_DIR}/${TRC_DB}"
+                fi
+                TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}"
+                TESTER_OPTS="${TESTER_OPTS} --trc-db=${TRC_DB}"
                 ;;
             --trc-tag=*)
-                TRC_TAGS="${TRC_TAGS} ${1#--trc-tag=}" ;
+                TRC_TAGS="${TRC_TAGS} ${1#--trc-tag=}"
                 TESTER_OPTS="${TESTER_OPTS} $1"
                 ;;
             --trc-*) TRC_OPTS="${TRC_OPTS} --${1#--trc-}" ;;
@@ -404,7 +404,7 @@ process_opts()
     
             --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
 
-            --build-only) RCF= ; CS= ;
+            --build-only) RCF= ; CS=
                           TESTER_OPTS="${TESTER_OPTS} --no-run --no-cs" ;; 
 
             --build-log=*) 
@@ -428,7 +428,7 @@ process_opts()
                 ;;
 
             *)  echo "Unknown option: $1" >&2;
-                usage ;
+                usage
                 exit 1 ;;
         esac
         test -n "$opt" && cmd_line_opts_all="${cmd_line_opts_all} $opt"
@@ -509,7 +509,7 @@ elif test ! -d "${TE_BUILD}" ; then
     exit 1
 fi
 export TE_BUILD
-pushd "${TE_BUILD}" >/dev/null
+cd "${TE_BUILD}"
 
 export TE_LOG_DIR="${TE_LOG_DIR}"
 mkdir -p "${TE_LOG_DIR}"
@@ -596,12 +596,12 @@ if test -n "$BUILDER" ; then
     if test -n "${QUIET}" ; then
         "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
             --with-config="${CONF_BUILDER}" >"${TE_BUILD_LOG}" || \
-            exit_with_log ;
-        make install >>"${TE_BUILD_LOG}" || exit_with_log ;
+            exit_with_log
+        make install >>"${TE_BUILD_LOG}" || exit_with_log
     else
         "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
-            --with-config="${CONF_BUILDER}" || exit_with_log ;
-        make install || exit_with_log ;
+            --with-config="${CONF_BUILDER}" || exit_with_log
+        make install || exit_with_log
     fi
 fi
 
@@ -611,13 +611,13 @@ else
     te_builder_opts $BUILDER_OPTS || exit_with_log
 fi
 
-# Goto the directory where the script was called ${TE_RUN_DIR}
-popd >/dev/null
+# Goto the directory where the script was called ${TE_RUN_DIR}.
+# It has to be the current dir for all TE Engine applications.
+cd "${TE_RUN_DIR}"
 
 if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
     te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
 fi
-
 
 if test -n "${DO_NUTS}" ; then
     if test ! -e "${CONF_NUT}" ; then
