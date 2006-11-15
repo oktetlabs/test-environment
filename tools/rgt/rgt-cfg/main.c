@@ -1039,9 +1039,10 @@ rgt_end_document(void *user_data)
  */
 static void
 rgt_start_element(void *user_data,
-                  const xmlChar *tag, const xmlChar **attrs)
+                  const xmlChar *xml_tag, const xmlChar **attrs)
 {
     rgt_gen_ctx_t *ctx = (rgt_gen_ctx_t *)user_data;
+    const char    *tag = (const char *)xml_tag;
 
     switch (ctx->state)
     {
@@ -1171,9 +1172,10 @@ rgt_start_element(void *user_data,
  * @return Nothing
  */
 static void
-rgt_end_element(void *user_data, const xmlChar *tag)
+rgt_end_element(void *user_data, const xmlChar *xml_tag)
 {
     rgt_gen_ctx_t *ctx = (rgt_gen_ctx_t *)user_data;
+    const char    *tag = (const char *)xml_tag;
 
     switch (ctx->state)
     {

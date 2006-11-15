@@ -44,6 +44,9 @@
 
 #define UTILITY_NAME "xml-processor"
 
+#define CAST_CONST_XML_CHAR(x_) ((const xmlChar *)(x_))
+#define CAST_XML_CHAR(x_) ((xmlChar *)(x_))
+
 /**
  * Callback function that is called before parsing the document.
  *
@@ -92,7 +95,7 @@ rgt_log_end_document(void *user_data)
 
 static void
 rgt_process_cntrl_start(rgt_gen_ctx_t *ctx,
-                        const xmlChar *tag, const char **attrs)
+                        const char *tag, const char **attrs)
 {
     rgt_depth_ctx_t *depth_ctx;
 
@@ -143,10 +146,11 @@ rgt_process_cntrl_start(rgt_gen_ctx_t *ctx,
  * @return Nothing
  */
 static void
-rgt_log_end_element(void *user_data, const xmlChar *tag)
+rgt_log_end_element(void *user_data, const xmlChar *xml_tag)
 {
     rgt_gen_ctx_t   *ctx = (rgt_gen_ctx_t *)user_data;
     rgt_depth_ctx_t *depth_ctx;
+    const char      *tag = (const char *)xml_tag;
 
     depth_ctx = &g_array_index(ctx->depth_info,
                                rgt_depth_ctx_t, (ctx->depth - 1));
@@ -338,10 +342,11 @@ rgt_log_end_element(void *user_data, const xmlChar *tag)
  */
 static void
 rgt_log_start_element(void *user_data,
-                      const xmlChar *tag, const xmlChar **attrs)
+                      const xmlChar *xml_tag, const xmlChar **attrs)
 {
     rgt_gen_ctx_t   *ctx = (rgt_gen_ctx_t *)user_data;
     rgt_depth_ctx_t *depth_ctx;
+    const char      *tag = (const char *)xml_tag;
 
     depth_ctx = &g_array_index(ctx->depth_info,
                                rgt_depth_ctx_t, (ctx->depth - 1));
@@ -558,33 +563,34 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
  * without expanding - update this code!
  */
 static xmlEntityPtr
-rgt_get_entity(void *user_data, const xmlChar *name)
+rgt_get_entity(void *user_data, const xmlChar *xml_name)
 {
     static xmlEntity  ent;
     rgt_gen_ctx_t    *ctx = (rgt_gen_ctx_t *)user_data;
+    const char       *name = (const char *)xml_name;
 
     if (ctx->expand_entities)
-        return xmlGetPredefinedEntity(name);
+        return xmlGetPredefinedEntity(xml_name);
 
     ent.etype = XML_INTERNAL_PREDEFINED_ENTITY;
 
     if (strcmp(name, "lt") == 0)
     {
-        ent.name = "lt";
-        ent.orig = "&lt;";
-        ent.content = "&lt;";
+        ent.name = CAST_CONST_XML_CHAR("lt");
+        ent.orig = CAST_XML_CHAR("&lt;");
+        ent.content = CAST_XML_CHAR("&lt;");
     }
     else if (strcmp(name, "gt") == 0)
     {
-        ent.name = "gt";
-        ent.orig = "&gt;";
-        ent.content = "&gt;";    
+        ent.name = CAST_CONST_XML_CHAR("gt");
+        ent.orig = CAST_XML_CHAR("&gt;");
+        ent.content = CAST_XML_CHAR("&gt;");
     }
     else if (strcmp(name, "amp") == 0)
     {
-        ent.name = "amp";
-        ent.orig = "&amp;";
-        ent.content = "&amp;";    
+        ent.name = CAST_CONST_XML_CHAR("amp");
+        ent.orig = CAST_XML_CHAR("&amp;");
+        ent.content = CAST_XML_CHAR("&amp;");    
     }
     else
         assert(0);

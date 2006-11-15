@@ -637,7 +637,7 @@ output_regular_log_msg(log_msg *msg)
 
                 case 's':
                 {
-                    fwrite_string(log_obstk, arg->val);
+                    fwrite_string(log_obstk, (const char *)arg->val);
                     i++;
 
                     continue;
@@ -680,7 +680,7 @@ output_regular_log_msg(log_msg *msg)
                         /* Strart file tag */
                         obstack_printf(log_obstk,
                                        "<file name=\"%s\">", "TODO");
-                        fwrite_string(log_obstk, arg->val);
+                        fwrite_string(log_obstk, (const char *)arg->val);
                         /* End file tag */
                         obstack_grow(log_obstk, "</file>",
                                      strlen("</file>"));
