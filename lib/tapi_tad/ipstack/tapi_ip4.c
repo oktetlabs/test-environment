@@ -124,7 +124,7 @@ tapi_ip4_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
     if (ttl >= 0)
         CHECK_RC(asn_write_int32(tmp_pdu, ttl, "time-to-live.#plain"));
     if (tos >= 0)
-        CHECK_RC(asn_write_int32(tmp_pdu, ttl, "type-of-service.#plain"));
+        CHECK_RC(asn_write_int32(tmp_pdu, tos, "type-of-service.#plain"));
 
     if (pdu != NULL)
         *pdu = tmp_pdu;
