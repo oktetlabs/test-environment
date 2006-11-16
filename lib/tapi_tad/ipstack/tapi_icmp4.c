@@ -44,10 +44,179 @@
 te_errno
 tapi_icmp4_add_csap_layer(asn_value **csap_spec)
 {
-    return tapi_tad_csap_add_layer(csap_spec, ndn_ip4_csap, "#icmp4",
+    return tapi_tad_csap_add_layer(csap_spec, ndn_icmp4_csap, "#icmp4",
                                    NULL);
 }
 
+te_errno
+tapi_tcp_ip_icmp_ip4_eth_csap_create(const char    *ta_name,
+                                     int            sid,
+                                     const char    *eth_dev,
+                                     unsigned int   receive_mode,
+                                     const uint8_t *eth_src,
+                                     const uint8_t *eth_dst, 
+                                     in_addr_t      src_addr,
+                                     in_addr_t      dst_addr,
+                                     in_addr_t      msg_src_addr,
+                                     in_addr_t      msg_dst_addr,
+                                     int            msg_src_port,
+                                     int            msg_dst_port,
+                                     csap_handle_t *tcp_csap)
+{
+    te_errno    rc;
+    asn_value  *csap_spec = NULL;
+
+    /*
+     * Incapsulated IP packet header has rem_addr as local address and
+     * loc_addr as remote address
+     */
+    rc = tapi_tcp_add_csap_layer(&csap_spec, msg_src_port, msg_dst_port);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add TCP csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    /*
+     * Incapsulated IP packet header has rem_addr as local address and
+     * loc_addr as remote address
+     */
+    rc = tapi_ip4_add_csap_layer(&csap_spec, msg_src_addr, msg_dst_addr,
+                                 -1 /* default proto */,
+                                 -1 /* default ttl */,
+                                 -1 /* default tos */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add IP4 csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_icmp4_add_csap_layer(&csap_spec);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add ICMP csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_ip4_add_csap_layer(&csap_spec, src_addr, dst_addr,
+                                 -1 /* default proto */,
+                                 -1 /* default ttl */,
+                                 -1 /* default tos */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add IP4 csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_eth_add_csap_layer(&csap_spec, eth_dev, receive_mode,
+                                 eth_dst, eth_src,
+                                 NULL /* automatic length/type */,
+                                 TE_BOOL3_ANY /* untagged/tagged */,
+                                 TE_BOOL3_ANY /* Ethernet2/LLC+SNAP */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add ETH csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+
+    rc = tapi_tad_csap_create(ta_name, sid, "tcp.ip4.icmp4.ip4.eth",
+                              csap_spec, tcp_csap);
+
+    asn_free_value(csap_spec);
+
+    return TE_RC(TE_TAPI, rc);
+}
+
+te_errno
+tapi_udp_ip_icmp_ip4_eth_csap_create(const char    *ta_name,
+                                     int            sid,
+                                     const char    *eth_dev,
+                                     unsigned int   receive_mode,
+                                     const uint8_t *eth_src,
+                                     const uint8_t *eth_dst, 
+                                     in_addr_t      src_addr,
+                                     in_addr_t      dst_addr,
+                                     in_addr_t      msg_src_addr,
+                                     in_addr_t      msg_dst_addr,
+                                     int            msg_src_port,
+                                     int            msg_dst_port,
+                                     csap_handle_t *udp_csap)
+{
+    te_errno    rc;
+    asn_value  *csap_spec = NULL;
+
+    /*
+     * Incapsulated IP packet header has rem_addr as local address and
+     * loc_addr as remote address
+     */
+    rc = tapi_udp_add_csap_layer(&csap_spec, msg_src_port, msg_dst_port);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add UDP csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    /*
+     * Incapsulated IP packet header has rem_addr as local address and
+     * loc_addr as remote address
+     */
+    rc = tapi_ip4_add_csap_layer(&csap_spec, msg_src_addr, msg_dst_addr,
+                                 -1 /* default proto */,
+                                 -1 /* default ttl */,
+                                 -1 /* default tos */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add IP4 csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_icmp4_add_csap_layer(&csap_spec);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add ICMP csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_ip4_add_csap_layer(&csap_spec, src_addr, dst_addr,
+                                 -1 /* default proto */,
+                                 -1 /* default ttl */,
+                                 -1 /* default tos */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add IP4 csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_eth_add_csap_layer(&csap_spec, eth_dev, receive_mode,
+                                 eth_dst, eth_src,
+                                 NULL /* automatic length/type */,
+                                 TE_BOOL3_ANY /* untagged/tagged */,
+                                 TE_BOOL3_ANY /* Ethernet2/LLC+SNAP */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add ETH csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+
+    rc = tapi_tad_csap_create(ta_name, sid, "udp.ip4.icmp4.ip4.eth",
+                              csap_spec, udp_csap);
+
+    asn_free_value(csap_spec);
+
+    return TE_RC(TE_TAPI, rc);
+}
 
 /* See the description in tapi_icmp4.h */
 te_errno
