@@ -13,6 +13,7 @@ EXTRA_DIST =
 ARP_HDRS = arp/tapi_arp.h
 ARP_SRCS = arp/tapi_arp.c
 if WITH_ARP
+AM_CPPFLAGS += -I$(srcdir)/arp
 EXTRA_HEADERS += $(ARP_HDRS)
 EXTRA_SOURCES += $(ARP_SRCS)
 else
@@ -23,6 +24,7 @@ endif
 ATM_HDRS = atm/tapi_atm.h
 ATM_SRCS = atm/tapi_atm.c
 if WITH_ATM
+AM_CPPFLAGS += -I$(srcdir)/atm
 EXTRA_HEADERS += $(ATM_HDRS)
 EXTRA_SOURCES += $(ATM_SRCS)
 else
@@ -33,6 +35,7 @@ endif
 BRIDGE_HDRS = bridge/tapi_stp.h
 BRIDGE_SRCS = bridge/tapi_stp.c
 if WITH_BRIDGE
+AM_CPPFLAGS += -I$(srcdir)/bridge
 EXTRA_HEADERS += $(BRIDGE_HDRS)
 EXTRA_SOURCES += $(BRIDGE_SRCS)
 else
@@ -43,6 +46,7 @@ endif
 CLI_HDRS = cli/tapi_cli.h
 CLI_SRCS = cli/tapi_cli.c
 if WITH_CLI
+AM_CPPFLAGS += -I$(srcdir)/cli
 EXTRA_HEADERS += $(CLI_HDRS)
 EXTRA_SOURCES += $(CLI_SRCS)
 else
@@ -53,6 +57,7 @@ endif
 DHCP_HDRS = dhcp/tapi_dhcp.h
 DHCP_SRCS = dhcp/tapi_dhcp.c
 if WITH_DHCP
+AM_CPPFLAGS += -I$(srcdir)/dhcp
 EXTRA_HEADERS += $(DHCP_HDRS)
 EXTRA_SOURCES += $(DHCP_SRCS)
 else
@@ -63,6 +68,7 @@ endif
 ETH_HDRS = eth/tapi_eth.h
 ETH_SRCS = eth/tapi_eth.c
 if WITH_ETH
+AM_CPPFLAGS += -I$(srcdir)/eth
 EXTRA_HEADERS += $(ETH_HDRS)
 EXTRA_SOURCES += $(ETH_SRCS)
 else
@@ -84,6 +90,7 @@ IPSTACK_SRCS = \
 	ipstack/tapi_tcp_conn.c \
 	ipstack/tapi_socket.c
 if WITH_IPSTACK
+AM_CPPFLAGS += -I$(srcdir)/ipstack
 EXTRA_HEADERS += $(IPSTACK_HDRS)
 EXTRA_SOURCES += $(IPSTACK_SRCS)
 else
@@ -94,6 +101,7 @@ endif
 ISCSI_HDRS = iscsi/tapi_iscsi.h
 ISCSI_SRCS = iscsi/tapi_iscsi.c
 if WITH_ISCSI
+AM_CPPFLAGS += -I$(srcdir)/iscsi
 EXTRA_HEADERS += $(ISCSI_HDRS)
 EXTRA_SOURCES += $(ISCSI_SRCS)
 else
@@ -104,6 +112,7 @@ endif
 PCAP_HDRS = pcap/tapi_pcap.h
 PCAP_SRCS = pcap/tapi_pcap.c
 if WITH_PCAP
+AM_CPPFLAGS += -I$(srcdir)/pcap
 EXTRA_HEADERS += $(PCAP_HDRS)
 EXTRA_SOURCES += $(PCAP_SRCS)
 else
@@ -120,6 +129,7 @@ SNMP_HDRS = \
 	snmp/tapi_snmp_macro.h
 SNMP_SRCS = snmp/tapi_snmp.c
 if WITH_SNMP
+AM_CPPFLAGS += -I$(srcdir)/snmp
 EXTRA_HEADERS += $(SNMP_HDRS)
 EXTRA_SOURCES += $(SNMP_SRCS)
 else
