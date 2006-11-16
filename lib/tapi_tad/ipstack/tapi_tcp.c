@@ -62,15 +62,44 @@
 
 #include "logger_api.h"
 
-#include "tapi_tcp.h"
-#include "tapi_tad.h"
-#include "tapi_eth.h"
-#include "tapi_arp.h"
-
 #include "ndn_ipstack.h"
 #include "ndn_eth.h"
 #include "ndn_socket.h"
 
+#include "tapi_ndn.h"
+#include "tapi_tad.h"
+#include "tapi_eth.h"
+#include "tapi_ip4.h"
+#include "tapi_tcp.h"
+#include "tapi_arp.h"
+
+#include "tapi_test.h"
+
+/* See the description in tapi_tcp.h */
+te_errno
+tapi_tcp_add_csap_layer(asn_value **csap_spec,
+                        int         local_port,
+                        int         remote_port)
+{
+    asn_value  *layer;
+
+    if (local_port > 0xffff || remote_port > 0xffff)
+    {
+        WARN("%s() EINVAL: local port %d, remote port %d", 
+             __FUNCTION__, local_port, remote_port);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_tcp_csap, "#tcp",
+                                     &layer));
+
+    if (local_port >= 0)
+        CHECK_RC(asn_write_int32(layer, local_port, "local-port.#plain"));
+    if (remote_port >= 0)
+        CHECK_RC(asn_write_int32(layer, remote_port, "remote-port.#plain"));
+
+    return 0;
+}
 
 /* See description in tapi_tcp.h */
 int

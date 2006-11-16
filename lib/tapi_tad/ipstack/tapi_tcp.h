@@ -35,6 +35,7 @@
 #include "te_stdint.h"
 #include "tad_common.h"
 #include "asn_usr.h"
+#include "tapi_tad.h"
 #include "tapi_ip4.h"
 
 #define TCP_FIN_FLAG    0x01
@@ -54,6 +55,21 @@ typedef uint32_t tapi_tcp_pos_t;
 /************************************************************************
  * ======================== ROW-TCP methods =============================
  */
+
+/**
+ * Add TCP layer in CSAP specification.
+ *
+ * @param csap_spec     Location of CSAP specification pointer.
+ * @param local_port    Default local port in network byte order
+ *                      or -1 to keep unspecified
+ * @param remote_port   Default remote port in network byte order
+ *                      or -1  to keep unspecified
+ *
+ * @retval Status code.
+ */
+extern te_errno tapi_tcp_add_csap_layer(asn_value **csap_spec,
+                                        int         local_port,
+                                        int         remote_port);
 
 
 /**
