@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * $Id: $
+ * $Id$
  */
 
 /** @page ipstack-ip4_send_icmp Send ICMP datagram via ip4.eth CSAP and receive it via RAW socket
@@ -143,20 +143,20 @@ main(int argc, char *argv[])
                                      NULL));
     /* Add ip4 layer to the CSAP */
     CHECK_RC(tapi_ip4_add_csap_layer(&csap_spec, 
-                                      SIN(csap_addr)->sin_addr.s_addr, 
-                                      SIN(sock_addr)->sin_addr.s_addr,
-                                      IPPROTO_ICMP,
-                                      -1,
-                                      -1));
+                                     SIN(csap_addr)->sin_addr.s_addr, 
+                                     SIN(sock_addr)->sin_addr.s_addr,
+                                     IPPROTO_ICMP,
+                                     -1,
+                                     -1));
     /* Add ethernet layer to the CSAP*/
     CHECK_RC(tapi_eth_add_csap_layer(&csap_spec,
-                                      csap_if->if_name,
-                                      TAD_ETH_RECV_NO,
-                                      sock_hwaddr->sa_data,
-                                      csap_hwaddr->sa_data,
-                                      &ip_eth,
-                                      TE_BOOL3_ANY,
-                                      TE_BOOL3_ANY));
+                                     csap_if->if_name,
+                                     TAD_ETH_RECV_NO,
+                                     sock_hwaddr->sa_data,
+                                     csap_hwaddr->sa_data,
+                                     &ip_eth,
+                                     TE_BOOL3_ANY,
+                                     TE_BOOL3_ANY));
     /* Create CSAP */
     CHECK_RC(tapi_tad_csap_create(host_csap->ta, 0,
                                   "icmp4.ip4.eth",
@@ -183,7 +183,7 @@ main(int argc, char *argv[])
 
     /* Start sending data via CSAP */
     CHECK_RC(tapi_tad_trsend_start(host_csap->ta, 0, send_csap,
-                               template, RCF_MODE_NONBLOCKING));
+                                   template, RCF_MODE_NONBLOCKING));
 
     MSLEEP(100);
 

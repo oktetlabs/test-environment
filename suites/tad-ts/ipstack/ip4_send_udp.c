@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * $Id: $
+ * $Id$
  */
 
 /** @page ipstack-ip4_send_udp Send UDP/IP4 datagram via udp.ip4.eth CSAP and receive it via DGRAM socket
@@ -79,18 +79,18 @@ main(int argc, char *argv[])
 {
     int                         pld_len;
 
-    tapi_env_host               *host_csap = NULL;
-    rcf_rpc_server              *pco = NULL;
-    const struct sockaddr       *csap_addr;
-    const struct sockaddr       *sock_addr;
-    const struct sockaddr       *csap_hwaddr;
-    const struct sockaddr       *sock_hwaddr;
-    const struct if_nameindex   *csap_if;
+    tapi_env_host              *host_csap = NULL;
+    rcf_rpc_server             *pco = NULL;
+    const struct sockaddr      *csap_addr;
+    const struct sockaddr      *sock_addr;
+    const struct sockaddr      *csap_hwaddr;
+    const struct sockaddr      *sock_hwaddr;
+    const struct if_nameindex  *csap_if;
 
     csap_handle_t               udp_ip4_send_csap = CSAP_INVALID_HANDLE;
     int                         recv_socket = -1;
 
-    asn_value                   *template = NULL;
+    asn_value                  *template = NULL;
     
     void                       *send_buf;
     void                       *recv_buf;
@@ -123,8 +123,8 @@ main(int argc, char *argv[])
                                           TAD_ETH_RECV_NO,
                                           csap_hwaddr->sa_data,
                                           sock_hwaddr->sa_data,
-                                       SIN(csap_addr)->sin_addr.s_addr,
-                                       SIN(sock_addr)->sin_addr.s_addr,
+                                          SIN(csap_addr)->sin_addr.s_addr,
+                                          SIN(sock_addr)->sin_addr.s_addr,
                                           ntohs(SIN(csap_addr)->sin_port),
                                           ntohs(SIN(sock_addr)->sin_port),
                                           &udp_ip4_send_csap));
@@ -143,12 +143,14 @@ main(int argc, char *argv[])
                                                   send_buf, pld_len));
     /* Start sending data */
     CHECK_RC(tapi_tad_trsend_start(host_csap->ta, 0, udp_ip4_send_csap,
-                               template, RCF_MODE_BLOCKING));
+                                   template, RCF_MODE_BLOCKING));
 
     /* Start receiving data */
     rc = rpc_recv(pco, recv_socket, recv_buf, pld_len, 0);
     if (rc != pld_len)
         TEST_FAIL("Numbers of sent and received bytes differ");
+    else if (memcmp(send_buf, recv_buf, pld_len) != 0)
+        TEST_FAIL("UDP payload corrupted");
 
     TEST_SUCCESS;
 
