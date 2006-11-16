@@ -22,6 +22,7 @@ include_HEADERS = \
 	ndn_pcap.h \
 	ndn_atm.h \
 	ndn_eth.h \
+	ndn_llc.h \
 	ndn_bridge.h \
 	ndn_arp.h \
 	ndn_ipstack.h \
@@ -38,6 +39,7 @@ libndn_la_SOURCES = \
 	ndn_pcap.c \
 	ndn_atm.c \
 	ndn_eth.c \
+	ndn_llc.c \
 	ndn_bridge.c \
 	ndn_arp.c \
 	ndn_ipstack.c \

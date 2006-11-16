@@ -31,6 +31,7 @@
 
 #include "asn_impl.h"
 #include "ndn_internal.h"
+#include "ndn_llc.h"
 #include "ndn_atm.h"
 
 
@@ -133,8 +134,27 @@ asn_type ndn_aal5_cpcs_trailer_s =
 const asn_type * const ndn_aal5_cpcs_trailer = &ndn_aal5_cpcs_trailer_s;
 
 
+static asn_named_entry_t _ndn_aal5_encap_ne_array[] =
+{
+    { "vcMultiplexRoutedProtocol", &asn_base_null_s,
+      { PRIVATE, NDN_TAG_AAL5_VC_MUX_ROUTED } },
+    { "llc", &ndn_llc_header_s,
+      { PRIVATE, NDN_TAG_AAL5_LLC } },
+};
+
+static asn_type ndn_aal5_encap_s =
+{
+    "AAL5-Encapsulation", { PRIVATE, 100 }, CHOICE, 
+    TE_ARRAY_LEN(_ndn_aal5_encap_ne_array),
+    { _ndn_aal5_encap_ne_array }
+};
+
+
 static asn_named_entry_t _ndn_aal5_csap_ne_array[] = 
 {
+    { "encap",      &ndn_aal5_encap_s,
+      { PRIVATE, NDN_TAG_AAL5_ENCAP } },
+
     { "cpcs-uu",    &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_AAL5_CPCS_UU } },
     { "cpi",        &ndn_data_unit_int8_s,

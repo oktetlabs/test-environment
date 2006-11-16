@@ -51,9 +51,10 @@ AAL5-CSAP ::=  SEQUENCE {
     cpcs-uu         DATA-UNIT{INTEGER (0..255)} OPTIONAL,
     cpi             DATA-UNIT{INTEGER (0..255)} OPTIONAL,
 
-    encaps          CHOICE {
+    encap          CHOICE {
         vcMultiplexRoutedProtocol   NULL,
-        llcEncapsulation    SEQUENCE {
+        llc SEQUENCE {
+            // FIXME
             ether-type  DATA-UNIT{INTEGER (0..65535)} OPTIONAL
         }
     } OPTIONAL

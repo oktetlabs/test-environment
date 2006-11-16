@@ -84,15 +84,6 @@ typedef enum {
     NDN_TAG_ETHERNET2,
 
     NDN_TAG_LLC_HEADER,
-    NDN_TAG_LLC_DSAP_IG,
-    NDN_TAG_LLC_DSAP,
-    NDN_TAG_LLC_SSAP_CR,
-    NDN_TAG_LLC_SSAP,
-    NDN_TAG_LLC_CTL,
-
-    NDN_TAG_LLC_SNAP_HEADER,
-    NDN_TAG_SNAP_OUI,
-    NDN_TAG_SNAP_PID,
 
 } ndn_eth_tags_t;
 
