@@ -47,6 +47,7 @@
 #include "te_ethernet.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
+#include "ndn_llc.h"
 
 #include "tad_bps.h"
 #include "tad_eth_impl.h"
