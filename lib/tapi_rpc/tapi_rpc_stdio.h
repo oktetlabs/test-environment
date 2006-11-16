@@ -111,6 +111,21 @@ extern int rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file);
 extern rpc_wait_status rpc_system(rcf_rpc_server *rpcs, const char *cmd);
 
 /**
+ * Execute shell command on the IPC server.
+ * You SHOULD not use this function unless you are sure that shell command
+ * will exit normally. If this RPC will timeout, you'll have no chance to
+ * kill the child process, because you do not know its PID.
+ *
+ * @param rpcs          RPC server handle
+ * @param cmd           format of the command to be executed
+ * @param ...           parameters for the command format
+ *
+ * @return status of the process
+ */
+extern rpc_wait_status rpc_system_ex(rcf_rpc_server *rpcs, 
+                                     const char *cmd, ...);
+
+/**
  * Open a process by creating a pipe, forking, and invoking the shell.
  *
  * @note Do not use this function unless you test it - use 
@@ -156,19 +171,21 @@ extern rpc_wait_status rpc_shell_get_all(rcf_rpc_server *rpcs,
 
 /**
  * Execute shell command on the IPC server and read the output.
+ * Fail if there was anything on stderr.
  * The routine allocates memory for the output buffer and places
  * null-terminated string to it.
  * @b pbuf pointer is initialized by NULL if no buffer is allocated.
+ * If @b pbuf is NULL, stdout is not redirected.
  *
  * @param rpcs          RPC server handle
- * @param buf           location for the command output and stderr buffers
+ * @param pbuf          location for the command output
  * @param cmd           format of the command to be executed
  * @param ...           parameters for command
  *
  * @return status of the process
  */
 extern rpc_wait_status rpc_shell_get_all2(rcf_rpc_server *rpcs,
-                                          char *buf[2], 
+                                          char **pbuf, 
                                           const char *cmd, ...);
 
 /**

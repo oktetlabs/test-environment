@@ -464,7 +464,7 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,
 
     tarpc_pid_t     pid;
     rpc_wait_status rc;
-    int iut_err_jump;
+    te_bool         iut_err_jump;
 
     va_list ap;
 
@@ -490,7 +490,7 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,
 
     *pbuf = NULL;
     if (rpc_read_all(rpcs, fd, pbuf, &bytes) != 0)
-        rpc_kill(rpcs, pid, RPC_SIGKILL);
+        rpc_ta_kill_death(rpcs, pid);
 
     rpc_close(rpcs, fd);
 
@@ -508,9 +508,10 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,
 }
 
 rpc_wait_status
-rpc_shell_get_all2(rcf_rpc_server *rpcs, char *buf[2],
+rpc_shell_get_all2(rcf_rpc_server *rpcs, char **pbuf,
                    const char *cmd, ...)
 {
+    char   *buf[2];
     size_t  bytes[2];
     size_t  read1, read2;
     char    cmdline[RPC_SHELL_CMDLINE_MAX];
@@ -518,7 +519,7 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char *buf[2],
 
     tarpc_pid_t     pid;
     rpc_wait_status rc;
-    int iut_err_jump;
+    te_bool         iut_err_jump;
 
     va_list ap;
 
@@ -526,6 +527,8 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char *buf[2],
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
 
+    if (pbuf != NULL)
+        *pbuf = NULL;
     memset(&rc, 0, sizeof(rc));
     rc.flag = RPC_WAIT_STATUS_UNKNOWN;
     if (rpcs == NULL || buf == NULL)
@@ -535,7 +538,10 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char *buf[2],
     }
     
     iut_err_jump = rpcs->iut_err_jump;
-    pid = rpc_te_shell_cmd_gen(rpcs, cmdline, -1, NULL, &fd[0], &fd[1]);
+    if (pbuf != NULL)
+        pid = rpc_te_shell_cmd_gen(rpcs, cmdline, -1, NULL, &fd[0], &fd[1]);
+    else
+        pid = rpc_te_shell_cmd_gen(rpcs, cmdline, -1, NULL, NULL, &fd[1]);
     if (pid < 0)
     {
         ERROR("Cannot execute the command: rpc_te_shell_cmd_gen() failed");
@@ -544,10 +550,18 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char *buf[2],
 
     read1 = read2 = 0;
     buf[0] = buf[1] = NULL;
-    if (rpc_read_all2(rpcs, fd, buf, bytes) != 0)
-        rpc_kill(rpcs, pid, RPC_SIGKILL);
-
-    rpc_close(rpcs, fd[0]);
+    if (pbuf != NULL)
+    {
+        if (rpc_read_all2(rpcs, fd, buf, bytes) != 0)
+            rpc_ta_kill_death(rpcs, pid);
+        *pbuf = buf[0];
+        rpc_close(rpcs, fd[0]);
+    }
+    else
+    {
+        if (rpc_read_all(rpcs, fd[1], &buf[1], &bytes[1]) != 0)
+            rpc_ta_kill_death(rpcs, pid);
+    }
     rpc_close(rpcs, fd[1]);
 
     /* Restore jump setting to avoid jump after command crash. */
@@ -559,6 +573,18 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char *buf[2],
      * case.
      */
     rpc_waitpid(rpcs, pid, &rc, 0);
+
+    if (rc.flag == RPC_WAIT_STATUS_EXITED && rc.value == 0 && 
+        buf[1][0] != '\0')
+    {
+        free(buf[1]);
+        ERROR("The command has non-empty stderr");
+        rc.flag = RPC_WAIT_STATUS_UNKNOWN;
+        if (iut_err_jump)
+            TAPI_JMP_DO(TE_EFAIL);
+    }
+    else
+        free(buf[1]);
 
     return rc;
 }
@@ -605,6 +631,19 @@ rpc_system(rcf_rpc_server *rpcs, const char *cmd)
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_WAIT_STATUS(system, rc);
+}
+
+rpc_wait_status
+rpc_system_ex(rcf_rpc_server *rpcs, const char *cmd, ...)
+{
+    char    cmdline[RPC_SHELL_CMDLINE_MAX];
+    va_list ap;
+
+    va_start(ap, cmd);
+    vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
+    va_end(ap);
+
+    return rpc_system(rpcs, cmdline);
 }
 
 /**
