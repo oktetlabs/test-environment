@@ -60,6 +60,11 @@
       <arg name="pld_len">
         <value>50</value>
       </arg>
+      <arg name="chksum">
+        <value>correct</value>
+        <value>=1</value>
+        <value>=2</value>
+      </arg>
     </run> 
    
   </session>

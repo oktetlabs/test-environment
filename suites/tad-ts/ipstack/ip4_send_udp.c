@@ -1,7 +1,7 @@
 /** @file
  * @brief Test Environment
  *
- * Check IP4/ETH CSAP data-sending behaviour
+ * Check UDP/IP4/ETH CSAP data-sending behaviour
  * 
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -26,8 +26,8 @@
 
 /** @page ipstack-ip4_send_udp Send UDP/IP4 datagram via udp.ip4.eth CSAP and receive it via DGRAM socket
  *
- * @objective Check that udp.ip4.eth CSAP can send correctly formed
- *            UDP datagrams.
+ * @objective Check that udp.ip4.eth CSAP can send UDP datagrams
+ *            with user-specified ports and checksum.
  *
  * @param host_csap     TA with CSAP
  * @param pco           TA with RAW socket
@@ -36,13 +36,16 @@
  * @param csap_hwaddr   CSAP local MAC address
  * @param sock_hwaddr   CSAP remote MAC address
  * @param pld_len       Datagram's payload length
+ * @param chksum        Datagram's checksum (correct or
+ *                      corrupted by user)
  *
  * @par Scenario:
  *
  * -# Create udp.ip4.eth CSAP on @p pco_csap. 
  * -# Create UDP socket on @p pco_sock.
- * -# Send UDP/IP4 datagrem with specified payload length. 
- * -# Receive datagram via socket.
+ * -# Send UDP/IP4 datagrem with specified payload length and checksum.
+ * -# If @p chksum is 'correct' receive datagram via socket.
+ * -# In other cases check that no datagram is received.
  * -# Destroy CSAP and close socket
  *
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
@@ -86,6 +89,7 @@ main(int argc, char *argv[])
     const struct sockaddr      *csap_hwaddr;
     const struct sockaddr      *sock_hwaddr;
     const struct if_nameindex  *csap_if;
+    const char                 *chksum;
 
     csap_handle_t               udp_ip4_send_csap = CSAP_INVALID_HANDLE;
     int                         recv_socket = -1;
@@ -94,6 +98,8 @@ main(int argc, char *argv[])
     
     void                       *send_buf;
     void                       *recv_buf;
+
+    te_bool                     sum_ok;
 
     TEST_START; 
 
@@ -105,6 +111,7 @@ main(int argc, char *argv[])
     TEST_GET_ADDR(sock_hwaddr);
     TEST_GET_IF(csap_if);
     TEST_GET_INT_PARAM(pld_len);
+    TEST_GET_STRING_PARAM(chksum);
 
     /* Create send-recv buffers */
     send_buf = te_make_buf_by_len(pld_len);
@@ -141,15 +148,39 @@ main(int argc, char *argv[])
                                           "#eth", NULL));
     CHECK_RC(tapi_tad_tmpl_ptrn_add_payload_plain(&template, FALSE,
                                                   send_buf, pld_len));
+    
+    if (strcmp(chksum, "correct") == 0)
+        sum_ok = TRUE;
+    else if (chksum[0] == '=')
+    {
+        char           *end;
+        unsigned long   v = strtoul(chksum + 1, &end, 0);
+
+        if (end == chksum + 1 || *end != '\0')
+        TEST_FAIL("Invalide 'chksum' parameter value '%s'", chksum);
+
+        CHECK_RC(asn_write_int32(template, v,
+                                 "pdus.1.#ip4.pld-checksum.#diff"));
+        sum_ok = FALSE;
+    }
+    else
+        TEST_FAIL("Invalide 'chksum' parameter value '%s'", chksum);
+    
     /* Start sending data */
     CHECK_RC(tapi_tad_trsend_start(host_csap->ta, 0, udp_ip4_send_csap,
                                    template, RCF_MODE_BLOCKING));
 
     /* Start receiving data */
-    rc = rpc_recv(pco, recv_socket, recv_buf, pld_len, 0);
-    if (rc != pld_len)
+    RPC_AWAIT_IUT_ERROR(pco);
+    rc = rpc_recv(pco, recv_socket, recv_buf, pld_len, 
+                  RPC_MSG_DONTWAIT);
+    
+    if (!sum_ok && rc != -1)
+        TEST_FAIL("Datadgram was received despite the "
+                  "incorrect checksum");
+    else if (sum_ok && rc != pld_len)
         TEST_FAIL("Numbers of sent and received bytes differ");
-    else if (memcmp(send_buf, recv_buf, pld_len) != 0)
+    else if (sum_ok && memcmp(send_buf, recv_buf, pld_len) != 0)
         TEST_FAIL("UDP payload corrupted");
 
     TEST_SUCCESS;
