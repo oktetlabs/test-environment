@@ -102,19 +102,19 @@ extern te_errno tapi_icmp4_add_pdu(asn_value **tmpl_or_ptrn,
  * @return Zero on success or error code
  */
 extern te_errno
-tapi_tcp_ip_icmp_ip4_eth_csap_create(const char    *ta_name,
-                                     int            sid,
-                                     const char    *eth_dev,
-                                     unsigned int   receive_mode,
-                                     const uint8_t *eth_src,
-                                     const uint8_t *eth_dst, 
-                                     in_addr_t      src_addr,
-                                     in_addr_t      dst_addr,
-                                     in_addr_t      msg_src_addr,
-                                     in_addr_t      msg_dst_addr,
-                                     int            msg_src_port,
-                                     int            msg_dst_port,
-                                     csap_handle_t *tcp_csap);
+tapi_tcp_ip4_icmp_ip4_eth_csap_create(const char    *ta_name,
+                                      int            sid,
+                                      const char    *eth_dev,
+                                      unsigned int   receive_mode,
+                                      const uint8_t *eth_src,
+                                      const uint8_t *eth_dst, 
+                                      in_addr_t      src_addr,
+                                      in_addr_t      dst_addr,
+                                      in_addr_t      msg_src_addr,
+                                      in_addr_t      msg_dst_addr,
+                                      int            msg_src_port,
+                                      int            msg_dst_port,
+                                      csap_handle_t *tcp_csap);
 
 
 /**
@@ -139,19 +139,19 @@ tapi_tcp_ip_icmp_ip4_eth_csap_create(const char    *ta_name,
  * @return Zero on success or error code
  */
 extern te_errno
-tapi_udp_ip_icmp_ip4_eth_csap_create(const char    *ta_name,
-                                     int            sid,
-                                     const char    *eth_dev,
-                                     unsigned int   receive_mode,
-                                     const uint8_t *eth_src,
-                                     const uint8_t *eth_dst, 
-                                     in_addr_t      src_addr,
-                                     in_addr_t      dst_addr,
-                                     in_addr_t      msg_src_addr,
-                                     in_addr_t      msg_dst_addr,
-                                     int            msg_src_port,
-                                     int            msg_dst_port,
-                                     csap_handle_t *tcp_csap);
+tapi_udp_ip4_icmp_ip4_eth_csap_create(const char    *ta_name,
+                                      int            sid,
+                                      const char    *eth_dev,
+                                      unsigned int   receive_mode,
+                                      const uint8_t *eth_src,
+                                      const uint8_t *eth_dst, 
+                                      in_addr_t      src_addr,
+                                      in_addr_t      dst_addr,
+                                      in_addr_t      msg_src_addr,
+                                      in_addr_t      msg_dst_addr,
+                                      int            msg_src_port,
+                                      int            msg_dst_port,
+                                      csap_handle_t *tcp_csap);
 
 
 #ifdef __cplusplus
