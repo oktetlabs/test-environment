@@ -1,7 +1,7 @@
 /** @file
  * @brief Test Environment
  *
- * Check IP4/ETH CSAP data-sending behaviour
+ * Check ICMP4/IP4/ETH CSAP data-sending behaviour
  * 
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -24,10 +24,11 @@
  * $Id$
  */
 
-/** @page ipstack-ip4_send_icmp Send ICMP datagram via ip4.eth CSAP and receive it via RAW socket
+/** @page ipstack-ip4_send_icmp Send ICMP datagram via icmp4.ip4.eth CSAP and receive it via RAW socket
  *
- * @objective Check that ip4.eth CSAP can send correctly formed
- *            ICMP datagrams.
+ * @objective Check that ip4.eth CSAP can send ICMP 
+ *            datagrams with user-specified type, code and 
+ *            checksum fields.
  *
  * @param host_csap     TA with CSAP
  * @param pco           TA with RAW socket
@@ -37,15 +38,20 @@
  * @param sock_hwaddr   CSAP remote MAC address
  * @param type          ICMP message's type
  * @param code          ICMP message's code
+ * @param chksum        ICMP message's checksum 
+ *                      (correct or corrupted by user)
  *
  * @par Scenario:
  *
- * -# Create ip4.eth CSAP on @p pco_csap. 
+ * -# Create icmp4.ip4.eth CSAP on @p pco_csap. 
  * -# Create IPv4 raw socket on @p pco_sock.
- * -# Send IPv4 datagram with specified ICMP message in payload.
+ * -# Send IPv4 datagram with ICMP message having
+ *    user-specified type, code and checksum.
  * -# Receive datagram via socket.
- * -# Check that ICMP message has correctly formed type, code and 
- *    checksum fields
+ * -# In case @p chksum is specified as 'correct', check that 
+ *    ICMP message has correctly formed type, code and checksum fields
+ * -# In other cases check that ICMP message has incorrect
+ *    checksum field.
  * -# Destroy CSAP and close socket
  *
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
@@ -101,6 +107,7 @@ main(int argc, char *argv[])
     const struct if_nameindex  *csap_if;
     int                         type;
     int                         code;
+    const char                 *chksum;
 
     csap_handle_t               send_csap = CSAP_INVALID_HANDLE;
     asn_value                  *csap_spec = NULL;
@@ -113,6 +120,8 @@ main(int argc, char *argv[])
     ssize_t                     r;
 
     uint8_t                     ip_header_len;
+
+    te_bool                     sum_ok;
     
     TEST_START; 
 
@@ -125,6 +134,7 @@ main(int argc, char *argv[])
     TEST_GET_IF(csap_if);
     TEST_GET_INT_PARAM(type);
     TEST_GET_INT_PARAM(code);
+    TEST_GET_STRING_PARAM(chksum);
 
     /* Create buffer to receive ICMP message */
     recv_buf_len = sizeof(struct icmphdr) + 
@@ -181,6 +191,23 @@ main(int argc, char *argv[])
                               TE_BOOL3_ANY,
                               TE_BOOL3_ANY));
 
+    if (strcmp(chksum, "correct") == 0)
+        sum_ok = TRUE;
+    else if (chksum[0] == '=')
+    {
+        char           *end;
+        unsigned long   v = strtoul(chksum + 1, &end, 0);
+
+        if (end == chksum + 1 || *end != '\0')
+        TEST_FAIL("Invalide 'chksum' parameter value '%s'", chksum);
+
+        CHECK_RC(asn_write_int32(template, v,
+                                 "pdus.1.#ip4.pld-checksum.#diff"));
+        sum_ok = FALSE;
+    }
+    else
+        TEST_FAIL("Invalide 'chksum' parameter value '%s'", chksum);
+    
     /* Start sending data via CSAP */
     CHECK_RC(tapi_tad_trsend_start(host_csap->ta, 0, send_csap,
                                    template, RCF_MODE_NONBLOCKING));
@@ -206,18 +233,35 @@ main(int argc, char *argv[])
 
     /* Check ICMP header's fields */
     /* Check type field */
-    if (((struct icmphdr *)(recv_buf + ip_header_len * 4))->type != type)
-        TEST_FAIL("ICMP message was received with "
-                  "corrupted type field");
-    /* Check code field */
-    if (((struct icmphdr *)(recv_buf + ip_header_len * 4))->code != code)
-        TEST_FAIL("ICMP message was received with "
-                  "corrupted code field");
-    /* Check checksum field */
-    if (~(short)calculate_checksum(recv_buf + ip_header_len * 4, 
+    if (sum_ok)
+    {
+        if (((struct icmphdr *)
+                    (recv_buf + ip_header_len * 4))->type != type)
+            TEST_FAIL("ICMP message was received with "
+                      "corrupted type field");
+        /* Check code field */
+        if (((struct icmphdr *)
+                    (recv_buf + ip_header_len * 4))->code != code)
+            TEST_FAIL("ICMP message was received with "
+                      "corrupted code field");
+        /* Check checksum field */
+        if (~(short)calculate_checksum(recv_buf + ip_header_len * 4, 
                                     sizeof(struct icmphdr)))
-        TEST_FAIL("ICMP message was received with "
-                  "corrupted checksum field");
+            TEST_FAIL("ICMP message was unexpectedly "
+                      "received with "
+                      "corrupted checksum field");
+    }
+    else
+    {
+        /* Check checksum field */
+        if (~(short)calculate_checksum(recv_buf + ip_header_len * 4, 
+                                    sizeof(struct icmphdr)))
+            ;
+        else
+            TEST_FAIL("ICMP message was unexpectedly "
+                      "received with "
+                      "correct checksum field");
+    }
 
     TEST_SUCCESS;
 
