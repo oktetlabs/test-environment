@@ -191,6 +191,62 @@ main(int argc, char *argv[])
                               TE_BOOL3_ANY,
                               TE_BOOL3_ANY));
 
+    if (type == 0 || type == 8 || type == 13 || type == 14
+            || type == 15 || type == 16 
+            || type == 17 || type == 18)
+    {
+        /* 
+         * More fields should be filled in the case 
+         * of echo request/reply (type == 8/0),
+         * timestamp request/reply (type == 13/14),
+         * information request/replu (type == 15/16)
+         * or address mask request/reply (type == 17/18)
+         */
+        
+        /* identifier field */
+        CHECK_RC(asn_write_int32(template, rpc_getpid(pco),
+                                "pdus.0.#icmp4.id.#plain"));
+        /* sequence number field */
+        CHECK_RC(asn_write_int32(template, 0,
+                                "pdus.0.#icmp4.seq.#plain"));
+
+        /* 
+         * timestamps fields should be filled in the case
+         * of timestamps request/reply 
+         */
+        if (type == 13 || type == 14)
+        {
+            CHECK_RC(asn_write_int32(template, 0,
+                                    "pdus.0.#icmp4.orig-ts.#plain"));
+            CHECK_RC(asn_write_int32(template, 0,
+                                    "pdus.0.#icmp4.rx-ts.#plain"));
+            CHECK_RC(asn_write_int32(template, 0,
+                                    "pdus.0.#icmp4.tx-ts.#plain"));
+        }
+    }
+
+    if (type == 12)
+    {
+        /*
+         * Protocol inreachible error.
+         * ptr field should be filled
+         */
+        CHECK_RC(asn_write_int32(template, IPPROTO_ICMP,
+                                 "pdus.0.#icmp4.ptr.#plain"));
+
+    }
+
+    if (type == 5)
+    {
+        /*
+         * Redirection messages.
+         * gw field should be filled
+         */
+        CHECK_RC(asn_write_int32(template, 0,
+                                 "pdus.0.#icmp4.redirect-gw.#plain"));
+
+    }
+
     if (strcmp(chksum, "correct") == 0)
         sum_ok = TRUE;
     else if (chksum[0] == '=')

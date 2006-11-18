@@ -78,7 +78,34 @@
             <value>{'host_csap'{addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
           </arg>  
           <arg name="type">
+            <value>5</value>
+          </arg>
+          <arg name="code">
+            <value>0</value>
+            <value>1</value>
+            <value>2</value>
+            <value>3</value>
+          </arg>
+          <arg name="chksum">
+            <value>correct</value>
+            <value>=1</value>
+          </arg>
+        </run>
+      </session>
+    </run> 
+   
+    <run>
+      <session>
+        <run>
+          <script name="ip4_send_icmp">
+            <req id="TAD_IP4"/>
+          </script>
+          <arg name="env">
+            <value>{'host_csap'{addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+          </arg>  
+          <arg name="type">
             <value>11</value>
+            <value>12</value>
           </arg>
           <arg name="code">
             <value>0</value>
@@ -102,9 +129,17 @@
             <value>{'host_csap'{addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
           </arg>  
           <arg name="type">
+            <value>0</value>
             <value>4</value>
+            <value>8</value>
             <value>9</value>
             <value>10</value>
+            <value>13</value>
+            <value>14</value>
+            <value>15</value>
+            <value>16</value>
+            <value>17</value>
+            <value>18</value>
           </arg>
           <arg name="code">
             <value>0</value>
