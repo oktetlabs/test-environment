@@ -62,7 +62,7 @@
           </arg>
           <arg name="chksum">
             <value>correct</value>
-            <value>=1</value>
+            <value>+1</value>
           </arg>
         </run>
       </session>
@@ -88,7 +88,7 @@
           </arg>
           <arg name="chksum">
             <value>correct</value>
-            <value>=1</value>
+            <value>+1</value>
           </arg>
         </run>
       </session>
@@ -113,7 +113,7 @@
           </arg>
           <arg name="chksum">
             <value>correct</value>
-            <value>=1</value>
+            <value>+1</value>
           </arg>
         </run>
       </session>
@@ -146,7 +146,7 @@
           </arg>
           <arg name="chksum">
             <value>correct</value>
-            <value>=1</value>
+            <value>+1</value>
           </arg>
         </run>
       </session>
@@ -164,7 +164,7 @@
       </arg>
       <arg name="chksum">
         <value>correct</value>
-        <value>=1</value>
+        <value>+1</value>
       </arg>
     </run> 
    

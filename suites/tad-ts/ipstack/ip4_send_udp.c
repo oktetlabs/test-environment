@@ -118,8 +118,8 @@ main(int argc, char *argv[])
     recv_buf = te_make_buf_by_len(pld_len);
 
     /* Create UDP socket */
-    recv_socket = rpc_socket(pco, RPC_PF_INET, 
-                             RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
+    recv_socket = rpc_socket(pco,
+                             RPC_PF_INET, RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
     /* Bind socket */
     CHECK_RC(rpc_bind(pco, recv_socket, sock_addr));
     
@@ -150,34 +150,38 @@ main(int argc, char *argv[])
                                                   send_buf, pld_len));
     
     if (strcmp(chksum, "correct") == 0)
+    {
         sum_ok = TRUE;
-    else if (chksum[0] == '=')
+    }
+    else if (chksum[0] == '+')
     {
         char           *end;
         unsigned long   v = strtoul(chksum + 1, &end, 0);
 
         if (end == chksum + 1 || *end != '\0')
-        TEST_FAIL("Invalide 'chksum' parameter value '%s'", chksum);
+            TEST_FAIL("Invalide 'chksum' parameter value '%s'", chksum);
 
         CHECK_RC(asn_write_int32(template, v,
                                  "pdus.1.#ip4.pld-checksum.#diff"));
         sum_ok = FALSE;
     }
     else
-        TEST_FAIL("Invalide 'chksum' parameter value '%s'", chksum);
+    {
+        TEST_FAIL("Invalid 'chksum' parameter value '%s'", chksum);
+    }
     
     /* Start sending data */
     CHECK_RC(tapi_tad_trsend_start(host_csap->ta, 0, udp_ip4_send_csap,
                                    template, RCF_MODE_BLOCKING));
 
+    MSLEEP(100);
+
     /* Start receiving data */
     RPC_AWAIT_IUT_ERROR(pco);
-    rc = rpc_recv(pco, recv_socket, recv_buf, pld_len, 
-                  RPC_MSG_DONTWAIT);
+    rc = rpc_recv(pco, recv_socket, recv_buf, pld_len, RPC_MSG_DONTWAIT);
     
     if (!sum_ok && rc != -1)
-        TEST_FAIL("Datadgram was received despite the "
-                  "incorrect checksum");
+        TEST_FAIL("Datadgram was received despite of incorrect checksum");
     else if (sum_ok && rc != pld_len)
         TEST_FAIL("Numbers of sent and received bytes differ");
     else if (sum_ok && memcmp(send_buf, recv_buf, pld_len) != 0)
@@ -192,8 +196,8 @@ cleanup:
     asn_free_value(template);
     
     if (host_csap != NULL)
-        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta, 
-                                             0, udp_ip4_send_csap));
+        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta, 0,
+                                             udp_ip4_send_csap));
 
     free(send_buf);
     free(recv_buf);

@@ -249,13 +249,13 @@ main(int argc, char *argv[])
 
     if (strcmp(chksum, "correct") == 0)
         sum_ok = TRUE;
-    else if (chksum[0] == '=')
+    else if (chksum[0] == '+')
     {
         char           *end;
         unsigned long   v = strtoul(chksum + 1, &end, 0);
 
         if (end == chksum + 1 || *end != '\0')
-        TEST_FAIL("Invalide 'chksum' parameter value '%s'", chksum);
+            TEST_FAIL("Invalide 'chksum' parameter value '%s'", chksum);
 
         CHECK_RC(asn_write_int32(template, v,
                                  "pdus.1.#ip4.pld-checksum.#diff"));
