@@ -97,7 +97,7 @@ extern te_errno tapi_icmp4_add_pdu(asn_value **tmpl_or_ptrn,
  * @param msg_dst_addr  Destination IPv4 Address of ICMP Error message
  * @param msg_src_port  Source UDP port in network byte order or -1
  * @param msg_dst_port  Destination UDP port in network byte order or -1
- * @param udp_csap      Location for the CSAP handle (OUT)
+ * @param tcp_csap      Location for the CSAP handle (OUT)
  *
  * @return Zero on success or error code
  */
@@ -151,7 +151,7 @@ tapi_udp_ip4_icmp_ip4_eth_csap_create(const char    *ta_name,
                                       in_addr_t      msg_dst_addr,
                                       int            msg_src_port,
                                       int            msg_dst_port,
-                                      csap_handle_t *tcp_csap);
+                                      csap_handle_t *udp_csap);
 
 
 #ifdef __cplusplus
