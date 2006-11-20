@@ -239,6 +239,10 @@ AC_ARG_WITH([socket],,
  fi
 ], [w_socket=false])
 
+if test $w_eth = true -o $w_atm = true ; then
+   proto_specific llc;
+   AC_CONFIG_FILES([llc/Makefile])
+fi
 
 AC_SUBST([TAD_LIBLIST])
 AC_SUBST([TAD_SUBDIRS])
