@@ -283,6 +283,7 @@ typedef struct tad_aal5_prepare_pdus_data {
     csap_p      csap;       /**< CSAP */
     tad_pkts   *pdus;       /**< List to put PDUs */
     uint8_t    *trailer;    /**< CPCS PDU trailer template */
+    te_bool     write_crc;  /**< Calculate and write CRC to trailer */
 } tad_aal5_prepare_pdus_data;
 
 /**
@@ -335,10 +336,13 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
     len = htons(pld_len);
     memcpy((uint8_t *)trailer->data_ptr + 2, &len, sizeof(len));
 
-    /* Calculate CRC and write it to trailer */
-    (void)tad_pkt_enumerate_seg(pkt, tad_all5_crc32, &crc);
-    crc = htonl(~crc);
-    memcpy((uint8_t *)trailer->data_ptr + 4, &crc, sizeof(crc));
+    /* Calculate CRC and write it to trailer if requested */
+    if(data->write_crc)
+    {
+        (void)tad_pkt_enumerate_seg(pkt, tad_all5_crc32, &crc);
+        crc = htonl(~crc);
+        memcpy((uint8_t *)trailer->data_ptr + 4, &crc, sizeof(crc));
+    }
 
     /*
      * CPCS-PDU is ready for 'segmentation'
@@ -421,6 +425,12 @@ tad_aal5_gen_bin_cb(csap_p                csap,
     cb_data.csap = csap;
     cb_data.pdus = pdus;
     cb_data.trailer = trailer;
+    /*
+     * Don't calculate and write CRC if it
+     * is already present in the template.
+     */
+    cb_data.write_crc = tmpl_data->trailer.dus[3].du_type == TAD_DU_UNDEF;
+
     rc = tad_pkt_enumerate(sdus, tad_aal5_prepare_pdus, &cb_data);
     if (rc != 0)
     {
