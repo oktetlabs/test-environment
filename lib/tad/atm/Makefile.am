@@ -11,9 +11,3 @@ libtad_atm_a_SOURCES = \
 	tad_atm_stack.c \
 	tad_atm_layer.c \
 	tad_aal5_layer.c
-
-
-install-exec-hook:
-	touch -c -r libtad_atm.a $(DESTDIR)/$(libdir)/libtad_atm.a
-
-all: install

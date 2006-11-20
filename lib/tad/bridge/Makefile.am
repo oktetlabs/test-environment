@@ -8,9 +8,3 @@ noinst_HEADERS = tad_bridge_impl.h
 noinst_LIBRARIES = libtad_bridge.a
 
 libtad_bridge_a_SOURCES = tad_bridge_csap.c tad_bridge_layer.c
-
-
-install-exec-hook:
-	touch -c -r libtad_bridge.a $(DESTDIR)/$(libdir)/libtad_bridge.a
-
-all: install
