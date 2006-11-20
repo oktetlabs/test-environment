@@ -34,12 +34,12 @@
 # $Id:  $
 #
 
+SCRIPT=`which $0`
+BUILDER=`dirname $SCRIPT`
 PLATFORM="$1"
 LIBNAME="$2"
 INCLUDE="$3/include"
 shift 3
-
-BUILDER=`dirname $0`
 
 . $BUILDER/te_build_win_platform
 

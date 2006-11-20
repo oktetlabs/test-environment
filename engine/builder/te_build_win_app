@@ -36,6 +36,8 @@
 # $Id:  $
 #
 
+SCRIPT=`which $0`
+BUILDER=`dirname $SCRIPT`
 SRCDIR=$1
 CYGWIN=$2
 PLATFORM=$3
@@ -44,7 +46,7 @@ LIBS=$5
 LIBS=`eval "echo "$LIBS`
 shift 5
 
-. `dirname $0`/te_build_win_platform
+. ${BUILDER}/te_build_win_platform
 
 WIN_DIR=${USER}_build/${APPNAME%%.exe}
 

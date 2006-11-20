@@ -28,8 +28,8 @@ libtools_a_SOURCES = te_bufs.c te_alloc.c te_sockaddr.c te_format.c
 
 libtools.a: $(libtools_a_SOURCES) 
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
-        $(TE_PATH)/te_build_win_lib $(TE_PLATFORM) $@ \
-                                    $(DESTDIR)/$(prefix) $^
+        PATH="$${PATH}:$(TE_BASE)/engine/builder:$(TE_PATH)" \
+        te_build_win_lib $(TE_PLATFORM) $@ $(DESTDIR)/$(prefix) $^
         
 install-exec-hook:
 	if test -e $(lib_LIBRARIES) -a ! -s $(lib_LIBRARIES) \

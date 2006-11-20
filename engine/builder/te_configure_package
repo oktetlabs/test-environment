@@ -149,6 +149,7 @@ PARMS="$PARMS --build=`gcc -dumpmachine` \
        TE_LDFLAGS=\"${ADD_LDFLAGS}\" \
        TE_LDADD=\"$LDADD\" \
        TE_PATH=\"$TE_PATH\" \
+       TE_INSTALL=\"$TE_INSTALL\" \
        TE_PLATFORM=$PLATFORM"
 
 configure_package

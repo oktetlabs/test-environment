@@ -74,6 +74,8 @@ else
     cd "${SOURCES}"
 fi
 
+mkdir -p ${TE_INSTALL_SUITE}
+
 if test ! -e Makefile ; then
     SUITE_NAME=`echo ${SUITE} | tr .- _`
     PARMS="`eval echo '$TE_BS_SUITE_'${SUITE_NAME}'_PARMS'`"

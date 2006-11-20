@@ -91,13 +91,15 @@ RPCSERVER_SRC= $(rpcserver_SOURCES) rpcserver_symtbl.c rpc_unsupported.c
 
 rpcserver32$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
-        $(TE_PATH)/te_build_win_app $(srcdir) $(TE_PLATFORM) windows $@ \
-                                    \"$(RPCSERVER_LIBS)\" $^
+        PATH="$${PATH}:$(TE_BASE)/engine/builder:$(TE_PATH)" \
+        te_build_win_app $(srcdir) $(TE_PLATFORM) \
+                         windows $@ \"$(RPCSERVER_LIBS)\" $^
         
 rpcserver64$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
-        $(TE_PATH)/te_build_win_app $(srcdir) $(TE_PLATFORM) windows_64 $@ \
-                                    \"$(RPCSERVER_LIBS)\" $^
+        PATH="$${PATH}:$(TE_BASE)/engine/builder:$(TE_PATH)" \
+        te_build_win_app $(srcdir) $(TE_PLATFORM) \
+                         windows_64 $@ \"$(RPCSERVER_LIBS)\" $^
 
 install-data-hook:
 	if test -e rpcserver32$(EXEEXT) -a ! -s rpcserver32$(EXEEXT) \
