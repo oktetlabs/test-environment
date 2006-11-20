@@ -3425,8 +3425,12 @@ TARPC_FUNC(uname, {},
     struct utsname uts;
     
     MAKE_CALL(out->retval = func_ptr(&uts));
-    if (out->retval == 0)
+/* inequality because Solaris' uname() returns 
+ * "non-negative value" in case of success 
+ */
+    if (out->retval >= 0)
     {
+        out->retval = 0;
         PUT_STR(sysname, sysname);
         PUT_STR(nodename, nodename);
         PUT_STR(release, release);
@@ -3435,7 +3439,7 @@ TARPC_FUNC(uname, {},
     } 
     else
     {
-        ERROR("getpwnam() returned NULL");
+        ERROR("uname() returned error");
     }
 finish:
     if (!RPC_IS_ERRNO_RPC(out->common._errno))
