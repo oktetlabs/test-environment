@@ -12,3 +12,5 @@ write
 close
 waitpid
 te_shell_cmd
+getsockname
+poll
