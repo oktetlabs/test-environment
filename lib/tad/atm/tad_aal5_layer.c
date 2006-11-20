@@ -71,8 +71,10 @@ typedef struct tad_aal5_proto_tmpl_data {
  */
 static const tad_bps_pkt_frag tad_all5_bps_cpcs_trailer[] =
 {
-    { "cpcs-uu",    8,  BPS_FLD_SIMPLE(NDN_TAG_AAL5_CPCS_UU), TAD_DU_I32, FALSE },
-    { "cpi",        8,  BPS_FLD_SIMPLE(NDN_TAG_AAL5_CPI), TAD_DU_I32, FALSE },
+    { "cpcs-uu",    8,  BPS_FLD_CONST_DEF(NDN_TAG_AAL5_CPCS_UU, 0),
+                        TAD_DU_I32, FALSE },
+    { "cpi",        8,  BPS_FLD_CONST_DEF(NDN_TAG_AAL5_CPI, 0),
+                        TAD_DU_I32, FALSE },
     { "length",     16, NDN_TAG_AAL5_LENGTH,
                         ASN_TAG_CONST, ASN_TAG_USER, 0, TAD_DU_I32, TRUE },
     { "crc",        32, NDN_TAG_AAL5_CRC,
@@ -258,10 +260,18 @@ tad_all5_crc32(const tad_pkt *pkt, tad_pkt_seg *seg,
 {
     uint32_t   *crc32 = opaque;
 
-    UNUSED(pkt);
-    UNUSED(seg_num);
-
-    *crc32 = calculate_crc32(*crc32, seg->data_ptr, seg->data_len);
+    if (seg_num < tad_pkt_seg_num(pkt) - 1)
+    {
+        *crc32 = calculate_crc32(*crc32, seg->data_ptr, seg->data_len);
+    }
+    else
+    {
+        assert(seg->data_len == AAL5_TRAILER_LEN);
+        /* Exclude CRC placeholder from the calculations */
+        *crc32 = calculate_crc32(*crc32,
+                                 seg->data_ptr,
+                                 seg->data_len - sizeof(uint32_t));
+    }
 
     return 0;
 }
@@ -295,7 +305,7 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
     te_errno                rc;
     tad_atm_cell_ctrl_data *cell_ctrl;
     uint16_t                len;
-    uint32_t                crc = 0;
+    uint32_t                crc = CRC32_INIT;
 
     /* Remember actual length of the payload */
     assert(tad_pkt_len(pkt) >= AAL5_TRAILER_LEN);
