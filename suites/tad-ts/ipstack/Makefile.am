@@ -23,4 +23,5 @@ LDADD = @TS_LIBS@
 tetest_PROGRAMS = \
 	ip4_raw_send \
 	ip4_send_icmp \
-	ip4_send_udp
+	ip4_send_udp \
+	ip4_send_icmp_error_udp

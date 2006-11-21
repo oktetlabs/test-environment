@@ -167,6 +167,79 @@
         <value>+1</value>
       </arg>
     </run> 
+    
+    <run>
+      <session>
+        <run>
+          <script name="ip4_send_icmp_error_udp">
+            <req id="TAD_IP4"/>
+          </script>
+          <arg name="env">
+            <value>{'host_csap'{addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+          </arg>  
+          <arg name="type" list="">
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>11</value>
+            <value>11</value>
+          </arg>
+          <arg name="code" list="">
+            <value>0</value>
+            <value>1</value>
+            <value>2</value>
+            <value>3</value>
+            <value>4</value>
+            <value>5</value>
+            <value>6</value>
+            <value>7</value>
+            <value>8</value>
+            <value>9</value>
+            <value>10</value>
+            <value>11</value>
+            <value>12</value>
+            <value>13</value>
+            <value>14</value>
+            <value>15</value>
+            <value>0</value>
+            <value>1</value>
+          </arg>
+          <arg name="exp_errno" list="">
+            <value>ENETUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>ENOPROTOOPT</value>
+            <value>ECONNREFUSED</value>
+            <value>0</value>
+            <value>EOPNOTSUPP</value>
+            <value>ENETUNREACH</value>
+            <value>EHOSTDOWN</value>
+            <value>ENONET</value>
+            <value>ENETUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>ENETUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>EHOSTUNREACH</value>
+          </arg>
+        </run>
+      </session>
+    </run> 
    
   </session>
 

@@ -19,5 +19,6 @@ A brief description (objective) of the test package.
 -# @ref ipstack-ip4_raw_send
 -# @ref ipstack-ip4_send_icmp
 -# @ref ipstack-ip4_send_udp
+-# @ref ipstack-ip4_send_icmp_error_udp
 
 */
