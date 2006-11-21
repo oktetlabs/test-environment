@@ -299,7 +299,7 @@ typedef int tapi_tcp_handler_t;
  *
  * @return Status code
  */
-extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
+extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                     const struct sockaddr *local_addr, 
                                     const struct sockaddr *remote_addr, 
                                     const char *local_iface,
@@ -307,6 +307,26 @@ extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                     const uint8_t *remote_mac,
                                     int window,
                                     tapi_tcp_handler_t *handler);
+/**
+ * Modification of tapi_tcp_init_connection() that supports
+ * Layer2 encapsulation.
+ *
+ * Parameters are same as above plus:
+ * 
+ * @param enc_vlan      Use VLAN encapsulation
+ * @param enc_llc       Use LLC/SNAP encapsulation
+ */
+extern int tapi_tcp_init_connection_enc(const char *agt,
+                                        tapi_tcp_mode_t mode,
+                                        const struct sockaddr *local_addr, 
+                                        const struct sockaddr *remote_addr, 
+                                        const char *local_iface,
+                                        const uint8_t *local_mac,
+                                        const uint8_t *remote_mac,
+                                        int window,
+                                        te_bool enc_vlan,
+                                        te_bool enc_snap,
+                                        tapi_tcp_handler_t *handler);
 
 /**
  * Destroy TAPI TCP connection handler: stop receive process on CSAPs, etc. 

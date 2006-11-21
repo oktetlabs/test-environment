@@ -618,13 +618,16 @@ uint8_t broadcast_mac[] = {0xff,0xff,0xff,0xff,0xff,0xff};
 
 /* See description in tapi_tcp.h */
 int
-tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
-                         const struct sockaddr *local_addr, 
-                         const struct sockaddr *remote_addr, 
-                         const char *local_iface,
-                         const uint8_t *local_mac, 
-                         const uint8_t *remote_mac,
-                         int window, tapi_tcp_handler_t *handler)
+tapi_tcp_init_connection_enc(const char *agt, tapi_tcp_mode_t mode, 
+                             const struct sockaddr *local_addr, 
+                             const struct sockaddr *remote_addr, 
+                             const char *local_iface,
+                             const uint8_t *local_mac, 
+                             const uint8_t *remote_mac,
+                             int window,
+                             te_bool enc_vlan,
+                             te_bool enc_snap,
+                             tapi_tcp_handler_t *handler)
 {
     int rc;
     int syms;
@@ -690,8 +693,8 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     CHECK_ERROR("%s(); create arp pattern fails %r", __FUNCTION__, rc);
     rc = tapi_eth_add_pdu(&arp_pattern, NULL, TRUE,
                           broadcast_mac, remote_mac, NULL,
-                          TE_BOOL3_ANY /* tagged/untagged */,
-                          TE_BOOL3_ANY /* Ethernet2/LLC */);
+                          enc_vlan /* tagged/untagged */,
+                          enc_snap /* Ethernet2/LLC */);
     CHECK_ERROR("%s(); create arp/eth pattern fails %r",
                 __FUNCTION__, rc);
 
@@ -792,6 +795,21 @@ cleanup:
     return TE_RC(TE_TAPI, rc);
 }
 
+
+int
+tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
+                         const struct sockaddr *local_addr, 
+                         const struct sockaddr *remote_addr, 
+                         const char *local_iface,
+                         const uint8_t *local_mac, 
+                         const uint8_t *remote_mac,
+                         int window, tapi_tcp_handler_t *handler)
+{
+    return tapi_tcp_init_connection_enc(agt, mode, local_addr, remote_addr,
+                                        local_iface, local_mac, remote_mac,
+                                        window, TE_BOOL3_ANY, TE_BOOL3_ANY,
+                                        handler);
+}
 
 /* See description in tapi_tcp.h */
 int
