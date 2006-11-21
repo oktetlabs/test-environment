@@ -12,19 +12,19 @@ MY_LDADD=-ltapi_rpc -lrpc_types -ltapi_env -ltapi -lrcfrpc \
          -llog_bufs -ltools -lexpat -lpthread
 
 MY_DEPS= \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtapi_rpc.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtapi.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtapi_env.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/librpc_types.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/librcfrpc.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libconfapi.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libconf_oid.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/librcfapi.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/librpcxdr.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/liblogger_ten.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libipc.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/liblog_bufs.a \
-    ${TE_INSTALL}/$(TE_PLATFORM)/lib/libtools.a
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtapi_rpc.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtapi.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtapi_env.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpc_types.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfrpc.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconfapi.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfapi.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdr.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_ten.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libipc.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblog_bufs.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a
 
 noinst_HEADERS=rpc_suite.h         
 

@@ -49,22 +49,22 @@ TS_LIBS="-ltapi_tad -ltapi_env -ltapi_rpc -lrcfrpc -ltapi -lconfapi \
 -lconf_oid -lrcfapi -lndn -lasn -lrpcxdr -lrpc_types -llogger_ten \
 -lipc -llog_bufs -ltools -lpthread -lm"
 
-TS_DEPS="${TE_INSTALL}/${TE_PLATFORM}/lib/libtools.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/liblog_bufs.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/libipc.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/liblogger_ten.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/librpc_types.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/librpcxdr.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/libasn.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/libndn.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/librcfapi.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/libconf_oid.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/libconfapi.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/libtapi.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/librcfrpc.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/libtapi_rpc.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/libtapi_env.a \
-${TE_INSTALL}/${TE_PLATFORM}/lib/libtapi_tad.a"
+TS_DEPS="\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libtools.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/liblog_bufs.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libipc.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/liblogger_ten.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/librpc_types.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/librpcxdr.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libasn.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libndn.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/librcfapi.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libconf_oid.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libconfapi.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libtapi.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/librcfrpc.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libtapi_rpc.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libtapi_env.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libtapi_tad.a"
 
 AC_SUBST([TS_LIBS])
 AC_SUBST([TS_DEPS])
