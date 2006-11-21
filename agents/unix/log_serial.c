@@ -131,6 +131,15 @@ connect_conserver(int port, const char *user, const char *console)
         ERROR("Cannot create socket: errno=%d", errno);
         return -1;
     }
+
+#if HAVE_FCNTL_H
+    /* 
+     * Try to set close-on-exec flag, but ignore failures, 
+     * since it's not critical.
+     */
+    (void)fcntl(sock, F_SETFD, FD_CLOEXEC);
+#endif
+
     inaddr.sin_family      = AF_INET;
     inaddr.sin_port        = htons(port);
     inaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
