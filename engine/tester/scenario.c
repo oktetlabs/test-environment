@@ -79,7 +79,9 @@ typedef enum {
 
 
 /**
- * ibar: Please, provide function description.
+ * Given two overlapping intervals (segment0 and segment1), a new
+ * interval is formed which is an overlap of the original two.
+ * overlap->flags = seg0->flags (op_code) seg1->flags
  */
 static void
 get_operation_result(testing_act *seg0, testing_act *seg1,
@@ -97,7 +99,7 @@ get_operation_result(testing_act *seg0, testing_act *seg1,
     twice_centr_dist =
         (twice_centr_dist >= 0) ? twice_centr_dist : -twice_centr_dist;
 
-    /* there have to be an overlap */
+    /* there has to be an overlap */
     assert((unsigned)twice_centr_dist <= len_sum);
 
     overlap->first = (seg0->first < seg1->first) ?
@@ -120,8 +122,20 @@ get_operation_result(testing_act *seg0, testing_act *seg1,
     }
 }
 
+
 /**
- * ibar: Please, provide function description.
+ * Consider a sequence of intervals with possible gaps:
+ * [gap] elm [gap] elm ...
+ * On entry, we have some already chosen elm (*elm_p) and
+ * an index (*the_end_p) which could point
+ * 1. to a gap before the chosen elm: then the gap is returned
+ *    as "next" and the elm is unchanged.
+ * 2. to the beginning of the elm: then the elm itself is returned.
+ * 3. beyond the beginning of the elm: then
+ *    *elm_p is updated to be the next real elm (not a gap) and
+ *    either this next elm
+ *    or a gap in front of it (if exists) is returned as "next".
+ * In all cases, (*the_end_p) is updated to point to next->last + 1 .
  */
 static testing_act *
 get_next_with_gaps(testing_act **elm_p, testing_act *gap,
@@ -196,31 +210,6 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     testing_scenario    h_rslt; /* resulting list */
     te_bool             result_replace; /* put result into h0 */
 
-#if 1
-    if (TAILQ_EMPTY(h1))
-    {
-        assert(h0 == h_rslt_p);
-        return 0;
-    }
-    else if (TAILQ_EMPTY(h0))
-    {
-        if (op_code == TESTING_ACT_OR)
-        {
-            *h_rslt_p = *h1;
-            TAILQ_INIT(h1);
-        }
-        else if (op_code == TESTING_ACT_SUBTRACT)
-        {
-            /* Result should be empty */
-            TAILQ_INIT(h_rslt_p);
-        }
-        else
-        {
-            assert(FALSE);
-        }
-        return 0;
-    }
-#endif
 
     result_replace = (h_rslt_p == h0); /* result should replace h0 */
 
@@ -231,14 +220,32 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
         return TE_RC(TE_TESTER, TE_ENOMEM);
     the_end_0 = 0;
     elm0 = h0->tqh_first;
-    next0 = gap0;
+    if (elm0 == NULL) /* empty list is equivalent to one "inf" gap */
+    {
+        gap0->first = the_end_0;
+        gap0->last = INTRVL_TQ_POSTV_BIG - 1;
+        next0 = gap0;
+    }
+    else
+    {   /* Init, so it could only be either the first elm or the pregap.
+           Thus, definitely no worry about freeing elm0_prev */
+        next0 = get_next_with_gaps(&elm0, gap0, &the_end_0);
+    }
+
 
     /* a single obj to hold parameters of all list1 gaps */
     if ((gap1 = calloc(1, sizeof(*gap1))) == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
     the_end_1 = 0;
     elm1 = h1->tqh_first;
+    if (elm1 == NULL) /* empty list is equivalent to one "inf" gap */
+    {
+        gap1->first = the_end_1;
+        gap1->last = INTRVL_TQ_POSTV_BIG - 1;
+        need_get_next1 = 0;
+    }
     next1 = gap1;
+
 
     /* a single obj to pass parameters of all overlaps */
     if ((overlap = calloc(1, sizeof(*overlap))) == NULL)
@@ -254,15 +261,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     
     while (1) /* interate the fist set of intervals */
     {
-        elm0_prev = elm0;
-        next0 = get_next_with_gaps(&elm0, gap0, &the_end_0);
-        if (result_replace && elm0_prev != elm0)
-        {   
-            /* we empty list0 one entry at a time as we can */
-            TAILQ_REMOVE(h0, elm0_prev, links);
-        }
-        if (next0 == NULL)
-            break;
+        if (next0 == NULL) break;
 
         while (1) /* interate the second set of intervals */
         {
@@ -273,9 +272,8 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
             else
             {
                 next1 = get_next_with_gaps(&elm1, gap1, &the_end_1);
-                if (next1 == NULL)
-                    break;
             }
+            if (next1 == NULL) break;
 
             get_operation_result(next0, next1, overlap, op_code);
 
@@ -309,6 +307,16 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
                 break; /* need to step forward next0 now */
             }           
         }
+
+        /* step forward next0 */
+        elm0_prev = elm0;
+        next0 = get_next_with_gaps(&elm0, gap0, &the_end_0);
+
+        if (result_replace != 0 && elm0_prev != elm0)
+        {   /* we empty list0, one entry at a time as we can */
+            TAILQ_REMOVE(h0, elm0_prev, links);
+            free(elm0_prev); /* assuming elm's are malloc'ed properly */
+        }
     }
 
     /* Append the last overlap_grow if non-blank */
@@ -325,9 +333,11 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     free(gap1);
     free(overlap);
 
-#if 0
-    assert(!result_replace || h0->tqh_first == NULL);
-#endif
+    if (result_replace)
+    {
+        assert(h0->tqh_first == NULL);
+        free(h0);
+    }
     
     *h_rslt_p = h_rslt;
 
