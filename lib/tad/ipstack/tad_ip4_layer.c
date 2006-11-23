@@ -916,7 +916,30 @@ tad_ip4_match_do_cb(csap_p           csap,
         return rc;
     }
 
-    /* TODO: IPv4 options processing */
+    if (pkt_data->hdr.dus[1].val_i32 < 5)
+    {
+        WARN("Packet with too small IP header length %d do not match",
+             pkt_data->hdr.dus[1].val_i32);
+        return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
+    }
+    else
+    {
+        unsigned int opts_len = (pkt_data->hdr.dus[1].val_i32 - 5) << 2;
+
+        rc = tad_du_realloc(pkt_data->opts.dus, opts_len);
+        if (rc != 0)
+            return rc;
+
+        rc = tad_bps_pkt_frag_match_do(&proto_data->opts, &ptrn_data->opts,
+                                       &pkt_data->opts, pdu, &bitoff);
+        if (rc != 0)
+        {
+            F_VERB(CSAP_LOG_FMT "Match PDU vs IP options failed "
+                   "on bit offset %u: %r", CSAP_LOG_ARGS(csap),
+                   (unsigned)bitoff, rc);
+            return rc;
+        }
+    }
 
     rc = tad_pkt_get_frag(sdu, pdu, bitoff >> 3,
                           tad_pkt_len(pdu) - (bitoff >> 3),
