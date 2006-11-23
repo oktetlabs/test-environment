@@ -868,10 +868,8 @@ tad_ip4_match_post_cb(csap_p              csap,
     if (rc != 0)
         return rc;
 
-#if 0
     rc = tad_bps_pkt_frag_match_post(&proto_data->opts, &pkt_data->opts,
                                      pkt, &bitoff, meta_pkt_layer->nds);
-#endif
 
     return rc;
 }
