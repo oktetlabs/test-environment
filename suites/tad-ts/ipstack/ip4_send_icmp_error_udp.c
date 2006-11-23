@@ -117,8 +117,9 @@ main(int argc, char *argv[])
     
     int                         recv_socket = -1;
 
-    int                         set_option;
+    int                         recverr = 1;
     int                         sock_error;
+    int                         mtu_discover = 1;
 
     uint8_t                     rx_buf[100];
     size_t                      rx_buf_len = sizeof(rx_buf);
@@ -169,8 +170,9 @@ main(int argc, char *argv[])
      * Prepare socket to receive ICMP error
      * messages
      */
-    set_option = 1;
-    rpc_setsockopt(pco, recv_socket, RPC_IP_RECVERR, &set_option);
+    rpc_setsockopt(pco, recv_socket, RPC_IP_RECVERR, &recverr);
+    rpc_setsockopt(pco, recv_socket, RPC_IP_MTU_DISCOVER, 
+                    &mtu_discover);
 
     /* Create CSAP */
     CHECK_RC(tapi_udp_ip4_icmp_ip4_eth_csap_create(

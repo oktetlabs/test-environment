@@ -193,7 +193,6 @@
             <value>3</value>
             <value>3</value>
             <value>3</value>
-            <value>3</value>
             <value>11</value>
             <value>11</value>
           </arg>
@@ -202,7 +201,6 @@
             <value>1</value>
             <value>2</value>
             <value>3</value>
-            <value>4</value>
             <value>5</value>
             <value>6</value>
             <value>7</value>
@@ -222,7 +220,6 @@
             <value>EHOSTUNREACH</value>
             <value>ENOPROTOOPT</value>
             <value>ECONNREFUSED</value>
-            <value>0</value>
             <value>EOPNOTSUPP</value>
             <value>ENETUNREACH</value>
             <value>EHOSTDOWN</value>
