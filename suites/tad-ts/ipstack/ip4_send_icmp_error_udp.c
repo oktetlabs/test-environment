@@ -125,8 +125,9 @@ main(int argc, char *argv[])
     struct rpc_iovec            rx_vector;
     
     struct sockaddr_storage     msg_name;
-    socklen_t                   msg_namelen = sizeof(struct sockaddr_storage);
-    uint8_t                     cmsg_buf[TST_CMSG_LEN];
+    socklen_t                   msg_namelen =
+                                    sizeof(struct sockaddr_storage);
+    uint8_t                     cmsg_buf[TST_CMSG_LEN] = { 0, };
     struct cmsghdr             *cmsg;
     
     int                         received;
@@ -162,18 +163,14 @@ main(int argc, char *argv[])
     recv_socket = rpc_socket(pco, RPC_PF_INET, 
                              RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
     /* Bind socket to the local IP/port */
-    if (rpc_bind(pco, recv_socket, sock_addr) == -1)
-        TEST_FAIL("Function rpc_bind() unexpetctedly failed");
+    rpc_bind(pco, recv_socket, sock_addr);
 
     /* 
      * Prepare socket to receive ICMP error
      * messages
      */
     set_option = 1;
-    if (rpc_setsockopt(pco, recv_socket,
-                            RPC_IP_RECVERR,
-                            &set_option) == -1)
-        TEST_FAIL("Function rpc_setsockopt() unexpectedly failed");
+    rpc_setsockopt(pco, recv_socket, RPC_IP_RECVERR, &set_option);
 
     /* Create CSAP */
     CHECK_RC(tapi_udp_ip4_icmp_ip4_eth_csap_create(
@@ -262,8 +259,7 @@ main(int argc, char *argv[])
     /*
      * Receive icmp messages pending on socket
      */
-    received = rpc_recvmsg(pco, recv_socket,
-                            &rx_msghdr, RPC_MSG_ERRQUEUE);
+    received = rpc_recvmsg(pco, recv_socket, &rx_msghdr, RPC_MSG_ERRQUEUE);
 
     /* 
      * Check that protocol name is equal to the
@@ -302,17 +298,13 @@ main(int argc, char *argv[])
     
     /* Check that error queue is empty */
     RPC_AWAIT_IUT_ERROR(pco);
-    received = rpc_recvmsg(pco, recv_socket,
-                           &rx_msghdr, RPC_MSG_ERRQUEUE);
+    received = rpc_recvmsg(pco, recv_socket, &rx_msghdr, RPC_MSG_ERRQUEUE);
     if (received != -1)
     {
-        TEST_FAIL("recvmsg() return %d, "
-                  "but it is expected to return -1, because error queue "
-                  "is empty", received);
+        TEST_FAIL("recvmsg() return %d, but it is expected to "
+                  "return -1, because error queue is empty", received);
     }
-    CHECK_RPC_ERRNO(pco, RPC_EAGAIN,
-                    "recvmsg() "
-                    "returns -1, but");
+    CHECK_RPC_ERRNO(pco, RPC_EAGAIN, "recvmsg() returns -1, but");
 
     TEST_SUCCESS;
 
@@ -324,8 +316,7 @@ cleanup:
     asn_free_value(csap_spec);
     
     if (host_csap != NULL)
-        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta, 
-                                             0, 
+        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta, 0, 
                                              send_csap));
 
     TEST_END;
