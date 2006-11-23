@@ -33,10 +33,6 @@ TESTS = scen_op_1 \
 	scen_op_sub_13 \
 	scen_op_sub_14
 
-XFAIL_TESTS = \
-	scen_op_11 \
-	scen_op_sub_05
-
 dist_noinst_SCRIPTS = $(TESTS)
 
 check_PROGRAMS = scen_op_test
