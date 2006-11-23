@@ -449,6 +449,8 @@ extern te_errno tad_pthread_create(pthread_t *thread,
                                    void * (*start_routine)(void *),
                                    void *arg);
 
+extern te_errno tad_du_realloc(tad_data_unit_t *du, size_t size);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

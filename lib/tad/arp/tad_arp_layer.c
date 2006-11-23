@@ -370,28 +370,6 @@ tad_arp_match_post_cb(csap_p              csap,
     return 0;
 }
 
-#if 1
-te_errno
-tad_du_realloc(tad_data_unit_t *du, size_t size)
-{
-    assert(du != NULL);
-
-    if (du->du_type != TAD_DU_OCTS)
-        return TE_EINVAL;
-    if (du->val_data.len < size)
-    {
-        du->val_data.oct_str = realloc(du->val_data.oct_str, size);
-        if (du->val_data.oct_str == NULL)
-        {
-            du->val_data.len = 0;
-            return TE_ENOMEM;
-        }
-    }
-    du->val_data.len = size;
-    return 0;
-}
-#endif
-
 /* See description in tad_arp_impl.h */
 te_errno
 tad_arp_match_do_cb(csap_p           csap,

@@ -1982,3 +1982,25 @@ tad_payload_spec_clear(tad_payload_spec_t *pld_spec)
     memset(pld_spec, 0, sizeof(*pld_spec));
     pld_spec->type = TAD_PLD_UNKNOWN;
 }
+
+/* see description in tad_utils.h */
+te_errno
+tad_du_realloc(tad_data_unit_t *du, size_t size)
+{
+    assert(du != NULL);
+
+    if (du->du_type != TAD_DU_OCTS)
+        return TE_EINVAL;
+    if (du->val_data.len < size)
+    {
+        du->val_data.oct_str = realloc(du->val_data.oct_str, size);
+        if (du->val_data.oct_str == NULL)
+        {
+            du->val_data.len = 0;
+            return TE_ENOMEM;
+        }
+    }
+    du->val_data.len = size;
+    return 0;
+}
+
