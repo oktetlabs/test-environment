@@ -48,6 +48,13 @@
  *    udp error reply message.
  * -# Check that UDP socket has socket error appropriate to
  *    the sent error message.
+ * -# Check that socket error was reset by getsockopt() call.
+ * -# Call recvmsg() with flag MSG_ERRQUEUE to receive
+ *    ICMP error message via socket.
+ * -# Check received message to have the same IP/port, type and code
+ *    fields as sent message has.
+ * -# Call recvmsg() again to make sure that socket has
+ *    no messages else.
  * -# Destroy CSAP and close socket
  *
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
@@ -119,7 +126,6 @@ main(int argc, char *argv[])
 
     int                         recverr = 1;
     int                         sock_error;
-    int                         mtu_discover = 1;
 
     uint8_t                     rx_buf[100];
     size_t                      rx_buf_len = sizeof(rx_buf);
@@ -171,8 +177,6 @@ main(int argc, char *argv[])
      * messages
      */
     rpc_setsockopt(pco, recv_socket, RPC_IP_RECVERR, &recverr);
-    rpc_setsockopt(pco, recv_socket, RPC_IP_MTU_DISCOVER, 
-                    &mtu_discover);
 
     /* Create CSAP */
     CHECK_RC(tapi_udp_ip4_icmp_ip4_eth_csap_create(
