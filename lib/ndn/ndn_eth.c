@@ -41,8 +41,7 @@
 #include "ndn_llc.h"
 
 
-asn_type ndn_eth_address_s =
-{
+asn_type ndn_eth_address_s = {
     "Ethernet-Address", 
     {PRIVATE, 500}, 
     OCT_STRING, 
@@ -56,8 +55,8 @@ NDN_DATA_UNIT_TYPE(eth_address, ndn_eth_address_s, Ethernet-Address);
 
 
 
-static asn_named_entry_t _ndn_tag_header_ne_array[] =
-{
+static asn_named_entry_t _ndn_tag_header_ne_array[] = {
+
     /* Tag Control Information (TCI) */
     /** TCI priority field */
     { "priority", &ndn_data_unit_int3_s,
@@ -91,8 +90,7 @@ static asn_named_entry_t _ndn_tag_header_ne_array[] =
       { PRIVATE, NDN_TAG_VLAN_TAG_HEADER_ERIF_RD } },
 };
 
-asn_type ndn_vlan_tag_header_s =
-{
+asn_type ndn_vlan_tag_header_s = {
     "IEEE-Std-802.1Q-Tag-Header", {PRIVATE, NDN_TAG_VLAN_TAG_HEADER},
     SEQUENCE, TE_ARRAY_LEN(_ndn_tag_header_ne_array),
     { _ndn_tag_header_ne_array }
@@ -101,16 +99,14 @@ asn_type ndn_vlan_tag_header_s =
 const asn_type * const ndn_vlan_tag_header = &ndn_vlan_tag_header_s;
 
 
-static asn_named_entry_t _ndn_tagged_ne_array[] =
-{
+static asn_named_entry_t _ndn_tagged_ne_array[] = {
     { "untagged", &asn_base_null_s,
       { PRIVATE, NDN_TAG_ETH_UNTAGGED } },  /**< Frame is not tagged */
     { "tagged", &ndn_vlan_tag_header_s,
       { PRIVATE, NDN_TAG_VLAN_TAG_HEADER } },   /**< Frame is tagged */
 };
 
-static asn_type ndn_vlan_tagged_s =
-{
+static asn_type ndn_vlan_tagged_s = {
     "IEEE-Std-802.1Q-Tagged", { PRIVATE, 0 }, CHOICE, 
     TE_ARRAY_LEN(_ndn_tagged_ne_array),
     { _ndn_tagged_ne_array }
@@ -119,8 +115,7 @@ static asn_type ndn_vlan_tagged_s =
 const asn_type * const ndn_vlan_tagged = &ndn_vlan_tagged_s;
 
 
-static asn_named_entry_t _ndn_802_3_encap_ne_array[] =
-{
+static asn_named_entry_t _ndn_802_3_encap_ne_array[] = {
     /** Ethernet v2 encapsulation: Type interpretation of Length/Type */
     { "ethernet2", &asn_base_null_s,
       { PRIVATE, NDN_TAG_ETHERNET2 } },
@@ -129,16 +124,14 @@ static asn_named_entry_t _ndn_802_3_encap_ne_array[] =
       { PRIVATE, NDN_TAG_LLC_HEADER } },
 };
 
-static asn_type ndn_802_3_encap_s =
-{
+static asn_type ndn_802_3_encap_s = {
     "IEEE-Std-802.3-Encapsulation", { PRIVATE, 100 }, CHOICE, 
     TE_ARRAY_LEN(_ndn_802_3_encap_ne_array),
     { _ndn_802_3_encap_ne_array }
 };
 
 
-static asn_named_entry_t ndn_802_3_header_ne_array[] = 
-{
+static asn_named_entry_t ndn_802_3_header_ne_array[] = {
     /** 48-bit destination address */
     { "dst-addr", &ndn_data_unit_eth_address_s,
       { PRIVATE, NDN_TAG_802_3_DST } },
@@ -159,8 +152,7 @@ static asn_named_entry_t ndn_802_3_header_ne_array[] =
       { PRIVATE, NDN_TAG_802_3_ETHER_TYPE } },
 };
 
-asn_type ndn_eth_header_s =
-{
+asn_type ndn_eth_header_s = {
     "IEEE-Std-802.3-Header", { PRIVATE, 0 }, SEQUENCE, 
     TE_ARRAY_LEN(ndn_802_3_header_ne_array),
     { ndn_802_3_header_ne_array }
@@ -170,8 +162,7 @@ const asn_type * const ndn_eth_header = &ndn_eth_header_s;
 
 
 
-static asn_named_entry_t _ndn_eth_csap_ne_array [] = 
-{
+static asn_named_entry_t _ndn_eth_csap_ne_array [] = {
     { "device-id", &ndn_data_unit_char_string_s,
       { PRIVATE, NDN_TAG_ETH_DEVICE } },
     { "receive-mode", &asn_base_integer_s,
@@ -188,8 +179,7 @@ static asn_named_entry_t _ndn_eth_csap_ne_array [] =
       { PRIVATE, NDN_TAG_VLAN_TAG_HEADER_VID } },
 };
 
-asn_type ndn_eth_csap_s =
-{
+asn_type ndn_eth_csap_s = {
     "Ethernet-CSAP", {PRIVATE, 101}, SEQUENCE, 
     sizeof(_ndn_eth_csap_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_eth_csap_ne_array}

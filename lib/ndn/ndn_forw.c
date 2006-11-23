@@ -50,14 +50,12 @@ Forwarder-Delay-Cont ::= SEQUENCE {
 } 
 */
 
-static asn_named_entry_t _ndn_forw_delay_cont_ne_array [] = 
-{
+static asn_named_entry_t _ndn_forw_delay_cont_ne_array [] = {
     { "delay-min",   &asn_base_integer_s, {PRIVATE, 1}},
     { "delay-max",   &asn_base_integer_s, {PRIVATE, 2}},
 };
 
-asn_type ndn_forw_delay_cont_s =
-{
+asn_type ndn_forw_delay_cont_s = {
     "Forwarder-Delay-Cont", {PRIVATE, 100}, SEQUENCE, 
     sizeof(_ndn_forw_delay_cont_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_forw_delay_cont_ne_array}
@@ -72,14 +70,12 @@ Discret-Pair ::= SEQUENCE {
 } 
 */
 
-static asn_named_entry_t _ndn_forw_discr_pair_array [] = 
-{
+static asn_named_entry_t _ndn_forw_discr_pair_array [] = {
     { "prob",    &asn_base_int8_s, {PRIVATE, 1}},
     { "delay",   &asn_base_integer_s, {PRIVATE, 2}},
 };
 
-asn_type ndn_forw_discr_pair_s =
-{
+asn_type ndn_forw_discr_pair_s = {
     "Discret-Pair", {PRIVATE, 101}, SEQUENCE, 
     sizeof(_ndn_forw_discr_pair_array)/sizeof(asn_named_entry_t),
     {_ndn_forw_discr_pair_array}
@@ -91,8 +87,7 @@ const asn_type * const ndn_forw_discr_pair = &ndn_forw_discr_pair_s;
 Forwarder-Delay-Discrete ::= SEQUENCE OF Discret-Pair;
 */
 
-asn_type ndn_forw_delay_discr_s =
-{
+asn_type ndn_forw_delay_discr_s = {
     "Forwarder-Delay-Discrete", {PRIVATE, 102}, SEQUENCE_OF, 
     0, {subtype: &ndn_forw_discr_pair_s}
 };
@@ -109,14 +104,12 @@ enum {
     FTASK_DELAY_DISCRETE = 2,
 };
 
-static asn_named_entry_t _ndn_forw_delay_array [] = 
-{
+static asn_named_entry_t _ndn_forw_delay_array [] = {
     { "cont",  &ndn_forw_delay_cont_s,  {PRIVATE, FTASK_DELAY_CONTINOUS}},
     { "discr", &ndn_forw_delay_discr_s, {PRIVATE, FTASK_DELAY_DISCRETE}},
 };
 
-asn_type ndn_forw_delay_s =
-{
+asn_type ndn_forw_delay_s = {
     "Discret-Pair", {PRIVATE, 101}, CHOICE, 
     sizeof(_ndn_forw_delay_array)/sizeof(asn_named_entry_t),
     {_ndn_forw_delay_array}
@@ -131,12 +124,12 @@ Forwarder-Action-Reorder-Params ::= SEQUENCE {
     reorder-size    [2] DATA-UNIT {INTEGER}
 }
 */
-static asn_enum_entry_t _ndn_reorder_type_enum_entries[] = 
-{ 
+static asn_enum_entry_t _ndn_reorder_type_enum_entries[] = { 
     {"disabled", FORW_REORDER_DISABLED}, 
     {"random",   FORW_REORDER_RANDOM}, 
     {"reversed", FORW_REORDER_REVERSED}, 
 };
+
 static asn_type ndn_forw_reorder_type_s = {
     "Forw-Delay-Type", {APPLICATION, 15}, ENUMERATED,
     sizeof(_ndn_reorder_type_enum_entries)/sizeof(asn_enum_entry_t), 
@@ -144,15 +137,13 @@ static asn_type ndn_forw_reorder_type_s = {
 };
 
 
-static asn_named_entry_t _ndn_forw_reorder_ne_array [] = 
-{
+static asn_named_entry_t _ndn_forw_reorder_ne_array [] = {
     { "type",          &ndn_forw_reorder_type_s, {PRIVATE, 1}},
     { "timeout",       &ndn_data_unit_int32_s, {PRIVATE, 1}},
     { "reorder-size",  &ndn_data_unit_int16_s, {PRIVATE, 1}},
 };
 
-asn_type ndn_forw_reorder_s =
-{
+asn_type ndn_forw_reorder_s = {
     "Forwarder-Action-Reorder-Params", {PRIVATE, 100}, SEQUENCE, 
     sizeof(_ndn_forw_reorder_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_forw_reorder_ne_array}
@@ -168,8 +159,7 @@ Forwarder-Action-Drop-Params ::= CHOICE {
 } 
 */ 
 
-static asn_named_entry_t _ndn_forw_drop_ne_array [] = 
-{
+static asn_named_entry_t _ndn_forw_drop_ne_array [] = {
     { "random-rate",  &asn_base_int8_s, {PRIVATE, 0}},
     { "pattern-mask", &asn_base_bitstring_s, {PRIVATE, 1}},
 };
@@ -195,26 +185,20 @@ Forwarder-Action ::= SEQUENCE {
 
 */
 
-static asn_named_entry_t _ndn_forw_action_ne_array [] = 
-{
+static asn_named_entry_t _ndn_forw_action_ne_array [] = {
     { "id",       &asn_base_charstring_s, {PRIVATE, 1}},
     { "delay",    &ndn_forw_delay_s, {PRIVATE, 1} },
     { "reorder",  &ndn_forw_reorder_s, {PRIVATE, 1} },
     { "drop",     &ndn_forw_drop_s, {PRIVATE, 1} },
 };
 
-asn_type ndn_forw_action_s =
-{
+asn_type ndn_forw_action_s = {
     "Forwarder-Action", {PRIVATE, 101}, SEQUENCE, 
     sizeof(_ndn_forw_action_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_forw_action_ne_array}
 };
 
 const asn_type * const ndn_forw_action = &ndn_forw_action_s;
-
-
-
-
 
 
 
@@ -615,4 +599,3 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
 
     return rc;
 }
-

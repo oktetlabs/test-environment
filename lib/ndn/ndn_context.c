@@ -64,8 +64,7 @@ extern asn_type ndn_snmp_csap_s;
 extern asn_type ndn_cli_csap_s;
 extern asn_type ndn_socket_csap_s;
 
-static asn_named_entry_t _ndn_generic_csap_layer_ne_array[] = 
-{
+static asn_named_entry_t _ndn_generic_csap_layer_ne_array[] = {
 /* Add here reference to protocol-specific CSAP init params */ 
     { "atm",    &ndn_atm_csap_s,        {PRIVATE, TE_PROTO_ATM} },
     { "aal5",   &ndn_aal5_csap_s,       {PRIVATE, TE_PROTO_AAL5} },
@@ -86,8 +85,7 @@ static asn_named_entry_t _ndn_generic_csap_layer_ne_array[] =
     { "socket", &ndn_socket_csap_s,     {PRIVATE, TE_PROTO_SOCKET} }, 
 };
 
-asn_type ndn_generic_csap_layer_s =
-{
+asn_type ndn_generic_csap_layer_s = {
     "Generic-CSAP-Level", {APPLICATION, 1}, CHOICE, 
     sizeof(_ndn_generic_csap_layer_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_generic_csap_layer_ne_array}
@@ -115,8 +113,7 @@ extern asn_type ndn_snmp_message_s;
 extern asn_type ndn_cli_message_s; 
 extern asn_type ndn_socket_message_s;
 
-static asn_named_entry_t _ndn_generic_pdu_ne_array[] = 
-{
+static asn_named_entry_t _ndn_generic_pdu_ne_array[] = {
     { "atm",    &ndn_atm_header_s,        {PRIVATE, TE_PROTO_ATM} },
     { "aal5",   &ndn_aal5_cpcs_trailer_s, {PRIVATE, TE_PROTO_AAL5} },
     { "pcap",   &ndn_pcap_filter_s,       {PRIVATE, TE_PROTO_PCAP} }, 
@@ -136,8 +133,7 @@ static asn_named_entry_t _ndn_generic_pdu_ne_array[] =
     { "socket", &ndn_socket_message_s,    {PRIVATE, TE_PROTO_SOCKET} },
 };
 
-asn_type ndn_generic_pdu_s =
-{
+asn_type ndn_generic_pdu_s = {
     "Generic-PDU", {APPLICATION, 2}, CHOICE, 
     sizeof(_ndn_generic_pdu_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_generic_pdu_ne_array}

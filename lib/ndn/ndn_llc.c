@@ -33,16 +33,12 @@
 #include "ndn_llc.h"
 
 
-static asn_named_entry_t _ndn_snap_header_ne_array[] =
-{
-    { "oui", &ndn_data_unit_int24_s,
-      { PRIVATE, NDN_TAG_SNAP_OUI } },
-    { "pid", &ndn_data_unit_int16_s,
-      { PRIVATE, NDN_TAG_SNAP_PID } },
+static asn_named_entry_t _ndn_snap_header_ne_array[] = {
+    { "oui", &ndn_data_unit_int24_s, { PRIVATE, NDN_TAG_SNAP_OUI } },
+    { "pid", &ndn_data_unit_int16_s, { PRIVATE, NDN_TAG_SNAP_PID } },
 };
 
-asn_type ndn_snap_header_s =
-{
+asn_type ndn_snap_header_s = {
     "IEEE-Std-802-SNAP-Header", { PRIVATE, 0 }, SEQUENCE, 
     TE_ARRAY_LEN(_ndn_snap_header_ne_array),
     { _ndn_snap_header_ne_array }
@@ -51,8 +47,7 @@ asn_type ndn_snap_header_s =
 const asn_type * const ndn_snap_header = &ndn_snap_header_s;
 
 
-static asn_named_entry_t _ndn_llc_header_ne_array[] =
-{
+static asn_named_entry_t _ndn_llc_header_ne_array[] = {
     { "i-g", &ndn_data_unit_int1_s,         
       { PRIVATE, NDN_TAG_LLC_DSAP_IG } },   /**< Individual/group DSAP */
     { "dsap", &ndn_data_unit_int7_s,
@@ -68,8 +63,7 @@ static asn_named_entry_t _ndn_llc_header_ne_array[] =
       { PRIVATE, NDN_TAG_LLC_SNAP_HEADER } },   /**< SNAP sublayer header */
 };
 
-asn_type ndn_llc_header_s =
-{
+asn_type ndn_llc_header_s = {
     "IEEE-Std-802.2-LLC-Header", {PRIVATE, 102}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_llc_header_ne_array),
     { _ndn_llc_header_ne_array }

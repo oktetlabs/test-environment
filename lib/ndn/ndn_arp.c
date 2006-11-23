@@ -38,8 +38,7 @@
 #include "logger_api.h"
 
 
-static asn_named_entry_t _ndn_arp_header_ne_array[] = 
-{
+static asn_named_entry_t _ndn_arp_header_ne_array[] = {
     { "hw-type",        &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_ARP_HW_TYPE } },
     { "proto-type",     &ndn_data_unit_int16_s,
@@ -60,8 +59,7 @@ static asn_named_entry_t _ndn_arp_header_ne_array[] =
       { PRIVATE, NDN_TAG_ARP_TGT_PROTO_ADDR } },
 };
 
-asn_type ndn_arp_header_s =
-{
+asn_type ndn_arp_header_s = {
     "ARP-Header", { PRIVATE, 100 /* FIXME */}, SEQUENCE, 
     sizeof(_ndn_arp_header_ne_array) / sizeof(asn_named_entry_t),
     {_ndn_arp_header_ne_array}
@@ -70,8 +68,7 @@ asn_type ndn_arp_header_s =
 const asn_type * const ndn_arp_header = &ndn_arp_header_s;
 
 
-static asn_named_entry_t _ndn_arp_csap_ne_array[] = 
-{
+static asn_named_entry_t _ndn_arp_csap_ne_array[] = {
     { "hw-type",        &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_ARP_HW_TYPE } },
     { "proto-type",     &ndn_data_unit_int16_s,
@@ -82,8 +79,7 @@ static asn_named_entry_t _ndn_arp_csap_ne_array[] =
       { PRIVATE, NDN_TAG_ARP_PROTO_SIZE } },
 };
 
-asn_type ndn_arp_csap_s =
-{
+asn_type ndn_arp_csap_s = {
     "ARP-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE, 
     sizeof(_ndn_arp_csap_ne_array) / sizeof(asn_named_entry_t),
     { _ndn_arp_csap_ne_array }

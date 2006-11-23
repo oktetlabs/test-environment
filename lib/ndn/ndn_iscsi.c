@@ -56,8 +56,7 @@
 static size_t iscsi_digest_length[] = { 0, 1 };
 
 
-static asn_enum_entry_t _ndn_iscsi_digest_enum_entries[] =
-{
+static asn_enum_entry_t _ndn_iscsi_digest_enum_entries[] = {
     { "none",   ISCSI_DIGEST_NONE },
     { "crc32c", ISCSI_DIGEST_CRC32C },
 };
@@ -74,8 +73,7 @@ static const asn_type * const ndn_iscsi_digest = &ndn_iscsi_digest_s;
 
 
 /* ISCSI-CSAP definitions */
-static asn_named_entry_t _ndn_iscsi_csap_ne_array[] = 
-{
+static asn_named_entry_t _ndn_iscsi_csap_ne_array[] = {
     { "socket",        &asn_base_int16_s,
       { PRIVATE, NDN_TAG_ISCSI_SOCKET } },
     { "header-digest", &ndn_iscsi_digest_s,
@@ -98,8 +96,7 @@ const asn_type *ndn_iscsi_csap = &ndn_iscsi_csap_s;
 Key-Values ::= SEQUENCE OF 'charstring'
 */
 
-asn_type ndn_iscsi_key_values_s =
-{
+asn_type ndn_iscsi_key_values_s = {
     "Key-Values", {PRIVATE, NDN_TAG_ISCSI_SD_KEY_VALUES}, SEQUENCE_OF,
     0, {subtype: &asn_base_charstring_s}
 };
@@ -112,15 +109,13 @@ Key-Pair ::= SEQUENCE {
     values Key-Values,
 }
 */
-static asn_named_entry_t _ndn_iscsi_segment_data_ne_array [] =
-{
+static asn_named_entry_t _ndn_iscsi_segment_data_ne_array [] = {
     { "key", &asn_base_charstring_s,     {PRIVATE, NDN_TAG_ISCSI_SD_KEY} },
     { "values", &ndn_iscsi_key_values_s, 
         {PRIVATE, NDN_TAG_ISCSI_SD_VALUES} },    
 };
 
-asn_type ndn_iscsi_key_pair_s =
-{
+asn_type ndn_iscsi_key_pair_s = {
     "Key-Pair", {PRIVATE, NDN_TAG_ISCSI_SD_KEY_PAIR}, SEQUENCE,
     sizeof(_ndn_iscsi_segment_data_ne_array) / sizeof(asn_named_entry_t),
     {_ndn_iscsi_segment_data_ne_array}
@@ -132,8 +127,7 @@ const asn_type * const ndn_iscsi_key_pair = &ndn_iscsi_key_pair_s;
 ISCSI-Segment-Data ::= SEQUENCE OF Key-Pair;
 */
 
-asn_type ndn_iscsi_segment_data_s =
-{
+asn_type ndn_iscsi_segment_data_s = {
     "ISCSI-Segment-Data", 
     {PRIVATE, NDN_TAG_ISCSI_SD_SEGMENT_DATA}, SEQUENCE_OF,
     0,
@@ -143,8 +137,7 @@ asn_type ndn_iscsi_segment_data_s =
 const asn_type * const ndn_iscsi_segment_data = &ndn_iscsi_segment_data_s;
 
 /* ISCSI-Message definitions */
-static asn_named_entry_t _ndn_iscsi_message_ne_array [] = 
-{
+static asn_named_entry_t _ndn_iscsi_message_ne_array [] = {
     { "i-bit",   &ndn_data_unit_int1_s, {PRIVATE, NDN_TAG_ISCSI_I_BIT} },
     { "opcode",  &ndn_data_unit_int6_s, {PRIVATE, NDN_TAG_ISCSI_OPCODE} },
     { "f-bit",   &ndn_data_unit_int1_s, {PRIVATE, NDN_TAG_ISCSI_F_BIT} },
@@ -162,8 +155,7 @@ static asn_named_entry_t _ndn_iscsi_message_ne_array [] =
     { "last-data",  &asn_base_null_s, {PRIVATE, NDN_TAG_ISCSI_LAST} },
 };
 
-asn_type ndn_iscsi_message_s =
-{
+asn_type ndn_iscsi_message_s = {
     "ISCSI-Message", {PRIVATE, TE_PROTO_ISCSI}, SEQUENCE,
     sizeof(_ndn_iscsi_message_ne_array) / sizeof(asn_named_entry_t),
     {_ndn_iscsi_message_ne_array}
@@ -562,5 +554,3 @@ iscsi_rest_data_len(uint8_t           *bhs,
 
     return (total_ahs_len + h_dig_len + data_segment_len + d_dig_len) << 2;
 }
-
-

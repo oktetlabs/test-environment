@@ -43,15 +43,13 @@
 /**
  * PCAP filter (matching string) definition
  */
-static asn_named_entry_t _ndn_pcap_filter_ne_array [] = 
-{
+static asn_named_entry_t _ndn_pcap_filter_ne_array[] = {
     { "filter", &ndn_data_unit_char_string_s, {PRIVATE, 1}},
     { "filter-id", &asn_base_integer_s, {PRIVATE, 2}},
     { "bpf-id", &asn_base_integer_s, {PRIVATE, 3}},
 };
 
-asn_type ndn_pcap_filter_s =
-{
+asn_type ndn_pcap_filter_s = {
     "PCAP-Filter", {PRIVATE, 100}, SEQUENCE, 
     sizeof(_ndn_pcap_filter_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_pcap_filter_ne_array}
@@ -63,19 +61,16 @@ const asn_type * const ndn_pcap_filter = &ndn_pcap_filter_s;
 /**
  * PCAP CSAP definition
  */
-static asn_named_entry_t _ndn_pcap_csap_ne_array [] = 
-{
+static asn_named_entry_t _ndn_pcap_csap_ne_array[] = {
     { "ifname",         &ndn_data_unit_char_string_s, {PRIVATE, 1} },
     { "iftype",         &asn_base_integer_s, {PRIVATE, 2} },
     { "receive-mode",   &asn_base_integer_s, {PRIVATE, 3} },
 };
 
-asn_type ndn_pcap_csap_s =
-{
+asn_type ndn_pcap_csap_s = {
     "PCAP-CSAP", {PRIVATE, 101}, SEQUENCE, 
     sizeof(_ndn_pcap_csap_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_pcap_csap_ne_array}
 };
 
 const asn_type * const ndn_pcap_csap = &ndn_pcap_csap_s;
-

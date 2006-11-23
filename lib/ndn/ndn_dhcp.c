@@ -39,35 +39,30 @@
 static asn_type ndn_dhcpv4_options_s;
 
 
-static asn_named_entry_t _ndn_dhcpv4_option_ne_array [] = 
-{
+static asn_named_entry_t _ndn_dhcpv4_option_ne_array [] = {
     { "type",    &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_TYPE} },
     { "length",  &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_LENGTH} },
     { "value",   &ndn_data_unit_octet_string_s, {PRIVATE, NDN_DHCP_VALUE} },
     { "options", &ndn_dhcpv4_options_s, {PRIVATE, NDN_DHCP_OPTIONS} },
 };
 
-static asn_named_entry_t _ndn_dhcpv4_end_pad_option_ne_array [] = 
-{
+static asn_named_entry_t _ndn_dhcpv4_end_pad_option_ne_array [] = {
     { "type",    &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_TYPE} },
 };
 
-static asn_type ndn_dhcpv4_option_s = 
-{
+static asn_type ndn_dhcpv4_option_s = {
     "DHCPv4-Option", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE, 
     sizeof(_ndn_dhcpv4_option_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_dhcpv4_option_ne_array}
 };
 
-static asn_type ndn_dhcpv4_end_pad_option_s = 
-{
+static asn_type ndn_dhcpv4_end_pad_option_s = {
     "DHCPv4-Option", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE, 
     sizeof(_ndn_dhcpv4_end_pad_option_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_dhcpv4_end_pad_option_ne_array}
 };
 
-static asn_type ndn_dhcpv4_options_s =
-{ 
+static asn_type ndn_dhcpv4_options_s = { 
     "DHCPv4-Options", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE_OF, 
     0, {subtype: &ndn_dhcpv4_option_s} 
 };
@@ -78,8 +73,7 @@ asn_type *ndn_dhcpv4_end_pad_option  = &ndn_dhcpv4_end_pad_option_s;
 asn_type * ndn_dhcpv4_options = &ndn_dhcpv4_options_s;
 
 
-static asn_named_entry_t _ndn_dhcpv4_message_ne_array [] = 
-{
+static asn_named_entry_t _ndn_dhcpv4_message_ne_array [] = {
     { "op",     &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_OP} },
     { "htype",  &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_HTYPE} },
     { "hlen",   &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_HLEN} },
@@ -97,8 +91,7 @@ static asn_named_entry_t _ndn_dhcpv4_message_ne_array [] =
     { "options",  &ndn_dhcpv4_options_s, {PRIVATE,NDN_DHCP_OPTIONS} },
 };
 
-asn_type ndn_dhcpv4_message_s = 
-{
+asn_type ndn_dhcpv4_message_s = {
     "DHCPv4-Message", {PRIVATE, TE_PROTO_DHCP}, SEQUENCE, 
     sizeof(_ndn_dhcpv4_message_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_dhcpv4_message_ne_array}
@@ -109,10 +102,7 @@ asn_type * ndn_dhcpv4_message = &ndn_dhcpv4_message_s;
 
 
 
-
-
-asn_enum_entry_t _ndn_dhcp_mode_enum_entries[] = 
-{
+asn_enum_entry_t _ndn_dhcp_mode_enum_entries[] = {
     {"server", DHCP4_CSAP_MODE_SERVER},
     {"client", DHCP4_CSAP_MODE_CLIENT},
 };
@@ -128,20 +118,15 @@ asn_type ndn_dhcp_mode_s = {
 
 
 
-static asn_named_entry_t _ndn_dhcpv4_csap_ne_array [] = 
-{
+static asn_named_entry_t _ndn_dhcpv4_csap_ne_array[] = {
     { "mode",   &ndn_dhcp_mode_s, {PRIVATE, NDN_DHCP_MODE } },
     { "iface",  &asn_base_charstring_s, {PRIVATE, NDN_DHCP_IFACE} },
 };
 
-asn_type ndn_dhcpv4_csap_s =
-{
+asn_type ndn_dhcpv4_csap_s = {
     "DHCPv4-CSAP", {PRIVATE, TE_PROTO_DHCP}, SEQUENCE, 
     sizeof(_ndn_dhcpv4_csap_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_dhcpv4_csap_ne_array}
 };
 
 asn_type * ndn_dhcpv4_csap = &ndn_dhcpv4_csap_s;
-
-
-

@@ -56,8 +56,9 @@ IpAddress ::=
     [APPLICATION 0]
         IMPLICIT OCTET STRING (SIZE (4))
 */
-asn_type ndn_ip_address_s = 
-{ "IpAddress", {APPLICATION, 0}, OCT_STRING, 4, {0}};
+asn_type ndn_ip_address_s = {
+    "IpAddress", {APPLICATION, 0}, OCT_STRING, 4, {0}
+};
 
 const asn_type * const ndn_ip_address = &ndn_ip_address_s;
 
@@ -67,14 +68,13 @@ const asn_type * const ndn_ip_address = &ndn_ip_address_s;
  * Interval 
  */ 
 
-static asn_named_entry_t _ndn_interval_ne_array[] = 
-{
+static asn_named_entry_t _ndn_interval_ne_array[] = {
     { "b", &asn_base_integer_s, {PRIVATE, NDN_INTERVALS_BEGIN} },
     { "e", &asn_base_integer_s, {PRIVATE, NDN_INTERVALS_END} }
 };
 
-asn_type ndn_interval_static = 
-{ "Interval", {PRIVATE, NDN_DU_INTERVALS}, SEQUENCE, 
+asn_type ndn_interval_static = {
+    "Interval", {PRIVATE, NDN_DU_INTERVALS}, SEQUENCE, 
     sizeof(_ndn_interval_ne_array) / sizeof(_ndn_interval_ne_array[0]),
     {_ndn_interval_ne_array} 
 };
@@ -83,8 +83,8 @@ const asn_type *const ndn_interval = &ndn_interval_static;
 
 
 
-asn_type ndn_data_unit_ints_s = 
-{   "DATA-UNIT-intervals", {PRIVATE, NDN_DU_INTERVALS}, SEQUENCE_OF, 0,
+asn_type ndn_data_unit_ints_s = {
+    "DATA-UNIT-intervals", {PRIVATE, NDN_DU_INTERVALS}, SEQUENCE_OF, 0,
     {subtype: &ndn_interval_static} 
 };
 
@@ -93,22 +93,20 @@ const asn_type * const  ndn_interval_sequence = &ndn_data_unit_ints_s;
 
 
 
-asn_type ndn_data_unit_enum_s = 
-{ "DATA-UNIT-enum", {PRIVATE, NDN_DU_ENUM}, SET_OF, 0,
-   {subtype: &asn_base_integer_s} 
+asn_type ndn_data_unit_enum_s = {
+    "DATA-UNIT-enum", {PRIVATE, NDN_DU_ENUM}, SET_OF, 0,
+    {subtype: &asn_base_integer_s} 
 };
 
 
 
-static asn_named_entry_t _ndn_data_unit_mask_ne_array[] = 
-{
+static asn_named_entry_t _ndn_data_unit_mask_ne_array[] = {
     { "v", &asn_base_octstring_s, {PRIVATE, NDN_MASK_VALUE} },
     { "m", &asn_base_octstring_s, {PRIVATE, NDN_MASK_PATTERN} },
     { "exact-len", &asn_base_boolean_s, {PRIVATE, NDN_MASK_EXACT_LEN} }
 }; 
 
-asn_type ndn_data_unit_mask_s = 
-{ 
+asn_type ndn_data_unit_mask_s = { 
     "DATA-UNIT-mask", {PRIVATE, NDN_DU_MASK}, SEQUENCE, 
     sizeof(_ndn_data_unit_mask_ne_array)/
         sizeof(_ndn_data_unit_mask_ne_array[0]), 
@@ -117,24 +115,24 @@ asn_type ndn_data_unit_mask_s =
 
 
 
-static asn_named_entry_t _ndn_data_unit_env_ne_array[] = 
-{
+static asn_named_entry_t _ndn_data_unit_env_ne_array[] = {
     { "name", &asn_base_charstring_s, {PRIVATE, NDN_ENV_NAME} },
     { "type", &asn_base_enum_s, {PRIVATE, NDN_ENV_TYPE} }
 }; 
 
-asn_type ndn_data_unit_env_s = 
-{ "DATA-UNIT-env", {PRIVATE, NDN_DU_ENV}, SEQUENCE, 
-  sizeof(_ndn_data_unit_env_ne_array) /
-      sizeof(_ndn_data_unit_env_ne_array[0]), 
-  {_ndn_data_unit_env_ne_array} 
+asn_type ndn_data_unit_env_s = {
+    "DATA-UNIT-env", {PRIVATE, NDN_DU_ENV}, SEQUENCE, 
+    sizeof(_ndn_data_unit_env_ne_array) /
+        sizeof(_ndn_data_unit_env_ne_array[0]), 
+    { _ndn_data_unit_env_ne_array } 
 };
 
 
 
 
-asn_type ndn_octet_string6_s = 
-{  "OCTET STRING (SIZE (6))", {UNIVERSAL, 4}, OCT_STRING, 6, {0}};
+asn_type ndn_octet_string6_s = {
+    "OCTET STRING (SIZE (6))", {UNIVERSAL, 4}, OCT_STRING, 6, {0}
+};
 
 const asn_type * const  ndn_octet_string6 = &ndn_octet_string6_s;
 
@@ -163,22 +161,20 @@ NDN_DATA_UNIT_TYPE(objid,         asn_base_objid_s,      OBJECT IDENTIFIER);
 
 
 
-static asn_named_entry_t _ndn_pld_stream_ne_array[] = 
-{
+static asn_named_entry_t _ndn_pld_stream_ne_array[] = {
     { "function", &asn_base_charstring_s, {PRIVATE, NDN_PLD_STR_FUNC} },
     { "offset",   &ndn_data_unit_int32_s, {PRIVATE, NDN_PLD_STR_OFF} },
     { "length",   &ndn_data_unit_int32_s, {PRIVATE, NDN_PLD_STR_LEN} },
 };
 
-asn_type ndn_pld_stream_s =
-{ "Payload-Stream", {PRIVATE, NDN_PLD_STREAM}, SEQUENCE, 
-  sizeof(_ndn_pld_stream_ne_array) / sizeof(_ndn_pld_stream_ne_array[0]), 
-  {_ndn_pld_stream_ne_array} 
+asn_type ndn_pld_stream_s = {
+    "Payload-Stream", {PRIVATE, NDN_PLD_STREAM}, SEQUENCE, 
+    sizeof(_ndn_pld_stream_ne_array) / sizeof(_ndn_pld_stream_ne_array[0]), 
+    {_ndn_pld_stream_ne_array} 
 };
 
 
-static asn_named_entry_t _ndn_payload_ne_array[] = 
-{
+static asn_named_entry_t _ndn_payload_ne_array[] = {
     { "bytes",    &asn_base_octstring_s,  {PRIVATE, NDN_PLD_BYTES} },
     { "mask",     &ndn_data_unit_mask_s,  {PRIVATE, NDN_PLD_MASK} },
     { "function", &asn_base_charstring_s, {PRIVATE, NDN_PLD_FUNC} },
@@ -187,47 +183,48 @@ static asn_named_entry_t _ndn_payload_ne_array[] =
     { "stream",   &ndn_pld_stream_s,      {PRIVATE, NDN_PLD_STREAM} },
 }; 
 
-asn_type ndn_payload_s =
-{ "Payload", {PRIVATE, NDN_TMPL_PAYLOAD}, CHOICE, 
-  sizeof(_ndn_payload_ne_array) / sizeof(_ndn_payload_ne_array[0]), 
-  {_ndn_payload_ne_array} 
+asn_type ndn_payload_s = {
+    "Payload", {PRIVATE, NDN_TMPL_PAYLOAD}, CHOICE, 
+    sizeof(_ndn_payload_ne_array) / sizeof(_ndn_payload_ne_array[0]), 
+    {_ndn_payload_ne_array} 
 };
 
 const asn_type * const ndn_payload = &ndn_payload_s;
 
 
 
-static asn_type ndn_csap_layers_s =
-{ "CSAP-layers", {PRIVATE, NDN_CSAP_LAYERS}, SEQUENCE_OF, 0,
-    {subtype: &ndn_generic_csap_layer_s} };
+static asn_type ndn_csap_layers_s = {
+    "CSAP-layers", {PRIVATE, NDN_CSAP_LAYERS}, SEQUENCE_OF, 0,
+    {subtype: &ndn_generic_csap_layer_s}
+};
 
 const asn_type * const ndn_csap_layers = &ndn_csap_layers_s;
 
 
-static asn_named_entry_t _ndn_csap_params_ne_array[] = 
-{
+static asn_named_entry_t _ndn_csap_params_ne_array[] = {
     { "receive-timeout-ms", &asn_base_integer_s,
       { PRIVATE, NDN_CSAP_RECV_TIMEOUT } },
     { "stop-latency-timeout-ms", &asn_base_integer_s,
       { PRIVATE, NDN_CSAP_STOP_LATENCY_TIMEOUT } },
 }; 
 
-static asn_type ndn_csap_params_s =
-{ "CSAP-params", { PRIVATE, NDN_CSAP_PARAMS }, SEQUENCE,
-  TE_ARRAY_LEN(_ndn_csap_params_ne_array), { _ndn_csap_params_ne_array } };
+static asn_type ndn_csap_params_s = {
+    "CSAP-params", { PRIVATE, NDN_CSAP_PARAMS }, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_csap_params_ne_array), { _ndn_csap_params_ne_array }
+};
 
 const asn_type * const ndn_csap_params = &ndn_csap_params_s;
 
 
-static asn_named_entry_t _ndn_csap_spec_ne_array[] = 
-{
+static asn_named_entry_t _ndn_csap_spec_ne_array[] = {
     { "layers", &ndn_csap_layers_s, { PRIVATE, NDN_CSAP_LAYERS } },
     { "params", &ndn_csap_params_s, { PRIVATE, NDN_CSAP_PARAMS } },
 }; 
 
-static asn_type ndn_csap_spec_s =
-{ "CSAP-spec", { PRIVATE, NDN_CSAP_SPEC }, SEQUENCE,
-  TE_ARRAY_LEN(_ndn_csap_spec_ne_array), { _ndn_csap_spec_ne_array } };
+static asn_type ndn_csap_spec_s = {
+    "CSAP-spec", { PRIVATE, NDN_CSAP_SPEC }, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_csap_spec_ne_array), { _ndn_csap_spec_ne_array }
+};
 
 const asn_type * const ndn_csap_spec = &ndn_csap_spec_s;
 
@@ -235,35 +232,30 @@ const asn_type * const ndn_csap_spec = &ndn_csap_spec_s;
 
 
 
-static asn_type ndn_integer_seq_s = 
-{ 
+static asn_type ndn_integer_seq_s = { 
     "SEQENCE OF INTEGER", {PRIVATE, NDN_ITER_INTS}, SEQUENCE_OF, 0,
     {subtype: &asn_base_integer_s} 
 };
 
-static asn_type ndn_integer_seq_assoc_s = 
-{ 
+static asn_type ndn_integer_seq_assoc_s = { 
     "SEQENCE OF INTEGER", {PRIVATE, NDN_ITER_INTS_ASSOC}, SEQUENCE_OF, 0,
     {subtype: &asn_base_integer_s} 
 };
 
-static asn_type ndn_chstring_seq_s = 
-{ 
+static asn_type ndn_chstring_seq_s = { 
     "SEQENCE OF UniversalString",
     {PRIVATE, NDN_ITER_STRINGS}, SEQUENCE_OF, 0,
     {subtype: &asn_base_charstring_s} 
 };
 
 
-static asn_named_entry_t _ndn_template_parameter_simple_for_ne_array[] =
-{
+static asn_named_entry_t _ndn_template_parameter_simple_for_ne_array[] = {
     { "begin",  &asn_base_integer_s, {PRIVATE, NDN_FOR_BEGIN} },
     { "end",    &asn_base_integer_s, {PRIVATE, NDN_FOR_END} },
     { "step",   &asn_base_integer_s, {PRIVATE, NDN_FOR_STEP} }
 }; 
 
-static asn_type ndn_template_parameter_simple_for_s = 
-{ 
+static asn_type ndn_template_parameter_simple_for_s = { 
     "Templ-Param-simple-for", {PRIVATE, NDN_ITER_FOR}, SEQUENCE, 
     sizeof(_ndn_template_parameter_simple_for_ne_array) /
         sizeof(_ndn_template_parameter_simple_for_ne_array[0]), 
@@ -271,8 +263,7 @@ static asn_type ndn_template_parameter_simple_for_s =
 };
 
 
-static asn_named_entry_t _ndn_template_parameter_ne_array[] = 
-{
+static asn_named_entry_t _ndn_template_parameter_ne_array[] = {
     { "ints",       &ndn_integer_seq_s, {PRIVATE, NDN_ITER_INTS} },
     { "ints-assoc", &ndn_integer_seq_assoc_s,
         {PRIVATE, NDN_ITER_INTS_ASSOC} },
@@ -281,8 +272,7 @@ static asn_named_entry_t _ndn_template_parameter_ne_array[] =
         {PRIVATE, NDN_ITER_FOR} },
 }; 
 
-asn_type ndn_template_parameter_s =
-{
+asn_type ndn_template_parameter_s = {
     "Template-Parameter", {PRIVATE, NDN_TMPL_ARGS}, CHOICE,
     sizeof(_ndn_template_parameter_ne_array) /
         sizeof(_ndn_template_parameter_ne_array[0]), 
@@ -295,16 +285,16 @@ const asn_type * const ndn_template_parameter = &ndn_template_parameter_s;
 
 
 
-static asn_type ndn_template_parameter_sequence_s = 
-{ "SEQENCE OF Template-Parameter", {PRIVATE, NDN_TMPL_ARGS}, 
-  SEQUENCE_OF, 0, {subtype: &ndn_template_parameter_s} 
+static asn_type ndn_template_parameter_sequence_s = {
+    "SEQENCE OF Template-Parameter", {PRIVATE, NDN_TMPL_ARGS}, 
+    SEQUENCE_OF, 0, {subtype: &ndn_template_parameter_s} 
 };
 const asn_type * const ndn_template_params_seq = 
                             &ndn_template_parameter_sequence_s;
 
-static asn_type ndn_generic_pdu_sequence_s = 
-{ "Generic-PDU-sequence", {PRIVATE, NDN_TMPL_PDUS}, 
-  SEQUENCE_OF, 0, {subtype: &ndn_generic_pdu_s} 
+static asn_type ndn_generic_pdu_sequence_s = {
+    "Generic-PDU-sequence", {PRIVATE, NDN_TMPL_PDUS}, 
+    SEQUENCE_OF, 0, {subtype: &ndn_generic_pdu_s} 
 };
 
 const asn_type * const ndn_generic_pdu_sequence = 
@@ -314,8 +304,7 @@ const asn_type * const ndn_generic_pdu_sequence =
 
 
 
-static asn_named_entry_t _ndn_traffic_template_ne_array[] = 
-{
+static asn_named_entry_t _ndn_traffic_template_ne_array[] = {
     { "arg-sets",  &ndn_template_parameter_sequence_s,
         {PRIVATE, NDN_TMPL_ARGS} },
     { "delays",    &ndn_data_unit_int32_s,
@@ -328,11 +317,11 @@ static asn_named_entry_t _ndn_traffic_template_ne_array[] =
         {PRIVATE, NDN_TMPL_FUNCTION} },
 }; 
 
-asn_type ndn_traffic_template_s =
-{ "Traffic-Template", {PRIVATE, NDN_TRAFFIC_TEMPLATE}, SEQUENCE, 
-   sizeof(_ndn_traffic_template_ne_array) /
-       sizeof(_ndn_traffic_template_ne_array[0]), 
-   {_ndn_traffic_template_ne_array}
+asn_type ndn_traffic_template_s = {
+    "Traffic-Template", {PRIVATE, NDN_TRAFFIC_TEMPLATE}, SEQUENCE, 
+    sizeof(_ndn_traffic_template_ne_array) /
+        sizeof(_ndn_traffic_template_ne_array[0]), 
+    {_ndn_traffic_template_ne_array}
 };
 
 const asn_type * const  ndn_traffic_template = &ndn_traffic_template_s;
@@ -348,8 +337,7 @@ Packet-Action ::= CHOICE {
 }
 */
 
-static asn_named_entry_t _ndn_packet_action_ne_array[] = 
-{
+static asn_named_entry_t _ndn_packet_action_ne_array[] = {
     { "forw-pld",   &asn_base_integer_s,    {PRIVATE,
                                              NDN_ACT_FORWARD_PLD} },
     { "forw-raw",   &asn_base_integer_s,    {PRIVATE,
@@ -360,11 +348,11 @@ static asn_named_entry_t _ndn_packet_action_ne_array[] =
     { "no-report",  &asn_base_null_s,       {PRIVATE, NDN_ACT_NO_REPORT} },
 }; 
 
-asn_type ndn_packet_action_s =
-{ "Packet-Action", {PRIVATE, NDN_PU_ACTION}, CHOICE, 
-  sizeof(_ndn_packet_action_ne_array) /
-      sizeof(_ndn_packet_action_ne_array[0]), 
-  {_ndn_packet_action_ne_array} 
+asn_type ndn_packet_action_s = {
+    "Packet-Action", {PRIVATE, NDN_PU_ACTION}, CHOICE, 
+    sizeof(_ndn_packet_action_ne_array) /
+        sizeof(_ndn_packet_action_ne_array[0]), 
+    {_ndn_packet_action_ne_array} 
 };
 
 const asn_type * const  ndn_packet_action = &ndn_packet_action_s;
@@ -375,9 +363,9 @@ Packet-Actions ::= SEQUENCE OF Packet-Action
 
 */
 
-asn_type ndn_packet_actions_s =
-{ "Packet-Actions", {PRIVATE, NDN_PU_ACTIONS}, SEQUENCE_OF, 0,
-  {subtype: &ndn_packet_action_s}
+asn_type ndn_packet_actions_s = {
+    "Packet-Actions", {PRIVATE, NDN_PU_ACTIONS}, SEQUENCE_OF, 0,
+    {subtype: &ndn_packet_action_s}
 };
 
 const asn_type * const  ndn_packet_actions = &ndn_packet_actions_s;
@@ -393,18 +381,17 @@ Traffic-Pattern-Unit ::= SEQUENCE {
 */
 
 
-static asn_named_entry_t _ndn_traffic_pattern_unit_ne_array[] = 
-{
+static asn_named_entry_t _ndn_traffic_pattern_unit_ne_array[] = {
     { "pdus",      &ndn_generic_pdu_sequence_s, {PRIVATE, NDN_PU_PDUS} },
     { "payload",   &ndn_payload_s,       {PRIVATE, NDN_PU_PAYLOAD} },
     { "actions",   &ndn_packet_actions_s,{PRIVATE, NDN_PU_ACTIONS} },
 }; 
 
-asn_type ndn_traffic_pattern_unit_s =
-{ "Traffic-Pattern-Unit", {PRIVATE, NDN_TRAFFIC_PATTERN_UNIT}, SEQUENCE, 
-   sizeof(_ndn_traffic_pattern_unit_ne_array) /
-       sizeof(_ndn_traffic_pattern_unit_ne_array[0]),
-  {_ndn_traffic_pattern_unit_ne_array}
+asn_type ndn_traffic_pattern_unit_s = {
+    "Traffic-Pattern-Unit", {PRIVATE, NDN_TRAFFIC_PATTERN_UNIT}, SEQUENCE, 
+    sizeof(_ndn_traffic_pattern_unit_ne_array) /
+        sizeof(_ndn_traffic_pattern_unit_ne_array[0]),
+    {_ndn_traffic_pattern_unit_ne_array}
 };
 
 const asn_type * const ndn_traffic_pattern_unit = 
@@ -417,9 +404,9 @@ Traffic-Pattern ::= SEQUENCE OF Traffic-Pattern-Unit
 
 */
 
-asn_type ndn_traffic_pattern_s =
-{ "Traffic-Pattern", {PRIVATE, NDN_TRAFFIC_PATTERN}, SEQUENCE_OF, 0,
-  {subtype: &ndn_traffic_pattern_unit_s}
+asn_type ndn_traffic_pattern_s = {
+    "Traffic-Pattern", {PRIVATE, NDN_TRAFFIC_PATTERN}, SEQUENCE_OF, 0,
+    {subtype: &ndn_traffic_pattern_unit_s}
 };
 
 const asn_type * const  ndn_traffic_pattern = &ndn_traffic_pattern_s;
@@ -432,16 +419,15 @@ NDN-TimeStamp ::= SEQUENCE {
     micro-seconds INTEGER
 }
  */
-static asn_named_entry_t _ndn_time_stamp_ne_array[] = 
-{
+static asn_named_entry_t _ndn_time_stamp_ne_array[] = {
     { "seconds",       &asn_base_integer_s, {PRIVATE, NDN_TIME_SEC} },
     { "micro-seconds", &asn_base_integer_s, {PRIVATE, NDN_TIME_MCS} },
 }; 
 
-asn_type ndn_time_stamp_s =
-{ "NDN-TimeStamp", {PRIVATE, NDN_PKT_TIMESTAMP}, SEQUENCE, 
-   sizeof(_ndn_time_stamp_ne_array) / sizeof(_ndn_time_stamp_ne_array[0]),
-  {_ndn_time_stamp_ne_array}
+asn_type ndn_time_stamp_s = {
+    "NDN-TimeStamp", {PRIVATE, NDN_PKT_TIMESTAMP}, SEQUENCE, 
+    sizeof(_ndn_time_stamp_ne_array) / sizeof(_ndn_time_stamp_ne_array[0]),
+    {_ndn_time_stamp_ne_array}
 
 };
 
@@ -458,17 +444,16 @@ Raw-Packet ::= SEQUENCE -- values of this type are passed from CSAP to test
 */
 
 
-static asn_named_entry_t _ndn_raw_packet_ne_array[] = 
-{
+static asn_named_entry_t _ndn_raw_packet_ne_array[] = {
     { "received",  &ndn_time_stamp_s, {PRIVATE, NDN_PKT_TIMESTAMP} },
     { "pdus",      &ndn_generic_pdu_sequence_s, {PRIVATE, NDN_PKT_PDUS} },
     { "payload",   &ndn_payload_s,    {PRIVATE, NDN_PKT_PAYLOAD} },
 }; 
 
-asn_type ndn_raw_packet_s =
-{ "Raw-Packet", {PRIVATE, NDN_TRAFFIC_PACKET}, SEQUENCE, 
-   sizeof(_ndn_raw_packet_ne_array) / sizeof(_ndn_raw_packet_ne_array[0]), 
-  {_ndn_raw_packet_ne_array}
+asn_type ndn_raw_packet_s = {
+    "Raw-Packet", {PRIVATE, NDN_TRAFFIC_PACKET}, SEQUENCE, 
+    sizeof(_ndn_raw_packet_ne_array) / sizeof(_ndn_raw_packet_ne_array[0]), 
+    {_ndn_raw_packet_ne_array}
 
 };
 

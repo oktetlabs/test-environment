@@ -23,7 +23,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: ndn_ipstack.h 16769 2005-07-29 04:21:03Z konst $
+ * $Id$
  */ 
 
 #include "te_config.h" 
@@ -34,8 +34,7 @@
 #include "ndn_socket.h"
 
 
-static asn_named_entry_t _ndn_socket_message_ne_array[] = 
-{
+static asn_named_entry_t _ndn_socket_message_ne_array[] = {
     { "type-of-service", &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_SOCKET_TOS } },
     { "time-to-live",    &ndn_data_unit_int8_s,
@@ -52,8 +51,7 @@ static asn_named_entry_t _ndn_socket_message_ne_array[] =
       { PRIVATE, NDN_TAG_SOCKET_TYPE_FD } },
 };
 
-asn_type ndn_socket_message_s =
-{
+asn_type ndn_socket_message_s = {
     "Socket-Message", { PRIVATE, 100 }, SEQUENCE, 
     TE_ARRAY_LEN(_ndn_socket_message_ne_array),
     { _ndn_socket_message_ne_array }
@@ -63,8 +61,7 @@ asn_type * ndn_socket_message = &ndn_socket_message_s;
 
 
 
-static asn_named_entry_t _ndn_socket_type_ne_array[] = 
-{
+static asn_named_entry_t _ndn_socket_type_ne_array[] = {
     { "file-descr", &asn_base_integer_s,
       { PRIVATE, NDN_TAG_SOCKET_TYPE_FD } },
     { "udp",        &asn_base_null_s,
@@ -75,16 +72,14 @@ static asn_named_entry_t _ndn_socket_type_ne_array[] =
       { PRIVATE, NDN_TAG_SOCKET_TYPE_TCP_CLIENT } },
 };
 
-asn_type ndn_socket_type_s =
-{
+asn_type ndn_socket_type_s = {
     "TCP-CSAP", { PRIVATE, NDN_TAG_SOCKET_TYPE }, CHOICE,
     TE_ARRAY_LEN(_ndn_socket_type_ne_array),
     { _ndn_socket_type_ne_array }
 };
 
 
-static asn_named_entry_t _ndn_socket_csap_ne_array[] = 
-{
+static asn_named_entry_t _ndn_socket_csap_ne_array[] = {
     { "type",            &ndn_socket_type_s,
       { PRIVATE, NDN_TAG_SOCKET_TYPE } },
     { "type-of-service", &ndn_data_unit_int8_s,
@@ -101,8 +96,7 @@ static asn_named_entry_t _ndn_socket_csap_ne_array[] =
       { PRIVATE, NDN_TAG_SOCKET_REMOTE_PORT } },
 };
 
-asn_type ndn_socket_csap_s =
-{
+asn_type ndn_socket_csap_s = {
     "Socket-CSAP", { PRIVATE, 101 }, SEQUENCE, 
     TE_ARRAY_LEN(_ndn_socket_csap_ne_array),
     { _ndn_socket_csap_ne_array }

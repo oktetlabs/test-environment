@@ -40,8 +40,7 @@
 
 
 
-static asn_named_entry_t _ndn_bpdu_config_ne_array [] = 
-{
+static asn_named_entry_t _ndn_bpdu_config_ne_array [] = {
     { "flags",          &ndn_data_unit_int8_s,
         { PRIVATE, NDN_BRIDGE_FLAGS }},
     { "root-id",        &ndn_data_unit_octet_string_s ,
@@ -62,8 +61,7 @@ static asn_named_entry_t _ndn_bpdu_config_ne_array [] =
         { PRIVATE, NDN_BRIDGE_FORWARD_DELAY }},
 };
 
-asn_type ndn_bpdu_config_s =
-{
+asn_type ndn_bpdu_config_s = {
     "BPDU-Content-Config", {PRIVATE, NDN_BRIDGE_CFG}, SEQUENCE, 
     sizeof(_ndn_bpdu_config_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_bpdu_config_ne_array}
@@ -71,14 +69,12 @@ asn_type ndn_bpdu_config_s =
 
 
 
-static asn_named_entry_t _ndn_bpdu_content_ne_array [] = 
-{
+static asn_named_entry_t _ndn_bpdu_content_ne_array [] = {
     { "cfg",   &ndn_bpdu_config_s , { PRIVATE, NDN_BRIDGE_CFG }},
     { "tcn",   &asn_base_null_s , { PRIVATE, NDN_BRIDGE_TCN }},
 };
 
-asn_type ndn_bpdu_content_s =
-{
+asn_type ndn_bpdu_content_s = {
     "BPDU-Content", {APPLICATION, NDN_BRIDGE_CONTENT}, CHOICE, 
     sizeof(_ndn_bpdu_content_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_bpdu_content_ne_array}
@@ -87,8 +83,7 @@ asn_type ndn_bpdu_content_s =
 
 
 
-static asn_named_entry_t _ndn_bridge_pdu_ne_array [] = 
-{
+static asn_named_entry_t _ndn_bridge_pdu_ne_array [] = {
     { "proto-id",  &ndn_data_unit_int16_s ,
         { PRIVATE, NDN_BRIDGE_PROTO_ID }},
     { "version-id",&ndn_data_unit_int8_s , 
@@ -99,8 +94,7 @@ static asn_named_entry_t _ndn_bridge_pdu_ne_array [] =
         { PRIVATE, NDN_BRIDGE_CONTENT }},
 };
 
-asn_type ndn_bridge_pdu_s =
-{
+asn_type ndn_bridge_pdu_s = {
     "Bridge-PDU", {PRIVATE, TE_PROTO_BRIDGE}, SEQUENCE, 
     sizeof(_ndn_bridge_pdu_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_bridge_pdu_ne_array}
@@ -115,8 +109,7 @@ const asn_type * const ndn_bridge_pdu = &ndn_bridge_pdu_s;
 
 
 
-static asn_named_entry_t _ndn_bridge_csap_ne_array [] = 
-{
+static asn_named_entry_t _ndn_bridge_csap_ne_array [] = {
     { "proto-id",  &ndn_data_unit_int16_s ,
         { PRIVATE, NDN_BRIDGE_PROTO_ID }},
     { "version-id",&ndn_data_unit_int8_s , 
@@ -127,8 +120,7 @@ static asn_named_entry_t _ndn_bridge_csap_ne_array [] =
         { PRIVATE, NDN_BRIDGE_CONTENT }},
 };
 
-asn_type ndn_bridge_csap_s =
-{
+asn_type ndn_bridge_csap_s = {
     "Bridge-CSAP", {PRIVATE, TE_PROTO_BRIDGE}, SEQUENCE, 
     sizeof(_ndn_bridge_csap_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_bridge_csap_ne_array}

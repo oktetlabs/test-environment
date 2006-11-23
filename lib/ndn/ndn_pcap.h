@@ -53,7 +53,6 @@ enum pcap_csap_receive_mode {
     PCAP_RECV_ALL       = 0x1F,
 };
 
-
 extern const asn_type * const ndn_pcap_filter;
 extern const asn_type * const ndn_pcap_csap;
 
@@ -63,5 +62,4 @@ extern asn_type ndn_pcap_csap_s;
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
 #endif /* __TE_NDN_PCAP_H__ */

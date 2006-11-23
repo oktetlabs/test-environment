@@ -23,7 +23,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: ndn_ipstack.h 16769 2005-07-29 04:21:03Z konst $
+ * $Id$
  */ 
 
 #ifndef __TE_NDN_SOCKET_H__
