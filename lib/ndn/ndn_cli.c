@@ -40,7 +40,7 @@ static asn_named_entry_t _ndn_cli_message_ne_array [] = {
 
 asn_type ndn_cli_message_s = {
     "CLI-Message", {PRIVATE, TE_PROTO_CLI}, SEQUENCE,
-    sizeof(_ndn_cli_message_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_cli_message_ne_array),
     {_ndn_cli_message_ne_array}
 };
 
@@ -55,7 +55,7 @@ static asn_named_entry_t _ndn_cli_telnet_params_ne_array [] = {
 
 asn_type ndn_cli_telnet_params_s = {
     "CLI-Telnet-Params", {PRIVATE, NDN_CLI_TELNET}, SEQUENCE,
-    sizeof(_ndn_cli_telnet_params_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_cli_telnet_params_ne_array),
     {_ndn_cli_telnet_params_ne_array}
 };
 
@@ -69,7 +69,7 @@ static asn_named_entry_t _ndn_cli_serial_params_ne_array [] = {
 
 asn_type ndn_cli_serial_params_s = {
     "CLI-Serial-Params", {PRIVATE, NDN_CLI_SERIAL}, SEQUENCE,
-    sizeof(_ndn_cli_serial_params_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_cli_serial_params_ne_array),
     {_ndn_cli_serial_params_ne_array}
 };
 
@@ -83,7 +83,7 @@ static asn_named_entry_t _ndn_cli_shell_params_ne_array [] = {
 
 asn_type ndn_cli_shell_params_s = {
     "CLI-Shell-Params", {PRIVATE, NDN_CLI_SHELL}, SEQUENCE,
-    sizeof(_ndn_cli_shell_params_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_cli_shell_params_ne_array),
     {_ndn_cli_shell_params_ne_array}
 };
 
@@ -99,7 +99,7 @@ static asn_named_entry_t _ndn_cli_params_ne_array [] = {
 
 asn_type ndn_cli_params_s = {
     "CLI-Params", {PRIVATE, NDN_CLI_CONN_PARAMS}, CHOICE,
-    sizeof(_ndn_cli_params_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_cli_params_ne_array),
     {_ndn_cli_params_ne_array}
 };
 
@@ -126,7 +126,7 @@ static asn_named_entry_t _ndn_cli_csap_ne_array [] = {
 
 asn_type ndn_cli_csap_s = {
     "CLI-CSAP", {PRIVATE, TE_PROTO_CLI}, SEQUENCE, 
-    sizeof(_ndn_cli_csap_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_cli_csap_ne_array),
     {_ndn_cli_csap_ne_array}
 };
 

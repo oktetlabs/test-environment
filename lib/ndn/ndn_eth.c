@@ -181,7 +181,7 @@ static asn_named_entry_t _ndn_eth_csap_ne_array [] = {
 
 asn_type ndn_eth_csap_s = {
     "Ethernet-CSAP", {PRIVATE, 101}, SEQUENCE, 
-    sizeof(_ndn_eth_csap_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_eth_csap_ne_array),
     {_ndn_eth_csap_ne_array}
 };
 

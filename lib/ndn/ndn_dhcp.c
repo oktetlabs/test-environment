@@ -52,13 +52,13 @@ static asn_named_entry_t _ndn_dhcpv4_end_pad_option_ne_array [] = {
 
 static asn_type ndn_dhcpv4_option_s = {
     "DHCPv4-Option", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE, 
-    sizeof(_ndn_dhcpv4_option_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_dhcpv4_option_ne_array),
     {_ndn_dhcpv4_option_ne_array}
 };
 
 static asn_type ndn_dhcpv4_end_pad_option_s = {
     "DHCPv4-Option", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE, 
-    sizeof(_ndn_dhcpv4_end_pad_option_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_dhcpv4_end_pad_option_ne_array),
     {_ndn_dhcpv4_end_pad_option_ne_array}
 };
 
@@ -93,7 +93,7 @@ static asn_named_entry_t _ndn_dhcpv4_message_ne_array [] = {
 
 asn_type ndn_dhcpv4_message_s = {
     "DHCPv4-Message", {PRIVATE, TE_PROTO_DHCP}, SEQUENCE, 
-    sizeof(_ndn_dhcpv4_message_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_dhcpv4_message_ne_array),
     {_ndn_dhcpv4_message_ne_array}
 };
 
@@ -111,7 +111,7 @@ asn_type ndn_dhcp_mode_s = {
     "DHCPv4-CSAP-Mode",
     {PRIVATE, NDN_DHCP_MODE},
     ENUMERATED,
-    sizeof(_ndn_dhcp_mode_enum_entries)/sizeof(asn_enum_entry_t), 
+    TE_ARRAY_LEN(_ndn_dhcp_mode_enum_entries),
     {enum_entries: _ndn_dhcp_mode_enum_entries}
 };
 
@@ -125,7 +125,7 @@ static asn_named_entry_t _ndn_dhcpv4_csap_ne_array[] = {
 
 asn_type ndn_dhcpv4_csap_s = {
     "DHCPv4-CSAP", {PRIVATE, TE_PROTO_DHCP}, SEQUENCE, 
-    sizeof(_ndn_dhcpv4_csap_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_dhcpv4_csap_ne_array),
     {_ndn_dhcpv4_csap_ne_array}
 };
 

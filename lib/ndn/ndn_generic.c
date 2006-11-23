@@ -75,7 +75,7 @@ static asn_named_entry_t _ndn_interval_ne_array[] = {
 
 asn_type ndn_interval_static = {
     "Interval", {PRIVATE, NDN_DU_INTERVALS}, SEQUENCE, 
-    sizeof(_ndn_interval_ne_array) / sizeof(_ndn_interval_ne_array[0]),
+    TE_ARRAY_LEN(_ndn_interval_ne_array),
     {_ndn_interval_ne_array} 
 };
 
@@ -108,8 +108,7 @@ static asn_named_entry_t _ndn_data_unit_mask_ne_array[] = {
 
 asn_type ndn_data_unit_mask_s = { 
     "DATA-UNIT-mask", {PRIVATE, NDN_DU_MASK}, SEQUENCE, 
-    sizeof(_ndn_data_unit_mask_ne_array)/
-        sizeof(_ndn_data_unit_mask_ne_array[0]), 
+    TE_ARRAY_LEN(_ndn_data_unit_mask_ne_array),
     {_ndn_data_unit_mask_ne_array} 
 };
 
@@ -122,8 +121,7 @@ static asn_named_entry_t _ndn_data_unit_env_ne_array[] = {
 
 asn_type ndn_data_unit_env_s = {
     "DATA-UNIT-env", {PRIVATE, NDN_DU_ENV}, SEQUENCE, 
-    sizeof(_ndn_data_unit_env_ne_array) /
-        sizeof(_ndn_data_unit_env_ne_array[0]), 
+    TE_ARRAY_LEN(_ndn_data_unit_env_ne_array),
     { _ndn_data_unit_env_ne_array } 
 };
 
@@ -169,7 +167,7 @@ static asn_named_entry_t _ndn_pld_stream_ne_array[] = {
 
 asn_type ndn_pld_stream_s = {
     "Payload-Stream", {PRIVATE, NDN_PLD_STREAM}, SEQUENCE, 
-    sizeof(_ndn_pld_stream_ne_array) / sizeof(_ndn_pld_stream_ne_array[0]), 
+    TE_ARRAY_LEN(_ndn_pld_stream_ne_array),
     {_ndn_pld_stream_ne_array} 
 };
 
@@ -185,7 +183,7 @@ static asn_named_entry_t _ndn_payload_ne_array[] = {
 
 asn_type ndn_payload_s = {
     "Payload", {PRIVATE, NDN_TMPL_PAYLOAD}, CHOICE, 
-    sizeof(_ndn_payload_ne_array) / sizeof(_ndn_payload_ne_array[0]), 
+    TE_ARRAY_LEN(_ndn_payload_ne_array),
     {_ndn_payload_ne_array} 
 };
 
@@ -257,8 +255,7 @@ static asn_named_entry_t _ndn_template_parameter_simple_for_ne_array[] = {
 
 static asn_type ndn_template_parameter_simple_for_s = { 
     "Templ-Param-simple-for", {PRIVATE, NDN_ITER_FOR}, SEQUENCE, 
-    sizeof(_ndn_template_parameter_simple_for_ne_array) /
-        sizeof(_ndn_template_parameter_simple_for_ne_array[0]), 
+    TE_ARRAY_LEN(_ndn_template_parameter_simple_for_ne_array),
     {_ndn_template_parameter_simple_for_ne_array} 
 };
 
@@ -274,8 +271,7 @@ static asn_named_entry_t _ndn_template_parameter_ne_array[] = {
 
 asn_type ndn_template_parameter_s = {
     "Template-Parameter", {PRIVATE, NDN_TMPL_ARGS}, CHOICE,
-    sizeof(_ndn_template_parameter_ne_array) /
-        sizeof(_ndn_template_parameter_ne_array[0]), 
+    TE_ARRAY_LEN(_ndn_template_parameter_ne_array),
     {_ndn_template_parameter_ne_array}
 };
 
@@ -319,8 +315,7 @@ static asn_named_entry_t _ndn_traffic_template_ne_array[] = {
 
 asn_type ndn_traffic_template_s = {
     "Traffic-Template", {PRIVATE, NDN_TRAFFIC_TEMPLATE}, SEQUENCE, 
-    sizeof(_ndn_traffic_template_ne_array) /
-        sizeof(_ndn_traffic_template_ne_array[0]), 
+    TE_ARRAY_LEN(_ndn_traffic_template_ne_array),
     {_ndn_traffic_template_ne_array}
 };
 
@@ -350,8 +345,7 @@ static asn_named_entry_t _ndn_packet_action_ne_array[] = {
 
 asn_type ndn_packet_action_s = {
     "Packet-Action", {PRIVATE, NDN_PU_ACTION}, CHOICE, 
-    sizeof(_ndn_packet_action_ne_array) /
-        sizeof(_ndn_packet_action_ne_array[0]), 
+    TE_ARRAY_LEN(_ndn_packet_action_ne_array),
     {_ndn_packet_action_ne_array} 
 };
 
@@ -389,8 +383,7 @@ static asn_named_entry_t _ndn_traffic_pattern_unit_ne_array[] = {
 
 asn_type ndn_traffic_pattern_unit_s = {
     "Traffic-Pattern-Unit", {PRIVATE, NDN_TRAFFIC_PATTERN_UNIT}, SEQUENCE, 
-    sizeof(_ndn_traffic_pattern_unit_ne_array) /
-        sizeof(_ndn_traffic_pattern_unit_ne_array[0]),
+    TE_ARRAY_LEN(_ndn_traffic_pattern_unit_ne_array),
     {_ndn_traffic_pattern_unit_ne_array}
 };
 
@@ -426,7 +419,7 @@ static asn_named_entry_t _ndn_time_stamp_ne_array[] = {
 
 asn_type ndn_time_stamp_s = {
     "NDN-TimeStamp", {PRIVATE, NDN_PKT_TIMESTAMP}, SEQUENCE, 
-    sizeof(_ndn_time_stamp_ne_array) / sizeof(_ndn_time_stamp_ne_array[0]),
+    TE_ARRAY_LEN(_ndn_time_stamp_ne_array),
     {_ndn_time_stamp_ne_array}
 
 };
@@ -452,7 +445,7 @@ static asn_named_entry_t _ndn_raw_packet_ne_array[] = {
 
 asn_type ndn_raw_packet_s = {
     "Raw-Packet", {PRIVATE, NDN_TRAFFIC_PACKET}, SEQUENCE, 
-    sizeof(_ndn_raw_packet_ne_array) / sizeof(_ndn_raw_packet_ne_array[0]), 
+    TE_ARRAY_LEN(_ndn_raw_packet_ne_array),
     {_ndn_raw_packet_ne_array}
 
 };

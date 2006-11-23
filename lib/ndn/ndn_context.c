@@ -87,7 +87,7 @@ static asn_named_entry_t _ndn_generic_csap_layer_ne_array[] = {
 
 asn_type ndn_generic_csap_layer_s = {
     "Generic-CSAP-Level", {APPLICATION, 1}, CHOICE, 
-    sizeof(_ndn_generic_csap_layer_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_generic_csap_layer_ne_array),
     {_ndn_generic_csap_layer_ne_array}
 };
 
@@ -135,7 +135,7 @@ static asn_named_entry_t _ndn_generic_pdu_ne_array[] = {
 
 asn_type ndn_generic_pdu_s = {
     "Generic-PDU", {APPLICATION, 2}, CHOICE, 
-    sizeof(_ndn_generic_pdu_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_generic_pdu_ne_array),
     {_ndn_generic_pdu_ne_array}
 };
 

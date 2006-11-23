@@ -65,7 +65,7 @@ static asn_type ndn_iscsi_digest_s = {
     "iSCSI-digest",
     { PRIVATE, 1 /* FIXME */ },
     ENUMERATED,
-    sizeof(_ndn_iscsi_digest_enum_entries) / sizeof(asn_enum_entry_t),
+    TE_ARRAY_LEN(_ndn_iscsi_digest_enum_entries),
     { enum_entries: _ndn_iscsi_digest_enum_entries }
 };
 
@@ -84,7 +84,7 @@ static asn_named_entry_t _ndn_iscsi_csap_ne_array[] = {
 
 asn_type ndn_iscsi_csap_s = {
     "iSCSI-CSAP", { PRIVATE, TE_PROTO_ISCSI }, SEQUENCE, 
-    sizeof(_ndn_iscsi_csap_ne_array) / sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_iscsi_csap_ne_array),
     { _ndn_iscsi_csap_ne_array }
 };
 
@@ -117,7 +117,7 @@ static asn_named_entry_t _ndn_iscsi_segment_data_ne_array [] = {
 
 asn_type ndn_iscsi_key_pair_s = {
     "Key-Pair", {PRIVATE, NDN_TAG_ISCSI_SD_KEY_PAIR}, SEQUENCE,
-    sizeof(_ndn_iscsi_segment_data_ne_array) / sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_iscsi_segment_data_ne_array),
     {_ndn_iscsi_segment_data_ne_array}
 };
 
@@ -157,7 +157,7 @@ static asn_named_entry_t _ndn_iscsi_message_ne_array [] = {
 
 asn_type ndn_iscsi_message_s = {
     "ISCSI-Message", {PRIVATE, TE_PROTO_ISCSI}, SEQUENCE,
-    sizeof(_ndn_iscsi_message_ne_array) / sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_iscsi_message_ne_array),
     {_ndn_iscsi_message_ne_array}
 };
 

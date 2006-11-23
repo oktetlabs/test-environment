@@ -146,7 +146,7 @@ asn_type ndn_snmp_error_status_s = {
     "SnmpErrorStatus",
     {UNIVERSAL, 10},
     ENUMERATED,
-    sizeof(_ndn_snmp_error_status_enum_entries)/sizeof(asn_enum_entry_t), 
+    TE_ARRAY_LEN(_ndn_snmp_error_status_enum_entries),
     {enum_entries: _ndn_snmp_error_status_enum_entries}
 };
 
@@ -170,7 +170,7 @@ asn_type ndn_snmp_message_type_s = {
     "SnmpMessageType",
     {UNIVERSAL, 10},
     ENUMERATED,
-    sizeof(_ndn_snmp_message_type_enum_entries)/sizeof(asn_enum_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_message_type_enum_entries),
     {enum_entries: _ndn_snmp_message_type_enum_entries}
 };
 
@@ -191,7 +191,7 @@ static asn_named_entry_t _ndn_snmp_simple_ne_array[] = {
 
 asn_type ndn_snmp_simple_s = {
     "SimpleSyntax", {APPLICATION, 1}, CHOICE, 
-    sizeof(_ndn_snmp_simple_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_simple_ne_array),
     {_ndn_snmp_simple_ne_array}
 }; 
 
@@ -216,7 +216,7 @@ static asn_named_entry_t _ndn_snmp_appl_ne_array [] = {
 
 asn_type ndn_snmp_appl_s = {
     "ApplicationSyntax", {APPLICATION, 1}, CHOICE, 
-    sizeof(_ndn_snmp_appl_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_appl_ne_array),
     {_ndn_snmp_appl_ne_array}
 }; 
 
@@ -232,7 +232,7 @@ static asn_named_entry_t _ndn_snmp_object_syntax_ne_array [] = {
 
 asn_type ndn_snmp_object_syntax_s = {
     "ObjectSyntax", {APPLICATION, 1}, CHOICE, 
-    sizeof(_ndn_snmp_object_syntax_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_object_syntax_ne_array),
     {_ndn_snmp_object_syntax_ne_array}
 }; 
 
@@ -266,7 +266,7 @@ static asn_named_entry_t _ndn_snmp_var_bind_ne_array[] = {
 
 asn_type ndn_snmp_var_bind_s = {
     "VarBind", {PRIVATE, 100}, SEQUENCE, 
-    sizeof(_ndn_snmp_var_bind_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_var_bind_ne_array),
     {_ndn_snmp_var_bind_ne_array}
 };
 
@@ -298,7 +298,7 @@ static asn_named_entry_t _ndn_snmp_message_ne_array[] = {
 
 asn_type ndn_snmp_message_s = {
     "SNMP-Message", {PRIVATE, 100}, SEQUENCE, 
-    sizeof(_ndn_snmp_message_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_message_ne_array),
     {_ndn_snmp_message_ne_array}
 };
 
@@ -316,7 +316,7 @@ asn_type ndn_snmp_security_level_s = {
     "SNMP-Security-Level",
     {UNIVERSAL, 10},
     ENUMERATED,
-    sizeof(_ndn_snmp_security_level_enum_entries)/sizeof(asn_enum_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_security_level_enum_entries),
     {enum_entries: _ndn_snmp_security_level_enum_entries}
 };
 const asn_type * const ndn_snmp_security_level = &ndn_snmp_security_level_s;
@@ -332,7 +332,7 @@ asn_type ndn_snmp_auth_proto_s = {
     "SNMP-USM-AuthProtocol",
     {UNIVERSAL, 10},
     ENUMERATED,
-    sizeof(_ndn_snmp_auth_proto_enum_entries)/sizeof(asn_enum_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_auth_proto_enum_entries),
     {enum_entries: _ndn_snmp_auth_proto_enum_entries}
 };
 
@@ -349,7 +349,7 @@ asn_type ndn_snmp_priv_proto_s = {
     "SNMP-USM-PrivProtocol",
     {UNIVERSAL, 10},
     ENUMERATED,
-    sizeof(_ndn_snmp_priv_proto_enum_entries)/sizeof(asn_enum_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_priv_proto_enum_entries),
     {enum_entries: _ndn_snmp_priv_proto_enum_entries}
 };
 
@@ -366,7 +366,7 @@ static asn_named_entry_t _ndn_snmp_security_usm_ne_array[] = {
 
 asn_type ndn_snmp_security_usm_s = {
     "SNMP-Security-USM", {PRIVATE, 100}, SEQUENCE,
-    sizeof(_ndn_snmp_security_usm_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_security_usm_ne_array),
     {_ndn_snmp_security_usm_ne_array}
 };
 const asn_type * ndn_snmp_security_usm = &ndn_snmp_security_usm_s;
@@ -378,7 +378,7 @@ static asn_named_entry_t _ndn_snmp_security_v2c_ne_array[] = {
 };
 asn_type ndn_snmp_security_v2c_s = {
     "SNMP-Security-v2c", {PRIVATE, 100}, SEQUENCE,
-    sizeof(_ndn_snmp_security_v2c_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_security_v2c_ne_array),
     {_ndn_snmp_security_v2c_ne_array}
 };
 const asn_type * ndn_snmp_security_v2c = &ndn_snmp_security_v2c_s;
@@ -391,7 +391,7 @@ static asn_named_entry_t _ndn_snmp_security_ne_array[] = {
 };
 asn_type ndn_snmp_security_s = {
     "SNMP-Security", {APPLICATION, 1}, CHOICE, 
-    sizeof(_ndn_snmp_security_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_security_ne_array),
     {_ndn_snmp_security_ne_array}
 }; 
 const asn_type * const ndn_snmp_security = &ndn_snmp_security_s;
@@ -409,7 +409,7 @@ static asn_named_entry_t _ndn_snmp_csap_ne_array[] = {
 
 asn_type ndn_snmp_csap_s = {
     "SNMP-CSAP", {PRIVATE, 101}, SEQUENCE, 
-    sizeof(_ndn_snmp_csap_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_snmp_csap_ne_array),
     {_ndn_snmp_csap_ne_array}
 };
 

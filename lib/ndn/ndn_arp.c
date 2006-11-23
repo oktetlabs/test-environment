@@ -61,7 +61,7 @@ static asn_named_entry_t _ndn_arp_header_ne_array[] = {
 
 asn_type ndn_arp_header_s = {
     "ARP-Header", { PRIVATE, 100 /* FIXME */}, SEQUENCE, 
-    sizeof(_ndn_arp_header_ne_array) / sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_arp_header_ne_array),
     {_ndn_arp_header_ne_array}
 };
 
@@ -81,7 +81,7 @@ static asn_named_entry_t _ndn_arp_csap_ne_array[] = {
 
 asn_type ndn_arp_csap_s = {
     "ARP-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE, 
-    sizeof(_ndn_arp_csap_ne_array) / sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_arp_csap_ne_array),
     { _ndn_arp_csap_ne_array }
 };
 

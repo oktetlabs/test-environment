@@ -57,7 +57,7 @@ static asn_named_entry_t _ndn_forw_delay_cont_ne_array [] = {
 
 asn_type ndn_forw_delay_cont_s = {
     "Forwarder-Delay-Cont", {PRIVATE, 100}, SEQUENCE, 
-    sizeof(_ndn_forw_delay_cont_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_forw_delay_cont_ne_array),
     {_ndn_forw_delay_cont_ne_array}
 };
 
@@ -77,7 +77,7 @@ static asn_named_entry_t _ndn_forw_discr_pair_array [] = {
 
 asn_type ndn_forw_discr_pair_s = {
     "Discret-Pair", {PRIVATE, 101}, SEQUENCE, 
-    sizeof(_ndn_forw_discr_pair_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_forw_discr_pair_array),
     {_ndn_forw_discr_pair_array}
 };
 
@@ -111,7 +111,7 @@ static asn_named_entry_t _ndn_forw_delay_array [] = {
 
 asn_type ndn_forw_delay_s = {
     "Discret-Pair", {PRIVATE, 101}, CHOICE, 
-    sizeof(_ndn_forw_delay_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_forw_delay_array),
     {_ndn_forw_delay_array}
 };
 
@@ -132,7 +132,7 @@ static asn_enum_entry_t _ndn_reorder_type_enum_entries[] = {
 
 static asn_type ndn_forw_reorder_type_s = {
     "Forw-Delay-Type", {APPLICATION, 15}, ENUMERATED,
-    sizeof(_ndn_reorder_type_enum_entries)/sizeof(asn_enum_entry_t), 
+    TE_ARRAY_LEN(_ndn_reorder_type_enum_entries),
     {enum_entries: _ndn_reorder_type_enum_entries}
 };
 
@@ -145,7 +145,7 @@ static asn_named_entry_t _ndn_forw_reorder_ne_array [] = {
 
 asn_type ndn_forw_reorder_s = {
     "Forwarder-Action-Reorder-Params", {PRIVATE, 100}, SEQUENCE, 
-    sizeof(_ndn_forw_reorder_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_forw_reorder_ne_array),
     {_ndn_forw_reorder_ne_array}
 };
 
@@ -167,7 +167,7 @@ static asn_named_entry_t _ndn_forw_drop_ne_array [] = {
 asn_type ndn_forw_drop_s =
 {
     "Forwarder-Action-Drop-Params", {PRIVATE, 100}, CHOICE, 
-    sizeof(_ndn_forw_drop_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_forw_drop_ne_array),
     {_ndn_forw_drop_ne_array}
 };
 
@@ -194,7 +194,7 @@ static asn_named_entry_t _ndn_forw_action_ne_array [] = {
 
 asn_type ndn_forw_action_s = {
     "Forwarder-Action", {PRIVATE, 101}, SEQUENCE, 
-    sizeof(_ndn_forw_action_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_forw_action_ne_array),
     {_ndn_forw_action_ne_array}
 };
 

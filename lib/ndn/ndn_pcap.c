@@ -51,7 +51,7 @@ static asn_named_entry_t _ndn_pcap_filter_ne_array[] = {
 
 asn_type ndn_pcap_filter_s = {
     "PCAP-Filter", {PRIVATE, 100}, SEQUENCE, 
-    sizeof(_ndn_pcap_filter_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_pcap_filter_ne_array),
     {_ndn_pcap_filter_ne_array}
 };
 
@@ -69,7 +69,7 @@ static asn_named_entry_t _ndn_pcap_csap_ne_array[] = {
 
 asn_type ndn_pcap_csap_s = {
     "PCAP-CSAP", {PRIVATE, 101}, SEQUENCE, 
-    sizeof(_ndn_pcap_csap_ne_array)/sizeof(asn_named_entry_t),
+    TE_ARRAY_LEN(_ndn_pcap_csap_ne_array),
     {_ndn_pcap_csap_ne_array}
 };
 
