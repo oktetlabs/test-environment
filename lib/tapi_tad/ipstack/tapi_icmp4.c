@@ -28,6 +28,8 @@
 
 #define TE_LGR_USER "TAPI ICMPv4"
 
+#include <netinet/ip_icmp.h>
+
 #include "te_config.h"
 
 #include "te_errno.h"
@@ -237,6 +239,12 @@ tapi_icmp4_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
         CHECK_RC(asn_write_int32(tmp_pdu, type, "type.#plain"));
     if (code >= 0)
         CHECK_RC(asn_write_int32(tmp_pdu, code, "code.#plain"));
+
+    if (type == ICMP_PARAMETERPROB)
+    {
+        int ptr = 0;
+        CHECK_RC(asn_write_int32(tmp_pdu, ptr, "ptr.#plain"));
+    }
 
     if (pdu != NULL)
         *pdu = tmp_pdu;
