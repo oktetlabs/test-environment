@@ -60,6 +60,11 @@ int a = IP_MTU;],
 ])
 
 dnl
+dnl Check for Solaris-style sysinfo()
+dnl
+AC_CHECK_HEADERS([sys/systeminfo.h])
+
+dnl
 dnl Check for 'sa_restorer' member in 'struct sigaction'.
 dnl
 AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],

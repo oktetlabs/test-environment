@@ -2721,6 +2721,23 @@ struct tarpc_uname_out {
     tarpc_utsname buf;
 };
 
+/* Solaris sysinfo() */
+
+struct tarpc_sysinfo_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int command;
+    char      buf<>;
+    tarpc_int count;
+};
+
+struct tarpc_sysinfo_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+    char buf<>;
+};
+
 /* fileno() */
 struct tarpc_fileno_in {
     struct tarpc_in_arg common;
@@ -3514,8 +3531,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(socket)
         RPC_DEF(wsa_socket)
-	RPC_DEF(wsa_startup)
-	RPC_DEF(wsa_cleanup)
+        RPC_DEF(wsa_startup)
+        RPC_DEF(wsa_cleanup)
         RPC_DEF(duplicate_socket)
         RPC_DEF(duplicate_handle)
         RPC_DEF(dup)

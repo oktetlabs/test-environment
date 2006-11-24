@@ -47,6 +47,10 @@
 #include <scsi/sg.h>
 #endif
 
+#if HAVE_SYS_SYSTEMINFO_H
+#include <sys/systeminfo.h>
+#endif
+
 #if HAVE_LINUX_ETHTOOL_H
 #include "te_ethtool.h"
 #endif
@@ -3456,6 +3460,28 @@ finish:
 )
 
 #undef PUT_STR
+
+/*-------------- sysinfo() -------------------------------*/
+TARPC_FUNC(sysinfo, 
+{
+    COPY_ARG(buf);
+},
+{
+    INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->count);
+    MAKE_CALL(
+#if HAVE_SYS_SYSTEMINFO_H
+        out->retval = func(sysinfo_command_rpc2h(in->command),
+                           out->buf.buf_val,
+                           in->count);
+#else
+        errno = ENOSYS;
+        out->retval = -1
+#endif
+    );
+}
+)
+
+
 
 /*-------------- getuid() --------------------------------*/
 TARPC_FUNC(getuid, {}, { MAKE_CALL(out->uid = func_void()); })

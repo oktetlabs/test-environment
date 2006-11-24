@@ -58,6 +58,7 @@ typedef rpc_ptr rpc_aiocb_p;
 #include "te_rpc_sys_stat.h"
 #include "te_rpc_sys_wait.h"
 #include "te_rpc_sys_resource.h"
+#include "te_rpc_sys_systeminfo.h"
 #include "te_rpc_sys_time.h"
 #include "te_rpc_errno.h"
 

@@ -17,6 +17,7 @@ include_HEADERS = \
 	te_rpc_signal.h \
 	te_rpc_sys_poll.h \
 	te_rpc_sys_resource.h \
+	te_rpc_sys_systeminfo.h \
 	te_rpc_sys_time.h \
 	te_rpc_sys_socket.h \
 	te_rpc_sys_stat.h \
@@ -69,6 +70,7 @@ nodist_librpc_types_la_SOURCES = \
 	signal_conv.c \
 	sys_poll_conv.c \
 	sys_resource_conv.c \
+	sys_systeminfo_conv.c \
 	sys_stat_conv.c \
 	sys_wait_conv.c \
 	wsa_conv.c
@@ -85,6 +87,7 @@ EXTRA_DIST=\
 	signal.c \
 	sys_poll.c \
 	sys_resource.c \
+	sys_systeminfo.c \
 	sys_stat.c \
 	sys_wait.c \
 	wsa.c
