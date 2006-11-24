@@ -35,6 +35,7 @@
 #include "config.h"
 #endif
 
+#include <limits.h>
 #include <stdio.h>
 #include <ctype.h>
 #if HAVE_SYS_TYPES_H
@@ -2150,22 +2151,21 @@ mcast_link_addr_change(const char *ifname, const char *addr, int op)
     }
 #endif            
 
-    for (i = 0, p = addr; i < ETHER_ADDR_LEN; i++)
+    for (i = 0, p = addr; i < ETHER_ADDR_LEN; i++, p++)
     {
-        unsigned tmp;
-
-        if (p == NULL || (sscanf(p, "%02x", &tmp) < 1) || tmp > 0xff)
+        unsigned tmp = strtoul(p, (char *)&p, 16);
+        if (tmp > UCHAR_MAX)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        q[i] = (uint8_t)tmp;
-        p = strchr(p, ':');
-        /* Skip the colon */
-        if (p != NULL)
-            p++;
+        if (*p != ':' && (*p != '\0' || i < ETHER_ADDR_LEN - 1))
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        q[i] = tmp;
     }
     if (ioctl(cfg_socket, op, &request) != 0)
     {
-        ERROR("ioctl() failed");
-        return TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Changing multicast MAC address %s on %s failed: %r", 
+              addr, ifname, rc);
+        return rc;
     }
     
     return 0;
@@ -2269,7 +2269,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
     UNUSED(gid);
     UNUSED(oid);
     if ((fd = fopen("/proc/net/dev_mcast", "r")) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_EACCES);
+        return TE_OS_RC(TE_TA_UNIX, errno);
     
     s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
     *s = '\0';
