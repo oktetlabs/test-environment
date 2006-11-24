@@ -697,9 +697,13 @@ tad_bps_pkt_frag_match_post(const tad_bps_pkt_frag_def *def,
     for (i = 0; (rc == 0) && (i < def->fields); ++i, *bitoff += len)
     {
         if (def->descr[i].len > 0)
+        {
             len = def->descr[i].len;
+        }
         else if (pkt_data->dus[i].du_type == TAD_DU_OCTS)
+        {
             len = pkt_data->dus[i].val_data.len << 3;
+        }
         else
         {
             len = 0;
@@ -707,7 +711,8 @@ tad_bps_pkt_frag_match_post(const tad_bps_pkt_frag_def *def,
         }
 
         /* FIXME: Optimize - do not read twice */
-        tad_bin_to_data_unit(pkt, *bitoff, len, pkt_data->dus + i);
+        if (len > 0)
+            tad_bin_to_data_unit(pkt, *bitoff, len, pkt_data->dus + i);
 
         rc = tad_data_unit_to_nds(nds, def->descr[i].name, pkt_data->dus + i);
     }
