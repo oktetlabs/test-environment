@@ -68,7 +68,6 @@ rpcserver_DEPENDENCIES=\
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdrta.a 
 
 rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c inet_pton.c inet_ntop.c
-
 nodist_rpcserver_SOURCES=rpc_unsupported.c rpc_supported.h
 rpcserver32_SOURCES=
 rpcserver64_SOURCES=
@@ -87,7 +86,7 @@ RPCSERVER_LIBS="librcfpch.a libloggerta.a libtools.a librpc_types.a \
                 $(RPCSERVER_LIBS_ADD) librpcxdrta.a librpc.a  \
                 ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib user32.lib"
 
-RPCSERVER_SRC= $(rpcserver_SOURCES) rpcserver_symtbl.c rpc_unsupported.c 
+RPCSERVER_SRC= $(rpcserver_SOURCES) $(nodist_rpcserver_SOURCES)
 
 rpcserver32$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
