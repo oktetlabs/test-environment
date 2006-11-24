@@ -43,9 +43,11 @@ ADD_FUNCS=$3
 RESULT=$4
 shift 4
 
-rm -f te_bs_symtbl.tmp
+te_bs_symtbl_tmp=$RESULT.tmp
+
+rm -f $te_bs_symtbl_tmp
 $NM --demangle --format=bsd --extern-only --defined-only $* \
-    >> te_bs_symtbl.tmp
+    >> $te_bs_symtbl_tmp
 
 cat > $RESULT <<\EOF
 /*
@@ -85,7 +87,7 @@ awk --posix '
         printf("extern int %s;\n", $3) ;  \
     else                                  \
         printf("extern int %s();\n", $3); \
-} ' te_bs_symtbl.tmp >> $RESULT
+} ' $te_bs_symtbl_tmp >> $RESULT
 
 if ! test ${ADD_VARS} = empty ; then
     for i in `cat ${ADD_VARS}` ; do
@@ -116,7 +118,7 @@ awk --posix '
         printf("    { \"%s\", 0, &%s },\n", $3, $3); \
     else                                             \
         printf("    { \"%s\", 1, %s },\n", $3, $3);  \
-} ' te_bs_symtbl.tmp >> $RESULT
+} ' $te_bs_symtbl_tmp >> $RESULT
 
 if ! test ${ADD_VARS} = empty ; then
     for i in `cat ${ADD_VARS}` ; do
@@ -170,4 +172,4 @@ rcf_ch_symbol_name_auto(const void *addr)
 }
 EOF
 
-rm -f te_bs_symtbl.tmp
+rm -f $te_bs_symtbl_tmp
