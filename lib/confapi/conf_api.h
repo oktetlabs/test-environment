@@ -482,7 +482,7 @@ cfg_add_instance_local_fmt(cfg_handle *p_handle, cfg_val_type type,
  * Add instance with the first part of OID specified by handle and
  * the second part specified by format string and its parameters.
  *
- * @param p_handle      Locatin for handle of new instance
+ * @param p_handle      Location for handle of new instance
  * @param type          Type of value
  * @param val           Value
  * @param parent        Handle of the parent

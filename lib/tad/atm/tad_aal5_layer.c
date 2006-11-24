@@ -284,6 +284,8 @@ typedef struct tad_aal5_prepare_pdus_data {
     tad_pkts   *pdus;       /**< List to put PDUs */
     uint8_t    *trailer;    /**< CPCS PDU trailer template */
     te_bool     write_crc;  /**< Calculate and write CRC to trailer */
+    te_bool     write_len;  /**< Calculate and write payload length
+                                 to trailer */
 } tad_aal5_prepare_pdus_data;
 
 /**
@@ -331,13 +333,18 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
     memcpy(trailer->data_ptr, data->trailer, AAL5_TRAILER_LEN);
 
     /*
-     * Write length of the payload to trailer
+     * Write length of the payload to trailer if requested
      */
-    len = htons(pld_len);
-    memcpy((uint8_t *)trailer->data_ptr + 2, &len, sizeof(len));
+    if (data->write_len)
+    {
+        len = htons(pld_len);
+        memcpy((uint8_t *)trailer->data_ptr + 2, &len, sizeof(len));
+    }
 
-    /* Calculate CRC and write it to trailer if requested */
-    if(data->write_crc)
+    /*
+     * Calculate CRC and write it to trailer if requested
+     */
+    if (data->write_crc)
     {
         (void)tad_pkt_enumerate_seg(pkt, tad_all5_crc32, &crc);
         crc = htonl(~crc);
@@ -425,6 +432,12 @@ tad_aal5_gen_bin_cb(csap_p                csap,
     cb_data.csap = csap;
     cb_data.pdus = pdus;
     cb_data.trailer = trailer;
+    /*
+     * Don't calculate and write payload length
+     * if it is already present in the template.
+     */
+    cb_data.write_len = tmpl_data->trailer.dus[2].du_type == TAD_DU_UNDEF;
+
     /*
      * Don't calculate and write CRC if it
      * is already present in the template.
