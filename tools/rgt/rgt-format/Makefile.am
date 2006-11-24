@@ -68,29 +68,27 @@ dist-hook:
 	done
 
 $(RGT_SUBDIRS:%=%.h): $(RGT_SUBDIRS:%=%/tmpls/Makefile)
-	for util in $(RGT_SUBDIRS); do \
-	    echo -E "enum {" > $${util}.h; \
-	    for i in `ls $(srcdir)/$${util}/tmpls/*.tmpl`; do \
-	        basename $${i} | sed 's,\.tmpl,,' | \
-	            tr [:lower:] [:upper:] | \
-	            awk '{ printf "%s", $$1 }' >> $${util}.h; \
-	        echo "," >> $${util}.h; \
-	    done; \
-	    echo -E "};" >> $${util}.h; \
-	    echo -E "const char *xml2fmt_files[] = {" >> $${util}.h; \
-	    for i in `ls $(srcdir)/$${util}/tmpls/*.tmpl`; do \
-	        basename $${i} | \
-	            sed "s,\(.*\),\"$(pkgdatadir)/$${util}/tmpls/\1\"," | \
-	                awk '{ printf "%s", $$1 }'>> $${util}.h; \
-	        echo "," >> $${util}.h; \
-	    done; \
-	    echo -E "};" >> $${util}.h; \
-	    echo -E -n "rgt_tmpl_t xml2fmt_tmpls[" >> $${util}.h; \
-	    echo -E -n "sizeof(xml2fmt_files) / " >> $${util}.h; \
-	    echo -E "sizeof(xml2fmt_files[0])];" >> $${util}.h; \
-	    echo -E -n "size_t     xml2fmt_tmpls_num = " >> $${util}.h; \
-	    echo -E -n "sizeof(xml2fmt_files) / " >> $${util}.h; \
-	    echo -E "sizeof(xml2fmt_files[0]);" >> $${util}.h; \
-	    echo "#define INSTALL_DIR \"${pkgdatadir}/$${util}/\"" >> \
-	            $${util}.h; \
-	done
+	util=`echo $@ | sed 's,\.h$$,,'` ; \
+	echo -E "enum {" > $@; \
+	for i in `ls $(srcdir)/$${util}/tmpls/*.tmpl`; do \
+		basename $${i} | sed 's,\.tmpl$$,,' | \
+			tr [:lower:] [:upper:] | \
+			awk '{ printf "%s", $$1 }' >> $@; \
+		echo "," >> $@; \
+	done; \
+	echo -E "};" >> $@; \
+	echo -E "const char *xml2fmt_files[] = {" >> $@; \
+	for i in `ls $(srcdir)/$${util}/tmpls/*.tmpl`; do \
+		basename $${i} | \
+			sed "s,\(.*\),\"$(pkgdatadir)/$${util}/tmpls/\1\"," | \
+				awk '{ printf "%s", $$1 }'>> $@; \
+		echo "," >> $@; \
+	done; \
+	echo -E "};" >> $@; \
+	echo -E -n "rgt_tmpl_t xml2fmt_tmpls[" >> $@; \
+	echo -E -n "sizeof(xml2fmt_files) / " >> $@; \
+	echo -E "sizeof(xml2fmt_files[0])];" >> $@; \
+	echo -E -n "size_t     xml2fmt_tmpls_num = " >> $@; \
+	echo -E -n "sizeof(xml2fmt_files) / " >> $@; \
+	echo -E "sizeof(xml2fmt_files[0]);" >> $@; \
+	echo "#define INSTALL_DIR \"${pkgdatadir}/$@${util}/\"" >> $@
