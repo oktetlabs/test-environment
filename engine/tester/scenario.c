@@ -336,7 +336,6 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     if (result_replace)
     {
         assert(h0->tqh_first == NULL);
-        free(h0);
     }
     
     *h_rslt_p = h_rslt;
