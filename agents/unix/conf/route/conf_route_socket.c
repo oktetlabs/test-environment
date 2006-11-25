@@ -764,6 +764,9 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     }
 
     msg->rtm_addrs |= RTA_DST;
+#if HAVE_STRUCT_SOCKADDR_SA_LEN
+    addr->sa_len = addrlen;
+#endif
     addr = SA(((const uint8_t *)addr) + addrlen);
 
     /* Gateway */
@@ -777,6 +780,9 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         memcpy(addr, &rt_info->gw, addrlen);
         msg->rtm_addrs |= RTA_GATEWAY;
         msg->rtm_flags |= RTF_GATEWAY;
+#if HAVE_STRUCT_SOCKADDR_SA_LEN
+        addr->sa_len = addrlen;
+#endif
         addr = SA(((const uint8_t *)addr) + addrlen);
     }
     else if (rt_info->flags & TA_RT_INFO_FLG_IF)
@@ -815,6 +821,9 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         memcpy(te_sockaddr_get_netaddr(addr), ifa,
                te_netaddr_get_size(addr->sa_family));
         msg->rtm_addrs |= RTA_GATEWAY;
+#if HAVE_STRUCT_SOCKADDR_SA_LEN
+        addr->sa_len = addrlen;
+#endif
         addr = SA(((const uint8_t *)addr) + addrlen);
     }
 
@@ -879,6 +888,9 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         msg->rtm_addrs |= RTA_SRC;        
         msg->rtm_flags |= RTF_SETSRC;
         
+#if HAVE_STRUCT_SOCKADDR_SA_LEN
+        addr->sa_len = addrlen;
+#endif
         addr = SA(((const uint8_t *)addr) + addrlen);
     }
 #endif    
@@ -964,6 +976,9 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
 
     addrlen = te_sockaddr_get_size(CONST_SA(&rt_info->dst));
     memcpy(rt_buf + rtm->rtm_msglen, &rt_info->dst, addrlen);
+#if HAVE_STRUCT_SOCKADDR_SA_LEN
+    SA(rt_buf + rtm->rtm_msglen)->sa_len = addrlen;
+#endif
     rtm->rtm_msglen += addrlen;
 
     assert(rtm->rtm_msglen <= rt_buflen);
