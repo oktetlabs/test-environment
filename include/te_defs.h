@@ -284,12 +284,12 @@ rand_range(int min, int max)
     /* Try to find suitable type */
 #if   LONG_MAX / (INT_MAX - INT_MIN + 1) >= RAND_MAX  && \
       ! defined RAND_RANGE_FORCE_DOUBLE
-    (int)(min + ((long)max - min + 1) * rand() / (RAND_MAX + 1L));
+    (int)(min + (((long)max - min) + 1) * rand() / (RAND_MAX + 1L));
 #elif LLONG_MAX / (INT_MAX - INT_MIN + 1) >= RAND_MAX && \
       ! defined RAND_RANGE_FORCE_DOUBLE
-    (int)(min + ((long long)max - min + 1) * rand() / (RAND_MAX + 1LL));
+    (int)(min + (((long long)max - min) + 1) * rand() / (RAND_MAX + 1LL));
 #else
-    (int)(min + ((double)max - min + 1) * rand() / (RAND_MAX + 1.0));
+    (int)(min + (((double)max - min) + 1) * rand() / (RAND_MAX + 1.0));
 #endif
 #endif /* if 0 */
 }
