@@ -39,6 +39,7 @@
 #endif
 #if HAVE_STDLIB_H
 #include <stdlib.h>
+#include <limits.h> /* For rand_range() */
 #endif
 #if HAVE_STRING_H
 #include <string.h>
@@ -237,7 +238,60 @@ extern "C" {
 static inline int
 rand_range(int min, int max)
 {
+#if 0
     return min + (rand() % (max - min + 1));
+#else
+    /*
+     * FIXME: Too simple code above is subject to replacement
+     * 
+     *  As 'man 3 rand' tells:
+     *  
+     * ------------------------------------------------------------
+     * In  Numerical  Recipes in C: The Art of Scientific Computing
+     * (William H. Press, Brian P. Flannery, Saul A. Teukolsky,
+     * William T. Vetterling; New York: Cambridge University Press,
+     * 1992 (2nd ed., p. 277)), the following comments are made:
+     * "If you want to generate a random integer between 1 and 10,
+     * you should always do it by using high-order bits, as in
+     *
+     *               j=1+(int) (10.0*rand()/(RAND_MAX+1.0));
+     *
+     *        and never by anything resembling
+     *
+     *               j=1+(rand() % 10);
+     *
+     *        (which uses lower-order bits)."
+     * ------------------------------------------------------------
+     *
+     * So, the next implementation sequentially tries to use 'long',
+     * 'long long' and 'double' types at compile time basing on RAND_MAX
+     * constant value and RAND_RANGE_FORCE_DOUBLE preprocessor symbol and
+     * also taking care about avoiding any kind of possible overflow.
+     * 
+     * If RAND_RANGE_FORCE_DOUBLE preprocessor symbol is defined it means
+     * the implementation does not try to use 'long' or 'long long' types
+     * for calculations implementation; it just uses 'double' type instead.
+     *
+     * Note: the case when 'max - min > RAND_MAX' is not checked,
+     * although in this case pseudo-random values quantity becomes
+     * discrete: there are such values from 'min' to 'max' that are never
+     * returned.
+     */
+
+    /* -RAND_MAX returned value is the range logical error indicator */
+    return max < min ? -RAND_MAX :
+
+    /* Try to find suitable type */
+#if   LONG_MAX / (INT_MAX - INT_MIN + 1) >= RAND_MAX  && \
+      ! defined RAND_RANGE_FORCE_DOUBLE
+    (int)(min + ((long)max - min + 1) * rand() / (RAND_MAX + 1L));
+#elif LLONG_MAX / (INT_MAX - INT_MIN + 1) >= RAND_MAX && \
+      ! defined RAND_RANGE_FORCE_DOUBLE
+    (int)(min + ((long long)max - min + 1) * rand() / (RAND_MAX + 1LL));
+#else
+    (int)(min + ((double)max - min + 1) * rand() / (RAND_MAX + 1.0));
+#endif
+#endif /* if 0 */
 }
 #endif
 
