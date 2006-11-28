@@ -86,7 +86,7 @@ RPCSERVER_LIBS="librcfpch.a libloggerta.a libtools.a librpc_types.a \
                 $(RPCSERVER_LIBS_ADD) librpcxdrta.a librpc.a  \
                 ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib user32.lib"
 
-RPCSERVER_SRC= $(rpcserver_SOURCES) $(nodist_rpcserver_SOURCES)
+RPCSERVER_SRC= $(rpcserver_SOURCES) $(nodist_rpcserver_SOURCES) rpcserver_symtbl.c
 
 rpcserver32$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
