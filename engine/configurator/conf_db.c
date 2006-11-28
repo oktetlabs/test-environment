@@ -664,7 +664,8 @@ cfg_db_unregister_obj_by_id_str(char *id,
     }
     cfg_free_oid(idsplit);
 
-    rc = cfg_db_find_pattern(pattern, &nof_matches, &matches);
+    rc = cfg_db_find_pattern(pattern, (unsigned int *)&nof_matches,
+                             &matches);
     if (rc != 0)
     {
         ERROR("cfg_db_find_pattern() failed: %r; pattern: %s\n",
@@ -972,7 +973,8 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
     } while (0)
 
     
-    rc = cfg_db_find_pattern(msg->pattern, &nof_matches, &matches);
+    rc = cfg_db_find_pattern(msg->pattern, (unsigned int *)&nof_matches,
+                                            &matches);
     if (rc != 0)
         RETERR(rc);
     

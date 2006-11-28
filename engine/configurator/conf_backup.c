@@ -76,13 +76,13 @@ cfg_register_dependency(xmlNodePtr node, const char *dependant)
             xmlFree(oid);
             return TE_EINVAL;
         }
-        len = sizeof(*msg) + strlen(oid) + 1;
+        len = sizeof(*msg) + strlen((char *)oid) + 1;
         msg = calloc(1, len);
         msg->type = CFG_ADD_DEPENDENCY;
         msg->len = len;
         msg->rc = 0;
         msg->handle = dep_handle;
-        strcpy(msg->oid, oid);
+        strcpy(msg->oid, (char *)oid);
         cfg_process_msg((cfg_msg **)&msg, TRUE);
         if (msg->rc != 0)
         {
@@ -136,8 +136,8 @@ register_objects(xmlNodePtr *node, te_bool reg)
 
         def_val = xmlGetProp(cur, (const xmlChar *)"default");
 
-        len = sizeof(cfg_register_msg) + strlen(oid) + 1 +
-              (def_val == NULL ? 0 : strlen(def_val) + 1);
+        len = sizeof(cfg_register_msg) + strlen((char *)oid) + 1 +
+              (def_val == NULL ? 0 : strlen((char *)def_val) + 1);
               
         if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
         {
@@ -151,11 +151,11 @@ register_objects(xmlNodePtr *node, te_bool reg)
         msg->rc = 0;
         msg->access = CFG_READ_CREATE;
         msg->val_type = CVT_NONE;
-        strcpy(msg->oid, oid);
+        strcpy(msg->oid, (char *)oid);
         if (def_val != NULL)
         {
             msg->def_val = strlen(msg->oid) + 1;
-            strcpy(msg->oid + msg->def_val, def_val);
+            strcpy(msg->oid + msg->def_val, (char *)def_val);
         }
         xmlFree(oid);
         xmlFree(def_val);
@@ -179,22 +179,22 @@ register_objects(xmlNodePtr *node, te_bool reg)
 
         if ((attr = xmlGetProp(cur, (const xmlChar *)"type")) != NULL)
         {
-            if (strcmp(attr, "integer") == 0)
+            if (strcmp((char *)attr, "integer") == 0)
                 msg->val_type = CVT_INTEGER;
-            else if (strcmp(attr, "address") == 0)
+            else if (strcmp((char *)attr, "address") == 0)
                 msg->val_type = CVT_ADDRESS;
-            else if (strcmp(attr, "string") == 0)
+            else if (strcmp((char *)attr, "string") == 0)
                 msg->val_type = CVT_STRING;
-            else if (strcmp(attr, "none") != 0)
+            else if (strcmp((char *)attr, "none") != 0)
                 RETERR(TE_EINVAL, "Unsupported object type %s", attr);
             xmlFree(attr);
         }
 
         if ((attr = xmlGetProp(cur, (const xmlChar *)"volatile")) != NULL)
         {
-            if (strcmp(attr, "true") == 0)
+            if (strcmp((char *)attr, "true") == 0)
                 msg->vol = TRUE;
-            else if (strcmp(attr, "false") != 0)
+            else if (strcmp((char *)attr, "false") != 0)
                 RETERR(TE_EINVAL, "Volatile should be specified using "
                        "\"true\" or \"false\"");
             xmlFree(attr);
@@ -204,7 +204,8 @@ register_objects(xmlNodePtr *node, te_bool reg)
         {
             cfg_inst_val val;
             
-            if (cfg_types[msg->val_type].str2val(def_val, &val) != 0)
+            if (cfg_types[msg->val_type].str2val((char *)def_val, &val)
+                    != 0)
                 RETERR(TE_EINVAL, "Incorrect default value %s", def_val);
             
             cfg_types[msg->val_type].free(val);
@@ -212,11 +213,11 @@ register_objects(xmlNodePtr *node, te_bool reg)
 
         if ((attr = xmlGetProp(cur, (const xmlChar *)"access")) != NULL)
         {
-            if (strcmp(attr, "read_write") == 0)
+            if (strcmp((char*)attr, "read_write") == 0)
                 msg->access = CFG_READ_WRITE;
-            else if (strcmp(attr, "read_only") == 0)
+            else if (strcmp((char *)attr, "read_only") == 0)
                 msg->access = CFG_READ_ONLY;
-            else if (strcmp(attr, "read_create") != 0)
+            else if (strcmp((char *)attr, "read_create") != 0)
                 RETERR(TE_EINVAL, 
                        "Wrong value %s of \"access\" attribute", attr);
             xmlFree(attr);
@@ -318,9 +319,9 @@ parse_instances(xmlNodePtr node, cfg_instance **list)
         if ((tmp = (cfg_instance *)calloc(sizeof(*tmp), 1)) == NULL)
             RETERR(TE_ENOMEM, "No enough memory");
 
-        tmp->oid = oid;
+        tmp->oid = (char *)oid;
 
-        if ((tmp->obj = cfg_get_object(oid)) == NULL)
+        if ((tmp->obj = cfg_get_object((char *)oid)) == NULL)
             RETERR(TE_EINVAL, "Cannot find the object for instance %s",
                    oid);
                    
@@ -333,7 +334,7 @@ parse_instances(xmlNodePtr node, cfg_instance **list)
             if (val_s == NULL)
                 RETERR(TE_ENOENT, "Value is necessary for %s", oid);
 
-            if ((rc = cfg_types[tmp->obj->type].str2val(val_s, 
+            if ((rc = cfg_types[tmp->obj->type].str2val((char *)val_s,
                                                         &(tmp->val))) != 0)
             {
                 RETERR(rc, "Value conversion error for %s", oid);
@@ -799,7 +800,7 @@ put_object(FILE *f, cfg_object *obj)
         if (obj->def_val != NULL)
         {
             xmlChar *xml_str = xmlEncodeEntitiesReentrant(NULL,
-                                                          obj->def_val);
+                                   (const xmlChar *)obj->def_val);
 
             if (xml_str == NULL)
             {
@@ -858,7 +859,7 @@ put_instance(FILE *f, cfg_instance *inst)
                 return rc;
             }
 
-            xml_str = xmlEncodeEntitiesReentrant(NULL, val_str);
+            xml_str = xmlEncodeEntitiesReentrant(NULL, (xmlChar *)val_str);
             free(val_str);
             if (xml_str == NULL)
                 return TE_ENOMEM;
