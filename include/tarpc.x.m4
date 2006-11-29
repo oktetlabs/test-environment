@@ -3636,6 +3636,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(getenv)
         RPC_DEF(setenv)
         RPC_DEF(uname)
+        RPC_DEF(sysinfo)
         
         RPC_DEF(create_aiocb)
         RPC_DEF(fill_aiocb)
