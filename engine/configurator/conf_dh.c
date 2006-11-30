@@ -169,14 +169,15 @@ cfg_dh_process_add(xmlNodePtr node)
     while (node != NULL &&
            xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
     {
-        if ((oid = xmlGetProp_exp(node, (const xmlChar *)"oid")) == NULL)
+        if ((oid = (xmlChar *)xmlGetProp_exp(node,
+                   (const xmlChar *)"oid")) == NULL)
             RETERR(TE_EINVAL, "Incorrect add command format");
 
-        if ((obj = cfg_get_object(oid)) == NULL)
+        if ((obj = cfg_get_object((char *)oid)) == NULL)
             RETERR(TE_EINVAL, "Cannot find object for instance %s", oid);
         
         len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE + 
-              strlen(oid) + 1;
+              strlen((char *)oid) + 1;
         if ((msg = (cfg_add_msg *)calloc(1, len)) == NULL)
             RETERR(TE_ENOMEM, "Cannot allocate memory");
         
@@ -185,8 +186,8 @@ cfg_dh_process_add(xmlNodePtr node)
         msg->val_type = obj->type;
         msg->rc = 0;
         
-        val_s = xmlGetProp_exp(node, (const xmlChar *)"value");
-        if (val_s != NULL && strlen(val_s) >= CFG_MAX_INST_VALUE)
+        val_s = (xmlChar *)xmlGetProp_exp(node, (const xmlChar *)"value");
+        if (val_s != NULL && strlen((char *)val_s) >= CFG_MAX_INST_VALUE)
             RETERR(TE_ENOMEM, "Too long value");
             
         if (obj->type == CVT_NONE && val_s != NULL)
@@ -197,7 +198,8 @@ cfg_dh_process_add(xmlNodePtr node)
             
         if (val_s != NULL)
         {
-            if ((rc = cfg_types[obj->type].str2val(val_s, &val)) != 0)
+            if ((rc = cfg_types[obj->type].str2val((char *)val_s, &val))
+                   != 0)
                 RETERR(rc, "Value conversion error for %s", oid);
                 
             cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
@@ -207,8 +209,8 @@ cfg_dh_process_add(xmlNodePtr node)
         }
         
         msg->oid_offset = msg->len;
-        msg->len += strlen(oid) + 1;
-        strcpy((char *)msg + msg->oid_offset, oid);
+        msg->len += strlen((char *)oid) + 1;
+        strcpy((char *)msg + msg->oid_offset, (char *)oid);
         cfg_process_msg((cfg_msg **)&msg, TRUE);
         if (msg->rc != 0)
             RETERR(msg->rc, "Failed(%r) to execute the add command "
@@ -278,15 +280,16 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             if ((attr = xmlGetProp(cmd, (const xmlChar *)"ta")) == NULL)
                 RETERR(TE_EINVAL, "Incorrect reboot command format");
 
-            if ((msg = (cfg_reboot_msg *)calloc(1, sizeof(*msg) + 
-                                                strlen(attr) + 1)) == NULL)
+            if ((msg = (cfg_reboot_msg *)calloc(1, sizeof(*msg) +
+                                                strlen((char *)attr) + 1))
+                    == NULL)
                 RETERR(TE_ENOMEM, "Cannot allocate memory");
             
             msg->type = CFG_REBOOT;
-            msg->len = sizeof(*msg) + strlen(attr) + 1;
+            msg->len = sizeof(*msg) + strlen((char *)attr) + 1;
             msg->rc = 0;
             msg->restore = FALSE;
-            strcpy(msg->ta_name, attr);
+            strcpy(msg->ta_name, (char *)attr);
             
             cfg_process_msg((cfg_msg **)&msg, TRUE);
             if (msg->rc != 0)
@@ -317,14 +320,15 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name , (const xmlChar *)"object") == 0)
             {
-                if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
+                if ((oid = (xmlChar *)xmlGetProp_exp(tmp, (xmlChar *)"oid"))
+                        == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
                            cmd->name);
 
                 val_s = xmlGetProp(tmp, (const xmlChar *)"default");
 
-                len = sizeof(cfg_register_msg) + strlen(oid) + 1 +
-                      (val_s == NULL ? 0 : strlen(val_s) + 1);
+                len = sizeof(cfg_register_msg) + strlen((char *)oid) + 1 +
+                      (val_s == NULL ? 0 : strlen((char *)val_s) + 1);
                       
                 if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
                     RETERR(TE_ENOMEM, "Cannot allocate memory");
@@ -335,23 +339,23 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 msg->access = CFG_READ_CREATE;
                 msg->val_type = CVT_NONE;
 
-                strcpy(msg->oid, oid);
+                strcpy(msg->oid, (char *)oid);
                 if (val_s != NULL)
                 {
                     msg->def_val = strlen(msg->oid) + 1;
-                    strcpy(msg->oid + msg->def_val, val_s);
+                    strcpy(msg->oid + msg->def_val, (char *)val_s);
                 }
                 
                 attr = xmlGetProp(tmp, (const xmlChar *)"type");
                 if (attr != NULL)
                 {
-                    if (strcmp(attr, "integer") == 0)
+                    if (strcmp((char *)attr, "integer") == 0)
                         msg->val_type = CVT_INTEGER;
-                    else if (strcmp(attr, "address") == 0)
+                    else if (strcmp((char *)attr, "address") == 0)
                         msg->val_type = CVT_ADDRESS;
-                    else if (strcmp(attr, "string") == 0)
+                    else if (strcmp((char *)attr, "string") == 0)
                         msg->val_type = CVT_STRING;
-                    else if (strcmp(attr, "none") != 0)
+                    else if (strcmp((char *)attr, "none") != 0)
                         RETERR(TE_EINVAL, "Unsupported object type %s",
                                attr);
                     xmlFree(attr);
@@ -361,9 +365,9 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 attr = xmlGetProp(tmp, (const xmlChar *)"volatile");
                 if (attr != NULL)
                 {
-                    if (strcmp(attr, "true") == 0)
+                    if (strcmp((char *)attr, "true") == 0)
                         msg->vol = TRUE;
-                    else if (strcmp(attr, "false") != 0)
+                    else if (strcmp((char *)attr, "false") != 0)
                         RETERR(TE_EINVAL, "Volatile should be specified "
                                           "using \"true\" or \"false\"");
                     xmlFree(attr);
@@ -374,7 +378,8 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 {
                     cfg_inst_val val;
                     
-                    if (cfg_types[msg->val_type].str2val(val_s, &val) != 0)
+                    if (cfg_types[msg->val_type].str2val((char *)val_s,
+                                                         &val) != 0)
                         RETERR(TE_EINVAL, "Incorrect default value %s",
                                val_s);
                     
@@ -384,11 +389,11 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 attr = xmlGetProp(tmp, (const xmlChar *)"access");
                 if (attr != NULL)
                 {
-                    if (strcmp(attr, "read_write") == 0)
+                    if (strcmp((char *)attr, "read_write") == 0)
                         msg->access = CFG_READ_WRITE;
-                    else if (strcmp(attr, "read_only") == 0)
+                    else if (strcmp((char *)attr, "read_only") == 0)
                         msg->access = CFG_READ_ONLY;
-                    else if (strcmp(attr, "read_create") != 0)
+                    else if (strcmp((char *)attr, "read_create") != 0)
                         RETERR(TE_EINVAL, 
                                "Wrong value %s of 'access' attribute",
                                attr);
@@ -431,11 +436,13 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                            "Unexpected node '%s' in 'unregister' command",
                            tmp->name);
 
-                if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
+                if ((oid = (xmlChar *)xmlGetProp_exp(tmp, (xmlChar *)"oid"))
+                        == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
-                           cmd->name);                
+                           cmd->name);
 
-                rc = cfg_db_unregister_obj_by_id_str(oid, TE_LL_WARN);
+                rc = cfg_db_unregister_obj_by_id_str((char *)oid,
+                                                     TE_LL_WARN);
                 if (rc != 0)
                     RETERR(rc, "Failed to execute 'unregister' command "
                            "for object %s", oid);
@@ -471,11 +478,12 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name , (const xmlChar *)"instance") == 0)
             {
-                if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
+                if ((oid = (xmlChar *)xmlGetProp_exp(tmp, (xmlChar *)"oid"))
+                        == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
                            cmd->name);
 
-                if ((rc = cfg_db_find(oid, &handle)) != 0)
+                if ((rc = cfg_db_find((char *)oid, &handle)) != 0)
                     RETERR(TE_ENOENT, "Cannot find instance %s", oid);
                 
                 if (!CFG_IS_INST(handle))
@@ -495,11 +503,13 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 if (obj->type == CVT_NONE)
                     RETERR(TE_EINVAL, "Cannot perform set for %s", oid);
 
-                val_s = xmlGetProp_exp(tmp, (const xmlChar *)"value");
+                val_s = (xmlChar *)xmlGetProp_exp(tmp,
+                                                  (const xmlChar *)"value");
                 if (val_s == NULL)
                     RETERR(TE_EINVAL, "Value is required for %s", oid);
                 
-                if ((rc = cfg_types[obj->type].str2val(val_s, &val)) != 0)
+                if ((rc = cfg_types[obj->type].str2val((char *)val_s, &val))
+                       != 0)
                     RETERR(rc, "Value conversion error for %s", oid);
                 
                 cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
@@ -533,11 +543,12 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name, (const xmlChar *)"instance") == 0)
             {
-                if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
+                if ((oid = (xmlChar *)xmlGetProp_exp(tmp, (xmlChar *)"oid"))
+                       == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
                            cmd->name);
 
-                if ((rc = cfg_db_find(oid, &handle)) != 0)
+                if ((rc = cfg_db_find((char *)oid, &handle)) != 0)
                     RETERR(rc, "Cannot find instance %s", oid);
                 
                 if (!CFG_IS_INST(handle))
@@ -632,7 +643,7 @@ cfg_dh_create_file(char *filename)
                 if (msg->def_val)
                 {
                     str = xmlEncodeEntitiesReentrant(NULL,
-                              msg->oid + msg->def_val);
+                              (xmlChar *)(msg->oid + msg->def_val));
                     if (str == NULL)
                         RETERR(TE_RC(TE_CS, TE_ENOMEM));
                     fprintf(f, " default=\"%s\"", str);
@@ -672,7 +683,8 @@ cfg_dh_create_file(char *filename)
                     if (rc != 0)
                         RETERR(rc);
                         
-                    str = xmlEncodeEntitiesReentrant(NULL, val_str);
+                    str = xmlEncodeEntitiesReentrant(NULL,
+                                                     (xmlChar *)val_str);
                     free(val_str);
                     if (str == NULL)
                         RETERR(TE_RC(TE_CS, TE_ENOMEM));
