@@ -5737,6 +5737,7 @@ iscsi_reply_status(int sock, struct sockaddr_un *dest, te_errno rc)
 static void
 iscsi_cmnd_set(int sock, struct sockaddr_un *dest, int size, char *buffer)
 {
+    int neg_mode = KEY_TO_BE_NEGOTIATED;
     char *value;
 
     UNUSED(size);
@@ -5749,7 +5750,13 @@ iscsi_cmnd_set(int sock, struct sockaddr_un *dest, int size, char *buffer)
     }
     *value++ = '\0';
 
-    iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
+    if (*value == '!')
+    {
+        neg_mode = 0;
+        value++;
+    }
+
+    iscsi_configure_param_value(neg_mode,
                                 buffer, value,
                                 devdata->param_tbl);
     iscsi_reply_status(sock, dest, 0);
