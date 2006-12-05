@@ -54,10 +54,10 @@ if test "$unsetenv_returns" = "int"; then
    AC_DEFINE(UNSETENV_RETURNS_INT, 1, [Defined when unsetenv() returns int])
 fi                     
 
-AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
-AM_CONDITIONAL(CFG_ISCSI, test -n "$with_iscsi")
+AM_CONDITIONAL(CFG_RCF_RPC, test "$with_rcf_rpc" = yes)
+AM_CONDITIONAL(CFG_ISCSI, test "$with_iscsi" = yes)
 AM_CONDITIONAL(CFG_STANDALONE_RPCSERVER, 
-               test -n "$with_standalone_rpcserver")
+               test "$with_standalone_rpcserver" = yes)
 
 export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$TE_PLATFORM/lib/pkgconfig/
 
