@@ -891,7 +891,7 @@ tad_send_payload_default_fill(const tad_pkt *pkt,
     UNUSED(seg_num);
     UNUSED(opaque);
 
-    memset(seg->data_ptr, 0x5a, seg->data_len);
+    te_fill_buf(seg->data_ptr, seg->data_len);
     return 0;
 }
 

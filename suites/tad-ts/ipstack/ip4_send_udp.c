@@ -146,7 +146,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, FALSE,
                                           ndn_eth_header,
                                           "#eth", NULL));
-    CHECK_RC(tapi_tad_tmpl_ptrn_add_payload_plain(&template, FALSE,
+    CHECK_RC(tapi_tad_tmpl_ptrn_set_payload_plain(&template, FALSE,
                                                   send_buf, pld_len));
     
     if (strcmp(chksum, "correct") == 0)

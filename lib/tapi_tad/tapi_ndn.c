@@ -369,7 +369,7 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
 
 /* See the description in tapi_ndn.h */
 te_errno
-tapi_tad_tmpl_ptrn_add_payload_plain(asn_value  **obj_spec,
+tapi_tad_tmpl_ptrn_set_payload_plain(asn_value  **obj_spec,
                                      te_bool      is_pattern,
                                      const void  *payload,
                                      size_t       length)

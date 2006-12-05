@@ -108,22 +108,24 @@ extern te_errno tapi_tad_new_ptrn_unit(asn_value **obj_spec,
                                        asn_value **unit_spec);
 
 /**
- * Add a new unit in the traffic pattern specification.
+ * Set payload of the last unit in the traffic template or pattern
+ * specification.
  *
  * @param obj_spec      Location of ASN.1 value with Template of Pattern
  *                      specification (if NULL pointer is stored in
  *                      location, a new one is initialized)
- * @param is_pattern    Flag wheather required NDN is traffic pattern
+ * @param is_pattern    Flag whether required NDN is traffic pattern or
+ *                      template
  * @param payload       Pointer to payload data
  * @param length        Payload length
  *
  * @note If @a payload is @c NULL and @a length is not @c 0, random
- *       payload contents is generate for sending and any payload of
+ *       payload contents is generated on sending and any payload of
  *       specified length is matched.
  *
  * @return Status code.
  */
-extern te_errno tapi_tad_tmpl_ptrn_add_payload_plain(
+extern te_errno tapi_tad_tmpl_ptrn_set_payload_plain(
                     asn_value  **obj_spec,
                     te_bool      is_pattern,
                     const void  *payload,
