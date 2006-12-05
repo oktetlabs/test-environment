@@ -126,16 +126,6 @@ else
 
 # Built-in RPC server
 
-if CFG_ISCSI
-
-LDADD+=-liscsi_initiator_conf -lsetupapi
-
-AM_CPPFLAGS+=-DWITH_ISCSI
-
-ta_DEPENDENCIES += $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_initiator_conf.a
-
-endif
-
 ta_PROGRAMS=ta
 
 endif
@@ -150,6 +140,16 @@ LDADD=symtbl.o \
 -lrcfpch -lrpcxdr -lrpc_types -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta \
 -lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools \
 -lcygwin -lexpat 
+
+endif
+
+if CFG_ISCSI
+
+LDADD += -liscsi_initiator_conf -lsetupapi
+
+AM_CPPFLAGS += -DWITH_ISCSI
+
+ta_DEPENDENCIES += $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_initiator_conf.a
 
 endif
 
