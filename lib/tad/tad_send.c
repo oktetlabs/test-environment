@@ -51,6 +51,7 @@
 #include <netinet/in.h> 
 #endif
 
+#include "te_tools.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 #include "comm_agent.h"
