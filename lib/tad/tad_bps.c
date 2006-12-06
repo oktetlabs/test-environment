@@ -443,10 +443,24 @@ tad_bps_pkt_frag_gen_bin(const tad_bps_pkt_frag_def *def,
         {
             write_bits(bin, *bitoff, du->val_i32, len);
         }
+        else if (du->du_type == TAD_DU_EXPR)
+        {               
+            int64_t iterated;
+
+            rc = tad_int_expr_calculate(du->val_int_expr, args, arg_num,
+                                        &iterated);
+            if (rc != 0)                                    
+            {
+                ERROR("%s(): int expr calc error %x", __FUNCTION__, rc);
+                return TE_RC(TE_TAD_BPS, rc);
+            }
+            /* TODO Avoid type case carefully */
+            write_bits(bin, *bitoff, (uint32_t)iterated, len);
+        }
         else
         {
             ERROR("Not bit-aligned offsets and lengths are supported "
-                  "for plain integers only");
+                  "for plain integers and expressions only");
             return TE_RC(TE_TAD_BPS, TE_EOPNOTSUPP);
         }
 
