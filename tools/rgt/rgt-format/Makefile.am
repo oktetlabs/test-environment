@@ -91,4 +91,4 @@ $(RGT_SUBDIRS:%=%.h): $(RGT_SUBDIRS:%=%/tmpls/Makefile)
 	echo -E -n "size_t     xml2fmt_tmpls_num = " >> $@; \
 	echo -E -n "sizeof(xml2fmt_files) / " >> $@; \
 	echo -E "sizeof(xml2fmt_files[0]);" >> $@; \
-	echo "#define INSTALL_DIR \"${pkgdatadir}/$@${util}/\"" >> $@
+	echo "#define INSTALL_DIR \"${pkgdatadir}/$${util}/\"" >> $@
