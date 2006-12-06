@@ -686,7 +686,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
         return rc;
     }
 
-    if (xmlStrcmp(node->name, CONST_CHAR2XML("notes")) == 0)
+    if (node != NULL && xmlStrcmp(node->name, CONST_CHAR2XML("notes")) == 0)
     {
         rc = get_node_with_text_content(&node, "notes", &p->notes);
         if ((rc != 0) && (rc != TE_ENOENT))
