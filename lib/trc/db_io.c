@@ -312,8 +312,8 @@ get_node_property(xmlNodePtr node, const char *name, char **value)
 static te_errno
 alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
 {
-    te_errno    rc;
-    trc_test_iter_arg   *p;
+    te_errno            rc;
+    trc_test_iter_arg  *p;
 
     p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
@@ -332,6 +332,13 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
     if (rc != 0)
     {
         ERROR("Failed to get value of the argument '%s'", p->name);
+    }
+    /* FIXME: May be it is better to support p->value == NULL */
+    else if (p->value == NULL)
+    {
+        p->value = strdup("");
+        if (p->value == NULL)
+            return TE_RC(TE_TRC, TE_ENOMEM);
     }
 
     return rc;
