@@ -85,7 +85,7 @@ typedef struct tad_atm_proto_pdu_data {
  */
 static const tad_bps_pkt_frag tad_atm_uni_bps_hdr[] =
 {
-    { "gfc",            4,  BPS_FLD_NO_DEF(NDN_TAG_ATM_GFC),
+    { "gfc",            4,  BPS_FLD_CONST_DEF(NDN_TAG_ATM_GFC, 0),
       TAD_DU_I32, FALSE },
     { "vpi",            8,  BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI),
       TAD_DU_I32, TRUE },

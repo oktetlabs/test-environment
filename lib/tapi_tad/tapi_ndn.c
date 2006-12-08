@@ -388,7 +388,7 @@ tapi_tad_tmpl_ptrn_set_payload_plain(asn_value  **obj_spec,
                                    "payload.#bytes");
     if (rc != 0)
     {
-        ERROR("Addition of payload failed: %r", rc);
+        ERROR("Failed to set payload: %r", rc);
     }
 
     return TE_RC(TE_TAPI, rc);

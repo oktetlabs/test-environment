@@ -241,7 +241,7 @@ extern tapi_tad_trrecv_cb_data *tapi_tad_trrecv_make_cb_data(
 
 /**
  * Continue already started receiving process on CSAP. 
- * Blocks until receive will be finished. 
+ * Blocks until reception is finished. 
  *
  * @param ta_name       Test Agent name
  * @param session       TA session or 0
@@ -278,9 +278,9 @@ extern te_errno tapi_tad_trrecv_stop(const char              *ta_name,
 
 /**
  * Get received packets from already started receiving process on CSAP. 
- * Dont blocks, dont stop receiving process.
- * Got packets are removed from cache on CSAP, and will not be received
- * again, during call of _wait, _stop or _get method.
+ * Don't block, don't stop receiving process.
+ * Received packets are removed from CSAP cache, and will not be returned
+ * again, on _wait, _stop or _get calls.
  *
  * @param ta_name       Test Agent name
  * @param session       TA session or 0

@@ -83,8 +83,7 @@ tad_atm_prepare_recv(csap_p csap)
 
     assert(spec_data != NULL);
 
-    return tad_eth_sap_recv_open(&spec_data->sap,
-                                 TAD_ETH_RECV_HOST | TAD_ETH_RECV_OUT);
+    return tad_eth_sap_recv_open(&spec_data->sap, TAD_ETH_RECV_HOST);
 }
 
 /* See description tad_atm_impl.h */
