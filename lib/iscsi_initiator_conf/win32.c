@@ -313,7 +313,11 @@ iscsi_win32_find_initiator_registry(void)
             manufacturer = "Microsoft";
             break;
         case ISCSI_L5_WIN32:
+#if 0
             manufacturer = "Level 5";
+#else
+            manufacturer = "Solarflare Communications";
+#endif
             break;
         default:
             ERROR("Unsupported iSCSI initiator");
@@ -370,7 +374,7 @@ iscsi_win32_find_initiator_registry(void)
     }
 
     memset(buffer, 0, sizeof(buffer));
-    strcpy(buffer, "SYSTEM\\CurrentControlSet\\Control\\Class\\");
+    strcpy(buffer, "SYSTEM\\CurrentControlSet\\Services\\SFCISCSI\\");
     buf_size = sizeof(buffer) - strlen(buffer);
     if (!SetupDiGetDeviceRegistryProperty(scsi_adapters, &iscsi_dev_info,
                                           SPDRP_DRIVER, &value_type,
