@@ -351,7 +351,8 @@ efport2ifindex(void)
 #define NET_PATH        "SYSTEM\\CurrentControlSet\\Control\\Class\\" \
                         "{4D36E972-E325-11CE-BFC1-08002bE10318}"
 
-#define NDIS            "dev_c101_ndis_"
+#define NDIS_EFAB       "dev_c101_ndis_"
+#define NDIS_SF         "sfe_ndis_"
 #define BUFSIZE         256
 #define AMOUNT_OF_GUIDS         5
 
@@ -373,9 +374,35 @@ efport2ifindex(void)
     ULONG    size = 0;
     
     PIP_INTERFACE_INFO iftable;
+
+    char *driver_type_env, driver_type[BUFSIZE];
     
     int i, j;
     
+    driver_type[0] = 0;
+    GetEnvironmentVariable("TE_USE_EFAB_DRIVER", driver_type,
+                           sizeof(driver_type));
+    RING("TE_USE_EFAB_DRIVER='%s'", driver_type);
+    if (driver_type[0] != 0)
+    {
+      int t = atoi(driver_type);
+      if (t)
+      {
+        strcpy(driver_type, NDIS_EFAB);
+        RING("USING EFAB DRIVER");
+      }
+      else
+      {
+        strcpy(driver_type, NDIS_SF);
+        RING("USING SOLARFLARE DRIVER");
+      }
+    }
+    else
+    {
+      strcpy(driver_type, NDIS_SF);
+      RING("USING SOLARFLARE DRIVER");
+    }
+
     if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, NET_PATH, 0, 
                      KEY_READ, &key) != ERROR_SUCCESS) 
     {
@@ -403,17 +430,23 @@ efport2ifindex(void)
             RegCloseKey(subkey);
             continue;
         }
-        if (strstr(value, NDIS) != NULL)
+        if ((strstr(value, driver_type) != NULL))
         {
-            unsigned char *guid = strstr(value, NDIS "0") != NULL ? 
+            char driver[BUFSIZE];
+            unsigned char *guid;
+            
+            strcpy(driver, driver_type);
+            strcat(driver, "0");
+       
+            guid = strstr(value, driver) != NULL ? 
                           guid1[guid1_amount++] : guid2[guid2_amount++];
                 
             value_size = BUFSIZE;
             if (RegQueryValueEx(subkey, "NetCfgInstanceId", 
                                 NULL, NULL, guid, &value_size) != 0)
             {
-                ERROR("RegQueryValueEx() failed with errno %lu", 
-                      GetLastError());
+                ERROR("RegQueryValueEx(%s) failed with errno %u", 
+                      subkey_path, GetLastError());
                 RegCloseKey(subkey);
                 RegCloseKey(key);
                 return TE_RC(TE_TA_WIN32, TE_EFAULT);
@@ -481,7 +514,8 @@ efport2ifindex(void)
 #undef AMOUNT_OF_GUIDS
 #undef BUFSIZE    
 #undef NET_PATH
-#undef NDIS
+#undef NDIS_SF
+#undef NDIS_EFAB
 }
 
 static MIB_IFROW if_entry;
