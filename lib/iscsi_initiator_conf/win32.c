@@ -422,7 +422,7 @@ iscsi_win32_find_initiator_registry(void)
             return TE_RC(ISCSI_AGENT_TYPE, TE_ECORRUPTED);
         }
     }
-    else if (iscsi_configuration()->init_type == ISCSI_L5_WIN)
+    else if (iscsi_configuration()->init_type == ISCSI_L5_WIN32)
     {
         sprintf(buffer, registry_path_name);
     }
