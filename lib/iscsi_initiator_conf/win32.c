@@ -247,13 +247,7 @@ iscsi_win32_detect_initiator_name(void)
             ISCSI_WIN32_REPORT_ERROR();
         return FALSE;
     }
-    if ((result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
-                               "SYSTEM\\CurrentControlSet\\Services",
-                               0, KEY_ALL_ACCESS, &all_services)) != 0)
-    {
-        ISCSI_WIN32_REPORT_RESULT(result);
-        return FALSE;
-    }
+
     if ((result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
                                "SYSTEM\\CurrentControlSet\\Services",
                                0, KEY_ALL_ACCESS, &all_services)) != 0)
@@ -287,6 +281,30 @@ iscsi_win32_detect_initiator_name(void)
 }
 
 /**
+ * Name of the Microsoft Initiator vendor.
+ */
+#define ISCSI_MICROSOFT_MANUFACTURER_NAME "Microsoft"
+
+/**
+ * Name of the SF Initiator vendor.
+ */
+#define ISCSI_SF_MANUFACTURER_NAME "Solarflare Communications"
+
+/**
+ * Location of the MS & L5 Initiator configuration parameters
+ * in the registry.
+ */
+#define ISCSI_MS_REG_PATH \
+            "SYSTEM\\CurrentControlSet\\Control\\Class\\"
+
+/**
+ * Location of the SF Initiator configuration parameters
+ * in the registry.
+ */
+#define ISCSI_SF_REG_PATH \
+            "SYSTEM\\CurrentControlSet\\Services\\SFCISCSI\\"
+
+/**
  * Find a registry branch holding `hidden' iSCSI parameters,
  * using Win32 SetupAPI.
  * This function is called once per agent run, and it resets
@@ -302,6 +320,8 @@ iscsi_win32_find_initiator_registry(void)
     long            result;
 
     static char   buffer[1024];
+    static char   registry_path_name[1024];
+    
     unsigned long buf_size;
     unsigned long value_type;
 
@@ -310,14 +330,14 @@ iscsi_win32_find_initiator_registry(void)
     switch (iscsi_configuration()->init_type)
     {
         case ISCSI_MICROSOFT:
-            manufacturer = "Microsoft";
+            manufacturer = ISCSI_MICROSOFT_MANUFACTURER_NAME;
+            strcpy(registry_path_name, 
+                   ISCSI_MS_REG_PATH);
             break;
         case ISCSI_L5_WIN32:
-#if 0
-            manufacturer = "Level 5";
-#else
-            manufacturer = "Solarflare Communications";
-#endif
+            manufacturer = ISCSI_SF_MANUFACTURER_NAME;
+            strcpy(registry_path_name, 
+                   ISCSI_SF_REG_PATH);
             break;
         default:
             ERROR("Unsupported iSCSI initiator");
@@ -373,23 +393,47 @@ iscsi_win32_find_initiator_registry(void)
         }
     }
 
-    memset(buffer, 0, sizeof(buffer));
-    strcpy(buffer, "SYSTEM\\CurrentControlSet\\Services\\SFCISCSI\\");
-    buf_size = sizeof(buffer) - strlen(buffer);
-    if (!SetupDiGetDeviceRegistryProperty(scsi_adapters, &iscsi_dev_info,
-                                          SPDRP_DRIVER, &value_type,
-                                          buffer + strlen(buffer), 
-                                          buf_size, &buf_size))
+    /*
+     * The idea is that we search for MS Initiator in the correct
+     * place, but the L5 Initiator place is 'hardcoded'.
+     * In fact, this code is useless, because all configuration
+     * keys are hardcoded by both vendors.
+     */
+    if (iscsi_configuration()->init_type == ISCSI_MICROSOFT)
     {
-        ISCSI_WIN32_REPORT_ERROR();
-        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
-    }
-    if (value_type != REG_SZ)
-    {
+        /* 
+         * For microsoft Initiator the place is:
+         * registry_path_name\\DeviceID\\
+         */
+        memset(buffer, 0, sizeof(buffer));
+        strcpy(buffer, registry_path_name);
+        buf_size = sizeof(buffer) - strlen(buffer);
+        if (!SetupDiGetDeviceRegistryProperty(scsi_adapters, &iscsi_dev_info,
+                                              SPDRP_DRIVER, &value_type,
+                                              buffer + strlen(buffer), 
+                                              buf_size, &buf_size))
+        {
+            ISCSI_WIN32_REPORT_ERROR();
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+        }
+        if (value_type != REG_SZ)
+        {
             ERROR("Registry seems to be corrupted, very bad");
             return TE_RC(ISCSI_AGENT_TYPE, TE_ECORRUPTED);
+        }
     }
+    else if (iscsi_configuration()->init_type == ISCSI_L5_WIN)
+    {
+        sprintf(buffer, registry_path_name);
+    }
+    else
+    {
+        /* doublecheck */
+        ERROR("Unsupported Initiator type");
+    }
+    
     strcat(buffer, "\\Parameters");
+    
     RING("Trying to open %s", buffer);
     if ((result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, buffer,
                                0, KEY_ALL_ACCESS, &driver_parameters)) != 0)
