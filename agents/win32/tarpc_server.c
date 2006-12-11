@@ -2339,7 +2339,7 @@ TARPC_FUNC(uname, {},
     {
         RING("Unsupported CPU architecture: %d",
              sysinfo.wProcessorArchitecture);
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
 
