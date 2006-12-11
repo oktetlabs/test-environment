@@ -2302,6 +2302,86 @@ TARPC_FUNC(gethostbyaddr, {},
 }
 )
 
+/*-------------- uname() --------------------------------*/
+
+#define PUT_STR(_dst, _field)                                       \
+        do {                                                        \
+            out->buf._dst._dst##_val = strdup(_field);              \
+            if (out->buf._dst._dst##_val == NULL)                   \
+            {                                                       \
+                ERROR("Failed to duplicate string '%s'",            \
+                      _field);                                      \
+                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM); \
+                goto finish;                                        \
+            }                                                       \
+            out->buf._dst._dst##_len =                              \
+                strlen(out->buf._dst._dst##_val) + 1;               \
+        } while (0)
+
+TARPC_FUNC(uname, {}, 
+{ 
+    SYSTEM_INFO sysinfo;
+    OSVERSIONINFO verinfo;
+    char buf[100];
+    unsigned int buf_len = 100;
+
+    out->retval = 0;
+    GetNativeSystemInfo(&sysinfo);
+    if (sysinfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL)
+    {
+        PUT_STR(machine,"i686");
+    }
+    else if (sysinfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
+    {
+        PUT_STR(machine,"amd64");
+    }
+    else
+    {
+        RING("Unsupported CPU architecture: %d",
+             sysinfo.wProcessorArchitecture);
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        goto finish;
+    }
+
+    memset(&verinfo, 0, sizeof(OSVERSIONINFO));
+    verinfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+    if (!GetVersionEx(&verinfo))
+    {
+        RING("GetVersionEx failed, err=%d", GetLastError());
+        goto finish;
+    }
+    sprintf(buf, "WINNT_%d.%d", (int)verinfo.dwMajorVersion,
+            (int)verinfo.dwMinorVersion);
+    PUT_STR(release, buf);
+    sprintf(buf, "%d.%d", (int)verinfo.dwMajorVersion,
+            (int)verinfo.dwMinorVersion);
+    PUT_STR(osversion, buf);
+
+    PUT_STR(sysname, "win");
+
+    if (!GetComputerNameA(buf, (DWORD*)&buf_len))
+    {
+        RING("GetComputerName failed, err=%d", GetLastError());
+        goto finish;
+    }
+    PUT_STR(nodename, buf);
+    
+finish:
+    if (!RPC_IS_ERRNO_RPC(out->common._errno))
+    {
+        free(out->buf.sysname.sysname_val);
+        free(out->buf.nodename.nodename_val);
+        free(out->buf.release.release_val);
+        free(out->buf.osversion.osversion_val);
+        free(out->buf.machine.machine_val);
+        memset(&(out->buf), 0, sizeof(out->buf));
+    }
+    ;
+}
+)
+
+#undef PUT_STR
+
 /*-------------- simple_sender() -----------------------------*/
 /**
  * Simple sender.
