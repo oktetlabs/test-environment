@@ -45,6 +45,27 @@ char packet_asn_string[] =
 
 char buf[10000];
 
+static te_errno 
+check_walk_p(asn_value *v, void *d)
+{
+    static int m = 2000;
+
+    printf("%s for subval %s, syntax %d\n", 
+           __FUNCTION__, asn_get_name(v), asn_get_syntax(v, ""));
+    asn_put_mark(v, m);
+    m++;
+    return 0;
+}
+static te_errno 
+check_walk_g(asn_value *v, void *d)
+{
+    int m;
+    asn_get_mark(v, &m);
+    printf("%s for subval %s, syntax %d,mark %d\n", 
+           __FUNCTION__, asn_get_name(v), asn_get_syntax(v, ""), m);
+    return 0;
+}
+
 int 
 main(void)
 {
@@ -89,6 +110,18 @@ main(void)
 
     asn_sprint_value(val, buf, sizeof(buf), 0);
     printf("after: <%s>\n", buf);
+
+    if (0)
+    {
+        te_errno cb_r = 0;
+        rc = asn_walk_depth(val, TRUE, &cb_r, check_walk_p, NULL);
+
+
+        printf("rc = %x, status %x\n\n  another walk:\n", rc, cb_r);
+        rc = asn_walk_depth(val, FALSE, &cb_r, check_walk_g, NULL);
+        printf("rc = %x, status %x:\n", rc, cb_r);
+    }
+
 
     return 0;
 }
