@@ -2862,6 +2862,7 @@ asn_walk_depth(asn_value *container, te_bool only_leafs,
 {
     te_errno     rc = 0;
     unsigned int i;
+    asn_value   *sv;
 
     if (container == NULL || status == NULL || func == NULL)
         return TE_EINVAL;
@@ -2870,8 +2871,9 @@ asn_walk_depth(asn_value *container, te_bool only_leafs,
     {
         for (i = 0; i < container->len; i++)
         {
-            rc = asn_walk_depth(container->data.array[i], only_leafs,
-                                status, func, user_ptr);
+            if ((sv = container->data.array[i]) != NULL)
+                rc = asn_walk_depth(sv, only_leafs,
+                                    status, func, user_ptr);
             if (rc != 0 || (*status) != 0)
                 return rc;
         }
