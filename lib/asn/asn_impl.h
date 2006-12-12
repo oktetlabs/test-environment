@@ -150,6 +150,7 @@ struct asn_value
                                      sources. */
     } data;        /**< Syntax-specific data */
 
+    int mark;
     int txt_len;   /**< Length of textual presentation of value, 
                         may be unknown, this is denoted by -1. 
                         Zero value means incomplete value. */

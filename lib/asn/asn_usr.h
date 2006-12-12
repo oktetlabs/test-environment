@@ -1158,6 +1158,86 @@ extern size_t asn_count_txt_len(const asn_value *value,
                                 unsigned int indent);
 
 
+/**
+ * Set the mark to ASN value, which is arbitrary integer, which
+ * semantic is user-free. 
+ *
+ * @param value         Pointer to the ASN value.
+ * @param mark          Mark to be set.
+ *
+ * @return status code.
+ */
+extern te_errno asn_put_mark(asn_value *value, int mark);
+
+/**
+ * Get the mark of ASN value.
+ *
+ * @param value         Pointer to the ASN value.
+ * @param mark          Location for the mark of value.
+ *
+ * @return status code.
+ */
+extern te_errno asn_get_mark(const asn_value *value, int *mark);
+
+
+/**
+ * Typedef for user method to be called during walk over ASN value
+ * tree. 
+ *
+ */
+typedef te_errno (* walk_method)(asn_value *value, void *user_ptr);
+
+/**
+ * Walk over all subvalues tree of ASN value. 
+ * Order of walk is depth-first. Walk stops if user callback
+ * return non-zero status. 
+ *
+ * @param container     Pointer to the ASN value which subvalues
+ *                      should be iterated.
+ * @param only_leafs    Boolean flag, if TRUE, user callback will 
+ *                      will be called only for the leafs, i.e.
+ *                      for nodes without sub-values: either
+ *                      primitive or empty compound. 
+ * @param status        Location for user status of walk: if callback
+ *                      return non-zero, walk stops and callback
+ *                      return code will be put here. Should be zero
+ *                      before start.
+ * @param func          User callback, which should be called for each
+ *                      subvalue.
+ * @param user_ptr      User parameter for callback.
+ *
+ * @return status code.
+ */
+extern te_errno asn_walk_depth(asn_value *container, te_bool only_leafs,
+                               te_errno *status, walk_method func,
+                               void *user_ptr);
+
+/**
+ * Walk over all subvalues tree of ASN value. 
+ * Order of walk is breadth-first. Walk stops if user callback
+ * return non-zero status. 
+ *
+ * @param container     Pointer to the ASN value which subvalues
+ *                      should be iterated.
+ * @param only_leafs    Boolean flag, if TRUE, user callback will 
+ *                      will be called only for the leafs, i.e.
+ *                      for nodes without sub-values: either
+ *                      primitive or empty compound. 
+ * @param status        Location for user status of walk: if callback
+ *                      return non-zero, walk stops and callback
+ *                      return code will be put here.
+ * @param func          User callback, which should be called for each
+ *                      subvalue.
+ * @param user_ptr      User parameter for callback.
+ *
+ * @return status code.
+ */
+extern te_errno asn_walk_breadth(asn_value *container, te_bool only_leafs,
+                                 te_errno *status, walk_method func,
+                                 void *user_ptr);
+
+
+
 #ifdef __cplusplus
 } /* for 'extern "C" {' */
 #endif

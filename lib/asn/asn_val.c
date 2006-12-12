@@ -2832,6 +2832,72 @@ asn_label_to_tag(const asn_type *type, const char *label, asn_tag_t *tag)
 }
 
 
+/* See description in asn_usr.h */
+te_errno
+asn_put_mark(asn_value *value, int mark)
+{
+    if (value == NULL)
+        return TE_EINVAL;
+    value->mark = mark;
+
+    return 0;
+}
+
+/* See description in asn_usr.h */
+te_errno
+asn_get_mark(const asn_value *value, int *mark)
+{
+    if (value == NULL || mark == NULL )
+        return TE_EINVAL;
+
+    *mark = value->mark; 
+
+    return 0;
+}
+
+/* See description in asn_usr.h */
+te_errno
+asn_walk_depth(asn_value *container, te_bool only_leafs,
+               te_errno *status, walk_method func, void *user_ptr)
+{
+    te_errno     rc = 0;
+    unsigned int i;
+
+    if (container == NULL || status == NULL || func == NULL)
+        return TE_EINVAL;
+
+    if (container->syntax & COMPOUND)
+    {
+        for (i = 0; i < container->len; i++)
+        {
+            rc = asn_walk_depth(container->data.array[i], only_leafs,
+                                status, func, user_ptr);
+            if (rc != 0 || (*status) != 0)
+                return rc;
+        }
+
+        if (only_leafs && container->len > 0)
+            return 0; /* nothing more to do with this node */
+    }
+
+    *status = func(container, user_ptr); 
+
+    return 0;
+}
+
+/* See description in asn_usr.h */
+te_errno
+asn_walk_breadth(asn_value *container, te_bool only_leafs,
+                 te_errno *status, walk_method func, void *user_ptr)
+{
+    UNUSED(container);
+    UNUSED(only_leafs);
+    UNUSED(status);
+    UNUSED(func);
+    UNUSED(user_ptr);
+
+    return TE_EOPNOTSUPP;
+}
 
 /**
  * Definitions of ASN.1 base types.
