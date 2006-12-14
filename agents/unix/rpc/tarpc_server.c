@@ -4468,7 +4468,7 @@ echoer(tarpc_echoer_in *in)
 #if (SIZEOF_OFF_T == 8)
 typedef off_t   ta_off64_t;
 #else
-typedef __off64_t ta_off64_t;
+typedef uint64_t ta_off64_t;
 #endif
 
 TARPC_FUNC(sendfile,
