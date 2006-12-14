@@ -320,6 +320,9 @@ asn_copy_value(const asn_value *value)
 {
     asn_value *new_value;
 #if 1
+    if (value == NULL)
+        return NULL;
+
     new_value = asn_init_value(value->asn_type);
 
     if (asn_assign_value(new_value, value) != 0)
