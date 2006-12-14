@@ -30,10 +30,10 @@
 
 #ifndef __TARPC_SERVER_H__
 #define __TARPC_SERVER_H__
-
+#if 0
 #define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS   64
-
+#endif
 #include "te_config.h"
 #if HAVE_CONFIG_H
 #include "config.h"
