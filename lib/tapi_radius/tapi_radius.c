@@ -638,7 +638,7 @@ tapi_radius_csap_create(const char *ta, int sid, const char *device,
                                         TAD_ETH_RECV_DEF,
                                         NULL, NULL,
                                         net_addr, INADDR_ANY,
-                                        port, 0, csap);
+                                        port, -1, csap);
 }
 
 /**
