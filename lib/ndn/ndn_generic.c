@@ -925,3 +925,50 @@ ndn_du_read_plain_oct(const asn_value *pdu, uint16_t tag,
 
     return asn_read_value_field(du_leaf, value, len, "#plain");
 }
+
+
+
+
+/* see description in ndn.h */
+te_errno
+ndn_packet_to_template(const asn_value *pkt, asn_value **tmpl)
+{
+    te_errno rc = 0;
+    asn_value *sv_pkt = NULL, *sv_tmpl = NULL;
+
+    /* ========= Init template ========== */
+    if (tmpl == NULL)
+        return TE_EINVAL; 
+    if (*tmpl == NULL)
+        *tmpl = asn_init_value(ndn_traffic_template); 
+    if (*tmpl == NULL)
+        return TE_ENOMEM;
+
+    /* ========= copy pdus ============= */
+    sv_pkt = asn_find_descendant(pkt, &rc, "pdus");
+    if (rc != 0)
+        return rc; 
+
+    sv_tmpl = asn_retrieve_descendant(*tmpl, &rc, "pdus");
+    if (rc != 0)
+        return rc;
+
+    rc = asn_assign_value(sv_tmpl, sv_pkt);
+    if (rc != 0)
+        return rc;
+
+    /* ========= copy payload ============= */
+    sv_pkt = asn_find_descendant(pkt, &rc, "payload");
+    if (rc == TE_EASNINCOMPLVAL) /* there is no payload, all done */
+        return 0; 
+    if (rc != 0)
+        return rc; 
+
+    sv_tmpl = asn_retrieve_descendant(*tmpl, &rc, "payload");
+    if (rc != 0)
+        return rc;
+
+    rc = asn_assign_value(sv_tmpl, sv_pkt);
+
+    return rc;
+}

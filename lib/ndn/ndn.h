@@ -330,10 +330,20 @@ extern int ndn_match_mask(const asn_value *mask_pat,
  * @param packet ASN-value of Raw-Packet type.
  * @param ts     location for timestamp (OUT).
  *
- * return zero on success or appropriate error code otherwise.
+ * @return zero on success or appropriate error code otherwise.
  */
 extern int ndn_get_timestamp(const asn_value *packet, struct timeval *ts);
 
+/**
+ * Convert received packet to the template to be sent. 
+ *
+ * @param pkt   ASN value with received packet.
+ * @param tmpl  Location for ASN value with template.
+ *
+ * @return status code.
+ */
+extern te_errno ndn_packet_to_template(const asn_value *pkt,
+                                       asn_value **tmpl);
 
 #ifdef __cplusplus
 } /* extern "C" */
