@@ -68,7 +68,7 @@ main(int argc, char *argv[])
                      0, FALSE, NULL);
     if (rc != 0)
     {
-        ERROR("Unable to obtain TCE peer id, error code = %d", rc);
+        ERROR("Unable to obtain TCE peer id, error code = %r", rc);
         return EXIT_FAILURE;
     }
     RING("TCE principal peer ID for '%s' on TA '%s' is %d",
@@ -81,7 +81,7 @@ main(int argc, char *argv[])
                          0, FALSE, NULL);
         if (rc != 0 || result != 0)
         {
-            ERROR("Unable to dump TCE, error code = %d",
+            ERROR("Unable to dump TCE, error code = %r",
                   (rc != 0) ? rc : result);
             return EXIT_FAILURE;
         }
@@ -92,7 +92,7 @@ main(int argc, char *argv[])
         if ((rc = rcf_ta_get_file(ta, 0, buffer, filename)) != 0)
         {
             ERROR("Unable to obtain TCE data file (%s -> %s), "
-                  "error code = %d", buffer, filename, rc);
+                  "error code = %r", buffer, filename, rc);
             return EXIT_FAILURE;
         }
 
@@ -104,7 +104,7 @@ main(int argc, char *argv[])
             if ((rc = rcf_ta_get_file(ta, 0, buffer, map_filename)) != 0)
             {
                 ERROR("Unable to obtain TCE data file (%s -> %s), "
-                      "error code = %d", buffer, filename, rc);
+                      "error code = %r", buffer, filename, rc);
                 return EXIT_FAILURE;
             }
         }
@@ -115,7 +115,7 @@ main(int argc, char *argv[])
                          0, FALSE, NULL);
         if (rc != 0 || result != 0)
         {
-            WARN("Unable to stop TCE, error code = %d",
+            WARN("Unable to stop TCE, error code = %r",
                   rc ? rc : result);
         }
     }
