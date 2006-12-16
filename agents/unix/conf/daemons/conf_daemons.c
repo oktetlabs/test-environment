@@ -2427,7 +2427,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
 #if defined __linux__
     else if (strcmp(smtp_current, "postfix") == 0)
     {
-        te_bool enable;
+        te_bool enable = FALSE;
         int     rc;
         
         if ((rc = postfix_smarthost_get(&enable)) != 0)
@@ -2438,7 +2438,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
     }
     else if (strcmp(smtp_current, "exim") == 0)
     {
-        te_bool enable;
+        te_bool enable = FALSE;
         int     rc;
         
         if ((rc = exim_smarthost_get(&enable)) != 0)
@@ -2449,7 +2449,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
     }
     else if (strcmp(smtp_current, "qmail") == 0)
     {
-        te_bool enable;
+        te_bool enable = FALSE;
         int     rc;
         
         if ((rc = qmail_smarthost_get(&enable)) != 0)
