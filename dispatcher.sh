@@ -169,6 +169,7 @@ Generic options:
   --vg-rcf                      Run RCF under valgrind (without by default)
                                 (without by default)
   --vg-tester                   Run Tester under valgrind (without by default)
+  --gdb-tester                  Run Tester under GDB
 
   --tcer-ignore-dirs            Respect only base file names when doing TCE
                                 report (useful when a given file is used in
