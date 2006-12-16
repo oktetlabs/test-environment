@@ -240,6 +240,7 @@ VG_RCF=
 VG_CS=
 VG_LOGGER=
 VG_TESTER=
+GDB_TESTER=
 
 # Subsystems to be initialized
 BUILDER=yes
@@ -345,6 +346,8 @@ process_opts()
             --log-txt=*)        RGT_LOG_TXT="${1#--log-txt=}" ;;
             --log-html=*)       RGT_LOG_HTML="${1#--log-html=}" ;;
             --log-plain-html=*) RGT_LOG_HTML_PLAIN="${1#--log-plain-html=}" ;;
+
+            --gdb-tester)   GDB_TESTER=yes ;;
 
             --vg-rcf)    VG_RCF=yes ;;
             --vg-cs)     VG_CS=yes ;;
@@ -734,11 +737,15 @@ if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
     te_log_message Dispatcher Start \
         "Start Tester:${TESTER_OPTS} ${CONF_TESTER}"
     myecho "--->>> Start Tester"
-    if test -n "$VG_TESTER" ; then
+    if test -n "$GDB_TESTER" ; then
+        echo set args ${TESTER_OPTS} "${CONF_TESTER}" >gdb.te_tester.init
+        gdb -x gdb.te_tester.init te_tester
+        rm gdb.te_tester.init
+    elif test -n "$VG_TESTER" ; then
         valgrind ${VG_OPTIONS} te_tester ${TESTER_OPTS} "${CONF_TESTER}" \
             2>valgrind.te_tester
     else
-        te_tester ${TESTER_OPTS} "${CONF_TESTER}" 
+        te_tester ${TESTER_OPTS} "${CONF_TESTER}"
     fi
     START_OK=$?
 fi
