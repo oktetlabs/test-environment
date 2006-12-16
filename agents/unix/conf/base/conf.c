@@ -2153,7 +2153,8 @@ mcast_link_addr_change(const char *ifname, const char *addr, int op)
 
     for (i = 0, p = addr; i < ETHER_ADDR_LEN; i++, p++)
     {
-        unsigned tmp = strtoul(p, (char *)&p, 16);
+        unsigned tmp = strtoul(p, (char **)&p, 16);
+
         if (tmp > UCHAR_MAX)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         if (*p != ':' && (*p != '\0' || i < ETHER_ADDR_LEN - 1))
