@@ -84,7 +84,7 @@ typedef enum {
  * overlap->flags = seg0->flags (op_code) seg1->flags
  */
 static void
-get_operation_result(testing_act *seg0, testing_act *seg1,
+get_operation_result(const testing_act *seg0, const testing_act *seg1,
                      testing_act *overlap, testing_act_op op_code)
 {
     unsigned int    len_sum;
@@ -141,40 +141,41 @@ static testing_act *
 get_next_with_gaps(testing_act **elm_p, testing_act *gap,
                    unsigned int *the_end_p)
 {
-    unsigned int    the_end = *the_end_p;
-    testing_act    *elm = *elm_p;
-    testing_act    *next = NULL;
+    testing_act    *elm;
+    testing_act    *next;
 
+    assert(elm_p != NULL);
+    assert(gap != NULL);
+    assert(the_end_p != NULL);
 
-    if (elm == NULL)
-        return NULL;
-
-    if (the_end < elm->first) /* pre-gap */
+    elm = *elm_p;
+    if (elm == NULL) /* final gap to "infinity" */
     {
-        gap->first = the_end;
+        if (*the_end_p == INTRVL_TQ_POSTV_BIG)
+            return NULL;
+
+        gap->first = *the_end_p;
+        gap->last = INTRVL_TQ_POSTV_BIG - 1;
+        next = gap;
+    }
+    else if (*the_end_p < elm->first) /* pre-gap */
+    {
+        gap->first = *the_end_p;
         gap->last = elm->first - 1;
         next = gap;
     }
-    else if (the_end == elm->first) /* elm itself */
+    else if (*the_end_p == elm->first) /* elm itself */
     {
         next = elm;
     }
     else /* move to the next elm and get either pre-gap or elm itself */
     {
-        elm = elm->links.tqe_next;
-        next = get_next_with_gaps(&elm, gap, &the_end);
+        *elm_p = TAILQ_NEXT(elm, links);
+        next = get_next_with_gaps(elm_p, gap, the_end_p);
+        assert(*the_end_p == next->last + 1);
     }
 
-    if (next == NULL )
-    {   
-        /* final gap to "infinity" */
-        gap->first = the_end;
-        gap->last = INTRVL_TQ_POSTV_BIG - 1;
-        next = gap;
-    }
-
-    *the_end_p  = next->last + 1;    
-    *elm_p      = elm;
+    *the_end_p = next->last + 1;
 
     return next;
 }
@@ -201,9 +202,9 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     testing_act    *elm0_prev, *elm0, *elm1; /* real list entries */
     /* pseudo entries for gaps between the real intervals: */
     testing_act    *gap0, *gap1;
-    testing_act    *next0, *next1;   /* it points to gap or elm */
+    testing_act    *next0, *next1 = NULL;   /* it points to gap or elm */
     unsigned int    the_end_0, the_end_1; /* how far we've already gone */
-    unsigned int    need_get_next1 = 1;   /* flag */
+    te_bool         need_get_next1 = TRUE;   /* flag */
     testing_act    *overlap;         /* overlap of two intervals */
     testing_act    *overlap_grow;    /* cumulative overlap */
 
@@ -215,37 +216,23 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
 
     TAILQ_INIT(&h_rslt);
 
+    /* We have processed nothing yet */
+    the_end_0 = the_end_1 = 0;
+
+    /* 
+     * Start from the first element of the list0 and the list1
+     * correspondingly (may be NULL)
+     */
+    elm0 = h0->tqh_first;
+    elm1 = h1->tqh_first;
+
     /* a single obj to hold parameters of all list0 gaps */
     if ((gap0 = calloc(1, sizeof(*gap0))) == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    the_end_0 = 0;
-    elm0 = h0->tqh_first;
-    if (elm0 == NULL) /* empty list is equivalent to one "inf" gap */
-    {
-        gap0->first = the_end_0;
-        gap0->last = INTRVL_TQ_POSTV_BIG - 1;
-        next0 = gap0;
-    }
-    else
-    {   /* Init, so it could only be either the first elm or the pregap.
-           Thus, definitely no worry about freeing elm0_prev */
-        next0 = get_next_with_gaps(&elm0, gap0, &the_end_0);
-    }
-
 
     /* a single obj to hold parameters of all list1 gaps */
     if ((gap1 = calloc(1, sizeof(*gap1))) == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    the_end_1 = 0;
-    elm1 = h1->tqh_first;
-    if (elm1 == NULL) /* empty list is equivalent to one "inf" gap */
-    {
-        gap1->first = the_end_1;
-        gap1->last = INTRVL_TQ_POSTV_BIG - 1;
-        need_get_next1 = 0;
-    }
-    next1 = gap1;
-
 
     /* a single obj to pass parameters of all overlaps */
     if ((overlap = calloc(1, sizeof(*overlap))) == NULL)
@@ -257,23 +244,30 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
      */
     if ((overlap_grow = calloc(1, sizeof(*overlap_grow))) == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    
-    
+
+    /* 
+     * Init, so it could only be either the first elm or the pregap.
+     * Thus, definitely no worry about freeing elm0_prev
+     */
+    next0 = get_next_with_gaps(&elm0, gap0, &the_end_0);
+
     while (1) /* interate the fist set of intervals */
     {
-        if (next0 == NULL) break;
+        if (next0 == NULL)
+            break;
 
         while (1) /* interate the second set of intervals */
         {
-            if (need_get_next1 == 0)
+            if (!need_get_next1)
             {
-                need_get_next1 = 1; /* reset on each pass */
+                need_get_next1 = TRUE; /* reset on each pass */
             }
             else
             {
                 next1 = get_next_with_gaps(&elm1, gap1, &the_end_1);
             }
-            if (next1 == NULL) break;
+            if (next1 == NULL)
+                break;
 
             get_operation_result(next0, next1, overlap, op_code);
 
@@ -302,7 +296,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
                 if (next1->last > next0->last)
                 {
                     /* still have to process this next1 and new next0: */
-                    need_get_next1 = 0;
+                    need_get_next1 = FALSE;
                 }
                 break; /* need to step forward next0 now */
             }           
@@ -312,8 +306,9 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
         elm0_prev = elm0;
         next0 = get_next_with_gaps(&elm0, gap0, &the_end_0);
 
-        if (result_replace != 0 && elm0_prev != elm0)
-        {   /* we empty list0, one entry at a time as we can */
+        if (result_replace && elm0_prev != elm0)
+        {   
+            /* we empty list0, one entry at a time as we can */
             TAILQ_REMOVE(h0, elm0_prev, links);
             free(elm0_prev); /* assuming elm's are malloc'ed properly */
         }
@@ -338,7 +333,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
         assert(h0->tqh_first == NULL);
     }
     
-    *h_rslt_p = h_rslt;
+    TAILQ_CONCAT(h_rslt_p, &h_rslt, links);
 
     return 0;
 }
