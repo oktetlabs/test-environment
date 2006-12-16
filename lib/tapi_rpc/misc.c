@@ -1334,7 +1334,7 @@ rpc_sysinfo(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return NULL;
+        RETVAL_INT(sysinfo, -1);
     }
 
     memset(&in, 0, sizeof(in));
