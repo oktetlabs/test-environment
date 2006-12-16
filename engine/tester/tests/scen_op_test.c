@@ -608,7 +608,7 @@ main(void)
     testing_scenario ts1;
     testing_scenario ts2;
     testing_scenario ts_expected;
-    testing_scenario ts_result;
+    testing_scenario ts_result = TAILQ_HEAD_INITIALIZER(ts_result);
     int              op;
     te_errno         err;
 
