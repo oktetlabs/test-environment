@@ -193,8 +193,11 @@ main(int argc, char *argv[])
     TEST_SUCCESS;
 
 cleanup:
-    CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_a->ta, 0, send_csap));
-    CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_a->ta, 0, recv_csap));
+    if (host_a != NULL)
+    {
+        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_a->ta, 0, send_csap));
+        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_a->ta, 0, recv_csap));
+    }
 
     asn_free_value(csap_spec); csap_spec = NULL;
     asn_free_value(template); template = NULL;
