@@ -3468,16 +3468,16 @@ TARPC_FUNC(sysinfo,
 },
 {
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->count);
-    MAKE_CALL(
 #if HAVE_SYS_SYSTEMINFO_H
+    MAKE_CALL(
         out->retval = func(sysinfo_command_rpc2h(in->command),
                            out->buf.buf_val,
-                           in->count);
+                           in->count));
 #else
+    MAKE_CALL(
         errno = ENOSYS;
-        out->retval = -1
+        out->retval = -1);
 #endif
-    );
 }
 )
 
