@@ -5,7 +5,7 @@ AM_LDFLAGS = @TE_LDFLAGS@
 
 
 TESTS=parse_simple put_get parse_file val_set02 val_set03 val_set04 \
-      write_ind2 save_to_file1 find1 retrieve1
+      write_ind2 save_to_file1 find1 retrieve1 free_part
 check_PROGRAMS=$(TESTS)
 
 extra_DIST= \
@@ -23,7 +23,8 @@ val_set03.c \
 val_set04.c \
 write_ind1.c \
 write_ind2.c \
-save_to_file1.c
+save_to_file1.c \
+free_part.c
 
 noinst_HEADERS=test_types.h
 

@@ -235,9 +235,13 @@ asn_assign_value(asn_value *dst, const asn_value *src)
     if (!src || !dst) 
         return TE_EWRONGPTR;
 
-    dst->asn_type = src->asn_type;
+    if (dst->asn_type != src->asn_type)
+        return TE_EASNWRONGTYPE;
+
     dst->syntax   = src->syntax;
+#if 0
     dst->tag      = src->tag;
+#endif
     dst->len      = src->len; 
     dst->txt_len  = src->txt_len; 
 
@@ -496,7 +500,7 @@ asn_free_descendant(asn_value *value, const char *labels)
 
     te_errno rc = 0;
 
-    asn_value *subvalue;
+    printf("up labels: %p, <%s>\n", up_labels, up_labels);
 
     if (!value || !labels)
     {
@@ -515,9 +519,13 @@ asn_free_descendant(asn_value *value, const char *labels)
     {
         *low_label = '\0';
         low_label ++;
+        printf("up labels: %p, <%s>\n", up_labels, up_labels);
+#if 0
         rc = asn_impl_fall_down_to_tree_writable(value, up_labels, &subvalue);
-
         value = subvalue; 
+#else
+        value = asn_find_descendant(value, &rc, up_labels);
+#endif 
     } 
 #if 0
     if (rc == 0)
@@ -1032,8 +1040,14 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
             named_value = FALSE; 
             new_len = container->len;
 
+            while (leaf_type_index < 0)
+                leaf_type_index += new_len;
+
             if (leaf_type_index >= new_len)
             {
+                if (new_value == NULL)
+                    return TE_EASNWRONGLABEL;
+
                 new_len = leaf_type_index + 1;
                 if ((container->data.array = 
                       realloc(container->data.array, 
@@ -1046,10 +1060,23 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
 
                 container->len = new_len;
             }
-            else 
-                while (leaf_type_index < 0)
-                    leaf_type_index += new_len;
+#if 1
+            if (new_value == NULL)
+            {
+                unsigned int i = leaf_type_index;
+                asn_free_value(container->data.array[i]);
+                container->len--;
 
+                for (; i < container->len; i++)
+                    container->data.array[i] = container->data.array[i+1];
+
+                container->data.array = 
+                    realloc(container->data.array, 
+                            container->len * sizeof(asn_value *));
+
+                return 0;
+            }
+#endif
 
             /* pass through ... */
         case SEQUENCE:
