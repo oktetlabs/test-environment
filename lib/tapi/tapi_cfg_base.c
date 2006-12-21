@@ -318,6 +318,8 @@ tapi_cfg_base_if_add_mcast_mac(const char *oid,
                                 tapi_cfg_mac2str(mcast_mac));
 }
 
+#define DEFAULT_MULTICAST_ETHER_ADDR_IPV4 "01:00:5e:00:00:01"
+#define DEFAULT_MULTICAST_ETHER_ADDR_IPV6 "33:33:00:00:00:01"
 
 /* See description in tapi_cfg_base.h */
 int
@@ -345,6 +347,18 @@ tapi_cfg_base_if_del_mcast_mac(const char *oid,
         }
         for (i = 0; i < addr_num; i++)
         {
+            char *inst_name;
+            rc = cfg_get_inst_name(addrs[i], &inst_name);
+            if (rc != 0)
+            {
+                ERROR("Unable to enumerate multicast addresses: %r", rc);
+                break;
+            }
+            /* don't try to delete a default address */
+            if (strcmp(inst_name, DEFAULT_MULTICAST_ETHER_ADDR_IPV4) == 0 ||
+                strcmp(inst_name, DEFAULT_MULTICAST_ETHER_ADDR_IPV6) == 0)
+                continue;
+
             if ((rc = cfg_del_instance(addrs[i], TRUE)) != 0)
             {
                 ERROR("Failed to delete address with handle %#x: %r",
