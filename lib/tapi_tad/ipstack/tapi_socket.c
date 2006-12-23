@@ -61,6 +61,7 @@
 #include "conf_api.h"
 
 #include "logger_api.h"
+#include "te_sockaddr.h"
 
 #include "tapi_tad.h"
 #include "tapi_socket.h"
@@ -78,9 +79,9 @@
 
 
 /* See description in tapi_tcp.h */
-int
+te_errno
 tapi_tcp_server_csap_create(const char *ta_name, int sid, 
-                            in_addr_t loc_addr, uint16_t loc_port,
+                            const struct sockaddr *sa,
                             csap_handle_t *tcp_csap)
 {
     te_errno        rc = 0;
@@ -103,27 +104,39 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
     csap_socket     = asn_init_value(ndn_socket_csap);
 #endif
 
+    if (sa->sa_family != AF_INET)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENOSYS);
+        goto cleanup;
+    }
+
     rc = asn_write_value_field(csap_socket, NULL, 0,
                                "type.#tcp-server");
-    if (rc != 0) goto cleanup;
+    if (rc != 0)
+        goto cleanup;
 
     rc = asn_write_value_field(csap_socket,
-                               &loc_addr, sizeof(loc_addr),
+                               te_sockaddr_get_netaddr(sa),
+                               te_netaddr_get_size(sa->sa_family),
                                "local-addr.#plain");
-    if (rc != 0) goto cleanup;
+    if (rc != 0)
+        goto cleanup;
 
-    rc = asn_write_int32(csap_socket, ntohs(loc_port),
+    rc = asn_write_int32(csap_socket, ntohs(te_sockaddr_get_port(sa)),
                          "local-port.#plain");
-    if (rc != 0) goto cleanup;
+    if (rc != 0)
+        goto cleanup;
 
 #if !EXP
     rc = asn_write_component_value(csap_layer_spec, csap_socket,
                                    "#socket");
-    if (rc != 0) goto cleanup;
+    if (rc != 0)
+        goto cleanup;
 #endif
 
     rc = asn_insert_indexed(csap_layers, csap_layer_spec, 0, "");
-    if (rc != 0) goto cleanup;
+    if (rc != 0)
+        goto cleanup;
 
     rc = tapi_tad_csap_create(ta_name, sid, "socket", 
                               csap_spec, tcp_csap);
@@ -134,10 +147,10 @@ cleanup:
     return TE_RC(TE_TAPI, rc);
 }
 
-int
+te_errno
 tapi_socket_csap_create(const char *ta_name, int sid, int type,
-                        in_addr_t loc_addr, in_addr_t rem_addr,
-                        uint16_t loc_port, uint16_t rem_port,
+                        const struct sockaddr *loc,
+                        const struct sockaddr *rem,
                         csap_handle_t *csap)
 {
     te_errno        rc = 0;
@@ -156,28 +169,34 @@ tapi_socket_csap_create(const char *ta_name, int sid, int type,
     rc = asn_write_value_field(csap_socket, NULL, 0, 
                                type == NDN_TAG_SOCKET_TYPE_UDP ? 
                                "type.#udp" : "type.#tcp-client");
-    if (rc != 0) goto cleanup;
+    if (rc != 0)
+        goto cleanup;
 
-    if (loc_addr != INADDR_ANY)
+    if (!te_sockaddr_is_wildcard(loc))
         rc = asn_write_value_field(csap_socket,
-                                   &loc_addr, sizeof(loc_addr),
+                                   te_sockaddr_get_netaddr(loc),
+                                   te_netaddr_get_size(loc->sa_family),
                                    "local-addr.#plain");
-    if (rc != 0) goto cleanup;
+    if (rc != 0)
+        goto cleanup;
 
-    if (rem_addr != INADDR_ANY)
+    if (!te_sockaddr_is_wildcard(rem))
         rc = asn_write_value_field(csap_socket,
-                                   &rem_addr, sizeof(rem_addr),
+                                   te_sockaddr_get_netaddr(rem),
+                                   te_netaddr_get_size(rem->sa_family),
                                    "remote-addr.#plain");
-    if (rc != 0) goto cleanup;
+    if (rc != 0)
+        goto cleanup;
 
-    if (loc_port != 0)
-        rc = asn_write_int32(csap_socket, ntohs(loc_port),
+    if (ntohs(te_sockaddr_get_port(loc)) != 0)
+        rc = asn_write_int32(csap_socket, ntohs(te_sockaddr_get_port(loc)),
                              "local-port.#plain");
-    if (rc != 0) goto cleanup;
+    if (rc != 0)
+        goto cleanup;
 
 
-    if (rem_port != 0)
-        rc = asn_write_int32(csap_socket, ntohs(rem_port),
+    if (ntohs(te_sockaddr_get_port(rem)) != 0)
+        rc = asn_write_int32(csap_socket, ntohs(te_sockaddr_get_port(rem)),
                              "remote-port.#plain");
 
     rc = asn_write_component_value(csap_layer_spec, csap_socket, "#socket");
@@ -200,34 +219,32 @@ cleanup:
 
 
 /* See description in tapi_socket.h */
-int
+te_errno
 tapi_tcp_client_csap_create(const char *ta_name, int sid, 
-                            in_addr_t loc_addr, in_addr_t rem_addr,
-                            uint16_t loc_port, uint16_t rem_port,
+                            const struct sockaddr *loc,
+                            const struct sockaddr *rem,
                             csap_handle_t *tcp_csap)
 {
     return tapi_socket_csap_create(ta_name, sid, 
                                    NDN_TAG_SOCKET_TYPE_TCP_CLIENT,
-                                   loc_addr, rem_addr, loc_port, rem_port,
-                                   tcp_csap);
+                                   loc, rem, tcp_csap);
 }
 
 /* See description in tapi_socket.h */
-int
+te_errno
 tapi_udp_csap_create(const char *ta_name, int sid,
-                     in_addr_t loc_addr, in_addr_t rem_addr,
-                     uint16_t loc_port, uint16_t rem_port,
+                     const struct sockaddr *loc,
+                     const struct sockaddr *rem,
                      csap_handle_t *udp_csap)
 {
     return tapi_socket_csap_create(ta_name, sid, 
                                    NDN_TAG_SOCKET_TYPE_UDP,
-                                   loc_addr, rem_addr, loc_port, rem_port,
-                                   udp_csap);
+                                   loc, rem, udp_csap);
 }
 
 
 /* See description in tapi_socket.h */
-int
+te_errno
 tapi_tcp_socket_csap_create(const char *ta_name, int sid, 
                             int socket, csap_handle_t *tcp_csap)
 {
@@ -295,7 +312,7 @@ tcp_server_handler(const char *pkt_fname, void *user_param)
 }
 
 /* See description in tapi_tcp.h */
-int
+te_errno
 tapi_tcp_server_recv(const char *ta_name, int sid, 
                      csap_handle_t tcp_csap, 
                      unsigned int timeout, int *socket)
@@ -387,7 +404,7 @@ socket_csap_handler(const char *pkt_fname, void *user_param)
 
 
 /* See description in tapi_socket.h */
-int
+te_errno
 tapi_socket_recv(const char *ta_name, int sid, csap_handle_t csap, 
                  unsigned int timeout, csap_handle_t forward,
                  te_bool len_exact, uint8_t *buf, size_t *length)
@@ -459,7 +476,7 @@ cleanup:
 }
 
 /* See description in tapi_socket.h */
-int
+te_errno
 tapi_socket_send(const char *ta_name, int sid, csap_handle_t csap, 
                  uint8_t *buf, size_t length)
 {
@@ -498,7 +515,3 @@ cleanup:
     asn_free_value(template);
     return rc;
 }
-
-
-
-

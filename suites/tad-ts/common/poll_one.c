@@ -66,14 +66,16 @@ main(int argc, char *argv[])
     uint16_t            port;
     csap_handle_t       tcp_srv_csap = CSAP_INVALID_HANDLE;
     rcf_trpoll_csap     csapd;
+    struct sockaddr_in  addr;
 
     TEST_START;
     TEST_GET_HOST(iut_host);
     TEST_GET_BOOL_PARAM(zero_timeout);
 
-    CHECK_RC(tapi_allocate_port_htons(&port));
-    CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0, 
-                                         htonl(INADDR_ANY), port,
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    CHECK_RC(tapi_allocate_port_htons(&addr.sin_port));
+    CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0, &addr,
                                          &tcp_srv_csap));
 
     CHECK_RC(tapi_tad_trrecv_start(iut_host->ta, 0, tcp_srv_csap,

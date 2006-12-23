@@ -46,14 +46,14 @@
 #define TCP_URG_FLAG    0x20
 
 /**
- * Type for SEQ and ACK numbers
+ * Type for SEQ and ACK numbers (host byte order).
  */
 typedef uint32_t tapi_tcp_pos_t; 
 
 
 
-/************************************************************************
- * ======================== ROW-TCP methods =============================
+/*
+ * Raw TCP methods 
  */
 
 /**
@@ -83,24 +83,27 @@ extern te_errno tapi_tcp_add_csap_layer(asn_value **csap_spec,
  *                      Use TAD_ETH_RECV_DEF by default.
  * @param loc_mac       Local MAC address  (or NULL)
  * @param rem_mac       Remote MAC address  (or NULL)
- * @param loc_addr      Local IP address in network order (or NULL)
- * @param rem_addr      Remote IP address in network order (or NULL)
- * @param loc_port      Local TCP port in network byte order 
- * @param rem_port      Remote TCP port in network byte order 
+ * @param loc_addr      Local IP address in network order or
+ *                      htonl(INADDR_ANY)
+ * @param rem_addr      Remote IP address in network order or 
+ *                      htonl(INADDR_ANY)
+ * @param loc_port      Local TCP port in network byte order or -1 
+ * @param rem_port      Remote TCP port in network byte order or -1
  * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
  *
  * @return  Status of the operation
  */
-extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid, 
-                                        const char *eth_dev,
-                                        unsigned int receive_mode,
-                                        const uint8_t *loc_mac,
-                                        const uint8_t *rem_mac,
-                                        in_addr_t loc_addr,
-                                        in_addr_t rem_addr,
-                                        uint16_t loc_port,
-                                        uint16_t rem_port,
-                                        csap_handle_t *tcp_csap);
+extern te_errno tapi_tcp_ip4_eth_csap_create(const char    *ta_name,
+                                             int            sid, 
+                                             const char    *eth_dev,
+                                             unsigned int   receive_mode,
+                                             const uint8_t *loc_mac,
+                                             const uint8_t *rem_mac,
+                                             in_addr_t      loc_addr,
+                                             in_addr_t      rem_addr,
+                                             int            loc_port,
+                                             int            rem_port,
+                                             csap_handle_t *tcp_csap);
 
 /**
  * Start receiving of IPv4 packets 'tcp.ip4.eth' CSAP, non-block
@@ -112,10 +115,12 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param csap          Identifier of CSAP
- * @param src_addr      Source IP address in network order (or NULL)
- * @param dst_addr      Destination IP address in network order (or NULL)
- * @param loc_port      Local TCP port in network byte order 
- * @param rem_port      Remote TCP port in network byte order 
+ * @param src_addr      Source IP address in network order or
+ *                      htonl(INADDR_ANY)
+ * @param dst_addr      Destination IP address in network order or
+ *                      htonl(INADDR_ANY)
+ * @param src_port      Source TCP port in network byte order or -1
+ * @param dst_port      Destination TCP port in network byte order or -1
  * @param timeout       Timeout of operation (in milliseconds, 
  *                      zero for infinitive)
  * @param num           nubmer of packets to be caugth
@@ -124,31 +129,36 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
  * 
  * @return Zero on success or error code.
  */
-extern int tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid, 
-                                       csap_handle_t csap,
-                                       in_addr_t  src_addr,
-                                       in_addr_t  dst_addr,
-                                       uint16_t src_port, uint16_t dst_port,
-                                       unsigned int timeout,
-                                       unsigned int num,
-                                       rcf_trrecv_mode mode); 
+extern te_errno tapi_tcp_ip4_eth_recv_start(const char      *ta_name,
+                                            int              sid, 
+                                            csap_handle_t    csap,
+                                            in_addr_t        src_addr,
+                                            in_addr_t        dst_addr,
+                                            int              src_port,
+                                            int              dst_port,
+                                            unsigned int     timeout,
+                                            unsigned int     num,
+                                            rcf_trrecv_mode  mode); 
 
 
 /**
  * Prepare ASN Pattern-Unit value for 'tcp.ip4.eth' CSAP.
  * 
- * @param src_addr      Source IP address in network order (or NULL)
- * @param dst_addr      Destination IP address in network order (or NULL)
- * @param src_port      Source TCP port in network byte order 
- * @param dst_port      Destination TCP port in network byte order 
+ * @param src_addr      Source IP address in network order or
+ *                      htonl(INADDR_ANY)
+ * @param dst_addr      Destination IP address in network order or
+ *                      htonl(INADDR_ANY)
+ * @param src_port      Source TCP port in network byte order or -1
+ * @param dst_port      Destination TCP port in network byte order or -1
  * @param result_value  Location for pointer to new ASN value
  * 
  * @return Zero on success or error code.
  */
-extern int tapi_tcp_ip4_pattern_unit(
-                        in_addr_t  src_addr, in_addr_t  dst_addr,
-                        uint16_t src_port, uint16_t dst_port,
-                        asn_value **result_value);
+extern te_errno tapi_tcp_ip4_pattern_unit(in_addr_t   src_addr,
+                                          in_addr_t   dst_addr,
+                                          int         src_port,
+                                          int         dst_port,
+                                          asn_value **result_value);
 
 
 typedef struct tcp_message_t {
@@ -184,10 +194,13 @@ typedef void (*tcp_callback)(const tcp_message_t *pkt, void *userdata);
  *
  * @return Status code.
  */
-extern int tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
-                             tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
-                             te_bool syn_flag, te_bool ack_flag,
-                             uint8_t *msg);
+extern te_errno tapi_tcp_make_msg(uint16_t        src_port,
+                                  uint16_t        dst_port,
+                                  tapi_tcp_pos_t  seqn,
+                                  tapi_tcp_pos_t  ackn, 
+                                  te_bool         syn_flag,
+                                  te_bool         ack_flag,
+                                  uint8_t        *msg);
 
 /**
  * Prepare TCP header PDU by specified parameter values.
@@ -202,10 +215,10 @@ extern int tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
  *
  * @return Status code.
  */
-extern int tapi_tcp_pdu(uint16_t src_port, uint16_t dst_port, 
-                        tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
-                        te_bool syn_flag, te_bool ack_flag,
-                        asn_value **pdu);
+extern te_errno tapi_tcp_pdu(int src_port, int dst_port, 
+                             tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+                             te_bool syn_flag, te_bool ack_flag,
+                             asn_value **pdu);
 
 /**
  * Prepare Traffic-Template ASN value for 'tcp.ip4.eth' CSAP. 
@@ -251,14 +264,8 @@ extern int tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
 
 
 
-
-
-
-
-
-
-/************************************************************************
- * =================== TCP connection emulate methods ===================
+/*
+ * TCP connection emulate methods
  */
 
 
@@ -608,4 +615,5 @@ extern int tapi_tcp_reset_hack_catch(const char *ta_name, int session,
 extern int tapi_tcp_reset_hack_send(const char *ta_name, int session, 
                                     tapi_tcp_reset_hack_t *context,
                                     size_t received, size_t sent);
+
 #endif /* !__TE_TAPI_TCP_H__ */

@@ -180,18 +180,18 @@ main(int argc, char *argv[])
 
     /* Create CSAP */
     CHECK_RC(tapi_udp_ip4_icmp_ip4_eth_csap_create(
-                                  host_csap->ta, 0,
-                                  csap_if->if_name,
-                                  TAD_ETH_RECV_NO,
-                                  sock_hwaddr->sa_data,
-                                  csap_hwaddr->sa_data,
-                                  SIN(csap_addr)->sin_addr.s_addr,
-                                  SIN(sock_addr)->sin_addr.s_addr,
-                                  SIN(sock_addr)->sin_addr.s_addr,
-                                  SIN(csap_addr)->sin_addr.s_addr,
-                                  htons(SIN(sock_addr)->sin_port),
-                                  htons(SIN(csap_addr)->sin_port),
-                                  &send_csap));
+                 host_csap->ta, 0,
+                 csap_if->if_name,
+                 TAD_ETH_RECV_NO,
+                 sock_hwaddr->sa_data,
+                 csap_hwaddr->sa_data,
+                 SIN(csap_addr)->sin_addr.s_addr,
+                 SIN(sock_addr)->sin_addr.s_addr,
+                 SIN(sock_addr)->sin_addr.s_addr,
+                 SIN(csap_addr)->sin_addr.s_addr,
+                 SIN(sock_addr)->sin_port,
+                 SIN(csap_addr)->sin_port,
+                 &send_csap));
     
     /* Prepare data-sending template */
     /* 
@@ -200,8 +200,8 @@ main(int argc, char *argv[])
      */
     CHECK_RC(tapi_udp_add_pdu(&template, NULL,
                               FALSE, 
-                              htons(SIN(sock_addr)->sin_port),
-                              htons(SIN(csap_addr)->sin_port)));
+                              CONST_SIN(sock_addr)->sin_port,
+                              CONST_SIN(csap_addr)->sin_port));
     /*
      * Prepare UDP error message's IP header, src_addr
      * being IP to which UDP socket is bound

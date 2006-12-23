@@ -118,13 +118,13 @@ extern te_errno tapi_udp_ip4_eth_csap_create(const char    *ta_name,
 
 /** Structure of UDP/IPv4 datagram */
 typedef struct udp4_datagram {
-    struct timeval      ts;          /**< packet timestamp */
-    struct in_addr      src_addr;    /**< source address */
-    struct in_addr      dst_addr;    /**< destination address */
-    uint16_t            src_port;    /**< source port */
-    uint16_t            dst_port;    /**< destination port */
-    uint16_t            payload_len; /**< payload length */
-    uint8_t            *payload;     /**< UDP payload */
+    struct timeval  ts;          /**< packet timestamp */
+    struct in_addr  src_addr;    /**< source address */
+    struct in_addr  dst_addr;    /**< destination address */
+    uint16_t        src_port;    /**< source port in host byte order */
+    uint16_t        dst_port;    /**< destination port in host byte order */
+    uint16_t        payload_len; /**< payload length */
+    uint8_t        *payload;     /**< UDP payload */
 } udp4_datagram;
 
 /** 
@@ -176,7 +176,6 @@ extern tapi_tad_trrecv_cb_data *tapi_udp_ip4_eth_trrecv_cb_data(
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param csap          Identifier of CSAP
- * @param udp_dgram     UDP datagram with pattern for filter
  * @param mode          Count received packets only or store packets
  *                      to get to the test side later
  *
@@ -184,7 +183,6 @@ extern tapi_tad_trrecv_cb_data *tapi_udp_ip4_eth_trrecv_cb_data(
  */
 extern int tapi_udp_ip4_eth_recv_start(const char *ta_name, int sid,
                                        csap_handle_t csap,
-                                       const udp4_datagram *udp_dgram,
                                        rcf_trrecv_mode mode);
 
 #ifdef __cplusplus

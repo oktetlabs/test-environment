@@ -103,9 +103,7 @@ main(int argc, char *argv[])
         TEST_FAIL("bind failed");
 
 
-    rc = tapi_tcp_server_csap_create(host_csap->ta, 0,
-                                     SIN(csap_addr)->sin_addr.s_addr, 
-                                     SIN(csap_addr)->sin_port, &csap);
+    rc = tapi_tcp_server_csap_create(host_csap->ta, 0, csap_addr, &csap);
     if (rc != 0)
         TEST_FAIL("server csap create failed: %r", rc); 
     rc = rpc_connect(sock_pco, socket, csap_addr);

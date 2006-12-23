@@ -47,36 +47,30 @@
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
- * @param loc_addr      Local IP address in network order
- * @param loc_port      Local TCP port in network byte order 
+ * @param sa            Local address and port
  * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
  *
  * @return  Status of the operation
  */
-extern int tapi_tcp_server_csap_create(const char *ta_name, int sid, 
-                                       in_addr_t loc_addr,
-                                       uint16_t loc_port,
-                                       csap_handle_t *tcp_csap);
+extern te_errno tapi_tcp_server_csap_create(const char *ta_name, int sid, 
+                                            const struct sockaddr *sa,
+                                            csap_handle_t *tcp_csap);
 /**
  * Creates 'socket' CSAP, 'TCP client' mode. 
  * Connects to remote TCP server.
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
- * @param loc_addr      Local IP address in network order
- * @param rem_addr      Remote IP address in network order
- * @param loc_port      Local TCP port in network byte order 
- * @param rem_port      Remote TCP port in network byte order 
+ * @param loc           Local address and port
+ * @param rem           Remote address and port
  * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
  *
  * @return  Status of the operation
  */
-extern int tapi_tcp_client_csap_create(const char *ta_name, int sid, 
-                                       in_addr_t loc_addr,
-                                       in_addr_t rem_addr,
-                                       uint16_t loc_port,
-                                       uint16_t rem_port,
-                                       csap_handle_t *tcp_csap);
+extern te_errno tapi_tcp_client_csap_create(const char *ta_name, int sid, 
+                                            const struct sockaddr *loc,
+                                            const struct sockaddr *rem,
+                                            csap_handle_t *tcp_csap);
 /**
  * Creates 'data.tcp.ip4' CSAP, 'socket' mode, over socket, 
  * accepted on TA from some 'server' CSAP.
@@ -88,9 +82,9 @@ extern int tapi_tcp_client_csap_create(const char *ta_name, int sid,
  *
  * @return  Status of the operation
  */
-extern int tapi_tcp_socket_csap_create(const char *ta_name, int sid, 
-                                       int socket,
-                                       csap_handle_t *tcp_csap);
+extern te_errno tapi_tcp_socket_csap_create(const char *ta_name, int sid, 
+                                            int socket,
+                                            csap_handle_t *tcp_csap);
 
 /**
  * Wait new one connection from 'server' TCP CSAP.
@@ -103,9 +97,9 @@ extern int tapi_tcp_socket_csap_create(const char *ta_name, int sid,
  *
  * @return  Status of the operation
  */
-extern int tapi_tcp_server_recv(const char *ta_name, int sid, 
-                                csap_handle_t tcp_csap, 
-                                unsigned int timeout, int *socket);
+extern te_errno tapi_tcp_server_recv(const char *ta_name, int sid, 
+                                     csap_handle_t tcp_csap, 
+                                     unsigned int timeout, int *socket);
 
 /**
  * Wait some data on connected (i.e. non-server) 'socket' CSAP.
@@ -130,11 +124,11 @@ extern int tapi_tcp_server_recv(const char *ta_name, int sid,
  *
  * @return  Status of the operation
  */
-extern int tapi_socket_recv(const char *ta_name, int sid, 
-                            csap_handle_t csap, 
-                            unsigned int timeout, 
-                            csap_handle_t forward, te_bool exact,
-                            uint8_t *buf, size_t *length);
+extern te_errno tapi_socket_recv(const char *ta_name, int sid, 
+                                 csap_handle_t csap, 
+                                 unsigned int timeout, 
+                                 csap_handle_t forward, te_bool exact,
+                                 uint8_t *buf, size_t *length);
 
 /**
  * Send data via connected (non-server) 'socket' CSAP.
@@ -147,9 +141,9 @@ extern int tapi_socket_recv(const char *ta_name, int sid,
  *
  * @return  Status of the operation
  */
-extern int tapi_socket_send(const char *ta_name, int sid, 
-                            csap_handle_t csap, 
-                            uint8_t *buf, size_t length);
+extern te_errno tapi_socket_send(const char *ta_name, int sid, 
+                                 csap_handle_t csap, 
+                                 uint8_t *buf, size_t length);
 
 
 
@@ -161,39 +155,33 @@ extern int tapi_socket_send(const char *ta_name, int sid,
  * @param type          String, type of socket: 
  *                      should be either @c NDN_TAG_SOCKET_TYPE_UDP
  *                      or @c NDN_TAG_SOCKET_TYPE_TCP_CLIENT.
- * @param loc_addr      Local IP address in network order
- * @param rem_addr      Remote IP address in network order
- * @param loc_port      Local TCP port in network byte order 
- * @param rem_port      Remote TCP port in network byte order 
+ * @param loc           Local address and port
+ * @param rem           Remote address and port
  * @param csap      Identifier of an SNMP CSAP (OUT)
  * 
  * @return Zero on success or error code.
  */
-extern int tapi_socket_csap_create(const char *ta_name, int sid, int type,
-                                   in_addr_t loc_addr, in_addr_t rem_addr,
-                                   uint16_t loc_port, uint16_t rem_port,
-                                   csap_handle_t *csap);
+extern te_errno tapi_socket_csap_create(const char *ta_name,
+                                        int sid, int type,
+                                        const struct sockaddr *loc,
+                                        const struct sockaddr *rem,
+                                        csap_handle_t *csap);
 
 /**
  * Creates usual 'socket' CSAP of UDP type on specified Test Agent
  * 
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
- * @param loc_addr      Local IP address in network order
- * @param rem_addr      Remote IP address in network order
- * @param loc_port      Local TCP port in network byte order 
- * @param rem_port      Remote TCP port in network byte order 
+ * @param loc           Local address and port
+ * @param rem           Remote address and port
  * @param udp_csap      Identifier of an SNMP CSAP (OUT)
  * 
  * @return Zero on success or error code.
  */
-extern int tapi_udp_csap_create(const char *ta_name, int sid,
-                                in_addr_t loc_addr, in_addr_t rem_addr,
-                                uint16_t loc_port, uint16_t rem_port,
-                                csap_handle_t *udp_csap);
-
-
-
+extern te_errno tapi_udp_csap_create(const char *ta_name, int sid,
+                                     const struct sockaddr *loc,
+                                     const struct sockaddr *rem,
+                                     csap_handle_t *udp_csap);
 
 
 #endif /* !__TE_TAPI_SOCKET_H__ */

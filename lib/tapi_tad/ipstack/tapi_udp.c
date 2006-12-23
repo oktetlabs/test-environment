@@ -85,9 +85,11 @@ tapi_udp_add_csap_layer(asn_value **csap_spec,
                                      &layer));
 
     if (local_port >= 0)
-        CHECK_RC(asn_write_int32(layer, local_port, "local-port.#plain"));
+        CHECK_RC(asn_write_int32(layer, ntohs(local_port),
+                                 "local-port.#plain"));
     if (remote_port >= 0)
-        CHECK_RC(asn_write_int32(layer, remote_port, "remote-port.#plain"));
+        CHECK_RC(asn_write_int32(layer, ntohs(remote_port),
+                                 "remote-port.#plain"));
 
     return 0;
 }
@@ -108,9 +110,11 @@ tapi_udp_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
                                           &tmp_pdu));
 
     if (src_port >= 0)
-        CHECK_RC(asn_write_int32(tmp_pdu, src_port, "src-port.#plain"));
+        CHECK_RC(asn_write_int32(tmp_pdu, ntohs(src_port),
+                                 "src-port.#plain"));
     if (dst_port >= 0)
-        CHECK_RC(asn_write_int32(tmp_pdu, dst_port, "dst-port.#plain"));
+        CHECK_RC(asn_write_int32(tmp_pdu, ntohs(dst_port),
+                                 "dst-port.#plain"));
 
     if (pdu != NULL)
         *pdu = tmp_pdu;
@@ -277,16 +281,16 @@ ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
  *
  * @param src_addr      IPv4 source address (or NULL)
  * @param dst_addr      IPv4 destination address (or NULL)
- * @param src_port      UDP source port (or 0)
- * @param dst_port      UDP destination port (or 0)
+ * @param src_port      UDP source port in network byte order or -1 
+ * @param dst_port      UDP destination port network byte order or -1
  * @param result_value  Location for resulting ASN pattern
  *
  * @return Zero on success or error code
  */
-int
+static int
 tapi_udp_ip4_eth_pattern_unit(const uint8_t *src_addr,
                               const uint8_t *dst_addr,
-                              uint16_t src_port, uint16_t dst_port,
+                              int src_port, int dst_port,
                               asn_value **result_value)
 {
     int        rc;
@@ -299,33 +303,38 @@ tapi_udp_ip4_eth_pattern_unit(const uint8_t *src_addr,
     do {
         rc = asn_parse_value_text("{ pdus { udp:{}, ip4:{}, eth:{}}}",
                                   ndn_traffic_pattern_unit, &pattern, &num);
-        if (rc != 0) break;
+        if (rc != 0)
+            break;
 
         if (src_addr != NULL)
         {
             rc = asn_write_value_field(pattern, src_addr, sizeof(in_addr_t),
                                        "pdus.1.#ip4.src-addr.#plain");
-            if (rc != 0) break;
+            if (rc != 0)
+                break;
         }
         if (dst_addr != NULL)
         {
             rc = asn_write_value_field(pattern, dst_addr, sizeof(in_addr_t),
                                        "pdus.1.#ip4.dst-addr.#plain");
-            if (rc != 0) break;
+            if (rc != 0)
+                break;
         }
-        if (src_port != 0)
+        if (src_port >= 0)
         {
-            rc = asn_write_int32(pattern, src_port,
+            rc = asn_write_int32(pattern, ntohs(src_port),
                                  "pdus.0.#udp.src-port.#plain");
-            if (rc != 0) break;
+            if (rc != 0)
+                break;
         }
-        if (dst_port != 0)
+        if (dst_port >= 0)
         {
-            rc = asn_write_int32(pattern, dst_port,
+            rc = asn_write_int32(pattern, ntohs(dst_port),
                                  "pdus.0.#udp.dst-port.#plain");
-            if (rc != 0) break;
+            if (rc != 0)
+                break;
         }
-    } while(0);
+    } while (0);
 
     if (rc != 0)
     {
@@ -443,7 +452,6 @@ tapi_udp_ip4_eth_trrecv_cb_data(udp4_callback callback, void *user_data)
 int
 tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
                             csap_handle_t csap,
-                            const udp4_datagram *udp_dgram,
                             rcf_trrecv_mode mode)
 {
     int              rc;
@@ -451,18 +459,7 @@ tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
     asn_value       *pattern;
     asn_value       *pattern_unit;
 
-    if (udp_dgram != NULL)
-    {
-        rc = tapi_udp_ip4_eth_pattern_unit((uint8_t *)&udp_dgram->src_addr,
-                                           (uint8_t *)&udp_dgram->dst_addr,
-                                           udp_dgram->src_port,
-                                           udp_dgram->dst_port,
-                                           &pattern_unit);
-    }
-    else
-    {
-        rc = tapi_udp_ip4_eth_pattern_unit(NULL, NULL, 0, 0, &pattern_unit);
-    }
+    rc = tapi_udp_ip4_eth_pattern_unit(NULL, NULL, -1, -1, &pattern_unit);
     if (rc != 0)
     {
         ERROR("%s: pattern unit creation error: %r", __FUNCTION__, rc);

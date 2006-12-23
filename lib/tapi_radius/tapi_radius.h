@@ -343,10 +343,10 @@ typedef struct {
 } tapi_radius_attr_info_t;
 
 /** Default UDP port for RADIUS authentication service */
-#define TAPI_RADIUS_AUTH_PORT   1812
+#define TAPI_RADIUS_AUTH_PORT   (htons(1812))
 
 /** Default UDP port for RADIUS accounting service */
-#define TAPI_RADIUS_ACCT_PORT   1813
+#define TAPI_RADIUS_ACCT_PORT   (htons(1813))
 
 typedef void (*radius_callback)(const tapi_radius_packet_t *pkt,
                                 void *userdata);
@@ -498,8 +498,9 @@ extern tapi_tad_trrecv_cb_data *tapi_radius_trrecv_cb_data(
  * @param sid              RCF session identifier
  * @param device           Ethernet device name on agent to attach
  * @param net_addr         Local IP address on Test Agent
- * @param port             UDP port on Test Agent (TAPI_RADIUS_AUTH_PORT
- *                          or TAPI_RADIUS_ACCT_PORT)
+ * @param port             UDP port (network byte order) on Test Agent
+ *                         (TAPI_RADIUS_AUTH_PORT, TAPI_RADIUS_ACCT_PORT,
+ *                         or -1 to keep unspecified)
  * @param csap             Handle of new CSAP (OUT)
  *
  * @return Zero on success or error code.
@@ -507,7 +508,7 @@ extern tapi_tad_trrecv_cb_data *tapi_radius_trrecv_cb_data(
 extern te_errno tapi_radius_csap_create(const char *ta, int sid,
                                         const char *device,
                                         const in_addr_t net_addr,
-                                        uint16_t port,
+                                        int port,
                                         csap_handle_t *csap);
 
 /*

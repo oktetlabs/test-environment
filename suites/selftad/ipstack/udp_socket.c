@@ -97,12 +97,8 @@ main(int argc, char *argv[])
         TEST_FAIL("bind failed");
 
 
-    rc = tapi_udp_csap_create(host_csap->ta, 0,
-                                 SIN(csap_addr)->sin_addr.s_addr, 
-                                 SIN(sock_addr)->sin_addr.s_addr, 
-                                 SIN(csap_addr)->sin_port,
-                                 SIN(sock_addr)->sin_port,
-                                 &csap);
+    rc = tapi_udp_csap_create(host_csap->ta, 0, csap_addr, sock_addr,
+                              &csap);
     if (rc != 0)
         TEST_FAIL("'socket' csap create failed: %r", rc); 
 

@@ -190,9 +190,6 @@ extern tapi_tad_trrecv_cb_data *tapi_ip4_eth_trrecv_cb_data(
 /**
  * Prepare ASN Traffic-Template value for CSAP with 'ip4' layer.
  *
- * @attention Avoid usage of this function, since it should be removed
- *            in the future.
- *
  * @param fragments     array with IP fragments specifictaions, or NULL;
  * @param num_frags     number of IP fragments;
  * @param ttl           time-to-live field, or negative for CSAP default;
@@ -202,6 +199,9 @@ extern tapi_tad_trrecv_cb_data *tapi_ip4_eth_trrecv_cb_data(
  * @param result_value  location for pointer to new ASN value (OUT);
  *
  * @return status code
+ *
+ * @deprecated Avoid usage of this function, since it should be removed
+ *             in the future.
  */ 
 extern te_errno tapi_ip4_template(tapi_ip_frag_spec *fragments,
                                   unsigned int num_frags,

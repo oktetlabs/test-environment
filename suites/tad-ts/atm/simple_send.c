@@ -129,9 +129,7 @@ main(int argc, char *argv[])
     /* It may be NULL, if payload_len is 0 */
     payload = te_make_buf(0, ATM_PAYLOAD_LEN, &payload_len);
 
-    CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0, 
-                                         SIN(iut_addr)->sin_addr.s_addr,
-                                         te_sockaddr_get_port(iut_addr),
+    CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0, iut_addr,
                                          &tcp_srv_csap));
 
     tst_s = rpc_socket(pco_tst, rpc_socket_domain_by_addr(iut_addr),

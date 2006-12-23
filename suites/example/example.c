@@ -107,6 +107,7 @@ main(int argc, char *argv[])
     uint8_t rx_buffer[10000];
     uint8_t tx_buffer[10000];
     int len;
+    struct sockaddr_in addr;
     
     int acc_sock;
     csap_handle_t iscsi_csap = CSAP_INVALID_HANDLE;
@@ -119,9 +120,10 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_get_ta_list(ta, &len));
     RING("Agent is %s", ta);
 
-    CHECK_RC(tapi_tcp_server_csap_create(ta, 0, 
-                                         0,
-                                         htons(3260),
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(3260);
+    CHECK_RC(tapi_tcp_server_csap_create(ta, 0, CONST_SA(&addr),
                                          &listen_csap));
 
     CHECK_RC(tapi_tcp_server_recv(ta, 0, listen_csap, 100000, &acc_sock));

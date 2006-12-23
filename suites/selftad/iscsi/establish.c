@@ -118,8 +118,7 @@ main(int argc, char *argv[])
 
 
 
-    rc = tapi_tcp_server_csap_create(agt_a, 0, csap_ip_addr, 
-                                     csap_addr.sin_port, &listen_csap);
+    rc = tapi_tcp_server_csap_create(agt_a, 0, &csap_addr, &listen_csap);
     if (rc != 0)
         TEST_FAIL("server csap create failed: %r", rc); 
 

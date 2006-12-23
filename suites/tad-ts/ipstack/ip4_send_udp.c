@@ -132,8 +132,8 @@ main(int argc, char *argv[])
                                           sock_hwaddr->sa_data,
                                           SIN(csap_addr)->sin_addr.s_addr,
                                           SIN(sock_addr)->sin_addr.s_addr,
-                                          ntohs(SIN(csap_addr)->sin_port),
-                                          ntohs(SIN(sock_addr)->sin_port),
+                                          SIN(csap_addr)->sin_port,
+                                          SIN(sock_addr)->sin_port,
                                           &udp_ip4_send_csap));
     
     /* Prepare data-sending template */

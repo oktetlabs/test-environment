@@ -94,15 +94,17 @@ tapi_tcp_add_csap_layer(asn_value **csap_spec,
                                      &layer));
 
     if (local_port >= 0)
-        CHECK_RC(asn_write_int32(layer, local_port, "local-port.#plain"));
+        CHECK_RC(asn_write_int32(layer, ntohs(local_port),
+                                 "local-port.#plain"));
     if (remote_port >= 0)
-        CHECK_RC(asn_write_int32(layer, remote_port, "remote-port.#plain"));
+        CHECK_RC(asn_write_int32(layer, ntohs(remote_port),
+                                 "remote-port.#plain"));
 
     return 0;
 }
 
 /* See description in tapi_tcp.h */
-int
+te_errno
 tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid, 
                              const char *eth_dev,
                              unsigned int receive_mode,
@@ -110,11 +112,11 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
                              const uint8_t *rem_mac,
                              in_addr_t loc_addr,
                              in_addr_t rem_addr,
-                             uint16_t loc_port,
-                             uint16_t rem_port,
+                             int loc_port,
+                             int rem_port,
                              csap_handle_t *tcp_csap)
 {
-    int   rc;
+    te_errno    rc;
 
     asn_value *csap_spec = NULL;
 
@@ -157,12 +159,12 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
                                        "layers.1.#ip4.remote-addr.#plain");
         if (rc) break; 
 
-        if(loc_port)
+        if (loc_port >= 0)
             rc = asn_write_int32(csap_spec, ntohs(loc_port),
                                  "layers.0.#tcp.local-port.#plain");
         if (rc) break; 
 
-        if(rem_port)
+        if (rem_port >= 0)
             rc = asn_write_int32(csap_spec, ntohs(rem_port), 
                                  "layers.0.#tcp.remote-port.#plain");
         if (rc) break;
@@ -177,9 +179,9 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
 }
 
 /* See description in tapi_tcp.h */
-int 
-tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
-                          uint16_t src_port, uint16_t dst_port,
+te_errno
+tapi_tcp_ip4_pattern_unit(in_addr_t src_addr, in_addr_t dst_addr,
+                          int src_port, int dst_port,
                           asn_value **result_value)
 {
     int rc;
@@ -189,19 +191,8 @@ tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
     struct in_addr in_src_addr;
     struct in_addr in_dst_addr;
 
-    if (src_addr) 
-        in_src_addr.s_addr = src_addr;
-    else
-        in_src_addr.s_addr = 0;
-
-    if (dst_addr) 
-        in_dst_addr.s_addr = dst_addr;
-    else
-        in_dst_addr.s_addr = 0;
-
-    VERB("%s, create pattern unit %s:%u -> %s:%u", __FUNCTION__,
-         inet_ntoa(in_src_addr), (unsigned int)ntohs(src_port), 
-         inet_ntoa(in_dst_addr), (unsigned int)ntohs(dst_port));
+    in_src_addr.s_addr = src_addr;
+    in_dst_addr.s_addr = dst_addr;
 
     do {
         if (result_value == NULL) { rc = TE_EWRONGPTR; break; }
@@ -210,22 +201,22 @@ tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
                               ndn_traffic_pattern_unit, &pu, &num);
 
         if (rc) break;
-        if (src_addr)
+        if (src_addr != htonl(INADDR_ANY))
             rc = asn_write_value_field(pu, &src_addr, 4, 
                                        "pdus.1.#ip4.src-addr.#plain");
 
         if (rc) break;
-        if (dst_addr)
+        if (dst_addr != htonl(INADDR_ANY))
             rc = asn_write_value_field(pu, &dst_addr, 4, 
                                        "pdus.1.#ip4.dst-addr.#plain");
 
         if (rc) break;
-        if (src_port) /* SRC port passed here in network byte order */
+        if (src_port >= 0) /* SRC port passed here in network byte order */
             rc = asn_write_int32(pu, ntohs(src_port),
                                  "pdus.0.#tcp.src-port.#plain");
 
         if (rc) break;
-        if (dst_port) /* DST port passed here in network byte order */
+        if (dst_port >= 0) /* DST port passed here in network byte order */
             rc = asn_write_int32(pu, ntohs(dst_port),
                                  "pdus.0.#tcp.dst-port.#plain");
         if (rc) break;
@@ -245,17 +236,17 @@ tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
 
 
 /* See description in tapi_tcp.h */
-int
+te_errno
 tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid, 
                             csap_handle_t csap,
                             in_addr_t src_addr, in_addr_t dst_addr,
-                            uint16_t src_port, uint16_t dst_port,
+                            int src_port, int dst_port,
                             unsigned int timeout, unsigned int num,
                             rcf_trrecv_mode mode)
 { 
-    asn_value *pattern;
-    asn_value *pattern_unit; 
-    int        rc;
+    asn_value  *pattern;
+    asn_value  *pattern_unit; 
+    te_errno    rc;
     
     if ((rc = tapi_tcp_ip4_pattern_unit(src_addr, dst_addr, 
                                         src_port, dst_port, 
@@ -287,7 +278,7 @@ tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
 
 
 /* See description in tapi_tcp.h */
-int
+te_errno
 tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
                   tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
                   te_bool syn_flag, te_bool ack_flag,
@@ -335,14 +326,14 @@ tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
 }
 
 /* See description in tapi_tcp.h */
-int
-tapi_tcp_pdu(uint16_t src_port, uint16_t dst_port,
+te_errno
+tapi_tcp_pdu(int src_port, int dst_port,
              tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
              te_bool syn_flag, te_bool ack_flag,
              asn_value **pdu)
 {
-    int         rc,
-                syms;
+    te_errno    rc;
+    int         syms;
     asn_value  *g_pdu;
     asn_value  *tcp_pdu;
     uint8_t     flags;
@@ -362,18 +353,18 @@ tapi_tcp_pdu(uint16_t src_port, uint16_t dst_port,
         return TE_RC(TE_TAPI, rc);
     }
 
-    if (src_port != 0 &&
+    if (src_port >= 0 &&
         (rc = ndn_du_write_plain_int(tcp_pdu, NDN_TAG_TCP_SRC_PORT,
-                                     src_port)) != 0)
+                                     ntohs(src_port))) != 0)
     {
         ERROR("%s(): set TCP src port failed %r", __FUNCTION__, rc);
         asn_free_value(g_pdu);
         return TE_RC(TE_TAPI, rc);
     }
 
-    if (dst_port != 0 &&
+    if (dst_port >= 0 &&
         (rc = ndn_du_write_plain_int(tcp_pdu, NDN_TAG_TCP_DST_PORT,
-                                     dst_port)) != 0)
+                                     htons(dst_port))) != 0)
     {
         ERROR("%s(): set TCP dst port failed %r", __FUNCTION__, rc);
         asn_free_value(g_pdu);
@@ -442,7 +433,7 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
         return TE_RC(TE_TAPI, rc);
     }
 
-    rc = tapi_tcp_pdu(0, 0, seqn, ackn, syn_flag, ack_flag, &tcp_pdu);
+    rc = tapi_tcp_pdu(-1, -1, seqn, ackn, syn_flag, ack_flag, &tcp_pdu);
     if (rc != 0)
     {
         ERROR("%s(): make tcp pdu eror: %r", __FUNCTION__, rc);
@@ -510,7 +501,7 @@ tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
         return TE_RC(TE_TAPI, rc);
     }
 
-    rc = tapi_tcp_pdu(0, 0, seqn, ackn, syn_flag, ack_flag, &tcp_pdu);
+    rc = tapi_tcp_pdu(-1, -1, seqn, ackn, syn_flag, ack_flag, &tcp_pdu);
     if (rc != 0)
     {
         ERROR("%s(): make tcp pdu eror: %r", __FUNCTION__, rc);
@@ -567,8 +558,8 @@ tapi_tcp_reset_hack_init(const char *ta_name, int session,
                                       NULL, NULL, 
                                       context->loc_ip_addr,
                                       context->rem_ip_addr,
-                                      0, /* port will be in pattern */
-                                      0, /* we dont know remote port */
+                                      -1, /* port will be in pattern */
+                                      -1, /* we dont know remote port */
                                       &(context->tcp_hack_csap));
     if (rc != 0)
     {
