@@ -2117,8 +2117,8 @@ asn_get_choice_value(const asn_value *container, asn_value **subval,
         *subval = sv;
     if (tag_class != NULL)
         *tag_class = sv->tag.cl;
-    if (tag_val   != NULL)
-        *tag_val   = sv->tag.val;
+    if (tag_val != NULL)
+        *tag_val = sv->tag.val;
 
     return 0;
 }
