@@ -784,7 +784,7 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  out_fd, in_fd, offset, start, (unsigned)count,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 (offset != NULL) ? (int)*offset : 0);
+                 (offset != NULL) ? *offset : 0);
 
     RETVAL_INT(sendfile, out.retval);
 }
