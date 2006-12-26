@@ -594,7 +594,7 @@ cleanup:
         TE_RC_GET_ERROR(rc) != TE_ETADLESSDATA)
     {
         ERROR("%s: failed at offset %u: %r", __FUNCTION__,
-              (unsigned)(data_ptr - data));
+              (unsigned)(data_ptr - data), rc);
     }
     return rc;
 }

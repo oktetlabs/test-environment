@@ -581,6 +581,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
                                   &t_class, &t_val);
         if (rc != 0)
             return rc;
+        RING("%s t_val=%u", labes, t_val);
     } 
 
     /* 
