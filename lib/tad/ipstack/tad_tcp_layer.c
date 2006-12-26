@@ -589,5 +589,12 @@ tad_tcp_match_bin_cb(csap_p           csap,
     }
 
 cleanup:
+    if (rc != 0 &&
+        TE_RC_GET_ERROR(rc) != TE_ETADNOTMATCH &&
+        TE_RC_GET_ERROR(rc) != TE_ETADLESSDATA)
+    {
+        ERROR("%s: failed at offset %u: %r", __FUNCTION__,
+              (unsigned)(data_ptr - data));
+    }
     return rc;
 }
