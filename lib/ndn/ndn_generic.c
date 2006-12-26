@@ -550,9 +550,9 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
     const asn_type   *du_type;
     const asn_type   *du_sub_type;
     asn_tag_class     t_class;
-    uint16_t          t_val = NDN_DU_UNDEF;
-    const uint8_t *pat_data;
-    size_t pat_d_len;
+    asn_tag_value     t_val = NDN_DU_UNDEF;
+    const uint8_t    *pat_data;
+    size_t            pat_d_len;
 
     int      rc = 0;
     uint32_t user_int = 0;
