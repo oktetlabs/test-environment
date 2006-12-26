@@ -336,6 +336,8 @@ asn_copy_value(const asn_value *value)
         new_value->name = asn_strdup(value->name);
     else
         new_value->name = NULL;
+    
+    new_value->tag = value->tag;
 
     return new_value;
 #else
@@ -500,8 +502,6 @@ asn_free_descendant(asn_value *value, const char *labels)
 
     te_errno rc = 0;
 
-    printf("up labels: %p, <%s>\n", up_labels, up_labels);
-
     if (!value || !labels)
     {
         free(up_labels);
@@ -519,7 +519,6 @@ asn_free_descendant(asn_value *value, const char *labels)
     {
         *low_label = '\0';
         low_label ++;
-        printf("up labels: %p, <%s>\n", up_labels, up_labels);
 #if 0
         rc = asn_impl_fall_down_to_tree_writable(value, up_labels, &subvalue);
         value = subvalue; 
@@ -2080,7 +2079,7 @@ asn_get_child_value(const asn_value *container, const asn_value **subval,
 
     if (container->syntax != SEQUENCE && 
         container->syntax != SET)
-        return TE_EINVAL;
+        return TE_EASNWRONGTYPE;
 
     rc = asn_child_tag_index(container->asn_type, tag_class, tag_val,
                              &index);
