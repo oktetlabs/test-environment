@@ -480,6 +480,21 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         sprintf(buf, "/etc/init.d/%s %s >/dev/null", daemon_name,
                *value == '0' ? "stop" : "start");
 
+    /*
+     * Workaround for '/etc/init.d/*' script (OL bug 864): when no
+     * delay performed here 'sendmail' does not completely start for some
+     * strange reason although it should: only submission port (587)
+     * is opened but smtp one (25) is not; however, if some delay, say,
+     * 3 seconds is performed here then both submission (587) and smtp (25)
+     * ports are successfully opened by 'sendmail' as they should be;
+     * so the workaround for this 'feature' is 3 seconds delay.
+     * It is too strange that if the delay is performed only when 'sendmail'
+     * starts/stops then the workaround does not work.
+     *
+     * So, this fix is quite mysterious hack.
+     */
+    sleep(3); /** Voluntaristic value of 3 seconds */
+
 #elif defined __sun__
     TE_SPRINTF(buf, "/usr/sbin/svcadm %s %s",
                *value == '0' ? "disable -st" : "enable -rst",
