@@ -33,57 +33,85 @@
             <script name="simple_recv"/>
             <arg name="type">
                 <value>uni</value>
+<!--
                 <value reqs="TIME_CONSUMING">nni</value>
+-->
             </arg>
             <arg name="csap_vpi"> 
                 <value>unspec</value>
+<!--
                 <value reqs="TIME_CONSUMING">match</value>
                 <value reqs="TIME_CONSUMING">nomatch</value>
+-->
             </arg>
             <arg name="csap_vci"> 
+<!--
                 <value reqs="TIME_CONSUMING">unspec</value>
+-->
                 <value>match</value>
+<!--
                 <value reqs="TIME_CONSUMING">nomatch</value>
+-->
             </arg>
             <arg name="csap_congestion"> 
+<!--
                 <value reqs="TIME_CONSUMING">unspec</value>
                 <value reqs="TIME_CONSUMING">match</value>
+-->
                 <value>nomatch</value>
             </arg>
             <arg name="csap_clp"> 
                 <value>unspec</value>
+<!--
                 <value reqs="TIME_CONSUMING">match</value>
                 <value reqs="TIME_CONSUMING">nomatch</value>
+-->
             </arg>
             <arg name="ptrn_gfc"> 
+<!--
                 <value reqs="TIME_CONSUMING">unspec</value>
+-->
                 <value>match</value>
+<!--
                 <value reqs="TIME_CONSUMING">nomatch</value>
+-->
             </arg>
             <arg name="ptrn_vpi"> 
+<!--
                 <value reqs="TIME_CONSUMING">unspec</value>
                 <value reqs="TIME_CONSUMING">match</value>
+-->
                 <value>nomatch</value>
             </arg>
             <arg name="ptrn_vci"> 
                 <value>unspec</value>
+<!--
                 <value reqs="TIME_CONSUMING">match</value>
                 <value reqs="TIME_CONSUMING">nomatch</value>
+-->
             </arg>
             <arg name="ptrn_payload_type"> 
+<!--
                 <value reqs="TIME_CONSUMING">unspec</value>
+-->
                 <value>match</value>
+<!--
                 <value reqs="TIME_CONSUMING">nomatch</value>
+-->
             </arg>
             <arg name="ptrn_congestion"> 
+<!--
                 <value reqs="TIME_CONSUMING">unspec</value>
                 <value reqs="TIME_CONSUMING">match</value>
+-->
                 <value>nomatch</value>
             </arg>
             <arg name="ptrn_clp"> 
                 <value>unspec</value>
+<!--
                 <value reqs="TIME_CONSUMING">match</value>
                 <value reqs="TIME_CONSUMING">nomatch</value>
+-->
             </arg>
             <arg name="gfc">
                 <value>0</value>
