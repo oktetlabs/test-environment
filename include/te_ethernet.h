@@ -95,4 +95,8 @@
 #endif
 #endif
 
+#ifndef ETHER_DATA_LEN
+#define ETHER_DATA_LEN 1500
+#endif
+
 #endif /* !__TE_ETHERNET_H__ */
