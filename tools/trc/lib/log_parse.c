@@ -507,6 +507,60 @@ trc_report_merge_test_iter_data(trc_report_test_iter_data *result,
 }
 
 /**
+ * Callback function that is called when XML parser meets character data.
+ *
+ * @param  user_data  Pointer to user-specific data (user context)
+ * @param  ch         Pointer to the string
+ * @param  len        Number of the characters in the string
+ *
+ * @return Nothing
+ */
+static void
+trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
+{
+    trc_report_log_parse_ctx   *ctx = user_data;
+    size_t                      init_len;
+
+    assert(ctx != NULL);
+
+    if (ctx->rc != 0)
+        return;
+
+    /*
+     * Don't want to update objective to empty string.
+     * Empty verdict is meaningless.
+     * Empty list of TRC tags is useless.
+     */
+    if (len == 0)
+        return;
+
+    switch (ctx->state)
+    {
+        case TRC_REPORT_LOG_PARSE_VERDICT:
+        case TRC_REPORT_LOG_PARSE_OBJECTIVE:
+        case TRC_REPORT_LOG_PARSE_TAGS:
+            break;
+
+        default:
+            /* Just ignore */
+            return;
+    }
+
+    init_len = (ctx->str != NULL) ? strlen(ctx->str) : 0;
+    ctx->str = realloc(ctx->str, init_len + len + 1);
+    if (ctx->str == NULL)
+    {
+        ERROR("Memory allocation failure");
+        ctx->rc = TE_ENOMEM;
+    }
+    else
+    {
+        memcpy(ctx->str + init_len, ch, len);
+        ctx->str[init_len + len] = '\0';
+    }
+}
+
+/**
  * Callback function that is called when XML parser meets an opening tag.
  *
  * @param user_data     Pointer to user-specific data (user context)
@@ -654,6 +708,20 @@ trc_report_log_start_element(void *user_data,
             }
             break;
 
+        case TRC_REPORT_LOG_PARSE_VERDICT:
+            if (strcmp(tag, "br") == 0)
+            {
+                trc_report_log_characters(user_data,
+                                          CONST_CHAR2XML("\n"),
+                                          strlen("\n"));
+            }
+            else
+            {
+                ERROR("Unexpected element '%s' in 'verdict'", tag);
+                ctx->rc = TE_EFMT;
+            }
+            break;
+
         case TRC_REPORT_LOG_PARSE_PARAMS:
             if (strcmp(tag, "param") == 0)
             {
@@ -717,6 +785,8 @@ trc_report_log_start_element(void *user_data,
             break;
 
         default:
+            ERROR("Unexpected state %u at start of a new element '%s'",
+                  ctx->state, tag);
             assert(FALSE);
             break;
     }
@@ -869,6 +939,8 @@ trc_report_log_end_element(void *user_data, const xmlChar *name)
             break;
 
         case TRC_REPORT_LOG_PARSE_VERDICT:
+            if (strcmp(tag, "br") == 0)
+                break;
             assert(strcmp(tag, "verdict") == 0);
             if (ctx->str != NULL)
             {
@@ -905,60 +977,6 @@ trc_report_log_end_element(void *user_data, const xmlChar *name)
             ERROR("%s(): Unexpected state %u", __FUNCTION__, ctx->state);
             assert(FALSE);
             break;
-    }
-}
-
-/**
- * Callback function that is called when XML parser meets character data.
- *
- * @param  user_data  Pointer to user-specific data (user context)
- * @param  ch         Pointer to the string
- * @param  len        Number of the characters in the string
- *
- * @return Nothing
- */
-static void
-trc_report_log_characters(void *user_data, const xmlChar *ch, int len)
-{
-    trc_report_log_parse_ctx   *ctx = user_data;
-    size_t                      init_len;
-
-    assert(ctx != NULL);
-
-    if (ctx->rc != 0)
-        return;
-
-    /*
-     * Don't want to update objective to empty string.
-     * Empty verdict is meaningless.
-     * Empty list of TRC tags is useless.
-     */
-    if (len == 0)
-        return;
-
-    switch (ctx->state)
-    {
-        case TRC_REPORT_LOG_PARSE_VERDICT:
-        case TRC_REPORT_LOG_PARSE_OBJECTIVE:
-        case TRC_REPORT_LOG_PARSE_TAGS:
-            break;
-
-        default:
-            /* Just ignore */
-            return;
-    }
-
-    init_len = (ctx->str != NULL) ? strlen(ctx->str) : 0;
-    ctx->str = realloc(ctx->str, init_len + len + 1);
-    if (ctx->str == NULL)
-    {
-        ERROR("Memory allocation failure");
-        ctx->rc = TE_ENOMEM;
-    }
-    else
-    {
-        memcpy(ctx->str + init_len, ch, len);
-        ctx->str[init_len + len] = '\0';
     }
 }
 
