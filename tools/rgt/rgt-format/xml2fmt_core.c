@@ -44,9 +44,6 @@
 
 #define UTILITY_NAME "xml-processor"
 
-#define CAST_CONST_XML_CHAR(x_) ((const xmlChar *)(x_))
-#define CAST_XML_CHAR(x_) ((xmlChar *)(x_))
-
 /**
  * Callback function that is called before parsing the document.
  *
@@ -572,28 +569,58 @@ rgt_get_entity(void *user_data, const xmlChar *xml_name)
     if (ctx->expand_entities)
         return xmlGetPredefinedEntity(xml_name);
 
-    ent.etype = XML_INTERNAL_PREDEFINED_ENTITY;
+#define FILL_ENT(ent_, name_) \
+    do {                                        \
+        ent_.name = (const xmlChar *)(name_);   \
+        ent_.orig = (xmlChar *)("&" name_ ";"); \
+    } while (0)
 
     if (strcmp(name, "lt") == 0)
-    {
-        ent.name = CAST_CONST_XML_CHAR("lt");
-        ent.orig = CAST_XML_CHAR("&lt;");
-        ent.content = CAST_XML_CHAR("&lt;");
-    }
+        FILL_ENT(ent, "lt");
     else if (strcmp(name, "gt") == 0)
-    {
-        ent.name = CAST_CONST_XML_CHAR("gt");
-        ent.orig = CAST_XML_CHAR("&gt;");
-        ent.content = CAST_XML_CHAR("&gt;");
-    }
+        FILL_ENT(ent, "gt");
     else if (strcmp(name, "amp") == 0)
+        FILL_ENT(ent, "amp");
+    else if (strcmp(name, "quot") == 0)
+        FILL_ENT(ent, "quot");
+    else if (strcmp(name, "apos") == 0)
+        FILL_ENT(ent, "apos");
+    else
     {
-        ent.name = CAST_CONST_XML_CHAR("amp");
-        ent.orig = CAST_XML_CHAR("&amp;");
-        ent.content = CAST_XML_CHAR("&amp;");    
+        assert(0);
+        return NULL;
+    }
+#undef FILL_ENT
+
+    /*
+     * The following lines are dirty hack in order to fix a bug
+     * found in libxml2 (see http://bugzilla.gnome.org BugId 389843).
+     * It works very badly with entities in attribute values, and 
+     * looking at the code of libxml2 I've found a work-around:
+     * - In order to keep attribute entity unconverted we can use
+     *   entity data structure filled as following: 
+     *   "etype" (entity type) is set to "XML_INTERNAL_GENERAL_ENTITY";
+     *   "content" is set to NULL;
+     * Here we assume that entities can present only in attributes of
+     * <param> TAG (<param name="" value="HERE WE EXPECT ENTITIES">).
+     *
+     * @note The behaviour of libxml2 can change in the further versions,
+     * that's why this code should be reviewed and fixed later.
+     *
+     * This workaround works for libxml2 up to 2.6.27 (think this will
+     * work later as well, but who knows).
+     */
+
+    if (ctx->state == RGT_XML2HTML_STATE_PARAMS)
+    {
+        ent.etype = XML_INTERNAL_GENERAL_ENTITY;
+        ent.content = NULL;
     }
     else
-        assert(0);
+    {
+        ent.etype = XML_INTERNAL_PREDEFINED_ENTITY;
+        ent.content = ent.orig;
+    }
 
     return &ent;
 }

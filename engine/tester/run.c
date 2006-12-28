@@ -551,8 +551,22 @@ persons_info_to_string(const persons_info *persons)
 static size_t
 test_param_space(const test_iter_arg *arg)
 {
+    int    i;
+    size_t extra = 0;
+
+    /*
+     * Calculate the number of extra bytes necessary to escape 
+     * quotation marks '"' and back slashes "\":
+     * we need to add an extra back slash for each of these symbols.
+     */
+    for (i = 0; arg->value[i] != '\0'; i++)
+    {
+        if (arg->value[i] == '"' || arg->value[i] == '\\')
+            extra++;
+    }
+
     return 1 /* space */ + strlen(arg->name) + 1 /* = */ +
-           1 /* " */ + strlen(arg->value) + 1 /* " */ + 1 /* \0 */;
+           1 /* " */ + strlen(arg->value) + extra + 1 /* " */ + 1 /* \0 */;
 }
 
 /**
@@ -563,7 +577,13 @@ test_param_space(const test_iter_arg *arg)
  * @param n_args        Number of arguments
  * @param args          Current arguments context
  *
- * @return Allocated string or NULL.
+ * @return Allocated/Reallocated string or NULL.
+ *
+ * @note If function fails to allocate enough space, the original buffer 
+ * @p str is left unchanged.
+ * It is expected that a caller allocated @p str by means of 
+ * malloc/calloc/realloc functions.
+ *
  */
 static char *
 test_params_to_string(char *str, const unsigned int n_args,
@@ -594,12 +614,45 @@ test_params_to_string(char *str, const unsigned int n_args,
             if (nv == NULL)
             {
                 ERROR("realloc(%p, %u) failed", v, len);
+
+                if (str == NULL)
+                   free(v);
+
                 return NULL;
             }
             rest += TESTER_STR_BULK;
             v = nv;
         }
-        rest -= sprintf(v + (len - rest), " %s=\"%s\"", p->name, p->value);
+        rest -= sprintf(v + (len - rest), " %s=\"", p->name);
+        
+        /* 
+         * Add back slashes before '"' (quitation mark) and 
+         * "\" (back slash) characters.
+         */
+        {
+            size_t prev_len = 0;
+            size_t seg_len;
+            
+            while ((seg_len = strcspn(p->value + prev_len, "\\\""),
+                    p->value[prev_len + seg_len] != '\0'))
+            {
+                assert(rest >= (seg_len + 1));
+
+                memcpy(v + (len - rest), p->value + prev_len, seg_len);
+                rest -= seg_len;
+
+                v[len - rest] = '\\';
+                v[len - rest + 1] = p->value[prev_len + seg_len];
+
+                rest -= 2;
+                prev_len += seg_len + 1;
+            }
+            assert(rest >= seg_len);
+            memcpy(v + (len - rest), p->value + prev_len, seg_len);
+            rest -= seg_len;
+        }
+        assert(rest >= 2);
+        rest -= sprintf(v + (len - rest), "\"");
     }
     if (v != NULL)
         VERB("%s(): %s", __FUNCTION__, v);
@@ -857,6 +910,7 @@ run_test_script(test_script *script, test_id exec_id,
     char        gdb_init[32] = "";
     char        postfix[32] = "";
     char        vg_filename[32] = "";
+    char       *tmp;
 
     assert(status != NULL);
 
@@ -868,7 +922,14 @@ run_test_script(test_script *script, test_id exec_id,
         ERROR("%s(): asprintf() failed", __FUNCTION__);
         return TE_RC(TE_TESTER, TE_ENOMEM);
     }
-    params_str = test_params_to_string(params_str, n_args, args);
+    
+    tmp = test_params_to_string(params_str, n_args, args);
+    if (tmp == NULL)
+    {
+        free(params_str);
+        return TE_RC(TE_TESTER, TE_ENOMEM);
+    }
+    params_str = tmp;
 
     if (flags & TESTER_GDB)
     {

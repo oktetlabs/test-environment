@@ -500,7 +500,8 @@ create_node_by_msg(log_msg *msg, node_type_t type,
     p_prm = &(node->params);
     if (strncmp(fmt_str, "ARGs", strlen("ARGs")) == 0)
     {
-        char *param_lst;
+        char     *param_lst;
+        size_t    seg_len;
 
         /* Process "args" clause */
         fmt_str += strlen("ARGs");
@@ -532,9 +533,12 @@ create_node_by_msg(log_msg *msg, node_type_t type,
             (*p_prm)->name = param_lst;
             if ((param_lst = strchr(param_lst, '=')) == NULL)
             {
-                FMT_TRACE("The value of %s parameters is incorrect "
+                FMT_TRACE("The value of %s \"%s\" parameters is incorrect "
                           "in control message %s (%d %d)",
-                          node_type_str, msg->fmt_str, node_id, parent_id);
+                          node_type_str,
+                          (node->descr.name != NULL) ?
+                                node->descr.name : "<unnamed>",
+                          msg->fmt_str, node_id, parent_id);
                 return NULL;
             }
             *(param_lst++) = '\0';
@@ -549,18 +553,67 @@ create_node_by_msg(log_msg *msg, node_type_t type,
                 return NULL;
             }
             (*p_prm)->val = param_lst;
-            /*
-             * Go to the end of the parameter value - trailing quote mark.
-             * @todo Currently, it is not allowed to have quote mark in the
-             * parameter value, so be carefull with the parameter value.
-             */
-            if ((param_lst = strchr(param_lst, '"')) == NULL)
+
+            /* Search for back slash or quotation mark */
+            while ((seg_len = strcspn(param_lst, "\\\""),
+                    param_lst += seg_len,
+                    *param_lst != '\"'))
             {
-                FMT_TRACE("The value of %s parameters is incorrect "
-                          "in control message %s (%d %d)",
-                          node_type_str, msg->fmt_str, node_id, parent_id);
-                return NULL;
+                if (*param_lst == '\0')
+                {
+                    FMT_TRACE("The value of %s \"%s\" parameters is "
+                              "incorrect in control message %s (%d %d): "
+                              "[there is no trailing quotation mark]",
+                              node_type_str,
+                              (node->descr.name != NULL) ?
+                                    node->descr.name : "<unnamed>",
+                               msg->fmt_str, node_id, parent_id);
+                    return NULL;
+                }
+                assert(*param_lst == '\\');
+
+                /*
+                 * After back slash it is only possible to meet
+                 * a quotation mark or a back slash.
+                 * We should strip an extra back slash, which is 
+                 * used to perceive '"' and '\' as a characters in 
+                 * attribute's value.
+                 */
+                if (*(param_lst + 1) != '\\' && *(param_lst + 1) != '\"')
+                {
+                    FMT_TRACE("The value of %s \"%s\" parameters is "
+                              "incorrect in control message %s (%d %d): "
+                              "[back slash is followed by '%c' character]",
+                              node_type_str,
+                              (node->descr.name != NULL) ?
+                                    node->descr.name : "<unnamed>",
+                               msg->fmt_str, node_id, parent_id,
+                               *(param_lst + 1));
+                    return NULL;
+                }
+
+                /*
+                 * We found an auxiliary back slash, which should not be
+                 * included as a part of parameter value.
+                 * The simplest but not efficient way to delete it in
+                 * a stream of characters is to zap it by shifting the rest
+                 * of the string to the left on one position.
+                 *
+                 * @todo think of some more efficient algorithm if that
+                 * annoys you.
+                 */
+                memmove(param_lst, param_lst + 1,
+                        strlen(param_lst + 1) + 1);
+                /*
+                 * I intentionally used "strlen(param_lst + 1) + 1" 
+                 * construction instead of simpler "strlen(param_lst)"
+                 * in order to be more understandable.
+                 */
+
+                param_lst++;
             }
+            assert(*param_lst == '\"');
+
             *(param_lst++) = '\0';
             p_prm = &((*p_prm)->next);
         }
