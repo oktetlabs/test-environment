@@ -1624,6 +1624,8 @@ ta_waitpid(pid_t pid, int *p_status, int options)
             wake->prev->next = wake->next;
         else
             ta_children_wait_list = wake->next;
+        if (wake->next != NULL)
+            wake->next->prev = NULL;
         if (!found)
             found = find_dead_child(pid, &status);
         UNLOCK;
