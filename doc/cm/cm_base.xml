@@ -214,6 +214,16 @@
     <object oid="/agent/interface/stats/out_errors" access="read_only" 
             type="integer" volatile="true"/>
 
+    <!-- Network interface VLANs
+         Name: integer number, VLAN id 
+         Limit:  depends on Test Agent -->
+    <object oid="/agent/interface/vlans" access="read_create" type="none"/>
+
+    <!-- Network interface VLANs
+         Name: VLAN id 
+         Value: OS name of VLAN interface -->
+    <object oid="/agent/interface/vlans/ifname" access="read_only"
+            type="string"/>
 
     <!-- Summary network statistics.
          Name:  Agent network statistics -->
