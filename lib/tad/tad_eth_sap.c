@@ -659,7 +659,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
         goto error_exit;
     }
 
-    if (mode & TAD_ETH_RECV_OTHER)
+    if ((mode & TAD_ETH_RECV_OTHER) && !(mode & TAD_ETH_RECV_NO_PROMISC))
     {
         /*
          * Enable promiscuous mode for the socket on specified interface.

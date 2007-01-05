@@ -163,6 +163,8 @@ enum tad_eth_recv_mode {
     TAD_ETH_RECV_MCAST = 0x04,  /**< To multicast group */
     TAD_ETH_RECV_OTHER = 0x08,  /**< To someone else */
     TAD_ETH_RECV_OUT   = 0x10,  /**< Outgoing of any type */
+    /** Do not enter promiscuous mode even if TAD_ETH_RECV_OTHER is given */
+    TAD_ETH_RECV_NO_PROMISC = 0x100, 
 };
 
 /** Receive all packets */

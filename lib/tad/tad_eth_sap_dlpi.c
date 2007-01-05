@@ -510,24 +510,27 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
 
     if (mode & (TAD_ETH_RECV_OUT | TAD_ETH_RECV_OTHER))
     {
-        /*
-         * To catch frames 'To someone else'
-         * enable promiscuous DL_PROMISC_PHYS
-         */
-        memset(&dlp, 0, sizeof(dlp));
-        dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
-        dlp.promiscon_req.dl_level = DL_PROMISC_PHYS;
-        rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-        if (rc != 0)
+        if (!(mode & TAD_ETH_RECV_NO_PROMISC))
         {
-            ERROR("Attempt to set DL_PROMISC_PHYS failed");
-            goto err_exit;
+            /*
+             * To catch frames 'To someone else'
+             * enable promiscuous DL_PROMISC_PHYS
+             */
+            memset(&dlp, 0, sizeof(dlp));
+            dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+            dlp.promiscon_req.dl_level = DL_PROMISC_PHYS;
+            rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+            if (rc != 0)
+            {
+                ERROR("Attempt to set DL_PROMISC_PHYS failed");
+                goto err_exit;
+            }
+            
+            memset(&dlp, 0, sizeof(dlp));
+            rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+            if (rc != 0)
+                goto err_exit;
         }
-
-        memset(&dlp, 0, sizeof(dlp));
-        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-        if (rc != 0)
-            goto err_exit;
 
         /* Enable promiscuous DL_PROMISC_SAP */
         memset(&dlp, 0, sizeof(dlp));
