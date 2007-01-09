@@ -350,6 +350,8 @@ efport2ifindex(void)
 /* Path to network components in the registry */
 #define NET_PATH        "SYSTEM\\CurrentControlSet\\Control\\Class\\" \
                         "{4D36E972-E325-11CE-BFC1-08002bE10318}"
+#define ENV_PATH        "SYSTEM\\CurrentControlSet\\Control\\" \
+                        "Session Manager\\Environment"
 
 #define NDIS_EFAB       "dev_c101_ndis_"
 #define NDIS_SF         "sfe_ndis_"
@@ -368,21 +370,32 @@ efport2ifindex(void)
     int guid1_amount = 0, guid2_amount = 0;
     
     DWORD subkey_size;
-    DWORD value_size;
+    DWORD value_size = BUFSIZE;
     
     FILETIME tmp;
     ULONG    size = 0;
     
     PIP_INTERFACE_INFO iftable;
 
-    char *driver_type_env, driver_type[BUFSIZE];
+    char driver_type[BUFSIZE];
     
     int i, j;
     
     driver_type[0] = 0;
-    GetEnvironmentVariable("TE_USE_EFAB_DRIVER", driver_type,
-                           sizeof(driver_type));
-    RING("TE_USE_EFAB_DRIVER='%s'", driver_type);
+
+    /* Querying environment variable TE_USE_EFAB_DRIVER value */
+
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, ENV_PATH, 0, 
+                     KEY_READ, &key) != ERROR_SUCCESS) 
+    {
+        ERROR("RegOpenKeyEx() failed with errno %lu", GetLastError());
+        return TE_RC(TE_TA_WIN32, TE_EFAULT);
+    }
+    RegQueryValueEx(key, "TE_USE_EFAB_DRIVER", 
+                            NULL, NULL, driver_type, 
+                            &value_size);
+    RegCloseKey(key);
+
     if (driver_type[0] != 0)
     {
       int t = atoi(driver_type);
@@ -402,6 +415,8 @@ efport2ifindex(void)
       strcpy(driver_type, NDIS_SF);
       RING("USING SOLARFLARE DRIVER");
     }
+
+    /* Obtaining interface indexes */
 
     if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, NET_PATH, 0, 
                      KEY_READ, &key) != ERROR_SUCCESS) 
@@ -528,7 +543,7 @@ ifname2ifindex(const char *ifname)
     char   *tmp;                                   
     te_bool ef = FALSE;
     DWORD   index;
-    
+
     if (ifname == NULL)
         return 0;
 
@@ -572,7 +587,7 @@ ifindex2ifname(DWORD ifindex)
 
 /** Update information in if_entry. Local variable ifname should exist */
 #define GET_IF_ENTRY \
-    do {                                                        \
+    do {                                                        \ 
         if ((if_entry.dwIndex = ifname2ifindex(ifname)) == 0 || \
             GetIfEntry(&if_entry) != 0)                         \
             return TE_RC(TE_TA_WIN32, TE_ENOENT);               \
