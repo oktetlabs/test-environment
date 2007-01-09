@@ -1585,6 +1585,7 @@ ta_waitpid(pid_t pid, int *p_status, int options)
              * We've got a real status, althought we have sighandler
              * registered - this might happen sometimes.
              */
+            UNLOCK;
             log_child_death(pid, status);
             if (p_status != NULL)
                 *p_status = status;
