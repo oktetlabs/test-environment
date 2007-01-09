@@ -294,9 +294,13 @@ rgt_log_end_element(void *user_data, const xmlChar *xml_tag)
             break;
 
         case RGT_XML2HTML_STATE_VERDICT:
-            assert(strcmp(tag, "verdict") == 0);
-            proc_meta_verdict_end(ctx, depth_ctx, NULL);
-            ctx->state = RGT_XML2HTML_STATE_VERDICTS;
+            if (strcmp(tag, "verdict") == 0)
+            {
+                proc_meta_verdict_end(ctx, depth_ctx, NULL);
+                ctx->state = RGT_XML2HTML_STATE_VERDICTS;
+            }
+            else
+                assert(strcmp(tag, "br") == 0);
             break;
 
         case RGT_XML2HTML_STATE_PARAMS:
@@ -450,6 +454,11 @@ rgt_log_start_element(void *user_data,
             assert(strcmp(tag, "verdict") == 0);
             proc_meta_verdict_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
             ctx->state = RGT_XML2HTML_STATE_VERDICT;
+            break;
+
+        case RGT_XML2HTML_STATE_VERDICT:
+            assert(strcmp(tag, "br") == 0);
+            proc_log_msg_br(ctx, depth_ctx, RGT_XML2CHAR(attrs));
             break;
 
         case RGT_XML2HTML_STATE_PARAMS:
