@@ -646,6 +646,14 @@ TARPC_FUNC(execve, {},
 /*-------------- getpid() --------------------------------*/
 TARPC_FUNC(getpid, {}, { MAKE_CALL(out->retval = func_void()); })
 
+/*-------------- access() --------------------------------*/
+TARPC_FUNC(access, {}, 
+{
+    MAKE_CALL(out->retval = func_ptr(in->path.path_val, 
+        access_mode_flags_rpc2h(in->mode)));
+})
+               
+
 /*-------------- gettimeofday() --------------------------------*/
 TARPC_FUNC(gettimeofday,
 {

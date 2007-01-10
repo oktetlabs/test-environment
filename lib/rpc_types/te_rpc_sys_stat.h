@@ -91,6 +91,26 @@ RPCBITMAP2STR(file_mode_flags, FILE_MODE_FLAGS_MAPPING_LIST)
 /** Convert RPC mode flags to native flags */
 extern unsigned int file_mode_flags_rpc2h(unsigned int flags);
 
+typedef enum rpc_access_mode_flags {
+    RPC_F_OK = 0,
+    RPC_R_OK = (1 << 0),
+    RPC_W_OK = (1 << 1),
+    RPC_X_OK = (1 << 2)
+} rpc_access_mode_flags;
+
+/* F_OK not listed as it is defined to zero */
+#define ACCESS_MODE_FLAGS_MAPPING_LIST \
+    RPC_BIT_MAP_ENTRY(R_OK), \
+    RPC_BIT_MAP_ENTRY(W_OK), \
+    RPC_BIT_MAP_ENTRY(X_OK)
+
+/**
+ * access_mode_flags_rpc2str()
+ */
+RPCBITMAP2STR(access_mode_flags, ACCESS_MODE_FLAGS_MAPPING_LIST)    
+
+/** Convert RPC access mode to native flags */
+extern int access_mode_flags_rpc2h(int mode);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -1342,6 +1342,43 @@ rpc_seteuid(rcf_rpc_server *rpcs,
     RETVAL_INT(seteuid, out.retval);
 }
 
+int
+rpc_access(rcf_rpc_server *rpcs,
+           const char *path,
+           int mode)
+{
+    tarpc_access_in  in;
+    tarpc_access_out out;
+    
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(seteuid, -1);
+    }
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.mode  = mode;
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = (char *)strdup(path); /* FIXME */
+    }    
+
+    rcf_rpc_call(rpcs, "access", &in, &out);
+    
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(access, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): access(%s,%s) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 path, access_mode_flags_rpc2str(mode),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(access, out.retval);
+}
+
+
 struct passwd *
 rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
 {

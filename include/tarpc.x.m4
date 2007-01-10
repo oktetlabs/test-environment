@@ -2812,6 +2812,15 @@ struct tarpc_getpid_in {
 
 typedef struct tarpc_int_retval_out tarpc_getpid_out;
 
+/* access */
+struct tarpc_access_in {
+    struct tarpc_in_arg common;
+    char      path<>;
+    tarpc_int mode;
+};
+
+typedef struct tarpc_int_retval_out tarpc_access_out;
+
 /* sigval_t, union sigval */
 union tarpc_sigval switch (tarpc_bool pointer) {
     case 1: tarpc_ptr sival_ptr;
@@ -3525,6 +3534,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(getpid)
         RPC_DEF(gettimeofday)
         
+        RPC_DEF(access)
+
         RPC_DEF(malloc)
         RPC_DEF(free)
         RPC_DEF(memalign)
@@ -3636,7 +3647,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(getenv)
         RPC_DEF(setenv)
         RPC_DEF(uname)
-        RPC_DEF(sysinfo)
+        RPC_DEF(sysinfo)  
         
         RPC_DEF(create_aiocb)
         RPC_DEF(fill_aiocb)

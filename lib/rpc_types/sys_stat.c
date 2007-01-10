@@ -40,7 +40,10 @@
 #if HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
- 
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif 
+
 #include "te_rpc_defs.h"
 #include "te_rpc_sys_stat.h"
 
@@ -68,5 +71,18 @@ file_mode_flags_rpc2h(unsigned int flags)
         (!!(flags & RPC_S_IWOTH) * S_IWOTH) |
         (!!(flags & RPC_S_IXOTH) * S_IXOTH) |
         (!!(flags & RPC_S_IRWXO) * S_IRWXO);
+}
+#endif
+
+#ifdef R_OK
+int
+access_mode_flags_rpc2h(int flags)
+{
+    if (flags == RPC_F_OK)
+        return F_OK;
+    return
+        (!!(flags & RPC_R_OK) * R_OK) |
+        (!!(flags & RPC_W_OK) * W_OK) |
+        (!!(flags & RPC_X_OK) * X_OK);
 }
 #endif

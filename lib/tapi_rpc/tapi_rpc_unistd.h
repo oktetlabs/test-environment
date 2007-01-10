@@ -648,6 +648,20 @@ extern tarpc_uid_t rpc_getuid(rcf_rpc_server *rpcs);
 extern int rpc_setuid(rcf_rpc_server *rpcs,
                       tarpc_uid_t uid);
 
+
+/**
+ * Checks for access permissions @p mode of @p path at @p rpcs
+ *
+ * @param rpcs RPC server handle
+ * @param path Pathname to check
+ * @param mode Access mode (see lib/rpc_types/te_rpc_sys_stat.h)
+ *
+ * @return 0 if @p path is available as specific @p mode, -1 otherwise
+ */
+extern int rpc_access(rcf_rpc_server *rpcs,
+                      const char *path,
+                      int mode);
+
 /**
  * Query information about the broken out fields of a line from 
  * @b /etc/passwd for the entry that matches the user name @b name on
