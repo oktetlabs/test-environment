@@ -393,6 +393,16 @@ delete_with_children(cfg_instance *inst)
     return TE_RC_GET_ERROR(msg.rc) == TE_ENOENT ? 0 : msg.rc;
 }
 
+static int
+topo_qsort_predicate(const void *arg1, const void *arg2)
+{
+    int idx1 = *(int *)arg1;
+    int idx2 = *(int *)arg2;
+
+    return cfg_all_inst[idx2]->obj->ordinal_number - 
+           cfg_all_inst[idx1]->obj->ordinal_number;
+}
+
 
 /**
  * Return all read/create instances, not mentioned in the configuration
@@ -408,30 +418,54 @@ static int
 remove_excessive(char *root, cfg_instance *list)
 {
     int rc;
+    int n_deletable;
     int i;
     
-    for (i = 0; i < cfg_all_inst_size; i++)
+    int *sorted = malloc(sizeof(*sorted) * cfg_all_inst_size);
+
+    if (sorted == NULL)
     {
-        cfg_instance *tmp;
-        
+        ERROR("%s(): not enough memory", __FUNCTION__);
+        return TE_RC(TE_CS, TE_ENOMEM);
+    }
+    
+    for (i = 0, n_deletable = 0; i < cfg_all_inst_size; i++)
+    {
         if (cfg_all_inst[i] == NULL || 
+            !cfg_all_inst[i]->added ||
             cfg_all_inst[i]->obj->access != CFG_READ_CREATE ||
             strncmp(cfg_all_inst[i]->oid, root, strlen(root)) != 0)
         {
             continue;
         }
+        sorted[n_deletable] = i;
+        n_deletable++;
+    }
+    qsort(sorted, n_deletable, sizeof(*sorted), topo_qsort_predicate);
+
+    for (i = 0; i < n_deletable; i++)
+    {
+        cfg_instance *tmp;
+        
+        if (cfg_all_inst[sorted[i]] == NULL)
+            continue;
+
         for (tmp = list; tmp != NULL; tmp = tmp->brother)
         {
-            if (strcmp(tmp->oid, cfg_all_inst[i]->oid) == 0)
+            if (strcmp(tmp->oid, cfg_all_inst[sorted[i]]->oid) == 0)
                 break;
         }
         
         if (tmp != NULL)
             continue;
             
-        if ((rc = delete_with_children(cfg_all_inst[i])) != 0)
+        if ((rc = delete_with_children(cfg_all_inst[sorted[i]])) != 0)
+        {
+            free(sorted);
             return rc;
+        }
     }
+    free(sorted);
     
     return 0;
 }
@@ -634,6 +668,7 @@ topo_sort_instances(cfg_instance *list)
     
     for (tmp = list; tmp != NULL; tmp = tmp->brother)
         length++;
+
     list = topo_sort_instances_rec(list, length);
 
     for (tmp = list; tmp != NULL; tmp = tmp->brother)
@@ -686,14 +721,14 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore)
         }
     }
 
+    list = topo_sort_instances(list);
+
     if ((rc = remove_excessive("/", list)) != 0)
     {
         ERROR("Failed to remove excessive entries");
         free_instances(list);
         return rc;
     }
-
-    list = topo_sort_instances(list);
 
     return restore_entries(list);
 }
@@ -763,6 +798,8 @@ cfg_backup_restore_ta(char *ta)
         free_instances(list);
         return rc;
     }
+
+    list = topo_sort_instances(list);
     
     if ((rc = remove_excessive(buf, list)) != 0)
     {
@@ -770,8 +807,6 @@ cfg_backup_restore_ta(char *ta)
         return rc;
     }
 
-    list = topo_sort_instances(list);
-    
     return restore_entries(list);
 }
 

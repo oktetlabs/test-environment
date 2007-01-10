@@ -1276,8 +1276,9 @@ process_backup(cfg_backup_msg *msg)
             if (TE_RC_GET_ERROR(msg->rc) == TE_ETADEAD)
             {
                 rcf_check_agents();
-                cfg_ta_sync("/:", TRUE);
             }
+            cfg_ta_sync("/:", TRUE);
+            
             
             cfg_ta_log_syncing(TRUE);
             msg->rc = parse_config(msg->filename, TRUE);
