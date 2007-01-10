@@ -49,7 +49,7 @@
 
 /* See the description from tapi_reqs.h */
 te_errno
-tapi_reqs_exclude(const char *reqs)
+tapi_reqs_modify(const char *reqs)
 {
     te_errno        rc;
     cfg_val_type    type = CVT_STRING;
@@ -74,7 +74,7 @@ tapi_reqs_exclude(const char *reqs)
         len = 0;
     else
         len = strlen(old) + strlen("()&");
-    len += strlen(reqs) + strlen("!()") + 1;
+    len += strlen(reqs) + strlen("()") + 1;
 
     val = TE_ALLOC(len);
     if (val == NULL)
@@ -84,9 +84,9 @@ tapi_reqs_exclude(const char *reqs)
     }
 
     if (old == NULL)
-        p = snprintf(val, len, "!(%s)", reqs);
+        p = snprintf(val, len, "(%s)", reqs);
     else
-        p = snprintf(val, len, "(%s)&!(%s)", old, reqs);
+        p = snprintf(val, len, "(%s)&(%s)", old, reqs);
 
     free(old);
 

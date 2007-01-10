@@ -38,14 +38,13 @@ extern "C" {
 #endif
 
 /**
- * Add exclusion of test which match corresponding requirements
- * expression.
+ * Modify the set of defined requirements for tests
  *
  * @param reqs          Requirements expression
  *
  * @return Status code.
  */
-extern te_errno tapi_reqs_exclude(const char *reqs);
+extern te_errno tapi_reqs_append(const char *reqs);
 
 #ifdef __cplusplus
 } /* extern "C" */
