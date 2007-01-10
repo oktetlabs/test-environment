@@ -2077,7 +2077,8 @@ interface_del(unsigned int gid, const char *oid, const char *ifname)
     if ((vlan = strchr(devname, '.')) == NULL)
     {
         free(devname);
-        return TE_RC(TE_TA_UNIX, TE_EPERM);
+        ERROR("Attempting to delete non-VLAN interface");
+        return 0; /*TE_RC(TE_TA_UNIX, TE_EPERM); */
     }
     *vlan = 0;
 
@@ -2204,6 +2205,16 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     UNUSED(gid);
     UNUSED(oid);
     rc = mcast_link_addr_change(ifname, addr, SIOCDELMULTI);
+/* there are problems with deleting neighbour discovery multicast addresses,
+   when restoring configuration. 
+   this is solely to shut up the configurator.
+   yes, it's ugly, but there seems to be no other way...
+*/
+    if (rc == TE_RC(TE_TA_UNIX, TE_ENOENT) && 
+        strncmp(addr, "33:33:", 6) == 0)
+    {
+        rc = 0;
+    }
 #ifndef __linux__ 
     if (rc == 0)
     {
@@ -2267,6 +2278,9 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
     char        ifn[IFNAMSIZ];
     char        addrstr[ETHER_ADDR_LEN * 3];
 
+#define DEFAULT_MULTICAST_ETHER_ADDR_IPV4 "01005e000001"
+#define DEFAULT_MULTICAST_ETHER_ADDR_IPV6 "333300000001"
+
     UNUSED(gid);
     UNUSED(oid);
     if ((fd = fopen("/proc/net/dev_mcast", "r")) == NULL)
@@ -2285,6 +2299,11 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
         if (strcmp(ifn, ifname) == 0)
         {
             int i;
+
+            /* exclude `default' addresses */
+            if (strcmp(addrstr, DEFAULT_MULTICAST_ETHER_ADDR_IPV4) == 0 ||
+                strcmp(addrstr, DEFAULT_MULTICAST_ETHER_ADDR_IPV6) == 0)
+                continue;
 
             for (i = 0; i < 6; i++)
             {
