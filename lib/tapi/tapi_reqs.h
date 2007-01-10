@@ -44,7 +44,7 @@ extern "C" {
  *
  * @return Status code.
  */
-extern te_errno tapi_reqs_append(const char *reqs);
+extern te_errno tapi_reqs_modify(const char *reqs);
 
 #ifdef __cplusplus
 } /* extern "C" */
