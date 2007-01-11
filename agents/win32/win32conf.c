@@ -582,7 +582,7 @@ ifindex2ifname(DWORD ifindex)
 
 /** Update information in if_entry. Local variable ifname should exist */
 #define GET_IF_ENTRY \
-    do {                                                        \ 
+    do {                                                        \
         if ((if_entry.dwIndex = ifname2ifindex(ifname)) == 0 || \
             GetIfEntry(&if_entry) != 0)                         \
             return TE_RC(TE_TA_WIN32, TE_ENOENT);               \
