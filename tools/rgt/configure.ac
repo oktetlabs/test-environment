@@ -21,21 +21,40 @@ AC_PROG_INSTALL
 TE_APP_SET
 
 # Checks for libraries.
-AC_CHECK_LIB([tcl], [Tcl_CreateInterp],,,-lm -ldl)
-AC_CHECK_HEADER([tcl.h], ac_cv_header_tcl_h=yes, ac_cv_header_tcl_h=no)
 
-if test x$ac_cv_lib_tcl = xno || test x$ac_cv_header_tcl_h = xno
+# By default we include log filtering stuff
+AC_ARG_WITH([log_filter],
+            AS_HELP_STRING([--with-log-filter],
+                           [enable filtering support in RGT core]),
+            [ac_cv_with_log_filter=$withval], [ac_cv_with_log_filter=yes])
+
+if test "x$ac_cv_with_log_filter" = "xyes"
 then
-    # In Debian distributive TCL is placed under some untrivial directories
-    # Sets TCL_BIN_DIR
-    SC2_PATH_TCLCONFIG
-    # Sources tclConfig.sh, substs TCL_{BIN,SRC,LIB}_DIR
-    SC2_LOAD_TCLCONFIG
-    test -n "$TCL_INC_DIR" && TCL_CFLAGS=-I$TCL_INC_DIR
+    AC_CHECK_LIB([tcl], [Tcl_CreateInterp],,,-lm -ldl)
+    AC_CHECK_HEADER([tcl.h], ac_cv_header_tcl_h=yes, ac_cv_header_tcl_h=no)
+
+    if test x$ac_cv_lib_tcl = xno || test x$ac_cv_header_tcl_h = xno
+    then
+        # In Debian distributive TCL is placed under some untrivial 
+        # directories
+        # Sets TCL_BIN_DIR
+        SC2_PATH_TCLCONFIG
+        # Sources tclConfig.sh, substs TCL_{BIN,SRC,LIB}_DIR
+        SC2_LOAD_TCLCONFIG
+        test -n "$TCL_INC_DIR" && TCL_CFLAGS=-I$TCL_INC_DIR
+    else
+        TCL_LIB_SPEC=-ltcl
+        TCL_CFLAGS=
+    fi
+    AC_DEFINE([WITH_LOG_FILTER], 1, [Embed log fitering stuff in RGT core])
 else
-    TCL_LIB_SPEC=-ltcl
+    TCL_LIB_SPEC=
     TCL_CFLAGS=
 fi
+
+WITH_LOG_FILTER=$ac_cv_with_log_filter
+AC_SUBST([WITH_LOG_FILTER])
+
 AC_SUBST([TCL_LIB_SPEC])
 AC_SUBST([TCL_CFLAGS])
 
@@ -56,8 +75,8 @@ AC_C_BIGENDIAN
 
 AC_ARG_WITH([glib],
             AS_HELP_STRING([--with-glib=[PFX]],
-                           [Specify location for glib-2.0 installation]),
-              [ac_cv_with_glib=$withval], [ac_cv_with_glib=])
+                           [specify location for glib-2.0 installation]),
+            [ac_cv_with_glib=$withval], [ac_cv_with_glib=])
 
 if test "x$ac_cv_with_glib" != "x"
 then
@@ -88,7 +107,7 @@ xml_lib_err="You should select only one XML library. "\
 "Whether Libxml, or Expat"
 AC_ARG_WITH([libxml],
             AS_HELP_STRING([--with-libxml],
-                           [Use XML parser from Libxml library]),
+                           [use XML parser from Libxml library]),
             [
                 if test "x$xml_lib" != "x"
                 then
@@ -99,7 +118,7 @@ AC_ARG_WITH([libxml],
             
 AC_ARG_WITH([expat],
             AS_HELP_STRING([--with-expat],
-                           [Use XML parser from Expat library]),
+                           [use XML parser from Expat library]),
             [
                 if test "x$xml_lib" != "x"
                 then
@@ -133,8 +152,9 @@ AC_SUBST(XML_PARSER_LIBS)
 
 TE_HEADERS_PATH=""
 AC_ARG_WITH([te-headers-path],
-   [  --with-te-headers-path=[PATH]        Specify location of TE headers],
-   CFLAGS="$CFLAGS -I$withval")
+            AS_HELP_STRING([--with-te-headers-path=[PATH]],
+                           [specify location of TE headers]),
+            CFLAGS="$CFLAGS -I$withval")
 
 
 CFLAGS=${CFLAGS}" "${XML2_CFLAGS}

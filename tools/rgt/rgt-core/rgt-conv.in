@@ -67,10 +67,18 @@ Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
 
   --incomplete-log         Do not shout on truncated log report, but complete
                            it automatically.
+EOF
+  
+    if [ "@WITH_LOG_FILTER@" = "yes" ] ; then
+        cat <<EOF
 
   -c FILE,                 Specify XML filter configuration file. If no file
   --cfg-filter=FILE        specified no filtering is applied.
-  
+EOF
+    fi
+
+    cat <<EOF
+
   -f FILE, --raw-log=FILE  Specify Raw Log file name to be processed.
   
   -o FILE, --output=FILE   Result file name. If it is not specified then the
@@ -79,7 +87,7 @@ Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
   -v, --version            Display version information.
   
   -h, --help               Show this help message.
-  
+
 EOF
 }
 
@@ -176,11 +184,23 @@ do
         extra_flags="$extra_flags $1"
         ;;
     -c)
+        if [ "@WITH_LOG_FILTER@" = "no" ] ; then
+            usage
+            echo "Unknown option: $1" >&2
+            { (exit 1); exit 1; }
+        fi
+
         cfg_file=$2
         check_file $cfg_file "filter configuration file"
         shift
         ;;
     --cfg-filter*)
+        if [ "@WITH_LOG_FILTER@" = "no" ] ; then
+            usage
+            echo "Unknown option: $1" >&2
+            { (exit 1); exit 1; }
+        fi
+
         if echo $1 | grep '=' >/dev/null ; then
             cfg_file=`echo $1 | sed 's/^--cfg-filter=//'`
         else

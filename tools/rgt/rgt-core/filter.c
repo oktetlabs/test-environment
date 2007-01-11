@@ -29,10 +29,13 @@
 
 #include "rgt_common.h"
 
+#if (defined WITH_LOG_FILTER)
 #include <tcl.h>
+#endif
 
 #include "filter.h"
 
+#if (defined WITH_LOG_FILTER)
 static Tcl_Interp *tcl_interp = NULL;
 static te_bool     initialized = FALSE;
 
@@ -244,3 +247,56 @@ rgt_filter_check_duration(const char *node_type,
 
     return (fmode == NFMODE_DEFAULT) ? NFMODE_INCLUDE : fmode;
 }
+
+#else
+int
+rgt_filter_init(const char *fltr_fname)
+{
+    UNUSED(fltr_fname);
+
+    return 0;
+}
+
+void
+rgt_filter_destroy()
+{
+}
+
+enum node_fltr_mode
+rgt_filter_check_message(const char *entity, const char *user,
+                         te_log_level level,
+                         const uint32_t *timestamp, uint32_t *flags)
+{
+    UNUSED(entity);
+    UNUSED(level);
+    UNUSED(timestamp);
+    UNUSED(flags);
+
+    if (rgt_ctx.proc_cntrl_msg && strcmp(user, TE_LOG_CMSG_USER) == 0)
+        *flags |= RGT_MSG_FLG_VERDICT;
+
+    *flags |= RGT_MSG_FLG_NORMAL;
+
+    return NFMODE_INCLUDE;
+}
+
+enum node_fltr_mode
+rgt_filter_check_branch(const char *path)
+{
+    UNUSED(path);
+
+    return NFMODE_INCLUDE;
+}
+
+enum node_fltr_mode
+rgt_filter_check_duration(const char *node_type,
+                          uint32_t *start_ts, uint32_t *end_ts)
+{
+    UNUSED(node_type);
+    UNUSED(start_ts);
+    UNUSED(end_ts);
+    
+    return NFMODE_INCLUDE;
+}
+
+#endif

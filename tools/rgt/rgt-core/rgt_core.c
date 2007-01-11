@@ -141,8 +141,10 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     
     /* Option Table */
     struct poptOption optionsTable[] = {
+#if (defined WITH_LOG_FILTER)
         { "filter", 'f', POPT_ARG_STRING, NULL, 'f',
           "TCL filter file.", "FILE" },
+#endif /* WITH_LOG_FILTER */
 
         { "mode", 'm', POPT_ARG_STRING, NULL, 'm',
           "Mode of operation, can be " 
@@ -176,47 +178,57 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 
     while ((rc = poptGetNextOpt(optCon)) >= 0)
     {
-        if (rc == 'f')
+        switch (rc)
         {
-            if ((ctx->fltr_fname = poptGetOptArg(optCon)) == NULL)
-            {
-                usage(optCon, 1, "Specify TCL filter file", NULL);
-            }
-        }
-        else if (rc == 'm')
-        {
-            if ((ctx->op_mode_str = poptGetOptArg(optCon)) == NULL ||
-                (strcmp(ctx->op_mode_str, RGT_OP_MODE_LIVE_STR) != 0 && 
-                 strcmp(ctx->op_mode_str, RGT_OP_MODE_POSTPONED_STR) != 0))
-            {
-                usage(optCon, 1, "Specify mode of operation", 
-                      RGT_OP_MODE_LIVE_STR " or "
-                      RGT_OP_MODE_POSTPONED_STR);
-            }
-            ctx->op_mode = 
-                strcmp(ctx->op_mode_str, RGT_OP_MODE_LIVE_STR) == 0 ?
-                RGT_OP_MODE_LIVE : RGT_OP_MODE_POSTPONED;
-        }
-        else if (rc == 'v')
-        {
-            printf("Package %s: rgt-core version %s\n%s\n", 
-                   PACKAGE, VERSION, TE_COPYRIGHT);
-            poptFreeContext(optCon);
-            exit(0);
-        }
-        else if (rc == 'n')
-        {
-            /* User do not want us to process control messages */
-            ctx->proc_cntrl_msg = FALSE;
-        }
-        else if (rc == 'i')
-        {
-            /* User ask us to complete log report automatically */
-            ctx->proc_incomplete = TRUE;
-        }
-        else if (rc == 'V')
-        {
-            ctx->verb = TRUE;
+#if (defined WITH_LOG_FILTER)
+            case 'f':
+                if ((ctx->fltr_fname = poptGetOptArg(optCon)) == NULL)
+                {
+                    usage(optCon, 1, "Specify TCL filter file", NULL);
+                }
+                break;
+#endif /* WITH_LOG_FILTER */
+
+            case 'm':
+                if ((ctx->op_mode_str = poptGetOptArg(optCon)) == NULL ||
+                    (strcmp(ctx->op_mode_str,
+                            RGT_OP_MODE_LIVE_STR) != 0 &&
+                     strcmp(ctx->op_mode_str,
+                            RGT_OP_MODE_POSTPONED_STR) != 0))
+                {
+                    usage(optCon, 1, "Specify mode of operation", 
+                          RGT_OP_MODE_LIVE_STR " or "
+                          RGT_OP_MODE_POSTPONED_STR);
+                }
+                ctx->op_mode = 
+                    strcmp(ctx->op_mode_str, RGT_OP_MODE_LIVE_STR) == 0 ?
+                    RGT_OP_MODE_LIVE : RGT_OP_MODE_POSTPONED;
+                break;
+        
+            case 'v':
+                printf("Package %s: rgt-core version %s\n%s\n", 
+                       PACKAGE, VERSION, TE_COPYRIGHT);
+                poptFreeContext(optCon);
+                exit(0);
+                break;
+
+            case 'n':
+                /* User do not want us to process control messages */
+                ctx->proc_cntrl_msg = FALSE;
+                break;
+
+            case 'i':
+                /* User ask us to complete log report automatically */
+                ctx->proc_incomplete = TRUE;
+                break;
+
+            case 'V':
+                ctx->verb = TRUE;
+                break;
+            
+            default:
+                assert(0);
+                break;
         }
     }
 
