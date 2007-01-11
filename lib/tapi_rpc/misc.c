@@ -1267,15 +1267,34 @@ rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(setsockopt, -1);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (mcast_addr == NULL)
+    {
+        ERROR("%s(): Invalid 'mcast_addr'", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     in.fd = s;
     in.ifindex = if_index;
     in.leave_group = leave_group;
     in.family = addr_family_h2rpc(mcast_addr->sa_family);
-    in.multiaddr.multiaddr_len = te_netaddr_get_size(mcast_addr->sa_family);
-    in.multiaddr.multiaddr_val = te_sockaddr_get_netaddr(mcast_addr);
+
+    if ((in.multiaddr.multiaddr_len =
+         te_netaddr_get_size(mcast_addr->sa_family)) == 0)
+    {
+        ERROR("%s(): 'te_netaddr_get_size(%s)' has returned error",
+              __FUNCTION__, addr_family_rpc2str(mcast_addr->sa_family));
+        RETVAL_INT(mcast_join_leave, -1);
+    }
+    if ((in.multiaddr.multiaddr_val =
+         te_sockaddr_get_netaddr(mcast_addr)) == NULL)
+    {
+        ERROR("%s(): 'te_sockaddr_get_netaddr(%s)' has returned error",
+              __FUNCTION__, te_sockaddr2str(mcast_addr));
+        RETVAL_INT(mcast_join_leave, -1);
+    }
+
     in.how = how;    
 
     rcf_rpc_call(rpcs, "mcast_join_leave", &in, &out);
