@@ -410,11 +410,6 @@ efport2ifindex(void)
         RING("USING SOLARFLARE DRIVER");
       }
     }
-    else
-    {
-      strcpy(driver_type, NDIS_SF);
-      RING("USING SOLARFLARE DRIVER");
-    }
 
     /* Obtaining interface indexes */
 
