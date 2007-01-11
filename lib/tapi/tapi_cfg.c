@@ -615,7 +615,7 @@ tapi_cfg_add_blackhole(const char *ta, int addr_family,
     char        dst_addr_str[INET6_ADDRSTRLEN];
     int         netaddr_size = te_netaddr_get_size(addr_family);
 
-    if (netaddr_size < 0)
+    if (netaddr_size == 0)
     {
         ERROR("%s() unknown address family value", __FUNCTION__);
         return TE_RC(TE_TAPI, TE_EINVAL);
@@ -864,7 +864,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 
     UNUSED(flags);
 
-    if (netaddr_size < 0)
+    if (netaddr_size == 0)
     {
         ERROR("%s() unknown address family value", __FUNCTION__);
         return TE_RC(TE_TAPI, TE_EINVAL);
