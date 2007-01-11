@@ -42,7 +42,16 @@
 #include <setjmp.h>
 #include <popt.h>
 
-#include <libxml/parser.h>
+#if (defined WITH_LIBXML)
+# include <libxml/parser.h>
+typedef xmlChar rgt_xmlChar;
+#elif (defined WITH_EXPAT)
+# include <expat.h>
+typedef char rgt_xmlChar;
+#else
+# error Not Libxml nor Expat is selected
+#endif
+
 #include <glib.h>
 
 #include "te_defs.h"
@@ -154,15 +163,22 @@ typedef struct rgt_gen_ctx {
 
     jmp_buf       jmp_env; /**< Context to generate an exception */
     char          err_msg[255]; /**< Error message to print */
+
+#if (defined WITH_EXPAT)
+    XML_Parser     p; /**< Parser instance - to free context when 
+                           an exception happens */
+    FILE          *src_fd; /**< File pointer of parsed file - to close
+                                when an exception happens */
+#endif
 } rgt_gen_ctx_t;
 
 
 static te_log_level get_level_mask(const char *level_str);
 static void entity_filter_start_rule(rgt_gen_ctx_t *ctx,
-                                     const xmlChar **xml_attrs);
+                                     const rgt_xmlChar **xml_attrs);
 static void entity_filter_end_rule(rgt_gen_ctx_t *ctx);
 static void entity_filter_process_user(rgt_gen_ctx_t *ctx,
-                                       const xmlChar **xml_attrs);
+                                       const rgt_xmlChar **xml_attrs);
 
 /**
  * Terminates execution flow generating an exception.
@@ -665,7 +681,7 @@ duration_filter_update(rgt_gen_ctx_t *ctx, GQueue *queue,
  * @param xml_attrs  Attributes of <include>/<exclude> TAG
  */
 static void
-duration_filter_rule(rgt_gen_ctx_t *ctx, const xmlChar **xml_attrs)
+duration_filter_rule(rgt_gen_ctx_t *ctx, const rgt_xmlChar **xml_attrs)
 {
     const char     *node = 
         rgt_tmpls_xml_attrs_get((const char **)xml_attrs, "node");
@@ -724,7 +740,7 @@ duration_filter_rule(rgt_gen_ctx_t *ctx, const xmlChar **xml_attrs)
  * @param xml_attrs  Attributes of <include>/<exclude> TAG
  */
 static void
-branch_filter_rule(rgt_gen_ctx_t *ctx, const xmlChar **xml_attrs)
+branch_filter_rule(rgt_gen_ctx_t *ctx, const rgt_xmlChar **xml_attrs)
 {
     const char     *path = 
         rgt_tmpls_xml_attrs_get((const char **)xml_attrs, "path");
@@ -754,7 +770,7 @@ branch_filter_rule(rgt_gen_ctx_t *ctx, const xmlChar **xml_attrs)
 }
 
 static void
-entity_filter_start(rgt_gen_ctx_t *ctx, const xmlChar **xml_attrs)
+entity_filter_start(rgt_gen_ctx_t *ctx, const rgt_xmlChar **xml_attrs)
 {
     const char *match = 
         rgt_tmpls_xml_attrs_get((const char **)xml_attrs, "match");
@@ -782,7 +798,7 @@ entity_filter_start(rgt_gen_ctx_t *ctx, const xmlChar **xml_attrs)
  * @param xml_attrs  Attributes of <include>/<exclude> TAG
  */
 static void
-entity_filter_start_rule(rgt_gen_ctx_t *ctx, const xmlChar **xml_attrs)
+entity_filter_start_rule(rgt_gen_ctx_t *ctx, const rgt_xmlChar **xml_attrs)
 {
     const char   *entity = 
         rgt_tmpls_xml_attrs_get((const char **)xml_attrs, "entity");
@@ -921,7 +937,8 @@ add_user(gpointer key, gpointer value, gpointer user_data)
  * @param xml_attrs  Attributes of <user> TAG
  */
 static void
-entity_filter_process_user(rgt_gen_ctx_t *ctx, const xmlChar **xml_attrs)
+entity_filter_process_user(rgt_gen_ctx_t *ctx,
+                           const rgt_xmlChar **xml_attrs)
 {
     const char   *name = 
         rgt_tmpls_xml_attrs_get((const char **)xml_attrs, "name");
@@ -1039,7 +1056,7 @@ rgt_end_document(void *user_data)
  */
 static void
 rgt_start_element(void *user_data,
-                  const xmlChar *xml_tag, const xmlChar **attrs)
+                  const rgt_xmlChar *xml_tag, const rgt_xmlChar **attrs)
 {
     rgt_gen_ctx_t *ctx = (rgt_gen_ctx_t *)user_data;
     const char    *tag = (const char *)xml_tag;
@@ -1172,7 +1189,7 @@ rgt_start_element(void *user_data,
  * @return Nothing
  */
 static void
-rgt_end_element(void *user_data, const xmlChar *xml_tag)
+rgt_end_element(void *user_data, const rgt_xmlChar *xml_tag)
 {
     rgt_gen_ctx_t *ctx = (rgt_gen_ctx_t *)user_data;
     const char    *tag = (const char *)xml_tag;
@@ -1246,6 +1263,7 @@ rgt_end_element(void *user_data, const xmlChar *xml_tag)
     }
 }
 
+#if (defined WITH_LIBXML)
 static void
 rgt_report_problem(void *user_data, const char *msg, ...)
 {
@@ -1305,6 +1323,101 @@ static xmlSAXHandler sax_handler = {
     .serror                 = NULL
 #endif
 };
+#endif /* WITH_LIBXML */
+
+#if (defined WITH_LIBXML)
+/**
+ * Parse XML file specified in context.
+ * 
+ * @param gen_ctx  Context set up by main() entry point
+ *
+ * @return Status of the operation
+ * @retval 0  A file has been successfully parsed
+ * @retval 1  An error has happened during a file parsing
+ */
+static int
+rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
+{
+    if (xmlSAXUserParseFile(&sax_handler, gen_ctx,
+                            gen_ctx->xml_fname) != 0)
+    {
+        fprintf(stderr, "Cannot parse XML document\n");
+        return 1;
+    }
+
+    xmlCleanupParser();
+    return 0;
+}
+
+/**
+ * Free parser resources when aborted by exception while file processing.
+ * 
+ * @param gen_ctx  Context data
+ */
+static void
+rgt_free_parser_on_abort(rgt_gen_ctx_t *gen_ctx)
+{
+    UNUSED(gen_ctx);
+
+    xmlCleanupParser();
+}
+
+#elif (defined WITH_EXPAT)
+static int
+rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
+{
+    XML_Parser     p = NULL;
+    size_t         n;
+    char           buf[1024];
+    te_bool        err = FALSE;
+
+    if ((gen_ctx->src_fd = fopen(gen_ctx->xml_fname, "r")) == NULL)
+    {
+        fprintf(stderr, "Cannot open %s file: %s\n",
+                gen_ctx->xml_fname, strerror(errno));
+        return 1;
+    }
+    if ((gen_ctx->p = XML_ParserCreate(NULL)) == NULL)
+    {
+        fprintf(stderr, "Cannot create parser\n");
+        fclose(gen_ctx->src_fd);
+        return 1;
+    }
+    p = gen_ctx->p;
+
+    XML_SetUserData(p, gen_ctx);
+    XML_SetElementHandler(p, rgt_start_element, rgt_end_element);
+    rgt_start_document(gen_ctx);
+
+    do {
+        n = fread(buf, 1, sizeof(buf), gen_ctx->src_fd);
+
+        if (XML_Parse(p, buf, n, (n == 0)) == 0)
+        {
+            fprintf(stderr, "Parse error at line %d:\n%s\n",
+                    XML_GetCurrentLineNumber(p),
+                    XML_ErrorString(XML_GetErrorCode(p)));
+            err = TRUE;
+            break;
+        }
+    } while (n != 0);
+
+    if (!err)
+        rgt_end_document(gen_ctx);
+
+    XML_ParserFree(p);
+    fclose(gen_ctx->src_fd);
+    
+    return 0;
+}
+
+static void
+rgt_free_parser_on_abort(rgt_gen_ctx_t *gen_ctx)
+{
+    XML_ParserFree(gen_ctx->p);
+    fclose(gen_ctx->src_fd);
+}
+#endif
 
 /**
  * Print "usage" how to.
@@ -1472,22 +1585,21 @@ main(int argc, char **argv)
 
     if ((rc = setjmp(gen_ctx.jmp_env)) == 0)
     {
-
-        if (xmlSAXUserParseFile(&sax_handler, &gen_ctx, 
-                                gen_ctx.xml_fname) != 0)
-        {
-            rc = 1;
-            snprintf(gen_ctx.err_msg, sizeof(gen_ctx.err_msg),
-                     "Cannot parse XML document\n");
-        }
+        rc = rgt_parse_file(&gen_ctx);
+    }
+    else
+    {
+        /*
+         * We've got an exception while running rgt_parse_file(),
+         * so we need to free resources.
+         */
+        rgt_free_parser_on_abort(&gen_ctx);
     }
 
     if (rc != 0)
         fprintf(stderr, gen_ctx.err_msg);
 
     rgt_tmpls_free(xml2fmt_tmpls, xml2fmt_tmpls_num);
-
-    xmlCleanupParser();
 
     return rc;
 }

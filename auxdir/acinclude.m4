@@ -6054,6 +6054,8 @@ AC_DEFUN([TE_APP_RESTORE], [
 # It defines the following varables:
 # XML2_CFLAGS, XML2_LIBS
 #
+# It also defines WITH_LIBXML macro.
+#
 AC_DEFUN([TE_PATH_LIBXML2], [
     LIBXML_CONFIG_PREFIX=""
     AC_ARG_WITH([libxml-prefix],
@@ -6073,12 +6075,33 @@ AC_DEFUN([TE_PATH_LIBXML2], [
         XML2_LIBS="$XML2_LIBS `$XML_CONFIG --libs`"
         XML2_CFLAGS="$XML2_CFLAGS `$XML_CONFIG --cflags`"
         AC_MSG_RESULT([found])
+        AC_DEFINE([WITH_LIBXML], 1, [ Use Libxml as XML Parser])
     else
         AC_MSG_ERROR([Could not find libxml2, check ftp://xmlsoft.org/.])
     fi
 
     AC_SUBST([XML2_CFLAGS])
     AC_SUBST([XML2_LIBS])
+])
+
+# TE_PATH_EXPAT
+# -------------
+# The macro is used for checking against Expat library.
+# It defines the following varables:
+# EXPAT_CFLAGS, EXPAT_LIBS
+#
+# It also defines WITH_EXPAT macro.
+#
+AC_DEFUN([TE_PATH_EXPAT], [
+    AC_CHECK_LIB([expat], [XML_Parse],
+                 [AC_DEFINE([WITH_EXPAT], 1, [ Use Expat as XML Parser])],
+                 [AC_MSG_ERROR([Could not find expat library installed.])])
+
+    EXPAT_CFLAGS=
+    EXPAT_LIBS=-lexpat
+
+    AC_SUBST([EXPAT_CFLAGS])
+    AC_SUBST([EXPAT_LIBS])
 ])
 
 # TE_BINUTIL

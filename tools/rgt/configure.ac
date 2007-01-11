@@ -83,7 +83,53 @@ then
     export PKG_CONFIG_PATH
 fi
 
-TE_PATH_LIBXML2
+xml_lib=
+xml_lib_err="You should select only one XML library. "\
+"Whether Libxml, or Expat"
+AC_ARG_WITH([libxml],
+            AS_HELP_STRING([--with-libxml],
+                           [Use XML parser from Libxml library]),
+            [
+                if test "x$xml_lib" != "x"
+                then
+                    AC_MSG_ERROR("[$xml_lib_err]")
+                fi
+                xml_lib=libxml
+            ])
+            
+AC_ARG_WITH([expat],
+            AS_HELP_STRING([--with-expat],
+                           [Use XML parser from Expat library]),
+            [
+                if test "x$xml_lib" != "x"
+                then
+                    AC_MSG_ERROR("[$xml_lib_err]")
+                fi
+                xml_lib=expat
+            ])
+
+if test "x$xml_lib" = "x"
+then
+    xml_lib=libxml
+fi
+
+if test "x$xml_lib" = "xlibxml"
+then
+    # Use Libxml
+    TE_PATH_LIBXML2
+
+    XML_PARSER_CFLAGS=${XML2_CFLAGS}
+    XML_PARSER_LIBS=${XML2_LIBS}
+else
+    # Use Expat
+    TE_PATH_EXPAT
+
+    XML_PARSER_CFLAGS=${EXPAT_CFLAGS}
+    XML_PARSER_LIBS=${EXPAT_LIBS}
+fi
+
+AC_SUBST(XML_PARSER_CFLAGS)
+AC_SUBST(XML_PARSER_LIBS)
 
 TE_HEADERS_PATH=""
 AC_ARG_WITH([te-headers-path],
@@ -104,7 +150,7 @@ AC_CONFIG_FILES([Makefile
                  lib/tmpls/Makefile
                  rgt-cfg/Makefile
                  rgt-cfg/tmpls/Makefile
-                 rgt-core/Makefile 
+                 rgt-core/Makefile
                  rgt-core/rgt-conv
                  rgt-format/Makefile
                  rgt-format/xml2html-multi/Makefile

@@ -213,11 +213,17 @@ DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_file_end, LOG_MSG_FILE_END)
 
 void
 proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
-           const xmlChar *ch, size_t len)
+           const rgt_xmlChar *ch, size_t len)
 {
     FILE *fd = ((gen_ctx_user_t *)ctx->user_data)->fd;
 
     UNUSED(depth_ctx);
 
     fwrite(ch, len, 1, fd);
+}
+
+te_bool
+proc_expand_entities(void)
+{
+    return FALSE;
 }

@@ -143,7 +143,7 @@ rgt_process_cntrl_start(rgt_gen_ctx_t *ctx,
  * @return Nothing
  */
 static void
-rgt_log_end_element(void *user_data, const xmlChar *xml_tag)
+rgt_log_end_element(void *user_data, const rgt_xmlChar *xml_tag)
 {
     rgt_gen_ctx_t   *ctx = (rgt_gen_ctx_t *)user_data;
     rgt_depth_ctx_t *depth_ctx;
@@ -343,7 +343,7 @@ rgt_log_end_element(void *user_data, const xmlChar *xml_tag)
  */
 static void
 rgt_log_start_element(void *user_data,
-                      const xmlChar *xml_tag, const xmlChar **attrs)
+                      const rgt_xmlChar *xml_tag, const rgt_xmlChar **attrs)
 {
     rgt_gen_ctx_t   *ctx = (rgt_gen_ctx_t *)user_data;
     rgt_depth_ctx_t *depth_ctx;
@@ -530,7 +530,7 @@ rgt_log_start_element(void *user_data,
  * @return Nothing
  */
 static void
-rgt_log_characters(void *user_data, const xmlChar *ch, int len)
+rgt_log_characters(void *user_data, const rgt_xmlChar *ch, int len)
 {
     rgt_gen_ctx_t   *ctx = (rgt_gen_ctx_t *)user_data;
     rgt_depth_ctx_t *depth_ctx;
@@ -559,6 +559,7 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
     }
 }
 
+#if (defined WITH_LIBXML)
 /**
  * The callback is called for resolving entities (& NAME ;)
  * In case of SAX parser it converts standard entities into their values
@@ -569,7 +570,7 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
  * without expanding - update this code!
  */
 static xmlEntityPtr
-rgt_get_entity(void *user_data, const xmlChar *xml_name)
+rgt_get_entity(void *user_data, const rgt_xmlChar *xml_name)
 {
     static xmlEntity  ent;
     rgt_gen_ctx_t    *ctx = (rgt_gen_ctx_t *)user_data;
@@ -579,9 +580,9 @@ rgt_get_entity(void *user_data, const xmlChar *xml_name)
         return xmlGetPredefinedEntity(xml_name);
 
 #define FILL_ENT(ent_, name_) \
-    do {                                        \
-        ent_.name = (const xmlChar *)(name_);   \
-        ent_.orig = (xmlChar *)("&" name_ ";"); \
+    do {                                            \
+        ent_.name = (const rgt_xmlChar *)(name_);   \
+        ent_.orig = (rgt_xmlChar *)("&" name_ ";"); \
     } while (0)
 
     if (strcmp(name, "lt") == 0)
@@ -693,6 +694,103 @@ static xmlSAXHandler sax_handler = {
     .serror                 = NULL
 #endif
 };
+#endif /* WITH_LIBXML */
+
+/**
+ * Parses XML file specified in context.
+ * 
+ * @param gen_ctx  Context set up by main() entry point
+ *
+ * @return Status of the operation
+ * @retval 0  A file has been successfully parsed
+ * @retval 1  An error has happened during a file parsing
+ */
+#if (defined WITH_LIBXML)
+static int
+rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
+{
+    if (xmlSAXUserParseFile(&sax_handler, gen_ctx,
+                            gen_ctx->xml_fname) != 0)
+    {
+        fprintf(stderr, "Cannot parse XML document\n");
+        return 1;
+    }
+
+    xmlCleanupParser();
+    return 0;
+}
+#elif (defined WITH_EXPAT)
+static int
+rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
+{
+#define BUF_BLOCK_LEN 1024 /* 1Kb */
+    XML_Parser     p = NULL;
+    FILE          *fd = NULL;
+    size_t         n;
+    char          *buf = NULL;
+    size_t         buf_len = BUF_BLOCK_LEN * 1024; /* 1Mb */
+    te_bool        err = FALSE;
+
+    if ((fd = fopen(gen_ctx->xml_fname, "r")) == NULL)
+    {
+        fprintf(stderr, "Cannot open %s file: %s\n",
+                gen_ctx->xml_fname, strerror(errno));
+        return 1;
+    }
+    if ((p = XML_ParserCreate(NULL)) == NULL)
+    {
+        fprintf(stderr, "Cannot create parser\n");
+        fclose(fd);
+        return 1;
+    }
+
+    assert((buf_len % BUF_BLOCK_LEN) == 0);
+
+    while ((buf = malloc(buf_len)) == NULL && buf_len != 0)
+    {
+        buf_len -= BUF_BLOCK_LEN;
+    }
+    if (buf_len == 0)
+    {
+        fprintf(stderr, "Cannot allocate enough memory\n");
+        XML_ParserFree(p);
+        fclose(fd);
+        return 1;
+    }
+    assert(buf != NULL);
+
+    XML_SetUserData(p, gen_ctx);
+    XML_SetElementHandler(p, rgt_log_start_element, rgt_log_end_element);
+    if (proc_expand_entities())
+        XML_SetCharacterDataHandler(p, rgt_log_characters);
+    else
+        XML_SetDefaultHandler(p, rgt_log_characters);
+
+    rgt_log_start_document(gen_ctx);
+
+    do {
+        n = fread(buf, 1, buf_len, fd);
+
+        if (XML_Parse(p, buf, n, (n == 0)) == 0)
+        {
+            fprintf(stderr, "Parse error at line %d:\n%s\n",
+                    XML_GetCurrentLineNumber(p),
+                    XML_ErrorString(XML_GetErrorCode(p)));
+            err = TRUE;
+            break;
+        }
+    } while (n != 0);
+
+    if (!err)
+        rgt_log_end_document(gen_ctx);
+
+    free(buf);
+    XML_ParserFree(p);
+    fclose(fd);
+    
+    return 0;
+}
+#endif
 
 /**
  * Print "usage" how to.
@@ -844,7 +942,7 @@ int
 main(int argc, char **argv)
 {
     rgt_gen_ctx_t gen_ctx;
-    int           rc = 0;
+    int           rc;
 
     memset(&gen_ctx, 0, sizeof(gen_ctx));
 
@@ -866,18 +964,13 @@ main(int argc, char **argv)
         exit(1);
     }
 
-    if (xmlSAXUserParseFile(&sax_handler, &gen_ctx,
-                            gen_ctx.xml_fname) != 0)
-    {
-        fprintf(stderr, "Cannot parse XML document\n");
-        rc = 1;
-    }
+    rc = rgt_parse_file(&gen_ctx);
+
     assert(gen_ctx.depth == 0);
 
     rgt_tmpls_free(xml2fmt_tmpls, xml2fmt_tmpls_num);
 
     g_array_free(gen_ctx.depth_info, TRUE);
-    xmlCleanupParser();
 
     return rc;
 }

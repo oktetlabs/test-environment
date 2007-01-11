@@ -30,10 +30,10 @@ pkgdatadir = $(datadir)/$(subdir)
 
 AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) \
               -I$(top_srcdir)/lib/tmpls @EXTRA_CPPFLAGS@
-AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @XML2_CFLAGS@
+AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @XML_PARSER_CFLAGS@
 
 GEN_LDADD = -L. -L$(top_builddir)/lib/tmpls @GLIB_LIBS@ @TE_LDFLAGS@ \
-            @XML2_LIBS@  -ltmpls -lpopt
+            @XML_PARSER_LIBS@  -ltmpls -lpopt
 GEN_DEP = $(top_builddir)/lib/tmpls/libtmpls.a
 
 

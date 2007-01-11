@@ -38,7 +38,16 @@ extern "C" {
 #include "config.h"
 #endif
 
-#include <libxml/parser.h>
+#if (defined WITH_LIBXML)
+# include <libxml/parser.h>
+typedef xmlChar rgt_xmlChar;
+#elif (defined WITH_EXPAT)
+# include <expat.h>
+typedef char rgt_xmlChar;
+#else
+# error Not Libxml nor Expat is selected
+#endif
+
 #include <glib.h>
 #include <popt.h>
 
@@ -245,7 +254,17 @@ RGT_EXTERN_FUNC(proc_log_msg_file_end);
  */
 extern void proc_chars(rgt_gen_ctx_t *ctx,
                        rgt_depth_ctx_t *depth_ctx,
-                       const xmlChar *ch, size_t len);
+                       const rgt_xmlChar *ch, size_t len);
+
+/**
+ * Callback function that tells whether a program wants entities
+ * to be expanded or not.
+ * For instance XML, HTML generating programs do not want entities
+ * to be expanded, TEXT generating programs do.
+ *
+ * @return TRUE if entities should be expanded, or FALSE otherwise.
+ */
+extern te_bool proc_expand_entities(void);
 
 #ifdef __cplusplus
 } /* extern "C" */
