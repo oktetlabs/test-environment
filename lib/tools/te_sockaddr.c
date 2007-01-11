@@ -262,7 +262,7 @@ te_netaddr_get_size(int af)
                   "operation has no effect", __FUNCTION__, (int)af);
     }
 
-    return -1;
+    return 0;
 }
 
 /* See the description in te_sockaddr.h */
@@ -304,7 +304,7 @@ te_sockaddr_mask_by_prefix(struct sockaddr *mask, socklen_t masklen,
     size_t   max = te_netaddr_get_size(af);
     uint8_t *ptr;
 
-    if (max == (size_t)-1)
+    if (max == 0)
         return TE_EAFNOSUPPORT;
     if (prefix > (max << 3))
         return TE_EINVAL;
