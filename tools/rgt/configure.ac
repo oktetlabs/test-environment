@@ -127,19 +127,24 @@ AC_ARG_WITH([expat],
                 xml_lib=expat
             ])
 
-if test "x$xml_lib" = "x"
-then
-    xml_lib=libxml
-fi
+AC_CHECKING([XML Parser library])
 
-if test "x$xml_lib" = "xlibxml"
+if test "x$xml_lib" = "xlibxml" || test "x$xml_lib" = "x"
 then
     # Use Libxml
-    TE_PATH_LIBXML2
+    if test "x$xml_lib" = "x" ; then
+        TE_PATH_LIBXML2([NOTE])
+    else
+        TE_PATH_LIBXML2
+    fi
 
     XML_PARSER_CFLAGS=${XML2_CFLAGS}
     XML_PARSER_LIBS=${XML2_LIBS}
-else
+fi
+
+if test "x$xml_lib" = "xexpat" || 
+   (test "x$xml_lib" = "x" && test "x$XML_PARSER_LIBS" = "x")
+then
     # Use Expat
     TE_PATH_EXPAT
 

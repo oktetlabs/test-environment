@@ -6054,9 +6054,24 @@ AC_DEFUN([TE_APP_RESTORE], [
 # It defines the following varables:
 # XML2_CFLAGS, XML2_LIBS
 #
+# Parameters:
+#      $1 - whether to generate an error or warning in case LIBXML2 
+#           has not been found.
+#           Possible values: "ERROR", "NOTE"
+#           If nothing is specified, "ERROR" is assumed.
+#
 # It also defines WITH_LIBXML macro.
 #
 AC_DEFUN([TE_PATH_LIBXML2], [
+    ERR_REPORT_TYPE=$1
+    if test -z "$1" ; then
+        ERR_REPORT_TYPE="ERROR"
+    else
+        if test x"$1" != x"ERROR" && test x"$1" != x"NOTE" ; then
+            AC_MSG_ERROR([First argument of [TE_PATH_LIBXML2] can be WARN or NOTE.])
+        fi
+    fi
+
     LIBXML_CONFIG_PREFIX=""
     AC_ARG_WITH([libxml-prefix],
         [--with-libxml-prefix=[PFX] \
@@ -6077,7 +6092,11 @@ AC_DEFUN([TE_PATH_LIBXML2], [
         AC_MSG_RESULT([found])
         AC_DEFINE([WITH_LIBXML], 1, [ Use Libxml as XML Parser])
     else
-        AC_MSG_ERROR([Could not find libxml2, check ftp://xmlsoft.org/.])
+        if test x"$ERR_REPORT_TYPE" = x"ERROR"; then
+            AC_MSG_ERROR([Could not find libxml2, check ftp://xmlsoft.org/.])
+        else
+            AC_MSG_RESULT([not found])
+        fi
     fi
 
     AC_SUBST([XML2_CFLAGS])
@@ -6093,6 +6112,7 @@ AC_DEFUN([TE_PATH_LIBXML2], [
 # It also defines WITH_EXPAT macro.
 #
 AC_DEFUN([TE_PATH_EXPAT], [
+    AC_MSG_CHECKING([for Expat library])
     AC_CHECK_LIB([expat], [XML_Parse],
                  [AC_DEFINE([WITH_EXPAT], 1, [ Use Expat as XML Parser])],
                  [AC_MSG_ERROR([Could not find expat library installed.])])
