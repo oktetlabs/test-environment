@@ -402,13 +402,20 @@ efport2ifindex(void)
       if (t)
       {
         strcpy(driver_type, NDIS_EFAB);
-        RING("USING EFAB DRIVER");
+        RING("Efab drivers will be used to resolve ef* interfaces, if any");
       }
       else
       {
         strcpy(driver_type, NDIS_SF);
-        RING("USING SOLARFLARE DRIVER");
+        RING("Solarflare drivers will be used to resolve ef* interfaces,"
+             " if any");
       }
+    }
+    else
+    {
+      strcpy(driver_type, NDIS_SF);
+      RING("Solarflare drivers will be used to resolve ef* interfaces, "
+           "if any");
     }
 
     /* Obtaining interface indexes */
