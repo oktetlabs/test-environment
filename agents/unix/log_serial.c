@@ -237,10 +237,13 @@ open_conserver(const char *conserver)
             break;
         if (!isdigit(*buf))
         {
-            ERROR("Non-numeric response from conserver: %c", *buf);
+            char err_msg[64] = "";
+
+            err_msg[0] = *buf;
+            read(sock, err_msg + 1, sizeof(err_msg) - 2);
+            ERROR("Conserver said: \"%s\", quitting", err_msg);
             close(sock);
             return -1;
-            
         }
         port = (port * 10) + *buf - '0';
     }
