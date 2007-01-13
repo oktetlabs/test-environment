@@ -240,6 +240,8 @@ typedef struct iscsi_initiator_data {
     int                        host_bus_adapter;  /**< Number of the host bus 
                                                   adapter. Usually 0 */
     int                        verbosity; /**< Initiator verbosity level */
+                               /**< Win32 iSCSI Service Restart Requirement */
+    int                        win32_service_restart;
                                /** A time slice to wait for device readiness (usecs) */
     unsigned long              retry_timeout; 
                                /** Number of times to probe iSCSI device readiness */

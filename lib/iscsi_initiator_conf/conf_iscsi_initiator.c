@@ -633,6 +633,36 @@ iscsi_initiator_verbose_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/* Win32 iSCSI Service Restart Requirement */
+static te_errno
+iscsi_initiator_win32_service_restart_set(unsigned int gid, const char *oid,
+                                          char *value, const char *instance,
+                                          ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    iscsi_configuration()->win32_service_restart = atoi(value);
+
+    return 0;
+}
+
+static te_errno
+iscsi_initiator_win32_service_restart_get(unsigned int gid, const char *oid,
+                                          char *value, const char *instance,
+                                          ...)
+{
+
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    sprintf(value, "%d", iscsi_configuration()->win32_service_restart);
+
+    return 0;
+}
+
 /* Retry timeout */
 static te_errno
 iscsi_initiator_retry_timeout_set(unsigned int gid, const char *oid,
@@ -781,8 +811,15 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_verbose, "verbose", NULL,
                     iscsi_initiator_verbose_get,
                     iscsi_initiator_verbose_set);
 
+RCF_PCH_CFG_NODE_RW(node_iscsi_win32_service_restart,
+                    "win32_service_restart", NULL, 
+                    &node_iscsi_verbose, 
+                    iscsi_initiator_win32_service_restart_get,
+                    iscsi_initiator_win32_service_restart_set);
+
 RCF_PCH_CFG_NODE_RW(node_iscsi_script_path, "script_path", NULL, 
-                    &node_iscsi_verbose, iscsi_script_path_get,
+                    &node_iscsi_win32_service_restart,
+                    iscsi_script_path_get,
                     iscsi_script_path_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_type, "type", NULL, 

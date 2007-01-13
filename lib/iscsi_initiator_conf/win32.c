@@ -646,7 +646,7 @@ static te_errno
 iscsi_win32_restart_iscsi_service(void)
 {
     SP_PROPCHANGE_PARAMS params;
-    
+
     params.ClassInstallHeader.cbSize = sizeof(SP_CLASSINSTALL_HEADER);
     params.ClassInstallHeader.InstallFunction = DIF_PROPERTYCHANGE;
     params.StateChange = DICS_PROPCHANGE;
@@ -664,6 +664,7 @@ iscsi_win32_restart_iscsi_service(void)
         ISCSI_WIN32_REPORT_ERROR();
         return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
+
     return 0;
 }
 
@@ -1138,10 +1139,14 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
                 }
             }
         }
-        if (iscsi_win32_restart_iscsi_service() != 0)
+        if (iscsi_configuration()->win32_service_restart != 0)
         {
-            ERROR("Unable to restart iSCSI service");
-            return 0;
+            RING("Restart Win32 iSCSI Initiator Service");
+            if (iscsi_win32_restart_iscsi_service() != 0)
+            {
+                ERROR("Unable to restart iSCSI service");
+                return 0;
+            }
         }
     }
     iscsi_send_to_win32_iscsicli("%s %s", 
