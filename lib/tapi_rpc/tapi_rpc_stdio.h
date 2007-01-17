@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 /** Maximum resulting command length for rpc_shell() */
-#define RPC_SHELL_CMDLINE_MAX   256
+#define RPC_SHELL_CMDLINE_MAX   1024
 
 /** 'FILE *' equivalent */
 typedef rpc_ptr rpc_file_p;
