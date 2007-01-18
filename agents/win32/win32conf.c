@@ -180,6 +180,16 @@ static te_errno neigh_del(unsigned int, const char *,
 static te_errno neigh_list(unsigned int, const char *, char **,
                            const char *);
 
+//Multicast
+static te_errno mcast_link_addr_add(unsigned int, const char *,
+                                    const char *, const char *,
+                                    const char *);
+static te_errno mcast_link_addr_del(unsigned int, const char *,
+                                    const char *, const char *);
+static te_errno mcast_link_addr_list(unsigned int, const char *, char **,
+                                     const char *);
+//Multicast
+
 /* 
  * This is a bit of hack - there are same handlers for static and dynamic
  * branches, handler discovers dynamic subtree by presence of
@@ -285,7 +295,15 @@ static rcf_pch_cfg_object node_neigh_static =
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
       (rcf_ch_cfg_list)neigh_list, NULL, NULL};
 
-RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_neigh_static,
+//Multicast
+static rcf_pch_cfg_object node_mcast_link_addr =
+ { "mcast_link_addr", 0, NULL, &node_neigh_static,
+  NULL, NULL, (rcf_ch_cfg_add)mcast_link_addr_add,
+  (rcf_ch_cfg_del)mcast_link_addr_del,
+  (rcf_ch_cfg_list)mcast_link_addr_list, NULL, NULL };
+//
+
+RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_mcast_link_addr,
                     promisc_get, promisc_set);
 
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
@@ -2640,3 +2658,317 @@ ta_win32_conf_net_if_stats_init(void)
     
     return rcf_pch_add_node("/agent/interface", &node_net_if_stats);
 }
+
+
+// Multicast
+
+#define DRV_TYPE 40000
+#define METHOD_BUFFERED                 0
+#define FILE_ANY_ACCESS                 0
+
+#define CTL_CODE( DeviceType, Function, Method, Access ) (                 \
+    ((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method) \
+)
+
+
+#define KRX_ADD_MULTICAST_ADDR \
+    CTL_CODE( DRV_TYPE, 0x907, METHOD_BUFFERED, FILE_ANY_ACCESS  )
+
+#define KRX_DEL_MULTICAST_ADDR \
+    CTL_CODE( DRV_TYPE, 0x908, METHOD_BUFFERED, FILE_ANY_ACCESS  )
+
+#define KRX_GET_MULTICAST_LIST \
+    CTL_CODE( DRV_TYPE, 0x909, METHOD_BUFFERED, FILE_ANY_ACCESS  )
+
+#define WRAPPER_DEVICE_NAME  "\\\\.\\olwrapper"
+#define WRAPPER_DEVFILE_NAME "\\\\.\\olwrapper"
+
+static te_errno
+mcast_link_addr_add(unsigned int gid, const char *oid,
+                    const char *value, const char *ifname, const char *addr)
+{
+
+    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ | 
+                            GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    int rc;
+    DWORD bytes_returned = 0;
+    unsigned char addr6[6];
+    unsigned int itemp;
+
+    RING("!!!!!!!!!!!!!!!!!!!!!!!!mcast_link_addr_add!!!!!!!!!!!!!!!!!!");
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(ifname);
+//    UNUSED(addr);
+
+    if (INVALID_HANDLE_VALUE == dev)
+    {
+      WARN("Failed to open device '%s', errno=%d", WRAPPER_DEVFILE_NAME,
+           GetLastError());
+      return -1;
+    }
+    RING("add addr %s", addr);
+    sscanf(addr+0,"%x", &itemp);
+    RING("itemp 0 = 0x%x", itemp);
+    addr6[0] = (unsigned char)itemp;
+    sscanf(addr+3,"%x", &itemp);
+    RING("itemp 1 = 0x%x", itemp);
+    addr6[1] = (unsigned char)itemp;
+    sscanf(addr+6,"%x", &itemp);
+    RING("itemp 2 = 0x%x", itemp);
+    addr6[2] = (unsigned char)itemp;
+    sscanf(addr+9,"%x", itemp);
+    addr6[3] = (unsigned char)itemp;
+    sscanf(addr+12,"%x", itemp);
+    addr6[4] = (unsigned char)itemp;
+    sscanf(addr+15,"%x", itemp);
+    addr6[5] = (unsigned char)itemp;
+
+    RING("hex addr = 0x%x", *(unsigned int *)addr6);
+    if (!DeviceIoControl(dev, KRX_ADD_MULTICAST_ADDR, addr6, 6, NULL, 0,
+                         &bytes_returned, NULL))
+    {
+      rc = GetLastError();
+      WARN("DeviceIoControl failed with errno=%d", GetLastError());
+      return -2;
+    }
+    CloseHandle(dev);
+    return 0;
+
+/*
+    te_errno rc;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    rc = mcast_link_addr_change(ifname, addr, SIOCADDMULTI);
+#ifndef __linux__
+    if (rc == 0)
+    {
+        mma_list_el *p = (mma_list_el *)malloc(sizeof(mma_list_el));
+        strncpy(p->ifname, ifname, IFNAMSIZ);
+        strncpy(p->value, addr, sizeof(p->value));
+        p->next = mcast_mac_addr_list;
+        mcast_mac_addr_list = p->next;
+    }
+#endif
+    return rc;
+    */
+}
+    
+static te_errno
+mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
+                    const char *addr)
+{
+
+    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ | 
+                            GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    int rc;
+    DWORD bytes_returned = 0;
+    unsigned char addr6[6];
+    unsigned int itemp;
+
+    RING("!!!!!!!!!!!!!!!!!!!!!!!!mcast_link_addr_del!!!!!!!!!!!!!!!!!!");
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ifname);
+//    UNUSED(addr);
+
+    if (INVALID_HANDLE_VALUE == dev)
+    {
+      WARN("Failed to open device '%s', errno=%d", WRAPPER_DEVFILE_NAME,
+           GetLastError());
+      return -1;
+    }
+    RING("del addr %s", addr);
+    
+    sscanf(addr+0,"%x", &itemp);
+    RING("itemp 0 = 0x%x", itemp);
+    addr6[0] = (unsigned char)itemp;
+    sscanf(addr+3,"%x", &itemp);
+    RING("itemp 1 = 0x%x", itemp);
+    addr6[1] = (unsigned char)itemp;
+    sscanf(addr+6,"%x", &itemp);
+    RING("itemp 2 = 0x%x", itemp);
+    addr6[2] = (unsigned char)itemp;
+    sscanf(addr+9,"%x", itemp);
+    addr6[3] = (unsigned char)itemp;
+    sscanf(addr+12,"%x", itemp);
+    addr6[4] = (unsigned char)itemp;
+    sscanf(addr+15,"%x", itemp);
+    addr6[5] = (unsigned char)itemp;
+
+    RING("hex addr = 0x%x", *(unsigned int *)addr6);
+
+    if (!DeviceIoControl(dev, KRX_DEL_MULTICAST_ADDR, addr6, 6, NULL, 0,
+                         &bytes_returned, NULL))
+    {
+      rc = GetLastError();
+      WARN("DeviceIoControl failed with errno=%d", GetLastError());
+      return -2;
+    }
+    CloseHandle(dev);
+    return 0;
+
+/*    te_errno rc;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    rc = mcast_link_addr_change(ifname, addr, SIOCDELMULTI);
+#ifndef __linux__ 
+    if (rc == 0)
+    {
+        if (strcmp(mcast_mac_addr_list->value, addr) == 0 &&
+            strcmp(mcast_mac_addr_list->ifname, ifname) == 0)
+        {
+            mma_list_el *p = mcast_mac_addr_list->next;
+            free(mcast_mac_addr_list);
+            mcast_mac_addr_list = p;
+        }
+        else
+        {
+            mma_list_el *p,
+                        *pp;
+            for (p = mcast_mac_addr_list;
+                 p->next != NULL && 
+                 (strcmp(p->next->value, addr) != 0 ||
+                  strcmp(p->next->ifname, ifname) != 0);
+                 p = p->next);
+            pp = p->next->next;
+            free(p->next);
+            p->next = pp;
+        }
+    }
+#endif
+    return rc;*/
+
+}
+
+static te_errno
+mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
+                     const char *ifname)
+{
+
+    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ | 
+                            GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    int rc;
+    DWORD bytes_returned = 0;
+    unsigned int i;
+    unsigned char *buf = malloc(1024 * sizeof(unsigned char));
+    unsigned char *ret = malloc(1024 * sizeof(unsigned char));
+
+    RING("!!!!!!!!!!!!!!!!!!!!!!!!mcast_link_addr_list!!!!!!!!!!!!!!!!!!");
+
+    UNUSED(gid);
+    UNUSED(oid);
+//    UNUSED(list);
+    UNUSED(ifname);
+
+
+    if (INVALID_HANDLE_VALUE == dev)
+    {
+      WARN("Failed to open device '%s', errno=%d", WRAPPER_DEVFILE_NAME,
+           GetLastError());
+      return -1;
+    }
+    if (!DeviceIoControl(dev, KRX_GET_MULTICAST_LIST, 
+                        (void *)buf, 1024, (void *)buf, 1024,
+                         &bytes_returned, NULL))
+    {
+      rc = GetLastError();
+      WARN("DeviceIoControl failed with errno=%d", GetLastError());
+      return -2;
+    }
+    else
+   { 
+      RING("bytes_returned=%d", bytes_returned);
+   }
+    CloseHandle(dev);
+    for (i = 0; i < bytes_returned / 6; i++)
+    {
+      sprintf(&ret[i*18],"%02x:%02x:%02x:%02x:%02x:%02x ", buf[i*6], 
+              buf[i*6+1], buf[i*6+2], buf[i*6+3], buf[i*6+4], buf[i*6+5]);
+      RING("%d element of list: %s", i, &ret[i*18]);
+      RING("begin og the buffer 0x%x", *(unsigned int*)buf);
+    }
+//    list[i][0] = 0;
+
+    *list = ret;
+    return 0;
+
+#if 0
+/*    char       *s = NULL;
+    int         p = 0;
+    int         buf_segs = 1;
+
+#define MMAC_ADDR_BUF_SIZE 16384 
+#ifndef __linux__
+    mma_list_el *tmp;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ifname);
+
+    s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
+    *s = '\0';
+
+    for (tmp = mcast_mac_addr_list; tmp != NULL; tmp = tmp->next)
+    {
+        if (strcmp(tmp->ifname, ifname) == 0)
+        {
+            if (p >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
+            {
+                s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
+            }
+            p += sprintf(&s[p], "%s ", tmp->value);
+        }
+    }
+#else
+    FILE       *fd;
+    char        ifn[IFNAMSIZ];
+    char        addrstr[ETHER_ADDR_LEN * 3];
+
+    UNUSED(gid);
+    UNUSED(oid);
+    if ((fd = fopen("/proc/net/dev_mcast", "r")) == NULL)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    
+    s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
+    *s = '\0';
+
+    while (fscanf(fd, "%*d %s %*d %*d %s\n", ifn, addrstr) > 0)
+    {
+        /*
+         * Read file and copy items with appropriate interface name
+         * to the buffer, adding colons to MAC addresses.
+         */
+            
+/*        if (strcmp(ifn, ifname) == 0)
+        {
+            int i;
+
+            for (i = 0; i < 6; i++)
+            {
+                if (p >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
+                {
+                    s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
+                }
+                strncpy(&s[p], &addrstr[i * 2], 2);
+                p += 2;
+                s[p++] = (i < 5) ? ':' : ' ';
+                s[p] = '\0';
+            }
+        }
+    }
+    fclose(fd);
+#endif
+    *list = s;
+    return 0;
+    */
+#endif
+}
+
+// Multicast
