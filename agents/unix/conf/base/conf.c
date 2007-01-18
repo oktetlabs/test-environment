@@ -2075,6 +2075,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, rc);
     }
 
+#if defined __linux__
     if (cfg_socket < 0)
     {
         ERROR("%s: non-init cfg socket", cfg_socket);
@@ -2083,12 +2084,10 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
     if_request.cmd = ADD_VLAN_CMD;
     strcpy(if_request.device1, ifname);
     if_request.u.VID = vid;
-#if 1
+
     if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
-        l_errno = errno;
+        l_errno = errno; 
 #endif
-
-
     VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
          __FUNCTION__, gid, oid, vid_str, ifname);
 
@@ -2112,7 +2111,14 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
     int vid = atoi(vid_str);
     int l_errno = 0;
 
+    te_errno rc;
 
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+    {
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+#if defined __linux__
     if (cfg_socket < 0)
     {
         ERROR("%s: non-init cfg socket", cfg_socket);
@@ -2121,7 +2127,7 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
     if_request.cmd = DEL_VLAN_CMD;
     vlan_ifname_get_internal(ifname, vid, if_request.device1);
     if_request.u.VID = vid;
-#if 1
+
     if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
         l_errno = errno;
 #endif
