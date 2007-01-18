@@ -203,6 +203,7 @@ AC_SEARCH_LIBS([pam_start], [pam],
 AC_CHECK_HEADERS([security/pam_appl.h])
 AC_CHECK_HEADERS([sys/utsname.h])
 AC_CHECK_HEADERS([sys/systeminfo.h])
+AC_CHECK_HEADERS([linux/if_vlan.h])
 
 if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
     dnl

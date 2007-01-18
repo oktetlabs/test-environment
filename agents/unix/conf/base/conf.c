@@ -84,7 +84,9 @@
 #include <net/if_dl.h>
 #endif
 
+#if HAVE_LINUX_IF_VLAN_H
 #include <linux/if_vlan.h>
+#endif
 
 /* { required for sysctl on netbsd */
 #if HAVE_SYS_PARAM_H
