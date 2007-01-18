@@ -83,6 +83,9 @@
 #if HAVE_NET_IF_DL_H
 #include <net/if_dl.h>
 #endif
+
+#include <linux/if_vlan.h>
+
 /* { required for sysctl on netbsd */
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -361,6 +364,13 @@ static te_errno interface_add(unsigned int, const char *, const char *,
                               const char *);
 static te_errno interface_del(unsigned int, const char *, const char *);
 
+static te_errno vlans_list(unsigned int, const char *, char **,
+                           const char*);
+static te_errno vlans_add(unsigned int, const char *, const char *,
+                              const char *, const char *);
+static te_errno vlans_del(unsigned int, const char *, const char *,
+                          const char *);
+
 static te_errno mcast_link_addr_add(unsigned int, const char *,
                                     const char *, const char *,
                                     const char *);
@@ -405,6 +415,17 @@ static te_errno bcast_link_addr_set(unsigned int, const char *,
 
 static te_errno bcast_link_addr_get(unsigned int, const char *,
                                     char *, const char *);
+
+static te_errno vlan_get_parent(const char *, char *);
+
+static te_errno vlans_get_children(const char *, size_t *, int *);
+
+static te_errno vlan_ifname_get(unsigned int , const char *,
+                                char *, const char *, const char *);
+
+static te_errno vlan_ifname_get_internal(const char *ifname, int vlan_id, 
+                                         char *v_ifname);
+
 
 static te_errno ifindex_get(unsigned int, const char *, char *,
                             const char *);
@@ -489,6 +510,7 @@ static rcf_pch_cfg_object node_neigh_static =
       (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
       (rcf_ch_cfg_list)neigh_list, NULL, NULL};
+
       
 RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
                     broadcast_get, broadcast_set);
@@ -505,7 +527,15 @@ static rcf_pch_cfg_object node_mcast_link_addr =
       (rcf_ch_cfg_del)mcast_link_addr_del,
       (rcf_ch_cfg_list)mcast_link_addr_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_mcast_link_addr,
+RCF_PCH_CFG_NODE_RO(node_vl_ifname, "ifname", NULL, NULL,
+                    vlan_ifname_get);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_vlans, "vlans",
+                            &node_vl_ifname, &node_mcast_link_addr,
+                            vlans_add, vlans_del,
+                            vlans_list, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_vlans,
                     promisc_get, promisc_set);
 
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
@@ -555,13 +585,19 @@ RCF_PCH_CFG_NODE_AGENT(node_agent, &node_user);
 
 static te_bool init = FALSE;
 
+
+#define MAX_VLANS 0xfff
+static int vlans_buffer[MAX_VLANS];
+
+
 /** Grab interface-specific resources */
 static te_errno
 interface_grab(const char *name)
 {
     const char *ifname = strrchr(name, ':');
-    const char *dot;
     te_errno    rc;
+    char parent[IFNAMSIZ];
+
 
     if (ifname == NULL)
     {
@@ -570,32 +606,35 @@ interface_grab(const char *name)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    dot = strchr(ifname, '.');
-    if (dot == NULL)
-    {
-        /* Grab main interface with all its VLANs */
-        unsigned int len = strlen(name);
-        char         ptrn[len + 3];
+    rc = vlan_get_parent(ifname, parent);
+    if (rc != 0)
+        return rc;
 
-        memcpy(ptrn, name, len);
-        ptrn[len] = '.';
-        ptrn[len + 1] = '*';
-        ptrn[len + 2] = '\0';
-        rc = rcf_pch_rsrc_check_locks(ptrn);
+    if (*parent != 0)
+    {
+        rc = rcf_pch_rsrc_check_locks(parent);
         if (rc != 0)
             return rc;
     }
     else
     {
-        /* Grab VLAN of the interface */
-        unsigned int len = dot - name;
-        char         parent[len + 1];
+        /* Grab main interface with all its VLANs */
+        unsigned int len = strlen(ifname);
+        size_t n_vlans = MAX_VLANS, i;
+        char         vlan_ifname[len + 10];
+        
 
-        memcpy(parent, name, len);
-        parent[len] = '\0';
-        rc = rcf_pch_rsrc_check_locks(parent);
+        rc = vlans_get_children(ifname, &n_vlans, vlans_buffer);
         if (rc != 0)
             return rc;
+
+        for (i = 0; i < n_vlans; i++)
+        {
+            vlan_ifname_get_internal(ifname, vlans_buffer[i], vlan_ifname);
+            rc = rcf_pch_rsrc_check_locks(vlan_ifname);
+            if (rc != 0)
+                return rc;
+        } 
     }
 
 #ifdef ENABLE_8021X
@@ -1791,6 +1830,308 @@ interface_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
 }
 
 #endif
+
+/**
+ * Get list of VLANs on particular physical device
+ *
+ * If there are no VLAN children under passed interface, 'n_vlans'
+ * set to zero.
+ *
+ * @param devname       name of network device
+ * @param n_vlans       number of vlans (IN/OUT)
+ * @param vlans         location for vlan IDs (OUT)
+ *
+ * @return status code
+ */
+static te_errno
+vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
+{
+    if (devname == NULL ||n_vlans == NULL || vlans == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL); 
+
+    *n_vlans = 0;
+#if defined __linux__
+    {
+        FILE *proc_vlans = fopen("/proc/net/vlan/config", "r");
+        int vlan_id;
+
+        if (proc_vlans == NULL)
+        {
+            ERROR("%s(): Failed to open /proc/net/vlan/config %s",
+                  __FUNCTION__, strerror(errno));
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+        while (fgets(trash, sizeof(trash), proc_vlans) != NULL)
+        {
+            char *s = strchr(trash, '|');
+            size_t space_ofs;
+
+
+            if (s == NULL)
+                continue;
+            s++;
+            while (isspace(*s)) s++;
+            if (!isdigit(*s))
+                continue;
+            vlan_id = atoi(s);
+
+            s = strchr(s, '|');
+            if (s == NULL)
+                continue;
+            s++;
+            while (isspace(*s)) s++;
+
+            space_ofs = strcspn(s, " \t\n\r");
+            s[space_ofs] = 0; 
+
+            if (strcmp(s, devname) == 0)
+                vlans[(*n_vlans)++] = vlan_id;
+        }
+
+    }
+#elif defined __sun__
+#endif
+
+    return 0;
+}
+/**
+ * Get VLAN ifname
+ *
+ * @param devname       name of network device
+ * @param vlan_id       VLAN id
+ * @param v_ifname      location for VLAN ifname, 
+ *
+ * @return status
+ */
+static te_errno
+vlan_ifname_get_internal(const char *ifname, int vlan_id, 
+                         char *v_ifname)
+{
+#if defined __linux__
+    sprintf(v_ifname, "%s.%d", ifname, vlan_id); 
+#elif define __sun__ 
+    size_t offset = 0;
+    while (!isdigit(ifname[offset])) offset++;
+
+    memcpy(v_ifname, ifname, offset);
+    sprintf(v_ifname + offset, "%d00%ѕ", vlan_id, ifname + offset);
+#endif 
+    return 0;
+}
+
+/**
+ * Get VLAN ifname
+ *
+ * @param gid           request group identifier (unused)
+ * @param oid           full object instence identifier
+ * @param value         location for interface name
+ * @param ifname        name of the interface
+ * @param vid           name of the vlan (decimal integer)
+ *
+ * @return status
+ */
+static te_errno
+vlan_ifname_get(unsigned int gid, const char *oid, char *value,
+                const char *ifname, const char *vid)
+{
+    int vlan_id = atoi(vid);
+
+    VERB("%s: gid=%u oid='%s', ifname = '%s', vid %d",
+         __FUNCTION__, gid, oid, ifname,  vlan_id); 
+
+
+    return vlan_ifname_get_internal(ifname, vlan_id, value);
+}
+
+/**
+ * Get parent device name of VLAN interface.
+ * If passed interface is not VLAN, method sets 'parent' to empty string
+ * and return success.
+ * 
+ * @param ifname        interface name
+ * @param parent        location of parent interface name,
+ *                      IF_NAMESIZE buffer length(OUT)
+ *
+ * @return status
+ */
+static te_errno
+vlan_get_parent(const char *ifname, char *parent)
+{
+    *parent = 0;
+#if defined __linux__
+    {
+        FILE *proc_vlans = fopen("/proc/net/vlan/config", "r");
+
+        if (proc_vlans == NULL)
+        {
+            ERROR("%s(): Failed to open /proc/net/vlan/config %s",
+                  __FUNCTION__, strerror(errno));
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+        while (fgets(trash, sizeof(trash), proc_vlans) != NULL)
+        {
+            size_t space_ofs;
+            char *s = trash;
+            char *p = parent;
+
+
+            space_ofs = strcspn(s, " \t\n\r");
+            s[space_ofs] = 0; 
+
+
+            if (strcmp(s, ifname) != 0)
+                continue;
+
+            s += space_ofs + 1;
+
+            s = strchr(s, '|');
+            s++;
+            s = strchr(s, '|');
+            s++;
+
+            while (isspace(*s)) s++;
+
+            while (!isspace(*s)) 
+                *p++ = *s++;
+            *p = 0;
+            break;
+        }
+
+    }
+#elif defined __sun__
+#endif
+    return 0;
+}
+
+
+/**
+ * Get instance list for object "agent/interface/vlans".
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param list          location for the list pointer
+ *
+ * @return              Status code
+ * @retval 0            success
+ * @retval TE_ENOMEM       cannot allocate memory
+ */
+static te_errno
+vlans_list(unsigned int gid, const char *oid, char **list,
+           const char *ifname)
+{
+    size_t n_vlans = MAX_VLANS;
+    size_t i;
+    te_errno rc;
+
+    char *b;
+
+    rc = vlans_get_children(ifname, &n_vlans, vlans_buffer);
+    if (rc != 0)
+        return rc;
+
+    VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
+         __FUNCTION__, gid, oid, ifname, n_vlans);
+
+    if (n_vlans == 0) 
+    {
+        *list = NULL;
+        return 0;
+    }
+
+    b = *list = malloc(n_vlans * 5 /* max digits in VLAN id + space */ + 1);
+    if (*list == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM); 
+
+    for (i = 0; i < n_vlans; i++)
+        b += sprintf(b, "%d ", vlans_buffer[i]); 
+
+    return 0;
+}
+
+/**
+ * Add VLAN Ethernet device.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier 
+ * @param value         value string 
+ * @param ifname        device name, over it VLAN should be added 
+ * @param vid_str       VLAN id string, decimal notation
+ *
+ * @return              Status code
+ */
+static te_errno
+vlans_add(unsigned int gid, const char *oid, const char *value,
+              const char *ifname, const char *vid_str)
+{
+    struct vlan_ioctl_args if_request;
+    int vid = atoi(vid_str);
+    int l_errno = 0;
+    te_errno rc;
+
+    UNUSED(value);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+    {
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (cfg_socket < 0)
+    {
+        ERROR("%s: non-init cfg socket", cfg_socket);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT); 
+    }
+    if_request.cmd = ADD_VLAN_CMD;
+    strcpy(if_request.device1, ifname);
+    if_request.u.VID = vid;
+#if 1
+    if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
+        l_errno = errno;
+#endif
+
+
+    VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
+         __FUNCTION__, gid, oid, vid_str, ifname);
+
+    return TE_RC(TE_TA_UNIX, l_errno); 
+}
+
+/**
+ * Delete VLAN Ethernet device.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param ifname        VLAN device name: ethX.VID
+ *
+ * @return              Status code
+ */
+static te_errno
+vlans_del(unsigned int gid, const char *oid, const char *ifname,
+          const char *vid_str)
+{
+    struct vlan_ioctl_args if_request;
+    int vid = atoi(vid_str);
+    int l_errno = 0;
+
+
+    if (cfg_socket < 0)
+    {
+        ERROR("%s: non-init cfg socket", cfg_socket);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT); 
+    }
+    if_request.cmd = DEL_VLAN_CMD;
+    vlan_ifname_get_internal(ifname, vid, if_request.device1);
+    if_request.u.VID = vid;
+#if 1
+    if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
+        l_errno = errno;
+#endif
+
+
+    VERB("%s: gid=%u oid='%s', vid %s, ifname %s, errno %d",
+         __FUNCTION__, gid, oid, vid_str, ifname, l_errno);
+
+    return TE_RC(TE_TA_UNIX, l_errno); 
+}
 
 /**
  * Get instance list for object "agent/interface".
