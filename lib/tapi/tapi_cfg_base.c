@@ -572,3 +572,62 @@ tapi_cfg_del_if_ip4_addresses(const char *ta,
 
     return rc;
 }
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
+                          int vid, char **vlan_ifname)
+{
+    cfg_val_type val = CVT_STRING;
+    te_errno     rc = 0;
+
+    if ((rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
+                                   "/agent:%s/interface:%s/vlans:%d",
+                                   ta, if_name, vid)) != 0)
+    {
+        ERROR("Failed to add VLAN with VID=%d to %s", vid, if_name);
+        return rc;
+    }
+    if ((rc = cfg_get_instance_fmt(&val, vlan_ifname,
+                         "/agent:%s/interface:%s/vlans:%d/ifname:",
+                         ta, if_name, vid)) != 0)
+    {
+        ERROR("Failed to get interface name for VLAN interface "
+              "with VID=%d on %s", vid, if_name);
+        return rc;
+    }
+
+    /* We should synchronize interfaces list to be able to use the new VLAN
+     * interface (add network addresses, etc) */
+    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:*", ta)) != 0)
+    {
+        ERROR("Failed to synchronize interfaces on %s "
+              "after adding a new VLAN interface", ta);
+    }
+    return rc;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
+                          int vid)
+{
+    cfg_val_type val = CVT_STRING;
+    te_errno     rc = 0;
+
+    if ((rc = cfg_del_instance_fmt(NULL, CVT_NONE, NULL,
+                                   "/agent:%s/interface:%s/vlans:%d",
+                                   ta, if_name, vid)) != 0)
+    {
+        ERROR("Failed to delete VLAN with VID=%d from %s", vid, if_name);
+        return rc;
+    }
+
+    /* We should synchronize interfaces list */
+    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:*", ta)) != 0)
+    {
+        ERROR("Failed to synchronize interfaces on %s "
+              "after adding a new VLAN interface", ta);
+    }
+    return rc;
+}

@@ -305,6 +305,31 @@ tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
                                 ta, iface);
 }
 
+/**
+ * Add VLAN interface and get its name.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       interface name
+ * @param vid           VLAN ID to create
+ * @param vlan_ifname   pointer to return the name of new interface
+ *
+ * @return Status code
+ */
+te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
+                                   int vid, char **vlan_ifname);
+
+/**
+ * Delete VLAN interface.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       interface name
+ * @param vid           VLAN ID to create
+ *
+ * @return Status code
+ */
+te_errno tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name, 
+                                   int vid);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
