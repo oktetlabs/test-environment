@@ -2098,7 +2098,15 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
     if_request.u.VID = vid;
 
     if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
-        l_errno = errno; 
+    {
+        /* try to load module and add VLAN again */
+        strcpy(buf, "/sbin/modprobe 8021q >/dev/null");
+
+        if (ta_system(buf) == 0 && 
+            ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
+            l_errno = errno; 
+    }
+
 #else
     ERROR("This test agent does not support VLANs");
     return TE_RC(TE_TA_UNIX, EINVAL);
