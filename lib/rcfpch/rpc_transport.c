@@ -143,6 +143,7 @@ static fd_set rset;
 #define PIPE_PREFIX     "\\\\.\\pipe\\"
 
 typedef struct winpipe {
+    te_bool    busy;       /**< The pipe entry in pipes array is busy */
     te_bool    valid;      /**< The pipe is valid */
     te_bool    wait;       /**< The pipe is scheduled for waiting */
     te_bool    read;       /**< The pipe is read now */
@@ -349,7 +350,7 @@ rpc_transport_shutdown()
     for (i = 0; i < max_pipe; i++)
     {
         CloseHandle(pipes[i].ov.hEvent);
-        if (pipes[i].valid)
+        if (pipes[i].busy && pipes[i].valid)
         {
             CloseHandle(pipes[i].in_handle);
             CloseHandle(pipes[i].out_handle);
@@ -374,7 +375,7 @@ get_free_pipe(int *p_handle)
 {
     int i;
     
-    for (i = 0; i < max_pipe && pipes[i].valid; i++);
+    for (i = 0; i < max_pipe && pipes[i].busy; i++);
     
     if (i == max_pipe)
     {
@@ -393,6 +394,7 @@ get_free_pipe(int *p_handle)
     pipes[i].in_handle = pipes[i].out_handle = INVALID_HANDLE_VALUE;
     pipes[i].wait = FALSE;
     pipes[i].read = FALSE;
+    pipes[i].busy = TRUE;
     
     *p_handle = i;
     
@@ -651,6 +653,8 @@ rpc_transport_connect_rpcserver(const char *name,
     te_errno rc;
     char     pipename[64];
     int      i;
+    HANDLE   in_handle = INVALID_HANDLE_VALUE;
+    HANDLE   out_handle = INVALID_HANDLE_VALUE;
     
     UNUSED(name);
     
@@ -664,23 +668,25 @@ rpc_transport_connect_rpcserver(const char *name,
         ReleaseMutex(conn_mutex);
         return rc;
     }
+    ReleaseMutex(conn_mutex);
 
-    if ((rc = open_out(pipename, "_1", &pipes[i].out_handle)) != 0)
+    if ((rc = open_out(pipename, "_1", &out_handle)) != 0)
     {
-        ReleaseMutex(conn_mutex);
+        rpc_transport_close(i);
         return rc;
     }                      
     
     if ((rc = open_in(pipename, "_2", &pipes[i].ov, 
-                      &pipes[i].in_handle)) != 0)
+                      &in_handle)) != 0)
     {
-        CloseHandle(pipes[i].out_handle);
-        ReleaseMutex(conn_mutex);
+        CloseHandle(out_handle);
+        rpc_transport_close(i);
         return rc;
     }                      
     
+    pipes[i].in_handle = in_handle;
+    pipes[i].out_handle = out_handle;
     pipes[i].valid = TRUE;
-    ReleaseMutex(conn_mutex);
     *p_handle = i;
     
     return 0;
@@ -765,6 +771,8 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
     char     pipename[64];
     te_errno rc;
     int      i;
+    HANDLE   in_handle = INVALID_HANDLE_VALUE;
+    HANDLE   out_handle = INVALID_HANDLE_VALUE;
     
     SleepEx(5, TRUE); /* Let other thread send the response 
                          on server creation */
@@ -782,23 +790,25 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
         ReleaseMutex(conn_mutex);
         return rc;
     }
+    ReleaseMutex(conn_mutex);
     
     if ((rc = open_in(pipename, "_1", &pipes[i].ov, 
-                      &pipes[i].in_handle)) != 0)
+                      &in_handle)) != 0)
     {
-        ReleaseMutex(conn_mutex);
+        rpc_transport_close(i);
         return rc;
     }                      
     
-    if ((rc = open_out(pipename, "_2", &pipes[i].out_handle)) != 0)
+    if ((rc = open_out(pipename, "_2", &out_handle)) != 0)
     {
-        CloseHandle(pipes[i].in_handle);
-        ReleaseMutex(conn_mutex);
+        CloseHandle(in_handle);
+        rpc_transport_close(i);
         return rc;
     }                      
 
+    pipes[i].in_handle = in_handle;
+    pipes[i].out_handle = out_handle;
     pipes[i].valid = TRUE;
-    ReleaseMutex(conn_mutex);
     *p_handle = i;
 
     return 0;
@@ -895,10 +905,14 @@ rpc_transport_close(rpc_transport_handle handle)
     assert(handle < max_pipe);
     
     WaitForSingleObject(conn_mutex, INFINITE);
-    pipes[handle].valid = FALSE;
+    pipes[handle].busy = FALSE;
 
-    CloseHandle(pipes[handle].in_handle);
-    CloseHandle(pipes[handle].out_handle);
+    if (pipes[handle].valid)
+    {
+      CloseHandle(pipes[handle].in_handle);
+      CloseHandle(pipes[handle].out_handle);
+    }
+    pipes[handle].valid = FALSE;
     
     pipes[handle].in_handle = pipes[handle].out_handle =
     INVALID_HANDLE_VALUE;

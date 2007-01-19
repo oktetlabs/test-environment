@@ -77,6 +77,8 @@ static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 extern te_errno create_process_rpc_server(const char *name, int32_t *pid, 
                                           te_bool inherit, 
                                           te_bool net_init);
+extern te_errno rcf_ch_rpc_server_thread(void *ready, 
+                                         int argc, char *argv[]);
 #endif
 
 extern int win32_process_exec(int argc, char **argv);
@@ -595,6 +597,37 @@ die(void)
 
 #ifdef RCF_RPC
 extern void wsa_func_handles_discover();
+/**
+ * Entry point for RPC server started as TA thread.
+ *
+ * @param ready         semaphore to be posted after params processing
+ * @param argc          number of arguments in argv array
+ * @param argv          arguments (RPC server name first)     
+ *
+ * @return Status code.
+ */
+te_errno 
+rcf_ch_rpc_server_thread(void *ready, int argc, char *argv[])
+{
+    char *name;
+   
+    if (argc < 1)
+    {
+        ERROR("Too few parameters for rcf_ch_rpcserver_thread");
+        sem_post(ready);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    if ((name = strdup(argv[0])) == NULL)
+    {
+        sem_post(ready);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    
+    sem_post(ready);
+    rcf_pch_rpc_server(name);
+    
+    return 0;
+}
 #else
 
 /** Dummy */

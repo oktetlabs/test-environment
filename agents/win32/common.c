@@ -121,10 +121,32 @@ thread_mutex_unlock(void *mutex)
 int __cdecl
 setenv(const char *name, const char *value, int overwrite)
 {
-    UNUSED(overwrite);
+    HMODULE hCygwinDll;
+    static int load_failed = 0;
+    static FARPROC cygwin_setenv = NULL;
+
+    if (!load_failed && (NULL == cygwin_setenv))
+    {
+        hCygwinDll = LoadLibrary("cygwin1.dll");
+        if (NULL != hCygwinDll)
+        {
+          cygwin_setenv = GetProcAddress(hCygwinDll, "setenv");
+        }
+        else
+        {
+          load_failed = 1;
+        }
+    }
+    if (NULL != cygwin_setenv)
+    {
+      /* Make sure that cygwin env. is also updated
+       * (this is necessary for subsequent calls of cygwin's getenv)
+       */
+      cygwin_setenv(name, value, overwrite);
+    }
     return SetEnvironmentVariable(name, value) ? 0 : -1;
 }
- 
+
 /** Replaces cygwin function */
 #ifndef WINDOWS
 UNSETENV_RETURN_TYPE 
