@@ -316,7 +316,7 @@ tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
  * @return Status code
  */
 te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
-                                   int vid, char **vlan_ifname);
+                                   uint16_t vid, char **vlan_ifname);
 
 /**
  * Delete VLAN interface.
@@ -328,7 +328,7 @@ te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
  * @return Status code
  */
 te_errno tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name, 
-                                   int vid);
+                                   uint16_t vid);
 
 #ifdef __cplusplus
 } /* extern "C" */

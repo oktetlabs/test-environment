@@ -576,7 +576,7 @@ tapi_cfg_del_if_ip4_addresses(const char *ta,
 /* See description in tapi_cfg_base.h */
 te_errno
 tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
-                          int vid, char **vlan_ifname)
+                          uint16_t vid, char **vlan_ifname)
 {
     cfg_val_type val = CVT_STRING;
     te_errno     rc = 0;
@@ -610,7 +610,7 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
 /* See description in tapi_cfg_base.h */
 te_errno
 tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
-                          int vid)
+                          uint16_t vid)
 {
     cfg_val_type val = CVT_STRING;
     te_errno     rc = 0;
