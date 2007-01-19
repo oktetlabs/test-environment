@@ -86,6 +86,9 @@
 
 #if HAVE_LINUX_IF_VLAN_H
 #include <linux/if_vlan.h>
+#define LINUX_VLAN_SUPPORT 1
+#else
+#define LINUX_VLAN_SUPPORT 0
 #endif
 
 /* { required for sysctl on netbsd */
@@ -1191,8 +1194,7 @@ prefix_check(const char *value, sa_family_t family, unsigned int *prefix)
  */
 static int
 store_nlmsg(const struct sockaddr_nl *who,
-            const struct nlmsghdr *msg,
-            void *arg)
+            struct nlmsghdr *msg, void *arg)
 {
     agt_nlmsg_list  *list = (agt_nlmsg_list *)arg;
     agt_nlmsg_entry *entry;
@@ -1911,7 +1913,7 @@ vlan_ifname_get_internal(const char *ifname, int vlan_id,
 {
 #if defined __linux__
     sprintf(v_ifname, "%s.%d", ifname, vlan_id); 
-#elif define __sun__ 
+#elif defined __sun__ 
     size_t offset = 0;
     while (!isdigit(ifname[offset])) offset++;
 
@@ -2065,7 +2067,9 @@ static te_errno
 vlans_add(unsigned int gid, const char *oid, const char *value,
               const char *ifname, const char *vid_str)
 {
+#if LINUX_VLAN_SUPPORT
     struct vlan_ioctl_args if_request;
+#endif
     int vid = atoi(vid_str);
     int l_errno = 0;
     te_errno rc;
@@ -2077,7 +2081,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-#if defined __linux__
+#if LINUX_VLAN_SUPPORT
     if (cfg_socket < 0)
     {
         ERROR("%s: non-init cfg socket", cfg_socket);
@@ -2089,6 +2093,9 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
 
     if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
         l_errno = errno; 
+#else
+    ERROR("This test agent does not support VLANs");
+    return TE_RC(TE_TA_UNIX, EINVAL);
 #endif
     VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
          __FUNCTION__, gid, oid, vid_str, ifname);
@@ -2109,7 +2116,9 @@ static te_errno
 vlans_del(unsigned int gid, const char *oid, const char *ifname,
           const char *vid_str)
 {
+#if LINUX_VLAN_SUPPORT
     struct vlan_ioctl_args if_request;
+#endif
     int vid = atoi(vid_str);
     int l_errno = 0;
 
@@ -2120,7 +2129,7 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-#if defined __linux__
+#if LINUX_VLAN_SUPPORT
     if (cfg_socket < 0)
     {
         ERROR("%s: non-init cfg socket", cfg_socket);
@@ -2132,6 +2141,9 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
 
     if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
         l_errno = errno;
+#else
+    ERROR("This test agent does not support VLANs");
+    return TE_RC(TE_TA_UNIX, EINVAL);
 #endif
 
 
