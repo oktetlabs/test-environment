@@ -91,6 +91,10 @@
 #define LINUX_VLAN_SUPPORT 0
 #endif
 
+/* For now, enable old-style VLAN support. When it is removed, we have to
+ * change access type to interfaces from read_create to read_only */
+#define OLD_VLAN_SUPPORT 1
+
 /* { required for sysctl on netbsd */
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -365,9 +369,11 @@ static te_errno ip6_fw_get(unsigned int, const char *, char *);
 static te_errno ip6_fw_set(unsigned int, const char *, const char *);
 
 static te_errno interface_list(unsigned int, const char *, char **);
+#if OLD_VLAN_SUPPORT
 static te_errno interface_add(unsigned int, const char *, const char *,
                               const char *);
 static te_errno interface_del(unsigned int, const char *, const char *);
+#endif
 
 static te_errno vlans_list(unsigned int, const char *, char **,
                            const char*);
@@ -562,10 +568,17 @@ RCF_PCH_CFG_NODE_RW(node_bcast_link_addr, "bcast_link_addr", NULL,
 RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_bcast_link_addr,
                     ifindex_get);
 
+#if OLD_VLAN_SUPPORT
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
                             &node_ifindex, &node_dns,
                             interface_add, interface_del,
                             interface_list, NULL);
+#else
+RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
+                            &node_ifindex, &node_dns,
+                            NULL, NULL,
+                            interface_list, NULL);
+#endif
 
 RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_interface,
                     ip4_fw_get, ip4_fw_set);
@@ -2098,14 +2111,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
     if_request.u.VID = vid;
 
     if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
-    {
-        /* try to load module and add VLAN again */
-        strcpy(buf, "/sbin/modprobe 8021q >/dev/null");
-
-        if (ta_system(buf) == 0 && 
-            ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
-            l_errno = errno; 
-    }
+        l_errno = errno; 
 
 #else
     ERROR("This test agent does not support VLANs");
@@ -2365,6 +2371,7 @@ aliases_list()
 }
 #endif
 
+#if OLD_VLAN_SUPPORT
 /**
  * Add VLAN Ethernet device.
  *
@@ -2468,6 +2475,7 @@ interface_del(unsigned int gid, const char *oid, const char *ifname)
 
     return (ta_system(buf) != 0) ? TE_RC(TE_TA_UNIX, TE_ESHCMD) : 0;
 }
+#endif
 
 
 /**
