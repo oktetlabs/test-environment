@@ -1861,6 +1861,9 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
 
         if (proc_vlans == NULL)
         {
+            if (errno == ENOENT)
+                return 0; /* no vlan support module loaded, empty list */
+
             ERROR("%s(): Failed to open /proc/net/vlan/config %s",
                   __FUNCTION__, strerror(errno));
             return TE_OS_RC(TE_TA_UNIX, errno);
