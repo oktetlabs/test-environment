@@ -1971,6 +1971,9 @@ vlan_get_parent(const char *ifname, char *parent)
 
         if (proc_vlans == NULL)
         {
+            if (errno == ENOENT)
+                return 0; /* no vlan support module loaded, no parent */
+
             ERROR("%s(): Failed to open /proc/net/vlan/config %s",
                   __FUNCTION__, strerror(errno));
             return TE_OS_RC(TE_TA_UNIX, errno);
