@@ -1869,8 +1869,8 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
     *n_vlans = 0;
 #if defined __linux__
     {
-        FILE *proc_vlans = fopen("/proc/net/vlan/config", "r");
-        int vlan_id;
+        FILE   *proc_vlans = fopen("/proc/net/vlan/config", "r");
+        int     vlan_id;
 
         if (proc_vlans == NULL)
         {
@@ -1883,9 +1883,8 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
         }
         while (fgets(trash, sizeof(trash), proc_vlans) != NULL)
         {
-            char *s = strchr(trash, '|');
-            size_t space_ofs;
-
+            char   *s = strchr(trash, '|');
+            size_t  space_ofs;
 
             if (s == NULL)
                 continue;
@@ -1907,7 +1906,7 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
             if (strcmp(s, devname) == 0)
                 vlans[(*n_vlans)++] = vlan_id;
         }
-
+        (void)fclose(proc_vlans);
     }
 #elif defined __sun__
 #endif
