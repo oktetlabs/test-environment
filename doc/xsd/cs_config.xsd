@@ -75,7 +75,7 @@
                                       type="xs:string" use="required"/>
                         <xs:attribute name="scope" default="instance">
                             <xs:simpleType>
-                                <xs:restriction base="xs:token>
+                                <xs:restriction base="xs:token">
                                     <xs:enumeration value="instance"/>
                                     <xs:enumeration value="object"/>
                                 </xs:restriction>
