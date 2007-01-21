@@ -86,7 +86,8 @@ cfg_register_dependency(xmlNodePtr node, const char *dependant)
         msg->rc = 0;
         msg->handle = dep_handle;
         msg->object_wide = (scope != NULL && 
-                            xmlStrcmp(scope, (const xmlChar *)"object"));
+                            xmlStrcmp(scope, 
+                                      (const xmlChar *)"object") == 0);
         strcpy(msg->oid, (char *)oid);
         cfg_process_msg((cfg_msg **)&msg, TRUE);
         if (msg->rc != 0)
@@ -121,6 +122,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
         xmlChar   *oid  = NULL;
         xmlChar   *def_val  = NULL;
         xmlChar   *attr = NULL;
+        xmlChar   *parent_dep = NULL;
         int        len;
         
         if ((xmlStrcmp(cur->name , (const xmlChar *)"comment") == 0) ||
@@ -141,6 +143,8 @@ register_objects(xmlNodePtr *node, te_bool reg)
 
         def_val = xmlGetProp(cur, (const xmlChar *)"default");
 
+        parent_dep = xmlGetProp(cur, (const xmlChar *)"parent-dep");
+
         len = sizeof(cfg_register_msg) + strlen((char *)oid) + 1 +
               (def_val == NULL ? 0 : strlen((char *)def_val) + 1);
               
@@ -151,10 +155,14 @@ register_objects(xmlNodePtr *node, te_bool reg)
             return TE_ENOMEM;
         }
 
+
         msg->type = CFG_REGISTER;
         msg->len = len;
         msg->rc = 0;
         msg->access = CFG_READ_CREATE;
+        msg->no_parent_dep = (parent_dep != NULL && 
+                              xmlStrcmp(parent_dep, 
+                                        (const xmlChar *)"no") == 0);
         msg->val_type = CVT_NONE;
         strcpy(msg->oid, (char *)oid);
         if (def_val != NULL)

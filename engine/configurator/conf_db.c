@@ -506,7 +506,8 @@ cfg_process_msg_register(cfg_register_msg *msg)
     }
     topological_order          = cfg_all_obj[i];
     cfg_maybe_adopt_objects(cfg_all_obj[i], oid);
-    if (father != &cfg_obj_root && father != &cfg_obj_agent)
+    if (!msg->no_parent_dep && 
+        father != &cfg_obj_root && father != &cfg_obj_agent)
     {
         cfg_create_dep(father, cfg_all_obj[i], FALSE);
     }

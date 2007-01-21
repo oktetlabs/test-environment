@@ -320,6 +320,8 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name , (const xmlChar *)"object") == 0)
             {
+                const xmlChar *parent_dep;
+
                 if ((oid = (xmlChar *)xmlGetProp_exp(tmp, (xmlChar *)"oid"))
                         == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
@@ -327,16 +329,22 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
 
                 val_s = xmlGetProp(tmp, (const xmlChar *)"default");
 
+                parent_dep = xmlGetProp(tmp, (const xmlChar *)"parent-dep");
+
                 len = sizeof(cfg_register_msg) + strlen((char *)oid) + 1 +
                       (val_s == NULL ? 0 : strlen((char *)val_s) + 1);
                       
                 if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
                     RETERR(TE_ENOMEM, "Cannot allocate memory");
                 
+
                 msg->type = CFG_REGISTER;
                 msg->len = len;
                 msg->rc = 0;
                 msg->access = CFG_READ_CREATE;
+                msg->no_parent_dep = (parent_dep != NULL && 
+                              xmlStrcmp(parent_dep, 
+                                        (const xmlChar *)"no") == 0);
                 msg->val_type = CVT_NONE;
 
                 strcpy(msg->oid, (char *)oid);
@@ -630,7 +638,7 @@ cfg_dh_create_file(char *filename)
                 
                 fprintf(f, "\n  <register>\n");
                 fprintf(f, "    <object oid=\"%s\" "
-                        "access=\"%s\" type=\"%s\"",
+                        "access=\"%s\" type=\"%s\"%s",
                         msg->oid, 
                         msg->access == CFG_READ_CREATE ?
                             "read_create" :
@@ -639,7 +647,8 @@ cfg_dh_create_file(char *filename)
                         msg->val_type == CVT_NONE ?    "none" :
                         msg->val_type == CVT_INTEGER ? "integer" :
                         msg->val_type == CVT_ADDRESS ? "address" :
-                                                       "string");
+                                                       "string",
+                        (msg->no_parent_dep ? " parent-dep=\"no\"" : ""));
                 if (msg->def_val)
                 {
                     str = xmlEncodeEntitiesReentrant(NULL,
