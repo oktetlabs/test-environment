@@ -102,6 +102,7 @@ typedef struct cfg_orphan
 {
     cfg_object *object;       /**< Dependant object */
     cfg_oid    *master;       /**< Master object */
+    te_bool     object_wide;  /**< Whether the dependency is object-wide */
     struct cfg_orphan *next;  /**< Next dependency */
     struct cfg_orphan *prev;  /**< Previous dependency */
 } cfg_orphan;
@@ -174,9 +175,11 @@ cfg_put_in_order_dep(cfg_object *obj)
  *
  * @param master        Master object
  * @param obj           Dependant object
+ * @param object_wide   If TRUE, the dependency is between
+ *                      the master object and dependant instances
  */
 static void
-cfg_create_dep(cfg_object *master, cfg_object *obj)
+cfg_create_dep(cfg_object *master, cfg_object *obj, te_bool object_wide)
 {
     cfg_dependency *newdep;
 
@@ -191,6 +194,7 @@ cfg_create_dep(cfg_object *master, cfg_object *obj)
 
     newdep->next = obj->depends_on;
     newdep->depends = master;
+    newdep->object_wide = object_wide;
     obj->depends_on = newdep;
     if (master->ordinal_number >= obj->ordinal_number)
     {
@@ -210,6 +214,7 @@ cfg_create_dep(cfg_object *master, cfg_object *obj)
     }
 
     newdep->depends = obj;
+    newdep->object_wide = object_wide;
 
     if (master->dependants == NULL)
         master->dependants = newdep;
@@ -342,7 +347,7 @@ cfg_maybe_adopt_objects (cfg_object *master, cfg_oid *oid)
             VERB("Adopting object '%s' by '%s'", 
                  iter->object->oid, 
                  master->oid);
-            cfg_create_dep(master, iter->object);
+            cfg_create_dep(master, iter->object, iter->object_wide);
             cfg_free_oid(iter->master);
             if (iter->prev == NULL)
                 orphaned_objects = next;
@@ -503,7 +508,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
     cfg_maybe_adopt_objects(cfg_all_obj[i], oid);
     if (father != &cfg_obj_root && father != &cfg_obj_agent)
     {
-        cfg_create_dep(father, cfg_all_obj[i]);
+        cfg_create_dep(father, cfg_all_obj[i], FALSE);
     }
 
     cfg_free_oid(oid);
@@ -775,6 +780,7 @@ cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
         VERB("Creating an orphaned object %s <- %s", msg->oid, obj->oid);
         orph         = calloc(1, sizeof(*orph));
         orph->object = obj;
+        orph->object_wide = msg->object_wide;
         orph->master = cfg_convert_oid_str(msg->oid);
         orph->next   = orphaned_objects;
         orph->prev   = NULL;
@@ -784,7 +790,7 @@ cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
     }
     else
     {
-        cfg_create_dep(CFG_GET_OBJ(master_handle), obj);
+        cfg_create_dep(CFG_GET_OBJ(master_handle), obj, msg->object_wide);
     }
 }
 

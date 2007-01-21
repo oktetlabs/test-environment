@@ -269,6 +269,7 @@ typedef struct cfg_add_dependency_msg {
     cfg_handle    handle;   /**< IN: object handle */
     char          oid[0];   /**< IN: start of the master 
                                  instance identifier */
+    te_bool       object_wide; /**< IN: whether dependency is object wide */
 } cfg_add_dependency_msg;
 
 /** CFG_SHUTDOWN message content */

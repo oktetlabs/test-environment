@@ -39,6 +39,7 @@ int
 cfg_register_dependency(xmlNodePtr node, const char *dependant)
 {
     xmlChar                *oid = NULL;
+    xmlChar                *scope = NULL;
     cfg_add_dependency_msg *msg = NULL;
     cfg_handle              dep_handle;
 
@@ -70,6 +71,8 @@ cfg_register_dependency(xmlNodePtr node, const char *dependant)
             ERROR("Missing OID attribute in <depends>");
             return TE_EINVAL;
         }
+        scope = xmlGetProp(node, (const xmlChar *)"scope");
+
         if (node->children != NULL)
         {
             ERROR("<depends> cannot have children");
@@ -82,6 +85,8 @@ cfg_register_dependency(xmlNodePtr node, const char *dependant)
         msg->len = len;
         msg->rc = 0;
         msg->handle = dep_handle;
+        msg->object_wide = (scope != NULL && 
+                            xmlStrcmp(scope, (const xmlChar *)"object"));
         strcpy(msg->oid, (char *)oid);
         cfg_process_msg((cfg_msg **)&msg, TRUE);
         if (msg->rc != 0)
@@ -853,8 +858,9 @@ put_object(FILE *f, cfg_object *obj)
             fputs(">\n", f);
             for (dep = obj->depends_on; dep != NULL; dep = dep->next)
             {
-                fprintf(f, "    <depends oid=\"%s\" />\n", 
-                        dep->depends->oid);
+                fprintf(f, "    <depends oid=\"%s\" scope=\"%s\"/>\n", 
+                        dep->depends->oid, 
+                        dep->object_wide ? "object" : "instance");
             }
             fputs("  </object>\n", f);
         }

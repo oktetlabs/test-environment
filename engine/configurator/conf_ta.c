@@ -550,6 +550,11 @@ cfg_ta_sync_dependants(cfg_instance *inst)
     {
         dep_oid = cfg_convert_oid_str(dep->depends->oid);
         to_sync = cfg_oid_common_root(dep_oid, my_oid);
+        if (dep->object_wide)
+        {
+            char *name = CFG_OID_GET_INST_NAME(to_sync, to_sync->len - 1);
+            strcpy(name, "*");
+        }
         to_sync_str = cfg_convert_oid(to_sync);
         if (do_log_syncing)
         {

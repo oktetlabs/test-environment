@@ -38,6 +38,7 @@ extern "C" {
 /** Configurator dependency item */
 typedef struct cfg_dependency {
     struct cfg_object     *depends;
+    te_bool                object_wide;
     struct cfg_dependency *next;
 } cfg_dependency;
 
