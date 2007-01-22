@@ -765,7 +765,9 @@ cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
         return;
     }
 
-    VERB("Adding dependency '%s' for '%s'", msg->oid, obj->oid);
+    VERB("Adding %s dependency '%s' for '%s'", 
+         msg->object_wide ? "object-wide" : "instance-wide",
+         msg->oid, obj->oid);
 
     
     rc = cfg_db_find(msg->oid, &master_handle);

@@ -268,9 +268,9 @@ typedef struct cfg_conf_touch_msg {
 typedef struct cfg_add_dependency_msg {
     CFG_MSG_FIELDS
     cfg_handle    handle;   /**< IN: object handle */
+    te_bool       object_wide; /**< IN: whether dependency is object wide */
     char          oid[0];   /**< IN: start of the master 
                                  instance identifier */
-    te_bool       object_wide; /**< IN: whether dependency is object wide */
 } cfg_add_dependency_msg;
 
 /** CFG_SHUTDOWN message content */
