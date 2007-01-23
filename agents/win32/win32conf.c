@@ -384,8 +384,10 @@ efport2ifindex(void)
     
     static char guid1[AMOUNT_OF_GUIDS][BUFSIZE];
     static char guid2[AMOUNT_OF_GUIDS][BUFSIZE];
+    static int driver_type_reported = 0;
 
-    int guid1_amount = 0, guid2_amount = 0;
+    static int guid1_amount = 0, guid2_amount = 0;
+    static int guids_found = 0;
     
     DWORD subkey_size;
     DWORD value_size = BUFSIZE;
@@ -398,6 +400,7 @@ efport2ifindex(void)
     char driver_type[BUFSIZE];
     
     int i, j;
+    unsigned int old_ef_index[2];
     
     driver_type[0] = 0;
 
@@ -420,79 +423,93 @@ efport2ifindex(void)
       if (t)
       {
         strcpy(driver_type, NDIS_EFAB);
-        RING("Efab drivers will be used to resolve ef* interfaces, if any");
+        if (!driver_type_reported)
+        {
+          RING("Efab drivers will be used to resolve ef* interfaces,"
+               " if any");
+        }
       }
       else
       {
         strcpy(driver_type, NDIS_SF);
-        RING("Solarflare drivers will be used to resolve ef* interfaces,"
-             " if any");
+        if (!driver_type_reported)
+        {
+          RING("Solarflare drivers will be used to resolve ef* interfaces,"
+               " if any");
+        }
       }
     }
     else
     {
       strcpy(driver_type, NDIS_SF);
-      RING("Solarflare drivers will be used to resolve ef* interfaces, "
-           "if any");
+      if (!driver_type_reported)
+      {
+        RING("Solarflare drivers will be used to resolve ef* interfaces, "
+             "if any");
+      }
     }
+    driver_type_reported = 1;
 
-    /* Obtaining interface indexes */
-
-    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, NET_PATH, 0, 
-                     KEY_READ, &key) != ERROR_SUCCESS) 
+    if (!guids_found)
     {
-        ERROR("RegOpenKeyEx() failed with errno %lu", GetLastError());
-        return TE_RC(TE_TA_WIN32, TE_EFAULT);
-    }
+        /* Obtaining interface indexes */
+        if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, NET_PATH, 0, 
+                         KEY_READ, &key) != ERROR_SUCCESS) 
+        {
+            ERROR("RegOpenKeyEx() failed with errno %lu", GetLastError());
+            return TE_RC(TE_TA_WIN32, TE_EFAULT);
+        }
 
-    for (i = 0, subkey_size = value_size = BUFSIZE; 
-         RegEnumKeyEx(key, i, subkey_name, &subkey_size, 
-                      NULL, NULL, NULL, &tmp) != ERROR_NO_MORE_ITEMS;
-         i++, subkey_size = value_size = BUFSIZE)
-    { 
-        sprintf(subkey_path, "%s\\%s", NET_PATH, subkey_name);
-        if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, subkey_path, 
-                         0, KEY_READ, &subkey) != ERROR_SUCCESS)
-        {
-           continue;
-        }
-    
-        if (RegQueryValueEx(subkey, "MatchingDeviceId", 
-                            NULL, NULL, (unsigned char *)value, 
-                            &value_size) != ERROR_SUCCESS) 
-        {
-            /* Field with device ID is absent, may its virtual device */
-            RegCloseKey(subkey);
-            continue;
-        }
-        if ((strstr(value, driver_type) != NULL))
-        {
-            char driver[BUFSIZE];
-            unsigned char *guid;
-            
-            strcpy(driver, driver_type);
-            strcat(driver, "0");
-       
-            guid = strstr(value, driver) != NULL ? 
-                          guid1[guid1_amount++] : guid2[guid2_amount++];
-                
-            value_size = BUFSIZE;
-            if (RegQueryValueEx(subkey, "NetCfgInstanceId", 
-                                NULL, NULL, guid, &value_size) != 0)
+        for (i = 0, subkey_size = value_size = BUFSIZE; 
+             RegEnumKeyEx(key, i, subkey_name, &subkey_size, 
+                          NULL, NULL, NULL, &tmp) != ERROR_NO_MORE_ITEMS;
+             i++, subkey_size = value_size = BUFSIZE)
+        { 
+            sprintf(subkey_path, "%s\\%s", NET_PATH, subkey_name);
+            if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, subkey_path, 
+                             0, KEY_READ, &subkey) != ERROR_SUCCESS)
             {
-                ERROR("RegQueryValueEx(%s) failed with errno %u", 
-                      subkey_path, GetLastError());
-                RegCloseKey(subkey);
-                RegCloseKey(key);
-                return TE_RC(TE_TA_WIN32, TE_EFAULT);
+               continue;
             }
-        }
-        RegCloseKey(subkey);
-    } 
-    RegCloseKey(key);
-    
-    if (guid1_amount == 0 || guid2_amount == 0)
-        return 0;
+        
+            if (RegQueryValueEx(subkey, "MatchingDeviceId", 
+                                NULL, NULL, (unsigned char *)value, 
+                                &value_size) != ERROR_SUCCESS) 
+            {
+                /* Field with device ID is absent, may its virtual device */
+                RegCloseKey(subkey);
+                continue;
+            }
+            if ((strstr(value, driver_type) != NULL))
+            {
+                char driver[BUFSIZE];
+                unsigned char *guid;
+                
+                strcpy(driver, driver_type);
+                strcat(driver, "0");
+           
+                guid = strstr(value, driver) != NULL ? 
+                              guid1[guid1_amount++] : guid2[guid2_amount++];
+                    
+                value_size = BUFSIZE;
+                if (RegQueryValueEx(subkey, "NetCfgInstanceId", 
+                                    NULL, NULL, guid, &value_size) != 0)
+                {
+                    ERROR("RegQueryValueEx(%s) failed with errno %u", 
+                          subkey_path, GetLastError());
+                    RegCloseKey(subkey);
+                    RegCloseKey(key);
+                    return TE_RC(TE_TA_WIN32, TE_EFAULT);
+                }
+            }
+            RegCloseKey(subkey);
+        } 
+        RegCloseKey(key);
+        
+        if (guid1_amount == 0 || guid2_amount == 0)
+            return 0;
+        guids_found = 1;
+    }
 
     if ((iftable = (PIP_INTERFACE_INFO)malloc(sizeof(*iftable))) == NULL) 
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
@@ -523,6 +540,10 @@ efport2ifindex(void)
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
     }                                                               
 
+    old_ef_index[0] = ef_index[0];
+    old_ef_index[1] = ef_index[1];
+    ef_index[0] = 0;
+    ef_index[1] = 0;
     for (i = 0; i < iftable->NumAdapters; i++)
     {
         for(j = 0; j < guid1_amount; j++)
@@ -539,10 +560,32 @@ efport2ifindex(void)
     free(iftable); 
     
     if (ef_index[0] > 0)
-        RING("Interface index for EF port 1 %d", ef_index[0]);
+    {
+        if (old_ef_index[0] != ef_index[0])
+            RING("Interface index for EF port 1: %d", ef_index[0]);
+    }
+    else
+    {
+        if (old_ef_index[0] != 0)
+        {
+            RING("Can't find index for EF port 1");
+        }
+    }
 
     if (ef_index[1] > 0)
-        RING("Interface index for EF port 2 %d", ef_index[1]);
+    {
+        if (old_ef_index[1] != ef_index[1])
+        {
+            RING("Interface index for EF port 2: %d", ef_index[1]);
+        }
+    }
+    else
+    {
+        if (old_ef_index[1] != 0)
+        {
+            RING("Can't find index for EF port 2");
+        }
+    }
     
     return 0;
 
@@ -585,6 +628,8 @@ ifname2ifindex(const char *ifname)
         
     if (index < 1 || index > 2)
         return 0;
+
+    efport2ifindex();
         
     return ef_index[index - 1];
 }
@@ -2696,6 +2741,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     unsigned int itemp;
 
     RING("!!!!!!!!!!!!!!!!!!!!!!!!mcast_link_addr_add!!!!!!!!!!!!!!!!!!");
+    printf("IGORL: mcast_link_addr_add\n");
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2710,6 +2756,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
       return -1;
     }
     RING("add addr %s", addr);
+    printf("IGORL: add addr %s\n", addr);
     sscanf(addr+0,"%x", &itemp);
     RING("itemp 0 = 0x%x", itemp);
     addr6[0] = (unsigned char)itemp;
@@ -2719,14 +2766,16 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     sscanf(addr+6,"%x", &itemp);
     RING("itemp 2 = 0x%x", itemp);
     addr6[2] = (unsigned char)itemp;
-    sscanf(addr+9,"%x", itemp);
+    sscanf(addr+9,"%x", &itemp);
     addr6[3] = (unsigned char)itemp;
-    sscanf(addr+12,"%x", itemp);
+    sscanf(addr+12,"%x", &itemp);
     addr6[4] = (unsigned char)itemp;
-    sscanf(addr+15,"%x", itemp);
+    sscanf(addr+15,"%x", &itemp);
     addr6[5] = (unsigned char)itemp;
 
     RING("hex addr = 0x%x", *(unsigned int *)addr6);
+    printf("IGORL: read addr  = %02x:%02x:%02x:%02x:%02x:%02x\n",
+           addr6[0], addr6[1], addr6[2], addr6[3], addr6[4], addr6[5]);
     if (!DeviceIoControl(dev, KRX_ADD_MULTICAST_ADDR, addr6, 6, NULL, 0,
                          &bytes_returned, NULL))
     {
@@ -2734,6 +2783,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
       WARN("DeviceIoControl failed with errno=%d", GetLastError());
       return -2;
     }
+    printf("IGORL: before closehandle\n");
     CloseHandle(dev);
     return 0;
 
@@ -2794,11 +2844,11 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     sscanf(addr+6,"%x", &itemp);
     RING("itemp 2 = 0x%x", itemp);
     addr6[2] = (unsigned char)itemp;
-    sscanf(addr+9,"%x", itemp);
+    sscanf(addr+9,"%x", &itemp);
     addr6[3] = (unsigned char)itemp;
-    sscanf(addr+12,"%x", itemp);
+    sscanf(addr+12,"%x", &itemp);
     addr6[4] = (unsigned char)itemp;
-    sscanf(addr+15,"%x", itemp);
+    sscanf(addr+15,"%x", &itemp);
     addr6[5] = (unsigned char)itemp;
 
     RING("hex addr = 0x%x", *(unsigned int *)addr6);
