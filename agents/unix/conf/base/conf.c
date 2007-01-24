@@ -171,6 +171,7 @@ typedef struct pam_message const pam_message_t;
 #include "unix_internal.h"
 #include "conf_dlpi.h"
 #include "conf_route.h"
+#include "te_shell_cmd.h"
 
 #ifdef CFG_UNIX_DAEMONS
 #include "conf_daemons.h"
@@ -623,6 +624,7 @@ interface_grab(const char *name)
               name);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
+    ifname++;
 
     rc = vlan_get_parent(ifname, parent);
     if (rc != 0)
@@ -1866,6 +1868,7 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
     if (devname == NULL ||n_vlans == NULL || vlans == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL); 
 
+    VERB("%s(): enter for device: <%s>", __FUNCTION__, devname);
     *n_vlans = 0;
 #if defined __linux__
     {
@@ -1875,7 +1878,10 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
         if (proc_vlans == NULL)
         {
             if (errno == ENOENT)
+            {
+                RING("%s: no proc vlan file ", __FUNCTION__);
                 return 0; /* no vlan support module loaded, empty list */
+            }
 
             ERROR("%s(): Failed to open /proc/net/vlan/config %s",
                   __FUNCTION__, strerror(errno));
@@ -1909,6 +1915,57 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
         (void)fclose(proc_vlans);
     }
 #elif defined __sun__
+    { 
+        int   out_fd = -1;
+        FILE *out;
+        int   status;
+        pid_t dladm_cmd_pid = te_shell_cmd("LANG=POSIX dladm show-link -p",
+                                           -1, NULL, &out_fd, NULL);
+        if (dladm_cmd_pid < 0)
+        {
+            ERROR("%s(): start of dladm failed", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+        
+        out = fdopen(out_fd, "r");
+        while (fgets(trash, sizeof(trash), out) != NULL)
+        { 
+            size_t ofs; 
+            char *s = trash;
+            int vlan_id;
+
+            VERB("%s(): read line: <%s>", __FUNCTION__, trash);
+            /* skip "<ifname> type=" */
+            s = strchr(s, ' '); 
+            s++;
+            s = strchr(s, '='); 
+            s++;
+            if (strncmp(s, "vlan", 4) != 0)
+                continue;
+            s += sizeof("vlan") - 1;
+            vlan_id = atoi(s);
+
+            s = strstr(s, "device=");
+            if (s == NULL)
+                continue;
+            VERB("%s(): find vlan: %d, s: <%s>", __FUNCTION__, vlan_id, s);
+            s += sizeof("device=") - 1; 
+            ofs = strcspn(s," \n\r\t");
+            s[ofs] = 0;
+            if (strcmp(s, devname) != 0)
+                continue;
+
+            vlans[(*n_vlans)++] = vlan_id;
+        }
+        
+        ta_waitpid(dladm_cmd_pid, &status, 0);
+        if (status != 0)
+        {
+            ERROR("%s(): Non-zero status of dladm: %d",
+                  __FUNCTION__, status);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+    }
 #endif
 
     return 0;
@@ -1984,7 +2041,10 @@ vlan_get_parent(const char *ifname, char *parent)
         if (proc_vlans == NULL)
         {
             if (errno == ENOENT)
+            {
+                RING("%s: no proc vlan file ", __FUNCTION__);
                 return 0; /* no vlan support module loaded, no parent */
+            }
 
             ERROR("%s(): Failed to open /proc/net/vlan/config %s",
                   __FUNCTION__, strerror(errno));
@@ -2021,6 +2081,54 @@ vlan_get_parent(const char *ifname, char *parent)
 
     }
 #elif defined __sun__
+    {
+        int   out_fd = -1;
+        FILE *out;
+        int   status;
+        pid_t dladm_cmd_pid = te_shell_cmd("LANG=POSIX dladm show-link -p",
+                                           -1, NULL, &out_fd, NULL);
+        VERB("%s(<%s>): cmd pid %d, out fd %d",
+             __FUNCTION__, ifname, (int)dladm_cmd_pid, out_fd);
+        if (dladm_cmd_pid < 0)
+        {
+            ERROR("%s(): start of dladm failed", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+        
+        out = fdopen(out_fd, "r");
+        while (fgets(trash, sizeof(trash), out) != NULL)
+        { 
+            char *s = strchr(trash, ' ');
+            char *p;
+            *s = 0;
+            s++;
+            if (strcmp(ifname, trash) != 0)
+                continue;
+            if (strncmp(s, "type=vlan ", sizeof("type=vlan ") - 1) != 0)
+                continue; 
+
+            VERB("%s(): found parent <%s> for if <%s>", 
+                 __FUNCTION__, s, ifname);
+
+            s = strstr(s, "device");
+            if (s == NULL)
+                continue;
+            s = strchr(s, '=');
+            p = parent;
+            while(*s != 0 && !isspace(*s))
+                *(p++) = *(s++);
+            *p = 0;
+            break;
+        }
+
+        ta_waitpid(dladm_cmd_pid, &status, 0);
+        if (status != 0)
+        {
+            ERROR("%s(): Non-zero status of dladm: %d",
+                  __FUNCTION__, status);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+    }
 #endif
     return 0;
 }
@@ -2094,6 +2202,10 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
 
     UNUSED(value);
 
+    RING("%s: gid=%u oid='%s', vid %s, ifname %s, errno %d",
+         __FUNCTION__, gid, oid, vid_str, ifname, l_errno);
+
+
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
     {
         return TE_RC(TE_TA_UNIX, rc);
@@ -2112,13 +2224,19 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
     if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
         l_errno = errno; 
 
+#elif defined __sun__
+    {
+        char vlan_if_name[IFNAMSIZ];
+        vlan_ifname_get_internal(ifname, vid, vlan_if_name);
+
+        sprintf(buf, "LANG=POSIX ifconfig %s plumb >/dev/null",
+                vlan_if_name);
+        return ta_system(buf) != 0 ? TE_RC(TE_TA_UNIX, TE_ESHCMD) : 0;
+    }
 #else
     ERROR("This test agent does not support VLANs");
     return TE_RC(TE_TA_UNIX, EINVAL);
 #endif
-    VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
-         __FUNCTION__, gid, oid, vid_str, ifname);
-
     return TE_RC(TE_TA_UNIX, l_errno); 
 }
 
