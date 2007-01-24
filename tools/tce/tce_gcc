@@ -32,7 +32,7 @@
 # Use 'gcc' by default
 test -z "${TCE_CC}" && TCE_CC="gcc"
 
-tce_coverage_options="-g -fno-inline -ftest-coverage -fprofile-arcs -D_init=_target_init -D_fini=_target_fini"
+tce_coverage_options="-g -O0 -ftest-coverage -fprofile-arcs -D_init=_target_init -D_fini=_target_fini"
 
 coverage_options=
 processed_options=
@@ -50,7 +50,7 @@ for arg in "$@"; do
         -c) nobbhook=yes
         processed_options="$processed_options -c" ;;
         -O[1-9]|-O) processed_options="$processed_options -D__OPTIMIZE__=1" ;;
-        -g|-ftest-coverage|-fprofile-arcs|-nostartfiles|-fno-inline|-finline) ;;
+        -g|-ftest-coverage|-fprofile-arcs|-nostartfiles|-O0) ;;
         -o) processed_options="$processed_options $arg" ; forward_next=yes ;;
         -*) processed_options="$processed_options $arg" ;;
         *)
