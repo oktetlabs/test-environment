@@ -2278,6 +2278,15 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
 
     if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
         l_errno = errno;
+#elif defined __sun__
+    {
+        char vlan_if_name[IFNAMSIZ];
+        vlan_ifname_get_internal(ifname, vid, vlan_if_name);
+
+        sprintf(buf, "LANG=POSIX ifconfig %s unplumb >/dev/null",
+                vlan_if_name);
+        return ta_system(buf) != 0 ? TE_RC(TE_TA_UNIX, TE_ESHCMD) : 0;
+    }
 #else
     ERROR("This test agent does not support VLANs");
     return TE_RC(TE_TA_UNIX, EINVAL);

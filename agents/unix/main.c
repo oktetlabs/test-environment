@@ -1898,6 +1898,8 @@ main(int argc, char **argv)
     }
 #endif
     
+    setenv("LC_ALL", "POSIX", 1);
+
     /* FIXME */
     chdir("/tmp");
     
