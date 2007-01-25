@@ -67,6 +67,7 @@ main(int argc, char *argv[])
     const struct if_nameindex  *csap_if;
 
     char           *if_name;
+    char           *vlan_ifn;
     cfg_handle     *handles;
     unsigned int    n_handles;
 
@@ -102,7 +103,7 @@ main(int argc, char *argv[])
         TEST_FAIL("There is no any accessible interface on Agt_A");
 
 
-    cfg_get_inst_name(handles[0], &if_name);
+    cfg_get_inst_name(handles[n_handles - 1], &if_name);
     rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
                               "/agent:Agt_A/interface:%s/vlans:12",
                               if_name);
@@ -146,7 +147,8 @@ main(int argc, char *argv[])
         cfg_val_type type = CVT_STRING;
         char *name = NULL;
 
-        rc = cfg_get_instance_fmt(&type, &name, "/agent:Agt_A/interface:eth1/vlans:12/ifname:");
+        rc = cfg_get_instance_fmt(&type, &name,
+                                  "/agent:Agt_A/interface:eth1/vlans:12/ifname:");
         RING("read ifname rc %r, %s", rc, name);
     }
 
@@ -154,6 +156,15 @@ main(int argc, char *argv[])
                               if_name);
     if (rc != 0)
         TEST_FAIL("remove VLAN failed %r", rc);
+
+    rc = tapi_cfg_base_if_add_vlan("Agt_A", if_name, 10, &vlan_ifn);
+    if (rc != 0)
+        TEST_FAIL("add VLAN with TAPI failed %r", rc);
+    RING("ifname of created VLAN: %s", vlan_ifn);
+
+    rc = tapi_cfg_base_if_del_vlan("Agt_A", if_name, 10);
+    if (rc != 0)
+        TEST_FAIL("remove VLAN with TAPI failed %r", rc);
 
     TEST_SUCCESS;
 
