@@ -66,25 +66,13 @@ main(int argc, char *argv[])
     tapi_env_host              *host_csap = NULL;
     const struct if_nameindex  *csap_if;
 
+    char           *if_name;
     cfg_handle     *handles;
     unsigned int    n_handles;
 
     TEST_START; 
 
-    rc = cfg_find_pattern("/agent:Agt_A/interface:eth1/vlans:*", 
-                          &n_handles, &handles); 
-    RING("find vlans on eth1 on Agt_A rc %r, n: %d", rc, n_handles);
-    {
-        int i;
-        char *name;
-        for (i = 0; i < n_handles; i++)
-        {
-            cfg_get_inst_name(handles[i], &name);
-            RING("found vlan '%s' on Agt_A", name);
-        }
-    }
-
-    rc = cfg_find_pattern("/agent:Agt_B/interface:*/vlans:*", 
+    rc = cfg_find_pattern("/agent:Agt_A/interface:*/vlans:*", 
                           &n_handles, &handles); 
     RING("find vlans on Agt_B rc %r, n: %d", rc, n_handles);
     {
@@ -93,7 +81,7 @@ main(int argc, char *argv[])
         for (i = 0; i < n_handles; i++)
         {
             cfg_get_inst_name(handles[i], &name);
-            RING("found vlan '%s' on Agt_B", name);
+            RING("found vlan '%s' on Agt_A", name);
         }
     }
 
@@ -110,20 +98,23 @@ main(int argc, char *argv[])
             RING("found interfaces '%s' on Agt_A", name);
         }
     }
-
-#if 0
-    rc = cfg_add_instance_fmt(NULL, CVT_STRING, "/agent:Agt_A/interface:eth2",
-                              "/agent:Agt_A/rsrc:eth2");
-    RING("add vlan interfaces on Agt_A rc %r", rc);
-#endif
-
-    rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL, "/agent:Agt_A/interface:eth1/vlans:12");
-    RING("add vlan on Agt_A rc %r", rc);
+    if (n_handles < 1)
+        TEST_FAIL("There is no any accessible interface on Agt_A");
 
 
-    rc = cfg_find_pattern("/agent:Agt_A/interface:eth1/vlans:*", 
+    cfg_get_inst_name(handles[0], &if_name);
+    rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
+                              "/agent:Agt_A/interface:%s/vlans:12",
+                              if_name);
+    RING("add vlan on Agt_A:%s rc %r", if_name, rc);
+    if (rc != 0)
+        TEST_FAIL("Add VLAN failed");
+
+
+    rc = cfg_find_pattern("/agent:Agt_A/interface:*/vlans:*", 
                           &n_handles, &handles); 
-    RING("After add vlan: find vlans on eth1 on Agt_A rc %r, n: %d", rc, n_handles);
+    RING("After add vlan: find vlans on eth1 on Agt_A rc %r, n: %d",
+         rc, n_handles);
     {
         int i;
         char *name;
@@ -159,9 +150,11 @@ main(int argc, char *argv[])
         RING("read ifname rc %r, %s", rc, name);
     }
 
-    cfg_del_instance_fmt(FALSE, "/agent:Agt_A/interface:eth1/vlans:12");
+    rc = cfg_del_instance_fmt(FALSE, "/agent:Agt_A/interface:%s/vlans:12",
+                              if_name);
+    if (rc != 0)
+        TEST_FAIL("remove VLAN failed %r", rc);
 
-    TEST_SUCCESS;
     TEST_SUCCESS;
 
 cleanup:
