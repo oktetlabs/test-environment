@@ -776,6 +776,16 @@ extern te_errno cfg_verify_backup(const char *name);
 extern te_errno cfg_restore_backup(const char *name);
 
 /**
+ * Restore the backup w/o processing history.
+ *
+ * @param name      name returned by cfg_create_backup
+ *
+ * @return Status code (see te_errno.h)
+ */
+extern te_errno cfg_restore_backup_nohistory(const char *name);
+
+
+/**
  * Ask Configurator to forget about the backup, if known.
  *
  * @param name      Location of name returned by cfg_create_backup

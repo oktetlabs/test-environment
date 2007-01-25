@@ -1246,6 +1246,7 @@ process_backup(cfg_backup_msg *msg)
         }
 
         case CFG_BACKUP_RESTORE:
+        case CFG_BACKUP_RESTORE_NOHISTORY:
         {
             /* Check agents */
             int rc = rcf_check_agents();
@@ -1254,31 +1255,37 @@ process_backup(cfg_backup_msg *msg)
                 cfg_ta_sync("/:", TRUE);
 
             rcf_log_cfg_changes(TRUE);
-            
-            /* Try to restore using dynamic history */
-            if ((msg->rc = cfg_dh_restore_backup(msg->filename, TRUE)) == 0)
+
+            if (msg->op != CFG_BACKUP_RESTORE_NOHISTORY)
             {
-                cfg_conf_delay_reset();
-                cfg_ta_sync("/:", TRUE);
-                
-                if ((msg->rc = verify_backup(msg->filename, FALSE, 
-                                   "Restoring backup from history failed:")
-                                             ) == 0)
+                /* Try to restore using dynamic history */
+                msg->rc = cfg_dh_restore_backup(msg->filename, TRUE);
+                if (msg->rc != 0)
                 {
-                    rcf_log_cfg_changes(FALSE);
-                    return;
+                    WARN("Restoring backup from history failed; "
+                         "restore from the file");
                 }
+                else
+                {
+                    cfg_conf_delay_reset();
+                    cfg_ta_sync("/:", TRUE);
+                    
+                    msg->rc = verify_backup(msg->filename, FALSE, 
+                                            "Restoring backup from history "
+                                            "failed:");
+                    if (msg->rc == 0)
+                    {
+                        rcf_log_cfg_changes(FALSE);
+                        return;
+                    }
+                }
+                
+                if (TE_RC_GET_ERROR(msg->rc) == TE_ETADEAD)
+                {
+                    rcf_check_agents();
+                }
+                cfg_ta_sync("/:", TRUE);
             }
-            else
-                WARN("Restoring backup from history failed; "
-                     "restore from the file");
-            
-            if (TE_RC_GET_ERROR(msg->rc) == TE_ETADEAD)
-            {
-                rcf_check_agents();
-            }
-            cfg_ta_sync("/:", TRUE);
-            
             
             cfg_ta_log_syncing(TRUE);
             msg->rc = parse_config(msg->filename, TRUE);

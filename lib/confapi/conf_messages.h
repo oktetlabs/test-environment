@@ -246,7 +246,10 @@ typedef struct cfg_backup_msg {
 #define CFG_BACKUP_RESTORE      3   
 
 /** Release configuration backup */
-#define CFG_BACKUP_RELEASE      4   
+#define CFG_BACKUP_RELEASE      4
+
+/** Restore configuration backup w/o trying to process history */
+#define CFG_BACKUP_RESTORE_NOHISTORY  5
     char    filename[0];  /**< IN or OUT depending on operation */
 } cfg_backup_msg;
 

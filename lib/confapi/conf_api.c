@@ -2091,6 +2091,19 @@ cfg_restore_backup(const char *name)
     return cfg_backup(name, CFG_BACKUP_RESTORE);
 }
 
+/**
+ * Restore the backup w/o processing the history
+ *
+ * @param name      name returned by cfg_create_backup
+ *
+ * @return status code (see te_errno.h)
+ */
+te_errno
+cfg_restore_backup_nohistory(const char *name)
+{
+    return cfg_backup(name, CFG_BACKUP_RESTORE_NOHISTORY);
+}
+
 
 /**
  * Create a configuration file.
