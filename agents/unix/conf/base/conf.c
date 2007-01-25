@@ -93,7 +93,7 @@
 
 /* For now, enable old-style VLAN support. When it is removed, we have to
  * change access type to interfaces from read_create to read_only */
-#define OLD_VLAN_SUPPORT 1
+#define OLD_VLAN_SUPPORT 0
 
 /* { required for sysctl on netbsd */
 #if HAVE_SYS_PARAM_H
@@ -1990,7 +1990,7 @@ vlan_ifname_get_internal(const char *ifname, int vlan_id,
     while (!isdigit(ifname[offset])) offset++;
 
     memcpy(v_ifname, ifname, offset);
-    sprintf(v_ifname + offset, "%d00%ѕ", vlan_id, ifname + offset);
+    sprintf(v_ifname + offset, "%d00%s", vlan_id, ifname + offset);
 #endif 
     return 0;
 }
