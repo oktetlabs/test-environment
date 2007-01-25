@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package version="1.0">
+
+  <description>Tests on Configurator functionality.</description>
+
+  <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
+
+  <session track_conf="silent">
+
+    <run>
+      <script name="vlans">
+        <req id="CS_VLAN"/>
+      </script>
+      <arg name="env">
+        <value>{'host_csap'{if:'csap_if'}}</value>
+      </arg>  
+    </run>
+
+  </session>
+</package>
