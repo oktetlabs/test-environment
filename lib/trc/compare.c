@@ -42,6 +42,7 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_test_result.h"
+#include "logger_api.h"
 
 #include "te_trc.h"
 
@@ -63,6 +64,16 @@ te_test_results_equal(const te_test_result *lhv,
          v2 = TAILQ_FIRST(&rhv->verdicts);
          v1 != NULL && v2 != NULL && strcmp(v1->str, v2->str) == 0;
          v1 = TAILQ_NEXT(v1, links), v2 = TAILQ_NEXT(v2, links));
+
+#if 0
+    if (v1 != NULL && v2 != NULL)
+    {
+        unsigned int   i;
+
+        for (i = 0; v1->str[i] == v2->str[i]; ++i);
+        RING("Diff at %u\n'%s'\n'%s'", i, v1->str + i, v2->str + i);
+    }
+#endif
     
     return (v1 == NULL) && (v2 == NULL);
 }
