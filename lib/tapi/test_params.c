@@ -52,10 +52,17 @@ DEFINE_LGR_ENTITY("(unknown)");
 
 /* See description in tapi_test.h */
 void
-sigint_handler(int signum)
+te_test_sig_handler(int signum)
 {
-    UNUSED(signum);
-    exit(TE_EXIT_SIGINT);
+    if (signum == SIGINT)
+    {
+        UNUSED(signum);
+        exit(TE_EXIT_SIGINT);
+    }
+    else if (signum == SIGUSR1)
+    {
+        TEST_FAIL("Test is killed by SIGUSR1");
+    }
 }
 
 

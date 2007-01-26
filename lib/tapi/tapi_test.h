@@ -123,7 +123,13 @@ extern "C" {
      * Install SIGINT signal handler to exit() with failure status, \
      * if test is terminated by user by Ctrl-C.                     \
      */                                                             \
-    (void)signal(SIGINT, sigint_handler);                           \
+    (void)signal(SIGINT, te_test_sig_handler);                      \
+    /*                                                              \
+     * Install SIGUSR1 signal handler to call TEST_FAIL().          \
+     * In comparison with SIGINT, SIGUSR1 does not lead to testing  \
+     * campaign termination.                                        \
+     */                                                             \
+    (void)signal(SIGUSR1, te_test_sig_handler);                     \
                                                                     \
     TAPI_ON_JMP(TEST_ON_JMP_DO);                                    \
     TEST_GET_INT_PARAM(te_test_id);                                 \
@@ -584,7 +590,7 @@ extern int test_split_param_list(const char *list, char ***array_p);
  *
  * @param signum    - signal number
  */
-extern void sigint_handler(int signum);
+extern void te_test_sig_handler(int signum);
 
 /* Scalable sleep primitives */
 
