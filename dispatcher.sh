@@ -135,7 +135,7 @@ Generic options:
   --tester-run=<testpath>       Run test under the path.
   --tester-run-from=<testpath>  Run tests starting from the test path.
   --tester-run-to=<testpath>    Run tests up to the test path.
-  --tester-exclude=<tpath>      Exclude specified tests from campaign.
+  --tester-exclude=<testpath>   Exclude specified tests from campaign.
   --tester-vg=<testpath>        Run test scripts under specified path using
                                 valgrind.
   --tester-gdb=<testpath>       Run test scripts under specified path using
