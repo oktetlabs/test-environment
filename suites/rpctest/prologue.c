@@ -26,7 +26,7 @@ main(void)
 {
     int result = EXIT_FAILURE;
 
-    signal(SIGINT, sigint_handler);
+    signal(SIGINT, te_test_sig_handler);
     te_lgr_entity = TE_TEST_NAME;
     TAPI_ON_JMP(TEST_ON_JMP_DO);
 
