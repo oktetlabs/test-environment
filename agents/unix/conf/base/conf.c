@@ -93,7 +93,7 @@
 
 /* For now, enable old-style VLAN support. When it is removed, we have to
  * change access type to interfaces from read_create to read_only */
-#define OLD_VLAN_SUPPORT 0
+#define OLD_VLAN_SUPPORT 1
 
 /* { required for sysctl on netbsd */
 #if HAVE_SYS_PARAM_H
@@ -1757,6 +1757,7 @@ ifconf_foreach_ifreq(struct my_ifreq *ifr, size_t length,
 #endif /* USE_IOCTL */
 
 
+#if OLD_VLAN_SUPPORT
 /**
  * Check, if the interface with specified name exists.
  *
@@ -1802,6 +1803,7 @@ interface_exists(const char *ifname)
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
+#endif
 
 
 #if !defined(__linux__) && defined(SIOCGIFCONF)
@@ -1879,8 +1881,12 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
         {
             if (errno == ENOENT)
             {
-                RING("%s: no proc vlan file ", __FUNCTION__);
-                return 0; /* no vlan support module loaded, empty list */
+                /* 
+                 * No vlan support module loaded, empty list. 
+                 * Do not RING() here -- do not spam into the log.
+                 */
+                VERB("%s: no proc vlan file", __FUNCTION__);
+                return 0;
             }
 
             ERROR("%s(): Failed to open /proc/net/vlan/config %s",
