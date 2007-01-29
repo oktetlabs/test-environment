@@ -71,6 +71,8 @@ typedef struct test_path_proc_ctx {
     uint8_t        *bm;     /**< Bit mask with iterations to be run */
     unsigned int    iter;   /**< Current iteration of the run item */
 
+    te_bool transparent;    /**< Is the run item transparent on the path? */
+
 } test_path_proc_ctx;
 
 /**
@@ -645,6 +647,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
     }
     ctx->ri = run;
     ctx->bm = bm;
+    ctx->transparent = (name == NULL);
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
@@ -689,7 +692,9 @@ test_path_proc_test_end(run_item *run, unsigned int cfg_id_off,
          */
         gctx->rc = scenario_append(parent != NULL ? parent->scenario :
                                                     gctx->scenario,
-                                   ctx->scenario, ctx->item->iterate);
+                                   ctx->scenario,
+                                   ctx->transparent ? 1 :
+                                       ctx->item->iterate);
         if (gctx->rc != 0)
         {
             EXIT("FAULT - %r", gctx->rc);
