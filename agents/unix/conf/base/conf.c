@@ -1965,6 +1965,7 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
                   __FUNCTION__, status);
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
+        fclose(out);
     }
 #endif
 
@@ -2128,6 +2129,7 @@ vlan_get_parent(const char *ifname, char *parent)
                   __FUNCTION__, status);
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
+        fclose(out);
     }
 #endif
     return 0;
