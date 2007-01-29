@@ -1880,7 +1880,7 @@ main(int argc, char **argv)
     
     char  buf[16];
     char *tmp;
-    
+
 #ifdef __linux__
     const void **av = (const void **)&argv[argc + 1];
 
@@ -1898,10 +1898,29 @@ main(int argc, char **argv)
     }
 #endif
     
-    setenv("LC_ALL", "POSIX", 1);
+    /*
+     * Set locale to POSIX in order to get all messages in standard
+     * format, language, etc.
+     */
+    if (setenv("LC_ALL", "POSIX", !0) != 0)
+    {
+        fprintf(stderr, "Failed to set LC_ALL to POSIX\n");
+        /* Continue */
+    }
 
-    /* FIXME */
-    chdir("/tmp");
+    /* Forget user's home and initial working directories */
+    unsetenv("PWD");
+    unsetenv("HOME");
+
+    /* 
+     * Change working directory to /tmp in order to create all
+     * temporary files there.
+     */
+    if (chdir("/tmp") != 0)
+    {
+        fprintf(stderr, "Failed to change current directory to /tmp\n");
+        /* Continue */
+    }
     
     if (argc < 3)
     {
