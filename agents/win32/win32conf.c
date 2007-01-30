@@ -2740,9 +2740,6 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     unsigned char addr6[6];
     unsigned int itemp;
 
-    RING("!!!!!!!!!!!!!!!!!!!!!!!!mcast_link_addr_add!!!!!!!!!!!!!!!!!!");
-    printf("IGORL: mcast_link_addr_add\n");
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
@@ -2751,9 +2748,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
 
     if (INVALID_HANDLE_VALUE == dev)
     {
-      WARN("Failed to open device '%s', errno=%d", WRAPPER_DEVFILE_NAME,
-           GetLastError());
-      return -1;
+      return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
     }
     RING("add addr %s", addr);
     printf("IGORL: add addr %s\n", addr);
@@ -2820,8 +2815,6 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     unsigned char addr6[6];
     unsigned int itemp;
 
-    RING("!!!!!!!!!!!!!!!!!!!!!!!!mcast_link_addr_del!!!!!!!!!!!!!!!!!!");
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(ifname);
@@ -2829,9 +2822,7 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
 
     if (INVALID_HANDLE_VALUE == dev)
     {
-      WARN("Failed to open device '%s', errno=%d", WRAPPER_DEVFILE_NAME,
-           GetLastError());
-      return -1;
+      return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
     }
     RING("del addr %s", addr);
     
@@ -2910,8 +2901,6 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
     unsigned char *buf = malloc(1024 * sizeof(unsigned char));
     unsigned char *ret = malloc(1024 * sizeof(unsigned char));
 
-    RING("!!!!!!!!!!!!!!!!!!!!!!!!mcast_link_addr_list!!!!!!!!!!!!!!!!!!");
-
     UNUSED(gid);
     UNUSED(oid);
 //    UNUSED(list);
@@ -2920,9 +2909,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 
     if (INVALID_HANDLE_VALUE == dev)
     {
-      WARN("Failed to open device '%s', errno=%d", WRAPPER_DEVFILE_NAME,
-           GetLastError());
-      return -1;
+      return TE_RC(TE_TA_WIN32, TE_ENOENT);
     }
     if (!DeviceIoControl(dev, KRX_GET_MULTICAST_LIST, 
                         (void *)buf, 1024, (void *)buf, 1024,
