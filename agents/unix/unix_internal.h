@@ -47,6 +47,9 @@
 #if HAVE_NET_IF_H
 #include <net/if.h>
 #endif
+#if HAVE_CTYPE_H
+#include <ctype.h>
+#endif
 
 #include "te_sockaddr.h"
 #include "rcf_pch.h"
@@ -92,6 +95,8 @@
         default: prefix = 33; break;         \
     }
 
+
+#if defined(__linux__)
 /** Strip off .VLAN from interface name */
 static inline char *
 ifname_without_vlan(const char *ifname)
@@ -101,10 +106,68 @@ ifname_without_vlan(const char *ifname)
     
     strcpy(tmp, ifname);
     if ((s = strchr(tmp, '.')) != NULL)
-        *s = 0;
+        *s = '\0';
         
     return tmp;
 }
+#elif defined(__sun__)
+static inline char *
+ifname_without_vlan(const char *ifname)
+{
+    static char tmp[IFNAMSIZ];
+
+    int i, k, tok_found;
+    int len = strlen(ifname);
+    memset(tmp, 0, IFNAMSIZ);
+
+    for (i = 0; i < len; i++)
+    {
+        if (isdigit(ifname[i]) != 0)
+            break;
+
+        tmp[i] = ifname[i];
+    } /* Got the drv name part */
+
+    k = i;
+
+    tok_found = 0;
+    for (; i < len; i++) /* Look for 00 VLAN token */
+    {
+        if (ifname[i] == '0' && ifname[i+1] == '0')
+        {
+            tok_found = 1;
+            i++; i++; /* Move beyond the token */
+            break;
+        }
+    }   /* Skipped everything up to 00 token including */
+
+
+    if (tok_found == 0) /* no 00 token, just a regular ifname: we copy */
+    {
+        for (; k < len; k++)       
+            tmp[k] = ifname[k];
+    }
+    else
+    {
+        if (i >=len)
+            ERROR("Dangling 00 token in ifname: %s\n", ifname);
+
+        for (; i < len; i++) /* Copy the rest: instance number */
+            tmp[k++] = ifname[i];
+    }
+
+    tmp[k]='\0';
+    return tmp;
+}
+#else
+static inline char *
+ifname_without_vlan(const char *ifname)
+{
+    ERROR("This test agent does not support VLANs");
+    return NULL;
+}
+#endif  /* __linux__ or __sun__ */
+
 
 /** Is interface a loopback? */
 #define INTERFACE_IS_LOOPBACK(ifname) \
