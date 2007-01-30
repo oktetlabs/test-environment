@@ -91,9 +91,11 @@
 #define LINUX_VLAN_SUPPORT 0
 #endif
 
-/* For now, enable old-style VLAN support. When it is removed, we have to
- * change access type to interfaces from read_create to read_only */
-#define OLD_VLAN_SUPPORT 1
+/**
+ * If you really need old-style Linux-specific VLAN support, you should 
+ * change access type to interfaces list from read_only to read_create.
+ */
+#define OLD_VLAN_SUPPORT 0
 
 /* { required for sysctl on netbsd */
 #if HAVE_SYS_PARAM_H

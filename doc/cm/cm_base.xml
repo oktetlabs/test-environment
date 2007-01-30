@@ -69,7 +69,7 @@
     
     <!-- Network interface
          Name: "eth0"-like -->
-    <object oid="/agent/interface" access="read_create" type="none"/>
+    <object oid="/agent/interface" access="read_only" type="none"/>
     
     <!-- Network interface index
          Name: "eth0"-like -->
