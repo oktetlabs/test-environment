@@ -319,6 +319,33 @@ te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
                                    uint16_t vid, char **vlan_ifname);
 
 /**
+ * Add VLAN interface if necessary and get its name.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       interface name
+ * @param vid           VLAN ID to get the name
+ * @param vlan_ifname   pointer to return the name of new interface
+ *
+ * @return Status code
+ */
+static inline te_errno
+tapi_cfg_base_if_add_get_vlan(const char *ta, const char *if_name,
+                              uint16_t vid, char **vlan_ifname)
+{
+    cfg_val_type val = CVT_STRING;
+
+    if (cfg_get_instance_fmt(&val, vlan_ifname,
+                             "/agent:%s/interface:%s/vlans:%d/ifname:",
+                             ta, if_name, vid))
+    {
+        return tapi_cfg_base_if_add_vlan(ta, if_name, vid, vlan_ifname);
+    }
+
+    return 0;
+}
+
+
+/**
  * Delete VLAN interface.
  *
  * @param ta            Test Agent name
@@ -327,8 +354,21 @@ te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-te_errno tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name, 
-                                   uint16_t vid);
+static inline te_errno
+tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
+                          uint16_t vid)
+{
+    te_errno     rc = 0;
+
+    if ((rc = cfg_del_instance_fmt(TRUE, "/agent:%s/interface:%s/vlans:%d",
+                                   ta, if_name, vid)) != 0)
+    {
+        ERROR("Failed to delete VLAN with VID=%d from %s", vid, if_name);
+        return rc;
+    }
+
+    return rc;
+}
 
 #ifdef __cplusplus
 } /* extern "C" */
