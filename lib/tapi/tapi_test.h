@@ -435,7 +435,7 @@ extern "C" {
         }                                                               \
         for (i = 0; i < (var_len_); i++)                                \
         {                                                               \
-            (var_name_)[i] = (int)strtol(str_array[i], &end_ptr, 10);   \
+            (var_name_)[i] = (int)strtol(str_array[i], &end_ptr, 0);    \
             if (end_ptr == str_array[i] || *end_ptr != '\0')            \
             {                                                           \
                 TEST_FAIL("The value of '%s' parameter should be "      \
