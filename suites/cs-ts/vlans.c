@@ -59,6 +59,7 @@
 #include "tapi_rpcsock_macros.h"
 #include "tapi_test.h"
 #include "tapi_rpc_params.h"
+#include "tapi_cfg_base.h"
 
 int
 main(int argc, char *argv[])
@@ -75,7 +76,7 @@ main(int argc, char *argv[])
 
     rc = cfg_find_pattern("/agent:Agt_A/interface:*/vlans:*", 
                           &n_handles, &handles); 
-    RING("find vlans on Agt_B rc %r, n: %d", rc, n_handles);
+    RING("find vlans on Agt_A rc %r, n: %d", rc, n_handles);
     {
         int i;
         char *name;
@@ -161,6 +162,23 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("add VLAN with TAPI failed %r", rc);
     RING("ifname of created VLAN: %s", vlan_ifn);
+
+
+
+    {
+        char cfg_if_oid[200];
+        cfg_handle new_addr;
+        struct sockaddr_in sa;
+
+        sa.sin_family = AF_INET;
+        sa.sin_addr.s_addr = inet_addr("192.168.0.1");
+        sprintf(cfg_if_oid, "/agent:Agt_A/interface:%s/", vlan_ifn);
+
+        rc = tapi_cfg_base_add_net_addr(cfg_if_oid, SA(&sa),
+                           24, FALSE, &new_addr);
+        if (rc != 0)
+            TEST_FAIL("add IP address on VLAN failed %r", rc);
+    }
 
     rc = tapi_cfg_base_if_del_vlan("Agt_A", if_name, 10);
     if (rc != 0)
