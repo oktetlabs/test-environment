@@ -29,7 +29,7 @@
  * @author Ivan Soloducha <Ivan.Soloducha@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id: conf.c 24823 2006-03-05 07:24:43Z arybchik $
+ * $Id$
  */
 
 #ifdef USE_NETLINK
@@ -91,7 +91,6 @@
 #include "unix_internal.h"
 #include "conf_route.h"
 
-#ifdef USE_NETLINK
 #include <sys/select.h>
 #include <asm/types.h>
 #include <linux/netlink.h>
@@ -102,7 +101,6 @@
 #include <iproute/utils.h>
 #include <iproute/ll_map.h>
 #include <iproute/ip_common.h>
-#endif
 
 
 static char buf[4096];
