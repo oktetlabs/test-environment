@@ -2526,7 +2526,10 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         {
             /* Error string is overriden in any case */
             if (ctx->current_result.exp_result == NULL &&
-                test_get_name(ri) != NULL)
+                (/* Any test with specified name w/o record in TRC DB */
+                 test_get_name(ri) != NULL ||
+                 /* Noname session with only unknown tests inside */
+                 ctx->current_result.exp_status == TRC_VERDICT_UNKNOWN))
             {
                 assert(ctx->current_result.exp_status ==
                            TRC_VERDICT_UNKNOWN);
@@ -2551,9 +2554,8 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                            TE_TEST_SKIPPED)))
             {
                 /* 
-                 * Expectations status can't be unknown, since we have
-                 * run something in this session (run status is not
-                 * empty).
+                 * Expectations status can be either unknown, if
+                 * everything is skipped inside, or known otherwise.
                  */
                 assert(ctx->current_result.exp_status !=
                            TRC_VERDICT_UNKNOWN ||
