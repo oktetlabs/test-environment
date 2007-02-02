@@ -471,7 +471,10 @@ tester_group_result(tester_test_result *group_result,
          * If group contains unknown or unexpected results, its
          * status is unexpected.
          */
-        if (iter_result->exp_status != TRC_VERDICT_EXPECTED)
+        if (iter_result->exp_status == TRC_VERDICT_UNKNOWN &&
+            group_result->exp_status == TRC_VERDICT_UNKNOWN)
+            /* Do nothing */;
+        else if (iter_result->exp_status != TRC_VERDICT_EXPECTED)
             group_result->exp_status = TRC_VERDICT_UNEXPECTED;
         else if (group_result->exp_status == TRC_VERDICT_UNKNOWN)
             group_result->exp_status = TRC_VERDICT_EXPECTED;
@@ -2526,7 +2529,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 test_get_name(ri) != NULL)
             {
                 assert(ctx->current_result.exp_status ==
-                       TRC_VERDICT_UNKNOWN);
+                           TRC_VERDICT_UNKNOWN);
                 ctx->current_result.error = "Unknown test/iteration";
             }
             else if (ctx->current_result.result.status == TE_TEST_EMPTY)
