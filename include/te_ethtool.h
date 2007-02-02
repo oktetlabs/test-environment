@@ -1,3 +1,13 @@
+/** @file
+ * @brief Wrapper to include <linux/ethtool.h>
+ *
+ * It is not easy to include linux/ethtool.h for kernels <= 2.6.17.
+ * This wrapper solves the problem for users.
+ *
+ * @author Alexandra Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
+ *
+ * $Id$
+ */
 #if HAVE_LINUX_ETHTOOL_H
 #include <asm/types.h> /* For >= 2.6.18 */
 
