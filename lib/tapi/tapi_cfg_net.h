@@ -191,9 +191,12 @@ extern te_errno tapi_cfg_net_reserve_all(void);
 /**
  * Set UP state for all interfaces (nodes) of networks configuration.
  *
+ * @param force         If interface is already UP, push it down and up
+ *                      again
+ *
  * @return Status code.
  */
-extern te_errno tapi_cfg_net_all_up(void);
+extern te_errno tapi_cfg_net_all_up(te_bool force);
 
 /**
  * Delete IPv4 addresses from all nodes in networks configuration.

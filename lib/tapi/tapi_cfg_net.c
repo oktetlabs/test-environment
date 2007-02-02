@@ -681,7 +681,7 @@ tapi_cfg_net_reserve_all(void)
 
 /* See description in tapi_cfg_net.h */
 te_errno
-tapi_cfg_net_all_up(void)
+tapi_cfg_net_all_up(te_bool force)
 {
     int             rc;
     cfg_nets_t      nets;
@@ -724,6 +724,27 @@ tapi_cfg_net_all_up(void)
             }
             if (status != 1)
             {
+                rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+                                          "%s/status:", oid);
+                if (rc != 0)
+                {
+                    ERROR("Failed to set status of %s to UP: %r",
+                          oid, rc);
+                    free(oid);
+                    break;
+                }
+            }
+            else if (force)
+            {
+                rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+                                          "%s/status:", oid);
+                if (rc != 0)
+                {
+                    ERROR("Failed to set status of %s to DOWN: %r",
+                          oid, rc);
+                    free(oid);
+                    break;
+                }
                 rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                           "%s/status:", oid);
                 if (rc != 0)
