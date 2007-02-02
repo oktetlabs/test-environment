@@ -172,7 +172,7 @@ main(int argc, char *argv[])
 
         sa.sin_family = AF_INET;
         sa.sin_addr.s_addr = inet_addr("192.168.0.1");
-        sprintf(cfg_if_oid, "/agent:Agt_A/interface:%s/", vlan_ifn);
+        sprintf(cfg_if_oid, "/agent:Agt_A/interface:%s", vlan_ifn);
 
         rc = tapi_cfg_base_add_net_addr(cfg_if_oid, SA(&sa),
                            24, FALSE, &new_addr);
