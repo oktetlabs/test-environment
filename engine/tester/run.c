@@ -2555,12 +2555,9 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             {
                 /* 
                  * Expectations status can be either unknown, if
-                 * everything is skipped inside, or known otherwise.
+                 * everything is skipped inside or only unknown
+                 * tests are run, or known otherwise.
                  */
-                assert(ctx->current_result.exp_status !=
-                           TRC_VERDICT_UNKNOWN ||
-                       ctx->current_result.result.status ==
-                           TE_TEST_SKIPPED);
                 /* 
                  * Do not override expectations status derived from
                  * session members results.
