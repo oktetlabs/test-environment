@@ -130,6 +130,10 @@
 
 #define TA_USE_PAM  1
 
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
+
 /** Data passed between 'set_change_passwd' and 'conv_fun' callback fun */
 typedef struct {
     char const *passwd;                    /**< Password string pointer */
@@ -365,6 +369,8 @@ static const char * const env_hidden[] = {
     "LD_PRELOAD"
 };
 
+static te_errno uname_get(unsigned int, const char *, char *);
+
 static te_errno ip4_fw_get(unsigned int, const char *, char *);
 static te_errno ip4_fw_set(unsigned int, const char *, const char *);
 
@@ -595,10 +601,10 @@ static rcf_pch_cfg_object node_env =
       (rcf_ch_cfg_add)env_add, (rcf_ch_cfg_del)env_del,
       (rcf_ch_cfg_list)env_list, NULL, NULL };
 
-
+RCF_PCH_CFG_NODE_RO(node_uname, "uname", NULL, &node_env, uname_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
-                            NULL, &node_env,
+                            NULL, &node_uname,
                             user_add, user_del,
                             user_list, NULL);
 
@@ -5508,6 +5514,43 @@ env_list(unsigned int gid, const char *oid, char **list)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
+}
+
+/**
+ * Get agent uname value.
+ *
+ * @param gid       Request's group identifier (unused)
+ * @param oid       Full object instance identifier (unused)
+ * @param value     Location for the value (OUT)
+ * @param name      Variable name
+ *
+ * @return Status code
+ */
+static te_errno
+uname_get(unsigned int gid, const char *oid, char *value)
+{
+#ifdef HAVE_SYS_UTSNAME_H
+    struct utsname val;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (uname(&val) == 0)
+    {
+        if (strlen(val.sysname) >= RCF_MAX_VAL)
+            ERROR("System uname '%s' truncated", val.sysname);
+        snprintf(value, RCF_MAX_VAL, "%s", val.sysname);
+        return 0;
+    }
+    else
+    {
+        ERROR("Failed to call uname()");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+#else
+#warning "uname access method is not implemented"
+    return TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
+#endif
 }
 
 /**

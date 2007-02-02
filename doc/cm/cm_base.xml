@@ -953,6 +953,12 @@
          Limit: any -->
     <object oid="/agent/env" access="read_create" type="string"/>
     
+    <!-- uname value for the system
+         Name:  empty
+         Value: Linux, SunOS, "Microsoft Windows", etc 
+         -->
+    <object oid="/agent/uname" access="read_only" type="string"/>
+    
     <!-- Tester user. 
          Name: te_tester_<uid> 
          Password is the same as user name. -->
