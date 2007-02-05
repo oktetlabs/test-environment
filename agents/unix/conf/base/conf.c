@@ -124,15 +124,15 @@
 
 #include <pwd.h>
 
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
+
 /* PAM (Pluggable Authentication Modules) support */
 #if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
 #include <security/pam_appl.h>
 
 #define TA_USE_PAM  1
-
-#ifdef HAVE_SYS_UTSNAME_H
-#include <sys/utsname.h>
-#endif
 
 /** Data passed between 'set_change_passwd' and 'conv_fun' callback fun */
 typedef struct {
