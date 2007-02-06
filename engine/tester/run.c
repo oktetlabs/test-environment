@@ -920,7 +920,8 @@ run_test_script(test_script *script, test_id exec_id,
     ENTRY("name=%s exec_id=%u n_args=%u arg=%p flags=0x%x",
           script->name, exec_id, n_args, args, flags);
 
-    if (asprintf(&params_str, " te_test_id=%u", exec_id) < 0)
+    if (asprintf(&params_str, " te_test_id=%u te_rand_seed=%d",
+                 exec_id, rand()) < 0)
     {
         ERROR("%s(): asprintf() failed", __FUNCTION__);
         return TE_RC(TE_TESTER, TE_ENOMEM);

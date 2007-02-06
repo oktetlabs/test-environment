@@ -136,10 +136,11 @@ extern "C" {
                                                                     \
     /* Initialize pseudo-random generator */                        \
     {                                                               \
-        unsigned int seed = time(NULL) + te_test_id;                \
+        int te_rand_seed;                                           \
                                                                     \
-        srand(seed);                                                \
-        RING("Pseudo-random seed is %u", seed);                     \
+        TEST_GET_INT_PARAM(te_rand_seed);                           \
+        srand(te_rand_seed);                                        \
+        RING("Pseudo-random seed is %d", te_rand_seed);             \
     }                                                               \
                                                                     \
     TEST_START_SPECIFIC
