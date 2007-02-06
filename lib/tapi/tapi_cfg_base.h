@@ -360,7 +360,7 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
 {
     te_errno     rc = 0;
 
-    if ((rc = cfg_del_instance_fmt(TRUE, "/agent:%s/interface:%s/vlans:%d",
+    if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/vlans:%d",
                                    ta, if_name, vid)) != 0)
     {
         ERROR("Failed to delete VLAN with VID=%d from %s", vid, if_name);
