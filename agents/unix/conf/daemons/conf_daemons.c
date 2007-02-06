@@ -481,7 +481,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
                *value == '0' ? "stop" : "start");
 
     /*
-     * Workaround for '/etc/init.d/*' script (OL bug 864): when no
+     * Workaround for '/etc/init.d/...' script (OL bug 864): when no
      * delay performed here 'sendmail' does not completely start for some
      * strange reason although it should: only submission port (587)
      * is opened but smtp one (25) is not; however, if some delay, say,
