@@ -5535,7 +5535,7 @@ uname_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    if (uname(&val) == 0)
+    if (uname(&val) >= 0)
     {
         if (strlen(val.sysname) >= RCF_MAX_VAL)
             ERROR("System uname '%s' truncated", val.sysname);
