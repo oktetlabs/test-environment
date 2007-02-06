@@ -30,6 +30,8 @@
 #ifndef __TE_TA_COMMON_H__
 #define __TE_TA_COMMON_H__
 
+#include "te_defs.h"
+
 /** 
  * Get OS identifier of the current thread. 
  *
@@ -66,5 +68,16 @@ extern void thread_mutex_lock(void *mutex);
  * @param mutex     mutex handle
  */
 extern void thread_mutex_unlock(void *mutex);
+
+
+/**
+ * Check that interface is locked for using of this TA 
+ *
+ * @param ifname        name of network interface
+ * 
+ * @retval 0      interface is not locked
+ * @retval other  interface is locked
+ */
+extern te_bool ta_interface_is_mine(const char *ifname);
 
 #endif /* !__TE_TA_COMMON_H__ */
