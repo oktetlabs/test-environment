@@ -240,9 +240,9 @@ iscsi_unix_cli(const char *cmd, ...)
     vsnprintf(cmdline, ISCSI_MAX_CMD_SIZE, cmd, ap);
     va_end(ap);
 
-    VERB("%s() command line: %s\n", __FUNCTION__, cmdline);
+    RING("%s() command line: %s\n", __FUNCTION__, cmdline);
     status = ta_system(cmdline);
-    VERB("%s(): ta_system() call returns 0x%x\n", __FUNCTION__, status);
+    RING("%s(): ta_system() call returns 0x%x\n", __FUNCTION__, status);
 
     free(cmdline);
 
@@ -547,6 +547,7 @@ iscsi_scan_directory(const char *pattern, const char *entity_name,
                       entity_name);
                 return TE_RC(ISCSI_AGENT_TYPE, TE_EIO);
             case GLOB_NOMATCH:
+                ERROR("No matches to pattern '%s' found by glob()", pattern);
                 return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
             default:
                 ERROR("unexpected error on glob()");
@@ -572,78 +573,59 @@ iscsi_linux_detect_hba(void)
     FILE       *hba = NULL;
     glob_t      devices;
 
-    switch (init_data->init_type)
+    VERB("%s(type=%d) started", __FUNCTION__, init_data->init_type);
+
+    VERB("Call iscsi_scan_directory()");
+    rc = iscsi_scan_directory("/sys/bus/scsi/devices/*/vendor",
+                              "host bus adapters",
+                              &devices);
+    if (rc != 0)
     {
-        case ISCSI_L5:
-            hba = popen("T=`grep -l efabiscsi "
-                        "/sys/class/scsi_host/host*/proc_name` && "
-                        "B=${T%/proc_name} && "
-                        "echo ${B##*/host}", "r");
+        return rc;
+    }
+    else
+    {
+        unsigned i;
+                
+        for (i = 0; i < devices.gl_pathc; i++)
+        {
+            VERB("Trying %s", devices.gl_pathv[i]);
+            hba = fopen(devices.gl_pathv[i], "r");
             if (hba == NULL)
             {
-                return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
+                WARN("Cannot open %s: %s", devices.gl_pathv[i], 
+                     strerror(errno));
+                continue;
             }
-            
-            rc = fscanf(hba, "%d", &init_data->host_bus_adapter);
-            if (rc <= 0)
+            *dev_pattern = '\0';
+            fgets(dev_pattern, sizeof(dev_pattern) - 1, hba);
+            RING("Vendor reported is %s", dev_pattern);
+            fclose(hba);
+            if (strstr(dev_pattern, "ATA") != NULL)
+                continue;
+
+            rc = sscanf(devices.gl_pathv[i], 
+                        "/sys/bus/scsi/devices/%d:", 
+                        &init_data->host_bus_adapter);
+            if (rc != 1)
             {
-                return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
-            }
-            pclose(hba);
-            break;
-        default:
-        {
-            rc = iscsi_scan_directory("/sys/bus/scsi/devices/*/vendor",
-                                      "host bus adapters",
-                                      &devices);
-            if (rc != 0)
-            {
-                return rc;
-            }
-            else
-            {
-                unsigned i;
-                
-                for (i = 0; i < devices.gl_pathc; i++)
-                {
-                    RING("Trying %s", devices.gl_pathv[i]);
-                    hba = fopen(devices.gl_pathv[i], "r");
-                    if (hba == NULL)
-                    {
-                        WARN("Cannot open %s: %s", devices.gl_pathv[i], 
-                             strerror(errno));
-                        continue;
-                    }
-                    *dev_pattern = '\0';
-                    fgets(dev_pattern, sizeof(dev_pattern) - 1, hba);
-                    RING("Vendor reported is %s", dev_pattern);
-                    fclose(hba);
-                    if (strstr(dev_pattern, "UNH") == NULL)
-                        continue;
-                    
-                    rc = sscanf(devices.gl_pathv[i], 
-                                "/sys/bus/scsi/devices/%d:", 
-                                &init_data->host_bus_adapter);
-                    if (rc != 1)
-                    {
-                        ERROR("Something strange with "
-                              "/sys/bus/scsi/devices");
-                        globfree(&devices);
-                        return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
-                    }
-                    break;
-                }
-                if (i == devices.gl_pathc)
-                {
-                    globfree(&devices);
-                    return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
-                }
+                ERROR("Something strange with "
+                      "/sys/bus/scsi/devices");
                 globfree(&devices);
+                return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
             }
-            RING("Host bus adapter detected as %d", init_data->host_bus_adapter);
             break;
         }
+        if (i == devices.gl_pathc)
+        {
+            globfree(&devices);
+            return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
+        }
+        globfree(&devices);
     }
+    RING("Host bus adapter detected as %d", init_data->host_bus_adapter);
+
+    VERB("%s() finished successfuly", __FUNCTION__);
     return 0;
 }
 
@@ -753,10 +735,16 @@ iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
 {
     int         rc = 0;
 
+    VERB("Call iscsi_linux_detect_hba()");
     rc = iscsi_linux_detect_hba();
     if (rc != 0)
+    {
+        ERROR("iscsi_linux_detect_hba() returned rc=%r (0x%x), errno=%d",
+              rc, rc, errno);
         return rc;
+    }
 
+    VERB("Call iscsi_get_device_name()");
     rc = iscsi_get_device_name(conn, target_id, 
                                FALSE, conn->device_name);
     if (rc != 0)
