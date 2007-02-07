@@ -442,6 +442,8 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
     }
     else
     {
+        RING("%s(): device=%s", __FUNCTION__,
+             target->conns[0].device_name);
         strcpy(value, target->conns[0].device_name);
     }
     pthread_mutex_unlock(&target->conns[0].status_mutex);
