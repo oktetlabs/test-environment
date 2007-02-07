@@ -133,6 +133,8 @@ static char   *iscsi_conditions[] = {
     "Error:|The target has already been logged|[Ff]ailed|cannot|invalid|not found",
     "Connection Id[[:space:]]*:[[:space:]]*([a-f0-9]*)-([a-f0-9]*)",
     "Device Interface Name[[:space:]]*:[[:space:]]*([^[:space:]]+)",
+    "Legacy Device Name[[:space:]]*:[[:space:]]*([^[:space:]]+)",
+    "Total of ([0-9])* sessions",
 };
 
 /** Compiled form of iscsi_conditions */
@@ -144,6 +146,8 @@ static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
 #define error_regexp (iscsi_regexps[3])
 #define existing_conn_regexp (iscsi_regexps[4])
 #define dev_name_regexp (iscsi_regexps[5])
+#define legacy_dev_name_regexp (iscsi_regexps[6])
+#define total_sessions_regexp (iscsi_regexps[7])
 
 static te_errno iscsi_win32_set_default_parameters(void);
 
@@ -635,6 +639,68 @@ iscsi_win32_set_default_parameters(void)
     }
     return 0;
 #undef RPARAMETER
+}
+
+static te_errno
+iscsi_win32_cleanup_stalled_sessions(void)
+{
+    te_errno rc;
+    char session_id[ISCSI_SESSION_ID_LENGTH];
+    char *buffers[1];
+    char sessions_count_str[10];
+    int  sessions_count;
+
+    for (;;)
+    {
+
+        RING("Call 'iscsicli.exe SessionList'");
+        iscsi_send_to_win32_iscsicli("SessionList");
+
+        buffers[0] = sessions_count_str;
+        rc = iscsi_win32_wait_for(&total_sessions_regexp, 
+                                  &error_regexp,
+                                  &success_regexp,
+                                  1, 1, 
+                                  sizeof(sessions_count_str) \
+                                  - 1, 
+                                  buffers);
+        if (rc != 0)
+        {
+            ERROR("Failed to get amount of iSCSI sessions, rc=%r", rc);
+            return rc;
+        }
+
+        RING("Total of %s sessions", sessions_count_str);
+        sessions_count = atoi(sessions_count_str);
+        RING("Total of %d sessions", sessions_count);
+
+        if (sessions_count == 0)
+        {
+            RING("No sessions opened");
+            break;
+        }
+
+        RING("Waiting for session IDs");
+
+        buffers[0] = session_id;
+        rc = iscsi_win32_wait_for(&session_id_regexp, 
+                                  &error_regexp,
+                                  &success_regexp,
+                                  1, 1, 
+                                  sizeof(session_id) \
+                                  - 1, 
+                                  buffers);
+        if (rc != 0)
+        {
+            ERROR("Failed to get session ID, rc=%r", rc);
+            return rc;
+        }
+    
+        iscsi_send_to_win32_iscsicli("LogoutTarget %s", session_id);
+        iscsi_win32_finish_cli();
+    }
+
+    return 0;
 }
 
 /**
@@ -1148,6 +1214,15 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
                 return 0;
             }
         }
+        else
+        {
+            RING("Close all remaining sessions if any");
+            if (iscsi_win32_cleanup_stalled_sessions() != 0)
+            {
+                ERROR("Failed to close all remaining sessions");
+                return 0;
+            }
+        }
     }
     iscsi_send_to_win32_iscsicli("%s %s", 
                                  is_connection ? 
@@ -1258,6 +1333,7 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
     {
         case ISCSI_CONNECTION_DOWN:
         case ISCSI_CONNECTION_REMOVED:
+            RING("Connection Down");
             if (strcmp(conn->session_type, "Discovery") != 0)
             {
                 te_bool do_logout = FALSE;
@@ -1265,7 +1341,10 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
                 rc = 0;
                 if (req->cid > 0)
                 {
-                    if (conn->connection_id[0] != '\0')
+                    RING("Remove the connection, session=%s, cid=%d",
+                         target->session_id, req->cid);
+                    if ((target->session_id[0] != '\0') &&
+                        (conn->connection_id[0] != '\0'))
                     {
                         rc = iscsi_send_to_win32_iscsicli \
                             ("RemoveConnection %s %s",
@@ -1273,15 +1352,25 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
                              conn->connection_id);
                         do_logout = TRUE;
                     }
+                    else
+                    {
+                        ERROR("The connection does not exist");
+                    }
                 }
                 else
                 {
+                    RING("Remove the connection, session=%s, cid=%d",
+                         target->session_id, req->cid);
                     if (target->session_id[0] != '\0')
                     {
                         rc = iscsi_send_to_win32_iscsicli \
                             ("LogoutTarget %s",
                              target->session_id);
                         do_logout = TRUE;
+                    }
+                    else
+                    {
+                        ERROR("The connection does not exist");
                     }
                 }
                 if (rc != 0)
@@ -1312,6 +1401,7 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
             }
             break;
         case ISCSI_CONNECTION_UP:
+            RING("Connection Up");
             if (target->conns[req->cid].status == 
                 ISCSI_CONNECTION_DISCOVERING)
             {
@@ -1507,7 +1597,7 @@ iscsi_win32_prepare_device(iscsi_connection_data_t *conn, int target_id)
     char  conn_id_second[ISCSI_SESSION_ID_LENGTH] = "-0x";
     char  drive_id[ISCSI_MAX_DEVICE_NAME_LEN];
     int   rc;
-    
+
     rc = iscsi_send_to_win32_iscsicli("SessionList");
     if (rc != 0)
     {
@@ -1541,22 +1631,36 @@ iscsi_win32_prepare_device(iscsi_connection_data_t *conn, int target_id)
         }
     }
     buffers[0] = drive_id;
+#if 0
     RING("Waiting for device name");
     rc = iscsi_win32_wait_for(&dev_name_regexp, 
                               &error_regexp,
                               &success_regexp,
                               1, 1, sizeof(drive_id) - 1,
                               buffers);
+#endif
+    RING("Waiting for legacy name");
+    rc = iscsi_win32_wait_for(&legacy_dev_name_regexp, 
+                              &error_regexp,
+                              &success_regexp,
+                              1, 1, sizeof(drive_id) - 1,
+                              buffers);
+    RING("iscsi_win32_wait_for() returns rc=%r (%d)", rc, rc);
                               
     iscsi_win32_finish_cli();
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENODATA)
         {
+            RING("Call iscsi_win32_detect_device_interface_name()");
             rc = iscsi_win32_detect_device_interface_name(target_id, 
                                                           drive_id);
             if (rc != 0)
+            {
+                RING("iscsi_win32_detect_device_interface_name() "
+                     "returns rc=%r (%d)", rc, rc);
                 return rc;
+            }
         }
         else
         {
@@ -1565,7 +1669,10 @@ iscsi_win32_prepare_device(iscsi_connection_data_t *conn, int target_id)
         }
     }
     if (*drive_id == '\0')
+    {
+        ERROR("Device ID is not found");
         return TE_RC(ISCSI_AGENT_TYPE, TE_EAGAIN);
+    }
 
     pthread_mutex_lock(&conn->status_mutex);
     strcpy(conn->device_name, drive_id);
