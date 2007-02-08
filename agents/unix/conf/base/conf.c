@@ -268,6 +268,9 @@ str_addr_family(const char *str_addr)
     return (strchr(str_addr, ':') == NULL) ? AF_INET : AF_INET6;
 }
 
+#define INTERFACE_IS_LOOPBACK(ifname) \
+     (strncmp(ifname, "lo", strlen("lo")) == 0)
+
 #define CHECK_INTERFACE(ifname) \
     ((ifname == NULL) ? TE_EINVAL :                 \
      (strlen(ifname) > IFNAMSIZ) ? TE_E2BIG :       \
@@ -503,7 +506,7 @@ static te_errno user_add(unsigned int, const char *, const char *,
 static te_errno user_del(unsigned int, const char *, const char *);
 
 te_errno ta_vlan_get_children(const char *, size_t *, int *);
-te_errno ta_vlan_get_parent(const char *, size_t *, int *);
+te_errno ta_vlan_get_parent(const char *, char *);
 
 
 /*
