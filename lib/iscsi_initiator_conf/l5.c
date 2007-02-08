@@ -324,7 +324,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
     /** Dump the generated config file so that it appeared in TE logs */
     iscsi_unix_cli("cat %s", filename);
 
-    return iscsi_unix_cli("cd %s; ./iscsi_setconfig te", 
+    return iscsi_unix_cli("cd %s; ./iscsi_setconfig -e configs/te", 
                            iscsi_configuration()->script_path);
 }
 
