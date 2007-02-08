@@ -2091,7 +2091,7 @@ ta_vlan_get_parent(const char *ifname, char *parent)
         {
             if (errno == ENOENT)
             {
-                RING("%s: no proc vlan file ", __FUNCTION__);
+                VERB("%s: no proc vlan file ", __FUNCTION__);
                 return 0; /* no vlan support module loaded, no parent */
             }
 
