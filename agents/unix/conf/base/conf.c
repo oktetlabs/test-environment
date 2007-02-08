@@ -272,7 +272,7 @@ str_addr_family(const char *str_addr)
     ((ifname == NULL) ? TE_EINVAL :                 \
      (strlen(ifname) > IFNAMSIZ) ? TE_E2BIG :       \
      (strchr(ifname, ':') != NULL ||                \
-      !INTERFACE_IS_MINE(ifname)) ? TE_ENODEV : 0)
+      !ta_interface_is_mine(ifname)) ? TE_ENODEV : 0)
 
 /**
  * Configuration IOCTL request.
@@ -436,10 +436,6 @@ static te_errno bcast_link_addr_set(unsigned int, const char *,
 static te_errno bcast_link_addr_get(unsigned int, const char *,
                                     char *, const char *);
 
-static te_errno vlan_get_parent(const char *, char *);
-
-static te_errno vlans_get_children(const char *, size_t *, int *);
-
 static te_errno vlan_ifname_get(unsigned int , const char *,
                                 char *, const char *, const char *);
 
@@ -505,6 +501,9 @@ static te_errno user_list(unsigned int, const char *, char **);
 static te_errno user_add(unsigned int, const char *, const char *,
                          const char *);
 static te_errno user_del(unsigned int, const char *, const char *);
+
+te_errno ta_vlan_get_children(const char *, size_t *, int *);
+te_errno ta_vlan_get_parent(const char *, size_t *, int *);
 
 
 /*
@@ -617,6 +616,28 @@ static te_bool init = FALSE;
 static int vlans_buffer[MAX_VLANS];
 
 
+
+
+
+te_bool
+ta_interface_is_mine(const char *ifname)
+{
+    char parent[IFNAMSIZ] = "";
+
+    if (INTERFACE_IS_LOOPBACK(ifname) || 
+        rcf_pch_rsrc_accessible("/agent:%s/interface:%s",
+                                ta_name, ifname))
+        return TRUE;
+
+    if (ta_vlan_get_parent(ifname, parent) != 0)
+        return FALSE;
+
+    if (*parent)
+        return rcf_pch_rsrc_accessible("/agent:%s/interface:%s",
+                                       ta_name, parent);
+    return FALSE; 
+}
+
 /** Grab interface-specific resources */
 static te_errno
 interface_grab(const char *name)
@@ -634,7 +655,7 @@ interface_grab(const char *name)
     }
     ifname++;
 
-    rc = vlan_get_parent(ifname, parent);
+    rc = ta_vlan_get_parent(ifname, parent);
     if (rc != 0)
         return rc;
 
@@ -652,7 +673,7 @@ interface_grab(const char *name)
         char         vlan_ifname[len + 10];
         
 
-        rc = vlans_get_children(ifname, &n_vlans, vlans_buffer);
+        rc = ta_vlan_get_children(ifname, &n_vlans, vlans_buffer);
         if (rc != 0)
             return rc;
 
@@ -1860,6 +1881,11 @@ interface_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
 
 #endif
 
+
+
+
+
+
 /**
  * Get list of VLANs on particular physical device
  *
@@ -1872,9 +1898,11 @@ interface_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
  *
  * @return status code
  */
-static te_errno
-vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
+te_errno
+ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
 {
+    char f_buf[200];
+
     if (devname == NULL ||n_vlans == NULL || vlans == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL); 
 
@@ -1901,9 +1929,9 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
                   __FUNCTION__, strerror(errno));
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
-        while (fgets(trash, sizeof(trash), proc_vlans) != NULL)
+        while (fgets(f_buf, sizeof(f_buf), proc_vlans) != NULL)
         {
-            char   *s = strchr(trash, '|');
+            char   *s = strchr(f_buf, '|');
             size_t  space_ofs;
 
             if (s == NULL)
@@ -1942,13 +1970,13 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
         }
         
         out = fdopen(out_fd, "r");
-        while (fgets(trash, sizeof(trash), out) != NULL)
+        while (fgets(f_buf, sizeof(f_buf), out) != NULL)
         { 
             size_t ofs; 
-            char *s = trash;
+            char *s = f_buf;
             int vlan_id;
 
-            VERB("%s(): read line: <%s>", __FUNCTION__, trash);
+            VERB("%s(): read line: <%s>", __FUNCTION__, f_buf);
             /* skip "<ifname> type=" */
             s = strchr(s, ' '); 
             s++;
@@ -1985,6 +2013,7 @@ vlans_get_children(const char *devname, size_t *n_vlans, int *vlans)
 
     return 0;
 }
+
 /**
  * Get VLAN ifname
  *
@@ -2045,9 +2074,11 @@ vlan_ifname_get(unsigned int gid, const char *oid, char *value,
  *
  * @return status
  */
-static te_errno
-vlan_get_parent(const char *ifname, char *parent)
+te_errno
+ta_vlan_get_parent(const char *ifname, char *parent)
 {
+    char f_buf[200];
+
     *parent = 0;
 #if defined __linux__
     {
@@ -2065,10 +2096,10 @@ vlan_get_parent(const char *ifname, char *parent)
                   __FUNCTION__, strerror(errno));
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
-        while (fgets(trash, sizeof(trash), proc_vlans) != NULL)
+        while (fgets(f_buf, sizeof(f_buf), proc_vlans) != NULL)
         {
             size_t space_ofs;
-            char *s = trash;
+            char *s = f_buf;
             char *p = parent;
 
 
@@ -2111,13 +2142,13 @@ vlan_get_parent(const char *ifname, char *parent)
         }
         
         out = fdopen(out_fd, "r");
-        while (fgets(trash, sizeof(trash), out) != NULL)
+        while (fgets(f_buf, sizeof(f_buf), out) != NULL)
         { 
-            char *s = strchr(trash, ' ');
+            char *s = strchr(f_buf, ' ');
             char *p;
             *s = 0;
             s++;
-            if (strcmp(ifname, trash) != 0)
+            if (strcmp(ifname, f_buf) != 0)
                 continue;
             if (strncmp(s, "type=vlan ", sizeof("type=vlan ") - 1) != 0)
                 continue; 
@@ -2129,6 +2160,7 @@ vlan_get_parent(const char *ifname, char *parent)
             if (s == NULL)
                 continue;
             s = strchr(s, '=');
+            if (*s) s++; /* skip '=' */
             p = parent;
             while(*s != 0 && !isspace(*s))
                 *(p++) = *(s++);
@@ -2171,7 +2203,7 @@ vlans_list(unsigned int gid, const char *oid, char **list,
 
     char *b;
 
-    rc = vlans_get_children(ifname, &n_vlans, vlans_buffer);
+    rc = ta_vlan_get_children(ifname, &n_vlans, vlans_buffer);
     if (rc != 0)
         return rc;
 
@@ -2218,7 +2250,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
 
     UNUSED(value);
 
-    RING("%s: gid=%u oid='%s', vid %s, ifname %s, errno %d",
+    VERB("%s: gid=%u oid='%s', vid %s, ifname %s, errno %d",
          __FUNCTION__, gid, oid, vid_str, ifname, l_errno);
 
 

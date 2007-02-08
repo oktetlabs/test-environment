@@ -23,7 +23,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: conf.c 24823 2006-03-05 07:24:43Z arybchik $
+ * $Id$
  */
 
 #define TE_LGR_USER     "Unix Conf GetMsg"
@@ -420,7 +420,7 @@ route_entry_process(const mib2_ipRouteEntry_t *rt)
         strcpy(ifname, rt_info.ifname);
     }
     
-    if (!INTERFACE_IS_MINE(ifname))
+    if (!ta_interface_is_mine(ifname))
         return 0;
 
     MASK2PREFIX(ntohl(rt->ipRouteMask), prefixlen);

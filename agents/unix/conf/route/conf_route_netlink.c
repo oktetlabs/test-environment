@@ -662,7 +662,7 @@ rtnl_print_route_cb(const struct sockaddr_nl *who,
         return 0;
     
     ifname = ll_index_to_name(*(int *)RTA_DATA(tb[RTA_OIF]));
-    if (!INTERFACE_IS_MINE(ifname))
+    if (!ta_interface_is_mine(ifname))
         return 0;
 
     p = user_data->buf;
