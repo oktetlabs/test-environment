@@ -2127,7 +2127,7 @@ ta_vlan_get_parent(const char *ifname, char *parent)
             *p = 0;
             break;
         }
-
+        fclose(proc_vlans);
     }
 #elif defined __sun__
     {
