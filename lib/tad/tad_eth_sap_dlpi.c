@@ -28,6 +28,12 @@
 
 #define TE_LGR_USER     "TAD DLPI"
 
+/*
+ * Data Link Provider Interface (DLPI)
+ * Copyright  1997 The Open Group
+ * http://www.opengroup.org/onlinepubs/9638599/toc.htm
+ */
+
 #include "te_config.h"
 #if HAVE_CONFIG_H
 #include "config.h"
@@ -114,6 +120,7 @@ split_dname_unmb(tad_eth_sap *sap)
         ERROR("%s bad unit number", sap->name);
         return -1;
     }
+
     return 0;
 }
 
@@ -296,6 +303,7 @@ dlpi_request(int fd, char *req, int req_len)
               dlprim(dlp->dl_primitive), rc);
         return rc;
     }
+
     return 0;
 }
 
@@ -369,6 +377,7 @@ dlpi_ack(int fd, char *resp, int resp_len)
               dlprim(dlp->dl_primitive), ctl.len, resp_len);
         return TE_RC(TE_TAD_DLPI, TE_EINVAL);
     }
+
     return rc;
 }
 
@@ -465,7 +474,6 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
     dlpi_data          *dlpi = (dlpi_data *)sap->data;
     te_errno            rc = 0;
     union DL_primitives dlp;
-
 
     if (dlpi->dl_info.dl_provider_style == DL_STYLE1)
     {
@@ -569,6 +577,22 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
         rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
         if (rc != 0)
             goto err_exit;
+
+        /* Enable promiscuous DL_PROMISC_SAP */
+        memset(&dlp, 0, sizeof(dlp));
+        dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+        dlp.promiscon_req.dl_level = DL_PROMISC_SAP;
+        rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+        if (rc != 0)
+        {
+            ERROR("Attempt to set DL_PROMISC_SAP failed");
+            goto err_exit;
+        }
+
+        memset(&dlp, 0, sizeof(dlp));
+        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+        if (rc != 0)
+            goto err_exit;
     }
 
     /*
@@ -590,6 +614,54 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
             goto err_exit;
         }
     }
+err_exit:
+    return rc;
+}
+
+static te_errno
+dlpi_sap_close(tad_eth_sap *sap)
+{
+    dlpi_data          *dlpi = (dlpi_data *)sap->data;
+    te_errno            rc = 0;
+    union DL_primitives dlp;
+
+    if (dlpi->dl_info.dl_provider_style == DL_STYLE1)
+    {
+        ERROR("DLS provider supports DL_STYLE1");
+        rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+        goto err_exit;
+    }
+    else if (dlpi->dl_info.dl_provider_style == DL_STYLE2)
+    {
+        dlp.attach_req.dl_primitive = DL_UNBIND_REQ;
+        rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+        if (rc != 0)
+           goto err_exit;
+
+        memset(&dlp, 0, sizeof(dlp));
+        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+        if (rc != 0)
+           goto err_exit;
+    }
+    else
+    {
+        ERROR("Unknown DL_STYLE");
+        rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+        goto err_exit;
+    }
+
+    /* Detach DLSAP from the Stream */
+    memset(&dlp, 0, sizeof(dlp));
+    dlp.bind_req.dl_primitive = DL_DETACH_REQ;
+    dlp.attach_req.dl_ppa = dlpi->unit;
+
+    rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+    if (rc != 0)
+        goto err_exit;
+
+    memset(&dlp, 0, sizeof(dlp));
+    rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+
 err_exit:
     return rc;
 }
@@ -648,6 +720,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
         return TE_RC(TE_TAD_DLPI, TE_ENOMEM);
     }
     ERROR("%s: it was write() -> %d", __FUNCTION__);
+
     return 0;
 }
 
@@ -793,6 +866,7 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
         if (pkt_len != NULL)
             *pkt_len = data.len;
     }
+
     return 0;
 }
 
@@ -823,7 +897,7 @@ tad_eth_sap_recv_close(tad_eth_sap *sap)
     int rc = 0;
     UNUSED(sap);
 
-    return rc;
+    return dlpi_sap_close(sap);
 }
 
 #endif
