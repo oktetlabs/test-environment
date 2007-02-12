@@ -684,7 +684,7 @@ restore_entries(cfg_instance *list)
                 if (iter->added)
                     continue;
                 
-                RING("Restoring instance %s", iter->oid);
+                VERB("Restoring instance %s", iter->oid);
                 
                 switch (rc = add_or_set(iter, &deps_might_fire))
                 {
