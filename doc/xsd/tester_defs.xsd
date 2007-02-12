@@ -301,6 +301,7 @@
             <enumeration value="silent"/>
             <enumeration value="yes"/>
             <enumeration value="no"/>
+            <enumeration value="nohistory"/>
         </restriction>
     </simpleType>
 

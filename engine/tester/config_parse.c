@@ -858,6 +858,8 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
             attrs->track_conf = TESTER_TRACK_CONF_NO;
         else if (xmlStrcmp(s, CONST_CHAR2XML("silent")) == 0)
             attrs->track_conf = TESTER_TRACK_CONF_SILENT;
+        else if (xmlStrcmp(s, CONST_CHAR2XML("nohistory")) == 0)
+            attrs->track_conf = TESTER_TRACK_CONF_NOHISTORY;
         else
         {
             ERROR("Invalid value '%s' of 'track_conf' property",

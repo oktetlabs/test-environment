@@ -1233,7 +1233,9 @@ run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
                 WARN("Current configuration differs from backup - "
                      "restore");
             }
-            rc = cfg_restore_backup(ctx->backup);
+            rc = (track_conf == TESTER_TRACK_CONF_NOHISTORY ? 
+                  cfg_restore_backup_nohistory(ctx->backup) :
+                  cfg_restore_backup(ctx->backup));
             if (rc != 0)
             {
                 ERROR("Cannot restore configuration backup: %r", rc);
