@@ -603,6 +603,7 @@ cfg_db_unregister_obj_by_id_str(char *id,
     cfg_object          *brother;
     cfg_object          *father;
     cfg_object          *master;
+    cfg_object          *objtmp;
     cfg_dependency      *depends_on;
     cfg_dependency      *dependants;
 
@@ -649,7 +650,8 @@ cfg_db_unregister_obj_by_id_str(char *id,
                 id, dependants->depends->oid);
 
         /* the obj must be there, so assert: */
-        assert(forget_master(dependants->depends, obj) != NULL);
+        objtmp = forget_master(dependants->depends, obj);
+        assert(objtmp != NULL);
     }
 
 
@@ -698,7 +700,8 @@ cfg_db_unregister_obj_by_id_str(char *id,
         assert(master != NULL);
 
         /* the obj must be there, so assert: */
-        assert(forget_dependant(master, obj) != NULL);
+        objtmp = forget_dependant(master, obj);
+        assert(objtmp != NULL);
     }
 
 
