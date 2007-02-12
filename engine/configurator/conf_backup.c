@@ -378,7 +378,7 @@ parse_instances(xmlNodePtr node, cfg_instance **list)
  * @return status code (see te_errno.h)
  */
 static int
-delete_with_children(cfg_instance *inst)
+delete_with_children(cfg_instance *inst, te_bool *has_deps)
 {
     cfg_del_msg msg = { CFG_DEL, sizeof(cfg_del_msg), 0, 0};
     cfg_msg    *p_msg = (cfg_msg *)&msg;
@@ -392,10 +392,13 @@ delete_with_children(cfg_instance *inst)
     if (inst->obj->access != CFG_READ_CREATE)
         return 0;
         
+    if (inst->obj->dependants != NULL)
+        *has_deps = TRUE;
+
     for (tmp = inst->son; tmp != NULL; tmp = next)
     {
         next = tmp->brother;
-        if ((rc = delete_with_children(tmp)) != 0)
+        if ((rc = delete_with_children(tmp, has_deps)) != 0)
             return rc;
     }
         
@@ -428,7 +431,7 @@ topo_qsort_predicate(const void *arg1, const void *arg2)
  * @return status code (see te_errno.h)
  */
 static int
-remove_excessive(char *root, cfg_instance *list)
+remove_excessive(char *root, cfg_instance *list, te_bool *has_deps)
 {
     int rc;
     int n_deletable;
@@ -472,7 +475,8 @@ remove_excessive(char *root, cfg_instance *list)
         if (tmp != NULL)
             continue;
             
-        if ((rc = delete_with_children(cfg_all_inst[sorted[i]])) != 0)
+        rc = delete_with_children(cfg_all_inst[sorted[i]], has_deps);
+        if (rc != 0)
         {
             free(sorted);
             return rc;
@@ -491,7 +495,7 @@ remove_excessive(char *root, cfg_instance *list)
  * @return status code (see errno.h)
  */
 static int
-add_or_set(cfg_instance *inst)
+add_or_set(cfg_instance *inst, te_bool *has_deps)
 {
     if (cfg_inst_agent(inst))
         return 0;
@@ -499,7 +503,7 @@ add_or_set(cfg_instance *inst)
     /* Entry may appear after addition of previous ones */
     if (inst->handle == CFG_HANDLE_INVALID)
         cfg_db_find(inst->oid, &inst->handle);
-        
+
     if (inst->handle != CFG_HANDLE_INVALID)
     {
         cfg_set_msg *msg;
@@ -518,6 +522,9 @@ add_or_set(cfg_instance *inst)
         {
             return 0;
         }
+
+        if (inst->obj->dependants != NULL)
+            *has_deps = TRUE;
         
         msg = (cfg_set_msg *)calloc(sizeof(*msg) + 
                                     CFG_MAX_INST_VALUE, 1);
@@ -547,6 +554,9 @@ add_or_set(cfg_instance *inst)
         if (msg == NULL)
             return TE_ENOMEM;
         
+        if (inst->obj->dependants != NULL)
+            *has_deps = TRUE;
+
         msg->type = CFG_ADD;
         msg->len = sizeof(*msg);
         t = msg->val_type = inst->obj->type;
@@ -562,69 +572,6 @@ add_or_set(cfg_instance *inst)
     }
 }
 
-/**
- * Add/update entries, mentioned in the configuration file.
- *
- * @param list  list of instances mentioned in the configuration file
- *
- * @return status code (see te_errno.h)
- */
-static int
-restore_entries(cfg_instance *list)
-{
-    while (list != NULL)
-    {
-        cfg_instance *prev = NULL;
-        cfg_instance *tmp = list;
-        te_bool       done = FALSE;
-        int           rc;
-
-        
-        while (tmp != NULL)
-        {
-            RING("Restoring instance %s", tmp->oid);
-
-            switch (rc = add_or_set(tmp))
-            {
-                case 0:
-                {
-                    done = TRUE;
-                    if (prev != NULL)
-                    {
-                        prev->brother = tmp->brother;
-                        tmp->brother = NULL;
-                        free_instances(tmp);
-                        tmp = prev->brother;
-                    }
-                    else
-                    {
-                        list = tmp->brother;
-                        tmp->brother = NULL;
-                        free_instances(tmp);
-                        tmp = list;
-                    }
-                    break;
-                }
-                
-                case TE_ENOENT:
-                    prev = tmp;
-                    tmp = tmp->brother;
-                    break;
-                    
-                default:
-                    free_instances(list);
-                    return rc;
-            }
-        }
-        if (list != NULL && !done)
-        {
-            free_instances(list);
-            return TE_ENOENT;
-        }
-    }
-    
-    return 0;
-}
 
 static cfg_instance *
 topo_sort_instances_rec(cfg_instance *list, unsigned length)
@@ -697,6 +644,86 @@ topo_sort_instances(cfg_instance *list)
     return list;
 }
 
+
+/**
+ * Add/update entries, mentioned in the configuration file.
+ *
+ * @param list  list of instances mentioned in the configuration file
+ *
+ * @return status code (see te_errno.h)
+ */
+static int
+restore_entries(cfg_instance *list)
+{
+    int           rc;
+    int           n_processed     = 0;
+    int           n_iterations    = 0;
+    te_bool       need_retry      = FALSE;
+    cfg_instance *iter;
+    te_bool       deps_might_fire = TRUE;
+
+    list = topo_sort_instances(list);
+
+
+    while (deps_might_fire)
+    {
+        deps_might_fire = FALSE;
+        if ((rc = remove_excessive("/", list, &deps_might_fire)) != 0)
+        {
+            ERROR("Failed to remove excessive entries");
+            free_instances(list);
+            return rc;
+        }
+    
+        do
+        {
+            n_processed = 0;
+            need_retry  = FALSE;
+            for (iter = list; iter != NULL; iter = iter->brother)
+            {
+                if (iter->added)
+                    continue;
+                
+                RING("Restoring instance %s", iter->oid);
+                
+                switch (rc = add_or_set(iter, &deps_might_fire))
+                {
+                    case 0:
+                        iter->added = TRUE;
+                        n_processed++;
+                        break;
+                    case TE_ENOENT:
+                        /* do nothing */
+                        need_retry = TRUE;
+                        break;
+                    default:
+                        free_instances(list);
+                        return rc;
+                }
+            }
+        } while(n_processed != 0 && need_retry);
+        
+        if (need_retry)
+        {
+            free_instances(list);
+            return TE_ENOENT;
+        }
+
+        if (deps_might_fire)
+            cfg_ta_sync("/:", TRUE);
+        if (n_iterations++ > 10)
+        {
+            WARN("Loop dependency suspected, aborting");
+            break;
+        }
+    }
+
+    free_instances(list);
+    
+    return 0;
+}
+
+
 /**
  * Process "backup" configuration file or backup file.
  *
@@ -723,28 +750,19 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore)
 
     if ((rc = parse_instances(cur, &list)) != 0)
         return rc;
-    
+
     if (!restore)
     {
         if ((rc = cfg_ta_sync("/:", TRUE)) != 0)
         {
             ERROR("Cannot synchronize database with Test Agents");
-            free_instances(list);
             return rc;
         }
     }
 
-    list = topo_sort_instances(list);
-
-    if ((rc = remove_excessive("/", list)) != 0)
-    {
-        ERROR("Failed to remove excessive entries");
-        free_instances(list);
-        return rc;
-    }
-
     return restore_entries(list);
 }
+
 
 
 /**
@@ -766,6 +784,11 @@ cfg_backup_restore_ta(char *ta)
     int            i;
     
     sprintf(buf, CFG_TA_PREFIX"%s", ta);
+
+    if ((rc = cfg_ta_sync(buf, TRUE)) != 0)
+    {
+        return rc;
+    }
 
     /* Create list of instances on the TA */
     for (i = 0; i < cfg_all_inst_size; i++)
@@ -804,20 +827,6 @@ cfg_backup_restore_ta(char *ta)
             prev->brother = tmp;
 
         prev = tmp;
-    }
-
-    if ((rc = cfg_ta_sync(buf, TRUE)) != 0)
-    {
-        free_instances(list);
-        return rc;
-    }
-
-    list = topo_sort_instances(list);
-    
-    if ((rc = remove_excessive(buf, list)) != 0)
-    {
-        free_instances(list);
-        return rc;
     }
 
     return restore_entries(list);

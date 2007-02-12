@@ -593,9 +593,10 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if ((inst = CFG_GET_INST(handle)) != NULL)
     {
         inst->added = TRUE;
-        cfg_conf_delay_update(inst->oid);
 
         cfg_ta_sync_dependants(inst);
+
+        cfg_conf_delay_update(inst->oid);
     }
     else
     {
