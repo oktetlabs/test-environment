@@ -241,10 +241,10 @@
     <!-- Network interface duplex control; set value denied when autonegotiation
          state on
          Name: none
-         Value: 0 - half duplex
-                1 - full duplex -->
+         Value: half - half duplex
+                full - full duplex -->
     <object oid="/agent/interface/phy/duplex" access="read_write"
-            type="integer"/>
+            type="string"/>
     
     <!-- Network interface speed control; set value denied when autonegotiation
          state on
