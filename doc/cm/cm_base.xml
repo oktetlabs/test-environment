@@ -225,6 +225,55 @@
     <object oid="/agent/interface/vlans/ifname" access="read_only"
             type="string"/>
 
+    <!-- Network interface PHY parameters
+         Name: PHY
+         Value: none -->
+    <object oid="/agent/interface/phy" access="read_only"
+            type="none"/>
+    
+    <!-- Network interface autonegotiation state control
+         Name: autoneg
+         Value: 0 - ON
+                1 - OFF -->
+    <object oid="/agent/interface/phy/autoneg" access="read_write"
+            type="integer"/>
+    
+    <!-- Network interface speed control
+         Name: speed
+         Value: 10   - 10 Mbit/sec
+                100  - 100 Mbit/sec
+                1000 - 1000 Mbit/sec -->
+    <object oid="/agent/interface/phy/speed" access="read_write"
+            type="integer"/>
+    
+    <!-- Network interface duplex control
+         Name: duplex
+         Value: 0 - half duplex
+                1 - full duplex -->
+    <object oid="/agent/interface/phy/duplex" access="read_write"
+            type="integer"/>
+    
+    <!-- List of network interface modes
+         Name: mode name
+         Value: 0 - mode not advertised
+                1 - mode advertised
+         Limit: any -->
+    <object oid="/agent/interface/phy/modes" access="read_write"
+            type="string"/>
+    
+    <!-- Link state control
+         Name: state
+         Value: 0 - link down
+                1 - link up -->
+    <object oid="/agent/interface/phy/state" access="read_write"
+            type="integer"/>
+    
+    <!-- Link reset
+         Name: reset
+         Value: 0 - means that link should be reseted -->
+    <object oid="/agent/interface/phy/reset" access="write_only"
+            type="integer"/>
+
     <!-- Summary network statistics.
          Name:  Agent network statistics -->
     <object oid="/agent/stats" access="read_only" 
