@@ -260,7 +260,7 @@
                <Speed>_<duplex>, such as 100_half
          Value: 0 - mode not advertised
                 1 - mode advertised
-         Limit: 3 -->
+         Limit: depends of PHY type -->
     <object oid="/agent/interface/phy/modes" access="read_write"
             type="string"/>
     
