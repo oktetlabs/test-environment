@@ -226,52 +226,55 @@
             type="string"/>
 
     <!-- Network interface PHY parameters
-         Name: PHY
+         Name: none
          Value: none -->
     <object oid="/agent/interface/phy" access="read_only"
             type="none"/>
     
     <!-- Network interface autonegotiation state control
-         Name: autoneg
+         Name: none
          Value: 0 - ON
                 1 - OFF -->
     <object oid="/agent/interface/phy/autoneg" access="read_write"
             type="integer"/>
     
-    <!-- Network interface speed control
-         Name: speed
+    <!-- Network interface speed control; set value denied when autonegotiation
+         state on
+         Name: none
          Value: 10   - 10 Mbit/sec
                 100  - 100 Mbit/sec
                 1000 - 1000 Mbit/sec -->
     <object oid="/agent/interface/phy/speed" access="read_write"
             type="integer"/>
     
-    <!-- Network interface duplex control
-         Name: duplex
+    <!-- Network interface duplex control; set value denied when autonegotiation
+         state on
+         Name: none
          Value: 0 - half duplex
                 1 - full duplex -->
     <object oid="/agent/interface/phy/duplex" access="read_write"
             type="integer"/>
     
     <!-- List of network interface modes
-         Name: mode name
+         Name: mode name in format:
+               <Speed>_<duplex>, such as 100_half
          Value: 0 - mode not advertised
                 1 - mode advertised
-         Limit: any -->
+         Limit: 3 -->
     <object oid="/agent/interface/phy/modes" access="read_write"
             type="string"/>
     
     <!-- Link state control
-         Name: state
+         Name: none
          Value: 0 - link down
                 1 - link up -->
-    <object oid="/agent/interface/phy/state" access="read_write"
+    <object oid="/agent/interface/phy/state" access="read_only"
             type="integer"/>
     
     <!-- Link reset
-         Name: reset
-         Value: 0 - means that link should be reseted -->
-    <object oid="/agent/interface/phy/reset" access="write_only"
+         Name: none
+         Value: any value means that link should be reseted -->
+    <object oid="/agent/interface/phy/reset" access="read_write"
             type="integer"/>
 
     <!-- Summary network statistics.
