@@ -238,15 +238,6 @@
     <object oid="/agent/interface/phy/autoneg" access="read_write"
             type="integer"/>
     
-    <!-- Network interface speed control; set value denied when autonegotiation
-         state on
-         Name: none
-         Value: 10   - 10 Mbit/sec
-                100  - 100 Mbit/sec
-                1000 - 1000 Mbit/sec -->
-    <object oid="/agent/interface/phy/speed" access="read_write"
-            type="integer"/>
-    
     <!-- Network interface duplex control; set value denied when autonegotiation
          state on
          Name: none
@@ -255,14 +246,29 @@
     <object oid="/agent/interface/phy/duplex" access="read_write"
             type="integer"/>
     
-    <!-- List of network interface modes
-         Name: mode name in format:
-               <Speed>_<duplex>, such as 100_half
+    <!-- Network interface speed control; set value denied when autonegotiation
+         state on
+         Name: none
+         Value: integer equal PHY speed in Mbit/sec -->
+    <object oid="/agent/interface/phy/speed" access="read_write"
+            type="integer"/>
+    
+    <!-- PHY supported mode list
+         Name: none -->
+    <object oid="/agent/interface/phy/modes" access="none"
+            type="none"/>
+    
+    <!-- PHY supported mode speed
+         Name: integer equal PHY speed in Mbit/sec -->
+    <object oid="/agent/interface/phy/modes/speed" access="none"
+            type="none"/>
+    
+    <!-- PHY supported mode duplex state
+         Name: half/full
          Value: 0 - mode not advertised
-                1 - mode advertised
-         Limit: depends of PHY type -->
-    <object oid="/agent/interface/phy/modes" access="read_write"
-            type="string"/>
+                1 - mode advertised -->
+    <object oid="/agent/interface/phy/modes/speed/duplex" access="read_write"
+            type="integer"/>
     
     <!-- Link state control
          Name: none
