@@ -134,7 +134,8 @@ static char   *iscsi_conditions[] = {
     "Connection Id[[:space:]]*:[[:space:]]*([a-f0-9]*)-([a-f0-9]*)",
     "Device Interface Name[[:space:]]*:[[:space:]]*([^[:space:]]+)",
     "Legacy Device Name[[:space:]]*:[[:space:]]*([^[:space:]]+)",
-    "Total of ([0-9])* sessions",
+    "^Session Id[[:space:]]*:[[:space:]]*([a-f0-9]*-[a-f0-9]*)", 
+    "^Total of ([0-9]*) sessions",
 };
 
 /** Compiled form of iscsi_conditions */
@@ -147,7 +148,8 @@ static regex_t iscsi_regexps[TE_ARRAY_LEN(iscsi_conditions)];
 #define existing_conn_regexp (iscsi_regexps[4])
 #define dev_name_regexp (iscsi_regexps[5])
 #define legacy_dev_name_regexp (iscsi_regexps[6])
-#define total_sessions_regexp (iscsi_regexps[7])
+#define session_list_id_regexp (iscsi_regexps[7])
+#define total_sessions_regexp (iscsi_regexps[8])
 
 static te_errno iscsi_win32_set_default_parameters(void);
 
@@ -670,7 +672,6 @@ iscsi_win32_cleanup_stalled_sessions(void)
             return rc;
         }
 
-        RING("Total of %s sessions", sessions_count_str);
         sessions_count = atoi(sessions_count_str);
         RING("Total of %d sessions", sessions_count);
 
@@ -683,7 +684,7 @@ iscsi_win32_cleanup_stalled_sessions(void)
         RING("Waiting for session IDs");
 
         buffers[0] = session_id;
-        rc = iscsi_win32_wait_for(&session_id_regexp, 
+        rc = iscsi_win32_wait_for(&session_list_id_regexp, 
                                   &error_regexp,
                                   &success_regexp,
                                   1, 1, 
@@ -695,6 +696,7 @@ iscsi_win32_cleanup_stalled_sessions(void)
             ERROR("Failed to get session ID, rc=%r", rc);
             return rc;
         }
+        RING("Found opened session \"%s\"", session_id);
     
         iscsi_send_to_win32_iscsicli("LogoutTarget %s", session_id);
         iscsi_win32_finish_cli();
