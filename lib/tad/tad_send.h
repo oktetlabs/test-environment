@@ -153,12 +153,12 @@ extern void *tad_send_thread(void *arg);
  *
  * @return zero on success, otherwise error code.  
  */
-extern int tad_send_prepare_bin(csap_p csap, asn_value *nds, 
-                                const struct tad_tmpl_arg_t *args, 
-                                size_t arg_num, 
-                                tad_payload_spec_t *pld_data,
-                                void **layer_opaque,
-                                tad_pkts *pkts_per_layer);
+extern te_errno tad_send_prepare_bin(csap_p csap, asn_value *nds, 
+                                     const struct tad_tmpl_arg_t *args, 
+                                     size_t arg_num, 
+                                     tad_payload_spec_t *pld_data,
+                                     void **layer_opaque,
+                                     tad_pkts *pkts_per_layer);
 
 
 

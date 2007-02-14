@@ -104,8 +104,8 @@ extern const char *te_proto_to_str(te_tad_protocols_t proto);
  *
  * @return Status code.
  */
-extern int tad_convert_payload(const asn_value *ndn_payload, 
-                               tad_payload_spec_t *pld_spec);
+extern te_errno tad_convert_payload(const asn_value *ndn_payload, 
+                                    tad_payload_spec_t *pld_spec);
 
 
 /**
