@@ -600,3 +600,294 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
     return rc;
 }
 
+/*
+ * Configurator PHY support
+ */
+  
+#if CONFIGURATOR_PHY_SUPPORT
+#if HAVE_LINUX_ETHTOOL_H
+
+/**
+ * Get PHY autonegotiation state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Pointer to returned autonegotiation state value:
+ *                      PHY_AUTONEG_OFF - autonegatiation OFF
+ *                      PHY_AUTONEG_ON  - autonegatiation ON
+ *
+ * @return Status code
+ */
+te_errno
+tapi_cfg_base_phy_autoneg_get(const char *ta, const char *if_name,
+    int *state)
+{
+    return cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, state),
+                                     "/agent:%s/interface:%s/phy:/autoneg:",
+                                     ta,
+                                     if_name);
+}
+
+/**
+ * Set PHY autonegotiation state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Autonegotiation state value:
+ *                      PHY_AUTONEG_OFF - autonegatiation OFF
+ *                      PHY_AUTONEG_ON  - autonegatiation ON
+ *
+ * @return Status code
+ */
+te_errno
+tapi_cfg_base_phy_autoneg_set(const char *ta, const char *if_name,
+    int state)
+{
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, state),
+                                "/agent:%s/interface:%s/phy:/autoneg:",
+                                ta,
+                                if_name);
+}
+
+#define PHY_DUPLEX_STRING_HALF "half"
+#define PHY_DUPLEX_STRING_FULL "full"
+
+/**
+ * Get PHY duplex state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Pointer to returned duplex state value:
+ *                      PHY_DUPLEX_HALF - half duplex
+ *                      PHY_DUPLEX_FULL - full duplex
+ *
+ * @return Status code
+ */
+te_errno
+tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
+    int *state)
+{
+    te_errno  rc = 0;
+    char     *duplex;
+    
+    rc = cfg_get_instance_sync_fmt(NULL,
+                                   (void *)&duplex,
+                                   "/agent:%s/interface:%s/phy:/duplex:",
+                                   ta,
+                                   if_name);
+    if (rc != 0)
+        return rc;
+    
+    if (strcmp(duplex, PHY_DUPLEX_STRING_HALF) == 0)
+        *state = PHY_DUPLEX_HALF;
+    else
+        if (strcmp(duplex, PHY_DUPLEX_STRING_FULL) == 0)
+            *state = PHY_DUPLEX_FULL;
+        else
+            ERROR("unknown duplex value");
+    
+    free(duplex);
+    
+    return 0;
+}
+
+/**
+ * Set PHY duplex state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Duplex state value:
+ *                      PHY_DUPLEX_HALF - half duplex
+ *                      PHY_DUPLEX_FULL - full duplex
+ *
+ * @return Status code
+ */
+te_errno
+tapi_cfg_base_phy_duplex_set(const char *ta, const char *if_name, int state)
+{
+    te_errno rc = 0;
+    
+    switch (state)
+    {
+        case PHY_DUPLEX_HALF:
+        {
+            rc = cfg_set_instance_fmt(CFG_VAL(STRING,
+                                              PHY_DUPLEX_STRING_HALF),
+                                      "/agent:%s/interface:%s/phy:/duplex:",
+                                      ta,
+                                      if_name);
+            break;
+        }
+        
+        case PHY_DUPLEX_FULL:
+        {
+            rc = cfg_set_instance_fmt(CFG_VAL(STRING,
+                                              PHY_DUPLEX_STRING_FULL),
+                                      "/agent:%s/interface:%s/phy:/duplex:",
+                                      ta,
+                                      if_name);
+            break;
+        }
+        
+        default: ERROR("unknown duplex value");
+    }
+    
+    return rc;
+}
+
+
+
+/**
+ * Get PHY speed value.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param speed         Pointer to returned speed value
+ *                      (see linux/ethtool.h for more details)
+ *
+ * @return Status code
+ */
+te_errno
+tapi_cfg_base_phy_speed_get(const char *ta, const char *if_name, int *speed)
+{
+    return cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, speed),
+                                     "/agent:%s/interface:%s/phy:/speed:",
+                                     ta,
+                                     if_name);
+}
+
+/**
+ * Set PHY speed.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param speed         Speed value (see linux/ethtool.h for more details)
+ *
+ * @return Status code
+ */
+te_errno
+tapi_cfg_base_phy_speed_set(const char *ta, const char *if_name, int speed)
+{
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, speed),
+                                "/agent:%s/interface:%s/phy:/speed:",
+                                ta,
+                                if_name);
+}
+
+/**
+ * Get PHY link state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Pointer to returned link state value:
+ *                      0 - link down
+ *                      1 - link up
+ *
+ * @return Status code
+ */
+te_errno
+tapi_cfg_base_phy_state_get(const char *ta, const char *if_name, int *state)
+{
+    return cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, state),
+                                     "/agent:%s/interface:%s/phy:/state:",
+                                     ta,
+                                     if_name);
+}
+
+/**
+ * Check that PHY mode is advertised.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param speed         Speed value (see linux/ethtool.h for more details)
+ * @param duplex        Duplex state value:
+ *                      PHY_DUPLEX_HALF - half duplex
+ *                      PHY_DUPLEX_FULL - full duplex
+ * @param state         Pointer to mode state:
+ *                      TRUE - mode is advertised
+ *                      FALSE - mode is not advertised
+ *
+ * @return Status code
+ */
+te_errno
+tapi_cfg_base_phy_is_mode_advertised(const char *ta, const char *if_name,
+    int speed, int duplex, te_bool *state)
+{
+    te_errno rc = 0;
+    int      advertised = -1;
+    
+    /* Get mode state */
+    rc = cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, &advertised),
+                                   "/agent:%s/interface:%s/phy:"
+                                   "/modes:/speed:%d/duplex:%s",
+                                   ta,
+                                   if_name,
+                                   speed,
+                                   (duplex) ?
+                                   PHY_DUPLEX_STRING_FULL :
+                                   PHY_DUPLEX_STRING_HALF);
+    
+    /* Store state */
+    if (advertised)
+        *state = TRUE;
+    else
+        *state = FALSE;
+    
+    return rc;
+}
+
+/**
+ * Set PHY mode to advertising state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param speed         Speed value (see linux/ethtool.h for more details)
+ * @param duplex        Duplex state value:
+ *                      PHY_DUPLEX_HALF - half duplex
+ *                      PHY_DUPLEX_FULL - full duplex
+ * @param state         Mode state:
+ *                      0 - mode is not advertised
+ *                      1 - mode is advertised
+ *
+ * @return Status code
+ */
+te_errno
+tapi_cfg_base_phy_advertise_mode(const char *ta, const char *if_name,
+    int speed, int duplex, int state)
+{
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, state),
+                                "/agent:%s/interface:%s/phy:"
+                                "/modes:/speed:%d/duplex:%s",
+                                ta,
+                                if_name,
+                                speed,
+                                (duplex) ?
+                                PHY_DUPLEX_STRING_FULL :
+                                PHY_DUPLEX_STRING_HALF);
+}
+
+#undef PHY_DUPLEX_STRING_HALF
+#undef PHY_DUPLEX_STRING_FULL
+
+/**
+ * Restart autonegotiation.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param unused        Unused parameter;
+ *                      should be set to any value (just formality)
+ *
+ * @return Status code
+ */
+te_errno
+tapi_cfg_base_phy_restart_autoneg(const char *ta, const char *if_name,
+    int unused)
+{
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, unused),
+                                "/agent:%s/interface:%s/phy:/reset:",
+                                ta,
+                                if_name);
+}
+
+#endif /* HAVE_LINUX_ETHTOOL_H */ 
+#endif /* CONFIGURATOR_PHY_SUPPORT */
