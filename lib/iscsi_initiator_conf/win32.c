@@ -1023,15 +1023,17 @@ iscsi_win32_format_params(iscsi_target_param_descr_t *table,
     *buffer = '\0';
     for (; table->offset >= 0; table++)
     {
-        if ((table->offer == 0 || 
-             (connection->conf_params & table->offer) == table->offer) &&
-            iscsi_is_param_needed(table, target, connection, 
-                                  &connection->chap))
+        if (table->offer == 0 || 
+            (connection->conf_params & table->offer) == table->offer)
         {
-            strcat(buffer, " ");
-            iscsi_write_param(iscsi_append_to_buf, buffer,
-                              table, target, connection,
-                              &connection->chap);
+            if (iscsi_is_param_needed(table, target, connection, 
+                                      &connection->chap))
+            {
+                strcat(buffer, " ");
+                iscsi_write_param(iscsi_append_to_buf, buffer,
+                                  table, target, connection,
+                                  &connection->chap);
+            }
         }
         else
         {
