@@ -375,27 +375,16 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
  * Configurator PHY support
  */
 
-#define CONFIGURATOR_PHY_SUPPORT 0
-
 
 #if CONFIGURATOR_PHY_SUPPORT
 
-#define HAVE_LINUX_ETHTOOL_H 0
-
 #if HAVE_LINUX_ETHTOOL_H
-
-/* PHY Autonegotiation states */
-#define PHY_AUTONEG_OFF  (0)    /* OFF */
-#define PHY_AUTONEG_ON   (1)    /* ON */
-
-/* PHY Duplex states */
-#define PHY_DUPLEX_HALF  (0)    /* Half duplex */
-#define PHY_DUPLEX_FULL  (1)    /* Full duplex */
+#include <te_ethtool.h>
+#endif
 
 /* PHY link states */
 #define PHY_STATE_DOWN   (0)    /* Link down */
 #define PHY_STATE_UP     (1)    /* Link up */
-
 
 /**
  * Get PHY autonegotiation state.
@@ -410,7 +399,7 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_base_phy_autoneg_get(const char *ta, const char *if_name,
-    int *state);
+                              int *state);
 
 /**
  * Set PHY autonegotiation state.
@@ -425,7 +414,7 @@ tapi_cfg_base_phy_autoneg_get(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_base_phy_autoneg_set(const char *ta, const char *if_name,
-    int state);
+                              int state);
 
 /**
  * Get PHY duplex state.
@@ -440,7 +429,7 @@ tapi_cfg_base_phy_autoneg_set(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
-    int *state);
+                             int *state);
 
 /**
  * Set PHY duplex state.
@@ -455,7 +444,7 @@ tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_base_phy_duplex_set(const char *ta, const char *if_name,
-    int state);
+                             int state);
 
 /**
  * Get PHY speed value.
@@ -469,7 +458,7 @@ tapi_cfg_base_phy_duplex_set(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_base_phy_speed_get(const char *ta, const char *if_name,
-    int *speed);
+                            int *speed);
 
 /**
  * Set PHY speed.
@@ -482,7 +471,7 @@ tapi_cfg_base_phy_speed_get(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_base_phy_speed_set(const char *ta, const char *if_name,
-    int speed);
+                            int speed);
 
 /**
  * Get PHY link state.
@@ -497,7 +486,7 @@ tapi_cfg_base_phy_speed_set(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_base_phy_state_get(const char *ta, const char *if_name,
-    int *state);
+                            int *state);
 
 /**
  * Check that PHY mode is advertised.
@@ -516,7 +505,8 @@ tapi_cfg_base_phy_state_get(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_base_phy_is_mode_advertised(const char *ta, const char *if_name,
-    int speed, int duplex, te_bool *state);
+                                     int speed, int duplex,
+                                     te_bool *state);
 
 /**
  * Set PHY mode to advertising state.
@@ -535,7 +525,7 @@ tapi_cfg_base_phy_is_mode_advertised(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_base_phy_advertise_mode(const char *ta, const char *if_name,
-    int speed, int duplex, int state);
+                                 int speed, int duplex, int state);
 
 /**
  * Restart autonegotiation.
@@ -549,9 +539,7 @@ tapi_cfg_base_phy_advertise_mode(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_base_phy_restart_autoneg(const char *ta, const char *if_name,
-    int unused);
-
-#endif /* HAVE_LINUX_ETHTOOL_H */
+                                  int unused);
 
 #endif /* CONFIGURATOR_PHY_SUPPORT */
 

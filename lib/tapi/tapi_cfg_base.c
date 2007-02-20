@@ -634,8 +634,8 @@ tapi_cfg_base_phy_autoneg_get(const char *ta, const char *if_name,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Autonegotiation state value:
- *                      PHY_AUTONEG_OFF - autonegatiation OFF
- *                      PHY_AUTONEG_ON  - autonegatiation ON
+ *                      AUTONEG_DISABLE - autonegatiation OFF
+ *                      AUTONEG_ENABLE  - autonegatiation ON
  *
  * @return Status code
  */
@@ -658,8 +658,8 @@ tapi_cfg_base_phy_autoneg_set(const char *ta, const char *if_name,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to returned duplex state value:
- *                      PHY_DUPLEX_HALF - half duplex
- *                      PHY_DUPLEX_FULL - full duplex
+ *                      DUPLEX_HALF - half duplex
+ *                      DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -679,12 +679,10 @@ tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
         return rc;
     
     if (strcmp(duplex, PHY_DUPLEX_STRING_HALF) == 0)
-        *state = PHY_DUPLEX_HALF;
-    else
-        if (strcmp(duplex, PHY_DUPLEX_STRING_FULL) == 0)
-            *state = PHY_DUPLEX_FULL;
-        else
-            ERROR("unknown duplex value");
+        *state = DUPLEX_HALF;
+    else if (strcmp(duplex, PHY_DUPLEX_STRING_FULL) == 0)
+        *state = DUPLEX_FULL;
+    else ERROR("unknown duplex value");
     
     free(duplex);
     
@@ -697,8 +695,8 @@ tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Duplex state value:
- *                      PHY_DUPLEX_HALF - half duplex
- *                      PHY_DUPLEX_FULL - full duplex
+ *                      DUPLEX_HALF - half duplex
+ *                      DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -709,7 +707,7 @@ tapi_cfg_base_phy_duplex_set(const char *ta, const char *if_name, int state)
     
     switch (state)
     {
-        case PHY_DUPLEX_HALF:
+        case DUPLEX_HALF:
         {
             rc = cfg_set_instance_fmt(CFG_VAL(STRING,
                                               PHY_DUPLEX_STRING_HALF),
@@ -719,7 +717,7 @@ tapi_cfg_base_phy_duplex_set(const char *ta, const char *if_name, int state)
             break;
         }
         
-        case PHY_DUPLEX_FULL:
+        case DUPLEX_FULL:
         {
             rc = cfg_set_instance_fmt(CFG_VAL(STRING,
                                               PHY_DUPLEX_STRING_FULL),
@@ -801,8 +799,8 @@ tapi_cfg_base_phy_state_get(const char *ta, const char *if_name, int *state)
  * @param if_name       Interface name
  * @param speed         Speed value (see linux/ethtool.h for more details)
  * @param duplex        Duplex state value:
- *                      PHY_DUPLEX_HALF - half duplex
- *                      PHY_DUPLEX_FULL - full duplex
+ *                      DUPLEX_HALF - half duplex
+ *                      DUPLEX_FULL - full duplex
  * @param state         Pointer to mode state:
  *                      TRUE - mode is advertised
  *                      FALSE - mode is not advertised
@@ -828,7 +826,7 @@ tapi_cfg_base_phy_is_mode_advertised(const char *ta, const char *if_name,
                                    PHY_DUPLEX_STRING_HALF);
     
     /* Store state */
-    if (advertised)
+    if (advertised == 1)
         *state = TRUE;
     else
         *state = FALSE;
@@ -843,8 +841,8 @@ tapi_cfg_base_phy_is_mode_advertised(const char *ta, const char *if_name,
  * @param if_name       Interface name
  * @param speed         Speed value (see linux/ethtool.h for more details)
  * @param duplex        Duplex state value:
- *                      PHY_DUPLEX_HALF - half duplex
- *                      PHY_DUPLEX_FULL - full duplex
+ *                      DUPLEX_HALF - half duplex
+ *                      DUPLEX_FULL - full duplex
  * @param state         Mode state:
  *                      0 - mode is not advertised
  *                      1 - mode is advertised
