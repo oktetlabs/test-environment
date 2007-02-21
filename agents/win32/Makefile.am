@@ -32,7 +32,7 @@ if CFG_RCF_RPC
 LDADD=symtbl.o \
 -lrcfpch -lrpc_types -lrpcxdrta -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta \
 -lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin \
--lexpat
+-lexpat -lpcap
 
 AM_CPPFLAGS+=-DRCF_RPC -I.
 ta_SOURCES+=tarpc_server.c 

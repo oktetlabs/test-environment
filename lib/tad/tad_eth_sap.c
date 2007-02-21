@@ -284,7 +284,55 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 
 #ifdef SIOCGIFHWADDR /* FIXME */
     memset(&if_req, 0, sizeof(if_req));
-    strncpy(if_req.ifr_name, ifname, sizeof(if_req.ifr_name));
+    if (strncmp(ifname, "ef", 2) == 0)
+    {
+        /* Reading real interface index from file */
+        int efindex, ifindex;
+        FILE *F;
+        char filename[100], new_ifname[100];
+        char str[100];
+        unsigned char mac[ETHER_ADDR_LEN];
+
+        strcpy(new_ifname, ifname);
+        sscanf(ifname, "ef%d", &efindex);
+        if (efindex >= 1 && efindex <=2)
+        {
+            sprintf(filename, "/tmp/efdata_%d", efindex);
+            F = fopen(filename, "rt");
+            if (F != NULL)
+            {
+                fgets(str, 100, F);
+                if (str[strlen(str) - 1] == '\n')
+                {
+                  str[strlen(str) - 1] = 0;
+                }
+                ifindex = atoi(str);
+                fgets(str, 100, F);
+                if (str[strlen(str) - 1] == '\n')
+                {
+                  str[strlen(str) - 1] = 0;
+                }
+                sprintf(new_ifname, "\\Device\\NPF_%s", str);
+                fgets(str, 100, F);
+                if (str[strlen(str) - 1] == '\n')
+                {
+                  str[strlen(str) - 1] = 0;
+                }
+                fclose(F);
+                sscanf(str, "%x:%x:%x:%x:%x:%x",
+                       &mac[0], &mac[1], &mac[2],
+                       &mac[3], &mac[4], &mac[5]);
+                memcpy(sap->addr, mac, ETHER_ADDR_LEN);
+            }
+        }
+        strncpy(if_req.ifr_name, new_ifname, sizeof(if_req.ifr_name));
+        strcpy(sap->name, new_ifname);
+    }
+    else
+    {
+        strncpy(if_req.ifr_name, ifname, sizeof(if_req.ifr_name));
+    }
+#ifndef __CYGWIN__
     if (ioctl(cfg_socket, SIOCGIFHWADDR, &if_req))
     {
 #ifdef USE_PF_PACKET
@@ -298,6 +346,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
         return rc;
     }
     memcpy(sap->addr, if_req.ifr_hwaddr.sa_data, ETHER_ADDR_LEN);
+#endif
 #endif
 
 #ifdef USE_PF_PACKET
@@ -331,7 +380,9 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
     data->in = data->out = NULL;
 #endif
     
+#ifndef __CYGWIN__
     strcpy(sap->name, ifname);
+#endif
 
     return 0;
 }
@@ -790,6 +841,7 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
 
     return 0;
 #else
+#ifndef __CYGWIN__
     if ((fd = pcap_get_selectable_fd(data->in)) < 0)
     {
         rc = TE_OS_RC(TE_TAD_BPF, errno);
@@ -798,7 +850,6 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
         return rc;
     }
 
-    
     FD_ZERO(&readfds);
     FD_SET(fd, &readfds);
     ret_val = select(fd + 1, &readfds, NULL, NULL, &tv);
@@ -817,7 +868,15 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
              CSAP_LOG_ARGS(sap->csap), fd, rc);
         return rc;
     }
-   
+#else
+    if ((fd = pcap_fileno(data->in)) < 0)
+    {
+        rc = TE_OS_RC(TE_TAD_BPF, errno);
+        ERROR("%s(): pcap_fileno() returned %d",
+              __FUNCTION__, fd);
+        return rc;
+    }
+#endif
     ptr.pkt = pkt;
     ptr.pkt_len = pkt_len;
     rc = pcap_dispatch(data->in, 1, pkt_handl, (u_char *)&ptr);
@@ -827,6 +886,13 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
         ERROR("%s(): pcap_dispatch() returned %d",
               __FUNCTION__, rc);
         return rc;
+    }
+    if (rc == 0)
+    {
+        F_VERB(CSAP_LOG_FMT "select(%d, {%d}, NULL, NULL, {%d, %d}) timed "
+               "out", CSAP_LOG_ARGS(sap->csap), fd + 1, fd, tv.tv_sec,
+               tv.tv_usec);
+        return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
     }
     
     return 0;

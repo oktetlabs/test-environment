@@ -370,6 +370,28 @@ w2a(WCHAR *str)
     return buf;        
 }
 
+static int
+efdata2file(int efindex, int ifindex, const char *guid,
+            const unsigned char *mac)
+{
+  FILE *F;
+  char filename[100];
+
+  sprintf(filename, "/tmp/efdata_%d", efindex + 1);
+
+  F = fopen(filename, "wt");
+  if (NULL == F)
+  {
+    return -1;
+  }
+  fprintf(F, "%d\n%s\n", ifindex, guid);
+  fprintf(F, "%02x:%02x:%02x:%02x:%02x:%02x\n",
+          mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  fclose(F);
+
+  return 0;
+}
+
 static te_errno
 efport2ifindex(void)
 {
@@ -402,13 +424,19 @@ efport2ifindex(void)
     
     FILETIME tmp;
     ULONG    size = 0;
+    DWORD    rc;
     
     PIP_INTERFACE_INFO iftable;
+    PIP_ADAPTER_INFO  adapters, info;
+
+    static unsigned char mac1[6], mac2[6];
+    static char mac_str[100];
 
     char driver_type[BUFSIZE];
     
     int i, j;
     unsigned int old_ef_index[2];
+    int guid1_found_index, guid2_found_index;
     
     driver_type[0] = 0;
 
@@ -552,25 +580,63 @@ efport2ifindex(void)
     old_ef_index[1] = ef_index[1];
     ef_index[0] = 0;
     ef_index[1] = 0;
+    guid1_found_index = -1;
+    guid2_found_index = -1;
     for (i = 0; i < iftable->NumAdapters; i++)
     {
         for(j = 0; j < guid1_amount; j++)
         {
           if (strstr(w2a(iftable->Adapter[i].Name), guid1[j]) != NULL)
+          {
             ef_index[0] = iftable->Adapter[i].Index;
+            guid1_found_index = j;
+          }
         }
         for(j = 0; j < guid2_amount; j++)
         {
           if (strstr(w2a(iftable->Adapter[i].Name), guid2[j]) != NULL)
+          {
             ef_index[1] = iftable->Adapter[i].Index;
+            guid2_found_index = j;
+          }
         }
     }
     free(iftable); 
-    
+
+    GetAdaptersInfo(NULL, &size);
+    adapters = (PIP_ADAPTER_INFO)malloc(size);
+
+    if ((rc = GetAdaptersInfo(adapters, &size)) != NO_ERROR)
+    {
+        ERROR("GetAdaptersInfo failed, error %d", rc);
+        free(adapters);
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+    }
+
+    for (info = adapters; info != NULL; info = info->Next)
+    {
+      if ((guid1_found_index >= 0) && (ef_index[0] == info->Index))
+      {
+        memcpy(mac1, info->Address, 6);
+      }
+      if ((guid2_found_index >= 0) && (ef_index[1] == info->Index))
+      {
+        memcpy(mac2, info->Address, 6);
+      }
+    }
+    free(adapters);
+
     if (ef_index[0] > 0)
     {
         if (old_ef_index[0] != ef_index[0])
-            RING("Interface index for EF port 1: %d", ef_index[0]);
+        {
+            efdata2file(0, ef_index[0], guid1[guid1_found_index], mac1);
+            sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
+                    mac1[0], mac1[1], mac1[2],
+                    mac1[3], mac1[4], mac1[5]);
+            RING("Interface index for EF port 1: %d, "
+                 "MAC: %s", ef_index[0], mac_str);
+        }
     }
     else
     {
@@ -584,7 +650,12 @@ efport2ifindex(void)
     {
         if (old_ef_index[1] != ef_index[1])
         {
-            RING("Interface index for EF port 2: %d", ef_index[1]);
+            efdata2file(1, ef_index[1], guid2[guid2_found_index], mac2);
+            sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
+                    mac2[0], mac2[1], mac2[2],
+                    mac2[3], mac2[4], mac2[5]);
+            RING("Interface index for EF port 2: %d, "
+                 "MAC: %s", ef_index[1], mac_str);
         }
     }
     else
@@ -2795,27 +2866,8 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     {
       return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
     }
-    RING("add addr %s", addr);
-    printf("IGORL: add addr %s\n", addr);
-    sscanf(addr+0,"%x", &itemp);
-    RING("itemp 0 = 0x%x", itemp);
-    addr6[0] = (unsigned char)itemp;
-    sscanf(addr+3,"%x", &itemp);
-    RING("itemp 1 = 0x%x", itemp);
-    addr6[1] = (unsigned char)itemp;
-    sscanf(addr+6,"%x", &itemp);
-    RING("itemp 2 = 0x%x", itemp);
-    addr6[2] = (unsigned char)itemp;
-    sscanf(addr+9,"%x", &itemp);
-    addr6[3] = (unsigned char)itemp;
-    sscanf(addr+12,"%x", &itemp);
-    addr6[4] = (unsigned char)itemp;
-    sscanf(addr+15,"%x", &itemp);
-    addr6[5] = (unsigned char)itemp;
-
-    RING("hex addr = 0x%x", *(unsigned int *)addr6);
-    printf("IGORL: read addr  = %02x:%02x:%02x:%02x:%02x:%02x\n",
-           addr6[0], addr6[1], addr6[2], addr6[3], addr6[4], addr6[5]);
+    sscanf(addr, "%x:%x:%x:%x:%x:%x", &addr6[0], &addr6[1], &addr6[2],
+                                      &addr6[3], &addr6[4], &addr6[5]);
     if (!DeviceIoControl(dev, KRX_ADD_MULTICAST_ADDR, addr6, 6, NULL, 0,
                          &bytes_returned, NULL))
     {
@@ -2823,29 +2875,8 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
       WARN("DeviceIoControl failed with errno=%d", GetLastError());
       return -2;
     }
-    printf("IGORL: before closehandle\n");
     CloseHandle(dev);
     return 0;
-
-/*
-    te_errno rc;
-    
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    rc = mcast_link_addr_change(ifname, addr, SIOCADDMULTI);
-#ifndef __linux__
-    if (rc == 0)
-    {
-        mma_list_el *p = (mma_list_el *)malloc(sizeof(mma_list_el));
-        strncpy(p->ifname, ifname, IFNAMSIZ);
-        strncpy(p->value, addr, sizeof(p->value));
-        p->next = mcast_mac_addr_list;
-        mcast_mac_addr_list = p->next;
-    }
-#endif
-    return rc;
-    */
 }
     
 static te_errno
@@ -2869,26 +2900,9 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     {
       return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
     }
-    RING("del addr %s", addr);
     
-    sscanf(addr+0,"%x", &itemp);
-    RING("itemp 0 = 0x%x", itemp);
-    addr6[0] = (unsigned char)itemp;
-    sscanf(addr+3,"%x", &itemp);
-    RING("itemp 1 = 0x%x", itemp);
-    addr6[1] = (unsigned char)itemp;
-    sscanf(addr+6,"%x", &itemp);
-    RING("itemp 2 = 0x%x", itemp);
-    addr6[2] = (unsigned char)itemp;
-    sscanf(addr+9,"%x", &itemp);
-    addr6[3] = (unsigned char)itemp;
-    sscanf(addr+12,"%x", &itemp);
-    addr6[4] = (unsigned char)itemp;
-    sscanf(addr+15,"%x", &itemp);
-    addr6[5] = (unsigned char)itemp;
-
-    RING("hex addr = 0x%x", *(unsigned int *)addr6);
-
+    sscanf(addr, "%x:%x:%x:%x:%x:%x", &addr6[0], &addr6[1], &addr6[2],
+                                      &addr6[3], &addr6[4], &addr6[5]);
     if (!DeviceIoControl(dev, KRX_DEL_MULTICAST_ADDR, addr6, 6, NULL, 0,
                          &bytes_returned, NULL))
     {
@@ -2898,39 +2912,6 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     }
     CloseHandle(dev);
     return 0;
-
-/*    te_errno rc;
-    
-    UNUSED(gid);
-    UNUSED(oid);
-    rc = mcast_link_addr_change(ifname, addr, SIOCDELMULTI);
-#ifndef __linux__ 
-    if (rc == 0)
-    {
-        if (strcmp(mcast_mac_addr_list->value, addr) == 0 &&
-            strcmp(mcast_mac_addr_list->ifname, ifname) == 0)
-        {
-            mma_list_el *p = mcast_mac_addr_list->next;
-            free(mcast_mac_addr_list);
-            mcast_mac_addr_list = p;
-        }
-        else
-        {
-            mma_list_el *p,
-                        *pp;
-            for (p = mcast_mac_addr_list;
-                 p->next != NULL && 
-                 (strcmp(p->next->value, addr) != 0 ||
-                  strcmp(p->next->ifname, ifname) != 0);
-                 p = p->next);
-            pp = p->next->next;
-            free(p->next);
-            p->next = pp;
-        }
-    }
-#endif
-    return rc;*/
-
 }
 
 static te_errno
@@ -2956,6 +2937,8 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
     {
       return TE_RC(TE_TA_WIN32, TE_ENOENT);
     }
+
+    memset(ret, 0, 1024 * sizeof(char));
     if (!DeviceIoControl(dev, KRX_GET_MULTICAST_LIST, 
                         (void *)buf, 1024, (void *)buf, 1024,
                          &bytes_returned, NULL))
@@ -2964,93 +2947,15 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
       WARN("DeviceIoControl failed with errno=%d", GetLastError());
       return -2;
     }
-    else
-   { 
-      RING("bytes_returned=%d", bytes_returned);
-   }
     CloseHandle(dev);
     for (i = 0; i < bytes_returned / 6; i++)
     {
       sprintf(&ret[i*18],"%02x:%02x:%02x:%02x:%02x:%02x ", buf[i*6], 
               buf[i*6+1], buf[i*6+2], buf[i*6+3], buf[i*6+4], buf[i*6+5]);
-      RING("%d element of list: %s", i, &ret[i*18]);
-      RING("begin og the buffer 0x%x", *(unsigned int*)buf);
     }
-//    list[i][0] = 0;
 
     *list = ret;
     return 0;
-
-#if 0
-/*    char       *s = NULL;
-    int         p = 0;
-    int         buf_segs = 1;
-
-#define MMAC_ADDR_BUF_SIZE 16384 
-#ifndef __linux__
-    mma_list_el *tmp;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(ifname);
-
-    s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
-    *s = '\0';
-
-    for (tmp = mcast_mac_addr_list; tmp != NULL; tmp = tmp->next)
-    {
-        if (strcmp(tmp->ifname, ifname) == 0)
-        {
-            if (p >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
-            {
-                s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
-            }
-            p += sprintf(&s[p], "%s ", tmp->value);
-        }
-    }
-#else
-    FILE       *fd;
-    char        ifn[IFNAMSIZ];
-    char        addrstr[ETHER_ADDR_LEN * 3];
-
-    UNUSED(gid);
-    UNUSED(oid);
-    if ((fd = fopen("/proc/net/dev_mcast", "r")) == NULL)
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    
-    s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
-    *s = '\0';
-
-    while (fscanf(fd, "%*d %s %*d %*d %s\n", ifn, addrstr) > 0)
-    {
-        /*
-         * Read file and copy items with appropriate interface name
-         * to the buffer, adding colons to MAC addresses.
-         */
-            
-/*        if (strcmp(ifn, ifname) == 0)
-        {
-            int i;
-
-            for (i = 0; i < 6; i++)
-            {
-                if (p >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
-                {
-                    s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
-                }
-                strncpy(&s[p], &addrstr[i * 2], 2);
-                p += 2;
-                s[p++] = (i < 5) ? ':' : ' ';
-                s[p] = '\0';
-            }
-        }
-    }
-    fclose(fd);
-#endif
-    *list = s;
-    return 0;
-    */
-#endif
 }
 
 // Multicast
