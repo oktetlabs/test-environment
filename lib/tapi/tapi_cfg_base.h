@@ -375,7 +375,6 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
  * Configurator PHY support
  */
 
-
 #if CONFIGURATOR_PHY_SUPPORT
 
 #if HAVE_LINUX_ETHTOOL_H

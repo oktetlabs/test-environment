@@ -622,10 +622,18 @@ te_errno
 tapi_cfg_base_phy_autoneg_get(const char *ta, const char *if_name,
     int *state)
 {
-    return cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, state),
-                                     "/agent:%s/interface:%s/phy:/autoneg:",
-                                     ta,
-                                     if_name);
+    int rc = 0;
+    
+    rc =  cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, state),
+                                    "/agent:%s/interface:%s/phy:/autoneg:",
+                                    ta,
+                                    if_name);
+    
+    /* Check that option is supported */
+    if (*state == -1)
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+    
+    return rc;
 }
 
 /**
@@ -682,7 +690,8 @@ tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
         *state = DUPLEX_HALF;
     else if (strcmp(duplex, PHY_DUPLEX_STRING_FULL) == 0)
         *state = DUPLEX_FULL;
-    else ERROR("unknown duplex value");
+    else
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
     
     free(duplex);
     
@@ -748,10 +757,18 @@ tapi_cfg_base_phy_duplex_set(const char *ta, const char *if_name, int state)
 te_errno
 tapi_cfg_base_phy_speed_get(const char *ta, const char *if_name, int *speed)
 {
-    return cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, speed),
-                                     "/agent:%s/interface:%s/phy:/speed:",
-                                     ta,
-                                     if_name);
+    int rc = 0;
+    
+    rc = cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, speed),
+                                   "/agent:%s/interface:%s/phy:/speed:",
+                                   ta,
+                                   if_name);
+    
+    /* Check that option is supported */
+    if (*speed == -1)
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+    
+    return rc;
 }
 
 /**
@@ -786,10 +803,17 @@ tapi_cfg_base_phy_speed_set(const char *ta, const char *if_name, int speed)
 te_errno
 tapi_cfg_base_phy_state_get(const char *ta, const char *if_name, int *state)
 {
-    return cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, state),
-                                     "/agent:%s/interface:%s/phy:/state:",
-                                     ta,
-                                     if_name);
+    int rc = 0;
+    
+    rc = cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, state),
+                                   "/agent:%s/interface:%s/phy:/state:",
+                                   ta,
+                                   if_name);
+    /* Check that option is supported */
+    if (*state == -1)
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+    
+    return rc;
 }
 
 /**
