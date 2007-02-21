@@ -69,6 +69,14 @@
 #include <sys/ethernet.h>
 #endif
 
+#ifdef __CYGWIN__
+#define ETHER_ADDR_LEN 6
+#define ETHERTYPE_IP   0x0800
+#define ETHERTYPE_ARP  0x0806
+#define ETHER_MIN_LEN  64
+#define ETHER_CRC_LEN  4
+#endif
+
 #ifndef ETHER_ADDR_LEN
 #ifdef ETHERADDRL
 #define ETHER_ADDR_LEN  ETHERADDRL
