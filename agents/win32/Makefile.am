@@ -25,7 +25,8 @@ CLEANFILES=symtbl.c
 
 SYMTBL_OBJECTS=win32.o 
 SYMTBL_LIBS= $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
-             $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a
+             $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a \
+             $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib${TAD}.a
 
 if CFG_RCF_RPC
 

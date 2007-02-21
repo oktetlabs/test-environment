@@ -371,13 +371,20 @@ w2a(WCHAR *str)
 }
 
 static int
-efdata2file(int efindex, int ifindex, const char *guid,
-            const unsigned char *mac)
+intfdata2file(const char *prefix, int efindex, int ifindex,
+              const char *guid, const unsigned char *mac)
 {
   FILE *F;
   char filename[100];
 
-  sprintf(filename, "/tmp/efdata_%d", efindex + 1);
+  if (strncmp(prefix, "ef", 2) == 0)
+  {
+    sprintf(filename, "/tmp/efdata_%d", efindex + 1);
+  }
+  else
+  {
+    sprintf(filename, "/tmp/intfdata_%d", ifindex);
+  }
 
   F = fopen(filename, "wt");
   if (NULL == F)
@@ -615,6 +622,8 @@ efport2ifindex(void)
 
     for (info = adapters; info != NULL; info = info->Next)
     {
+      intfdata2file("intf", -1, info->Index, info->AdapterName,
+                    info->Address);
       if ((guid1_found_index >= 0) && (ef_index[0] == info->Index))
       {
         memcpy(mac1, info->Address, 6);
@@ -630,7 +639,8 @@ efport2ifindex(void)
     {
         if (old_ef_index[0] != ef_index[0])
         {
-            efdata2file(0, ef_index[0], guid1[guid1_found_index], mac1);
+            intfdata2file("ef", 0, ef_index[0],
+                          guid1[guid1_found_index], mac1);
             sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
                     mac1[0], mac1[1], mac1[2],
                     mac1[3], mac1[4], mac1[5]);
@@ -650,7 +660,8 @@ efport2ifindex(void)
     {
         if (old_ef_index[1] != ef_index[1])
         {
-            efdata2file(1, ef_index[1], guid2[guid2_found_index], mac2);
+            intfdata2file("ef", 1, ef_index[1],
+                          guid2[guid2_found_index], mac2);
             sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
                     mac2[0], mac2[1], mac2[2],
                     mac2[3], mac2[4], mac2[5]);

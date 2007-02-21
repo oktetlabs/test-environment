@@ -284,20 +284,38 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 
 #ifdef SIOCGIFHWADDR /* FIXME */
     memset(&if_req, 0, sizeof(if_req));
-    if (strncmp(ifname, "ef", 2) == 0)
+    if (strncmp(ifname, "ef", 2) == 0 ||
+        strncmp(ifname, "intf", 4) == 0)
     {
         /* Reading real interface index from file */
-        int efindex, ifindex;
+        int efindex = -1, ifindex = -1;
         FILE *F;
+        int ef_type = 0; /* ef* or intf* type of interface name */
         char filename[100], new_ifname[100];
         char str[100];
         unsigned char mac[ETHER_ADDR_LEN];
 
         strcpy(new_ifname, ifname);
-        sscanf(ifname, "ef%d", &efindex);
-        if (efindex >= 1 && efindex <=2)
+        if (strncmp(ifname, "ef", 2) == 0)
         {
-            sprintf(filename, "/tmp/efdata_%d", efindex);
+          sscanf(ifname, "ef%d", &efindex);
+          ef_type = 1;
+        }
+        else
+        {
+          sscanf(ifname, "intf%d", &ifindex);
+          ef_type = 0;
+        }
+        if ((efindex >= 1 && efindex <=2) || (ef_type == 0))
+        {
+            if (ef_type == 1)
+            {
+                sprintf(filename, "/tmp/efdata_%d", efindex);
+            }
+            else
+            {
+                sprintf(filename, "/tmp/intfdata_%d", ifindex);
+            }
             F = fopen(filename, "rt");
             if (F != NULL)
             {
