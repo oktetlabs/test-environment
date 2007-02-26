@@ -391,8 +391,8 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to returned autonegotiation state value:
- *                      PHY_AUTONEG_OFF - autonegatiation OFF
- *                      PHY_AUTONEG_ON  - autonegatiation ON
+ *                      AUTONEG_DISABLE - autonegatiation OFF
+ *                      AUTONEG_ENABLE  - autonegatiation ON
  *
  * @return Status code
  */
@@ -406,8 +406,8 @@ tapi_cfg_base_phy_autoneg_get(const char *ta, const char *if_name,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Autonegotiation state value:
- *                      PHY_AUTONEG_OFF - autonegatiation OFF
- *                      PHY_AUTONEG_ON  - autonegatiation ON
+ *                      AUTONEG_DISABLE - autonegatiation OFF
+ *                      AUTONEG_ENABLE  - autonegatiation ON
  *
  * @return Status code
  */
@@ -421,8 +421,8 @@ tapi_cfg_base_phy_autoneg_set(const char *ta, const char *if_name,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to returned duplex state value:
- *                      PHY_DUPLEX_HALF - half duplex
- *                      PHY_DUPLEX_FULL - full duplex
+ *                      DUPLEX_HALF - half duplex
+ *                      DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -436,8 +436,8 @@ tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Duplex state value:
- *                      PHY_DUPLEX_HALF - half duplex
- *                      PHY_DUPLEX_FULL - full duplex
+ *                      DUPLEX_HALF - half duplex
+ *                      DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -478,8 +478,8 @@ tapi_cfg_base_phy_speed_set(const char *ta, const char *if_name,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to returned link state value:
- *                      0 - link down
- *                      1 - link up
+ *                      PHY_STATE_DOWN - link down
+ *                      PHY_STATE_UP   - link up
  *
  * @return Status code
  */
@@ -494,11 +494,11 @@ tapi_cfg_base_phy_state_get(const char *ta, const char *if_name,
  * @param if_name       Interface name
  * @param speed         Speed value (see linux/ethtool.h for more details)
  * @param duplex        Duplex state value:
- *                      PHY_DUPLEX_HALF - half duplex
- *                      PHY_DUPLEX_FULL - full duplex
+ *                      DUPLEX_HALF - half duplex
+ *                      DUPLEX_FULL - full duplex
  * @param state         Pointer to mode state:
- *                      TRUE - mode is advertised
- *                      FALSE - mode is not advertised
+ *                      1 - mode is advertised
+ *                      0 - mode is not advertised
  *
  * @return Status code
  */
@@ -514,8 +514,8 @@ tapi_cfg_base_phy_is_mode_advertised(const char *ta, const char *if_name,
  * @param if_name       Interface name
  * @param speed         Speed value (see linux/ethtool.h for more details)
  * @param duplex        Duplex state value:
- *                      PHY_DUPLEX_HALF - half duplex
- *                      PHY_DUPLEX_FULL - full duplex
+ *                      DUPLEX_HALF - half duplex
+ *                      DUPLEX_FULL - full duplex
  * @param state         Mode state:
  *                      0 - mode is not advertised
  *                      1 - mode is advertised 
