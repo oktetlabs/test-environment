@@ -6128,12 +6128,9 @@ phy_property(const char *ifname, struct ethtool_cmd *ecmd, int type)
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd < 0)
     {
-        ERROR("%s fails: "
-              "failed to create control socket, "
-              "errno=%d (%s)",
-              __FUNCTION__,
-              errno,
-              strerror(errno));
+        ERROR("%s fails: failed to create control socket, "
+              "errno=%d (%s)", __FUNCTION__,
+              errno, strerror(errno));
         return errno;
     }
     
@@ -6176,13 +6173,11 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
          * Check for option support: if option is not
          * supported the leaf value should be set to -1
          */
-        
         if (rc == EOPNOTSUPP)
         {
             sprintf(value, "%d", -1);
             return 0;
         }
-        
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
     
@@ -6470,23 +6465,18 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
          * Check for option support: if option is not
          * supported the leaf value should be set to -1
          */
-        
         if (rc == EOPNOTSUPP)
         {
             sprintf(value, "%d", -1);
             return 0;
         }
-        
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
     
     /* Extract values */
     sscanf(oid,
            "/agent:%[^/]/interface:%[^/]/phy:/modes:/speed:%d/duplex:%s",
-           unused1,
-           unused2,
-           &speed,
-           duplex);
+           unused1, unused2, &speed, duplex);
     
     /* Get current mode */
     mode = phy_get_mode(speed, duplex);
@@ -6552,10 +6542,7 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
     /* Extract values */
     sscanf(oid,
            "/agent:%[^/]/interface:%[^/]/phy:/modes:/speed:%d/duplex:%s",
-           unused1,
-           unused2,
-           &speed,
-           duplex);
+           unused1, unused2, &speed, duplex);
     
     result |= phy_get_mode(speed, duplex);
     
@@ -6836,7 +6823,7 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
     }
     
-    /* Get value */
+    /* Get value provided by caller */
     sscanf(value, "%d", &speed);
     
     /* Set value */
@@ -6893,8 +6880,7 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     
     if (fd < 0)
     {
-        ERROR("%s fails: "
-              "failed to create control socket",
+        ERROR("%s fails: failed to create control socket",
               __FUNCTION__);
         sprintf(value, "%d", 0);
         return 0;
@@ -6911,13 +6897,11 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
          * Check for option support: if option is not
          * supported the leaf value should be set to -1
          */
-        
         if (rc == EOPNOTSUPP)
         {
             sprintf(value, "%d", -1);
             return 0;
         }
-        
         return TE_RC(TE_TA_UNIX, errno);;
     }
     
@@ -6991,9 +6975,7 @@ phy_reset_set(unsigned int gid, const char *oid, const char *value,
     
     if (fd < 0)
     {
-        ERROR("%s fails: "
-              "failed to create control socket",
-              __FUNCTION__);
+        ERROR("%s fails: failed to create control socket", __FUNCTION__);
         return fd;
     }
     
@@ -7005,8 +6987,7 @@ phy_reset_set(unsigned int gid, const char *oid, const char *value,
     if (rc != 0)
     {
         ERROR("failed to restart autonegotiation, errno=%d (%s)",
-              errno,
-              strerror(errno));
+              errno, strerror(errno));
         close(fd);
         return TE_RC(TE_TA_UNIX, errno);
     }
