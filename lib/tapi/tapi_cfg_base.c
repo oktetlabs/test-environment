@@ -588,6 +588,7 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
         ERROR("Failed to add VLAN with VID=%d to %s", vid, if_name);
         return rc;
     }
+    
     if ((rc = cfg_get_instance_fmt(&val, vlan_ifname,
                          "/agent:%s/interface:%s/vlans:%d/ifname:",
                          ta, if_name, vid)) != 0)
@@ -607,6 +608,9 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
 #if CONFIGURATOR_PHY_SUPPORT
 #if HAVE_LINUX_ETHTOOL_H
 
+/* Sleep time after changes apply */
+#define TIME_TO_SLEEP   (5)
+
 /**
  * Get PHY autonegotiation state.
  *
@@ -620,14 +624,13 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
  */
 te_errno
 tapi_cfg_base_phy_autoneg_get(const char *ta, const char *if_name,
-    int *state)
+                              int *state)
 {
     int rc = 0;
     
     rc =  cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, state),
                                     "/agent:%s/interface:%s/phy:/autoneg:",
-                                    ta,
-                                    if_name);
+                                    ta, if_name);
     
     /* Check that option is supported */
     if (*state == -1)
@@ -649,16 +652,65 @@ tapi_cfg_base_phy_autoneg_get(const char *ta, const char *if_name,
  */
 te_errno
 tapi_cfg_base_phy_autoneg_set(const char *ta, const char *if_name,
-    int state)
+                              int state)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, state),
-                                "/agent:%s/interface:%s/phy:/autoneg:",
-                                ta,
-                                if_name);
+    te_errno rc = 0;
+    
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, state),
+                              "/agent:%s/interface:%s/phy:/autoneg:",
+                              ta, if_name);
+    /* Wait for changes */
+    sleep(TIME_TO_SLEEP);
+    
+    return rc;
 }
 
 #define PHY_DUPLEX_STRING_HALF "half"
 #define PHY_DUPLEX_STRING_FULL "full"
+
+/**
+ * Get PHY duplex state by name string.
+ *
+ * @param name          Duplex state name string
+ *
+ * @return DUPLEX_HALF - half duplex;
+ *         DUPLEX_FULL - full duplex;
+ *         or -1 if name string does not recognized
+ */
+static inline int
+tapi_cfg_base_phy_get_duplex_by_name(char *name)
+{
+    if (strcmp(name, PHY_DUPLEX_STRING_HALF) == 0)
+        return DUPLEX_HALF;
+    else if (strcmp(name, PHY_DUPLEX_STRING_FULL) == 0)
+        return DUPLEX_FULL;
+    
+    return -1;
+}
+
+/**
+ * Get PHY duplex state by id.
+ *
+ * @param duplex        Duplex state id
+ *
+ * @return half - half duplex;
+ *         full - full duplex;
+ *         or NULL if id does not recognized
+ */
+static inline char *
+tapi_cfg_base_phy_get_duplex_by_id(int duplex)
+{
+    switch (duplex)
+    {
+        case DUPLEX_HALF: return PHY_DUPLEX_STRING_HALF;
+        case DUPLEX_FULL: return PHY_DUPLEX_STRING_FULL;
+    }
+    
+    return NULL;
+}
+
+#undef PHY_DUPLEX_STRING_HALF
+#undef PHY_DUPLEX_STRING_FULL
 
 /**
  * Get PHY duplex state.
@@ -673,7 +725,7 @@ tapi_cfg_base_phy_autoneg_set(const char *ta, const char *if_name,
  */
 te_errno
 tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
-    int *state)
+                             int *state)
 {
     te_errno  rc = 0;
     char     *duplex;
@@ -681,17 +733,11 @@ tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
     rc = cfg_get_instance_sync_fmt(NULL,
                                    (void *)&duplex,
                                    "/agent:%s/interface:%s/phy:/duplex:",
-                                   ta,
-                                   if_name);
+                                   ta, if_name);
     if (rc != 0)
         return rc;
     
-    if (strcmp(duplex, PHY_DUPLEX_STRING_HALF) == 0)
-        *state = DUPLEX_HALF;
-    else if (strcmp(duplex, PHY_DUPLEX_STRING_FULL) == 0)
-        *state = DUPLEX_FULL;
-    else
-        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+    *state = tapi_cfg_base_phy_get_duplex_by_name(duplex);
     
     free(duplex);
     
@@ -712,37 +758,23 @@ tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
 te_errno
 tapi_cfg_base_phy_duplex_set(const char *ta, const char *if_name, int state)
 {
-    te_errno rc = 0;
+    te_errno  rc = 0;
+    char     *duplex;
     
-    switch (state)
-    {
-        case DUPLEX_HALF:
-        {
-            rc = cfg_set_instance_fmt(CFG_VAL(STRING,
-                                              PHY_DUPLEX_STRING_HALF),
+    duplex = tapi_cfg_base_phy_get_duplex_by_id(state);
+    
+    if (duplex == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, duplex),
                                       "/agent:%s/interface:%s/phy:/duplex:",
-                                      ta,
-                                      if_name);
-            break;
-        }
-        
-        case DUPLEX_FULL:
-        {
-            rc = cfg_set_instance_fmt(CFG_VAL(STRING,
-                                              PHY_DUPLEX_STRING_FULL),
-                                      "/agent:%s/interface:%s/phy:/duplex:",
-                                      ta,
-                                      if_name);
-            break;
-        }
-        
-        default: ERROR("unknown duplex value");
-    }
+                                      ta, if_name);
+    
+    /* Wait for changes */
+    sleep(TIME_TO_SLEEP);
     
     return rc;
 }
-
-
 
 /**
  * Get PHY speed value.
@@ -761,8 +793,7 @@ tapi_cfg_base_phy_speed_get(const char *ta, const char *if_name, int *speed)
     
     rc = cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, speed),
                                    "/agent:%s/interface:%s/phy:/speed:",
-                                   ta,
-                                   if_name);
+                                   ta, if_name);
     
     /* Check that option is supported */
     if (*speed == -1)
@@ -783,10 +814,17 @@ tapi_cfg_base_phy_speed_get(const char *ta, const char *if_name, int *speed)
 te_errno
 tapi_cfg_base_phy_speed_set(const char *ta, const char *if_name, int speed)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, speed),
-                                "/agent:%s/interface:%s/phy:/speed:",
-                                ta,
-                                if_name);
+    te_errno rc = 0;
+    
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, speed),
+                              "/agent:%s/interface:%s/phy:/speed:",
+                              ta, if_name);
+    
+    /* Wait for changes */
+    sleep(TIME_TO_SLEEP);
+    
+    return rc;
+
 }
 
 /**
@@ -807,8 +845,11 @@ tapi_cfg_base_phy_state_get(const char *ta, const char *if_name, int *state)
     
     rc = cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, state),
                                    "/agent:%s/interface:%s/phy:/state:",
-                                   ta,
-                                   if_name);
+                                   ta, if_name);
+    
+    if (rc != 0)
+        return rc;
+    
     /* Check that option is supported */
     if (*state == -1)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
@@ -833,21 +874,24 @@ tapi_cfg_base_phy_state_get(const char *ta, const char *if_name, int *state)
  */
 te_errno
 tapi_cfg_base_phy_is_mode_advertised(const char *ta, const char *if_name,
-    int speed, int duplex, te_bool *state)
+                                     int speed, int duplex,
+                                     te_bool *state)
 {
-    te_errno rc = 0;
-    int      advertised = -1;
+    te_errno  rc = 0;
+    int       advertised = -1;
+    char     *duplex_string;
+    
+    duplex_string = tapi_cfg_base_phy_get_duplex_by_id(duplex);
+    
+    if (duplex_string == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
     
     /* Get mode state */
     rc = cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, &advertised),
                                    "/agent:%s/interface:%s/phy:"
                                    "/modes:/speed:%d/duplex:%s",
-                                   ta,
-                                   if_name,
-                                   speed,
-                                   (duplex) ?
-                                   PHY_DUPLEX_STRING_FULL :
-                                   PHY_DUPLEX_STRING_HALF);
+                                   ta, if_name, speed,
+                                   duplex_string);
     
     /* Store state */
     if (advertised == 1)
@@ -875,21 +919,27 @@ tapi_cfg_base_phy_is_mode_advertised(const char *ta, const char *if_name,
  */
 te_errno
 tapi_cfg_base_phy_advertise_mode(const char *ta, const char *if_name,
-    int speed, int duplex, int state)
+                                 int speed, int duplex, int state)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, state),
-                                "/agent:%s/interface:%s/phy:"
-                                "/modes:/speed:%d/duplex:%s",
-                                ta,
-                                if_name,
-                                speed,
-                                (duplex) ?
-                                PHY_DUPLEX_STRING_FULL :
-                                PHY_DUPLEX_STRING_HALF);
+    te_errno  rc = 0;
+    char     *duplex_string;
+    
+    duplex_string = tapi_cfg_base_phy_get_duplex_by_id(duplex);
+    
+    if (duplex_string == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, state),
+                              "/agent:%s/interface:%s/phy:"
+                              "/modes:/speed:%d/duplex:%s",
+                              ta, if_name, speed,
+                              duplex_string);
+    
+    /* Wait for changes */
+    sleep(TIME_TO_SLEEP);
+    
+    return rc;
 }
-
-#undef PHY_DUPLEX_STRING_HALF
-#undef PHY_DUPLEX_STRING_FULL
 
 /**
  * Restart autonegotiation.
@@ -903,13 +953,14 @@ tapi_cfg_base_phy_advertise_mode(const char *ta, const char *if_name,
  */
 te_errno
 tapi_cfg_base_phy_restart_autoneg(const char *ta, const char *if_name,
-    int unused)
+                                  int unused)
 {
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, unused),
                                 "/agent:%s/interface:%s/phy:/reset:",
-                                ta,
-                                if_name);
+                                ta, if_name);
 }
+
+#undef TIME_TO_SLEEP
 
 #endif /* HAVE_LINUX_ETHTOOL_H */ 
 #endif /* CONFIGURATOR_PHY_SUPPORT */

@@ -6102,6 +6102,46 @@ user_del(unsigned int gid, const char *oid, const char *user)
     phy_property(_ifname, _data, ETHTOOL_SSET)
 
 /**
+ * Get duplex state by name string
+ *
+ * @param name          Duplex name string
+ *
+ * @return DUPLEX_FULL, DUPLEX_HALF or -1 if
+ *         duplex name string does not recognized
+ */
+static inline int
+phy_get_duplex_by_name(char *name)
+{
+    if (strcasecmp(name, PHY_FULL_DUPLEX) == 0)
+        return DUPLEX_FULL;
+    
+    if (strcasecmp(name, PHY_HALF_DUPLEX) == 0)
+        return DUPLEX_HALF;
+    
+    return -1;
+}
+
+/**
+ * Get duplex name string by id
+ *
+ * @param id            Duplex ID
+ *
+ * @return PHY_FULL_DUPLEX, PHY_HALF_DUPLEX or NULL if
+ *         duplex ID does not recognized
+ */
+static inline char *
+phy_get_duplex_by_id(int id)
+{
+    switch (id)
+    {
+        case DUPLEX_FULL: return PHY_FULL_DUPLEX;
+        case DUPLEX_HALF: return PHY_HALF_DUPLEX;
+    }
+    
+    return NULL;
+}
+
+/**
  * Get and set PHY property using ioctl() call.
  * Ethtool parameters will be stored in @p ecmd
  * (see linux/ethtool.h for more details)
@@ -6175,7 +6215,7 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
          */
         if (rc == EOPNOTSUPP)
         {
-            sprintf(value, "%d", -1);
+            snprintf(value, RCF_MAX_VAL, "%d", -1);
             return 0;
         }
         return TE_OS_RC(TE_TA_UNIX, rc);
@@ -6185,7 +6225,7 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
     state = (ecmd.autoneg == AUTONEG_ENABLE) ? 1 : 0;
     
     /* Store value */
-    sprintf(value, "%d", state);
+    snprintf(value, RCF_MAX_VAL, "%d", state);
     
     return 0;
 }
@@ -6210,7 +6250,7 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
  */
 static te_errno
 phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
-           const char *ifname)
+                const char *ifname)
 {
     struct ethtool_cmd ecmd;
     int                autoneg = 0;
@@ -6271,10 +6311,11 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
  */
 static te_errno
 phy_duplex_get(unsigned int gid, const char *oid, char *value,
-              const char *ifname)
+               const char *ifname)
 {
-    struct ethtool_cmd ecmd;
-    int                rc;
+    struct ethtool_cmd  ecmd;
+    int                 rc;
+    char               *duplex;
     
     UNUSED(gid);
     UNUSED(oid);
@@ -6284,7 +6325,7 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
     /* Get property */
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
-        sprintf(value, "%s", PHY_NOT_SUPPORTED);
+        snprintf(value, RCF_MAX_VAL, "%s", PHY_NOT_SUPPORTED);
         
         /* Check for option support */
         if (rc == EOPNOTSUPP)
@@ -6293,8 +6334,13 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
     
+    duplex = phy_get_duplex_by_id(ecmd.duplex);
+    
+    if (duplex == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    
     /* Store value */
-    sprintf(value, "%s", (ecmd.duplex) ? PHY_FULL_DUPLEX : PHY_HALF_DUPLEX);
+    snprintf(value, RCF_MAX_VAL, "%s", duplex);
     
     return 0;
 }
@@ -6320,6 +6366,7 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
 {
     struct ethtool_cmd ecmd;
     int                rc = 0;
+    int                duplex = 0;
     
     UNUSED(gid);
     UNUSED(oid);
@@ -6341,20 +6388,16 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
     }
     
+    duplex = phy_get_duplex_by_name((char *)value);
+    
+    if (duplex == -1)
+    {
+        ERROR("unknown duplex state: %s", value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    
     /* Set value */
-    if (strcmp(value, PHY_FULL_DUPLEX) == 0)
-    {
-        ecmd.duplex = DUPLEX_FULL;
-    }
-    else if (strcmp(value, PHY_HALF_DUPLEX) == 0)
-    {
-        ecmd.duplex = DUPLEX_HALF;
-    }
-    else
-    {
-            ERROR("unknown duplex state: %s", value);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    ecmd.duplex = duplex;
     
     /* Apply value */
     if ((rc = PHY_SET_PROPERTY(ifname, &ecmd)) != 0)
@@ -6442,7 +6485,7 @@ phy_get_mode(int speed, const char *duplex)
  */
 static te_errno
 phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
-              const char *ifname)
+                           const char *ifname)
 {
 #define UNUSED_SIZE (10)
 #define DUPLEX_SIZE (4)
@@ -6467,7 +6510,7 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
          */
         if (rc == EOPNOTSUPP)
         {
-            sprintf(value, "%d", -1);
+            snprintf(value, RCF_MAX_VAL, "%d", -1);
             return 0;
         }
         return TE_OS_RC(TE_TA_UNIX, rc);
@@ -6483,9 +6526,9 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
     
     /* Set mode state */
     if (ecmd.advertising & mode)
-        sprintf(value, "%d", 1);
+        snprintf(value, RCF_MAX_VAL, "%d", 1);
     else
-        sprintf(value, "%d", 0);
+        snprintf(value, RCF_MAX_VAL, "%d", 0);
     
     return 0;
 }
@@ -6505,7 +6548,7 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
  */
 static te_errno
 phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
-    const char *value, const char *ifname)
+                           const char *value, const char *ifname)
 {
     struct ethtool_cmd ecmd;
     int                set        = 0;
@@ -6550,7 +6593,7 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
     set = atoi(value);
     
     if (set == 1)
-        ecmd.advertising = ecmd.supported & result; /* Set value */
+        ecmd.advertising = ecmd.supported | result; /* Set value */
     else
         ecmd.advertising &= ~result; /* Unset value */
     
@@ -6579,7 +6622,7 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
     if (ecmd.advertising != (u32)advertised)
     {
         ERROR("cannot advertise this mode");
-        return TE_OS_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
     }
     
     return 0;
@@ -6629,7 +6672,8 @@ phy_modes_list_ins_value(char **list, char *value)
 }
 
 /**
- * Get instance list for object "agent/interface/phy/speed/duplex".
+ * Get list of supported PHY speed/duplex
+ * modes (object "agent/interface/phy/speed/duplex").
  *
  * @param id            full identifier of the father instance
  * @param list          location for the list pointer
@@ -6639,7 +6683,7 @@ phy_modes_list_ins_value(char **list, char *value)
  */
 static te_errno
 phy_modes_speed_duplex_list(unsigned int gid, const char *oid, char **list,
-                     const char *ifname)
+                            const char *ifname)
 {
     struct ethtool_cmd  ecmd;
     char               *speed_pattern = "speed:";
@@ -6766,7 +6810,7 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
         
         if (rc == EOPNOTSUPP)
         {
-            sprintf(value, "%d", -1);
+            snprintf(value, RCF_MAX_VAL, "%d", -1);
             return 0;
         }
         
@@ -6776,7 +6820,7 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
     }
     
     /* Store value */
-    sprintf(value, "%d", ecmd.speed);
+    snprintf(value, RCF_MAX_VAL, "%d", ecmd.speed);
     
     return 0;
 }
@@ -6796,7 +6840,7 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
  */
 static te_errno
 phy_speed_set(unsigned int gid, const char *oid, const char *value,
-           const char *ifname)
+              const char *ifname)
 {
     struct ethtool_cmd ecmd;
     int                speed;
@@ -6830,11 +6874,10 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
     ecmd.speed = speed;
     
     /* Set duplex */
-    duplex = (ecmd.duplex == DUPLEX_HALF) ? PHY_HALF_DUPLEX :
-                                            PHY_FULL_DUPLEX;
+    duplex = phy_get_duplex_by_id(ecmd.duplex);
     
-    /* Set advertising mode */
-    ecmd.advertising |= phy_get_mode(speed, duplex);
+    if (duplex == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     
     /* Apply value */
     if ((rc = PHY_SET_PROPERTY(ifname, &ecmd)) != 0)
@@ -6882,7 +6925,7 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     {
         ERROR("%s fails: failed to create control socket",
               __FUNCTION__);
-        sprintf(value, "%d", 0);
+        snprintf(value, RCF_MAX_VAL, "%d", 0);
         return 0;
     }
     
@@ -6899,7 +6942,7 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
          */
         if (rc == EOPNOTSUPP)
         {
-            sprintf(value, "%d", -1);
+            snprintf(value, RCF_MAX_VAL, "%d", -1);
             return 0;
         }
         return TE_RC(TE_TA_UNIX, errno);;
@@ -6908,7 +6951,7 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     state = edata.data ? 1 : 0;
     
     /* Store value */
-    sprintf(value, "%d", state);
+    snprintf(value, RCF_MAX_VAL, "%d", state);
     
     /* Close a socket */
     close(fd);
@@ -6934,7 +6977,7 @@ phy_reset_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(ifname);
     
-    sprintf(value, "%d", phy_reset_value);
+    snprintf(value, RCF_MAX_VAL, "%d", phy_reset_value);
     
     return 0;
 }
