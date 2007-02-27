@@ -2096,8 +2096,8 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
         int   err_fd = -1;
         FILE *out;
         int   status;
-        char  cmdln[PATH_MAX] = "";
-        char  out_sav[PATH_MAX] = "";
+        char  cmdln[1024*2] = "";
+        char  out_sav[1024*2] = "";
         int   room = sizeof(out_sav) - 1;
 
         snprintf(cmdln, sizeof(cmdln),
