@@ -2093,24 +2093,37 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
 #elif defined __sun__
     { 
         int   out_fd = -1;
+        int   err_fd = -1;
         FILE *out;
         int   status;
-        pid_t dladm_cmd_pid = te_shell_cmd("LANG=POSIX dladm show-link -p",
-                                           -1, NULL, &out_fd, NULL);
+        char  cmdln[PATH_MAX] = "";
+        char  out_sav[PATH_MAX] = "";
+        int   room = sizeof(out_sav) - 1;
+
+        snprintf(cmdln, sizeof(cmdln),
+                 "LANG=POSIX /sbin/dladm show-link -p");
+        pid_t dladm_cmd_pid = te_shell_cmd(cmdln, -1,
+                                           NULL, &out_fd, &err_fd);
         if (dladm_cmd_pid < 0)
         {
             ERROR("%s(): start of dladm failed", __FUNCTION__);
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
-        
+
         out = fdopen(out_fd, "r");
         while (fgets(f_buf, sizeof(f_buf), out) != NULL)
         { 
-            size_t ofs; 
+            size_t ofs;
             char *s = f_buf;
             int vlan_id;
 
             VERB("%s(): read line: <%s>", __FUNCTION__, f_buf);
+            if (room > 0)
+            {
+                strncat(out_sav, f_buf, room);
+                room -= strlen(f_buf);
+            }
+
             /* skip "<ifname> type=" */
             s = strchr(s, ' '); 
             s++;
@@ -2135,10 +2148,30 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
         }
         
         ta_waitpid(dladm_cmd_pid, &status, 0);
-        if (status != 0)
+        if (status != 0)       
         {
-            ERROR("%s(): Non-zero status of dladm: %d",
-                  __FUNCTION__, status);
+            FILE *err;
+            char *cur;
+            int   len;
+
+            ERROR("%s(): Non-zero status of cmd: %s: %d",
+                  __FUNCTION__, cmdln, status);
+            ERROR("%s %d bytes of stdout follow:\n%s",
+                  room > 0 ? "All":"First", strlen(out_sav), out_sav);
+
+            out_sav[0]='\0';
+            cur = out_sav;
+            room = sizeof(out_sav) - 1;
+            err = fdopen(err_fd, "r");
+            while (room > 0)
+            {
+               if(fgets(cur, room, err) == NULL) break;
+               len = strlen(cur); room -= len; cur  += len;
+            }
+            fclose(err);
+            ERROR("%s %d bytes of stderr follow:\n%s",
+                  room > 0 ? "All":"First", strlen(out_sav), out_sav);
+
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
         fclose(out);
