@@ -1131,16 +1131,236 @@ ta_unix_conf_route_blackhole_list(char **list)
 te_errno
 ta_unix_conf_route_blackhole_add(ta_rt_info_t *rt_info)
 {
-    UNUSED(rt_info);
-    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    int                 rt_sock = -1;
+    size_t              rt_buflen = sizeof(struct rt_msghdr) +
+                                    sizeof(struct sockaddr_storage) *
+                                        RTAX_MAX;
+    uint8_t             rt_buf[rt_buflen];
+    unsigned int        rt_cmd;
+    pid_t               rt_pid;
+    te_errno            rc = 0;
+    struct rt_msghdr   *rtm = (struct rt_msghdr *)rt_buf;
+    socklen_t           addrlen;
+    uint8_t            *addr;
+    uint32_t            prefix_max = 0;
+    ssize_t             ret;
+
+    ENTRY();
+
+    memset(&rt_buf, 0, rt_buflen);
+
+    /*
+     * 'man -s 7P route' on SunOS 5.X suggests to use AF_* as the last
+     * argument.
+     */
+    rt_sock = socket(PF_ROUTE, SOCK_RAW, AF_UNSPEC);
+    if (rt_sock < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Cannot open routing socket: %r", rc);
+        RETURN_RC(rc);
+    }
+
+    rtm = (struct rt_msghdr *)rt_buf;
+    rtm->rtm_msglen = sizeof(*rtm);
+    rtm->rtm_version = RTM_VERSION;
+    rtm->rtm_type = RTM_ADD;
+    rtm->rtm_addrs = RTA_DST | RTA_GATEWAY | RTA_NETMASK;
+    rtm->rtm_flags = RTF_BLACKHOLE;
+    rtm->rtm_pid = getpid();
+    rtm->rtm_seq = ++rt_seq;
+
+    addrlen = te_sockaddr_get_size(CONST_SA(&rt_info->dst));
+    memcpy(rt_buf + rtm->rtm_msglen, &rt_info->dst, addrlen);
+    memcpy(rt_buf + rtm->rtm_msglen + addrlen, &rt_info->dst, addrlen);
+    memcpy(rt_buf + rtm->rtm_msglen + 2 * addrlen, &rt_info->dst, addrlen);
+
+    /* Gateway sockaddr */
+    addr = rt_buf + rtm->rtm_msglen + addrlen;
+
+    if (CONST_SA(&rt_info->dst)->sa_family == AF_INET)
+    {
+        struct in_addr loopback = { .s_addr = htonl(INADDR_LOOPBACK) };
+
+        prefix_max = sizeof(struct in_addr) * 8;
+        te_sockaddr_set_netaddr(SA(addr), &loopback);
+    }
+    else if (CONST_SA(&rt_info->dst)->sa_family == AF_INET6)
+    {
+        struct in6_addr loopback = IN6ADDR_LOOPBACK_INIT;
+
+        prefix_max = sizeof(struct in6_addr) * 8;
+        te_sockaddr_set_netaddr(SA(addr), &loopback);
+    }
+
+    /* Network mask netaddr */
+    addr = te_sockaddr_get_netaddr(rt_buf + rtm->rtm_msglen + 2 * addrlen);
+
+    if (rt_info->prefix > 0 && rt_info->prefix <= prefix_max)
+    {
+        unsigned byte_mask = (rt_info->prefix - 1) / 8;
+        uint8_t  bit_mask  = 0xff00u >> (((rt_info->prefix - 1) % 8) + 1);
+
+        if (byte_mask > 0)
+            memset(addr, 0xff, byte_mask);
+
+        addr[byte_mask] |= bit_mask;
+    }
+
+/* FIXME: Somewhy this code corrupts sockaddr structure (sa_family) */
+#if 0
+#if HAVE_STRUCT_SOCKADDR_SA_LEN
+    SA(rt_buf + rtm->rtm_msglen)->sa_len = addrlen;
+    SA(rt_buf + rtm->rtm_msglen + addrlen)->sa_len = addrlen;
+    SA(rt_buf + rtm->rtm_msglen + 2 * addrlen)->sa_len = addrlen;
+#endif
+#endif
+    rtm->rtm_msglen += 3 * addrlen;
+
+    assert(rtm->rtm_msglen <= rt_buflen);
+
+    VERB("%s(): dst=%s seq=%u", __FUNCTION__,
+         te_sockaddr_get_ipstr(CONST_SA(&rt_info->dst)), rtm->rtm_seq);
+
+    ret = write(rt_sock, rt_buf, rtm->rtm_msglen);
+    if (ret != rtm->rtm_msglen)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, (ret < 0) ? errno : EIO);
+        ERROR("%s(): Failed to send route request seq=%u to kernel: %r",
+              __FUNCTION__, rtm->rtm_seq, rc);
+#ifdef TA_UNIX_CONF_ROUTE_DEBUG
+        route_log("ta_unix_conf_route_find() failed", rtm);
+#endif
+        goto cleanup;
+    }
+
+#ifdef TA_UNIX_CONF_ROUTE_DEBUG
+    route_log(__FUNCTION__, rtm);
+#endif
+
+cleanup:
+    if (rt_sock != -1)
+        close(rt_sock);
+
+    RETURN_RC(rc);
 }
 
 /* See the description in conf_route.h */
 te_errno 
 ta_unix_conf_route_blackhole_del(ta_rt_info_t *rt_info)
 {
-    UNUSED(rt_info);
-    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    int                 rt_sock = -1;
+    size_t              rt_buflen = sizeof(struct rt_msghdr) +
+                                    sizeof(struct sockaddr_storage) *
+                                        RTAX_MAX;
+    uint8_t             rt_buf[rt_buflen];
+    unsigned int        rt_cmd;
+    pid_t               rt_pid;
+    te_errno            rc = 0;
+    struct rt_msghdr   *rtm = (struct rt_msghdr *)rt_buf;
+    socklen_t           addrlen;
+    uint8_t            *addr;
+    uint32_t            prefix_max = 0;
+    ssize_t             ret;
+
+    ENTRY();
+
+    memset(&rt_buf, 0, rt_buflen);
+
+    /*
+     * 'man -s 7P route' on SunOS 5.X suggests to use AF_* as the last
+     * argument.
+     */
+    rt_sock = socket(PF_ROUTE, SOCK_RAW, AF_UNSPEC);
+    if (rt_sock < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Cannot open routing socket: %r", rc);
+        RETURN_RC(rc);
+    }
+
+    rtm = (struct rt_msghdr *)rt_buf;
+    rtm->rtm_msglen = sizeof(*rtm);
+    rtm->rtm_version = RTM_VERSION;
+    rtm->rtm_type = RTM_DELETE;
+    rtm->rtm_addrs = RTA_DST | RTA_GATEWAY | RTA_NETMASK;
+    rtm->rtm_flags = RTF_BLACKHOLE;
+    rtm->rtm_pid = getpid();
+    rtm->rtm_seq = ++rt_seq;
+
+    addrlen = te_sockaddr_get_size(CONST_SA(&rt_info->dst));
+    memcpy(rt_buf + rtm->rtm_msglen, &rt_info->dst, addrlen);
+    memcpy(rt_buf + rtm->rtm_msglen + addrlen, &rt_info->dst, addrlen);
+    memcpy(rt_buf + rtm->rtm_msglen + 2 * addrlen, &rt_info->dst, addrlen);
+
+    /* Gateway sockaddr */
+    addr = rt_buf + rtm->rtm_msglen + addrlen;
+
+    if (CONST_SA(&rt_info->dst)->sa_family == AF_INET)
+    {
+        struct in_addr loopback = { .s_addr = htonl(INADDR_LOOPBACK) };
+
+        prefix_max = sizeof(struct in_addr) * 8;
+        te_sockaddr_set_netaddr(SA(addr), &loopback);
+    }
+    else if (CONST_SA(&rt_info->dst)->sa_family == AF_INET6)
+    {
+        struct in6_addr loopback = IN6ADDR_LOOPBACK_INIT;
+
+        prefix_max = sizeof(struct in6_addr) * 8;
+        te_sockaddr_set_netaddr(SA(addr), &loopback);
+    }
+
+    /* Network mask netaddr */
+    addr = te_sockaddr_get_netaddr(rt_buf + rtm->rtm_msglen + 2 * addrlen);
+
+    if (rt_info->prefix > 0 && rt_info->prefix <= prefix_max)
+    {
+        unsigned byte_mask = (rt_info->prefix - 1) / 8;
+        uint8_t  bit_mask  = 0xff00u >> (((rt_info->prefix - 1) % 8) + 1);
+
+        if (byte_mask > 0)
+            memset(addr, 0xff, byte_mask);
+
+        addr[byte_mask] |= bit_mask;
+    }
+
+/* FIXME: Somewhy this code corrupts sockaddr structure (sa_family) */
+#if 0
+#if HAVE_STRUCT_SOCKADDR_SA_LEN
+    SA(rt_buf + rtm->rtm_msglen)->sa_len = addrlen;
+    SA(rt_buf + rtm->rtm_msglen + addrlen)->sa_len = addrlen;
+    SA(rt_buf + rtm->rtm_msglen + 2 * addrlen)->sa_len = addrlen;
+#endif
+#endif
+    rtm->rtm_msglen += 3 * addrlen;
+
+    assert(rtm->rtm_msglen <= rt_buflen);
+
+    VERB("%s(): dst=%s seq=%u", __FUNCTION__,
+         te_sockaddr_get_ipstr(CONST_SA(&rt_info->dst)), rtm->rtm_seq);
+
+    ret = write(rt_sock, rt_buf, rtm->rtm_msglen);
+    if (ret != rtm->rtm_msglen)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, (ret < 0) ? errno : EIO);
+        ERROR("%s(): Failed to send route request seq=%u to kernel: %r",
+              __FUNCTION__, rtm->rtm_seq, rc);
+#ifdef TA_UNIX_CONF_ROUTE_DEBUG
+        route_log("ta_unix_conf_route_find() failed", rtm);
+#endif
+        goto cleanup;
+    }
+
+#ifdef TA_UNIX_CONF_ROUTE_DEBUG
+    route_log(__FUNCTION__, rtm);
+#endif
+
+cleanup:
+    if (rt_sock != -1)
+        close(rt_sock);
+
+    RETURN_RC(rc);
 }
 
 
