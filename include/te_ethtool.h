@@ -8,6 +8,10 @@
  *
  * $Id$
  */
+
+#ifndef __TE_ETHTOOL_H__
+#define __TE_ETHTOOL_H__
+
 #include <asm/types.h> /* For >= 2.6.18 */
 
 #include "te_stdint.h" /* For <= 2.6.17 */
@@ -17,3 +21,5 @@ typedef uint16_t u16;
 typedef uint8_t  u8;
 
 #include <linux/ethtool.h>
+
+#endif /* __TE_ETHTOOL_H__ */
