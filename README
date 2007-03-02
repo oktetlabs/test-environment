@@ -18,7 +18,7 @@ Engine:
   avoid mixture in log because of unprecise timestamps in messages
   logged by Dispatcher (via logging script))
 
-Test Agent:
+Unix Test Agent:
 
 - expect and expect-dev (for TAD CLI only)
 - libnetlink + iproute/ headers
@@ -28,6 +28,11 @@ Test Agent:
 - libpam (0.76-22) (For Linux it is not required but suggested)
 
 We are using versions of libraries specified in parentheses.
+
+Windows Test Agent (engine on windows is not supported):
+
+- cygwin cross-toolchain
+- libpcap
 
 Of course, gcc, make, sed and other standard development tools
 are required to build sources.
@@ -48,9 +53,14 @@ Supported OSes:
 ~~~~~~~~~~~~~~~
 All works fine with Debian 3.1 (Sarge) native packages.
 
-For Fedora Core 3/4, you need to install new flex (we use package from PLD
+For Fedora Core, you need to install new flex (we use package from PLD
 distribution) and netlink library (we use home-made iproute rpm which
 includes the library).
+
+Test agent works on Solaris without any problems.
+
+Test agent works on Windows with cygwin core and cygwin ssh server
+installed.
 
 If you know success stories/problems for other Linux/*BSD/* distributions,
 add your comments here.
