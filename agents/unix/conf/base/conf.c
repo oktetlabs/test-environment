@@ -2146,9 +2146,15 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
 
             vlans[(*n_vlans)++] = vlan_id;
         }
+        fclose(out);
         
         ta_waitpid(dladm_cmd_pid, &status, 0);
-        if (status != 0)       
+        if (status == 0)
+        {
+            close(err_fd);
+            return 0;
+        }
+        else
         {
             FILE *err;
             char *cur;
@@ -2165,8 +2171,8 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
             err = fdopen(err_fd, "r");
             while (room > 0)
             {
-               if(fgets(cur, room, err) == NULL) break;
-               len = strlen(cur); room -= len; cur  += len;
+                if(fgets(cur, room, err) == NULL) break;
+                len = strlen(cur); room -= len; cur  += len;
             }
             fclose(err);
             ERROR("%s %d bytes of stderr follow:\n%s",
@@ -2174,7 +2180,7 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
 
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
-        fclose(out);
+ 
     }
 #endif
 
