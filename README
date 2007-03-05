@@ -32,7 +32,9 @@ We are using versions of libraries specified in parentheses.
 Windows Test Agent (engine on windows is not supported):
 
 - cygwin cross-toolchain
-- libpcap
+- libpcap (crosscompiled for cygwin). Should be put into standard
+  include/lib paths of cygwin cross-compiler - required for TAD library.
+  Winpcap runtime has to be installed on Windows host.
 
 Of course, gcc, make, sed and other standard development tools
 are required to build sources.
