@@ -91,12 +91,6 @@
 #define LINUX_VLAN_SUPPORT 0
 #endif
 
-/**
- * If you really need old-style Linux-specific VLAN support, you should 
- * change access type to interfaces list from read_only to read_create.
- */
-#define OLD_VLAN_SUPPORT 0
-
 /* { required for sysctl on netbsd */
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -381,11 +375,6 @@ static te_errno ip6_fw_get(unsigned int, const char *, char *);
 static te_errno ip6_fw_set(unsigned int, const char *, const char *);
 
 static te_errno interface_list(unsigned int, const char *, char **);
-#if OLD_VLAN_SUPPORT
-static te_errno interface_add(unsigned int, const char *, const char *,
-                              const char *);
-static te_errno interface_del(unsigned int, const char *, const char *);
-#endif
 
 static te_errno vlans_list(unsigned int, const char *, char **,
                            const char*);
@@ -692,33 +681,17 @@ RCF_PCH_CFG_NODE_RO(node_phy, "phy",
                     &node_phy_autoneg, &node_ifindex,
                     NULL);
 
-#if OLD_VLAN_SUPPORT
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
                             &node_phy, &node_dns,
-                            interface_add, interface_del,
-                            interface_list, NULL);
-#else
-RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
-                            &node_phy, &node_dns,
-                            NULL, NULL,
-                            interface_list, NULL);
-#endif
+                            NULL, NULL, interface_list, NULL);
 
 
 
 #else /* CONFIGURATOR_PHY_SUPPORT */
 
-#if OLD_VLAN_SUPPORT
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
                             &node_ifindex, &node_dns,
-                            interface_add, interface_del,
-                            interface_list, NULL);
-#else
-RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
-                            &node_ifindex, &node_dns,
-                            NULL, NULL,
-                            interface_list, NULL);
-#endif
+                            NULL, NULL, interface_list, NULL);
 
 #endif /* CONFIGURATOR_PHY_SUPPORT */
 
@@ -1920,55 +1893,6 @@ ifconf_foreach_ifreq(struct my_ifreq *ifr, size_t length,
 #endif /* USE_IOCTL */
 
 
-#if OLD_VLAN_SUPPORT
-/**
- * Check, if the interface with specified name exists.
- *
- * @param name          interface name
- *
- * @return 0     if the interface exists,
- *         or error code otherwise
- */
-static te_errno
-interface_exists(const char *ifname)
-{
-    FILE *f;
-
-    if ((f = fopen("/proc/net/dev", "r")) == NULL)
-    {
-        ERROR("%s(): Failed to open /proc/net/dev for reading: %s",
-              __FUNCTION__, strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    buf[0] = 0;
-
-    while (fgets(trash, sizeof(trash), f) != NULL)
-    {
-        char *s = strchr(trash, ':');
-
-        if (s == NULL)
-            continue;
-
-        for (*s-- = 0; s != trash && *s != ' '; s--);
-
-        if (*s == ' ')
-            s++;
-
-        if (strcmp(s, ifname) == 0)
-        {
-            fclose(f);
-            return 0;
-        }
-    }
-
-    fclose(f);
-
-    return TE_RC(TE_TA_UNIX, TE_ENOENT);
-}
-#endif
-
-
 #if !defined(__linux__) && defined(SIOCGIFCONF)
 
 static te_errno
@@ -2676,112 +2600,6 @@ aliases_list()
 #endif
 
     return 0;
-}
-#endif
-
-#if OLD_VLAN_SUPPORT
-/**
- * Add VLAN Ethernet device.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         value string (unused)
- * @param ifname        VLAN device name: ethX.VID
- *
- * @return              Status code
- */
-static te_errno
-interface_add(unsigned int gid, const char *oid, const char *value,
-              const char *ifname)
-{
-    char    *devname;
-    char    *vlan;
-    char    *tmp;
-    uint16_t vid;
-    te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    
-    if ((devname = strdup(ifname)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    rc = interface_exists(ifname);
-    if (rc == 0)
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-    else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
-        return rc;
-
-    if ((vlan = strchr(devname, '.')) == NULL)
-    {
-        free(devname);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    *vlan++ = 0;
-
-    if ((rc = CHECK_INTERFACE(devname)) != 0)
-    {
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-    
-    vid = strtol(vlan, &tmp, 10);
-    if (tmp == vlan || *tmp != 0 || interface_exists(devname) != 0)
-    {
-        free(devname);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    
-    sprintf(buf, "/sbin/vconfig add %s %d >/dev/null", devname, vid);
-    free(devname);
-
-    return ta_system(buf) != 0 ? TE_RC(TE_TA_UNIX, TE_ESHCMD) : 0;
-}
-
-/**
- * Delete VLAN Ethernet device.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param ifname        VLAN device name: ethX.VID
- *
- * @return              Status code
- */
-static te_errno
-interface_del(unsigned int gid, const char *oid, const char *ifname)
-{
-    char *devname;
-    char *vlan;
-    
-    te_errno    rc;
-    
-    UNUSED(gid);
-    UNUSED(oid);
-    
-    if ((rc = interface_exists(ifname)) != 0)
-        return rc;
-
-    if ((devname = strdup(ifname)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    if ((vlan = strchr(devname, '.')) == NULL)
-    {
-        free(devname);
-        ERROR("Attempting to delete non-VLAN interface");
-        return 0; /*TE_RC(TE_TA_UNIX, TE_EPERM); */
-    }
-    *vlan = 0;
-
-    if ((rc = CHECK_INTERFACE(devname)) != 0)
-    {
-        free(devname);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-    free(devname);
-
-    sprintf(buf, "/sbin/vconfig rem %s >/dev/null", ifname);
-
-    return (ta_system(buf) != 0) ? TE_RC(TE_TA_UNIX, TE_ESHCMD) : 0;
 }
 #endif
 
