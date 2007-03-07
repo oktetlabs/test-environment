@@ -586,8 +586,8 @@ RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_bcast_link_addr,
 #if CONFIGURATOR_PHY_SUPPORT
 
 #if HAVE_LINUX_ETHTOOL_H
-
 #include "te_ethtool.h"
+#endif
 
 /*
  * Usefull constants
@@ -704,7 +704,7 @@ RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
                             interface_list, NULL);
 #endif
 
-#endif /* HAVE_LINUX_ETHTOOL_H */
+
 
 #else /* CONFIGURATOR_PHY_SUPPORT */
 
@@ -2093,37 +2093,24 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
 #elif defined __sun__
     { 
         int   out_fd = -1;
-        int   err_fd = -1;
         FILE *out;
         int   status;
-        char  cmdln[1024*2] = "";
-        char  out_sav[1024*2] = "";
-        int   room = sizeof(out_sav) - 1;
-
-        snprintf(cmdln, sizeof(cmdln),
-                 "LANG=POSIX /sbin/dladm show-link -p");
-        pid_t dladm_cmd_pid = te_shell_cmd(cmdln, -1,
-                                           NULL, &out_fd, &err_fd);
+        pid_t dladm_cmd_pid = te_shell_cmd("LANG=POSIX dladm show-link -p",
+                                           -1, NULL, &out_fd, NULL);
         if (dladm_cmd_pid < 0)
         {
             ERROR("%s(): start of dladm failed", __FUNCTION__);
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
-
+        
         out = fdopen(out_fd, "r");
         while (fgets(f_buf, sizeof(f_buf), out) != NULL)
         { 
-            size_t ofs;
+            size_t ofs; 
             char *s = f_buf;
             int vlan_id;
 
             VERB("%s(): read line: <%s>", __FUNCTION__, f_buf);
-            if (room > 0)
-            {
-                strncat(out_sav, f_buf, room);
-                room -= strlen(f_buf);
-            }
-
             /* skip "<ifname> type=" */
             s = strchr(s, ' '); 
             s++;
@@ -2146,41 +2133,15 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
 
             vlans[(*n_vlans)++] = vlan_id;
         }
-        fclose(out);
         
         ta_waitpid(dladm_cmd_pid, &status, 0);
-        if (status == 0)
+        if (status != 0)
         {
-            close(err_fd);
-            return 0;
-        }
-        else
-        {
-            FILE *err;
-            char *cur;
-            int   len;
-
-            ERROR("%s(): Non-zero status of cmd: %s: %d",
-                  __FUNCTION__, cmdln, status);
-            ERROR("%s %d bytes of stdout follow:\n%s",
-                  room > 0 ? "All":"First", strlen(out_sav), out_sav);
-
-            out_sav[0]='\0';
-            cur = out_sav;
-            room = sizeof(out_sav) - 1;
-            err = fdopen(err_fd, "r");
-            while (room > 0)
-            {
-                if(fgets(cur, room, err) == NULL) break;
-                len = strlen(cur); room -= len; cur  += len;
-            }
-            fclose(err);
-            ERROR("%s %d bytes of stderr follow:\n%s",
-                  room > 0 ? "All":"First", strlen(out_sav), out_sav);
-
+            ERROR("%s(): Non-zero status of dladm: %d",
+                  __FUNCTION__, status);
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
- 
+        fclose(out);
     }
 #endif
 
@@ -6124,8 +6085,10 @@ user_del(unsigned int gid, const char *oid, const char *user)
  *
  * @return              error code
  */
+#if defined __linux__
 #define PHY_GET_PROPERTY(_ifname, _data) \
     phy_property(_ifname, _data, ETHTOOL_GSET)
+#endif 
 
 /**
  * Set PHY property using ioctl() call.
@@ -6137,8 +6100,10 @@ user_del(unsigned int gid, const char *oid, const char *user)
  *
  * @return              error code
  */
+#if defined __linux__
 #define PHY_SET_PROPERTY(_ifname, _data) \
     phy_property(_ifname, _data, ETHTOOL_SSET)
+#endif
 
 /**
  * Get duplex state by name string
@@ -6148,6 +6113,7 @@ user_del(unsigned int gid, const char *oid, const char *user)
  * @return DUPLEX_FULL, DUPLEX_HALF or -1 if
  *         duplex name string does not recognized
  */
+#if defined __linux__
 static inline int
 phy_get_duplex_by_name(char *name)
 {
@@ -6159,6 +6125,7 @@ phy_get_duplex_by_name(char *name)
     
     return -1;
 }
+#endif /* __linux__ */
 
 /**
  * Get duplex name string by id
@@ -6168,17 +6135,24 @@ phy_get_duplex_by_name(char *name)
  * @return PHY_FULL_DUPLEX, PHY_HALF_DUPLEX or NULL if
  *         duplex ID does not recognized
  */
+
 static inline char *
 phy_get_duplex_by_id(int id)
 {
     switch (id)
     {
+#if defined __linux__
         case DUPLEX_FULL: return PHY_FULL_DUPLEX;
         case DUPLEX_HALF: return PHY_HALF_DUPLEX;
+#elif defined __sun__
+        case 1: return PHY_HALF_DUPLEX;
+        case 2: return PHY_FULL_DUPLEX;
+#endif /* __linux__ */
     }
     
     return NULL;
 }
+
 
 /**
  * Get and set PHY property using ioctl() call.
@@ -6193,6 +6167,7 @@ phy_get_duplex_by_id(int id)
  *
  * @return              error code
  */
+#if defined __linux__
 static int
 phy_property(const char *ifname, struct ethtool_cmd *ecmd, int type)
 {
@@ -6221,6 +6196,7 @@ phy_property(const char *ifname, struct ethtool_cmd *ecmd, int type)
     
     return errno;
 }
+#endif /* __linux__ */
 
 /**
  * Get PHY autonegotiation state.
@@ -6236,12 +6212,13 @@ static te_errno
 phy_autoneg_get(unsigned int gid, const char *oid, char *value,
                 const char *ifname)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
+#if defined __linux__
     struct ethtool_cmd ecmd;
     int                state;
     int                rc = 0;
-    
-    UNUSED(gid);
-    UNUSED(oid);
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -6267,6 +6244,12 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
     snprintf(value, RCF_MAX_VAL, "%d", state);
     
     return 0;
+#elif defined __sun__
+    UNUSED(ifname);
+    snprintf(value, RCF_MAX_VAL, "%d", -1);
+    return 0;
+#endif /* __linux__ */
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
 /**
@@ -6291,12 +6274,13 @@ static te_errno
 phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
                 const char *ifname)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
+#if defined __linux__
     struct ethtool_cmd ecmd;
     int                autoneg = 0;
     int                rc      = 0;
-    
-    UNUSED(gid);
-    UNUSED(oid);
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -6336,7 +6320,82 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
     }
     
     return 0;
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+#endif /* __linux__ */
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);;
 }
+
+#if defined __sun__
+
+/* Stdout output buffer size: need to pick up command execution output */
+#define BUFFER_SIZE (1024)
+/* Size of interface name */
+#define IFNAME_MAX  (10)
+/* Command line pattern to get duplex state */
+#define KSTAT_GET_DUPLEX_CMD \
+       "kstat -p %s:%d:mac:link_duplex | tr -d \"\t\" | sed -e 's/^.*[ ]//'"
+/* Command line pattern to get duplex state */
+#define KSTAT_GET_SPEED_CMD \
+        "kstat -p ::%s:ifspeed | tr -d \"\t\" | sed -e 's/^.*[ ]//'"
+/* Command line pattern to get link state */
+#define KSTAT_GET_STATE_CMD \
+        "kstat -p %s:%d::link_state | tr -d \"\t\" | sed -e 's/^.*[ ]//'"
+/* Speed units */
+#define KSTAT_SPEED_UNITS_IN_M 1000000
+
+/**
+ * Execute shell command.
+ *
+ * @param cmd           Command line
+ *
+ * @return              Pointer to stdout buffer (1 line only)
+ */
+static char *
+phy_execute_shell_cmd(char *cmd)
+{
+    pid_t  pid;
+    int    out_fd = -1;
+    FILE  *fp;
+    char  *out_buf;
+    
+    /* Try to execute command line */
+    pid = te_shell_cmd(cmd, -1, NULL, &out_fd, NULL);
+    
+    if (pid < 0)
+    {
+        ERROR("failed to execute command line while getting duplex state");
+        free(cmd);
+        return NULL;
+    }
+    
+    /* Trying to open stdout */
+    if ((fp = fdopen(out_fd, "r")) == NULL)
+    {
+        ERROR("failed to get shell command execution result while "
+              "getting duplex state");
+        free(cmd);
+        return NULL;
+    }
+    
+    /* Allocate memory for output buffer */
+    if ((out_buf = (char *)malloc(BUFFER_SIZE)) == NULL)
+    {
+        ERROR("failed to allocate memory while getting duplex state");
+        free(cmd);
+        return NULL;
+    }
+    
+    /* Read data from stdout */
+    fgets(out_buf, BUFFER_SIZE, fp);
+    
+    /* Remove \r\n */
+    out_buf[strlen(out_buf) - 1] = '\0';
+    
+    return out_buf;
+}
+#endif /* __sun__ */
 
 /**
  * Get PHY duplex state.
@@ -6352,12 +6411,13 @@ static te_errno
 phy_duplex_get(unsigned int gid, const char *oid, char *value,
                const char *ifname)
 {
-    struct ethtool_cmd  ecmd;
-    int                 rc;
     char               *duplex;
     
     UNUSED(gid);
     UNUSED(oid);
+#if defined __linux__
+    struct ethtool_cmd  ecmd;
+    int                 rc;
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -6382,6 +6442,64 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
     snprintf(value, RCF_MAX_VAL, "%s", duplex);
     
     return 0;
+#elif defined __sun__
+    char   drv[IFNAME_MAX];
+    int    instance = -1;
+    char  *cmd;
+    char  *out_buf;
+    
+#define NUM_ARGS (2)
+    /* Extract driver name and instance number from interface name */
+    if (sscanf(ifname, "%[^0-9]%d", drv, &instance) != NUM_ARGS)
+    {
+        ERROR("failed to parse interface name");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+#undef NUM_ARGS
+    
+    /* Try to allocate mamory for shell command buffer */
+    if((cmd = (char *)malloc(BUFFER_SIZE)) == NULL)
+    {
+        ERROR("Failed to allocate memory for shell command buffer "
+              "while getting duplex state");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    
+    /* Construct a command line */
+    sprintf(cmd, KSTAT_GET_DUPLEX_CMD, drv, instance);
+    
+    /* Execute command line */
+    out_buf = phy_execute_shell_cmd(cmd);
+    
+    /* Check that duplex state information is supported */
+    if (strlen(out_buf) == 0)
+    {
+        WARN("cannot get duplex state on `%s'", ifname);
+        free(out_buf);
+        free(cmd);
+        return 0;
+    }
+    
+    /* Get duplex string */
+    duplex = phy_get_duplex_by_id(atoi(out_buf));
+    
+    if (duplex == NULL)
+    {
+        ERROR("unknown duplex value");
+        free(out_buf);
+        free(cmd);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    
+    /* Set value */
+    snprintf(value, RCF_MAX_VAL, "%s", duplex);
+    
+    free(out_buf);
+    free(cmd);
+    
+    return 0;
+#endif /* __linux__ */
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
 /**
@@ -6403,12 +6521,13 @@ static te_errno
 phy_duplex_set(unsigned int gid, const char *oid, const char *value,
            const char *ifname)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
+#if defined __linux__
     struct ethtool_cmd ecmd;
     int                rc = 0;
     int                duplex = 0;
-    
-    UNUSED(gid);
-    UNUSED(oid);
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -6450,6 +6569,11 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
     }
     
     return 0;
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+#endif /* __linux__ */
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
 /**
@@ -6460,6 +6584,7 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
  *
  * @return              Mode value or 0 if no such mode
  */
+#if defined __linux__
 static int
 phy_get_mode(int speed, const char *duplex)
 {
@@ -6509,6 +6634,7 @@ phy_get_mode(int speed, const char *duplex)
     
     return 0;
 }
+#endif /* __linux__ */
 
 /**
  * Get value for object "agent/interface/phy/speed/duplex".
@@ -6526,6 +6652,8 @@ static te_errno
 phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
                            const char *ifname)
 {
+    UNUSED(gid);
+#if defined __linux__
 #define UNUSED_SIZE (10)
 #define DUPLEX_SIZE (4)
     struct ethtool_cmd  ecmd;
@@ -6535,8 +6663,6 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
     char                duplex[DUPLEX_SIZE];
     int                 rc    = 0;
     int                 mode  = 0;
-    
-    UNUSED(gid);
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -6570,6 +6696,12 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
         snprintf(value, RCF_MAX_VAL, "%d", 0);
     
     return 0;
+#else
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(ifname);
+#endif /* __linux__ */
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
 /**
@@ -6589,6 +6721,9 @@ static te_errno
 phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
                            const char *value, const char *ifname)
 {
+    UNUSED(gid);
+    
+#if defined __linux__
     struct ethtool_cmd ecmd;
     int                set        = 0;
     int                result     = 0;
@@ -6601,8 +6736,6 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
     
 #undef UNUSED_SIZE
 #undef DUPLEX_SIZE
-    
-    UNUSED(gid);
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -6665,6 +6798,12 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
     }
     
     return 0;
+#else
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(ifname);
+#endif /* __linux__ */
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
 /**
@@ -6724,12 +6863,12 @@ static te_errno
 phy_modes_speed_duplex_list(unsigned int gid, const char *oid, char **list,
                             const char *ifname)
 {
+    UNUSED(gid);
+#if defined __linux__
     struct ethtool_cmd  ecmd;
     char               *speed_pattern = "speed:";
     int                 speed = 0;
     int                 rc    = 0;
-    
-    UNUSED(gid);
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -6754,7 +6893,11 @@ phy_modes_speed_duplex_list(unsigned int gid, const char *oid, char **list,
     
     if (ecmd.supported & phy_get_mode(speed, PHY_FULL_DUPLEX))
         phy_modes_list_ins_value(list, PHY_FULL_DUPLEX);
-    
+#else
+    UNUSED(oid);
+    UNUSED(list);
+    UNUSED(ifname);
+#endif /* __linux__ */
     return 0;
 }
 
@@ -6771,11 +6914,12 @@ static te_errno
 phy_modes_speed_list(unsigned int gid, const char *oid, char **list,
                      const char *ifname)
 {
-    struct ethtool_cmd  ecmd;
-    int                 rc = 0;
-    
     UNUSED(gid);
     UNUSED(oid);
+    
+#if defined __linux__
+    struct ethtool_cmd  ecmd;
+    int                 rc = 0;
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -6813,7 +6957,10 @@ phy_modes_speed_list(unsigned int gid, const char *oid, char **list,
     {
         phy_modes_list_ins_value(list, PHY_SPEED_10000MBIT);
     }
-    
+#else
+    UNUSED(list);
+    UNUSED(ifname);
+#endif /* __linux__ */
     return 0;
 }
 
@@ -6831,11 +6978,12 @@ static te_errno
 phy_speed_get(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
-    struct ethtool_cmd ecmd;
-    int                rc = 0;
-    
     UNUSED(gid);
     UNUSED(oid);
+    
+#if defined __linux__
+    struct ethtool_cmd ecmd;
+    int                rc = 0;
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -6862,6 +7010,49 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
     snprintf(value, RCF_MAX_VAL, "%d", ecmd.speed);
     
     return 0;
+#elif defined __sun__
+    char  *cmd;
+    char  *out_buf;
+    int    speed = 0;
+    
+    /* Try to allocate mamory for shell command buffer */
+    if((cmd = (char *)malloc(BUFFER_SIZE)) == NULL)
+    {
+        ERROR("Failed to allocate memory for shell command buffer "
+              "while getting speed value");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    
+    /* Construct a command line */
+    sprintf(cmd, KSTAT_GET_SPEED_CMD, ifname);
+    
+    /* Execute command line */
+    if ((out_buf = phy_execute_shell_cmd(cmd)) == NULL)
+    {
+        ERROR("failed to get speed value");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    
+    /* Check that speed value information is supported */
+    if (strlen(out_buf) == 0)
+    {
+        WARN("cannot get speed value on `%s'", ifname);
+        free(out_buf);
+        free(cmd);
+        return 0;
+    }
+    
+    speed = atoi(out_buf) / KSTAT_SPEED_UNITS_IN_M;
+    
+    /* Set value */
+    snprintf(value, RCF_MAX_VAL, "%d", speed);
+    
+    free(out_buf);
+    free(cmd);
+    
+    return 0;
+#endif /* __linux__ */
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
 /**
@@ -6881,13 +7072,13 @@ static te_errno
 phy_speed_set(unsigned int gid, const char *oid, const char *value,
               const char *ifname)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
+#if defined __linux__
     struct ethtool_cmd ecmd;
     int                speed;
     int                rc = 0;
-    char              *duplex;
-    
-    UNUSED(gid);
-    UNUSED(oid);
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -6912,12 +7103,6 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
     /* Set value */
     ecmd.speed = speed;
     
-    /* Set duplex */
-    duplex = phy_get_duplex_by_id(ecmd.duplex);
-    
-    if (duplex == NULL)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    
     /* Apply value */
     if ((rc = PHY_SET_PROPERTY(ifname, &ecmd)) != 0)
     {
@@ -6926,6 +7111,11 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
     }
     
     return 0;
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+#endif /* __linux__ */
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
 /**
@@ -6942,14 +7132,14 @@ static te_errno
 phy_state_get(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
+#if defined __linux__
     struct ifreq         ifr;
     int                  fd;
     struct ethtool_value edata;
     int                  state = 0;
-    int                  rc    = 0;
-    
-    UNUSED(gid);
-    UNUSED(oid);
     
     memset(&edata, 0, sizeof(edata));
     
@@ -6973,13 +7163,13 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     ifr.ifr_data = (caddr_t)&edata;
     
     /* Get link state */
-    if ((rc = ioctl(fd, SIOCETHTOOL, &ifr)) != 0)
+    if (ioctl(fd, SIOCETHTOOL, &ifr) != 0)
     {
         /*
          * Check for option support: if option is not
          * supported the leaf value should be set to -1
          */
-        if (rc == EOPNOTSUPP)
+        if (errno == EOPNOTSUPP)
         {
             snprintf(value, RCF_MAX_VAL, "%d", -1);
             return 0;
@@ -6996,6 +7186,69 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     close(fd);
     
     return 0;
+#elif defined __sun__
+    char   drv[IFNAME_MAX];
+    int    instance = -1;
+    char  *cmd;
+    char  *out_buf;
+    int    state    = -1;
+    
+#define NUM_ARGS (2)
+    /* Extract driver name and instance number from interface name */
+    if (sscanf(ifname, "%[^0-9]%d", drv, &instance) != NUM_ARGS)
+    {
+        ERROR("failed to parse interface name");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+#undef NUM_ARGS
+    
+    /* Try to allocate mamory for shell command buffer */
+    if((cmd = (char *)malloc(BUFFER_SIZE)) == NULL)
+    {
+        ERROR("Failed to allocate memory for shell command buffer "
+              "while getting link state");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    
+    /* Construct a command line */
+    sprintf(cmd, KSTAT_GET_STATE_CMD, drv, instance);
+    
+    /* Execute command line */
+    out_buf = phy_execute_shell_cmd(cmd);
+    
+    /* Check that duplex state information is supported */
+    if (strlen(out_buf) == 0)
+    {
+        WARN("cannot get state state on `%s'", ifname);
+        snprintf(value, RCF_MAX_VAL, "%d", state);
+        free(out_buf);
+        free(cmd);
+        return 0;
+    }
+    
+    /* Set state */
+    state = atoi(out_buf);
+    
+    /* Correct state */
+    state = (state == 0 || state == 1) ? state : -1;
+    
+    /* Set value */
+    snprintf(value, RCF_MAX_VAL, "%d", state);
+    
+    free(out_buf);
+    free(cmd);
+    
+    return 0;
+
+#undef KSTAT_SPEED_UNITS_IN_M
+#undef KSTAT_GET_DUPLEX_CMD
+#undef KSTAT_GET_SPEED_CMD
+#undef KSTAT_GET_STATE_CMD
+#undef BUFFER_SIZE
+#undef IFNAME_MAX
+
+#endif /* __linux__ */
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
 /**
@@ -7016,8 +7269,11 @@ phy_reset_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(ifname);
     
+#if defined __linux__
     snprintf(value, RCF_MAX_VAL, "%d", phy_reset_value);
-    
+#else
+    UNUSED(value);
+#endif /* __linux__ */
     return 0;
 }
 
@@ -7035,13 +7291,14 @@ static te_errno
 phy_reset_set(unsigned int gid, const char *oid, const char *value,
            const char *ifname)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
+#if defined __linux__
     struct ifreq         ifr;
     int                  fd;
     int                  rc = 0;
     struct ethtool_value edata;
-    
-    UNUSED(gid);
-    UNUSED(oid);
     
     memset(&edata, 0, sizeof(edata));
     
@@ -7075,7 +7332,13 @@ phy_reset_set(unsigned int gid, const char *oid, const char *value,
     }
     
     close(fd);
+    
     return 0;
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+#endif /* __linux__ */
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
 #undef PHY_GET_PROPERTY
