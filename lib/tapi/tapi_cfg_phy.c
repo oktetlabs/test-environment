@@ -26,7 +26,7 @@
  *
  * @author Vadim V. Galitsyn <Vadim.Galitsyn@oktetlabs.ru>
  *
- * $Id: tapi_cfg_phy.c 36776 2007-02-27 14:36:00Z galitsyn $
+ * $Id$
  */
 
 #define TE_LGR_USER     "Configuration PHY"

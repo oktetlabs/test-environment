@@ -26,7 +26,7 @@
  *
  * @author Vadim V. Galitsyn <Vadim.Galitsyn@oktetlabs.ru>
  *
- * $Id: tapi_cfg_phy.h 36739 2007-02-26 09:19:57Z galitsyn $
+ * $Id$
  */
 
 #ifndef __TE_TAPI_CFG_PHY_H__
