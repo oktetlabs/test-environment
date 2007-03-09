@@ -169,6 +169,8 @@ static te_errno promisc_set(unsigned int, const char *, const char *,
 
 static te_errno mtu_get(unsigned int, const char *, char *,
                         const char *);
+static te_errno mtu_set(unsigned int, const char *, const char *,
+                        const char *);
 
 static te_errno neigh_state_get(unsigned int, const char *, char *,
                                 const char *, const char *);
@@ -316,7 +318,7 @@ RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
                     status_get, status_set);
 
 RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
-                    mtu_get, NULL);
+                    mtu_get, mtu_set);
 
 RCF_PCH_CFG_NODE_RO(node_bcast_link_addr, "bcast_link_addr", NULL,
                     &node_mtu, bcast_link_addr_get);
@@ -1469,6 +1471,83 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     sprintf(value, "%lu", if_entry.dwMtu);
 
     return 0;
+}
+
+/**
+ * Change MTU of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+mtu_set(unsigned int gid, const char *oid, const char *value,
+        const char *ifname)
+{
+    char     *tmp;
+    te_errno  rc = 0;
+    long      mtu;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(ifname);
+
+#if 0 /* UNIX implementation */
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    mtu = strtol(value, &tmp, 10);
+    if (tmp == value || *tmp != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+#if (defined(SIOCGIFMTU)  && defined(HAVE_STRUCT_IFREQ_IFR_MTU))   || \
+    (defined(SIOCGLIFMTU) && defined(HAVE_STRUCT_LIFREQ_LIFR_MTU))
+    req.my_ifr_mtu = mtu;
+    strcpy(req.my_ifr_name, ifname);
+    if (ioctl(cfg_socket, MY_SIOCSIFMTU, (int)&req) != 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        
+        if (errno == EBUSY)
+        {
+            char status[2];
+            
+            /* Try to down interface */
+            if (status_get(0, NULL, status, ifname) == 0 &&
+                *status == '1' && status_set(0, NULL, "0", ifname) == 0)
+            {
+                int rc1;
+
+                WARN("Interface '%s' is pushed down/up to set a new MTU",
+                     ifname);
+
+                if (ioctl(cfg_socket, MY_SIOCSIFMTU, (int)&req) == 0)
+                {
+                    rc = 0;
+                }
+                
+                if ((rc1 = status_set(0, NULL, "1", ifname)) != 0)
+                {
+                    ERROR("Failed to up interface after changing of mtu "
+                          "error %r", rc1);
+                    return rc1;
+                }
+            }
+        }
+    }
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    if (rc != 0)
+        ERROR("ioctl(SIOCSIFMTU) failed: %r", rc);
+#endif /* UNIX implementation*/
+
+    return rc;
 }
 
 /**
