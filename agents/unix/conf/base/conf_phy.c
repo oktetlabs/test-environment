@@ -27,8 +27,6 @@
  * $Id$
  */
 
-#if CONFIGURATOR_PHY_SUPPORT
-
 #define TE_LGR_USER     "PHY Conf"
 
 #include "te_config.h"
@@ -1377,7 +1375,7 @@ phy_reset_get(unsigned int gid, const char *oid, char *value,
  */
 static te_errno
 phy_reset_set(unsigned int gid, const char *oid, const char *value,
-           const char *ifname)
+              const char *ifname)
 {
     UNUSED(gid);
     UNUSED(oid);
@@ -1431,5 +1429,3 @@ phy_reset_set(unsigned int gid, const char *oid, const char *value,
 
 #undef PHY_GET_PROPERTY
 #undef PHY_SET_PROPERTY
-
-#endif /* CONFIGURATOR_PHY_SUPPORT */
