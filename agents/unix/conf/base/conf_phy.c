@@ -24,7 +24,7 @@
  *
  * @author Vadim V. Galitsyn <Vadim.Galitsyn@oktetlabs.ru>
  *
- * $Id: conf_phy.c 37074 2007-03-07 15:11:57Z sasha $
+ * $Id$
  */
 
 #if CONFIGURATOR_PHY_SUPPORT
