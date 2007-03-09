@@ -12,6 +12,7 @@ include_HEADERS = \
 	tapi_sockaddr.h \
 	tapi_cfg.h \
 	tapi_cfg_base.h \
+	tapi_cfg_phy.h \
 	tapi_cfg_net.h \
 	tapi_cfg_arl.h \
 	tapi_cfg_dhcp.h \
@@ -30,6 +31,7 @@ libtapi_la_SOURCES = \
 	tapi_cfg.c \
 	tapi_cfg_local_to_ta.c \
 	tapi_cfg_base.c \
+	tapi_cfg_phy.c \
 	tapi_cfg_net.c \
 	tapi_cfg_arl.c \
 	tapi_cfg_dhcp.c \
