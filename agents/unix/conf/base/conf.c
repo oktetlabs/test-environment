@@ -784,10 +784,10 @@ rcf_ch_conf_root(void)
         if (ta_unix_conf_sys_init() != 0)
             goto fail;
         
-        /* Initialize configurator PHY support */
+#if CONFIGURATOR_PHY_SUPPORT
         if (ta_unix_conf_phy_init() != 0)
             goto fail;
-        
+#endif
         rcf_pch_rsrc_init();
     }
 

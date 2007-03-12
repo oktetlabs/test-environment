@@ -15,35 +15,6 @@
         <value>{'host_csap'{if:'csap_if'}}</value>
       </arg>  
     </run>
-    
-    <run>
-      <script name="phy" track_conf="silent">
-      </script>
-      <arg name="ta">
-        <value>Agt_B</value>
-      </arg>
-      <arg name="iface_name">
-        <value>eth1</value>
-      </arg>
-      <arg name="second_ta">
-        <value>Agt_A</value>
-      </arg>
-      <arg name="second_iface">
-        <value>eth3</value>
-      </arg>
-      <arg name="speed">
-        <value>10</value>
-      </arg>
-      <arg name="duplex">
-        <value>0</value>
-      </arg>
-      <arg name="speed_adver">
-        <value>100</value>
-      </arg>
-      <arg name="duplex_adver">
-        <value>0</value>
-      </arg>
-    </run>
 
   </session>
 </package>

@@ -33,14 +33,16 @@
 
 #include "tapi_cfg_phy.h"
 
+#if CONFIGURATOR_PHY_SUPPORT
+
 /**
  * Get PHY autonegotiation state.
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to returned autonegotiation state value:
- *                      TE_PHY_AUTONEG_OFF - autonegatiation OFF
- *                      TE_PHY_AUTONEG_ON  - autonegatiation ON
+ *                      PHY_AUTONEG_OFF - autonegatiation OFF
+ *                      PHY_AUTONEG_ON  - autonegatiation ON
  *
  * @return Status code
  */
@@ -67,8 +69,8 @@ tapi_cfg_base_phy_autoneg_get(const char *ta, const char *if_name,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Autonegotiation state value:
- *                      TE_PHY_AUTONEG_OFF - autonegatiation OFF
- *                      TE_PHY_AUTONEG_ON  - autonegatiation ON
+ *                      PHY_AUTONEG_OFF - autonegatiation OFF
+ *                      PHY_AUTONEG_ON  - autonegatiation ON
  *
  * @return Status code
  */
@@ -85,26 +87,27 @@ tapi_cfg_base_phy_autoneg_set(const char *ta, const char *if_name,
     return rc;
 }
 
-#define TE_PHY_DUPLEX_STRING_HALF "half"
-#define TE_PHY_DUPLEX_STRING_FULL "full"
+#define PHY_DUPLEX_STRING_HALF "half"
+#define PHY_DUPLEX_STRING_FULL "full"
 
 /**
  * Get PHY duplex state by name string.
  *
  * @param name          Duplex state name string
  *
- * @return TE_PHY_DUPLEX_HALF - half duplex;
- *         TE_PHY_DUPLEX_FULL - full duplex;
+ * @return PHY_DUPLEX_HALF - half duplex;
+ *         PHY_DUPLEX_FULL - full duplex;
  *         or -1 if name string does not recognized
  */
 static inline int
 tapi_cfg_base_phy_get_duplex_by_name(char *name)
 {
-    if (strcmp(name, TE_PHY_DUPLEX_STRING_HALF) == 0)
-        return TE_PHY_DUPLEX_HALF;
-    else if (strcmp(name, TE_PHY_DUPLEX_STRING_FULL) == 0)
-        return TE_PHY_DUPLEX_FULL;
-    
+#if HAVE_LINUX_ETHTOOL_H
+    if (strcmp(name, PHY_DUPLEX_STRING_HALF) == 0)
+        return PHY_DUPLEX_HALF;
+    else if (strcmp(name, PHY_DUPLEX_STRING_FULL) == 0)
+        return PHY_DUPLEX_FULL;
+#endif
     return -1;
 }
 
@@ -120,17 +123,18 @@ tapi_cfg_base_phy_get_duplex_by_name(char *name)
 static inline char *
 tapi_cfg_base_phy_get_duplex_by_id(int duplex)
 {
+#if HAVE_LINUX_ETHTOOL_H
     switch (duplex)
     {
-        case TE_PHY_DUPLEX_HALF: return TE_PHY_DUPLEX_STRING_HALF;
-        case TE_PHY_DUPLEX_FULL: return TE_PHY_DUPLEX_STRING_FULL;
+        case PHY_DUPLEX_HALF: return PHY_DUPLEX_STRING_HALF;
+        case PHY_DUPLEX_FULL: return PHY_DUPLEX_STRING_FULL;
     }
-    
+#endif
     return NULL;
 }
 
-#undef TE_PHY_DUPLEX_STRING_HALF
-#undef TE_PHY_DUPLEX_STRING_FULL
+#undef PHY_DUPLEX_STRING_HALF
+#undef PHY_DUPLEX_STRING_FULL
 
 /**
  * Get PHY duplex state.
@@ -138,8 +142,8 @@ tapi_cfg_base_phy_get_duplex_by_id(int duplex)
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to returned duplex state value:
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      PHY_DUPLEX_HALF - half duplex
+ *                      PHY_DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -170,8 +174,8 @@ tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Duplex state value:
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      PHY_DUPLEX_HALF - half duplex
+ *                      PHY_DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -199,10 +203,10 @@ tapi_cfg_base_phy_duplex_set(const char *ta, const char *if_name, int state)
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param speed         Pointer to returned speed value
- *                      TE_PHY_SPEED_10    - 10 Mbit/sec
- *                      TE_PHY_SPEED_100   - 100 Mbit/sec
- *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
- *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ *                      PHY_SPEED_10    - 10 Mbit/sec
+ *                      PHY_SPEED_100   - 100 Mbit/sec
+ *                      PHY_SPEED_1000  - 1000 Mbit/sec
+ *                      PHY_SPEED_10000 - 10000 Mbit/sec
  *
  * @return Status code
  */
@@ -228,10 +232,10 @@ tapi_cfg_base_phy_speed_get(const char *ta, const char *if_name, int *speed)
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param speed         Speed value
- *                      TE_PHY_SPEED_10    - 10 Mbit/sec
- *                      TE_PHY_SPEED_100   - 100 Mbit/sec
- *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
- *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ *                      PHY_SPEED_10    - 10 Mbit/sec
+ *                      PHY_SPEED_100   - 100 Mbit/sec
+ *                      PHY_SPEED_1000  - 1000 Mbit/sec
+ *                      PHY_SPEED_10000 - 10000 Mbit/sec
  *
  * @return Status code
  */
@@ -254,8 +258,8 @@ tapi_cfg_base_phy_speed_set(const char *ta, const char *if_name, int speed)
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to returned link state value:
- *                      TE_PHY_STATE_DOWN - link down
- *                      TE_PHY_STATE_UP   - link up
+ *                      PHY_STATE_DOWN - link down
+ *                      PHY_STATE_UP   - link up
  *
  * @return Status code
  */
@@ -285,8 +289,8 @@ tapi_cfg_base_phy_state_get(const char *ta, const char *if_name, int *state)
  * @param if_name       Interface name
  * @param speed         Speed value (see linux/ethtool.h for more details)
  * @param duplex        Duplex state value:
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      PHY_DUPLEX_HALF - half duplex
+ *                      PHY_DUPLEX_FULL - full duplex
  * @param state         Pointer to mode state:
  *                      TRUE - mode is advertised
  *                      FALSE - mode is not advertised
@@ -330,8 +334,8 @@ tapi_cfg_base_phy_is_mode_advertised(const char *ta, const char *if_name,
  * @param if_name       Interface name
  * @param speed         Speed value (see linux/ethtool.h for more details)
  * @param duplex        Duplex state value:
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      PHY_DUPLEX_HALF - half duplex
+ *                      PHY_DUPLEX_FULL - full duplex
  * @param state         Mode state:
  *                      0 - mode is not advertised
  *                      1 - mode is advertised
@@ -384,13 +388,6 @@ tapi_cfg_base_phy_reset(const char *ta, const char *if_name,
 
 /**
  * Synchonize PHY interface changes between remote hosts.
- * This function should be called after any __set__
- * operation (when autonegotiation is ON) to be sure that changes has
- * been applied at both hosts connected by physical link.
- * For example, if interface speed value
- * has been changed at first host, network adapher at the second host
- * can automatically change itself speed value. This function call
- * will reflect such changes at the configuration tree.
  *
  * @param first_ta      First Test Agent name
  * @param first_ifname  Interface name of first TA
@@ -449,3 +446,5 @@ tapi_cfg_base_phy_sync(const char *first_ta, const char *first_ifname,
     
     return rc;
 }
+
+#endif /* CONFIGURATOR_PHY_SUPPORT */
