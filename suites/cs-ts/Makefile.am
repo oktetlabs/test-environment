@@ -22,4 +22,4 @@ AM_LDFLAGS = @TS_LDFLAGS@
 
 LDADD = @TS_LIBS@
 
-tetest_PROGRAMS = vlans
+tetest_PROGRAMS = vlans phy
