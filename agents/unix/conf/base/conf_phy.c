@@ -44,7 +44,9 @@
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
 
+#ifdef HAVE_STROPTS_H
 #include <stropts.h>
+#endif
 
 #if HAVE_LINUX_ETHTOOL_H
 #include "te_ethtool.h"
@@ -1015,7 +1017,10 @@ phy_modes_speed_list(unsigned int gid, const char *oid, char **list,
     
     /* Get property */
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
-        return TE_OS_RC(TE_TA_UNIX, rc);
+    {
+        WARN("No modes supported/advertized by `%s'", ifname);
+        return 0;
+    }
     
     /* Add 10BaseT support */
     if (ecmd.supported & SUPPORTED_10baseT_Half ||
@@ -1355,11 +1360,8 @@ phy_reset_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(ifname);
     
-#if defined __linux__
     snprintf(value, RCF_MAX_VAL, "%d", phy_reset_value);
-#else
-    UNUSED(value);
-#endif /* __linux__ */
+    
     return 0;
 }
 
@@ -1398,16 +1400,22 @@ phy_reset_set(unsigned int gid, const char *oid, const char *value,
     /* Try to create control socket */
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     
+    ERROR("1");
+    
     if (fd < 0)
     {
         ERROR("%s fails: failed to create control socket", __FUNCTION__);
         return fd;
     }
     
+    ERROR("2");
+    
     /* Get|set properties */
     edata.cmd = ETHTOOL_NWAY_RST;
     ifr.ifr_data = (caddr_t)&edata;
     rc = ioctl(fd, SIOCETHTOOL, &ifr);
+    
+    ERROR("3");
     
     if (rc != 0)
     {
@@ -1416,6 +1424,8 @@ phy_reset_set(unsigned int gid, const char *oid, const char *value,
         close(fd);
         return TE_RC(TE_TA_UNIX, errno);
     }
+    
+    ERROR("4");
     
     close(fd);
     
