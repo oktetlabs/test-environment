@@ -1448,6 +1448,15 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/* FIXME: Temporary workaround to force mtu_get return the value
+ *        that was passed to mtu_set
+ */
+struct mtu_entry_t
+{
+  char if_name[20];
+  unsigned int mtu;
+};
+static struct mtu_entry_t mtus[20];
 
 /**
  * Get MTU of the interface.
@@ -1463,12 +1472,33 @@ static te_errno
 mtu_get(unsigned int gid, const char *oid, char *value,
         const char *ifname)
 {
+    int i, if_index = -1, free_index = -1;
+
     UNUSED(gid);
     UNUSED(oid);
 
     GET_IF_ENTRY;
 
-    sprintf(value, "%lu", if_entry.dwMtu);
+    for (i = 0; i < 20; i++)
+    {
+      if (strcmp(mtus[i].if_name, ifname) == 0)
+      {
+        if_index = i;
+        break;
+      }
+      if (mtus[i].if_name[0] == 0 && free_index == -1)
+      {
+        free_index = i;
+      }
+    }
+    if (if_index == -1 && free_index != -1)
+    {
+      if_index = free_index;
+      strcpy(mtus[if_index].if_name, ifname);
+      mtus[if_index].mtu = if_entry.dwMtu;
+    }
+//    sprintf(value, "%lu", if_entry.dwMtu);
+    sprintf(value, "%lu", mtus[if_index].mtu);
 
     return 0;
 }
@@ -1490,11 +1520,34 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     char     *tmp;
     te_errno  rc = 0;
     long      mtu;
+    int i, if_index = -1, free_index = -1;
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
     UNUSED(ifname);
+
+    mtu = strtol(value, &tmp, 10);
+    if (tmp == value || *tmp != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    for (i = 0; i < 20; i++)
+    {
+      if (strcmp(mtus[i].if_name, ifname) == 0)
+      {
+        if_index = i;
+        break;
+      }
+      if (mtus[i].if_name[0] == 0 && free_index == -1)
+      {
+        free_index = i;
+      }
+    }
+    if (if_index == -1 && free_index != -1)
+    {
+      if_index = free_index;
+      strcpy(mtus[if_index].if_name, ifname);
+      mtus[if_index].mtu = 1500;
+    }
+    mtus[if_index].mtu = mtu;
 
 #if 0 /* UNIX implementation */
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
