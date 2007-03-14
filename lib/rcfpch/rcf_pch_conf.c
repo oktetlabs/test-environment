@@ -1305,7 +1305,7 @@ rcf_pch_rsrc_check_locks(const char *rsrc_ptrn)
  * @return Status code
  */
 static te_errno
-create_lock(const char *name)
+ta_rsrc_create_lock(const char *name)
 {
     char        fname[RCF_MAX_PATH];
     FILE       *f;
@@ -1351,8 +1351,8 @@ create_lock(const char *name)
  *
  * @param name     resource name
  */
-static void
-delete_lock(const char *name)
+void
+ta_rsrc_delete_lock(const char *name)
 {
     char    fname[RCF_MAX_PATH];
     int     rc;
@@ -1532,14 +1532,14 @@ rsrc_add(unsigned int gid, const char *oid, const char *value,
     }
 
 #ifndef __CYGWIN__
-    if ((rc = create_lock(tmp->name)) != 0)
+    if ((rc = ta_rsrc_create_lock(tmp->name)) != 0)
         RETERR(rc);
 #endif        
         
     if ((rc = info->grab(tmp->name)) != 0)
     {
 #ifndef __CYGWIN__
-        delete_lock(tmp->name);
+        ta_rsrc_delete_lock(tmp->name);
 #endif        
         RETERR(rc);
     }
@@ -1595,7 +1595,7 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
                 return rc;
                 
 #ifndef __CYGWIN__
-            delete_lock(cur->name);
+            ta_rsrc_delete_lock(cur->name);
 #endif
                 
             if (prev != NULL)

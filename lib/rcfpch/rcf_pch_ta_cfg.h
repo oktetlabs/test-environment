@@ -350,6 +350,25 @@ extern int ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs,
  */
 extern int ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info);
 
+
+/* Resource handling */
+
+/*
+ * Create a lock for the resource with specified name.
+ *
+ * @param name     resource name
+ *
+ * @return Status code
+ */
+static te_errno ta_rsrc_create_lock(const char *name);
+
+/*
+ * Delete a lock for the resource with specified name.
+ *
+ * @param name     resource name
+ */
+void ta_rsrc_delete_lock(const char *name);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
