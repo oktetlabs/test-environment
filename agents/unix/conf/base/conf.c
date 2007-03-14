@@ -337,8 +337,8 @@ static struct my_ifreq req;
 static char buf[4096];
 static char trash[128];
 
-static int cfg_socket = -1;
-static int cfg6_socket = -1;
+int cfg_socket = -1;
+int cfg6_socket = -1;
 
 /*
  * Access routines prototypes (comply to procedure types
@@ -1973,7 +1973,8 @@ vlan_ifname_get_internal(const char *ifname, int vlan_id,
     while (!isdigit(ifname[offset])) offset++;
 
     memcpy(v_ifname, ifname, offset);
-    sprintf(v_ifname + offset, "%d00%s", vlan_id, ifname + offset);
+    sprintf(v_ifname + offset, "%d", vlan_id * 1000 + 
+            atoi(ifname + offset));
 #endif 
     return 0;
 }
@@ -4231,11 +4232,11 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
         
         if (errno == EBUSY)
         {
-            char status[2];
+            te_bool status;
             
             /* Try to down interface */
-            if (status_get(0, NULL, status, ifname) == 0 &&
-                *status == '1' && status_set(0, NULL, "0", ifname) == 0)
+            if (ta_interface_status_get(ifname, &status) == 0 &&
+                status && ta_interface_status_set(ifname, FALSE) == 0)
             {
                 int rc1;
 
@@ -4247,7 +4248,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
                     rc = 0;
                 }
                 
-                if ((rc1 = status_set(0, NULL, "1", ifname)) != 0)
+                if ((rc1 = ta_interface_status_set(ifname, TRUE)) != 0)
                 {
                     ERROR("Failed to up interface after changing of mtu "
                           "error %r", rc1);
@@ -4336,6 +4337,61 @@ arp_set(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
+ * Get status of the interface (FALSE - down or TRUE - up).
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param status        location to put status of the interface
+ *
+ * @return              Status code
+ */
+te_errno
+ta_interface_status_get(const char *ifname, te_bool *status)
+{
+    te_errno rc;
+    
+    assert(status != NULL);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    strcpy(req.my_ifr_name, ifname);
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+
+    *status = !!(req.my_ifr_flags & IFF_UP);
+    return 0;
+}
+
+/**
+ * Change status of the interface. If virtual interface is put to down
+ * state,it is de-installed and information about it is stored in the list
+ * of down interfaces.
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param status        TRUE to get interface up and FALSE to down
+ *
+ * @return              Status code
+ */
+te_errno
+ta_interface_status_set(const char *ifname, te_bool status)
+{
+    te_errno rc;
+    
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+
+    if (status)
+        req.my_ifr_flags |= (IFF_UP | IFF_RUNNING);
+    else
+        req.my_ifr_flags &= ~(IFF_UP | IFF_RUNNING);
+
+    CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
+    return 0;
+}
+
+/**
  * Get status of the interface ("0" - down or "1" - up).
  *
  * @param gid           group identifier (unused)
@@ -4350,17 +4406,15 @@ status_get(unsigned int gid, const char *oid, char *value,
            const char *ifname)
 {
     te_errno rc;
+    te_bool  status;
     
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
-    strcpy(req.my_ifr_name, ifname);
-    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
-
-    sprintf(value, "%d", (req.my_ifr_flags & IFF_UP) != 0);
+    rc = ta_interface_status_get(ifname, &status);
+    if (rc != 0)
+        return rc;
+    sprintf(value, "%d", status);
 
     return 0;
 }
@@ -4381,27 +4435,19 @@ static te_errno
 status_set(unsigned int gid, const char *oid, const char *value,
            const char *ifname)
 {
-    te_errno rc;
+    te_bool  status;
     
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
-    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
-    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
-
     if (strcmp(value, "0") == 0)
-        req.my_ifr_flags &= ~(IFF_UP | IFF_RUNNING);
+        status = FALSE;
     else if (strcmp(value, "1") == 0)
-        req.my_ifr_flags |= (IFF_UP | IFF_RUNNING);
+        status = TRUE;
     else
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
-
-    return 0;
+    return ta_interface_status_set(ifname, status);
 }
 
 

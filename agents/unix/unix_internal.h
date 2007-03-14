@@ -237,7 +237,34 @@ extern int ta_system(const char *cmd);
  */
 extern int ta_kill_death(pid_t pid);
 
+/**
+ * Get status of the interface (FALSE - down or TRUE - up).
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param status        location to put status of the interface
+ *
+ * @return              Status code
+ */
+extern te_errno ta_interface_status_get(const char *ifname, 
+                                        te_bool *status);
+
+/**
+ * Change status of the interface. If virtual interface is put to down
+ * state,it is de-installed and information about it is stored in the list
+ * of down interfaces.
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param status        TRUE to get interface up and FALSE to down
+ *
+ * @return              Status code
+ */
+extern te_errno ta_interface_status_set(const char *ifname, te_bool status);
+
 /** Environment */
 extern char const * const *environ;
+
+/* Sockets to be used by various parts of configurator */
+extern int cfg_socket;
+extern int cfg6_socket;
 
 #endif /* __TE_TA_UNIX_INTERNAL_H__ */
