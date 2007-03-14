@@ -776,7 +776,7 @@ typedef te_errno (* rcf_ch_cfg_get)(unsigned int gid, const char *oid,
  */
 typedef te_errno (* rcf_ch_cfg_set)(unsigned int gid, const char *oid,
                                     const char *value,
-                               const char *instN, ...);
+                                    const char *instN, ...);
 
 /**
  * Prototype for add instance routine.
