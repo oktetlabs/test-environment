@@ -291,8 +291,19 @@ typedef int tapi_tcp_handler_t;
 
 /**
  * Initialize process for open TCP connection.
- * This method does not blocks. Use 'tapi_tcp_wait_open' for wait 
+ * This method does not blocks, only sends SYN (in client mode) 
+ * or SYN-ACK (in server mode). Use 'tapi_tcp_wait_open' for wait 
  * complete open of TCP connection.
+ * Local IP address should be fake, not retistered on host with TA,
+ * because running OS will respond to TCP messages also, and it will
+ * make side effects on IUT. 
+ * Local MAC address may be fake, and it is desired to use fake, 
+ * because running OS sometimes may respond with ICMP messages 
+ * to IP packets which is got in its Ethernet device and have foreign
+ * IP dst address. 
+ *
+ * If local MAC address is fake, Ethernet device will be turned to
+ * promiscuous mode.
  *
  * @param agt           name of TA;
  * @param mode          TCP mode: server or client, really, this means
@@ -301,6 +312,10 @@ typedef int tapi_tcp_handler_t;
  *                      are zeroes, (IN/OUT);
  * @param remote_addr   remote socket address, unspecified values 
  *                      are zeroes, (IN/OUT);
+ * @param local_iface   name of Ethernet interface on 'agt' host;
+ * @param local_mac     local MAC address, may be fake;
+ * @param remote_mac    remote MAC address, must be real address of peer
+ *                      device;
  * @param window        default window size, or zero
  * @param handler       TAPI handler of created TCP connection (OUT);
  *

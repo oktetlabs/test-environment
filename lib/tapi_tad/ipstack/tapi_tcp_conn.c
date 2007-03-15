@@ -68,6 +68,7 @@
 #include "tapi_tad.h"
 #include "tapi_eth.h"
 #include "tapi_arp.h"
+#include "tapi_cfg.h"
 
 #include "ndn_ipstack.h"
 #include "ndn_eth.h"
@@ -637,7 +638,10 @@ tapi_tcp_init_connection_enc(const char *agt, tapi_tcp_mode_t mode,
 
     char arp_reply_method[100];
 
-    size_t func_len;
+    te_bool  use_native_mac = FALSE;
+    uint8_t  native_local_mac[6];
+    size_t   mac_len = sizeof(native_local_mac);
+    size_t   func_len;
     uint16_t trafic_param;
 
     asn_value *syn_pattern = NULL;
@@ -673,6 +677,14 @@ tapi_tcp_init_connection_enc(const char *agt, tapi_tcp_mode_t mode,
             goto cleanup;          \
         }                          \
     } while (0)
+    rc = tapi_cfg_get_hwaddr(agt, local_iface, native_local_mac, &mac_len);
+    CHECK_ERROR("%s(); get local native MAC failed %r",
+                __FUNCTION__, rc);
+
+    use_native_mac = !memcmp(native_local_mac, local_mac, mac_len);
+    if (use_native_mac)
+        RING("%s(): use native MAC on interface, may be side effects", 
+             __FUNCTION__);
 
     rc = rcf_ta_create_session(agt, &rcv_sid);
     CHECK_ERROR("%s(); create rcv session failed %r",
@@ -713,14 +725,19 @@ tapi_tcp_init_connection_enc(const char *agt, tapi_tcp_mode_t mode,
     trafic_param = ETH_P_ARP;
 
     rc = tapi_arp_eth_csap_create_ip4(agt, arp_sid, local_iface,
-                                      TAD_ETH_RECV_DEF,
+                                      use_native_mac ? 
+                                          TAD_ETH_RECV_HOST |
+                                          TAD_ETH_RECV_BCAST 
+                                        : TAD_ETH_RECV_DEF,
                                       remote_mac, NULL, &arp_csap);
     CHECK_ERROR("%s(): create arp csap fails %r", __FUNCTION__, rc);
 
     INFO("%s(): created arp csap: %d", __FUNCTION__, arp_csap);
 
     rc = tapi_tcp_ip4_eth_csap_create(agt, rcv_sid, local_iface,
-                                      TAD_ETH_RECV_DEF,
+                                      use_native_mac ? 
+                                          TAD_ETH_RECV_HOST 
+                                        : TAD_ETH_RECV_DEF,
                                       local_mac, remote_mac,
                                       local_in_addr->sin_addr.s_addr,
                                       remote_in_addr->sin_addr.s_addr,
@@ -731,8 +748,7 @@ tapi_tcp_init_connection_enc(const char *agt, tapi_tcp_mode_t mode,
                 __FUNCTION__, rc);
 
     rc = tapi_tcp_ip4_eth_csap_create(agt, snd_sid, local_iface,
-                                      TAD_ETH_RECV_DEF &
-                                          ~TAD_ETH_RECV_OTHER,
+                                      TAD_ETH_RECV_HOST,
                                       local_mac, remote_mac,
                                       local_in_addr->sin_addr.s_addr,
                                       remote_in_addr->sin_addr.s_addr,
