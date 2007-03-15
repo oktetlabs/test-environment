@@ -659,8 +659,8 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
                  "flooder(%p, %d, %p, %d, %d, %d, %d, %d, %p, %p) "
                  "-> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op), rcvrs,
-                 rcvnum, sndrs, sndnum, bulkszs, time2run, time2wait,
+                 rpcs->ta, rpcs->name, rpcop2str(op), sndrs, 
+                 sndnum, rcvrs, rcvnum, bulkszs, time2run, time2wait,
                  iomux,
                  tx_stat, rx_stat, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
