@@ -5,7 +5,7 @@
  * (storage/cm/cm_base.xml).
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2007 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -32,6 +32,7 @@
 #define TE_LGR_USER     "Configuration PHY"
 
 #include "tapi_cfg_phy.h"
+#include "te_ethernet_phy.h"
 
 /**
  * Get PHY autonegotiation state.
@@ -39,16 +40,16 @@
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to returned autonegotiation state value:
- *                      TE_PHY_AUTONEG_OFF - autonegatiation OFF
- *                      TE_PHY_AUTONEG_ON  - autonegatiation ON
+ *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
+ *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
  *
  * @return Status code
  */
 te_errno
-tapi_cfg_base_phy_autoneg_get(const char *ta, const char *if_name,
-                              int *state)
+tapi_cfg_phy_autoneg_get(const char *ta, const char *if_name,
+                         int *state)
 {
-    int rc = 0;
+    te_errno rc = 0;
     
     rc =  cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, state),
                                     "/agent:%s/interface:%s/phy:/autoneg:",
@@ -67,14 +68,14 @@ tapi_cfg_base_phy_autoneg_get(const char *ta, const char *if_name,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Autonegotiation state value:
- *                      TE_PHY_AUTONEG_OFF - autonegatiation OFF
- *                      TE_PHY_AUTONEG_ON  - autonegatiation ON
+ *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
+ *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
  *
  * @return Status code
  */
 te_errno
-tapi_cfg_base_phy_autoneg_set(const char *ta, const char *if_name,
-                              int state)
+tapi_cfg_phy_autoneg_set(const char *ta, const char *if_name,
+                         int state)
 {
     te_errno rc = 0;
     
@@ -84,9 +85,6 @@ tapi_cfg_base_phy_autoneg_set(const char *ta, const char *if_name,
     
     return rc;
 }
-
-#define TE_PHY_DUPLEX_STRING_HALF "half"
-#define TE_PHY_DUPLEX_STRING_FULL "full"
 
 /**
  * Get PHY duplex state by name string.
@@ -98,7 +96,7 @@ tapi_cfg_base_phy_autoneg_set(const char *ta, const char *if_name,
  *         or -1 if name string does not recognized
  */
 static inline int
-tapi_cfg_base_phy_get_duplex_by_name(char *name)
+tapi_cfg_phy_duplex_str2id(char *name)
 {
     if (strcmp(name, TE_PHY_DUPLEX_STRING_HALF) == 0)
         return TE_PHY_DUPLEX_HALF;
@@ -118,7 +116,7 @@ tapi_cfg_base_phy_get_duplex_by_name(char *name)
  *         or NULL if id does not recognized
  */
 static inline char *
-tapi_cfg_base_phy_get_duplex_by_id(int duplex)
+tapi_cfg_phy_duplex_id2str(int duplex)
 {
     switch (duplex)
     {
@@ -128,9 +126,6 @@ tapi_cfg_base_phy_get_duplex_by_id(int duplex)
     
     return NULL;
 }
-
-#undef TE_PHY_DUPLEX_STRING_HALF
-#undef TE_PHY_DUPLEX_STRING_FULL
 
 /**
  * Get PHY duplex state.
@@ -144,22 +139,25 @@ tapi_cfg_base_phy_get_duplex_by_id(int duplex)
  * @return Status code
  */
 te_errno
-tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
-                             int *state)
+tapi_cfg_phy_duplex_get(const char *ta, const char *if_name,
+                        int *state)
 {
     te_errno  rc = 0;
     char     *duplex;
     
-    rc = cfg_get_instance_sync_fmt(NULL,
-                                   (void *)&duplex,
+    rc = cfg_get_instance_sync_fmt(NULL, (void *)&duplex,
                                    "/agent:%s/interface:%s/phy:/duplex:",
                                    ta, if_name);
     if (rc != 0)
         return rc;
     
-    *state = tapi_cfg_base_phy_get_duplex_by_name(duplex);
+    *state = tapi_cfg_phy_duplex_str2id(duplex);
     
     free(duplex);
+    
+    /* Check for error */
+    if (*state == -1)
+        return TE_RC(TE_TAPI, TE_EINVAL);
     
     return 0;
 }
@@ -176,19 +174,19 @@ tapi_cfg_base_phy_duplex_get(const char *ta, const char *if_name,
  * @return Status code
  */
 te_errno
-tapi_cfg_base_phy_duplex_set(const char *ta, const char *if_name, int state)
+tapi_cfg_phy_duplex_set(const char *ta, const char *if_name, int state)
 {
     te_errno  rc = 0;
     char     *duplex;
     
-    duplex = tapi_cfg_base_phy_get_duplex_by_id(state);
+    duplex = tapi_cfg_phy_duplex_id2str(state);
     
     if (duplex == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
     
     rc = cfg_set_instance_fmt(CFG_VAL(STRING, duplex),
-                                      "/agent:%s/interface:%s/phy:/duplex:",
-                                      ta, if_name);
+                              "/agent:%s/interface:%s/phy:/duplex:",
+                              ta, if_name);
     
     return rc;
 }
@@ -207,9 +205,9 @@ tapi_cfg_base_phy_duplex_set(const char *ta, const char *if_name, int state)
  * @return Status code
  */
 te_errno
-tapi_cfg_base_phy_speed_get(const char *ta, const char *if_name, int *speed)
+tapi_cfg_phy_speed_get(const char *ta, const char *if_name, int *speed)
 {
-    int rc = 0;
+    te_errno rc = 0;
     
     rc = cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, speed),
                                    "/agent:%s/interface:%s/phy:/speed:",
@@ -236,7 +234,7 @@ tapi_cfg_base_phy_speed_get(const char *ta, const char *if_name, int *speed)
  * @return Status code
  */
 te_errno
-tapi_cfg_base_phy_speed_set(const char *ta, const char *if_name, int speed)
+tapi_cfg_phy_speed_set(const char *ta, const char *if_name, int speed)
 {
     te_errno rc = 0;
     
@@ -260,9 +258,9 @@ tapi_cfg_base_phy_speed_set(const char *ta, const char *if_name, int speed)
  * @return Status code
  */
 te_errno
-tapi_cfg_base_phy_state_get(const char *ta, const char *if_name, int *state)
+tapi_cfg_phy_state_get(const char *ta, const char *if_name, int *state)
 {
-    int rc = 0;
+    te_errno rc = 0;
     
     rc = cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, state),
                                    "/agent:%s/interface:%s/phy:/state:",
@@ -294,15 +292,15 @@ tapi_cfg_base_phy_state_get(const char *ta, const char *if_name, int *state)
  * @return Status code
  */
 te_errno
-tapi_cfg_base_phy_is_mode_advertised(const char *ta, const char *if_name,
-                                     int speed, int duplex,
-                                     te_bool *state)
+tapi_cfg_phy_is_mode_advertised(const char *ta, const char *if_name,
+                                int speed, int duplex,
+                                te_bool *state)
 {
     te_errno  rc = 0;
     int       advertised = -1;
     char     *duplex_string;
     
-    duplex_string = tapi_cfg_base_phy_get_duplex_by_id(duplex);
+    duplex_string = tapi_cfg_phy_duplex_id2str(duplex);
     
     if (duplex_string == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
@@ -339,18 +337,18 @@ tapi_cfg_base_phy_is_mode_advertised(const char *ta, const char *if_name,
  * @return Status code
  */
 te_errno
-tapi_cfg_base_phy_advertise_mode(const char *ta, const char *if_name,
-                                 int speed, int duplex, int state)
+tapi_cfg_phy_advertise_mode(const char *ta, const char *if_name,
+                            int speed, int duplex, te_bool state)
 {
     te_errno  rc = 0;
     char     *duplex_string;
     
-    duplex_string = tapi_cfg_base_phy_get_duplex_by_id(duplex);
+    duplex_string = tapi_cfg_phy_duplex_id2str(duplex);
     
     if (duplex_string == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
     
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, state),
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, (int)state),
                               "/agent:%s/interface:%s/phy:"
                               "/modes:/speed:%d/duplex:%s",
                               ta, if_name, speed,
@@ -370,12 +368,12 @@ tapi_cfg_base_phy_advertise_mode(const char *ta, const char *if_name,
  * @return Status code
  */
 te_errno
-tapi_cfg_base_phy_reset(const char *ta, const char *if_name,
-                        int unused)
+tapi_cfg_phy_reset(const char *ta, const char *if_name)
 {
     te_errno rc = 0;
+    int      reset = 0;
     
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, unused),
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, reset),
                               "/agent:%s/interface:%s/phy:/reset:",
                               ta, if_name);
     
@@ -400,32 +398,26 @@ tapi_cfg_base_phy_reset(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_base_phy_sync(const char *first_ta, const char *first_ifname,
-                       const char *second_ta, const char *second_ifname)
+tapi_cfg_phy_sync(const char *first_ta, const char *first_ifname,
+                  const char *second_ta, const char *second_ifname)
 {
     te_errno rc = 0;
     
     /* Reset first link */
-    rc = tapi_cfg_base_phy_reset(first_ta, first_ifname, 0);
+    rc = tapi_cfg_phy_reset(first_ta, first_ifname);
     if (rc != 0)
-    {
-        ERROR("failed to reset first link");
-        return rc;
-    }
+        WARN("failed to reset first link");
     
     /* Reset second link */
-    rc = tapi_cfg_base_phy_reset(second_ta, second_ifname, 0);
+    rc = tapi_cfg_phy_reset(second_ta, second_ifname);
     if (rc != 0)
-    {
-        ERROR("failed to reset second link");
-        return rc;
-    }
+        WARN("failed to reset second link");
     
     /* Wait changes */
     rc = cfg_wait_changes();
     if (rc != 0)
     {
-        ERROR("wait changes fails");
+        ERROR("wait changes failed");
         return rc;
     }
     
@@ -434,7 +426,7 @@ tapi_cfg_base_phy_sync(const char *first_ta, const char *first_ifname,
                              first_ta, first_ifname);
     if (rc != 0)
     {
-        ERROR("failed to sync first link leaf");
+        ERROR("failed to sync %s link at %s", first_ifname, first_ta);
         return rc;
     }
     
@@ -443,7 +435,7 @@ tapi_cfg_base_phy_sync(const char *first_ta, const char *first_ifname,
                              second_ta, second_ifname);
     if (rc != 0)
     {
-        ERROR("failed to sync second link leaf");
+        ERROR("failed to sync %s link at %s", second_ifname, second_ta);
         return rc;
     }
     

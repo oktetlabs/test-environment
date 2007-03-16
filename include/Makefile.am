@@ -49,6 +49,7 @@ te_headers = \
 	ta_common.h \
 	te_win_defs.h \
 	te_ethernet.h \
+	te_ethernet_phy.h \
 	te_queue.h \
 	te_test_result.h \
 	tester_internal.h \

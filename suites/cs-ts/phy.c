@@ -109,7 +109,7 @@ main(int argc, char *argv[])
     CHECK_RC(cfg_tree_print(NULL, TE_LL_RING, "/:"));
     
     /* Check link state */
-    CHECK_RC(tapi_cfg_base_phy_state_get(ta, iface_name, &link_state));
+    CHECK_RC(tapi_cfg_phy_state_get(ta, iface_name, &link_state));
     if (link_state != TE_PHY_STATE_UP)
         TEST_FAIL("link down at TA `%s' for interface `%s'", ta,
                   iface_name);
@@ -119,18 +119,18 @@ main(int argc, char *argv[])
      */
     
     /* Get autonegatiation state */
-    CHECK_RC(tapi_cfg_base_phy_autoneg_get(ta, iface_name, &autoneg));
+    CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
     RING("Autonegatiation state: %d", autoneg);
     
     /* Turn off autonegatiation */
     autoneg = TE_PHY_AUTONEG_OFF;
-    CHECK_RC(tapi_cfg_base_phy_autoneg_set(ta, iface_name, autoneg));
+    CHECK_RC(tapi_cfg_phy_autoneg_set(ta, iface_name, autoneg));
     
     /* Reset value */
     autoneg = -1;
     
     /* Check that PHY autonegatiation is at state OFF */
-    CHECK_RC(tapi_cfg_base_phy_autoneg_get(ta, iface_name, &autoneg));
+    CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
     if (autoneg != TE_PHY_AUTONEG_OFF)
         TEST_FAIL("failed to set autonegotiation to state OFF");
     
@@ -139,10 +139,10 @@ main(int argc, char *argv[])
      */
     
     /* Set PHY speed value */
-    CHECK_RC(tapi_cfg_base_phy_speed_set(ta, iface_name, speed));
+    CHECK_RC(tapi_cfg_phy_speed_set(ta, iface_name, speed));
     
     /* Check that PHY speed has been set correctly */
-    CHECK_RC(tapi_cfg_base_phy_speed_get(ta, iface_name, &tmp_speed));
+    CHECK_RC(tapi_cfg_phy_speed_get(ta, iface_name, &tmp_speed));
     if (tmp_speed != speed)
         TEST_FAIL("failed to set speed to value: %d", speed);
     
@@ -151,10 +151,10 @@ main(int argc, char *argv[])
      */
     
     /* Set PHY duplex value */
-    CHECK_RC(tapi_cfg_base_phy_duplex_set(ta, iface_name, duplex));
+    CHECK_RC(tapi_cfg_phy_duplex_set(ta, iface_name, duplex));
     
     /* Check that PHY duplex state has been set correctly */
-    CHECK_RC(tapi_cfg_base_phy_duplex_get(ta, iface_name, &tmp_duplex));
+    CHECK_RC(tapi_cfg_phy_duplex_get(ta, iface_name, &tmp_duplex));
     if (tmp_duplex != duplex)
         TEST_FAIL("failed to set duplex to value: %d", duplex);
     
@@ -164,13 +164,13 @@ main(int argc, char *argv[])
     
     /* Turn PHY autonegatiation to state ON */
     autoneg = TE_PHY_AUTONEG_ON;
-    CHECK_RC(tapi_cfg_base_phy_autoneg_set(ta, iface_name, autoneg));
+    CHECK_RC(tapi_cfg_phy_autoneg_set(ta, iface_name, autoneg));
     
     /* Reset value */
     autoneg = -1;
     
     /* Check that PHY autonegatiation is at state ON */
-    CHECK_RC(tapi_cfg_base_phy_autoneg_get(ta, iface_name, &autoneg));
+    CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
     if (autoneg != TE_PHY_AUTONEG_ON)
         TEST_FAIL("failed to set autonegotiation to state ON");
     
@@ -179,41 +179,40 @@ main(int argc, char *argv[])
      */
     
     /* Check that mode is advertised */
-    CHECK_RC(tapi_cfg_base_phy_is_mode_advertised(ta, iface_name,
-                                                  speed_adver, duplex_adver,
-                                                  &mode));
+    CHECK_RC(tapi_cfg_phy_is_mode_advertised(ta, iface_name,
+                                             speed_adver, duplex_adver,
+                                             &mode));
     if (!mode)
         TEST_FAIL("mode is not advertised");
     
     /* Turn off advertising for this mode */
-    CHECK_RC(tapi_cfg_base_phy_advertise_mode(ta, iface_name,
-                                              speed_adver, duplex_adver,
-                                              0));
+    CHECK_RC(tapi_cfg_phy_advertise_mode(ta, iface_name,
+                                         speed_adver, duplex_adver,
+                                         0));
     
     /* Synchronize configuration tree */
-    CHECK_RC(tapi_cfg_base_phy_sync(ta, iface_name, second_ta,
-                                    second_iface));
+    CHECK_RC(tapi_cfg_phy_sync(ta, iface_name, second_ta,
+                               second_iface));
     
     /* Check that mode is not advertised */
-    CHECK_RC(tapi_cfg_base_phy_is_mode_advertised(ta, iface_name,
-                                                  speed_adver, duplex_adver,
-                                                  &tmp_mode));
+    CHECK_RC(tapi_cfg_phy_is_mode_advertised(ta, iface_name,
+                                             speed_adver, duplex_adver,
+                                             &tmp_mode));
     if (tmp_mode)
         TEST_FAIL("failed to turn off mode advertising");
     
     /* Turn on advertising for this mode */
-    CHECK_RC(tapi_cfg_base_phy_advertise_mode(ta, iface_name,
-                                              speed_adver, duplex_adver,
-                                              1));
+    CHECK_RC(tapi_cfg_phy_advertise_mode(ta, iface_name,
+                                         speed_adver, duplex_adver, 1));
     
     /* Synchronize configuration tree */
-    CHECK_RC(tapi_cfg_base_phy_sync(ta, iface_name, second_ta,
-                                    second_iface));
+    CHECK_RC(tapi_cfg_phy_sync(ta, iface_name, second_ta,
+                               second_iface));
     
     /* Check that mode is advertised */
-    CHECK_RC(tapi_cfg_base_phy_is_mode_advertised(ta, iface_name,
-                                                  speed_adver, duplex_adver,
-                                                  &tmp_mode));
+    CHECK_RC(tapi_cfg_phy_is_mode_advertised(ta, iface_name,
+                                             speed_adver, duplex_adver,
+                                             &tmp_mode));
     if (!tmp_mode)
         TEST_FAIL("failed to advertise mode");
     
@@ -221,10 +220,10 @@ main(int argc, char *argv[])
      * Restart PHY autonegatiation
      */
     
-    CHECK_RC(tapi_cfg_base_phy_reset(ta, iface_name, 0));
+    CHECK_RC(tapi_cfg_phy_reset(ta, iface_name));
     
     /* Synchronize */
-    CHECK_RC(tapi_cfg_base_phy_sync(ta, iface_name, second_ta,
+    CHECK_RC(tapi_cfg_phy_sync(ta, iface_name, second_ta,
              second_iface));
     
     TEST_SUCCESS;
