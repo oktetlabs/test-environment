@@ -91,7 +91,8 @@ TE_TA_TYPE([solaris2], [solaris], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent ndn asn])
 
 
-TE_PLATFORM([solaris_64], [--host=i386-pc-solaris2.11],
+TE_PLATFORM([solaris_64],
+            [--host=i386-pc-solaris2.11 CC=i386-pc-solaris2.11-gcc-4.1.2],
             [-I${SOLARIS2_HOME}/sys-include], [-m64 -pthreads],
             [-L${SOLARIS2_HOME}/lib/amd64 \
              -Wl,-rpath-link,${SOLARIS2_HOME}/lib/amd64],
