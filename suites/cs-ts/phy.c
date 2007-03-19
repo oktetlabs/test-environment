@@ -30,7 +30,8 @@
  *
  * @param ta            Test agent name
  * @param iface_name    Interface name
- * @param second_ta     A Test agent connected with @p ta by physical link
+ * @param second_ta     The name of a test agent connected
+ *                      with @p ta by physical link
  * @param second_iface  @p second_ta interface name
  * @param speed         Interface speed
  * @param duplex        Interface duplex state
