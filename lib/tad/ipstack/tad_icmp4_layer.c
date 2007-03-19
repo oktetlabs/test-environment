@@ -58,6 +58,7 @@
 
 #include "te_defs.h"
 #include "te_alloc.h"
+#include "te_ethernet.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 

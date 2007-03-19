@@ -519,6 +519,10 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
     int                 ret_val;
     fd_set              write_set;
     int                 fd;
+#ifdef __CYGWIN__
+    unsigned char      *packet_data = NULL, *cur_data = NULL;
+    int                 seg;
+#endif
     
     assert(sap != NULL);
     data = sap->data;
@@ -536,6 +540,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
         ERROR("%s(): no output socket", __FUNCTION__);
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
+#ifndef __CYGWIN__
     if ((fd = pcap_fileno(data->out)) < 0)
     {
         rc = TE_OS_RC(TE_TAD_CSAP, errno);
@@ -544,8 +549,11 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
         return rc;
     }
 #endif
+#endif
 
+#ifndef __CYGWIN__
     F_VERB("%s: writing data to socket: %d", __FUNCTION__, fd);
+#endif
 
     /* Convert packet segments to IO vector */
     rc = tad_pkt_segs_to_iov(pkt, iov, iovlen);
@@ -555,10 +563,33 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
         return rc;
     }
 
+#ifdef __CYGWIN__
+    /* Prepare block of data to send */
+    packet_data = malloc(pkt->segs_len);
+    if (NULL == packet_data)
+    {
+        ERROR("Failed to allocate buffer for all packet data");
+        return TE_RC(TE_TAD_CSAP, TE_ENOBUFS);
+    }
+    cur_data = packet_data;
+    for (seg = 0; seg < iovlen; seg++)
+    {
+      memcpy(cur_data, iov[seg].iov_base, iov[seg].iov_len);
+      cur_data += iov[seg].iov_len;
+    }
+    if ((unsigned int)(cur_data - packet_data) != pkt->segs_len)
+    {
+        ERROR("Size error while creating full packet from segments");
+        free(packet_data);
+        return TE_RC(TE_TAD_CSAP, TE_ENOBUFS);
+    }
+#endif
+
     for (retries = 0, ret_val = 0;
          ret_val <= 0 && retries < TAD_WRITE_RETRIES;
          retries++)
     {
+#ifndef __CYGWIN__
         struct timeval timeout = TAD_WRITE_TIMEOUT_DEFAULT; 
     
         FD_ZERO(&write_set);
@@ -600,7 +631,23 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
                     return rc;
             }
         } 
+#else /* !__CYGWIN */
+        if (0 == pcap_sendpacket(data->out, packet_data, pkt->segs_len))
+        {
+          ret_val = pkt->segs_len;
+          break;
+        }
+        else
+        {
+          ret_val = -1;
+        }
+#endif /* !__CYGWIN__ */
     }
+
+#ifdef __CYGWIN__
+    free(packet_data);
+#endif
+
     if (retries == TAD_WRITE_RETRIES)
     {
         ERROR("CSAP #%d, too many retries made, failed", sap->csap->id);
@@ -634,6 +681,7 @@ tad_eth_sap_send_close(tad_eth_sap *sap)
     fd = data->out;
 #else
     assert(data->out != NULL);
+#ifndef __CYGWIN__
     if ((fd = pcap_fileno(data->out)) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TAD_CSAP, errno);
@@ -642,6 +690,9 @@ tad_eth_sap_send_close(tad_eth_sap *sap)
               __FUNCTION__, fd, rc);
         return rc;
     }
+#else /* !__CYGWIN__ */
+    fd = -1;
+#endif /* !__CYGWIN__ */
 #endif
 
     if (fd >= 0)
@@ -766,7 +817,8 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
 #else
     /*  Obtain a packet capture descriptor */
     data->in = pcap_open_live(sap->name, TAD_ETH_SAP_SNAP_LEN,
-                              (mode & TAD_ETH_RECV_OTHER) ? 1 : 0,
+                              ((mode & TAD_ETH_RECV_OTHER) &&
+                               !(mode & TAD_ETH_RECV_NO_PROMISC)) ? 1 : 0,
                               10 /* read timeout in ms */, data->errbuf);
     if (data->in == NULL)
     {
