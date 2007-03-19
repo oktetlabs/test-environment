@@ -720,7 +720,7 @@ phy_get_mode(int speed, const char *duplex)
             break;
         }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 21)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 22)
         case SPEED_10000:
         {
             if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
@@ -836,9 +836,6 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
     int                rc = -1;
     int                advertised = -1;
     
-#undef UNUSED_SIZE
-#undef DUPLEX_SIZE
-    
     memset(&ecmd, 0, sizeof(ecmd));
     
     /* Get all properties */
@@ -935,8 +932,6 @@ phy_modes_list_ins_value(char **list, char *value)
     realloced = realloc(*list, strlen(*list) + LIST_BULK);
     if (realloced == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-#undef LIST_BULK 
 
     /* Fill new list entry */
     sprintf(entry, "%s ", value);
@@ -1286,7 +1281,7 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
         }
         
         ERROR("failed to get interface state value");
-        return TE_RC(TE_TA_UNIX, errno);;
+        return TE_RC(TE_TA_UNIX, errno);
     }
     
     state = edata.data ? TE_PHY_STATE_UP : TE_PHY_STATE_DOWN;

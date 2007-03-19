@@ -212,6 +212,8 @@ tapi_cfg_phy_speed_get(const char *ta, const char *if_name, int *speed)
     rc = cfg_get_instance_sync_fmt(CFG_VAL(INTEGER, speed),
                                    "/agent:%s/interface:%s/phy:/speed:",
                                    ta, if_name);
+    if (rc != 0)
+        return rc;
     
     /* Check that option is supported */
     if (*speed == -1)

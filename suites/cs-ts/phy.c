@@ -40,15 +40,15 @@
  * @par Scenario 
  * -# Get PHY state value
  * -# Check that PHY is at state ON
- * -# Get PHY autonegatiation state
- * -# Turn PHY autonegatiation to state OFF
- * -# Check that PHY autonegatiation is at state OFF
+ * -# Get PHY autonegotiation state
+ * -# Turn PHY autonegotiation to state OFF
+ * -# Check that PHY autonegotiation is at state OFF
  * -# Set PHY speed value equal to @p speed
  * -# Check that PHY speed has been set correctly
  * -# Set PHY duplex value equal to @p duplex
  * -# Check that PHY duplex state has been set correctly
- * -# Turn PHY autonegatiation to state ON
- * -# Check that PHY autonegatiation is at state ON
+ * -# Turn PHY autonegotiation to state ON
+ * -# Check that PHY autonegotiation is at state ON
  * -# Check advertising support:
  *        a) Check that mode (@p speed_adver, @p duplex_adver)
  *           is advertised
@@ -56,7 +56,7 @@
  *        c) Check that mode is not advertised
  *        d) Turn on advertising for this mode
  *        e) Check that mode is advertised
- * -# Restart PHY autonegatiation
+ * -# Restart PHY autonegotiation
  *
  * @author Vadim V. Galitsyn <Vadim.Galitsyn@oktetlabs.ru>
  */
@@ -76,22 +76,22 @@
 int
 main(int argc, char *argv[])
 {
-    char    *ta               = NULL;
-    char    *iface_name       = NULL;
-    char    *second_ta        = NULL;
-    char    *second_iface     = NULL;
-    int      link_state       = -1;
-    int      autoneg          = -1;
-    int      duplex           = -1;
-    int      tmp_duplex       = -1;
-    int      speed            = -1;
-    int      tmp_speed        = -1;
-    int      speed_adver      = -1;
-    int      duplex_adver     = -1;
-    int      tmp_speed_adver  = -1;
+    char    *ta = NULL;
+    char    *iface_name = NULL;
+    char    *second_ta = NULL;
+    char    *second_iface = NULL;
+    int      link_state = -1;
+    int      autoneg = -1;
+    int      duplex = -1;
+    int      tmp_duplex = -1;
+    int      speed = -1;
+    int      tmp_speed = -1;
+    int      speed_adver = -1;
+    int      duplex_adver = -1;
+    int      tmp_speed_adver = -1;
     int      tmp_duplex_adver = -1;
-    te_bool  mode             = FALSE;
-    te_bool  tmp_mode         = FALSE;
+    te_bool  mode = FALSE;
+    te_bool  tmp_mode = FALSE;
     
     TEST_START; 
     
@@ -118,18 +118,18 @@ main(int argc, char *argv[])
      * Autonegotiation
      */
     
-    /* Get autonegatiation state */
+    /* Get autonegotiation state */
     CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
     RING("Autonegatiation state: %d", autoneg);
     
-    /* Turn off autonegatiation */
+    /* Turn off autonegotiation */
     autoneg = TE_PHY_AUTONEG_OFF;
     CHECK_RC(tapi_cfg_phy_autoneg_set(ta, iface_name, autoneg));
     
     /* Reset value */
     autoneg = -1;
     
-    /* Check that PHY autonegatiation is at state OFF */
+    /* Check that PHY autonegotiation is at state OFF */
     CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
     if (autoneg != TE_PHY_AUTONEG_OFF)
         TEST_FAIL("failed to set autonegotiation to state OFF");
@@ -162,14 +162,14 @@ main(int argc, char *argv[])
      * Autonegotiation
      */
     
-    /* Turn PHY autonegatiation to state ON */
+    /* Turn PHY autonegotiation to state ON */
     autoneg = TE_PHY_AUTONEG_ON;
     CHECK_RC(tapi_cfg_phy_autoneg_set(ta, iface_name, autoneg));
     
     /* Reset value */
     autoneg = -1;
     
-    /* Check that PHY autonegatiation is at state ON */
+    /* Check that PHY autonegotiation is at state ON */
     CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
     if (autoneg != TE_PHY_AUTONEG_ON)
         TEST_FAIL("failed to set autonegotiation to state ON");
@@ -217,7 +217,7 @@ main(int argc, char *argv[])
         TEST_FAIL("failed to advertise mode");
     
     /*
-     * Restart PHY autonegatiation
+     * Restart PHY autonegotiation
      */
     
     CHECK_RC(tapi_cfg_phy_reset(ta, iface_name));
