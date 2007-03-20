@@ -3703,6 +3703,8 @@ simple_receiver(tarpc_simple_receiver_in *in,
             break;
         }
 
+        if (out->bytes == 0)
+            RING("First %d bytes are received", len);
         out->bytes += len;
     }
 
