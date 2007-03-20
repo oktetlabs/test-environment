@@ -136,6 +136,47 @@ tapi_cfg_phy_speed_set(const char *ta, const char *if_name,
                        int speed);
 
 /**
+ * Get PHY interface mode: speed and duplex state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param speed         Speed value
+ *                      TE_PHY_SPEED_10    - 10 Mbit/sec
+ *                      TE_PHY_SPEED_100   - 100 Mbit/sec
+ *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
+ *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ * @param duplex        Duplex state value
+ *                      TE_PHY_DUPLEX_HALF - half duplex
+ *                      TE_PHY_DUPLEX_FULL - full duplex
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_base_phy_mode_get(const char *ta, const char *if_name,
+                           int *speed, int *duplex);
+
+/**
+ * Set PHY interface mode: speed and duplex state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param speed         Speed value
+ *                      TE_PHY_SPEED_10    - 10 Mbit/sec
+ *                      TE_PHY_SPEED_100   - 100 Mbit/sec
+ *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
+ *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ * @param duplex        Duplex state value
+ *                      TE_PHY_DUPLEX_HALF - half duplex
+ *                      TE_PHY_DUPLEX_FULL - full duplex
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_base_phy_mode_set(const char *ta, const char *if_name,
+                           int speed, int duplex);
+
+
+/**
  * Get PHY link state.
  *
  * @param ta            Test Agent name

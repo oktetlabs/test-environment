@@ -249,6 +249,92 @@ tapi_cfg_phy_speed_set(const char *ta, const char *if_name, int speed)
 }
 
 /**
+ * Get PHY interface mode: speed and duplex state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param speed         Speed value
+ *                      TE_PHY_SPEED_10    - 10 Mbit/sec
+ *                      TE_PHY_SPEED_100   - 100 Mbit/sec
+ *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
+ *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ * @param duplex        Duplex state value
+ *                      TE_PHY_DUPLEX_HALF - half duplex
+ *                      TE_PHY_DUPLEX_FULL - full duplex
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_base_phy_mode_get(const char *ta, const char *if_name,
+                           int *speed, int *duplex)
+{
+    te_errno rc;
+    
+    /* Try to get speed value */
+    rc = tapi_cfg_phy_speed_get(ta, if_name, speed);
+    if (rc != 0)
+    {
+        ERROR("failed to get interface speed value on %s at %s",
+              ta, if_name);
+        return rc;
+    }
+    
+    /* Try to get duplex state */
+    rc = tapi_cfg_phy_duplex_get(ta, if_name, duplex);
+    if (rc != 0)
+    {
+        ERROR("failed to get interface duplex state on %s at %s",
+              ta, if_name);
+        return rc;
+    }
+    
+    return 0;
+}
+
+/**
+ * Set PHY interface mode: speed and duplex state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param speed         Speed value
+ *                      TE_PHY_SPEED_10    - 10 Mbit/sec
+ *                      TE_PHY_SPEED_100   - 100 Mbit/sec
+ *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
+ *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ * @param duplex        Duplex state value
+ *                      TE_PHY_DUPLEX_HALF - half duplex
+ *                      TE_PHY_DUPLEX_FULL - full duplex
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_base_phy_mode_set(const char *ta, const char *if_name,
+                           int speed, int duplex)
+{
+    te_errno rc;
+    
+    /* Try to set speed value */
+    rc = tapi_cfg_phy_speed_set(ta, if_name, speed);
+    if (rc != 0)
+    {
+        ERROR("failed to set interface speed value on %s at %s",
+              ta, if_name);
+        return rc;
+    }
+    
+    /* Try to set duplex state */
+    rc = tapi_cfg_phy_duplex_set(ta, if_name, duplex);
+    if (rc != 0)
+    {
+        ERROR("failed to set interface duplex state on %s at %s",
+              ta, if_name);
+        return rc;
+    }
+    
+    return 0;
+}
+
+/**
  * Get PHY link state.
  *
  * @param ta            Test Agent name

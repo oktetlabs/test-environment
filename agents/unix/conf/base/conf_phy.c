@@ -76,6 +76,13 @@ static int phy_reset_value = 0; /**< Value of PHY reset */
 /* Speed units */
 #define KSTAT_SPEED_UNITS_IN_M 1000000
 
+/* Maximum number of items in the list of speeds */
+#define TE_PHY_SPEED_LIST_MAX_ITEMS (5)
+/* Maximum number of items in the list of speeds */
+#define TE_PHY_DUPLEX_LIST_MAX_ITEMS (2)
+/* Maximum size of the item in the list */
+#define TE_PHY_LIST_MAX_ITEM_SIZE (6)
+
 
 /*
  * Methods
@@ -95,9 +102,13 @@ static te_errno phy_duplex_set(unsigned int, const char *, const char *,
                                const char *);
 
 static te_errno phy_modes_speed_duplex_get(unsigned int, const char *,
-                                           char *, const char *);
+                                           char *, const char *,
+                                           const char *, const char *,
+                                           const char *, const char *);
 
 static te_errno phy_modes_speed_duplex_set(unsigned int, const char *,
+                                           const char *, const char *,
+                                           const char *, const char *,
                                            const char *, const char *);
 
 static te_errno phy_modes_speed_duplex_list(unsigned int, const char *,
@@ -234,6 +245,7 @@ phy_get_duplex_by_id(int id)
 #if defined __linux__
         case DUPLEX_FULL: return TE_PHY_DUPLEX_STRING_FULL;
         case DUPLEX_HALF: return TE_PHY_DUPLEX_STRING_HALF;
+        case 255:         return TE_PHY_DUPLEX_STRING_UNKNOWN;
 #elif defined __sun__
         case 0: return TE_PHY_DUPLEX_STRING_UNKNOWN;
         case 1: return TE_PHY_DUPLEX_STRING_HALF;
@@ -262,27 +274,15 @@ static int
 phy_property(const char *ifname, struct ethtool_cmd *ecmd, int type)
 {
     struct ifreq        ifr;
-    int                 fd;
     
     /* Setup control structure */
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
     
-    /* Try to create control socket */
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0)
-    {
-        ERROR("%s fails: failed to create control socket, "
-              "errno=%d (%s)", __FUNCTION__,
-              errno, strerror(errno));
-        return errno;
-    }
-    
     /* Get|set properties */
     ecmd->cmd = type;
     ifr.ifr_data = (caddr_t)ecmd;
-    ioctl(fd, SIOCETHTOOL, &ifr);
-    close(fd);
+    ioctl(cfg_socket, SIOCETHTOOL, &ifr);
     
     return errno;
 }
@@ -485,6 +485,27 @@ phy_execute_shell_cmd(char *cmd)
 #endif /* __sun__ */
 
 /**
+ * Extract driver name and instance number from interface name.
+ *
+ * @param ifname        name of the interface
+ * @param drv           driver name (output value)
+ * @param instance      instance number (output value)
+ *
+ * @return              A number of arguments which has been parsed.
+ *                      This number should be equal to 2 since we want
+ *                      to extract two argumants: driver name and instance
+ *                      number. If this number is not equal to 2 it means
+ *                      that parsing error has been occured.
+ */
+#if defined __sun__
+static inline int
+phy_extract_ifname(const char *ifname, char *drv, int *instance)
+{
+    return sscanf(ifname, "%[^0-9]%d", drv, instance);
+}
+#endif /* __sun__ */
+
+/**
  * Get PHY duplex state.
  *
  * @param gid           group identifier (unused)
@@ -544,7 +565,7 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
     int    result = -1;
     
     /* Extract driver name and instance number from interface name */
-    if (sscanf(ifname, "%[^0-9]%d", drv, &instance) != 2)
+    if (phy_extract_ifname(ifname, drv, &instance) != 2)
     {
         ERROR("failed to parse interface name");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -749,17 +770,15 @@ phy_get_mode(int speed, const char *duplex)
  */
 static te_errno
 phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
-                           const char *ifname)
+                           const char *ifname, const char *phy_name,
+                           const char *mode_name, const char * speed,
+                           const char *duplex)
 {
     UNUSED(gid);
+    UNUSED(phy_name);
+    UNUSED(mode_name);
 #if defined __linux__
-#define UNUSED_SIZE (10)
-#define DUPLEX_SIZE (4)
     struct ethtool_cmd  ecmd;
-    char                unused1[UNUSED_SIZE];
-    char                unused2[UNUSED_SIZE];
-    int                 speed = -1;
-    char                duplex[DUPLEX_SIZE];
     int                 rc = -1;
     int                 mode = -1;
     
@@ -782,13 +801,8 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
     
-    /* Extract values */
-    sscanf(oid,
-           "/agent:%[^/]/interface:%[^/]/phy:/modes:/speed:%d/duplex:%s",
-           unused1, unused2, &speed, duplex);
-    
-    /* Get current mode */
-    mode = phy_get_mode(speed, duplex);
+    /* Try to get current mode */
+    mode = phy_get_mode(atoi(speed), duplex);
     
     /* Set mode state */
     if (ecmd.advertising & mode)
@@ -801,6 +815,8 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(ifname);
+    UNUSED(speed);
+    UNUSED(duplex);
 #endif /* __linux__ */
     ERROR("advertising modes check is not supported at this platform");
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
@@ -821,18 +837,17 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
  */
 static te_errno
 phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
-                           const char *value, const char *ifname)
+                           const char *value, const char *ifname,
+                           const char *phy_name, const char *mode_name,
+                           const char * speed, const char *duplex)
 {
     UNUSED(gid);
-    
+    UNUSED(phy_name);
+    UNUSED(mode_name);
 #if defined __linux__
     struct ethtool_cmd ecmd;
     int                set = -1;
     int                result = -1;
-    char               unused1[UNUSED_SIZE];
-    char               unused2[UNUSED_SIZE];
-    int                speed = -1;
-    char               duplex[DUPLEX_SIZE];
     int                rc = -1;
     int                advertised = -1;
     
@@ -853,12 +868,7 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     
-    /* Extract values */
-    sscanf(oid,
-           "/agent:%[^/]/interface:%[^/]/phy:/modes:/speed:%d/duplex:%s",
-           unused1, unused2, &speed, duplex);
-    
-    result = phy_get_mode(speed, duplex);
+    result = phy_get_mode(atoi(speed), duplex);
     
     /* Set or unset */
     set = atoi(value);
@@ -901,6 +911,8 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(ifname);
+    UNUSED(speed);
+    UNUSED(duplex);
     
     ERROR("mode advertising is not supported at this platform");
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
@@ -915,37 +927,14 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
  *
  * @return Status code
  */
-static te_errno
+static void
 phy_modes_list_ins_value(char **list, char *value)
 {
-    char *entry;
-    char *realloced;
+    /* Insert the item to the end of list */
+    strcat(*list, value);
     
-#define LIST_BULK (10)
-
-    /* Try to allocate memory for temporary buffer */
-    entry = (char *)malloc(LIST_BULK);
-    if (entry == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
-    /* Try to reallocate list memory */
-    realloced = realloc(*list, strlen(*list) + LIST_BULK);
-    if (realloced == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    /* Fill new list entry */
-    sprintf(entry, "%s ", value);
-    
-    /* Store new list entry */
-    strcat(realloced, entry);
-    
-    /* Restore list */
-    *list = realloced;
-    
-    /* Free unused memory */
-    free(entry);
-    
-    return 0;
+    /* Insert delimeter to the end of list */
+    strcat(*list, " ");
 }
 
 /**
@@ -972,12 +961,18 @@ phy_modes_speed_duplex_list(unsigned int gid, const char *oid, char **list,
     
     memset(&ecmd, 0, sizeof(ecmd));
     
-    /* Initialize list */
-    if ((*list = strdup("")) == NULL)
+    /* Allocate memory for list buffer */
+    *list = (char *)malloc(TE_PHY_DUPLEX_LIST_MAX_ITEMS *
+                           TE_PHY_LIST_MAX_ITEM_SIZE);
+    if (*list == NULL)
     {
         ERROR("out of memory");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
+    
+    /* Initialize list buffer */
+    memset(*list, 0, TE_PHY_DUPLEX_LIST_MAX_ITEMS *
+           TE_PHY_LIST_MAX_ITEM_SIZE);
     
     /* Get property */
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
@@ -1029,8 +1024,15 @@ phy_modes_speed_list(unsigned int gid, const char *oid, char **list,
     
     memset(&ecmd, 0, sizeof(ecmd));
     
-    /* Initialize list */
-    if ((*list = strdup("")) == NULL)
+    /* Allocate memory for list buffer */
+    *list = (char *)malloc(TE_PHY_SPEED_LIST_MAX_ITEMS *
+                           TE_PHY_LIST_MAX_ITEM_SIZE);
+    
+    /* Initialize list buffer */
+    memset(*list, 0, TE_PHY_SPEED_LIST_MAX_ITEMS *
+           TE_PHY_LIST_MAX_ITEM_SIZE);
+    
+    if (*list == NULL)
     {
         ERROR("out of memory");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
@@ -1242,7 +1244,6 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     
 #if defined __linux__
     struct ifreq         ifr;
-    int                  fd;
     struct ethtool_value edata;
     int                  state = -1;
     
@@ -1252,23 +1253,12 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
     
-    /* Try to create control socket */
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    
-    if (fd < 0)
-    {
-        ERROR("%s fails: failed to create control socket",
-              __FUNCTION__);
-        snprintf(value, RCF_MAX_VAL, "%d", 0);
-        return 0;
-    }
-    
     /* Get properties */
     edata.cmd = ETHTOOL_GLINK;
     ifr.ifr_data = (caddr_t)&edata;
     
     /* Get link state */
-    if (ioctl(fd, SIOCETHTOOL, &ifr) != 0)
+    if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
     {
         /*
          * Check for option support: if option is not
@@ -1289,9 +1279,6 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     /* Store value */
     snprintf(value, RCF_MAX_VAL, "%d", state);
     
-    /* Close a socket */
-    close(fd);
-    
     return 0;
 #elif defined __sun__
     char   drv[IFNAME_MAX];
@@ -1300,7 +1287,7 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     int    state = -1;
     
     /* Extract driver name and instance number from interface name */
-    if (sscanf(ifname, "%[^0-9]%d", drv, &instance) != 2)
+    if (phy_extract_ifname(ifname, drv, &instance) != 2)
     {
         ERROR("failed to parse interface name");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -1382,7 +1369,6 @@ phy_reset_set(unsigned int gid, const char *oid, const char *value,
     
 #if defined __linux__
     struct ifreq         ifr;
-    int                  fd;
     int                  rc = -1;
     struct ethtool_value edata;
     
@@ -1395,29 +1381,17 @@ phy_reset_set(unsigned int gid, const char *oid, const char *value,
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
     
-    /* Try to create control socket */
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    
-    if (fd < 0)
-    {
-        ERROR("%s fails: failed to create control socket", __FUNCTION__);
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-    
     /* Get|set properties */
     edata.cmd = ETHTOOL_NWAY_RST;
     ifr.ifr_data = (caddr_t)&edata;
-    rc = ioctl(fd, SIOCETHTOOL, &ifr);
+    rc = ioctl(cfg_socket, SIOCETHTOOL, &ifr);
     
     if (rc < 0)
     {
         ERROR("failed to restart autonegotiation, errno=%d (%s)",
               errno, strerror(errno));
-        close(fd);
         return TE_RC(TE_TA_UNIX, errno);
     }
-    
-    close(fd);
     
     return 0;
 #else
