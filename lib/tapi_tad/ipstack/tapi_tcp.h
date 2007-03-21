@@ -538,6 +538,16 @@ extern tapi_tcp_pos_t tapi_tcp_last_seqn_sent(tapi_tcp_handler_t handler);
 extern tapi_tcp_pos_t tapi_tcp_last_ackn_sent(tapi_tcp_handler_t handler);
 
 /**
+ * Return last received window in established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ *
+ * @return SEQ number of zero if 'hanlder' not valid.
+ */
+extern size_t tapi_tcp_last_win_got(tapi_tcp_handler_t handler);
+
+
+/**
  * Return next SEQ number to be sent in established TCP connection.
  *
  * @param handler       TAPI handler of TCP connection;     

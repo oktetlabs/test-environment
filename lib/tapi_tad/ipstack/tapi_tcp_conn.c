@@ -139,6 +139,7 @@ typedef struct tapi_tcp_connection_t {
 
     size_t         last_len_got;
     size_t         last_len_sent;
+    size_t         last_win_got;
 
     te_bool        fin_got;
     te_bool        reset_got; 
@@ -551,6 +552,10 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     rc = ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_ACKN, &pdu_field);
     CHECK_ERROR("read TCP ackn error");
     ack_got = pdu_field;
+
+    rc = ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_WINDOW, &pdu_field);
+    CHECK_ERROR("read TCP window error");
+    conn_descr->last_win_got = pdu_field;
 
     pkt = calloc(1, sizeof(*pkt)); 
 
@@ -1304,6 +1309,18 @@ tapi_tcp_send_ack(tapi_tcp_handler_t handler, tapi_tcp_pos_t ackn)
 
 }
 
+size_t
+tapi_tcp_last_win_got(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return 0;
+
+    return conn_descr->last_win_got;
+}
 
 tapi_tcp_pos_t
 tapi_tcp_last_seqn_got(tapi_tcp_handler_t handler)
