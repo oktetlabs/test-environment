@@ -313,6 +313,11 @@ tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
  * @param vid           VLAN ID to create
  * @param vlan_ifname   pointer to return the name of new interface
  *
+ * @note MTU of the new VLAN interface is OS-dependent. For example, Linux
+ * makes this MTU equal to the master interface MTU; Solaris creates VLAN
+ * interface with maximum allowed MTU independently from the master
+ * interface settings. Caller should care about MTU himself.
+ *
  * @return Status code
  */
 te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
@@ -325,6 +330,11 @@ te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
  * @param if_name       interface name
  * @param vid           VLAN ID to get the name
  * @param vlan_ifname   pointer to return the name of new interface
+ *
+ * @note MTU of the new VLAN interface is OS-dependent. For example, Linux
+ * makes this MTU equal to the master interface MTU; Solaris creates VLAN
+ * interface with maximum allowed MTU independently from the master
+ * interface settings. Caller should care about MTU himself.
  *
  * @return Status code
  */
