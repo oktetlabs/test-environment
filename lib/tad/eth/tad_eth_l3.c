@@ -457,7 +457,7 @@ tad_eth_arp_reply(csap_p csap, const char *usr_param,
     if (rw_layer_cbs->prepare_send_cb != NULL && 
         (rc = rw_layer_cbs->prepare_send_cb(csap)) != 0)
     {
-        ERROR("%s(): prepare for recv failed %r", rc);
+        ERROR("%s(): prepare for send failed %r", __FUNCTION__, rc);
         return rc;
     }
 
@@ -474,7 +474,6 @@ tad_eth_arp_reply(csap_p csap, const char *usr_param,
               __FUNCTION__, usr_param, rc);
         return TE_EINVAL;
     } 
-
     VERB("%s(): got user param %s; parsed MAC: %x:%x:%x:%x:%x:%x;",
          __FUNCTION__, usr_param, 
          (int)my_mac[0], (int)my_mac[1], (int)my_mac[2], 
