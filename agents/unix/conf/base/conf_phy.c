@@ -58,8 +58,6 @@
 
 #include "te_ethernet_phy.h"
 
-static int phy_reset_value = 0; /**< Value of PHY reset */
-
 /* Stdout output buffer size: need to pick up command execution output */
 #define BUFFER_SIZE (1024)
 /* Size of interface name */
@@ -127,22 +125,15 @@ static te_errno phy_speed_set(unsigned int, const char *, const char *,
 static te_errno phy_state_get(unsigned int, const char *, char *,
                               const char *);
 
-static te_errno phy_reset_get(unsigned int, const char *, char *,
-                              const char *);
-
-static te_errno phy_reset_set(unsigned int, const char *, const char *,
-                              const char *);
-
+static te_errno phy_commit(unsigned int, const cfg_oid *);
 
 /*
  * Nodes
  */
 
+static rcf_pch_cfg_object node_phy;
 
-RCF_PCH_CFG_NODE_RW(node_phy_reset, "reset", NULL, NULL,
-                    phy_reset_get, phy_reset_set);
-
-RCF_PCH_CFG_NODE_RO(node_phy_state, "state", NULL, &node_phy_reset,
+RCF_PCH_CFG_NODE_RO(node_phy_state, "state", NULL, NULL,
                     phy_state_get);
 
 static rcf_pch_cfg_object node_phy_modes_speed_duplex = {
@@ -150,7 +141,7 @@ static rcf_pch_cfg_object node_phy_modes_speed_duplex = {
     (rcf_ch_cfg_get)phy_modes_speed_duplex_get,
     (rcf_ch_cfg_set)phy_modes_speed_duplex_set,
     NULL, NULL,
-    (rcf_ch_cfg_list)phy_modes_speed_duplex_list, NULL, NULL
+    (rcf_ch_cfg_list)phy_modes_speed_duplex_list, NULL, &node_phy
 };
 
 RCF_PCH_CFG_NODE_COLLECTION(node_phy_modes_speed, "speed",
@@ -161,22 +152,187 @@ RCF_PCH_CFG_NODE_COLLECTION(node_phy_modes_speed, "speed",
 RCF_PCH_CFG_NODE_RO(node_phy_modes, "modes", &node_phy_modes_speed,
                     &node_phy_state, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_phy_speed, "speed", NULL, &node_phy_modes,
-                    phy_speed_get, phy_speed_set);
+RCF_PCH_CFG_NODE_RWC(node_phy_speed, "speed", NULL, &node_phy_modes,
+                     phy_speed_get, phy_speed_set, &node_phy);
 
-RCF_PCH_CFG_NODE_RW(node_phy_duplex, "duplex", NULL, &node_phy_speed,
-                    phy_duplex_get, phy_duplex_set);
+RCF_PCH_CFG_NODE_RWC(node_phy_duplex, "duplex", NULL, &node_phy_speed,
+                     phy_duplex_get, phy_duplex_set, &node_phy);
 
-RCF_PCH_CFG_NODE_RW(node_phy_autoneg, "autoneg", NULL, &node_phy_duplex,
-                    phy_autoneg_get, phy_autoneg_set);
+RCF_PCH_CFG_NODE_RWC(node_phy_autoneg, "autoneg", NULL, &node_phy_duplex,
+                     phy_autoneg_get, phy_autoneg_set, &node_phy);
 
-RCF_PCH_CFG_NODE_RO(node_phy, "phy",
-                    &node_phy_autoneg, NULL,
-                    NULL);
+RCF_PCH_CFG_NODE_NA_COMMIT(node_phy, "phy", &node_phy_autoneg, NULL,
+                           phy_commit);
+
+
+#if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
+/* A list of the interfaces parameters */
+struct phy_iflist_head {
+    struct phy_iflist_head *next;   /**< Next list item */
+    struct phy_iflist_head *prev;   /**< Previous list item */
+    const char             *ifname; /**< Interface name  */
+    struct ethtool_cmd      ecmd;   /**< Interface parameters */
+} phy_iflist;
+
+/**
+ * Initialize PHY interfaces parameters list.
+ *
+ * @param list          A pointer to list head
+ */
+static void
+phy_init_iflist(struct phy_iflist_head *list)
+{
+    list->next = NULL;
+}
+
+/**
+ * Add a new list entry to the PHY interfaces parameters list.
+ *
+ * This function just allocates memory for a new list item,
+ * sets interface name field and initialize ecmd field.
+ * cmd field should be filled by caller after item memory
+ * will be allocated and a pointer to item will be returned to caller.
+ *
+ * @param list          A pointer to list head
+ * @param ifname        Interface name
+ *
+ * @return A pointer to newly allocated list item or NULL
+ *         if no more memory available to allocate a new list item.
+ */
+static struct phy_iflist_head *
+phy_iflist_add_item(struct phy_iflist_head *list, const char *ifname)
+{
+    struct phy_iflist_head *new_list_item;
+    struct phy_iflist_head *next;
+    
+    /* Allocate memory for a new list item */
+    new_list_item =
+        (struct phy_iflist_head *)malloc(sizeof(struct phy_iflist_head));
+    if (new_list_item == NULL)
+        return NULL;
+    
+    /* Store interface name */
+    new_list_item->ifname = ifname;
+    
+    /* Remember a pointer to current next list item */
+    next = list->next;
+    
+    /* Insert new list item between list head and
+       next element relative list head */
+    
+    /* Tell to list head that the next element after list head
+       is newly allocated list item */
+    list->next = new_list_item;
+    /* Tell to newly allocated list item that previous list element is
+       a list head */
+    new_list_item->prev = list;
+    
+    /* If next (previuosly remembered) list element exists,
+       tell this element that the previous list element is
+       a newly allocated list item and tell the newly allocated
+       list item that the next element is the first element at the list */
+    if (next != NULL)
+    {
+        next->prev = new_list_item;
+        new_list_item->next = next;
+    }
+    else /* Store the end of the list */
+        new_list_item->next = NULL;
+    
+    /* Initialize ecmd */
+    memset(&(new_list_item->ecmd), 0, sizeof(struct ethtool_cmd));
+    new_list_item->ecmd.speed = TE_PHY_SPEED_UNKNOWN;
+    new_list_item->ecmd.duplex = TE_PHY_DUPLEX_UNKNOWN;
+    new_list_item->ecmd.autoneg = TE_PHY_AUTONEG_UNKNOWN;
+    
+    return new_list_item;
+}
+
+/**
+ * Find the PHY interface properties list item or
+ * add a new one to this list if no such item exists in list.
+ *
+ * @param list          A pointer to list head
+ * @param ifname        Interface name
+ *
+ * @return A pointer to newly allocated list item or pointer to list item
+ *         that already exists in the list or a NULL
+ *         if no more memory available to allocate a new list item.
+ */
+static struct phy_iflist_head *
+phy_iflist_find_or_add(struct phy_iflist_head *list, const char *ifname)
+{
+    struct phy_iflist_head *list_item = list;
+    
+    /* Walking through the list items */
+    while (1)
+    {
+        /* Look for the next list item */
+        if (list_item->next == NULL)
+            break;
+        
+        /* Check for the list item existense */
+        if (strcmp(list_item->next->ifname, ifname) == 0)
+            return list_item;
+        
+        /* Switch to next list item */
+        list_item = list_item->next;
+        
+        /* Looking for the list end */
+        if (list_item->next == NULL)
+            break;
+    }
+    
+    /* If item does not exeists, add a new one */
+    return phy_iflist_add_item(list, ifname);
+}
+
+/**
+ * Find the PHY interface properties list item.
+ *
+ * @param list          A pointer to list head
+ * @param ifname        Interface name
+ *
+ * @return A pointer to list item or a NULL
+ *         if no more memory available to allocate
+ *         a new list item.
+ */
+static struct phy_iflist_head *
+phy_iflist_find(struct phy_iflist_head *list, const char *ifname)
+{
+    struct phy_iflist_head *list_item = list;
+    
+    /* Walking through the list items */
+    while (1)
+    {
+        /* Look for the next list item */
+        if (list_item->next == NULL)
+            break;
+        
+        /* Check for the list item existense */
+        if (strcmp(list_item->next->ifname, ifname) == 0)
+            return list_item;
+        
+        /* Switch to next list item */
+        list_item = list_item->next;
+        
+        /* Looking for the list end */
+        if (list_item->next == NULL)
+            break;
+    }
+    
+    /* If item does not exeists, return NULL */
+    return NULL;
+}
+#endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
 
 te_errno
 ta_unix_conf_phy_init(void)
 {
+#if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
+    /* Initialize interfaces configuration parameters list */
+    phy_init_iflist(&phy_iflist);
+#endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
     return rcf_pch_add_node("/agent/interface", &node_phy);
 }
 
@@ -369,19 +525,14 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     
 #if defined __linux__
-    struct ethtool_cmd ecmd;
-    int                autoneg = -1;
-    int                rc = -1;
+    int                     autoneg = -1;
+    struct phy_iflist_head *list_item;
     
-    memset(&ecmd, 0, sizeof(ecmd));
-    
-    /* Get all properties */
-    if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
-    {
-        ERROR("failed to get PHY properties while "
-              "trying to set autonegatiation state");
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
+    /* Try to get a pointer to list item associated with
+     * current interface name */
+    list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
+    if (list_item == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     
     /* Get value */
     sscanf(value, "%d", &autoneg);
@@ -395,19 +546,7 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
     }
     
     /* Set value */
-    ecmd.autoneg = (uint8_t)autoneg;
-    
-    /* Enable features if needed */
-    if (autoneg == AUTONEG_ENABLE)
-        ecmd.advertising = ecmd.supported;
-    
-    /* Apply value */
-    if ((rc = PHY_SET_PROPERTY(ifname, &ecmd)) != 0)
-    {
-        ERROR("failed to set PHY autonegatiation state, errno=%d (%s)",
-              rc, strerror(rc));
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
+    list_item->ecmd.autoneg = (uint8_t)autoneg;
     
     return 0;
 #else
@@ -643,26 +782,14 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     
 #if defined __linux__
-    struct ethtool_cmd ecmd;
-    int                rc = -1;
-    int                duplex = -1;
+    int                     duplex = -1;
+    struct phy_iflist_head *list_item;
     
-    memset(&ecmd, 0, sizeof(ecmd));
-    
-    /* Get all properties */
-    if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
-    {
-        ERROR("failed to get PHY properties while setting duplex value");
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    
-    /* Check for autonegatiation state off */
-    if (ecmd.autoneg & AUTONEG_ENABLE)
-    {
-        ERROR("autonegatiation is ON; turn OFF autonegatiation "
-              "to change the value of DUPLEX");
-        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-    }
+    /* Try to get a pointer to list item associated with
+     * current interface name */
+    list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
+    if (list_item == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     
     duplex = phy_get_duplex_by_name(value);
     
@@ -673,17 +800,7 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
     }
     
     /* Set value */
-    ecmd.duplex = duplex;
-    
-    /* Apply value */
-    if ((rc = PHY_SET_PROPERTY(ifname, &ecmd)) != 0)
-    {
-        ERROR("failed to apply PHY properties while setting "
-              "duplex value, errno=%d (%s)",
-              rc, strerror(rc));
-        
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
+    list_item->ecmd.duplex = duplex;
     
     return 0;
 #else
@@ -775,6 +892,7 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
                            const char *duplex)
 {
     UNUSED(gid);
+    UNUSED(oid);
     UNUSED(phy_name);
     UNUSED(mode_name);
 #if defined __linux__
@@ -812,7 +930,6 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
     
     return 0;
 #else
-    UNUSED(oid);
     UNUSED(value);
     UNUSED(ifname);
     UNUSED(speed);
@@ -842,14 +959,15 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
                            const char * speed, const char *duplex)
 {
     UNUSED(gid);
+    UNUSED(oid);
     UNUSED(phy_name);
     UNUSED(mode_name);
 #if defined __linux__
-    struct ethtool_cmd ecmd;
-    int                set = -1;
-    int                result = -1;
-    int                rc = -1;
-    int                advertised = -1;
+    int                     set = -1;
+    int                     mode = -1;
+    struct ethtool_cmd      ecmd;
+    struct phy_iflist_head *list_item;
+    te_errno                rc;
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -861,54 +979,33 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
     
-    /* Check autonegotiation state */
-    if (ecmd.autoneg == AUTONEG_DISABLE)
+    
+    /* Get mode numeric ID */
+    mode = phy_get_mode(atoi(speed), duplex);
+    if (mode == 0)
     {
-        ERROR("autonegotiation should be ON while advertising change");
+        ERROR("trying to advertise bad mode");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
-    result = phy_get_mode(atoi(speed), duplex);
     
     /* Set or unset */
     set = atoi(value);
     
+    /* Try to get a pointer to list item associated with
+     * current interface name */
+    list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
+    if (list_item == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    
     if (set == 1)
-        ecmd.advertising = ecmd.supported | result; /* Set value */
+        list_item->ecmd.advertising =
+            ecmd.advertising | mode; /* Set value */
     else
-        ecmd.advertising &= ~result; /* Unset value */
-    
-    /* Remember advertised modes value */
-    advertised = ecmd.advertising;
-    
-    /* Apply value */
-    if ((rc = PHY_SET_PROPERTY(ifname, &ecmd)) != 0)
-    {
-        ERROR("failed to apply PHY properties while setting "
-              "mode to advertising state");
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    
-    /*
-     * Check that mode advertised
-     */
-    
-    if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
-    {
-        ERROR("failed to check PHY properties while setting "
-              "mode to advertising state");
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    
-    if (ecmd.advertising != (u32)advertised)
-    {
-        ERROR("cannot advertise this mode");
-        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-    }
+        list_item->ecmd.advertising =
+            ecmd.advertising & (~mode); /* Unset value */
     
     return 0;
 #else
-    UNUSED(oid);
     UNUSED(value);
     UNUSED(ifname);
     UNUSED(speed);
@@ -1182,39 +1279,20 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     
 #if defined __linux__
-    struct ethtool_cmd ecmd;
-    int                speed;
-    int                rc = -1;
+    int                     speed;
+    struct phy_iflist_head *list_item;
     
-    memset(&ecmd, 0, sizeof(ecmd));
-    
-    /* Get all properties */
-    if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
-    {
-        ERROR("failed to get PHY properties while setting speed value");
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    
-    /* Check for autonegatiation state off */
-    if (ecmd.autoneg & AUTONEG_ENABLE)
-    {
-        ERROR("autonegatiation is ON; turn OFF autonegatiation "
-              "to change the value of DUPLEX");
-        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-    }
+    /* Try to get a pointer to list item associated with
+     * current interface name */
+    list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
+    if (list_item == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     
     /* Get value provided by caller */
     sscanf(value, "%d", &speed);
     
     /* Set value */
-    ecmd.speed = speed;
-    
-    /* Apply value */
-    if ((rc = PHY_SET_PROPERTY(ifname, &ecmd)) != 0)
-    {
-        ERROR("failed to set PHY properties while applying speed value");
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
+    list_item->ecmd.speed = speed;
     
     return 0;
 #else
@@ -1327,55 +1405,22 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
-/**
- * Get PHY reset state.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         location of value
- * @param ifname        name of the interface
- *
- * @return              Status code
- */
-static te_errno
-phy_reset_get(unsigned int gid, const char *oid, char *value,
-              const char *ifname)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(ifname);
-    
-    snprintf(value, RCF_MAX_VAL, "%d", phy_reset_value);
-    
-    return 0;
-}
-
+#if defined __linux__ && HAVE_LINUX_ETHTOOL_H
 /**
  * Restart autonegotiation.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         new value pointer
  * @param ifname        name of the interface
  *
  * @return              Status code
  */
 static te_errno
-phy_reset_set(unsigned int gid, const char *oid, const char *value,
-              const char *ifname)
+phy_reset(const char *ifname)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    
-#if defined __linux__
     struct ifreq         ifr;
     int                  rc = -1;
     struct ethtool_value edata;
     
     memset(&edata, 0, sizeof(edata));
-    
-    /* Extract value */
-    sscanf(value, "%d", &phy_reset_value);
     
     /* Setup control structure */
     memset(&ifr, 0, sizeof(ifr));
@@ -1388,16 +1433,78 @@ phy_reset_set(unsigned int gid, const char *oid, const char *value,
     
     if (rc < 0)
     {
-        ERROR("failed to restart autonegotiation, errno=%d (%s)",
-              errno, strerror(errno));
-        return TE_RC(TE_TA_UNIX, errno);
+        ERROR("failed to restart autonegotiation at %s, errno=%d (%s)",
+              ifname, errno, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    
+    return 0;
+}
+#endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
+
+static te_errno
+phy_commit(unsigned int gid, const cfg_oid *p_oid)
+{
+    UNUSED(gid);
+#if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
+    char                   *ifname;
+    struct phy_iflist_head *list_item;
+    struct ethtool_cmd      ecmd;
+    int                     rc = -1;
+    
+    /* Extract interface name */
+    ifname = CFG_OID_GET_INST_NAME(p_oid, 2);
+    
+    /* Try to get a pointer to list item associated with
+     * current interface name */
+    list_item = phy_iflist_find(&phy_iflist, ifname);
+    if (list_item == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    
+    /* Initialize structure */
+    memset(&ecmd, 0, sizeof(ecmd));
+    
+    /* Get property */
+    if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
+    {
+        ERROR("failed to get PHY properties while setting "
+              "interface parameters");
+        return TE_OS_RC(TE_TA_UNIX, rc);
+    }
+    
+    /* Merge current and new link parameters */
+    list_item->ecmd.supported = ecmd.supported;
+    list_item->ecmd.port = ecmd.port;
+    list_item->ecmd.phy_address = ecmd.phy_address;
+    list_item->ecmd.transceiver = ecmd.transceiver;
+    list_item->ecmd.maxtxpkt = ecmd.maxtxpkt;
+    list_item->ecmd.maxrxpkt = ecmd.maxrxpkt;
+    
+    /* Apply value */
+    if ((rc = PHY_SET_PROPERTY(ifname, &(list_item->ecmd))) != 0)
+    {
+        ERROR("failed to apply PHY properties while setting "
+              "interface properties");
+        
+        return TE_OS_RC(TE_TA_UNIX, rc);
+    }
+    
+    /* Restart autonegatiation if needed */
+    if (list_item->ecmd.autoneg == TE_PHY_AUTONEG_ON)
+    {
+        if ((rc = phy_reset(ifname)) != 0)
+        {
+            ERROR("failed to restart autonegatiation while setting "
+                  "interface properties");
+            
+            return TE_OS_RC(TE_TA_UNIX, rc);
+        }
     }
     
     return 0;
 #else
-    UNUSED(value);
-    UNUSED(ifname);
-#endif /* __linux__ */
-    ERROR("autonegatiation restart is not supported at this platform");
+    UNUSED(p_oid);
+    ERROR("change interface parameters is not supported at this platform");
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
 }

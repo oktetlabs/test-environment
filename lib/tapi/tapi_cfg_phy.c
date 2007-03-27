@@ -79,9 +79,9 @@ tapi_cfg_phy_autoneg_set(const char *ta, const char *if_name,
 {
     te_errno rc = 0;
     
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, state),
-                              "/agent:%s/interface:%s/phy:/autoneg:",
-                              ta, if_name);
+    rc = cfg_set_instance_local_fmt(CFG_VAL(INTEGER, state),
+                                    "/agent:%s/interface:%s/phy:/autoneg:",
+                                    ta, if_name);
     
     return rc;
 }
@@ -184,9 +184,9 @@ tapi_cfg_phy_duplex_set(const char *ta, const char *if_name, int state)
     if (duplex == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
     
-    rc = cfg_set_instance_fmt(CFG_VAL(STRING, duplex),
-                              "/agent:%s/interface:%s/phy:/duplex:",
-                              ta, if_name);
+    rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, duplex),
+                                    "/agent:%s/interface:%s/phy:/duplex:",
+                                    ta, if_name);
     
     return rc;
 }
@@ -240,9 +240,9 @@ tapi_cfg_phy_speed_set(const char *ta, const char *if_name, int speed)
 {
     te_errno rc = 0;
     
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, speed),
-                              "/agent:%s/interface:%s/phy:/speed:",
-                              ta, if_name);
+    rc = cfg_set_instance_local_fmt(CFG_VAL(INTEGER, speed),
+                                    "/agent:%s/interface:%s/phy:/speed:",
+                                     ta, if_name);
     
     return rc;
 
@@ -265,7 +265,7 @@ tapi_cfg_phy_speed_set(const char *ta, const char *if_name, int speed)
  * @return Status code
  */
 extern te_errno
-tapi_cfg_base_phy_mode_get(const char *ta, const char *if_name,
+tapi_cfg_phy_mode_get(const char *ta, const char *if_name,
                            int *speed, int *duplex)
 {
     te_errno rc;
@@ -308,7 +308,7 @@ tapi_cfg_base_phy_mode_get(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_base_phy_mode_set(const char *ta, const char *if_name,
+tapi_cfg_phy_mode_set(const char *ta, const char *if_name,
                            int speed, int duplex)
 {
     te_errno rc;
@@ -436,96 +436,25 @@ tapi_cfg_phy_advertise_mode(const char *ta, const char *if_name,
     if (duplex_string == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
     
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, (int)state),
-                              "/agent:%s/interface:%s/phy:"
-                              "/modes:/speed:%d/duplex:%s",
-                              ta, if_name, speed,
-                              duplex_string);
+    rc = cfg_set_instance_local_fmt(CFG_VAL(INTEGER, (int)state),
+                                    "/agent:%s/interface:%s/phy:"
+                                    "/modes:/speed:%d/duplex:%s",
+                                    ta, if_name, speed,
+                                    duplex_string);
     
     return rc;
 }
 
 /**
- * Reset link.
+ * Commit PHY interface changes to TAs.
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
- * @param unused        Unused parameter;
- *                      should be set to any value (just formality)
- *
- * @return Status code
- */
-te_errno
-tapi_cfg_phy_reset(const char *ta, const char *if_name)
-{
-    te_errno rc = 0;
-    int      reset = 0;
-    
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, reset),
-                              "/agent:%s/interface:%s/phy:/reset:",
-                              ta, if_name);
-    
-    return rc;
-}
-
-/**
- * Synchonize PHY interface changes between remote hosts.
- * This function should be called after any __set__
- * operation (when autonegotiation is ON) to be sure that changes has
- * been applied at both hosts connected by physical link.
- * For example, if interface speed value
- * has been changed at first host, network adapher at the second host
- * can automatically change itself speed value. This function call
- * will reflect such changes at the configuration tree.
- *
- * @param first_ta      First Test Agent name
- * @param first_ifname  Interface name of first TA
- * @param second_ta     Second Test Agent name
- * @param second_ifname Interface name of second TA
  *
  * @return Status code
  */
 extern te_errno
-tapi_cfg_phy_sync(const char *first_ta, const char *first_ifname,
-                  const char *second_ta, const char *second_ifname)
+tapi_cfg_phy_commit(const char *ta, const char *if_name)
 {
-    te_errno rc = 0;
-    
-    /* Reset first link */
-    rc = tapi_cfg_phy_reset(first_ta, first_ifname);
-    if (rc != 0)
-        WARN("failed to reset first link");
-    
-    /* Reset second link */
-    rc = tapi_cfg_phy_reset(second_ta, second_ifname);
-    if (rc != 0)
-        WARN("failed to reset second link");
-    
-    /* Wait changes */
-    rc = cfg_wait_changes();
-    if (rc != 0)
-    {
-        ERROR("wait changes failed");
-        return rc;
-    }
-    
-    /* Synchronize first link leaf */
-    rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s/phy:",
-                             first_ta, first_ifname);
-    if (rc != 0)
-    {
-        ERROR("failed to sync %s link at %s", first_ifname, first_ta);
-        return rc;
-    }
-    
-    /* Synchronize second link leaf */
-    rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s/phy:",
-                             second_ta, second_ifname);
-    if (rc != 0)
-    {
-        ERROR("failed to sync %s link at %s", second_ifname, second_ta);
-        return rc;
-    }
-    
-    return rc;
+    return cfg_commit_fmt("/agent:%s/interface:%s/phy:", ta, if_name);
 }

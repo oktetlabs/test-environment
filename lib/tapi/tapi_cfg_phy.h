@@ -152,7 +152,7 @@ tapi_cfg_phy_speed_set(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_base_phy_mode_get(const char *ta, const char *if_name,
+tapi_cfg_phy_mode_get(const char *ta, const char *if_name,
                            int *speed, int *duplex);
 
 /**
@@ -172,9 +172,8 @@ tapi_cfg_base_phy_mode_get(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_base_phy_mode_set(const char *ta, const char *if_name,
+tapi_cfg_phy_mode_set(const char *ta, const char *if_name,
                            int speed, int duplex);
-
 
 /**
  * Get PHY link state.
@@ -230,7 +229,7 @@ tapi_cfg_phy_advertise_mode(const char *ta, const char *if_name,
                             int speed, int duplex, te_bool state);
 
 /**
- * Reset link.
+ * Commit PHY interface changes to TAs.
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
@@ -238,28 +237,7 @@ tapi_cfg_phy_advertise_mode(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_phy_reset(const char *ta, const char *if_name);
-
-/**
- * Synchonize PHY interface changes between remote hosts.
- * This function should be called after any __set__
- * operation (when autonegotiation is ON) to be sure that changes has
- * been applied at both hosts connected by physical link.
- * For example, if interface speed value
- * has been changed at the first host, network adapter at the second host
- * can automatically change itself speed value. This function call
- * will reflect such changes at the configuration tree.
- *
- * @param first_ta      First Test Agent name
- * @param first_ifname  Interface name of the first TA
- * @param second_ta     Second Test Agent name
- * @param second_ifname Interface name of the second TA
- *
- * @return Status code
- */
-extern te_errno
-tapi_cfg_phy_sync(const char *first_ta, const char *first_ifname,
-                  const char *second_ta, const char *second_ifname);
+tapi_cfg_phy_commit(const char *ta, const char *if_name);
 
 #ifdef __cplusplus
 } /* extern "C" */

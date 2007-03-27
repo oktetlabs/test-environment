@@ -115,18 +115,36 @@ main(int argc, char *argv[])
         TEST_FAIL("link down at TA `%s' for interface `%s'", ta,
                   iface_name);
     
-    /*
-     * Autonegotiation
-     */
-    
     /* Get autonegotiation state */
     CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
     RING("Autonegatiation state: %d", autoneg);
-    
     /* Turn off autonegotiation */
     autoneg = TE_PHY_AUTONEG_OFF;
     CHECK_RC(tapi_cfg_phy_autoneg_set(ta, iface_name, autoneg));
     
+    /* Set PHY speed value */
+    CHECK_RC(tapi_cfg_phy_speed_set(ta, iface_name, speed));
+    
+    /* Set PHY duplex value */
+    CHECK_RC(tapi_cfg_phy_duplex_set(ta, iface_name, duplex));
+    
+    /* Commit changes */
+    CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
+    
+    /*
+     * Check the result
+     */
+    
+    /* Check that PHY duplex state has been set correctly */
+    CHECK_RC(tapi_cfg_phy_duplex_get(ta, iface_name, &tmp_duplex));
+    if (tmp_duplex != duplex)
+        TEST_FAIL("failed to set duplex to value: %d", duplex);
+
+    /* Check that PHY speed has been set correctly */
+    CHECK_RC(tapi_cfg_phy_speed_get(ta, iface_name, &tmp_speed));
+    if (tmp_speed != speed)
+        TEST_FAIL("failed to set speed to value: %d", speed);
+
     /* Reset value */
     autoneg = -1;
     
@@ -134,30 +152,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
     if (autoneg != TE_PHY_AUTONEG_OFF)
         TEST_FAIL("failed to set autonegotiation to state OFF");
-    
-    /*
-     * Speed
-     */
-    
-    /* Set PHY speed value */
-    CHECK_RC(tapi_cfg_phy_speed_set(ta, iface_name, speed));
-    
-    /* Check that PHY speed has been set correctly */
-    CHECK_RC(tapi_cfg_phy_speed_get(ta, iface_name, &tmp_speed));
-    if (tmp_speed != speed)
-        TEST_FAIL("failed to set speed to value: %d", speed);
-    
-    /*
-     * Duplex
-     */
-    
-    /* Set PHY duplex value */
-    CHECK_RC(tapi_cfg_phy_duplex_set(ta, iface_name, duplex));
-    
-    /* Check that PHY duplex state has been set correctly */
-    CHECK_RC(tapi_cfg_phy_duplex_get(ta, iface_name, &tmp_duplex));
-    if (tmp_duplex != duplex)
-        TEST_FAIL("failed to set duplex to value: %d", duplex);
+
     
     /*
      * Autonegotiation
@@ -166,14 +161,6 @@ main(int argc, char *argv[])
     /* Turn PHY autonegotiation to state ON */
     autoneg = TE_PHY_AUTONEG_ON;
     CHECK_RC(tapi_cfg_phy_autoneg_set(ta, iface_name, autoneg));
-    
-    /* Reset value */
-    autoneg = -1;
-    
-    /* Check that PHY autonegotiation is at state ON */
-    CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
-    if (autoneg != TE_PHY_AUTONEG_ON)
-        TEST_FAIL("failed to set autonegotiation to state ON");
     
     /*
      * Advertising
@@ -191,9 +178,7 @@ main(int argc, char *argv[])
                                          speed_adver, duplex_adver,
                                          0));
     
-    /* Synchronize configuration tree */
-    CHECK_RC(tapi_cfg_phy_sync(ta, iface_name, second_ta,
-                               second_iface));
+    CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
     
     /* Check that mode is not advertised */
     CHECK_RC(tapi_cfg_phy_is_mode_advertised(ta, iface_name,
@@ -206,9 +191,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_cfg_phy_advertise_mode(ta, iface_name,
                                          speed_adver, duplex_adver, 1));
     
-    /* Synchronize configuration tree */
-    CHECK_RC(tapi_cfg_phy_sync(ta, iface_name, second_ta,
-                               second_iface));
+    CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
     
     /* Check that mode is advertised */
     CHECK_RC(tapi_cfg_phy_is_mode_advertised(ta, iface_name,
@@ -220,12 +203,6 @@ main(int argc, char *argv[])
     /*
      * Restart PHY autonegotiation
      */
-    
-    CHECK_RC(tapi_cfg_phy_reset(ta, iface_name));
-    
-    /* Synchronize */
-    CHECK_RC(tapi_cfg_phy_sync(ta, iface_name, second_ta,
-             second_iface));
     
     TEST_SUCCESS;
 
