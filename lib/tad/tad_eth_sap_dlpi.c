@@ -83,6 +83,9 @@ typedef struct dlpi_data {
     int           fd;      /**< STREAM device file descriptor */
     dl_info_ack_t dl_info; /**< DLPI stream info */
     char         *buf;
+    te_bool       close_possible; /**< Indicates that fd was
+                                    attached and bound
+                                    (FIXME: temporary solution) */
 } dlpi_data;
 
 
@@ -447,6 +450,10 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 
     dlpi->dl_info = *((dl_info_ack_t *)req);
 
+    /* FIXME */
+    VERB("B: Set close_possible FALSE on init"); 
+    dlpi->close_possible = FALSE;
+
     return 0;
 
 err_exit:
@@ -475,147 +482,157 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
     te_errno            rc = 0;
     union DL_primitives dlp;
 
-    if (dlpi->dl_info.dl_provider_style == DL_STYLE1)
+    if (!dlpi->close_possible)  /* FIXME */
     {
-        ERROR("DLS provider supports DL_STYLE1");
-        rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
-        goto err_exit;
-    }
-    else if (dlpi->dl_info.dl_provider_style == DL_STYLE2)
-    {
-        dlp.attach_req.dl_primitive = DL_ATTACH_REQ;
-        dlp.attach_req.dl_ppa = dlpi->unit;
+        if (dlpi->dl_info.dl_provider_style == DL_STYLE1)
+        {
+            ERROR("DLS provider supports DL_STYLE1");
+            rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+            goto err_exit;
+        }
+        else if (dlpi->dl_info.dl_provider_style == DL_STYLE2)
+        {
+            dlp.attach_req.dl_primitive = DL_ATTACH_REQ;
+            dlp.attach_req.dl_ppa = dlpi->unit;
+            rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+            if (rc != 0)
+               goto err_exit;
+
+            memset(&dlp, 0, sizeof(dlp));
+            rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+            if (rc != 0)
+               goto err_exit;
+        }
+        else
+        {
+            ERROR("Unknown DL_STYLE");
+            rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+            goto err_exit;
+        }
+
+        /* Bind DLSAP to the Stream */
+        memset(&dlp, 0, sizeof(dlp));
+        dlp.bind_req.dl_primitive = DL_BIND_REQ;
+        dlp.bind_req.dl_sap = 0;  /* I am not sure about it absolutely :( */
+        dlp.bind_req.dl_service_mode = DL_CLDLS;
+
         rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
         if (rc != 0)
-           goto err_exit;
+            goto err_exit;
 
         memset(&dlp, 0, sizeof(dlp));
-        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_BIND_ACK_SIZE);
         if (rc != 0)
-           goto err_exit;
-    }
-    else
-    {
-        ERROR("Unknown DL_STYLE");
-        rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
-        goto err_exit;
-    }
+            goto err_exit;
 
-    /* Bind DLSAP to the Stream */
-    memset(&dlp, 0, sizeof(dlp));
-    dlp.bind_req.dl_primitive = DL_BIND_REQ;
-    dlp.bind_req.dl_sap = 0;  /* I am not sure about it absolutely :( */
-    dlp.bind_req.dl_service_mode = DL_CLDLS;
-
-    rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-    if (rc != 0)
-        goto err_exit;
-
-    memset(&dlp, 0, sizeof(dlp));
-    rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_BIND_ACK_SIZE);
-    if (rc != 0)
-        goto err_exit;
-
-    if (mode & (TAD_ETH_RECV_OUT | TAD_ETH_RECV_OTHER))
-    {
-        if (!(mode & TAD_ETH_RECV_NO_PROMISC))
+        if (mode & (TAD_ETH_RECV_OUT | TAD_ETH_RECV_OTHER))
         {
-            /*
-             * To catch frames 'To someone else'
-             * enable promiscuous DL_PROMISC_PHYS
-             */
+            if (!(mode & TAD_ETH_RECV_NO_PROMISC))
+            {
+                /*
+                 * To catch frames 'To someone else'
+                 * enable promiscuous DL_PROMISC_PHYS
+                 */
+                memset(&dlp, 0, sizeof(dlp));
+                dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+                dlp.promiscon_req.dl_level = DL_PROMISC_PHYS;
+                rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+                if (rc != 0)
+                {
+                    ERROR("Attempt to set DL_PROMISC_PHYS failed");
+                    goto err_exit;
+                }
+                
+                memset(&dlp, 0, sizeof(dlp));
+                rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+                if (rc != 0)
+                    goto err_exit;
+            }
+
+            /* Enable promiscuous DL_PROMISC_SAP */
             memset(&dlp, 0, sizeof(dlp));
             dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
-            dlp.promiscon_req.dl_level = DL_PROMISC_PHYS;
+            dlp.promiscon_req.dl_level = DL_PROMISC_SAP;
             rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
             if (rc != 0)
             {
-                ERROR("Attempt to set DL_PROMISC_PHYS failed");
+                ERROR("Attempt to set DL_PROMISC_SAP failed");
                 goto err_exit;
             }
-            
+
             memset(&dlp, 0, sizeof(dlp));
             rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
             if (rc != 0)
                 goto err_exit;
         }
 
-        /* Enable promiscuous DL_PROMISC_SAP */
-        memset(&dlp, 0, sizeof(dlp));
-        dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
-        dlp.promiscon_req.dl_level = DL_PROMISC_SAP;
-        rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-        if (rc != 0)
+        if (mode & TAD_ETH_RECV_MCAST)
         {
-            ERROR("Attempt to set DL_PROMISC_SAP failed");
-            goto err_exit;
+            /*
+             * Try to enable multicast (you would have thought
+             * promiscuous would be sufficient)
+             */
+            memset(&dlp, 0, sizeof(dlp));
+            dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+            dlp.promiscon_req.dl_level = DL_PROMISC_MULTI;
+            rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+            if (rc != 0)
+            {
+                ERROR("Attempt to set DL_PROMISC_MULTI failed");
+                goto err_exit;
+            }
+
+            memset(&dlp, 0, sizeof(dlp));
+            rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+            if (rc != 0)
+                goto err_exit;
+
+            /* Enable promiscuous DL_PROMISC_SAP */
+            memset(&dlp, 0, sizeof(dlp));
+            dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+            dlp.promiscon_req.dl_level = DL_PROMISC_SAP;
+            rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+            if (rc != 0)
+            {
+                ERROR("Attempt to set DL_PROMISC_SAP failed");
+                goto err_exit;
+            }
+
+            memset(&dlp, 0, sizeof(dlp));
+            rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+            if (rc != 0)
+                goto err_exit;
         }
 
-        memset(&dlp, 0, sizeof(dlp));
-        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-        if (rc != 0)
-            goto err_exit;
-    }
-
-    if (mode & TAD_ETH_RECV_MCAST)
-    {
         /*
-         * Try to enable multicast (you would have thought
-         * promiscuous would be sufficient)
+         ** This is a non standard SunOS hack to get the full raw link-layer
+         ** processing (M_PROTO message block are not processed).
          */
-        memset(&dlp, 0, sizeof(dlp));
-        dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
-        dlp.promiscon_req.dl_level = DL_PROMISC_MULTI;
-        rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-        if (rc != 0)
         {
-            ERROR("Attempt to set DL_PROMISC_MULTI failed");
-            goto err_exit;
+            struct strioctl str;
+
+            str.ic_cmd = DLIOCRAW;
+            str.ic_timout = -1;
+            str.ic_len = 0;
+            str.ic_dp = NULL;
+            rc = ioctl(dlpi->fd, I_STR, &str);
+            if (rc < 0)
+            {
+                rc = TE_OS_RC(TE_TAD_DLPI, errno);
+                ERROR("DLIOCRAW: %r", rc);
+                goto err_exit;
+            }
         }
-
-        memset(&dlp, 0, sizeof(dlp));
-        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-        if (rc != 0)
-            goto err_exit;
-
-        /* Enable promiscuous DL_PROMISC_SAP */
-        memset(&dlp, 0, sizeof(dlp));
-        dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
-        dlp.promiscon_req.dl_level = DL_PROMISC_SAP;
-        rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-        if (rc != 0)
-        {
-            ERROR("Attempt to set DL_PROMISC_SAP failed");
-            goto err_exit;
-        }
-
-        memset(&dlp, 0, sizeof(dlp));
-        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-        if (rc != 0)
-            goto err_exit;
-    }
-
-    /*
-     ** This is a non standard SunOS hack to get the full raw link-layer
-     ** processing (M_PROTO message block are not processed).
-     */
-    {
-        struct strioctl str;
-
-        str.ic_cmd = DLIOCRAW;
-        str.ic_timout = -1;
-        str.ic_len = 0;
-        str.ic_dp = NULL;
-        rc = ioctl(dlpi->fd, I_STR, &str);
-        if (rc < 0)
-        {
-            rc = TE_OS_RC(TE_TAD_DLPI, errno);
-            ERROR("DLIOCRAW: %r", rc);
-            goto err_exit;
-        }
-    }
+        /* FIXME */
+        VERB("B: Set close_possible TRUE");
+        dlpi->close_possible = TRUE;
 err_exit:
     return rc;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 static te_errno
@@ -625,45 +642,56 @@ dlpi_sap_close(tad_eth_sap *sap)
     te_errno            rc = 0;
     union DL_primitives dlp;
 
-    if (dlpi->dl_info.dl_provider_style == DL_STYLE1)
+    if (dlpi->close_possible)   /* FIXME */
     {
-        ERROR("DLS provider supports DL_STYLE1");
-        rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
-        goto err_exit;
-    }
-    else if (dlpi->dl_info.dl_provider_style == DL_STYLE2)
-    {
-        dlp.attach_req.dl_primitive = DL_UNBIND_REQ;
+        if (dlpi->dl_info.dl_provider_style == DL_STYLE1)
+        {
+            ERROR("DLS provider supports DL_STYLE1");
+            rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+            goto err_exit;
+        }
+        else if (dlpi->dl_info.dl_provider_style == DL_STYLE2)
+        {
+            dlp.attach_req.dl_primitive = DL_UNBIND_REQ;
+            rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+            if (rc != 0)
+               goto err_exit;
+
+            memset(&dlp, 0, sizeof(dlp));
+            rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+            if (rc != 0)
+               goto err_exit;
+        }
+        else
+        {
+            ERROR("Unknown DL_STYLE");
+            rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+            goto err_exit;
+        }
+
+        /* Detach DLSAP from the Stream */
+        memset(&dlp, 0, sizeof(dlp));
+        dlp.bind_req.dl_primitive = DL_DETACH_REQ;
+        dlp.attach_req.dl_ppa = dlpi->unit;
+
         rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
         if (rc != 0)
-           goto err_exit;
+            goto err_exit;
 
         memset(&dlp, 0, sizeof(dlp));
         rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-        if (rc != 0)
-           goto err_exit;
+
+        /* FIXME */
+        VERB("B: Set close_possible FALSE on closure");
+        dlpi->close_possible = FALSE;
+err_exit:
+        return rc;
     }
     else
-    {
-        ERROR("Unknown DL_STYLE");
-        rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
-        goto err_exit;
+    {        
+        ERROR("No sending/receiving processes on CSAP, cannot stop.");
+        return TE_RC(TE_TAD_DLPI, TE_EBADF);
     }
-
-    /* Detach DLSAP from the Stream */
-    memset(&dlp, 0, sizeof(dlp));
-    dlp.bind_req.dl_primitive = DL_DETACH_REQ;
-    dlp.attach_req.dl_ppa = dlpi->unit;
-
-    rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-    if (rc != 0)
-        goto err_exit;
-
-    memset(&dlp, 0, sizeof(dlp));
-    rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-
-err_exit:
-    return rc;
 }
 
 
@@ -882,7 +910,7 @@ tad_eth_sap_send_close(tad_eth_sap *sap)
     int rc = 0;
     UNUSED(sap);
 
-    return rc;
+    return dlpi_sap_close(sap);
 }
 
 
