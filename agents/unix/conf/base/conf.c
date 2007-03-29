@@ -1973,8 +1973,8 @@ vlan_ifname_get_internal(const char *ifname, int vlan_id,
     while (!isdigit(ifname[offset])) offset++;
 
     memcpy(v_ifname, ifname, offset);
-    sprintf(v_ifname + offset, "%d", atoi(ifname + offset) * 1000 + 
-            vlan_id);
+    sprintf(v_ifname + offset, "%d", vlan_id * 1000 + 
+            atoi(ifname + offset));
 #endif 
     return 0;
 }
