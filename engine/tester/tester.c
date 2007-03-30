@@ -618,7 +618,7 @@ main(int argc, char *argv[])
         goto exit;
     }
 
-    TE_LOG_RING("Target requirements", "%s",
+    TE_LOG_RING("Target Requirements", "%s",
                 tester_reqs_expr_to_string(global.targets));
 
     /*
