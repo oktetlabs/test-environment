@@ -98,8 +98,11 @@ cat <<EOF >"$rgt_filter"
 <filters>
   <entity-filter>
     <exclude entity=""/>
-    <include entity="">
+    <include entity="Dispatcher">
         <user name="TRC tags"/>
+    </include>
+    <include entity="Tester">
+        <user name="Target Requirements"/>
     </include>
   </entity-filter>
 </filters>
