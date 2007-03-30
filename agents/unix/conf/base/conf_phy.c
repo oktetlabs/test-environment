@@ -537,8 +537,8 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
     /* Get value */
     sscanf(value, "%d", &autoneg);
     
-    if (autoneg != AUTONEG_ENABLE &&
-        autoneg != AUTONEG_DISABLE)
+    if (autoneg != TE_PHY_AUTONEG_ON &&
+        autoneg != TE_PHY_AUTONEG_OFF)
     {
         ERROR("fail while trying to set autonegotiation state "
               "to wrong value");
