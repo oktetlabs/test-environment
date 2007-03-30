@@ -618,6 +618,9 @@ main(int argc, char *argv[])
         goto exit;
     }
 
+    TE_LOG_RING("Target requirements", "%s",
+                tester_reqs_expr_to_string(global.targets));
+
     /*
      * Initialize pseudo-random number generator after command-line
      * options processing, since random seed may be passed as

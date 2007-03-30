@@ -409,15 +409,9 @@ reqs_expr_to_string_buf(const logic_expr *expr, char **buf, ssize_t *left,
     }
 }
 
-/**
- * Print requirements expression to static buffer.
- *
- * @param expr      Requirements expression
- *
- * @return Pointer to the static buffer with printed expression
- */
-static const char *
-reqs_expr_to_string(const logic_expr *expr)
+/* See the description in tester_reqs.h */
+const char *
+tester_reqs_expr_to_string(const logic_expr *expr)
 {
     static char buf[0x10000];
 
@@ -578,7 +572,7 @@ tester_is_run_required(const logic_expr        *targets,
                  "Collected sticky requirements: %s\n"
                  "Test node requirements: %s\n"
                  "Requirements attached to parameters:%s\n",
-                 reqs_expr_to_string(targets),
+                 tester_reqs_expr_to_string(targets),
                  reqs_list_to_string(sticky_reqs, test->n_args, args),
                  reqs_list_to_string(reqs, test->n_args, args),
                  params_reqs_list_to_string(test->n_args, args));

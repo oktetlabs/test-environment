@@ -125,6 +125,15 @@ extern te_bool tester_is_run_required(
 extern te_errno tester_get_sticky_reqs(test_requirements *sticky_reqs,
                                        const test_requirements *reqs);
 
+/**
+ * Print requirements expression to static buffer.
+ *
+ * @param expr      Requirements expression
+ *
+ * @return Pointer to the static buffer with printed expression.
+ */
+extern const char *tester_reqs_expr_to_string(const logic_expr *expr);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
