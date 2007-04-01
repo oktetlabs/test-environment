@@ -681,10 +681,16 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
         }                          \
     } while (0)
     rc = tapi_cfg_get_hwaddr(agt, local_iface, native_local_mac, &mac_len);
-    CHECK_ERROR("%s(); get local native MAC failed %r",
-                __FUNCTION__, rc);
-
-    use_native_mac = !memcmp(native_local_mac, local_mac, mac_len);
+    if (rc != 0)
+    {
+        WARN("%s(); get local native MAC failed %r",
+             __FUNCTION__, rc);
+        use_native_mac = FALSE;
+    }
+    else
+    {
+        use_native_mac = !memcmp(native_local_mac, local_mac, mac_len);
+    }
     if (use_native_mac)
         RING("%s(): use native MAC on interface, may be side effects", 
              __FUNCTION__);
