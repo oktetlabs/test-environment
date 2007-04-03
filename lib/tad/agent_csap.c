@@ -104,6 +104,7 @@ agent_csap_list_cb(csap_handle_t csap_id, void *ptr, void *opaque)
 {
     agent_csap_list_cb_data *data = opaque;
     te_bool                  again;
+    int                      p;
 
     UNUSED(ptr);
 
@@ -111,9 +112,9 @@ agent_csap_list_cb(csap_handle_t csap_id, void *ptr, void *opaque)
         return;
 
     do {
-        int p = snprintf(data->list + data->off, data->len - data->off,
-                         "%s%u", (data->off != 0) ? " " : "", csap_id) +
-                1 /* \0 */;
+        p = snprintf(data->list + data->off, data->len - data->off,
+                     "%s%u", (data->off != 0) ? " " : "", csap_id) +
+            1 /* \0 */;
         
         again = (p > (int)(data->len - data->off));
         if (again)
