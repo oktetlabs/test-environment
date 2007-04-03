@@ -618,8 +618,11 @@ main(int argc, char *argv[])
         goto exit;
     }
 
-    TE_LOG_RING("Target Requirements", "%s",
-                tester_reqs_expr_to_string(global.targets));
+    if (global.targets != NULL)
+    {
+        TE_LOG_RING("Target Requirements", "%s",
+                    tester_reqs_expr_to_string(global.targets));
+    }
 
     /*
      * Initialize pseudo-random number generator after command-line
