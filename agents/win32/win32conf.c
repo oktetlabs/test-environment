@@ -931,6 +931,8 @@ interface_list(unsigned int gid, const char *oid, char **list)
     UNUSED(gid);
     UNUSED(oid);
 
+    efport2ifindex();
+
     GET_TABLE(MIB_IFTABLE, GetIfTable);
     if (table == NULL)
     {
@@ -997,6 +999,12 @@ ip_addr_exist(DWORD addr, MIB_IPADDRROW *data)
 {
     MIB_IPADDRTABLE *table;
     int              i;
+
+    if (addr = 0)
+    {
+      RING("skip 0.0.0.0 address");
+      return TE_RC(TE_TA_WIN32, TE_ENOENT);
+    }
 
     GET_TABLE(MIB_IPADDRTABLE, GetIpAddrTable);
 
@@ -1090,8 +1098,42 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     if ((rc = AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m, if_entry.dwIndex,
                             &nte_context, &nte_instance)) != NO_ERROR)
     {
-        ERROR("AddIpAddress() failed, error %d", rc);
+        ERROR("AddIpAddress() failed, error %d, addr %s", rc, addr);
         return TE_RC(TE_TA_WIN32, TE_EWIN);
+
+/*        if (rc != 1221)
+{
+
+}
+else
+{
+WARN("The second AddIpAddress() failed, error %d, addr %s", rc, addr);
+}*/
+/*      //Check that address exists
+WARN("AddIpAddress() failed, error %d, addr %s", rc, addr);
+{
+  MIB_IPADDRROW data;
+  DWORD         a;
+
+  if ((a = inet_addr(addr)) == INADDR_NONE)
+  {
+     WARN("net_addr_add: Wrong address");
+  }
+
+  if ((rc = ip_addr_exist(a, &data)) == 0)
+  {
+      WARN("net_addr_add: Address %s already exists", addr);
+      return 0;
+  }
+}
+Sleep(15000);
+if ((rc = AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m, if_entry.dwIndex,
+                        &nte_context, &nte_instance)) != NO_ERROR)
+{
+   ERROR("The second AddIpAddress() failed, error %d, addr %s", rc, addr);
+
+    return TE_RC(TE_TA_WIN32, TE_EWIN);
+}*/
     }
 
     return 0;
@@ -1151,9 +1193,10 @@ net_addr_del(unsigned int gid, const char *oid,
             {
                 if ((rc = DeleteIPAddress(addrlist->Context)) != NO_ERROR)
                 {
-                    ERROR("DeleteIPAddress() failed; error %d\n", rc);
-                    free(table);
-                    return TE_RC(TE_TA_WIN32, TE_EWIN);;
+                   ERROR("DeleteIPAddress() failed; error %d addr = %s\n",
+                         rc, addr);
+                   free(table);
+                   return TE_RC(TE_TA_WIN32, TE_EWIN);;
                 }
                 free(table);
                 return 0;
@@ -1205,6 +1248,11 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     {
         if (table->table[i].dwIndex != if_entry.dwIndex)
             continue;
+        if (table->table[i].dwAddr == 0)
+        {   
+            RING("skip 0.0.0.0 address");
+            continue;
+        }
 
         s += snprintf(s, sizeof(buf) - (s - buf), "%s ",
                       inet_ntoa(*(struct in_addr *)
@@ -1472,13 +1520,14 @@ static te_errno
 mtu_get(unsigned int gid, const char *oid, char *value,
         const char *ifname)
 {
-    int i, if_index = -1, free_index = -1;
+//    int i, if_index = -1, free_index = -1;
 
     UNUSED(gid);
     UNUSED(oid);
 
     GET_IF_ENTRY;
 
+/*
     for (i = 0; i < 20; i++)
     {
       if (strcmp(mtus[i].if_name, ifname) == 0)
@@ -1497,8 +1546,11 @@ mtu_get(unsigned int gid, const char *oid, char *value,
       strcpy(mtus[if_index].if_name, ifname);
       mtus[if_index].mtu = if_entry.dwMtu;
     }
-//    sprintf(value, "%lu", if_entry.dwMtu);
     sprintf(value, "%lu", mtus[if_index].mtu);
+*/
+
+    sprintf(value, "%lu", if_entry.dwMtu);
+
 
     return 0;
 }
@@ -1519,14 +1571,18 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
 {
     char     *tmp;
     te_errno  rc = 0;
-    long      mtu;
-    int i, if_index = -1, free_index = -1;
+//    long      mtu;
+//    int i, if_index = -1, free_index = -1;
+    unsigned char szCommand[256];
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(ifname);
+    sprintf(szCommand, "./windows_layer2_mtu.exe %s", value);
+    printf("szCommand = %s\n", szCommand);
+    system(szCommand);    
 
-    mtu = strtol(value, &tmp, 10);
+/*    mtu = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     for (i = 0; i < 20; i++)
@@ -1548,7 +1604,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
       mtus[if_index].mtu = 1500;
     }
     mtus[if_index].mtu = mtu;
-
+*/
 #if 0 /* UNIX implementation */
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -2335,7 +2391,7 @@ route_list(unsigned int gid, const char *oid, char **list)
     {
         int prefix;
 
-        if ((table->table[i].dwForwardType != FORW_TYPE_LOCAL &&
+        if ((/*table->table[i].dwForwardType != FORW_TYPE_LOCAL &&*/
              table->table[i].dwForwardType != FORW_TYPE_REMOTE) ||
              table->table[i].dwForwardDest == 0xFFFFFFFF ||
              (table->table[i].dwForwardMask == 0xFFFFFFFF &&
