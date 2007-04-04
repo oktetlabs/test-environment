@@ -1000,7 +1000,7 @@ ip_addr_exist(DWORD addr, MIB_IPADDRROW *data)
     MIB_IPADDRTABLE *table;
     int              i;
 
-    if (addr = 0)
+    if (addr == 0)
     {
       RING("skip 0.0.0.0 address");
       return TE_RC(TE_TA_WIN32, TE_ENOENT);
@@ -1098,42 +1098,14 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     if ((rc = AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m, if_entry.dwIndex,
                             &nte_context, &nte_instance)) != NO_ERROR)
     {
-        ERROR("AddIpAddress() failed, error %d, addr %s", rc, addr);
-        return TE_RC(TE_TA_WIN32, TE_EWIN);
-
-/*        if (rc != 1221)
-{
-
-}
-else
-{
-WARN("The second AddIpAddress() failed, error %d, addr %s", rc, addr);
-}*/
-/*      //Check that address exists
-WARN("AddIpAddress() failed, error %d, addr %s", rc, addr);
-{
-  MIB_IPADDRROW data;
-  DWORD         a;
-
-  if ((a = inet_addr(addr)) == INADDR_NONE)
-  {
-     WARN("net_addr_add: Wrong address");
-  }
-
-  if ((rc = ip_addr_exist(a, &data)) == 0)
-  {
-      WARN("net_addr_add: Address %s already exists", addr);
-      return 0;
-  }
-}
-Sleep(15000);
-if ((rc = AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m, if_entry.dwIndex,
-                        &nte_context, &nte_instance)) != NO_ERROR)
-{
-   ERROR("The second AddIpAddress() failed, error %d, addr %s", rc, addr);
-
-    return TE_RC(TE_TA_WIN32, TE_EWIN);
-}*/
+      if (rc == ERROR_DUP_DOMAINNAME)
+      {
+        WARN("AddIpAddress() failed, error ERROR_DUP_DOMAINNAME, addr %s",
+             addr);
+        return 0;
+      }
+      ERROR("AddIpAddress() failed, error %d, addr %s", rc, addr);
+      return TE_RC(TE_TA_WIN32, TE_EWIN);
     }
 
     return 0;
@@ -1428,6 +1400,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
 
     if ((rc = ip_addr_exist(a, &data)) != 0)
         return rc;
+
     return 0;
 }
 
