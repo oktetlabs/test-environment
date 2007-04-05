@@ -1112,6 +1112,49 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
+ * Deletes DHCP address
+ *
+ */
+
+static te_errno
+net_addr_del_dhcp(unsigned int dwIndex)
+{
+  PIP_INTERFACE_INFO table;
+  DWORD size = 0;
+  unsigned int i;
+  int   rc;
+
+  GetInterfaceInfo(NULL, &size);
+  table = (PIP_INTERFACE_INFO)malloc(size);                      
+
+  if ((rc = GetInterfaceInfo(table, &size)) != NO_ERROR)                  
+  {                                                               
+      ERROR("GetInterfaceInfo failed, error %d", rc);
+      free(table);                                                
+      return TE_RC(TE_TA_WIN32, TE_EWIN);                          
+  }
+
+  for (i = 0; i < table->NumAdapters; i++)
+  {
+     if (dwIndex == table->Adapter[i].Index)
+     {
+        WARN("Try to delete DHCP address adapter ID = %d\n", dwIndex);
+        if ((rc = IpReleaseAddress(&table->Adapter[i])) != NO_ERROR)
+        {
+           ERROR("IpReleaseAddress() failed; error %d, adapterid = %d\n",
+                 rc,  table->Adapter[i].Index);
+           free(table);
+           return TE_RC(TE_TA_WIN32, TE_EWIN);;
+        }
+       free(table);
+       return 0;
+     }
+  }
+  free(table);
+  return -1;
+}
+
+/**
  * Clear interface address of the down interface.
  *
  * @param gid           group identifier (unused)
@@ -1165,8 +1208,14 @@ net_addr_del(unsigned int gid, const char *oid,
             {
                 if ((rc = DeleteIPAddress(addrlist->Context)) != NO_ERROR)
                 {
-                   ERROR("DeleteIPAddress() failed; error %d addr = %s\n",
+                   WARN("DeleteIPAddress() failed; error %d, addr = %s\n",
                          rc, addr);
+                   if (rc == ERROR_GEN_FAILURE)
+                   {
+                     rc = net_addr_del_dhcp(info->Index);
+                     free(table);
+                     return rc;
+                   }
                    free(table);
                    return TE_RC(TE_TA_WIN32, TE_EWIN);;
                 }
