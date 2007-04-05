@@ -106,7 +106,6 @@ main(int argc, char *argv[])
     TEST_GET_INT_PARAM(speed_adver);
     TEST_GET_INT_PARAM(duplex_adver);
     
-    /* Print out configuration tree */
     CHECK_RC(cfg_tree_print(NULL, TE_LL_RING, "/:"));
     
     /* Check link state */
@@ -118,17 +117,14 @@ main(int argc, char *argv[])
     /* Get autonegotiation state */
     CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
     RING("Autonegatiation state: %d", autoneg);
-    /* Turn off autonegotiation */
+    
     autoneg = TE_PHY_AUTONEG_OFF;
     CHECK_RC(tapi_cfg_phy_autoneg_set(ta, iface_name, autoneg));
     
-    /* Set PHY speed value */
     CHECK_RC(tapi_cfg_phy_speed_set(ta, iface_name, speed));
     
-    /* Set PHY duplex value */
     CHECK_RC(tapi_cfg_phy_duplex_set(ta, iface_name, duplex));
     
-    /* Commit changes */
     CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
     
     /*

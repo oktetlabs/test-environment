@@ -76,11 +76,38 @@
 
 /* Maximum number of items in the list of speeds */
 #define TE_PHY_SPEED_LIST_MAX_ITEMS (5)
-/* Maximum number of items in the list of speeds */
+/* Maximum number of items in the list of duplex values */
 #define TE_PHY_DUPLEX_LIST_MAX_ITEMS (2)
 /* Maximum size of the item in the list */
 #define TE_PHY_LIST_MAX_ITEM_SIZE (6)
 
+#if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
+/**
+ * Get PHY property using ioctl() call.
+ * Ethtool parameters will be stored in @p ecmd
+ * (see linux/ethtool.h for more details)
+ *
+ * @param _ifname       name of the interface
+ * @param _data         ethtool command
+ *
+ * @return              error code
+ */
+#define PHY_GET_PROPERTY(_ifname, _data) \
+    phy_property(_ifname, _data, ETHTOOL_GSET)
+
+/**
+ * Set PHY property using ioctl() call.
+ * Ethtool parameters will be stored in @p ecmd
+ * (see linux/ethtool.h for more details)
+ *
+ * @param _ifname       name of the interface
+ * @param _data         ethtool command
+ *
+ * @return              error code
+ */
+#define PHY_SET_PROPERTY(_ifname, _data) \
+    phy_property(_ifname, _data, ETHTOOL_SSET)
+#endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
 
 /*
  * Methods
@@ -167,7 +194,7 @@ RCF_PCH_CFG_NODE_NA_COMMIT(node_phy, "phy", &node_phy_autoneg, NULL,
 
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
 /* A list of the interfaces parameters */
-struct phy_iflist_head {
+static struct phy_iflist_head {
     struct phy_iflist_head *next;   /**< Next list item */
     struct phy_iflist_head *prev;   /**< Previous list item */
     const char             *ifname; /**< Interface name  */
@@ -192,11 +219,12 @@ phy_init_iflist(struct phy_iflist_head *list)
  * sets interface name field and initialize ecmd field.
  * cmd field should be filled by caller after item memory
  * will be allocated and a pointer to item will be returned to caller.
+ * @p list should be a valid pointer to list head.
  *
- * @param list          A pointer to list head
+ * @param list          Pointer to the list head
  * @param ifname        Interface name
  *
- * @return A pointer to newly allocated list item or NULL
+ * @return Pointer to the newly allocated list item or NULL
  *         if no more memory available to allocate a new list item.
  */
 static struct phy_iflist_head *
@@ -236,7 +264,7 @@ phy_iflist_add_item(struct phy_iflist_head *list, const char *ifname)
         next->prev = new_list_item;
         new_list_item->next = next;
     }
-    else /* Store the end of the list */
+    else /* Else store the end of the list */
         new_list_item->next = NULL;
     
     /* Initialize ecmd */
@@ -252,10 +280,12 @@ phy_iflist_add_item(struct phy_iflist_head *list, const char *ifname)
  * Find the PHY interface properties list item or
  * add a new one to this list if no such item exists in list.
  *
- * @param list          A pointer to list head
+ * @p list should be a valid pointer to list head.
+ *
+ * @param list          Pointer to the list head
  * @param ifname        Interface name
  *
- * @return A pointer to newly allocated list item or pointer to list item
+ * @return Pointer to the newly allocated list item or pointer to list item
  *         that already exists in the list or a NULL
  *         if no more memory available to allocate a new list item.
  */
@@ -267,11 +297,11 @@ phy_iflist_find_or_add(struct phy_iflist_head *list, const char *ifname)
     /* Walking through the list items */
     while (1)
     {
-        /* Look for the next list item */
+        /* Check for valid pointer */
         if (list_item->next == NULL)
             break;
         
-        /* Check for the list item existense */
+        /* Check for search condition */
         if (strcmp(list_item->next->ifname, ifname) == 0)
             return list_item;
         
@@ -283,12 +313,14 @@ phy_iflist_find_or_add(struct phy_iflist_head *list, const char *ifname)
             break;
     }
     
-    /* If item does not exeists, add a new one */
+    /* If item does not exists add a new one */
     return phy_iflist_add_item(list, ifname);
 }
 
 /**
  * Find the PHY interface properties list item.
+ *
+ * @p list should be a valid pointer to list head.
  *
  * @param list          A pointer to list head
  * @param ifname        Interface name
@@ -305,11 +337,11 @@ phy_iflist_find(struct phy_iflist_head *list, const char *ifname)
     /* Walking through the list items */
     while (1)
     {
-        /* Look for the next list item */
+        /* Check for valid pointer */
         if (list_item->next == NULL)
             break;
         
-        /* Check for the list item existense */
+        /* Check for search condition */
         if (strcmp(list_item->next->ifname, ifname) == 0)
             return list_item;
         
@@ -330,39 +362,13 @@ te_errno
 ta_unix_conf_phy_init(void)
 {
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
-    /* Initialize interfaces configuration parameters list */
+    /* Initialize configuration parameters list */
     phy_init_iflist(&phy_iflist);
 #endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
     return rcf_pch_add_node("/agent/interface", &node_phy);
 }
 
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
-/**
- * Get PHY property using ioctl() call.
- * Ethtool parameters will be stored in @p ecmd
- * (see linux/ethtool.h for more details)
- *
- * @param _ifname       name of the interface
- * @param _data         ethtool command
- *
- * @return              error code
- */
-#define PHY_GET_PROPERTY(_ifname, _data) \
-    phy_property(_ifname, _data, ETHTOOL_GSET)
-
-/**
- * Set PHY property using ioctl() call.
- * Ethtool parameters will be stored in @p ecmd
- * (see linux/ethtool.h for more details)
- *
- * @param _ifname       name of the interface
- * @param _data         ethtool command
- *
- * @return              error code
- */
-#define PHY_SET_PROPERTY(_ifname, _data) \
-    phy_property(_ifname, _data, ETHTOOL_SSET)
-
 /**
  * Get duplex state by name string
  *
@@ -374,6 +380,9 @@ ta_unix_conf_phy_init(void)
 static inline int
 phy_get_duplex_by_name(const char *name)
 {
+    if (name == NULL)
+        return -1;
+    
     if (strcasecmp(name, TE_PHY_DUPLEX_STRING_FULL) == 0)
         return DUPLEX_FULL;
     
@@ -392,7 +401,6 @@ phy_get_duplex_by_name(const char *name)
  * @return TE_PHY_DUPLEX_STRING_FULL, TE_PHY_DUPLEX_STRING_HALF or NULL if
  *         duplex ID does not recognized
  */
-
 static inline char *
 phy_get_duplex_by_id(int id)
 {
@@ -412,6 +420,7 @@ phy_get_duplex_by_id(int id)
     return NULL;
 }
 
+#if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
 /**
  * Get and set PHY property using ioctl() call.
  * Ethtool parameters will be stored in @p ecmd
@@ -425,13 +434,12 @@ phy_get_duplex_by_id(int id)
  *
  * @return              error code
  */
-#if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
 static int
 phy_property(const char *ifname, struct ethtool_cmd *ecmd, int type)
 {
     struct ifreq        ifr;
     
-    /* Setup control structure */
+    /* Initialize control structure */
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
     
@@ -468,7 +476,6 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
     
     memset(&ecmd, 0, sizeof(ecmd));
     
-    /* Get property */
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         /*
@@ -484,11 +491,9 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
     
-    /* Set option state */
     state = (ecmd.autoneg == AUTONEG_ENABLE) ?
             TE_PHY_AUTONEG_ON : TE_PHY_AUTONEG_OFF;
     
-    /* Store value */
     snprintf(value, RCF_MAX_VAL, "%d", state);
     
     return 0;
@@ -534,7 +539,6 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
     if (list_item == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     
-    /* Get value */
     sscanf(value, "%d", &autoneg);
     
     if (autoneg != TE_PHY_AUTONEG_ON &&
@@ -545,7 +549,6 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     
-    /* Set value */
     list_item->ecmd.autoneg = (uint8_t)autoneg;
     
     return 0;
@@ -576,7 +579,6 @@ phy_execute_shell_cmd(char *cmd)
     char *out_buf;
     int   result = -1;
     
-    /* Try to execute command line */
     pid = te_shell_cmd(cmd, -1, NULL, &out_fd, NULL);
     
     if (pid < 0)
@@ -586,7 +588,6 @@ phy_execute_shell_cmd(char *cmd)
         return -1;
     }
     
-    /* Trying to open stdout */
     if ((fp = fdopen(out_fd, "r")) == NULL)
     {
         ERROR("failed to get shell command execution result while "
@@ -594,17 +595,14 @@ phy_execute_shell_cmd(char *cmd)
         return -1;
     }
     
-    /* Allocate memory for output buffer */
     if ((out_buf = (char *)malloc(BUFFER_SIZE)) == NULL)
     {
         ERROR("failed to allocate memory while getting duplex state");
         return -1;
     }
     
-    /* Initialize buffer */
     memset(out_buf, 0, BUFFER_SIZE);
     
-    /* Read data from stdout */
     if (fgets(out_buf, BUFFER_SIZE, fp) == NULL)
     {
         WARN("failed to read command execution result: %s", cmd);
@@ -623,6 +621,7 @@ phy_execute_shell_cmd(char *cmd)
 }
 #endif /* __sun__ */
 
+#if defined __sun__
 /**
  * Extract driver name and instance number from interface name.
  *
@@ -636,7 +635,6 @@ phy_execute_shell_cmd(char *cmd)
  *                      number. If this number is not equal to 2 it means
  *                      that parsing error has been occured.
  */
-#if defined __sun__
 static inline int
 phy_extract_ifname(const char *ifname, char *drv, int *instance)
 {
@@ -668,10 +666,9 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
     
     memset(&ecmd, 0, sizeof(ecmd));
     
-    /* Get property */
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
-        /* Check for option support */
+        /* Check that option does not supported */
         if (rc == EOPNOTSUPP)
         {
             /* If this option is not supported we should not
@@ -694,7 +691,6 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     
-    /* Store value */
     snprintf(value, RCF_MAX_VAL, "%s", duplex);
     
 #elif defined __sun__
@@ -710,7 +706,6 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     
-    /* Try to allocate memory for shell command buffer */
     if((cmd = (char *)malloc(BUFFER_SIZE)) == NULL)
     {
         ERROR("Failed to allocate memory for shell command buffer "
@@ -721,10 +716,8 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
     /* Construct a command line */
     sprintf(cmd, KSTAT_GET_DUPLEX_CMD, drv, instance);
     
-    /* Execute command line */
     result = phy_execute_shell_cmd(cmd);
     
-    /* Check output result value */
     if (result == -1)
     {
         WARN("failed to get duplex state at %s", ifname);
@@ -738,7 +731,6 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
         return 0;
     }
     
-    /* Get duplex string */
     duplex = phy_get_duplex_by_id(result);
     
     if (duplex == NULL)
@@ -748,7 +740,6 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     
-    /* Set value */
     snprintf(value, RCF_MAX_VAL, "%s", duplex);
     
     free(cmd);
@@ -799,7 +790,6 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     
-    /* Set value */
     list_item->ecmd.duplex = duplex;
     
     return 0;
@@ -902,7 +892,6 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
     
     memset(&ecmd, 0, sizeof(ecmd));
     
-    /* Get property */
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         /*
@@ -919,7 +908,6 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
     
-    /* Try to get current mode */
     mode = phy_get_mode(atoi(speed), duplex);
     
     /* Set mode state */
@@ -971,7 +959,6 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
     
     memset(&ecmd, 0, sizeof(ecmd));
     
-    /* Get all properties */
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         ERROR("failed to get PHY properties while setting "
@@ -979,8 +966,6 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
     
-    
-    /* Get mode numeric ID */
     mode = phy_get_mode(atoi(speed), duplex);
     if (mode == 0)
     {
@@ -988,7 +973,6 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     
-    /* Set or unset */
     set = atoi(value);
     
     /* Try to get a pointer to list item associated with
@@ -999,10 +983,10 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
     
     if (set == 1)
         list_item->ecmd.advertising =
-            ecmd.advertising | mode; /* Set value */
+            ecmd.advertising | mode;
     else
         list_item->ecmd.advertising =
-            ecmd.advertising & (~mode); /* Unset value */
+            ecmd.advertising & (~mode);
     
     return 0;
 #else
@@ -1058,7 +1042,6 @@ phy_modes_speed_duplex_list(unsigned int gid, const char *oid, char **list,
     
     memset(&ecmd, 0, sizeof(ecmd));
     
-    /* Allocate memory for list buffer */
     *list = (char *)malloc(TE_PHY_DUPLEX_LIST_MAX_ITEMS *
                            TE_PHY_LIST_MAX_ITEM_SIZE);
     if (*list == NULL)
@@ -1067,11 +1050,9 @@ phy_modes_speed_duplex_list(unsigned int gid, const char *oid, char **list,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
     
-    /* Initialize list buffer */
     memset(*list, 0, TE_PHY_DUPLEX_LIST_MAX_ITEMS *
            TE_PHY_LIST_MAX_ITEM_SIZE);
     
-    /* Get property */
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         ERROR("failed to get interface properties");
@@ -1121,13 +1102,8 @@ phy_modes_speed_list(unsigned int gid, const char *oid, char **list,
     
     memset(&ecmd, 0, sizeof(ecmd));
     
-    /* Allocate memory for list buffer */
     *list = (char *)malloc(TE_PHY_SPEED_LIST_MAX_ITEMS *
                            TE_PHY_LIST_MAX_ITEM_SIZE);
-    
-    /* Initialize list buffer */
-    memset(*list, 0, TE_PHY_SPEED_LIST_MAX_ITEMS *
-           TE_PHY_LIST_MAX_ITEM_SIZE);
     
     if (*list == NULL)
     {
@@ -1135,7 +1111,9 @@ phy_modes_speed_list(unsigned int gid, const char *oid, char **list,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
     
-    /* Get property */
+    memset(*list, 0, TE_PHY_SPEED_LIST_MAX_ITEMS *
+           TE_PHY_LIST_MAX_ITEM_SIZE);
+    
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         WARN("No modes supported/advertized by `%s'", ifname);
@@ -1200,7 +1178,6 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
     
     memset(&ecmd, 0, sizeof(ecmd));
     
-    /* Get property */
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         /*
@@ -1228,7 +1205,6 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
     int    result = -1;
     int    speed = -1;
     
-    /* Try to allocate memory for shell command buffer */
     if((cmd = (char *)malloc(BUFFER_SIZE)) == NULL)
     {
         ERROR("Failed to allocate memory for shell command buffer "
@@ -1239,7 +1215,6 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
     /* Construct a command line */
     sprintf(cmd, KSTAT_GET_SPEED_CMD, ifname);
     
-    /* Execute command line */
     if ((result = phy_execute_shell_cmd(cmd)) == -1)
     {
         WARN("failed to get speed value for interface %s", ifname);
@@ -1250,7 +1225,6 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
     
     speed = result / KSTAT_SPEED_UNITS_IN_M;
     
-    /* Set value */
     snprintf(value, RCF_MAX_VAL, "%d", speed);
     
     free(cmd);
@@ -1291,7 +1265,6 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
     /* Get value provided by caller */
     sscanf(value, "%d", &speed);
     
-    /* Set value */
     list_item->ecmd.speed = speed;
     
     return 0;
@@ -1327,11 +1300,10 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     
     memset(&edata, 0, sizeof(edata));
     
-    /* Setup control structure */
+    /* Initialize control structure */
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
     
-    /* Get properties */
     edata.cmd = ETHTOOL_GLINK;
     ifr.ifr_data = (caddr_t)&edata;
     
@@ -1354,7 +1326,6 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     
     state = edata.data ? TE_PHY_STATE_UP : TE_PHY_STATE_DOWN;
     
-    /* Store value */
     snprintf(value, RCF_MAX_VAL, "%d", state);
     
     return 0;
@@ -1371,7 +1342,6 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     
-    /* Try to allocate memory for shell command buffer */
     if((cmd = (char *)malloc(BUFFER_SIZE)) == NULL)
     {
         ERROR("Failed to allocate memory for shell command buffer "
@@ -1379,10 +1349,8 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
     
-    /* Construct a command line */
     sprintf(cmd, KSTAT_GET_STATE_CMD, drv, instance);
     
-    /* Execute command line */
     state = phy_execute_shell_cmd(cmd);
     
     /* Check that duplex state information is supported */
@@ -1397,7 +1365,6 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     /* Correct state */
     state = (state == 0 || state == 1) ? state : TE_PHY_STATE_UNKNOWN;
     
-    /* Set value */
     snprintf(value, RCF_MAX_VAL, "%d", state);
     
     free(cmd);
@@ -1422,7 +1389,7 @@ phy_reset(const char *ifname)
     
     memset(&edata, 0, sizeof(edata));
     
-    /* Setup control structure */
+    /* Initialize control structure */
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
     
@@ -1442,6 +1409,14 @@ phy_reset(const char *ifname)
 }
 #endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
 
+/**
+ * Apply locally stored changes.
+ *
+ * @param gid           GID
+ * @param p_oid         Pointer to the OID
+ *
+ * @return              Status code
+ */
 static te_errno
 phy_commit(unsigned int gid, const cfg_oid *p_oid)
 {
@@ -1461,10 +1436,8 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
     if (list_item == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     
-    /* Initialize structure */
     memset(&ecmd, 0, sizeof(ecmd));
     
-    /* Get property */
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         ERROR("failed to get PHY properties while setting "
@@ -1480,7 +1453,6 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
     list_item->ecmd.maxtxpkt = ecmd.maxtxpkt;
     list_item->ecmd.maxrxpkt = ecmd.maxrxpkt;
     
-    /* Apply value */
     if ((rc = PHY_SET_PROPERTY(ifname, &(list_item->ecmd))) != 0)
     {
         ERROR("failed to apply PHY properties while setting "

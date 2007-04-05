@@ -44,6 +44,9 @@ extern "C" {
 /**
  * Get PHY autonegotiation state.
  *
+ * NOTE: Output parameters are valid if function returns
+ * positive result only.
+ *
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to the returned autonegotiation state value:
@@ -73,6 +76,9 @@ tapi_cfg_phy_autoneg_set(const char *ta, const char *if_name,
 
 /**
  * Get PHY duplex state.
+ *
+ * NOTE: Output parameters are valid if function returns
+ * positive result only.
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
@@ -106,7 +112,7 @@ tapi_cfg_phy_duplex_set(const char *ta, const char *if_name,
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
- * @param speed         Pointer to returned speed value
+ * @param speed         Pointer to the returned speed value
  *                      TE_PHY_SPEED_10    - 10 Mbit/sec
  *                      TE_PHY_SPEED_100   - 100 Mbit/sec
  *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
@@ -153,7 +159,7 @@ tapi_cfg_phy_speed_set(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_phy_mode_get(const char *ta, const char *if_name,
-                           int *speed, int *duplex);
+                      int *speed, int *duplex);
 
 /**
  * Set PHY interface mode: speed and duplex state.
@@ -173,14 +179,17 @@ tapi_cfg_phy_mode_get(const char *ta, const char *if_name,
  */
 extern te_errno
 tapi_cfg_phy_mode_set(const char *ta, const char *if_name,
-                           int speed, int duplex);
+                      int speed, int duplex);
 
 /**
  * Get PHY link state.
  *
+ * NOTE: Output parameters are valid if function returns
+ * positive result only.
+ *
  * @param ta            Test Agent name
  * @param if_name       Interface name
- * @param state         Pointer to returned link state value:
+ * @param state         Pointer to the returned link state value:
  *                      TE_PHY_STATE_DOWN - link down
  *                      TE_PHY_STATE_UP   - link up
  *
@@ -200,8 +209,8 @@ tapi_cfg_phy_state_get(const char *ta, const char *if_name,
  *                      TE_PHY_DUPLEX_HALF - half duplex
  *                      TE_PHY_DUPLEX_FULL - full duplex
  * @param state         Pointer to mode state:
- *                      1 - mode is advertised
- *                      0 - mode is not advertised
+ *                      1 - the mode is advertised
+ *                      0 - the mode is not advertised
  *
  * @return Status code
  */
@@ -219,8 +228,8 @@ tapi_cfg_phy_is_mode_advertised(const char *ta, const char *if_name,
  *                      TE_PHY_DUPLEX_HALF - half duplex
  *                      TE_PHY_DUPLEX_FULL - full duplex
  * @param state         Mode state:
- *                      0 - mode is not advertised
- *                      1 - mode is advertised 
+ *                      0 - the mode is not advertised
+ *                      1 - the mode is advertised 
  *
  * @return Status code
  */

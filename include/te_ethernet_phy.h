@@ -46,7 +46,7 @@
 /* Duplex constants */
 #define TE_PHY_DUPLEX_STRING_FULL     "full"    /* Full duplex */
 #define TE_PHY_DUPLEX_STRING_HALF     "half"    /* Half duplex */
-#define TE_PHY_DUPLEX_STRING_UNKNOWN  "unknown" /* Unknown duples state */
+#define TE_PHY_DUPLEX_STRING_UNKNOWN  "unknown" /* Unknown duplex state */
 
 
 /*
@@ -67,7 +67,7 @@
 /* PHY duplex states */
 #define TE_PHY_DUPLEX_HALF            (0)       /* Half duplex */
 #define TE_PHY_DUPLEX_FULL            (1)       /* Full duplex */
-#define TE_PHY_DUPLEX_UNKNOWN         (2)      /* Unknown duplex state */
+#define TE_PHY_DUPLEX_UNKNOWN         (2)       /* Unknown duplex state */
 
 /* PHY speed values */
 #define TE_PHY_SPEED_UNKNOWN          (0)       /* Unknown speed value */
