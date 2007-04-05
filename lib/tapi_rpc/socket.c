@@ -393,6 +393,41 @@ rpc_recv_gen(rcf_rpc_server *rpcs,
     RETVAL_INT(recv, out.retval);
 }
 
+tarpc_ssize_t
+rpc_recvbuf(rcf_rpc_server *rpcs, int fd, rpc_ptr buf, size_t count, 
+            rpc_send_recv_flags flags)
+{
+    rcf_rpc_op      op;
+    tarpc_recvbuf_in  in;
+    tarpc_recvbuf_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(write, -1);
+    }
+
+    op = rpcs->op;
+
+    in.fd  = fd;
+    in.len = count;
+    in.buf = buf;
+
+    rcf_rpc_call(rpcs, "recvbuf", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(readbuf, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: recvbuf(%d, %u, %u, %s) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 fd, buf, count, send_recv_flags_rpc2str(flags),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(recvbuf, out.retval);
+}
+
 int
 rpc_shutdown(rcf_rpc_server *rpcs, int s, rpc_shut_how how)
 {
@@ -509,6 +544,42 @@ rpc_send(rcf_rpc_server *rpcs,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(send, out.retval);
+}
+
+ssize_t
+rpc_sendbuf(rcf_rpc_server *rpcs, int s, rpc_ptr buf, size_t len,
+            rpc_send_recv_flags flags)
+{
+    rcf_rpc_op     op;
+    tarpc_sendbuf_in  in;
+    tarpc_sendbuf_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(send, -1);
+    }
+
+    op = rpcs->op;
+
+    in.fd = s;
+    in.len = len;
+    in.buf = buf;
+    in.flags = flags;
+
+    rcf_rpc_call(rpcs, "sendbuf", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(send, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: sendbuf(%d, %u, %u, %s) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 s, buf, len, send_recv_flags_rpc2str(flags),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(sendbuf, out.retval);
 }
 
 ssize_t

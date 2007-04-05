@@ -892,6 +892,25 @@ _readbuf_1_svc(tarpc_readbuf_in *in, tarpc_readbuf_out *out,
     return TRUE;
 }
 
+/*-------------- recvbuf() ------------------------------*/
+
+bool_t
+_recvbuf_1_svc(tarpc_recvbuf_in *in, tarpc_recvbuf_out *out,
+                  struct svc_req *rqstp)
+{
+
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+
+    errno = 0;
+    if ((out->retval = recv(in->fd, rcf_pch_mem_get(in->buf), in->len, 
+                            in->flags)) < 0)
+    {
+        out->common._errno = TE_RC(TE_TA_UNIX, errno);
+    }
+    return TRUE;
+}
+
 
 /*-------------- writebuf() ------------------------------*/
 
@@ -906,6 +925,25 @@ _writebuf_1_svc(tarpc_writebuf_in *in, tarpc_writebuf_out *out,
     errno = 0;
     if ((out->retval = 
          write(in->fd, rcf_pch_mem_get(in->buf), in->len)) < 0)
+    {
+        out->common._errno = TE_RC(TE_TA_UNIX, errno);
+    }
+    return TRUE;
+}
+
+/*-------------- sendbuf() ------------------------------*/
+
+bool_t
+_sendbuf_1_svc(tarpc_sendbuf_in *in, tarpc_sendbuf_out *out,
+                struct svc_req *rqstp)
+{
+
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+
+    errno = 0;
+    if ((out->retval = 
+         send(in->fd, rcf_pch_mem_get(in->buf), in->len, in->flags)) < 0)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, errno);
     }

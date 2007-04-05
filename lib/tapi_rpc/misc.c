@@ -1057,6 +1057,35 @@ rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
     RETVAL_VOID(set_buf_pattern);
 }
 
+int
+rpc_memcmp(rcf_rpc_server *rpcs, rpc_ptr s1, rpc_ptr s2, size_t n)
+{
+    tarpc_memcmp_in  in;
+    tarpc_memcmp_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(memcmp, -2);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.s1 = s1;
+    in.s2 = s2;
+    in.n = n;
+
+    rcf_rpc_call(rpcs, "memcmp", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: memcmp(%u, %u, %u) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(rpcs->op),
+                 s1, s2, n, out.retval,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    return (int)out.retval;
+}
 
 void
 rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start)

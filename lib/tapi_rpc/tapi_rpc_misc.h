@@ -490,6 +490,22 @@ extern int rpc_sysinfo(rcf_rpc_server *rpcs,
                        char *buffer,
                        int count);
 
+/**
+ * Compare memory areas
+ *
+ * @param rpcs  RPC server handle
+ * @param s1    RPC pointer to the first memory area
+ * @param s2    RPC pointer to the second memory area
+ * @param n     Size of memory areas to be compared
+ *
+ * @return      An integer less than, equal to, or greater than zero if the
+ *              first n bytes of s1 is found, respectively, to be less 
+ *              than, to match, or be greater than the first n bytes of s2.
+ * @note See memcmp(3)
+ */
+extern int rpc_memcmp(rcf_rpc_server *rpcs, 
+                      rpc_ptr s1, rpc_ptr s2, size_t n);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

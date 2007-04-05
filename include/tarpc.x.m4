@@ -682,6 +682,19 @@ struct tarpc_send_in {
 
 typedef struct tarpc_ssize_t_retval_out tarpc_send_out;
 
+/* sendbuf() */
+
+struct tarpc_sendbuf_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int       fd;
+    tarpc_ptr       buf;
+    tarpc_size_t    len;
+    tarpc_int       flags;
+};
+
+typedef struct tarpc_ssize_t_retval_out tarpc_sendbuf_out;
+
 
 /* recv() */
 
@@ -701,6 +714,20 @@ struct tarpc_recv_out {
 
     uint8_t         buf<>;
 };
+
+/* recvbuf() */
+
+struct tarpc_recvbuf_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int       fd;
+    tarpc_ptr       buf;
+    tarpc_size_t    len;
+    tarpc_int       flags;
+};
+
+typedef struct tarpc_ssize_t_retval_out tarpc_recvbuf_out;
+
 
 /* WSARecvEx() */
 
@@ -1474,6 +1501,16 @@ struct tarpc_set_buf_pattern_in {
 struct tarpc_set_buf_pattern_out {
     struct tarpc_out_arg common;
 };
+
+/* memcmp */
+struct tarpc_memcmp_in {
+    struct tarpc_in_arg  common;
+    tarpc_ptr       s1;
+    tarpc_ptr       s2;
+    tarpc_size_t    n;
+};
+
+typedef struct tarpc_int_retval_out tarpc_memcmp_out;
 
 /* alloc_wsabuf */
 struct tarpc_alloc_wsabuf_in {
