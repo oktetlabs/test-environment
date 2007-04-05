@@ -732,7 +732,8 @@ int
 rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
                     char *cbuf, size_t buflen, size_t answer_plen,
                     const uint8_t *ba, size_t cmdlen, csap_handle_t csap_id,
-                    unsigned int num, te_bool results, unsigned int timeout)
+                    unsigned int num, unsigned int timeout,
+                    unsigned int flags)
 {
 #ifndef TAD_DUMMY 
     csap_p      csap;
@@ -741,8 +742,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
     asn_value  *nds = NULL; 
 #endif
 
-    INFO("%s: csap %u, num %u, timeout %u ms, %s", __FUNCTION__,
-         csap_id, num, timeout, results ? "results" : "");
+    INFO("%s: csap %u, num %u, timeout %u ms, flags=%x", __FUNCTION__,
+         csap_id, num, timeout, flags);
 
 #ifdef TAD_DUMMY 
     UNUSED(rcfc);
@@ -753,7 +754,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
     UNUSED(cmdlen);
     UNUSED(csap_id);
     UNUSED(num);
-    UNUSED(results);
+    UNUSED(flags);
     UNUSED(timeout);
 
     return -1;
@@ -800,8 +801,12 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
     
     CSAP_LOCK(csap);
 
-    if (results)
+    if (flags & RCF_CH_TRRECV_PACKETS)
+    {
         csap->state |= CSAP_STATE_RESULTS;
+        if (flags & RCF_CH_TRRECV_PACKETS_NO_PAYLOAD)
+            csap->state |= CSAP_STATE_PACKETS_NO_PAYLOAD;
+    }
 
     csap->first_pkt = csap->last_pkt = tv_zero;
 
@@ -948,7 +953,7 @@ int
 rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    const uint8_t *ba, size_t cmdlen, csap_handle_t csap_id,
-                   te_bool results, unsigned int timeout)
+                   unsigned int timeout, unsigned int flags)
 { 
 #ifndef TAD_DUMMY 
     csap_p      csap;
@@ -958,8 +963,8 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
     asn_value  *ptrn = NULL;
 #endif
 
-    INFO("%s: csap %u, timeout %u ms, %s", __FUNCTION__,
-         csap_id, timeout, results ? "results" : "");
+    INFO("%s: csap %u, timeout %u ms, flags=%x", __FUNCTION__,
+         csap_id, timeout, flags);
 
 #ifdef TAD_DUMMY 
     UNUSED(rcfc);
@@ -1012,8 +1017,12 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
 
     CSAP_LOCK(csap);
 
-    if (results)
+    if (flags & RCF_CH_TRRECV_PACKETS)
+    {
         csap->state |= CSAP_STATE_RESULTS;
+        if (flags & RCF_CH_TRRECV_PACKETS_NO_PAYLOAD)
+            csap->state |= CSAP_STATE_PACKETS_NO_PAYLOAD;
+    }
 
     csap->first_pkt = tv_zero;
     csap->last_pkt  = tv_zero;

@@ -67,6 +67,7 @@ extern "C" {
 /** @name Traffic flags */
 #define TR_POSTPONED            1
 #define TR_RESULTS              2
+#define TR_NO_PAYLOAD           4
 /*@}*/
 
 

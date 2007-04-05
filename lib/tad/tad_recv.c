@@ -1459,24 +1459,28 @@ tad_recv_get_packets(csap_p csap, tad_task_context *task, te_bool wait,
                 ERROR("ERROR: %s:%u", __FILE__, __LINE__);
         }
 
-        rc = tad_pkt_flatten_copy(&pkt->payload, &payload, &payload_len);
-        if (rc != 0)
+        if (~csap->state & CSAP_STATE_PACKETS_NO_PAYLOAD)
         {
-            ERROR(CSAP_LOG_FMT "Failed to make flatten copy of payload: "
-                  "%r", CSAP_LOG_ARGS(csap), rc);
-            /* TODO: Is it better to continue or to report an error? */
-        }
-        else
-        {
-            rc = asn_write_value_field(pkt->nds, payload, payload_len, 
-                                       "payload.#bytes");
+            rc = tad_pkt_flatten_copy(&pkt->payload,
+                                      &payload, &payload_len);
             if (rc != 0)
             {
-                ERROR("ASN error in add rest payload %r", rc);
+                ERROR(CSAP_LOG_FMT "Failed to make flatten copy of "
+                      "payload: %r", CSAP_LOG_ARGS(csap), rc);
+                /* TODO: Is it better to continue or to report an error? */
             }
-            free(payload); /* FIXME: Avoid it */
-            payload = NULL;
-            payload_len = 0;
+            else
+            {
+                rc = asn_write_value_field(pkt->nds, payload, payload_len, 
+                                           "payload.#bytes");
+                if (rc != 0)
+                {
+                    ERROR("ASN error in add rest payload %r", rc);
+                }
+                free(payload); /* FIXME: Avoid it */
+                payload = NULL;
+                payload_len = 0;
+            }
         }
 
         rc = tad_recv_report_packet(pkt->nds, task->rcfc,

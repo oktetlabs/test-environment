@@ -906,8 +906,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 int          handle;
                 int          num = 1;
                 unsigned int timeout = TAD_TIMEOUT_INF;
-                te_bool      results = FALSE;
-
+                unsigned int mode = 0;
 
                 if (*ptr == 0 || ba == NULL)
                     goto bad_protocol;
@@ -918,9 +917,16 @@ rcf_pch_run(const char *confstr, const char *info)
 
                 if (strncmp(ptr, "results", strlen("results")) == 0)
                 {
-                    results = 1;
+                    mode |= RCF_CH_TRRECV_PACKETS;
                     ptr += strlen("results");
                     SKIP_SPACES(ptr);
+                    if (strncmp(ptr, "no-payload",
+                                strlen("no-payload")) == 0)
+                    {
+                        mode |= RCF_CH_TRRECV_PACKETS_NO_PAYLOAD;
+                        ptr += strlen("no-payload");
+                        SKIP_SPACES(ptr);
+                    }
                 }
 
                 if (*ptr != 0)
@@ -928,7 +934,7 @@ rcf_pch_run(const char *confstr, const char *info)
 
                 if (rcf_ch_trrecv_start(conn, cmd, cmd_buf_len, 
                                         answer_plen, ba, len, handle,
-                                        num, results, timeout) < 0)
+                                        num, timeout, mode) < 0)
                 {
                     ERROR("rcf_ch_trrecv_start() returns - no support");
                     SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
@@ -939,9 +945,9 @@ rcf_pch_run(const char *confstr, const char *info)
 
             case RCFOP_TRSEND_RECV:
             {
-                int handle;
-                int timeout;
-                int results;
+                int             handle;
+                int             timeout;
+                unsigned int    mode;
 
                 if (*ptr == 0 || ba == NULL)
                     goto bad_protocol;
@@ -951,13 +957,9 @@ rcf_pch_run(const char *confstr, const char *info)
 
                 if (strcmp_start("results", ptr) == 0)
                 {
-                    results = 1;
+                    mode |= RCF_CH_TRRECV_PACKETS;
                     ptr += strlen("results");
                     SKIP_SPACES(ptr);
-                }
-                else
-                {
-                    results = 0;
                 }
 
                 if (*ptr != 0)
@@ -965,7 +967,7 @@ rcf_pch_run(const char *confstr, const char *info)
 
                 if (rcf_ch_trsend_recv(conn, cmd, cmd_buf_len,
                                        answer_plen, ba, len, handle,
-                                       results, timeout) < 0)
+                                       timeout, mode) < 0)
                 {
                     ERROR("rcf_ch_trsend_recv() returns - no support");
                     SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));

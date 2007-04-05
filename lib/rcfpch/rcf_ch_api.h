@@ -473,6 +473,14 @@ extern int rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
                               size_t answer_plen,
                               csap_handle_t csap);
 
+
+/** Traffic receive mode flags */
+typedef enum rcf_ch_trrecv_flags {
+    RCF_CH_TRRECV_PACKETS,              /**< Receive and report packets */
+    RCF_CH_TRRECV_PACKETS_NO_PAYLOAD,   /**< Do not report packets 
+                                             payload */
+} rcf_ch_trrecv_flags;
+
 /**
  * "trrecv_start" command handler.
  *
@@ -490,10 +498,9 @@ extern int rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
  * @param csap          CSAP handle
  * @param num           number of packets to be sent
  *                      (0 if number of packets is unlimited)
- * @param results       if TRUE, received packets should be
- *                      passed to the TEN
  * @param timeout       maximum duration (in milliseconds) of
  *                      receiving the traffic
+ * @param flags         traffic receive flags (see rcf_ch_trrecv_flags)
  *
  *
  * @return Indication of command support or error code
@@ -506,8 +513,8 @@ extern int rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                                char *cbuf, size_t buflen,
                                size_t answer_plen, const uint8_t *ba, 
                                size_t cmdlen, csap_handle_t csap, 
-                               unsigned int num, te_bool results,
-                               unsigned int timeout);
+                               unsigned int num, unsigned int timeout,
+                               unsigned int flags);
 
 /**
  * "trrecv_stop" command handler.
@@ -594,6 +601,7 @@ extern int rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
  *
  * @param csap          CSAP handle  * @param results "results" flag value
  * @param timeout       timeout value in milliseconds (if > 0)
+ * @param flags         traffic receive flags (see rcf_ch_trrecv_flags)
  *
  *
  * @return Indication of command support or error code
@@ -606,8 +614,8 @@ extern int rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
                               char *cbuf, size_t buflen,
                               size_t answer_plen,
                               const uint8_t *ba, size_t cmdlen,
-                              csap_handle_t csap, te_bool results,
-                              unsigned int timeout);
+                              csap_handle_t csap, unsigned int timeout,
+                              unsigned int flags);
 
 /**
  * "trpoll" command handler.

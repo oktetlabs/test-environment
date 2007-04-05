@@ -138,7 +138,11 @@ enum {
     CSAP_STATE_SEND_DONE  = 0x0020, /**< Send has been finished */
     CSAP_STATE_RECV_DONE  = 0x0040, /**< Receive has been finished */
     CSAP_STATE_COMPLETE   = 0x0100, /**< Receive operation complete */
+
+    CSAP_STATE_PACKETS_NO_PAYLOAD = 0x0400, /**< Do not report payload of
+                                                 received packets */
     CSAP_STATE_RESULTS    = 0x0800, /**< Receive results are required */
+
     CSAP_STATE_FOREGROUND = 0x1000, /**< RCF answer is pending */
     CSAP_STATE_WAIT       = 0x2000, /**< User request to wait for
                                          end of processing */
