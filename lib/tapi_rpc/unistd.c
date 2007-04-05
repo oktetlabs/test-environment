@@ -409,7 +409,7 @@ rpc_readbuf(rcf_rpc_server *rpcs,
                  fd, buf, count,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT(writebuf, out.retval);
+    RETVAL_INT(readbuf, out.retval);
 }
 
 
