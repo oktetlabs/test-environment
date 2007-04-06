@@ -476,8 +476,8 @@ extern int rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
 
 /** Traffic receive mode flags */
 typedef enum rcf_ch_trrecv_flags {
-    RCF_CH_TRRECV_PACKETS,              /**< Receive and report packets */
-    RCF_CH_TRRECV_PACKETS_NO_PAYLOAD,   /**< Do not report packets 
+    RCF_CH_TRRECV_PACKETS = 1,           /**< Receive and report packets */
+    RCF_CH_TRRECV_PACKETS_NO_PAYLOAD = 2,/**< Do not report packets 
                                              payload */
 } rcf_ch_trrecv_flags;
 

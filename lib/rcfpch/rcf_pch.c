@@ -947,7 +947,7 @@ rcf_pch_run(const char *confstr, const char *info)
             {
                 int             handle;
                 int             timeout;
-                unsigned int    mode;
+                unsigned int    mode = 0;
 
                 if (*ptr == 0 || ba == NULL)
                     goto bad_protocol;
