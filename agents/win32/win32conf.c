@@ -1121,7 +1121,7 @@ net_addr_del_dhcp(unsigned int dwIndex)
 {
   PIP_INTERFACE_INFO table;
   DWORD size = 0;
-  unsigned int i;
+  DWORD i;
   int   rc;
 
   GetInterfaceInfo(NULL, &size);
@@ -1591,7 +1591,7 @@ static te_errno
 mtu_set(unsigned int gid, const char *oid, const char *value,
         const char *ifname)
 {
-    char     *tmp;
+//    char     *tmp;
     te_errno  rc = 0;
 //    long      mtu;
 //    int i, if_index = -1, free_index = -1;
@@ -3075,13 +3075,15 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     int rc;
     DWORD bytes_returned = 0;
     unsigned char addr6[6];
-    unsigned int itemp;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
+    if (strstr(ifname, "ef") == NULL)
+    {
+      return 0;
+    }
     UNUSED(ifname);
-//    UNUSED(addr);
 
     if (INVALID_HANDLE_VALUE == dev)
     {
@@ -3110,12 +3112,13 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     int rc;
     DWORD bytes_returned = 0;
     unsigned char addr6[6];
-    unsigned int itemp;
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(ifname);
-//    UNUSED(addr);
+    if (strstr(ifname, "ef") == NULL)
+    {
+      return 0;
+    }
 
     if (INVALID_HANDLE_VALUE == dev)
     {
@@ -3150,12 +3153,18 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
-//    UNUSED(list);
-    UNUSED(ifname);
-
+    if (strstr(ifname, "ef") == NULL)
+    {
+      sprintf(ret, " ");
+      *list = ret;
+      free(buf);
+      return 0;
+    }
 
     if (INVALID_HANDLE_VALUE == dev)
     {
+      free(buf);
+      free(ret);
       return TE_RC(TE_TA_WIN32, TE_ENOENT);
     }
 
@@ -3166,6 +3175,8 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
     {
       rc = GetLastError();
       WARN("DeviceIoControl failed with errno=%d", GetLastError());
+      free(buf);
+      free(ret);
       return -2;
     }
     CloseHandle(dev);
@@ -3174,6 +3185,8 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
       sprintf(&ret[i*18],"%02x:%02x:%02x:%02x:%02x:%02x ", buf[i*6], 
               buf[i*6+1], buf[i*6+2], buf[i*6+3], buf[i*6+4], buf[i*6+5]);
     }
+
+    free(buf);
 
     *list = ret;
     return 0;
