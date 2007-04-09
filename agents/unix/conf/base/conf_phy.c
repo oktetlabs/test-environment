@@ -580,9 +580,7 @@ phy_execute_shell_cmd(char *cmd)
     
     return result;
 }
-#endif /* __sun__ */
 
-#if defined __sun__
 /**
  * Extract driver name and instance number from interface name.
  *
