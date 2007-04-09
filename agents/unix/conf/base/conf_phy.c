@@ -202,17 +202,6 @@ static struct phy_iflist_head {
 } phy_iflist;
 
 /**
- * Initialize PHY interfaces parameters list.
- *
- * @param list          A pointer to list head
- */
-static void
-phy_init_iflist(struct phy_iflist_head *list)
-{
-    list->next = NULL;
-}
-
-/**
  * Add a new list entry to the PHY interfaces parameters list.
  *
  * This function just allocates memory for a new list item,
@@ -233,41 +222,24 @@ phy_iflist_add_item(struct phy_iflist_head *list, const char *ifname)
     struct phy_iflist_head *new_list_item;
     struct phy_iflist_head *next;
     
-    /* Allocate memory for a new list item */
     new_list_item =
         (struct phy_iflist_head *)malloc(sizeof(struct phy_iflist_head));
     if (new_list_item == NULL)
         return NULL;
     
-    /* Store interface name */
     new_list_item->ifname = ifname;
-    
-    /* Remember a pointer to current next list item */
     next = list->next;
-    
-    /* Insert new list item between list head and
-       next element relative list head */
-    
-    /* Tell to list head that the next element after list head
-       is newly allocated list item */
     list->next = new_list_item;
-    /* Tell to newly allocated list item that previous list element is
-       a list head */
     new_list_item->prev = list;
     
-    /* If next (previuosly remembered) list element exists,
-       tell this element that the previous list element is
-       a newly allocated list item and tell the newly allocated
-       list item that the next element is the first element at the list */
     if (next != NULL)
     {
         next->prev = new_list_item;
         new_list_item->next = next;
     }
-    else /* Else store the end of the list */
+    else
         new_list_item->next = NULL;
     
-    /* Initialize ecmd */
     memset(&(new_list_item->ecmd), 0, sizeof(struct ethtool_cmd));
     new_list_item->ecmd.speed = TE_PHY_SPEED_UNKNOWN;
     new_list_item->ecmd.duplex = TE_PHY_DUPLEX_UNKNOWN;
@@ -307,10 +279,6 @@ phy_iflist_find_or_add(struct phy_iflist_head *list, const char *ifname)
         
         /* Switch to next list item */
         list_item = list_item->next;
-        
-        /* Looking for the list end */
-        if (list_item->next == NULL)
-            break;
     }
     
     /* If item does not exists add a new one */
@@ -347,10 +315,6 @@ phy_iflist_find(struct phy_iflist_head *list, const char *ifname)
         
         /* Switch to next list item */
         list_item = list_item->next;
-        
-        /* Looking for the list end */
-        if (list_item->next == NULL)
-            break;
     }
     
     /* If item does not exeists, return NULL */
@@ -362,8 +326,7 @@ te_errno
 ta_unix_conf_phy_init(void)
 {
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
-    /* Initialize configuration parameters list */
-    phy_init_iflist(&phy_iflist);
+    phy_iflist.next = NULL;
 #endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
     return rcf_pch_add_node("/agent/interface", &node_phy);
 }
@@ -439,11 +402,9 @@ phy_property(const char *ifname, struct ethtool_cmd *ecmd, int type)
 {
     struct ifreq        ifr;
     
-    /* Initialize control structure */
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
     
-    /* Get|set properties */
     ecmd->cmd = type;
     ifr.ifr_data = (caddr_t)ecmd;
     ioctl(cfg_socket, SIOCETHTOOL, &ifr);
@@ -1011,10 +972,7 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
 static void
 phy_modes_list_ins_value(char **list, char *value)
 {
-    /* Insert the item to the end of list */
     strcat(*list, value);
-    
-    /* Insert delimeter to the end of list */
     strcat(*list, " ");
 }
 
@@ -1388,12 +1346,9 @@ phy_reset(const char *ifname)
     struct ethtool_value edata;
     
     memset(&edata, 0, sizeof(edata));
-    
-    /* Initialize control structure */
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
     
-    /* Get|set properties */
     edata.cmd = ETHTOOL_NWAY_RST;
     ifr.ifr_data = (caddr_t)&edata;
     rc = ioctl(cfg_socket, SIOCETHTOOL, &ifr);
