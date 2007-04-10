@@ -43,6 +43,7 @@
 #endif
 
 #include "te_errno.h"
+#include "logger_api.h"
 #include "te_defs.h"
 #include "rcf_pch.h"
 #include "unix_internal.h"
@@ -320,18 +321,7 @@ phy_iflist_find(struct phy_iflist_head *list, const char *ifname)
     /* If item does not exeists, return NULL */
     return NULL;
 }
-#endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
 
-te_errno
-ta_unix_conf_phy_init(void)
-{
-#if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
-    phy_iflist.next = NULL;
-#endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
-    return rcf_pch_add_node("/agent/interface", &node_phy);
-}
-
-#if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
 /**
  * Get duplex state by name string
  *
@@ -354,36 +344,7 @@ phy_get_duplex_by_name(const char *name)
     
     return -1;
 }
-#endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
 
-/**
- * Get duplex name string by id
- *
- * @param id            Duplex ID
- *
- * @return TE_PHY_DUPLEX_STRING_FULL, TE_PHY_DUPLEX_STRING_HALF or NULL if
- *         duplex ID does not recognized
- */
-static inline char *
-phy_get_duplex_by_id(int id)
-{
-    switch (id)
-    {
-#if defined __linux__
-        case DUPLEX_FULL: return TE_PHY_DUPLEX_STRING_FULL;
-        case DUPLEX_HALF: return TE_PHY_DUPLEX_STRING_HALF;
-        case 255:         return TE_PHY_DUPLEX_STRING_UNKNOWN;
-#elif defined __sun__
-        case 0: return TE_PHY_DUPLEX_STRING_UNKNOWN;
-        case 1: return TE_PHY_DUPLEX_STRING_HALF;
-        case 2: return TE_PHY_DUPLEX_STRING_FULL;
-#endif /* __linux__ */
-    }
-    
-    return NULL;
-}
-
-#if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
 /**
  * Get and set PHY property using ioctl() call.
  * Ethtool parameters will be stored in @p ecmd
@@ -411,7 +372,135 @@ phy_property(const char *ifname, struct ethtool_cmd *ecmd, int type)
     
     return errno;
 }
+
+/**
+ * Calculate PHY interface mode.
+ *
+ * @param speed         Speed value
+ * @param duplex        Duplex value
+ *
+ * @return              Mode value or 0 if no such mode
+ */
+static int
+phy_get_mode(int speed, const char *duplex)
+{
+    switch (speed)
+    {
+        case SPEED_10:
+        {
+            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_HALF) == 0)
+                return ADVERTISED_10baseT_Half;
+            
+            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
+                return ADVERTISED_10baseT_Full;
+            
+            break;
+        }
+        
+        case SPEED_100:
+        {
+            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_HALF) == 0)
+                return ADVERTISED_100baseT_Half;
+            
+            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
+                return ADVERTISED_100baseT_Full;
+            
+            break;
+        }
+        
+        case SPEED_1000:
+        {
+            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_HALF) == 0)
+                return ADVERTISED_1000baseT_Half;
+            
+            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
+                return ADVERTISED_1000baseT_Full;
+            
+            break;
+        }
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 22)
+        case SPEED_10000:
+        {
+            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
+                return ADVERTISED_10000baseT_Full;
+            
+            break;
+        }
+#endif /* LINUX_VERSION_CODE */
+    }
+    
+    return 0;
+}
+
+/**
+ * Restart autonegotiation.
+ *
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_reset(const char *ifname)
+{
+    struct ifreq         ifr;
+    int                  rc = -1;
+    struct ethtool_value edata;
+    
+    memset(&edata, 0, sizeof(edata));
+    memset(&ifr, 0, sizeof(ifr));
+    strcpy(ifr.ifr_name, ifname);
+    
+    edata.cmd = ETHTOOL_NWAY_RST;
+    ifr.ifr_data = (caddr_t)&edata;
+    rc = ioctl(cfg_socket, SIOCETHTOOL, &ifr);
+    
+    if (rc < 0)
+    {
+        ERROR("failed to restart autonegotiation at %s, errno=%d (%s)",
+              ifname, errno, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    
+    return 0;
+}
 #endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
+
+te_errno
+ta_unix_conf_phy_init(void)
+{
+#if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
+    phy_iflist.next = NULL;
+#endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
+    return rcf_pch_add_node("/agent/interface", &node_phy);
+}
+
+/**
+ * Get duplex name string by id
+ *
+ * @param id            Duplex ID
+ *
+ * @return TE_PHY_DUPLEX_STRING_FULL, TE_PHY_DUPLEX_STRING_HALF or NULL if
+ *         duplex ID does not recognized
+ */
+static inline char *
+phy_get_duplex_by_id(int id)
+{
+    switch (id)
+    {
+#if defined __linux__
+        case DUPLEX_FULL: return TE_PHY_DUPLEX_STRING_FULL;
+        case DUPLEX_HALF: return TE_PHY_DUPLEX_STRING_HALF;
+        case 255:         return TE_PHY_DUPLEX_STRING_UNKNOWN;
+#elif defined __sun__
+        case 0: return TE_PHY_DUPLEX_STRING_UNKNOWN;
+        case 1: return TE_PHY_DUPLEX_STRING_HALF;
+        case 2: return TE_PHY_DUPLEX_STRING_FULL;
+#endif /* __linux__ */
+    }
+    
+    return NULL;
+}
 
 /**
  * Get PHY autonegotiation state.
@@ -760,68 +849,6 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
-#if defined __linux__
-/**
- * Calculate PHY interface mode.
- *
- * @param speed         Speed value
- * @param duplex        Duplex value
- *
- * @return              Mode value or 0 if no such mode
- */
-static int
-phy_get_mode(int speed, const char *duplex)
-{
-    switch (speed)
-    {
-        case SPEED_10:
-        {
-            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_HALF) == 0)
-                return ADVERTISED_10baseT_Half;
-            
-            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
-                return ADVERTISED_10baseT_Full;
-            
-            break;
-        }
-        
-        case SPEED_100:
-        {
-            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_HALF) == 0)
-                return ADVERTISED_100baseT_Half;
-            
-            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
-                return ADVERTISED_100baseT_Full;
-            
-            break;
-        }
-        
-        case SPEED_1000:
-        {
-            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_HALF) == 0)
-                return ADVERTISED_1000baseT_Half;
-            
-            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
-                return ADVERTISED_1000baseT_Full;
-            
-            break;
-        }
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 22)
-        case SPEED_10000:
-        {
-            if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
-                return ADVERTISED_10000baseT_Full;
-            
-            break;
-        }
-#endif /* LINUX_VERSION_CODE */
-    }
-    
-    return 0;
-}
-#endif /* __linux__ */
-
 /**
  * Get value for object "agent/interface/phy/speed/duplex".
  * Possible values are: 0 - configuration advertised
@@ -959,6 +986,7 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
 #endif /* __linux__ */
 }
 
+#if defined __linux__
 /**
  * Insert value into list of object instances
  *
@@ -973,6 +1001,7 @@ phy_modes_list_ins_value(char **list, char *value)
     strcat(*list, value);
     strcat(*list, " ");
 }
+#endif /* __linux__ */
 
 /**
  * Get list of supported PHY speed/duplex
@@ -1327,40 +1356,6 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
 #endif /* __linux__ */
     return 0;
 }
-
-#if defined __linux__ && HAVE_LINUX_ETHTOOL_H
-/**
- * Restart autonegotiation.
- *
- * @param ifname        name of the interface
- *
- * @return              Status code
- */
-static te_errno
-phy_reset(const char *ifname)
-{
-    struct ifreq         ifr;
-    int                  rc = -1;
-    struct ethtool_value edata;
-    
-    memset(&edata, 0, sizeof(edata));
-    memset(&ifr, 0, sizeof(ifr));
-    strcpy(ifr.ifr_name, ifname);
-    
-    edata.cmd = ETHTOOL_NWAY_RST;
-    ifr.ifr_data = (caddr_t)&edata;
-    rc = ioctl(cfg_socket, SIOCETHTOOL, &ifr);
-    
-    if (rc < 0)
-    {
-        ERROR("failed to restart autonegotiation at %s, errno=%d (%s)",
-              ifname, errno, strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-    
-    return 0;
-}
-#endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
 
 /**
  * Apply locally stored changes.

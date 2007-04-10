@@ -248,6 +248,30 @@ tapi_cfg_phy_advertise_mode(const char *ta, const char *if_name,
 extern te_errno
 tapi_cfg_phy_commit(const char *ta, const char *if_name);
 
+/**
+ * Get PHY duplex state by name string.
+ *
+ * @param name          Duplex state name string
+ *
+ * @return TE_PHY_DUPLEX_HALF - half duplex;
+ *         TE_PHY_DUPLEX_FULL - full duplex;
+ *         or -1 if name string does not recognized
+ */
+extern int
+tapi_cfg_phy_duplex_str2id(char *name);
+
+/**
+ * Get PHY duplex state by id.
+ *
+ * @param duplex        Duplex state id
+ *
+ * @return half - half duplex;
+ *         full - full duplex;
+ *         or NULL if id does not recognized
+ */
+extern char *
+tapi_cfg_phy_duplex_id2str(int duplex);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
