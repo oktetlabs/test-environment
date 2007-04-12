@@ -1,0 +1,9 @@
+/** @page IPv6 Socket API Tests
+
+@author Oleg Kravtsov <Oleg.Kravtsov.ru>
+
+@par Tests:
+
+-# @ref sockets-send_recv
+
+*/

@@ -1,0 +1,114 @@
+<?xml version="1.0"?>
+<history>
+
+  <register>
+    <object oid="/agent/env" access="read_create" type="string"/>
+
+    <object oid="/agent/ip4_rt_default_if" access="read_only" type="string"/>
+    <object oid="/agent/ip4_fw" access="read_write" type="integer"/>
+    <object oid="/agent/route" access="read_create" type="address">
+        <depends oid="/agent/interface"/>
+        <depends oid="/agent/interface/status"/>
+        <depends oid="/agent/rsrc"/>
+    </object>
+    <object oid="/agent/route/dev" access="read_write" type="string"/>
+    <object oid="/agent/route/mtu" access="read_write" type="integer"/>
+    <object oid="/agent/route/win" access="read_write" type="integer"/>
+    <object oid="/agent/route/irtt" access="read_write" type="integer"/>
+
+    <object oid="/agent/rpcserver" access="read_create" type="string"/>
+  </register>
+
+  <register>
+    <object oid="/volatile" access="read_create" type="none"
+            volatile="true"/>
+    <object oid="/volatile/sockaddr_port" access="read_create" type="integer"
+            volatile="true"/>
+    <object oid="/volatile/ta_sockets" 
+            access="read_create" type="string" volatile="true"/>
+    <object oid="/rpcserver_sid" 
+            access="read_create" type="integer" volatile="true"/>
+  </register>
+
+  <register>
+    <object oid="/agent/interface"
+            access="read_only" type="none">
+        <depends oid="/agent/rsrc"/>
+    </object>
+    <object oid="/agent/interface/index"
+            access="read_create" type="integer" volatile="true"/>
+    <object oid="/agent/interface/net_addr"
+            access="read_create" type="integer"/>
+    <object oid="/agent/interface/net_addr/broadcast"
+            access="read_write" type="address"/>
+    <object oid="/agent/interface/link_addr"
+            access="read_write" type="address"/>
+    <object oid="/agent/interface/mtu"
+            access="read_write" type="integer"/>
+    <object oid="/agent/interface/ip4_ttl"
+            access="read_write" type="integer"/>
+    <object oid="/agent/interface/status"
+            access="read_write" type="integer"/>
+    <object oid="/agent/interface/neigh_static" access="read_create"
+            type="address"/>
+  </register>
+
+  <register>
+    <object oid="/net" access="read_create" type="none"/>
+    <object oid="/net/type" access="read_create" type="integer"/>
+    <object oid="/net/ip4_subnet" access="read_create" type="address"/>
+    <object oid="/net/ip6_subnet" access="read_create" type="address"/>
+    <object oid="/net/node" access="read_create" type="string"/>
+    <object oid="/net/node/type" access="read_create" type="integer"/>
+    <object oid="/net/node/ip4_address" access="read_create" type="address"/>
+    <object oid="/net/node/ip6_address" access="read_create" type="address"/>
+  </register>
+
+  <register>
+    <object oid="/rpcserver_sid/counter" access="read_write" type="integer"
+            volatile="true"/>
+  </register>
+
+  <register>
+    <object oid="/net_pool"
+            access="read_create" type="none"/>
+    <object oid="/net_pool/entry"
+            access="read_create" type="integer"/>
+    <object oid="/net_pool/entry/prefix"
+            access="read_write" type="integer"/>
+    <object oid="/net_pool/entry/n_entries"
+            access="read_write" type="integer"/>
+    <object oid="/net_pool/entry/pool"
+            access="read_write" type="none"/>
+    <object oid="/net_pool/entry/pool/entry"
+            access="read_create" type="integer"/>
+  </register>
+
+  <add>
+    <instance oid="/net_pool:ip4"/>
+    <instance oid="/net_pool:ip4/entry:192.168.56.0" value="0"/>
+    <instance oid="/net_pool:ip4/entry:192.168.57.0" value="0"/>
+  </add>
+  <set>
+    <instance oid="/net_pool:ip4/entry:192.168.56.0/prefix:" value="24"/>
+    <instance oid="/net_pool:ip4/entry:192.168.57.0/prefix:" value="24"/>
+  </set>
+
+  <add>
+    <instance oid="/net_pool:ip6"/>
+    <instance oid="/net_pool:ip6/entry:${TE_IP6_POOL:-fec0:0:}0::" value="0"/>
+    <instance oid="/net_pool:ip6/entry:${TE_IP6_POOL:-fec0:0:}1::" value="0"/>
+  </add>
+  <set>
+    <instance oid="/net_pool:ip6/entry:${TE_IP6_POOL:-fec0:0:}0::/prefix:"
+              value="48"/>
+    <instance oid="/net_pool:ip6/entry:${TE_IP6_POOL:-fec0:0:}1::/prefix:"
+              value="48"/>
+  </set>
+
+  <add>
+    <instance oid="/volatile:"/>
+    <instance oid="/volatile:/sockaddr_port:" value="0"/>
+  </add>
+
+</history>

@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    
+    <description>IPv6 Socket support</description>
+    
+    <author mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+
+    <session>
+<!--
+        <arg name="domain">
+            <value>PF_INET</value>
+            <value>PF_INET6</value>
+        </arg>
+-->
+        <enum name="sock_stream_dgram">
+            <value>SOCK_STREAM</value>
+            <value>SOCK_DGRAM</value>
+        </enum>
+        <enum name="env.peer2peer">
+<!--            <value type="env.peer2peer"/> -->
+            <value type="env.p2p_ip6ip4mapped"/>
+            <value type="env.p2p_ip6"/>
+        </enum>
+
+        <run>
+            <script name="opt_ipv6_only"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT},addr:'iut_addr6':inet6:unicast,addr:'iut_addr4':inet:unicast},{{'pco_tst':tester}}}</value>
+            </arg>
+        </run>
+        <run>
+            <script name="send_recv">
+                <req ref="sock_type"/>
+            </script>
+            <arg name="env" type="env.peer2peer"/>
+            <arg name="sock_type" type="sock_stream_dgram"/>
+        </run>
+    </session>
+</package>

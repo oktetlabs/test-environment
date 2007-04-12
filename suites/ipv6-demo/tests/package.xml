@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package version="1.0">
+
+    <description>IPv6 Demo Test Suite</description>
+
+    <author mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+
+    <session>
+        <!-- Environment for IPv4 networks -->
+        <enum name="env.peer2peer">
+            <value>'net':IUT{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if',addr:'iut_lladdr':ether:unicast},{{'pco_tst':tester},addr:'tst_addr':inet:unicast,if:'tst_if',addr:'tst_lladdr':ether:unicast}}</value>
+        </enum>
+        <enum name="env.peer2peer_tst">
+            <value reqs="ENV-TST-LINK">'net':tester{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if',addr:'iut_lladdr':ether:unicast},{{'pco_tst':tester},addr:'tst_addr':inet:unicast,if:'tst_if',addr:'tst_lladdr':ether:unicast}}</value>
+        </enum>
+
+        <!-- Environment for IPv6 networks -->
+        <enum name="env.p2p_ip6ip4mapped">
+            <value reqs="IP6,IP6_IP4MAPPED">'net':IUT{{{'pco_iut':IUT},addr:'iut_addr':inet6:ip4mapped_uc,addr:'iut_lladdr':ether:unicast,if:'iut_if'},{{'pco_tst':tester},addr:'tst_addr':inet6:ip4mapped_uc,addr:'tst_lladdr':ether:unicast,if:'tst_if'}}</value>
+        </enum>
+        <enum name="env.p2p_ip6">
+            <value reqs="IP6,IP6_FULL">'net':IUT{{{'pco_iut':IUT},addr:'iut_addr':inet6:unicast,addr:'iut_lladdr':ether:unicast,if:'iut_if'},{{'pco_tst':tester},addr:'tst_addr':inet6:unicast,addr:'tst_lladdr':ether:unicast,if:'tst_if'}}</value>
+        </enum>
+
+        <prologue>
+            <script name="prologue"/>
+<!--            <arg name="env" type="env.iut_only"/> -->
+        </prologue>
+
+        <run>
+            <package name="sockets" track_conf="silent"/>
+        </run>
+    </session>
+</package>
