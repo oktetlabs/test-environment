@@ -265,6 +265,55 @@ static te_errno uname_get(unsigned int, const char *, char *);
 #define ENABLE_NET_SNMP_STATS
 #endif
 
+typedef struct ndis_stats_s {
+  uint64_t gen_broadcast_bytes_rcv;    
+  uint64_t gen_broadcast_bytes_xmit;   
+  uint64_t gen_broadcast_frames_rcv;  
+  uint64_t gen_broadcast_frames_xmit;  
+  uint64_t gen_directed_bytes_rcv;
+  uint64_t gen_directed_bytes_xmit;
+  uint64_t gen_directed_frames_rcv;   
+  uint64_t gen_directed_frames_xmit; 
+  uint64_t gen_multicast_bytes_rcv;
+  uint64_t gen_multicast_bytes_xmit;
+  uint64_t gen_multicast_frames_rcv;  
+  uint64_t gen_multicast_frames_xmit; 
+  uint64_t gen_rcv_crc_error;
+  uint64_t gen_rcv_error;            
+  uint64_t gen_rcv_no_buffer;        
+  uint64_t gen_rcv_ok;
+  uint64_t gen_xmit_error;       
+  uint64_t gen_xmit_ok;
+  uint64_t eth_rcv_error_alignment;
+  uint64_t eth_rcv_overrun;
+  uint64_t eth_xmit_heartbeat_failure;
+  uint64_t eth_xmit_late_collisions;
+  uint64_t eth_xmit_max_collisions;
+  uint64_t eth_xmit_more_collisions;
+  uint64_t eth_xmit_deferred;
+  uint64_t eth_xmit_one_collision;
+  uint64_t eth_xmit_times_crs_lost;
+  uint64_t eth_xmit_underrun;
+  uint64_t gen_transmit_queue_length;
+  ULONG gen_link_speed;
+} ndis_stats;
+
+typedef struct if_stats {
+    uint64_t      in_octets;
+    uint64_t      in_ucast_pkts;
+    uint64_t      in_nucast_pkts;
+    uint64_t      in_discards;
+    uint64_t      in_errors;
+    uint64_t      in_unknown_protos;
+    uint64_t      out_octets;
+    uint64_t      out_ucast_pkts;
+    uint64_t      out_nucast_pkts;
+    uint64_t      out_discards;
+    uint64_t      out_errors;
+} if_stats;
+
+static te_errno if_stats_get(const char *ifname, if_stats *stats);
+
 #ifdef ENABLE_IFCONFIG_STATS
 extern te_errno ta_win32_conf_net_if_stats_init();
 #endif
@@ -2781,13 +2830,29 @@ static te_errno net_if_stats_##_counter_##_get(unsigned int gid_,       \
                                                const char  *ifname)     \
 {                                                                       \
     int        rc = 0;                                                  \
+    if_stats   stats;                                                   \
                                                                         \
     UNUSED(gid_);                                                       \
     UNUSED(oid_);                                                       \
-                                                                        \
+    /* Get statistics via GetIfEntry function */                        \
     GET_IF_ENTRY;                                                       \
-    snprintf((value_), RCF_MAX_VAL, "%lu", if_entry. _field_);          \
+    stats.in_octets = (uint64_t)if_entry.dwInOctets;                    \
+    stats.in_ucast_pkts = (uint64_t)if_entry.dwInUcastPkts;             \
+    stats.in_nucast_pkts = (uint64_t)if_entry.dwInNUcastPkts;           \
+    stats.in_discards = (uint64_t)if_entry.dwInDiscards;                \
+    stats.in_errors = (uint64_t)if_entry.dwInErrors;                    \
+    stats.in_unknown_protos = (uint64_t)if_entry.dwInUnknownProtos;     \
+    stats.out_octets = (uint64_t)if_entry.dwOutOctets;                  \
+    stats.out_ucast_pkts = (uint64_t)if_entry.dwOutUcastPkts;           \
+    stats.out_nucast_pkts = (uint64_t)if_entry.dwOutNUcastPkts;         \
+    stats.out_discards = (uint64_t)if_entry.dwOutDiscards;              \
+    stats.out_errors = (uint64_t)if_entry.dwOutErrors;                  \
                                                                         \
+    /* Try to get statistics from wrapper. In case of success           \
+     * several values from stats would be overwritten */                \
+    if_stats_get((ifname), &stats);                                     \
+                                                                        \
+    snprintf((value_), RCF_MAX_VAL, "%llu", stats. _field_);            \
                                                                         \
     VERB("dev_counter_get(dev_name=%s, counter=%s) returns %s",         \
          ifname, #_counter_, value_);                                   \
@@ -2796,17 +2861,17 @@ static te_errno net_if_stats_##_counter_##_get(unsigned int gid_,       \
 }
 
 
-STATS_IFTABLE_COUNTER_GET(in_octets, dwInOctets);
-STATS_IFTABLE_COUNTER_GET(in_ucast_pkts, dwInUcastPkts);
-STATS_IFTABLE_COUNTER_GET(in_nucast_pkts, dwInNUcastPkts);
-STATS_IFTABLE_COUNTER_GET(in_discards, dwInDiscards);
-STATS_IFTABLE_COUNTER_GET(in_errors, dwInErrors);
-STATS_IFTABLE_COUNTER_GET(in_unknown_protos, dwInUnknownProtos);
-STATS_IFTABLE_COUNTER_GET(out_octets, dwOutOctets);
-STATS_IFTABLE_COUNTER_GET(out_ucast_pkts, dwOutUcastPkts);
-STATS_IFTABLE_COUNTER_GET(out_nucast_pkts, dwOutNUcastPkts);
-STATS_IFTABLE_COUNTER_GET(out_discards, dwOutDiscards);
-STATS_IFTABLE_COUNTER_GET(out_errors, dwOutErrors);
+STATS_IFTABLE_COUNTER_GET(in_octets, in_octets);
+STATS_IFTABLE_COUNTER_GET(in_ucast_pkts, in_ucast_pkts);
+STATS_IFTABLE_COUNTER_GET(in_nucast_pkts, in_nucast_pkts);
+STATS_IFTABLE_COUNTER_GET(in_discards, in_discards);
+STATS_IFTABLE_COUNTER_GET(in_errors, in_errors);
+STATS_IFTABLE_COUNTER_GET(in_unknown_protos, in_unknown_protos);
+STATS_IFTABLE_COUNTER_GET(out_octets, out_octets);
+STATS_IFTABLE_COUNTER_GET(out_ucast_pkts, out_ucast_pkts);
+STATS_IFTABLE_COUNTER_GET(out_nucast_pkts, out_nucast_pkts);
+STATS_IFTABLE_COUNTER_GET(out_discards, out_discards);
+STATS_IFTABLE_COUNTER_GET(out_errors, out_errors);
 
 #undef STATS_IFTABLE_COUNTER_GET
 
@@ -3193,3 +3258,66 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 }
 
 // Multicast
+
+// Ndis statistics
+
+#define KSTAT_GET \
+    CTL_CODE( DRV_TYPE, 0x912, METHOD_BUFFERED, FILE_ANY_ACCESS  )
+
+
+static te_errno
+if_stats_get(const char *ifname, if_stats *stats)
+{
+    int   rc = 0;
+
+    ndis_stats ndstats;
+    DWORD bytes_returned = 0;
+    
+    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ | 
+                            GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+
+    if (INVALID_HANDLE_VALUE == dev)
+    {
+#if 0
+        WARN("Wrapper not found. Cannot get statistics.");
+#endif
+        return -1;
+    }
+
+    if (strstr(ifname, "ef") == NULL)
+    {
+        return -1;
+    }
+
+    memset(&ndstats, 0, sizeof(ndstats));
+
+    if (!DeviceIoControl(dev, KSTAT_GET, NULL, 0, 
+                         (void *)&ndstats, sizeof(ndstats),
+                         &bytes_returned, NULL))
+    {
+      rc = GetLastError();
+      WARN("DeviceIoControl failed with errno=%d", GetLastError());
+      return -2;
+    }
+    CloseHandle(dev);
+
+    stats->in_octets = ndstats.gen_broadcast_bytes_rcv;
+    stats->in_ucast_pkts = ndstats.gen_directed_frames_rcv;
+    stats->in_nucast_pkts = ndstats.gen_broadcast_frames_rcv + 
+                            ndstats.gen_multicast_frames_rcv;
+    stats->in_discards = ndstats.gen_rcv_error + ndstats.gen_rcv_no_buffer;
+    stats->in_errors = ndstats.gen_rcv_error;
+#if 0
+    stats->in_unknown_protos = 0;
+#endif
+    stats->out_octets = ndstats.gen_broadcast_bytes_xmit;
+    stats->out_ucast_pkts = ndstats.gen_directed_frames_xmit;
+    stats->out_nucast_pkts = ndstats.gen_broadcast_frames_xmit + 
+                             ndstats.gen_multicast_frames_xmit;
+#if 0
+    stats->out_discards = 0;
+#endif
+    stats->out_errors = ndstats.gen_xmit_error;
+
+    return 0;
+}
