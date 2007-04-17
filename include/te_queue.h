@@ -245,7 +245,7 @@ struct name {								\
 }
 
 #define	STAILQ_HEAD_INITIALIZER(head)					\
-	{ NULL, &(head).stqh_first }
+	{ NULL, &(head)->stqh_first }
 
 #define	STAILQ_ENTRY(type)						\
 struct {								\
@@ -305,7 +305,7 @@ struct {								\
 	(STAILQ_EMPTY((head)) ?						\
 		NULL :							\
 	        ((struct type *)(void *)				\
-		((char *)((head)->stqh_last) - __offsetof(struct type, field))))
+		((char *)((head)->stqh_last) - offsetof(struct type, field))))
 
 #define	STAILQ_NEXT(elm, field)	((elm)->field.stqe_next)
 
