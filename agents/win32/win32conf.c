@@ -3117,15 +3117,15 @@ ta_win32_conf_net_if_stats_init(void)
     ((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method) \
 )
 
+#define NDIS_IOCTL_BASE   (0x800 | 0x100)
 
-#define KRX_ADD_MULTICAST_ADDR \
-    CTL_CODE( DRV_TYPE, 0x907, METHOD_BUFFERED, FILE_ANY_ACCESS  )
+#define NDIS_IOCTL(code) \
+    CTL_CODE( DRV_TYPE, NDIS_IOCTL_BASE + code, \
+              METHOD_BUFFERED, FILE_ANY_ACCESS  )
 
-#define KRX_DEL_MULTICAST_ADDR \
-    CTL_CODE( DRV_TYPE, 0x908, METHOD_BUFFERED, FILE_ANY_ACCESS  )
-
-#define KRX_GET_MULTICAST_LIST \
-    CTL_CODE( DRV_TYPE, 0x909, METHOD_BUFFERED, FILE_ANY_ACCESS  )
+#define KRX_ADD_MULTICAST_ADDR     NDIS_IOCTL(7) 
+#define KRX_DEL_MULTICAST_ADDR     NDIS_IOCTL(8)
+#define KRX_GET_MULTICAST_LIST     NDIS_IOCTL(9)
 
 #define WRAPPER_DEVICE_NAME  "\\\\.\\olwrapper"
 #define WRAPPER_DEVFILE_NAME "\\\\.\\olwrapper"
