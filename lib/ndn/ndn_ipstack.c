@@ -248,9 +248,185 @@ const asn_type * const ndn_udp_csap = &ndn_udp_csap_s;
 
 
 
+
 /*
  * TCP
  */ 
+
+/*
+TCP-Option-MSS ::= SEQUENCE {
+    length      [0] DATA-UNIT{INTEGER (0..255) } OPTIONAL,
+    mss         [1] DATA-UNIT{INTEGER (0..65535) }
+}
+*/
+static asn_named_entry_t _ndn_tcp_opt_mss_ne_array [] = {
+    { "length", &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_LEN} },
+    { "mss", &ndn_data_unit_int16_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_MSS} },
+};
+asn_type ndn_tcp_opt_mss_s = {
+    "TCP-Option-MSS", {PRIVATE, NDN_TAG_TCP_OPT_MSS}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_tcp_opt_mss_ne_array),
+    {_ndn_tcp_opt_mss_ne_array}
+};
+
+
+/*
+TCP-Option-WindScale ::= SEQUENCE {
+    length      [0] DATA-UNIT{INTEGER (0..255) } OPTIONAL,
+    scale       [1] DATA-UNIT{INTEGER (0..255) }
+}
+*/
+static asn_named_entry_t _ndn_tcp_opt_win_scale_ne_array [] = {
+    { "length", &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_LEN} },
+    { "scale", &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_MSS} },
+};
+
+asn_type ndn_tcp_opt_win_scale_s = {
+    "TCP-Option-WindScale", {PRIVATE, NDN_TAG_TCP_OPT_WIN_SCALE}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_tcp_opt_win_scale_ne_array),
+    {_ndn_tcp_opt_win_scale_ne_array}
+};
+
+
+/*
+TCP-Option-SackPerm ::= SEQUENCE {
+    length      [0] DATA-UNIT{INTEGER (0..255) } OPTIONAL,
+}
+*/
+static asn_named_entry_t _ndn_tcp_opt_sack_perm_ne_array [] = {
+    { "length", &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_LEN} },
+};
+
+asn_type ndn_tcp_opt_sack_perm_s = {
+    "TCP-Option-SackPerm", {PRIVATE, NDN_TAG_TCP_OPT_SACK_PERM},
+    SEQUENCE,
+    TE_ARRAY_LEN(_ndn_tcp_opt_sack_perm_ne_array),
+    {_ndn_tcp_opt_sack_perm_ne_array}
+};
+
+/*
+TCP-Option-SackBlock ::= SEQUENCE {
+    left      [0] DATA-UNIT{INTEGER },
+    right      [0] DATA-UNIT{INTEGER },
+}
+*/
+static asn_named_entry_t _ndn_tcp_opt_sackblock_ne_array [] = {
+    { "left", &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_SACK_LEFT} },
+    { "right", &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_SACK_RIGHT} },
+};
+asn_type ndn_tcp_opt_sackblock_s = {
+    "TCP-Option-SackBlock", {PRIVATE, NDN_TAG_TCP_OPT_SACK_BLOCK},
+    SEQUENCE,
+    TE_ARRAY_LEN(_ndn_tcp_opt_sackblock_ne_array),
+    {_ndn_tcp_opt_sackblock_ne_array}
+};
+
+asn_type ndn_tcp_opt_sackblocks_seq_s = {
+    "SEQUENCE OF TCP-Option-SackBlock",
+    {PRIVATE, NDN_TAG_TCP_OPT_SACK_BLOCKS},
+    SEQUENCE_OF, 0,
+    {subtype: &ndn_tcp_opt_sackblock_s}
+};
+
+/*
+TCP-Option-SackData ::= SEQUENCE {
+    length      [0] DATA-UNIT{INTEGER (0..255) } OPTIONAL,
+    blocks      [1] SEQUENCE OF TCP-Option-SackBlock,
+}
+*/
+static asn_named_entry_t _ndn_tcp_opt_sack_data_ne_array [] = {
+    { "length", &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_LEN} },
+    { "blocks", &ndn_tcp_opt_sackblocks_seq_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_SACK_BLOCKS} },
+};
+
+asn_type ndn_tcp_opt_sack_data_s = {
+    "TCP-Option-SackData", {PRIVATE, NDN_TAG_TCP_OPT_SACK_DATA}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_tcp_opt_sack_data_ne_array),
+    {_ndn_tcp_opt_sack_data_ne_array}
+};
+
+/*
+TCP-Option-Timestamp ::= SEQUENCE {
+    length      [0] DATA-UNIT{INTEGER (0..255) } OPTIONAL,
+    value       [1] DATA-UNIT{INTEGER }
+    echo-reply  [2] DATA-UNIT{INTEGER }
+}
+*/
+static asn_named_entry_t _ndn_tcp_opt_timestamp_ne_array [] = {
+    { "length", &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_LEN} },
+    { "value", &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_VALUE} },
+    { "echo-reply", &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_TCP_OPT_ECHO_REPLY} },
+};
+
+asn_type ndn_tcp_opt_timestamp_s = {
+    "TCP-Option-Timestamp", {PRIVATE, NDN_TAG_TCP_OPT_TIMESTAMP}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_tcp_opt_timestamp_ne_array),
+    {_ndn_tcp_opt_timestamp_ne_array}
+};
+
+/*
+TCP-Option ::= CHOICE { 
+    eol         [0] NULL,
+    nop         [1] NULL,
+    mss         [2] TCP-Option-MSS,
+    win₋scale   [3] TCP-Option-WindScale,
+    sack-perm   [4] TCP-Option-SackPerm,
+    sack-data   [5] TCP-Option-SackData,
+    timestamp   [8] TCP-Option-Timestamp,
+}
+*/
+static asn_named_entry_t _ndn_tcp_option_ne_array [] = {
+    { "eol",       &asn_base_null_s, {PRIVATE, NDN_TAG_TCP_OPT_EOL} },
+    { "nop",       &asn_base_null_s, {PRIVATE, NDN_TAG_TCP_OPT_NOP} },
+    { "mss",       &ndn_tcp_opt_mss_s, {PRIVATE, NDN_TAG_TCP_OPT_MSS} },
+    { "win-scale", &ndn_tcp_opt_win_scale_s,
+                    {PRIVATE, NDN_TAG_TCP_OPT_WIN_SCALE} },
+    { "sack-perm", &ndn_tcp_opt_sack_perm_s,
+                    {PRIVATE, NDN_TAG_TCP_OPT_SACK_PERM} },
+    { "sack-data", &ndn_tcp_opt_sack_data_s,
+                    {PRIVATE, NDN_TAG_TCP_OPT_SACK_DATA} },
+    { "timestamp", &ndn_tcp_opt_timestamp_s,
+                    {PRIVATE, NDN_TAG_TCP_OPT_TIMESTAMP} },
+};
+
+asn_type ndn_tcp_option_s = {
+    "TCP-Option", {PRIVATE, NDN_TAG_TCP_OPTIONS}, CHOICE, 
+    TE_ARRAY_LEN(_ndn_tcp_option_ne_array),
+    {_ndn_tcp_option_ne_array}
+};
+
+const asn_type * const ndn_tcp_option = &ndn_tcp_option_s;
+
+
+/*
+TCP-Header ::= SEQUENCE {
+    src-port  [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    dst-port  [1] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    seqn      [2] DATA-UNIT{INTEGER } OPTIONAL,
+    acqn      [3] DATA-UNIT{INTEGER } OPTIONAL,
+    hlen      [4] DATA-UNIT{INTEGER (0..15)} OPTIONAL,
+    flags     [5] DATA-UNIT{INTEGER (0..63)} OPTIONAL,
+    win-size  [6] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    checksum  [7] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    urg-p     [8] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    options   [9] SEQUENCE OF TCP-Option OPTIONAL,
+    socket   [10]   INTEGER OPTIONAL, 
+    length   [11]   INTEGER OPTIONAL, 
+    ...
+}
+*/
 
 static asn_named_entry_t _ndn_tcp_header_ne_array [] = {
     { "src-port", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_SRC_PORT} },
