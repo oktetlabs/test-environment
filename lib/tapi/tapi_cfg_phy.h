@@ -272,6 +272,20 @@ tapi_cfg_phy_duplex_str2id(char *name);
 extern char *
 tapi_cfg_phy_duplex_id2str(int duplex);
 
+/**
+ * Turn off all advertised modes and advertise only one.
+ *
+ * @param ta            Test agent
+ * @param ifname        Interface name
+ * @param advert_speed  Speed to advertise
+ * @param advert_duplex Duplex to advertise
+ *
+ * @return Operation status code.
+ */
+extern te_errno
+tapi_cfg_phy_advertise_one(const char *ta, const char *if_name,
+                           int advert_speed, int advert_duplex);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

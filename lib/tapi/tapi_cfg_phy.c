@@ -468,3 +468,75 @@ tapi_cfg_phy_commit(const char *ta, const char *if_name)
 {
     return cfg_commit_fmt("/agent:%s/interface:%s/phy:", ta, if_name);
 }
+
+/**
+ * Turn off all advertised modes and advertise only one.
+ *
+ * @param ta            Test agent
+ * @param ifname        Interface name
+ * @param advert_speed  Speed to advertise
+ * @param advert_duplex Duplex to advertise
+ *
+ * @return Operation status code.
+ */
+extern te_errno
+tapi_cfg_phy_advertise_one(const char *ta, const char *if_name,
+                           int advert_speed, int advert_duplex)
+{
+    unsigned int  snum, dnum, i, j;
+    cfg_handle   *speeds, *duplexes;
+    char         *speed;
+    char         *duplex;
+    
+    /* Get a list of all supported speeds */
+    if (cfg_find_pattern_fmt(&snum, &speeds,
+                             "/agent:%s/interface:%s/phy:/modes:/speed:*",
+                             ta, if_name) != 0)
+        ERROR("Failed to find any supported modes");
+    
+    /* Walk through all supported speeds values for this interface name */
+    for (i = 0; i < snum; i++)
+    {
+         /* Get the instance name of current speed node */
+         if (cfg_get_inst_name(speeds[i], &speed) != 0)
+            continue;
+         
+         /* Get a list of all supported duplex states */
+         if (cfg_find_pattern_fmt(&dnum, &duplexes,
+                                  "/agent:%s/interface:%s/phy:/modes:"
+                                  "/speed:%s/duplex:*", ta,
+                                  if_name, speed) != 0)
+            ERROR("Failed to find any supported modes");
+        
+        /*
+         * Walk through all supported duplex values for this interface
+         * name and current speed value */
+        for (j = 0; j < dnum; j++)
+        {
+            /* Get the instance name of current duplex node */
+            if (cfg_get_inst_name(duplexes[j], &duplex) != 0)
+                continue;
+            
+            /* Leave mode advertised */
+            if (atoi(speed) == advert_speed &&
+                tapi_cfg_phy_duplex_str2id(duplex) == advert_duplex)
+                continue;
+            
+            /* Turn off advertising for this mode */
+            if (tapi_cfg_phy_advertise_mode(ta, if_name, atoi(speed),
+                                        tapi_cfg_phy_duplex_str2id(duplex),
+                                            FALSE) != 0)
+                ERROR("Failed to turn off mode [%s,%s] advertising on "
+                      "%s at %s", speed, duplex, ta, if_name);
+            
+            free(duplex);
+        }
+        
+        free(duplexes);
+        free(speed);
+    }
+    
+    free(speeds);
+    
+    return tapi_cfg_phy_commit(ta, if_name);
+}

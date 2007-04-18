@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#define TE_LOG_LEVEL 0xFF
+
 #define TE_LGR_USER     "PHY Conf"
 
 #include "te_config.h"
@@ -196,10 +198,11 @@ RCF_PCH_CFG_NODE_NA_COMMIT(node_phy, "phy", &node_phy_autoneg, NULL,
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
 /* A list of the interfaces parameters */
 static struct phy_iflist_head {
-    struct phy_iflist_head *next;   /**< Next list item */
-    struct phy_iflist_head *prev;   /**< Previous list item */
-    const char             *ifname; /**< Interface name  */
-    struct ethtool_cmd      ecmd;   /**< Interface parameters */
+    struct phy_iflist_head *next;           /**< Next list item */
+    struct phy_iflist_head *prev;           /**< Previous list item */
+    const char             *ifname;         /**< Interface name  */
+    struct ethtool_cmd      ecmd;           /**< Interface parameters */
+    te_bool                 adver_cached;   /**< Adver cache state flag */
 } phy_iflist;
 
 /**
@@ -228,7 +231,8 @@ phy_iflist_add_item(struct phy_iflist_head *list, const char *ifname)
     if (new_list_item == NULL)
         return NULL;
     
-    new_list_item->ifname = ifname;
+    new_list_item->ifname = strdup(ifname);
+    
     next = list->next;
     list->next = new_list_item;
     new_list_item->prev = list;
@@ -245,45 +249,9 @@ phy_iflist_add_item(struct phy_iflist_head *list, const char *ifname)
     new_list_item->ecmd.speed = TE_PHY_SPEED_UNKNOWN;
     new_list_item->ecmd.duplex = TE_PHY_DUPLEX_UNKNOWN;
     new_list_item->ecmd.autoneg = TE_PHY_AUTONEG_UNKNOWN;
+    new_list_item->adver_cached = FALSE;
     
     return new_list_item;
-}
-
-/**
- * Find the PHY interface properties list item or
- * add a new one to this list if no such item exists in list.
- *
- * @p list should be a valid pointer to list head.
- *
- * @param list          Pointer to the list head
- * @param ifname        Interface name
- *
- * @return Pointer to the newly allocated list item or pointer to list item
- *         that already exists in the list or a NULL
- *         if no more memory available to allocate a new list item.
- */
-static struct phy_iflist_head *
-phy_iflist_find_or_add(struct phy_iflist_head *list, const char *ifname)
-{
-    struct phy_iflist_head *list_item = list;
-    
-    /* Walking through the list items */
-    while (1)
-    {
-        /* Check for valid pointer */
-        if (list_item->next == NULL)
-            break;
-        
-        /* Check for search condition */
-        if (strcmp(list_item->next->ifname, ifname) == 0)
-            return list_item;
-        
-        /* Switch to next list item */
-        list_item = list_item->next;
-    }
-    
-    /* If item does not exists add a new one */
-    return phy_iflist_add_item(list, ifname);
 }
 
 /**
@@ -312,7 +280,7 @@ phy_iflist_find(struct phy_iflist_head *list, const char *ifname)
         
         /* Check for search condition */
         if (strcmp(list_item->next->ifname, ifname) == 0)
-            return list_item;
+            return list_item->next;
         
         /* Switch to next list item */
         list_item = list_item->next;
@@ -320,6 +288,33 @@ phy_iflist_find(struct phy_iflist_head *list, const char *ifname)
     
     /* If item does not exeists, return NULL */
     return NULL;
+}
+
+/**
+ * Find the PHY interface properties list item or
+ * add a new one to this list if no such item exists in list.
+ *
+ * @p list should be a valid pointer to list head.
+ *
+ * @param list          Pointer to the list head
+ * @param ifname        Interface name
+ *
+ * @return Pointer to the newly allocated list item or pointer to list item
+ *         that already exists in the list or a NULL
+ *         if no more memory available to allocate a new list item.
+ */
+static struct phy_iflist_head *
+phy_iflist_find_or_add(struct phy_iflist_head *list, const char *ifname)
+{
+    struct phy_iflist_head *list_item;
+    
+    list_item = phy_iflist_find(list, ifname);
+    
+    /* If item does not exists add a new one */
+    if (list_item == NULL)
+        return phy_iflist_add_item(list, ifname);
+    
+    return list_item;
 }
 
 /**
@@ -457,8 +452,9 @@ phy_reset(const char *ifname)
     
     if (rc < 0)
     {
-        ERROR("failed to restart autonegotiation at %s, errno=%d (%s)",
-              ifname, errno, strerror(errno));
+        VERB("failed to restart autonegotiation at %s, errno=%d (%s)",
+             ifname, errno, strerror(errno));
+        
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
     
@@ -576,8 +572,8 @@ static te_errno
 phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
                 const char *ifname)
 {
-    UNUSED(gid);
     UNUSED(oid);
+    UNUSED(gid);
     
 #if defined __linux__
     int                     autoneg = -1;
@@ -817,8 +813,8 @@ static te_errno
 phy_duplex_set(unsigned int gid, const char *oid, const char *value,
            const char *ifname)
 {
-    UNUSED(gid);
     UNUSED(oid);
+    UNUSED(gid);
     
 #if defined __linux__
     int                     duplex = -1;
@@ -930,18 +926,19 @@ static te_errno
 phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
                            const char *value, const char *ifname,
                            const char *phy_name, const char *mode_name,
-                           const char * speed, const char *duplex)
+                           const char *speed, const char *duplex)
 {
-    UNUSED(gid);
     UNUSED(oid);
     UNUSED(phy_name);
     UNUSED(mode_name);
+    UNUSED(gid);
 #if defined __linux__
     int                     set = -1;
     int                     mode = -1;
     struct ethtool_cmd      ecmd;
     struct phy_iflist_head *list_item;
     te_errno                rc;
+    u32                     advertising = 0;
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -967,12 +964,23 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
     if (list_item == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     
+    /* Extract from cache or not */
+    if (list_item->adver_cached)
+    {
+        advertising = list_item->ecmd.advertising;
+    }
+    else
+    {
+        advertising = ecmd.advertising;
+        list_item->adver_cached = TRUE;
+    }
+    
     if (set == 1)
         list_item->ecmd.advertising =
-            ecmd.advertising | mode;
+            advertising | mode;
     else
         list_item->ecmd.advertising =
-            ecmd.advertising & (~mode);
+            advertising & (~mode);
     
     return 0;
 #else
@@ -1234,8 +1242,8 @@ static te_errno
 phy_speed_set(unsigned int gid, const char *oid, const char *value,
               const char *ifname)
 {
-    UNUSED(gid);
     UNUSED(oid);
+    UNUSED(gid);
     
 #if defined __linux__
     int                     speed;
@@ -1243,6 +1251,7 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
     
     /* Try to get a pointer to list item associated with
      * current interface name */
+    
     list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
     if (list_item == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
@@ -1369,11 +1378,14 @@ static te_errno
 phy_commit(unsigned int gid, const cfg_oid *p_oid)
 {
     UNUSED(gid);
+    
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
     char                   *ifname;
     struct phy_iflist_head *list_item;
     struct ethtool_cmd      ecmd;
     int                     rc = -1;
+    
+    VERB("commit changes");
     
     /* Extract interface name */
     ifname = CFG_OID_GET_INST_NAME(p_oid, 2);
@@ -1382,7 +1394,11 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
      * current interface name */
     list_item = phy_iflist_find(&phy_iflist, ifname);
     if (list_item == NULL)
+    {
+        ERROR("cannot find locally saved PHY setting for interface %s",
+              ifname);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -1401,10 +1417,43 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
     list_item->ecmd.maxtxpkt = ecmd.maxtxpkt;
     list_item->ecmd.maxrxpkt = ecmd.maxrxpkt;
     
+    /* Check the cache */
+    if (!list_item->adver_cached)
+        list_item->ecmd.advertising = ecmd.advertising;
+    
+    VERB("Properties to set:  %d %d %d %d %d %d %d %d %d %d %s",
+         list_item->ecmd.supported,
+         list_item->ecmd.advertising,
+         list_item->ecmd.speed,
+         list_item->ecmd.duplex,
+         list_item->ecmd.port,
+         list_item->ecmd.phy_address,
+         list_item->ecmd.transceiver,
+         list_item->ecmd.autoneg,
+         list_item->ecmd.maxtxpkt,
+         list_item->ecmd.maxrxpkt,
+         ifname);
+    
+    VERB("Current properties: %d %d %d %d %d %d %d %d %d %d %s",
+         ecmd.supported,
+         ecmd.advertising,
+         ecmd.speed,
+         ecmd.duplex,
+         ecmd.port,
+         ecmd.phy_address,
+         ecmd.transceiver,
+         ecmd.autoneg,
+         ecmd.maxtxpkt,
+         ecmd.maxrxpkt,
+         ifname);
+    
+    /* Flush cache */
+    list_item->adver_cached = FALSE;
+    
     if ((rc = PHY_SET_PROPERTY(ifname, &(list_item->ecmd))) != 0)
     {
         ERROR("failed to apply PHY properties while setting "
-              "interface properties");
+              "interface %s properties", ifname);
         
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
@@ -1413,12 +1462,8 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
     if (list_item->ecmd.autoneg == TE_PHY_AUTONEG_ON)
     {
         if ((rc = phy_reset(ifname)) != 0)
-        {
-            ERROR("failed to restart autonegatiation while setting "
-                  "interface properties");
-            
-            return TE_OS_RC(TE_TA_UNIX, rc);
-        }
+            VERB("failed to restart autonegatiation while setting "
+                 "interface %s properties", ifname);
     }
     
     return 0;
