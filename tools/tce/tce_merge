@@ -1,11 +1,11 @@
-#! /bin/sh
+#! /usr/bin/awk -f
 #
 # Test Coverage Estimation
 #
 # Script to merge TCE results from different sources
 #
 #
-# Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+# Copyright (C) 2007 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or
@@ -29,99 +29,82 @@
 # $Id$
 #
 
-mergefile=$1
-ignoredir=$2
-exclude=$3
-gcovfile=$4
-modulename=$5
-resultfile=${gcovfile}.new
+BEGIN { MODE = ARGV[1]; ARGV[1] = ""; deltafile = ARGV[2]; ARGV[2] = ""; MERGER = "tce_merge_" MODE}
 
-source=`head -n1 $gcovfile | awk -F: '{ print $NF }'`
-if test -n "$exclude"; then
-    if expr $source : "$exclude" >/dev/null; then
+$1 == "FILE" {
+    if ((getline delta < deltafile) <= 0)
+    {
+        if (MODE != "min")
+        {
+            print;
+            while ((getline) > 0) print;
+        }
         exit 0
-    fi
-fi
-
-if test -n "$ignoredir"; then
-    stamp=`basename $source | md5sum | awk '{print $1}'`
-else
-    stamp=`head -n2 $gcovfile | md5sum | awk '{ print $1}'`
-fi
-stamp=${stamp}.${modulename}
-oldfile=${stamp}
-if ar x "$mergefile" "$stamp" 2>/dev/null && test -f "$stamp"; then
-    (   if test "`cat $oldfile | wc -l`" -ne "`cat $gcovfile | wc -l`"; then
-            exit 1
-        fi
-        awk "{ print; getline < \"$gcovfile\"; print }" $oldfile  |
-        awk -F: \
-            '/^[[:space:]]*(branch|call|function)/ {
-                 print
-                 next
-             }
-             {
-                 oldcount=$1
-                 getline
-                 if(oldcount ~ /-/) {
-                     printf "%s\n", $0
-                 }
-                 else {
-                     sourceline=""
-                     for(i = 3; i <= NF; i++)
-                     {
-                         if(sourceline)  sourceline=sourceline ":";
-                         sourceline=sourceline $i
-                     }
-                     sum = $1 + oldcount;
-                     printf "%9s:%5s:%s\n", sum == 0 ? "#####" : sum, $2, sourceline
-                 }
-             }' |
-        awk '/^[[:space:]]*(branch|call)/ {
-                oldcount=($3 == "never" ? $3 : $4)
-                getline
-                if (oldcount == "never" && $3 == "never")
+    }
+    split(delta, deltafields);
+    if (deltafields[1] != "FILE")
+    {
+        print "master and delta files are incompatible" > "/dev/stderr";
+        exit 1
+    }
+    while ($2 != deltafields[2] || $5 != deltafields[5])
+    {
+        if ($2 SUBSEP deltafields[2] < $5 SUBSEP deltafields[$5])
+        {
+            if (MODE != "min") print;
+            for (;;)
+            {
+                if ((getline) <= 0) exit 0;
+                if ($1 == "FILE") break;
+                if (MODE != "min") 
                 {
-                    sum = ""
-                    taken = "never executed"
+                    if (MODE == "diff" && $1 != "SUMMARY") $1 = "-0";
+                    print
                 }
-                else
-                {
-                    sum = oldcount + $4
-                    taken = ($1 == "branch" ? "taken " : "returns ")
-                }
-                printf "%6s %2d %s%s\n", $1, $2, taken, sum
-                next
-             }
-             /^[[:space:]]*function/ {
-                 oldcount = $4 + 0
-                 oldretp  = $6
-                 sub(/%$/, "", oldretp);
-                 oldblock = $9
-                 sub(/%$/, "", oldblock);
-                 getline
-                 sub(/%$/, "", $6);
-                 sub(/%$/, "", $9);
-                 if (oldcount + $4 == 0)
-                     printf "function %s called 0 returned 0% blocks executed 0%\n", $2;
-                 else
-                 {
-                     printf "function %s called %d returned %s%% blocks executed %s%%\n", $2, \
-                         oldcount + $4, \
-                         ((oldretp * oldcount / 100) + ($6 * $4 / 100)) / (oldcount + $4) * 100, \
-                         oldblock < $9 ? $9 : oldblock;
-                 }
-                 next
-             }
-             { print }'> $resultfile
-) || (  echo "$gcovfile: files mismatch, not merging" >2
-        cp $gcovfile $resultfile )
-else
-    cp $gcovfile $resultfile
-fi
+            }
+        }
+        else
+        {
+            if (MODE != "min") print delta;
+            for (;;)
+            {
+                if ((getline delta < deltafile) <= 0) exit 0;
+                split(delta, deltafields);
+                if (deltafields[1] == "FILE") break;
+                if (MODE != "min") print delta;
+            }
+        }
+    }
+    if ($3 != deltafields[3] || $4 != deltafields[4])
+    {
+        print "master and delta files refer to different source versions" > "/dev/stderr"
+        exit
+    }
+    print $1, $2, $3, $4, $5, $6 + deltafields[6]
+    fflush();
+    next
+}
 
-rm -f $oldfile
-mv $resultfile $oldfile
-ar cr $mergefile $stamp
-rm -f $oldfile
+$1 == "SUMMARY" {
+    getline delta < deltafile;
+    if (delta !~ /^SUMMARY/)
+    {
+        print "master and delta files are incompatible" > "/dev/stderr";
+        exit 1;
+    }
+    close(MERGER);
+    next
+}
 
+{
+    getline delta < deltafile;
+    print $0, delta | MERGER
+}
+
+
+END {
+    if (MODE != "min")
+    {
+        while ((getline < deltafile) > 0) print;
+    }
+}

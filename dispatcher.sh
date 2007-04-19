@@ -171,29 +171,6 @@ Generic options:
   --vg-tester                   Run Tester under valgrind (without by default)
   --gdb-tester                  Run Tester under GDB
 
-  --tcer-ignore-dirs            Respect only base file names when doing TCE
-                                report (useful when a given file is used in
-                                different contexts, e. g. in a user-space
-                                library and a kernel module, and you want total
-                                statistics. Note, however, that this will lead
-                                to unexpected results if there are actually
-                                files with equal base names in different
-                                directories.
-  --tcer-exclude=<pattern>      Ignore files with names matching <pattern>
-                                when doing TCE report generation.
-                                <pattern> is an expr(1)-style pattern
-  --tces-totals-to=<filename>   If this option is present, <filename> will be
-                                generated containing totals in text format
-  --tces-modules                List of modules to include into TCE summary
-  --tces-conditionals           List of conditionals to exclude from 
-                                TCE summary
-  --tces-datadir=<dir>          Directory for TCE summary results splitted
-                                into many files
-  --tces-sort-by=<mode>         Sort TCE summary table by covered branch
-                                percentage (mode=branches, the default),
-                                covered line percentage (mode=lines),
-                                or source file names (mode=sources)
-
     The script exits with a status of zero if everything does smoothly and
     all tests, if any tests are run, give expected results. A status of two
     is returned, if some tests are run and give unexpected results.
@@ -225,10 +202,6 @@ TRC_OPTS=
 TRC_TAGS=
 # No additional option for rgt-xml2html-multi tool
 RGT_X2HM_OPTS=
-# No additional TCE report options by default
-TCER_OPTS=
-# No additional TCE summary options by default
-TCES_OPTS=
 # Configurator options
 CS_OPTS=
 # Building options
@@ -359,9 +332,6 @@ process_opts()
                          VG_LOGGER=yes
                          VG_TESTER=yes ;;
         
-            --tcer-*) TCER_OPTS="${TCER_OPTS} --${1#--tcer-}" ;;
-            --tces-*) TCES_OPTS="${TCES_OPTS} --${1#--tces-}" ;;
-
             --no-builder) BUILDER= ;;
             --no-nuts-build) BUILD_NUTS= ;;
             --no-tester) TESTER= ;;
@@ -778,12 +748,6 @@ if test -n "${LOGGER_OK}" -a -n "${RCF_OK}" ; then
     te_log_flush
 fi
 
-if test ${START_OK} -ne 1 -a -n "${DO_NUTS}" ; then
-    te_log_message Dispatcher Start "Dumping TCE"
-    myecho "--->>> Dump TCE"
-    te_tce_dump.sh "${CONF_NUT}"
-fi
-
 shutdown_daemon RCF 
 
 shutdown_daemon LOGGER
@@ -831,8 +795,7 @@ fi
 
 if test ${START_OK} -ne 1 -a -n "${DO_NUTS}" ; then
     myecho "--->>> TCE processing"
-    TCER_OPTS="${TCER_OPTS}" TCES_OPTS="${TCES_OPTS}" \
-        te_tce_process "${CONF_NUT}"
+    te_tce_process "${CONF_NUT}"
 fi
 
 # Run TRC, if any its option is provided

@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /usr/bin/awk -f
 #
 # Test Coverage Estimation
 #
@@ -29,249 +29,160 @@
 # $Id$
 #
 
-usage ()
+function update_summary() 
 {
-    cat >&2 <<EOF
-USAGE: tce_summary <log-file-name> [<options>...] [<output-file>]
-Converts a TCE log into HTML form. If <output-file> is not given,
-standard output is assumed.
-
-Options:
---datadir=<directory>  If given, <output-file> will only contain
-                        an index of files, actual annotated sources
-                        being placed into <directory>, one file per source
---map-file=<mapfile>   The name of a file containing name-to-module map
---modules=<modulename> The space-separated list of modules 
-                       to measure coverage of
-                       ("-" denotes user-land code)
---totals-to=<filename> If this option is present, <filename> will be
-                       generated containing totals in text format
---conditionals=<list>  The space-separated list of preprocessor conditionals 
-                       which are taken into account 
---sort-by=<MODE>       The mode of sorting the index of files:
-                            branches  by covered branches percentage
-                                      (the default)
-                            lines     by covered lines percentage
-                            sources   by filename
-                            modules   by module
-
-EOF
-exit 0
+    sumline = sprintf("%d %d %d %d %s %d", lines, executed, branches, exbranches, sourcefile, nfile);
+    if (SORTMODE == "filename")
+        summary[sourcefile] = sumline;
+    else if (SORTMODE == "lines")
+        summary[sprintf("%8.8d", lines)] = sumline;
+    else if (SORTMODE == "executed")
+        summary[sprintf("%8.8d", executed)] = sumline;
+    else if (SORTMODE == "branches")
+        summary[sprintf("%8.8d", branches)] = sumline;
+    else if (SORTMODE == "executed_branches")
+        summary[sprintf("%8.8d", exbranches)] = sumline;
+    else if (SORTMODE == "coverage")
+        summary[sprintf("%5.5d", lines != 0 ? executed * 10000 / lines : 10000)] = sumline;
+    else if (SORTMODE == "branch_coverage")
+        summary[sprintf("%5.5d", branches != 0 ? exbranches * 1000 / branches : 1000)] = sumline;
+    lines = 0;
+    executed = 0;
+    branches = 0;
+    exbranches = 0;
 }
 
-outputfile="/dev/stdout"
-sortmode=""
-for arg; do
-    case "$arg" in
-        --datadir=*) datadir="${arg#--datadir=}/"; mkdir -p "$datadir"
-            ;;
-        --sort-by=*) for sm in ${arg#--sort-by}; do
-                        case "$sm" in
-                            branches) sortmode="$sortmode -k5,5g -k6,6nr" ;;
-                            lines) sortmode="$sortmode -k1,1g -k2,2nr" ;;
-                            sources) sortmode="$sortmode -k9,9" ;;
-                            modules) sortmode="$sortmode -k10.33,10" ;;
-                            *) usage "Unknown sort mode $sm" ;;
-                        esac
-                     done ;;
-        --map-file=*) mapfile=${arg#--map-file=} ;;
-        --totals-to=*) totalfile=${arg#--totals-to=} ;;
-        --modules=*)  modules=${arg#--modules=} ;;
-        --conditionals=*) conditionals=${arg#--conditionals=} ;;
-        --help) usage ;;
-        --*) echo "Unrecognized option $arg" >&2; usage; exit 1 ;;
-        *)
-        if test -z "$sourcefile"; then
-            sourcefile="$arg"
-        else
-            outputfile="$arg"
-        fi
-        ;;
-    esac
-done
+$1 == "FILE" {
+    if (EXCLUDE)
+    {
+        while ($5 ~ EXCLUDE)
+        {
+            while (getline > 0)
+            {
+                if ($1 == "FILE") break;
+            }
+            if ($1 != "FILE") next;
+        }
+    }
+    if (GROUP_HEADERS && prevobj && prevobj != $2)
+    {
+        prevobj = $2
+        update_summary();
+    }
+    lineno = 0;
+    funno = 0;
+    nfile++;
+    sourcefile = $5;
+    destfile = sprintf("%s/%d.html", DATADIR, nfile);
+    printf "<p><a href=\"%d.html\">[prev]</a><a href=\"%d.html\">[next]</a>\n", nfile - 1, nfile + 1 > destfile
+    print "<table>" >> destfile
+    print "<caption>" sourcefile "</caption>" >> destfile
+    next;
+}
 
-if test -z "$sortmode"; then
-    sortmode='-k5,5g -k6,6nr' # by branches
-fi
+$1 == "SUMMARY" {
+    lines += $2
+    executed += $3;
+    branches += $4;
+    exbranches += $5;
+    if (!GROUP_HEADERS) update_summary();
+    print "</table>" >> destfile
+    close(destfile);
+    close(sourcefile);
+    next;
+}
 
+{
+    source="/** unavailable **/"
+    lineno++;
+    getline source < sourcefile;
+    if (compactify && $1 == "-" && $2 == "*" && $3 == "*" && $4 == "*") 
+    {
+        skipped++;
+        next;
+    }
+    gsub(/&/, "\\&amp;", source);
+    gsub(/</, "\\&lt;", source);
+    gsub(/>/, "\\&gt;", source);
+    gsub(/ /, "\\&nbsp;", source);
+    gsub(/\t/, "\\&nbsp;\\&nbsp;\\&nbsp;\\&nbsp;", source);
+    if (skipped != 0)
+    {
+        printf "<tr><td colspan=\"2\">at line %d:</td></tr>\n", lineno >> destfile
+    }
+    if ($2 != "*")
+    {
+        split($2, fun, ":");
+        printf "<tr><td><a name=\"fun%d\" href=\"#fun%d\">[prev]</a><a href=\"#fun%d\">[next]</a></td>", funno, funno - 1, funno + 1 >> destfile;
+        printf "<td>%sFunction called %d times, returned %.2f%%, %.2f%% blocks executed%s</td></tr>\n",
+            fun[1] + 0 == 0 ? "<strong>" : "", fun[1], fun[2], fun[3], fun[1] + 0 == 0 ? "</strong>" : "" >> destfile;
+        funno++;
+    }
+    brc = "";
+    if ($3 != "*" && $1 != "0")
+    {
+        split($3, br, ":");
+        for (i = 1; i in br; i++)
+        {
+            brc = sprintf("%s%s[branch %d: %.2f%%]%s", 
+                          brc, 
+                          br[i] + 0 == 0 ? "<strong>" : "", 
+                          i, 
+                          ($1 + 0 == 0 ? 100 : br[i] * 100 / $1),
+                          br[i] + 0 == 0 ? "</strong>" : "");
+        }
+    }
+    cc = "";
+    if ($4 != "*" && $1 != "0")
+    {
+        split($4, cl, ":");
+        for (i = 1; i in cl; i++)
+        {
+            cc = sprintf("%s%s[call %d returned: %.2f%%]%s", 
+                         cc, 
+                         cl[i] + 0 == 0 ? "<strong>" : "", 
+                         i, 
+                         ($1 + 0 == 0 ? 100 : cl[i] * 100 / $1),
+                         cl[i] + 0 == 0 ? "</strong>" : "");
+        }
+    }
 
-if test -z "$sourcefile"; then
-    echo "Log file name must be given" >&2
-    usage
-    exit 1
-fi
+    if ($1 == "0") 
+    {
+        empho = "<strong>";
+        emphc = "</strong>";
+    }
+    else
+    {
+        empho = "";
+        emphc = "";
+    }
+    if ($1 == "-0" || $1 == "-") $1 = "";
+    if ($1 == "+0") $1 = "0";
+    if ($1 == "")
+    {
+        empho = "<font color=\"gray\">";
+        emphc = "</font>"
+    }
+    printf "<tr><td align=\"right\">%s%s%s</td><td>%s%s%s %s%s</td></tr>\n", empho, $1, emphc, empho, source, emphc, brc, cc >> destfile;
 
-if test "$outputfile" == "/dev/stdout" -a -n "$totalfile"; then
-    echo "An explicit output filename must be given " \
-        "when --totals-to is present" >&2
-    usage
-    exit 1
-fi
-
-if test -z "$modules" -a -n "$mapfile"; then
-    modules=`awk '{ print $2; }' $mapfile | sort | uniq`
-fi
-
-if test -n "$conditionals"; then
-    cb=`echo $conditionals | sed 's/^[[:space:]]*//
-                                  s/[[:space:]]*$//
-                                  s/[[:space:]][[:space:]]*/|/g'`
-    begincond="[0-9]+:#if(def)?[[:space:]]*($cb)[[:space:]]*\$"
-    endcond="[0-9]+:#endif.*($cb)"
-fi
-
-cat >$outputfile <<EOF
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-<HTML>
-<HEAD>
-  <META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
-  <TITLE>TCE Summary</TITLE>
-</HEAD>
-<BODY LANG="en-US" DIR="LTR">
-<H1 ALIGN=CENTER>TCE Summary</H1>
-<!-- totals -->
-`ar p "$sourcefile" | tce_count - '^branch[[:space:]]*[0-9]+ (never executed|taken 0)' \
-    '^branch[[:space:]]*[0-9]+ taken[[:space:]]*[1-9][0-9]*' "$begincond" "$endcond" |
-(
-    read ratio sum
-    echo "<H2>Grand Total: $ratio% of $sum branches covered</H2>" 
-)
-ar p "$sourcefile" | tce_count - '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' "$begincond" "$endcond" |
-(
-    read ratio sum
-    echo "<H2>Grand Total: $ratio% of $sum lines covered</H2>" 
-)
-`
-<TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>
-<TH>Module</TH>
-<TH>% of taken branches</TH>
-<TH>% of executed lines</TH>
-`for m in $modules; do
-echo "<TR><TD>$m</TD>"
-ar t "$sourcefile" | awk "/\\.$m\$/ { print }"  | xargs -n1 ar p $sourcefile |
-tce_count - '^branch[[:space:]]*[0-9]+ (never executed|taken 0)' \
-    '^branch[[:space:]]*[0-9]+ taken[[:space:]]*[1-9][0-9]*' "$begincond" "$endcond" | 
-(
-    read ratio sum
-    echo "<TD>$ratio% of $sum</TD>" 
-)
-ar t "$sourcefile" | awk "/\\.$m\$/ { print }" | xargs -n1 ar p $sourcefile |
-tce_count - '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' "$begincond" "$endcond" |
-(
-    read ratio sum
-    echo "<TD>$ratio% of $sum</TD>" 
-)
-done
-`
-<!-- end totals -->
-</TABLE>
-<TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>
-<TH>% of taken branches</TH>
-<TH>Total branches</TH>
-<TH>% of executed lines</TH>
-<TH>Total lines</TH>
-<TH>Module</TH>
-<TH>Source file</TH>
-
-EOF
-
-if test -n "$totalfile"; then
-    awk '/^<!-- totals -->/, /^<!-- end totals -->/ {
-                                      line = $0
-                                      if ($0 ~ /<(TR)/) print "";
-                                      gsub(/<[^>]*>/, "", line);
-                                      if (line)
-                                      {
-                                          printf "%-20.20s", line
-                                      }
-                                      if ($0 ~ /<(TABLE|H2)/) print "";
-                                      }
-                                  END { print ""; }' $outputfile > $totalfile
-fi
-
-if test -z "$modules"; then
-    modulefilter="{ print }"
-else
-    m=`echo $modules | sed 's/^[[:space:]]*//
-                            s/[[:space:]]*$//
-                            s/[[:space:]][[:space:]]*/|/g'`
-    modulefilter="/\\.($m)\$/ { print }"
-fi
+    skipped = 0;
+}
 
 
-ar t $sourcefile | awk "$modulefilter" | \
-    xargs -n1 tce_summary_file $sourcefile "$begincond" "$endcond" >${sourcefile}.summary
-cat ${sourcefile}.summary | sort $sortmode | \
-    awk -vSUBDIR=$datadir \
-    '$2 != 0 { fname=$9; gsub(/\//, "-", fname); modname=$10; sub(/^[^.]*\./, "", modname);
-                                printf "<tr><td>%s<td>%s<td>%s<td>%s<td>%s<td><a href=\"%s\">%s</a></tr>\n",
-                                $5, $6, $1, $2, modname, (SUBDIR ? SUBDIR fname ".html" : "#" $10) , $9 }' >>$outputfile
-
-echo "</TABLE>" >>$outputfile
-
-if test -n "$datadir"; then
-    echo "</BODY>" >>$outputfile
-    echo "</HTML>" >>$outputfile
-fi
-
-awk -vSUBDIR=$datadir -vSOURCEFILE=$sourcefile -vBC="$begincond" -vEC="$endcond" '$2 != 0 {
-          if (!SUBDIR) 
-              myfile="/dev/stdout";
-          else
-          {
-             name=$9
-             gsub(/\//, "-", name)
-             myfile=SUBDIR name ".html"
-             print "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">" >myfile
-             print "<html>" >>myfile
-             print "<head>" >>myfile
-             print "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">" >>myfile
-             print "<title>TCE Annotated Source for " filename "</title>" >>myfile
-             print "</head>" >>myfile
-             print "<body lang=\"en-US\" dir=\"LTR\">" >>myfile
-          }
-          printf "<h2>%s</h2>\n", $9 >> myfile;
-          printf "<p><a name=\"%s\"></a><table border=\"1\" align=\"center\">", $10 >> myfile;
-          printf "<tr><td>%s of %d lines executed\n" \
-                 "<tr><td>%s of %d branches executed\n" \
-                 "<tr><td>%s of %d branches taken at least once\n" \
-                 "<tr><td>%s of %d calls executed\n" \
-                 "</table>\n<pre>",
-                 $1, $2, $3, $4, $5, $6, $7, $8 >> myfile;
-         excluded = 0
-         thefile = $10
-         while ((("ar p " SOURCEFILE " " thefile) | getline srcline) > 0)
-         {
-             if (BC && srcline ~ BC)
-             {
-                 print "</pre>\n<table>\n<tr><td bgcolor='#AAAAAA'><pre>" >>myfile;
-                 startline = FNR
-                 excluded = 1;
-             }
-             else if (excluded && srcline ~ EC)
-             {
-                 excluded = 0;
-                 print "</pre>\n</table>\n<pre>" >>myfile
-             }
-             gsub(/&/, "\\&amp;", srcline); 
-             gsub(/</, "\\&lt;", srcline); 
-             gsub(/>/, "\\&gt;", srcline); 
-             gsub(/"/, "\\&quot;", srcline); 
-             if (!excluded && (srcline ~ /^[[:space:]]*#+:/))
-                 srcline = "<strong>" srcline "</strong>"
-             else if (srcline ~ /^[[:space:]]*(call|branch|function)/)
-                 srcline = "<small>" srcline "</small>"
-             print srcline >>myfile
-         }
-         if (excluded)
-         {
-             print "Unclosed conditional detected at " thefile ":" startline >"/dev/stderr"
-         }
-         close("ar p " SOURCEFILE " " thefile);
-         print "</pre>" >>myfile
-         if (SUBDIR)
-             print"</body></html>" >>myfile
-         close(myfile);
-      }' $sourcefile.summary >>$outputfile
-
+END {
+    if (GROUP_HEADERS) update_summary();
+    asorti(summary, sorted);
+    print "<table border=\"1\">";
+    print "<th>Filename</th><th>Lines executed</th><th>Branches executed</th>"
+    for (i = 1; i in sorted; i++)
+    {
+        split(summary[sorted[i]], sumfields);
+        printf "<tr><td><a href=\"%s/%d.html\">%s</a></td><td>%.2f%% of %d</td><td>%.2f%% of %d (%s)</td>", 
+            DATADIR, sumfields[6], sumfields[5], 
+            sumfields[1] == 0 ? "100" : (sumfields[2] * 100 / sumfields[1]), sumfields[1],
+            sumfields[3] == 0 ? "100" : (sumfields[4] * 100 / sumfields[3]), sumfields[3], sorted[i];
+    }
+    print "</table>"
+}
 

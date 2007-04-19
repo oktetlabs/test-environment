@@ -1,9 +1,9 @@
-#! /bin/sh
+#! /usr/bin/awk -f
 #
 # Test Coverage Estimation report generator
 #
 #
-# Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+# Copyright (C) 2007 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or 
@@ -27,94 +27,113 @@
 # $Id$
 #
 
-usage() {
-    if test -n "$1" ; then
-        echo -e "$1" >&2
-    fi
-    cat >&2 <<EOF
-
-USAGE: tce_report [--ignore-dirs] <input-file> <output-file> <source-dir> 
-                  [--exclude=regexp] 
-
-Processes GCOV data contained in the file <input-file> which should
-correspond to sources in <source-dir>. Coverage results are put into
-<output-file>.
-
-If <output-file> exists and it matches the current sources, the results
-are merged (the older <output-file> is saved as <output-file>.prev)
-
---ignore-dirs causes treating files with the same base name as the same file.
---exclude=REGEXP specifies a pattern for files to be excluded from the report.
-REGEXP must be a basic regexp (sed-like), with "^" prepended implicitly.
-
-EOF
-    exit 1
+BEGIN { 
+    FS=":"; 
+    runs = 1; 
+    fun = "*"; 
+    lines = 0;
+    executed = 0;
+    nbranches = 0;
+    exbranches = 0;
 }
 
-nfile=1
-for i; do
-    case "$i" in
-        --help) 
-        usage
-        ;;
-        --ignore-dirs)
-        ignoredir=yes
-        ;;
-        --exclude=*)
-        exclude=${i#--exclude=}
-        ;;
-        --*) usage "Unknown option $i";;
-        *) case $nfile in
-            1) infile=$i ;;
-            2) mergefile=$i ;;
-            3) srcdir=$i ;;
-            *) usage "Extra files on command line";;
-        esac
-        nfile=$((nfile + 1))
-        ;;
-    esac
-done
+$2 == 0 { 
+    if ($3 == "Source")
+    {
+        if ((getline tmp < $4) > 0)
+        {
+            ("cksum " $4) | getline sourcefile;
+        }
+        else
+        {
+            sourcefile = "n/a n/a " $4
+        }
+    }
+    else if ($3 == "Data" || $3 == "Object")
+    {
+    	objfile = $4
+    }
+    else if ($3 == "Runs")
+    {
+        runs = $4 + 0;
+    }
+    next
+}
 
-if test $nfile -ne 4 ; then
-    usage "Invalid number of arguments: $nfile"
-fi
+{
+    if (!header)
+    {
+        header = 1;
+        print "FILE", objfile, sourcefile, checksum, runs
+    }
+}
 
-mapfile=${infile%.tar}.map
-smapfile=${infile%.tar}.smap
+NF == 1 {
+    split($0, subfields, " ")
+    if (subfields[1] == "function")
+    {
+        fun = subfields[4] ":" subfields[6] ":" subfields[9]
+        gsub(/%/, "", fun);
+    }
+    else if (subfields[1] == "branch")
+    {
+        branches[subfields[2] + 0] = subfields[4] + 0;
+        nbranches++;
+        if (subfields[4] + 0 != 0) exbranches++;
+    }
+    else if (subfields[1] == "call")
+    {
+        calls[subfields[2] + 0] = subfields[4] + 0
+    }
+    next
+}
 
-if test -z "$infile" -o -z "$mergefile" -o -z "$srcdir" ; then
-    usage "Invalid arguments"
-fi
+function print_branches() {
+    bs = "";
+    for (i = 0; i in branches; i++)
+    {
+        bs = bs branches[i] ":"
+    }
+    cs = "";
+    for (i = 0; i in calls; i++)
+    {
+        cs = cs calls[i] ":"
+    }
+    sub(/:$/, "", bs);
+    sub(/:$/, "", cs);
+    print " ", fun, bs ? bs : "*", cs ? cs : "*"
+}
 
-if test -z "`which tce_merge`" ; then
-    mydir=`dirname $0`
-    if test -x "${mydir}/tce_merge" ; then
-        export PATH="${mydir}:${PATH}"
+{
+    if (header > 1)
+    {
+        print_branches();
+    }
     else
-        echo "Supporting scripts not found!!!" >&2
-        exit 1
-    fi
-fi
+    {
+        header++;
+    }
+    
+    split("", branches);
+    split("", calls);
+    fun = "*"    
+}
 
-if ! test -f $infile; then
-    echo "$infile not found" >&2
-    exit 1
-fi
+$1 ~ /#$/ { lines++; printf 0; next }
+{
+    gsub(/[[:space:]]/, "");
+    if ($1 != "-") 
+    {
+        lines++;
+        executed++;
+    }
+    printf $1;
+}
 
-# cleanup files that might remain from previous sessions
-for pattern in '*.gcov' '*.da' '*.gcda' '.[a-z]*.da' '.[a-z]*.gcda'; do
-    find $srcdir -follow -name "$pattern" -exec rm -f '{}' ';'
-done
+END { 
+    print_branches(); 
+    print "SUMMARY", lines, executed, nbranches, exbranches
+}
 
-# convert gcov raw data to annotated sources
-tar -x -P -f $infile
-cat $mapfile | xargs -n2 tce_gcov >$smapfile
-
-# merge the results
-if test -f "$mergefile"; then
-    cp "$mergefile" "$mergefile".prev
-fi
-cat $smapfile | xargs -n2 tce_merge $mergefile "$ignoredir" "$exclude" 
-
-
+    
 

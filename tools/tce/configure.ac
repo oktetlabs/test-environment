@@ -11,22 +11,11 @@ AC_CONFIG_MACRO_DIR([../../auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
-AC_PROG_CC
 AC_PROG_INSTALL
 
 TE_APP_SET
 
 AC_CONFIG_HEADERS([config.h])
-
-AC_HEADER_STDC
-AC_CHECK_HEADERS([\
-assert.h \
-unistd.h \
-errno.h \
-strings.h \
-sys/types.h \
-])
-
 
 AC_CONFIG_FILES([Makefile])
 

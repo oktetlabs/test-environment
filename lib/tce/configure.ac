@@ -4,7 +4,7 @@
 AC_PREREQ([2.59])
 AC_INIT([tce], [1.0], [Artem.Andreev@oktetlabs.ru])
 
-AC_CONFIG_SRCDIR([tce_collector.c])
+AC_CONFIG_SRCDIR([tce_generic.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 AC_CONFIG_MACRO_DIR([../../auxdir])
@@ -13,7 +13,7 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
 TE_LIB_SET

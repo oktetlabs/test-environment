@@ -15,26 +15,15 @@
    the executable file might be covered by the GNU General Public License.  
 */
 
-#include <te_config.h>
+#define _ISOC99_SOURCE
 #include <stdio.h>
 
+#include <stdarg.h>
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#ifdef HAVE_NETINET_TCP_H
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#endif
-#ifdef HAVE_SYS_UN_H
-#include <sys/un.h>
-#endif
-#endif
-#include <signal.h>
 #include <unistd.h>
 
 
@@ -178,24 +167,18 @@ struct gcov_info
                      is.  */
 };
 
-/* Chain of per-object gcov structures.  */
-struct gcov_info *__gcov_list;
-
-/* A program checksum allows us to distinguish program data for an
-   object file included in multiple programs.  */
-gcov_unsigned_t __gcov_crc32;
-
-static gcov_unsigned_t gcov_version;
-
-void __gcov_merge_add (gcov_type *counters, unsigned n_counters)
+void __gcov_merge_add (__attribute__ ((unused)) gcov_type *counters, 
+                       __attribute__ ((unused)) unsigned n_counters)
 {
 }
 
-void __gcov_merge_single (gcov_type *counters, unsigned n_counters)
+void __gcov_merge_single (__attribute__ ((unused)) gcov_type *counters, 
+                          __attribute__ ((unused)) unsigned n_counters)
 {
 }
 
-void __gcov_merge_delta (gcov_type *counters, unsigned n_counters)
+void __gcov_merge_delta (__attribute__ ((unused)) gcov_type *counters, 
+                         __attribute__ ((unused)) unsigned n_counters)
 {
 }
 
@@ -222,610 +205,334 @@ struct bb
     struct bb_function_info *function_infos;
 };
 
-/* Chain of per-object file bb structures.  */
-struct bb *__bb_head;
-
 #endif
 
 
-enum CONNECT_MODES { CONNECT_FIFO, CONNECT_UNIX, 
-                     CONNECT_ABSTRACT, CONNECT_TCP };
-
-static enum CONNECT_MODES connect_mode;
-static int peer_id;
-static char collector_path[PATH_MAX + 1];
-static struct in_addr tcp_address;
-static int tcp_port;
-
-void
-__bb_init_connection(const char *mode, int peer)
-{
-    if (strncmp(mode, "fifo:", 5) == 0)
-    {
-        connect_mode = CONNECT_FIFO;
-        strcpy(collector_path, mode + 5);
-    }
-#ifdef HAVE_SYS_SOCKET_H
-#ifdef HAVE_SYS_UN_H
-    else if (strncmp(mode, "unix:", 5) == 0)
-    {
-        connect_mode = CONNECT_UNIX;
-        strcpy(collector_path, mode + 5);
-    }
-    else if (strncmp(mode, "abstract:", 9) == 0)
-    {
-        connect_mode = CONNECT_ABSTRACT;
-        strcpy(collector_path, mode + 9);
-    }
-#endif
-#ifdef HAVE_NETINET_TCP_H
-    else if (strncmp(mode, "tcp:", 4) == 0)
-    {
-        char *tmp;
-        tcp_port = htons(strtoul(mode + 4, &tmp, 10));
-                
-        if (*tmp == '\0')
-        {
-            tcp_address.s_addr = 0;
-        }
-        else
-        {
-            inet_pton(AF_INET, tmp + 1, &tcp_address);
-        }
-    }
-#endif
-#endif /* HAVE_SYS_SOCKET_H */
-    peer_id = peer;
-}
-
-
-/* Dump the coverage counts. We merge with existing counts when
-   possible, to avoid growing the .da files ad infinitum.  */
-
-EXIT_GCOV()
-{
-#ifdef GCC_IS_3_4P
-    struct gcov_info *gi_ptr;
-    struct gcov_summary this_program;
-    struct gcov_summary all;
-    struct gcov_ctr_summary *cs_ptr;
-    const struct gcov_ctr_info *ci_ptr;
-    unsigned t_ix;
-    gcov_unsigned_t c_num;
-#else
-    struct bb *ptr;
-    int i;
-    long long program_sum = 0;
-    long long program_max = 0;
-    long program_arcs = 0;
-
-#endif
-
-    int fd;
-    static char buffer[PATH_MAX + 64];
-
-    if (peer_id == 0) /* __bb_init_function has not been called */
-    {
-        const char *env = getenv("TCE_CONNECTION");
-        char name[PATH_MAX + 1];
-        char *space_at;
-        int peer_id;
-        if (env == NULL)
-        {
-            fputs("no TCE_CONNECTION\n", stderr);
-            return;
-        }
-        strncpy(name, env, sizeof(name) - 1);
-        space_at = strchr(name, ' ');
-        if (space_at == NULL ||
-            (peer_id = strtol(space_at, NULL, 0)) == 0)
-        {
-            fprintf(stderr, "invalid TCE_CONNECTION var '%s'\n", env);
-            return;
-        }
-        *space_at = '\0';
-        __bb_init_connection(name, peer_id);
-    }
-
-    signal(SIGPIPE, SIG_IGN);
-    errno = 0;
-
-    switch (connect_mode)
-    {
-#ifdef HAVE_NETINET_TCP_H
-        case CONNECT_TCP:
-        {
-            struct sockaddr_in addr;
-            addr.sin_family = AF_INET;
-            addr.sin_addr = tcp_address;
-            addr.sin_port = tcp_port;
-            fd = socket(PF_INET, SOCK_STREAM, 0);
-            connect(fd, (struct sockaddr *)&addr, sizeof(addr));
-            break;
-        }
-#endif
-#ifdef HAVE_SYS_UN_H
-        case CONNECT_UNIX:
-        case CONNECT_ABSTRACT:
-        {
-            struct sockaddr_un addr;
-            addr.sun_family = AF_UNIX;
-            if (connect_mode == CONNECT_UNIX)
-                strcpy(addr.sun_path, collector_path);
-            else
-            {
-                memset(addr.sun_path, 0, sizeof(addr.sun_path));
-                strcpy(addr.sun_path + 1, collector_path);
-            }
-            fd = socket(PF_UNIX, SOCK_STREAM, 0);
-            connect(fd, (struct sockaddr *)&addr, sizeof(addr));
-            break;
-        }
-#endif
-        case CONNECT_FIFO:
-        {
-            fd = open(collector_path, O_WRONLY);
-            break;
-        }
-        default:
-        {
-            fputs("internal error: invalid connection mode\n", stderr);
-            return;
-        }
-    }
-    
-    if (errno)
-    {
-        fprintf(stderr, "cannot connect to TCE collector: %s\n", 
-                strerror(errno));
-        return;
-    }
-
-    sprintf(buffer, "%d\n", peer_id);
-    write(fd, buffer, strlen(buffer)); 
-
-
-#ifdef GCC_IS_3_4P    
-    memset (&all, 0, sizeof (all));
-    /* Find the totals for this execution.  */
-    memset (&this_program, 0, sizeof (this_program));
-    for (gi_ptr = __gcov_list; gi_ptr; gi_ptr = gi_ptr->next)
-    {
-        ci_ptr = gi_ptr->counts;
-        for (t_ix = 0; t_ix < GCOV_COUNTERS_SUMMABLE; t_ix++)
-        {
-            if (!((1 << t_ix) & gi_ptr->ctr_mask))
-                continue;
-            
-            cs_ptr = &this_program.ctrs[t_ix];
-            cs_ptr->num += ci_ptr->num;
-            for (c_num = 0; c_num < ci_ptr->num; c_num++)
-            {
-                cs_ptr->sum_all += ci_ptr->values[c_num];
-                if (cs_ptr->run_max < ci_ptr->values[c_num])
-                    cs_ptr->run_max = ci_ptr->values[c_num];
-            }
-            ci_ptr++;
-        }
-    }
-    
-    /* Now merge each file.  */
-    for (gi_ptr = __gcov_list; gi_ptr; gi_ptr = gi_ptr->next)
-    {
-        struct gcov_summary this_object;
-        struct gcov_summary object, program;
-        gcov_type *values[GCOV_COUNTERS];
-        const struct gcov_fn_info *fi_ptr;
-        unsigned fi_stride;
-        unsigned c_ix, f_ix, n_counts, s_ix;
-        struct gcov_ctr_summary *cs_obj, *cs_tobj, *cs_prg, 
-            *cs_tprg, *cs_all;
-        int error = 0;
-        gcov_unsigned_t tag, length;
-        gcov_position_t summary_pos = 0;
-
-        memset (&this_object, 0, sizeof (this_object));
-        memset (&object, 0, sizeof (object));
-      
-        /* Totals for this object file.  */
-        ci_ptr = gi_ptr->counts;
-        for (t_ix = 0; t_ix < GCOV_COUNTERS_SUMMABLE; t_ix++)
-        {
-            if (!((1 << t_ix) & gi_ptr->ctr_mask))
-                continue;
-          
-            cs_ptr = &this_object.ctrs[t_ix];
-            cs_ptr->num += ci_ptr->num;
-            for (c_num = 0; c_num < ci_ptr->num; c_num++)
-            {
-                cs_ptr->sum_all += ci_ptr->values[c_num];
-                if (cs_ptr->run_max < ci_ptr->values[c_num])
-                    cs_ptr->run_max = ci_ptr->values[c_num];
-            }
-          
-            ci_ptr++;
-        }
-
-        c_ix = 0;
-        for (t_ix = 0; t_ix < GCOV_COUNTERS; t_ix++)
-        {
-            if ((1 << t_ix) & gi_ptr->ctr_mask)
-            {
-                values[c_ix] = gi_ptr->counts[c_ix].values;
-                c_ix++;
-            }
-        }
-      
-        /* Calculate the function_info stride. This depends on the
-           number of counter types being measured.  */
-        fi_stride = sizeof (struct gcov_fn_info) + c_ix * sizeof (unsigned);
-        if (__alignof__ (struct gcov_fn_info) > sizeof (unsigned))
-        {
-            fi_stride += __alignof__ (struct gcov_fn_info) - 1;
-            fi_stride &= ~(__alignof__ (struct gcov_fn_info) - 1);
-        }
-      
-        memset (&program, 0, sizeof (program));
-
-        /* Merge the summaries.  */
-        f_ix = ~0u;
-        for (t_ix = 0; t_ix < GCOV_COUNTERS_SUMMABLE; t_ix++)
-        {
-            cs_obj = &object.ctrs[t_ix];
-            cs_tobj = &this_object.ctrs[t_ix];
-            cs_prg = &program.ctrs[t_ix];
-            cs_tprg = &this_program.ctrs[t_ix];
-            cs_all = &all.ctrs[t_ix];
-
-            if ((1 << t_ix) & gi_ptr->ctr_mask)
-            {
-                if (!cs_obj->runs++)
-                    cs_obj->num = cs_tobj->num;
-                cs_obj->sum_all += cs_tobj->sum_all;
-                if (cs_obj->run_max < cs_tobj->run_max)
-                    cs_obj->run_max = cs_tobj->run_max;
-                cs_obj->sum_max += cs_tobj->run_max;
-          
-                if (!cs_prg->runs++)
-                    cs_prg->num = cs_tprg->num;
-                cs_prg->sum_all += cs_tprg->sum_all;
-                if (cs_prg->run_max < cs_tprg->run_max)
-                    cs_prg->run_max = cs_tprg->run_max;
-                cs_prg->sum_max += cs_tprg->run_max;
-            }
-      
-            if (!cs_all->runs && cs_prg->runs)
-                memcpy (cs_all, cs_prg, sizeof (*cs_all));
-            else if (!all.checksum
-                     && (!GCOV_LOCKED || cs_all->runs == cs_prg->runs)
-                     && memcmp (cs_all, cs_prg, sizeof (*cs_all)))
-            {
-                all.checksum = ~0u;
-            }
-        }
-      
-        c_ix = 0;
-        for (t_ix = 0; t_ix < GCOV_COUNTERS; t_ix++)
-        {
-            if ((1 << t_ix) & gi_ptr->ctr_mask)
-            {
-                values[c_ix] = gi_ptr->counts[c_ix].values;
-                c_ix++;
-            }
-        }
-
-        program.checksum = __gcov_crc32;
-      
-        /* Write out the data.  */
-
-        snprintf(buffer, sizeof(buffer), 
-                 "%s new %u %u %u %u %u %u\n", 
-                 gi_ptr->filename, 
-                 gcov_version, gi_ptr->stamp,
-                 object.checksum, program.checksum,
-                 gi_ptr->n_functions, gi_ptr->ctr_mask);
-        write(fd, buffer, strlen(buffer));
-
-        for (s_ix = 0; s_ix < GCOV_COUNTERS_SUMMABLE; s_ix++)
-        {
-            snprintf(buffer, sizeof(buffer), 
-                     ">%u %u %Lu %Lu %Lu %u %u %Lu %Lu %Lu\n", 
-                     object.ctrs[s_ix].num,
-                     object.ctrs[s_ix].runs,
-                     object.ctrs[s_ix].sum_all,
-                     object.ctrs[s_ix].run_max,
-                     object.ctrs[s_ix].sum_max,
-                     program.ctrs[s_ix].num,
-                     program.ctrs[s_ix].runs,
-                     program.ctrs[s_ix].sum_all,
-                     program.ctrs[s_ix].run_max,
-                     program.ctrs[s_ix].sum_max);
-            write(fd, buffer, strlen(buffer));
-        }
-        
-        /* Write execution counts for each function.  */
-        for (f_ix = 0; f_ix < gi_ptr->n_functions; f_ix++)
-        {
-            unsigned arc_count = 0;
-            
-            fi_ptr = (const struct gcov_fn_info *)
-                ((const char *) gi_ptr->functions + f_ix * fi_stride);
-
-            c_ix = 0;
-            for (t_ix = 0; t_ix < GCOV_COUNTERS; t_ix++)
-            {
-                if (!((1 << t_ix) & gi_ptr->ctr_mask))
-                    continue;
-
-                arc_count += fi_ptr->n_ctrs[c_ix];
-            }
-
-            /* Announce function.  */
-            snprintf(buffer, sizeof(buffer), "*%u %u %u\n", 
-                     fi_ptr->ident, fi_ptr->checksum, arc_count);
-            write(fd, buffer, strlen(buffer));
-
-            c_ix = 0;
-            for (t_ix = 0; t_ix < GCOV_COUNTERS; t_ix++)
-            {
-                gcov_type *c_ptr;
-                gcov_merge_fn merge;
-
-                if (!((1 << t_ix) & gi_ptr->ctr_mask))
-                    continue;
-
-                n_counts = fi_ptr->n_ctrs[c_ix];
-                merge = gi_ptr->counts[c_ix].merge;
-                sprintf(buffer, "~%s %d\n", merge == __gcov_merge_add ?
-                        "add" : (merge == __gcov_merge_single ?
-                                 "single" : 
-                                 (merge == __gcov_merge_delta ?
-                                  "delta" : "unknown")),
-                        n_counts);
-                write(fd, buffer, strlen(buffer));
-            
-                c_ptr = values[c_ix];
-                if (merge == __gcov_merge_delta)
-                {
-                    for (; n_counts > 0; n_counts -= 4, c_ptr += 4)
-                    {
-                        sprintf(buffer, "+%Lu %Lu %Lu %Lu\n", 
-                                c_ptr[0], c_ptr[1], c_ptr[2], c_ptr[3]);
-                        write(fd, buffer, strlen(buffer));
-                    }
-                }
-                else if (merge == __gcov_merge_single)
-                {
-                    for (; n_counts > 0; n_counts -= 3, c_ptr += 3)
-                    {
-                        sprintf(buffer, "+%Lu %Lu %Lu\n", 
-                                c_ptr[0], c_ptr[1], c_ptr[2]);
-                        write(fd, buffer, strlen(buffer));
-                    }
-                }
-                else
-                {
-                    while (n_counts--)
-                    {
-                        sprintf(buffer, "+%Lu\n", *c_ptr++);
-                        write(fd, buffer, strlen(buffer));
-                    }
-                }
-                
-                values[c_ix] = c_ptr;
-                c_ix++;
-            }
-        }
-        
-    }
-
-#else
-    
-    /* Non-merged stats for this program.  */
-    for (ptr = __bb_head; ptr; ptr = ptr->next)
-    {
-        for (i = 0; i < ptr->ncounts; i++)
-        {
-            program_sum += ptr->counts[i];
-            
-            if (ptr->counts[i] > program_max)
-                program_max = ptr->counts[i];
-        }
-        program_arcs += ptr->ncounts;
-    }
-    
-    for (ptr = __bb_head; ptr; ptr = ptr->next)
-    {
-        long long object_max = 0;
-        long long object_sum = 0;
-        long object_functions = 0;
-        int error = 0;
-        struct bb_function_info *fn_info;
-        long long *count_ptr;
-        
-        if (!ptr->filename)
-            continue;
-        
-        for (fn_info = ptr->function_infos; 
-             fn_info->arc_count != -1; 
-             fn_info++)
-        {
-            object_functions++;
-        }
-        
-        /* Calculate the per-object statistics.  */
-        for (i = 0; i < ptr->ncounts; i++)
-        {
-            object_sum += ptr->counts[i];
-            
-            if (ptr->counts[i] > object_max)
-                object_max = ptr->counts[i];
-        }
-
-        snprintf(buffer, sizeof(buffer), 
-                 "%s %d %d %Ld %Ld %d %Ld %Ld\n", 
-                ptr->filename,
-                object_functions, 
-                program_arcs,
-                program_sum, 
-                program_max, 
-                ptr->ncounts, 
-                object_sum,
-                object_max);
-        write(fd, buffer, strlen(buffer));
-      
-        /* Write execution counts for each function.  */
-        count_ptr = ptr->counts;
-        
-        for (fn_info = ptr->function_infos; fn_info->arc_count >= 0;
-             fn_info++)
-        {          
-            snprintf(buffer, sizeof(buffer), 
-                     "*%s %u %u\n~add %d\n", fn_info->name,
-                     (unsigned)fn_info->checksum, 
-                     (unsigned)fn_info->arc_count, 
-                     fn_info->arc_count);
-            write(fd, buffer, strlen(buffer));
-            for (i = fn_info->arc_count; i > 0; i--, count_ptr++)
-            {
-                sprintf(buffer, "+%Ld\n", *count_ptr);
-                write(fd, buffer, strlen(buffer));
-            }
-        }
-    }
-#endif
-    write(fd, "end\n", 4);
-    close(fd);
-}
-
+static int gcov_program_id = 0;
 
 /* Add a new object file onto the bb chain.  Invoked automatically
    when running an object file's global ctors.  */
 
+#define SYS_TCE_PREFIX "/sys/tce/"
 
-#ifdef GCC_IS_3_4P
-
-static
-void calc_gcov_version(void)
+static int
+open_tce_info(int objno, const char *functr, int functrno, int arcno,
+              const char *attrname, int mode)
 {
-    if (gcov_version == 0)
+    char path[32] = SYS_TCE_PREFIX;
+    int pos = strlen(path);
+    int size = sizeof(path) - pos - 1;
+    char *ptr = path + pos;
+#define ADJPOS \ 
+    if (pos < 0 || pos > size) return -1; else ptr += pos, size -= pos
+
+    pos = snprintf(ptr, size, "%d/", gcov_program_id);
+    ADJPOS;
+
+    if (objno >= 0)
     {
-        unsigned char v[4];
-        unsigned ix;
-        char *ptr = __VERSION__;
-        unsigned major, minor = 0;
-        
-        major = strtoul(ptr, &ptr, 10);
-        if (*ptr)
-            minor = strtoul(ptr + 1, &ptr, 10);
+        pos = snprintf(ptr, size, "%d/", objno);
+        ADJPOS;
+        if (functr != NULL)
+        {
+            pos = strlen(functr);
+            if (pos > size) 
+                return -1;
+            memcpy(ptr, functr, pos);
+            ptr += pos;
+            size -= pos;
+            
+            pos = snprintf(ptr, size, "%d/", functrno);
+            ADJPOS;
+            if (arcno >= 0)
+            {
+                pos = snprintf(ptr, size, "%d/", functrno);
+                ADJPOS;
+            }
+        }
+    }
+    strncpy(ptr, attrname, size);
+
+#undef ADJPOS
     
-        v[0] = (major < 10 ? '0' : 'A' - 10) + major;
-        v[1] = (minor / 10) + '0';
-        v[2] = (minor % 10) + '0';
-        ptr  = strchr(ptr, '(');
-        v[3] = (ptr == NULL ? '*' : ptr[1]);
+    return open(path, mode);
+}
+
+
+static void
+write_tce_info(int objno, const char *functr, int functrno, int arcno, 
+               const char *attrname, const char *fmt, ...)
+{
+    va_list args;
+    int fd;
+    char buffer[128];
+    
+    va_start(args, fmt);
+    fd = open_tce_info(objno, functr, functrno, arcno, 
+                       attrname, O_WRONLY);
+    if (fd >= 0)
+    {
+        int len;
+        len = vsnprintf(buffer, sizeof(buffer) - 1, fmt, args);
+        if (len > 0)
+        {
+            write(fd, buffer, len > (int)sizeof(buffer) - 1 ? 
+                  (int)sizeof(buffer) - 1 : len);
+        }
+        close(fd);
+    }
+    va_end(args);
+}
+
+static int
+read_tce_info(int objno, const char *functr, int functrno, int arcno, 
+              const char *attrname, const char *fmt, ...)
+{
+    va_list args;
+    int fd;
+    int n_fields = 0;
+    char buffer[128];
+    
+    va_start(args, fmt);
+    fd = open_tce_info(objno, functr, functrno, arcno, 
+                       attrname, O_RDONLY);
+    if (fd >= 0)
+    {
+        int len;
         
-        for (ix = 0; ix != 4; ix++)
-            gcov_version = (gcov_version << 8) | v[ix];
+        len = read(fd, buffer, sizeof(buffer) - 1);
+        if (len > 0)
+        {
+            buffer[len] = '\0';
+            n_fields = vsscanf(buffer, fmt, args);
+        }
+        close(fd);
+    }
+    return n_fields;
+}
+
+#define TCE_GLOBAL -1, NULL, -1, -1
+#define TCE_OBJ(_objno) _objno, NULL, -1, -1
+#define TCE_FUN(_objno, _funno) _objno, "fun", _funno, -1
+#define TCE_CTR(_objno, _ctrno) _objno, "ctr", _ctrno, -1
+#define TCE_ARC(_objno, _funno, _arcno) _objno, "fun", _funno, _arcno
+
+static void
+get_program_number(void)
+{
+    if (gcov_program_id == 0)
+    {
+        read_tce_info(TCE_GLOBAL, "seq", "%d", &gcov_program_id);
+        if (gcov_program_id != 0)
+        {
+            write_tce_info(TCE_GLOBAL, "version", "%s",  __VERSION__);
+        }
     }
 }
 
-INIT_GCOV(info)
+#ifdef GCC_IS_3_4P
+
+void
+__gcov_init (struct gcov_info *info)
 {
     if (!info->version)
         return;
     else
     {
-        const char *ptr = info->filename;
-        gcov_unsigned_t crc32 = __gcov_crc32;
+        int objno = -1;
 
-        calc_gcov_version();
-        do
+        get_program_number();
+        read_tce_info(TCE_GLOBAL, "next", "%d", -1, &objno);
+        if (objno >= 0)
         {
-            unsigned ix;
-            gcov_unsigned_t value = *ptr << 24;
-            
-            for (ix = 8; ix--; value <<= 1)
+            unsigned i;
+            unsigned fi_stride;
+            int actual_counters = 0;
+            const struct gcov_fn_info *fi_ptr;
+
+            write_tce_info(TCE_OBJ(objno), "filename", "%s", 
+                           info->filename);
+            write_tce_info(TCE_OBJ(objno), "stamp", "%x", info->stamp);
+            write_tce_info(TCE_OBJ(objno), "ctr_mask", "%x", 
+                           info->ctr_mask);
+            write_tce_info(TCE_OBJ(objno), "n_functions", "%u", 
+                           info->n_functions);
+
+            for (i = 0; i < GCOV_COUNTERS; i++)
             {
-                gcov_unsigned_t feedback;
+                int cnno = -1;
                 
-                feedback = (value ^ crc32) & 0x80000000 ? 0x04c11db7 : 0;
-                crc32 <<= 1;
-                crc32 ^= feedback;
+                if ((info->ctr_mask & (1 << i)) != 0)
+                {
+                    read_tce_info(TCE_OBJ(objno), "next_cn", "%d", &cnno);
+                    
+                    if (cnno >= 0)
+                    {
+                        write_tce_info(TCE_CTR(objno, cnno), "n_counters",
+                                       "%u", info->counts[i].num);
+                        write_tce_info(TCE_CTR(objno, cnno), 
+                                       "merger", "%d",
+                                       info->counts[i].merge == 
+                                       __gcov_merge_add ? 0 :
+                                       (info->counts[i].merge == 
+                                        __gcov_merge_single ? 1 :
+                                        (info->counts[i].merge == 
+                                         __gcov_merge_delta ? 2 : -1)));
+                        memset(info->counts[i].values, 0, 
+                               sizeof(*info->counts[i].values) * 
+                               info->counts[i].num);
+                        write_tce_info(TCE_CTR(objno, cnno), "data", "%p", 
+                                       info->counts[i].values);
+                        actual_counters++;
+                    }
+                }
             }
+
+            fi_stride = sizeof (struct gcov_fn_info) + actual_counters * 
+                sizeof (unsigned);
+            if (__alignof__ (struct gcov_fn_info) > sizeof (unsigned))
+            {
+                fi_stride += __alignof__ (struct gcov_fn_info) - 1;
+                fi_stride &= ~(__alignof__ (struct gcov_fn_info) - 1);
+            }
+      
+
+            for (i = 0, fi_ptr = info->functions; 
+                 i < info->n_functions; 
+                 i++, fi_ptr = (const struct gcov_fn_info *)
+                     ((const char *)fi_ptr + fi_stride))
+            {
+                int fnno = -1;
+                int j;
+                int cn;
+                
+                read_tce_info(TCE_OBJ(objno), "next_fn", "%d", &fnno);
+
+                if (fnno >= 0)
+                {
+                    write_tce_info(TCE_FUN(objno, fnno), "ident", "%x",
+                                   fi_ptr->ident);
+                    write_tce_info(TCE_FUN(objno, fnno), "checksum", "%x", 
+                                   fi_ptr->checksum);
+                    
+                    for (j = 0, cn = 0; j < GCOV_COUNTERS; j++)
+                    {
+                        int arcno = -1;
+
+                        if ((info->ctr_mask & (1 << j)) != 0)
+                        {
+                            read_tce_info(TCE_FUN(objno, fnno), "next", 
+                                          "%d", &arcno);
+                            if (arcno >= 0)
+                            {
+                                write_tce_info(TCE_ARC(objno, fnno, arcno), 
+                                               "count", "%u", 
+                                               fi_ptr->n_ctrs[cn++]);
+                            }
+                        }
+                    }
+                }
+            }
+
         }
-        while (*ptr++);
-        
-        __gcov_crc32 = crc32;
-        
-        if (!__gcov_list)
-            atexit (__gcov_exit);
-        
-        info->next = __gcov_list;
-        __gcov_list = info;
     }
     info->version = 0;
 }
 
 #else
 
-INIT_GCOV(blocks)
+void
+__bb_init_func (struct bb *blocks)
 {
+    int objno = -1;
+
     if (blocks->zero_word)
         return;
 
-    /* Initialize destructor and per-thread data.  */
-    if (!__bb_head)
-    {
-        atexit (__bb_exit_func);
-    }
+    get_program_number();
 
+    read_tce_info(TCE_GLOBAL, "next", "%d", -1, &objno);
+    if (objno >= 0)
+    {
+        unsigned i;
+        unsigned n_funcs = 0;
+        int cnno = -1;
+        
+        write_tce_info(TCE_OBJ(objno), "filename", "%s", blocks->filename);
+        write_tce_info(TCE_OBJ(objno), "ctr_mask", "%x", 1);
+
+        for (n_funcs = 0; 
+             blocks->function_infos[n_funcs].arc_count >= 0; 
+             n_funcs++)
+            ;
+
+        write_tce_info(TCE_OBJ(objno), "n_functions", "%u", n_funcs);
+        
+        for (i = 0; i < n_funcs; i++)
+        {
+            int fnno = -1;
+
+            read_tce_info(TCE_OBJ(objno), "next_fn", "%d", &fnno);
+            
+            if (fnno >= 0)
+            {
+                int arcno = -1;
+
+                write_tce_info(TCE_FUN(objno, fnno), "name", "%s",
+                               blocks->function_infos[i].name);
+                    
+                read_tce_info(TCE_FUN(objno, fnno), "next", "%d", &arcno);
+                if (arcno >= 0)
+                {
+                    write_tce_info(TCE_ARC(objno, fnno, arcno), 
+                                   "count", "%u", 
+                                   blocks->function_infos[i].arc_count);
+                }
+            }
+        }
+
+        read_tce_info(TCE_OBJ(objno), "next_cn", "%d", &cnno);
+
+        if (cnno >= 0)
+        {
+            write_tce_info(TCE_CTR(objno, cnno), "n_counters", "%u", 
+                           blocks->ncounts);
+            write_tce_info(TCE_CTR(objno, cnno), "merger", "%d", 0);
+            memset(blocks->counts, 0, sizeof(*blocks->counts) * 
+                   blocks->ncounts);
+            write_tce_info(TCE_CTR(objno, cnno), "data", "%p", 
+                           blocks->counts);
+        }
+        
+    }
+    
     /* Set up linked list.  */
     blocks->zero_word = 1;
-    blocks->next = __bb_head;
-    __bb_head = blocks;
 }
 
 #endif
 
-/* Called before fork or exec - reset gathered coverage info to zero.  
-   This avoids duplication or loss of the
-   profile information gathered so far.  */
+/* We do not need to clear data before fork or exec, 
+ * because, unlike the standard libgcov, there is no
+ * possibility the data get garbled by two concurrent
+ * processes.
+ *
+ * However, currently a fork()'ed process will not participate
+ * in TCE gathering (until exec*() is called, of course, and
+ * a new TCE initialization is performed)
+ */
 
 #ifdef GCC_IS_3_4P
 
-FLUSH_GCOV()
+void __gcov_flush (void)
 {
-  const struct gcov_info *gi_ptr;
-
-  /* __gcov_exit (); */
-  for (gi_ptr = __gcov_list; gi_ptr; gi_ptr = gi_ptr->next)
-    {
-      unsigned t_ix;
-      const struct gcov_ctr_info *ci_ptr;
-      
-      for (t_ix = 0, ci_ptr = gi_ptr->counts; t_ix != GCOV_COUNTERS; t_ix++)
-    if ((1 << t_ix) & gi_ptr->ctr_mask)
-      {
-        memset (ci_ptr->values, 0, sizeof (gcov_type) * ci_ptr->num);
-        ci_ptr++;
-      }
-    }
 }
 
 
 #else
 
-FLUSH_GCOV()
+void __bb_fork_func (void)
 {
-    struct bb *ptr;
-
-    for (ptr = __bb_head; ptr != NULL; ptr = ptr->next)
-    {
-        long i;
-        for (i = ptr->ncounts - 1; i >= 0; i--)
-            ptr->counts[i] = 0;
-    }
 }
 
 #endif
