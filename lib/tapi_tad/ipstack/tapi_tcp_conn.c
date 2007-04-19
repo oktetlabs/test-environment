@@ -637,8 +637,6 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     int rcv_sid;
     int snd_sid;
     
-    char       *p;
-
     char arp_reply_method[100];
 
     te_bool  use_native_mac = FALSE;
