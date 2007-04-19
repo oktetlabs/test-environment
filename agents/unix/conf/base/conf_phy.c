@@ -27,8 +27,6 @@
  * $Id$
  */
 
-#define TE_LOG_LEVEL 0xFF
-
 #define TE_LGR_USER     "PHY Conf"
 
 #include "te_config.h"
@@ -65,15 +63,21 @@
 #define BUFFER_SIZE (1024)
 /* Size of interface name */
 #define IFNAME_MAX  (IFNAMSIZ)
+/* Command line pattern to get autonegotiation state */
+#define KSTAT_GET_AUTONEG_CMD \
+       "kstat -p %s:%d:mac:link_autoneg | tr -d \"\t\" | "" \
+       sed -e 's/^.*[link_autoneg]//'"
 /* Command line pattern to get duplex state */
 #define KSTAT_GET_DUPLEX_CMD \
-       "kstat -p %s:%d:mac:link_duplex | tr -d \"\t\" | sed -e 's/^.*[ ]//'"
+       "kstat -p %s:%d:mac:link_duplex | tr -d \"\t\" | sed -e " \
+       "'s/^.*[duplex]//'"
 /* Command line pattern to get duplex state */
 #define KSTAT_GET_SPEED_CMD \
-        "kstat -p ::%s:ifspeed | tr -d \"\t\" | sed -e 's/^.*[ ]//'"
+        "kstat -p ::%s:ifspeed | tr -d \"\t\" | sed -e 's/^.*[ifspeed]//'"
 /* Command line pattern to get link state */
 #define KSTAT_GET_STATE_CMD \
-        "kstat -p %s:%d::link_state | tr -d \"\t\" | sed -e 's/^.*[ ]//'"
+        "kstat -p %s:%d::link_state | tr -d \"\t\" | sed -e " \
+        "'s/^.*[state]//'"
 /* Speed units */
 #define KSTAT_SPEED_UNITS_IN_M 1000000
 
@@ -498,6 +502,94 @@ phy_get_duplex_by_id(int id)
     return NULL;
 }
 
+#if defined __sun__
+/**
+ * Execute shell command and return a value
+ * of numeric constant that read from stdout after
+ * commang execution.
+ *
+ * @param cmd           Command line
+ *
+ * @return              Numeric constant value or -1 if error occured
+ */
+static int
+phy_execute_shell_cmd(char *cmd)
+{
+    pid_t pid;
+    int   out_fd = -1;
+    FILE *fp;
+    char *out_buf;
+    int   result = -1;
+    
+    pid = te_shell_cmd(cmd, -1, NULL, &out_fd, NULL);
+    
+    if (pid < 0)
+    {
+        ERROR("failed to execute command line while getting: %s: "
+              "%s", cmd, strerror(errno));
+        return -1;
+    }
+    
+    if ((fp = fdopen(out_fd, "r")) == NULL)
+    {
+        ERROR("failed to get shell command execution result while "
+              "getting duplex state: %s", cmd);
+        fclose(fp);
+        
+        return -1;
+    }
+    
+    if ((out_buf = (char *)malloc(BUFFER_SIZE)) == NULL)
+    {
+        ERROR("failed to allocate memory while getting duplex state");
+        fclose(fp);
+        close(out_fd);
+        return -1;
+    }
+    
+    memset(out_buf, 0, BUFFER_SIZE);
+    
+    if (fgets(out_buf, BUFFER_SIZE, fp) == NULL)
+    {
+        WARN("failed to read command execution result: %s", cmd);
+        free(out_buf);
+        fclose(fp);
+        close(out_fd);
+        return -1;
+    }
+    
+    /* Remove \r\n */
+    out_buf[strlen(out_buf) - 1] = '\0';
+    
+    result = atoi(out_buf);
+    
+    free(out_buf);
+    fclose(fp);
+    close(out_fd);
+    
+    return result;
+}
+
+/**
+ * Extract driver name and instance number from interface name.
+ *
+ * @param ifname        name of the interface
+ * @param drv           driver name (output value)
+ * @param instance      instance number (output value)
+ *
+ * @return              A number of arguments which has been parsed.
+ *                      This number should be equal to 2 since we want
+ *                      to extract two argumants: driver name and instance
+ *                      number. If this number is not equal to 2 it means
+ *                      that parsing error has been occured.
+ */
+static inline int
+phy_extract_ifname(const char *ifname, char *drv, int *instance)
+{
+    return sscanf(ifname, "%[^0-9]%d", drv, instance);
+}
+#endif /* __sun__ */
+
 /**
  * Get PHY autonegotiation state.
  *
@@ -542,10 +634,67 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
     
     snprintf(value, RCF_MAX_VAL, "%d", state);
     
-    return 0;
-#endif /* __linux__ */
+#elif defined __sun__
+    
+    char   drv[IFNAME_MAX];
+    int    instance = -1;
+    char  *cmd;
+    int    autoneg = -1;
+    
+    VERB("get autoneg");
+    
+    /* Extract driver name and instance number from interface name */
+    if (phy_extract_ifname(ifname, drv, &instance) != 2)
+    {
+        ERROR("failed to parse interface name");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    
+    if((cmd = (char *)malloc(BUFFER_SIZE)) == NULL)
+    {
+        ERROR("Failed to allocate memory for shell command buffer "
+              "while getting duplex state");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    
+    /* Construct a command line */
+    sprintf(cmd, KSTAT_GET_AUTONEG_CMD, drv, instance);
+    
+    autoneg = phy_execute_shell_cmd(cmd);
+    
+    if (autoneg == -1)
+    {
+        WARN("failed to get autoneg state at %s", ifname);
+        free(cmd);
+        
+        /* If this option is not supported we should not
+           * return negative result code because configurator
+           * never starts */
+        snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
+        
+        return 0;
+    }
+    
+    /* Check for valid value */
+    switch (autoneg) {
+    
+        case TE_PHY_AUTONEG_ON: snprintf(value, RCF_MAX_VAL, "%d",
+                                         TE_PHY_AUTONEG_ON);
+                                break;
+        case TE_PHY_AUTONEG_OFF: snprintf(value, RCF_MAX_VAL, "%d",
+                                          TE_PHY_AUTONEG_OFF);
+                                 break;
+        default: snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
+    };
+    
+    free(cmd);
+
+#else
+
     UNUSED(ifname);
     snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
+    
+#endif /* __linux__ */
     
     return 0;
 }
@@ -606,85 +755,6 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
-#if defined __sun__
-/**
- * Execute shell command and return a value
- * of numeric constant that read from stdout after
- * commang execution.
- *
- * @param cmd           Command line
- *
- * @return              Numeric constant value or -1 if error occured
- */
-static int
-phy_execute_shell_cmd(char *cmd)
-{
-    pid_t pid;
-    int   out_fd = -1;
-    FILE *fp;
-    char *out_buf;
-    int   result = -1;
-    
-    pid = te_shell_cmd(cmd, -1, NULL, &out_fd, NULL);
-    
-    if (pid < 0)
-    {
-        ERROR("failed to execute command line while getting "
-              "duplex state: %s", cmd);
-        return -1;
-    }
-    
-    if ((fp = fdopen(out_fd, "r")) == NULL)
-    {
-        ERROR("failed to get shell command execution result while "
-              "getting duplex state: %s", cmd);
-        return -1;
-    }
-    
-    if ((out_buf = (char *)malloc(BUFFER_SIZE)) == NULL)
-    {
-        ERROR("failed to allocate memory while getting duplex state");
-        return -1;
-    }
-    
-    memset(out_buf, 0, BUFFER_SIZE);
-    
-    if (fgets(out_buf, BUFFER_SIZE, fp) == NULL)
-    {
-        WARN("failed to read command execution result: %s", cmd);
-        free(out_buf);
-        return -1;
-    }
-    
-    /* Remove \r\n */
-    out_buf[strlen(out_buf) - 1] = '\0';
-    
-    result = atoi(out_buf);
-    
-    free(out_buf);
-    
-    return result;
-}
-
-/**
- * Extract driver name and instance number from interface name.
- *
- * @param ifname        name of the interface
- * @param drv           driver name (output value)
- * @param instance      instance number (output value)
- *
- * @return              A number of arguments which has been parsed.
- *                      This number should be equal to 2 since we want
- *                      to extract two argumants: driver name and instance
- *                      number. If this number is not equal to 2 it means
- *                      that parsing error has been occured.
- */
-static inline int
-phy_extract_ifname(const char *ifname, char *drv, int *instance)
-{
-    return sscanf(ifname, "%[^0-9]%d", drv, instance);
-}
-#endif /* __sun__ */
 
 /**
  * Get PHY duplex state.
