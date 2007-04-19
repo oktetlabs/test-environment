@@ -3127,6 +3127,8 @@ ta_win32_conf_net_if_stats_init(void)
 #define KRX_DEL_MULTICAST_ADDR     NDIS_IOCTL(8)
 #define KRX_GET_MULTICAST_LIST     NDIS_IOCTL(9)
 
+#define KSTAT_GET     NDIS_IOCTL(12)
+
 #define WRAPPER_DEVICE_NAME  "\\\\.\\olwrapper"
 #define WRAPPER_DEVFILE_NAME "\\\\.\\olwrapper"
 
@@ -3260,10 +3262,6 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 // Multicast
 
 // Ndis statistics
-
-#define KSTAT_GET \
-    CTL_CODE( DRV_TYPE, 0x912, METHOD_BUFFERED, FILE_ANY_ACCESS  )
-
 
 static te_errno
 if_stats_get(const char *ifname, if_stats *stats)
