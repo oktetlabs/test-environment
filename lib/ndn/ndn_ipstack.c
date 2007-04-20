@@ -409,6 +409,14 @@ asn_type ndn_tcp_option_s = {
 
 const asn_type * const ndn_tcp_option = &ndn_tcp_option_s;
 
+asn_type ndn_tcp_options_seq_s = {
+    "SEQUENCE OF TCP-Option",
+    {PRIVATE, NDN_TAG_TCP_OPTIONS},
+    SEQUENCE_OF, 0,
+    {subtype: &ndn_tcp_option_s}
+};
+
+const asn_type * const ndn_tcp_options_seq = &ndn_tcp_options_seq_s;
 
 /*
 TCP-Header ::= SEQUENCE {
@@ -438,6 +446,7 @@ static asn_named_entry_t _ndn_tcp_header_ne_array [] = {
     { "win-size", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_WINDOW} },
     { "checksum", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_CHECKSUM} },
     { "urg-p",    &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_URG} },
+    { "options",  &ndn_tcp_options_seq_s, {PRIVATE, NDN_TAG_TCP_OPTIONS} },
     { "socket",   &asn_base_integer_s, {PRIVATE, NDN_TAG_TCP_DATA_SOCKET} },
     { "length",   &asn_base_integer_s, {PRIVATE, NDN_TAG_TCP_DATA_LENGTH} },
 };

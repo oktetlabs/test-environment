@@ -99,6 +99,16 @@ typedef enum {
 } ndn_tcp_tags_t;
 
 typedef enum {
+    TE_TCP_OPT_EOL,
+    TE_TCP_OPT_NOP,
+    TE_TCP_OPT_MSS,
+    TE_TCP_OPT_WIN_SCALE,
+    TE_TCP_OPT_SACK_PERM,
+    TE_TCP_OPT_SACK_DATA,
+    TE_TCP_OPT_TIMESTAMP = 8,
+} te_tcp_options_kind_t;
+
+typedef enum { 
     NDN_TAG_TCP_OPT_EOL,
     NDN_TAG_TCP_OPT_NOP,
     NDN_TAG_TCP_OPT_MSS,
@@ -106,13 +116,13 @@ typedef enum {
     NDN_TAG_TCP_OPT_SACK_PERM,
     NDN_TAG_TCP_OPT_SACK_DATA,
     NDN_TAG_TCP_OPT_TIMESTAMP = 8,
-    NDN_TAG_TCP_OPT_LEN, 
-    NDN_TAG_TCP_OPT_SCALE, 
-    NDN_TAG_TCP_OPT_LEFT, 
-    NDN_TAG_TCP_OPT_RIGHT, 
-    NDN_TAG_TCP_OPT_VALUE, 
-    NDN_TAG_TCP_OPT_ECHO_REPLY, 
-    NDN_TAG_TCP_OPT_SACK_BLOCKS, 
+    NDN_TAG_TCP_OPT_LEN,
+    NDN_TAG_TCP_OPT_SCALE,
+    NDN_TAG_TCP_OPT_LEFT,
+    NDN_TAG_TCP_OPT_RIGHT,
+    NDN_TAG_TCP_OPT_VALUE,
+    NDN_TAG_TCP_OPT_ECHO_REPLY,
+    NDN_TAG_TCP_OPT_SACK_BLOCKS,
     NDN_TAG_TCP_OPT_SACK_BLOCK,
     NDN_TAG_TCP_OPT_SACK_LEFT,
     NDN_TAG_TCP_OPT_SACK_RIGHT,
@@ -146,6 +156,8 @@ extern const asn_type * const ndn_udp_csap;
 
 extern const asn_type * const ndn_tcp_header;
 extern const asn_type * const ndn_tcp_csap;
+extern const asn_type * const ndn_tcp_option;
+extern const asn_type * const ndn_tcp_options_seq;
 
 #ifdef __cplusplus
 } /* extern "C" */
