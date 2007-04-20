@@ -11,7 +11,7 @@ DEFINE_LGR_ENTITY("parse_file");
 int 
 main (int argc, char *argv[])
 { 
-    int rc, s_parsed;
+    int rc, s_parsed, n;
 #if 1
     asn_type *a_type = ndn_raw_packet;
 #else
@@ -40,12 +40,20 @@ main (int argc, char *argv[])
         printf("tempalte write expr %x\n", rc);
     }
 
+    n = asn_count_txt_len(packet, 0);
+    {
+        char buffer[3000];
+        rc = asn_sprint_value(packet, buffer, n + 1, 0); 
+
+        printf("count %d, real %d, print: %s\n", n, rc, buffer);
+    }
 
     asn_save_to_file(packet, "out.asn");
 
 #if 1
     asn_free_value(packet);
 #endif
+
 
 
 #if 0
