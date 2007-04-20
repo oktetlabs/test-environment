@@ -41,6 +41,9 @@
 extern "C" {
 #endif
 
+/* Time to sleep after PHY properties has been changed */
+#define TE_PHY_SLEEP_TIME   (10)
+
 /**
  * Get PHY autonegotiation state.
  *
