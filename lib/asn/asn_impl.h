@@ -135,7 +135,7 @@ struct asn_value
                             number of sub-ids, which sub-id has usual for
                             current architecture size of 'int';
                         -# BIT_STRING -- number of bits;    
-                    - constraint syntax:       
+                    - compound syntax:       
                           number of sub-values, 
                           This field should be one or zero (for non-complete
                           values) for CHOICE and TAGGED syntaxes.  
@@ -154,6 +154,8 @@ struct asn_value
     int txt_len;   /**< Length of textual presentation of value, 
                         may be unknown, this is denoted by -1. 
                         Zero value means incomplete value. */
+    int c_indent;
+    int c_lines;
 };
 
 
@@ -268,6 +270,8 @@ extern te_errno asn_put_child_by_index(asn_value *container,
 extern te_errno asn_get_child_by_index(const asn_value *container, 
                                        asn_value **child, 
                                        int index);
+
+extern te_bool asn_clean_count(asn_value *value);
 
 #ifdef __cplusplus
 } /* extern "C" */
