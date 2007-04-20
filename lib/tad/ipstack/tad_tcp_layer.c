@@ -514,7 +514,9 @@ tad_tcp_match_bin_cb(csap_p           csap,
                      tad_pkt         *pdu,
                      tad_pkt         *sdu)
 { 
+    asn_value  *options = NULL;
     uint8_t    *data_ptr; 
+    uint8_t    *pld_start; 
     uint8_t    *data; 
     size_t      data_len;
     asn_value  *tcp_header_pdu = NULL;
@@ -576,7 +578,103 @@ tad_tcp_match_bin_cb(csap_p           csap,
  
 #undef CHECK_FIELD
 
-    /* TODO: Process TCP options */
+    if (data_len < h_len * 4)
+    {
+        ERROR(CSAP_LOG_FMT "Length of data in passed PDU too small: %d",
+              CSAP_LOG_ARGS(csap), data_len);
+        rc = TE_RC(TE_TAD_CSAP, TE_ETADLESSDATA);
+        goto cleanup;
+    }
+
+    /* Process TCP options */
+    /* Options in pattern are ignored. TODO: filtering by options */
+
+    /* Assume that option length is set correctly in incoming packet */
+
+    pld_start = data_ptr + h_len * 4;
+
+    rc = 0;
+    if (tcp_header_pdu != NULL)
+    {
+        uint32_t opt_val;
+        if (data < pld_start)
+            RING("%s(): dump of options: %Tm",
+                 __FUNCTION__, data, pld_start - data);
+
+        while ( rc == 0 && data < pld_start)
+        {
+            asn_value *opt = asn_init_value(ndn_tcp_option);
+            if (options == NULL)
+                options = asn_init_value(ndn_tcp_options_seq);
+
+            RING("%s(): foung option with kind %d, offset %d",
+                 __FUNCTION__, (int)(*data), data  - data_ptr);
+            switch (*data)
+            {
+                case TE_TCP_OPT_EOL:
+                    rc = asn_write_value_field(opt, NULL, 0, "#eol");
+                    break;
+                case TE_TCP_OPT_NOP:
+                    rc = asn_write_value_field(opt, NULL, 0, "#nop");
+                    break;
+                case TE_TCP_OPT_MSS:
+                    rc = asn_write_value_field(opt, data+1, 1, 
+                                               "#mss.length.#plain");
+                    if (rc) break;
+                    opt_val = ntohs(*((uint16_t *)(data + 2)));
+                    rc = asn_write_value_field(opt, &opt_val, 4,
+                                               "#mss.mss.#plain");
+                    data += *(data + 1) - 1;
+                    break;
+                case TE_TCP_OPT_WIN_SCALE:
+                    rc = asn_write_value_field(opt, data + 1, 1, 
+                                               "#win-scale.length.#plain");
+                    if (rc) break;
+                    rc = asn_write_value_field(opt, data + 2, 1,
+                                               "#win-scale.scale.#plain");
+                    data += *(data + 1) - 1;
+                    break;
+
+                case TE_TCP_OPT_SACK_PERM:
+                case TE_TCP_OPT_SACK_DATA:
+                    F_INFO(CSAP_LOG_FMT "TCP options, SACK not supported",
+                          CSAP_LOG_ARGS(csap));
+                    data += *(data + 1) - 1;
+                    asn_free_value(opt);
+                    opt = NULL;
+                    break;
+                case TE_TCP_OPT_TIMESTAMP:
+                    rc = asn_write_value_field(opt, data+1, 1, 
+                                               "#timestamp.length.#plain");
+                    if (rc) break;
+                    opt_val = ntohl(*((uint32_t *)(data + 2)));
+                    rc = asn_write_value_field(opt, &opt_val, 4,
+                                               "#timestamp.value.#plain");
+                    if (rc) break;
+                    opt_val = ntohl(*((uint32_t *)(data + 6)));
+                    rc = asn_write_value_field(opt, &opt_val, 4,
+                                           "#timestamp.echo-reply.#plain");
+                    data += *(data + 1) - 1;
+                    break;
+            }
+            data++;
+            if (rc) break;
+
+            if (opt != NULL)
+                rc = asn_insert_indexed(options, opt, -1, "");
+
+        {
+            char buf [200] = {0,};
+            asn_sprint_value(options, buf, sizeof(buf) - 1, 0);
+            RING("dump of parsed options: %s", buf);
+        }
+        }
+        if (rc == 0)
+            rc = asn_put_descendent(tcp_header_pdu, options, "options");
+        RING("%s(), options put, rc %r", __FUNCTION__, rc);
+    }
+    if (rc)
+        goto cleanup;
 
     /* Passing payload to upper layer */
     rc = tad_pkt_get_frag(sdu, pdu, h_len * 4, data_len - (h_len * 4),
@@ -589,12 +687,14 @@ tad_tcp_match_bin_cb(csap_p           csap,
     }
 
 cleanup:
-    if (rc != 0 &&
-        TE_RC_GET_ERROR(rc) != TE_ETADNOTMATCH &&
-        TE_RC_GET_ERROR(rc) != TE_ETADLESSDATA)
+    if (rc != 0)
     {
-        ERROR("%s: failed at offset %u: %r", __FUNCTION__,
-              (unsigned)(data_ptr - data), rc);
+        if (TE_RC_GET_ERROR(rc) != TE_ETADNOTMATCH &&
+            TE_RC_GET_ERROR(rc) != TE_ETADLESSDATA)
+        {
+            ERROR("%s: failed at offset %u: %r", __FUNCTION__,
+                  (unsigned)(data_ptr - data), rc);
+        }
     }
     return rc;
 }
