@@ -76,7 +76,7 @@ $1 == "FILE" {
     destfile = sprintf("%s/%d.html", DATADIR, nfile);
     printf "<p><a href=\"%d.html\">[prev]</a><a href=\"%d.html\">[next]</a>\n", nfile - 1, nfile + 1 > destfile
     print "<table>" >> destfile
-    print "<caption>" sourcefile "</caption>" >> destfile
+    printf "<caption>%s (%s): %d runs</caption>\n", sourcefile, $2, $NF >> destfile
     next;
 }
 
@@ -164,7 +164,10 @@ $1 == "SUMMARY" {
         empho = "<font color=\"gray\">";
         emphc = "</font>"
     }
-    printf "<tr><td align=\"right\">%s%s%s</td><td>%s%s%s %s%s</td></tr>\n", empho, $1, emphc, empho, source, emphc, brc, cc >> destfile;
+    printf "<tr><td align=\"right\">%s%s%s</td><td>%s%s%s %s%s</td></tr>\n", 
+        empho, $1, emphc, empho, source, emphc, 
+        (brc ? "<small>" : "") brc (brc ? "</small>" : ""), 
+        (cc ? "<small>" : "") cc (cc ? "</small>" : "") >> destfile;
 
     skipped = 0;
 }
@@ -178,10 +181,10 @@ END {
     for (i = 1; i in sorted; i++)
     {
         split(summary[sorted[i]], sumfields);
-        printf "<tr><td><a href=\"%s/%d.html\">%s</a></td><td>%.2f%% of %d</td><td>%.2f%% of %d (%s)</td>", 
+        printf "<tr><td><a href=\"%s/%d.html\">%s</a></td><td>%.2f%% of %d</td><td>%.2f%% of %d</td>", 
             DATADIR, sumfields[6], sumfields[5], 
             sumfields[1] == 0 ? "100" : (sumfields[2] * 100 / sumfields[1]), sumfields[1],
-            sumfields[3] == 0 ? "100" : (sumfields[4] * 100 / sumfields[3]), sumfields[3], sorted[i];
+            sumfields[3] == 0 ? "100" : (sumfields[4] * 100 / sumfields[3]), sumfields[3];
     }
     print "</table>"
 }
