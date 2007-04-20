@@ -138,7 +138,8 @@ typedef enum tester_track_conf {
     TESTER_TRACK_CONF_YES,
     TESTER_TRACK_CONF_NO,
     TESTER_TRACK_CONF_SILENT,
-    TESTER_TRACK_CONF_NOHISTORY
+    TESTER_TRACK_CONF_NOHISTORY,
+    TESTER_TRACK_CONF_YES_NOHISTORY
 } tester_track_conf;
 
 /** Default value of the track_conf attribute */

@@ -1141,6 +1141,8 @@ log_msg(cfg_msg *msg, te_bool before)
                     "%s backup %s%s%s",
                     op == CFG_BACKUP_CREATE ? "Create" :
                     op == CFG_BACKUP_RESTORE ? "Restore" :
+                    op == CFG_BACKUP_RESTORE_NOHISTORY ? 
+                    "Restore w/o history" :
                     op == CFG_BACKUP_RELEASE ? "Release" :
                     op == CFG_BACKUP_VERIFY ? "Verify" : "unknown",
                     op == CFG_BACKUP_CREATE ? "" :

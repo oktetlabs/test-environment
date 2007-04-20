@@ -852,13 +852,18 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
     s = xmlGetProp(node, CONST_CHAR2XML("track_conf"));
     if (s != NULL)
     {
-        if (xmlStrcmp(s, CONST_CHAR2XML("yes")) == 0)
+        if (xmlStrcmp(s, CONST_CHAR2XML("yes")) == 0 || 
+            xmlStrcmp(s, CONST_CHAR2XML("barf")) == 0)
             attrs->track_conf = TESTER_TRACK_CONF_YES;
+        if (xmlStrcmp(s, CONST_CHAR2XML("barf_nohistory")) == 0 || 
+            xmlStrcmp(s, CONST_CHAR2XML("yes_nohistory")) == 0)
+            attrs->track_conf = TESTER_TRACK_CONF_YES_NOHISTORY;
         else if (xmlStrcmp(s, CONST_CHAR2XML("no")) == 0)
             attrs->track_conf = TESTER_TRACK_CONF_NO;
         else if (xmlStrcmp(s, CONST_CHAR2XML("silent")) == 0)
             attrs->track_conf = TESTER_TRACK_CONF_SILENT;
-        else if (xmlStrcmp(s, CONST_CHAR2XML("nohistory")) == 0)
+        else if (xmlStrcmp(s, CONST_CHAR2XML("nohistory")) == 0 || 
+                 xmlStrcmp(s, CONST_CHAR2XML("silent_nohistory")) == 0)
             attrs->track_conf = TESTER_TRACK_CONF_NOHISTORY;
         else
         {

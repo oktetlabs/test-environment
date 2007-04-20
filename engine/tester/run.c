@@ -1227,13 +1227,15 @@ run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
         rc = cfg_verify_backup(ctx->backup);
         if (TE_RC_GET_ERROR(rc) == TE_EBACKUP)
         {
-            if (track_conf == TESTER_TRACK_CONF_YES)
+            if (track_conf == TESTER_TRACK_CONF_YES ||
+                track_conf == TESTER_TRACK_CONF_YES_NOHISTORY)
             {
                 /* If backup is not OK, restore it */
                 WARN("Current configuration differs from backup - "
                      "restore");
             }
-            rc = (track_conf == TESTER_TRACK_CONF_NOHISTORY ? 
+            rc = (track_conf == TESTER_TRACK_CONF_NOHISTORY || 
+                  track_conf == TESTER_TRACK_CONF_YES_NOHISTORY ? 
                   cfg_restore_backup_nohistory(ctx->backup) :
                   cfg_restore_backup(ctx->backup));
             if (rc != 0)
@@ -1241,7 +1243,8 @@ run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
                 ERROR("Cannot restore configuration backup: %r", rc);
                 ctx->current_result.status = TESTER_TEST_ERROR;
             }
-            else if (track_conf == TESTER_TRACK_CONF_YES)
+            else if (track_conf == TESTER_TRACK_CONF_YES || 
+                     track_conf == TESTER_TRACK_CONF_YES_NOHISTORY)
             {
                 RING("Configuration successfully restored using backup");
                 if (ctx->current_result.status < TESTER_TEST_DIRTY)
