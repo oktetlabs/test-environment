@@ -876,78 +876,62 @@ TARPC_FUNC(write, {},
 
 /*-------------- readbuf() ------------------------------*/
 
-bool_t
-_readbuf_1_svc(tarpc_readbuf_in *in, tarpc_readbuf_out *out,
-                  struct svc_req *rqstp)
+TARPC_FUNC(readbuf, {},
 {
+    MAKE_CALL(out->retval = func(in->fd, in->buf, in->off, in->len));
+}
+)
 
-    UNUSED(rqstp);
-    memset(out, 0, sizeof(*out));
-
-    errno = 0;
-    if ((out->retval = read(in->fd, rcf_pch_mem_get(in->buf), in->len)) < 0)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, errno);
-    }
-    return TRUE;
+ssize_t
+readbuf(int fd, rpc_ptr buf_base, size_t buf_offset, size_t count)
+{
+    return read(fd, rcf_pch_mem_get(buf_base) + buf_offset, count);
 }
 
 /*-------------- recvbuf() ------------------------------*/
 
-bool_t
-_recvbuf_1_svc(tarpc_recvbuf_in *in, tarpc_recvbuf_out *out,
-                  struct svc_req *rqstp)
+TARPC_FUNC(recvbuf, {},
 {
-
-    UNUSED(rqstp);
-    memset(out, 0, sizeof(*out));
-
-    errno = 0;
-    if ((out->retval = recv(in->fd, rcf_pch_mem_get(in->buf), in->len, 
-                            in->flags)) < 0)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, errno);
-    }
-    return TRUE;
+    MAKE_CALL(out->retval = func(in->fd, in->buf, in->off, 
+                                 in->len, in->flags));
 }
+)
 
+ssize_t
+recvbuf(int fd, rpc_ptr buf_base, size_t buf_offset, 
+        size_t count, int flags)
+{
+    return recv(fd, rcf_pch_mem_get(buf_base) + buf_offset, count, flags);
+}
 
 /*-------------- writebuf() ------------------------------*/
 
-bool_t
-_writebuf_1_svc(tarpc_writebuf_in *in, tarpc_writebuf_out *out,
-                struct svc_req *rqstp)
+TARPC_FUNC(writebuf, {},
 {
+    MAKE_CALL(out->retval = func(in->fd, in->buf, in->off, in->len));
+}
+)
 
-    UNUSED(rqstp);
-    memset(out, 0, sizeof(*out));
-
-    errno = 0;
-    if ((out->retval = 
-         write(in->fd, rcf_pch_mem_get(in->buf), in->len)) < 0)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, errno);
-    }
-    return TRUE;
+ssize_t
+writebuf(int fd, rpc_ptr buf_base, size_t buf_offset, size_t count)
+{
+    return write(fd, rcf_pch_mem_get(buf_base) + buf_offset, count);
 }
 
 /*-------------- sendbuf() ------------------------------*/
 
-bool_t
-_sendbuf_1_svc(tarpc_sendbuf_in *in, tarpc_sendbuf_out *out,
-                struct svc_req *rqstp)
+TARPC_FUNC(sendbuf, {},
 {
+    MAKE_CALL(out->retval = func(in->fd, in->buf, in->off,
+                                 in->len, in->flags));
+}
+)
 
-    UNUSED(rqstp);
-    memset(out, 0, sizeof(*out));
-
-    errno = 0;
-    if ((out->retval = 
-         send(in->fd, rcf_pch_mem_get(in->buf), in->len, in->flags)) < 0)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, errno);
-    }
-    return TRUE;
+ssize_t
+sendbuf(int fd, rpc_ptr buf_base, size_t buf_offset, 
+        size_t count, int flags)
+{
+    return send(fd, rcf_pch_mem_get(buf_base) + buf_offset, count, flags);
 }
 
 
@@ -3474,6 +3458,8 @@ TARPC_FUNC(uname, {},
 { 
     struct utsname uts;
     
+    UNUSED(in);
+
     MAKE_CALL(out->retval = func_ptr(&uts));
 /* inequality because Solaris' uname() returns 
  * "non-negative value" in case of success 
@@ -5294,86 +5280,88 @@ TARPC_FUNC(memalign, {},
 )
 
 /*-------------------------- Fill buffer ----------------------------*/
-bool_t
-_set_buf_1_svc(tarpc_set_buf_in *in, tarpc_set_buf_out *out,
-               struct svc_req *rqstp)
+TARPC_FUNC(set_buf, {},
 {
-    uint8_t *dst_buf;
+    MAKE_CALL(func_ptr(in->src_buf.src_buf_val, in->dst_buf, in->dst_off, 
+                       in->src_buf.src_buf_len));
+}
+)
+
+void 
+set_buf(const char *src_buf, 
+        tarpc_ptr dst_buf_base, size_t dst_offset, size_t len)
+{
+    char *dst_buf = rcf_pch_mem_get(dst_buf_base);
     
-    UNUSED(rqstp);
-    UNUSED(out);
-    
-    dst_buf = rcf_pch_mem_get(in->dst_buf);
-    if (dst_buf != NULL && in->src_buf.src_buf_len != 0)
-    {
-        memcpy(dst_buf + (unsigned int)in->offset,
-               in->src_buf.src_buf_val, in->src_buf.src_buf_len);
-    }
-    
-    return TRUE;
+    if (dst_buf != NULL && len != 0)
+        memcpy(dst_buf + dst_offset, src_buf, len);
+    else if (len != 0)
+        errno = EFAULT;
 }
 
 /*-------------------------- Read buffer ----------------------------*/
-bool_t
-_get_buf_1_svc(tarpc_get_buf_in *in, tarpc_get_buf_out *out,
-               struct svc_req *rqstp)
+TARPC_FUNC(get_buf, {},
 {
-    void *src_buf; 
-    
-    UNUSED(rqstp);
+    out->dst_buf.dst_buf_len = in->len;
+    MAKE_CALL(func(in->src_buf, in->src_off, 
+                   &out->dst_buf.dst_buf_val, 
+                   &out->dst_buf.dst_buf_len));
+}
+)
 
-    src_buf = rcf_pch_mem_get(in->src_buf);
-    if (src_buf != NULL && in->len != 0)
+void
+get_buf(tarpc_ptr src_buf_base, size_t src_offset, 
+        char **dst_buf, size_t *len)
+{
+    char *src_buf = rcf_pch_mem_get(src_buf_base); 
+
+    if (src_buf != NULL && *len != 0)
     {
-        char *buf;
+        char *buf = malloc(*len);
 
-        buf = malloc(in->len);
         if (buf == NULL)
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        else
         {
-            memcpy(buf, src_buf + (unsigned int)in->offset, in->len);
-            out->dst_buf.dst_buf_val = buf;
-            out->dst_buf.dst_buf_len = in->len;
+            len = 0;
+            errno = ENOMEM;
         }
+        else
+            memcpy(dst_buf, src_buf + src_offset, *len);
     }
-    else
+    else if (*len != 0)
     {
-        out->dst_buf.dst_buf_val = NULL;
-        out->dst_buf.dst_buf_len = 0;
+        errno = EFAULT;
+        len = 0;
     }
-    
-    return TRUE;
 }
 
 /*---------------------- Fill buffer by the pattern ----------------------*/
-bool_t
-_set_buf_pattern_1_svc(tarpc_set_buf_pattern_in *in, 
-                       tarpc_set_buf_pattern_out *out,
-                       struct svc_req *rqstp)
+TARPC_FUNC(set_buf_pattern, {},
 {
-    uint8_t *dst_buf;
+    MAKE_CALL(func(in->pattern, in->dst_buf, in->dst_off, in->len));
+}
+)
+
+void
+set_buf_pattern(int pattern,
+                tarpc_ptr dst_buf_base, size_t dst_offset, size_t len)
+{
+    char *dst_buf = rcf_pch_mem_get(dst_buf_base);
     
-    UNUSED(rqstp);
-    UNUSED(out);
-    
-    dst_buf = rcf_pch_mem_get(in->dst_buf) + (unsigned int)in->offset;
-    if (dst_buf != NULL)
+    if (dst_buf != NULL && len != 0)
     {
-        if (in->pattern < TAPI_RPC_BUF_RAND)
-        {
-            memset(dst_buf, in->pattern, in->len);
-        }
+        if (pattern < TAPI_RPC_BUF_RAND)
+            memset(dst_buf + dst_offset, pattern, len);
         else
         {
             unsigned int i;
-            
-            for (i = 0; i < in->len; i++)
+
+            for (i = 0; i < len; i++)
                 dst_buf[i] = rand() % TAPI_RPC_BUF_RAND;
         }
     }
-    
-    return TRUE;
+    else if (len != 0)
+        errno = EFAULT;
+
 }
 
 /*-------------- setrlimit() ------------------------------*/

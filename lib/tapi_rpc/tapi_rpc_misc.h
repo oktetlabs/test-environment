@@ -358,10 +358,22 @@ extern void rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start);
  * @param src_buf  pointer to the source buffer
  * @param len      length of data to be copied
  * @param dst_buf  pointer to the destination buffer
- * @param offset   displacement in the destination buffer
+ * @param dst_off   displacement in the destination buffer
  */
-extern void rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
-                        size_t len, rpc_ptr dst_buf, size_t offset);
+extern void rpc_set_buf_gen(rcf_rpc_server *rpcs, const uint8_t *src_buf,
+                            size_t len, rpc_ptr dst_buf, size_t dst_off);
+static inline void
+rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
+            size_t len, rpc_ptr dst_buf)
+{
+    rpc_set_buf_gen(rpcs, src_buf, len, dst_buf, 0);
+}
+static inline void
+rpc_set_buf_off(rcf_rpc_server *rpcs, const uint8_t *src_buf,
+                size_t len, rpc_ptr_off *dst_buf)
+{
+    rpc_set_buf_gen(rpcs, src_buf, len, dst_buf->base, dst_buf->offset);
+}
 
 /**
  * Fill @b dst_buf located in TA address space by specified pattern
@@ -374,9 +386,22 @@ extern void rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
  * @param dst_buf  pointer to the destination buffer
  * @param offset   displacement in the destination buffer
  */
-extern void rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
-                                size_t len, rpc_ptr dst_buf, 
-                                rpc_ptr offset);
+extern void rpc_set_buf_pattern_gen(rcf_rpc_server *rpcs, int pattern,
+                                    size_t len, 
+                                    rpc_ptr dst_buf, size_t dst_off);
+static inline void
+rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
+            size_t len, rpc_ptr dst_buf)
+{
+    rpc_set_buf_pattern_gen(rpcs, pattern, len, dst_buf, 0);
+}
+static inline void
+rpc_set_buf_pattern_off(rcf_rpc_server *rpcs, int pattern,
+                        size_t len, rpc_ptr_off *dst_buf)
+{
+    rpc_set_buf_pattern_gen(rpcs, pattern, len, 
+                            dst_buf->base, dst_buf->offset);
+}
 
 /**
  * Copy the @b src_buf buffer located in TA address space to the 
@@ -388,8 +413,21 @@ extern void rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
  * @param len      length of data to be copied
  * @param dst_buf  destination buffer
  */
-extern void rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
-                        rpc_ptr offset, size_t len, uint8_t *dst_buf);
+extern void rpc_get_buf_gen(rcf_rpc_server *rpcs, 
+                            rpc_ptr src_buf, size_t src_off,
+                            size_t len, uint8_t *dst_buf);
+static inline void
+rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
+            size_t len, uint8_t *dst_buf)
+{
+    rpc_get_buf_gen(rpcs, src_buf, 0, len, dst_buf);
+}
+static inline void
+rpc_get_buf_off(rcf_rpc_server *rpcs, rpc_ptr_off *src_buf,
+                size_t len, uint8_t *dst_buf)
+{
+    rpc_get_buf_gen(rpcs, src_buf->base, src_buf->offset, len, dst_buf);
+}
 
 
 /**
@@ -504,7 +542,7 @@ extern int rpc_sysinfo(rcf_rpc_server *rpcs,
  * @note See memcmp(3)
  */
 extern int rpc_memcmp(rcf_rpc_server *rpcs, 
-                      rpc_ptr s1, rpc_ptr s2, size_t n);
+                      rpc_ptr_off *s1, rpc_ptr_off *s2, size_t n);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -394,8 +394,8 @@ rpc_recv_gen(rcf_rpc_server *rpcs,
 }
 
 tarpc_ssize_t
-rpc_recvbuf(rcf_rpc_server *rpcs, int fd, rpc_ptr buf, size_t count, 
-            rpc_send_recv_flags flags)
+rpc_recvbuf_gen(rcf_rpc_server *rpcs, int fd, rpc_ptr buf, size_t buf_off,
+                size_t count, rpc_send_recv_flags flags)
 {
     rcf_rpc_op      op;
     tarpc_recvbuf_in  in;
@@ -415,14 +415,16 @@ rpc_recvbuf(rcf_rpc_server *rpcs, int fd, rpc_ptr buf, size_t count,
     in.fd  = fd;
     in.len = count;
     in.buf = buf;
+    in.off = buf_off;
 
     rcf_rpc_call(rpcs, "recvbuf", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(readbuf, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: recvbuf(%d, %u, %u, %s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: recvbuf(%d, %u (off %u), %u, %s) "
+                 "-> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, buf, count, send_recv_flags_rpc2str(flags),
+                 fd, buf, buf_off, count, send_recv_flags_rpc2str(flags),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(recvbuf, out.retval);
@@ -547,8 +549,8 @@ rpc_send(rcf_rpc_server *rpcs,
 }
 
 ssize_t
-rpc_sendbuf(rcf_rpc_server *rpcs, int s, rpc_ptr buf, size_t len,
-            rpc_send_recv_flags flags)
+rpc_sendbuf_gen(rcf_rpc_server *rpcs, int s, rpc_ptr buf, size_t buf_off,
+                size_t len, rpc_send_recv_flags flags)
 {
     rcf_rpc_op     op;
     tarpc_sendbuf_in  in;
@@ -568,15 +570,17 @@ rpc_sendbuf(rcf_rpc_server *rpcs, int s, rpc_ptr buf, size_t len,
     in.fd = s;
     in.len = len;
     in.buf = buf;
+    in.off = buf_off;
     in.flags = flags;
 
     rcf_rpc_call(rpcs, "sendbuf", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(send, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: sendbuf(%d, %u, %u, %s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: sendbuf(%d, %u (off %u), %u, %s) "
+                 "-> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, buf, len, send_recv_flags_rpc2str(flags),
+                 s, buf, buf_off, len, send_recv_flags_rpc2str(flags),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(sendbuf, out.retval);

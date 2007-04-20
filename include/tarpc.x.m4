@@ -55,9 +55,9 @@ typedef int32_t     tarpc_ssize_t;
 /** RPC socklen_t analog */
 typedef uint32_t    tarpc_socklen_t;
 /** Handle of the 'sigset_t' or 0 */
-typedef tarpc_ptr   tarpc_sigset_t;
+typedef tarpc_ptr    tarpc_sigset_t;
 /** Handle of the 'fd_set' or 0 */
-typedef tarpc_ptr   tarpc_fd_set;
+typedef tarpc_ptr    tarpc_fd_set;
 /** RPC off_t analog */
 typedef int64_t     tarpc_off_t;
 /** RPC rlim_t analog */
@@ -68,6 +68,8 @@ typedef int64_t     tarpc_time_t;
 typedef int64_t     tarpc_suseconds_t;
 /** Pointer to 'struct aiocb' */
 typedef tarpc_ptr   tarpc_aiocb_t;
+/** RPC pthread_t analogue */
+typedef tarpc_ptr   tarpc_pthread_t;
 
 /** Handle of the 'WSAEvent' or 0 */
 typedef tarpc_ptr   tarpc_wsaevent;
@@ -93,7 +95,7 @@ typedef uint32_t tarpc_ethtool_command;
 struct tarpc_in_arg {
     tarpc_op        op;         /**< RPC operation */
     uint64_t        start;
-    tarpc_ptr       tid;        /**< Thread identifier (for checking and 
+    tarpc_pthread_t tid;        /**< Thread identifier (for checking and 
                                      waiting) */
     tarpc_ptr       done;       /**< Pointer to the boolean variable in
                                      TA context to be set when function
@@ -116,7 +118,7 @@ struct tarpc_out_arg {
 
     uint32_t    duration;   /**< Duration of the called routine
                                  execution (in microseconds) */
-    tarpc_ptr   tid;        /**< Identifier of the thread which 
+    tarpc_pthread_t tid;    /**< Identifier of the thread which 
                                  performs possibly blocking operation,
                                  but caller does not want to block.
                                  It should be passed as input when
@@ -633,6 +635,7 @@ struct tarpc_readbuf_in {
 
     tarpc_int       fd;
     tarpc_ptr       buf;
+    tarpc_size_t    off;
     tarpc_size_t    len;
 };
 
@@ -689,6 +692,7 @@ struct tarpc_sendbuf_in {
 
     tarpc_int       fd;
     tarpc_ptr       buf;
+    tarpc_size_t    off;
     tarpc_size_t    len;
     tarpc_int       flags;
 };
@@ -722,6 +726,7 @@ struct tarpc_recvbuf_in {
 
     tarpc_int       fd;
     tarpc_ptr       buf;
+    tarpc_size_t    off;
     tarpc_size_t    len;
     tarpc_int       flags;
 };
@@ -1469,7 +1474,7 @@ struct tarpc_set_buf_in {
     struct tarpc_in_arg  common;
     char                 src_buf<>;
     tarpc_ptr            dst_buf;
-    tarpc_ptr            offset; 
+    tarpc_size_t         dst_off;
 };
 
 struct tarpc_set_buf_out {
@@ -1480,7 +1485,7 @@ struct tarpc_set_buf_out {
 struct tarpc_get_buf_in {
     struct tarpc_in_arg  common;
     tarpc_ptr            src_buf;  /**< A pointer in the TA address space */
-    tarpc_ptr            offset;   /**< A displacement in source buffer */
+    tarpc_size_t         src_off;  /**< Offset from the buffer */
     tarpc_size_t         len;      /**< How much to get */
 };
 
@@ -1493,7 +1498,7 @@ struct tarpc_get_buf_out {
 struct tarpc_set_buf_pattern_in {
     struct tarpc_in_arg  common;
     tarpc_ptr            dst_buf;
-    tarpc_ptr            offset; 
+    tarpc_size_t         dst_off;
     tarpc_int            pattern;
     tarpc_size_t         len;      
 };
@@ -1505,8 +1510,11 @@ struct tarpc_set_buf_pattern_out {
 /* memcmp */
 struct tarpc_memcmp_in {
     struct tarpc_in_arg  common;
-    tarpc_ptr       s1;
-    tarpc_ptr       s2;
+
+    tarpc_ptr       s1_base;
+    tarpc_size_t    s1_off;
+    tarpc_ptr       s2_base;
+    tarpc_size_t    s2_off;
     tarpc_size_t    n;
 };
 

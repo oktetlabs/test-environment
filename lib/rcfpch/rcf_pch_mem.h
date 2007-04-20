@@ -68,7 +68,7 @@ extern void rcf_pch_mem_free_mem(void *mem);
  *
  * @return Memory address or NULL
  */
-extern void *rcf_pch_mem_get(rcf_pch_mem_id id);
+extern char *rcf_pch_mem_get(rcf_pch_mem_id id);
 
 /**
  * Find memory identifier by memory address.

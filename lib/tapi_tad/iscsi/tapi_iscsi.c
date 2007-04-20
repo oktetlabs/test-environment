@@ -2609,7 +2609,7 @@ struct iscsi_io_handle_t
                                      device, as opposed to raw access */
     size_t          chunksize;  /**< Chunk size for file copying */
     size_t          bufsize;    /**< Current buffer size */
-    tarpc_ptr       buffer;     /**< Aligned buffer */
+    rpc_ptr         buffer;     /**< Aligned buffer */
     iscsi_io_cmd_t  cmds[MAX_ISCSI_IO_CMDS]; /**< Buffer for requests */
     sem_t           cmd_wait;   /**< Posted when a new request is added */
     int             next_cmd;   /**< Next request number */
@@ -2919,7 +2919,7 @@ command_read(iscsi_io_handle_t *ioh, int *fd,
               (result_len != length ? TE_RC(TE_TAPI, TE_EIO) : 0));
     if (status == 0)
     {
-        rpc_get_buf(ioh->rpcs, ioh->buffer, 0, length, data);
+        rpc_get_buf(ioh->rpcs, ioh->buffer, length, data);
     }
     
     return status;
@@ -2935,7 +2935,7 @@ command_write(iscsi_io_handle_t *ioh, int *fd,
         return RPC_ERRNO(ioh->rpcs);
     
     RING("Doing RPC write");
-    rpc_set_buf(ioh->rpcs, data, length, ioh->buffer, 0);
+    rpc_set_buf(ioh->rpcs, data, length, ioh->buffer);
     ioh->rpcs->timeout = 120000;
     result_len = rpc_write(ioh->rpcs, *fd, data, length);
     return (result_len < 0 ?

@@ -378,8 +378,8 @@ rpc_write(rcf_rpc_server *rpcs,
 }
 
 tarpc_ssize_t
-rpc_readbuf(rcf_rpc_server *rpcs,
-            int fd, rpc_ptr buf, size_t count)
+rpc_readbuf_gen(rcf_rpc_server *rpcs,
+                int fd, rpc_ptr buf, size_t buf_off, size_t count)
 {
     rcf_rpc_op      op;
     tarpc_readbuf_in  in;
@@ -399,14 +399,15 @@ rpc_readbuf(rcf_rpc_server *rpcs,
     in.fd  = fd;
     in.len = count;
     in.buf = buf;
+    in.off = buf_off;
 
     rcf_rpc_call(rpcs, "readbuf", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(readbuf, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: readbuf(%d, %u, %u) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: readbuf(%d, %u (off %u), %u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, buf, count,
+                 fd, buf, buf_off, count,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(readbuf, out.retval);
@@ -414,8 +415,8 @@ rpc_readbuf(rcf_rpc_server *rpcs,
 
 
 tarpc_ssize_t
-rpc_writebuf(rcf_rpc_server *rpcs,
-             int fd, rpc_ptr buf, size_t count)
+rpc_writebuf_gen(rcf_rpc_server *rpcs,
+                 int fd, rpc_ptr buf, size_t buf_off, size_t count)
 {
     rcf_rpc_op      op;
     tarpc_writebuf_in  in;
@@ -435,14 +436,15 @@ rpc_writebuf(rcf_rpc_server *rpcs,
     in.fd  = fd;
     in.len = count;
     in.buf = buf;
+    in.off = buf_off;
 
     rcf_rpc_call(rpcs, "writebuf", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(writebuf, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: writebuf(%d, %u, %u) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: writebuf(%d, %u (off %u), %u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, buf, count,
+                 fd, buf, buf_off, count,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(writebuf, out.retval);

@@ -154,7 +154,7 @@ rcf_pch_mem_free_mem(void *mem)
  *
  * @return Memory address or NULL
  */
-void *
+char *
 rcf_pch_mem_get(rcf_pch_mem_id id)
 {
     void *m = NULL;

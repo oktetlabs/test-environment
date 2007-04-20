@@ -44,8 +44,18 @@
 typedef uint32_t rpc_ptr;
 typedef rpc_ptr rpc_fd_set_p;
 typedef rpc_ptr rpc_sigset_p;
-typedef rpc_ptr rpc_aiocb_p;
+typedef rpc_ptr  rpc_aiocb_p;
 
+/** Pointer to the memory area */
+typedef struct rpc_ptr_off {
+    rpc_ptr     base;   /**< Handle of the base address */
+    uint32_t    offset; /**< Offset from the base */
+} rpc_ptr_off;
+
+#define RPC_PTR_OFF_IS_VALID(ptr_) ((ptr_).base == RPC_NULL)
+#define RPC_PTR_OFF_INC(ptr_, off_) ((ptr_).off += (off_))
+#define RPC_PTR_OFF_DEC(ptr_, off_) ((ptr_).off -= (off_))
+#define RPC_PTR_OFF_GET_OFFSET(ptr_) ((ptr_).off)
 
 #ifndef WINDOWS
 

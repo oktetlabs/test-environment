@@ -42,6 +42,8 @@
 
 #include "tarpc.h"
 
+#include "tapi_jmp.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -158,9 +160,20 @@ extern int rpc_write(rcf_rpc_server *rpcs,
  *
  * @return  Number of bytes actually written, otherwise -1 on failure
  */
-extern tarpc_ssize_t rpc_writebuf(rcf_rpc_server *rpcs,
-                                  int fd, rpc_ptr buf, size_t count);
-
+extern tarpc_ssize_t rpc_writebuf_gen(rcf_rpc_server *rpcs, int fd,
+                                      rpc_ptr buf, size_t buf_off,
+                                      size_t count);
+static inline tarpc_ssize_t
+rpc_writebuf(rcf_rpc_server *rpcs, int fd, rpc_ptr buf, size_t count)
+{
+    return rpc_writebuf_gen(rpcs, fd, buf, 0, count);
+}
+static inline tarpc_ssize_t
+rpc_writebuf_off(rcf_rpc_server *rpcs, int fd, 
+                 rpc_ptr_off *buf, size_t count)
+{
+    return rpc_writebuf_gen(rpcs, fd, buf->base, buf->offset, count);
+}
 
 /**
  * This generic routine attemps to read up to @b count bytes from file 
@@ -220,8 +233,20 @@ rpc_read(rcf_rpc_server *rpcs,
  *
  * @return  number of bytes read, otherwise -1 on error.
  */
-extern tarpc_ssize_t rpc_readbuf(rcf_rpc_server *rpcs,
-                                 int fd, rpc_ptr buf, size_t count);
+extern tarpc_ssize_t rpc_readbuf_gen(rcf_rpc_server *rpcs, int fd,
+                                     rpc_ptr buf, size_t buf_off,
+                                     size_t count);
+static inline tarpc_ssize_t
+rpc_readbuf(rcf_rpc_server *rpcs, int fd, rpc_ptr buf, size_t count)
+{
+    return rpc_readbuf_gen(rpcs, fd, buf, 0, count);
+}
+static inline tarpc_ssize_t
+rpc_readbuf_off(rcf_rpc_server *rpcs, int fd, rpc_ptr_off *buf, 
+                size_t count)
+{
+    return rpc_readbuf_gen(rpcs, fd, buf->base, buf->offset, count);
+}
 
 /**
  * RPC equivalent of 'lseek'
@@ -719,10 +744,9 @@ extern int rpc_seteuid(rcf_rpc_server *rpcs, tarpc_uid_t uid);
  * @param rpcs    RPC server handle
  * @param size    size of the buffer to be allocated
  *
- * @return   Allocated buffer identifier or RPC_NULL
+ * @return  Allocated buffer identifier or RPC_NULL.
  */
-extern rpc_ptr rpc_malloc(rcf_rpc_server *rpcs,
-                          size_t size);
+extern rpc_ptr rpc_malloc(rcf_rpc_server *rpcs, size_t size);
 
 /**
  * Free the specified buffer in TA address space.
@@ -730,9 +754,52 @@ extern rpc_ptr rpc_malloc(rcf_rpc_server *rpcs,
  * @param rpcs   RPC server handle
  * @param buf    identifier of the buffer to be freed
  */
-extern void rpc_free(rcf_rpc_server *rpcs,
-                     rpc_ptr buf);
+extern void rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf);
 
+
+/**
+ * Allocate a buffer of specified size in the TA address space.
+ *
+ * @param rpcs    RPC server handle
+ * @param size    size of the buffer to be allocated
+ *
+ * @return  Allocated buffer identifier with offset. 
+ *          It should be validated by RPC_PTR_OFF_IS_VALID()
+ */
+static inline te_bool
+rpc_malloc_off(rcf_rpc_server *rpcs, size_t size, rpc_ptr_off **buf)
+{
+    rpc_ptr_off *ret = calloc(sizeof(rpc_ptr_off), 1);
+
+    ret->base = rpc_malloc(rpcs, size);
+    if (ret->base == RPC_NULL)
+        return FALSE;
+    ret->offset = 0;
+    *buf = ret;
+    return TRUE;
+}
+
+/**
+ * Free the specified buffer in TA address space.
+ *
+ * @param rpcs   RPC server handle
+ * @param buf    Identifier of the buffer to be freed with offset. Offset
+ *               should be zero.
+ */
+static inline void 
+rpc_free_off(rcf_rpc_server *rpcs, rpc_ptr_off *buf)
+{
+    if (buf->offset != 0)
+    {
+        ERROR("Attempt to free buffer %u with non-zero offset %u on %s", 
+              buf->base, buf->offset, rpcs->ta);
+        rpcs->iut_err_jump = TRUE;
+        TAPI_JMP_DO(TE_EFAIL);
+        return;
+    }
+    rpc_free(rpcs, buf->base);
+    free(buf);
+}
 
 /**
  * Allocate a buffer of specified size in the TA address space

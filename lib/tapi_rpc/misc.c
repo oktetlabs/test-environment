@@ -950,8 +950,8 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
  * Copy the data from src_buf to the dst_buf buffer located at TA.
  */
 void
-rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
-            size_t len, rpc_ptr dst_buf, size_t offset)
+rpc_set_buf_gen(rcf_rpc_server *rpcs, const uint8_t *src_buf,
+            size_t len, rpc_ptr dst_buf, size_t dst_off)
 {
     tarpc_set_buf_in  in;
     tarpc_set_buf_out out;
@@ -973,13 +973,14 @@ rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
     else
         in.src_buf.src_buf_len = 0;
 
-    in.dst_buf = (tarpc_ptr)dst_buf;
-    in.offset = (tarpc_ptr)offset;
+    in.dst_buf = dst_buf;
+    in.dst_off = dst_off;
 
     rcf_rpc_call(rpcs, "set_buf", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): set_buf() -> (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): set_buf(%p, %u, %u (off %u)) -> (%s)",
                  rpcs->ta, rpcs->name,
+                 src_buf, len, dst_buf, dst_off,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(set_buf);
@@ -989,8 +990,8 @@ rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
  * Copy the data from the src_buf buffer located at TA to dst_buf buffer.
  */
 void
-rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
-            rpc_ptr offset, size_t len, uint8_t *dst_buf)
+rpc_get_buf_gen(rcf_rpc_server *rpcs, rpc_ptr src_buf, size_t src_off,
+            size_t len, uint8_t *dst_buf)
 {
     tarpc_get_buf_in  in;
     tarpc_get_buf_out out;
@@ -1006,14 +1007,15 @@ rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    in.src_buf = (tarpc_ptr)src_buf;
-    in.offset = (tarpc_ptr)offset;
+    in.src_buf = src_buf;
+    in.src_off = src_off;
     in.len = len;
 
     rcf_rpc_call(rpcs, "get_buf", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): get_buf() -> (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): get_buf(%p, %u, %u (off %u)) -> (%s)",
                  rpcs->ta, rpcs->name,
+                 src_buf, len, src_buf, src_off,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     if ((out.dst_buf.dst_buf_len != 0) && (out.dst_buf.dst_buf_val != NULL))
@@ -1026,8 +1028,8 @@ rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
  * Fill buffer by the pattern
  */
 void
-rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
-                    size_t len, rpc_ptr dst_buf, rpc_ptr offset)
+rpc_set_buf_pattern_gen(rcf_rpc_server *rpcs, int pattern,
+                        size_t len, rpc_ptr dst_buf, size_t dst_off)
 {
     tarpc_set_buf_pattern_in  in;
     tarpc_set_buf_pattern_out out;
@@ -1043,22 +1045,24 @@ rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    in.dst_buf = (tarpc_ptr)dst_buf;
-    in.offset = (tarpc_ptr)offset;
+    in.dst_buf = dst_buf;
+    in.dst_off = dst_off;
     in.pattern = pattern;
     in.len = len;
 
     rcf_rpc_call(rpcs, "set_buf_pattern", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): set_buf_pattern() -> (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): set_buf_pattern(0x%x, %u, %u (off %u)) "
+                 "-> (%s)",
                  rpcs->ta, rpcs->name,
+                 pattern, len, dst_buf, dst_off,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(set_buf_pattern);
 }
 
 int
-rpc_memcmp(rcf_rpc_server *rpcs, rpc_ptr s1, rpc_ptr s2, size_t n)
+rpc_memcmp(rcf_rpc_server *rpcs, rpc_ptr_off *s1, rpc_ptr_off *s2, size_t n)
 {
     tarpc_memcmp_in  in;
     tarpc_memcmp_out out;
@@ -1073,15 +1077,18 @@ rpc_memcmp(rcf_rpc_server *rpcs, rpc_ptr s1, rpc_ptr s2, size_t n)
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
-    in.s1 = s1;
-    in.s2 = s2;
+    in.s1_base = s1->base;
+    in.s1_off = s1->offset;
+    in.s2_base = s2->base;
+    in.s2_off = s2->offset;
     in.n = n;
 
     rcf_rpc_call(rpcs, "memcmp", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: memcmp(%u, %u, %u) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: memcmp(%u (off %u), %u (off %u), %u) i"
+                 "-> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(rpcs->op),
-                 s1, s2, n, out.retval,
+                 s1->base, s1->offset, s2->base, s2->offset, n, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     return (int)out.retval;

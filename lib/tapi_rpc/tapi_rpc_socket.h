@@ -356,11 +356,8 @@ extern ssize_t rpc_sendmsg(rcf_rpc_server *rpcs,
  * @param s         socket descriptor
  * @param msg       pointer to a @b rpc_msghdr structure that hold the
  *                  received message 
- * @param flags     bitwise OR of zero or more of the following flags:
- *                   - RPC_MSG_OOB send out-of-band data if supported.
- *                   - RPC_MSG_DONTWAIT enable non-blocking operation.
- *                   Other supported flags can be found in 
- *                   te_rpc_sys_socket.h
+ * @param flags     bitwise OR of zero or more of the flags; 
+ *                  see @b rpc_recv for more information
  *
  * @return Length of received data, otherwise -1 when an error occured.
  */
@@ -373,22 +370,32 @@ extern ssize_t rpc_recvmsg(rcf_rpc_server *rpcs,
  * This operation takes place on RPC server side and buffer is stored on
  * the same side.
  *
- * @param rpcs  RPC server handle
- * @param s     socket descriptor
- * @param buf   RPC pointer to buffer containing the message to be sent
- * @param len   length of the message in bytes
- * @param flags bitwise OR of zero or more of the following flags:
- *               - MSG_OOB send out-of-band data if supported.
- *               - MSG_DONTWAIT enable non-blocking operation.
- *               See @b send() manual page for more information about all 
- *               supported flags.
+ * @param rpcs      RPC server handle
+ * @param s         socket descriptor
+ * @param buf       RPC pointer to buffer containing the message to be sent
+ * @param buf_off   offset in the buffer above
+ * @param len       length of the message in bytes
+ * @param flags     bitwise OR of zero or more of the flags; 
+ *                  see @b rpc_send for more information
  *
  * @return number of bytes actually sent, otherwise -1.
  * @note See @b send() manual page for more information
  */
-extern ssize_t rpc_sendbuf(rcf_rpc_server *rpcs, 
-                           int s, rpc_ptr buf, size_t len,
-                           rpc_send_recv_flags flags);
+extern ssize_t rpc_sendbuf_gen(rcf_rpc_server *rpcs, 
+                               int s, rpc_ptr buf, size_t buf_off, 
+                               size_t len, rpc_send_recv_flags flags);
+static inline ssize_t
+rpc_sendbuf(rcf_rpc_server *rpcs, int s, rpc_ptr buf, size_t len, 
+            rpc_send_recv_flags flags)
+{
+    return rpc_sendbuf_gen(rpcs, s, buf, 0, len, flags);
+}
+static inline ssize_t
+rpc_sendbuf_off(rcf_rpc_server *rpcs, int s, rpc_ptr_off *buf, size_t len, 
+                rpc_send_recv_flags flags)
+{
+    return rpc_sendbuf_gen(rpcs, s, buf->base, buf->offset, len, flags);
+}
 
 /**
  * Receive messages and store them in the buffer @b buf of length @b len.
@@ -408,7 +415,7 @@ extern ssize_t rpc_sendbuf(rcf_rpc_server *rpcs,
  * @return Number of bytes received, otherwise -1 when error occured
  */
 extern tarpc_ssize_t rpc_recvbuf(rcf_rpc_server *rpcs, 
-                                 int fd, rpc_ptr buf, size_t count, 
+                                 int fd, rpc_ptr_off *buf, size_t count, 
                                  rpc_send_recv_flags flags);
 
 /**

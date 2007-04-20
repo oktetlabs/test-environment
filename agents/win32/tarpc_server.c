@@ -2325,6 +2325,8 @@ TARPC_FUNC(uname, {},
     char buf[100];
     unsigned int buf_len = 100;
 
+    UNUSED(in);
+
     out->retval = 0;
     GetNativeSystemInfo(&sysinfo);
     if (sysinfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL)
@@ -4242,85 +4244,92 @@ TARPC_FUNC(memalign, {},
 )
 
 
-/**
- * Fill in the buffer.
- */
+/*-------------------------- Fill buffer ----------------------------*/
+void 
+set_buf(const char *src_buf, 
+        tarpc_ptr dst_buf_base, size_t dst_offset, size_t len)
+{
+    char *dst_buf = rcf_pch_mem_get(dst_buf_base);
+    
+    if (dst_buf != NULL && len != 0)
+        memcpy(dst_buf + dst_offset, src_buf, len);
+    else if (len != 0)
+        errno = EFAULT;
+}
+
 TARPC_FUNC(set_buf, {},
 {
-    uint8_t *dst_buf;
-    
-    UNUSED(list);
-    UNUSED(out);
-    
-    dst_buf = rcf_pch_mem_get(in->dst_buf);
-    if (dst_buf != NULL && in->src_buf.src_buf_len != 0)
-    {
-        memcpy(dst_buf + (unsigned int)in->offset,
-               in->src_buf.src_buf_val, in->src_buf.src_buf_len);
-    }
+    MAKE_CALL(set_buf(in->src_buf.src_buf_val, in->dst_buf, in->dst_off, 
+                      in->src_buf.src_buf_len));
 }
 )
 
+/*-------------------------- Read buffer ----------------------------*/
+void
+get_buf(tarpc_ptr src_buf_base, size_t src_offset, 
+        char **dst_buf, size_t *len)
+{
+    char *src_buf = rcf_pch_mem_get(src_buf_base); 
+
+    if (src_buf != NULL && *len != 0)
+    {
+        char *buf = malloc(*len);
+
+        if (buf == NULL)
+        {
+            len = 0;
+            errno = ENOMEM;
+        }
+        else
+            memcpy(dst_buf, src_buf + src_offset, *len);
+    }
+    else if (*len != 0)
+    {
+        errno = EFAULT;
+        len = 0;
+    }
+}
+
 TARPC_FUNC(get_buf, {},
 {
-    uint8_t *src_buf; 
-    
-    UNUSED(list);
-
-    src_buf = rcf_pch_mem_get(in->src_buf);
-    if (src_buf != NULL && in->len != 0)
-    {
-        uint8_t *buf;
-
-        buf = malloc(in->len);
-        if (buf == NULL)
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-        else
-        {
-            memcpy(buf, (char *)src_buf + 
-                   (unsigned int)in->offset, in->len);
-            out->dst_buf.dst_buf_val = buf;
-            out->dst_buf.dst_buf_len = in->len;
-        }
-    }
-    else
-    {
-        out->dst_buf.dst_buf_val = NULL;
-        out->dst_buf.dst_buf_len = 0;
-    }
+    out->dst_buf.dst_buf_len = in->len;
+    MAKE_CALL(get_buf(in->src_buf, in->src_off, 
+              &out->dst_buf.dst_buf_val, 
+              &out->dst_buf.dst_buf_len));
 }
 )
 
 /*---------------------- Fill buffer by the pattern ----------------------*/
-bool_t
-_set_buf_pattern_1_svc(tarpc_set_buf_pattern_in *in, 
-                       tarpc_set_buf_pattern_out *out,
-                       struct svc_req *rqstp)
+void
+set_buf_pattern(int pattern,
+                tarpc_ptr dst_buf_base, size_t dst_offset, size_t len)
 {
-    uint8_t *dst_buf;
+    char *dst_buf = rcf_pch_mem_get(dst_buf_base);
     
-    UNUSED(rqstp);
-    UNUSED(out);
-    
-    dst_buf = (uint8_t *)rcf_pch_mem_get(in->dst_buf) + 
-              (unsigned int)in->offset;
-    if (dst_buf != NULL)
+    if (dst_buf != NULL && len != 0)
     {
-        if (in->pattern < TAPI_RPC_BUF_RAND)
-        {
-            memset(dst_buf, in->pattern, in->len);
-        }
+        if (pattern < TAPI_RPC_BUF_RAND)
+            memset(dst_buf + dst_offset, pattern, len);
         else
         {
             unsigned int i;
-            
-            for (i = 0; i < in->len; i++)
+
+            for (i = 0; i < len; i++)
                 dst_buf[i] = rand() % TAPI_RPC_BUF_RAND;
         }
     }
-    
-    return TRUE;
+    else if (len != 0)
+        errno = EFAULT;
+
 }
+
+TARPC_FUNC(set_buf_pattern, {},
+{
+    MAKE_CALL(set_buf_pattern(in->pattern, in->dst_buf, in->dst_off,
+                              in->len));
+}
+)
+
 
 /**
  * Allocate a single WSABUF structure and a buffer of specified size;
