@@ -819,7 +819,7 @@ asn_retrieve_descendant(asn_value *value, te_errno *status,
         labels_buf[0] = '\0';
     va_end(list);
 
-    value->txt_len = -1;
+    asn_clean_count(value); 
 
     if (rc != 0)
         RETURN_NULL_WITH_ERROR(rc);
@@ -906,6 +906,7 @@ asn_put_child_value(asn_value *container, asn_value *subvalue,
         return TE_EWRONGPTR; 
 
     container->txt_len = -1;
+    asn_clean_count(subvalue); 
 
     rc = asn_child_tag_index(container->asn_type, tag_class, tag_val,
                              &index);
@@ -1926,6 +1927,7 @@ asn_impl_write_component_value(asn_value *container,
         return TE_EASNWRONGLABEL;
 
     container->txt_len = -1;
+    elem_value->txt_len = -1;
 
     switch (container->syntax)
     {
@@ -2328,6 +2330,9 @@ asn_insert_indexed(asn_value *container, asn_value *elem_value,
         return r_c;
 
     container->txt_len = -1;
+    asn_clean_count(elem_value); /* event it was calculated already,
+                                 it not actual, because indent is 
+                                 changed by this insert */
 
     if (strcmp(elem_value->asn_type->name,
                value->asn_type->sp.subtype->name))

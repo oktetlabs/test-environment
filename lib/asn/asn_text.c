@@ -1881,3 +1881,37 @@ asn_parse_dvalue_in_file(const char *filename, const asn_type *type,
 
     return rc;
 }
+
+
+
+te_bool
+asn_clean_count(asn_value *value)
+{
+    te_bool need = FALSE;
+    asn_value *sval;
+
+    unsigned int i;
+
+    if (value == NULL || !(value->syntax & COMPOUND))
+        return FALSE; 
+
+    switch (value->syntax)
+    {
+        case SEQUENCE:
+        case SEQUENCE_OF:
+        case SET:
+        case SET_OF:
+            need = TRUE;
+
+        default:
+            break;
+    }
+    for (i = 0; i < value->len; i++)
+        if ((sval = value->data.array[i]) != NULL)
+            if (asn_clean_count(sval))
+                need = TRUE;
+    if (need) 
+        value->txt_len = -1;
+    return need;
+}
+
