@@ -503,6 +503,7 @@ tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
             rc = asn_get_choice_value(option, &p_opt, &t_cl, &t_val);
             if (rc != 0) continue;
             
+            opt_val = 0;
             switch (t_val)
             {
                 case NDN_TAG_TCP_OPT_EOL:
@@ -526,9 +527,10 @@ tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
                 case NDN_TAG_TCP_OPT_TIMESTAMP:
                     *p = TE_TCP_OPT_TIMESTAMP;
                     *(p+1) = opt_b_len;
-                    asn_read_int32(p_opt, &opt_val, "timestamp.value");
+                    asn_read_int32(p_opt, &opt_val, "value");
                     *((uint32_t *)(p + 2)) = htonl(opt_val);
-                    asn_read_int32(p_opt, &opt_val, "timestamp.echo-reply");
+                    opt_val = 0;
+                    asn_read_int32(p_opt, &opt_val, "echo-reply");
                     *((uint32_t *)(p + 6)) = htonl(opt_val);
                     break;
                 case NDN_TAG_TCP_OPT_SACK_PERM:
