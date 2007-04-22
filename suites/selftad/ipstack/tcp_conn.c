@@ -252,6 +252,15 @@ main(int argc, char *argv[])
                              "pdus.0.#tcp.options.0.#mss.mss.#plain");
         if (rc != 0)
             WARN("write MSS failed %r", rc);
+
+        asn_write_value_field(tcp_template, NULL, 0,
+                             "pdus.0.#tcp.options.1.#nop");
+        asn_write_value_field(tcp_template, NULL, 0,
+                             "pdus.0.#tcp.options.2.#nop");
+        asn_write_int32(tcp_template, 1234567,
+                     "pdus.0.#tcp.options.3.#timestamp.value.#plain");
+        asn_write_int32(tcp_template, 0,
+                     "pdus.0.#tcp.options.3.#timestamp.echo-reply.#plain");
         rc = tapi_tcp_send_template(conn_hand, tcp_template,
                                     RCF_MODE_BLOCKING);
         if (rc != 0)
