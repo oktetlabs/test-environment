@@ -219,6 +219,11 @@ main(int argc, char *argv[])
         uint32_t length = 120;
 
 
+        rc = asn_write_int32(tcp_template, 1400,
+                        "pdus.0.#tcp.options.0.#mss.mss.#plain");
+        if (rc != 0)
+            WARN("write MSS failed %r", rc);
+
         rc = asn_write_int32(tcp_template, seqn, "arg-sets.0.#ints.0");
         if (rc != 0)
             TEST_FAIL("write arg seqn failed %X", rc);
