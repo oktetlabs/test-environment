@@ -413,7 +413,6 @@ extern int tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout);
  */
 extern int tapi_tcp_send_rst(tapi_tcp_handler_t handler);
 
-
 /**
  * Send TCP message via established connection.
  * With seq_mode = TAPI_TCP_AUTO it should be used ONLY for sending
@@ -445,6 +444,23 @@ extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
                              tapi_tcp_pos_t ackn, 
                              tapi_ip_frag_spec *frags,
                              size_t frag_num);
+
+/**
+ * Prepare template for TCP message via established connection.
+ * Fields SEQN and ACKN are filled by default, if user want
+ * to set them explicetly , one can do it via ASN lib API.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ * @param payload       data for message payload;
+ * @param len           length of payload;
+ * @param tmpl          location for new ASN value with 
+ *                      traffic template(OUT);
+ *
+ * @return Status code
+ */
+extern int tapi_tcp_conn_template(tapi_tcp_handler_t handler,
+                                  uint8_t *payload, size_t len,
+                                  asn_value **tmpl);
 
 /**
  * Send explicitely formed traffic template. 

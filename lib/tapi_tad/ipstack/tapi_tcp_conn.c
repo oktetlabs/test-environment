@@ -1116,9 +1116,6 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    if (conn_descr == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL); 
-
     switch (seq_mode)
     {
         case TAPI_TCP_AUTO:
@@ -1427,6 +1424,24 @@ tapi_tcp_update_sent_seq(tapi_tcp_handler_t handler, size_t new_sent_len)
 
 
 
+int
+tapi_tcp_conn_template(tapi_tcp_handler_t handler,
+                       uint8_t *payload, size_t len, asn_value **tmpl)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_pos_t ackn;
+
+    tapi_tcp_conns_db_init();
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    ackn = conn_descr->ack_sent;
+
+    return tapi_tcp_template(conn_next_seq(conn_descr),
+                             ackn, FALSE, (ackn != 0), 
+                             payload, len, tmpl);
+}
 
 
 
