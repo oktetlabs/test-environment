@@ -162,15 +162,70 @@ tad_tcp_get_param_cb(csap_p csap, unsigned int layer, const char *param)
 }
 
 
+static size_t
+tad_tcp_option_len(const asn_value *opt_tmpl)
+{
+    asn_tag_class t_cl;
+    asn_tag_value t_val;
+    te_errno rc;
+    asn_value *opt;
+    int length = 0;
+
+    rc = asn_get_choice_value(opt_tmpl, &opt, &t_cl, &t_val);
+    if (rc != 0)
+    {
+        WARN("%s() get particular TCP option failed %r", 
+             __FUNCTION__, rc);
+        return 0;
+    }
+    switch (t_val)
+    {
+        case NDN_TAG_TCP_OPT_EOL:
+        case NDN_TAG_TCP_OPT_NOP:
+            return 1;
+            break;
+        case NDN_TAG_TCP_OPT_MSS:
+        case NDN_TAG_TCP_OPT_WIN_SCALE:
+        case NDN_TAG_TCP_OPT_TIMESTAMP:
+            rc = asn_read_int32(opt, &length, "length");
+            break;
+        case NDN_TAG_TCP_OPT_SACK_PERM:
+        case NDN_TAG_TCP_OPT_SACK_DATA:
+            WARN("%s() SACK TCP option not supported.", 
+                 __FUNCTION__, rc);
+            return 0;
+    }
+    if (rc == 0)
+        return length;
+    if (rc == TE_EASNINCOMPLVAL)
+        switch (t_val)
+        {
+            case NDN_TAG_TCP_OPT_MSS:
+                return 4;
+            case NDN_TAG_TCP_OPT_WIN_SCALE:
+                return 3;
+            case NDN_TAG_TCP_OPT_TIMESTAMP:
+                return 10;
+        }
+    return 0;
+}
+
 /* See description in tad_ipstack_impl.h */
 te_errno
 tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                        asn_value *layer_pdu, void **p_opaque)
 { 
-    te_errno    rc = 0;
-
+    te_errno    rc = 0; 
     const asn_value *tcp_csap_pdu;
+    asn_value *options;
+    asn_value *option;
 
+    tcp_csap_specific_data_t *spec_data = 
+        csap_get_proto_spec_data(csap, layer);
+
+    UNUSED(p_opaque);
+
+    spec_data->options_len = 0;
     if (!(csap->state & CSAP_STATE_SEND))
     {
         ERROR(CSAP_LOG_FMT " should be called in SEND mode", 
@@ -178,10 +233,6 @@ tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
         return TE_RC(TE_TAD_CSAP, TE_ETADCSAPSTATE);
     }
 
-    tcp_csap_specific_data_t *spec_data = 
-        csap_get_proto_spec_data(csap, layer);
-
-    UNUSED(p_opaque);
 
     tcp_csap_pdu = csap->layers[layer].nds;
 
@@ -233,6 +284,21 @@ tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     CONVERT_FIELD(NDN_TAG_TCP_CHECKSUM, du_checksum);
     CONVERT_FIELD(NDN_TAG_TCP_URG, du_urg_p);
 #undef CONVERT_FIELD 
+
+    rc = asn_get_descendent(layer_pdu, &options, "options");
+    if (rc == 0)
+    {
+        int i, opt_num = asn_get_length(options, "");
+
+        for (i = 0; i < opt_num; i++)
+        {
+            rc = asn_get_indexed(options, &option, i, "");
+            if (rc == 0)
+                spec_data->options_len += tad_tcp_option_len(option);
+        }
+        RING(CSAP_LOG_FMT " Options bin len: %d",
+             CSAP_LOG_ARGS(csap), (int)spec_data->options_len);
+    }
     return 0;
 }
 
