@@ -225,7 +225,6 @@ tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 
     UNUSED(p_opaque);
 
-    spec_data->options_len = 0;
     if (!(csap->state & CSAP_STATE_SEND))
     {
         ERROR(CSAP_LOG_FMT " should be called in SEND mode", 
@@ -285,6 +284,7 @@ tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     CONVERT_FIELD(NDN_TAG_TCP_URG, du_urg_p);
 #undef CONVERT_FIELD 
 
+    spec_data->opt_bin_len = 0;
     rc = asn_get_descendent(layer_pdu, &options, "options");
     if (rc == 0)
     {
@@ -294,11 +294,16 @@ tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
         {
             rc = asn_get_indexed(options, &option, i, "");
             if (rc == 0)
-                spec_data->options_len += tad_tcp_option_len(option);
+                spec_data->opt_bin_len += tad_tcp_option_len(option);
         }
         RING(CSAP_LOG_FMT " Options bin len: %d",
-             CSAP_LOG_ARGS(csap), (int)spec_data->options_len);
+             CSAP_LOG_ARGS(csap), (int)spec_data->opt_bin_len);
+
+        spec_data->options = options;
     }
+    else
+        spec_data->options = NULL;
+
     return 0;
 }
 
@@ -465,11 +470,14 @@ tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
     uint8_t                    *p = seg->data_ptr;
     te_errno                    rc;
 
-    int hdr_len = 20;
+    const asn_value *options;
+    asn_value *option;
+
+    unsigned int hdr_len = 20 + data->spec_data->opt_bin_len;
 
     UNUSED(pkt);
     UNUSED(seg_num);
-    assert(seg->data_len == 20);
+    assert(seg->data_len == hdr_len);
 
 #define CHECK_ERROR(fail_cond_, error_, msg_...) \
     do {                                     \
@@ -558,8 +566,72 @@ tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
     PUT_BIN_DATA(du_checksum, 0, 2);
     PUT_BIN_DATA(du_urg_p, 0, 2); 
 
-    return 0;
 #undef PUT_BIN_DATA
+
+    options = data->spec_data->options;
+    if (options != NULL)
+    {
+        uint8_t *opt_start = p;
+
+        asn_tag_class t_cl;
+        asn_tag_value t_val;
+        asn_value *p_opt;
+        size_t opt_b_len;
+        int32_t opt_val;
+
+        int i, opt_num = asn_get_length(options, "");
+
+        for (i = 0; i < opt_num; i++)
+        {
+            rc = asn_get_indexed(options, &option, i, ""); 
+            if (rc != 0) continue;
+
+            opt_b_len = tad_tcp_option_len(option);
+
+            rc = asn_get_choice_value(option, &p_opt, &t_cl, &t_val);
+            if (rc != 0) continue;
+            
+            switch (t_val)
+            {
+                case NDN_TAG_TCP_OPT_EOL:
+                    *p = TE_TCP_OPT_EOL;
+                    break;
+                case NDN_TAG_TCP_OPT_NOP:
+                    *p = TE_TCP_OPT_NOP;
+                    break;
+                case NDN_TAG_TCP_OPT_MSS:
+                    *p = TE_TCP_OPT_MSS;
+                    *(p+1) = opt_b_len;
+                    asn_read_int32(p_opt, &opt_val, "mss");
+                    *((uint16_t *)(p + 2)) = htons((uint16_t)opt_val);
+                    break;
+                case NDN_TAG_TCP_OPT_WIN_SCALE:
+                    *p = TE_TCP_OPT_WIN_SCALE;
+                    *(p+1) = opt_b_len;
+                    asn_read_int32(p_opt, &opt_val, "win-scale");
+                    *(p+2) = opt_val;
+                    break;
+                case NDN_TAG_TCP_OPT_TIMESTAMP:
+                    *p = TE_TCP_OPT_TIMESTAMP;
+                    *(p+1) = opt_b_len;
+                    asn_read_int32(p_opt, &opt_val, "timestamp.value");
+                    *((uint32_t *)(p + 2)) = htonl(opt_val);
+                    asn_read_int32(p_opt, &opt_val, "timestamp.echo-reply");
+                    *((uint32_t *)(p + 6)) = htonl(opt_val);
+                    break;
+                case NDN_TAG_TCP_OPT_SACK_PERM:
+                case NDN_TAG_TCP_OPT_SACK_DATA:
+                    WARN("%s() SACK TCP option not supported.", 
+                         __FUNCTION__, rc);
+                    continue;
+            }
+            p += opt_b_len;
+        }
+        RING("%s: options bytes: %Tm", __FUNCTION__, opt_start, 
+             data->spec_data->opt_bin_len);
+    }
+
+    return 0;
 
 cleanup:
     return rc;
@@ -578,21 +650,25 @@ tad_tcp_gen_bin_cb(csap_p csap, unsigned int layer,
     UNUSED(tmpl_pdu); 
     UNUSED(opaque);
  
-    /* UDP layer does no fragmentation, just copy all SDUs to PDUs */
+
+    opaque_data.spec_data = csap_get_proto_spec_data(csap, layer);
+    opaque_data.args      = args;
+    opaque_data.arg_num   = arg_num;
+
+    /* TCP layer does no fragmentation, just copy all SDUs to PDUs */
     tad_pkts_move(pdus, sdus);
 
     /*
      * Allocate and add TCP header to all packets.
      * FIXME sizeof(struct tcphdr) instead of 20.
      */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, 20, NULL);
+    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL,
+                              20 + opaque_data.spec_data->opt_bin_len,
+                              NULL);
     if (rc != 0)
         return rc;
 
     /* Fill in added segment as TCP header */
-    opaque_data.spec_data = csap_get_proto_spec_data(csap, layer);
-    opaque_data.args      = args;
-    opaque_data.arg_num   = arg_num;
     rc = tad_pkts_enumerate_first_segs(pdus, tad_tcp_fill_in_hdr,
                                        &opaque_data);
 

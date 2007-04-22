@@ -72,7 +72,8 @@ typedef struct tcp_csap_specific_data
     unsigned short   dst_port;    /**< Dest.  TCP port for current packet*/
 
     uint16_t         data_tag;
-    size_t           options_len;
+    size_t           opt_bin_len;
+    const asn_value *options;
 
     tad_data_unit_t  du_src_port;
     tad_data_unit_t  du_dst_port;
