@@ -411,14 +411,26 @@ extern char *tad_tcp_get_param_cb(csap_p csap, unsigned int layer,
                                   const char *param);
 
 /**
- * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
+ * Callback for confirm template TCP PDU with TCP CSAP
+ * parameters and possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_tcp_confirm_pdu_cb(csap_p         csap,
-                                       unsigned int   layer,
-                                       asn_value     *tmpl_pdu,
-                                       void         **p_opaque); 
+extern te_errno tad_tcp_confirm_tmpl_cb(csap_p         csap,
+                                        unsigned int   layer,
+                                        asn_value     *tmpl_pdu,
+                                        void         **p_opaque); 
+
+/**
+ * Callback for confirm pattern TCP PDU with TCP CSAP
+ * parameters and possibilities.
+ *
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ */ 
+extern te_errno tad_tcp_confirm_ptrn_cb(csap_p         csap,
+                                        unsigned int   layer,
+                                        asn_value     *tmpl_pdu,
+                                        void         **p_opaque); 
 
 /**
  * Callback for generate binary data to be sent to media.

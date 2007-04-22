@@ -164,13 +164,19 @@ tad_tcp_get_param_cb(csap_p csap, unsigned int layer, const char *param)
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
+tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                        asn_value *layer_pdu, void **p_opaque)
 { 
     te_errno    rc = 0;
 
     const asn_value *tcp_csap_pdu;
-    const asn_value *du_field;
+
+    if (!(csap->state & CSAP_STATE_SEND))
+    {
+        ERROR(CSAP_LOG_FMT " should be called in SEND mode", 
+              CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPSTATE);
+    }
 
     tcp_csap_specific_data_t *spec_data = 
         csap_get_proto_spec_data(csap, layer);
@@ -194,58 +200,28 @@ tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
     CONVERT_FIELD(NDN_TAG_TCP_SRC_PORT, du_src_port); 
     if (spec_data->du_src_port.du_type == TAD_DU_UNDEF)
     {
-        if (csap->state & CSAP_STATE_SEND)
-        {
-            rc = tad_data_unit_convert(tcp_csap_pdu,
-                                       NDN_TAG_TCP_LOCAL_PORT,
-                                       &(spec_data->du_src_port));
-            if (rc != 0)
-            {          
-                ERROR("%s(csap %d), local_port to src failed, rc %r",
-                      __FUNCTION__, csap->id, rc);
-                return rc;
-            }
-        }
-        else
-        {
-            if (asn_get_child_value(tcp_csap_pdu, &du_field, PRIVATE,
-                                    NDN_TAG_TCP_REMOTE_PORT) == 0 &&
-                (rc = asn_write_component_value(layer_pdu, du_field,
-                                               "src-port")) != 0)
-            {
-                ERROR("%s(): write src-port to tcp layer_pdu failed %r",
-                      __FUNCTION__, rc);
-                return TE_RC(TE_TAD_CSAP, rc);
-            }
+        rc = tad_data_unit_convert(tcp_csap_pdu,
+                                   NDN_TAG_TCP_LOCAL_PORT,
+                                   &(spec_data->du_src_port));
+        if (rc != 0)
+        {          
+            ERROR("%s(csap %d), local_port to src failed, rc %r",
+                  __FUNCTION__, csap->id, rc);
+            return rc;
         }
     }
 
     CONVERT_FIELD(NDN_TAG_TCP_DST_PORT, du_dst_port);
     if (spec_data->du_dst_port.du_type == TAD_DU_UNDEF)
     {
-        if (csap->state & CSAP_STATE_SEND)
-        {
-            rc = tad_data_unit_convert(tcp_csap_pdu,
-                                       NDN_TAG_TCP_REMOTE_PORT,
-                                       &(spec_data->du_dst_port));
-            if (rc != 0)
-            {          
-                ERROR("%s(csap %d), remote port to dst failed, rc %r",
-                      __FUNCTION__, csap->id, rc);
-                return rc;
-            }
-        }
-        else
-        {
-            if (asn_get_child_value(tcp_csap_pdu, &du_field, PRIVATE,
-                                    NDN_TAG_TCP_LOCAL_PORT) == 0 &&
-                (rc = asn_write_component_value(layer_pdu, du_field,
-                                               "dst-port")) != 0)
-            {
-                ERROR("%s(): write dst-port to tcp layer_pdu failed %r",
-                      __FUNCTION__, rc);
-                return TE_RC(TE_TAD_CSAP, rc);
-            }
+        rc = tad_data_unit_convert(tcp_csap_pdu,
+                                   NDN_TAG_TCP_REMOTE_PORT,
+                                   &(spec_data->du_dst_port));
+        if (rc != 0)
+        {          
+            ERROR("%s(csap %d), remote port to dst failed, rc %r",
+                  __FUNCTION__, csap->id, rc);
+            return rc;
         }
     }
 
@@ -257,6 +233,60 @@ tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
     CONVERT_FIELD(NDN_TAG_TCP_CHECKSUM, du_checksum);
     CONVERT_FIELD(NDN_TAG_TCP_URG, du_urg_p);
 #undef CONVERT_FIELD 
+    return 0;
+}
+
+
+/* See description in tad_ipstack_impl.h */
+te_errno
+tad_tcp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
+                        asn_value *layer_pdu, void **p_opaque)
+{ 
+    te_errno    rc = 0;
+
+    const asn_value *tcp_csap_pdu;
+    const asn_value *du_field;
+
+    tcp_csap_specific_data_t *spec_data = 
+        csap_get_proto_spec_data(csap, layer);
+
+    UNUSED(p_opaque);
+
+    if (!(csap->state & CSAP_STATE_RECV))
+    {
+        ERROR(CSAP_LOG_FMT " should be called in RECV mode", 
+              CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPSTATE);
+    }
+
+    tcp_csap_pdu = csap->layers[layer].nds;
+
+    if (spec_data->du_src_port.du_type == TAD_DU_UNDEF)
+    {
+        if (asn_get_child_value(tcp_csap_pdu, &du_field, PRIVATE,
+                                NDN_TAG_TCP_REMOTE_PORT) == 0 &&
+            (rc = asn_write_component_value(layer_pdu, du_field,
+                                           "src-port")) != 0)
+        {
+            ERROR("%s(): write src-port to tcp layer_pdu failed %r",
+                  __FUNCTION__, rc);
+            return TE_RC(TE_TAD_CSAP, rc);
+        }
+    }
+
+    if (spec_data->du_dst_port.du_type == TAD_DU_UNDEF)
+    {
+        if (asn_get_child_value(tcp_csap_pdu, &du_field, PRIVATE,
+                                NDN_TAG_TCP_LOCAL_PORT) == 0 &&
+            (rc = asn_write_component_value(layer_pdu, du_field,
+                                           "dst-port")) != 0)
+        {
+            ERROR("%s(): write dst-port to tcp layer_pdu failed %r",
+                  __FUNCTION__, rc);
+            return TE_RC(TE_TAD_CSAP, rc);
+        }
+    }
+
     return 0;
 }
 
@@ -598,7 +628,7 @@ tad_tcp_match_bin_cb(csap_p           csap,
     {
         uint32_t opt_val;
         if (data < pld_start)
-            RING("%s(): dump of options: %Tm",
+            VERB("%s(): dump of options: %Tm",
                  __FUNCTION__, data, pld_start - data);
 
         while ( rc == 0 && data < pld_start)
@@ -607,7 +637,7 @@ tad_tcp_match_bin_cb(csap_p           csap,
             if (options == NULL)
                 options = asn_init_value(ndn_tcp_options_seq);
 
-            RING("%s(): foung option with kind %d, offset %d",
+            VERB("%s(): foung option with kind %d, offset %d",
                  __FUNCTION__, (int)(*data), data  - data_ptr);
             switch (*data)
             {
@@ -663,15 +693,17 @@ tad_tcp_match_bin_cb(csap_p           csap,
             if (opt != NULL)
                 rc = asn_insert_indexed(options, opt, -1, "");
 
+#if 0
         {
             char buf [200] = {0,};
             asn_sprint_value(options, buf, sizeof(buf) - 1, 0);
             RING("dump of parsed options: %s", buf);
         }
+#endif
         }
         if (rc == 0)
             rc = asn_put_descendent(tcp_header_pdu, options, "options");
-        RING("%s(), options put, rc %r", __FUNCTION__, rc);
+        VERB("%s(), options put, rc %r", __FUNCTION__, rc);
     }
     if (rc)
         goto cleanup;
