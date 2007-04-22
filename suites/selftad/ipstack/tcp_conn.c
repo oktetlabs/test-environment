@@ -244,18 +244,22 @@ main(int argc, char *argv[])
     asn_free_value(tcp_template);
     tcp_template = NULL;
 
+    {
+        uint32_t length = 200;
 
-    tapi_tcp_conn_template(conn_hand, buffer, 200, &tcp_template);
-    rc = asn_write_int32(tcp_template, 1025,
-                         "pdus.0.#tcp.options.0.#mss.mss.#plain");
-    if (rc != 0)
-        WARN("write MSS failed %r", rc);
-    rc = tapi_tcp_send_template(conn_hand, tcp_template,
-                                RCF_MODE_BLOCKING);
-    if (rc != 0)
-        TEST_FAIL("send template failed %X", rc);
+        tapi_tcp_conn_template(conn_hand, buffer, length, &tcp_template);
+        rc = asn_write_int32(tcp_template, 1025,
+                             "pdus.0.#tcp.options.0.#mss.mss.#plain");
+        if (rc != 0)
+            WARN("write MSS failed %r", rc);
+        rc = tapi_tcp_send_template(conn_hand, tcp_template,
+                                    RCF_MODE_BLOCKING);
+        if (rc != 0)
+            TEST_FAIL("send template failed %X", rc);
+        tapi_tcp_update_sent_seq(conn_hand, length);
 
-    rpc_recv(sock_pco, socket, buffer, sizeof(buffer), 0);
+        rpc_recv(sock_pco, socket, buffer, sizeof(buffer), 0);
+    }
 
     /*
      * Closing connection
