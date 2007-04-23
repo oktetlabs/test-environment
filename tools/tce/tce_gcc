@@ -100,8 +100,7 @@ if test -z "$nobbhook"; then
     for i in $CC; do
         tmpcc=$i
     done
-    selfpath=`cd \`dirname \\\`which $tmpcc\\\`\` && pwd && cd -`
-    ${TCE_CC} -c ${TCE_CFLAGS} -o $BBHOOK_O -I${selfpath}/../include ${selfpath}/../share/tce/bbhook.c
+    ${TCE_CC} -c ${TCE_CFLAGS} -o $BBHOOK_O -I${TCE_SRC}/include ${TCE_SRC}/../share/tce/bbhook.c
     ar crs $LIBGCOV_A $BBHOOK_O
     BBHOOK_O="-L$TCELIB -lgcov"
 else
