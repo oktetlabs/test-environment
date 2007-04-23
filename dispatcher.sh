@@ -170,6 +170,7 @@ Generic options:
                                 (without by default)
   --vg-tester                   Run Tester under valgrind (without by default)
   --gdb-tester                  Run Tester under GDB
+  --tce                         Do TCE processing
 
     The script exits with a status of zero if everything does smoothly and
     all tests, if any tests are run, give expected results. A status of two
@@ -350,6 +351,8 @@ process_opts()
             --conf-rgt=*) CONF_RGT=${1#--conf-rgt=} ;;
             --conf-nut=*) DO_NUTS=yes ; CONF_NUT="${1#--conf-nut=}" ;;
             --force) TE_NO_PROMPT=yes ;;
+
+            --tce) DO_TCE=yes ;;
             
             --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
             --log-online) LOG_ONLINE=yes ;;
@@ -793,7 +796,7 @@ if test -n "${RGT_LOG_HTML}" ; then
     fi
 fi
 
-if test ${START_OK} -ne 1 -a -n "${DO_NUTS}" ; then
+if test ${START_OK} -ne 1 -a -n "${DO_TCE}" ; then
     myecho "--->>> TCE processing"
     te_tce_process "${CONF_NUT}"
 fi
