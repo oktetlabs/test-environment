@@ -5315,10 +5315,10 @@ get_buf(tarpc_ptr src_buf_base, size_t src_offset,
 {
     char *src_buf = rcf_pch_mem_get(src_buf_base); 
 
+    *dst_buf = NULL;
     if (src_buf != NULL && *len != 0)
     {
         char *buf = malloc(*len);
-        *dst_buf = buf;
 
         if (buf == NULL)
         {
@@ -5326,7 +5326,10 @@ get_buf(tarpc_ptr src_buf_base, size_t src_offset,
             errno = ENOMEM;
         }
         else
-            memcpy(*dst_buf, src_buf + src_offset, *len);
+        {
+            memcpy(buf, src_buf + src_offset, *len);
+            *dst_buf = buf;
+        }
     }
     else if (*len != 0)
     {
