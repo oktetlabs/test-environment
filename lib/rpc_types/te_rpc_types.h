@@ -52,10 +52,10 @@ typedef struct rpc_ptr_off {
     uint32_t    offset; /**< Offset from the base */
 } rpc_ptr_off;
 
-#define RPC_PTR_OFF_IS_VALID(ptr_) ((ptr_).base == RPC_NULL)
-#define RPC_PTR_OFF_INC(ptr_, off_) ((ptr_).off += (off_))
-#define RPC_PTR_OFF_DEC(ptr_, off_) ((ptr_).off -= (off_))
-#define RPC_PTR_OFF_GET_OFFSET(ptr_) ((ptr_).off)
+#define RPC_PTR_OFF_IS_NULL(ptr_) ((ptr_).base == RPC_NULL)
+#define RPC_PTR_OFF_INC(ptr_, off_) ((ptr_).offset += (off_))
+#define RPC_PTR_OFF_DEC(ptr_, off_) ((ptr_).offset -= (off_))
+#define RPC_PTR_OFF_GET_OFFSET(ptr_) ((ptr_).offset)
 
 #ifndef WINDOWS
 
