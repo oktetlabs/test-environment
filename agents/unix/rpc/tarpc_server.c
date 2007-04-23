@@ -5318,19 +5318,20 @@ get_buf(tarpc_ptr src_buf_base, size_t src_offset,
     if (src_buf != NULL && *len != 0)
     {
         char *buf = malloc(*len);
+        *dst_buf = buf;
 
         if (buf == NULL)
         {
-            len = 0;
+            *len = 0;
             errno = ENOMEM;
         }
         else
-            memcpy(dst_buf, src_buf + src_offset, *len);
+            memcpy(*dst_buf, src_buf + src_offset, *len);
     }
     else if (*len != 0)
     {
         errno = EFAULT;
-        len = 0;
+        *len = 0;
     }
 }
 
