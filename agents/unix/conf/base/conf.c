@@ -4356,8 +4356,16 @@ ta_interface_status_get(const char *ifname, te_bool *status)
 
     strcpy(req.my_ifr_name, ifname);
     CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
-
     *status = !!(req.my_ifr_flags & IFF_UP);
+
+#if defined(__sun__)
+    rc = ioctl(cfg6_socket, MY_SIOCGIFFLAGS, &req);
+    if (rc < 0)
+        WARN("Failed to get staust of %s IPv6 interface", ifname);
+    else if (*status != !!(req.my_ifr_flags & IFF_UP))
+        WARN("Different statuses for %s IPv4 and IPv6 interfaces", ifname);
+#endif
+
     return 0;
 }
 
@@ -4388,6 +4396,11 @@ ta_interface_status_set(const char *ifname, te_bool status)
         req.my_ifr_flags &= ~(IFF_UP | IFF_RUNNING);
 
     CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
+#if defined(__sun__)
+    rc = ioctl(cfg6_socket, MY_SIOCSIFFLAGS, &req);
+    if (rc < 0)
+        WARN("Failed to bring up %s IPv6 interface", ifname);
+#endif
     return 0;
 }
 
