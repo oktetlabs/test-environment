@@ -1304,7 +1304,7 @@ rcf_pch_rsrc_check_locks(const char *rsrc_ptrn)
  *
  * @return Status code
  */
-static te_errno
+te_errno
 ta_rsrc_create_lock(const char *name)
 {
     char        fname[RCF_MAX_PATH];

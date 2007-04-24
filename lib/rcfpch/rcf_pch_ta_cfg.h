@@ -360,7 +360,7 @@ extern int ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info);
  *
  * @return Status code
  */
-static te_errno ta_rsrc_create_lock(const char *name);
+extern te_errno ta_rsrc_create_lock(const char *name);
 
 /*
  * Delete a lock for the resource with specified name.
