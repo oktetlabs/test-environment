@@ -1457,6 +1457,7 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
     struct phy_iflist_head *list_item;
     struct ethtool_cmd      ecmd;
     int                     rc = -1;
+    te_bool                 advertise = FALSE;
     
     VERB("commit changes");
     
@@ -1520,8 +1521,12 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
          ecmd.maxrxpkt,
          ifname);
     
+    /* Remember this to check advertising completion later */
+    advertise = !(list_item->ecmd.advertising == ecmd.advertising);
+    
     /* Flush cache */
     list_item->adver_cached = FALSE;
+    
     
     if ((rc = PHY_SET_PROPERTY(ifname, &(list_item->ecmd))) != 0)
     {
@@ -1529,6 +1534,26 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
               "interface %s properties", ifname);
         
         return TE_OS_RC(TE_TA_UNIX, rc);
+    }
+    
+    /* Check that advertised modes were advertised */
+    if (advertise &&
+        list_item->ecmd.autoneg == TE_PHY_AUTONEG_ON)
+    {
+        memset(&ecmd, 0, sizeof(ecmd));
+        if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
+        {
+            ERROR("failed to get PHY properties while checking "
+                  "advertised modes at interface %s", ifname);
+            
+            return TE_OS_RC(TE_TA_UNIX, rc);
+        }
+        
+        if (ecmd.advertising != list_item->ecmd.advertising)
+        {
+            ERROR("failed to advertise needfull modes at %s", ifname);
+            return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        }
     }
     
     /* Restart autonegatiation if needed */
