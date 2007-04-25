@@ -2716,7 +2716,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 }
 
 /**
- * Configure IPv4 address for the interface.
+ * Configure IPv4/IPv6 address for the interface.
  * If the address does not exist, alias interface is created.
  *
  * @param gid           group identifier (unused)
@@ -2912,14 +2912,18 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
 
-    if (*value != 0)
+#if defined(__linux__) || (!defined(SIOCLIFADDIF) && defined(SIOCALIFADDR))
+    /* SIOCLIFADDIF case sets prefix itself, so no need for this */
+    if (*value != '\0')
     {
         if ((rc = prefix_set(gid, oid, value, ifname, addr)) != 0)
         {
             net_addr_del(gid, oid, ifname, addr);
+            ERROR("prefix_set failure");
             return rc;
         }
     }
+#endif
 
     return 0;
 }
