@@ -466,7 +466,10 @@ phy_reset(const char *ifname)
 }
 #endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
 
-te_errno
+/**
+ * Initialize PHY subtree
+ */
+extern te_errno
 ta_unix_conf_phy_init(void)
 {
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
@@ -551,7 +554,7 @@ phy_execute_shell_cmd(char *cmd)
     
     if (fgets(out_buf, BUFFER_SIZE, fp) == NULL)
     {
-        WARN("failed to read command execution result: %s", cmd);
+        VERB("failed to read command execution result");
         free(out_buf);
         fclose(fp);
         close(out_fd);
@@ -664,7 +667,7 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
     
     if (autoneg == -1)
     {
-        WARN("failed to get autoneg state at %s", ifname);
+        VERB("failed to get autoneg state at %s", ifname);
         free(cmd);
         
         /* If this option is not supported we should not
@@ -834,7 +837,7 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
     
     if (result == -1)
     {
-        WARN("failed to get duplex state at %s", ifname);
+        VERB("failed to get duplex state at %s", ifname);
         free(cmd);
         
         /* If this option is not supported we should not
@@ -1179,7 +1182,7 @@ phy_modes_speed_list(unsigned int gid, const char *oid, char **list,
     
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
-        WARN("No modes supported/advertized by `%s'", ifname);
+        VERB("No modes supported/advertized by `%s'", ifname);
         return 0;
     }
     
@@ -1280,7 +1283,7 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
     
     if ((result = phy_execute_shell_cmd(cmd)) == -1)
     {
-        WARN("failed to get speed value for interface %s", ifname);
+        VERB("failed to get speed value for interface %s", ifname);
         snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_SPEED_UNKNOWN);
         free(cmd);
         return 0;
@@ -1420,7 +1423,7 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     /* Check that duplex state information is supported */
     if (state == -1)
     {
-        WARN("cannot get state state on `%s'", ifname);
+        VERB("cannot get state state on `%s'", ifname);
         snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_STATE_UNKNOWN);
         free(cmd);
         return 0;

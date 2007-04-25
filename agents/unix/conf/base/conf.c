@@ -232,6 +232,7 @@ extern te_errno iscsi_initiator_conf_init();
 #endif
 
 extern te_errno ta_unix_conf_sys_init();
+extern te_errno ta_unix_conf_phy_init();
 
 #ifdef USE_NETLINK
 /** Netlink message storage */
