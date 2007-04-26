@@ -168,6 +168,12 @@ dnl - -lsendfile on Solaris2 (SunOS 5.11).
 dnl
 AC_SEARCH_LIBS([sendfile], [sendfile])
 
+dnl    
+dnl libdlpi is provided on Solaris
+dnl
+AC_CHECK_LIB([dlpi], [dlpi_open])
+AC_CHECK_HEADERS([libdlpi.h])
+
 dnl
 dnl POSIX threads are provided by:
 dnl - -lpthread in Linux;

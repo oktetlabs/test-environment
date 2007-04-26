@@ -84,6 +84,10 @@
 #include <net/if_dl.h>
 #endif
 
+#ifndef __linux__
+#include <libdlpi.h>
+#endif
+
 #if HAVE_LINUX_IF_VLAN_H
 #include <linux/if_vlan.h>
 #define LINUX_VLAN_SUPPORT 1
@@ -393,11 +397,17 @@ static te_errno mcast_link_addr_list(unsigned int, const char *, char **,
                                      const char *);
 #ifndef __linux__
 typedef struct mma_list_el {
-    char                ifname[IFNAMSIZ];
     char                value[ETHER_ADDR_LEN * 3];
     struct mma_list_el *next;
 } mma_list_el;
-static mma_list_el *mcast_mac_addr_list = NULL;
+
+typedef struct ifs_list_el {
+    char                ifname[IFNAMSIZ];
+    dlpi_handle_t       fd;
+    struct mma_list_el *mcast_addresses;
+    struct ifs_list_el *next;
+} ifs_list_el;
+static struct ifs_list_el *interface_stream_list = NULL;
 #endif
 
 static te_errno net_addr_add(unsigned int, const char *, const char *,
@@ -2517,9 +2527,53 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
 
     return 0;
 }
-
+#ifndef __linux__
 static te_errno
-mcast_link_addr_change(const char *ifname, const char *addr, int op)
+mcast_link_addr_change_dlpi(dlpi_handle_t hnd, const char *addr, int op)
+{
+    uint8_t     mac_addr[ETHER_ADDR_LEN];
+    int         i;
+    char       *p;
+    te_errno    rc;
+    
+    for (i = 0, p = addr; i < ETHER_ADDR_LEN; i++, p++)
+    {
+        unsigned tmp = strtoul(p, (char **)&p, 16);
+
+        if (tmp > UCHAR_MAX)
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        if (*p != ':' && (*p != '\0' || i < ETHER_ADDR_LEN - 1))
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        mac_addr[i] = tmp;
+    }
+    if (op == SIOCADDMULTI)
+    {
+        if ((rc = dlpi_enabmulti(hnd, mac_addr, ETHER_ADDR_LEN)) != 
+            DLPI_SUCCESS)
+        {
+            ERROR("dlpi_enabmulti() failed, rc = %x", rc);
+            return TE_EINVAL;
+        }
+    }
+    else if (op == SIOCDELMULTI)
+    {
+        if ((rc = dlpi_disabmulti(hnd, mac_addr, ETHER_ADDR_LEN)) != 
+            DLPI_SUCCESS)
+        {
+            ERROR("dlpi_disabmulti() failed, rc = %x", rc);
+            return TE_EINVAL;
+        }
+    }
+    else
+    {
+        ERROR("Invalid operation: %d", op);
+        return TE_EINVAL;
+    }
+    return 0;
+}
+#endif
+static te_errno
+mcast_link_addr_change_ioctl(const char *ifname, const char *addr, int op)
 {
     struct ifreq    request;
     int             i;
@@ -2570,33 +2624,61 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
                     const char *value, const char *ifname, const char *addr)
 {
     te_errno rc;
+#ifndef __linux__    
+    ifs_list_el *p = interface_stream_list;
+    mma_list_el *q;
+#endif    
     
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
-    rc = mcast_link_addr_change(ifname, addr, SIOCADDMULTI);
-#ifndef __linux__
-    if (rc == 0)
+    
+#ifdef __linux__    
+    rc = mcast_link_addr_change_ioctl(ifname, addr, SIOCADDMULTI);
+#else
+    for (p = interface_stream_list;
+         p != NULL && strcmp(p->ifname, ifname) != 0; p = p->next);
+    if (p == NULL)
     {
-        mma_list_el *p = (mma_list_el *)malloc(sizeof(mma_list_el));
-        strncpy(p->ifname, ifname, IFNAMSIZ);
-        strncpy(p->value, addr, sizeof(p->value));
-        p->next = mcast_mac_addr_list;
-        mcast_mac_addr_list = p->next;
+        p = (ifs_list_el *)malloc(sizeof(ifs_list_el));
+        strcpy(p->ifname, ifname);
+        p->mcast_addresses = NULL;
+        p->next = interface_stream_list;
+        dlpi_open(ifname, &p->fd, DLPI_NATIVE);
+        PRINT("DLPI handle %p", p->fd);
+        interface_stream_list = p;
+    }
+
+    for (q = p->mcast_addresses;
+         q != NULL && strcmp(q->value, addr) != 0; q = q->next);
+    if (q == NULL)
+    {
+        q = (mma_list_el *)malloc(sizeof(mma_list_el));
+        /* Against setting too long value for MAC address */
+        strncpy(q->value, addr, sizeof(q->value));
+        /* Adding the address via DLPI */
+        rc = mcast_link_addr_change_dlpi(p->fd, addr, SIOCADDMULTI);
+        q->next = p->mcast_addresses;
+        p->mcast_addresses = q;
     }
 #endif
     return rc;
 }
-    
+ 
 static te_errno
 mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
                     const char *addr)
 {
     te_errno rc;
+#ifndef __linux__
+    ifs_list_el *p;
+    mma_list_el *q;
+#endif
     
     UNUSED(gid);
     UNUSED(oid);
-    rc = mcast_link_addr_change(ifname, addr, SIOCDELMULTI);
+#ifdef __linux__    
+    rc = mcast_link_addr_change_ioctl(ifname, addr, SIOCDELMULTI);
 /* there are problems with deleting neighbour discovery multicast addresses,
    when restoring configuration. 
    this is solely to shut up the configurator.
@@ -2607,31 +2689,61 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     {
         rc = 0;
     }
-#ifndef __linux__ 
-    if (rc == 0)
+#else
+    for (p = interface_stream_list;
+         p != NULL && strcmp(p->ifname, ifname) != 0; p = p->next);
+    if (p == NULL)
     {
-        if (strcmp(mcast_mac_addr_list->value, addr) == 0 &&
-            strcmp(mcast_mac_addr_list->ifname, ifname) == 0)
+        ERROR("No such interface: %s", ifname);
+        return TE_RC(TE_TA_UNIX, TE_ENXIO);
+    }
+    if (strcmp(p->mcast_addresses->value, addr) == 0)
+    {
+        /* Deleting address via DLPI */
+        rc = mcast_link_addr_change_dlpi(p->fd, addr, SIOCDELMULTI);
+        q = p->mcast_addresses->next;
+        free(p->mcast_addresses);
+        p->mcast_addresses = q;
+        if (q == NULL)
         {
-            mma_list_el *p = mcast_mac_addr_list->next;
-            free(mcast_mac_addr_list);
-            mcast_mac_addr_list = p;
+            PRINT("Close DLPI handle %p", p->fd);
+            dlpi_close(p->fd);
+            if (p == interface_stream_list)
+            {
+                interface_stream_list = p->next;
+                free(p);
+            }
+            else
+            {
+                ifs_list_el *tmp;
+                for (tmp = interface_stream_list;
+                     tmp->next != p; tmp = tmp->next);
+                tmp->next = p->next;
+                free(p);
+            }
+        }
+    }
+    else
+    {
+        for (q = p->mcast_addresses;
+             q->next != NULL && strcmp(addr, q->next->value) != 0;
+             q = q->next);
+        if (q->next == NULL)
+        {
+            ERROR("No such address: %s on interface %s", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
         else
         {
-            mma_list_el *p,
-                        *pp;
-            for (p = mcast_mac_addr_list;
-                 p->next != NULL && 
-                 (strcmp(p->next->value, addr) != 0 ||
-                  strcmp(p->next->ifname, ifname) != 0);
-                 p = p->next);
-            pp = p->next->next;
-            free(p->next);
-            p->next = pp;
+            mma_list_el *tmp = q->next->next;
+            /* Deleting address via DLPI */
+            rc = mcast_link_addr_change_dlpi(p->fd, addr, SIOCDELMULTI);
+            free(q->next);
+            q->next = tmp;
         }
     }
-#endif
+
+#endif            
     return rc;
 }
 
@@ -2640,11 +2752,12 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
                      const char *ifname)
 {
     char       *s = NULL;
-    int         p = 0;
+    int         sp = 0;         /* String Pointer */
     int         buf_segs = 1;
 
 #define MMAC_ADDR_BUF_SIZE 16384 
 #ifndef __linux__
+    ifs_list_el *p = interface_stream_list;
     mma_list_el *tmp;
 
     UNUSED(gid);
@@ -2653,17 +2766,22 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 
     s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
     *s = '\0';
-
-    for (tmp = mcast_mac_addr_list; tmp != NULL; tmp = tmp->next)
+    for (p = interface_stream_list;
+         (p != NULL) && (strcmp(p->ifname, ifname)) != 0; p = p->next);
+    if (p != NULL)
     {
-        if (strcmp(tmp->ifname, ifname) == 0)
+        for (tmp = p->mcast_addresses; tmp != NULL; tmp = tmp->next)
         {
-            if (p >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
+            if (sp >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
             {
                 s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
             }
-            p += sprintf(&s[p], "%s ", tmp->value);
+            sp += sprintf(&s[sp], "%s ", tmp->value);
         }
+    }
+    else
+    {
+        return 0;
     }
 #else
     FILE       *fd;
@@ -2699,14 +2817,14 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 
             for (i = 0; i < 6; i++)
             {
-                if (p >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
+                if (sp >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
                 {
                     s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
                 }
-                strncpy(&s[p], &addrstr[i * 2], 2);
-                p += 2;
-                s[p++] = (i < 5) ? ':' : ' ';
-                s[p] = '\0';
+                strncpy(&s[sp], &addrstr[i * 2], 2);
+                sp += 2;
+                s[sp++] = (i < 5) ? ':' : ' ';
+                s[sp] = '\0';
             }
         }
     }
