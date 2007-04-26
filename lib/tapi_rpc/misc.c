@@ -1335,10 +1335,10 @@ rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
 
     rcf_rpc_call(rpcs, "mcast_join_leave", &in, &out);
     
-    TAPI_RPC_LOG("RPC (%s,%s): mcast_join_leave(%d, %s, %d, leave:%s) -> "
+    TAPI_RPC_LOG("RPC (%s,%s): mcast_join_leave(%d, %s, %d, %s) -> "
                  " %d (%s)", rpcs->ta, rpcs->name, s,
                  te_sockaddr2str(mcast_addr), if_index,
-                 leave_group? "TRUE" : "FALSE",
+                 leave_group? "LEAVE" : "JOIN",
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(mcast_join_leave, out.retval);
