@@ -198,8 +198,13 @@ ds_slapd_list(unsigned int gid, const char *oid, char **list)
     {
         char *tmp = strstr(line, "slapd");
         
-        tmp = strstr(tmp, ":") + 2;
+        /* Skip wrong list entry */
+        if ((tmp = strstr(tmp, ":")) != NULL)
+            tmp += 2;
+        else continue;
+        
         s += sprintf(s, "%u ", atoi(tmp));
+        
     }
     
     pclose(f);
