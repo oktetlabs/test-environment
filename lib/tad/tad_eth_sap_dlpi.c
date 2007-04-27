@@ -66,6 +66,9 @@
 #include <sys/filio.h>
 #endif
 
+/* This file is for DLPI only */
+#ifdef DLPI_SUPPORT
+
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "logger_api.h"
@@ -73,7 +76,6 @@
 #include "tad_eth_sap.h"
 #include "tad_utils.h"
 
-#ifdef DLPI_SUPPORT
 
 #define MAXDLBUF    8192
 
@@ -525,31 +527,11 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
         if (rc != 0)
             goto err_exit;
 
-        if (mode & (TAD_ETH_RECV_OUT | TAD_ETH_RECV_OTHER))
+        /* Enable promiscuous DL_PROMISC_SAP if we'd like to receive
+         * anything except incoming unicast with "our" dst */
+        if (mode & (TAD_ETH_RECV_OUT | TAD_ETH_RECV_OTHER | 
+                    TAD_ETH_RECV_MCAST))
         {
-            if (!(mode & TAD_ETH_RECV_NO_PROMISC))
-            {
-                /*
-                 * To catch frames 'To someone else'
-                 * enable promiscuous DL_PROMISC_PHYS
-                 */
-                memset(&dlp, 0, sizeof(dlp));
-                dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
-                dlp.promiscon_req.dl_level = DL_PROMISC_PHYS;
-                rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-                if (rc != 0)
-                {
-                    ERROR("Attempt to set DL_PROMISC_PHYS failed");
-                    goto err_exit;
-                }
-                
-                memset(&dlp, 0, sizeof(dlp));
-                rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-                if (rc != 0)
-                    goto err_exit;
-            }
-
-            /* Enable promiscuous DL_PROMISC_SAP */
             memset(&dlp, 0, sizeof(dlp));
             dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
             dlp.promiscon_req.dl_level = DL_PROMISC_SAP;
@@ -566,6 +548,36 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
                 goto err_exit;
         }
 
+        if (mode & (TAD_ETH_RECV_OUT | TAD_ETH_RECV_OTHER) && 
+            !(mode & TAD_ETH_RECV_NO_PROMISC))
+        {
+            /*
+             * To catch frames 'To someone else'
+             * enable promiscuous DL_PROMISC_PHYS
+             */
+            memset(&dlp, 0, sizeof(dlp));
+            dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
+            dlp.promiscon_req.dl_level = DL_PROMISC_PHYS;
+            rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+            if (rc != 0)
+            {
+                ERROR("Attempt to set DL_PROMISC_PHYS failed");
+                goto err_exit;
+            }
+            
+            memset(&dlp, 0, sizeof(dlp));
+            rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+            if (rc != 0)
+                goto err_exit;
+        }
+
+        /* To receive multicast, we should tell the STREAM that we want to
+         * receive _that_ multicast address or to receive _all_ multicast
+         * address. There are 2 approaches:
+         * - Find (from configurator) the list of assigned multicast
+         *   addresses and add them via DLPI.
+         * - Receive all multicast.
+         * We are getting the second way. */
         if (mode & TAD_ETH_RECV_MCAST)
         {
             /*
@@ -579,22 +591,6 @@ dlpi_sap_open(tad_eth_sap *sap, unsigned int mode)
             if (rc != 0)
             {
                 ERROR("Attempt to set DL_PROMISC_MULTI failed");
-                goto err_exit;
-            }
-
-            memset(&dlp, 0, sizeof(dlp));
-            rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-            if (rc != 0)
-                goto err_exit;
-
-            /* Enable promiscuous DL_PROMISC_SAP */
-            memset(&dlp, 0, sizeof(dlp));
-            dlp.promiscon_req.dl_primitive = DL_PROMISCON_REQ;
-            dlp.promiscon_req.dl_level = DL_PROMISC_SAP;
-            rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-            if (rc != 0)
-            {
-                ERROR("Attempt to set DL_PROMISC_SAP failed");
                 goto err_exit;
             }
 
