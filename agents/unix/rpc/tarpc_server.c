@@ -5279,6 +5279,16 @@ TARPC_FUNC(memalign, {},
 }
 )
 
+/*-------------- memcmp() ------------------------------*/
+
+TARPC_FUNC(memcmp, {},
+{
+    out->retval = func_void(rcf_pch_mem_get(in->s1_base) + in->s1_off,
+                            rcf_pch_mem_get(in->s2_base) + in->s2_off,
+                            in->n);
+}
+)
+
 /*-------------------------- Fill buffer ----------------------------*/
 TARPC_FUNC(set_buf, {},
 {
