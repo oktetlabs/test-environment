@@ -84,7 +84,7 @@
 #include <net/if_dl.h>
 #endif
 
-#ifndef __linux__
+#ifdef HAVE_LIBDLPI
 #include <libdlpi.h>
 #endif
 
@@ -403,7 +403,9 @@ typedef struct mma_list_el {
 
 typedef struct ifs_list_el {
     char                ifname[IFNAMSIZ];
+#ifdef HAVE_LIBDLPI    
     dlpi_handle_t       fd;
+#endif    
     struct mma_list_el *mcast_addresses;
     struct ifs_list_el *next;
 } ifs_list_el;
@@ -2527,7 +2529,7 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
 
     return 0;
 }
-#ifndef __linux__
+#ifdef HAVE_LIBDLPI
 static te_errno
 mcast_link_addr_change_dlpi(dlpi_handle_t hnd, const char *addr, int op)
 {
@@ -2644,8 +2646,9 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
         strcpy(p->ifname, ifname);
         p->mcast_addresses = NULL;
         p->next = interface_stream_list;
+#ifdef HAVE_LIBDLPI        
         dlpi_open(ifname, &p->fd, DLPI_NATIVE);
-        PRINT("DLPI handle %p", p->fd);
+#endif        
         interface_stream_list = p;
     }
 
@@ -2656,8 +2659,10 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
         q = (mma_list_el *)malloc(sizeof(mma_list_el));
         /* Against setting too long value for MAC address */
         strncpy(q->value, addr, sizeof(q->value));
+#ifdef HAVE_LIBDLPI        
         /* Adding the address via DLPI */
         rc = mcast_link_addr_change_dlpi(p->fd, addr, SIOCADDMULTI);
+#endif
         q->next = p->mcast_addresses;
         p->mcast_addresses = q;
     }
@@ -2699,15 +2704,18 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     }
     if (strcmp(p->mcast_addresses->value, addr) == 0)
     {
+#ifdef HAVE_LIBDLPI        
         /* Deleting address via DLPI */
         rc = mcast_link_addr_change_dlpi(p->fd, addr, SIOCDELMULTI);
+#endif        
         q = p->mcast_addresses->next;
         free(p->mcast_addresses);
         p->mcast_addresses = q;
         if (q == NULL)
         {
-            PRINT("Close DLPI handle %p", p->fd);
+#ifdef HAVE_LIBDLPI            
             dlpi_close(p->fd);
+#endif            
             if (p == interface_stream_list)
             {
                 interface_stream_list = p->next;
@@ -2736,8 +2744,10 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
         else
         {
             mma_list_el *tmp = q->next->next;
+#ifdef HAVE_LIBDLPI            
             /* Deleting address via DLPI */
             rc = mcast_link_addr_change_dlpi(p->fd, addr, SIOCDELMULTI);
+#endif            
             free(q->next);
             q->next = tmp;
         }

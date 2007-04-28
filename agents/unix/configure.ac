@@ -171,9 +171,10 @@ AC_SEARCH_LIBS([sendfile], [sendfile])
 dnl    
 dnl libdlpi is provided on Solaris
 dnl
-AC_CHECK_LIB([dlpi], [dlpi_open])
+AC_ARG_ENABLE([libdlpi], [Build Test Agent with libdlpi, if available],
+AC_CHECK_LIB([dlpi], [dlpi_open]))
 AC_CHECK_HEADERS([libdlpi.h])
-
+   
 dnl
 dnl POSIX threads are provided by:
 dnl - -lpthread in Linux;
