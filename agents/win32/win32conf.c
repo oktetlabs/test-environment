@@ -194,6 +194,23 @@ static te_errno mcast_link_addr_del(unsigned int, const char *,
                                     const char *, const char *);
 static te_errno mcast_link_addr_list(unsigned int, const char *, char **,
                                      const char *);
+//PHY support
+extern te_errno ta_unix_conf_phy_init();
+
+static te_errno phy_state_get(unsigned int, const char *, char *,
+                              const char *);
+
+static te_errno phy_speed_get(unsigned int, const char *, char *,
+                              const char *);
+
+static te_errno phy_autoneg_get(unsigned int, const char *, char *,
+                                const char *);
+
+static te_errno phy_duplex_get(unsigned int, const char *, char *,
+                               const char *);
+                              
+static rcf_pch_cfg_object node_phy;
+
 //Multicast
 
 /* 
@@ -312,7 +329,8 @@ typedef struct if_stats {
     uint64_t      out_errors;
 } if_stats;
 
-static te_errno if_stats_get(const char *ifname, if_stats *stats);
+static te_errno if_stats_get(const char *ifname, if_stats *stats, 
+                             ndis_stats *raw_stats);
 
 #ifdef ENABLE_IFCONFIG_STATS
 extern te_errno ta_win32_conf_net_if_stats_init();
@@ -934,6 +952,9 @@ rcf_ch_conf_root()
             return NULL;
 #endif
 
+        /* Initialize configurator PHY support */
+        if (ta_unix_conf_phy_init() != 0)
+            return NULL;
     }
 
 
@@ -2850,7 +2871,7 @@ static te_errno net_if_stats_##_counter_##_get(unsigned int gid_,       \
                                                                         \
     /* Try to get statistics from wrapper. In case of success           \
      * several values from stats would be overwritten */                \
-    if_stats_get((ifname), &stats);                                     \
+    if_stats_get((ifname), &stats, NULL);                               \
                                                                         \
     snprintf((value_), RCF_MAX_VAL, "%llu", stats. _field_);            \
                                                                         \
@@ -3127,7 +3148,7 @@ ta_win32_conf_net_if_stats_init(void)
 #define KRX_DEL_MULTICAST_ADDR     NDIS_IOCTL(8)
 #define KRX_GET_MULTICAST_LIST     NDIS_IOCTL(9)
 
-#define KSTAT_GET     NDIS_IOCTL(12)
+#define KSTAT_GET     NDIS_IOCTL(18)
 
 #define WRAPPER_DEVICE_NAME  "\\\\.\\olwrapper"
 #define WRAPPER_DEVFILE_NAME "\\\\.\\olwrapper"
@@ -3264,7 +3285,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 // Ndis statistics
 
 static te_errno
-if_stats_get(const char *ifname, if_stats *stats)
+if_stats_get(const char *ifname, if_stats *stats, ndis_stats *raw_stats)
 {
     int   rc = 0;
 
@@ -3293,29 +3314,166 @@ if_stats_get(const char *ifname, if_stats *stats)
                          (void *)&ndstats, sizeof(ndstats),
                          &bytes_returned, NULL))
     {
-      rc = GetLastError();
-      WARN("DeviceIoControl failed with errno=%d", GetLastError());
-      return -2;
+        rc = GetLastError();
+        WARN("DeviceIoControl failed with errno=%d", GetLastError());
+        return -2;
     }
     CloseHandle(dev);
-
-    stats->in_octets = ndstats.gen_broadcast_bytes_rcv;
-    stats->in_ucast_pkts = ndstats.gen_directed_frames_rcv;
-    stats->in_nucast_pkts = ndstats.gen_broadcast_frames_rcv + 
-                            ndstats.gen_multicast_frames_rcv;
-    stats->in_discards = ndstats.gen_rcv_error + ndstats.gen_rcv_no_buffer;
-    stats->in_errors = ndstats.gen_rcv_error;
+    
+    if (raw_stats != NULL)
+    {
+        memcpy(raw_stats, &ndstats, sizeof(ndstats));
+    }
+        
+    if (stats != NULL)
+    {
+        stats->in_octets = ndstats.gen_broadcast_bytes_rcv;
+        stats->in_ucast_pkts = ndstats.gen_directed_frames_rcv;
+        stats->in_nucast_pkts = ndstats.gen_broadcast_frames_rcv + 
+                                ndstats.gen_multicast_frames_rcv;
+        stats->in_discards = ndstats.gen_rcv_error + 
+                             ndstats.gen_rcv_no_buffer;
+        stats->in_errors = ndstats.gen_rcv_error;
 #if 0
-    stats->in_unknown_protos = 0;
+        stats->in_unknown_protos = 0;
 #endif
-    stats->out_octets = ndstats.gen_broadcast_bytes_xmit;
-    stats->out_ucast_pkts = ndstats.gen_directed_frames_xmit;
-    stats->out_nucast_pkts = ndstats.gen_broadcast_frames_xmit + 
-                             ndstats.gen_multicast_frames_xmit;
+        stats->out_octets = ndstats.gen_broadcast_bytes_xmit;
+        stats->out_ucast_pkts = ndstats.gen_directed_frames_xmit;
+        stats->out_nucast_pkts = ndstats.gen_broadcast_frames_xmit + 
+                                 ndstats.gen_multicast_frames_xmit;
 #if 0
-    stats->out_discards = 0;
+        stats->out_discards = 0;
 #endif
-    stats->out_errors = ndstats.gen_xmit_error;
-
+        stats->out_errors = ndstats.gen_xmit_error;
+    }
     return 0;
+}
+
+//PHY support.
+RCF_PCH_CFG_NODE_RO(node_phy_state, "state", NULL, NULL,
+                    phy_state_get);
+
+RCF_PCH_CFG_NODE_RO(node_phy_speed, "speed", NULL, &node_phy_state,
+                    phy_speed_get);
+
+RCF_PCH_CFG_NODE_RO(node_phy_duplex, "duplex", NULL, &node_phy_speed,
+                    phy_duplex_get);
+
+RCF_PCH_CFG_NODE_RO(node_phy_autoneg, "autoneg", NULL, &node_phy_duplex,
+                    phy_autoneg_get);
+
+RCF_PCH_CFG_NODE_NA(node_phy, "phy", &node_phy_autoneg, 
+                    NULL);
+
+/**
+ * Get PHY state value.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         location of value
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_state_get(unsigned int gid, const char *oid, char *value,
+              const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ifname);
+    int state = -1;
+    
+    snprintf(value, RCF_MAX_VAL, "%d", state);
+    
+    return 0;
+}
+
+/**
+ * Get PHY current speed value.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         location of value
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_speed_get(unsigned int gid, const char *oid, char *value,
+              const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    
+
+    int speed = -1;
+    ndis_stats stats;
+    if(if_stats_get( ifname, NULL, &stats) == 0)
+    {
+        speed = (int)(stats.gen_link_speed / 10000);
+#if 0
+        WARN("SPEED GOT: %u", stats.gen_link_speed);
+#endif
+    }
+    snprintf(value, RCF_MAX_VAL, "%d", speed);
+    
+    return 0;
+}
+
+/**
+ * Get PHY autonegotiation state.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         location of value
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_autoneg_get(unsigned int gid, const char *oid, char *value,
+                const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ifname);
+    
+    int state = -1;
+    
+    snprintf(value, RCF_MAX_VAL, "%d", state);
+    
+    return 0;
+}
+
+/**
+ * Get PHY duplex state.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         location of value
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_duplex_get(unsigned int gid, const char *oid, char *value,
+               const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ifname);
+
+    snprintf(value, RCF_MAX_VAL, "not supported");
+        
+    return 0;
+}
+
+/**
+ * Initialize PHY subtree
+ */
+extern te_errno
+ta_unix_conf_phy_init(void)
+{
+    return rcf_pch_add_node("/agent/interface", &node_phy);
 }
