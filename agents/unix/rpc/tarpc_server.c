@@ -1598,7 +1598,7 @@ TARPC_FUNC(sigaction,
         p_act = &act;
         
         act.sa_flags = sigaction_flags_rpc2h(in_act->flags);
-        act_mask = rcf_pch_mem_get(in_act->mask);
+        act_mask = (sigset_t *) rcf_pch_mem_get(in_act->mask);
         if (act_mask == NULL)
         {
             out->common._errno = TE_RC(TE_TA_UNIX, TE_EFAULT);
@@ -1634,7 +1634,8 @@ TARPC_FUNC(sigaction,
 
         oldact.sa_flags = sigaction_flags_rpc2h(out_oldact->flags);
         if ((out_oldact->mask != RPC_NULL) &&
-            (oldact_mask = rcf_pch_mem_get(out_oldact->mask)) == NULL)
+            (oldact_mask = 
+                (sigset_t *) rcf_pch_mem_get(out_oldact->mask)) == NULL)
         {
             out->common._errno = TE_RC(TE_TA_UNIX, TE_EFAULT);
             out->retval = -1;
