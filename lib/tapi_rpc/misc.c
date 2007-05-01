@@ -1129,7 +1129,7 @@ rpc_create_child_process_socket(const char *method,
                                 rpc_socket_type sock_type,
                                 rcf_rpc_server **pco_child, int *child_s)
 {
-    char        info[512];
+    unsigned char info[512];
     int         info_len = sizeof(info);
     char        process_name[12];
     static int  counter = 1;
