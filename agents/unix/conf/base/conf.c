@@ -4679,7 +4679,7 @@ typedef struct {
 } neigh_find_cb_param; 
     
 int
-neigh_find_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
+neigh_find_cb(const struct sockaddr_nl *who, struct nlmsghdr *n,
               void *arg)
 {    
     neigh_find_cb_param *p = (neigh_find_cb_param *)arg;
@@ -5189,7 +5189,7 @@ typedef struct {
 } neigh_print_cb_param;
 
 int
-neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
+neigh_print_cb(const struct sockaddr_nl *who, struct nlmsghdr *n,
                void *arg)
 {
     neigh_print_cb_param *p = (neigh_print_cb_param *)arg;
