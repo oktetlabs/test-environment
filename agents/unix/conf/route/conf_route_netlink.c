@@ -399,7 +399,7 @@ typedef struct rtnl_cb_user_data {
  */
 static int
 rtnl_get_route_cb(const struct sockaddr_nl *who,
-                  const struct nlmsghdr *n, void *arg)
+                  struct nlmsghdr *n, void *arg)
 {
     static ta_route_type rtm_type2ta_rt_type[TA_RT_TYPE_MAX_VALUE] = 
         {
@@ -603,7 +603,7 @@ typedef struct {
 
 static int
 rtnl_print_route_cb(const struct sockaddr_nl *who,
-                    const struct nlmsghdr *n, void *arg)
+                    struct nlmsghdr *n, void *arg)
 {
     struct rtmsg        *r = NLMSG_DATA(n);
     int                  len = n->nlmsg_len;
@@ -795,7 +795,7 @@ do {                                                            \
  */
 static int
 rtnl_print_blackhole_cb(const struct sockaddr_nl *who,
-                        const struct nlmsghdr *n, void *arg)
+                        struct nlmsghdr *n, void *arg)
 {
     struct rtmsg        *r = NLMSG_DATA(n);
     int                  len = n->nlmsg_len;
