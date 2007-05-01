@@ -294,6 +294,8 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
         char filename[100], new_ifname[100];
         char str[100];
         unsigned char mac[ETHER_ADDR_LEN];
+        unsigned int mac_bytes[ETHER_ADDR_LEN];
+        int i;
 
         strcpy(new_ifname, ifname);
         if (strncmp(ifname, "ef", 2) == 0)
@@ -337,9 +339,11 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
                   str[strlen(str) - 1] = 0;
                 }
                 fclose(F);
-                sscanf(str, "%x:%x:%x:%x:%x:%x",
-                       &mac[0], &mac[1], &mac[2],
-                       &mac[3], &mac[4], &mac[5]);
+                sscanf(str, "%02x:%02x:%02x:%02x:%02x:%02x",
+                       &mac_bytes[0], &mac_bytes[1], &mac_bytes[2],
+                       &mac_bytes[3], &mac_bytes[4], &mac_bytes[5]);
+                for (i = 0; i < 6; i++)
+                    mac[i] = mac_bytes[i];
                 memcpy(sap->addr, mac, ETHER_ADDR_LEN);
             }
         }
