@@ -342,7 +342,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
                 sscanf(str, "%02x:%02x:%02x:%02x:%02x:%02x",
                        &mac_bytes[0], &mac_bytes[1], &mac_bytes[2],
                        &mac_bytes[3], &mac_bytes[4], &mac_bytes[5]);
-                for (i = 0; i < 6; i++)
+                for (i = 0; i < ETHER_ADDR_LEN; i++)
                     mac[i] = mac_bytes[i];
                 memcpy(sap->addr, mac, ETHER_ADDR_LEN);
             }
