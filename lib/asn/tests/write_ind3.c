@@ -12,7 +12,7 @@ main(void)
 {
     char buffer[1000];
     asn_value *opt, *options;
-    int rc, syms;
+    int rc;
     char len;
     uint32_t opt_val;
     
