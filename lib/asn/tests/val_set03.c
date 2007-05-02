@@ -9,17 +9,17 @@ DEFINE_LGR_ENTITY("val_set03");
 
 
 asn_named_entry_t my_entry_array [] = {
-    { "number", &asn_base_integer_s,    0 },
-    { "string", &asn_base_charstring_s, 0 }
+    { "number", &asn_base_integer_s,    {0,0} },
+    { "string", &asn_base_charstring_s, {0,0} }
 };
 
 
 asn_named_entry_t str_ea [] = {
-    { "string", &asn_base_charstring_s, 0 }
+    { "string", &asn_base_charstring_s, {0,0} }
 };
 
 asn_named_entry_t num_ea [] = {
-    { "number", &asn_base_integer_s, 0 }
+    { "number", &asn_base_integer_s, {0,0} }
 };
 
 asn_type my_sequence = {
@@ -27,7 +27,7 @@ asn_type my_sequence = {
     {APPLICATION, 1},
     SEQUENCE,
     2,
-    {&my_entry_array}
+    my_entry_array
 };
 
 
@@ -36,7 +36,7 @@ asn_type my_str_sequence = {
     {APPLICATION, 5},
     SEQUENCE,
     1,
-    {&str_ea}
+    str_ea
 };
 
 
@@ -45,13 +45,13 @@ asn_type my_num_sequence = {
     {APPLICATION, 5},
     SEQUENCE,
     1,
-    {&num_ea}
+    num_ea
 };
 
 
 asn_named_entry_t compl_entry_array [] = {
-    { "nested", &my_sequence,       0 },
-    { "name", &asn_base_charstring, 0 }
+    { "nested", &my_sequence,       {0,0} },
+    { "name", &asn_base_charstring, {0,0} }
 };
 
 asn_type complex_sequence = {
@@ -59,7 +59,7 @@ asn_type complex_sequence = {
     {APPLICATION, 2},
     SEQUENCE,
     2,
-    {&compl_entry_array}
+    compl_entry_array
 };
 
 
@@ -77,14 +77,17 @@ int
 main (void)
 { 
     asn_value *seq_val   = asn_init_value(&my_sequence);
-    asn_value *compl_seq = asn_init_value(&complex_sequence);
-    asn_value *for_read;
 
-    int a = 1981, b = 1234; 
+    int a = 1981; 
     char str[] = "uura..";
-    char str2[] = "sss.... lslsls";
     int r; 
+#if 0
     int read_len = BUF_TO_READ;
+    char str2[] = "sss.... lslsls";
+    asn_value *for_read;
+    asn_value *compl_seq = asn_init_value(&complex_sequence);
+    int b = 1234;
+#endif
 
     r = asn_write_value_field(seq_val, &a, sizeof(a), "number");
     if (r) 
