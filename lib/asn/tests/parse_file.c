@@ -17,9 +17,11 @@ main (int argc, char *argv[])
 #else
     asn_type *a_type = ndn_traffic_template;
 #endif
-    asn_value *packet, *eth_header, *snmp_message;
+    asn_value *packet;
 
-    const asn_value *pattern_unit;
+#if 0
+    asn_value *eth_header, *snmp_message;
+#endif
 
     if (argc < 2)
     {
