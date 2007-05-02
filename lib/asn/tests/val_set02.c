@@ -20,7 +20,9 @@ main (void)
     int a = 1981; 
     char str[] = "test string";
     int r; 
+#if 0
     int read_len = BUF_TO_READ;
+#endif
 
 #if FIRST_TEST
     r = asn_write_value_field(seq_val, &a, sizeof(a), "number");
