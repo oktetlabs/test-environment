@@ -58,7 +58,7 @@ main(void)
 
     if ((p = asn_init_value(ndn_data_unit_char_string)) == NULL)
     {
-        TEST_FAIL("Cannot create \"char string\" DATA UNIT", "");
+        TEST_FAIL("Cannot create \"char string\" DATA UNIT");
         return 1;
     }
     for (i = 0; i < sizeof(test_strings) / sizeof(test_strings[0]); i++)
