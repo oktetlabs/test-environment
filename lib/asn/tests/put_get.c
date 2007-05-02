@@ -31,7 +31,7 @@ main(void)
     asn_value  *str_val; 
     asn_value  *child_val; 
     asn_value  *choice_val; 
-    size_t      syms; 
+    ssize_t     syms; 
     int         rc;
 
     asn_parse_value_text("15", asn_base_integer, &int_val, &syms);
