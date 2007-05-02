@@ -90,6 +90,7 @@
 #include "rcf_pch_ta_cfg.h"
 #include "unix_internal.h"
 #include "conf_route.h"
+#include "ta_common.h"
 
 #include <sys/select.h>
 #include <asm/types.h>
