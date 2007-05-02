@@ -54,18 +54,7 @@ for arg in "$@"; do
         -o) processed_options="$processed_options $arg" ; forward_next=yes ;;
         -*) processed_options="$processed_options $arg" ;;
         *)
-        if test -n "${TCE_SRC}"; then
-            mydir=`dirname $arg`
-            myself=`basename $arg`
-            fullpath=`cd $mydir && echo $PWD`/$myself
-            for src in ${TCE_SRC}; do
-                case "$fullpath" in
-                    $src*) coverage_options="$tce_coverage_options" ; break ;;
-                esac
-            done
-        else
-            coverage_options="$tce_coverage_options"
-        fi
+        coverage_options="$tce_coverage_options"
         if test -n "${TCE_SRC_EXCLUDE}"; then
             if test -L $arg ; then
                 link=`readlink $arg`
@@ -100,7 +89,7 @@ if test -z "$nobbhook"; then
     for i in $CC; do
         tmpcc=$i
     done
-    ${TCE_CC} -c ${TCE_CFLAGS} -o $BBHOOK_O -I${TCE_SRC}/include ${TCE_SRC}/../share/tce/bbhook.c
+    ${TCE_CC} -c ${TCE_CFLAGS} -o $BBHOOK_O -I${TCE_SRC}/include ${TCE_SRC}/bbhook.c
     ar crs $LIBGCOV_A $BBHOOK_O
     BBHOOK_O="-L$TCELIB -lgcov"
 else
