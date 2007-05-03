@@ -774,7 +774,7 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
     HANDLE   in_handle = INVALID_HANDLE_VALUE;
     HANDLE   out_handle = INVALID_HANDLE_VALUE;
     
-    SleepEx(5, TRUE); /* Let other thread send the response 
+    SleepEx(500, TRUE); /* Let other thread send the response 
                          on server creation */
     
     sprintf(pipename, PIPE_PREFIX "%s_%lu_%lu_%u", 
