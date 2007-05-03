@@ -74,7 +74,10 @@ $1 == "FILE" {
     nfile++;
     sourcefile = $5;
     destfile = sprintf("%s/%d.html", DATADIR, nfile);
-    printf "<p><a href=\"%d.html\">[prev]</a><a href=\"%d.html\">[next]</a>\n", nfile - 1, nfile + 1 > destfile
+    print "<html>" > destfile
+    print "<head><title>" sourcefile "</title></head>" >> destfile
+    print "<body>" >> destfile
+    printf "<p><a href=\"%d.html\">[prev]</a><a href=\"%d.html\">[next]</a>\n", nfile - 1, nfile + 1 >> destfile
     print "<table>" >> destfile
     printf "<caption>%s (%s): %d runs</caption>\n", sourcefile, $2, $NF >> destfile
     next;
@@ -87,6 +90,8 @@ $1 == "SUMMARY" {
     exbranches += $5;
     if (!GROUP_HEADERS) update_summary();
     print "</table>" >> destfile
+    print "</body>" >> destfile
+    print "</html>" >> destfile
     close(destfile);
     close(sourcefile);
     next;
@@ -176,6 +181,9 @@ $1 == "SUMMARY" {
 END {
     if (GROUP_HEADERS) update_summary();
     asorti(summary, sorted);
+    print "<html>"
+    print "<head><title>TCE summary</title></head>"
+    print "<body>"
     print "<table border=\"1\">";
     print "<th>Filename</th><th>Lines executed</th><th>Branches executed</th>"
     url = DATADIR
@@ -189,5 +197,7 @@ END {
             sumfields[3] == 0 ? "100" : (sumfields[4] * 100 / sumfields[3]), sumfields[3];
     }
     print "</table>"
+    print "</body>"
+    print "</html>"
 }
 
