@@ -127,6 +127,8 @@ main(int argc, char *argv[])
     
     CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
     
+    CFG_WAIT_CHANGES;
+    
     /*
      * Check the result
      */
@@ -157,6 +159,8 @@ main(int argc, char *argv[])
     /* Turn PHY autonegotiation to state ON */
     autoneg = TE_PHY_AUTONEG_ON;
     CHECK_RC(tapi_cfg_phy_autoneg_set(ta, iface_name, autoneg));
+    CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
+    CFG_WAIT_CHANGES;
     
     /*
      * Advertising
@@ -167,7 +171,7 @@ main(int argc, char *argv[])
                                              speed_adver, duplex_adver,
                                              &mode));
     if (!mode)
-        TEST_FAIL("mode is not advertised");
+        TEST_FAIL("mode is not advertised on %s at %s", ta, iface_name);
     
     /* Turn off advertising for this mode */
     CHECK_RC(tapi_cfg_phy_advertise_mode(ta, iface_name,
@@ -175,6 +179,7 @@ main(int argc, char *argv[])
                                          0));
     
     CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
+    CFG_WAIT_CHANGES;
     
     /* Check that mode is not advertised */
     CHECK_RC(tapi_cfg_phy_is_mode_advertised(ta, iface_name,
@@ -188,6 +193,7 @@ main(int argc, char *argv[])
                                          speed_adver, duplex_adver, 1));
     
     CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
+    CFG_WAIT_CHANGES;
     
     /* Check that mode is advertised */
     CHECK_RC(tapi_cfg_phy_is_mode_advertised(ta, iface_name,

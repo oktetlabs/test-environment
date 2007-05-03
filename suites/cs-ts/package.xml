@@ -17,7 +17,7 @@
     </run>
     
     <run>
-      <script name="phy" track_conf="silent">
+      <script name="phy" track_conf="nohistory">
       </script>
       <arg name="ta">
         <value>Agt_B</value>
@@ -41,7 +41,7 @@
         <value>100</value>
       </arg>
       <arg name="duplex_adver">
-        <value>0</value>
+        <value>1</value>
       </arg>
     </run>
 
