@@ -178,11 +178,13 @@ END {
     asorti(summary, sorted);
     print "<table border=\"1\">";
     print "<th>Filename</th><th>Lines executed</th><th>Branches executed</th>"
+    url = DATADIR
+    sub(/^.*\//, "", url);
     for (i = 1; i in sorted; i++)
     {
         split(summary[sorted[i]], sumfields);
         printf "<tr><td><a href=\"%s/%d.html\">%s</a></td><td>%.2f%% of %d</td><td>%.2f%% of %d</td>", 
-            DATADIR, sumfields[6], sumfields[5], 
+            url, sumfields[6], sumfields[5], 
             sumfields[1] == 0 ? "100" : (sumfields[2] * 100 / sumfields[1]), sumfields[1],
             sumfields[3] == 0 ? "100" : (sumfields[4] * 100 / sumfields[3]), sumfields[3];
     }
