@@ -61,7 +61,8 @@ main(void)
     printf("composed value: \n%s\n", buffer);
 
 
-    rc = asn_get_child_value(seq_val, &child_val, PRIVATE, SEQ_STRING_TAG);
+    rc = asn_get_child_value(seq_val, (const asn_value **)&child_val,
+                             PRIVATE, SEQ_STRING_TAG);
     if (rc) 
     {
         result = 1;
