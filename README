@@ -18,6 +18,9 @@ Engine:
   avoid mixture in log because of unprecise timestamps in messages
   logged by Dispatcher (via logging script))
 
+We've tested engine on Linux only.
+
+
 Unix Test Agent:
 
 - expect and expect-dev (for TAD CLI only)
@@ -25,7 +28,7 @@ Unix Test Agent:
 - flex >= 2.5.31 from sourceforge; flex 2.5.4a from gnu.org does not work
 - libexpat
 - libpcap0.8-dev (for TAD PCAP only)
-- libpam (0.76-22) (For Linux it is not required but suggested)
+- libpam (0.76-22) (not required but suggested)
 
 We are using versions of libraries specified in parentheses.
 
@@ -53,14 +56,18 @@ to build and run from distributive:
 
 Supported OSes:
 ~~~~~~~~~~~~~~~
+Linux:
 All works fine with Debian 3.1 (Sarge) native packages.
-
 For Fedora Core, you need to install new flex (we use package from PLD
 distribution) and netlink library (we use home-made iproute rpm which
 includes the library).
 
-Test agent works on Solaris without any problems.
+Solaris:
+Test agent is tested with OpenSolaris SunOS thorin 5.11 snv_59, both i86
+and amd64 architecture.
+For cross-tools, you need to install libdlpi and all dependent libraries.
 
+Windows:
 Test agent works on Windows with cygwin core and cygwin ssh server
 installed.
 
