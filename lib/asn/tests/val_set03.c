@@ -27,7 +27,7 @@ asn_type my_sequence = {
     {APPLICATION, 1},
     SEQUENCE,
     2,
-    my_entry_array
+    {my_entry_array}
 };
 
 
@@ -36,7 +36,7 @@ asn_type my_str_sequence = {
     {APPLICATION, 5},
     SEQUENCE,
     1,
-    str_ea
+    {str_ea}
 };
 
 
@@ -45,13 +45,13 @@ asn_type my_num_sequence = {
     {APPLICATION, 5},
     SEQUENCE,
     1,
-    num_ea
+    {num_ea}
 };
 
 
 asn_named_entry_t compl_entry_array [] = {
     { "nested", &my_sequence,       {0,0} },
-    { "name", &asn_base_charstring, {0,0} }
+    { "name", &asn_base_charstring_s, {0,0} }
 };
 
 asn_type complex_sequence = {
@@ -59,7 +59,7 @@ asn_type complex_sequence = {
     {APPLICATION, 2},
     SEQUENCE,
     2,
-    compl_entry_array
+    {compl_entry_array}
 };
 
 
