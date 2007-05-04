@@ -1505,33 +1505,9 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
     }
     if (nread > (int)tad_pkt_len(pkt))
     {
-#if 1
-        tad_pkt_free_segs(pkt);
-#endif
-        size_t       len = nread - tad_pkt_len(pkt);
-        tad_pkt_seg *seg = tad_pkt_first_seg(pkt);
-
-        if ((seg != NULL) && (seg->data_ptr == NULL))
-        {
-            void *mem = malloc(len);
-
-            if (mem == NULL)
-            {
-                rc = TE_OS_RC(TE_TAD_CSAP, errno);
-                assert(rc != 0);
-                return rc;
-            }
-            VERB("%s(): reuse the first segment of packet", __FUNCTION__);
-            tad_pkt_put_seg_data(pkt, seg,
-                                 mem, len, tad_pkt_seg_data_free);
-        }
-        else
-        {
-            seg = tad_pkt_alloc_seg(NULL, len, NULL);
-            VERB("%s(): append segment with %u bytes space", __FUNCTION__,
-                 (unsigned)len);
-            tad_pkt_append_seg(pkt, seg);
-        }
+        rc = tad_pkt_realloc_segs(pkt, nread);
+        if (rc != 0)
+            return rc;
     }
 
     /* Logical block to allocate iov of volatile length on the stack */

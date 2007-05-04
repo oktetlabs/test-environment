@@ -701,6 +701,16 @@ extern te_errno tad_pkt_match_mask(const tad_pkt *pkt, size_t len,
                                    te_bool exact_len);
 
 
+/**
+ * Alloc additional segments for the packet
+ *
+ * @param pkt       the packet to add new segments
+ * @param new_len   necessary length of the packet after adding segments
+ *
+ * @return Status code.
+ */
+extern te_errno tad_pkt_realloc_segs(tad_pkt *pkt, size_t new_len);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

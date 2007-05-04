@@ -139,7 +139,7 @@ extern te_errno tad_eth_sap_recv_open(tad_eth_sap  *sap,
  *
  * @param sap           SAP description structure
  * @param timeout       Receive operation timeout
- * @param pkt           Frame to be sent
+ * @param pkt           Frame to receive
  * @param pkt_len       Location for real packet length
  *
  * @return Status code.

@@ -176,36 +176,13 @@ pkt_handl(u_char *ptr, const struct pcap_pkthdr *header,
     te_errno      rc;
 
     if (header->len != pktlen)
-        WARN("Frame has been trunced");
+        WARN("Frame has been truncated");
 
     if (pktlen > tad_pkt_len(pktptr->pkt))
     {
-        tad_pkt_free_segs(pktptr->pkt);
-
-        size_t       len = pktlen - tad_pkt_len(pktptr->pkt);
-        tad_pkt_seg *seg = tad_pkt_first_seg(pktptr->pkt);
-
-        if ((seg != NULL) && (seg->data_ptr == NULL))
-        {
-            void *mem = malloc(len);
-
-            if (mem == NULL)
-            {
-                rc = TE_OS_RC(TE_TAD_CSAP, errno);
-                assert(rc != 0);
-                return;
-            }
-            VERB("%s(): reuse the first segment of packet", __FUNCTION__);
-            tad_pkt_put_seg_data(pktptr->pkt, seg,
-                                 mem, len, tad_pkt_seg_data_free);
-        }
-        else
-        {
-            seg = tad_pkt_alloc_seg(NULL, len, NULL);
-            VERB("%s(): append segment with %u bytes space", __FUNCTION__,
-                 (unsigned)len);
-            tad_pkt_append_seg(pktptr->pkt, seg);
-        }
+        rc = tad_pkt_realloc_segs(pktptr->pkt, pktlen);
+        if (rc != 0)
+            return;
     }
 
     /* Logical block to allocate iov of volatile length on the stack */

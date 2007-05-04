@@ -1243,3 +1243,27 @@ tad_pkt_match_mask(const tad_pkt *pkt, size_t len, const uint8_t *mask,
 
     return 0;
 }
+
+/* See description in tad_pkt.h */
+te_errno
+tad_pkt_realloc_segs(tad_pkt *pkt, size_t new_len)
+{
+    te_errno     rc;
+    tad_pkt_seg *seg;
+
+    assert(pkt != NULL);
+    /* 
+     * @todo We should make start allocation: do not call
+     * tad_pkt_alloc_seg(), but do the real realloc instead.
+     */
+    tad_pkt_free_segs(pkt);
+    seg = tad_pkt_alloc_seg(NULL, new_len, NULL);
+    if (seg == NULL)
+    {
+        ERROR("%s(): out of memory");
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
+    tad_pkt_append_seg(pkt, seg);
+
+    return 0;
+}
