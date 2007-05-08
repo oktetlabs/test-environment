@@ -69,6 +69,7 @@
 #include <sys/filio.h>
 #endif
 
+#undef HAVE_SYS_BUFMOD_H
 #if HAVE_SYS_BUFMOD_H
 #include <sys/bufmod.h>
 #endif
@@ -493,58 +494,76 @@ dlpi_sap_open(tad_eth_sap *sap)
     union DL_primitives dlp;
 
 
-    if (!dlpi->close_possible)  /* FIXME */
+    if (dlpi->close_possible)  /* FIXME */
+        return 0;
+
+    if (dlpi->dl_info.dl_provider_style == DL_STYLE1)
     {
-        if (dlpi->dl_info.dl_provider_style == DL_STYLE1)
-        {
-            ERROR("DLS provider supports DL_STYLE1");
-            rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
-            return rc;
-        }
-        else if (dlpi->dl_info.dl_provider_style == DL_STYLE2)
-        {
-            dlp.attach_req.dl_primitive = DL_ATTACH_REQ;
-            dlp.attach_req.dl_ppa = dlpi->unit;
-            rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-            if (rc != 0)
-               return rc;
-
-            memset(&dlp, 0, sizeof(dlp));
-            rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-            if (rc != 0)
-               return rc;
-        }
-        else
-        {
-            ERROR("Unknown DL_STYLE");
-            rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
-            return rc;
-        }
-
-        /* Bind DLSAP to the Stream */
-        memset(&dlp, 0, sizeof(dlp));
-        dlp.bind_req.dl_primitive = DL_BIND_REQ;
-        dlp.bind_req.dl_sap = 0;  /* I am not sure about it absolutely :( */
-        dlp.bind_req.dl_service_mode = DL_CLDLS;
-
+        ERROR("DLS provider supports DL_STYLE1");
+        rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+        return rc;
+    }
+    else if (dlpi->dl_info.dl_provider_style == DL_STYLE2)
+    {
+        dlp.attach_req.dl_primitive = DL_ATTACH_REQ;
+        dlp.attach_req.dl_ppa = dlpi->unit;
         rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
         if (rc != 0)
-            return rc;
+           return rc;
 
         memset(&dlp, 0, sizeof(dlp));
-        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_BIND_ACK_SIZE);
+        rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
         if (rc != 0)
-            return rc;
-
-        /* FIXME */
-        VERB("B: Set close_possible TRUE");
-        dlpi->close_possible = TRUE;
-        return 0;
+           return rc;
     }
     else
     {
-        return 0;
+        ERROR("Unknown DL_STYLE");
+        rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
+        return rc;
     }
+
+    /* Bind DLSAP to the Stream */
+    memset(&dlp, 0, sizeof(dlp));
+    dlp.bind_req.dl_primitive = DL_BIND_REQ;
+    dlp.bind_req.dl_sap = 0;  /* I am not sure about it absolutely :( */
+    dlp.bind_req.dl_service_mode = DL_CLDLS;
+
+    rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+    if (rc != 0)
+        return rc;
+
+    memset(&dlp, 0, sizeof(dlp));
+    rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_BIND_ACK_SIZE);
+    if (rc != 0)
+        return rc;
+
+#ifdef DLIOCRAW
+    /*
+     ** This is a non standard SunOS hack to get the full raw link-layer
+     ** processing (M_PROTO message block are not processed).
+     */
+    {
+        struct strioctl str;
+
+        str.ic_cmd = DLIOCRAW;
+        str.ic_timout = -1;
+        str.ic_len = 0;
+        str.ic_dp = NULL;
+        rc = ioctl(dlpi->fd, I_STR, &str);
+        if (rc < 0)
+        {
+            rc = TE_OS_RC(TE_TAD_DLPI, errno);
+            ERROR("DLIOCRAW: %r", rc);
+            return rc;
+        }
+    }
+#endif
+
+    /* FIXME */
+    VERB("B: Set close_possible TRUE");
+    dlpi->close_possible = TRUE;
+    return 0;
 }
 
 static te_errno
@@ -818,25 +837,6 @@ tad_eth_sap_recv_open(tad_eth_sap *sap,
         dlpi->promisc_flags |= 1 << DL_PROMISC_MULTI;
     }
 
-    /*
-     ** This is a non standard SunOS hack to get the full raw link-layer
-     ** processing (M_PROTO message block are not processed).
-     */
-    {
-        struct strioctl str;
-
-        str.ic_cmd = DLIOCRAW;
-        str.ic_timout = -1;
-        str.ic_len = 0;
-        str.ic_dp = NULL;
-        rc = ioctl(dlpi->fd, I_STR, &str);
-        if (rc < 0)
-        {
-            rc = TE_OS_RC(TE_TAD_DLPI, errno);
-            ERROR("DLIOCRAW: %r", rc);
-            return rc;
-        }
-    }
     return 0;
 }
 
