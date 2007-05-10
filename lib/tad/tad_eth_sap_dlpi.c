@@ -670,7 +670,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
             return TE_RC(TE_TAD_DLPI, TE_ENOMEM);
         }
     }
-    ERROR("%s: before write()", __FUNCTION__);
+
     rc = write(dlpi->fd, dlpi->buf, pkt_len);
     if (rc != pkt_len)
     {
@@ -678,7 +678,6 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
               rc, pkt_len);
         return TE_RC(TE_TAD_DLPI, TE_ENOMEM);
     }
-    ERROR("%s: it was write() -> %d", __FUNCTION__);
 
     return 0;
 }
