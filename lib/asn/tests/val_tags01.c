@@ -62,7 +62,7 @@ main (void)
     printf("rc getting choice subval: %d\n", r); 
 
     if (r == 0 && subval != NULL)
-        printf("got subval syntax: %d\n", (*subval)->syntax);
+        printf("got subval syntax: %d\n", subval->syntax);
 
     return 0;
 }
