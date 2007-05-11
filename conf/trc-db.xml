@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <trc_db>
   <test name="cs-ts" type="package">
-    <objective>Tests on RCF functionality.</objective>
+    <objective>Tests on Configurator functionality.</objective>
     <notes/>
     <iter result="PASSED">
       <notes/>
