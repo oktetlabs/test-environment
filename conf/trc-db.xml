@@ -1,26 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <trc_db>
-  <test name="cs-ts" type="package">
-    <objective>Tests on Configurator functionality.</objective>
-    <notes/>
-    <iter result="PASSED">
-      <notes/>
-      <test name="vlans" type="script">
-        <objective/>
-        <notes/>
-        <iter result="PASSED">
-          <notes/>
-        </iter>
-      </test>
-      <test name="phy" type="script">
-        <objective/>
-        <notes/>
-        <iter result="PASSED">
-          <notes/>
-        </iter>
-      </test>
-    </iter>
-  </test>
   <test name="rcftest" type="package">
     <objective>Tests on RCF functionality.</objective>
     <notes/>
@@ -2342,6 +2321,27 @@
               <notes/>
             </iter>
           </test>
+        </iter>
+      </test>
+    </iter>
+  </test>
+  <test name="cs-ts" type="package">
+    <objective>Tests on Configurator functionality.</objective>
+    <notes/>
+    <iter result="PASSED">
+      <notes/>
+      <test name="vlans" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <notes/>
+        </iter>
+      </test>
+      <test name="phy" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <notes/>
         </iter>
       </test>
     </iter>
