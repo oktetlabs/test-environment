@@ -93,6 +93,7 @@ main(void)
     printf("complex::\n--\n%s\n--\n", buffer); 
 #endif
 
+#undef DEBUG
 #define DEBUG 1
     r = asn_remove_indexed(seq_val, 1, "");
     if (r) { fprintf(stderr, "remove error code: %6x\n", r); return r; }
