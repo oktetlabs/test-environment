@@ -49,6 +49,7 @@ static te_errno
 check_walk_p(asn_value *v, void *d)
 {
     static int m = 2000;
+    UNUSED(d);
 
     printf("%s for subval %s, syntax %d\n", 
            __FUNCTION__, asn_get_name(v), asn_get_syntax(v, ""));
@@ -60,6 +61,7 @@ static te_errno
 check_walk_g(asn_value *v, void *d)
 {
     int m;
+    UNUSED(d);
     asn_get_mark(v, &m);
     printf("%s for subval %s, syntax %d,mark %d\n", 
            __FUNCTION__, asn_get_name(v), asn_get_syntax(v, ""), m);
