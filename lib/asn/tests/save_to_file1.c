@@ -42,9 +42,9 @@ const char *test_strings[] = {
     "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"",
 };
 
-#define TEST_FAIL(fmt_, args_...) \
+#define TEST_FAIL(fmt_...) \
     do {                                   \
-        fprintf(stderr, fmt_ "\n", args_); \
+        fprintf(stderr, fmt_ ); \
     } while (0)
 
 int
@@ -58,7 +58,7 @@ main(void)
 
     if ((p = asn_init_value(ndn_data_unit_char_string)) == NULL)
     {
-        TEST_FAIL("Cannot create \"char string\" DATA UNIT" , "");
+        TEST_FAIL("Cannot create \"char string\" DATA UNIT\n");
         return 1;
     }
     for (i = 0; i < sizeof(test_strings) / sizeof(test_strings[0]); i++)
@@ -67,14 +67,14 @@ main(void)
 
         if ((rc = asn_write_string(p, test_strings[i], "#plain")) != 0)
         {
-            TEST_FAIL("Cannot write string into asn_value %s",
+            TEST_FAIL("Cannot write string into asn_value %s\n",
                       te_rc_err2str(rc));
             return 2;
         }
 
         if ((rc = asn_save_to_file(p, "save_to_file1.asn")) != 0)
         {
-            TEST_FAIL("Cannot save asn value into file %s",
+            TEST_FAIL("Cannot save asn value into file %s\n",
                       te_rc_err2str(rc));
             return 3;
         }
@@ -85,7 +85,7 @@ main(void)
                                       &ret_p, &syms_parsed);
         if (rc != 0)
         {
-            TEST_FAIL("Iter %d, string %s; Cannot parse file %s",
+            TEST_FAIL("Iter %d, string %s; Cannot parse file %s\n",
                       i, test_strings[i], te_rc_err2str(rc));
             return 4;
         }
@@ -93,7 +93,7 @@ main(void)
         /* Now we should compare new and original strings */
         if ((rc = asn_read_string(ret_p, &new_str, "#plain")) != 0)
         {
-            TEST_FAIL("Cannot read string from asn_value %s",
+            TEST_FAIL("Cannot read string from asn_value %s\n",
                       te_rc_err2str(rc));
             return 5;
         }
@@ -101,7 +101,7 @@ main(void)
         if (strcmp(test_strings[i], new_str) != 0)
         {
             TEST_FAIL("Original ('%s') and new ('%s') strings "
-                      "are different", test_strings[i], new_str);
+                      "are different\n", test_strings[i], new_str);
             return 6;
         }
 
@@ -110,7 +110,7 @@ main(void)
 
     if (unlink("save_to_file1.asn") != 0)
     {
-        TEST_FAIL("Failed to unlink save_to_file1.asn: errno=%d", errno);
+        TEST_FAIL("Failed to unlink save_to_file1.asn: errno=%d\n", errno);
         return 7;
     }
 
