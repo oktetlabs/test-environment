@@ -819,19 +819,20 @@ asn_retrieve_descendant(asn_value *value, te_errno *status,
         labels_buf[0] = '\0';
     va_end(list);
 
-    asn_clean_count(value); 
-
     if (rc != 0)
         RETURN_NULL_WITH_ERROR(rc);
-
-    if (status != NULL)
-        *status = 0;
 
     if (value == NULL)
         RETURN_NULL_WITH_ERROR(TE_EWRONGPTR);
 
-    if (labels_buf == NULL || *labels_buf == '\0')
+    if (status != NULL)
+        *status = 0;
+
+    if (*labels_buf == '\0')
+    {
+        asn_clean_count(value); 
         return (asn_value *)value;
+    }
 
     while ((rest_labels != NULL) && (*rest_labels != '\0') && (rc == 0))
     { 
