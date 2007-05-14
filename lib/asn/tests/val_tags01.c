@@ -20,7 +20,7 @@ main (void)
     asn_value *seq_val   = asn_init_value(&at_plain_seq1);
     asn_value *ch_val   = asn_init_value(&at_plain_choice1);
 
-    const asn_value *subval;
+    asn_value *subval;
 
     int a = 1981; 
     char str[] = "uura..";
@@ -35,11 +35,13 @@ main (void)
     if (r) { printf("write numbver error: %d\n", r); return 1; }
 
 
-    r = asn_get_child_value(seq_val, &subval, PRIVATE, SEQ_NUMBER_TAG);
+    r = asn_get_child_value(seq_val, (const asn_value **)&subval, 
+                            PRIVATE, SEQ_NUMBER_TAG);
     printf("rc getting subval by tag 'number': %d\n", r); 
 
 
-    r = asn_get_child_value(seq_val, &subval, PRIVATE, SEQ_STRING_TAG);
+    r = asn_get_child_value(seq_val, (const asn_value **)&subval, 
+                            PRIVATE, SEQ_STRING_TAG);
     printf("rc getting subval by tag 'string': %d\n", r); 
 
     r = asn_write_value_field(seq_val, str, sizeof(str), "string");
@@ -48,10 +50,12 @@ main (void)
     r = asn_sprint_value(seq_val, buffer, 1000, 0);
     printf("seq_val after write values: \n\"%s\"\n", buffer); 
 
-    r = asn_get_child_value(seq_val, &subval, PRIVATE, SEQ_NUMBER_TAG);
+    r = asn_get_child_value(seq_val, (const asn_value **)&subval, 
+                            PRIVATE, SEQ_NUMBER_TAG);
     printf("rc getting subval by tag 'number': %d\n", r); 
 
-    r = asn_get_child_value(seq_val, &subval, PRIVATE, SEQ_INT_ARRAY_TAG);
+    r = asn_get_child_value(seq_val, (const asn_value **)&subval, 
+                            PRIVATE, SEQ_INT_ARRAY_TAG);
     printf("rc getting subval by tag 'ingeter_array': %d\n", r); 
 
     r = asn_write_value_field(ch_val, &a, sizeof(a), "#number");
