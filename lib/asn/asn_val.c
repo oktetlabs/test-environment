@@ -803,9 +803,9 @@ asn_retrieve_descendant(asn_value *value, te_errno *status,
 {
     va_list     list;
     te_errno    rc = 0;
-    asn_value  *tmp_value = value;
+    asn_value  *tmp_value;
     char        labels_buf[200]; 
-    const char *rest_labels = labels_buf;
+    const char *rest_labels;
     int         subval_index;
 
     va_start(list, labels_fmt);
@@ -825,15 +825,16 @@ asn_retrieve_descendant(asn_value *value, te_errno *status,
     if (value == NULL)
         RETURN_NULL_WITH_ERROR(TE_EWRONGPTR);
 
+    tmp_value = value;
+    asn_clean_count(tmp_value); 
+
     if (status != NULL)
         *status = 0;
 
     if (*labels_buf == '\0')
-    {
-        asn_clean_count(value); 
-        return (asn_value *)value;
-    }
+        goto end;
 
+    rest_labels = labels_buf;
     while ((rest_labels != NULL) && (*rest_labels != '\0') && (rc == 0))
     { 
         asn_value *new_value;
@@ -885,6 +886,8 @@ asn_retrieve_descendant(asn_value *value, te_errno *status,
 
     if (rc != 0 && status != NULL)
         *status = rc; 
+
+end:
 
     return (rc == 0) ? tmp_value : NULL;
 }
