@@ -685,7 +685,9 @@ tapi_cfg_net_all_up(te_bool force)
 {
     int             rc;
     cfg_nets_t      nets;
-    unsigned int    i, j;
+    unsigned int    i, j, k;
+    char          **nodes;
+    unsigned int    n_nodes;
 
     /* Get available networks configuration */
     rc = tapi_cfg_net_get_nets(&nets);
@@ -695,15 +697,26 @@ tapi_cfg_net_all_up(te_bool force)
         return rc;
     }
 
+    n_nodes = 0;
+    for (i = 0; i < nets.n_nets; ++i)
+        n_nodes += nets.nets[i].n_nodes;
+    nodes = calloc(sizeof(char *), n_nodes);
+    if (nodes == NULL)
+    {
+        ERROR("Out of memory");
+        return TE_OS_RC(TE_TAPI, errno);
+    }
+
+    /* Get the list of interfaces to be brought up */
+    k = 0;
     for (i = 0; i < nets.n_nets; ++i)
     {
         cfg_net_t  *net = nets.nets + i;
 
-        for (j = 0; j < net->n_nodes; ++j)
+        for (j = 0; j < net->n_nodes; ++j, k++)
         {
             cfg_val_type    type;
             char           *oid = NULL;
-            int             status;
 
             type = CVT_STRING;
             rc = cfg_get_instance(net->nodes[j].handle, &type, &oid);
@@ -713,58 +726,81 @@ tapi_cfg_net_all_up(te_bool force)
                       "0x%x: %r", net->nodes[j].handle, rc);
                 break;
             }
+            nodes[k] = oid;
+        }
+    }
 
-            type = CVT_INTEGER;
-            rc = cfg_get_instance_fmt(&type, &status, "%s/status:", oid);
-            if (rc != 0)
-            {
-                ERROR("Failed to get status of %s: %r", oid, rc);
-                free(oid);
-                break;
-            }
-            if (status != 1)
-            {
-                rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
-                                          "%s/status:", oid);
-                if (rc != 0)
-                {
-                    ERROR("Failed to set status of %s to UP: %r",
-                          oid, rc);
-                    free(oid);
-                    break;
-                }
-            }
-            else if (force)
+    /* Check interfaces status and bring them down if "force" */
+    for (k = 0; k < n_nodes; k++)
+    {
+        cfg_val_type    type;
+        int             status;
+
+        type = CVT_INTEGER;
+        rc = cfg_get_instance_fmt(&type, &status, "%s/status:", nodes[k]);
+        if (rc != 0)
+        {
+            ERROR("Failed to get status of %s: %r", nodes[k], rc);
+            goto error;
+        }
+        if (status == 1)
+        {
+            if (force)
             {
                 rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
-                                          "%s/status:", oid);
+                                          "%s/status:", nodes[k]);
                 if (rc != 0)
                 {
                     ERROR("Failed to set status of %s to DOWN: %r",
-                          oid, rc);
-                    free(oid);
-                    break;
+                          nodes[k], rc);
+                    goto error;
                 }
-                rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
-                                          "%s/status:", oid);
-                if (rc != 0)
-                {
-                    ERROR("Failed to set status of %s to UP: %r",
-                          oid, rc);
-                    free(oid);
-                    break;
-                }
+
             }
             else
             {
-                INFO("Node (interface) %s is already UP", oid);
+                INFO("Node (interface) %s is already UP", nodes[k]);
+                free(nodes[k]);
+                nodes[k] = NULL;
             }
-            free(oid);
         }
+    }
+    if (force)
+        CFG_WAIT_CHANGES;
+
+    /* Bring interfaces up */
+    for (k = 0; k < n_nodes; k++)
+    {
+        cfg_val_type    type;
+
+        if (nodes[k] == NULL)
+            continue; /* The interface was already up */
+        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+                                  "%s/status:", nodes[k]);
         if (rc != 0)
-            break;
+        {
+            ERROR("Failed to set status of %s to UP: %r",
+                  nodes[k], rc);
+            goto error;
+        }
+        else
+        {
+            INFO("Node (interface) %s is already UP", nodes[k]);
+        }
+        free(nodes[k]);
+        nodes[k] = NULL;
     }
 
+error:
+    if (rc != 0)
+    {
+        for (k = 0; k < n_nodes; k++)
+        {
+            if (nodes[k] != NULL)
+                free(nodes[k]);
+        }
+    }
+    free(nodes);
     tapi_cfg_net_free_nets(&nets);
 
     return rc;
