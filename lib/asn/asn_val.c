@@ -1426,6 +1426,8 @@ asn_write_value_field(asn_value *container, const void *data, size_t d_len,
     if (subvalue == NULL)
         return rc;
 
+    container->txt_len = -1;
+    asn_clean_count(container); 
     rc = asn_write_primitive(subvalue, data, d_len);
 #else
     char     *field_labels_int_copy = asn_strdup(field_labels); 
