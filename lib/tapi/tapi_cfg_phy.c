@@ -504,7 +504,7 @@ tapi_cfg_phy_advertise_one(const char *ta, const char *if_name,
          /* Get a list of all supported duplex states */
          if (cfg_find_pattern_fmt(&dnum, &duplexes,
                                   "/agent:%s/interface:%s/phy:/modes:"
-                                  "/speed:%s/duplex:*", ta,
+                                  "/speed:%s/duplex:", ta,
                                   if_name, speed) != 0)
             ERROR("Failed to find any supported modes");
         
