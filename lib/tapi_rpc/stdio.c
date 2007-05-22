@@ -610,7 +610,6 @@ rpc_system(rcf_rpc_server *rpcs, const char *cmd)
         RETVAL_WAIT_STATUS(system, rc);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
     in.cmd.cmd_len = strlen(cmd) + 1;
     in.cmd.cmd_val = (char *)cmd_dup;
 
