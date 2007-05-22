@@ -33,6 +33,10 @@
 
 #include <libxml/xinclude.h>
 
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+
 
 /** Format for backup file name */
 #define CONF_BACKUP_NAME         "%s/te_cfg_backup_%d_%llu.xml"
@@ -1587,6 +1591,18 @@ process_cmd_line_opts(int argc, char **argv)
 }
 
 /**
+ * Handler for SIGPIPE signal.
+ *
+ * @param signum        Signal number (unused)
+ */
+static void
+cfg_sigpipe_handler(int signum)
+{
+    UNUSED(signum);
+    WARN("SIGPIPE received");
+}
+
+/**
  * Main loop of the Configurator: initialization and processing user
  * requests.
  *
@@ -1616,6 +1632,10 @@ main(int argc, char **argv)
     }
 
     VERB("Starting...");
+
+#if HAVE_SIGNAL_H
+    (void)signal(SIGPIPE, cfg_sigpipe_handler);
+#endif
 
     ipc_init();
     if (ipc_register_server(CONFIGURATOR_SERVER, CONFIGURATOR_IPC,
