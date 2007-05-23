@@ -938,25 +938,53 @@ static te_errno
 rpcserver_list(unsigned int gid, const char *oid, char **value)
 {
     rpcserver *rpcs;
-    char       buf[1024];
-    char      *s = buf;
+    char      *buf;
+    unsigned   buflen = 1024;
+    unsigned   filled_len = 0;
     
     UNUSED(gid);
     UNUSED(oid);
     
+    buf = calloc(buflen, 1);
+    if (buf == NULL)
+    {
+        ERROR("%s(): calloc failed", __FUNCTION__);
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+    }
+
     pthread_mutex_lock(&lock);
     *buf = 0;
     
     for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
-        s += sprintf(s, "%s ", rpcs->name);
+    {
+        if (buflen - filled_len <= strlen(rpcs->name) + 1)
+        {
+            char *buf1;
+
+            buflen *= 2;
+            buf1 = realloc(buf, buflen);
+            if (buf1 == NULL)
+            {
+                pthread_mutex_unlock(&lock);
+                free(buf);
+                ERROR("%s(): realloc failed", __FUNCTION__);
+                return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+            }
+            buf = buf1;
+        }
+        filled_len += snprintf(buf + filled_len, buflen - filled_len, 
+                               "%s ", rpcs->name);
+    }
         
     if ((*value = strdup(buf)) == NULL)
     {
         pthread_mutex_unlock(&lock);
+        free(buf);
         ERROR("%s(): strdup(%s) failed", __FUNCTION__, buf);
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);
     }
     pthread_mutex_unlock(&lock);
+    free(buf);
     
     return 0;
 }

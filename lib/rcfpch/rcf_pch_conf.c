@@ -342,8 +342,10 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 
             len = strlen(obj->sub_id) + strlen(tmp_inst_name) + 3;
 
-            sprintf(tmp_parsed, "%s/%s:%s", parsed == NULL ? "" : parsed,
-                    obj->sub_id, tmp_inst_name);
+            snprintf(tmp_parsed, CFG_OID_MAX, "%s/%s:%s", 
+                     parsed == NULL ? "" : parsed,
+                     obj->sub_id, tmp_inst_name);
+            tmp_parsed[CFG_OID_MAX - 1] = '\0';
 
             if (*next_level == 0 || all || strcmp(next_level, OID_ETC) == 0)
             {
