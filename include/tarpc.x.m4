@@ -3602,6 +3602,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(readbuf)
         RPC_DEF(writebuf)
+        RPC_DEF(recvbuf)
+        RPC_DEF(sendbuf)
 
         RPC_DEF(readv)
         RPC_DEF(writev)
