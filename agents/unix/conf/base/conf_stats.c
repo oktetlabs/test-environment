@@ -441,9 +441,10 @@ net_stats_get(net_stats *stats)
         return TE_OS_RC(TE_TA_UNIX, EINVAL);
     }
 
+cleanup:
+
     free(buf);
 
-cleanup:
 #endif    
 
     return 0;
