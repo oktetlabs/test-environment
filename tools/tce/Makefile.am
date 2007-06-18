@@ -17,4 +17,4 @@ dist_mybin_SCRIPTS=\
 
 
 mydatadir=$(datadir)/@PACKAGE_NAME@
-nobase_dist_mydata_DATA = bbhook.c modules/Makefile-2.6 modules/tce_bbinit.c modules/tce_bbinit_defs.h
+nobase_dist_mydata_DATA = bbhook.c modules/Makefile modules/tce_bbinit.c modules/tce_bbinit_defs.h
