@@ -539,6 +539,11 @@ _create_process_1_svc(tarpc_create_process_in *in,
     
     out->pid = fork();
 
+    if (out->pid == -1)
+    {
+        out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+        return TRUE;
+    }
     if (out->pid == 0)
     {
         rcf_pch_detach();
@@ -3611,7 +3616,8 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         {
             if (!in->ignore_err)
             {
-                ERROR("send() failed in simple_sender(): errno %x", errno);
+                ERROR("send() failed in simple_sender(): errno %s(%x)",
+                      strerror(errno), errno);
                 free(buf);
                 return -1;
             }
