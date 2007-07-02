@@ -773,13 +773,12 @@ static te_errno
 phy_duplex_get(unsigned int gid, const char *oid, char *value,
                const char *ifname)
 {
-    char               *duplex;
-    
     UNUSED(gid);
     UNUSED(oid);
 #if defined __linux__
     struct ethtool_cmd  ecmd;
     int                 rc;
+    char               *duplex;
     
     memset(&ecmd, 0, sizeof(ecmd));
     
@@ -815,6 +814,7 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
     int    instance = -1;
     char  *cmd;
     int    result = -1;
+    char  *duplex;
     
     /* Extract driver name and instance number from interface name */
     if (phy_extract_ifname(ifname, drv, &instance) != 2)
@@ -860,6 +860,9 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
     snprintf(value, RCF_MAX_VAL, "%s", duplex);
     
     free(cmd);
+#else
+    UNUSED(value);
+    UNUSED(ifname);
 #endif /* __linux__ */
     return 0;
 }
@@ -1294,6 +1297,9 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
     snprintf(value, RCF_MAX_VAL, "%d", speed);
     
     free(cmd);
+#else
+    UNUSED(value);
+    UNUSED(ifname);
 #endif /* __linux__ */
     return 0;
 }
@@ -1435,6 +1441,9 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     snprintf(value, RCF_MAX_VAL, "%d", state);
     
     free(cmd);
+#else
+    UNUSED(value);
+    UNUSED(ifname);
 #endif /* __linux__ */
     return 0;
 }
