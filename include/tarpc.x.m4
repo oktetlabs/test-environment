@@ -2766,23 +2766,6 @@ struct tarpc_uname_out {
     tarpc_utsname buf;
 };
 
-/* Solaris sysinfo() */
-
-struct tarpc_sysinfo_in {
-    struct tarpc_in_arg common;
-
-    tarpc_int command;
-    char      buf<>;
-    tarpc_int count;
-};
-
-struct tarpc_sysinfo_out {
-    struct tarpc_out_arg common;
-
-    tarpc_int retval;
-    char buf<>;
-};
-
 /* fileno() */
 struct tarpc_fileno_in {
     struct tarpc_in_arg common;
@@ -3695,7 +3678,6 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(getenv)
         RPC_DEF(setenv)
         RPC_DEF(uname)
-        RPC_DEF(sysinfo)  
         
         RPC_DEF(create_aiocb)
         RPC_DEF(fill_aiocb)

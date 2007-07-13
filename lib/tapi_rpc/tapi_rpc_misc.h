@@ -510,25 +510,6 @@ extern int rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
 
 
 /**
- * Get system info (currently only works with Solaris agent)
- *
- * @param rpcs          RPC server handle
- * @param command       System info variable name
- *                      NOTE: unlike most other calls, this takes
- *                      a RPC value, not a native one, as it is
- *                      extremely unlikely that the engine host might
- *                      have <sys/systeminfo.h>
- * @param buffer        Buffer to put resulting string in
- * @param count         Size of @p buffer
- *
- * @return              0 on success, -1 on failure
- */
-extern int rpc_sysinfo(rcf_rpc_server *rpcs, 
-                       rpc_sysinfo_command command,
-                       char *buffer,
-                       int count);
-
-/**
  * Compare memory areas
  *
  * @param rpcs  RPC server handle
