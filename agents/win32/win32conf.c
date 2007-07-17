@@ -622,6 +622,7 @@ efport2ifindex(void)
             return 0;
         guids_found = 1;
     }
+    //RING("SFCResolve: guid1='%s', guid2='%s'", guid1[0], guid2[0]);
 
     if ((iftable = (PIP_INTERFACE_INFO)malloc(sizeof(*iftable))) == NULL) 
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
@@ -658,6 +659,7 @@ efport2ifindex(void)
     ef_index[1] = 0;
     guid1_found_index = -1;
     guid2_found_index = -1;
+    //RING("SFCResolve: numadapters=%d", iftable->NumAdapters);
     for (i = 0; i < iftable->NumAdapters; i++)
     {
         for(j = 0; j < guid1_amount; j++)
@@ -1024,6 +1026,8 @@ interface_list(unsigned int gid, const char *oid, char **list)
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+
+    printf("VISTA: returning iflist: '%s'", *list);
 
     return 0;
 }
@@ -1468,6 +1472,9 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
+    printf("VISTA: Getting broadcast for ifname='%s', addr='%s'",
+           ifname, addr);
+
     if ((a = inet_addr(addr)) == INADDR_NONE)
     {
         if (strcmp(addr, "255.255.255.255") != 0)
@@ -1509,16 +1516,22 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
 
+    printf("VISTA: Setting broadcast '%s' for ifname='%s', addr='%s'",
+           value, ifname, addr);
     if ((a = inet_addr(addr)) == INADDR_NONE)
     {
         if (strcmp(addr, "255.255.255.255") != 0)
             return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
 
+    printf("VISTA: Setting broadcast before GET_IF_ENTRY");
     GET_IF_ENTRY;
+    printf("VISTA: Setting broadcast after GET_IF_ENTRY");
 
     if ((rc = ip_addr_exist(a, &data)) != 0)
         return rc;
+    printf("VISTA: Setting broadcast after ip_addr_exist");
+
 
     return 0;
 }
@@ -1670,7 +1683,12 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(ifname);
-    sprintf(szCommand, "./windows_layer2_mtu.exe %s", value);
+    snprintf(szCommand, sizeof(szCommand) - 1,
+             "./sish_client.exe "
+             "--server=127.0.0.1 "
+             "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_mtu.exe "
+             "--args=%s", value);
+//    sprintf(szCommand, "./windows_layer2_mtu.exe %s", value);
     printf("szCommand = %s\n", szCommand);
     system(szCommand);    
 
