@@ -996,18 +996,15 @@ rcf_ch_conf_release()
 static te_errno
 interface_list(unsigned int gid, const char *oid, char **list)
 {
-//    MIB_IFTABLE *table;
-    PIP_ADAPTER_INFO table, info; 
-    DWORD            size = 0; 
+    MIB_IFTABLE *table;
     char        *s = buf;
-    int          i, rc;
+    int          i;
 
     UNUSED(gid);
     UNUSED(oid);
 
     efport2ifindex();
 
-#if 0
     GET_TABLE(MIB_IFTABLE, GetIfTable);
     if (table == NULL)
     {
@@ -1016,32 +1013,13 @@ interface_list(unsigned int gid, const char *oid, char **list)
         else
             return 0;
     }
-#endif
-    GetAdaptersInfo(NULL, &size);
-    table = (PIP_ADAPTER_INFO)malloc(size);                      
-                                                                    
-    if ((rc = GetAdaptersInfo(table, &size)) != NO_ERROR)                  
-    {                                                               
-        ERROR("GetAdaptersInfo failed, error %d", rc);
-        free(table);                                                
-        return TE_RC(TE_TA_WIN32, TE_EWIN);                          
-    }                                                               
-
     buf[0] = 0;
 
-#if 0
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
         s += snprintf(s, sizeof(buf) - (s - buf),
                       "%s ", ifindex2ifname(table->table[i].dwIndex));
     }
-#endif
-    for (info = table; info != NULL; info = info->Next)
-    {
-        s += snprintf(s, sizeof(buf) - (s - buf),
-                      "%s ", ifindex2ifname(info->Index));
-    }
-
     free(table);
 
     if ((*list = strdup(buf)) == NULL)
@@ -1162,38 +1140,37 @@ get_addr_mask(const char *addr, const char *value, DWORD *p_a, DWORD *p_m)
 static int
 check_address(const char *addr, DWORD if_index)
 {
-    PIP_ADAPTER_INFO table, info; 
-    DWORD            size = 0; 
+    MIB_IPADDRTABLE *table;
+    char ifname[20], tmpaddr[30];
+    int i;
 
-    int   rc;
     int   found = 0;
 
-    GetAdaptersInfo(NULL, &size);
-    table = (PIP_ADAPTER_INFO)malloc(size);                      
-                                                                    
-    if ((rc = GetAdaptersInfo(table, &size)) != NO_ERROR)                  
-    {                                                               
-        ERROR("GetAdaptersInfo failed, error %d", rc);
-        free(table);                                                
-        return -1;                          
-    }                                                               
-
-    for (info = table; info != NULL; info = info->Next)
+    sprintf(ifname, ifindex2ifname(if_index));
+    GET_IF_ENTRY;
+    GET_TABLE(MIB_IPADDRTABLE, GetIpAddrTable);
+    if (table == NULL)
     {
-       IP_ADDR_STRING *addrlist;
-       
-       if (info->Index != if_index)
-           continue;
-       
-       for (addrlist = &(info->IpAddressList); 
-            addrlist != NULL;
-            addrlist = addrlist->Next)
+      return 0;
+    }
+
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        if (table->table[i].dwIndex != if_index)
+            continue;
+        if (table->table[i].dwAddr == 0)
+        {   
+            RING("skip 0.0.0.0 address");
+            continue;
+        }
+
+        snprintf(tmpaddr, sizeof(tmpaddr), "%s",
+                                    inet_ntoa(*(struct in_addr *)
+                                    &(table->table[i].dwAddr)));
+        if (strcmp(addr, tmpaddr) == 0)
         {
-            if (strcmp(addr, addrlist->IpAddress.String) == 0)
-            {
-              found = 1;
-              break;
-            }
+          found = 1;
+          break;
         }
     }
     free(table);
@@ -1249,7 +1226,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     for (i = 0; i < TIME_TO_WAIT; i++)
     {
-      if (0 == check_address(addr, if_entry.dwIndex))
+      if (check_address(addr, if_entry.dwIndex))
       {
         break;
       }
