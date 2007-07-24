@@ -996,15 +996,18 @@ rcf_ch_conf_release()
 static te_errno
 interface_list(unsigned int gid, const char *oid, char **list)
 {
-    MIB_IFTABLE *table;
+//    MIB_IFTABLE *table;
+    PIP_ADAPTER_INFO table, info; 
+    DWORD            size = 0; 
     char        *s = buf;
-    int          i;
+    int          i, rc;
 
     UNUSED(gid);
     UNUSED(oid);
 
     efport2ifindex();
 
+#if 0
     GET_TABLE(MIB_IFTABLE, GetIfTable);
     if (table == NULL)
     {
@@ -1013,14 +1016,31 @@ interface_list(unsigned int gid, const char *oid, char **list)
         else
             return 0;
     }
+#endif
+    GetAdaptersInfo(NULL, &size);
+    table = (PIP_ADAPTER_INFO)malloc(size);                      
+                                                                    
+    if ((rc = GetAdaptersInfo(table, &size)) != NO_ERROR)                  
+    {                                                               
+        ERROR("GetAdaptersInfo failed, error %d", rc);
+        free(table);                                                
+        return TE_RC(TE_TA_WIN32, TE_EWIN);                          
+    }                                                               
 
     buf[0] = 0;
 
+#if 0
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
         s += snprintf(s, sizeof(buf) - (s - buf),
                       "%s ", ifindex2ifname(table->table[i].dwIndex));
-    }                      
+    }
+#endif
+    for (info = table; info != NULL; info = info->Next)
+    {
+        s += snprintf(s, sizeof(buf) - (s - buf),
+                      "%s ", ifindex2ifname(info->Index));
+    }
 
     free(table);
 
@@ -1138,6 +1158,49 @@ get_addr_mask(const char *addr, const char *value, DWORD *p_a, DWORD *p_m)
      return 0;
 }
 
+/** Check that IPv4 address is assigned to specified interface */
+static int
+check_address(const char *addr, DWORD if_index)
+{
+    PIP_ADAPTER_INFO table, info; 
+    DWORD            size = 0; 
+
+    int   rc;
+    int   found = 0;
+
+    GetAdaptersInfo(NULL, &size);
+    table = (PIP_ADAPTER_INFO)malloc(size);                      
+                                                                    
+    if ((rc = GetAdaptersInfo(table, &size)) != NO_ERROR)                  
+    {                                                               
+        ERROR("GetAdaptersInfo failed, error %d", rc);
+        free(table);                                                
+        return -1;                          
+    }                                                               
+
+    for (info = table; info != NULL; info = info->Next)
+    {
+       IP_ADDR_STRING *addrlist;
+       
+       if (info->Index != if_index)
+           continue;
+       
+       for (addrlist = &(info->IpAddressList); 
+            addrlist != NULL;
+            addrlist = addrlist->Next)
+        {
+            if (strcmp(addr, addrlist->IpAddress.String) == 0)
+            {
+              found = 1;
+              break;
+            }
+        }
+    }
+    free(table);
+
+    return found;
+}
+
 /**
  * Configure IPv4 address for the interface.
  * If the address does not exist, alias interface is created.
@@ -1154,12 +1217,14 @@ static te_errno
 net_addr_add(unsigned int gid, const char *oid, const char *value,
              const char *ifname, const char *addr)
 {
+#define TIME_TO_WAIT 15 // Time to wait until address appears
+                        // on interface
     DWORD a, m;
 
     ULONG nte_context;
     ULONG nte_instance;
 
-    int rc;
+    int rc, i;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1180,6 +1245,25 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
       }
       ERROR("AddIpAddress() failed, error %d, addr %s", rc, addr);
       return TE_RC(TE_TA_WIN32, TE_EWIN);
+    }
+
+    for (i = 0; i < TIME_TO_WAIT; i++)
+    {
+      if (0 == check_address(addr, if_entry.dwIndex))
+      {
+        break;
+      }
+      sleep(1);
+    }
+    if (i == TIME_TO_WAIT)
+    {
+      WARN("AddIpAddress(): IP address didn't appear on interface "
+           "after %d seconds", TIME_TO_WAIT);
+    }
+    else
+    {
+      RING("AddIpAddress: Address appeared on interface after "
+          "%d seconds", i);
     }
 
     return 0;
