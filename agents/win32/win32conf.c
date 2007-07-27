@@ -996,7 +996,9 @@ rcf_ch_conf_release()
 static te_errno
 interface_list(unsigned int gid, const char *oid, char **list)
 {
-    MIB_IFTABLE *table;
+//    MIB_IFTABLE *table;
+    IP_ADAPTER_INFO *ifinfo, *cur_if;
+    DWORD size = 0, rc;
     char        *s = buf;
     int          i;
 
@@ -1005,27 +1007,51 @@ interface_list(unsigned int gid, const char *oid, char **list)
 
     efport2ifindex();
 
-    GET_TABLE(MIB_IFTABLE, GetIfTable);
-    if (table == NULL)
+    ifinfo = (IP_ADAPTER_INFO *)malloc(sizeof(IP_ADAPTER_INFO));
+    size = sizeof(IP_ADAPTER_INFO);
+    if (ifinfo == NULL)
     {
-        if ((*list = strdup(" ")) == NULL)
-            return TE_RC(TE_TA_WIN32, TE_ENOMEM);
-        else
-            return 0;
+      return TE_RC(TE_TA_WIN32, TE_ENOMEM);
     }
-    buf[0] = 0;
 
-    for (i = 0; i < (int)table->dwNumEntries; i++)
+    rc = GetAdaptersInfo(ifinfo, &size);
+    if (rc == ERROR_BUFFER_OVERFLOW)
     {
-        s += snprintf(s, sizeof(buf) - (s - buf),
-                      "%s ", ifindex2ifname(table->table[i].dwIndex));
+      free(ifinfo);
+      ifinfo = (IP_ADAPTER_INFO *)malloc(size);
+      if (ifinfo == NULL)
+      {
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+      }
     }
-    free(table);
+    else if (rc != ERROR_SUCCESS)
+    {
+      ERROR("%s failed, error %d", "GetAdaptersInfo", rc);
+      free(ifinfo);
+      return TE_RC(TE_TA_WIN32, TE_EWIN);
+    }
+
+    rc = GetAdaptersInfo(ifinfo, &size);
+    if (rc != ERROR_SUCCESS)
+    {
+      ERROR("%s failed, error %d", "GetAdaptersInfo", rc);
+      free(ifinfo);
+      return TE_RC(TE_TA_WIN32, TE_EWIN);
+    }
+
+    buf[0] = 0;
+    cur_if = ifinfo;
+    while (cur_if != NULL)
+    {
+      s += snprintf(s, sizeof(buf) - (s - buf),
+                    "%s ", ifindex2ifname(cur_if->Index));
+      cur_if = cur_if->Next;
+    }
+
+    free(ifinfo);
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
-
-    printf("VISTA: returning iflist: '%s'", *list);
 
     return 0;
 }
@@ -1533,9 +1559,6 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    printf("VISTA: Getting broadcast for ifname='%s', addr='%s'",
-           ifname, addr);
-
     if ((a = inet_addr(addr)) == INADDR_NONE)
     {
         if (strcmp(addr, "255.255.255.255") != 0)
@@ -1577,22 +1600,16 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
 
-    printf("VISTA: Setting broadcast '%s' for ifname='%s', addr='%s'",
-           value, ifname, addr);
     if ((a = inet_addr(addr)) == INADDR_NONE)
     {
         if (strcmp(addr, "255.255.255.255") != 0)
             return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
 
-    printf("VISTA: Setting broadcast before GET_IF_ENTRY");
     GET_IF_ENTRY;
-    printf("VISTA: Setting broadcast after GET_IF_ENTRY");
 
     if ((rc = ip_addr_exist(a, &data)) != 0)
         return rc;
-    printf("VISTA: Setting broadcast after ip_addr_exist");
-
 
     return 0;
 }
@@ -2092,9 +2109,10 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
 
     UNUSED(gid);
     UNUSED(oid);
-    
-    if (neigh_find(oid, ifname, addr, NULL) == 0)
-        return TE_RC(TE_TA_WIN32, TE_EEXIST);
+ 
+    /* Don't check the existence of the entry */
+//    if (neigh_find(oid, ifname, addr, NULL) == 0)
+//        return TE_RC(TE_TA_WIN32, TE_EEXIST);
 
     memset(&entry, 0, sizeof(entry));
     
@@ -3325,6 +3343,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
       sprintf(ret, " ");
       *list = ret;
       free(buf);
+      CloseHandle(dev);
       return 0;
     }
 
@@ -3344,6 +3363,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
       WARN("DeviceIoControl failed with errno=%d", GetLastError());
       free(buf);
       free(ret);
+      CloseHandle(dev);
       return -2;
     }
     CloseHandle(dev);
