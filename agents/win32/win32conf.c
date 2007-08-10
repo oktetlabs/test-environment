@@ -52,6 +52,7 @@
 #include <sys/utsname.h>
 #endif
 
+
 /* TA name pointer */
 extern char *ta_name;
 
@@ -181,6 +182,8 @@ static te_errno neigh_set(unsigned int, const char *, const char *,
                           const char *, const char *);
 static te_errno neigh_add(unsigned int, const char *, const char *,
                           const char *, const char *);
+static te_errno neigh_find(const char *, const char *, const char *,
+                          char *);
 static te_errno neigh_del(unsigned int, const char *,
                           const char *, const char *);
 static te_errno neigh_list(unsigned int, const char *, char **,
@@ -426,6 +429,122 @@ const char *te_lockdir = "/tmp";
 
 /** Mapping of EF ports to interface indices */
 static DWORD ef_index[2] = { 0, 0 };
+
+/*  
+   Structure to save manualy added arp list entries
+*/
+
+typedef struct neigh_st_entry_s{
+  MIB_IPNETROW val;
+  struct neigh_st_list_entry_s *next;
+}neigh_st_entry, *pneigh_st_entry;
+
+static pneigh_st_entry gl_st_list_head = NULL;
+
+
+/* Adds an entry to the static ARP entries list */
+static void add_static_neigh(MIB_IPNETROW *to_add)
+{
+  pneigh_st_entry* p;
+  pneigh_st_entry new_entry;
+
+  new_entry = (pneigh_st_entry) malloc(sizeof(neigh_st_entry));
+  p = &gl_st_list_head;
+  
+  while(*p != NULL){
+    if (((*p)->val.dwAddr == to_add->dwAddr)&&
+        ((*p)->val.dwType == to_add->dwType)&&
+        ((*p)->val.dwIndex == to_add->dwIndex)) 
+    {
+        memcpy(&((*p)->val.bPhysAddr), &(to_add->bPhysAddr),
+               MAXLEN_PHYSADDR);
+        return;
+    }
+    p = &((*p)->next);
+  }
+  
+  *p = new_entry;
+  (*p)->next = NULL;
+  memcpy(&((*p)->val), to_add, sizeof(MIB_IPNETROW));
+}
+
+/* Remove an entry from the static ARP entries list */
+static te_errno 
+delete_neigh_st_entry(MIB_IPNETROW* ip_entry){
+  pneigh_st_entry *p;
+  pneigh_st_entry t;
+
+  p = &gl_st_list_head;
+  while(*p != NULL){
+    if (((*p)->val.dwAddr == ip_entry->dwAddr)&&
+        ((*p)->val.dwType == ip_entry->dwType)&&
+        ((*p)->val.dwIndex == ip_entry->dwIndex) ) 
+    {
+      t = *p;
+      *p = (*p)->next;
+      free(t);
+      return 0;
+    }
+    p = &((*p)->next);
+  }
+  return TE_RC(TE_TA_WIN32, TE_ENOENT);
+}
+
+/* 
+ 
+  Return a list of the static entries in ARP cache,
+  i.e. only the entries we've entered manually
+
+*/
+static te_errno
+neigh_st_list(char** list, const char* ifname)
+{
+    char mac[30];
+    DWORD ifindex = ifname2ifindex(ifname);
+    char* t = buf;
+    pneigh_st_entry p;
+
+    buf[0] = 0;
+    for (p = gl_st_list_head; p != NULL; p = p->next)
+    {
+        if (p->val.dwPhysAddrLen != 6 ||
+            p->val.dwIndex != ifindex ||
+            p->val.dwAddr == 0xFFFFFFFF ||
+            neigh_find("static", ifname,
+                       inet_ntoa(*(struct in_addr *) &(p->val.dwAddr)),
+                       mac) != 0)
+        {
+            
+            continue;
+            
+        }
+        t += snprintf(t, sizeof(buf) - (t - buf), "%s ",
+                      inet_ntoa(*(struct in_addr *)
+                                    &(p->val.dwAddr)));
+    }
+
+    
+    if ((*list = strdup(buf)) == NULL)
+      return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+
+    return 0;
+}
+
+/* 
+   Flushes static ARP entries list. 
+*/
+void flush_neigh_st_list()
+{
+    pneigh_st_entry p1, p2 = NULL;
+    
+    
+    for (p1 = gl_st_list_head; p1 != NULL; p1 = p1->next) {
+        if (p2 != NULL)
+            free(p2);
+        p2 = p1;
+    }
+    
+}
 
 /* Convert wide string to usual one */
 static char *
@@ -1052,6 +1171,7 @@ interface_list(unsigned int gid, const char *oid, char **list)
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+
 
     return 0;
 }
@@ -2138,6 +2258,8 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
         ERROR("CreateIpNetEntry() failed, error %d", rc);
         return TE_RC(TE_TA_WIN32, TE_EWIN);
     }
+    if (entry.dwType == ARP_STATIC) add_static_neigh(&entry);
+
     return 0;
 }
 
@@ -2182,7 +2304,8 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
         if (table->table[i].dwAddr == a && table->table[i].dwType == type &&
             table->table[i].dwIndex == ifindex)
         {
-            if ((rc = DeleteIpNetEntry(table->table + i)) != 0)
+            if (((rc = DeleteIpNetEntry(table->table + i)) != 0)||
+               (delete_neigh_st_entry(table->table + i)))
             {
                 if (type == ARP_STATIC)
                 {
@@ -2209,6 +2332,10 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
  * @param ifname        interface name
  *
  * @return Status code
+ * 
+ * Note: For "static" requests only the entries added by neigh_add
+ *       will be returned. It is done in order to avoid tests failures 
+ *       due to unwanted arbitrary changes in ARP cache on Vista.
  */
 static te_errno
 neigh_list(unsigned int gid, const char *oid, char **list, 
@@ -2226,6 +2353,8 @@ neigh_list(unsigned int gid, const char *oid, char **list,
 
     if (ifindex == 0)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
+    if (type == ARP_STATIC)
+        return neigh_st_list(list, ifname);
 
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
     if (table == NULL)

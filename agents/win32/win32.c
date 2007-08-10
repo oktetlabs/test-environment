@@ -38,6 +38,7 @@
 #include <sys/wait.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <w32api/windows.h>
 
 #undef ERROR
 
@@ -82,6 +83,12 @@ extern te_errno rcf_ch_rpc_server_thread(void *ready,
 #endif
 
 extern int win32_process_exec(int argc, char **argv);
+
+/* 
+   Flushes local static ARP entries list 
+   Defined in win32conf.c
+*/
+extern void flush_neigh_st_list();
 
 
 /* See description in rcf_ch_api.h */
@@ -691,6 +698,8 @@ main(int argc, char **argv)
         if (retval == 0)
             retval = rc;
     }
+    
+    flush_neigh_st_list();
 
     return retval;
 }
