@@ -100,6 +100,78 @@ extern "C" {
 
 /* All routines block caller until response from RCF */
 
+#if 0
+
+/** Test Agent control flags */
+enum rcf_ta_flags {
+    /* Generic flags */
+    RCF_TA_REBOOTABLE   = 0x01, /**< Test agent is rebootable */
+    RCF_TA_NO_SYNC_TIME = 0x02, /**< Disable time synchronisation
+                                     on Test Agent start-up */
+    RCF_TA_RUNNING      = 0x04, /**< TA is already running, just
+                                     connect to it */
+
+    /* rcfunix-specific flags */
+    RCF_TA_UNIX_SUDO    = 0x010000, /**< Start agent under sudo */
+};
+
+/**
+ * Add a new Test Agent to RCF.
+ *
+ * If Test Agent @a name is already defined in RCF and disabled,
+ * @a type, @a rcflib and @a confstr parameters have to be @c NULL and
+ * Test Agent will be started in accordance with parameters defined
+ * in RCF configuration file. If Test Agent @a name is not defined in
+ * RCF configuration file, @a type, @a rcflib and @a confstr parameters
+ * have to be defined (not @c NULL).
+ *
+ * @param name          Test Agent name
+ * @param type          Test Agent type or @c NULL
+ * @param rcflib        Name of RCF TA-specific shared library to be
+ *                      used to control Test Agent or @c NULL
+ * @param confstr       TA-specific configuration string or @c NULL
+ * @param flags         Test Agent control flags (see ::rcf_ta_flags)
+ *
+ * @return Error code
+ * @retval TE_EEXIST    Test Agent with such name exists and running
+ * @retval TE_ENOENT    @a type, @a rcflib, or @a confstr is unspecified
+ *                      (@c NULL) and Test Agent with name @a name is not
+ *                      predefined in RCF configuration file
+ */
+extern te_errno rcf_add_ta(const char *name, const char *type,
+                           const char *rcflib, const char *confstr,
+                           unsigned int flags);
+
+/**
+ * Add a new Test Agent controlled using rcfunix TA-specific shared
+ * library.
+ *
+ * @param name          Test Agent name
+ * @param type          Test Agent type
+ * @param host          Host name or IPv4 address in dotted notation
+ * @param port          TCP port to be used on Test Agent to listen to
+ * @param copy_timeout  Test Agent image coping timeout or 0 for default
+ * @param kill_timeout  Test Agent kill timeout or 0 for default
+ * @param flags         Test Agent control flags (see ::rcf_ta_flags)
+ */
+extern te_errno rcf_add_ta_unix(const char *name, const char *type,
+                                const char *host, uint16_t port,
+                                unsigned int copy_timeout,
+                                unsigned int kill_timeout,
+                                unsigned int flags);
+
+/**
+ * Delete Test Agent from RCF.
+ *
+ * @param name          Test Agent name
+ *
+ * @return Error code
+ */
+extern te_errno rcf_del_ta(const char *name);
+
+#endif
+
+
 /**
  * This function returns list of Test Agents (names) running.
  *
