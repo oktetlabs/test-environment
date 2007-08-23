@@ -2395,7 +2395,7 @@ finish:
 int
 simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 {
-    char buf[1024];
+    char *buf;
 
     uint64_t sent = 0;
 
@@ -2408,14 +2408,19 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
     uint64_t control = 0;
 #endif
 
-    if (in->size_max > (int)sizeof(buf) || in->size_min > in->size_max ||
-        in->delay_min > in->delay_max)
+    if ((buf = malloc(in->size_max)) == NULL)
+    {
+        ERROR("Out of memory");
+        return -1;
+    }
+
+    if (in->size_min > in->size_max || in->delay_min > in->delay_max)
     {
         ERROR("Incorrect size of delay parameters");
         return -1;
     }
 
-    memset(buf, 0xAB, sizeof(buf));
+    memset(buf, 0xAB, in->size_max);
 
     for (start = now = time(NULL);
          now - start <= (time_t)in->time2run;
@@ -2443,6 +2448,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
                 continue;
             err = GetLastError();
             ERROR("send() failed in simple_sender(): errno %d", err);
+            free(buf);
             return -1;
         }
 
@@ -2452,6 +2458,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
                 continue;
             ERROR("send() returned %d instead %d in simple_sender()",
                   len, size);
+            free(buf);
             return -1;
         }
 
@@ -2480,6 +2487,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 
     out->bytes = sent;
 
+    free(buf);
     return 0;
 }
 
