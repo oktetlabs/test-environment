@@ -362,6 +362,9 @@ phy_property(const char *ifname, struct ethtool_cmd *ecmd, int type)
 {
     struct ifreq        ifr;
     
+    /* Reset errno value */
+    errno = 0;
+    
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
     
