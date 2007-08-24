@@ -429,6 +429,7 @@ const char *te_lockdir = "/tmp";
 
 /** Mapping of EF ports to interface indices */
 static DWORD ef_index[2] = { 0, 0 };
+static char ef_regpath[2][1024];
 
 /*  
    Structure to save manualy added arp list entries
@@ -560,7 +561,8 @@ w2a(WCHAR *str)
 
 static int
 intfdata2file(const char *prefix, int efindex, int ifindex,
-              const char *guid, const unsigned char *mac)
+              const char *guid, const unsigned char *mac,
+              const char *regpath)
 {
   FILE *F;
   char filename[100];
@@ -582,6 +584,7 @@ intfdata2file(const char *prefix, int efindex, int ifindex,
   fprintf(F, "%d\n%s\n", ifindex, guid);
   fprintf(F, "%02x:%02x:%02x:%02x:%02x:%02x\n",
           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  fprintf(F, "%s\n", regpath);
   fclose(F);
 
   return 0;
@@ -598,7 +601,7 @@ efport2ifindex(void)
 
 #define NDIS_EFAB       "dev_c101_ndis_"
 #define NDIS_SF         "sfe_ndis_"
-#define BUFSIZE         256
+#define BUFSIZE         512
 #define AMOUNT_OF_GUIDS         5
 
     HKEY key, subkey;
@@ -609,6 +612,8 @@ efport2ifindex(void)
     
     static char guid1[AMOUNT_OF_GUIDS][BUFSIZE];
     static char guid2[AMOUNT_OF_GUIDS][BUFSIZE];
+    static char guid1_regpath[AMOUNT_OF_GUIDS][BUFSIZE];
+    static char guid2_regpath[AMOUNT_OF_GUIDS][BUFSIZE];
     static int driver_type_reported = 0;
 
     static int guid1_amount = 0, guid2_amount = 0;
@@ -714,15 +719,26 @@ efport2ifindex(void)
             if ((strstr(value, driver_type) != NULL))
             {
                 char driver[BUFSIZE];
-                unsigned char *guid;
+                unsigned char *guid, *guid_regpath;
                 
                 strcpy(driver, driver_type);
                 strcat(driver, "0");
            
-                guid = strstr(value, driver) != NULL ? 
-                              guid1[guid1_amount++] : guid2[guid2_amount++];
+                if (strstr(value, driver) != NULL)
+                {
+                  guid = guid1[guid1_amount];
+                  guid_regpath = guid1_regpath[guid1_amount];
+                  guid1_amount++;
+                }
+                else
+                {
+                  guid = guid2[guid2_amount];
+                  guid_regpath = guid2_regpath[guid2_amount];
+                  guid2_amount++;
+                }
                     
                 value_size = BUFSIZE;
+                strcpy(guid_regpath, subkey_path);
                 if (RegQueryValueEx(subkey, "NetCfgInstanceId", 
                                     NULL, NULL, guid, &value_size) != 0)
                 {
@@ -813,7 +829,7 @@ efport2ifindex(void)
     for (info = adapters; info != NULL; info = info->Next)
     {
       intfdata2file("intf", -1, info->Index, info->AdapterName,
-                    info->Address);
+                    info->Address, "");
       if ((guid1_found_index >= 0) && (ef_index[0] == info->Index))
       {
         memcpy(mac1, info->Address, 6);
@@ -829,13 +845,15 @@ efport2ifindex(void)
     {
         if (old_ef_index[0] != ef_index[0])
         {
+            strcpy(ef_regpath[0], guid1_regpath[guid1_found_index]);
             intfdata2file("ef", 0, ef_index[0],
-                          guid1[guid1_found_index], mac1);
+                          guid1[guid1_found_index], mac1, ef_regpath[0]);
             sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
                     mac1[0], mac1[1], mac1[2],
                     mac1[3], mac1[4], mac1[5]);
             RING("Interface index for EF port 1: %d, "
-                 "MAC: %s", ef_index[0], mac_str);
+                 "MAC: %s, regpath: %s", ef_index[0], mac_str,
+                 ef_regpath[0]);
         }
     }
     else
@@ -850,13 +868,15 @@ efport2ifindex(void)
     {
         if (old_ef_index[1] != ef_index[1])
         {
+            strcpy(ef_regpath[1], guid2_regpath[guid2_found_index]);
             intfdata2file("ef", 1, ef_index[1],
-                          guid2[guid2_found_index], mac2);
+                          guid2[guid2_found_index], mac2, ef_regpath[1]);
             sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
                     mac2[0], mac2[1], mac2[2],
                     mac2[3], mac2[4], mac2[5]);
             RING("Interface index for EF port 2: %d, "
-                 "MAC: %s", ef_index[1], mac_str);
+                 "MAC: %s, regpath: %s", ef_index[1], mac_str,
+                 ef_regpath[1]);
         }
     }
     else
