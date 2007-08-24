@@ -48,28 +48,6 @@ extern "C" {
 
 
 /**
- * Create a tunnel between two hosts.
- *
- * @param ta_srv        Test Agent with VTund server
- * @param ta_clnt       Test Agent with VTund client
- * @param srv_addr      Address and port for VTund server to listen to
- *                      and for VTund client to connect to (if port is 0,
- *                      default VTund port is used)
- * @param ta_srv_if     Configurator handle of the created interface 
- *                      on the Test Agent with VTund server
- * @param ta_clnt_if    Configurator handle of the created interface 
- *                      on the Test Agent with VTund client
- * 
- * @return Status code
- */
-extern te_errno tapi_cfg_vtund_create_tunnel(
-                    const char            *ta_srv,
-                    const char            *ta_clnt,
-                    const struct sockaddr *srv_addr,
-                    cfg_handle            *ta_srv_if,
-                    cfg_handle            *ta_clnt_if);
-
-/**
  * Get XEN storage path for templates of domU
  * disk images and where domUs are cloned.
  *
