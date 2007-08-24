@@ -36,11 +36,6 @@
 #if HAVE_STDARG_H
 #include <stdarg.h>
 #endif
-#if HAVE_IWLIB_H
-#include <iwlib.h>
-#else
-#error iwlib.h is an obligatory header for WiFi support
-#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -51,6 +46,12 @@
 #include "rcf_pch.h"
 #include "logger_api.h"
 #include "unix_internal.h"
+
+#if HAVE_IWLIB_H
+#include <iwlib.h>
+#else
+#error iwlib.h is an obligatory header for WiFi support
+#endif
 
 #ifdef ENABLE_8021X
 extern te_errno ds_supplicant_network_set(unsigned int gid, const char *oid,
