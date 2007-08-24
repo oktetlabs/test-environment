@@ -511,6 +511,48 @@ te_errno ta_vlan_get_children(const char *, size_t *, int *);
 te_errno ta_vlan_get_parent(const char *, char *);
 
 
+/* XEN stuff interface */
+static te_errno xen_path_get(unsigned int, char const *, char *);
+static te_errno xen_path_set(unsigned int, char const *, char const *);
+
+static te_errno dom_u_add(unsigned int, char const *, char const *,
+                          char const *, char const *);
+static te_errno dom_u_del(unsigned int, char const *, char const *,
+                          char const *);
+static te_errno dom_u_list(unsigned int, char const *, char **);
+static te_errno dom_u_get(unsigned int, char const *, char *,
+                          char const *, char const *);
+static te_errno dom_u_set(unsigned int, char const *, char const *,
+                          char const *, char const *);
+
+static te_errno dom_u_status_get(unsigned int, char const *, char *,
+                                 char const *, char const *);
+static te_errno dom_u_status_set(unsigned int, char const *,
+                                 char const *, char const *,
+                                 char const *);
+
+static te_errno dom_u_ip_addr_get(unsigned int, char const *, char *,
+                                  char const *, char const *);
+static te_errno dom_u_ip_addr_set(unsigned int, char const *,
+                                  char const *, char const *,
+                                  char const *);
+
+static te_errno dom_u_mac_addr_get(unsigned int, char const *, char *,
+                                   char const *, char const *);
+static te_errno dom_u_mac_addr_set(unsigned int, char const *,
+                                   char const *, char const *,
+                                   char const *);
+
+static te_errno dom_u_migrate_set(unsigned int, char const *,
+                                  char const *, char const *,
+                                  char const *);
+
+static te_errno dom_u_migrate_kind_get(unsigned int, char const *, char *,
+                                       char const *, char const *);
+static te_errno dom_u_migrate_kind_set(unsigned int, char const *,
+                                       char const *, char const *,
+                                       char const *);
+
 /*
  * Unix Test Agent basic configuration tree.
  */
@@ -604,7 +646,38 @@ RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
                             user_add, user_del,
                             user_list, NULL);
 
-RCF_PCH_CFG_NODE_AGENT(node_agent, &node_user);
+/* XEN stuff tree */
+RCF_PCH_CFG_NODE_RW(node_dom_u_migrate_kind, "kind",
+                    NULL, NULL,
+                    &dom_u_migrate_kind_get, &dom_u_migrate_kind_set);
+
+RCF_PCH_CFG_NODE_RW(node_dom_u_migrate, "migrate",
+                    &node_dom_u_migrate_kind, NULL,
+                    NULL, &dom_u_migrate_set);
+
+RCF_PCH_CFG_NODE_RW(node_dom_u_mac_addr, "mac_addr",
+                    NULL, &node_dom_u_migrate,
+                    &dom_u_mac_addr_get, &dom_u_mac_addr_set);
+
+RCF_PCH_CFG_NODE_RW(node_dom_u_ip_addr, "ip_addr",
+                    NULL, &node_dom_u_mac_addr,
+                    &dom_u_ip_addr_get, &dom_u_ip_addr_set);
+
+RCF_PCH_CFG_NODE_RW(node_dom_u_status, "status",
+                    NULL, &node_dom_u_ip_addr,
+                    &dom_u_status_get, &dom_u_status_set);
+
+static rcf_pch_cfg_object node_dom_u =
+    { "dom_u", 0, &node_dom_u_status, NULL,
+      (rcf_ch_cfg_get)&dom_u_get, (rcf_ch_cfg_set)&dom_u_set,
+      (rcf_ch_cfg_add)&dom_u_add, (rcf_ch_cfg_del)&dom_u_del,
+      (rcf_ch_cfg_list)&dom_u_list, NULL, NULL };
+
+RCF_PCH_CFG_NODE_RW(node_xen, "xen",
+                    &node_dom_u, &node_user,
+                    &xen_path_get, &xen_path_set);
+
+RCF_PCH_CFG_NODE_AGENT(node_agent, &node_xen);
 
 static te_bool init = FALSE;
 
@@ -5957,5 +6030,1219 @@ user_del(unsigned int gid, const char *oid, const char *user)
     /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
     ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
 
+    return 0;
+}
+
+/* XEN stuff implementation */
+
+/** Maximal number of maintained domUs */
+enum { MAX_DOM_U_NUM = 1024 };
+
+/** DomU statuses */
+typedef enum { DOM_U_STATUS_NON_RUNNING,
+               DOM_U_STATUS_RUNNING,
+               DOM_U_STATUS_SAVED,
+               DOM_U_STATUS_MIGRATED,
+               DOM_U_STATUS_ERROR } status_t;
+
+/**
+ * Path to accessible across network storage for
+ * XEN kernel and templates of XEN config/VBD images.
+ */
+static char xen_path[PATH_MAX] = { '\0' };
+
+/** Kernel, initial ramdisk and VBD image files */
+static char const *const xen_kernel = "vmlinuz-2.6.18-4-xen-686";
+static char const *const xen_ramdsk = "initrd.img-2.6.18-4-xen-686";
+static char const *const xen_dsktpl = "disk-template.img";
+static char const *const xen_tmpdir = "tmpdir";
+
+/** Status name to status and vice versa translation array */
+static struct {
+    char const *name; /**< Status name */
+    status_t status;  /**< Status      */
+} const statuses[] = { { "non-running", DOM_U_STATUS_NON_RUNNING },
+                       { "running",     DOM_U_STATUS_RUNNING },
+                       { "saved",       DOM_U_STATUS_SAVED },
+                       { "migrated",    DOM_U_STATUS_MIGRATED } };
+
+/** DomU internal representation */
+static struct {
+    char const *name;         /**< DomU name (also serves as slot
+                                   is empty sign if it is NULL)     */
+    status_t    status;       /**< DomU state                       */
+    char        ip_addr[16];  /**< DomU IP address                  */
+    char        mac_addr[18]; /**< DomU MAC address                 */
+    int         migrate_kind; /**< Migrate kind (non-live/live)     */
+} dom_u_slot[MAX_DOM_U_NUM];
+
+/**
+ * Get the whole number of domU slots.
+ *
+ * @return              The whole number of domU slots
+ */
+static inline unsigned int
+dom_u_limit(void)
+{
+    return sizeof(dom_u_slot) / sizeof(*dom_u_slot);
+}
+
+/**
+ * Find domU.
+ *
+ * @param dom_u         The name of the domU to find
+ *
+ * @return              domU index (from 0 to DOM_U_MAX_NUM - 1) if
+ *                      found, otherwise - 'sizeof(dom_u_list) /
+ *                      sizeof(*dom_u_list)' (which is equivlent to
+ *                      DOM_U_MAX_NUM)
+ */
+static unsigned
+find_dom_u(char const *dom_u)
+{
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+
+    for (u = 0; u < limit; u++)
+    {
+        char const *name = dom_u_slot[u].name;
+
+        if (name != NULL && strcmp(name, dom_u) == 0)
+            break;
+    }
+
+    return u;
+}
+
+/* Try to find domU and initialize its index */
+#define FIND_DOM_U(dom_u_name_, dom_u_index_) \
+    do {                                                               \
+        if ((dom_u_index_ = find_dom_u(dom_u_name_)) >= dom_u_limit()) \
+        {                                                              \
+            ERROR("DomU %s does NOT exist", dom_u_name_);              \
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);                       \
+        }                                                              \
+    } while(0)
+
+
+/**
+ * Converts status to its string representation.
+ *
+ * @param status        Status to be converted to string representation
+ *
+ * @return              String representation or NULL in case of an error
+ */
+static char const *
+dom_u_status_to_string(status_t status)
+{
+    unsigned int u;
+
+    for (u = 0; u < sizeof(statuses) / sizeof(*statuses); u++)
+        if (statuses[u].status == status)
+            return statuses[u].name;
+
+    return NULL;
+}
+
+/**
+ * Converts status string representation to status.
+ *
+ * @param status_string Status string representation
+ *
+ * @return              Converted status value or
+ *                      DOM_U_STATUS_ERROR in case of an error
+ */
+static status_t
+dom_u_status_string_to_status(char const *status_string)
+{
+    unsigned int u;
+
+    for (u = 0; u < sizeof(statuses) / sizeof(*statuses); u++)
+        if (strcmp(statuses[u].name, status_string) == 0)
+            return statuses[u].status;
+
+    return DOM_U_STATUS_ERROR;
+}
+
+/**
+ * Checks whether the agent runs within dom0 or not
+ *
+ * @return              TRUE if the agent runs within dom0,
+ *                      otherwise - FALSE
+ */
+static te_bool
+is_within_dom0(void)
+{
+    struct stat st;
+
+    /* Probably there is better mean do detect we are within dom0, eh? */
+    return stat("/usr/sbin/xm", &st) == 0 &&
+           (S_ISLNK(st.st_mode) || S_ISREG(st.st_mode));
+}
+
+/**
+ * Removes directory and all its subdirectories
+ *
+ * @param dir           Directory path
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_rmfr(char const *dir)
+{
+    /* FIXME: Non "ta_system" implementation is needed*/
+    char const* const cmd = "rm -fr ";
+    char *const cmdline = malloc(strlen(cmd) + strlen(dir) + 1);
+
+    strcpy(cmdline, cmd);
+    strcat(cmdline, dir);
+
+    if (ta_system(cmdline) != 0)
+    {
+        free(cmdline);
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    free(cmdline);
+    return 0;
+}
+
+/**
+ * (Re)creates file inside disk image and fills it with supplied data
+ *
+ * @param dom_u         domU
+ * @param fname         File name inside disk image (path from root /)
+ * @param fdata         Data string (zero ended)
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_fill_file_in_disk_image(char const *dom_u, char const *fname,
+                            char const *fdata)
+{
+    char        buffer[PATH_MAX];
+    struct stat st;
+    te_errno    rc = 0;
+    FILE       *f;
+    int         sys;
+
+    TE_SPRINTF(buffer, "%s/%s/%s", xen_path, dom_u, xen_tmpdir);
+
+    if (stat(buffer, &st) == 0)
+        goto cleanup2;
+
+    if (mkdir(buffer, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
+    {
+        ERROR("Failed to create temporary %s directory", buffer);
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup0;
+    }
+
+    if (chmod(buffer, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
+    {
+        ERROR("Failed to chmod temporary %s directory", buffer);
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup1;
+    }
+
+    /* FIXME: Non "ta_system" implementation is needed*/
+    TE_SPRINTF(buffer, "mount -o loop %s/%s/disk.img %s/%s/%s",
+               xen_path, dom_u, xen_path, dom_u, xen_tmpdir);
+
+    if ((sys = ta_system(buffer)) != 0 && !(sys == -1 && errno == ECHILD))
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup1;
+    }
+
+    TE_SPRINTF(buffer, "%s/%s/%s%s", xen_path, dom_u, xen_tmpdir, fname);
+
+    if ((f = fopen(buffer, "w")) == NULL)
+    {
+        ERROR("Failed to open %s file for writing", buffer);
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup2;
+    }
+
+    if ((size_t)fprintf(f, "%s", fdata) != strlen(fdata))
+    {
+        ERROR("Failed to write %s file with data:\n%s", buffer, fdata);
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    if (fclose(f) != 0)
+    {
+        ERROR("Failed to close %s file after writing", buffer);
+
+        if (rc == 0)
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+cleanup2:
+    /* FIXME: Non "ta_system" implementation is needed*/
+    TE_SPRINTF(buffer, "umount %s/%s/%s", xen_path, dom_u, xen_tmpdir);
+
+    if ((sys = ta_system(buffer)) != 0 && !(sys == -1 && errno == ECHILD))
+    {
+        if (rc == 0)
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+cleanup1:
+    TE_SPRINTF(buffer, "%s/%s/%s", xen_path, dom_u, xen_tmpdir);
+
+    if (rmdir(buffer) == -1)
+    {
+        if (rc == 0)
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+cleanup0:
+    return rc;
+}
+
+/**
+ * Get path to accessible across network storage for
+ * XEN kernel and templates of XEN config/VBD images.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for path to be filled in
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_path_get(unsigned int gid, char const *oid, char *value)
+{
+    struct stat st;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    strcpy(value, xen_path);
+    return 0;
+}
+
+/**
+ * Set path to accessible across network storage for
+ * XEN kernel and templates of XEN config/VBD images.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         path to set
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_path_set(unsigned int gid, char const *oid, char const *value)
+{
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+    size_t       len   = strlen(value);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    /* If value is not empty string then the agent must run within dom0 */
+    if (*value != '\0' && !is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to change XEN path: domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    /* Check whether XEN path fits XEN path storage */
+    if (len >= sizeof(xen_path))
+    {
+        ERROR("XEN path is too long");
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
+    /* For non-empty XEN path perform all necessary checks */
+    if (len > 0)
+    {
+        struct stat  st;
+
+        if (*value != '/')
+        {
+            ERROR("XEN path must be absolute (starting from \"/\")");
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        if (stat(value, &st) == -1)
+        {
+            ERROR("Path specified for XEN does NOT exist");
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        if (!S_ISDIR(st.st_mode))
+        {
+            ERROR("Path specified for XEN is not a directory");
+            return TE_RC(TE_TA_UNIX, TE_ENOTDIR);
+        }
+
+        TE_SPRINTF(buf, "%s/%s", value, xen_kernel);
+
+        if (stat(buf, &st) == -1)
+        {
+            ERROR("XEN kernel does NOT exist on specified XEN path");
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        if (!S_ISREG(st.st_mode))
+        {
+            ERROR("XEN kernel specified is NOT a file");
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        TE_SPRINTF(buf, "%s/%s", value, xen_ramdsk);
+
+        if (stat(buf, &st) == -1)
+        {
+            ERROR("XEN initial ramdisk does NOT exist "
+                  "on specified XEN path");
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        if (!S_ISREG(st.st_mode))
+        {
+            ERROR("XEN initial ramdisk specified is NOT a file");
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        TE_SPRINTF(buf, "%s/%s", value, xen_dsktpl);
+
+        if (stat(buf, &st) == -1)
+        {
+            ERROR("XEN disk image template does NOT exist "
+                  "on specified XEN path");
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        if (!S_ISREG(st.st_mode))
+        {
+            ERROR("XEN disk image template specified is NOT a file");
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+    }
+
+    memcpy(xen_path, value, len + 1);
+    return 0;
+}
+
+/**
+ * Get presence of directory/images state of domU.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for status to be filled in
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to get status of
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_get(unsigned int gid, char const *oid, char *value,
+          char const *xen, char const *dom_u)
+{
+    unsigned int u;
+    struct stat  st;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    FIND_DOM_U(dom_u, u);
+
+    TE_SPRINTF(buf, "%s/%s", xen_path, dom_u);
+    strcpy(value, stat(buf, &st) == 0 ? "1" : "0");
+    return 0;
+}
+
+/**
+ * Set (change) presence of directory/images state of domU.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         status to set
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to set status of
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_set(unsigned int gid, char const *oid, char const *value,
+           char const *xen, char const *dom_u)
+{
+    unsigned int u;
+    struct stat  st;
+    int          sys;
+    te_bool      to_set = strcmp(value, "1") == 0;
+    te_bool      is_set;
+    te_errno     rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    FIND_DOM_U(dom_u, u);
+
+    TE_SPRINTF(buf, "%s/%s", xen_path, dom_u);
+    is_set = stat(buf, &st) == 0;
+
+    /* If desired state is already exists, do nothing */
+    if ((is_set && to_set) || (!is_set && !to_set))
+        return 0;
+
+    /* If not to set then remove domU directory and disk images */
+    if (!to_set)
+        goto cleanup1;
+
+    /* Otherwise, create domU directory and all necessary images */
+    if (mkdir(buf, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
+    {
+        ERROR("Failed to create domU directory %s", buf);
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup0;
+    }
+
+    if (chmod(buf, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
+    {
+        ERROR("Failed to chmod domU directory %s", buf);
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup1;
+    }
+
+    /* FIXME: Non "ta_system" implementation is needed*/
+    TE_SPRINTF(buf, "set -x; cp --sparse=always %s/%s %s/%s/disk.img",
+               xen_path, xen_dsktpl, xen_path, dom_u);
+
+    if ((sys = ta_system(buf)) != 0 && !(sys == -1 && errno == ECHILD))
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup1;
+    }
+
+    TE_SPRINTF(buf, "%s/%s/disk.img", xen_path, dom_u);
+
+    if (chmod(buf, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
+    {
+        ERROR("Failed to chmod domU disk image %s", buf);
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup1;
+    }
+
+    /* FIXME: Non "ta_system" implementation is needed*/
+    TE_SPRINTF(buf, "set -x; dd if=/dev/zero of=%s/%s/swap.img "
+               "bs=1K seek=131071 count=1", xen_path, dom_u);
+
+    if ((sys = ta_system(buf)) != 0 && !(sys == -1 && errno == ECHILD))
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup1;
+    }
+
+    TE_SPRINTF(buf, "%s/%s/swap.img", xen_path, dom_u);
+
+    if (chmod(buf, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
+    {
+        ERROR("Failed to chmod domU swap image %s", buf);
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup1;
+    }
+
+    if ((rc = xen_fill_file_in_disk_image(dom_u, "/etc/udev/rules.d/"
+                                          "z25_persistent-net.rules",
+                                          "")) != 0)
+    {
+        goto cleanup1;
+    }
+
+    if ((rc = xen_fill_file_in_disk_image(dom_u, "/etc/hostname",
+                                          dom_u)) == 0)
+    {
+        goto cleanup0;
+    }
+
+cleanup1:
+    /* Erase domU directory and disk images unconditionally */
+    TE_SPRINTF(buf, "%s/%s", xen_path, dom_u);
+    xen_rmfr(buf);
+
+cleanup0:
+    return rc;
+}
+
+/**
+ * Add new domU.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         initializing value (not used)
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to add
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_add(unsigned int gid, char const *oid, char const *value,
+          char const *xen, char const *dom_u)
+{
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+    te_errno     rc    = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    if (!is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    if (*xen_path == '\0')
+    {
+        ERROR("Failed to add domU %s since XEN path is not set", dom_u);
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    if ((u = find_dom_u(dom_u)) < dom_u_limit())
+    {
+        ERROR("Failed to add DomU %s: it is already exists", dom_u);
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
+
+    /* Find an empty slot */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name == NULL)
+            break;
+
+    /* If an empty slot is NOT found */
+    if (u == limit)
+    {
+        ERROR("Failed to add domU %s: all domU slots are taken", dom_u);
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
+    if ((dom_u_slot[u].name = strdup(dom_u)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    /* Try to set requested presence of directory/images state of domU */
+    if ((rc = dom_u_set(gid, oid, value, xen, dom_u)) != 0)
+    {
+        /* Rollback */
+        free((void *)dom_u_slot[u].name);
+        dom_u_slot[u].name = NULL;
+    }
+
+    /* Assign here initial values (modified later from within TAPI) */
+    dom_u_slot[u].status = DOM_U_STATUS_NON_RUNNING;
+    strcpy(dom_u_slot[u].ip_addr, "0.0.0.0");
+    strcpy(dom_u_slot[u].mac_addr, "00:00:00:00:00:00");
+    dom_u_slot[u].migrate_kind = 0;
+
+    return rc;
+}
+
+/**
+ * Delete domU.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to delete
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_del(unsigned int gid, char const *oid, char const *xen,
+          char const *dom_u)
+{
+    unsigned int u;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    FIND_DOM_U(dom_u, u);
+
+    free((void *)dom_u_slot[u].name);
+    dom_u_slot[u].name = NULL;
+    return 0;
+}
+
+/**
+ * List domUs.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param list          address of a pointer to storage allocated
+ *                      for the list pointer is initialized with
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_list(unsigned int gid, char const *oid, char **list)
+{
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+    unsigned int len = 0;
+    char        *ptr;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    /* Count the whole length of domU names plus one per name */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+            len += strlen(dom_u_slot[u].name) + 1;
+
+    if ((ptr = malloc(len)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    *(*list = ptr) = '\0';
+
+    /**
+     * Fill in the list with existing domU names
+     * separated with spaces except the last one
+     */
+    for (u = 0; u < limit; u++)
+    {
+        char const *name = dom_u_slot[u].name;
+
+        if (name != NULL)
+        {
+            size_t len = strlen(name);
+
+            if (ptr != *list)
+                *ptr++ = ' ';
+
+            memcpy(ptr, name, len);
+            *(ptr += len) = '\0';
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Get domU status.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for status to be filled in
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to get status of
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_status_get(unsigned int gid, char const *oid, char *value,
+                 char const *xen, char const *dom_u)
+{
+    char const  *s;
+    unsigned int u;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    FIND_DOM_U(dom_u, u);
+
+    if ((s = dom_u_status_to_string(dom_u_slot[u].status)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    strcpy(value, s);
+    return 0;
+}
+
+/**
+ * Set (change) domU status; business logic is moved to TAPI.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         status to set
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to set status of
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_status_set(unsigned int gid, char const *oid, char const *value,
+                 char const *xen, char const *dom_u)
+{
+    unsigned int u;
+    FILE        *f;
+    status_t     status = dom_u_status_string_to_status(value);
+    te_errno     rc     = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    if (status == DOM_U_STATUS_ERROR)
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto cleanup0;
+    }
+
+    FIND_DOM_U(dom_u, u);
+
+    /* If nothing to do */
+    if ((dom_u_slot[u].status == status))
+        goto cleanup0;
+
+    /**
+     * "Non-running" -> "migrated" pseudo transition: really the
+     * status is either left in "non-running" or set as "running"
+     */
+    if (dom_u_slot[u].status == DOM_U_STATUS_NON_RUNNING &&
+        status == DOM_U_STATUS_MIGRATED)
+    {
+        size_t len = strlen(dom_u);
+
+        /* FIXME: Non "popen" implementation is needed*/
+        TE_SPRINTF(buf, "xm list | awk '{print$1}' 2>/dev/null");
+
+        if ((f = popen(buf, "r")) == NULL)
+        {
+            rc = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("popen(%s) failed with errno %d", buf, rc);
+            goto cleanup0;
+        }
+
+        while (fgets(buf, sizeof(buf), f) != NULL)
+        {
+            if (strncmp(buf, dom_u, len) == 0)
+            {
+                status = DOM_U_STATUS_RUNNING;
+                break;
+            }
+        }
+
+        pclose(f);
+
+        if (status != DOM_U_STATUS_RUNNING)
+        {
+            ERROR("Failed to accept migrated domU %s", dom_u);
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup0;
+        }
+
+        goto cleanup1; /** Imitation of 'break' statement */
+    }
+
+    /* "Non-running" -> "running" transition */
+    if (dom_u_slot[u].status == DOM_U_STATUS_NON_RUNNING &&
+        status == DOM_U_STATUS_RUNNING)
+    {
+        /* IP address must be set for domU */
+        if (strcmp(dom_u_slot[u].ip_addr, "0.0.0.0") == 0)
+        {
+            ERROR("DomU %s IP address is not set", dom_u);
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup0;
+        }
+
+        /* Create XEN domU configuration file */
+        TE_SPRINTF(buf, "%s/%s/conf.cfg", xen_path, dom_u);
+
+        if ((f = fopen(buf, "w")) == NULL)
+        {
+            ERROR("Failed to (re)create domU %s configuration file %s",
+                  dom_u, buf);
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup0;
+        }
+
+        if (fprintf(f, "kernel='%s/%s'\n", xen_path, xen_kernel)  < 0 ||
+            fprintf(f, "ramdisk='%s/%s'\n", xen_path, xen_ramdsk) < 0 ||
+            fprintf(f, "memory='128'\n")                          < 0 ||
+            fprintf(f, "root='/dev/sda1 ro'\n")                   < 0 ||
+            fprintf(f, "disk=[ 'file:%s/%s/disk.img,sda1,w', "
+                       "'file:%s/%s/swap.img,sda2,w' ]\n",
+                       xen_path, dom_u, xen_path, dom_u)          < 0 ||
+            fprintf(f, "name='%s'\n", dom_u)                      < 0)
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup2;
+        }
+
+        /* If MAC address is NOT specified it is set by XEN automatically */
+        if ((strcmp(dom_u_slot[u].mac_addr, "00:00:00:00:00:00") == 0 ?
+                        fprintf(f, "vif  = [ 'bridge=xenbr0' ]\n") :
+                        fprintf(f, "vif  = [ 'bridge=xenbr0,mac=%s' ]\n",
+                                dom_u_slot[u].mac_addr)) < 0)
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup2;
+        }
+
+        if (fprintf(f, "on_poweroff = 'destroy'\n") < 0 ||
+            fprintf(f, "on_reboot   = 'restart'\n") < 0 ||
+            fprintf(f, "on_crash    = 'restart'\n") < 0)
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup2;
+        }
+
+        if (fflush(f) != 0)
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+
+cleanup2:
+        if (fclose(f) != 0)
+        {
+            if (rc == 0)
+                rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        }
+
+        if (rc != 0)
+            goto cleanup0;
+
+        /* Clear list of interfaces */
+        if ((rc = xen_fill_file_in_disk_image(dom_u, "/etc/udev/rules.d/"
+                                              "z25_persistent-net.rules",
+                                              "")) != 0)
+        {
+            goto cleanup0;
+        }
+
+        /* Creating domU "/etc/network/interfaces" file */
+        TE_SPRINTF(buf,
+                   "auto lo\n"
+                   "iface lo inet loopback\n"
+                   "\n"
+                   "auto eth0\n"
+                   "iface eth0 inet static\n"
+                   "    address %s\n"
+                   "    netmask 255.255.255.0\n", dom_u_slot[u].ip_addr);
+        if ((rc = xen_fill_file_in_disk_image(dom_u,
+                                              "/etc/network/interfaces",
+                                              buf)) != 0)
+        {
+            goto cleanup0;
+        }
+
+        /* Starting domU */
+        TE_SPRINTF(buf, "xm create %s/%s/conf.cfg", xen_path, dom_u);
+
+        if (ta_system(buf) != 0)
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup0;
+        }
+
+        /** 
+         * FIXME: Here must be "domU is really started"
+         * detection code rather than stupid 'sleep'
+         */
+        sleep(25);
+        goto cleanup1; /** Imitation of 'break' statement */
+    }
+
+    /* "Running" -> "non-running" transition */
+    if (dom_u_slot[u].status == DOM_U_STATUS_RUNNING &&
+        status == DOM_U_STATUS_NON_RUNNING)
+    {
+        TE_SPRINTF(buf, "xm shutdown %s", dom_u);
+
+        if (ta_system(buf) != 0)
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup0;
+        }
+
+        /* FIXME: stupid sleep should be replaced with smarter code */
+        sleep(15);
+        goto cleanup1; /** Imitation of 'break' statement */
+    }
+
+    /* "Running" -> "saved" transition */
+    if (dom_u_slot[u].status == DOM_U_STATUS_RUNNING &&
+        status == DOM_U_STATUS_SAVED)
+    {
+        TE_SPRINTF(buf, "xm save %s %s/%s/saved.img",
+                   dom_u, xen_path, dom_u);
+
+        if (ta_system(buf) != 0)
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup0;
+        }
+
+        /* FIXME: stupid sleep should be replaced with smarter code */
+        sleep(10);
+        goto cleanup1; /** Imitation of 'break' statement */
+    }
+
+    /* "Saved" -> "running" transition */
+    if (dom_u_slot[u].status == DOM_U_STATUS_SAVED &&
+        status == DOM_U_STATUS_RUNNING)
+    {
+        TE_SPRINTF(buf, "xm restore %s/%s/saved.img", xen_path, dom_u);
+
+        if (ta_system(buf) != 0)
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup0;
+        }
+
+        /* FIXME: stupid sleep should be replaced with smarter code */
+        sleep(25);
+        goto entry1; /** Imitation of absence of the 'break' statement */
+    }
+
+    /* "Saved" -> "non-running" transition */
+    if (dom_u_slot[u].status == DOM_U_STATUS_SAVED &&
+        status == DOM_U_STATUS_NON_RUNNING)
+    {
+entry1:
+        TE_SPRINTF(buf, "%s/%s/saved.img", xen_path, dom_u);
+
+        /* Error here is not critical */
+        if (unlink(buf) == -1)
+            ERROR("Failed to unlink %s/%s/saved.img", xen_path, dom_u);
+
+        goto cleanup1; /** Imitation of 'break' statement */
+    }
+
+    /* All still unserviced transitions are erroneous */
+    rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+    goto cleanup0;
+
+cleanup1: /** This label is used in case of success */
+    dom_u_slot[u].status = status;
+
+cleanup0: /** This label is used in case of an error */
+    return rc;
+}
+
+/**
+ * Get domU IP address.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for IP address to be filled in
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to get IP address of
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_ip_addr_get(unsigned int gid, char const *oid, char *value,
+                  char const *xen, char const *dom_u)
+{
+    unsigned int u;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    FIND_DOM_U(dom_u, u);
+
+    strcpy(value, dom_u_slot[u].ip_addr);
+    return 0;
+}
+
+/**
+ * Set (change) domU IP address (possible only in non-running state).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         status to set
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to set status of
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_ip_addr_set(unsigned int gid, char const *oid, char const *value,
+                  char const *xen, char const *dom_u)
+{
+    unsigned int u;
+    size_t       len = strlen(value);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    FIND_DOM_U(dom_u, u);
+
+    if (len >= sizeof(dom_u_slot[u].ip_addr))
+    {
+        ERROR("Too long IP address");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    /**
+     * IP address will be really changed in domU disk image
+     * only when transition into "running" status is requested
+     */
+    strcpy(dom_u_slot[u].ip_addr, value);
+    return 0;
+}
+
+/**
+ * Get domU MAC address.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for status to be filled in
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to get status of
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_mac_addr_get(unsigned int gid, char const *oid, char *value,
+                   char const *xen, char const *dom_u)
+{
+    unsigned int u;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    FIND_DOM_U(dom_u, u);
+
+    strcpy(value, dom_u_slot[u].mac_addr);
+    return 0;
+}
+
+/**
+ * Set (change) domU MAC address (possible only in non-running state).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         status to set
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to set status of
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_mac_addr_set(unsigned int gid, char const *oid, char const *value,
+                   char const *xen, char const *dom_u)
+{
+    enum { ether_bytes = 6 };
+
+    unsigned int u;
+    size_t       len = strlen(value);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    FIND_DOM_U(dom_u, u);
+
+    if (len >= sizeof(dom_u_slot[u].mac_addr))
+    {
+        ERROR("Too long MAC address");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    /**
+     * MAC address will be really changed in domU configuration
+     * file only when transition into "running" status is requested
+     */
+    strcpy(dom_u_slot[u].mac_addr, value);
+    return 0;
+}
+
+/**
+ * Migrate to another XEN dom0.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         name of the agent running within XEN dom0
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to migrate
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_migrate_set(unsigned int gid, char const *oid, char const *value,
+                  char const *xen, char const *dom_u)
+{
+    unsigned int u;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    FIND_DOM_U(dom_u, u);
+
+    TE_SPRINTF(buf, "xm migrate %s %s %s",
+               dom_u_slot[u].migrate_kind ? "--live" : "", dom_u, value);
+
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Failed to migrate domU %s", dom_u);
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    return 0;
+}
+
+/**
+ * Migrate to another XEN dom0.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         name of the agent running within XEN dom0
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to migrate
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_migrate_kind_get(unsigned int gid, char const *oid, char *value,
+                  char const *xen, char const *dom_u)
+{
+    unsigned u;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    FIND_DOM_U(dom_u, u);
+
+    strcpy(value, dom_u_slot[u].migrate_kind ? "1" : "0");
+    return 0;
+}
+
+/**
+ * Migrate to another XEN dom0.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         name of the agent running within XEN dom0
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to migrate
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_migrate_kind_set(unsigned int gid, char const *oid, char const *value,
+                  char const *xen, char const *dom_u)
+{
+    unsigned u;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+    FIND_DOM_U(dom_u, u);
+
+    dom_u_slot[u].migrate_kind = (strcmp(value, "0") == 0 ? 0 : 1);
     return 0;
 }

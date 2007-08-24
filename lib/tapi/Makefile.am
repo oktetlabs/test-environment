@@ -19,6 +19,7 @@ include_HEADERS = \
 	tapi_cfg_vtund.h \
 	tapi_cfg_ip6.h \
 	tapi_cfg_stats.h \
+	tapi_cfg_xen.h \
 	tapi_file.h \
 	tapi_reqs.h
 
@@ -38,10 +39,10 @@ libtapi_la_SOURCES = \
 	tapi_cfg_vtund.c \
 	tapi_cfg_ip6.c \
 	tapi_cfg_stats.c \
+	tapi_cfg_xen.c \
 	tapi_file.c \
 	verdict.c \
 	tapi_reqs.c
-
 
 install-exec-hook:
 	touch -c -r libtapi.la $(DESTDIR)/$(libdir)/libtapi.*

@@ -26,36 +26,70 @@
         
         Author: Edward Makarov E-mail: Edward.Makarov@oktetlabs.ru
     -->
-    
+
     <!-- Objects registered by Configurator itself -->
-    
+
     <!-- XEN dom0. 
-         Name: none -->
-    <object oid="/agent/xen" access="none" type="none"/>
+         Name: none
+         Value: Path to accessible across network storage for XEN
+                kernel, templates of XEN VBD/ramdisk images and
+                for directories of domUs for cloned VBDs/ramdisks
+
+         Note: If at least one domU node exists then
+               it is impossible to change XEN dom0 value -->
+    <object oid="/agent/xen" access="read_write" type="string"/>
 
     <!-- XEN domU.
-
-         When created, configuration file and disk image are cloned from the
-	 common templates; IP address for the network interface used for
-	 RCF/RPC communication is previously got by DHCP and updated in cloned
-	 configuration file and disk image.
-	 When deleted, cloned configuration file and disk image are deleted.
-
-         Name: XEN domain name (used for cloned domU configuration file) -->
-    <object oid="/agent/xen/dom_u" access="read_create" type="none"/>
+         Name: XEN domain name
+         Value: Directory/disk images creation/destruction flag: if 0
+                is specified then in case when directory/images exist
+                then they are removed and in case they do not exist then
+                new ones are NOT created; otherwise, if 1 is specified
+                then in case when directory does not exist then directory
+                is created and new images are generated and in case they
+                already exist then they are left intact -->
+    <object oid="/agent/xen/dom_u" access="read_create" type="integer"/>
 
     <!-- Status contolling and reflecting domU state.
          Name: none
-	 Value: "non-running", "running" and "saved"; the transition from
-	        "non-running" to "saved" status is NOT allowed -->
-    <object oid="/agent/xen/dom_u/status" access="read_write" type="string"/>
+         Value: "non-running", "running" and "saved"; the transition
+                from "non-running" to "saved" status is NOT allowed
 
-    <!-- Migration of domU or transfer of domU image file; if domU is
-         in 'running' state then live migration is performed, otherwise if
-	 domU is in 'saved' state then domU image file transfer is performed.
+         Note: When status is "non-running" then also pseudo-status
+               "migrated" may be set, which causes eventually that
+               either "running" or intact "non-running" status is
+               reached -->
+    <object oid="/agent/xen/dom_u/status" access="read_write"
+            type="string"/>
+
+    <!-- IP address of the interface used for RCF/RPC communication.
+         Name: none
+         Value: IP address
+
+         Note: If domU is not in "non-running" status then
+               it is impossible to change IP address value -->
+    <object oid="/agent/xen/dom_u/ip_addr" access="read_write"
+            type="address"/>
+
+    <!-- MAC address of the interface used for RCF/RPC communication.
+         Name: none
+         Value: MAC address
+
+         Note: If domU is not in "non-running" status then
+               it is impossible to change MAC address value -->
+    <object oid="/agent/xen/dom_u/mac_addr" access="read_write"
+            type="address"/>
+
+    <!-- Migration of domU.
          Name: none
          Value: IP address or dom0 host name to migrate/transfer to -->
-    <object oid="/agent/xen/dom_u/migrate" access="read_write" type="string"
-            volatile="true"/>
+    <object oid="/agent/xen/dom_u/migrate" access="read_write"
+            type="string" volatile="true"/>
+
+    <!-- Kind of migration.
+         Name: none
+         Value: 0 non-live migration, 1 live migration -->
+    <object oid="/agent/xen/dom_u/migrate/kind" access="read_write"
+            type="integer"/>
 
 </backup>
