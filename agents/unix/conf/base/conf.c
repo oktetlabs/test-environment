@@ -126,6 +126,10 @@
 #include <sys/utsname.h>
 #endif
 
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
 /* PAM (Pluggable Authentication Modules) support */
 #if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
 #include <security/pam_appl.h>
@@ -6173,11 +6177,16 @@ dom_u_status_string_to_status(char const *status_string)
 static te_bool
 is_within_dom0(void)
 {
+#ifdef HAVE_SYS_STAT_H
     struct stat st;
 
     /* Probably there is better mean do detect we are within dom0, eh? */
     return stat("/usr/sbin/xm", &st) == 0 &&
            (S_ISLNK(st.st_mode) || S_ISREG(st.st_mode));
+#else
+#warning "is_within_dom0 helper function for XEN is not implemented"
+    return TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
+#endif
 }
 
 /**
@@ -6220,6 +6229,7 @@ static te_errno
 xen_fill_file_in_disk_image(char const *dom_u, char const *fname,
                             char const *fdata)
 {
+#ifdef HAVE_SYS_STAT_H
     char        buffer[PATH_MAX];
     struct stat st;
     te_errno    rc = 0;
@@ -6299,6 +6309,9 @@ cleanup1:
 
 cleanup0:
     return rc;
+#else
+#warning "xen_fill_file_in_disk_image helper for XEN is not implemented"
+#endif
 }
 
 /**
@@ -6314,6 +6327,7 @@ cleanup0:
 static te_errno
 xen_path_get(unsigned int gid, char const *oid, char *value)
 {
+#ifdef HAVE_SYS_STAT_H
     struct stat st;
 
     UNUSED(gid);
@@ -6321,6 +6335,9 @@ xen_path_get(unsigned int gid, char const *oid, char *value)
 
     strcpy(value, xen_path);
     return 0;
+#else
+#warning "xen_path_get method for XEN is not implemented"
+#endif
 }
 
 /**
@@ -6336,6 +6353,7 @@ xen_path_get(unsigned int gid, char const *oid, char *value)
 static te_errno
 xen_path_set(unsigned int gid, char const *oid, char const *value)
 {
+#ifdef HAVE_SYS_STAT_H
     unsigned int u;
     unsigned int limit = dom_u_limit();
     size_t       len   = strlen(value);
@@ -6435,6 +6453,9 @@ xen_path_set(unsigned int gid, char const *oid, char const *value)
 
     memcpy(xen_path, value, len + 1);
     return 0;
+#else
+#warning "xen_path_set method for XEN is not implemented"
+#endif
 }
 
 /**
@@ -6452,6 +6473,7 @@ static te_errno
 dom_u_get(unsigned int gid, char const *oid, char *value,
           char const *xen, char const *dom_u)
 {
+#ifdef HAVE_SYS_STAT_H
     unsigned int u;
     struct stat  st;
 
@@ -6464,6 +6486,9 @@ dom_u_get(unsigned int gid, char const *oid, char *value,
     TE_SPRINTF(buf, "%s/%s", xen_path, dom_u);
     strcpy(value, stat(buf, &st) == 0 ? "1" : "0");
     return 0;
+#else
+#warning "dom_u_get_set method for XEN is not implemented"
+#endif
 }
 
 /**
@@ -6481,6 +6506,7 @@ static te_errno
 dom_u_set(unsigned int gid, char const *oid, char const *value,
            char const *xen, char const *dom_u)
 {
+#ifdef HAVE_SYS_STAT_H
     unsigned int u;
     struct stat  st;
     int          sys;
@@ -6578,6 +6604,9 @@ cleanup1:
 
 cleanup0:
     return rc;
+#else
+#warning "dom_u_set_set method for XEN is not implemented"
+#endif
 }
 
 /**
