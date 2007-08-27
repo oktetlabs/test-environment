@@ -4271,13 +4271,29 @@ TARPC_FUNC(set_buf, {},
                       in->src_buf.src_buf_len));
 }
 )
+/*-------------- sendbuf() ------------------------------*/
+
+
+ssize_t
+sendbuf(int fd, rpc_ptr buf_base, size_t buf_offset, 
+        size_t count, int flags)
+{
+    return send(fd, rcf_pch_mem_get(buf_base) + buf_offset, count, flags);
+}
+
+TARPC_FUNC(sendbuf, {},
+{
+    MAKE_CALL(out->retval = sendbuf(in->fd, in->buf, in->off,
+                                 in->len, in->flags));
+}
+)
 
 /*-------------------------- Read buffer ----------------------------*/
 void
 get_buf(tarpc_ptr src_buf_base, size_t src_offset, 
         char **dst_buf, size_t *len)
 {
-    char *src_buf = rcf_pch_mem_get(src_buf_base); 
+    char *src_buf = rcf_pch_mem_get(src_buf_base);
 
     if (src_buf != NULL && *len != 0)
     {
@@ -4289,7 +4305,10 @@ get_buf(tarpc_ptr src_buf_base, size_t src_offset,
             errno = ENOMEM;
         }
         else
-            memcpy(dst_buf, src_buf + src_offset, *len);
+        {
+            memcpy(buf, src_buf + src_offset, *len);
+            *dst_buf = buf;
+        }
     }
     else if (*len != 0)
     {
