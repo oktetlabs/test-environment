@@ -2489,6 +2489,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 
     free(buf);
     return 0;
+
 }
 
 TARPC_FUNC(simple_sender, {},
@@ -2512,13 +2513,19 @@ int
 simple_receiver(tarpc_simple_receiver_in *in,
                 tarpc_simple_receiver_out *out)
 {
-    char *buf;
+    char           *buf;
+    fd_set          set;
+    int             rc;
+    ssize_t         len;
+    struct timeval  tv;
+    int err = 0;
 
-    uint64_t received = 0;
-#ifdef TA_DEBUG
-    uint64_t control = 0;
-    int start = time(NULL);
-#endif
+    time_t          start;
+    time_t          now;
+
+    out->bytes = 0;
+
+    RING("%s() started", __FUNCTION__);
 
     if ((buf = malloc(MAX_PKT)) == NULL)
     {
@@ -2526,70 +2533,60 @@ simple_receiver(tarpc_simple_receiver_in *in,
         return -1;
     }
 
-    while (TRUE)
+    for (start = now = time(NULL);
+         (in->time2run != 0) ?
+          ((unsigned int)(now - start) <= in->time2run) : TRUE;
+         now = time(NULL))
     {
-        struct timeval tv = { 1, 0 };
-        fd_set         set;
-        int            len;
-
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
         FD_ZERO(&set);
-        FD_SET((unsigned int)in->s, &set);
-        if (select(in->s + 1, &set, NULL, NULL, &tv) < 0)
+        FD_SET(in->s, &set);
+
+        rc = select(in->s + 1, &set, NULL, NULL, &tv);
+        if (rc < 0)
         {
-            int err = 0;
-            
             err = GetLastError();
             ERROR("select() failed in simple_receiver(): errno %d", err);
             free(buf);
             return -1;
         }
-        if (!FD_ISSET(in->s, &set))
+        else if (rc == 0)
         {
-            if (received > 0)
-                break;
-            else
+            if ((in->time2run != 0) || (out->bytes == 0))
                 continue;
+            else
+                break;
+        }
+        else if (!FD_ISSET(in->s, &set))
+        {
+            ERROR("select() waited for reading on the socket, "
+                  "returned %d, but the socket in not in set", rc);
+            free(buf);
+            return -1;
         }
 
         len = recv(in->s, buf, MAX_PKT, 0);
-
         if (len < 0)
         {
-            int err = 0;
-            
             err = GetLastError();
             ERROR("recv() failed in simple_receiver(): errno %d", err);
             free(buf);
             return -1;
         }
-
         if (len == 0)
         {
-            ERROR("recv() returned 0 in simple_receiver()");
-            free(buf);
-            return -1;
+            break;
         }
 
-        received += len;
-#ifdef TA_DEBUG
-        control += len;
-        if (control > 0x20000)
-        {
-            char buf[128];
-            sprintf(buf,
-                    "echo \"Intermediate %llu time %d\" >> /tmp/receiver",
-                    received, time(NULL) - start);
-            system(buf);
-            control = 0;
-        }
-#endif
+        if (out->bytes == 0)
+            RING("First %d bytes are received", len);
+        out->bytes += len;
     }
 
-    RING("Received %llu", received);
     free(buf);
-
-    out->bytes = received;
-
+    RING("simple_receiver() stopped, received %llu bytes",
+         out->bytes);
     return 0;
 }
 
