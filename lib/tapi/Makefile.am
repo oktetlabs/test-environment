@@ -43,7 +43,7 @@ libtapi_la_SOURCES = \
 	verdict.c \
 	tapi_reqs.c
 
-#	tapi_cfg_xen.c \
+#	tapi_cfg_xen.c 
 
 install-exec-hook:
 	touch -c -r libtapi.la $(DESTDIR)/$(libdir)/libtapi.*
