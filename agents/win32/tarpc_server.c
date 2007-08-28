@@ -1295,8 +1295,8 @@ TARPC_FUNC(readbuf,
     set_overlapped_filepos(&overlapped, (HANDLE)in->fd);
     
     MAKE_CALL(out->retval = ReadFile((HANDLE)(in->fd), 
-                                     rcf_pch_mem_get(in->buf), 
-                                     in->len, &rc, &overlapped));
+                           (char *)rcf_pch_mem_get(in->buf) + in->off,
+                           in->len, &rc, &overlapped));
 
     if (out->retval == 0)
     {
@@ -5210,3 +5210,13 @@ sleep_ex(int msec)
 {
     SleepEx(msec, TRUE);
 } 
+
+/*-------------- memcmp() ------------------------------*/
+
+TARPC_FUNC(memcmp, {},
+{
+     out->retval = memcmp(rcf_pch_mem_get(in->s1_base) + in->s1_off,
+                            rcf_pch_mem_get(in->s2_base) + in->s2_off,
+                            in->n);
+}
+)
