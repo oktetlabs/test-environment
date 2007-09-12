@@ -537,6 +537,9 @@ static tce_info *current_tce_module;
 static struct page **current_module_pages;
 
 #ifdef CONFIG_KALLSYMS
+
+#define GCOV_INIT_MAGIC_STRING "_GLOBAL__I_"
+
 static int
 module_load_notifier(struct notifier_block *self, unsigned long val, void *data)
 {
@@ -565,7 +568,7 @@ module_load_notifier(struct notifier_block *self, unsigned long val, void *data)
         for (sym = mod->symtab, i = 0; i < mod->num_symtab; i++, sym++)
         {
             symname = mod->strtab + sym->st_name;
-            if (strstr(symname, "GCOV") != NULL)
+            if (strncmp(symname, GCOV_INIT_MAGIC_STRING, strlen(GCOV_INIT_MAGIC_STRING)) == 0)
             {
                 ((void (*)(void))sym->st_value)();
             }
