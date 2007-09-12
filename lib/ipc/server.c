@@ -1324,7 +1324,7 @@ write_socket(int socket, const void *buffer, size_t len)
             {
                 struct pollfd   pfd = { socket, POLLOUT, 0 };
 
-                if (poll(&pfd, 1, TE_SEC2MS(10)) != 1)
+                if (poll(&pfd, 1, TE_SEC2MS(2)) != 1)
                 {
                     /* Too long block - give up */
                     return TE_OS_RC(TE_IPC, errno);
