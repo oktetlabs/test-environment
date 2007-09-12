@@ -53,6 +53,9 @@
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+#if HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#endif
 
 #ifndef TE_IPC_AF_UNIX
 #if HAVE_NETINET_IN_H
@@ -1309,12 +1312,25 @@ write_socket(int socket, const void *buffer, size_t len)
 {
     while (len > 0)
     {
-        int r = send(socket, buffer, len, 0);
+        int r = send(socket, buffer, len, MSG_DONTWAIT);
 
         if (r < 0)
         {
-            perror("write_socket send() error");
-            return TE_OS_RC(TE_IPC, errno);
+            if (errno != EAGAIN)
+            {
+                perror("write_socket send() error");
+                return TE_OS_RC(TE_IPC, errno);
+            }
+            {
+                struct pollfd   pfd = { socket, POLLOUT, 0 };
+
+                if (poll(&pfd, 1, TE_SEC2MS(10)) != 1)
+                {
+                    /* Too long block - give up */
+                    return TE_OS_RC(TE_IPC, errno);
+                }
+                continue;
+            }
         }
         else if (r == 0)
         {
