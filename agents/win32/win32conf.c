@@ -1905,7 +1905,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
              "./sish_client.exe "
              "--server=127.0.0.1 "
              "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_manage.exe "
-             "--args=set mtu %s", value);
+             "--args=\"set mtu %s\"", value);
 //    sprintf(szCommand, "./windows_layer2_mtu.exe %s", value);
     printf("szCommand = %s\n", szCommand);
     system(szCommand);    
