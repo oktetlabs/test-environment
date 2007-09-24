@@ -124,21 +124,22 @@
 #include <sys/utsname.h>
 #endif
 
-/**
- * XEN support: 'struct stat' declaration
- * and PATH_MAX definition are needed for XEN
- */
-#if defined(HAVE_SYS_STAT_H) && defined(HAVE_LIMITS_H)
+/* XEN support: 'struct stat' declaration is needed for XEN */
+#if defined(HAVE_SYS_STAT_H)
 #include <sys/stat.h>
-#include <limits.h>
-
 #define XEN_SUPPORT 1
 
+/**
+ * FIXME: In spite of <limits.h> and <sys/param.h>
+ * (if available) are included PATH_MAX is not defined
+ */
+#if !defined(PATH_MAX)
+#define PATH_MAX 256
+#endif
+
 #else
-
 #define XEN_SUPPORT 0
-
-#endif /* HAVE_SYS_STAT_H && HAVE_LIMITS_H */
+#endif /* HAVE_SYS_STAT_H */
 
 /* PAM (Pluggable Authentication Modules) support */
 #if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM) && \
@@ -6062,11 +6063,6 @@ typedef enum { DOM_U_STATUS_NON_RUNNING,
                DOM_U_STATUS_SAVED,
                DOM_U_STATUS_MIGRATED,
                DOM_U_STATUS_ERROR } status_t;
-
-/* FIXME: In spite of <limits.h> is included PATH_MAX is not defined */
-#if !defined(PATH_MAX)
-#define PATH_MAX 256
-#endif
 
 /**
  * Path to accessible across network storage for
