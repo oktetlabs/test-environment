@@ -6063,6 +6063,11 @@ typedef enum { DOM_U_STATUS_NON_RUNNING,
                DOM_U_STATUS_MIGRATED,
                DOM_U_STATUS_ERROR } status_t;
 
+/* FIXME: In spite of <limits.h> is included PATH_MAX is not defined */
+#if !defined(PATH_MAX)
+#define PATH_MAX 256
+#endif
+
 /**
  * Path to accessible across network storage for
  * XEN kernel and templates of XEN config/VBD images.
