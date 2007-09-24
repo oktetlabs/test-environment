@@ -31,21 +31,14 @@
 #ifndef __TE_TAPI_CFG_XEN_H__
 #define __TE_TAPI_CFG_XEN_H__
 
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#if HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
 #include "te_errno.h"
 #include "conf_api.h"
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct sockaddr; /** Forward declaration to avoid header inclusion */
 
 /**
  * Get XEN storage path for templates of domU
@@ -186,30 +179,6 @@ extern te_errno tapi_cfg_xen_dom_u_migrate(char const *from_ta,
                                            char const *dom_u,
                                            char const *host,
                                            te_bool     live);
-
-/**
- * Create domU previously requesting IP address by MAC via DHCP.
- *
- * @param ta            Test Agent running withing dom0
- * @param dom_u         Name of domU to create
- * @param mac           MAC address to use to request IP one via DHCP
- * 
- * @return Status code
- */
-extern te_errno tapi_cfg_xen_create_dom_u_dhcp(char const    *ta,
-                                               char const    *dom_u,
-                                               uint8_t const *mac);
-
-/**
- * Destroy domU releasing IP address previously got via DHCP.
- *
- * @param ta            Test Agent running withing dom0
- * @param dom_u         Name of domU to destroy
- * 
- * @return Status code
- */
-extern te_errno tapi_cfg_xen_destroy_dom_u_dhcp(char const *ta,
-                                                char const *dom_u);
 
 
 #ifdef __cplusplus
