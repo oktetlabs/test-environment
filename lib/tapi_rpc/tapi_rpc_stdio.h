@@ -189,6 +189,26 @@ extern rpc_wait_status rpc_shell_get_all2(rcf_rpc_server *rpcs,
                                           const char *cmd, ...);
 
 /**
+ * Execute shell command on the IPC server and read the output and stderr.
+ * The routine allocates memory for the output buffers and places
+ * null-terminated strings to them.
+ * @b pbuf[0] and pbuf[1] pointers are initialized by NULL if no buffer
+ * are allocated.
+ * If @b pbuf is NULL, stdout is not redirected.
+ *
+ * @param rpcs          RPC server handle
+ * @param pbuf          array of locations for the command output and stderr
+ * @param cmd           format of the command to be executed
+ * @param ...           parameters for command
+ *
+ * @return status of the process
+ */
+extern rpc_wait_status rpc_shell_get_all3(rcf_rpc_server *rpcs,
+                                          char **pbuf,
+                                          const char *cmd, ...);
+
+
+/**
  * Execute command on the RPC server as a given user and redirect
  * stdin/stdout to pipe(s) if necessary.
  * You MUST use uid parameter instead of "su - user -c", because su makes

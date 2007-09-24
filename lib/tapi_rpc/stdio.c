@@ -589,6 +589,77 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char **pbuf,
 }
 
 rpc_wait_status
+rpc_shell_get_all3(rcf_rpc_server *rpcs, char **pbuf,
+                   const char *cmd, ...)
+{
+    char   *buf[2];
+    size_t  bytes[2];
+    size_t  read1, read2;
+    char    cmdline[RPC_SHELL_CMDLINE_MAX];
+    int     fd[2];
+
+    tarpc_pid_t     pid;
+    rpc_wait_status rc;
+    te_bool         iut_err_jump;
+
+    va_list ap;
+
+    va_start(ap, cmd);
+    vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
+    va_end(ap);
+
+    if (pbuf != NULL)
+        *pbuf = NULL;
+    memset(&rc, 0, sizeof(rc));
+    rc.flag = RPC_WAIT_STATUS_UNKNOWN;
+    if (rpcs == NULL || buf == NULL)
+    {
+        ERROR("%s(): Invalid parameters", __FUNCTION__);
+        return rc;
+    }
+    
+    iut_err_jump = rpcs->iut_err_jump;
+    if (pbuf != NULL)
+        pid = rpc_te_shell_cmd_gen(rpcs, cmdline, -1, NULL, &fd[0], &fd[1]);
+    else
+        pid = rpc_te_shell_cmd_gen(rpcs, cmdline, -1, NULL, NULL, &fd[1]);
+    if (pid < 0)
+    {
+        ERROR("Cannot execute the command: rpc_te_shell_cmd_gen() failed");
+        return rc;
+    }
+
+    read1 = read2 = 0;
+    buf[0] = buf[1] = NULL;
+    if (pbuf != NULL)
+    {
+        if (rpc_read_all2(rpcs, fd, buf, bytes) != 0)
+            rpc_ta_kill_death(rpcs, pid);
+        pbuf[0] = buf[0];
+        pbuf[1] = buf[1];
+        rpc_close(rpcs, fd[0]);
+    }
+    else
+    {
+        if (rpc_read_all(rpcs, fd[1], &buf[1], &bytes[1]) != 0)
+            rpc_ta_kill_death(rpcs, pid);
+    }
+    rpc_close(rpcs, fd[1]);
+
+    /* Restore jump setting to avoid jump after command crash. */
+    rpcs->iut_err_jump = iut_err_jump;
+    /* 
+     * @todo if we will jump, we'd better free(buf).
+     * As test is failed in any way, this memory leak is not important.
+     * Let's think that its test responsibility to free the buf in any
+     * case.
+     */
+    rpc_waitpid(rpcs, pid, &rc, 0);
+
+    return rc;
+}
+
+rpc_wait_status
 rpc_system(rcf_rpc_server *rpcs, const char *cmd)
 {
     tarpc_system_in     in;
