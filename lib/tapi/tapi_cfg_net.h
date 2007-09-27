@@ -221,6 +221,16 @@ typedef struct tapi_cfg_net_assigned {
     cfg_handle *entries;   /**< assigned pool entries */
 } tapi_cfg_net_assigned;
 
+
+/**
+ * Check all configuration networks that MTU values on the ends
+ * of each network does not differ
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_all_check_mtu();
+
+
 /**
  * Assign IP subnet to specified configuration network.
  *

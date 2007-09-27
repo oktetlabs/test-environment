@@ -1111,7 +1111,6 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
     return rc;
 }
 
-
 /* See description in tapi_cfg_net.h */
 te_errno
 tapi_cfg_net_all_assign_ip(unsigned int af)
@@ -1138,6 +1137,79 @@ tapi_cfg_net_all_assign_ip(unsigned int af)
         }
     }
 
+    tapi_cfg_net_free_nets(&nets);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_all_check_mtu()
+{
+    unsigned int    i, j;
+    int             net_mtu, mtu;
+    int             rc = 0;
+
+    cfg_nets_t      nets;
+
+    RING("Perform MTU compare check for all networks");
+
+    /* Get testing network configuration in C structures */
+    rc = tapi_cfg_net_get_nets(&nets);
+    if (rc != 0)
+    {
+        ERROR("tapi_cfg_net_get_nets() failed %r", rc);
+        return rc;
+    }
+
+    for (i = 0; i < nets.n_nets; ++i)
+    {
+        cfg_net_t  *net = nets.nets + i;
+
+        net_mtu = 0;
+
+        for (j = 0; j < net->n_nodes; ++j)
+        {
+            cfg_val_type    type;
+            char           *oid = NULL;
+
+            type = CVT_STRING;
+            rc = cfg_get_instance(net->nodes[j].handle, &type, &oid);
+            if (rc != 0)
+            {
+                ERROR("Failed to get Configurator instance by handle "
+                      "0x%x: %r", net->nodes[j].handle, rc);
+                goto cleanup;
+            }
+
+            type = CVT_INTEGER;
+            rc = cfg_get_instance_fmt(&type, &mtu, "%s/mtu:", oid);
+            if (rc != 0)
+            {
+                ERROR("Failed to get MTU of %s: %r", oid, rc);
+                goto cleanup;
+            }
+            
+            RING("%s/mtu: = %d", oid, mtu);
+
+            /* Store MTU value of the first node in the network */
+            if (net_mtu == 0)
+            {
+                net_mtu = mtu;
+                continue;
+            }
+
+            /* Fail if MTU value differs */
+            if (mtu != net_mtu)
+            {
+                ERROR("Different MTU values on the ends of network");
+                rc = TE_RC(TE_TAPI, TE_EINVAL);
+                goto cleanup;
+            }
+        }
+    }
+
+cleanup:
     tapi_cfg_net_free_nets(&nets);
 
     return rc;
