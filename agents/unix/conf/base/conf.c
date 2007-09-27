@@ -124,19 +124,16 @@
 #include <sys/utsname.h>
 #endif
 
-/* XEN support: 'struct stat' declaration is needed for XEN */
+/* XEN support */
 #if defined(HAVE_SYS_STAT_H)
-#include <sys/stat.h>
-#define XEN_SUPPORT 1
+#include <sys/stat.h> /** For 'struct stat' */
 
-/**
- * FIXME: In spite of <limits.h> and <sys/param.h>
- * (if available) are included PATH_MAX is not defined
- */
+/* UNIX branching heritage: PATH_MAX can still be undefined here yet */
 #if !defined(PATH_MAX)
-#define PATH_MAX 256
+#define PATH_MAX 108
 #endif
 
+#define XEN_SUPPORT 1
 #else
 #define XEN_SUPPORT 0
 #endif /* HAVE_SYS_STAT_H */
@@ -6055,13 +6052,14 @@ user_del(unsigned int gid, const char *oid, const char *user)
 #if XEN_SUPPORT
 
 /** Maximal number of maintained domUs */
-enum { MAX_DOM_U_NUM = 1024 };
+enum { MAX_DOM_U_NUM = 256 };
 
 /** DomU statuses */
 typedef enum { DOM_U_STATUS_NON_RUNNING,
                DOM_U_STATUS_RUNNING,
                DOM_U_STATUS_SAVED,
-               DOM_U_STATUS_MIGRATED,
+               DOM_U_STATUS_MIGRATED_RUNNING,
+               DOM_U_STATUS_MIGRATED_SAVED,
                DOM_U_STATUS_ERROR } status_t;
 
 /**
@@ -6074,16 +6072,20 @@ static char xen_path[PATH_MAX] = { '\0' };
 static char const *const xen_kernel = "vmlinuz-2.6.18-4-xen-686";
 static char const *const xen_ramdsk = "initrd.img-2.6.18-4-xen-686";
 static char const *const xen_dsktpl = "disk-template.img";
+static char const *const xen_dskimg = "disk.img";
+static char const *const xen_swpimg = "swap.img";
 static char const *const xen_tmpdir = "tmpdir";
 
 /** Status name to status and vice versa translation array */
 static struct {
     char const *name; /**< Status name */
     status_t status;  /**< Status      */
-} const statuses[] = { { "non-running", DOM_U_STATUS_NON_RUNNING },
-                       { "running",     DOM_U_STATUS_RUNNING },
-                       { "saved",       DOM_U_STATUS_SAVED },
-                       { "migrated",    DOM_U_STATUS_MIGRATED } };
+} const statuses[] = {
+    { "non-running",      DOM_U_STATUS_NON_RUNNING },
+    { "running",          DOM_U_STATUS_RUNNING },
+    { "saved",            DOM_U_STATUS_SAVED },
+    { "migrated-running", DOM_U_STATUS_MIGRATED_RUNNING },
+    { "migrated-saved",   DOM_U_STATUS_MIGRATED_SAVED } };
 
 /** DomU internal representation */
 static struct {
@@ -6265,8 +6267,8 @@ xen_fill_file_in_disk_image(char const *dom_u, char const *fname,
     }
 
     /* FIXME: Non "ta_system" implementation is needed*/
-    TE_SPRINTF(buffer, "mount -o loop %s/%s/disk.img %s/%s/%s",
-               xen_path, dom_u, xen_path, dom_u, xen_tmpdir);
+    TE_SPRINTF(buffer, "mount -o loop %s/%s/%s %s/%s/%s",
+               xen_path, dom_u, xen_dskimg, xen_path, dom_u, xen_tmpdir);
 
     if ((sys = ta_system(buffer)) != 0 && !(sys == -1 && errno == ECHILD))
     {
@@ -6567,8 +6569,8 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
     }
 
     /* FIXME: Non "ta_system" implementation is needed*/
-    TE_SPRINTF(buf, "set -x; cp --sparse=always %s/%s %s/%s/disk.img",
-               xen_path, xen_dsktpl, xen_path, dom_u);
+    TE_SPRINTF(buf, "set -x; cp --sparse=always %s/%s %s/%s/%s",
+               xen_path, xen_dsktpl, xen_path, dom_u, xen_dskimg);
 
     if ((sys = ta_system(buf)) != 0 && !(sys == -1 && errno == ECHILD))
     {
@@ -6576,7 +6578,7 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
         goto cleanup1;
     }
 
-    TE_SPRINTF(buf, "%s/%s/disk.img", xen_path, dom_u);
+    TE_SPRINTF(buf, "%s/%s/%s", xen_path, dom_u, xen_dskimg);
 
     if (chmod(buf, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
     {
@@ -6665,13 +6667,19 @@ dom_u_add(unsigned int gid, char const *oid, char const *value,
 
     if (*xen_path == '\0')
     {
-        ERROR("Failed to add domU %s since XEN path is not set", dom_u);
+        ERROR("Failed to add '%s' domU since XEN path is not set", dom_u);
         return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    if (*dom_u == '\0')
+    {
+        ERROR("Failed to add '%s' domU: domU name is empty", dom_u);
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
 
     if ((u = find_dom_u(dom_u)) < dom_u_limit())
     {
-        ERROR("Failed to add DomU %s: it is already exists", dom_u);
+        ERROR("Failed to add domU %s: it is already exists", dom_u);
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
 
@@ -6888,14 +6896,29 @@ dom_u_status_set(unsigned int gid, char const *oid, char const *value,
     if ((dom_u_slot[u].status == status))
         goto cleanup0;
 
-    /**
-     * "Non-running" -> "migrated" pseudo transition: really the
-     * status is either left in "non-running" or set as "running"
-     */
+    /* "Non-running" -> "migrated-saved" transition */
     if (dom_u_slot[u].status == DOM_U_STATUS_NON_RUNNING &&
-        status == DOM_U_STATUS_MIGRATED)
+        status == DOM_U_STATUS_MIGRATED_SAVED)
     {
-        size_t len = strlen(dom_u);
+        struct stat st;
+
+        TE_SPRINTF(buf, "%s/%s/%s", xen_path, dom_u, xen_dskimg);
+
+        if (stat(buf, &st) != 0 || !S_ISREG(st.st_mode))
+        {
+            ERROR("Failed to accept migrated saved '%s' domU", dom_u);
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup0;
+        }
+
+        goto cleanup1; /** Imitation of 'break' statement */
+    }
+
+    /* "Non-running" -> "migrated-running" transition */
+    if (dom_u_slot[u].status == DOM_U_STATUS_NON_RUNNING &&
+        status == DOM_U_STATUS_MIGRATED_RUNNING)
+    {
+        size_t  len = strlen(dom_u);
 
         /* FIXME: Non "popen" implementation is needed*/
         TE_SPRINTF(buf, "xm list | awk '{print$1}' 2>/dev/null");
@@ -6911,16 +6934,16 @@ dom_u_status_set(unsigned int gid, char const *oid, char const *value,
         {
             if (strncmp(buf, dom_u, len) == 0)
             {
-                status = DOM_U_STATUS_RUNNING;
+                dom_u_slot[u].status = DOM_U_STATUS_MIGRATED_RUNNING;
                 break;
             }
         }
 
         pclose(f);
 
-        if (status != DOM_U_STATUS_RUNNING)
+        if (dom_u_slot[u].status != DOM_U_STATUS_MIGRATED_RUNNING)
         {
-            ERROR("Failed to accept migrated domU %s", dom_u);
+            ERROR("Failed to accept migrated running '%s' domU", dom_u);
             rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
             goto cleanup0;
         }
@@ -6955,9 +6978,10 @@ dom_u_status_set(unsigned int gid, char const *oid, char const *value,
             fprintf(f, "ramdisk='%s/%s'\n", xen_path, xen_ramdsk) < 0 ||
             fprintf(f, "memory='128'\n")                          < 0 ||
             fprintf(f, "root='/dev/sda1 ro'\n")                   < 0 ||
-            fprintf(f, "disk=[ 'file:%s/%s/disk.img,sda1,w', "
-                       "'file:%s/%s/swap.img,sda2,w' ]\n",
-                       xen_path, dom_u, xen_path, dom_u)          < 0 ||
+            fprintf(f, "disk=[ 'file:%s/%s/%s,sda1,w', "
+                       "'file:%s/%s/%s,sda2,w' ]\n",
+                       xen_path, dom_u, xen_dskimg,
+                       xen_path, dom_u, xen_swpimg)               < 0 ||
             fprintf(f, "name='%s'\n", dom_u)                      < 0)
         {
             rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
@@ -7036,8 +7060,9 @@ cleanup2:
         goto cleanup1; /** Imitation of 'break' statement */
     }
 
-    /* "Running" -> "non-running" transition */
-    if (dom_u_slot[u].status == DOM_U_STATUS_RUNNING &&
+    /* "Running/migrated-running" -> "non-running" transition */
+    if ((dom_u_slot[u].status == DOM_U_STATUS_RUNNING ||
+         dom_u_slot[u].status == DOM_U_STATUS_MIGRATED_RUNNING) &&
         status == DOM_U_STATUS_NON_RUNNING)
     {
         TE_SPRINTF(buf, "xm shutdown %s", dom_u);
@@ -7053,8 +7078,9 @@ cleanup2:
         goto cleanup1; /** Imitation of 'break' statement */
     }
 
-    /* "Running" -> "saved" transition */
-    if (dom_u_slot[u].status == DOM_U_STATUS_RUNNING &&
+    /* "Running/migrated-running" -> "saved" transition */
+    if ((dom_u_slot[u].status == DOM_U_STATUS_RUNNING ||
+         dom_u_slot[u].status == DOM_U_STATUS_MIGRATED_RUNNING) &&
         status == DOM_U_STATUS_SAVED)
     {
         TE_SPRINTF(buf, "xm save %s %s/%s/saved.img",
@@ -7071,8 +7097,9 @@ cleanup2:
         goto cleanup1; /** Imitation of 'break' statement */
     }
 
-    /* "Saved" -> "running" transition */
-    if (dom_u_slot[u].status == DOM_U_STATUS_SAVED &&
+    /* "Saved/migrated-saved" -> "running" transition */
+    if ((dom_u_slot[u].status == DOM_U_STATUS_SAVED ||
+         dom_u_slot[u].status == DOM_U_STATUS_MIGRATED_SAVED) &&
         status == DOM_U_STATUS_RUNNING)
     {
         TE_SPRINTF(buf, "xm restore %s/%s/saved.img", xen_path, dom_u);
@@ -7088,8 +7115,9 @@ cleanup2:
         goto entry1; /** Imitation of absence of the 'break' statement */
     }
 
-    /* "Saved" -> "non-running" transition */
-    if (dom_u_slot[u].status == DOM_U_STATUS_SAVED &&
+    /* "Saved/migrated-saved" -> "non-running" transition */
+    if ((dom_u_slot[u].status == DOM_U_STATUS_SAVED ||
+         dom_u_slot[u].status == DOM_U_STATUS_MIGRATED_SAVED) &&
         status == DOM_U_STATUS_NON_RUNNING)
     {
 entry1:

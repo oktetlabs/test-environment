@@ -52,7 +52,6 @@
 #define DHCP_OPT_SERVER_ID      54  /**< Server Identifier */
 /*@}*/
 
-
 /**
  * Value used in DHCP 'htype' field for Ethernet (10Mb) hardware type
  * [RFC 1700]
@@ -85,6 +84,10 @@ typedef enum {
 #define DHCPV4_HDR_SNAME_SIZE 64
 /** Size 'file' field of DHCP message */
 #define DHCPV4_HDR_FILE_SIZE 128
+
+#ifndef ETHER_ADDR_LEN
+#define ETHER_ADDR_LEN 6
+#endif
 
 /** DHCP option internal representation */
 struct dhcp_option {
@@ -367,5 +370,33 @@ extern int dhcpv4_message_insert_option(struct dhcp_message *dhcp_msg,
                                         struct dhcp_option *opt);
 extern te_bool dhcpv4_option55_has_code(const struct dhcp_option *opt,
                                         uint8_t type);
+
+/**
+ * Request IP address via DHCP protocol
+ *
+ * @param ta           Test agent name
+ * @param if_name      Name of the interface to request from
+ * @param mac          MAC address to use in request
+ * @param ip_addr      Storage for IP address that is returned
+ *
+ * @return status code
+ */
+extern te_errno tapi_dhcp_request_ip_addr(char const *ta,
+                                          char const *if_name,
+                                          uint8_t const mac[ETHER_ADDR_LEN],
+                                          struct sockaddr *ip_addr);
+
+/**
+ * Release IP address via DHCP protocol
+ *
+ * @param ta           Test agent name
+ * @param if_name      Name of the interface to request from
+ * @param ip_addr      Storage for IP address that is returned
+ *
+ * @return status code
+ */
+extern te_errno tapi_dhcp_release_ip_addr(char const *ta,
+                                          char const *if_name,
+                                          struct sockaddr const *ip_addr);
 
 #endif /* !__TE_TAPI_DHCP_H__ */

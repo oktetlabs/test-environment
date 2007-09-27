@@ -76,6 +76,11 @@
 #include "tapi_dhcp.h"
 
 
+#define DHCP_MAGIC_SIZE        4
+
+#define SERVER_ID_OPTION       54
+#define REQUEST_IP_ADDR_OPTION 50
+
 #define CHECK_RC(expr_) \
     do {                                                \
         int rc_ = (expr_);                              \
@@ -1207,4 +1212,227 @@ tapi_dhcpv4_csap_get_ipaddr(const char *ta_name, csap_handle_t dhcp_csap,
         return errno;
 
     return 0;
+}
+
+/**
+ * Tries to send DHCP request and waits for ans answer
+ *
+ * @param ta        TA name
+ * @param csap      DHCP CSAP handle
+ * @param lladdr    Local hardware address
+ * @param type      Message type (DHCP Option 53)
+ * @param broadcast Whether DHCP request is marked as broadcast
+ * @param myaddr    in: current IP address; out: obtained IP address
+ * @param srvaddr   in: current IP address; out: obtained IP address
+ * @param xid       DHCP XID field
+ * @param xid       DHCP XID field
+ *
+ * @return boolean success
+ */
+static te_bool
+dhcp_request_reply(const char *ta, csap_handle_t csap,
+                        const struct sockaddr *lladdr,
+                        int type, te_bool broadcast,
+                        struct in_addr *myaddr,
+                        struct in_addr *srvaddr,
+                        unsigned long *xid, te_bool set_ciaddr)
+{
+    struct dhcp_message *request = NULL;
+    uint16_t             flags = (broadcast ? FLAG_BROADCAST : 0);
+    struct dhcp_option **opt;
+    int                  i;
+    te_errno             rc = 0;
+
+    if ((request = dhcpv4_message_create(type)) == NULL)
+    {
+        ERROR("Failed to create DHCP message");
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup0;
+    }
+
+    dhcpv4_message_set_flags(request, &flags);
+    dhcpv4_message_set_chaddr(request, lladdr->sa_data);
+    dhcpv4_message_set_xid(request, xid);
+
+    if (set_ciaddr)
+        dhcpv4_message_set_ciaddr(request, myaddr);
+
+    if (type != DHCPDISCOVER)
+        dhcpv4_message_add_option(request, SERVER_ID_OPTION,
+                                  sizeof(srvaddr->s_addr),
+                                  &srvaddr->s_addr);
+    if (type == DHCPREQUEST)
+        dhcpv4_message_add_option(request, REQUEST_IP_ADDR_OPTION,
+                                  sizeof(myaddr->s_addr),
+                                  &myaddr->s_addr);
+
+    /* Add the 'end' option (RFC2131, chapter 4.1, page 22:
+     * "The last option must always be the 'end' option")
+     */
+    dhcpv4_message_add_option(request, 255, 0, NULL);
+
+    /* Calculate the space in octets currently occupied by options */
+    for (i = DHCP_MAGIC_SIZE, opt = &(request->opts);
+         *opt != NULL;
+         opt = &((*opt)->next))
+    {
+        int opt_type = (*opt)->type;
+
+        i++;                          /** Option type length       */
+        if (opt_type != 255 && opt_type != 0)
+            i += 1 + (*opt)->val_len; /** Option len + body length */
+    }
+
+    /* Align to 32-octet boundary; no such requirement in RFC,
+     * Solaris 'dhcp' server does this way, so the test too:
+     * alignment is performed over adding appropriate number
+     * of 'pad' options
+     */
+    for (i = 32 - i % 32; i < 32 && i > 0; i--)
+        dhcpv4_message_add_option(request, 0, 0, NULL);
+
+    if (type != DHCPRELEASE)
+    {
+        const char          *err_msg;
+        unsigned int         timeout = 10000; /**< 10 sec */
+        struct dhcp_message *reply   = tapi_dhcpv4_send_recv(ta, csap,
+                                                             request,
+                                                             &timeout,
+                                                             &err_msg);
+        struct dhcp_option const *server_id_option;
+
+        if (reply == NULL)
+        {
+            ERROR("Failed send/receive DHCP request/reply: %s", err_msg);
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup1;
+        }
+
+        myaddr->s_addr = dhcpv4_message_get_yiaddr(reply);
+
+        RING("Got address %d.%d.%d.%d",
+             (myaddr->s_addr & 0xFF),
+             (myaddr->s_addr >> 8) & 0xFF,
+             (myaddr->s_addr >> 16) & 0xFF,
+             (myaddr->s_addr >> 24) & 0xFF);
+
+        if (dhcpv4_message_get_xid(reply) != *xid)
+        {
+            ERROR("Reply XID doesn't match that of request");
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup2;
+        }
+
+        if ((server_id_option = dhcpv4_message_get_option(reply,
+                                                          54)) == NULL)
+        {
+            ERROR("Cannot get ServerID option");
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup2;
+        }
+
+        if (server_id_option->len != 4 || server_id_option->val_len != 4)
+        {
+            ERROR("Invalid ServerID option value length: %u",
+                  server_id_option->val_len);
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup2;
+        }
+
+        memcpy(&srvaddr->s_addr, server_id_option->val, 4);
+
+cleanup2:
+        free(reply);
+    }
+    else
+    {
+        rc = tapi_dhcpv4_message_send(ta, csap, request);
+    }
+
+cleanup1:
+    free(request);
+
+cleanup0:
+    return rc;
+}
+
+te_errno
+tapi_dhcp_request_ip_addr(char const *ta, char const *if_name,
+                          uint8_t const mac[ETHER_ADDR_LEN],
+                          struct sockaddr *ip_addr)
+{
+    int                     rc;
+    csap_handle_t           csap = CSAP_INVALID_HANDLE;
+    struct in_addr          myaddr = {INADDR_ANY};
+    struct in_addr          srvaddr = {INADDR_ANY};
+    unsigned long           xid = random();
+    struct sockaddr         mac_addr = { .sa_family = AF_LOCAL };
+
+    memcpy(mac_addr.sa_data, mac, ETHER_ADDR_LEN);
+
+    if ((rc = tapi_dhcpv4_plain_csap_create(ta, if_name,
+                                            DHCP4_CSAP_MODE_CLIENT,
+                                            &csap)) != 0)
+    {
+        ERROR("Failed to create DHCP client CSAP for interface %s on %s",
+              if_name, ta);
+        goto cleanup0;
+    }
+
+    if ((rc = dhcp_request_reply(ta, csap, &mac_addr, DHCPDISCOVER, TRUE,
+                                 &myaddr, &srvaddr, &xid, FALSE)) != 0)
+    {
+        ERROR("DHCP discovery failed");
+        goto cleanup1;
+    }
+
+    if ((rc = dhcp_request_reply(ta, csap, &mac_addr, DHCPREQUEST, TRUE,
+                                 &myaddr, &srvaddr, &xid, FALSE)) != 0)
+    {
+        ERROR("DHCP lease cannot be obtained");
+        goto cleanup1;
+    }
+
+    ip_addr->sa_family = AF_INET;
+    SIN(ip_addr)->sin_addr = myaddr;
+
+cleanup1:
+    tapi_tad_csap_destroy(ta, 0, csap);
+
+cleanup0:
+    return rc;
+}
+
+te_errno
+tapi_dhcp_release_ip_addr(char const *ta, char const *if_name,
+                          struct sockaddr const *addr)
+{
+    csap_handle_t  csap = CSAP_INVALID_HANDLE;
+    struct in_addr myaddr = {INADDR_ANY};
+    struct in_addr srvaddr = {INADDR_ANY};
+    unsigned long  xid = random();
+    te_errno       rc;
+
+    memcpy(&myaddr, &SIN(addr)->sin_addr, sizeof(myaddr));
+
+    if ((rc = tapi_dhcpv4_plain_csap_create(ta, if_name,
+                                            DHCP4_CSAP_MODE_CLIENT,
+                                            &csap)) != 0)
+    {
+        ERROR("Failed to create DHCP client CSAP on %s:%s", ta, if_name);
+        goto cleanup0;
+    }
+
+    if ((rc = dhcp_request_reply(ta, csap, addr, DHCPRELEASE, FALSE,
+                                 &myaddr, &srvaddr, &xid, TRUE)) != 0)
+    {
+        ERROR("Error releasing DHCP lease");
+        goto cleanup1;
+    }
+
+cleanup1:
+    tapi_tad_csap_destroy(ta, 0, csap);
+
+cleanup0:
+    return rc;
 }
