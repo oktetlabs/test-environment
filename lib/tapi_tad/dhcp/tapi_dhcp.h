@@ -390,8 +390,8 @@ extern te_errno tapi_dhcp_request_ip_addr(char const *ta,
  * Release IP address via DHCP protocol
  *
  * @param ta           Test agent name
- * @param if_name      Name of the interface to request from
- * @param ip_addr      Storage for IP address that is returned
+ * @param if_name      Name of the interface to send release request from
+ * @param ip_addr      Storage for IP address that is to release
  *
  * @return status code
  */
