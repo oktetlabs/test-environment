@@ -746,8 +746,6 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
     tarpc_sendfile_in  in;
     tarpc_sendfile_out out;
 
-    RING("sizeof(tarpc_off_t)=%d", sizeof(tarpc_off_t));
-
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
