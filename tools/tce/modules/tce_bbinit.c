@@ -7,6 +7,7 @@
 #include <linux/pagemap.h>
 #include <linux/miscdevice.h>
 #include <linux/notifier.h>
+#include <linux/vmalloc.h>
 #include "tce_bbinit_defs.h"
 
 /****************** TCE structure definitions ************************/
@@ -95,7 +96,7 @@ tce_info_release(struct kobject *kobj)
 {
     tce_info *info = container_of(kobj, tce_info, kobj);
 
-    kfree(info);
+    vfree(info);
 }
 
 typedef struct tce_ctr_page_data
@@ -190,14 +191,14 @@ tce_obj_info_release(struct kobject *kobj)
     unsigned long flags;
 
     if (info->data.filename != NULL)
-        kfree(info->data.filename);
+        vfree(info->data.filename);
     if (info->data.functions != NULL)
-        kfree(info->data.functions);
+        vfree(info->data.functions);
     spin_lock_irqsave(&parent->data.obj_list_lock, flags);
     list_del(&info->data.entry);
     spin_unlock_irqrestore(&parent->data.obj_list_lock, flags);
 
-    kfree(info);
+    vfree(info);
 }
 
 static void 
@@ -252,8 +253,8 @@ static void
 tce_obj_alloc_functions(tce_obj_info *obj, int n_functions)
 {
     obj->data.n_functions = n_functions;
-    obj->data.functions = kmalloc(sizeof(*obj->data.functions) *
-                                  obj->data.n_functions, GFP_KERNEL);
+    obj->data.functions = vmalloc(sizeof(*obj->data.functions) *
+                                  obj->data.n_functions);
     memset(obj->data.functions, 0, sizeof(*obj->data.functions) * 
            obj->data.n_functions);
 }
@@ -301,7 +302,7 @@ add_counter_pages(tce_ctr_info *data, unsigned long long ptr,
     unsigned length = n_counters * sizeof(long long);
 
     data->data.n_pages = n_pages;
-    data->data.pages = kmalloc(sizeof(*data->data.pages) * n_pages, GFP_KERNEL);
+    data->data.pages = vmalloc(sizeof(*data->data.pages) * n_pages);
     for (i = 0; i < n_pages; i++, length -= PAGE_SIZE - offset, offset = 0)
     {
         memset(&data->data.pages[i], 0, sizeof(data->data.pages[i]));
@@ -323,7 +324,7 @@ add_module_pages(tce_ctr_info *data, void *coreptr, int n_counters)
 {
     long n_pages = (n_counters * sizeof(long long) + 
                     (long)coreptr % PAGE_SIZE + PAGE_SIZE - 1) / PAGE_SIZE;
-    struct page **pages = kmalloc(sizeof(*pages) * n_pages, GFP_KERNEL);
+    struct page **pages = vmalloc(sizeof(*pages) * n_pages);
     int i;
     char *vmptr = (char *)((unsigned long)coreptr & PAGE_MASK);
     
@@ -335,7 +336,7 @@ add_module_pages(tce_ctr_info *data, void *coreptr, int n_counters)
     }
     add_counter_pages(data, (unsigned long)coreptr, n_counters, 
                       n_pages, pages);
-    kfree(pages);
+    vfree(pages);
 }
 
 static void
@@ -345,7 +346,7 @@ tce_ctr_info_release(struct kobject *kobj)
     
     if (info->data.pages != NULL)
     {   
-        kfree(info->data.pages);
+        vfree(info->data.pages);
     }
 }
 
@@ -370,19 +371,19 @@ TCE_ATTR_STORE(tce_ctr_info, data, obj, value, count)
     
     n_phys = (obj->data.n_counters * sizeof(long long) + ptr % PAGE_SIZE 
               + PAGE_SIZE - 1) / PAGE_SIZE;
-    app_pages = kmalloc(sizeof(*app_pages) * n_phys, GFP_KERNEL);
+    app_pages = vmalloc(sizeof(*app_pages) * n_phys);
 
     rc = get_user_pages(current, current->mm, ptr, 
                         obj->data.n_counters * sizeof(long long), 0, 0, 
                         app_pages, NULL);
     if (rc != 0)
     {
-        kfree(app_pages);
+        vfree(app_pages);
         return rc;
     }
 
     rc = add_counter_pages(obj, ptr, obj->data.n_counters, n_phys, app_pages);
-    kfree(app_pages);
+    vfree(app_pages);
 
     if (rc != 0)
         return rc;
@@ -454,7 +455,7 @@ add_new_tce_program(pid_t pid, int *pnext)
     next = tce_prog_seqno++;
     spin_unlock_irqrestore(&tce_prog_seqno_lock, flags);
 
-    new_prog = kmalloc(sizeof(*new_prog), GFP_KERNEL);
+    new_prog = vmalloc(sizeof(*new_prog));
     memset(new_prog, 0, sizeof(*new_prog));
     kobj_set_kset_s(new_prog, tce_subsys);
     new_prog->data.pid = pid;
@@ -557,8 +558,7 @@ module_load_notifier(struct notifier_block *self, unsigned long val, void *data)
         
         n_pages = ((unsigned long)mod->module_core % PAGE_SIZE +
                    mod->core_size + PAGE_SIZE - 1) / PAGE_SIZE;
-        current_module_pages = kmalloc(sizeof(*current_module_pages) * n_pages,
-                                       GFP_KERNEL);
+        current_module_pages = vmalloc(sizeof(*current_module_pages) * n_pages);
         
         for (i = 0, core_ptr = mod->module_core; i < n_pages; i++, core_ptr += PAGE_SIZE)
         {
@@ -573,7 +573,7 @@ module_load_notifier(struct notifier_block *self, unsigned long val, void *data)
                 ((void (*)(void))sym->st_value)();
             }
         }
-        kfree(current_module_pages);
+        vfree(current_module_pages);
         current_module_pages = NULL;
     }
     return NOTIFY_OK;
