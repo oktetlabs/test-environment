@@ -197,6 +197,16 @@ static te_errno mcast_link_addr_del(unsigned int, const char *,
                                     const char *, const char *);
 static te_errno mcast_link_addr_list(unsigned int, const char *, char **,
                                      const char *);
+
+/* VLANS */
+static te_errno vlan_ifname_get(unsigned int , const char *,
+                                char *, const char *, const char *);
+static te_errno vlans_list(unsigned int, const char *, char **,
+                           const char*);
+static te_errno vlans_add(unsigned int, const char *, const char *,
+                          const char *, const char *);
+static te_errno vlans_del(unsigned int, const char *, const char *,
+                          const char *);
 //PHY support
 extern te_errno ta_unix_conf_phy_init();
 
@@ -332,6 +342,11 @@ typedef struct if_stats {
     uint64_t      out_errors;
 } if_stats;
 
+/* VLANS */
+#define MAX_VLANS 0xfff
+static int vlans_buffer[MAX_VLANS];
+static size_t n_vlans = 0;
+
 static te_errno if_stats_get(const char *ifname, if_stats *stats, 
                              ndis_stats *raw_stats);
 
@@ -381,7 +396,15 @@ static rcf_pch_cfg_object node_mcast_link_addr =
   (rcf_ch_cfg_list)mcast_link_addr_list, NULL, NULL };
 //
 
-RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_mcast_link_addr,
+/* VLANS */
+RCF_PCH_CFG_NODE_RO(node_vl_ifname, "ifname", NULL, NULL,
+                    vlan_ifname_get);
+RCF_PCH_CFG_NODE_COLLECTION(node_vlans, "vlans",
+                            &node_vl_ifname, &node_mcast_link_addr,
+                            vlans_add, vlans_del,
+                            vlans_list, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_vlans,
                     promisc_get, promisc_set);
 
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
@@ -3725,3 +3748,153 @@ ta_unix_conf_phy_init(void)
 {
     return rcf_pch_add_node("/agent/interface", &node_phy);
 }
+
+
+/**
+ * Get VLAN ifname
+ *
+ * @param gid           request group identifier (unused)
+ * @param oid           full object instence identifier
+ * @param value         location for interface name
+ * @param ifname        name of the interface
+ * @param vid           name of the vlan (decimal integer)
+ *
+ * @return status
+ */
+static te_errno
+vlan_ifname_get(unsigned int gid, const char *oid, char *value,
+                const char *ifname, const char *vid)
+{
+    int vlan_id = atoi(vid);
+    
+    VERB("%s: gid=%u oid='%s', ifname = '%s', vid %d",
+         __FUNCTION__, gid, oid, ifname,  vlan_id); 
+
+    sprintf(value, "%s", ifname);
+    return 0;
+}
+
+/**
+ * Get instance list for object "agent/interface/vlans".
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param list          location for the list pointer
+ *
+ * @return              Status code
+ * @retval 0            success
+ * @retval TE_ENOMEM       cannot allocate memory
+ */
+static te_errno
+vlans_list(unsigned int gid, const char *oid, char **list,
+           const char *ifname)
+{
+    size_t i;
+
+    char *b;
+
+    if (strstr(ifname,"ef")== NULL)
+    { 
+        VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
+             __FUNCTION__, gid, oid, ifname, 0);
+        
+        *list = NULL;
+        return 0;
+    }
+    VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
+         __FUNCTION__, gid, oid, ifname, n_vlans);
+
+    if (n_vlans == 0) 
+    {
+        *list = NULL;
+        return 0;
+    }
+
+    b = *list = malloc(n_vlans * 5 /* max digits in VLAN id + space */ + 1);
+    if (*list == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM); 
+
+    for (i = 0; i < n_vlans; i++)
+        b += sprintf(b, "%d ", vlans_buffer[i]); 
+
+    return 0;
+}
+
+/**
+ * Add link to VLAN Ethernet device.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier 
+ * @param value         value string 
+ * @param ifname        device name, over it VLAN should be added 
+ * @param vid_str       VLAN id string, decimal notation
+ *
+ * @return              Status code
+ */
+static te_errno
+vlans_add(unsigned int gid, const char *oid, const char *value,
+              const char *ifname, const char *vid_str)
+{
+    int vid = atoi(vid_str);
+
+    UNUSED(value);
+
+    VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
+         __FUNCTION__, gid, oid, vid_str, ifname);
+
+    if (strstr(ifname,"ef")== NULL)
+    {
+        ERROR("Only ef* windows interfaces support VLANS");
+        return TE_RC(TE_TA_WIN32, EINVAL);
+    }
+    
+    if (n_vlans == 1) 
+    {
+        ERROR("VLAN interface is already set on %s", ifname);
+        return TE_RC(TE_TA_WIN32, EINVAL);
+    }
+    
+    vlans_buffer[n_vlans] = vid;
+    n_vlans += 1;
+    return 0;
+}
+
+/**
+ * Delete link to VLAN Ethernet device.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param ifname        VLAN device name: ef*
+ *
+ * @return              Status code
+ */
+static te_errno
+vlans_del(unsigned int gid, const char *oid, const char *ifname,
+          const char *vid_str)
+{
+    int vid = atoi(vid_str);
+
+
+    VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
+         __FUNCTION__, gid, oid, vid_str, ifname);
+
+    if (strstr(ifname,"ef")== NULL)
+    {
+        ERROR("Only ef* windows interfaces support VLANS");
+        return TE_RC(TE_TA_WIN32, EINVAL);
+    }
+    
+    if (n_vlans == 0) 
+    {
+        ERROR("VLAN interface are not set on %s, cannot delete", ifname);
+        return TE_RC(TE_TA_WIN32, EINVAL);
+    }
+    
+    if (vlans_buffer[n_vlans] != vid)
+    {
+        WARN("Trying to delete VLAN with VLAN id=, still deleting",vid);
+    }
+    n_vlans -= 1;
+    return 0;
+}
+
