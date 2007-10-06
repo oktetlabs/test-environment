@@ -2346,4 +2346,114 @@
       </test>
     </iter>
   </test>
+  <test name="xen" type="package">
+    <objective>Tests on XEN functionality.</objective>
+    <notes/>
+    <iter result="PASSED">
+      <notes/>
+      <test name="prologue" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <notes/>
+        </iter>
+      </test>
+      <test name="xen_dhcp" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <arg name="env">{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</arg>
+          <arg name="rpc_ifname">eth0</arg>
+          <arg name="mac_addr">00:18:f3:4f:b6:cc</arg>
+          <notes/>
+        </iter>
+      </test>
+      <test name="xen_path" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <arg name="env">{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</arg>
+          <arg name="xen_path">/srv/local/xen</arg>
+          <arg name="should_fail">FALSE</arg>
+          <notes/>
+        </iter>
+        <iter result="PASSED">
+          <arg name="env">{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</arg>
+          <arg name="xen_path">/non/existent/path</arg>
+          <arg name="should_fail">TRUE</arg>
+          <notes/>
+        </iter>
+      </test>
+      <test name="xen_create_destroy" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <arg name="env">{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</arg>
+          <arg name="rpc_ifname">eth0</arg>
+          <arg name="mac_addr">00:18:f3:4f:b6:cc</arg>
+          <arg name="xen_path">/srv/local/xen</arg>
+          <arg name="dom_u">user_domain</arg>
+          <notes/>
+        </iter>
+      </test>
+      <test name="xen_startup" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <arg name="env">{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</arg>
+          <arg name="rpc_ifname">eth0</arg>
+          <arg name="mac_addr">00:18:f3:4f:b6:cc</arg>
+          <arg name="xen_path">/srv/local/xen</arg>
+          <arg name="dom_u">user_domain</arg>
+          <notes/>
+        </iter>
+      </test>
+      <test name="xen_saved" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <arg name="env">{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</arg>
+          <arg name="rpc_ifname">eth0</arg>
+          <arg name="mac_addr">00:18:f3:4f:b6:cc</arg>
+          <arg name="xen_path">/srv/local/xen</arg>
+          <arg name="dom_u">user_domain</arg>
+          <notes/>
+        </iter>
+      </test>
+      <test name="xen_migrate" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <arg name="env">{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</arg>
+          <arg name="rpc_ifname">eth0</arg>
+          <arg name="mac_addr">00:18:f3:4f:b6:cc</arg>
+          <arg name="xen_path">/srv/local/xen</arg>
+          <arg name="dom_u">user_domain</arg>
+          <arg name="live_migration">FALSE</arg>
+          <notes/>
+        </iter>
+        <iter result="PASSED">
+          <arg name="env">{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</arg>
+          <arg name="rpc_ifname">eth0</arg>
+          <arg name="mac_addr">00:18:f3:4f:b6:cc</arg>
+          <arg name="xen_path">/srv/local/xen</arg>
+          <arg name="dom_u">user_domain</arg>
+          <arg name="live_migration">TRUE</arg>
+          <notes/>
+        </iter>
+      </test>
+      <test name="xen_saved_migrate" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <arg name="env">{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</arg>
+          <arg name="rpc_ifname">eth0</arg>
+          <arg name="mac_addr">00:18:f3:4f:b6:cc</arg>
+          <arg name="xen_path">/srv/local/xen</arg>
+          <arg name="dom_u">user_domain</arg>
+          <notes/>
+        </iter>
+      </test>
+    </iter>
+  </test>
 </trc_db>

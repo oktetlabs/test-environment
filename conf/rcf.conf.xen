@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<rcf>
+  <ta name="Agt_A" type="linux" fake="no" synch_time="no" rebootable="no"
+      rcflib="rcfunix" confstr="kili0:18001:sudo:"/>
+  <ta name="Agt_B" type="linux" fake="no" synch_time="no" rebootable="no"
+      rcflib="rcfunix" confstr="ulmo:18002:sudo:"/>
+</rcf>
+

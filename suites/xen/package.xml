@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>General XEN tests</description>
+    <author mailto="Edward.Makarov@oktetlabs.ru"/>
+    <session track_conf="silent">
+        <var name="env.peer2peer">
+            <value>{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</value>
+        </var>
+
+        <prologue>
+            <script name="prologue"/>
+        </prologue>
+
+        <run>
+            <script name="xen_dhcp"/>
+            <arg name="env" ref="env.peer2peer"/>
+            <arg name="rpc_ifname">
+                <value>eth0</value>
+            </arg>
+            <arg name="mac_addr">
+                <value>00:18:f3:4f:b6:cc</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="xen_path"/>
+            <arg name="env" ref="env.peer2peer"/>
+            <arg name="xen_path" list="">
+                <value>/srv/local/xen</value>
+                <value>/non/existent/path</value>
+            </arg>
+            <arg name="should_fail" list="">
+                <value>FALSE</value>
+                <value>TRUE</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="xen_create_destroy"/>
+            <arg name="env" ref="env.peer2peer"/>
+            <arg name="rpc_ifname">
+                <value>eth0</value>
+            </arg>
+            <arg name="mac_addr">
+                <value>00:18:f3:4f:b6:cc</value>
+            </arg>
+            <arg name="xen_path">
+                <value>/srv/local/xen</value>
+            </arg>
+            <arg name="dom_u">
+                <value>user_domain</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="xen_startup"/>
+            <arg name="env" ref="env.peer2peer"/>
+            <arg name="rpc_ifname">
+                <value>eth0</value>
+            </arg>
+            <arg name="mac_addr">
+                <value>00:18:f3:4f:b6:cc</value>
+            </arg>
+            <arg name="xen_path">
+                <value>/srv/local/xen</value>
+            </arg>
+            <arg name="dom_u">
+                <value>user_domain</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="xen_saved"/>
+            <arg name="env" ref="env.peer2peer"/>
+            <arg name="rpc_ifname">
+                <value>eth0</value>
+            </arg>
+            <arg name="mac_addr">
+                <value>00:18:f3:4f:b6:cc</value>
+            </arg>
+            <arg name="xen_path">
+                <value>/srv/local/xen</value>
+            </arg>
+            <arg name="dom_u">
+                <value>user_domain</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="xen_migrate"/>
+            <arg name="env" ref="env.peer2peer"/>
+            <arg name="rpc_ifname">
+                <value>eth0</value>
+            </arg>
+            <arg name="mac_addr">
+                <value>00:18:f3:4f:b6:cc</value>
+            </arg>
+            <arg name="xen_path">
+                <value>/srv/local/xen</value>
+            </arg>
+            <arg name="dom_u">
+                <value>user_domain</value>
+            </arg>
+            <arg name="live_migration">
+                <value>FALSE</value>
+                <value>TRUE</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="xen_saved_migrate"/>
+            <arg name="env" ref="env.peer2peer"/>
+            <arg name="rpc_ifname">
+                <value>eth0</value>
+            </arg>
+            <arg name="mac_addr">
+                <value>00:18:f3:4f:b6:cc</value>
+            </arg>
+            <arg name="xen_path">
+                <value>/srv/local/xen</value>
+            </arg>
+            <arg name="dom_u">
+                <value>user_domain</value>
+            </arg>
+        </run>
+
+    </session>
+</package>
+
