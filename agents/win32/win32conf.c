@@ -207,6 +207,9 @@ static te_errno vlans_add(unsigned int, const char *, const char *,
                           const char *, const char *);
 static te_errno vlans_del(unsigned int, const char *, const char *,
                           const char *);
+static int set_vlan_internal(const char *ifname, int vlan_id);
+static int remove_vlan_internal(const char *ifname, int vlan_id);
+
 //PHY support
 extern te_errno ta_unix_conf_phy_init();
 
@@ -3836,6 +3839,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
               const char *ifname, const char *vid_str)
 {
     int vid = atoi(vid_str);
+    int rc = 0;
 
     UNUSED(value);
 
@@ -3853,7 +3857,13 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
         ERROR("VLAN interface is already set on %s", ifname);
         return TE_RC(TE_TA_WIN32, EINVAL);
     }
-    
+    rc = set_vlan_internal("ef1", vid);
+    if (rc != 0)
+    {
+        ERROR("Failed to physically set VLAN"); 
+        return TE_RC(TE_TA_WIN32, TE_EFAULT);
+    }
+
     vlans_buffer[n_vlans] = vid;
     n_vlans += 1;
     return 0;
@@ -3873,7 +3883,7 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
           const char *vid_str)
 {
     int vid = atoi(vid_str);
-
+    int rc = 0;
 
     VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
          __FUNCTION__, gid, oid, vid_str, ifname);
@@ -3894,7 +3904,61 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
     {
         WARN("Trying to delete VLAN with VLAN id=, still deleting",vid);
     }
+    rc = remove_vlan_internal("ef1", vid);
+    if (rc != 0)
+    {
+        ERROR("Failed to physically remove VLAN"); 
+        return TE_RC(TE_TA_WIN32, TE_EFAULT);
+    }
     n_vlans -= 1;
     return 0;
+}
+
+static int 
+set_vlan_internal(const char *ifname, int vlan_id)
+{
+    char buffer[RCF_MAX_PATH + 1];
+    RING("Setting %d VLAN on '%s'", vlan_id, ifname);
+    if (strcmp(ifname, "ef1") != 0)
+    {
+      ERROR("Wrong interface name %s, only ef1 is appropriate", ifname);
+      return -1;
+    }
+    snprintf(buffer, sizeof(buffer) - 1,
+             "./sish_client.exe "
+             "--server=127.0.0.1 "
+             "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_manage.exe "
+             "--args=\"set vlanid %d vlantagging 3\"", vlan_id);
+    if (system(buffer) == 0)
+        return 0;
+    else
+    {
+        errno = ENXIO;
+        return -1;
+    }
+}
+
+static int 
+remove_vlan_internal(const char *ifname, int vlan_id)
+{
+    char buffer[RCF_MAX_PATH + 1];
+    RING("Deleting %d VLAN on '%s'",vlan_id, ifname);
+    if (strcmp(ifname, "ef1") != 0)
+    {
+      ERROR("Wrong interface name %s, only ef1 is appropriate", ifname);
+      return -1;
+    }
+    snprintf(buffer, sizeof(buffer) - 1,
+             "./sish_client.exe "
+             "--server=127.0.0.1 "
+             "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_manage.exe "
+             "--args=\"set vlanid %d vlantagging 0\"", vlan_id);
+    if (system(buffer) == 0)
+        return 0;
+    else
+    {
+        errno = ENXIO;
+        return -1;
+    }
 }
 
