@@ -1412,6 +1412,12 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
              addr);
         return 0;
       }
+      if (rc == ERROR_OBJECT_ALREADY_EXISTS)
+      {
+  WARN("AddIpAddress() failed, error ERROR_OBJECT_ALREADY_EXISTS, addr %s",
+             addr);
+        return 0;
+      }
       ERROR("AddIpAddress() failed, error %d, addr %s", rc, addr);
       return TE_RC(TE_TA_WIN32, TE_EWIN);
     }
