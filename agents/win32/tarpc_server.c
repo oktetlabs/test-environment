@@ -1340,7 +1340,7 @@ TARPC_FUNC(writebuf, {},
     set_overlapped_filepos(&overlapped, (HANDLE)in->fd);
     
     MAKE_CALL(out->retval = WriteFile((HANDLE)(in->fd), 
-                                      rcf_pch_mem_get(in->buf),
+                                      rcf_pch_mem_get(in->buf) + in->off,
                                       in->len, &rc, &overlapped));
 
     if (out->retval == 0)
