@@ -162,7 +162,7 @@
     <object oid="/agent/xen/dom_u/migrate"
             access="read_write" type="string" volatile="true"/>
     <object oid="/agent/xen/dom_u/migrate/kind"
-            access="read_write" type="integer"/>
+            access="read_write" type="integer" volatile="true"/>
   </register>
 
   <add>
