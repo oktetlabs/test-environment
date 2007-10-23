@@ -124,6 +124,12 @@ typedef struct tad_eth_sap_data {
 
 } tad_eth_sap_data;
 
+#ifdef __CYGWIN__
+void 
+check_win_tso_behaviour_and_modify_frame(const char *pkt,
+                                         uint32_t len);
+#endif
+
 #ifdef USE_PF_PACKET
 /**
  * Close PF_PACKET socket.
@@ -177,6 +183,10 @@ pkt_handl(u_char *ptr, const struct pcap_pkthdr *header,
 
     if (header->len != pktlen)
         WARN("Frame has been truncated");
+    
+#ifdef __CYGWIN__
+    check_win_tso_behaviour_and_modify_frame(packet, header->len);
+#endif
 
     if (pktlen > tad_pkt_len(pktptr->pkt))
     {
@@ -846,6 +856,7 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
     fd_set              readfds;
     pkt_len_pkt         ptr;
 #endif
+    
 
     assert(sap != NULL);
     data = sap->data;
@@ -1013,5 +1024,70 @@ tad_eth_sap_detach(tad_eth_sap *sap)
 
     return result;
 }
+
+#ifdef __CYGWIN__
+#define ETH_STD_HDR      14
+#define ETH_VLAN_HDR     18
+#define PROTO_TYPE_IP    htons(0x800)
+#define PROTO_TYPE_VLAN  htons(0x810)
+
+#define IS_VLAN_FRAME(_pkt)         \
+    ((*((uint16_t *)_pkt + 6)) == PROTO_TYPE_VLAN)
+
+/**
+ * Used to retrieve the total length field of the IP header,
+ * if pkt is an IP packet.
+ *  @param  pkt      Location of the packet
+ *  @param  field    OUT Location of the total length field
+ *  @return 0 for an IP packet, -1 otherwise.
+ */
+inline int
+get_ip_total_len(const char *pkt, uint16_t **field)
+{
+    char *t = pkt;
+    
+    if (!IS_VLAN_FRAME(t))
+    {
+        t += 12;
+    }
+    else
+    {
+        t += 15;
+    }
+    
+    *field = (uint16_t *) t;
+    if (**field == PROTO_TYPE_IP)
+    {
+        *field += 2;
+        return 0;
+    } 
+    return -1;
+}
+
+/**
+ * Detects Windows TSO behaviour when the total length field of the
+ * IP header is set to zero for the packets which are expcted to be 
+ * segmentated. Sets the field to a meaningful value.
+ * 
+ *  @param  pkt Location of the packet
+ *  @param  len The actual packet length
+ * */
+
+void 
+check_win_tso_behaviour_and_modify_frame(const char *pkt, uint32_t len)
+{
+    uint16_t*   ip_tot_len;
+    
+    if ((get_ip_total_len(pkt, &ip_tot_len) == 0) && (*ip_tot_len == 0)) 
+    {
+        *ip_tot_len = IS_VLAN_FRAME(pkt) ? ntohs(len - ETH_VLAN_HDR) : 
+                                          ntohs(len - ETH_STD_HDR);
+    }
+}
+#undef PROTO_TYPE_VLAN
+#undef PROTO_TYPE_IP
+#undef ETH_VLAN_HDR
+#undef ETH_STD_HDR
+#endif
 
 #endif /* defined(USE_PF_PACKET) || defined(USE_BPF) */
