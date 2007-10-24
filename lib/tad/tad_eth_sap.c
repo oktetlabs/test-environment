@@ -1052,7 +1052,7 @@ get_ip_total_len(const char *pkt, uint16_t **field)
     }
     else
     {
-        t += 15;
+        t += 16;
     }
     
     *field = (uint16_t *) t;
