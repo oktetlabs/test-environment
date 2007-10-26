@@ -755,6 +755,7 @@ init_sta_info(const char *ifname, wifi_sta_info_t *info)
         if (!(wrq.u.data.flags & IW_ENCODE_DISABLED))
             info->wep_enc = TRUE;
 
+#if 0
         /* Set default keys to zero */
         for (i = 1; i <= WEP_KEYS_NUM; i++)
         {
@@ -770,6 +771,7 @@ init_sta_info(const char *ifname, wifi_sta_info_t *info)
                 return rc;
             }
         }
+#endif
 
         /*
          * Some cards enable WEP when updating default TX Key,
@@ -955,7 +957,7 @@ wifi_list(unsigned int gid, const char *oid, char **list,
     if ((rc = wifi_get_item(ifname, SIOCGIWNAME, &wrq)) != 0)
     {
         /* Interface does not support wireless extension */
-        RING("Interface %s does not support WiFi", ifname);
+        VERB("Interface %s does not support WiFi", ifname);
         *list = strdup("");
         return 0;
     }
