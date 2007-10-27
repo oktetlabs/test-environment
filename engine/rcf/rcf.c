@@ -217,6 +217,8 @@ typedef struct ta {
     char               *cold_reboot_ta;     /**< Cold reboot TA name */
     const char         *cold_reboot_param;  /**< Cold reboot params */
 
+    te_bool            dynamic;             /**< Dynamic creation flag */
+
     /** @name Methods */
     rcf_talib_start     start;              /**< Start TA */
     rcf_talib_close     close;              /**< Close TA */
@@ -404,7 +406,6 @@ resolve_ta_methods(ta *agent, char *libname)
 
     return 0;
 }
-
 
 /**
  * Parse configuration file and initializes list of Test Agents.
@@ -2402,6 +2403,267 @@ process_user_request(usrreq *req)
                 msg->error = TE_RC(TE_RCF, TE_EINPROGRESS);
                 answer_user_request(req);
             }
+            return;
+
+        case RCFOP_ADD_TA:
+            do {
+                int          rc;
+                ta          *agent;
+                char const  *p;
+                size_t const len = strlen(msg->ta) + 1;
+
+                rcf_msg *new_msg;
+
+                if ((new_msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) +
+                                                    names_len)) == NULL)
+                {
+                    msg->error = TE_RC(TE_RCF, TE_ENOMEM);
+                    break; /** Leave 'do/while' block */
+                }
+
+                *new_msg = *msg;
+                free(msg);
+                msg = req->message = new_msg;
+                msg->data_len = 0;
+                msg->error = 0;
+
+                /* Check whether agent with such name exists */
+                for (p = names; p < names + names_len; p += strlen(p) + 1)
+                {
+                    if (strcmp(p, msg->ta) == 0)
+                        break; /** Leave 'for' loop */
+                }
+
+                if (p < names + names_len)
+                {
+                    ERROR("TA '%s' already exists", msg->ta);
+                    msg->error = TE_RC(TE_RCF, TE_EEXIST);
+                    break; /** Leave 'do/while' block */
+                }
+
+                if (names_len + len > sizeof(names))
+                {
+                    ERROR("FATAL ERROR: Too many Test Agents - "
+                          "increase memory constants");
+                    msg->error = TE_RC(TE_RCF, TE_ETOOMANY);
+                    break; /** Leave 'do/while' block */
+                }
+
+                if ((agent = (ta *)calloc(1, sizeof(ta))) == NULL)
+                {
+                    msg->error = TE_RC(TE_RCF, TE_ENOMEM);
+                    break; /** Leave 'do/while' block */
+                }
+
+                agent->dynamic = TRUE;
+                agent->next = agents;
+                agent->flags = msg->flags | TA_DEAD;
+
+                if (resolve_ta_methods(agent, msg->file) != 0)
+                {
+                    free(agent);
+                    msg->error = TE_RC(TE_RCF, TE_EFAIL);
+                    break; /** Leave 'do/while' block */
+                }
+
+                agent->enable_synch_time = msg->intparm ? TRUE : FALSE;
+
+                agent->sent.prev = agent->sent.next = &agent->sent;
+                agent->pending.prev = agent->pending.next = &agent->pending;
+                agent->waiting.prev = agent->waiting.next = &agent->waiting;
+
+                agent->sid = RCF_SID_UNUSED;
+
+                if ((agent->name = strdup(msg->ta)) == NULL ||
+                    (agent->type = strdup(msg->id)) == NULL ||
+                    (agent->conf = strdup(msg->value)) == NULL)
+                {
+                    /* Suppose that calloc provided all NULLs */
+                    free(agent->name);
+                    free(agent->type);
+                    free(agent->conf);
+
+                    free(agent);
+                    msg->error = TE_RC(TE_RCF, TE_ENOMEM);
+                    break; /** Leave 'do/while' block */
+                }
+
+                if ((rc = init_agent(agent)) != 0)
+                {
+                    /* Suppose that calloc provided all NULLs */
+                    free(agent->name);
+                    free(agent->type);
+                    free(agent->conf);
+
+                    free(agent);
+                    msg->error = rc;
+                    break; /** Leave 'do/while' block */
+                }
+
+                /* 'msg->error' here is 0 since it was previously 0'ed */
+
+                strcpy(names + names_len, agent->name);
+                names_len += len;
+
+                agents = agent;
+                ta_num++;
+            } while(0);
+
+            answer_user_request(req);
+            return;
+
+        case RCFOP_DEL_TA:
+            do {
+                ta         **a;
+                char        *p;
+                size_t const len = strlen(msg->ta) + 1;
+
+                rcf_msg *new_msg;
+
+                new_msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + names_len);
+
+                if (new_msg == NULL)
+                {
+                    msg->error = TE_RC(TE_RCF, TE_ENOMEM);
+                    answer_user_request(req);
+                    return;
+                }
+
+                *new_msg = *msg;
+                free(msg);
+                msg = req->message = new_msg;
+                msg->data_len = 0;
+                msg->error = 0;
+
+                /* Check whether agent with such name exists */
+                for (p = names; p < names + names_len; p += strlen(p) + 1)
+                {
+                    if (strcmp(p, msg->ta) == 0)
+                        break; /** Leave 'for' loop */
+                }
+
+                /* Try to find the agent that is to be removed */
+                if (p >= names + names_len)
+                {
+                    ERROR("TA '%s' does not exist", msg->ta);
+                    msg->error = TE_RC(TE_RCF, TE_ENOENT);
+                    break; /** Leave 'do/while' block */
+                }
+
+                /* Find the agent by name */
+                for (a = &agents; *a != NULL; a = &(*a)->next)
+                {
+                    if (strcmp(msg->ta, (*a)->name) == 0)
+                        break; /** Leave current 'for' loop */
+                }
+
+                /* Handle the case when the agent item is not found */
+                if (*a == NULL)
+                {
+                    ERROR("TA '%s' does not found", msg->ta);
+                    msg->error = TE_RC(TE_RCF, TE_ENOENT);
+                    break; /** Leave 'do/while' block */
+                }
+
+                if (!(*a)->dynamic)
+                {
+                    ERROR("TA '%s' is specified in RCF configuration "
+                          "file and cannot be removed", msg->ta);
+                    msg->error = TE_RC(TE_RCF, TE_EPERM);
+                    break; /** Leave 'do/while' block */
+                }
+
+                /* Shutdown TA */
+                RING("Shutting down '%s' TA", (*a)->name);
+
+                {
+                    time_t t = time(NULL);
+
+                    ta *agt = *a;
+                    ta *next = agt->next; /**< Save 'next' item */
+
+                    if (!(agent->flags & TA_DEAD)) /** If TA is NOT DEAD */
+                    {
+                        sprintf(cmd, "SID %d %s",
+                                ++agt->sid, TE_PROTO_SHUTDOWN);
+                        (agt->transmit)(agt->handle, cmd, strlen(cmd) + 1);
+                        answer_all_requests(&(agt->sent), TE_EIO);
+                        answer_all_requests(&(agt->pending), TE_EIO);
+                        answer_all_requests(&(agt->waiting), TE_EIO);
+
+                        while (time(NULL) - t < RCF_SHUTDOWN_TIMEOUT)
+                        {
+                            struct timeval tv  = tv0;
+                            fd_set         set = set0;
+
+                            select(FD_SETSIZE, &set, NULL, NULL, &tv);
+
+                            if ((agt->is_ready)(agt->handle))
+                            {
+                                char    answer[16];
+                                char   *ba;
+                                size_t  len = sizeof(cmd);
+
+                                if ((agt->receive)(agt->handle, cmd,
+                                                   &len, &ba) != 0)
+                                {
+                                    continue;
+                                }
+
+                                sprintf(answer, "SID %d 0", agt->sid);
+
+                                if (strcmp(cmd, answer) != 0)
+                                    continue;
+
+                                INFO("Test Agent '%s' is down", agt->name);
+                                agt->flags |= TA_DOWN;
+                                (agt->close)(agt->handle, &set0);
+                                break; /** Leave current 'while' loop */
+                            }
+                        }
+                    }
+
+                    if (!(agt->flags & TA_DOWN))
+                        ERROR("Soft shutdown of TA '%s' failed", agt->name);
+
+                    if (agt->handle != NULL)
+                    {
+                        if ((agt->finish)(agt->handle, NULL) != 0)
+                        {
+                            ERROR("Cannot finish TA '%s'", agt->name);
+                            break; /** Leave 'do/while' block */
+                        }
+
+                        agt->handle = NULL;
+                    }
+
+                    RING("Test Agent '%s' is stopped", agt->name);
+
+                    /* Free agent */
+                    free(agt->name);
+                    free(agt->type);
+                    free(agt->conf);
+                    free(agt);
+
+                    /* Remove agent from linked list */
+                    *a = next;
+                }
+
+                /* Remove TA name from the list of TA names */
+                if (names + names_len - p - len > 0)
+                    memmove(p, p + len, names + names_len - p - len);
+
+                names_len -= len;
+
+                /* Handle the edge case */
+                if (names_len == 0)
+                    *names = '\0';
+
+                /* 'msg->error' here is 0 since it was previously 0'ed */
+
+            } while(0);
+
+            answer_user_request(req);
             return;
 
         default:

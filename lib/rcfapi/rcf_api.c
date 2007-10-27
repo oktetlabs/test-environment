@@ -67,6 +67,7 @@
 #include "logger_api.h"
 #include "rcf_api.h"
 #include "rcf_internal.h"
+#include "rcf_methods.h"
 #define RCF_NEED_TYPE_LEN 1
 #include "te_proto.h"
 #include "ipc_client.h"
@@ -802,6 +803,161 @@ check_params_len(const char *params, int maxlen, int *necessary)
     return 1;
 }
 
+static char const rcfunix_name[] = "rcfunix";
+
+/**
+ * Add a new Test Agent to RCF.
+ *
+ * @param name          Test Agent name
+ * @param type          Test Agent type
+ * @param rcflib        Name of RCF TA-specific shared library to be
+ *                      used to control Test Agent
+ * @param confstr       TA-specific configuration string
+ * @param flags         Test Agent control flags (see ::rcf_ta_flags)
+ *
+ * @return Error code
+ * @retval 0            success
+ * @retval TE_EEXIST    Test Agent with such name exists and running
+ * @retval TE_ETOOMANY  Too many Test Agents are added, no more space
+ */
+extern te_errno rcf_add_ta(const char *name, const char *type,
+                           const char *rcflib, const char *confstr,
+                           unsigned int flags)
+{
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
+
+    if (name == NULL || type == NULL || rcflib == NULL || confstr == NULL)
+        return TE_RC(TE_RCF_API, TE_EWRONGPTR);
+
+    if (strlen(name) + 1 > sizeof(msg.ta))
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    /* Check lengths of values */
+    if (strlen(rcflib) + 1 > sizeof(msg.file))
+    {
+        ERROR("Too long 'rcflib' value = '%s'", rcflib);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+    }
+
+    if (strlen(confstr) + 1 > sizeof(msg.value))
+    {
+        ERROR("Too long 'confstr' value = '%s'", confstr);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+    }
+
+    if (flags & RCF_TA_UNIX_SUDO)
+    {
+        ERROR("RCF_TA_UNIX_SUDO flag is specified for rcf_add_ta(): "
+              "use 'sudo' specification in 'confstr' value instead");
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+    }
+
+    RCF_API_INIT;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.opcode = RCFOP_ADD_TA;
+    strcpy(msg.ta, name);
+    strcpy(msg.id, type);
+    strcpy(msg.file, rcflib);
+    strcpy(msg.value, confstr);
+
+    if (flags & RCF_TA_REBOOTABLE)
+        msg.flags |= TA_REBOOTABLE;
+
+    msg.intparm = (flags & RCF_TA_NO_SYNC_TIME) ? 0 : 1;
+
+    rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
+                                   &msg, &anslen, NULL);
+                                   
+    return rc == 0 ? msg.error : rc;
+}
+
+/**
+ * Add a new Test Agent controlled using rcfunix TA-specific shared
+ * library.
+ *
+ * @param name          Test Agent name
+ * @param type          Test Agent type
+ * @param host          Host name or IPv4 address in dotted notation
+ * @param port          TCP port to be used on Test Agent to listen to
+ * @param copy_timeout  Test Agent image coping timeout or 0 for default
+ * @param kill_timeout  Test Agent kill timeout or 0 for default
+ * @param flags         Test Agent control flags (see ::rcf_ta_flags)
+ *
+ * @return Error code   See 'rcf_add_ta' error codes
+ */
+extern te_errno rcf_add_ta_unix(const char *name, const char *type,
+                                const char *host, uint16_t port,
+                                unsigned int copy_timeout,
+                                unsigned int kill_timeout,
+                                unsigned int flags)
+{
+    char confstr[RCF_MAX_VAL];
+    char copy_timeout_str[RCF_MAX_ID];
+    char kill_timeout_str[RCF_MAX_ID];
+    int  n;
+
+    /* Other parameters are checked within 'rcf_add_ta' */
+    if (host == NULL)
+        return TE_RC(TE_RCF_API, TE_EWRONGPTR);
+
+#define SNPRINTF(buf_, fmt_...) \
+    ((n = snprintf(buf_, sizeof(buf_), fmt_)) < 0 || n > sizeof(buf_))
+    if (SNPRINTF(copy_timeout_str,
+                 copy_timeout ? "copy_timeout=%u:" : "", copy_timeout) ||
+        SNPRINTF(kill_timeout_str,
+                 kill_timeout ? "kill_timeout=%u:" : "", kill_timeout) ||
+        SNPRINTF(confstr, "%s:%u:%s%s%s", host, port,
+                 copy_timeout_str, kill_timeout_str,
+                 flags & RCF_TA_UNIX_SUDO ? "sudo:" : ""))
+#undef SNPRINTF
+    {
+        ERROR("Failed to form 'confstr' string");
+        return n < 0 ? TE_OS_RC(TE_RCF_API, errno) :
+                       TE_RC(TE_RCF_API, TE_EFAIL);
+    }
+
+    /**
+     * Remove this specific flag (if present) since it is
+     * already processed and is taken into account in 'confstr'
+     */
+    flags &= ~RCF_TA_UNIX_SUDO;
+
+    /* Continue processing */
+    return rcf_add_ta(name, type, rcfunix_name, confstr, flags);
+}
+
+/**
+ * Delete Test Agent from RCF.
+ *
+ * @param name          Test Agent name
+ *
+ * @return Error code
+ * @retval 0            success
+ * @retval TE_ENOENT    Test Agent with such name does not exist
+ * @retval TE_EPERM     Test Agent with such name exists but is
+ *                      specified in RCF configuration file
+ */
+extern te_errno rcf_del_ta(const char *name)
+{
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
+
+    RCF_API_INIT;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.opcode = RCFOP_DEL_TA;
+    strcpy(msg.ta, name);
+
+    rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
+                                   &msg, &anslen, NULL);
+
+    return rc == 0 ? msg.error : rc;
+}
+
 /**
  * This function returns list of Test Agents (names) running.
  *
@@ -821,7 +977,7 @@ check_params_len(const char *params, int maxlen, int *necessary)
  * @retval 0            success
  * @retval TE_ESMALLBUF the buffer is too small
  * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ENOMEM       out of memory
+ * @retval TE_ENOMEM    out of memory
  */
 te_errno
 rcf_get_ta_list(char *buf, size_t *len)
@@ -867,7 +1023,7 @@ rcf_get_ta_list(char *buf, size_t *len)
     memcpy(buf, ans->data, ans->data_len);
     *len = ans->data_len;
     free(ans);
-    
+
     return 0;
 }
 
