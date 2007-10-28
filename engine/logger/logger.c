@@ -154,6 +154,36 @@ lgr_register_message(const void *buf, size_t len)
     pthread_mutex_unlock(&mutex);
 }
 
+static pthread_mutex_t add_remove_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static void
+add_inst(ta_inst *inst)
+{
+    pthread_mutex_lock(&add_remove_mutex);
+    inst->next = ta_list;
+    ta_list = inst;
+    pthread_mutex_unlock(&add_remove_mutex);
+}
+
+static void
+remove_inst(ta_inst *inst)
+{
+    ta_inst **a;
+
+    pthread_mutex_lock(&add_remove_mutex);
+    for (a = &ta_list; *a != NULL; a = &(*a)->next)
+    {
+        if (*a == inst)
+            *a = inst->next;
+
+        break;
+    }
+    pthread_mutex_unlock(&add_remove_mutex);
+}
+
+/** Forward declaration */
+static void * ta_handler(void *ta);
+
 /**
  * This is an entry point of logger message server.
  * This server should be run as separate thread.
@@ -233,17 +263,68 @@ te_handler(void)
             len = total;
         }
 
-        if (strncmp((const char *)((uint8_t *)buf + sizeof(te_log_nfl)),
-                    LGR_SHUTDOWN, te_log_raw_get_nfl(buf)) == 0)
         {
-            RING("Logger shutdown ...\n");
-            lgr_flags |= LOGGER_SHUTDOWN;
-            (void)kill(pid, SIGUSR1);
-            break;
-        }
-        else
-        {
-            lgr_register_message(buf, len);
+            char const *msg = (void *)((char *)buf + sizeof(te_log_nfl));
+
+            unsigned int const ml = te_log_raw_get_nfl(buf);
+            unsigned int const pl = strlen(LGR_SRV_FOR_TA_PREFIX);
+
+            if (ml + sizeof(te_log_nfl) == len &&
+                strncmp(msg, LGR_SHUTDOWN, ml) == 0)
+            {
+                RING("Logger shutdown ...\n");
+                lgr_flags |= LOGGER_SHUTDOWN;
+                (void)kill(pid, SIGUSR1);
+                break;
+            }
+            /* Check whether logger TA handler invocation is needed */
+            else if (ml + sizeof(te_log_nfl) == len &&
+                     ml > pl && ml - pl < RCF_MAX_NAME &&
+                     strncmp(msg, LGR_SRV_FOR_TA_PREFIX, pl) == 0)
+            {
+                ta_inst *inst = calloc(1, sizeof(*inst));
+
+                if (inst == NULL)
+                {
+                    ERROR("No Memory");
+                    continue;
+                }
+
+                inst->next = ta_list;
+                inst->thread_run = FALSE;
+                memcpy(inst->agent, msg + pl, ml - pl);
+
+                RING("Logger '%s' TA handler is being added", inst->agent);
+
+                if ((rc = rcf_ta_name2type(inst->agent, inst->type)) != 0)
+                {
+                    ERROR("Cannot interact with RCF: %r", rc);
+                    free(inst);
+                    continue;
+                }
+
+                if (pthread_create(&inst->thread, NULL,
+                                   (void *)&ta_handler,
+                                   (void *)inst) != 0)
+                {
+                    ERROR("Logger(client): pthread_create() failed: %s",
+                          strerror(errno));
+                    free(inst);
+                    continue;
+                }
+
+                RING("Logger '%s' TA handler has been added", inst->agent);
+
+                INFO("Logger configuration file parsing\n");
+                add_inst(inst);
+
+                if (configParser(cfg_file) != 0)
+                    WARN("Logger configuration file failure\n");
+            }
+            else
+            {
+                lgr_register_message(buf, len);
+            }
         }
     } /* end of forever loop */
 
@@ -618,6 +699,8 @@ ta_handler(void *ta)
 
     } /* end of forever loop */
 
+    remove_inst(inst);
+
     if (do_flush || flush_done)
     {
         (void)ta_flush_done(srv);
@@ -633,6 +716,7 @@ ta_handler(void *ta)
         RING("IPC Server '%s' closed", srv_name);
     }
 
+    inst->thread_run = FALSE;
     return NULL;
 }
 

@@ -65,6 +65,7 @@
 #include "te_printf.h"
 #include "te_queue.h"
 #include "logger_api.h"
+#include "logger_ten.h"
 #include "rcf_api.h"
 #include "rcf_internal.h"
 #include "rcf_methods.h"
@@ -870,8 +871,49 @@ extern te_errno rcf_add_ta(const char *name, const char *type,
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-                                   
-    return rc == 0 ? msg.error : rc;
+
+    /* Add logger hanlder for just added TA */
+    if (rc == 0 && (rc = msg.error) == 0)
+    {
+        size_t const       pl         = strlen(LGR_SRV_FOR_TA_PREFIX);
+        size_t const       nl         = strlen(name);
+        te_log_nfl const   nfl        = pl + nl;
+        te_log_nfl const   nfl_net    = htons(nfl);
+        char               msg[sizeof(nfl_net) + nfl];
+        struct ipc_client *log_client = NULL;
+        te_errno           rc; /**< It's local */
+
+
+        /* Prepare msg with 'LGR_SRV_FOR_TA_PREFIX + name' entity name */
+        memcpy(msg, &nfl_net, sizeof(nfl_net));
+        memcpy(msg + sizeof(nfl_net), LGR_SRV_FOR_TA_PREFIX, pl);
+        memcpy(msg + sizeof(nfl_net) + pl, name, nl);
+
+        /* We do not fail if logger TA handler is not invoked */
+
+        /* Here the local 'rc' is used */
+        if ((rc = ipc_init_client("RCF API: rcf_add_ta()",
+                                  LOGGER_IPC, &log_client)) == 0)
+        {
+            /* Here the local 'rc' is used */
+            if ((rc = ipc_send_message(log_client, LGR_SRV_NAME,
+                                       msg, sizeof(msg))) != 0)
+            {
+                WARN("Failed to send IPC message to logger "
+                     "in order to invoke logger TA handler: %r", rc);
+            }
+
+            if ((rc = ipc_close_client(log_client)) != 0)
+                WARN("Failed to close IPC clienti: %r", rc);
+        }
+        else
+        {
+            WARN("Failed to init IPC client in order "
+                 "to invoke logger TA handler: %r", rc);
+        }
+    }
+
+    return rc;
 }
 
 /**
