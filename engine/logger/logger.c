@@ -716,7 +716,7 @@ ta_handler(void *ta)
         RING("IPC Server '%s' closed", srv_name);
     }
 
-    inst->thread_run = FALSE;
+    free(inst);
     return NULL;
 }
 
