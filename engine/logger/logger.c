@@ -25,6 +25,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
+ * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
  * $Id$
  */
@@ -174,9 +175,10 @@ remove_inst(ta_inst *inst)
     for (a = &ta_list; *a != NULL; a = &(*a)->next)
     {
         if (*a == inst)
+        {
             *a = inst->next;
-
-        break;
+            break;
+        }
     }
     pthread_mutex_unlock(&add_remove_mutex);
 }
@@ -313,10 +315,11 @@ te_handler(void)
                     continue;
                 }
 
-                RING("Logger '%s' TA handler has been added", inst->agent);
-
-                INFO("Logger configuration file parsing\n");
+                inst->thread_run = TRUE;
                 add_inst(inst);
+
+                RING("Logger '%s' TA handler has been added", inst->agent);
+                INFO("Logger configuration file parsing\n");
 
                 if (configParser(cfg_file) != 0)
                     WARN("Logger configuration file failure\n");
@@ -700,6 +703,7 @@ ta_handler(void *ta)
     } /* end of forever loop */
 
     remove_inst(inst);
+    free(inst);
 
     if (do_flush || flush_done)
     {
@@ -716,7 +720,6 @@ ta_handler(void *ta)
         RING("IPC Server '%s' closed", srv_name);
     }
 
-    free(inst);
     return NULL;
 }
 
@@ -1042,6 +1045,28 @@ join_te_srv:
 
 exit:
     /* Release all memory on shutdown */
+    pthread_mutex_lock(&add_remove_mutex);
+    {
+        ta_inst **a = &ta_list;
+
+        while ((ta_el = *a) != NULL)
+        {
+            if (ta_el->thread_run)
+            {
+                /* Keep current 'ta_el' intact */
+                a = &ta_el->next;
+            }
+            else
+            {
+                /* Remove 'ta_el' from the list and free it */
+                *a = ta_el->next;
+                free(ta_el);
+            }
+        }
+    }
+    pthread_mutex_unlock(&add_remove_mutex);
+
+#if 0
     while (ta_list != NULL)
     {
         ta_el = ta_list;
@@ -1059,6 +1084,7 @@ exit:
 
         free(ta_el);
     }
+#endif
 
     if ((pid_f != NULL) && (fclose(pid_f) != 0))
     {
