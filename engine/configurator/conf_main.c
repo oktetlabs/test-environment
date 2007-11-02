@@ -1513,7 +1513,6 @@ free_resources(void)
     cfg_db_destroy();
 
     VERB("Free resources");
-    free(cfg_ta_list);
     free(cfg_get_buf);
 
     VERB("Closing server");

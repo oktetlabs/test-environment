@@ -43,6 +43,9 @@
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -69,6 +72,7 @@
 #include "rcf_api.h"
 #include "rcf_internal.h"
 #include "rcf_methods.h"
+#include "conf_messages.h"
 #define RCF_NEED_TYPE_LEN 1
 #include "te_proto.h"
 #include "ipc_client.h"
@@ -807,6 +811,96 @@ check_params_len(const char *params, int maxlen, int *necessary)
 static char const rcfunix_name[] = "rcfunix";
 
 /**
+ * Delete Test Agent from RCF (main executive part).
+ *
+ * @param name          Test Agent name
+ *
+ * @return Error code
+ * @retval 0            success
+ * @retval TE_ENOENT    Test Agent with such name does not exist
+ * @retval TE_EPERM     Test Agent with such name exists but is
+ *                      specified in RCF configuration file
+ */
+static te_errno
+del_ta_executive(const char *name)
+{
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
+
+    RCF_API_INIT;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.opcode = RCFOP_DEL_TA;
+    strcpy(msg.ta, name);
+
+    return (rc = send_recv_rcf_ipc_message(ctx_handle, &msg,
+                                           sizeof(msg), &msg, &anslen,
+                                           NULL)) != 0 ? rc : msg.error;
+}
+
+/**
+ * Synchronize just added Test Agent with Configurator.
+ *
+ * @param name          Test Agent name
+ *
+ * @return Error code
+ */
+static te_errno
+sync_ta(char const *ta)
+{
+    /** IPC client to interact with Configurator */
+    ipc_client        *cfgl_ipc_client = NULL;
+    char               cfgl_msg_buf[4096];
+    cfg_sync_msg      *msg;
+    unsigned int       len;
+    te_errno           rc;
+
+    static pthread_mutex_t cfgl_lock = PTHREAD_MUTEX_INITIALIZER;
+
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_lock(&cfgl_lock);
+#endif
+    if ((rc = ipc_init_client("RCF API: rcf_add_ta()",
+                              CONFIGURATOR_IPC,
+                              &cfgl_ipc_client)) != 0)
+    {
+#ifdef HAVE_PTHREAD_H
+        pthread_mutex_unlock(&cfgl_lock);
+#endif
+        ERROR("Failed to initialize CONFIGURATOR_IPC client");
+        return rc;
+    }
+
+    msg = (cfg_sync_msg *)cfgl_msg_buf;
+    msg->type = CFG_SYNC;
+    msg->subtree = TRUE;
+
+    strcat(cfgl_msg_buf, ta);
+    len = strlen(cfgl_msg_buf);
+    strcpy(msg->oid, "/agent:");
+    strcat(msg->oid, ta);
+    msg->len = sizeof(cfg_sync_msg) + strlen(msg->oid);
+    len = sizeof(cfgl_msg_buf);
+
+    if ((rc = ipc_send_message_with_answer(cfgl_ipc_client,
+                                           CONFIGURATOR_SERVER,
+                                           msg, msg->len, msg,
+                                           &len)) == 0)
+    {
+        rc = msg->rc;
+    }
+
+    if (ipc_close_client(cfgl_ipc_client) != 0)
+        WARN("Failed to close IPC clienti");
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_unlock(&cfgl_lock);
+#endif
+
+    return rc;
+}
+
+/**
  * Add a new Test Agent to RCF.
  *
  * @param name          Test Agent name
@@ -872,17 +966,17 @@ extern te_errno rcf_add_ta(const char *name, const char *type,
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
 
-    /* Add logger hanlder for just added TA */
+    /* On success perform postprocessing */
     if (rc == 0 && (rc = msg.error) == 0)
     {
+        /* Add logger hanlder for just added TA */
+
         size_t const       pl         = strlen(LGR_SRV_FOR_TA_PREFIX);
         size_t const       nl         = strlen(name);
         te_log_nfl const   nfl        = pl + nl;
         te_log_nfl const   nfl_net    = htons(nfl);
         char               msg[sizeof(nfl_net) + nfl];
         struct ipc_client *log_client = NULL;
-        te_errno           rc; /**< It's local */
-
 
         /* Prepare msg with 'LGR_SRV_FOR_TA_PREFIX + name' entity name */
         memcpy(msg, &nfl_net, sizeof(nfl_net));
@@ -899,18 +993,26 @@ extern te_errno rcf_add_ta(const char *name, const char *type,
             if ((rc = ipc_send_message(log_client, LGR_SRV_NAME,
                                        msg, sizeof(msg))) != 0)
             {
-                WARN("Failed to send IPC message to logger "
-                     "in order to invoke logger TA handler: %r", rc);
+                ERROR("Failed to send IPC message to logger "
+                      "in order to invoke logger TA handler: %r", rc);
+                del_ta_executive(name); /** Rollback */
             }
-
-            if ((rc = ipc_close_client(log_client)) != 0)
-                WARN("Failed to close IPC clienti: %r", rc);
+            else
+            {
+                if (ipc_close_client(log_client) != 0)
+                    WARN("Failed to close IPC clienti: %r", rc);
+            }
         }
         else
         {
-            WARN("Failed to init IPC client in order "
-                 "to invoke logger TA handler: %r", rc);
+            ERROR("Failed to init IPC client in order "
+                  "to invoke logger TA handler: %r", rc);
+            del_ta_executive(name); /** Rollback */
         }
+
+        /* Enforce TA synchronization in Configurator */
+        if (rc == 0 && (rc = sync_ta(name)) != 0)
+            del_ta_executive(name); /** Rollback */
     }
 
     return rc;
@@ -946,7 +1048,8 @@ extern te_errno rcf_add_ta_unix(const char *name, const char *type,
         return TE_RC(TE_RCF_API, TE_EWRONGPTR);
 
 #define SNPRINTF(buf_, fmt_...) \
-    ((n = snprintf(buf_, sizeof(buf_), fmt_)) < 0 || n > sizeof(buf_))
+    ((n = snprintf(buf_, sizeof(buf_), fmt_)) < 0 || \
+     (unsigned)n > sizeof(buf_))
     if (SNPRINTF(copy_timeout_str,
                  copy_timeout ? "copy_timeout=%u:" : "", copy_timeout) ||
         SNPRINTF(kill_timeout_str,
@@ -984,20 +1087,12 @@ extern te_errno rcf_add_ta_unix(const char *name, const char *type,
  */
 extern te_errno rcf_del_ta(const char *name)
 {
-    rcf_msg     msg;
-    size_t      anslen = sizeof(msg);
-    te_errno    rc;
+    te_errno rc = del_ta_executive(name);
 
-    RCF_API_INIT;
+    if (rc == 0)
+        sync_ta(name); /** Enforce TA synchronization in Configurator */
 
-    memset(&msg, 0, sizeof(msg));
-    msg.opcode = RCFOP_DEL_TA;
-    strcpy(msg.ta, name);
-
-    rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
-                                   &msg, &anslen, NULL);
-
-    return rc == 0 ? msg.error : rc;
+    return rc;
 }
 
 /**

@@ -32,8 +32,13 @@
 
 
 #define TA_LIST_SIZE    64
-char *cfg_ta_list = NULL;
-static size_t ta_list_size = TA_LIST_SIZE;
+
+typedef struct ta_list_t {
+    char  *list;
+    size_t list_size;
+} ta_list_t;
+
+#define TA_LIST_INITIALIZER { NULL, TA_LIST_SIZE }
 
 #define TA_BUF_SIZE     8192
 char *cfg_get_buf = NULL;
@@ -45,46 +50,49 @@ char max_commit_subtree[CFG_INST_NAME_MAX] = {};
 char local_cmd_bkp[1024];
 
 /**
- * Initialize list of Test Agemts.
+ * Get list of Test Agents.
+ *
+ * @param ta_list List of Test Agents (that is returned)
  *
  * @return status code (see errno.h)
  */
 static int
-ta_list_init()
+ta_list_get(ta_list_t *ta_list)
 {
     const char *ta;
     int         rc;
-    
-    if ((cfg_get_buf = (char *)malloc(cfg_get_buf_len)) == NULL)
+
+    if (cfg_get_buf == NULL &&
+        (cfg_get_buf = (char *)malloc(cfg_get_buf_len)) == NULL)
     {
         ERROR("Out of memory");
         return TE_ENOMEM;
     }
-        
-    while (TRUE)
+
+    for (ta_list->list_size = TA_LIST_SIZE;;)
     {
-        if ((cfg_ta_list = (char *)calloc(ta_list_size, 1)) == NULL)
+        if ((ta_list->list = calloc(ta_list->list_size, 1)) == NULL)
         {
             ERROR("Out of memory");
             return TE_ENOMEM;
         }
 
-        rc = rcf_get_ta_list(cfg_ta_list, &ta_list_size);
+        rc = rcf_get_ta_list(ta_list->list, &ta_list->list_size);
         if (rc == 0)
             break;
 
-        free(cfg_ta_list);
-        cfg_ta_list = NULL;
+        free(ta_list->list);
+        ta_list->list = NULL;
         if (TE_RC_GET_ERROR(rc) != TE_ESMALLBUF)
         {
             ERROR("rcf_get_ta_list() returned %r", rc);
             return rc;
         }
 
-        ta_list_size += TA_LIST_SIZE;
+        ta_list->list_size += TA_LIST_SIZE;
     }
-    for (ta = cfg_ta_list;
-         ta < cfg_ta_list + ta_list_size;
+    for (ta = ta_list->list;
+         ta < ta_list->list + ta_list->list_size;
          ta += strlen(ta) + 1)
         if (strlen(ta) >= CFG_INST_NAME_MAX)
         {
@@ -105,12 +113,13 @@ cfg_ta_add_agent_instances()
     const char *ta;
     int         rc;
     int         i = 1;
-    
-    if (cfg_ta_list == NULL && (rc = ta_list_init()) != 0)
+    ta_list_t   ta_list = TA_LIST_INITIALIZER;
+
+    if ((rc = ta_list_get(&ta_list)) != 0)
         return rc;
 
-    for (ta = cfg_ta_list;
-         ta < cfg_ta_list + ta_list_size;
+    for (ta = ta_list.list;
+         ta < ta_list.list + ta_list.list_size;
          ta += strlen(ta) + 1, ++i)
     {
         if ((cfg_all_inst[i] =
@@ -124,6 +133,7 @@ cfg_ta_add_agent_instances()
                 free(cfg_all_inst[i]);
             }
             ERROR("Out of memory");
+            free(ta_list.list);
             return TE_ENOMEM;
         }
         strcpy(cfg_all_inst[i]->name, ta);
@@ -136,6 +146,7 @@ cfg_ta_add_agent_instances()
             cfg_all_inst[i - 1]->brother = cfg_all_inst[i];
         cfg_all_inst[i]->father = &cfg_inst_root;
     }
+    free(ta_list.list);
     return 0;
 }
 
@@ -147,12 +158,17 @@ void
 cfg_ta_reboot_all(void)
 {
     const char *ta;
+    ta_list_t   ta_list = TA_LIST_INITIALIZER;
 
-    for (ta = cfg_ta_list;
-         ta < cfg_ta_list + ta_list_size;
-         ta += strlen(ta) + 1)
+    if (ta_list_get(&ta_list) == 0)
     {
-        rcf_ta_reboot(ta, NULL, NULL);
+        for (ta = ta_list.list;
+             ta < ta_list.list + ta_list.list_size;
+             ta += strlen(ta) + 1)
+        {
+            rcf_ta_reboot(ta, NULL, NULL);
+        }
+        free(ta_list.list);
     }
 }
 
@@ -370,9 +386,7 @@ sync_ta_subtree(const char *ta, const char *oid)
     cfg_handle handle;
 
     if (do_log_syncing)
-    {
         RING("Synchronize TA '%s' subtree '%s'", ta, oid);
-    }
 
     /* Take all instances from the TA */
     if ((wildcard_oid = malloc(strlen(oid) + sizeof("/..."))) == NULL)
@@ -490,22 +504,27 @@ sync_ta_subtree(const char *ta, const char *oid)
 int
 cfg_ta_sync(char *oid, te_bool subtree)
 {
-    cfg_oid *tmp_oid;
-    char    *ta;
-    int      rc = 0;
+    cfg_oid  *tmp_oid;
+    char     *ta;
+    int       rc = 0;
+    ta_list_t ta_list = TA_LIST_INITIALIZER;
+
+    if ((rc = ta_list_get(&ta_list)) != 0)
+        return rc;
 
     if ((tmp_oid = cfg_convert_oid_str(oid)) == NULL ||
         !tmp_oid->inst || 
         (tmp_oid->len > 1 && strcmp_start("/agent", oid) != 0))
     {
         cfg_free_oid(tmp_oid);
+        free(ta_list.list);
         return TE_EINVAL;
     }
-    
+
     if (tmp_oid->len == 1 || strcmp_start(CFG_TA_PREFIX"*", oid) == 0)
     {
-        for (ta = cfg_ta_list;
-             ta < cfg_ta_list + ta_list_size;
+        for (ta = ta_list.list;
+             ta < ta_list.list + ta_list.list_size;
              ta += strlen(ta) + 1)
         {
             char agent_oid[CFG_OID_MAX];
@@ -517,15 +536,64 @@ cfg_ta_sync(char *oid, te_bool subtree)
                 break;
         }
     }
-    else
+    else /** Here an exact agent is used in 'oid' */
     {
+        te_bool found = FALSE;
+        char   *tmp;
+
         ta = ((cfg_inst_subid *)(tmp_oid->ids))[1].name;
 
-        rc = subtree ? sync_ta_subtree(ta, oid) :
-                       sync_ta_instance(ta, oid);
+        /* Try to find the specified agent among ones returned by RCF */
+        for (tmp = ta_list.list;
+             tmp < ta_list.list + ta_list.list_size;
+             tmp += strlen(tmp) + 1)
+        {
+            if ((found = strcmp(ta, tmp) == 0))
+                break;
+        }
+
+        if (found) /** This is the normal case */
+        {
+            rc = subtree ? sync_ta_subtree(ta, oid) :
+                           sync_ta_instance(ta, oid);
+        }
+        else /** The specified agent is deleted by RCF */
+        {
+            char oid_s[sizeof(CFG_TA_PREFIX) +
+                       CFG_INST_NAME_MAX] = CFG_TA_PREFIX;
+
+            if (do_log_syncing)
+                RING("Deleting non-existent TA '%s'...", ta);
+
+            if (strlen(ta) < CFG_INST_NAME_MAX)
+            {
+                cfg_handle handle;
+
+                strcat(oid_s, ta);
+
+                if ((rc = cfg_db_find(oid_s, &handle)) == 0)
+                {
+                    cfg_db_del(handle);
+
+                    if (do_log_syncing)
+                        RING("Non-existent TA '%s' is deleted", ta);
+                }
+                else /** This should never happen */
+                {
+                    ERROR("OID '%s' is not found", oid_s);
+                    rc = TE_EINVAL;
+                }
+            }
+            else /** This should never happen too */
+            {
+                ERROR("Too long TA name '%s'", ta);
+                rc = TE_EINVAL;
+            }
+        }
     }
     cfg_free_oid(tmp_oid);
 
+    free(ta_list.list);
     return rc;
 }
 
