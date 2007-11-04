@@ -124,6 +124,32 @@
             </arg>
         </run>
 
+        <run>
+            <script name="xen_rcf"/>
+            <arg name="env" ref="env.peer2peer"/>
+            <arg name="rpc_ifname">
+                <value>eth0</value>
+            </arg>
+            <arg name="mac_addr">
+                <value>00:18:f3:4f:b6:cc</value>
+            </arg>
+            <arg name="host0">
+                <value>kili0</value>
+            </arg>
+            <arg name="host1">
+                <value>kili1</value>
+            </arg>
+            <arg name="host2">
+                <value>ulmo</value>
+            </arg>
+            <arg name="host3">
+                <value>kili3</value>
+            </arg>
+            <arg name="port">
+                <value>18003</value>
+            </arg>
+        </run>
+
     </session>
 </package>
 

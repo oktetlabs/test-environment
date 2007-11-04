@@ -2454,6 +2454,21 @@
           <notes/>
         </iter>
       </test>
+      <test name="xen_rcf" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <arg name="env">{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</arg>
+          <arg name="rpc_ifname">eth0</arg>
+          <arg name="mac_addr">00:18:f3:4f:b6:cc</arg>
+          <arg name="host0">kili0</arg>
+          <arg name="host1">kili1</arg>
+          <arg name="host2">ulmo</arg>
+          <arg name="host3">kili3</arg>
+          <arg name="port">18003</arg>
+          <notes/>
+        </iter>
+      </test>
     </iter>
   </test>
 </trc_db>

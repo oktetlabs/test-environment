@@ -31,7 +31,7 @@ MY_DEPS = \
 
 noinst_HEADERS = xen_suite.h xen.h
 
-tetest_PROGRAMS = prologue xen_dhcp xen_path xen_create_destroy xen_startup xen_saved xen_migrate xen_saved_migrate
+tetest_PROGRAMS = prologue xen_dhcp xen_path xen_create_destroy xen_startup xen_saved xen_migrate xen_saved_migrate xen_rcf
 
 
 prologue_SOURCES = prologue.c
@@ -65,3 +65,7 @@ xen_migrate_DEPENDENCIES = $(MY_DEPS)
 xen_saved_migrate_SOURCES = xen_saved_migrate.c
 xen_saved_migrate_LDADD = $(MY_LDADD)
 xen_saved_migrate_DEPENDENCIES = $(MY_DEPS)
+
+xen_rcf_SOURCES = xen_rcf.c
+xen_rcf_LDADD = $(MY_LDADD)
+xen_rcf_DEPENDENCIES = $(MY_DEPS)

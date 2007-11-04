@@ -927,7 +927,11 @@ extern te_errno rcf_add_ta(const char *name, const char *type,
         return TE_RC(TE_RCF_API, TE_EWRONGPTR);
 
     if (strlen(name) + 1 > sizeof(msg.ta))
+    {
+        ERROR("Too long (%u chars, must be not more than %u ones) "
+              "TA name = '%s'", strlen(name), sizeof(msg.ta) - 1, name);
         return TE_RC(TE_RCF_API, TE_EINVAL);
+    }
 
     /* Check lengths of values */
     if (strlen(rcflib) + 1 > sizeof(msg.file))
