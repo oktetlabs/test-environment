@@ -2926,6 +2926,8 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
+    
+    ta_system("cp /tmp/.vnc/.Xauthority /tmp/");
 
     sprintf(buf, "HOME=/tmp DISPLAY=:%s xhost +", number);
 
@@ -3078,7 +3080,7 @@ vncserver_release(const char *name)
     rcf_pch_del_node(&node_ds_vncpasswd);
     rcf_pch_del_node(&node_ds_vncserver);
     
-    ta_system("rm -rf /tmp/.vnc");
+    ta_system("rm -rf /tmp/.vnc /tmp/.Xauthority");
     
     return 0;
 }
