@@ -245,7 +245,7 @@
             <req id="TAD_IP4"/>
           </script>
           <arg name="env">
-            <value>{{{'iut_pco':tester},addr:'iut_addr':inet:unicast,addr:'iut_mac':ether:unicast,if:'iut_if'},{{'tst_pco':tester},addr:'tst_addr':inet:unicast,addr:'tst_mac':ether:unicast,if:'tst_if'}}</value>
+            <value>{{{'iut_pco':IUT},addr:'iut_addr':inet:unicast,addr:'iut_mac':ether:unicast,if:'iut_if'},{{'tst_pco':tester},addr:'tst_addr':inet:unicast,addr:'tst_mac':ether:unicast,if:'tst_if'}}</value>
           </arg>
           <arg name="payload_len">
             <value>99</value>
@@ -257,6 +257,23 @@
         </run>
       </session>
     </run>
+
+    <run>
+      <session>
+        <run>
+          <script name="ip4_send_recv_tcp_msg">
+            <req id="TAD_IP4"/>
+          </script>
+          <arg name="env">
+            <value>{{{'iut_pco':IUT},addr:'iut_addr':inet:unicast,addr:'iut_mac':ether:unicast,if:'iut_if'},{{'tst_pco':tester},addr:'tst_addr':inet:unicast,addr:'tst_mac':ether:unicast,if:'tst_if'}}</value>
+          </arg>
+          <arg name="payload_len">
+            <value>99</value>
+          </arg>
+        </run>
+      </session>
+    </run>
+
   </session>
 
 </package>

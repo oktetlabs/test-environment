@@ -24,11 +24,11 @@
  * $Id:$
  */
 
-/** @page ipstack-ip4_send_tcp Send TCP packets via CSAP
- *        and accept it via STREAM socket.
+/** @page ipstack-ip4_send_msg_tcp Send and receive TCP packets via
+ *        tapi_tpc_send_msg and tapi_tcp_recv_msg function.
  *
- * @objective Check that tcp.ip4.eth CSAP can send TCP packets with
- *            user-specified payload length and checksum.
+ * @objective Check usability of functions tapi_tcp_send_msg 
+ *            and tapi_tcp_recv_msg.
  *
  * @param pco_iut       TA wich will be TCP server  
  * @param pco_tst       TA wich will be TCP client
@@ -42,15 +42,17 @@
  * -# Create TCP socket on @p pco_iut. 
  * -# Send TCP init connection packet from @p pco_tst
  * -# Accept TCP connection on @p pco_iut.
- * -# Send TCP packet with random generated payload data from @p pco_tst
- * -# Receive TCP packet on @p pco_iut
- * -# Close connection by sending RST from @ pco_tst.
+ * -# Send TCP packet via socket from @p pco_iut
+ * -# Receive TCP packet via tapi_tcp_recv_msg function on @p pco_tst
+ * -# Send TCP packet via tapi_tcp_send_msg function from @p pco_tst
+ * -# Receive TCP packet via socket on @p pco_iut
+ * -# Close connection by sending RST from @p pco_tst.
  *
  *  @author Aleksandr Platonov <Aleksandr.Platonov@oktetlabs.ru>
  */
 #ifndef DOXYGEN_TEST_SPEC
 
-#define TE_TEST_NAME "ipstack/ip4_send_tcp"
+#define TE_TEST_NAME "ipstack/ip4_send_msg_tcp"
 
 #define TEST_START_VARS     TEST_START_ENV_VARS
 #define TEST_START_SPECIFIC TEST_START_ENV
@@ -97,8 +99,6 @@ main(int argc, char *argv[])
     const struct if_nameindex *tst_if = NULL;
     
     int                        payload_len;
-    
-    const char                *check_sum = NULL;
 
     int                        iut_tcp_sock = -1;
     int                        tmp_sock = -1;
@@ -106,12 +106,6 @@ main(int argc, char *argv[])
     
     void                      *send_buf = NULL;
     void                      *recv_buf = NULL;
-
-    asn_value                 *template = NULL;
-    asn_value                 *pdu = NULL;
-    asn_value                 *pdu_ip = NULL;
-    
-    te_bool                    checksum_correct = TRUE;
 
     TEST_START;
     TEST_GET_PCO(iut_pco);
@@ -123,8 +117,8 @@ main(int argc, char *argv[])
     TEST_GET_IF(iut_if);
     TEST_GET_IF(tst_if);
     TEST_GET_INT_PARAM(payload_len);
-    TEST_GET_STRING_PARAM(check_sum);
     
+    /* Check payload_len parameter. */
     if (payload_len < 1)
         TEST_FAIL("Invalid payload_len parameter %d", payload_len);
 
@@ -163,67 +157,52 @@ main(int argc, char *argv[])
     send_buf = te_make_buf_by_len(payload_len);
     recv_buf = malloc(payload_len);
 
-    /* Prepare data to send. */
-    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, FALSE,
-                                          ndn_tcp_header, "#tcp", &pdu));
-    CHECK_RC(asn_write_int32(pdu, TCP_FLAG_ACK, "flags.#plain"));
-    CHECK_RC(asn_write_int32(pdu, tapi_tcp_next_ackn(tcp_conn),
-                             "ackn.#plain"));
-    CHECK_RC(asn_write_int32(pdu, tapi_tcp_next_seqn(tcp_conn),
-                             "seqn.#plain"));
-    CHECK_RC(tapi_tad_tmpl_ptrn_set_payload_plain(&template, FALSE,
-                                                  send_buf, payload_len));
-    if (strcmp(check_sum, "correct"))
-    {   
-        checksum_correct = FALSE;
-        CHECK_RC(tapi_ip4_add_pdu(&template, &pdu_ip, FALSE, 0, 0, -1, -1, -1));
-        CHECK_RC(asn_write_int32(pdu_ip, rand_range(1, 255),
-                                 "pld-checksum.#diff"));
+    /* Send data via socket. */
+    int recv_bytes = payload_len;
+    if (payload_len != rpc_send(iut_pco, iut_tcp_sock,
+                                send_buf, payload_len, 0))
+        TEST_FAIL("Sending data by socket failed");
+    
+    /* Receive data via tapi_tcp_recv_msg. */
+    uint8_t flags;
+    CHECK_RC(tapi_tcp_recv_msg(tcp_conn, 100, TAPI_TCP_AUTO, recv_buf, 
+                               &recv_bytes, NULL, NULL, &flags));
+
+    if (recv_bytes == payload_len)
+    {
+        if (memcmp(send_buf, recv_buf, payload_len))
+            TEST_FAIL("Data, received by tapi_tcp_recv_msg, corrupted");
     }
+    else
+        TEST_FAIL("Number of sended bytes diffes "
+                  "with number of received by tapi_tcp_recv_msg");
 
-    /* Send data. */
-    CHECK_RC(tapi_tcp_send_template(tcp_conn, template, RCF_MODE_BLOCKING));
-    CHECK_RC(tapi_tcp_update_sent_seq(tcp_conn, payload_len));
-
+    /* Send data via tapi_tcp_send_msg  */
+    CHECK_RC(tapi_tcp_send_msg(tcp_conn, send_buf, payload_len, TAPI_TCP_AUTO,
+                        0, TAPI_TCP_QUIET, 0, NULL, 0));
     /* Give data some time to be received. */
     MSLEEP(100);
-
-    /* Receive data. */
+    /* Receive data via socket. */
     te_bool sock_ready_for_read;
     GET_READABILITY(sock_ready_for_read, iut_pco, iut_tcp_sock, 1);
-
-    if (checksum_correct)
+    if (sock_ready_for_read)
     {
-        if (sock_ready_for_read)
-        {
-            if (payload_len != rpc_recv(iut_pco, iut_tcp_sock, 
+        if (payload_len != rpc_recv(iut_pco, iut_tcp_sock, 
                                     recv_buf, payload_len, 0))
             TEST_FAIL("Number of sended bytes diffes "
                       "with number of received bytes.");
-
-            /* Check received data. */
-            if (memcmp(send_buf, recv_buf, payload_len))
-                TEST_FAIL("Received data corrupted.");
-        }
-        else
-            TEST_FAIL("Can not receive TCP packet");
+        /* Check received data. */
+        if (memcmp(send_buf, recv_buf, payload_len))
+            TEST_FAIL("Received data corrupted.");
     }
     else
-        if (sock_ready_for_read)
-            TEST_FAIL("TCP packet was received despite of incorrect cehcksum");
+        TEST_FAIL("Can not receive TCP packet");
 
     TEST_SUCCESS;
 cleanup:
     CLEANUP_CHECK_RC(tapi_tcp_send_rst(tcp_conn));
     CLEANUP_CHECK_RC(tapi_tcp_destroy_connection(tcp_conn));
     CLEANUP_RPC_CLOSE(iut_pco, iut_tcp_sock);
-    
-    if (template != NULL)
-    {
-        asn_free_value(template);
-        template = NULL;
-        pdu = NULL;
-    }
     
     free(send_buf);
     free(recv_buf);

@@ -25,4 +25,5 @@ tetest_PROGRAMS = \
 	ip4_send_icmp \
 	ip4_send_udp \
 	ip4_send_icmp_error_udp \
-    ip4_send_tcp
+    ip4_send_tcp \
+	ip4_send_recv_tcp_msg
