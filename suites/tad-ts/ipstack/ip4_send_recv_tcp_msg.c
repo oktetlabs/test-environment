@@ -163,6 +163,7 @@ main(int argc, char *argv[])
                                 send_buf, payload_len, 0))
         TEST_FAIL("Sending data by socket failed");
     
+    MSLEEP(100);
     /* Receive data via tapi_tcp_recv_msg. */
     uint8_t flags;
     CHECK_RC(tapi_tcp_recv_msg(tcp_conn, 100, TAPI_TCP_AUTO, recv_buf, 
