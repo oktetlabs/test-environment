@@ -155,14 +155,22 @@
             access="read_create" type="integer"/>
     <object oid="/agent/xen/dom_u/status"
             access="read_write" type="string"/>
+    <object oid="/agent/xen/dom_u/memory"
+            access="read_write" type="integer"/>
+    <object oid="/agent/xen/dom_u/if_name"
+            access="read_write" type="string"/>
     <object oid="/agent/xen/dom_u/ip_addr"
             access="read_write" type="address"/>
     <object oid="/agent/xen/dom_u/mac_addr"
             access="read_write" type="address"/>
-    <object oid="/agent/xen/dom_u/interface"
-            access="read_create" type="address"/>
-    <object oid="/agent/xen/dom_u/interface/bridge"
+    <object oid="/agent/xen/dom_u/br_name"
             access="read_write" type="string"/>
+    <object oid="/agent/xen/dom_u/bridge"
+            access="read_create" type="string"/>
+    <object oid="/agent/xen/dom_u/bridge/ip_addr"
+            access="read_write" type="address"/>
+    <object oid="/agent/xen/dom_u/bridge/mac_addr"
+            access="read_write" type="address"/>
     <object oid="/agent/xen/dom_u/migrate"
             access="read_write" type="string" volatile="true"/>
     <object oid="/agent/xen/dom_u/migrate/kind"
