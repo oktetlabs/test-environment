@@ -159,6 +159,10 @@
             access="read_write" type="address"/>
     <object oid="/agent/xen/dom_u/mac_addr"
             access="read_write" type="address"/>
+    <object oid="/agent/xen/dom_u/interface"
+            access="read_create" type="address"/>
+    <object oid="/agent/xen/dom_u/interface/bridge"
+            access="read_write" type="string"/>
     <object oid="/agent/xen/dom_u/migrate"
             access="read_write" type="string" volatile="true"/>
     <object oid="/agent/xen/dom_u/migrate/kind"

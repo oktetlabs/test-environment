@@ -114,6 +114,84 @@ extern te_errno tapi_cfg_xen_dom_u_set_status(char const *ta,
  * Get IP address of 'eth0' of domU.
  *
  * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get status of
+ * @param size          Storage to accept domU 'eth0' memory size
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_get_memory_size(char const   *ta,
+                                                   char const   *dom_u,
+                                                   unsigned int *size);
+
+/**
+ * Set IP address of 'eth0' of domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get memory size of
+ * @param size          New domU 'eth0' memory size
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_set_memory_size(char const  *ta,
+                                                   char const  *dom_u,
+                                                   unsigned int size);
+
+/**
+ * Get the name of the bridge that is used for RCF/RPC communication.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get bridge name of
+ * @param br_name       Storage to accept bridge name
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_get_br_name(char const *ta,
+                                               char const *dom_u,
+                                               char       *br_name);
+
+/**
+ * Set the name of the bridge that is used for RCF/RPC communication.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get bridge name of
+ * @param br_name       New domU bridge name
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_set_br_name(char const *ta,
+                                               char const *dom_u,
+                                               char const *br_name);
+
+/**
+ * Get the name of the interface that is used for RCF/RPC communication.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get interface name of
+ * @param if_name       Storage to accept interface name
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_get_if_name(char const *ta,
+                                               char const *dom_u,
+                                               char       *if_name);
+
+/**
+ * Set the name of the interface that is used for RCF/RPC communication.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get interface name of
+ * @param if_name       New domU interface name
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_set_if_name(char const *ta,
+                                               char const *dom_u,
+                                               char const *if_name);
+
+/**
+ * Get IP address of the interface that is used for RCF/RPC communication.
+ *
+ * @param ta            Test Agent running withing dom0
  * @param dom_u         Name of domU to get IP address of
  * @param ip_addr       Storage to accept domU 'eth0' IP address
  * 
@@ -124,7 +202,7 @@ extern te_errno tapi_cfg_xen_dom_u_get_ip_addr(char const      *ta,
                                                struct sockaddr *ip_addr);
 
 /**
- * Set IP address of 'eth0' of domU.
+ * Set IP address of the interface that is used for RCF/RPC communication.
  *
  * @param ta            Test Agent running withing dom0
  * @param dom_u         Name of domU to get IP address of
@@ -161,6 +239,125 @@ extern te_errno tapi_cfg_xen_dom_u_get_mac_addr(char const *ta,
  */
 extern te_errno tapi_cfg_xen_dom_u_set_mac_addr(char const    *ta,
                                                 char const    *dom_u,
+                                                uint8_t const *mac);
+
+/**
+ * Add new bridge to domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to create
+ * @param bridge        Bridge name
+ * @param if_name       Interface name
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_add_bridge(char const *ta,
+                                              char const *dom_u,
+                                              char const *bridge,
+                                              char const *if_name);
+
+/**
+ * Delete bridge from domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to destroy
+ * @param bridge        Bridge name
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_del_bridge(char const *ta,
+                                              char const *dom_u,
+                                              char const *bridge);
+
+/**
+ * Get the name of the interface that is used for testing communication.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get bridge name of
+ * @param bridge        DomU bridge name
+ * @param if_name       Storage to accept interface name
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_bridge_get_if_name(char const *ta,
+                                                      char const *dom_u,
+                                                      char const *bridge,
+                                                      char       *if_name);
+
+/**
+ * Set the name of the interface that is used for testing communication.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get bridge name of
+ * @param bridge        DomU bridge name
+ * @param if_name       Interface name
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_bridge_set_if_name(char const *ta,
+                                                      char const *dom_u,
+                                                      char const *bridge,
+                                                      char const *if_name);
+
+/**
+ * Get IP address of the interface that is used for RCF/RPC communication.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU
+ * @param bridge        Name of the bridge interface is added to
+ * @param ip_addr       Storage to accept IP address
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_bridge_get_ip_addr(
+                                           char const      *ta,
+                                           char const      *dom_u,
+                                           char const      *bridge,
+                                           struct sockaddr *ip_addr);
+
+/**
+ * Set IP address of the interface that is used for RCF/RPC communication.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get IP address of
+ * @param ip_addr       New domU 'eth0' IP address
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_bridge_set_ip_addr(
+                                   char const            *ta,
+                                   char const            *dom_u,
+                                   char const            *bridge,
+                                   struct sockaddr const *ip_addr);
+
+/**
+ * Get MAC address of 'eth0' of domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get MAC address of
+ * @param mac           Storage to accept domU 'eth0' MAC address
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_bridge_get_mac_addr(
+                                                char const *ta,
+                                                char const *dom_u,
+                                                char const *bridge,
+                                                uint8_t    *mac);
+
+/**
+ * Set MAC address of 'eth0' of domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get MAC address of
+ * @param mac           New domU 'eth0' MAC address
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_bridge_set_mac_addr(
+                                                char const    *ta,
+                                                char const    *dom_u,
+                                                char const    *bridge,
                                                 uint8_t const *mac);
 
 /**

@@ -62,6 +62,24 @@
     <object oid="/agent/xen/dom_u/status" access="read_write"
             type="string"/>
 
+    <!-- Memory size used for domU
+         Name: none
+         Value: Memory size in Mb
+
+         Note: If domU is not in "non-running" status then
+               it is impossible to change memory size value -->
+    <object oid="/agent/xen/dom_u/memory" access="read_write"
+            type="integer"/>
+
+    <!-- The interface used for RCF/RPC communication.
+         Name: none
+         Value: Interface name
+
+         Note: If domU is not in "non-running" status then
+               it is impossible to change interface name value -->
+    <object oid="/agent/xen/dom_u/if_name" access="read_write"
+            type="string"/>
+
     <!-- IP address of the interface used for RCF/RPC communication.
          Name: none
          Value: IP address
@@ -78,6 +96,36 @@
          Note: If domU is not in "non-running" status then
                it is impossible to change MAC address value -->
     <object oid="/agent/xen/dom_u/mac_addr" access="read_write"
+            type="address"/>
+
+    <!-- The bridge where interface used for RCF/RPC communication
+         is added to.
+         Name: none
+         Value: Bridge name
+
+         Note: If domU is not in "non-running" status then
+               it is impossible to change bridge name value -->
+    <object oid="/agent/xen/dom_u/br_name" access="read_write"
+            type="string"/>
+
+    <!-- The bridge where dom0 tested interface is already added to
+         and domU testing interface is to add to.
+         Name: Bridge name
+         Value: DomU interface name (usually is the same
+                as the name of the dom0 tested one) -->
+    <object oid="/agent/xen/dom_u/bridge " access="read_create"
+            type="string"/>
+
+    <!-- IP address of the domU interface that is added to the bridge.
+         Name: None
+         Value: DomU interface IP address -->
+    <object oid="/agent/xen/dom_u/bridge/ip_addr " access="read_write"
+            type="address"/>
+
+    <!-- MAC address of the domU interface that is added to the bridge.
+         Name: None
+         Value: DomU interface IP address -->
+    <object oid="/agent/xen/dom_u/bridge/mac_addr " access="read_write"
             type="address"/>
 
     <!-- Migration of domU.

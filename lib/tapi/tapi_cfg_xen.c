@@ -154,7 +154,7 @@ tapi_cfg_xen_destroy_dom_u(char const *ta, char const *dom_u)
                                    "/agent:%s/xen:/dom_u:%s",
                                    ta, dom_u)) != 0)
     {
-        ERROR("Failed to destroy '%s' domU on %", dom_u, ta);
+        ERROR("Failed to destroy '%s' domU on %s", dom_u, ta);
     }
 
 cleanup0:
@@ -196,6 +196,126 @@ tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
     if (rc != 0)
         ERROR("Failed to set \"%s\" status for '%s' domU on %s: %r",
               status, dom_u, ta, rc);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_get_memory_size(char const *ta, char const *dom_u,
+                                   unsigned int *size)
+{
+    cfg_val_type  type  = CVT_INTEGER;
+
+    te_errno rc = cfg_get_instance_fmt(&type, size,
+                                       "/agent:%s/xen:/dom_u:%s/memory:",
+                                       ta, dom_u);
+
+    if (rc != 0)
+        ERROR("Failed to get memory size for '%s' domU on %s", dom_u, ta);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_set_memory_size(char const *ta, char const *dom_u,
+                                   unsigned int size)
+{
+    te_errno rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, size),
+                                       "/agent:%s/xen:/dom_u:%s/memory:",
+                                       ta, dom_u);
+
+    if (rc != 0)
+        ERROR("Failed to set memory size for '%s' domU on %s", dom_u, ta);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_get_br_name(char const *ta, char const *dom_u,
+                               char *br_name)
+{
+    cfg_val_type type  = CVT_STRING;
+    char const  *value;
+
+    te_errno rc = cfg_get_instance_fmt(&type, &value,
+                                       "/agent:%s/xen:/dom_u:%s/br_name:",
+                                       ta, dom_u);
+
+    if (rc == 0)
+    {
+        strcpy(br_name, value);
+        free((void *)value);
+    }
+    else
+    {
+        ERROR("Failed to get RCF/RPC bridge name for '%s' domU on %s",
+              dom_u, ta);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_set_br_name(char const *ta, char const *dom_u,
+                               char const *br_name)
+{
+    te_errno rc = cfg_set_instance_fmt(CFG_VAL(STRING, br_name),
+                                       "/agent:%s/xen:/dom_u:%s/br_name:",
+                                       ta, dom_u);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to set \"%s\" RCF/RPC bridge name "
+              "for '%s' domU on %s: %r", br_name, dom_u, ta, rc);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_get_if_name(char const *ta, char const *dom_u,
+                               char *if_name)
+{
+    cfg_val_type type  = CVT_STRING;
+    char const  *value;
+
+    te_errno rc = cfg_get_instance_fmt(&type, &value,
+                                       "/agent:%s/xen:/dom_u:%s/if_name:",
+                                       ta, dom_u);
+
+    if (rc == 0)
+    {
+        strcpy(if_name, value);
+        free((void *)value);
+    }
+    else
+    {
+        ERROR("Failed to get RCF/RPC interface name for '%s' domU on %s",
+              dom_u, ta);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_set_if_name(char const *ta, char const *dom_u,
+                               char const *if_name)
+{
+    te_errno rc = cfg_set_instance_fmt(CFG_VAL(STRING, if_name),
+                                       "/agent:%s/xen:/dom_u:%s/if_name:",
+                                       ta, dom_u);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to set \"%s\" RCF/RPC interface name "
+              "for '%s' domU on %s: %r", if_name, dom_u, ta, rc);
+    }
 
     return rc;
 }
@@ -274,6 +394,179 @@ tapi_cfg_xen_dom_u_set_mac_addr(char const *ta, char const *dom_u, uint8_t const
                                    ta, dom_u)) != 0)
     {
         ERROR("Failed to set MAC address of '%s' domU on %s", dom_u, ta);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_add_bridge(char const *ta, char const *dom_u,
+                             char const *bridge, char const *if_name)
+{
+    te_errno rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, if_name),
+                                       "/agent:%s/xen:/dom_u:%s"
+                                       "/bridge:%s", ta, dom_u, bridge);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to add '%s' bridge for '%s' domU on %s",
+              bridge, dom_u, ta);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_del_bridge(char const *ta, char const *dom_u,
+                              char const *bridge)
+{
+    te_errno rc = cfg_del_instance_fmt(FALSE,
+                                       "/agent:%s/xen:/dom_u:%s"
+                                       "/bridge:%s", ta, dom_u, bridge);
+    if (rc != 0)
+    {
+        ERROR("Failed to delete '%s' bridge for '%s' domU on %s",
+              bridge, dom_u, ta);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_bridge_get_if_name(char const *ta, char const *dom_u,
+                                      char const *bridge, char *if_name)
+{
+    cfg_val_type type  = CVT_STRING;
+    char const  *value;
+
+    te_errno rc = cfg_get_instance_fmt(&type, &value,
+                                       "/agent:%s/xen:/dom_u:%s"
+                                       "/bridge:%s", ta, dom_u, bridge);
+
+    if (rc == 0)
+    {
+        strcpy(if_name, value);
+        free((void *)value);
+    }
+    else
+    {
+        ERROR("Failed to get RCF/RPC interface name for '%s' "
+              "bridge on '%s' domU on %s", bridge, dom_u, ta);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_bridge_set_if_name(char const *ta, char const *dom_u,
+                                      char const *bridge,
+                                      char const *if_name)
+{
+    te_errno rc = cfg_set_instance_fmt(CFG_VAL(STRING, if_name),
+                                       "/agent:%s/xen:/dom_u:%s"
+                                       "/bridge:%s", ta, dom_u, bridge);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to set \"%s\" RCF/RPC interface name for '%s' "
+              "bridge on '%s' domU on %s: %r", if_name, bridge, dom_u,
+              ta, rc);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_bridge_get_ip_addr(char const *ta, char const *dom_u,
+                                      char const *bridge,
+                                      struct sockaddr *ip_addr)
+{
+    cfg_val_type           type  = CVT_ADDRESS;
+    struct sockaddr const *value;
+
+    te_errno rc = cfg_get_instance_fmt(&type, &value,
+                                       "/agent:%s/xen:/dom_u:%s"
+                                       "/bridge:%s/ip_addr:",
+                                       ta, dom_u, bridge);
+
+    if (rc == 0)
+    {
+        memcpy(ip_addr, value, sizeof(*value));
+        free((void *)value);
+    }
+    else
+        ERROR("Failed to get IP address for '%s' bridge "
+              "interface on '%s' domU on %s", bridge, dom_u, ta);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_bridge_set_ip_addr(char const *ta, char const *dom_u,
+                                      char const *bridge,
+                                      struct sockaddr const *ip_addr)
+{
+    te_errno rc = cfg_set_instance_fmt(CFG_VAL(ADDRESS, ip_addr),
+                                       "/agent:%s/xen:/dom_u:%s"
+                                       "/bridge:%s/ip_addr:",
+                                       ta, dom_u, bridge);
+
+    if (rc != 0)
+        ERROR("Failed to set IP address for '%s' bridge "
+              "interface on '%s' domU on %s", bridge, dom_u, ta);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_bridge_get_mac_addr(char const *ta, char const *dom_u,
+                                       char const *bridge, uint8_t *mac)
+{
+    cfg_val_type     type = CVT_ADDRESS;
+    struct sockaddr *addr;
+
+    te_errno rc = cfg_get_instance_fmt(&type, &addr,
+                                       "/agent:%s/xen:/dom_u:%s"
+                                       "/bridge:%s/mac_addr:",
+                                       ta, dom_u, bridge);
+
+    if (rc == 0)
+    {
+        memcpy(mac, addr->sa_data, ETHER_ADDR_LEN);
+        free(addr);
+    }
+    else
+        ERROR("Failed to get MAC address for '%s' bridge "
+              "interface on '%s' domU on %s", bridge, dom_u, ta);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_bridge_set_mac_addr(char const *ta, char const *dom_u,
+                                       char const *bridge,
+                                       uint8_t const *mac)
+{
+    struct sockaddr addr = { .sa_family = AF_LOCAL };
+    te_errno        rc;
+
+    memcpy(addr.sa_data, mac, ETHER_ADDR_LEN);
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(ADDRESS, &addr),
+                                   "/agent:%s/xen:/dom_u:%s"
+                                   "/bridge:%s/mac_addr:",
+                                   ta, dom_u, bridge)) != 0)
+    {
+        ERROR("Failed to set MAC address for '%s' bridge "
+              "interface on '%s' domU on %s", bridge, dom_u, ta);
     }
 
     return rc;
