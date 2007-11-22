@@ -39,6 +39,66 @@
                it is impossible to change XEN dom0 value -->
     <object oid="/agent/xen" access="read_write" type="string"/>
 
+    <!-- XEN kernel.
+         Name: none
+         Value: XEN kernel file name (found within the XEN path)
+
+         Note: If at least one domU node exists then
+               it is impossible to change XEN kernel value -->
+    <object oid="/agent/xen/kernel" access="read_write" type="string"/>
+
+    <!-- XEN initial ramdisk.
+         Name: none
+         Value: XEN initrd file name (found within the XEN path)
+
+         Note: If at least one domU node exists then
+               it is impossible to change XEN initrd value -->
+    <object oid="/agent/xen/initrd" access="read_write" type="string"/>
+
+    <!-- XEN disk image template.
+         Name: none
+         Value: XEN dsktpl file name (found within the XEN path)
+
+         Note: If at least one domU node exists then
+               it is impossible to change XEN dsktpl value -->
+    <object oid="/agent/xen/dsktpl" access="read_write" type="string"/>
+
+    <!-- RCF port (needed for starting TA inside domU).
+         Name: none
+         Value: RCF port
+
+         Note: Valid values are 0 and the range from 1024 to 65535 -->
+    <object oid="/agent/xen/rcf_port" access="read_write"
+            type="integer"/>
+
+    <!-- The name of the XEN dom0 bridge connected to the interface
+         that is used for RPC communication.
+         Name: none
+         Value: XEN RPC bridge name
+
+         Note: If at least one domU node exists then it is impossible
+               to change XEN RPC bridge name value -->
+    <object oid="/agent/xen/rpc_br" access="read_write" type="string"/>
+
+    <!-- The name of the XEN dom0 interface that is used
+         for RPC communication.
+         Name: none
+         Value: XEN RPC interface name
+
+         Note: If at least one domU node exists then it is impossible
+               to change XEN RPC interface name value -->
+    <object oid="/agent/xen/rpc_if" access="read_write" type="string"/>
+
+    <!-- The base MAC address template that is used
+         for the virtual interfaces of domUs.
+         Name: none
+         Value: Base MAC address template
+
+         Note: If at least one domU node exists then it is impossible
+               to change base MAC address template value -->
+    <object oid="/agent/xen/base_mac_addr" access="read_write"
+            type="address"/>
+
     <!-- XEN domU.
          Name: XEN domain name
          Value: Directory/disk images creation/destruction flag: if 0

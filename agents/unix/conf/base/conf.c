@@ -529,6 +529,29 @@ te_errno ta_vlan_get_parent(const char *, char *);
 static te_errno xen_path_get(unsigned int, char const *, char *);
 static te_errno xen_path_set(unsigned int, char const *, char const *);
 
+static te_errno xen_kernel_get(unsigned int, char const *, char *);
+static te_errno xen_kernel_set(unsigned int, char const *, char const *);
+
+static te_errno xen_initrd_get(unsigned int, char const *, char *);
+static te_errno xen_initrd_set(unsigned int, char const *, char const *);
+
+static te_errno xen_dsktpl_get(unsigned int, char const *, char *);
+static te_errno xen_dsktpl_set(unsigned int, char const *, char const *);
+
+static te_errno xen_rcf_port_get(unsigned int, char const *, char *);
+static te_errno xen_rcf_port_set(unsigned int, char const *,
+                                 char const *);
+
+static te_errno xen_rpc_br_get(unsigned int, char const *, char *);
+static te_errno xen_rpc_br_set(unsigned int, char const *, char const *);
+
+static te_errno xen_rpc_if_get(unsigned int, char const *, char *);
+static te_errno xen_rpc_if_set(unsigned int, char const *, char const *);
+
+static te_errno xen_base_mac_addr_get(unsigned int, char const *, char *);
+static te_errno xen_base_mac_addr_set(unsigned int, char const *,
+                                      char const *);
+
 static te_errno dom_u_add(unsigned int, char const *, char const *,
                           char const *, char const *);
 static te_errno dom_u_del(unsigned int, char const *, char const *,
@@ -551,12 +574,6 @@ static te_errno dom_u_memory_set(unsigned int, char const *,
                                  char const *, char const *,
                                  char const *);
 
-static te_errno dom_u_if_name_get(unsigned int, char const *, char *,
-                                 char const *, char const *);
-static te_errno dom_u_if_name_set(unsigned int, char const *,
-                                 char const *, char const *,
-                                 char const *);
-
 static te_errno dom_u_ip_addr_get(unsigned int, char const *, char *,
                                   char const *, char const *);
 static te_errno dom_u_ip_addr_set(unsigned int, char const *,
@@ -568,12 +585,6 @@ static te_errno dom_u_mac_addr_get(unsigned int, char const *, char *,
 static te_errno dom_u_mac_addr_set(unsigned int, char const *,
                                    char const *, char const *,
                                    char const *);
-
-static te_errno dom_u_br_name_get(unsigned int, char const *, char *,
-                                 char const *, char const *);
-static te_errno dom_u_br_name_set(unsigned int, char const *,
-                                 char const *, char const *,
-                                 char const *);
 
 static te_errno dom_u_bridge_add(unsigned int, char const *, char const *,
                                  char const *, char const *, char const *);
@@ -730,24 +741,16 @@ static rcf_pch_cfg_object node_dom_u_bridge =
       (rcf_ch_cfg_del)&dom_u_bridge_del,
       (rcf_ch_cfg_list)&dom_u_bridge_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(node_dom_u_br_name, "br_name",
-                    NULL, &node_dom_u_bridge,
-                    &dom_u_br_name_get, &dom_u_br_name_set);
-
 RCF_PCH_CFG_NODE_RW(node_dom_u_mac_addr, "mac_addr",
-                    NULL, &node_dom_u_br_name,
+                    NULL, &node_dom_u_bridge,
                     &dom_u_mac_addr_get, &dom_u_mac_addr_set);
 
 RCF_PCH_CFG_NODE_RW(node_dom_u_ip_addr, "ip_addr",
                     NULL, &node_dom_u_mac_addr,
                     &dom_u_ip_addr_get, &dom_u_ip_addr_set);
 
-RCF_PCH_CFG_NODE_RW(node_dom_u_if_name, "if_name",
-                    NULL, &node_dom_u_ip_addr,
-                    &dom_u_if_name_get, &dom_u_if_name_set);
-
 RCF_PCH_CFG_NODE_RW(node_dom_u_memory, "memory",
-                    NULL, &node_dom_u_if_name,
+                    NULL, &node_dom_u_ip_addr,
                     &dom_u_memory_get, &dom_u_memory_set);
 
 RCF_PCH_CFG_NODE_RW(node_dom_u_status, "status",
@@ -760,8 +763,36 @@ static rcf_pch_cfg_object node_dom_u =
       (rcf_ch_cfg_add)&dom_u_add, (rcf_ch_cfg_del)&dom_u_del,
       (rcf_ch_cfg_list)&dom_u_list, NULL, NULL };
 
+RCF_PCH_CFG_NODE_RW(node_base_mac_addr, "base_mac_addr",
+                    NULL, &node_dom_u,
+                    &xen_base_mac_addr_get, &xen_base_mac_addr_set);
+
+RCF_PCH_CFG_NODE_RW(node_rpc_if, "rpc_if",
+                    NULL, &node_base_mac_addr,
+                    &xen_rpc_if_get, &xen_rpc_if_set);
+
+RCF_PCH_CFG_NODE_RW(node_rpc_br, "rpc_br",
+                    NULL, &node_rpc_if,
+                    &xen_rpc_br_get, &xen_rpc_br_set);
+
+RCF_PCH_CFG_NODE_RW(node_rcf_port, "rcf_port",
+                    NULL, &node_rpc_br,
+                    &xen_rcf_port_get, &xen_rcf_port_set);
+
+RCF_PCH_CFG_NODE_RW(node_dsktpl, "dsktpl",
+                    NULL, &node_rcf_port,
+                    &xen_dsktpl_get, &xen_dsktpl_set);
+
+RCF_PCH_CFG_NODE_RW(node_initrd, "initrd",
+                    NULL, &node_dsktpl,
+                    &xen_initrd_get, &xen_initrd_set);
+
+RCF_PCH_CFG_NODE_RW(node_kernel, "kernel",
+                    NULL, &node_initrd,
+                    &xen_kernel_get, &xen_kernel_set);
+
 RCF_PCH_CFG_NODE_RW(node_xen, "xen",
-                    &node_dom_u, &node_user,
+                    &node_kernel, &node_user,
                     &xen_path_get, &xen_path_set);
 
 RCF_PCH_CFG_NODE_AGENT(node_agent, &node_xen);
@@ -6139,17 +6170,28 @@ typedef enum { DOM_U_STATUS_NON_RUNNING,
  * Path to accessible across network storage for
  * XEN kernel and templates of XEN config/VBD images.
  */
-static char xen_path[PATH_MAX] = { '\0' };
+static char xen_path[PATH_MAX]   = { '\0' };
 
+/** Kernel, initial ramdisk and VBD image files */
+static char xen_kernel[PATH_MAX] = { '\0' };
+static char xen_initrd[PATH_MAX] = { '\0' };
+static char xen_dsktpl[PATH_MAX] = { '\0' };
+
+/** RCF port number */
+static unsigned int xen_rcf_port = 0;
+
+/** XEN dom0 RPC bridge and interface */
+static char xen_rpc_br[PATH_MAX] = { '\0' };
+static char xen_rpc_if[PATH_MAX] = { '\0' };
+
+/** XEN domU base MAC address */
+static char xen_base_mac_addr[] = "00:00:00:00:00:00";
+
+/** Values that are used to initialize addresses */
 static char const init_ip_addr[]  = "0.0.0.0";
 static char const init_mac_addr[] = "00:00:00:00:00:00";
 
-/** Kernel, initial ramdisk and VBD image files */
-/** FIXME: these 3 items MUST be parametrized (over XEN CFG tree) */
-static char const  *const xen_kernel = "vmlinuz-2.6.18-4-xen-686";
-static char const  *const xen_ramdsk = "initrd.img-2.6.18-4-xen-686";
-static char const  *const xen_dsktpl = "disk-template.img";
-
+/* Names of the cloned disk image, swap image and temporary directory */
 static char const *const xen_dskimg = "disk.img";
 static char const *const xen_swpimg = "swap.img";
 static char const *const xen_tmpdir = "tmpdir";
@@ -6171,8 +6213,6 @@ static struct {
                                       is empty sign if it is NULL)       */
     status_t     status;         /**< DomU state                         */
     unsigned int memory;         /**< DomU state                         */
-    char const   *br_name;       /**< DomU RCF/RPC interface bridge name */
-    char const   *if_name;       /**< DomU RCF/RPC interface name        */
     char         ip_addr[16];    /**< DomU IP address                    */
     char         mac_addr[18];   /**< DomU MAC address                   */
 
@@ -6488,19 +6528,17 @@ check_dom_u_is_initialized_properly(unsigned int u)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    if (*dom_u_slot[u].br_name == '\0')
+    if (*xen_rpc_br == '\0')
     {
         ERROR("The name of the bridge that is used for RCF/RPC "
-              "communication ('/agent/xen/dom_u/br_name') is NOT "
-              "initialized for '%s' domU ", dom_u_slot[u].name);
+              "communication ('/agent/xen/rpc_br') is NOT initialized");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    if (*dom_u_slot[u].if_name == '\0')
+    if (*xen_rpc_if == '\0')
     {
         ERROR("The name of the interface that is used for RCF/RPC "
-              "communication ('/agent/xen/dom_u/if_name') is NOT "
-              "initialized for '%s' domU", dom_u_slot[u].name);
+              "communication ('/agent/xen/rpc_if') is NOT initialized");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
@@ -6585,7 +6623,7 @@ prepare_dom_u_interfaces_config(unsigned int u)
     for (*ptr = '\0', i = -1; i <= limit; i++)
     {
         char const *bridge = i < 0 ?
-                       dom_u_slot[u].br_name :
+                       xen_rpc_br :
                        (i < limit ?
                             dom_u_slot[u].bridge_slot[i].br_name :
                             "");
@@ -6647,7 +6685,7 @@ prepare_persistent_net_rules(unsigned int u)
                            dom_u_slot[u].mac_addr :
                            dom_u_slot[u].bridge_slot[i].mac_addr;
             char const *ifn = i < 0 ?
-                           dom_u_slot[u].if_name :
+                           xen_rpc_if :
                            dom_u_slot[u].bridge_slot[i].if_name;
 
             /* It's the 'num' that is inside block */
@@ -6700,7 +6738,7 @@ prepare_network_interfaces_config(unsigned int u)
                            "auto lo\niface lo inet loopback\n" :
                            "";
             char const *ifn = i < 0 ?
-                           dom_u_slot[u].if_name :
+                           xen_rpc_if :
                            dom_u_slot[u].bridge_slot[i].if_name;
             char const *ipa = i < 0 ?
                            dom_u_slot[u].ip_addr :
@@ -6828,8 +6866,104 @@ xen_path_set(unsigned int gid, char const *oid, char const *value)
             ERROR("Path specified for XEN is not a directory");
             return TE_RC(TE_TA_UNIX, TE_ENOTDIR);
         }
+    }
 
-        TE_SPRINTF(buf, "%s/%s", value, xen_kernel);
+    memcpy(xen_path, value, len + 1);
+    return 0;
+#else
+#warning '/agent/xen' 'set' access method is not implemented
+    UNUSED(value);
+
+    ERROR("'/agent/xen' 'set' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get XEN kernel file name.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for kernel file name to be filled in
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_kernel_get(unsigned int gid, char const *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+#if XEN_SUPPORT
+    strcpy(value, xen_kernel);
+    return 0;
+#else
+#warning '/agent/xen/kernel' 'get' access method is not implemented
+    ERROR("'/agent/xen/kernel' 'get' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set XEN kernel file name (XEN path must be set properly previously).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         kernel file name to set
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_kernel_set(unsigned int gid, char const *oid, char const *value)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+    size_t       len   = strlen(value);
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if XEN_SUPPORT
+    /* If value is not empty string then the agent must run within dom0 */
+    if (*value != '\0' && !is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* XEN path must be previously properly set */
+    if (*xen_path == '\0')
+    {
+        ERROR("Failed to set XEN kernel file name because "
+              "XEN path is NOT set properly yet");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to change XEN kernel file name: "
+                  "domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    /* Check whether XEN kernel file name fits XEN path storage */
+    if (len >= sizeof(xen_kernel))
+    {
+        ERROR("XEN kernel file name is too long");
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
+    /* For non-empty XEN kernel file name perform all necessary checks */
+    if (len > 0)
+    {
+        struct stat  st;
+
+        TE_SPRINTF(buf, "%s/%s", xen_path, value);
 
         if (stat(buf, &st) == -1)
         {
@@ -6842,45 +6976,560 @@ xen_path_set(unsigned int gid, char const *oid, char const *value)
             ERROR("XEN kernel specified is NOT a file");
             return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
+    }
 
-        TE_SPRINTF(buf, "%s/%s", value, xen_ramdsk);
+    memcpy(xen_kernel, value, len + 1);
+    return 0;
+#else
+#warning '/agent/xen/kernel' 'set' access method is not implemented
+    UNUSED(value);
+    ERROR("'/agent/xen/kernel' 'set' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get XEN initial ramdisk file name.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for initrd file name to be filled in
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_initrd_get(unsigned int gid, char const *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+#if XEN_SUPPORT
+    strcpy(value, xen_initrd);
+    return 0;
+#else
+#warning '/agent/xen/initrd' 'get' access method is not implemented
+    ERROR("'/agent/xen/initrd' 'get' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set XEN initrd file name (XEN path must be set properly previously).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         initrd file name to set
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_initrd_set(unsigned int gid, char const *oid, char const *value)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+    size_t       len   = strlen(value);
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if XEN_SUPPORT
+    /* If value is not empty string then the agent must run within dom0 */
+    if (*value != '\0' && !is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* XEN path must be previously properly set */
+    if (*xen_path == '\0')
+    {
+        ERROR("Failed to set XEN initrd file name because "
+              "XEN path is NOT set properly yet");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to change XEN initrd file name: "
+                  "domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    /* Check whether XEN initrd file name fits XEN path storage */
+    if (len >= sizeof(xen_initrd))
+    {
+        ERROR("XEN initrd file name is too long");
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
+    /* For non-empty XEN initrd file name perform all necessary checks */
+    if (len > 0)
+    {
+        struct stat  st;
+
+        TE_SPRINTF(buf, "%s/%s", xen_path, value);
 
         if (stat(buf, &st) == -1)
         {
-            ERROR("XEN initial ramdisk does NOT exist "
-                  "on specified XEN path");
+            ERROR("XEN initrd does NOT exist on specified XEN path");
             return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
 
         if (!S_ISREG(st.st_mode))
         {
-            ERROR("XEN initial ramdisk specified is NOT a file");
-            return TE_RC(TE_TA_UNIX, TE_ENOENT);
-        }
-
-        TE_SPRINTF(buf, "%s/%s", value, xen_dsktpl);
-
-        if (stat(buf, &st) == -1)
-        {
-            ERROR("XEN disk image template does NOT exist "
-                  "on specified XEN path");
-            return TE_RC(TE_TA_UNIX, TE_ENOENT);
-        }
-
-        if (!S_ISREG(st.st_mode))
-        {
-            ERROR("XEN disk image template specified is NOT a file");
+            ERROR("XEN initrd specified is NOT a file");
             return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
     }
 
-    memcpy(xen_path, value, len + 1);
+    memcpy(xen_initrd, value, len + 1);
     return 0;
 #else
-#warning '/agent/xen' 'set' access method is not implemented
+#warning '/agent/xen/initrd' 'set' access method is not implemented
+    UNUSED(value);
+    ERROR("'/agent/xen/initrd' 'set' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get XEN dsktpl file name.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for dsktpl file name to be filled in
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_dsktpl_get(unsigned int gid, char const *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
     UNUSED(value);
 
-    ERROR("'/agent/xen' 'set' access method is not implemented");
+#if XEN_SUPPORT
+    strcpy(value, xen_dsktpl);
+    return 0;
+#else
+#warning '/agent/xen/dsktpl' 'get' access method is not implemented
+    ERROR("'/agent/xen/dsktpl' 'get' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set XEN dsktpl file name (XEN path must be set properly previously).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         dsktpl file name to set
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_dsktpl_set(unsigned int gid, char const *oid, char const *value)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+    size_t       len   = strlen(value);
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if XEN_SUPPORT
+    /* If value is not empty string then the agent must run within dom0 */
+    if (*value != '\0' && !is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* XEN path must be previously properly set */
+    if (*xen_path == '\0')
+    {
+        ERROR("Failed to set XEN dsktpl file name because "
+              "XEN path is NOT set properly yet");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to change XEN dsktpl file name: "
+                  "domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    /* Check whether XEN dsktpl file name fits XEN path storage */
+    if (len >= sizeof(xen_dsktpl))
+    {
+        ERROR("XEN dsktpl file name is too long");
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
+    /* For non-empty XEN dsktpl file name perform all necessary checks */
+    if (len > 0)
+    {
+        struct stat  st;
+
+        TE_SPRINTF(buf, "%s/%s", xen_path, value);
+
+        if (stat(buf, &st) == -1)
+        {
+            ERROR("XEN dsktpl does NOT exist on specified XEN path");
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        if (!S_ISREG(st.st_mode))
+        {
+            ERROR("XEN dsktpl specified is NOT a file");
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+    }
+
+    memcpy(xen_dsktpl, value, len + 1);
+    return 0;
+#else
+#warning '/agent/xen/dsktpl' 'set' access method is not implemented
+    UNUSED(value);
+    ERROR("'/agent/xen/dsktpl' 'set' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get RCF port number.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for RCF port number to be filled in
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_rcf_port_get(unsigned int gid, char const *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+#if XEN_SUPPORT
+    sprintf(value, "%u", xen_rcf_port);
+    return 0;
+#else
+#warning '/agent/xen/rcf_port' 'get' access method is not implemented
+    ERROR("'/agent/xen/rcf_port' 'get' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set RCF port numer (restrictions are applied).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         RCF port number to set
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_rcf_port_set(unsigned int gid, char const *oid, char const *value)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+    int          port  = atoi(value); /** Relying on value validity */
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if XEN_SUPPORT
+    /* If value is not 0 then the agent must run within dom0 */
+    if (port != 0 && !is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to change RCF port number: domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    /* For non-0 RCF port number perform all necessary checks */
+    if (port != 0 && port < 1024 && port > 65535)
+    {
+        ERROR("RCF port number is neither 0 "
+              "nor in the range from 1024 to 65535");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    xen_rcf_port = port;
+    return 0;
+#else
+#warning '/agent/xen/rcf_port' 'set' access method is not implemented
+    UNUSED(value);
+    ERROR("'/agent/xen/rcf_port' 'set' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get XEN RPC bridge name.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for RPC bridge name to be filled in
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_rpc_br_get(unsigned int gid, char const *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+#if XEN_SUPPORT
+    strcpy(value, xen_rpc_br);
+    return 0;
+#else
+#warning '/agent/xen/rpc_br' 'get' access method is not implemented
+    ERROR("'/agent/xen/rpc_br' 'get' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set XEN RPC bridge name.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         RPC bridge name to set
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_rpc_br_set(unsigned int gid, char const *oid, char const *value)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+    size_t       len   = strlen(value);
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if XEN_SUPPORT
+    /* If value is not empty string then the agent must run within dom0 */
+    if (*value != '\0' && !is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to change XEN RPC bridge name: "
+                  "domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    /* Check whether XEN RPC bridge name fits XEN path storage */
+    if (len >= sizeof(xen_rpc_br))
+    {
+        ERROR("XEN RPC bridge name is too long");
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
+    memcpy(xen_rpc_br, value, len + 1);
+    return 0;
+#else
+#warning '/agent/xen/rpc_br' 'set' access method is not implemented
+    UNUSED(value);
+    ERROR("'/agent/xen/rpc_br' 'set' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get XEN RPC interface name.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for RPC interface name to be filled in
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_rpc_if_get(unsigned int gid, char const *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+#if XEN_SUPPORT
+    strcpy(value, xen_rpc_if);
+    return 0;
+#else
+#warning '/agent/xen/rpc_if' 'get' access method is not implemented
+    ERROR("'/agent/xen/rpc_if' 'get' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set XEN RPC interface name.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         RPC interface name to set
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_rpc_if_set(unsigned int gid, char const *oid, char const *value)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+    size_t       len   = strlen(value);
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if XEN_SUPPORT
+    /* If value is not empty string then the agent must run within dom0 */
+    if (*value != '\0' && !is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to change XEN RPC interface name: "
+                  "domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    /* Check whether XEN RPC interface name fits XEN path storage */
+    if (len >= sizeof(xen_rpc_if))
+    {
+        ERROR("XEN RPC interface name is too long");
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
+    memcpy(xen_rpc_if, value, len + 1);
+    return 0;
+#else
+#warning '/agent/xen/rpc_if' 'set' access method is not implemented
+    UNUSED(value);
+    ERROR("'/agent/xen/rpc_if' 'set' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get XEN domU base MAC address template.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for base MAC address to be filled in
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_base_mac_addr_get(unsigned int gid, char const *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+#if XEN_SUPPORT
+    strcpy(value, xen_base_mac_addr);
+    return 0;
+#else
+#warning '/agent/xen/base_mac_addr' 'get' \
+access method is not implemented
+    ERROR("'/agent/xen/base_mac_addr' 'get' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set XEN domU base MAC address template.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         Base MAC address to set
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_base_mac_addr_set(unsigned int gid, char const *oid, char const *value)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+    size_t       len   = strlen(value);
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if XEN_SUPPORT
+    /* If value is not empty string then the agent must run within dom0 */
+    if (*value != '\0' && !is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to change XEN base MAC address template: "
+                  "domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    /* Check whether XEN base MAC address fits XEN path storage */
+    if (len >= sizeof(xen_rpc_if))
+    {
+        ERROR("XEN base MAC address template is too long");
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
+    memcpy(xen_base_mac_addr, value, len + 1);
+    return 0;
+#else
+#warning '/agent/xen/base_mac_addr' 'set' \
+access method is not implemented
+    UNUSED(value);
+    ERROR("'/agent/xen/base_mac_addr' 'set' "
+          "access method is not implemented");
     return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
@@ -7116,12 +7765,6 @@ dom_u_add(unsigned int gid, char const *oid, char const *value,
 
     rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-    if ((dom_u_slot[u].br_name = strdup("")) == NULL)
-        goto cleanup0;
-
-    if ((dom_u_slot[u].if_name = strdup("")) == NULL)
-        goto cleanup1;
-
     strcpy(dom_u_slot[u].ip_addr, init_ip_addr);
     strcpy(dom_u_slot[u].mac_addr, init_mac_addr);
 
@@ -7133,12 +7776,6 @@ dom_u_add(unsigned int gid, char const *oid, char const *value,
     /* Try to set requested presence of directory/images state of domU */
     if ((rc = dom_u_set(gid, oid, value, xen, dom_u)) == 0)
         return 0;
-
-cleanup1:
-
-    free((void *)dom_u_slot[u].br_name);
-
-cleanup0:
 
     free((void *)dom_u_slot[u].name);
     dom_u_slot[u].name = NULL;
@@ -7186,8 +7823,6 @@ dom_u_del(unsigned int gid, char const *oid, char const *xen,
         }
     }
 
-    free((void *)dom_u_slot[u].if_name);
-    free((void *)dom_u_slot[u].br_name);
     free((void *)dom_u_slot[u].name);
     dom_u_slot[u].name = NULL;
     return 0;
@@ -7425,7 +8060,7 @@ dom_u_status_set(unsigned int gid, char const *oid, char const *value,
         }
 
         if (fprintf(f, "kernel='%s/%s'\n", xen_path, xen_kernel)  < 0 ||
-            fprintf(f, "ramdisk='%s/%s'\n", xen_path, xen_ramdsk) < 0 ||
+            fprintf(f, "ramdisk='%s/%s'\n", xen_path, xen_initrd) < 0 ||
             fprintf(f, "memory='%u'\n", dom_u_slot[u].memory)     < 0 ||
             fprintf(f, "root='/dev/sda1 ro'\n")                   < 0 ||
             fprintf(f, "disk=[ 'file:%s/%s/%s,sda1,w', "
@@ -7653,163 +8288,6 @@ dom_u_memory_set(unsigned int gid, char const *oid, char const *value,
 #warning '/agent/xen/dom_u/memory' 'get' access method is not implemented
      ERROR("'/agent/xen/dom_u/memory' 'get' access method is not " \
            "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
-#endif
-}
-
-/**
- * Get the name of the domU bridge where
- * the interface used for RCF/RPC communication is added to.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for the bridge name to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to get the bridge name of
- *
- * @return              Status code
- */
-static te_errno
-dom_u_br_name_get(unsigned int gid, char const *oid, char *value,
-                  char const *xen, char const *dom_u)
-{
-#if XEN_SUPPORT
-    unsigned int u;
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
-    FIND_DOM_U(dom_u, u);
-
-    strcpy(value, dom_u_slot[u].br_name);
-    return 0;
-#else
-#warning '/agent/xen/dom_u/br_name' 'get' access method is not implemented
-    ERROR("'/agent/xen/dom_u/br_name' 'get' access method is not " \
-          "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
-#endif
-}
-
-/**
- * Set (change) the name of the domU bridge where
- * the interface used for RCF/RPC communication is added to.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         the bridge name to set
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to set the bridge name of
- *
- * @return              Status code
- */
-static te_errno
-dom_u_br_name_set(unsigned int gid, char const *oid, char const *value,
-                  char const *xen, char const *dom_u)
-{
-#if XEN_SUPPORT
-    char        *br_name;
-    unsigned int u;
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
-    FIND_DOM_U(dom_u, u);
-
-    if ((br_name = strdup(value)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    free((void *)dom_u_slot[u].br_name);
-    dom_u_slot[u].br_name = br_name;
-    return 0;
-#else
-#warning '/agent/xen/dom_u/br_name' 'set' access method is not implemented
-    ERROR("'/agent/xen/dom_u/br_name' 'set' access method is not " \
-          "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
-#endif
-}
-
-/**
- * Get the name of the domU interface used for RCF/RPC communication.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for the interface name to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to get the interface name of
- *
- * @return              Status code
- */
-static te_errno
-dom_u_if_name_get(unsigned int gid, char const *oid, char *value,
-                  char const *xen, char const *dom_u)
-{
-#if XEN_SUPPORT
-    unsigned int u;
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
-    FIND_DOM_U(dom_u, u);
-
-    strcpy(value, dom_u_slot[u].if_name);
-    return 0;
-#else
-#warning '/agent/xen/dom_u/if_name' 'get' access method is not implemented
-    ERROR("'/agent/xen/dom_u/if_name' 'get' access method is not " \
-          "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
-#endif
-}
-
-/**
- * Set (change) the name of the domU interface used for RCF/RPC
- * communication.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         the interface name to set
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to set the interface name of
- *
- * @return              Status code
- */
-static te_errno
-dom_u_if_name_set(unsigned int gid, char const *oid, char const *value,
-                  char const *xen, char const *dom_u)
-{
-#if XEN_SUPPORT
-    char        *if_name;
-    unsigned int u;
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
-    FIND_DOM_U(dom_u, u);
-
-    if ((if_name = strdup(value)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    free((void *)dom_u_slot[u].if_name);
-    dom_u_slot[u].if_name = if_name;
-    return 0;
-#else
-#warning '/agent/xen/dom_u/if_name' 'set' access method is not implemented
-    ERROR("'/agent/xen/dom_u/if_name' 'set' access method is not " \
-          "implemented");
     return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
