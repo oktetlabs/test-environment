@@ -3029,6 +3029,15 @@ struct tarpc_simple_receiver_out {
     uint64_t    bytes;      /**< Number of received bytes */
 };
 
+struct tarpc_wait_readable_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_int   s;               /**< Socket to be used */
+    uint32_t    timeout;         /**< Receive timeout (in milliseconds) */
+};
+
+typedef struct tarpc_int_retval_out tarpc_wait_readable_out;
+
 
 struct tarpc_recv_verify_in {
     struct tarpc_in_arg common;
@@ -3693,6 +3702,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(simple_sender)
         RPC_DEF(simple_receiver)
+        RPC_DEF(wait_readable)
         RPC_DEF(recv_verify)
         RPC_DEF(flooder)
         RPC_DEF(echoer)

@@ -207,6 +207,17 @@ extern int rpc_simple_receiver(rcf_rpc_server *handle,
                                uint64_t *received);
 
 /**
+ * Wait for readable socket.
+ *
+ * @param rpcs            RPC server
+ * @param s               a socket to be user for select
+ * @param timeout         Receive timeout (in milliseconds)
+ *
+ * @return result of select() call
+ */
+extern int rpc_wait_readable(rcf_rpc_server *rpcs, int s, uint32_t timeout);
+
+/**
  * Receive and verify all acceptable data on socket.
  * Verification made by function, which name is passed.
  * This function should generate block of data by start sequence

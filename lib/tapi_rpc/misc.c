@@ -541,6 +541,54 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
     RETVAL_INT(simple_receiver, out.retval);
 }
 
+/**
+ * Wait for readable socket.
+ *
+ * @param rpcs            RPC server
+ * @param s               a socket to be user for select
+ * @param timeout         Receive timeout (in milliseconds)
+ *
+ * @return result of select call
+ */
+int
+rpc_wait_readable(rcf_rpc_server *rpcs,
+                  int s, uint32_t timeout)
+{
+    rcf_rpc_op                op;
+    tarpc_wait_readable_in    in;
+    tarpc_wait_readable_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(simple_receiver, -1);
+    }
+
+    op = rpcs->op;
+
+    in.s = s;
+    in.timeout = timeout;
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+    {
+        rpcs->timeout = timeout + TE_SEC2MS(TAPI_RPC_TIMEOUT_EXTRA_SEC);
+    }
+
+    rcf_rpc_call(rpcs, "wait_readable", &in, &out);
+
+#if 0
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(simple_receiver, out.retval);
+#endif
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: wait_readable(%d, %d) -> %d (%s) ",
+                 rpcs->ta, rpcs->name, rpcop2str(op), s,
+                 timeout, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(wait_readable, out.retval);
+}
+
 
 /* See description in tapi_rpc_misc.h */
 int
