@@ -927,8 +927,8 @@ writebuf(int fd, rpc_ptr buf_base, size_t buf_offset, size_t count)
 
 TARPC_FUNC(sendbuf, {},
 {
-    MAKE_CALL(out->retval = func(in->fd, in->buf, in->off,
-                                 in->len, in->flags));
+    MAKE_CALL(out->retval = func(in->fd, in->buf, in->off, in->len,
+                                 send_recv_flags_rpc2h(in->flags)));
 }
 )
 
@@ -3718,6 +3718,59 @@ simple_receiver(tarpc_simple_receiver_in *in,
 }
 
 #undef MAX_PKT
+
+/*--------------wait_readable() --------------------------*/
+TARPC_FUNC(wait_readable, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/**
+ * Wait until the socket becomes readable.
+ *
+ * @param in                input RPC argument
+ *
+ * @return number of received bytes or -1 in the case of failure
+ */
+int
+wait_readable(tarpc_wait_readable_in *in,
+              tarpc_wait_readable_out *out)
+{
+    api_func        select_func;
+    fd_set          set;
+    int             rc;
+    struct timeval  tv;
+
+    RING("%s() started", __FUNCTION__);
+
+    if (tarpc_find_func(in->common.lib, "select", &select_func) != 0)
+    {
+        return -1;
+    }
+    
+    tv.tv_sec = in->timeout / 1000;
+    tv.tv_usec = (in->timeout % 1000) * 1000;
+    FD_ZERO(&set);
+    FD_SET(in->s, &set);
+
+    rc = select_func(in->s + 1, &set, NULL, NULL, &tv);
+    if (rc < 0)
+    {
+        ERROR("select() failed in wait_readable(): errno %x", errno);
+        return -1;
+    }
+    else if ((rc > 0) && (!FD_ISSET(in->s, &set)))
+    {
+        ERROR("select() waited for reading on the socket, "
+              "returned %d, but the socket in not in set", rc);
+        return -1;
+    }
+
+    return rc;
+}
+
+
 
 /*-------------- recv_verify() --------------------------*/
 TARPC_FUNC(recv_verify, {},
