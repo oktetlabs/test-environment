@@ -145,48 +145,63 @@ extern te_errno tapi_cfg_xen_dom_u_set_memory_size(char const  *ta,
  * 
  * @return Status code
  */
-extern te_errno tapi_cfg_xen_dom_u_get_br_name(char const *ta,
-                                               char const *dom_u,
-                                               char       *br_name);
+extern te_errno tapi_cfg_xen_get_rpc_br(char const *ta,
+                                        char       *br_name);
 
 /**
  * Set the name of the bridge that is used for RCF/RPC communication.
  *
  * @param ta            Test Agent running withing dom0
- * @param dom_u         Name of domU to get bridge name of
  * @param br_name       New domU bridge name
  * 
  * @return Status code
  */
-extern te_errno tapi_cfg_xen_dom_u_set_br_name(char const *ta,
-                                               char const *dom_u,
-                                               char const *br_name);
+extern te_errno tapi_cfg_xen_set_rpc_br(char const *ta,
+                                        char const *br_name);
 
 /**
  * Get the name of the interface that is used for RCF/RPC communication.
  *
  * @param ta            Test Agent running withing dom0
- * @param dom_u         Name of domU to get interface name of
  * @param if_name       Storage to accept interface name
  * 
  * @return Status code
  */
-extern te_errno tapi_cfg_xen_dom_u_get_if_name(char const *ta,
-                                               char const *dom_u,
-                                               char       *if_name);
+extern te_errno tapi_cfg_xen_get_rpc_if(char const *ta,
+                                        char       *if_name);
 
 /**
  * Set the name of the interface that is used for RCF/RPC communication.
  *
  * @param ta            Test Agent running withing dom0
- * @param dom_u         Name of domU to get interface name of
  * @param if_name       New domU interface name
  * 
  * @return Status code
  */
-extern te_errno tapi_cfg_xen_dom_u_set_if_name(char const *ta,
-                                               char const *dom_u,
-                                               char const *if_name);
+extern te_errno tapi_cfg_xen_set_rpc_if(char const *ta,
+                                        char const *if_name);
+
+/**
+ * Get MAC address that is used as base one for domUs.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param mac           Storage to accept base MAC address
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_get_base_mac_addr(char const *ta,
+                                               uint8_t    *mac);
+
+/**
+ * Set MAC address that is used as base one for domUs.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param mac           New base MAC address
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_set_base_mac_addr(char const    *ta,
+                                               uint8_t const *mac);
 
 /**
  * Get IP address of the interface that is used for RCF/RPC communication.
