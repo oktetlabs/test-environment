@@ -51,6 +51,14 @@
 #include <sys/systeminfo.h>
 #endif
 
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
 #if HAVE_LINUX_ETHTOOL_H
 #include "te_ethtool.h"
 #endif
@@ -59,6 +67,10 @@
 #include "te_tools.h"
 
 #include "unix_internal.h"
+
+#ifndef MSG_MORE
+#define MSG_MORE 0
+#endif
 
 
 #ifdef LIO_READ
@@ -402,7 +414,7 @@ static type_info_t type_info[] =
     {"size_t", sizeof(size_t)},
     {"socklen_t", sizeof(socklen_t)},
     {"struct timeval", sizeof(struct timeval)},
-    {"struct linger", sizeof(struct linger)},
+   {"struct linger", sizeof(struct linger)},
     {"struct in_addr", sizeof(struct in_addr)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
 #if HAVE_STRUCT_IP_MREQN
@@ -939,6 +951,25 @@ sendbuf(int fd, rpc_ptr buf_base, size_t buf_offset,
     return send(fd, rcf_pch_mem_get(buf_base) + buf_offset, count, flags);
 }
 
+/*------------ send_msg_more() --------------------------*/
+TARPC_FUNC(send_msg_more, {},
+{
+    MAKE_CALL(out->retval = func(in->fd, in->buf, 
+                                 in->first_len, in->second_len));
+}
+)
+
+ssize_t
+send_msg_more(int fd, rpc_ptr buf, size_t first_len, size_t second_len)
+{
+    int res1, res2;
+    if (-1 == (res1 = send(fd, rcf_pch_mem_get(buf), first_len, MSG_MORE)))
+        return -1;
+    if (-1 == (res2 = send(fd, rcf_pch_mem_get(buf) + first_len,
+                           second_len, 0)))
+        return -1;
+    return res1 + res2;
+}
 
 /*-------------- readv() ------------------------------*/
 

@@ -398,6 +398,26 @@ rpc_sendbuf_off(rcf_rpc_server *rpcs, int s, rpc_ptr_off *buf, size_t len,
 }
 
 /**
+ * Transmit 2 messages to socket descriptor @b s on RPC server side by 
+ * using 2 send calls. The first send call transmit first @b first_len
+ * bytes of @b buf with MSG_MORE flag, the second send call transmit
+ * next @b second_len bytes of @b buf with zero flag. This operation 
+ * takes place on RPC serverside and buffer is stored on the same side.
+ *
+ * @param rpcs       RPC server handle
+ * @param s          socket descriptor
+ * @param buf        RPC pointer to buffer containing the message to be sent
+ * @param first_len  length of the first message in bytes
+ * @param second_len length of the second message in bytes
+ *
+ * @return On succes, number of bytes actually sent, otherwise -1.
+ * @note See @b send() manual page for more information
+ */
+extern ssize_t rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf, 
+                                size_t first_len, size_t second_len);
+
+
+/**
  * Receive messages and store them in the buffer @b buf of length @b len.
  * This operation takes place on RPC server side and buffer is stored on
  * the same side.

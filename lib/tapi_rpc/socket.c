@@ -587,6 +587,43 @@ rpc_sendbuf_gen(rcf_rpc_server *rpcs, int s, rpc_ptr buf, size_t buf_off,
 }
 
 ssize_t
+rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
+                size_t first_len, size_t second_len)
+{
+    rcf_rpc_op     op;
+    tarpc_send_msg_more_in  in;
+    tarpc_send_msg_more_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(send, -1);
+    }
+
+    op = rpcs->op;
+
+    in.fd = s;
+    in.first_len = first_len;
+    in.second_len = second_len;
+    in.buf = buf;
+
+    rcf_rpc_call(rpcs, "send_msg_more", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(send_msg_more, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: send_msg_more(%d, %u , %u, %u) "
+                 "-> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 s, buf, first_len, second_len,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(send_msg_more, out.retval);
+}
+
+ssize_t
 rpc_sendmsg(rcf_rpc_server *rpcs,
             int s, const struct rpc_msghdr *msg, rpc_send_recv_flags flags)
 {
