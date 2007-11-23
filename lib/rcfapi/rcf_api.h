@@ -107,11 +107,9 @@ enum rcf_ta_flags {
     RCF_TA_NO_SYNC_TIME = 0x02, /**< Disable time synchronisation
                                      on Test Agent start-up */
 
-/** This flag is currently unused and probably is subject to removal */
-#if 0
-    RCF_TA_RUNNING      = 0x04, /**< TA is already running, just
-                                     connect to it */
-#endif
+    RCF_TA_NO_HKEY_CHK  = 0x04, /**< TA is copied to destination host
+                                     using StrictHostKeyChecking=no
+                                     SSH option */
 
     /* rcfunix-specific flags */
     RCF_TA_UNIX_SUDO    = 0x010000, /**< Start agent under sudo */

@@ -51,6 +51,9 @@ typedef void *rcf_talib_handle;
                                      the connectivity */
 #define TA_REBOOTABLE   0x04    /**< Test Agent host may be rebooted */
 #define TA_FAKE         0x08    /**< TA is started manually */
+#define TA_NO_HKEY_CHK  0x10    /**< TA is copied using
+                                     StrictHostKeyChecking=no
+                                     SSH option */
 /*@}*/
 /** @name Test Agent flags for RCF engine internal use */
 #define TA_DOWN         0x0100  /**< For internal RCF use */

@@ -965,6 +965,9 @@ extern te_errno rcf_add_ta(const char *name, const char *type,
     if (flags & RCF_TA_REBOOTABLE)
         msg.flags |= TA_REBOOTABLE;
 
+    if (flags & RCF_TA_NO_HKEY_CHK)
+        msg.flags |= TA_NO_HKEY_CHK;
+
     msg.intparm = (flags & RCF_TA_NO_SYNC_TIME) ? 0 : 1;
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),

@@ -103,6 +103,7 @@
  */
 
 #define RCFUNIX_SSH         "ssh -qxTn -o BatchMode=yes "
+#define NO_HKEY_CHK         "-o StrictHostKeyChecking=no"
 #define RCFUNIX_REDIRECT    ">/dev/null 2>&1"
 
 #define RCFUNIX_KILL_TIMEOUT    15
@@ -429,7 +430,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         if (ta->notcopy)
         {
-            sprintf(cmd, RCFUNIX_SSH "%s %s ln -s %s /tmp/%s%s",
+            sprintf(cmd, RCFUNIX_SSH "%s %s %s ln -s %s /tmp/%s%s",
+                    *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
                     ta->key, ta->host, path, ta_type, ta->postfix);
         }
         else
@@ -440,7 +442,9 @@ rcfunix_start(const char *ta_name, const char *ta_type,
              * Be quite, but DO NOT suppress command output in order
              * to have to see possible problems.
              */
-            sprintf(cmd, "scp -rBpq %s %s %s:/tmp/%s%s >/dev/null 2>&1",
+            sprintf(cmd,
+                    "scp -rBpq %s %s %s %s:/tmp/%s%s >/dev/null 2>&1",
+                    *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
                     ta->key, path, ta->host, ta_type, ta->postfix);
         }
     }
