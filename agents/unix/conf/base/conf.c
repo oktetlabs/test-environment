@@ -552,6 +552,23 @@ static te_errno xen_base_mac_addr_get(unsigned int, char const *, char *);
 static te_errno xen_base_mac_addr_set(unsigned int, char const *,
                                       char const *);
 
+static te_errno xen_interface_add(unsigned int, char const *, char const *,
+                                  char const *, char const *);
+static te_errno xen_interface_del(unsigned int, char const *, char const *,
+                                  char const *);
+static te_errno xen_interface_list(unsigned int, char const *, char **);
+static te_errno xen_interface_get(unsigned int, char const *, char *,
+                                  char const *, char const *);
+static te_errno xen_interface_set(unsigned int, char const *, char const *,
+                                  char const *, char const *);
+
+static te_errno xen_interface_bridge_get(unsigned int, char const *,
+                                         char *, char const *,
+                                         char const *);
+static te_errno xen_interface_bridge_set(unsigned int, char const *,
+                                         char const *, char const *,
+                                         char const *);
+
 static te_errno dom_u_add(unsigned int, char const *, char const *,
                           char const *, char const *);
 static te_errno dom_u_del(unsigned int, char const *, char const *,
@@ -763,8 +780,20 @@ static rcf_pch_cfg_object node_dom_u =
       (rcf_ch_cfg_add)&dom_u_add, (rcf_ch_cfg_del)&dom_u_del,
       (rcf_ch_cfg_list)&dom_u_list, NULL, NULL };
 
+RCF_PCH_CFG_NODE_RW(node_xen_interface_bridge, "bridge",
+                    NULL, NULL,
+                    &xen_interface_bridge_get, &xen_interface_bridge_set);
+
+static rcf_pch_cfg_object node_xen_interface =
+    { "interface", 0, &node_xen_interface_bridge, &node_dom_u,
+      (rcf_ch_cfg_get)&xen_interface_get,
+      (rcf_ch_cfg_set)&xen_interface_set,
+      (rcf_ch_cfg_add)&xen_interface_add,
+      (rcf_ch_cfg_del)&xen_interface_del,
+      (rcf_ch_cfg_list)&xen_interface_list, NULL, NULL };
+
 RCF_PCH_CFG_NODE_RW(node_base_mac_addr, "base_mac_addr",
-                    NULL, &node_dom_u,
+                    NULL, &node_xen_interface,
                     &xen_base_mac_addr_get, &xen_base_mac_addr_set);
 
 RCF_PCH_CFG_NODE_RW(node_rpc_if, "rpc_if",
@@ -6156,7 +6185,7 @@ user_del(unsigned int gid, const char *oid, const char *user)
 #if XEN_SUPPORT
 
 /** Maximal number of maintained domUs and bridges in every domU */
-enum { MAX_DOM_U_NUM = 256, MAX_BRIDGE_NUM = 16 };
+enum { MAX_DOM_U_NUM = 256, MAX_BRIDGE_NUM = 16, MAX_INTERFACE_NUM = 16 };
 
 /** DomU statuses */
 typedef enum { DOM_U_STATUS_NON_RUNNING,
@@ -6207,6 +6236,14 @@ static struct {
     { "migrated-running", DOM_U_STATUS_MIGRATED_RUNNING },
     { "migrated-saved",   DOM_U_STATUS_MIGRATED_SAVED } };
 
+/** XEN vertual tested interface internal representation */
+static struct {
+    char const *if_name; /**< XEN virtual tested interface name       */
+    char const *ph_name; /**< XEN realp hysical tested interface name */
+    char const *br_name; /**< XEN bridge, which both interfaces
+                              are connected to*/
+} interface_slot[MAX_INTERFACE_NUM];
+
 /** DomU internal representation */
 static struct {
     char const   *name;          /**< DomU name (also serves as slot
@@ -6247,7 +6284,7 @@ dom_u_limit(void)
  * @return              domU index (from 0 to DOM_U_MAX_NUM - 1) if
  *                      found, otherwise - 'sizeof(dom_u_list) /
  *                      sizeof(*dom_u_list)' (which is equivlent to
- *                      DOM_U_MAX_NUM)
+ *                      MAX_DOM_U_NUM)
  */
 static unsigned
 find_dom_u(char const *dom_u)
@@ -6279,9 +6316,9 @@ find_dom_u(char const *dom_u)
 
 
 /**
- * Get the whole number of domU slots.
+ * Get the whole number of bridge slots.
  *
- * @return              The whole number of domU slots
+ * @return              The whole number of bridge slots
  */
 static inline unsigned int
 bridge_limit(void)
@@ -6291,14 +6328,14 @@ bridge_limit(void)
 }
 
 /**
- * Find domU.
+ * Find bridge.
  *
- * @param dom_u         The name of the domU to find
+ * @param bridge        The name of the bridge to find
  *
- * @return              domU index (from 0 to DOM_U_MAX_NUM - 1) if
- *                      found, otherwise - 'sizeof(dom_u_list) /
- *                      sizeof(*dom_u_list)' (which is equivlent to
- *                      DOM_U_MAX_NUM)
+ * @return              domU index (from 0 to MAX_BRIDGE_NUM - 1) if
+ *                      found, otherwise - 'sizeof(bridge_slot) /
+ *                      sizeof(*bridge_slot)' (which is equivlent to
+ *                      MAX_BRIDGE_NUM)
  */
 static unsigned
 find_bridge(char const *bridge, unsigned int u)
@@ -6328,6 +6365,56 @@ find_bridge(char const *bridge, unsigned int u)
                   (bridge_name_), dom_u_slot[dom_u_index_].name);      \
             return TE_RC(TE_TA_UNIX, TE_ENOENT);                       \
         }                                                              \
+    } while(0)
+
+
+/**
+ * Get the whole number of interface slots.
+ *
+ * @return              The whole number of domU slots
+ */
+static inline unsigned int
+interface_limit(void)
+{
+    return sizeof(interface_slot) / sizeof(*interface_slot);
+}
+
+/**
+ * Find interface.
+ *
+ * @param interface     The name of the interface to find
+ *
+ * @return              interface index (from 0 to MAX_INTERFACE_NUM - 1)
+ *                      if found, otherwise - 'sizeof(interface_slot) /
+ *                      sizeof(*interface_slot)' (which is equivlent to
+ *                      MAX_INTERFACE_NUM)
+ */
+static unsigned
+find_interface(char const *interface)
+{
+    unsigned int u;
+    unsigned int limit = interface_limit();
+
+    for (u = 0; u < limit; u++)
+    {
+        char const *name = interface_slot[u].if_name;
+
+        if (name != NULL && strcmp(name, interface) == 0)
+            break;
+    }
+
+    return u;
+}
+
+/* Try to find interface and initialize its index */
+#define FIND_INTERFACE(interface_name_, interface_index_) \
+    do {                                                                 \
+        if (((interface_index_) =                                        \
+                  find_interface(interface_name_)) >= interface_limit()) \
+        {                                                                \
+            ERROR("Interface '%s' does NOT exist", (interface_name_));   \
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);                         \
+        }                                                                \
     } while(0)
 
 
@@ -7529,6 +7616,386 @@ xen_base_mac_addr_set(unsigned int gid, char const *oid, char const *value)
 access method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/base_mac_addr' 'set' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get real physical interface name by the name of the virtual one.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for real interface name to be filled in
+ * @param xen           name of the XEN node (empty, unused)
+ * @param interface     name of the virtual interface
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_interface_get(unsigned int gid, char const *oid, char *value,
+                  char const *xen, char const *interface)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+#if XEN_SUPPORT
+    FIND_INTERFACE(interface, u);
+
+    strcpy(value, interface_slot[u].ph_name);
+    return 0;
+#else
+#warning '/agent/xen/interface' 'get' \
+access method is not implemented
+    ERROR("'/agent/xen/interface' 'get' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set real physical interface name by the name of the virtual one.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         real interface name to set
+ * @param xen           name of the XEN node (empty, unused)
+ * @param interface     name of the virtual interface
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_interface_set(unsigned int gid, char const *oid, char const *value,
+                  char const *xen, char const *interface)
+{
+#if XEN_SUPPORT
+    char const  *ph_name;
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+#if XEN_SUPPORT
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to change XEN bridge name: "
+                  "domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    FIND_INTERFACE(interface, u);
+
+    if ((ph_name = strdup(value)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    free((void *)interface_slot[u].ph_name);
+    interface_slot[u].ph_name = ph_name;
+    return 0;
+#else
+#warning '/agent/xen/interface' 'set' \
+access method is not implemented
+    ERROR("'/agent/xen/interface' 'set' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Add new XEN virtual tested interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         initializing value (not used)
+ * @param xen           name of the XEN node (empty, unused)
+ * @param interface     name of the XEN virtual tested interface to add
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_interface_add(unsigned int gid, char const *oid, char const *value,
+                  char const *xen, char const *interface)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+#if XEN_SUPPORT
+    if (!is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to delete XEN virtual tested interface: "
+                  "domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    if ((u = find_interface(interface)) < interface_limit())
+    {
+        ERROR("Failed to add interface %s: it already exists", interface);
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
+
+    /* Find an empty slot */
+    for (u = 0, limit = interface_limit(); u < limit; u++)
+        if (interface_slot[u].if_name == NULL)
+            break;
+
+    /* If an empty slot is NOT found */
+    if (u == limit)
+    {
+        ERROR("Failed to add interface %s: all interface slots are taken",
+              interface);
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
+    if ((interface_slot[u].br_name = strdup("")) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    if ((interface_slot[u].ph_name = strdup(value)) == NULL)
+    {
+        free((void *)interface_slot[u].br_name);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    if ((interface_slot[u].if_name = strdup(interface)) == NULL)
+    {
+        free((void *)interface_slot[u].ph_name);
+        free((void *)interface_slot[u].br_name);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    return 0;
+#else
+#warning '/agent/xen/interface' 'add' \
+access method is not implemented
+    ERROR("'/agent/xen/interface' 'add' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Delete XEN virtual tested interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param xen           name of the XEN node (empty, unused)
+ * @param interface     name of the XEN virtual tested interface to delete
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_interface_del(unsigned int gid, char const *oid, char const *xen,
+                  char const *interface)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+#if XEN_SUPPORT
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to delete XEN virtual tested interface: "
+                  "domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    FIND_INTERFACE(interface, u);
+
+    free((void *)interface_slot[u].br_name);
+    free((void *)interface_slot[u].ph_name);
+    free((void *)interface_slot[u].if_name);
+    interface_slot[u].if_name = NULL;
+    return 0;
+#else
+#warning '/agent/xen/interface' 'del' i\
+access method is not implemented
+    ERROR("'/agent/xen/interface' 'del' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * List XEN virtual tested interfaces.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param list          address of a pointer to storage allocated
+ *                      for the list pointer is initialized with
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_interface_list(unsigned int gid, char const *oid, char **list)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int limit = interface_limit();
+    unsigned int len = 0;
+    char        *ptr;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if XEN_SUPPORT
+    /* Count the whole length of interface names plus one per name */
+    for (u = 0; u < limit; u++)
+        if (interface_slot[u].if_name != NULL)
+            len += strlen(interface_slot[u].if_name) + 1;
+
+    if ((ptr = malloc(len)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    *(*list = ptr) = '\0';
+
+    /**
+     * Fill in the list with existing domU names
+     * separated with spaces except the last one
+     */
+    for (u = 0; u < limit; u++)
+    {
+        char const *name = interface_slot[u].if_name;
+
+        if (name != NULL)
+        {
+            size_t len = strlen(name);
+
+            if (ptr != *list)
+                *ptr++ = ' ';
+
+            memcpy(ptr, name, len);
+            *(ptr += len) = '\0';
+        }
+    }
+
+    return 0;
+#else
+#warning '/agent/xen/interface' 'list' \
+access method is not implemented
+    ERROR("'/agent/xen/interface' 'list' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get the name of the XEN bridge, which
+ * virtual tested interface is connected to.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for XEN bridge name to be filled in
+ * @param interface     virtual tested interface name
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_interface_bridge_get(unsigned int gid, char const *oid, char *value,
+                         char const *xen, char const *interface)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(xen);
+
+#if XEN_SUPPORT
+    FIND_INTERFACE(interface, u);
+
+    strcpy(value, interface_slot[u].br_name);
+    return 0;
+#else
+#warning '/agent/xen/interface/bridge' 'get' \
+access method is not implemented
+    ERROR("'/agent/xen/interface/bridge' 'get' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set the name of the XEN bridge, which
+ * virtual tested interface is connected to.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         XEN bridge name to set
+ * @param interface     virtual tested interface name
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_interface_bridge_set(unsigned int gid, char const *oid,
+                         char const *value, char const *xen,
+                         char const *interface)
+{
+#if XEN_SUPPORT
+    char const  *br_name;
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+#if XEN_SUPPORT
+    /* Check whether domUs exist */
+    for (u = 0; u < limit; u++)
+        if (dom_u_slot[u].name != NULL)
+        {
+            ERROR("Failed to change XEN bridge name: "
+                  "domU(s) exist(s)");
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+
+    FIND_INTERFACE(interface, u);
+
+    if ((br_name = strdup(value)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    free((void *)interface_slot[u].br_name);
+    interface_slot[u].br_name = br_name;
+    return 0;
+#else
+#warning '/agent/xen/interface/bridge' 'set' \
+access method is not implemented
+    UNUSED(value);
+    UNUSED(interface);
+    ERROR("'/agent/xen/interface/bridge' 'set' "
           "access method is not implemented");
     return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
