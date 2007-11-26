@@ -63,54 +63,6 @@ extern te_errno tapi_cfg_xen_get_path(char const *ta, char *path);
 extern te_errno tapi_cfg_xen_set_path(char const *ta, char const *path);
 
 /**
- * Create new domU.
- *
- * @param ta            Test Agent running withing dom0
- * @param dom_u         Name of domU to create
- * 
- * @return Status code
- */
-extern te_errno tapi_cfg_xen_create_dom_u(char const *ta,
-                                          char const *dom_u);
-
-/**
- * Destroy new domU.
- *
- * @param ta            Test Agent running withing dom0
- * @param dom_u         Name of domU to destroy
- * 
- * @return Status code
- */
-extern te_errno tapi_cfg_xen_destroy_dom_u(char const *ta,
-                                           char const *dom_u);
-
-/**
- * Get status of domU.
- *
- * @param ta            Test Agent running withing dom0
- * @param dom_u         Name of domU to get status of
- * @param status        Storage to accept status
- * 
- * @return Status code
- */
-extern te_errno tapi_cfg_xen_dom_u_get_status(char const *ta,
-                                              char const *dom_u,
-                                              char       *status);
-
-/**
- * Set status of domU.
- *
- * @param ta            Test Agent running withing dom0
- * @param dom_u         Name of domU to get status of
- * @param status        New domU status
- * 
- * @return Status code
- */
-extern te_errno tapi_cfg_xen_dom_u_set_status(char const *ta,
-                                              char const *dom_u,
-                                              char const *status);
-
-/**
  * Get IP address of 'eth0' of domU.
  *
  * @param ta            Test Agent running withing dom0
@@ -119,9 +71,8 @@ extern te_errno tapi_cfg_xen_dom_u_set_status(char const *ta,
  * 
  * @return Status code
  */
-extern te_errno tapi_cfg_xen_dom_u_get_memory_size(char const   *ta,
-                                                   char const   *dom_u,
-                                                   unsigned int *size);
+extern te_errno tapi_cfg_xen_get_rcf_port(char const   *ta,
+                                          unsigned int *port);
 
 /**
  * Set IP address of 'eth0' of domU.
@@ -132,9 +83,8 @@ extern te_errno tapi_cfg_xen_dom_u_get_memory_size(char const   *ta,
  * 
  * @return Status code
  */
-extern te_errno tapi_cfg_xen_dom_u_set_memory_size(char const  *ta,
-                                                   char const  *dom_u,
-                                                   unsigned int size);
+extern te_errno tapi_cfg_xen_set_rcf_port(char const  *ta,
+                                          unsigned int port);
 
 /**
  * Get the name of the bridge that is used for RCF/RPC communication.
@@ -202,6 +152,80 @@ extern te_errno tapi_cfg_xen_get_base_mac_addr(char const *ta,
  */
 extern te_errno tapi_cfg_xen_set_base_mac_addr(char const    *ta,
                                                uint8_t const *mac);
+
+/**
+ * Create new domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to create
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_create_dom_u(char const *ta,
+                                          char const *dom_u);
+
+/**
+ * Destroy new domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to destroy
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_destroy_dom_u(char const *ta,
+                                           char const *dom_u);
+
+/**
+ * Get status of domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get status of
+ * @param status        Storage to accept status
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_get_status(char const *ta,
+                                              char const *dom_u,
+                                              char       *status);
+
+/**
+ * Set status of domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get status of
+ * @param status        New domU status
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_set_status(char const *ta,
+                                              char const *dom_u,
+                                              char const *status);
+
+/**
+ * Get memory size that wiil be specified in creation of domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get status of
+ * @param size          Storage to accept domU memory size
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_get_memory_size(char const   *ta,
+                                                   char const   *dom_u,
+                                                   unsigned int *size);
+
+/**
+ * Set memory size that wiil be specified in creation of domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get memory size of
+ * @param size          New domU memory size
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_set_memory_size(char const  *ta,
+                                                   char const  *dom_u,
+                                                   unsigned int size);
 
 /**
  * Get IP address of the interface that is used for RCF/RPC communication.
