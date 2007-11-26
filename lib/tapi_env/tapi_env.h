@@ -199,6 +199,36 @@
         }                                                           \
     } while (0)
 
+/**
+ * Get XEN bridge. Name of the variable must match name
+ * of the XEN bridge in environment configuration string.
+ *
+ * @param br_     XEN bridge (const struct if_nameindex *) (OUT)
+ */
+#define TEST_GET_BR(if_, br_) \
+    do {                                                            \
+        (br_) = tapi_env_get_br(&env, #if_);                        \
+        if ((br_) == NULL)                                          \
+        {                                                           \
+            TEST_STOP;                                              \
+        }                                                           \
+    } while (0)
+
+/**
+ * Get XEN physical interface. Name of the variable must match name
+ * of the XEN physical interface in environment configuration string.
+ *
+ * @param ph_ XEN physical interface (const struct if_nameindex *) (OUT)
+ */
+#define TEST_GET_PH(if_, ph_) \
+    do {                                                            \
+        (ph_) = tapi_env_get_ph(&env, #if_);                        \
+        if ((ph_) == NULL)                                          \
+        {                                                           \
+            TEST_STOP;                                              \
+        }                                                           \
+    } while (0)
+
 
 /** Types of entities in the Environment */
 typedef enum {
@@ -300,7 +330,9 @@ typedef struct tapi_env_if {
 
     unsigned int    i_node;     /**< Index of the associated node */
     
-    struct if_nameindex info;   /**< Interface info */
+    struct if_nameindex if_info;/**< Interface info */
+    struct if_nameindex br_info;/**< XEN bridge info */
+    struct if_nameindex ph_info;/**< XEN physical interface info */
     
     te_bool ip4_unicast_used;   /**< Is IPv4 address assigned to
                                      the host in this net used? */
@@ -502,6 +534,34 @@ extern const struct sockaddr * tapi_env_get_addr(tapi_env *env,
  * @return Pointer to the structure with interface name and index.
  */
 extern const struct if_nameindex * tapi_env_get_if(tapi_env *env,
+                                                   const char *name);
+
+/**
+ * Get system name of the bridge named in configuration string
+ * as 'name' argument.
+ *
+ * Pointer becomes not valid when environment is freed.
+ *
+ * @param env       Environment handle
+ * @param name      Name of the bridge in environment
+ *
+ * @return Pointer to the structure with bridge name and index.
+ */
+extern const struct if_nameindex * tapi_env_get_br(tapi_env *env,
+                                                   const char *name);
+
+/**
+ * Get system name of the physical interface  named in configuration
+ * string as 'name' argument.
+ *
+ * Pointer becomes not valid when environment is freed.
+ *
+ * @param env       Environment handle
+ * @param name      Name of the physical interface in environment
+ *
+ * @return Pointer to the structure with bridge name and index.
+ */
+extern const struct if_nameindex * tapi_env_get_ph(tapi_env *env,
                                                    const char *name);
 
 /**

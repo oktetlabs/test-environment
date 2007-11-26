@@ -201,7 +201,6 @@ tapi_env_get(const char *cfg, tapi_env *env)
 {
     te_errno    rc;
 
-
     if (cfg == NULL || env == NULL)
     {
         ERROR("Invalid argument: %s(0x%x, 0x%x)",
@@ -447,7 +446,9 @@ tapi_env_free(tapi_env *env)
     while ((iface = env->ifs.cqh_first) != (void *)&env->ifs)
     {
         CIRCLEQ_REMOVE(&env->ifs, iface, links);
-        free(iface->info.if_name);
+        free(iface->if_info.if_name);
+        free(iface->br_info.if_name);
+        free(iface->ph_info.if_name);
         free(iface->name);
         free(iface);
     }
@@ -642,10 +643,83 @@ tapi_env_get_if(tapi_env *env, const char *name)
          p = p->links.cqe_next)
     {
         if (p->name != NULL && strcmp(p->name, name) == 0)
-            return &p->info;
+            return &p->if_info;
     }
 
     WARN("Interface '%s' does not exist in environment", name);
+
+    return NULL;
+}
+
+
+/* See description in tapi_env.h */
+const struct if_nameindex *
+tapi_env_get_br(tapi_env *env, const char *name)
+{
+    tapi_env_if      *p;
+    tapi_env_alias   *a;
+
+    if (env == NULL || name == NULL || *name == '\0')
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return NULL;
+    }
+
+    SLIST_FOREACH(a, &env->aliases, links)
+    {
+        if (strcmp(a->alias, name) == 0)
+        {
+            VERB("'%s' is alias of '%s'", name, a->name);
+            name = a->name;
+            break;
+        }
+    }
+    for (p = env->ifs.cqh_first;
+         p != (void *)&env->ifs;
+         p = p->links.cqe_next)
+    {
+        if (p->name != NULL && strcmp(p->name, name) == 0)
+            return &p->br_info;
+    }
+
+    WARN("XEN bridge '%s' does not exist in environment", name);
+
+    return NULL;
+}
+
+
+/* See description in tapi_env.h */
+const struct if_nameindex *
+tapi_env_get_ph(tapi_env *env, const char *name)
+{
+    tapi_env_if      *p;
+    tapi_env_alias   *a;
+
+    if (env == NULL || name == NULL || *name == '\0')
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return NULL;
+    }
+
+    SLIST_FOREACH(a, &env->aliases, links)
+    {
+        if (strcmp(a->alias, name) == 0)
+        {
+            VERB("'%s' is alias of '%s'", name, a->name);
+            name = a->name;
+            break;
+        }
+    }
+    for (p = env->ifs.cqh_first;
+         p != (void *)&env->ifs;
+         p = p->links.cqe_next)
+    {
+        if (p->name != NULL && strcmp(p->name, name) == 0)
+            return &p->ph_info;
+    }
+
+    WARN("XEN physical interface '%s' does not exist in environment",
+         name);
 
     return NULL;
 }
@@ -1330,7 +1404,7 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
             /* Get name of the interface from network node value */
             rc = node_value_get_ith_inst_name(
                      cfg_nets->nets[p->net->i_net].nodes[p->i_node].handle,
-                     2, &p->info.if_name);
+                     2, &p->if_info.if_name);
             if (rc != 0)
             {
                 ERROR("Failed to get interface name");
@@ -1345,6 +1419,63 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
             {
                 ERROR("Failed to get OID of the network node");
                 return rc;
+            }
+            else /** XEN-specific part */
+            {
+                char const  xen[]    = "xen:/";
+                char const  bridge[] = "/bridge:";
+                char       *xen_oid  = malloc(strlen(oid) +
+                                              strlen(xen) +
+                                              strlen(bridge));
+                char const *slash    = strrchr(oid, '/');
+
+                if (slash == NULL)
+                {
+                    rc = TE_EFAIL;
+                    goto cleanup0;
+                }
+
+                memcpy(xen_oid, oid, ++slash - oid);
+                xen_oid[slash - oid] = '\0';
+                strcat(xen_oid, xen);
+                strcat(xen_oid, slash);
+                val_type = CVT_STRING;
+
+                if ((rc = cfg_get_instance_fmt(&val_type,
+                                               &p->ph_info.if_name,
+                                               xen_oid)) != 0)
+                {
+                    if (rc != TE_RC(TE_CS, TE_ENOENT))
+                    {
+                        ERROR("Failed to get '%s' OID value", xen_oid);
+                        goto cleanup0;
+                    }
+
+                    p->ph_info.if_name = strdup("");
+                }
+
+                strcat(xen_oid, bridge);
+                val_type = CVT_STRING;
+
+                if ((rc = cfg_get_instance_fmt(&val_type,
+                                               &p->br_info.if_name,
+                                               xen_oid)) != 0)
+                {
+                    if (rc != TE_RC(TE_CS, TE_ENOENT))
+                    {
+                        ERROR("Failed to get '%s' OID value", xen_oid);
+                        goto cleanup0;
+                    }
+
+                    p->br_info.if_name = strdup("");
+                }
+
+                rc = 0;
+cleanup0:
+                free(xen_oid);
+
+                if (rc != 0)
+                    return rc;
             }
         }
         else
@@ -1364,42 +1495,42 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
 
             if (cfg_find_fmt(NULL, oid_fmt, ta, "lo") == 0)
             {
-                p->info.if_name = strdup("lo");
+                p->if_info.if_name = strdup("lo");
             }
             else if (cfg_find_fmt(NULL, oid_fmt, ta, "lo0") == 0)
             {
-                p->info.if_name = strdup("lo0");
+                p->if_info.if_name = strdup("lo0");
             }
             /* FIXME: Dirty hack for Windows */
             else if (cfg_find_fmt(NULL, oid_fmt, ta, "intf1") == 0)
             {
-                p->info.if_name = strdup("intf1");
+                p->if_info.if_name = strdup("intf1");
             }
             else
             {
                 ERROR("Unable to get loopback interface");
                 return TE_ESRCH;
             }
-            if (p->info.if_name == NULL)
+            if (p->if_info.if_name == NULL)
             {
                 ERROR("strdup() failed");
                 return te_rc_os2te(errno);
             }
 
             oid = malloc(strlen(oid_fmt) - 2 + strlen(ta) -
-                         2 + strlen(p->info.if_name) + 1);
+                         2 + strlen(p->if_info.if_name) + 1);
             if (oid == NULL)
             {
                 ERROR("malloc() failed");
                 return TE_ENOMEM;
             }
-            sprintf(oid, oid_fmt, ta, p->info.if_name);
+            sprintf(oid, oid_fmt, ta, p->if_info.if_name);
             
             free(ta);
         }
 
         val_type = CVT_INTEGER;
-        rc = cfg_get_instance_fmt(&val_type, &(p->info.if_index),
+        rc = cfg_get_instance_fmt(&val_type, &(p->if_info.if_index),
                                   "%s/index:", oid);
         if (rc != 0)
         {
@@ -1408,9 +1539,11 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
             free(oid);
             return rc;
         }
+
         free(oid);
         oid = NULL;
     }
+
     return 0;
 }
 
