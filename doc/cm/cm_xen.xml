@@ -110,6 +110,25 @@
                 already exist then they are left intact -->
     <object oid="/agent/xen/dom_u" access="read_create" type="integer"/>
 
+    <!-- XEN virtual tested interface.
+         Name: XEN virtual tested interface name
+         Value: Real physical tested interface name
+
+         Note: If at least one domU node exists then it is impossible
+               to add/delete this node -->
+    <object oid="/agent/xen/interface" access="read_create"
+            type="string"/>
+
+    <!-- The name of the XEN bridge which XEN virtual
+         and real physical interfaces are connected to.
+         Name: none
+         Value: XEN bridge name
+
+         Note: If at least one domU node exists then it is impossible
+               to change XEN bridge name value -->
+    <object oid="/agent/xen/interface/bridge" access="read_write"
+            type="string"/>
+
     <!-- Status contolling and reflecting domU state.
          Name: none
          Value: "non-running", "running" and "saved"; the transition
