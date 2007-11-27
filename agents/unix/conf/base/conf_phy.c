@@ -1507,6 +1507,16 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
     if (!list_item->adver_cached)
         list_item->ecmd.advertising = ecmd.advertising;
     
+    /* In case of Intel e1000 driver speed and duplex must not
+     * be set if we are going to enable autonegotiation. 
+     * It looks pointless for other cards too, so speed and 
+     * duplex values are zeroed */
+    if (list_item->ecmd.autoneg)
+    {
+        list_item->ecmd.speed = 0;
+        list_item->ecmd.duplex = 0;
+    }
+    
     VERB("Properties to set:  %d %d %d %d %d %d %d %d %d %d %s",
          list_item->ecmd.supported,
          list_item->ecmd.advertising,

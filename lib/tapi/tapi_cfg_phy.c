@@ -97,6 +97,7 @@ tapi_cfg_phy_autoneg_set(const char *ta, const char *if_name,
  *
  * @return TE_PHY_DUPLEX_HALF - half duplex;
  *         TE_PHY_DUPLEX_FULL - full duplex;
+ *         TE_PHY_DUPLEX_UNKNOWN - unknown duplex;
  *         or -1 if name string does not recognized
  */
 extern int
@@ -109,6 +110,8 @@ tapi_cfg_phy_duplex_str2id(char *name)
         return TE_PHY_DUPLEX_HALF;
     else if (strcmp(name, TE_PHY_DUPLEX_STRING_FULL) == 0)
         return TE_PHY_DUPLEX_FULL;
+    else if (strcmp(name, TE_PHY_DUPLEX_STRING_UNKNOWN) == 0)
+        return TE_PHY_DUPLEX_UNKNOWN;
     
     return -1;
 }
@@ -120,6 +123,7 @@ tapi_cfg_phy_duplex_str2id(char *name)
  *
  * @return half - half duplex;
  *         full - full duplex;
+ *         unknown - unknown duplex;
  *         or NULL if id does not recognized
  */
 extern char *
@@ -129,6 +133,7 @@ tapi_cfg_phy_duplex_id2str(int duplex)
     {
         case TE_PHY_DUPLEX_HALF: return TE_PHY_DUPLEX_STRING_HALF;
         case TE_PHY_DUPLEX_FULL: return TE_PHY_DUPLEX_STRING_FULL;
+        case TE_PHY_DUPLEX_UNKNOWN: return TE_PHY_DUPLEX_STRING_UNKNOWN;
     }
     
     return NULL;
@@ -145,6 +150,7 @@ tapi_cfg_phy_duplex_id2str(int duplex)
  * @param state         Pointer to the returned duplex state value:
  *                      TE_PHY_DUPLEX_HALF - half duplex
  *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      TE_PHY_DUPLEX_UNKNOWN - unknown duplex state
  *
  * @return Status code
  */
@@ -271,6 +277,7 @@ tapi_cfg_phy_speed_set(const char *ta, const char *if_name, int speed)
  * @param duplex        Duplex state value
  *                      TE_PHY_DUPLEX_HALF - half duplex
  *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      TE_PHY_DUPLEX_UNKNOWN - unknown duplex
  *
  * @return Status code
  */
