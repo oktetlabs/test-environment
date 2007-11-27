@@ -52,6 +52,7 @@
 #include <sys/utsname.h>
 #endif
 
+#include "te_ethernet_phy.h"
 
 /* TA name pointer */
 extern char *ta_name;
@@ -218,13 +219,29 @@ static te_errno phy_state_get(unsigned int, const char *, char *,
 
 static te_errno phy_speed_get(unsigned int, const char *, char *,
                               const char *);
+static te_errno phy_speed_set(unsigned int, const char *, const char *,
+                              const char *);
 
 static te_errno phy_autoneg_get(unsigned int, const char *, char *,
+                                const char *);
+static te_errno phy_autoneg_set(unsigned int, const char *, const char *,
                                 const char *);
 
 static te_errno phy_duplex_get(unsigned int, const char *, char *,
                                const char *);
+static te_errno phy_duplex_set(unsigned int, const char *, const char *,
+                               const char *);
+
+static te_errno phy_commit(unsigned int, const cfg_oid *);
+
+static int get_settings_path(char *path);
+
+static int phy_parameters_get(const char *ifname);
+
+static int phy_parameters_set(const char *ifname);
                               
+static unsigned int speed_duplex_state = 0;
+static unsigned int speed_duplex_to_set = 0;
 static rcf_pch_cfg_object node_phy;
 
 //Multicast
@@ -3633,17 +3650,17 @@ if_stats_get(const char *ifname, if_stats *stats, ndis_stats *raw_stats)
 RCF_PCH_CFG_NODE_RO(node_phy_state, "state", NULL, NULL,
                     phy_state_get);
 
-RCF_PCH_CFG_NODE_RO(node_phy_speed, "speed", NULL, &node_phy_state,
-                    phy_speed_get);
+RCF_PCH_CFG_NODE_RWC(node_phy_speed, "speed", NULL, &node_phy_state,
+                    phy_speed_get, phy_speed_set, &node_phy);
 
-RCF_PCH_CFG_NODE_RO(node_phy_duplex, "duplex", NULL, &node_phy_speed,
-                    phy_duplex_get);
+RCF_PCH_CFG_NODE_RWC(node_phy_duplex, "duplex", NULL, &node_phy_speed,
+                     phy_duplex_get, phy_duplex_set, &node_phy);
 
-RCF_PCH_CFG_NODE_RO(node_phy_autoneg, "autoneg", NULL, &node_phy_duplex,
-                    phy_autoneg_get);
+RCF_PCH_CFG_NODE_RWC(node_phy_autoneg, "autoneg", NULL, &node_phy_duplex,
+                     phy_autoneg_get, phy_autoneg_set, &node_phy);
 
-RCF_PCH_CFG_NODE_NA(node_phy, "phy", &node_phy_autoneg, 
-                    NULL);
+RCF_PCH_CFG_NODE_NA_COMMIT(node_phy, "phy", &node_phy_autoneg, 
+                           NULL, phy_commit);
 
 /**
  * Get PHY state value.
@@ -3692,11 +3709,77 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
     if(if_stats_get( ifname, NULL, &stats) == 0)
     {
         speed = (int)(stats.gen_link_speed / 10000);
-#if 0
-        WARN("SPEED GOT: %u", stats.gen_link_speed);
-#endif
     }
+    
     snprintf(value, RCF_MAX_VAL, "%d", speed);
+    
+    return 0;
+}
+
+/**
+ * Change speed value.
+ *
+ * Autonegatiation state should be turned off before
+ * change the values of duplex and speed PHY parameters.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_speed_set(unsigned int gid, const char *oid, const char *value,
+              const char *ifname)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+    
+    int speed;
+    int rc;
+    /* Get value provided by caller */
+    sscanf(value, "%d", &speed);
+    if (strcmp(ifname, "ef1") == 0)
+    {
+        if((rc = phy_parameters_get(ifname)) != 0)
+        {
+            ERROR("failed to get phy parameters");
+            return TE_OS_RC(TE_TA_WIN32, rc);
+        }
+    
+        if (speed_duplex_state == 0)
+        {
+            ERROR("You can change speed state only "
+                  "with disabled autonegatiation");
+            return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
+        }
+        else 
+        {
+            /* resetting current speed to zero retaining duplex state */
+            speed_duplex_to_set &= 1;
+            switch (speed)
+            {
+               case 10:
+                   speed_duplex_to_set += 1;
+                   break;
+               case 100:
+                   speed_duplex_to_set += 3;
+                   break;
+               case 1000:
+                   speed_duplex_to_set += 5;
+                   break;
+               case 10000:
+                   speed_duplex_to_set += 7;
+                   break;
+            }
+        }
+    }
+    else
+    {
+        ERROR("change speed state is only supported on ef1");
+        return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
+    }
     
     return 0;
 }
@@ -3717,11 +3800,113 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
 {
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(ifname);
-    
+    int rc;
     int state = -1;
     
+    if (strcmp(ifname, "ef1") == 0)
+    {
+        if ((rc = phy_parameters_get(ifname)) == 0)
+        {
+            if (speed_duplex_state == 0)
+                state = TE_PHY_AUTONEG_ON;
+            else
+                state = TE_PHY_AUTONEG_OFF;
+        }
+        else 
+        {
+            ERROR("failed to get autoneg state");
+            return TE_OS_RC(TE_TA_WIN32, rc);
+        } 
+    }
     snprintf(value, RCF_MAX_VAL, "%d", state);
+    
+    return 0;
+}
+
+/**
+ * Change autonegatiation state.
+ * Possible values: 0 - autonegatiation off
+ *                  1 - autonegatiation on
+ *
+ * Autonegatiation state should turn off before
+ * change the values of duplex and speed PHY parameters.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
+                const char *ifname)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+    
+    int rc;
+    ndis_stats stats;
+    int autoneg = -1;
+    int speed = -1;
+    
+    sscanf(value, "%d", &autoneg);
+    
+    if (autoneg != TE_PHY_AUTONEG_ON && autoneg != TE_PHY_AUTONEG_OFF)
+    {
+        ERROR("cannot set unknown autonegotiation state: %s", value);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
+    }
+    if (strcmp(ifname, "ef1") == 0)
+    {
+        if((rc = phy_parameters_get(ifname)) != 0)
+        {
+            ERROR("failed to get phy parameters");
+            return TE_OS_RC(TE_TA_WIN32, rc);
+        }
+
+        if (speed_duplex_state != 0) /* autoneg off */
+        {
+            if (autoneg == TE_PHY_AUTONEG_ON)
+                speed_duplex_to_set = 0;
+        }
+        else /* autoneg on */
+        {
+            if (autoneg == TE_PHY_AUTONEG_OFF)
+            {
+                /** 
+                  * setting to current speed and full duplex because
+                  * we cannot get duplex state from interface
+                  */
+                if((rc = if_stats_get(ifname, NULL, &stats)) != 0)
+                {
+                    ERROR("failed to get link speed");
+                    return TE_OS_RC(TE_TA_WIN32, rc);
+                }
+                speed = (int)(stats.gen_link_speed / 10000);
+                switch (speed)
+                {
+                    case 10:
+                        speed_duplex_to_set = 2;
+                        break;
+                    case 100:
+                        speed_duplex_to_set = 4;
+                        break;
+                    case 1000:
+                        speed_duplex_to_set = 6;
+                        break;
+                    case 10000:
+                        speed_duplex_to_set = 8;
+                        break;
+                } 
+            }
+        }
+    }
+    else
+    {
+        ERROR("changing autonegotiation state is only supported on ef1");
+        return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
+    }
     
     return 0;
 }
@@ -3742,10 +3927,127 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
 {
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(ifname);
+    int rc;
+    
+    if (strcmp(ifname, "ef1") == 0)
+    {
+        if ((rc = phy_parameters_get(ifname)) == 0)
+        {
+            if (speed_duplex_state != 0)
+                sprintf(value, "%s", (speed_duplex_state % 2) ?
+                                      TE_PHY_DUPLEX_STRING_HALF :
+                                      TE_PHY_DUPLEX_STRING_FULL);
+            else
+                sprintf(value, "%s", TE_PHY_DUPLEX_STRING_UNKNOWN);
 
-    snprintf(value, RCF_MAX_VAL, "not supported");
-        
+            return 0;
+        }
+        else
+        {
+            ERROR("failed to get duplex state");
+            return TE_OS_RC(TE_TA_WIN32, rc);
+        }
+    }
+    sprintf(value, "not supported");
+    
+    return 0;
+}
+
+/**
+ * Change duplex state.
+ * Possible values: 0 - half duplex
+ *                  1 - full duplex
+ *
+ * Autonegatiation state should be turned off before
+ * change the values of duplex and speed PHY parameters.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_duplex_set(unsigned int gid, const char *oid, const char *value,
+           const char *ifname)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+    
+    int rc;
+    int duplex = -1;
+
+    /* Get value provided by caller */
+    sscanf(value, "%d", &duplex);
+    if (duplex != 0 && duplex != 1)
+    {
+        ERROR("cannot set unknown duplex state: %s", value);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
+    }
+    if (strcmp(ifname, "ef1") == 0)
+    {
+        if((rc = phy_parameters_get(ifname)) != 0)
+        {
+            ERROR("failed to get phy parameters");
+            return TE_OS_RC(TE_TA_WIN32, rc);
+        }
+
+        if (speed_duplex_state == 0)
+        {
+            ERROR("You can change duplex state only "
+                  "with disabled autonegatiation");
+            return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
+        }
+        else 
+        {
+            /* Last bit of speed_duplex_to_set set to 1 means half-duplex */
+            if ((speed_duplex_to_set & 1) == 0)
+                speed_duplex_to_set -= (1 - duplex);
+            else
+                speed_duplex_to_set += duplex;
+        }
+    }
+    else
+    {
+        ERROR("change duplex state is only supported on ef1");
+        return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
+    }
+    
+    return 0;
+}
+
+/**
+ * Apply locally stored changes.
+ *
+ * @param gid           GID
+ * @param p_oid         Pointer to the OID
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_commit(unsigned int gid, const cfg_oid *p_oid)
+{
+    UNUSED(gid);
+    char *ifname;
+    int rc;
+    
+    /* Extract interface name */
+    ifname = CFG_OID_GET_INST_NAME(p_oid, 2);
+
+    if (strcmp(ifname, "ef1") == 0)
+    {    
+        if ((rc = phy_parameters_set(ifname)) != 0)
+        {
+            ERROR("failed to set phy parameters");
+            return TE_OS_RC(TE_TA_WIN32, rc);
+        }
+    }
+    else
+    {
+        ERROR("change speed/duplex/autoneg state is only supported on ef1");
+        return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
+    }
     return 0;
 }
 
@@ -3756,8 +4058,183 @@ extern te_errno
 ta_unix_conf_phy_init(void)
 {
     return rcf_pch_add_node("/agent/interface", &node_phy);
+    if (phy_parameters_get("ef1") != 0)
+        WARN("Phy params can't be received for ef1");
+    speed_duplex_to_set = speed_duplex_state;
 }
 
+#define NET_PATH        "SYSTEM\\CurrentControlSet\\Control\\Class\\" \
+                        "{4D36E972-E325-11CE-BFC1-08002bE10318}"
+#define NDIS_SF_0         "sfe_ndis_0"
+#define BUFSIZE_REG         256
+#define SPEED_DUPLEX_NAME TEXT("*SpeedDuplex")
+
+static int get_settings_path(char *path)
+{
+#ifdef _WIN32
+    HKEY key, subkey;
+    static char subkey_name[BUFSIZE_REG];
+    static char subkey_path[BUFSIZE_REG];
+    static char value[BUFSIZE_REG];
+    DWORD subkey_size;
+    DWORD value_size = BUFSIZE_REG;
+    
+    DWORD  ret = -1;
+    int i;
+    FILETIME tmp;
+    
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, NET_PATH, 0, 
+                     KEY_READ, &key) != ERROR_SUCCESS) 
+    {
+        VERB("%s: RegOpenKeyEx() failed with errno %lu\n",
+             __FUNCTION__, GetLastError());
+        return -1;
+    }
+    
+    for (i = 0, subkey_size = value_size = BUFSIZE_REG; 
+         RegEnumKeyEx(key, i, subkey_name, &subkey_size, 
+                      NULL, NULL, NULL, &tmp) != ERROR_NO_MORE_ITEMS;
+         i++, subkey_size = value_size = BUFSIZE_REG)
+    { 
+        sprintf(subkey_path, "%s\\%s", NET_PATH, subkey_name);
+        if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, subkey_path, 
+                         0, KEY_READ, &subkey) != ERROR_SUCCESS)
+        {
+            continue;
+        }
+    
+        if (RegQueryValueEx(subkey, "MatchingDeviceId", 
+                            NULL, NULL, (unsigned char *)value, 
+                            &value_size) != ERROR_SUCCESS) 
+        {
+            /* Field with device ID is absent, may its virtual device */
+            RegCloseKey(subkey);
+            continue;
+        }
+        if ((strstr(value, NDIS_SF_0) != NULL))
+        {
+            strcpy(path, subkey_path);
+            ret = 0;
+            break;
+        }
+        RegCloseKey(subkey);
+    } 
+    RegCloseKey(key);
+    return ret;
+#else
+    UNUSED(path);
+    return 0;
+#endif
+}
+
+static int phy_parameters_get(const char *ifname)
+{
+#ifdef _WIN32
+    int err;
+    HKEY hkKey;
+    static char path[BUFSIZE_REG];
+    char speed_duplex_value[10];
+    unsigned int dwTemp;
+
+    if (strcmp(ifname, "ef1") != 0)
+    {
+        err = -1;
+        ERROR("Wrong interface name %s, only ef1 is supported", ifname);
+        return TE_RC(TE_TA_WIN32, err);
+    }
+
+    if (get_settings_path(path) != 0)
+    {
+        err = -1;
+        WARN("Failed to find NDIS port 0 entry");
+        return TE_RC(TE_TA_WIN32, err);
+    }
+
+    if(RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, 
+                    KEY_READ | KEY_WRITE, &hkKey) == ERROR_SUCCESS)
+    {
+        dwTemp = sizeof(speed_duplex_value);
+        if (RegQueryValueEx(hkKey, SPEED_DUPLEX_NAME,
+                            NULL, NULL, (BYTE *)speed_duplex_value,
+                            &dwTemp) == ERROR_SUCCESS)
+        {
+            sscanf(speed_duplex_value, "%d", &speed_duplex_state);
+        }
+        else 
+        {
+            err = GetLastError();
+            ERROR("Failed to get *SpeedDuplex, err = %d", err);
+            RegCloseKey(hkKey);
+            return TE_RC(TE_TA_WIN32, err);
+        }
+    }    
+    else
+    {
+        err = GetLastError();
+        WARN("Failed to get open NDIS registry key, err = %d", err);
+        return TE_RC(TE_TA_WIN32, err);
+    }
+    RegCloseKey(hkKey);
+    return 0;
+#else
+    UNUSED(ifname);
+    return 0;
+#endif
+}
+
+static int phy_parameters_set(const char *ifname)
+{
+#ifdef _WIN32
+    int err;
+    HKEY hkKey;
+    static char path[BUFSIZE_REG];
+    char speed_duplex_value[10];
+
+    if (strcmp(ifname, "ef1") != 0)
+    {
+        err = 2;
+        ERROR("Wrong interface name %s, only ef1 is supported", ifname);
+        return TE_RC(TE_TA_WIN32, err);
+    }
+
+    if (get_settings_path(path) != 0)
+    {
+        err = -1;
+        ERROR("Failed to find NDIS port 0 entry");
+        return TE_RC(TE_TA_WIN32, err);
+    }
+
+    if(RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, 
+                    KEY_READ | KEY_WRITE, &hkKey) == ERROR_SUCCESS)
+    {
+        sprintf(speed_duplex_value, "%d", speed_duplex_to_set);
+        if (RegSetValueEx(hkKey, SPEED_DUPLEX_NAME, 0, REG_SZ, 
+                          (CONST BYTE *)speed_duplex_value,
+                          strlen(speed_duplex_value)) != ERROR_SUCCESS)
+        {
+            err = GetLastError();
+            ERROR("Failed to set *SpeedDuplex, err = %d", err);
+            RegCloseKey(hkKey);
+            return TE_RC(TE_TA_WIN32, err);
+        }
+    }
+    else
+    {
+        err = GetLastError();
+        ERROR("Failed to get open NDIS registry key, err = %d", err);
+        return TE_RC(TE_TA_WIN32, err);
+    }
+    RegCloseKey(hkKey);
+    return 0;
+#else
+    UNUSED(ifname);
+    return 0;
+#endif
+}
+#undef NET_PATH
+#undef NDIS_SF_0
+#undef BUFSIZE_REG
+#undef SPEED_DUPLEX_NAME
 
 /**
  * Get VLAN ifname
