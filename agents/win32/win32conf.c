@@ -3742,37 +3742,23 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
     sscanf(value, "%d", &speed);
     if (strcmp(ifname, "ef1") == 0)
     {
-        if((rc = phy_parameters_get(ifname)) != 0)
+        /* resetting current speed to zero retaining duplex state */
+        speed_duplex_to_set &= 1;
+        speed_duplex_to_set = 1 - speed_duplex_to_set;
+        switch (speed)
         {
-            ERROR("failed to get phy parameters");
-            return TE_OS_RC(TE_TA_WIN32, rc);
-        }
-    
-        if (speed_duplex_state == 0)
-        {
-            ERROR("You can change speed state only "
-                  "with disabled autonegatiation");
-            return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
-        }
-        else 
-        {
-            /* resetting current speed to zero retaining duplex state */
-            speed_duplex_to_set &= 1;
-            switch (speed)
-            {
-               case 10:
-                   speed_duplex_to_set += 1;
-                   break;
-               case 100:
-                   speed_duplex_to_set += 3;
-                   break;
-               case 1000:
-                   speed_duplex_to_set += 5;
-                   break;
-               case 10000:
-                   speed_duplex_to_set += 7;
-                   break;
-            }
+           case 10:
+               speed_duplex_to_set += 1;
+               break;
+           case 100:
+               speed_duplex_to_set += 3;
+               break;
+           case 1000:
+               speed_duplex_to_set += 5;
+               break;
+           case 10000:
+               speed_duplex_to_set += 7;
+               break;
         }
     }
     else
@@ -3934,9 +3920,9 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
         if ((rc = phy_parameters_get(ifname)) == 0)
         {
             if (speed_duplex_state != 0)
-                sprintf(value, "%s", (speed_duplex_state % 2) ?
-                                      TE_PHY_DUPLEX_STRING_HALF :
-                                      TE_PHY_DUPLEX_STRING_FULL);
+                sprintf(value, "%s", ((speed_duplex_state % 2) == 0)?
+                                      TE_PHY_DUPLEX_STRING_FULL:
+                                      TE_PHY_DUPLEX_STRING_HALF);
             else
                 sprintf(value, "%s", TE_PHY_DUPLEX_STRING_UNKNOWN);
 
@@ -3951,6 +3937,32 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
     sprintf(value, "not supported");
     
     return 0;
+}
+
+/**
+ * Get duplex state by name string
+ *
+ * @param name          Duplex name string
+ *
+ * @return DUPLEX_FULL, DUPLEX_HALF, DUPLEX_UNKNOWN or -1 if
+ *         duplex name string does not recognized
+ */
+static inline int
+phy_get_duplex_by_name(const char *name)
+{
+    if (name == NULL)
+        return -1;
+    
+    if (strcasecmp(name, TE_PHY_DUPLEX_STRING_HALF) == 0)
+        return TE_PHY_DUPLEX_HALF;
+    
+    if (strcasecmp(name, TE_PHY_DUPLEX_STRING_FULL) == 0)
+        return TE_PHY_DUPLEX_FULL;
+    
+    if (strcasecmp(name, TE_PHY_DUPLEX_STRING_UNKNOWN) == 0)
+        return TE_PHY_DUPLEX_UNKNOWN;
+    
+    return -1;
 }
 
 /**
@@ -3979,33 +3991,38 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
     int duplex = -1;
 
     /* Get value provided by caller */
-    sscanf(value, "%d", &duplex);
-    if (duplex != 0 && duplex != 1)
+    duplex = phy_get_duplex_by_name(value);
+    if (duplex != TE_PHY_DUPLEX_HALF && 
+        duplex != TE_PHY_DUPLEX_FULL && 
+        duplex != TE_PHY_DUPLEX_UNKNOWN)
     {
         ERROR("cannot set unknown duplex state: %s", value);
         return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
+    if (duplex == TE_PHY_DUPLEX_UNKNOWN)
+    {
+        WARN("Skipped setting \"unknown\" duplex state");
+        return 0;
+    }
     if (strcmp(ifname, "ef1") == 0)
     {
-        if((rc = phy_parameters_get(ifname)) != 0)
+        if (speed_duplex_to_set == 0) /* Will set by default 1Gbit speed */
         {
-            ERROR("failed to get phy parameters");
-            return TE_OS_RC(TE_TA_WIN32, rc);
-        }
-
-        if (speed_duplex_state == 0)
-        {
-            ERROR("You can change duplex state only "
-                  "with disabled autonegatiation");
-            return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
-        }
-        else 
+            speed_duplex_to_set = (duplex == TE_PHY_DUPLEX_FULL)?
+                                  6 : 5;
+        } else 
         {
             /* Last bit of speed_duplex_to_set set to 1 means half-duplex */
-            if ((speed_duplex_to_set & 1) == 0)
-                speed_duplex_to_set -= (1 - duplex);
-            else
-                speed_duplex_to_set += duplex;
+            if (((speed_duplex_to_set & 1) == 0) && /* full duplex */
+                duplex == TE_PHY_DUPLEX_HALF)
+            {
+                speed_duplex_to_set -= 1;
+            }
+            else if (((speed_duplex_to_set & 1) == 1) && /* half duplex */
+                     duplex == TE_PHY_DUPLEX_FULL)
+            {         
+                speed_duplex_to_set += 1;
+            }    
         }
     }
     else
