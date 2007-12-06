@@ -425,7 +425,13 @@ te_errno
 tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
                               char const *status)
 {
-    te_errno rc;
+    unsigned int v;
+    te_bool      started;
+    te_errno     rc;
+
+    cfg_val_type           type  = CVT_ADDRESS;
+    struct sockaddr const *value;
+    struct sockaddr        ip_addr;
 
     if (ta == NULL || dom_u == NULL || status == NULL)
     {
@@ -434,15 +440,62 @@ tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
         return TE_EINVAL;
     }
 
+    /* Needed for transition to "running" status */
+    if ((rc = cfg_get_instance_fmt(&type, &value,
+                                   "/agent:%s/xen:/dom_u:%s/ip_addr:",
+                                   ta, dom_u)) != 0)
+    {
+        ERROR("Failed to get IP address for '%s' domU on %s", dom_u, ta);
+        return rc;
+    }
+
+    memcpy(&ip_addr, value, sizeof(ip_addr));
+    free((void *)value);
+
     if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, status),
                                    "/agent:%s/xen:/dom_u:%s/status:",
                                    ta, dom_u)) != 0)
     {
         ERROR("Failed to set \"%s\" status for '%s' domU on %s: %r",
               status, dom_u, ta, rc);
+        return rc;
     }
 
-    return rc;
+    if (strcmp(status, "running") != 0)
+        return 0;
+
+    /* Check up to 120-150 seconds whether SSH server is up */
+    for (v = 0, started = FALSE; !started && v < 20; v++)
+    {
+        char buf[256];
+        char const *const chk_str = "BOPOHA ECT KYCOK CbIPA";
+        FILE *f;
+
+        TE_SPRINTF(buf, "/usr/bin/ssh -o StrictHostKeyChecking=no "
+                   "%s echo %s 2> /dev/null",
+                   inet_ntoa(SIN(&ip_addr)->sin_addr), chk_str);
+
+        if ((f = popen(buf, "r")) == NULL)
+        {
+            ERROR("popen(%s) failed with errno %d", buf, rc);
+            return errno;
+        }
+
+        if (fgets(buf, sizeof(buf), f) != NULL &&
+            strncmp(buf, chk_str, strlen(chk_str)) == 0)
+        {
+            started = TRUE;
+        }
+
+        pclose(f);
+
+        sleep(5);
+    }
+
+    if (!started)
+        return TE_EFAIL;
+
+    return 0;
 }
 
 /* See description in tapi_cfg_xen.h */
