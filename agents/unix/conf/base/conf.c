@@ -8515,6 +8515,14 @@ dom_u_status_set(unsigned int gid, char const *oid, char const *value,
             goto cleanup0;
         }
 
+        /* Memory size must be set for domU */
+        if (dom_u_slot[u].memory == 0)
+        {
+            ERROR("DomU %s memory size is not set", dom_u);
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup0;
+        }
+
         /* Create XEN domU configuration file */
         TE_SPRINTF(buf, "%s/%s/conf.cfg", xen_path, dom_u);
 
@@ -8585,11 +8593,7 @@ cleanup2:
             goto cleanup0;
         }
 
-        /** 
-         * FIXME: Here must be "domU is really started"
-         * detection code rather than stupid 'sleep'
-         */
-        sleep(25);
+        /* Really domU is stil booting here */
         goto cleanup1; /** Imitation of 'break' statement */
     }
 
@@ -8743,7 +8747,7 @@ dom_u_memory_set(unsigned int gid, char const *oid, char const *value,
 #if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
-    if (mem <= 0)
+    if (mem < 0)
     {
         ERROR("Invalid memory size value = %d", mem);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
