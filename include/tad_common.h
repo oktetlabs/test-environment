@@ -134,7 +134,8 @@ calculate_checksum(const void *data, size_t length)
         checksum += a.num;
     }
 
-    return (checksum & 0xffff) + (checksum >> 16);
+    checksum = (checksum & 0xffff) + (checksum >> 16);
+    return checksum + (checksum >> 16);
 }
 
 /**
