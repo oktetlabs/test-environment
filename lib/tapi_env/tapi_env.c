@@ -1426,7 +1426,7 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
                 char const  bridge[] = "/bridge:";
                 char       *xen_oid  = malloc(strlen(oid) +
                                               strlen(xen) +
-                                              strlen(bridge));
+                                              strlen(bridge) + 1);
                 char const *slash    = strrchr(oid, '/');
 
                 if (slash == NULL)
