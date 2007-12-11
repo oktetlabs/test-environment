@@ -346,7 +346,15 @@ tapi_cfg_base_if_add_get_vlan(const char *ta, const char *if_name,
 
     if (cfg_get_instance_fmt(&val, vlan_ifname,
                              "/agent:%s/interface:%s/vlans:%d/ifname:",
-                             ta, if_name, vid))
+                             ta, if_name, vid) &&
+        /* Check if Priority only mode enabled */
+        cfg_get_instance_fmt(&val, vlan_ifname,
+                             "/agent:%s/interface:%s/vlans:%d/ifname:",
+                             ta, if_name, (vid | 0x1000)) &&
+        /* Check if VLAN only vlan mode enabled */
+        cfg_get_instance_fmt(&val, vlan_ifname,
+                             "/agent:%s/interface:%s/vlans:%d/ifname:",
+                             ta, if_name, (vid | 0x2000)) )
     {
         return tapi_cfg_base_if_add_vlan(ta, if_name, vid, vlan_ifname);
     }

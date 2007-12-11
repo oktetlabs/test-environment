@@ -364,6 +364,8 @@ typedef struct if_stats {
 
 /* VLANS */
 #define MAX_VLANS 0xfff
+#define TAG_PRI_ONLY 0x1000
+#define TAG_VLAN_ONLY 0x2000
 static int vlans_buffer[MAX_VLANS];
 static size_t n_vlans = 0;
 
@@ -4313,7 +4315,7 @@ vlans_list(unsigned int gid, const char *oid, char **list,
         return 0;
     }
 
-    b = *list = malloc(n_vlans * 5 /* max digits in VLAN id + space */ + 1);
+    b = *list = malloc(n_vlans * 6 /* max digits in VLAN id + space */ + 1);
     if (*list == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM); 
 
@@ -4417,6 +4419,7 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
 static int 
 set_vlan_internal(const char *ifname, int vlan_id)
 {
+    int vlan_mode = 3;
     char buffer[RCF_MAX_PATH + 1];
     RING("Setting %d VLAN on '%s'", vlan_id, ifname);
     if (strcmp(ifname, "ef1") != 0)
@@ -4424,11 +4427,22 @@ set_vlan_internal(const char *ifname, int vlan_id)
       ERROR("Wrong interface name %s, only ef1 is appropriate", ifname);
       return -1;
     }
+    if (vlan_id & TAG_PRI_ONLY)
+    {
+        if (vlan_id != TAG_PRI_ONLY)
+            WARN("Vlan id has been set to 0 in Priority only mode");
+        vlan_id = TAG_PRI_ONLY;
+        vlan_mode = 1;
+    }
+    else if (vlan_id & TAG_VLAN_ONLY)
+        vlan_mode = 2;
+    
     snprintf(buffer, sizeof(buffer) - 1,
              "./sish_client.exe "
              "--server=127.0.0.1 "
              "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_manage.exe "
-             "--args=\"set vlanid %d vlantagging 3\"", vlan_id);
+             "--args=\"set vlanid %d vlantagging %d\"", 
+             (vlan_id & MAX_VLANS), vlan_mode);
     if (system(buffer) == 0)
         return 0;
     else
@@ -4452,7 +4466,8 @@ remove_vlan_internal(const char *ifname, int vlan_id)
              "./sish_client.exe "
              "--server=127.0.0.1 "
              "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_manage.exe "
-             "--args=\"set vlanid %d vlantagging 0\"", vlan_id);
+             "--args=\"set vlanid %d vlantagging 0\"",
+             (vlan_id & MAX_VLANS));
     if (system(buffer) == 0)
         return 0;
     else
