@@ -493,8 +493,13 @@ tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
     }
 
     if (!started)
+    {
+        ERROR("Failed to detect running SSH daemon within '%s' domU",
+              dom_u);
         return TE_EFAIL;
+    }
 
+    RING("Running SSH daemon within '%s' domU is detected", dom_u);
     return 0;
 }
 
