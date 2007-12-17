@@ -44,6 +44,10 @@ libconf_a_SOURCES += conf_iscsi_target.c
 
 endif
 
+if CFG_VCM
+libconf_a_SOURCES += base/conf_vcm.c 
+endif
+
 if CFG_UNIX_WIFI
 libconf_a_SOURCES += base/conf_wifi.c
 endif

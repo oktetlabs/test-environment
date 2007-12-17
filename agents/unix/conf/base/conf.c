@@ -240,6 +240,9 @@ extern te_errno ta_unix_conf_net_if_stats_init();
 extern te_errno ta_unix_conf_net_snmp_stats_init();
 #endif
 
+#ifdef ENABLE_VCM_SUPPORT
+extern te_errno ta_unix_conf_vcm_init();
+#endif
 #ifdef ENABLE_WIFI_SUPPORT
 extern te_errno ta_unix_conf_wifi_init();
 #endif
@@ -999,6 +1002,10 @@ rcf_ch_conf_root(void)
 #endif        
 #ifdef ENABLE_WIFI_SUPPORT
         if (ta_unix_conf_wifi_init() != 0)
+            goto fail;
+#endif
+#ifdef ENABLE_VCM_SUPPORT
+        if (ta_unix_conf_vcm_init() != 0)
             goto fail;
 #endif
 #ifdef ENABLE_8021X

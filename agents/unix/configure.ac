@@ -424,6 +424,16 @@ else
 fi
 AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$use_netlink")
 
+AC_ARG_ENABLE([vcm],
+              AS_HELP_STRING([--enable-vcm],
+                             [enable VCM mgmt support (default is NO)]),
+              [ac_cv_enable_vcm=$enableval], [ac_cv_enable_vcm=no])
+
+AM_CONDITIONAL(CFG_VCM, test -n "$ac_cv_enable_vcm")
+if test -n "$ac_cv_enable_vcm"; then
+    AC_DEFINE([ENABLE_VCM_SUPPORT], [], [Whether to enable VCM support])
+fi    
+
 AM_CONDITIONAL(ISCSI_TARGET_USE, test -n "$with_iscsi")
 if test -n "$with_iscsi"; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_ISCSI"
