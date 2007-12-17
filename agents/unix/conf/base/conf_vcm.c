@@ -55,6 +55,8 @@
 static char vcm_address[20];
 static struct sockaddr_in vcm_address_in;
 
+static char vcmconn_path[500];
+
 /* TODO: explore correct -cp option! */
 static char java_command_base[] = "/usr/bin/java -cp /home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/axis-ant.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/axis-schema.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/axis.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/commons-discovery-0.2.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/commons-logging-1.0.4.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/jaxrpc.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/log4j-1.2.8.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/saaj.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/start.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/vcm-appserver.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/vcm-connector.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/wsdl4j-1.5.1.jar:target/all/vcm-connector-client.jar com.tilgin.vcm.connector.client.VoodTerminalServicesTestClient";
 
@@ -206,6 +208,33 @@ vcm_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+
+static te_errno
+vcmconn_path_get(unsigned int gid, const char *oid,
+          char *value, const char *vcm_name)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+    UNUSED(vcm_name);
+
+    strcpy(value, vcmconn_path);
+
+    return 0;
+}
+
+static te_errno
+vcmconn_path_set(unsigned int gid, const char *oid,
+          char *value, const char *vcm_name)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+    UNUSED(vcm_name);
+
+    strncpy(vcmconn_path, value, sizeof(vcmconn_path));
+
+    return 0;
+}
+
 /**
  * Determine list of VCM boxes.
  *
@@ -233,8 +262,12 @@ vcm_box_list(unsigned int gid, const char *oid, char **list,
 RCF_PCH_CFG_NODE_RW(node_vcm_swversion, "swversion", NULL, NULL,
                     vcm_swversion_get, vcm_swversion_set);
 
+RCF_PCH_CFG_NODE_RW(node_vcmconn_path, "vcmconn_path", NULL, NULL,
+                    vcmconn_path_get, vcmconn_path_set);
+
+
 RCF_PCH_CFG_NODE_COLLECTION(node_vcm_box, "box",
-                            &node_vcm_swversion, NULL,
+                            &node_vcm_swversion, &node_vcmconn_path,
                             NULL, NULL,
                             vcm_box_list, NULL);
 
