@@ -161,6 +161,75 @@ vcm_swversion_set(unsigned int gid, const char *oid,
     RING("%s: status of java comand: %d",  __FUNCTION__, status);
     return 0;
 }
+
+
+static te_errno
+vcm_parameter_get(unsigned int gid, const char *oid,
+          char *value, const char *name)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+
+    strcpy(value, "");
+    return 0;
+}
+
+
+static te_errno
+vcm_parameter_set(unsigned int gid, const char *oid,
+          char *value, const char *name)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+    char box_name[100];
+    char *p;
+    char out_buffer[1000];
+    char err_buffer[1000];
+    char java_command[2000];
+
+    int out_fd = -1, err_fd = -1;
+    int status;
+
+    pid_t java_cmd_pid;
+
+    p = strstr(oid, "box:");
+    p += 4;
+    strncpy(box_name, p, sizeof(box_name));
+
+    p = strchr(box_name, '/');
+    *p = 0;
+
+    RING("%s: called for oid <%s> , box_name <%s>, value <%s>",
+        __FUNCTION__, oid, box_name, value);
+
+    snprintf(java_command, sizeof(java_command), 
+             "%s --setSoftwareRevision %s %s %s", 
+             java_command_base, vcm_address, box_name, value);
+
+    RING("%s: prepared java comand: <%s>",  __FUNCTION__, java_command);
+    java_cmd_pid = te_shell_cmd_inline(java_command, -1,
+                                       NULL, &out_fd, &err_fd);
+    if (java_cmd_pid < 0)
+    {
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    err_buffer[0] = 0;
+    out_buffer[0] = 0;
+
+    read(err_fd, err_buffer, sizeof(err_buffer));
+    err_buffer[999] = 0;
+    read(out_fd, out_buffer, sizeof(out_buffer));
+    out_buffer[999] = 0;
+
+    RING("%s: java command stdout: <%s>; stderr: <%s>",
+         __FUNCTION__, out_buffer, err_buffer);
+
+    ta_waitpid(java_cmd_pid, &status, 0);
+    RING("%s: status of java comand: %d",  __FUNCTION__, status);
+    return 0;
+}
+
 /**
  * Get route value.
  *
@@ -259,7 +328,11 @@ vcm_box_list(unsigned int gid, const char *oid, char **list,
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_vcm_swversion, "swversion", NULL, NULL,
+RCF_PCH_CFG_NODE_RW(node_vcm_parameter, "parameter", NULL, NULL,
+                    vcm_parameter_get, vcm_parameter_set);
+
+RCF_PCH_CFG_NODE_RW(node_vcm_swversion, "swversion",
+                    NULL, &node_vcm_parameter,
                     vcm_swversion_get, vcm_swversion_set);
 
 RCF_PCH_CFG_NODE_RW(node_vcmconn_path, "vcmconn_path", NULL, NULL,
