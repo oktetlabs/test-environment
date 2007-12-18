@@ -25,7 +25,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: conf_wifi.c 44156 2007-10-26 14:56:47Z helen $
+ * $Id$
  */
 
 #define TE_LGR_USER     "Conf VCM"
