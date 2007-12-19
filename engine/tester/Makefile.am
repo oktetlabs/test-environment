@@ -29,7 +29,8 @@ noinst_HEADERS = \
 	tester_reqs.h \
 	tester_result.h \
 	tester_run.h \
-	tester_term.h
+	tester_term.h \
+	tester_interactive.h
 
 
 bin_PROGRAMS = te_tester 
@@ -51,7 +52,8 @@ te_tester_SOURCES = \
 	run.c \
 	scenario.c \
 	verdicts.c \
-	tester.c
+	tester.c \
+	tester_interactive.c
 
 CLEANFILES = \
 	test_path_lex.h \
@@ -73,7 +75,7 @@ test_path_lex.h: test_path_lex.c
 
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid $(TRC_LDADD) \
                   -llogger_ten -lipc -lipcserver -llogic_expr \
-                  -llog_bufs -ltools \
+                  -llog_bufs -ltools -lreadline \
                   @XML2_LIBS@ -lpopt -lpthread 
 
 te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ $(TRC_DEPS) \
