@@ -13,7 +13,7 @@
 #endif
 #include "tester_interactive.h"
 
-inline void
+void
 tester_interactive_print_usage()
 {
     printf("Interactive-mode usage:\n"
