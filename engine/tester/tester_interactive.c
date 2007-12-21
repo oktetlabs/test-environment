@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #endif
 #include <stdio.h>
+#if HAVE_READLINE
 #include <readline/readline.h>
 #include <readline/history.h>
-
+#endif
 
 #include "test_path.h"
 #include "tester_run.h"
@@ -32,7 +33,7 @@ tester_interactive_open_prompt(
         test_paths *paths,
         testing_scenario *scenario)
 {
-    
+#if HAVE_READLINE    
     char    *user_choice;
     int     rc;
     int     argc;
@@ -115,5 +116,15 @@ tester_interactive_open_prompt(
     }
     
 #undef INVALID_SYNTAX_ERROR
-    return TESTER_INTERACTIVE_ERROR;   
+    return TESTER_INTERACTIVE_ERROR;
+#else
+    
+    UNUSED(cfgs);
+    UNUSED(total_iters);
+    UNUSED(paths);
+    UNUSED(scenario);
+    
+    printf("Can't run in interactive mode: readline library is not availiable.\n");
+    return TESTER_INTERACTIVE_ERROR;
+#endif
 }

@@ -37,6 +37,13 @@ AC_CHECK_LIB([curses], [start_color],
                         [ Define if your curses library supports color. ])],
              [AC_MSG_WARN([Color terminal is not supported])])
 
+AC_SEARCH_LIBS([readline], [readline],
+               [LIBS="-lreadline ${LIBS}"
+               AC_DEFINE(HAVE_READLINE, 1,
+                         [Define whether readline library is availiable.])],
+               [AC_MSG_WARN([Readline library is not present.\
+ Interactive testing will not be availiable.])]) 
+
 AC_CONFIG_FILES([Makefile tests/Makefile])
 
 TE_APP_RESTORE
