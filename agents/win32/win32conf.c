@@ -3744,9 +3744,14 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
     sscanf(value, "%d", &speed);
     if (strcmp(ifname, "ef1") == 0)
     {
-        /* resetting current speed to zero retaining duplex state */
-        speed_duplex_to_set &= 1;
-        speed_duplex_to_set = 1 - speed_duplex_to_set;
+        if (speed_duplex_to_set == 0)
+            speed_duplex_to_set = 1; /* Assume full duplex */
+        else
+        {
+            /* resetting current speed to zero retaining duplex state */
+            speed_duplex_to_set &= 1;
+            speed_duplex_to_set = 1 - speed_duplex_to_set;
+        }
         switch (speed)
         {
            case 10:
@@ -3768,7 +3773,6 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
         ERROR("change speed state is only supported on ef1");
         return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
     }
-    
     return 0;
 }
 
@@ -3839,7 +3843,6 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
     int speed = -1;
     
     sscanf(value, "%d", &autoneg);
-    
     if (autoneg != TE_PHY_AUTONEG_ON && autoneg != TE_PHY_AUTONEG_OFF)
     {
         ERROR("cannot set unknown autonegotiation state: %s", value);
@@ -3847,20 +3850,15 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
     }
     if (strcmp(ifname, "ef1") == 0)
     {
-        if((rc = phy_parameters_get(ifname)) != 0)
-        {
-            ERROR("failed to get phy parameters");
-            return TE_OS_RC(TE_TA_WIN32, rc);
-        }
 
-        if (speed_duplex_state != 0) /* autoneg off */
+        if (autoneg == TE_PHY_AUTONEG_ON)
         {
-            if (autoneg == TE_PHY_AUTONEG_ON)
-                speed_duplex_to_set = 0;
+            speed_duplex_to_set = 0;
         }
-        else /* autoneg on */
+        else 
+        if (autoneg == TE_PHY_AUTONEG_OFF)
         {
-            if (autoneg == TE_PHY_AUTONEG_OFF)
+            if (speed_duplex_to_set == 0)
             {
                 /** 
                   * setting to current speed and full duplex because
@@ -3885,6 +3883,11 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
                         break;
                     case 10000:
                         speed_duplex_to_set = 8;
+                        break;
+                    default:
+                        WARN("Unknown speed value %d, setting to 1000", 
+                             speed);
+                        speed_duplex_to_set = 6;
                         break;
                 } 
             }
