@@ -471,8 +471,9 @@ tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
         char const *const chk_str = "BOPOHA ECT KYCOK CbIPA";
         FILE *f;
 
-        TE_SPRINTF(buf, "/usr/bin/ssh -o StrictHostKeyChecking=no "
-                   "%s echo %s 2> /dev/null",
+        TE_SPRINTF(buf,
+                   "/usr/bin/ssh -qxTno StrictHostKeyChecking=no "
+                   "%s echo '%s' 2> /dev/null",
                    inet_ntoa(SIN(&ip_addr)->sin_addr), chk_str);
 
         if ((f = popen(buf, "r")) == NULL)
