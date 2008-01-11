@@ -421,6 +421,9 @@ tapi_tad_trrecv_pkt_handler(const char *filename, void *my_data)
         return;
     }
 
+    /* remove file with received packet when it is already parsed */
+    unlink(filename);
+
     if (cb_data != NULL && cb_data->callback != NULL)
     {
         cb_data->callback(packet, cb_data->user_data);
