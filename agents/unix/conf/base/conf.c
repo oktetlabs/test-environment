@@ -8103,7 +8103,7 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
     }
 
     /* FIXME: Non "ta_system" implementation is needed*/
-    TE_SPRINTF(buf, "set -x; cp --sparse=always %s/%s %s/%s/%s",
+    TE_SPRINTF(buf, "cp --sparse=always %s/%s %s/%s/%s",
                xen_path, xen_dsktpl, xen_path, dom_u, xen_dskimg);
 
     if ((sys = ta_system(buf)) != 0 && !(sys == -1 && errno == ECHILD))
@@ -8122,8 +8122,8 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
     }
 
     /* FIXME: Non "ta_system" implementation is needed*/
-    TE_SPRINTF(buf, "set -x; dd if=/dev/zero of=%s/%s/swap.img "
-               "bs=1K seek=131071 count=1", xen_path, dom_u);
+    TE_SPRINTF(buf, "dd if=/dev/zero of=%s/%s/%s "
+               "bs=1k seek=131071 count=1", xen_path, dom_u, xen_swpimg);
 
     if ((sys = ta_system(buf)) != 0 && !(sys == -1 && errno == ECHILD))
     {
@@ -8131,11 +8131,20 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
         goto cleanup1;
     }
 
-    TE_SPRINTF(buf, "%s/%s/swap.img", xen_path, dom_u);
+    TE_SPRINTF(buf, "%s/%s/%s", xen_path, dom_u, xen_swpimg);
 
     if (chmod(buf, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
     {
         ERROR("Failed to chmod domU swap image %s", buf);
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto cleanup1;
+    }
+
+    /* FIXME: Non "ta_system" implementation is needed*/
+    TE_SPRINTF(buf, "/sbin/mkswap %s/%s/%s", xen_path, dom_u, xen_swpimg);
+
+    if ((sys = ta_system(buf)) != 0 && !(sys == -1 && errno == ECHILD))
+    {
         rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
         goto cleanup1;
     }
