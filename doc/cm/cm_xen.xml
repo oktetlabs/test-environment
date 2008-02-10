@@ -39,6 +39,12 @@
                it is impossible to change XEN dom0 value -->
     <object oid="/agent/xen" access="read_write" type="string"/>
 
+    <!-- XEN subpath.
+         Name: none
+         Value: XEN subpath (within the XEN path) to create/destroy
+                domUs. -->
+    <object oid="/agent/xen/subpath" access="read_write" type="string"/>
+
     <!-- XEN kernel.
          Name: none
          Value: XEN kernel file name (found within the XEN path)
