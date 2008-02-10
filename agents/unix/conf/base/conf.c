@@ -532,6 +532,9 @@ te_errno ta_vlan_get_parent(const char *, char *);
 static te_errno xen_path_get(unsigned int, char const *, char *);
 static te_errno xen_path_set(unsigned int, char const *, char const *);
 
+static te_errno xen_subpath_get(unsigned int, char const *, char *);
+static te_errno xen_subpath_set(unsigned int, char const *, char const *);
+
 static te_errno xen_kernel_get(unsigned int, char const *, char *);
 static te_errno xen_kernel_set(unsigned int, char const *, char const *);
 
@@ -823,8 +826,12 @@ RCF_PCH_CFG_NODE_RW(node_kernel, "kernel",
                     NULL, &node_initrd,
                     &xen_kernel_get, &xen_kernel_set);
 
+RCF_PCH_CFG_NODE_RW(node_subpath, "subpath",
+                    NULL, &node_kernel,
+                    &xen_subpath_get, &xen_subpath_set);
+
 RCF_PCH_CFG_NODE_RW(node_xen, "xen",
-                    &node_kernel, &node_user,
+                    &node_subpath, &node_user,
                     &xen_path_get, &xen_path_set);
 
 RCF_PCH_CFG_NODE_AGENT(node_agent, &node_xen);
@@ -6206,19 +6213,22 @@ typedef enum { DOM_U_STATUS_NON_RUNNING,
  * Path to accessible across network storage for
  * XEN kernel and templates of XEN config/VBD images.
  */
-static char xen_path[PATH_MAX]   = { '\0' };
+static char xen_path[PATH_MAX]    = { '\0' };
+
+/** Subpath to XEN storage for dynamically created/destroyed domUs */
+static char xen_subpath[PATH_MAX] = {'\0' };
 
 /** Kernel, initial ramdisk and VBD image files */
-static char xen_kernel[PATH_MAX] = { '\0' };
-static char xen_initrd[PATH_MAX] = { '\0' };
-static char xen_dsktpl[PATH_MAX] = { '\0' };
+static char xen_kernel[PATH_MAX]  = { '\0' };
+static char xen_initrd[PATH_MAX]  = { '\0' };
+static char xen_dsktpl[PATH_MAX]  = { '\0' };
 
 /** RCF port number */
-static unsigned int xen_rcf_port = 0;
+static unsigned int xen_rcf_port  = 0;
 
 /** XEN dom0 RPC bridge and interface */
-static char xen_rpc_br[PATH_MAX] = { '\0' };
-static char xen_rpc_if[PATH_MAX] = { '\0' };
+static char xen_rpc_br[PATH_MAX]  = { '\0' };
+static char xen_rpc_if[PATH_MAX]  = { '\0' };
 
 /** XEN domU base MAC address */
 static char xen_base_mac_addr[] = "00:00:00:00:00:00";
@@ -6508,6 +6518,49 @@ xen_rmfr(char const *dir)
 }
 
 /**
+ * Forms full path to domU disk image dynamic storage 
+ *
+ * @param dom_u         domU
+ * @param fname         File name inside disk image (path from root /)
+ * @param fdata         Data string (zero ended)
+ *
+ * @return              Status code
+ */
+static char const *
+get_dom_u_path(char const *dom_u)
+{
+    size_t      xen_path_len    = strlen(xen_path);
+    size_t      xen_subpath_len = strlen(xen_subpath);
+    size_t      dom_u_len       = strlen(dom_u);
+    static char dom_u_path[PATH_MAX];
+    char       *ptr             = dom_u_path;
+
+    if (xen_path_len + 1 +
+            xen_subpath_len + (xen_subpath_len > 0 ? 1 : 0) +
+            dom_u_len + 1 > sizeof(dom_u_path))
+    {
+        *dom_u_path = '\0';
+    }
+    else
+    {
+        memcpy(ptr, xen_path, xen_path_len);
+        ptr   += xen_path_len;
+        *ptr++ = '/';
+
+        if (xen_subpath_len > 0)
+        {
+            memcpy(ptr, xen_subpath, xen_subpath_len);
+            ptr   += xen_subpath_len;
+            *ptr++ = '/';
+        }
+
+        strcpy(ptr, dom_u);
+    }
+
+    return dom_u_path;
+}
+
+/**
  * (Re)creates file inside disk image and fills it with supplied data
  *
  * @param dom_u         domU
@@ -6520,13 +6573,14 @@ static te_errno
 xen_fill_file_in_disk_image(char const *dom_u, char const *fname,
                             char const *fdata)
 {
-    char        buffer[PATH_MAX];
-    struct stat st;
-    te_errno    rc = 0;
-    FILE       *f;
-    int         sys;
+    char              buffer[PATH_MAX];
+    char const *const dom_u_path = get_dom_u_path(dom_u);
+    struct stat       st;
+    te_errno          rc = 0;
+    FILE             *f;
+    int               sys;
 
-    TE_SPRINTF(buffer, "%s/%s/%s", xen_path, dom_u, xen_tmpdir);
+    TE_SPRINTF(buffer, "%s/%s", dom_u_path, xen_tmpdir);
 
     if (stat(buffer, &st) == 0)
         goto cleanup2;
@@ -6546,8 +6600,8 @@ xen_fill_file_in_disk_image(char const *dom_u, char const *fname,
     }
 
     /* FIXME: Non "ta_system" implementation is needed*/
-    TE_SPRINTF(buffer, "mount -o loop %s/%s/%s %s/%s/%s",
-               xen_path, dom_u, xen_dskimg, xen_path, dom_u, xen_tmpdir);
+    TE_SPRINTF(buffer, "mount -o loop %s/%s %s/%s",
+               dom_u_path, xen_dskimg, dom_u_path, xen_tmpdir);
 
     if ((sys = ta_system(buffer)) != 0 && !(sys == -1 && errno == ECHILD))
     {
@@ -6555,7 +6609,7 @@ xen_fill_file_in_disk_image(char const *dom_u, char const *fname,
         goto cleanup1;
     }
 
-    TE_SPRINTF(buffer, "%s/%s/%s%s", xen_path, dom_u, xen_tmpdir, fname);
+    TE_SPRINTF(buffer, "%s/%s%s", dom_u_path, xen_tmpdir, fname);
 
     if ((f = fopen(buffer, "w")) == NULL)
     {
@@ -6580,7 +6634,7 @@ xen_fill_file_in_disk_image(char const *dom_u, char const *fname,
 
 cleanup2:
     /* FIXME: Non "ta_system" implementation is needed*/
-    TE_SPRINTF(buffer, "umount %s/%s/%s", xen_path, dom_u, xen_tmpdir);
+    TE_SPRINTF(buffer, "umount %s/%s", dom_u_path, xen_tmpdir);
 
     if ((sys = ta_system(buffer)) != 0 && !(sys == -1 && errno == ECHILD))
     {
@@ -6589,7 +6643,7 @@ cleanup2:
     }
 
 cleanup1:
-    TE_SPRINTF(buffer, "%s/%s/%s", xen_path, dom_u, xen_tmpdir);
+    TE_SPRINTF(buffer, "%s/%s", dom_u_path, xen_tmpdir);
 
     if (rmdir(buffer) == -1)
     {
@@ -6969,6 +7023,74 @@ xen_path_set(unsigned int gid, char const *oid, char const *value)
     UNUSED(value);
 
     ERROR("'/agent/xen' 'set' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get subpath to accessible across network storage for
+ * XEN config/VBD images.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for path to be filled in
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_subpath_get(unsigned int gid, char const *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+#if XEN_SUPPORT
+    strcpy(value, xen_subpath);
+    return 0;
+#else
+#warning '/agent/xen/subpath' 'get' access method is not implemented
+    ERROR("'/agent/xen/subpath' 'get' access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set subpath to accessible across network storage for
+ * XEN config/VBD images.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         path to set
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_subpath_set(unsigned int gid, char const *oid, char const *value)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int limit = dom_u_limit();
+    size_t       len   = strlen(value);
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if XEN_SUPPORT
+    /* Check whether XEN subpath fits XEN subpath storage */
+    if (len >= sizeof(xen_subpath))
+    {
+        ERROR("XEN subpath is too long");
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
+    memcpy(xen_subpath, value, len + 1);
+    return 0;
+#else
+#warning '/agent/xen/subpath' 'set' access method is not implemented
+    UNUSED(value);
+
+    ERROR("'/agent/xen/subpath' 'set' access method is not implemented");
     return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
@@ -8035,8 +8157,7 @@ dom_u_get(unsigned int gid, char const *oid, char *value,
 #if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
-    TE_SPRINTF(buf, "%s/%s", xen_path, dom_u);
-    strcpy(value, stat(buf, &st) == 0 ? "1" : "0");
+    strcpy(value, stat(get_dom_u_path(dom_u), &st) == 0 ? "1" : "0");
     return 0;
 #else
 #warning '/agent/xen/dom_u' 'get' access method is not implemented
@@ -8067,6 +8188,8 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
     te_bool      to_set = strcmp(value, "1") == 0;
     te_bool      is_set;
     te_errno     rc = 0;
+
+    char const *const dom_u_path = get_dom_u_path(dom_u);
 #endif
 
     UNUSED(gid);
@@ -8076,8 +8199,7 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
 #if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
-    TE_SPRINTF(buf, "%s/%s", xen_path, dom_u);
-    is_set = stat(buf, &st) == 0;
+    is_set = stat(dom_u_path, &st) == 0;
 
     /* If desired state is already exists, do nothing */
     if ((is_set && to_set) || (!is_set && !to_set))
@@ -8088,23 +8210,23 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
         goto cleanup1;
 
     /* Otherwise, create domU directory and all necessary images */
-    if (mkdir(buf, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
+    if (mkdir(dom_u_path, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
     {
-        ERROR("Failed to create domU directory %s", buf);
+        ERROR("Failed to create domU directory %s", dom_u_path);
         rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
         goto cleanup0;
     }
 
-    if (chmod(buf, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
+    if (chmod(dom_u_path, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
     {
-        ERROR("Failed to chmod domU directory %s", buf);
+        ERROR("Failed to chmod domU directory %s", dom_u_path);
         rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
         goto cleanup1;
     }
 
     /* FIXME: Non "ta_system" implementation is needed*/
-    TE_SPRINTF(buf, "cp --sparse=always %s/%s %s/%s/%s",
-               xen_path, xen_dsktpl, xen_path, dom_u, xen_dskimg);
+    TE_SPRINTF(buf, "cp --sparse=always %s/%s %s/%s",
+               xen_path, xen_dsktpl, dom_u_path, xen_dskimg);
 
     if ((sys = ta_system(buf)) != 0 && !(sys == -1 && errno == ECHILD))
     {
@@ -8112,9 +8234,11 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
         goto cleanup1;
     }
 
-    TE_SPRINTF(buf, "%s/%s/%s", xen_path, dom_u, xen_dskimg);
+    TE_SPRINTF(buf, "%s/%s", dom_u_path, xen_dskimg);
 
-    if (chmod(buf, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
+    if (chmod(buf, S_IRUSR | S_IWUSR |
+                   S_IRGRP | S_IWGRP |
+                   S_IROTH | S_IWOTH) == -1)
     {
         ERROR("Failed to chmod domU disk image %s", buf);
         rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
@@ -8122,8 +8246,8 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
     }
 
     /* FIXME: Non "ta_system" implementation is needed*/
-    TE_SPRINTF(buf, "dd if=/dev/zero of=%s/%s/%s "
-               "bs=1k seek=131071 count=1", xen_path, dom_u, xen_swpimg);
+    TE_SPRINTF(buf, "dd if=/dev/zero of=%s/%s "
+               "bs=1k seek=131071 count=1", dom_u_path, xen_swpimg);
 
     if ((sys = ta_system(buf)) != 0 && !(sys == -1 && errno == ECHILD))
     {
@@ -8131,9 +8255,11 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
         goto cleanup1;
     }
 
-    TE_SPRINTF(buf, "%s/%s/%s", xen_path, dom_u, xen_swpimg);
+    TE_SPRINTF(buf, "%s/%s", dom_u_path, xen_swpimg);
 
-    if (chmod(buf, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
+    if (chmod(buf, S_IRUSR | S_IWUSR |
+                   S_IRGRP | S_IWGRP |
+                   S_IROTH | S_IWOTH) == -1)
     {
         ERROR("Failed to chmod domU swap image %s", buf);
         rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
@@ -8141,7 +8267,7 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
     }
 
     /* FIXME: Non "ta_system" implementation is needed*/
-    TE_SPRINTF(buf, "/sbin/mkswap %s/%s/%s", xen_path, dom_u, xen_swpimg);
+    TE_SPRINTF(buf, "/sbin/mkswap %s/%s", dom_u_path, xen_swpimg);
 
     if ((sys = ta_system(buf)) != 0 && !(sys == -1 && errno == ECHILD))
     {
@@ -8164,8 +8290,7 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
 
 cleanup1:
     /* Erase domU directory and disk images unconditionally */
-    TE_SPRINTF(buf, "%s/%s", xen_path, dom_u);
-    xen_rmfr(buf);
+    xen_rmfr(dom_u_path);
 
 cleanup0:
     return rc;
@@ -8438,6 +8563,8 @@ dom_u_status_set(unsigned int gid, char const *oid, char const *value,
     FILE        *f;
     status_t     status = dom_u_status_string_to_status(value);
     te_errno     rc     = 0;
+
+    char const *const dom_u_path = get_dom_u_path(dom_u);
 #endif
 
     UNUSED(gid);
@@ -8470,7 +8597,7 @@ dom_u_status_set(unsigned int gid, char const *oid, char const *value,
     {
         struct stat st;
 
-        TE_SPRINTF(buf, "%s/%s/%s", xen_path, dom_u, xen_dskimg);
+        TE_SPRINTF(buf, "%s/%s", dom_u_path, xen_dskimg);
 
         if (stat(buf, &st) != 0 || !S_ISREG(st.st_mode))
         {
@@ -8540,7 +8667,7 @@ dom_u_status_set(unsigned int gid, char const *oid, char const *value,
         }
 
         /* Create XEN domU configuration file */
-        TE_SPRINTF(buf, "%s/%s/conf.cfg", xen_path, dom_u);
+        TE_SPRINTF(buf, "%s/conf.cfg", dom_u_path);
 
         if ((f = fopen(buf, "w")) == NULL)
         {
@@ -8554,10 +8681,10 @@ dom_u_status_set(unsigned int gid, char const *oid, char const *value,
             fprintf(f, "ramdisk='%s/%s'\n", xen_path, xen_initrd) < 0 ||
             fprintf(f, "memory='%u'\n", dom_u_slot[u].memory)     < 0 ||
             fprintf(f, "root='/dev/sda1 ro'\n")                   < 0 ||
-            fprintf(f, "disk=[ 'file:%s/%s/%s,sda1,w', "
-                       "'file:%s/%s/%s,sda2,w' ]\n",
-                       xen_path, dom_u, xen_dskimg,
-                       xen_path, dom_u, xen_swpimg)               < 0 ||
+            fprintf(f, "disk=[ 'file:%s/%s,sda1,w', "
+                       "'file:%s/%s,sda2,w' ]\n",
+                       dom_u_path, xen_dskimg,
+                       dom_u_path, xen_swpimg)               < 0 ||
             fprintf(f, "name='%s'\n", dom_u)                      < 0 ||
             (rc = prepare_dom_u_interfaces_config(u)) != 0 ||
             fprintf(f, "%s", buf) < 0 ||
@@ -8601,7 +8728,7 @@ cleanup2:
         }
 
         /* Starting domU */
-        TE_SPRINTF(buf, "xm create %s/%s/conf.cfg", xen_path, dom_u);
+        TE_SPRINTF(buf, "xm create %s/conf.cfg", dom_u_path);
 
         if (ta_system(buf) != 0)
         {
@@ -8636,8 +8763,7 @@ cleanup2:
          dom_u_slot[u].status == DOM_U_STATUS_MIGRATED_RUNNING) &&
         status == DOM_U_STATUS_SAVED)
     {
-        TE_SPRINTF(buf, "xm save %s %s/%s/saved.img",
-                   dom_u, xen_path, dom_u);
+        TE_SPRINTF(buf, "xm save %s %s/saved.img", dom_u, dom_u_path);
 
         if (ta_system(buf) != 0)
         {
@@ -8655,7 +8781,7 @@ cleanup2:
          dom_u_slot[u].status == DOM_U_STATUS_MIGRATED_SAVED) &&
         status == DOM_U_STATUS_RUNNING)
     {
-        TE_SPRINTF(buf, "xm restore %s/%s/saved.img", xen_path, dom_u);
+        TE_SPRINTF(buf, "xm restore %s/saved.img", dom_u_path);
 
         if (ta_system(buf) != 0)
         {
@@ -8674,11 +8800,11 @@ cleanup2:
         status == DOM_U_STATUS_NON_RUNNING)
     {
 entry1:
-        TE_SPRINTF(buf, "%s/%s/saved.img", xen_path, dom_u);
+        TE_SPRINTF(buf, "%s/saved.img", dom_u_path);
 
         /* Error here is not critical */
         if (unlink(buf) == -1)
-            ERROR("Failed to unlink %s/%s/saved.img", xen_path, dom_u);
+            ERROR("Failed to unlink %s/saved.img", dom_u_path);
 
         goto cleanup1; /** Imitation of 'break' statement */
     }
