@@ -215,6 +215,8 @@ AC_ARG_WITH([cli],,
     if test -z "${LIB_PATHNAME}" ; then
         AC_MSG_ERROR([Cannot find static util library])
     fi
+# tcl and m libraries are needed for expect library
+# and they don't link automatically by some linkers
     TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
     find_lib tcl
     if test -z "${LIB_PATHNAME}" ; then
