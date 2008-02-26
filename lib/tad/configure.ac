@@ -216,6 +216,16 @@ AC_ARG_WITH([cli],,
         AC_MSG_ERROR([Cannot find static util library])
     fi
     TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
+    find_lib tcl
+    if test -z "${LIB_PATHNAME}" ; then
+        AC_MSG_ERROR([Cannot find static tcl library])
+    fi
+    TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
+    find_lib m
+    if test -z "${LIB_PATHNAME}" ; then
+        AC_MSG_ERROR([Cannot find static m library])
+    fi
+    TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
     AC_CONFIG_FILES([cli/Makefile])
  fi
 ], [w_cli=false])
