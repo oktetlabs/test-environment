@@ -834,7 +834,7 @@ efport2ifindex(void)
              
         guids_found = 1;
     }
-    RING("SFCResolve: guid1='%s', guid2='%s'", guid1[0], guid2[0]);
+    //RING("SFCResolve: guid1='%s', guid2='%s'", guid1[0], guid2[0]);
 
     if ((iftable = (PIP_INTERFACE_INFO)malloc(sizeof(*iftable))) == NULL) 
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
@@ -873,7 +873,7 @@ efport2ifindex(void)
     ef_index_2_2 = 0;
     guid1_found_index = -1;
     guid2_found_index = -1;
-    RING("SFCResolve: numadapters=%d", iftable->NumAdapters);
+    //RING("SFCResolve: numadapters=%d", iftable->NumAdapters);
     for (i = 0; i < iftable->NumAdapters; i++)
     {
         for(j = 0; j < guid1_amount; j++)
@@ -932,7 +932,6 @@ efport2ifindex(void)
       }
     }
     free(adapters);
-    RING("Agent: ef_index_2_2 = %d", ef_index_2_2);
 
     if (ef_index_2_2 > 0)
     {
