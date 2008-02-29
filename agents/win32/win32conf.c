@@ -474,6 +474,7 @@ const char *te_lockdir = "/tmp";
 
 /** Mapping of EF ports to interface indices */
 static DWORD ef_index[2] = { 0, 0 };
+static DWORD ef_index_2_2 = 0; // for driver version 2.2
 static char ef_regpath[2][1024];
 
 /*  
@@ -645,7 +646,8 @@ efport2ifindex(void)
                         "Session Manager\\Environment"
 
 #define NDIS_EFAB       "dev_c101_ndis_"
-#define NDIS_SF         "sfe_ndis_"
+#define NDIS_SF_2_1         "sfe_ndis_"
+#define NDIS_SF_2_2         "ndis_basic"
 #define BUFSIZE         512
 #define AMOUNT_OF_GUIDS         5
 
@@ -657,11 +659,13 @@ efport2ifindex(void)
     
     static char guid1[AMOUNT_OF_GUIDS][BUFSIZE];
     static char guid2[AMOUNT_OF_GUIDS][BUFSIZE];
+    static char guid_2_2[AMOUNT_OF_GUIDS][BUFSIZE];
     static char guid1_regpath[AMOUNT_OF_GUIDS][BUFSIZE];
     static char guid2_regpath[AMOUNT_OF_GUIDS][BUFSIZE];
+    static char guid_2_2_regpath[AMOUNT_OF_GUIDS][BUFSIZE];
     static int driver_type_reported = 0;
 
-    static int guid1_amount = 0, guid2_amount = 0;
+    static int guid1_amount = 0, guid2_amount = 0, guid_2_2_amount = 0;
     static int guids_found = 0;
     
     DWORD subkey_size;
@@ -681,7 +685,8 @@ efport2ifindex(void)
     
     int i, j;
     unsigned int old_ef_index[2];
-    int guid1_found_index, guid2_found_index;
+    unsigned int old_ef_index_2_2;
+    int guid1_found_index, guid2_found_index, guid_2_2_found_index;
     
     driver_type[0] = 0;
 
@@ -712,7 +717,7 @@ efport2ifindex(void)
       }
       else
       {
-        strcpy(driver_type, NDIS_SF);
+        strcpy(driver_type, NDIS_SF_2_1);
         if (!driver_type_reported)
         {
           RING("Solarflare drivers will be used to resolve ef* interfaces,"
@@ -722,7 +727,7 @@ efport2ifindex(void)
     }
     else
     {
-      strcpy(driver_type, NDIS_SF);
+      strcpy(driver_type, NDIS_SF_2_1);
       if (!driver_type_reported)
       {
         RING("Solarflare drivers will be used to resolve ef* interfaces, "
@@ -761,6 +766,7 @@ efport2ifindex(void)
                 RegCloseKey(subkey);
                 continue;
             }
+
             if ((strstr(value, driver_type) != NULL))
             {
                 char driver[BUFSIZE];
@@ -784,6 +790,28 @@ efport2ifindex(void)
                     
                 value_size = BUFSIZE;
                 strcpy(guid_regpath, subkey_path);
+
+                if (RegQueryValueEx(subkey, "NetCfgInstanceId", 
+                                    NULL, NULL, guid, &value_size) != 0)
+                {
+                    ERROR("RegQueryValueEx(%s) failed with errno %u", 
+                          subkey_path, GetLastError());
+                    RegCloseKey(subkey);
+                    RegCloseKey(key);
+                    return TE_RC(TE_TA_WIN32, TE_EFAULT);
+                }
+            }
+            else /* Try to find path to SF 2.2 driver */
+            if ((strstr(value, NDIS_SF_2_2) != NULL))
+            {
+                unsigned char *guid, *guid_regpath;
+                value_size = BUFSIZE;
+
+                guid = guid_2_2[guid1_amount];
+                guid_regpath = guid_2_2_regpath[guid_2_2_amount];
+                guid_2_2_amount++;
+
+                strcpy(guid_regpath, subkey_path);
                 if (RegQueryValueEx(subkey, "NetCfgInstanceId", 
                                     NULL, NULL, guid, &value_size) != 0)
                 {
@@ -799,10 +827,14 @@ efport2ifindex(void)
         RegCloseKey(key);
         
         if (guid1_amount == 0 || guid2_amount == 0)
-            return 0;
+            if (guid_2_2_amount == 0)
+            {
+                return 0;
+            }
+             
         guids_found = 1;
     }
-    //RING("SFCResolve: guid1='%s', guid2='%s'", guid1[0], guid2[0]);
+    RING("SFCResolve: guid1='%s', guid2='%s'", guid1[0], guid2[0]);
 
     if ((iftable = (PIP_INTERFACE_INFO)malloc(sizeof(*iftable))) == NULL) 
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
@@ -835,11 +867,13 @@ efport2ifindex(void)
 
     old_ef_index[0] = ef_index[0];
     old_ef_index[1] = ef_index[1];
+    old_ef_index_2_2 = ef_index_2_2;
     ef_index[0] = 0;
     ef_index[1] = 0;
+    ef_index_2_2 = 0;
     guid1_found_index = -1;
     guid2_found_index = -1;
-    //RING("SFCResolve: numadapters=%d", iftable->NumAdapters);
+    RING("SFCResolve: numadapters=%d", iftable->NumAdapters);
     for (i = 0; i < iftable->NumAdapters; i++)
     {
         for(j = 0; j < guid1_amount; j++)
@@ -856,6 +890,15 @@ efport2ifindex(void)
           {
             ef_index[1] = iftable->Adapter[i].Index;
             guid2_found_index = j;
+          }
+        }
+        /* Try to find index for 2.2 version driver */
+        for(j = 0; j < guid_2_2_amount; j++)
+        {
+          if (strstr(w2a(iftable->Adapter[i].Name), guid_2_2[j]) != NULL)
+          {
+            ef_index[0] = iftable->Adapter[i].Index;
+            guid_2_2_found_index = j;
           }
         }
     }
@@ -875,6 +918,10 @@ efport2ifindex(void)
     {
       intfdata2file("intf", -1, info->Index, info->AdapterName,
                     info->Address, "");
+      if ((guid_2_2_found_index >= 0) && (ef_index_2_2 == info->Index))
+      {
+        memcpy(mac1, info->Address, 6);
+      }
       if ((guid1_found_index >= 0) && (ef_index[0] == info->Index))
       {
         memcpy(mac1, info->Address, 6);
@@ -885,7 +932,33 @@ efport2ifindex(void)
       }
     }
     free(adapters);
+    RING("Agent: ef_index_2_2 = %d", ef_index_2_2);
 
+    if (ef_index_2_2 > 0)
+    {
+        if (old_ef_index_2_2 != ef_index_2_2)
+        {
+            strcpy(ef_regpath[0], guid_2_2_regpath[guid_2_2_found_index]);
+            intfdata2file("ef", 0, ef_index_2_2,
+                          guid_2_2[guid_2_2_found_index], 
+                          mac1, ef_regpath[0]);
+            sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
+                    mac1[0], mac1[1], mac1[2],
+                    mac1[3], mac1[4], mac1[5]);
+            RING("Interface index for EF port 1: %d, "
+                 "MAC: %s, regpath: %s", ef_index_2_2, mac_str,
+                 ef_regpath[0]);
+        }
+    }
+    else
+    {
+        if (old_ef_index_2_2 != 0)
+        {
+            RING("Can't find index for EF port 1");
+        }
+    }
+    
+    
     if (ef_index[0] > 0)
     {
         if (old_ef_index[0] != ef_index[0])
@@ -937,7 +1010,8 @@ efport2ifindex(void)
 #undef AMOUNT_OF_GUIDS
 #undef BUFSIZE    
 #undef NET_PATH
-#undef NDIS_SF
+#undef NDIS_SF_2_1
+#undef NDIS_SF_2_2
 #undef NDIS_EFAB
 }
 
@@ -1416,7 +1490,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if ((rc = get_addr_mask(addr, value, &a, &m)) != 0)
         return rc;
 
@@ -4087,7 +4161,8 @@ ta_unix_conf_phy_init(void)
 
 #define NET_PATH        "SYSTEM\\CurrentControlSet\\Control\\Class\\" \
                         "{4D36E972-E325-11CE-BFC1-08002bE10318}"
-#define NDIS_SF_0         "sfe_ndis_0"
+#define NDIS_SF_0_2_2         "ndis_basic"
+#define NDIS_SF_0_2_1         "sfe_ndis_0"
 #define BUFSIZE_REG         256
 #define SPEED_DUPLEX_NAME TEXT("*SpeedDuplex")
 
@@ -4133,7 +4208,13 @@ static int get_settings_path(char *path)
             RegCloseKey(subkey);
             continue;
         }
-        if ((strstr(value, NDIS_SF_0) != NULL))
+        if ((strstr(value, NDIS_SF_0_2_2) != NULL))
+        {
+            strcpy(path, subkey_path);
+            ret = 0;
+            break;
+        }
+        if ((strstr(value, NDIS_SF_0_2_1) != NULL))
         {
             strcpy(path, subkey_path);
             ret = 0;
@@ -4142,6 +4223,7 @@ static int get_settings_path(char *path)
         RegCloseKey(subkey);
     } 
     RegCloseKey(key);
+    RING("get_settings_path finished in TA");
     return ret;
 #else
     UNUSED(path);
@@ -4254,7 +4336,8 @@ static int phy_parameters_set(const char *ifname)
 #endif
 }
 #undef NET_PATH
-#undef NDIS_SF_0
+#undef NDIS_SF_0_2_1
+#undef NDIS_SF_0_2_2
 #undef BUFSIZE_REG
 #undef SPEED_DUPLEX_NAME
 
