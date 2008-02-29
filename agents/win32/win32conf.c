@@ -4223,7 +4223,6 @@ static int get_settings_path(char *path)
         RegCloseKey(subkey);
     } 
     RegCloseKey(key);
-    RING("get_settings_path finished in TA");
     return ret;
 #else
     UNUSED(path);
