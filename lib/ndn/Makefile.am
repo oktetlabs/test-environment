@@ -31,7 +31,8 @@ include_HEADERS = \
 	ndn_cli.h \
 	$(SNMP_H) \
 	ndn_iscsi.h \
-	ndn_socket.h
+	ndn_socket.h \
+	ndn_kprobes.h
 
 libndn_la_SOURCES = \
 	ndn_generic.c \
@@ -48,7 +49,8 @@ libndn_la_SOURCES = \
 	ndn_cli.c \
 	$(SNMP_S) \
 	ndn_iscsi.c \
-	ndn_socket.c
+	ndn_socket.c \
+	ndn_kprobes.c
 
 
 install-exec-hook:
