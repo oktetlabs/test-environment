@@ -80,7 +80,7 @@ static uint8_t log_data[RCF_PCH_LOG_BULK];
 
 
 /**
- * Parse the string stripping off quoting and excape symbols.
+ * Parse the string stripping off quoting and escape symbols.
  * Parsed string is placed instead of old one. Pointer to next token
  * in the command line (or to end symbol). Pointer to the start
  * of parsed string is put to s.
@@ -712,8 +712,10 @@ rcf_pch_run(const char *confstr, const char *info)
                 char *filename;
                 int   put = opcode == RCFOP_FPUT;
 
-                if (*ptr == 0 || transform_str(&ptr, &filename) != 0 ||
-                    *ptr != 0 || (put != (ba != 0)))
+                if (*ptr == '\0' ||
+                    transform_str(&ptr, &filename) != 0 ||
+                    *ptr != '\0' ||
+                    (put != (ba != NULL)))
                     goto bad_protocol;
 
                 rc = rcf_ch_file(conn, cmd, cmd_buf_len, answer_plen,

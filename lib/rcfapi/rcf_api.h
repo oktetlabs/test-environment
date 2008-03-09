@@ -183,10 +183,10 @@ extern te_errno rcf_del_ta(const char *name);
  *
  * @return error code
  *
- * @retval 0            success
- * @retval TE_ESMALLBUF the buffer is too small
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ENOMEM       out of memory
+ * @retval 0                success
+ * @retval TE_ESMALLBUF     the buffer is too small
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ENOMEM        out of memory
  */
 extern te_errno rcf_get_ta_list(char *buf, size_t *len);
 
@@ -199,10 +199,10 @@ extern te_errno rcf_get_ta_list(char *buf, size_t *len);
  *
  * @return error code
  *
- * @retval 0            success
- * @retval TE_EINVAL       name of non-running Test Agent is provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ENOMEM       out of memory
+ * @retval 0                success
+ * @retval TE_EINVAL        name of non-running Test Agent is provided
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ENOMEM        out of memory
  */
 extern te_errno rcf_ta_name2type(const char *ta_name, char *ta_type);
 
@@ -220,10 +220,10 @@ extern te_errno rcf_ta_name2type(const char *ta_name, char *ta_type);
  *
  * @return error code
  *
- * @retval 0            success
- * @retval TE_EINVAL       name of non-running Test Agent is provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ENOMEM       out of memory
+ * @retval 0                success
+ * @retval TE_EINVAL        name of non-running Test Agent is provided
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ENOMEM        out of memory
  */
 extern te_errno rcf_ta_create_session(const char *ta_name, int *session);
 
@@ -466,14 +466,14 @@ extern te_errno rcf_ta_set_var(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
- * @retval TE_EINVAL       name of non-running TN Test Agent, non-existent
- *                      session identifier or bad file name are provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ENOENT       no such file
- * @retval TE_EPERM        operation not permitted
- * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval TE_ENOMEM       out of memory
+ * @retval 0                success
+ * @retval TE_EINVAL        name of non-running TN Test Agent, non-existent
+ *                          session identifier or bad file name are provided
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ENOENT        no such file
+ * @retval TE_EPERM         operation not permitted
+ * @retval TE_ETAREBOOTED   Test Agent is rebooted
+ * @retval TE_ENOMEM        out of memory
  */
 extern te_errno rcf_ta_get_file(const char *ta_name, int session, 
                                 const char *rfile, const char *lfile);
@@ -489,14 +489,14 @@ extern te_errno rcf_ta_get_file(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
- * @retval TE_EINVAL       name of non-running TN Test Agent, non-existent
- *                      session identifier or bad file name are provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ENOENT       no such file
- * @retval TE_EPERM        operation not permitted
- * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval TE_ENOMEM       out of memory
+ * @retval 0                success
+ * @retval TE_EINVAL        name of non-running TN Test Agent, non-existent
+ *                          session identifier or bad file name are provided
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ENOENT        no such file
+ * @retval TE_EPERM         operation not permitted
+ * @retval TE_ETAREBOOTED   Test Agent is rebooted
+ * @retval TE_ENOMEM        out of memory
  */
 extern te_errno rcf_ta_put_file(const char *ta_name, int session, 
                                 const char *lfile, const char *rfile);
@@ -510,14 +510,14 @@ extern te_errno rcf_ta_put_file(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
- * @retval TE_EINVAL       name of non-running TN Test Agent, non-existent
- *                      session identifier or bad file name are provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ENOENT       no such file
- * @retval TE_EPERM        operation not permitted
- * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval TE_ENOMEM       out of memory
+ * @retval 0                success
+ * @retval TE_EINVAL        name of non-running TN Test Agent, non-existent
+ *                          session identifier or bad file name are provided
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ENOENT        no such file
+ * @retval TE_EPERM         operation not permitted
+ * @retval TE_ETAREBOOTED   Test Agent is rebooted
+ * @retval TE_ENOMEM        out of memory
  */
 extern te_errno rcf_ta_del_file(const char *ta_name, int session,
                                 const char *rfile);
@@ -550,13 +550,13 @@ extern te_errno rcf_tr_op_log(te_bool ring);
  *
  * @return error code
  *
- * @retval 0            success
- * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval TE_ENOMEM       out of memory
- * @retval other        error returned by command handler on the TA
+ * @retval 0                success
+ * @retval TE_EINVAL        name of non-running TN Test Agent or
+ *                          non-existent session identifier is provided
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ETAREBOOTED   Test Agent is rebooted
+ * @retval TE_ENOMEM        out of memory
+ * @retval other            error returned by command handler on the TA
  *
  * @sa rcf_ta_csap_destroy
  */
