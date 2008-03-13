@@ -241,6 +241,8 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
                 (*kprobes_info)[*number_of_structures].block_timeout = 0;
            (*kprobes_info)[*number_of_structures].scenario_index = i + 1;
         }
+        if (j == 0)
+            break;
     }
     /* Get expected drivers load result */
     if (asn_read_string(kprobes_info_asn, &expresult_str, "expresult"))
