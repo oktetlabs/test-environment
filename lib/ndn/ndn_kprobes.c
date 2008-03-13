@@ -42,22 +42,26 @@ typedef enum {
     NDN_KPROBES_INTERCOUNT,
     NDN_KPROBES_RETVAL,
     NDN_KPROBES_BLOCKTIMEOUT
-} ndn_kprobes_pdu_tags_t;
+} ndn_kprobes_scenario_item_tags_t;
 
 typedef enum {
-    NDN_KPROBES_PDU,
-} ndn_kprobes_pdus_tags_t;
+    NDN_KPROBES_SCENARIO_ITEM
+} ndn_kprobes_scenario_tags_t;
 
 typedef enum {
-    NDN_KPROBES_PDUS,
-    NDN_KPROBES_EXPRESULT,
-} ndn_kprobes_pdu_sequence_tags_t;
+    NDN_KPROBES_SCENARIO
+} ndn_kprobes_scenarios_tags_t;
 
 typedef enum {
-    NDN_KPROBES_PACKET,
+    NDN_KPROBES_SCENARIOS,
+    NDN_KPROBES_EXPRESULT
+} ndn_kprobes_scenarios_sequence_tags_t;
+
+typedef enum {
+    NDN_KPROBES_PACKET
 } ndn_kprobes_packet_tags_t;
 
-static asn_named_entry_t _ndn_kprobes_pdu_ne_array[] = {
+static asn_named_entry_t _ndn_kprobes_scenario_item_ne_array[] = {
     { "function", &asn_base_charstring_s,  {PRIVATE, NDN_KPROBES_FUNCTION} },
     { "action", &asn_base_charstring_s,  {PRIVATE, NDN_KPROBES_ACTION} },
     { "interceptcount", &asn_base_integer_s,  {PRIVATE, NDN_KPROBES_INTERCOUNT} },
@@ -65,24 +69,29 @@ static asn_named_entry_t _ndn_kprobes_pdu_ne_array[] = {
     { "blocktimeout", &asn_base_integer_s,  {PRIVATE, NDN_KPROBES_BLOCKTIMEOUT} }
 };
 
-static asn_type ndn_kprobes_pdu_s = {
-    "kprobes-PDU", {PRIVATE, NDN_KPROBES_PDU}, SEQUENCE,
-    TE_ARRAY_LEN(_ndn_kprobes_pdu_ne_array),
-    {_ndn_kprobes_pdu_ne_array}
+static asn_type ndn_kprobes_scenario_item_s = {
+    "kprobes-scenario_item", {PRIVATE, NDN_KPROBES_SCENARIO_ITEM}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_kprobes_scenario_item_ne_array),
+    {_ndn_kprobes_scenario_item_ne_array}
 };
 
-const asn_type * const ndn_kprobes_pdu = &ndn_kprobes_pdu_s;
+const asn_type * const ndn_kprobes_scenario_item = &ndn_kprobes_scenario_item_s;
 
-static asn_type ndn_kprobes_pdu_sequence_s = {
-    "kprobes-PDU-sequence", {PRIVATE, NDN_KPROBES_PDUS},
-    SEQUENCE_OF, 0, {subtype: &ndn_kprobes_pdu_s}
+static asn_type ndn_kprobes_scenario_s = {
+    "kprobes-scenario", {PRIVATE, NDN_KPROBES_SCENARIO},
+    SEQUENCE_OF, 0, {subtype: &ndn_kprobes_scenario_item_s}
 };
 
-const asn_type * const ndn_kprobes_pdu_sequence =
-                            &ndn_kprobes_pdu_sequence_s;
+const asn_type * const ndn_kprobes_scenario =
+                            &ndn_kprobes_scenario_s;
+
+static asn_type ndn_kprobes_scenarios_s = {
+    "kprobes-scenarios", {PRIVATE, NDN_KPROBES_SCENARIOS},
+    SEQUENCE_OF, 0, {subtype: &ndn_kprobes_scenario_s}
+};
 
 static asn_named_entry_t _ndn_kprobes_packet_ne_array[] = {
-    { "pdus", &ndn_kprobes_pdu_sequence_s, {PRIVATE, NDN_KPROBES_PDUS} },
+    { "scenarios", &ndn_kprobes_scenarios_s, {PRIVATE, NDN_KPROBES_SCENARIOS} },
     { "expresult", &asn_base_charstring_s, {PRIVATE, NDN_KPROBES_EXPRESULT} }
 };
 
@@ -152,11 +161,14 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
     asn_value *kprobes_info_asn = NULL;
     int        s_parsed;    
     int        i;
+    int        j;
     char       request[KPROBES_MAX_FUNC_NAME] = {0};
     char      *action_str = NULL;
     char      *function_name = NULL;
     char      *expresult_str = NULL;
     
+    *number_of_structures = 0;
+
     /* string2asn */
     if (asn_parse_value_text(kprobes_info_str, ndn_kprobes_packet,
                              &kprobes_info_asn, &s_parsed))
@@ -166,65 +178,70 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
     }
     
     /* While we can get function name */
-    for(i = 0; ; i++)
+    for (i = 0; ; i++)
     {
-        *kprobes_info =
-            (kprobes_info_t*)realloc((void *)*kprobes_info,
-                                     sizeof(kprobes_info_t) * (i + 1));
-        /* Get function name */
-        sprintf(request, "pdus.%d.function", i);
-        if (asn_read_string(kprobes_info_asn, &function_name, request))
-            break;
-        strcpy((*kprobes_info)[i].function_name, function_name);
-        
-        /* Get action for function */
-        sprintf(request, "pdus.%d.action", i);
-        if (asn_read_string(kprobes_info_asn, &action_str, request))
+        for (j = 0; ; j++, (*number_of_structures)++)
         {
-            puts("action");
-            return -1;
-        }
-        (*kprobes_info)[i].action = 
-            kprobes_map_code(kprobes_action_map, action_str);
-        
-        /* Get intercept count */
-        sprintf(request, "pdus.%d.interceptcount", i);
-        if (asn_read_int32(kprobes_info_asn,
-                           &((*kprobes_info)[i].intercept_count), request))
-        {
-            puts("intercept_count");
-            return -1;
-        }
+            *kprobes_info =
+                (kprobes_info_t*)realloc((void *)*kprobes_info,
+                                         sizeof(kprobes_info_t) * ((*number_of_structures) + 1));
+            /* Get function name */
+            sprintf(request, "scenarios.%d.%d.function", i, j);
+            if (asn_read_string(kprobes_info_asn, &function_name, request))
+                break;
+            strcpy((*kprobes_info)[*number_of_structures].function_name, function_name);
+            
+            /* Get action for function */
+            sprintf(request, "scenarios.%d.%d.action", i, j);
+            if (asn_read_string(kprobes_info_asn, &action_str, request))
+            {
+                puts("action");
+                return -1;
+            }
 
-        /* Get retval if needed */
-        if ((*kprobes_info)[i].action == TE_KPROBES_ACTION_FAIL)
-        {
-            sprintf(request, "pdus.%d.retval", i);
-            if (asn_read_int32(kprobes_info_asn,
-                               &((*kprobes_info)[i].retval), request))
-            {
-                puts("retval");
-                return -1;
-            }
-        }
-        else
-            (*kprobes_info)[i].retval = 0;
+            (*kprobes_info)[*number_of_structures].action = 
+                kprobes_map_code(kprobes_action_map, action_str);
         
-        /* Get block timeout if needed */
-        if ((*kprobes_info)[i].action == TE_KPROBES_ACTION_BLOCK)
-        {
-            sprintf(request, "pdus.%d.blocktimeout", i);
+            /* Get intercept count */
+            sprintf(request, "scenarios.%d.%d.interceptcount", i, j);
             if (asn_read_int32(kprobes_info_asn,
-                               &((*kprobes_info)[i].block_timeout), request))
+                               &((*kprobes_info)[*number_of_structures].intercept_count), request))
             {
-                puts("block_timeout");
+                puts("intercept_count");
                 return -1;
             }
+
+            
+            /* Get retval if needed */
+            if ((*kprobes_info)[*number_of_structures].action == TE_KPROBES_ACTION_FAIL)
+            {
+                sprintf(request, "scenarios.%d.%d.retval", i, j);
+                if (asn_read_int32(kprobes_info_asn,
+                                 &((*kprobes_info)[*number_of_structures].retval), request))
+                {
+                    puts("retval");
+                    return -1;
+                }
+            }
+            else
+                (*kprobes_info)[*number_of_structures].retval = 0;
+        
+            /* Get block timeout if needed */
+            if ((*kprobes_info)[*number_of_structures].action == TE_KPROBES_ACTION_BLOCK)
+            {
+                sprintf(request, "scenarios.%d.%d.blocktimeout", i, j);
+                if (asn_read_int32(kprobes_info_asn,
+                                &((*kprobes_info)[*number_of_structures].block_timeout), request))
+                {
+                    puts("block_timeout");
+                    return -1;
+                }
+            }
+            else
+                (*kprobes_info)[*number_of_structures].block_timeout = 0;
+           (*kprobes_info)[*number_of_structures].scenario_index = i + 1;
         }
-        else
-            (*kprobes_info)[i].block_timeout = 0;
     }
-    
     /* Get expected drivers load result */
     if (asn_read_string(kprobes_info_asn, &expresult_str, "expresult"))
     {
@@ -232,8 +249,6 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
         return -1;
     }
     *expresult = kprobes_map_code(kprobes_expresult_map, expresult_str);
-    
-    *number_of_structures = i;
 
     return 0;
 }
