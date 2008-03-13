@@ -105,6 +105,12 @@
     <object oid="/agent/xen/base_mac_addr" access="read_write"
             type="address"/>
 
+    <!-- The dom0 acceleration status.
+         Name: none
+         Value: Dom0 acceleration status (0 - no acceleration) -->
+    <object oid="/agent/xen/accel" access="read_write"
+            type="integer" volatile="true"/>
+
     <!-- XEN domU.
          Name: XEN domain name
          Value: Directory/disk images creation/destruction flag: if 0
@@ -212,6 +218,13 @@
          Value: DomU interface IP address -->
     <object oid="/agent/xen/dom_u/bridge/mac_addr " access="read_write"
             type="address"/>
+
+    <!-- Acceleration sign of the domU interface that is added
+         to the bridge.
+         Name: None
+         Value: DomU interface acceleration sign -->
+    <object oid="/agent/xen/dom_u/bridge/accel" access="read_write"
+            type="integer"/>
 
     <!-- Migration of domU.
          Name: none

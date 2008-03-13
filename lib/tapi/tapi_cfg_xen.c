@@ -314,6 +314,58 @@ tapi_cfg_xen_set_base_mac_addr(char const *ta, uint8_t const *mac)
 
 /* See description in tapi_cfg_xen.h */
 te_errno
+tapi_cfg_xen_get_accel(char const *ta, te_bool *accel)
+{
+    cfg_val_type type = CVT_INTEGER;
+    int         *acceleration;
+    te_errno     rc;
+
+    if (ta == NULL || accel == NULL)
+    {
+        ERROR("Failed to get acceleration on %s: Invalid params", ta);
+        return TE_EINVAL;
+    }
+
+    if ((rc = cfg_get_instance_fmt(&type, &acceleration,
+                                   "/agent:%s/xen:/accel:",
+                                   ta)) != 0)
+    {
+        ERROR("Failed to get acceleration on %s", ta);
+    }
+    else
+    {
+        *accel = acceleration ? TRUE : FALSE;
+        free(acceleration);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_set_accel(char const *ta, te_bool accel)
+{
+    int      acceleration = accel ? 1 : 0;
+    te_errno rc;
+
+    if (ta == NULL)
+    {
+        ERROR("Failed to set acceleration on %s: Invalid params", ta);
+        return TE_EINVAL;
+    }
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, acceleration),
+                                   "/agent:%s/xen:/accel:",
+                                   ta)) != 0)
+    {
+        ERROR("Failed to set acceleration on %s", ta);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
 tapi_cfg_xen_create_dom_u(char const *ta, char const *dom_u)
 {
     /* Create domU destroying old  directory/disk images in XEN storage */
@@ -891,6 +943,66 @@ tapi_cfg_xen_dom_u_bridge_set_mac_addr(char const *ta, char const *dom_u,
                                    ta, dom_u, bridge)) != 0)
     {
         ERROR("Failed to set MAC address for '%s' bridge "
+              "interface on '%s' domU on %s", bridge, dom_u, ta);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_bridge_get_accel(char const *ta, char const *dom_u,
+                                    char const *bridge, te_bool *accel)
+{
+    cfg_val_type type = CVT_INTEGER;
+    int          acceleration;
+    te_errno     rc;
+
+    if (ta == NULL || dom_u == NULL || bridge == NULL || accel == NULL)
+    {
+        ERROR("Failed to get acceleration sign for '%s' bridge interface "
+              "on '%s' domU on %s: Invalid params", bridge, dom_u, ta);
+        return TE_EINVAL;
+    }
+
+    if ((rc = cfg_get_instance_fmt(&type, &acceleration,
+                                   "/agent:%s/xen:/dom_u:%s"
+                                   "/bridge:%s/accel:",
+                                   ta, dom_u, bridge)) != 0)
+    {
+        ERROR("Failed to get acceleration sign for '%s' bridge "
+              "interface on '%s' domU on %s", bridge, dom_u, ta);
+    }
+    else
+    {
+        *accel = acceleration ? TRUE : FALSE;
+        free(acceleration);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_dom_u_bridge_set_accel(char const *ta, char const *dom_u,
+                                    char const *bridge, te_bool accel)
+{
+    int      acceleration = accel ? 1 : 0;
+    te_errno rc;
+
+    if (ta == NULL || dom_u == NULL || bridge == NULL)
+    {
+        ERROR("Failed to set acceleration sign for '%s' bridge interface "
+              "on '%s' domU on %s: Invalid params", bridge, dom_u, ta);
+        return TE_EINVAL;
+    }
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, acceleration),
+                                   "/agent:%s/xen:/dom_u:%s"
+                                   "/bridge:%s/accel:",
+                                   ta, dom_u, bridge)) != 0)
+    {
+        ERROR("Failed to set acceleration sign for '%s' bridge "
               "interface on '%s' domU on %s", bridge, dom_u, ta);
     }
 

@@ -558,6 +558,9 @@ static te_errno xen_base_mac_addr_get(unsigned int, char const *, char *);
 static te_errno xen_base_mac_addr_set(unsigned int, char const *,
                                       char const *);
 
+static te_errno xen_accel_get(unsigned int, char const *, char *);
+static te_errno xen_accel_set(unsigned int, char const *, char const *);
+
 static te_errno xen_interface_add(unsigned int, char const *, char const *,
                                   char const *, char const *);
 static te_errno xen_interface_del(unsigned int, char const *, char const *,
@@ -633,6 +636,13 @@ static te_errno dom_u_bridge_mac_addr_get(unsigned int, char const *,
 static te_errno dom_u_bridge_mac_addr_set(unsigned int, char const *,
                                           char const *, char const *,
                                           char const *, char const *);
+
+static te_errno dom_u_bridge_accel_get(unsigned int, char const *,
+                                       char *, char const *,
+                                       char const *, char const *);
+static te_errno dom_u_bridge_accel_set(unsigned int, char const *,
+                                       char const *, char const *,
+                                       char const *, char const *);
 
 static te_errno dom_u_migrate_set(unsigned int, char const *,
                                   char const *, char const *,
@@ -746,8 +756,13 @@ RCF_PCH_CFG_NODE_RW(node_dom_u_migrate, "migrate",
                     &node_dom_u_migrate_kind, NULL,
                     NULL, &dom_u_migrate_set);
 
-RCF_PCH_CFG_NODE_RW(node_dom_u_bridge_mac_addr, "mac_addr",
+RCF_PCH_CFG_NODE_RW(node_dom_u_bridge_accel, "accel",
                     NULL, NULL,
+                    &dom_u_bridge_accel_get,
+                    &dom_u_bridge_accel_set);
+
+RCF_PCH_CFG_NODE_RW(node_dom_u_bridge_mac_addr, "mac_addr",
+                    NULL, &node_dom_u_bridge_accel,
                     &dom_u_bridge_mac_addr_get,
                     &dom_u_bridge_mac_addr_set);
 
@@ -798,8 +813,12 @@ static rcf_pch_cfg_object node_xen_interface =
       (rcf_ch_cfg_del)&xen_interface_del,
       (rcf_ch_cfg_list)&xen_interface_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(node_base_mac_addr, "base_mac_addr",
+RCF_PCH_CFG_NODE_RW(node_xen_accel, "accel",
                     NULL, &node_xen_interface,
+                    &xen_accel_get, &xen_accel_set);
+
+RCF_PCH_CFG_NODE_RW(node_base_mac_addr, "base_mac_addr",
+                    NULL, &node_xen_accel,
                     &xen_base_mac_addr_get, &xen_base_mac_addr_set);
 
 RCF_PCH_CFG_NODE_RW(node_rpc_if, "rpc_if",
@@ -6276,6 +6295,7 @@ static struct {
        char const *if_name;      /**< DomU testing interface name        */
        char        ip_addr[16];  /**< DomU testing interface IP address  */
        char        mac_addr[18]; /**< DomU testing interface MAC address */
+       te_bool     accel;        /**< Accelerated spec-tion in config    */
     }
     bridge_slot[MAX_BRIDGE_NUM]; /**< DomU bridges where dom0 tested
                                       interfaces are added to            */
@@ -6421,6 +6441,35 @@ find_interface(char const *interface)
     }
 
     return u;
+}
+
+/**
+ * Find interface.
+ *
+ * @param bridge        The name of the bridge physical interface
+ *                      is connected to
+ *
+ * @return              Physical interface name or NULL if not found
+ */
+static char const *
+find_physical_interface(char const *bridge)
+{
+    unsigned int u;
+    unsigned int limit = interface_limit();
+
+    if (bridge == NULL)
+        return NULL;
+
+    for (u = 0; u < limit; u++)
+    {
+        if (interface_slot[u].if_name != NULL &&
+            strcmp(interface_slot[u].br_name, bridge) == 0)
+        {
+            return interface_slot[u].ph_name;
+        }
+    }
+
+    return NULL;
 }
 
 /* Try to find interface and initialize its index */
@@ -6752,6 +6801,94 @@ check_dom_u_is_initialized_properly(unsigned int u)
 }
 
 /**
+ * Fills the next part of the 'buf' or resets buffer pointer
+ *
+ * @param fmt           Format (resets buffer pointer if NULL)
+ *
+ * @return              Status code
+ */
+static te_errno
+update_buf(char const *fmt, ...)
+{
+    int     num;
+    va_list ap;
+
+    static char *ptr = buf;
+
+    if (fmt == NULL)
+    {
+        *(ptr = buf) = '\0';
+        return 0;
+    }
+
+    va_start(ap, fmt);
+    num = vsnprintf(ptr, buf + sizeof(buf) - ptr, fmt, ap);
+    va_end(ap);
+
+    if (num < 0)
+    {
+        *(ptr = buf) = '\0';
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    /* Check whether truncation has occured */
+    if (num >= buf + sizeof(buf) - ptr)
+    {
+        ERROR("Buffer size (%u) is too small", sizeof(buf));
+        *(ptr = buf) = '\0';
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    ptr += num;
+
+    return 0;
+}
+
+/**
+ * Fills 'buf' with the network interfaces data for domU config file
+ *
+ * @param u             DomU slot number
+ * @param i             DomU bridge slot number
+ *
+ * @return              Status code
+ */
+static te_errno
+add_dom_u_interfaces_config(unsigned int u, int i)
+{
+    if (i < 0)
+    {
+        return update_buf("vif  = [ 'bridge=%s,mac=%s'",
+                          xen_rpc_br, dom_u_slot[u].mac_addr);
+    }
+
+    if (i >= (int) bridge_limit())
+        return update_buf(" ]\n");
+
+    {
+        char const *brd = dom_u_slot[u].bridge_slot[i].br_name;
+        char const *mac = dom_u_slot[u].bridge_slot[i].mac_addr;
+        char const *phy = find_physical_interface(brd);
+
+        if (brd != NULL)
+        {
+            if (phy == NULL)
+            {
+                ERROR("Internal error: cannot find "
+                      "physical interface by bridge name");
+                return TE_RC(TE_TA_UNIX, TE_EFAIL);
+            }
+
+            return dom_u_slot[u].bridge_slot[i].accel ?
+                       update_buf(",'bridge=%s,accel=%s,mac=%s'",
+                                  brd, phy, mac) :
+                       update_buf(",'bridge=%s,mac=%s'", brd, mac);
+        }
+    }
+
+    return 0;
+}
+
+/**
  * Fills 'buf' with the network interfaces data for domU config file
  *
  * @param u             DomU slot number
@@ -6761,49 +6898,18 @@ check_dom_u_is_initialized_properly(unsigned int u)
 static te_errno
 prepare_dom_u_interfaces_config(unsigned int u)
 {
-    char *ptr = buf;
-    int   i;
-    int   limit = (int) bridge_limit();
+    int i;
+    int limit = (int)bridge_limit();
 
-/* FIXME: This loop must be reimplemented in clear, non-complicated way */
+    update_buf(NULL); /** Restart buffer pointer (see update_conf) */
 
     /* Prepare interfaces */
-    for (*ptr = '\0', i = -1; i <= limit; i++)
+    for (i = -1; i <= limit; i++)
     {
-        char const *bridge = i < 0 ?
-                       xen_rpc_br :
-                       (i < limit ?
-                            dom_u_slot[u].bridge_slot[i].br_name :
-                            "");
+        te_errno rc = add_dom_u_interfaces_config(u, i);
 
-        if (i < 0 || bridge != NULL || i == limit)
-        {
-            char const *hdr = i < 0 ? "vif  = [ " : ",";
-            char const *fmt = i < limit ? "%s'bridge=%s,mac=%s'" :
-                                          " ]\n";
-            char const *mac = i < 0 ?
-                           dom_u_slot[u].mac_addr :
-                           (i < limit ? 
-                                dom_u_slot[u].bridge_slot[i].mac_addr :
-                                "");
-
-            int num = snprintf(ptr, buf + sizeof(buf) - ptr,
-                               fmt, hdr, bridge, mac);
-
-            if (num < 0)
-                return TE_OS_RC(TE_TA_UNIX, errno);
-
-            /* Check whether truncation has occured */
-            if (num >= buf + sizeof(buf) - ptr)
-            {
-                ERROR("Buffer size (%u) is too small for the "
-                      "configuration of persistent rules",
-                      sizeof(buf));
-                return TE_RC(TE_TA_UNIX, TE_EFAIL);
-            }
-
-            ptr += num;
-        }
+        if (rc != 0)
+            return rc;
     }
 
     return 0;
@@ -6820,12 +6926,13 @@ prepare_dom_u_interfaces_config(unsigned int u)
 static te_errno
 prepare_persistent_net_rules(unsigned int u)
 {
-    char *ptr = buf;
     int   i;
     int   limit = (int) bridge_limit();
 
+    update_buf(NULL); /** Restart buffer pointer (see update_conf) */
+
     /* Prepare interfaces */
-    for (*ptr = '\0', i = -1; i < limit; i++)
+    for (i = -1; i < limit; i++)
     {
         if (i < 0 || dom_u_slot[u].bridge_slot[i].br_name != NULL)
         {
@@ -6836,27 +6943,15 @@ prepare_persistent_net_rules(unsigned int u)
                            xen_rpc_if :
                            dom_u_slot[u].bridge_slot[i].if_name;
 
-            /* It's the 'num' that is inside block */
-            int num = snprintf(ptr, buf + sizeof(buf) - ptr,
-                               "\n"
-                               "# Xen virtual device (vif)\n"
-                               "SUBSYSTEM==\"net\", DRIVERS==\"?*\", "
-                               "ATTRS{address}==\"%s\", NAME=\"%s\"\n",
-                               mac, ifn);
+            te_errno    rc = update_buf("\n"
+                                        "# Xen virtual device (vif)\n"
+                                        "SUBSYSTEM==\"net\", "
+                                        "DRIVERS==\"?*\", "
+                                        "ATTRS{address}==\"%s\", "
+                                        "NAME=\"%s\"\n", mac, ifn);
 
-            if (num < 0)
-                return TE_OS_RC(TE_TA_UNIX, errno);
-
-            /* Check whether truncation has occured */
-            if (num >= buf + sizeof(buf) - ptr)
-            {
-                ERROR("Buffer size (%u) is too small for the "
-                      "configuration of persistent rules",
-                      sizeof(buf));
-                return TE_RC(TE_TA_UNIX, TE_EFAIL);
-            }
-
-            ptr += num; /** The 'num' that is inside block is used here */
+            if (rc != 0)
+                return rc;
         }
     }
 
@@ -6873,12 +6968,13 @@ prepare_persistent_net_rules(unsigned int u)
 static te_errno
 prepare_network_interfaces_config(unsigned int u)
 {
-    char *ptr = buf;
     int   i;
     int   limit = (int) bridge_limit();
 
+    update_buf(NULL); /** Restart buffer pointer (see update_conf) */
+
     /* Prepare interfaces */
-    for (*ptr = '\0', i = -1; i < limit; i++)
+    for (i = -1; i < limit; i++)
     {
         if (i < 0 || dom_u_slot[u].bridge_slot[i].br_name != NULL)
         {
@@ -6892,27 +6988,13 @@ prepare_network_interfaces_config(unsigned int u)
                            dom_u_slot[u].ip_addr :
                            dom_u_slot[u].bridge_slot[i].ip_addr;
 
-            /* It's the 'num' that is inside block */
-            int num = snprintf(ptr, buf + sizeof(buf) - ptr,
-                               "%s\nauto %s\n"
-                               "iface %s inet static\n"
-                               "    address %s\n"
-                               "    netmask 255.255.255.0\n",
-                               hdr, ifn, ifn, ipa);
-
-            if (num < 0)
-                return TE_OS_RC(TE_TA_UNIX, errno);
-
-            /* Check whether truncation has occured */
-            if (num >= buf + sizeof(buf) - ptr)
-            {
-                ERROR("Buffer size (%u) is too small for the "
-                      "configuration of network interfaces",
-                      sizeof(buf));
-                return TE_RC(TE_TA_UNIX, TE_EFAIL);
-            }
-
-            ptr += num; /** Inside block 'num' is used here */
+            te_errno    rc = update_buf("%s\nauto %s\n"
+                                        "iface %s inet static\n"
+                                        "    address %s\n"
+                                        "    netmask 255.255.255.0\n",
+                                        hdr, ifn, ifn, ipa);
+            if (rc != 0)
+                return rc;
         }
     }
 
@@ -7068,9 +7150,7 @@ static te_errno
 xen_subpath_set(unsigned int gid, char const *oid, char const *value)
 {
 #if XEN_SUPPORT
-    unsigned int u;
-    unsigned int limit = dom_u_limit();
-    size_t       len   = strlen(value);
+    size_t len = strlen(value);
 #endif
 
     UNUSED(gid);
@@ -7679,12 +7759,12 @@ xen_base_mac_addr_get(unsigned int gid, char const *oid, char *value)
 {
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
 
 #if XEN_SUPPORT
     strcpy(value, xen_base_mac_addr);
     return 0;
 #else
+    UNUSED(value);
 #warning '/agent/xen/base_mac_addr' 'get' \
 access method is not implemented
     ERROR("'/agent/xen/base_mac_addr' 'get' "
@@ -7745,6 +7825,169 @@ xen_base_mac_addr_set(unsigned int gid, char const *oid, char const *value)
 access method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/base_mac_addr' 'set' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+#if XEN_SUPPORT
+static te_errno
+xen_accel_get_executive(te_bool *status)
+{
+    char const pattern[] = "sfc_netback";
+
+    te_errno   rc  = 0;
+    int        fd;
+    int        st;
+    pid_t      pid = te_shell_cmd("lsmod | grep -w ^sfc_netback "
+                                  "2> /dev/null | awk '{print$1}'",
+                                  -1, NULL, &fd, NULL);
+
+
+    *status = FALSE;
+
+    if (pid == -1)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    *buf = '\0';
+    ta_waitpid(pid, &st, 0);
+
+    if (st == 0)
+    {
+        if (read(fd, buf, sizeof(buf)) != -1)
+        {
+            *status = strncmp(buf, pattern,
+                              sizeof(pattern) - 1) == 0 ? TRUE : FALSE;
+        }
+        else
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        }
+    }
+    else
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    close(fd);
+    return rc;
+}
+#endif
+
+/**
+ * Get XEN dom0 acceleration status
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for acceleration status
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_accel_get(unsigned int gid, char const *oid, char *value)
+{
+#if XEN_SUPPORT
+    te_bool  status;
+    te_errno rc;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if XEN_SUPPORT
+    /* The agent must run within dom0 */
+    if (!is_within_dom0())
+    {
+        value = "0";
+        return 0;
+    }
+
+    if ((rc = xen_accel_get_executive(&status)) == 0)
+        strcpy(value, status ? "1" : "0");
+
+    return rc;
+#else
+    UNUSED(value);
+#warning '/agent/xen/accel' 'get' \
+access method is not implemented
+    ERROR("'/agent/xen/accel' 'get' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set XEN dom0 acceleration status
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         acceleration status
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_accel_set(unsigned int gid, char const *oid, char const *value)
+{
+#if XEN_SUPPORT
+    te_bool     status;
+    te_bool     needed_status = strcmp(value, "0") == 0 ? FALSE : TRUE;
+    te_errno    rc;
+    char const *cmd = NULL;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if XEN_SUPPORT
+    /* The agent must run within dom0 */
+    if (!is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    if ((rc = xen_accel_get_executive(&status)) == 0)
+    {
+        switch (status)
+        {
+            case FALSE:
+                if (needed_status)
+                    cmd = "/sbin/modprobe sfc_netback";
+
+                break;
+
+            default:
+                if (!needed_status)
+                    cmd = "/sbin/rmmod sfc_netback";
+
+                break;
+        }
+
+        if (cmd != NULL)
+        {
+            if (ta_system(cmd) != 0)
+            {
+                rc = TE_OS_RC(TE_TA_UNIX, errno);
+            }
+            else if ((rc = xen_accel_get_executive(&status)) == 0)
+            {
+                if ((needed_status && !status) ||
+                    (!needed_status && status))
+                {
+                    ERROR("Failed to set acceleration %s",
+                          status ? "ON" : "OFF");
+                    rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+                }
+            }
+        }
+    }
+
+    return rc;
+#else
+#warning '/agent/xen/accel' 'set' \
+access method is not implemented
+    UNUSED(value);
+    ERROR("'/agent/xen/accel' 'set' "
           "access method is not implemented");
     return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -9216,6 +9459,7 @@ dom_u_bridge_add(unsigned int gid, char const *oid,
 
     strcpy(dom_u_slot[u].bridge_slot[v].ip_addr, init_ip_addr);
     strcpy(dom_u_slot[u].bridge_slot[v].mac_addr, init_mac_addr);
+    dom_u_slot[u].bridge_slot[v].accel = FALSE;
     return 0;
 #else
 #warning '/agent/xen/dom_u/bridge' 'add' access method is not implemented
@@ -9510,6 +9754,86 @@ dom_u_bridge_mac_addr_set(unsigned int gid, char const *oid,
 #warning '/agent/xen/dom_u/bridge/mac_addr' 'set' \
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/mac_addr' 'set' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get domU acceleration sign.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         storage for acceleration sign to be filled in
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to get status of
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_bridge_accel_get(unsigned int gid, char const *oid,
+                       char *value, char const *xen,
+                       char const *dom_u, char const *bridge)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int v;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+#if XEN_SUPPORT
+    FIND_DOM_U(dom_u, u);
+    FIND_BRIDGE(bridge, u, v);
+
+    strcpy(value, dom_u_slot[u].bridge_slot[v].accel ? "1" : "0");
+    return 0;
+#else
+#warning '/agent/xen/dom_u/bridge/accel' 'get' \
+access method is not implemented
+    ERROR("'/agent/xen/dom_u/bridge/accel' 'get' "
+          "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set (change) domU MAC address (possible only in non-running state).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         status to set
+ * @param xen           name of the XEN node (empty, unused)
+ * @param dom_u         name of the domU to set status of
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_bridge_accel_set(unsigned int gid, char const *oid,
+                       char const *value, char const *xen,
+                       char const *dom_u, char const *bridge)
+{
+#if XEN_SUPPORT
+    unsigned int u;
+    unsigned int v;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(xen);
+
+#if XEN_SUPPORT
+    FIND_DOM_U(dom_u, u);
+    FIND_BRIDGE(bridge, u, v);
+
+    dom_u_slot[u].bridge_slot[v].accel = *value != '0' ? TRUE : FALSE;
+    return 0;
+#else
+#warning '/agent/xen/dom_u/bridge/accel' 'set' \
+access method is not implemented
+    ERROR("'/agent/xen/dom_u/bridge/accel' 'set' "
           "access method is not implemented");
     return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif

@@ -154,6 +154,26 @@ extern te_errno tapi_cfg_xen_set_base_mac_addr(char const    *ta,
                                                uint8_t const *mac);
 
 /**
+ * Get dom0 acceleration.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param accel         Storage to accept dom0 acceleration
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_get_accel(char const *ta, te_bool *accel);
+
+/**
+ * Set dom0 acceleration.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param accel         New acceleration value
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_set_accel(char const *ta, te_bool accel);
+
+/**
  * Create new domU.
  *
  * @param ta            Test Agent running withing dom0
@@ -398,6 +418,36 @@ extern te_errno tapi_cfg_xen_dom_u_bridge_set_mac_addr(
                                                 char const    *dom_u,
                                                 char const    *bridge,
                                                 uint8_t const *mac);
+
+/**
+ * Get acceleration specification sign of a tested interface of domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get MAC address of
+ * @param accel         Storage to accept domU tested iface accel sign
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_bridge_get_accel(
+                                                char const *ta,
+                                                char const *dom_u,
+                                                char const *bridge,
+                                                te_bool    *accel);
+
+/**
+ * Set acceleration specification sign of a tested interface of domU.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param dom_u         Name of domU to get tested iface accel sign of
+ * @param accel         New domU tested iface accel sign
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_dom_u_bridge_set_accel(
+                                                char const *ta,
+                                                char const *dom_u,
+                                                char const *bridge,
+                                                te_bool     accel);
 
 /**
  * Set MAC address of 'eth0' of domU.
