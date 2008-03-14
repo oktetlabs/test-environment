@@ -698,6 +698,70 @@ extern te_errno asn_write_primitive(asn_value *value,
  */
 extern te_errno asn_put_choice(asn_value *container, asn_value *value);
 
+
+/**
+ * Convert 'extended' ASN path (set of labels) to ordinary one for given
+ * asn_value.
+ *
+ * Extended ASN path could have search expression instead of one (or
+ * several) labels. Only index labels could be replaced (i.e. it is
+ * possible only for SEQUENCE_OF and SET_OF types) and subtype has to be
+ * SEQUENCE or SET. The syntax is following:
+ *   <optional labels>.[<label>:<asn text value>].<other optional labels>
+ * Square brackets are part of format. The asn_value corresponding to
+ * <optional labels> is iterated and for each member the <label> value is
+ * compared to <asn text value>. If comparison is successful, then whole
+ * search expression is replaced by index. The <label> must be of
+ * CHAR_STRING type.
+ *
+ * @param node          Root ASN value to start searching for labels
+ * @param ext_path      Extended ASN path with search expressions
+ * @param asn_path      Buffer for normal ASN path
+ * @param asn_path_len  asn_path buffer length
+ *
+ * @return  0  - path was converted successfully
+ *          -1 - normal part of extended path is incorrect
+ *          -2 - search for label failed
+ *          -3 - buffer is too short to hold result
+ */
+te_errno asn_path_from_extended(const asn_value *node, const char *ext_path,
+                                char *asn_path, unsigned int asn_path_len);
+
+/**
+ * Inserts 'value' into root_node ASN value.
+ *
+ * ext_path must be of format
+ *   <labels>.[<label>:<asn text value>]
+ *
+ * 'value' will be inserted as a subvalue of '<labels>' value, its index
+ * will be stored in 'index' variable and after that <asn text value> will
+ * be assigned to field named <label> of newly inserted ASN value. The
+ * <label> must be of CHAR_STRING type.
+ *
+ * @param root_node  Root ASN value to start searching for labels
+ * @param ext_path   Extended ASN path with search expressions
+ * @param value      ASN value to be inserted
+ * @param index      Index of 'value' after insertion into container (OUT)
+ *
+ * @return   Status code
+ */
+int asn_insert_value_extended_path(const asn_value *root_node,
+                                   const char *ext_path,
+                                   asn_value *value,
+                                   int *index);
+
+
+/**
+ * Check that everything that is in the 'value' is in the 'container'.
+ *
+ * @param container  ASN value to be compared against
+ * @param value      ASN value to be compared
+ *
+ * @return Status code
+ */
+te_errno
+asn_check_value_contains(asn_value *container, asn_value *value);
+
 /* 
  * ======================================================================
  * All methods below are depricated, or will become such in nearest 

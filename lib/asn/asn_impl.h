@@ -156,6 +156,11 @@ struct asn_value
                         Zero value means incomplete value. */
     int c_indent;
     int c_lines;
+    char *path;    /**< Path to this value from root of some container.
+                        It is valid ONLY inside asn_walk_depth function.
+                        Root container is a container which was passed to 
+                        asn_walk_depth. Use asn_get_value_path from
+                        walk_func to obtain this path */
 };
 
 

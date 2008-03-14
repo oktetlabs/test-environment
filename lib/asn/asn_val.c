@@ -31,6 +31,7 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <string.h> 
+#include <ctype.h>
 
 #include <stdarg.h>
 
@@ -2895,36 +2896,163 @@ asn_get_mark(const asn_value *value, int *mark)
     return 0;
 }
 
-/* See description in asn_usr.h */
-te_errno
-asn_walk_depth(asn_value *container, te_bool only_leafs,
-               te_errno *status, walk_method func, void *user_ptr)
+/**
+ * Get ASN path of value relative to container. This function must be used
+ * only from inside callbacks of asn_walk_depth function.
+ *
+ * @param   value   ASN value
+ *
+ * @return  ASN path
+ */
+static const char*
+asn_get_value_path(asn_value *value)
+{
+    if (value == NULL || value->path == NULL)
+        return "";
+    return value->path;
+}
+
+/**
+ * Get label of a field by its index
+ *
+ * @param value      Root ASN value
+ * @param index      Index of field
+ * @param label      Buffer for name (OUT)
+ * @param label_len  Length of buffer
+ *
+ * @return  0 - success
+ *         -1 - error
+ */
+static int
+asn_impl_get_label_by_index(asn_value *value, unsigned int index,
+                            char *label, unsigned int label_len)
+{
+    const asn_type  *type = NULL;
+    char            *name = NULL;
+    asn_value       *child_value = NULL;
+#define BUF_SIZE 20
+    
+    if (value == NULL || label == NULL || label_len == 0)
+        return -1;
+
+    type = asn_get_type(value);
+    
+    if (type->syntax & ASN_SYN_NAMED)
+    {
+        name = type->sp.named_entries[index].name;
+        if (type->syntax == CHOICE)
+        {
+            if (0 != asn_get_child_by_index(value, &child_value, index))
+            {
+                return -1;
+            }
+            snprintf(label, label_len - 1, "#%s", child_value->name);
+        }
+        else
+        {
+            if (strlen(name) >= label_len)
+            {
+                return -1;
+            }
+            strncpy(label, name, label_len - 1);
+        }
+        label[label_len - 1] = '\0';
+    }
+    else /* Indexed entries */
+    {
+        name = malloc(BUF_SIZE * sizeof(char));
+        if (name == NULL)
+        {
+            return -1;
+        }
+        snprintf(name, BUF_SIZE - 1, "%d", index);
+        if (strlen(name) >= label_len)
+        {
+            return -1;
+        }
+        strncpy(label, name, label_len - 1);
+        label[label_len - 1] = '\0';
+    }
+
+#undef BUF_SIZE
+    return 0;
+}
+
+/**
+ * Walks through ASN tree and calls func on each item
+ *
+ * See params description in asn_walk_depth function. Additional parameter
+ * (path) contains ASN path to current value from the root node (container)
+ * and could be obtained in the 'func' using asn_get_value_path function.
+ */
+static te_errno
+asn_impl_walk_depth(asn_value *container, te_bool only_leafs, char *path,
+                    te_errno *status, walk_method func, void *user_ptr)
 {
     te_errno     rc = 0;
     unsigned int i;
     asn_value   *sv;
+    char        *subpath = NULL;
+    char        *valuename = NULL;
+#define PATH_SIZE 512
 
     if (container == NULL || status == NULL || func == NULL)
         return TE_EINVAL;
 
     if (container->syntax & COMPOUND)
     {
+        subpath = malloc(PATH_SIZE * sizeof(char));
+        valuename = malloc(PATH_SIZE * sizeof(char));
+        if (subpath == NULL || valuename == NULL)
+        {
+            return TE_ENOMEM;
+        }
         for (i = 0; i < container->len; i++)
         {
             if ((sv = container->data.array[i]) != NULL)
-                rc = asn_walk_depth(sv, only_leafs,
-                                    status, func, user_ptr);
+            {
+                valuename[0] = '\0';
+                asn_impl_get_label_by_index(container->data.array[i], i,
+                                            valuename, PATH_SIZE);
+                snprintf(subpath, PATH_SIZE - 1, "%s.%s", path, valuename);
+                rc = asn_impl_walk_depth(sv, only_leafs, subpath,
+                                         status, func, user_ptr);
+            }
             if (rc != 0 || (*status) != 0)
+            {
+                free(subpath);
+                free(valuename);
                 return rc;
+            }
         }
+        free(subpath);
+        free(valuename);
 
         if (only_leafs && container->len > 0)
             return 0; /* nothing more to do with this node */
     }
 
-    *status = func(container, user_ptr); 
+    container->path = path;
+    *status = func(container, user_ptr);
+    container->path = NULL;
 
     return 0;
+}
+
+/* See description in asn_usr.h */
+te_errno
+asn_walk_depth(asn_value *container, te_bool only_leafs,
+               te_errno *status, walk_method func, void *user_ptr)
+{
+    char    *path = NULL;
+    te_errno rc;
+
+    path = strdup("");
+    rc = asn_impl_walk_depth(container, only_leafs, path, status,
+                             func, user_ptr);
+    free(path);
+
+    return rc;
 }
 
 /* See description in asn_usr.h */
@@ -2939,6 +3067,521 @@ asn_walk_breadth(asn_value *container, te_bool only_leafs,
     UNUSED(user_ptr);
 
     return TE_EOPNOTSUPP;
+}
+
+/* See description in asn_usr.h */
+te_errno
+asn_path_from_extended(const asn_value *node, const char *ext_path,
+                       char *asn_path, unsigned int asn_path_len)
+{
+    char *search_start = NULL, *search_end = NULL;
+    char *path = NULL;
+    int prefix_len = 0;
+    asn_value *container = NULL, *new_value = NULL;
+    te_errno rc;
+    const asn_type *value_type = NULL;
+    const asn_type *subtype = NULL;
+    const asn_type *search_type = NULL;
+    asn_syntax value_syntax;
+    char *search_name = NULL;
+    char *search_value = NULL;
+    int search_len = 0;
+    char *p = NULL;
+    int i, parsed_syms = 0, len;
+
+    /* Check validity of arguments */
+    if ((node == NULL) || (ext_path == NULL) ||
+        (asn_path == NULL))
+        return TE_EINVAL;
+
+    /* Check if there are any searches */
+    if ((search_start = strstr(ext_path, ".[")) == NULL)
+    {
+        /* Nothing to replace - return the path as is */
+        if (asn_path_len < strlen(ext_path) + 1)
+        {
+            return TE_ENOBUFS;
+        }
+        memset(asn_path, '\0', asn_path_len);
+        strncpy(asn_path, ext_path, asn_path_len);
+
+        return 0;
+    }
+
+    /* Get ASN node which contents are to be searched */
+    prefix_len = search_start - ext_path;
+    path = malloc((prefix_len + 1) * sizeof(char));
+    strncpy(path, ext_path, prefix_len);
+    path[prefix_len] = '\0';
+    rc = asn_get_descendent(node, &container, path);
+    free(path);
+    if (rc != 0)
+    {
+        RING("ext: asn_get_descendent failed");
+        return rc;
+    }
+
+    /* Check type of container and type of members of container */
+    value_type = asn_get_type(container);
+    value_syntax = asn_get_syntax_of_type(value_type);
+    if ((value_syntax != SET_OF) &&
+        (value_syntax != SEQUENCE_OF))
+    {
+        RING("ext: wrong type of container");
+        return TE_EASNWRONGTYPE;
+    }
+    rc = asn_get_subtype(value_type, &subtype, "0");
+    if (rc != 0)
+    {
+        RING("ext: get_subtype failed");
+        return rc;
+    }
+    value_syntax = asn_get_syntax_of_type(subtype);
+    if ((value_syntax != SET) &&
+        (value_syntax != SEQUENCE))
+    {
+        RING("ext: wrong subtype: %d", value_syntax);
+        return TE_EASNWRONGTYPE;
+    }
+
+    /* Parse search expression - extract label and value */
+    search_end = strstr(search_start, "].");
+    if (search_end == NULL)
+    {
+        RING("ext: failed to find end of search");
+        return TE_EINVAL;
+    }
+
+    search_start += 2;
+    search_len = search_end - search_start;
+    search_name = malloc((search_len + 1) * sizeof(char));
+    search_value = malloc((search_len + 1) * sizeof(char));
+    memset(search_name, '\0', search_len + 1);
+    memset(search_value, '\0', search_len + 1);
+
+    p = search_name;
+    while (*search_start != ':')
+    {
+        if (isspace(*search_start))
+            continue;
+        *p++ = *search_start++;
+    }
+
+    search_start++;
+    *search_value = '\"';
+    p = search_value + 1;
+    while (search_start != search_end)
+    {
+        if (isspace(*search_start))
+            continue;
+        *p++ = *search_start++;
+    }
+    *p = '\"';
+    
+    /* Check that type of member has corresponding label */
+    for (i = 0; i < subtype->len; i++)
+    {
+        if (strcmp(subtype->sp.named_entries[i].name, search_name) == 0)
+        {
+            break;
+        }
+    }
+    if (i == subtype->len && subtype->len != 0)
+    {
+        RING("ext: couldn't find label");
+        rc = TE_EASNWRONGLABEL;
+        goto cleanup;
+    }
+    search_type = subtype->sp.named_entries[i].type;
+
+    /* Check that search type is CHAR_STRING */
+    if (search_type->syntax != CHAR_STRING)
+    {
+        RING("ext: wrong syntax of search value = %d", search_type->syntax);
+        rc = TE_EASNWRONGTYPE;
+        goto cleanup;
+    }
+
+    /* Create asn_value from search value based on labeled member type */
+    rc = asn_parse_value_text(search_value, search_type, &new_value, &parsed_syms);
+    if (rc != 0)
+    {
+        RING("ext: failed to parse search value '%s'", search_value);
+        goto cleanup;
+    }
+
+    /* Iterate through members of container comparing corrensponding field
+     *   When found - remember index and stop iteration
+     */
+    for (i = 0; i < container->len; i++)
+    {
+        asn_value *subvalue, *value_to_compare;
+
+        rc = asn_get_child_by_index(container, &subvalue, i);
+        if (rc != 0)
+        {
+            RING("ext: Failed to get child by index");
+            goto cleanup;
+        }
+        rc = asn_get_descendent(subvalue, &value_to_compare, search_name);
+        if (rc != 0)
+        {
+            RING("ext: asn_get_descendent for value_to_compare failed");
+            goto cleanup;
+        }
+
+        /* Compare value_to_compare with search_value - everything that is
+         * mentioned in the new_value must present in value_to_compare
+         */
+        rc = asn_check_value_contains(value_to_compare, new_value);
+        if (rc == 0)
+            break;
+    }
+    if (i == container->len) /* Nothing was found */
+    {
+        RING("ext: nothing was found to match search");
+        rc = TE_EASNDIFF;
+        goto cleanup;
+    }
+
+    /*
+     * Calculate necessary buffer length for ASN path and check
+     * asn_path_len
+     */
+    path = malloc(20 * sizeof(char));
+    len = snprintf(path, 20, ".%d.", i);
+    if (prefix_len + len + strlen(search_end + 2) >= asn_path_len)
+    {
+        free(path);
+        rc = TE_ENOBUFS;
+        goto cleanup;
+    }
+
+    /* Create final asn_path */
+    strncpy(asn_path, ext_path, prefix_len);
+    asn_path[prefix_len] = '\0';
+    strncat(asn_path, path, asn_path_len);
+    strncat(asn_path, search_end + 2, asn_path_len);
+    free(path);
+
+    rc = 0;
+
+cleanup:
+    free(search_name);
+    free(search_value);
+
+    return rc;
+}
+
+/* See description in asn_usr.h */
+int
+asn_insert_value_extended_path(const asn_value *root_node,
+                               const char *ext_path,
+                               asn_value *value,
+                               int *index)
+{
+    char *search_start = NULL, *search_end = NULL;
+    char *prefix_path = NULL;
+    int prefix_len = 0;
+    asn_value *new_value = NULL;
+    te_errno rc;
+    const asn_type *value_type = NULL;
+    const asn_type *subtype = NULL;
+    const asn_type *search_type = NULL;
+    asn_syntax value_syntax;
+    char *search_name = NULL;
+    char *search_value = NULL;
+    int search_len = 0;
+    char *p = NULL;
+    int i, parsed_syms = 0;
+
+    /* Check validity of arguments */
+    if ((root_node == NULL) || (ext_path == NULL) ||
+        (value == NULL))
+        return TE_EINVAL;
+
+    /* Check if there are any searches */
+    if ((search_start = strstr(ext_path, ".[")) == NULL)
+    {
+        return TE_EOPNOTSUPP;
+    }
+
+    /* Get ASN node which contents are to be searched */
+    prefix_len = search_start - ext_path;
+    prefix_path = malloc((prefix_len + 1) * sizeof(char));
+    strncpy(prefix_path, ext_path, prefix_len);
+    prefix_path[prefix_len] = '\0';
+    search_type = asn_get_type(root_node);
+    rc = asn_get_subtype(search_type, &value_type, prefix_path);
+    if (rc != 0)
+    {
+        RING("insert-extended: asn_get_descendent(%s) failed", prefix_path);
+        goto cleanup;
+    }
+
+    /* Check type of container and type of members of container */
+    value_syntax = asn_get_syntax_of_type(value_type);
+    if ((value_syntax != SET_OF) &&
+        (value_syntax != SEQUENCE_OF))
+    {
+        RING("insert-extended: incorrect type");
+        rc = TE_EASNWRONGTYPE;
+        goto cleanup;
+    }
+    rc = asn_get_subtype(value_type, &subtype, "0");
+    if (rc != 0)
+    {
+        RING("insert-extended: failed to get subtype");
+        goto cleanup;
+    }
+    value_syntax = asn_get_syntax_of_type(subtype);
+    if (((value_syntax != SET) &&
+         (value_syntax != SEQUENCE)) ||
+        (value->syntax != value_syntax))
+    {
+        RING("insert-extended: wrong syntax of subtype (need: %d or %d, have: %d, value->syntax=%d", SET, SEQUENCE, value_syntax, value->syntax);
+        rc = TE_EASNWRONGTYPE;
+        goto cleanup;
+    }
+
+    /* Parse search expression - extract label and value */
+    search_end = strstr(search_start, "]");
+    if (search_end == NULL)
+    {
+        RING("insert-extended: failed to find search end");
+        rc = TE_EINVAL;
+        goto cleanup;
+    }
+
+    search_start += 2;
+    search_len = search_end - search_start;
+    search_name = malloc((search_len + 1) * sizeof(char));
+    search_value = malloc((search_len + 1) * sizeof(char));
+    memset(search_name, '\0', search_len + 1);
+    memset(search_value, '\0', search_len + 1);
+    
+    p = search_name;
+    while (*search_start != ':')
+    {
+        if (isspace(*search_start))
+            continue;
+        *p++ = *search_start++;
+    }
+
+    search_start++;
+    search_value[0] = '\"';
+    p = search_value + 1;
+    while (search_start != search_end)
+    {
+        *p++ = *search_start++;
+    }
+    *p = '\"';
+    
+    /* Check that type of member has corresponding label */
+    for (i = 0; i < subtype->len; i++)
+    {
+        if (strcmp(subtype->sp.named_entries[i].name, search_name) == 0)
+        {
+            break;
+        }
+    }
+    if (i == subtype->len && subtype->len != 0)
+    { 
+        RING("insert-extended: subtype doesn't have necessary label");
+        rc = TE_EASNWRONGLABEL;
+        goto cleanup;
+    }
+    search_type = subtype->sp.named_entries[i].type;
+
+    /* Check that search type is CHAR_STRING */
+    if (search_type->syntax != CHAR_STRING)
+    {
+        rc = TE_EASNWRONGTYPE;
+        goto cleanup;
+    }
+
+    /* Create asn_value from search value based on labeled member type */
+    rc = asn_parse_value_text(search_value, search_type, &new_value, &parsed_syms);
+    if (rc != 0)
+    {
+        RING("insert-extended: Failed to parse search_value");
+        goto cleanup;
+    }
+
+    /*
+     * Insert 'value' into the container and get index
+     * For now always insert as index 0
+     */
+    rc = asn_insert_indexed(root_node, value, 0, prefix_path);
+    if (rc != 0)
+    {
+        RING("insert-extended: Failed to insert value");
+        goto cleanup;
+    }
+
+    if (index != NULL)
+    {
+        *index = 0;
+    }
+
+    /*
+     * Set 'search_name' subvalue of newly inserted value to 'new_value'
+     * value
+     */
+    rc = asn_put_descendent(value, new_value, search_name);
+
+cleanup:
+    free(prefix_path);
+    free(search_name);
+    free(search_value);
+
+    return rc;
+}
+
+/*
+ * Structure for asn_check_value_contains
+ */
+struct check_contains_s
+{
+    asn_value *container;
+    asn_value *value;
+};
+
+/**
+ * Compares two ASN values by comparing their textual representation
+ *
+ * TODO: Write more accurate comparison (consider order of items in
+ * SEQUENCE_OF and don't consider it in SET_OF)
+ *
+ * @param a  value to compare
+ * @param b  value to compare
+ *
+ * @return  0 - values are identical
+ *          Status code - otherwise
+ */
+static te_errno
+asn_impl_compare_values(asn_value *a, asn_value *b)
+{
+    char *text_a = NULL;
+    char *text_b = NULL;
+    int len_a = 0, len_b = 0;
+    int req_a, req_b;
+    te_errno rc = TE_EASNDIFF;
+
+#if 0
+    /* 
+     * TODO: Understand why UniverstalString leafs has COMPOUND syntax, but
+     * not CHAR_STRING. After that uncomment this type check.
+     */
+    if ((a->syntax != b->syntax) ||
+        (a->syntax | COMPOUND) ||
+        (b->syntax | COMPOUND))
+    {
+        RING("ASNCOMPARE: types are different: a(typename=%s)=%d, b(typename=%s)=%d", a->asn_type->name, a->asn_type->syntax, b->asn_type->name, b->asn_type->syntax);
+        return TE_EASNWRONGTYPE;
+    }
+#endif
+
+    len_a = len_b = 100;
+    text_a = malloc(len_a * sizeof(char));
+    text_b = malloc(len_b * sizeof(char));
+    if (text_a == NULL || text_b == NULL)
+    {
+        RING("ASNCOMPARE: Failed to allocate %d and %d bytes of memory", len_a, len_b);
+        return TE_ENOMEM;
+    }
+
+    req_a = asn_sprint_value(a, text_a, len_a, 0);
+    req_b = asn_sprint_value(b, text_b, len_b, 0);
+
+    if (req_a != len_a)
+    {
+        text_a = realloc(text_a, req_a + 1);
+        len_a = req_a + 1;
+    }
+    if (req_b != len_b)
+    {
+        text_b = realloc(text_b, req_b + 1);
+        len_b = req_b + 1;
+    }
+    req_a = asn_sprint_value(a, text_a, len_a, 0);
+    req_b = asn_sprint_value(b, text_b, len_b, 0);
+
+#if 0
+    RING("ASNCOMPARE: req_a=%d, req_b=%d, text_a='%s', text_b='%s'", req_a, req_b, text_a, text_b);
+#endif
+    rc = TE_EASNDIFF;
+    if (req_a == req_b)
+    {
+        if (0 == strncmp(text_a, text_b, req_a))
+        {
+            rc = 0;
+        }
+    }
+
+    free(text_a);
+    free(text_b);
+
+    return rc;
+}
+
+/**
+ * Callback for use with asn_walk_depth in asn_check_value_contains
+ *
+ * @param leaf      ASN value for leaf currently processed
+ * @param user_ptr  Pointer to user-defined data
+ *
+ * @return  Status code
+ */
+static te_errno
+asn_impl_check_contains_callback(asn_value *leaf, void *user_ptr)
+{
+    struct check_contains_s *cc = (struct check_contains_s *)user_ptr;
+    const char *path;
+    asn_value *cont_value;
+    te_errno rc;
+
+    path = asn_get_value_path(leaf);
+#if 0
+    RING("CHKCONTCALLBACK: got path='%s'", path);
+#endif
+    rc = asn_get_descendent(cc->container, &cont_value, path);
+    if (rc != 0)
+    {
+        return rc;
+    }
+#if 0
+    RING("CHKCONTCALLBACK: checking leaf(type=%s,%d) and cont_value(type=%s,%d)",
+         leaf->asn_type->name, leaf->syntax,
+         cont_value->asn_type->name, cont_value->syntax);
+#endif
+
+    return asn_impl_compare_values(leaf, cont_value);
+}
+
+/* See description in asn_usr.h */
+te_errno
+asn_check_value_contains(asn_value *container, asn_value *value)
+{
+    struct check_contains_s cc;
+    te_errno status = 0, rc;
+
+    cc.container = container;
+    cc.value = value;
+#if 0
+    RING("CHKCONT: checking container(type=%s,%d) and value(type=%s,%d)",
+         container->asn_type->name, container->syntax,
+         value->asn_type->name, value->syntax);
+#endif
+    rc = asn_walk_depth(value, TRUE, &status,
+                        asn_impl_check_contains_callback, (void *)&cc);
+
+    if (rc == 0)
+    {
+        rc = status;
+    }
+
+    return rc;
 }
 
 /**

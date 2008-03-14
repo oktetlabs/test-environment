@@ -1,0 +1,87 @@
+
+TE-NDN-Platform
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+IMPORTS Ip4Address FROM TE-NDN-Tcp-Ip;
+
+EXPORTS ;
+
+-- TODO:
+--  * EXPORTS clause
+--  * pppoe settings
+--  * bridge settings
+--  * check what parameters could be OPTIONAL
+
+Conn-Layer-ip_static ::= SEQUENCE {
+    addr              Ip4Address,
+    prefix            INTEGER (0..32),
+    gateway           Ip4Address,
+    dns1              Ip4Address,
+    dns2              Ip4Address OPTIONAL,
+    dns3              Ip4Address OPTIONAL,
+    hostname          UniversalString,
+    domain            UniversalString OPTIONAL,
+    ...
+}
+
+Conn-Layer-ip_dhcp ::= SEQUENCE {
+    vendorid          UniversalString,
+    clientid          UniversalString,
+    hostname          UniversalString,
+    ...
+}
+
+
+Sharing-Enum ::= INTEGER {
+    disabled(0),
+    vlan(1)
+}
+
+Conn-Type-Enum ::= INTEGER {
+    static(0),
+    dhcp(1),
+    ...
+}
+
+Conn-Layer-ethif ::= SEQUENCE {
+    priority          INTEGER (0..7),
+    sharing           Sharing-Enum,
+    vlan_id           INTEGER (-1..4095),
+}
+
+Conn-Layer-firewall ::= SEQUENCE {
+    firewall          BOOLEAN,
+    nat               BOOLEAN,
+    enforce-mss       BOOLEAN,
+    dmz               BOOLEAN,
+    dmz-host-ip       Ip4Address OPTIONAL,
+}
+
+
+Connection-Item ::= SEQUENCE {
+    id                INTEGER,
+    type              Conn-Type-Enum,
+    status            UniversalString,
+    -- General parameters
+    name              UniversalString,
+    description       UniversalString,
+    enabled           BOOLEAN,
+    -- Layers' parameters
+    eth_if            Conn-Layer-ethif,
+    ip_static         Conn-Layer-ip_static,
+    ip_dhcp           Conn-Layer-ip_dhcp,
+    firewall          Conn-Layer-firewall,
+    ...
+}
+
+Connection-List ::= SEQUENCE OF Connection-Item
+
+Configuration ::= SEQUENCE {
+  connection         Connection-List,
+  ...
+}
+
+END

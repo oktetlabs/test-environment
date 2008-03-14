@@ -254,6 +254,7 @@ typedef enum {
                                with named fields */
     TE_EASNTXTSEPAR,      /**< Wrong separator between elements
                                in const value */
+    TE_EASNDIFF,          /**< ASN values are different */
 /*@}*/
 
 /** @name Traffic Application Domain errno's */
