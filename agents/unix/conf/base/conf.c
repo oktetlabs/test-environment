@@ -8490,7 +8490,7 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
 
     /* FIXME: Non "ta_system" implementation is needed*/
     TE_SPRINTF(buf, "dd if=/dev/zero of=%s/%s bs=1k seek=131071 "
-               "count=1 > /dev/null", dom_u_path, xen_swpimg);
+               "count=1 2>/dev/null", dom_u_path, xen_swpimg);
 
     if ((sys = ta_system(buf)) != 0 && !(sys == -1 && errno == ECHILD))
     {
