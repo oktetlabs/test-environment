@@ -918,7 +918,7 @@ efport2ifindex(void)
     {
       intfdata2file("intf", -1, info->Index, info->AdapterName,
                     info->Address, "");
-      if ((guid_2_2_found_index >= 0) && (ef_index_2_2 == info->Index))
+      if ((guid_2_2_found_index >= 0) && (ef_index[0] == info->Index))
       {
         memcpy(mac1, info->Address, 6);
       }
@@ -932,7 +932,7 @@ efport2ifindex(void)
       }
     }
     free(adapters);
-
+#if 0
     if (ef_index_2_2 > 0)
     {
         if (old_ef_index_2_2 != ef_index_2_2)
@@ -957,7 +957,7 @@ efport2ifindex(void)
         }
     }
     
-    
+ #endif   
     if (ef_index[0] > 0)
     {
         if (old_ef_index[0] != ef_index[0])
@@ -4323,7 +4323,8 @@ static int phy_parameters_set(const char *ifname)
     else
     {
         err = GetLastError();
-        ERROR("Failed to get open NDIS registry key, err = %d", err);
+        ERROR("Failed to get open NDIS registry key, err = %d, path = %s", 
+            err, path);
         return TE_RC(TE_TA_WIN32, err);
     }
     RegCloseKey(hkKey);
