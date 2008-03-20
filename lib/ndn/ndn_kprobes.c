@@ -54,7 +54,7 @@ typedef enum {
 
 typedef enum {
     NDN_KPROBES_SCENARIOS,
-    NDN_KPROBES_EXPRESULT
+    NDN_KPROBES_EXPRESULT,
 } ndn_kprobes_scenarios_sequence_tags_t;
 
 typedef enum {
@@ -172,10 +172,7 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
     /* string2asn */
     if (asn_parse_value_text(kprobes_info_str, ndn_kprobes_packet,
                              &kprobes_info_asn, &s_parsed))
-    {
-        puts("string2asn");
         return -1;
-    }
     
     /* While we can get function name */
     for (i = 0; ; i++)
@@ -194,10 +191,7 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
             /* Get action for function */
             sprintf(request, "scenarios.%d.%d.action", i, j);
             if (asn_read_string(kprobes_info_asn, &action_str, request))
-            {
-                puts("action");
                 return -1;
-            }
 
             (*kprobes_info)[*number_of_structures].action = 
                 kprobes_map_code(kprobes_action_map, action_str);
@@ -206,11 +200,7 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
             sprintf(request, "scenarios.%d.%d.interceptcount", i, j);
             if (asn_read_int32(kprobes_info_asn,
                                &((*kprobes_info)[*number_of_structures].intercept_count), request))
-            {
-                puts("intercept_count");
                 return -1;
-            }
-
             
             /* Get retval if needed */
             if ((*kprobes_info)[*number_of_structures].action == TE_KPROBES_ACTION_FAIL)
@@ -218,10 +208,7 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
                 sprintf(request, "scenarios.%d.%d.retval", i, j);
                 if (asn_read_int32(kprobes_info_asn,
                                  &((*kprobes_info)[*number_of_structures].retval), request))
-                {
-                    puts("retval");
                     return -1;
-                }
             }
             else
                 (*kprobes_info)[*number_of_structures].retval = 0;
@@ -232,10 +219,7 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
                 sprintf(request, "scenarios.%d.%d.blocktimeout", i, j);
                 if (asn_read_int32(kprobes_info_asn,
                                 &((*kprobes_info)[*number_of_structures].block_timeout), request))
-                {
-                    puts("block_timeout");
                     return -1;
-                }
             }
             else
                 (*kprobes_info)[*number_of_structures].block_timeout = 0;
@@ -246,12 +230,10 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
     }
     /* Get expected drivers load result */
     if (asn_read_string(kprobes_info_asn, &expresult_str, "expresult"))
-    {
-        puts("expresult");
         return -1;
-    }
-    *expresult = kprobes_map_code(kprobes_expresult_map, expresult_str);
 
+    *expresult = kprobes_map_code(kprobes_expresult_map, expresult_str);
+    
     return 0;
 }
 #endif /* defined (__linux__) */
