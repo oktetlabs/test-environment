@@ -415,9 +415,15 @@ if test -n "$ifcfg_via_netlink" ; then
     # On Linux netlink is default way to configure interfaces and IP
     use_netlink=yes
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_NETLINK"
-    AC_CHECK_LIB([netlink], [rtnl_open], [],
-                 AC_MSG_ERROR([Cannot find libnetlink!]))
-    EXTRA_LDADD="$EXTRA_LDADD -lnetlink"
+
+    if test "$with_libnetconf" ; then
+        EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_LIBNETCONF"
+        EXTRA_LDADD="$EXTRA_LDADD -lnetconf"
+    else
+        AC_CHECK_LIB([netlink], [rtnl_open], [],
+                     AC_MSG_ERROR([Cannot find libnetlink!]))
+        EXTRA_LDADD="$EXTRA_LDADD -lnetlink"
+    fi
 else 
     # The rest should use IOCTL interface for now
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_IOCTL -DUSE_ROUTE_SOCKET"

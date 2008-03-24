@@ -32,7 +32,7 @@
  * $Id$
  */
 
-#ifdef USE_NETLINK
+#if defined(USE_NETLINK) && !defined(USE_LIBNETCONF)
 
 #if !defined(__linux__)
 #error netlink can be used on Linux only
@@ -1011,4 +1011,4 @@ ta_unix_conf_route_blackhole_del(ta_rt_info_t *rt_info)
     return 0;
 }
 
-#endif /* USE_NETLINK */
+#endif /* USE_NETLINK && !USE_LIBNETCONF */

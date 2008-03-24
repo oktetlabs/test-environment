@@ -195,17 +195,24 @@ typedef struct pam_message const pam_message_t;
 #include "conf_daemons.h"
 #endif
 
+#if defined(__linux__)
+#include <linux/sockios.h>
+#endif
+
 #ifdef USE_NETLINK
+#ifdef USE_LIBNETCONF
+#include <netconf.h>
+#else
 #include <sys/select.h>
 #include <asm/types.h>
 #include <linux/netlink.h>
 #include <fnmatch.h>
-#include <linux/sockios.h>
 #include <iproute/libnetlink.h>
 #include <iproute/rt_names.h>
 #include <iproute/utils.h>
 #include <iproute/ll_map.h>
 #include <iproute/ip_common.h>
+#endif
 #endif
 
 #ifndef ENABLE_IFCONFIG_STATS
@@ -256,6 +263,9 @@ extern te_errno ta_unix_conf_sys_init();
 extern te_errno ta_unix_conf_phy_init();
 
 #ifdef USE_NETLINK
+#ifdef USE_LIBNETCONF
+netconf_handle nh = NETCONF_HANDLE_INVALID;
+#else
 /** Netlink message storage */
 typedef struct agt_nlmsg_entry {
     TAILQ_ENTRY(agt_nlmsg_entry) links;  /**< List links */
@@ -267,6 +277,7 @@ typedef TAILQ_HEAD(agt_nlmsg_list, agt_nlmsg_entry) agt_nlmsg_list;
 
 static void free_nlmsg_list(agt_nlmsg_list *list);
 
+#endif
 #endif
 
 /**
@@ -962,6 +973,13 @@ rcf_ch_conf_root(void)
     if (!init)
     {
 #ifdef USE_NETLINK
+#ifdef USE_LIBNETCONF
+        if (netconf_open(&nh) != 0)
+        {
+            ERROR("Failed to open netconf session");
+            return NULL;
+        }
+#else
         struct rtnl_handle rth;
         
         memset(&rth, 0, sizeof(rth));
@@ -973,6 +991,7 @@ rcf_ch_conf_root(void)
 
         ll_init_map(&rth);
         rtnl_close(&rth);
+#endif
 #endif
 
         if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -1480,6 +1499,7 @@ prefix_check(const char *value, sa_family_t family, unsigned int *prefix)
 }
 
 #ifdef USE_NETLINK
+#if !defined(USE_LIBNETCONF)
 /**
  * Store answer from RTM_GETXXX in netlink message list.
  *
@@ -1738,10 +1758,12 @@ nl_ip_addr_add_del(int cmd, const char *ifname,
 
     char         addrstr[INET6_ADDRSTRLEN];
 
+#endif /* !USE_LIBNETCONF */
 #define AF_INET_DEFAULT_BYTELEN  (sizeof(struct in_addr))
 #define AF_INET_DEFAULT_BITLEN   (AF_INET_DEFAULT_BYTELEN << 3)
 #define AF_INET6_DEFAULT_BYTELEN (sizeof(struct in6_addr))
 #define AF_INET6_DEFAULT_BITLEN  (AF_INET6_DEFAULT_BYTELEN << 3)
+#if !defined(USE_LIBNETCONF)
 
     ENTRY("cmd=%d ifname=%s addr=0x%x prefix=%u bcast=%s",
           cmd, ifname, addr, prefix, bcast == NULL ? "<null>" :
@@ -1881,6 +1903,7 @@ nl_ip_addr_modify(enum net_addr_ops cmd,
     return rc;
 }
 
+#endif
 #endif /* USE_NETLINK */
 
 
@@ -3315,7 +3338,6 @@ static te_errno
 net_addr_add(unsigned int gid, const char *oid, const char *value,
              const char *ifname, const char *addr)
 {
-    const char     *name;
     unsigned int    prefix;
     char           *end;
     in_addr_t       mask;
@@ -3330,15 +3352,6 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
-
-    /* Check that address has not been assigned to any interface yet */
-    name = nl_find_net_addr(addr, NULL, &ip_addr, NULL, NULL);
-    if (name != NULL)
-    {
-        ERROR("%s(): Address '%s' already exists on interface '%s'",
-              __FUNCTION__, addr, name);
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-    }
 
     family = str_addr_family(addr);
 
@@ -3384,8 +3397,92 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         broadcast.ip4_addr.s_addr = (~mask) | ip_addr.ip4_addr.s_addr;
     }
 
-    return nl_ip_addr_modify(NET_ADDR_ADD, ifname, addr,
-                              &prefix, &broadcast);
+#if defined(USE_LIBNETCONF)
+    {
+        unsigned int      ifindex;
+        unsigned int      addrlen;
+        netconf_list     *list;
+        netconf_node     *t;
+        netconf_net_addr  net_addr;
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        addrlen = (family == AF_INET) ?
+                  sizeof(struct in_addr) : sizeof(struct in6_addr);
+
+        /*
+         * Check that address has not been assigned to any
+         * interface yet.
+         */
+
+        list = netconf_net_addr_dump(nh, (unsigned char)family);
+        if (list == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *naddr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, naddr->address, addrlen) == 0)
+            {
+                static char tmp[IF_NAMESIZE];
+
+                if (if_indextoname(naddr->ifindex, tmp) == NULL)
+                    strcpy(tmp, "unknown");
+
+                ERROR("%s(): Address '%s' already exists "
+                      "on interface '%s'", __FUNCTION__, addr, tmp);
+                netconf_list_free(list);
+                return TE_RC(TE_TA_UNIX, TE_EEXIST);
+            }
+        }
+
+        netconf_list_free(list);
+
+        netconf_net_addr_init(&net_addr);
+        net_addr.family = family;
+        net_addr.prefix = prefix;
+        net_addr.ifindex = ifindex;
+        net_addr.address = (uint8_t *)&ip_addr;
+        net_addr.broadcast = (uint8_t *)&broadcast;
+
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_ADD, &net_addr) < 0)
+        {
+            ERROR("%s(): Cannot add address '%s' on interface '%s'",
+                  __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        return 0;
+    }
+#else
+    {
+        const char *name;
+
+        /*
+         * Check that address has not been assigned to any
+         * interface yet.
+         */
+        name = nl_find_net_addr(addr, NULL, &ip_addr, NULL, NULL);
+        if (name != NULL)
+        {
+            ERROR("%s(): Address '%s' already exists on interface '%s'",
+                  __FUNCTION__, addr, name);
+            return TE_RC(TE_TA_UNIX, TE_EEXIST);
+        }
+
+        return nl_ip_addr_modify(NET_ADDR_ADD, ifname, addr,
+                                  &prefix, &broadcast);
+    }
+#endif
 }
 #endif
 
@@ -3473,7 +3570,84 @@ net_addr_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, rc);
 
 #if defined(USE_NETLINK)
+#if defined(USE_LIBNETCONF)
+    {
+        sa_family_t             family;
+        unsigned int            addrlen;
+        unsigned int            ifindex;
+        netconf_net_addr        net_addr;
+        gen_ip_address          ip_addr;
+        netconf_list           *list;
+        netconf_node           *t;
+        te_bool                 found;
+        unsigned char           prefix = 0;
+
+        family = str_addr_family(addr);
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        addrlen = (family == AF_INET) ?
+                  sizeof(struct in_addr) : sizeof(struct in6_addr);
+
+        if (inet_pton(family, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to convert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        /* Check address existence */
+        if ((list = netconf_net_addr_dump_iface(nh,
+                                                (unsigned char)family,
+                                                ifindex)) == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        found = FALSE;
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *naddr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, naddr->address, addrlen) == 0)
+            {
+                found = TRUE;
+                prefix = naddr->prefix;
+                break;
+            }
+        }
+
+        netconf_list_free(list);
+
+        if (!found)
+        {
+            ERROR("Address '%s' on interface '%s' not found",
+                  addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        netconf_net_addr_init(&net_addr);
+        net_addr.family = family;
+        net_addr.prefix = prefix;
+        net_addr.ifindex = ifindex;
+        net_addr.address = (uint8_t *)&ip_addr;
+
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_DEL, &net_addr) < 0)
+        {
+            ERROR("%s(): Cannot delete address '%s' from "
+                  "interface '%s'", __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        return 0;
+    }
+#else
     return nl_ip_addr_modify(NET_ADDR_DELETE, ifname, addr, NULL, NULL);
+#endif
 #elif defined(USE_IOCTL)
     {
         sa_family_t  family = str_addr_family(addr);
@@ -3538,6 +3712,86 @@ net_addr_del(unsigned int gid, const char *oid,
 static te_errno
 net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
+#if defined(USE_LIBNETCONF)
+{
+    te_errno            rc;
+    unsigned int        ifindex;
+    netconf_list       *nlist;
+    netconf_node       *t;
+    unsigned int        len;
+    char               *cur_ptr;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (list == NULL)
+    {
+        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+    {
+        ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if ((ifindex = if_nametoindex(ifname)) == 0)
+    {
+        ERROR("%s(): Device '%s' does not exist", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    /* Get addresses of both families, IPv4 and IPv6 */
+    if ((nlist = netconf_net_addr_dump_iface(nh, AF_UNSPEC,
+                                            ifindex)) == NULL)
+    {
+        ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    /* Calculate maximum space needed by list */
+    len = nlist->length * (INET6_ADDRSTRLEN + 1);
+
+    if ((*list = malloc(len)) == NULL)
+    {
+        netconf_list_free(nlist);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    memset(*list, 0, len);
+
+    cur_ptr = *list;
+    for (t = nlist->head; t != NULL; t = t->next)
+    {
+        const netconf_net_addr *net_addr = &(t->data.net_addr);
+
+        assert(cur_ptr >= *list);
+        assert((unsigned int)(cur_ptr - *list) <= len);
+
+        if (cur_ptr != *list)
+        {
+            snprintf(cur_ptr, len - (cur_ptr - *list), " ");
+            cur_ptr += strlen(cur_ptr);
+        }
+
+        if (inet_ntop(net_addr->family, net_addr->address, cur_ptr,
+                      *list + len - cur_ptr) == NULL)
+        {
+            ERROR("%s(): Cannot save network address", __FUNCTION__);
+            free(*list);
+            netconf_list_free(nlist);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        cur_ptr += strlen(cur_ptr);
+    }
+
+    netconf_list_free(nlist);
+
+    return 0;
+}
+#else
 {
     int               len = 0;
     te_errno          rc;
@@ -3668,6 +3922,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     free_nlmsg_list(&addr_list);
     return 0;
 }
+#endif
 
 #elif USE_IOCTL
 
@@ -3849,12 +4104,79 @@ prefix_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
 #if defined(USE_NETLINK)
+#if defined(USE_LIBNETCONF)
+    {
+        te_errno                rc;
+        sa_family_t             family;
+        unsigned int            addrlen;
+        unsigned int            ifindex;
+        gen_ip_address          ip_addr;
+        netconf_list           *list;
+        netconf_node           *t;
+        te_bool                 found;
+
+        if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        {
+            ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        family = str_addr_family(addr);
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        addrlen = (family == AF_INET) ?
+                  sizeof(struct in_addr) : sizeof(struct in6_addr);
+
+        if (inet_pton(family, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to convert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        if ((list = netconf_net_addr_dump_iface(nh,
+                                                (unsigned char)family,
+                                                ifindex)) == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        found = FALSE;
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *net_addr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, net_addr->address, addrlen) == 0)
+            {
+                found = TRUE;
+                prefix = net_addr->prefix;
+                break;
+            }
+        }
+
+        netconf_list_free(list);
+
+        if (!found)
+        {
+            ERROR("Address '%s' on interface '%s' to get prefix "
+                  "not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+    }
+#else
     if (nl_find_net_addr(addr, ifname, NULL, &prefix, NULL) == NULL)
     {
         ERROR("Address '%s' on interface '%s' to get prefix not found",
               addr, ifname);
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
+#endif
 #elif defined(USE_IOCTL)
     strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
     if (strchr(addr, ':') == NULL)
@@ -3934,7 +4256,102 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
         return rc;
 
 #if defined(USE_NETLINK)
+#if defined(USE_LIBNETCONF)
+    {
+        te_errno                rc;
+        sa_family_t             family;
+        unsigned int            addrlen;
+        unsigned int            ifindex;
+        netconf_net_addr        net_addr;
+        gen_ip_address          ip_addr;
+        netconf_list           *list;
+        netconf_node           *t;
+        unsigned char           oldprefix = 0;
+        te_bool                 found;
+
+        if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        {
+            ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        family = str_addr_family(addr);
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        addrlen = (family == AF_INET) ?
+                  sizeof(struct in_addr) : sizeof(struct in6_addr);
+
+        if (inet_pton(family, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to convert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        if ((list = netconf_net_addr_dump_iface(nh,
+                                                (unsigned char)family,
+                                                ifindex)) == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        found = FALSE;
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *naddr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, naddr->address, addrlen) == 0)
+            {
+                found = TRUE;
+                oldprefix = naddr->prefix;
+                break;
+            }
+        }
+
+        netconf_list_free(list);
+
+        if (!found)
+        {
+            ERROR("Address '%s' on interface '%s' to set prefix "
+                  "not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        netconf_net_addr_init(&net_addr);
+        net_addr.family = family;
+        net_addr.prefix = oldprefix;
+        net_addr.ifindex = ifindex;
+        net_addr.address = (uint8_t *)&ip_addr;
+
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_DEL,
+                                    &net_addr) < 0)
+        {
+            ERROR("%s(): Cannot delete address '%s' from "
+                  "interface '%s'", __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        net_addr.prefix = prefix;
+
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_ADD,
+                                    &net_addr) < 0)
+        {
+            ERROR("%s(): Cannot add address '%s' to interface '%s'",
+                  __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        return 0;
+    }
+#else
     return nl_ip_addr_modify(NET_ADDR_MODIFY, ifname, addr, &prefix, NULL);
+#endif
 #elif defined(USE_IOCTL)
     {
         const char *name;
@@ -3984,12 +4401,82 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     memset(&bcast, 0, sizeof(bcast));
 
 #if defined(USE_NETLINK)
+#if defined(USE_LIBNETCONF)
+    {
+        te_errno                rc;
+        unsigned int            ifindex;
+        gen_ip_address          ip_addr;
+        netconf_list           *list;
+        netconf_node           *t;
+        te_bool                 found;
+
+        if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        {
+            ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        if (inet_pton(AF_INET, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to convert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        if ((list = netconf_net_addr_dump_iface(nh, AF_INET,
+                                                ifindex)) == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        found = FALSE;
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *net_addr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, net_addr->address,
+                       sizeof(struct in_addr)) == 0)
+            {
+                found = TRUE;
+
+                if (net_addr->broadcast != NULL)
+                {
+                    memcpy(&bcast.ip4_addr.s_addr, net_addr->broadcast,
+                           sizeof(struct in_addr));
+                }
+                else
+                {
+                    bcast.ip4_addr.s_addr = htonl(INADDR_BROADCAST);
+                }
+
+                break;
+            }
+        }
+
+        netconf_list_free(list);
+
+        if (!found)
+        {
+            ERROR("Address '%s' on interface '%s' to get broadcast "
+                  "address not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+    }
+#else
     if (nl_find_net_addr(addr, ifname, NULL, NULL, &bcast) == NULL)
     {
         ERROR("Address '%s' on interface '%s' to get broadcast address "
               "not found", addr, ifname);
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
+#endif
 #elif defined(USE_IOCTL)
     strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
     if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
@@ -4068,7 +4555,97 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
     }
 
 #if defined(USE_NETLINK)
+#if defined(USE_LIBNETCONF)
+    {
+        te_errno                rc;
+        unsigned int            ifindex;
+        netconf_net_addr        net_addr;
+        gen_ip_address          ip_addr;
+        netconf_list           *list;
+        netconf_node           *t;
+        te_bool                 found;
+        unsigned char           prefix = 0;
+
+        if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        {
+            ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        if (inet_pton(AF_INET, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to convert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        if ((list = netconf_net_addr_dump_iface(nh,
+                                                AF_INET,
+                                                ifindex)) == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        found = FALSE;
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *naddr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, naddr->address,
+                       sizeof(struct in_addr)) == 0)
+            {
+                found = TRUE;
+                prefix = naddr->prefix;
+                break;
+            }
+        }
+
+        netconf_list_free(list);
+
+        if (!found)
+        {
+            ERROR("Address '%s' on interface '%s' to set broadcast "
+                  "not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        netconf_net_addr_init(&net_addr);
+        net_addr.family = AF_INET;
+        net_addr.prefix = prefix;
+        net_addr.ifindex = ifindex;
+        net_addr.address = (uint8_t *)&ip_addr;
+
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_DEL,
+                                    &net_addr) < 0)
+        {
+            ERROR("%s(): Cannot delete address '%s' from "
+                  "interface '%s'",
+                  __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        net_addr.broadcast = (uint8_t *)&bcast;
+
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_ADD,
+                                    &net_addr) < 0)
+        {
+            ERROR("%s(): Cannot add address '%s' to interface '%s'",
+                  __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        return 0;
+    }
+#else
     return nl_ip_addr_modify(NET_ADDR_MODIFY, ifname, addr, NULL, &bcast);
+#endif
 #elif defined(USE_IOCTL)
     {
         const char *name;
@@ -4422,6 +4999,51 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
     }
 
 #ifdef USE_NETLINK
+#if defined(USE_LIBNETCONF)
+    {
+        unsigned int            ifindex;
+        netconf_list           *list;
+        netconf_node           *t;
+        te_bool                 found;
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        if ((list = netconf_link_dump(nh)) == NULL)
+        {
+            ERROR("%s(): Cannot get list of interfaces", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        found = FALSE;
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_link *link = &(t->data.link);
+
+            if (ifindex == (unsigned int)(link->ifindex))
+            {
+                link_addr_n2a(link->broadcast, link->addrlen,
+                              value, RCF_MAX_VAL);
+                found = TRUE;
+                break;
+            }
+        }
+
+        netconf_list_free(list);
+
+        if (!found)
+        {
+            ERROR("Cannot find interface '%s'", ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        return 0;
+    }
+#else
 {
     struct rtnl_handle  rth;
     int                 ifindex;
@@ -4519,6 +5141,7 @@ exit:
 
     return rc;
 }
+#endif
 #elif HAVE_SYS_DLPI_H
     do {
         size_t  len = sizeof(buf);
@@ -4920,6 +5543,7 @@ promisc_set(unsigned int gid, const char *oid, const char *value,
 
 
 #ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
+#if !defined(USE_LIBNETCONF)
 /** Find neighbour entry and return its parameters */
 /**< User data for neigh_find_cb() callback function */
 typedef struct {
@@ -5000,12 +5624,94 @@ neigh_find_cb(const struct sockaddr_nl *who, struct nlmsghdr *n,
     return 0;
 }
 #endif
+#endif
 
 static te_errno
 neigh_find(const char *oid, const char *ifname, const char *addr,
            char *mac_p, unsigned int *state_p)
 {
 #ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
+#if defined(USE_LIBNETCONF)
+    te_errno            rc;
+    sa_family_t         family;
+    unsigned int        ifindex;
+    gen_ip_address      ip_addr;
+    unsigned int        addrlen;
+    netconf_list       *list;
+    netconf_node       *t;
+    te_bool             dynamic;
+    te_bool             found;
+
+    family = str_addr_family(addr);
+    dynamic = (strstr(oid, "dynamic") != NULL);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+    {
+        ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if ((ifindex = if_nametoindex(ifname)) == 0)
+    {
+        ERROR("%s(): Device '%s' does not exist", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    if (inet_pton(family, addr, &ip_addr) <= 0)
+    {
+        ERROR("Failed to convert address '%s' from string", addr);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    addrlen = (family == AF_INET) ?
+              sizeof(struct in_addr) : sizeof(struct in6_addr);
+
+    if ((list = netconf_neigh_dump(nh, family)) == NULL)
+    {
+        ERROR("%s(): Cannot get list of neighbours", __FUNCTION__);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    found = FALSE;
+    for (t = list->head; t != NULL; t = t->next)
+    {
+        const netconf_neigh *neigh = &(t->data.neigh);
+
+        if ((unsigned int)(neigh->ifindex) != ifindex)
+            continue;
+
+        if (memcmp(neigh->dst, &ip_addr, addrlen) != 0)
+            continue;
+
+        if ((neigh->state == NETCONF_NUD_UNSPEC) ||
+            (neigh->state == NETCONF_NUD_FAILED) ||
+            (dynamic == !!(neigh->state & NETCONF_NUD_PERMANENT)))
+        {
+            continue;
+        }
+
+        found = TRUE;
+
+        if (mac_p != NULL)
+        {
+            link_addr_n2a(neigh->lladdr, neigh->addrlen,
+                          mac_p, RCF_MAX_VAL);
+        }
+
+        if (state_p != NULL)
+            *state_p = neigh->state;
+
+        /* Find the first one */
+        break;
+    }
+
+    netconf_list_free(list);
+
+    if (!found)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return 0;
+#else
     struct rtnl_handle   rth;    
     neigh_find_cb_param  user_data;
     te_errno             rc;
@@ -5046,6 +5752,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
     rtnl_close(&rth);
     return 0;
     
+#endif
 #else
     UNUSED(oid);
     UNUSED(ifname);
@@ -5183,6 +5890,7 @@ neigh_set(unsigned int gid, const char *oid, const char *value,
 }
 
 #ifdef NEIGH_USE_NETLINK
+#if !defined(USE_LIBNETCONF)
 /** Add or delete a neighbour entry.
  *
  * @param oid           Object instance identifier
@@ -5281,6 +5989,7 @@ neigh_change(const char *oid, const char *addr, const char *ifname,
     return 0;
 }
 #endif
+#endif
 
 /**
  * Add a new neighbour entry.
@@ -5297,6 +6006,69 @@ static te_errno
 neigh_add(unsigned int gid, const char *oid, const char *value,
           const char *ifname, const char *addr)
 {
+#if defined(USE_NETLINK) && defined(USE_LIBNETCONF)
+    te_errno            rc;
+    te_bool             dynamic;
+    sa_family_t         family;
+    unsigned int        ifindex;
+    gen_ip_address      ip_addr;
+    netconf_neigh       neigh;
+    uint8_t             raw_addr[ETHER_ADDR_LEN];
+
+    UNUSED(gid);
+
+    family = str_addr_family(addr);
+    dynamic = (strstr(oid, "dynamic") != NULL);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+    {
+        ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if ((ifindex = if_nametoindex(ifname)) == 0)
+    {
+        ERROR("%s(): Device '%s' does not exist", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    if (inet_pton(family, addr, &ip_addr) <= 0)
+    {
+        ERROR("Failed to convert address '%s' from string", addr);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    netconf_neigh_init(&neigh);
+    neigh.family = family;
+    neigh.ifindex = ifindex;
+
+    neigh.state = (dynamic) ?
+                  NETCONF_NUD_REACHABLE : NETCONF_NUD_PERMANENT;
+
+    neigh.dst = (uint8_t *)&ip_addr;
+
+    if (value != NULL)
+    {
+        if (link_addr_a2n(raw_addr, sizeof(raw_addr),
+                          value) != ETHER_ADDR_LEN)
+        {
+            ERROR("Bad hardware address '%s'", value);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        neigh.addrlen = ETHER_ADDR_LEN;
+        neigh.lladdr = raw_addr;
+    }
+
+    if (netconf_neigh_modify(nh, NETCONF_CMD_REPLACE, &neigh) < 0)
+    {
+        ERROR("%s(): Cannot add neighbour '%s' on interface '%s'",
+              __FUNCTION__, addr, ifname);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return 0;
+#else
 #ifndef NEIGH_USE_NETLINK
     struct arpreq arp_req;
     int           i;
@@ -5366,6 +6138,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
 #endif    
+#endif
 }
 
 /**
@@ -5394,6 +6167,50 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
         }
         return rc;
     }
+#if defined(USE_NETLINK) && defined(USE_LIBNETCONF)
+    {
+        sa_family_t         family;
+        unsigned int        ifindex;
+        gen_ip_address      ip_addr;
+        netconf_neigh       neigh;
+
+        family = str_addr_family(addr);
+
+        if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        {
+            ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        if (inet_pton(family, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to convert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        netconf_neigh_init(&neigh);
+        neigh.family = family;
+        neigh.ifindex = ifindex;
+        neigh.dst = (uint8_t *)&ip_addr;
+
+        if (netconf_neigh_modify(nh, NETCONF_CMD_DEL, &neigh) < 0)
+        {
+            ERROR("%s(): Cannot delete neighbour '%s' from "
+                  "interface '%s'",
+                  __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        return 0;
+    }
+#else
 #ifdef NEIGH_USE_NETLINK
     return neigh_change(oid, addr, ifname, NULL, RTM_DELNEIGH); 
 #else /* USE_IOCTL */
@@ -5432,9 +6249,109 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 #endif
     }
 #endif    
+#endif
 }
 
 #ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
+#if defined(USE_LIBNETCONF)
+static te_errno
+ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
+                        char **list)
+{
+    te_errno            rc;
+    unsigned int        ifindex;
+    netconf_list       *nlist;
+    netconf_node       *t;
+    unsigned int        len;
+    char               *cur_ptr;
+
+    if (list == NULL)
+    {
+        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+    {
+        ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if ((ifindex = if_nametoindex(ifname)) == 0)
+    {
+        ERROR("%s(): Device '%s' does not exist", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    /* There are no neighbours for loopback interface */
+    if (strcmp(ifname, "lo") == 0)
+        return 0;
+
+    /* Get neighbours of both families: IPv4 and IPv6 */
+    if ((nlist = netconf_neigh_dump(nh, AF_UNSPEC)) == NULL)
+    {
+        ERROR("%s(): Cannot get list of neighbours", __FUNCTION__);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    /* Calculate maximum space needed by the list */
+    len = nlist->length * (INET6_ADDRSTRLEN + 1);
+
+    if ((*list = malloc(len)) == NULL)
+    {
+        netconf_list_free(nlist);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    memset(*list, 0, len);
+
+    cur_ptr = *list;
+    for (t = nlist->head; t != NULL; t = t->next)
+    {
+        const netconf_neigh *neigh = &(t->data.neigh);
+
+        assert(cur_ptr >= *list);
+        assert((unsigned int)(cur_ptr - *list) <= len);
+
+        if ((unsigned int)(neigh->ifindex) != ifindex)
+            continue;
+
+        if (((neigh->state & NETCONF_NUD_UNSPEC) != 0) ||
+            ((neigh->state & NETCONF_NUD_INCOMPLETE) != 0) ||
+            (!(neigh->state & NETCONF_NUD_PERMANENT) == is_static))
+        {
+            continue;
+        }
+
+        if ((neigh->lladdr == NULL) || (neigh->dst == NULL))
+            continue;
+
+        /* Neighbour is ok, save it to the list */
+
+        if (cur_ptr != *list)
+        {
+            snprintf(cur_ptr, len - (cur_ptr - *list), " ");
+            cur_ptr += strlen(cur_ptr);
+        }
+
+        if (inet_ntop(neigh->family, neigh->dst, cur_ptr,
+                      len - (cur_ptr - *list)) == NULL)
+        {
+            ERROR("%s(): Cannot save destination address",
+                  __FUNCTION__);
+            free(*list);
+            netconf_list_free(nlist);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        cur_ptr += strlen(cur_ptr);
+    }
+
+    netconf_list_free(nlist);
+
+    return 0;
+}
+#else
 typedef struct {
     te_bool dynamic;
     char    ifname[IFNAMSIZ];
@@ -5524,6 +6441,7 @@ ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
 
     return 0;
 }
+#endif
 #elif !HAVE_INET_MIB2_H
 static te_errno
 ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
