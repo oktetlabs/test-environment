@@ -2582,7 +2582,7 @@ process_user_request(usrreq *req)
                     ta *agt = *a;
                     ta *next = agt->next; /**< Save 'next' item */
 
-                    if (!(agent->flags & TA_DEAD)) /** If TA is NOT DEAD */
+                    if (!(agt->flags & TA_DEAD)) /** If TA is NOT DEAD */
                     {
                         sprintf(cmd, "SID %d %s",
                                 ++agt->sid, TE_PROTO_SHUTDOWN);
