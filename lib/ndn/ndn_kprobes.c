@@ -151,7 +151,7 @@ kprobes_map_code(kprobes_map_t *table, const char *id)
  *                             which represents kptobes info
  * @param number_of_structures (OUT)Number of structures in kprobes_info array
  *
- * @return 0 on success or -1
+ * @return 0 on success
  */
 int
 ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult, 
@@ -159,6 +159,7 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
                        int *number_of_structures)
 {
     asn_value *kprobes_info_asn = NULL;
+    int        rc;
     int        s_parsed;    
     int        i;
     int        j;
@@ -170,9 +171,9 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
     *number_of_structures = 0;
 
     /* string2asn */
-    if (asn_parse_value_text(kprobes_info_str, ndn_kprobes_packet,
-                             &kprobes_info_asn, &s_parsed))
-        return -1;
+    if ((rc = asn_parse_value_text(kprobes_info_str, ndn_kprobes_packet,
+                                   &kprobes_info_asn, &s_parsed)) != 0)
+        return rc;
     
     /* While we can get function name */
     for (i = 0; ; i++)
@@ -181,45 +182,57 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
         {
             *kprobes_info =
                 (kprobes_info_t*)realloc((void *)*kprobes_info,
-                                         sizeof(kprobes_info_t) * ((*number_of_structures) + 1));
+                                         sizeof(kprobes_info_t) * 
+                                            ((*number_of_structures) + 1));
             /* Get function name */
             sprintf(request, "scenarios.%d.%d.function", i, j);
             if (asn_read_string(kprobes_info_asn, &function_name, request))
                 break;
-            strcpy((*kprobes_info)[*number_of_structures].function_name, function_name);
+            strcpy((*kprobes_info)[*number_of_structures].function_name,
+                   function_name);
             
             /* Get action for function */
             sprintf(request, "scenarios.%d.%d.action", i, j);
-            if (asn_read_string(kprobes_info_asn, &action_str, request))
-                return -1;
+            if ((rc = asn_read_string(kprobes_info_asn, &action_str, request))
+                != 0)
+                return rc;
 
             (*kprobes_info)[*number_of_structures].action = 
                 kprobes_map_code(kprobes_action_map, action_str);
         
             /* Get intercept count */
             sprintf(request, "scenarios.%d.%d.interceptcount", i, j);
-            if (asn_read_int32(kprobes_info_asn,
-                               &((*kprobes_info)[*number_of_structures].intercept_count), request))
-                return -1;
+            if ((rc = asn_read_int32(kprobes_info_asn,
+                                     &((*kprobes_info)[*number_of_structures].
+                                        intercept_count),
+                                     request)) != 0)
+                return rc;
             
             /* Get retval if needed */
-            if ((*kprobes_info)[*number_of_structures].action == TE_KPROBES_ACTION_FAIL)
+            if ((*kprobes_info)[*number_of_structures].action ==
+                TE_KPROBES_ACTION_FAIL)
             {
                 sprintf(request, "scenarios.%d.%d.retval", i, j);
-                if (asn_read_int32(kprobes_info_asn,
-                                 &((*kprobes_info)[*number_of_structures].retval), request))
-                    return -1;
+                if ((rc = asn_read_int32(kprobes_info_asn,
+                                         &((*kprobes_info)
+                                            [*number_of_structures].
+                                                retval),
+                                         request)) != 0)
+                    return rc;
             }
             else
                 (*kprobes_info)[*number_of_structures].retval = 0;
         
             /* Get block timeout if needed */
-            if ((*kprobes_info)[*number_of_structures].action == TE_KPROBES_ACTION_BLOCK)
+            if ((*kprobes_info)[*number_of_structures].action == 
+                TE_KPROBES_ACTION_BLOCK)
             {
                 sprintf(request, "scenarios.%d.%d.blocktimeout", i, j);
-                if (asn_read_int32(kprobes_info_asn,
-                                &((*kprobes_info)[*number_of_structures].block_timeout), request))
-                    return -1;
+                if ((rc = asn_read_int32(kprobes_info_asn,
+                                   &((*kprobes_info)[*number_of_structures].
+                                       block_timeout),
+                                   request)) != 0)
+                    return rc;
             }
             else
                 (*kprobes_info)[*number_of_structures].block_timeout = 0;
@@ -229,8 +242,9 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
             break;
     }
     /* Get expected drivers load result */
-    if (asn_read_string(kprobes_info_asn, &expresult_str, "expresult"))
-        return -1;
+    if ((rc = asn_read_string(kprobes_info_asn, &expresult_str, "expresult"))
+        != 0)
+        return rc;
 
     *expresult = kprobes_map_code(kprobes_expresult_map, expresult_str);
     
