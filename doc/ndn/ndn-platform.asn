@@ -5,82 +5,120 @@ BEGIN
 
 IMPORTS DATA-UNIT FROM TE-NDN-General;
 
-IMPORTS Ip4Address FROM TE-NDN-Tcp-Ip;
 
 EXPORTS ;
 
--- TODO:
---  * EXPORTS clause
---  * pppoe settings
---  * bridge settings
---  * check what parameters could be OPTIONAL
-
-Conn-Layer-ip_static ::= SEQUENCE {
-    addr              Ip4Address,
-    prefix            INTEGER (0..32),
-    gateway           Ip4Address,
-    dns1              Ip4Address,
-    dns2              Ip4Address OPTIONAL,
-    dns3              Ip4Address OPTIONAL,
-    hostname          UniversalString,
-    domain            UniversalString OPTIONAL,
-    ...
+Conn-Layer-eth-if-up-param ::= SEQUENCE {
+    vlan-id         INTEGER,
+    priority        INTEGER (0..7)
 }
 
-Conn-Layer-ip_dhcp ::= SEQUENCE {
-    vendorid          UniversalString,
-    clientid          UniversalString,
-    hostname          UniversalString,
-    ...
+Conn-Layer-eth-if ::= SEQUENCE {
+    up-param        Conn-Layer-eth-if-up-param,
+    param           NULL
 }
 
-
-Sharing-Enum ::= INTEGER {
-    disabled(0),
-    vlan(1)
+Conn-Layer-eth-port ::= SEQUENCE {
+    up-param        NULL,
+    param           NULL
 }
+
+Conn-Layer-firewall-param ::= SEQUENCE {
+    firewall        BOOLEAN,
+    nat             BOOLEAN,
+    dmz             BOOLEAN,
+    dmz-host        OCTET STRING,
+    enforce-mss     BOOLEAN
+}
+
+Conn-Layer-firewall ::= SEQUENCE {
+    up-param        NULL,
+    param           Conn-Layer-firewall-param
+}
+
+Conn-Layer-ip-dhcp-up-param ::= SEQUENCE {
+    vendorid        UniversalString,
+    clientid        UniversalString,
+    hostname        UniversalString
+}
+
+Conn-Layer-ip-dhcp ::= SEQUENCE {
+    up-param        Conn-Layer-ip-dhcp-up-param,
+    param           NULL
+}
+
+Conn-Layer-ip-ipcp ::= SEQUENCE {
+    up-param        NULL,
+    param           NULL
+}
+
+Conn-Layer-ip-static-param ::= SEQUENCE {
+    addr            OCTET STRING,
+    prefix          INTEGER (0..32),
+    gateway         OCTET STRING,
+    hostname        UniversalString,
+    domain          UniversalString,
+    dns1            OCTET STRING,
+    dns2            OCTET STRING,
+    dns3            OCTET STRING
+}
+
+Conn-Layer-ip-static ::= SEQUENCE {
+    up-param        NULL,
+    param           Conn-Layer-ip-static-param
+}
+
+Conn-Layer-ppp-param ::= SEQUENCE {
+    username        UniversalString,
+    password        UniversalString,
+    service-name    UniversalString,
+    ac-name         UniversalString,
+    auth-type       UniversalString,
+    mru             INTEGER (0..65535),
+    persist         BOOLEAN,
+    maxfail         INTEGER (0..65535),
+    demand          BOOLEAN,
+    idle            INTEGER (0..65535),
+    proxyarp        BOOLEAN,
+    debug           BOOLEAN,
+    keepalive-retry INTEGER (0..65535),
+    keepalive-inteval   INTEGER (0..65535)
+}
+
+Conn-Layer-ppp ::= SEQUENCE {
+    up-param        NULL,
+    param           Conn-Layer-ppp-param
+}
+
 
 Conn-Type-Enum ::= INTEGER {
     static(0),
     dhcp(1),
+    pppoe(2),
     ...
 }
-
-Conn-Layer-ethif ::= SEQUENCE {
-    priority          INTEGER (0..7),
-    sharing           Sharing-Enum,
-    vlan_id           INTEGER (-1..4095),
-}
-
-Conn-Layer-firewall ::= SEQUENCE {
-    firewall          BOOLEAN,
-    nat               BOOLEAN,
-    enforce-mss       BOOLEAN,
-    dmz               BOOLEAN,
-    dmz-host-ip       Ip4Address OPTIONAL,
-}
-
 
 Connection-Item ::= SEQUENCE {
-    id                INTEGER,
-    type              Conn-Type-Enum,
-    status            UniversalString,
-    -- General parameters
-    name              UniversalString,
-    description       UniversalString,
-    enabled           BOOLEAN,
+    id              INTEGER,
+    type            Conn-Type-Enum,
+    admin           BOOLEAN,
+    name            UniversalString,
+    description     UniversalString,
+
     -- Layers' parameters
-    eth_if            Conn-Layer-ethif,
-    ip_static         Conn-Layer-ip_static,
-    ip_dhcp           Conn-Layer-ip_dhcp,
-    firewall          Conn-Layer-firewall,
-    ...
+    eth-if          Conn-Layer-eth-if,
+    eth-port        Conn-Layer-eth-port,
+    firewall        Conn-Layer-firewall,
+    ip-dhcp         Conn-Layer-ip-dhcp,
+    ip-ipcp         Conn-Layer-ip-ipcp,
+    ip-static       Conn-Layer-ip-static,
+    ppp             Conn-Layer-ppp
 }
 
-Connection-List ::= SEQUENCE OF Connection-Item
+Connection-Seq ::= SEQUENCE OF Connection-Item
 
 Configuration ::= SEQUENCE {
-  connection         Connection-List,
+  connection         Connection-Seq,
   ...
 }
 
