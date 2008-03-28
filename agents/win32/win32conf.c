@@ -126,6 +126,11 @@ extern char *ta_name;
 
 #define METRIC_DEFAULT  20
 
+/* Version of Solarflare driver */
+#define DRIVER_VERSION_UNKNOWN 0
+#define DRIVER_VERSION_2_1 1
+#define DRIVER_VERSION_2_2 2
+
 /*
  * Access routines prototypes (comply to procedure types
  * specified in rcf_ch_api.h).
@@ -239,6 +244,8 @@ static int get_settings_path(char *path);
 static int phy_parameters_get(const char *ifname);
 
 static int phy_parameters_set(const char *ifname);
+
+static int get_driver_version();
                               
 static unsigned int speed_duplex_state = 0;
 static unsigned int speed_duplex_to_set = 0;
@@ -1997,7 +2004,6 @@ mtu_get(unsigned int gid, const char *oid, char *value,
 */
 
     sprintf(value, "%lu", if_entry.dwMtu);
-
 
     return 0;
 }
@@ -4164,6 +4170,7 @@ ta_unix_conf_phy_init(void)
 #define NDIS_SF_0_2_1         "sfe_ndis_0"
 #define BUFSIZE_REG         256
 #define SPEED_DUPLEX_NAME TEXT("*SpeedDuplex")
+#define DRIVER_VERSION_NAME TEXT("DriverVersion")
 
 static int get_settings_path(char *path)
 {
@@ -4227,6 +4234,55 @@ static int get_settings_path(char *path)
     UNUSED(path);
     return 0;
 #endif
+}
+
+static int get_driver_version()
+{
+    int err;
+    HKEY hkKey;
+    static char path[BUFSIZE_REG];
+    char driver_version_value[10];
+    unsigned int dwTemp;
+
+    if (get_settings_path(path) != 0)
+    {
+      err = -1;
+      ERROR("Failed to find NDIS port 0 entry");
+      return TE_RC(TE_TA_WIN32, err);
+    }
+
+    if(RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, 
+                    KEY_READ, &hkKey) == ERROR_SUCCESS)
+    {
+        dwTemp = sizeof(driver_version_value);
+        if (RegQueryValueEx(hkKey, DRIVER_VERSION_NAME,
+                            NULL, NULL, (BYTE *)driver_version_value,
+                            &dwTemp) != ERROR_SUCCESS)
+        {
+            err = GetLastError();
+            ERROR("Failed to get DriverVersion, err = %d", err);
+            RegCloseKey(hkKey);
+            return DRIVER_VERSION_UNKNOWN;
+        }
+    }    
+    else
+    {
+        err = GetLastError();
+        WARN("Failed to get open NDIS registry key, err = %d", err);
+        return DRIVER_VERSION_UNKNOWN;
+    }
+    RegCloseKey(hkKey);
+
+    if (strncmp(driver_version_value, "2.1", 3) == 0)
+    {
+        return DRIVER_VERSION_2_1;
+    }
+    else if (strncmp(driver_version_value, "2.2", 3) == 0)
+    {
+        return DRIVER_VERSION_2_2;
+    }
+
+    return DRIVER_VERSION_UNKNOWN;
 }
 
 static int phy_parameters_get(const char *ifname)
