@@ -54,7 +54,6 @@ typedef enum {
 
 typedef enum {
     NDN_KPROBES_SCENARIOS,
-    NDN_KPROBES_EXPRESULT,
 } ndn_kprobes_scenarios_sequence_tags_t;
 
 typedef enum {
@@ -91,8 +90,7 @@ static asn_type ndn_kprobes_scenarios_s = {
 };
 
 static asn_named_entry_t _ndn_kprobes_packet_ne_array[] = {
-    { "scenarios", &ndn_kprobes_scenarios_s, {PRIVATE, NDN_KPROBES_SCENARIOS} },
-    { "expresult", &asn_base_charstring_s, {PRIVATE, NDN_KPROBES_EXPRESULT} }
+    { "scenarios", &ndn_kprobes_scenarios_s, {PRIVATE, NDN_KPROBES_SCENARIOS} }
 };
 
 asn_type ndn_kprobes_packet_s = {
@@ -108,13 +106,6 @@ typedef struct kprobes_map_s
     char *id;
     int   code;
 } kprobes_map_t;
-
-static kprobes_map_t kprobes_expresult_map[] = {
-    {"KPROBES_LOAD_FAIL", KPROBES_FAULTS_DRV_LOAD_FAIL},
-    {"KPROBES_IF_CREATE_FAIL", KPROBES_FAULTS_IF_CREATE_FAIL},
-    {"KPROBES_NO_FAIL", KPROBES_FAULTS_NO_FAIL},
-    {NULL, 0}
-};
 
 static kprobes_map_t kprobes_action_map[] = {
     {"fail", TE_KPROBES_ACTION_FAIL},
@@ -145,8 +136,6 @@ kprobes_map_code(kprobes_map_t *table, const char *id)
  * array of kprobes_info_t structures.
  *
  * @param kprobes_info_str     Kprobes info in asn string representation
- * @param expresult            (OUT) Expected driver load result 
- *                             from kprobes info
  * @param kprobes_info         (OUT) Array of structures, 
  *                             which represents kptobes info
  * @param number_of_structures (OUT)Number of structures in kprobes_info array
@@ -154,7 +143,7 @@ kprobes_map_code(kprobes_map_t *table, const char *id)
  * @return 0 on success
  */
 int
-ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult, 
+ndn_kprobes_parse_info(const char *kprobes_info_str,
                        kprobes_info_t **kprobes_info, 
                        int *number_of_structures)
 {
@@ -166,7 +155,6 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
     char       request[KPROBES_MAX_FUNC_NAME] = {0};
     char      *action_str = NULL;
     char      *function_name = NULL;
-    char      *expresult_str = NULL;
     
     *number_of_structures = 0;
 
@@ -241,13 +229,6 @@ ndn_kprobes_parse_info(const char *kprobes_info_str, int *expresult,
         if (j == 0)
             break;
     }
-    /* Get expected drivers load result */
-    if ((rc = asn_read_string(kprobes_info_asn, &expresult_str, "expresult"))
-        != 0)
-        return rc;
-
-    *expresult = kprobes_map_code(kprobes_expresult_map, expresult_str);
-    
     return 0;
 }
 #endif /* defined (__linux__) */

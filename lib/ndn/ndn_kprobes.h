@@ -82,8 +82,6 @@ typedef struct kprobes_info_s {
  * array of kprobes_info_t structures.
  *
  * @param kprobes_info_str     Kprobes info in asn string representation
- * @param expresult            (OUT) Expected result of drivers load
- *                             from kprobes info
  * @param kprobes_info         (OUT) Array of structures, 
  *                             which represents kptobes info
  * @param number_of_structures (OUT) Number of structures in kprobes_info array
@@ -91,7 +89,6 @@ typedef struct kprobes_info_s {
  * @return 0 on success or -1
  */
 extern int ndn_kprobes_parse_info(const char *kprobes_info_str, 
-                                  int *expresult,
                                   kprobes_info_t **kprobes_info,
                                   int *number_of_structures);
 #ifdef __cplusplus
