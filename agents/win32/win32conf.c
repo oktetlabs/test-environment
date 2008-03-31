@@ -481,7 +481,6 @@ const char *te_lockdir = "/tmp";
 
 /** Mapping of EF ports to interface indices */
 static DWORD ef_index[2] = { 0, 0 };
-static DWORD ef_index_2_2 = 0; // for driver version 2.2
 static char ef_regpath[2][1024];
 
 /*  
@@ -692,8 +691,7 @@ efport2ifindex(void)
     
     int i, j;
     unsigned int old_ef_index[2];
-    unsigned int old_ef_index_2_2;
-    int guid1_found_index, guid2_found_index, guid_2_2_found_index;
+    int guid1_found_index, guid2_found_index;
     
     driver_type[0] = 0;
 
@@ -814,8 +812,8 @@ efport2ifindex(void)
                 unsigned char *guid, *guid_regpath;
                 value_size = BUFSIZE;
 
-                guid = guid_2_2[guid1_amount];
-                guid_regpath = guid_2_2_regpath[guid_2_2_amount];
+                guid = guid1[guid_2_2_amount];
+                guid_regpath = guid1_regpath[guid_2_2_amount];
                 guid_2_2_amount++;
 
                 strcpy(guid_regpath, subkey_path);
@@ -874,10 +872,8 @@ efport2ifindex(void)
 
     old_ef_index[0] = ef_index[0];
     old_ef_index[1] = ef_index[1];
-    old_ef_index_2_2 = ef_index_2_2;
     ef_index[0] = 0;
     ef_index[1] = 0;
-    ef_index_2_2 = 0;
     guid1_found_index = -1;
     guid2_found_index = -1;
     //RING("SFCResolve: numadapters=%d", iftable->NumAdapters);
@@ -902,10 +898,10 @@ efport2ifindex(void)
         /* Try to find index for 2.2 version driver */
         for(j = 0; j < guid_2_2_amount; j++)
         {
-          if (strstr(w2a(iftable->Adapter[i].Name), guid_2_2[j]) != NULL)
+          if (strstr(w2a(iftable->Adapter[i].Name), guid1[j]) != NULL)
           {
             ef_index[0] = iftable->Adapter[i].Index;
-            guid_2_2_found_index = j;
+            guid1_found_index = j;
           }
         }
     }
@@ -925,10 +921,12 @@ efport2ifindex(void)
     {
       intfdata2file("intf", -1, info->Index, info->AdapterName,
                     info->Address, "");
+#if 0
       if ((guid_2_2_found_index >= 0) && (ef_index[0] == info->Index))
       {
         memcpy(mac1, info->Address, 6);
       }
+#endif
       if ((guid1_found_index >= 0) && (ef_index[0] == info->Index))
       {
         memcpy(mac1, info->Address, 6);
@@ -963,8 +961,7 @@ efport2ifindex(void)
             RING("Can't find index for EF port 1");
         }
     }
-    
- #endif   
+#endif   
     if (ef_index[0] > 0)
     {
         if (old_ef_index[0] != ef_index[0])
