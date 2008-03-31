@@ -98,6 +98,21 @@ Conn-Type-Enum ::= INTEGER {
     ...
 }
 
+Service-Separation-Enum ::= INTEGER {
+    none(0),
+    primary(1),
+    secondary(2),
+    tertiary(3),
+    quaternary(4),
+    quinary(5)
+}
+
+Service-Separation ::= SEQUENCE {
+    default     Service-Separation-Enum,
+    management  Service-Separation-Enum,
+    voice       Service-Separation-Enum
+}
+
 Connection-Item ::= SEQUENCE {
     id              INTEGER,
     type            Conn-Type-Enum,
@@ -113,6 +128,9 @@ Connection-Item ::= SEQUENCE {
     ip-ipcp         Conn-Layer-ip-ipcp,
     ip-static       Conn-Layer-ip-static,
     ppp             Conn-Layer-ppp
+
+    -- Service separation
+    pfpool          Service-Separation
 }
 
 Connection-Seq ::= SEQUENCE OF Connection-Item
