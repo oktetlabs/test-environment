@@ -79,7 +79,7 @@ tapi_cfg_xen_get_path(char const *ta, char *path)
     }
 
     if ((rc = cfg_get_instance_fmt(&type, &value,
-                                   "/agent:%s/xen:", ta)) != 0)
+                                   "/agent:%s/xen:", ta)) == 0)
     {
         strcpy(path, value);
         free((void *)value);
@@ -450,7 +450,7 @@ tapi_cfg_xen_dom_u_get_status(char const *ta, char const *dom_u,
     char const  *value;
     te_errno     rc;
 
-    if (ta == NULL || dom_u == NULL || status)
+    if (ta == NULL || dom_u == NULL || status == NULL)
     {
         ERROR("Failed to get status for '%s' domU on %s: Invalid params",
               dom_u, ta);
@@ -1022,6 +1022,7 @@ tapi_cfg_xen_dom_u_migrate(char const *from_ta, char const *to_ta,
     char xen_path2[PATH_MAX];
     char status[PATH_MAX];
 
+    unsigned        memory_size = 0;
     uint8_t         mac[ETHER_ADDR_LEN];
     struct sockaddr ip;
 
@@ -1073,8 +1074,10 @@ tapi_cfg_xen_dom_u_migrate(char const *from_ta, char const *to_ta,
         goto cleanup0;
     }
 
-    /* Save MAC and IP addresses */
-    if ((rc = tapi_cfg_xen_dom_u_get_mac_addr(from_ta, dom_u, mac)) != 0 ||
+    /* Save memory size and MAC and IP addresses */
+    if ((rc = tapi_cfg_xen_dom_u_get_memory_size(from_ta, dom_u,
+                                                 &memory_size)) != 0 ||
+        (rc = tapi_cfg_xen_dom_u_get_mac_addr(from_ta, dom_u, mac)) != 0 ||
         (rc = tapi_cfg_xen_dom_u_get_ip_addr( from_ta, dom_u, &ip)) != 0)
     {
         goto cleanup0;
@@ -1122,7 +1125,9 @@ tapi_cfg_xen_dom_u_migrate(char const *from_ta, char const *to_ta,
     }
 
     /* Set MAC and IP addresses saved previously */
-    if ((rc = tapi_cfg_xen_dom_u_set_mac_addr(to_ta, dom_u, mac)) != 0 ||
+    if ((rc = tapi_cfg_xen_dom_u_set_memory_size(to_ta, dom_u,
+                                                 memory_size)) != 0 ||
+        (rc = tapi_cfg_xen_dom_u_set_mac_addr(to_ta, dom_u, mac)) != 0 ||
         (rc = tapi_cfg_xen_dom_u_set_ip_addr( to_ta, dom_u, &ip)) != 0)
     {
         goto cleanup0;
