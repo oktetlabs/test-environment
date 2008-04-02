@@ -638,6 +638,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(EASNTXTVALNAME);    
                           
         ERR2STR(EASNTXTSEPAR);      
+        ERR2STR(EASNDIFF);      
                           
         ERR2STR(ETADCSAPNOTEX);  
         ERR2STR(ETADLOWER);       
