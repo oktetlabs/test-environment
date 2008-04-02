@@ -1226,7 +1226,7 @@ asn_put_descendent(asn_value *container, asn_value *subval,
             rc = asn_put_child_by_index(par_value, subval, index);
         else
         {
-            rc = asn_get_child_by_index(par_value, &par_value,
+            rc = asn_get_child_by_index(par_value, &tmp,
                                         index);
             if (rc == TE_EASNINCOMPLVAL)
             {
