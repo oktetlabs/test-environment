@@ -1248,6 +1248,10 @@ asn_put_descendent(asn_value *container, asn_value *subval,
                     par_value = tmp;
                 }
             }
+            else
+            {
+                par_value = tmp;
+            }
         }
         if (rc != 0)
             break;
