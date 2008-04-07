@@ -1730,7 +1730,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         if (rc != 0)
         {
             ERROR("Processing of the run item '%s' arguments "
-                  "failed: %r", test_get_name(p), rc);
+                  "failed: %r", run_item_name(p), rc);
             return rc;
         }
         node = xmlNodeNext(node);

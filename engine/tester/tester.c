@@ -182,6 +182,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         TESTER_OPT_QUIET,
         TESTER_OPT_VERBOSE,
+        TESTER_OPT_INTERACTIVE,
 
         TESTER_OPT_NO_BUILD,
         TESTER_OPT_NO_RUN,
@@ -221,6 +222,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
     /* Option Table */
     const struct poptOption options_table[] = {
+        { "interactive", 'i', POPT_ARG_NONE, NULL, TESTER_OPT_INTERACTIVE,
+          "Enter interactive mode after initial test scenario "
+          "execution.", NULL },
+
         { "suite", 's', POPT_ARG_STRING, NULL, TESTER_OPT_SUITE_PATH,
           "Specify path to the Test Suite.", "<name>:<path>" },
 
@@ -419,6 +424,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     global->flags &= ~TESTER_VERBOSE;
                 else
                     WARN("Extra 'quiet' option is ignored");
+                break;
+
+            case TESTER_OPT_INTERACTIVE:
+                global->flags |= TESTER_INTERACTIVE;
                 break;
 
             case TESTER_OPT_SUITE_PATH:

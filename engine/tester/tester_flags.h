@@ -80,6 +80,7 @@ enum tester_flags {
 
     TESTER_INLOGUE      = (1 << 28),  /**< Is in prologue/epilogue */
 
+    TESTER_INTERACTIVE  = (1 << 29),  /**< Interactive mode */
     TESTER_SHUTDOWN     = (1 << 30),  /**< Shutdown test scenario */
 };
 

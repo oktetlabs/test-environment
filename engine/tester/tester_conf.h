@@ -377,6 +377,15 @@ test_get_name(const run_item *ri)
 }
 
 /**
+ * Get run item name.
+ */
+static inline const char *
+run_item_name(const run_item *ri)
+{
+    return (ri->name != NULL) ? ri->name : test_get_name(ri);
+}
+
+/**
  * Get pointer to variable/argument values.
  *
  * @param va            Variable/argument

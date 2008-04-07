@@ -173,7 +173,7 @@ walk_service(const tester_cfg_walk *walk, const void *opaque,
     tester_cfg_walk_ctl ctl_tmp;
 
     ENTRY("run=%s id_off=%u start_cb=%p end_cb=%p",
-          test_get_name(run), id_off, start_cb, end_cb);
+          run_item_name(run), id_off, start_cb, end_cb);
 
     if (start_cb != NULL)
         ctl = start_cb((run_item *)run, id_off, (void *)opaque);
@@ -217,7 +217,7 @@ walk_test_session(const tester_cfg_walk *walk, const void *opaque,
     tester_cfg_walk_ctl ctl;
     tester_cfg_walk_ctl ctl_tmp;
 
-    ENTRY("run=%s id_off=%u flags=%#x", test_get_name(ri), id_off, flags);
+    ENTRY("run=%s id_off=%u flags=%#x", run_item_name(ri), id_off, flags);
 
     if (walk->session_start != NULL)
         ctl = walk->session_start((run_item *)ri, (test_session *)session,
@@ -283,7 +283,7 @@ walk_test_package(const tester_cfg_walk *walk, const void *opaque,
     tester_cfg_walk_ctl  ctl;
     tester_cfg_walk_ctl  ctl_tmp;
 
-    ENTRY("run=%s id_off=%u flags=%#x", test_get_name(ri), id_off, flags);
+    ENTRY("run=%s id_off=%u flags=%#x", run_item_name(ri), id_off, flags);
 
     if (walk->pkg_start != NULL)
         ctl = walk->pkg_start((run_item *)ri, (test_package *)pkg,
@@ -335,7 +335,7 @@ walk_repeat(const tester_cfg_walk *walk, const void *opaque,
     te_bool             do_exception = FALSE;
 
     ENTRY("run=%s id_off=%u flags=%#x keepalive=%p exception=%p",
-          test_get_name(run), id_off, flags, keepalive, exception);
+          run_item_name(run), id_off, flags, keepalive, exception);
 
     do {
         if (keepalive != NULL)
@@ -449,7 +449,7 @@ walk_iterate(const tester_cfg_walk *walk, const void *opaque,
     unsigned int        i;
 
     ENTRY("run=%s id_off=%u flags=%#x keepalive=%p exception=%p",
-          test_get_name(run), id_off, flags, keepalive, exception);
+          run_item_name(run), id_off, flags, keepalive, exception);
 
     assert(run != NULL);
 
@@ -509,7 +509,7 @@ walk_run_item(const tester_cfg_walk *walk, const void *opaque,
     tester_cfg_walk_ctl ctl_tmp;
 
     ENTRY("run=%s id_off=%u flags=%#x keepalive=%p exception=%p",
-          test_get_name(run), id_off, flags, keepalive, exception);
+          run_item_name(run), id_off, flags, keepalive, exception);
 
     if (walk->run_start != NULL)
         ctl = walk->run_start((run_item *)run, id_off, flags,

@@ -200,7 +200,7 @@ test_run_item_find_arg(const run_item *ri, const char *name,
     else if (rc == 0)
     {
         INFO("%s(): Argument '%s' not found in run item '%s' context",
-             __FUNCTION__, name, test_get_name(ri));
+             __FUNCTION__, name, run_item_name(ri));
     }
     else
     {
@@ -483,7 +483,7 @@ test_var_arg_get_value(const run_item                   *ri,
     if (index >= n_values)
     {
         ERROR("%s(): Run item '%s' argument '%s' value with too big "
-              "index %u is requested", __FUNCTION__, test_get_name(ri),
+              "index %u is requested", __FUNCTION__, run_item_name(ri),
               va->name, index);
         return TE_RC(TE_TESTER, TE_E2BIG);
     }

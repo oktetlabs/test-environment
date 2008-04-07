@@ -2178,8 +2178,8 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
                                      data->ctx_n_args, &data->arg->reqs);
     if (data->arg->value == NULL)
     {
-        ERROR("Unable to get value of the argument of the test '%s'",
-              test_get_name(data->ri));
+        ERROR("Unable to get value of the argument of the run item '%s'",
+              run_item_name(data->ri));
         return TE_RC(TE_TESTER, TE_ESRCH);
     }
 
@@ -2416,7 +2416,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     ctx->current_result.id = tester_get_id();
 
     /* Test is considered here as run, if such event is logged */
-    tester_term_out_start(ctx->flags, ri->type, test_get_name(ri),
+    tester_term_out_start(ctx->flags, ri->type, run_item_name(ri),
                           ctx->group_result.id, ctx->current_result.id);
     log_test_start(ri, ctx->group_result.id, ctx->current_result.id,
                    ctx->args);
@@ -2606,7 +2606,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                         ctx->current_result.result.status,
                         ctx->current_result.error);
 
-        tester_term_out_done(ctx->flags, ri->type, test_get_name(ri),
+        tester_term_out_done(ctx->flags, ri->type, run_item_name(ri),
                              ctx->group_result.id,
                              ctx->current_result.id,
                              ctx->current_result.status,
@@ -2654,33 +2654,36 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         {
             step = 0;
         }
-        if (scenario_step(&gctx->act, &gctx->act_id, step) == TESTING_STOP)
+
+        while (scenario_step(&gctx->act, &gctx->act_id, step) ==
+                   TESTING_STOP)
         {
+            if (gctx->flags & TESTER_INTERACTIVE)
+            {
+            }
             /* End of testing scenario */
             EXIT("FIN");
             return TESTER_CFG_WALK_FIN;
         }
-        else
+
+        switch (run_this_item(cfg_id_off, gctx->act_id,
+                              ri->weight, 1))
         {
-            switch (run_this_item(cfg_id_off, gctx->act_id,
-                                  ri->weight, 1))
-            {
-                case TESTING_STOP:
-                    EXIT("CONT");
-                    return TESTER_CFG_WALK_CONT;
+            case TESTING_STOP:
+                EXIT("CONT");
+                return TESTER_CFG_WALK_CONT;
 
-                case TESTING_FORWARD:
-                    EXIT("BREAK");
-                    return TESTER_CFG_WALK_BREAK;
+            case TESTING_FORWARD:
+                EXIT("BREAK");
+                return TESTER_CFG_WALK_BREAK;
 
-                case TESTING_BACKWARD:
-                    EXIT("BACK");
-                    return TESTER_CFG_WALK_BACK;
+            case TESTING_BACKWARD:
+                EXIT("BACK");
+                return TESTER_CFG_WALK_BACK;
 
-                default:
-                    assert(FALSE);
-                    return TESTER_CFG_WALK_FAULT;
-            }
+            default:
+                assert(FALSE);
+                return TESTER_CFG_WALK_FAULT;
         }
     }
     else

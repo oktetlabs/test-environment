@@ -255,8 +255,8 @@ prepare_arg_cb(const test_var_arg *va, void *opaque)
                                   &n_values, NULL, NULL);
     if (rc != 0)
     {
-        ERROR("Enumeration of values of argument '%s' of the test "
-              "'%s' failed: %r", va->name, test_get_name(data->ri), rc);
+        ERROR("Enumeration of values of argument '%s' of the run item "
+              "'%s' failed: %r", va->name, run_item_name(data->ri), rc);
         return rc;
     }
 
@@ -466,8 +466,8 @@ prepare_test_start(run_item *ri, unsigned int cfg_id_off,
     if (gctx->rc != 0)
         return TESTER_CFG_WALK_FAULT;
 
-    VERB("%s(): test=%s n_iters=%u", __FUNCTION__,
-         test_get_name(ri), ri->n_iters);
+    VERB("%s(): run-item=%s n_iters=%u", __FUNCTION__,
+         run_item_name(ri), ri->n_iters);
 
     return TESTER_CFG_WALK_CONT;
 }
@@ -485,8 +485,8 @@ prepare_test_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
-    VERB("%s(): test=%s n_iters=%u weight=%u", __FUNCTION__,
-         test_get_name(ri), ri->n_iters, ri->weight);
+    VERB("%s(): run-item=%s n_iters=%u weight=%u", __FUNCTION__,
+         run_item_name(ri), ri->n_iters, ri->weight);
 
     if (gctx->rc == 0)
     {

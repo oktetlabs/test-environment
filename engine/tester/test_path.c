@@ -312,7 +312,7 @@ get_iter_arg_value(const test_path_proc_ctx *ctx, const char *name,
     if (va == NULL)
     {
         ERROR("Argument '%s' not found in run item '%s' context",
-              name, test_get_name(ctx->ri));
+              name, run_item_name(ctx->ri));
         EXIT("ESRCH");
         return TE_RC(TE_TESTER, TE_ESRCH);
     }
@@ -553,8 +553,8 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
             if (rc != 0)
             {
                 ERROR("Failed to enumerate values of argument '%s' of "
-                      "the test '%s': %r", va->name, test_get_name(run),
-                      rc);
+                      "the run item '%s': %r", va->name,
+                      run_item_name(run), rc);
                 free(arg_bm);
                 free(bm);
                 EXIT("%r", rc);
@@ -564,7 +564,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
             {
                 /* May be these values are used in other call of the test */
                 INFO("Empty set of values is specified for argument '%s' "
-                     "of the test '%s'", va->name, test_get_name(run));
+                     "of the run item '%s'", va->name, run_item_name(run));
                 free(arg_bm);
                 free(bm);
                 EXIT("0 - argument values do not match");
