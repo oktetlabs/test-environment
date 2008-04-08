@@ -163,7 +163,6 @@ static te_errno bcast_link_addr_get(unsigned int, const char *,
 
 static te_errno ifindex_get(unsigned int, const char *, char *,
                             const char *);
-
 static te_errno status_get(unsigned int, const char *, char *,
                            const char *);
 static te_errno status_set(unsigned int, const char *, const char *,
@@ -246,6 +245,9 @@ static int phy_parameters_get(const char *ifname);
 static int phy_parameters_set(const char *ifname);
 
 static int get_driver_version();
+
+char * ifindex2friendly_name(DWORD ifindex);
+static DWORD friendly_name2ifindex(const char *ifname);
                               
 static unsigned int speed_duplex_state = 0;
 static unsigned int speed_duplex_to_set = 0;
@@ -576,7 +578,6 @@ neigh_st_list(char** list, const char* ifname)
                                     &(p->val.dwAddr)));
     }
 
-    
     if ((*list = strdup(buf)) == NULL)
       return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
@@ -1318,6 +1319,89 @@ interface_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
+
+char * 
+ifindex2friendly_name(DWORD ifindex)
+{
+    static char friendly_name[100] = "";
+    DWORD retval = 0;
+    MIB_IFROW *info;
+    DWORD        size = 0;
+    int          i;
+    MIB_IFTABLE *iftable;
+
+#if 0 
+    MIB_IFROW table;
+    table.dwIndex = ifindex;
+
+    retval = GetIfEntry(&table);
+
+    if (retval == 0)
+    {
+        sprintf(friendly_name, "%s", table.bDescr);
+        goto success;
+    }
+#endif
+
+    iftable = (MIB_IFTABLE *)malloc(sizeof(MIB_IFTABLE));
+
+    retval = GetIfTable(iftable, &size, 0);
+    iftable = (MIB_IFTABLE *)realloc(iftable, size);
+    retval = GetIfTable(iftable, &size, 0);   
+   
+
+    for (i = 0; i < iftable->dwNumEntries; i++)
+    {
+        info = iftable->table + i;
+        if (info->dwIndex == ifindex)
+        {
+            sprintf(friendly_name, "%s", info->bDescr);
+            goto success;
+        }
+       
+    }
+
+    ERROR("Friendly name not found for interface %d", ifindex);
+    return NULL;
+
+success:
+    free(iftable);
+    return friendly_name;
+}
+
+static DWORD
+friendly_name2ifindex(const char *ifname)
+{
+    DWORD retval = 0;
+    MIB_IFROW *info;
+    DWORD        size = 0;
+    int          i;
+    MIB_IFTABLE *iftable;
+    DWORD ifindex = -1;
+
+    iftable = (MIB_IFTABLE *)malloc(sizeof(MIB_IFTABLE));
+
+    retval = GetIfTable(iftable, &size, 0);
+    iftable = (MIB_IFTABLE *)realloc(iftable, size);
+    retval = GetIfTable(iftable, &size, 0);      
+
+    for (i = 0; i < iftable->dwNumEntries; i++)
+    {
+        info = iftable->table + i;
+        if (strcmp(info->bDescr, ifname) == 0)
+        {
+            ifindex = info->dwIndex;
+            goto success;
+        }
+       
+    }
+
+success:
+    free(iftable);
+    return ifindex;
+
+}
+
 /** Convert interface name to interface index */
 static int
 name2index(const char *ifname, DWORD *ifindex)
@@ -1510,7 +1594,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
       }
       if (rc == ERROR_OBJECT_ALREADY_EXISTS)
       {
-  WARN("AddIpAddress() failed, error ERROR_OBJECT_ALREADY_EXISTS, addr %s",
+   WARN("AddIpAddress() failed, error ERROR_OBJECT_ALREADY_EXISTS, addr %s",
              addr);
         return 0;
       }
