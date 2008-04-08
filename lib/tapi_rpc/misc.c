@@ -999,8 +999,9 @@ void
 rpc_set_buf_gen(rcf_rpc_server *rpcs, const uint8_t *src_buf,
             size_t len, rpc_ptr dst_buf, size_t dst_off)
 {
-    tarpc_set_buf_in  in;
-    tarpc_set_buf_out out;
+    char               *src_buf_cpy;
+    tarpc_set_buf_in    in;
+    tarpc_set_buf_out   out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1013,16 +1014,37 @@ rpc_set_buf_gen(rcf_rpc_server *rpcs, const uint8_t *src_buf,
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    in.src_buf.src_buf_val = (char *)src_buf;
-    if (src_buf != NULL)
-        in.src_buf.src_buf_len = len;
-    else
-        in.src_buf.src_buf_len = 0;
-
     in.dst_buf = dst_buf;
     in.dst_off = dst_off;
 
+    if (src_buf == NULL)
+    {
+        src_buf_cpy = NULL;
+        in.src_buf.src_buf_val = NULL;
+        in.src_buf.src_buf_len = 0;
+    }
+    else
+    {
+        /*
+         * Duplicate input buffer, because it could be constant and may need
+         * to be modified.
+         */
+        src_buf_cpy = malloc(len);
+        if (src_buf_cpy == NULL)
+        {
+            ERROR("%s(): Failed to allocate %u bytes of memory",
+                  __FUNCTION__, len);
+            RETVAL_VOID(set_buf);
+        }
+        memcpy(src_buf_cpy, src_buf, len);
+
+        in.src_buf.src_buf_val = src_buf_cpy;
+        in.src_buf.src_buf_len = len;
+    }
+
     rcf_rpc_call(rpcs, "set_buf", &in, &out);
+
+    free(src_buf_cpy);
 
     TAPI_RPC_LOG("RPC (%s,%s): set_buf(%p, %u, %u (off %u)) -> (%s)",
                  rpcs->ta, rpcs->name,
