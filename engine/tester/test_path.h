@@ -98,13 +98,16 @@ typedef struct test_path_item {
     unsigned int    iterate;    /**< How many times to run */
 } test_path_item;
 
+/** List of test path items */
+typedef TAILQ_HEAD(test_path_items, test_path_item) test_path_items;
+
 /** Test path */
 typedef struct test_path {
-    TAILQ_ENTRY(test_path)          links;  /**< List links */
-    char                           *str;    /**< String representation */
-    test_path_type                  type;   /**< Type of the test path */
-    TAILQ_HEAD(, test_path_item)    head;   /**< Head of the path */
-    testing_scenario                scen;   /**< Testing scenario */
+    TAILQ_ENTRY(test_path)  links;  /**< List links */
+    char                   *str;    /**< String representation */
+    test_path_type          type;   /**< Type of the test path */
+    test_path_items         head;   /**< Head of the path */
+    testing_scenario        scen;   /**< Testing scenario */
 } test_path;
 
 /** List of test paths */

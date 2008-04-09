@@ -758,6 +758,9 @@ process_test_path(const tester_cfgs *cfgs, const unsigned int total_iters,
                   test_path *path)
 {
     te_errno                rc;
+    test_path_item         *item;
+    unsigned long           sn;
+    char                   *end;
     tester_cfg_walk_ctl     ctl;
     test_path_proc_data     gctx;
     const tester_cfg_walk   cbs = {
@@ -789,6 +792,30 @@ process_test_path(const tester_cfgs *cfgs, const unsigned int total_iters,
     if (TAILQ_EMPTY(&path->head))
     {
         rc = scenario_add_act(&path->scen, 0, total_iters - 1, 0);
+        EXIT("%r", rc);
+        return rc;
+    }
+    /*
+     * If there is only one path item with no select, step and arguments
+     * and its name is a number less than total number of tests,
+     * it is scenario number.
+     */
+    else if (((item = TAILQ_FIRST(&path->head)) ==
+                      TAILQ_LAST(&path->head, test_path_items)) &&
+             (item->select == 0) && (item->step == 0) &&
+             (TAILQ_EMPTY(&item->args)) &&
+             ((sn = strtoul(item->name, &end, 0)) != ULONG_MAX) &&
+             (end != item->name) && (*end == '\0') &&
+             (sn < total_iters))
+    {
+        unsigned int    i;
+
+        rc = scenario_add_act(&path->scen, sn, sn, 0);
+
+        assert(item->iterate > 0);
+        for (i = 0; rc == 0 && i < item->iterate - 1; ++i)
+            rc = scenario_act_copy(&path->scen, TAILQ_FIRST(&path->scen));
+
         EXIT("%r", rc);
         return rc;
     }
