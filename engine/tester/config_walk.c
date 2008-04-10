@@ -601,7 +601,7 @@ tester_configs_walk(const tester_cfgs     *cfgs,
 
     ENTRY("flags=%#x", walk_flags);
 
-    for (id_off = 0, cfg = TAILQ_FIRST(cfgs);
+    for (id_off = 0, cfg = TAILQ_FIRST(&cfgs->head);
          cfg != NULL && ctl == TESTER_CFG_WALK_CONT;
          id_off += cfg->total_iters, cfg = TAILQ_NEXT(cfg, links))
     {

@@ -535,7 +535,7 @@ prepare_script(run_item *ri, test_script *script,
 
 /* See the description in tester_conf.h */
 te_errno
-tester_prepare_configs(tester_cfgs *cfgs, unsigned int *iters)
+tester_prepare_configs(tester_cfgs *cfgs)
 {
     config_prepare_data     gctx;
     const tester_cfg_walk   cbs = {
@@ -577,12 +577,12 @@ tester_prepare_configs(tester_cfgs *cfgs, unsigned int *iters)
     {
         assert(!SLIST_EMPTY(&gctx.ctxs));
 
-        *iters = SLIST_FIRST(&gctx.ctxs)->total_iters;
+        cfgs->total_iters = SLIST_FIRST(&gctx.ctxs)->total_iters;
 
         config_prepare_destroy_ctx(&gctx);
         assert(SLIST_EMPTY(&gctx.ctxs));
 
-        EXIT("0 - total_iters=%u", *iters);
+        EXIT("0 - total_iters=%u", cfgs->total_iters);
         return 0;
     }
     else

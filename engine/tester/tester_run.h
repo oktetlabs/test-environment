@@ -283,6 +283,7 @@ extern const char * scenario_to_str(const testing_scenario *scenario);
 
 /* Forwards */
 struct tester_cfgs;
+struct test_paths;
 
 /**
  * Run test configurations.
@@ -290,15 +291,17 @@ struct tester_cfgs;
  * @param scenario      Testing scenario
  * @param targets       Target requirements
  * @param cfgs          Tester configurations
+ * @param paths         Test paths
  * @param trc_db        TRC database handle
  * @param trc_tags      List of TRC tags (IUT identification)
  * @param flags         Flags
  *
  * @return Status code.
  */
-extern te_errno tester_run(const testing_scenario   *scenario,
+extern te_errno tester_run(testing_scenario         *scenario,
                            const struct logic_expr  *targets,
                            const struct tester_cfgs *cfgs,
+                           struct test_paths        *paths,
                            const te_trc_db          *trc_db,
                            const tqh_strings        *trc_tags,
                            const unsigned int        flags);

@@ -314,7 +314,12 @@ typedef struct tester_cfg {
 } tester_cfg;
 
 /** Head of Tester configuration files list */
-typedef TAILQ_HEAD(tester_cfgs, tester_cfg) tester_cfgs;
+typedef struct tester_cfgs {
+    TAILQ_HEAD(, tester_cfg)    head;           /**< List of
+                                                     configurations */
+    unsigned int                total_iters;    /**< Grand total number
+                                                     of iterations */
+} tester_cfgs;
 
 
 
@@ -572,12 +577,10 @@ extern te_errno tester_parse_configs(tester_cfgs *cfgs,
  * Prepare configuration to be passed by testing scenario generator.
  *
  * @param cfgs          List of Tester configurations
- * @param iters         Location of total number of iterations
  *
  * @return Status code.
  */
-extern te_errno tester_prepare_configs(tester_cfgs  *cfgs,
-                                       unsigned int *iters);
+extern te_errno tester_prepare_configs(tester_cfgs *cfgs);
 
 /**
  * Free Tester configurations.

@@ -1,3 +1,39 @@
+/** @file
+ * @brief Tester Subsystem
+ *
+ * Interactive mode.
+ *
+ *
+ * Copyright (C) 2008 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
+ *
+ * Test Environment is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * Test Environment is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Sergey Levi <sergeyle@tercom.ru>
+ *
+ * $Id$
+ */
+
+#include "te_config.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #endif
@@ -14,7 +50,9 @@
 #endif
 #include "tester_interactive.h"
 
-void
+
+#if HAVE_READLINE    
+static void
 tester_interactive_print_usage()
 {
     printf("Interactive-mode usage:\n"
@@ -24,31 +62,33 @@ tester_interactive_print_usage()
            "\t!command     - to execute shell command\n"
            "\t?            - to view this message\n");
 }
+#endif
 
 
-int
-tester_interactive_open_prompt(
-        tester_cfgs *cfgs,
-        int total_iters,
-        test_paths *paths,
-        testing_scenario *scenario)
+/* See the description in tester_interactive.h */
+enum interactive_mode_opts
+tester_interactive_open_prompt(const tester_cfgs *cfgs,
+                               test_paths        *paths,
+                               testing_scenario  *scenario)
 {
 #if HAVE_READLINE    
-    char    *user_choice;
-    int     rc;
-    int     argc;
-    char    **argv;
-    int     i;
+    char           *user_choice;
+    int             rc;
+    int             argc;
+    const char    **argv;
+    int             i;
 
-#define INVALID_SYNTAX_ERROR "Error parsing input: invalid syntax.\
-        Type '?' to read usage\n"
+    printf("Entering Tester interactive mode. "
+           "Please enter your choice.\n");
+
+#define INVALID_SYNTAX_ERROR \
+    "Error parsing input: invalid syntax. Type '?' to read usage.\n"
+
     while (1)
     {
-        user_choice = readline("Entering tester interactive mode.\n"
-            "Please enter your choice.\n"
-            ">");
+        user_choice = readline("> ");
         
-        if(poptParseArgvString(user_choice, &argc, &argv) < 0)
+        if (poptParseArgvString(user_choice, &argc, &argv) < 0)
         {
             tester_interactive_print_usage();
             continue;
@@ -65,8 +105,6 @@ tester_interactive_open_prompt(
         }
         else if(strcmp(argv[0], "run") == 0)
         {
-            test_paths_free(paths);
-            scenario_free(scenario);
             TAILQ_INIT(paths);
             TAILQ_INIT(scenario);
 
@@ -83,18 +121,16 @@ tester_interactive_open_prompt(
                     ERROR("Failed to parse test path: '%s'", argv[i]);
                     return TESTER_INTERACTIVE_ERROR;
                 }
-                printf("Test path %s was processed.\n", argv[i]);
+                VERB("Test path '%s' was processed.\n", argv[i]);
             }
-            rc = tester_process_test_paths(cfgs, total_iters, paths,
-                    scenario);
+            rc = tester_process_test_paths(cfgs, paths, scenario, FALSE);
             if (rc != 0)
             {
                 return TESTER_INTERACTIVE_ERROR;
             }
 
             free(argv);
-            printf("New test paths were processed\n"
-                   "Resuming testing...\n");
+            printf("New test paths were processed. Resuming testing...\n");
             return TESTER_INTERACTIVE_RUN;
 
         }
@@ -116,15 +152,19 @@ tester_interactive_open_prompt(
     }
     
 #undef INVALID_SYNTAX_ERROR
+
     return TESTER_INTERACTIVE_ERROR;
+
 #else
     
     UNUSED(cfgs);
-    UNUSED(total_iters);
     UNUSED(paths);
     UNUSED(scenario);
     
-    printf("Can't run in interactive mode: readline library is not availiable.\n");
-    return TESTER_INTERACTIVE_ERROR;
+    printf("Can't run in interactive mode: "
+           "readline library is not availiable.\n");
+
+    return TESTER_INTERACTIVE_STOP;
+
 #endif
 }

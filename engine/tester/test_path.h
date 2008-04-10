@@ -147,17 +147,19 @@ extern void test_paths_free(test_paths *paths);
  * Process requested tests paths and create testing scenario.
  * It no test paths are specified, scenario to run all tests is created.
  *
- * @param cfgs          Configurations
- * @param total_iters   Total number of iterations
- * @param paths         Paths specified by user
- * @param scenario      Location for testing scenario
+ * @param cfgs              Configurations
+ * @param paths             Paths specified by user
+ * @param scenario          Location for testing scenario
+ * @param all_by_default    If tests to run are not specified, run
+ *                          all by default
  *
  * @return Status code.
  */
-extern te_errno tester_process_test_paths(const tester_cfgs  *cfgs,
-                                          const unsigned int  total_iters,
-                                          test_paths         *paths,
-                                          testing_scenario   *scenario);
+extern te_errno tester_process_test_paths(
+                    const tester_cfgs *cfgs,
+                    test_paths        *paths,
+                    testing_scenario  *scenario,
+                    te_bool            all_by_default);
 
 #ifdef __cplusplus
 } /* extern "C" */

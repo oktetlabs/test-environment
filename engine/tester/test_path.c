@@ -748,14 +748,12 @@ test_path_proc_iter_start(run_item *ri, unsigned int cfg_id_off,
  * Process requested test path and generate testing scenario.
  *
  * @param cfgs          Configurations
- * @param total_iters   Total number of iterations
  * @param path          Path to be processed
  *
  * @return Status code.
  */
 static te_errno
-process_test_path(const tester_cfgs *cfgs, const unsigned int total_iters,
-                  test_path *path)
+process_test_path(const tester_cfgs *cfgs, test_path *path)
 {
     te_errno                rc;
     test_path_item         *item;
@@ -791,7 +789,7 @@ process_test_path(const tester_cfgs *cfgs, const unsigned int total_iters,
 
     if (TAILQ_EMPTY(&path->head))
     {
-        rc = scenario_add_act(&path->scen, 0, total_iters - 1, 0);
+        rc = scenario_add_act(&path->scen, 0, cfgs->total_iters - 1, 0);
         EXIT("%r", rc);
         return rc;
     }
@@ -806,7 +804,7 @@ process_test_path(const tester_cfgs *cfgs, const unsigned int total_iters,
              (TAILQ_EMPTY(&item->args)) &&
              ((sn = strtoul(item->name, &end, 0)) != ULONG_MAX) &&
              (end != item->name) && (*end == '\0') &&
-             (sn < total_iters))
+             (sn < cfgs->total_iters))
     {
         unsigned int    i;
 
@@ -859,13 +857,17 @@ process_test_path(const tester_cfgs *cfgs, const unsigned int total_iters,
  * Merge scenarios created for all test paths taking into account
  * types of paths.
  *
- * @param paths         List of paths specified by user
- * @param total_iters   Total number of test items (iterations)
- * @param scenario      Location for testing scenario
+ * @param paths             List of paths specified by user
+ * @param total_iters       Total number of test items (iterations)
+ * @param scenario          Location for testing scenario
+ * @param all_by_default    If tests to run are not specified, run
+ *                          all by default
+ *
+ * @return Status code.
  */
 static te_errno
 merge_test_paths(test_paths *paths, const unsigned int total_iters,
-                 testing_scenario *scenario)
+                 testing_scenario *scenario, te_bool all_by_default)
 {
     testing_scenario    flags;
     testing_scenario    exclude;
@@ -988,7 +990,8 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
         }
     }
 
-    if (!run_spec)
+    RING("%d", all_by_default);
+    if (!run_spec && all_by_default)
     {
         /* No test paths to run are specified, scenarion is still empty */
         assert(TAILQ_EMPTY(scenario));
@@ -1021,10 +1024,10 @@ exit:
 
 /* See the description in test_path.h */
 te_errno
-tester_process_test_paths(const tester_cfgs  *cfgs,
-                          const unsigned int  total_iters,
-                          test_paths         *paths,
-                          testing_scenario   *scenario)
+tester_process_test_paths(const tester_cfgs *cfgs,
+                          test_paths        *paths,
+                          testing_scenario  *scenario,
+                          te_bool            all_by_default)
 {
     te_errno    rc;
     test_path  *path;
@@ -1033,13 +1036,14 @@ tester_process_test_paths(const tester_cfgs  *cfgs,
     assert(paths != NULL);
     assert(scenario != NULL);
     
+    RING("----%d", all_by_default);
     ENTRY();
 
     for (path = TAILQ_FIRST(paths), rc = 0;
          path != NULL && rc == 0;
          path = TAILQ_NEXT(path, links))
     {
-        rc = process_test_path(cfgs, total_iters, path);
+        rc = process_test_path(cfgs, path);
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
             ERROR("Test path requested by user not found.\nPath: %s",
@@ -1055,7 +1059,8 @@ tester_process_test_paths(const tester_cfgs  *cfgs,
         }
     }
 
-    rc = merge_test_paths(paths, total_iters, scenario);
+    rc = merge_test_paths(paths, cfgs->total_iters, scenario,
+                          all_by_default);
 
     if (rc == 0)
         INFO("Scenario is %s", scenario_to_str(scenario));
@@ -1185,4 +1190,5 @@ test_paths_free(test_paths *paths)
         TAILQ_REMOVE(paths, p, links);
         test_path_free(p);
     }
+    assert(TAILQ_EMPTY(paths));
 }

@@ -61,6 +61,7 @@
 #include "tester_term.h"
 #include "tester_run.h"
 #include "tester_result.h"
+#include "tester_interactive.h"
 
 
 /** Define it to enable support of timeouts in Tester */
@@ -140,6 +141,9 @@ typedef struct tester_ctx {
  */
 typedef struct tester_run_data {
     unsigned int                flags;      /**< Flags */
+    const tester_cfgs          *cfgs;       /**< Tester configurations */
+    test_paths                 *paths;      /**< Testing paths */
+    testing_scenario           *scenario;   /**< Testing scenario */
     const logic_expr           *targets;    /**< Target requirements
                                                  expression specified
                                                  in command line */
@@ -161,6 +165,10 @@ typedef struct tester_run_data {
     SLIST_HEAD(, tester_ctx)    ctxs;       /**< Stack of contexts */
 
 } tester_run_data;
+
+
+static enum interactive_mode_opts tester_run_interactive(
+                                      tester_run_data *gctx);
 
 
 /**
@@ -2695,10 +2703,32 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         {
             if (gctx->flags & TESTER_INTERACTIVE)
             {
+                switch (tester_run_interactive(gctx))
+                {
+                    case TESTER_INTERACTIVE_RUN:
+                        step = 0;
+                        break;
+
+                    case TESTER_INTERACTIVE_RESUME:
+                    case TESTER_INTERACTIVE_STOP:
+                        /* Just try to continue */
+                        break;
+
+                    default:
+                        assert(FALSE);
+                        /*@fallthrou@*/
+
+                    case TESTER_INTERACTIVE_ERROR:
+                        EXIT("FAULT");
+                        return TESTER_CFG_WALK_FAULT;
+                }
             }
-            /* End of testing scenario */
-            EXIT("FIN");
-            return TESTER_CFG_WALK_FIN;
+            else
+            {
+                /* End of testing scenario */
+                EXIT("FIN");
+                return TESTER_CFG_WALK_FIN;
+            }
         }
 
         switch (run_this_item(cfg_id_off, gctx->act_id,
@@ -2731,12 +2761,13 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
 /* See the description in tester_run.h */
 te_errno
-tester_run(const testing_scenario *scenario,
-           const logic_expr       *targets,
-           const tester_cfgs      *cfgs,
-           const te_trc_db        *trc_db,
-           const tqh_strings      *trc_tags,
-           const unsigned int      flags)
+tester_run(testing_scenario   *scenario,
+           const logic_expr   *targets,
+           const tester_cfgs  *cfgs,
+           test_paths         *paths,
+           const te_trc_db    *trc_db,
+           const tqh_strings  *trc_tags,
+           const unsigned int  flags)
 {
     te_errno                rc, rc2;
     tester_run_data         data;
@@ -2765,17 +2796,14 @@ tester_run(const testing_scenario *scenario,
         run_script,
     };
 
-    if (TAILQ_EMPTY(scenario))
-    {
-        ERROR("Testing scenario is empty");
-        return TE_RC(TE_TESTER, TE_ENOENT);
-    }
-
     memset(&data, 0, sizeof(data));
     data.flags = flags;
+    data.cfgs = cfgs;
+    data.paths = paths;
+    data.scenario = scenario;
     data.targets = targets;
     data.act = TAILQ_FIRST(scenario);
-    data.act_id = data.act->first;
+    data.act_id = (data.act != NULL) ? data.act->first : 0;
 #if WITH_TRC
     data.trc_db = trc_db;
     data.trc_tags = trc_tags;
@@ -2796,6 +2824,31 @@ tester_run(const testing_scenario *scenario,
 
     if (tester_run_first_ctx(&data) == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
+
+    while (TAILQ_EMPTY(data.scenario) &&
+           (data.flags & TESTER_INTERACTIVE))
+    {
+        switch (tester_run_interactive(&data))
+        {
+            case TESTER_INTERACTIVE_RUN:
+            case TESTER_INTERACTIVE_RESUME:
+            case TESTER_INTERACTIVE_STOP:
+                break;
+
+            default:
+                assert(FALSE);
+                /*@fallthrou@*/
+
+            case TESTER_INTERACTIVE_ERROR:
+                return TE_RC(TE_TESTER, TE_EFAULT);
+        }
+    }
+
+    if (TAILQ_EMPTY(data.scenario))
+    {
+        WARN("Testing scenario is empty");
+        return TE_RC(TE_TESTER, TE_ENOENT);
+    }
 
     ctl = tester_configs_walk(cfgs, &cbs, 0, &data);
     switch (ctl)
@@ -2843,4 +2896,52 @@ tester_run(const testing_scenario *scenario,
     }
 
     return rc;
+}
+
+
+/**
+ * Run Tester interactive session.
+ *
+ * @param gctx          Run global context
+ *
+ * @return Tester interactive result.
+ */
+static enum interactive_mode_opts
+tester_run_interactive(tester_run_data *gctx)
+{
+    enum interactive_mode_opts  result;
+    test_paths                  paths;
+    testing_scenario            scenario;
+
+    result = tester_interactive_open_prompt(gctx->cfgs, &paths, &scenario);
+    switch (result)
+    {
+        case TESTER_INTERACTIVE_RUN:
+            gctx->act = TAILQ_FIRST(&scenario);
+            gctx->act_id = gctx->act->first;
+            TAILQ_CONCAT(gctx->paths, &paths, links);
+            (void)scenario_append(gctx->scenario, &scenario, 1);
+            break;
+
+        case TESTER_INTERACTIVE_RESUME:
+            /* Just try to continue */
+            break;
+
+        case TESTER_INTERACTIVE_STOP:
+            /*
+             * Remove interactive flag to avoid further
+             * prompting.
+             */
+            gctx->flags &= ~TESTER_INTERACTIVE;
+            break;
+
+        default:
+            assert(FALSE);
+            /*@fallthrou@*/
+
+        case TESTER_INTERACTIVE_ERROR:
+            break;
+    }
+
+    return result;
 }

@@ -2394,7 +2394,7 @@ tester_parse_configs(tester_cfgs *cfgs, te_bool build, te_bool verbose)
     te_errno    rc;
     tester_cfg *cfg;
 
-    TAILQ_FOREACH(cfg, cfgs, links)
+    TAILQ_FOREACH(cfg, &cfgs->head, links)
     {
         rc = tester_parse_config(cfg, build, verbose);
         if (rc != 0)
@@ -2670,9 +2670,10 @@ tester_cfgs_free(tester_cfgs *cfgs)
 {
     tester_cfg *cfg;
 
-    while ((cfg = TAILQ_FIRST(cfgs)) != NULL)
+    while ((cfg = TAILQ_FIRST(&cfgs->head)) != NULL)
     {
-        TAILQ_REMOVE(cfgs, cfg, links);
+        TAILQ_REMOVE(&cfgs->head, cfg, links);
+        cfgs->total_iters -= cfg->total_iters;
         tester_cfg_free(cfg);
     }
 }

@@ -81,7 +81,6 @@ typedef struct tester_global {
     logic_expr         *targets;    /**< Target requirements expression */
     te_trc_db          *trc_db;     /**< TRC database handle */
     tqh_strings         trc_tags;   /**< TRC tags */
-    unsigned int        total;      /**< Total number of test iterations */
     testing_scenario    scenario;   /**< Testing scenario */
 } tester_global;
 
@@ -104,7 +103,8 @@ tester_global_init(tester_global *global)
     /* By default verbosity level is set to 1 */
     global->flags |= TESTER_VERBOSE | TESTER_NO_TRC;
 
-    TAILQ_INIT(&global->cfgs);
+    global->cfgs.total_iters = 0;
+    TAILQ_INIT(&global->cfgs.head);
     TAILQ_INIT(&global->suites);
     TAILQ_INIT(&global->paths);
 
@@ -580,7 +580,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
             return TE_ENOMEM;
         }
         VERB("Configuration file to be processed: %s", cfg_file);
-        TAILQ_INSERT_TAIL(&global->cfgs, cfg, links);
+        TAILQ_INSERT_TAIL(&global->cfgs.head, cfg, links);
     }
 
     poptFreeContext(optCon);
@@ -671,18 +671,19 @@ main(int argc, char *argv[])
      * Prepare configurations to be processed by testing scenario
      * generator.
      */
-    rc = tester_prepare_configs(&global.cfgs, &global.total);
+    rc = tester_prepare_configs(&global.cfgs);
     if (rc != 0)
     {
         goto exit;
     }
-    INFO("Total number of iteration is %u", global.total);
+    INFO("Total number of iteration is %u", global.cfgs.total_iters);
 
     /*
      * Create testing scenario.
      */
-    rc = tester_process_test_paths(&global.cfgs, global.total,
-                                   &global.paths, &global.scenario);
+    rc = tester_process_test_paths(&global.cfgs, &global.paths,
+                                   &global.scenario,
+                                   !(global.flags & TESTER_INTERACTIVE));
     if (rc != 0)
     {
         goto exit;
@@ -692,10 +693,11 @@ main(int argc, char *argv[])
      * Execure testing scenario.
      */
     if ((~global.flags & TESTER_NO_RUN) &&
-        !TAILQ_EMPTY(&global.cfgs))
+        !TAILQ_EMPTY(&global.cfgs.head))
     {
         RING("Starting...");
-        rc = tester_run(&global.scenario, global.targets, &global.cfgs,
+        rc = tester_run(&global.scenario, global.targets,
+                        &global.cfgs, &global.paths,
                         global.trc_db, &global.trc_tags, global.flags);
         if (rc != 0)
         {
