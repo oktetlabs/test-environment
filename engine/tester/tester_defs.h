@@ -38,6 +38,14 @@
 extern "C" {
 #endif
 
+
+/**
+ * Test identification number for
+ * prologues, epilogues, sessions, packages.
+ */
+#define TE_TIN_INVALID  ((unsigned int)(-1))
+
+
 /** Types of run items */
 typedef enum run_item_type {
     RUN_ITEM_NONE,

@@ -277,16 +277,28 @@ colored_verdict(const colored_verdict_data *what)
 /* See description in tester_term.h */
 void
 tester_term_out_start(unsigned int flags, run_item_type type,
-                      const char *name, test_id parent, test_id self)
+                      const char *name, unsigned int tin,
+                      test_id parent, test_id self)
 {
     char ids[20] = "";
+    char tin_str[16] = "";
     char msg[256];
 
     if ((~flags & TESTER_VERBOSE) ||
-        ((~flags & TESTER_VVVVERB) && (type == RUN_ITEM_SESSION)))
+        ((~flags & TESTER_VVERB) && (type == RUN_ITEM_SESSION)))
         return;
 
-    if (flags & TESTER_VVVVERB)
+    if (flags & TESTER_OUT_TIN && tin != TE_TIN_INVALID)
+    {
+        if (snprintf(tin_str, sizeof(tin_str), " [%u]", tin) >=
+                (int)sizeof(tin_str))
+        {
+            ERROR("Too short buffer for TIN");
+            /* Continue */
+        }
+    }
+
+    if (flags & TESTER_VVERB)
     {
         if (snprintf(ids, sizeof(ids), " %d:%d", parent, self) >=
                 (int)sizeof(ids))
@@ -296,8 +308,8 @@ tester_term_out_start(unsigned int flags, run_item_type type,
         }
     }
 
-    if (snprintf(msg, sizeof(msg), "Starting%s %s %s",
-                 ids, run_item_type_to_string(type), name) >=
+    if (snprintf(msg, sizeof(msg), "Starting%s %s %s%s",
+                 ids, run_item_type_to_string(type), name, tin_str) >=
             (int)sizeof(msg))
     {
         ERROR("Too short buffer for output message");
@@ -332,10 +344,11 @@ tester_term_out_start(unsigned int flags, run_item_type type,
 void
 tester_term_out_done(unsigned int flags,
                      run_item_type type, const char *name,
-                     test_id parent, test_id self,
+                     unsigned int tin, test_id parent, test_id self,
                      tester_test_status status, trc_verdict trcv)
 {
     char                    ids[20] = "";
+    char                    tin_str[16] = "";
     char                    msg_out[256];
     char                    msg_in[256];
     char                   *msg;
@@ -344,7 +357,7 @@ tester_term_out_done(unsigned int flags,
     assert(status < TESTER_TEST_STATUS_MAX);
 
     if ((~flags & TESTER_VERBOSE) ||
-        ((~flags & TESTER_VVVVERB) && (type == RUN_ITEM_SESSION)))
+        ((~flags & TESTER_VVERB) && (type == RUN_ITEM_SESSION)))
         return;
 
     fflush(stdout);
@@ -379,7 +392,17 @@ tester_term_out_done(unsigned int flags,
     }
 #endif
 
-    if (flags & TESTER_VVVVERB)
+    if (flags & TESTER_OUT_TIN && tin != TE_TIN_INVALID)
+    {
+        if (snprintf(tin_str, sizeof(tin_str), " [%u]", tin) >=
+                (int)sizeof(tin_str))
+        {
+            ERROR("Too short buffer for TIN");
+            /* Continue */
+        }
+    }
+
+    if (flags & TESTER_VVERB)
     {
         if (snprintf(ids, sizeof(ids), " %d:%d", parent, self) >=
                 (int)sizeof(ids))
@@ -390,8 +413,8 @@ tester_term_out_done(unsigned int flags,
     }
 
     /* Prepare message to be output in another line */
-    if (snprintf(msg_out, sizeof(msg_out), "Done%s %s %s ",
-                 ids, run_item_type_to_string(type), name) >=
+    if (snprintf(msg_out, sizeof(msg_out), "Done%s %s %s%s ",
+                 ids, run_item_type_to_string(type), name, tin_str) >=
             (int)sizeof(msg_out))
     {
         ERROR("Too short buffer for output message");
@@ -430,7 +453,7 @@ tester_term_out_done(unsigned int flags,
                 break;
 
             case TRC_VERDICT_EXPECTED:
-                cvt = (flags & TESTER_VVERB) ?
+                cvt = (flags & TESTER_OUT_EXP) ?
                            COLORED_VERDICT_TRC_EXP_VERB :
                            COLORED_VERDICT_TRC_EXP;
                 break;

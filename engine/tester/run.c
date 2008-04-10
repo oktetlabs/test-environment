@@ -87,12 +87,6 @@
 /** Print string which may be NULL. */
 #define PRINT_STRING(_str)  ((_str) ? : "")
 
-/**
- * Test identification number for
- * prologues, epilogues, sessions, packages.
- */
-#define TE_TIN_INVALID  ((unsigned int)(-1))
-
 
 /** Tester context */
 typedef struct tester_ctx {
@@ -2429,6 +2423,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 {
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
+    unsigned int        tin;
 
     UNUSED(flags);
 
@@ -2455,14 +2450,13 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
     ctx->current_result.id = tester_get_id();
 
+    tin = (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT) ?
+              TE_TIN_INVALID : cfg_id_off;
     /* Test is considered here as run, if such event is logged */
-    tester_term_out_start(ctx->flags, ri->type, run_item_name(ri),
+    tester_term_out_start(ctx->flags, ri->type, run_item_name(ri), tin,
                           ctx->group_result.id, ctx->current_result.id);
     log_test_start(ri, ctx->group_result.id, ctx->current_result.id,
-                   (ctx->flags & TESTER_INLOGUE ||
-                    ri->type != RUN_ITEM_SCRIPT) ?
-                       TE_TIN_INVALID : cfg_id_off,
-                   ctx->args);
+                   tin, ctx->args);
 
     tester_test_result_add(&gctx->results, &ctx->current_result);
 
@@ -2555,6 +2549,8 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
     if (ctx->current_result.status != TESTER_TEST_INCOMPLETE)
     {
+        unsigned int    tin;
+
         /* The last step in test executaion - verification of backup */
         run_verify_cfg_backup(ctx, test_get_attrs(ri)->track_conf);
 
@@ -2645,11 +2641,13 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         }
 #endif
 
+        tin = (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT) ?
+                  TE_TIN_INVALID : cfg_id_off;
         log_test_result(ctx->group_result.id, ctx->current_result.id,
                         ctx->current_result.result.status,
                         ctx->current_result.error);
 
-        tester_term_out_done(ctx->flags, ri->type, run_item_name(ri),
+        tester_term_out_done(ctx->flags, ri->type, run_item_name(ri), tin,
                              ctx->group_result.id,
                              ctx->current_result.id,
                              ctx->current_result.status,

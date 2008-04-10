@@ -182,6 +182,8 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         TESTER_OPT_QUIET,
         TESTER_OPT_VERBOSE,
+        TESTER_OPT_OUT_TIN,
+        TESTER_OPT_OUT_EXPECTED,
         TESTER_OPT_INTERACTIVE,
 
         TESTER_OPT_NO_BUILD,
@@ -331,6 +333,12 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         { "trc-tag", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_TRC_TAG,
           "Tags to customize TRC expectations.", NULL },
 
+        { "out-tin", 't', POPT_ARG_NONE, NULL, TESTER_OPT_OUT_TIN,
+          "Output Test Identification Numbers (TINs) to terminal.", NULL },
+
+        { "out-expected", 'e', POPT_ARG_NONE, NULL, TESTER_OPT_OUT_EXPECTED,
+          "If result is expected, output the result just after OK.", NULL },
+
         { "verbose", 'v', POPT_ARG_NONE, NULL, TESTER_OPT_VERBOSE,
           "Increase verbosity of the Tester (the first level is set by "
           "default).", NULL },
@@ -405,25 +413,25 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     global->flags |= TESTER_VERBOSE;
                 else if (!(global->flags & TESTER_VVERB))
                     global->flags |= TESTER_VVERB;
-                else if (!(global->flags & TESTER_VVVERB))
-                    global->flags |= TESTER_VVVERB;
-                else if (!(global->flags & TESTER_VVVVERB))
-                    global->flags |= TESTER_VVVVERB;
                 else
                     WARN("Extra 'verbose' option is ignored");
                 break;
 
             case TESTER_OPT_QUIET:
-                if (global->flags & TESTER_VVVVERB)
-                    global->flags &= ~TESTER_VVVVERB;
-                else if (global->flags & TESTER_VVVERB)
-                    global->flags &= ~TESTER_VVVERB;
-                else if (global->flags & TESTER_VVERB)
+                if (global->flags & TESTER_VVERB)
                     global->flags &= ~TESTER_VVERB;
                 else if (global->flags & TESTER_VERBOSE)
                     global->flags &= ~TESTER_VERBOSE;
                 else
                     WARN("Extra 'quiet' option is ignored");
+                break;
+
+            case TESTER_OPT_OUT_TIN:
+                global->flags |= TESTER_OUT_TIN;
+                break;
+
+            case TESTER_OPT_OUT_EXPECTED:
+                global->flags |= TESTER_OUT_EXP;
                 break;
 
             case TESTER_OPT_INTERACTIVE:

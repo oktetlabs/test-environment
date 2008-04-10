@@ -146,6 +146,9 @@ Generic options:
   --tester-verbose              Increase verbosity of the Tester (the first
                                 level is set by default).
   --tester-quiet                Decrease verbosity of the Tester.
+  --tester-out-tin              Output Test Identification Numbers to terminal
+  --tester-out-expected         If result is expected (in accordance with TRC),
+                                output the result together with OK
   --tester-interactive          Interactive ask user for tests to run.
 
   --trc-log=<filename>          Generate bzip2-ed TRC log

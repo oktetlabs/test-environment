@@ -46,11 +46,13 @@ extern "C" {
  * @param flags     Tester context flags
  * @param type      Type of run item
  * @param name      Name of the test
+ * @param tin       Test identification number
  * @param parent    Parent ID
  * @param self      Self ID of the test
  */
 extern void tester_term_out_start(unsigned int flags,
                                   run_item_type type, const char *name,
+                                  unsigned int tin,
                                   test_id parent, test_id self);
 
 /**
@@ -59,6 +61,7 @@ extern void tester_term_out_start(unsigned int flags,
  * @param flags     Tester context flags
  * @param type      Type of run item
  * @param name      Name of the test
+ * @param tin       Test identification number
  * @param parent    Parent ID
  * @param self      Self ID of the test
  * @param status    Test status 
@@ -66,6 +69,7 @@ extern void tester_term_out_start(unsigned int flags,
  */
 extern void tester_term_out_done(unsigned int flags,
                                  run_item_type type, const char *name,
+                                 unsigned int tin,
                                  test_id parent, test_id self,
                                  tester_test_status status,
                                  trc_verdict trcv);
