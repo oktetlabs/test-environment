@@ -1938,7 +1938,7 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
 }
 
 /** 
- * Implementation of rcf_ta_get_file and rcf_ta_put_file functionality -
+ * Implementation of rcf_ta_(get|put|del)_file functionality -
  * see description of these functions for details.
  *
  * @param ta_name       Test Agent name              
@@ -1950,8 +1950,8 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
  * @return error code
  */
 static te_errno
-get_put_file(const char *ta_name, int session,
-             const char *rfile, const char *lfile, int opcode)
+handle_file(const char *ta_name, int session,
+            const char *rfile, const char *lfile, int opcode)
 {
     rcf_msg    *msg;
     size_t      anslen = sizeof(*msg);
@@ -1964,7 +1964,7 @@ get_put_file(const char *ta_name, int session,
         (strlen(lfile) == 0 && opcode != RCFOP_FDEL) ||
         strlen(rfile) == 0 || BAD_TA)
     {
-        ERROR("Invalid arguments are provided to rcf put/get");
+        ERROR("Invalid arguments provided to %s", __FUNCTION__);
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
     
@@ -1974,7 +1974,7 @@ get_put_file(const char *ta_name, int session,
     
         if ((fd = open(lfile, O_RDONLY)) < 0)
         {
-            ERROR("cannot open file %s for reading\n", lfile);
+            ERROR("Cannot open file %s for reading", lfile);
             return TE_RC(TE_RCF_API, TE_ENOENT);
         }
         close(fd);
@@ -2029,7 +2029,7 @@ te_errno
 rcf_ta_get_file(const char *ta_name, int session,
                 const char *rfile, const char *lfile)
 {
-    return get_put_file(ta_name, session, rfile, lfile, RCFOP_FGET);
+    return handle_file(ta_name, session, rfile, lfile, RCFOP_FGET);
 }
 
 /**
@@ -2056,7 +2056,7 @@ te_errno
 rcf_ta_put_file(const char *ta_name, int session,
                 const char *lfile, const char *rfile)
 {
-    return get_put_file(ta_name, session, rfile, lfile, RCFOP_FPUT);
+    return handle_file(ta_name, session, rfile, lfile, RCFOP_FPUT);
 }
 
 /**
@@ -2080,7 +2080,7 @@ rcf_ta_put_file(const char *ta_name, int session,
 te_errno
 rcf_ta_del_file(const char *ta_name, int session, const char *rfile)
 {
-    return get_put_file(ta_name, session, rfile, "", RCFOP_FDEL);
+    return handle_file(ta_name, session, rfile, "", RCFOP_FDEL);
 }
 
 

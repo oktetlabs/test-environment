@@ -90,7 +90,7 @@
 
 /** Forward declarations of RPC server context */
 typedef struct rcf_rpc_server {
-    /* Configuration paramters */
+    /* Configuration parameters */
     rcf_rpc_op  op;             /**< Instruction for RPC call */
     uint64_t    start;          /**< Time when RPC should be called on 
                                      the server (in milliseconds since
