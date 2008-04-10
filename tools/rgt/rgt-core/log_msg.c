@@ -435,6 +435,38 @@ create_node_by_msg(log_msg *msg, node_type_t type,
         SKIP_SPACES(fmt_str);
     }
 
+    if (strncmp(fmt_str, "TIN", strlen("TIN")) == 0)
+    {
+        /* Process "page" clause */
+        fmt_str += strlen("TIN");
+
+        SKIP_SPACES(fmt_str);
+
+        if (strncmp(fmt_str, "%u", strlen("%u")) != 0)
+        {
+            FMT_TRACE("Missing \"%%u\" after TIN clause in "
+                      "control message %s (%d %d)",
+                      msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
+
+        if ((arg = get_next_arg(msg)) == NULL)
+        {
+            FMT_TRACE("Missing \"TIN\" argument in control message "
+                      "%s (%d %d)", msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
+        node->descr.tin = ntohl(*(uint32_t *)arg->val);
+
+        fmt_str += strlen("%u");
+
+        SKIP_SPACES(fmt_str);
+    }
+    else
+    {
+        node->descr.tin = TE_TIN_INVALID;
+    }
+
     if (strncmp(fmt_str, "PAGE", strlen("PAGE")) == 0)
     {
         /* Process "page" clause */

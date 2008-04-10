@@ -103,6 +103,7 @@
       </sequence>
 
       <attribute name="name" type="string"/>
+      <attribute name="tin" type="unsigned int" use="optional"/>
       <attributeGroup ref="proteos:result_attr_group"/>
     </complexType>
 

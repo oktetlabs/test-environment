@@ -86,6 +86,12 @@
 /** Print string which may be NULL. */
 #define PRINT_STRING(_str)  ((_str) ? : "")
 
+/**
+ * Test identification number for
+ * prologues, epilogues, sessions, packages.
+ */
+#define TE_TIN_INVALID  ((unsigned int)(-1))
+
 
 /** Tester context */
 typedef struct tester_ctx {
@@ -669,11 +675,12 @@ test_params_to_string(char *str, const unsigned int n_args,
  * @param ri            Run item
  * @param parent        Parent ID
  * @param test          Test ID
+ * @param tin           Test identification number
  * @param args          Array with test iteration arguments
  */
 static void
 log_test_start(const run_item *ri, test_id parent, test_id test,
-               const test_iter_arg *args)
+               unsigned int tin, const test_iter_arg *args)
 {
     char   *params_str;
     char   *authors;
@@ -682,32 +689,57 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
     switch (ri->type)
     {
         case RUN_ITEM_SCRIPT:
-            if (ri->u.script.page == NULL)
+            if (tin != TE_TIN_INVALID)
             {
-                TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                            "TEST %s \"%s\" ARGs%s",
-                            parent, test, ri->u.script.name,
-                            PRINT_STRING(ri->u.script.objective),
-                            PRINT_STRING(params_str));
+                if (ri->u.script.page == NULL)
+                {
+                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                                "TEST %s \"%s\" TIN %u ARGs%s",
+                                parent, test, ri->u.script.name,
+                                PRINT_STRING(ri->u.script.objective),
+                                tin, PRINT_STRING(params_str));
+                }
+                else
+                {
+                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                                "TEST %s \"%s\" TIN %u PAGE %s ARGs%s",
+                                parent, test, ri->u.script.name,
+                                PRINT_STRING(ri->u.script.objective),
+                                tin, ri->u.script.page,
+                                PRINT_STRING(params_str));
+                }
             }
             else
             {
-                TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                            "TEST %s \"%s\" PAGE %s ARGs%s",
-                            parent, test, ri->u.script.name,
-                            PRINT_STRING(ri->u.script.objective),
-                            ri->u.script.page,
-                            PRINT_STRING(params_str));
+                if (ri->u.script.page == NULL)
+                {
+                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                                "TEST %s \"%s\" ARGs%s",
+                                parent, test, ri->u.script.name,
+                                PRINT_STRING(ri->u.script.objective),
+                                PRINT_STRING(params_str));
+                }
+                else
+                {
+                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                                "TEST %s \"%s\" PAGE %s ARGs%s",
+                                parent, test, ri->u.script.name,
+                                PRINT_STRING(ri->u.script.objective),
+                                ri->u.script.page,
+                                PRINT_STRING(params_str));
+                }
             }
             break;
 
         case RUN_ITEM_SESSION:
+            assert(tin == TE_TIN_INVALID);
             TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
                         "SESSION ARGs%s",
                         parent, test, PRINT_STRING(params_str));
             break;
 
         case RUN_ITEM_PACKAGE:
+            assert(tin == TE_TIN_INVALID);
             authors = persons_info_to_string(&ri->u.package->authors);
             if (authors == NULL)
             {
@@ -2419,6 +2451,9 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     tester_term_out_start(ctx->flags, ri->type, run_item_name(ri),
                           ctx->group_result.id, ctx->current_result.id);
     log_test_start(ri, ctx->group_result.id, ctx->current_result.id,
+                   (ctx->flags & TESTER_INLOGUE ||
+                    ri->type != RUN_ITEM_SCRIPT) ?
+                       TE_TIN_INVALID : cfg_id_off,
                    ctx->args);
 
     tester_test_result_add(&gctx->results, &ctx->current_result);

@@ -123,6 +123,8 @@ live_process_start_event(node_info_t *node, const char *node_name,
 
     fprintf(rgt_ctx.out_fd, "| Starting %s: %s\n",
             node_name, node->descr.name);
+    if (node->descr.tin != TE_TIN_INVALID)
+        fprintf(rgt_ctx.out_fd, "|- TIN: %u\n", node->descr.tin);
     fprintf(rgt_ctx.out_fd, "|- Date: ");
     print_ts(node->start_ts);
     fprintf(rgt_ctx.out_fd, "\n");

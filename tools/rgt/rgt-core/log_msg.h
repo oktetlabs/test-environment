@@ -121,16 +121,24 @@ node_type2str(node_type_t node_type)
     return "";
 }
 
+
+/**
+ * Test identification number for
+ * prologues, epilogues, sessions, packages.
+ */
+#define TE_TIN_INVALID  ((unsigned int)(-1))
+
 /**
  * Structure that represents information about a particular entry.
  * It is used for passing information about start/end events. 
  */
 typedef struct node_descr {
-    char *name;       /**< Entry name */
-    char *objective;  /**< Objectives of the entry */
-    char *page;       /**< Name of the page with documentation */
-    char *authors;    /**< Entry authors */
-    int   n_branches; /**< Number of branches in the entry */
+    char           *name;       /**< Entry name */
+    char           *objective;  /**< Objectives of the entry */
+    unsigned int    tin;        /**< Test identification number */
+    char           *page;       /**< Name of the page with documentation */
+    char           *authors;    /**< Entry authors */
+    int             n_branches; /**< Number of branches in the entry */
 } node_descr_t;
 
 typedef struct node_info {
