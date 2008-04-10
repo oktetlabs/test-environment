@@ -43,9 +43,10 @@ enum tester_flags {
                                            additional output of status
                                            together with TRC verdict */
     TESTER_VVVERB       = (1 << 2),   /**< The third level of verbosity:
+                                           additional output of test TIDs */
+    TESTER_VVVVERB      = (1 << 3),   /**< The forth level of verbosity:
                                            additional output of test IDs
                                            on run paths */
-    TESTER_VVVVERB      = (1 << 3),   /**< The third level of verbosity */
 
     TESTER_FAKE         = (1 << 4),   /**< Fake run */
 

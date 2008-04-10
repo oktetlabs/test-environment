@@ -283,10 +283,10 @@ tester_term_out_start(unsigned int flags, run_item_type type,
     char msg[256];
 
     if ((~flags & TESTER_VERBOSE) ||
-        ((~flags & TESTER_VVVERB) && (type == RUN_ITEM_SESSION)))
+        ((~flags & TESTER_VVVVERB) && (type == RUN_ITEM_SESSION)))
         return;
 
-    if (flags & TESTER_VVVERB)
+    if (flags & TESTER_VVVVERB)
     {
         if (snprintf(ids, sizeof(ids), " %d:%d", parent, self) >=
                 (int)sizeof(ids))
@@ -344,7 +344,7 @@ tester_term_out_done(unsigned int flags,
     assert(status < TESTER_TEST_STATUS_MAX);
 
     if ((~flags & TESTER_VERBOSE) ||
-        ((~flags & TESTER_VVVERB) && (type == RUN_ITEM_SESSION)))
+        ((~flags & TESTER_VVVVERB) && (type == RUN_ITEM_SESSION)))
         return;
 
     fflush(stdout);
@@ -379,7 +379,7 @@ tester_term_out_done(unsigned int flags,
     }
 #endif
 
-    if (flags & TESTER_VVVERB)
+    if (flags & TESTER_VVVVERB)
     {
         if (snprintf(ids, sizeof(ids), " %d:%d", parent, self) >=
                 (int)sizeof(ids))
