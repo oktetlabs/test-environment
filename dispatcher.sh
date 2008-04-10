@@ -146,6 +146,7 @@ Generic options:
   --tester-verbose              Increase verbosity of the Tester (the first
                                 level is set by default).
   --tester-quiet                Decrease verbosity of the Tester.
+  --tester-interactive          Interactive ask user for tests to run.
 
   --trc-log=<filename>          Generate bzip2-ed TRC log
   --trc-db=<filename>           TRC database to be used
