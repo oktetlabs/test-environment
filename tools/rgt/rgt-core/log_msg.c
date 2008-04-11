@@ -442,23 +442,16 @@ create_node_by_msg(log_msg *msg, node_type_t type,
 
         SKIP_SPACES(fmt_str);
 
-        if (strncmp(fmt_str, "%u", strlen("%u")) != 0)
+        if (sscanf(fmt_str, "%u ", &node->descr.tin) < 1)
         {
-            FMT_TRACE("Missing \"%%u\" after TIN clause in "
-                      "control message %s (%d %d)",
+            FMT_TRACE("Missing test identification number after TIN "
+                      "clause in control message '%s' (%d %d)",
                       msg->fmt_str, node_id, parent_id);
             return NULL;
         }
 
-        if ((arg = get_next_arg(msg)) == NULL)
-        {
-            FMT_TRACE("Missing \"TIN\" argument in control message "
-                      "%s (%d %d)", msg->fmt_str, node_id, parent_id);
-            return NULL;
-        }
-        node->descr.tin = ntohl(*(uint32_t *)arg->val);
-
-        fmt_str += strlen("%u");
+        while (isdigit(*fmt_str))
+            fmt_str++;
 
         SKIP_SPACES(fmt_str);
     }
