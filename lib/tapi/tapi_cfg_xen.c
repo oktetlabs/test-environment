@@ -317,7 +317,7 @@ te_errno
 tapi_cfg_xen_get_accel(char const *ta, te_bool *accel)
 {
     cfg_val_type type = CVT_INTEGER;
-    int         *acceleration;
+    int          acceleration;
     te_errno     rc;
 
     if (ta == NULL || accel == NULL)
@@ -335,7 +335,6 @@ tapi_cfg_xen_get_accel(char const *ta, te_bool *accel)
     else
     {
         *accel = acceleration ? TRUE : FALSE;
-        free(acceleration);
     }
 
     return rc;
