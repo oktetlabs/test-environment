@@ -990,7 +990,6 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
         }
     }
 
-    RING("%d", all_by_default);
     if (!run_spec && all_by_default)
     {
         /* No test paths to run are specified, scenarion is still empty */
@@ -1036,7 +1035,6 @@ tester_process_test_paths(const tester_cfgs *cfgs,
     assert(paths != NULL);
     assert(scenario != NULL);
     
-    RING("----%d", all_by_default);
     ENTRY();
 
     for (path = TAILQ_FIRST(paths), rc = 0;
