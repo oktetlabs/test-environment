@@ -475,6 +475,14 @@ walk_iterate(const tester_cfg_walk *walk, const void *opaque,
                                      (void *)opaque);
             ctl = walk_ctl_merge(ctl, ctl_tmp);
         }
+
+        if (ctl == TESTER_CFG_WALK_BACK && curr_id_off != id_off)
+        {
+            VERB("%s(): Try the first iteration", __FUNCTION__);
+            i = 0;
+            curr_id_off = id_off;
+            ctl = TESTER_CFG_WALK_CONT;
+        }
     }
 
     if (ctl == TESTER_CFG_WALK_BREAK)
