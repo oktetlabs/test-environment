@@ -443,19 +443,17 @@ walk_iterate(const tester_cfg_walk *walk, const void *opaque,
              const run_item *run,
              const run_item *keepalive, const run_item *exception)
 {
-    tester_cfg_walk_ctl ctl;
+    tester_cfg_walk_ctl ctl = TESTER_CFG_WALK_CONT;
     tester_cfg_walk_ctl ctl_tmp;
-    unsigned int        curr_id_off;
-    unsigned int        i;
+    unsigned int        curr_id_off = id_off;
+    unsigned int        i = 0;
 
     ENTRY("run=%s id_off=%u flags=%#x keepalive=%p exception=%p",
           run_item_name(run), id_off, flags, keepalive, exception);
 
     assert(run != NULL);
 
-    for (i = 0, curr_id_off = id_off, ctl = TESTER_CFG_WALK_CONT;
-         i < run->n_iters && ctl == TESTER_CFG_WALK_CONT;
-         ++i, curr_id_off += run->weight)
+    while (i < run->n_iters && ctl == TESTER_CFG_WALK_CONT)
     {
         if (walk->iter_start != NULL)
             ctl = walk->iter_start((run_item *)run, curr_id_off, flags, i,
@@ -482,6 +480,11 @@ walk_iterate(const tester_cfg_walk *walk, const void *opaque,
             i = 0;
             curr_id_off = id_off;
             ctl = TESTER_CFG_WALK_CONT;
+        }
+        else
+        {
+             ++i;
+             curr_id_off += run->weight;
         }
     }
 
