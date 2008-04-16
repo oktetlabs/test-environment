@@ -54,7 +54,7 @@ static unsigned int global_attr_num = 0;
 /** Wheter the attribute array is currently used or not */
 static te_bool      attr_locked = FALSE;
 
-#define N_BUFS 10
+#define N_BUFS 11
 #define BUF_LEN 128
 /** The array of buffers for keeping string value attributes */
 static char bufs[N_BUFS][BUF_LEN];
