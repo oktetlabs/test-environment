@@ -567,6 +567,8 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     rgt_depth_ctx_t  *prev_depth_ctx;
     const char       *name = rgt_tmpls_xml_attrs_get(xml_attrs, "name");
     const char       *result = rgt_tmpls_xml_attrs_get(xml_attrs, "result");
+    const char       *tin = rgt_tmpls_xml_attrs_get(xml_attrs, "tin");
+    char             *tin_val = NULL;
     const char       *err = rgt_tmpls_xml_attrs_get(xml_attrs, "err");
     const char       *node_class;
     char              fname[255];
@@ -586,6 +588,18 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
         node_class = NODE_CLASS_ERR;
     else
         node_class = NODE_CLASS_STD;
+
+    if (tin != NULL)
+    {
+        size_t tin_val_len = malloc(strlen(tin) + strlen("()") + 1;
+
+        if ((tin_val = malloc(tin_val_len)) == NULL)
+        {
+            fprintf(stderr, "Cannot allocate memory for TIN\n");
+            exit(1);
+        }
+        snprintf(tin_val, tin_val_len, "(%s)", tin);
+    }
 
     prev_depth_ctx = &g_array_index(ctx->depth_info,
                                     rgt_depth_ctx_t, (ctx->depth - 2));
@@ -614,9 +628,11 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     rgt_tmpls_attrs_add_fstr(attrs, "node_type", node_type);
     rgt_tmpls_attrs_add_fstr(attrs, "name", name);
     rgt_tmpls_attrs_add_fstr(attrs, "result", result);
+    rgt_tmpls_attrs_add_fstr(attrs, "tin", tin_val);
     rgt_tmpls_attrs_add_fstr(attrs, "err", err);
     rgt_tmpls_output(depth_user->fd,
                      &xml2fmt_tmpls[DOC_CNTRL_NODE_TITLE], attrs);
+    free(tin_val);
 
     rgt_tmpls_attrs_add_fstr(attrs, "fname", fname);
     rgt_tmpls_attrs_add_fstr(attrs, "class", node_class);
