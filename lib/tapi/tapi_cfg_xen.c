@@ -979,7 +979,7 @@ tapi_cfg_xen_dom_u_bridge_get_accel(char const *ta, char const *dom_u,
                                     char const *bridge, te_bool *accel)
 {
     cfg_val_type type = CVT_INTEGER;
-    int          acceleration;
+    int         *acceleration;
     te_errno     rc;
 
     if (ta == NULL || dom_u == NULL || bridge == NULL || accel == NULL)
@@ -999,7 +999,7 @@ tapi_cfg_xen_dom_u_bridge_get_accel(char const *ta, char const *dom_u,
     }
     else
     {
-        *accel = acceleration ? TRUE : FALSE;
+        *accel = *acceleration ? TRUE : FALSE;
         free(acceleration);
     }
 
@@ -1011,7 +1011,6 @@ te_errno
 tapi_cfg_xen_dom_u_bridge_set_accel(char const *ta, char const *dom_u,
                                     char const *bridge, te_bool accel)
 {
-    int      acceleration = accel ? 1 : 0;
     te_errno rc;
 
     if (ta == NULL || dom_u == NULL || bridge == NULL)
@@ -1021,7 +1020,7 @@ tapi_cfg_xen_dom_u_bridge_set_accel(char const *ta, char const *dom_u,
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, acceleration),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, accel ? 1 : 0),
                                    "/agent:%s/xen:/dom_u:%s"
                                    "/bridge:%s/accel:",
                                    ta, dom_u, bridge)) != 0)
