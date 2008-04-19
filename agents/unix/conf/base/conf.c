@@ -572,6 +572,8 @@ static te_errno xen_base_mac_addr_set(unsigned int, char const *,
 static te_errno xen_accel_get(unsigned int, char const *, char *);
 static te_errno xen_accel_set(unsigned int, char const *, char const *);
 
+static te_errno xen_init_set(unsigned int, char const *, char const *);
+
 static te_errno xen_interface_add(unsigned int, char const *, char const *,
                                   char const *, char const *);
 static te_errno xen_interface_del(unsigned int, char const *, char const *,
@@ -824,8 +826,12 @@ static rcf_pch_cfg_object node_xen_interface =
       (rcf_ch_cfg_del)&xen_interface_del,
       (rcf_ch_cfg_list)&xen_interface_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(node_xen_accel, "accel",
+RCF_PCH_CFG_NODE_RW(node_xen_init, "init",
                     NULL, &node_xen_interface,
+                    NULL, &xen_init_set);
+
+RCF_PCH_CFG_NODE_RW(node_xen_accel, "accel",
+                    NULL, &node_xen_init,
                     &xen_accel_get, &xen_accel_set);
 
 RCF_PCH_CFG_NODE_RW(node_base_mac_addr, "base_mac_addr",
@@ -7153,7 +7159,7 @@ typedef enum { DOM_U_STATUS_NON_RUNNING,
 static char xen_path[PATH_MAX]    = { '\0' };
 
 /** Subpath to XEN storage for dynamically created/destroyed domUs */
-static char xen_subpath[PATH_MAX] = {'\0' };
+static char xen_subpath[PATH_MAX] = { '\0' };
 
 /** Kernel, initial ramdisk and VBD image files */
 static char xen_kernel[PATH_MAX]  = { '\0' };
@@ -8750,44 +8756,41 @@ access method is not implemented
 
 #if XEN_SUPPORT
 static te_errno
-xen_accel_get_executive(te_bool *status)
+xen_executive(char const *cmd)
 {
-    char const pattern[] = "sfc_netback";
-
-    te_errno   rc  = 0;
     int        fd;
     int        st;
-    pid_t      pid = te_shell_cmd("lsmod | grep -w ^sfc_netback "
-                                  "2> /dev/null | awk '{print$1}'",
-                                  -1, NULL, &fd, NULL);
-
-
-    *status = FALSE;
+    ssize_t    rd  = 0;
+    pid_t      pid = te_shell_cmd(cmd, -1, NULL, &fd, NULL);
+    te_errno   rc  = 0;
 
     if (pid == -1)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
-    *buf = '\0';
     ta_waitpid(pid, &st, 0);
 
-    if (st == 0)
-    {
-        if (read(fd, buf, sizeof(buf)) != -1)
-        {
-            *status = strncmp(buf, pattern,
-                              sizeof(pattern) - 1) == 0 ? TRUE : FALSE;
-        }
-        else
-        {
-            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
-        }
-    }
-    else
-    {
+    if (st != 0 || (rd = read(fd, buf, sizeof(buf) - 1)) < 0)
         rc = TE_OS_RC(TE_TA_UNIX, errno);
-    }
 
     close(fd);
+
+    while (rd > 0 && buf[rd - 1] == '\n')
+        rd--;
+
+    buf[rd] = '\0';
+    return rc;
+}
+
+static te_errno
+xen_accel_get_executive(te_bool *status)
+{
+    char const pt[] = "sfc_netback";
+    te_errno   rc   = xen_executive("lsmod | grep -w ^sfc_netback "
+                                    "2> /dev/null | awk '{print$1}'");
+
+    if (rc == 0)
+        *status = strncmp(buf, pt, sizeof(pt) - 1) == 0 ? TRUE : FALSE;
+
     return rc;
 }
 #endif
@@ -8907,6 +8910,111 @@ access method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/accel' 'set' "
           "access method is not implemented");
+    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Perform XEN dom0 initialization/cleanup
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         init "command"
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_init_set(unsigned int gid, char const *oid, char const *value)
+{
+#if XEN_SUPPORT
+    char const  *cmd_list = "/usr/sbin/xm list | awk '{print$1}' | "
+                            "grep -v 'Name' | grep -v 'Domain-0'";
+    char const  *cmd_shut = "for dom_u in "
+                            "`/usr/sbin/xm list | awk '{print $1}' | "
+                            "grep -v 'Name' | grep -v 'Domain-0'`; "
+                            "do /usr/sbin/xm shutdown $dom_u; done";
+    char const  *cmd_dest = "for dom_u in "
+                            "`/usr/sbin/xm list | awk '{print $1}' | "
+                            "grep -v 'Name' | grep -v 'Domain-0'`; "
+                            "do /usr/sbin/xm destroy $dom_u; done";
+
+    te_errno     rc;
+    unsigned int u;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+#if XEN_SUPPORT
+    /* The agent must run within dom0 */
+    if (!is_within_dom0())
+    {
+        ERROR("Agent runs NOT within dom0");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    if (*xen_path == '\0')
+    {
+        ERROR("XEN path is NOT set");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    if ((rc =  xen_executive(cmd_list)) != 0)
+        return rc;
+
+    if (*buf == '\0')
+        goto clear_xen_sub_path;
+
+    RING("Shutting down domUs:\n%s", buf);
+
+    if ((rc =  xen_executive(cmd_shut)) != 0)
+        return rc;
+
+    for (u = 0; u < 9; u++)
+    {
+        if ((rc =  xen_executive(cmd_list)) != 0)
+            return rc;
+
+        if (*buf == '\0')
+            goto clear_xen_sub_path;
+
+        sleep(3);
+    }
+
+    RING("Destroying domUs:\n%s", buf);
+
+    if ((rc =  xen_executive(cmd_dest)) != 0)
+        return rc;
+
+    for (u = 0; u < 9; u++)
+    {
+        if ((rc =  xen_executive(cmd_list)) != 0)
+            return rc;
+
+        if (*buf == '\0')
+            goto clear_xen_sub_path;
+
+        sleep(3);
+    }
+
+    ERROR("Failed to shutdown and then destroy all domUs");
+    return TE_RC(TE_TA_UNIX, TE_EFAIL);
+
+clear_xen_sub_path:
+
+    TE_SPRINTF(buf, "%s/%s/*", xen_path, xen_subpath);
+
+    if ((rc = xen_rmfr(buf)) != 0)
+        ERROR("Failed to clear XEN subpath '%s'", buf);
+
+    return rc;
+#else
+#warning '/agent/xen/init' 'set' \
+init method is not implemented
+    UNUSED(value);
+    ERROR("'/agent/xen/init' 'set' "
+          "init method is not implemented");
     return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }

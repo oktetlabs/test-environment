@@ -344,20 +344,45 @@ tapi_cfg_xen_get_accel(char const *ta, te_bool *accel)
 te_errno
 tapi_cfg_xen_set_accel(char const *ta, te_bool accel)
 {
-    int      acceleration = accel ? 1 : 0;
     te_errno rc;
 
     if (ta == NULL)
     {
-        ERROR("Failed to set acceleration on %s: Invalid params", ta);
+        ERROR("Failed to set acceleration to %s on %s: Invalid params",
+              accel ? "TRUE" : "FALSE", ta);
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, acceleration),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, accel ? 1 : 0),
                                    "/agent:%s/xen:/accel:",
                                    ta)) != 0)
     {
-        ERROR("Failed to set acceleration on %s", ta);
+        ERROR("Failed to set acceleration to %s on %s",
+              accel ? "TRUE" : "FALSE", ta);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_xen.h */
+te_errno
+tapi_cfg_xen_set_init(char const *ta, te_bool init)
+{
+    te_errno rc;
+
+    if (ta == NULL)
+    {
+        ERROR("Failed to perform XEN %s on %s: Invalid params",
+              init ? "initialization" : "clean up", ta);
+        return TE_EINVAL;
+    }
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, init ? 1 : 0),
+                                   "/agent:%s/xen:/init:",
+                                   ta)) != 0)
+    {
+        ERROR("Failed to perform XEN %s on %s",
+              init ? "initialization" : "clean up", ta);
     }
 
     return rc;

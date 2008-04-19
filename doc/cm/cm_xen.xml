@@ -111,6 +111,17 @@
     <object oid="/agent/xen/accel" access="read_write"
             type="integer" volatile="true"/>
 
+    <!-- The dom0 initialization/clean up "method".
+         Name: none
+         Value: writing 1 causes Dom0 initialization, 0 - clean up
+
+         Note: Currently, initialization and clean up are identical:
+               all running domUs are shut down, then those that failed
+               to shut down are destroyed and then all cloned and other
+               created images are destroyed on 'xen/subpath' -->
+    <object oid="/agent/xen/init" access="read_write"
+            type="integer" volatile="true"/>
+
     <!-- XEN domU.
          Name: XEN domain name
          Value: Directory/disk images creation/destruction flag: if 0

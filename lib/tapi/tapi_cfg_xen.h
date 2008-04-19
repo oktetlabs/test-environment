@@ -174,6 +174,16 @@ extern te_errno tapi_cfg_xen_get_accel(char const *ta, te_bool *accel);
 extern te_errno tapi_cfg_xen_set_accel(char const *ta, te_bool accel);
 
 /**
+ * Perform dom0 initialization/cleanup.
+ *
+ * @param ta            Test Agent running withing dom0
+ * @param init          Initialization (TRUE) or clean up (FALSE)?
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_xen_set_init(char const *ta, te_bool init);
+
+/**
  * Create new domU.
  *
  * @param ta            Test Agent running withing dom0
