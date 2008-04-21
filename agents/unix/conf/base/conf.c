@@ -9547,13 +9547,7 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
 
     if ((rc = xen_fill_file_in_disk_image(dom_u, "/etc/udev/rules.d/"
                                           "z25_persistent-net.rules",
-                                          "")) != 0)
-    {
-        goto cleanup1;
-    }
-
-    if ((rc = xen_fill_file_in_disk_image(dom_u, "/etc/hostname",
-                                          dom_u)) == 0)
+                                          "")) == 0)
     {
         goto cleanup0;
     }
