@@ -3076,7 +3076,8 @@ asn_walk_breadth(asn_value *container, te_bool only_leafs,
 /* See description in asn_usr.h */
 te_errno
 asn_path_from_extended(const asn_value *node, const char *ext_path,
-                       char *asn_path, unsigned int asn_path_len)
+                       char *asn_path, unsigned int asn_path_len,
+                       te_bool auto_insert)
 {
     char *search_start = NULL, *search_end = NULL;
     char *path = NULL;
@@ -3092,6 +3093,7 @@ asn_path_from_extended(const asn_value *node, const char *ext_path,
     int search_len = 0;
     char *p = NULL;
     int i, parsed_syms = 0, len;
+    char *temp_asn_path;
 
     /* Check validity of arguments */
     if ((node == NULL) || (ext_path == NULL) ||
@@ -3099,7 +3101,7 @@ asn_path_from_extended(const asn_value *node, const char *ext_path,
         return TE_EINVAL;
 
     /* Check if there are any searches */
-    if ((search_start = strstr(ext_path, ".[")) == NULL)
+    if ((search_start = strchr(ext_path, '[')) == NULL)
     {
         /* Nothing to replace - return the path as is */
         if (asn_path_len < strlen(ext_path) + 1)
@@ -3113,12 +3115,21 @@ asn_path_from_extended(const asn_value *node, const char *ext_path,
     }
 
     /* Get ASN node which contents are to be searched */
-    prefix_len = search_start - ext_path;
-    path = malloc((prefix_len + 1) * sizeof(char));
-    strncpy(path, ext_path, prefix_len);
-    path[prefix_len] = '\0';
-    rc = asn_get_descendent(node, &container, path);
-    free(path);
+    if (search_start == ext_path)
+    {
+        container = node;
+        rc = 0;
+        prefix_len = 0;
+    }
+    else
+    {
+        prefix_len = search_start - ext_path - 1;
+        path = malloc((prefix_len + 1) * sizeof(char));
+        strncpy(path, ext_path, prefix_len);
+        path[prefix_len] = '\0';
+        rc = asn_get_descendent(node, &container, path);
+        free(path);
+    }
     if (rc != 0)
     {
         RING("ext: asn_get_descendent failed");
@@ -3134,12 +3145,7 @@ asn_path_from_extended(const asn_value *node, const char *ext_path,
         RING("ext: wrong type of container");
         return TE_EASNWRONGTYPE;
     }
-    rc = asn_get_subtype(value_type, &subtype, "0");
-    if (rc != 0)
-    {
-        RING("ext: get_subtype failed");
-        return rc;
-    }
+    subtype = value_type->sp.subtype;
     value_syntax = asn_get_syntax_of_type(subtype);
     if ((value_syntax != SET) &&
         (value_syntax != SEQUENCE))
@@ -3149,14 +3155,14 @@ asn_path_from_extended(const asn_value *node, const char *ext_path,
     }
 
     /* Parse search expression - extract label and value */
-    search_end = strstr(search_start, "].");
+    search_end = strchr(search_start, ']');
     if (search_end == NULL)
     {
         RING("ext: failed to find end of search");
         return TE_EINVAL;
     }
 
-    search_start += 2;
+    search_start += 1;
     search_len = search_end - search_start;
     search_name = malloc((search_len + 1) * sizeof(char));
     search_value = malloc((search_len + 1) * sizeof(char));
@@ -3243,9 +3249,40 @@ asn_path_from_extended(const asn_value *node, const char *ext_path,
     }
     if (i == container->len) /* Nothing was found */
     {
-        RING("ext: nothing was found to match search");
-        rc = TE_EASNDIFF;
-        goto cleanup;
+        asn_value *temp_val;
+
+        if (auto_insert == FALSE)
+        {
+            rc = TE_EASNDIFF;
+            goto cleanup;
+        }
+        
+        /* Now try to insert value automatically */
+        temp_asn_path = malloc(asn_path_len);
+        if (temp_asn_path == NULL)
+        {
+            rc = TE_ENOBUFS;
+            goto cleanup;
+        }
+        strncpy(temp_asn_path, ext_path, prefix_len);
+        temp_asn_path[prefix_len] = '\0';
+        strncat(temp_asn_path, ".[", asn_path_len);
+        strncat(temp_asn_path, search_name, asn_path_len);
+        strncat(temp_asn_path, ":", asn_path_len);
+        strncat(temp_asn_path, search_value + 1, asn_path_len);
+        temp_asn_path[strlen(temp_asn_path) - 1] = '\0';
+        strncat(temp_asn_path, "]", asn_path_len);
+        temp_val = asn_init_value(subtype);
+        rc = asn_insert_value_extended_path(node, temp_asn_path,
+                                            temp_val, NULL);
+        free(temp_asn_path);
+        if (rc != 0)
+        {
+            goto cleanup;
+        }
+
+        return asn_path_from_extended(node, ext_path, asn_path,
+                                      asn_path_len, auto_insert);
     }
 
     /*
@@ -3253,7 +3290,7 @@ asn_path_from_extended(const asn_value *node, const char *ext_path,
      * asn_path_len
      */
     path = malloc(20 * sizeof(char));
-    len = snprintf(path, 20, ".%d.", i);
+    len = snprintf(path, 20, ".%d", i);
     if (prefix_len + len + strlen(search_end + 2) >= asn_path_len)
     {
         free(path);
@@ -3261,14 +3298,34 @@ asn_path_from_extended(const asn_value *node, const char *ext_path,
         goto cleanup;
     }
 
-    /* Create final asn_path */
-    strncpy(asn_path, ext_path, prefix_len);
-    asn_path[prefix_len] = '\0';
-    strncat(asn_path, path, asn_path_len);
-    strncat(asn_path, search_end + 2, asn_path_len);
+    /* Create temporary path */
+    temp_asn_path = malloc(asn_path_len);
+    if (temp_asn_path == NULL)
+    {
+        free(path);
+        rc = TE_ENOBUFS;
+        goto cleanup;
+    }
+    strncpy(temp_asn_path, ext_path, prefix_len);
+    temp_asn_path[prefix_len] = '\0';
+    strncat(temp_asn_path, path, asn_path_len);
+    if (*(search_end + 1) != '\0')
+    {
+        strncat(temp_asn_path, search_end + 1, asn_path_len);
+    }
     free(path);
 
-    rc = 0;
+    /* 
+     * Call asn_path_from_extended once more to process
+     * other searches
+     */
+    rc = asn_path_from_extended(node, temp_asn_path, asn_path,
+                                asn_path_len, auto_insert);
+    free(temp_asn_path);
+    if (rc != 0)
+    {
+        goto cleanup;
+    }
 
 cleanup:
     free(search_name);
@@ -3305,13 +3362,20 @@ asn_insert_value_extended_path(const asn_value *root_node,
         return TE_EINVAL;
 
     /* Check if there are any searches */
-    if ((search_start = strstr(ext_path, ".[")) == NULL)
+    if ((search_start = strchr(ext_path, '[')) == NULL)
     {
         return TE_EOPNOTSUPP;
     }
 
     /* Get ASN node which contents are to be searched */
-    prefix_len = search_start - ext_path;
+    if (search_start == ext_path)
+    {
+        prefix_len = 0;
+    }
+    else
+    {
+        prefix_len = search_start - ext_path - 1;
+    }
     prefix_path = malloc((prefix_len + 1) * sizeof(char));
     strncpy(prefix_path, ext_path, prefix_len);
     prefix_path[prefix_len] = '\0';
@@ -3319,7 +3383,6 @@ asn_insert_value_extended_path(const asn_value *root_node,
     rc = asn_get_subtype(search_type, &value_type, prefix_path);
     if (rc != 0)
     {
-        RING("insert-extended: asn_get_descendent(%s) failed", prefix_path);
         goto cleanup;
     }
 
@@ -3328,14 +3391,12 @@ asn_insert_value_extended_path(const asn_value *root_node,
     if ((value_syntax != SET_OF) &&
         (value_syntax != SEQUENCE_OF))
     {
-        RING("insert-extended: incorrect type");
         rc = TE_EASNWRONGTYPE;
         goto cleanup;
     }
     rc = asn_get_subtype(value_type, &subtype, "0");
     if (rc != 0)
     {
-        RING("insert-extended: failed to get subtype");
         goto cleanup;
     }
     value_syntax = asn_get_syntax_of_type(subtype);
@@ -3343,21 +3404,19 @@ asn_insert_value_extended_path(const asn_value *root_node,
          (value_syntax != SEQUENCE)) ||
         (value->syntax != value_syntax))
     {
-        RING("insert-extended: wrong syntax of subtype (need: %d or %d, have: %d, value->syntax=%d", SET, SEQUENCE, value_syntax, value->syntax);
         rc = TE_EASNWRONGTYPE;
         goto cleanup;
     }
 
     /* Parse search expression - extract label and value */
-    search_end = strstr(search_start, "]");
+    search_end = strchr(search_start, ']');
     if (search_end == NULL)
     {
-        RING("insert-extended: failed to find search end");
         rc = TE_EINVAL;
         goto cleanup;
     }
 
-    search_start += 2;
+    search_start += 1;
     search_len = search_end - search_start;
     search_name = malloc((search_len + 1) * sizeof(char));
     search_value = malloc((search_len + 1) * sizeof(char));
@@ -3391,7 +3450,6 @@ asn_insert_value_extended_path(const asn_value *root_node,
     }
     if (i == subtype->len && subtype->len != 0)
     { 
-        RING("insert-extended: subtype doesn't have necessary label");
         rc = TE_EASNWRONGLABEL;
         goto cleanup;
     }
@@ -3408,7 +3466,6 @@ asn_insert_value_extended_path(const asn_value *root_node,
     rc = asn_parse_value_text(search_value, search_type, &new_value, &parsed_syms);
     if (rc != 0)
     {
-        RING("insert-extended: Failed to parse search_value");
         goto cleanup;
     }
 
@@ -3419,7 +3476,6 @@ asn_insert_value_extended_path(const asn_value *root_node,
     rc = asn_insert_indexed(root_node, value, 0, prefix_path);
     if (rc != 0)
     {
-        RING("insert-extended: Failed to insert value");
         goto cleanup;
     }
 

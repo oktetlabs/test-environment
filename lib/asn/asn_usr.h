@@ -718,6 +718,7 @@ extern te_errno asn_put_choice(asn_value *container, asn_value *value);
  * @param ext_path      Extended ASN path with search expressions
  * @param asn_path      Buffer for normal ASN path
  * @param asn_path_len  asn_path buffer length
+ * @param auto_insert   Insert items if search fail
  *
  * @return  0  - path was converted successfully
  *          -1 - normal part of extended path is incorrect
@@ -725,7 +726,8 @@ extern te_errno asn_put_choice(asn_value *container, asn_value *value);
  *          -3 - buffer is too short to hold result
  */
 te_errno asn_path_from_extended(const asn_value *node, const char *ext_path,
-                                char *asn_path, unsigned int asn_path_len);
+                                char *asn_path, unsigned int asn_path_len,
+                                te_bool auto_insert);
 
 /**
  * Inserts 'value' into root_node ASN value.
