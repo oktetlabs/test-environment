@@ -251,3 +251,72 @@ tapi_icmp4_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
 
     return 0;
 }
+
+/**
+ * Create 'icmp.ip4.eth' CSAP on the specified Agent
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
+ * @param receive_mode  Bitmask with receive mode, see 'enum
+ *                      tad_eth_recv_mode' in tad_common.h.
+ *                      Use TAD_ETH_RECV_DEF by default.
+ * @param eth_src       Local MAC address (or NULL)
+ * @param eth_dst       Remote MAC address (or NULL)
+ * @param src_addr      Local IP address in network byte order (or NULL)
+ * @param dst_addr      Remote IP address in network byte order (or NULL)
+ * @param icmp_csap     Location for the CSAP handle (OUT)
+ *
+ * @return Zero on success or error code
+ */
+te_errno
+tapi_icmp_ip4_eth_csap_create(const char    *ta_name,
+                              int            sid,
+                              const char    *eth_dev,
+                              unsigned int   receive_mode,
+                              const uint8_t *eth_src,
+                              const uint8_t *eth_dst,
+                              in_addr_t      src_addr,
+                              in_addr_t      dst_addr,
+                              csap_handle_t *icmp_csap)
+{
+    te_errno    rc;
+    asn_value  *csap_spec = NULL;
+
+    do {
+        if ((rc = tapi_tad_csap_add_layer(&csap_spec,
+                                          ndn_icmp4_csap,
+                                          "#icmp4", NULL)) != 0)
+        {
+            WARN("%s(): add ICMP csap layer failed %r", __FUNCTION__, rc);
+            break;
+        }
+
+        if ((rc = tapi_ip4_add_csap_layer(&csap_spec,
+                                          src_addr, dst_addr,
+                                          -1 /* default proto */,
+                                          -1 /* default ttl */,
+                                          -1 /* default tos */)) != 0)
+        {
+            WARN("%s(): add IP4 csap layer failed %r", __FUNCTION__, rc);
+            break;
+        }
+
+        if ((rc = tapi_eth_add_csap_layer(&csap_spec, eth_dev,
+                                          receive_mode, eth_dst, eth_src,
+                                          NULL, TE_BOOL3_ANY,
+                                          TE_BOOL3_ANY)) != 0)
+        {
+            WARN("%s(): add ETH csap layer failed %r", __FUNCTION__, rc);
+            break;
+        }
+
+
+        rc = tapi_tad_csap_create(ta_name, sid, "icmp4.ip4.eth",
+                                  csap_spec, icmp_csap);
+    } while (0);
+
+    asn_free_value(csap_spec);
+
+    return TE_RC(TE_TAPI, rc);
+}

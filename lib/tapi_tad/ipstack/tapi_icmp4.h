@@ -153,6 +153,33 @@ extern te_errno tapi_udp_ip4_icmp_ip4_eth_csap_create(
                     int            msg_dst_port,
                     csap_handle_t *udp_csap);
 
+/**
+ * Create 'icmp.ip4.eth' CSAP on the specified Agent
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
+ * @param receive_mode  Bitmask with receive mode, see 'enum
+ *                      tad_eth_recv_mode' in tad_common.h.
+ *                      Use TAD_ETH_RECV_DEF by default.
+ * @param eth_src       Local MAC address (or NULL)
+ * @param eth_dst       Remote MAC address (or NULL)
+ * @param src_addr      Local IP address in network byte order (or NULL)
+ * @param dst_addr      Remote IP address in network byte order (or NULL)
+ * @param icmp_csap     Location for the CSAP handle (OUT)
+ *
+ * @return Zero on success or error code
+ */
+extern te_errno tapi_icmp_ip4_eth_csap_create(
+                    const char    *ta_name,
+                    int            sid,
+                    const char    *eth_dev,
+                    unsigned int   receive_mode,
+                    const uint8_t *eth_src,
+                    const uint8_t *eth_dst,
+                    in_addr_t      src_addr,
+                    in_addr_t      dst_addr,
+                    csap_handle_t *icmp_csap);
 
 #ifdef __cplusplus
 } /* extern "C" */
