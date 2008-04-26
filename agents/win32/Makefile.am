@@ -1,6 +1,7 @@
 
 ACLOCAL_AMFLAGS = -I $(TE_M4)
-AM_CPPFLAGS=$(TE_CPPFLAGS) -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include \
+AM_CPPFLAGS=$(TE_CPPFLAGS) \
+            -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include \
             -include te_config.h -include config.h -fno-strict-aliasing \
             -D_WIN32_WINNT=0x0501 -D'INCLUDE(x)='
 AM_CFLAGS=$(TE_CFLAGS)
@@ -33,7 +34,7 @@ if CFG_RCF_RPC
 LDADD=symtbl.o \
 -lrcfpch -lrpc_types -lrpcxdrta -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta \
 -lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin \
--lexpat -lpcap
+-lexpat -lpcap -lole32 -loleaut32
 
 AM_CPPFLAGS+=-DRCF_RPC -I.
 ta_SOURCES+=tarpc_server.c 
@@ -68,7 +69,8 @@ rpcserver_DEPENDENCIES=\
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpc_types.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdrta.a 
 
-rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c inet_pton.c inet_ntop.c
+rpcserver_SOURCES=tarpc_server.c rpcserver.c \
+                  common.c inet_pton.c inet_ntop.c
 nodist_rpcserver_SOURCES=rpc_unsupported.c rpc_supported.h
 rpcserver32_SOURCES=
 rpcserver64_SOURCES=
@@ -85,9 +87,11 @@ rpcserver_symtbl.c: tarpc_server.o common.o $(RPCSERVER_SYMTBL_ADD)
 
 RPCSERVER_LIBS="librcfpch.a libloggerta.a libtools.a librpc_types.a \
                 $(RPCSERVER_LIBS_ADD) librpcxdrta.a librpc.a  \
-                ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib user32.lib"
+                ws2_32.lib mswsock.lib wsock32.lib \
+                iphlpapi.lib user32.lib"
 
-RPCSERVER_SRC= $(rpcserver_SOURCES) $(nodist_rpcserver_SOURCES) rpcserver_symtbl.c
+RPCSERVER_SRC= $(rpcserver_SOURCES) \
+               $(nodist_rpcserver_SOURCES) rpcserver_symtbl.c
 
 rpcserver32$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
@@ -140,7 +144,7 @@ ta_PROGRAMS=ta
 LDADD=symtbl.o \
 -lrcfpch -lrpcxdr -lrpc_types -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta \
 -lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools \
--lcygwin -lexpat 
+-lcygwin -lexpat -lpcap -lole32 -loleaut32
 
 endif
 
@@ -150,7 +154,8 @@ LDADD += -liscsi_initiator_conf -lsetupapi
 
 AM_CPPFLAGS += -DWITH_ISCSI
 
-ta_DEPENDENCIES += $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_initiator_conf.a
+ta_DEPENDENCIES +=\
+     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_initiator_conf.a
 
 endif
 
