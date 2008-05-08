@@ -711,19 +711,16 @@ extern te_errno asn_put_choice(asn_value *container, asn_value *value);
  * Square brackets are part of format. The asn_value corresponding to
  * <optional labels> is iterated and for each member the <label> value is
  * compared to <asn text value>. If comparison is successful, then whole
- * search expression is replaced by index. The <label> must be of
- * CHAR_STRING type.
- *
+ * search expression is replaced by index. There could be several labels in
+ * the search expression, they are separated by ',' then.
+ * 
  * @param node          Root ASN value to start searching for labels
  * @param ext_path      Extended ASN path with search expressions
  * @param asn_path      Buffer for normal ASN path
  * @param asn_path_len  asn_path buffer length
  * @param auto_insert   Insert items if search fail
  *
- * @return  0  - path was converted successfully
- *          -1 - normal part of extended path is incorrect
- *          -2 - search for label failed
- *          -3 - buffer is too short to hold result
+ * @return  Status code
  */
 te_errno asn_path_from_extended(const asn_value *node, const char *ext_path,
                                 char *asn_path, unsigned int asn_path_len,
@@ -737,8 +734,8 @@ te_errno asn_path_from_extended(const asn_value *node, const char *ext_path,
  *
  * 'value' will be inserted as a subvalue of '<labels>' value, its index
  * will be stored in 'index' variable and after that <asn text value> will
- * be assigned to field named <label> of newly inserted ASN value. The
- * <label> must be of CHAR_STRING type.
+ * be assigned to field named <label> of newly inserted ASN value. Several
+ * labels could be specified in [], separate with ','.
  *
  * @param root_node  Root ASN value to start searching for labels
  * @param ext_path   Extended ASN path with search expressions
