@@ -163,6 +163,7 @@ static te_errno bcast_link_addr_get(unsigned int, const char *,
 
 static te_errno ifindex_get(unsigned int, const char *, char *,
                             const char *);
+
 static te_errno status_get(unsigned int, const char *, char *,
                            const char *);
 static te_errno status_set(unsigned int, const char *, const char *,
@@ -246,9 +247,9 @@ static int phy_parameters_set(const char *ifname);
 
 static int get_driver_version();
 
-char * ifindex2friendly_name(DWORD ifindex);
-static DWORD friendly_name2ifindex(const char *ifname);
-                              
+char * ifindex2frname(DWORD ifindex);
+static DWORD frname2ifindex(const char *ifname);
+
 static unsigned int speed_duplex_state = 0;
 static unsigned int speed_duplex_to_set = 0;
 static rcf_pch_cfg_object node_phy;
@@ -388,6 +389,66 @@ extern te_errno ta_win32_conf_net_if_stats_init();
 #ifdef ENABLE_NET_SNMP_STATS
 extern te_errno ta_win32_conf_net_snmp_stats_init();
 #endif
+
+/* WMI Support */
+#ifdef _WIN32
+
+#ifndef ENABLE_WMI_SUPPORT
+#define ENABLE_WMI_SUPPORT
+#endif
+
+#ifdef ENABLE_WMI_SUPPORT
+typedef int (*t_wmi_init_wbem_objs)(void);
+typedef int (*t_wmi_uninit_wbem_objs)(void);
+typedef int (*t_wmi_get_adapters_list)(void);
+typedef char * (*t_wmi_get_frname_by_vlanid)(DWORD vlanid);
+typedef DWORD (*t_wmi_get_vlanid_by_frname)(const char *ifname);
+
+/* Defining function pointers to imported functions*/
+#define GEN_IMP_FUNC_PTR(_fname) \
+t_##_fname p##_fname;
+GEN_IMP_FUNC_PTR(wmi_init_wbem_objs);
+GEN_IMP_FUNC_PTR(wmi_uninit_wbem_objs);
+GEN_IMP_FUNC_PTR(wmi_get_adapters_list);
+GEN_IMP_FUNC_PTR(wmi_get_frname_by_vlanid);
+GEN_IMP_FUNC_PTR(wmi_get_vlanid_by_frname);
+#undef GEN_IMP_FUNC_PTR
+
+static te_bool wmi_imported = FALSE;
+
+/** Function used to initalize function poiners with respective
+  * function addresses from talib.
+  * If import was successfull it marks wmi_imported as TRUE.
+  *
+  * After successful import , pwmi_* funcs can be used as usual.
+  */
+static te_bool wmi_init_func_imports(void)
+{
+    wmi_imported = TRUE;
+#define IMPORT_FUNC(_fname)                                   \
+    do {                                                      \
+        if (!wmi_imported)                                    \
+            break;                                            \
+        if ((p##_fname = rcf_ch_symbol_addr(#_fname, TRUE)) == 0)\
+        {                                                     \
+            ERROR("No %s function exported. "                  \
+                 "WMI support will be disabled", #_fname);    \
+            wmi_imported = FALSE;                             \
+        }                                                     \
+    } while (0)
+    
+    IMPORT_FUNC(wmi_init_wbem_objs);
+    IMPORT_FUNC(wmi_uninit_wbem_objs);
+    IMPORT_FUNC(wmi_get_adapters_list);
+    IMPORT_FUNC(wmi_get_frname_by_vlanid);
+    IMPORT_FUNC(wmi_get_vlanid_by_frname);
+    
+    return wmi_imported;
+#undef IMPORT_FUNC
+}
+#endif //ENABLE_WMI_SUPPORT
+
+#endif //_WIN32
 
 /* win32 Test Agent configuration tree */
 
@@ -578,6 +639,7 @@ neigh_st_list(char** list, const char* ifname)
                                     &(p->val.dwAddr)));
     }
 
+    
     if ((*list = strdup(buf)) == NULL)
       return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
@@ -1026,9 +1088,10 @@ static DWORD
 ifname2ifindex(const char *ifname)
 {
     char   *s;
-    char   *tmp;                                   
+    char   *tmp;
     te_bool ef = FALSE;
-    DWORD   index;
+    DWORD   index, vlan_id;
+    char *friendly_name;
 
     if (ifname == NULL)
         return 0;
@@ -1037,23 +1100,47 @@ ifname2ifindex(const char *ifname)
         s = (char *)ifname + strlen("intf");
     else if (strcmp_start("ef", ifname) == 0)
     {
-        s = (char *)ifname + strlen("ef");
-        ef = TRUE;
+        if (strcmp_start("ef1.", ifname) == 0)
+        {
+            /* Interface is VLAN */
+            s = (char *)ifname + strlen("ef1.");
+            vlan_id = strtol(s, &tmp, 10);
+            if (tmp == s || *tmp != 0)
+                return 0;
+            if (!wmi_imported)
+                return 0;
+            friendly_name = pwmi_get_frname_by_vlanid(vlan_id);
+            if (friendly_name != NULL)
+            {
+                index = frname2ifindex(friendly_name);
+                if (index > 0)
+                    return index;
+                else
+                    return 0;
+            }
+            else
+                return 0;
+        }
+        else
+        {
+            s = (char *)ifname + strlen("ef");
+            ef = TRUE;
+        }
     }
     else
         return 0;
     index = strtol(s, &tmp, 10);
     if (tmp == s || *tmp != 0)
         return 0;
-        
+
     if (!ef)
         return index;
-        
+
     if (index < 1 || index > 2)
         return 0;
 
     efport2ifindex();
-        
+
     return ef_index[index - 1];
 }
 
@@ -1062,15 +1149,37 @@ char *
 ifindex2ifname(DWORD ifindex)
 {
     static char ifname[16];
-    
+    char *friendly_name;
+    DWORD vlan_id = -1;
+
+    friendly_name = ifindex2frname(ifindex);
+    if (strcmp_start("Virtual", friendly_name) == 0)
+    {
+        if (!wmi_imported)
+        {
+          return NULL;
+        }
+        vlan_id = pwmi_get_vlanid_by_frname(friendly_name);
+        if (vlan_id > 0)
+        {
+            sprintf(ifname, "ef1.%d", vlan_id);
+            return ifname;
+        }
+        else
+        {
+            ERROR("wmi_get_vlanid_by_name failed");
+            return NULL;
+        }
+    }
+
     if (ef_index[0] == ifindex)
         sprintf(ifname, "ef1");
     else if (ef_index[1] == ifindex)
         sprintf(ifname, "ef2");
     else
         sprintf(ifname, "intf%u", (unsigned int)ifindex);
-        
-    return ifname;        
+
+    return ifname;
 }
 
 /** Update information in if_entry. Local variable ifname should exist */
@@ -1181,16 +1290,22 @@ find_ifindex(DWORD addr, DWORD *ifindex)
  * @return root pointer
  */
 rcf_pch_cfg_object *
+
 rcf_ch_conf_root()
 {
     static te_bool init = FALSE;
-    
+
     /* Link RPC nodes */
     if (!init)
     {
+#ifdef ENABLE_WMI_SUPPORT
+        if (get_driver_version() == DRIVER_VERSION_2_2)
+          wmi_init_func_imports();
+#endif
+
         if (efport2ifindex() != 0)
             return NULL;
-        
+
         init = TRUE;
 #ifdef RCF_RPC
         rcf_pch_rpc_init();
@@ -1200,6 +1315,11 @@ rcf_ch_conf_root()
         {
             return NULL;
         }
+#endif
+
+#ifdef ENABLE_WMI_SUPPORT
+        if (wmi_imported)
+            pwmi_init_wbem_objs();
 #endif
         rcf_pch_rsrc_init();
         rcf_pch_rsrc_info("/agent/interface", 
@@ -1321,7 +1441,7 @@ interface_list(unsigned int gid, const char *oid, char **list)
 
 
 char * 
-ifindex2friendly_name(DWORD ifindex)
+ifindex2frname(DWORD ifindex)
 {
     static char friendly_name[100] = "";
     DWORD retval = 0;
@@ -1370,7 +1490,7 @@ success:
 }
 
 static DWORD
-friendly_name2ifindex(const char *ifname)
+frname2ifindex(const char *ifname)
 {
     DWORD retval = 0;
     MIB_IFROW *info;
@@ -1531,7 +1651,7 @@ check_address(const char *addr, DWORD if_index)
         if (table->table[i].dwIndex != if_index)
             continue;
         if (table->table[i].dwAddr == 0)
-        {   
+        {
             RING("skip 0.0.0.0 address");
             continue;
         }
@@ -1594,7 +1714,8 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
       }
       if (rc == ERROR_OBJECT_ALREADY_EXISTS)
       {
-   WARN("AddIpAddress() failed, error ERROR_OBJECT_ALREADY_EXISTS, addr %s",
+        WARN("AddIpAddress() failed, error "
+             "ERROR_OBJECT_ALREADY_EXISTS, addr %s",
              addr);
         return 0;
       }
@@ -4299,12 +4420,14 @@ static int get_settings_path(char *path)
         {
             strcpy(path, subkey_path);
             ret = 0;
+            RegCloseKey(subkey);
             break;
         }
         if ((strstr(value, NDIS_SF_0_2_1) != NULL))
         {
             strcpy(path, subkey_path);
             ret = 0;
+            RegCloseKey(subkey);
             break;
         }
         RegCloseKey(subkey);
@@ -4345,11 +4468,11 @@ static int get_driver_version()
             RegCloseKey(hkKey);
             return DRIVER_VERSION_UNKNOWN;
         }
-    }    
+    }
     else
     {
         err = GetLastError();
-        WARN("Failed to get open NDIS registry key, err = %d", err);
+        WARN("Failed to open NDIS registry key, err = %d", err);
         return DRIVER_VERSION_UNKNOWN;
     }
     RegCloseKey(hkKey);
@@ -4406,7 +4529,7 @@ static int phy_parameters_get(const char *ifname)
             RegCloseKey(hkKey);
             return TE_RC(TE_TA_WIN32, err);
         }
-    }    
+    }
     else
     {
         err = GetLastError();
