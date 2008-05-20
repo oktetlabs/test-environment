@@ -250,6 +250,8 @@ static int get_driver_version();
 char * ifindex2frname(DWORD ifindex);
 static DWORD frname2ifindex(const char *ifname);
 
+int wmi_update_driver(char *hardware_id);
+
 static unsigned int speed_duplex_state = 0;
 static unsigned int speed_duplex_to_set = 0;
 static rcf_pch_cfg_object node_phy;
@@ -1099,7 +1101,7 @@ ifname2ifindex(const char *ifname)
     if (strcmp_start("intf", ifname) == 0)
         s = (char *)ifname + strlen("intf");
     else if (strcmp_start("ef", ifname) == 0)
-    {
+    {       
         if (strcmp_start("ef1.", ifname) == 0)
         {
             /* Interface is VLAN */
@@ -1339,6 +1341,7 @@ rcf_ch_conf_root()
         /* Initialize configurator PHY support */
         if (ta_unix_conf_phy_init() != 0)
             return NULL;
+    
     }
 
 
@@ -4822,3 +4825,79 @@ remove_vlan_internal(const char *ifname, int vlan_id)
     }
 }
 
+#define INF_PATH "SF_DRIVER_PATH"
+
+
+char *env_get_reg(const char *key)
+{
+    HKEY key;
+    #define ENV_PATH1 "SYSTEM\\CurrentControlSet\\Control\\" \
+                        "Session Manager\\Environment"
+    
+
+    static char drv_path[256] = "\0";
+    int sz = 256;
+
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, ENV_PATH1, 0, 
+                 KEY_READ, &key) != ERROR_SUCCESS) 
+    {
+        ERROR("RegOpenKeyEx() failed with errno %lu", GetLastError());
+        //return TE_RC(TE_TA_WIN32, TE_EFAULT);
+        return NULL;
+    }
+     
+    if  (RegQueryValueEx(key, "SF_DRIVER_PATH", 
+                            NULL, NULL, drv_path, 
+                            &sz) != ERROR_SUCCESS)
+    {
+        WARN("RegQueryValueEx() failed with errno %d", GetLastError());
+        //perror("in query: ");
+        //return TE_RC(TE_TA_WIN32, TE_EFAULT);
+        return NULL;
+    }
+    
+    RegCloseKey(key);
+
+    return drv_path;
+}
+
+/**
+ * update the driver for virtual network adapter
+ *
+ * @param hardware_id       HWID of virtal network adapter
+ *
+ * @return              Status code
+ */
+
+int wmi_update_driver(char *hardware_id)
+{
+    char sysstr[512];
+    char *path;
+
+    if (hardware_id == NULL)
+        hardware_id = 
+            "{C641C770-FAAC-44ED-9C73-48D1B5E59200}\\\\NDIS_VIRTUAL";
+
+    if ( (path = env_get_reg(INF_PATH) ) == NULL)
+        {
+            WARN("Variable %s not set. Skipping devcon execution\n",
+                    INF_PATH);
+            return -1;
+        }
+
+    snprintf(sysstr, sizeof(sysstr) - 1,
+             "./sish_client.exe " 
+             "--server=127.0.0.1 " 
+             "--command=\"%s\\devcon.exe\" "
+             "--args=\"update %s\\sfcndis5.inf " 
+             "{C641C770-FAAC-44ED-9C73-48D1B5E59200}\\\\NDIS_VIRTUAL\"",
+             path, path);
+
+    
+    if (system(sysstr) != 0)
+    {
+        WARN("%s",_strerror("In system(): "));
+        return -1;
+    }
+
+}
