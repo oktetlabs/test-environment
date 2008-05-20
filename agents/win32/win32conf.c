@@ -1153,7 +1153,7 @@ ifindex2ifname(DWORD ifindex)
     DWORD vlan_id = -1;
 
     friendly_name = ifindex2frname(ifindex);
-    if (strcmp_start("Virtual", friendly_name) == 0)
+    if (strcmp_start("Solarflare Virtual", friendly_name) == 0)
     {
         if (!wmi_imported)
         {
