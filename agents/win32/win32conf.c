@@ -4828,7 +4828,7 @@ remove_vlan_internal(const char *ifname, int vlan_id)
 #define INF_PATH "SF_DRIVER_PATH"
 
 
-char *env_get_reg(const char *key)
+char *env_get_reg()
 {
     HKEY key;
     #define ENV_PATH1 "SYSTEM\\CurrentControlSet\\Control\\" \
@@ -4846,7 +4846,7 @@ char *env_get_reg(const char *key)
         return NULL;
     }
      
-    if  (RegQueryValueEx(key, "SF_DRIVER_PATH", 
+    if  (RegQueryValueEx(key, INF_PATH, 
                             NULL, NULL, drv_path, 
                             &sz) != ERROR_SUCCESS)
     {
@@ -4878,7 +4878,7 @@ int wmi_update_driver(char *hardware_id)
         hardware_id = 
             "{C641C770-FAAC-44ED-9C73-48D1B5E59200}\\\\NDIS_VIRTUAL";
 
-    if ( (path = env_get_reg(INF_PATH) ) == NULL)
+    if ( (path = env_get_reg() ) == NULL)
         {
             WARN("Variable %s not set. Skipping devcon execution\n",
                     INF_PATH);
@@ -4892,12 +4892,4 @@ int wmi_update_driver(char *hardware_id)
              "--args=\"update %s\\sfcndis5.inf " 
              "{C641C770-FAAC-44ED-9C73-48D1B5E59200}\\\\NDIS_VIRTUAL\"",
              path, path);
-
-    
-    if (system(sysstr) != 0)
-    {
-        WARN("%s",_strerror("In system(): "));
-        return -1;
-    }
-
 }
