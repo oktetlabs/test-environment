@@ -402,7 +402,7 @@ extern te_errno ta_win32_conf_net_snmp_stats_init();
 #ifdef ENABLE_WMI_SUPPORT
 typedef int (*t_wmi_init_wbem_objs)(void);
 typedef int (*t_wmi_uninit_wbem_objs)(void);
-typedef int (*t_wmi_get_adapters_list)(void);
+typedef te_errno (*t_wmi_get_vlan_list)(char * , DWORD **, int *);
 typedef char * (*t_wmi_get_frname_by_vlanid)(DWORD vlanid);
 typedef DWORD (*t_wmi_get_vlanid_by_frname)(const char *ifname);
 typedef te_errno (*t_wmi_add_vlan)(DWORD vlan_id, te_bool priority);
@@ -415,7 +415,7 @@ typedef te_errno (*t_wmi_del_vlan)(DWORD vlan_id);
 t_##_fname p##_fname;
 GEN_IMP_FUNC_PTR(wmi_init_wbem_objs);
 GEN_IMP_FUNC_PTR(wmi_uninit_wbem_objs);
-GEN_IMP_FUNC_PTR(wmi_get_adapters_list);
+GEN_IMP_FUNC_PTR(wmi_get_vlan_list);
 GEN_IMP_FUNC_PTR(wmi_get_frname_by_vlanid);
 GEN_IMP_FUNC_PTR(wmi_get_vlanid_by_frname);
 GEN_IMP_FUNC_PTR(wmi_add_vlan);
@@ -447,7 +447,7 @@ static te_bool wmi_init_func_imports(void)
     
     IMPORT_FUNC(wmi_init_wbem_objs);
     IMPORT_FUNC(wmi_uninit_wbem_objs);
-    IMPORT_FUNC(wmi_get_adapters_list);
+    IMPORT_FUNC(wmi_get_vlan_list);
     IMPORT_FUNC(wmi_get_frname_by_vlanid);
     IMPORT_FUNC(wmi_get_vlanid_by_frname);
     IMPORT_FUNC(wmi_add_vlan);
@@ -4626,11 +4626,18 @@ vlan_ifname_get(unsigned int gid, const char *oid, char *value,
                 const char *ifname, const char *vid)
 {
     int vlan_id = atoi(vid);
-    
-    VERB("%s: gid=%u oid='%s', ifname = '%s', vid %d",
-         __FUNCTION__, gid, oid, ifname,  vlan_id); 
 
-    sprintf(value, "%s", ifname);
+    VERB("%s: gid=%u oid='%s', ifname = '%s', vid %d",
+         __FUNCTION__, gid, oid, ifname,  vlan_id);
+
+    if (get_driver_version() == DRIVER_VERSION_2_2)
+    {
+        sprintf(value, "%s.%s", ifname, vid);
+    }
+    else /* 2.1 */
+    {
+        sprintf(value, "%s", ifname);
+    }
     return 0;
 }
 
@@ -4650,34 +4657,70 @@ vlans_list(unsigned int gid, const char *oid, char **list,
            const char *ifname)
 {
     size_t i;
-
     char *b;
+    char *frname;
+    int rc, count;
+    DWORD *vid_list;
 
-    if (strstr(ifname,"ef")== NULL)
-    { 
-        VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
-             __FUNCTION__, gid, oid, ifname, 0);
-        
-        *list = NULL;
-        return 0;
-    }
-    VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
-         __FUNCTION__, gid, oid, ifname, n_vlans);
-
-    if (n_vlans == 0) 
+    if (strstr(ifname, "ef")== NULL)
     {
-        *list = NULL;
+        VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
+        __FUNCTION__, gid, oid, ifname, 0);
+
+       *list = NULL;
         return 0;
     }
 
-    b = *list = malloc(n_vlans * 6 /* max digits in VLAN id + space */ + 1);
-    if (*list == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM); 
+    if (get_driver_version() == DRIVER_VERSION_2_2)
+    {
+        if (strstr(ifname, ".") != NULL)
+        {
+            VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
+                 __FUNCTION__, gid, oid, ifname, 0);
+            *list = NULL;
+            return 0;
+        }
+        if (!wmi_imported)
+        {
+            *list = NULL;
+            return 0;
+        }
+        frname = ifindex2frname(ifname2ifindex(ifname));
+        rc = pwmi_get_vlan_list(frname, &vid_list, &count);
 
-    for (i = 0; i < n_vlans; i++)
-        b += sprintf(b, "%d ", vlans_buffer[i]); 
+        if (vid_list == NULL || count == 0)
+        {
+            *list = NULL;
+            return 0; 
+        }
+                           /* max digits in VLAN id + space */
+        b = *list = malloc(count * 6  + 1);
+        for (i = 0; i < count; i++)
+            b += sprintf(b, "%d ", vid_list[i]); 
 
-    return 0;
+        return 0;
+
+    }
+    else
+    {
+        VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
+             __FUNCTION__, gid, oid, ifname, n_vlans);
+
+        if (n_vlans == 0) 
+        {
+            *list = NULL;
+            return 0;
+        }
+                           /* max digits in VLAN id + space */
+        b = *list = malloc(n_vlans * 6 + 1);
+        if (*list == NULL)
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM); 
+
+        for (i = 0; i < n_vlans; i++)
+            b += sprintf(b, "%d ", vlans_buffer[i]); 
+
+        return 0;
+    }
 }
 
 /**
