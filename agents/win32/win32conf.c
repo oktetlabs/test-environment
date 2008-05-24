@@ -213,8 +213,8 @@ static te_errno vlans_add(unsigned int, const char *, const char *,
                           const char *, const char *);
 static te_errno vlans_del(unsigned int, const char *, const char *,
                           const char *);
-static int set_vlan_internal(const char *ifname, int vlan_id);
-static int remove_vlan_internal(const char *ifname, int vlan_id);
+static int set_vlan_reg(const char *ifname, int vlan_id);
+static int remove_vlan_reg(const char *ifname, int vlan_id);
 
 //PHY support
 extern te_errno ta_unix_conf_phy_init();
@@ -405,6 +405,10 @@ typedef int (*t_wmi_uninit_wbem_objs)(void);
 typedef int (*t_wmi_get_adapters_list)(void);
 typedef char * (*t_wmi_get_frname_by_vlanid)(DWORD vlanid);
 typedef DWORD (*t_wmi_get_vlanid_by_frname)(const char *ifname);
+typedef te_errno (*t_wmi_add_vlan)(DWORD vlan_id, te_bool priority);
+typedef te_errno (*t_wmi_del_vlan)(DWORD vlan_id);
+
+
 
 /* Defining function pointers to imported functions*/
 #define GEN_IMP_FUNC_PTR(_fname) \
@@ -414,6 +418,8 @@ GEN_IMP_FUNC_PTR(wmi_uninit_wbem_objs);
 GEN_IMP_FUNC_PTR(wmi_get_adapters_list);
 GEN_IMP_FUNC_PTR(wmi_get_frname_by_vlanid);
 GEN_IMP_FUNC_PTR(wmi_get_vlanid_by_frname);
+GEN_IMP_FUNC_PTR(wmi_add_vlan);
+GEN_IMP_FUNC_PTR(wmi_del_vlan);
 #undef GEN_IMP_FUNC_PTR
 
 static te_bool wmi_imported = FALSE;
@@ -444,7 +450,8 @@ static te_bool wmi_init_func_imports(void)
     IMPORT_FUNC(wmi_get_adapters_list);
     IMPORT_FUNC(wmi_get_frname_by_vlanid);
     IMPORT_FUNC(wmi_get_vlanid_by_frname);
-    
+    IMPORT_FUNC(wmi_add_vlan);
+    IMPORT_FUNC(wmi_del_vlan);
     return wmi_imported;
 #undef IMPORT_FUNC
 }
@@ -4690,6 +4697,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
 {
     int vid = atoi(vid_str);
     int rc = 0;
+    te_bool priority = TRUE;
 
     UNUSED(value);
 
@@ -4701,19 +4709,42 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
         ERROR("Only ef* windows interfaces support VLANS");
         return TE_RC(TE_TA_WIN32, EINVAL);
     }
-    
-    if (n_vlans == 1) 
-    {
-        ERROR("VLAN interface is already set on %s", ifname);
-        return TE_RC(TE_TA_WIN32, EINVAL);
-    }
-    rc = set_vlan_internal("ef1", vid);
-    if (rc != 0)
-    {
-        ERROR("Failed to physically set VLAN"); 
-        return TE_RC(TE_TA_WIN32, TE_EFAULT);
-    }
 
+    if (get_driver_version() == DRIVER_VERSION_2_2)
+    {
+        if (vid & TAG_PRI_ONLY)
+        {
+            if (vid != TAG_PRI_ONLY)
+                WARN("Vlan id has been set to 0 in Priority only mode");
+            vid = TAG_PRI_ONLY;
+            /*priority = TRUE;*/
+        }
+        else if (vid & TAG_VLAN_ONLY)
+            priority = FALSE;
+
+        if (!wmi_imported)
+            return TE_RC(TE_TA_WIN32, TE_EFAULT);
+        rc = pwmi_add_vlan(vid & MAX_VLANS, priority);
+        if (rc != 0)
+        {
+            ERROR("Failed to set VLAN via WMI"); 
+            return TE_RC(TE_TA_WIN32, TE_EFAULT);
+        }
+    }
+    else 
+    {
+        if (n_vlans == 1) 
+        {
+            ERROR("VLAN interface is already set on %s", ifname);
+            return TE_RC(TE_TA_WIN32, EINVAL);
+        }
+        rc = set_vlan_reg("ef1", vid);
+        if (rc != 0)
+        {
+            ERROR("Failed to physically set VLAN"); 
+            return TE_RC(TE_TA_WIN32, TE_EFAULT);
+        }
+    }
     vlans_buffer[n_vlans] = vid;
     n_vlans += 1;
     return 0;
@@ -4749,23 +4780,38 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
         ERROR("VLAN interface are not set on %s, cannot delete", ifname);
         return TE_RC(TE_TA_WIN32, EINVAL);
     }
-    
-    if (vlans_buffer[n_vlans] != vid)
-    {
-        WARN("Trying to delete VLAN with VLAN id=, still deleting",vid);
+
+    if (get_driver_version() == DRIVER_VERSION_2_2)
+    {        
+        if (!wmi_imported)
+            return TE_RC(TE_TA_WIN32, EINVAL);
+        rc = pwmi_del_vlan(vid & MAX_VLANS);
+        if (rc != 0)
+        {
+            ERROR("Failed to remove VLAN via WMI"); 
+            return TE_RC(TE_TA_WIN32, TE_EFAULT);
+        }
     }
-    rc = remove_vlan_internal("ef1", vid);
-    if (rc != 0)
+    else
     {
-        ERROR("Failed to physically remove VLAN"); 
-        return TE_RC(TE_TA_WIN32, TE_EFAULT);
+    
+        if (vlans_buffer[n_vlans] != vid)
+        {
+            WARN("Trying to delete VLAN with VLAN id=, still deleting",vid);
+        }
+        rc = remove_vlan_reg("ef1", vid);
+        if (rc != 0)
+        {
+            ERROR("Failed to physically remove VLAN"); 
+            return TE_RC(TE_TA_WIN32, TE_EFAULT);
+        }
     }
     n_vlans -= 1;
     return 0;
 }
 
 static int 
-set_vlan_internal(const char *ifname, int vlan_id)
+set_vlan_reg(const char *ifname, int vlan_id)
 {
     int vlan_mode = 3;
     char buffer[RCF_MAX_PATH + 1];
@@ -4801,7 +4847,7 @@ set_vlan_internal(const char *ifname, int vlan_id)
 }
 
 static int 
-remove_vlan_internal(const char *ifname, int vlan_id)
+remove_vlan_reg(const char *ifname, int vlan_id)
 {
     char buffer[RCF_MAX_PATH + 1];
     RING("Deleting %d VLAN on '%s'",vlan_id, ifname);
