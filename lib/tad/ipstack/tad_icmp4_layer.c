@@ -591,8 +591,32 @@ tad_icmp4_match_pre_cb(csap_p              csap,
     meta_pkt_layer->opaque = pkt_data;
 
     rc = tad_bps_pkt_frag_match_pre(&proto_data->hdr, &pkt_data->hdr);
+    if (rc != 0)
+        return rc;
 
-    return rc;
+    rc = tad_bps_pkt_frag_match_pre(&proto_data->unused, &pkt_data->unused);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_match_pre(&proto_data->pp, &pkt_data->pp);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_match_pre(&proto_data->echo_info,
+                                    &pkt_data->echo_info);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_match_pre(&proto_data->ts, &pkt_data->ts);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_match_pre(&proto_data->redirect,
+                                    &pkt_data->redirect);
+    if (rc != 0)
+        return rc;
+
+    return 0;
 }
 
 /* See description in tad_ipstack_impl.h */
