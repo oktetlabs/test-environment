@@ -250,8 +250,6 @@ static int get_driver_version();
 char * ifindex2frname(DWORD ifindex);
 static DWORD frname2ifindex(const char *ifname);
 
-int wmi_update_driver(char *hardware_id);
-
 static unsigned int speed_duplex_state = 0;
 static unsigned int speed_duplex_to_set = 0;
 static rcf_pch_cfg_object node_phy;
@@ -409,7 +407,6 @@ typedef te_errno (*t_wmi_add_vlan)(DWORD vlan_id, te_bool priority);
 typedef te_errno (*t_wmi_del_vlan)(DWORD vlan_id);
 
 
-
 /* Defining function pointers to imported functions*/
 #define GEN_IMP_FUNC_PTR(_fname) \
 t_##_fname p##_fname;
@@ -444,7 +441,7 @@ static te_bool wmi_init_func_imports(void)
             wmi_imported = FALSE;                             \
         }                                                     \
     } while (0)
-    
+
     IMPORT_FUNC(wmi_init_wbem_objs);
     IMPORT_FUNC(wmi_uninit_wbem_objs);
     IMPORT_FUNC(wmi_get_vlan_list);
@@ -452,6 +449,7 @@ static te_bool wmi_init_func_imports(void)
     IMPORT_FUNC(wmi_get_vlanid_by_frname);
     IMPORT_FUNC(wmi_add_vlan);
     IMPORT_FUNC(wmi_del_vlan);
+
     return wmi_imported;
 #undef IMPORT_FUNC
 }
