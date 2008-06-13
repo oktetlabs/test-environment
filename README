@@ -3,32 +3,38 @@ Required packages:
 ~~~~~~~~~~~~~~~~~~
 The following packages are required to build and run.
 
-Engine:
+Engine (in [] brackets - debian package names):
 
-- libxml2-devel at least 2.6.x (2.6.10)
-- glib2-devel (glib-2.0 package we use 2.4.8)
-- popt-devel (libpopt-dev on Debian)
-- tcl (and tcl-devel, if applicable, e.g. on Fedora Core 2)
-- libxslt (we use 1.1.6)
-- libexpat
-- flex >= 2.5.31-31 from sourceforge; flex 2.5.4a from gnu.org will not work
-- gawk (mawk will not work)
-- any curses library (ncurses will work) with development files
+- libxml2-devel at least 2.6.x (2.6.10) [libxml2 libxml2-dev]
+- glib2-devel (glib-2.0 package we use 2.4.8) [libglib2-dev]
+- popt-devel (libpopt-dev on Debian) [libpopt-dev]
+- libreadline (for tester interactive) [libreadline-common,
+  libreadline-dev, libreadline-5]
+- tcl (and tcl-devel, if applicable, e.g. on Fedora Core 2) [tcl, tcl-dev]
+- libxslt (we use 1.1.6) [libxslt1-dev, libxslt-1.1]
+- libexpat [libexpat1, libexpat1-dev]
+- flex >= 2.5.31-31 from sourceforge; flex 2.5.4a from
+  gnu.org will not work [flex]
+- gawk (mawk will not work) [gawk]
+- any curses library (ncurses will work) with development
+  files [ncurses, ncurses-dev]
 - perl-Time-HiRes package on Redhat/Fedora is very usefull (it allows to
   avoid mixture in log because of unprecise timestamps in messages
   logged by Dispatcher (via logging script))
+- libgss0 (>=0.0.18) [libgss0]
+- curl libraries [not from debian, should be taken from storage]
 
 We've tested engine on Linux only.
 
 
 Unix Test Agent:
 
-- expect and expect-dev (for TAD CLI only)
-- libnetlink + iproute/ headers
+- expect and expect-dev (for TAD CLI only) [expect, expect-dev]
+- libnetlink + iproute/ headers [iproute, iproute-dev]
 - flex >= 2.5.31 from sourceforge; flex 2.5.4a from gnu.org does not work
 - libexpat
-- libpcap0.8-dev (for TAD PCAP only)
-- libpam (0.76-22) (not required but suggested)
+- libpcap0.8-dev (for TAD PCAP only) [libpcap0.8-dev]
+- libpam (0.76-22) (not required but suggested) [libpam]
 
 We are using versions of libraries specified in parentheses.
 
