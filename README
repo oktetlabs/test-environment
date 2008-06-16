@@ -3,6 +3,10 @@ Required packages:
 ~~~~~~~~~~~~~~~~~~
 The following packages are required to build and run.
 
+NOTE: for building TE you need to have:
+ - autoconf 2.61
+ - automake 1.9.6 (note: 1.10.* does not work)
+
 Engine (in [] brackets - debian package names):
 
 - libxml2-devel at least 2.6.x (2.6.10) [libxml2 libxml2-dev]
