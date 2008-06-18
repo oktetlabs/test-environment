@@ -224,7 +224,7 @@ ndn_kprobes_parse_info(const char *kprobes_info_str,
             }
             else
                 (*kprobes_info)[*number_of_structures].block_timeout = 0;
-           (*kprobes_info)[*number_of_structures].scenario_index = i + 1;
+           (*kprobes_info)[*number_of_structures].scenario_index = i;
         }
         if (j == 0)
             break;
