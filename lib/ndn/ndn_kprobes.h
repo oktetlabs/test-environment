@@ -42,11 +42,11 @@ extern asn_type * ndn_kprobes_packet;
 #define KPROBES_MAX_FUNC_NAME   64
 
 typedef enum {
-    TE_KPROBES_ACTION_SKIP,
-    TE_KPROBES_ACTION_FAIL,
-    TE_KPROBES_ACTION_BLOCK,
-    TE_KPROBES_ACTION_UNBLOCK,
-} te_kprobes_action_t;
+    NDN_KPROBES_ACTION_SKIP,
+    NDN_KPROBES_ACTION_FAIL,
+    NDN_KPROBES_ACTION_BLOCK,
+    NDN_KPROBES_ACTION_UNBLOCK,
+} ndn_kprobes_action_t;
 
 /* Possible failure results */
 /** Driver is not loaded */
@@ -59,11 +59,10 @@ typedef enum {
 /**
  * Kprobes info structure
  */
-typedef struct kprobes_info_s {
+typedef struct ndn_kprobes_info_s {
     char function_name[KPROBES_MAX_FUNC_NAME]; /**< Intercepted function
                                                     name */
-    te_kprobes_action_t action;
-    /*char action[KPROBES_MAX_FUNC_NAME]; */       /**< Action to be done with
+    ndn_kprobes_action_t action;                /**< Action to be done with
                                                     call of function_name
                                                     function */
     int intercept_count;
@@ -75,21 +74,13 @@ typedef struct kprobes_info_s {
     int block_timeout;
     int scenario_index;
     int scenario_item_index;
-} kprobes_info_t;
+} ndn_kprobes_info_t;
 
 /**
- * Function parses the kprobes info asn string, fills given
- * array of kprobes_info_t structures.
- *
- * @param kprobes_info_str     Kprobes info in asn string representation
- * @param kprobes_info         (OUT) Array of structures, 
- *                             which represents kptobes info
- * @param number_of_structures (OUT) Number of structures in kprobes_info array
- *
- * @return 0 on success or -1
+ * see ndn_kprobes.c
  */
 extern int ndn_kprobes_parse_info(const char *kprobes_info_str, 
-                                  kprobes_info_t **kprobes_info,
+                                  ndn_kprobes_info_t **kprobes_info,
                                   int *number_of_structures);
 #ifdef __cplusplus
 } /* extern "C" */

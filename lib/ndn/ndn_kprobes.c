@@ -108,10 +108,10 @@ typedef struct kprobes_map_s
 } kprobes_map_t;
 
 static kprobes_map_t kprobes_action_map[] = {
-    {"fail", TE_KPROBES_ACTION_FAIL},
-    {"skip", TE_KPROBES_ACTION_SKIP},
-    {"block", TE_KPROBES_ACTION_BLOCK},
-    {"unblock", TE_KPROBES_ACTION_UNBLOCK}
+    {"fail", NDN_KPROBES_ACTION_FAIL},
+    {"skip", NDN_KPROBES_ACTION_SKIP},
+    {"block", NDN_KPROBES_ACTION_BLOCK},
+    {"unblock", NDN_KPROBES_ACTION_UNBLOCK}
 };
 
 static int
@@ -144,7 +144,7 @@ kprobes_map_code(kprobes_map_t *table, const char *id)
  */
 int
 ndn_kprobes_parse_info(const char *kprobes_info_str,
-                       kprobes_info_t **kprobes_info, 
+                       ndn_kprobes_info_t **kprobes_info, 
                        int *number_of_structures)
 {
     asn_value *kprobes_info_asn = NULL;
@@ -169,8 +169,8 @@ ndn_kprobes_parse_info(const char *kprobes_info_str,
         for (j = 0; ; j++, (*number_of_structures)++)
         {
             *kprobes_info =
-                (kprobes_info_t*)realloc((void *)*kprobes_info,
-                                         sizeof(kprobes_info_t) * 
+                (ndn_kprobes_info_t*)realloc((void *)*kprobes_info,
+                                         sizeof(ndn_kprobes_info_t) * 
                                             ((*number_of_structures) + 1));
             /* Get function name */
             sprintf(request, "scenarios.%d.%d.function", i, j);
@@ -198,7 +198,7 @@ ndn_kprobes_parse_info(const char *kprobes_info_str,
             
             /* Get retval if needed */
             if ((*kprobes_info)[*number_of_structures].action ==
-                TE_KPROBES_ACTION_FAIL)
+                NDN_KPROBES_ACTION_FAIL)
             {
                 sprintf(request, "scenarios.%d.%d.retval", i, j);
                 if ((rc = asn_read_int32(kprobes_info_asn,
@@ -213,7 +213,7 @@ ndn_kprobes_parse_info(const char *kprobes_info_str,
         
             /* Get block timeout if needed */
             if ((*kprobes_info)[*number_of_structures].action == 
-                TE_KPROBES_ACTION_BLOCK)
+                NDN_KPROBES_ACTION_BLOCK)
             {
                 sprintf(request, "scenarios.%d.%d.blocktimeout", i, j);
                 if ((rc = asn_read_int32(kprobes_info_asn,
