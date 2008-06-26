@@ -58,6 +58,7 @@ typedef struct te_dhcp_server_subnet {
 
     char               *subnet;
     int                 prefix_len;
+    char               *range;
     te_dhcp_option     *options;
 } te_dhcp_server_subnet;
 

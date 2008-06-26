@@ -347,6 +347,10 @@ ds_dhcpserver_save_conf(void)
 //        add_xxx(s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
 #endif
 #if defined __linux__
+        if (s->range != NULL)
+        {
+            fprintf(f, "\trange %s;\n", s->range);
+        }
         for (opt = s->options; opt != NULL; opt = opt->next)
         {
             te_bool quoted = is_quoted(opt->name);
@@ -641,8 +645,15 @@ ds_dhcpserver_ifs_set(unsigned int gid, const char *oid, const char *value)
 static void
 free_subnet(te_dhcp_server_subnet *s)
 {
+    te_dhcp_option *opt, *next;
+
     free(s->subnet);
-    /*  TODO: free options here */
+    free(s->range);
+    for (opt = s->options; opt != NULL; opt = next)
+    {
+        next = opt->next;
+        FREE_OPTION(opt);
+    }
     free(s);
 }
 
@@ -728,6 +739,7 @@ ds_subnet_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
     s->prefix_len = prefix_len;
+    s->range = NULL;
 
     TAILQ_INSERT_TAIL(&subnets, s, links);
 
@@ -913,58 +925,58 @@ ds_host_group_set(unsigned int gid, const char *oid, const char *value,
 }
 
 /*
- * Definition of the routines for obtaining/changing of host/group
- * attributes (except options).
+ * Definition of the routines for obtaining/changing of
+ * host/group/subnet attributes (except options).
  */
-#define ATTR_GET(_attr, _gh) \
+#define ATTR_GET(_attr, _ghs, _ghs_type) \
 static te_errno \
-ds_##_gh##_##_attr##_get(unsigned int gid, const char *oid,     \
-                         char *value, const char *dhcpserver,   \
-                         const char *name)                      \
+ds_##_ghs##_##_attr##_get(unsigned int gid, const char *oid,    \
+                          char *value, const char *dhcpserver,  \
+                          const char *name)                     \
 {                                                               \
-    _gh *gh;                                                    \
+    _ghs_type *ghs;                                             \
                                                                 \
     UNUSED(gid);                                                \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL)                        \
+    if ((ghs = find_##_ghs(name)) == NULL)                      \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
-    if (gh->_attr == NULL)                                      \
+    if (ghs->_attr == NULL)                                     \
         *value = 0;                                             \
     else                                                        \
-        strcpy(value, gh->_attr);                               \
+        strcpy(value, ghs->_attr);                              \
                                                                 \
     return 0;                                                   \
 }
 
 #define SSS(S) #S
 
-#define ATTR_SET(_attr, _gh) \
+#define ATTR_SET(_attr, _ghs, _ghs_type) \
 static te_errno \
-ds_##_gh##_##_attr##_set(unsigned int gid, const char *oid,     \
-                         const char *value,                     \
-                         const char *dhcpserver,                \
-                         const char *name)                      \
+ds_##_ghs##_##_attr##_set(unsigned int gid, const char *oid,    \
+                          const char *value,                    \
+                          const char *dhcpserver,               \
+                          const char *name)                     \
 {                                                               \
-    _gh  *gh;                                                   \
+    _ghs_type  *ghs;                                            \
     char *old_val;                                              \
                                                                 \
     UNUSED(gid);                                                \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL)                        \
+    if ((ghs = find_##_ghs(name)) == NULL)                      \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
-    old_val = gh->_attr;                                        \
+    old_val = ghs->_attr;                                       \
                                                                 \
     if (*value == 0)                                            \
-        gh->_attr = NULL;                                       \
+        ghs->_attr = NULL;                                      \
     else                                                        \
     {                                                           \
-        if ((gh->_attr = strdup(value)) == NULL)                \
+        if ((ghs->_attr = strdup(value)) == NULL)               \
         {                                                       \
             return TE_RC(TE_TA_UNIX, TE_ENOMEM);                \
         }                                                       \
@@ -975,34 +987,36 @@ ds_##_gh##_##_attr##_set(unsigned int gid, const char *oid,     \
     return 0;                                                   \
 }
 
-ATTR_GET(chaddr, host)
-ATTR_SET(chaddr, host)
-ATTR_GET(client_id, host)
-ATTR_SET(client_id, host)
-ATTR_GET(ip_addr, host)
-ATTR_SET(ip_addr, host)
-ATTR_GET(next_server, host)
-ATTR_SET(next_server, host)
-ATTR_GET(filename, host)
-ATTR_SET(filename, host)
-ATTR_GET(flags, host)
-ATTR_SET(flags, host)
-ATTR_GET(next_server, group)
-ATTR_SET(next_server, group)
-ATTR_GET(filename, group)
-ATTR_SET(filename, group)
+ATTR_GET(chaddr, host, host)
+ATTR_SET(chaddr, host, host)
+ATTR_GET(client_id, host, host)
+ATTR_SET(client_id, host, host)
+ATTR_GET(ip_addr, host, host)
+ATTR_SET(ip_addr, host, host)
+ATTR_GET(next_server, host, host)
+ATTR_SET(next_server, host, host)
+ATTR_GET(filename, host, host)
+ATTR_SET(filename, host, host)
+ATTR_GET(flags, host, host)
+ATTR_SET(flags, host, host)
+ATTR_GET(next_server, group, group)
+ATTR_SET(next_server, group, group)
+ATTR_GET(filename, group, group)
+ATTR_SET(filename, group, group)
+ATTR_GET(range, subnet, te_dhcp_server_subnet)
+ATTR_SET(range, subnet, te_dhcp_server_subnet)
 
 /**
  * Definition of the method for obtaining of options list
- * for the host/group.
+ * for the host/group/subnet.
  */
-#define GET_OPT_LIST(_gh) \
+#define GET_OPT_LIST(_ghs, _ghs_type) \
 static te_errno \
-ds_##_gh##_option_list(unsigned int gid, const char *oid,       \
+ds_##_ghs##_option_list(unsigned int gid, const char *oid,      \
                        char **list, const char *dhcpserver,     \
                        const char *name)                        \
 {                                                               \
-   _gh *gh;                                                     \
+   _ghs_type *ghs;                                              \
                                                                 \
     te_dhcp_option *opt;                                        \
                                                                 \
@@ -1010,11 +1024,11 @@ ds_##_gh##_option_list(unsigned int gid, const char *oid,       \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL)                        \
+    if ((ghs = find_##_ghs(name)) == NULL)                      \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
     *buf = 0;                                                   \
-    for (opt = gh->options; opt != NULL; opt = opt->next)       \
+    for (opt = ghs->options; opt != NULL; opt = opt->next)      \
     {                                                           \
         sprintf(buf + strlen(buf), "%s ", opt->name);           \
     }                                                           \
@@ -1023,17 +1037,18 @@ ds_##_gh##_option_list(unsigned int gid, const char *oid,       \
               TE_RC(TE_TA_UNIX, TE_ENOMEM) : 0;                 \
 }
 
-GET_OPT_LIST(host)
-GET_OPT_LIST(group)
+GET_OPT_LIST(host, host)
+GET_OPT_LIST(group, group)
+GET_OPT_LIST(subnet, te_dhcp_server_subnet)
 
-/* Method for adding of the option for group/host */
-#define ADD_OPT(_gh) \
+/* Method for adding of the option for group/host/subnet */
+#define ADD_OPT(_ghs, _ghs_type) \
 static te_errno \
-ds_##_gh##_option_add(unsigned int gid, const char *oid,        \
+ds_##_ghs##_option_add(unsigned int gid, const char *oid,       \
                       const char *value, const char *dhcpserver,\
                       const char *name, const char *optname)    \
 {                                                               \
-    _gh *gh;                                                    \
+    _ghs_type *ghs;                                             \
                                                                 \
     te_dhcp_option *opt;                                        \
                                                                 \
@@ -1044,10 +1059,10 @@ ds_##_gh##_option_add(unsigned int gid, const char *oid,        \
     if (*value == 0)                                            \
         return TE_RC(TE_TA_UNIX, TE_EINVAL);                    \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL)                        \
+    if ((ghs = find_##_ghs(name)) == NULL)                      \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
-    if (find_option(gh->options, optname) != NULL)              \
+    if (find_option(ghs->options, optname) != NULL)             \
         return TE_RC(TE_TA_UNIX, TE_EEXIST);                    \
                                                                 \
     if ((opt = (te_dhcp_option *)calloc(sizeof(*opt), 1))       \
@@ -1058,23 +1073,24 @@ ds_##_gh##_option_add(unsigned int gid, const char *oid,        \
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);                    \
     }                                                           \
                                                                 \
-    opt->next = gh->options;                                    \
-    gh->options = opt;                                          \
+    opt->next = ghs->options;                                   \
+    ghs->options = opt;                                         \
                                                                 \
     return 0;                                                   \
 }
 
-ADD_OPT(host)
-ADD_OPT(group)
+ADD_OPT(host, host)
+ADD_OPT(group, group)
+ADD_OPT(subnet, te_dhcp_server_subnet)
 
-/* Method for obtaining of the option for group/host */
-#define GET_OPT(_gh) \
+/* Method for obtaining of the option for group/host/subnet */
+#define GET_OPT(_ghs, _ghs_type) \
 static te_errno \
-ds_##_gh##_option_get(unsigned int gid, const char *oid,        \
+ds_##_ghs##_option_get(unsigned int gid, const char *oid,       \
                       char *value, const char *dhcpserver,      \
                       const char *name, const char *optname)    \
 {                                                               \
-    _gh *gh;                                                    \
+    _ghs_type *ghs;                                             \
                                                                 \
     te_dhcp_option *opt;                                        \
                                                                 \
@@ -1082,10 +1098,10 @@ ds_##_gh##_option_get(unsigned int gid, const char *oid,        \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL)                        \
+    if ((ghs = find_##_ghs(name)) == NULL)                      \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
-    if ((opt = find_option(gh->options, optname)) == NULL)      \
+    if ((opt = find_option(ghs->options, optname)) == NULL)     \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
     strcpy(value, opt->value);                                  \
@@ -1093,17 +1109,18 @@ ds_##_gh##_option_get(unsigned int gid, const char *oid,        \
     return 0;                                                   \
 }
 
-GET_OPT(host)
-GET_OPT(group)
+GET_OPT(host, host)
+GET_OPT(group, group)
+GET_OPT(subnet, te_dhcp_server_subnet)
 
-/* Method for changing of the option value for group/host */
-#define SET_OPT(_gh) \
+/* Method for changing of the option value for group/host/subnet */
+#define SET_OPT(_ghs, _ghs_type) \
 static te_errno \
-ds_##_gh##_option_set(unsigned int gid, const char *oid,        \
+ds_##_ghs##_option_set(unsigned int gid, const char *oid,       \
                       const char *value, const char *dhcpserver,\
                       const char *name, const char *optname)    \
 {                                                               \
-    _gh *gh;                                                    \
+    _ghs_type *ghs;                                             \
                                                                 \
     char *old;                                                  \
                                                                 \
@@ -1113,10 +1130,10 @@ ds_##_gh##_option_set(unsigned int gid, const char *oid,        \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL)                        \
+    if ((ghs = find_##_ghs(name)) == NULL)                      \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
-    if ((opt = find_option(gh->options, optname)) == NULL)      \
+    if ((opt = find_option(ghs->options, optname)) == NULL)     \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
     old = opt->value;                                           \
@@ -1136,18 +1153,19 @@ ds_##_gh##_option_set(unsigned int gid, const char *oid,        \
     return 0;                                                   \
 }
 
-SET_OPT(host)
-SET_OPT(group)
+SET_OPT(host, host)
+SET_OPT(group, group)
+SET_OPT(subnet, te_dhcp_server_subnet)
 
 
-/* Method for deletion of the option value for group/host */
-#define DEL_OPT(_gh) \
+/* Method for deletion of the option value for group/host/subnet */
+#define DEL_OPT(_ghs, _ghs_type) \
 static te_errno      \
-ds_##_gh##_option_del(unsigned int gid, const char *oid,        \
+ds_##_ghs##_option_del(unsigned int gid, const char *oid,       \
                       const char *dhcpserver, const char *name, \
                       const char *optname)                      \
 {                                                               \
-    _gh *gh;                                                    \
+    _ghs_type *ghs;                                             \
                                                                 \
     te_dhcp_option *opt, *prev;                                 \
                                                                 \
@@ -1155,10 +1173,10 @@ ds_##_gh##_option_del(unsigned int gid, const char *oid,        \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL)                        \
+    if ((ghs = find_##_ghs(name)) == NULL)                      \
         return TE_RC(TE_TA_UNIX, TE_ENOENT);                    \
                                                                 \
-    for (opt = gh->options, prev = NULL;                        \
+    for (opt = ghs->options, prev = NULL;                       \
          opt != NULL && strcmp(opt->name, optname) != 0;        \
          prev = opt, opt = opt->next);                          \
                                                                 \
@@ -1168,15 +1186,16 @@ ds_##_gh##_option_del(unsigned int gid, const char *oid,        \
     if (prev)                                                   \
         prev->next = opt->next;                                 \
     else                                                        \
-        gh->options = opt->next;                                \
+        ghs->options = opt->next;                               \
                                                                 \
     FREE_OPTION(opt);                                           \
                                                                 \
     return 0;                                                   \
 }
 
-DEL_OPT(host)
-DEL_OPT(group)
+DEL_OPT(host, host)
+DEL_OPT(group, group)
+DEL_OPT(subnet, te_dhcp_server_subnet)
 
 #ifdef TA_UNIX_ISC_DHCPS_LEASES_SUPPORTED
 
@@ -1568,8 +1587,20 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_host, "host",
                             ds_host_add, ds_host_del,
                             ds_host_list, NULL);
 
+static rcf_pch_cfg_object node_ds_subnet_option =
+    { "option", 0, NULL, NULL,
+      (rcf_ch_cfg_get)ds_subnet_option_get,
+      (rcf_ch_cfg_set)ds_subnet_option_set,
+      (rcf_ch_cfg_add)ds_subnet_option_add,
+      (rcf_ch_cfg_del)ds_subnet_option_del,
+      (rcf_ch_cfg_list)ds_subnet_option_list, NULL, NULL };
+
+RCF_PCH_CFG_NODE_RW(node_ds_subnet_range, "range",
+                    NULL, &node_ds_subnet_option,
+                    ds_subnet_range_get, ds_subnet_range_set);
+
 static rcf_pch_cfg_object node_ds_subnet =
-    { "subnet", 0, NULL, &node_ds_host,
+    { "subnet", 0, &node_ds_subnet_range, &node_ds_host,
       (rcf_ch_cfg_get)ds_subnet_get,
       (rcf_ch_cfg_set)ds_subnet_set,
       (rcf_ch_cfg_add)ds_subnet_add,
