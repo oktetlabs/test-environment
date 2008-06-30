@@ -111,6 +111,7 @@ get_ds_name(const char *oid)
     return
 #if defined __linux__
          (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :       
+         (strstr(oid, "pppoeserver") != NULL) ? "pppoe-server" :       
          (strstr(oid, "dnsserver") != NULL) ? "named" :        
          (strstr(oid, "todudpserver") != NULL) ? "daytime-udp" :  
          (strstr(oid, "tftpserver") != NULL) ? "tftp" :        
@@ -304,6 +305,9 @@ extern int find_file(unsigned int n, const char * const *files,
 
 extern te_errno dhcpserver_grab(const char *name);
 extern te_errno dhcpserver_release(const char *name);
+
+extern te_errno pppoeserver_grab(const char *name);
+extern te_errno pppoeserver_release(const char *name);
 
 extern te_errno echoserver_grab(const char *name);
 extern te_errno echoserver_release(const char *name);

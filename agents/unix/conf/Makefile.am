@@ -71,6 +71,13 @@ noinst_HEADERS += daemons/dhcp/dhcp_server.h
 
 endif
 
+if CFG_UNIX_DAEMONS_PPPOE_SERVER
+
+libconf_a_SOURCES += daemons/pppoe/pppoe_server.c 
+noinst_HEADERS += daemons/pppoe/pppoe_server.h 
+
+endif
+
 if CFG_UNIX_DAEMONS_NAMED
 
 libconf_a_SOURCES += daemons/dns/dns_server.c \

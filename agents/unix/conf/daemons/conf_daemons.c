@@ -3440,6 +3440,10 @@ static struct {
     { "/agent/dhcpserver", dhcpserver_grab, dhcpserver_release }, 
 #endif
 
+#ifdef WITH_PPPOE_SERVER
+    { "/agent/pppoeserver", pppoeserver_grab, pppoeserver_release }, 
+#endif
+
 #ifdef WITH_ECHO_SERVER
     { "/agent/echoserver", echoserver_grab, echoserver_release },
 #endif /* WITH_ECHO_SERVER */

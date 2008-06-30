@@ -378,6 +378,10 @@ if test -n "$with_cfg_unix_daemons" ; then
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DHCP_SERVER" ;
             ;;
 
+        pppoe)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_PPPOE_SERVER" ;
+            ;;
+
         radius)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_RADIUS_SERVER" ;
             ;;
@@ -406,6 +410,8 @@ AM_CONDITIONAL(CFG_UNIX_DAEMONS_NAMED,
     [expr "$with_cfg_unix_daemons" : ".*dns" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_ISC_DHCP_SERVER,
     [expr "$with_cfg_unix_daemons" : ".*dhcp" >/dev/null])
+AM_CONDITIONAL(CFG_UNIX_DAEMONS_PPPOE_SERVER,
+    [expr "$with_cfg_unix_daemons" : ".*pppoe" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_VTUND, 
     [expr "$with_cfg_unix_daemons" : ".*vtund" >/dev/null])
 AM_CONDITIONAL([CFG_UNIX_DAEMONS_RADIUS],
