@@ -36,9 +36,6 @@ AC_CONFIG_HEADERS([config.h])
 
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 
-EXTRA_CPPFLAGS=
-EXTRA_LDADD=
-
 if test "$with_rcf_rpc" ; then
     TE_CPPFLAGS="$TE_CPPFLAGS -DRCF_RPC"
 fi    
@@ -177,14 +174,6 @@ dnl
 AC_ARG_ENABLE([libdlpi], [Build Test Agent with libdlpi, if available],
 AC_CHECK_LIB([dlpi], [dlpi_open]))
 AC_CHECK_HEADERS([libdlpi.h])
-
-AC_CHECK_HEADERS([iproute/libnetlink.h],[nl_old=yes],[nl_old=no],[])
-AM_CONDITIONAL([NL_OLD], test "$nl_old" = "yes")
-if test "$nl_old" = "yes" ; then
-    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DNL_OLD"
-fi
-
-echo ${EXTRA_CPPFLAGS}
    
 dnl
 dnl POSIX threads are provided by:
@@ -297,6 +286,9 @@ dnl util library is necessary for static linking of expect
 AC_SEARCH_LIBS([openpty], [util])
 
 dnl "conf" staff
+
+EXTRA_CPPFLAGS=
+EXTRA_LDADD=
 
 AC_PROG_LEX
 AC_PROG_YACC
