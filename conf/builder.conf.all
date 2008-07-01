@@ -23,7 +23,7 @@ TE_PLATFORM([], [], [], [], [],
              comm_net_agent loggerta rcfpch tce tad tad_dummy \
              iscsi_unh_target iscsi_initiator_conf \
              ipc bsapi loggerten rcfapi confapi comm_net_engine rcfunix \
-             tapi rcfrpc tapi_rpc tapi_env tapi_tad tapi_radius trc])
+             tapi rcfrpc tapi_rpc tapi_env tapi_tad tapi_radius trc netconf])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install])
 TE_APP_PARMS([tester], [--with-trc])
@@ -36,18 +36,18 @@ TE_LIB_PARMS([tad], [], [],
 
 TE_TA_TYPE([linux], [${LINUX32_PLATFORM}], [unix],
            [--with-rcf-rpc  --with-iscsi\
-            --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd'],
+            --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd' --with-libnetconf],
            [], [], [], [comm_net_agent ndn asn])
 
 TE_LIB_PARMS([tad_dummy], [], [tad], [], [], [], [])
 
 TE_TA_TYPE([linux_lite], [${LINUX32_PLATFORM}], [unix],
-            [--with-tad=tad_dummy],
+            [--with-tad=tad_dummy --with-libnetconf],
             [], [], [], [comm_net_agent])
 
 # Agent with Power Unit support
 TE_TA_TYPE([power_ctl], [], [power-ctl],
-           [--with-tad=tad_dummy],
+           [--with-tad=tad_dummy --with-libnetconf],
            [], [], [], [comm_net_agent])
 
 
@@ -65,13 +65,13 @@ TE_LIB_PARMS([tad], [linux_other], [],
 
 TE_TA_TYPE([linux64], [${LINUX64_PLATFORM}], [unix],
            [--with-rcf-rpc --with-iscsi \
-            --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd'],
+            --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd' --with-libnetconf],
            [], [], [], [comm_net_agent ndn asn])
 
 TE_LIB_PARMS([tad_dummy], [linux_other], [tad], [], [], [], [])
 
 TE_TA_TYPE([linux64_lite], [${LINUX64_PLATFORM}], [unix],
-            [--with-tad=tad_dummy],
+            [--with-tad=tad_dummy --with-libnetconf],
             [], [], [], [comm_net_agent])
 
 #
