@@ -207,11 +207,29 @@ typedef struct pam_message const pam_message_t;
 #include <asm/types.h>
 #include <linux/netlink.h>
 #include <fnmatch.h>
+#if NL_OLD
 #include <iproute/libnetlink.h>
 #include <iproute/rt_names.h>
 #include <iproute/utils.h>
 #include <iproute/ll_map.h>
 #include <iproute/ip_common.h>
+#else
+#include <libnetlink.h>j
+/**
+ * inet_prefix type was taken from the iproute library header.
+ * Sorry for that.
+ */
+typedef struct
+{
+    uint8_t  family;
+    uint8_t  bytelen;
+    int16_t  bitlen;
+    uint32_t flags;
+    uint32_t data[4];
+} inet_prefix;
+
+
+#endif /* NL_OLD */
 #endif
 #endif
 
@@ -995,7 +1013,6 @@ rcf_ch_conf_root(void)
             return NULL;
         }
 
-        ll_init_map(&rth);
         rtnl_close(&rth);
 #endif
 #endif
@@ -1539,7 +1556,7 @@ store_nlmsg(const struct sockaddr_nl *who,
 
     TAILQ_INSERT_TAIL(list, entry, links);
 
-    return ll_remember_index(who, msg, NULL);
+    return 0;
 }
 
 /**
@@ -1586,8 +1603,6 @@ ip_addr_get(int family, agt_nlmsg_list *list)
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    ll_init_map(&rth);
-
     if (rtnl_wilddump_request(&rth, family, RTM_GETADDR) < 0)
     {
         ERROR("%s: Cannot send dump request, %s",
@@ -1633,7 +1648,6 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
     int                ifindex = 0;
     sa_family_t        family;
     int                rc;
-
 
     TAILQ_INIT(&addr_list);
 
@@ -1692,12 +1706,15 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
                   (memcmp(RTA_DATA(rta_tb[IFA_LOCAL]),
                          &ip_addr.ip6_addr, sizeof(struct in6_addr)) == 0)))
             {
+                char ifname[IFNAMSIZ];
+                
                 if (ifname == NULL ||
                     ((int)if_nametoindex(ifname) == ifa->ifa_index))
                     break;
 
                 WARN("Interfaces '%s' and '%s' have the same address '%s'",
-                     ifname, ll_index_to_name(ifa->ifa_index), str_addr);
+                     ifname, if_indextoname(ifa->ifa_index, ifname), 
+                     str_addr);
             }
         }
     }
@@ -1728,11 +1745,14 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
 
     free_nlmsg_list(&addr_list);
 
-    return (a == NULL) ? NULL :
-           (ifname != NULL) ? ifname :
-                              (const char *)ll_index_to_name(ifindex);
+    {
+        char ifname_local[IFNAMSIZ];
+        
+        return (a == NULL) ? NULL :
+            (ifname != NULL) ? ifname :
+            (const char *)if_indextoname(ifindex, ifname_local);
+    }
 }
-
 
 /**
  * Add/delete AF_INET/AF_INET6 address.
@@ -1820,7 +1840,6 @@ nl_ip_addr_add_del(int cmd, const char *ifname,
         return rc;
     }
 
-    ll_init_map(&rth);
     req.ifa.ifa_index = if_nametoindex(ifname);
 
     if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
@@ -3477,11 +3496,15 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
          * Check that address has not been assigned to any
          * interface yet.
          */
+        /*
+         * FIXME: this 'name' is returned from the stack inside the
+         * function, which is bad!.
+         */
         name = nl_find_net_addr(addr, NULL, &ip_addr, NULL, NULL);
         if (name != NULL)
         {
-            ERROR("%s(): Address '%s' already exists on interface '%s'",
-                  __FUNCTION__, addr, name);
+            ERROR("%s(): Address '%s' already exists on another interface",
+                  __FUNCTION__, addr);
             return TE_RC(TE_TA_UNIX, TE_EEXIST);
         }
 
@@ -5070,8 +5093,6 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    ll_init_map(&rth);
-
     ifindex = if_nametoindex(ifname);
     if (ifindex <= 0)
     {
@@ -5731,7 +5752,6 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
         ERROR("Failed to open a netlink socket");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
-    ll_init_map(&rth);
 
     memset(&user_data, 0, sizeof(user_data));
 
@@ -5973,8 +5993,6 @@ neigh_change(const char *oid, const char *addr, const char *ifname,
         ERROR("Failed to open Netlink socket");
         return TE_RC(TE_TA_UNIX, errno);
     }
-
-    ll_init_map(&rth);
 
     if ((req.ndm.ndm_ifindex = if_nametoindex(ifname)) == 0)
     {
@@ -6420,7 +6438,6 @@ ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
         ERROR("Failed to open a netlink socket");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
-    ll_init_map(&rth);
 
     strcpy(user_data.ifname, ifname);
     user_data.dynamic = !is_static;

@@ -97,21 +97,23 @@
 #include <linux/netlink.h>
 #include <fnmatch.h>
 #include <linux/sockios.h>
+#if NL_OLD
 #include <iproute/libnetlink.h>
 #include <iproute/rt_names.h>
 #include <iproute/utils.h>
 #include <iproute/ll_map.h>
 #include <iproute/ip_common.h>
-
+#else
+#include <libnetlink.h>
+#endif /* NL_OLD */
 
 static char buf[4096];
-
-
 struct nl_request {
     struct nlmsghdr n;
     struct rtmsg    r;
     char            buf[1024];
 };
+
 
 /** 
  * Convert system-independent route info data structure to
@@ -333,7 +335,6 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
          * We need to call this function as rt_info2nl_req() 
          * will need to convert interface name to index.
          */
-        ll_init_map(&rth);
     }
     
     if ((rc = rt_info2nl_req(rt_info, &req)) != 0)
@@ -471,9 +472,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
         {            
             user_data->rt_info->flags |= TA_RT_INFO_FLG_IF;
             user_data->if_index = *(int *)RTA_DATA(tb[RTA_OIF]);
-            memcpy(user_data->rt_info->ifname,
-                   ll_index_to_name(user_data->if_index),
-                   IFNAMSIZ);
+            if_indextoname(user_data->if_index, user_data->rt_info->ifname);
         }
 
         if (tb[RTA_PREFSRC] != NULL)
@@ -565,8 +564,6 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
         ERROR("Failed to open a netlink socket: %r", rc);
         return rc;
     }
-    ll_init_map(&rth);
-
     if (rtnl_wilddump_request(&rth, rt_info->dst.ss_family,
                               RTM_GETROUTE) < 0)
     {
@@ -609,7 +606,7 @@ rtnl_print_route_cb(const struct sockaddr_nl *who,
     struct rtmsg        *r = NLMSG_DATA(n);
     int                  len = n->nlmsg_len;
     char                *p;
-    const char          *ifname;
+    const char          ifname[IFNAMSIZ];
     
     rtnl_print_route_cb_user_data_t *user_data = 
                          (rtnl_print_route_cb_user_data_t *)arg;
@@ -662,7 +659,9 @@ rtnl_print_route_cb(const struct sockaddr_nl *who,
     if (tb[RTA_OIF] == NULL)
         return 0;
     
-    ifname = ll_index_to_name(*(int *)RTA_DATA(tb[RTA_OIF]));
+    if (if_indextoname(*(int *)RTA_DATA(tb[RTA_OIF]), ifname) == NULL)
+        return 0;
+    
     if (!ta_interface_is_mine(ifname))
         return 0;
 
@@ -751,7 +750,6 @@ ta_unix_conf_route_list(char **list)
         ERROR("Failed to open a netlink socket");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
-    ll_init_map(&rth);
     
 #define GET_ALL_ROUTES_OF_FAMILY(__family)                      \
 do {                                                            \
