@@ -376,8 +376,8 @@ typedef struct if_stats {
 #define MAX_VLANS 0xfff
 #define TAG_PRI_ONLY 0x1000
 #define TAG_VLAN_ONLY 0x2000
-static int vlans_buffer[MAX_VLANS];
-static size_t n_vlans = 0;
+static int vlans_2_1_buffer[5];
+static size_t n_2_1_vlans = 0;
 
 static te_errno if_stats_get(const char *ifname, if_stats *stats, 
                              ndis_stats *raw_stats);
@@ -4702,20 +4702,20 @@ vlans_list(unsigned int gid, const char *oid, char **list,
     else
     {
         VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
-             __FUNCTION__, gid, oid, ifname, n_vlans);
+             __FUNCTION__, gid, oid, ifname, n_2_1_vlans);
 
-        if (n_vlans == 0) 
+        if (n_2_1_vlans == 0) 
         {
             *list = NULL;
             return 0;
         }
                            /* max digits in VLAN id + space */
-        b = *list = malloc(n_vlans * 6 + 1);
+        b = *list = malloc(n_2_1_vlans * 6 + 1);
         if (*list == NULL)
             return TE_RC(TE_TA_UNIX, TE_ENOMEM); 
 
-        for (i = 0; i < n_vlans; i++)
-            b += sprintf(b, "%d ", vlans_buffer[i]); 
+        for (i = 0; i < n_2_1_vlans; i++)
+            b += sprintf(b, "%d ", vlans_2_1_buffer[i]); 
 
         return 0;
     }
@@ -4774,7 +4774,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
     }
     else 
     {
-        if (n_vlans == 1) 
+        if (n_2_1_vlans == 1) 
         {
             ERROR("VLAN interface is already set on %s", ifname);
             return TE_RC(TE_TA_WIN32, EINVAL);
@@ -4785,9 +4785,9 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
             ERROR("Failed to physically set VLAN"); 
             return TE_RC(TE_TA_WIN32, TE_EFAULT);
         }
+        vlans_2_1_buffer[n_2_1_vlans] = vid;
+        n_2_1_vlans += 1;
     }
-    vlans_buffer[n_vlans] = vid;
-    n_vlans += 1;
     return 0;
 }
 
@@ -4807,7 +4807,7 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
     int vid = atoi(vid_str);
     int rc = 0;
 
-    VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
+    WARN("%s: gid=%u oid='%s', vid %s, ifname %s",
          __FUNCTION__, gid, oid, vid_str, ifname);
 
     if (strstr(ifname,"ef")== NULL)
@@ -4816,12 +4816,6 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
         return TE_RC(TE_TA_WIN32, EINVAL);
     }
     
-    if (n_vlans == 0) 
-    {
-        ERROR("VLAN interface are not set on %s, cannot delete", ifname);
-        return TE_RC(TE_TA_WIN32, EINVAL);
-    }
-
     if (get_driver_version() == DRIVER_VERSION_2_2)
     {        
         if (!wmi_imported)
@@ -4835,8 +4829,14 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
     }
     else
     {
-    
-        if (vlans_buffer[n_vlans] != vid)
+        if (n_2_1_vlans == 0) 
+        {
+            ERROR("VLAN interface are not set "
+                  "on %s, cannot delete" , ifname);
+            return TE_RC(TE_TA_WIN32, EINVAL);
+        }
+
+        if (vlans_2_1_buffer[n_2_1_vlans] != vid)
         {
             WARN("Trying to delete VLAN with VLAN id=, still deleting",vid);
         }
@@ -4846,8 +4846,8 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
             ERROR("Failed to physically remove VLAN"); 
             return TE_RC(TE_TA_WIN32, TE_EFAULT);
         }
+        n_2_1_vlans -= 1;
     }
-    n_vlans -= 1;
     return 0;
 }
 
