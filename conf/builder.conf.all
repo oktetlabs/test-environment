@@ -77,6 +77,35 @@ TE_TA_TYPE([linux64_lite], [${LINUX64_PLATFORM}], [unix],
 #
 # Solaris2 platform
 #
+TE_PLATFORM([solaris], [--host=i386-pc-solaris2.11], 
+            [-I${SOLARIS2_HOME}/sys-include], [-pthreads],
+            [-L${SOLARIS2_HOME}/lib],
+            [tools rpcxdr rpc_types conf_oid asn ndn \
+             loggerta comm_net_agent rcfpch tad])
+
+TE_LIB_PARMS([tad], [solaris], [],
+             [--with-atm --with-eth --with-bridge --with-arp \
+              --with-ipstack --with-cli --with-socket])
+
+TE_TA_TYPE([solaris2], [solaris], [unix],
+           [--with-rcf-rpc], [], [], [], [comm_net_agent ndn asn])
+
+
+TE_PLATFORM([solaris_64],
+            [--host=i386-pc-solaris2.11 CC=i386-pc-solaris2.11-gcc-4.1.2],
+            [-I${SOLARIS2_HOME}/sys-include], [-m64 -pthreads],
+            [-L${SOLARIS2_HOME}/lib/amd64 \
+             -Wl,-rpath-link,${SOLARIS2_HOME}/lib/amd64],
+            [tools rpcxdr rpc_types conf_oid asn ndn \
+             loggerta comm_net_agent rcfpch tad])
+
+TE_LIB_PARMS([tad], [solaris_64], [],
+             [--with-atm --with-eth --with-bridge --with-arp \
+              --with-ipstack --with-cli --with-socket])
+
+TE_TA_TYPE([solaris2_64], [solaris_64], [unix],
+           [--with-rcf-rpc], [], [], [], [comm_net_agent ndn asn])
+
 
 #
 # FreeBSD6 platform
