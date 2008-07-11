@@ -42,7 +42,7 @@ _item_comp()
     return 0
 }
 
-complete -F _item_comp $default -o nospace item
+complete -F _item_comp $default item
 
 
 
