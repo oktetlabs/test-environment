@@ -1,0 +1,48 @@
+_item_comp()
+{
+    local cur
+    local prev
+    local options
+    
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev=${COMP_WORDS[COMP_CWORD-1]}
+
+    case "${prev}" in
+        -a)
+        options="set add del edit list"
+        ;;
+        -o)
+        options="$(whoami) -"
+        ;;
+        -i)
+        options=$(item | sed "s/^[ \t]*//; s/ .*//g;")
+        ;;
+        -f)
+            local cur_prefix="/${cur}"
+            cur_prefix=${cur_prefix%/*}
+            local search_dir="/srv/local/items"
+            local i;
+            local ls_res=`ls ${search_dir}/${cur_prefix}/`
+            local options_prefix=${cur_prefix:1}
+            local sep="/"
+            
+            if test -z $cur_prefix; then
+                sep=""
+            fi
+            for i in ${ls_res}; do
+                options="$options ${options_prefix}$sep$i"
+            done
+        ;;
+        *)
+        options="-h -v -f -i -o -d -a "
+        ;;
+    esac
+    COMPREPLY=( $( compgen -W '$options' -- ${cur} ) )
+
+    return 0
+}
+
+complete -F _item_comp $default -o nospace item
+
+
+
