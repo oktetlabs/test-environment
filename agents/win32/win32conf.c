@@ -1160,11 +1160,16 @@ ifindex2ifname(DWORD ifindex)
     DWORD vlan_id = -1;
 
     friendly_name = ifindex2frname(ifindex);
+    if (friendly_name == NULL)
+    {
+        ERROR("ifindex2frname failed");
+        return NULL;
+    }
     if (strcmp_start("Solarflare Virtual", friendly_name) == 0)
     {
         if (!wmi_imported)
         {
-          return NULL;
+            return NULL;
         }
         vlan_id = pwmi_get_vlanid_by_frname(friendly_name);
         if (vlan_id > 0)
@@ -1483,7 +1488,8 @@ ifindex2frname(DWORD ifindex)
         info = iftable->table + i;
         if (info->dwIndex == ifindex)
         {
-            sprintf(friendly_name, "%s", info->bDescr);
+            snprintf(friendly_name, TE_ARRAY_LEN(friendly_name), 
+                     "%s", info->bDescr);
             goto success;
         }
        
@@ -4684,6 +4690,11 @@ vlans_list(unsigned int gid, const char *oid, char **list,
             return 0;
         }
         frname = ifindex2frname(ifname2ifindex(ifname));
+        if (frname == NULL)
+        {
+            ERROR("ifindex2frname failed");
+            return 0;
+        }
         rc = pwmi_get_vlan_list(frname, &vid_list, &count);
 
         if (vid_list == NULL || count == 0)
