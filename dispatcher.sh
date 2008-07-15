@@ -526,7 +526,17 @@ if test -z "${QUIET}" ; then
 fi
 export TE_PATH
 export PATH="${TE_PATH}/bin:$PATH"
-export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${TE_PATH}/lib"
+# Do not export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${TE_PATH}/lib" --
+# it can add empty entry to LD_LIBRARY_PATH (if it was unset), so you'll
+# get current dir as part of LD_LIBRARY_PATH, with misterious failures.
+# We can use
+# LD_LIBRARY_PATH=${LD_LIBRARY_PATH+$LD_LIBRARY_PATH:}${TE_PATH}/lib
+# but it fails if LD_LIBRARY_PATH is set, but empty.
+if [ -z "${LD_LIBRARY_PATH}" ]; then
+    export LD_LIBRARY_PATH="${TE_PATH}/lib"
+else
+    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${TE_PATH}/lib"
+fi
 
 
 if test -z "$TE_INSTALL_NUT" ; then
