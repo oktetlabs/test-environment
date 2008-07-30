@@ -165,6 +165,11 @@ static te_bool
 ps_pppoeserver_is_run(void)
 {
 #if defined __linux__
+    /*
+     * We should kill all pppd sessions. Killing with some polite signals
+     * does not help
+     */
+    (void)ta_system("killall -KILL pppd");
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", pppoe_server_exec);
 #endif
 
