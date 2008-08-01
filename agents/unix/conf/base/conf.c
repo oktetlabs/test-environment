@@ -2505,8 +2505,20 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
     if_request.u.VID = vid;
 
     if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
-        l_errno = errno; 
+        l_errno = errno;
+#if 0
+    {
+        char vlan_if_name[IFNAMSIZ];
+        
+        vlan_ifname_get_internal(ifname, vid, vlan_if_name);
 
+        sprintf(buf, "ifconfig %s up > /dev/null",
+                vlan_if_name);
+
+        if (ta_system(buf) != 0)
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+#endif
 #elif defined __sun__
     {
         char vlan_if_name[IFNAMSIZ];
@@ -3759,6 +3771,12 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     /* Calculate maximum space needed by list */
     len = nlist->length * (INET6_ADDRSTRLEN + 1);
 
+    if (len == 0)
+    {
+        *list = NULL;
+        return 0;
+    }
+
     if ((*list = malloc(len)) == NULL)
     {
         netconf_list_free(nlist);
@@ -4141,7 +4159,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
 
         if (inet_pton(family, addr, &ip_addr) <= 0)
         {
-            ERROR("Failed to convert address '%s' from string", addr);
+            ERROR("Failed to covnert address '%s' from string", addr);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
@@ -6302,11 +6320,23 @@ ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
 
     /* Calculate maximum space needed by the list */
     len = nlist->length * (INET6_ADDRSTRLEN + 1);
+    
+    if (len == 0)
+    {
+        *list = NULL;
+        return 0;
+    }
 
     if ((*list = malloc(len)) == NULL)
     {
         netconf_list_free(nlist);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    if (len == 0)
+    {
+        *list = NULL;
+        return 0;
     }
 
     memset(*list, 0, len);
@@ -9271,10 +9301,17 @@ xen_interface_list(unsigned int gid, char const *oid, char **list)
         if (interface_slot[u].if_name != NULL)
             len += strlen(interface_slot[u].if_name) + 1;
 
+    if (len == 0)
+    {
+        *list = NULL;
+        return 0;
+    }
+    
     if ((ptr = malloc(len)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-    *(*list = ptr) = '\0';
+    if (list != NULL)
+        *(*list = ptr) = '\0';
 
     /**
      * Fill in the list with existing domU names
@@ -9734,10 +9771,17 @@ dom_u_list(unsigned int gid, char const *oid, char **list)
         if (dom_u_slot[u].name != NULL)
             len += strlen(dom_u_slot[u].name) + 1;
 
+    if (len == 0)
+    {
+        *list = NULL;
+        return 0;
+    }
+
     if ((ptr = malloc(len)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    *(*list = ptr) = '\0';
+    
+    if (list != NULL)
+        *(*list = ptr) = '\0';
 
     /**
      * Fill in the list with existing domU names
@@ -10564,10 +10608,17 @@ dom_u_bridge_list(unsigned int gid, char const *oid, char **list,
         if (dom_u_slot[u].bridge_slot[v].br_name != NULL)
             len += strlen(dom_u_slot[u].bridge_slot[v].br_name) + 1;
 
+    if (len == 0)
+    {
+        *list = NULL;
+        return 0;
+    }
+
     if ((ptr = malloc(len)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-    *(*list = ptr) = '\0';
+    if (list != NULL)
+        *(*list = ptr) = '\0';
 
     /**
      * Fill in the list with existing domU names
