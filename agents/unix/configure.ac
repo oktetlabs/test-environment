@@ -312,11 +312,11 @@ dnl Check that we have iwlib installed in our system
 dnl
     AC_CHECK_HEADERS([iwlib.h], [],
                      AC_MSG_ERROR([Cannot find iwlib.h header]))
-    AC_CHECK_LIB([iw], [iw_sockets_open], [],
+    AC_CHECK_LIB([iw], [iw_sockets_open], [EXTRA_LDADD="$EXTRA_LDADD -liw"],
                  AC_MSG_ERROR([Cannot find iw library]))
 
     AC_DEFINE([ENABLE_WIFI_SUPPORT], [], [Whether to enable WiFi support])
-    LDADD="$LDADD -liw"
+    LIBS="$LIBS -lm"
 fi
 
 AM_CONDITIONAL([CFG_UNIX_WIFI], test x"$ac_cv_enable_wifi" != xno)
