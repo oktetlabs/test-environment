@@ -3,12 +3,14 @@ SUBDIRS=rpc conf
 
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include \
+              $(TE_CPPFLAGS) \
               -include te_config.h -include config.h $(EXTRA_CPPFLAGS)
 
 AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS)
 
-AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib -Wl,-Bstatic $(TE_LDFLAGS)
+AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib \
+             -Wl,-Bstatic $(TE_LDFLAGS)
 
 LIBS = $(TAD_LIBS) @LIBS@
 
@@ -20,7 +22,7 @@ noinst_HEADERS = unix_internal.h
 
 taexec_PROGRAMS = ta
 
-ta_SOURCES = main.c ftp_routines.c log_serial.c
+ta_SOURCES = main.c ftp_routines.c log_serial.c log_remote.c
 
 ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch \
            -l$(TAD) $(TE_LDADD) \
@@ -29,14 +31,15 @@ ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch \
 
 CLEANFILES = symtbl.c
 
-SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o 
+SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o log_remote.o
 SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib$(TAD).a \
               conf/libconf.a rpc/libtarpc.a 
 
 if ISCSI_TARGET_USE
-SYMTBL_LIBS+=$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_unh_target.a
+SYMTBL_LIBS+=\
+$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_unh_target.a
 endif      
 
 ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
