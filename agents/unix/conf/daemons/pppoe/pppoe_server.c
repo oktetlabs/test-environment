@@ -80,7 +80,6 @@ find_option(te_pppoe_option *opt, const char *name)
     return opt;
 }
 
-
 /** Save configuration to the file */
 static int
 ps_pppoeserver_save_conf(char **args)
@@ -117,7 +116,19 @@ ps_pppoeserver_save_conf(char **args)
     sprintf(buf, "-L %s", inet_ntoa(new_addr));
     strcpy(args_buf, buf);
 
+/* Default number of pppoe clients supported by pppoe-server */
+#define N_PPP_CLIENTS   64
+
+    /* This fix is ugly, indeed. Just to prevent overlapping of local
+     * and remote IPs for multiple pppoe clients. To be replaced by
+     * more nice one after all problems with pppoe and dhcp servers
+     * have been fixed.
+     */
+    new_addr.s_addr = htonl(ntohl(addr.s_addr) + N_PPP_CLIENTS + 1);
+#if 0
+    /* This works good if pppoe-server has no more than ONE client. */
     new_addr.s_addr = htonl(ntohl(addr.s_addr) + 2);
+#endif
     sprintf(buf, " -R %s", inet_ntoa(new_addr));
     strcat(args_buf, buf);
 
