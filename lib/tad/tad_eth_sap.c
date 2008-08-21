@@ -275,7 +275,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
         strncmp(ifname, "intf", 4) == 0)
     {
         /* Reading real interface index from file */
-        int efindex = -1, ifindex = -1;
+        int efindex = -1, ifindex = -1, vlan = 0;
         FILE *F;
         int ef_type = 0; /* ef* or intf* type of interface name */
         char filename[100], new_ifname[100];
@@ -287,8 +287,17 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
         strcpy(new_ifname, ifname);
         if (strncmp(ifname, "ef", 2) == 0)
         {
-          sscanf(ifname, "ef%d", &efindex);
-          ef_type = 1;
+          if (strstr(ifname, ".") == NULL)
+          {
+            sscanf(ifname, "ef%d", &efindex);
+            ef_type = 1;
+          } 
+          else
+          {
+            sscanf(ifname, "ef%d.%d", &efindex, &vlan);
+            sprintf(filename, "/tmp/efdata_%d.%d", efindex, vlan);
+            ef_type = 2;
+          }
         }
         else
         {
@@ -297,13 +306,20 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
         }
         if ((efindex >= 1 && efindex <=2) || (ef_type == 0))
         {
-            if (ef_type == 1)
+            if (ef_type == 2)
             {
-                sprintf(filename, "/tmp/efdata_%d", efindex);
-            }
+                /* Have already made filename above */
+            } 
             else
             {
-                sprintf(filename, "/tmp/intfdata_%d", ifindex);
+                if (ef_type == 1)
+                {
+                    sprintf(filename, "/tmp/efdata_%d", efindex);
+                }
+                else
+                {
+                    sprintf(filename, "/tmp/intfdata_%d", ifindex);
+                }
             }
             F = fopen(filename, "rt");
             if (F != NULL)
@@ -856,7 +872,7 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
     fd_set              readfds;
     pkt_len_pkt         ptr;
 #endif
-    
+
 
     assert(sap != NULL);
     data = sap->data;

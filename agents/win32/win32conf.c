@@ -684,14 +684,17 @@ w2a(WCHAR *str)
 static int
 intfdata2file(const char *prefix, int efindex, int ifindex,
               const char *guid, const unsigned char *mac,
-              const char *regpath)
+              const char *regpath, int efvlan)
 {
   FILE *F;
   char filename[100];
 
   if (strncmp(prefix, "ef", 2) == 0)
   {
-    sprintf(filename, "/tmp/efdata_%d", efindex + 1);
+    if (efvlan > 0)
+      sprintf(filename, "/tmp/efdata_%d.%d", efindex + 1, efvlan);
+    else 
+      sprintf(filename, "/tmp/efdata_%d", efindex + 1);
   }
   else
   {
@@ -757,6 +760,9 @@ efport2ifindex(void)
     static unsigned char mac1[6], mac2[6];
     static char mac_str[100];
 
+    char *ifname = NULL;
+    int efvlan = 0;
+    
     char driver_type[BUFSIZE];
     
     int i, j;
@@ -986,11 +992,22 @@ efport2ifindex(void)
         free(adapters);
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
     }
-
+    
     for (info = adapters; info != NULL; info = info->Next)
     {
-      intfdata2file("intf", -1, info->Index, info->AdapterName,
-                    info->Address, "");
+      ifname = ifindex2ifname(info->Index);
+      if (strncmp(ifname, "ef", 2) == 0)
+      {
+        if (strstr(ifname, ".") != NULL)
+        {
+          sscanf(strstr(ifname, ".") + 1, "%d", &efvlan);
+          intfdata2file("ef", 0, info->Index, info->AdapterName,
+                        info->Address, "", efvlan);
+        }
+      } 
+      else
+        intfdata2file("intf", -1, info->Index, info->AdapterName,
+                      info->Address, "", 0);
 #if 0
       if ((guid_2_2_found_index >= 0) && (ef_index[0] == info->Index))
       {
@@ -1015,7 +1032,7 @@ efport2ifindex(void)
             strcpy(ef_regpath[0], guid_2_2_regpath[guid_2_2_found_index]);
             intfdata2file("ef", 0, ef_index_2_2,
                           guid_2_2[guid_2_2_found_index], 
-                          mac1, ef_regpath[0]);
+                          mac1, ef_regpath[0], 0);
             sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
                     mac1[0], mac1[1], mac1[2],
                     mac1[3], mac1[4], mac1[5]);
@@ -1038,7 +1055,7 @@ efport2ifindex(void)
         {
             strcpy(ef_regpath[0], guid1_regpath[guid1_found_index]);
             intfdata2file("ef", 0, ef_index[0],
-                          guid1[guid1_found_index], mac1, ef_regpath[0]);
+                          guid1[guid1_found_index], mac1, ef_regpath[0], 0);
             sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
                     mac1[0], mac1[1], mac1[2],
                     mac1[3], mac1[4], mac1[5]);
@@ -1061,7 +1078,7 @@ efport2ifindex(void)
         {
             strcpy(ef_regpath[1], guid2_regpath[guid2_found_index]);
             intfdata2file("ef", 1, ef_index[1],
-                          guid2[guid2_found_index], mac2, ef_regpath[1]);
+                          guid2[guid2_found_index], mac2, ef_regpath[1], 0);
             sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
                     mac2[0], mac2[1], mac2[2],
                     mac2[3], mac2[4], mac2[5]);
