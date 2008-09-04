@@ -130,6 +130,7 @@ extern char *ta_name;
 #define DRIVER_VERSION_UNKNOWN 0
 #define DRIVER_VERSION_2_1 1
 #define DRIVER_VERSION_2_2 2
+#define DRIVER_VERSION_2_3 3
 
 /*
  * Access routines prototypes (comply to procedure types
@@ -1328,7 +1329,7 @@ rcf_ch_conf_root()
     if (!init)
     {
 #ifdef ENABLE_WMI_SUPPORT
-        if (get_driver_version() == DRIVER_VERSION_2_2)
+        if (get_driver_version() >= DRIVER_VERSION_2_2)
           wmi_init_func_imports();
 #endif
 
@@ -4512,9 +4513,13 @@ static int get_driver_version()
     {
         return DRIVER_VERSION_2_1;
     }
-    else if (strncmp(driver_version_value, "2.2", 3) == 0)
+    else 
+    if (strncmp(driver_version_value, "2.2", 3) == 0)
     {
         return DRIVER_VERSION_2_2;
+    } else if (strncmp(driver_version_value, "2.3", 3) == 0)
+    {
+        return DRIVER_VERSION_2_3;
     }
 
     return DRIVER_VERSION_UNKNOWN;
@@ -4651,7 +4656,7 @@ vlan_ifname_get(unsigned int gid, const char *oid, char *value,
     VERB("%s: gid=%u oid='%s', ifname = '%s', vid %d",
          __FUNCTION__, gid, oid, ifname,  vlan_id);
 
-    if (get_driver_version() == DRIVER_VERSION_2_2)
+    if (get_driver_version() >= DRIVER_VERSION_2_2)
     {
         sprintf(value, "%s.%s", ifname, vid);
     }
@@ -4692,7 +4697,7 @@ vlans_list(unsigned int gid, const char *oid, char **list,
         return 0;
     }
 
-    if (get_driver_version() == DRIVER_VERSION_2_2)
+    if (get_driver_version() >= DRIVER_VERSION_2_2)
     {
         if (strstr(ifname, ".") != NULL)
         {
@@ -4779,7 +4784,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_WIN32, EINVAL);
     }
 
-    if (get_driver_version() == DRIVER_VERSION_2_2)
+    if (get_driver_version() >= DRIVER_VERSION_2_2)
     {
         if (vid & TAG_PRI_ONLY)
         {
@@ -4844,7 +4849,7 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
         return TE_RC(TE_TA_WIN32, EINVAL);
     }
     
-    if (get_driver_version() == DRIVER_VERSION_2_2)
+    if (get_driver_version() >= DRIVER_VERSION_2_2)
     {        
         if (!wmi_imported)
             return TE_RC(TE_TA_WIN32, EINVAL);
