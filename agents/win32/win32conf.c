@@ -3779,6 +3779,8 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     UNUSED(value);
     if (strstr(ifname, "ef") == NULL)
     {
+      if (dev != INVALID_HANDLE_VALUE)
+        CloseHandle(dev);
       return 0;
     }
     UNUSED(ifname);
@@ -3794,6 +3796,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     {
       rc = GetLastError();
       WARN("DeviceIoControl failed with errno=%d", GetLastError());
+      CloseHandle(dev);
       return -2;
     }
     CloseHandle(dev);
@@ -3815,6 +3818,8 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     UNUSED(oid);
     if (strstr(ifname, "ef") == NULL)
     {
+      if (dev != INVALID_HANDLE_VALUE)
+        CloseHandle(dev);
       return 0;
     }
 
@@ -3830,6 +3835,7 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     {
       rc = GetLastError();
       WARN("DeviceIoControl failed with errno=%d", GetLastError());
+      CloseHandle(dev);
       return -2;
     }
     CloseHandle(dev);
@@ -3856,7 +3862,8 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
       sprintf(ret, " ");
       *list = ret;
       free(buf);
-      CloseHandle(dev);
+      if (dev != INVALID_HANDLE_VALUE)
+        CloseHandle(dev);
       return 0;
     }
 
@@ -3917,6 +3924,7 @@ if_stats_get(const char *ifname, if_stats *stats, ndis_stats *raw_stats)
 
     if (strstr(ifname, "ef") == NULL)
     {
+        CloseHandle(dev);
         return -1;
     }
 
@@ -3928,6 +3936,7 @@ if_stats_get(const char *ifname, if_stats *stats, ndis_stats *raw_stats)
     {
         rc = GetLastError();
         WARN("DeviceIoControl failed with errno=%d", GetLastError());
+        CloseHandle(dev);
         return -2;
     }
     CloseHandle(dev);
@@ -4517,7 +4526,8 @@ static int get_driver_version()
     if (strncmp(driver_version_value, "2.2", 3) == 0)
     {
         return DRIVER_VERSION_2_2;
-    } else if (strncmp(driver_version_value, "2.3", 3) == 0)
+    } else 
+    if (strncmp(driver_version_value, "2.3", 3) == 0)
     {
         return DRIVER_VERSION_2_3;
     }
