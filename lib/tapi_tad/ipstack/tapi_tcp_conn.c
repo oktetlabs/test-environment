@@ -1223,7 +1223,7 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
 
     if (msg != NULL)
     {
-        if (buffer != NULL && (*len >= msg->len))
+        if (msg->data != NULL && buffer != NULL && (*len >= msg->len))
         {
             memcpy(buffer, msg->data, msg->len);
             *len = msg->len;
