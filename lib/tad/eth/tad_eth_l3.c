@@ -523,6 +523,13 @@ tad_eth_arp_reply(csap_p csap, const char *usr_param,
     if (rc != 0)
     {
         ERROR("%s() write error", __FUNCTION__);
+        return rc;
+    }
+
+    if (rw_layer_cbs->shutdown_send_cb != NULL && 
+        (rc = rw_layer_cbs->shutdown_send_cb(csap)) != 0)
+    {
+        ERROR("%s(): shutdown for send failed %r", __FUNCTION__, rc);
     }
 
     return rc;
