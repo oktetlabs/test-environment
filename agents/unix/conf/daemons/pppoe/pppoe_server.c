@@ -139,6 +139,7 @@ ps_pppoeserver_save_conf(char **args)
         p = strchr(p, ' ');
         if (p != NULL && *p != '\0')
         {
+            *p = '\0';
             p++;
         }
         
