@@ -4729,6 +4729,12 @@ vlans_list(unsigned int gid, const char *oid, char **list,
         }
         rc = pwmi_get_vlan_list(frname, &vid_list, &count);
 
+        if (rc != 0)
+        {
+            ERROR("Getting vlan list by WMI failed, rc=%d", rc);
+            *list = NULL;
+            return 0; 
+        }
         if (vid_list == NULL || count == 0)
         {
             *list = NULL;
