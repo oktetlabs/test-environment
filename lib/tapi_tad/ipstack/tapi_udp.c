@@ -179,8 +179,45 @@ tapi_udp_ip4_eth_csap_create(const char    *ta_name,
     return TE_RC(TE_TAPI, rc);
 }
 
+/* See the description in tapi_udp.h */
+te_errno
+tapi_udp_ip4_csap_create(const char    *ta_name,
+                         int            sid,
+                         in_addr_t      loc_addr,
+                         in_addr_t      rem_addr,
+                         int            loc_port,
+                         int            rem_port,
+                         csap_handle_t *udp_csap)
+{
+    te_errno    rc;
+    asn_value  *csap_spec = NULL;
 
+    rc = tapi_udp_add_csap_layer(&csap_spec, loc_port, rem_port);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add UDP csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
 
+    rc = tapi_ip4_add_csap_layer(&csap_spec, loc_addr, rem_addr,
+                                 -1 /* default proto */,
+                                 -1 /* default ttl */,
+                                 -1 /* default tos */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add IP4 csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_tad_csap_create(ta_name, sid, "udp.ip4", csap_spec,
+                              udp_csap);
+
+    asn_free_value(csap_spec);
+
+    return TE_RC(TE_TAPI, rc);
+}
 
 /**
  * data for udp callback 

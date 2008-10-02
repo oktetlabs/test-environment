@@ -113,6 +113,25 @@ extern te_errno tapi_udp_ip4_eth_csap_create(const char    *ta_name,
                                              int            loc_port,
                                              int            rem_port,
                                              csap_handle_t *udp_csap);
+/**
+ * Create 'udp.ip4' CSAP on the specified Agent
+ *
+ * @param ta_name       Test Agent name
+ * @param loc_addr      Local IP address in network byte order (or NULL)
+ * @param rem_addr      Remote IP address in network byte order (or NULL)
+ * @param loc_port      Local UDP port in network byte order or -1
+ * @param rem_port      Remote UDP port in network byte order or -1
+ * @param udp_csap      Location for the CSAP handle (OUT)
+ *
+ * @return Zero on success or error code
+ */
+extern te_errno tapi_udp_ip4_csap_create(const char    *ta_name,
+                                         int            sid,
+                                         in_addr_t      loc_addr,
+                                         in_addr_t      rem_addr,
+                                         int            loc_port,
+                                         int            rem_port,
+                                         csap_handle_t *udp_csap);
 
 
 
