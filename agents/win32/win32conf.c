@@ -4486,7 +4486,7 @@ static int get_driver_version()
     int err;
     HKEY hkKey;
     static char path[BUFSIZE_REG];
-    char driver_version_value[10];
+    char driver_version_value[20];
     unsigned int dwTemp;
 
     if (get_settings_path(path) != 0)
