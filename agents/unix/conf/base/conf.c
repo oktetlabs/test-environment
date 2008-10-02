@@ -5022,6 +5022,16 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
+    /* 
+     * In case of point-to-point protocol there is no broadcast 
+     * hardware address, return zero-address.
+     */
+    if (strstr(ifname, "ppp") != NULL)
+    {
+        strcpy(value, "00:00:00:00:00:00");
+        return 0;
+    }
+
 #ifdef USE_NETLINK
 #if defined(USE_LIBNETCONF)
     {
