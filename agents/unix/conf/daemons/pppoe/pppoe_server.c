@@ -181,7 +181,9 @@ ps_pppoeserver_is_run(void)
      * We should kill all pppd sessions. Killing with some polite signals
      * does not help
      */
+#if 0
     (void)ta_system("killall -KILL pppd");
+#endif
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", pppoe_server_exec);
 #endif
 
