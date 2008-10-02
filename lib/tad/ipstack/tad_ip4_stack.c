@@ -59,6 +59,12 @@
 #include <net/ethernet.h>
 #endif
 
+#ifdef PF_PACKET
+#if HAVE_NETPACKET_PACKET_H
+#include <netpacket/packet.h>
+#endif
+#endif
+
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <errno.h>
@@ -90,7 +96,6 @@ tad_ip4_rw_init_cb(csap_p csap)
     int    rc;
     size_t len;
 
-
     spec_data = calloc(1, sizeof(*spec_data));
     if (spec_data == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
@@ -107,8 +112,12 @@ tad_ip4_rw_init_cb(csap_p csap)
     spec_data->sa_op.sin_family = AF_INET;
     spec_data->sa_op.sin_port = 0;
 
-    /* opening incoming socket */
-    spec_data->socket = socket(AF_INET, SOCK_RAW, IPPROTO_IP); 
+    /* opening incoming socket */    
+#ifdef PF_PACKET
+    spec_data->socket = socket(PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP)); 
+#else
+    spec_data->socket = socket(AF_INET, SOCK_RAW, IPPROTO_IP);
+#endif
     if (spec_data->socket < 0)
     {
         return TE_OS_RC(TE_TAD_CSAP, errno);
