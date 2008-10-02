@@ -26,6 +26,7 @@ net_addr_list_cb(struct nlmsghdr *h, netconf_list *list)
     struct rtattr      *rta;
     int                 len;
     netconf_net_addr   *net_addr;
+    uint8_t            *local = NULL;
 
     if (netconf_list_extend(list, NETCONF_NODE_NET_ADDR) != 0)
         return -1;
@@ -36,6 +37,8 @@ net_addr_list_cb(struct nlmsghdr *h, netconf_list *list)
     net_addr->prefix = ifa->ifa_prefixlen;
     net_addr->flags = ifa->ifa_flags;
     net_addr->ifindex = ifa->ifa_index;
+    net_addr->address = NULL;
+    net_addr->broadcast = NULL;
 
     rta = (struct rtattr *)((char *)h +
                             NLMSG_SPACE(sizeof(struct ifaddrmsg)));
@@ -52,9 +55,30 @@ net_addr_list_cb(struct nlmsghdr *h, netconf_list *list)
             case IFA_BROADCAST:
                 net_addr->broadcast = netconf_dup_rta(rta);
                 break;
+
+            case IFA_LOCAL:
+                local = netconf_dup_rta(rta);
+                break;
         }
 
         rta = RTA_NEXT(rta, len);
+    }
+
+    /* 
+     * NOTE:
+     * IFA_ADDRESS is prefix address, rather than local interface address.
+     * It makes no difference for normally configured broadcast interfaces,
+     * but for point-to-point IFA_ADDRESS is DESTINATION address,
+     * local address is supplied in IFA_LOCAL attribute.
+     */
+    if (net_addr->broadcast == NULL && local != NULL)
+    {
+        free(net_addr->address);
+        net_addr->address = local;
+    }
+    else
+    {
+        free(local);
     }
 
     return 0;
