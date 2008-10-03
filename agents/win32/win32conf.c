@@ -997,7 +997,12 @@ efport2ifindex(void)
     for (info = adapters; info != NULL; info = info->Next)
     {
       ifname = ifindex2ifname(info->Index);
-      if (strncmp(ifname, "ef", 2) == 0)
+      if (ifname == NULL)
+      {
+        ERROR("Can't get ifname for ifindex=%d", info->Index);
+      }
+      if ((ifname != NULL) &&
+          (strncmp(ifname, "ef", 2) == 0))
       {
         if (strstr(ifname, ".") != NULL)
         {
