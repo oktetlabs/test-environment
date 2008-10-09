@@ -4700,8 +4700,8 @@ vlans_list(unsigned int gid, const char *oid, char **list,
     size_t i;
     char *b;
     char *frname;
-    int rc, count;
     DWORD *vid_list;
+    int rc, count, count_skipped = 0;
 
     if (strstr(ifname, "ef")== NULL)
     {
@@ -4747,15 +4747,22 @@ vlans_list(unsigned int gid, const char *oid, char **list,
         }
                            /* max digits in VLAN id + space */
         b = *list = malloc(count * 6  + 1);
+
         for (i = 0; i < count; i++)
         {
             /* Exclude special vlanids from list */
             if (vid_list[i] == 0 || vid_list[i] == 4095)
             {
                 WARN("Special vlan id %d skipped", vid_list[i]);
+                count_skipped++;
                 continue;
             }
             b += sprintf(b, "%d ", vid_list[i]); 
+        }
+        if (count_skipped == count)
+        {
+            free(b);
+            *list = NULL;
         }
         return 0;
 
