@@ -406,6 +406,7 @@ typedef char * (*t_wmi_get_frname_by_vlanid)(DWORD vlanid);
 typedef DWORD (*t_wmi_get_vlanid_by_frname)(const char *ifname);
 typedef te_errno (*t_wmi_add_vlan)(DWORD vlan_id, te_bool priority);
 typedef te_errno (*t_wmi_del_vlan)(DWORD vlan_id);
+typedef int(*t_wmi_mtu_set)(const char* frname, int value);
 
 
 /* Defining function pointers to imported functions*/
@@ -418,6 +419,7 @@ GEN_IMP_FUNC_PTR(wmi_get_frname_by_vlanid);
 GEN_IMP_FUNC_PTR(wmi_get_vlanid_by_frname);
 GEN_IMP_FUNC_PTR(wmi_add_vlan);
 GEN_IMP_FUNC_PTR(wmi_del_vlan);
+GEN_IMP_FUNC_PTR(wmi_mtu_set);
 #undef GEN_IMP_FUNC_PTR
 
 static te_bool wmi_imported = FALSE;
@@ -450,6 +452,7 @@ static te_bool wmi_init_func_imports(void)
     IMPORT_FUNC(wmi_get_vlanid_by_frname);
     IMPORT_FUNC(wmi_add_vlan);
     IMPORT_FUNC(wmi_del_vlan);
+    IMPORT_FUNC(wmi_mtu_set);
 
     return wmi_imported;
 #undef IMPORT_FUNC
@@ -1926,6 +1929,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 
     GET_IF_ENTRY;
     GET_TABLE(MIB_IPADDRTABLE, GetIpAddrTable);
+    
     if (table == NULL)
     {
         if ((*list = strdup(" ")) == NULL)
@@ -2242,8 +2246,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     sprintf(value, "%lu", mtus[if_index].mtu);
 */
 
-    sprintf(value, "%lu", if_entry.dwMtu);
-
+    sprintf(value, "%lu", if_entry.dwMtu);    
     return 0;
 }
 
@@ -2266,19 +2269,60 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
 //    long      mtu;
 //    int i, if_index = -1, free_index = -1;
     unsigned char szCommand[256];
+    
+#define ETHERNET_HEADER_LEN 14
+#define VLAN_HEADER_LEN 4
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(ifname);
-    snprintf(szCommand, sizeof(szCommand) - 1,
-             "./sish_client.exe "
-             "--server=127.0.0.1 "
-             "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_manage.exe "
-             "--args=\"set mtu %s\"", value);
-//    sprintf(szCommand, "./windows_layer2_mtu.exe %s", value);
-    printf("szCommand = %s\n", szCommand);
-    system(szCommand);    
-
+    GET_IF_ENTRY;
+    
+    if (NULL == strstr(ifname, "ef"))
+    {
+        ERROR("Tried to set MTU on non-Solarflare adapter.");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    
+    if (get_driver_version() >= DRIVER_VERSION_2_2)
+    {    
+      int     mtu;
+      char*   frname;
+      
+      mtu = atoi(value);
+      if (!wmi_imported)
+      {
+        ERROR("WMI functions were not imported.");
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
+      }
+      
+      frname = ifindex2frname(if_entry.dwIndex);
+      if (frname == NULL)
+      {
+        ERROR("Failed to retrieve adapter friendly name.");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+      }
+      
+      // We pass to the driver the maximum total size, 
+      // which is frame length + ethernet and vlan header.
+      // VLAN tagging is enabled by default on V2.3 so we
+      // have to add 18 to the MU input value.
+      
+      if (pwmi_mtu_set(frname, mtu + ETHERNET_HEADER_LEN + VLAN_HEADER_LEN))
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        
+      return 0;
+    }
+    else
+    {
+      snprintf(szCommand, sizeof(szCommand) - 1,
+          "./sish_client.exe "
+          "--server=127.0.0.1 "
+          "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_manage.exe "
+          "--args=\"set mtu %s\"", value);
+      //    sprintf(szCommand, "./windows_layer2_mtu.exe %s", value);
+      printf("szCommand = %s\n", szCommand);
+      system(szCommand);    
+    }
 /*    mtu = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -2302,6 +2346,10 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     }
     mtus[if_index].mtu = mtu;
 */
+
+#undef ETHERNET_HEADER_LEN
+#undef VLAN_HEADER_LEN
+
 #if 0 /* UNIX implementation */
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
