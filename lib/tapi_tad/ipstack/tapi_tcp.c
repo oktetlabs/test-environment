@@ -474,7 +474,80 @@ cleanup:
     return TE_RC(TE_TAPI, rc); 
 }
 
+int
+tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
+                         te_bool urg_flag, te_bool ack_flag,
+                         te_bool psh_flag, te_bool rst_flag,
+                         te_bool syn_flag, te_bool fin_flag,
+                         asn_value **pattern)
+{
+    int         rc = 0;
+    int         syms;
+    int32_t     flags;
+    asn_value  *tcp_pdu = NULL;
+    asn_value  *raw_tcp_pdu = NULL;
 
+
+    if (pattern == NULL)
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
+
+    *pattern = NULL;
+
+    if ((rc = asn_parse_value_text("{{ pdus {ip4:{}, eth:{} } }}",
+                                   ndn_traffic_pattern,
+                                   pattern, &syms)) != 0)
+    {
+        ERROR("%s(): cannot parse pattern: %r, sym %d",
+              __FUNCTION__, rc, syms);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    if ((rc = tapi_tcp_pdu(-1, -1, seqn, ackn, syn_flag,
+                           ack_flag, &tcp_pdu)) != 0)
+    {
+        ERROR("%s(): make tcp pdu eror: %r", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+    if (seqn == 0)
+        rc = asn_free_subvalue(tcp_pdu, "#tcp.seqn");
+    WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+
+    if (ackn == 0)
+        rc = asn_free_subvalue(tcp_pdu, "#tcp.ackn");
+    WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+
+    asn_get_choice_value(tcp_pdu, &raw_tcp_pdu, NULL, NULL);
+
+    ndn_du_read_plain_int(raw_tcp_pdu, NDN_TAG_TCP_FLAGS, &flags);
+
+    /* Set more flags if necessary */
+    if (urg_flag)
+        flags |= TCP_URG_FLAG;
+
+    if (psh_flag)
+        flags |= TCP_PSH_FLAG;
+
+    if (rst_flag)
+        flags |= TCP_RST_FLAG;
+
+    if (fin_flag)
+        flags |= TCP_FIN_FLAG;
+
+    ndn_du_write_plain_int(raw_tcp_pdu, NDN_TAG_TCP_FLAGS, flags);
+
+    if ((rc = asn_insert_indexed(*pattern, tcp_pdu, 0, "0.pdus")) != 0)
+    {
+        ERROR("%s(): insert tcp pdu eror: %r", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+cleanup:
+    if (rc != 0)
+        asn_free_value(*pattern);
+
+    return TE_RC(TE_TAPI, rc);
+}
 
 int
 tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
