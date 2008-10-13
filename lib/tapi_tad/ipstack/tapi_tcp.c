@@ -180,6 +180,57 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
 
 /* See description in tapi_tcp.h */
 te_errno
+tapi_tcp_ip4_csap_create(const char *ta_name, int sid, 
+                         in_addr_t loc_addr,
+                         in_addr_t rem_addr,
+                         int loc_port,
+                         int rem_port,
+                         csap_handle_t *tcp_csap)
+{
+    te_errno    rc;
+
+    asn_value *csap_spec = NULL;
+
+    do {
+        int num = 0;
+
+        rc = asn_parse_value_text("{ layers { tcp:{}, ip4:{} } }", 
+                                  ndn_csap_spec, &csap_spec, &num); 
+        if (rc) break; 
+
+        if(loc_addr)
+            rc = asn_write_value_field(csap_spec,
+                                       &loc_addr, sizeof(loc_addr),
+                                       "layers.1.#ip4.local-addr.#plain");
+        if (rc) break; 
+
+        if(rem_addr)
+            rc = asn_write_value_field(csap_spec,
+                                       &rem_addr, sizeof(rem_addr),
+                                       "layers.1.#ip4.remote-addr.#plain");
+        if (rc) break; 
+
+        if (loc_port >= 0)
+            rc = asn_write_int32(csap_spec, ntohs(loc_port),
+                                 "layers.0.#tcp.local-port.#plain");
+        if (rc) break; 
+
+        if (rem_port >= 0)
+            rc = asn_write_int32(csap_spec, ntohs(rem_port), 
+                                 "layers.0.#tcp.remote-port.#plain");
+        if (rc) break;
+
+        rc = tapi_tad_csap_create(ta_name, sid, "tcp.ip4", 
+                                  csap_spec, tcp_csap); 
+    } while (0);
+
+    asn_free_value(csap_spec);
+
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See description in tapi_tcp.h */
+te_errno
 tapi_tcp_ip4_pattern_unit(in_addr_t src_addr, in_addr_t dst_addr,
                           int src_port, int dst_port,
                           asn_value **result_value)
@@ -327,96 +378,6 @@ tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
 
 /* See description in tapi_tcp.h */
 te_errno
-tapi_tcp_segment_pdu(int src_port, int dst_port,
-                     tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                     te_bool urg_flag, te_bool ack_flag,
-                     te_bool psh_flag, te_bool rst_flag,
-                     te_bool syn_flag, te_bool fin_flag,
-                     asn_value **pdu)
-{
-    te_errno    rc;
-    int         syms;
-    asn_value  *g_pdu;
-    asn_value  *tcp_pdu;
-    uint8_t     flags;
-
-    if (pdu == NULL)
-        return TE_RC(TE_TAPI, TE_EWRONGPTR);
-
-    if ((rc = asn_parse_value_text("tcp:{}", ndn_generic_pdu,
-                                   &g_pdu, &syms)) != 0)
-        return TE_RC(TE_TAPI, rc);
-
-    if ((rc = asn_get_choice_value(g_pdu, &tcp_pdu, NULL, NULL))
-            != 0)
-    {
-        ERROR("%s(): get tcp pdu subvalue failed %r", __FUNCTION__, rc);
-        asn_free_value(g_pdu);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    if (src_port >= 0 &&
-        (rc = ndn_du_write_plain_int(tcp_pdu, NDN_TAG_TCP_SRC_PORT,
-                                     ntohs(src_port))) != 0)
-    {
-        ERROR("%s(): set TCP src port failed %r", __FUNCTION__, rc);
-        asn_free_value(g_pdu);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    if (dst_port >= 0 &&
-        (rc = ndn_du_write_plain_int(tcp_pdu, NDN_TAG_TCP_DST_PORT,
-                                     htons(dst_port))) != 0)
-    {
-        ERROR("%s(): set TCP dst port failed %r", __FUNCTION__, rc);
-        asn_free_value(g_pdu);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    if ((rc = ndn_du_write_plain_int(tcp_pdu, NDN_TAG_TCP_SEQN,
-                                     seqn)) != 0)
-    {
-        ERROR("%s(): set TCP seqn failed %r", __FUNCTION__, rc);
-        asn_free_value(*pdu);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    if ((rc = ndn_du_write_plain_int(tcp_pdu, NDN_TAG_TCP_ACKN,
-                                     ackn)) != 0)
-    {
-        ERROR("%s(): set TCP ackn failed %r", __FUNCTION__, rc);
-        asn_free_value(g_pdu);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    flags = 0;
-    if (urg_flag)
-        flags |= TCP_URG_FLAG;
-    if (ack_flag)
-        flags |= TCP_ACK_FLAG;
-    if (psh_flag)
-        flags |= TCP_PSH_FLAG;
-    if (rst_flag)
-        flags |= TCP_RST_FLAG;
-    if (syn_flag)
-        flags |= TCP_SYN_FLAG;
-    if (fin_flag)
-        flags |= TCP_FIN_FLAG;
-
-    if ((rc = ndn_du_write_plain_int(tcp_pdu, NDN_TAG_TCP_FLAGS,
-                                     flags)) != 0)
-    {
-        ERROR("%s(): set TCP flags failed %r", __FUNCTION__, rc);
-        asn_free_value(g_pdu);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    *pdu = g_pdu;
-    return 0;
-}
-
-/* See description in tapi_tcp.h */
-te_errno
 tapi_tcp_pdu(int src_port, int dst_port,
              tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
              te_bool syn_flag, te_bool ack_flag,
@@ -495,75 +456,17 @@ tapi_tcp_pdu(int src_port, int dst_port,
     return 0;
 }
 
-/* See description in tapi_tcp.h */
-int
-tapi_tcp_segment_template(tapi_tcp_pos_t seqn,
-                          tapi_tcp_pos_t ackn,
-                          te_bool urg_flag, te_bool ack_flag,
-                          te_bool psh_flag, te_bool rst_flag,
-                          te_bool syn_flag, te_bool fin_flag,
-                          uint8_t *data, size_t pld_len,
-                          asn_value **tmpl)
-{
-    int         rc = 0;
-    int         syms;
-    asn_value  *tcp_pdu = NULL;
-
-    if (tmpl == NULL)
-        return TE_RC(TE_TAPI, TE_EWRONGPTR);
-
-    *tmpl = NULL;
-
-    if ((rc = asn_parse_value_text("{ pdus {ip4:{}, eth:{} } }",
-                                   ndn_traffic_template,
-                                   tmpl, &syms)) != 0)
-    {
-        ERROR("%s(): cannot parse template: %r, sym %d",
-              __FUNCTION__, rc, syms);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    if ((rc = tapi_tcp_segment_pdu(-1, -1, seqn, ackn,
-                                   urg_flag, ack_flag, psh_flag,
-                                   rst_flag, syn_flag, fin_flag,
-                                   &tcp_pdu)) != 0)
-    {
-        ERROR("%s(): make tcp pdu eror: %r", __FUNCTION__, rc);
-        goto cleanup;
-    }
-
-    if (data != NULL && pld_len > 0)
-    {
-        if ((rc = asn_write_value_field(*tmpl, data, pld_len,
-                                        "payload.#bytes")) != 0)
-        {
-            ERROR("%s(): write payload eror: %r", __FUNCTION__, rc);
-            goto cleanup;
-        }
-    }
-
-    if ((rc = asn_insert_indexed(*tmpl, tcp_pdu, 0, "pdus")) != 0)
-    {
-        ERROR("%s(): insert tcp pdu eror: %r", __FUNCTION__, rc);
-        goto cleanup;
-    }
-
-cleanup:
-    if (rc != 0)
-        asn_free_value(*tmpl);
-
-    return TE_RC(TE_TAPI, rc);
-}
 
 /* See description in tapi_tcp.h */
 int
-tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                  te_bool syn_flag, te_bool ack_flag,
-                  uint8_t *data, size_t pld_len,
-                  asn_value **tmpl)
+tapi_tcp_template_gen(te_bool is_eth_pdu,
+                      tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+                      te_bool syn_flag, te_bool ack_flag,
+                      uint8_t *data, size_t pld_len,
+                      asn_value **tmpl)
 {
     int rc = 0,
-        syms;
+        syms; 
 
     asn_value *tcp_pdu = NULL;
 
@@ -572,12 +475,16 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
 
     *tmpl = NULL;
 
-    rc = asn_parse_value_text("{ pdus {ip4:{}, eth:{} } }",
-                              ndn_traffic_template,
+
+    rc = asn_parse_value_text(is_eth_pdu ? 
+                              "{ pdus {ip4:{}, eth:{} } }" : 
+                              "{ pdus {ip4:{}} }", 
+                              ndn_traffic_template, 
                               tmpl, &syms);
+
     if (rc != 0)
     {
-        ERROR("%s(): cannot parse template: %r, sym %d",
+        ERROR("%s(): cannot parse template: %r, sym %d", 
               __FUNCTION__, rc, syms);
         return TE_RC(TE_TAPI, rc);
     }
@@ -587,7 +494,7 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
     {
         ERROR("%s(): make tcp pdu eror: %r", __FUNCTION__, rc);
         goto cleanup;
-    }
+    } 
 
     if (data != NULL && pld_len > 0)
     {
@@ -611,19 +518,30 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
 
     rc = asn_insert_indexed(*tmpl, tcp_pdu, 0, "pdus");
     if (rc != 0)
-    {
+    { 
         ERROR("%s(): insert tcp pdu eror: %r", __FUNCTION__, rc);
         goto cleanup;
     }
 
 cleanup:
     if (rc != 0)
-        asn_free_value(*tmpl);
+        asn_free_value(*tmpl); 
 
-    return TE_RC(TE_TAPI, rc);
+    return TE_RC(TE_TAPI, rc); 
 }
 
 /* See description in tapi_tcp.h */
+int
+tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+                  te_bool syn_flag, te_bool ack_flag,
+                  uint8_t *data, size_t pld_len,
+                  asn_value **tmpl)
+{
+    return tapi_tcp_template_gen(TRUE, seqn, ackn, syn_flag, ack_flag, 
+                                 data, pld_len, tmpl);
+}
+
+
 int
 tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
                          te_bool urg_flag, te_bool ack_flag,
@@ -633,7 +551,9 @@ tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
 {
     int         rc = 0;
     int         syms;
+    int32_t     flags;
     asn_value  *tcp_pdu = NULL;
+    asn_value  *raw_tcp_pdu = NULL;
 
     if (pattern == NULL)
         return TE_RC(TE_TAPI, TE_EWRONGPTR);
@@ -649,10 +569,8 @@ tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
         return TE_RC(TE_TAPI, rc);
     }
 
-    if ((rc = tapi_tcp_segment_pdu(-1, -1, seqn, ackn,
-                                   urg_flag, ack_flag, psh_flag,
-                                   rst_flag, syn_flag, fin_flag,
-                                   &tcp_pdu)) != 0)
+    if ((rc = tapi_tcp_pdu(-1, -1, seqn, ackn, syn_flag,
+                           ack_flag, &tcp_pdu)) != 0)
     {
         ERROR("%s(): make tcp pdu eror: %r", __FUNCTION__, rc);
         goto cleanup;
@@ -665,6 +583,25 @@ tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
     if (ackn == 0)
         rc = asn_free_subvalue(tcp_pdu, "#tcp.ackn");
     WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+
+    asn_get_choice_value(tcp_pdu, &raw_tcp_pdu, NULL, NULL);
+
+    ndn_du_read_plain_int(raw_tcp_pdu, NDN_TAG_TCP_FLAGS, &flags);
+
+    /* Set more flags if necessary */
+    if (urg_flag)
+        flags |= TCP_URG_FLAG;
+
+    if (psh_flag)
+        flags |= TCP_PSH_FLAG;
+
+    if (rst_flag)
+        flags |= TCP_RST_FLAG;
+
+    if (fin_flag)
+        flags |= TCP_FIN_FLAG;
+
+    ndn_du_write_plain_int(raw_tcp_pdu, NDN_TAG_TCP_FLAGS, flags);
 
     if ((rc = asn_insert_indexed(*pattern, tcp_pdu, 0, "0.pdus")) != 0)
     {
@@ -679,10 +616,13 @@ cleanup:
     return TE_RC(TE_TAPI, rc);
 }
 
+
+/* See description in tapi_tcp.h */
 int
-tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
-                 te_bool syn_flag, te_bool ack_flag,
-                 asn_value **pattern)
+tapi_tcp_pattern_gen(te_bool is_eth_pdu,
+                     tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+                     te_bool syn_flag, te_bool ack_flag,
+                     asn_value **pattern)
 {
     int rc = 0,
         syms; 
@@ -694,7 +634,9 @@ tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
 
     *pattern = NULL; 
 
-    rc = asn_parse_value_text("{{ pdus {ip4:{}, eth:{} } }}", 
+    rc = asn_parse_value_text(is_eth_pdu ? 
+                              "{{ pdus {ip4:{}, eth:{} } }}" : 
+                              "{{ pdus {ip4:{}} }}", 
                               ndn_traffic_pattern, 
                               pattern, &syms);
     if (rc != 0)
@@ -712,12 +654,17 @@ tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
     }
 
     if (seqn == 0)
+    {
         rc = asn_free_subvalue(tcp_pdu, "#tcp.seqn");
-    WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+        WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+    }
 
     if (ackn == 0)
+    {
         rc = asn_free_subvalue(tcp_pdu, "#tcp.ackn");
-    WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+        if (ack_flag)
+            WARN("%s(): free ackn rc %r", __FUNCTION__, rc);
+    }
 
     rc = asn_insert_indexed(*pattern, tcp_pdu, 0, "0.pdus");
     if (rc != 0)
@@ -732,14 +679,16 @@ cleanup:
 
     return TE_RC(TE_TAPI, rc); 
 }
-
-
-
-
-
-
-
-
+                       
+/* See description in tapi_tcp.h */
+int
+tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+                 te_bool syn_flag, te_bool ack_flag,
+                 asn_value **pattern)
+{
+    return tapi_tcp_pattern_gen(TRUE, seqn, ackn, 
+                                syn_flag, ack_flag, pattern);
+}
 
 
 int
