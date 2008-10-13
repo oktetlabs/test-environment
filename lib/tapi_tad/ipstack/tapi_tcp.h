@@ -334,6 +334,62 @@ extern int tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn,
                                     te_bool syn_flag, te_bool fin_flag,
                                     asn_value **pattern);
 
+/**
+ * Prepare TCP header PDU by specified parameter values.
+ * Modified version of tapi_tcp_pdu.
+ *
+ * @param src_port      source TCP port in network byte order
+ * @param dst_port      destination TCP port in network byte order
+ * @param seqn          sequence number in host byte order
+ * @param ackn          acknowledge number in host byte order
+ * @param urg_flag      URG flag
+ * @param ack_flag      ACK flag
+ * @param psh_flag      PSH flag
+ * @param rst_flag      RST flag
+ * @param syn_flag      SYN flag
+ * @param fin_flag      FIN flag
+ * @param pdu           location for pointer to ASN value (OUT)
+ *
+ * @return Status code.
+ */
+extern int tapi_tcp_segment_pdu(int src_port, int dst_port,
+                                tapi_tcp_pos_t seqn,
+                                tapi_tcp_pos_t ackn,
+                                te_bool urg_flag, te_bool ack_flag,
+                                te_bool psh_flag, te_bool rst_flag,
+                                te_bool syn_flag, te_bool fin_flag,
+                                asn_value **pdu);
+
+/**
+ * Prepare Traffic-Template ASN value for 'tcp.ip4.eth' CSAP.
+ * Modified version of tapi_tcp_template.
+ * It is assumed that all connection parameters 
+ * (src/dst MACs, IP, and ports) are already set in CSAP.
+ * If it is not, fill there parameters in obtained traffic template
+ * explicitely. 
+ *
+ * @param seqn          sequence number in host byte order
+ * @param ackn          acknowledge number in host byte order
+ * @param urg_flag      URG flag
+ * @param ack_flag      ACK flag
+ * @param psh_flag      PSH flag
+ * @param rst_flag      RST flag
+ * @param syn_flag      SYN flag
+ * @param fin_flag      FIN flag
+ * @param data          pointer to data with payload or NULL
+ * @param pld_len       length of payload
+ * @param tmpl          location for pointer to ASN value (OUT)
+ *
+ * @return Status code.
+ */
+extern int tapi_tcp_segment_template(tapi_tcp_pos_t seqn, 
+                                     tapi_tcp_pos_t ackn, 
+                                     te_bool urg_flag, te_bool ack_flag,
+                                     te_bool psh_flag, te_bool rst_flag,
+                                     te_bool syn_flag, te_bool fin_flag,
+                                     uint8_t *data, size_t pld_len,
+                                     asn_value **tmpl);
+
 /*
  * TCP connection emulate methods
  */
