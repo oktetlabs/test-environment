@@ -230,186 +230,186 @@ wifi_get_skfd()
  * Execute a private command on the interface
  */
 static int
-set_private_cmd(int		skfd,		/* Socket */
-		const char     *ifname,		/* Dev name */
-		const char     *cmdname,	/* Command name */
-		iwprivargs     *priv,		/* Private ioctl description */
-		int		priv_num,	/* Number of descriptions */
-		int		count,		/* Args count */
-		va_list ap)                     /* Command arguments */
+set_private_cmd(int             skfd,           /* Socket */
+                const char     *ifname,         /* Dev name */
+                const char     *cmdname,        /* Command name */
+                iwprivargs     *priv,           /* Private ioctl description */
+                int             priv_num,       /* Number of descriptions */
+                int             count,          /* Args count */
+                va_list ap)                     /* Command arguments */
 {
-  struct iwreq	wrq;
-  u_char	buffer[4096];	/* Only that big in v25 and later */
-  int		i = 0;		/* Start with first command arg */
-  int		k;		/* Index in private description table */
+    struct iwreq    wrq;
+    u_char          buffer[4096];       /* Only that big in v25 and later */
+    int             i = 0;              /* Start with first command arg */
+    int             k;                  /* Index in private description table */
 #if 0
-  int		temp;
+    int             temp;
 #endif
-  int		subcmd = 0;	/* sub-ioctl index */
-  int		offset = 0;	/* Space for sub-ioctl index */
+    int             subcmd = 0;     /* sub-ioctl index */
+    int             offset = 0;     /* Space for sub-ioctl index */
 
 #if 0
-  /* Check if we have a token index.
-   * Do it know so that sub-ioctl takes precendence, and so that we
-   * don't have to bother with it later on... */
-  if((count > 1) && (sscanf(args[0], "[%i]", &temp) == 1))
+    /* Check if we have a token index.
+     * Do it know so that sub-ioctl takes precendence, and so that we
+     * don't have to bother with it later on... */
+    if((count > 1) && (sscanf(args[0], "[%i]", &temp) == 1))
     {
-      subcmd = temp;
-      args++;
-      count--;
+        subcmd = temp;
+        args++;
+        count--;
     }
 #endif
 
-  /* Search the correct ioctl */
-  k = -1;
-  while((++k < priv_num) && strcmp(priv[k].name, cmdname));
+    /* Search the correct ioctl */
+    k = -1;
+    while((++k < priv_num) && strcmp(priv[k].name, cmdname));
 
-  /* If not found... */
-  if(k == priv_num)
+    /* If not found... */
+    if(k == priv_num)
     {
-      fprintf(stderr, "Invalid command : %s\n", cmdname);
-      return(-1);
+        fprintf(stderr, "Invalid command : %s\n", cmdname);
+        return(-1);
     }
     
-  /* Watch out for sub-ioctls ! */
-  if(priv[k].cmd < SIOCDEVPRIVATE)
+    /* Watch out for sub-ioctls ! */
+    if(priv[k].cmd < SIOCDEVPRIVATE)
     {
-      int	j = -1;
+        int     j = -1;
 
-      /* Find the matching *real* ioctl */
-      while((++j < priv_num) && ((priv[j].name[0] != '\0') ||
-				 (priv[j].set_args != priv[k].set_args) ||
-				 (priv[j].get_args != priv[k].get_args)));
+        /* Find the matching *real* ioctl */
+        while((++j < priv_num) && ((priv[j].name[0] != '\0') ||
+              (priv[j].set_args != priv[k].set_args) ||
+              (priv[j].get_args != priv[k].get_args)));
 
-      /* If not found... */
-      if(j == priv_num)
-	{
-	  fprintf(stderr, "Invalid private ioctl definition for : %s\n",
- 		  cmdname);
-	  return(-1);
-	}
+        /* If not found... */
+        if(j == priv_num)
+        {
+            fprintf(stderr, "Invalid private ioctl definition for : %s\n",
+            cmdname);
+            return(-1);
+        }
 
-      /* Save sub-ioctl number */
-      subcmd = priv[k].cmd;
-      /* Reserve one int (simplify alignement issues) */
-      offset = sizeof(__u32);
-      /* Use real ioctl definition from now on */
-      k = j;
+        /* Save sub-ioctl number */
+        subcmd = priv[k].cmd;
+        /* Reserve one int (simplify alignement issues) */
+        offset = sizeof(__u32);
+        /* Use real ioctl definition from now on */
+        k = j;
 
-      printf("<mapping sub-ioctl %s to cmd 0x%X-%d>\n", cmdname,
-	     priv[k].cmd, subcmd);
+        printf("<mapping sub-ioctl %s to cmd 0x%X-%d>\n", cmdname,
+            priv[k].cmd, subcmd);
     }
 
-  /* If we have to set some data */
-  if((priv[k].set_args & IW_PRIV_TYPE_MASK) &&
-     (priv[k].set_args & IW_PRIV_SIZE_MASK))
+    /* If we have to set some data */
+    if((priv[k].set_args & IW_PRIV_TYPE_MASK) &&
+       (priv[k].set_args & IW_PRIV_SIZE_MASK))
     {
-      switch(priv[k].set_args & IW_PRIV_TYPE_MASK)
-	{
-	case IW_PRIV_TYPE_BYTE:
-	  /* Number of args to fetch */
-	  wrq.u.data.length = count;
-	  if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
-	    wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+        switch(priv[k].set_args & IW_PRIV_TYPE_MASK)
+    {
+    case IW_PRIV_TYPE_BYTE:
+      /* Number of args to fetch */
+      wrq.u.data.length = count;
+      if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
+        wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
 
-	  /* Fetch args */
-	  for(; i < wrq.u.data.length; i++) {
-	    buffer[i] = (char) va_arg(ap, int);
-	  }
-	  break;
+      /* Fetch args */
+      for(; i < wrq.u.data.length; i++) {
+        buffer[i] = (char) va_arg(ap, int);
+      }
+      break;
 
-	case IW_PRIV_TYPE_INT:
-	  /* Number of args to fetch */
-	  wrq.u.data.length = count;
-	  if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
-	    wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+    case IW_PRIV_TYPE_INT:
+      /* Number of args to fetch */
+      wrq.u.data.length = count;
+      if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
+        wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
 
-	  /* Fetch args */
-	  for(; i < wrq.u.data.length; i++) {
-	    ((__s32 *) buffer)[i] = (__s32) va_arg(ap, int);
-	  }
-	  break;
+      /* Fetch args */
+      for(; i < wrq.u.data.length; i++) {
+        ((__s32 *) buffer)[i] = (__s32) va_arg(ap, int);
+      }
+      break;
 
-	case IW_PRIV_TYPE_CHAR:
-	  if(i < count)
-	    {
+    case IW_PRIV_TYPE_CHAR:
+      if(i < count)
+        {
               char *ptr;
               
               ptr = va_arg(ap, char *);
-	      /* Size of the string to fetch */
-	      wrq.u.data.length = strlen(ptr) + 1;
-	      if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
-		wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+          /* Size of the string to fetch */
+          wrq.u.data.length = strlen(ptr) + 1;
+          if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
+        wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
 
-	      /* Fetch string */
-	      memcpy(buffer, ptr, wrq.u.data.length);
-	      buffer[sizeof(buffer) - 1] = '\0';
-	      i++;
-	    }
-	  else
-	    {
-	      wrq.u.data.length = 1;
-	      buffer[0] = '\0';
-	    }
-	  break;
+          /* Fetch string */
+          memcpy(buffer, ptr, wrq.u.data.length);
+          buffer[sizeof(buffer) - 1] = '\0';
+          i++;
+        }
+      else
+        {
+          wrq.u.data.length = 1;
+          buffer[0] = '\0';
+        }
+      break;
 
 #if 0
-	case IW_PRIV_TYPE_FLOAT:
-	  /* Number of args to fetch */
-	  wrq.u.data.length = count;
-	  if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
-	    wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+    case IW_PRIV_TYPE_FLOAT:
+      /* Number of args to fetch */
+      wrq.u.data.length = count;
+      if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
+        wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
 
-	  /* Fetch args */
-	  for(; i < wrq.u.data.length; i++) {
-	    double		freq;
-	    if(sscanf(args[i], "%lg", &(freq)) != 1)
-	      {
-		printf("Invalid float [%s]...\n", args[i]);
-		return(-1);
-	      }    
-	    if(index(args[i], 'G')) freq *= GIGA;
-	    if(index(args[i], 'M')) freq *= MEGA;
-	    if(index(args[i], 'k')) freq *= KILO;
-	    sscanf(args[i], "%i", &temp);
-	    iw_float2freq(freq, ((struct iw_freq *) buffer) + i);
-	  }
-	  break;
+      /* Fetch args */
+      for(; i < wrq.u.data.length; i++) {
+        double        freq;
+        if(sscanf(args[i], "%lg", &(freq)) != 1)
+          {
+        printf("Invalid float [%s]...\n", args[i]);
+        return(-1);
+          }    
+        if(index(args[i], 'G')) freq *= GIGA;
+        if(index(args[i], 'M')) freq *= MEGA;
+        if(index(args[i], 'k')) freq *= KILO;
+        sscanf(args[i], "%i", &temp);
+        iw_float2freq(freq, ((struct iw_freq *) buffer) + i);
+      }
+      break;
 #endif
 
 #if 0
-	case IW_PRIV_TYPE_ADDR:
-	  /* Number of args to fetch */
-	  wrq.u.data.length = count;
-	  if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
-	    wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+    case IW_PRIV_TYPE_ADDR:
+      /* Number of args to fetch */
+      wrq.u.data.length = count;
+      if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
+        wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
 
-	  /* Fetch args */
-	  for(; i < wrq.u.data.length; i++) {
+      /* Fetch args */
+      for(; i < wrq.u.data.length; i++) {
             const char *addr = va_arg(ap, char *);
-	    if(iw_in_addr(skfd, ifname, addr,
-			  ((struct sockaddr *) buffer) + i) < 0)
-	      {
-		printf("Invalid address [%s]...\n", addr);
-		return(-1);
-	      }
-	  }
-	  break;
+        if(iw_in_addr(skfd, ifname, addr,
+              ((struct sockaddr *) buffer) + i) < 0)
+          {
+        printf("Invalid address [%s]...\n", addr);
+        return(-1);
+          }
+      }
+      break;
 #endif
 
-	default:
-	  fprintf(stderr, "Not yet implemented...\n");
-	  return(-1);
-	}
-	  
+    default:
+      fprintf(stderr, "Not yet implemented...\n");
+      return(-1);
+    }
+      
       if((priv[k].set_args & IW_PRIV_SIZE_FIXED) &&
-	 (wrq.u.data.length != (priv[k].set_args & IW_PRIV_SIZE_MASK)))
-	{
-	  printf("The command %s need exactly %d argument...\n",
-		 cmdname, priv[k].set_args & IW_PRIV_SIZE_MASK);
-	  return(-1);
-	}
-    }	/* if args to set */
+     (wrq.u.data.length != (priv[k].set_args & IW_PRIV_SIZE_MASK)))
+    {
+      printf("The command %s need exactly %d argument...\n",
+         cmdname, priv[k].set_args & IW_PRIV_SIZE_MASK);
+      return(-1);
+    }
+    }    /* if args to set */
   else
     {
       wrq.u.data.length = 0L;
@@ -424,25 +424,25 @@ set_private_cmd(int		skfd,		/* Socket */
     {
       /* First case : all SET args fit within wrq */
       if(offset)
-	wrq.u.mode = subcmd;
+    wrq.u.mode = subcmd;
       memcpy(wrq.u.name + offset, buffer, IFNAMSIZ - offset);
     }
   else
     {
       if((priv[k].set_args == 0) &&
-	 (priv[k].get_args & IW_PRIV_SIZE_FIXED) &&
-	 (iw_get_priv_size(priv[k].get_args) <= IFNAMSIZ))
-	{
-	  /* Second case : no SET args, GET args fit within wrq */
-	  if(offset)
-	    wrq.u.mode = subcmd;
-	}
+     (priv[k].get_args & IW_PRIV_SIZE_FIXED) &&
+     (iw_get_priv_size(priv[k].get_args) <= IFNAMSIZ))
+    {
+      /* Second case : no SET args, GET args fit within wrq */
+      if(offset)
+        wrq.u.mode = subcmd;
+    }
       else
-	{
-	  /* Thirst case : args won't fit in wrq, or variable number of args */
-	  wrq.u.data.pointer = (caddr_t) buffer;
-	  wrq.u.data.flags = subcmd;
-	}
+    {
+      /* Thirst case : args won't fit in wrq, or variable number of args */
+      wrq.u.data.pointer = (caddr_t) buffer;
+      wrq.u.data.flags = subcmd;
+    }
     }
 
   /* Perform the private ioctl */
@@ -457,8 +457,8 @@ set_private_cmd(int		skfd,		/* Socket */
   if((priv[k].get_args & IW_PRIV_TYPE_MASK) &&
      (priv[k].get_args & IW_PRIV_SIZE_MASK))
     {
-      int	j;
-      int	n = 0;		/* number of args */
+      int    j;
+      int    n = 0;        /* number of args */
 
 #if 0
       printf("%-8.8s  %s:", ifname, cmdname);
@@ -466,19 +466,19 @@ set_private_cmd(int		skfd,		/* Socket */
 
       /* Check where is the returned data */
       if((priv[k].get_args & IW_PRIV_SIZE_FIXED) &&
-	 (iw_get_priv_size(priv[k].get_args) <= IFNAMSIZ))
-	{
-	  memcpy(buffer, wrq.u.name, IFNAMSIZ);
-	  n = priv[k].get_args & IW_PRIV_SIZE_MASK;
-	}
+     (iw_get_priv_size(priv[k].get_args) <= IFNAMSIZ))
+    {
+      memcpy(buffer, wrq.u.name, IFNAMSIZ);
+      n = priv[k].get_args & IW_PRIV_SIZE_MASK;
+    }
       else
-	n = wrq.u.data.length;
+    n = wrq.u.data.length;
 
       switch(priv[k].get_args & IW_PRIV_TYPE_MASK)
-	{
-	case IW_PRIV_TYPE_BYTE:
-	  /* Display args */
-	  for(j = 0; j < n; j++)
+    {
+    case IW_PRIV_TYPE_BYTE:
+      /* Display args */
+      for(j = 0; j < n; j++)
           {
             if (count != 0)
             {
@@ -492,11 +492,11 @@ set_private_cmd(int		skfd,		/* Socket */
                 return -1;
             }
           }
-	  break;
+      break;
 
-	case IW_PRIV_TYPE_INT:
-	  /* Display args */
-	  for(j = 0; j < n; j++)
+    case IW_PRIV_TYPE_INT:
+      /* Display args */
+      for(j = 0; j < n; j++)
           {
             if (count != 0)
             {
@@ -510,65 +510,65 @@ set_private_cmd(int		skfd,		/* Socket */
                 return -1;
             }
           }
-	  break;
+      break;
 
-	case IW_PRIV_TYPE_CHAR:
-	  /* Display args */
+    case IW_PRIV_TYPE_CHAR:
+      /* Display args */
             if (count == 0)
             {
                 ERROR("Cannot flush string in %s:%d", __FILE__, __LINE__);
                 return -1;
             }
             count--;
-	    buffer[wrq.u.data.length - 1] = '\0';
+        buffer[wrq.u.data.length - 1] = '\0';
             
             memcpy((char *)va_arg(ap, int *), buffer, wrq.u.data.length);
             break;
 
 #if 0
-	case IW_PRIV_TYPE_FLOAT:
-	  {
-	    double		freq;
-	    /* Display args */
-	    for(j = 0; j < n; j++)
-	      {
-		freq = iw_freq2float(((struct iw_freq *) buffer) + j);
-		if(freq >= GIGA)
-		  printf("%gG  ", freq / GIGA);
-		else
-		  if(freq >= MEGA)
-		  printf("%gM  ", freq / MEGA);
-		else
-		  printf("%gk  ", freq / KILO);
-	      }
-	    printf("\n");
-	  }
-	  break;
+    case IW_PRIV_TYPE_FLOAT:
+      {
+        double        freq;
+        /* Display args */
+        for(j = 0; j < n; j++)
+          {
+        freq = iw_freq2float(((struct iw_freq *) buffer) + j);
+        if(freq >= GIGA)
+          printf("%gG  ", freq / GIGA);
+        else
+          if(freq >= MEGA)
+          printf("%gM  ", freq / MEGA);
+        else
+          printf("%gk  ", freq / KILO);
+          }
+        printf("\n");
+      }
+      break;
 #endif
 
 #if 0
-	case IW_PRIV_TYPE_ADDR:
-	  {
-	    char		scratch[128];
-	    struct sockaddr *	hwa;
-	    /* Display args */
-	    for(j = 0; j < n; j++)
-	      {
-		hwa = ((struct sockaddr *) buffer) + j;
-		if(j)
-		  printf("           %.*s", 
-			 (int) strlen(cmdname), "                ");
-		printf("%s\n", iw_pr_ether(scratch, hwa->sa_data));
-	      }
-	  }
-	  break;
+    case IW_PRIV_TYPE_ADDR:
+      {
+        char        scratch[128];
+        struct sockaddr *    hwa;
+        /* Display args */
+        for(j = 0; j < n; j++)
+          {
+        hwa = ((struct sockaddr *) buffer) + j;
+        if(j)
+          printf("           %.*s", 
+             (int) strlen(cmdname), "                ");
+        printf("%s\n", iw_pr_ether(scratch, hwa->sa_data));
+          }
+      }
+      break;
 #endif
 
-	default:
-	  fprintf(stderr, "Not yet implemented...\n");
-	  return(-1);
-	}
-    }	/* if args to set */
+    default:
+      fprintf(stderr, "Not yet implemented...\n");
+      return(-1);
+    }
+    }    /* if args to set */
 
   return(0);
 }
@@ -584,7 +584,7 @@ set_private(const char *ifname, /* Dev name */
             ...)
 {
   iwprivargs *priv;
-  int	      number; /* Max of private ioctl */
+  int          number; /* Max of private ioctl */
   int         skfd = wifi_get_skfd();
   va_list     ap;
   int         rc;
@@ -601,7 +601,7 @@ set_private(const char *ifname, /* Dev name */
     {
       /* Could skip this message ? */
       fprintf(stderr, "%-8.8s  no private ioctls.\n\n",
-	      ifname);
+          ifname);
       return(-1);
     }
 
@@ -745,7 +745,7 @@ init_sta_info(const char *ifname, wifi_sta_info_t *info)
         info->def_key_id = (wrq.u.data.flags & IW_ENCODE_INDEX) - 1;
 
         info->auth_open = TRUE;
-	if (wrq.u.data.flags & IW_ENCODE_RESTRICTED)
+    if (wrq.u.data.flags & IW_ENCODE_RESTRICTED)
         {
             assert(!(wrq.u.data.flags & IW_ENCODE_DISABLED));
             info->auth_open = FALSE;
@@ -1141,7 +1141,7 @@ wifi_wep_key_set(unsigned int gid, const char *oid, char *value,
               __FUNCTION__, value);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    wrq.u.data.length = WEP_KEY_LEN;
+    wrq.u.data.length = keylen;
     wrq.u.data.pointer = (caddr_t)key;
     wrq.u.encoding.flags = (key_index + 1);
     
@@ -1257,7 +1257,7 @@ wifi_wep_set(unsigned int gid, const char *oid, char *value,
          */
         wrq.u.data.pointer = (caddr_t)key;
         wrq.u.data.length = sizeof(key);
-	wrq.u.data.flags = 0;
+        wrq.u.data.flags = 0;
         if ((rc = wifi_get_item(ifname, SIOCGIWENCODE, &wrq)) != 0)
         {
             ERROR("%s(): Cannot read out current WiFi information",
