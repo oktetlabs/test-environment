@@ -127,6 +127,7 @@ extern te_errno tapi_udp_ip4_eth_csap_create(const char    *ta_name,
  */
 extern te_errno tapi_udp_ip4_csap_create(const char    *ta_name,
                                          int            sid,
+                                         const char    *ifname,
                                          in_addr_t      loc_addr,
                                          in_addr_t      rem_addr,
                                          int            loc_port,

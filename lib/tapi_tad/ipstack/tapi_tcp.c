@@ -180,7 +180,8 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
 
 /* See description in tapi_tcp.h */
 te_errno
-tapi_tcp_ip4_csap_create(const char *ta_name, int sid, 
+tapi_tcp_ip4_csap_create(const char *ta_name, int sid,
+                         const char *ifname,
                          in_addr_t loc_addr,
                          in_addr_t rem_addr,
                          int loc_port,
@@ -192,33 +193,31 @@ tapi_tcp_ip4_csap_create(const char *ta_name, int sid,
     asn_value *csap_spec = NULL;
 
     do {
-        int num = 0;
+        rc = tapi_tcp_add_csap_layer(&csap_spec, loc_port, rem_port);
+        if (rc != 0)
+        {
+            WARN("%s(): add UDP csap layer failed %r", __FUNCTION__, rc);
+            break;
+        }
 
-        rc = asn_parse_value_text("{ layers { tcp:{}, ip4:{} } }", 
-                                  ndn_csap_spec, &csap_spec, &num); 
-        if (rc) break; 
+        rc = tapi_ip4_add_csap_layer(&csap_spec, loc_addr, rem_addr,
+                                     -1 /* default proto */,
+                                     -1 /* default ttl */,
+                                     -1 /* default tos */);
+        if (rc != 0)
+        {
+            WARN("%s(): add IP4 csap layer failed %r", __FUNCTION__, rc);
+            break;
+        }
 
-        if(loc_addr)
-            rc = asn_write_value_field(csap_spec,
-                                       &loc_addr, sizeof(loc_addr),
-                                       "layers.1.#ip4.local-addr.#plain");
-        if (rc) break; 
-
-        if(rem_addr)
-            rc = asn_write_value_field(csap_spec,
-                                       &rem_addr, sizeof(rem_addr),
-                                       "layers.1.#ip4.remote-addr.#plain");
-        if (rc) break; 
-
-        if (loc_port >= 0)
-            rc = asn_write_int32(csap_spec, ntohs(loc_port),
-                                 "layers.0.#tcp.local-port.#plain");
-        if (rc) break; 
-
-        if (rem_port >= 0)
-            rc = asn_write_int32(csap_spec, ntohs(rem_port), 
-                                 "layers.0.#tcp.remote-port.#plain");
-        if (rc) break;
+        rc = asn_write_string(csap_spec, ifname,
+                              "layers.1.#ip4.ifname.#plain");
+        if (rc != 0)
+        {
+            WARN("%s(): write IP4 layer value 'ifname' failed %r",
+                 __FUNCTION__, rc);
+            break;
+        }
 
         rc = tapi_tad_csap_create(ta_name, sid, "tcp.ip4", 
                                   csap_spec, tcp_csap); 
@@ -543,11 +542,12 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
 
 
 int
-tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                         te_bool urg_flag, te_bool ack_flag,
-                         te_bool psh_flag, te_bool rst_flag,
-                         te_bool syn_flag, te_bool fin_flag,
-                         asn_value **pattern)
+tapi_tcp_segment_pattern_gen(te_bool is_eth_pdu,
+                             tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
+                             te_bool urg_flag, te_bool ack_flag,
+                             te_bool psh_flag, te_bool rst_flag,
+                             te_bool syn_flag, te_bool fin_flag,
+                             asn_value **pattern)
 {
     int         rc = 0;
     int         syms;
@@ -560,7 +560,9 @@ tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
 
     *pattern = NULL;
 
-    if ((rc = asn_parse_value_text("{{ pdus {ip4:{}, eth:{} } }}",
+    if ((rc = asn_parse_value_text(is_eth_pdu?
+                                   "{{ pdus { ip4:{}, eth:{} } }}":
+                                   "{{ pdus { ip4:{} } }}",
                                    ndn_traffic_pattern,
                                    pattern, &syms)) != 0)
     {
@@ -577,12 +579,16 @@ tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
     }
 
     if (seqn == 0)
+    {
         rc = asn_free_subvalue(tcp_pdu, "#tcp.seqn");
-    WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+        WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+    }
 
     if (ackn == 0)
+    {
         rc = asn_free_subvalue(tcp_pdu, "#tcp.ackn");
-    WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+        WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+    }
 
     asn_get_choice_value(tcp_pdu, &raw_tcp_pdu, NULL, NULL);
 
@@ -614,6 +620,20 @@ cleanup:
         asn_free_value(*pattern);
 
     return TE_RC(TE_TAPI, rc);
+}
+
+int
+tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
+                         te_bool urg_flag, te_bool ack_flag,
+                         te_bool psh_flag, te_bool rst_flag,
+                         te_bool syn_flag, te_bool fin_flag,
+                         asn_value **pattern)
+{
+    return tapi_tcp_segment_pattern_gen(TRUE, seqn, ackn,
+                                        urg_flag, ack_flag,
+                                        psh_flag, rst_flag,
+                                        syn_flag, fin_flag,
+                                        pattern);
 }
 
 
@@ -783,13 +803,14 @@ tapi_tcp_segment_pdu(int src_port, int dst_port,
 
 /* See description in tapi_tcp.h */
 int
-tapi_tcp_segment_template(tapi_tcp_pos_t seqn, 
-                          tapi_tcp_pos_t ackn, 
-                          te_bool urg_flag, te_bool ack_flag,
-                          te_bool psh_flag, te_bool rst_flag,
-                          te_bool syn_flag, te_bool fin_flag,
-                          uint8_t *data, size_t pld_len,
-                          asn_value **tmpl)
+tapi_tcp_segment_template_gen(te_bool is_eth_pdu,
+                              tapi_tcp_pos_t seqn, 
+                              tapi_tcp_pos_t ackn, 
+                              te_bool urg_flag, te_bool ack_flag,
+                              te_bool psh_flag, te_bool rst_flag,
+                              te_bool syn_flag, te_bool fin_flag,
+                              uint8_t *data, size_t pld_len,
+                              asn_value **tmpl)
 {
     int         rc = 0;
     int         syms; 
@@ -800,8 +821,9 @@ tapi_tcp_segment_template(tapi_tcp_pos_t seqn,
 
     *tmpl = NULL;
 
-
-    if ((rc = asn_parse_value_text("{ pdus {ip4:{}, eth:{} } }", 
+    if ((rc = asn_parse_value_text(is_eth_pdu ?
+                                   "{ pdus {ip4:{}, eth:{} } }" :
+                                   "{ pdus {ip4:{} } }", 
                                    ndn_traffic_template, 
                                    tmpl, &syms)) != 0)
     {
@@ -841,6 +863,25 @@ cleanup:
         asn_free_value(*tmpl); 
 
     return TE_RC(TE_TAPI, rc); 
+}
+
+/* See description in tapi_tcp.h */
+int
+tapi_tcp_segment_template(tapi_tcp_pos_t seqn, 
+                          tapi_tcp_pos_t ackn, 
+                          te_bool urg_flag, te_bool ack_flag,
+                          te_bool psh_flag, te_bool rst_flag,
+                          te_bool syn_flag, te_bool fin_flag,
+                          uint8_t *data, size_t pld_len,
+                          asn_value **tmpl)
+{
+    return tapi_tcp_segment_template_gen(TRUE, seqn, ackn,
+                                         urg_flag, ack_flag,
+                                         psh_flag, rst_flag,
+                                         syn_flag, fin_flag,
+                                         data, pld_len,
+                                         tmpl);
+
 }
 
 

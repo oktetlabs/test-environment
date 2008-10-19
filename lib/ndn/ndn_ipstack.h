@@ -62,6 +62,7 @@ typedef enum {
     NDN_TAG_IP4_PLD_CH_OFFSET,
     NDN_TAG_IP4_PLD_CH_DISABLE,
     NDN_TAG_IP4_PLD_CH_DIFF,
+    NDN_TAG_IP4_IFNAME,
 } ndn_ip4_tags_t;
 
 typedef enum {

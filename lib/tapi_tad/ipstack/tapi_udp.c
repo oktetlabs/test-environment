@@ -183,6 +183,7 @@ tapi_udp_ip4_eth_csap_create(const char    *ta_name,
 te_errno
 tapi_udp_ip4_csap_create(const char    *ta_name,
                          int            sid,
+                         const char    *ifname,
                          in_addr_t      loc_addr,
                          in_addr_t      rem_addr,
                          int            loc_port,
@@ -208,6 +209,16 @@ tapi_udp_ip4_csap_create(const char    *ta_name,
     {
         asn_free_value(csap_spec);
         WARN("%s(): add IP4 csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = asn_write_string(csap_spec, ifname,
+                          "layers.1.#ip4.ifname.#plain");
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): write IP4 layer value 'ifname' failed %r",
+             __FUNCTION__, rc);
         return rc;
     }
 
