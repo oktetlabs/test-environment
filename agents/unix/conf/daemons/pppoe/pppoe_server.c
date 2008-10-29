@@ -217,6 +217,7 @@ ps_pppoeserver_stop(void)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
+    (void)ta_system("killall -KILL pppd");
     return 0;
 }
 
@@ -228,7 +229,7 @@ ps_pppoeserver_start(void)
     char    *args = NULL;
 
     ENTRY("%s()", __FUNCTION__);
-
+    
     rc = ps_pppoeserver_save_conf(&args);
     if (rc != 0)
     {
@@ -246,6 +247,7 @@ ps_pppoeserver_start(void)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
+
     return 0;
 }
 
@@ -261,7 +263,6 @@ ps_pppoeserver_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(oid);
     ENTRY("%s(): value=%s", __FUNCTION__, value);
 
-    RING("PPPOE: set called (value=%s)", value);
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
@@ -483,7 +484,6 @@ pppoeserver_grab(const char *name)
     
     UNUSED(name);
 
-    RING("PPPOE: grab started");
     pppoe_server_subnet = NULL;
 
     if ((rc = rcf_pch_add_node("/agent", &node_ps_pppoeserver)) != 0)
