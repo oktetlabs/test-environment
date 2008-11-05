@@ -173,10 +173,12 @@ wifi_sta_info_t wifi_sta_info;
 #define CHECK_CONSISTENCY(ifname_, info_)
 #endif
 
-static te_errno sta_restore_encryption(const char *ifname, 
+static te_errno sta_restore_encryption(const char *ifname,
                                        wifi_sta_info_t *info);
 static te_errno init_sta_info(const char *ifname, wifi_sta_info_t *info);
+#if 0
 static te_bool sta_info_check(const char *ifname, wifi_sta_info_t *info);
+#endif
 static te_errno parse_wep_key_index(const char *in_value, int *out_value);
 
 
@@ -200,13 +202,14 @@ static int
 wifi_get_skfd()
 {
     static int skfd = -1;
-    
+
     if (skfd == -1)
     {
         /* We'll never close this socket until agent shutdown */
         if ((skfd = iw_sockets_open()) < 0)
         {
             ERROR("Cannot open socket for wireless extension");
+
             return -(TE_OS_RC(TE_TA_UNIX, errno));
         }
     }
@@ -262,6 +265,7 @@ set_private_cmd(int             skfd,           /* Socket */
 
     /* Search the correct ioctl */
     k = -1;
+
     while((++k < priv_num) && strcmp(priv[k].name, cmdname));
 
     /* If not found... */
@@ -270,7 +274,7 @@ set_private_cmd(int             skfd,           /* Socket */
         fprintf(stderr, "Invalid command : %s\n", cmdname);
         return(-1);
     }
-    
+
     /* Watch out for sub-ioctls ! */
     if(priv[k].cmd < SIOCDEVPRIVATE)
     {
@@ -286,18 +290,21 @@ set_private_cmd(int             skfd,           /* Socket */
         {
             fprintf(stderr, "Invalid private ioctl definition for : %s\n",
             cmdname);
+
             return(-1);
         }
 
         /* Save sub-ioctl number */
         subcmd = priv[k].cmd;
+
         /* Reserve one int (simplify alignement issues) */
         offset = sizeof(__u32);
+
         /* Use real ioctl definition from now on */
         k = j;
 
         printf("<mapping sub-ioctl %s to cmd 0x%X-%d>\n", cmdname,
-            priv[k].cmd, subcmd);
+               priv[k].cmd, subcmd);
     }
 
     /* If we have to set some data */
@@ -305,272 +312,324 @@ set_private_cmd(int             skfd,           /* Socket */
        (priv[k].set_args & IW_PRIV_SIZE_MASK))
     {
         switch(priv[k].set_args & IW_PRIV_TYPE_MASK)
-    {
-    case IW_PRIV_TYPE_BYTE:
-      /* Number of args to fetch */
-      wrq.u.data.length = count;
-      if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
-        wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
-
-      /* Fetch args */
-      for(; i < wrq.u.data.length; i++) {
-        buffer[i] = (char) va_arg(ap, int);
-      }
-      break;
-
-    case IW_PRIV_TYPE_INT:
-      /* Number of args to fetch */
-      wrq.u.data.length = count;
-      if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
-        wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
-
-      /* Fetch args */
-      for(; i < wrq.u.data.length; i++) {
-        ((__s32 *) buffer)[i] = (__s32) va_arg(ap, int);
-      }
-      break;
-
-    case IW_PRIV_TYPE_CHAR:
-      if(i < count)
         {
-              char *ptr;
-              
-              ptr = va_arg(ap, char *);
-          /* Size of the string to fetch */
-          wrq.u.data.length = strlen(ptr) + 1;
-          if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
-        wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+            case IW_PRIV_TYPE_BYTE:
+                /* Number of args to fetch */
+                wrq.u.data.length = count;
 
-          /* Fetch string */
-          memcpy(buffer, ptr, wrq.u.data.length);
-          buffer[sizeof(buffer) - 1] = '\0';
-          i++;
-        }
-      else
-        {
-          wrq.u.data.length = 1;
-          buffer[0] = '\0';
-        }
-      break;
+                if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
+                    wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+
+                /* Fetch args */
+                for(; i < wrq.u.data.length; i++)
+                {
+                    buffer[i] = (char) va_arg(ap, int);
+                }
+
+                break;
+
+            case IW_PRIV_TYPE_INT:
+                /* Number of args to fetch */
+                wrq.u.data.length = count;
+
+                if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
+                    wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+
+                /* Fetch args */
+                for(; i < wrq.u.data.length; i++)
+                {
+                    ((__s32 *) buffer)[i] = (__s32) va_arg(ap, int);
+                }
+
+                break;
+
+            case IW_PRIV_TYPE_CHAR:
+                if(i < count)
+                {
+                    char *ptr;
+
+                    ptr = va_arg(ap, char *);
+
+                    /* Size of the string to fetch */
+                    wrq.u.data.length = strlen(ptr) + 1;
+
+                    if(wrq.u.data.length > (priv[k].set_args &
+                                            IW_PRIV_SIZE_MASK))
+                        wrq.u.data.length =
+                            priv[k].set_args & IW_PRIV_SIZE_MASK;
+
+                    /* Fetch string */
+                    memcpy(buffer, ptr, wrq.u.data.length);
+
+                    buffer[sizeof(buffer) - 1] = '\0';
+
+                    i++;
+                }
+                else
+                {
+                    wrq.u.data.length = 1;
+
+                    buffer[0] = '\0';
+                }
+
+                break;
 
 #if 0
-    case IW_PRIV_TYPE_FLOAT:
-      /* Number of args to fetch */
-      wrq.u.data.length = count;
-      if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
-        wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+            case IW_PRIV_TYPE_FLOAT:
+                /* Number of args to fetch */
+                wrq.u.data.length = count;
 
-      /* Fetch args */
-      for(; i < wrq.u.data.length; i++) {
-        double        freq;
-        if(sscanf(args[i], "%lg", &(freq)) != 1)
-          {
-        printf("Invalid float [%s]...\n", args[i]);
-        return(-1);
-          }    
-        if(index(args[i], 'G')) freq *= GIGA;
-        if(index(args[i], 'M')) freq *= MEGA;
-        if(index(args[i], 'k')) freq *= KILO;
-        sscanf(args[i], "%i", &temp);
-        iw_float2freq(freq, ((struct iw_freq *) buffer) + i);
-      }
-      break;
+                if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
+                    wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+
+                /* Fetch args */
+                for(; i < wrq.u.data.length; i++)
+                {
+                    double        freq;
+
+                    if(sscanf(args[i], "%lg", &(freq)) != 1)
+                    {
+                        printf("Invalid float [%s]...\n", args[i]);
+
+                        return(-1);
+                    }
+
+                    if(index(args[i], 'G')) freq *= GIGA;
+
+                    if(index(args[i], 'M')) freq *= MEGA;
+
+                    if(index(args[i], 'k')) freq *= KILO;
+
+                    sscanf(args[i], "%i", &temp);
+
+                    iw_float2freq(freq, ((struct iw_freq *) buffer) + i);
+                }
+
+                break;
+
+            case IW_PRIV_TYPE_ADDR:
+                /* Number of args to fetch */
+                wrq.u.data.length = count;
+
+                if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
+                    wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+
+                /* Fetch args */
+                for(; i < wrq.u.data.length; i++)
+                {
+                    const char *addr = va_arg(ap, char *);
+
+                    if(iw_in_addr(skfd, ifname, addr,
+                       ((struct sockaddr *) buffer) + i) < 0)
+                    {
+                        printf("Invalid address [%s]...\n", addr);
+
+                        return(-1);
+                    }
+                }
+
+                break;
 #endif
 
-#if 0
-    case IW_PRIV_TYPE_ADDR:
-      /* Number of args to fetch */
-      wrq.u.data.length = count;
-      if(wrq.u.data.length > (priv[k].set_args & IW_PRIV_SIZE_MASK))
-        wrq.u.data.length = priv[k].set_args & IW_PRIV_SIZE_MASK;
+            default:
+                fprintf(stderr, "Not yet implemented...\n");
 
-      /* Fetch args */
-      for(; i < wrq.u.data.length; i++) {
-            const char *addr = va_arg(ap, char *);
-        if(iw_in_addr(skfd, ifname, addr,
-              ((struct sockaddr *) buffer) + i) < 0)
-          {
-        printf("Invalid address [%s]...\n", addr);
-        return(-1);
-          }
-      }
-      break;
-#endif
+                return(-1);
+        }
 
-    default:
-      fprintf(stderr, "Not yet implemented...\n");
-      return(-1);
-    }
-      
-      if((priv[k].set_args & IW_PRIV_SIZE_FIXED) &&
-     (wrq.u.data.length != (priv[k].set_args & IW_PRIV_SIZE_MASK)))
-    {
-      printf("The command %s need exactly %d argument...\n",
-         cmdname, priv[k].set_args & IW_PRIV_SIZE_MASK);
-      return(-1);
-    }
+        if((priv[k].set_args & IW_PRIV_SIZE_FIXED) &&
+           (wrq.u.data.length != (priv[k].set_args & IW_PRIV_SIZE_MASK)))
+        {
+            printf("The command %s need exactly %d argument...\n",
+                   cmdname, priv[k].set_args & IW_PRIV_SIZE_MASK);
+
+            return(-1);
+        }
     }    /* if args to set */
-  else
+    else
     {
       wrq.u.data.length = 0L;
     }
 
-  strncpy(wrq.ifr_name, ifname, IFNAMSIZ);
+    strncpy(wrq.ifr_name, ifname, IFNAMSIZ);
 
-  /* Those two tests are important. They define how the driver
-   * will have to handle the data */
-  if((priv[k].set_args & IW_PRIV_SIZE_FIXED) &&
-      ((iw_get_priv_size(priv[k].set_args) + offset) <= IFNAMSIZ))
+    /* Those two tests are important. They define how the driver
+     * will have to handle the data */
+    if((priv[k].set_args & IW_PRIV_SIZE_FIXED) &&
+       ((iw_get_priv_size(priv[k].set_args) + offset) <= IFNAMSIZ))
     {
-      /* First case : all SET args fit within wrq */
-      if(offset)
-    wrq.u.mode = subcmd;
-      memcpy(wrq.u.name + offset, buffer, IFNAMSIZ - offset);
+        /* First case : all SET args fit within wrq */
+        if(offset)
+            wrq.u.mode = subcmd;
+
+        memcpy(wrq.u.name + offset, buffer, IFNAMSIZ - offset);
     }
-  else
+    else
     {
-      if((priv[k].set_args == 0) &&
-     (priv[k].get_args & IW_PRIV_SIZE_FIXED) &&
-     (iw_get_priv_size(priv[k].get_args) <= IFNAMSIZ))
-    {
-      /* Second case : no SET args, GET args fit within wrq */
-      if(offset)
-        wrq.u.mode = subcmd;
-    }
-      else
-    {
-      /* Thirst case : args won't fit in wrq, or variable number of args */
-      wrq.u.data.pointer = (caddr_t) buffer;
-      wrq.u.data.flags = subcmd;
-    }
-    }
-
-  /* Perform the private ioctl */
-  if(ioctl(skfd, priv[k].cmd, &wrq) < 0)
-    {
-      fprintf(stderr, "Interface doesn't accept private ioctl...\n");
-      fprintf(stderr, "%s (%X): %s\n", cmdname, priv[k].cmd, strerror(errno));
-      return(-1);
-    }
-
-  /* If we have to get some data */
-  if((priv[k].get_args & IW_PRIV_TYPE_MASK) &&
-     (priv[k].get_args & IW_PRIV_SIZE_MASK))
-    {
-      int    j;
-      int    n = 0;        /* number of args */
-
-#if 0
-      printf("%-8.8s  %s:", ifname, cmdname);
-#endif
-
-      /* Check where is the returned data */
-      if((priv[k].get_args & IW_PRIV_SIZE_FIXED) &&
-     (iw_get_priv_size(priv[k].get_args) <= IFNAMSIZ))
-    {
-      memcpy(buffer, wrq.u.name, IFNAMSIZ);
-      n = priv[k].get_args & IW_PRIV_SIZE_MASK;
-    }
-      else
-    n = wrq.u.data.length;
-
-      switch(priv[k].get_args & IW_PRIV_TYPE_MASK)
-    {
-    case IW_PRIV_TYPE_BYTE:
-      /* Display args */
-      for(j = 0; j < n; j++)
-          {
-            if (count != 0)
-            {
-                *((char *) va_arg(ap, char *)) = buffer[j];
-                count--;
-            }
-            else
-            {
-                ERROR("Cannot flush %d byte in %s:%d",
-                      j, __FILE__, __LINE__);
-                return -1;
-            }
-          }
-      break;
-
-    case IW_PRIV_TYPE_INT:
-      /* Display args */
-      for(j = 0; j < n; j++)
-          {
-            if (count != 0)
-            {
-                *((int *) va_arg(ap, int *)) = buffer[j];
-                count--;
-            }
-            else
-            {
-                ERROR("Cannot flush %d byte in %s:%d",
-                      j, __FILE__, __LINE__);
-                return -1;
-            }
-          }
-      break;
-
-    case IW_PRIV_TYPE_CHAR:
-      /* Display args */
-            if (count == 0)
-            {
-                ERROR("Cannot flush string in %s:%d", __FILE__, __LINE__);
-                return -1;
-            }
-            count--;
-        buffer[wrq.u.data.length - 1] = '\0';
-            
-            memcpy((char *)va_arg(ap, int *), buffer, wrq.u.data.length);
-            break;
-
-#if 0
-    case IW_PRIV_TYPE_FLOAT:
-      {
-        double        freq;
-        /* Display args */
-        for(j = 0; j < n; j++)
-          {
-        freq = iw_freq2float(((struct iw_freq *) buffer) + j);
-        if(freq >= GIGA)
-          printf("%gG  ", freq / GIGA);
+        if((priv[k].set_args == 0) &&
+           (priv[k].get_args & IW_PRIV_SIZE_FIXED) &&
+           (iw_get_priv_size(priv[k].get_args) <= IFNAMSIZ))
+        {
+            /* Second case : no SET args, GET args fit within wrq */
+            if(offset)
+                wrq.u.mode = subcmd;
+        }
         else
-          if(freq >= MEGA)
-          printf("%gM  ", freq / MEGA);
-        else
-          printf("%gk  ", freq / KILO);
-          }
-        printf("\n");
-      }
-      break;
-#endif
+        {
+            /* Thirst case : args won't fit in wrq, or
+             * variable number of args
+             */
+            wrq.u.data.pointer = (caddr_t) buffer;
+            wrq.u.data.flags = subcmd;
+        }
+    }
+
+    /* Perform the private ioctl */
+    if(ioctl(skfd, priv[k].cmd, &wrq) < 0)
+    {
+        fprintf(stderr, "Interface doesn't accept private ioctl...\n");
+
+        fprintf(stderr, "%s (%X): %s\n", cmdname,
+                priv[k].cmd, strerror(errno));
+
+        return(-1);
+    }
+
+    /* If we have to get some data */
+    if((priv[k].get_args & IW_PRIV_TYPE_MASK) &&
+       (priv[k].get_args & IW_PRIV_SIZE_MASK))
+    {
+        int    j;
+        int    n = 0;        /* number of args */
 
 #if 0
-    case IW_PRIV_TYPE_ADDR:
-      {
-        char        scratch[128];
-        struct sockaddr *    hwa;
-        /* Display args */
-        for(j = 0; j < n; j++)
-          {
-        hwa = ((struct sockaddr *) buffer) + j;
-        if(j)
-          printf("           %.*s", 
-             (int) strlen(cmdname), "                ");
-        printf("%s\n", iw_pr_ether(scratch, hwa->sa_data));
-          }
-      }
-      break;
+        printf("%-8.8s  %s:", ifname, cmdname);
 #endif
 
-    default:
-      fprintf(stderr, "Not yet implemented...\n");
-      return(-1);
-    }
+        /* Check where is the returned data */
+        if((priv[k].get_args & IW_PRIV_SIZE_FIXED) &&
+           (iw_get_priv_size(priv[k].get_args) <= IFNAMSIZ))
+        {
+            memcpy(buffer, wrq.u.name, IFNAMSIZ);
+
+            n = priv[k].get_args & IW_PRIV_SIZE_MASK;
+        }
+        else
+            n = wrq.u.data.length;
+
+        switch(priv[k].get_args & IW_PRIV_TYPE_MASK)
+        {
+            case IW_PRIV_TYPE_BYTE:
+                /* Display args */
+                for(j = 0; j < n; j++)
+                {
+                    if (count != 0)
+                    {
+                        *((char *) va_arg(ap, char *)) = buffer[j];
+
+                        count--;
+                    }
+                    else
+                    {
+                        ERROR("Cannot flush %d byte in %s:%d",
+                              j, __FILE__, __LINE__);
+
+                        return -1;
+                    }
+                }
+
+                break;
+
+            case IW_PRIV_TYPE_INT:
+                /* Display args */
+                for(j = 0; j < n; j++)
+                {
+                    if (count != 0)
+                    {
+                        *((int *) va_arg(ap, int *)) = buffer[j];
+
+                        count--;
+                    }
+                    else
+                    {
+                        ERROR("Cannot flush %d byte in %s:%d",
+                              j, __FILE__, __LINE__);
+
+                        return -1;
+                    }
+                }
+
+                break;
+
+            case IW_PRIV_TYPE_CHAR:
+                /* Display args */
+                if (count == 0)
+                {
+                    ERROR("Cannot flush string in %s:%d", __FILE__, __LINE__);
+
+                        return -1;
+                }
+
+                count--;
+
+                buffer[wrq.u.data.length - 1] = '\0';
+
+                memcpy((char *)va_arg(ap, int *), buffer, wrq.u.data.length);
+
+                break;
+
+#if 0
+            case IW_PRIV_TYPE_FLOAT:
+                {
+                    double        freq;
+
+                    /* Display args */
+                    for(j = 0; j < n; j++)
+                    {
+                        freq = iw_freq2float(((struct iw_freq *) buffer) + j);
+
+                        if(freq >= GIGA)
+                            printf("%gG  ", freq / GIGA);
+                        else if(freq >= MEGA)
+                            printf("%gM  ", freq / MEGA);
+                        else
+                            printf("%gk  ", freq / KILO);
+                    }
+
+                    printf("\n");
+                }
+
+                break;
+
+            case IW_PRIV_TYPE_ADDR:
+                {
+                    char        scratch[128];
+                    struct sockaddr *    hwa;
+
+                    /* Display args */
+                    for(j = 0; j < n; j++)
+                    {
+                        hwa = ((struct sockaddr *) buffer) + j;
+
+                        if(j)
+                            printf("           %.*s",
+                                   (int) strlen(cmdname), "                ");
+
+                        printf("%s\n", iw_pr_ether(scratch, hwa->sa_data));
+                    }
+                }
+
+                break;
+#endif
+
+            default:
+                fprintf(stderr, "Not yet implemented...\n");
+
+                return(-1);
+        }
     }    /* if args to set */
 
-  return(0);
+    return(0);
 }
 
 /*------------------------------------------------------------------*/
@@ -579,37 +638,38 @@ set_private_cmd(int             skfd,           /* Socket */
  */
 static inline int
 set_private(const char *ifname, /* Dev name */
-            const char *cmd, 
+            const char *cmd,
             int count, /* Args count */
             ...)
 {
-  iwprivargs *priv;
-  int          number; /* Max of private ioctl */
-  int         skfd = wifi_get_skfd();
-  va_list     ap;
-  int         rc;
+    iwprivargs     *priv;
+    int             number; /* Max of private ioctl */
+    int             skfd = wifi_get_skfd();
+    va_list         ap;
+    int             rc;
 
-  WIFI_CHECK_SKFD(skfd);
+    WIFI_CHECK_SKFD(skfd);
 
-  va_start(ap, count);
+    va_start(ap, count);
 
-  /* Read the private ioctls */
-  number = iw_get_priv_info(skfd, ifname, &priv);
+    /* Read the private ioctls */
+    number = iw_get_priv_info(skfd, ifname, &priv);
 
-  /* Is there any ? */
-  if(number <= 0)
+    /* Is there any ? */
+    if(number <= 0)
     {
-      /* Could skip this message ? */
-      fprintf(stderr, "%-8.8s  no private ioctls.\n\n",
-          ifname);
-      return(-1);
+        /* Could skip this message ? */
+        fprintf(stderr, "%-8.8s  no private ioctls.\n\n",
+                ifname);
+
+        return(-1);
     }
 
-  rc = set_private_cmd(skfd, ifname, cmd,
-                       priv, number, count, ap);
-  va_end(ap);
-  
-  return rc;
+    rc = set_private_cmd(skfd, ifname, cmd,
+                         priv, number, count, ap);
+    va_end(ap);
+
+    return rc;
 }
 
 /**
@@ -629,9 +689,8 @@ wifi_set_item(const char *ifname, int req, struct iwreq *wrp)
     int skfd = wifi_get_skfd();
 
 #define RETRY_LIMIT 500
-
     WIFI_CHECK_SKFD(skfd);
-    
+
     while ((rc = iw_set_ext(skfd, ifname, req, wrp)) != 0)
     {
         if (errno == EBUSY)
@@ -640,19 +699,20 @@ wifi_set_item(const char *ifname, int req, struct iwreq *wrp)
             if (++retry < RETRY_LIMIT)
             {
                 usleep(50);
+
                 continue;
             }
         }
-        
+
         rc = TE_OS_RC(TE_TA_UNIX, errno);
+
         break;
     }
-
 #undef RETRY_LIMIT
 
     if (retry != 0)
         WARN("%s: The number of retries %d", __FUNCTION__, retry);
- 
+
     return rc;
 }
 
@@ -673,7 +733,6 @@ wifi_get_item(const char *ifname, int req, struct iwreq *wrp)
     int skfd = wifi_get_skfd();
 
 #define RETRY_LIMIT 500
-
     WIFI_CHECK_SKFD(skfd);
 
     while ((rc = iw_get_ext(skfd, ifname, req, wrp)) != 0)
@@ -684,19 +743,20 @@ wifi_get_item(const char *ifname, int req, struct iwreq *wrp)
             if (++retry < RETRY_LIMIT)
             {
                 usleep(50);
+
                 continue;
             }
         }
 
         rc = TE_OS_RC(TE_TA_UNIX, errno);
+
         break;
     }
-
 #undef RETRY_LIMIT
 
     if (retry != 0)
         WARN("%s: The number of retries %d", __FUNCTION__, retry);
- 
+
     return rc;
 }
 
@@ -717,6 +777,7 @@ sta_restore_encryption(const char *ifname, wifi_sta_info_t *info)
         {
             ERROR("%s(): Cannot disable WEP encryption: %r",
                   __FUNCTION__, rc);
+
             return rc;
         }
     }
@@ -729,25 +790,34 @@ sta_restore_encryption(const char *ifname, wifi_sta_info_t *info)
 static te_errno
 init_sta_info(const char *ifname, wifi_sta_info_t *info)
 {
-    struct iwreq wrq;
-    uint8_t      key[IW_ENCODING_TOKEN_MAX];
-    int          i;
-    te_errno     rc;
+    struct iwreq    wrq;
+    uint8_t         key[IW_ENCODING_TOKEN_MAX];
+    int             i;
+    te_errno        rc;
 
     memset(info, 0, sizeof(*info));
 
     wrq.u.data.pointer = (caddr_t)key;
     wrq.u.data.length = sizeof(key);
     wrq.u.data.flags = 0; /* Set index to zero to get current */
-  
+
     if ((rc = wifi_get_item(ifname, SIOCGIWENCODE, &wrq)) == 0)
     {
-        info->def_key_id = (wrq.u.data.flags & IW_ENCODE_INDEX) - 1;
+        if ((wrq.u.data.flags & IW_ENCODE_INDEX) == 0)
+            /* IOCTL returns XX00 in wrq.u.data.flags when
+             * WEP encryption is disabled. We may consider
+             * that def_key_id is 0 in this case.
+             */
+            info->def_key_id = 0;
+        else
+            info->def_key_id = (wrq.u.data.flags & IW_ENCODE_INDEX) - 1;
 
         info->auth_open = TRUE;
-    if (wrq.u.data.flags & IW_ENCODE_RESTRICTED)
+
+        if (wrq.u.data.flags & IW_ENCODE_RESTRICTED)
         {
             assert(!(wrq.u.data.flags & IW_ENCODE_DISABLED));
+
             info->auth_open = FALSE;
         }
         info->prev_auth_open = info->auth_open;
@@ -790,6 +860,7 @@ init_sta_info(const char *ifname, wifi_sta_info_t *info)
     return rc;
 }
 
+#if 0
 static te_bool
 sta_info_check(const char *ifname, wifi_sta_info_t *info)
 {
@@ -802,7 +873,7 @@ sta_info_check(const char *ifname, wifi_sta_info_t *info)
     wrq.u.data.pointer = (caddr_t)key;
     wrq.u.data.length = sizeof(key);
     wrq.u.data.flags = 0; /* Set index to zero to get current */
-  
+
     if ((rc = wifi_get_item(ifname, SIOCGIWENCODE, &wrq)) != 0)
     {
         ERROR("%s(): Cannot get Default WEP key index: %r",
@@ -849,7 +920,8 @@ sta_info_check(const char *ifname, wifi_sta_info_t *info)
               "it operated in %s mode", __FUNCTION__,
               info->auth_open ? "Open" : "SharedKey",
               sta_auth_open ? "Open" : "SharedKey");
-        fprintf(stderr, "%s(): Inconsistency with authentication method being used: "
+        fprintf(stderr, "%s(): Inconsistency with authentication"
+                        "method being used: "
               "STA expected to operate in %s authentication mode, but "
               "it operated in %s mode\n", __FUNCTION__,
               info->auth_open ? "Open" : "SharedKey",
@@ -858,7 +930,6 @@ sta_info_check(const char *ifname, wifi_sta_info_t *info)
     }
 
     /* Check PrivacyInvoked and ExcludeUnencrypted */
-    
     memset(&wrq, 0, sizeof(wrq));
     wrq.u.param.flags = IW_AUTH_DROP_UNENCRYPTED;
     if ((rc = wifi_get_item(ifname, SIOCGIWAUTH, &wrq)) != 0)
@@ -915,9 +986,10 @@ sta_info_check(const char *ifname, wifi_sta_info_t *info)
         }
         WARN("PRIVACY_INVOKED flag is restored");
     }
-    
+
     return TRUE;
 }
+#endif
 
 static te_errno
 parse_wep_key_index(const char *in_value, int *out_value)
@@ -927,6 +999,7 @@ parse_wep_key_index(const char *in_value, int *out_value)
     {
         ERROR("Incorrect value for WEP key index: '%s'\n"
               "Allowed values are: 0, 1, 2, 3.", in_value);
+
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
@@ -958,15 +1031,19 @@ wifi_list(unsigned int gid, const char *oid, char **list,
     {
         /* Interface does not support wireless extension */
         VERB("Interface %s does not support WiFi", ifname);
+
         *list = strdup("");
+
         return 0;
     }
 
     /* Fill in station parameters */
     GET_WIFI_STA_INFO(ifname, info);
+
     if (info->valid)
     {
         *list = strdup("enabled");
+
         return 0;
     }
 
@@ -974,6 +1051,7 @@ wifi_list(unsigned int gid, const char *oid, char **list,
         return rc;
 
     *list = strdup("enabled");
+
     return 0;
 }
 
@@ -992,7 +1070,7 @@ wifi_wep_def_key_id_get(unsigned int gid, const char *oid, char *value,
                         const char *ifname)
 {
     wifi_sta_info_t *info;
-    
+
     UNUSED(gid);
     UNUSED(oid);
 
@@ -1000,6 +1078,7 @@ wifi_wep_def_key_id_get(unsigned int gid, const char *oid, char *value,
     CHECK_CONSISTENCY(ifname, info);
 
     sprintf(value, "%d", info->def_key_id);
+
     return 0;
 }
 
@@ -1024,13 +1103,13 @@ wifi_wep_def_key_id_set(unsigned int gid, const char *oid, char *value,
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
     GET_WIFI_STA_INFO(ifname, info);
     CHECK_CONSISTENCY(ifname, info);
 
     if ((rc = parse_wep_key_index(value, &key_index)) != 0)
         return rc;
-   
+
     memset(&wrq, 0, sizeof(wrq));
 
     wrq.u.encoding.flags = (key_index + 1);
@@ -1042,6 +1121,7 @@ wifi_wep_def_key_id_set(unsigned int gid, const char *oid, char *value,
     {
         ERROR("%s(): Cannot set Default WEP key [%d]: %r",
               __FUNCTION__, key_index, rc);
+
         return rc;
     }
 
@@ -1076,7 +1156,7 @@ wifi_wep_key_get(unsigned int gid, const char *oid, char *value,
     unsigned int     i;
     te_errno         rc;
     wifi_sta_info_t *info;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(p1);
@@ -1120,7 +1200,7 @@ wifi_wep_key_set(unsigned int gid, const char *oid, char *value,
     int              keylen;
     wifi_sta_info_t *info;
     char             def_key_id[10];
- 
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(p1);
@@ -1135,16 +1215,19 @@ wifi_wep_key_set(unsigned int gid, const char *oid, char *value,
     memset(&wrq, 0, sizeof(wrq));
 
     keylen = iw_in_key(value, key);
+
     if (keylen <= 0)
     {
         ERROR("%s(): Incorrect WEP key value '%s' specified",
               __FUNCTION__, value);
+
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
+
     wrq.u.data.length = keylen;
     wrq.u.data.pointer = (caddr_t)key;
     wrq.u.encoding.flags = (key_index + 1);
-    
+
     if ((rc = wifi_set_item(ifname, SIOCSIWENCODE, &wrq)) != 0)
         return rc;
 
@@ -1156,7 +1239,7 @@ wifi_wep_key_set(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Returns the list of Default WEP keys (always four keys present 
+ * Returns the list of Default WEP keys (always four keys present
  * in the system).
  *
  * @param gid     group identifier (unused)
@@ -1176,6 +1259,7 @@ wifi_wep_key_list(unsigned int gid, const char *oid, char **list,
 
     /* Any interface supporting WEP should keep four default WEP keys */
     *list = strdup("0 1 2 3");
+
     return 0;
 }
 
@@ -1194,7 +1278,7 @@ wifi_wep_get(unsigned int gid, const char *oid, char *value,
              const char *ifname)
 {
     wifi_sta_info_t *info;
-    
+
     UNUSED(gid);
     UNUSED(oid);
 
@@ -1220,13 +1304,12 @@ static te_errno
 wifi_wep_set(unsigned int gid, const char *oid, char *value,
              const char *ifname)
 {
-    int      int_val;
-    te_bool  new_wep_enc;
-
-    uint8_t          key[IW_ENCODING_TOKEN_MAX];
-    wifi_sta_info_t *info;
-    te_errno         rc;
-    struct iwreq     wrq;
+    int                 int_val;
+    te_bool             new_wep_enc;
+    uint8_t             key[IW_ENCODING_TOKEN_MAX];
+    wifi_sta_info_t    *info;
+    te_errno            rc;
+    struct iwreq        wrq;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1242,8 +1325,10 @@ wifi_wep_set(unsigned int gid, const char *oid, char *value,
     if (sscanf(value, "%d", &int_val) != 1)
     {
         ERROR("Incorrect value for WEP encryption passed %s", value);
+
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
+
     new_wep_enc = (int_val == 1);
 
     if (new_wep_enc == info->wep_enc)
@@ -1252,26 +1337,31 @@ wifi_wep_set(unsigned int gid, const char *oid, char *value,
     if (new_wep_enc)
     {
         /*
-         * We enable WEP, which current disabled, so we might 
+         * We enable WEP, which current disabled, so we might
          * need to restore authentication method.
          */
         wrq.u.data.pointer = (caddr_t)key;
         wrq.u.data.length = sizeof(key);
         wrq.u.data.flags = 0;
+
         if ((rc = wifi_get_item(ifname, SIOCGIWENCODE, &wrq)) != 0)
         {
             ERROR("%s(): Cannot read out current WiFi information",
                   __FUNCTION__);
+
             return rc;
         }
+
         wrq.u.data.flags &= ~IW_ENCODE_DISABLED; /* Enable */
 
         if ((rc = wifi_set_item(ifname, SIOCSIWENCODE, &wrq)) != 0)
         {
             ERROR("%s(): Cannot enable WEP encryption",
                   __FUNCTION__);
+
             return rc;
         }
+
         info->auth_open = info->prev_auth_open;
     }
     else
@@ -1284,6 +1374,7 @@ wifi_wep_set(unsigned int gid, const char *oid, char *value,
         {
             ERROR("%s(): Cannot disable WEP encryption",
                   __FUNCTION__);
+
             return rc;
         }
 
@@ -1294,23 +1385,30 @@ wifi_wep_set(unsigned int gid, const char *oid, char *value,
          * about that, so save current authentication method.
          */
         info->prev_auth_open = info->auth_open;
+
         info->auth_open = TRUE;
     }
+
     info->wep_enc = !info->wep_enc;
 
     /* Update PrivacyInvoked and ExcludeUnencrypted */
     memset(&wrq, 0, sizeof(wrq));
     wrq.u.param.flags = IW_AUTH_DROP_UNENCRYPTED;
     wrq.u.param.value = info->wep_enc;
+
     if ((rc = wifi_set_item(ifname, SIOCSIWAUTH, &wrq)) != 0)
     {
         ERROR("%s(): Cannot change DROP_UNENCRYPTED flag", __FUNCTION__);
+
         return rc;
     }
+
     wrq.u.param.flags = IW_AUTH_PRIVACY_INVOKED;
+
     if ((rc = wifi_set_item(ifname, SIOCSIWAUTH, &wrq)) != 0)
     {
         ERROR("%s(): Cannot change PRIVACY_INVOKED flag", __FUNCTION__);
+
         return rc;
     }
 
@@ -1391,20 +1489,25 @@ wifi_auth_set(unsigned int gid, const char *oid, char *value,
         {
             ERROR("SharedKey authentication can't be enabled when "
                   "WEP is disabled on the interface.");
+
             return TE_RC(TE_TA_UNIX, EPERM);
         }
+
         wrq.u.param.value = IW_AUTH_ALG_SHARED_KEY;
     }
     else
     {
         ERROR("Canot set authentication algorithm to '%s'", value);
+
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     wrq.u.param.flags = IW_AUTH_80211_AUTH_ALG;
+
     if ((rc = wifi_set_item(ifname, SIOCSIWAUTH, &wrq)) != 0)
     {
         ERROR("%s(): Cannot change Authentication algorithm", __FUNCTION__);
+
         return rc;
     }
 
@@ -1453,15 +1556,20 @@ wifi_channel_get(unsigned int gid, const char *oid, char *value,
         return rc;
 
     freq = iw_freq2float(&(wrq.u.freq));
+
     channel = iw_freq_to_channel(freq, &range);
+
     if (freq < KILO)
     {
         WARN("iw_freq2float() function returns channel, not frequency");
+
         channel = (int)freq;
     }
+
     if (channel < 0)
     {
         ERROR("Cannot get current channel number on %s interface", ifname);
+
         return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
 
@@ -1489,7 +1597,7 @@ wifi_channel_set(unsigned int gid, const char *oid, char *value,
     int             skfd = wifi_get_skfd();
     double          freq;
     int             channel;
-    
+
     UNUSED(gid);
     UNUSED(oid);
 
@@ -1498,6 +1606,7 @@ wifi_channel_set(unsigned int gid, const char *oid, char *value,
     if (sscanf(value, "%d", &channel) != 1)
     {
         ERROR("Incorrect format of channel value '%s'", value);
+
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
@@ -1508,8 +1617,10 @@ wifi_channel_set(unsigned int gid, const char *oid, char *value,
     {
         ERROR("Cannot convert %d channel to an appropriate "
               "frequency value", channel);
+
         return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
+
     iw_float2freq(freq, &(wrq.u.freq));
 
     return wifi_set_item(ifname, SIOCSIWFREQ, &wrq);
@@ -1544,10 +1655,13 @@ wifi_channels_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_EFAULT);
 
     *value = '\0';
+
     for (i = 0; i < range.num_frequency; i++)
     {
         freq = iw_freq2float(&(range.freq[i]));
+
         channel = iw_freq_to_channel(freq, &range);
+
         sprintf(value + strlen(value), "%d%c", channel,
                 i == (range.num_frequency - 1) ? '\0' : ':');
     }
@@ -1593,6 +1707,7 @@ wifi_ap_get(unsigned int gid, const char *oid, char *value,
                     (uint8_t)wrq.u.ap_addr.sa_data[3],
                     (uint8_t)wrq.u.ap_addr.sa_data[4],
                     (uint8_t)wrq.u.ap_addr.sa_data[5]);
+
             return 0;
         }
     }
@@ -1619,7 +1734,7 @@ wifi_essid_get(unsigned int gid, const char *oid, char *value,
     struct iwreq wrq;
     char         essid[IW_ESSID_MAX_SIZE + 1] = {};
     te_errno     rc;
-    
+
     UNUSED(gid);
     UNUSED(oid);
 
@@ -1631,6 +1746,7 @@ wifi_essid_get(unsigned int gid, const char *oid, char *value,
     {
         ERROR("%s(): Cannot read ESSID value for %s interface",
               __FUNCTION__, ifname);
+
         return rc;
     }
 
@@ -1659,7 +1775,7 @@ wifi_essid_set(unsigned int gid, const char *oid, char *value,
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (strcasecmp(value, "off") == 0 || strcasecmp(value, "any") == 0)
     {
         wrq.u.essid.flags = 0;
@@ -1671,15 +1787,20 @@ wifi_essid_set(unsigned int gid, const char *oid, char *value,
         {
             ERROR("ESSID string '%s' is too long. "
                   "Maximum allowed length is %d", value, IW_ESSID_MAX_SIZE);
+
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
+
         wrq.u.essid.flags = 1;
+
         strcpy(essid, value);
     }
+
     wrq.u.essid.pointer = (caddr_t)essid;
     wrq.u.essid.length = strlen(essid) + 1;
 
     rc = wifi_set_item(ifname, SIOCSIWESSID, &wrq);
+
 #ifdef ENABLE_8021X
     ds_supplicant_network_set(0, NULL, value, ifname);
 #endif
@@ -1722,7 +1843,6 @@ RCF_PCH_CFG_NODE_COLLECTION(node_wifi, "wifi",
                             &node_wifi_essid, NULL,
                             NULL, NULL,
                             wifi_list, NULL);
-
 
 /**
  * Initializes ta_unix_conf_wifi support.
