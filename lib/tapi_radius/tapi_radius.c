@@ -1226,16 +1226,16 @@ tapi_supp_reset(const char *ta_name, const char *if_name)
              "/agent:%s/interface:%s/supplicant:", ta_name, if_name);
 
     /* Common parameters */
-    SUPP_SET_EMPTY("/identity:");
-    SUPP_SET_EMPTY("/cur_method:");
+    SUPP_SET_EMPTY(supp_oid, "/identity:");
+    SUPP_SET_EMPTY(supp_oid, "/cur_method:");
 
     /* Method-specific parameters */
-    SUPP_SET_EMPTY("/eap-md5:/username:");
-    SUPP_SET_EMPTY("/eap-md5:/passwd:");
-    SUPP_SET_EMPTY("/eap-tls:/cert:");
-    SUPP_SET_EMPTY("/eap-tls:/key:");
-    SUPP_SET_EMPTY("/eap-tls:/key_passwd:");
-    SUPP_SET_EMPTY("/eap-tls:/root_cert:");
+    SUPP_SET_EMPTY(supp_oid, "/eap-md5:/username:");
+    SUPP_SET_EMPTY(supp_oid, "/eap-md5:/passwd:");
+    SUPP_SET_EMPTY(supp_oid, "/eap-tls:/cert:");
+    SUPP_SET_EMPTY(supp_oid, "/eap-tls:/key:");
+    SUPP_SET_EMPTY(supp_oid, "/eap-tls:/key_passwd:");
+    SUPP_SET_EMPTY(supp_oid, "/eap-tls:/root_cert:");
 
     return cfg_commit_fmt(supp_oid);
 }
