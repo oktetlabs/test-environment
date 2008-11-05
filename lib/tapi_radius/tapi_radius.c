@@ -1067,7 +1067,7 @@ tapi_supp_set_wifi_auth(const char *ta_name, const char *if_name,
             key_mgmt = "WPA-PSK";
             break;
 
-        case TAPI_AUPH_KEY_8021X:
+        case TAPI_AUTH_KEY_8021X:
             key_mgmt = "WPA-EAP";
 
         default:
@@ -1085,19 +1085,19 @@ tapi_supp_set_wifi_auth(const char *ta_name, const char *if_name,
             cipher_group = "WEP40";
             break;
 
-        case TAPI_AUPH_CIPHER_WEP104:
+        case TAPI_AUTH_CIPHER_WEP104:
             cipher_group = "WEP104";
             break;
 
-        case TAPI_AUPH_CIPHER_WEP:
+        case TAPI_AUTH_CIPHER_WEP:
             cipher_group = "WEP40 WEP104";
             break;
 
-        case TAPI_AUPH_CIPHER_TKIP:
+        case TAPI_AUTH_CIPHER_TKIP:
             cipher_group = "TKIP";
             break;
 
-        case TAPI_AUPH_CIPHER_CCMP:
+        case TAPI_AUTH_CIPHER_CCMP:
             cipher_group = "CCMP";
             break;
 
@@ -1116,19 +1116,19 @@ tapi_supp_set_wifi_auth(const char *ta_name, const char *if_name,
             cipher_pairwise = "WEP40";
             break;
 
-        case TAPI_AUPH_CIPHER_WEP104:
+        case TAPI_AUTH_CIPHER_WEP104:
             cipher_pairwise = "WEP104";
             break;
 
-        case TAPI_AUPH_CIPHER_WEP:
+        case TAPI_AUTH_CIPHER_WEP:
             cipher_pairwise = "WEP40 WEP104";
             break;
 
-        case TAPI_AUPH_CIPHER_TKIP:
+        case TAPI_AUTH_CIPHER_TKIP:
             cipher_pairwise = "TKIP";
             break;
 
-        case TAPI_AUPH_CIPHER_CCMP:
+        case TAPI_AUTH_CIPHER_CCMP:
             cipher_pairwise = "CCMP";
             break;
 
