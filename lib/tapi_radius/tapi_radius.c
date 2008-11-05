@@ -56,6 +56,12 @@
 #include <unistd.h>
 #endif
 
+#define SUPP_SET_EMPTY(_supp_oid, _suboid) \
+    rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, ""), "%s" _suboid,      \
+                                    _supp_oid);                             \
+    if (rc != 0)                                                            \
+        return rc;
+
 /* Attribute dictionary length */
 #define TAPI_RADIUS_DICT_LEN     256
 
@@ -1025,6 +1031,9 @@ tapi_supp_set_wifi_auth(const char *ta_name, const char *if_name,
                         const tapi_auth_wifi_t *wifi)
 {
     const char *proto;
+    const char *key_mgmt;
+    const char *cipher_group;
+    const char *cipher_pairwise;
     char        supp_oid[128];
     te_errno    rc;
 
@@ -1047,11 +1056,104 @@ tapi_supp_set_wifi_auth(const char *ta_name, const char *if_name,
                   wifi->proto);
             return TE_RC(TE_TAPI, TE_EINVAL);
     }
+
+    switch (wifi->key_mgmt)
+    {
+        case TAPI_AUTH_KEY_NONE:
+            key_mgmt = "NONE";
+            break;
+
+        case TAPI_AUTH_KEY_PSK:
+            key_mgmt = "WPA-PSK";
+            break;
+
+        case TAPI_AUPH_KEY_8021X:
+            key_mgmt = "WPA-EAP";
+
+        default:
+            ERROR("%s(): unknown key management id '%d'", __FUNCTION__,
+                  wifi->key_mgmt);
+    }
+
+    switch (wifi->cipher_group)
+    {
+        case TAPI_AUTH_CIPHER_NONE:
+            cipher_group = "";
+            break;
+
+        case TAPI_AUTH_CIPHER_WEP40:
+            cipher_group = "WEP40";
+            break;
+
+        case TAPI_AUPH_CIPHER_WEP104:
+            cipher_group = "WEP104";
+            break;
+
+        case TAPI_AUPH_CIPHER_WEP:
+            cipher_group = "WEP40 WEP104";
+            break;
+
+        case TAPI_AUPH_CIPHER_TKIP:
+            cipher_group = "TKIP";
+            break;
+
+        case TAPI_AUPH_CIPHER_CCMP:
+            cipher_group = "CCMP";
+            break;
+
+        default:
+            ERROR("%s(): unknown group cipher id '%d'", __FUNCTION__,
+                  wifi->cipher_group);
+    }
+
+    switch (wifi->cipher_pairwise)
+    {
+        case TAPI_AUTH_CIPHER_NONE:
+            cipher_pairwise = "";
+            break;
+
+        case TAPI_AUTH_CIPHER_WEP40:
+            cipher_pairwise = "WEP40";
+            break;
+
+        case TAPI_AUPH_CIPHER_WEP104:
+            cipher_pairwise = "WEP104";
+            break;
+
+        case TAPI_AUPH_CIPHER_WEP:
+            cipher_pairwise = "WEP40 WEP104";
+            break;
+
+        case TAPI_AUPH_CIPHER_TKIP:
+            cipher_pairwise = "TKIP";
+            break;
+
+        case TAPI_AUPH_CIPHER_CCMP:
+            cipher_pairwise = "CCMP";
+            break;
+
+        default:
+            ERROR("%s(): unknown pairwise cipher id '%d'", __FUNCTION__,
+                  wifi->cipher_pairwise);
+    }
+
     if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, proto),
                                    "%s/proto:", supp_oid)) != 0)
         return rc;
 
-    /* TODO setting cipher */
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, key_mgmt),
+                                   "%s/key_mgmt:", supp_oid)) != 0)
+        return rc;
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, cipher_group),
+                                   "%s/group:", supp_oid)) != 0)
+        return rc;
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, cipher_pairwise),
+                                   "%s/pairwise:", supp_oid)) != 0)
+        return rc;
+
+    SUPP_SET_EMPTY(supp_oid, "/psk:");
 
     return cfg_commit_fmt(supp_oid);
 }
@@ -1123,12 +1225,6 @@ tapi_supp_reset(const char *ta_name, const char *if_name)
     snprintf(supp_oid, sizeof(supp_oid),
              "/agent:%s/interface:%s/supplicant:", ta_name, if_name);
 
-#define SUPP_SET_EMPTY(_suboid) \
-    rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, ""), "%s" _suboid,      \
-                                    supp_oid);                              \
-    if (rc != 0)                                                            \
-        return rc;
-
     /* Common parameters */
     SUPP_SET_EMPTY("/identity:");
     SUPP_SET_EMPTY("/cur_method:");
@@ -1140,7 +1236,6 @@ tapi_supp_reset(const char *ta_name, const char *if_name)
     SUPP_SET_EMPTY("/eap-tls:/key:");
     SUPP_SET_EMPTY("/eap-tls:/key_passwd:");
     SUPP_SET_EMPTY("/eap-tls:/root_cert:");
-#undef SUPP_SET_EMPTY
 
     return cfg_commit_fmt(supp_oid);
 }

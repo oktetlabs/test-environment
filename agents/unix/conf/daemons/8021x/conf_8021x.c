@@ -35,7 +35,13 @@ typedef enum {
     SP_NETWORK,             /**< Network name, usually ESSID */
     SP_METHOD,              /**< EAP method: "eap-md5", "eap-tls" etc. */
     SP_IDENTITY,            /**< EAP identity */
-    SP_PROTO,               /**< Protocol: "", "WPA", "RSN" */
+    SP_PROTO,               /**< Protocol: "", "WPA", "WPA2", "RSN" */
+    SP_KEY_MGMT,            /**< Key management: "NONE", "WPA-PSK",
+                             *   "WPA-EAP" */
+    SP_GROUP,               /**< Group cipher: "TKIP", "CCMP", "TKIP CCMP" */
+    SP_PAIRWISE,            /**< Pairwise cipher: "TKIP", "CCMP",
+                             *  "TKIP CCMP" */
+    SP_PSK,                 /**< Preshared key */
     SP_MD5_USERNAME,        /**< EAP-MD5 username */
     SP_MD5_PASSWORD,        /**< EAP-MD5 password */
     SP_TLS_CERT_PATH,       /**< EAP-TLS path to user certificate file */
@@ -383,55 +389,64 @@ wpa_supp_reload(const char *ifname)
 static void
 wpa_supp_write_config(FILE *f, const supplicant *supp)
 {
-    const char *s = supp_get_param(supp, SP_METHOD);
-    const char *proto = supp_get_param(supp, SP_PROTO);
+    const char *s_method = supp_get_param(supp, SP_METHOD);
+    const char *s_proto = supp_get_param(supp, SP_PROTO);
+    const char *s_identity = supp_get_param(supp, SP_IDENTITY);
+    const char *s_key_mgmt = supp_get_param(supp, SP_KEY_MGMT);
+    const char *s_group = supp_get_param(supp, SP_GROUP);
+    const char *s_pairwise = supp_get_param(supp, SP_PAIRWISE);
+    const char *s_psk = supp_get_param(supp, SP_PSK);
 
     fprintf(f, "ctrl_interface=/var/run/wpa_supplicant\n"
                "network={\n"
-               "  ssid=\"%s\"\n"
-               "  identity=\"%s\"\n",
-            supp_get_param(supp, SP_NETWORK),
-            supp_get_param(supp, SP_IDENTITY));
+               "  ssid=\"%s\"\n",
+            supp_get_param(supp, SP_NETWORK));
 
-    if (strcmp(s, "eap-md5") == 0)
-    {
-        fprintf(f, "  eap=MD5\n"
-                   "  password=\"%s\"\n",
-                supp_get_param(supp, SP_MD5_PASSWORD));
-    }
-    else if (strcmp(s, "eap-tls") == 0)
-    {
-        fprintf(f, "  eap=TLS\n"
-                   "  ca_cert=\"%s\"\n"
-                   "  client_cert=\"%s\"\n"
-                   "  private_key=\"%s\"\n"
-                   "  private_key_passwd=\"%s\"\n",
-                supp_get_param(supp, SP_TLS_ROOT_CERT_PATH),
-                supp_get_param(supp, SP_TLS_CERT_PATH),
-                supp_get_param(supp, SP_TLS_KEY_PATH),
-                supp_get_param(supp, SP_TLS_KEY_PASSWD)
-               );
-    }
-    else if (s[0] != '\0')
-    {
-        ERROR("%s(): unknown EAP method '%s'", __FUNCTION__, s);
-    }
+    if (s_identity[0] != '\0')
+        fprintf(f, "  identity=\"%s\"\n", s_identity);
 
-    if (proto[0] == '\0' )
+    if (s_proto[0] != '\0')
+        fprintf(f, "  proto=%s\n", s_proto);
+    else if (strcmp(s_key_mgmt, "IEEE8021X") == 0)
+        fprintf(f, "  eapol_flags=0\n");
+
+    if (s_key_mgmt[0] != '\0')
+        fprintf(f, "  key_mgmt=%s\n", s_key_mgmt);
+
+    if (s_group[0] != '\0')
+        fprintf(f, "  group=%s\n", s_group);
+
+    if (s_pairwise[0] != '\0')
+        fprintf(f, "  pairwise=%s\n", s_pairwise);
+
+    if (s_psk[0] != '\0')
+        fprintf(f, "  psk=\"%s\"\n", s_psk);
+
+    if (s_method[0] != '\0')
     {
-        /* No WPA */
-        fprintf(f, "  key_mgmt=IEEE8021X\n"
-                   "  eapol_flags=0\n");
-    }
-    else
-    {
-        fprintf(f, "  proto=%s\n"
-                   "  pairwise=%s\n"
-                   "  group=%s\n"
-                   "  key_mgmt=WPA-EAP\n",
-                proto,
-                strcmp(proto, "WPA") == 0 ? "TKIP" : "CCMP",
-                strcmp(proto, "WPA") == 0 ? "TKIP" : "CCMP");
+        if (strcmp(s_method, "eap-md5") == 0)
+        {
+            fprintf(f, "  eap=MD5\n"
+                       "  password=\"%s\"\n",
+                    supp_get_param(supp, SP_MD5_PASSWORD));
+        }
+        else if (strcmp(s_method, "eap-tls") == 0)
+        {
+            fprintf(f, "  eap=TLS\n"
+                       "  ca_cert=\"%s\"\n"
+                       "  client_cert=\"%s\"\n"
+                       "  private_key=\"%s\"\n"
+                       "  private_key_passwd=\"%s\"\n",
+                       supp_get_param(supp, SP_TLS_ROOT_CERT_PATH),
+                       supp_get_param(supp, SP_TLS_CERT_PATH),
+                       supp_get_param(supp, SP_TLS_KEY_PATH),
+                       supp_get_param(supp, SP_TLS_KEY_PASSWD));
+        }
+        else
+        {
+            ERROR("%s(): unknown EAP method '%s'",
+                  __FUNCTION__, s_method);
+        }
     }
 
     fprintf(f, "}\n");
@@ -853,19 +868,50 @@ DS_SUPP_PARAM_SET(ds_supp_method_set, SP_METHOD)
 DS_SUPP_PARAM_GET(ds_supp_proto_get, SP_PROTO)
 DS_SUPP_PARAM_SET(ds_supp_proto_set, SP_PROTO)
 
-RCF_PCH_CFG_NODE_RW(node_ds_supp_proto, "proto",
+/* New brothers in our family */
+DS_SUPP_PARAM_GET(ds_supp_key_mgmt_get, SP_KEY_MGMT)
+DS_SUPP_PARAM_SET(ds_supp_key_mgmt_set, SP_KEY_MGMT)
+DS_SUPP_PARAM_GET(ds_supp_group_get, SP_GROUP)
+DS_SUPP_PARAM_SET(ds_supp_group_set, SP_GROUP)
+DS_SUPP_PARAM_GET(ds_supp_pairwise_get, SP_PAIRWISE)
+DS_SUPP_PARAM_SET(ds_supp_pairwise_set, SP_PAIRWISE)
+DS_SUPP_PARAM_GET(ds_supp_psk_get, SP_PSK)
+DS_SUPP_PARAM_SET(ds_supp_psk_set, SP_PSK)
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_psk, "psk",
                     NULL, &node_ds_supp_eaptls,
-                    ds_supp_proto_get, 
+                    ds_supp_psk_get,
+                    ds_supp_psk_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_pairwise, "pairwise",
+                    NULL, &node_ds_supp_psk,
+                    ds_supp_pairwise_get,
+                    ds_supp_pairwise_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_group, "group",
+                    NULL, &node_ds_supp_pairwise,
+                    ds_supp_group_get,
+                    ds_supp_group_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_key_mgmt, "key_mgmt",
+                    NULL, &node_ds_supp_group,
+                    ds_supp_key_mgmt_get,
+                    ds_supp_key_mgmt_set);
+/**/
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_proto, "proto",
+                    NULL, &node_ds_supp_key_mgmt,
+                    ds_supp_proto_get,
                     ds_supp_proto_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_supp_method, "cur_method",
                     NULL, &node_ds_supp_proto,
-                    ds_supp_method_get, 
+                    ds_supp_method_get,
                     ds_supp_method_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_supp_identity, "identity",
                     NULL, &node_ds_supp_method,
-                    ds_supp_identity_get, 
+                    ds_supp_identity_get,
                     ds_supp_identity_set);
 
 static rcf_pch_cfg_object node_ds_supplicant = {

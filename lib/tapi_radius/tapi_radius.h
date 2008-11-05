@@ -667,6 +667,7 @@ extern te_errno tapi_radius_serv_del_user(const char *ta_name,
 
 /** Key management types supported by supplicant */
 typedef enum {
+    TAPI_AUTH_KEY_NONE,     /**< No key authentication */
     TAPI_AUTH_KEY_PSK,      /**< Pre-shared key authentication */
     TAPI_AUTH_KEY_8021X     /**< IEEE802.1x/EAP authentication */
 } tapi_auth_key_mgmt_t;
