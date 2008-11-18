@@ -317,8 +317,9 @@ wpa_supp_start(const char *ifname, const char *conf_fname)
         return 0;
     }
     RING("Starting wpa_supplicant on %s", ifname);
-    snprintf(buf, sizeof(buf), "wpa_supplicant -i %s -c %s -B >/dev/null 2>&1", 
-             ifname, conf_fname);
+    snprintf(buf, sizeof(buf),
+             "wpa_supplicant -i %s -c %s -D "
+             "wext -B >/dev/null 2>&1", ifname, conf_fname);
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
@@ -373,7 +374,15 @@ wpa_supp_reload(const char *ifname)
     RING("Reloading wpa_supplicant configuration on %s", ifname);
     if (wpa_supp_get(ifname))
     {
+        snprintf(buf, sizeof(buf), "wpa_cli -i %s disconnect", ifname);
+        if (ta_system(buf) != 0)
+            WARN("Command '%s' failed", buf);
+
         snprintf(buf, sizeof(buf), "wpa_cli -i %s reconfigure", ifname);
+        if (ta_system(buf) != 0)
+            WARN("Command '%s' failed", buf);
+
+        snprintf(buf, sizeof(buf), "wpa_cli -i %s reassociate", ifname);
         if (ta_system(buf) != 0)
             WARN("Command '%s' failed", buf);
     }
@@ -405,19 +414,19 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
     if (s_identity[0] != '\0')
         fprintf(f, "  identity=\"%s\"\n", s_identity);
 
+    if (s_key_mgmt[0] != '\0')
+        fprintf(f, "  key_mgmt=%s\n", s_key_mgmt);
+
     if (s_proto[0] != '\0')
         fprintf(f, "  proto=%s\n", s_proto);
     else if (strcmp(s_key_mgmt, "IEEE8021X") == 0)
         fprintf(f, "  eapol_flags=0\n");
 
-    if (s_key_mgmt[0] != '\0')
-        fprintf(f, "  key_mgmt=%s\n", s_key_mgmt);
+    if (s_pairwise[0] != '\0')
+        fprintf(f, "  pairwise=%s\n", s_pairwise);
 
     if (s_group[0] != '\0')
         fprintf(f, "  group=%s\n", s_group);
-
-    if (s_pairwise[0] != '\0')
-        fprintf(f, "  pairwise=%s\n", s_pairwise);
 
     if (s_psk[0] != '\0')
         fprintf(f, "  psk=\"%s\"\n", s_psk);
