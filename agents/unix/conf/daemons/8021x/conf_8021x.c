@@ -38,6 +38,13 @@ typedef enum {
     SP_PROTO,               /**< Protocol: "", "WPA", "WPA2", "RSN" */
     SP_KEY_MGMT,            /**< Key management: "NONE", "WPA-PSK",
                              *   "WPA-EAP" */
+    SP_WEP_KEY0,            /**< WEP keys: double-quoted ASCII strings
+                             *   or strings of 10/13/16 hexdigits
+                             *   without quotation */
+    SP_WEP_KEY1,
+    SP_WEP_KEY2,
+    SP_WEP_KEY3,
+    SP_WEP_TX_KEYIDX,       /**< Default WEP key index: 0..3 */
     SP_GROUP,               /**< Group cipher: "TKIP", "CCMP", "TKIP CCMP" */
     SP_PAIRWISE,            /**< Pairwise cipher: "TKIP", "CCMP",
                              *  "TKIP CCMP" */
@@ -402,6 +409,11 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
     const char *s_proto = supp_get_param(supp, SP_PROTO);
     const char *s_identity = supp_get_param(supp, SP_IDENTITY);
     const char *s_key_mgmt = supp_get_param(supp, SP_KEY_MGMT);
+    const char *s_wep_key0 = supp_get_param(supp, SP_WEP_KEY0);
+    const char *s_wep_key1 = supp_get_param(supp, SP_WEP_KEY1);
+    const char *s_wep_key2 = supp_get_param(supp, SP_WEP_KEY2);
+    const char *s_wep_key3 = supp_get_param(supp, SP_WEP_KEY3);
+    const char *s_wep_tx_keyidx = supp_get_param(supp, SP_WEP_TX_KEYIDX);
     const char *s_group = supp_get_param(supp, SP_GROUP);
     const char *s_pairwise = supp_get_param(supp, SP_PAIRWISE);
     const char *s_psk = supp_get_param(supp, SP_PSK);
@@ -416,6 +428,23 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
 
     if (s_key_mgmt[0] != '\0')
         fprintf(f, "  key_mgmt=%s\n", s_key_mgmt);
+
+    /* Writing WEP keys' settings into configuration file */
+    if (s_wep_key0[0] != '\0')
+        fprintf(f, "  wep_key0=%s\n", s_wep_key0);
+
+    if (s_wep_key1[0] != '\0')
+        fprintf(f, "  wep_key1=%s\n", s_wep_key1);
+
+    if (s_wep_key2[0] != '\0')
+        fprintf(f, "  wep_key2=%s\n", s_wep_key2);
+
+    if (s_wep_key3[0] != '\0')
+        fprintf(f, "  wep_key3=%s\n", s_wep_key3);
+
+    if (s_wep_tx_keyidx[0] != '\0')
+        fprintf(f, "  wep_tx_keyidx=%s\n", s_wep_tx_keyidx);
+    /**/
 
     if (s_proto[0] != '\0')
         fprintf(f, "  proto=%s\n", s_proto);
@@ -877,9 +906,21 @@ DS_SUPP_PARAM_SET(ds_supp_method_set, SP_METHOD)
 DS_SUPP_PARAM_GET(ds_supp_proto_get, SP_PROTO)
 DS_SUPP_PARAM_SET(ds_supp_proto_set, SP_PROTO)
 
-/* New brothers in our family */
+/* NEW_BROTHERS_IN_OUR_FAMILY */
 DS_SUPP_PARAM_GET(ds_supp_key_mgmt_get, SP_KEY_MGMT)
 DS_SUPP_PARAM_SET(ds_supp_key_mgmt_set, SP_KEY_MGMT)
+/* NODES_TO_MANAGE_WEP_KEYS */
+DS_SUPP_PARAM_GET(ds_supp_wep_key0_get, SP_WEP_KEY0)
+DS_SUPP_PARAM_SET(ds_supp_wep_key0_set, SP_WEP_KEY0)
+DS_SUPP_PARAM_GET(ds_supp_wep_key1_get, SP_WEP_KEY1)
+DS_SUPP_PARAM_SET(ds_supp_wep_key1_set, SP_WEP_KEY1)
+DS_SUPP_PARAM_GET(ds_supp_wep_key2_get, SP_WEP_KEY2)
+DS_SUPP_PARAM_SET(ds_supp_wep_key2_set, SP_WEP_KEY2)
+DS_SUPP_PARAM_GET(ds_supp_wep_key3_get, SP_WEP_KEY3)
+DS_SUPP_PARAM_SET(ds_supp_wep_key3_set, SP_WEP_KEY3)
+DS_SUPP_PARAM_GET(ds_supp_wep_tx_keyidx_get, SP_WEP_TX_KEYIDX)
+DS_SUPP_PARAM_SET(ds_supp_wep_tx_keyidx_set, SP_WEP_TX_KEYIDX)
+/* !NODES_TO_MANAGE_WEP_KEYS */
 DS_SUPP_PARAM_GET(ds_supp_group_get, SP_GROUP)
 DS_SUPP_PARAM_SET(ds_supp_group_set, SP_GROUP)
 DS_SUPP_PARAM_GET(ds_supp_pairwise_get, SP_PAIRWISE)
@@ -902,11 +943,38 @@ RCF_PCH_CFG_NODE_RW(node_ds_supp_group, "group",
                     ds_supp_group_get,
                     ds_supp_group_set);
 
-RCF_PCH_CFG_NODE_RW(node_ds_supp_key_mgmt, "key_mgmt",
+/* NODES_TO_MANAGE_WEP_KEYS */
+RCF_PCH_CFG_NODE_RW(node_ds_supp_wep_tx_keyidx, "wep_tx_keyidx",
                     NULL, &node_ds_supp_group,
+                    ds_supp_wep_tx_keyidx_get,
+                    ds_supp_wep_tx_keyidx_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_wep_key3, "wep_key3",
+                    NULL, &node_ds_supp_wep_tx_keyidx,
+                    ds_supp_wep_key3_get,
+                    ds_supp_wep_key3_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_wep_key2, "wep_key2",
+                    NULL, &node_ds_supp_wep_key3,
+                    ds_supp_wep_key2_get,
+                    ds_supp_wep_key2_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_wep_key1, "wep_key1",
+                    NULL, &node_ds_supp_wep_key2,
+                    ds_supp_wep_key1_get,
+                    ds_supp_wep_key1_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_wep_key0, "wep_key0",
+                    NULL, &node_ds_supp_wep_key1,
+                    ds_supp_wep_key0_get,
+                    ds_supp_wep_key0_set);
+/* !NODES_TO_MANAGE_WEP_KEYS */
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_key_mgmt, "key_mgmt",
+                    NULL, &node_ds_supp_wep_key0,
                     ds_supp_key_mgmt_get,
                     ds_supp_key_mgmt_set);
-/**/
+/* !NEW_BROTHERS_IN_OUR_FAMILY */
 
 RCF_PCH_CFG_NODE_RW(node_ds_supp_proto, "proto",
                     NULL, &node_ds_supp_key_mgmt,
