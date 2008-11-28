@@ -60,11 +60,16 @@ typedef struct tapi_ip_frag_spec {
 typedef struct tapi_ip4_packet_t {
     in_addr_t   src_addr;
     in_addr_t   dst_addr;
-
+    int         hlen;
+    int         len;
     uint8_t     ip_proto;
 
     uint8_t    *payload;
     size_t      pld_len;
+
+    size_t      ip_ident;
+    te_bool     more_frags;
+    size_t      offset;
 } tapi_ip4_packet_t;
 
 
@@ -90,7 +95,7 @@ extern te_errno tapi_ip4_add_csap_layer(asn_value **csap_spec,
                                         int         tos);
 
 /**
- * Add IPv4 PDU as the last PDU to the last unit of the traffic 
+ * Add IPv4 PDU as the last PDU to the last unit of the traffic
  * template or pattern.
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
@@ -132,7 +137,7 @@ extern te_errno tapi_ip4_add_pdu(asn_value **tmpl_or_ptrn,
  *                      existing
  * @param fragments     Array with IP fragments specifictaions
  * @param num_frags     Number of IP fragments (if 0, nothing is done)
- * 
+ *
  * @return Status code.
  */
 extern te_errno tapi_ip4_pdu_tmpl_fragments(asn_value         **tmpl,
@@ -141,7 +146,7 @@ extern te_errno tapi_ip4_pdu_tmpl_fragments(asn_value         **tmpl,
                                             unsigned int        num_frags);
 
 /**
- * Creates 'ip4.eth' CSAP
+ * Create 'ip4.eth' CSAP
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
@@ -159,18 +164,38 @@ extern te_errno tapi_ip4_pdu_tmpl_fragments(asn_value         **tmpl,
  * @return Status code.
  */
 extern te_errno tapi_ip4_eth_csap_create(const char    *ta_name,
-                                         int            sid, 
+                                         int            sid,
                                          const char    *eth_dev,
                                          unsigned int   receive_mode,
-                                         const uint8_t *loc_mac_addr, 
-                                         const uint8_t *rem_mac_addr, 
+                                         const uint8_t *loc_mac_addr,
+                                         const uint8_t *rem_mac_addr,
                                          in_addr_t      loc_ip4_addr,
                                          in_addr_t      rem_ip4_addr,
                                          int            ip_proto,
                                          csap_handle_t *ip4_csap);
 
+/**
+ * Creates 'ip4' CSAP
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param loc_ip4_addr  Local IPv4 address in network order or
+ *                      htonl(INADDR_ANY)
+ * @param rem_ip4_addr  Remote IPv4 address in network order or
+ *                      htonl(INADDR_ANY)
+ * @param proto         Protocol over IPv4 or negative number
+ * @param ip4_csap      Location for the IPv4 CSAP handle (OUT)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ip4_csap_create(const char    *ta_name,
+                                     int            sid,
+                                     in_addr_t      loc_ip4_addr,
+                                     in_addr_t      rem_ip4_addr,
+                                     int            ip_proto,
+                                     csap_handle_t *ip4_csap);
 
-/** 
+/**
  * Callback function for the receiving IP datagrams.
  *
  * Neither pkt, nor pkt->payload MAY NOT be stored for future use
@@ -202,10 +227,10 @@ extern tapi_tad_trrecv_cb_data *tapi_ip4_eth_trrecv_cb_data(
  *
  * @deprecated Avoid usage of this function, since it should be removed
  *             in the future.
- */ 
+ */
 extern te_errno tapi_ip4_template(tapi_ip_frag_spec *fragments,
                                   unsigned int num_frags,
-                                  int ttl, int protocol, 
+                                  int ttl, int protocol,
                                   const uint8_t *payload,
                                   size_t pld_len,
                                   asn_value **result_value);

@@ -2,7 +2,7 @@
  * @brief Test API for TAD. IP stack CSAP
  *
  * Implementation of Test API
- * 
+ *
  * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
@@ -139,8 +139,8 @@ tapi_ip4_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
                             unsigned int num_frags)
 {
     asn_value         *tmp_pdu;
-    te_errno           rc; 
-    unsigned int       i; 
+    te_errno           rc;
+    unsigned int       i;
     tapi_ip_frag_spec *frag;
     asn_value         *frag_seq = NULL;
 
@@ -213,7 +213,7 @@ tapi_ip4_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
     if (pdu != NULL)
         *pdu = tmp_pdu;
 
-    return 0; 
+    return 0;
 }
 
 
@@ -223,7 +223,7 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid,
                          const char *eth_dev, unsigned int receive_mode,
                          const uint8_t *loc_mac_addr,
                          const uint8_t *rem_mac_addr,
-                         in_addr_t      loc_ip4_addr, 
+                         in_addr_t      loc_ip4_addr,
                          in_addr_t      rem_ip4_addr,
                          int            ip_proto,
                          csap_handle_t *ip4_csap)
@@ -251,8 +251,40 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid,
         return rc;
     }
 
-    rc = tapi_tad_csap_create(ta_name, sid, "ip4.eth", 
-                              csap_spec, ip4_csap); 
+    rc = tapi_tad_csap_create(ta_name, sid, "ip4.eth",
+                              csap_spec, ip4_csap);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        return rc;
+    }
+
+    return 0;
+}
+
+/* See the description in tapi_ip4.h */
+te_errno
+tapi_ip4_csap_create(const char *ta_name, int sid,
+                     in_addr_t      loc_ip4_addr,
+                     in_addr_t      rem_ip4_addr,
+                     int            ip_proto,
+                     csap_handle_t *ip4_csap)
+{
+    te_errno        rc = 0;
+    asn_value      *csap_spec = NULL;
+
+    rc = tapi_ip4_add_csap_layer(&csap_spec,
+                                 loc_ip4_addr, rem_ip4_addr,
+                                 ip_proto, -1 /* default TTL */,
+                                 -1 /* default TOS */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        return rc;
+    }
+
+    rc = tapi_tad_csap_create(ta_name, sid, "ip4",
+                              csap_spec, ip4_csap);
     if (rc != 0)
     {
         asn_free_value(csap_spec);
@@ -263,14 +295,13 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid,
 }
 
 
-
 typedef struct tapi_ip4_eth_pkt_handler_data {
     ip4_callback  callback;
     void         *user_data;
 } tapi_ip4_eth_pkt_handler_data;
 
-/* 
- * Pkt handler for IP packets 
+/*
+ * Pkt handler for IP packets
  */
 static void
 ip4_pkt_handler(asn_value *pkt, void *user_param)
@@ -295,7 +326,7 @@ ip4_pkt_handler(asn_value *pkt, void *user_param)
     if (cb_data->callback == NULL)
     {
         WARN("%s called with NULL user cb", __FUNCTION__);
-        return; 
+        return;
     }
 
 #define CHECK_FAIL(msg_...) \
@@ -312,13 +343,13 @@ ip4_pkt_handler(asn_value *pkt, void *user_param)
               __FUNCTION__, rc);
 
     len = sizeof(plain_pkt.src_addr);
-    rc = ndn_du_read_plain_oct(ip_pdu, NDN_TAG_IP4_SRC_ADDR, 
+    rc = ndn_du_read_plain_oct(ip_pdu, NDN_TAG_IP4_SRC_ADDR,
                                (uint8_t *)&(plain_pkt.src_addr), &len);
     CHECK_FAIL("%s(): get IP4 src fails, rc = %r",
               __FUNCTION__, rc);
 
     len = sizeof(plain_pkt.dst_addr);
-    rc = ndn_du_read_plain_oct(ip_pdu, NDN_TAG_IP4_DST_ADDR, 
+    rc = ndn_du_read_plain_oct(ip_pdu, NDN_TAG_IP4_DST_ADDR,
                                (uint8_t *)&(plain_pkt.dst_addr), &len);
     CHECK_FAIL("%s(): get IP4 dst fails, rc = %r",
               __FUNCTION__, rc);
@@ -331,6 +362,30 @@ ip4_pkt_handler(asn_value *pkt, void *user_param)
     plain_pkt.payload = malloc(len);
 
     rc = asn_read_value_field(pkt, plain_pkt.payload, &len, "payload");
+
+    rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_HLEN, &hdr_field);
+    CHECK_FAIL("%s(): get IP4 header length fails, rc = %r",
+               __FUNCTION__, rc);
+    plain_pkt.hlen = hdr_field;
+
+    rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_LEN, &hdr_field);
+    CHECK_FAIL("%s(): get IP4 total length fails, rc = %r",
+               __FUNCTION__, rc);
+    plain_pkt.len = hdr_field;
+
+    rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_IDENT, &hdr_field);
+    CHECK_FAIL("%s(): get IP4 ident fails, rc = %r", __FUNCTION__, rc);
+    plain_pkt.ip_ident = hdr_field;
+
+    rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_FRAG_OFFSET, &hdr_field);
+    CHECK_FAIL("%s(): get IP4 frag offset fails, rc = %r",
+               __FUNCTION__, rc);
+    plain_pkt.offset = hdr_field;
+
+    rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_MORE_FRAGS, &hdr_field);
+    CHECK_FAIL("%s(): get IP4 more_frags flag fails, rc = %r",
+               __FUNCTION__, rc);
+    plain_pkt.more_frags = hdr_field != 0 ? TRUE : FALSE ;
 
     cb_data->callback(&plain_pkt, cb_data->user_data);
 
@@ -354,7 +409,7 @@ tapi_ip4_eth_trrecv_cb_data(ip4_callback  callback,
     }
     cb_data->callback = callback;
     cb_data->user_data = user_data;
-    
+
     res = tapi_tad_trrecv_make_cb_data(ip4_pkt_handler, cb_data);
     if (res == NULL)
         free(cb_data);
@@ -367,17 +422,17 @@ tapi_ip4_eth_trrecv_cb_data(ip4_callback  callback,
 
 
 
-/* 
+/*
  * See the description in tapi_ip4.h.
  *
  * Avoid usage of this function.
  */
 te_errno
 tapi_ip4_template(tapi_ip_frag_spec *fragments, unsigned int num_frags,
-                  int ttl, int protocol, 
+                  int ttl, int protocol,
                   const uint8_t *payload, size_t pld_len,
                   asn_value **result_value)
-{ 
+{
     te_errno    rc;
     asn_value *ip4_pdu;
 
@@ -391,7 +446,7 @@ tapi_ip4_template(tapi_ip_frag_spec *fragments, unsigned int num_frags,
     } while (0)
 
     if (result_value == NULL)
-        return TE_RC(TE_TAPI, TE_EWRONGPTR); 
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     rc = tapi_ip4_add_pdu(result_value, &ip4_pdu, FALSE /* template */,
                           htonl(INADDR_ANY), htonl(INADDR_ANY),
