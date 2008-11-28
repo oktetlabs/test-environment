@@ -822,6 +822,15 @@ tad_recv_match_payload(tad_payload_spec_t *pattern, const tad_pkt *payload)
                                     pattern->mask.exact_len);
             break;
 
+        case TAD_PLD_BYTES:
+            /*
+             * We don't check exact length because of possible
+             * trailing bytes.
+             */
+            rc = tad_pkt_match_bytes(payload, pattern->plain.length,
+                                     pattern->plain.data, FALSE);
+            break;
+
         default:
             rc = TE_EOPNOTSUPP;
             ERROR("%s(): Match for pattern type %u is not supported",
@@ -832,9 +841,9 @@ tad_recv_match_payload(tad_payload_spec_t *pattern, const tad_pkt *payload)
 
     return rc;
 }
- 
+
 /**
- * Try match binary data with Traffic-Pattern-Unit and prepare ASN value 
+ * Try match binary data with Traffic-Pattern-Unit and prepare ASN value
  * with packet if it satisfies to the pattern unit.
  *
  * @param csap          CSAP instance

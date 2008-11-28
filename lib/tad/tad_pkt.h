@@ -700,6 +700,20 @@ extern te_errno tad_pkt_match_mask(const tad_pkt *pkt, size_t len,
                                    const uint8_t *value,
                                    te_bool exact_len);
 
+/**
+ * Match packet content by payload.
+ *
+ * @param pkt           Packet
+ * @param len           Length of the payload
+ * @param mask          Payload bytes
+ * @param exact_len     Is packet length should be equal to length of
+ *                      the payload or may be greater?
+ *
+ * @return Status code.
+ */
+extern te_errno tad_pkt_match_bytes(const tad_pkt *pkt, size_t len,
+                                    const uint8_t *payload,
+                                    te_bool exact_len);
 
 /**
  * Alloc additional segments for the packet

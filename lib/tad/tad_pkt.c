@@ -1231,6 +1231,7 @@ tad_pkt_match_mask(const tad_pkt *pkt, size_t len, const uint8_t *mask,
              (len > 0) && (slen > 0);
              d++, m++, v++, len--, slen--)
         {
+            F_VERB("d: %x & m: %x ?= v: %x & m: %x", *d, *m, *v, *m);
             if ((*d & *m) != (*v & *m))
             { 
                 return TE_ETADNOTMATCH;
@@ -1246,9 +1247,26 @@ tad_pkt_match_mask(const tad_pkt *pkt, size_t len, const uint8_t *mask,
 
 /* See description in tad_pkt.h */
 te_errno
+tad_pkt_match_bytes(const tad_pkt *pkt, size_t len,
+                    const uint8_t *payload, te_bool exact_len)
+{
+    uint8_t   *mask;
+    te_errno   rv;
+
+    if ((mask = malloc(len)) == NULL)
+        return TE_ENOMEM;
+
+    memset(mask, 0xFF, len);
+    rv = tad_pkt_match_mask(pkt, len, mask, payload, exact_len);
+    free(mask);
+
+    return rv;
+}
+
+/* See description in tad_pkt.h */
+te_errno
 tad_pkt_realloc_segs(tad_pkt *pkt, size_t new_len)
 {
-    te_errno     rc;
     tad_pkt_seg *seg;
 
     assert(pkt != NULL);
