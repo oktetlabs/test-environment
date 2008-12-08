@@ -46,10 +46,17 @@
 #define CONST_STRING_LENGTH(str_) (sizeof(str_) - 1)
 
 
-/** @name Types of DHCP Options */
-#define DHCP_OPT_HOSTNAME       12  /**< Name of the host */
-#define DHCP_OPT_MESSAGE_TYPE   53  /**< DHCP Message Type */
-#define DHCP_OPT_SERVER_ID      54  /**< Server Identifier */
+/** @name Type of DHCP Options */
+typedef enum dhcp_option_type {
+    DHCP_OPT_INVALID      = -1,  /**< Invalid option */
+    DHCP_OPT_HOSTNAME     = 12,  /**< Name of the host */
+    DHCP_OPT_MESSAGE_TYPE = 53,  /**< DHCP Message Type */
+    DHCP_OPT_SERVER_ID    = 54,  /**< Server Identifier */
+    DHCP_OPT_VENDOR_CLASS = 60,  /**< Vendor class */
+    DHCP_OPT_CLIENT_ID    = 61,  /**< Client ID */ 
+    DHCP_OPT_USER_CLASS   = 77,  /**< User class */
+    DHCP_OPT_END          = 255, /**< End option */
+} dhcp_option_type;
 /*@}*/
 
 /**
