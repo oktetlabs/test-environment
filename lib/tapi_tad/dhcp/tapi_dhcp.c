@@ -581,6 +581,8 @@ dhcpv4_option_create(uint8_t type, uint8_t len,
         return NULL;
     }
 
+    opt->next = NULL;
+    opt->subopts = NULL;
     opt->type = type;
     opt->len = len;
     opt->val_len = val_len;
