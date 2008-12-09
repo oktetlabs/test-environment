@@ -730,7 +730,8 @@ efport2ifindex(void)
 
 #define NDIS_EFAB       "dev_c101_ndis_"
 #define NDIS_SF_2_1         "sfe_ndis_"
-#define NDIS_SF_2_2         "ndis_basic"
+//#define NDIS_SF_2_2         "ndis_basic"
+#define NDIS_SF_2_2     "{c641c770-faac-44ed-9c73-48d1b5e59200}"
 #define BUFSIZE         512
 #define AMOUNT_OF_GUIDS         5
 
@@ -4462,7 +4463,8 @@ ta_unix_conf_phy_init(void)
 
 #define NET_PATH        "SYSTEM\\CurrentControlSet\\Control\\Class\\" \
                         "{4D36E972-E325-11CE-BFC1-08002bE10318}"
-#define NDIS_SF_0_2_2         "ndis_basic"
+//#define NDIS_SF_0_2_2         "ndis_basic"
+#define NDIS_SF_0_2_2   "{c641c770-faac-44ed-9c73-48d1b5e59200}"
 #define NDIS_SF_0_2_1         "sfe_ndis_0"
 #define BUFSIZE_REG         256
 #define SPEED_DUPLEX_NAME TEXT("*SpeedDuplex")
