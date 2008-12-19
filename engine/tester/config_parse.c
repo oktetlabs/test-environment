@@ -95,7 +95,8 @@ static te_errno alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg,
 
 static te_errno parse_test_package(tester_cfg         *cfg,
                                    const test_session *session,
-                                   test_package       *pkg);
+                                   test_package       *pkg,
+                                   char const         *src);
 
 static void run_item_free(run_item *run);
 static void run_items_free(run_items *runs);
@@ -1604,7 +1605,10 @@ get_package(xmlNodePtr node, tester_cfg *cfg, const test_session *session,
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
-    rc = parse_test_package(cfg, session, p);
+    /* Parse test package also getting optional 'src' attribute */
+    rc = parse_test_package(cfg, session, p,
+                            XML2CHAR(xmlGetProp(node,
+                                                CONST_CHAR2XML("src"))));
     if (rc != 0)
     {
         ERROR("Parsing/preprocessing of the package '%s' failed",
@@ -2208,7 +2212,7 @@ tests_info_free(tests_info *ti)
  */
 static te_errno
 parse_test_package(tester_cfg *cfg, const test_session *session,
-                   test_package *pkg)
+                   test_package *pkg, char const *src)
 {
     xmlParserCtxtPtr    parser = NULL;
     xmlDocPtr           doc = NULL;
@@ -2223,8 +2227,9 @@ parse_test_package(tester_cfg *cfg, const test_session *session,
 
     TAILQ_INIT(&ti);
 
-    pkg->path = name_to_path(cfg, pkg->name, TRUE);
-    if (pkg->path == NULL)
+    if ((pkg->path = name_to_path(cfg,
+                                src != NULL ? src : pkg->name,
+                                src != NULL ? FALSE : TRUE)) == NULL)
     {
         ERROR("Failed to make path to Test Package file by name and "
               "context");
