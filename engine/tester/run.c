@@ -674,16 +674,21 @@ test_params_to_string(char *str, const unsigned int n_args,
 /**
  * Log test (script, package, session) start.
  *  
+ * @param ctx           Tester context
  * @param ri            Run item
- * @param parent        Parent ID
- * @param test          Test ID
  * @param tin           Test identification number
- * @param args          Array with test iteration arguments
  */
 static void
-log_test_start(const run_item *ri, test_id parent, test_id test,
-               unsigned int tin, const test_iter_arg *args)
+log_test_start(const tester_ctx *ctx, const run_item *ri,
+               unsigned int tin)
 {
+    test_id                 parent = ctx->group_result.id;
+    test_id                 test = ctx->current_result.id;
+    const test_iter_arg    *args = ctx->args;
+    const char             *name =
+        (ctx->flags & TESTER_LOG_IGNORE_RUN_NAME) ? test_get_name(ri)
+                                                  : run_item_name(ri);
+
     char   *params_str;
     char   *authors;
 
@@ -697,7 +702,7 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
                 {
                     TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
                                 "TEST %s \"%s\" TIN %u ARGs%s",
-                                parent, test, ri->u.script.name,
+                                parent, test, name,
                                 PRINT_STRING(ri->u.script.objective),
                                 tin, PRINT_STRING(params_str));
                 }
@@ -705,7 +710,7 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
                 {
                     TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
                                 "TEST %s \"%s\" TIN %u PAGE %s ARGs%s",
-                                parent, test, ri->u.script.name,
+                                parent, test, name,
                                 PRINT_STRING(ri->u.script.objective),
                                 tin, ri->u.script.page,
                                 PRINT_STRING(params_str));
@@ -717,7 +722,7 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
                 {
                     TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
                                 "TEST %s \"%s\" ARGs%s",
-                                parent, test, ri->u.script.name,
+                                parent, test, name,
                                 PRINT_STRING(ri->u.script.objective),
                                 PRINT_STRING(params_str));
                 }
@@ -725,7 +730,7 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
                 {
                     TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
                                 "TEST %s \"%s\" PAGE %s ARGs%s",
-                                parent, test, ri->u.script.name,
+                                parent, test, name,
                                 PRINT_STRING(ri->u.script.objective),
                                 ri->u.script.page,
                                 PRINT_STRING(params_str));
@@ -747,7 +752,7 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
             {
                 TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
                             "PACKAGE %s \"%s\" ARGs%s",
-                            parent, test, ri->u.package->name,
+                            parent, test, name,
                             PRINT_STRING(ri->u.package->objective),
                             PRINT_STRING(params_str));
             }
@@ -927,6 +932,7 @@ tester_test_status_to_te_test_result(tester_test_status status,
  * Run test script in provided context with specified parameters.
  *
  * @param script        Test script to run
+ * @param run_name      Run item name or @c NULL
  * @param exec_id       Test execution ID
  * @param n_args        Number of arguments
  * @param args          Arguments to be passed
@@ -936,7 +942,7 @@ tester_test_status_to_te_test_result(tester_test_status status,
  * @return Status code.
  */
 static te_errno
-run_test_script(test_script *script, test_id exec_id,
+run_test_script(test_script *script, const char *run_name, test_id exec_id,
                 const unsigned int n_args, const test_iter_arg *args,
                 const unsigned int flags, tester_test_status *status)
 {
@@ -954,8 +960,10 @@ run_test_script(test_script *script, test_id exec_id,
     ENTRY("name=%s exec_id=%u n_args=%u arg=%p flags=0x%x",
           script->name, exec_id, n_args, args, flags);
 
-    if (asprintf(&params_str, " te_test_id=%u te_rand_seed=%d",
-                 exec_id, rand()) < 0)
+    if (asprintf(&params_str,
+                 " te_test_id=%u te_test_name=\"%s\" te_rand_seed=%d",
+                 exec_id, run_name != NULL ? run_name : script->name,
+                 rand()) < 0)
     {
         ERROR("%s(): asprintf() failed", __FUNCTION__);
         return TE_RC(TE_TESTER, TE_ENOMEM);
@@ -1172,7 +1180,7 @@ run_script(run_item *ri, test_script *script,
 
     assert(ri != NULL);
     assert(ri->n_args == ctx->n_args);
-    if (run_test_script(script, ctx->current_result.id,
+    if (run_test_script(script, ri->name, ctx->current_result.id,
                         ctx->n_args, ctx->args,
                         gctx->act == NULL ? 0 : /* FIXME */
                            gctx->act->flags,
@@ -2455,8 +2463,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     /* Test is considered here as run, if such event is logged */
     tester_term_out_start(ctx->flags, ri->type, run_item_name(ri), tin,
                           ctx->group_result.id, ctx->current_result.id);
-    log_test_start(ri, ctx->group_result.id, ctx->current_result.id,
-                   tin, ctx->args);
+    log_test_start(ctx, ri, tin);
 
     tester_test_result_add(&gctx->results, &ctx->current_result);
 

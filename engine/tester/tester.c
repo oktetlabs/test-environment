@@ -101,7 +101,8 @@ tester_global_init(tester_global *global)
     global->rand_seed = (unsigned int)time(NULL);
 
     /* By default verbosity level is set to 1 */
-    global->flags |= TESTER_VERBOSE | TESTER_NO_TRC;
+    global->flags |= TESTER_VERBOSE | TESTER_NO_TRC |
+                     TESTER_LOG_IGNORE_RUN_NAME;
 
     global->cfgs.total_iters = 0;
     TAILQ_INIT(&global->cfgs.head);
@@ -184,6 +185,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_VERBOSE,
         TESTER_OPT_OUT_TIN,
         TESTER_OPT_OUT_EXPECTED,
+        TESTER_OPT_IGNORE_RUN_NAME,
         TESTER_OPT_INTERACTIVE,
 
         TESTER_OPT_NO_BUILD,
@@ -339,6 +341,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         { "out-expected", 'e', POPT_ARG_NONE, NULL, TESTER_OPT_OUT_EXPECTED,
           "If result is expected, output the result just after OK.", NULL },
 
+        { "ignore-run-name", '\0', POPT_ARG_NONE, NULL,
+          TESTER_OPT_IGNORE_RUN_NAME,
+          "Force testing flow logging to ignore run item names.", NULL },
+
         { "verbose", 'v', POPT_ARG_NONE, NULL, TESTER_OPT_VERBOSE,
           "Increase verbosity of the Tester (the first level is set by "
           "default).", NULL },
@@ -432,6 +438,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
             case TESTER_OPT_OUT_EXPECTED:
                 global->flags |= TESTER_OUT_EXP;
+                break;
+
+            case TESTER_OPT_IGNORE_RUN_NAME:
+                global->flags |= TESTER_LOG_IGNORE_RUN_NAME;
                 break;
 
             case TESTER_OPT_INTERACTIVE:
