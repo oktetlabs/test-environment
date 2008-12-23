@@ -101,8 +101,7 @@ tester_global_init(tester_global *global)
     global->rand_seed = (unsigned int)time(NULL);
 
     /* By default verbosity level is set to 1 */
-    global->flags |= TESTER_VERBOSE | TESTER_NO_TRC |
-                     TESTER_LOG_IGNORE_RUN_NAME;
+    global->flags |= TESTER_VERBOSE | TESTER_NO_TRC;
 
     global->cfgs.total_iters = 0;
     TAILQ_INIT(&global->cfgs.head);
