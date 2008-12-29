@@ -26,6 +26,8 @@ Engine (in [] brackets - debian package names):
   avoid mixture in log because of unprecise timestamps in messages
   logged by Dispatcher (via logging script))
 - libgss0 (>=0.0.18) [libgss0]
+- Wireless tools - development files [libiw-dev]
+- PPPoE [pppoe] [pppoeconf]
 - curl libraries [not from debian, should be taken from storage]
 
 We've tested engine on Linux only.
