@@ -474,7 +474,7 @@ tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
          data->spec_data->du_flags.val_i32,
          (int)(*(p-1)));
 
-    PUT_BIN_DATA(du_win_size, 1400, 2); /* TODO: good default window */
+    PUT_BIN_DATA(du_win_size, 0xFFFF, 2); /* TODO: good default window */
     PUT_BIN_DATA(du_checksum, 0, 2);
     PUT_BIN_DATA(du_urg_p, 0, 2); 
 
