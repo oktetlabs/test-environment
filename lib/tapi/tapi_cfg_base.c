@@ -74,12 +74,11 @@ tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled, const char *vrsn)
     int             rc;
     cfg_val_type    val_type = CVT_INTEGER;
     int             val;
-    char            *val_str;
+    char           *val_str = NULL;
     char            obj_id[CFG_OID_MAX];
-    
 
     snprintf(obj_id, sizeof(obj_id), "/agent/ip%s_fw", vrsn);
-    
+
     if (cfg_get_instance_fmt(NULL, &val_str,
                              "/agent:%s/rsrc:ip%s_fw", ta, vrsn) != 0)
     {
@@ -87,13 +86,13 @@ tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled, const char *vrsn)
                                   "/agent:%s/rsrc:ip%s_fw", ta, vrsn);
         if (rc != 0)
             return rc;
-    }        
+    }
     else
-        free(val_str);                     
+        free(val_str);
 
-    rc = cfg_get_instance_fmt(&val_type, &val,
-                              "/agent:%s/ip%s_fw:", ta, vrsn);
-    if (rc != 0)
+    if ((rc = cfg_get_instance_fmt(&val_type, &val,
+                                   "/agent:%s/ip%s_fw:",
+                                   ta, vrsn)) != 0)
     {
         ERROR("Failed to get IPv%s forwarding state on '%s': %r",
               vrsn, ta, rc);
@@ -104,14 +103,15 @@ tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled, const char *vrsn)
     {
         int new_val = *enabled;
 
-        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, new_val),
-                                  "/agent:%s/ip%s_fw:", ta, vrsn);
-        if (rc != 0)
+        if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, new_val),
+                                       "/agent:%s/ip%s_fw:",
+                                       ta, vrsn)) != 0)
         {
             ERROR("Failed to configure IPv%s forwarding on '%s': %r",
                   vrsn, ta, rc);
             return rc;
         }
+
         *enabled = val;
     }
 
