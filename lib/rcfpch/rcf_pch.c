@@ -318,7 +318,7 @@ get_opcode(char **ptr, rcf_op_t *opcode)
     TRY_CMD(RPC);
     TRY_CMD(KILL);
 
-#undef TRY_COMMAND
+#undef TRY_CMD
 
     return 1;
 }
