@@ -181,15 +181,15 @@ extern "C" {
  * @param expr_  Expression to be checked
  */
 #define CLEANUP_CHECK_RC(expr_) \
-    do {                                                       \
-        int rc_;                                               \
-                                                               \
-        if ((rc_ = (expr_)) != 0)                              \
-        {                                                      \
-            ERROR("line %d: %s returns 0x%X, but expected 0",  \
-                  __LINE__, # expr_, rc_);                     \
-            result = EXIT_FAILURE;                             \
-        }                                                      \
+    do {                                                            \
+        int rc_;                                                    \
+                                                                    \
+        if ((rc_ = (expr_)) != 0)                                   \
+        {                                                           \
+            ERROR("line %d: %s returns 0x%X (%r), but expected 0",  \
+                  __LINE__, # expr_, rc_, rc_);                     \
+            result = EXIT_FAILURE;                                  \
+        }                                                           \
     } while (0)
 
 /**
