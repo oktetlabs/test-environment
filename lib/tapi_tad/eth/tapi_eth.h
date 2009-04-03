@@ -123,8 +123,8 @@ extern te_errno tapi_eth_add_pdu(asn_value      **tmpl_or_ptrn,
  *
  * @return Status code.
  */
-extern te_errno tapi_eth_pdu_len_type(asn_value      *pdu,
-                                      const uint16_t  len_type);
+extern te_errno tapi_eth_pdu_length_type(asn_value      *pdu,
+                                         const uint16_t  len_type);
 
 /**
  * Add IEEE Std 802.1Q tag header.

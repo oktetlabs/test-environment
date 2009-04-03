@@ -71,28 +71,9 @@ tapi_eth_add_csap_layer(asn_value      **csap_spec,
                         te_bool3         llc)
 {
     asn_value  *layer;
-    
+
     UNUSED(tagged);
     UNUSED(llc);
-#if 0
-    if (!is_tagged &&
-        (priority != NULL || cfi != NULL || vlan_id != NULL))
-    {
-        ERROR("%s(): Priority/CFI/VLAN-ID cannot be specified for "
-              "untagged frame", __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-    if (is_tagged)
-    {
-        /* FIXME: Add frame-type.#tagged container */
-        if (priority != NULL)
-            CHECK_RC(asn_write_int32(layer, *priority, "priority.#plain"));
-        if (cfi != NULL)
-            CHECK_RC(asn_write_int32(layer, *cfi, "cfi.#plain"));
-        if (vlan_id != NULL)
-            CHECK_RC(asn_write_int32(layer, *vlan_id, "vlan-id.#plain"));
-    }
-#endif
 
     CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_eth_csap, "#eth",
                                      &layer));
