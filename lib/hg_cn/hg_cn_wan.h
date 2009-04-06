@@ -2,6 +2,7 @@
  * @brief Home Gateway Configuration Notation
  *
  * Home Gateway Configuration Notation definitions.
+ * WAN side configuration.
  *
  *
  * Copyright (C) 2009 Test Environment authors (see file AUTHORS
@@ -28,8 +29,8 @@
  * $Id$
  */
 
-#ifndef __TE_HG_CN_H__
-#define __TE_HG_CN_H__
+#ifndef __TE_HG_CN_WAN_H__
+#define __TE_HG_CN_WAN_H__
 
 #include "asn_usr.h"
 
@@ -42,4 +43,4 @@ extern "C" {
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_HG_CN_H__ */
+#endif /* !__TE_HG_CN_WAN_H__ */

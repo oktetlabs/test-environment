@@ -1,7 +1,7 @@
 /** @file
  * @brief Home Gateway Configuration Notation
  *
- * Defition of Home Gateway configuration using ASN.1 syntax.
+ * WAN side configuration ANS.1 syntax.
  *
  *
  * Copyright (C) 2009 Test Environment authors (see file AUTHORS
@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "HG CN"
+#define TE_LGR_USER     "HG CN WAN"
 
 #include "te_config.h"
 
