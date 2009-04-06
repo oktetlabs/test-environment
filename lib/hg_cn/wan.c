@@ -5,7 +5,7 @@
  *
  *
  * Copyright (C) 2009 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
+ * in the wan directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -45,4 +45,29 @@
 #include "logger_api.h"
 #include "asn_usr.h"
 #include "hg_cn.h"
+#include "hg_cn_wan.h"
 
+
+/* WAN configuration */
+static asn_named_entry_t _hg_cn_wan_ne_array[] = {
+    {
+        .name   = "eth",
+        .type   = &hg_cn_wan_eth_s,
+        .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH },
+    },
+    {
+        .name   = "atm",
+        .type   = &hg_cn_wan_atm_s,
+        .tag    = { PRIVATE, HG_CN_TAG_WAN_ATM },
+    },
+};
+
+asn_type hg_cn_wan_s = {
+    .name   = "WAN",
+    .tag    = { PRIVATE, HG_CN_TAG_WAN },
+    .syntax = SEQUENCE,
+    .len    = TE_ARRAY_LEN(_hg_cn_wan_ne_array),
+    .sp     = { _hg_cn_wan_ne_array },
+};
+
+const asn_type * const hg_cn_wan = &hg_cn_wan_s;

@@ -45,4 +45,30 @@
 #include "logger_api.h"
 #include "asn_usr.h"
 #include "hg_cn.h"
+#include "hg_cn_lan.h"
+#include "hg_cn_wan.h"
 
+
+/* Configuration root */
+static asn_named_entry_t _hg_cn_root_ne_array[] = {
+    {
+        .name   = "wan",
+        .type   = &hg_cn_wan_s,
+        .tag    = { PRIVATE, HG_CN_TAG_WAN },
+    },
+    {
+        .name   = "lan",
+        .type   = &hg_cn_lan_s,
+        .tag    = { PRIVATE, HG_CN_TAG_LAN },
+    },
+};
+
+asn_type hg_cn_root_s = {
+    .name   = "Configuration",
+    .tag    = { PRIVATE, HG_CN_TAG_ROOT },
+    .syntax = SEQUENCE,
+    .len    = TE_ARRAY_LEN(_hg_cn_root_ne_array),
+    .sp     = { _hg_cn_root_ne_array },
+};
+
+const asn_type * const hg_cn_root = &hg_cn_root_s;

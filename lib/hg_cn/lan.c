@@ -45,4 +45,5 @@
 #include "logger_api.h"
 #include "asn_usr.h"
 #include "hg_cn.h"
+#include "hg_cn_lan.h"
 
