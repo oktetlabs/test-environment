@@ -376,11 +376,11 @@ wpa_supp_reload(const char *ifname)
     if (!wpa_supp_get(ifname))
     {
         WARN("%s: wpa_supplicant on %s is not running", __FUNCTION__, ifname);
-        return 0;
     }
-    RING("Reloading wpa_supplicant configuration on %s", ifname);
-    if (wpa_supp_get(ifname))
+    else
     {
+        RING("Reloading wpa_supplicant configuration on %s", ifname);
+
         snprintf(buf, sizeof(buf), "wpa_cli -i %s disconnect", ifname);
         if (ta_system(buf) != 0)
             WARN("Command '%s' failed", buf);
@@ -393,6 +393,7 @@ wpa_supp_reload(const char *ifname)
         if (ta_system(buf) != 0)
             WARN("Command '%s' failed", buf);
     }
+
     return 0;
 }
 
