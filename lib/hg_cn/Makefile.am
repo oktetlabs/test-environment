@@ -8,11 +8,13 @@ lib_LTLIBRARIES = libhg_cn.la
 
 include_HEADERS = \
 	hg_cn.h \
-	hg_cn_kprobes.h
+	hg_cn_lan.h \
+	hg_cn_wan.h
 
 libhg_cn_la_SOURCES = \
-	hg_cn_generic.c \
-	hg_cn_kprobes.c
+	hg_cn.c \
+	lan.c \
+	wan.c
 
 
 install-exec-hook:
