@@ -1626,10 +1626,15 @@ ta_waitpid(pid_t pid, int *p_status, int options)
         else
             ta_children_wait_list = wake->next;
         if (wake->next != NULL)
+            /*
+             * in case wake->next->prev is a valid node, if we set it to
+             * NULL we'll break backward direction of the list
+             */
 #if 0
             wake->next->prev = NULL;
-#endif
+#else
             wake->next->prev = wake->prev;
+#endif
         if (!found)
             found = find_dead_child(pid, &status);
         UNLOCK;
