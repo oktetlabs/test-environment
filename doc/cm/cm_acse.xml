@@ -1,0 +1,177 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!-- This configuration model is intended for describing of configuration
+         information common for all Test Agents -->
+
+    <!--
+        Copyright (C) 2003 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+        
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+        
+        Author: Edward Makarov E-mail: Edward.Makarov@oktetlabs.ru
+    -->
+
+    <!-- ACSE object.
+         Name: none
+         Value: every read operation gets Configurator
+                invocationally unique (numeric) ID -->
+    <object oid="/agent/acse" access="read_only" type="string"
+            volatile="true"/>
+
+    <!-- ACS object.
+         Name: unique name -->
+    <object oid="/agent/acse/acs" access="read_create" type="none"/>
+
+    <!-- ACS URL.
+         Name: none
+         Value: URL -->
+    <object oid="/agent/acse/acs/url" access="read_write"
+            type="string"/>
+
+    <!-- ACS certificate.
+         Name: none
+         Value: certificate serialized into string representation -->
+    <object oid="/agent/acse/acs/cert" access="read_write"
+            type="string"/>
+
+    <!-- User name used while authenticating to an ACS.
+         Name: none
+         Value: user name -->
+    <object oid="/agent/acse/acs/user" access="read_write"
+            type="string"/>
+
+    <!-- User password used while authenticating to an ACS.
+         Name: none
+         Value: user password -->
+    <object oid="/agent/acse/acs/pass" access="read_write"
+            type="string"/>
+
+    <!-- CPE object.
+         Name: unique name -->
+    <object oid="/agent/acse/acs/cpe" access="read_create"
+            type="none"/>
+
+    <!-- CPE URL.
+         Name: none
+         Value: URL -->
+    <object oid="/agent/acse/acs/cpe/url" access="read_write"
+            type="string"/>
+
+    <!-- CPE certificate.
+         Name: none
+         Value: certificate serialized into string representation -->
+    <object oid="/agent/acse/acs/cpe/cert" access="read_write"
+            type="string"/>
+
+    <!-- User name used while authenticating to a CPE.
+         Name: none
+         Value: user name -->
+    <object oid="/agent/acse/acs/cpe/user" access="read_write"
+            type="string"/>
+
+    <!-- User password used while authenticating to a CPE.
+         Name: none
+         Value: user password -->
+    <object oid="/agent/acse/acs/cpe/pass" access="read_write"
+            type="string"/>
+
+    <!-- CPE device ID object.
+         Name: none -->
+    <object oid="/agent/acse/acs/cpe/device_id" access="read_only"
+            type="none"/>
+
+    <!-- CPE device ID Manufacturer subobject.
+         Name: none
+         Value: Manufacturer of the device -->
+    <object oid="/agent/acse/acs/cpe/device_id/manufacturer"
+            access="read_write" type="string"/>
+
+    <!-- CPE device ID Organizationally Unique Identifier subobject.
+         Name: none
+         Value: OUI of the device -->
+    <object oid="/agent/acse/acs/cpe/device_id/oui"
+            access="read_write" type="string"/>
+
+    <!-- CPE device ID ProductClass subobject.
+         Name: none
+         Value: Product Class of the device -->
+    <object oid="/agent/acse/acs/cpe/device_id/product_class"
+            access="read_write" type="string"/>
+
+    <!-- CPE device ID SerialNumber subobject.
+         Name: none
+         Value: Serial Number of the device -->
+    <object oid="/agent/acse/acs/cpe/device_id/serial_number"
+            access="read_write" type="string"/>
+
+    <!-- Sessions object.
+         Name: none -->
+    <object oid="/agent/acse/sessions" access="read_only"
+            type="none"/>
+
+    <!-- Session object.
+         Name: based on Configurator invocationally unique ID -->
+    <object oid="/agent/acse/sessions/session" access="read_only"
+            type="none" volatile="true"/>
+
+    <!-- Link to the CPE instance that corresponds to a session object.
+         Name: none
+         Value: "/agent:Agt/acse:/acs:ACS/cpe:CPE" instance -->
+    <object oid="/agent/acse/sessions/session/link" access="read_only"
+            type="string" volatile="true"/>
+
+    <!-- Actual state of a session.
+         Name: none
+         Value: 1 - SESSION_CONNECTED
+                2 - SESSION_AUTHENTICATED
+                3 - SESSION_PREINITIATED
+                4 - SESSION_INITIATED
+                5 - SESSIOD_INSIDE_TRANSACTION
+                6 - SESSION_OUT_OF_TRANSACTION -->
+    <object oid="/agent/acse/sessions/session/state"
+            access="read_only" type="integer" volatile="true"/>
+
+    <!-- Target state of a session.
+         Name: none
+         Value: 0 - SESSION_NO_STATE
+                1 - SESSION_CONNECTED
+                2 - SESSION_AUTHENTICATED
+                3 - SESSION_PREINITIATED
+                4 - SESSION_INITIATED
+                5 - SESSIOD_INSIDE_TRANSACTION
+                6 - SESSION_OUT_OF_TRANSACTION -->
+    <object oid="/agent/acse/sessions/session/target_state"
+            access="read_write" type="integer"/>
+
+    <!-- Enable (let a session go)/disable (stop) a session.
+         Name: none
+         Value: 0 - disable, 1 - enable
+
+         Notes: When target state is reached the session is
+                automatically disabled (stopped) -->
+    <object oid="/agent/acse/sessions/session/enabled"
+            access="read_write" type="integer" volatile="true" />
+
+    <!-- Hold or do not hold requests during (a part of) a session.
+         Name: none
+         Value: 0 - do not hold requests, 1 - hold requests -->
+    <object oid="/agent/acse/sessions/session/hold_requests"
+            access="read_write" type="integer" />
+
+</backup>
