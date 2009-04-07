@@ -5,7 +5,7 @@
  *
  *
  * Copyright (C) 2009 Test Environment authors (see file AUTHORS
- * in the wan directory of the distribution).
+ * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
