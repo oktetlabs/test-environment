@@ -44,18 +44,18 @@ static asn_named_entry_t _hg_cn_wan_eth_conn_bridge_ne_array[] = {
     {
         .name   = "eth_if",
         .type   = &hg_cn_wan_layer_eth_if_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_ETH_IF },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "bridge",
         .type   = &hg_cn_wan_layer_bridge_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_BRIDGE },
+        .tag    = { PRIVATE, 0 },
     },
 };
 
 static asn_type hg_cn_wan_eth_conn_bridge_s = {
     .name   = "WAN Ethernet Bridge layers",
-    .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONN_BRIDGE },
+    .tag    = { PRIVATE, 0 },
     .syntax = SEQUENCE,
     .len    = TE_ARRAY_LEN(_hg_cn_wan_eth_conn_bridge_ne_array),
     .sp     = { _hg_cn_wan_eth_conn_bridge_ne_array },
@@ -67,28 +67,28 @@ static asn_named_entry_t _hg_cn_wan_eth_conn_static_ne_array[] = {
     {
         .name   = "eth_if",
         .type   = &hg_cn_wan_layer_eth_if_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_ETH_IF },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "bridge",
         .type   = &hg_cn_wan_layer_bridge_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_BRIDGE },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "ip_static",
         .type   = &hg_cn_wan_layer_ip_static_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_IP_STATIC },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "firewall",
         .type   = &hg_cn_wan_layer_firewall_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_FIREWALL },
+        .tag    = { PRIVATE, 0 },
     },
 };
 
 static asn_type hg_cn_wan_eth_conn_static_s = {
     .name   = "WAN Ethernet Static layers",
-    .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONN_STATIC },
+    .tag    = { PRIVATE, 0 },
     .syntax = SEQUENCE,
     .len    = TE_ARRAY_LEN(_hg_cn_wan_eth_conn_static_ne_array),
     .sp     = { _hg_cn_wan_eth_conn_static_ne_array },
@@ -100,28 +100,28 @@ static asn_named_entry_t _hg_cn_wan_eth_conn_dhcp_ne_array[] = {
     {
         .name   = "eth_if",
         .type   = &hg_cn_wan_layer_eth_if_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_ETH_IF },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "bridge",
         .type   = &hg_cn_wan_layer_bridge_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_BRIDGE },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "ip_dhcp",
         .type   = &hg_cn_wan_layer_ip_dhcp_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_IP_DHCP },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "firewall",
         .type   = &hg_cn_wan_layer_firewall_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_FIREWALL },
+        .tag    = { PRIVATE, 0 },
     },
 };
 
 static asn_type hg_cn_wan_eth_conn_dhcp_s = {
     .name   = "WAN Ethernet DHCP layers",
-    .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONN_DHCP },
+    .tag    = { PRIVATE, 0 },
     .syntax = SEQUENCE,
     .len    = TE_ARRAY_LEN(_hg_cn_wan_eth_conn_dhcp_ne_array),
     .sp     = { _hg_cn_wan_eth_conn_dhcp_ne_array },
@@ -133,33 +133,33 @@ static asn_named_entry_t _hg_cn_wan_eth_conn_pppoe_ne_array[] = {
     {
         .name   = "eth_if",
         .type   = &hg_cn_wan_layer_eth_if_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_ETH_IF },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "bridge",
         .type   = &hg_cn_wan_layer_bridge_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_BRIDGE },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "ppp",
         .type   = &hg_cn_wan_layer_ppp_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_PPP },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "ip_ipcp",
         .type   = &hg_cn_wan_layer_ip_ipcp_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_IP_IPCP },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "firewall",
         .type   = &hg_cn_wan_layer_firewall_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_LAYER_FIREWALL },
+        .tag    = { PRIVATE, 0 },
     },
 };
 
 static asn_type hg_cn_wan_eth_conn_pppoe_s = {
     .name   = "WAN Ethernet PPPoE layers",
-    .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONN_PPPOE },
+    .tag    = { PRIVATE, 0 },
     .syntax = SEQUENCE,
     .len    = TE_ARRAY_LEN(_hg_cn_wan_eth_conn_pppoe_ne_array),
     .sp     = { _hg_cn_wan_eth_conn_pppoe_ne_array },
@@ -171,28 +171,28 @@ static asn_named_entry_t _hg_cn_wan_eth_conn_layers_ne_array[] = {
     {
         .name   = "pppoe",
         .type   = &hg_cn_wan_eth_conn_pppoe_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONN_PPPOE },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "dhcp",
         .type   = &hg_cn_wan_eth_conn_dhcp_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONN_DHCP },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "static",
         .type   = &hg_cn_wan_eth_conn_static_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONN_STATIC },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "bridge",
         .type   = &hg_cn_wan_eth_conn_bridge_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONN_BRIDGE },
+        .tag    = { PRIVATE, 0 },
     },
 };
 
 static asn_type hg_cn_wan_eth_conn_s = {
     .name   = "WAN Ethernet layers",
-    .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONN_LAYERS },
+    .tag    = { PRIVATE, 0 },
     .syntax = CHOICE,
     .len    = TE_ARRAY_LEN(_hg_cn_wan_eth_conn_layers_ne_array),
     .sp     = { _hg_cn_wan_eth_conn_layers_ne_array },
@@ -204,18 +204,18 @@ static asn_named_entry_t _hg_cn_wan_eth_conn_ne_array[] = {
     {
         .name   = "common",
         .type   = &hg_cn_wan_conn_common_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_CONN_COMMON },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "layer",
         .type   = &hg_cn_wan_eth_conn_layers_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONN_LAYERS },
+        .tag    = { PRIVATE, 0 },
     },
 };
 
 static asn_type hg_cn_wan_eth_conn_s = {
     .name   = "WAN Ethernet connection",
-    .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONN },
+    .tag    = { PRIVATE, 0 },
     .syntax = SEQUENCE,
     .len    = TE_ARRAY_LEN(_hg_cn_wan_eth_conn_ne_array),
     .sp     = { _hg_cn_wan_eth_conn_ne_array },
@@ -225,7 +225,7 @@ static asn_type hg_cn_wan_eth_conn_s = {
 /* Ethernet WAN connections */
 static asn_type hg_cn_wan_eth_conns_s = {
     .name   = "WAN Ethernet connections",
-    .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONNS },
+    .tag    = { PRIVATE, 0 },
     .syntax = SEQUENCE_OF,
     .len    = 0,
     .sp     = { .subtype = &hg_cn_wan_eth_conn_s },
@@ -237,13 +237,13 @@ static asn_named_entry_t _hg_cn_wan_eth_ne_array[] = {
     {
         .name   = "conn",
         .type   = &hg_cn_wan_eth_conns_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH_CONNS },
+        .tag    = { PRIVATE, 0 },
     },
 };
 
 asn_type hg_cn_wan_eth_s = {
     .name   = "WAN Ethernet",
-    .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH },
+    .tag    = { PRIVATE, 0 },
     .syntax = SEQUENCE,
     .len    = TE_ARRAY_LEN(_hg_cn_wan_eth_ne_array),
     .sp     = { _hg_cn_wan_eth_ne_array },

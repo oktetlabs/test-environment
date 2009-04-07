@@ -44,18 +44,18 @@ static asn_named_entry_t _hg_cn_wan_ne_array[] = {
     {
         .name   = "eth",
         .type   = &hg_cn_wan_eth_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_ETH },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "atm",
         .type   = &hg_cn_wan_atm_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN_ATM },
+        .tag    = { PRIVATE, 0 },
     },
 };
 
 asn_type hg_cn_wan_s = {
     .name   = "WAN",
-    .tag    = { PRIVATE, HG_CN_TAG_WAN },
+    .tag    = { PRIVATE, 0 },
     .syntax = SEQUENCE,
     .len    = TE_ARRAY_LEN(_hg_cn_wan_ne_array),
     .sp     = { _hg_cn_wan_ne_array },

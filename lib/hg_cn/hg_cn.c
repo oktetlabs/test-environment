@@ -45,18 +45,18 @@ static asn_named_entry_t _hg_cn_root_ne_array[] = {
     {
         .name   = "wan",
         .type   = &hg_cn_wan_s,
-        .tag    = { PRIVATE, HG_CN_TAG_WAN },
+        .tag    = { PRIVATE, 0 },
     },
     {
         .name   = "lan",
         .type   = &hg_cn_lan_s,
-        .tag    = { PRIVATE, HG_CN_TAG_LAN },
+        .tag    = { PRIVATE, 0 },
     },
 };
 
 asn_type hg_cn_root_s = {
     .name   = "Configuration",
-    .tag    = { PRIVATE, HG_CN_TAG_ROOT },
+    .tag    = { PRIVATE, 0 },
     .syntax = SEQUENCE,
     .len    = TE_ARRAY_LEN(_hg_cn_root_ne_array),
     .sp     = { _hg_cn_root_ne_array },
