@@ -2,7 +2,7 @@
  * @brief Home Gateway Configuration Notation
  *
  * WAN side configuration ANS.1 syntax.
- * Ethernet interface layer.
+ * Firewall layer.
  *
  *
  * Copyright (C) 2009 Test Environment authors (see file AUTHORS
@@ -29,7 +29,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "HG CN WAN EthIf"
+#define TE_LGR_USER     "HG CN WAN Firewall"
 
 #include "te_config.h"
 
@@ -46,29 +46,45 @@
 #include "logger_api.h"
 #include "asn_usr.h"
 #include "hg_cn.h"
-#include "hg_cn_wan_layer_eth_if.h"
+#include "hg_cn_wan_layer.h"
 
 
-/* WAN connection Ethernet interface layer */
-static asn_named_entry_t _hg_cn_wan_layer_eth_if_ne_array[] = {
+/* WAN connection Firewall layer */
+static asn_named_entry_t _hg_cn_wan_layer_firewall_ne_array[] = {
     {
-        .name   = "vlan_id",
+        .name   = "firewall",
         .type   = &,
         .tag    = { PRIVATE, 0 },
     },
     {
-        .name   = "priority",
+        .name   = "nat",
+        .type   = &,
+        .tag    = { PRIVATE, 0 },
+    },
+    {
+        .name   = "enforce_mss",
+        .type   = &,
+        .tag    = { PRIVATE, 0 },
+    },
+    {
+        .name   = "dmz",
+        .type   = &,
+        .tag    = { PRIVATE, 0 },
+    },
+    {
+        .name   = "dmz_host",
         .type   = &,
         .tag    = { PRIVATE, 0 },
     },
 };
 
-asn_type hg_cn_wan_layer_eth_if_s = {
-    .name   = "WAN Conn Layer Eth If",
+asn_type hg_cn_wan_layer_firewall_s = {
+    .name   = "WAN Conn Layer Firewall",
     .tag    = { PRIVATE, 0 },
     .syntax = SEQUENCE,
-    .len    = TE_ARRAY_LEN(_hg_cn_wan_layer_eth_if_ne_array),
-    .sp     = { _hg_cn_wan_layer_eth_if_ne_array },
+    .len    = TE_ARRAY_LEN(_hg_cn_wan_layer_firewall_ne_array),
+    .sp     = { _hg_cn_wan_layer_firewall_ne_array },
 };
 
-const asn_type * const hg_cn_wan_layer_eth_if = &hg_cn_wan_layer_eth_if_s;
+const asn_type * const hg_cn_wan_layer_firewall =
+    &hg_cn_wan_layer_firewall_s;

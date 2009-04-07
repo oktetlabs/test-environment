@@ -23,7 +23,8 @@ libhg_cn_la_SOURCES = \
 	wan_layer_firewall.c \
 	wan_layer_ip_dhcp.c \
 	wan_layer_ip_ipcp.c \
-	wan_layer_ip_static.c
+	wan_layer_ip_static.c \
+	wan_layer_ppp.c
 
 
 install-exec-hook:

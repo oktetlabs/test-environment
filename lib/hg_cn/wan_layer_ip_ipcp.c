@@ -2,7 +2,7 @@
  * @brief Home Gateway Configuration Notation
  *
  * WAN side configuration ANS.1 syntax.
- * Ethernet interface layer.
+ * IPCP IP address layer.
  *
  *
  * Copyright (C) 2009 Test Environment authors (see file AUTHORS
@@ -29,7 +29,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "HG CN WAN EthIf"
+#define TE_LGR_USER     "HG CN WAN IP IPCP"
 
 #include "te_config.h"
 
@@ -46,29 +46,20 @@
 #include "logger_api.h"
 #include "asn_usr.h"
 #include "hg_cn.h"
-#include "hg_cn_wan_layer_eth_if.h"
+#include "hg_cn_wan_layer.h"
 
 
-/* WAN connection Ethernet interface layer */
-static asn_named_entry_t _hg_cn_wan_layer_eth_if_ne_array[] = {
-    {
-        .name   = "vlan_id",
-        .type   = &,
-        .tag    = { PRIVATE, 0 },
-    },
-    {
-        .name   = "priority",
-        .type   = &,
-        .tag    = { PRIVATE, 0 },
-    },
+/* WAN connection IP IPCP layer */
+static asn_named_entry_t _hg_cn_wan_layer_ip_ipcp_ne_array[] = {
 };
 
-asn_type hg_cn_wan_layer_eth_if_s = {
-    .name   = "WAN Conn Layer Eth If",
+asn_type hg_cn_wan_layer_ip_ipcp_s = {
+    .name   = "WAN Conn Layer IP IPCP",
     .tag    = { PRIVATE, 0 },
     .syntax = SEQUENCE,
-    .len    = TE_ARRAY_LEN(_hg_cn_wan_layer_eth_if_ne_array),
-    .sp     = { _hg_cn_wan_layer_eth_if_ne_array },
+    .len    = TE_ARRAY_LEN(_hg_cn_wan_layer_ip_ipcp_ne_array),
+    .sp     = { _hg_cn_wan_layer_ip_ipcp_ne_array },
 };
 
-const asn_type * const hg_cn_wan_layer_eth_if = &hg_cn_wan_layer_eth_if_s;
+const asn_type * const hg_cn_wan_layer_ip_ipcp =
+    &hg_cn_wan_layer_ip_ipcp_s;
