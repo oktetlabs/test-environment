@@ -15,9 +15,11 @@ include_HEADERS = \
 libhg_cn_la_SOURCES = \
 	hg_cn.c \
 	lan.c \
+	lan_group.c \
 	wan.c \
 	wan_atm.c \
 	wan_eth.c \
+	wan_conn.c \
 	wan_layer_bridge.c \
 	wan_layer_eth_if.c \
 	wan_layer_firewall.c \

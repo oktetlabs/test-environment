@@ -32,15 +32,6 @@
 
 #include "te_config.h"
 
-#include <stdio.h>
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#else
-#if HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-#endif
-
 #include "te_defs.h"
 #include "logger_api.h"
 #include "asn_usr.h"
@@ -52,7 +43,7 @@
 static asn_named_entry_t _hg_cn_lan_ne_array[] = {
     {
         .name   = "group",
-        .type   = &hg_cn_lan_group_s,
+        .type   = &hg_cn_lan_groups_s,
         .tag    = { PRIVATE, 0 },
     },
 };
