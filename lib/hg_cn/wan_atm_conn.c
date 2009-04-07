@@ -386,4 +386,4 @@ asn_type hg_cn_wan_atm_conns_s = {
     .sp     = { .subtype = &hg_cn_wan_atm_conn_s },
 };
 
-const asn_type * const hg_cn_wan_atm = &hg_cn_wan_atm_s;
+const asn_type * const hg_cn_wan_atm_conns = &hg_cn_wan_atm_conns_s;

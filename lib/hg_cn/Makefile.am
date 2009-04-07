@@ -18,6 +18,8 @@ libhg_cn_la_SOURCES = \
 	lan_group.c \
 	wan.c \
 	wan_atm.c \
+	wan_atm_conn.c \
+	wan_atm_vc.c \
 	wan_eth.c \
 	wan_conn.c \
 	wan_layer_bridge.c \
