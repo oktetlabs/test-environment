@@ -9,12 +9,21 @@ lib_LTLIBRARIES = libhg_cn.la
 include_HEADERS = \
 	hg_cn.h \
 	hg_cn_lan.h \
-	hg_cn_wan.h
+	hg_cn_wan.h \
+	hg_cn_wan_layer.h
 
 libhg_cn_la_SOURCES = \
 	hg_cn.c \
 	lan.c \
-	wan.c
+	wan.c \
+	wan_atm.c \
+	wan_eth.c \
+	wan_layer_bridge.c \
+	wan_layer_eth_if.c \
+	wan_layer_firewall.c \
+	wan_layer_ip_dhcp.c \
+	wan_layer_ip_ipcp.c \
+	wan_layer_ip_static.c
 
 
 install-exec-hook:
