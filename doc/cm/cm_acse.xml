@@ -29,10 +29,21 @@
 
     <!-- ACSE object.
          Name: none
-         Value: every read operation gets Configurator
-                invocationally unique (numeric) ID -->
-    <object oid="/agent/acse" access="read_only" type="string"
-            volatile="true"/>
+         Value: 0/1
+
+         Notes: When 1 is written and ACSE process has not been invoked
+                previously, it gets invoked. When 0 is written and ACSE
+                process has not been shut down previously, it gets shut
+                down.  When ACSE process is being invoked, reading of
+                the object value gets 1, otherwise it gets 0 -->
+    <object oid="/agent/acse" access="read_write" type="integer"/>
+
+    <!-- Unique ID string generator.
+         Name: none
+         Value: every read operation gets Configurator invocationally
+                unique (numeric) ID (string representation of) -->
+    <object oid="/agent/acse/unique_id" access="read_only"
+            type="string" volatile="true"/>
 
     <!-- ACS object.
          Name: unique name -->
