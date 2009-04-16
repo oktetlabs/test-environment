@@ -45,7 +45,7 @@ extern "C" {
 extern int cfg_backup_process_file(xmlNodePtr node, te_bool restore);
 
 /**
- * Save current version of the TA subtree, 
+ * Save current version of the TA subtree,
  * synchronize DB with TA and restore TA configuration.
  *
  * @param ta    TA name
@@ -62,7 +62,7 @@ extern int cfg_backup_restore_ta(char *ta);
  * @return status code (errno.h)
  */
 extern int cfg_backup_create_file(const char *filename);
- 
+
 #ifdef __cplusplus
 }
 #endif

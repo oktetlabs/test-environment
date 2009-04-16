@@ -33,12 +33,12 @@
 
 /* defined in conf_backup.c */
 extern int cfg_register_dependency(xmlNodePtr node, const char *dependant);
-  
-/** Backup descriptor */  
+
+/** Backup descriptor */
 typedef struct cfg_backup {
     struct cfg_backup *next; /**< Next backup associated with this point */
     char              *filename; /**< backup filename */
-} cfg_backup;    
+} cfg_backup;
 
 /** Configurator dynamic history entry */
 typedef struct cfg_dh_entry {
@@ -51,41 +51,40 @@ typedef struct cfg_dh_entry {
     cfg_val_type         type;    /**< Type of the old_val */
     cfg_inst_val         old_val; /**< Data for reversing delete and set */
     int                  seq;     /**< Sequence number for debugging */
-    te_bool              committed; /**< Wheter the command kept in this 
+    te_bool              committed; /**< Wheter the command kept in this
                                          entry is committed or not */
 } cfg_dh_entry;
 
 static cfg_dh_entry *first = NULL;
 static cfg_dh_entry *last = NULL;
 
-
 /** Release memory allocated for backup list */
 static inline void
 free_entry_backup(cfg_dh_entry *entry)
 {
-    cfg_backup *tmp;                                                 
-                                                                     
-    for (tmp = entry->backup; tmp != NULL; tmp = entry->backup) 
-    {                                                                
-        entry->backup = entry->backup->next;                       
-        free(tmp->filename);                                        
-        free(tmp);                                                  
-    }                                                                
-} 
+    cfg_backup *tmp;
+
+    for (tmp = entry->backup; tmp != NULL; tmp = entry->backup)
+    {
+        entry->backup = entry->backup->next;
+        free(tmp->filename);
+        free(tmp);
+    }
+}
 
 /** Release memory allocated for dynamic history entry */
 static inline void
 free_dh_entry(cfg_dh_entry *entry)
 {
-    if (entry->type != CVT_NONE)                       
-        cfg_types[entry->type].free(entry->old_val);  
-                                                        
-    free_entry_backup(entry);                          
-                                                        
-    if (entry->old_oid != NULL)                        
-        free(entry->old_oid);                          
-    free(entry->cmd);                                  
-    free(entry);                                       
+    if (entry->type != CVT_NONE)
+        cfg_types[entry->type].free(entry->old_val);
+
+    free_entry_backup(entry);
+
+    if (entry->old_oid != NULL)
+        free(entry->old_oid);
+    free(entry->cmd);
+    free(entry);
 }
 
 /**
@@ -165,7 +164,7 @@ cfg_dh_process_add(xmlNodePtr node)
     xmlChar     *oid = NULL;
     xmlChar     *val_s = NULL;
     xmlChar     *attr = NULL;
-    
+
     while (node != NULL &&
            xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
     {
@@ -175,39 +174,39 @@ cfg_dh_process_add(xmlNodePtr node)
 
         if ((obj = cfg_get_object((char *)oid)) == NULL)
             RETERR(TE_EINVAL, "Cannot find object for instance %s", oid);
-        
-        len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE + 
+
+        len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE +
               strlen((char *)oid) + 1;
         if ((msg = (cfg_add_msg *)calloc(1, len)) == NULL)
             RETERR(TE_ENOMEM, "Cannot allocate memory");
-        
+
         msg->type = CFG_ADD;
         msg->len = sizeof(cfg_add_msg);
         msg->val_type = obj->type;
         msg->rc = 0;
-        
+
         val_s = (xmlChar *)xmlGetProp_exp(node, (const xmlChar *)"value");
         if (val_s != NULL && strlen((char *)val_s) >= CFG_MAX_INST_VALUE)
             RETERR(TE_ENOMEM, "Too long value");
-            
+
         if (obj->type == CVT_NONE && val_s != NULL)
             RETERR(TE_EINVAL, "Value is prohibited for %s", oid);
-            
+
         if (val_s == NULL)
-            msg->val_type = CVT_NONE; /* Default will be assigned */ 
-            
+            msg->val_type = CVT_NONE; /* Default will be assigned */
+
         if (val_s != NULL)
         {
             if ((rc = cfg_types[obj->type].str2val((char *)val_s, &val))
                    != 0)
                 RETERR(rc, "Value conversion error for %s", oid);
-                
+
             cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
             cfg_types[obj->type].free(val);
             free(val_s);
             val_s = NULL;
         }
-        
+
         msg->oid_offset = msg->len;
         msg->len += strlen((char *)oid) + 1;
         strcpy((char *)msg + msg->oid_offset, (char *)oid);
@@ -220,7 +219,7 @@ cfg_dh_process_add(xmlNodePtr node)
         msg = NULL;
         free(oid);
         oid = NULL;
-        
+
         node = xmlNodeNext(node);
     }
     if (node != NULL)
@@ -231,7 +230,7 @@ cfg_dh_process_add(xmlNodePtr node)
 
 /**
  * Process "history" configuration file - execute all commands
- * and add them to dynamic history. 
+ * and add them to dynamic history.
  * Note: this routine does not reboot Test Agents.
  *
  * @param node      <history> node pointer
@@ -239,13 +238,13 @@ cfg_dh_process_add(xmlNodePtr node)
  *
  * @return status code (errno.h)
  */
-int 
+int
 cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
 {
     xmlNodePtr cmd;
     int        len;
     int        rc;
-    
+
     if (node == NULL)
         return 0;
 
@@ -255,7 +254,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
         xmlChar   *oid   = NULL;
         xmlChar   *val_s = NULL;
         xmlChar   *attr = NULL;
-        
+
         if (xmlStrcmp(cmd->name , (const xmlChar *)"include") == 0)
             continue;
 
@@ -284,22 +283,22 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                                                 strlen((char *)attr) + 1))
                     == NULL)
                 RETERR(TE_ENOMEM, "Cannot allocate memory");
-            
+
             msg->type = CFG_REBOOT;
             msg->len = sizeof(*msg) + strlen((char *)attr) + 1;
             msg->rc = 0;
             msg->restore = FALSE;
             strcpy(msg->ta_name, (char *)attr);
-            
+
             cfg_process_msg((cfg_msg **)&msg, TRUE);
             if (msg->rc != 0)
                 RETERR(msg->rc, "Failed to execute the reboot command");
-                
+
             xmlFree(attr);
             free(msg);
             continue;
         }
-        
+
         if (xmlStrcmp(cmd->name , (const xmlChar *)"register") != 0 &&
             xmlStrcmp(cmd->name , (const xmlChar *)"unregister") != 0 &&
             xmlStrcmp(cmd->name , (const xmlChar *)"add") != 0 &&
@@ -309,7 +308,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             ERROR("Unknown command %s", cmd->name);
             return TE_EINVAL;
         }
-        
+
         if (xmlStrcmp(cmd->name , (const xmlChar *)"register") == 0)
         {
             cfg_register_msg *msg = NULL;
@@ -333,17 +332,16 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
 
                 len = sizeof(cfg_register_msg) + strlen((char *)oid) + 1 +
                       (val_s == NULL ? 0 : strlen((char *)val_s) + 1);
-                      
+
                 if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
                     RETERR(TE_ENOMEM, "Cannot allocate memory");
-                
 
                 msg->type = CFG_REGISTER;
                 msg->len = len;
                 msg->rc = 0;
                 msg->access = CFG_READ_CREATE;
-                msg->no_parent_dep = (parent_dep != NULL && 
-                              xmlStrcmp(parent_dep, 
+                msg->no_parent_dep = (parent_dep != NULL &&
+                              xmlStrcmp(parent_dep,
                                         (const xmlChar *)"no") == 0);
                 msg->val_type = CVT_NONE;
 
@@ -353,7 +351,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     msg->def_val = strlen(msg->oid) + 1;
                     strcpy(msg->oid + msg->def_val, (char *)val_s);
                 }
-                
+
                 attr = xmlGetProp(tmp, (const xmlChar *)"type");
                 if (attr != NULL)
                 {
@@ -381,19 +379,19 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     xmlFree(attr);
                     attr = NULL;
                 }
-                
+
                 if (val_s != NULL)
                 {
                     cfg_inst_val val;
-                    
+
                     if (cfg_types[msg->val_type].str2val((char *)val_s,
                                                          &val) != 0)
                         RETERR(TE_EINVAL, "Incorrect default value %s",
                                val_s);
-                    
+
                     cfg_types[msg->val_type].free(val);
                 }
-                
+
                 attr = xmlGetProp(tmp, (const xmlChar *)"access");
                 if (attr != NULL)
                 {
@@ -402,7 +400,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     else if (strcmp((char *)attr, "read_only") == 0)
                         msg->access = CFG_READ_ONLY;
                     else if (strcmp((char *)attr, "read_create") != 0)
-                        RETERR(TE_EINVAL, 
+                        RETERR(TE_EINVAL,
                                "Wrong value %s of 'access' attribute",
                                attr);
                     xmlFree(attr);
@@ -429,11 +427,11 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 RETERR(TE_EINVAL,
                        "Unexpected node '%s' in register command",
                        tmp->name);
-        }   /* register */      
+        }   /* register */
         else if (xmlStrcmp(cmd->name , (const xmlChar *)"unregister") == 0)
         {
             cfg_msg *msg = NULL; /* dummy for RETERR to work */
-            
+
             if (postsync)
                 continue;
 
@@ -472,7 +470,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 ERROR("Failed to process add command");
                 return rc;
             }
-        } 
+        }
         else if (xmlStrcmp(cmd->name , (const xmlChar *)"set") == 0)
         {
             cfg_set_msg *msg = NULL;
@@ -493,21 +491,21 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
 
                 if ((rc = cfg_db_find((char *)oid, &handle)) != 0)
                     RETERR(TE_ENOENT, "Cannot find instance %s", oid);
-                
+
                 if (!CFG_IS_INST(handle))
                     RETERR(TE_EINVAL,"OID %s is not instance", oid);
-                
+
                 len = sizeof(cfg_set_msg) + CFG_MAX_INST_VALUE;
                 if ((msg = (cfg_set_msg *)calloc(1, len)) == NULL)
                     RETERR(TE_ENOMEM, "Cannot allocate memory");
-                
+
                 msg->handle = handle;
                 msg->type = CFG_SET;
                 msg->len = sizeof(cfg_set_msg);
                 msg->rc = 0;
                 obj = CFG_GET_INST(handle)->obj;
                 msg->val_type = obj->type;
-                
+
                 if (obj->type == CVT_NONE)
                     RETERR(TE_EINVAL, "Cannot perform set for %s", oid);
 
@@ -515,17 +513,17 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                                                   (const xmlChar *)"value");
                 if (val_s == NULL)
                     RETERR(TE_EINVAL, "Value is required for %s", oid);
-                
+
                 if ((rc = cfg_types[obj->type].str2val((char *)val_s, &val))
                        != 0)
                     RETERR(rc, "Value conversion error for %s", oid);
-                
+
                 cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
                 free(val_s);
                 val_s = NULL;
                 cfg_types[obj->type].free(val);
                 cfg_process_msg((cfg_msg **)&msg, TRUE);
-                
+
                 if (msg->rc != 0)
                     RETERR(msg->rc, "Failed to execute the set command "
                                     "for instance %s", oid);
@@ -539,7 +537,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             }
             if (tmp != NULL)
                 RETERR(TE_EINVAL, "Incorrect set command format");
-        } 
+        }
         else if (xmlStrcmp(cmd->name , (const xmlChar *)"delete") == 0)
         {
             cfg_del_msg *msg = NULL;
@@ -558,18 +556,18 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
 
                 if ((rc = cfg_db_find((char *)oid, &handle)) != 0)
                     RETERR(rc, "Cannot find instance %s", oid);
-                
+
                 if (!CFG_IS_INST(handle))
                     RETERR(TE_EINVAL, "OID %s is not instance", oid);
-                
+
                 if ((msg = (cfg_del_msg *)calloc(1, sizeof(*msg))) == NULL)
                     RETERR(TE_ENOMEM, "Cannot allocate memory");
-                
+
                 msg->type = CFG_DEL;
                 msg->len = sizeof(*msg);
                 msg->rc = 0;
                 msg->handle = handle;
-                
+
                 cfg_process_msg((cfg_msg **)&msg, TRUE);
                 if (msg->rc != 0)
                     RETERR(msg->rc, "Failed to execute the delete command "
@@ -584,7 +582,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             }
             if (tmp != NULL)
                 RETERR(TE_EINVAL, "Incorrect delete command format");
-        } 
+        }
         else
         {
             assert(FALSE);
@@ -594,8 +592,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
     }
 
     return 0;
-    
-#undef RETERR    
+#undef RETERR
 }
 
 /**
@@ -605,29 +602,29 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
  *
  * @return status code (errno.h)
  */
-int 
+int
 cfg_dh_create_file(char *filename)
 {
     FILE *f= fopen(filename, "w");
-    
+
     cfg_dh_entry *tmp;
     xmlChar      *str;
-    
+
     cfg_dh_optimize();
-    
+
 #define RETERR(_err) \
     do {                   \
         fclose(f);         \
         unlink(filename);  \
         return _err;       \
-    } while (0)    
+    } while (0)
 
     if (f == NULL)
         return TE_OS_RC(TE_CS, errno);
-        
+
     fprintf(f, "<?xml version=\"1.0\"?>\n");
     fprintf(f, "<history>\n");
-    
+
     for (tmp = first; tmp != NULL; tmp = tmp->next)
     {
         switch (tmp->cmd->type)
@@ -635,11 +632,11 @@ cfg_dh_create_file(char *filename)
             case CFG_REGISTER:
             {
                 cfg_register_msg *msg = (cfg_register_msg *)(tmp->cmd);
-                
+
                 fprintf(f, "\n  <register>\n");
                 fprintf(f, "    <object oid=\"%s\" "
                         "access=\"%s\" type=\"%s\"%s",
-                        msg->oid, 
+                        msg->oid,
                         msg->access == CFG_READ_CREATE ?
                             "read_create" :
                         msg->access == CFG_READ_WRITE ?
@@ -661,37 +658,37 @@ cfg_dh_create_file(char *filename)
                 fprintf(f, "/>\n  </register>\n");
                 break;
             }
-                
+
             case CFG_ADD:
             case CFG_SET:
             {
                 cfg_val_type t = tmp->cmd->type == CFG_ADD ?
                                  ((cfg_add_msg *)(tmp->cmd))->val_type :
                                  ((cfg_set_msg *)(tmp->cmd))->val_type;
-                
-                fprintf(f, "\n  <%s>\n", 
+
+                fprintf(f, "\n  <%s>\n",
                         tmp->cmd->type == CFG_ADD ? "add" : "set");
-                fprintf(f, "    <instance oid=\"%s\" ", 
-                        tmp->cmd->type == CFG_ADD ? 
-                        (char *)(tmp->cmd) + 
+                fprintf(f, "    <instance oid=\"%s\" ",
+                        tmp->cmd->type == CFG_ADD ?
+                        (char *)(tmp->cmd) +
                         ((cfg_add_msg *)(tmp->cmd))->oid_offset :
                         tmp->old_oid);
-                
+
                 if (t != CVT_NONE)
                 {
                     cfg_inst_val val;
                     char        *val_str = NULL;
                     int          rc;
-                    
+
                     rc = cfg_types[t].get_from_msg(tmp->cmd, &val);
                     if (rc != 0)
                         RETERR(rc);
-                        
+
                     rc = cfg_types[t].val2str(val, &val_str);
                     cfg_types[t].free(val);
                     if (rc != 0)
                         RETERR(rc);
-                        
+
                     str = xmlEncodeEntitiesReentrant(NULL,
                                                      (xmlChar *)val_str);
                     free(val_str);
@@ -700,11 +697,11 @@ cfg_dh_create_file(char *filename)
                     fprintf(f, "value=\"%s\"", str);
                     xmlFree(str);
                  }
-                 fprintf(f, "/>\n  </%s>\n", 
+                 fprintf(f, "/>\n  </%s>\n",
                          tmp->cmd->type == CFG_ADD ? "add" : "set");
                  break;
             }
-                
+
             case CFG_DEL:
             {
                 fprintf(f, "\n  <delete>\n    <instance oid=\"%s\"/>\n"
@@ -712,10 +709,10 @@ cfg_dh_create_file(char *filename)
                         tmp->old_oid);
                 break;
             }
-            
+
             case CFG_REBOOT:
             {
-                fprintf(f, "\n  <reboot ta=%s/>\n", 
+                fprintf(f, "\n  <reboot ta=%s/>\n",
                        ((cfg_reboot_msg *)(tmp->cmd))->ta_name);
                 break;
             }
@@ -724,55 +721,55 @@ cfg_dh_create_file(char *filename)
     fprintf(f, "\n</history>\n");
     fclose(f);
     return 0;
-    
-#undef RETERR    
+
+#undef RETERR
 }
 
 /**
  * Attach backup to the last command.
- * 
+ *
  * @param filename      name of the backup file
  *
  * @return status code (see te_errno.h)
  */
-int 
+int
 cfg_dh_attach_backup(char *filename)
 {
     cfg_backup *tmp;
-    
+
     if (last == NULL)
         return 0;
-        
+
     if ((tmp = (cfg_backup *)malloc(sizeof(*tmp))) == NULL)
         return TE_ENOMEM;
-        
+
     if ((tmp->filename = strdup(filename)) == NULL)
     {
         free(tmp);
         return TE_ENOMEM;
     }
-    
+
     tmp->next = last->backup;
     last->backup = tmp;
-    
+
     VERB("Attach backup %s to command %d", filename, last->seq);
-        
+
     return 0;
 }
 
 /**
- * Returns TRUE, if backup with specified name is associated 
+ * Returns TRUE, if backup with specified name is associated
  * with DH entry.
  */
 static te_bool
 has_backup(cfg_dh_entry *entry, char *filename)
 {
     cfg_backup *tmp;
-    
+
     for (tmp = entry->backup; tmp != NULL; tmp = tmp->next)
         if (strcmp(tmp->filename, filename) == 0)
             break;
-    
+
     return tmp != NULL;
 }
 
@@ -780,7 +777,7 @@ has_backup(cfg_dh_entry *entry, char *filename)
  * Restore backup with specified name using reversed command
  * of the dynamic history. Processed commands are removed
  * from the history.
- * 
+ *
  * @param filename      name of the backup file
  * @param hard_check    whether hard check should be applied
  *                      on restore backup. For instance if on deleting
@@ -791,34 +788,34 @@ has_backup(cfg_dh_entry *entry, char *filename)
  * @retval TE_ENOENT       there is not command in dynamic history to which
  *                      the specified backup is attached
  */
-int 
+int
 cfg_dh_restore_backup(char *filename, te_bool hard_check)
 {
     cfg_dh_entry *limit = NULL;
     cfg_dh_entry *tmp;
     cfg_dh_entry *prev;
     char         *id;
-    
+
     int rc;
     int result = 0;
     int unreg_obj_LL;
-    
+
     cfg_dh_optimize();
-    
+
     /* At first, look for an instance with the backup */
     if (filename != NULL)
     {
         for (limit = first; limit != NULL; limit = limit->next)
             if (limit->backup != NULL && has_backup(limit, filename))
                 break;
-            
+
         if (limit == NULL)
         {
             ERROR("Position of the backup in dynamic history is not found");
             return TE_ENOENT;
         }
     }
-    
+
     if (filename != NULL && limit != NULL)
         VERB("Restore backup %s up to command %d", filename, limit->seq);
 
@@ -827,7 +824,6 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
         unreg_obj_LL = TE_LL_VERB;
     else
         unreg_obj_LL = TE_LL_WARN;
-
 
     for (tmp = last; tmp != limit; tmp = prev)
     {
@@ -853,21 +849,21 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
                 cfg_del_msg msg = { CFG_DEL, sizeof(msg), 0, 0};
                 cfg_msg    *p_msg = (cfg_msg *)&msg;
 
-                rc = cfg_db_find((char *)(tmp->cmd) + 
-                                 ((cfg_add_msg *)(tmp->cmd))->oid_offset, 
+                rc = cfg_db_find((char *)(tmp->cmd) +
+                                 ((cfg_add_msg *)(tmp->cmd))->oid_offset,
                                  &(msg.handle));
 
                 if (rc != 0)
                 {
                     if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
                     {
-                        ERROR("%s(): cfg_db_find() failed: %r", 
+                        ERROR("%s(): cfg_db_find() failed: %r",
                               __FUNCTION__, rc);
                         TE_RC_UPDATE(result, msg.rc);
                     }
                     break;
                 }
-               
+
                 /* Roll back only messages that were committed */
                 if (tmp->committed)
                 {
@@ -882,15 +878,15 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
                     cfg_db_del(msg.handle);
                     break;
                 }
-               
+
                 if (msg.rc != 0 && (hard_check ||
-                    (msg.rc != TE_RC(TE_TA_UNIX, TE_ESRCH) && 
+                    (msg.rc != TE_RC(TE_TA_UNIX, TE_ESRCH) &&
                      msg.rc != TE_RC(TE_TA_UNIX, TE_ENOENT))))
                 {
                     ERROR("%s(): add failed: %r", __FUNCTION__, msg.rc);
                     TE_RC_UPDATE(result, msg.rc);
                 }
-                
+
                 if (!hard_check &&
                     (msg.rc == TE_RC(TE_TA_UNIX, TE_ESRCH) ||
                      msg.rc == TE_RC(TE_TA_UNIX, TE_ENOENT)))
@@ -901,32 +897,32 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
 
                 break;
             }
-                
+
             case CFG_SET:
             {
                 cfg_set_msg *msg =
-                    (cfg_set_msg *)calloc(sizeof(cfg_set_msg) + 
+                    (cfg_set_msg *)calloc(sizeof(cfg_set_msg) +
                                           CFG_MAX_INST_VALUE, 1);
-                                                         
+
                 if (msg == NULL)
                 {
                     ERROR("calloc() failed");
                     return TE_ENOMEM;
                 }
-                    
-                if ((rc = cfg_db_find(tmp->old_oid, &msg->handle)) != 0) 
+
+                if ((rc = cfg_db_find(tmp->old_oid, &msg->handle)) != 0)
                 {
                     ERROR("cfg_db_find(%s) failed: %r", tmp->old_oid, rc);
                     free(msg);
                     return rc;
                 }
-                    
+
                 msg->type = CFG_SET;
                 msg->len = sizeof(*msg);
                 msg->val_type = ((cfg_set_msg *)(tmp->cmd))->val_type;
-                cfg_types[msg->val_type].put_to_msg(tmp->old_val, 
+                cfg_types[msg->val_type].put_to_msg(tmp->old_val,
                                                     (cfg_msg *)msg);
-                
+
                 if (tmp->committed)
                 {
                     cfg_process_msg((cfg_msg **)&msg, FALSE);
@@ -936,7 +932,7 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
                     VERB("Do not restore %s as it is locally modified",
                          tmp->old_oid);
                 }
-               
+
                 rc = msg->rc;
                 free(msg);
                 if (rc != 0)
@@ -946,31 +942,31 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
                 }
                 break;
             }
-                
-            case CFG_DEL: 
+
+            case CFG_DEL:
             {
                 cfg_add_msg *msg = (cfg_add_msg *)
-                                       calloc(sizeof(cfg_add_msg) + 
+                                       calloc(sizeof(cfg_add_msg) +
                                               CFG_MAX_INST_VALUE +
                                               strlen(tmp->old_oid) + 1, 1);
-                                                         
+
                 if (msg == NULL)
                 {
                     ERROR("calloc() failed");
                     return TE_ENOMEM;
                 }
-                    
+
                 msg->type = CFG_ADD;
                 msg->len = sizeof(*msg);
                 msg->val_type = tmp->type;
-                cfg_types[tmp->type].put_to_msg(tmp->old_val, 
+                cfg_types[tmp->type].put_to_msg(tmp->old_val,
                                                 (cfg_msg *)msg);
                 msg->oid_offset = msg->len;
                 msg->len += strlen(tmp->old_oid) + 1;
                 strcpy((char *)msg + msg->oid_offset, tmp->old_oid);
-               
+
                 cfg_process_msg((cfg_msg **)&msg, FALSE);
-               
+
                 rc = msg->rc;
                 free(msg);
                 if (rc != 0)
@@ -989,6 +985,7 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
     }
     if (limit == NULL)
         first = NULL;
+
     return result;
 }
 
@@ -1004,31 +1001,31 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
  * @retval TE_EINVAL    bad message or message, which should not be in
  *                      history
  */
-int 
+int
 cfg_dh_add_command(cfg_msg *msg, te_bool local)
 {
     cfg_dh_entry *entry = (cfg_dh_entry *)calloc(sizeof(cfg_dh_entry), 1);
-    
+
     if (entry == NULL)
     {
         ERROR("Memory allocation failure");
         return TE_ENOMEM;
     }
-        
+
     if ((entry->cmd = (cfg_msg *)calloc(msg->len, 1)) == NULL)
     {
         ERROR("Memory allocation failure");
         free(entry);
         return TE_ENOMEM;
     }
-    
+
     /* Local commands are not comitted yet, and vice versa */
     entry->committed = !local;
 
     memcpy(entry->cmd, msg, msg->len);
     if (msg->type == CFG_ADD)
     {
-        ((cfg_add_msg *)(entry->cmd))->oid_offset = 
+        ((cfg_add_msg *)(entry->cmd))->oid_offset =
             ((cfg_add_msg *)msg)->oid_offset;
     }
 
@@ -1038,7 +1035,7 @@ cfg_dh_add_command(cfg_msg *msg, te_bool local)
         free(entry);        \
         return _err;        \
     } while (0)
-    
+
     /* Construct the reverse command first */
     switch (msg->type)
     {
@@ -1047,12 +1044,12 @@ cfg_dh_add_command(cfg_msg *msg, te_bool local)
         case CFG_REBOOT:
             entry->type = CVT_NONE;
             break;
-            
+
         case CFG_SET:
         case CFG_DEL:
         {
             cfg_instance *inst = CFG_GET_INST(((cfg_del_msg *)msg)->handle);
-            
+
             if (inst == NULL)
             {
                 ERROR("Failed to get instance by handle 0x%08x",
@@ -1061,23 +1058,23 @@ cfg_dh_add_command(cfg_msg *msg, te_bool local)
             }
 
             entry->type = inst->obj->type;
-    
+
             if (inst->obj->type != CVT_NONE)
-                if (cfg_types[inst->obj->type].copy(inst->val, 
+                if (cfg_types[inst->obj->type].copy(inst->val,
                                                     &(entry->old_val)) != 0)
                     RETERR(TE_ENOMEM);
-                    
+
             if ((entry->old_oid = strdup(inst->oid)) == NULL)
                 RETERR(TE_ENOMEM);
-                    
+
             break;
         }
-            
+
         default:
             /* Should not occur */
             RETERR(TE_EINVAL);
     }
-    
+
     if (first == NULL)
     {
         first = last = entry;
@@ -1092,31 +1089,30 @@ cfg_dh_add_command(cfg_msg *msg, te_bool local)
         entry->prev = last;
         last = entry;
     }
-    
+
     if (msg->type == CFG_REBOOT)
     {
         for (entry = first; entry != NULL; entry = entry->next)
             free_entry_backup(entry);
     }
-    
-    VERB("Add command %d", last->seq);
-    
-    return 0;
-#undef RETERR    
-}
 
+    VERB("Add command %d", last->seq);
+
+    return 0;
+#undef RETERR
+}
 
 /**
  * Delete last command from the history.
  */
-void 
+void
 cfg_dh_delete_last_command(void)
 {
     cfg_dh_entry *tmp = last;
-    
+
     if (first == NULL)
         return;
-        
+
     if (first == last)
     {
         first = last = NULL;
@@ -1124,9 +1120,9 @@ cfg_dh_delete_last_command(void)
     else
     {
         cfg_dh_entry *prev;
-        
+
         for (prev = first; prev->next != last; prev = prev->next);
-        
+
         prev->next = NULL;
         last = prev;
     }
@@ -1138,7 +1134,7 @@ cfg_dh_delete_last_command(void)
 /**
  * Destroy dynamic hostory before shut down.
  */
-void 
+void
 cfg_dh_destroy(void)
 {
     cfg_dh_entry *tmp, *next;
@@ -1148,18 +1144,18 @@ cfg_dh_destroy(void)
         next = tmp->next;
         free_dh_entry(tmp);
     }
-    
+
     last = first = NULL;
 }
 
 /**
  * Remove useless command sequences.
  */
-void 
+void
 cfg_dh_optimize(void)
 {
     cfg_dh_entry *tmp;
-    
+
     /* Optimize add/delete commands */
     for (tmp = first; tmp != NULL; )
     {
@@ -1167,68 +1163,68 @@ cfg_dh_optimize(void)
         char         *oid;
         te_bool       found = FALSE;
         unsigned int  len;
-        
+
         if (tmp->cmd->type != CFG_ADD || tmp->backup != NULL)
         {
             tmp = tmp->next;
             continue;
         }
-        
+
         oid = (char *)(tmp->cmd) + ((cfg_add_msg *)(tmp->cmd))->oid_offset;
         len = strlen(oid);
-        
-        /* 
+
+        /*
          * Look for delete command for this instance.
-         * If command with backup or reboot command or 
-         * command changing the object, which is not in tmp subtree is 
+         * If command with backup or reboot command or
+         * command changing the object, which is not in tmp subtree is
          * met, break the search.
          */
          for (tmp_del = tmp->next; tmp_del != NULL; tmp_del = tmp_del->next)
          {
              char *tmp_oid;
-             
+
              if (tmp_del->backup != NULL ||
                  tmp_del->cmd->type == CFG_REBOOT)
                  break;
-                 
-             if (tmp_del->cmd->type == CFG_DEL && 
+
+             if (tmp_del->cmd->type == CFG_DEL &&
                  strcmp(tmp_del->old_oid, oid) == 0)
              {
                  found = TRUE;
                  break;
              }
-             
+
              tmp_oid = tmp_del->cmd->type == CFG_ADD ?
-                       (char *)(tmp_del->cmd) + 
-                       ((cfg_add_msg *)(tmp_del->cmd))->oid_offset : 
+                       (char *)(tmp_del->cmd) +
+                       ((cfg_add_msg *)(tmp_del->cmd))->oid_offset :
                        tmp_del->old_oid;
-                       
-             if (tmp_oid == NULL || strlen(tmp_oid) > len || 
+
+             if (tmp_oid == NULL || strlen(tmp_oid) > len ||
                  strncmp(tmp_oid, oid, len) != 0)
              {
                  break;
              }
          }
-         
+
          if (!found)
          {
              tmp = tmp->next;
              continue;
          }
-         
+
          /* Now we need to remove [tmp ... tmp_del] commands */
          if (tmp->prev != NULL)
              tmp->prev->next = tmp_del->next;
          else
              first = tmp_del->next;
-             
+
          if (tmp_del->next != NULL)
              tmp_del->next->prev = tmp->prev;
          else
              last = tmp->prev;
-             
+
          tmp_del->next = NULL;
-             
+
          for (; tmp != NULL; tmp = tmp_del)
          {
              tmp_del = tmp->next;
@@ -1248,7 +1244,7 @@ cfg_dh_optimize(void)
             cfg_dh_entry *next = tmp->next;
             cfg_inst_val  next_old_val = next->old_val;
             cfg_val_type  type = ((cfg_set_msg *)(tmp->cmd))->val_type;
-            
+
             /*
              * Copy old value of this command to old value
              * of the next command.
@@ -1259,7 +1255,7 @@ cfg_dh_optimize(void)
                 return;
             }
             cfg_types[type].free(next_old_val);
-            
+
             if (tmp->prev != NULL)
                 tmp->prev->next = tmp->next;
             else
@@ -1275,17 +1271,17 @@ cfg_dh_optimize(void)
 
 /**
  * Release history after backup.
- * 
+ *
  * @param filename      name of the backup file
  */
-void 
+void
 cfg_dh_release_after(char *filename)
 {
     cfg_dh_entry *limit, *next, *cur;
-    
+
     if (filename == NULL)
         return;
-    
+
     for (limit = last; limit != NULL; limit = limit->prev)
     {
         if (limit->backup != NULL)
@@ -1295,10 +1291,10 @@ cfg_dh_release_after(char *filename)
             return;
         }
     }
-        
+
     if (limit == NULL || limit == last)
         return;
-    
+
     for (cur = limit->next; cur != NULL; cur = next)
     {
         next = cur->next;
@@ -1311,7 +1307,7 @@ cfg_dh_release_after(char *filename)
 
 /**
  * Forget about this backup.
- * 
+ *
  * @param filename      name of the backup file
  *
  * @return status code
@@ -1320,29 +1316,29 @@ int
 cfg_dh_release_backup(char *filename)
 {
     cfg_dh_entry *tmp;
-    
+
     for (tmp = first; tmp != NULL; tmp = tmp->next)
     {
         cfg_backup *cur, *prev;
-      
-        for (cur = tmp->backup, prev = NULL; 
+
+        for (cur = tmp->backup, prev = NULL;
              cur != NULL && strcmp(cur->filename, filename) != 0;
              prev = cur, cur = cur->next);
-             
+
         if (cur == NULL)
             continue;
-        
+
         if (prev)
             prev->next = cur->next;
         else
             tmp->backup = cur->next;
-            
+
         free(cur->filename);
         free(cur);
-        
+
         return 0;
     }
-    
+
     return 0;
 }
 
@@ -1374,24 +1370,24 @@ cfg_dh_apply_commit(const char *oid)
     {
         switch (tmp->cmd->type)
         {
-            /* 
-             * We are only interested in ADD and SET commands, 
+            /*
+             * We are only interested in ADD and SET commands,
              * which could be local.
              */
             case CFG_ADD:
             case CFG_SET:
             {
                 entry_oid = (tmp->cmd->type == CFG_ADD) ?
-                    (const char *)(tmp->cmd) + 
+                    (const char *)(tmp->cmd) +
                         ((cfg_add_msg *)(tmp->cmd))->oid_offset :
                     tmp->old_oid;
 
                 if (strncmp(entry_oid, oid, oid_len) == 0)
                     tmp->committed = TRUE;
-                
+
                 break;
             }
-            
+
             default:
                 break;
         }

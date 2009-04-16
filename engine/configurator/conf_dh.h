@@ -35,7 +35,7 @@ extern "C" {
 
 /**
  * Process "history" configuration file - execute all commands
- * and add them to dynamic history. 
+ * and add them to dynamic history.
  * Note: this routine does not reboot Test Agents.
  *
  * @param node      <history> node pointer
@@ -56,7 +56,7 @@ extern int cfg_dh_create_file(char *filename);
 
 /**
  * Attach backup to the last command.
- * 
+ *
  * @param filename      name of the backup file
  *
  * @return status code (see te_errno.h)
@@ -67,7 +67,7 @@ extern int cfg_dh_attach_backup(char *filename);
  * Restore backup with specified name using reversed command
  * of the dynamic history. Processed commands are removed
  * from the history.
- * 
+ *
  * @param filename      name of the backup file
  * @param hard_check    whether hard check should be applied
  *                      on restore backup. For instance if on deleting
@@ -118,14 +118,14 @@ extern void cfg_dh_optimize(void);
 
 /**
  * Release history after backup.
- * 
+ *
  * @param filename      name of the backup file
  */
 extern void cfg_dh_release_after(char *filename);
 
 /**
  * Forget about this backup.
- * 
+ *
  * @param filename      name of the backup file
  *
  * @return status code

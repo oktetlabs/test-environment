@@ -30,7 +30,6 @@
 #include "conf_defs.h"
 #include "rcf_api.h"
 
-
 #define TA_LIST_SIZE    64
 
 typedef struct ta_list_t {
@@ -43,7 +42,6 @@ typedef struct ta_list_t {
 #define TA_BUF_SIZE     8192
 char *cfg_get_buf = NULL;
 static int cfg_get_buf_len = TA_BUF_SIZE;
-
 
 te_bool local_cmd_seq = FALSE;
 char max_commit_subtree[CFG_INST_NAME_MAX] = {};
@@ -150,7 +148,6 @@ cfg_ta_add_agent_instances()
     return 0;
 }
 
-
 /**
  * Reboot all Test Agents (before re-initializing of the Configurator).
  */
@@ -195,10 +192,10 @@ sync_ta_instance(const char *ta, const char *oid)
     cfg_handle    handle = CFG_HANDLE_INVALID;
     cfg_inst_val  val;
     int           rc;
-    
+
     if (obj == NULL)
         return 0;
-        
+
     rc = cfg_db_find(oid, &handle);
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
         return rc;
@@ -210,7 +207,7 @@ sync_ta_instance(const char *ta, const char *oid)
         if (rc != 0)
         {
             /*
-             * There is new instance on Test Agent, which we should 
+             * There is new instance on Test Agent, which we should
              * put into our local DB.
              */
             rc = cfg_db_add(oid, &handle, CVT_NONE,
@@ -268,7 +265,7 @@ sync_ta_instance(const char *ta, const char *oid)
                 "failed", cfg_get_buf, obj->type, oid);
         return rc;
     }
-    
+
     if (handle == CFG_HANDLE_INVALID)
     {
         rc = cfg_db_add(oid, &handle, obj->type, val);
@@ -306,7 +303,7 @@ remove_excessive(cfg_instance *inst, char *list)
         next = tmp->brother;
         remove_excessive(tmp, list);
     }
-    
+
     if (cfg_inst_agent(inst))
         return;
 
@@ -325,29 +322,29 @@ remove_excessive(cfg_instance *inst, char *list)
 typedef struct olist {
     struct olist *next;
     char          oid[CFG_OID_MAX];
-} olist;    
+} olist;
 
 /** Insert the entry in lexico-graphical order */
 static int
 insert_entry(char *oid, olist **list)
 {
     olist *cur, *prev, *tmp;
-    
+
     if ((tmp = malloc(sizeof(olist))) == NULL)
         return TE_ENOMEM;
-        
+
     strncpy(tmp->oid, oid, CFG_OID_MAX);
-        
-    for (prev = NULL, cur = *list; 
-         cur != NULL && strcmp(cur->oid, oid) < 0; 
+
+    for (prev = NULL, cur = *list;
+         cur != NULL && strcmp(cur->oid, oid) < 0;
          prev = cur, cur = cur->next);
-         
+
     tmp->next = cur;
     if (!prev)
         *list = tmp;
     else
         prev->next = tmp;
-        
+
     return 0;
 }
 
@@ -356,12 +353,12 @@ static inline void
 free_list(olist *list)
 {
     olist *tmp;
-    
+
     for (; list != NULL; list = tmp)
     {
         tmp = list->next;
         free(list);
-    } 
+    }
 }
 
 /**
@@ -380,7 +377,7 @@ sync_ta_subtree(const char *ta, const char *oid)
     char  *limit;
     char  *wildcard_oid;
     int    rc;
-    
+
     olist *list = NULL, *entry;
 
     cfg_handle handle;
@@ -407,7 +404,7 @@ sync_ta_subtree(const char *ta, const char *oid)
     cfg_get_buf[0] = 0;
     while (TRUE)
     {
-        rc = rcf_ta_cfg_get(ta, 0, wildcard_oid, cfg_get_buf, 
+        rc = rcf_ta_cfg_get(ta, 0, wildcard_oid, cfg_get_buf,
                             cfg_get_buf_len);
         if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF)
         {
@@ -433,9 +430,9 @@ sync_ta_subtree(const char *ta, const char *oid)
         }
     }
     free(wildcard_oid);
-    
+
     VERB("%s instances:\n%s", ta, cfg_get_buf);
-    
+
     rc = cfg_db_find(oid, &handle);
 
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
@@ -456,15 +453,15 @@ sync_ta_subtree(const char *ta, const char *oid)
             return TE_ENOMEM;
         }
     }
-    
+
     limit = cfg_get_buf + strlen(cfg_get_buf);
     sprintf(limit, " %s", oid);
-    
+
     if (rc == 0)
         remove_excessive(CFG_GET_INST(handle), cfg_get_buf);
     else
         rc = 0;
-        
+
     /* Calculate number of OIDs to be synchronized */
     for (tmp = cfg_get_buf; tmp < limit; tmp = next)
     {
@@ -473,7 +470,7 @@ sync_ta_subtree(const char *ta, const char *oid)
             *next++ = 0;
         else
             next = limit;
-            
+
         if ((rc = insert_entry(tmp, &list)) != 0)
         {
             free_list(list);
@@ -483,10 +480,10 @@ sync_ta_subtree(const char *ta, const char *oid)
 
     for (entry = list; entry != NULL; entry = entry->next)
         if ((rc = sync_ta_instance(ta, entry->oid)) != 0)
-            break; 
-            
+            break;
+
     rcf_ta_cfg_group(ta, 0, FALSE);
-    
+
     free_list(list);
 
     return rc;
@@ -513,7 +510,7 @@ cfg_ta_sync(char *oid, te_bool subtree)
         return rc;
 
     if ((tmp_oid = cfg_convert_oid_str(oid)) == NULL ||
-        !tmp_oid->inst || 
+        !tmp_oid->inst ||
         (tmp_oid->len > 1 && strcmp_start("/agent", oid) != 0))
     {
         cfg_free_oid(tmp_oid);
@@ -529,8 +526,8 @@ cfg_ta_sync(char *oid, te_bool subtree)
         {
             char agent_oid[CFG_OID_MAX];
 
-            TE_SPRINTF(agent_oid, CFG_TA_PREFIX"%s%s", ta, 
-                       tmp_oid->len == 1 ? "" : 
+            TE_SPRINTF(agent_oid, CFG_TA_PREFIX"%s%s", ta,
+                       tmp_oid->len == 1 ? "" :
                        oid + strlen(CFG_TA_PREFIX"*"));
             if ((rc = sync_ta_subtree(ta, agent_oid)) != 0)
                 break;
@@ -654,7 +651,7 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
     cfg_object     *obj = inst->obj;
     cfg_inst_val    val;
     char           *val_str = NULL;
-    
+
     ENTRY("ta=%s inst=0x%X", ta, inst);
     VERB("Commit to '%s' instance '%s'", ta, inst->oid);
     if ((inst->added && obj->type == CVT_NONE) ||
@@ -695,7 +692,7 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
     if (!inst->added && obj->access == CFG_READ_CREATE)
     {
         /*
-         * We need to add a new instance to the Test Agent - 
+         * We need to add a new instance to the Test Agent -
          * postponed add operation.
          */
         if ((rc = rcf_ta_cfg_add(ta, 0, inst->oid, val_str)) != 0)
@@ -834,7 +831,6 @@ handle_result:
     return ret;
 }
 
-
 /**
  * Commit changes in local Configurator database to all Test Agents.
  *
@@ -847,7 +843,6 @@ cfg_tas_commit(const char *oid)
 {
     int             rc = 0;
     cfg_instance   *inst;
-
 
     ENTRY("oid=%s", (oid == NULL) ? "(null)" : oid);
     if (oid == NULL)
@@ -892,7 +887,7 @@ cfg_tas_commit(const char *oid)
             return 0;
         }
 
-        if (local_cmd_seq && 
+        if (local_cmd_seq &&
             (strlen(max_commit_subtree) < strlen(oid) ||
              strncmp(max_commit_subtree, oid, strlen(oid)) != 0))
         {
@@ -915,7 +910,7 @@ cfg_tas_commit(const char *oid)
         rc = cfg_ta_commit(ta_inst->name, inst);
     }
 
-    if (local_cmd_seq)    
+    if (local_cmd_seq)
     {
         local_cmd_seq = FALSE;
 

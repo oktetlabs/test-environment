@@ -34,7 +34,6 @@
 extern "C" {
 #endif
 
-
 /** Buffer with TAs list */
 extern char *cfg_ta_list;
 /** Buffer for GET requests */
@@ -48,7 +47,7 @@ extern char *cfg_get_buf;
  * EACCESS error code notifying that there is open local-commnd sequence.
  *
  * 2. It is not allowed to COMMIT only a part of local changes
- * in Configuration DB, instead user shall COMMIT all their changes in 
+ * in Configuration DB, instead user shall COMMIT all their changes in
  * one COMMIT. Incorrect COMMIT commands shall fail with EPERM error code.
  */
 
@@ -65,10 +64,9 @@ extern te_bool local_cmd_seq;
 extern char max_commit_subtree[CFG_INST_NAME_MAX];
 
 /**
- * Backup file name which reflects situation before local SET/ADD command 
+ * Backup file name which reflects situation before local SET/ADD command
  */
 extern char local_cmd_bkp[1024];
-
 
 /**
  * Reboot all Test Agents (before re-initializing of the Configurator).
@@ -83,7 +81,7 @@ extern void cfg_ta_reboot_all(void);
  * @param subtree       1 if the subtree of the specified node should
  *                      be synchronized
  *
- * @return status code (see te_errno.h) 
+ * @return status code (see te_errno.h)
  */
 extern int cfg_ta_sync(char *oid, te_bool subtree);
 
@@ -100,20 +98,18 @@ extern int cfg_ta_add_agent_instances(void);
  * @param oid   - subtree OID or NULL if whole database should be
  *                synchronized
  *
- * @return status code (see te_errno.h) 
+ * @return status code (see te_errno.h)
  */
 extern int cfg_tas_commit(const char *oid);
-
 
 /**
  * Synchronize dependant nodes.
  *
- * @param inst Instance to 
+ * @param inst Instance to
  *
  * @return 0 on success, error code otherwise
  */
 extern int cfg_ta_sync_dependants(cfg_instance *inst);
-
 
 /**
  * Toggles logging of all sync operations

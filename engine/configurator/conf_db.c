@@ -40,49 +40,52 @@ static cfg_object cfg_obj_conf_delay;
 static cfg_object cfg_obj_conf_delay_ta;
 
 /** Root of configuration objects */
-cfg_object cfg_obj_root = 
+cfg_object cfg_obj_root =
     { 0, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, FALSE, NULL,
       &cfg_obj_agent, NULL, CFG_DEP_INITIALIZER };
-      
+
 /** "/agent" object */
-static cfg_object cfg_obj_agent = 
+static cfg_object cfg_obj_agent =
     { 1, "/agent", { 'a', 'g', 'e', 'n', 't', 0 },
-      CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root,  
+      CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root,
       &cfg_obj_agent_rsrc, &cfg_obj_conf_delay, CFG_DEP_INITIALIZER };
 
 /** "/agent/rsrc" object */
-static cfg_object cfg_obj_agent_rsrc = 
+static cfg_object cfg_obj_agent_rsrc =
     { 2, "/agent/rsrc", { 'r', 's', 'r', 'c', 0 },
-      CVT_STRING, CFG_READ_CREATE, NULL, FALSE, &cfg_obj_agent, 
+      CVT_STRING, CFG_READ_CREATE, NULL, FALSE, &cfg_obj_agent,
       NULL, NULL, CFG_DEP_INITIALIZER };
 
 /** "/conf_delay" object */
-static cfg_object cfg_obj_conf_delay = 
-    { 3, "/conf_delay", 
+static cfg_object cfg_obj_conf_delay =
+    { 3, "/conf_delay",
       { 'c', 'o', 'n', 'f', '_', 'd', 'e', 'l', 'a', 'y', 0 },
-      CVT_STRING, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_root, 
+      CVT_STRING, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_root,
       &cfg_obj_conf_delay_ta, NULL, CFG_DEP_INITIALIZER };
 
 /** "/conf_delay/ta" object */
-static cfg_object cfg_obj_conf_delay_ta = 
+static cfg_object cfg_obj_conf_delay_ta =
     { 4, "/conf_delay/ta", { 't', 'a', 0 },
-      CVT_INTEGER, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_conf_delay, 
+      CVT_INTEGER, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_conf_delay,
       NULL, NULL, CFG_DEP_INITIALIZER };
 
-      
 /** Pool with configuration objects */
 cfg_object **cfg_all_obj = NULL;
+
 /** Size of objects pool */
 int cfg_all_obj_size;
 
 /** Root of configuration instances */
-cfg_instance cfg_inst_root = 
-    { 0x10000, "/:", { 0 }, &cfg_obj_root, TRUE, NULL, NULL, NULL, 
+cfg_instance cfg_inst_root =
+    { 0x10000, "/:", { 0 }, &cfg_obj_root, TRUE, NULL, NULL, NULL,
       { 0 } };
+
 /** Pool with configuration instances */
 cfg_instance **cfg_all_inst = NULL;
+
 /** Size of instances pool */
 int cfg_all_inst_size;
+
 /** Maximum index ever used in the cfg_all_inst */
 static int cfg_all_inst_max = 1;
 
@@ -95,8 +98,9 @@ uint32_t cfg_conf_delay;
 /* Locals */
 static int pattern_match(char *pattern, char *str);
 
-/** Description for a dependency referenced 
- *  before its master object
+/**
+ * Description for a dependency referenced
+ * before its master object
  */
 typedef struct cfg_orphan
 {
@@ -107,20 +111,22 @@ typedef struct cfg_orphan
     struct cfg_orphan *prev;  /**< Previous dependency */
 } cfg_orphan;
 
-/** List of dependencies referenced before their master objects are
- *  registered 
+/**
+ * List of dependencies referenced before their master objects are
+ * registered
  */
 static cfg_orphan *orphaned_objects;
 
-/** Ordered list of all objects such that a master object always
- *  preceeds all its dependant objects 
+/**
+ * Ordered list of all objects such that a master object always
+ * preceeds all its dependant objects
  */
 static cfg_object *topological_order;
 
 /**
  * Find a place for a new record in the topologically sorted list.
- * The idea is that when a new dependency is added, 
- * we move a dependent object beyond all the objects with 
+ * The idea is that when a new dependency is added,
+ * we move a dependent object beyond all the objects with
  * the same or lesser number of master objects.
  *
  * Actually, this is a "real-time" version of an topological sorting
@@ -134,12 +140,12 @@ cfg_put_in_order_dep(cfg_object *obj)
     cfg_object     *prev;
     cfg_object     *place;
     cfg_dependency *dep_iter;
-    
-    if (obj->dep_next != NULL && 
+
+    if (obj->dep_next != NULL &&
         obj->dep_next->ordinal_number <= obj->ordinal_number)
     {
-        for (prev = obj, place = obj->dep_next; 
-             place != NULL; 
+        for (prev = obj, place = obj->dep_next;
+             place != NULL;
              prev = place, place = place->dep_next)
         {
             if (place->ordinal_number > obj->ordinal_number)
@@ -157,8 +163,8 @@ cfg_put_in_order_dep(cfg_object *obj)
         obj->dep_next = place;
         obj->dep_prev = prev;
     }
-    for (dep_iter = obj->dependants; 
-         dep_iter != NULL; 
+    for (dep_iter = obj->dependants;
+         dep_iter != NULL;
          dep_iter = dep_iter->next)
     {
         if (dep_iter->depends->ordinal_number <= obj->ordinal_number)
@@ -168,7 +174,6 @@ cfg_put_in_order_dep(cfg_object *obj)
         }
     }
 }
-
 
 /**
  * Create a dependency record.
@@ -202,7 +207,7 @@ cfg_create_dep(cfg_object *master, cfg_object *obj, te_bool object_wide)
     }
     cfg_put_in_order_dep(obj);
 
-    /* 
+    /*
      * Now we add the object to the dependants list of its master, keeping
      * the list in lexicographic order
      */
@@ -244,7 +249,7 @@ static void
 cfg_destroy_deps(cfg_dependency *deps)
 {
     cfg_dependency *next;
-    
+
     for (; deps != NULL; deps = next)
     {
         next = deps->next;
@@ -261,7 +266,7 @@ int
 cfg_db_init(void)
 {
     cfg_db_destroy();
-    if ((cfg_all_obj = (cfg_object **)calloc(CFG_OBJ_NUM, 
+    if ((cfg_all_obj = (cfg_object **)calloc(CFG_OBJ_NUM,
                                              sizeof(void *))) == NULL)
     {
         ERROR("Out of memory");
@@ -278,7 +283,7 @@ cfg_db_init(void)
     cfg_obj_agent_rsrc.brother = NULL;
     cfg_obj_conf_delay.brother = NULL;
 
-    if ((cfg_all_inst = (cfg_instance **)calloc(CFG_INST_NUM, 
+    if ((cfg_all_inst = (cfg_instance **)calloc(CFG_INST_NUM,
                                                 sizeof(void *))) == NULL)
     {
         free(cfg_all_obj);
@@ -289,14 +294,14 @@ cfg_db_init(void)
     cfg_all_inst_size = CFG_INST_NUM;
     cfg_all_inst[0] = &cfg_inst_root;
     cfg_inst_root.son = NULL;
-    
+
     return cfg_ta_add_agent_instances();
 }
 
 /**
  * Destroy the database before shutdown.
  */
-void 
+void
 cfg_db_destroy(void)
 {
     int i;
@@ -338,14 +343,14 @@ static void
 cfg_maybe_adopt_objects (cfg_object *master, cfg_oid *oid)
 {
     cfg_orphan *iter, *next;
-    
+
     for (iter = orphaned_objects; iter != NULL; iter = next)
     {
         next = iter->next;
         if (cfg_oid_cmp(oid, iter->master) == 0)
         {
-            VERB("Adopting object '%s' by '%s'", 
-                 iter->object->oid, 
+            VERB("Adopting object '%s' by '%s'",
+                 iter->object->oid,
                  master->oid);
             cfg_create_dep(master, iter->object, iter->object_wide);
             cfg_free_oid(iter->master);
@@ -353,14 +358,13 @@ cfg_maybe_adopt_objects (cfg_object *master, cfg_oid *oid)
                 orphaned_objects = next;
             else
                 iter->prev->next = next;
-            
+
             if (next != NULL)
                 next->prev = iter->prev;
             free(iter);
         }
     }
 }
-
 
 /**
  * Process a message with the user request: "register"
@@ -371,57 +375,57 @@ cfg_maybe_adopt_objects (cfg_object *master, cfg_oid *oid)
  *              cfg_process_msg_get_oid
  *              it should be >= CFG_RECV_BUF_LEN)
  */
-void 
+void
 cfg_process_msg_register(cfg_register_msg *msg)
 {
     cfg_oid    *oid = cfg_convert_oid_str(msg->oid);
     cfg_object *father = &cfg_obj_root;
     cfg_object  *obj = NULL;
-    
+
     int i = 0;
-    
+
     if (oid == NULL)
     {
         msg->rc = TE_EINVAL;
         return;
     }
-    
+
     if (oid->inst)
     {
         cfg_free_oid(oid);
         msg->rc = TE_EINVAL;
         return;
     }
-        
+
     /* Look for the father first */
     while (TRUE)
     {
-       for (; 
-            father != NULL && 
-            strcmp(father->subid, 
-                   ((cfg_object_subid *)(oid->ids))[i].subid) != 0; 
+       for (;
+            father != NULL &&
+            strcmp(father->subid,
+                   ((cfg_object_subid *)(oid->ids))[i].subid) != 0;
             father = father->brother);
-       
+
        if (++i == oid->len - 1 || father == NULL)
            break;
-           
+
        father = father->son;
     }
-    
+
     if (father == NULL)
     {
         cfg_free_oid(oid);
         msg->rc = TE_ENOENT;
         return;
     }
-      
+
     /* Check for an obj with the same name */
-    for (obj = father->son; 
+    for (obj = father->son;
          obj != NULL && \
          strcmp(obj->subid,
-                ((cfg_object_subid *)(oid->ids))[i].subid) != 0; 
+                ((cfg_object_subid *)(oid->ids))[i].subid) != 0;
          obj = obj->brother);
-    
+
     if (obj != NULL)
     {
         cfg_free_oid(oid);
@@ -430,13 +434,13 @@ cfg_process_msg_register(cfg_register_msg *msg)
         msg->rc = TE_RC(TE_CS, TE_EEXIST);
         return;
     }
-    
+
     /* Now look for an empty slot in the objects array */
     for (i = 0; i < cfg_all_obj_size && cfg_all_obj[i] != NULL; i++);
-    
+
     if (i == cfg_all_obj_size)
     {
-        void *tmp = realloc(cfg_all_obj, 
+        void *tmp = realloc(cfg_all_obj,
                         sizeof(void *) * (cfg_all_obj_size + CFG_OBJ_NUM));
 
         if (tmp == NULL)
@@ -445,13 +449,13 @@ cfg_process_msg_register(cfg_register_msg *msg)
             msg->rc = TE_ENOMEM;
             return;
         }
-        memset(tmp + sizeof(void *) * cfg_all_obj_size, 0, 
+        memset(tmp + sizeof(void *) * cfg_all_obj_size, 0,
                sizeof(void *) * CFG_OBJ_NUM);
-        
+
         cfg_all_obj = (cfg_object **)tmp;
         cfg_all_obj_size += CFG_OBJ_NUM;
     }
-    
+
     if ((cfg_all_obj[i] =
              (cfg_object *)calloc(sizeof(cfg_object), 1)) == NULL)
     {
@@ -466,8 +470,8 @@ cfg_process_msg_register(cfg_register_msg *msg)
         msg->rc = TE_ENOMEM;
         return;
     }
-    
-    if (msg->def_val > 0 && 
+
+    if (msg->def_val > 0 &&
         (cfg_all_obj[i]->def_val = strdup(msg->oid + msg->def_val)) == NULL)
     {
         free(cfg_all_obj[i]->oid);
@@ -483,9 +487,9 @@ cfg_process_msg_register(cfg_register_msg *msg)
              msg->oid);
         msg->vol = TRUE;
     }
-    
+
     cfg_all_obj[i]->handle = i;
-    strcpy(cfg_all_obj[i]->subid, 
+    strcpy(cfg_all_obj[i]->subid,
            ((cfg_object_subid *)(oid->ids))[oid->len - 1].subid);
     cfg_all_obj[i]->type = msg->val_type;
     cfg_all_obj[i]->access = msg->access;
@@ -506,7 +510,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
     }
     topological_order          = cfg_all_obj[i];
     cfg_maybe_adopt_objects(cfg_all_obj[i], oid);
-    if (!msg->no_parent_dep && 
+    if (!msg->no_parent_dep &&
         father != &cfg_obj_root && father != &cfg_obj_agent)
     {
         cfg_create_dep(father, cfg_all_obj[i], FALSE);
@@ -589,7 +593,7 @@ forget_master(cfg_object *dependant, cfg_object *obj)
  *
  * @param id        id string of an object to be removed.
  * @param log_lvl   Log level for messages about forced actions
- *                  (instance delete, dependancy cut, etc. ) 
+ *                  (instance delete, dependancy cut, etc. )
  *
  * @return  0 or TE_EINVAL, if error occurred.
  *
@@ -617,7 +621,6 @@ cfg_db_unregister_obj_by_id_str(char *id,
     int                 nof_matches = 0;
     te_errno            rc;
 
-
     obj = cfg_get_obj_by_obj_id_str(id);
     if (obj == NULL)
     {
@@ -639,9 +642,10 @@ cfg_db_unregister_obj_by_id_str(char *id,
         return TE_RC(TE_CS, TE_EINVAL);
     }
 
-
-    /* Cut off all the dependants by brutal force
-     * (normally, should not happen): */
+    /*
+     * Cut off all the dependants by brutal force
+     * (normally, should not happen):
+     */
     for (dependants = obj->dependants; dependants != NULL;
          dependants = dependants->next)
     {
@@ -654,12 +658,12 @@ cfg_db_unregister_obj_by_id_str(char *id,
         assert(objtmp != NULL);
     }
 
-
     /* Form a pattern '|A0:*|A1:*|... and check for instances: */
     idsplit = cfg_convert_oid_str(id);
     id_elmnt = (cfg_object_subid *)(idsplit->ids);
     ids_end = id_elmnt + idsplit->len;
     iter = pattern;
+
     /* skip empty ids[0], i.e. '/:*' as the first part of the pattern: */
     for (id_elmnt++; id_elmnt < ids_end; id_elmnt++)
     {
@@ -691,7 +695,6 @@ cfg_db_unregister_obj_by_id_str(char *id,
     }
     free(matches);
 
-
     /* remove obj from the list of dependants of each master: */
     depends_on = obj->depends_on;
     for (;depends_on != NULL; depends_on = depends_on->next)
@@ -704,9 +707,10 @@ cfg_db_unregister_obj_by_id_str(char *id,
         assert(objtmp != NULL);
     }
 
-
-    /* Since we've made sure above that nobody depends on the obj,
-     * we just remove the obj from the topological order: */
+    /*
+     * Since we've made sure above that nobody depends on the obj,
+     * we just remove the obj from the topological order:
+     */
     if (obj->dep_prev == NULL)       /* head */
     {
         topological_order       = obj->dep_next;
@@ -723,7 +727,6 @@ cfg_db_unregister_obj_by_id_str(char *id,
         obj->dep_next->dep_prev = obj->dep_prev;
     }
 
-
     /* Remove the obj from the obj tree: */
     father = obj->father;
     if (father->son == obj)
@@ -738,7 +741,6 @@ cfg_db_unregister_obj_by_id_str(char *id,
         brother->brother = obj->brother;
     }
 
-
     /* Delete from the array of objects */
     cfg_all_obj[obj->handle] = NULL;
 
@@ -747,7 +749,6 @@ cfg_db_unregister_obj_by_id_str(char *id,
     free(obj);
     return 0;
 } /* cfg_db_unregister_obj_by_id_str() */
-
 
 void
 cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
@@ -761,18 +762,18 @@ cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
         msg->rc = TE_EINVAL;
         return;
     }
-    
+
     if ((obj = CFG_GET_OBJ(msg->handle)) == NULL)
     {
         msg->rc = TE_ENOENT;
         return;
     }
 
-    VERB("Adding %s dependency '%s' for '%s'", 
+    VERB("Adding %s dependency '%s' for '%s'",
          msg->object_wide ? "object-wide" : "instance-wide",
          msg->oid, obj->oid);
 
-    
+
     rc = cfg_db_find(msg->oid, &master_handle);
     if (rc != 0 && rc != TE_ENOENT)
     {
@@ -782,7 +783,7 @@ cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
     if (rc != 0)
     {
         cfg_orphan *orph;
-        
+
         VERB("Creating an orphaned object %s <- %s", msg->oid, obj->oid);
         orph         = calloc(1, sizeof(*orph));
         orph->object = obj;
@@ -800,13 +801,13 @@ cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
     }
 }
 
-void 
+void
 cfg_process_msg_find(cfg_find_msg *msg)
 {
     msg->rc = cfg_db_find(msg->oid, &(msg->handle));
 }
 
-void 
+void
 cfg_process_msg_get_descr(cfg_get_descr_msg *msg)
 {
     cfg_object *obj;
@@ -817,26 +818,26 @@ cfg_process_msg_get_descr(cfg_get_descr_msg *msg)
         msg->rc = TE_EINVAL;
         return;
     }
-    
+
     if ((obj = CFG_GET_OBJ(msg->handle)) == NULL)
     {
         msg->rc = TE_ENOENT;
         return;
     }
-    
+
     msg->descr.type = obj->type;
     msg->descr.access = obj->access;
     msg->len = sizeof(*msg);
 }
 
-void 
+void
 cfg_process_msg_get_oid(cfg_get_oid_msg *msg)
 {
 #define RET(_item) \
     do {                                                  \
         if (_item == NULL)                                \
         {                                                 \
-            msg->rc = TE_ENOENT;                             \
+            msg->rc = TE_ENOENT;                          \
             return;                                       \
         }                                                 \
         strcpy(msg->oid, _item->oid);                     \
@@ -853,17 +854,17 @@ cfg_process_msg_get_oid(cfg_get_oid_msg *msg)
         cfg_object *obj = CFG_GET_OBJ(msg->handle);
         RET(obj);
     }
-#undef RET    
+#undef RET
 }
 
-void 
+void
 cfg_process_msg_get_id(cfg_get_id_msg *msg)
 {
 #define RET(_item, _what) \
     do {                                                     \
         if (_item == NULL)                                   \
         {                                                    \
-            msg->rc = TE_ENOENT;                                \
+            msg->rc = TE_ENOENT;                             \
             return;                                          \
         }                                                    \
         strcpy(msg->id, _item->_what);                       \
@@ -880,10 +881,10 @@ cfg_process_msg_get_id(cfg_get_id_msg *msg)
         cfg_object *obj = CFG_GET_OBJ(msg->handle);
         RET(obj, subid);
     }
-#undef RET    
+#undef RET
 }
 
-void 
+void
 cfg_process_msg_family(cfg_family_msg *msg)
 {
 #define RET(_item) \
@@ -913,9 +914,8 @@ cfg_process_msg_family(cfg_family_msg *msg)
         cfg_object *obj = CFG_GET_OBJ(msg->handle);
         RET(obj);
     }
-#undef RET    
+#undef RET
 }
-
 
 /**
  * Process a user request to find all objects or object instances
@@ -930,17 +930,16 @@ cfg_pattern_msg *
 cfg_process_msg_pattern(cfg_pattern_msg *msg)
 {
     cfg_pattern_msg *tmp = msg;
-    
+
     int num_max = (CFG_BUF_LEN - sizeof(*msg)) / sizeof(cfg_handle);
     int num = 0;
 
     cfg_handle *matches = NULL;
     int         nof_matches;
     te_errno    rc;
-    
 
 /* Number of slots in additional allocation chunks */
-#define ALLOC_STEP  32 
+#define ALLOC_STEP  32
 
 /* Put a handle into the array of handles of the message */
 #define PUT_HANDLE(_handle) \
@@ -973,7 +972,7 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
                 tmp = (cfg_pattern_msg *)tmp1;                      \
             }                                                       \
         }                                                           \
-        tmp->handles[num] = _handle;                              \
+        tmp->handles[num] = _handle;                                \
     } while(0)
 
 #define RETERR(_rc) \
@@ -984,27 +983,24 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
         return msg;             \
     } while (0)
 
-    
     rc = cfg_db_find_pattern(msg->pattern, (unsigned int *)&nof_matches,
                                             &matches);
     if (rc != 0)
         RETERR(rc);
-    
+
     for (num = 0; num < nof_matches; num++)
         PUT_HANDLE(matches[num]);
-        
+
     free(matches);
-    
+
     VERB("Found %d OIDs by pattern", num);
     tmp->len = sizeof(*msg) + sizeof(cfg_handle) * num;
     return tmp;
-    
+
 #undef ALLOC_STEP
 #undef PUT_HANDLE
 #undef RETERR
 }   /* cfg_process_msg_pattern() */
-
-
 
 /**
  * Find all objects or object instances matching a pattern.
@@ -1026,9 +1022,9 @@ cfg_db_find_pattern(const char *pattern,
 {
     cfg_handle  *matches = NULL;
     int         nof_matches = 0;
-    cfg_oid     *idsplit = NULL;   
+    cfg_oid     *idsplit = NULL;
     int         i, k;
-    
+
     te_bool     all = FALSE;
     te_bool     inst;
 
@@ -1039,7 +1035,6 @@ cfg_db_find_pattern(const char *pattern,
         return TE_RC(TE_CS, _rc);   \
     } while (0)
 
-      
     if (strcmp(pattern, "*") == 0)
     {
         all = TRUE;
@@ -1068,10 +1063,10 @@ cfg_db_find_pattern(const char *pattern,
             cfg_inst_subid *s1;
             cfg_inst_subid *s2;
             cfg_oid        *tmp_idsplit;
-            
+
             if (cfg_all_inst[i] == NULL)
                 continue;
-                
+
             if (all)
             {
                 matches[nof_matches++] = cfg_all_inst[i]->handle;
@@ -1091,7 +1086,7 @@ cfg_db_find_pattern(const char *pattern,
             s2 = (cfg_inst_subid *)(tmp_idsplit->ids);
             for (k = 0; k < idsplit->len; k++, s1++, s2++)
             {
-                if ((s1->subid[0] != '*' && 
+                if ((s1->subid[0] != '*' &&
                      pattern_match(s1->subid, s2->subid) != 0) ||
                     (s1->name[0] != '*' &&
                      pattern_match(s1->name, s2->name) != 0))
@@ -1115,20 +1110,20 @@ cfg_db_find_pattern(const char *pattern,
             cfg_object_subid *s1;
             cfg_object_subid *s2;
             cfg_oid          *tmp_idsplit;
-            
+
             if (cfg_all_obj[i] == NULL)
                 continue;
-                
+
             if (all)
             {
                 matches[nof_matches++] = cfg_all_obj[i]->handle;
                 continue;
             }
-            
+
             tmp_idsplit = cfg_convert_oid_str(cfg_all_obj[i]->oid);
             if (tmp_idsplit == NULL)
                 RETERR(TE_ENOMEM);
-                
+
             if (tmp_idsplit->len != idsplit->len)
             {
                 cfg_free_oid(tmp_idsplit);
@@ -1139,7 +1134,7 @@ cfg_db_find_pattern(const char *pattern,
             for (k = 0; k < idsplit->len; k++, s1++, s2++)
             {
                 if (s1->subid[0] != '*' &&
-                    pattern_match(s1->subid, s2->subid) != 0) 
+                    pattern_match(s1->subid, s2->subid) != 0)
                 {
                     break;
                 }
@@ -1153,20 +1148,18 @@ cfg_db_find_pattern(const char *pattern,
     cfg_free_oid(idsplit);
     matches = realloc(matches, nof_matches * sizeof(cfg_handle));
     *p_matches = matches;
-    *p_nmatches = nof_matches;    
+    *p_nmatches = nof_matches;
     return 0;
 #undef RETERR
 }   /* cfg_db_find_pattern() */
 
-
-
-/** 
+/**
  * Add instance children if they are read/write.
  *
  * @param inst   pointer on the instance.
  *
  * @return  status code.
- */ 
+ */
 static int
 cfg_db_add_children(cfg_instance *inst)
 {
@@ -1175,7 +1168,7 @@ cfg_db_add_children(cfg_instance *inst)
     int             i = 0;
     int             len;
     int             err;
-    
+
     len = strlen(inst->oid);
     obj1 = obj1->son;
     while (obj1)
@@ -1191,13 +1184,13 @@ cfg_db_add_children(cfg_instance *inst)
         if (!oid_s)
             return TE_ENOMEM;
         sprintf(oid_s, "%s/%s:", inst->oid, obj1->subid);
-        
+
         /* Adding instance */
         for (i = 0; i < cfg_all_inst_size && cfg_all_inst[i] != NULL; i++);
-        
+
         if (i == cfg_all_inst_size)
         {
-            void *tmp = realloc(cfg_all_inst, 
+            void *tmp = realloc(cfg_all_inst,
                 sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
 
             if (tmp == NULL)
@@ -1205,34 +1198,34 @@ cfg_db_add_children(cfg_instance *inst)
                 free(oid_s);
                 return TE_ENOMEM;
             }
-            
-            memset(tmp + sizeof(void *) * cfg_all_inst_size, 0, 
+
+            memset(tmp + sizeof(void *) * cfg_all_inst_size, 0,
                  sizeof(void *) * CFG_INST_NUM);
-        
+
             cfg_all_inst = (cfg_instance **)tmp;
             cfg_all_inst_size += CFG_INST_NUM;
         }
-    
+
         cfg_all_inst[i] = (cfg_instance *)calloc(sizeof(cfg_instance), 1);
         if (cfg_all_inst[i] == NULL)
         {
             free(oid_s);
             return TE_ENOMEM;
         }
-        
+
         /* Setting all parameters*/
         cfg_all_inst[i]->oid = oid_s;
         if (obj1->type != CVT_NONE)
         {
             int err;
-        
+
             if (obj1->def_val != NULL)
-                err = cfg_types[obj1->type].str2val(obj1->def_val, 
+                err = cfg_types[obj1->type].str2val(obj1->def_val,
                                                &(cfg_all_inst[i]->val));
             else
-                err = 
+                err =
                     cfg_types[obj1->type].def_val(&(cfg_all_inst[i]->val));
-        
+
             if (err)
             {
                 free(cfg_all_inst[i]->oid);
@@ -1241,15 +1234,15 @@ cfg_db_add_children(cfg_instance *inst)
                 return err;
             }
         }
- 
+
         cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
         cfg_all_inst[i]->name[0] = '\0';
         cfg_all_inst[i]->obj = obj1;
         cfg_all_inst[i]->father = inst;
         cfg_all_inst[i]->son = NULL;
         cfg_all_inst[i]->brother = inst->son;
-        inst->son =  cfg_all_inst[i]; 
-        
+        inst->son =  cfg_all_inst[i];
+
         /* Adding all its children*/
         if ( (err = cfg_db_add_children(cfg_all_inst[i])) != 0)
             return err;
@@ -1265,12 +1258,12 @@ get_delay_by_oid(const char *oid)
     char ta[RCF_MAX_NAME];
     char oid_obj[CFG_OID_MAX];
     int  i;
-    
+
     if (!cfg_get_ta_name(oid, ta))
          return 0;
 
     cfg_oid_inst2obj(oid, oid_obj);
-    
+
     if (*oid_obj == 0)
         return 0;
 
@@ -1284,24 +1277,24 @@ get_delay_by_oid(const char *oid)
             for (tmp = tmp->son; tmp != NULL; tmp = tmp->brother)
                 if (*tmp->name == 0 || strcmp(tmp->name, ta) == 0)
                     return tmp->val.val_int;
-                
+
             return 0;
         }
     }
     return 0;
 }
 
-/** 
+/**
  * Update the current configuration delay after adding/deleting/changing
  * an instance.
  *
  * @param oid   instance OID
  */
-void 
+void
 cfg_conf_delay_update(const char *oid)
 {
     uint32_t delay = get_delay_by_oid(oid);
-    
+
     if (delay > cfg_conf_delay)
         cfg_conf_delay = delay;
 }
@@ -1316,7 +1309,7 @@ cfg_conf_delay_update(const char *oid)
  *
  * @return status code (see te_errno.h)
  */
-int 
+int
 cfg_db_add(const char *oid_s, cfg_handle *handle,
            cfg_val_type type, cfg_inst_val val)
 {
@@ -1327,52 +1320,52 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     cfg_instance   *prev;
     cfg_inst_subid *s;
     int             i = 0;
-    
+
     if (oid == NULL)
     {
         ERROR("%s: OID is expected to be not NULL", __FUNCTION__);
         return TE_EINVAL;
     }
-    
+
 #define RET(_rc) \
     do {                        \
         cfg_free_oid(oid);      \
         return _rc;             \
     } while (0)
-    
+
     if (!oid->inst)
         RET(TE_EINVAL);
-    
+
     s = (cfg_inst_subid *)(oid->ids);
-    
+
     /* Look for the father first */
     while (TRUE)
     {
-       for (; 
-            father != NULL && 
+       for (;
+            father != NULL &&
             (strcmp(father->obj->subid, s->subid) != 0 ||
              strcmp(father->name, s->name) != 0);
             father = father->brother);
-            
+
         s++;
-        
+
         if (++i == oid->len - 1 || father == NULL)
             break;
-        
+
         father = father->son;
     }
-    
+
     if (father == NULL)
         RET(TE_ENOENT);
-        
+
     /* Find an object for the instance */
-    for (obj = father->obj->son; 
+    for (obj = father->obj->son;
          obj != NULL && strcmp(obj->subid, s->subid) != 0;
          obj = obj->brother);
-         
+
     if (obj == NULL)
         RET(TE_ENOENT);
-        
+
     if (obj->type != type && type != CVT_NONE)
     {
         ERROR("cfg_db_add: type (%d) expected - bad type (%d)"
@@ -1381,10 +1374,10 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
               CVT_STRING, CVT_ADDRESS);
         RET(TE_EBADTYPE);
     }
-    
+
     /* Try to find instance with the same name */
-    for (inst = father->son, prev = NULL; 
-         inst != NULL && strcmp(inst->oid, oid_s) < 0; 
+    for (inst = father->son, prev = NULL;
+         inst != NULL && strcmp(inst->oid, oid_s) < 0;
          prev = inst, inst = inst->brother);
 
     if (inst != NULL && strcmp(inst->oid, oid_s) == 0)
@@ -1392,46 +1385,46 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
 
     /* Now look for empty slot in the object instances array */
     for (i = 0; i < cfg_all_inst_size && cfg_all_inst[i] != NULL; i++);
-    
+
     if (i == cfg_all_inst_size)
     {
-        void *tmp = realloc(cfg_all_inst, 
+        void *tmp = realloc(cfg_all_inst,
             sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
 
         if (tmp == NULL)
             RET(TE_ENOMEM);
-            
-        memset(tmp + sizeof(void *) * cfg_all_inst_size, 0, 
+
+        memset(tmp + sizeof(void *) * cfg_all_inst_size, 0,
                sizeof(void *) * CFG_INST_NUM);
-        
+
         cfg_all_inst = (cfg_instance **)tmp;
         cfg_all_inst_size += CFG_INST_NUM;
     }
-    
-    inst = cfg_all_inst[i] = 
+
+    inst = cfg_all_inst[i] =
         (cfg_instance *)calloc(sizeof(cfg_instance), 1);
-        
+
     if (cfg_all_inst[i] == NULL)
         RET(TE_ENOMEM);
-        
+
     if ((inst->oid = strdup(oid_s)) == NULL)
     {
         free(inst);
         cfg_all_inst[i] = NULL;
         RET(TE_ENOMEM);
     }
-    
+
     if (obj->type != CVT_NONE)
     {
         int err;
-        
+
         if (type != CVT_NONE)
             err = cfg_types[obj->type].copy(val, &(inst->val));
         else if (obj->def_val != NULL)
             err = cfg_types[obj->type].str2val(obj->def_val, &(inst->val));
         else
             err = cfg_types[obj->type].def_val(&(inst->val));
-        
+
         if (err)
         {
             free(inst->oid);
@@ -1440,9 +1433,9 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
             RET(err);
         }
     }
-    
+
     /*
-     * It is a new instance in local DB, so that mark it as not 
+     * It is a new instance in local DB, so that mark it as not
      * synchronized with Test Agent (not added to Test Agent).
      * It is the deal of uper layer to update this field to 'TRUE',
      * when this object is added to the Test Agent.
@@ -1453,7 +1446,7 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     inst->obj = obj;
     inst->father = father;
     inst->son = NULL;
-        
+
     if (prev)
     {
         inst->brother = prev->brother;
@@ -1464,11 +1457,11 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
         inst->brother = father->son;
         father->son = inst;
     }
-    
+
     *handle = inst->handle;
     if (cfg_all_inst_max < i)
         cfg_all_inst_max = i;
-    
+
     cfg_free_oid(oid);
     if (strcmp_start(CFG_TA_PREFIX, inst->oid) != 0)
     {
@@ -1476,7 +1469,6 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     }
 
     return 0;
-
 #undef RET
 }
 
@@ -1491,16 +1483,16 @@ static te_bool
 has_read_create_children(cfg_instance *inst)
 {
     cfg_instance *tmp;
-    
+
     for (tmp = inst->son; tmp != NULL; tmp = tmp->brother)
     {
-        if (tmp->obj->access == CFG_READ_CREATE || 
+        if (tmp->obj->access == CFG_READ_CREATE ||
             has_read_create_children(tmp))
         {
             return TRUE;
         }
     }
-    
+
     return FALSE;
 }
 
@@ -1511,20 +1503,20 @@ has_read_create_children(cfg_instance *inst)
  *
  * @return status code (see te_errno.h)
  */
-int 
+int
 cfg_db_del_check(cfg_handle handle)
 {
     cfg_instance *inst = CFG_GET_INST(handle);
-    
+
     if (inst == NULL)
         return TE_ENOENT;
-        
+
     if (has_read_create_children(inst))
         return TE_EHASSON;
-        
+
     if (inst->father == NULL)
         return TE_EISROOT;
-        
+
     return 0;
 }
 
@@ -1540,28 +1532,28 @@ delete_son(cfg_instance *father, cfg_instance *son)
         next = tmp->brother;
         delete_son(son, tmp);
     }
-        
+
     if (father->son == son)
     {
         father->son = son->brother;
     }
     else
     {
-        for (brother = father->son; 
+        for (brother = father->son;
              brother->brother != son;
-             brother = brother->brother); 
-             
+             brother = brother->brother);
+
         assert(brother != NULL);
         brother->brother = son->brother;
     }
 
     /* Delete from the array of object instances */
     cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(son->handle)] = NULL;
-    
+
     /* Free memory allocated for the instance */
     if (son->obj->type != CVT_NONE)
         cfg_types[son->obj->type].free(son->val);
-        
+
     free(son->oid);
     free(son);
 }
@@ -1571,7 +1563,7 @@ delete_son(cfg_instance *father, cfg_instance *son)
  *
  * @param handle        object instance handle
  */
-void 
+void
 cfg_db_del(cfg_handle handle)
 {
     delete_son(CFG_GET_INST(handle)->father, CFG_GET_INST(handle));
@@ -1585,24 +1577,24 @@ cfg_db_del(cfg_handle handle)
  *
  * @return status code (see te_errno.h)
  */
-int 
+int
 cfg_db_set(cfg_handle handle, cfg_inst_val val)
 {
     cfg_instance *inst = CFG_GET_INST(handle);
-    
+
     assert(inst);
     if (inst->obj->type != CVT_NONE)
     {
         cfg_inst_val val0;
         int err = cfg_types[inst->obj->type].copy(val, &val0);
-        
+
         if (err)
             return err;
-            
+
         cfg_types[inst->obj->type].free(inst->val);
         inst->val = val0;
     }
-    
+
     return 0;
 }
 
@@ -1614,14 +1606,14 @@ cfg_db_set(cfg_handle handle, cfg_inst_val val)
  *
  * @return status code (see te_errno.h)
  */
-int 
+int
 cfg_db_get(cfg_handle handle, cfg_inst_val *val)
 {
     cfg_instance *inst = CFG_GET_INST(handle);
-    
+
     if (inst == NULL)
         return TE_ENOENT;
-    
+
     if (inst->obj->type != CVT_NONE)
         return cfg_types[inst->obj->type].copy(inst->val, val);
     else
@@ -1636,12 +1628,12 @@ cfg_db_get(cfg_handle handle, cfg_inst_val *val)
  *
  * @return status code (see te_errno.h)
  */
-int 
+int
 cfg_db_find(const char *oid_s, cfg_handle *handle)
 {
     cfg_oid *oid = NULL;
     int      i = 0;
-    
+
     if ((oid = cfg_convert_oid_str(oid_s)) == NULL)
        return TE_EINVAL;
 
@@ -1665,11 +1657,11 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
 
         while (TRUE)
         {
-            for (; 
-                 tmp != NULL && 
-                 !(strcmp(tmp->obj->subid, 
+            for (;
+                 tmp != NULL &&
+                 !(strcmp(tmp->obj->subid,
                           ((cfg_inst_subid *)(oid->ids))[i].subid) == 0 &&
-                   strcmp(tmp->name, 
+                   strcmp(tmp->name,
                           ((cfg_inst_subid *)(oid->ids))[i].name) == 0);
                  tmp = tmp->brother);
 
@@ -1696,7 +1688,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
                 i == oid->len)
             {
                 int         rc;
-                const char *subobj_name = 
+                const char *subobj_name =
                     ((cfg_inst_subid *)(oid->ids))[oid->len - 1].subid;
                 cfg_object *subobj_tmp = last_subinst->obj->son;
 
@@ -1708,7 +1700,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
 
                     subobj_tmp = subobj_tmp->brother;
                 }
-                
+
                 if (subobj_tmp == NULL)
                 {
                     ERROR("Instance %s cannot be added into configurator "
@@ -1717,8 +1709,8 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
                     RETERR(TE_EINVAL);
                 }
 
-                /* 
-                 * Add a new dummy instance to the local 
+                /*
+                 * Add a new dummy instance to the local
                  * configuration tree, and mark it as empty.
                  */
                 rc = cfg_db_add(oid_s, handle, CVT_NONE,
@@ -1729,7 +1721,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
                 else
                     RET(*handle);
             }
-            
+
             RETERR(TE_ENOENT);
         }
         else
@@ -1740,15 +1732,15 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
         cfg_object *tmp = &cfg_obj_root;
         while (TRUE)
         {
-           for (; 
-                tmp != NULL && 
-                strcmp(tmp->subid, 
-                       ((cfg_object_subid *)(oid->ids))[i].subid) != 0; 
+           for (;
+                tmp != NULL &&
+                strcmp(tmp->subid,
+                       ((cfg_object_subid *)(oid->ids))[i].subid) != 0;
                 tmp = tmp->brother);
-           
+
            if (++i == oid->len || tmp == NULL)
                break;
-               
+
            tmp = tmp->son;
         }
         if (tmp == NULL)
@@ -1756,7 +1748,6 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
         else
             RET(tmp->handle);
     }
-    
 #undef RET
 #undef RETERR
 }
@@ -1775,34 +1766,34 @@ cfg_get_object(const char *oid_s)
     cfg_object     *tmp = &cfg_obj_root;
     cfg_inst_subid *s;
     int             i = 0;
-    
+
     if (oid == NULL)
         return NULL;
-    
+
     if (!oid->inst)
     {
         cfg_free_oid(oid);
         return NULL;
     }
-    
+
     s = (cfg_inst_subid *)(oid->ids);
-    
+
     while (TRUE)
     {
-       for (; 
-            tmp != NULL && 
-            strcmp(tmp->subid, s->subid) != 0; 
+       for (;
+            tmp != NULL &&
+            strcmp(tmp->subid, s->subid) != 0;
             tmp = tmp->brother);
-            
+
        if (++i == oid->len || tmp == NULL)
            break;
-           
+
        tmp = tmp->son;
        s++;
     }
-    
+
     cfg_free_oid(oid);
-    
+
     return tmp;
 }
 
@@ -1829,7 +1820,7 @@ cfg_get_obj_by_obj_id_str(const char *obj_id_str)
         cfg_free_oid(idsplit);
         return NULL;
     }
-    
+
     ids = (cfg_object_subid *)(idsplit->ids);
 
     for (i = 0;;)
@@ -1870,7 +1861,7 @@ cfg_get_ins_by_ins_id_str(const char *ins_id_str)
         cfg_free_oid(idsplit);
         return NULL;
     }
-    
+
     ids = (cfg_inst_subid *)(idsplit->ids);
 
     for (i = 0;;)
@@ -1890,56 +1881,56 @@ cfg_get_ins_by_ins_id_str(const char *ins_id_str)
     return ins;
 }
 
-/*
+/**
  * Decide if the string matches to pattern
  *
  * @param pattern        pattern
  * @param string        string to match
  *
- * @return 
+ * @return
  *    0  - string matches to pattern
  *    -1 - string doesn't match to pattern
- */         
+ */
 static int
 pattern_match(char *pattern, char *str)
 {
     char *star;
     char *segment;
-    
+
     if (pattern == NULL || str == NULL)
         return -1;
-        
+
     if ((star = strchr(pattern, '*')) == NULL)
     {
         return (strcmp(pattern, str) == 0) ? 0 : -1;
     }
     segment = star + 1;
-    
+
     if (strlen(str) < strlen(segment) + (size_t)(star - pattern))
         return -1;
-    
+
     if (strncmp(pattern, str, star - pattern) != 0)
         return -1;
 
     if ((strcmp(segment, str + strlen(str) - strlen(segment))) != 0)
         return -1;
-    
+
     return 0;
 }
 
 /** Check if the object or its sons matching oid are volatile */
 static te_bool
-oid_match_volatile(cfg_object *obj, const cfg_inst_subid *subids, 
+oid_match_volatile(cfg_object *obj, const cfg_inst_subid *subids,
                    int subids_num)
 {
     cfg_object *tmp;
-    
+
     if (obj->vol)
         return TRUE;
-        
+
     if (subids_num == 0)
         return FALSE;
-        
+
     for (tmp = obj->son; tmp != NULL; tmp = tmp->brother)
     {
         if ((strcmp(subids[0].subid, "*") == 0 ||
@@ -1949,7 +1940,7 @@ oid_match_volatile(cfg_object *obj, const cfg_inst_subid *subids,
             return TRUE;
         }
     }
-        
+
     return FALSE;
 }
 
@@ -1962,43 +1953,43 @@ oid_match_volatile(cfg_object *obj, const cfg_inst_subid *subids,
  *
  * @return TRUE (match) or FALSE (does not match)
  */
-te_bool 
+te_bool
 cfg_oid_match_volatile(const char *oid_s, char **ta)
 {
     cfg_oid *oid = cfg_convert_oid_str(oid_s);
-    
+
     if (oid == NULL)
     {
-        ERROR("Incorrect OID %s is passed to %s", oid_s, 
+        ERROR("Incorrect OID %s is passed to %s", oid_s,
               __FUNCTION__);
         return FALSE;
     }
-    
+
     cfg_inst_subid *subids = (cfg_inst_subid *)(oid->ids);
-    
+
     te_bool match = FALSE;
-    
+
     if (strcmp(oid_s, "*:*") == 0)
     {
         if (ta != NULL && (*ta = strdup("*")) == NULL)
             return FALSE;
-            
+
         return TRUE;
     }
-    
+
     if (oid == NULL)
         return FALSE;
-        
+
     if (!oid->inst)
         return FALSE;
-        
+
     match = (oid->len > 1) && (strcmp(subids[1].subid, "agent") == 0) &&
             oid_match_volatile(&cfg_obj_root, subids + 1, oid->len - 1) &&
-            ((ta != NULL && (*ta = strdup(subids[1].name)) != NULL) || 
+            ((ta != NULL && (*ta = strdup(subids[1].name)) != NULL) ||
               ta == NULL);
 
     cfg_free_oid(oid);
-    
+
     return match;
 }
 

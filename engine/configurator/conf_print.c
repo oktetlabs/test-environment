@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * 
+ *
  * @author Igor Baryshev <Igor.Baryshev@oktetlabs.ru>
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
@@ -35,13 +35,11 @@
 
 #include "conf_defs.h"
 
-
 static char *obj_tree_bufprint(cfg_object *obj,   const int indent);
 static char *ins_tree_bufprint(cfg_instance *ins, const int indent);
 static char *obj_bufprint_deps(cfg_object *obj);
 static char *bufprintf(char **p_buf, int *p_offset, size_t *p_sz,
                        const char *format, ...);
-
 
 /**
  * log_msg() helper to print a log upon arrival of this type of msg.
@@ -62,12 +60,11 @@ cfg_db_tree_print_msg_log(cfg_tree_print_msg *msg,
         flname = (msg->buf) + (msg->id_len);
     else
         flname = "NULL";
-    
+
     LOG_MSG(cfg_log_lvl, "Msg: tree print request: root id: %s, "
             "output filename: %s, log level: %d\n",
             msg->buf, flname, msg->log_lvl);
 }
-
 
 /**
  * Starting from a given prefix, print a tree of objects or instances
@@ -96,7 +93,6 @@ cfg_db_tree_print(const char *filename,
     size_t      id_len;
     va_list ap;
 
-
     if (id_fmt == NULL)
         return TE_RC(TE_CS, TE_EINVAL);
     va_start(ap, id_fmt);
@@ -104,13 +100,13 @@ cfg_db_tree_print(const char *filename,
     va_end(ap);
     if (id_len >= sizeof(id))
         return TE_RC(TE_CS, TE_EINVAL);
-    
+
     if ((idsplit = cfg_convert_oid_str(id)) == NULL)
         return TE_RC(TE_CS, TE_EINVAL);
     if (idsplit->inst)
         which = 1;
     cfg_free_oid(idsplit);
-    
+
     if (which == 0)
         root = (void *)cfg_get_obj_by_obj_id_str(id);
     else
@@ -146,7 +142,6 @@ cfg_db_tree_print(const char *filename,
     free(buf);
     return 0;
 }
-
 
 #define CHECK(x) \
     do {                                            \
@@ -190,12 +185,11 @@ obj_tree_bufprint(cfg_object *obj, const int indent)
     char           *tmp;
     cfg_dependency *dep;
 
-    
     for (i = 0; i < indent; i++)
         CHECK(bufprintf(&buf, &offset, &sz, " ") != NULL);
 
     CHECK(bufprintf(&buf, &offset, &sz, "%s  %s %s %s\n",
-                    obj->oid, 
+                    obj->oid,
                     obj->access == CFG_READ_CREATE ? "RC" :
                     obj->access == CFG_READ_WRITE ? "RW" :
                     "R",
@@ -210,11 +204,11 @@ obj_tree_bufprint(cfg_object *obj, const int indent)
         {
             for (i = 0; i < indent; i++)
                 CHECK(bufprintf(&buf, &offset, &sz, " ") != NULL);
-            CHECK(bufprintf(&buf, &offset, &sz, "-> %s\n", 
+            CHECK(bufprintf(&buf, &offset, &sz, "-> %s\n",
                             dep->depends->oid) != NULL);
         }
     }
-    
+
     for (obj = obj->son; obj != NULL; obj = obj->brother)
         CHECK(obj_tree_bufprint(obj, indent + 2) != NULL);
 
@@ -249,7 +243,6 @@ ins_tree_bufprint(cfg_instance *ins, const int indent)
     char          *tmp;
     char          *str;
 
-
     for (i = 0; i < indent; i++)
         CHECK(bufprintf(&buf, &offset, &sz, " ") != NULL);
 
@@ -274,7 +267,6 @@ ins_tree_bufprint(cfg_instance *ins, const int indent)
     return buf;
 }
 
-
 /**
  * Print all dependancies of an object into a file and(or) log.
  *
@@ -296,7 +288,6 @@ cfg_db_obj_print_deps(const char *filename,
     cfg_object      *obj;
     va_list ap;
 
-
     if (id_fmt == NULL)
         return TE_RC(TE_CS, TE_EINVAL);
     va_start(ap, id_fmt);
@@ -304,8 +295,7 @@ cfg_db_obj_print_deps(const char *filename,
     va_end(ap);
     if (id_len >= sizeof(id))
         return TE_RC(TE_CS, TE_EINVAL);
-    
-    
+
     obj = cfg_get_obj_by_obj_id_str(id);
     if (obj == NULL)
     {
@@ -356,7 +346,6 @@ obj_bufprint_deps(cfg_object *obj)
     cfg_dependency  *depends_on;
     cfg_dependency  *dependants;
 
-    
     CHECK(bufprintf(&buf, &offset, &sz, "Masters of the object: %s\n",
                     obj->oid) != NULL);
     for (depends_on = obj->depends_on;
@@ -376,16 +365,14 @@ obj_bufprint_deps(cfg_object *obj)
         CHECK(bufprintf(&buf, &offset, &sz, "%s\n",
                         otmp != NULL ? otmp->oid : "NULL") != NULL);
     }
-    
+
     tmp = buf;
     BUF_RESET;
     return tmp;
 }
 
-
 #undef BUF_RESET
 #undef CHECK
-
 
 /**
  * Print into auto-growing buffer according to format.
@@ -401,15 +388,13 @@ static char *
 bufprintf(char **p_buf, int *p_offset, size_t *p_sz,
           const char *format, ...)
 {
-
     size_t  grow_min = 16 * 1024;
     float   grow_coeff = 0.2;
-    char    *buf = *p_buf;   
+    char    *buf = *p_buf;
     int     offset = *p_offset;
     size_t  sz = *p_sz;
     int     n;
     va_list ap;
-
 
     if (buf == NULL && (buf = (char *)malloc(sz)) == NULL)
     {

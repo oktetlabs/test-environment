@@ -1,7 +1,7 @@
 /** @file
  * @brief Unix Test Agent
  *
- * PPPoE server configuring 
+ * PPPoE server configuring
  *
  *
  * Copyright (C) 2004, 2005 Test Environment authors (see file AUTHORS
@@ -32,7 +32,6 @@
 #include "conf_daemons.h"
 #include "pppoe_server.h"
 
-
 /** List of known possible locations of PPPoE server executables */
 static const char *pppoe_server_execs[] = {
     "/usr/sbin/pppoe-server"
@@ -54,10 +53,8 @@ static te_pppoe_server_subnet *pppoe_server_subnet = NULL;
 /** PPPoE server interfaces */
 static char *pppoe_server_ifs = NULL;
 
-
 /** Was PPPoE server enabled at TA start up? */
 static te_bool pppoe_server_was_run = FALSE;
-
 
 /** Auxiliary buffer */
 static char buf[2048];
@@ -69,7 +66,6 @@ static char buf[2048];
         free(_opt->value);      \
         free(_opt);             \
     } while (0)
-
 
 /* Find the option in specified options list */
 static te_pppoe_option *
@@ -90,7 +86,6 @@ ps_pppoeserver_save_conf(char **args)
     struct in_addr           addr, new_addr;
     char                    *p;
     char                    *token;
-
 
     if (f == NULL)
     {
@@ -142,7 +137,7 @@ ps_pppoeserver_save_conf(char **args)
             *p = '\0';
             p++;
         }
-        
+
         sprintf(buf, " -I %s", token);
         strcat(args_buf, buf);
     }
@@ -229,14 +224,14 @@ ps_pppoeserver_start(void)
     char    *args = NULL;
 
     ENTRY("%s()", __FUNCTION__);
-    
+
     rc = ps_pppoeserver_save_conf(&args);
     if (rc != 0)
     {
         ERROR("Failed to save PPPoE server configuration file");
         return rc;
     }
-    
+
 #if defined __linux__
     TE_SPRINTF(buf, "%s -O %s -l %s",
                pppoe_server_exec, pppoe_server_conf, args);
@@ -246,7 +241,6 @@ ps_pppoeserver_start(void)
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-
 
     return 0;
 }
@@ -321,7 +315,6 @@ ps_pppoeserver_ifs_set(unsigned int gid, const char *oid, const char *value)
 
     return 0;
 }
-
 
 static void
 free_subnet(te_pppoe_server_subnet *s)
@@ -437,7 +430,6 @@ ps_subnet_del(unsigned int gid, const char *oid,
     free_subnet(s);
 
     return 0;
-    
 }
 
 static te_errno
@@ -476,12 +468,11 @@ RCF_PCH_CFG_NODE_RW(node_ps_pppoeserver, "pppoeserver",
                     &node_ps_pppoeserver_ifs, NULL,
                     ps_pppoeserver_get, ps_pppoeserver_set);
 
-
-te_errno 
+te_errno
 pppoeserver_grab(const char *name)
 {
     int rc = 0;
-    
+
     UNUSED(name);
 
     pppoe_server_subnet = NULL;
@@ -526,13 +517,12 @@ te_errno
 pppoeserver_release(const char *name)
 {
     te_errno    rc;
-    
+
     UNUSED(name);
 
     rc = rcf_pch_del_node(&node_ps_pppoeserver);
     if (rc != 0)
         return rc;
-
 
     if (pppoe_server_was_run)
     {

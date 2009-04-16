@@ -11,7 +11,6 @@
 #include "te_defs.h"
 #include "te_queue.h"
 
-
 /** Definitions of types for PPPoE configuring */
 typedef struct te_pppoe_option {
     struct te_pppoe_option *next;

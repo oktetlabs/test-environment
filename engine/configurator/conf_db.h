@@ -46,13 +46,13 @@ typedef struct cfg_dependency {
 typedef struct cfg_object {
     cfg_handle         handle;  /**< Handle of the object */
     char              *oid;     /**< OID of the object */
-    char               subid[CFG_SUBID_MAX]; 
+    char               subid[CFG_SUBID_MAX];
                                 /**< Own sub-identifier of the object */
     cfg_val_type       type;    /**< Type of the object instance value */
     uint8_t            access;  /**< Access rights */
     char              *def_val; /**< Default value */
     te_bool            vol;     /**< The object is volatile */
-    
+
     /** @name Family */
     struct cfg_object *father;  /**< Link to father */
     struct cfg_object *son;     /**< Link to the first son */
@@ -60,9 +60,9 @@ typedef struct cfg_object {
     /*@}*/
 
     /** @name Dependency tracking */
-    unsigned               ordinal_number; 
+    unsigned               ordinal_number;
     /**< Ordinal number of this object in the topologically sorted list */
-    struct cfg_dependency *depends_on; 
+    struct cfg_dependency *depends_on;
                                /**< Objects this object depends on */
     struct cfg_dependency *dependants;
                                /**< Objects depending on this object */
@@ -88,7 +88,7 @@ cfg_object_agent(cfg_object *obj)
 
 #define CFG_OBJ_HANDLE_VALID(_handle) \
     (_handle < (uint32_t)cfg_all_obj_size && cfg_all_obj[_handle] != NULL)
-    
+
 #define CFG_GET_OBJ(_handle) \
     (CFG_OBJ_HANDLE_VALID(_handle) ? cfg_all_obj[_handle] : NULL)
 
@@ -108,7 +108,7 @@ typedef struct cfg_instance {
     struct cfg_instance *son;       /**< Link to the first son */
     struct cfg_instance *brother;   /**< Link to the next brother */
     /*@}*/
-    
+
     union  cfg_inst_val  val;
 } cfg_instance;
 
@@ -119,11 +119,11 @@ extern int cfg_inst_seq_num;
 
 #define CFG_TA_PREFIX   "/agent:"
 
-/** 
- * Check if instance is /agent:* 
- * 
+/**
+ * Check if instance is /agent:*
+ *
  * @param inst  instance
- * 
+ *
  * @return TRUE if instance is /agent:*
  */
 static inline te_bool
@@ -147,18 +147,18 @@ cfg_get_ta_name(const char *oid, char *ta)
     char *s = (char *)oid + strlen(CFG_TA_PREFIX);
     char *tmp;
     int   n;
-    
+
     if (strcmp_start(CFG_TA_PREFIX, oid) != 0)
         return FALSE;
-        
+
     n = ((tmp = strchr(s, '/')) == NULL) ? (int)strlen(s) : tmp - s;
-        
+
     if (n >= RCF_MAX_NAME)
         return FALSE;
-        
+
     memcpy(ta, s, n);
     ta[n] = 0;
-    
+
     return TRUE;
 }
 
@@ -166,7 +166,7 @@ cfg_get_ta_name(const char *oid, char *ta)
     (CFG_INST_HANDLE_TO_INDEX(_handle) < (uint32_t)cfg_all_inst_size && \
      cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(_handle)] != NULL &&         \
      cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(_handle)]->handle == _handle)
-    
+
 #define CFG_GET_INST(_handle) \
     (CFG_INST_HANDLE_VALID(_handle) ? \
      cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(_handle)] : NULL)
@@ -243,7 +243,7 @@ extern cfg_instance *cfg_get_ins_by_ins_id_str(const char *ins_id_str);
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_db_add(const char *oid_s, cfg_handle *handle, 
+extern int cfg_db_add(const char *oid_s, cfg_handle *handle,
                       cfg_val_type type, cfg_inst_val val);
 
 /**
@@ -334,7 +334,7 @@ extern te_bool cfg_oid_match_volatile(const char *oid_s, char **ta);
 /** Delay for configuration changes accomodation */
 uint32_t cfg_conf_delay;
 
-/** 
+/**
  * Update the current configuration delay after adding/deleting/changing
  * an instance.
  *
@@ -355,7 +355,6 @@ cfg_conf_delay_reset(void)
     }
 }
 
-
 /**
  * Starting from a given prefix, print a tree of objects or instances
  * into a file and(or) log.
@@ -370,6 +369,7 @@ cfg_conf_delay_reset(void)
 extern te_errno  cfg_db_tree_print(const char *filename,
                                    const unsigned int log_lvl,
                                    const char *id_fmt, ...);
+
 /**
  * log_msg() helper to print a log upon arrival of this type of msg.
  *
@@ -400,7 +400,7 @@ extern te_errno cfg_db_obj_print_deps(const char *filename,
  *
  * @param id        id string of an object to be removed.
  * @param log_lvl   Log level for messages about forced actions
- *                  (instance delete, dependancy cut, etc. ) 
+ *                  (instance delete, dependancy cut, etc. )
  *
  * @return  0 or TE_EINVAL, if error occurred.
  *
