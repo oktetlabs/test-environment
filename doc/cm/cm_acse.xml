@@ -1,9 +1,6 @@
 <?xml version="1.0"?>
 <backup>
 
-    <!-- This configuration model is intended for describing of configuration
-         information common for all Test Agents -->
-
     <!--
         Copyright (C) 2003 Test Environment authors (see file AUTHORS
         in the root directory of the distribution).
@@ -111,40 +108,35 @@
          Name: none
          Value: Manufacturer of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/manufacturer"
-            access="read_write" type="string"/>
+            access="read_only" type="string"/>
 
     <!-- CPE device ID Organizationally Unique Identifier subobject.
          Name: none
          Value: OUI of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/oui"
-            access="read_write" type="string"/>
+            access="read_only" type="string"/>
 
     <!-- CPE device ID ProductClass subobject.
          Name: none
          Value: Product Class of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/product_class"
-            access="read_write" type="string"/>
+            access="read_only" type="string"/>
 
     <!-- CPE device ID SerialNumber subobject.
          Name: none
          Value: Serial Number of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/serial_number"
-            access="read_write" type="string"/>
-
-    <!-- Sessions object.
-         Name: none -->
-    <object oid="/agent/acse/sessions" access="read_only"
-            type="none"/>
+            access="read_only" type="string"/>
 
     <!-- Session object.
          Name: based on Configurator invocationally unique ID -->
-    <object oid="/agent/acse/sessions/session" access="read_only"
+    <object oid="/agent/acse/session" access="read_only"
             type="none" volatile="true"/>
 
     <!-- Link to the CPE instance that corresponds to a session object.
          Name: none
          Value: "/agent:Agt/acse:/acs:ACS/cpe:CPE" instance -->
-    <object oid="/agent/acse/sessions/session/link" access="read_only"
+    <object oid="/agent/acse/session/link" access="read_only"
             type="string" volatile="true"/>
 
     <!-- Actual state of a session.
@@ -155,7 +147,7 @@
                 4 - SESSION_INITIATED
                 5 - SESSIOD_INSIDE_TRANSACTION
                 6 - SESSION_OUT_OF_TRANSACTION -->
-    <object oid="/agent/acse/sessions/session/state"
+    <object oid="/agent/acse/session/state"
             access="read_only" type="integer" volatile="true"/>
 
     <!-- Target state of a session.
@@ -167,7 +159,7 @@
                 4 - SESSION_INITIATED
                 5 - SESSIOD_INSIDE_TRANSACTION
                 6 - SESSION_OUT_OF_TRANSACTION -->
-    <object oid="/agent/acse/sessions/session/target_state"
+    <object oid="/agent/acse/session/target_state"
             access="read_write" type="integer"/>
 
     <!-- Enable (let a session go)/disable (stop) a session.
@@ -176,13 +168,13 @@
 
          Notes: When target state is reached the session is
                 automatically disabled (stopped) -->
-    <object oid="/agent/acse/sessions/session/enabled"
+    <object oid="/agent/acse/session/enabled"
             access="read_write" type="integer" volatile="true" />
 
     <!-- Hold or do not hold requests during (a part of) a session.
          Name: none
          Value: 0 - do not hold requests, 1 - hold requests -->
-    <object oid="/agent/acse/sessions/session/hold_requests"
+    <object oid="/agent/acse/session/hold_requests"
             access="read_write" type="integer" />
 
 </backup>
