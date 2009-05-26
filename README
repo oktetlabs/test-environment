@@ -29,6 +29,8 @@ Engine (in [] brackets - debian package names):
 - Wireless tools - development files [libiw-dev]
 - PPPoE [pppoe] [pppoeconf]
 - curl libraries [not from debian, should be taken from storage]
+- libusb, libusb-dev
+- libpam0g-dev
 
 We've tested engine on Linux only.
 
