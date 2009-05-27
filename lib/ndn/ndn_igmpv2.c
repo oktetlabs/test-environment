@@ -38,25 +38,15 @@
 #include "tad_common.h"
 
 
-
-
 static asn_named_entry_t _ndn_igmpv2_pdu_ne_array [] = {
     { "type",          &ndn_data_unit_int8_s,
         { PRIVATE, NDN_IGMPV2_TYPE }},
     { "max-resp-time", &ndn_data_unit_int8_s ,
         { PRIVATE, NDN_IGMPV2_MAX_RESPONSE_TIME }},
-    { "checksum", &ndn_data_unit_int16_s,
+    { "checksum", &ndn_data_unit_int8_s,
         { PRIVATE, NDN_IGMPV2_CHECKSUM }},
     { "group-address", &ndn_data_unit_ip_address_s,
         { PRIVATE, NDN_IGMPV2_GROUP_ADDRESS }},
-    { "mac-src-address", &ndn_data_unit_eth_address_s,
-        { PRIVATE, NDN_IGMPV2_MAC_SOURCE_ADDRESS }},
-    { "mac-dst-address", &ndn_data_unit_eth_address_s,
-        { PRIVATE, NDN_IGMPV2_MAC_DESTINATION_ADDRESS }},
-    { "ip4-src-address", &ndn_data_unit_ip_address_s,
-        { PRIVATE, NDN_IGMPV2_IP4_SOURCE_ADDRESS }},
-    { "ip4-dst-address", &ndn_data_unit_ip_address_s,
-        { PRIVATE, NDN_IGMPV2_IP4_DESTINATION_ADDRESS }},
 };
 
 asn_type ndn_igmpv2_pdu_s = {
@@ -76,14 +66,6 @@ static asn_named_entry_t _ndn_igmpv2_csap_ne_array [] = {
         { PRIVATE, NDN_IGMPV2_MAX_RESPONSE_TIME }},
     { "group-address", &ndn_data_unit_ip_address_s,
         { PRIVATE, NDN_IGMPV2_GROUP_ADDRESS }},
-    { "mac-src-address", &ndn_data_unit_eth_address_s,
-        { PRIVATE, NDN_IGMPV2_MAC_SOURCE_ADDRESS }},
-    { "mac-dst-address", &ndn_data_unit_eth_address_s,
-        { PRIVATE, NDN_IGMPV2_MAC_DESTINATION_ADDRESS }},
-    { "ip4-src-address", &ndn_data_unit_ip_address_s,
-        { PRIVATE, NDN_IGMPV2_IP4_SOURCE_ADDRESS }},
-    { "ip4-dst-address", &ndn_data_unit_ip_address_s,
-        { PRIVATE, NDN_IGMPV2_IP4_DESTINATION_ADDRESS }},
 };
 
 asn_type ndn_igmpv2_csap_s = {
