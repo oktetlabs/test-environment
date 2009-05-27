@@ -173,7 +173,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
                 found = TRUE;
             }
             else if ((route->family == AF_INET6) &&
-                     (memcmp(&SIN6(&(rt_info->dst))->sin6_addr.in6_u,
+                     (memcmp(&SIN6(&(rt_info->dst))->sin6_addr,
                              &addr_any, sizeof(struct in6_addr)) == 0))
             {
                 found = TRUE;
@@ -196,7 +196,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
                 found = TRUE;
             }
             else if ((route->family == AF_INET6) &&
-                     (memcmp(&SIN6(&(rt_info->dst))->sin6_addr.in6_u,
+                     (memcmp(&SIN6(&(rt_info->dst))->sin6_addr,
                              &addr_any, sizeof(struct in6_addr)) == 0))
             {
                 found = TRUE;
