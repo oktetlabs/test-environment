@@ -65,6 +65,24 @@ typedef enum {
     NDN_TAG_IP4_IFNAME,
 } ndn_ip4_tags_t;
 
+
+typedef enum {
+    NDN_TAG_IP6_VERSION,
+    NDN_TAG_IP6_TCL,
+    NDN_TAG_IP6_FLAB,
+    NDN_TAG_IP6_LEN,
+    NDN_TAG_IP6_NHDR,
+    NDN_TAG_IP6_HLIM,
+    NDN_TAG_IP6_SRC_ADDR,
+    NDN_TAG_IP6_DST_ADDR,
+    NDN_TAG_IP6_LOCAL_ADDR,
+    NDN_TAG_IP6_REMOTE_ADDR,
+    NDN_TAG_IP6_PLD_CHECKSUM,
+    NDN_TAG_IP6_PLD_CH_OFFSET,
+    NDN_TAG_IP6_PLD_CH_DISABLE,
+    NDN_TAG_IP6_PLD_CH_DIFF,
+} ndn_ip6_tags_t;
+
 typedef enum {
     NDN_TAG_ICMP4_TYPE,
     NDN_TAG_ICMP4_CODE,
@@ -78,6 +96,14 @@ typedef enum {
     NDN_TAG_ICMP4_RX_TS,
     NDN_TAG_ICMP4_TX_TS,
 } ndn_icmp4_tags_t;
+
+typedef enum {
+    NDN_TAG_ICMP6_TYPE,
+    NDN_TAG_ICMP6_CODE,
+    NDN_TAG_ICMP6_CHECKSUM,
+    NDN_TAG_ICMP6_ID,
+    NDN_TAG_ICMP6_SEQ,
+} ndn_icmp6_tags_t;
 
 typedef enum {
     NDN_TAG_TCP_SRC_PORT,

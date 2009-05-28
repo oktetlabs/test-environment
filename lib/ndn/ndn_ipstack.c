@@ -170,6 +170,74 @@ const asn_type * const ndn_ip4_csap = &ndn_ip4_csap_s;
 
 
 
+
+/*
+ * IPv6
+ */
+static asn_named_entry_t _ndn_ip6_pld_chksm_ne_array [] = {
+    { "offset", &asn_base_integer_s, 
+      { PRIVATE, NDN_TAG_IP6_PLD_CH_OFFSET } },
+    { "disable", &asn_base_null_s, 
+      { PRIVATE, NDN_TAG_IP6_PLD_CH_DISABLE } },
+    { "diff", &asn_base_integer_s, 
+      { PRIVATE, NDN_TAG_IP6_PLD_CH_DIFF } },
+};
+
+asn_type ndn_ip6_pld_chksm_s = {
+    "IP6-Payload-Checksum", {PRIVATE, NDN_TAG_IP6_PLD_CHECKSUM}, CHOICE, 
+    TE_ARRAY_LEN(_ndn_ip6_pld_chksm_ne_array),
+    {_ndn_ip6_pld_chksm_ne_array}
+};
+
+static asn_named_entry_t _ndn_ip6_header_ne_array [] = {
+    { "version",         &ndn_data_unit_int4_s,
+      { PRIVATE, NDN_TAG_IP6_VERSION } },
+    { "traffic-class",        &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_TCL } },
+    { "flow-label", &ndn_data_unit_int32_s, 
+      { PRIVATE, NDN_TAG_IP6_FLAB } },
+    { "payload-length",    &ndn_data_unit_int16_s, 
+      { PRIVATE, NDN_TAG_IP6_LEN } },
+    { "next-header",        &ndn_data_unit_int8_s, 
+      { PRIVATE, NDN_TAG_IP6_NHDR } },
+    { "hop-limit",   &ndn_data_unit_int8_s, 
+      { PRIVATE, NDN_TAG_IP6_HLIM } },
+    { "src-addr",        &ndn_data_unit_ip6_address_s, 
+      { PRIVATE, NDN_TAG_IP6_SRC_ADDR } },
+    { "dst-addr",        &ndn_data_unit_ip6_address_s, 
+      { PRIVATE, NDN_TAG_IP6_DST_ADDR } },
+
+    { "pld-checksum",    &ndn_ip6_pld_chksm_s, 
+      { PRIVATE, NDN_TAG_IP6_PLD_CHECKSUM } },
+};
+
+asn_type ndn_ip6_header_s = {
+    "IPv6-Header", {PRIVATE, 100}, SEQUENCE, 
+    TE_ARRAY_LEN(_ndn_ip6_header_ne_array),
+    {_ndn_ip6_header_ne_array}
+};
+
+const asn_type * const ndn_ip6_header = &ndn_ip6_header_s;
+
+static asn_named_entry_t _ndn_ip6_csap_ne_array [] = {
+    { "next-header", &ndn_data_unit_int8_s,
+        {PRIVATE, NDN_TAG_IP6_NHDR} },
+    { "local-addr",      &ndn_data_unit_ip6_address_s,
+        {PRIVATE, NDN_TAG_IP6_LOCAL_ADDR} },
+    { "remote-addr",     &ndn_data_unit_ip6_address_s,
+        {PRIVATE, NDN_TAG_IP6_REMOTE_ADDR} },
+};
+
+asn_type ndn_ip6_csap_s = {
+    "IPv6-CSAP", {PRIVATE, 101}, SEQUENCE, 
+    TE_ARRAY_LEN(_ndn_ip6_csap_ne_array),
+    {_ndn_ip6_csap_ne_array}
+};
+
+const asn_type * const ndn_ip6_csap = &ndn_ip6_csap_s;
+
+
+
 /*
  * ICMPv4
  */ 
@@ -210,6 +278,36 @@ asn_type ndn_icmp4_message_s = {
 const asn_type * const ndn_icmp4_message = &ndn_icmp4_message_s;
 
 const asn_type * const ndn_icmp4_csap = &asn_base_null_s;
+
+
+
+/*
+ * ICMPv6
+ */
+
+static asn_named_entry_t _ndn_icmp6_message_ne_array [] = {
+    { "type",           &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_ICMP6_TYPE } },
+    { "code",           &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_ICMP6_CODE } },
+    { "checksum",       &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_ICMP6_CHECKSUM } },
+
+    { "id",             &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_ICMP6_ID } },
+    { "seq",            &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_ICMP6_SEQ } },
+};
+
+asn_type ndn_icmp6_message_s = {
+    "ICMPv6-Message", {PRIVATE, 100}, SEQUENCE, 
+    TE_ARRAY_LEN(_ndn_icmp6_message_ne_array),
+    {_ndn_icmp6_message_ne_array}
+};
+
+const asn_type * const ndn_icmp6_message = &ndn_icmp6_message_s;
+
+const asn_type * const ndn_icmp6_csap = &asn_base_null_s;
 
 
 

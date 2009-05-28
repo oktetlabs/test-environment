@@ -85,6 +85,7 @@ extern asn_type ndn_data_unit_octet_string_s;
 extern asn_type ndn_data_unit_char_string_s;  
 extern asn_type ndn_data_unit_objid_s;  
 extern asn_type ndn_data_unit_ip_address_s;  
+extern asn_type ndn_data_unit_ip6_address_s;
 
 extern asn_type ndn_ip_address_s;
 extern asn_type ndn_octet_string6_s;

@@ -82,6 +82,46 @@ static csap_spt_type_t ip4_csap_spt =
 };
 
 /**
+ * IPv6
+ */
+static csap_spt_type_t ip6_csap_spt =
+{
+    .proto               = "ip6",
+    .unregister_cb       = NULL,
+
+    .init_cb             = tad_ip6_init_cb,
+    .destroy_cb          = tad_ip6_destroy_cb,
+    .get_param_cb        = NULL,
+
+    .confirm_tmpl_cb     = tad_ip6_confirm_tmpl_cb,
+    .generate_pkts_cb    = tad_ip6_gen_bin_cb,
+    .release_tmpl_cb     = tad_ip6_release_pdu_cb,
+
+    .confirm_ptrn_cb     = tad_ip6_confirm_ptrn_cb,
+    .match_pre_cb        = tad_ip6_match_pre_cb,
+    .match_do_cb         = tad_ip6_match_do_cb,
+    .match_done_cb       = NULL,
+    .match_post_cb       = tad_ip6_match_post_cb,
+    .match_free_cb       = tad_ip6_release_pdu_cb,
+    .release_ptrn_cb     = tad_ip6_release_pdu_cb,
+
+    .generate_pattern_cb = NULL,
+
+    .rw_init_cb          = tad_ip6_rw_init_cb,
+    .rw_destroy_cb       = tad_ip6_rw_destroy_cb,
+
+    .prepare_send_cb     = NULL,
+    .write_cb            = tad_ip6_write_cb,
+    .shutdown_send_cb    = NULL,
+
+    .prepare_recv_cb     = NULL,
+    .read_cb             = tad_ip6_read_cb,
+    .shutdown_recv_cb    = NULL,
+
+    .write_read_cb       = tad_common_write_read_cb,
+};
+
+/**
  * ICMPv4
  */
 static csap_spt_type_t icmp4_csap_spt = 
@@ -104,6 +144,35 @@ static csap_spt_type_t icmp4_csap_spt =
     .match_post_cb       = tad_icmp4_match_post_cb,
     .match_free_cb       = tad_icmp4_release_pdu_cb,
     .release_ptrn_cb     = tad_icmp4_release_pdu_cb,
+
+    .generate_pattern_cb = NULL,
+
+    CSAP_SUPPORT_NO_RW,
+};
+
+/**
+ * ICMPv6
+ */
+static csap_spt_type_t icmp6_csap_spt = 
+{
+    .proto               = "icmp6",
+    .unregister_cb       = NULL,
+
+    .init_cb             = tad_icmp6_init_cb,
+    .destroy_cb          = tad_icmp6_destroy_cb,
+    .get_param_cb        = NULL,
+
+    .confirm_tmpl_cb     = tad_icmp6_confirm_tmpl_cb,
+    .generate_pkts_cb    = tad_icmp6_gen_bin_cb,
+    .release_tmpl_cb     = tad_icmp6_release_pdu_cb,
+
+    .confirm_ptrn_cb     = tad_icmp6_confirm_ptrn_cb,
+    .match_pre_cb        = tad_icmp6_match_pre_cb,
+    .match_do_cb         = tad_icmp6_match_do_cb,
+    .match_done_cb       = NULL,
+    .match_post_cb       = tad_icmp6_match_post_cb,
+    .match_free_cb       = tad_icmp6_release_pdu_cb,
+    .release_ptrn_cb     = tad_icmp6_release_pdu_cb,
 
     .generate_pattern_cb = NULL,
 
@@ -174,21 +243,29 @@ static csap_spt_type_t tcp_csap_spt =
  * Command Handler.
  *
  * @return Status code.
- */ 
+ */
 te_errno
 csap_support_ipstack_register(void)
-{ 
+{
     te_errno rc;
 
     rc = csap_spt_add(&ip4_csap_spt);
-    if (rc != 0) 
+    if (rc != 0)
         return rc;
 
     rc = csap_spt_add(&icmp4_csap_spt);
-    if (rc != 0) 
+    if (rc != 0)
         return rc;
 
     rc = csap_spt_add(&udp_csap_spt);
+    if (rc != 0)
+        return rc;
+
+    rc = csap_spt_add(&ip6_csap_spt);
+    if (rc != 0)
+        return rc;
+
+    rc = csap_spt_add(&icmp6_csap_spt);
     if (rc != 0)
         return rc;
 

@@ -60,6 +60,10 @@ asn_type ndn_ip_address_s = {
     "IpAddress", {APPLICATION, 0}, OCT_STRING, 4, {0}
 };
 
+asn_type ndn_ip6_address_s = {
+    "Ip6Address", {APPLICATION, 0}, OCT_STRING, 16, {0}
+};
+
 const asn_type * const ndn_ip_address = &ndn_ip_address_s;
 
 
@@ -156,7 +160,7 @@ NDN_DATA_UNIT_TYPE(octet_string6, ndn_octet_string6_s,   OCTET STRING(6));
 NDN_DATA_UNIT_TYPE(char_string,   asn_base_charstring_s, UniversalString);
 NDN_DATA_UNIT_TYPE(ip_address,    ndn_ip_address_s,      IpAddress);
 NDN_DATA_UNIT_TYPE(objid,         asn_base_objid_s,      OBJECT IDENTIFIER);
-
+NDN_DATA_UNIT_TYPE(ip6_address,    ndn_ip6_address_s,      Ip6Address);
 
 
 static asn_named_entry_t _ndn_pld_stream_ne_array[] = {

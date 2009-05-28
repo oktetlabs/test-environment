@@ -103,6 +103,8 @@ typedef enum {
     TE_PROTO_TCP,
     TE_PROTO_UDP,
     TE_PROTO_SOCKET,
+    TE_PROTO_ICMP6,
+    TE_PROTO_IP6,
 } te_tad_protocols_t;
 
 
