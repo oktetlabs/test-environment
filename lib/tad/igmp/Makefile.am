@@ -3,8 +3,8 @@ AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ 
 
 
-noinst_HEADERS = tad_igmpv2_impl.h
+noinst_HEADERS = tad_igmp2_impl.h
 
-noinst_LIBRARIES = libtad_igmpv2.a
+noinst_LIBRARIES = libtad_igmp.a
 
-libtad_igmpv2_a_SOURCES = tad_igmpv2_csap.c tad_igmpv2_layer.c
+libtad_igmp_a_SOURCES = tad_igmp2_csap.c tad_igmp2_layer.c

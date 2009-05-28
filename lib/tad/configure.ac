@@ -166,6 +166,13 @@ AC_ARG_WITH([dhcp],,
  fi
 ], [w_dhcp=false])
 
+AC_ARG_WITH([igmp],, 
+[if test "${withval}" = yes; then
+   proto_specific igmp;
+   AC_CONFIG_FILES([igmp/Makefile])
+ fi
+], [w_igmp=false])
+
 AC_ARG_WITH([snmp],, 
 [if test "${withval}" = yes; then
     w_snmp=true

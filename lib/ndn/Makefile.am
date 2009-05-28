@@ -28,6 +28,7 @@ include_HEADERS = \
 	ndn_ipstack.h \
 	ndn_forw.h \
 	ndn_dhcp.h \
+	ndn_igmp2.h \
 	ndn_cli.h \
 	$(SNMP_H) \
 	ndn_iscsi.h \
@@ -46,6 +47,7 @@ libndn_la_SOURCES = \
 	ndn_ipstack.c \
 	ndn_forw.c \
 	ndn_dhcp.c \
+	ndn_igmp2.c \
 	ndn_cli.c \
 	$(SNMP_S) \
 	ndn_iscsi.c \

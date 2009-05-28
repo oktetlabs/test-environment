@@ -184,6 +184,10 @@ tad_ip4_init_cb(csap_p csap, unsigned int layer)
                 protocol = IPPROTO_ICMP;
                 break;
 
+            case TE_PROTO_IGMP2:
+                protocol = IPPROTO_IGMP;
+                break;
+
             default:
                 protocol = 0;
                 break;
@@ -691,6 +695,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
             break;
 
         case IPPROTO_ICMP:
+        case IPPROTO_IGMP:
             cb_data.upper_chksm_offset = 2;
             cb_data.use_phdr = FALSE;
             break;

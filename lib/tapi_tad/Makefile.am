@@ -97,6 +97,17 @@ else
 EXTRA_DIST += $(IPSTACK_HDRS) $(IPSTACK_SRCS)
 endif
 
+# IGMP
+IGMP_HDRS = igmp/tapi_igmp2.h
+IGMP_SRCS = igmp/tapi_igmp2.c
+if WITH_IGMP
+AM_CPPFLAGS += -I$(srcdir)/igmp
+EXTRA_HEADERS += $(IGMP_HDRS)
+EXTRA_SOURCES += $(IGMP_SRCS)
+else
+EXTRA_DIST += $(IGMP_HDRS) $(IGMP_SRCS)
+endif
+
 # ISCSI
 ISCSI_HDRS = iscsi/tapi_iscsi.h
 ISCSI_SRCS = iscsi/tapi_iscsi.c

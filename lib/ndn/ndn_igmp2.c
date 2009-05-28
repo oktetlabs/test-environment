@@ -34,45 +34,45 @@
 #include "te_errno.h"
 #include "asn_impl.h"
 #include "ndn_internal.h"
-#include "ndn_igmpv2.h"
+#include "ndn_igmp2.h"
 #include "tad_common.h"
 
 
-static asn_named_entry_t _ndn_igmpv2_pdu_ne_array [] = {
+static asn_named_entry_t _ndn_igmp2_message_ne_array [] = {
     { "type",          &ndn_data_unit_int8_s,
-        { PRIVATE, NDN_IGMPV2_TYPE }},
+        { PRIVATE, NDN_IGMP2_TYPE }},
     { "max-resp-time", &ndn_data_unit_int8_s ,
-        { PRIVATE, NDN_IGMPV2_MAX_RESPONSE_TIME }},
+        { PRIVATE, NDN_IGMP2_MAX_RESPONSE_TIME }},
     { "checksum", &ndn_data_unit_int8_s,
-        { PRIVATE, NDN_IGMPV2_CHECKSUM }},
+        { PRIVATE, NDN_IGMP2_CHECKSUM }},
     { "group-address", &ndn_data_unit_ip_address_s,
-        { PRIVATE, NDN_IGMPV2_GROUP_ADDRESS }},
+        { PRIVATE, NDN_IGMP2_GROUP_ADDRESS }},
 };
 
-asn_type ndn_igmpv2_pdu_s = {
-    "IGMPv2-PDU-Content", {PRIVATE, NDN_IGMPV2_}, SEQUENCE,
-    TE_ARRAY_LEN(_ndn_igmpv2_pdu_ne_array),
-    {_ndn_igmpv2_pdu_ne_array}
+asn_type ndn_igmp2_message_s = {
+    "IGMP2-PDU-Content", {PRIVATE, 111}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_igmp2_message_ne_array),
+    {_ndn_igmp2_message_ne_array}
 };
 
 
-const asn_type * const ndn_igmpv2_pdu = &ndn_igmpv2_pdu_s;
+const asn_type * const ndn_igmp2_message = &ndn_igmp2_message_s;
 
 
-static asn_named_entry_t _ndn_igmpv2_csap_ne_array [] = {
+static asn_named_entry_t _ndn_igmp2_csap_ne_array [] = {
     { "version",&ndn_data_unit_int8_s ,
-        { PRIVATE, NDN_IGMPV2_VERSION }},
+        { PRIVATE, NDN_IGMP2_VERSION }},
     { "max-resp-time", &ndn_data_unit_int8_s ,
-        { PRIVATE, NDN_IGMPV2_MAX_RESPONSE_TIME }},
+        { PRIVATE, NDN_IGMP2_MAX_RESPONSE_TIME }},
     { "group-address", &ndn_data_unit_ip_address_s,
-        { PRIVATE, NDN_IGMPV2_GROUP_ADDRESS }},
+        { PRIVATE, NDN_IGMP2_GROUP_ADDRESS }},
 };
 
-asn_type ndn_igmpv2_csap_s = {
-    "IGMPv2-CSAP", {PRIVATE, TE_PROTO_IGMPV2}, SEQUENCE,
-    TE_ARRAY_LEN(_ndn_igmpv2_csap_ne_array),
-    {_ndn_igmpv2_csap_ne_array}
+asn_type ndn_igmp2_csap_s = {
+    "IGMP2-CSAP", {PRIVATE, TE_PROTO_IGMP2}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_igmp2_csap_ne_array),
+    {_ndn_igmp2_csap_ne_array}
 };
 
-const asn_type * const ndn_igmpv2_csap = &ndn_igmpv2_csap_s;
+const asn_type * const ndn_igmp2_csap = &ndn_igmp2_csap_s;
 

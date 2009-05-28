@@ -1,5 +1,5 @@
 /** @file
- * @brief Test API for TAD. IP stack CSAP
+ * @brief Test API for TAD IGMPv2 CSAP
  *
  * Implementation of Test API
  * 
@@ -37,26 +37,26 @@
 #include "asn_usr.h"
 #include "tapi_ndn.h"
 #include "ndn_ipstack.h"
-#include "ndn_igmpv2.h"
-#include "tapi_igmpv2.h"
+#include "ndn_igmp2.h"
+#include "tapi_igmp2.h"
 
 #include "tapi_test.h"
 
 
-/* See the description in tapi_igmpv2.h */
+/* See the description in tapi_igmp2.h */
 te_errno
-tapi_igmpv2_add_csap_layer(asn_value **csap_spec)
+tapi_igmp2_add_csap_layer(asn_value **csap_spec)
 {
-    return tapi_tad_csap_add_layer(csap_spec, ndn_igmpv2_csap, "#igmpv2",
+    return tapi_tad_csap_add_layer(csap_spec, ndn_igmp2_csap, "#igmp2",
                                    NULL);
 }
 
 
-/* See the description in tapi_igmpv2.h */
+/* See the description in tapi_igmp2.h */
 te_errno
-tapi_igmpv2_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
-                    te_bool is_pattern,
-                    int type, int max_resp_time, in_addr_t group_addr)
+tapi_igmp2_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
+                   te_bool is_pattern,
+                   int type, int max_resp_time, in_addr_t group_addr)
 {
     asn_value  *tmp_pdu;
 
@@ -64,7 +64,7 @@ tapi_igmpv2_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
-                                          ndn_igmpv2_message, "#igmpv2",
+                                          ndn_igmp2_message, "#igmp2",
                                           &tmp_pdu));
 
     if (type >= 0)
@@ -84,23 +84,23 @@ tapi_igmpv2_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
     return 0;
 }
 
-/* See the description in tapi_igmpv2.h */
+/* See the description in tapi_igmp2.h */
 te_errno
-tapi_igmpv2_ip4_eth_csap_create(const char    *ta_name,
-                                int            sid,
-                                const char    *eth_dev,
-                                unsigned int   receive_mode,
-                                const uint8_t *eth_src,
-                                in_addr_t      src_addr,
-                                csap_handle_t *igmp_csap)
+tapi_igmp2_ip4_eth_csap_create(const char    *ta_name,
+                               int            sid,
+                               const char    *eth_dev,
+                               unsigned int   receive_mode,
+                               const uint8_t *eth_src,
+                               in_addr_t      src_addr,
+                               csap_handle_t *igmp_csap)
 {
     te_errno    rc;
     asn_value  *csap_spec = NULL;
 
     do {
         if ((rc = tapi_tad_csap_add_layer(&csap_spec,
-                                          ndn_igmpv2_csap,
-                                          "#igmpv2", NULL)) != 0)
+                                          ndn_igmp2_csap,
+                                          "#igmp2", NULL)) != 0)
         {
             WARN("%s(): add IGMPv2 csap layer failed %r", __FUNCTION__, rc);
             break;
@@ -138,27 +138,27 @@ tapi_igmpv2_ip4_eth_csap_create(const char    *ta_name,
     return TE_RC(TE_TAPI, rc);
 }
 
-/* See the description in tapi_igmpv2.h */
+/* See the description in tapi_igmp2.h */
 te_errno
-tapi_igmpv2_ip4_eth_add_pdu(asn_value **tmpl_or_ptrn,
-                            asn_value **pdu,
-                            te_bool     is_pattern,
-                            int         type,
-                            int         max_resp_time,
-                            in_addr_t   group_addr,
-                            in_addr_t   src_addr,
-                            uint8_t    *eth_src)
+tapi_igmp2_ip4_eth_add_pdu(asn_value **tmpl_or_ptrn,
+                           asn_value **pdu,
+                           te_bool     is_pattern,
+                           int         type,
+                           int         max_resp_time,
+                           in_addr_t   group_addr,
+                           in_addr_t   src_addr,
+                           uint8_t    *eth_src)
 {
     te_errno        rc = 0;
     const uint16_t  ip_eth = ETHERTYPE_IP;
 
-    CHECK_RC(tapi_igmpv2_add_pdu(tmpl_or_ptrn, pdu, is_pattern,
-                                 type, max_resp_time, group_addr));
+    CHECK_RC(tapi_igmp2_add_pdu(tmpl_or_ptrn, pdu, is_pattern,
+                                type, max_resp_time, group_addr));
 
     CHECK_RC(tapi_ip4_add_pdu(tmpl_or_ptrn, pdu, is_pattern,
                               src_addr, htonl(INADDR_ANY),
-                              TE_PROTO_IGMPV2,
-                              TAPI_IGMPV2_IP4_TTL_DEFAULT,
+                              TE_PROTO_IGMP2,
+                              TAPI_IGMP2_IP4_TTL_DEFAULT,
                               -1 /* default ToS */ ));
     CHECK_RC(tapi_eth_add_pdu(tmpl_or_ptrn, pdu, is_pattern,
                               NULL, eth_src,

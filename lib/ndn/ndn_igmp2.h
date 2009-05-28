@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Declarations of ASN.1 types for NDN for Ethernet protocol. 
+ * Declarations of ASN.1 types for NDN for IGMPv2 protocol. 
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -25,8 +25,8 @@
  *
  * $Id: $
  */ 
-#ifndef __TE_NDN_IGMPV2_H__
-#define __TE_NDN_IGMPV2_H__
+#ifndef __TE_NDN_IGMP2_H__
+#define __TE_NDN_IGMP2_H__
 
 
 #include "te_stdint.h"
@@ -41,31 +41,31 @@ extern "C" {
  * ASN.1 tags for IGMPv2 PDUs
  */
 typedef enum {
-    NDN_IGMPV2_VERSION,
-    NDN_IGMPV2_TYPE,
-    NDN_IGMPV2_MAX_RESPONCE_TIME,
-    NDN_IGMPV2_CHECKSUM,
-    NDN_IGMPV2_GROUP_ADDRESS,
-    NDN_IGMPV2_,
-} ndn_igmpv2_tags_t;
+    NDN_IGMP2_VERSION,
+    NDN_IGMP2_TYPE,
+    NDN_IGMP2_MAX_RESPONSE_TIME,
+    NDN_IGMP2_CHECKSUM,
+    NDN_IGMP2_GROUP_ADDRESS,
+    NDN_IGMP2_,
+} ndn_igmp2_tags_t;
 
 typedef enum {
-    NDN_IGMPV2_TYPE_QUERY = 0x11,     /**< Group Query message */
-    NDN_IGMPV2_TYPE_REPORT_V1 = 0x12, /**< IGMP Version 1 Membership report */
-    NDN_IGMPV2_TYPE_JOIN = 0x16,      /**< Membership Report/Join message  */
-    NDN_IGMPV2_TYPE_LEAVE = 0x16,     /**< Group Leave message */
-} ndn_igmpv2_type_t;
+    NDN_IGMP2_TYPE_QUERY = 0x11,     /**< Group Query message */
+    NDN_IGMP2_TYPE_REPORT_V1 = 0x12, /**< IGMP Version 1 Membership report */
+    NDN_IGMP2_TYPE_JOIN = 0x16,      /**< Membership Report/Join message  */
+    NDN_IGMP2_TYPE_LEAVE = 0x16,     /**< Group Leave message */
+} ndn_igmp2_type_t;
 
 
-extern const asn_type * const ndn_igmpv2_pdu;
-extern const asn_type * const ndn_igmpv2_csap;
+extern const asn_type * const ndn_igmp2_message;
+extern const asn_type * const ndn_igmp2_csap;
 
-extern asn_type ndn_igmpv2_pdu_s;
-extern asn_type ndn_igmpv2_csap_s;
+extern asn_type ndn_igmp2_message_s;
+extern asn_type ndn_igmp2_csap_s;
 
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 
-#endif /* __TE_NDN_IGMPV2_H__ */
+#endif /* __TE_NDN_IGMP2_H__ */

@@ -1,5 +1,5 @@
 /** @file
- * @brief Test API for TAD. ipstack CSAP
+ * @brief Test API for TAD. IGMPv2 CSAP
  *
  * Implementation of Test API
  *
@@ -26,8 +26,8 @@
  * $Id: $
  */
 
-#ifndef __TE_TAPI_IGMPV2_H__
-#define __TE_TAPI_IGMPV2_H__
+#ifndef __TE_TAPI_IGMP2_H__
+#define __TE_TAPI_IGMP2_H__
 
 
 #if HAVE_SYS_TYPES_H
@@ -56,7 +56,7 @@ extern "C" {
  *
  * @retval Status code.
  */
-extern te_errno tapi_igmpv2_add_csap_layer(asn_value **csap_spec);
+extern te_errno tapi_igmp2_add_csap_layer(asn_value **csap_spec);
 
 /**
  * Add IGMPv2 PDU as the last PDU to the last unit of the traffic 
@@ -73,7 +73,7 @@ extern te_errno tapi_igmpv2_add_csap_layer(asn_value **csap_spec);
  *
  * @return              Status code.
  */
-extern te_errno tapi_igmpv2_add_pdu(asn_value         **tmpl_or_ptrn,
+extern te_errno tapi_igmp2_add_pdu(asn_value         **tmpl_or_ptrn,
                                     asn_value         **pdu,
                                     te_bool             is_pattern,
                                     int                 type,
@@ -82,7 +82,7 @@ extern te_errno tapi_igmpv2_add_pdu(asn_value         **tmpl_or_ptrn,
 
 
 /**
- * Create 'igmpv2.ip4.eth' CSAP on the specified Agent
+ * Create 'igmp2.ip4.eth' CSAP on the specified Agent
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
@@ -96,14 +96,13 @@ extern te_errno tapi_igmpv2_add_pdu(asn_value         **tmpl_or_ptrn,
  *
  * @return Zero on success or error code
  */
-extern te_errno tapi_igmpv2_ip4_eth_csap_create(
-                    const char    *ta_name,
-                    int            sid,
-                    const char    *eth_dev,
-                    unsigned int   receive_mode,
-                    const uint8_t *eth_src,
-                    in_addr_t      src_addr,
-                    csap_handle_t *igmp_csap);
+extern te_errno tapi_igmp2_ip4_eth_csap_create(const char    *ta_name,
+                                               int            sid,
+                                               const char    *eth_dev,
+                                               unsigned int   receive_mode,
+                                               const uint8_t *eth_src,
+                                               in_addr_t      src_addr,
+                                               csap_handle_t *igmp_csap);
 
 /**
  * Compose IGMPv2.IPv4.Eth PDU as the last PDU to the last unit
@@ -127,16 +126,16 @@ extern te_errno tapi_igmpv2_ip4_eth_csap_create(
  *
  * @return              Status code.
  */
-extern te_errno tapi_igmpv2_ip4_eth_add_pdu(asn_value **tmpl_or_ptrn,
-                                            asn_value **pdu,
-                                            te_bool     is_pattern,
-                                            int         type,
-                                            int         max_resp_time,
-                                            in_addr_t   group_addr,
-                                            in_addr_t   src_addr,
-                                            uint8_t    *eth_src);
+extern te_errno tapi_igmp2_ip4_eth_add_pdu(asn_value **tmpl_or_ptrn,
+                                           asn_value **pdu,
+                                           te_bool     is_pattern,
+                                           int         type,
+                                           int         max_resp_time,
+                                           in_addr_t   group_addr,
+                                           in_addr_t   src_addr,
+                                           uint8_t    *eth_src);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_TAPI_IGMPV2_H__ */
+#endif /* !__TE_TAPI_IGMP2_H__ */
