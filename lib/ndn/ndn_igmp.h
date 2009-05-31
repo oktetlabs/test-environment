@@ -25,8 +25,8 @@
  *
  * $Id: $
  */ 
-#ifndef __TE_NDN_IGMP2_H__
-#define __TE_NDN_IGMP2_H__
+#ifndef __TE_NDN_IGMP_H__
+#define __TE_NDN_IGMP_H__
 
 
 #include "te_stdint.h"
@@ -41,31 +41,31 @@ extern "C" {
  * ASN.1 tags for IGMPv2 PDUs
  */
 typedef enum {
-    NDN_IGMP2_VERSION,
-    NDN_IGMP2_TYPE,
-    NDN_IGMP2_MAX_RESPONSE_TIME,
-    NDN_IGMP2_CHECKSUM,
-    NDN_IGMP2_GROUP_ADDRESS,
-    NDN_IGMP2_,
-} ndn_igmp2_tags_t;
+    NDN_TAG_IGMP_VERSION,
+    NDN_TAG_IGMP_TYPE,
+    NDN_TAG_IGMP_MAX_RESPONSE_TIME,
+    NDN_TAG_IGMP_CHECKSUM,
+    NDN_TAG_IGMP_GROUP_ADDRESS,
+    NDN_TAG_IGMP_,
+} ndn_igmp_tags_t;
 
 typedef enum {
-    NDN_IGMP2_TYPE_QUERY = 0x11,     /**< Group Query message */
-    NDN_IGMP2_TYPE_REPORT_V1 = 0x12, /**< IGMP Version 1 Membership report */
-    NDN_IGMP2_TYPE_JOIN = 0x16,      /**< Membership Report/Join message  */
-    NDN_IGMP2_TYPE_LEAVE = 0x16,     /**< Group Leave message */
-} ndn_igmp2_type_t;
+    NDN_TAG_IGMP_TYPE_QUERY = 0x11,     /**< Group Query message */
+    NDN_TAG_IGMP_TYPE_REPORT_V1 = 0x12, /**< IGMP Version 1 Membership report */
+    NDN_TAG_IGMP_TYPE_JOIN = 0x16,      /**< Membership Report/Join message  */
+    NDN_TAG_IGMP_TYPE_LEAVE = 0x16,     /**< Group Leave message */
+} ndn_igmp_type_t;
 
 
-extern const asn_type * const ndn_igmp2_message;
-extern const asn_type * const ndn_igmp2_csap;
+extern const asn_type * const ndn_igmp_message;
+extern const asn_type * const ndn_igmp_csap;
 
-extern asn_type ndn_igmp2_message_s;
-extern asn_type ndn_igmp2_csap_s;
+extern asn_type ndn_igmp_message_s;
+extern asn_type ndn_igmp_csap_s;
 
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 
-#endif /* __TE_NDN_IGMP2_H__ */
+#endif /* __TE_NDN_IGMP_H__ */

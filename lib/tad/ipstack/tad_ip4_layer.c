@@ -184,7 +184,7 @@ tad_ip4_init_cb(csap_p csap, unsigned int layer)
                 protocol = IPPROTO_ICMP;
                 break;
 
-            case TE_PROTO_IGMP2:
+            case TE_PROTO_IGMP:
                 protocol = IPPROTO_IGMP;
                 break;
 

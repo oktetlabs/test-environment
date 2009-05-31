@@ -1,5 +1,5 @@
 /** @file
- * @brief TAD IGMPv2
+ * @brief TAD IGMP version 2 layer
  *
  * Traffic Application Domain Command Handler.
  * IGMPv2 CSAP layer-related callbacks.
@@ -50,51 +50,51 @@
 #include "te_errno.h"
 #include "logger_ta_fast.h"
 #include "tad_bps.h"
-#include "tad_igmp2_impl.h"
+#include "tad_igmp_impl.h"
 
 
 static unsigned char mac_mcast[] = { 0x01, 0x00, 0x5E, 0x00, 0x00, 0x00 };
 
-#define TE_TAD_IGMP2_MAXLEN 8
+#define TE_TAD_IGMP_MAXLEN 8
 
 /**
  * IGMPv2 layer specific data
  */
-typedef struct tad_igmp2_proto_data {
+typedef struct tad_igmp_proto_data {
     tad_bps_pkt_frag_def    hdr;
-} tad_igmp2_proto_data;
+} tad_igmp_proto_data;
 
 /**
  * IGMPv2 layer specific data for PDU processing
  * (both send and receive).
  */
-typedef struct tad_igmp2_proto_pdu_data {
+typedef struct tad_igmp_proto_pdu_data {
     tad_bps_pkt_frag_data   hdr;
-} tad_igmp2_proto_pdu_data;
+} tad_igmp_proto_pdu_data;
 
 
 /**
  * Definition of Internet Group Management Protocol (IGMP) header.
  */
-static const tad_bps_pkt_frag tad_igmp2_bps_hdr[] =
+static const tad_bps_pkt_frag tad_igmp_bps_hdr[] =
 {
-    { "type", 8, BPS_FLD_NO_DEF(NDN_IGMP2_TYPE),
+    { "type", 8, BPS_FLD_NO_DEF(NDN_TAG_IGMP_TYPE),
       TAD_DU_I32, FALSE },
-    { "max-resp-time", 8, BPS_FLD_NO_DEF(NDN_IGMP2_MAX_RESPONSE_TIME),
+    { "max-resp-time", 8, BPS_FLD_NO_DEF(NDN_TAG_IGMP_MAX_RESPONSE_TIME),
       TAD_DU_I32, FALSE },
-    { "checksum", 16, BPS_FLD_NO_DEF(NDN_IGMP2_CHECKSUM),
-      TAD_DU_I32, FALSE },
-    { "group-addr", 32,
-      BPS_FLD_CONST_DEF(NDN_IGMP2_GROUP_ADDRESS, 0),
+    { "checksum", 16, BPS_FLD_CONST_DEF(NDN_TAG_IGMP_CHECKSUM, 0),
+      TAD_DU_I32, TRUE },
+    { "group-address", 32,
+      BPS_FLD_CONST_DEF(NDN_TAG_IGMP_GROUP_ADDRESS, 0),
       TAD_DU_OCTS, FALSE },
 };
 
-/* See description tad_igmp2_impl.h */
+/* See description tad_igmp_impl.h */
 te_errno
-tad_igmp2_init_cb(csap_p csap, unsigned int layer)
-{ 
+tad_igmp_init_cb(csap_p csap, unsigned int layer)
+{
     te_errno                rc;
-    tad_igmp2_proto_data   *proto_data;
+    tad_igmp_proto_data    *proto_data;
     const asn_value        *layer_nds;
 
     proto_data = TE_ALLOC(sizeof(*proto_data));
@@ -105,8 +105,8 @@ tad_igmp2_init_cb(csap_p csap, unsigned int layer)
 
     layer_nds = csap->layers[layer].nds;
 
-    rc = tad_bps_pkt_frag_init(tad_igmp2_bps_hdr,
-                               TE_ARRAY_LEN(tad_igmp2_bps_hdr),
+    rc = tad_bps_pkt_frag_init(tad_igmp_bps_hdr,
+                               TE_ARRAY_LEN(tad_igmp_bps_hdr),
                                layer_nds, &proto_data->hdr);
     if (rc != 0)
         return rc;
@@ -114,11 +114,11 @@ tad_igmp2_init_cb(csap_p csap, unsigned int layer)
     return 0; 
 }
 
-/* See description tad_igmp2_impl.h */
+/* See description tad_igmp_impl.h */
 te_errno
-tad_igmp2_destroy_cb(csap_p csap, unsigned int layer)
+tad_igmp_destroy_cb(csap_p csap, unsigned int layer)
 {
-    tad_igmp2_proto_data *proto_data;
+    tad_igmp_proto_data *proto_data;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
     csap_set_proto_spec_data(csap, layer, NULL);
@@ -143,12 +143,12 @@ tad_igmp2_destroy_cb(csap_p csap, unsigned int layer)
  * @return Status code.
  */
 static te_errno
-tad_igmp2_nds_to_pdu_data(csap_p csap, tad_igmp2_proto_data *proto_data,
-                          const asn_value *layer_pdu,
-                          tad_igmp2_proto_pdu_data **p_pdu_data)
+tad_igmp_nds_to_pdu_data(csap_p csap, tad_igmp_proto_data *proto_data,
+                         const asn_value *layer_pdu,
+                         tad_igmp_proto_pdu_data **p_pdu_data)
 {
     te_errno                    rc;
-    tad_igmp2_proto_pdu_data   *pdu_data;
+    tad_igmp_proto_pdu_data    *pdu_data;
 
     UNUSED(csap);
 
@@ -168,12 +168,12 @@ tad_igmp2_nds_to_pdu_data(csap_p csap, tad_igmp2_proto_data *proto_data,
     return 0;
 }
 
-/* See description in tad_igmp2_impl.h */
+/* See description in tad_igmp_impl.h */
 void
-tad_igmp2_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
+tad_igmp_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
 {
-    tad_igmp2_proto_data     *proto_data;
-    tad_igmp2_proto_pdu_data *pdu_data = opaque;
+    tad_igmp_proto_data     *proto_data;
+    tad_igmp_proto_pdu_data *pdu_data = opaque;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
     assert(proto_data != NULL);
@@ -187,18 +187,18 @@ tad_igmp2_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
 }
 
 
-/* See description in tad_igmp2_impl.h */
+/* See description in tad_igmp_impl.h */
 te_errno
-tad_igmp2_confirm_tmpl_cb(csap_p csap, unsigned int layer,
+tad_igmp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                           asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                    rc;
-    tad_igmp2_proto_data       *proto_data;
-    tad_igmp2_proto_pdu_data   *tmpl_data;
+    tad_igmp_proto_data        *proto_data;
+    tad_igmp_proto_pdu_data    *tmpl_data;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    rc = tad_igmp2_nds_to_pdu_data(csap, proto_data, layer_pdu, &tmpl_data);
+    rc = tad_igmp_nds_to_pdu_data(csap, proto_data, layer_pdu, &tmpl_data);
     *p_opaque = tmpl_data;
     if (rc != 0)
         return rc;
@@ -219,19 +219,36 @@ tad_igmp2_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     return rc;
 }
 
-/* See description in tad_igmp2_impl.h */
-te_errno
-tad_igmp2_gen_bin_cb(csap_p csap, unsigned int layer,
-                     const asn_value *tmpl_pdu, void *opaque,
-                     const tad_tmpl_arg_t *args, size_t arg_num,
-                     tad_pkts *sdus, tad_pkts *pdus)
+/**
+ * Callback to generate binary data per PDU.
+ *
+ * This function complies with tad_pkt_enum_cb prototype.
+ */
+static te_errno
+tad_igmp_gen_bin_cb_per_pdu(tad_pkt *pdu, void *hdr)
 {
-    tad_igmp2_proto_data     *proto_data;
-    tad_igmp2_proto_pdu_data *tmpl_data = opaque;
+    tad_pkt_seg    *seg = tad_pkt_first_seg(pdu);
+
+    /* Copy header template to packet */
+    assert(seg->data_ptr != NULL);
+    memcpy(seg->data_ptr, hdr, seg->data_len);
+
+    return 0;
+}
+
+/* See description in tad_igmp_impl.h */
+te_errno
+tad_igmp_gen_bin_cb(csap_p csap, unsigned int layer,
+                    const asn_value *tmpl_pdu, void *opaque,
+                    const tad_tmpl_arg_t *args, size_t arg_num,
+                    tad_pkts *sdus, tad_pkts *pdus)
+{
+    tad_igmp_proto_data     *proto_data;
+    tad_igmp_proto_pdu_data *tmpl_data = opaque;
 
     te_errno        rc;
     unsigned int    bitoff;
-    uint8_t         hdr[TE_TAD_IGMP2_MAXLEN];
+    uint8_t         hdr[TE_TAD_IGMP_MAXLEN];
 
 
     assert(csap != NULL);
@@ -262,39 +279,47 @@ tad_igmp2_gen_bin_cb(csap_p csap, unsigned int layer,
     if (rc != 0)
         return rc;
 
+    /* Per-PDU processing */
+    rc = tad_pkt_enumerate(pdus, tad_igmp_gen_bin_cb_per_pdu, hdr);
+    if (rc != 0)
+    {
+        ERROR("Failed to process IGMP PDUs: %r", rc);
+        return rc;
+    }
+
     return 0;
 }
 
 
-/* See description in tad_igmp2_impl.h */
+/* See description in tad_igmp_impl.h */
 te_errno
-tad_igmp2_confirm_ptrn_cb(csap_p csap, unsigned int layer,
-                          asn_value *layer_pdu, void **p_opaque)
+tad_igmp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
+                         asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                    rc;
-    tad_igmp2_proto_data       *proto_data;
-    tad_igmp2_proto_pdu_data   *ptrn_data;
+    tad_igmp_proto_data        *proto_data;
+    tad_igmp_proto_pdu_data    *ptrn_data;
 
     F_ENTRY("(%d:%u) layer_pdu=%p", csap->id, layer,
             (void *)layer_pdu);
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    rc = tad_igmp2_nds_to_pdu_data(csap, proto_data, layer_pdu, &ptrn_data);
+    rc = tad_igmp_nds_to_pdu_data(csap, proto_data, layer_pdu, &ptrn_data);
     *p_opaque = ptrn_data;
 
     return rc;
 }
 
 
-/* See description in tad_igmp2_impl.h */
+/* See description in tad_igmp_impl.h */
 te_errno
-tad_igmp2_match_pre_cb(csap_p              csap,
-                       unsigned int        layer,
-                       tad_recv_pkt_layer *meta_pkt_layer)
+tad_igmp_match_pre_cb(csap_p              csap,
+                      unsigned int        layer,
+                      tad_recv_pkt_layer *meta_pkt_layer)
 {
-    tad_igmp2_proto_data       *proto_data;
-    tad_igmp2_proto_pdu_data   *pkt_data;
+    tad_igmp_proto_data        *proto_data;
+    tad_igmp_proto_pdu_data    *pkt_data;
     te_errno                    rc;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
@@ -312,14 +337,14 @@ tad_igmp2_match_pre_cb(csap_p              csap,
 }
 
 
-/* See description in tad_igmp2_impl.h */
+/* See description in tad_igmp_impl.h */
 te_errno
-tad_igmp2_match_post_cb(csap_p              csap,
-                        unsigned int        layer,
-                        tad_recv_pkt_layer *meta_pkt_layer)
+tad_igmp_match_post_cb(csap_p              csap,
+                       unsigned int        layer,
+                       tad_recv_pkt_layer *meta_pkt_layer)
 {
-    tad_igmp2_proto_data       *proto_data;
-    tad_igmp2_proto_pdu_data   *pkt_data = meta_pkt_layer->opaque;
+    tad_igmp_proto_data        *proto_data;
+    tad_igmp_proto_pdu_data    *pkt_data = meta_pkt_layer->opaque;
     tad_pkt                    *pkt;
     te_errno                    rc;
     unsigned int                bitoff = 0;
@@ -327,9 +352,9 @@ tad_igmp2_match_post_cb(csap_p              csap,
     if (~csap->state & CSAP_STATE_RESULTS)
         return 0;
 
-    if ((meta_pkt_layer->nds = asn_init_value(ndn_igmp2_message)) == NULL)
+    if ((meta_pkt_layer->nds = asn_init_value(ndn_igmp_message)) == NULL)
     {
-        ERROR_ASN_INIT_VALUE(ndn_igmp2_message);
+        ERROR_ASN_INIT_VALUE(ndn_igmp_message);
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
 
@@ -343,19 +368,19 @@ tad_igmp2_match_post_cb(csap_p              csap,
 }
 
 
-/* See description in tad_igmp2_impl.h */
+/* See description in tad_igmp_impl.h */
 te_errno
-tad_igmp2_match_do_cb(csap_p           csap,
-                      unsigned int     layer,
-                      const asn_value *ptrn_pdu,
-                      void            *ptrn_opaque,
-                      tad_recv_pkt    *meta_pkt,
-                      tad_pkt         *pdu,
-                      tad_pkt         *sdu)
+tad_igmp_match_do_cb(csap_p           csap,
+                     unsigned int     layer,
+                     const asn_value *ptrn_pdu,
+                     void            *ptrn_opaque,
+                     tad_recv_pkt    *meta_pkt,
+                     tad_pkt         *pdu,
+                     tad_pkt         *sdu)
 {
-    tad_igmp2_proto_data       *proto_data;
-    tad_igmp2_proto_pdu_data   *ptrn_data = ptrn_opaque;
-    tad_igmp2_proto_pdu_data   *pkt_data = meta_pkt->layers[layer].opaque;
+    tad_igmp_proto_data        *proto_data;
+    tad_igmp_proto_pdu_data    *ptrn_data = ptrn_opaque;
+    tad_igmp_proto_pdu_data    *pkt_data = meta_pkt->layers[layer].opaque;
     te_errno                    rc;
     unsigned int                bitoff = 0;
 

@@ -98,8 +98,8 @@ EXTRA_DIST += $(IPSTACK_HDRS) $(IPSTACK_SRCS)
 endif
 
 # IGMP
-IGMP_HDRS = igmp/tapi_igmp2.h
-IGMP_SRCS = igmp/tapi_igmp2.c
+IGMP_HDRS = igmp/tapi_igmp.h
+IGMP_SRCS = igmp/tapi_igmp.c
 if WITH_IGMP
 AM_CPPFLAGS += -I$(srcdir)/igmp
 EXTRA_HEADERS += $(IGMP_HDRS)

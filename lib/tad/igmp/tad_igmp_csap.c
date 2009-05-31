@@ -1,5 +1,5 @@
 /** @file
- * @brief TAD IGMPv2 layer
+ * @brief TAD IGMP version 2 layer
  *
  * Traffic Application Domain Command Handler.
  * IGMPv2 CSAP support description structures. 
@@ -38,29 +38,29 @@
 #include "tad_csap_support.h"
 #include "tad_utils.h"
 
-#include "tad_igmp2_impl.h"
+#include "tad_igmp_impl.h"
 
 
-static csap_spt_type_t igmp2_csap_spt = 
+static csap_spt_type_t igmp_csap_spt = 
 {
-    .proto               = "igmp2",
+    .proto               = "igmp",
     .unregister_cb       = NULL,
 
-    .init_cb             = tad_igmp2_init_cb,
-    .destroy_cb          = tad_igmp2_destroy_cb,
+    .init_cb             = tad_igmp_init_cb,
+    .destroy_cb          = tad_igmp_destroy_cb,
     .get_param_cb        = NULL,
 
-    .confirm_tmpl_cb     = tad_igmp2_confirm_tmpl_cb,
-    .generate_pkts_cb    = tad_igmp2_gen_bin_cb,
-    .release_tmpl_cb     = tad_igmp2_release_pdu_cb,
+    .confirm_tmpl_cb     = tad_igmp_confirm_tmpl_cb,
+    .generate_pkts_cb    = tad_igmp_gen_bin_cb,
+    .release_tmpl_cb     = tad_igmp_release_pdu_cb,
 
-    .confirm_ptrn_cb     = tad_igmp2_confirm_ptrn_cb,
-    .match_pre_cb        = tad_igmp2_match_pre_cb,
-    .match_do_cb         = tad_igmp2_match_do_cb,
+    .confirm_ptrn_cb     = tad_igmp_confirm_ptrn_cb,
+    .match_pre_cb        = tad_igmp_match_pre_cb,
+    .match_do_cb         = tad_igmp_match_do_cb,
     .match_done_cb       = NULL,
-    .match_post_cb       = tad_igmp2_match_post_cb,
-    .match_free_cb       = tad_igmp2_release_pdu_cb,
-    .release_ptrn_cb     = tad_igmp2_release_pdu_cb,
+    .match_post_cb       = tad_igmp_match_post_cb,
+    .match_free_cb       = tad_igmp_release_pdu_cb,
+    .release_ptrn_cb     = tad_igmp_release_pdu_cb,
 
     .generate_pattern_cb = NULL,
 
@@ -75,7 +75,8 @@ static csap_spt_type_t igmp2_csap_spt =
  * @return Status code.
  */ 
 te_errno
-csap_support_igmp2_register(void)
+csap_support_igmp_register(void)
 { 
-    return csap_spt_add(&igmp2_csap_spt);
+    ERROR("Register IGMP TAD layer");
+    return csap_spt_add(&igmp_csap_spt);
 }

@@ -21,7 +21,7 @@ AC_PROG_INSTALL
 TE_LIB_SET
 
 dnl List of all layers
-layers="arp atm bridge cli dhcp eth ipstack iscsi pcap snmp"
+layers="arp atm bridge cli dhcp eth ipstack iscsi pcap snmp igmp"
 dnl Whether any --with-<layer> option specified
 layers_specified=
 for layer in $layers ; do

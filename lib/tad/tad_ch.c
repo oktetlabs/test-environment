@@ -146,6 +146,10 @@ rcf_ch_tad_init(void)
     extern te_errno csap_support_ipstack_register(void);
     CHECK_RC(csap_support_ipstack_register());
 #endif
+#ifdef WITH_IGMP
+    extern te_errno csap_support_igmp_register(void);
+    CHECK_RC(csap_support_igmp_register());
+#endif
 #ifdef WITH_SNMP
     extern te_errno csap_support_snmp_register(void);
     CHECK_RC(csap_support_snmp_register());

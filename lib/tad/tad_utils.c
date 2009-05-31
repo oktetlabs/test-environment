@@ -1361,6 +1361,8 @@ te_proto_from_str(const char *proto_txt)
                 return TE_PROTO_ICMP6;
             if (strcmp(proto_txt + 1, "scsi") == 0)
                 return TE_PROTO_ISCSI;
+            if (strcmp(proto_txt + 1, "gmp") == 0)
+                return TE_PROTO_IGMP;
             break;
 
         case 'p':
@@ -1431,6 +1433,9 @@ te_proto_to_str(te_tad_protocols_t proto)
 
          case TE_PROTO_IP6:
              return "ip6";
+
+         case TE_PROTO_IGMP:
+             return "igmp";
 
          case TE_PROTO_ISCSI:
              return "iscsi";
