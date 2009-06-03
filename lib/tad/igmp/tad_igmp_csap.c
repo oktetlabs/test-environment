@@ -2,7 +2,7 @@
  * @brief TAD IGMP version 2 layer
  *
  * Traffic Application Domain Command Handler.
- * IGMPv2 CSAP support description structures. 
+ * IGMPv2 CSAP support description structures.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -41,7 +41,7 @@
 #include "tad_igmp_impl.h"
 
 
-static csap_spt_type_t igmp_csap_spt = 
+static csap_spt_type_t igmp_csap_spt =
 {
     .proto               = "igmp",
     .unregister_cb       = NULL,
@@ -73,10 +73,10 @@ static csap_spt_type_t igmp_csap_spt =
  * Command Handler.
  *
  * @return Status code.
- */ 
+ */
 te_errno
 csap_support_igmp_register(void)
-{ 
-    ERROR("Register IGMP TAD layer");
+{
+    INFO("Register IGMP TAD layer");
     return csap_spt_add(&igmp_csap_spt);
 }
