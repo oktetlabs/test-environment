@@ -104,6 +104,9 @@ typedef enum {
 /** Default TTL for IGMP messages is 1 */
 #define TAPI_IGMP_IP4_TTL_DEFAULT 1
 
+/** Default ToS for IGMP messages is 0xc0 */
+#define TAPI_IGMP_IP4_TOS_DEFAULT   0xc0
+
 /** Pre-allocated size for source addresses list */
 #define TAPI_IGMP_SRC_LIST_SIZE_MIN             16
 

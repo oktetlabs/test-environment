@@ -180,7 +180,7 @@ tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
                           src_addr, dst_addr,
                           IPPROTO_IGMP,
                           TAPI_IGMP_IP4_TTL_DEFAULT,
-                          -1 /* default ToS */ );
+                          TAPI_IGMP_IP4_TOS_DEFAULT);
     if (rc != 0)
         return rc;
 
