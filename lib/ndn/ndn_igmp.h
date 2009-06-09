@@ -46,16 +46,15 @@ typedef enum {
     NDN_TAG_IGMP_MAX_RESPONSE_TIME,
     NDN_TAG_IGMP_CHECKSUM,
     NDN_TAG_IGMP_GROUP_ADDRESS,
+    NDN_TAG_IGMP3_S_FLAG,
+    NDN_TAG_IGMP3_QRV,
+    NDN_TAG_IGMP3_QQIC,
+    NDN_TAG_IGMP3_NUMBER_OF_SOURCES,
+    NDN_TAG_IGMP3_SOURCE_ADDRESS_LIST,
+    NDN_TAG_IGMP3_NUMBER_OF_GROUPS,
+    NDN_TAG_IGMP3_GROUP_RECORD_LIST,
     NDN_TAG_IGMP_,
 } ndn_igmp_tags_t;
-
-typedef enum {
-    NDN_TAG_IGMP_TYPE_QUERY = 0x11,     /**< Group Query message */
-    NDN_TAG_IGMP_TYPE_REPORT_V1 = 0x12, /**< IGMP Version 1 Membership report */
-    NDN_TAG_IGMP_TYPE_JOIN = 0x16,      /**< Membership Report/Join message  */
-    NDN_TAG_IGMP_TYPE_LEAVE = 0x16,     /**< Group Leave message */
-} ndn_igmp_type_t;
-
 
 extern const asn_type * const ndn_igmp_message;
 extern const asn_type * const ndn_igmp_csap;

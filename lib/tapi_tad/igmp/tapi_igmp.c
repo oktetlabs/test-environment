@@ -1,5 +1,5 @@
 /** @file
- * @brief Test API for TAD IGMPv2 CSAP
+ * @brief Test API for TAD IGMP CSAP
  *
  * Implementation of Test API
  * 
@@ -41,73 +41,31 @@
 #include "tapi_test.h"
 
 
-/* See the description in tapi_igmp2.h */
+/* See the description in tapi_igmp.h */
 te_errno
-tapi_igmp2_add_csap_layer(asn_value **csap_spec)
+tapi_igmp_add_csap_layer(asn_value **csap_spec)
 {
     asn_value  *layer = NULL;
 
-    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_igmp_csap, "#igmp",
-                                     &layer));
-
-    CHECK_RC(asn_write_int32(layer, TAPI_IGMP_VERSION_2,
-                             "version.#plain"));
-
-    return 0;
+    return tapi_tad_csap_add_layer(csap_spec, ndn_igmp_csap,
+                                   "#igmp", &layer);
 }
 
-
-/* See the description in tapi_igmp2.h */
+/* See the description in tapi_igmp.h */
 te_errno
-tapi_igmp2_add_pdu(asn_value          **tmpl_or_ptrn,
-                   asn_value          **pdu,
-                   te_bool              is_pattern,
-                   tapi_igmp_msg_type   type,
-                   int                  max_resp_time,
-                   in_addr_t            group_addr)
-{
-    asn_value  *tmp_pdu;
-
-    if (type > 0xff || max_resp_time > 0xff)
-        return TE_RC(TE_TAPI, TE_EINVAL);
-
-    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
-                                          ndn_igmp_message, "#igmp",
-                                          &tmp_pdu));
-
-    if (type > 0)
-        CHECK_RC(asn_write_int32(tmp_pdu, type, "type.#plain"));
-    if (max_resp_time >= 0)
-        CHECK_RC(asn_write_int32(tmp_pdu, max_resp_time,
-                                 "max-resp-time.#plain"));
-
-    ERROR("Fill Group Address: 0x%08x", (uint32_t)group_addr);
-    if (group_addr != htonl(INADDR_ANY))
-        CHECK_RC(asn_write_value_field(tmp_pdu,
-                                       &group_addr, sizeof(group_addr),
-                                       "group-address.#plain"));
-
-    if (pdu != NULL)
-        *pdu = tmp_pdu;
-
-    return 0;
-}
-
-/* See the description in tapi_igmp2.h */
-te_errno
-tapi_igmp2_ip4_eth_csap_create(const char    *ta_name,
-                               int            sid,
-                               const char    *eth_dev,
-                               unsigned int   receive_mode,
-                               const uint8_t *eth_src,
-                               in_addr_t      src_addr,
-                               csap_handle_t *igmp_csap)
+tapi_igmp_ip4_eth_csap_create(const char    *ta_name,
+                              int            sid,
+                              const char    *eth_dev,
+                              unsigned int   receive_mode,
+                              const uint8_t *eth_src,
+                              in_addr_t      src_addr,
+                              csap_handle_t *igmp_csap)
 {
     te_errno    rc;
     asn_value  *csap_spec = NULL;
 
     do {
-        if ((rc = tapi_igmp2_add_csap_layer(&csap_spec)) != 0)
+        if ((rc = tapi_igmp_add_csap_layer(&csap_spec)) != 0)
         {
             WARN("%s(): add IGMPv2 csap layer failed %r", __FUNCTION__, rc);
             break;
@@ -145,11 +103,48 @@ tapi_igmp2_ip4_eth_csap_create(const char    *ta_name,
     return TE_RC(TE_TAPI, rc);
 }
 
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp2_add_pdu(asn_value          **tmpl_or_ptrn,
+                   asn_value          **pdu,
+                   te_bool              is_pattern,
+                   tapi_igmp_msg_type   type,
+                   int                  max_resp_time,
+                   in_addr_t            group_addr)
+{
+    asn_value  *tmp_pdu;
+
+    if (type > 0xff || max_resp_time > 0xff)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
+                                          ndn_igmp_message, "#igmp",
+                                          &tmp_pdu));
+
+    if (type > 0)
+        CHECK_RC(asn_write_int32(tmp_pdu, type, "type.#plain"));
+    if (max_resp_time >= 0)
+        CHECK_RC(asn_write_int32(tmp_pdu, max_resp_time,
+                                 "max-resp-time.#plain"));
+
+    INFO("Fill Group Address: 0x%08x", (uint32_t)group_addr);
+    if (group_addr != htonl(INADDR_ANY))
+        CHECK_RC(asn_write_value_field(tmp_pdu,
+                                       &group_addr, sizeof(group_addr),
+                                       "group-address.#plain"));
+
+    if (pdu != NULL)
+        *pdu = tmp_pdu;
+
+    return 0;
+}
+
 /* See header */
 void
 tapi_ip4_to_mac(in_addr_t ip4_addr, uint8_t *eth_addr)
 {
-    uint8_t *ip_addr_p = &ip4_addr;
+    uint8_t *ip_addr_p = (uint8_t *)&ip4_addr;
 
     /* Map IP address into MAC one */
     eth_addr[0] = 0x01;
@@ -160,66 +155,680 @@ tapi_ip4_to_mac(in_addr_t ip4_addr, uint8_t *eth_addr)
     eth_addr[5] = ip_addr_p[3];
 }
 
-/* See the description in tapi_igmp2.h */
+/* See the description in tapi_igmp.h */
 te_errno
-tapi_igmp2_ip4_eth_add_pdu(asn_value             **tmpl_or_ptrn,
-                           asn_value             **pdu,
-                           te_bool                 is_pattern,
-                           tapi_igmp_msg_type      type,
-                           tapi_igmp_query_type    query_type,
-                           int                     max_resp_time,
-                           in_addr_t               group_addr,
-                           in_addr_t               src_addr,
-                           uint8_t                *eth_src)
+tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
+                          asn_value **pdu,
+                          te_bool     is_pattern,
+                          in_addr_t   dst_addr,
+                          in_addr_t   src_addr,
+                          uint8_t    *eth_src)
 {
     te_errno       rc     = 0;
     const uint16_t ip_eth = ETHERTYPE_IP;
-    in_addr_t      dst_addr = htonl(INADDR_ANY);
     uint8_t        eth_dst[ETHER_ADDR_LEN];
 
-    /* Add IGMPv2 layer message to PDU template/pattern */
-    CHECK_RC(tapi_igmp2_add_pdu(tmpl_or_ptrn, pdu, is_pattern,
-                                type, max_resp_time, group_addr));
-
-    switch (type)
-    {
-        case TAPI_IGMP_TYPE_QUERY:
-            dst_addr = (query_type == TAPI_IGMP_QUERY_TYPE_GROUP) ?
-                group_addr : htonl(TAPI_MCAST_ADDR_ALL_HOSTS);
-            break;
-
-        case TAPI_IGMP_TYPE_REPORT_V1:
-        case TAPI_IGMP_TYPE_REPORT:
-            dst_addr = group_addr;
-            break;
-
-        case TAPI_IGMP_TYPE_LEAVE:
-            dst_addr = htonl(TAPI_MCAST_ADDR_ALL_ROUTERS);
-            break;
-
-        default:
-            dst_addr = htonl(INADDR_ANY);
-            break;
-    }
+    if (dst_addr == htonl(INADDR_ANY))
+        dst_addr = TAPI_MCAST_ADDR_ALL_HOSTS;
 
     /* Add IPv4 layer header to PDU template/pattern */
-    CHECK_RC(tapi_ip4_add_pdu(tmpl_or_ptrn, pdu, is_pattern,
-                              src_addr, dst_addr,
-                              IPPROTO_IGMP,
-                              TAPI_IGMP2_IP4_TTL_DEFAULT,
-                              -1 /* default ToS */ ));
+    rc = tapi_ip4_add_pdu(tmpl_or_ptrn, pdu, is_pattern,
+                          src_addr, dst_addr,
+                          IPPROTO_IGMP,
+                          TAPI_IGMP_IP4_TTL_DEFAULT,
+                          -1 /* default ToS */ );
+    if (rc != 0)
+        return rc;
 
     /* Calculate MAC multicast address also */
     if (dst_addr != htonl(INADDR_ANY))
         tapi_ip4_to_mac(dst_addr, eth_dst);
 
     /* Add Ethernet layer header to PDU template/pattern */
-    CHECK_RC(tapi_eth_add_pdu(tmpl_or_ptrn, pdu, is_pattern,
-                              (dst_addr == htonl(INADDR_ANY)) ? NULL : eth_dst,
-                              eth_src,
-                              &ip_eth,
-                              TE_BOOL3_ANY,
-                              TE_BOOL3_ANY));
+    rc = tapi_eth_add_pdu(tmpl_or_ptrn, pdu, is_pattern,
+                          (dst_addr == htonl(INADDR_ANY)) ? NULL : eth_dst,
+                          eth_src,
+                          &ip_eth,
+                          TE_BOOL3_ANY,
+                          TE_BOOL3_ANY);
+    if (rc != 0)
+        return rc;
 
     return rc;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp1_ip4_eth_send_report(const char    *ta_name,
+                               int            session,
+                               csap_handle_t  csap,
+                               in_addr_t      group_addr,
+                               in_addr_t      src_addr,
+                               uint8_t       *eth_src)
+{
+    te_errno   rc       = 0;
+    asn_value *pkt_tmpl = NULL;
+
+    /* Add IGMPv2 layer message to PDU template/pattern */
+    rc = tapi_igmp2_add_pdu(&pkt_tmpl, NULL, FALSE,
+                            TAPI_IGMP1_TYPE_REPORT, 0, group_addr);
+    if (rc != 0)
+        return rc;
+
+    /* Add IPv4 layer header to PDU template/pattern */
+    rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
+                                   group_addr, src_addr, eth_src);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_tad_trsend_start(ta_name, session, csap,
+                               pkt_tmpl, RCF_MODE_BLOCKING);
+
+    asn_free_value(pkt_tmpl);
+
+    return rc;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp2_ip4_eth_send_report(const char    *ta_name,
+                               int            session,
+                               csap_handle_t  csap,
+                               in_addr_t      group_addr,
+                               in_addr_t      src_addr,
+                               uint8_t       *eth_src)
+{
+    te_errno   rc       = 0;
+    asn_value *pkt_tmpl = NULL;
+
+    /* Add IGMPv2 layer message to PDU template/pattern */
+    rc = tapi_igmp2_add_pdu(&pkt_tmpl, NULL, FALSE,
+                            TAPI_IGMP2_TYPE_REPORT, 0, group_addr);
+    if (rc != 0)
+        return rc;
+
+    /* Add IPv4 layer header to PDU template/pattern */
+    rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
+                                   group_addr, src_addr, eth_src);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_tad_trsend_start(ta_name, session, csap,
+                               pkt_tmpl, RCF_MODE_BLOCKING);
+
+    asn_free_value(pkt_tmpl);
+
+    return rc;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp2_ip4_eth_send_leave(const char    *ta_name,
+                              int            session,
+                              csap_handle_t  csap,
+                              in_addr_t      group_addr,
+                              in_addr_t      src_addr,
+                              uint8_t       *eth_src)
+{
+    te_errno   rc       = 0;
+    asn_value *pkt_tmpl = NULL;
+
+    /* Add IGMPv2 layer message to PDU template/pattern */
+    rc = tapi_igmp2_add_pdu(&pkt_tmpl, NULL, FALSE,
+                            TAPI_IGMP2_TYPE_LEAVE, 0, group_addr);
+    if (rc != 0)
+        return rc;
+
+    /* Add IPv4 layer header to PDU template/pattern */
+    rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
+                                   TAPI_MCAST_ADDR_ALL_ROUTERS,
+                                   src_addr, eth_src);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_tad_trsend_start(ta_name, session, csap,
+                               pkt_tmpl, RCF_MODE_BLOCKING);
+
+    asn_free_value(pkt_tmpl);
+
+    return rc;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
+                              int            session,
+                              csap_handle_t  csap,
+                              in_addr_t      group_addr,
+                              in_addr_t      src_addr,
+                              uint8_t       *eth_src)
+{
+    te_errno   rc       = 0;
+    asn_value *pkt_tmpl = NULL;
+
+    /* Add IGMPv2 layer message to PDU template/pattern */
+    rc = tapi_igmp2_add_pdu(&pkt_tmpl, NULL, FALSE,
+                            TAPI_IGMP_TYPE_QUERY, 0, group_addr);
+    if (rc != 0)
+        return rc;
+
+    /* Add IPv4 layer header to PDU template/pattern */
+    rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
+                                   TAPI_MCAST_ADDR_ALL_HOSTS,
+                                   src_addr, eth_src);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_tad_trsend_start(ta_name, session, csap,
+                               pkt_tmpl, RCF_MODE_BLOCKING);
+
+    asn_free_value(pkt_tmpl);
+
+    return rc;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp2_ip4_eth_send_group_query(const char    *ta_name,
+                                    int            session,
+                                    csap_handle_t  csap,
+                                    in_addr_t      group_addr,
+                                    in_addr_t      src_addr,
+                                    uint8_t       *eth_src)
+{
+    te_errno   rc       = 0;
+    asn_value *pkt_tmpl = NULL;
+
+    /* Add IGMPv2 layer message to PDU template/pattern */
+    rc = tapi_igmp2_add_pdu(&pkt_tmpl, NULL, FALSE,
+                            TAPI_IGMP_TYPE_QUERY, 0, group_addr);
+    if (rc != 0)
+        return rc;
+
+    /* Add IPv4 layer header to PDU template/pattern */
+    rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
+                                   group_addr, src_addr, eth_src);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_tad_trsend_start(ta_name, session, csap,
+                               pkt_tmpl, RCF_MODE_BLOCKING);
+
+    asn_free_value(pkt_tmpl);
+
+    return rc;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
+                          asn_value               **pdu,
+                          te_bool                   is_pattern,
+                          tapi_igmp3_group_list_t  *group_list)
+{
+    asn_value *tmp_pdu;
+    int        type = TAPI_IGMP3_TYPE_REPORT;
+    uint8_t   *data;
+    int        data_len;
+    int        offset = 0;
+
+    assert(group_list != NULL);
+
+    data_len = tapi_igmp3_group_list_length(group_list);
+    if ((data = (uint8_t *)calloc(data_len, 1)) == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    CHECK_RC(tapi_igmp3_group_list_gen_bin(group_list, data,
+                                           data_len, &offset));
+
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
+                                          ndn_igmp_message, "#igmp",
+                                          &tmp_pdu));
+
+    CHECK_RC(asn_write_int32(tmp_pdu, type, "type.#plain"));
+
+    CHECK_RC(asn_write_int32(tmp_pdu, group_list->groups_no,
+                             "number-of-groups.#plain"));
+
+    CHECK_RC(asn_write_value_field(tmp_pdu, data, data_len,
+                                   "group-record-list.#plain"));
+
+    if (pdu != NULL)
+        *pdu = tmp_pdu;
+
+    free(data);
+
+    return 0;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_ip4_eth_send_report(const char      *ta_name,
+                               int              session,
+                               csap_handle_t    csap,
+                               tapi_igmp3_group_list_t  *group_list,
+                               in_addr_t        src_addr,
+                               uint8_t         *eth_src)
+{
+    te_errno       rc = 0;
+    asn_value     *pkt_tmpl = NULL;
+
+    rc = tapi_igmp3_add_report_pdu(&pkt_tmpl, NULL, FALSE, group_list);
+    if (rc != 0)
+        return rc;
+
+    /* Add IPv4 layer header to PDU template/pattern */
+    rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
+                                   TAPI_MCAST_ADDR_ALL_MCR,
+                                   src_addr, eth_src);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_tad_trsend_start(ta_name, session, csap,
+                               pkt_tmpl, RCF_MODE_BLOCKING);
+
+    asn_free_value(pkt_tmpl);
+
+    return rc;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
+                         asn_value               **pdu,
+                         te_bool                   is_pattern,
+                         int                       max_resp_code,
+                         in_addr_t                 group_addr,
+                         int                       s_flag,
+                         int                       qrv,
+                         int                       qqic,
+                         tapi_igmp3_src_list_t    *src_list)
+{
+    asn_value *tmp_pdu;
+    int        type = IGMP_HOST_MEMBERSHIP_QUERY;
+    uint8_t   *data;
+    int        data_len;
+    int        offset = 0;
+
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
+                                          ndn_igmp_message, "#igmp",
+                                          &tmp_pdu));
+
+    CHECK_RC(asn_write_int32(tmp_pdu, type, "type.#plain"));
+
+    if (max_resp_code >= 0)
+        CHECK_RC(asn_write_int32(tmp_pdu, max_resp_code,
+                                 "max-resp-time.#plain"));
+
+    if (group_addr != htonl(INADDR_ANY))
+        CHECK_RC(asn_write_value_field(tmp_pdu,
+                                       &group_addr, sizeof(group_addr),
+                                       "group-address.#plain"));
+
+    CHECK_RC(asn_write_int32(tmp_pdu, s_flag, "s_flag.#plain"));
+    CHECK_RC(asn_write_int32(tmp_pdu, qrv, "qrv.#plain"));
+    CHECK_RC(asn_write_int32(tmp_pdu, qqic, "qqic.#plain"));
+
+    if (src_list != NULL)
+    {
+        CHECK_RC(asn_write_int32(tmp_pdu, src_list->src_no,
+                             "number-of-sources.#plain"));
+
+        data_len = tapi_igmp3_src_list_length(src_list);
+        if ((data = (uint8_t *)calloc(data_len, 1)) == NULL)
+            return TE_RC(TE_TAPI, TE_ENOMEM);
+        CHECK_RC(tapi_igmp3_src_list_gen_bin(src_list, data, data_len, &offset));
+        CHECK_RC(asn_write_value_field(tmp_pdu, data, data_len,
+                                       "source-address-list.#plain"));
+    }
+    else
+    {
+        CHECK_RC(asn_write_int32(tmp_pdu, 0,
+                             "number-of-sources.#plain"));
+        CHECK_RC(asn_write_value_field(tmp_pdu, NULL, 0,
+                                       "source-address-list.#plain"));
+    }
+
+    if (pdu != NULL)
+        *pdu = tmp_pdu;
+
+    return 0;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
+                              int                    session,
+                              csap_handle_t          csap,
+                              int                    max_resp_code,
+                              in_addr_t              group_addr,
+                              int                    s_flag,
+                              int                    qrv,
+                              int                    qqic,
+                              tapi_igmp3_src_list_t *src_list,
+                              in_addr_t              src_addr,
+                              uint8_t               *eth_src)
+{
+    te_errno       rc = 0;
+    asn_value     *pkt_tmpl = NULL;
+
+    rc = tapi_igmp3_add_query_pdu(&pkt_tmpl, NULL, FALSE,
+                                  max_resp_code, group_addr, s_flag,
+                                  qrv, qqic, src_list);
+    if (rc != 0)
+        return rc;
+
+    /* Add IPv4 layer header to PDU template/pattern */
+    rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
+                                   TAPI_MCAST_ADDR_ALL_MCR,
+                                   src_addr, eth_src);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_tad_trsend_start(ta_name, session, csap,
+                               pkt_tmpl, RCF_MODE_BLOCKING);
+
+    asn_free_value(pkt_tmpl);
+
+    return rc;
+}
+
+
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_src_list_init(tapi_igmp3_src_list_t *src_list)
+{
+    if (src_list == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    src_list->src_no = 0;
+    src_list->src_no_max = TAPI_IGMP3_SRC_LIST_SIZE_MIN;
+    src_list->src_addr = (in_addr_t *)calloc(sizeof(in_addr_t) *
+                                             src_list->src_no_max, 1);
+    if (src_list->src_addr == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    return 0;
+}
+
+/* See the description in tapi_igmp.h */
+void
+tapi_igmp3_src_list_free(tapi_igmp3_src_list_t *src_list)
+{
+    if (src_list == NULL)
+        return;
+    if ((src_list->src_no_max > 0) && (src_list->src_addr != NULL))
+    {
+        free(src_list->src_addr);
+        src_list->src_addr = NULL;
+        src_list->src_no_max = 0;
+        src_list->src_no = 0;
+    }
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_src_list_add(tapi_igmp3_src_list_t *src_list, in_addr_t addr)
+{
+    in_addr_t *tmp_list;
+    int        tmp_size;
+
+    if ((src_list == NULL) || (src_list->src_no_max <= 0))
+    {
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (src_list->src_no >= src_list->src_no_max)
+    {
+        tmp_size = src_list->src_no_max * 2;
+        tmp_list = (in_addr_t *)realloc(src_list->src_addr,
+                                        sizeof(in_addr_t *) * tmp_size);
+        if (tmp_list == NULL)
+            return TE_RC(TE_TAPI, TE_ENOMEM);
+        src_list->src_addr = tmp_list;
+        src_list->src_no_max = tmp_size;
+    }
+
+    src_list->src_addr[src_list->src_no++] = addr;
+
+    return 0;
+}
+
+/* See the description in tapi_igmp.h */
+int
+tapi_igmp3_src_list_length(tapi_igmp3_src_list_t *src_list)
+{
+    assert(src_list != NULL);
+    return src_list->src_no * sizeof(in_addr_t);
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_src_list_gen_bin(tapi_igmp3_src_list_t *src_list,
+                                void *buf, int buf_size, int *offset)
+{
+    uint8_t *p = (uint8_t *)buf + *offset;
+    int len = tapi_igmp3_src_list_length(src_list);
+
+    if (buf_size - *offset < len)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    memcpy(p, src_list->src_addr, len);
+    *offset += len;
+
+    return 0;
+}
+
+/* See the description in tapi_igmp.h */
+int
+tapi_igmp3_group_record_length(tapi_igmp3_group_record_t *group_record)
+{
+    assert(group_record != NULL);
+    return TAPI_IGMP3_GROUP_RECORD_HDR_LEN +
+           tapi_igmp3_src_list_length(&group_record->src_list) +
+           group_record->aux_data_len * sizeof(uint32_t);
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_group_record_gen_bin(tapi_igmp3_group_record_t *group_record,
+                               void *buf, int buf_size, int *offset)
+{
+    uint16_t  tmp_src_no;
+    uint8_t  *p;
+    int       aux_len;
+    te_errno  rc;
+
+    assert(group_record != NULL);
+    assert(buf != NULL);
+    assert(offset != NULL);
+
+    p = (uint8_t *)buf + *offset;
+    if (buf_size - *offset < tapi_igmp3_group_record_length(group_record))
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    /* Fill Record Type field */
+    *p++ = (uint8_t)group_record->record_type;
+
+    /* Fill Aux Data Len field */
+    *p++ = (uint8_t)group_record->aux_data_len;
+
+    /* Fill Number of Sources field */
+    tmp_src_no = htons(group_record->src_list.src_no);
+    memcpy(p, &tmp_src_no, sizeof(uint16_t));
+    p += sizeof(uint16_t);
+
+    *offset += sizeof(uint32_t);
+
+    /* Fill Group Multicast Address field */
+    memcpy(p, &group_record->group_address, sizeof(in_addr_t));
+    *offset += sizeof(in_addr_t);
+
+    if ((rc = tapi_igmp3_src_list_gen_bin(&group_record->src_list,
+                                          buf, buf_size, offset)) != 0)
+    {
+        return rc;
+    }
+
+    /* Fill Auxiliary Data */
+    aux_len = group_record->aux_data_len * sizeof(uint32_t);
+    if (buf_size - *offset < aux_len)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    memcpy(buf + *offset, group_record->aux_data, aux_len);
+    *offset += aux_len;
+
+    return 0;
+}
+
+/* See the description in tapi_igmp.h */
+int
+tapi_igmp3_group_list_length(tapi_igmp3_group_list_t *group_list)
+{
+    int len = 0;
+    int grp_no;
+
+    for (grp_no = 0; grp_no < group_list->groups_no; grp_no++)
+    {
+        len += tapi_igmp3_group_record_length(group_list->groups[grp_no]);
+    }
+    return len;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_group_list_gen_bin(tapi_igmp3_group_list_t *group_list,
+                             void *buf, int buf_size, int *offset)
+{
+    te_errno rc;
+    int      grp_no;
+    int      len;
+
+    assert(group_list != NULL);
+    assert(buf != NULL);
+    assert(offset != NULL);
+
+    len = tapi_igmp3_group_list_length(group_list);
+    if (buf_size - *offset < len)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    for (grp_no = 0; grp_no < group_list->groups_no; grp_no++)
+    {
+        if ((rc = tapi_igmp3_group_record_gen_bin(group_list->groups[grp_no],
+                                                  buf, buf_size,
+                                                  offset)) != 0)
+        {
+            ERROR("Failed to pack group records to binary format");
+            return rc;
+        }
+    }
+
+    return 0;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_group_record_init(tapi_igmp3_group_record_t *group_record,
+                             int group_type, in_addr_t group_address,
+                             void *aux_data, int aux_data_len)
+{
+    if ((group_record == NULL) ||
+        ((aux_data_len > 0) && (aux_data == NULL)))
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    group_record->record_type   = group_type;
+    group_record->group_address = group_address;
+    group_record->aux_data = aux_data;
+    group_record->aux_data_len = aux_data_len;
+
+    return tapi_igmp3_src_list_init(&group_record->src_list);
+}
+
+/* See the description in tapi_igmp.h */
+void
+tapi_igmp3_group_record_free(tapi_igmp3_group_record_t *group_record)
+{
+    if (group_record == NULL)
+        return;
+
+    if ((group_record->aux_data_len > 0) && (group_record->aux_data != NULL))
+        free(group_record->aux_data);
+
+    tapi_igmp3_src_list_free(&group_record->src_list);
+
+    memset(group_record, 0, sizeof(tapi_igmp3_group_record_t));
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_group_record_add_source(tapi_igmp3_group_record_t *group_record,
+                                  in_addr_t src_addr)
+{
+    if (group_record == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return tapi_igmp3_src_list_add(&group_record->src_list, src_addr);
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_group_list_init(tapi_igmp3_group_list_t *group_list)
+{
+    if (group_list == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    group_list->groups_no = 0;
+    group_list->groups_no_max = TAPI_IGMP3_GROUP_LIST_SIZE_MIN;
+    group_list->groups =
+        calloc(sizeof(tapi_igmp3_group_record_t *) *
+               group_list->groups_no_max, 1);
+    if (group_list->groups == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    return 0;
+}
+
+/* See the description in tapi_igmp.h */
+void
+tapi_igmp3_group_list_free(tapi_igmp3_group_list_t *group_list)
+{
+    if (group_list == NULL)
+        return;
+    if ((group_list->groups_no_max > 0) && (group_list->groups != NULL))
+    {
+        free(group_list->groups);
+        group_list->groups = NULL;
+        group_list->groups_no_max = 0;
+        group_list->groups_no = 0;
+    }
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
+                          tapi_igmp3_group_record_t *group_record)
+{
+    tapi_igmp3_group_record_t **tmp_list;
+    int                         tmp_size;
+
+    if ((group_list == NULL) ||
+        (group_list->groups == NULL) ||
+        (group_list->groups_no_max <= 0))
+    {
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (group_list->groups_no >= group_list->groups_no_max)
+    {
+        tmp_size = group_list->groups_no_max * 2;
+        tmp_list = realloc(group_list->groups,
+                           tmp_size * sizeof(tapi_igmp3_group_record_t *));
+        if (tmp_list == NULL)
+            return TE_RC(TE_TAPI, TE_ENOMEM);
+        group_list->groups = tmp_list;
+        group_list->groups_no_max = tmp_size;
+    }
+
+    group_list->groups[group_list->groups_no++] = group_record;
+
+    return 0;
 }

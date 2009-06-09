@@ -39,7 +39,8 @@
 
 
 static asn_named_entry_t _ndn_igmp_message_ne_array [] = {
-    { "type",          &ndn_data_unit_int8_s,
+    /* Common for IGMP fields */
+    { "type", &ndn_data_unit_int8_s,
         { PRIVATE, NDN_TAG_IGMP_TYPE }},
     { "max-resp-time", &ndn_data_unit_int8_s ,
         { PRIVATE, NDN_TAG_IGMP_MAX_RESPONSE_TIME }},
@@ -47,6 +48,24 @@ static asn_named_entry_t _ndn_igmp_message_ne_array [] = {
         { PRIVATE, NDN_TAG_IGMP_CHECKSUM }},
     { "group-address", &ndn_data_unit_ip_address_s,
         { PRIVATE, NDN_TAG_IGMP_GROUP_ADDRESS }},
+
+    /* IGMPv3 Query specific fields */
+    { "s-flag", &ndn_data_unit_int8_s,
+        { PRIVATE, NDN_TAG_IGMP3_S_FLAG }},
+    { "qrv", &ndn_data_unit_int8_s,
+        { PRIVATE, NDN_TAG_IGMP3_QRV }},
+    { "qqic", &ndn_data_unit_int8_s,
+        { PRIVATE, NDN_TAG_IGMP3_QQIC }},
+    { "number-of-sources", &ndn_data_unit_int16_s,
+        { PRIVATE, NDN_TAG_IGMP3_NUMBER_OF_SOURCES }},
+    { "source-address-list", &ndn_data_unit_octet_string_s,
+        { PRIVATE, NDN_TAG_IGMP3_SOURCE_ADDRESS_LIST }},
+
+    /* IGMPv3 Report specific fields */
+    { "number-of-groups", &ndn_data_unit_int16_s,
+        { PRIVATE, NDN_TAG_IGMP3_NUMBER_OF_GROUPS }},
+    { "group-record-list", &ndn_data_unit_octet_string_s,
+        { PRIVATE, NDN_TAG_IGMP3_GROUP_RECORD_LIST }},
 };
 
 asn_type ndn_igmp_message_s = {

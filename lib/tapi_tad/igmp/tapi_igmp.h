@@ -1,5 +1,5 @@
 /** @file
- * @brief Test API for TAD. IGMPv2 CSAP
+ * @brief Test API for TAD. IGMP CSAP
  *
  * Implementation of Test API
  *
@@ -37,6 +37,10 @@
 #include <netinet/in.h>
 #endif
 
+#if 1 /* HAVE_LINUX_IGMP_H */
+#include <linux/igmp.h>
+#endif
+
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "tad_common.h"
@@ -64,14 +68,23 @@ typedef enum {
 /**
  * IGMP message types definition
  */
-typedef enum {
-    TAPI_IGMP_TYPE_UNUSED    = 0,    /**< Uninitialised value */
-    TAPI_IGMP_TYPE_QUERY     = 0x11, /**< General/Group Query message*/
-    TAPI_IGMP_TYPE_REPORT_V1 = 0x12, /**< IGMPv1 Membership report*/
-    TAPI_IGMP_TYPE_REPORT    = 0x16, /**< IGMPv2 Membership report */
-    TAPI_IGMP_TYPE_LEAVE     = 0x17, /**< Group Leave message */
-    TAPI_IGMP_TYPE_,
-} tapi_igmp_msg_type;
+/** General/Group Query message*/
+#define TAPI_IGMP_TYPE_QUERY IGMP_HOST_MEMBERSHIP_QUERY
+
+/** IGMPv1 Membership report*/
+#define TAPI_IGMP1_TYPE_REPORT IGMP_HOST_MEMBERSHIP_REPORT
+
+/** IGMPv2 Membership report */
+#define TAPI_IGMP2_TYPE_REPORT IGMPV2_HOST_MEMBERSHIP_REPORT
+
+/**< Group Leave message */
+#define TAPI_IGMP2_TYPE_LEAVE IGMP_HOST_LEAVE_MESSAGE
+
+/** IGMPv3 Membership report */
+#define TAPI_IGMP3_TYPE_REPORT IGMPV3_HOST_MEMBERSHIP_REPORT
+
+typedef int tapi_igmp_msg_type;
+
 
 typedef enum {
     TAPI_IGMP_QUERY_TYPE_UNUSED,
@@ -80,23 +93,72 @@ typedef enum {
 } tapi_igmp_query_type;
 
 /** IPv4 Multicast Address of All-Hosts group: 224.0.0.1 */
-#define TAPI_MCAST_ADDR_ALL_HOSTS    0xe0000001
+#define TAPI_MCAST_ADDR_ALL_HOSTS    IGMP_ALL_HOSTS
 
 /** IPv4 Multicast Address of All-Routers group: 224.0.0.2 */
-#define TAPI_MCAST_ADDR_ALL_ROUTERS  0xe0000002
+#define TAPI_MCAST_ADDR_ALL_ROUTERS  IGMP_ALL_ROUTER
 
-/** Default TTL for IGMPv2 messages is 1 */
-#define TAPI_IGMP2_IP4_TTL_DEFAULT 1
+/** IPv4 Multicast Address of All-Multicast-Routers IGMPv3 group: 224.0.0.22 */
+#define TAPI_MCAST_ADDR_ALL_MCR      IGMPV3_ALL_MCR
+
+/** Default TTL for IGMP messages is 1 */
+#define TAPI_IGMP_IP4_TTL_DEFAULT 1
+
+/** Pre-allocated size for source addresses list */
+#define TAPI_IGMP_SRC_LIST_SIZE_MIN             16
+
+/** Pre-allocated size for group records list */
+#define TAPI_IGMP_GROUP_RECORD_LIST_SIZE_MIN    16
+
+#define TAPI_IGMP3_GROUP_RECORD_HDR_LEN     8
+
+#define TAPI_IGMP3_SRC_LIST_SIZE_MIN    16
+#define TAPI_IGMP3_GROUP_RECORD_HDR_LEN 8
+#define TAPI_IGMP3_GROUP_LIST_SIZE_MIN  16
+
+/**
+ * IGMPv3 Source Address List (simple array) storage
+ */
+typedef struct tapi_igmp3_src_list_s {
+    in_addr_t  *src_addr;    /**< Array of source addresses */
+    int         src_no;      /**< Number of sources */
+    int         src_no_max;  /**< Maximum number of sources pre-allocated */
+} tapi_igmp3_src_list_t;
+
+/**
+ * IGMPv3 Group Record structure
+ */
+typedef struct tapi_igmp3_group_record_s {
+    int                     record_type;   /**< Record type of Group Record */
+    in_addr_t               group_address; /**< Multicast Address which this
+                                                Group Record relays to */
+    int                     aux_data_len;  /**< Length of auxiliary data in
+                                                32-bit words */
+    void                   *aux_data;      /**< Pointer to auxiliaty data
+                                                buffer */
+    tapi_igmp3_src_list_t   src_list;      /**< Source Address list storage */
+} tapi_igmp3_group_record_t;
+
+/**
+ * IGMPv3 Group Records List storage
+ */
+typedef struct tapi_igmp3_group_list_s {
+    tapi_igmp3_group_record_t **groups;        /**< Array of Group Records */
+    int                         groups_no;     /**< Number of Group Records */
+    int                         groups_no_max; /**< Size of pre-allocated
+                                                    Group Records array */
+} tapi_igmp3_group_list_t;
+
 
 
 /**
- * Add IGMPv2 layer in CSAP specification.
+ * Add IGMP layer in CSAP specification.
  *
  * @param csap_spec     Location of CSAP specification pointer.
  *
  * @retval Status code.
  */
-extern te_errno tapi_igmp2_add_csap_layer(asn_value **csap_spec);
+extern te_errno tapi_igmp_add_csap_layer(asn_value **csap_spec);
 
 /**
  * Add IGMPv2 PDU as the last PDU to the last unit of the traffic 
@@ -137,13 +199,13 @@ extern te_errno tapi_igmp2_add_pdu(asn_value          **tmpl_or_ptrn,
  *
  * @return Zero on success or error code
  */
-extern te_errno tapi_igmp2_ip4_eth_csap_create(const char    *ta_name,
-                                               int            sid,
-                                               const char    *eth_dev,
-                                               unsigned int   receive_mode,
-                                               const uint8_t *eth_src,
-                                               in_addr_t      src_addr,
-                                               csap_handle_t *igmp_csap);
+extern te_errno tapi_igmp_ip4_eth_csap_create(const char    *ta_name,
+                                              int            sid,
+                                              const char    *eth_dev,
+                                              unsigned int   receive_mode,
+                                              const uint8_t *eth_src,
+                                              in_addr_t      src_addr,
+                                              csap_handle_t *igmp_csap);
 
 /**
  * Compose IGMPv2.IPv4.Eth PDU as the last PDU to the last unit
@@ -169,6 +231,7 @@ extern te_errno tapi_igmp2_ip4_eth_csap_create(const char    *ta_name,
  *
  * @return              Status code.
  */
+#if 0
 extern te_errno
 tapi_igmp2_ip4_eth_add_pdu(asn_value                  **tmpl_or_ptrn,
                            asn_value                  **pdu,
@@ -179,6 +242,190 @@ tapi_igmp2_ip4_eth_add_pdu(asn_value                  **tmpl_or_ptrn,
                            in_addr_t                    group_addr,
                            in_addr_t                    src_addr,
                            uint8_t                     *eth_src);
+
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
+                          asn_value               **pdu,
+                          te_bool                   is_pattern,
+                          tapi_igmp3_group_list_t  *group_list);
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp3_ip4_eth_send_report(const char      *ta_name,
+                               int              session,
+                               csap_handle_t    csap,
+                               tapi_igmp3_group_list_t  *group_list,
+                               in_addr_t        src_addr,
+                               uint8_t         *eth_src);
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
+                         asn_value               **pdu,
+                         te_bool                   is_pattern,
+                         int                       max_resp_code,
+                         in_addr_t                 group_addr,
+                         int                       s_flag,
+                         int                       qrv,
+                         int                       qqic,
+                         tapi_igmp3_src_list_t    *src_list);
+
+
+#endif
+
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
+                          asn_value **pdu,
+                          te_bool     is_pattern,
+                          in_addr_t   dst_addr,
+                          in_addr_t   src_addr,
+                          uint8_t    *eth_src);
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp1_ip4_eth_send_report(const char    *ta_name,
+                               int            session,
+                               csap_handle_t  csap,
+                               in_addr_t      group_addr,
+                               in_addr_t      src_addr,
+                               uint8_t       *eth_src);
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp2_ip4_eth_send_report(const char    *ta_name,
+                               int            session,
+                               csap_handle_t  csap,
+                               in_addr_t      group_addr,
+                               in_addr_t      src_addr,
+                               uint8_t       *eth_src);
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp2_ip4_eth_send_leave(const char    *ta_name,
+                              int            session,
+                              csap_handle_t  csap,
+                              in_addr_t      group_addr,
+                              in_addr_t      src_addr,
+                              uint8_t       *eth_src);
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
+                              int            session,
+                              csap_handle_t  csap,
+                              in_addr_t      group_addr,
+                              in_addr_t      src_addr,
+                              uint8_t       *eth_src);
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp2_ip4_eth_send_group_query(const char    *ta_name,
+                                    int            session,
+                                    csap_handle_t  csap,
+                                    in_addr_t      group_addr,
+                                    in_addr_t      src_addr,
+                                    uint8_t       *eth_src);
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
+                          asn_value               **pdu,
+                          te_bool                   is_pattern,
+                          tapi_igmp3_group_list_t  *group_list);
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp3_ip4_eth_send_report(const char      *ta_name,
+                               int              session,
+                               csap_handle_t    csap,
+                               tapi_igmp3_group_list_t  *group_list,
+                               in_addr_t        src_addr,
+                               uint8_t         *eth_src);
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
+                         asn_value               **pdu,
+                         te_bool                   is_pattern,
+                         int                       max_resp_code,
+                         in_addr_t                 group_addr,
+                         int                       s_flag,
+                         int                       qrv,
+                         int                       qqic,
+                         tapi_igmp3_src_list_t    *src_list);
+
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
+                              int                    session,
+                              csap_handle_t          csap,
+                              int                    max_resp_code,
+                              in_addr_t              group_addr,
+                              int                    s_flag,
+                              int                    qrv,
+                              int                    qqic,
+                              tapi_igmp3_src_list_t *src_list,
+                              in_addr_t              src_addr,
+                              uint8_t               *eth_src);
+
+
+extern te_errno
+tapi_igmp3_src_list_init(tapi_igmp3_src_list_t *src_list);
+
+extern void
+tapi_igmp3_src_list_free(tapi_igmp3_src_list_t *src_list);
+
+extern te_errno
+tapi_igmp3_src_list_add(tapi_igmp3_src_list_t *src_list, in_addr_t addr);
+
+extern int
+tapi_igmp3_src_list_length(tapi_igmp3_src_list_t *src_list);
+
+extern te_errno
+tapi_igmp3_src_list_gen_bin(tapi_igmp3_src_list_t *src_list,
+                            void *buf, int buf_size, int *offset);
+
+extern int
+tapi_igmp3_group_record_length(tapi_igmp3_group_record_t *group_record);
+
+extern te_errno
+tapi_igmp3_group_record_gen_bin(tapi_igmp3_group_record_t *group_record,
+                                void *buf, int buf_size, int *offset);
+
+extern int
+tapi_igmp3_group_list_length(tapi_igmp3_group_list_t *group_list);
+
+extern te_errno
+tapi_igmp3_group_list_gen_bin(tapi_igmp3_group_list_t *group_list,
+                              void *buf, int buf_size, int *offset);
+
+extern te_errno
+tapi_igmp3_group_record_init(tapi_igmp3_group_record_t *group_record,
+                             int group_type, in_addr_t group_address,
+                             void *aux_data, int aux_data_len);
+
+extern void
+tapi_igmp3_group_record_free(tapi_igmp3_group_record_t *group_record);
+
+extern te_errno
+tapi_igmp3_group_record_add_source(tapi_igmp3_group_record_t *group_record,
+                                   in_addr_t src_addr);
+
+extern te_errno
+tapi_igmp3_group_list_init(tapi_igmp3_group_list_t *group_list);
+
+extern void
+tapi_igmp3_group_list_free(tapi_igmp3_group_list_t *group_list);
+
+
+extern te_errno
+tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
+                          tapi_igmp3_group_record_t *group_record);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

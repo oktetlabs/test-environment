@@ -44,6 +44,8 @@
 #include <netinet/in.h>
 #endif
 
+#include <linux/igmp.h>
+
 #include "te_defs.h"
 #include "te_alloc.h"
 #include "te_stdint.h"
@@ -55,13 +57,16 @@
 
 static unsigned char mac_mcast[] = { 0x01, 0x00, 0x5E, 0x00, 0x00, 0x00 };
 
-#define TE_TAD_IGMP_MAXLEN 8
+#define TE_TAD_IGMP_MAXLEN 1500
 
 /**
  * IGMPv2 layer specific data
  */
 typedef struct tad_igmp_proto_data {
     tad_bps_pkt_frag_def    hdr;
+    tad_bps_pkt_frag_def    group_address;
+    tad_bps_pkt_frag_def    v3_query;
+    tad_bps_pkt_frag_def    v3_report;
 } tad_igmp_proto_data;
 
 /**
@@ -70,24 +75,71 @@ typedef struct tad_igmp_proto_data {
  */
 typedef struct tad_igmp_proto_pdu_data {
     tad_bps_pkt_frag_data   hdr;
+    tad_bps_pkt_frag_data   group_address;
+    tad_bps_pkt_frag_data   v3_query;
+    tad_bps_pkt_frag_data   v3_report;
 } tad_igmp_proto_pdu_data;
 
 
 /**
- * Definition of Internet Group Management Protocol (IGMP) header.
+ * Definition of IGMP header.
  */
 static const tad_bps_pkt_frag tad_igmp_bps_hdr[] =
 {
     { "type", 8, BPS_FLD_NO_DEF(NDN_TAG_IGMP_TYPE),
       TAD_DU_I32, FALSE },
-    { "max-resp-time", 8, BPS_FLD_NO_DEF(NDN_TAG_IGMP_MAX_RESPONSE_TIME),
+    { "max-resp-time", 8,
+      BPS_FLD_CONST_DEF(NDN_TAG_IGMP_MAX_RESPONSE_TIME, 0),
       TAD_DU_I32, FALSE },
     { "checksum", 16, BPS_FLD_CONST_DEF(NDN_TAG_IGMP_CHECKSUM, 0),
       TAD_DU_I32, TRUE },
+};
+
+/**
+ * Definition of IGMP header group address field.
+ */
+static const tad_bps_pkt_frag tad_igmp_bps_group_address[] =
+{
     { "group-address", 32,
       BPS_FLD_CONST_DEF(NDN_TAG_IGMP_GROUP_ADDRESS, 0),
       TAD_DU_OCTS, FALSE },
 };
+
+/**
+ * Definition of IGMPv3 Query specific data.
+ */
+static const tad_bps_pkt_frag tad_igmp_bps_v3_query[] =
+{
+    { "reserved", 4, BPS_FLD_CONST(0),
+      TAD_DU_I32, FALSE },
+    { "s-flag", 1, BPS_FLD_CONST_DEF(NDN_TAG_IGMP3_S_FLAG, 0),
+      TAD_DU_I32, FALSE },
+    { "qrv", 3, BPS_FLD_CONST_DEF(NDN_TAG_IGMP3_QRV, 0),
+      TAD_DU_I32, FALSE },
+    { "qqic", 8, BPS_FLD_CONST_DEF(NDN_TAG_IGMP3_QQIC, 0),
+      TAD_DU_I32, FALSE },
+    { "number-of-sources", 16,
+      BPS_FLD_NO_DEF(NDN_TAG_IGMP3_NUMBER_OF_SOURCES),
+      TAD_DU_I32, FALSE },
+    { "source-address-list", 0,
+      BPS_FLD_CONST_DEF(NDN_TAG_IGMP3_SOURCE_ADDRESS_LIST, 0),
+      TAD_DU_OCTS, FALSE },
+};
+
+/**
+ * Definition of IGMPv3 Report specific data.
+ */
+static const tad_bps_pkt_frag tad_igmp_bps_v3_report[] =
+{
+    { "reserved", 16, BPS_FLD_CONST(0),
+      TAD_DU_I32, FALSE },
+    { "number-of-groups", 16, BPS_FLD_NO_DEF(NDN_TAG_IGMP3_NUMBER_OF_GROUPS),
+      TAD_DU_I32, FALSE },
+    { "group-record-list", 0,
+      BPS_FLD_CONST_DEF(NDN_TAG_IGMP3_GROUP_RECORD_LIST, 0),
+      TAD_DU_OCTS, FALSE },
+};
+
 
 /* See description tad_igmp_impl.h */
 te_errno
@@ -111,6 +163,24 @@ tad_igmp_init_cb(csap_p csap, unsigned int layer)
     if (rc != 0)
         return rc;
 
+    rc = tad_bps_pkt_frag_init(tad_igmp_bps_group_address,
+                               TE_ARRAY_LEN(tad_igmp_bps_group_address),
+                               layer_nds, &proto_data->group_address);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_init(tad_igmp_bps_v3_query,
+                               TE_ARRAY_LEN(tad_igmp_bps_v3_query),
+                               layer_nds, &proto_data->v3_query);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_init(tad_igmp_bps_v3_report,
+                               TE_ARRAY_LEN(tad_igmp_bps_v3_report),
+                               layer_nds, &proto_data->v3_report);
+    if (rc != 0)
+        return rc;
+
     return 0; 
 }
 
@@ -124,6 +194,9 @@ tad_igmp_destroy_cb(csap_p csap, unsigned int layer)
     csap_set_proto_spec_data(csap, layer, NULL);
 
     tad_bps_pkt_frag_free(&proto_data->hdr);
+    tad_bps_pkt_frag_free(&proto_data->group_address);
+    tad_bps_pkt_frag_free(&proto_data->v3_query);
+    tad_bps_pkt_frag_free(&proto_data->v3_report);
 
     free(proto_data);
 
@@ -165,6 +238,21 @@ tad_igmp_nds_to_pdu_data(csap_p csap, tad_igmp_proto_data *proto_data,
     if (rc != 0)
         return rc;
 
+    rc = tad_bps_nds_to_data_units(&proto_data->group_address, layer_pdu,
+                                   &pdu_data->group_address);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_nds_to_data_units(&proto_data->v3_query, layer_pdu,
+                                   &pdu_data->v3_query);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_nds_to_data_units(&proto_data->v3_report, layer_pdu,
+                                   &pdu_data->v3_report);
+    if (rc != 0)
+        return rc;
+
     return 0;
 }
 
@@ -182,6 +270,12 @@ tad_igmp_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
     {
         tad_bps_free_pkt_frag_data(&proto_data->hdr,
                                    &pdu_data->hdr);
+        tad_bps_free_pkt_frag_data(&proto_data->group_address,
+                                   &pdu_data->group_address);
+        tad_bps_free_pkt_frag_data(&proto_data->v3_query,
+                                   &pdu_data->v3_query);
+        tad_bps_free_pkt_frag_data(&proto_data->v3_report,
+                                   &pdu_data->v3_report);
         free(pdu_data);
     }
 }
@@ -192,9 +286,10 @@ te_errno
 tad_igmp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                           asn_value *layer_pdu, void **p_opaque)
 {
-    te_errno                    rc;
-    tad_igmp_proto_data        *proto_data;
-    tad_igmp_proto_pdu_data    *tmpl_data;
+    te_errno                 rc;
+    tad_igmp_proto_data     *proto_data;
+    tad_igmp_proto_pdu_data *tmpl_data;
+    uint8_t                  type;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
@@ -214,6 +309,44 @@ tad_igmp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
         ERROR("Sending IGMP messages with not plain specification of "
               "the type is not supported yet");
         return TE_RC(TE_TAD_CSAP, TE_ENOSYS);
+    }
+    type = tmpl_data->hdr.dus[0].val_i32;
+
+    switch (type)
+    {
+        case IGMPV3_HOST_MEMBERSHIP_REPORT:
+            rc = tad_bps_confirm_send(&proto_data->v3_report,
+                                      &tmpl_data->v3_report);
+            if (rc != 0)
+                return rc;
+            break;
+
+        case IGMP_HOST_MEMBERSHIP_QUERY:
+        case IGMP_HOST_MEMBERSHIP_REPORT:
+        case IGMPV2_HOST_MEMBERSHIP_REPORT:
+        case IGMP_HOST_LEAVE_MESSAGE:
+            rc = tad_bps_confirm_send(&proto_data->group_address,
+                                      &tmpl_data->group_address);
+            if (rc != 0)
+                return rc;
+
+            /* Check if it is V3 Query */
+            if (type != IGMP_HOST_MEMBERSHIP_QUERY)
+                break;
+
+            /* Check if there is 'number-of-source' field */
+            if (asn_get_length(layer_pdu, "number-of-sources") == -1)
+                break;
+
+            rc = tad_bps_confirm_send(&proto_data->v3_query,
+                                      &tmpl_data->v3_query);
+            if (rc != 0)
+                return rc;
+
+            break;
+
+        default:
+            return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
     return rc;
@@ -246,9 +379,10 @@ tad_igmp_gen_bin_cb(csap_p csap, unsigned int layer,
     tad_igmp_proto_data     *proto_data;
     tad_igmp_proto_pdu_data *tmpl_data = opaque;
 
-    te_errno        rc;
-    unsigned int    bitoff;
-    uint8_t         hdr[TE_TAD_IGMP_MAXLEN];
+    te_errno     rc;
+    unsigned int bitoff;
+    uint8_t      hdr[TE_TAD_IGMP_MAXLEN];
+    uint8_t      type;
 
 
     assert(csap != NULL);
@@ -269,6 +403,63 @@ tad_igmp_gen_bin_cb(csap_p csap, unsigned int layer,
               __FUNCTION__, rc);
         return rc;
     }
+    assert((bitoff & 7) == 0);
+
+    type = hdr[0];
+    switch (type)
+    {
+        case IGMPV3_HOST_MEMBERSHIP_REPORT:
+            rc = tad_bps_pkt_frag_gen_bin(&proto_data->v3_report,
+                                          &tmpl_data->v3_report,
+                                          args, arg_num, hdr,
+                                          &bitoff, sizeof(hdr) << 3);
+            if (rc != 0)
+            {
+                ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for addresses: %r",
+                      __FUNCTION__, rc);
+                return rc;
+            }
+            break;
+
+        case IGMP_HOST_MEMBERSHIP_QUERY:
+        case IGMP_HOST_MEMBERSHIP_REPORT:
+        case IGMPV2_HOST_MEMBERSHIP_REPORT:
+        case IGMP_HOST_LEAVE_MESSAGE:
+            rc = tad_bps_pkt_frag_gen_bin(&proto_data->group_address,
+                                          &tmpl_data->group_address,
+                                          args, arg_num, hdr,
+                                          &bitoff, sizeof(hdr) << 3);
+            if (rc != 0)
+            {
+                ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for addresses: %r",
+                      __FUNCTION__, rc);
+                return rc;
+            }
+
+            /* Check if it is V3 Query */
+            if (type != IGMP_HOST_MEMBERSHIP_QUERY)
+                break;
+
+            /* Check if there is 'number-of-source' field */
+            if (asn_get_length(tmpl_pdu, "number-of-sources") == -1)
+                break;
+
+            rc = tad_bps_pkt_frag_gen_bin(&proto_data->v3_query,
+                                          &tmpl_data->v3_query,
+                                          args, arg_num, hdr,
+                                          &bitoff, sizeof(hdr) << 3);
+            if (rc != 0)
+            {
+                ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for addresses: %r",
+                      __FUNCTION__, rc);
+                return rc;
+            }
+            break;
+
+        default:
+            return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    }
+
     assert((bitoff & 7) == 0);
 
     /* IGMPv2 layer does no fragmentation, just copy all SDUs to PDUs */
@@ -333,6 +524,18 @@ tad_igmp_match_pre_cb(csap_p              csap,
     if (rc != 0)
         return rc;
 
+    rc = tad_bps_pkt_frag_match_pre(&proto_data->group_address, &pkt_data->group_address);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_match_pre(&proto_data->v3_query, &pkt_data->v3_query);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_match_pre(&proto_data->v3_report, &pkt_data->v3_report);
+    if (rc != 0)
+        return rc;
+
     return 0;
 }
 
@@ -363,6 +566,28 @@ tad_igmp_match_post_cb(csap_p              csap,
 
     rc = tad_bps_pkt_frag_match_post(&proto_data->hdr, &pkt_data->hdr,
                                      pkt, &bitoff, meta_pkt_layer->nds);
+    if (rc != 0)
+        return rc;
+
+    /* TODO: not sure post-check should be so simple */
+
+    rc = tad_bps_pkt_frag_match_post(&proto_data->group_address,
+                                     &pkt_data->group_address,
+                                     pkt, &bitoff, meta_pkt_layer->nds);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_match_post(&proto_data->v3_query,
+                                     &pkt_data->v3_query,
+                                     pkt, &bitoff, meta_pkt_layer->nds);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_match_post(&proto_data->v3_report,
+                                     &pkt_data->v3_report,
+                                     pkt, &bitoff, meta_pkt_layer->nds);
+    if (rc != 0)
+        return rc;
 
     return rc;
 }
@@ -378,11 +603,13 @@ tad_igmp_match_do_cb(csap_p           csap,
                      tad_pkt         *pdu,
                      tad_pkt         *sdu)
 {
-    tad_igmp_proto_data        *proto_data;
-    tad_igmp_proto_pdu_data    *ptrn_data = ptrn_opaque;
-    tad_igmp_proto_pdu_data    *pkt_data = meta_pkt->layers[layer].opaque;
-    te_errno                    rc;
-    unsigned int                bitoff = 0;
+    tad_igmp_proto_data     *proto_data;
+    tad_igmp_proto_pdu_data *ptrn_data = ptrn_opaque;
+    tad_igmp_proto_pdu_data *pkt_data  = meta_pkt->layers[layer].opaque;
+    te_errno                 rc;
+    unsigned int             bitoff    = 0;
+    unsigned int             len;
+    int                      type;
 
     UNUSED(ptrn_pdu);
 
@@ -403,11 +630,84 @@ tad_igmp_match_do_cb(csap_p           csap,
                                    &pkt_data->hdr, pdu, &bitoff);
     if (rc != 0)
     {
-        F_VERB(CSAP_LOG_FMT "Match PDU vs IPv4 header failed on bit "
-               "offset %u: %r", CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
+        F_VERB(CSAP_LOG_FMT "Match PDU vs IGMP header failed on bit "
+               "offset %u: %r", CSAP_LOG_ARGS(csap),
+               (unsigned)bitoff, rc);
         return rc;
     }
 
+    type = pkt_data->hdr.dus[0].val_i32;
+    switch (type)
+    {
+        case IGMPV3_HOST_MEMBERSHIP_REPORT:
+            len = tad_pkt_len(pdu) - (bitoff >> 3) - 4;
+
+            /* Reallocate Source Addresses List binary data */
+            rc = tad_du_realloc(&pkt_data->v3_report.dus[2], len);
+            if (rc != 0)
+                return rc;
+
+            rc = tad_bps_pkt_frag_match_do(&proto_data->v3_report,
+                                           &ptrn_data->v3_report,
+                                           &pkt_data->v3_report,
+                                           pdu, &bitoff);
+            if (rc != 0)
+            {
+                F_VERB(CSAP_LOG_FMT "Match PDU vs IGMP header failed on bit "
+                       "offset %u: %r", CSAP_LOG_ARGS(csap),
+                       (unsigned)bitoff, rc);
+                return rc;
+            }
+            break;
+
+        case IGMP_HOST_MEMBERSHIP_QUERY:
+        case IGMP_HOST_MEMBERSHIP_REPORT:
+        case IGMPV2_HOST_MEMBERSHIP_REPORT:
+        case IGMP_HOST_LEAVE_MESSAGE:
+            rc = tad_bps_pkt_frag_match_do(&proto_data->group_address,
+                                           &ptrn_data->group_address,
+                                           &pkt_data->group_address,
+                                           pdu, &bitoff);
+            if (rc != 0)
+            {
+                F_VERB(CSAP_LOG_FMT "Match PDU vs IGMP header failed on bit "
+                       "offset %u: %r", CSAP_LOG_ARGS(csap),
+                       (unsigned)bitoff, rc);
+                return rc;
+            }
+
+            /* Check if it is V3 Query */
+            if (type != IGMP_HOST_MEMBERSHIP_QUERY)
+                break;
+
+            len = tad_pkt_len(pdu) - (bitoff >> 3) - 4;
+            if (len == 0)
+                break;
+
+            /* Reallocate Group Records List binary data */
+            rc = tad_du_realloc(&pkt_data->v3_report.dus[5], len);
+            if (rc != 0)
+                return rc;
+
+            rc = tad_bps_pkt_frag_match_do(&proto_data->v3_query,
+                                           &ptrn_data->v3_query,
+                                           &pkt_data->v3_query,
+                                           pdu, &bitoff);
+            if (rc != 0)
+            {
+                F_VERB(CSAP_LOG_FMT "Match PDU vs IGMP header failed on bit "
+                       "offset %u: %r", CSAP_LOG_ARGS(csap),
+                       (unsigned)bitoff, rc);
+                return rc;
+            }
+
+            break;
+
+        default:
+            return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    }
+
+    /* There should be nothing remaining */
     rc = tad_pkt_get_frag(sdu, pdu, bitoff >> 3,
                           tad_pkt_len(pdu) - (bitoff >> 3),
                           TAD_PKT_GET_FRAG_ERROR);
