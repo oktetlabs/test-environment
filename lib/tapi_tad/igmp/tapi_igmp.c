@@ -155,6 +155,9 @@ tapi_ip4_to_mac(in_addr_t ip4_addr, uint8_t *eth_addr)
     eth_addr[5] = ip_addr_p[3];
 }
 
+/** Router Alert Option is mandatory */
+static uint8_t ip_opt_router_alert[] = {0x94, 0x04, 0x00, 0x00};
+
 /* See the description in tapi_igmp.h */
 te_errno
 tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
@@ -167,16 +170,25 @@ tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
     te_errno       rc     = 0;
     const uint16_t ip_eth = ETHERTYPE_IP;
     uint8_t        eth_dst[ETHER_ADDR_LEN];
+    asn_value     *ip4_pdu;
 
     if (dst_addr == htonl(INADDR_ANY))
         dst_addr = TAPI_MCAST_ADDR_ALL_HOSTS;
 
     /* Add IPv4 layer header to PDU template/pattern */
-    rc = tapi_ip4_add_pdu(tmpl_or_ptrn, pdu, is_pattern,
+    rc = tapi_ip4_add_pdu(tmpl_or_ptrn, &ip4_pdu, is_pattern,
                           src_addr, dst_addr,
                           IPPROTO_IGMP,
                           TAPI_IGMP_IP4_TTL_DEFAULT,
                           -1 /* default ToS */ );
+    if (rc != 0)
+        return rc;
+
+    /* Add manndatory Router Alert IP option */
+    rc = asn_write_value_field(ip4_pdu, 
+                             ip_opt_router_alert,
+                             sizeof(ip_opt_router_alert),
+                             "options.#plain");
     if (rc != 0)
         return rc;
 
