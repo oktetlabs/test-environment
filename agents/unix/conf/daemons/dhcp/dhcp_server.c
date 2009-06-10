@@ -35,6 +35,9 @@
 #include "conf_daemons.h"
 #include "dhcp_server.h"
 
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
 
 /**
  * Define it to use DHCP server native configuration:
@@ -1700,6 +1703,8 @@ dhcpserver_grab(const char *name)
     dhcp_server_conf = "/tmp/te.dhcpd.conf";
     dhcp_server_leases = "/tmp/te.dhcpd.leases";
     {
+        struct passwd *p;
+        
         int f = creat(dhcp_server_leases, 00666);
 
         if (f < 0)
@@ -1710,6 +1715,9 @@ dhcpserver_grab(const char *name)
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
         close(f);
+        p = getpwnam("dhcpd");
+        if (p != NULL)
+            (void)chown(dhcp_server_leases, p->pw_uid, p->pw_gid);
     }
 
     if (ds_dhcpserver_is_run())
