@@ -1700,16 +1700,16 @@ dhcpserver_grab(const char *name)
     dhcp_server_conf = "/tmp/te.dhcpd.conf";
     dhcp_server_leases = "/tmp/te.dhcpd.leases";
     {
-        FILE *f = fopen(dhcp_server_leases, "w");
+        int f = creat(dhcp_server_leases, 00666);
 
-        if (f == NULL)
+        if (f < 0)
         {
             ERROR("Failed to open '%s' for writing: %s",
                   dhcp_server_leases, strerror(errno));
             rcf_pch_del_node(&node_ds_dhcpserver);
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
-        fclose(f);
+        close(f);
     }
 
     if (ds_dhcpserver_is_run())
