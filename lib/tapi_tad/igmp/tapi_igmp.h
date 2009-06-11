@@ -198,7 +198,7 @@ extern te_errno tapi_igmp2_add_pdu(asn_value          **tmpl_or_ptrn,
  *                      Use TAD_ETH_RECV_DEF by default.
  * @param eth_src       Local MAC address (or NULL)
  * @param src_addr      Local IP address in network byte order (or NULL)
- * @param icmp_csap     Location for the CSAP handle (OUT)
+ * @param igmp_csap     Location for the CSAP handle (OUT)
  *
  * @return Zero on success or error code
  */
@@ -211,75 +211,24 @@ extern te_errno tapi_igmp_ip4_eth_csap_create(const char    *ta_name,
                                               csap_handle_t *igmp_csap);
 
 /**
- * Compose IGMPv2.IPv4.Eth PDU as the last PDU to the last unit
- * of the traffic template or pattern.
+ * Add IPv4.Eth layers to PDU
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
  *                      pattern
  * @param pdu           Location for ASN.1 value pointer with added PDU
  * @param is_pattern    Is the first argument template or pattern
- * @param type          Type of IGMPv2 message
- * @param query_type    Type of query message (general or group membership
- *                      query). Used only if type = query.
- * @param max_resp_time IGMP message maximum response   time,
- *                      or negative to keep unspecified.
- * @param group_addr    Group Address field of IGMPv2 message
+ * @param dst_addr      IPv4 layer Destination Multicast address (also used
+ *                      for generating Ethernet multicast address)
  * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
  *                      keep unspecified.
  * @param eth_src       Ethernet layer Source Address field or NULL to keep
  *                      unspecified.
  *
- * @note  Destination addresses for IPv4 and Ethernet layers are calculated
- *        from @p group_addr and @p type values.
+ * @note  Destination address Ethernet layers is calculated from
+ *        @p dst_address value.
  *
  * @return              Status code.
  */
-#if 0
-extern te_errno
-tapi_igmp2_ip4_eth_add_pdu(asn_value                  **tmpl_or_ptrn,
-                           asn_value                  **pdu,
-                           te_bool                      is_pattern,
-                           tapi_igmp_msg_type           type,
-                           tapi_igmp_query_type         query_type,
-                           int                          max_resp_time,
-                           in_addr_t                    group_addr,
-                           in_addr_t                    src_addr,
-                           uint8_t                     *eth_src);
-
-
-/* See the description in tapi_igmp.h */
-extern te_errno
-tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
-                          asn_value               **pdu,
-                          te_bool                   is_pattern,
-                          tapi_igmp3_group_list_t  *group_list);
-
-/* See the description in tapi_igmp.h */
-te_errno
-tapi_igmp3_ip4_eth_send_report(const char      *ta_name,
-                               int              session,
-                               csap_handle_t    csap,
-                               tapi_igmp3_group_list_t  *group_list,
-                               in_addr_t        src_addr,
-                               uint8_t         *eth_src);
-
-/* See the description in tapi_igmp.h */
-extern te_errno
-tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
-                         asn_value               **pdu,
-                         te_bool                   is_pattern,
-                         int                       max_resp_code,
-                         in_addr_t                 group_addr,
-                         int                       s_flag,
-                         int                       qrv,
-                         int                       qqic,
-                         tapi_igmp3_src_list_t    *src_list);
-
-
-#endif
-
-
-/* See the description in tapi_igmp.h */
 extern te_errno
 tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
                           asn_value **pdu,
@@ -288,7 +237,20 @@ tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
                           in_addr_t   src_addr,
                           uint8_t    *eth_src);
 
-/* See the description in tapi_igmp.h */
+/**
+ * Send IGMPv1 report message
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
+ * @param group_addr    Multicast Group Address field of IGMPv2 message.
+ * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      keep unspecified.
+ * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ *                      unspecified.
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp1_ip4_eth_send_report(const char    *ta_name,
                                int            session,
@@ -297,7 +259,20 @@ tapi_igmp1_ip4_eth_send_report(const char    *ta_name,
                                in_addr_t      src_addr,
                                uint8_t       *eth_src);
 
-/* See the description in tapi_igmp.h */
+/**
+ * Send IGMPv2 report message
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
+ * @param group_addr    Multicast Group Address field of IGMPv2 message.
+ * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      keep unspecified.
+ * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ *                      unspecified.
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp2_ip4_eth_send_report(const char    *ta_name,
                                int            session,
@@ -306,7 +281,20 @@ tapi_igmp2_ip4_eth_send_report(const char    *ta_name,
                                in_addr_t      src_addr,
                                uint8_t       *eth_src);
 
-/* See the description in tapi_igmp.h */
+/**
+ * Send IGMPv2 Group Membership Leave message
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
+ * @param group_addr    Multicast Group Address field of IGMPv2 message.
+ * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      keep unspecified.
+ * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ *                      unspecified.
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp2_ip4_eth_send_leave(const char    *ta_name,
                               int            session,
@@ -315,7 +303,22 @@ tapi_igmp2_ip4_eth_send_leave(const char    *ta_name,
                               in_addr_t      src_addr,
                               uint8_t       *eth_src);
 
-/* See the description in tapi_igmp.h */
+/**
+ * Send IGMPv2 Query message
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
+ * @param max_resp_time IGMP message maximum response time,
+ *                      or negative to keep unspecified.
+ * @param group_addr    Multicast Group Address field of IGMPv2 message.
+ * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      keep unspecified.
+ * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ *                      unspecified.
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
                               int            session,
@@ -324,7 +327,22 @@ tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
                               in_addr_t      src_addr,
                               uint8_t       *eth_src);
 
-/* See the description in tapi_igmp.h */
+/**
+ * Send IGMPv2 Group Specific Query message
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
+ * @param max_resp_time IGMP message maximum response time,
+ *                      or negative to keep unspecified.
+ * @param group_addr    Multicast Group Address field of IGMPv2 message.
+ * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      keep unspecified.
+ * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ *                      unspecified.
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp2_ip4_eth_send_group_query(const char    *ta_name,
                                     int            session,
@@ -333,14 +351,38 @@ tapi_igmp2_ip4_eth_send_group_query(const char    *ta_name,
                                     in_addr_t      src_addr,
                                     uint8_t       *eth_src);
 
-/* See the description in tapi_igmp.h */
+/**
+ * Add IGMPv3 Report PDU as the last PDU to the last unit of the traffic 
+ * template or pattern.
+ *
+ * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
+ *                      pattern
+ * @param pdu           Location for ASN.1 value pointer with added PDU
+ * @param is_pattern    Is the first argument template or pattern
+ * @param group_list    List of group records to be sent in this PDU
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
                           asn_value               **pdu,
                           te_bool                   is_pattern,
                           tapi_igmp3_group_list_t  *group_list);
 
-/* See the description in tapi_igmp.h */
+/**
+ * Send IGMPv3 Group Membership report message
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
+ * @param group_list    List of group records to be sent in this PDU
+ * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      keep unspecified.
+ * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ *                      unspecified.
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp3_ip4_eth_send_report(const char      *ta_name,
                                int              session,
@@ -349,7 +391,28 @@ tapi_igmp3_ip4_eth_send_report(const char      *ta_name,
                                in_addr_t        src_addr,
                                uint8_t         *eth_src);
 
-/* See the description in tapi_igmp.h */
+/**
+ * Add IGMPv3 Query PDU as the last PDU to the last unit of the traffic 
+ * template or pattern.
+ *
+ * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
+ *                      pattern
+ * @param pdu           Location for ASN.1 value pointer with added PDU
+ * @param is_pattern    Is the first argument template or pattern
+ * @param max_resp_time IGMP message maximum response code,
+ *                      or negative to keep unspecified.
+ * @param group_addr    Multicast Group Address field of IGMPv3 Query message.
+ * @param s_flag        S Flag (Suppress Router-Side Processing) field
+ *                      of IGMPv3 Query message.
+ * @param qrv           QRV (Querier's Robustness Variable) field
+ *                      of IGMPv3 Query message.
+ * @param qqic          QQIC (Querier's Query Interval Code) field
+ *                      of IGMPv3 Query message.
+ * @param src_list      List of source addresses to be sent in this PDU,
+ *                      or NULL
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
                          asn_value               **pdu,
@@ -361,7 +424,34 @@ tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
                          int                       qqic,
                          tapi_igmp3_src_list_t    *src_list);
 
-/* See the description in tapi_igmp.h */
+/**
+ * Send IGMPv3 Group Membership Query message
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
+ * @param max_resp_time IGMP message maximum response code,
+ *                      or negative to keep unspecified.
+ * @param group_addr    Multicast Group Address field of IGMPv3 Query message.
+ * @param s_flag        S Flag (Suppress Router-Side Processing) field
+ *                      of IGMPv3 Query message.
+ * @param qrv           QRV (Querier's Robustness Variable) field
+ *                      of IGMPv3 Query message.
+ * @param qqic          QQIC (Querier's Query Interval Code) field
+ *                      of IGMPv3 Query message.
+ * @param src_list      List of source addresses to be sent in this PDU,
+ *                      or NULL
+ * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      keep unspecified.
+ * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ *                      unspecified.
+ *
+ * @note                To specify the case of General Query, @p group_addr
+ *                      should be INADDR_ANY and message will be
+ *                      sent to ALL_HOSTS (224.0.0.1)
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
                               int                    session,
@@ -376,18 +466,61 @@ tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
                               uint8_t               *eth_src);
 
 
+/**
+ * Initialise source address list instance
+ *
+ * @param src_list      Pointer to source address list to initialise
+ *                      with default values
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp3_src_list_init(tapi_igmp3_src_list_t *src_list);
 
+/**
+ * Free resources allocated by source address list instance
+ *
+ * @param src_list      Pointer to source address list to finalise
+ *
+ * @return              N/A
+ */
 extern void
 tapi_igmp3_src_list_free(tapi_igmp3_src_list_t *src_list);
 
+/**
+ * Add source address to the list
+ *
+ * @param src_list      Source address list to add to
+ * @param addr          IPv4 address to add
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp3_src_list_add(tapi_igmp3_src_list_t *src_list, in_addr_t addr);
 
+/**
+ * Calculate the binary length of the source address list
+ * stored in IGMPv3 message
+ *
+ * @param src_list      Source address list to add to
+ *
+ * @return              Length in bytes.
+ */
 extern int
 tapi_igmp3_src_list_length(tapi_igmp3_src_list_t *src_list);
 
+/**
+ * Pack the source list to binary data to store in IGMPv3 message
+ *
+ * @param src_list      Source address list to add to
+ * @param buf           Buffer to pack the source address list at
+ * @param buf_size      Size of pre-allocated buffer
+ * @param offset        Offset in the buffer to place the packed
+ *                      source address list from. Is updated by
+ *                      the length of packed data.
+ *
+ * @return              Status Code.
+ */
 extern te_errno
 tapi_igmp3_src_list_gen_bin(tapi_igmp3_src_list_t *src_list,
                             void *buf, int buf_size, int *offset);
