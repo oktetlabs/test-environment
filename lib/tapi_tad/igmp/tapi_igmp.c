@@ -171,7 +171,7 @@ tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
     const uint16_t ip_eth = ETHERTYPE_IP;
     uint8_t        eth_dst[ETHER_ADDR_LEN];
     asn_value     *ip4_pdu;
-    te_bool        dont_frag = TRUE;
+    int            dont_frag = 1;
 
     if (dst_addr == htonl(INADDR_ANY))
         dst_addr = TAPI_MCAST_ADDR_ALL_HOSTS;
@@ -185,7 +185,7 @@ tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
     if (rc != 0)
         return rc;
 
-    rc = asn_write_bool(ip4_pdu,  dont_frag, "dont-frag");
+    rc = asn_write_int32(ip4_pdu, dont_frag, "dont-frag.#plain");
     if (rc != 0)
         return rc;
 
