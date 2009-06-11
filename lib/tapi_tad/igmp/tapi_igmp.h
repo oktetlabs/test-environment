@@ -510,14 +510,12 @@ extern int
 tapi_igmp3_src_list_length(tapi_igmp3_src_list_t *src_list);
 
 /**
- * Pack the source list to binary data to store in IGMPv3 message
+ * Pack the source list to store in IGMPv3 message
  *
  * @param src_list      Source address list to add to
  * @param buf           Buffer to pack the source address list at
  * @param buf_size      Size of pre-allocated buffer
- * @param offset        Offset in the buffer to place the packed
- *                      source address list from. Is updated by
- *                      the length of packed data.
+ * @param offset        Buffer offset to start packing from (IN/OUT)
  *
  * @return              Status Code.
  */
@@ -525,39 +523,125 @@ extern te_errno
 tapi_igmp3_src_list_gen_bin(tapi_igmp3_src_list_t *src_list,
                             void *buf, int buf_size, int *offset);
 
+/**
+ * Calculate the binary length of the Group Record
+ * stored in IGMPv3 message
+ *
+ * @param group_record  Group record to pack
+ *
+ * @return              Length in bytes.
+ */
 extern int
 tapi_igmp3_group_record_length(tapi_igmp3_group_record_t *group_record);
 
+/**
+ * Pack the groups record structure with source addresses list
+ * to store in IGMPv3 message
+ *
+ * @param group_record  Group record to pack
+ * @param buf           Buffer to pack the source address list at
+ * @param buf_size      Size of pre-allocated buffer
+ * @param offset        Buffer offset to start packing from (IN/OUT)
+ *
+ * @return              Status Code.
+ */
 extern te_errno
 tapi_igmp3_group_record_gen_bin(tapi_igmp3_group_record_t *group_record,
                                 void *buf, int buf_size, int *offset);
 
+/**
+ * Calculate the binary length of the Group Records list
+ * packed in IGMPv3 message
+ *
+ * @param group_list    Group Records list to pack to pack
+ *
+ * @return              Length in bytes.
+ */
 extern int
 tapi_igmp3_group_list_length(tapi_igmp3_group_list_t *group_list);
 
+/**
+ * Pack the Group Records list
+ * to store in IGMPv3 message
+ *
+ * @param group_list    Group Records list to pack
+ * @param buf           Buffer to pack the source address list at
+ * @param buf_size      Size of pre-allocated buffer
+ * @param offset        Buffer offset to start packing from (IN/OUT)
+ *
+ * @return              Status Code.
+ */
 extern te_errno
 tapi_igmp3_group_list_gen_bin(tapi_igmp3_group_list_t *group_list,
                               void *buf, int buf_size, int *offset);
 
+/**
+ * Initialise pre-allocated structure of Group Record with default values
+ *
+ * @param group_record  Group Record to initialise list to pack
+ * @param group_type    Type of the group record
+ * @param group_address Multicast Group Address
+ * @param aux_data      Pointer to auxiliary data to be packed into the
+ *                      record group)
+ * @param aux_data_len  Length of the auxiliary data in 32-bit words
+ *
+ * @return              Status Code.
+ */
 extern te_errno
 tapi_igmp3_group_record_init(tapi_igmp3_group_record_t *group_record,
                              int group_type, in_addr_t group_address,
                              void *aux_data, int aux_data_len);
 
+/**
+ * Free system resources allocated by group_record
+ *
+ * @param group_record  Group Record to free
+ *
+ * @return              Status Code.
+ */
 extern void
 tapi_igmp3_group_record_free(tapi_igmp3_group_record_t *group_record);
 
+/**
+ * Free system resources allocated by group_record
+ *
+ * @param group_record  Group Record to free
+ *
+ * @return              Status Code.
+ */
 extern te_errno
 tapi_igmp3_group_record_add_source(tapi_igmp3_group_record_t *group_record,
                                    in_addr_t src_addr);
 
+/**
+ * Initialise the group records list with initial values
+ *
+ * @param group_list    Group Records list structure to initialise
+ *
+ * @return              Status Code.
+ */
 extern te_errno
 tapi_igmp3_group_list_init(tapi_igmp3_group_list_t *group_list);
 
+/**
+ * Free system resources allocated by group records list
+ *
+ * @param group_list    Group Record to free
+ *
+ * @return              Status Code.
+ */
 extern void
 tapi_igmp3_group_list_free(tapi_igmp3_group_list_t *group_list);
 
 
+/**
+ * Add group record to the Group Records list
+ *
+ * @param group_list    Group Records list to add to
+ * @param group_recordd Group Record structure to add
+ *
+ * @return              Status code.
+ */
 extern te_errno
 tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
                           tapi_igmp3_group_record_t *group_record);
