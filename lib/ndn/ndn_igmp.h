@@ -53,8 +53,15 @@ typedef enum {
     NDN_TAG_IGMP3_SOURCE_ADDRESS_LIST,
     NDN_TAG_IGMP3_NUMBER_OF_GROUPS,
     NDN_TAG_IGMP3_GROUP_RECORD_LIST,
+#ifdef NDN_IGMP_STRUCTURED
+    NDN_TAG_IGMP3_GROUP_RECORD,
+    NDN_TAG_IGMP3_GROUP_RECORD_TYPE,
+    NDN_TAG_IGMP3_AUX_DATA_LEN,
+    NDN_TAG_IGMP3_AUX_DATA,
+#endif
     NDN_TAG_IGMP_,
 } ndn_igmp_tags_t;
+
 
 extern const asn_type * const ndn_igmp_message;
 extern const asn_type * const ndn_igmp_csap;

@@ -37,6 +37,39 @@
 #include "ndn_igmp.h"
 #include "tad_common.h"
 
+#ifdef NDN_IGMP_STRUCTURED
+asn_type ndn_igmp_source_address_list_s = {
+    "IGMP-Source-Address-List", {PRIVATE, NDN_TAG_IGMP3_SOURCE_ADDRESS_LIST},
+    SEQUENCE_OF, 0, {subtype: &ndn_data_unit_ip_address_s}}
+};
+
+static asn_named_entry_t _ndn_igmp_group_record_ne_array [] = {
+    /* Common for IGMP fields */
+    { "record-type", &ndn_data_unit_int8_s,
+        { PRIVATE, NDN_TAG_IGMP3_RECORD_TYPE }},
+    { "aux-data-length", &ndn_data_unit_int8_s,
+        { PRIVATE, NDN_TAG_IGMP3_AUX_DATA_LENGTH }},
+    { "number-of-sources", &ndn_data_unit_int16_s,
+        { PRIVATE, NDN_TAG_IGMP3_NUMBER_OF_SOURCES }},
+    { "group-address", &ndn_data_unit_ip_address_s,
+        { PRIVATE, NDN_TAG_IGMP_GROUP_ADDRESS }},
+    { "source-address-list", &ndn_igmp_source_address_list_s,
+        { PRIVATE, NDN_TAG_IGMP3_SOURCE_ADDRESS_LIST }},
+    { "aux-data", &ndn_data_unit_octet_string_s,
+        { PRIVATE, NDN_TAG_IGMP3_AUX_DATA }},
+};
+
+asn_type ndn_igmp_group_record_s = {
+    "IGMP-Group-Record", {PRIVATE, NDN_TAG_IGMP3_GROUP_RECORD}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_igmp_group_record_ne_array),
+    {_ndn_igmp_group_record_ne_array}
+};
+
+asn_type ndn_igmp_group_record_list_s = {
+    "IGMP-Group-Record-List", {PRIVATE, NDN_TAG_IGMP3_GROUP_RECORD_LIST},
+    SEQUENCE_OF, 0, {subtype: &ndn_igmp_group_record_s}}
+};
+#endif /* NDN_IGMP_STRUCTURED */
 
 static asn_named_entry_t _ndn_igmp_message_ne_array [] = {
     /* Common for IGMP fields */
@@ -58,13 +91,23 @@ static asn_named_entry_t _ndn_igmp_message_ne_array [] = {
         { PRIVATE, NDN_TAG_IGMP3_QQIC }},
     { "number-of-sources", &ndn_data_unit_int16_s,
         { PRIVATE, NDN_TAG_IGMP3_NUMBER_OF_SOURCES }},
+
+#ifdef NDN_IGMP_STRUCTURED
+    { "source-address-list", &ndn_igmp_source_address_list_s,
+#else
     { "source-address-list", &ndn_data_unit_octet_string_s,
+#endif
         { PRIVATE, NDN_TAG_IGMP3_SOURCE_ADDRESS_LIST }},
 
     /* IGMPv3 Report specific fields */
     { "number-of-groups", &ndn_data_unit_int16_s,
         { PRIVATE, NDN_TAG_IGMP3_NUMBER_OF_GROUPS }},
+
+#ifdef NDN_IGMP_STRUCTURED
+    { "group-record-list", &ndn_igmp_group_record_list_s,
+#else
     { "group-record-list", &ndn_data_unit_octet_string_s,
+#endif
         { PRIVATE, NDN_TAG_IGMP3_GROUP_RECORD_LIST }},
 };
 
