@@ -331,39 +331,6 @@ tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
 
     /* Add IPv4 layer header to PDU template/pattern */
     rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
-                                   TAPI_MCAST_ADDR_ALL_HOSTS,
-                                   src_addr, eth_src);
-    if (rc != 0)
-        return rc;
-
-    rc = tapi_tad_trsend_start(ta_name, session, csap,
-                               pkt_tmpl, RCF_MODE_BLOCKING);
-
-    asn_free_value(pkt_tmpl);
-
-    return rc;
-}
-
-/* See the description in tapi_igmp.h */
-te_errno
-tapi_igmp2_ip4_eth_send_group_query(const char    *ta_name,
-                                    int            session,
-                                    csap_handle_t  csap,
-                                    in_addr_t      group_addr,
-                                    in_addr_t      src_addr,
-                                    uint8_t       *eth_src)
-{
-    te_errno   rc       = 0;
-    asn_value *pkt_tmpl = NULL;
-
-    /* Add IGMPv2 layer message to PDU template/pattern */
-    rc = tapi_igmp2_add_pdu(&pkt_tmpl, NULL, FALSE,
-                            TAPI_IGMP_TYPE_QUERY, 0, group_addr);
-    if (rc != 0)
-        return rc;
-
-    /* Add IPv4 layer header to PDU template/pattern */
-    rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
                                    group_addr, src_addr, eth_src);
     if (rc != 0)
         return rc;

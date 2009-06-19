@@ -312,6 +312,7 @@ tapi_igmp2_ip4_eth_send_leave(const char    *ta_name,
  * @param max_resp_time IGMP message maximum response time,
  *                      or negative to keep unspecified.
  * @param group_addr    Multicast Group Address field of IGMPv2 message.
+ *                      For General Query should be 0.0.0.0 (INADDR_ANY)
  * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
  *                      keep unspecified.
  * @param eth_src       Ethernet layer Source Address field or NULL to keep
@@ -326,30 +327,6 @@ tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
                               in_addr_t      group_addr,
                               in_addr_t      src_addr,
                               uint8_t       *eth_src);
-
-/**
- * Send IGMPv2 Group Specific Query message
- *
- * @param ta_name       Test Agent name
- * @param sid           RCF SID
- * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
- * @param max_resp_time IGMP message maximum response time,
- *                      or negative to keep unspecified.
- * @param group_addr    Multicast Group Address field of IGMPv2 message.
- * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
- *                      keep unspecified.
- * @param eth_src       Ethernet layer Source Address field or NULL to keep
- *                      unspecified.
- *
- * @return              Status code.
- */
-extern te_errno
-tapi_igmp2_ip4_eth_send_group_query(const char    *ta_name,
-                                    int            session,
-                                    csap_handle_t  csap,
-                                    in_addr_t      group_addr,
-                                    in_addr_t      src_addr,
-                                    uint8_t       *eth_src);
 
 /**
  * Add IGMPv3 Report PDU as the last PDU to the last unit of the traffic 
