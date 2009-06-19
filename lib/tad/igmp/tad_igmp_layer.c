@@ -685,9 +685,12 @@ tad_igmp_match_do_cb(csap_p           csap,
                 break;
 
             /* Reallocate Group Records List binary data */
-            rc = tad_du_realloc(&pkt_data->v3_report.dus[5], len);
+            rc = tad_du_realloc(&pkt_data->v3_query.dus[5], len);
             if (rc != 0)
+            {
+                ERROR("DU realloc failed to set length to %d", len);
                 return rc;
+            }
 
             rc = tad_bps_pkt_frag_match_do(&proto_data->v3_query,
                                            &ptrn_data->v3_query,
@@ -704,6 +707,9 @@ tad_igmp_match_do_cb(csap_p           csap,
             break;
 
         default:
+            F_VERB(CSAP_LOG_FMT "Match PDU vs IGMP header failed on bit "
+                   "offset %u: %r", CSAP_LOG_ARGS(csap),
+                   (unsigned)bitoff, rc);
             return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
