@@ -335,7 +335,7 @@ tad_igmp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                 break;
 
             /* Check if there is 'number-of-source' field */
-            if (asn_get_length(layer_pdu, "number-of-sources") == -1)
+            if (asn_get_length(layer_pdu, "number-of-sources.#plain") == -1)
                 break;
 
             rc = tad_bps_confirm_send(&proto_data->v3_query,
