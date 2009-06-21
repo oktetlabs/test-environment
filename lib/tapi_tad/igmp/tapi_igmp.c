@@ -316,6 +316,7 @@ te_errno
 tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
                               int            session,
                               csap_handle_t  csap,
+                              int            max_resp_time,
                               in_addr_t      group_addr,
                               in_addr_t      src_addr,
                               uint8_t       *eth_src)
@@ -325,7 +326,8 @@ tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
 
     /* Add IGMPv2 layer message to PDU template/pattern */
     rc = tapi_igmp2_add_pdu(&pkt_tmpl, NULL, FALSE,
-                            TAPI_IGMP_TYPE_QUERY, 0, group_addr);
+                            TAPI_IGMP_TYPE_QUERY,
+                            max_resp_time, group_addr);
     if (rc != 0)
         return rc;
 
@@ -371,11 +373,23 @@ tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
 
     CHECK_RC(asn_write_int32(tmp_pdu, type, "type.#plain"));
 
-    CHECK_RC(asn_write_int32(tmp_pdu, group_list->groups_no,
-                             "number-of-groups.#plain"));
+    if (group_list != NULL)
+    {
+        CHECK_RC(asn_write_int32(tmp_pdu, group_list->groups_no,
+                                 "number-of-groups.#plain"));
 
-    CHECK_RC(asn_write_value_field(tmp_pdu, data, data_len,
-                                   "group-record-list.#plain"));
+        CHECK_RC(asn_write_value_field(tmp_pdu, data, data_len,
+                                       "group-record-list.#plain"));
+    }
+    else if (!is_pattern)
+    {
+        CHECK_RC(asn_write_int32(tmp_pdu, 0,
+                                 "number-of-groups.#plain"));
+#if 0
+        CHECK_RC(asn_write_value_field(tmp_pdu, "", 0,
+                                       "group-record-list.#plain"));
+#endif
+    }
 
     if (pdu != NULL)
         *pdu = tmp_pdu;
@@ -444,12 +458,11 @@ tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
         CHECK_RC(asn_write_int32(tmp_pdu, max_resp_code,
                                  "max-resp-time.#plain"));
 
-    if (group_addr != htonl(INADDR_ANY))
-        CHECK_RC(asn_write_value_field(tmp_pdu,
-                                       &group_addr, sizeof(group_addr),
-                                       "group-address.#plain"));
+    CHECK_RC(asn_write_value_field(tmp_pdu,
+                                   &group_addr, sizeof(group_addr),
+                                   "group-address.#plain"));
 
-    CHECK_RC(asn_write_int32(tmp_pdu, s_flag, "s_flag.#plain"));
+    CHECK_RC(asn_write_int32(tmp_pdu, s_flag, "s-flag.#plain"));
     CHECK_RC(asn_write_int32(tmp_pdu, qrv, "qrv.#plain"));
     CHECK_RC(asn_write_int32(tmp_pdu, qqic, "qqic.#plain"));
 
@@ -466,11 +479,14 @@ tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
                                        "source-address-list.#plain"));
     }
     else
+    if (!is_pattern)
     {
         CHECK_RC(asn_write_int32(tmp_pdu, 0,
                              "number-of-sources.#plain"));
-        CHECK_RC(asn_write_value_field(tmp_pdu, NULL, 0,
+#if 0
+        CHECK_RC(asn_write_value_field(tmp_pdu, "", 0,
                                        "source-address-list.#plain"));
+#endif
     }
 
     if (pdu != NULL)

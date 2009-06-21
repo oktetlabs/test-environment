@@ -324,6 +324,7 @@ extern te_errno
 tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
                               int            session,
                               csap_handle_t  csap,
+                              int            max_resp_time,
                               in_addr_t      group_addr,
                               in_addr_t      src_addr,
                               uint8_t       *eth_src);
