@@ -70,6 +70,7 @@ typedef enum dhcp_option_type {
     DHCP_OPT_AUTO_CONFIG                = 116,  /**< Auto configuration */
     DHCP_OPT_CLASSLESS_STATIC_ROUTE     = 121,  /**< Classless static
                                                      route RFC 3442 */
+    DHCP_OPT_PVID                       = 150,  /**< Port VLAN */
     DHCP_OPT_CLASSLESS_STATIC_ROUTES    = 249,  /**< Classless static
                                                      routes*/
     DHCP_OPT_END                        = 255,  /**< End option */
