@@ -807,7 +807,7 @@ te_errno
 tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
                           tapi_igmp3_group_record_t *group_record)
 {
-    tapi_igmp3_group_record_t **tmp_list;
+    tapi_igmp3_group_record_t **tmp_records;
     int                         tmp_size;
 
     if ((group_list == NULL) ||
@@ -820,11 +820,11 @@ tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
     if (group_list->groups_no >= group_list->groups_no_max)
     {
         tmp_size = group_list->groups_no_max * 2;
-        tmp_list = realloc(group_list->groups,
-                           tmp_size * sizeof(tapi_igmp3_group_record_t *));
-        if (tmp_list == NULL)
+        tmp_records = realloc(group_list->groups,
+                              tmp_size * sizeof(tapi_igmp3_group_record_t *));
+        if (tmp_records == NULL)
             return TE_RC(TE_TAPI, TE_ENOMEM);
-        group_list->groups = tmp_list;
+        group_list->groups = tmp_records;
         group_list->groups_no_max = tmp_size;
     }
 
@@ -832,3 +832,93 @@ tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
 
     return 0;
 }
+
+
+/* See the description in tapi_igmp.h */
+tapi_igmp3_src_list_t *
+tapi_igmp3_src_list_new(tapi_igmp3_src_list_t *src_list, ...)
+{
+    in_addr_t src;
+    va_list ap;
+
+    if (src_list == NULL)
+    {
+        src_list = (tapi_igmp3_src_list_t *)
+            calloc(1, sizeof(tapi_igmp3_src_list_t));
+        if (src_list == NULL)
+            TEST_FAIL("Canot allocate group records list structure");
+        if (tapi_igmp3_src_list_init(src_list) != 0)
+            TEST_FAIL("Canot initialise group records list structure");
+    }
+
+    va_start(ap, src_list);
+    while ((src = va_arg(ap, in_addr_t)) != 0)
+    {
+        if (tapi_igmp3_src_list_add(src_list, src) != 0)
+            TEST_FAIL("Failed to add source address to the list");
+    }
+    va_end(ap);
+
+    return src_list;
+}
+
+
+/* See the description in tapi_igmp.h */
+tapi_igmp3_group_record_t *
+tapi_igmp3_group_record_new(tapi_igmp3_group_record_t *group_record,
+                            int group_type, in_addr_t group_address,
+                            void *aux_data, int aux_data_len, ...)
+{
+    in_addr_t src;
+    va_list ap;
+
+    if (group_record == NULL)
+    {
+        group_record = (tapi_igmp3_group_record_t *)
+            calloc(1, sizeof(tapi_igmp3_group_record_t));
+        if (group_record == NULL)
+            TEST_FAIL("Canot allocate group record structure");
+        if (tapi_igmp3_group_record_init(group_record, group_type, group_address,
+                                         aux_data, aux_data_len) != 0)
+            TEST_FAIL("Canot initialise group record structure");
+    }
+
+    va_start(ap, aux_data_len);
+    while ((src = va_arg(ap, in_addr_t)) != 0)
+    {
+        if (tapi_igmp3_group_record_add_source(group_record, src) != 0)
+            TEST_FAIL("Failed to add source address to group record");
+    }
+    va_end(ap);
+
+    return group_record;
+}
+
+/* See the description in tapi_igmp.h */
+tapi_igmp3_group_list_t *
+tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...)
+{
+    tapi_igmp3_group_record_t *group_record = NULL;
+    va_list ap;
+
+    if (group_list == NULL)
+    {
+        group_list = (tapi_igmp3_group_list_t *)
+            calloc(1, sizeof(tapi_igmp3_group_list_t));
+        if (group_list == NULL)
+            TEST_FAIL("Canot allocate group records list structure");
+        if (tapi_igmp3_group_list_init(group_list) != 0)
+            TEST_FAIL("Canot initialise group records list structure");
+    }
+
+    va_start(ap, group_list);
+    while ((group_record = va_arg(ap, tapi_igmp3_group_record_t *)) != NULL)
+    {
+        if (tapi_igmp3_group_list_add(group_list, group_record) != 0)
+            TEST_FAIL("Failed to add group record to the list");
+    }
+    va_end(ap);
+
+    return group_list;
+}
+

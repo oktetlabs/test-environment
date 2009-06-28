@@ -625,6 +625,113 @@ tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
                           tapi_igmp3_group_record_t *group_record);
 
 
+/**
+ * Allocate, initialise and fill source list structure
+ *
+ * @param src_list    Source list to initialise and fill
+ *                    Memory allocation will be skipped if this parameter is not NULL
+ * @param ...         List of source addresses to be added to the list
+ *                    (list should be ended with 0 value (INADDR_ANY))
+ *
+ * @return            Initialised source list, or NULL if failed.
+ */
+extern tapi_igmp3_src_list_t *
+tapi_igmp3_src_list_new(tapi_igmp3_src_list_t *src_list, ...);
+
+
+extern tapi_igmp3_group_record_t *
+tapi_igmp3_group_record_new(tapi_igmp3_group_record_t *group_record,
+                            int group_type, in_addr_t group_address,
+                            void *aux_data, int aux_data_len, ...);
+
+
+/**
+ * Allocate, initialise and fill group list structure
+ *
+ * @param group_list  Group Records list to initialise and fill (i
+ *                    Memory allocation will be skipped if this parameter is not NULL
+ * @param ...         List of group records to be added to the list
+ *                    (list should be ended with NULL value)
+ *
+ * @return            Initialised source list, or NULL if failed.
+ */
+extern tapi_igmp3_group_list_t *
+tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
+
+
+#define IGMP1_SEND_JOIN(_pco, _csap, _group_addr, _src_addr, _src_mac) \
+    CHECK_RC(tapi_igmp1_ip4_eth_send_report((_pco)->ta, (_pco)->sid,    \
+                                            (_csap), (_group_addr),    \
+                                            (_src_addr), (_src_mac)))
+
+#define IGMP2_SEND_JOIN(_pco, _csap, _group_addr, _src_addr, _src_mac) \
+    CHECK_RC(tapi_igmp2_ip4_eth_send_report((_pco)->ta, (_pco)->sid,    \
+                                            (_csap), (_group_addr),    \
+                                            (_src_addr), (_src_mac)))
+
+#define IGMP2_SEND_LEAVE(_pco, _csap, _group_addr, _src_addr, _src_mac) \
+    CHECK_RC(tapi_igmp2_ip4_eth_send_leave((_pco)->ta, (_pco)->sid,    \
+                                           (_csap), (_group_addr),    \
+                                           (_src_addr), (_src_mac)))
+
+#define IGMP2_SEND_QUERY(_pco, _csap, _group_addr, _src_addr, _src_mac) \
+    CHECK_RC(tapi_igmp2_ip4_eth_send_query((_pco)->ta, (_pco)->sid,    \
+                                           (_csap), (_group_addr),    \
+                                           (_src_addr), (_src_mac)))
+
+
+#define IGMP3_SRC_LIST(_list...)                \
+    tapi_igmp3_src_list_new(_list)
+
+#define IGMP3_GROUP_RECORD(_group_record, _group_type, _group_address, _aux_data, _aux_data_len...) \
+    tapi_igmp3_group_record_new(_group_record, _group_type, _group_address, \
+                                _aux_data, _aux_data_len)
+
+#define IGMP_GROUP_LIST(_group_list,...) \
+    tapi_igmp3_group_list_new(_group_list)
+
+
+#define IGMP3_SEND_REPORT(_pco, _csap, _group_list, _src_addr, _src_mac) \
+    CHECK_RC(tapi_igmp3_ip4_eth_send_report((_pco)->ta, (_pco)->sid,        \
+                                            (_csap), (_group_list),         \
+                                            (_src_addr), (_src_mac)))
+
+#define IGMP3_SEND_SINGLE_REPORT(_pco, _csap, _group_type, _group_addr, _src_addr, _src_mac, _addr1...) \
+    IGMP3_SEND_REPORT((_pco), (_csap),                                      \
+                      IGMP_GROUP_LIST(NULL,                                 \
+                          IGMP_GROUP_RECORD((_group_type), (_group_addr),   \
+                                            NULL, 0, _addr1, 0), NULL),     \
+                      (_src_addr), (_src_mac))
+
+#define IGMP3_SEND_JOIN(_pco, _csap, _group_addr, _src_addr, _src_mac) \
+    IGMP3_SEND_REPORT((_pco), (_csap),                                  \
+                      IGMP_GROUP_LIST(NULL,                             \
+                          IGMP_GROUP_RECORD(IGMPV3_CHANGE_TO_EXCLUDE,   \
+                              (_group_addr), NULL, 0, 0), NULL),        \
+                      (_src_addr), (_src_mac))
+
+#define IGMP3_SEND_LEAVE(_pco, _csap, _group_addr, _src_addr, _src_mac) \
+    IGMP3_SEND_REPORT((_pco), (_csap),                                  \
+                      IGMP_GROUP_LIST(NULL,                             \
+                          IGMP_GROUP_RECORD(IGMPV3_CHANGE_TO_INCLUDE,   \
+                              (_group_addr), NULL, 0, 0), NULL),        \
+                      (_src_addr), (_src_mac))
+
+#define IGMP3_SEND_ALLOW(_pco, _csap, _group_addr, _src_addr, _src_mac, _addr1,...) \
+    IGMP3_SEND_REPORT((_pco), (_csap),                                      \
+                      IGMP_GROUP_LIST(NULL,                                 \
+                          IGMP_GROUP_RECORD(IGMPV3_ALLOW_NEW_SOURCES,       \
+                              (_group_addr), NULL, 0, _addr1, 0), NULL),    \
+                      (_src_addr), (_src_mac))
+
+#define IGMP3_SEND_BLOCK(_pco, _csap, _group_addr, _src_addr, _src_mac, _addr1,...) \
+    IGMP3_SEND_REPORT((_pco), (_csap),                                      \
+                      IGMP_GROUP_LIST(NULL,                                 \
+                          IGMP_GROUP_RECORD(IGMPV3_BLOCK_OLD_SOURCES,       \
+                              (_group_addr), NULL, 0, _addr1, 0), NULL),    \
+                      (_src_addr), (_src_mac))
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
