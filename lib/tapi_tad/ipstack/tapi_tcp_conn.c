@@ -370,8 +370,12 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
     unsigned int    num = 0;
     tapi_tcp_pos_t  seq;
 
+
     if (conn_descr == NULL)
+    {
+        ERROR("%s: connection descriptor is NULL", __FUNCTION__);
         return TE_EINVAL;
+    }
 
     seq = conn_descr->seq_got;
 
@@ -379,8 +383,12 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
                            conn_descr->rcv_csap,
                            tcp_conn_pkt_handler, conn_descr, &num);
     if (rc != 0)
+    {
+        ERROR("%s: rcf_ta_trrecv_get() failed", __FUNCTION__);
         return rc;
+    }
 
+    INFO("received %d messages", num);
     if (conn_descr->seq_got == seq)
     {
         sleep((timeout + 999) / 1000);
@@ -388,10 +396,18 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
                                conn_descr->rcv_csap,
                                tcp_conn_pkt_handler, conn_descr, &num);
         if (rc != 0)
+        {
+            ERROR("%s: rcf_ta_trrecv_get() failed", __FUNCTION__);
             return rc;
+        }
+
         if (conn_descr->seq_got == seq)
+        {
+            ERROR("%s: no messages received", __FUNCTION__);
             return TE_ETIMEDOUT;
+        }
     }
+
     return 0;
 }
 
@@ -413,7 +429,16 @@ static inline tapi_tcp_msg_queue_t *
 conn_get_oldest_msg(tapi_tcp_connection_t *conn_descr)
 {
     if (conn_descr == NULL)
+    {
+        ERROR("%s: Connection descriptor is NULL", __FUNCTION__);
         return NULL;
+    }
+
+    if (conn_descr->messages == NULL)
+    {
+        ERROR("%s: Connection descriptor messages is NULL", __FUNCTION__);
+        return NULL;
+    }
 
     if (conn_descr->messages->cqh_first ==
             (void *)conn_descr->messages) 
@@ -1219,7 +1244,6 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
         conn_wait_msg(conn_descr, timeout);
         msg = conn_get_oldest_msg(conn_descr);
     }
-
 
     if (msg != NULL)
     {
