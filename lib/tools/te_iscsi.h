@@ -863,7 +863,7 @@ typedef enum iscsi_connection_status
 /**
  * SCSI block size for iSCSI
  */
-#define	ISCSI_SCSI_BLOCKSIZE 512
+#define    ISCSI_SCSI_BLOCKSIZE 512
 
 #ifdef __cplusplus
 extern "C" {
