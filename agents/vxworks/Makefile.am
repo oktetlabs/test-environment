@@ -9,7 +9,8 @@ install-exec-hook:
 
 else
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include 
+AM_CPPFLAGS = @TE_CPPFLAGS@ \
+              -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include 
 AM_CFLAGS = @TE_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib
 
