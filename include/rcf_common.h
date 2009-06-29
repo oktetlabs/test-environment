@@ -43,7 +43,7 @@
                                      identifier length */
 #define RCF_MAX_VAL         (128  * 6) /**< Maximum length of variable value
                                      or object instance value */
-#define RCF_MAX_PATH        128 /**< Maximum full file name */
+#define RCF_MAX_PATH        256 /**< Maximum full file name */
 
 #define RCF_MAX_PARAMS      10  /**< Maximum number of routine parameters */
 
