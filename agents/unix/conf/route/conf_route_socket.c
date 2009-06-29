@@ -1412,7 +1412,7 @@ route_read ()
     NET_RT_DUMP,
     0
   };
-		      
+  
   /* Get buffer size. */
   if (sysctl (mib, MIBSIZ, NULL, &bufsiz, NULL, 0) < 0) 
     {
