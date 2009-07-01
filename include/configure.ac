@@ -148,6 +148,7 @@ sys/errno.h \
 sys/ethernet.h \
 sys/filio.h \
 sys/ioctl.h \
+sys/mman.h \
 sys/poll.h \
 sys/resource.h \
 sys/select.h \

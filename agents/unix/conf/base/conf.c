@@ -1059,6 +1059,10 @@ rcf_ch_conf_root(void)
         if (ta_unix_conf_vcm_init() != 0)
             goto fail;
 #endif
+#ifdef WITH_TR069_SUPPORT
+        if (ta_unix_conf_acse_init() != 0)
+            goto fail;
+#endif
 #ifdef ENABLE_8021X
         if (ta_unix_conf_supplicant_init() != 0)
             goto fail;

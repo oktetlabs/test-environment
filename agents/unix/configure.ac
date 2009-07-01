@@ -446,6 +446,18 @@ if test -n "$ac_cv_enable_vcm"; then
     AC_DEFINE([ENABLE_VCM_SUPPORT], [], [Whether to enable VCM support])
 fi    
 
+AC_ARG_WITH([tr069],
+            AS_HELP_STRING([--with-tr069],
+                           [enable TR-069 support (default is NO)]),
+            [],
+            [with_tr069=no])
+
+AM_CONDITIONAL(CFG_TR069, test x"$with_tr069" != xno)
+AS_IF([test x"$with_tr069" != xno],
+      [AC_DEFINE([WITH_TR069_SUPPORT], [], \
+      [Whether to enable TR-069 support]) \
+      EXTRA_LDADD="$EXTRA_LDADD -lacse -lssl -lcrypto -lz"])
+
 AM_CONDITIONAL(ISCSI_TARGET_USE, test -n "$with_iscsi")
 if test -n "$with_iscsi"; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_ISCSI"
