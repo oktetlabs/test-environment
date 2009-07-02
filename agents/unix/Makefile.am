@@ -48,6 +48,10 @@ ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a 
 
+if CFG_TR069
+ta_DEPENDENCIES += $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libacse.a 
+endif
+
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@ \
           $(srcdir)/symtbl_funcs
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" \
