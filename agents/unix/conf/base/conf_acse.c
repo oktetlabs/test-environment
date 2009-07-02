@@ -57,10 +57,10 @@
 #include "te_queue.h"
 #include "te_defs.h"
 #include "logger_api.h"
+#include "logfork.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
-#include "logger_api.h"
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
 #include "acse.h"
@@ -329,6 +329,8 @@ session_hold_requests_get(unsigned int gid, char const *oid,
                           char *value, char const *acse,
                           char const *session)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, session, NULL,
                     session_hold_requests_get_fun);
 }
@@ -349,6 +351,8 @@ session_hold_requests_set(unsigned int gid, char const *oid,
                           char const *value, char const *acse,
                           char const *session)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, session, NULL,
                     session_hold_requests_set_fun);
 }
@@ -369,6 +373,8 @@ session_enabled_get(unsigned int gid, char const *oid,
                     char *value, char const *acse,
                     char const *session)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, session, NULL,
                     session_enabled_get_fun);
 }
@@ -389,6 +395,8 @@ session_enabled_set(unsigned int gid, char const *oid,
                     char const *value, char const *acse,
                     char const *session)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, session, NULL,
                     session_enabled_set_fun);
 }
@@ -409,6 +417,8 @@ session_target_state_get(unsigned int gid, char const *oid,
                          char *value, char const *acse,
                          char const *session)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, session, NULL,
                     session_target_state_get_fun);
 }
@@ -429,6 +439,8 @@ session_target_state_set(unsigned int gid, char const *oid,
                          char const *value, char const *acse,
                          char const *session)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, session, NULL,
                     session_target_state_set_fun);
 }
@@ -449,6 +461,8 @@ session_state_get(unsigned int gid, char const *oid,
                   char *value, char const *acse,
                   char const *session)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, session, NULL,
                     session_state_get_fun);
 }
@@ -469,6 +483,8 @@ session_link_get(unsigned int gid, char const *oid,
                  char *value, char const *acse,
                  char const *session)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, session, NULL,
                     session_link_get_fun);
 }
@@ -487,6 +503,8 @@ static te_errno
 acse_session_list(unsigned int gid, char const *oid,
                   char **list, char const *acse)
 {
+    UNUSED(acse);
+
     return call_list(gid, oid, list, NULL, acse_session_list_fun);
 }
 
@@ -507,6 +525,8 @@ device_id_serial_number_get(unsigned int gid, char const *oid,
                             char *value, char const *acse,
                             char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, cpe,
                     device_id_serial_number_get_fun);
 }
@@ -528,6 +548,8 @@ device_id_product_class_get(unsigned int gid, char const *oid,
                             char *value, char const *acse,
                             char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, cpe,
                     device_id_product_class_get_fun);
 }
@@ -549,6 +571,8 @@ device_id_oui_get(unsigned int gid, char const *oid,
                   char *value, char const *acse,
                   char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, cpe,
                     device_id_oui_get_fun);
 }
@@ -570,6 +594,8 @@ device_id_manufacturer_get(unsigned int gid, char const *oid,
                            char *value, char const *acse,
                            char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, cpe,
                     device_id_manufacturer_get_fun);
 }
@@ -591,6 +617,8 @@ cpe_pass_get(unsigned int gid, char const *oid,
              char *value, char const *acse,
              char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, cpe, cpe_pass_get_fun);
 }
 
@@ -611,6 +639,8 @@ cpe_pass_set(unsigned int gid, char const *oid,
              char const *value, char const *acse,
              char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, acs, cpe, cpe_pass_set_fun);
 }
 
@@ -631,6 +661,8 @@ cpe_user_get(unsigned int gid, char const *oid,
              char *value, char const *acse,
              char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, cpe, cpe_user_get_fun);
 }
 
@@ -651,6 +683,8 @@ cpe_user_set(unsigned int gid, char const *oid,
              char const *value, char const *acse,
              char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, acs, cpe, cpe_user_set_fun);
 }
 
@@ -671,6 +705,8 @@ cpe_cert_get(unsigned int gid, char const *oid,
              char *value, char const *acse,
              char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, cpe, cpe_cert_get_fun);
 }
 
@@ -691,6 +727,8 @@ cpe_cert_set(unsigned int gid, char const *oid,
              char const *value, char const *acse,
              char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, acs, cpe, cpe_cert_set_fun);
 }
 
@@ -711,6 +749,8 @@ cpe_url_get(unsigned int gid, char const *oid,
             char *value, char const *acse,
             char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, cpe, cpe_url_get_fun);
 }
 
@@ -731,7 +771,53 @@ cpe_url_set(unsigned int gid, char const *oid,
             char const *value, char const *acse,
             char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, acs, cpe, cpe_url_set_fun);
+}
+
+/**
+ * Get the cpe IP address.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Object identifier (unused)
+ * @param value         The value of the cpe IP address
+ * @param acse          Name of the acse instance (unused)
+ * @param acs           Name of the acs instance
+ * @param cpe           Name of the acs cpe instance
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_ip_addr_get(unsigned int gid, char const *oid,
+                char *value, char const *acse,
+                char const *acs, char const *cpe)
+{
+    UNUSED(acse);
+
+    return call_get(gid, oid, value, acs, cpe, cpe_ip_addr_get_fun);
+}
+
+/**
+ * Set the cpe IP address.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Object identifier (unused)
+ * @param value         New value of the cpe IP address
+ * @param acse          Name of the acse instance (unused)
+ * @param acs           Name of the acs instance
+ * @param cpe           Name of the acs cpe instance
+ *
+ * @return      Status code.
+ */
+static te_errno
+cpe_ip_addr_set(unsigned int gid, char const *oid,
+                char const *value, char const *acse,
+                char const *acs, char const *cpe)
+{
+    UNUSED(acse);
+
+    return call_set(gid, oid, value, acs, cpe, cpe_ip_addr_set_fun);
 }
 
 /**
@@ -751,6 +837,8 @@ acs_cpe_add(unsigned int gid, char const *oid,
             char const *value, char const *acse,
             char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, acs, cpe, acs_cpe_add_fun);
 }
 
@@ -769,6 +857,8 @@ static te_errno
 acs_cpe_del(unsigned int gid, char const *oid,
             char const *acse, char const *acs, char const *cpe)
 {
+    UNUSED(acse);
+
     return call_del(gid, oid, acs, cpe, acs_cpe_del_fun);
 }
 
@@ -787,6 +877,8 @@ static te_errno
 acs_cpe_list(unsigned int gid, char const *oid,
              char **list, char const *acse, char const *acs)
 {
+    UNUSED(acse);
+
     return call_list(gid, oid, list, acs, acs_cpe_list_fun);
 }
 
@@ -805,6 +897,8 @@ static te_errno
 acs_pass_get(unsigned int gid, char const *oid,
              char *value, char const *acse, char const *acs)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, NULL, acs_pass_get_fun);
 }
 
@@ -823,6 +917,8 @@ static te_errno
 acs_pass_set(unsigned int gid, char const *oid,
              char const *value, char const *acse, char const *acs)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, acs, NULL, acs_pass_set_fun);
 }
 
@@ -841,6 +937,8 @@ static te_errno
 acs_user_get(unsigned int gid, char const *oid,
              char *value, char const *acse, char const *acs)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, NULL, acs_user_get_fun);
 }
 
@@ -859,6 +957,8 @@ static te_errno
 acs_user_set(unsigned int gid, char const *oid,
              char const *value, char const *acse, char const *acs)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, acs, NULL, acs_user_set_fun);
 }
 
@@ -877,6 +977,8 @@ static te_errno
 acs_cert_get(unsigned int gid, char const *oid,
              char *value, char const *acse, char const *acs)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, NULL, acs_cert_get_fun);
 }
 
@@ -895,6 +997,8 @@ static te_errno
 acs_cert_set(unsigned int gid, char const *oid,
              char const *value, char const *acse, char const *acs)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, acs, NULL, acs_cert_set_fun);
 }
 
@@ -913,6 +1017,8 @@ static te_errno
 acs_url_get(unsigned int gid, char const *oid,
             char *value, char const *acse, char const *acs)
 {
+    UNUSED(acse);
+
     return call_get(gid, oid, value, acs, NULL, acs_url_get_fun);
 }
 
@@ -931,6 +1037,8 @@ static te_errno
 acs_url_set(unsigned int gid, char const *oid,
             char const *value, char const *acse, char const *acs)
 {
+    UNUSED(acse);
+
     return call_set(gid, oid, value, acs, NULL, acs_url_set_fun);
 }
 
@@ -949,6 +1057,8 @@ static te_errno
 acse_acs_add(unsigned int gid, char const *oid,
              char const *value, char const *acse, char const *acs)
 {
+    UNUSED(acse);
+
     return call_add(gid, oid, value, acs, NULL, acse_acs_add_fun);
 }
 
@@ -965,6 +1075,8 @@ static te_errno
 acse_acs_del(unsigned int gid, char const *oid,
              char const *acse, char const *acs)
 {
+    UNUSED(acse);
+
     return call_del(gid, oid, acs, NULL, acse_acs_del_fun);
 }
 
@@ -982,6 +1094,8 @@ static te_errno
 acse_acs_list(unsigned int gid, char const *oid,
               char **list, char const *acse)
 {
+    UNUSED(acse);
+
     return call_list(gid, oid, list, NULL, acse_acs_list_fun);
 }
 
@@ -1268,8 +1382,12 @@ RCF_PCH_CFG_NODE_RW(node_cpe_url, "url",
                     NULL, &node_cpe_cert,
                     &cpe_url_get, &cpe_url_set);
 
+RCF_PCH_CFG_NODE_RW(node_cpe_ip_addr, "ip_addr", 
+                    NULL, &node_cpe_url,
+                    &cpe_ip_addr_get, &cpe_ip_addr_set);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_acs_cpe, "cpe",
-                            &node_cpe_url, NULL,
+                            &node_cpe_ip_addr, NULL,
                             &acs_cpe_add, &acs_cpe_del,
                             &acs_cpe_list, NULL);
 
