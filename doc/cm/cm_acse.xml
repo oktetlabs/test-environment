@@ -75,6 +75,12 @@
     <object oid="/agent/acse/acs/cpe" access="read_create"
             type="none"/>
 
+    <!-- CPE IP address.
+         Name: none
+         Value: URL -->
+    <object oid="/agent/acse/acs/cpe/ip_addr" access="read_write"
+            type="address"/>
+
     <!-- CPE URL.
          Name: none
          Value: URL -->

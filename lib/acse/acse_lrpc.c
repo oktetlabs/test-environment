@@ -57,11 +57,6 @@
 #include "te_queue.h"
 #include "te_defs.h"
 #include "logger_api.h"
-#include "comm_agent.h"
-#include "rcf_ch_api.h"
-#include "rcf_pch.h"
-#include "logger_api.h"
-#include "te_shell_cmd.h"
 #include "acse_internal.h"
 
 /** Device ID */
@@ -75,6 +70,7 @@ typedef struct {
 /** CPE */
 typedef struct {
     char const *name;          /**< CPE name */
+    char const *ip_addr;       /**< CPE IP address */
     char const *url;           /**< CPE URL */
     char const *cert;          /**< CPE certificate */
     char const *user;          /**< CPE user name */
@@ -683,6 +679,48 @@ cpe_url_set(params_t *params)
 }
 
 /**
+ * Get the cpe IP address.
+ *
+ * @param params        Parameters object
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_ip_addr_get(params_t *params)
+{
+    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+
+    if (cpe_inst == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    strcpy(params->value, cpe_inst->ip_addr);
+    return 0;
+}
+
+/**
+ * Set the cpe IP address.
+ *
+ * @param params        Parameters object
+ *
+ * @return      Status code.
+ */
+static te_errno
+cpe_ip_addr_set(params_t *params)
+{
+    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+
+    if (cpe_inst == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    free_const(cpe_inst->ip_addr);
+
+    if ((cpe_inst->ip_addr = strdup(params->value)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    return 0;
+}
+
+/**
  * Add the acs cpe instance.
  *
  * @param params        Parameters object
@@ -720,53 +758,60 @@ acs_cpe_add(params_t *params)
     if ((cpe_item->cpe.name = strdup(params->cpe)) == NULL)
         goto enomem_1;
 
-    if ((cpe_item->cpe.url  = strdup("")) == NULL)
+    if ((cpe_item->cpe.ip_addr  = strdup("0.0.0.0")) == NULL)
         goto enomem_2;
 
-    if ((cpe_item->cpe.cert = strdup("")) == NULL)
+RING("AAA: cpe.ip_addr = '%s', cpe_item = %p", cpe_item->cpe.ip_addr, cpe_item);
+    if ((cpe_item->cpe.url  = strdup("")) == NULL)
         goto enomem_3;
 
-    if ((cpe_item->cpe.user = strdup("")) == NULL)
+    if ((cpe_item->cpe.cert = strdup("")) == NULL)
         goto enomem_4;
 
-    if ((cpe_item->cpe.pass = strdup("")) == NULL)
+    if ((cpe_item->cpe.user = strdup("")) == NULL)
         goto enomem_5;
 
-    if ((cpe_item->cpe.device_id.manufacturer = strdup("")) == NULL)
+    if ((cpe_item->cpe.pass = strdup("")) == NULL)
         goto enomem_6;
 
-    if ((cpe_item->cpe.device_id.oui = strdup("")) == NULL)
+    if ((cpe_item->cpe.device_id.manufacturer = strdup("")) == NULL)
         goto enomem_7;
 
-    if ((cpe_item->cpe.device_id.product_class = strdup("")) == NULL)
+    if ((cpe_item->cpe.device_id.oui = strdup("")) == NULL)
         goto enomem_8;
 
-    if ((cpe_item->cpe.device_id.serial_number = strdup("")) == NULL)
+    if ((cpe_item->cpe.device_id.product_class = strdup("")) == NULL)
         goto enomem_9;
+
+    if ((cpe_item->cpe.device_id.serial_number = strdup("")) == NULL)
+        goto enomem_A;
 
     STAILQ_INSERT_TAIL(&acs_item->acs.cpe_list, cpe_item, link);
     return 0;
 
-enomem_9:
+enomem_A:
     free_const(cpe_item->cpe.device_id.product_class);
 
-enomem_8:
+enomem_9:
     free_const(cpe_item->cpe.device_id.oui);
 
-enomem_7:
+enomem_8:
     free_const(cpe_item->cpe.device_id.manufacturer);
 
-enomem_6:
+enomem_7:
     free_const(cpe_item->cpe.pass);
 
-enomem_5:
+enomem_6:
     free_const(cpe_item->cpe.user);
 
-enomem_4:
+enomem_5:
     free_const(cpe_item->cpe.cert);
 
-enomem_3:
+enomem_4:
     free_const(cpe_item->cpe.url);
+
+enomem_3:
+    free_const(cpe_item->cpe.ip_addr);
 
 enomem_2:
     free_const(cpe_item->cpe.name);
@@ -1172,7 +1217,8 @@ acse_acs_list(params_t *params)
     return 0;
 }
 
-/** Translation table for calculated goto */
+/** Translation table for calculated goto
+ * (shoud correspond to enum acse_fun_t in acse.h) */
 static te_errno
     (*xlat[])(params_t *) = {
         &acse_acs_add, &acse_acs_del, &acse_acs_list,
@@ -1181,6 +1227,7 @@ static te_errno
         &acs_user_get, &acs_user_set,
         &acs_pass_get, &acs_pass_set,
         &acs_cpe_add, &acs_cpe_del, &acs_cpe_list,
+        &cpe_ip_addr_get, &cpe_ip_addr_set,
         &cpe_url_get, &cpe_url_set,
         &cpe_cert_get, &cpe_cert_set,
         &cpe_user_get, &cpe_user_set,

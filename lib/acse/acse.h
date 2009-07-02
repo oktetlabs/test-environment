@@ -37,6 +37,7 @@ extern "C" {
 
 #include "rcf_common.h"
 
+/* This enum should correspond to xlat array in acse_lrpc.c */
 typedef enum { acse_fun_first = 1,
                acse_acs_add_fun = acse_fun_first,
                acse_acs_del_fun, acse_acs_list_fun,
@@ -45,6 +46,7 @@ typedef enum { acse_fun_first = 1,
                acs_user_get_fun, acs_user_set_fun,
                acs_pass_get_fun, acs_pass_set_fun,
                acs_cpe_add_fun, acs_cpe_del_fun, acs_cpe_list_fun,
+               cpe_ip_addr_get_fun, cpe_ip_addr_set_fun,
                cpe_url_get_fun, cpe_url_set_fun,
                cpe_cert_get_fun, cpe_cert_set_fun,
                cpe_user_get_fun, cpe_user_set_fun,
