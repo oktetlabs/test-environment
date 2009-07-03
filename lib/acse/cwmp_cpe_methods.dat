@@ -1,0 +1,7 @@
+SetParameterValues
+GetParameterValues
+GetParameterNames
+GetParameterAttributes
+SetParameterAttributes
+AddObject
+DeleteObject
