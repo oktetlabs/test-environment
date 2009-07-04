@@ -51,12 +51,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __cwmp__GetRPCMethods(struct soap *soap, struct _cwmp_
     return 0;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 __cwmp__GetParamterValues(struct soap *soap, struct _cwmp__GetParameterValues *cwmp__GetParameterValues, struct _cwmp__GetParameterValuesResponse *cwmp__GetParameterValuesResponse)
-{
-    return 0;
-}
-
-SOAP_FMAC5 int SOAP_FMAC6 __cwmp__GetParamterNames(struct soap *soap, struct _cwmp__GetParameterNames *cwmp__GetParameterNames, struct _cwmp__GetParameterNamesResponse *cwmp__GetParameterNamesResponse)
+SOAP_FMAC5 int SOAP_FMAC6 __cwmp__Inform(struct soap *soap, struct _cwmp__Inform *cwmp__Inform, struct _cwmp__InformResponse *cwmp__InformResponse)
 {
     return 0;
 }
