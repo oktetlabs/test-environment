@@ -226,25 +226,6 @@ find_cpe(char const *acs, char const *cpe)
 }
 
 /**
- * Initializes the list of instances to be empty.
- *
- * @param list          The list of instances
- *
- * @return              Status code
- */
-static te_errno
-empty_list(char **list)
-{
-    char *l = strdup("");
-
-    if (l == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    *list = l;
-    return 0;
-}
-
-/**
  * Get the session 'hold_requests' flag.
  *
  * @param params        Parameters object
