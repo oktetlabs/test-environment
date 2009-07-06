@@ -1,7 +1,16 @@
 SetParameterValues
 GetParameterValues
 GetParameterNames
-GetParameterAttributes
 SetParameterAttributes
+GetParameterAttributes
 AddObject
 DeleteObject
+Reboot
+Download
+Upload
+FactoryReset
+GetQueuedTransfers
+GetAllQueuedTransfers
+ScheduleInform
+SetVouchers
+GetOptions
