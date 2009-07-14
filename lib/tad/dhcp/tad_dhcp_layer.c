@@ -468,7 +468,15 @@ tad_dhcp_match_post_cb(csap_p              csap,
 
             opt_type = *data;
             FILL_DHCP_OPT_FIELD(opt, "type",  1);
-            if (opt_type == 255 || opt_type == 0)
+
+            /* Do not add padding zeros to ASN value*/
+            if (opt_type == 0)
+            {
+                asn_free_value(opt);
+                continue;
+            }
+
+            if (opt_type == 255)
             {
                 /* END and PAD options don't have length and value */
                 asn_insert_indexed(opt_list, opt, -1, "");
