@@ -136,14 +136,8 @@
 
     <!-- Session object.
          Name: based on Configurator invocationally unique ID -->
-    <object oid="/agent/acse/session" access="read_only"
+    <object oid="/agent/acse/acs/cpe/session" access="read_only"
             type="none" volatile="true"/>
-
-    <!-- Link to the CPE instance that corresponds to a session object.
-         Name: none
-         Value: "/agent:Agt/acse:/acs:ACS/cpe:CPE" instance -->
-    <object oid="/agent/acse/session/link" access="read_only"
-            type="string" volatile="true"/>
 
     <!-- Actual state of a session.
          Name: none
@@ -153,7 +147,7 @@
                 4 - SESSION_INITIATED
                 5 - SESSIOD_INSIDE_TRANSACTION
                 6 - SESSION_OUT_OF_TRANSACTION -->
-    <object oid="/agent/acse/session/state"
+    <object oid="/agent/acse/acs/cpe/session/state"
             access="read_only" type="integer" volatile="true"/>
 
     <!-- Target state of a session.
@@ -165,7 +159,7 @@
                 4 - SESSION_INITIATED
                 5 - SESSIOD_INSIDE_TRANSACTION
                 6 - SESSION_OUT_OF_TRANSACTION -->
-    <object oid="/agent/acse/session/target_state"
+    <object oid="/agent/acse/acs/cpe/session/target_state"
             access="read_write" type="integer"/>
 
     <!-- Enable (let a session go)/disable (stop) a session.
@@ -174,13 +168,13 @@
 
          Notes: When target state is reached the session is
                 automatically disabled (stopped) -->
-    <object oid="/agent/acse/session/enabled"
+    <object oid="/agent/acse/acs/cpe/session/enabled"
             access="read_write" type="integer" volatile="true" />
 
     <!-- Hold or do not hold requests during (a part of) a session.
          Name: none
          Value: 0 - do not hold requests, 1 - hold requests -->
-    <object oid="/agent/acse/session/hold_requests"
+    <object oid="/agent/acse/acs/cpe/session/hold_requests"
             access="read_write" type="integer" />
 
 </backup>
