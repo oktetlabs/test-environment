@@ -136,8 +136,8 @@
 
     <!-- Session object.
          Name: based on Configurator invocationally unique ID -->
-    <object oid="/agent/acse/acs/cpe/session" access="read_only"
-            type="none" volatile="true"/>
+    <object oid="/agent/acse/acs/cpe/session"
+            access="read_only" type="none"/>
 
     <!-- Actual state of a session.
          Name: none
@@ -169,12 +169,12 @@
          Notes: When target state is reached the session is
                 automatically disabled (stopped) -->
     <object oid="/agent/acse/acs/cpe/session/enabled"
-            access="read_write" type="integer" volatile="true" />
+            access="read_write" type="integer"/>
 
     <!-- Hold or do not hold requests during (a part of) a session.
          Name: none
          Value: 0 - do not hold requests, 1 - hold requests -->
     <object oid="/agent/acse/acs/cpe/session/hold_requests"
-            access="read_write" type="integer" />
+            access="read_write" type="integer"/>
 
 </backup>
