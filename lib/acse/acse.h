@@ -43,16 +43,6 @@ extern "C" {
 #include "rcf_common.h"
 #include "tarpc.h"
 
-typedef enum { session_no_state,
-               session_disconnected,
-               session_connected,
-               session_authenticated,
-               session_preinitiated,
-               session_initiated,
-               session_inside_transaction,
-               session_outside_transaction
-} session_state_t;
-
 /* This enum should correspond to xlat array in acse_lrpc.c */
 typedef enum { acse_fun_first = 1,
                acse_acs_add_fun = acse_fun_first,

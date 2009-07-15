@@ -71,6 +71,17 @@
 #include "logger_api.h"
 #include "acse_internal.h"
 
+/** Session states */
+typedef enum { session_no_state,
+               session_disconnected,
+               session_connected,
+               session_authenticated,
+               session_preinitiated,
+               session_initiated,
+               session_inside_transaction,
+               session_outside_transaction
+} session_state_t;
+
 /** Session */
 typedef struct {
     session_state_t state;         /**< Session state                  */

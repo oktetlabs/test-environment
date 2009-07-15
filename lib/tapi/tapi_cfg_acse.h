@@ -33,11 +33,21 @@
 
 #include "te_errno.h"
 #include "conf_api.h"
-#include "acse.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** Session states */
+typedef enum { session_no_state,
+               session_disconnected,
+               session_connected,
+               session_authenticated,
+               session_preinitiated,
+               session_initiated,
+               session_inside_transaction,
+               session_outside_transaction
+} session_state_t;
 
 /**
  * Start ACSE.
