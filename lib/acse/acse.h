@@ -35,7 +35,23 @@
 extern "C" {
 #endif
 
+#define LRPC_MMAP_AREA "/lrpc_mmap_area"
+#define LRPC_ACSE_SOCK "/tmp/lrpc_acse_sock"
+#define LRPC_TA_SOCK   "/tmp/lrpc_ta_sock"
+#define LRPC_RPC_SOCK  "/tmp/lrpc_rpc_sock"
+
 #include "rcf_common.h"
+#include "tarpc.h"
+
+typedef enum { session_no_state,
+               session_disconnected,
+               session_connected,
+               session_authenticated,
+               session_preinitiated,
+               session_initiated,
+               session_inside_transaction,
+               session_outside_transaction
+} session_state_t;
 
 /* This enum should correspond to xlat array in acse_lrpc.c */
 typedef enum { acse_fun_first = 1,
@@ -55,15 +71,33 @@ typedef enum { acse_fun_first = 1,
                device_id_oui_get_fun,
                device_id_product_class_get_fun,
                device_id_serial_number_get_fun,
-               acse_session_list_fun,
-               session_link_get_fun, session_state_get_fun,
+               session_state_get_fun,
                session_target_state_get_fun, session_target_state_set_fun,
                session_enabled_get_fun, session_enabled_set_fun,
                session_hold_requests_get_fun, session_hold_requests_set_fun,
-               acse_fun_last = session_hold_requests_set_fun
+               fun_cpe_get_rpc_methods,
+               fun_cpe_set_parameter_values,
+               fun_cpe_get_parameter_values,
+               fun_cpe_get_parameter_names,
+               fun_cpe_set_parameter_attributes,
+               fun_cpe_get_parameter_attributes,
+               fun_cpe_add_object,
+               fun_cpe_delete_object,
+               fun_cpe_reboot,
+               fun_cpe_download,
+               fun_cpe_upload,
+               fun_cpe_factory_reset,
+               fun_cpe_get_queued_transfers,
+               fun_cpe_get_all_queued_transfers,
+               fun_cpe_schedule_inform,
+               fun_cpe_set_vouchers,
+               fun_cpe_get_options,
+               rpc_test_fun,
+               acse_fun_last = rpc_test_fun
 } acse_fun_t;
 
 typedef struct {
+    unsigned int acse;
     unsigned int gid;
     char         oid[RCF_MAX_ID];
 
@@ -72,12 +106,16 @@ typedef struct {
         char     list[RCF_MAX_VAL];
     };
 
-    union {
-        char     acs[RCF_MAX_NAME];
-        char     session[RCF_MAX_NAME];
-    };
-
+    char         acs[RCF_MAX_NAME];
     char         cpe[RCF_MAX_NAME];
+
+    union {
+        /** GetRPCMethods output */
+        struct {
+            tarpc_string64_t list[32];
+            tarpc_uint       len;
+        } method_list;
+    };
 } params_t;
 
 /**
@@ -86,7 +124,7 @@ typedef struct {
  * @param rfd           Local RPC read endpoint
  * @param wfd           Local RPC write endpoint
  */
-extern void acse_loop(params_t *params, int rd_fd, int wr_fd);
+extern void acse_loop(params_t *params, int sock);
 
 #ifdef __cplusplus
 }

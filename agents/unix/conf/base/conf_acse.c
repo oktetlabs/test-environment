@@ -64,18 +64,23 @@
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
 #include "acse.h"
+#include "tarpc.h"
 
 /** The ACSE instance */
 static struct {
-    int       acse_value;
-    pid_t     pid;
-    params_t *params;
-    long      params_size;
-    int       rfd;
-    int       wfd;
-} acse_inst = { .acse_value = 0, .pid = -1,
-                .params = NULL, .params_size = 0,
-                .rfd = -1, .wfd = -1 };
+    pid_t     pid;         /**< ACSE process ID                         */
+    params_t *params;      /**< Parameters passed through shared memory */
+    long      params_size; /**< Shared memory region size               */
+    int       sock;        /**< Synchronization socket for LRPC         */
+} acse_inst = { .pid = -1, .params = NULL, .params_size = 0, .sock = -1 };
+
+/** Shared memory name */
+static char const lrpc_mmap_area[] = LRPC_MMAP_AREA;
+
+/** Unix socket names for ACSE, TA and RPC */
+static char const lrpc_acse_sock[] = LRPC_ACSE_SOCK;
+static char const lrpc_ta_sock[]   = LRPC_TA_SOCK;
+static char const lrpc_rpc_sock[]  = LRPC_RPC_SOCK;
 
 /**
  * Initializes the list of instances to be empty.
@@ -97,6 +102,19 @@ empty_list(char **list)
 }
 
 /**
+ * Determines whether ACSE is started and link to it is initialized.
+ *
+ * @return              TRUE is ACSE is started and link to it
+                        is initialized, otherwise - FALSE
+ */
+static inline te_bool
+acse_value(void)
+{
+    return acse_inst.params != NULL &&
+           acse_inst.params->acse != 0 ? TRUE : FALSE;
+}
+
+/**
  * Initializes the list of instances to be empty.
  *
  * @param fun           The particular fun to call
@@ -108,10 +126,10 @@ call_fun(acse_fun_t fun)
 {
     te_errno rc;
 
-    if (acse_inst.acse_value == 0)
-        return TE_RC(TE_TA_UNIX, TE_EPERM);
+    if (!acse_value())
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 
-    switch (write(acse_inst.wfd, &fun, sizeof fun))
+    switch (write(acse_inst.sock, &fun, sizeof fun))
     {
         case -1:
             ERROR("Failed to call ACSE over LRPC: %s", strerror(errno));
@@ -123,7 +141,7 @@ call_fun(acse_fun_t fun)
             return TE_RC(TE_TA_UNIX, TE_EUNKNOWN);
     }
 
-    switch (read(acse_inst.rfd, &rc, sizeof rc))
+    switch (read(acse_inst.sock, &rc, sizeof rc))
     {
         case -1:
             ERROR("Failed to return from ACSE call over LRPC: %s",
@@ -144,14 +162,14 @@ call_fun(acse_fun_t fun)
  *
  * @param gid           Group identifier
  * @param oid           Object identifier
- * @param acs_session   Name of the acs/session instance
+ * @param acs           Name of the acs instance
  * @param cpe           Name of the cpe instance
  *
  * @return              Status code
  */
 static te_errno
 prepare_params(unsigned int gid, char const *oid,
-               char const *acs_session, char const *cpe)
+               char const *acs, char const *cpe)
 {
     acse_inst.params->gid = gid;
 
@@ -160,12 +178,12 @@ prepare_params(unsigned int gid, char const *oid,
 
     strcpy(acse_inst.params->oid, oid);
 
-    if (acs_session != NULL)
+    if (acs != NULL)
     {
-        if (strlen(acs_session) >= sizeof acse_inst.params->acs)
+        if (strlen(acs) >= sizeof acse_inst.params->acs)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-        strcpy(acse_inst.params->acs, acs_session);
+        strcpy(acse_inst.params->acs, acs);
     }
     else
         *acse_inst.params->acs = '\0';
@@ -189,7 +207,7 @@ prepare_params(unsigned int gid, char const *oid,
  * @param gid           Group identifier
  * @param oid           Object identifier
  * @param value         The value of the instance to get
- * @param acs_session   Name of the acs/session instance
+ * @param acs           Name of the acs instance
  * @param cpe           Name of the cpe instance
  * @param fun           The particular fun to call
  *
@@ -197,9 +215,9 @@ prepare_params(unsigned int gid, char const *oid,
  */
 static te_errno
 call_get(unsigned int gid, char const *oid, char *value,
-         char const *acs_session, char const *cpe, acse_fun_t fun)
+         char const *acs, char const *cpe, acse_fun_t fun)
 {
-    te_errno rc = prepare_params(gid, oid, acs_session, cpe);
+    te_errno rc = prepare_params(gid, oid, acs, cpe);
 
     if (rc != 0 || (rc = call_fun(fun)) != 0)
         return rc;
@@ -214,7 +232,7 @@ call_get(unsigned int gid, char const *oid, char *value,
  * @param gid           Group identifier
  * @param oid           Object identifier
  * @param value         The value of the instance to set
- * @param acs_session   Name of the acs/session instance
+ * @param acs           Name of the acs instance
  * @param cpe           Name of the cpe instance
  * @param fun           The particular fun to call
  *
@@ -222,9 +240,9 @@ call_get(unsigned int gid, char const *oid, char *value,
  */
 static te_errno
 call_set(unsigned int gid, char const *oid, char const *value,
-         char const *acs_session, char const *cpe, acse_fun_t fun)
+         char const *acs, char const *cpe, acse_fun_t fun)
 {
-    te_errno rc = prepare_params(gid, oid, acs_session, cpe);
+    te_errno rc = prepare_params(gid, oid, acs, cpe);
 
     if (rc != 0)
         return rc;
@@ -242,7 +260,7 @@ call_set(unsigned int gid, char const *oid, char const *value,
  * @param gid           Group identifier
  * @param oid           Object identifier
  * @param value         The value of the instance to set
- * @param acs_session   Name of the acs/session instance
+ * @param acs           Name of the acs instance
  * @param cpe           Name of the cpe instance
  * @param fun           The particular fun to call
  *
@@ -250,9 +268,9 @@ call_set(unsigned int gid, char const *oid, char const *value,
  */
 static te_errno
 call_add(unsigned int gid, char const *oid, char const *value,
-         char const *acs_session, char const *cpe, acse_fun_t fun)
+         char const *acs, char const *cpe, acse_fun_t fun)
 {
-    return call_set(gid, oid, value, acs_session, cpe, fun);
+    return call_set(gid, oid, value, acs, cpe, fun);
 }
 
 /**
@@ -260,7 +278,7 @@ call_add(unsigned int gid, char const *oid, char const *value,
  *
  * @param gid           Group identifier
  * @param oid           Object identifier
- * @param acs_session   Name of the acs/session instance
+ * @param acs           Name of the acs instance
  * @param cpe           Name of the cpe instance
  * @param fun           The particular fun to call
  *
@@ -268,9 +286,9 @@ call_add(unsigned int gid, char const *oid, char const *value,
  */
 static te_errno
 call_del(unsigned int gid, char const *oid,
-         char const *acs_session, char const *cpe, acse_fun_t fun)
+         char const *acs, char const *cpe, acse_fun_t fun)
 {
-    te_errno rc = prepare_params(gid, oid, acs_session, cpe);
+    te_errno rc = prepare_params(gid, oid, acs, cpe);
 
     if (rc != 0)
         return rc;
@@ -293,7 +311,7 @@ static te_errno
 call_list(unsigned int gid, char const *oid, char **list,
           char const *acs, acse_fun_t fun)
 {
-    if (acse_inst.acse_value != 0)
+    if (acse_value())
     {
         te_errno rc = prepare_params(gid, oid, acs, NULL);
 
@@ -320,18 +338,19 @@ call_list(unsigned int gid, char const *oid, char **list,
  * @param oid           Object identifier (unused)
  * @param value         The value of the sesion 'hold_requests' flag
  * @param acse          Name of the acse instance (unused)
- * @param session       Name of the session instance
+ * @param acs           Name of the acs instance
+ * @param cpe           Name of the acs cpe instance
  *
  * @return              Status code
  */
 static te_errno
 session_hold_requests_get(unsigned int gid, char const *oid,
                           char *value, char const *acse,
-                          char const *session)
+                          char const *acs, char const *cpe)
 {
     UNUSED(acse);
 
-    return call_get(gid, oid, value, session, NULL,
+    return call_get(gid, oid, value, acs, cpe,
                     session_hold_requests_get_fun);
 }
 
@@ -342,18 +361,19 @@ session_hold_requests_get(unsigned int gid, char const *oid,
  * @param oid           Object identifier (unused)
  * @param value         New value of the session 'hold_requests' flag
  * @param acse          Name of the acse instance (unused)
- * @param session       Name of the session instance
+ * @param acs           Name of the acs instance
+ * @param cpe           Name of the acs cpe instance
  *
  * @return      Status code.
  */
 static te_errno
 session_hold_requests_set(unsigned int gid, char const *oid,
                           char const *value, char const *acse,
-                          char const *session)
+                          char const *acs, char const *cpe)
 {
     UNUSED(acse);
 
-    return call_set(gid, oid, value, session, NULL,
+    return call_set(gid, oid, value, acs, cpe,
                     session_hold_requests_set_fun);
 }
 
@@ -364,18 +384,19 @@ session_hold_requests_set(unsigned int gid, char const *oid,
  * @param oid           Object identifier (unused)
  * @param value         The value of the session 'enabled' flag
  * @param acse          Name of the acse instance (unused)
- * @param session       Name of the session instance
+ * @param acs           Name of the acs instance
+ * @param cpe           Name of the acs cpe instance
  *
  * @return              Status code
  */
 static te_errno
 session_enabled_get(unsigned int gid, char const *oid,
                     char *value, char const *acse,
-                    char const *session)
+                    char const *acs, char const *cpe)
 {
     UNUSED(acse);
 
-    return call_get(gid, oid, value, session, NULL,
+    return call_get(gid, oid, value, acs, cpe,
                     session_enabled_get_fun);
 }
 
@@ -386,18 +407,19 @@ session_enabled_get(unsigned int gid, char const *oid,
  * @param oid           Object identifier (unused)
  * @param value         New value of the session 'enabled' flag
  * @param acse          Name of the acse instance (unused)
- * @param session       Name of the session instance
+ * @param acs           Name of the acs instance
+ * @param cpe           Name of the acs cpe instance
  *
  * @return      Status code.
  */
 static te_errno
 session_enabled_set(unsigned int gid, char const *oid,
                     char const *value, char const *acse,
-                    char const *session)
+                    char const *acs, char const *cpe)
 {
     UNUSED(acse);
 
-    return call_set(gid, oid, value, session, NULL,
+    return call_set(gid, oid, value, acs, cpe,
                     session_enabled_set_fun);
 }
 
@@ -408,18 +430,19 @@ session_enabled_set(unsigned int gid, char const *oid,
  * @param oid           Object identifier (unused)
  * @param value         The value of the session target_state
  * @param acse          Name of the acse instance (unused)
- * @param session       Name of the session instance
+ * @param acs           Name of the acs instance
+ * @param cpe           Name of the acs cpe instance
  *
  * @return              Status code
  */
 static te_errno
 session_target_state_get(unsigned int gid, char const *oid,
                          char *value, char const *acse,
-                         char const *session)
+                         char const *acs, char const *cpe)
 {
     UNUSED(acse);
 
-    return call_get(gid, oid, value, session, NULL,
+    return call_get(gid, oid, value, acs, cpe,
                     session_target_state_get_fun);
 }
 
@@ -430,18 +453,19 @@ session_target_state_get(unsigned int gid, char const *oid,
  * @param oid           Object identifier (unused)
  * @param value         New value of the session target_state
  * @param acse          Name of the acse instance (unused)
- * @param session       Name of the session instance
+ * @param acs           Name of the acs instance
+ * @param cpe           Name of the acs cpe instance
  *
  * @return      Status code.
  */
 static te_errno
 session_target_state_set(unsigned int gid, char const *oid,
                          char const *value, char const *acse,
-                         char const *session)
+                         char const *acs, char const *cpe)
 {
     UNUSED(acse);
 
-    return call_set(gid, oid, value, session, NULL,
+    return call_set(gid, oid, value, acs, cpe,
                     session_target_state_set_fun);
 }
 
@@ -452,60 +476,20 @@ session_target_state_set(unsigned int gid, char const *oid,
  * @param oid           Object identifier (unused)
  * @param value         The value of the session state
  * @param acse          Name of the acse instance (unused)
- * @param session       Name of the session instance
+ * @param acs           Name of the acs instance
+ * @param cpe           Name of the acs cpe instance
  *
  * @return              Status code
  */
 static te_errno
 session_state_get(unsigned int gid, char const *oid,
                   char *value, char const *acse,
-                  char const *session)
+                  char const *acs, char const *cpe)
 {
     UNUSED(acse);
 
-    return call_get(gid, oid, value, session, NULL,
+    return call_get(gid, oid, value, acs, cpe,
                     session_state_get_fun);
-}
-
-/**
- * Get the session link to a cpe.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the session link to a cpe
- * @param acse          Name of the acse instance (unused)
- * @param session       Name of the session instance
- *
- * @return              Status code
- */
-static te_errno
-session_link_get(unsigned int gid, char const *oid,
-                 char *value, char const *acse,
-                 char const *session)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, session, NULL,
-                    session_link_get_fun);
-}
-
-/**
- * Get the list of sessions.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param list          The list of sessions
- * @param acse          Name of the acse instance (unused)
- *
- * @return              Status code
- */
-static te_errno
-acse_session_list(unsigned int gid, char const *oid,
-                  char **list, char const *acse)
-{
-    UNUSED(acse);
-
-    return call_list(gid, oid, list, NULL, acse_session_list_fun);
 }
 
 /**
@@ -1141,98 +1125,178 @@ acse_get(unsigned int gid, char const *oid,
     UNUSED(gid);
     UNUSED(acse);
 
-    sprintf(value, "%i", acse_inst.acse_value);
+    strcpy(value, acse_value() ? "1" : "0");
     return 0;
 }
 
-static te_errno
-start_acse(char const *lrpc_area)
+/**
+ * Create unix socket, bind it and connect it to another one if specified.
+ *
+ * @param unix_path     Unnix path to bind to
+ * @param connect_to    Unix path to connect to
+ *                      or NULL if no connection is needed
+ *
+ * @return              Socket or -1 in case of an error
+ */
+static int
+unix_socket(char const *unix_path, char const *connect_to)
 {
-    te_errno rc = 0;
-    int      shm_fd;
-    int      fd[2][2];
+    int s = socket(AF_UNIX, SOCK_DGRAM, 0);
 
-    shm_unlink(lrpc_area);
-
-    if ((shm_fd = shm_open(lrpc_area,
-                           O_CREAT | O_EXCL | O_RDWR,
-                           S_IRWXU | S_IRWXG | S_IRWXO)) != -1)
+    if (s != -1)
     {
-        long size = sysconf(_SC_PAGESIZE);
+        struct sockaddr_un addr = { .sun_family = AF_UNIX };
 
-        if (size != -1)
+        if (strlen(unix_path) < sizeof addr.sun_path)
         {
-            if (size > 0)
+            int saved_errno;
+
+            strcpy(addr.sun_path, unix_path);
+
+            if (bind(s, (struct sockaddr *)&addr, sizeof addr) != -1)
             {
-                size = (sizeof *acse_inst.params / size +
-                           (sizeof *acse_inst.params % size ? 1 : 0)) *
-                               size;
+                if (connect_to == NULL)
+                    return s;
 
-                if (ftruncate(shm_fd, size) != -1)
+                if (strlen(connect_to) < sizeof addr.sun_path)
                 {
-                    void *p = mmap(NULL, size, PROT_READ | PROT_WRITE,
-                                   MAP_SHARED, shm_fd, 0);
+                    memset(addr.sun_path, 0, sizeof addr.sun_path);
+                    strcpy(addr.sun_path, connect_to);
 
-                    if (p != MAP_FAILED)
-                    {
-                        memset(p, 0, acse_inst.params_size = size);
-
-                        if (pipe(fd[0]) != -1)
-                        {
-                            if (pipe(fd[1]) != -1)
-                            {
-                                switch (acse_inst.pid = fork())
-                                {
-                                    case -1:
-                                        rc = TE_OS_RC(TE_TA_UNIX, errno);
-                                        ERROR("%s: fork() failed: %r",
-                                              __FUNCTION__, rc);
-                                        close(fd[0][0]);
-                                        close(fd[0][1]);
-                                        close(fd[1][0]);
-                                        close(fd[1][1]);
-                                        break;
-                                    case 0:
-                                        rcf_pch_detach();
-                                        setpgid(0, 0);
-                                        logfork_register_user("ACSE");
-                                        close(fd[1][0]);
-                                        close(fd[0][1]);
-                                        close(shm_fd);
-                                        acse_loop(p, fd[0][0], fd[1][1]);
-                                        close(fd[0][0]);
-                                        close(fd[1][1]);
-                                        munmap(acse_inst.params,
-                                               acse_inst.params_size);
-                                        exit(0);
-                                    default:
-                                        acse_inst.params = p;
-                                        acse_inst.rfd = fd[1][0];
-                                        acse_inst.wfd = fd[0][1];
-                                        close(fd[0][0]);
-                                        close(fd[1][1]);
-                                        break;
-                                }
-                            }
-                            else
-                                rc = TE_OS_RC(TE_TA_UNIX, errno);
-                        }
-                        else
-                            rc = TE_OS_RC(TE_TA_UNIX, errno);
-                    }
-                    else
-                        rc = TE_OS_RC(TE_TA_UNIX, errno);
+                    if (connect(s, (struct sockaddr *)&addr, sizeof addr) != -1)
+                      return s;
                 }
                 else
-                    rc = TE_OS_RC(TE_TA_UNIX, errno);
+                    errno = ENAMETOOLONG;
+            }
+
+            saved_errno = errno;
+            close(s);
+            errno = saved_errno;
+        }
+        else
+            errno = ENAMETOOLONG;
+    }
+
+    return -1;
+}
+
+/**
+ * Create/open shared memory object and perform mapping for it.
+ *
+ * @param create        Whether to create rather than open a memory object
+ * @param size          Desired size that will be rounded up on success
+ *
+ * @return              Address of allocated memory
+ *                      or NULL in case of an error
+ */
+static void *
+shared_mem(te_bool create, long *size)
+{
+    void *shm_ptr = NULL;
+    int   shm_fd;
+
+    if (create)
+        shm_unlink(lrpc_mmap_area);
+
+    if ((shm_fd = shm_open(lrpc_mmap_area,
+                           (create ? (O_CREAT | O_EXCL) : 0) | O_RDWR,
+                           S_IRWXU | S_IRWXG | S_IRWXO)) != -1)
+    {
+        int  saved_errno;
+        long sz = sysconf(_SC_PAGESIZE);
+
+        if (sz != -1)
+        {
+            if (sz > 0)
+            {
+                sz = (*size / sz + (*size % sz ? 1 : 0)) * sz;
+
+                if (ftruncate(shm_fd, sz) != -1 &&
+                    (shm_ptr = mmap(NULL, sz, PROT_READ | PROT_WRITE,
+                                    MAP_SHARED, shm_fd, 0)) != MAP_FAILED)
+                {
+                    *size = sz;
+                }
+                else
+                    shm_ptr = NULL;
             }
             else
-                rc = TE_RC(TE_TA_UNIX, TE_EUNKNOWN);
+                errno = EINVAL;
+        }
+
+        saved_errno = errno;
+        close(shm_fd);
+
+        if (shm_ptr == NULL && create)
+            shm_unlink(lrpc_mmap_area);
+
+        errno = saved_errno;
+    }
+
+    return shm_ptr;
+}
+
+/**
+ * Initialize necessary entities and start ACSE.
+ *
+ * @return              Status
+ */
+static te_errno
+start_acse(void)
+{
+    te_errno rc = 0;
+    int      sock_ta;
+    int      sock_acse;
+
+    shm_unlink(lrpc_mmap_area);
+    unlink(lrpc_acse_sock);
+    unlink(lrpc_ta_sock);
+
+    long  size = sizeof *acse_inst.params;
+    void *p = shared_mem(TRUE, &size);
+
+    if (p != NULL)
+    {
+        memset(p, 0, size);
+
+        if ((sock_acse = unix_socket(lrpc_acse_sock, NULL)) != -1)
+        {
+            if ((sock_ta = unix_socket(lrpc_ta_sock, lrpc_acse_sock)) != -1)
+            {
+                switch (acse_inst.pid = fork())
+                {
+                    case -1:
+                        rc = TE_OS_RC(TE_TA_UNIX, errno);
+                        ERROR("%s: fork() failed: %r",
+                              __FUNCTION__, rc);
+                        close(sock_ta);
+                        close(sock_acse);
+                        break;
+                    case 0:
+                        rcf_pch_detach();
+                        setpgid(0, 0);
+                        logfork_register_user("ACSE");
+                        close(sock_ta);
+                        acse_loop(p, sock_acse);
+                        close(sock_acse);
+                        munmap(acse_inst.params,
+                               acse_inst.params_size);
+                        exit(0);
+                    default:
+                        acse_inst.params = p;
+                        acse_inst.params_size = size;
+                        acse_inst.params->acse = 1;
+                        acse_inst.sock = sock_ta;
+                        close(sock_acse);
+                        break;
+                }
+            }
+            else
+                rc = TE_OS_RC(TE_TA_UNIX, errno);
         }
         else
             rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        close(shm_fd);
     }
     else
         rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -1240,13 +1304,18 @@ start_acse(char const *lrpc_area)
     return rc;
 }
 
+/**
+ * Stop ACSE and clean up previously initialized entities.
+ *
+ * @return              Status
+ */
 static te_errno
-stop_acse(char const *lrpc_area)
+stop_acse(void)
 {
     te_errno rc = 0;
 
     if (acse_inst.pid != -1)
-    {
+{
         if (kill(-acse_inst.pid, SIGTERM) == 0)
         {
             RING("Sent SIGTERM to the process with PID = %u",
@@ -1276,12 +1345,16 @@ stop_acse(char const *lrpc_area)
 
     if (rc == 0)
     {
+        acse_inst.params->acse = 0;
         munmap(acse_inst.params, acse_inst.params_size);
-        shm_unlink(lrpc_area);
-        close(acse_inst.rfd);
-        acse_inst.rfd = -1;
-        close(acse_inst.wfd);
-        acse_inst.wfd = -1;
+        acse_inst.params = NULL;
+        acse_inst.params_size = 0;
+        shm_unlink(lrpc_mmap_area);
+        unlink(lrpc_acse_sock);
+        unlink(lrpc_ta_sock);
+        unlink(lrpc_rpc_sock);
+        close(acse_inst.sock);
+        acse_inst.sock = -1;
     }
 
     return rc;
@@ -1301,25 +1374,20 @@ static te_errno
 acse_set(unsigned int gid, char const *oid,
          char const *value, char const *acse)
 {
-    te_errno rc             = 0;
-    int      new_acse_value = atoi(value);
-
-    static char lrpc_area[] = "/lrpc_area";
+    te_bool new_acse_value = !!atoi(value);
+    te_bool old_acse_value = acse_value();
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(acse);
 
-    if (acse_inst.acse_value != new_acse_value)
+    if ((new_acse_value && !old_acse_value) ||
+        (!new_acse_value && old_acse_value))
     {
-        te_errno (*action)(char const *) =
-            acse_inst.acse_value == 0 ? &start_acse : &stop_acse;
-
-        if ((rc = (*action)(lrpc_area)) == 0)
-            acse_inst.acse_value = new_acse_value;
+        return (*(new_acse_value ? &start_acse : &stop_acse))();
     }
 
-    return rc;
+    return 0;
 }
 
 RCF_PCH_CFG_NODE_RW(node_session_hold_requests, "hold_requests",
@@ -1338,14 +1406,8 @@ RCF_PCH_CFG_NODE_RO(node_session_state, "state",
                     NULL, &node_session_target_state,
                     &session_state_get);
 
-RCF_PCH_CFG_NODE_RO(node_session_link, "link",
-                    NULL, &node_session_state,
-                    &session_link_get);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_acse_session, "session", 
-                            &node_session_link, NULL,
-                            NULL, NULL,
-                            &acse_session_list, NULL);
+RCF_PCH_CFG_NODE_NA(node_cpe_session, "session",
+                    &node_session_state, NULL);
 
 RCF_PCH_CFG_NODE_RO(node_device_id_serial_number, "serial_number",
                     NULL, NULL,
@@ -1364,7 +1426,7 @@ RCF_PCH_CFG_NODE_RO(node_device_id_manufacturer, "manufacturer",
                     &device_id_manufacturer_get);
 
 RCF_PCH_CFG_NODE_NA(node_cpe_device_id, "device_id", 
-                    &node_device_id_manufacturer, NULL);
+                    &node_device_id_manufacturer, &node_cpe_session);
 
 RCF_PCH_CFG_NODE_RW(node_cpe_pass, "pass", 
                     NULL, &node_cpe_device_id,
@@ -1408,7 +1470,7 @@ RCF_PCH_CFG_NODE_RW(node_acs_url, "url",
                     &acs_url_get, &acs_url_set);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_acse_acs, "acs",
-                            &node_acs_url, &node_acse_session,
+                            &node_acs_url, NULL,
                             &acse_acs_add, &acse_acs_del,
                             &acse_acs_list, NULL);
 
@@ -1429,4 +1491,452 @@ te_errno
 ta_unix_conf_acse_init()
 {
     return rcf_pch_add_node("/agent", &node_acse);
+}
+
+/** TR-069 stuff */
+
+/** Executive routines for mapping of the CPE CWMP RPC methods
+ * (defined in conf/base/conf_acse.c, used from rpc/tarpc_server.c)
+ */
+
+/**
+ * Checks shared mem and socket for RPC and initializes them if necessary.
+ *
+ * @return Status code (see te_errno.h)
+ */
+static te_bool
+lrpc_rpc_init(void)
+{
+    long size = sizeof *acse_inst.params;
+
+    if (acse_inst.params == NULL &&
+        (acse_inst.params = shared_mem(FALSE, &size)) == NULL)
+    {
+        return FALSE;
+    }
+
+    if (acse_inst.params->acse == 0)
+    {
+        errno = ENOSYS;
+        return FALSE;
+    }
+
+    if (acse_inst.sock == -1)
+    {
+        unlink(lrpc_rpc_sock);
+
+        if((acse_inst.sock = unix_socket(lrpc_rpc_sock,
+                                         lrpc_acse_sock)) == -1)
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_get_rpc_methods(tarpc_cpe_get_rpc_methods_in *in,
+                    tarpc_cpe_get_rpc_methods_out *out)
+{
+    int          errno_save = errno;
+    unsigned int len;
+
+    UNUSED(in);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_get_rpc_methods);
+
+    if ((len = acse_inst.params->method_list.len) > 0)
+    {
+        tarpc_uint        u;
+        tarpc_string64_t **dst = &out->method_list.method_list_val;
+        tarpc_string64_t *src  = acse_inst.params->method_list.list;
+
+        if ((*dst = calloc(len, sizeof **dst)) == NULL)
+            return -1;
+
+        for (u = 0; u < len; u++)
+            strcpy((*dst)[u], src[u]);
+
+        out->method_list.method_list_len = len;
+    }
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_set_parameter_values(tarpc_cpe_set_parameter_values_in *in,
+                         tarpc_cpe_set_parameter_values_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_set_parameter_values);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_get_parameter_values(tarpc_cpe_get_parameter_values_in *in,
+                         tarpc_cpe_get_parameter_values_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_get_parameter_values);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_get_parameter_names(tarpc_cpe_get_parameter_names_in *in,
+                        tarpc_cpe_get_parameter_names_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_get_parameter_names);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_set_parameter_attributes(tarpc_cpe_set_parameter_attributes_in *in,
+                             tarpc_cpe_set_parameter_attributes_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_set_parameter_attributes);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_get_parameter_attributes(tarpc_cpe_get_parameter_attributes_in *in,
+                             tarpc_cpe_get_parameter_attributes_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_get_parameter_attributes);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_add_object(tarpc_cpe_add_object_in *in,
+               tarpc_cpe_add_object_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_add_object);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_delete_object(tarpc_cpe_delete_object_in *in,
+                  tarpc_cpe_delete_object_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_delete_object);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_reboot(tarpc_cpe_reboot_in *in,
+           tarpc_cpe_reboot_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_reboot);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_download(tarpc_cpe_download_in *in,
+             tarpc_cpe_download_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_download);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_upload(tarpc_cpe_upload_in *in,
+           tarpc_cpe_upload_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_upload);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_factory_reset(tarpc_cpe_factory_reset_in *in,
+                  tarpc_cpe_factory_reset_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_factory_reset);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_get_queued_transfers(tarpc_cpe_get_queued_transfers_in *in,
+                         tarpc_cpe_get_queued_transfers_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_get_queued_transfers);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_get_all_queued_transfers(tarpc_cpe_get_all_queued_transfers_in *in,
+                             tarpc_cpe_get_all_queued_transfers_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_get_all_queued_transfers);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_schedule_inform(tarpc_cpe_schedule_inform_in *in,
+                    tarpc_cpe_schedule_inform_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_schedule_inform);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_set_vouchers(tarpc_cpe_set_vouchers_in *in,
+                 tarpc_cpe_set_vouchers_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_set_vouchers);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/* See description in unix_internal.h */
+extern int
+cpe_get_options(tarpc_cpe_get_options_in *in,
+                tarpc_cpe_get_options_out *out)
+{
+    int   errno_save = errno;
+
+    UNUSED(in);
+    UNUSED(out);
+
+    if (!lrpc_rpc_init())
+    {
+        return -1;
+    }
+
+    call_fun(fun_cpe_get_options);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
 }

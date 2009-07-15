@@ -104,13 +104,13 @@ recover_on_select_failure(void)
 /**
  * See description in acse.h
  */
-void acse_loop(params_t *params, int rd_fd, int wr_fd)
+void acse_loop(params_t *params, int sock)
 {
     channel_item_t *item = malloc(sizeof *item);
 
     if (item != NULL)
     {
-        if (acse_lrpc_create(&item->channel, params, rd_fd, wr_fd) == 0)
+        if (acse_lrpc_create(&item->channel, params, sock) == 0)
         {
             STAILQ_INSERT_TAIL(&channel_list, item, link);
 

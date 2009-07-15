@@ -267,4 +267,254 @@ extern char const * const *environ;
 extern int cfg_socket;
 extern int cfg6_socket;
 
+/** TR-069 stuff */
+
+#ifdef WITH_TR069_SUPPORT
+
+#include "tarpc.h"
+
+/** Executive routines for mapping of the CPE CWMP RPC methods
+ * (defined in conf/base/conf_acse.c, used from rpc/tarpc_server.c)
+ */
+
+/**
+ * Executive routine for CPE GetRPCMethods method.
+ *
+ * @param in       CPE GetRPCMethods method input parameters
+ * @param out      CPE GetRPCMethods method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_get_rpc_methods(
+               tarpc_cpe_get_rpc_methods_in *in,
+               tarpc_cpe_get_rpc_methods_out *out);
+
+/**
+ * Executive routine for CPE SetParameterValues method.
+ *
+ * @param in       CPE SetParameterValues method input parameters
+ * @param out      CPE SetParameterValues method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_set_parameter_values(
+               tarpc_cpe_set_parameter_values_in *in,
+               tarpc_cpe_set_parameter_values_out *out);
+
+/**
+ * Executive routine for CPE GetParameterValues method.
+ *
+ * @param in       CPE GetParameterValues method input parameters
+ * @param out      CPE GetParameterValues method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_get_parameter_values(
+               tarpc_cpe_get_parameter_values_in *in,
+               tarpc_cpe_get_parameter_values_out *out);
+
+/**
+ * Executive routine for CPE GetParameterNames method.
+ *
+ * @param in       CPE GetParameterNames method input parameters
+ * @param out      CPE GetParameterNames method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_get_parameter_names(
+               tarpc_cpe_get_parameter_names_in *in,
+               tarpc_cpe_get_parameter_names_out *out);
+
+/**
+ * Executive routine for CPE SetParameterAttributes method.
+ *
+ * @param in       CPE SetParameterAttributes method input parameters
+ * @param out      CPE SetParameterAttributes method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_set_parameter_attributes(
+               tarpc_cpe_set_parameter_attributes_in *in,
+               tarpc_cpe_set_parameter_attributes_out *out);
+
+/**
+ * Executive routine for CPE GetParameterAttributes method.
+ *
+ * @param in       CPE GetParameterAttributes method input parameters
+ * @param out      CPE GetParameterAttributes method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_get_parameter_attributes(
+               tarpc_cpe_get_parameter_attributes_in *in,
+               tarpc_cpe_get_parameter_attributes_out *out);
+
+/**
+ * Executive routine for CPE AddObject method.
+ *
+ * @param in       CPE AddObject method input parameters
+ * @param out      CPE AddObject method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_add_object(
+               tarpc_cpe_add_object_in *in,
+               tarpc_cpe_add_object_out *out);
+
+/**
+ * Executive routine for CPE DeleteObject method.
+ *
+ * @param in       CPE DeleteObject method input parameters
+ * @param out      CPE DeleteObject method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_delete_object(
+               tarpc_cpe_delete_object_in *in,
+               tarpc_cpe_delete_object_out *out);
+
+/**
+ * Executive routine for CPE Reboot method.
+ *
+ * @param in       CPE Reboot method input parameters
+ * @param out      CPE Reboot method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_reboot(
+               tarpc_cpe_reboot_in *in,
+               tarpc_cpe_reboot_out *out);
+
+/**
+ * Executive routine for CPE Download method.
+ *
+ * @param in       CPE Download method input parameters
+ * @param out      CPE Download method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_download(
+               tarpc_cpe_download_in *in,
+               tarpc_cpe_download_out *out);
+
+/**
+ * Executive routine for CPE Upload method.
+ *
+ * @param in       CPE Upload method input parameters
+ * @param out      CPE Upload method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_upload(
+               tarpc_cpe_upload_in *in,
+               tarpc_cpe_upload_out *out);
+
+/**
+ * Executive routine for CPE FactoryReset method.
+ *
+ * @param in       CPE FactoryReset method input parameters
+ * @param out      CPE FactoryReset method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_factory_reset(
+               tarpc_cpe_factory_reset_in *in,
+               tarpc_cpe_factory_reset_out *out);
+
+/**
+ * Executive routine for CPE GetQueuedTransfers method.
+ *
+ * @param in       CPE GetQueuedTransfers method input parameters
+ * @param out      CPE GetQueuedTransfers method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_get_queued_transfers(
+               tarpc_cpe_get_queued_transfers_in *in,
+               tarpc_cpe_get_queued_transfers_out *out);
+
+/**
+ * Executive routine for CPE GetAllQueuedTransfers method.
+ *
+ * @param in       CPE GetAllQueuedTransfers method input parameters
+ * @param out      CPE GetAllQueuedTransfers method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_get_all_queued_transfers(
+               tarpc_cpe_get_all_queued_transfers_in *in,
+               tarpc_cpe_get_all_queued_transfers_out *out);
+
+/**
+ * Executive routine for CPE ScheduleInform method.
+ *
+ * @param in       CPE ScheduleInform method input parameters
+ * @param out      CPE ScheduleInform method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_schedule_inform(
+               tarpc_cpe_schedule_inform_in *in,
+               tarpc_cpe_schedule_inform_out *out);
+
+/**
+ * Executive routine for CPE SetVouchers method.
+ *
+ * @param in       CPE SetVouchers method input parameters
+ * @param out      CPE SetVouchers method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_set_vouchers(
+               tarpc_cpe_set_vouchers_in *in,
+               tarpc_cpe_set_vouchers_out *out);
+
+/**
+ * Executive routine for CPE GetOptions method.
+ *
+ * @param in       CPE GetOptions method input parameters
+ * @param out      CPE GetOptions method output parameters
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On a SOAP error a CPE fault code is returned (9000-9019).
+ *         When transaction with CPE is impossible, -1 is returned.
+ */
+extern int cpe_get_options(
+               tarpc_cpe_get_options_in *in,
+               tarpc_cpe_get_options_out *out);
+
+#endif /* WITH_TR069_SUPPORT */
+
 #endif /* __TE_TA_UNIX_INTERNAL_H__ */

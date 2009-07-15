@@ -3543,7 +3543,128 @@ TARPC_FUNC(setuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
 /*-------------- seteuid() --------------------------------*/
 TARPC_FUNC(seteuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
 
-/*-------------- simple_sender() -----------------------------*/
+
+/*-------------- cpe_get_rpc_methods() -------------------*/
+TARPC_FUNC(cpe_get_rpc_methods, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_set_parameter_values() --------------*/
+TARPC_FUNC(cpe_set_parameter_values, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_get_parameter_values() --------------*/
+TARPC_FUNC(cpe_get_parameter_values, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_get_parameter_names() ---------------*/
+TARPC_FUNC(cpe_get_parameter_names, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_set_parameter_attributes() ----------*/
+TARPC_FUNC(cpe_set_parameter_attributes, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_get_parameter_attributes() ----------*/
+TARPC_FUNC(cpe_get_parameter_attributes, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_add_object() ------------------------*/
+TARPC_FUNC(cpe_add_object, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_delete_object() ---------------------*/
+TARPC_FUNC(cpe_delete_object, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_reboot() ----------------------------*/
+TARPC_FUNC(cpe_reboot, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_download() --------------------------*/
+TARPC_FUNC(cpe_download, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_upload() ----------------------------*/
+TARPC_FUNC(cpe_upload, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_factory_reset() ---------------------*/
+TARPC_FUNC(cpe_factory_reset, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_get_queued_transfers() --------------*/
+TARPC_FUNC(cpe_get_queued_transfers, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_get_all_queued_transfers() ----------*/
+TARPC_FUNC(cpe_get_all_queued_transfers, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_schedule_inform() -------------------*/
+TARPC_FUNC(cpe_schedule_inform, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_set_vouchers() ----------------------*/
+TARPC_FUNC(cpe_set_vouchers, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- cpe_get_options() -----------------------*/
+TARPC_FUNC(cpe_get_options, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+
+/*-------------- simple_sender() -------------------------*/
 TARPC_FUNC(simple_sender, {},
 {
     MAKE_CALL(out->retval = func_ptr(in, out));
@@ -3772,6 +3893,8 @@ wait_readable(tarpc_wait_readable_in *in,
     fd_set          set;
     int             rc;
     struct timeval  tv;
+
+    UNUSED(out);
 
     RING("%s() started", __FUNCTION__);
 

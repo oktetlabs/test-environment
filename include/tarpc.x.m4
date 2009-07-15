@@ -3558,6 +3558,278 @@ struct tarpc_mcast_join_leave_out {
     tarpc_int            retval;
 };
 
+/* cpe_get_rpc_methods() */
+typedef struct tarpc_void_in tarpc_cpe_get_rpc_methods_in;
+
+typedef char tarpc_string32_t[33];
+typedef char tarpc_string64_t[65];
+typedef char tarpc_string256_t[257];
+typedef char *tarpc_xsd_any_simple_type_t;
+typedef tarpc_string64_t tarpc_base64_t;
+
+struct tarpc_cpe_get_rpc_methods_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    tarpc_string64_t method_list<>;
+};
+
+/* cpe_set_parameter_values() */
+struct parameter_value_struct_t {
+    tarpc_string256_t           name;
+    tarpc_xsd_any_simple_type_t value;
+};
+
+struct tarpc_cpe_set_parameter_values_in {
+    struct tarpc_in_arg common;
+
+    parameter_value_struct_t parameter_list<>;
+    tarpc_string32_t         parameter_key;
+};
+
+struct tarpc_cpe_set_parameter_values_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    tarpc_int status;
+};
+
+/* cpe_get_parameter_values() */
+struct tarpc_cpe_get_parameter_values_in {
+    struct tarpc_in_arg common;
+
+    tarpc_string256_t parameter_names<>;
+};
+
+struct tarpc_cpe_get_parameter_values_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    parameter_value_struct_t parameter_list<>;
+};
+
+/* cpe_get_parameter_names() */
+struct tarpc_cpe_get_parameter_names_in {
+    struct tarpc_in_arg common;
+
+    tarpc_string256_t parameter_path;
+    tarpc_bool        next_level;
+};
+
+struct parameter_info_struct_t {
+    tarpc_string256_t name;
+    tarpc_bool        writable;
+};
+
+struct tarpc_cpe_get_parameter_names_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    parameter_info_struct_t parameter_list<>;
+};
+
+/* cpe_set_parameter_attributes() */
+struct set_parameter_attributes_struct_t {
+    tarpc_string256_t name;
+    tarpc_bool        notification_change;
+    tarpc_int         notification;
+    tarpc_bool        access_list_change;
+    tarpc_string64_t  access_list<>;
+};
+
+struct tarpc_cpe_set_parameter_attributes_in {
+    struct tarpc_in_arg common;
+
+    set_parameter_attributes_struct_t parameter_list<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_cpe_set_parameter_attributes_out;
+
+/* cpe_get_parameter_attributes() */
+struct tarpc_cpe_get_parameter_attributes_in {
+    struct tarpc_in_arg common;
+
+    tarpc_string256_t parameter_names<>;
+};
+
+struct parameter_attribute_struct_t {
+    tarpc_string256_t name;
+    tarpc_int         notification;
+    tarpc_string64_t  access_list<>;
+};
+
+struct tarpc_cpe_get_parameter_attributes_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    parameter_attribute_struct_t parameter_list<>;
+};
+
+/* cpe_add_object() */
+struct tarpc_cpe_add_object_in {
+    struct tarpc_in_arg common;
+
+    tarpc_string256_t object_name;
+    tarpc_string32_t  parameter_key;
+};
+
+struct tarpc_cpe_add_object_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    tarpc_uint instance_number;
+    tarpc_int  status;
+};
+
+/* cpe_delete_object() */
+struct tarpc_cpe_delete_object_in {
+    struct tarpc_in_arg common;
+
+    tarpc_string256_t object_name;
+    tarpc_string32_t  parameter_key;
+};
+
+struct tarpc_cpe_delete_object_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    tarpc_int status;
+};
+
+/* cpe_reboot() */
+struct tarpc_cpe_reboot_in {
+    struct tarpc_in_arg common;
+
+    tarpc_string32_t command_key;
+};
+
+typedef struct tarpc_int_retval_out tarpc_cpe_reboot_out;
+
+/* cpe_download() */
+struct tarpc_cpe_download_in {
+    struct tarpc_in_arg common;
+
+    tarpc_string32_t  command_key;
+    tarpc_string64_t  file_type;
+    tarpc_string256_t url;
+    tarpc_string256_t username;
+    tarpc_string256_t password;
+    tarpc_uint        file_size;
+    tarpc_string256_t target_file_name;
+    tarpc_uint        delay_seconds;
+    tarpc_string256_t success_url;
+    tarpc_string256_t failure_url;
+};
+
+struct tarpc_cpe_download_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    tarpc_int    status;
+    tarpc_time_t start_time;
+    tarpc_time_t complete_time;
+};
+
+/* cpe_upload() */
+struct tarpc_cpe_upload_in {
+    struct tarpc_in_arg common;
+
+    tarpc_string32_t  command_key;
+    tarpc_string64_t  file_type;
+    tarpc_string256_t url;
+    tarpc_string256_t username;
+    tarpc_string256_t password;
+    tarpc_uint        delay_seconds;
+};
+
+struct tarpc_cpe_upload_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    tarpc_int    status;
+    tarpc_time_t start_time;
+    tarpc_time_t complete_time;
+};
+
+/* cpe_factory_reset() */
+typedef struct tarpc_void_in tarpc_cpe_factory_reset_in;
+
+typedef struct tarpc_int_retval_out tarpc_cpe_factory_reset_out;
+
+/* cpe_get_queued_transfers() */
+typedef struct tarpc_void_in tarpc_cpe_get_queued_transfers_in;
+
+struct tarpc_cpe_get_queued_transfers_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    tarpc_string32_t command_key;
+    tarpc_int        state;
+};
+
+/* cpe_get_all_queued_transfers() */
+typedef struct tarpc_void_in tarpc_cpe_get_all_queued_transfers_in;
+
+struct all_queued_transfer_struct_t {
+    tarpc_string32_t  command_key;
+    tarpc_int         state;
+    tarpc_bool        is_download;
+    tarpc_string64_t  file_type;
+    tarpc_uint        file_size;
+    tarpc_string256_t target_file_name;
+};
+
+struct tarpc_cpe_get_all_queued_transfers_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    all_queued_transfer_struct_t transfer_list[16];
+};
+
+/* cpe_schedule_inform() */
+struct tarpc_cpe_schedule_inform_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint       delay_seconds;
+    tarpc_string32_t command_key;
+};
+
+typedef struct tarpc_int_retval_out tarpc_cpe_schedule_inform_out;
+
+/* cpe_set_vouchers() */
+
+struct tarpc_cpe_set_vouchers_in {
+    struct tarpc_in_arg common;
+
+    tarpc_base64_t voucher_list<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_cpe_set_vouchers_out;
+
+/* cpe_get_options() */
+struct tarpc_cpe_get_options_in {
+    struct tarpc_in_arg common;
+
+    tarpc_base64_t voucher_list<>;
+};
+
+struct option_struct_t {
+    tarpc_string64_t option_name;
+    tarpc_uint       voucher_s_n;
+    tarpc_uint       state;
+    tarpc_int        mode;
+    tarpc_time_t     start_date;
+    tarpc_time_t     expiration_date;
+    tarpc_bool       is_transferable;
+};
+
+struct tarpc_cpe_get_options_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+
+    option_struct_t option_list<>;
+};
+
 program tarpc
 {
     version ver0
@@ -3802,5 +4074,23 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(getrlimit)
 
         RPC_DEF(mcast_join_leave)
+
+        RPC_DEF(cpe_get_rpc_methods)
+        RPC_DEF(cpe_set_parameter_values)
+        RPC_DEF(cpe_get_parameter_values)
+        RPC_DEF(cpe_get_parameter_names)
+        RPC_DEF(cpe_set_parameter_attributes)
+        RPC_DEF(cpe_get_parameter_attributes)
+        RPC_DEF(cpe_add_object)
+        RPC_DEF(cpe_delete_object)
+        RPC_DEF(cpe_reboot)
+        RPC_DEF(cpe_download)
+        RPC_DEF(cpe_upload)
+        RPC_DEF(cpe_factory_reset)
+        RPC_DEF(cpe_get_queued_transfers)
+        RPC_DEF(cpe_get_all_queued_transfers)
+        RPC_DEF(cpe_schedule_inform)
+        RPC_DEF(cpe_set_vouchers)
+        RPC_DEF(cpe_get_options)
     } = 1;
 } = 1;

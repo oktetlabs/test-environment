@@ -50,6 +50,18 @@
 #include <signal.h>
 #endif
 
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#else
+#error <sys/socket.h> is definitely needed for acse_lrpc.c
+#endif
+
+#if HAVE_SYS_UN_H
+#include <sys/un.h>
+#else
+#error <sys/un.h> is definitely needed for acse_lrpc.c
+#endif
+
 #include <string.h>
 
 #include "te_stdint.h"
@@ -59,22 +71,32 @@
 #include "logger_api.h"
 #include "acse_internal.h"
 
+/** Session */
+typedef struct {
+    session_state_t state;         /**< Session state                  */
+    session_state_t target_state;  /**< Session desired state          */
+    int             enabled;       /**< Whether a session may continue */
+    int             hold_requests; /**< Whether to put "hold requests"
+                                        in SOAP msg                    */
+} session_t;
+
 /** Device ID */
 typedef struct {
-    char const *manufacturer;  /**< Manufacturer */
+    char const *manufacturer;  /**< Manufacturer                     */
     char const *oui;           /**< Organizational Unique Identifier */
-    char const *product_class; /**< Product Class */
-    char const *serial_number; /**< Serial Number */
+    char const *product_class; /**< Product Class                    */
+    char const *serial_number; /**< Serial Number                    */
 } device_id_t;
 
 /** CPE */
 typedef struct {
-    char const *name;          /**< CPE name */
-    char const *ip_addr;       /**< CPE IP address */
-    char const *url;           /**< CPE URL */
-    char const *cert;          /**< CPE certificate */
-    char const *user;          /**< CPE user name */
+    char const *name;          /**< CPE name          */
+    char const *ip_addr;       /**< CPE IP address    */
+    char const *url;           /**< CPE URL           */
+    char const *cert;          /**< CPE certificate   */
+    char const *user;          /**< CPE user name     */
     char const *pass;          /**< CPE user password */
+    session_t   session;       /**< Session           */
     device_id_t device_id;     /**< Device Identifier */
 } cpe_t;
 
@@ -87,11 +109,11 @@ typedef struct cpe_item_t
 
 /** ACS */
 typedef struct {
-    char const *name;          /**< ACS name */
-    char const *url;           /**< ACS URL */
-    char const *cert;          /**< ACS certificate */
-    char const *user;          /**< ACS user name */
-    char const *pass;          /**< ACS user password */
+    char const *name;          /**< ACS name                       */
+    char const *url;           /**< ACS URL                        */
+    char const *cert;          /**< ACS certificate                */
+    char const *user;          /**< ACS user name                  */
+    char const *pass;          /**< ACS user password              */
     STAILQ_HEAD(cpe_list_t, cpe_item_t)
                 cpe_list;      /**< The list of CPEs being handled */
 } acs_t;
@@ -103,30 +125,15 @@ typedef struct acs_item_t
     acs_t                acs;
 } acs_item_t;
 
-/** Session */
-typedef struct {
-    char const *name;          /**< Session name */
-    char const *link;          /**< The link to a particular CPE */
-    int         state;         /**< Session state */
-    int         target_state;  /**< Session desired state */
-    int         enabled;       /**< Whether a session may continue */
-    int         hold_requests; /**< Whether to put "hold requests" in SOAP */
-} session_t;
-
-/** Session list */
-typedef struct session_item_t
-{
-    STAILQ_ENTRY(session_item_t) link;
-    session_t                    session;
-} session_item_t;
-
 /** LRPC mechanism state machine states */
 typedef enum { want_read, want_write } lrpc_t;
 
 /** LRPC mechanism state machine private data */
 typedef struct {
-    int       rd_fd;  /**< The pipe endpoint from TA to read from       */
-    int       wr_fd;  /**< The pipe endpoint to TA to write to          */
+    int       sock;   /**< The socket endpoint from TA to read/write    */
+    struct sockaddr_un
+              addr;   /**< The address of a requester to answer to      */
+    socklen_t len;    /**< The length of the address of a requester     */
     params_t *params; /**< Parameters passed from TA over shared memory */
     te_errno  rc;     /**< Return code to be passed back to TA          */
     lrpc_t    state;  /**< LRPC mechanism state machine current state   */
@@ -135,10 +142,6 @@ typedef struct {
 /** The list af acs instances */
 static STAILQ_HEAD(acs_list_t, acs_item_t)
     acs_list = STAILQ_HEAD_INITIALIZER(&acs_list); 
-
-/** The list af session instances */
-static STAILQ_HEAD(session_list_t, session_item_t)
-    session_list = STAILQ_HEAD_INITIALIZER(&session_list);
 
 /**
  * Avoid warning when freeing pointers to const data
@@ -150,27 +153,6 @@ static STAILQ_HEAD(session_list_t, session_item_t)
  {
      free((void *)p);
  }
-
-/**
- * Find a session instance from the session list
- *
- * @param session       Name of the session instance
- *
- * @return              Session instance address or NULL if not found
- */
-static session_t *
-find_session(char const *session)
-{
-    session_item_t *item;
-
-    STAILQ_FOREACH(item, &session_list, link)
-    {
-        if (strcmp(item->session.name, session) == 0)
-            return &item->session;
-    }
-
-    return NULL;
-}
 
 /**
  * Find an acs instance from the acs list
@@ -235,12 +217,12 @@ find_cpe(char const *acs, char const *cpe)
 static te_errno
 session_hold_requests_get(params_t *params)
 {
-    session_t *session_inst = find_session(params->session);
+    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
 
-    if (session_inst == NULL)
+    if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(params->value, "%i", session_inst->hold_requests);
+    sprintf(params->value, "%i", cpe_inst->session.hold_requests);
     return 0;
 }
 
@@ -254,12 +236,12 @@ session_hold_requests_get(params_t *params)
 static te_errno
 session_hold_requests_set(params_t *params)
 {
-    session_t *session_inst = find_session(params->session);
+    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
 
-    if (session_inst == NULL)
+    if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    session_inst->hold_requests = atoi(params->value);
+    cpe_inst->session.hold_requests = atoi(params->value);
     return 0;
 }
 
@@ -273,12 +255,12 @@ session_hold_requests_set(params_t *params)
 static te_errno
 session_enabled_get(params_t *params)
 {
-    session_t *session_inst = find_session(params->session);
+    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
 
-    if (session_inst == NULL)
+    if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(params->value, "%i", session_inst->enabled);
+    sprintf(params->value, "%i", cpe_inst->session.enabled);
     return 0;
 }
 
@@ -292,12 +274,12 @@ session_enabled_get(params_t *params)
 static te_errno
 session_enabled_set(params_t *params)
 {
-    session_t *session_inst = find_session(params->session);
+    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
 
-    if (session_inst == NULL)
+    if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    session_inst->enabled = atoi(params->value);
+    cpe_inst->session.enabled = atoi(params->value);
     return 0;
 }
 
@@ -311,12 +293,12 @@ session_enabled_set(params_t *params)
 static te_errno
 session_target_state_get(params_t *params)
 {
-    session_t *session_inst = find_session(params->session);
+    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
 
-    if (session_inst == NULL)
+    if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(params->value, "%i", session_inst->target_state);
+    sprintf(params->value, "%i", cpe_inst->session.target_state);
     return 0;
 }
 
@@ -330,12 +312,12 @@ session_target_state_get(params_t *params)
 static te_errno
 session_target_state_set(params_t *params)
 {
-    session_t *session_inst = find_session(params->session);
+    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
 
-    if (session_inst == NULL)
+    if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    session_inst->target_state = atoi(params->value);
+    cpe_inst->session.target_state = atoi(params->value);
     return 0;
 }
 
@@ -349,69 +331,12 @@ session_target_state_set(params_t *params)
 static te_errno
 session_state_get(params_t *params)
 {
-    session_t *session_inst = find_session(params->session);
+    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
 
-    if (session_inst == NULL)
+    if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(params->value, "%i", session_inst->state);
-    return 0;
-}
-
-/**
- * Get the session link to a cpe.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-session_link_get(params_t *params)
-{
-    session_t *session_inst = find_session(params->session);
-
-    if (session_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, session_inst->link);
-    return 0;
-}
-
-/**
- * Get the list of sessions.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-acse_session_list(params_t *params)
-{
-    char           *ptr = params->list;
-    unsigned int    len = 0;
-    session_item_t *item;
-
-    /* Calculate the whole length (plus 1 sym for trailing ' '/'\0') */
-    STAILQ_FOREACH(item, &session_list, link)
-        len += strlen(item->session.name) + 1;
-
-    if (len > sizeof params->list)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    /* Form the list */
-    STAILQ_FOREACH(item, &session_list, link)
-    {
-        if ((len = strlen(item->session.name)) > 0)
-        {
-            if (item != STAILQ_FIRST(&session_list))
-              *ptr++ = ' ';
-
-            memcpy(ptr, item->session.name, len);
-            ptr += len;
-        }
-    }
-
-    *ptr = '\0';
+    sprintf(params->value, "%i", cpe_inst->session.state);
     return 0;
 }
 
@@ -742,7 +667,6 @@ acs_cpe_add(params_t *params)
     if ((cpe_item->cpe.ip_addr  = strdup("0.0.0.0")) == NULL)
         goto enomem_2;
 
-RING("AAA: cpe.ip_addr = '%s', cpe_item = %p", cpe_item->cpe.ip_addr, cpe_item);
     if ((cpe_item->cpe.url  = strdup("")) == NULL)
         goto enomem_3;
 
@@ -766,6 +690,11 @@ RING("AAA: cpe.ip_addr = '%s', cpe_item = %p", cpe_item->cpe.ip_addr, cpe_item);
 
     if ((cpe_item->cpe.device_id.serial_number = strdup("")) == NULL)
         goto enomem_A;
+
+    cpe_item->cpe.session.state         = session_no_state;
+    cpe_item->cpe.session.target_state  = session_no_state;
+    cpe_item->cpe.session.enabled       = FALSE;
+    cpe_item->cpe.session.hold_requests = FALSE;
 
     STAILQ_INSERT_TAIL(&acs_item->acs.cpe_list, cpe_item, link);
     return 0;
@@ -1198,6 +1127,58 @@ acse_acs_list(params_t *params)
     return 0;
 }
 
+static te_errno
+cpe_get_rpc_methods(params_t *params)
+{
+    strcpy(params->method_list.list[0], "GetRPCMethods");
+    strcpy(params->method_list.list[1], "SetParameterValues");
+    strcpy(params->method_list.list[2], "GetParameterValues");
+    strcpy(params->method_list.list[3], "GetParameterNames");
+    strcpy(params->method_list.list[4], "AddObject");
+    strcpy(params->method_list.list[5], "DeleteObject");
+    strcpy(params->method_list.list[6], "ScheduleInform");
+    params->method_list.len = 7;
+    return 0;
+}
+
+#undef RPC_TEST
+
+#define RPC_TEST(_fun) \
+static te_errno                                               \
+_fun(params_t *params)                                        \
+{                                                             \
+    ERROR("Hi, I am rpc_test_" #_fun "!!! params->acse = %u", \
+          params->acse);                                      \
+    return 0;                                                 \
+}
+
+RPC_TEST(cpe_set_parameter_values)
+RPC_TEST(cpe_get_parameter_values)
+RPC_TEST(cpe_get_parameter_names)
+RPC_TEST(cpe_set_parameter_attributes)
+RPC_TEST(cpe_get_parameter_attributes)
+RPC_TEST(cpe_add_object)
+RPC_TEST(cpe_delete_object)
+RPC_TEST(cpe_reboot)
+RPC_TEST(cpe_download)
+RPC_TEST(cpe_upload)
+RPC_TEST(cpe_factory_reset)
+RPC_TEST(cpe_get_queued_transfers)
+RPC_TEST(cpe_get_all_queued_transfers)
+RPC_TEST(cpe_schedule_inform)
+RPC_TEST(cpe_set_vouchers)
+RPC_TEST(cpe_get_options)
+
+
+#undef RPC_TEST
+
+static te_errno
+rpc_test(params_t *params)
+{
+    ERROR("Hi, I am rpc_test!!! params->acse = %u", params->acse);
+    return 0;
+}
+
 /** Translation table for calculated goto
  * (shoud correspond to enum acse_fun_t in acse.h) */
 static te_errno
@@ -1217,11 +1198,28 @@ static te_errno
         &device_id_oui_get,
         &device_id_product_class_get,
         &device_id_serial_number_get,
-        &acse_session_list,
-        &session_link_get, &session_state_get,
+        &session_state_get,
         &session_target_state_get, &session_target_state_set,
         &session_enabled_get, &session_enabled_set,
-        &session_hold_requests_get, &session_hold_requests_set };
+        &session_hold_requests_get, &session_hold_requests_set,
+        &cpe_get_rpc_methods,
+        &cpe_set_parameter_values,
+        &cpe_get_parameter_values,
+        &cpe_get_parameter_names,
+        &cpe_set_parameter_attributes,
+        &cpe_get_parameter_attributes,
+        &cpe_add_object,
+        &cpe_delete_object,
+        &cpe_reboot,
+        &cpe_download,
+        &cpe_upload,
+        &cpe_factory_reset,
+        &cpe_get_queued_transfers,
+        &cpe_get_all_queued_transfers,
+        &cpe_schedule_inform,
+        &cpe_set_vouchers,
+        &cpe_get_options,
+        &rpc_test };
 
 static te_errno
 before_select(void *data, fd_set *rd_set, fd_set *wr_set, int *fd_max)
@@ -1231,17 +1229,17 @@ before_select(void *data, fd_set *rd_set, fd_set *wr_set, int *fd_max)
     switch (lrpc->state)
     {
         case want_read:
-            FD_SET(lrpc->rd_fd, rd_set);
+            FD_SET(lrpc->sock, rd_set);
 
-            if (*fd_max < lrpc->rd_fd + 1)
-                *fd_max = lrpc->rd_fd + 1;
+            if (*fd_max < lrpc->sock + 1)
+                *fd_max = lrpc->sock + 1;
 
             break;
         case want_write:
-            FD_SET(lrpc->wr_fd, wr_set);
+            FD_SET(lrpc->sock, wr_set);
 
-            if (*fd_max < lrpc->wr_fd + 1)
-                *fd_max = lrpc->wr_fd + 1;
+            if (*fd_max < lrpc->sock + 1)
+                *fd_max = lrpc->sock + 1;
 
             break;
         default:
@@ -1260,9 +1258,13 @@ after_select(void *data, fd_set *rd_set, fd_set *wr_set)
     switch (lrpc->state)
     {
         case want_read:
-            if (FD_ISSET(lrpc->rd_fd, rd_set))
+            if (FD_ISSET(lrpc->sock, rd_set))
             {
-                switch (read(lrpc->rd_fd, &fun, sizeof fun))
+                lrpc->len = sizeof lrpc->addr;
+
+                switch (recvfrom(lrpc->sock, &fun, sizeof fun, 0,
+                                 (struct sockaddr *)&lrpc->addr,
+                                 &lrpc->len))
                 {
                     case -1:
                         ERROR("Failed to get call over LRPC: %s",
@@ -1283,9 +1285,10 @@ after_select(void *data, fd_set *rd_set, fd_set *wr_set)
 
             break;
         case want_write:
-            if (FD_SET(lrpc->wr_fd, wr_set))
+            if (FD_SET(lrpc->sock, wr_set))
             {
-                switch (write(lrpc->wr_fd, &lrpc->rc, sizeof lrpc->rc))
+                switch (sendto(lrpc->sock, &lrpc->rc, sizeof lrpc->rc, 0,
+                               (struct sockaddr *)&lrpc->addr, lrpc->len))
                 {
                     case -1:
                         ERROR("Failed to return from call over LRPC: %s",
@@ -1313,8 +1316,7 @@ destroy(void *data)
 {
     lrpc_data_t *lrpc = data;
 
-    close(lrpc->rd_fd);
-    close(lrpc->wr_fd);
+    close(lrpc->sock);
     free(lrpc);
     return 0;
 }
@@ -1326,25 +1328,27 @@ error_destroy(void *data)
 }
 
 extern te_errno
-acse_lrpc_create(channel_t *channel, params_t *params,
-                 int rd_fd, int wr_fd)
+acse_lrpc_create(channel_t *channel, params_t *params, int sock)
 {
     lrpc_data_t *lrpc = channel->data = malloc(sizeof *lrpc);
 
     if (lrpc == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-    lrpc->rd_fd   = rd_fd;
-    lrpc->wr_fd   = wr_fd;
-    lrpc->params  = params;
-    lrpc->rc      = 0;
-    lrpc->state   = want_read;
+    lrpc->sock            = sock;
+    lrpc->addr.sun_family = AF_UNIX;
+    lrpc->len             = sizeof lrpc->addr;
+    lrpc->params          = params;
+    lrpc->rc              = 0;
+    lrpc->state           = want_read;
 
     channel->type          = lrpc_type;
     channel->before_select = &before_select;
     channel->after_select  = &after_select;
     channel->destroy       = &destroy;
     channel->error_destroy = &error_destroy;
+
+#if 0
 {
             unsigned int u;
 
@@ -1367,5 +1371,7 @@ acse_lrpc_create(channel_t *channel, params_t *params,
               STAILQ_INSERT_TAIL(&session_list, item, link);
             }
 }
+#endif
+
     return 0;
 }

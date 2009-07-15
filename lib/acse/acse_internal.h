@@ -72,8 +72,7 @@ typedef struct channel_item_t
 } channel_item_t;
 
 extern te_errno
-acse_lrpc_create(channel_t *channel, params_t *params,
-                 int rd_fd, int wr_fd);
+acse_lrpc_create(channel_t *channel, params_t *params, int sock);
 
 extern te_errno
 acse_conn_create(channel_t *channel);
