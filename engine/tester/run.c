@@ -2353,14 +2353,13 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #if WITH_TRC
     if ((~ctx->flags & TESTER_NO_TRC) && (test_get_name(ri) != NULL))
     {
-        const char     *names[ctx->n_args];
-        const char     *values[ctx->n_args];
+        trc_report_argument args[ctx->n_args];
         unsigned int    i;
 
         for (i = 0; i < ctx->n_args; ++i)
         {
-            names[i] = ctx->args[i].name;
-            values[i] = ctx->args[i].value;
+            args[i].name = (char *)ctx->args[i].name;
+            args[i].value = (char *)ctx->args[i].value;
         }
         /* 
          * It is guaranteed that trc_db_walker_step_iter() does not
@@ -2369,7 +2368,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
          */
         (void)trc_db_walker_step_iter(ctx->trc_walker,
                                       ctx->n_args,
-                                      (char **)names, (char **)values,
+                                      args,
                                       FALSE);
         ctx->do_trc_walker = TRUE;
 
