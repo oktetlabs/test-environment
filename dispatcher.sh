@@ -162,6 +162,14 @@ Generic options:
   --trc-txt=<filename>          Name of the file for text report
                                 (by default, it is generated to stdout)
   --trc-quiet                   Do not output total statistics to stdout
+  --trc-comparison=<method>     Specify the method to match parameter values in TRC
+                                - exact (the default)
+                                - casefold 
+                                - normalise (XML-style space normalization)
+                                - tokens (the values are split into tokens which are
+                                either sequences of XML name characters or single characters;
+                                the matching is done on these lists; in additional, numeric
+                                tokens are compared as numbers (so e.g. 10 and 0xa render equal)
   --trc-update                  Update TRC database
   --trc-init                    Initialize TRC database (be careful,
                                 TRC database file will be rewritten)
