@@ -32,6 +32,8 @@
 
 #include "te_config.h"
 
+#include <ctype.h>
+
 #include "te_errno.h"
 #include "te_alloc.h"
 #include "logger_api.h"
@@ -134,7 +136,7 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
         {
             if (force)
             {
-                VERB("Step test '%s' - force to create", test_name);
+                RING("Step test '%s' - force to create", test_name);
                 walker->test = trc_db_new_test(tests, walker->iter,
                                                test_name);
                 if (walker->test == NULL)
@@ -145,7 +147,7 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
             }
             else
             {
-                VERB("Step test '%s' - unknown", test_name);
+                RING("Step test '%s' - unknown", test_name);
                 walker->unknown++;
             }
         }
@@ -158,6 +160,111 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
     walker->is_iter = FALSE;
 
     return (walker->unknown == 0);
+}
+
+int (*trc_db_compare_values)(const char *s1, const char *s2) = strcmp;
+
+static unsigned
+next_token(const char *pos, const char **start, te_bool *is_numeric)
+{
+    unsigned len = 0;
+    
+    *is_numeric = FALSE;
+    while(isspace(*pos))
+        pos++;
+    *start = pos;
+    if (*pos != '\0')
+    {
+        while(isalnum(*pos) || *pos == '-' || *pos == '_' || *pos == '.')
+        {
+            pos++;
+            len++;
+        }
+        if (len == 0)
+            len = 1;
+        else
+        {
+            char *tmp;
+            strtol(*start, &tmp, 0); // scanning only
+            if (tmp == pos)
+                *is_numeric = TRUE;
+        }
+    }
+    return len;
+}
+
+int
+trc_db_strcmp_tokens(const char *s1, const char *s2)
+{
+    unsigned wlen1 = 0;
+    te_bool numeric1 = FALSE;
+    unsigned wlen2 = 0;
+    te_bool numeric2 = FALSE;
+    int rc;
+    
+    do
+    {
+        wlen1 = next_token(s1, &s1, &numeric1);
+        wlen2 = next_token(s2, &s2, &numeric2);
+        if (numeric1 && numeric2)
+        {
+            rc = strtol(s1, NULL, 0) - strtol(s2, NULL, 0);
+            if (rc != 0)
+                return rc;
+        }
+        if (wlen1 < wlen2)
+        {
+            return memcmp(s1, s2, wlen1) > 0 ? 1 : -1;
+        }
+        else if (wlen1 > wlen2)
+        {
+            return memcmp(s1, s2, wlen2) >= 0 ? 1 : -1;
+        }
+        else
+        {
+            rc = memcmp(s1, s2, wlen1);
+            if (rc != 0)
+                return rc;
+        }
+        s1 += wlen1;
+        s2 += wlen2;
+    } while (wlen1 != 0 && wlen2 != 0);
+    return 0;
+}
+
+int
+trc_db_strcmp_normspace(const char *s1, const char *s2)
+{
+    while (isspace(*s1))
+        s1++;
+    while (isspace(*s2))
+        s2++;
+    
+    while (*s1 != '\0' && *s2 != '\0')
+    {
+        if (isspace(*s1))
+        {
+            if (!isspace(*s2))
+                return (int)' ' - (int)*s2;
+            while (isspace(*s1))
+                s1++;
+            while (isspace(*s2))
+                s2++;
+        }
+        else
+        {
+            if (*s1 != *s2)
+                return (int)*s1 - (int)*s2;
+            s1++;
+            s2++;
+        }
+    }
+    while (isspace(*s1))
+        s1++;
+    while (isspace(*s2))
+        s2++;
+
+    return (int)*s1 - (int)*s2;
 }
 
 /**
@@ -174,68 +281,42 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
 static te_bool
 test_iter_args_match(const trc_test_iter_args  *db_args,
                      unsigned int               n_args,
-                     const char               **names,
-                     const char               **values)
+                     trc_report_argument       *args)
 {
-    uint8_t             match[n_args];
     trc_test_iter_arg  *arg;
-    te_bool             arg_match;
     unsigned int        i;
 
-    memset(match, 0, sizeof(match));
-    for (arg = TAILQ_FIRST(&db_args->head), arg_match = TRUE;
-         arg_match && arg != NULL;
-         arg = TAILQ_NEXT(arg, links))
+    for (arg = TAILQ_FIRST(&db_args->head), i = 0;
+         arg != NULL && i < n_args;
+         arg = TAILQ_NEXT(arg, links), i++)
     {
         VERB("Argument from TRC DB: %s=%s", arg->name, arg->value);
-        arg_match = FALSE;
-        for (i = 0; i < n_args; ++i)
+        VERB("Compare with: %s=%s", args[i].name, args[i].value);
+        if (strcmp(args[i].name, arg->name) != 0)
         {
-            VERB("Compare with: %s=%s", names[i], values[i]);
-            if (match[i] == 0 && strcmp(names[i], arg->name) == 0)
+            VERB("Mismatch: %s vs %s", args[i].name, arg->name);
+            return FALSE;
+        }
+        else
+        {
+            if (trc_db_compare_values(args[i].value, arg->value) != 0)
             {
-                char       *value = (char *)values[i];
-                te_bool     value_match;
-
-                if (strchr(value, '\n') != NULL)
-                {
-                    char *tmp;
-
-                    value = strdup(value);
-                    assert(value != NULL);
-                    for (tmp = value;
-                         (tmp = strchr(tmp, '\n')) != NULL;
-                         *tmp = ' ');
-                }
-
-                value_match = (strcmp(value, arg->value) == 0);
-
-                if (value != (char *)values[i])
-                    free(value);
-
-                if (value_match)
-                {
-                    VERB("Match!");
-                    match[i] = 1;
-                    arg_match = TRUE;
-                    break;
-                }
+                VERB("Value mismatch for %s: %s vs %s", arg->name, 
+                      args[i].value, arg->value);
+                return FALSE;
             }
         }
-        VERB("Argument from TRC DB -> %smatch", arg_match ? "" : "no ");
     }
-    if (!arg_match || memchr(match, 0, n_args) != NULL)
-        return FALSE;
-    else
-        return TRUE;
+    if (arg != NULL || i != n_args)
+        VERB("Argument count mismatch: %d vs %d", i, n_args);
+    return (arg == NULL && i == n_args);
 }
 
 /* See the description in te_trc.h */
 te_bool
 trc_db_walker_step_iter(te_trc_db_walker  *walker,
                         unsigned int       n_args,
-                        char             **names,
-                        char             **values,
+                        trc_report_argument *args,
                         te_bool            force)
 {
     assert(!walker->is_iter);
@@ -250,18 +331,17 @@ trc_db_walker_step_iter(te_trc_db_walker  *walker,
         for (walker->iter = TAILQ_FIRST(&walker->test->iters.head);
              walker->iter != NULL &&
              !test_iter_args_match(&walker->iter->args,
-                                   n_args, (const char **)names,
-                                   (const char **)values);
+                                   n_args, args);
              walker->iter = TAILQ_NEXT(walker->iter, links));
 
         if (walker->iter == NULL)
         {
             if (force)
             {
+                unsigned i;
                 VERB("Step iteration - force to create");
                 walker->iter = trc_db_new_test_iter(walker->test,
-                                                    n_args,
-                                                    names, values);
+                                                    n_args, args);
                 if (walker->iter == NULL)
                 {
                     ERROR("Cannot allocate a new test '%s' iteration",
@@ -411,6 +491,7 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
 
     if (walker->unknown > 0)
     {
+        ERROR("Iteration is not known");
         /* Test iteration is unknown. No expected result. */
         return NULL;
     }
@@ -422,6 +503,7 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
         res = logic_expr_match(p->tags_expr, tags);
         if (res != 0)
         {
+            ERROR("Matching tag found");
             TAILQ_FOREACH(q, &p->results, links)
             {
                 if (q->result.status == TE_TEST_SKIPPED)
@@ -448,6 +530,11 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
     {
         /* May be default expected result exists? */
         result = walker->iter->exp_default;
+    }
+
+    if (result == NULL)
+    {
+        RING("Expected result is not known");
     }
 
     return result;

@@ -447,7 +447,7 @@ rgt_core_process_log_msg(log_msg *msg)
         strcmp(msg->user, TE_LOG_CMSG_USER) == 0 &&
         strcmp(msg->entity, TE_LOG_CMSG_ENTITY_TESTER) == 0)
     {
-            rgt_process_tester_control_message(msg);
+        rgt_process_tester_control_message(msg);
     }
     else
     {
@@ -489,3 +489,4 @@ rgt_update_progress_bar(rgt_gen_ctx_t *ctx)
     fprintf(stderr, "\r%ld%%",
             (long)(((long long)offset * 100L) / ctx->rawlog_size));
 }
+

@@ -77,7 +77,8 @@ typedef struct trc_test_iter_args {
 
     xmlNodePtr  node;   /**< XML node with this element */
 
-    TAILQ_HEAD(, trc_test_iter_arg) head;   /**< Head of the list */
+    /** Head of the list */
+    TAILQ_HEAD(trc_test_iter_args_head, trc_test_iter_arg) head;
 
 } trc_test_iter_args;
 
@@ -186,8 +187,7 @@ extern trc_test *trc_db_new_test(trc_tests *tests, trc_test_iter *parent,
  *
  * @param parent        Test a new iteration belongs to
  * @param n_args        Number of arguments
- * @param names         Array with argument names
- * @param values        Array with argument values
+ * @param args          Array with arguments
  *
  * @note If @a names[] and @a values[] are owned by the function,
  *       the pointers in @a names and @a values are set to @c NULL.
@@ -196,13 +196,17 @@ extern trc_test *trc_db_new_test(trc_tests *tests, trc_test_iter *parent,
  */
 extern trc_test_iter *trc_db_new_test_iter(trc_test      *test,
                                            unsigned int   n_args,
-                                           char         **names,
-                                           char         **values);
+                                           trc_report_argument *args);
 
 
 extern te_errno trc_db_save(te_trc_db *db, const char *filename);
 
 extern void trc_db_free(te_trc_db *db);
+
+extern int (*trc_db_compare_values)(const char *s1, const char *s2);
+
+extern int trc_db_strcmp_tokens(const char *s1, const char *s2);
+extern int trc_db_strcmp_normspace(const char *s1, const char *s2);
 
 extern trc_test *trc_db_walker_get_test(const te_trc_db_walker *walker);
 extern trc_test_iter *trc_db_walker_get_iter(

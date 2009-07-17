@@ -214,14 +214,13 @@ trc_db_new_test(trc_tests *tests, trc_test_iter *parent, const char *name)
  *
  * @param args          Empty list of arguments
  * @param n_args        Number of arguments to add into the list
- * @param names         Array with names of arguments
- * @param values        Array with values of arguments
+ * @param in_args       Added arguments
  *
  * @return Status code.
  */
 static te_errno
 trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
-                      char **names, char **values)
+                      trc_report_argument *add_args)
 {
     unsigned int        i;
     trc_test_iter_arg  *arg;
@@ -240,14 +239,14 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
             }
             return TE_RC(TE_TRC, TE_ENOMEM);
         }
-        arg->name = names[i];
-        arg->value = values[i];
+        arg->name = add_args[i].name;
+        arg->value = add_args[i].value;
         TAILQ_INSERT_TAIL(&args->head, arg, links);
     }
 
     /* Success, names and values are own */
     for (i = 0; i < n_args; ++i)
-        names[i] = values[i] = NULL;
+        add_args[i].name = add_args[i].value = NULL;
 
     return 0;
 }
@@ -255,7 +254,7 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
 /* See the description in trc_db.h */
 trc_test_iter *
 trc_db_new_test_iter(trc_test *test, unsigned int n_args,
-                     char **names, char **values)
+                     trc_report_argument *args)
 {
     trc_test_iter *p;
     te_errno       rc;
@@ -268,7 +267,7 @@ trc_db_new_test_iter(trc_test *test, unsigned int n_args,
         TAILQ_INIT(&p->tests.head);
         LIST_INIT(&p->users);
         p->parent = test;
-        rc = trc_db_test_iter_args(&p->args, n_args, names, values);
+        rc = trc_db_test_iter_args(&p->args, n_args, args);
         if (rc != 0)
         {
             free(p);

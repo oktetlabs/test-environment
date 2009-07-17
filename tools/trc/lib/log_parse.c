@@ -45,6 +45,8 @@
 #include <assert.h>
 #endif
 
+#include <search.h>
+
 #include <libxml/tree.h>
 
 #include "te_errno.h"
@@ -77,6 +79,7 @@ typedef enum trc_report_log_parse_state {
     TRC_REPORT_LOG_PARSE_SKIP,      /**< Skip entire contents */
 } trc_report_log_parse_state;
 
+
 /** TRC report TE log parser context. */
 typedef struct trc_report_log_parse_ctx {
 
@@ -106,8 +109,7 @@ typedef struct trc_report_log_parse_ctx {
     unsigned int    args_max;   /**< Maximum number of arguments
                                      the space is allocated for */
     unsigned int    args_n;     /**< Current number of arguments */
-    char          **args_name;  /**< Names of arguments */
-    char          **args_value; /**< Values of arguments */
+    trc_report_argument *args;   /**< Actual arguments */
 
     unsigned int    stack_size; /**< Size of the stack in elements */
     te_bool        *stack_info; /**< Stack */
@@ -342,25 +344,24 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
     if (ctx->args_n == ctx->args_max)
     {
         ctx->args_max++;
-        ctx->args_name = realloc(ctx->args_name,
-                             sizeof(*(ctx->args_name)) * ctx->args_max);
-        ctx->args_value = realloc(ctx->args_value,
-                             sizeof(*(ctx->args_value)) * ctx->args_max);
-        if (ctx->args_name == NULL || ctx->args_value == NULL)
+        ctx->args = realloc(ctx->args,
+                            sizeof(*(ctx->args)) * ctx->args_max);
+        if (ctx->args == NULL)
         {
             ctx->rc = TE_ENOMEM;
             return;
         }
-        ctx->args_name[ctx->args_n] = ctx->args_value[ctx->args_n] = NULL;
+        ctx->args[ctx->args_n].name = NULL;
+        ctx->args[ctx->args_n].value = NULL;
     }
 
     while (attrs[0] != NULL && attrs[1] != NULL)
     {
         if (xmlStrcmp(attrs[0], CONST_CHAR2XML("name")) == 0)
         {
-            free(ctx->args_name[ctx->args_n]);
-            ctx->args_name[ctx->args_n] = strdup(XML2CHAR(attrs[1]));
-            if (ctx->args_name[ctx->args_n] == NULL)
+            free(ctx->args[ctx->args_n].name);
+            ctx->args[ctx->args_n].name = strdup(XML2CHAR(attrs[1]));
+            if (ctx->args[ctx->args_n].name == NULL)
             {
                 ERROR("strdup(%s) failed", attrs[1]);
                 ctx->rc = TE_ENOMEM;
@@ -369,9 +370,9 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         }
         else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("value")) == 0)
         {
-            free(ctx->args_value[ctx->args_n]);
-            ctx->args_value[ctx->args_n] = strdup(XML2CHAR(attrs[1]));
-            if (ctx->args_value[ctx->args_n] == NULL)
+            free(ctx->args[ctx->args_n].value);
+            ctx->args[ctx->args_n].value = strdup(XML2CHAR(attrs[1]));
+            if (ctx->args[ctx->args_n].value == NULL)
             {
                 ERROR("strdup(%s) failed", XML2CHAR(attrs[1]));
                 ctx->rc = TE_ENOMEM;
@@ -381,8 +382,8 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         attrs += 2;
     }
 
-    if (ctx->args_name[ctx->args_n] == NULL ||
-        ctx->args_value[ctx->args_n] == NULL)
+    if (ctx->args[ctx->args_n].name == NULL ||
+        ctx->args[ctx->args_n].value == NULL)
     {
         ERROR("Invalid format of the test parameter specification");
         ctx->rc = TE_EFMT;
@@ -792,6 +793,13 @@ trc_report_log_start_element(void *user_data,
     }
 }
 
+static int
+compare_arg_names(const void *v1, const void *v2)
+{
+    return strcmp(((trc_report_argument *)v1)->name,
+                  ((trc_report_argument *)v2)->name);
+}
+
 /**
  * Callback function that is called when XML parser meets the end of 
  * an element.
@@ -861,7 +869,7 @@ trc_report_log_end_element(void *user_data, const xmlChar *name)
             ctx->state = TRC_REPORT_LOG_PARSE_TEST;
 
             if (!trc_db_walker_step_iter(ctx->db_walker, ctx->args_n,
-                                         ctx->args_name, ctx->args_value,
+                                         ctx->args,
                                          TRUE))
             {
                 ERROR("Unable to create a new iteration");
@@ -930,6 +938,8 @@ trc_report_log_end_element(void *user_data, const xmlChar *name)
 
         case TRC_REPORT_LOG_PARSE_PARAMS:
             assert(strcmp(tag, "params") == 0);
+            qsort(ctx->args, ctx->args_n, sizeof(*ctx->args), 
+                  compare_arg_names);
             ctx->state = TRC_REPORT_LOG_PARSE_META;
             break;
 
@@ -1082,11 +1092,10 @@ trc_report_process_log(trc_report_ctx *gctx, const char *log)
     free(ctx.stack_info);
     for (ctx.args_n = 0; ctx.args_n < ctx.args_max; ctx.args_n++)
     {
-        free(ctx.args_name[ctx.args_n]);
-        free(ctx.args_value[ctx.args_n]);
+        free(ctx.args[ctx.args_n].name);
+        free(ctx.args[ctx.args_n].value);
     }
-    free(ctx.args_name);
-    free(ctx.args_value);
+    free(ctx.args);
 
     return rc;
 }

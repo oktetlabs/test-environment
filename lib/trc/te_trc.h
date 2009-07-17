@@ -42,6 +42,13 @@ extern "C" {
 #endif
 
 
+/** TE log test argument */
+typedef struct trc_report_argument {
+    char *name; /**< Argument name */
+    char *value; /**< Argument value */
+} trc_report_argument;
+
+
 /**
  * Single test result with auxiliary information for TRC.
  */
@@ -175,8 +182,7 @@ extern te_bool trc_db_walker_step_test(te_trc_db_walker *walker,
  *
  * @param walker        Current walker position
  * @param n_args        Number of arguments
- * @param names         Array with arguments names
- * @param values        Array with arguments values
+ * @param args          Test arguments
  * @param force         Force to create DB entry, if it does not
  *                      exist (if resources allocation fails, FALSE is
  *                      returned, else TRUE is returned)
@@ -190,8 +196,7 @@ extern te_bool trc_db_walker_step_test(te_trc_db_walker *walker,
  */
 extern te_bool trc_db_walker_step_iter(te_trc_db_walker  *walker,
                                        unsigned int       n_args,
-                                       char             **names,
-                                       char             **values,
+                                       trc_report_argument *args,
                                        te_bool            force);
 
 /**

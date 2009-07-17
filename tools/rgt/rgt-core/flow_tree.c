@@ -981,20 +981,38 @@ flow_tree_attach_message(log_msg *msg)
     }
     cur_node = *p_cur_node;
 
-    if (msg->flags & RGT_MSG_FLG_NORMAL)
+    if ((msg->flags & RGT_MSG_FLG_NORMAL) != 0)
         flow_tree_attach_from_node(cur_node, msg);
 
     /* Check if we are processing Test Control message */
-    if (msg->flags & RGT_MSG_FLG_VERDICT)
+    if ((msg->flags & RGT_MSG_FLG_VERDICT) != 0)
     {
+        int idlen = strlen(TE_TEST_OBJECTIVE_ID);
+        
         /* Currently Control messages can be generated only for tests */
         assert(cur_node->type == NT_TEST);
 
-        /* Append message to the list of test verdicts */
-        if (cur_node->verdicts == NULL)
-            cur_node->verdicts = g_queue_new();
+        rgt_expand_log_msg(msg);
+        if (strncmp(msg->txt_msg, TE_TEST_OBJECTIVE_ID, idlen))
+        {
+            node_info_t *info = cur_node->user_data;
+            
+            info->descr.objective = 
+            node_info_obstack_copy0(msg->txt_msg +
+                                    idlen, 
+                                    strlen(msg->txt_msg + idlen));
 
-        g_queue_push_tail(cur_node->verdicts, msg);
+            if ((msg->flags & RGT_MSG_FLG_NORMAL) == 0)
+                free_log_msg(msg);
+        }
+        else
+        {
+            /* Append message to the list of test verdicts */
+            if (cur_node->verdicts == NULL)
+                cur_node->verdicts = g_queue_new();
+
+            g_queue_push_tail(cur_node->verdicts, msg);
+        }
     }
 }
 

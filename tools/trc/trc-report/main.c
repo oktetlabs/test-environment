@@ -78,6 +78,7 @@ enum {
     TRC_OPT_NO_EXPECTED,
     TRC_OPT_NO_STATS_NOT_RUN,
     TRC_OPT_IGNORE_LOG_TAGS,
+    TRC_OPT_COMPARISON,
 };
 
 /** HTML report configuration */
@@ -192,7 +193,9 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
           TRC_OPT_NO_STATS_NOT_RUN,
           "Do not entries with unexpected 'not run' statistics.",
           NULL },
-
+        { "comparison", '\0', POPT_ARG_STRING, NULL, TRC_OPT_COMPARISON,
+          "Parameter comparison method (default is 'exact').",
+          "exact|casefold|tokens" },
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_OPT_VERSION, 
           "Display version information.", NULL },
 
@@ -225,6 +228,34 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             case TRC_OPT_DB:
                 db_fn = (char *)poptGetOptArg(optCon);
                 break;
+
+            case TRC_OPT_COMPARISON:
+            {
+                const char *method = poptGetOptArg(optCon);
+                
+                if (strcmp(method, "exact") == 0)
+                {
+                    trc_db_compare_values = strcmp;
+                }
+                else if (strcmp(method, "casefold") == 0)
+                {
+                    trc_db_compare_values = strcasecmp;
+                }
+                else if (strcmp(method, "normalised") == 0)
+                {
+                    trc_db_compare_values = trc_db_strcmp_normspace;
+                }
+                else if (strcmp(method, "tokens") == 0)
+                {
+                    trc_db_compare_values = trc_db_strcmp_tokens;
+                }
+                else
+                {
+                    ERROR("Invalid comparison method: %s", method);
+                    goto exit;
+                }
+                break;
+            }
             
             case TRC_OPT_TAG:
             {

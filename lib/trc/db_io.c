@@ -314,12 +314,11 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
 {
     te_errno            rc;
     trc_test_iter_arg  *p;
+    trc_test_iter_arg  *insert_after = NULL;
 
     p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
         return TE_RC(TE_TRC, TE_ENOMEM);
-    p->node = node;
-    TAILQ_INSERT_TAIL(&args->head, p, links);
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
     if (p->name == NULL)
@@ -327,6 +326,21 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
         ERROR("Name of the argument is missing");
         return TE_RC(TE_TRC, TE_EFMT);
     }
+
+    TAILQ_FOREACH_REVERSE(insert_after, &args->head, 
+                          trc_test_iter_args_head, 
+                          links)
+    {
+        if (strcmp(insert_after->name, p->name) < 0)
+            break;
+    }
+
+    p->node = node;
+    if (insert_after == NULL)
+        TAILQ_INSERT_TAIL(&args->head, p, links);
+    else
+        TAILQ_INSERT_AFTER(&args->head, insert_after, p, links);
+
 
     rc = get_text_content(node, "arg", &p->value);
     if (rc != 0)
@@ -516,7 +530,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
 
     INFO("New iteration of the test %s", test->name);
 
-    p = trc_db_new_test_iter(test, 0, NULL, NULL);
+    p = trc_db_new_test_iter(test, 0, NULL);
     if (p == NULL)
         return TE_RC(TE_TRC, TE_ENOMEM);
     p->node = p->tests.node = node;
@@ -531,7 +545,11 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
 
     rc = get_result(node, "result", &def);
     if (rc != 0)
+    {
+        ERROR("Cannot get test iteration result: %r", rc);
         return rc;
+    }
+    
     p->exp_default = exp_defaults_get(def);
     if (p->exp_default == NULL)
         return TE_ENOMEM;
@@ -561,7 +579,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
     rc = get_expected_results(&node, &p->exp_results);
     if (rc != 0)
     {
-        ERROR("Expected results of the test iteration is "
+        ERROR("Expected results of the test iteration are "
               "missing/invalid");
         return rc;
     }

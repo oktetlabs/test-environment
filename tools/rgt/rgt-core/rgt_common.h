@@ -296,8 +296,10 @@ typedef struct log_msg {
                                      used by get_next_arg function */
     int           args_count;   /**< Total number of the arguments */
 
-    char         *txt_msg;
+    char         *txt_msg;      /**< Processed fmt_str + args */
 } log_msg;
+
+
 
 #ifdef __cplusplus
 }
