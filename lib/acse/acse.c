@@ -47,12 +47,6 @@ static STAILQ_HEAD(channel_list_t, channel_item_t)
     channel_list = STAILQ_HEAD_INITIALIZER(&channel_list); 
 
 static void
-destroy_item(channel_item_t *item)
-{
-    (*item->channel.error_destroy)(item->channel.data);
-}
-
-static void
 destroy_all_items(void)
 {
     channel_item_t *item;
@@ -60,7 +54,8 @@ destroy_all_items(void)
 
     STAILQ_FOREACH_SAFE(item, &channel_list, link, tmp)
     {
-        (*item->channel.error_destroy)(item->channel.data);
+        (*item->channel.destroy)(item->channel.data);
+        free(item);
     }
 }
 
@@ -72,80 +67,120 @@ recover_on_select_failure(void)
 
     STAILQ_FOREACH_SAFE(item, &channel_list, link, tmp)
     {
-        int    fd_max = 0;
-        fd_set rd_set;
-        fd_set wr_set;
-
-        struct timeval t = { .tv_sec = 0, .tv_usec = 0 };
-
-        FD_ZERO(&rd_set);
-        FD_ZERO(&wr_set);
-
-        if ((*item->channel.before_select)(item->channel.data,
-                                           &rd_set, &wr_set,
-                                           &fd_max) != 0 ||
-            select(fd_max, &rd_set, &wr_set, NULL, &t) == -1)
+        if ((*item->channel.recover_fds)(item->channel.data) != 0)
         {
-            switch (item->channel.type)
-            {
-                case lrpc_type:
-                    destroy_all_items();
-                    return -1;
-                default:
-                    destroy_item(item);
-                    break;
-            }
+            destroy_all_items();
+            return -1;
         }
     }
 
     return 0;
 }
 
+/* See description in acse.h */
+extern int
+check_fd(int fd)
+{
+    fd_set         set;
+    struct timeval t = { .tv_sec = 0, .tv_usec = 0 };
+
+    FD_ZERO(&set);
+    FD_SET(fd, &set);
+
+    if (select(fd + 1, &set, NULL, NULL, &t) == -1)
+        return -1;
+
+    return 0;
+}
+
 /**
- * See description in acse.h
+ * Create all dispatchers
+ *
+ * @param params        Shared memory for LRPC parameters
+ * @param sock          Socket for LRPC synchronization
+ *
+ * @return              0 if OK, otherwise -1
  */
-void acse_loop(params_t *params, int sock)
+static int
+create_dispatchers(params_t *params, int sock)
 {
     channel_item_t *item = malloc(sizeof *item);
 
-    if (item != NULL)
+    if (item != NULL &&
+        acse_lrpc_create(&item->channel, params, sock) == 0)
     {
-        if (acse_lrpc_create(&item->channel, params, sock) == 0)
+        STAILQ_INSERT_TAIL(&channel_list, item, link);
+
+        if ((item = malloc(sizeof *item)) != NULL &&
+            acse_conn_create(&item->channel) == 0)
         {
             STAILQ_INSERT_TAIL(&channel_list, item, link);
 
-            RING("I am acse_loop, now from the ACSE library!!!");
-
-            for(;;)
+            if ((item = malloc(sizeof *item)) != NULL &&
+                acse_cwmp_create(&item->channel) == 0)
             {
-                int        r;
-                int        fd_max = 0;
-                fd_set     rd_set;
-                fd_set     wr_set;
+                STAILQ_INSERT_TAIL(&channel_list, item, link);
 
-                FD_ZERO(&rd_set);
-                FD_ZERO(&wr_set);
-
-                STAILQ_FOREACH(item, &channel_list, link)
+                if ((item = malloc(sizeof *item)) != NULL &&
+                    acse_sreq_create(&item->channel) == 0)
                 {
-                    if ((*item->channel.before_select)(item->channel.data,
-                                                       &rd_set, &wr_set,
-                                                       &fd_max) != 0)
-                    {
-                        destroy_all_items();
-                        return;
-                    }
+                    STAILQ_INSERT_TAIL(&channel_list, item, link);
+                    return 0;
                 }
+            }
+        }
+    }
 
-                switch (r = select(fd_max, &rd_set, &wr_set, NULL, NULL))
+    destroy_all_items();
+    return -1;
+}
+
+/* See description in acse.h */
+void acse_loop(params_t *params, int sock)
+{
+    if (create_dispatchers(params, sock) == 0)
+    {
+        RING("I am acse_loop, now from the ACSE library!!!");
+
+        for(;;)
+        {
+            int             r;
+            int             fd_max = 0;
+            fd_set          rd_set;
+            fd_set          wr_set;
+            channel_item_t *item;
+
+            FD_ZERO(&rd_set);
+            FD_ZERO(&wr_set);
+
+            STAILQ_FOREACH(item, &channel_list, link)
+            {
+                if ((*item->channel.before_select)(item->channel.data,
+                                                   &rd_set, &wr_set,
+                                                   &fd_max) != 0)
                 {
-                    case -1:
-                        if (recover_on_select_failure() != 0)
-                            return;
+                    destroy_all_items();
+                    return;
+                }
+            }
 
-                        break;
-                    default:
-                        STAILQ_FOREACH(item, &channel_list, link)
+            switch (r = select(fd_max, &rd_set, &wr_set, NULL, NULL))
+            {
+                case -1:
+                    if (recover_on_select_failure() != 0)
+                        return;
+
+                    break;
+                default:
+                    {
+                        channel_item_t *last_item = STAILQ_LAST(
+                                                        &channel_list,
+                                                        channel_item_t,
+                                                        link);
+                        channel_item_t *tmp;
+
+                        STAILQ_FOREACH_SAFE(item, &channel_list,
+                                            link, tmp)
                         {
                             if ((*item->channel.after_select)(
                                     item->channel.data,
@@ -155,15 +190,12 @@ void acse_loop(params_t *params, int sock)
                                 return;
                             }
 
-                            if (item == STAILQ_LAST(&channel_list,
-                                                    channel_item_t, link))
-                            {
+                            if (item == last_item)
                                 break;
-                            }
                         }
+                    }
 
-                        break;
-                }
+                    break;
             }
         }
     }
