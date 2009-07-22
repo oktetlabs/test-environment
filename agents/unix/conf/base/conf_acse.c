@@ -867,6 +867,126 @@ acs_cpe_list(unsigned int gid, char const *oid,
 }
 
 /**
+ * Get the acs port value.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Object identifier (unused)
+ * @param value         The value of the acs port
+ * @param acse          Name of the acse instance (unused)
+ * @param acs           Name of the acs instance
+ *
+ * @return              Status code
+ */
+static te_errno
+acs_port_get(unsigned int gid, char const *oid,
+             char *value, char const *acse, char const *acs)
+{
+    UNUSED(acse);
+
+    return call_get(gid, oid, value, acs, NULL, acs_port_get_fun);
+}
+
+/**
+ * Set the acs port value.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Object identifier (unused)
+ * @param value         New value of the acs port
+ * @param acse          Name of the acse instance (unused)
+ * @param acs           Name of the acs instance
+ *
+ * @return      Status code.
+ */
+static te_errno
+acs_port_set(unsigned int gid, char const *oid,
+             char const *value, char const *acse, char const *acs)
+{
+    UNUSED(acse);
+
+    return call_set(gid, oid, value, acs, NULL, acs_port_set_fun);
+}
+
+/**
+ * Get the acs ssl flag.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Object identifier (unused)
+ * @param value         The value of the acs ssl flag
+ * @param acse          Name of the acse instance (unused)
+ * @param acs           Name of the acs instance
+ *
+ * @return              Status code
+ */
+static te_errno
+acs_ssl_get(unsigned int gid, char const *oid,
+            char *value, char const *acse, char const *acs)
+{
+    UNUSED(acse);
+
+    return call_get(gid, oid, value, acs, NULL, acs_ssl_get_fun);
+}
+
+/**
+ * Set the acs ssl flag.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Object identifier (unused)
+ * @param value         New value of the acs ssl flag
+ * @param acse          Name of the acse instance (unused)
+ * @param acs           Name of the acs instance
+ *
+ * @return      Status code.
+ */
+static te_errno
+acs_ssl_set(unsigned int gid, char const *oid,
+            char const *value, char const *acse, char const *acs)
+{
+    UNUSED(acse);
+
+    return call_set(gid, oid, value, acs, NULL, acs_ssl_set_fun);
+}
+
+/**
+ * Get the acs enabled flag.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Object identifier (unused)
+ * @param value         The value of the acs enabled flag
+ * @param acse          Name of the acse instance (unused)
+ * @param acs           Name of the acs instance
+ *
+ * @return              Status code
+ */
+static te_errno
+acs_enabled_get(unsigned int gid, char const *oid,
+                char *value, char const *acse, char const *acs)
+{
+    UNUSED(acse);
+
+    return call_get(gid, oid, value, acs, NULL, acs_enabled_get_fun);
+}
+
+/**
+ * Set the acs enabled flag.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Object identifier (unused)
+ * @param value         New value of the acs enabled flag
+ * @param acse          Name of the acse instance (unused)
+ * @param acs           Name of the acs instance
+ *
+ * @return      Status code.
+ */
+static te_errno
+acs_enabled_set(unsigned int gid, char const *oid,
+                char const *value, char const *acse, char const *acs)
+{
+    UNUSED(acse);
+
+    return call_set(gid, oid, value, acs, NULL, acs_enabled_set_fun);
+}
+
+/**
  * Get the acs password.
  *
  * @param gid           Group identifier (unused)
@@ -1315,7 +1435,7 @@ stop_acse(void)
     te_errno rc = 0;
 
     if (acse_inst.pid != -1)
-{
+    {
         if (kill(-acse_inst.pid, SIGTERM) == 0)
         {
             RING("Sent SIGTERM to the process with PID = %u",
@@ -1453,8 +1573,20 @@ RCF_PCH_CFG_NODE_COLLECTION(node_acs_cpe, "cpe",
                             &acs_cpe_add, &acs_cpe_del,
                             &acs_cpe_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_acs_pass, "pass", 
+RCF_PCH_CFG_NODE_RW(node_acs_port, "port", 
                     NULL, &node_acs_cpe,
+                    &acs_port_get, &acs_port_set);
+
+RCF_PCH_CFG_NODE_RW(node_acs_ssl, "ssl", 
+                    NULL, &node_acs_port,
+                    &acs_ssl_get, &acs_ssl_set);
+
+RCF_PCH_CFG_NODE_RW(node_acs_enabled, "enabled", 
+                    NULL, &node_acs_ssl,
+                    &acs_enabled_get, &acs_enabled_set);
+
+RCF_PCH_CFG_NODE_RW(node_acs_pass, "pass", 
+                    NULL, &node_acs_enabled,
                     &acs_pass_get, &acs_pass_set);
 
 RCF_PCH_CFG_NODE_RW(node_acs_user, "user", 
@@ -1590,6 +1722,9 @@ cpe_set_parameter_values(tarpc_cpe_set_parameter_values_in *in,
 
     call_fun(fun_cpe_set_parameter_values);
 
+    errno = ENOSYS;
+    return -1;
+
     /* Clean up errno */
     errno = errno_save;
 
@@ -1612,6 +1747,9 @@ cpe_get_parameter_values(tarpc_cpe_get_parameter_values_in *in,
     }
 
     call_fun(fun_cpe_get_parameter_values);
+
+    errno = ENOSYS;
+    return -1;
 
     /* Clean up errno */
     errno = errno_save;
@@ -1636,6 +1774,9 @@ cpe_get_parameter_names(tarpc_cpe_get_parameter_names_in *in,
 
     call_fun(fun_cpe_get_parameter_names);
 
+    errno = ENOSYS;
+    return -1;
+
     /* Clean up errno */
     errno = errno_save;
 
@@ -1658,6 +1799,9 @@ cpe_set_parameter_attributes(tarpc_cpe_set_parameter_attributes_in *in,
     }
 
     call_fun(fun_cpe_set_parameter_attributes);
+
+    errno = ENOSYS;
+    return -1;
 
     /* Clean up errno */
     errno = errno_save;
@@ -1682,6 +1826,9 @@ cpe_get_parameter_attributes(tarpc_cpe_get_parameter_attributes_in *in,
 
     call_fun(fun_cpe_get_parameter_attributes);
 
+    errno = ENOSYS;
+    return -1;
+
     /* Clean up errno */
     errno = errno_save;
 
@@ -1704,6 +1851,9 @@ cpe_add_object(tarpc_cpe_add_object_in *in,
     }
 
     call_fun(fun_cpe_add_object);
+
+    errno = ENOSYS;
+    return -1;
 
     /* Clean up errno */
     errno = errno_save;
@@ -1728,6 +1878,9 @@ cpe_delete_object(tarpc_cpe_delete_object_in *in,
 
     call_fun(fun_cpe_delete_object);
 
+    errno = ENOSYS;
+    return -1;
+
     /* Clean up errno */
     errno = errno_save;
 
@@ -1750,6 +1903,9 @@ cpe_reboot(tarpc_cpe_reboot_in *in,
     }
 
     call_fun(fun_cpe_reboot);
+
+    errno = ENOSYS;
+    return -1;
 
     /* Clean up errno */
     errno = errno_save;
@@ -1774,6 +1930,9 @@ cpe_download(tarpc_cpe_download_in *in,
 
     call_fun(fun_cpe_download);
 
+    errno = ENOSYS;
+    return -1;
+
     /* Clean up errno */
     errno = errno_save;
 
@@ -1796,6 +1955,9 @@ cpe_upload(tarpc_cpe_upload_in *in,
     }
 
     call_fun(fun_cpe_upload);
+
+    errno = ENOSYS;
+    return -1;
 
     /* Clean up errno */
     errno = errno_save;
@@ -1820,6 +1982,9 @@ cpe_factory_reset(tarpc_cpe_factory_reset_in *in,
 
     call_fun(fun_cpe_factory_reset);
 
+    errno = ENOSYS;
+    return -1;
+
     /* Clean up errno */
     errno = errno_save;
 
@@ -1842,6 +2007,9 @@ cpe_get_queued_transfers(tarpc_cpe_get_queued_transfers_in *in,
     }
 
     call_fun(fun_cpe_get_queued_transfers);
+
+    errno = ENOSYS;
+    return -1;
 
     /* Clean up errno */
     errno = errno_save;
@@ -1866,6 +2034,9 @@ cpe_get_all_queued_transfers(tarpc_cpe_get_all_queued_transfers_in *in,
 
     call_fun(fun_cpe_get_all_queued_transfers);
 
+    errno = ENOSYS;
+    return -1;
+
     /* Clean up errno */
     errno = errno_save;
 
@@ -1888,6 +2059,9 @@ cpe_schedule_inform(tarpc_cpe_schedule_inform_in *in,
     }
 
     call_fun(fun_cpe_schedule_inform);
+
+    errno = ENOSYS;
+    return -1;
 
     /* Clean up errno */
     errno = errno_save;
@@ -1912,6 +2086,9 @@ cpe_set_vouchers(tarpc_cpe_set_vouchers_in *in,
 
     call_fun(fun_cpe_set_vouchers);
 
+    errno = ENOSYS;
+    return -1;
+
     /* Clean up errno */
     errno = errno_save;
 
@@ -1934,6 +2111,9 @@ cpe_get_options(tarpc_cpe_get_options_in *in,
     }
 
     call_fun(fun_cpe_get_options);
+
+    errno = ENOSYS;
+    return -1;
 
     /* Clean up errno */
     errno = errno_save;
