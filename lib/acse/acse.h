@@ -51,6 +51,9 @@ typedef enum { acse_fun_first = 1,
                acs_cert_get_fun, acs_cert_set_fun,
                acs_user_get_fun, acs_user_set_fun,
                acs_pass_get_fun, acs_pass_set_fun,
+               acs_enabled_get_fun, acs_enabled_set_fun,
+               acs_ssl_get_fun, acs_ssl_set_fun,
+               acs_port_get_fun, acs_port_set_fun,
                acs_cpe_add_fun, acs_cpe_del_fun, acs_cpe_list_fun,
                cpe_ip_addr_get_fun, cpe_ip_addr_set_fun,
                cpe_url_get_fun, cpe_url_set_fun,
@@ -107,6 +110,15 @@ typedef struct {
         } method_list;
     };
 } params_t;
+
+/**
+ * Check fd for acceptance by select call
+ *
+ * @param fd            File descriptor
+ *
+ * @return              0 if OK, otherwise -1
+ */
+extern int check_fd(int fd);
 
 /**
  * ACSE main loop
