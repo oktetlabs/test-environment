@@ -71,71 +71,6 @@
 #include "logger_api.h"
 #include "acse_internal.h"
 
-/** Session states */
-typedef enum { session_no_state,
-               session_disconnected,
-               session_connected,
-               session_authenticated,
-               session_preinitiated,
-               session_initiated,
-               session_inside_transaction,
-               session_outside_transaction
-} session_state_t;
-
-/** Session */
-typedef struct {
-    session_state_t state;         /**< Session state                  */
-    session_state_t target_state;  /**< Session desired state          */
-    int             enabled;       /**< Whether a session may continue */
-    int             hold_requests; /**< Whether to put "hold requests"
-                                        in SOAP msg                    */
-} session_t;
-
-/** Device ID */
-typedef struct {
-    char const *manufacturer;  /**< Manufacturer                     */
-    char const *oui;           /**< Organizational Unique Identifier */
-    char const *product_class; /**< Product Class                    */
-    char const *serial_number; /**< Serial Number                    */
-} device_id_t;
-
-/** CPE */
-typedef struct {
-    char const *name;          /**< CPE name          */
-    char const *ip_addr;       /**< CPE IP address    */
-    char const *url;           /**< CPE URL           */
-    char const *cert;          /**< CPE certificate   */
-    char const *user;          /**< CPE user name     */
-    char const *pass;          /**< CPE user password */
-    session_t   session;       /**< Session           */
-    device_id_t device_id;     /**< Device Identifier */
-} cpe_t;
-
-/** CPE list */
-typedef struct cpe_item_t
-{
-    STAILQ_ENTRY(cpe_item_t) link;
-    cpe_t                    cpe;
-} cpe_item_t;
-
-/** ACS */
-typedef struct {
-    char const *name;          /**< ACS name                       */
-    char const *url;           /**< ACS URL                        */
-    char const *cert;          /**< ACS certificate                */
-    char const *user;          /**< ACS user name                  */
-    char const *pass;          /**< ACS user password              */
-    STAILQ_HEAD(cpe_list_t, cpe_item_t)
-                cpe_list;      /**< The list of CPEs being handled */
-} acs_t;
-
-/** ACS list */
-typedef struct acs_item_t
-{
-    STAILQ_ENTRY(acs_item_t) link;
-    acs_t                acs;
-} acs_item_t;
-
 /** LRPC mechanism state machine states */
 typedef enum { want_read, want_write } lrpc_t;
 
@@ -151,8 +86,7 @@ typedef struct {
 } lrpc_data_t;
 
 /** The list af acs instances */
-static STAILQ_HEAD(acs_list_t, acs_item_t)
-    acs_list = STAILQ_HEAD_INITIALIZER(&acs_list); 
+acs_list_t acs_list = STAILQ_HEAD_INITIALIZER(&acs_list); 
 
 /**
  * Avoid warning when freeing pointers to const data
@@ -706,6 +640,7 @@ acs_cpe_add(params_t *params)
     cpe_item->cpe.session.target_state  = session_no_state;
     cpe_item->cpe.session.enabled       = FALSE;
     cpe_item->cpe.session.hold_requests = FALSE;
+    cpe_item->cpe.soap                  = NULL;
 
     STAILQ_INSERT_TAIL(&acs_item->acs.cpe_list, cpe_item, link);
     return 0;
@@ -834,6 +769,159 @@ acs_cpe_list(params_t *params)
     }
 
     *ptr = '\0';
+    return 0;
+}
+
+/**
+ * Get the acs port value.
+ *
+ * @param params        Parameters object
+ *
+ * @return              Status code
+ */
+static te_errno
+acs_port_get(params_t *params)
+{
+    acs_t *acs_inst = find_acs(params->acs);
+
+    if (acs_inst == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    sprintf(params->value, "%i", acs_inst->port);
+    return 0;
+}
+
+/**
+ * Set the acs port.
+ *
+ * @param params        Parameters object
+ *
+ * @return      Status code.
+ */
+static te_errno
+acs_port_set(params_t *params)
+{
+    acs_t *acs_inst = find_acs(params->acs);
+
+    if (acs_inst == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    acs_inst->port = atoi(params->value);
+    return 0;
+}
+
+/**
+ * Get the acs ssl flag.
+ *
+ * @param params        Parameters object
+ *
+ * @return              Status code
+ */
+static te_errno
+acs_ssl_get(params_t *params)
+{
+    acs_t *acs_inst = find_acs(params->acs);
+
+    if (acs_inst == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    sprintf(params->value, "%i", acs_inst->ssl);
+    return 0;
+}
+
+/**
+ * Set the acs ssl flag.
+ *
+ * @param params        Parameters object
+ *
+ * @return      Status code.
+ */
+static te_errno
+acs_ssl_set(params_t *params)
+{
+    acs_t *acs_inst = find_acs(params->acs);
+
+    if (acs_inst == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    acs_inst->ssl = atoi(params->value);
+    return 0;
+}
+
+/**
+ * Get the acs enabled flag.
+ *
+ * @param params        Parameters object
+ *
+ * @return              Status code
+ */
+static te_errno
+acs_enabled_get(params_t *params)
+{
+    acs_t *acs_inst = find_acs(params->acs);
+
+    if (acs_inst == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    sprintf(params->value, "%i", acs_inst->enabled);
+    return 0;
+}
+
+/**
+ * Set the acs enabled flag.
+ *
+ * @param params        Parameters object
+ *
+ * @return      Status code.
+ */
+static te_errno
+acs_enabled_set(params_t *params)
+{
+    int    prev_value;
+    int    new_value = atoi(params->value);
+    acs_t *acs_inst  = find_acs(params->acs);
+
+    if (acs_inst == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    prev_value = acs_inst->enabled;
+
+    if (prev_value == 0 && new_value != 0 && acs_inst->port != 0)
+    {
+        if ((acs_inst->soap = soap_new2(SOAP_IO_KEEPALIVE,
+                                        SOAP_IO_DEFAULT)) != NULL)
+        {
+            acs_inst->soap->bind_flags = SO_REUSEADDR;
+
+            if (soap_bind(acs_inst->soap, NULL,
+                          acs_inst->port, 5) != SOAP_INVALID_SOCKET)
+            {
+                acs_inst->enabled = new_value;
+                return 0;
+            }
+            else
+            {
+                te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+                soap_end(acs_inst->soap);
+                soap_free(acs_inst->soap);
+                acs_inst->soap = NULL;
+                return rc;
+            }
+        }
+        else
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    if (prev_value != 0 && new_value == 0 && acs_inst->soap != NULL)
+    {
+        free(acs_inst->soap->user);
+        soap_end(acs_inst->soap);
+        soap_free(acs_inst->soap);
+        acs_inst->soap = NULL;
+        acs_inst->enabled = new_value;
+    }
+
     return 0;
 }
 
@@ -1044,6 +1132,11 @@ acse_acs_add(params_t *params)
     if ((item->acs.pass = strdup("")) == NULL)
         goto enomem_5;
 
+    item->acs.enabled = 0;
+    item->acs.ssl     = 0;
+    item->acs.port    = 0;
+    item->acs.soap    = NULL;
+
     STAILQ_INIT(&item->acs.cpe_list);
     STAILQ_INSERT_TAIL(&acs_list, item, link);
     return 0;
@@ -1092,6 +1185,14 @@ acse_acs_del(params_t *params)
             free_const(item->acs.cert);
             free_const(item->acs.user);
             free_const(item->acs.pass);
+
+            if (item->acs.soap != NULL)
+            {
+                free(item->acs.soap->user);
+                soap_end(item->acs.soap);
+                soap_free(item->acs.soap);
+            }
+
             free(item);
             return 0;
         }
@@ -1158,8 +1259,8 @@ cpe_get_rpc_methods(params_t *params)
 static te_errno                                               \
 _fun(params_t *params)                                        \
 {                                                             \
-    ERROR("Hi, I am rpc_test_" #_fun "!!! params->acse = %u", \
-          params->acse);                                      \
+    UNUSED(params);                                           \
+    ERROR("Hi, I am " #_fun "!!!");                           \
     return 0;                                                 \
 }
 
@@ -1186,6 +1287,7 @@ RPC_TEST(cpe_get_options)
 static te_errno
 rpc_test(params_t *params)
 {
+    UNUSED(params);
     ERROR("Hi, I am rpc_test!!! params->acse = %u", params->acse);
     return 0;
 }
@@ -1199,6 +1301,9 @@ static te_errno
         &acs_cert_get, &acs_cert_set,
         &acs_user_get, &acs_user_set,
         &acs_pass_get, &acs_pass_set,
+        &acs_enabled_get, &acs_enabled_set,
+        &acs_ssl_get, &acs_ssl_set,
+        &acs_port_get, &acs_port_set,
         &acs_cpe_add, &acs_cpe_del, &acs_cpe_list,
         &cpe_ip_addr_get, &cpe_ip_addr_set,
         &cpe_url_get, &cpe_url_set,
@@ -1286,6 +1391,7 @@ after_select(void *data, fd_set *rd_set, fd_set *wr_set)
                             fun >= acse_fun_first && fun <= acse_fun_last ?
                                 (*xlat[fun - acse_fun_first])(lrpc->params) :
                                 TE_RC(TE_TA_UNIX, TE_ENOSYS);
+
                         lrpc->state = want_write;
                         break;
                     default:
@@ -1296,7 +1402,7 @@ after_select(void *data, fd_set *rd_set, fd_set *wr_set)
 
             break;
         case want_write:
-            if (FD_SET(lrpc->sock, wr_set))
+            if (FD_ISSET(lrpc->sock, wr_set))
             {
                 switch (sendto(lrpc->sock, &lrpc->rc, sizeof lrpc->rc, 0,
                                (struct sockaddr *)&lrpc->addr, lrpc->len))
@@ -1333,9 +1439,10 @@ destroy(void *data)
 }
 
 static te_errno
-error_destroy(void *data)
+recover_fds(void *data)
 {
-    return destroy(data);
+    UNUSED(data);
+    return -1;
 }
 
 extern te_errno
@@ -1353,36 +1460,10 @@ acse_lrpc_create(channel_t *channel, params_t *params, int sock)
     lrpc->rc              = 0;
     lrpc->state           = want_read;
 
-    channel->type          = lrpc_type;
     channel->before_select = &before_select;
     channel->after_select  = &after_select;
     channel->destroy       = &destroy;
-    channel->error_destroy = &error_destroy;
-
-#if 0
-{
-            unsigned int u;
-
-            for (u = 0; u < 2; u++)
-            {
-              char buf[64];
-              session_item_t *item;
-
-              item = malloc(sizeof *item);
-
-              sprintf(buf, "session_%u", u);
-              item->session.name = strdup(buf);
-              sprintf(buf, "/agent:Agt_A/acse:/acs:acs%u/cpe:cpe%u", u, u);
-              item->session.link = strdup(buf);
-              item->session.state = u + 3;
-              item->session.target_state = u + 5;
-              item->session.enabled = u;
-              item->session.hold_requests = u;
-
-              STAILQ_INSERT_TAIL(&session_list, item, link);
-            }
-}
-#endif
+    channel->recover_fds   = &recover_fds;
 
     return 0;
 }
