@@ -177,18 +177,87 @@ tapi_cfg_acse_get_acs_pass(char const *ta, char const *acs,
 
 /* See description in tapi_cfg_acse.h */
 extern te_errno
+tapi_cfg_acse_set_acs_enabled(char const *ta, char const *acs,
+                              te_bool enabled)
+{
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, enabled ? 1 : 0),
+                                "/agent:%s/acse:/acs:%s/enabled:",
+                                ta, acs);
+}
+
+/* See description in tapi_cfg_acse.h */
+extern te_errno
+tapi_cfg_acse_get_acs_enabled(char const *ta, char const *acs,
+                              te_bool *enabled)
+{
+    cfg_val_type type = CVT_INTEGER;
+
+    return cfg_get_instance_fmt(&type, enabled,
+                                "/agent:%s/acse:/acs:%s/enabled:",
+                                ta, acs);
+}
+
+/* See description in tapi_cfg_acse.h */
+extern te_errno
+tapi_cfg_acse_set_acs_ssl(char const *ta, char const *acs,
+                          te_bool ssl)
+{
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, ssl ? 1 : 0),
+                                "/agent:%s/acse:/acs:%s/ssl:",
+                                ta, acs);
+}
+
+/* See description in tapi_cfg_acse.h */
+extern te_errno
+tapi_cfg_acse_get_acs_ssl(char const *ta, char const *acs,
+                          te_bool *ssl)
+{
+    cfg_val_type type = CVT_INTEGER;
+
+    return cfg_get_instance_fmt(&type, ssl,
+                                "/agent:%s/acse:/acs:%s/ssl:",
+                                ta, acs);
+}
+
+/* See description in tapi_cfg_acse.h */
+extern te_errno
+tapi_cfg_acse_set_acs_port(char const *ta, char const *acs,
+                           int port)
+{
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, port),
+                                "/agent:%s/acse:/acs:%s/port:",
+                                ta, acs);
+}
+
+/* See description in tapi_cfg_acse.h */
+extern te_errno
+tapi_cfg_acse_get_acs_port(char const *ta, char const *acs,
+                           int *port)
+{
+    cfg_val_type type = CVT_INTEGER;
+
+    return cfg_get_instance_fmt(&type, port,
+                                "/agent:%s/acse:/acs:%s/port:",
+                                ta, acs);
+}
+
+/* See description in tapi_cfg_acse.h */
+extern te_errno
 tapi_cfg_acse_add_acs_with_params(char const *ta, char const *acs,
                                   char const *url, char const *cert,
-                                  char const *user, char const *pass)
+                                  char const *user, char const *pass,
+                                  te_bool ssl, int port)
 {
     te_errno rc;
 
     if ((rc =      tapi_cfg_acse_add_acs(ta, acs))       == 0 &&
         (rc =  tapi_cfg_acse_set_acs_url(ta, acs, url))  == 0 &&
         (rc = tapi_cfg_acse_set_acs_cert(ta, acs, cert)) == 0 &&
-        (rc = tapi_cfg_acse_set_acs_user(ta, acs, user)) == 0)
+        (rc = tapi_cfg_acse_set_acs_user(ta, acs, user)) == 0 &&
+        (rc = tapi_cfg_acse_set_acs_pass(ta, acs, pass)) == 0 &&
+        (rc = tapi_cfg_acse_set_acs_ssl(ta, acs, ssl))  == 0)
     {
-        return tapi_cfg_acse_set_acs_pass(ta, acs, pass);
+        return tapi_cfg_acse_set_acs_port(ta, acs, port);
     }
 
     return rc;
@@ -198,7 +267,7 @@ tapi_cfg_acse_add_acs_with_params(char const *ta, char const *acs,
 extern te_errno
 tapi_cfg_acse_del_acs(char const *ta, char const *acs)
 {
-    return cfg_del_instance_fmt(TRUE, "/agent:%s/acse:/acs:%s", ta, acs);
+    return cfg_del_instance_fmt(FALSE, "/agent:%s/acse:/acs:%s", ta, acs);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -488,6 +557,6 @@ tapi_cfg_acse_add_cpe_with_params(char const *ta, char const *acs,
 extern te_errno
 tapi_cfg_acse_del_cpe(char const *ta, char const *acs, char const *cpe)
 {
-    return cfg_del_instance_fmt(TRUE, "/agent:%s/acse:/acs:%s/cpe:%s",
+    return cfg_del_instance_fmt(FALSE, "/agent:%s/acse:/acs:%s/cpe:%s",
                                 ta, acs, cpe);
 }

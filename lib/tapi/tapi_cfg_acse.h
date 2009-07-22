@@ -182,6 +182,84 @@ extern te_errno tapi_cfg_acse_get_acs_pass(char const *ta,
                                            char const **pass);
 
 /**
+ * Set ACS object enabled parameter.
+ *
+ * @param ta            Test Agent name
+ * @param acs           ACS object name
+ * @param enabled       ACS object enabled parameter
+ * 
+ * @return              Status code
+ */
+extern te_errno tapi_cfg_acse_set_acs_enabled(char const *ta,
+                                              char const *acs,
+                                              te_bool enabled);
+
+/**
+ * Get ACS object enabled parameter.
+ *
+ * @param ta            Test Agent name
+ * @param acs           ACS object name
+ * @param enabled       ACS object enabled parameter
+ * 
+ * @return              Status code
+ */
+extern te_errno tapi_cfg_acse_get_acs_enabled(char const *ta,
+                                              char const *acs,
+                                              te_bool *enabled);
+
+/**
+ * Set ACS object ssl parameter.
+ *
+ * @param ta            Test Agent name
+ * @param acs           ACS object name
+ * @param ssl           ACS object ssl parameter
+ * 
+ * @return              Status code
+ */
+extern te_errno tapi_cfg_acse_set_acs_ssl(char const *ta,
+                                          char const *acs,
+                                          te_bool ssl);
+
+/**
+ * Get ACS object ssl parameter.
+ *
+ * @param ta            Test Agent name
+ * @param acs           ACS object name
+ * @param ssl           ACS object ssl parameter
+ * 
+ * @return              Status code
+ */
+extern te_errno tapi_cfg_acse_get_acs_ssl(char const *ta,
+                                          char const *acs,
+                                          te_bool *ssl);
+
+/**
+ * Set ACS object port parameter.
+ *
+ * @param ta            Test Agent name
+ * @param acs           ACS object name
+ * @param port          ACS object port parameter
+ * 
+ * @return              Status code
+ */
+extern te_errno tapi_cfg_acse_set_acs_port(char const *ta,
+                                           char const *acs,
+                                           int port);
+
+/**
+ * Get ACS object port parameter.
+ *
+ * @param ta            Test Agent name
+ * @param acs           ACS object name
+ * @param port          ACS object port parameter
+ * 
+ * @return              Status code
+ */
+extern te_errno tapi_cfg_acse_get_acs_port(char const *ta,
+                                           char const *acs,
+                                           int *port);
+
+/**
  * Add ACS object and then set its parameters.
  *
  * @param ta            Test Agent name
@@ -190,6 +268,8 @@ extern te_errno tapi_cfg_acse_get_acs_pass(char const *ta,
  * @param cert          ACS object cert parameter
  * @param user          ACS object user parameter
  * @param pass          ACS object pass parameter
+ * @param ssl           ACS object ssl parameter
+ * @param port          ACS object port parameter
  * 
  * @return              Status code
  */
@@ -198,7 +278,9 @@ extern te_errno tapi_cfg_acse_add_acs_with_params(char const *ta,
                                                   char const *url,
                                                   char const *cert,
                                                   char const *user,
-                                                  char const *pass);
+                                                  char const *pass,
+                                                  te_bool ssl,
+                                                  int port);
 
 /**
  * Delete ACS object.
@@ -527,7 +609,7 @@ extern te_errno tapi_cfg_acse_get_device_id_oui(
  * 
  * @return              Status code
  */
-extern te_errno tapi_cfg_acse_get_product_class(
+extern te_errno tapi_cfg_acse_get_device_id_product_class(
                     char const *ta,
                     char const *acs,
                     char const *cpe,
@@ -543,7 +625,7 @@ extern te_errno tapi_cfg_acse_get_product_class(
  * 
  * @return              Status code
  */
-extern te_errno tapi_cfg_acse_get_serial_number(
+extern te_errno tapi_cfg_acse_get_device_id_serial_number(
                     char const *ta,
                     char const *acs,
                     char const *cpe,
