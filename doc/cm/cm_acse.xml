@@ -70,6 +70,24 @@
     <object oid="/agent/acse/acs/pass" access="read_write"
             type="string"/>
 
+    <!-- Enabled flag used to enable acceptance of connections on an ACS.
+         Name: none
+         Value: 0 if disabled, otherwise - enabled -->
+    <object oid="/agent/acse/acs/enabled" access="read_write"
+            type="integer"/>
+
+    <!-- SSL flag used to enable SSL on connections on an ACS.
+         Name: none
+         Value: 0 if disabled, otherwise - enabled -->
+    <object oid="/agent/acse/acs/ssl" access="read_write"
+            type="integer"/>
+
+    <!-- Port value used on connections on an ACS.
+         Name: none
+         Value: port -->
+    <object oid="/agent/acse/acs/port" access="read_write"
+            type="integer"/>
+
     <!-- CPE object.
          Name: unique name -->
     <object oid="/agent/acse/acs/cpe" access="read_create"
