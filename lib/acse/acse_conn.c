@@ -39,6 +39,102 @@
 
 #include "te_errno.h"
 #include "te_queue.h"
+#include "te_defs.h"
 #include "logger_api.h"
 #include "acse_internal.h"
 
+/** Connection Dispatcher state machine states */
+typedef enum { want_read, want_write } conn_t;
+
+/** Connection Dispatcher state machine private data */
+typedef struct {
+    conn_t state; /**< Session Requester state machine current state */
+} conn_data_t;
+
+static te_errno
+before_select(void *data, fd_set *rd_set, fd_set *wr_set, int *fd_max)
+{
+    acs_item_t *item;
+
+    UNUSED(data);
+    UNUSED(rd_set);
+    UNUSED(wr_set);
+    UNUSED(fd_max);
+
+    STAILQ_FOREACH(item, &acs_list, link)
+    {
+        if (item->acs.soap != NULL && item->acs.soap->master != -1)
+        {
+            FD_SET(item->acs.soap->master, rd_set);
+
+            if (*fd_max < item->acs.soap->master + 1)
+                *fd_max = item->acs.soap->master + 1;
+        }
+    }
+
+    return 0;
+}
+
+static te_errno
+after_select(void *data, fd_set *rd_set, fd_set *wr_set)
+{
+    acs_item_t *item;
+
+    UNUSED(data);
+    UNUSED(rd_set);
+    UNUSED(wr_set);
+
+    STAILQ_FOREACH(item, &acs_list, link)
+    {
+        if (item->acs.soap != NULL && item->acs.soap->master != -1)
+        {
+            if (FD_ISSET(item->acs.soap->master, rd_set))
+            {
+                soap_accept(item->acs.soap);
+
+                if (soap_valid_socket(item->acs.soap->socket))
+                {
+                    item->acs.soap->fclose(item->acs.soap);
+                }
+
+                soap_end(item->acs.soap);
+            }
+        }
+    }
+
+    return 0;
+}
+
+static te_errno
+destroy(void *data)
+{
+    conn_data_t *conn = data;
+
+    free(conn);
+    return 0;
+}
+
+static te_errno
+recover_fds(void *data)
+{
+    UNUSED(data);
+    return -1;
+}
+
+extern te_errno
+acse_conn_create(channel_t *channel)
+{
+    conn_data_t *conn = channel->data = malloc(sizeof *conn);
+
+    if (conn == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    conn->state            = want_read;
+
+    channel->before_select = &before_select;
+    channel->after_select  = &after_select;
+    channel->destroy       = &destroy;
+    channel->recover_fds   = &recover_fds;
+
+    return 0;
+}
