@@ -39,6 +39,70 @@
 
 #include "te_errno.h"
 #include "te_queue.h"
+#include "te_defs.h"
 #include "logger_api.h"
 #include "acse_internal.h"
+
+/** Session Requester state machine states */
+typedef enum { want_read, want_write } sreq_t;
+
+/** Session Requester state machine private data */
+typedef struct {
+    sreq_t state; /**< Session Requester state machine current state */
+} sreq_data_t;
+
+static te_errno
+before_select(void *data, fd_set *rd_set, fd_set *wr_set, int *fd_max)
+{
+    UNUSED(data);
+    UNUSED(rd_set);
+    UNUSED(wr_set);
+    UNUSED(fd_max);
+
+    return 0;
+}
+
+static te_errno
+after_select(void *data, fd_set *rd_set, fd_set *wr_set)
+{
+    UNUSED(data);
+    UNUSED(rd_set);
+    UNUSED(wr_set);
+
+    return 0;
+}
+
+static te_errno
+destroy(void *data)
+{
+    sreq_data_t *sreq = data;
+
+    free(sreq);
+    return 0;
+}
+
+static te_errno
+recover_fds(void *data)
+{
+    UNUSED(data);
+    return -1;
+}
+
+extern te_errno
+acse_sreq_create(channel_t *channel)
+{
+    sreq_data_t *sreq = channel->data = malloc(sizeof *sreq);
+
+    if (sreq == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    sreq->state            = want_read;
+
+    channel->before_select = &before_select;
+    channel->after_select  = &after_select;
+    channel->destroy       = &destroy;
+    channel->recover_fds   = &recover_fds;
+
+    return 0;
+}
 
