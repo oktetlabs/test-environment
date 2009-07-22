@@ -41,14 +41,88 @@ extern "C" {
 #include <sys/types.h>
 #endif
 
+#include <stdsoap2.h>
+
 #include "te_errno.h"
 #include "acse.h"
 
-typedef enum { lrpc_type, listenning_type, connection_type } item_type_t;
+/** Session states */
+typedef enum { session_no_state,
+               session_disconnected,
+               session_connected,
+               session_authenticated,
+               session_preinitiated,
+               session_initiated,
+               session_inside_transaction,
+               session_outside_transaction
+} session_state_t;
+
+/** Session */
+typedef struct {
+    session_state_t state;         /**< Session state                  */
+    session_state_t target_state;  /**< Session desired state          */
+    int             enabled;       /**< Whether a session may continue */
+    int             hold_requests; /**< Whether to put "hold requests"
+                                        in SOAP msg                    */
+} session_t;
+
+/** Device ID */
+typedef struct {
+    char const *manufacturer;  /**< Manufacturer                     */
+    char const *oui;           /**< Organizational Unique Identifier */
+    char const *product_class; /**< Product Class                    */
+    char const *serial_number; /**< Serial Number                    */
+} device_id_t;
+
+/** CPE */
+typedef struct {
+    char const  *name;          /**< CPE name                      */
+    char const  *ip_addr;       /**< CPE IP address                */
+    char const  *url;           /**< CPE URL                       */
+    char const  *cert;          /**< CPE certificate               */
+    char const  *user;          /**< CPE user name                 */
+    char const  *pass;          /**< CPE user password             */
+    session_t    session;       /**< Session                       */
+    device_id_t  device_id;     /**< Device Identifier             */
+    struct soap *soap;          /**< Connected socket SOAP struct  */
+} cpe_t;
+
+/** CPE list */
+typedef struct cpe_item_t
+{
+    STAILQ_ENTRY(cpe_item_t) link;
+    cpe_t                    cpe;
+} cpe_item_t;
+
+/** ACS */
+typedef struct {
+    char const  *name;          /**< ACS name                       */
+    char const  *url;           /**< ACS URL                        */
+    char const  *cert;          /**< ACS certificate                */
+    char const  *user;          /**< ACS user name                  */
+    char const  *pass;          /**< ACS user password              */
+    int          enabled;       /**< ACS enabled flag               */
+    int          ssl;           /**< ACS ssl flag                   */
+    int          port;          /**< ACS port value                 */
+    STAILQ_HEAD(cpe_list_t, cpe_item_t)
+                cpe_list;       /**< The list of CPEs being handled */
+    struct soap *soap;          /**< Listenning socket SOAP struct  */
+} acs_t;
+
+/** ACS list */
+typedef struct acs_item_t
+{
+    STAILQ_ENTRY(acs_item_t) link;
+    acs_t                acs;
+} acs_item_t;
+
+typedef STAILQ_HEAD(acs_list_t, acs_item_t) acs_list_t;
+
+/** The list af acs instances */
+extern acs_list_t acs_list;
 
 /** Abstraction structure for the 'channel' object */
 typedef struct channel_t {
-    item_type_t type;           /**< The type of an item                */
     void       *data;           /**< Channel-specific private data      */
     te_errno  (*before_select)( /**< Called before 'select' syscall     */
         void   *data,           /**< Channel-specific private data      */
@@ -59,9 +133,9 @@ typedef struct channel_t {
         void   *data,           /**< Channel-specific private data      */
         fd_set *rd_set,         /**< Descriptor set checked for reading */
         fd_set *wr_set);        /**< Descriptor set checked for writing */
-    te_errno  (*destroy)(       /**< Called on destroy                  */
+    te_errno  (*recover_fds)(   /**< Called on error during select call */
         void   *data);          /**< Channel-specific private data      */
-    te_errno  (*error_destroy)( /**< Called on error and destroy        */
+    te_errno  (*destroy)(       /**< Called on destroy                  */
         void   *data);          /**< Channel-specific private data      */
 } channel_t;
 
