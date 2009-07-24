@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<history>
+
+  <!-- Socket API testing configuration with 3 hosts and Level5
+       environment, but Linux kernel stack testing. -->
+
+  <register>
+    <object oid="/agent/acse" access="read_write" type="integer" volatile="true"/>
+    <object oid="/agent/acse/unique_id" access="read_only"
+            type="string" volatile="true"/>
+    <object oid="/agent/acse/acs" access="read_create" type="none"/>
+    <object oid="/agent/acse/acs/url" access="read_write"
+            type="string"/>
+    <object oid="/agent/acse/acs/cert" access="read_write"
+            type="string"/>
+    <object oid="/agent/acse/acs/user" access="read_write"
+            type="string"/>
+    <object oid="/agent/acse/acs/pass" access="read_write"
+            type="string"/>
+    <object oid="/agent/acse/acs/enabled" access="read_write"
+            type="integer"/>
+    <object oid="/agent/acse/acs/ssl" access="read_write"
+            type="integer"/>
+    <object oid="/agent/acse/acs/port" access="read_write"
+            type="integer"/>
+    <object oid="/agent/acse/acs/cpe" access="read_create"
+            type="none"/>
+    <object oid="/agent/acse/acs/cpe/ip_addr" access="read_write"
+            type="address"/>
+    <object oid="/agent/acse/acs/cpe/url" access="read_write"
+            type="string"/>
+    <object oid="/agent/acse/acs/cpe/cert" access="read_write"
+            type="string"/>
+    <object oid="/agent/acse/acs/cpe/user" access="read_write"
+            type="string"/>
+    <object oid="/agent/acse/acs/cpe/pass" access="read_write"
+            type="string"/>
+    <object oid="/agent/acse/acs/cpe/device_id" access="read_only"
+            type="none"/>
+    <object oid="/agent/acse/acs/cpe/device_id/manufacturer"
+            access="read_only" type="string"/>
+    <object oid="/agent/acse/acs/cpe/device_id/oui"
+            access="read_only" type="string"/>
+    <object oid="/agent/acse/acs/cpe/device_id/product_class"
+            access="read_only" type="string"/>
+    <object oid="/agent/acse/acs/cpe/device_id/serial_number"
+            access="read_only" type="string"/>
+    <object oid="/agent/acse/acs/cpe/session"
+            access="read_only" type="none"/>
+    <object oid="/agent/acse/acs/cpe/session/state"
+            access="read_only" type="integer" volatile="true"/>
+    <object oid="/agent/acse/acs/cpe/session/target_state"
+            access="read_write" type="integer"/>
+    <object oid="/agent/acse/acs/cpe/session/enabled"
+            access="read_write" type="integer"/>
+    <object oid="/agent/acse/acs/cpe/session/hold_requests"
+            access="read_write" type="integer"/>
+  </register>
+
+</history>

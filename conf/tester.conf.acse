@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<tester_cfg version="1.0">
+    
+  <maintainer mailto="Edward.Makarov@oktetlabs.ru"/>
+
+  <description>ACSE tests on TE itself</description>
+    
+  <suite name="acse"/>
+
+  <run>
+    <package name="acse"/>
+  </run>
+
+</tester_cfg>

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>General ACSE test</description>
+    <author mailto="Edward.Makarov@oktetlabs.ru"/>
+    <session track_conf="silent">
+        <var name="env.peer2peer">
+            <value>{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</value>
+        </var>
+
+        <prologue>
+            <script name="prologue"/>
+        </prologue>
+
+        <run>
+            <script name="acse"/>
+            <arg name="env" ref="env.peer2peer"/>
+        </run>
+
+    </session>
+</package>
+
