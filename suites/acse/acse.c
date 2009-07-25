@@ -39,10 +39,41 @@ main(int argc, char *argv[])
     rcf_rpc_server *pco_iut = NULL;
     rcf_rpc_server *pco_aux = NULL;
 
+    struct sockaddr_in dst_in[2] =
+        { { .sin_family = AF_INET, .sin_port = htons(80) },
+          { .sin_family = AF_INET, .sin_port = htons(443) } };
+    struct sockaddr_in src_in[2] =
+        { { .sin_family = AF_INET },
+          { .sin_family = AF_INET } };
+
+    struct sockaddr const *iut_dst[2] =
+        { (struct sockaddr *)&dst_in[0],
+          (struct sockaddr *)&dst_in[1] };
+
+    struct sockaddr const *aux_src[2] =
+        { (struct sockaddr *)&src_in[0],
+          (struct sockaddr *)&src_in[1] };
+
+    struct sockaddr const *iut_addr = NULL;
+    struct sockaddr const *aux_addr = NULL;
+
+    int aux_s[2];
+
     TEST_START;
 
     TEST_GET_PCO(pco_iut);
     TEST_GET_PCO(pco_aux);
+
+    TEST_GET_ADDR(iut_addr);
+    TEST_GET_ADDR(aux_addr);
+
+    dst_in[0].sin_addr = SIN(iut_addr)->sin_addr;
+    dst_in[1].sin_addr = SIN(iut_addr)->sin_addr;
+
+    src_in[0].sin_addr = SIN(aux_addr)->sin_addr;
+    src_in[0].sin_port = htons(ntohs(SIN(aux_addr)->sin_port) + 1);
+    src_in[1].sin_addr = SIN(aux_addr)->sin_addr;
+    src_in[1].sin_port = htons(ntohs(SIN(aux_addr)->sin_port) + 2);
 
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/acse:", pco_iut->ta));
     CHECK_RC(tapi_cfg_acse_start(pco_iut->ta));
@@ -149,6 +180,21 @@ main(int argc, char *argv[])
     }
 
     CHECK_RC(cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/acse:", pco_iut->ta));
+
+    /* Logging propogation */
+    SLEEP(3);
+
+    for (u = 0; u < 2; u++)
+    {
+        aux_s[u] = rpc_socket(pco_aux, RPC_AF_INET, RPC_SOCK_STREAM, RPC_IPPROTO_TCP);
+        rpc_bind(pco_aux, aux_s[u], aux_src[u]);
+    }
+
+    for (u = 0; u < 2; u++)
+        rpc_connect(pco_aux, aux_s[u], iut_dst[u]);
+
+    for (u = 0; u < 2; u++)
+        rpc_close(pco_aux, aux_s[u]);
 
     for(u = 0; u < 2; u++)
     {
