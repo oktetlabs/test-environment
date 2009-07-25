@@ -4,7 +4,7 @@
     <author mailto="Edward.Makarov@oktetlabs.ru"/>
     <session track_conf="silent">
         <var name="env.peer2peer">
-            <value>{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'tst_addr':inet:unicast,if:'tst_if'}}</value>
+            <value>{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast,if:'iut_if'},{{'pco_aux':tester},addr:'aux_addr':inet:unicast,if:'aux_if'}}</value>
         </var>
 
         <prologue>
