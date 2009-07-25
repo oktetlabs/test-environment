@@ -94,6 +94,10 @@ after_select(void *data, fd_set *rd_set, fd_set *wr_set)
 
                 if (soap_valid_socket(item->acs.soap->socket))
                 {
+                    /* FIXME: It's a debug message */
+                    RING("Incoming SOAP connection, socket = %d", item->acs.soap->socket);
+
+                    /* FIXME: Here connection should be handled */
                     item->acs.soap->fclose(item->acs.soap);
                 }
 
