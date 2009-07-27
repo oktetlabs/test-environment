@@ -599,8 +599,8 @@ tapi_igmp3_src_list_add(tapi_igmp3_src_list_t *src_list, in_addr_t addr)
 int
 tapi_igmp3_src_list_length(tapi_igmp3_src_list_t *src_list)
 {
-    assert(src_list != NULL);
-    return src_list->src_no * sizeof(in_addr_t);
+    return (src_list == NULL) ? 0 :
+           src_list->src_no * sizeof(in_addr_t);
 }
 
 /* See the description in tapi_igmp.h */
@@ -610,6 +610,9 @@ tapi_igmp3_src_list_gen_bin(tapi_igmp3_src_list_t *src_list,
 {
     uint8_t *p = (uint8_t *)buf + *offset;
     int len = tapi_igmp3_src_list_length(src_list);
+
+    if (src_list == NULL)
+        return 0;
 
     if (buf_size - *offset < len)
         return TE_RC(TE_TAPI, TE_EINVAL);
