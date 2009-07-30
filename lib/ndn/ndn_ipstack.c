@@ -175,16 +175,16 @@ const asn_type * const ndn_ip4_csap = &ndn_ip4_csap_s;
  * IPv6
  */
 static asn_named_entry_t _ndn_ip6_pld_chksm_ne_array [] = {
-    { "offset", &asn_base_integer_s, 
+    { "offset", &asn_base_integer_s,
       { PRIVATE, NDN_TAG_IP6_PLD_CH_OFFSET } },
-    { "disable", &asn_base_null_s, 
+    { "disable", &asn_base_null_s,
       { PRIVATE, NDN_TAG_IP6_PLD_CH_DISABLE } },
-    { "diff", &asn_base_integer_s, 
+    { "diff", &asn_base_integer_s,
       { PRIVATE, NDN_TAG_IP6_PLD_CH_DIFF } },
 };
 
 asn_type ndn_ip6_pld_chksm_s = {
-    "IP6-Payload-Checksum", {PRIVATE, NDN_TAG_IP6_PLD_CHECKSUM}, CHOICE, 
+    "IP6-Payload-Checksum", {PRIVATE, NDN_TAG_IP6_PLD_CHECKSUM}, CHOICE,
     TE_ARRAY_LEN(_ndn_ip6_pld_chksm_ne_array),
     {_ndn_ip6_pld_chksm_ne_array}
 };
@@ -194,25 +194,68 @@ static asn_named_entry_t _ndn_ip6_header_ne_array [] = {
       { PRIVATE, NDN_TAG_IP6_VERSION } },
     { "traffic-class",        &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_IP6_TCL } },
-    { "flow-label", &ndn_data_unit_int32_s, 
+    { "flow-label", &ndn_data_unit_int32_s,
       { PRIVATE, NDN_TAG_IP6_FLAB } },
-    { "payload-length",    &ndn_data_unit_int16_s, 
+    { "payload-length",    &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_IP6_LEN } },
-    { "next-header",        &ndn_data_unit_int8_s, 
+    { "next-header",        &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_IP6_NHDR } },
-    { "hop-limit",   &ndn_data_unit_int8_s, 
+    { "hop-limit",   &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_IP6_HLIM } },
-    { "src-addr",        &ndn_data_unit_ip6_address_s, 
+    { "src-addr",        &ndn_data_unit_ip6_address_s,
       { PRIVATE, NDN_TAG_IP6_SRC_ADDR } },
-    { "dst-addr",        &ndn_data_unit_ip6_address_s, 
+    { "dst-addr",        &ndn_data_unit_ip6_address_s,
       { PRIVATE, NDN_TAG_IP6_DST_ADDR } },
 
-    { "pld-checksum",    &ndn_ip6_pld_chksm_s, 
+    { "next-header-hbh",    &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXTH_HBH_NHDR } },
+    { "hdr-ext-len-hbh",    &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXTH_HBH_HEXL } },
+    { "options-hbh",        &ndn_data_unit_octet_string_s,
+      { PRIVATE, NDN_TAG_IP6_EXTH_HBH_OPTIONS } },
+
+    { "next-header-doh1",    &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXTH_DOH1_NHDR } },
+    { "hdr-ext-len-doh1",    &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXTH_DOH1_HEXL } },
+    { "options-doh1",        &ndn_data_unit_octet_string_s,
+      { PRIVATE, NDN_TAG_IP6_EXTH_DOH1_OPTIONS } },
+
+    { "next-header-doh2",    &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXTH_DOH2_NHDR } },
+    { "hdr-ext-len-doh2",    &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXTH_DOH2_HEXL } },
+    { "options-doh2",        &ndn_data_unit_octet_string_s,
+      { PRIVATE, NDN_TAG_IP6_EXTH_DOH2_OPTIONS } },
+
+    { "next-header-rh",      &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_RH_NHDR } },
+    { "hdr-ext-len-rh",      &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_RH_HEXL } },
+    { "routing-type",       &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_RH_RT } },
+    { "segments-left",      &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_RH_SL } },
+    { "type-specific-data", &ndn_data_unit_octet_string_s,
+      { PRIVATE, NDN_TAG_IP6_RH_TSD } },
+
+    { "next-header-fh",  &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_FH_NHDR } },
+    { "reserved",        &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_FH_RESERVED } },
+    { "fragment-offset", &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_IP6_FH_FO } },
+    { "res",        &ndn_data_unit_int4_s,
+      { PRIVATE, NDN_TAG_IP6_FH_RES } },
+    { "mflag",        &ndn_data_unit_int1_s,
+      { PRIVATE, NDN_TAG_IP6_FH_MF } },
+
+    { "pld-checksum",    &ndn_ip6_pld_chksm_s,
       { PRIVATE, NDN_TAG_IP6_PLD_CHECKSUM } },
 };
 
 asn_type ndn_ip6_header_s = {
-    "IPv6-Header", {PRIVATE, 100}, SEQUENCE, 
+    "IPv6-Header", {PRIVATE, 100}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_ip6_header_ne_array),
     {_ndn_ip6_header_ne_array}
 };
