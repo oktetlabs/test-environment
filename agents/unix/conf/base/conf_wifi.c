@@ -636,7 +636,7 @@ set_private_cmd(int             skfd,           /* Socket */
 /*
  * Execute a private command on the interface
  */
-static inline int
+static int
 set_private(const char *ifname, /* Dev name */
             const char *cmd,
             int count, /* Args count */
