@@ -35,6 +35,31 @@
 
 #include "conf_defs.h"
 
+/* Minimal buffer size to be allocated */
+#define BUF_SIZE_MIN    (16 * 1024)
+
+/* Realloc coefficient */
+#define BUF_GROW_COEFF  0.2
+
+#define CHECK(x) \
+    do {                                            \
+        if (!(x))                                   \
+        {                                           \
+            free(buf);                              \
+            buf = NULL;                             \
+            offset = 0;                             \
+            sz = BUF_SIZE_MIN;                      \
+            return NULL;                            \
+        }                                           \
+    } while (0)
+
+#define BUF_RESET \
+    do {                                            \
+            buf = NULL;                             \
+            offset = 0;                             \
+            sz = BUF_SIZE_MIN;                      \
+    } while (0)
+
 static char *obj_tree_bufprint(cfg_object *obj,   const int indent);
 static char *ins_tree_bufprint(cfg_instance *ins, const int indent);
 static char *obj_bufprint_deps(cfg_object *obj);
@@ -143,25 +168,7 @@ cfg_db_tree_print(const char *filename,
     return 0;
 }
 
-#define CHECK(x) \
-    do {                                            \
-        if (!(x))                                   \
-        {                                           \
-            free(buf);                              \
-            buf = NULL;                             \
-            offset = 0;                             \
-            sz = sz_ini;                            \
-            return NULL;                            \
-        }                                           \
-    } while (0)
 
-#define BUF_RESET \
-    do {                                            \
-            buf = NULL;                             \
-            offset = 0;                             \
-            sz = sz_ini;                            \
-                                                    \
-    } while (0)
 
 /**
  * Print (recursively) a tree of objects into the buffer.
@@ -177,10 +184,9 @@ cfg_db_tree_print(const char *filename,
 static char *
 obj_tree_bufprint(cfg_object *obj, const int indent)
 {
-    const size_t    sz_ini = 16 * 1024;
+    static size_t   sz     = BUF_SIZE_MIN;
     static char    *buf    = NULL;
     static int      offset = 0;
-    static size_t   sz     = sz_ini;
     int             i;
     char           *tmp;
     cfg_dependency *dep;
@@ -235,10 +241,9 @@ obj_tree_bufprint(cfg_object *obj, const int indent)
 static char *
 ins_tree_bufprint(cfg_instance *ins, const int indent)
 {
-    const size_t  sz_ini = 16 * 1024;
-    static char   *buf = NULL;
+    static size_t sz = BUF_SIZE_MIN;
+    static char  *buf = NULL;
     static int    offset = 0;
-    static size_t sz = sz_ini;
     int           i;
     char          *tmp;
     char          *str;
@@ -337,10 +342,9 @@ cfg_db_obj_print_deps(const char *filename,
 static char *
 obj_bufprint_deps(cfg_object *obj)
 {
-    const size_t    sz_ini = 16 * 1024;
+    static size_t   sz = BUF_SIZE_MIN;
     static char     *buf = NULL;
     static int      offset = 0;
-    static size_t   sz = sz_ini;
     char            *tmp;
     cfg_object      *otmp;
     cfg_dependency  *depends_on;
@@ -388,8 +392,8 @@ static char *
 bufprintf(char **p_buf, int *p_offset, size_t *p_sz,
           const char *format, ...)
 {
-    size_t  grow_min = 16 * 1024;
-    float   grow_coeff = 0.2;
+    size_t  grow_min = BUF_SIZE_MIN;
+    float   grow_coeff = BUF_GROW_COEFF;
     char    *buf = *p_buf;
     int     offset = *p_offset;
     size_t  sz = *p_sz;
