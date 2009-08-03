@@ -192,7 +192,11 @@ ds_slapd_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
+    /* Do not continue if popen fails */
+    if (f == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
     buf[0] = 0;
     while (fgets(line, sizeof(line), f) != NULL)
     {
