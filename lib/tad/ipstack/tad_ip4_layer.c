@@ -601,13 +601,14 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     size_t          bitlen;
     unsigned int    bitoff;
 
-
     assert(csap != NULL);
     F_ENTRY("(%d:%u) tmpl_pdu=%p args=%p arg_num=%u sdus=%p pdus=%p",
             csap->id, layer, (void *)tmpl_pdu, (void *)args,
             (unsigned)arg_num, sdus, pdus);
 
     proto_data = csap_get_proto_spec_data(csap, layer);
+
+    memset(&cb_data, 0, sizeof(tad_ip4_gen_bin_cb_per_sdu_data));
 
     /* IP header checksum */
     switch (tmpl_data->hdr.dus[11].du_type)
@@ -628,7 +629,8 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
         default:
             ERROR("%s(): Unexpected data-unit type %u for 'h-checksum'",
                   __FUNCTION__, tmpl_data->hdr.dus[11].du_type);
-            return TE_RC(TE_TAD_CSAP, TE_ENOSYS);
+            rc = TE_RC(TE_TAD_CSAP, TE_ENOSYS);
+            goto cleanup;
     }
 
     /* Calculate length of the header */
@@ -648,13 +650,17 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     {
         ERROR("%s(): Too big IPv4 header - %u octets", __FUNCTION__,
               (unsigned)cb_data.hlen);
-        return TE_RC(TE_TAD_CSAP, TE_E2BIG);
+        rc = TE_RC(TE_TAD_CSAP, TE_E2BIG);
+        goto cleanup;
     }
 
     /* Allocate memory for binary template of the header */
     cb_data.hdr = malloc(cb_data.hlen);
     if (cb_data.hdr == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    {
+        rc = TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        goto cleanup;
+    }
 
     /* Generate binary template of the header */
     bitoff = 0;
@@ -665,8 +671,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     {
         ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for header: %r",
               __FUNCTION__, rc);
-        free(cb_data.hdr);
-        return rc;
+        goto cleanup;
     }
     rc = tad_bps_pkt_frag_gen_bin(&proto_data->opts, &tmpl_data->opts,
                                   args, arg_num, cb_data.hdr,
@@ -675,8 +680,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     {
         ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for options: %r",
               __FUNCTION__, rc);
-        free(cb_data.hdr);
-        return rc;
+        goto cleanup;
     }
     assert(bitoff == bitlen);
 
@@ -718,7 +722,8 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     {
         ERROR("%s(): asn_get_child_value() failed for 'pld-checksum': "
               "%r", __FUNCTION__, rc);
-        return TE_RC(TE_TAD_CSAP, rc);
+        rc = TE_RC(TE_TAD_CSAP, rc);
+        goto cleanup;
     }
     else
     {
@@ -731,7 +736,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
         {
             ERROR("%s(): asn_get_choice_value() failed for "
                   "'pld-checksum': %r", __FUNCTION__, rc);
-            return rc;
+            goto cleanup;
         }
         switch (tv)
         {
@@ -747,7 +752,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
                 {
                     ERROR("%s(): asn_read_int32() failed for "
                           "'pld-checksum.#offset': %r", __FUNCTION__, rc);
-                    return rc;
+                    goto cleanup;
                 }
                 break;
 
@@ -760,7 +765,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
                 {
                     ERROR("%s(): asn_read_int32() failed for "
                           "'pld-checksum.#diff': %r", __FUNCTION__, rc);
-                    return rc;
+                    goto cleanup;
                 }
                 cb_data.init_chksm += tmp;
                 break;
@@ -769,7 +774,8 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
             default:
                 ERROR("%s(): Unexpected choice tag value for "
                       "'pld-checksum'", __FUNCTION__);
-                return TE_RC(TE_TAD_CSAP, TE_EASNOTHERCHOICE);
+                rc = TE_RC(TE_TAD_CSAP, TE_EASNOTHERCHOICE);
+                goto cleanup;
         }
     }
 
@@ -789,10 +795,14 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     if (rc != 0)
     {
         ERROR("Failed to process IPv4 SDUs: %r", rc);
-        return rc;
+        goto cleanup;
     }
 
-    return 0;
+cleanup:
+    if (cb_data.hdr != NULL)
+        free(cb_data.hdr);
+
+    return rc;
 }
 
 

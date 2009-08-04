@@ -413,16 +413,17 @@ rcf_ch_file(struct rcf_comm_connection *handle,
     int8_t    *auxbuf_p = NULL;
     size_t     procfile_len = 0;
 
-    if ((auxbuf = malloc(AUX_BUFFER_LEN)) == NULL)
-    {
-        ERROR("Impossible allocate buffer");
-        rc = TE_RC(TE_RCF_PCH, TE_ENOMEM);
-        goto reject;
-    }
 
     if (strncmp(RCF_FILE_PROC_PREFIX, filename,
                 strlen(RCF_FILE_PROC_PREFIX)) == 0)
     {
+        if ((auxbuf = malloc(AUX_BUFFER_LEN)) == NULL)
+        {
+            ERROR("Impossible allocate buffer");
+            rc = TE_RC(TE_RCF_PCH, TE_ENOMEM);
+            goto reject;
+        }
+
         VERB("file operation in '/proc/'");
         if (op != RCFOP_FGET)
         {
@@ -484,6 +485,8 @@ rcf_ch_file(struct rcf_comm_connection *handle,
         }
         RCF_CH_UNLOCK;
         close(fd);
+
+        free(auxbuf);
 
         EXIT("%r", rc);
         return rc;
