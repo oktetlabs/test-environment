@@ -799,8 +799,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     }
 
 cleanup:
-    if (cb_data.hdr != NULL)
-        free(cb_data.hdr);
+    free(cb_data.hdr);
 
     return rc;
 }
