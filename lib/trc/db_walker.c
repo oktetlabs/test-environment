@@ -534,7 +534,7 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
 
     if (result == NULL)
     {
-        RING("Expected result is not known");
+        INFO("Expected result is not known");
     }
 
     return result;
