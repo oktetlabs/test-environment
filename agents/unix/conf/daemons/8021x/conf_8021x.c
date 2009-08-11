@@ -45,6 +45,7 @@ typedef enum {
     SP_WEP_KEY2,
     SP_WEP_KEY3,
     SP_WEP_TX_KEYIDX,       /**< Default WEP key index: 0..3 */
+    SP_AUTH_ALG,            /**< Authentication algorithm OPEN|SHARED|LEAP */
     SP_GROUP,               /**< Group cipher: "TKIP", "CCMP", "TKIP CCMP" */
     SP_PAIRWISE,            /**< Pairwise cipher: "TKIP", "CCMP",
                              *  "TKIP CCMP" */
@@ -418,6 +419,7 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
     const char *s_group = supp_get_param(supp, SP_GROUP);
     const char *s_pairwise = supp_get_param(supp, SP_PAIRWISE);
     const char *s_psk = supp_get_param(supp, SP_PSK);
+    const char *s_auth_alg = supp_get_param(supp, SP_AUTH_ALG);
 
     fprintf(f, "ctrl_interface=/var/run/wpa_supplicant\n"
                "network={\n"
@@ -445,6 +447,10 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
 
     if (s_wep_tx_keyidx[0] != '\0')
         fprintf(f, "  wep_tx_keyidx=%s\n", s_wep_tx_keyidx);
+
+    /* Authentication algorithm OPEN|SHARED|LEAP */
+    if (s_auth_alg[0] != '\0')
+        fprintf(f, "  auth_alg=%s\n", s_auth_alg);
     /**/
 
     if (s_proto[0] != '\0')
@@ -928,9 +934,16 @@ DS_SUPP_PARAM_GET(ds_supp_pairwise_get, SP_PAIRWISE)
 DS_SUPP_PARAM_SET(ds_supp_pairwise_set, SP_PAIRWISE)
 DS_SUPP_PARAM_GET(ds_supp_psk_get, SP_PSK)
 DS_SUPP_PARAM_SET(ds_supp_psk_set, SP_PSK)
+DS_SUPP_PARAM_GET(ds_supp_auth_alg_get, SP_AUTH_ALG)
+DS_SUPP_PARAM_SET(ds_supp_auth_alg_set, SP_AUTH_ALG)
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_auth_alg, "auth_alg",
+                    NULL, &node_ds_supp_eaptls,
+                    ds_supp_auth_alg_get,
+                    ds_supp_auth_alg_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_supp_psk, "psk",
-                    NULL, &node_ds_supp_eaptls,
+                    NULL, &node_ds_supp_auth_alg,
                     ds_supp_psk_get,
                     ds_supp_psk_set);
 
