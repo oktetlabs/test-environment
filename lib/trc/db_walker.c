@@ -136,7 +136,7 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
         {
             if (force)
             {
-                RING("Step test '%s' - force to create", test_name);
+                INFO("Step test '%s' - force to create", test_name);
                 walker->test = trc_db_new_test(tests, walker->iter,
                                                test_name);
                 if (walker->test == NULL)
