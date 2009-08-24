@@ -503,7 +503,7 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
         res = logic_expr_match(p->tags_expr, tags);
         if (res != 0)
         {
-            ERROR("Matching tag found");
+            INFO("Matching tag found");
             TAILQ_FOREACH(q, &p->results, links)
             {
                 if (q->result.status == TE_TEST_SKIPPED)
