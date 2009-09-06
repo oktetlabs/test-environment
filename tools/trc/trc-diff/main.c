@@ -53,6 +53,7 @@
 #include "te_trc.h"
 
 #include "trc_diff.h"
+#include "re_subst.h"
 
 
 DEFINE_LGR_ENTITY("TRC DIFF");
@@ -101,6 +102,7 @@ enum {
     TRC_DIFF_OPT_EXCLUDE7,
     TRC_DIFF_OPT_EXCLUDE8,
     TRC_DIFF_OPT_EXCLUDE9,
+    TRC_DIFF_OPT_KEY2HTML,
 };
 
 
@@ -141,6 +143,10 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
 
         { "title", 't', POPT_ARG_STRING, &trc_diff_title, 0,
           "Title of the HTML report to be generate.", "TITLE" },
+
+        { "key2html", '\0', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_KEY2HTML,
+          "File with regular expressions to apply when output keys to "
+          "HTML report.", "FILENAME" },
 
 #define TRC_DIFF_SET_OPTS(id_) \
         { #id_ "-tag", '0' + id_, POPT_ARG_STRING, NULL,            \
@@ -258,6 +264,21 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
                 }
                 break;
 
+            case TRC_DIFF_OPT_KEY2HTML:
+            {
+                const char *key2html_fn = poptGetOptArg(optCon);
+
+                if (trc_re_substs_read(key2html_fn, &key_substs) != 0)
+                {
+                    ERROR("Failed to get key substitutions from "
+                          "file '%s'", key2html_fn);
+                    free((void *)key2html_fn);
+                    return EXIT_FAILURE;
+                }
+                free((void *)key2html_fn);
+                break;
+            }
+
             case TRC_DIFF_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,
                        TE_COPYRIGHT);
@@ -356,6 +377,7 @@ exit:
 
     trc_db_close(ctx->db);
     trc_diff_ctx_free(ctx);
+    trc_re_substs_free(&key_substs);
 
     return result;
 }

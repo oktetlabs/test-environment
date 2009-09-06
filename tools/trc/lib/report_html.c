@@ -46,6 +46,7 @@
 #include "trc_tags.h"
 #include "trc_html.h"
 #include "trc_report.h"
+#include "re_subst.h"
 
 
 #define WRITE_STR(str) \
@@ -317,7 +318,6 @@ static const char * const trc_test_exp_got_row_mid =
 
 static const char * const trc_test_exp_got_row_end =
 "</td>\n"
-"      <td>%s</td>\n"
 "      <td>%s %s</td>\n"
 "    </tr>\n";
 
@@ -464,15 +464,21 @@ trc_report_exp_got_to_html(FILE                *f,
                 break;
             
             WRITE_STR(trc_test_exp_got_row_mid);
-            
+
             rc = te_test_result_to_html(f, (iter_entry == NULL) ? NULL :
                                                &iter_entry->result);
             if (rc != 0)
                 break;
             
+            WRITE_STR(trc_test_exp_got_row_mid);
+
+            if (iter_data->exp_result != NULL &&
+                iter_data->exp_result->key != NULL)
+            {
+                trc_re_key_substs(iter_data->exp_result->key, f);
+            }
+
             fprintf(f, trc_test_exp_got_row_end,
-                    (iter_data->exp_result == NULL) ? "" :
-                        PRINT_STR(iter_data->exp_result->key),
                     (iter_data->exp_result == NULL) ? "" :
                         PRINT_STR(iter_data->exp_result->notes),
                     PRINT_STR(iter->notes));

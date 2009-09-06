@@ -154,6 +154,8 @@ Generic options:
   --trc-log=<filename>          Generate bzip2-ed TRC log
   --trc-db=<filename>           TRC database to be used
   --trc-tag=<TAG>               Tag to get specific expected results
+  --trc-key2html=<filename>     File with key substitutions when output to HTML
+                                report
   --trc-ignore-log-tags         Ignore tags from log
   --trc-html=<filename>         Name of the file for HTML report
   --trc-brief-html=<filename>   Name of the file for brief HTML report
@@ -381,6 +383,13 @@ process_opts()
                 fi
                 TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}"
                 TESTER_OPTS="${TESTER_OPTS} --trc-db=${TRC_DB}"
+                ;;
+            --trc-key2html=*) 
+                TRC_KEY2HTML="${1#--trc-key2html=}"
+                if test "${TRC_KEY2HTML:0:1}" != "/" ; then 
+                    TRC_KEY2HTML="${CONF_DIR}/${TRC_KEY2HTML}"
+                fi
+                TRC_OPTS="${TRC_OPTS} --key2html=${TRC_KEY2HTML}"
                 ;;
             --trc-tag=*)
                 TRC_TAGS="${TRC_TAGS} ${1#--trc-tag=}"

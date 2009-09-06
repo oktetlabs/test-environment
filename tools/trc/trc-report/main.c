@@ -51,6 +51,7 @@
 #include "logger_api.h"
 #include "te_trc.h"
 #include "trc_report.h"
+#include "re_subst.h"
 
 
 DEFINE_LGR_ENTITY("TRC RG");
@@ -68,6 +69,7 @@ enum {
     TRC_OPT_HTML,
     TRC_OPT_HTML_HEADER,
     TRC_OPT_HTML_TITLE,
+    TRC_OPT_KEY2HTML,
     TRC_OPT_NO_TOTAL_STATS,
     TRC_OPT_NO_PACKAGES_ONLY,
     TRC_OPT_STATS_ONLY,
@@ -164,6 +166,9 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         { "html-header", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_HEADER,
           "Name of the file with header for the HTML report.",
           "FILENAME" },
+        { "key2html", '\0', POPT_ARG_STRING, NULL, TRC_OPT_KEY2HTML,
+          "File with regular expressions to apply when output keys to "
+          "HTML report.", "FILENAME" },
         { "no-total", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_TOTAL_STATS,
           "Do not include grand total statistics.",
           NULL },
@@ -337,6 +342,21 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                     goto exit;
                 }
                 free((void *)trc_html_header_fn);
+                break;
+            }
+
+            case TRC_OPT_KEY2HTML:
+            {
+                const char *key2html_fn = poptGetOptArg(optCon);
+
+                if (trc_re_substs_read(key2html_fn, &key_substs) != 0)
+                {
+                    ERROR("Failed to get key substitutions from "
+                          "file '%s'", key2html_fn);
+                    free((void *)key2html_fn);
+                    break;
+                }
+                free((void *)key2html_fn);
                 break;
             }
 
@@ -565,6 +585,8 @@ exit:
     
     xmlCleanupParser();
     logic_expr_int_lex_destroy();
+
+    trc_re_substs_free(&key_substs);
 
     return result;
 }

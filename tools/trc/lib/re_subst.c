@@ -60,39 +60,11 @@
 #include "te_queue.h"
 #include "logger_api.h"
 
-#include "trc_html.h"
+#include "re_subst.h"
 
 
-/** Regular expression match substitution */
-typedef struct trc_re_match_subst {
-    TAILQ_ENTRY(trc_re_match_subst) links;  /**< List links */
-
-    te_bool             match;  /**< Match or string */
-    union {
-        char           *str;    /**< String to insert */
-        unsigned int    match;  /**< Match index to insert */
-    } u;
-} trc_re_match_subst;
-
-/** Regular expression match substitutions list */
-typedef TAILQ_HEAD(trc_re_match_substs, trc_re_match_subst)
-    trc_re_match_substs;
-
-/** Regular expression substitution */
-typedef struct trc_re_subst {
-    TAILQ_ENTRY(trc_re_subst)   links;  /**< List links */
-
-    regex_t                 re;         /**< Compiled regular expression */
-    unsigned int            max_match;  /**< Number of used matches
-                                             in substitution */
-    char                   *str;        /**< Substitution string */
-    trc_re_match_substs     with;       /**< Substitute with */
-
-    regmatch_t             *matches;    /**< Match data */
-} trc_re_subst;
-
-/** Regular expression substitutions list */
-typedef TAILQ_HEAD(trc_re_substs, trc_re_subst) trc_re_substs;
+/** Key substitutions */
+trc_re_substs key_substs = TAILQ_HEAD_INITIALIZER(key_substs);
 
 
 /**
@@ -115,11 +87,8 @@ trc_re_subst_free(trc_re_subst *subst)
     free(subst->matches);
 }
 
-/**
- * Free resourses allocated for the list of regular expression
- * substitutions.
- */
-static void
+/* See the description in re_subst.h */
+void
 trc_re_substs_free(trc_re_substs *substs)
 {
     trc_re_subst   *p;
@@ -176,15 +145,8 @@ trc_re_subst_parse(trc_re_subst *p)
     return 0;
 }
 
-/**
- * Read substitutions from file.
- *
- * @param file          File name
- * @param substs        List to add substitutions to
- *
- * @return Status code.
- */
-static te_errno
+/* See the description in re_subst.h */
+te_errno
 trc_re_substs_read(const char *file, trc_re_substs *substs)
 {
     te_errno        rc = 0;
@@ -324,47 +286,17 @@ trc_re_substs_exec(const trc_re_subst *subst, const char *str, regoff_t max,
         fputc(str[i], f);
 }
 
-/**
- * Execute substitutions.
- *
- * @param substs        List of substitutions to do
- * @param str           String to substitute in
- * @param f             File to write to
- *
- * @return Status code.
- */
-static void
+/* See the description in re_subst.h */
+void
 trc_re_substs_exec_start(const trc_re_substs *substs, const char *str,
                          FILE *f)
 {
     trc_re_substs_exec(TAILQ_FIRST(substs), str, strlen(str), f);
 }
 
-#if 0
-int
-main(int argc, char **argv)
+/* See the description in re_subst.h */
+void
+trc_re_key_substs(const char *key, FILE *f)
 {
-    te_errno        rc;
-    trc_re_substs   substs;
-    unsigned int    i;
-
-    TAILQ_INIT(&substs);
-
-    rc = trc_re_substs_read("keys", &substs);
-    if (rc != 0)
-    {
-        trc_re_substs_free(&substs);
-        return EXIT_FAILURE;
-    }
-
-    for (i = 1; argv[i] != NULL; ++i)
-    {
-        trc_re_substs_exec_start(&substs, argv[i], stdout);
-        putchar('\n');
-    }
-
-    trc_re_substs_free(&substs);
-
-    return EXIT_SUCCESS;
+    trc_re_substs_exec_start(&key_substs, key, f);
 }
-#endif

@@ -48,6 +48,7 @@
 #include "trc_tags.h"
 #include "trc_diff.h"
 #include "trc_html.h"
+#include "re_subst.h"
 
 
 /** Generate brief version of the diff report */
@@ -188,9 +189,13 @@ static const char * const trc_diff_key_table_heading =
 "  </thead>\n"
 "  <tbody>\n";
 
-static const char * const trc_diff_key_table_row =
+
+static const char * const trc_diff_key_table_row_start =
 "    <tr>\n"
-"      <td>%s</td>\n"
+"      <td>";
+
+static const char * const trc_diff_key_table_row_end =
+"</td>\n"
 "      <td align=right>%u</td>\n"
 "    </tr>\n";
 
@@ -523,7 +528,9 @@ trc_diff_keys_stats_to_html(FILE *f, trc_diff_sets *sets)
                  q != (void *)&(p->keys_stats);
                  q = q->links.cqe_next)
             {
-                fprintf(f, trc_diff_key_table_row, q->key, q->count);
+                WRITE_STR(trc_diff_key_table_row_start);
+                trc_re_key_substs(q->key, f);
+                fprintf(f, trc_diff_key_table_row_end, q->count);
             }
             WRITE_STR(trc_diff_table_end);
         }
@@ -585,8 +592,11 @@ trc_diff_test_iter_keys_to_html(FILE                 *f,
     TAILQ_FOREACH(set, sets, links)
     {
         if (entry->results[set->id]->key != NULL)
-            fprintf(f, "<em>%s</em> - %s<br/>",
-                    set->name, entry->results[set->id]->key);
+        {
+            fprintf(f, "<em>%s</em> - ", set->name);
+            trc_re_key_substs(entry->results[set->id]->key, f);
+            fputs("<br/>", f);
+        }
     }
 
     return 0;
@@ -640,9 +650,9 @@ trc_diff_test_keys_to_html(FILE *f, const trc_diff_sets *sets,
             fprintf(f, "<em>%s</em> - ", set->name);
         TAILQ_FOREACH(str, entry->keys + set->id, links)
         {
-            fprintf(f, "%s%s",
-                    (str == TAILQ_FIRST(entry->keys + set->id)) ? "" : ", ",
-                    str->v);
+            if (str != TAILQ_FIRST(entry->keys + set->id))
+                fputs(", ", f);
+            trc_re_key_substs(str->v, f);
         }
     }
     return 0;

@@ -42,6 +42,7 @@
 #include "logger_api.h"
 
 #include "trc_html.h"
+#include "re_subst.h"
 
 
 #define WRITE_STR(str) \
@@ -101,9 +102,15 @@ trc_test_result_to_html(FILE *f, const trc_exp_result_entry *result)
         return rc;
 
     if (result->key != NULL)
-        fprintf(f, "<br/>Key: %s", result->key);
+    {
+        fputs("<br/>Key: ", f);
+        trc_re_key_substs(result->key, f);
+    }
     if (result->notes != NULL)
-        fprintf(f, "<br/>Notes: %s", result->notes);
+    {
+        fputs("<br/>Notes: ", f);
+        fputs(result->notes, f);
+    }
 
     return 0;
 }
