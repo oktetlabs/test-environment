@@ -60,9 +60,6 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-#ifdef HAVE_REGEX_H
-#include <regex.h>
-#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
