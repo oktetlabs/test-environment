@@ -525,7 +525,7 @@ test_iters_check_output_and_get_keys(trc_test *test, unsigned int flags)
                  q = TAILQ_NEXT(q, links));
 
             if (p == q)
-                s += sprintf(s, "%s<BR/>", p->exp_result.key);
+                s += sprintf(s, "%s<br/>", p->exp_result.key);
         }
     }
 
