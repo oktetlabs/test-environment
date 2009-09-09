@@ -993,7 +993,7 @@ flow_tree_attach_message(log_msg *msg)
         assert(cur_node->type == NT_TEST);
 
         rgt_expand_log_msg(msg);
-        if (strncmp(msg->txt_msg, TE_TEST_OBJECTIVE_ID, idlen))
+        if (strncmp(msg->txt_msg, TE_TEST_OBJECTIVE_ID, idlen) == 0)
         {
             node_info_t *info = cur_node->user_data;
             
