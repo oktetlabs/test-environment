@@ -189,7 +189,7 @@ extern te_errno tapi_igmp2_add_pdu(asn_value          **tmpl_or_ptrn,
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
- * @param eth_dev       Name of Ethernet interface
+ * @param ifname        Network interface name
  * @param receive_mode  Bitmask with receive mode, see 'enum
  *                      tad_eth_recv_mode' in tad_common.h.
  *                      Use TAD_ETH_RECV_DEF by default.
@@ -201,11 +201,33 @@ extern te_errno tapi_igmp2_add_pdu(asn_value          **tmpl_or_ptrn,
  */
 extern te_errno tapi_igmp_ip4_eth_csap_create(const char    *ta_name,
                                               int            sid,
-                                              const char    *eth_dev,
+                                              const char    *ifname,
                                               unsigned int   receive_mode,
                                               const uint8_t *eth_src,
                                               in_addr_t      src_addr,
                                               csap_handle_t *igmp_csap);
+
+/**
+ * Add IPv4 layer to PDU, used for ppp connections
+ *
+ * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
+ *                      pattern
+ * @param pdu           Location for ASN.1 value pointer with added PDU
+ * @param is_pattern    Is the first argument template or pattern
+ * @param dst_addr      IPv4 layer Destination Multicast address (also used
+ *                      for generating Ethernet multicast address)
+ * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      keep unspecified.
+ *
+ * @return              Status code.
+ */
+extern te_errno
+tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
+                      asn_value **pdu,
+                      te_bool     is_pattern,
+                      in_addr_t   dst_addr,
+                      in_addr_t   src_addr);
+
 
 /**
  * Add IPv4.Eth layers to PDU
@@ -324,6 +346,7 @@ tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
                               int            max_resp_time,
                               in_addr_t      group_addr,
                               in_addr_t      src_addr,
+                              te_bool        skip_eth,
                               uint8_t       *eth_src);
 
 /**
@@ -438,6 +461,7 @@ tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
                               int                    qqic,
                               tapi_igmp3_src_list_t *src_list,
                               in_addr_t              src_addr,
+                              te_bool                skip_eth,
                               uint8_t               *eth_src);
 
 
@@ -671,10 +695,11 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
                                            (_csap), (_group_addr),    \
                                            (_src_addr), (_src_mac)))
 
-#define IGMP2_SEND_QUERY(_pco, _csap, _group_addr, _src_addr, _src_mac) \
+#define IGMP2_SEND_QUERY(_pco, _csap, _group_addr, _src_addr, _skip_eth, _src_mac) \
     CHECK_RC(tapi_igmp2_ip4_eth_send_query((_pco)->ta, (_pco)->sid,    \
                                            (_csap), (_group_addr),    \
-                                           (_src_addr), (_src_mac)))
+                                           (_src_addr), (_skip_eth), \
+                                           (_src_mac)))
 
 
 #define IGMP3_SRC_LIST(_list...)                \

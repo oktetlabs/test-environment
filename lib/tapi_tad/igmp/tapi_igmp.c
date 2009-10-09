@@ -51,18 +51,22 @@ tapi_igmp_add_csap_layer(asn_value **csap_spec)
                                    "#igmp", &layer);
 }
 
+
 /* See the description in tapi_igmp.h */
 te_errno
 tapi_igmp_ip4_eth_csap_create(const char    *ta_name,
                               int            sid,
-                              const char    *eth_dev,
+                              const char    *ifname,
                               unsigned int   receive_mode,
                               const uint8_t *eth_src,
                               in_addr_t      src_addr,
                               csap_handle_t *igmp_csap)
 {
+    te_bool     ppp_if;
     te_errno    rc;
     asn_value  *csap_spec = NULL;
+
+    ppp_if = (strncmp(ifname, "ppp", strlen("ppp")) == 0);
 
     do {
         if ((rc = tapi_igmp_add_csap_layer(&csap_spec)) != 0)
@@ -82,7 +86,24 @@ tapi_igmp_ip4_eth_csap_create(const char    *ta_name,
             break;
         }
 
-        if ((rc = tapi_eth_add_csap_layer(&csap_spec, eth_dev,
+        if (ppp_if)
+        {
+            rc = asn_write_string(csap_spec, ifname,
+                          "layers.1.#ip4.ifname.#plain");
+            if (rc != 0)
+            {
+                asn_free_value(csap_spec);
+                WARN("%s(): write IP4 layer value 'ifname' failed %r",
+                     __FUNCTION__, rc);
+                return rc;
+            }
+
+            rc = tapi_tad_csap_create(ta_name, sid, "igmp.ip4",
+                                      csap_spec, igmp_csap);
+            break;
+        }
+
+        if ((rc = tapi_eth_add_csap_layer(&csap_spec, ifname,
                                           receive_mode,
                                           NULL,
                                           eth_src,
@@ -92,7 +113,6 @@ tapi_igmp_ip4_eth_csap_create(const char    *ta_name,
             WARN("%s(): add ETH csap layer failed %r", __FUNCTION__, rc);
             break;
         }
-
 
         rc = tapi_tad_csap_create(ta_name, sid, "igmp.ip4.eth",
                                   csap_spec, igmp_csap);
@@ -157,6 +177,45 @@ tapi_ip4_to_mac(in_addr_t ip4_addr, uint8_t *eth_addr)
 
 /** Router Alert Option is mandatory */
 static uint8_t ip_opt_router_alert[] = {0x94, 0x04, 0x00, 0x00};
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
+                      asn_value **pdu,
+                      te_bool     is_pattern,
+                      in_addr_t   dst_addr,
+                      in_addr_t   src_addr)
+{
+    te_errno       rc     = 0;
+    asn_value     *ip4_pdu;
+    int            dont_frag = 1;
+
+    if (dst_addr == htonl(INADDR_ANY))
+        dst_addr = TAPI_MCAST_ADDR_ALL_HOSTS;
+
+    /* Add IPv4 layer header to PDU template/pattern */
+    rc = tapi_ip4_add_pdu(tmpl_or_ptrn, &ip4_pdu, is_pattern,
+                          src_addr, dst_addr,
+                          IPPROTO_IGMP,
+                          TAPI_IGMP_IP4_TTL_DEFAULT,
+                          TAPI_IGMP_IP4_TOS_DEFAULT);
+    if (rc != 0)
+        return rc;
+
+    rc = asn_write_int32(ip4_pdu, dont_frag, "dont-frag.#plain");
+    if (rc != 0)
+        return rc;
+
+    /* Add manndatory Router Alert IP option */
+    rc = asn_write_value_field(ip4_pdu, 
+                             ip_opt_router_alert,
+                             sizeof(ip_opt_router_alert),
+                             "options.#plain");
+    if (rc != 0)
+        return rc;
+
+    return rc;
+}
 
 /* See the description in tapi_igmp.h */
 te_errno
@@ -319,6 +378,7 @@ tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
                               int            max_resp_time,
                               in_addr_t      group_addr,
                               in_addr_t      src_addr,
+                              te_bool        skip_eth,
                               uint8_t       *eth_src)
 {
     te_errno   rc       = 0;
@@ -332,8 +392,16 @@ tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
         return rc;
 
     /* Add IPv4 layer header to PDU template/pattern */
-    rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
-                                   group_addr, src_addr, eth_src);
+    if (skip_eth)
+    {
+        rc = tapi_igmp_add_ip4_pdu(&pkt_tmpl, NULL, FALSE,
+                                   group_addr, src_addr);
+    }
+    else
+    {
+        rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
+                                       group_addr, src_addr, eth_src);
+    }
     if (rc != 0)
         return rc;
 
@@ -507,6 +575,7 @@ tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
                               int                    qqic,
                               tapi_igmp3_src_list_t *src_list,
                               in_addr_t              src_addr,
+                              te_bool                skip_eth,
                               uint8_t               *eth_src)
 {
     te_errno       rc = 0;
@@ -519,9 +588,18 @@ tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
         return rc;
 
     /* Add IPv4 layer header to PDU template/pattern */
-    rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
+    if (skip_eth)
+    {
+        rc = tapi_igmp_add_ip4_pdu(&pkt_tmpl, NULL, FALSE,
                                    TAPI_MCAST_ADDR_ALL_MCR,
-                                   src_addr, eth_src);
+                                   src_addr);
+    }
+    else
+    {
+        rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
+                                       TAPI_MCAST_ADDR_ALL_MCR,
+                                       src_addr, eth_src);
+    }
     if (rc != 0)
         return rc;
 
