@@ -3387,8 +3387,16 @@ asn_path_from_extended(const asn_value *node, const char *ext_path,
     {
         if (auto_insert == FALSE)
         {
-            ERROR("%s(): Cannot expand path - item cannot be found",
-                  __FUNCTION__);
+            /*
+             * fixme: previously it was an error message
+             * it's not a good style to log tonns of errors from
+             * a generic library, so right now it's a warn.
+             * when one invents a nice way to solve the problem of
+             * expected/unexpected parsing failures - just make it
+             * an error back
+             */
+            WARN("%s(): Cannot expand path - item cannot be found",
+                 __FUNCTION__);
             rc = TE_EASNDIFF;
             goto cleanup;
         }
