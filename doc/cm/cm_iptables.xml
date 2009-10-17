@@ -34,10 +34,14 @@
 
     <!-- Root object of iptables rules for the specific interface.
          Name: empty -->
-    <object oid="/agent/interface/iptables" access="read_create" type="none"/>
+    <object oid="/agent/interface/iptables" access="read_only" type="none"/>
+
+    <!-- Table name
+         Name: filter, mangle, nat or raw -->
+    <object oid="/agent/interface/iptables/table" access="read_only" type="none"/>
 
     <!-- Rule ID
          Name: full rule with spaces substituted by ';' -->
-    <object oid="/agent/interface/iptables/rule" access="read_create" type="none"/>
+    <object oid="/agent/interface/iptables/table/rule" access="read_create" type="none"/>
 
 </backup>
