@@ -259,6 +259,12 @@ extern te_errno ta_unix_iscsi_target_init();
 extern te_errno iscsi_initiator_conf_init();
 #endif
 
+#ifdef WITH_IPTABLES
+extern te_errno ta_unix_conf_iptables_init();
+extern te_errno iptables_interface_init(const char *);
+extern te_errno iptables_interface_fini(const char *);
+#endif
+
 extern te_errno ta_unix_conf_sys_init();
 extern te_errno ta_unix_conf_phy_init();
 
@@ -927,6 +933,13 @@ interface_grab(const char *name)
         rc = rcf_pch_rsrc_check_locks(parent);
         if (rc != 0)
             return rc;
+
+#if WITH_IPTABLES
+        if ((rc = iptables_interface_init(parent)) != 0)
+        {
+            ERROR("Failed to initialise iptables chains for %s", parent);
+        }
+#endif
     }
     else
     {
@@ -934,7 +947,6 @@ interface_grab(const char *name)
         unsigned int len = strlen(ifname);
         size_t n_vlans = MAX_VLANS, i;
         char         vlan_ifname[len + 10];
-        
 
         rc = ta_vlan_get_children(ifname, &n_vlans, vlans_buffer);
         if (rc != 0)
@@ -946,8 +958,22 @@ interface_grab(const char *name)
             rc = rcf_pch_rsrc_check_locks(vlan_ifname);
             if (rc != 0)
                 return rc;
-        } 
+#if WITH_IPTABLES
+            if ((rc = iptables_interface_init(vlan_ifname)) != 0)
+            {
+                ERROR("Failed to initialise iptables chains for %s",
+                      vlan_ifname);
+            }
+#endif
+        }
     }
+
+#if WITH_IPTABLES
+    if ((rc = iptables_interface_init(ifname)) != 0)
+    {
+        ERROR("Failed to initialise iptables chains for %s", ifname);
+    }
+#endif
 
 #ifdef ENABLE_8021X
     return supplicant_grab(name);
@@ -960,6 +986,48 @@ interface_grab(const char *name)
 static te_errno
 interface_release(const char *name)
 {
+#if WITH_IPTABLES
+    const char *ifname = strrchr(name, ':');
+    te_errno    rc;
+    char parent[IFNAMSIZ];
+
+    if (ifname == NULL)
+    {
+        ERROR("%s(): Invalid interface instance name %s", __FUNCTION__,
+              name);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    ifname++;
+
+    rc = ta_vlan_get_parent(ifname, parent);
+    if (rc != 0)
+        return rc;
+
+    if (*parent != '\0')
+    {
+        iptables_interface_fini(parent);
+    }
+    else do
+    {
+        /* Grab main interface with all its VLANs */
+        unsigned int len = strlen(ifname);
+        size_t n_vlans = MAX_VLANS, i;
+        char         vlan_ifname[len + 10];
+
+        rc = ta_vlan_get_children(ifname, &n_vlans, vlans_buffer);
+        if (rc != 0)
+            break;
+
+        for (i = 0; i < n_vlans; i++)
+        {
+            vlan_ifname_get_internal(ifname, vlans_buffer[i], vlan_ifname);
+            iptables_interface_fini(vlan_ifname);
+        }
+    } while (0);
+
+    iptables_interface_fini(ifname);
+#endif
+
 #ifdef ENABLE_8021X
     return supplicant_release(name);
 #else
@@ -1050,7 +1118,7 @@ rcf_ch_conf_root(void)
             goto fail;
         if (iscsi_initiator_conf_init() != 0)
             goto fail;
-#endif        
+#endif
 #ifdef ENABLE_WIFI_SUPPORT
         if (ta_unix_conf_wifi_init() != 0)
             goto fail;
@@ -1075,14 +1143,18 @@ rcf_ch_conf_root(void)
         if (ta_unix_conf_net_snmp_stats_init() != 0)
             goto fail;
 #endif
-        
+#ifdef WITH_IPTABLES
+        if (ta_unix_conf_iptables_init() != 0)
+            goto fail;
+#endif
+
         if (ta_unix_conf_sys_init() != 0)
             goto fail;
-        
+
         /* Initialize configurator PHY support */
         if (ta_unix_conf_phy_init() != 0)
             goto fail;
-        
+
         rcf_pch_rsrc_init();
     }
 

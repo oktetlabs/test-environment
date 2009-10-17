@@ -464,6 +464,11 @@ if test -n "$with_iscsi"; then
     EXTRA_LDADD="$EXTRA_LDADD -liscsi_unh_target -liscsi_initiator_conf"
 fi    
 
+AM_CONDITIONAL(CFG_IPTABLES_SUPPORT, test -n "$with_iptables")
+if test -n "$with_iptables"; then
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_IPTABLES"
+fi
+
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 

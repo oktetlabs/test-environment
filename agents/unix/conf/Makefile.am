@@ -57,6 +57,10 @@ if CFG_UNIX_WIFI
 libconf_a_SOURCES += base/conf_wifi.c
 endif
 
+if CFG_IPTABLES_SUPPORT
+libconf_a_SOURCES += base/conf_iptables.c
+endif
+
 if CFG_UNIX_8021X
 libconf_a_SOURCES += daemons/8021x/conf_8021x.c
 endif
