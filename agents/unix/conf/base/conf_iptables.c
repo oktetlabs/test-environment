@@ -465,6 +465,7 @@ iptables_rule_add(unsigned int  gid, const char *oid, const char *value,
     char      cmd_buf[IPTABLES_CMD_BUF_SIZE];
 
     UNUSED(gid);
+    UNUSED(oid);
     UNUSED(value);
     UNUSED(dummy);
 
@@ -514,6 +515,7 @@ iptables_rule_del(unsigned int  gid, const char *oid,
     char      cmd_buf[IPTABLES_CMD_BUF_SIZE];
 
     UNUSED(gid);
+    UNUSED(oid);
     UNUSED(dummy);
 
     RING("%s started", __FUNCTION__);
@@ -549,8 +551,6 @@ iptables_rule_del(unsigned int  gid, const char *oid,
 extern te_errno
 ta_unix_conf_iptables_init(void)
 {
-    int rc;
-
     return rcf_pch_add_node("/agent/interface", &node_iptables);
 }
 
