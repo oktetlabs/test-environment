@@ -21,6 +21,7 @@ include_HEADERS = \
 	tapi_cfg_ip6.h \
 	tapi_cfg_stats.h \
 	tapi_cfg_xen.h \
+	tapi_cfg_iptables.h \
 	tapi_file.h \
 	tapi_reqs.h \
         tapi_cfg_acse.h
@@ -43,6 +44,7 @@ libtapi_la_SOURCES = \
 	tapi_cfg_ip6.c \
 	tapi_cfg_stats.c \
 	tapi_cfg_xen.c \
+	tapi_cfg_iptables.c \
 	tapi_file.c \
 	verdict.c \
 	tapi_reqs.c \
