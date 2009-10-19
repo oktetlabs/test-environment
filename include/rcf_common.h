@@ -39,7 +39,7 @@
  */
 #define RCF_MAX_NAME        64
 
-#define RCF_MAX_ID          128 /**< Maximum object or stack 
+#define RCF_MAX_ID          256 /**< Maximum object or stack
                                      identifier length */
 #define RCF_MAX_VAL         (128  * 6) /**< Maximum length of variable value
                                      or object instance value */

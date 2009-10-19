@@ -35,7 +35,7 @@ extern "C" {
 
 #define CFG_SUBID_MAX       32   /**< Maximum length of sub-identifier 
                                       including trailing 0 */
-#define CFG_INST_NAME_MAX   128  /**< Instance name, including trailing 0 */
+#define CFG_INST_NAME_MAX   256  /**< Instance name, including trailing 0 */
 
 #define CFG_OID_LEN_MAX     8    /**< Maximum number of subids */
 
