@@ -588,268 +588,282 @@ output_regular_log_msg(log_msg *msg)
     obstk_base = obstack_base(log_obstk);
     log_msg_init_arg(msg);
 
-    for (i = 0; msg->fmt_str[i] != '\0'; i++)
+    if (msg->txt_msg != NULL)
     {
-        if (msg->fmt_str[i] == '%' && msg->fmt_str[i + 1] != '\0')
+        fwrite_string(log_obstk, msg->txt_msg, FALSE);
+    }
+    else
+    {
+        for (i = 0; msg->fmt_str[i] != '\0'; i++)
         {
-            if (msg->fmt_str[i + 1] == '%')
+            if (msg->fmt_str[i] == '%' && msg->fmt_str[i + 1] != '\0')
             {
-                obstack_1grow(log_obstk, '%');
-                i++;
-                continue;
-            }
-
-            if ((arg = get_next_arg(msg)) == NULL)
-            {
-                /* Too few arguments in the message */
-                /* Simply write the rest of format string to the log */
-                fwrite_string(log_obstk, msg->fmt_str + i, FALSE);
-                break;
-            }
-
-            /* Parse output format */
-            switch (msg->fmt_str[i + 1])
-            {
-                case 'c':
+                if (msg->fmt_str[i + 1] == '%')
                 {
-                    uint32_t val;
-                    char     c_buf[2] = {};
-
-                    val = ntohl(*(uint32_t *)arg->val);
-                    if (val > UCHAR_MAX)
+                    obstack_1grow(log_obstk, '%');
+                    i++;
+                    continue;
+                }
+                
+                if ((arg = get_next_arg(msg)) == NULL)
+                {
+                    /* Too few arguments in the message */
+                    /* Simply write the rest of format string to the log */
+                    fwrite_string(log_obstk, msg->fmt_str + i, FALSE);
+                    break;
+                }
+                
+                /* Parse output format */
+                switch (msg->fmt_str[i + 1])
+                {
+                    case 'c':
                     {
-                        obstack_printf(log_obstk, "&lt;0x%08x&gt;", val);
+                        uint32_t val;
+                        char     c_buf[2] = {};
+                        
+                        val = ntohl(*(uint32_t *)arg->val);
+                        if (val > UCHAR_MAX)
+                        {
+                            obstack_printf(log_obstk, "&lt;0x%08x&gt;", 
+                                           val);
+                        }
+                        else
+                        {
+                            c_buf[0] = (char)val;
+                            fwrite_string(log_obstk, c_buf, FALSE);
+                        }
+                        
+                        i++;
+                        
+                        continue;
+                    }
+                    
+                    case 'd':
+                    case 'u':
+                    case 'o':
+                    case 'x':
+                    case 'X':
+                    {
+                        char  format[3] = {'%', msg->fmt_str[i + 1], '\0'};
+                        
+                        *((uint32_t *)arg->val) = 
+                        ntohl(*(uint32_t *)arg->val);
+                        
+                        obstack_printf(log_obstk, format,
+                                       *((uint32_t *)arg->val));
+                        i++;
+                        
+                        continue;
+                    }
+                    
+                    case 'p':
+                    {
+                        uint32_t val;
+                        int      j;
+                        
+                        /* Address should be 4 bytes aligned */
+                        assert(arg->len % 4 == 0);
+                        
+                        obstack_grow(log_obstk, "0x", strlen("0x"));
+                        for (j = 0; j < arg->len / 4; j++)
+                        {
+                            val = *(((uint32_t *)arg->val) + j);
+                            
+                            /* Skip not trailing zero words */
+                            if (val == 0 && (j + 1) < arg->len / 4)
+                            {
+                                continue;
+                            }
+                            val = ntohl(val);
+                            
+                            obstack_printf(log_obstk, "%08x", val);
+                        }
+                        
+                        i++;
+                        
+                        continue;
+                    }
+                    
+                    case 's':
+                    {
+                        fwrite_string(log_obstk, (const char *)arg->val, 
+                                      FALSE);
+                        i++;
+                        
+                        continue;
+                    }
+                    
+                    case 'r':
+                    {
+                        te_errno    err;
+                        const char *src;
+                        
+                        err = *((uint32_t *)arg->val) = 
+                        ntohl(*(uint32_t *)arg->val);
+                        
+                        src = te_rc_mod2str(err);
+                        if (strlen(src) > 0)
+                        {
+                            fwrite_string(log_obstk, src, FALSE);
+                            obstack_1grow(log_obstk, '-');
+                        }
+                        fwrite_string(log_obstk, te_rc_err2str(err), FALSE);
+                        i++;
+                        
+                        continue;
+                    }
+                    
+                    case 'T':
+                    {
+                        int  j;
+                        int  n_tuples;
+                        int  tuple_width;
+                        int  cur_pos = 0;
+                        char one_byte_str[3];
+                        int  default_format = FALSE;
+                        int  k;
+                        
+                        /* @todo think of better way to implement this! */
+                        if (strstr(msg->fmt_str + i, "%Tf") ==
+                            (msg->fmt_str + i))
+                        {
+                            /* Strart file tag */
+                            obstack_printf(log_obstk,
+                                           "<file name=\"%s\">", "TODO");
+                            fwrite_string(log_obstk,
+                                          (const char *)arg->val, FALSE);
+                            /* End file tag */
+                            obstack_grow(log_obstk, "</file>",
+                                         strlen("</file>"));
+                            
+                            /* shift to the end of "%Tf" */
+                            i += 2;
+                            continue;
+                        }
+                        
+                        
+                        /*
+                         * %Tm[[n].[w]] - memory dump, n - the number of
+                         * elements after which "\n" is to be inserted,
+                         * w - width (in bytes) of the element.
+                         */
+                        if (strstr(msg->fmt_str + i, "%Tm") !=
+                            (msg->fmt_str + i))
+                        {
+                            /* Invalid format just output as it is */
+                            fprintf(stderr, "WARNING: Invalid format for "
+                                    "%%T specificator\n");
+                            print_message_info(msg);
+                            break;
+                        }
+                        
+                        obstack_grow(log_obstk,
+                                     "<mem-dump>", strlen("<mem-dump>"));
+                        if (sscanf(msg->fmt_str + i, "%%Tm[[%d].[%d]]", 
+                                   &n_tuples, &tuple_width) != 2)
+                        {
+                            default_format = TRUE;
+                            tuple_width = 1;
+                            n_tuples = 16; /* @todo remove hardcode */
+                        }
+                        
+                        while (cur_pos < arg->len)
+                        {
+                            obstack_grow(log_obstk, "<row>", 
+                                         strlen("<row>"));
+                            /* Start a memory table row */
+                            for (j = 0;
+                                 j < n_tuples && cur_pos < arg->len;
+                                 j++)
+                            {
+                                /* Start a block in a row */
+                                obstack_grow(log_obstk, "<elem>",
+                                             strlen("<elem>"));
+                                for (k = 0; 
+                                     k < tuple_width && cur_pos < arg->len;
+                                     k++, cur_pos++)
+                                {
+                                    snprintf(one_byte_str, 
+                                             sizeof(one_byte_str),
+                                             "%02X", *(arg->val + cur_pos));
+                                    obstack_grow(log_obstk, 
+                                                 one_byte_str, 2);
+                                }
+                                /* End a block in a row */
+                                obstack_grow(log_obstk, "</elem>",
+                                             strlen("</elem>"));
+                            }
+                            /* End a memory table row */
+                            obstack_grow(log_obstk, "</row>", 
+                                         strlen("</row>"));
+                        }
+                        obstack_grow(log_obstk, "</mem-dump>",
+                                     strlen("</mem-dump>"));
+                        
+                        /* shift to the end of "%Tm" */
+                        i += 2;
+                        
+                        if (!default_format)
+                        {
+                            j = 0;
+                            i += 2; /* shift to the end of "[[" */
+                            while (*(msg->fmt_str + i++) != ']' || ++j != 3)
+                                ;
+                            
+                            i--; 
+                        }
+                        
+                        continue;
+                    }
+                } /* switch */
+            }
+            
+            switch (msg->fmt_str[i])
+            {
+                case '\r':
+                    if (i > 0 && msg->fmt_str[i - 1] == '\n')
+                    {
+                        /*
+                         * Skip \r after \n, because it does not bring any
+                         * formating, but just follows after ]n on some 
+                         * systems
+                         */
+                        break;
+                    }
+                    /* Process it as ordinary new line character */
+                    /* FALLTHROUGH */
+                    
+                case '\n':
+                    obstack_grow(log_obstk, "<br/>", 5);
+                    break;
+                    
+                case '<':
+                    obstack_grow(log_obstk, "&lt;", 4);
+                    break;
+                    
+                case '>':
+                    obstack_grow(log_obstk, "&gt;", 4);
+                    break;
+                    
+                case '&':
+                    obstack_grow(log_obstk, "&amp;", 5);
+                    break;
+                    
+                default:
+                    if (msg->fmt_str[i] == '\t' || isprint(msg->fmt_str[i]))
+                    {
+                        obstack_1grow(log_obstk, msg->fmt_str[i]);
                     }
                     else
                     {
-                        c_buf[0] = (char)val;
-                        fwrite_string(log_obstk, c_buf, FALSE);
+                        obstack_printf(log_obstk, "&lt;0x%02x&gt;",
+                                       (unsigned char)msg->fmt_str[i]);
                     }
-
-                    i++;
-
-                    continue;
-                }
-
-                case 'd':
-                case 'u':
-                case 'o':
-                case 'x':
-                case 'X':
-                {
-                    char  format[3] = {'%', msg->fmt_str[i + 1], '\0'};
-
-                    *((uint32_t *)arg->val) = 
-                        ntohl(*(uint32_t *)arg->val);
-
-                    obstack_printf(log_obstk, format,
-                                   *((uint32_t *)arg->val));
-                    i++;
-
-                    continue;
-                }
-
-                case 'p':
-                {
-                    uint32_t val;
-                    int      j;
-
-                    /* Address should be 4 bytes aligned */
-                    assert(arg->len % 4 == 0);
-
-                    obstack_grow(log_obstk, "0x", strlen("0x"));
-                    for (j = 0; j < arg->len / 4; j++)
-                    {
-                        val = *(((uint32_t *)arg->val) + j);
-
-                        /* Skip not trailing zero words */
-                        if (val == 0 && (j + 1) < arg->len / 4)
-                        {
-                            continue;
-                        }
-                        val = ntohl(val);
-
-                        obstack_printf(log_obstk, "%08x", val);
-                    }
-
-                    i++;
-
-                    continue;
-                }
-
-                case 's':
-                {
-                    fwrite_string(log_obstk, (const char *)arg->val, FALSE);
-                    i++;
-
-                    continue;
-                }
-
-                case 'r':
-                {
-                    te_errno    err;
-                    const char *src;
-
-                    err = *((uint32_t *)arg->val) = 
-                        ntohl(*(uint32_t *)arg->val);
-
-                    src = te_rc_mod2str(err);
-                    if (strlen(src) > 0)
-                    {
-                        fwrite_string(log_obstk, src, FALSE);
-                        obstack_1grow(log_obstk, '-');
-                    }
-                    fwrite_string(log_obstk, te_rc_err2str(err), FALSE);
-                    i++;
-
-                    continue;
-                }
-
-                case 'T':
-                {
-                    int  j;
-                    int  n_tuples;
-                    int  tuple_width;
-                    int  cur_pos = 0;
-                    char one_byte_str[3];
-                    int  default_format = FALSE;
-                    int  k;
-                   
-                    /* @todo think of better way to implement this! */
-                    if (strstr(msg->fmt_str + i, "%Tf") ==
-                            (msg->fmt_str + i))
-                    {
-                        /* Strart file tag */
-                        obstack_printf(log_obstk,
-                                       "<file name=\"%s\">", "TODO");
-                        fwrite_string(log_obstk,
-                                      (const char *)arg->val, FALSE);
-                        /* End file tag */
-                        obstack_grow(log_obstk, "</file>",
-                                     strlen("</file>"));
-
-                        /* shift to the end of "%Tf" */
-                        i += 2;
-                        continue;
-                    }
-                   
-
-                   /*
-                    * %Tm[[n].[w]] - memory dump, n - the number of
-                    * elements after which "\n" is to be inserted,
-                    * w - width (in bytes) of the element.
-                    */
-                    if (strstr(msg->fmt_str + i, "%Tm") !=
-                            (msg->fmt_str + i))
-                    {
-                        /* Invalid format just output as it is */
-                        fprintf(stderr, "WARNING: Invalid format for "
-                                "%%T specificator\n");
-                        print_message_info(msg);
-                        break;
-                    }
-
-                    obstack_grow(log_obstk,
-                                 "<mem-dump>", strlen("<mem-dump>"));
-                    if (sscanf(msg->fmt_str + i, "%%Tm[[%d].[%d]]", 
-                               &n_tuples, &tuple_width) != 2)
-                    {
-                        default_format = TRUE;
-                        tuple_width = 1;
-                        n_tuples = 16; /* @todo remove hardcode */
-                    }
-
-                    while (cur_pos < arg->len)
-                    {
-                        obstack_grow(log_obstk, "<row>", strlen("<row>"));
-                        /* Start a memory table row */
-                        for (j = 0;
-                             j < n_tuples && cur_pos < arg->len;
-                             j++)
-                        {
-                            /* Start a block in a row */
-                            obstack_grow(log_obstk, "<elem>",
-                                         strlen("<elem>"));
-                            for (k = 0; 
-                                 k < tuple_width && cur_pos < arg->len;
-                                 k++, cur_pos++)
-                            {
-                                snprintf(one_byte_str, sizeof(one_byte_str),
-                                         "%02X", *(arg->val + cur_pos));
-                                obstack_grow(log_obstk, one_byte_str, 2);
-                            }
-                            /* End a block in a row */
-                            obstack_grow(log_obstk, "</elem>",
-                                         strlen("</elem>"));
-                        }
-                        /* End a memory table row */
-                        obstack_grow(log_obstk, "</row>", strlen("</row>"));
-                    }
-                    obstack_grow(log_obstk, "</mem-dump>",
-                                 strlen("</mem-dump>"));
-
-                    /* shift to the end of "%Tm" */
-                    i += 2;
-
-                    if (!default_format)
-                    {
-                        j = 0;
-                        i += 2; /* shift to the end of "[[" */
-                        while (*(msg->fmt_str + i++) != ']' || ++j != 3)
-                            ;
-
-                        i--; 
-                    }
-
-                    continue;
-                }
-            } /* switch */
-        }
-        
-        switch (msg->fmt_str[i])
-        {
-            case '\r':
-                if (i > 0 && msg->fmt_str[i - 1] == '\n')
-                {
-                    /*
-                     * Skip \r after \n, because it does not bring any
-                     * formating, but just follows after ]n on some systems
-                     */
                     break;
-                }
-                /* Process it as ordinary new line character */
-                /* FALLTHROUGH */
-
-            case '\n':
-                obstack_grow(log_obstk, "<br/>", 5);
-                break;
+            }
             
-            case '<':
-                obstack_grow(log_obstk, "&lt;", 4);
-                break;
-            
-            case '>':
-                obstack_grow(log_obstk, "&gt;", 4);
-                break;
-            
-            case '&':
-                obstack_grow(log_obstk, "&amp;", 5);
-                break;
-            
-            default:
-                if (msg->fmt_str[i] == '\t' || isprint(msg->fmt_str[i]))
-                {
-                    obstack_1grow(log_obstk, msg->fmt_str[i]);
-                }
-                else
-                {
-                    obstack_printf(log_obstk, "&lt;0x%02x&gt;",
-                                   (unsigned char)msg->fmt_str[i]);
-                }
-                break;
-        }
-
-    } /* for */
+        } /* for */
+    } /* if (msg->txt_msg != NULL) */
 
     if (obstack_next_free(log_obstk) != obstk_base)
     {
