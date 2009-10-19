@@ -92,7 +92,7 @@ te_errno
 iptables_table_list(unsigned int  gid, const char *oid, char **list,
                     const char *ifname)
 {
-    RING("%s started", __FUNCTION__);
+    INFO("%s started", __FUNCTION__);
 
     *list = (char *)calloc(4, strlen("filter") + 1);
     if (*list == NULL)
@@ -119,7 +119,7 @@ iptables_perif_chain_flush(const char *ifname, const char *table,
     char chain_name[IPTABLES_CHAIN_NAME_SIZE];
     char cmd_buf[IPTABLES_CMD_BUF_SIZE];
 
-    RING("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
+    INFO("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
 
     snprintf(chain_name, IPTABLES_CHAIN_NAME_SIZE, "%s_%s",
              ifname, chain);
@@ -146,7 +146,7 @@ iptables_perif_chain_create(const char *ifname, const char *table,
     char chain_name[IPTABLES_CHAIN_NAME_SIZE];
     char cmd_buf[IPTABLES_CMD_BUF_SIZE];
 
-    RING("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
+    INFO("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
 
     snprintf(chain_name, IPTABLES_CHAIN_NAME_SIZE, "%s_%s",
              ifname, chain);
@@ -186,7 +186,7 @@ iptables_perif_chain_destroy(const char *ifname, const char *table,
     char chain_name[IPTABLES_CHAIN_NAME_SIZE];
     char cmd_buf[IPTABLES_CMD_BUF_SIZE];
 
-    RING("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
+    INFO("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
 
     snprintf(chain_name, IPTABLES_CHAIN_NAME_SIZE, "%s_%s",
              ifname, chain);
@@ -308,6 +308,8 @@ iptables_interface_init(const char *ifname)
 void
 iptables_interface_fini(const char *ifname)
 {
+    RING("%s(%s) started", __FUNCTION__, ifname);
+
     /* filter table chains: INPUT, FORWARD, OUTPUT */
     iptables_perif_chain_destroy(ifname, "filter", "INPUT");
     iptables_perif_chain_destroy(ifname, "filter", "FORWARD");
@@ -340,9 +342,11 @@ iptables_rule_to_id(const char *rule)
     for ( ; *p != '\0' ; p++)
     {
         if (*p == ' ')
-        {
+            *p = '#';
+        else if (*p == ':')
             *p = ';';
-        }
+        else if (*p == '/')
+            *p = '|';
     }
 
     return id;
@@ -356,10 +360,12 @@ iptables_id_to_rule(const char *id)
 
     for ( ; *p != '\0' ; p++)
     {
-        if (*p == ';')
-        {
+        if (*p == '#')
             *p = ' ';
-        }
+        else if (*p == ';')
+            *p = ':';
+        else if (*p == '|')
+            *p = '/';
     }
 
     return rule;
@@ -375,12 +381,14 @@ static te_errno iptables_rule_list(unsigned int  gid, const char *oid, char **li
     char  buf[IPTABLES_CMD_BUF_SIZE];
     int   list_size = 0;
     int   list_len  = 0;
+    char *rule_id;
+    char *p = NULL;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dummy);
 
-    RING("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
+    INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
     *list = NULL;
 
@@ -390,8 +398,8 @@ static te_errno iptables_rule_list(unsigned int  gid, const char *oid, char **li
     }
 
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             "iptables-save -t %s | grep '^-A %s_' | sed -e 's/^-A //g'",
-             table, ifname);
+             "iptables-save -t %s | grep '^-A %s_' | sed -e 's/^-A %s_//g'",
+             table, ifname, ifname);
     if ((rc = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
     {
         ERROR("failed to execute command line while getting: %s: "
@@ -418,22 +426,29 @@ static te_errno iptables_rule_list(unsigned int  gid, const char *oid, char **li
 
     while (fgets(buf, sizeof(buf), fp) != NULL)
     {
-        char *id = iptables_rule_to_id(buf);
-        if (id == NULL)
+        /* Remove trailing newline */
+        p = buf + strlen(buf);
+        if (*(--p) == '\n')
+            *p = '\0';
+        if (*(--p) == ' ')
+            *p = '\0';
+
+        RING("Rule(ifname:%s, table:%s):%s", ifname, table, buf);
+        if ((rule_id = iptables_rule_to_id(buf))== NULL)
         {
             rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
             goto cleanup;
         }
-        if (list_len + strlen(id) + 1 >= list_size)
+        if (list_len + strlen(rule_id) + 1 >= list_size)
         {
-            list_size                               *= 2;
+            list_size *= 2;
             if ((*list = realloc(*list, list_size)) == NULL)
             {
                 rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                 goto cleanup;
             }
         }
-        list_len += sprintf(*list + list_len, " %s", id);
+        list_len += sprintf(*list + list_len, " %s", rule_id);
     }
 
 cleanup:
@@ -469,21 +484,16 @@ iptables_rule_add(unsigned int  gid, const char *oid, const char *value,
     UNUSED(value);
     UNUSED(dummy);
 
-    RING("%s started", __FUNCTION__);
+    INFO("%s started", __FUNCTION__);
 
     if ((ifname == NULL) || !ta_interface_is_mine(ifname))
     {
         return TE_RC(TE_TA_UNIX, TE_ENODEV);
     }
 
-    if (strncmp(rule_id, ifname, strlen(ifname)) != 0)
-    {
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
     rule = iptables_id_to_rule(rule_id);
-    snprintf(cmd_buf, sizeof(cmd_buf), "iptables -t %s -A %s",
-             table, rule);
+    snprintf(cmd_buf, sizeof(cmd_buf), "iptables -t %s -A %s_%s",
+             table, ifname, rule);
     free(rule);
 
     if (ta_system(cmd_buf) != 0)
@@ -518,21 +528,16 @@ iptables_rule_del(unsigned int  gid, const char *oid,
     UNUSED(oid);
     UNUSED(dummy);
 
-    RING("%s started", __FUNCTION__);
+    INFO("%s started", __FUNCTION__);
 
     if ((ifname == NULL) || !ta_interface_is_mine(ifname))
     {
         return TE_RC(TE_TA_UNIX, TE_ENODEV);
     }
 
-    if (strncmp(rule_id, ifname, strlen(ifname)) != 0)
-    {
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
     rule = iptables_id_to_rule(rule_id);
-    snprintf(cmd_buf, sizeof(cmd_buf), "iptables -t %s -D %s",
-             table, rule);
+    snprintf(cmd_buf, sizeof(cmd_buf), "iptables -t %s -D %s_%s",
+             table, ifname, rule);
     free(rule);
 
     if (ta_system(cmd_buf) != 0)
