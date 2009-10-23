@@ -1945,7 +1945,7 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
  * @param session       TA session or 0   
  * @param rfile         full name of the file in the TA/NUT file system
  * @param lfile         full name of the file in the TN file system
- * @param opcode        RCFOP_FPUT or RCFOP_FGET
+ * @param opcode        RCFOP_FPUT, RCFOP_FGET or RCFOP_DEL
  *
  * @return error code
  */
