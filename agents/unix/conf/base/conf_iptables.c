@@ -433,7 +433,7 @@ static te_errno iptables_rule_list(unsigned int  gid, const char *oid, char **li
         if (*(--p) == ' ')
             *p = '\0';
 
-        RING("Rule(ifname:%s, table:%s):%s", ifname, table, buf);
+        INFO("Rule(ifname:%s, table:%s):%s", ifname, table, buf);
         if ((rule_id = iptables_rule_to_id(buf))== NULL)
         {
             rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
