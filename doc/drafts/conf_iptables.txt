@@ -1,0 +1,71 @@
+Iptables configuration model in TE.
+
+Goals:
+- Configurator should be able to track changes in iptables rules
+  made by tests and rollback that changes.
+- Configurator should not allow conflicts between different test
+  agents running on the host.
+
+Resolving Conflicts:
+  To avoid conflicts between different test agents, let create separate
+chains for each interface. Each network interface is a resource of test
+agent and is not shared with other TAs. So let duplicate common chains
+for each interface and insert jump rules into common chains with
+interface-only matching.
+
+For example:
+  For NAT table and interface eth1 we should create chains: eth1_PREROUTING,
+eth1_POSTROUTING and eth1_OUTPUT, and add conditional jumps to PREROUTING,
+POSTROUTING and OUTPUT chains of NAT table with intarface matching
+(-i for incoming packets, or -o for outgoing)
+
+Configuration Tree Model:
+  1) Iptables configuration subtree should be under interface node:
+    /agent/interface/iptables/
+
+    Iptables node is not accessible and has no named instances.
+    It is created to simplify sync for iptables subtree.
+
+  2) Each table should be represented as standalone instance
+  (filter, mangle, nat, raw):
+    /agent/interface/iptables/table
+
+  NOTE: Table node is also not accessible now, but probably should have a state
+  (enabled/disabled) to verify if corresponding chains and jump rules are installed or not.
+
+  3) Each rule should be represented as standalone object to simplify
+  add/del operations.
+    The problem of naming rule instances may be resolved by using encoded
+  iptables command as rule name. For example, command:
+    'iptables -A POSTROUTING -s 10.30.0.1/32 -p tcp -m tcp --sport 554 -j SNAT \
+        --to-source 68.120.102.29:554'
+    should be cut to 'POSTROUTING -s 10.30.0.1/32 -p tcp -m tcp --sport 554 -j SNAT \
+        --to-source 68.120.102.29:554'
+    then, encoded by substituting symbols that are not allowed in
+    instance name (' ', ':', '/').
+
+    This encoding allows to avoid values of rule instances.
+
+Configutation Tree Operations:
+  1) Add new rule.
+    Adding new rule instance will decode instance name back to iptables rule
+    and execute 'iptables -A ...' command on the agent.
+
+  2) Delete new rule.
+    Deletion of rule would be also simple decoding of instance name
+    and executing 'iptables -D ...' command
+
+  3) List rules.
+    There is no need to implement get/set methods in this case and list method
+    could implemented via 'iptables-save' command or 'iptables -S' by encoding
+    rules to instance names.
+
+  4) Initialisation.
+    Iptables configuration model initialisation with creating of per-interface
+    chains for each table should be performed when an interface resource
+    is grabbed.
+
+  5) Finalisation.
+    When network interface resource is released, all auxiliary per-interface
+    iptables chains and corresponding jumping rules should be removed.
+
