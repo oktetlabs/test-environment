@@ -7,11 +7,13 @@ Goals:
   agents running on the host.
 
 Resolving Conflicts:
-  To avoid conflicts between different test agents, let create separate
-chains for each interface. Each network interface is a resource of test
-agent and is not shared with other TAs. So let duplicate common chains
-for each interface and insert jump rules into common chains with
-interface-only matching.
+  To avoid conflicts between different test agents, separate chains
+for each interface should be created.
+  Each network interface is a resource of test agent and is not shared
+with other TAs. Thus operating with per-interface chains only will not
+affect other interfaces.
+  Сommon (built-in) chains for each table should be duplicated and
+corresponding jump rules added (inserted) with interface-only matching.
 
 For example:
   For NAT table and interface eth1 we should create chains: eth1_PREROUTING,
@@ -31,11 +33,12 @@ Configuration Tree Model:
     /agent/interface/iptables/table
 
   NOTE: Table node is also not accessible now, but probably should have a state
-  (enabled/disabled) to verify if corresponding chains and jump rules are installed or not.
+  (enabled/disabled) to verify if corresponding chains and jump rules are
+  installed or not.
 
   3) Each rule should be represented as standalone object to simplify
   add/del operations.
-    The problem of naming rule instances may be resolved by using encoded
+    The problem of naming rule instances is resolved by using encoded
   iptables command as rule name. For example, command:
     'iptables -A POSTROUTING -s 10.30.0.1/32 -p tcp -m tcp --sport 554 -j SNAT \
         --to-source 68.120.102.29:554'
@@ -43,6 +46,9 @@ Configuration Tree Model:
         --to-source 68.120.102.29:554'
     then, encoded by substituting symbols that are not allowed in
     instance name (' ', ':', '/').
+
+    OID constructed for this rule looks like:
+      /agent:TA_TST1/interface:eth1/iptables:/table:nat/rule:POSTROUTING#-s#10.30.0.1|32#-p#tcp#-m#tcp#--sport#554#-j#SNAT#--to-source#68.120.102.29;554
 
     This encoding allows to avoid values of rule instances.
 
@@ -56,9 +62,17 @@ Configutation Tree Operations:
     and executing 'iptables -D ...' command
 
   3) List rules.
-    There is no need to implement get/set methods in this case and list method
-    could implemented via 'iptables-save' command or 'iptables -S' by encoding
-    rules to instance names.
+    There is no need to implement get/set methods in this case. List method
+    is implemented via 'iptables-save' command by encoding rules to instance
+    names.
+
+    At this moment list method works by running command:
+      "iptables-save -t <table_name> | grep '^-A <ifname>_' | sed -e 's/^-A <ifname>_//g'"
+    where <ifname> is corresponding interface name.
+
+    Thus output contains only rules in per-interface chains. Each line
+    represents one iptables rule. List method encodes this rules to instance
+    names and constructs the complete list of iptables rules.
 
   4) Initialisation.
     Iptables configuration model initialisation with creating of per-interface
@@ -68,4 +82,3 @@ Configutation Tree Operations:
   5) Finalisation.
     When network interface resource is released, all auxiliary per-interface
     iptables chains and corresponding jumping rules should be removed.
-
