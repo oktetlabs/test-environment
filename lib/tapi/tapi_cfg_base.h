@@ -345,7 +345,7 @@ tapi_cfg_base_if_add_get_vlan(const char *ta, const char *if_name,
     cfg_val_type val = CVT_STRING;
     unsigned int    count = 0;
     cfg_handle      *handles = NULL;
-    char buf[40];
+    char buf[128];
 
     if (cfg_get_instance_fmt(&val, vlan_ifname,
                              "/agent:%s/interface:%s/vlans:%d/ifname:",
@@ -360,7 +360,8 @@ tapi_cfg_base_if_add_get_vlan(const char *ta, const char *if_name,
                              ta, if_name, (vid | 0x2000)) )
     {
         /* Try to search interface directly in case of windows VLANS */
-        snprintf(buf, 30, "/agent:%s/interface:%s.%d/", ta, if_name, vid);
+        snprintf(buf, sizeof(buf), "/agent:%s/interface:%s.%d/",
+                 ta, if_name, vid);
         cfg_find_pattern(buf, &count, &handles);
         if (count > 0)
         {
