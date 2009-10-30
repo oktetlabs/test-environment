@@ -153,6 +153,10 @@ RCF_PCH_CFG_NODE_NA(node_sys, "sys", &node_tcp_sndbuf_max, NULL);
 te_errno
 ta_unix_conf_sys_init(void)
 {
+#if 1
+    /* Temporarily disable to be able to run on openvz host */
+    return 0;
+#endif
     return rcf_pch_add_node("/agent", &node_sys);
 }
 
