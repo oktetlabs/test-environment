@@ -32,53 +32,38 @@ Configuration Tree Model:
   (filter, mangle, nat, raw):
     /agent/interface/iptables/table
 
-  NOTE: Table node is also not accessible now, but probably should have a state
-  (enabled/disabled) to verify if corresponding chains and jump rules are
-  installed or not.
+  3) Each table has several per-interface chains
+    /agent/interface/iptables/table/chain
 
-  3) Each rule should be represented as standalone object to simplify
-  add/del operations.
-    The problem of naming rule instances is resolved by using encoded
-  iptables command as rule name. For example, command:
-    'iptables -A POSTROUTING -s 10.30.0.1/32 -p tcp -m tcp --sport 554 -j SNAT \
-        --to-source 68.120.102.29:554'
-    should be cut to 'POSTROUTING -s 10.30.0.1/32 -p tcp -m tcp --sport 554 -j SNAT \
-        --to-source 68.120.102.29:554'
-    then, encoded by substituting symbols that are not allowed in
-    instance name (' ', ':', '/').
+    Chains instances are not created automatically to avoid a lot of unused chains creation.
+    One of the built-in chains should be used as an instance name.
+    When instance is added, user-defined chain with <interface>_ prefix is created.
+    Chain instance has boolean value that shows whether jump rule is installed or not.
 
-    OID constructed for this rule looks like:
-      /agent:TA_TST1/interface:eth1/iptables:/table:nat/rule:POSTROUTING#-s#10.30.0.1|32#-p#tcp#-m#tcp#--sport#554#-j#SNAT#--to-source#68.120.102.29;554
+    - Get operation checks whether jump rule is installed by
+      grepping 'iptables -t <table> -S' output
+    - Set operation adds/deletes to/from common chain jumping
+      rule for per-interface chain.
+    - List operations returnes list of per-interface chains
+      in the corresponding table returned by 'iptables -S' command
+      grepping lines started with '-N <interface>_'.
 
-    This encoding allows to avoid values of rule instances.
+  4) List of rules for each chain is stored as a single string value.
+    /agent/interface/iptables/table/chain/rules
 
-Configutation Tree Operations:
-  1) Add new rule.
-    Adding new rule instance will decode instance name back to iptables rule
-    and execute 'iptables -A ...' command on the agent.
+    It has only one instance with empty name. There are no named lists of rules.
+    All rules are listed with '\n' delimiter.
 
-  2) Delete new rule.
-    Deletion of rule would be also simple decoding of instance name
-    and executing 'iptables -D ...' command
+    - Get operation returns list of rules generated
+      by 'iptables -t <table> -S <chain>' command.
 
-  3) List rules.
-    There is no need to implement get/set methods in this case. List method
-    is implemented via 'iptables-save' command by encoding rules to instance
-    names.
+    - Set operation flushes the chain and fills up new
+      chain rules list with iptables tool.
 
-    At this moment list method works by running command:
-      "iptables-save -t <table_name> | grep '^-A <ifname>_' | sed -e 's/^-A <ifname>_//g'"
-    where <ifname> is corresponding interface name.
+  5) To avoid operations with plain value of rules list,
+     cmd write-only volatile object is introduced.
 
-    Thus output contains only rules in per-interface chains. Each line
-    represents one iptables rule. List method encodes this rules to instance
-    names and constructs the complete list of iptables rules.
+     /agent/interface/iptables/table/chain/cmd
 
-  4) Initialisation.
-    Iptables configuration model initialisation with creating of per-interface
-    chains for each table should be performed when an interface resource
-    is grabbed.
-
-  5) Finalisation.
-    When network interface resource is released, all auxiliary per-interface
-    iptables chains and corresponding jumping rules should be removed.
+     This node allows to execute iptables command by setting its value.
+     It updates rules list, so sync is required for rules node.

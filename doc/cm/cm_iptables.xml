@@ -40,8 +40,21 @@
          Name: filter, mangle, nat or raw -->
     <object oid="/agent/interface/iptables/table" access="read_only" type="none"/>
 
-    <!-- Rule ID
-         Name: full rule with spaces substituted by ';' -->
-    <object oid="/agent/interface/iptables/table/rule" access="read_create" type="none"/>
+    <!-- Per-interface chain, may have name of built-in chain
+         If TRUE, then jump rule is added to the common chain (without prefix)
+         Jump is always conditional with interface matching.
+         Input or output direction is assumed by the chain name.
+         Name: chain name without <interface>_ prefix -->
+    <object oid="/agent/interface/iptables/table/chain" access="read_create" type="boolean"/>
+
+    <!-- Chain rules list. When set operation is performed, the chain is flushed and filled again.
+         Name: Empty
+         Value: whole list of rules as a single string value in the per-interface chain -->
+    <object oid="/agent/interface/iptables/table/chain/rules" access="read_write" type="string"/>
+
+    <!-- Execute iptables command for the chain, used to simplify TAPI 
+         Name: Empty
+         Value: iptables command to execute -->
+    <object oid="/agent/interface/iptables/table/chain/cmd" access="write_only" type="string" volatile="true"/>
 
 </backup>
