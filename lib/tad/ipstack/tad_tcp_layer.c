@@ -521,7 +521,7 @@ tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
                 case NDN_TAG_TCP_OPT_WIN_SCALE:
                     *p = TE_TCP_OPT_WIN_SCALE;
                     *(p+1) = opt_b_len;
-                    asn_read_int32(p_opt, &opt_val, "win-scale");
+                    asn_read_int32(p_opt, &opt_val, "scale");
                     *(p+2) = opt_val;
                     break;
                 case NDN_TAG_TCP_OPT_TIMESTAMP:
