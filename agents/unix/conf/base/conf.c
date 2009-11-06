@@ -413,6 +413,16 @@ static te_errno ip4_fw_set(unsigned int, const char *, const char *);
 static te_errno ip6_fw_get(unsigned int, const char *, char *);
 static te_errno ip6_fw_set(unsigned int, const char *, const char *);
 
+static te_errno ip4_fwd_get(unsigned int, const char *, char *,
+                            const char *);
+static te_errno ip4_fwd_set(unsigned int, const char *, const char *,
+                            const char *);
+
+static te_errno ip6_fwd_get(unsigned int, const char *, char *,
+                            const char *);
+static te_errno ip6_fwd_set(unsigned int, const char *, const char *,
+                            const char *);
+
 static te_errno interface_list(unsigned int, const char *, char **);
 
 static te_errno vlans_list(unsigned int, const char *, char **,
@@ -740,9 +750,29 @@ RCF_PCH_CFG_NODE_RW(node_bcast_link_addr, "bcast_link_addr", NULL,
                     &node_link_addr,
                     bcast_link_addr_get, bcast_link_addr_set);
 
-RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_bcast_link_addr,
+RCF_PCH_CFG_NODE_RW(node_ip4_fwd, "ip4_fwd", NULL, &node_link_addr,
+                    ip4_fwd_get, ip4_fwd_set);
+
+RCF_PCH_CFG_NODE_RW(node_ip6_fwd, "ip6_fwd", NULL, &node_ip4_fwd,
+                    ip6_fwd_get, ip6_fwd_set);
+
+RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_ip6_fwd,
                     ifindex_get);
 
+/*
+ * Piece of configuration tree with nodes responsible
+ * for IP4/6 forwarding:
+ *
+ * - node_ip4_fw - node_interface - node_dns - NULL
+ *       |             |                |
+ *     NULL            |              NULL
+ *                 node_ifindex - node_ip6_fwd - node_ip4_fwd - ...
+ *                     |              |              |
+ *                   NULL           NULL           NULL
+ *
+ *  node_ip4_fw/node_ip6_fw - all IP4/6 forwarding on the host
+ *  node_ip4_fwd/node_ip6_fwd IP4/6 forwarding via given interface
+ */
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
                             &node_ifindex, &node_dns,
                             NULL, NULL, interface_list, NULL);
@@ -5582,6 +5612,183 @@ status_set(unsigned int gid, const char *oid, const char *value,
     return ta_interface_status_set(ifname, status);
 }
 
+/**
+ * Get IP4 forwarding state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+ip4_fwd_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+#if __linux__
+    char    c = '0';
+    int     fd;
+    char    filename[128];
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    sprintf(filename, "/proc/sys/net/ipv4/conf/%s/forwarding", ifname);
+    if ((fd = open(filename, O_RDONLY)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (read(fd, &c, 1) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    close(fd);
+
+    sprintf(value, "%d", c == '0' ? 0 : 1);
+#else
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    sprintf(value, "%d", 0);
+#endif
+
+    return 0;
+}
+
+/**
+ * Change IP4 forwarding state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+ip4_fwd_set(unsigned int gid, const char *oid, const char *value,
+            const char *ifname)
+{
+#if __linux__
+    int     fd;
+    char    filename[128];
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    if ((*value != '0' && *value != '1') || *(value + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    sprintf(filename, "/proc/sys/net/ipv4/conf/%s/forwarding", ifname);
+    if ((fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    close(fd);
+#else
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/**
+ * Get IP6 forwarding state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+ip6_fwd_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+#if __linux__
+    char    c = '0';
+    int     fd;
+    char    filename[128];
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    sprintf(filename, "/proc/sys/net/ipv6/conf/%s/forwarding", ifname);
+    if ((fd = open(filename, O_RDONLY)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (read(fd, &c, 1) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    close(fd);
+
+    sprintf(value, "%d", c == '0' ? 0 : 1);
+#else
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    sprintf(value, "%d", 0);
+#endif
+
+    return 0;
+}
+
+/**
+ * Change IP6 forwarding state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+ip6_fwd_set(unsigned int gid, const char *oid, const char *value,
+            const char *ifname)
+{
+#if __linux__
+    int     fd;
+    char    filename[128];
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    if ((*value != '0' && *value != '1') || *(value + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    sprintf(filename, "/proc/sys/net/ipv6/conf/%s/forwarding", ifname);
+    if ((fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    close(fd);
+#else
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
 
 /**
  * Get promiscuous mode of the interface ("0" - normal or "1" - promiscuous)
