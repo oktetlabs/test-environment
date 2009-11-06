@@ -413,15 +413,15 @@ static te_errno ip4_fw_set(unsigned int, const char *, const char *);
 static te_errno ip6_fw_get(unsigned int, const char *, char *);
 static te_errno ip6_fw_set(unsigned int, const char *, const char *);
 
-static te_errno ip4_fwd_get(unsigned int, const char *, char *,
-                            const char *);
-static te_errno ip4_fwd_set(unsigned int, const char *, const char *,
-                            const char *);
+static te_errno iface_ip4_fw_get(unsigned int, const char *, char *,
+                                 const char *);
+static te_errno iface_ip4_fw_set(unsigned int, const char *, const char *,
+                                 const char *);
 
-static te_errno ip6_fwd_get(unsigned int, const char *, char *,
-                            const char *);
-static te_errno ip6_fwd_set(unsigned int, const char *, const char *,
-                            const char *);
+static te_errno iface_ip6_fw_get(unsigned int, const char *, char *,
+                                 const char *);
+static te_errno iface_ip6_fw_set(unsigned int, const char *, const char *,
+                                 const char *);
 
 static te_errno interface_list(unsigned int, const char *, char **);
 
@@ -750,29 +750,16 @@ RCF_PCH_CFG_NODE_RW(node_bcast_link_addr, "bcast_link_addr", NULL,
                     &node_link_addr,
                     bcast_link_addr_get, bcast_link_addr_set);
 
-RCF_PCH_CFG_NODE_RW(node_ip4_fwd, "ip4_fwd", NULL, &node_link_addr,
-                    ip4_fwd_get, ip4_fwd_set);
+RCF_PCH_CFG_NODE_RW(node_iface_ip4_fw, "iface_ip4_fw", NULL,
+                    &node_bcast_link_addr, iface_ip4_fw_get,
+                    iface_ip4_fw_set);
 
-RCF_PCH_CFG_NODE_RW(node_ip6_fwd, "ip6_fwd", NULL, &node_ip4_fwd,
-                    ip6_fwd_get, ip6_fwd_set);
+RCF_PCH_CFG_NODE_RW(node_iface_ip6_fw, "iface_ip6_fw", NULL,
+                    &node_iface_ip4_fw, iface_ip6_fw_get, iface_ip6_fw_set);
 
-RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_ip6_fwd,
+RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_ip6_fw,
                     ifindex_get);
 
-/*
- * Piece of configuration tree with nodes responsible
- * for IP4/6 forwarding:
- *
- * - node_ip4_fw - node_interface - node_dns - NULL
- *       |             |                |
- *     NULL            |              NULL
- *                 node_ifindex - node_ip6_fwd - node_ip4_fwd - ...
- *                     |              |              |
- *                   NULL           NULL           NULL
- *
- *  node_ip4_fw/node_ip6_fw - all IP4/6 forwarding on the host
- *  node_ip4_fwd/node_ip6_fwd IP4/6 forwarding via given interface
- */
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
                             &node_ifindex, &node_dns,
                             NULL, NULL, interface_list, NULL);
@@ -5623,8 +5610,8 @@ status_set(unsigned int gid, const char *oid, const char *value,
  * @return              Status code
  */
 static te_errno
-ip4_fwd_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname)
+iface_ip4_fw_get(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
 {
 #if __linux__
     char    c = '0';
@@ -5667,8 +5654,8 @@ ip4_fwd_get(unsigned int gid, const char *oid, char *value,
  * @return              Status code
  */
 static te_errno
-ip4_fwd_set(unsigned int gid, const char *oid, const char *value,
-            const char *ifname)
+iface_ip4_fw_set(unsigned int gid, const char *oid, const char *value,
+                 const char *ifname)
 {
 #if __linux__
     int     fd;
@@ -5712,8 +5699,8 @@ ip4_fwd_set(unsigned int gid, const char *oid, const char *value,
  * @return              Status code
  */
 static te_errno
-ip6_fwd_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname)
+iface_ip6_fw_get(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
 {
 #if __linux__
     char    c = '0';
@@ -5756,8 +5743,8 @@ ip6_fwd_get(unsigned int gid, const char *oid, char *value,
  * @return              Status code
  */
 static te_errno
-ip6_fwd_set(unsigned int gid, const char *oid, const char *value,
-            const char *ifname)
+iface_ip6_fw_set(unsigned int gid, const char *oid, const char *value,
+                 const char *ifname)
 {
 #if __linux__
     int     fd;
