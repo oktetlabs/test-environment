@@ -1465,22 +1465,6 @@ ta_waitpid(pid_t pid, int *p_status, int options)
     int     status;
     int     saved_errno;
 
-
-    if (!ta_children_dead_heap_inited)
-        ta_children_dead_heap_init();
-    if (pid < -1 || pid == 0)
-    {
-        ERROR("%s: process groups are not supported.", __FUNCTION__);
-        errno = EINVAL;
-        return -1;
-    }
-    if (options & ~WNOHANG)
-    {
-        ERROR("%s: only WNOHANG option is supported.", __FUNCTION__);
-        errno = EINVAL;
-        return -1;
-    }
-
 /**
  * Log that a function returned impossible value.
  * @todo there thould be ERROR, not PRINT, but I'd like to see this log
@@ -1490,15 +1474,62 @@ ta_waitpid(pid_t pid, int *p_status, int options)
     PRINT("%s: Impossible! " #_func " retured %d: %s",  \
           __FUNCTION__, rc, strerror(errno))
 
-    /* For WNOHANG, check if the process is running. There is possible race
+#define IMPOSSIBLE_LOG_AND_RET(_func) \
+    do {                                \
+        LOG_IMPOSSIBLE(_func);          \
+        if (wake->sem_alloc)            \
+            sem_destroy(&wake->sem);    \
+        free(wake);                     \
+        return -1;                      \
+    } while(0)
+
+#define LOCK \
+    do {                                                \
+        rc = pthread_mutex_lock(&children_lock);        \
+        if (rc != 0)                                    \
+            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_lock); \
+    } while(0)
+
+#define UNLOCK \
+    do {                                                    \
+        rc = pthread_mutex_unlock(&children_lock);          \
+        if (rc != 0)                                        \
+            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_unlock);   \
+    } while(0)
+
+    if (!ta_children_dead_heap_inited)
+    {
+        ta_children_dead_heap_init();
+    }
+
+    if (pid < -1 || pid == 0)
+    {
+        ERROR("%s: process groups are not supported.", __FUNCTION__);
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (options & ~WNOHANG)
+    {
+        ERROR("%s: only WNOHANG option is supported.", __FUNCTION__);
+        errno = EINVAL;
+        return -1;
+    }
+
+    /*
+     * For WNOHANG, check if the process is running. There is possible race
      * condition, because any call of waitpid() may perform a race with
      * waitpid() from SIGCHLD handler. So, we should return to user any
-     * non-error value. */
+     * non-error value.
+     */
     if ((options & WNOHANG))
     {
         rc = waitpid(pid, &status, options);
         if (rc == 0)
-            return rc; /* The process is running */
+        {
+            /* The process is running */
+            return rc;
+        }
         else if (rc != -1)
         {
             /* We've got the real status */
@@ -1528,26 +1559,6 @@ ta_waitpid(pid_t pid, int *p_status, int options)
     else
     {
         ta_children_wait  *wake;
-#define IMPOSSIBLE_LOG_AND_RET(_func) \
-    do {                                \
-        LOG_IMPOSSIBLE(_func);          \
-        if (wake->sem_alloc)            \
-            sem_destroy(&wake->sem);    \
-        free(wake);                     \
-        return -1;                      \
-    } while(0)
-#define LOCK \
-    do {                                                \
-        rc = pthread_mutex_lock(&children_lock);        \
-        if (rc != 0)                                    \
-            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_lock); \
-    } while(0)
-#define UNLOCK \
-    do {                                                    \
-        rc = pthread_mutex_unlock(&children_lock);          \
-        if (rc != 0)                                        \
-            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_unlock);   \
-    } while(0)
 
         /* Create wait structure */
         if ((wake = malloc(sizeof(ta_children_wait))) == NULL)
@@ -1555,6 +1566,7 @@ ta_waitpid(pid_t pid, int *p_status, int options)
             ERROR("%s: Out of memory", __FUNCTION__);
             return -1;
         }
+
         wake->pid = pid;
         wake->sem_alloc = FALSE;
         rc = sem_init(&wake->sem, 0, 0);
@@ -1562,7 +1574,7 @@ ta_waitpid(pid_t pid, int *p_status, int options)
             IMPOSSIBLE_LOG_AND_RET(sem_init);
         wake->sem_alloc = TRUE;
 
-        /* 
+        /*
          * Add an entry to ta_children_wait, so signal handler can wake us
          */
         wake->prev = NULL;
@@ -1574,7 +1586,22 @@ ta_waitpid(pid_t pid, int *p_status, int options)
 
         /* Check if we really have a child with such PID */
         saved_errno = errno;
+#if 0
+        /*
+         * Status returned by function 'ta_waitpid'
+         * can sometimes be garbage from non-initialized local
+         * variable 'status'. This happens when 'waitpid'
+         * returns here positive value 'vp_rc' and errno
+         * is not equal to ECHILD.
+         */
         wp_rc = waitpid(pid, NULL, WNOHANG);
+#else
+        /*
+         * FIXME: Status returned by function 'ta_waitpid'
+         * to be the same as one returned by function 'waitpid'.
+         */
+        wp_rc = waitpid(pid, &status, WNOHANG);
+#endif
         if (wp_rc == -1 && errno != ECHILD)
         {
             /** Some unpredictable error happened */
@@ -1599,7 +1626,7 @@ ta_waitpid(pid_t pid, int *p_status, int options)
 
         found = find_dead_child(pid, &status);
 
-        /* 
+        /*
          * A child is still alive:
          * Wait on semaphore only if there is a child with specified PID
          * otherwise it will be dead lock.
@@ -1614,10 +1641,12 @@ ta_waitpid(pid_t pid, int *p_status, int options)
             {
                 if (errno != EINTR)
                     IMPOSSIBLE_LOG_AND_RET(sem_wait);
-                /* Really, if it is "our" signal (SIGCHLD), we can try to 
+                /*
+                 * Really, if it is "our" signal (SIGCHLD), we can try to
                  * call find_dead_child, but we should not free(wake) before
                  * signal handler will call sem_post(), so let's sleep until
-                 * ta_sigchld_handler will wake up us explicitly. */
+                 * ta_sigchld_handler will wake up us explicitly.
+                 */
                 errno = saved_errno;
             }
             LOCK;
@@ -1659,22 +1688,24 @@ ta_waitpid(pid_t pid, int *p_status, int options)
         errno = ECHILD;
         return -1;
     }
-}
 #undef LOCK
 #undef UNLOCK
 #undef IMPOSSIBLE_LOG_AND_RET
 #undef LOG_IMPOSSIBLE
+}
 
 /* See description in unix_internal.h */
-int 
+int
 ta_system(const char *cmd)
 {
     pid_t   pid = te_shell_cmd(cmd, -1, NULL, NULL, NULL);
     int     status;
-        
+
     if (pid < 0)
         return -1;
+
     ta_waitpid(pid, &status, 0);
+
     return status;
 }
 
