@@ -3,7 +3,7 @@
  *
  * Unix TA iptables support
  *
- * Copyright (C) 2004-2007 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2009 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -170,11 +170,11 @@ static te_bool
 iptables_perif_chain_is_enabled(const char *ifname, const char *table,
                                 const char *chain)
 {
-    int   rc = 0;
-    FILE *fp;
-    int   out_fd;
-    char  buf[IPTABLES_CMD_BUF_SIZE];
-    te_bool enabled = FALSE;
+    int      rc      = 0;
+    FILE    *fp;
+    int      out_fd;
+    char     buf[IPTABLES_CMD_BUF_SIZE];
+    te_bool  enabled = FALSE;
 
     INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
@@ -185,7 +185,7 @@ iptables_perif_chain_is_enabled(const char *ifname, const char *table,
 
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
              "iptables -t %s -S %s | grep '^-A %s -%c %s -j %s_%s'",
-             table, chain,  chain,
+             table, chain, chain,
              ((strcmp(chain, "POSTROUTING") == 0) ||
               (strcmp(chain, "OUTPUT")      == 0)) ? 'o' : 'i',
              ifname, ifname, chain);
@@ -229,7 +229,7 @@ iptables_perif_chain_set(const char *ifname,
                          const char *chain,
                          te_bool enabled)
 {
-    int rc;
+    int  rc;
     char cmd_buf[IPTABLES_CMD_BUF_SIZE];
 
     INFO("%s(%s, %s, %s, %s) started", __FUNCTION__,
@@ -400,8 +400,8 @@ static te_errno iptables_chain_set(unsigned int  gid, const char *oid,
  */
 static te_errno iptables_chain_get(unsigned int  gid, const char *oid,
                                    char   *value, const char *ifname,
-                                   const char   *dummy, const char   *table,
-                                   const char   *chain)
+                                   const char *dummy, const char   *table,
+                                   const char *chain)
 {
     UNUSED(gid);
     UNUSED(oid);
@@ -463,7 +463,7 @@ static te_errno iptables_chain_list(unsigned int  gid, const char *oid, char **l
 
     if ((fp = fdopen(out_fd, "r")) == NULL)
     {
-        ERROR("failed to get shell command execution result");
+        ERROR("Failed to get shell command execution result");
         rc = TE_RC(TE_TA_UNIX, TE_EFAULT);
         goto cleanup;
     }
