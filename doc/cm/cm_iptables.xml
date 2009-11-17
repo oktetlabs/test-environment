@@ -10,7 +10,7 @@
         and iptables rules for different interfaces should not interact
         with each other.
 
-        Copyright (C) 2003 Test Environment authors (see file AUTHORS
+        Copyright (C) 2003-2009 Test Environment authors (see file AUTHORS
         in the root directory of the distribution).
 
         Test Environment is free software; you can redistribute it
