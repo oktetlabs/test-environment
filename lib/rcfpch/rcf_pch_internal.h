@@ -120,6 +120,15 @@ write_str_in_quotes(char *dst, const char *src, size_t len)
     *p++ = '\"';
     for (i = 0; (*src != '\0') && (i < len); ++i)
     {
+        /* Encode '\n' also */
+        if (*src == '\n')
+        {
+            *p++ ='\\';
+            *p++ = 'n';
+            *src++;
+            continue;
+        }
+
         if (*src == '\"' || *src == '\\')
         {
             *p++ = '\\';

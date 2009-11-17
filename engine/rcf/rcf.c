@@ -1825,6 +1825,15 @@ write_str(char *s, size_t len)
 
     while (*s != 0 && i < len)
     {
+        if (*s == '\n')
+        {
+            *ptr++ = '\\';
+            *ptr++ = 'n';
+            *s++;
+            i++;
+            continue;
+        }
+
         if (*s == '\"' || *s == '\\')
         {
             *ptr++ = '\\';
