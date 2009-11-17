@@ -44,35 +44,70 @@ extern "C" {
 
 
 /**
- * Add a new iptables rule
+ * Execute an iptables rule for the specific chain
  *
- * @param ta        - Test agent name
- * @param ifname    - Interface name
- * @param table     - Table to add rule to
- * @param rule      - Rule to add
+ * @param ta            - Test agent name
+ * @param ifname        - Interface name
+ * @param table         - Table to operate with (raw, filter, mangle, nat)
+ * @param chain         - Chain name to operate with (without prefix)
+ * @param rule          - Rule to add
  *
- * @return Status of the operation
+ * @return              Status of the operation
  */
-extern int tapi_cfg_iptables_rule_add(const char *ta,
-                                      const char *ifname,
-                                      const char *table,
-                                      const char *rule);
+extern int tapi_cfg_iptables_cmd(const char *ta,
+                                 const char *ifname,
+                                 const char *table,
+                                 const char *chain,
+                                 const char *rule);
 
 /**
- * Delete an iptables rule
+ * Install or delete jumping rule for the per-interface chain
  *
- * @param ta        - Test agent name
- * @param ifname    - Interface name
- * @param table     - Table to delete the rule from
- * @param rule      - Rule to delete
+ * @param ta            - Test agent name
+ * @param ifname        - Interface name
+ * @param table         - Table to operate with (raw, filter, mangle, nat)
+ * @param chain         - Chain name to operate with (without prefix)
+ * @param enabled       - Install or delete jumping rule
  *
- * @return Status of the operation
+ * @return              Status of the operation
  */
-extern int tapi_cfg_iptables_rule_del(const char *ta,
-                                      const char *ifname,
-                                      const char *table,
-                                      const char *rule);
+extern int tapi_cfg_iptables_chain_set(const char *ta,
+                                       const char *ifname,
+                                       const char *table,
+                                       const char *chain,
+                                       te_bool enabled);
 
+/**
+ * Add per-interface chain to the system
+ *
+ * @param ta            - Test agent name
+ * @param ifname        - Interface name
+ * @param table         - Table to operate with (raw, filter, mangle, nat)
+ * @param chain         - Chain name to operate with (without prefix)
+ * @param enabled       - Install or not jumping rule into the built-in chain
+ *
+ * @return              Status of the operation
+ */
+extern int tapi_cfg_iptables_chain_add(const char *ta,
+                                       const char *ifname,
+                                       const char *table,
+                                       const char *chain,
+                                       te_bool enabled);
+
+/**
+ * Delete per-interface chain from the system
+ *
+ * @param ta            - Test agent name
+ * @param ifname        - Interface name
+ * @param table         - Table to operate with (raw, filter, mangle, nat)
+ * @param chain         - Chain name to operate with (without prefix)
+ *
+ * @return              Status of the operation
+ */
+extern int tapi_cfg_iptables_chain_del(const char *ta,
+                                       const char *ifname,
+                                       const char *table,
+                                       const char *chain);
 
 #ifdef __cplusplus
 } /* extern "C" */

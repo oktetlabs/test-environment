@@ -48,7 +48,6 @@
 
 #if __linux__
 
-#define IPTABLES_CHAIN_NAME_SIZE 128
 #define IPTABLES_CMD_BUF_SIZE    1024
 
 /*
@@ -58,29 +57,67 @@
 static te_errno iptables_table_list(unsigned int, const char *, char **,
                                     const char *);
 
-static te_errno iptables_rule_add(unsigned int, const char *, const char *,
-                                  const char *, const char *, const char *,
-                                  const char *);
+static te_errno iptables_chain_get(unsigned int, const char *, char *,
+                                   const char *, const char *, const char *,
+                                   const char *);
 
-static te_errno iptables_rule_del(unsigned int, const char *, const char *,
-                                  const char *, const char *, const char *);
+static te_errno iptables_chain_set(unsigned int, const char *, const char *,
+                                   const char *, const char *, const char *,
+                                   const char *);
 
-static te_errno iptables_rule_list(unsigned int, const char *, char **,
+static te_errno iptables_chain_add(unsigned int, const char *, const char *,
+                                   const char *, const char *, const char *,
+                                   const char *);
+
+static te_errno iptables_chain_del(unsigned int, const char *, const char *,
                                    const char *, const char *, const char *);
+
+static te_errno iptables_chain_list(unsigned int, const char *, char **,
+                                    const char *, const char *, const char *);
+
+static te_errno iptables_rules_get(unsigned int, const char *, char *,
+                                   const char *, const char *, const char *,
+                                   const char *);
+
+static te_errno iptables_rules_set(unsigned int, const char *, const char *,
+                                   const char *, const char *, const char *,
+                                   const char *);
+
+static te_errno iptables_cmd_get(unsigned int, const char *, char *,
+                                 const char *, const char *, const char *,
+                                 const char *);
+
+static te_errno iptables_cmd_set(unsigned int, const char *, const char *,
+                                 const char *, const char *, const char *,
+                                 const char *);
+
+
 
 /*
  * Nodes
  */
 
-RCF_PCH_CFG_NODE_COLLECTION(node_iptables_rule, "rule",
-                            NULL, NULL,
-                            iptables_rule_add,
-                            iptables_rule_del,
-                            iptables_rule_list,
-                            NULL);
+RCF_PCH_CFG_NODE_RW(node_iptables_rules, "rules",
+                    NULL, NULL,
+                    iptables_rules_get,
+                    iptables_rules_set);
+
+RCF_PCH_CFG_NODE_RW(node_iptables_cmd, "cmd",
+                    NULL, &node_iptables_rules,
+                    iptables_cmd_get,
+                    iptables_cmd_set);
+
+static rcf_pch_cfg_object node_iptables_chain = 
+{ "chain", 0, &node_iptables_cmd, NULL,
+      (rcf_ch_cfg_get)iptables_chain_get,
+      (rcf_ch_cfg_set)iptables_chain_set,
+      (rcf_ch_cfg_add)iptables_chain_add,
+      (rcf_ch_cfg_del)iptables_chain_del,
+      (rcf_ch_cfg_list)iptables_chain_list,
+      NULL, NULL};
 
 RCF_PCH_CFG_NODE_COLLECTION(node_iptables_table, "table",
-                            &node_iptables_rule, NULL,
+                            &node_iptables_chain, NULL,
                             NULL, NULL,
                             iptables_table_list, NULL);
 
@@ -88,7 +125,17 @@ RCF_PCH_CFG_NODE_NA(node_iptables, "iptables",
                     &node_iptables_table, NULL);
 
 
-te_errno
+/**
+ * Obtain list of built-in iptables tables.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param list          location for the list pointer
+ * @param ifname        interface name (unused)
+ *
+ * @return              Status code
+ */
+static te_errno
 iptables_table_list(unsigned int  gid, const char *oid, char **list,
                     const char *ifname)
 {
@@ -109,116 +156,200 @@ iptables_table_list(unsigned int  gid, const char *oid, char **list,
     return 0;
 }
 
-/* Create $ifname_$chain chain and jump there */
-te_errno
-iptables_perif_chain_flush(const char *ifname, const char *table,
-                           const char *chain)
+
+/**
+ * Check if per-interface chain jumping rule is installed.
+ *
+ * @param ifname        interface name to check chain linked to
+ * @param table         table name to check chains in
+ * @param chain         chain name to check status of
+ *
+ * @return              Check status (boolean value)
+ */
+static te_bool
+iptables_perif_chain_is_enabled(const char *ifname, const char *table,
+                                const char *chain)
 {
-    te_errno rc;
+    int   rc = 0;
+    FILE *fp;
+    int   out_fd;
+    char  buf[IPTABLES_CMD_BUF_SIZE];
+    te_bool enabled = FALSE;
 
-    char chain_name[IPTABLES_CHAIN_NAME_SIZE];
-    char cmd_buf[IPTABLES_CMD_BUF_SIZE];
+    INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
-    INFO("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
-
-    snprintf(chain_name, IPTABLES_CHAIN_NAME_SIZE, "%s_%s",
-             ifname, chain);
-
-    /* Create new chain first */
-    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE, "iptables -t %s -F %s",
-             table, chain_name);
-    if ((rc = ta_system(cmd_buf)) != 0)
+    if ((ifname == NULL) || !ta_interface_is_mine(ifname))
     {
-        return rc;
+        return FALSE;
     }
 
-    return 0;
+    snprintf(buf, IPTABLES_CMD_BUF_SIZE,
+             "iptables -t %s -S %s | grep '^-A %s -%c %s -j %s_%s'",
+             table, chain,  chain,
+             ((strcmp(chain, "POSTROUTING") == 0) ||
+              (strcmp(chain, "OUTPUT")      == 0)) ? 'o' : 'i',
+             ifname, ifname, chain);
+    if ((rc = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
+    {
+        ERROR("failed to execute command line while getting: %s: "
+              "rc=%d (%s)", buf, rc, strerror(errno));
+        return FALSE;
+    }
+    rc = 0;
+
+    if ((fp = fdopen(out_fd, "r")) == NULL)
+    {
+        ERROR("failed to get shell command execution result");
+        goto cleanup;
+    }
+
+    enabled = (fgets(buf, sizeof(buf), fp) != NULL);
+
+cleanup:
+    fclose(fp);
+    close(out_fd);
+
+    return enabled;
 }
 
-
-/* Create $ifname_$chain chain and jump there */
-te_errno
-iptables_perif_chain_create(const char *ifname, const char *table,
-                            const char *chain)
+/**
+ * Change status of (install/remove) per-interface chain jumping rule.
+ *
+ * @param ifname        interface name to operate the chain linked to
+ * @param table         table name to operate chains in
+ * @param chain         chain name to work with
+ * @param enabled       state of chain jumping rule (if TRUE, jumping rule
+ *                      should be installed)
+ *
+ * @return              Status code
+ */
+static te_errno
+iptables_perif_chain_set(const char *ifname,
+                         const char *table,
+                         const char *chain,
+                         te_bool enabled)
 {
-    te_errno rc;
-
-    char chain_name[IPTABLES_CHAIN_NAME_SIZE];
+    int rc;
     char cmd_buf[IPTABLES_CMD_BUF_SIZE];
 
-    INFO("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
-
-    snprintf(chain_name, IPTABLES_CHAIN_NAME_SIZE, "%s_%s",
-             ifname, chain);
-
-    /* Create new chain first */
-    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE, "iptables -t %s -N %s",
-             table, chain_name);
-    if ((rc = ta_system(cmd_buf)) != 0)
-    {
-        return rc;
-    }
+    INFO("%s(%s, %s, %s, %s) started", __FUNCTION__,
+         ifname, table, chain, enabled ? "ON" : "OFF");
 
     /* Add rule to jump to new chain */
     snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             "iptables -t %s -I %s -%c %s -j %s",
-             table, chain,
+             "iptables -t %s -%c %s -%c %s -j %s_%s",
+             table, (enabled) ? 'I' : 'D', chain,
              ((strcmp(chain, "POSTROUTING") == 0) ||
               (strcmp(chain, "OUTPUT")      == 0)) ? 'o' : 'i',
-             ifname, chain_name);
+             ifname, ifname, chain);
+
     if ((rc = ta_system(cmd_buf)) != 0)
     {
-        ERROR("Failed to execute command: %s", cmd_buf);
+        ERROR("Command '%s' returned %d", cmd_buf, rc);
+    }
+
+    return rc;
+}
+
+/**
+ * Add per-interface chain and install jumping rule if required 
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         boolean value, if we should install jumping rule
+ * @param ifname        interface name to operate the chain linked to
+ * @param dummy         unused value, corresponding to .../iptables: node
+ * @param table         table name to operate chains in
+ * @param chain         chain name to add (without ifname prefix)
+ *
+ * @return              Status code
+ */
+static te_errno iptables_chain_add(unsigned int  gid, const char *oid,
+                                   const char   *value, const char *ifname,
+                                   const char   *dummy, const char   *table,
+                                   const char   *chain)
+{
+    te_errno rc;
+
+    char cmd_buf[IPTABLES_CMD_BUF_SIZE];
+
+    int enable = atoi(value);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(dummy);
+
+    INFO("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
+
+    /* Create new chain first */
+    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE, "iptables -t %s -N %s_%s",
+             table, ifname, chain);
+    if ((rc = ta_system(cmd_buf)) != 0)
+    {
+        ERROR("Failed to add the chain %s_%s, rc=%d", ifname, chain, rc);
         return rc;
+    }
+
+    if (enable)
+    {
+        if ((rc = iptables_perif_chain_set(ifname, table,
+                                           chain, TRUE)) != 0)
+        {
+            ERROR("Failed to add jumping rule for chain %s_%s",
+                  ifname, chain);
+            return rc;
+        }
     }
 
     return 0;
 }
 
-
-/* Create $ifname_$chain chain and jump there */
-te_errno
-iptables_perif_chain_destroy(const char *ifname, const char *table,
-                             const char *chain)
+/**
+ * Delete per-interface chain and remove jumping rule
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         boolean value, if we should install jumping rule
+ * @param ifname        interface name to operate the chain linked to
+ * @param dummy         unused value, corresponding to .../iptables: node
+ * @param table         table name to operate chains in
+ * @param chain         chain name to delete (without ifname prefix)
+ *
+ * @return              Status code
+ */
+static te_errno iptables_chain_del(unsigned int  gid, const char *oid,
+                                   const char   *ifname, const char *dummy,
+                                   const char   *table, const char *chain)
 {
     te_errno rc;
 
-    char chain_name[IPTABLES_CHAIN_NAME_SIZE];
     char cmd_buf[IPTABLES_CMD_BUF_SIZE];
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(dummy);
 
     INFO("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
 
-    snprintf(chain_name, IPTABLES_CHAIN_NAME_SIZE, "%s_%s",
-             ifname, chain);
-
     /* Delete jump rule */
-    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             "iptables -t %s -D %s -%c %s -j %s",
-             table, chain,
-             ((strcmp(chain, "POSTROUTING") == 0) ||
-              (strcmp(chain, "OUTPUT")      == 0)) ? 'o' : 'i',
-             ifname, chain_name);
-    if ((rc = ta_system(cmd_buf)) != 0)
-    {
-        ERROR("Failed to execute command: %s", cmd_buf);
-        return rc;
-    }
+    if (iptables_perif_chain_is_enabled(ifname, table, chain))
+        iptables_perif_chain_set(ifname, table, chain, FALSE);
 
     /* Flush chain */
-    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE, "iptables -t %s -F %s",
-             table, chain_name);
+    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE, "iptables -t %s -F %s_%s",
+             table, ifname, chain);
     if ((rc = ta_system(cmd_buf)) != 0)
     {
-        ERROR("Failed to execute command: %s", cmd_buf);
+        ERROR("Failed to flush the chain %s_%s, rc=%d", ifname, chain, rc);
         return rc;
     }
 
     /* Delete chain */
-    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE, "iptables -t %s -X %s",
-             table, chain_name);
+    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE, "iptables -t %s -X %s_%s",
+             table, ifname, chain);
     if ((rc = ta_system(cmd_buf)) != 0)
     {
-        ERROR("Failed to execute command: %s", cmd_buf);
+        ERROR("Failed to delete the chain %s_%s, rc=%d", ifname, chain, rc);
         return rc;
     }
 
@@ -226,163 +357,85 @@ iptables_perif_chain_destroy(const char *ifname, const char *table,
 }
 
 
-te_errno
-iptables_interface_init(const char *ifname)
+/**
+ * Install/remove per-interface chain jumping rule
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         boolean value, if the jumping rule should be
+ *                      installed (1) or removed (0)
+ * @param ifname        interface name to operate the chain linked to
+ * @param dummy         unused value, corresponding to .../iptables: node
+ * @param table         table name to operate chains in
+ * @param chain         chain name (without ifname prefix)
+ *
+ * @return              Status code
+ */
+static te_errno iptables_chain_set(unsigned int  gid, const char *oid,
+                                   const char   *value, const char *ifname,
+                                   const char   *dummy, const char   *table,
+                                   const char   *chain)
 {
-    int rc = 0;
+    int enable = atoi(value);
 
-    RING("%s(%s) started", __FUNCTION__, ifname);
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(dummy);
 
-    /* filter table chains: INPUT, FORWARD, OUTPUT */
-    if ((rc = iptables_perif_chain_create(ifname, "filter", "INPUT")) != 0)
-    {
-        return rc;
-    }
+    return iptables_perif_chain_set(ifname, table, chain, enable);
+}
 
-    if ((rc = iptables_perif_chain_create(ifname, "filter", "FORWARD")) != 0)
-    {
-        return rc;
-    }
+/**
+ * Get the status of per-interface chain jumping rule (installed or not)
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         location to returned status of jumping rule
+ * @param ifname        interface name to operate the chain linked to
+ * @param dummy         unused value, corresponding to .../iptables: node
+ * @param table         table name to operate chains in
+ * @param chain         chain name to check (without ifname prefix)
+ *
+ * @return              Status code
+ */
+static te_errno iptables_chain_get(unsigned int  gid, const char *oid,
+                                   char   *value, const char *ifname,
+                                   const char   *dummy, const char   *table,
+                                   const char   *chain)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(dummy);
 
-    if ((rc = iptables_perif_chain_create(ifname, "filter", "OUTPUT")) != 0)
-    {
-        return rc;
-    }
-
-    /* mangle table chains: PREROUTING, INPUT, FORWARD, OUTPUT, POSTROUTING */
-    if ((rc = iptables_perif_chain_create(ifname, "mangle", "PREROUTING")) != 0)
-    {
-        return rc;
-    }
-
-    if ((rc = iptables_perif_chain_create(ifname, "mangle", "INPUT")) != 0)
-    {
-        return rc;
-    }
-
-    if ((rc = iptables_perif_chain_create(ifname, "mangle", "FORWARD")) != 0)
-    {
-        return rc;
-    }
-
-    if ((rc = iptables_perif_chain_create(ifname, "mangle", "OUTPUT")) != 0)
-    {
-        return rc;
-    }
-
-    if ((rc = iptables_perif_chain_create(ifname, "mangle", "POSTROUTING")) != 0)
-    {
-        return rc;
-    }
-
-    /* nat table chains: PREROUTING, POSTROUTING, OUTPUT */
-    if ((rc = iptables_perif_chain_create(ifname, "nat", "PREROUTING")) != 0)
-    {
-        return rc;
-    }
-
-    if ((rc = iptables_perif_chain_create(ifname, "nat", "POSTROUTING")) != 0)
-    {
-        return rc;
-    }
-
-    if ((rc = iptables_perif_chain_create(ifname, "nat", "OUTPUT")) != 0)
-    {
-        return rc;
-    }
-
-    /* raw table chains: PREROUTING, OUTPUT */
-    if ((rc = iptables_perif_chain_create(ifname, "raw", "PREROUTING")) != 0)
-    {
-        return rc;
-    }
-
-    if ((rc = iptables_perif_chain_create(ifname, "raw", "OUTPUT")) != 0)
-    {
-        return rc;
-    }
+    sprintf(value, (iptables_perif_chain_is_enabled(ifname, table,
+                                                    chain) != 0) ? "1" : "0");
 
     return 0;
 }
 
-void
-iptables_interface_fini(const char *ifname)
+/**
+ * Get the list of per-interface chains.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param list          location of the chains list
+ * @param ifname        interface name to operate the chain linked to
+ * @param dummy         unused value, corresponding to .../iptables: node
+ * @param table         table name to look for chains in
+ *
+ * @return              Status code
+ */
+static te_errno iptables_chain_list(unsigned int  gid, const char *oid, char **list,
+                                    const char   *ifname, const char *dummy,
+                                    const char   *table)
 {
-    RING("%s(%s) started", __FUNCTION__, ifname);
-
-    /* filter table chains: INPUT, FORWARD, OUTPUT */
-    iptables_perif_chain_destroy(ifname, "filter", "INPUT");
-    iptables_perif_chain_destroy(ifname, "filter", "FORWARD");
-    iptables_perif_chain_destroy(ifname, "filter", "OUTPUT");
-
-    /* mangle table chains: PREROUTING, INPUT, FORWARD, OUTPUT, POSTROUTING */
-    iptables_perif_chain_destroy(ifname, "mangle", "PREROUTING");
-    iptables_perif_chain_destroy(ifname, "mangle", "INPUT");
-    iptables_perif_chain_destroy(ifname, "mangle", "FORWARD");
-    iptables_perif_chain_destroy(ifname, "mangle", "OUTPUT");
-    iptables_perif_chain_destroy(ifname, "mangle", "POSTROUTING");
-
-    /* nat table chains: PREROUTING, POSTROUTING, OUTPUT */
-    iptables_perif_chain_destroy(ifname, "nat", "PREROUTING");
-    iptables_perif_chain_destroy(ifname, "nat", "POSTROUTING");
-    iptables_perif_chain_destroy(ifname, "nat", "OUTPUT");
-
-    /* raw table chains: PREROUTING, OUTPUT */
-    iptables_perif_chain_destroy(ifname, "raw", "PREROUTING");
-    iptables_perif_chain_destroy(ifname, "raw", "OUTPUT");
-}
-
-
-static char *
-iptables_rule_to_id(const char *rule)
-{
-    char *id = strdup(rule);
-    char *p  = id;
-
-    for ( ; *p != '\0' ; p++)
-    {
-        if (*p == ' ')
-            *p = '#';
-        else if (*p == ':')
-            *p = ';';
-        else if (*p == '/')
-            *p = '|';
-    }
-
-    return id;
-}
-
-static char *
-iptables_id_to_rule(const char *id)
-{
-    char *rule = strdup(id);
-    char *p  = rule;
-
-    for ( ; *p != '\0' ; p++)
-    {
-        if (*p == '#')
-            *p = ' ';
-        else if (*p == ';')
-            *p = ':';
-        else if (*p == '|')
-            *p = '/';
-    }
-
-    return rule;
-}
-
-static te_errno iptables_rule_list(unsigned int  gid, const char *oid, char **list,
-                                   const char   *ifname, const char *dummy,
-                                   const char   *table)
-{
-    int   rc        = 0;
-    FILE *fp;
-    int   out_fd;
-    char  buf[IPTABLES_CMD_BUF_SIZE];
-    int   list_size = 0;
-    int   list_len  = 0;
-    char *rule_id;
-    char *p = NULL;
+    int       rc        = 0;
+    FILE     *fp;
+    int       out_fd;
+    char      buf[IPTABLES_CMD_BUF_SIZE];
+    uint32_t  list_size = 0;
+    uint32_t  list_len  = 0;
+    char     *p         = NULL;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -398,7 +451,7 @@ static te_errno iptables_rule_list(unsigned int  gid, const char *oid, char **li
     }
 
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             "iptables-save -t %s | grep '^-A %s_' | sed -e 's/^-A %s_//g'",
+             "iptables -t %s -S | grep '^-N %s_' | sed -e 's/^-N %s_//g'",
              table, ifname, ifname);
     if ((rc = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
     {
@@ -433,13 +486,7 @@ static te_errno iptables_rule_list(unsigned int  gid, const char *oid, char **li
         if (*(--p) == ' ')
             *p = '\0';
 
-        INFO("Rule(ifname:%s, table:%s):%s", ifname, table, buf);
-        if ((rule_id = iptables_rule_to_id(buf))== NULL)
-        {
-            rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            goto cleanup;
-        }
-        if (list_len + strlen(rule_id) + 1 >= list_size)
+        if (list_len + strlen(buf) + 1 >= list_size)
         {
             list_size *= 2;
             if ((*list = realloc(*list, list_size)) == NULL)
@@ -448,7 +495,94 @@ static te_errno iptables_rule_list(unsigned int  gid, const char *oid, char **li
                 goto cleanup;
             }
         }
-        list_len += sprintf(*list + list_len, " %s", rule_id);
+
+        list_len += sprintf(*list + list_len, "%s ", buf);
+
+        INFO("Found chain %s", buf);
+    }
+
+    if (strlen(*list) > 0)
+        INFO("Chains list for %s table on %s: %s", table, ifname, *list);
+
+cleanup:
+    fclose(fp);
+    close(out_fd);
+
+    return rc;
+}
+
+
+/**
+ * Get the list of rules in the per-interface chain as a single value.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         location for the rules list
+ * @param ifname        interface name to operate the chain linked to
+ * @param dummy         unused value, corresponding to .../iptables: node
+ * @param table         table name to operate with chains in
+ * @param chain         chain name to get the list of rules in
+ *
+ * @return              Status code
+ */
+static te_errno iptables_rules_get(unsigned int  gid, const char *oid,
+                                   char         *value, const char *ifname,
+                                   const char   *dummy, const char *table,
+                                   const char   *chain)
+{
+    int   rc        = 0;
+    FILE *fp;
+    int   out_fd;
+    char  buf[IPTABLES_CMD_BUF_SIZE] = {0, };
+    char *p = NULL;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(dummy);
+
+    INFO("%s(ifname=%s, table=%s, chain=%s) started",
+         __FUNCTION__, ifname, table, chain);
+
+    if ((ifname == NULL) || !ta_interface_is_mine(ifname))
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    *value = '\0';
+
+    snprintf(buf, IPTABLES_CMD_BUF_SIZE,
+             "iptables -t %s -S %s_%s | "
+             "grep '^-A %s_%s ' | "
+             "sed -e 's/^-A %s_%s //g'",
+             table, ifname, chain, ifname, chain, ifname, chain);
+    if ((rc = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
+    {
+        ERROR("failed to execute command line while getting: %s: "
+              "rc=%d (%s)", buf, rc, strerror(errno));
+        return rc;
+    }
+    rc = 0;
+
+    if ((fp = fdopen(out_fd, "r")) == NULL)
+    {
+        ERROR("failed to get shell command execution result");
+        rc = TE_RC(TE_TA_UNIX, TE_EFAULT);
+        goto cleanup;
+    }
+
+    while (fgets(buf, sizeof(buf), fp) != NULL)
+    {
+        /* Remove trailing newline */
+        p = buf + strlen(buf);
+        if (*(--p) == '\n')
+            *p = '\0';
+        while (*(--p) == ' ')
+            *p = '\0';
+
+        INFO("Rule(ifname:%s, table:%s, chain:%s): %s",
+             ifname, table, chain, buf);
+
+        value += sprintf(value, "%s|", buf);
     }
 
 cleanup:
@@ -460,98 +594,215 @@ cleanup:
 
 
 /**
- * Add iptables rule.
+ * Flush and setup the list of rules for the per-interface chain.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier
- * @param value         value string
- * @param ifname        device  name, over it VLAN should be added
- * @param table         device  name, over it VLAN should be added
- * @param rule_id       iptables rule id
+ * @param oid           full identifier of the father instance
+ * @param value         rules list without chain name and delimited by '|'
+ * @param ifname        interface name to operate the chain linked to
+ * @param dummy         unused value, corresponding to .../iptables: node
+ * @param table         table name to operate with chain in
+ * @param chain         chain name to update the list of rules in
  *
  * @return              Status code
  */
-static te_errno
-iptables_rule_add(unsigned int  gid, const char *oid, const char *value,
-                  const char *ifname, const char *dummy, const char *table,
-                  const char *rule_id)
+static te_errno iptables_rules_set(unsigned int  gid, const char *oid,
+                                   const char   *value, const char *ifname,
+                                   const char   *dummy, const char *table,
+                                   const char   *chain)
 {
-    char     *rule = NULL;
-    char      cmd_buf[IPTABLES_CMD_BUF_SIZE];
+    int   rc = 0;
+    FILE *fp;
+    int   in_fd;
+    char  buf[IPTABLES_CMD_BUF_SIZE];
+    char *p = NULL;
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
     UNUSED(dummy);
 
-    INFO("%s started", __FUNCTION__);
+    INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
     if ((ifname == NULL) || !ta_interface_is_mine(ifname))
     {
         return TE_RC(TE_TA_UNIX, TE_ENODEV);
     }
 
-    rule = iptables_id_to_rule(rule_id);
-    snprintf(cmd_buf, sizeof(cmd_buf), "iptables -t %s -A %s_%s",
-             table, ifname, rule);
-    free(rule);
+    /* Flush the chain */
+    snprintf(buf, IPTABLES_CMD_BUF_SIZE,
+             "iptables -t %s -F %s_%s", table, ifname, chain);
+    ta_system(buf);
 
-    if (ta_system(cmd_buf) != 0)
+    /* Open iptables-restore session, do not flush all chains */
+    snprintf(buf, IPTABLES_CMD_BUF_SIZE,
+             "iptables-restore -n");
+    if ((rc = te_shell_cmd(buf, -1, &in_fd, NULL, NULL)) < 0)
     {
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        ERROR("failed to execute command line while getting: %s: "
+              "rc=%d (%s)", buf, rc, strerror(errno));
+        return rc;
+    }
+    rc = 0;
+
+    if ((fp = fdopen(in_fd, "r")) == NULL)
+    {
+        ERROR("failed to get shell command execution result");
+        rc = TE_RC(TE_TA_UNIX, TE_EFAULT);
+        goto cleanup;
     }
 
-    return 0;
+    /* Fill the table */
+    fprintf(fp, "*%s\n", table);
+    do
+    {
+        int len;
+
+        p = strchr(value, '|');
+
+        len = (p != NULL) ? (p - value) : (int)strlen(value);
+        /* prepare format string */
+        sprintf(buf, "-A %%s_%%s %%.%ds\n", len);
+        fprintf(fp, buf, ifname, chain, value);
+
+        if (p != NULL)
+            value = p + 1;
+    } while (p != NULL);
+
+    /* Commit changes */
+    fprintf(fp, "COMMIT\n\n");
+
+cleanup:
+    fclose(fp);
+    close(in_fd);
+
+    return rc;
+}
+
+
+
+/**
+ * Add/Delete/Insert iptables rule into the specific per-interface chain.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         iptables command to execute, chain name in the
+ *                      command should be omitted to avoid ambiguity
+ * @param ifname        interface name to operate the chain linked to
+ * @param dummy         unused value, corresponding to .../iptables: node
+ * @param table         table name to operate with chain in
+ * @param chain         chain name to operate with
+ *
+ * @return              Status code
+ */
+static te_errno iptables_cmd_set(unsigned int  gid, const char *oid,
+                                 const char   *value, const char *ifname,
+                                 const char   *dummy, const char *table,
+                                 const char   *chain)
+{
+    int rc = 0;
+    char buf[IPTABLES_CMD_BUF_SIZE] = {0, };
+    char *val_p = (char *)value;
+    char *cmd_p = (char *)buf;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(dummy);
+
+    INFO("%s(ifname=%s, table=%s, chain=%s): %s", __FUNCTION__,
+         ifname, table, chain, value);
+
+    if ((ifname == NULL) || !ta_interface_is_mine(ifname))
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    cmd_p += sprintf(cmd_p, "iptables -t %s ", table);
+
+#define SKIP_SPACES(_p)                                 \
+    while ((*(_p) == ' ') || (*(_p) == '\t')) (_p)++;
+
+    SKIP_SPACES(val_p);
+    if (*val_p != '-')
+    {
+        ERROR("Invalid rule format");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    val_p++;
+    switch (*(val_p++))
+    {
+        case 'A':
+            cmd_p += sprintf(cmd_p, "-A ");
+            break;
+
+        case 'D':
+            cmd_p += sprintf(cmd_p, "-D ");
+            break;
+
+        case 'I':
+            cmd_p += sprintf(cmd_p, "-I ");
+            SKIP_SPACES(val_p);
+            while ((*val_p >= '0') && (*val_p <= '9'))
+                *(cmd_p++)  = *(val_p++);
+            cmd_p += sprintf(cmd_p, " ");
+            break;
+
+        default:
+            ERROR("Unknown iptables rule action");
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    SKIP_SPACES(val_p);
+    cmd_p += sprintf(cmd_p, " %s_%s %s", ifname, chain, val_p);
+#undef SKIP_SPACES
+
+    INFO("Fake cmd: '%s'", buf);
+    if ((rc = ta_system(buf)) != 0)
+    {
+        ERROR("Command '%s' returned %d", buf, rc);
+    }
+
+    return rc;
 }
 
 /**
- * Delete iptables rule.
+ * Dummy get method for volatile write-only object.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier
- * @param value         value string
- * @param ifname        device  name, over it VLAN should be added
- * @param table         device  name, over it VLAN should be added
- * @param rule_id       iptables rule id
+ * @param oid           full identifier of the father instance
+ * @param value         location to the returned empty value
+ * @param ifname        interface name to operate the chain linked to
+ * @param dummy         unused value, corresponding to .../iptables: node
+ * @param table         table name to operate with chain in
+ * @param chain         chain name to operate with
  *
  * @return              Status code
  */
-static te_errno
-iptables_rule_del(unsigned int  gid, const char *oid,
-                  const char *ifname, const char *dummy,
-                  const char *table, const char *rule_id)
+static te_errno iptables_cmd_get(unsigned int  gid, const char *oid,
+                                 char   *value, const char *ifname,
+                                 const char   *dummy, const char *table,
+                                 const char   *chain)
 {
-    char     *rule = NULL;
-    char      cmd_buf[IPTABLES_CMD_BUF_SIZE];
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dummy);
 
-    INFO("%s started", __FUNCTION__);
+    INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
     if ((ifname == NULL) || !ta_interface_is_mine(ifname))
     {
         return TE_RC(TE_TA_UNIX, TE_ENODEV);
     }
 
-    rule = iptables_id_to_rule(rule_id);
-    snprintf(cmd_buf, sizeof(cmd_buf), "iptables -t %s -D %s_%s",
-             table, ifname, rule);
-    free(rule);
-
-    if (ta_system(cmd_buf) != 0)
-    {
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
+    *value = '\0';
 
     return 0;
 }
-
-
 
 /**
  * Initialize iptables subtree
+ *
+ * @return              Status code
  */
 extern te_errno
 ta_unix_conf_iptables_init(void)
@@ -560,11 +811,17 @@ ta_unix_conf_iptables_init(void)
 }
 
 #else
+/**
+ * Dummy initialization of iptables subtree if not __linux__
+ *
+ * @return              Status code
+ */
 extern te_errno
 ta_unix_conf_iptables_init(void)
 {
-    ERROR("Dummy %s started", __FUNCTION__);
+    WARN("iptables functionality is not supported", __FUNCTION__);
     return 0;
 }
-#endif
+#endif  /* __linux__ */
+
 

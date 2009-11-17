@@ -52,7 +52,8 @@ Configuration Tree Model:
     /agent/interface/iptables/table/chain/rules
 
     It has only one instance with empty name. There are no named lists of rules.
-    All rules are listed with '\n' delimiter.
+    All rules are listed with '|' delimiter ('\n' delimiter usage is restricted
+    by RCF encoding rules).
 
     - Get operation returns list of rules generated
       by 'iptables -t <table> -S <chain>' command.
@@ -67,3 +68,5 @@ Configuration Tree Model:
 
      This node allows to execute iptables command by setting its value.
      It updates rules list, so sync is required for rules node.
+
+     Chain name in the iptables command should be omitted to avoid ambiguity.
