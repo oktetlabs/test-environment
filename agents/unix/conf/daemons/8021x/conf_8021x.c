@@ -306,8 +306,12 @@ wpa_supp_get(const char *ifname)
              PS_ALL_COMM " | grep wpa_supplicant | grep -v grep | "
              "grep -q %s",
              ifname);
+
     if (ta_system(buf) == 0)
+    {
+        WARN("WPA supplicant on interface %s is running.", ifname);
         return TRUE;
+    }
 
     return FALSE;
 }
@@ -324,15 +328,25 @@ wpa_supp_start(const char *ifname, const char *conf_fname)
              __FUNCTION__, ifname);
         return 0;
     }
-    RING("Starting wpa_supplicant on %s", ifname);
+
+    WARN("Starting wpa_supplicant on %s", ifname);
+
+#if 0
     snprintf(buf, sizeof(buf),
              "wpa_supplicant -i %s -c %s -D "
              "wext -B >/dev/null 2>&1", ifname, conf_fname);
+#else
+    snprintf(buf, sizeof(buf),
+             "wpa_supplicant -i %s -c %s -D "
+             "wext -B", ifname, conf_fname);
+#endif
+
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
         return TE_ESHCMD;
     }
+
     if (!wpa_supp_get(ifname))
     {
         ERROR("Failed to start wpa_supplicant on %s", ifname);
@@ -351,21 +365,21 @@ wpa_supp_stop(const char *ifname)
         WARN("%s: wpa_supplicant on %s is not running", __FUNCTION__, ifname);
         return 0;
     }
-    RING("Stopping wpa_supplicant on %s", ifname);
-    if (wpa_supp_get(ifname))
-    {
-        snprintf(buf, sizeof(buf), "wpa_cli -i %s disconnect", ifname);
-        if (ta_system(buf) != 0)
-            WARN("Command '%s' failed", buf);
 
-        snprintf(buf, sizeof(buf), "wpa_cli -i %s terminate", ifname);
-        if (ta_system(buf) != 0)
-            WARN("Command '%s' failed", buf);
+    WARN("Stopping wpa_supplicant on %s", ifname);
 
-        snprintf(buf, sizeof(buf), "/sbin/ifconfig %s up", ifname);
-        if (ta_system(buf) != 0)
-            WARN("Command '%s' failed", buf);
-    }
+    snprintf(buf, sizeof(buf), "wpa_cli -i %s disconnect", ifname);
+    if (ta_system(buf) != 0)
+        WARN("Command '%s' failed", buf);
+
+    snprintf(buf, sizeof(buf), "wpa_cli -i %s terminate", ifname);
+    if (ta_system(buf) != 0)
+        WARN("Command '%s' failed", buf);
+
+    snprintf(buf, sizeof(buf), "/sbin/ifconfig %s up", ifname);
+    if (ta_system(buf) != 0)
+        WARN("Command '%s' failed", buf);
+
     return 0;
 }
 
