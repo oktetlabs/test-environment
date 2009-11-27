@@ -500,7 +500,8 @@ iptables_chain_list(unsigned int  gid, const char *oid, char **list,
     }
 
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             "iptables -t %s -S | grep '^-N %s_' | sed -e 's/^-N %s_//g'",
+             "iptables -t %s -S | grep '^-N .*_%s' | "
+             "sed -e 's/^-N //g' | sed -e 's/_%s$//g'",
              table, ifname, ifname);
     if ((pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
     {
