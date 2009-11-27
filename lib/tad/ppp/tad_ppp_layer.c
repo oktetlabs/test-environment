@@ -44,8 +44,6 @@
 #include <netinet/in.h>
 #endif
 
-#include <linux/ppp.h>
-
 #include "te_defs.h"
 #include "te_alloc.h"
 #include "te_stdint.h"
@@ -53,7 +51,6 @@
 #include "logger_ta_fast.h"
 #include "tad_bps.h"
 #include "tad_ppp_impl.h"
-
 
 /**
  * PPP layer specific data
@@ -76,7 +73,7 @@ typedef struct tad_ppp_proto_pdu_data {
  */
 static const tad_bps_pkt_frag tad_ppp_bps_hdr[] =
 {
-    { "protocol", 16, BPS_FLD_NO_DEF(NDN_TAG_PPP_PROTOCOL),
+    { "protocol", 16, BPS_FLD_SIMPLE(NDN_TAG_PPP_PROTOCOL),
       TAD_DU_I32, FALSE },
 };
 
@@ -180,7 +177,6 @@ tad_ppp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     te_errno                 rc;
     tad_ppp_proto_data      *proto_data;
     tad_ppp_proto_pdu_data  *tmpl_data;
-    uint8_t                  type;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
@@ -227,8 +223,7 @@ tad_ppp_gen_bin_cb(csap_p csap, unsigned int layer,
 
     te_errno     rc;
     unsigned int bitoff;
-    uint8_t      hdr[TE_TAD_PPP_MAXLEN];
-    uint8_t      type;
+    uint8_t      hdr[TE_TAD_PPP_HDR_LEN];
 
 
     assert(csap != NULL);
@@ -362,8 +357,6 @@ tad_ppp_match_do_cb(csap_p           csap,
     tad_ppp_proto_pdu_data *pkt_data  = meta_pkt->layers[layer].opaque;
     te_errno                 rc;
     unsigned int             bitoff    = 0;
-    unsigned int             len;
-    int                      type;
 
     UNUSED(ptrn_pdu);
 
@@ -390,8 +383,7 @@ tad_ppp_match_do_cb(csap_p           csap,
         return rc;
     }
 
-#if 0
-    /* There should be nothing remaining */
+#if 1
     rc = tad_pkt_get_frag(sdu, pdu, bitoff >> 3,
                           tad_pkt_len(pdu) - (bitoff >> 3),
                           TAD_PKT_GET_FRAG_ERROR);

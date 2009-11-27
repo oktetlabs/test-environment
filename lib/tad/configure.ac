@@ -173,6 +173,14 @@ AC_ARG_WITH([igmp],,
  fi
 ], [w_igmp=false])
 
+AC_ARG_WITH([ppp],, 
+[if test "${withval}" = yes; then
+   proto_specific ppp;
+   AC_CONFIG_FILES([ppp/Makefile])
+ fi
+], [w_ppp=false])
+
+
 AC_ARG_WITH([snmp],, 
 [if test "${withval}" = yes; then
     w_snmp=true

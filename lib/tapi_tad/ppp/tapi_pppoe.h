@@ -26,8 +26,8 @@
  * $Id: $
  */
 
-#ifndef __TE_TAPI_PPP_H__
-#define __TE_TAPI_PPP_H__
+#ifndef __TE_TAPI_PPPOE_H__
+#define __TE_TAPI_PPPOE_H__
 
 
 #if HAVE_SYS_TYPES_H
@@ -36,8 +36,6 @@
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-
-#include <ppp_defs.h>
 
 #include "te_stdint.h"
 #include "te_defs.h"
@@ -57,7 +55,12 @@ extern "C" {
  *
  * @retval Status code.
  */
-extern te_errno tapi_ppp_add_csap_layer(asn_value **csap_spec);
+extern te_errno tapi_pppoe_add_csap_layer(asn_value **csap_spec,
+                                          uint8_t     version,
+                                          uint8_t     type,
+                                          uint8_t     code,
+                                          uint16_t    session_id,
+                                          uint16_t    length);
 
 /**
  * Add PPP PDU as the last PDU to the last unit of the traffic 
@@ -71,13 +74,17 @@ extern te_errno tapi_ppp_add_csap_layer(asn_value **csap_spec);
  *
  * @return              Status code.
  */
-extern te_errno tapi_ppp_add_pdu(asn_value          **tmpl_or_ptrn,
-                                 asn_value          **pdu,
-                                 te_bool              is_pattern,
-                                 uint16_t             protocol);
+extern te_errno tapi_pppoe_add_pdu(asn_value **tmpl_or_ptrn,
+                                   asn_value **pdu,
+                                   te_bool     is_pattern,
+                                   uint8_t     version,
+                                   uint8_t     type,
+                                   uint8_t     code,
+                                   uint16_t    session_id,
+                                   uint16_t    length);
 
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_TAPI_PPP_H__ */
+#endif /* !__TE_TAPI_PPPOE_H__ */

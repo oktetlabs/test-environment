@@ -21,7 +21,7 @@ AC_PROG_INSTALL
 TE_LIB_SET
 
 dnl List of all layers
-layers="arp atm bridge cli dhcp eth ipstack iscsi pcap snmp igmp"
+layers="arp atm bridge cli dhcp eth ipstack iscsi pcap snmp igmp ppp"
 dnl Whether any --with-<layer> option specified
 layers_specified=
 for layer in $layers ; do
@@ -58,6 +58,7 @@ AM_CONDITIONAL(WITH_BRIDGE,  test "$with_bridge" = "yes")
 AM_CONDITIONAL(WITH_CLI,     test "$with_cli" = "yes")
 AM_CONDITIONAL(WITH_DHCP,    test "$with_dhcp" = "yes")
 AM_CONDITIONAL(WITH_ETH,     test "$with_eth" = "yes")
+AM_CONDITIONAL(WITH_PPP,     test "$with_ppp" = "yes")
 AM_CONDITIONAL(WITH_IPSTACK, test "$with_ipstack" = "yes")
 AM_CONDITIONAL(WITH_IGMP,    test "$with_igmp" = "yes")
 AM_CONDITIONAL(WITH_ISCSI,   test "$with_iscsi" = "yes")

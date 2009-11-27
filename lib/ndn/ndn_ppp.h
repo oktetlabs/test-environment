@@ -49,11 +49,18 @@ typedef enum {
     NDN_TAG_PPPOE_PKT,
 } ndn_ppp_tags_t;
 
-extern asn_type *ndn_pppoe_pkt;
-extern asn_type *ndn_pppoe_csap;
+extern const asn_type * const ndn_pppoe_message;
+extern const asn_type * const ndn_pppoe_csap;
 
-extern asn_type *ndn_ppp_pkt;
-extern asn_type *ndn_ppp_csap;
+extern asn_type ndn_pppoe_message_s;
+extern asn_type ndn_pppoe_csap_s;
+
+extern const asn_type * const ndn_ppp_message;
+extern const asn_type * const ndn_ppp_csap;
+
+
+extern asn_type ndn_ppp_message_s;
+extern asn_type ndn_ppp_csap_s;
 
 #ifdef __cplusplus
 } /* extern "C" */

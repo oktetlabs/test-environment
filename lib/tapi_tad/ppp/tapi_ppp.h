@@ -37,8 +37,6 @@
 #include <netinet/in.h>
 #endif
 
-#include <ppp_defs.h>
-
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "tad_common.h"
@@ -57,7 +55,8 @@ extern "C" {
  *
  * @retval Status code.
  */
-extern te_errno tapi_ppp_add_csap_layer(asn_value **csap_spec);
+extern te_errno tapi_ppp_add_csap_layer(asn_value **csap_spec,
+                                        uint16_t    protocol);
 
 /**
  * Add PPP PDU as the last PDU to the last unit of the traffic 

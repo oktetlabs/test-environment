@@ -1368,6 +1368,10 @@ te_proto_from_str(const char *proto_txt)
         case 'p':
             if (strcmp(proto_txt + 1, "cap") == 0)
                 return TE_PROTO_PCAP;
+             if (strcmp(proto_txt + 1, "ppoe") == 0)
+                return TE_PROTO_PPPOE;
+             if (strcmp(proto_txt + 1, "pp") == 0)
+                return TE_PROTO_PPP;
             break;
 
         case 's':
@@ -1454,6 +1458,13 @@ te_proto_to_str(te_tad_protocols_t proto)
 
          case TE_PROTO_SOCKET:
              return "socket";
+         
+         case TE_PROTO_PPP:
+             return "ppp";
+
+         case TE_PROTO_PPPOE:
+             return "pppoe";
+
     }
     return NULL;
 }
@@ -1548,6 +1559,7 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
 
         /* TODO: possibly MSG_TRUNC and other flags are required */
 
+        flags |= MSG_TRUNC;
         r = recvmsg(sock, &msg, flags);
 
         if (r < 0)

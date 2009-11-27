@@ -43,12 +43,19 @@
 
 /* See the description in tapi_ppp.h */
 te_errno
-tapi_ppp_add_csap_layer(asn_value **csap_spec)
+tapi_ppp_add_csap_layer(asn_value **csap_spec,
+                        uint16_t protocol)
 {
     asn_value  *layer = NULL;
 
-    return tapi_tad_csap_add_layer(csap_spec, ndn_ppp_csap,
-                                   "#ppp", &layer);
+    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_ppp_csap,
+                                     "#ppp", &layer));
+    if (protocol != 0)
+        CHECK_RC(asn_write_value_field(layer, &protocol,
+                                       sizeof(protocol),
+                                       "protocol.#plain"));
+
+    return 0;
 }
 
 /* See the description in tapi_ppp.h */

@@ -75,7 +75,10 @@ static csap_spt_type_t pppoe_csap_spt =
 
     .init_cb             = tad_pppoe_init_cb,
     .destroy_cb          = tad_pppoe_destroy_cb,
+#if 0
     .get_param_cb        = tad_pppoe_get_param_cb,
+#endif
+    .get_param_cb        = NULL,
 
     .confirm_tmpl_cb     = tad_pppoe_confirm_tmpl_cb,
     .generate_pkts_cb    = tad_pppoe_gen_bin_cb,
@@ -103,6 +106,8 @@ static csap_spt_type_t pppoe_csap_spt =
 te_errno
 csap_support_ppp_register(void)
 {
+    te_errno rc;
+
     rc = csap_spt_add(&ppp_csap_spt);
     if (rc != 0)
         return rc;

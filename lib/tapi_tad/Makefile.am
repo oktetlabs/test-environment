@@ -108,6 +108,21 @@ else
 EXTRA_DIST += $(IGMP_HDRS) $(IGMP_SRCS)
 endif
 
+# PPP
+PPP_HDRS = \
+            ppp/tapi_ppp.h \
+            ppp/tapi_pppoe.h
+PPP_SRCS = \
+            ppp/tapi_ppp.c \
+            ppp/tapi_pppoe.c
+if WITH_PPP
+AM_CPPFLAGS += -I$(srcdir)/ppp
+EXTRA_HEADERS += $(PPP_HDRS)
+EXTRA_SOURCES += $(PPP_SRCS)
+else
+EXTRA_DIST += $(PPP_HDRS) $(PPP_SRCS)
+endif
+
 # ISCSI
 ISCSI_HDRS = iscsi/tapi_iscsi.h
 ISCSI_SRCS = iscsi/tapi_iscsi.c

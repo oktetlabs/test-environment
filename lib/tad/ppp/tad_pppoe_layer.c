@@ -44,8 +44,6 @@
 #include <netinet/in.h>
 #endif
 
-#include <linux/ppp.h>
-
 #include "te_defs.h"
 #include "te_alloc.h"
 #include "te_stdint.h"
@@ -76,15 +74,16 @@ typedef struct tad_pppoe_proto_pdu_data {
  */
 static const tad_bps_pkt_frag tad_pppoe_bps_hdr[] =
 {
-    { "ver", 4, BPS_FLD_NO_DEF(NDN_TAG_PPPOE_VERSION),
+    { "ver", 4, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_VERSION),
       TAD_DU_I32, FALSE },
-    { "type", 4, BPS_FLD_NO_DEF(NDN_TAG_PPPOE_TYPE),
+    { "type", 4, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_TYPE),
       TAD_DU_I32, FALSE },
-    { "code", 8, BPS_FLD_NO_DEF(NDN_TAG_PPPOE_CODE),
+    { "code", 8, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_CODE),
       TAD_DU_I32, FALSE },
-    { "session-id", 16, BPS_FLD_NO_DEF(NDN_TAG_PPPOE_SESSION_ID),
+    { "session-id", 16, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_SESSION_ID),
       TAD_DU_I32, FALSE },
-    { "length", 16, BPS_FLD_NO_DEF(NDN_TAG_PPPOE_LENGTH),
+    { "length", 16, NDN_TAG_PPPOE_LENGTH, NDN_TAG_PPPOE_LENGTH,
+                    ASN_TAG_INVALID, 0,
       TAD_DU_I32, FALSE },
 };
 
@@ -103,15 +102,15 @@ tad_pppoe_init_cb(csap_p csap, unsigned int layer)
     csap_set_proto_spec_data(csap, layer, proto_data);
 
     layer_nds = csap->layers[layer].nds;
-
-    rc = asn_read_int32(layer_nds, &proto_data->session_id, "session-id");
+#if 0
+    rc = asn_read_int32(layer_nds, &proto_data->hdr.session_id, "session-id");
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "%s() failed to get PPPoE Session ID",
               CSAP_LOG_ARGS(csap), __FUNCTION__);
         return rc;
     }
-
+#endif
     rc = tad_bps_pkt_frag_init(tad_pppoe_bps_hdr,
                                TE_ARRAY_LEN(tad_pppoe_bps_hdr),
                                layer_nds, &proto_data->hdr);
@@ -196,7 +195,6 @@ tad_pppoe_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     te_errno                 rc;
     tad_pppoe_proto_data      *proto_data;
     tad_pppoe_proto_pdu_data  *tmpl_data;
-    uint8_t                  type;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
@@ -243,9 +241,7 @@ tad_pppoe_gen_bin_cb(csap_p csap, unsigned int layer,
 
     te_errno     rc;
     unsigned int bitoff;
-    uint8_t      hdr[TE_TAD_PPPOE_MAXLEN];
-    uint8_t      type;
-
+    uint8_t      hdr[TE_TAD_PPPOE_HDR_LEN];
 
     assert(csap != NULL);
     F_ENTRY("(%d:%u) tmpl_pdu=%p args=%p arg_num=%u sdus=%p pdus=%p",
@@ -378,8 +374,6 @@ tad_pppoe_match_do_cb(csap_p           csap,
     tad_pppoe_proto_pdu_data *pkt_data  = meta_pkt->layers[layer].opaque;
     te_errno                 rc;
     unsigned int             bitoff    = 0;
-    unsigned int             len;
-    int                      type;
 
     UNUSED(ptrn_pdu);
 
@@ -406,8 +400,8 @@ tad_pppoe_match_do_cb(csap_p           csap,
         return rc;
     }
 
-#if 0
-    /* There should be nothing remaining */
+    RING("Bit offset is %u", bitoff);
+#if 1
     rc = tad_pkt_get_frag(sdu, pdu, bitoff >> 3,
                           tad_pkt_len(pdu) - (bitoff >> 3),
                           TAD_PKT_GET_FRAG_ERROR);

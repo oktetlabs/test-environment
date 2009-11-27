@@ -20,6 +20,7 @@ include_HEADERS = \
 	ndn.h \
 	ndn_internal.h \
 	ndn_pcap.h \
+	ndn_ppp.h \
 	ndn_atm.h \
 	ndn_eth.h \
 	ndn_llc.h \
@@ -39,6 +40,7 @@ libndn_la_SOURCES = \
 	ndn_generic.c \
 	ndn_context.c \
 	ndn_pcap.c \
+	ndn_ppp.c \
 	ndn_atm.c \
 	ndn_eth.c \
 	ndn_llc.c \

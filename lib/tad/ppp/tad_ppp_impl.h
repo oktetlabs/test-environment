@@ -45,6 +45,10 @@
 extern "C" {
 #endif
 
+
+#define TE_TAD_PPP_HDR_LEN      2
+#define TE_TAD_PPPOE_HDR_LEN    6
+
 /*
  * PPP CSAP specific data
  */
