@@ -42,6 +42,8 @@
 extern "C" {
 #endif
 
+/* Maximum length of iptables command string */
+#define TAPI_CFG_IPTABLES_CMD_LEN_MAX    512
 
 /**
  * Execute an iptables rule for the specific chain
@@ -54,11 +56,11 @@ extern "C" {
  *
  * @return              Status of the operation
  */
-extern int tapi_cfg_iptables_cmd(const char *ta,
-                                 const char *ifname,
-                                 const char *table,
-                                 const char *chain,
-                                 const char *rule);
+extern te_errno tapi_cfg_iptables_cmd(const char *ta,
+                                      const char *ifname,
+                                      const char *table,
+                                      const char *chain,
+                                      const char *rule);
 
 /**
  * Install or delete jumping rule for the per-interface chain
@@ -67,15 +69,15 @@ extern int tapi_cfg_iptables_cmd(const char *ta,
  * @param ifname        - Interface name
  * @param table         - Table to operate with (raw, filter, mangle, nat)
  * @param chain         - Chain name to operate with (without prefix)
- * @param enabled       - Install or delete jumping rule
+ * @param enable        - Install or delete jumping rule
  *
  * @return              Status of the operation
  */
-extern int tapi_cfg_iptables_chain_set(const char *ta,
-                                       const char *ifname,
-                                       const char *table,
-                                       const char *chain,
-                                       te_bool enabled);
+extern te_errno tapi_cfg_iptables_chain_set(const char *ta,
+                                            const char *ifname,
+                                            const char *table,
+                                            const char *chain,
+                                            te_bool enable);
 
 /**
  * Add per-interface chain to the system
@@ -84,15 +86,15 @@ extern int tapi_cfg_iptables_chain_set(const char *ta,
  * @param ifname        - Interface name
  * @param table         - Table to operate with (raw, filter, mangle, nat)
  * @param chain         - Chain name to operate with (without prefix)
- * @param enabled       - Install or not jumping rule into the built-in chain
+ * @param enable        - Install or not jumping rule to the built-in chain
  *
  * @return              Status of the operation
  */
-extern int tapi_cfg_iptables_chain_add(const char *ta,
-                                       const char *ifname,
-                                       const char *table,
-                                       const char *chain,
-                                       te_bool enabled);
+extern te_errno tapi_cfg_iptables_chain_add(const char *ta,
+                                            const char *ifname,
+                                            const char *table,
+                                            const char *chain,
+                                            te_bool enable);
 
 /**
  * Delete per-interface chain from the system
@@ -104,10 +106,10 @@ extern int tapi_cfg_iptables_chain_add(const char *ta,
  *
  * @return              Status of the operation
  */
-extern int tapi_cfg_iptables_chain_del(const char *ta,
-                                       const char *ifname,
-                                       const char *table,
-                                       const char *chain);
+extern te_errno tapi_cfg_iptables_chain_del(const char *ta,
+                                            const char *ifname,
+                                            const char *table,
+                                            const char *chain);
 
 #ifdef __cplusplus
 } /* extern "C" */
