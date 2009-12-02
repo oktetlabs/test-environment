@@ -80,13 +80,21 @@ find_option(te_pppoe_option *opt, const char *name)
 static int
 ps_pppoeserver_save_conf(char **args)
 {
-    FILE                    *f = fopen(pppoe_server_conf, "w");
+    FILE                    *f = NULL;
     static char              args_buf[2048];
     unsigned int             mask;
     struct in_addr           addr, new_addr;
     char                    *p;
     char                    *token;
 
+    if (pppoe_server_subnet == NULL)
+    {
+        ERROR("Failed to configure pppoe server until "
+              "subnets are not configured");
+        return TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    f = fopen(pppoe_server_conf, "w");
     if (f == NULL)
     {
         ERROR("Failed to open '%s' for writing: %s",
