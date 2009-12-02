@@ -1,0 +1,55 @@
+PPPoE server configuration model in TE.
+
+Configuration model:
+1) pppoe server subtree should be under the interface node
+    /agent/interface/pppoe_server
+
+  This node has only one instance with empty name.
+  It represents the pppoe-server running status for the certain interface.
+  (1 - pppoe-server is running, 0 - stopped).
+
+  pppoe-server can be configured to operate on several vlans other
+  the specific ethernet interface.
+
+  - Get value for this node greps ps utility output for:
+    'pppoe-server ... -I <ifname>'.
+
+  - Set method starts/stops pppoe-server daemon
+
+2) To simplify the configuration of pppoe-server, only neccessary parameters
+   are added to the configuration tree.
+
+   - Local address parameter (-L option) is representer by local_addr node:
+      /agent/interface/pppoe_server/local_addr
+
+   - Remote address parameter (-R option) is representer by remote_addr node:
+      /agent/interface/pppoe_server/remote_addr
+
+   - In case pppoe server should operate with ethernet interface other
+     several VLANs, vlans parameter is added as a string value:
+      /agent/interface/pppoe_server/vlans
+
+     This parameter lists vlan_ids to run pppoe_server daemon on
+     using '-I' key. For example:
+        /agent:TST1/interface:eth3/pppoe_server:/vlans: = "3 4 5"
+     will run 'pppoe-server -I eth3.3 -I eth3.4 -I eth3.5...'
+
+   NOTE: all these parameter are changable only if pppoe-server
+         daemon is not runnning, otherwise these parameters are parsed
+         from ps tool output.
+
+3) Diagnostics
+   It is not neccessary, but should be useful to have status of running pppd
+   daemons in the configuration model:
+
+   - /agent/interface/pppd node represents if pppd is running on the specified
+     interface (interface can be VLAN in this case).
+     This node is read-only and volatile, get method greps output of ps tool.
+
+   - /agent/interface/pppd/pid - pid of the corresponding pppd process running
+     other specified interface, get methos is similar to previous one.
+
+   - /agent/interface/pppd/ppp_if - name of ppp interface created other
+     specified ethernet interface (w/wo vlan_id). Get methos compares value
+     of /var/run/pppdX.pid files with corresponding pid of pppd process.
+

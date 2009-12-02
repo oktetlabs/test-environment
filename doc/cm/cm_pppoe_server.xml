@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!--
+        This configuration model is intended for describing of configuration
+        related to pppoe server on Agents
+
+        To resolve conflicts between pppoe servers spawned by different test
+        agents, each pppoe server should be related to specific interface
+        resource. But to reduce the amount of pppoe-server processes, it is
+        allowed to configure pppoe server to work with several vlan interfaces
+        over the specified master interface.
+
+        Copyright (C) 2003-2009 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+
+        Author: Alexander Kukuta E-mail: Alexander.Kukuta@oktetlabs.ru
+    -->
+
+    <!-- Root object for the pppoe_server daemon on the specific interface
+         Name: empty -->
+    <object oid="/agent/interface/pppoe_server" access="read_write" type="integer"/>
+
+    <!-- PPPoE server local address start
+         Name: empty -->
+    <object oid="/agent/interface/pppoe_server/local_addr" access="read_write" type="integer"/>
+
+    <!-- PPPoE server remote address start
+         Name: empty -->
+    <object oid="/agent/interface/pppoe_server/remote_addr" access="read_write" type="integer"/>
+
+    <!-- PPPoE vlan identifiers to list in pppoe-server parameters
+         Name: empty -->
+    <object oid="/agent/interface/pppoe_server/vlans" access="read_write" type="string"/>
+
+    <!-- Status of working pppd process for the specified interface.
+         Boolean value shows if pppd is running on the certain vlan interface
+         Name: empty -->
+    <object oid="/agent/interface/pppd" access="read_only" type="integer" volatile="true"/>
+
+    <!-- Name of ppp interface created other master interface or specific vlan,
+         non-empty string only if status is true
+         Name: empty -->
+    <object oid="/agent/interface/pppd/ppp_if" access="read_only" type="string" volatile="true"/>
+
+</backup>
