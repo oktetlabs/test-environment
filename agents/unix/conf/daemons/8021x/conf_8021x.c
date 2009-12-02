@@ -135,8 +135,8 @@ xsupplicant_get(const char *ifname)
     char buf[128];
 
     snprintf(buf, sizeof(buf),
-             PS_ALL_COMM " | grep xsupplicant | grep -v grep | "
-             "grep -q '-i %s'", ifname);
+             PS_ALL_COMM " | grep xsupplicant | grep -v grep | grep -q %s",
+             ifname);
     if (ta_system(buf) == 0)
         return TRUE;
 
@@ -304,7 +304,8 @@ wpa_supp_get(const char *ifname)
 
     snprintf(buf, sizeof(buf),
              PS_ALL_COMM " | grep wpa_supplicant | grep -v grep | "
-             "grep -q '-i %s'", ifname);
+             "grep -q %s",
+             ifname);
 
     if (ta_system(buf) == 0)
     {
