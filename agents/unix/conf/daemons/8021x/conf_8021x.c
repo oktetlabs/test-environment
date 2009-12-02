@@ -302,14 +302,14 @@ wpa_supp_get(const char *ifname)
 {
     char buf[128];
 
-#if 1
+#if 0
     snprintf(buf, sizeof(buf),
              PS_ALL_COMM " | grep wpa_supplicant | grep -v grep | "
              "grep -q '\-i %s'",
              ifname);
 #else
     snprintf(buf, sizeof(buf),
-             "wpa_cli -i %s status", ifname);
+             "wpa_cli -i %s status 1>/dev/null 2>&1", ifname);
 #endif
 
     if (ta_system(buf) == 0)
