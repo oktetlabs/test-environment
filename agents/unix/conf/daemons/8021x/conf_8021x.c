@@ -311,12 +311,15 @@ wpa_supp_get(const char *ifname)
     snprintf(buf, sizeof(buf),
              "wpa_cli -i %s status 1>/dev/null 2>&1", ifname);
 #endif
+    WARN("WPA supplicant status on interface %s", ifname);
 
     if (ta_system(buf) == 0)
     {
         WARN("WPA supplicant on interface %s is running.", ifname);
         return TRUE;
     }
+    else
+        WARN("WPA supplicant on interface %s is not running", ifname);
 
     return FALSE;
 }
