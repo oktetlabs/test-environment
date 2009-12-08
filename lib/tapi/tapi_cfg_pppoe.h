@@ -45,22 +45,49 @@
 extern "C" {
 #endif
 
-
 /**
- * Add subnet declaration in PPPoE server on the Test Agent.
+ * Add interface to PPPoE server configuration on the Test Agent.
  *
  * @param ta            Test Agent
- * @param subnet        Subnet address
- * @param prefix_len    Subnet prefix length
- * @param handle        Location for handle of the created instance or
- *                      NULL
+ * @param ifname        Interface to listen on
  *
  * @return Status code
  */
-extern int tapi_cfg_pppoes_add_subnet(const char            *ta,
-                                      const struct sockaddr *subnet,
-                                      int                    prefix_len,
-                                      cfg_handle            *handle);
+extern te_errno
+tapi_cfg_pppoe_server_if_add(const char *ta, const char *ifname);
+
+/**
+ * Delete interface from PPPoE server configuration on the Test Agent.
+ *
+ * @param ta            Test Agent
+ * @param ifname        Interface to remove
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_pppoe_server_if_del(const char *ta, const char *ifname);
+
+/**
+ * Configure subnet of PPPoE server to allocate local and remote addresses.
+ *
+ * @param ta            Test Agent
+ * @param subnet        String value of subnet XXX.XXX.XXX.XXX/prefix
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_pppoe_server_subnet_set(const char *ta, const char *subnet);
+
+/**
+ * Get subnet of PPPoE server to allocate local and remote addresses.
+ *
+ * @param ta            Test Agent
+ * @param subnet_p      Returned pointer to subnet value
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_pppoe_server_subnet_get(const char *ta, const char **subnet_p);
 
 #ifdef __cplusplus
 } /* extern "C" */
