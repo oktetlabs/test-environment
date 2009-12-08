@@ -24,138 +24,123 @@
  *
  *
  * @author Igor Labutin <Igor.Labutin@oktetlabs.ru>
+ * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: dhcp_server.c 50987 2008-06-26 12:50:41Z igorl $
+ * $Id$
  */
 
 #include <netinet/in.h>
 #include "conf_daemons.h"
-#include "pppoe_server.h"
 
-/** List of known possible locations of PPPoE server executables */
-static const char *pppoe_server_execs[] = {
-    "/usr/sbin/pppoe-server"
-};
-
-/** Number of known possible locations of PPPoE server executables */
-static unsigned int pppoe_server_n_execs =
-    sizeof(pppoe_server_execs) / sizeof(pppoe_server_execs[0]);
+#include "te_defs.h"
+#include "te_queue.h"
 
 /** PPPoE server executable name */
-static const char *pppoe_server_exec = NULL;
+#define PPPOE_SERVER_EXEC "/usr/sbin/pppoe-server"
 
 /** PPPoE server configuration file name */
-static const char *pppoe_server_conf = NULL;
+#define PPPOE_SERVER_CONF "/tmp/te.pppoe-server.conf"
 
-/** PPPoE server subnet */
-static te_pppoe_server_subnet *pppoe_server_subnet = NULL;
+/** Default buffer size for command-line construction */
+#define PPPOE_MAX_CMD_SIZE 1024
 
-/** PPPoE server interfaces */
-static char *pppoe_server_ifs = NULL;
+/** Default prefix for pppoe server subnet option */
+#define PPPOE_SUBNET_PREFIX_DEFAULT 32
 
-/** Was PPPoE server enabled at TA start up? */
-static te_bool pppoe_server_was_run = FALSE;
+/** Default number of pppoe clients supported by pppoe-server */
+#define PPPOE_MAX_SESSIONS 64
 
-/** Auxiliary buffer */
-static char buf[2048];
+/**
+ * Default amount of memory allocated for list methods
+ * of pppoeserver subtreee
+ */
+#define PPPOE_SERVER_LIST_SIZE 1024
 
-/** Release all memory allocated for option structure */
-#define FREE_OPTION(_opt) \
-    do {                        \
-        free(_opt->name);       \
-        free(_opt->value);      \
-        free(_opt);             \
-    } while (0)
+/** Definitions of types for PPPoE configuring */
+typedef struct te_pppoe_option {
+    SLIST_ENTRY(te_pppoe_option) list;
 
-/* Find the option in specified options list */
-static te_pppoe_option *
-find_option(te_pppoe_option *opt, const char *name)
+    char *name;
+    char *value;
+} te_pppoe_option;
+
+typedef struct te_pppoe_if {
+    SLIST_ENTRY(te_pppoe_if) list;
+
+    char *ifname;
+} te_pppoe_if;
+
+typedef struct te_pppoe_server {
+    SLIST_HEAD(, te_pppoe_if) ifs;
+    SLIST_HEAD(, te_pppoe_option) options;
+
+    in_addr_t subnet;
+    int       prefix;
+    int       max_sessions;
+
+    te_bool   initialised;
+    te_bool   started;
+    te_bool   changed;
+} te_pppoe_server;
+
+static te_pppoe_server pppoe_server;
+
+static void
+pppoe_server_init(te_pppoe_server *pppoe)
 {
-    for (; opt != NULL && strcmp(opt->name, name) != 0; opt = opt->next);
+    INFO("%s()", __FUNCTION__);
 
-    return opt;
+    SLIST_INIT(&pppoe->ifs);
+    SLIST_INIT(&pppoe->options);
+    pppoe->subnet = INADDR_ANY;
+    pppoe->prefix = 0;
+    pppoe->max_sessions = PPPOE_MAX_SESSIONS;
+    pppoe->started = FALSE;
+    pppoe->changed = FALSE;
+    pppoe->initialised = TRUE;
 }
 
-/** Save configuration to the file */
-static int
-ps_pppoeserver_save_conf(char **args)
+static te_pppoe_server *
+pppoe_server_find(void)
+{
+    te_pppoe_server *pppoe = &pppoe_server;
+    if (!pppoe->initialised)
+        pppoe_server_init(pppoe);
+
+    return pppoe;
+}
+
+/** Save configuration file for pppoe-server */
+static te_errno
+pppoe_server_save_conf(te_pppoe_server *pppoe)
 {
     FILE                    *f = NULL;
-    static char              args_buf[2048];
-    unsigned int             mask;
-    struct in_addr           addr, new_addr;
-    char                    *p;
-    char                    *token;
+    te_pppoe_option         *opt;
 
-    if (pppoe_server_subnet == NULL)
-    {
-        ERROR("Failed to configure pppoe server until "
-              "subnets are not configured");
-        return TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    INFO("%s()", __FUNCTION__);
 
-    f = fopen(pppoe_server_conf, "w");
+    f = fopen(PPPOE_SERVER_CONF, "w");
     if (f == NULL)
     {
         ERROR("Failed to open '%s' for writing: %s",
-              pppoe_server_conf, strerror(errno));
+              PPPOE_SERVER_CONF, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-#if defined __linux__
+    /* TODO: initialise option list with default options */
     fprintf(f, "noauth\n");
     fprintf(f, "lcp-echo-interval 10\n");
     fprintf(f, "lcp-echo-failure 2\n");
     fprintf(f, "nodefaultroute\n");
     fprintf(f, "mru 1492\n");
     fprintf(f, "mtu 1492\n");
-#endif
 
-    mask = PREFIX2MASK(pppoe_server_subnet->prefix_len);
-    addr.s_addr = inet_addr(pppoe_server_subnet->subnet);
-    addr.s_addr = htonl(ntohl(addr.s_addr) & mask);
-
-    new_addr.s_addr = htonl(ntohl(addr.s_addr) + 1);
-    sprintf(buf, "-L %s", inet_ntoa(new_addr));
-    strcpy(args_buf, buf);
-
-/* Default number of pppoe clients supported by pppoe-server */
-#define N_PPP_CLIENTS   64
-
-    /* This fix is ugly, indeed. Just to prevent overlapping of local
-     * and remote IPs for multiple pppoe clients. To be replaced by
-     * more nice one after all problems with pppoe and dhcp servers
-     * have been fixed.
-     */
-    new_addr.s_addr = htonl(ntohl(addr.s_addr) + N_PPP_CLIENTS + 1);
-#if 0
-    /* This works good if pppoe-server has no more than ONE client. */
-    new_addr.s_addr = htonl(ntohl(addr.s_addr) + 2);
-#endif
-    sprintf(buf, " -R %s", inet_ntoa(new_addr));
-    strcat(args_buf, buf);
-
-    p = pppoe_server_ifs;
-    while (p != NULL && *p != '\0')
+    for (opt = SLIST_FIRST(&pppoe->options);
+         opt != NULL; opt = SLIST_NEXT(opt, list))
     {
-        token = p;
-        p = strchr(p, ' ');
-        if (p != NULL && *p != '\0')
-        {
-            *p = '\0';
-            p++;
-        }
-
-        sprintf(buf, " -I %s", token);
-        strcat(args_buf, buf);
+        fprintf(f, "%s %s", opt->name, opt->value);
     }
 
-    if (args != NULL)
-    {
-        *args = args_buf;
-    }
-
-#if defined __linux__
     if (fsync(fileno(f)) != 0)
     {
         int err = errno;
@@ -170,80 +155,135 @@ ps_pppoeserver_save_conf(char **args)
         ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
-#endif
+
+    return 0;
+}
+
+
+/** Prepare command line arguments for pppoe-server */
+static te_errno
+pppoe_server_print_args(te_pppoe_server *pppoe, char *args, int maxlen)
+{
+    te_pppoe_if    *iface;
+    struct in_addr  local_addr;
+    struct in_addr  remote_addr;
+    char           *p = args;
+
+    INFO("%s()", __FUNCTION__);
+
+    p += snprintf(p, maxlen, "%s -O %s",
+                  PPPOE_SERVER_EXEC, PPPOE_SERVER_CONF);
+
+    if (pppoe->subnet != ntohs(INADDR_ANY))
+    {
+        local_addr.s_addr = htonl(ntohl(pppoe->subnet) + 1);
+        p += snprintf(p, maxlen - (p - args),
+                      " -L %s", inet_ntoa(local_addr));
+
+
+        /* This fix is ugly, indeed. Just to prevent overlapping of local
+         * and remote IPs for multiple pppoe clients. To be replaced by
+         * more nice one after all problems with pppoe and dhcp servers
+         * have been fixed.
+         */
+        remote_addr.s_addr = htonl(ntohl(pppoe->subnet) +
+                                   pppoe->max_sessions + 1);
+        p+= snprintf(p, maxlen - (p - args),
+                     " -R %s", inet_ntoa((struct in_addr)remote_addr));
+    }
+
+    for (iface = SLIST_FIRST(&pppoe->ifs);
+         iface != NULL; iface = SLIST_NEXT(iface, list))
+    {
+        p+= snprintf(p, maxlen - (p - args),
+                     " -I %s", iface->ifname);
+    }
 
     return 0;
 }
 
 /** Is PPPoE server daemon running */
 static te_bool
-ps_pppoeserver_is_run(void)
+pppoe_server_is_running(te_pppoe_server *pppoe)
 {
-#if defined __linux__
-    /*
-     * We should kill all pppd sessions. Killing with some polite signals
-     * does not help
-     */
-#if 0
-    (void)ta_system("killall -KILL pppd");
-#endif
-    sprintf(buf, "killall -CONT %s >/dev/null 2>&1", pppoe_server_exec);
-#endif
+    te_bool is_running;
+    char buf[PPPOE_MAX_CMD_SIZE];
 
-    return (ta_system(buf) == 0);
+    UNUSED(pppoe);
+
+    sprintf(buf, PS_ALL_COMM " | grep -v grep | grep -q %s >/dev/null 2>&1",
+            PPPOE_SERVER_EXEC);
+
+    is_running = (ta_system(buf) == 0);
+
+    INFO("PPPoE server is%s running", (is_running) ? "" : " not");
+
+    return is_running;
 }
 
-/** Get PPPoE server daemon on/off */
-static te_errno
-ps_pppoeserver_get(unsigned int gid, const char *oid, char *value)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-
-    strcpy(value, ps_pppoeserver_is_run() ? "1" : "0");
-
-    return 0;
-}
 
 /** Stop PPPoE server */
 static te_errno
-ps_pppoeserver_stop(void)
+pppoe_server_stop(te_pppoe_server *pppoe)
 {
-    ENTRY("%s()", __FUNCTION__);
+    char buf[PPPOE_MAX_CMD_SIZE];
 
-#if defined __linux__
-    TE_SPRINTF(buf, "killall %s", pppoe_server_exec);
-#endif
+    UNUSED(pppoe);
+
+    ENTRY("%s()", __FUNCTION__);
+    INFO("%s()", __FUNCTION__);
+
+    /* Quit if pppoe server is not running */
+    if (!pppoe_server_is_running(pppoe))
+        return 0;
+
+    TE_SPRINTF(buf, "killall %s", PPPOE_SERVER_EXEC);
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
+    /*
+     * We should kill all pppd sessions. Killing with some polite signals
+     * does not help
+     */
     (void)ta_system("killall -KILL pppd");
+
+    if (unlink(PPPOE_SERVER_CONF) != 0 &&
+        errno != ENOENT)
+    {
+        WARN("Failed to delete PPPoE server temporary configuration "
+             "file '%s': %s", PPPOE_SERVER_CONF, strerror(errno));
+    }
+
     return 0;
 }
 
 /** Start DHCP server */
 static te_errno
-ps_pppoeserver_start(void)
+pppoe_server_start(te_pppoe_server *pppoe)
 {
+    char buf[PPPOE_MAX_CMD_SIZE];
     te_errno rc;
-    char    *args = NULL;
 
     ENTRY("%s()", __FUNCTION__);
+    INFO("%s()", __FUNCTION__);
 
-    rc = ps_pppoeserver_save_conf(&args);
+    rc = pppoe_server_save_conf(pppoe);
     if (rc != 0)
     {
         ERROR("Failed to save PPPoE server configuration file");
         return rc;
     }
 
-#if defined __linux__
-    TE_SPRINTF(buf, "%s -O %s -l %s",
-               pppoe_server_exec, pppoe_server_conf, args);
-#endif
+    rc = pppoe_server_print_args(pppoe, buf, sizeof(buf));
+    if (rc != 0)
+    {
+        ERROR("Failed to prepare arguments to run pppoe-server");
+        return rc;
+    }
+
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
@@ -253,270 +293,457 @@ ps_pppoeserver_start(void)
     return 0;
 }
 
+/** Get PPPoE server daemon on/off */
+static te_errno
+pppoe_server_get(unsigned int gid, const char *oid, char *value)
+{
+    te_pppoe_server *pppoe = pppoe_server_find();
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("%s()", __FUNCTION__);
+
+    sprintf(value, "%s", pppoe_server_is_running(pppoe) ? "1" : "0");
+
+    return 0;
+}
+
 /** On/off PPPoE server */
 static te_errno
-ps_pppoeserver_set(unsigned int gid, const char *oid, const char *value)
+pppoe_server_set(unsigned int gid, const char *oid, const char *value)
 {
-    te_bool  is_run = ps_pppoeserver_is_run();
-    te_bool  do_run;
-    te_errno rc;
+    te_pppoe_server *pppoe = pppoe_server_find();
 
     UNUSED(gid);
     UNUSED(oid);
     ENTRY("%s(): value=%s", __FUNCTION__, value);
 
-    if (strlen(value) != 1 || (*value != '0' && *value != '1'))
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    INFO("%s()", __FUNCTION__);
 
-    do_run = (*value == '1');
+    pppoe->started = (strcmp(value, "1") == 0);
+    if (pppoe->started != pppoe_server_is_running(pppoe))
+    {
+        pppoe->changed = TRUE;
+    }
+
+    return 0;
+}
+
+/** Commit changes (re)start/stop PPPoE server */
+static te_errno
+pppoe_server_commit(unsigned int gid, const char *oid)
+{
+    te_pppoe_server *pppoe = pppoe_server_find();
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s()", __FUNCTION__);
+    INFO("%s()", __FUNCTION__);
 
     /*
      * We don't need to change state of PPPoE Server:
      * The current state is the same as desired.
      */
-    if (is_run == do_run)
+    if (!pppoe->changed)
         return 0;
 
-    if (do_run)
+    /* Stop pppoe_server if required */
+    if ((rc = pppoe_server_stop(pppoe)) != 0)
     {
-        rc = ps_pppoeserver_start();
-    }
-    else
-    {
-        rc = ps_pppoeserver_stop();
+        ERROR("Failed to stop PPPoE server");
+        return rc;
     }
 
-    return rc;
-}
+    /* Start pppoe_server with new parameters */
+    if (pppoe->started)
+    {
+        if ((rc = pppoe_server_start(pppoe)) != 0)
+        {
+            ERROR("Failed to start PPPoE server");
+            return rc;
+        }
+    }
 
-/** Get PPPoE server interfaces */
-static te_errno
-ps_pppoeserver_ifs_get(unsigned int gid, const char *oid, char *value)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-
-    strcpy(value, pppoe_server_ifs ? : "");
+    pppoe->changed = FALSE;
 
     return 0;
 }
 
-/** Set PPPoE server interfaces */
-static te_errno
-ps_pppoeserver_ifs_set(unsigned int gid, const char *oid, const char *value)
+
+/** Find the option in specified options list */
+static te_pppoe_option *
+pppoe_find_option(te_pppoe_server *pppoe, const char *name)
 {
-    char *copy;
+    te_pppoe_option *opt;
+
+    for (opt = SLIST_FIRST(&pppoe->options);
+         opt != NULL && strcmp(opt->name, name) != 0;
+         opt = SLIST_NEXT(opt, list));
+
+    return opt;
+}
+
+/** Get PPPoE server option */
+static te_errno
+pppoe_server_option_get(unsigned int gid, const char *oid, char *value,
+                        const char *pppoe_name, const char *option)
+{
+    te_pppoe_server *pppoe = pppoe_server_find();
+    te_pppoe_option *opt;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(pppoe_name);
 
-    /* TODO Check value */
+    INFO("%s()", __FUNCTION__);
 
-    copy = strdup(value);
-    if (copy == NULL)
+    if ((opt = pppoe_find_option(pppoe, option)) != NULL)
     {
-        ERROR("%s(): strdup(%s) failed", __FUNCTION__, value);
-        return TE_OS_RC(TE_TA_UNIX, errno);
+        strcpy(value, opt->value);
+        return 0;
     }
-    free(pppoe_server_ifs);
-    pppoe_server_ifs = copy;
 
-    return 0;
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
-static void
-free_subnet(te_pppoe_server_subnet *s)
+/** Overwrite PPPoE server option value */
+static te_errno
+pppoe_server_option_set(unsigned int gid, const char *oid,
+                        const char *value, const char *pppoe_name,
+                        const char *option)
 {
-    te_pppoe_option *opt, *next;
+    te_pppoe_server *pppoe = pppoe_server_find();
+    te_pppoe_option *opt;
 
-    free(s->subnet);
-    for (opt = s->options; opt != NULL; opt = next)
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(pppoe_name);
+
+    INFO("%s()", __FUNCTION__);
+
+    if ((opt = pppoe_find_option(pppoe, option)) != NULL)
     {
-        next = opt->next;
-        FREE_OPTION(opt);
+        free(opt->value);
+        opt->value = strdup(value);
+        pppoe->changed = TRUE;
+        return 0;
     }
-    free(s);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
-static te_pppoe_server_subnet *
-find_subnet(const char *subnet)
-{
-    UNUSED(subnet);
-    return pppoe_server_subnet;
-}
-
+/** Add PPPoE server option */
 static te_errno
-ps_subnet_get(unsigned int gid, const char *oid, char *value,
-              const char *pppoeserver, const char *subnet)
+pppoe_server_option_add(unsigned int gid, const char *oid,
+                        const char *value, const char *pppoe_name,
+                        const char *option)
 {
-    te_pppoe_server_subnet *s;
+    te_pppoe_server *pppoe = pppoe_server_find();
+    te_pppoe_option *opt;
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(pppoeserver);
+    UNUSED(pppoe_name);
 
-    if ((s = find_subnet(subnet)) == NULL)
-        return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
+    INFO("%s()", __FUNCTION__);
 
-    sprintf(value, "%d", s->prefix_len);
-
-    return 0;
-}
-
-static te_errno
-ps_subnet_set(unsigned int gid, const char *oid, const char *value,
-              const char *pppoeserver, const char *subnet)
-{
-    te_pppoe_server_subnet *s;
-    int                     prefix_len;
-    char                   *end;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(pppoeserver);
-
-    if ((s = find_subnet(subnet)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    prefix_len = strtol(value, &end, 10);
-    if (value == end || *end != '\0')
-        return TE_RC(TE_TA_UNIX, TE_EFMT);
-
-    s->prefix_len = prefix_len;
-
-    return 0;
-}
-
-static te_errno
-ps_subnet_add(unsigned int gid, const char *oid, const char *value,
-              const char *pppoeserver, const char *subnet)
-{
-    te_pppoe_server_subnet *s;
-    int                     prefix_len;
-    char                   *end;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(pppoeserver);
-
-    if ((s = find_subnet(subnet)) != NULL)
+    /* Check if option already exists */
+    if ((opt = pppoe_find_option(pppoe, option)) != NULL)
+    {
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
 
-    prefix_len = strtol(value, &end, 10);
-    if (value == end || *end != '\0')
-        return TE_RC(TE_TA_UNIX, TE_EFMT);
+    opt = (te_pppoe_option *)calloc(1, sizeof(te_pppoe_option));
+    opt->name = strdup(option);
+    opt->value = strdup(value);
+    SLIST_INSERT_HEAD(&pppoe->options, opt, list);
+    pppoe->changed = TRUE;
 
-    if ((s = calloc(1, sizeof(*s))) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    return 0;
+}
 
-    if ((s->subnet = strdup(subnet)) == NULL)
+/** Delete PPPoE server option */
+static te_errno
+pppoe_server_option_del(unsigned int gid, const char *oid,
+                        const char *pppoe_name, const char *option)
+{
+    te_pppoe_server *pppoe = pppoe_server_find();
+    te_pppoe_option *opt;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(pppoe_name);
+
+    INFO("%s()", __FUNCTION__);
+
+    /* Check if option already exists */
+    if ((opt = pppoe_find_option(pppoe, option)) == NULL)
     {
-        free(s);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    SLIST_REMOVE(&pppoe->options, opt, te_pppoe_option, list);
+    pppoe->changed = TRUE;
+
+    return 0;
+}
+
+/** List PPPoE server options */
+static te_errno
+pppoe_server_option_list(unsigned int gid, const char *oid, char **list,
+                         const char *pppoe_name)
+{
+    te_pppoe_server *pppoe = pppoe_server_find();
+    te_pppoe_option *opt;
+    uint32_t         list_size = 0;
+    uint32_t         list_len  = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(pppoe_name);
+
+    INFO("%s()", __FUNCTION__);
+
+    list_size = PPPOE_SERVER_LIST_SIZE;
+    if ((*list = (char *)calloc(1, list_size)) == NULL)
+    {
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    s->prefix_len = prefix_len;
+    list_len = 0;
 
-    pppoe_server_subnet = s;
+    SLIST_FOREACH(opt, &pppoe->options, list)
+    {
+        if (list_len + strlen(opt->name) + 1 >= list_size)
+        {
+            list_size *= 2;
+            if ((*list = realloc(*list, list_size)) == NULL)
+            {
+                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+            }
+        }
+
+        list_len += sprintf(*list + list_len, "%s ", opt->name);
+    }
+
+    return 0;
+}
+
+/** Find the option in specified options list */
+static te_pppoe_if *
+pppoe_find_if(te_pppoe_server *pppoe, const char *name)
+{
+    te_pppoe_if *iface;
+    for (iface = SLIST_FIRST(&pppoe->ifs);
+         iface != NULL && strcmp(iface->ifname, name) != 0;
+         iface = SLIST_NEXT(iface, list));
+
+    return iface;
+}
+
+/** Add PPPoE server interface */
+static te_errno
+pppoe_server_ifs_add(unsigned int gid, const char *oid,
+                     const char *value, const char *pppoe_name,
+                     const char *ifname)
+{
+    te_pppoe_server *pppoe = pppoe_server_find();
+    te_pppoe_if     *iface;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(pppoe_name);
+
+    INFO("%s()", __FUNCTION__);
+
+    /* Check if interface already added */
+    if ((iface = pppoe_find_if(pppoe, ifname)) != NULL)
+    {
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
+
+    iface = (te_pppoe_if *)calloc(1, sizeof(te_pppoe_if));
+    iface->ifname = strdup(ifname);
+    SLIST_INSERT_HEAD(&pppoe->ifs, iface, list);
+    pppoe->changed = TRUE;
+
+    return 0;
+}
+
+/** Delete PPPoE server option */
+static te_errno
+pppoe_server_ifs_del(unsigned int gid, const char *oid,
+                     const char *pppoe_name, const char *ifname)
+{
+    te_pppoe_server *pppoe = pppoe_server_find();
+    te_pppoe_if     *iface;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(pppoe_name);
+
+    INFO("%s()", __FUNCTION__);
+
+    /* Check if interface does not exists */
+    if ((iface = pppoe_find_if(pppoe, ifname)) == NULL)
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    SLIST_REMOVE(&pppoe->ifs, iface, te_pppoe_if, list);
+    pppoe->changed = TRUE;
+
+    return 0;
+}
+
+/** List PPPoE server options */
+static te_errno
+pppoe_server_ifs_list(unsigned int gid, const char *oid, char **list,
+                      const char *pppoe_name)
+{
+    te_pppoe_server *pppoe = pppoe_server_find();
+    te_pppoe_if     *iface;
+    uint32_t         list_size = 0;
+    uint32_t         list_len  = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(pppoe_name);
+
+    INFO("%s()", __FUNCTION__);
+
+    list_size = PPPOE_SERVER_LIST_SIZE;
+    if ((*list = (char *)calloc(1, list_size)) == NULL)
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    list_len = 0;
+
+    SLIST_FOREACH(iface, &pppoe->ifs, list)
+    {
+        if (list_len + strlen(iface->ifname) + 1 >= list_size)
+        {
+            list_size *= 2;
+            if ((*list = realloc(*list, list_size)) == NULL)
+            {
+                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+            }
+        }
+
+        list_len += sprintf(*list + list_len, "%s ", iface->ifname);
+    }
 
     return 0;
 }
 
 static te_errno
-ps_subnet_del(unsigned int gid, const char *oid,
-              const char *pppoeserver, const char *subnet)
+pppoe_server_subnet_get(unsigned int gid, const char *oid,
+                        char *value, const char *pppoeserver)
 {
-    te_pppoe_server_subnet  *s;
+    te_pppoe_server *pppoe = pppoe_server_find();
+    struct in_addr addr;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(pppoeserver);
 
-    if ((s = find_subnet(subnet)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    INFO("%s()", __FUNCTION__);
 
-    pppoe_server_subnet = NULL;
-    free_subnet(s);
+    addr.s_addr = pppoe->subnet;
+    sprintf(value, "%s|%d",
+           inet_ntoa(addr), pppoe->prefix);
 
     return 0;
 }
 
 static te_errno
-ps_subnet_list(unsigned int gid, const char *oid, char **list)
+pppoe_server_subnet_set(unsigned int gid, const char *oid,
+                        const char *value, const char *pppoeserver)
 {
+    te_pppoe_server *pppoe = pppoe_server_find();
+    char            *p;
+
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(pppoeserver);
 
-    if (pppoe_server_subnet != NULL)
+    INFO("%s()", __FUNCTION__);
+
+    if ((p = strchr(value, '|')) != NULL)
     {
-        sprintf(buf, "%s", pppoe_server_subnet->subnet);
+        *p++ = '\0';
+        pppoe->prefix = atoi(p);
     }
     else
-    {
-        strcpy(buf, "");
-    }
+        pppoe->prefix = PPPOE_SUBNET_PREFIX_DEFAULT;
 
-    return (*list = strdup(buf)) == NULL ?
-               TE_RC(TE_TA_UNIX, TE_ENOMEM) : 0;
+    if (inet_aton(value, (struct in_addr *)&pppoe->subnet) == 0)
+    {
+        ERROR("Invalid pppoe subnet format: %s", value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    pppoe->subnet = htonl(ntohl(pppoe->subnet) &
+                          PREFIX2MASK(pppoe->prefix));
+    pppoe->changed = TRUE;
+
+    return 0;
 }
 
 
-static rcf_pch_cfg_object node_ps_subnet =
-    { "subnet", 0, NULL, NULL,
-      (rcf_ch_cfg_get)ps_subnet_get,
-      (rcf_ch_cfg_set)ps_subnet_set,
-      (rcf_ch_cfg_add)ps_subnet_add,
-      (rcf_ch_cfg_del)ps_subnet_del,
-      (rcf_ch_cfg_list)ps_subnet_list, NULL, NULL };
+static rcf_pch_cfg_object node_pppoe_server_options =
+    { "option", 0, NULL, NULL,
+      (rcf_ch_cfg_get)pppoe_server_option_get,
+      (rcf_ch_cfg_set)pppoe_server_option_set,
+      (rcf_ch_cfg_add)pppoe_server_option_add,
+      (rcf_ch_cfg_del)pppoe_server_option_del,
+      (rcf_ch_cfg_list)pppoe_server_option_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(node_ps_pppoeserver_ifs, "interfaces",
-                    NULL, &node_ps_subnet,
-                    ps_pppoeserver_ifs_get, ps_pppoeserver_ifs_set);
+static rcf_pch_cfg_object node_pppoe_server_subnet =
+    { "subnet", 0, NULL, &node_pppoe_server_options,
+      (rcf_ch_cfg_get)pppoe_server_subnet_get,
+      (rcf_ch_cfg_set)pppoe_server_subnet_set,
+      NULL, NULL, NULL, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(node_ps_pppoeserver, "pppoeserver",
-                    &node_ps_pppoeserver_ifs, NULL,
-                    ps_pppoeserver_get, ps_pppoeserver_set);
+static rcf_pch_cfg_object node_pppoe_server_ifs =
+    { "interface", 0, NULL, &node_pppoe_server_subnet,
+      NULL, NULL,
+      (rcf_ch_cfg_add)pppoe_server_ifs_add,
+      (rcf_ch_cfg_del)pppoe_server_ifs_del,
+      (rcf_ch_cfg_list)pppoe_server_ifs_list, NULL, NULL };
+
+
+static rcf_pch_cfg_object node_pppoe_server =
+    { "pppoeserver", 0, &node_pppoe_server_ifs, NULL,
+      (rcf_ch_cfg_get)pppoe_server_get,
+      (rcf_ch_cfg_set)pppoe_server_set,
+      NULL, NULL, NULL,
+      (rcf_ch_cfg_commit)pppoe_server_commit, NULL };
 
 te_errno
 pppoeserver_grab(const char *name)
 {
-    int rc = 0;
+    te_pppoe_server *pppoe = pppoe_server_find();
+    te_errno      rc = 0;
 
     UNUSED(name);
 
-    pppoe_server_subnet = NULL;
+    INFO("%s()", __FUNCTION__);
 
-    if ((rc = rcf_pch_add_node("/agent", &node_ps_pppoeserver)) != 0)
+    if ((rc = rcf_pch_add_node("/agent", &node_pppoe_server)) != 0)
         return rc;
 
-    /* Find PPPoE server executable */
-    rc = find_file(pppoe_server_n_execs, pppoe_server_execs, TRUE);
-    if (rc < 0)
+    if ((rc = pppoe_server_stop(pppoe)) != 0)
     {
-        ERROR("Failed to find PPPoE server executable"
-             " - PPPoE will not be available");
-        rcf_pch_del_node(&node_ps_pppoeserver);
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        ERROR("Failed to stop PPPoE server"
+              " - PPPoE will not be available");
+        rcf_pch_del_node(&node_pppoe_server);
+        return rc;
     }
-    pppoe_server_exec = pppoe_server_execs[rc];
 
-
-#if defined __linux__
-    /* FIXME */
-    pppoe_server_conf = "/tmp/te.pppoe-server.conf";
-
-    if (ps_pppoeserver_is_run())
-    {
-        rc = ps_pppoeserver_stop();
-        if (rc != 0)
-        {
-            ERROR("Failed to stop PPPoE server"
-                  " - PPPoE will not be available");
-            rcf_pch_del_node(&node_ps_pppoeserver);
-            return rc;
-        }
-        pppoe_server_was_run = TRUE;
-    }
-#endif
+    pppoe->started = FALSE;
 
     return 0;
 }
@@ -524,36 +751,20 @@ pppoeserver_grab(const char *name)
 te_errno
 pppoeserver_release(const char *name)
 {
-    te_errno    rc;
+    te_pppoe_server *pppoe = pppoe_server_find();
+    te_errno      rc;
 
     UNUSED(name);
 
-    rc = rcf_pch_del_node(&node_ps_pppoeserver);
+    INFO("%s()", __FUNCTION__);
+
+    rc = rcf_pch_del_node(&node_pppoe_server);
     if (rc != 0)
         return rc;
 
-    if (pppoe_server_was_run)
+    if ((rc = pppoe_server_stop(pppoe)) != 0)
     {
-        if (ps_pppoeserver_is_run())
-        {
-            WARN("PPPoE server was disabled at start up from TE point "
-                 "of view, however it is enabled at shutdown. It looks "
-                 "like you have configuration rollback issues.");
-            (void)ps_pppoeserver_stop();
-        }
-        /*
-         * FIXME: Cannot restore original PPPoE server, since we didn't
-         * store any backups of configuration files
-         */
-        WARN("TE is unable to restore PPPoE server state (running) to "
-             "the initial state");
-        pppoe_server_was_run = FALSE;
-    }
-    if (pppoe_server_conf != NULL && unlink(pppoe_server_conf) != 0 &&
-        errno != ENOENT)
-    {
-        ERROR("Failed to delete PPPoE server temporary configuration "
-              "file '%s': %s", pppoe_server_conf, strerror(errno));
+        ERROR("Failed to stop pppoe server");
     }
 
     return 0;
