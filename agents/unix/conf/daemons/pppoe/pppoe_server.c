@@ -1,7 +1,7 @@
 /** @file
  * @brief Unix Test Agent
  *
- * PPPoE server configuring
+ * PPPoE server configuration support
  *
  *
  * Copyright (C) 2004, 2005 Test Environment authors (see file AUTHORS
@@ -35,6 +35,10 @@
 #include "te_defs.h"
 #include "te_queue.h"
 
+#ifndef __linux__
+#warn PPPoE server support may not work properly on non-linux test agents
+#endif
+
 /** PPPoE server executable name */
 #define PPPOE_SERVER_EXEC "/usr/sbin/pppoe-server"
 
@@ -56,35 +60,52 @@
  */
 #define PPPOE_SERVER_LIST_SIZE 1024
 
-/** Definitions of types for PPPoE configuring */
+/* Definitions of types for PPPoE configuring */
+
+/** Options written to pppoe-server configuration file */
 typedef struct te_pppoe_option {
     SLIST_ENTRY(te_pppoe_option) list;
 
-    char *name;
-    char *value;
+    char *name;                 /**< Option name */
+    char *value;                /**< Option value */
 } te_pppoe_option;
 
+/** Interfaces specified with -I parameter to pppoe-server */
 typedef struct te_pppoe_if {
     SLIST_ENTRY(te_pppoe_if) list;
 
-    char *ifname;
+    char *ifname;               /* Interface name to listen on */
 } te_pppoe_if;
 
+/** PPPoE server configuration structure */
 typedef struct te_pppoe_server {
-    SLIST_HEAD(, te_pppoe_if) ifs;
-    SLIST_HEAD(, te_pppoe_option) options;
+    SLIST_HEAD(, te_pppoe_if) ifs; /**< Interfaces specified with
+                                       -I parameter to pppoe-server */
+    SLIST_HEAD(, te_pppoe_option) options; /**< Options written to
+                                                pppoe-server configuration
+                                                file */
 
-    in_addr_t subnet;
-    int       prefix;
-    int       max_sessions;
+    in_addr_t subnet; /**< Subnet used for generating local and
+                           remote addresses (-L and -R options) */
+    int       prefix; /**< Subnet prefix  */
+    int       max_sessions; /**< Maximum allowed ppp sessions */
 
-    te_bool   initialised;
-    te_bool   started;
-    te_bool   changed;
+    te_bool   initialised; /**< structure initialisation flag */
+    te_bool   started;     /**< admin status for pppoe server */
+    te_bool   changed;     /**< configuration changed flag, used to detect
+                                if pppoe-server restart is required */
 } te_pppoe_server;
 
+/** Static pppoe server structure */
 static te_pppoe_server pppoe_server;
 
+/**
+ * Initialise pppoe server structure with default values
+ *
+ * @param pppoe         PPPoE server structure to initialise
+ *
+ * @return N/A
+ */
 static void
 pppoe_server_init(te_pppoe_server *pppoe)
 {
@@ -100,6 +121,11 @@ pppoe_server_init(te_pppoe_server *pppoe)
     pppoe->initialised = TRUE;
 }
 
+/**
+ * Return pointer to static pppoe server structure
+ *
+ * @return pppoe server structure
+ */
 static te_pppoe_server *
 pppoe_server_find(void)
 {
@@ -110,7 +136,13 @@ pppoe_server_find(void)
     return pppoe;
 }
 
-/** Save configuration file for pppoe-server */
+/**
+ * Prepare configuration file for pppoe-server
+ *
+ * @param pppoe   pppoe server structure
+ *
+ * @return Status code
+ */
 static te_errno
 pppoe_server_save_conf(te_pppoe_server *pppoe)
 {
@@ -160,7 +192,15 @@ pppoe_server_save_conf(te_pppoe_server *pppoe)
 }
 
 
-/** Prepare command line arguments for pppoe-server */
+/**
+ * Prepare command line arguments for pppoe-server
+ *
+ * @param pppoe   pppoe server structure
+ * @param args    buffer for arguments line
+ * @param maxlen  size of arguments buffer
+ *
+ * @return Status code
+ */
 static te_errno
 pppoe_server_print_args(te_pppoe_server *pppoe, char *args, int maxlen)
 {
@@ -202,7 +242,13 @@ pppoe_server_print_args(te_pppoe_server *pppoe, char *args, int maxlen)
     return 0;
 }
 
-/** Is PPPoE server daemon running */
+/**
+ * Check if pppoe-server is running
+ *
+ * @param pppoe   pppoe server structure
+ *
+ * @return pppoe server running status
+ */
 static te_bool
 pppoe_server_is_running(te_pppoe_server *pppoe)
 {
@@ -221,8 +267,13 @@ pppoe_server_is_running(te_pppoe_server *pppoe)
     return is_running;
 }
 
-
-/** Stop PPPoE server */
+/**
+ * Stop pppoe-server process
+ *
+ * @param pppoe   pppoe server structure
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_stop(te_pppoe_server *pppoe)
 {
@@ -260,7 +311,13 @@ pppoe_server_stop(te_pppoe_server *pppoe)
     return 0;
 }
 
-/** Start DHCP server */
+/**
+ * Stop pppoe-server process
+ *
+ * @param pppoe   pppoe server structure
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_start(te_pppoe_server *pppoe)
 {
@@ -293,7 +350,15 @@ pppoe_server_start(te_pppoe_server *pppoe)
     return 0;
 }
 
-/** Get PPPoE server daemon on/off */
+/**
+ * Get method forthat returns Stop pppoe-server process
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         location for the pppoe server status result
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_get(unsigned int gid, const char *oid, char *value)
 {
@@ -309,7 +374,15 @@ pppoe_server_get(unsigned int gid, const char *oid, char *value)
     return 0;
 }
 
-/** On/off PPPoE server */
+/**
+ * Set desired status of pppoe server
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         desired pppoe server status
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_set(unsigned int gid, const char *oid, const char *value)
 {
@@ -330,7 +403,16 @@ pppoe_server_set(unsigned int gid, const char *oid, const char *value)
     return 0;
 }
 
-/** Commit changes (re)start/stop PPPoE server */
+/**
+ * Commit changes in pppoe server configuration.
+ * (Re)star/stop pppoe server if required
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         location for the pppoe server status result
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_commit(unsigned int gid, const char *oid)
 {
@@ -373,7 +455,14 @@ pppoe_server_commit(unsigned int gid, const char *oid)
 }
 
 
-/** Find the option in specified options list */
+/**
+ * Find pppoe server option in options list
+ *
+ * @param pppoe         pppoe server structure
+ * @param name          option name to look for
+ *
+ * @return pppoe server option structure
+ */
 static te_pppoe_option *
 pppoe_find_option(te_pppoe_server *pppoe, const char *name)
 {
@@ -386,7 +475,18 @@ pppoe_find_option(te_pppoe_server *pppoe, const char *name)
     return opt;
 }
 
-/** Get PPPoE server option */
+/**
+ * Get callback for /agent/pppoeserver/option node.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         location for the pppoe server option value
+ * @param pppoe_name    dummy parameter due to name of ppppoeserver instance
+ *                      name is always empty
+ * @param option        option name to look for
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_option_get(unsigned int gid, const char *oid, char *value,
                         const char *pppoe_name, const char *option)
@@ -409,7 +509,18 @@ pppoe_server_option_get(unsigned int gid, const char *oid, char *value,
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
-/** Overwrite PPPoE server option value */
+/**
+ * Set callback for /agent/pppoeserver/option node.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         pppoe server option value
+ * @param pppoe_name    dummy parameter due to name of ppppoeserver instance
+ *                      name is always empty
+ * @param option        name of option to modify
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_option_set(unsigned int gid, const char *oid,
                         const char *value, const char *pppoe_name,
@@ -435,7 +546,18 @@ pppoe_server_option_set(unsigned int gid, const char *oid,
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
-/** Add PPPoE server option */
+/**
+ * Add callback for /agent/pppoeserver/option node.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         pppoe server option value
+ * @param pppoe_name    dummy parameter due to name of ppppoeserver instance
+ *                      name is always empty
+ * @param option        name of option to add
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_option_add(unsigned int gid, const char *oid,
                         const char *value, const char *pppoe_name,
@@ -465,7 +587,17 @@ pppoe_server_option_add(unsigned int gid, const char *oid,
     return 0;
 }
 
-/** Delete PPPoE server option */
+/**
+ * Delete callback for /agent/pppoeserver/option node.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param pppoe_name    dummy parameter due to name of ppppoeserver instance
+ *                      name is always empty
+ * @param option        name of option to delete
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_option_del(unsigned int gid, const char *oid,
                         const char *pppoe_name, const char *option)
@@ -491,7 +623,17 @@ pppoe_server_option_del(unsigned int gid, const char *oid,
     return 0;
 }
 
-/** List PPPoE server options */
+/**
+ * List callback for /agent/pppoeserver/option node.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param list          location for options list
+ * @param pppoe_name    dummy parameter due to name of ppppoeserver instance
+ *                      name is always empty
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_option_list(unsigned int gid, const char *oid, char **list,
                          const char *pppoe_name)
@@ -532,18 +674,37 @@ pppoe_server_option_list(unsigned int gid, const char *oid, char **list,
 }
 
 /** Find the option in specified options list */
+/**
+ * Find interface structure in pppoe server interface list
+ *
+ * @param pppoe         pppoe server structure
+ * @param ifname        interface name to find
+ *
+ * @return pppoe server option structure
+ */
 static te_pppoe_if *
-pppoe_find_if(te_pppoe_server *pppoe, const char *name)
+pppoe_find_if(te_pppoe_server *pppoe, const char *ifname)
 {
     te_pppoe_if *iface;
     for (iface = SLIST_FIRST(&pppoe->ifs);
-         iface != NULL && strcmp(iface->ifname, name) != 0;
+         iface != NULL && strcmp(iface->ifname, ifname) != 0;
          iface = SLIST_NEXT(iface, list));
 
     return iface;
 }
 
-/** Add PPPoE server interface */
+/**
+ * Add callback for /agent/pppoeserver/interface node.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         unused value of /agent/pppoeserverinterface instance
+ * @param pppoe_name    dummy parameter due to name of ppppoeserver instance
+ *                      name is always empty
+ * @param ifname        interface name to add to the list
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_ifs_add(unsigned int gid, const char *oid,
                      const char *value, const char *pppoe_name,
@@ -573,7 +734,17 @@ pppoe_server_ifs_add(unsigned int gid, const char *oid,
     return 0;
 }
 
-/** Delete PPPoE server option */
+/**
+ * Delete callback for /agent/pppoeserver/interface node.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param pppoe_name    dummy parameter due to name of ppppoeserver instance
+ *                      name is always empty
+ * @param ifname        interface name to delete from the list
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_ifs_del(unsigned int gid, const char *oid,
                      const char *pppoe_name, const char *ifname)
@@ -599,7 +770,17 @@ pppoe_server_ifs_del(unsigned int gid, const char *oid,
     return 0;
 }
 
-/** List PPPoE server options */
+/**
+ * List callback for /agent/pppoeserver/interface node.
+ *
+ * @param gid   group identifier (unused)
+ * @param oid   full identifier of the father instance
+ * @param list  location to the pppoe server interfaces list
+ * @param pppoe_name    dummy parameter due to name of ppppoeserver instance
+ *                      name is always empty
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_ifs_list(unsigned int gid, const char *oid, char **list,
                       const char *pppoe_name)
@@ -639,6 +820,17 @@ pppoe_server_ifs_list(unsigned int gid, const char *oid, char **list,
     return 0;
 }
 
+/**
+ * Get callback for /agent/pppoeserver/subnet node.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         location to the subnet value
+ * @param pppoeserver   dummy parameter due to name of ppppoeserver
+ *                      instance name is always empty
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_subnet_get(unsigned int gid, const char *oid,
                         char *value, const char *pppoeserver)
@@ -659,6 +851,18 @@ pppoe_server_subnet_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/**
+ * Set callback for /agent/pppoeserver/subnet node.
+ * Subnet address and prefix is encoded into one value  addr|prefix
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         location to the subnet value
+ * @param pppoeserver   dummy parameter due to name of ppppoeserver
+ *                      instance name is always empty
+ *
+ * @return status code
+ */
 static te_errno
 pppoe_server_subnet_set(unsigned int gid, const char *oid,
                         const char *value, const char *pppoeserver)
@@ -722,15 +926,32 @@ static rcf_pch_cfg_object node_pppoe_server =
       NULL, NULL, NULL,
       (rcf_ch_cfg_commit)pppoe_server_commit, NULL };
 
+/**
+ * Grab callback for pppoeserver resource
+ *
+ * @param name  dummy name of pppoe server
+ *
+ * @return status code
+ */
 te_errno
 pppoeserver_grab(const char *name)
 {
     te_pppoe_server *pppoe = pppoe_server_find();
-    te_errno      rc = 0;
+    char            *pppoe_paths[] = { PPPOE_SERVER_EXEC };
+    te_errno         rc = 0;
 
     UNUSED(name);
 
     INFO("%s()", __FUNCTION__);
+
+    /* Find PPPoE server executable */
+    rc = find_file(1, pppoe_paths, TRUE);
+    if (rc < 0)
+    {
+        ERROR("Failed to find PPPoE server executable"
+             " - PPPoE will not be available");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
 
     if ((rc = rcf_pch_add_node("/agent", &node_pppoe_server)) != 0)
         return rc;
@@ -748,6 +969,13 @@ pppoeserver_grab(const char *name)
     return 0;
 }
 
+/**
+ * Release callback for pppoeserver resource
+ *
+ * @param name  dummy name of pppoe server
+ *
+ * @return status code
+ */
 te_errno
 pppoeserver_release(const char *name)
 {
