@@ -440,7 +440,11 @@ static te_bool
 ds_dhcpserver_is_run(void)
 {
 #if defined __linux__
+#if 0
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", dhcp_server_exec);
+#else
+    sprintf(buf, "killall -CONT %s", dhcp_server_exec);
+#endif
 #elif defined __sun__
     TE_SPRINTF(buf, "[ \"`/usr/bin/svcs -H -o STATE dhcp-server`\" = \"online\" ]");
 #endif
@@ -465,7 +469,11 @@ ds_dhcpserver_get(unsigned int gid, const char *oid, char *value)
 static te_errno
 ds_dhcpserver_script_stop(void)
 {
+#if 0
     TE_SPRINTF(buf, "%s stop >/dev/null 2>&1", dhcp_server_script);
+#else
+    TE_SPRINTF(buf, "%s stop", dhcp_server_script);
+#endif
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
@@ -501,7 +509,11 @@ ds_dhcpserver_stop(void)
 static te_errno
 ds_dhcpserver_script_start(void)
 {
+#if 0
     TE_SPRINTF(buf, "%s start >/dev/null 2>&1", dhcp_server_script);
+#else
+    TE_SPRINTF(buf, "%s start", dhcp_server_script);
+#endif
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
@@ -527,25 +539,41 @@ ds_dhcpserver_start(void)
     }
     
 #if defined __linux__
+#if 0
     TE_SPRINTF(buf, "%s -q -t -cf %s",
                dhcp_server_exec, dhcp_server_conf);
+#else
+    TE_SPRINTF(buf, "%s -t -cf %s",
+               dhcp_server_exec, dhcp_server_conf);
+#endif
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
+#if 0
     TE_SPRINTF(buf, "%s -q -T -lf %s",
                dhcp_server_exec, dhcp_server_leases);
+#else
+    TE_SPRINTF(buf, "%s -T -lf %s",
+               dhcp_server_exec, dhcp_server_leases);
+#endif
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
+#if 0
     TE_SPRINTF(buf, "%s -q -cf %s -lf %s %s",
                dhcp_server_exec, dhcp_server_conf,
                dhcp_server_leases, dhcp_server_ifs ? : "");
+#else
+    TE_SPRINTF(buf, "%s -cf %s -lf %s %s",
+               dhcp_server_exec, dhcp_server_conf,
+               dhcp_server_leases, dhcp_server_ifs ? : "");
+#endif
 #elif defined __sun__
     TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st %s", get_ds_name("dhcpserver"));
     if (ta_system(buf) != 0)
