@@ -302,6 +302,9 @@ str_addr_family(const char *str_addr)
 #define INTERFACE_IS_LOOPBACK(ifname) \
      (strncmp(ifname, "lo", strlen("lo")) == 0)
 
+#define INTERFACE_IS_PPP(ifname) \
+     (strncmp(ifname, "ppp", strlen("ppp")) == 0)
+
 #define CHECK_INTERFACE(ifname) \
     ((ifname == NULL) ? TE_EINVAL :                 \
      (strlen(ifname) > IFNAMSIZ) ? TE_E2BIG :       \
@@ -919,6 +922,11 @@ ta_interface_is_mine(const char *ifname)
     if (*parent)
         return rcf_pch_rsrc_accessible("/agent:%s/interface:%s",
                                        ta_name, parent);
+
+    if (INTERFACE_IS_PPP(ifname) ||
+        rcf_pch_rsrc_accessible("/agent:%s/pppoeserver:", ta_name))
+        return TRUE;
+
     return FALSE;
 }
 
