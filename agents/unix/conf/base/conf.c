@@ -923,9 +923,11 @@ ta_interface_is_mine(const char *ifname)
         return rcf_pch_rsrc_accessible("/agent:%s/interface:%s",
                                        ta_name, parent);
 
+#if 0
     if (INTERFACE_IS_PPP(ifname) ||
         rcf_pch_rsrc_accessible("/agent:%s/pppoeserver:", ta_name))
         return TRUE;
+#endif
 
     return FALSE;
 }
