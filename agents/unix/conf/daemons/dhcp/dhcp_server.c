@@ -150,6 +150,12 @@ static te_bool dhcp_server_was_run = FALSE;
 
 #endif
 
+/** DHCP server admin status */
+static te_bool dhcp_server_started = FALSE;
+
+/** Changed flag for DHCP server configuration */
+static te_bool dhcp_server_changed = FALSE;
+
 
 /** Auxiliary buffer */
 static char buf[2048];
@@ -440,13 +446,12 @@ static te_bool
 ds_dhcpserver_is_run(void)
 {
 #if defined __linux__
-#if 0
-    sprintf(buf, "killall -CONT %s >/dev/null 2>&1", dhcp_server_exec);
-#else
-    sprintf(buf, "killall -CONT %s", dhcp_server_exec);
-#endif
+    sprintf(buf, PS_ALL_COMM "| grep -v grep | grep -q %s >/dev/null 2>&1",
+            dhcp_server_exec);
 #elif defined __sun__
     TE_SPRINTF(buf, "[ \"`/usr/bin/svcs -H -o STATE dhcp-server`\" = \"online\" ]");
+#else
+    return FALSE;
 #endif
 
     return (ta_system(buf) == 0);
@@ -464,16 +469,11 @@ ds_dhcpserver_get(unsigned int gid, const char *oid, char *value)
     return 0;
 }
 
-#if defined __linux__
 /** Stop DHCP server using script from /etc/init.d */
 static te_errno
 ds_dhcpserver_script_stop(void)
 {
-#if 0
-    TE_SPRINTF(buf, "%s stop >/dev/null 2>&1", dhcp_server_script);
-#else
     TE_SPRINTF(buf, "%s stop", dhcp_server_script);
-#endif
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
@@ -482,7 +482,6 @@ ds_dhcpserver_script_stop(void)
 
     return 0;
 }
-#endif
 
 /** Stop DHCP server */
 static te_errno
@@ -509,11 +508,7 @@ ds_dhcpserver_stop(void)
 static te_errno
 ds_dhcpserver_script_start(void)
 {
-#if 0
-    TE_SPRINTF(buf, "%s start >/dev/null 2>&1", dhcp_server_script);
-#else
     TE_SPRINTF(buf, "%s start", dhcp_server_script);
-#endif
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
@@ -537,65 +532,91 @@ ds_dhcpserver_start(void)
         ERROR("Failed to save DHCP server configuration file");
         return rc;
     }
-    
+
 #if defined __linux__
-#if 0
-    TE_SPRINTF(buf, "%s -q -t -cf %s",
-               dhcp_server_exec, dhcp_server_conf);
-#else
+
     TE_SPRINTF(buf, "%s -t -cf %s",
                dhcp_server_exec, dhcp_server_conf);
-#endif
     if (ta_system(buf) != 0)
     {
-        ERROR("Command '%s' failed", buf);
+        ERROR("Configuration file verification failed, command '%s'", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
-#if 0
-    TE_SPRINTF(buf, "%s -q -T -lf %s",
-               dhcp_server_exec, dhcp_server_leases);
-#else
     TE_SPRINTF(buf, "%s -T -lf %s",
                dhcp_server_exec, dhcp_server_leases);
-#endif
     if (ta_system(buf) != 0)
     {
-        ERROR("Command '%s' failed", buf);
+        ERROR("Leases database verification failed, command '%s'", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
-#if 0
-    TE_SPRINTF(buf, "%s -q -cf %s -lf %s %s",
-               dhcp_server_exec, dhcp_server_conf,
-               dhcp_server_leases, dhcp_server_ifs ? : "");
-#else
     TE_SPRINTF(buf, "%s -cf %s -lf %s %s",
                dhcp_server_exec, dhcp_server_conf,
                dhcp_server_leases, dhcp_server_ifs ? : "");
-#endif
+
 #elif defined __sun__
+
     TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st %s", get_ds_name("dhcpserver"));
     if (ta_system(buf) != 0)
     {
-        ERROR("Command '%s' failed", buf);
+        ERROR("Failed to stop DHCP server, command '%s'", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
     TE_SPRINTF(buf, "/usr/sbin/svcadm enable -rst %s", get_ds_name("dhcpserver"));
+
+#else
+
+    ERROR("DHCP server configuration is not supported");
+
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+
 #endif
+
     if (ta_system(buf) != 0)
     {
-        ERROR("Command '%s' failed", buf);
+        ERROR("Failed to start DHCP server, command '%s'", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
     return 0;
 }
 
-/** On/off DHCP server */
+/**
+ * Set desired status of DHCP server
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param value         desired dhcp server status
+ *
+ * @return status code
+ */
 static te_errno
 ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
+{
+    te_pppoe_server *pppoe = pppoe_server_find();
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s(): value=%s", __FUNCTION__, value);
+
+    INFO("%s()", __FUNCTION__);
+
+    dhcp_server_started = (strcmp(value, "1") == 0);
+    if (dhcp_server_started != ds_dhcpserver_is_run())
+    {
+        dhcp_server_changed = TRUE;
+    }
+
+    return 0;
+}
+
+
+/** On/off DHCP server */
+static te_errno
+ds_dhcpserver_commit(unsigned int gid, const char *oid)
 {
     te_bool  is_run = ds_dhcpserver_is_run();
     te_bool  do_run;
@@ -605,34 +626,44 @@ ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(oid);
     ENTRY("%s(): value=%s", __FUNCTION__, value);
 
-    if (strlen(value) != 1 || (*value != '0' && *value != '1'))
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    do_run = (*value == '1');
-
     /*
      * We don't need to change state of DHCP Server:
      * The current state is the same as desired.
      */
-    if (is_run == do_run)
+    if (!dhcp_server_changed)
         return 0;
 
-    if (do_run)
-    {
-#ifdef TA_UNIX_ISC_DHCPS_NATIVE_CFG
-        rc = ds_dhcpserver_script_start();
-#else
-        rc = ds_dhcpserver_start();
-#endif
-    }
-    else
+    /* Stop DHCP server */
+    if (ds_dhcpserver_is_run())
     {
 #ifdef TA_UNIX_ISC_DHCPS_NATIVE_CFG
         rc = ds_dhcpserver_script_stop();
 #else
         rc = ds_dhcpserver_stop();
 #endif
+        if (rc != 0)
+        {
+            ERROR("Failed to stop DHCP server");
+            return rc;
+        }
     }
+
+    /* (Re)start DHCP server, if required */
+    if (dhcp_server_started)
+    {
+#ifdef TA_UNIX_ISC_DHCPS_NATIVE_CFG
+        rc = ds_dhcpserver_script_start();
+#else
+        rc = ds_dhcpserver_start();
+#endif
+        if (rc != 0)
+        {
+            ERROR("Failed to start DHCP server");
+            return rc;
+        }
+    }
+
+    dhcp_server_changed = FALSE;
 
     return rc;
 }
@@ -668,6 +699,8 @@ ds_dhcpserver_ifs_set(unsigned int gid, const char *oid, const char *value)
     }
     free(dhcp_server_ifs);
     dhcp_server_ifs = copy;
+
+    dhcp_server_changed = TRUE;
 
     return 0;
 }
@@ -739,6 +772,8 @@ ds_subnet_set(unsigned int gid, const char *oid, const char *value,
 
     s->prefix_len = prefix_len;
 
+    dhcp_server_changed = TRUE;
+
     return 0;
 }
 
@@ -774,6 +809,8 @@ ds_subnet_add(unsigned int gid, const char *oid, const char *value,
 
     TAILQ_INSERT_TAIL(&subnets, s, links);
 
+    dhcp_server_changed = TRUE;
+
     return 0;
 }
 
@@ -793,8 +830,9 @@ ds_subnet_del(unsigned int gid, const char *oid,
     TAILQ_REMOVE(&subnets, s, links);
     free_subnet(s);
 
+    dhcp_server_changed = TRUE;
+
     return 0;
-    
 }
 
 static te_errno
