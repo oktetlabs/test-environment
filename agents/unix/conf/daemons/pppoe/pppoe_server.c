@@ -96,6 +96,9 @@ typedef struct te_pppoe_server {
                                 if pppoe-server restart is required */
 } te_pppoe_server;
 
+static te_bool
+pppoe_server_is_running(te_pppoe_server *pppoe);
+
 /** Static pppoe server structure */
 static te_pppoe_server pppoe_server;
 
@@ -116,8 +119,8 @@ pppoe_server_init(te_pppoe_server *pppoe)
     pppoe->subnet = INADDR_ANY;
     pppoe->prefix = 0;
     pppoe->max_sessions = PPPOE_MAX_SESSIONS;
-    pppoe->started = FALSE;
-    pppoe->changed = FALSE;
+    pppoe->started = pppoe_server_is_running(pppoe);
+    pppoe->changed = pppoe->started;
     pppoe->initialised = TRUE;
 }
 
