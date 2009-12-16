@@ -957,6 +957,8 @@ ds_##_gh##_add(unsigned int gid, const char *oid, const char *value,    \
     gh->next = _gh##s;                                                  \
     _gh##s = gh;                                                        \
                                                                         \
+    dhcp_server_changed = TRUE;                                         \
+                                                                        \
     return 0;                                                           \
 }
 
@@ -990,6 +992,8 @@ ds_##_gh##_del(unsigned int gid, const char *oid,       \
     else                                                \
         _gh##s = gh->next;                              \
     free_##_gh(gh);                                     \
+                                                        \
+    dhcp_server_changed = TRUE;                         \
                                                         \
     return 0;                                           \
 }
@@ -1046,6 +1050,8 @@ ds_host_group_set(unsigned int gid, const char *oid, const char *value,
         h->group = old;
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
+
+    dhcp_server_changed = TRUE;
 
     return 0;
 }
@@ -1113,6 +1119,8 @@ ds_##_ghs##_##_attr##_set(unsigned int gid, const char *oid,    \
     }                                                           \
                                                                 \
     free(old_val);                                              \
+                                                                \
+    dhcp_server_changed = TRUE;                                 \
                                                                 \
     return 0;                                                   \
 }
@@ -1210,6 +1218,8 @@ ds_##_ghs##_option_add(unsigned int gid, const char *oid,       \
     opt->next = ghs->options;                                   \
     ghs->options = opt;                                         \
                                                                 \
+    dhcp_server_changed = TRUE;                                 \
+                                                                \
     return 0;                                                   \
 }
 
@@ -1288,6 +1298,8 @@ ds_##_ghs##_option_set(unsigned int gid, const char *oid,       \
                                                                 \
     free(old);                                                  \
                                                                 \
+    dhcp_server_changed = TRUE;                                 \
+                                                                \
     return 0;                                                   \
 }
 
@@ -1329,6 +1341,8 @@ ds_##_ghs##_option_del(unsigned int gid, const char *oid,       \
         ghs->options = opt->next;                               \
                                                                 \
     FREE_OPTION(opt);                                           \
+                                                                \
+    dhcp_server_changed = TRUE;                                 \
                                                                 \
     return 0;                                                   \
 }
@@ -1884,6 +1898,7 @@ dhcpserver_init(void)
 #endif
 
     dhcp_server_initialised = TRUE;
+    dhcp_server_changed = TRUE;
 
     return 0;
 }
