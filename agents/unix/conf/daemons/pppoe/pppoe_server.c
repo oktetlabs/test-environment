@@ -940,7 +940,7 @@ te_errno
 pppoeserver_grab(const char *name)
 {
     te_pppoe_server *pppoe = pppoe_server_find();
-    char            *pppoe_paths[] = { PPPOE_SERVER_EXEC };
+    const char      *pppoe_paths[] = { PPPOE_SERVER_EXEC };
     te_errno         rc = 0;
 
     UNUSED(name);
