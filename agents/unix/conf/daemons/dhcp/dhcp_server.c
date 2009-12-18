@@ -1927,7 +1927,8 @@ dhcpserver_release(const char *name)
 
     UNUSED(name);
 
-    DHCP_SERVER_INIT_CHECK;
+    if (!dhcp_server_initialised)
+        return 0;
 
     rc = rcf_pch_del_node(&node_ds_dhcpserver);
     if (rc != 0)
@@ -1973,6 +1974,7 @@ dhcpserver_release(const char *name)
         }
         dhcp_server_was_run = FALSE;
     }
+
     if (dhcp_server_conf != NULL && unlink(dhcp_server_conf) != 0 &&
         errno != ENOENT)
     {
