@@ -198,9 +198,6 @@ iptables_perif_chain_is_enabled(const char *ifname, const char *table,
 
     INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
-    if ((ifname == NULL) || !ta_interface_is_mine(ifname))
-        return FALSE;
-
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
              "iptables -t %s -S %s | grep '^-A %s -%c %s -j %s_%s'",
              table, chain, chain,
@@ -494,11 +491,6 @@ iptables_chain_list(unsigned int  gid, const char *oid, char **list,
 
     *list = NULL;
 
-    if ((ifname == NULL) || !ta_interface_is_mine(ifname))
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENODEV);
-    }
-
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
              "iptables -t %s -S | grep '^-N .*_%s' | "
              "sed -e 's/^-N //g' | sed -e 's/_%s$//g'",
@@ -592,11 +584,6 @@ iptables_rules_get(unsigned int  gid, const char *oid,
     INFO("%s(ifname=%s, table=%s, chain=%s) started",
          __FUNCTION__, ifname, table, chain);
 
-    if ((ifname == NULL) || !ta_interface_is_mine(ifname))
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENODEV);
-    }
-
     *value = '\0';
 
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
@@ -671,11 +658,6 @@ iptables_rules_set(unsigned int  gid, const char *oid,
     UNUSED(dummy);
 
     INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
-
-    if ((ifname == NULL) || !ta_interface_is_mine(ifname))
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENODEV);
-    }
 
     /* Flush the chain */
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
@@ -762,11 +744,6 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
     INFO("%s(ifname=%s, table=%s, chain=%s): %s", __FUNCTION__,
          ifname, table, chain, value);
 
-    if ((ifname == NULL) || !ta_interface_is_mine(ifname))
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENODEV);
-    }
-
     cmd_p += sprintf(cmd_p, "iptables -t %s ", table);
 
 #define SKIP_SPACES(_p)                                 \
@@ -828,11 +805,6 @@ iptables_cmd_get(unsigned int  gid, const char *oid,
     UNUSED(chain);
 
     INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
-
-    if ((ifname == NULL) || !ta_interface_is_mine(ifname))
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENODEV);
-    }
 
     *value = '\0';
 
