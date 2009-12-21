@@ -23,7 +23,7 @@
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  * 
- * $Id: acse.c $
+ * $Id$
  */
 
 

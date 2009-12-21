@@ -23,7 +23,7 @@
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  * 
- * $Id: xen_suite.h $
+ * $Id$
  */
 
 #ifndef __XEN_SUITE_H__
