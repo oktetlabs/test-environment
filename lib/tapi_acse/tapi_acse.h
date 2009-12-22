@@ -117,6 +117,54 @@ extern te_errno tapi_acse_manage_cpe(const char *ta,
                                      const char *ssl_cert);
 
     
+/*
+ * ================= CWMP processing ===================
+ */
+
+extern te_errno tapi_acse_cpe_last_event(const char *ta,
+                                     const char *acs_handle,
+                                     const char *cpe_handle,
+                                     tapi_acse_event_t *event,
+);
+
+extern te_errno tapi_acse_cpe_get_event(const char *ta,
+                                     const char *acs_handle,
+                                     const char *cpe_handle,
+                                     int ev_num,
+                                     tapi_acse_event_t *event,
+);
+
+extern te_errno tapi_acse_cpe_state(const char *ta,
+                                     const char *acs_handle,
+                                     const char *cpe_handle,
+                                     tapi_acse_cpe_state_t *state,
+);
+
+extern te_errno tapi_acse_cpe_connect(const char *ta,
+                                     const char *acs_handle,
+                                     const char *cpe_handle,
+);
+
+extern te_errno tapi_acse_cpe_disconnect(const char *ta,
+                                     const char *acs_handle,
+                                     const char *cpe_handle,
+);
+
+extern te_errno tapi_acse_cpe_rpc_call(const char *ta,
+                                     const char *acs_handle,
+                                     const char *cpe_handle,
+                                     te_cwmp_rpc_t cpe_rpc_code,
+                                     tapi_acse_call_handle_t *call,
+                                     ...
+);
+
+extern te_errno tapi_acse_cpe_rpc_call_response(const char *ta,
+                                     const char *acs_handle,
+                                     const char *cpe_handle,
+                                     tapi_acse_call_handle_t call,
+                                     tapi_acse_call_status_t *status
+);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
