@@ -899,6 +899,7 @@ pppoe_server_subnet_set(unsigned int gid, const char *oid,
     return 0;
 }
 
+static rcf_pch_cfg_object node_pppoe_server;
 
 static rcf_pch_cfg_object node_pppoe_server_options =
     { "option", 0, NULL, NULL,
@@ -906,20 +907,20 @@ static rcf_pch_cfg_object node_pppoe_server_options =
       (rcf_ch_cfg_set)pppoe_server_option_set,
       (rcf_ch_cfg_add)pppoe_server_option_add,
       (rcf_ch_cfg_del)pppoe_server_option_del,
-      (rcf_ch_cfg_list)pppoe_server_option_list, NULL, NULL };
+      (rcf_ch_cfg_list)pppoe_server_option_list, NULL, &node_pppoe_server };
 
 static rcf_pch_cfg_object node_pppoe_server_subnet =
     { "subnet", 0, NULL, &node_pppoe_server_options,
       (rcf_ch_cfg_get)pppoe_server_subnet_get,
       (rcf_ch_cfg_set)pppoe_server_subnet_set,
-      NULL, NULL, NULL, NULL, NULL };
+      NULL, NULL, NULL, NULL, &node_pppoe_server };
 
 static rcf_pch_cfg_object node_pppoe_server_ifs =
     { "interface", 0, NULL, &node_pppoe_server_subnet,
       NULL, NULL,
       (rcf_ch_cfg_add)pppoe_server_ifs_add,
       (rcf_ch_cfg_del)pppoe_server_ifs_del,
-      (rcf_ch_cfg_list)pppoe_server_ifs_list, NULL, NULL };
+      (rcf_ch_cfg_list)pppoe_server_ifs_list, NULL, &node_pppoe_server };
 
 
 static rcf_pch_cfg_object node_pppoe_server =
