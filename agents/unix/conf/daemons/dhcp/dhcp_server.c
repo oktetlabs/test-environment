@@ -466,6 +466,8 @@ ds_dhcpserver_save_conf(void)
 static te_bool
 ds_dhcpserver_is_run(void)
 {
+    int rc = 0;
+
 #if defined __linux__
     sprintf(buf, PS_ALL_COMM "| grep -v grep | grep -q %s >/dev/null 2>&1",
             dhcp_server_exec);
@@ -475,7 +477,11 @@ ds_dhcpserver_is_run(void)
     return FALSE;
 #endif
 
-    return (ta_system(buf) == 0);
+    rc = ta_system(buf);
+
+    INFO("%s() returns %s", __FUNCTION__, (rc == 0) ? "TRUE" : "FALSE");
+
+    return (rc == 0);
 }
 
 /** Get DHCP server daemon on/off */
@@ -1911,6 +1917,25 @@ dhcpserver_grab(const char *name)
     UNUSED(name);
 
     DHCP_SERVER_INIT_CHECK;
+    
+    /* Stop DHCP server */
+    if (ds_dhcpserver_is_run())
+    {
+        WARN("Another DHCP server is running, shutting it down...");
+#ifdef TA_UNIX_ISC_DHCPS_NATIVE_CFG
+        rc = ds_dhcpserver_script_stop();
+#else
+        rc = ds_dhcpserver_stop();
+#endif
+        if (rc != 0)
+        {
+            ERROR("Failed to stop DHCP server");
+            return rc;
+        }
+    }
+
+    dhcp_server_started = FALSE;
+    dhcp_server_changed = FALSE;
 
     if ((rc = rcf_pch_add_node("/agent", &node_ds_dhcpserver)) != 0)
         return rc;
