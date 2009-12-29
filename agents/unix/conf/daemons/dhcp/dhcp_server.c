@@ -39,6 +39,8 @@
 #include <pwd.h>
 #endif
 
+#include <libgen.h>
+
 /**
  * Define it to use DHCP server native configuration:
  * - parse/backup/update/rollback of existing configuration file(s) and
@@ -177,6 +179,7 @@ static te_bool dhcp_server_changed = FALSE;
 
 /** Auxiliary buffer */
 static char buf[2048];
+static char name_buf[2048];
 
 #if defined __linux__
 /**
@@ -469,8 +472,14 @@ ds_dhcpserver_is_run(void)
     int rc = 0;
 
 #if defined __linux__
+#if 0
     sprintf(buf, PS_ALL_COMM "| grep -v grep | grep -q %s >/dev/null 2>&1",
             dhcp_server_exec);
+#else
+    strcpy(name_buf, dhcp_server_exec);
+    sprintf(buf, PS_ALL_COMM "| grep -v grep | grep -q %s >/dev/null 2>&1",
+            basename(name_buf));
+#endif
 #elif defined __sun__
     TE_SPRINTF(buf, "[ \"`/usr/bin/svcs -H -o STATE dhcp-server`\" = \"online\" ]");
 #else
@@ -1909,7 +1918,7 @@ dhcpserver_init(void)
     return 0;
 }
 
-te_errno 
+te_errno
 dhcpserver_grab(const char *name)
 {
     int rc = 0;
@@ -1917,7 +1926,7 @@ dhcpserver_grab(const char *name)
     UNUSED(name);
 
     DHCP_SERVER_INIT_CHECK;
-    
+
     /* Stop DHCP server */
     if (ds_dhcpserver_is_run())
     {
