@@ -37,14 +37,18 @@ extern "C" {
 #endif
 
 
+/* */
+extern void *va_end_list_ptr;
+#define VA_END_LIST (va_end_list_ptr)
+
 /*
  * ================= Configuring of ACSE ===================
  */
 
 typedef enum {
     ACSE_OP_ADD,
-    ACSE_OP_REMOVE,
-    ACSE_OP_CHANGE,
+    ACSE_OP_DEL,
+    ACSE_OP_MODIFY,
 } acse_op_t;
 
 /**
@@ -69,79 +73,111 @@ extern te_errno tapi_acse_stop(const char *ta);
  * Manage ACS object on the ACSE.
  *
  * @param ta            Test Agent name;
- * @param acs_handle    Name of ACS object within @p ta ACSE;
+ * @param acs_name      Name of ACS object within @p ta ACSE;
  * @param opcode        code of operation to be performed with 
  *                      specified ACS object: 
  *                          if @c ACSE_OP_ADD, object should not exist,
- *                          if @c ACSE_OP_CHANGE, object should exist, and
- *                              only non-NULL parameters will changed;
- * @param url           HTTP URL for @p acs_handle or NULL;
- * @param login         HTTP login name for @p acs_handle or NULL;
- * @param password      HTTP password for @p acs_handle or NULL;
- * @param ssl_cert      SSL certificate for @p acs_handle or NULL;
+ *                          if @c ACSE_OP_MODIFY, object should exist;
+ * @param ...           list of pairs (@p name, @p value), where @p name
+ *                      should match with name of leaf under 
+ *                      $c /agent/acse/acs/ in ConfiguratorModel, 
+ *                      and @p value is new value; list should be finished
+ *                      with macro @c VA_END_LIST.
+ *                      List should be empty if @p opcode is 
+ *                      @c ACSE_OP_DEL.
  *
  * @return status code
  */
 extern te_errno tapi_acse_manage_acs(const char *ta,
-                                     const char *acs_handle,
+                                     const char *acs_name  ,
                                      acse_op_t opcode,
-                                     const char *url,
-                                     const char *login,
-                                     const char *password,
-                                     const char *ssl_cert);
+                                     ...);
 
 
 /**
  * Manage CPE record on the ACSE.
  *
  * @param ta            Test Agent name;
- * @param acs_handle    Name of ACS object within @p ta ACSE;
- * @param cpe_handle    Name of CPE object within @p ta ACSE;
+ * @param acs_name      Name of ACS object within @p ta ACSE;
+ * @param cpe_name      Name of CPE record within @p ta ACSE;
  * @param opcode        code of operation to be performed with 
- *                      specified CPE object;
- * @param url           HTTP URL for Connection Request to this 
- *                      CPE, or NULL;
- * @param login         HTTP login name for CPE or NULL;
- * @param password      HTTP password for CPE or NULL;
- * @param ssl_cert      SSL certificate for CPE or NULL;
+ *                      specified CPE record;
+ * @param ...           list of pairs (@p name, @p value), where @p name
+ *                      should match with name of leaf under 
+ *                      $c /agent/acse/acs/cpe in ConfiguratorModel, 
+ *                      and @p value is new value; list should be finished
+ *                      with macro @c VA_END_LIST.
+ *                      List should be empty if @p opcode is 
+ *                      @c ACSE_OP_DEL.
  *
  * @return status code
  */
 extern te_errno tapi_acse_manage_cpe(const char *ta,
-                                     const char *acs_handle,
-                                     const char *cpe_handle,
+                                     const char *acs_name,
+                                     const char *cpe_name,
                                      acse_op_t opcode,
-                                     const char *url,
-                                     const char *login,
-                                     const char *password,
-                                     const char *ssl_cert);
+                                     ...);
 
     
 /*
  * ================= CWMP processing ===================
  */
 
+/**
+ * Get last Inform from particular CPE.
+ *
+ * @param ta            Test Agent name;
+ * @param acs_name      Name of ACS object within @p ta ACSE;
+ * @param cpe_name      Name of CPE record within @p ta ACSE;
+ * @param inform_descr  Inform data (OUT);
+ *
+ * @return status code
+ */
 extern te_errno tapi_acse_cpe_last_inform(const char *ta,
-                                     const char *acs_handle,
-                                     const char *cpe_handle,
-                                     te_cwmp_inform_t *inform_descr,
-);
+                                     const char *acs_name,
+                                     const char *cpe_name,
+                                     te_cwmp_inform_t *inform_descr);
 
+/**
+ * Get state of CWMP session with particular CPE.
+ *
+ * @param ta            Test Agent name;
+ * @param acs_name      Name of ACS object within @p ta ACSE;
+ * @param cpe_name      Name of CPE record within @p ta ACSE;
+ * @param state         Session state (OUT);
+ *
+ * @return status code
+ */
 extern te_errno tapi_acse_session_state(const char *ta,
-                                     const char *acs_handle,
-                                     const char *cpe_handle,
-                                     te_cwmp_session_state_t *state,
-);
+                                     const char *acs_name,
+                                     const char *cpe_name,
+                                     te_cwmp_session_state_t *state);
 
+/**
+ * Issue CWMP ConnectionRequest to particular CPE.
+ *
+ * @param ta            Test Agent name;
+ * @param acs_name      Name of ACS object within @p ta ACSE;
+ * @param cpe_name      Name of CPE record within @p ta ACSE;
+ *
+ * @return status code
+ */
 extern te_errno tapi_acse_cpe_connect(const char *ta,
-                                     const char *acs_handle,
-                                     const char *cpe_handle,
-);
+                                     const char *acs_name,
+                                     const char *cpe_name);
 
+/**
+ * Finish CWMP session with particular CPE.
+ *
+ * @param ta            Test Agent name;
+ * @param acs_name      Name of ACS object within @p ta ACSE;
+ * @param cpe_name      Name of CPE record within @p ta ACSE;
+ *
+ * @return status code
+ */
 extern te_errno tapi_acse_cpe_disconnect(const char *ta,
-                                     const char *acs_handle,
-                                     const char *cpe_handle,
-);
+                                         const char *acs_name,
+                                         const char *cpe_name);
 
 
 typedef uint32_t tapi_acse_call_handle_t;
@@ -154,19 +190,17 @@ typedef enum {
 } tapi_acse_call_status_t;
 
 extern te_errno tapi_acse_cpe_rpc_call(const char *ta,
-                                     const char *acs_handle,
-                                     const char *cpe_handle,
+                                     const char *acs_name,
+                                     const char *cpe_name,
                                      te_cwmp_rpc_cpe_t cpe_rpc_code,
                                      tapi_acse_call_handle_t *call,
-                                     ...
-);
+                                     ...);
 
 extern te_errno tapi_acse_cpe_rpc_call_response(const char *ta,
-                                     const char *acs_handle,
-                                     const char *cpe_handle,
+                                     const char *acs_name,
+                                     const char *cpe_name,
                                      tapi_acse_call_handle_t call,
-                                     tapi_acse_call_status_t *status
-);
+                                     tapi_acse_call_status_t *status);
 
 #ifdef __cplusplus
 } /* extern "C" */
