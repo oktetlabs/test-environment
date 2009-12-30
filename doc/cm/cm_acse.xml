@@ -52,10 +52,10 @@
     <object oid="/agent/acse/acs/url" access="read_write"
             type="string"/>
 
-    <!-- ACS certificate.
+    <!-- ACS SSL certificate.
          Name: none
          Value: certificate serialized into string representation -->
-    <object oid="/agent/acse/acs/cert" access="read_write"
+    <object oid="/agent/acse/acs/ssl_cert" access="read_write"
             type="string"/>
 
     <!-- User name used while authenticating to an ACS.
@@ -95,7 +95,7 @@
 
     <!-- CPE IP address.
          Name: none
-         Value: URL -->
+         Value: IP address -->
     <object oid="/agent/acse/acs/cpe/ip_addr" access="read_write"
             type="address"/>
 
@@ -132,25 +132,25 @@
          Name: none
          Value: Manufacturer of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/manufacturer"
-            access="read_only" type="string"/>
+            access="read_write" type="string"/>
 
     <!-- CPE device ID Organizationally Unique Identifier subobject.
          Name: none
          Value: OUI of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/oui"
-            access="read_only" type="string"/>
+            access="read_write" type="string"/>
 
     <!-- CPE device ID ProductClass subobject.
          Name: none
          Value: Product Class of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/product_class"
-            access="read_only" type="string"/>
+            access="read_write" type="string"/>
 
     <!-- CPE device ID SerialNumber subobject.
          Name: none
          Value: Serial Number of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/serial_number"
-            access="read_only" type="string"/>
+            access="read_write" type="string"/>
 
     <!-- Session object.
          Name: based on Configurator invocationally unique ID -->
