@@ -34,6 +34,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #if defined __linux__
 #include <linux/version.h>
 #endif
@@ -259,7 +263,8 @@ iptables_perif_chain_set(const char *ifname,
              iptables_is_chain_output(chain) ? 'o' : 'i',
              ifname, chain, ifname);
 
-    if ((rc = ta_system(cmd_buf)) != 0)
+    rc = ta_system(cmd_buf);
+    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
         ERROR("Command '%s' returned %r", cmd_buf, rc);
     }
@@ -299,7 +304,8 @@ iptables_chain_add(unsigned int  gid, const char *oid,
     /* Create new chain first */
     snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE, "iptables -t %s -N %s_%s",
              table, chain, ifname);
-    if ((rc = ta_system(cmd_buf)) != 0)
+    rc = ta_system(cmd_buf);
+    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
         ERROR("Failed to add the chain %s_%s, rc=%r", chain, ifname, rc);
         return rc;
@@ -361,7 +367,8 @@ iptables_chain_del(unsigned int  gid, const char *oid,
     /* Flush chain */
     snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE, "iptables -t %s -F %s_%s",
              table, chain, ifname);
-    if ((rc = ta_system(cmd_buf)) != 0)
+    rc = ta_system(cmd_buf);
+    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
         ERROR("Failed to flush the chain %s_%s, rc=%r", chain, ifname, rc);
         return rc;
@@ -370,7 +377,8 @@ iptables_chain_del(unsigned int  gid, const char *oid,
     /* Delete chain */
     snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE, "iptables -t %s -X %s_%s",
              table, chain, ifname);
-    if ((rc = ta_system(cmd_buf)) != 0)
+    rc = ta_system(cmd_buf);
+    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
         ERROR("Failed to delete the chain %s_%s, rc=%r", chain, ifname, rc);
         return rc;
@@ -772,7 +780,9 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
 #undef SKIP_SPACES
 
     INFO("Execute cmd: '%s'", buf);
-    if ((rc = ta_system(buf)) != 0)
+
+    rc = ta_system(buf);
+    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
         ERROR("Command '%s' returned %r", buf, rc);
     }

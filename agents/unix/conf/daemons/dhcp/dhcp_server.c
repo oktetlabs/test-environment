@@ -546,7 +546,7 @@ ds_dhcpserver_stop(void)
     TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st %s", get_ds_name("dhcpserver"));
 #endif
     rc = ta_system(buf);
-    if (!WIFEXITED(rc))
+    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
         ERROR("Command '%s' failed, rc=%r", buf, rc);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
