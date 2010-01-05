@@ -39,6 +39,10 @@
 #include <pwd.h>
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #include <libgen.h>
 
 /**
@@ -179,7 +183,6 @@ static te_bool dhcp_server_changed = FALSE;
 
 /** Auxiliary buffer */
 static char buf[2048];
-static char name_buf[2048];
 
 #if defined __linux__
 /**
@@ -469,17 +472,16 @@ ds_dhcpserver_save_conf(void)
 static te_bool
 ds_dhcpserver_is_run(void)
 {
-    int rc = 0;
+    int     rc = 0;
+    char   *name = NULL;
 
 #if defined __linux__
-#if 0
+    if ((name = strrchr(dhcp_server_exec, '/')) == NULL)
+        name = (char *)dhcp_server_exec;
+    else
+        name++;
     sprintf(buf, PS_ALL_COMM "| grep -v grep | grep -q %s >/dev/null 2>&1",
-            dhcp_server_exec);
-#else
-    strcpy(name_buf, dhcp_server_exec);
-    sprintf(buf, PS_ALL_COMM "| grep -v grep | grep -q %s >/dev/null 2>&1",
-            basename(name_buf));
-#endif
+            name);
 #elif defined __sun__
     TE_SPRINTF(buf, "[ \"`/usr/bin/svcs -H -o STATE dhcp-server`\" = \"online\" ]");
 #else
@@ -528,17 +530,25 @@ ds_dhcpserver_script_stop(void)
 static te_errno
 ds_dhcpserver_stop(void)
 {
+    int     rc = 0;
+    char   *name = NULL;
+
     ENTRY("%s()", __FUNCTION__);
     INFO("%s()", __FUNCTION__);
 
 #if defined __linux__
-    TE_SPRINTF(buf, "killall %s", dhcp_server_exec);
+    if ((name = strrchr(dhcp_server_exec, '/')) == NULL)
+        name = (char *)dhcp_server_exec;
+    else
+        name++;
+    TE_SPRINTF(buf, "killall %s", name);
 #elif defined __sun__
     TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st %s", get_ds_name("dhcpserver"));
 #endif
-    if (ta_system(buf) != 0)
+    rc = ta_system(buf);
+    if (!WIFEXITED(rc))
     {
-        ERROR("Command '%s' failed", buf);
+        ERROR("Command '%s' failed, rc=%r", buf, rc);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
