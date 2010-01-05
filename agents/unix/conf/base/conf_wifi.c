@@ -1352,14 +1352,28 @@ wifi_wep_set(unsigned int gid, const char *oid, char *value,
             return rc;
         }
 
-        wrq.u.data.flags &= ~IW_ENCODE_DISABLED; /* Enable */
-
-        if ((rc = wifi_set_item(ifname, SIOCSIWENCODE, &wrq)) != 0)
+        if (wrq.u.data.length > 0)
         {
-            ERROR("%s(): Cannot enable WEP encryption",
-                  __FUNCTION__);
+            /*
+             * Returned value wrq.u.data.length > 0 means
+             * that WEP encryption on tester's wireless interface
+             * is already enabled. We skip requred action with
+             * error warning.
+             */
+            ERROR("%s(): WEP encryption on wireless interface %s "
+                  "is already enabled ", __FUNCTION__, ifname);
+        }
+        else
+        {
+            wrq.u.data.flags &= ~IW_ENCODE_DISABLED; /* Enable */
 
-            return rc;
+            if ((rc = wifi_set_item(ifname, SIOCSIWENCODE, &wrq)) != 0)
+            {
+                ERROR("%s(): Cannot enable WEP encryption",
+                        __FUNCTION__);
+
+                return rc;
+            }
         }
 
         info->auth_open = info->prev_auth_open;
