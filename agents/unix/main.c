@@ -91,6 +91,7 @@
         return _rc;                                                     \
     } while (FALSE)
 
+static sem_t sigchld_sem;
 
 /** Status of exited child. */
 typedef struct ta_children_dead {
@@ -1253,6 +1254,17 @@ ta_sigchld_handler(void)
     te_bool logger = is_logger_available();
     int     saved_errno = errno;
 
+    /*
+     * we can't wait for the semaphore in signal handler,
+     * so we exit and the moment the sema is released the handler
+     * should be called by responsible context
+     */
+    if (sem_trywait(&sigchld_sem) < 0)
+    {
+        errno = saved_errno;
+        return;
+    }
+
     if (!ta_children_dead_heap_inited)
         ta_children_dead_heap_init();
 
@@ -1264,56 +1276,76 @@ ta_sigchld_handler(void)
      */
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
-        int               dead = ta_children_dead_heap_next;
+        int               dead = -1;
         ta_children_wait *wake;
 
         errno = saved_errno;
         get++;
         if (get > 1 && logger)
             WARN("Get %d children from on SIGCHLD handler call", get);
-        while (ta_children_dead_heap[dead].valid)
+        for (dead = 0; dead < TA_CHILDREN_DEAD_MAX; dead++)
         {
-            int next;
+            /*
+             * if we have a valid dead child with same pid, it means it's
+             * dead for ages and must be replaced by his younger dead 
+             * brother
+             */
+            if (pid == ta_children_dead_heap[dead].pid &&
+                ta_children_dead_heap[dead].valid)
+                break;
+        }
 
-            next = (dead + 1) % TA_CHILDREN_DEAD_MAX;
-            if (next == ta_children_dead_heap_next)
+        if (dead == TA_CHILDREN_DEAD_MAX)
+        {
+            dead = ta_children_dead_heap_next;
+
+            while (ta_children_dead_heap[dead].valid)
             {
-                struct timeval tv;
+                int next;
                 int i;
 
-                tv = ta_children_dead_heap[dead = 0].timestamp;
-                for (i = 1; i < TA_CHILDREN_DEAD_MAX; i++)
+                next = (dead + 1) % TA_CHILDREN_DEAD_MAX;
+                if (next == ta_children_dead_heap_next)
                 {
-                    if (TV_LESS(ta_children_dead_heap[i].timestamp, tv))
-                        tv = ta_children_dead_heap[dead = i].timestamp;
-                }
-                if (ta_children_dead_heap[dead].prev == -1 && logger)
-                {
-                    ERROR("List of dead child statuses "
-                          "is in inconsistent state: "
-                          "oldest entry has no prev, but heap is full.");
-                }
-                else 
-                {
-                    ta_children_dead_heap[
-                        ta_children_dead_heap[dead].prev].next = -1;
-                    if (ta_children_dead_heap[dead].next != -1 && logger)
+                    struct timeval tv;
+
+                    tv = ta_children_dead_heap[dead = 0].timestamp;
+                    for (i = 1; i < TA_CHILDREN_DEAD_MAX; i++)
+                    {
+                        if (TV_LESS(ta_children_dead_heap[i].timestamp, tv))
+                            tv = ta_children_dead_heap[dead = i].timestamp;
+                    }
+                    if (ta_children_dead_heap[dead].prev == -1 && logger)
                     {
                         ERROR("List of dead child statuses "
                               "is in inconsistent state: "
-                              "oldest entry is not the last.");
+                              "oldest entry has no prev, but heap is "
+                              "full.");
                     }
+                    else 
+                    {
+                        ta_children_dead_heap[
+                            ta_children_dead_heap[dead].prev].next = -1;
+                        if (ta_children_dead_heap[dead].next != -1 && 
+                            logger)
+                        {
+                            ERROR("List of dead child statuses "
+                                  "is in inconsistent state: "
+                                  "oldest entry is not the last.");
+                        }
+                    }
+                    if (logger)
+                    {
+                        VERB("Removing oldest entry with pid = %d, "
+                             "status = 0x%x from the list of dead "
+                             "children.", 
+                             ta_children_dead_heap[dead].pid,
+                             ta_children_dead_heap[dead].status);
+                    }
+                    break;
                 }
-                if (logger)
-                {
-                    VERB("Removing oldest entry with pid = %d, "
-                         "status = 0x%x from the list of dead children.", 
-                         ta_children_dead_heap[dead].pid,
-                         ta_children_dead_heap[dead].status);
-                }
-                break;
+                dead = next;
             }
-            dead = next;
         }
         ta_children_dead_heap_next = (dead + 1) % TA_CHILDREN_DEAD_MAX;
 
@@ -1361,6 +1393,8 @@ ta_sigchld_handler(void)
     }
     else
         errno = saved_errno;
+
+    sem_post(&sigchld_sem);
 }
 
 sigset_t rpcs_received_signals;
@@ -1586,6 +1620,16 @@ ta_waitpid(pid_t pid, int *p_status, int options)
 
         /* Check if we really have a child with such PID */
         saved_errno = errno;
+
+        UNLOCK;
+        /* take a semaphore not to have a race with sig hangler */
+        while ((rc = sem_wait(&sigchld_sem)) != 0)
+        {
+            if (errno != EINTR)
+                IMPOSSIBLE_LOG_AND_RET(sem_wait);
+            errno = saved_errno;
+        }
+        LOCK;
 #if 0
         /*
          * Status returned by function 'ta_waitpid'
@@ -1625,6 +1669,18 @@ ta_waitpid(pid_t pid, int *p_status, int options)
             errno = saved_errno; /* Remove ECHILD errno */
 
         found = find_dead_child(pid, &status);
+        /*
+         * it's 100% not our dead child, cause the process was alive
+         * when we called waitpid and because we hold sigchld_sem the
+         * signal handler has no chance of adding our process structure
+         * to the list.
+         */
+        if (wp_rc == 0)
+            found = FALSE;
+
+        sem_post(&sigchld_sem);
+        /* call handler to find out if we have any unhandled signals */
+        ta_sigchld_handler();
 
         /*
          * A child is still alive:
@@ -1998,6 +2054,11 @@ main(int argc, char **argv)
         ERROR("Cannot set SIGPIPE action: %r");
     }
 
+    if (sem_init(&sigchld_sem, 0, 1) < 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("Can't initialize sigchld sem: %r");
+    }
     /* FIXME: Is it used by RPC */
     sigact.sa_handler = (void *)ta_sigchld_handler;
     if (sigaction(SIGCHLD, &sigact, NULL) != 0)
