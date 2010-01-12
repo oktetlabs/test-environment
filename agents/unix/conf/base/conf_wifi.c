@@ -127,20 +127,39 @@ static ta_priv_ioctl priv_ioctl[TA_PRIV_IOCTL_MAX];
 #endif
 
 /** The number of default WEP keys */
-#define WEP_KEYS_NUM 4
+#define WEP_KEYS_NUM        4
+
+/** Default key index value of the assigned WEP key */
+#define WEP_KEY_ID_DFLT     1
 
 /**
- * Length of 40 bits WEP key.
- * @todo Extend agent to support 104 bits keys.
+ * WEP 40 key length 5 bytes.
  */
-#define WEP_KEY_LEN 5
+#define WEP40_KEY_LEN       5
+/**
+ * WEP 104 key length 13 bytes.
+ */
+#define WEP104_KEY_LEN      13
+/**
+ * WEP 128 key length 16 bytes.
+ */
+#define WEP128_KEY_LEN      16
+
+/**
+ * Length of 40 bits WEP key is on default.
+ */
+#define WEP_KEY_LEN_DFLT    WEP40_KEY_LEN
+/**
+ * Length of 128 bits WEP key is maximal.
+ */
+#define WEP_KEY_LEN_MAX     WEP128_KEY_LEN
 
 /** Information about station's settings */
 typedef struct wifi_sta_info_s {
     te_bool valid; /**< Wheter this structure keeps valid data */
     te_bool wep_enc; /**< Wheter WEP encryption is enabled */
     uint8_t def_key_id; /**< Default TX key index [0..3] */
-    uint8_t def_keys[WEP_KEYS_NUM][WEP_KEY_LEN]; /**< Default WEP keys */
+    uint8_t def_keys[WEP_KEYS_NUM][WEP_KEY_LEN_MAX]; /**< Default WEP keys */
     te_bool auth_open; /**< Wheter authentication algorithm is open */
     te_bool prev_auth_open; /**< Wheter authentication algorithm should be 
                                  open after enabling WEP */
@@ -1199,7 +1218,6 @@ wifi_wep_key_set(unsigned int gid, const char *oid, char *value,
     int              key_index;
     int              keylen;
     wifi_sta_info_t *info;
-    char             def_key_id[10];
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1352,25 +1370,38 @@ wifi_wep_set(unsigned int gid, const char *oid, char *value,
             return rc;
         }
 
-        if (wrq.u.data.length > 0)
+        if (wrq.u.data.length == WEP40_KEY_LEN ||
+            wrq.u.data.length == WEP104_KEY_LEN ||
+            wrq.u.data.length == WEP128_KEY_LEN)
         {
-            /*
-             * Returned value wrq.u.data.length > 0 means
-             * that WEP encryption on tester's wireless interface
-             * is already enabled. We skip requred action with
-             * error warning.
-             */
-            ERROR("%s(): WEP encryption on wireless interface %s "
-                  "is already enabled ", __FUNCTION__, ifname);
-        }
-        else
-        {
-            wrq.u.data.flags &= ~IW_ENCODE_DISABLED; /* Enable */
+            wrq.u.data.flags &= ~IW_ENCODE_DISABLED;
 
             if ((rc = wifi_set_item(ifname, SIOCSIWENCODE, &wrq)) != 0)
             {
                 ERROR("%s(): Cannot enable WEP encryption",
-                        __FUNCTION__);
+                      __FUNCTION__);
+
+                return rc;
+            }
+        }
+        else
+        {
+            ERROR("%s(): Invalid value '%d' of encryption "
+                  "key length was returned. Try to enable WEP 40 "
+                  "encryption with default zero key.",
+                  __FUNCTION__, wrq.u.data.length);
+
+            memset(key, 0, WEP_KEY_LEN_DFLT);
+            memset(&wrq, 0, sizeof(wrq));
+
+            wrq.u.data.pointer = (caddr_t)key;
+            wrq.u.data.length = WEP_KEY_LEN_DFLT;
+            wrq.u.encoding.flags = WEP_KEY_ID_DFLT;
+
+            if ((rc = wifi_set_item("ath1", SIOCSIWENCODE, &wrq)) != 0)
+            {
+                ERROR("%s(): Cannot enable WEP 40 encryption "
+                      "with default zero key", __FUNCTION__);
 
                 return rc;
             }
