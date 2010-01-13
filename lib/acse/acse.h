@@ -25,7 +25,7 @@
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
- * $Id: acse.h 31892 2006-09-26 07:12:12Z arybchik $
+ * $Id$
  */
 
 #ifndef __TE_LIB_ACSE_H__

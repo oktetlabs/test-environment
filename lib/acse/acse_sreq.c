@@ -25,7 +25,7 @@
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
- * $Id: acse_sreq.c 45424 2007-12-18 11:01:12Z edward $
+ * $Id$
  */
 
 #include "te_config.h"

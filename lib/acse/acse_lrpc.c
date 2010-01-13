@@ -25,7 +25,7 @@
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
- * $Id: acse_lrpc.c 45424 2007-12-18 11:01:12Z edward $
+ * $Id$
  */
 
 #include "te_config.h"
@@ -1388,9 +1388,9 @@ after_select(void *data, fd_set *rd_set, fd_set *wr_set)
                         return TE_RC(TE_TA_UNIX, TE_EFAIL);
                     case sizeof fun:
                         lrpc->rc =
-                            fun >= acse_fun_first && fun <= acse_fun_last ?
-                                (*xlat[fun - acse_fun_first])(lrpc->params) :
-                                TE_RC(TE_TA_UNIX, TE_ENOSYS);
+                          fun >= acse_fun_first && fun <= acse_fun_last ?
+                            (*xlat[fun - acse_fun_first])(lrpc->params) :
+                            TE_RC(TE_TA_UNIX, TE_ENOSYS);
 
                         lrpc->state = want_write;
                         break;

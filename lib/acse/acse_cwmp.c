@@ -25,7 +25,7 @@
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
- * $Id: acse_cwmp.c 45424 2007-12-18 11:01:12Z edward $
+ * $Id$
  */
 
 #include "te_config.h"
@@ -111,7 +111,10 @@ acse_cwmp_create(channel_t *channel)
 }
 
 
-SOAP_FMAC5 int SOAP_FMAC6 __cwmp__GetRPCMethods(struct soap *soap, struct _cwmp__GetRPCMethods *cwmp__GetRPCMethods, struct _cwmp__GetRPCMethodsResponse *cwmp__GetRPCMethodsResponse)
+SOAP_FMAC5 int SOAP_FMAC6
+__cwmp__GetRPCMethods(struct soap *soap, 
+struct _cwmp__GetRPCMethods *cwmp__GetRPCMethods, 
+struct _cwmp__GetRPCMethodsResponse *cwmp__GetRPCMethodsResponse)
 {
     UNUSED(soap);
     UNUSED(cwmp__GetRPCMethods);
@@ -120,7 +123,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __cwmp__GetRPCMethods(struct soap *soap, struct _cwmp_
     return 0;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 __cwmp__Inform(struct soap *soap, struct _cwmp__Inform *cwmp__Inform, struct _cwmp__InformResponse *cwmp__InformResponse)
+SOAP_FMAC5 int SOAP_FMAC6 
+__cwmp__Inform(struct soap *soap, 
+struct _cwmp__Inform *cwmp__Inform, 
+struct _cwmp__InformResponse *cwmp__InformResponse)
 {
     UNUSED(soap);
     UNUSED(cwmp__Inform);
@@ -129,7 +135,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __cwmp__Inform(struct soap *soap, struct _cwmp__Inform
     return 0;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 __cwmp__TransferComplete(struct soap *soap, struct _cwmp__TransferComplete *cwmp__TransferComplete, struct _cwmp__TransferCompleteResponse *cwmp__TransferCompleteResponse)
+SOAP_FMAC5 int SOAP_FMAC6 
+__cwmp__TransferComplete(struct soap *soap, 
+struct _cwmp__TransferComplete *cwmp__TransferComplete, 
+struct _cwmp__TransferCompleteResponse *cwmp__TransferCompleteResponse)
 {
     UNUSED(soap);
     UNUSED(cwmp__TransferComplete);
@@ -138,7 +147,12 @@ SOAP_FMAC5 int SOAP_FMAC6 __cwmp__TransferComplete(struct soap *soap, struct _cw
     return 0;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 __cwmp__AutonomousTransferComplete(struct soap *soap, struct _cwmp__AutonomousTransferComplete *cwmp__AutonomousTransferComplete, struct _cwmp__AutonomousTransferCompleteResponse *cwmp__AutonomousTransferCompleteResponse)
+SOAP_FMAC5 int SOAP_FMAC6 
+__cwmp__AutonomousTransferComplete(struct soap *soap, 
+struct _cwmp__AutonomousTransferComplete
+                *cwmp__AutonomousTransferComplete,
+struct _cwmp__AutonomousTransferCompleteResponse 
+                *cwmp__AutonomousTransferCompleteResponse)
 {
     UNUSED(soap);
     UNUSED(cwmp__AutonomousTransferComplete);
@@ -147,7 +161,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __cwmp__AutonomousTransferComplete(struct soap *soap, 
     return 0;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 __cwmp__RequestDownload(struct soap *soap, struct _cwmp__RequestDownload *cwmp__RequestDownload, struct _cwmp__RequestDownloadResponse *cwmp__RequestDownloadResponse)
+SOAP_FMAC5 int SOAP_FMAC6
+__cwmp__RequestDownload(struct soap *soap, 
+struct _cwmp__RequestDownload *cwmp__RequestDownload, 
+struct _cwmp__RequestDownloadResponse *cwmp__RequestDownloadResponse)
 {
     UNUSED(soap);
     UNUSED(cwmp__RequestDownload);
@@ -156,7 +173,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __cwmp__RequestDownload(struct soap *soap, struct _cwm
     return 0;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 __cwmp__Kicked(struct soap *soap, struct _cwmp__Kicked *cwmp__Kicked, struct _cwmp__KickedResponse *cwmp__KickedResponse)
+SOAP_FMAC5 int SOAP_FMAC6 
+__cwmp__Kicked(struct soap *soap, 
+struct _cwmp__Kicked *cwmp__Kicked, 
+struct _cwmp__KickedResponse *cwmp__KickedResponse)
 {
     UNUSED(soap);
     UNUSED(cwmp__Kicked);
