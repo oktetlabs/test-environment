@@ -1383,7 +1383,7 @@ ta_sigchld_handler(void)
          */
         if (pid == 0 || errno == ECHILD)
         {
-            RING("No child was available in SIGCHILD handler");
+            INFO("No child was available in SIGCHILD handler");
             errno = saved_errno;
         }
         else
