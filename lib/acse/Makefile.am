@@ -24,13 +24,25 @@ libacse_la_SOURCES = acse.c \
                     acse_lrpc.c \
                     acse_conn.c \
                     acse_sreq.c \
-                    acse_cwmp.c \
-                    stdsoap2.c \
-                    soapC.c \
-                    soapServer.c \
-                    soapClient.c
+                    acse_cwmp.c
+
+#                    soapClient.c # Why ?? 
+
+#                    stdsoap2.c \
+#                    soapC.c \
+#                    soapServer.c 
 
 #libacse_a_LIBADD = /usr/lib/libssl.a /usr/lib/libcrypto.a /usr/lib/libz.a
+
+bin_PROGRAMS = acse_dummy
+
+acse_dummy_SOURCES = acse_dummy.c \
+                    soapC.c \
+                    stdsoap2.c \
+                    soapServer.c 
+
+# acse_dummy_LDFLAGS = -lgsoap
+acse_dummy_LDFLAGS = -lz
 
 BUILT_SOURCES = cwmp_acs.h cwmp_cpe.h cwmp.h cwmp_decls.h cwmp.nsmap \
                 soapC.c soapClient.c soapServer.c soapH.h soapStub.h
@@ -44,12 +56,12 @@ stdsoap2.c: @SOAPC@
 # Generate ACS SOAP sources
 soapServer.c: cwmp_acs.h
 	$(SOAPCPP2) $(SOAPCPP2_ACS_FLAGS) cwmp_acs.h
-	rm soapC.c soapH.h soapStub.h cwmp.nsmap
+	rm -f soapC.c soapH.h soapStub.h cwmp.nsmap
 
 # Generate CPE SOAP sources
 soapClient.c: cwmp_cpe.h
 	$(SOAPCPP2) $(SOAPCPP2_CPE_FLAGS) cwmp_cpe.h
-	rm soapC.c soapH.h soapStub.h cwmp.nsmap
+	rm -f soapC.c soapH.h soapStub.h cwmp.nsmap
 
 # Generate common SOAP sources
 soapC.c soapH.h soapStub.h cwmp.nsmap: cwmp.h soapServer.c soapClient.c
