@@ -698,8 +698,11 @@ ds_dhcpserver_commit(unsigned int gid, const char *oid)
 #endif
         if (rc != 0)
         {
-            ERROR("Failed to stop DHCP server");
-            return rc;
+            if (ds_dhcpserver_is_run())
+            {
+                ERROR("Failed to stop DHCP server");
+                return rc;
+            }
         }
     }
 
@@ -1948,8 +1951,15 @@ dhcpserver_grab(const char *name)
 #endif
         if (rc != 0)
         {
-            ERROR("Failed to stop DHCP server");
-            return rc;
+            /*
+             * in case we failed to stop dhcp server and it's still
+             * running
+             */
+            if (ds_dhcpserver_is_run())
+            {
+                ERROR("Failed to stop DHCP server");
+                return rc;
+            }
         }
     }
 
