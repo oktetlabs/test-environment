@@ -1663,6 +1663,7 @@ ta_waitpid(pid_t pid, int *p_status, int options)
             log_child_death(pid, status);
             if (p_status != NULL)
                 *p_status = status;
+            sem_post(&sigchld_sem);
             return wp_rc;
         }
         else
