@@ -223,7 +223,8 @@ iptables_perif_chain_is_enabled(const char *ifname, const char *table,
     enabled = (fgets(buf, sizeof(buf), fp) != NULL);
 
 cleanup:
-    fclose(fp);
+    if (fp != NULL)
+        fclose(fp);
     close(out_fd);
     ta_waitpid(pid, &status, 0);
 
