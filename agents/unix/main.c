@@ -179,7 +179,11 @@ ta_children_dead_heap_init(void)
     int i;
 
     for (i = 0; i < TA_CHILDREN_DEAD_MAX; i++)
+    {
+        ta_children_dead_heap[i].prev = -1;
+        ta_children_dead_heap[i].next = -1;
         ta_children_dead_heap[i].valid = FALSE;
+    }
     ta_children_dead_heap_inited = TRUE;
 }
 
@@ -1459,7 +1463,7 @@ ta_children_cleanup()
  *
  * @return TRUE is a child was found, FALSE overwise.
  */
-static inline te_bool
+static te_bool
 find_dead_child(pid_t pid, int *status)
 {
     int     dead;
@@ -1481,6 +1485,13 @@ find_dead_child(pid_t pid, int *status)
 
             *status = ta_children_dead_heap[dead].status;
             ta_children_dead_heap[dead].valid = FALSE;
+            break;
+        }
+        /* Note, we should not ever get here */
+        if (!ta_children_dead_heap[dead].valid)
+        {
+            WARN("%s: invalid pid in the list", __FUNCTION__);
+            dead = -1;
             break;
         }
     }
@@ -1572,7 +1583,7 @@ ta_waitpid(pid_t pid, int *p_status, int options)
                 *p_status = status;
             return rc;
         }
-        else
+        else /* -1 */
         {
             /* The child is probably dead */
             rc = pthread_mutex_lock(&children_lock);
@@ -1581,7 +1592,12 @@ ta_waitpid(pid_t pid, int *p_status, int options)
                 LOG_IMPOSSIBLE(pthread_mutex_lock);
                 return -1;
             }
+            sem_wait(&sigchld_sem);
             found = find_dead_child(pid, &status);
+            sem_post(&sigchld_sem);
+            /* call handler to find out if we have any unhandled signals */
+            ta_sigchld_handler();
+
             rc = pthread_mutex_unlock(&children_lock);
             if (rc != 0)
             {
