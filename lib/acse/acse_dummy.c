@@ -77,7 +77,11 @@ main(int argc, char **argv)
         perror("accept failed:");
         return 2;
     }
+    soap_imode(&my_soap, SOAP_IO_KEEPALIVE);
+    soap_omode(&my_soap, SOAP_IO_KEEPALIVE);
     soap_set_namespaces(&my_soap, namespaces);
+
+    my_soap.max_keep_alive = 2;
 
     printf("before serve\n");
     soap_serve(&my_soap);
