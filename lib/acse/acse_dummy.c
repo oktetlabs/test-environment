@@ -107,12 +107,26 @@ __cwmp__Inform(struct soap *soap,
                struct _cwmp__Inform *cwmp__Inform,
                struct _cwmp__InformResponse *cwmp__InformResponse)
 {
-    UNUSED(soap);
     UNUSED(cwmp__Inform);
-    UNUSED(cwmp__InformResponse);
 
-    printf("%s called.\n", __FUNCTION__);
-    cwmp__InformResponse->MaxEnvelopes = 1;
+    printf("%s called. Header is %p, enc style is '%s'\n",
+            __FUNCTION__, soap->header, soap->encodingStyle);
+    if (soap->header)
+        printf("hold_request in Header: %d\n",
+                (int)soap->header->cwmp__HoldRequests.__item);
+    else
+    {
+        soap->header = soap_malloc(soap, sizeof(struct SOAP_ENV__Header));
+    }
+
+    if (soap->encodingStyle)
+    {
+        soap->encodingStyle = NULL;
+    }
+
+    cwmp__InformResponse->MaxEnvelopes = 255;
+    soap->header->cwmp__HoldRequests.__item = 1;
+    soap->header->cwmp__HoldRequests.SOAP_ENV__mustUnderstand = "1";
 
     return SOAP_OK;
 }
