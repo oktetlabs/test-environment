@@ -18,7 +18,11 @@
 #include "te_defs.h"
 #include "te_errno.h"
 
-#include "soapStub.h"
+#include "logger_api.h"
+
+DEFINE_LGR_ENTITY("ACSE_DUMMY");
+
+#include "acse_soapStub.h"
 #if 0
 #include "cwmp.nsmap"
 
@@ -60,14 +64,12 @@ main(int argc, char **argv)
         perror("bind failed:");
         return 1;
     }
-    printf("bound.\n");
 
     if (listen(l_sock, 5) < 0)
     {
         perror("listen failed:");
         return 2;
     }
-    printf("listen\n");
 
     soap_init(&my_soap);
     if ((my_soap.socket = accept(l_sock, &conn_sa, &conn_sa_size)) < 0)
@@ -75,9 +77,6 @@ main(int argc, char **argv)
         perror("accept failed:");
         return 2;
     }
-    printf("accepted %d\n", my_soap.socket);
-    send(my_soap.socket, "UUUUUUUUUUUUUUUUUUUUU", 20, 0);
-
     soap_set_namespaces(&my_soap, namespaces);
 
     printf("before serve\n");
@@ -89,96 +88,3 @@ main(int argc, char **argv)
     return 0;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6
-__cwmp__GetRPCMethods(struct soap *soap,
-                      struct _cwmp__GetRPCMethods *cwmp__GetRPCMethods,
-                      struct _cwmp__GetRPCMethodsResponse 
-                                    *cwmp__GetRPCMethodsResponse)
-{
-    UNUSED(soap);
-    UNUSED(cwmp__GetRPCMethods);
-    UNUSED(cwmp__GetRPCMethodsResponse);
-
-    return SOAP_OK;
-}
-
-SOAP_FMAC5 int SOAP_FMAC6 
-__cwmp__Inform(struct soap *soap,
-               struct _cwmp__Inform *cwmp__Inform,
-               struct _cwmp__InformResponse *cwmp__InformResponse)
-{
-    UNUSED(cwmp__Inform);
-
-    printf("%s called. Header is %p, enc style is '%s'\n",
-            __FUNCTION__, soap->header, soap->encodingStyle);
-    if (soap->header)
-        printf("hold_request in Header: %d\n",
-                (int)soap->header->cwmp__HoldRequests.__item);
-    else
-    {
-        soap->header = soap_malloc(soap, sizeof(struct SOAP_ENV__Header));
-    }
-
-    if (soap->encodingStyle)
-    {
-        soap->encodingStyle = NULL;
-    }
-
-    cwmp__InformResponse->MaxEnvelopes = 255;
-    soap->header->cwmp__HoldRequests.__item = 1;
-    soap->header->cwmp__HoldRequests.SOAP_ENV__mustUnderstand = "1";
-
-    return SOAP_OK;
-}
-
-SOAP_FMAC5 int SOAP_FMAC6
-__cwmp__TransferComplete(struct soap *soap,
-        struct _cwmp__TransferComplete *cwmp__TransferComplete,
-        struct _cwmp__TransferCompleteResponse
-                                *cwmp__TransferCompleteResponse)
-{
-    UNUSED(soap);
-    UNUSED(cwmp__TransferComplete);
-    UNUSED(cwmp__TransferCompleteResponse);
-
-    return 0;
-}
-
-SOAP_FMAC5 int SOAP_FMAC6
-__cwmp__AutonomousTransferComplete(struct soap *soap,
-        struct _cwmp__AutonomousTransferComplete
-                            *cwmp__AutonomousTransferComplete,
-        struct _cwmp__AutonomousTransferCompleteResponse
-                            *cwmp__AutonomousTransferCompleteResponse)
-{
-    UNUSED(soap);
-    UNUSED(cwmp__AutonomousTransferComplete);
-    UNUSED(cwmp__AutonomousTransferCompleteResponse);
-
-    return 0;
-}
-
-SOAP_FMAC5 int SOAP_FMAC6
-__cwmp__RequestDownload(struct soap *soap,
-        struct _cwmp__RequestDownload *cwmp__RequestDownload,
-        struct _cwmp__RequestDownloadResponse
-                                    *cwmp__RequestDownloadResponse)
-{
-    UNUSED(soap);
-    UNUSED(cwmp__RequestDownload);
-    UNUSED(cwmp__RequestDownloadResponse);
-
-    return 0;
-}
-
-SOAP_FMAC5 int SOAP_FMAC6
-__cwmp__Kicked(struct soap *soap,
-        struct _cwmp__Kicked *cwmp__Kicked,
-        struct _cwmp__KickedResponse *cwmp__KickedResponse)
-{
-    UNUSED(soap);
-    UNUSED(cwmp__Kicked);
-    UNUSED(cwmp__KickedResponse);
-
-    return 0;
-}

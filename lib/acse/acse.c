@@ -24,6 +24,7 @@
  *
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
@@ -44,7 +45,7 @@
 
 /** The list of "channels" */
 static STAILQ_HEAD(channel_list_t, channel_item_t)
-    channel_list = STAILQ_HEAD_INITIALIZER(&channel_list); 
+channel_list = STAILQ_HEAD_INITIALIZER(&channel_list); 
 
 static void
 destroy_all_items(void)
