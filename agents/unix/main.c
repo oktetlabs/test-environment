@@ -54,6 +54,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/un.h>
+#include <sys/queue.h>
 
 #ifdef __linux__
 #include <elf.h>
@@ -95,12 +96,12 @@ static sem_t sigchld_sem;
 
 /** Status of exited child. */
 typedef struct ta_children_dead {
-    pid_t               pid;        /**< PID of the child */
-    int                 status;     /**< status of the child */
-    struct timeval      timestamp;  /**< when child finished */
-    te_bool             valid;      /**< is this entry valid? */
-    int                 next;       /**< next id in the heap array */
-    int                 prev;       /**< prev id in the heap array */
+    SLIST_ENTRY(ta_children_dead) links;    /**< dead children linek list */
+
+    pid_t                       pid;        /**< PID of the child */
+    int                         status;     /**< status of the child */
+    struct timeval              timestamp;  /**< when child finished */
+    te_bool                     valid;      /**< is this entry valid? */
 } ta_children_dead;
 
 /** Reclaim to get status of child. */
@@ -159,11 +160,11 @@ static ta_children_dead ta_children_dead_heap[TA_CHILDREN_DEAD_MAX];
 /** Is the heap initialized? */
 static te_bool ta_children_dead_heap_inited = FALSE;
 
-/** Best candidate for heap entry to be used */
-static int ta_children_dead_heap_next = 0;
+/** Head of empty entries list */
+SLIST_HEAD(, ta_children_dead) ta_children_dead_pool;
 
 /** Head of dead children list */
-static volatile int ta_children_dead_list = -1;
+SLIST_HEAD(, ta_children_dead) ta_children_dead_list;
 
 /** Head of ta_children_wait list */
 static ta_children_wait *volatile ta_children_wait_list;
@@ -178,11 +179,15 @@ ta_children_dead_heap_init(void)
 {
     int i;
 
+    SLIST_INIT(&ta_children_dead_pool);
+    SLIST_INIT(&ta_children_dead_list);
+
     for (i = 0; i < TA_CHILDREN_DEAD_MAX; i++)
     {
-        ta_children_dead_heap[i].prev = -1;
-        ta_children_dead_heap[i].next = -1;
-        ta_children_dead_heap[i].valid = FALSE;
+        ta_children_dead *dead = &ta_children_dead_heap[i];
+        memset(dead, 0, sizeof(ta_children_dead));
+        SLIST_INSERT_HEAD(&ta_children_dead_pool, dead, links);
+        dead->valid = FALSE;
     }
     ta_children_dead_heap_inited = TRUE;
 }
@@ -1280,88 +1285,67 @@ ta_sigchld_handler(void)
      */
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
-        int               dead = -1;
+        ta_children_dead *dead = NULL;
+        ta_children_dead *oldest = NULL;
         ta_children_wait *wake;
 
         errno = saved_errno;
         get++;
         if (get > 1 && logger)
             WARN("Get %d children from on SIGCHLD handler call", get);
-        for (dead = 0; dead < TA_CHILDREN_DEAD_MAX; dead++)
+
+        for (dead = SLIST_FIRST(&ta_children_dead_list);
+             dead != NULL; dead = SLIST_NEXT(dead, links))
         {
             /*
              * if we have a valid dead child with same pid, it means it's
              * dead for ages and must be replaced by his younger dead 
              * brother
              */
-            if (pid == ta_children_dead_heap[dead].pid &&
-                ta_children_dead_heap[dead].valid)
-                break;
-        }
-
-        if (dead == TA_CHILDREN_DEAD_MAX)
-        {
-            dead = ta_children_dead_heap_next;
-
-            while (ta_children_dead_heap[dead].valid)
+            oldest = dead; /* Oldest entry is always the last */
+            if ((pid == dead->pid) && dead->valid)
             {
-                int next;
-                int i;
-
-                next = (dead + 1) % TA_CHILDREN_DEAD_MAX;
-                if (next == ta_children_dead_heap_next)
-                {
-                    struct timeval tv;
-
-                    tv = ta_children_dead_heap[dead = 0].timestamp;
-                    for (i = 1; i < TA_CHILDREN_DEAD_MAX; i++)
-                    {
-                        if (TV_LESS(ta_children_dead_heap[i].timestamp, tv))
-                            tv = ta_children_dead_heap[dead = i].timestamp;
-                    }
-                    if (ta_children_dead_heap[dead].prev == -1 && logger)
-                    {
-                        ERROR("List of dead child statuses "
-                              "is in inconsistent state: "
-                              "oldest entry has no prev, but heap is "
-                              "full.");
-                    }
-                    else 
-                    {
-                        ta_children_dead_heap[
-                            ta_children_dead_heap[dead].prev].next = -1;
-                        if (ta_children_dead_heap[dead].next != -1 && 
-                            logger)
-                        {
-                            ERROR("List of dead child statuses "
-                                  "is in inconsistent state: "
-                                  "oldest entry is not the last.");
-                        }
-                    }
-                    if (logger)
-                    {
-                        VERB("Removing oldest entry with pid = %d, "
-                             "status = 0x%x from the list of dead "
-                             "children.", 
-                             ta_children_dead_heap[dead].pid,
-                             ta_children_dead_heap[dead].status);
-                    }
-                    break;
-                }
-                dead = next;
+                WARN("Removing obsoleted entry with the same pid = %d, "
+                     "status = 0x%x from the list of dead children.", 
+                     dead->pid, dead->status);
+                SLIST_REMOVE(&ta_children_dead_list, dead,
+                             ta_children_dead, links);
+                break;
             }
         }
-        ta_children_dead_heap_next = (dead + 1) % TA_CHILDREN_DEAD_MAX;
 
-        ta_children_dead_heap[dead].pid = pid;
-        ta_children_dead_heap[dead].status = status;
-        gettimeofday(&ta_children_dead_heap[dead].timestamp, NULL);
-        ta_children_dead_heap[dead].valid = TRUE;
-        ta_children_dead_heap[dead].prev = -1;
-        if (ta_children_dead_list != -1)
-            ta_children_dead_heap[ta_children_dead_list].prev = dead;
-        ta_children_dead_heap[dead].next = ta_children_dead_list;
-        ta_children_dead_list = dead;
+        if (dead == NULL)
+        {
+            /*
+             * Entry with specified pid is not found.
+             * Allocate new entry from pool
+             */
+            dead = SLIST_FIRST(&ta_children_dead_pool);
+            if (dead != NULL)
+            {
+                SLIST_REMOVE(&ta_children_dead_pool, dead,
+                             ta_children_dead, links);
+            }
+        }
+
+        if (dead == NULL)
+        {
+            /*
+             * Pool is already empty. Free the oldest entry in the list.
+             */
+            dead = oldest;
+            WARN("Removing oldest entry with pid = %d, status = 0x%x "
+                 "from the list of dead children.", 
+                 dead->pid, dead->status);
+            SLIST_REMOVE(&ta_children_dead_list, dead,
+                         ta_children_dead, links);
+        }
+
+        dead->pid = pid;
+        dead->status = status;
+        dead->valid = TRUE;
+        gettimeofday(&dead->timestamp, NULL);
+        SLIST_INSERT_HEAD(&ta_children_dead_list, dead, links);
 
         for (wake = ta_children_wait_list; wake != NULL; wake = wake->next)
         {
@@ -1441,7 +1425,6 @@ init_tce_subsystem(void)
 static void
 ta_children_cleanup()
 {
-    ta_children_dead_list = -1;
     ta_children_dead_heap_init();
     while (ta_children_wait_list != NULL)
     {
@@ -1466,37 +1449,32 @@ ta_children_cleanup()
 static te_bool
 find_dead_child(pid_t pid, int *status)
 {
-    int     dead;
+    ta_children_dead *dead = NULL;
 
-    for (dead = ta_children_dead_list;
-         dead != -1;
-         dead = ta_children_dead_heap[dead].next)
+    for (dead = SLIST_FIRST(&ta_children_dead_list);
+         dead != NULL; dead = SLIST_NEXT(dead, links))
     {
-        if (ta_children_dead_heap[dead].pid == pid || pid == -1)
+        if (dead->pid == pid || pid == -1)
         {
-            if (ta_children_dead_heap[dead].prev != -1)
-            {
-                ta_children_dead_heap[
-                    ta_children_dead_heap[dead].prev].next = 
-                    ta_children_dead_heap[dead].next;
-            }
-            else
-                ta_children_dead_list = ta_children_dead_heap[dead].next;
+            SLIST_REMOVE(&ta_children_dead_list, dead,
+                         ta_children_dead, links);
+            SLIST_INSERT_HEAD(&ta_children_dead_pool, dead, links);
 
-            *status = ta_children_dead_heap[dead].status;
-            ta_children_dead_heap[dead].valid = FALSE;
+            *status = dead->status;
+            dead->valid = FALSE;
             break;
         }
+
         /* Note, we should not ever get here */
-        if (!ta_children_dead_heap[dead].valid)
+        if (!dead->valid)
         {
             WARN("%s: invalid pid in the list", __FUNCTION__);
-            dead = -1;
+            dead = NULL;
             break;
         }
     }
 
-    return dead != -1;
+    return dead != NULL;
 }
 
 /* See description in unix_internal.h */
