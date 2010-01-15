@@ -68,11 +68,17 @@ typedef enum dhcp_option_type {
     DHCP_OPT_CLIENT_ID                  = 61,   /**< Client ID */
     DHCP_OPT_USER_CLASS                 = 77,   /**< User class */
     DHCP_OPT_AUTO_CONFIG                = 116,  /**< Auto configuration */
+    DHCP_OPT_SIP_SERVERS                = 120,  /**< SIP servers (RFC 3361)
+                                                     */
     DHCP_OPT_CLASSLESS_STATIC_ROUTE     = 121,  /**< Classless static
-                                                     route RFC 3442 */
+                                                     route (RFC 3442) */
+    DHCP_OPT_VI_VSI                     = 125,  /**< Vendor-Identifying
+                                                     Vendor-Specific
+                                                     Information (RFC 3925)
+                                                     */
     DHCP_OPT_PVID                       = 150,  /**< Port VLAN */
     DHCP_OPT_CLASSLESS_STATIC_ROUTES    = 249,  /**< Classless static
-                                                     routes*/
+                                                     routes */
     DHCP_OPT_END                        = 255,  /**< End option */
 } dhcp_option_type;
 /*@}*/
