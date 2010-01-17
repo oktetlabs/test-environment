@@ -26,6 +26,7 @@ libacse_la_SOURCES = acse.c \
                     acse_sreq.c \
                     acse_cwmp.c \
                     acse_soapC.c \
+                    stdsoap2.c \
                     acse_soapServer.c 
 
 
@@ -36,7 +37,7 @@ bin_PROGRAMS = acse_dummy
 acse_dummy_SOURCES = acse_dummy.c
 
 # acse_dummy_LDFLAGS = -lgsoap
-acse_dummy_LDADD = -lacse -lgsoap -llogger_file -ltools
+acse_dummy_LDADD = -lacse -lz -llogger_file -ltools
 
 install-exec-hook:
 	touch -c -r libacse.* $(DESTDIR)/$(libdir)/libacse.*

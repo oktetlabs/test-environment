@@ -85,6 +85,7 @@ main(int argc, char **argv)
 
     printf("before serve\n");
     soap_serve(&my_soap);
+    printf("after serve\n");
 
     soap_done(&my_soap);
     soap_end(&my_soap);
