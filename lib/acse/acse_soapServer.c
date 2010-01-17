@@ -52,7 +52,9 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 
 			continue;
 		}
-                printf("%s():%d\n", __FUNCTION__, __LINE__);
+                printf("%s():%d, cont_len %d\n",
+                    __FUNCTION__, __LINE__, (int)soap->length);
+                /* TODO: Here should be processing of empty POST!!! */
 
 		if (soap_envelope_begin_in(soap)
 		 || soap_recv_header(soap)
