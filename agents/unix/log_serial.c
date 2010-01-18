@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -86,7 +86,7 @@ map_name_to_level(const char *name)
                   {"INFO",  TE_LL_INFO},
                   {"VERB",  TE_LL_VERB}};
     unsigned i;
-    
+
     for (i = 0; i < sizeof(levels) / sizeof(*levels); i++)
     {
         if (!strcmp(levels[i].name, name))
@@ -133,8 +133,8 @@ connect_conserver(int port, const char *user, const char *console)
     }
 
 #if HAVE_FCNTL_H
-    /* 
-     * Try to set close-on-exec flag, but ignore failures, 
+    /*
+     * Try to set close-on-exec flag, but ignore failures,
      * since it's not critical.
      */
     (void)fcntl(sock, F_SETFD, FD_CLOEXEC);
@@ -146,7 +146,7 @@ connect_conserver(int port, const char *user, const char *console)
     VERB("Connecting to conserver at localhost:%d", port);
     if (connect(sock, (struct sockaddr *)&inaddr, sizeof(inaddr)) < 0)
     {
-        ERROR("Unable to connect to conserver on port %d: errno=%d", 
+        ERROR("Unable to connect to conserver on port %d: errno=%d",
               port, errno);
         close(sock);
         return -1;
@@ -176,7 +176,7 @@ connect_conserver(int port, const char *user, const char *console)
         close(sock);
         return -1;
     }
-    
+
     return sock;
 
 #undef EXPECT_OK
@@ -201,10 +201,9 @@ open_conserver(const char *conserver)
     char *tmp;
     char  user[64];
     char *console;
-    
 
     port = strtoul(conserver, &tmp, 10);
-    
+
     if (port <= 0 || *tmp != ':')
     {
         ERROR ("Bad port: \"%s\"", conserver);
@@ -265,7 +264,7 @@ open_conserver(const char *conserver)
             } \
        } \
     } while(0)
-    
+
     SKIP_LINE;
     write(sock, CONSERVER_START, CONSERVER_CMDLEN);
     SKIP_LINE;
@@ -278,7 +277,7 @@ open_conserver(const char *conserver)
 
 
 /* Note: if there are several log_serial threads and
- * one is using conserver, others will be treated in 
+ * one is using conserver, others will be treated in
  * the same way. However, such situation is unrealistic,
  * and even then, sending a few bytes to a serial device
  * should not hurt much
@@ -289,7 +288,7 @@ static void
 close_conserver_cleanup(long fd)
 {
     char buf[1];
-    
+
     write(fd, CONSERVER_STOP, CONSERVER_CMDLEN);
     while(read(fd, buf, 1) == 1);
     close(fd);
@@ -310,7 +309,7 @@ close_conserver_cleanup(long fd)
  *                     as a conserver connection designator)
  *                    - sharing mode (opt)
  */
-int 
+int
 log_serial(void *ready, int argc, char *argv[])
 {
     char           user[64] = "";
@@ -328,7 +327,7 @@ log_serial(void *ready, int argc, char *argv[])
      * non-local control transfers, so I would say it's just a compiler
      * attempting to be over-smart. -- artem
      */
-    char * volatile buffer; 
+    char * volatile buffer;
     char * volatile other_buffer;
     char * volatile rest = NULL;
     char * volatile current;
@@ -342,40 +341,43 @@ log_serial(void *ready, int argc, char *argv[])
     struct pollfd   poller;
 
 #define MAYBE_DO_LOG \
-    do {                                                       \
-        if (current != buffer)                                 \
-        {                                                      \
-            *current = '\0';                                   \
-            newline = strrchr(buffer, '\n');                   \
-            if (newline)                                       \
-            {                                                  \
-                *newline = '\0';                               \
-                if (newline[1] == '\r')                        \
-                   newline++;                                  \
-            }                                                  \
-            LGR_MESSAGE(TE_LL_WARN, user, "%s%s",              \
-                        rest ? rest : "",                      \
-                        buffer);                               \
-            if (!newline)                                      \
-            {                                                  \
-                fence = buffer + TE_LOG_FIELD_MAX;             \
-                rest = NULL;                                   \
-            }                                                  \
-            else                                               \
-            {                                                  \
-                char *tmp;                                     \
-                                                               \
-                rest = newline + 1;                            \
-                tmp = buffer;                                  \
-                buffer = other_buffer;                         \
-                other_buffer = tmp;                            \
-                fence = buffer + TE_LOG_FIELD_MAX - (current - rest);   \
-            }                                                  \
-            current_timeout = -1;                              \
-            current = buffer;                                  \
-        }                                                      \
+    do {                                                            \
+        if (current != buffer)                                      \
+        {                                                           \
+            *current = '\0';                                        \
+            newline = strrchr(buffer, '\n');                        \
+            if (newline)                                            \
+            {                                                       \
+                *newline = '\0';                                    \
+                if (newline[1] == '\r')                             \
+                   newline++;                                       \
+            }                                                       \
+            LGR_MESSAGE(TE_LL_WARN, user, "%s%s",                   \
+                        rest ? rest : "",                           \
+                        buffer);                                    \
+            if (!newline)                                           \
+            {                                                       \
+                fence = buffer + TE_LOG_FIELD_MAX;                  \
+                *fence = '\0';                                      \
+                rest = NULL;                                        \
+            }                                                       \
+            else                                                    \
+            {                                                       \
+                char *tmp;                                          \
+                                                                    \
+                rest = newline + 1;                                 \
+                tmp = buffer;                                       \
+                buffer = other_buffer;                              \
+                other_buffer = tmp;                                 \
+                fence =                                             \
+                    buffer + TE_LOG_FIELD_MAX - (current - rest);   \
+                *fence = '\0';                                      \
+            }                                                       \
+            current_timeout = -1;                                   \
+            current = buffer;                                       \
+        }                                                           \
     } while (0)
-    
+
     if (argc < 4)
     {
         ERROR("Too few parameters to log_serial");
@@ -403,7 +405,7 @@ log_serial(void *ready, int argc, char *argv[])
     {
         int rc = errno;
 
-        ERROR("%s(): malloc failed at line %d: %d", __FUNCTION__, 
+        ERROR("%s(): malloc failed at line %d: %d", __FUNCTION__,
               __LINE__, rc);
         sem_post(ready);
         return TE_OS_RC(TE_TA_UNIX, rc);
@@ -412,7 +414,7 @@ log_serial(void *ready, int argc, char *argv[])
     {
         int rc = errno;
 
-        ERROR("%s(): malloc failed at line %d: %d", __FUNCTION__, 
+        ERROR("%s(): malloc failed at line %d: %d", __FUNCTION__,
               __LINE__, rc);
         sem_post(ready);
         return TE_OS_RC(TE_TA_UNIX, rc);
@@ -460,12 +462,12 @@ log_serial(void *ready, int argc, char *argv[])
             ERROR("Invalid sharing mode '%s'", argv[4]);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
-        
+
         poller.fd = open(argv[3], O_RDONLY | O_NOCTTY | O_NONBLOCK);
         if (poller.fd < 0)
         {
             int rc = errno;
-            
+
             sem_post(ready);
             ERROR("Cannot open %s: %d", argv[3], rc);
             return TE_OS_RC(TE_TA_UNIX, rc);
@@ -477,9 +479,9 @@ log_serial(void *ready, int argc, char *argv[])
     current = buffer;
     fence   = buffer + TE_LOG_FIELD_MAX;
     *fence  = '\0';
-    
+
 #if 0
-    pthread_cleanup_push((void (*)(void *))close_conserver_cleanup, 
+    pthread_cleanup_push((void (*)(void *))close_conserver_cleanup,
                          (void *)(long)poller.fd);
 #endif
     pthread_cleanup_push(free, buffer);
@@ -490,7 +492,7 @@ log_serial(void *ready, int argc, char *argv[])
         poller.events = POLLIN;
         poll(&poller, 1, current_timeout);
         VERB("something is available");
-        pthread_testcancel(); 
+        pthread_testcancel();
 
         if (poller.revents & POLLIN)
         {
@@ -533,7 +535,7 @@ log_serial(void *ready, int argc, char *argv[])
             RING("Terminal hung up");
             break;
         }
-        else 
+        else
         {
             VERB("timeout");
             MAYBE_DO_LOG;
