@@ -45,8 +45,9 @@
 #include "logger_api.h"
 #include "acse_internal.h"
 
+#include "httpda.h"
+
 #include "acse_soapH.h"
-#include "cwmp.nsmap"
 
 /** CWMP Dispatcher state machine states */
 typedef enum { want_read, want_write } cwmp_t;
@@ -134,6 +135,12 @@ __cwmp__Inform(struct soap *soap,
 
     printf("%s called. Header is %p, enc style is '%s'\n",
             __FUNCTION__, soap->header, soap->encodingStyle);
+    if (soap->authrealm && soap->userid)
+    {
+        printf("%s(): Digest auth, authrealm: '%s', userid '%s'\n", 
+                __FUNCTION__, soap->authrealm, soap->userid)
+    }
+
     if (soap->header)
         printf("hold_request in Header: %d\n",
                 (int)soap->header->cwmp__HoldRequests.__item);
@@ -146,6 +153,8 @@ __cwmp__Inform(struct soap *soap,
     {
         soap->encodingStyle = NULL;
     }
+
+    
 
     cwmp__InformResponse->MaxEnvelopes = 255;
     soap->header->cwmp__HoldRequests.__item = 1;

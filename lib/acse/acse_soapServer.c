@@ -28,7 +28,6 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 		}
 #endif
 
-                printf("%s():%d\n", __FUNCTION__, __LINE__);
 		soap_begin(soap);
 
 #ifndef WITH_FASTCGI
@@ -36,10 +35,9 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 			soap->keep_alive = 0;
 #endif
 
-                printf("%s():%d\n", __FUNCTION__, __LINE__);
+                printf("%s():%d, before recv\n", __FUNCTION__, __LINE__);
 		if (soap_begin_recv(soap))
 		{
-                printf("%s():%d\n", __FUNCTION__, __LINE__);
                         if (soap->error < SOAP_STOP)
 			{
 #ifdef WITH_FASTCGI
@@ -69,7 +67,7 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 #endif
 		}
 
-                printf("%s():%d\n", __FUNCTION__, __LINE__);
+                printf("%s():%d; end loop body\n", __FUNCTION__, __LINE__);
 #ifdef WITH_FASTCGI
 		soap_destroy(soap);
 		soap_end(soap);
@@ -84,7 +82,6 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 SOAP_FMAC5 int SOAP_FMAC6 soap_serve_request(struct soap *soap)
 {
 	soap_peek_element(soap);
-        printf("%s():%d\n", __FUNCTION__, __LINE__);
 	if (!soap_match_tag(soap, soap->tag, "cwmp:GetRPCMethods"))
 		return soap_serve___cwmp__GetRPCMethods(soap);
 	if (!soap_match_tag(soap, soap->tag, "cwmp:Inform"))

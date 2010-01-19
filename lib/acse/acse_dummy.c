@@ -22,6 +22,7 @@
 
 DEFINE_LGR_ENTITY("ACSE_DUMMY");
 
+
 #include "acse_soapStub.h"
 #if 0
 #include "cwmp.nsmap"
@@ -44,6 +45,7 @@ SOAP_NMAC struct Namespace namespaces[] =
 };
 #endif
 
+#include "httpda.h"
 
 
 int 
@@ -80,6 +82,8 @@ main(int argc, char **argv)
     soap_imode(&my_soap, SOAP_IO_KEEPALIVE);
     soap_omode(&my_soap, SOAP_IO_KEEPALIVE);
     soap_set_namespaces(&my_soap, namespaces);
+
+    soap_register_plugin(&my_soap, http_da); 
 
     my_soap.max_keep_alive = 2;
 
