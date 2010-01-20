@@ -382,7 +382,9 @@ lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
                          uint8_t **arg_addr)
 {
     uint32_t start_pos = 0;
+#if 0
     uint32_t tail;
+#endif
     uint32_t need_elements;
 
     if (length > TE_LOG_FIELD_MAX)
@@ -400,6 +402,7 @@ lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
 
     *arg_addr = LGR_GET_MESSAGE_ARRAY(ring_buffer, start_pos);
 
+#if 0
     tail = start_pos = ring_buffer->tail;
 
 
@@ -407,6 +410,12 @@ lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
     {
         memcpy(*arg_addr, start, length);
     }
+#else
+    if ((start_pos + need_elements) < LGR_TOTAL_RB_EL)
+    {
+        memcpy(*arg_addr, start, length);
+    }
+#endif
     else
     {
         uint32_t  length_aux;
