@@ -49,6 +49,10 @@
 
 #include "acse_soapH.h"
 
+/** Single REALM for Digest Auth. which we support. */
+const char *authrealm = "tr-069";
+extern const char* userid;
+
 /** CWMP Dispatcher state machine states */
 typedef enum { want_read, want_write } cwmp_t;
 
@@ -131,15 +135,39 @@ __cwmp__Inform(struct soap *soap,
                struct _cwmp__Inform *cwmp__Inform,
                struct _cwmp__InformResponse *cwmp__InformResponse)
 {
-    UNUSED(cwmp__Inform);
+printf("%s called. Header is %p, enc style is '%s', inform Dev is '%s'\n",
+            __FUNCTION__, soap->header, soap->encodingStyle,
+            cwmp__Inform->DeviceId->OUI);
 
-    printf("%s called. Header is %p, enc style is '%s'\n",
-            __FUNCTION__, soap->header, soap->encodingStyle);
+    soap->keep_alive = 1; 
+
     if (soap->authrealm && soap->userid)
     {
         printf("%s(): Digest auth, authrealm: '%s', userid '%s'\n", 
-                __FUNCTION__, soap->authrealm, soap->userid)
+                __FUNCTION__, soap->authrealm, soap->userid);
+        /* TODO: lookup passwd by userid */
+        if (!strcmp(soap->authrealm, authrealm) &&
+            !strcmp(soap->userid, userid))
+        {
+          char *passwd = "passwd";
+
+          if (http_da_verify_post(soap, passwd))
+          {
+            printf("%s(): Digest auth failed 1\n", __FUNCTION__);
+              soap_dealloc(soap, soap->authrealm);
+              soap->authrealm = soap_strdup(soap, authrealm);
+              soap->keep_alive = 1; 
+            return 401;
+          }
+        }
     }
+    else
+    {
+printf("%s(): Digest auth failed 2\n", __FUNCTION__);
+      soap->authrealm = soap_strdup(soap, authrealm);
+      return 401;
+    }
+
 
     if (soap->header)
         printf("hold_request in Header: %d\n",

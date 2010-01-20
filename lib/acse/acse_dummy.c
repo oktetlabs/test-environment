@@ -47,6 +47,8 @@ SOAP_NMAC struct Namespace namespaces[] =
 
 #include "httpda.h"
 
+/** Static userid for Digest Auth. login, temporary */
+const char* userid = "000261-Home Gateway-V60200000000-0010501606";
 
 int 
 main(int argc, char **argv)
@@ -88,7 +90,14 @@ main(int argc, char **argv)
     my_soap.max_keep_alive = 2;
 
     printf("before serve\n");
-    soap_serve(&my_soap);
+    if (soap_serve(&my_soap) != SOAP_OK)
+    {
+        printf("was serve error, try again..\n");
+        my_soap.socket = accept(l_sock, &conn_sa, &conn_sa_size);
+        soap_imode(&my_soap, SOAP_IO_KEEPALIVE);
+        soap_omode(&my_soap, SOAP_IO_KEEPALIVE);
+        soap_serve(&my_soap);
+    }
     printf("after serve\n");
 
     soap_done(&my_soap);
