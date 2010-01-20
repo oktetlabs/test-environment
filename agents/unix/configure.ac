@@ -422,13 +422,14 @@ if test -n "$ifcfg_via_netlink" ; then
     use_netlink=yes
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_NETLINK"
 
-    if test "$with_libnetconf" ; then
-        EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_LIBNETCONF"
-        EXTRA_LDADD="$EXTRA_LDADD -lnetconf"
-    else
+    if test "$with_libnetlink" ; then
         AC_CHECK_LIB([netlink], [rtnl_open], [],
                      AC_MSG_ERROR([Cannot find libnetlink!]))
         EXTRA_LDADD="$EXTRA_LDADD -lnetlink"
+
+    else
+        EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_LIBNETCONF"
+        EXTRA_LDADD="$EXTRA_LDADD -lnetconf"
     fi
 else 
     # The rest should use IOCTL interface for now
