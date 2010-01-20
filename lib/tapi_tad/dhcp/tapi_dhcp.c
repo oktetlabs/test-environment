@@ -1082,10 +1082,11 @@ dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&tapi_dhcp_lock);
 #endif
-        return rc;
     }
 
-    return 0;
+    unlink(pattern_fname);
+
+    return rc;
 }
 
 struct dhcp_message *
