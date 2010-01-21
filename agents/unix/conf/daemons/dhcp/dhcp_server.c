@@ -56,6 +56,8 @@
  */
 #undef TA_UNIX_ISC_DHCPS_NATIVE_CFG
 
+/** DHCP server pid file name */
+static const char *dhcp_server_pid_file = "/var/run/dhcpd.pid";
 
 /** List of known possible locations of DHCP server scripts */
 static const char *dhcp_server_scripts[] = {
@@ -476,23 +478,25 @@ ds_dhcpserver_is_run(void)
     char   *name = NULL;
 
 #if defined __linux__
+    sprintf(buf, "cat %s 2>/dev/null 1>/dev/null", dhcp_server_pid_file);
+    rc = ta_system(buf);
+    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
+        return FALSE;
+
     if ((name = strrchr(dhcp_server_exec, '/')) == NULL)
         name = (char *)dhcp_server_exec;
     else
         name++;
-    sprintf(buf, PS_ALL_COMM "| grep -v grep | grep -q %s >/dev/null 2>&1",
-            name);
+    sprintf(buf, PS_ALL_PID_ARGS " | grep $(cat %s) | "
+            "grep -q %s >/dev/null 2>&1", dhcp_server_pid_file, name);
 #elif defined __sun__
     TE_SPRINTF(buf, "[ \"`/usr/bin/svcs -H -o STATE dhcp-server`\" = \"online\" ]");
 #else
     return FALSE;
 #endif
-
     rc = ta_system(buf);
 
-    INFO("%s() returns %s", __FUNCTION__, (rc == 0) ? "TRUE" : "FALSE");
-
-    return (rc == 0);
+    return !(rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0);
 }
 
 /** Get DHCP server daemon on/off */
@@ -515,7 +519,7 @@ ds_dhcpserver_get(unsigned int gid, const char *oid, char *value)
 static te_errno
 ds_dhcpserver_script_stop(void)
 {
-    INFO("%s()", __FUNCTION__);
+    RING("%s() started", __FUNCTION__);
     TE_SPRINTF(buf, "%s stop", dhcp_server_script);
     if (ta_system(buf) != 0)
     {
@@ -534,14 +538,19 @@ ds_dhcpserver_stop(void)
     char   *name = NULL;
 
     ENTRY("%s()", __FUNCTION__);
-    INFO("%s()", __FUNCTION__);
 
 #if defined __linux__
+    sprintf(buf, "cat %s 2>/dev/null 1>/dev/null", dhcp_server_pid_file);
+    rc = ta_system(buf);
+    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
+        return 0;
+
     if ((name = strrchr(dhcp_server_exec, '/')) == NULL)
         name = (char *)dhcp_server_exec;
     else
         name++;
-    TE_SPRINTF(buf, "killall %s", name);
+
+    TE_SPRINTF(buf, "kill $(cat %s)", dhcp_server_pid_file);
 #elif defined __sun__
     TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st %s", get_ds_name("dhcpserver"));
 #endif
