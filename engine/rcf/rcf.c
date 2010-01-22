@@ -3095,7 +3095,13 @@ main(int argc, const char *argv[])
                 
                 if ((uint32_t)(now - req->sent) < req->timeout)
                     continue;
-                
+
+                if (now < req->sent)
+                {
+                    WARN("Current time is less than request's sent time");
+                    continue;
+                }
+               
                 {
                     size_t  ret;
                     char    time_buf[9];    /* Sufficient for format
