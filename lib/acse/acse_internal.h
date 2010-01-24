@@ -1,21 +1,21 @@
-/** @file
- * @brief ACSE API
- *
- * ACSE declarations.
+/** @file 
+ * @brief ACSE API 
+ * 
+ * ACSE declarations. 
  *
  *
  * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
+ * in the root directory of the distribution). 
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
+ * the License, or (at your option) any later version. 
  *
  * Test Environment is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU Lesser General Public License for more details. 
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
@@ -24,9 +24,10 @@
  *
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
- */
+*/
 
 #ifndef __TE_LIB_ACSE_INTERNAL_H__
 #define __TE_LIB_ACSE_INTERNAL_H__
@@ -44,6 +45,7 @@ extern "C" {
 #include <stdsoap2.h>
 
 #include "te_errno.h"
+#include "te_queue.h"
 #include "acse.h"
 
 /** Session states */
@@ -145,17 +147,19 @@ typedef struct channel_item_t
     channel_t                    channel;
 } channel_item_t;
 
-extern te_errno
-acse_lrpc_create(channel_t *channel, params_t *params, int sock);
+extern te_errno acse_lrpc_create(channel_t *channel,
+                                 params_t *params, int sock);
 
-extern te_errno
-acse_conn_create(channel_t *channel);
+extern te_errno acse_conn_create(channel_t *channel);
 
-extern te_errno
-acse_sreq_create(channel_t *channel);
+extern te_errno acse_sreq_create(channel_t *channel);
 
-extern te_errno
-acse_cwmp_create(channel_t *channel);
+extern te_errno acse_cwmp_create(channel_t *channel);
+
+
+extern int cwmp_SendConnectionRequest(const char *endpoint,
+                                      const char *username, 
+                                      const char *password);
 
 #ifdef __cplusplus
 }
