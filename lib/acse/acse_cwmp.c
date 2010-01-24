@@ -165,7 +165,20 @@ printf("%s called. Header is %p, enc style is '%s', inform Dev is '%s'\n",
     {
 printf("%s(): Digest auth failed 2\n", __FUNCTION__);
       soap->authrealm = soap_strdup(soap, authrealm);
+      soap->keep_alive = 1; 
+#if 1
+        soap->error = SOAP_OK;
+        soap_serializeheader(soap);
+        soap_begin_count(soap);
+        soap_end_count(soap);
+        soap_response(soap, 401);
+        // soap_envelope_end_out(soap);
+        soap_end_send(soap);
+      soap->keep_alive = 1; 
+      return SOAP_STOP;
+#else
       return 401;
+#endif
     }
 
 
@@ -242,5 +255,56 @@ __cwmp__Kicked(struct soap *soap,
     UNUSED(cwmp__Kicked);
     UNUSED(cwmp__KickedResponse);
 
+    return 0;
+}
+
+
+
+int
+cwmp_SendConnectionRequest(const char *endpoint,
+                           const char *username, 
+                           const char *password)
+{
+    struct soap *soap = soap_new();
+    struct http_da_info info;
+
+    soap_register_plugin(soap, http_da);
+
+    soap_begin(soap);
+    soap_begin_count(soap);
+    soap_end_count(soap);
+
+    if (soap_connect_command(soap, SOAP_GET, endpoint, "")
+        || soap_end_send(soap))
+    {
+        soap_print_fault(soap, stderr); 
+        return 1;
+    } 
+    if (soap_begin_recv(soap))
+    {
+        if (soap->error == 401)
+        {
+            printf("UUUUUUUU first attempt failed, AUTH\n");
+            /* save userid and passwd for basic or digest authentication */
+            http_da_save(soap, &info, authrealm, username, password);
+#if 1
+            soap_begin_count(soap);
+            soap_end_count(soap);
+#endif
+            soap_connect_command(soap, SOAP_GET, endpoint, "");
+            soap_end_send(soap);
+            soap_begin_recv(soap);
+            soap_end_recv(soap);
+            printf("UUUUUUUUU second attempt result %d\n", soap->error);
+            if (soap->error != SOAP_OK)
+                soap_print_fault(soap, stderr);
+        }
+        else 
+            soap_print_fault(soap, stderr); 
+        return 1;
+    } 
+
+    soap_done(soap);
+    soap_end(soap); 
     return 0;
 }
