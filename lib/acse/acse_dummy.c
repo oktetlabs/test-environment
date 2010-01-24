@@ -23,6 +23,7 @@
 DEFINE_LGR_ENTITY("ACSE_DUMMY");
 
 
+#include "acse_internal.h"
 #include "acse_soapStub.h"
 #if 0
 #include "cwmp.nsmap"
@@ -63,6 +64,15 @@ main(int argc, char **argv)
     l_sa.sin_addr.s_addr = INADDR_ANY;
     l_sa.sin_port = htons(argc > 1 ? atoi(argv[1]) : 2000);
 
+#if 1
+    if (argc == 1)
+    {
+        cwmp_SendConnectionRequest("http://localhost:8080/tr-069/TR-069",
+                                   "ACSE", "passwd");
+
+        return 1;
+    }
+#endif
     if (bind(l_sock, &l_sa, sizeof(l_sa)) < 0)
     {
         perror("bind failed:");
@@ -93,9 +103,9 @@ main(int argc, char **argv)
     if (soap_serve(&my_soap) != SOAP_OK)
     {
         printf("was serve error, try again..\n");
-        my_soap.socket = accept(l_sock, &conn_sa, &conn_sa_size);
-        soap_imode(&my_soap, SOAP_IO_KEEPALIVE);
-        soap_omode(&my_soap, SOAP_IO_KEEPALIVE);
+        //my_soap.socket = accept(l_sock, &conn_sa, &conn_sa_size);
+        //soap_imode(&my_soap, SOAP_IO_KEEPALIVE);
+        //soap_omode(&my_soap, SOAP_IO_KEEPALIVE);
         soap_serve(&my_soap);
     }
     printf("after serve\n");
