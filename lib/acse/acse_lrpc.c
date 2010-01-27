@@ -205,7 +205,7 @@ session_enabled_get(params_t *params)
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(params->value, "%i", cpe_inst->session.enabled);
+    sprintf(params->value, "%i", cpe_inst->enabled);
     return 0;
 }
 
@@ -224,47 +224,10 @@ session_enabled_set(params_t *params)
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    cpe_inst->session.enabled = atoi(params->value);
+    cpe_inst->enabled = atoi(params->value);
     return 0;
 }
 
-/**
- * Get the session target_state.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-session_target_state_get(params_t *params)
-{
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    sprintf(params->value, "%i", cpe_inst->session.target_state);
-    return 0;
-}
-
-/**
- * Set the session target_state.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-session_target_state_set(params_t *params)
-{
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    cpe_inst->session.target_state = atoi(params->value);
-    return 0;
-}
 
 /**
  * Get the session state.
@@ -361,89 +324,6 @@ device_id_manufacturer_get(params_t *params)
     return 0;
 }
 
-/**
- * Get the cpe password.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-cpe_pass_get(params_t *params)
-{
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, cpe_inst->pass);
-    return 0;
-}
-
-/**
- * Set the cpe password.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-cpe_pass_set(params_t *params)
-{
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    free_const(cpe_inst->pass);
-
-    if ((cpe_inst->pass = strdup(params->value)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
-}
-
-/**
- * Get the cpe user name.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-cpe_user_get(params_t *params)
-{
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, cpe_inst->user);
-    return 0;
-}
-
-/**
- * Set the cpe user name.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-cpe_user_set(params_t *params)
-{
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    free_const(cpe_inst->user);
-
-    if ((cpe_inst->user = strdup(params->value)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
-}
 
 /**
  * Get the cpe certificate.
@@ -529,47 +409,6 @@ cpe_url_set(params_t *params)
     return 0;
 }
 
-/**
- * Get the cpe IP address.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-cpe_ip_addr_get(params_t *params)
-{
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, cpe_inst->ip_addr);
-    return 0;
-}
-
-/**
- * Set the cpe IP address.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-cpe_ip_addr_set(params_t *params)
-{
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    free_const(cpe_inst->ip_addr);
-
-    if ((cpe_inst->ip_addr = strdup(params->value)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
-}
 
 /**
  * Add the acs cpe instance.
@@ -609,23 +448,21 @@ acs_cpe_add(params_t *params)
     if ((cpe_item->cpe.name = strdup(params->cpe)) == NULL)
         goto enomem_1;
 
-    if ((cpe_item->cpe.ip_addr  = strdup("0.0.0.0")) == NULL)
-        goto enomem_2;
 
     if ((cpe_item->cpe.url  = strdup("")) == NULL)
-        goto enomem_3;
+        goto enomem_0;
 
     if ((cpe_item->cpe.cert = strdup("")) == NULL)
         goto enomem_4;
 
-    if ((cpe_item->cpe.user = strdup("")) == NULL)
+    if ((cpe_item->cpe.username = strdup("")) == NULL)
         goto enomem_5;
 
-    if ((cpe_item->cpe.pass = strdup("")) == NULL)
-        goto enomem_6;
+    if ((cpe_item->cpe.password = strdup("")) == NULL)
+        goto enomem_0;
 
     if ((cpe_item->cpe.device_id.manufacturer = strdup("")) == NULL)
-        goto enomem_7;
+        goto enomem_0;
 
     if ((cpe_item->cpe.device_id.oui = strdup("")) == NULL)
         goto enomem_8;
@@ -636,9 +473,8 @@ acs_cpe_add(params_t *params)
     if ((cpe_item->cpe.device_id.serial_number = strdup("")) == NULL)
         goto enomem_A;
 
-    cpe_item->cpe.session.state         = session_no_state;
-    cpe_item->cpe.session.target_state  = session_no_state;
-    cpe_item->cpe.session.enabled       = FALSE;
+    cpe_item->cpe.session.state         = CWMP_NOP;
+    cpe_item->cpe.enabled               = FALSE;
     cpe_item->cpe.session.hold_requests = FALSE;
     cpe_item->cpe.soap                  = NULL;
 
@@ -654,23 +490,11 @@ enomem_9:
 enomem_8:
     free_const(cpe_item->cpe.device_id.manufacturer);
 
-enomem_7:
-    free_const(cpe_item->cpe.pass);
-
-enomem_6:
-    free_const(cpe_item->cpe.user);
-
 enomem_5:
     free_const(cpe_item->cpe.cert);
 
 enomem_4:
     free_const(cpe_item->cpe.url);
-
-enomem_3:
-    free_const(cpe_item->cpe.ip_addr);
-
-enomem_2:
-    free_const(cpe_item->cpe.name);
 
 enomem_1:
     free(cpe_item);
@@ -706,8 +530,8 @@ acs_cpe_del(params_t *params)
                     free_const(cpe_item->cpe.name);
                     free_const(cpe_item->cpe.url);
                     free_const(cpe_item->cpe.cert);
-                    free_const(cpe_item->cpe.user);
-                    free_const(cpe_item->cpe.pass);
+                    free_const(cpe_item->cpe.username);
+                    free_const(cpe_item->cpe.password);
                     free(cpe_item);
 
                     return 0;
@@ -1305,17 +1129,13 @@ static te_errno
         &acs_ssl_get, &acs_ssl_set,
         &acs_port_get, &acs_port_set,
         &acs_cpe_add, &acs_cpe_del, &acs_cpe_list,
-        &cpe_ip_addr_get, &cpe_ip_addr_set,
         &cpe_url_get, &cpe_url_set,
         &cpe_cert_get, &cpe_cert_set,
-        &cpe_user_get, &cpe_user_set,
-        &cpe_pass_get, &cpe_pass_set,
         &device_id_manufacturer_get,
         &device_id_oui_get,
         &device_id_product_class_get,
         &device_id_serial_number_get,
         &session_state_get,
-        &session_target_state_get, &session_target_state_set,
         &session_enabled_get, &session_enabled_set,
         &session_hold_requests_get, &session_hold_requests_set,
         &cpe_get_rpc_methods,

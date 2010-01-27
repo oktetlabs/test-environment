@@ -35,10 +35,10 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 			soap->keep_alive = 0;
 #endif
 
-                printf("%s():%d, before recv\n", __FUNCTION__, __LINE__);
 		if (soap_begin_recv(soap))
 		{
-                        if (soap->error < SOAP_STOP)
+                        if ((soap->error != SOAP_EOF) && 
+                            (soap->error < SOAP_STOP))
 			{
 #ifdef WITH_FASTCGI
 				soap_send_fault(soap);
@@ -50,9 +50,12 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 
 			continue;
 		}
-                printf("%s():%d, cont_len %d\n",
-                    __FUNCTION__, __LINE__, (int)soap->length);
-                /* TODO: Here should be processing of empty POST!!! */
+
+                if (soap->length == 0)
+                {
+                    /* TODO: Here should be processing of empty POST!!! */
+                    printf("%s(): Content Length ZERO!\n", __FUNCTION__);
+                }
 
 		if (soap_envelope_begin_in(soap)
 		 || soap_recv_header(soap)

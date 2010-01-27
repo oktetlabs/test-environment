@@ -67,8 +67,10 @@ main(int argc, char **argv)
 #if 1
     if (argc == 1)
     {
-        cwmp_SendConnectionRequest("http://localhost:8080/tr-069/TR-069",
-                                   "ACSE", "passwd");
+        cwmp_SendConnectionRequest(
+            "http://10.20.1.2:8082/5c2dfeabaf9650fe",
+            "000261-Home Gateway-V601L622R1A0-1001742119", 
+            "z7cD7CTDA1DrQKUb");
 
         return 1;
     }

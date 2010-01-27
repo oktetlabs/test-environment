@@ -4,7 +4,7 @@
  * ACS Emulator support
  *
  *
- * Copyright (C) 2009 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2009-2010 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -51,7 +51,6 @@
 
 /** Single REALM for Digest Auth. which we support. */
 const char *authrealm = "tr-069";
-extern const char* userid;
 
 /** CWMP Dispatcher state machine states */
 typedef enum { want_read, want_write } cwmp_t;
@@ -98,7 +97,7 @@ recover_fds(void *data)
     return -1;
 }
 
-extern te_errno
+te_errno
 acse_cwmp_create(channel_t *channel)
 {
     cwmp_data_t *cwmp = channel->data = malloc(sizeof *cwmp);
@@ -135,6 +134,13 @@ __cwmp__Inform(struct soap *soap,
                struct _cwmp__Inform *cwmp__Inform,
                struct _cwmp__InformResponse *cwmp__InformResponse)
 {
+    cpe_t *cpe_record = (cpe_t *)soap->user;
+
+    if(cpe_record == NULL)
+    {
+        /* TODO: correct processing */
+        return 500; 
+    }
 printf("%s called. Header is %p, enc style is '%s', inform Dev is '%s'\n",
             __FUNCTION__, soap->header, soap->encodingStyle,
             cwmp__Inform->DeviceId->OUI);
@@ -147,19 +153,26 @@ printf("%s called. Header is %p, enc style is '%s', inform Dev is '%s'\n",
                 __FUNCTION__, soap->authrealm, soap->userid);
         /* TODO: lookup passwd by userid */
         if (!strcmp(soap->authrealm, authrealm) &&
-            !strcmp(soap->userid, userid))
+            !strcmp(soap->userid, cpe_record->username))
         {
+
+#if 1
+          char *passwd = "z7cD7CTDA1DrQKUb";
+#else
           char *passwd = "passwd";
+#endif
 
           if (http_da_verify_post(soap, passwd))
           {
-            printf("%s(): Digest auth failed 1\n", __FUNCTION__);
+            printf("%s(): Digest auth failed RRRRRRRRRRRR\n", __FUNCTION__);
               soap_dealloc(soap, soap->authrealm);
               soap->authrealm = soap_strdup(soap, authrealm);
               soap->keep_alive = 1; 
             return 401;
           }
+          printf("%s(): AUTH passed\n", __FUNCTION__);
         }
+        printf("%s(): Should be fault\n", __FUNCTION__);
     }
     else
     {
@@ -284,13 +297,19 @@ cwmp_SendConnectionRequest(const char *endpoint,
     {
         if (soap->error == 401)
         {
-            printf("UUUUUUUU first attempt failed, AUTH\n");
+            char local_realm[100];
+            // soap_end_recv(soap);
+            printf("UUUUUUUU first attempt failed, AUTH, realm: '%s'\n",
+                  soap->authrealm);
+            strcpy(local_realm, soap->authrealm);
             /* save userid and passwd for basic or digest authentication */
-            http_da_save(soap, &info, authrealm, username, password);
+            http_da_save(soap, &info, local_realm, username, password);
 #if 1
             soap_begin_count(soap);
             soap_end_count(soap);
 #endif
+            info.qop = soap_strdup(soap, "auth");
+            http_da_restore(soap, &info);
             soap_connect_command(soap, SOAP_GET, endpoint, "");
             soap_end_send(soap);
             soap_begin_recv(soap);

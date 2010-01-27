@@ -63,7 +63,7 @@ typedef enum {
 } session_state_t;
 
 /*
- * State machine for CWMP session entity:
+ * State machine diargam for CWMP session entity:
 
    ( NOP )----->( LISTEN )------>[ Reply ]----->( WAIT_AUTH )<-\
       ^                                              |         |
@@ -71,15 +71,15 @@ typedef enum {
   [ Empty resp, close ]                         < Auth OK? > --/
       ^                                              |{Y}    {N}
       |{N}                                           V
-  < Was HoldRequest? >--------------   ----[ Process Inform, reply ]
+  < Was HoldRequest? >-------------\   /---[ Process Inform, reply ]
       ^               {Y}          |   |            
       |                            V   V  {POST}
-      |     /--------------------( SERVE )----->[ Process SOAP RPC ]
-      |     |       {Empty POST}       ^           |
-      |{N}  V                           \----------/ 
- < Is pend.Req? >                 
-      |{Y}  ^
-      |     \-----------------------------------------\
+      |          /---------------( SERVE )----->[ Process SOAP RPC ]
+      |          |  {Empty POST}       ^           |
+      |{N}       V                     \-----------/ 
+ < Have pending Req to CPE? >                 
+      |{Y}       ^
+      |          \------------------------------------\
       V                                               |
 [ Send Request to CPE ]--->( WAIT_RESPONSE )---->[ Process Response ] 
    
@@ -102,15 +102,16 @@ typedef struct {
 
 /** CPE */
 typedef struct {
-    char const  *name;          /**< CPE name                      */
-    char const  *ip_addr;       /**< CPE IP address                */
-    char const  *url;           /**< CPE URL                       */
-    char const  *cert;          /**< CPE certificate               */
-    char const  *user;          /**< CPE user name                 */
-    char const  *pass;          /**< CPE user password             */
-    session_t    session;       /**< Session                       */
-    device_id_t  device_id;     /**< Device Identifier             */
-    struct soap *soap;          /**< Connected socket SOAP struct  */
+    char const      *name;      /**< CPE name                      */
+    char const      *url;       /**< CPE URL                       */
+    struct sockaddr *addr;      /**< CPE IPv4 address              */
+    char const      *cert;      /**< CPE certificate               */
+    char const      *username;  /**< CPE user name                 */
+    char const      *password;  /**< CPE user password             */
+    session_t        session;   /**< Session                       */
+    device_id_t      device_id; /**< Device Identifier             */
+    int              enabled;
+    struct soap     *soap;      /**< Connected socket SOAP struct  */
 } cpe_t;
 
 /** CPE list */

@@ -757,6 +757,9 @@ static void http_da_calc_response(struct soap *soap, void **context, char HA1hex
   md5_handler(soap, context, MD5_FINAL, responseHA, 0);
 
   soap_s2hex(soap, (unsigned char*)responseHA, response, 16);
+#if 0
+  printf("%s() response '%s'\n", __FUNCTION__, response);
+#endif
 }
 
 #ifdef __cplusplus
