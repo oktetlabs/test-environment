@@ -1,10 +1,10 @@
 /** @file 
- * @brief ACSE API 
+ * @brief ACSE 
  * 
- * ACSE declarations. 
+ * ACSE internal declarations. 
  *
  *
- * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2009-2010 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution). 
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -49,21 +49,45 @@ extern "C" {
 #include "acse.h"
 
 /** Session states */
-typedef enum { session_no_state,
-               session_disconnected,
-               session_connected,
-               session_authenticated,
-               session_preinitiated,
-               session_initiated,
-               session_inside_transaction,
-               session_outside_transaction
+typedef enum { 
+    CWMP_NOP,           /**< No any TCP activity: neither active
+                          connection, nor listening for incoming ones.  */
+    CWMP_LISTEN,        /**< Listening for incoming HTTP connection.    */
+    CWMP_WAIT_AUTH,     /**< TCP connection established, first HTTP
+                            request received, but not authenicated,
+                            response with our WWW-Authenticate is sent. */
+    CWMP_SERVE,         /**< CWMP session established, waiting for
+                            incoming SOAP RPC requests from CPE.        */
+    CWMP_WAIT_RESPONSE, /**< CWMP session established, SOAP RPC is sent
+                            to the CPE, waiting for response.           */
 } session_state_t;
+
+/*
+ * State machine for CWMP session entity:
+
+   ( NOP )----->( LISTEN )------>[ Reply ]----->( WAIT_AUTH )<-\
+      ^                                              |         |
+      |                                              V         |
+  [ Empty resp, close ]                         < Auth OK? > --/
+      ^                                              |{Y}    {N}
+      |{N}                                           V
+  < Was HoldRequest? >--------------   ----[ Process Inform, reply ]
+      ^               {Y}          |   |            
+      |                            V   V  {POST}
+      |     /--------------------( SERVE )----->[ Process SOAP RPC ]
+      |     |       {Empty POST}       ^           |
+      |{N}  V                           \----------/ 
+ < Is pend.Req? >                 
+      |{Y}  ^
+      |     \-----------------------------------------\
+      V                                               |
+[ Send Request to CPE ]--->( WAIT_RESPONSE )---->[ Process Response ] 
+   
+ */
 
 /** Session */
 typedef struct {
     session_state_t state;         /**< Session state                  */
-    session_state_t target_state;  /**< Session desired state          */
-    int             enabled;       /**< Whether a session may continue */
     int             hold_requests; /**< Whether to put "hold requests"
                                         in SOAP msg                    */
 } session_t;
