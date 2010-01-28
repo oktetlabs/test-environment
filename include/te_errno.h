@@ -337,6 +337,7 @@ typedef enum {
     TE_TOOL_EXT,        /**< External tools */
     TE_TAD_BPF,         /**< TAD Ethernet using BPF */
     TE_TRC,             /**< Testing Results Comparator library */
+    TE_ACSE,            /**< ACS Emulator */
 } te_module;                             
 /*@}*/
 
