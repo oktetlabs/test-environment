@@ -424,7 +424,7 @@ lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
         length_aux = (LGR_TOTAL_RB_EL - start_pos) * LGR_RB_ELEMENT_LEN;
         memcpy(*arg_addr, start_aux, length_aux);
 
-        *start_aux += length_aux;
+        start_aux += length_aux;
         length_aux = length - length_aux;
         memcpy(LGR_GET_MESSAGE_ARRAY(ring_buffer, 0),
                start_aux, length_aux);
