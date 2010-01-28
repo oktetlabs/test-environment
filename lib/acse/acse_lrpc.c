@@ -93,11 +93,11 @@ acs_list_t acs_list = STAILQ_HEAD_INITIALIZER(&acs_list);
  *
  * @param p             Pointer to const data
  */
- static void
- free_const(void const *p)
- {
-     free((void *)p);
- }
+static void
+free_const(void const *p)
+{
+ free((void *)p);
+}
 
 /**
  * Find an acs instance from the acs list
@@ -123,29 +123,29 @@ find_acs(char const *acs)
 /**
  * Find a cpe instance from the cpe list of an acs instance
  *
- * @param acs           Name of the acs instance
- * @param cpe           Name of the cpe instance
+ * @param acs_name      Name of the acs instance
+ * @param cpe_name      Name of the cpe instance
  *
  * @return              Cpe instance address or NULL if not found
  */
-static cpe_t *
-find_cpe(char const *acs, char const *cpe)
+cpe_t *
+find_cpe(const char *acs_name, const char *cpe_name)
 {
-    acs_item_t *acs_item;
-    cpe_item_t *cpe_item;
+    acs_t *acs_item;
+    cpe_t *cpe_item;
 
-    STAILQ_FOREACH(acs_item, &acs_list, link)
+    SLIST_FOREACH(acs_item, &acs_list, links)
     {
-        if (strcmp(acs_item->acs.name, acs) == 0)
+        if (strcmp(acs_item->name, acs_name) == 0)
             break;
     }
 
     if (acs_item != NULL)
     {
-        STAILQ_FOREACH(cpe_item, &acs_item->acs.cpe_list, link)
+        SLIST_FOREACH(cpe_item, &acs_item->cpe_list, links)
         {
-            if (strcmp(cpe_item->cpe.name, cpe) == 0)
-                return &cpe_item->cpe;
+            if (strcmp(cpe_item->name, cpe_name) == 0)
+                return cpe_item;
         }
     }
 
