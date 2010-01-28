@@ -1,7 +1,8 @@
 /** @file
  * @brief ACSE API
  *
- * ACSE declarations.
+ * ACSE declarations, common for both sites: ACSE process
+ *      and head TA process.
  *
  *
  * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
@@ -24,6 +25,7 @@
  *
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */

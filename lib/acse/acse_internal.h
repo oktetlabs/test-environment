@@ -38,6 +38,8 @@ extern "C" {
 
 #include "te_config.h"
 
+#include <poll.h>
+
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -47,6 +49,7 @@ extern "C" {
 #include "te_errno.h"
 #include "te_queue.h"
 #include "acse.h"
+#include "acse_soapStub.h"
 
 /** Session states */
 typedef enum { 
@@ -85,6 +88,7 @@ typedef enum {
    
  */
 
+
 /** Session */
 typedef struct {
     session_state_t state;         /**< Session state                  */
@@ -92,100 +96,125 @@ typedef struct {
                                         in SOAP msg                    */
 } session_t;
 
-/** Device ID */
-typedef struct {
-    char const *manufacturer;  /**< Manufacturer                     */
-    char const *oui;           /**< Organizational Unique Identifier */
-    char const *product_class; /**< Product Class                    */
-    char const *serial_number; /**< Serial Number                    */
-} device_id_t;
+/* forward declaration */
+struct acs_struct;
 
 /** CPE */
-typedef struct {
-    char const      *name;      /**< CPE name                      */
-    char const      *url;       /**< CPE URL                       */
-    struct sockaddr *addr;      /**< CPE IPv4 address              */
-    char const      *cert;      /**< CPE certificate               */
-    char const      *username;  /**< CPE user name                 */
-    char const      *password;  /**< CPE user password             */
-    session_t        session;   /**< Session                       */
-    device_id_t      device_id; /**< Device Identifier             */
-    int              enabled;
-    struct soap     *soap;      /**< Connected socket SOAP struct  */
+typedef struct cpe_t{
+    LIST_ENTRY(cpe_t) links;
+
+    char const          *name;      /**< CPE record name         */
+    char const          *url;       /**< CPE URL for Conn.Req.   */
+    struct sockaddr     *addr;      /**< CPE IP address          */
+    char const          *cert;      /**< CPE certificate         */
+    char const          *username;  /**< CPE user name           */
+    char const          *password;  /**< CPE user password       */
+    session_t            session;   /**< Session                 */
+    cwmp__DeviceIdStruct device_id; /**< Device Identifier       */
+    int                  enabled;   /**< Enabled CWMP func. flag */
+    struct soap         *soap;      /**< SOAP struct             */
+    struct acs_t        *acs;       /**< ACS, managing this CPE  */
 } cpe_t;
 
-/** CPE list */
-typedef struct cpe_item_t
-{
-    STAILQ_ENTRY(cpe_item_t) link;
-    cpe_t                    cpe;
-} cpe_item_t;
-
 /** ACS */
-typedef struct {
-    char const  *name;          /**< ACS name                       */
-    char const  *url;           /**< ACS URL                        */
-    char const  *cert;          /**< ACS certificate                */
-    char const  *user;          /**< ACS user name                  */
-    char const  *pass;          /**< ACS user password              */
+typedef struct acs_t {
+    LIST_ENTRY(acs_t) links;
+
+    const char  *name;          /**< ACS name                       */
+    const char  *url;           /**< ACS URL                        */
+    const char  *cert;          /**< ACS certificate                */
+    const char  *username;      /**< ACS user name                  */
+    const char  *password;      /**< ACS user password              */
     int          enabled;       /**< ACS enabled flag               */
     int          ssl;           /**< ACS ssl flag                   */
     int          port;          /**< ACS port value                 */
-    STAILQ_HEAD(cpe_list_t, cpe_item_t)
+    LIST_HEAD(cpe_list_t, cpe_t)
                 cpe_list;       /**< The list of CPEs being handled */
-    struct soap *soap;          /**< Listenning socket SOAP struct  */
 } acs_t;
 
-/** ACS list */
-typedef struct acs_item_t
-{
-    STAILQ_ENTRY(acs_item_t) link;
-    acs_t                acs;
-} acs_item_t;
 
-typedef STAILQ_HEAD(acs_list_t, acs_item_t) acs_list_t;
+typedef LIST_HEAD(acs_list_t, acs_t) acs_list_t;
 
 /** The list af acs instances */
 extern acs_list_t acs_list;
 
 /** Abstraction structure for the 'channel' object */
 typedef struct channel_t {
+    LIST_ENTRY(channel_t) links;
     void       *data;           /**< Channel-specific private data      */
-    te_errno  (*before_select)( /**< Called before 'select' syscall     */
+    te_errno  (*before_poll)(   /**< Called before 'select' syscall     */
         void   *data,           /**< Channel-specific private data      */
-        fd_set *rd_set,         /**< Descriptor set checked for reading */
-        fd_set *wr_set,         /**< Descriptor set checked for writing */
-        int    *fd_max);        /**< Storage for maximal of descriptors */
+        struct pollfd *pfd);    /**< Poll descriptor for events         */
     te_errno  (*after_select)(  /**< Called after 'select' syscall      */
         void   *data,           /**< Channel-specific private data      */
-        fd_set *rd_set,         /**< Descriptor set checked for reading */
-        fd_set *wr_set);        /**< Descriptor set checked for writing */
-    te_errno  (*recover_fds)(   /**< Called on error during select call */
-        void   *data);          /**< Channel-specific private data      */
+        struct pollfd *pfd);    /**< Poll descriptor for events         */
     te_errno  (*destroy)(       /**< Called on destroy                  */
         void   *data);          /**< Channel-specific private data      */
 } channel_t;
-
-typedef struct channel_item_t
-{
-    STAILQ_ENTRY(channel_item_t) link;
-    channel_t                    channel;
-} channel_item_t;
-
-extern te_errno acse_lrpc_create(channel_t *channel,
-                                 params_t *params, int sock);
-
-extern te_errno acse_conn_create(channel_t *channel);
-
-extern te_errno acse_sreq_create(channel_t *channel);
-
-extern te_errno acse_cwmp_create(channel_t *channel);
 
 
 extern int cwmp_SendConnectionRequest(const char *endpoint,
                                       const char *username, 
                                       const char *password);
 
+
+/**
+ * Add an ACS object to internal DB
+ *
+ * @param acs_name      Name of the ACS
+ *
+ * @return              status code
+ *
+ */
+extern te_errno db_add_acs(const char *acs_name);
+
+/**
+ * Add a CPE record for particular ACS object to internal DB
+ *
+ * @param acs_name      Name of the ACS
+ * @param cpe_name      Name of the CPE 
+ *
+ * @return              status code
+ *
+ */
+extern te_errno db_add_cpe(const char *acs_name, const char *cpe_name);
+
+/**
+ * Find an acs instance from the acs list
+ *
+ * @param acs_name      Name of the acs instance
+ *
+ * @return              Acs instance address or NULL if not found
+ */
+extern acs_t * db_find_acs(const char *acs_name);
+
+/**
+ * Find a cpe instance from the cpe list of an acs instance
+ *
+ * @param acs_item      ACS object ptr, if already found, or NULL;
+ * @param acs_name      Name of the acs instance;
+ * @param cpe_name      Name of the cpe instance.
+ *
+ * @return              Cpe instance address or NULL if not found
+ */
+extern cpe_t * db_find_cpe(acs_t *acs_item,
+                           const char *acs_name,
+                           const char *cpe_name);
+
+
+
+
+/**
+ * Init EPC dispatcher.
+ */
+extern te_errno acse_epc_create(channel_t *channel, params_t *params,
+                               int sock);
+
+
+/**
+ * Init TCP Listener dispatcher (named 'conn' - by old style. to be fixed).
+ */
+extern te_errno acse_conn_create(channel_t *channel);
 #ifdef __cplusplus
 }
 #endif

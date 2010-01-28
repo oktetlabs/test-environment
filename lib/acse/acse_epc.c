@@ -1,5 +1,5 @@
 /** @file
- * @brief ACSE RPC Dispathcer
+ * @brief ACSE EPC Dispathcer
  *
  * ACS Emulator support
  *
@@ -22,8 +22,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
@@ -53,13 +53,13 @@
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #else
-#error <sys/socket.h> is definitely needed for acse_lrpc.c
+#error <sys/socket.h> is definitely needed for acse_epc.c
 #endif
 
 #if HAVE_SYS_UN_H
 #include <sys/un.h>
 #else
-#error <sys/un.h> is definitely needed for acse_lrpc.c
+#error <sys/un.h> is definitely needed for acse_epc.c
 #endif
 
 #include <string.h>
@@ -72,7 +72,7 @@
 #include "acse_internal.h"
 
 /** LRPC mechanism state machine states */
-typedef enum { want_read, want_write } lrpc_t;
+typedef enum { want_read, want_write } epc_t;
 
 /** LRPC mechanism state machine private data */
 typedef struct {
@@ -82,11 +82,9 @@ typedef struct {
     socklen_t len;    /**< The length of the address of a requester     */
     params_t *params; /**< Parameters passed from TA over shared memory */
     te_errno  rc;     /**< Return code to be passed back to TA          */
-    lrpc_t    state;  /**< LRPC mechanism state machine current state   */
-} lrpc_data_t;
+    epc_t    state;  /**< LRPC mechanism state machine current state   */
+} epc_data_t;
 
-/** The list af acs instances */
-acs_list_t acs_list = STAILQ_HEAD_INITIALIZER(&acs_list); 
 
 /**
  * Avoid warning when freeing pointers to const data
@@ -97,59 +95,6 @@ static void
 free_const(void const *p)
 {
  free((void *)p);
-}
-
-/**
- * Find an acs instance from the acs list
- *
- * @param acs           Name of the acs instance
- *
- * @return              Acs instance address or NULL if not found
- */
-static acs_t *
-find_acs(char const *acs)
-{
-    acs_item_t *item;
-
-    STAILQ_FOREACH(item, &acs_list, link)
-    {
-        if (strcmp(item->acs.name, acs) == 0)
-            return &item->acs;
-    }
-
-    return NULL;
-}
-
-/**
- * Find a cpe instance from the cpe list of an acs instance
- *
- * @param acs_name      Name of the acs instance
- * @param cpe_name      Name of the cpe instance
- *
- * @return              Cpe instance address or NULL if not found
- */
-cpe_t *
-find_cpe(const char *acs_name, const char *cpe_name)
-{
-    acs_t *acs_item;
-    cpe_t *cpe_item;
-
-    SLIST_FOREACH(acs_item, &acs_list, links)
-    {
-        if (strcmp(acs_item->name, acs_name) == 0)
-            break;
-    }
-
-    if (acs_item != NULL)
-    {
-        SLIST_FOREACH(cpe_item, &acs_item->cpe_list, links)
-        {
-            if (strcmp(cpe_item->name, cpe_name) == 0)
-                return cpe_item;
-        }
-    }
-
-    return NULL;
 }
 
 /**
@@ -420,87 +365,23 @@ cpe_url_set(params_t *params)
 static te_errno
 acs_cpe_add(params_t *params)
 {
-    acs_item_t *acs_item;
-    cpe_item_t *cpe_item;
+    cpe_t *cpe_item;
+    te_errno rc;
 
-    /* Find the acs item */
-    STAILQ_FOREACH(acs_item, &acs_list, link)
-    {
-        if (strcmp(acs_item->acs.name, params->acs) == 0)
-            break;
-    }
+    rc = db_add_cpe(params->acs, params->cpe);
+    if (rc)
+        return rc;
 
-    if (acs_item == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    cpe_item = db_find_cpe(NULL, params->acs, params->cpe);
+    if (cpe_item == NULL)
+        return TE_RC(TE_ACSE, TE_EFAULT);
 
-    STAILQ_FOREACH(cpe_item, &acs_item->acs.cpe_list, link)
-    {
-        if (strcmp(cpe_item->cpe.name, params->cpe) == 0)
-            break;
-    }
+    cpe_item->session.state         = CWMP_NOP;
+    cpe_item->enabled               = FALSE;
+    cpe_item->session.hold_requests = FALSE;
+    cpe_item->soap                  = NULL;
 
-    if (cpe_item != NULL)
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-
-    if ((cpe_item = malloc(sizeof *cpe_item)) == NULL)
-        goto enomem_0;
-
-    if ((cpe_item->cpe.name = strdup(params->cpe)) == NULL)
-        goto enomem_1;
-
-
-    if ((cpe_item->cpe.url  = strdup("")) == NULL)
-        goto enomem_0;
-
-    if ((cpe_item->cpe.cert = strdup("")) == NULL)
-        goto enomem_4;
-
-    if ((cpe_item->cpe.username = strdup("")) == NULL)
-        goto enomem_5;
-
-    if ((cpe_item->cpe.password = strdup("")) == NULL)
-        goto enomem_0;
-
-    if ((cpe_item->cpe.device_id.manufacturer = strdup("")) == NULL)
-        goto enomem_0;
-
-    if ((cpe_item->cpe.device_id.oui = strdup("")) == NULL)
-        goto enomem_8;
-
-    if ((cpe_item->cpe.device_id.product_class = strdup("")) == NULL)
-        goto enomem_9;
-
-    if ((cpe_item->cpe.device_id.serial_number = strdup("")) == NULL)
-        goto enomem_A;
-
-    cpe_item->cpe.session.state         = CWMP_NOP;
-    cpe_item->cpe.enabled               = FALSE;
-    cpe_item->cpe.session.hold_requests = FALSE;
-    cpe_item->cpe.soap                  = NULL;
-
-    STAILQ_INSERT_TAIL(&acs_item->acs.cpe_list, cpe_item, link);
-    return 0;
-
-enomem_A:
-    free_const(cpe_item->cpe.device_id.product_class);
-
-enomem_9:
-    free_const(cpe_item->cpe.device_id.oui);
-
-enomem_8:
-    free_const(cpe_item->cpe.device_id.manufacturer);
-
-enomem_5:
-    free_const(cpe_item->cpe.cert);
-
-enomem_4:
-    free_const(cpe_item->cpe.url);
-
-enomem_1:
-    free(cpe_item);
-
-enomem_0:
-    return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    return 0; 
 }
 
 /**
@@ -927,61 +808,21 @@ acs_url_set(params_t *params)
 static te_errno
 acse_acs_add(params_t *params)
 {
-    acs_item_t *item;
+    acs_t    item;
+    te_errno rc;
 
-    STAILQ_FOREACH(item, &acs_list, link)
-    {
-        if (strcmp(item->acs.name, params->acs) == 0)
-            break;
-    }
+    rc = db_add_acs(params->acs);
+    if (rc)
+        return rc;
+    /* Now fill ACS with some significant */
 
-    if (item != NULL)
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    item = db_find_acs(params->acs);
 
-    if ((item = malloc(sizeof *item)) == NULL)
-        goto enomem_0;
+    item->enabled = 0;
+    item->ssl     = 0;
+    item->port    = 0;
 
-    if ((item->acs.name = strdup(params->acs)) == NULL)
-        goto enomem_1;
-
-    if ((item->acs.url  = strdup("")) == NULL)
-        goto enomem_2;
-
-    if ((item->acs.cert = strdup("")) == NULL)
-        goto enomem_3;
-
-    if ((item->acs.user = strdup("")) == NULL)
-        goto enomem_4;
-
-    if ((item->acs.pass = strdup("")) == NULL)
-        goto enomem_5;
-
-    item->acs.enabled = 0;
-    item->acs.ssl     = 0;
-    item->acs.port    = 0;
-    item->acs.soap    = NULL;
-
-    STAILQ_INIT(&item->acs.cpe_list);
-    STAILQ_INSERT_TAIL(&acs_list, item, link);
-    return 0;
-
-enomem_5:
-    free_const(item->acs.user);
-
-enomem_4:
-    free_const(item->acs.cert);
-
-enomem_3:
-    free_const(item->acs.url);
-
-enomem_2:
-    free_const(item->acs.name);
-
-enomem_1:
-    free(item);
-
-enomem_0:
-    return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    return 0; 
 }
 
 /**
@@ -994,35 +835,8 @@ enomem_0:
 static te_errno
 acse_acs_del(params_t *params)
 {
-    acs_item_t *item;
 
-    STAILQ_FOREACH(item, &acs_list, link)
-    {
-        if (strcmp(item->acs.name, params->acs) == 0)
-        {
-            if (!STAILQ_EMPTY(&item->acs.cpe_list))
-                return TE_RC(TE_TA_UNIX, TE_EBUSY);
-
-            STAILQ_REMOVE(&acs_list, item, acs_item_t, link);
-            free_const(item->acs.name);
-            free_const(item->acs.url);
-            free_const(item->acs.cert);
-            free_const(item->acs.user);
-            free_const(item->acs.pass);
-
-            if (item->acs.soap != NULL)
-            {
-                free(item->acs.soap->user);
-                soap_end(item->acs.soap);
-                soap_free(item->acs.soap);
-            }
-
-            free(item);
-            return 0;
-        }
-    }
-
-    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    return 0;
 }
 
 /**
@@ -1040,21 +854,21 @@ acse_acs_list(params_t *params)
     acs_item_t  *item;
 
     /* Calculate the whole length (plus 1 sym for trailing ' '/'\0') */
-    STAILQ_FOREACH(item, &acs_list, link)
-        len += strlen(item->acs.name) + 1;
+    LIST_FOREACH(item, &acs_list, link)
+        len += strlen(item->name) + 1;
 
     if (len > sizeof params->list)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     /* Form the list */
-    STAILQ_FOREACH(item, &acs_list, link)
+    LIST_FOREACH(item, &acs_list, link)
     {
-        if ((len = strlen(item->acs.name)) > 0)
+        if ((len = strlen(item->name)) > 0)
         {
-            if (item != STAILQ_FIRST(&acs_list))
+            if (item != LIST_FIRST(&acs_list))
               *ptr++ = ' ';
 
-            memcpy(ptr, item->acs.name, len);
+            memcpy(ptr, item->name, len);
             ptr += len;
         }
     }
@@ -1158,61 +972,58 @@ static te_errno
         &rpc_test };
 
 static te_errno
-before_select(void *data, fd_set *rd_set, fd_set *wr_set, int *fd_max)
+epc_before_poll(void *data, struct pollfd *pfd)
 {
-    lrpc_data_t *lrpc = data;
+    epc_data_t *epc = data;
 
-    switch (lrpc->state)
+    pfd->fd = epc->sock;
+    pfd->revents = 0;
+
+    switch (epc->state)
     {
         case want_read:
-            FD_SET(lrpc->sock, rd_set);
-
-            if (*fd_max < lrpc->sock + 1)
-                *fd_max = lrpc->sock + 1;
-
+            pfd->events = POLLIN;
             break;
         case want_write:
-            FD_SET(lrpc->sock, wr_set);
-
-            if (*fd_max < lrpc->sock + 1)
-                *fd_max = lrpc->sock + 1;
-
+            pfd->events = POLLOUT;
             break;
         default:
+            pfd->events = 0;
+            pfd->fd = -1;
             break;
     }
 
     return 0;
 }
 
-static te_errno
-after_select(void *data, fd_set *rd_set, fd_set *wr_set)
+te_errno
+epc_after_poll(void *data, struct pollfd *pfd)
 {
     acse_fun_t   fun;
-    lrpc_data_t *lrpc = data;
+    epc_data_t *epc = data;
 
-    switch (lrpc->state)
+    switch (epc->state)
     {
         case want_read:
-            if (FD_ISSET(lrpc->sock, rd_set))
+            if (pfd->revents & POLLIN)
             {
-                lrpc->len = sizeof lrpc->addr;
+                epc->len = sizeof(epc->addr);
 
-                switch (recvfrom(lrpc->sock, &fun, sizeof fun, 0,
-                                 (struct sockaddr *)&lrpc->addr,
-                                 &lrpc->len))
+                switch (recvfrom(epc->sock, &fun, sizeof fun, 0,
+                                 (struct sockaddr *)&epc->addr,
+                                 &epc->len))
                 {
                     case -1:
                         ERROR("Failed to get call over LRPC: %s",
                               strerror(errno));
                         return TE_RC(TE_TA_UNIX, TE_EFAIL);
                     case sizeof fun:
-                        lrpc->rc =
+                        epc->rc =
                           fun >= acse_fun_first && fun <= acse_fun_last ?
-                            (*xlat[fun - acse_fun_first])(lrpc->params) :
+                            (*xlat[fun - acse_fun_first])(epc->params) :
                             TE_RC(TE_TA_UNIX, TE_ENOSYS);
 
-                        lrpc->state = want_write;
+                        epc->state = want_write;
                         break;
                     default:
                         ERROR("Failed to get call over LRPC");
@@ -1222,17 +1033,17 @@ after_select(void *data, fd_set *rd_set, fd_set *wr_set)
 
             break;
         case want_write:
-            if (FD_ISSET(lrpc->sock, wr_set))
+            if (pfd->revents & POLLOUT)
             {
-                switch (sendto(lrpc->sock, &lrpc->rc, sizeof lrpc->rc, 0,
-                               (struct sockaddr *)&lrpc->addr, lrpc->len))
+                switch (sendto(epc->sock, &epc->rc, sizeof epc->rc, 0,
+                               (struct sockaddr *)&epc->addr, epc->len))
                 {
                     case -1:
                         ERROR("Failed to return from call over LRPC: %s",
                               strerror(errno));
                         return TE_RC(TE_TA_UNIX, TE_EFAIL);
-                    case sizeof lrpc->rc:
-                        lrpc->state = want_read;
+                    case sizeof epc->rc:
+                        epc->state = want_read;
                         break;
                     default:
                         ERROR("Failed to return from call over LRPC");
@@ -1248,27 +1059,20 @@ after_select(void *data, fd_set *rd_set, fd_set *wr_set)
     return 0;
 }
 
-static te_errno
-destroy(void *data)
+te_errno
+epc_destroy(void *data)
 {
-    lrpc_data_t *lrpc = data;
+    epc_data_t *epc = data;
 
-    close(lrpc->sock);
-    free(lrpc);
+    close(epc->sock);
+    free(epc);
     return 0;
 }
 
-static te_errno
-recover_fds(void *data)
-{
-    UNUSED(data);
-    return -1;
-}
-
 extern te_errno
-acse_lrpc_create(channel_t *channel, params_t *params, int sock)
+acse_epc_create(channel_t *channel, params_t *params, int sock)
 {
-    lrpc_data_t *lrpc = channel->data = malloc(sizeof *lrpc);
+    epc_data_t *epc = channel->data = malloc(sizeof *lrpc);
 
     if (lrpc == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
@@ -1280,10 +1084,9 @@ acse_lrpc_create(channel_t *channel, params_t *params, int sock)
     lrpc->rc              = 0;
     lrpc->state           = want_read;
 
-    channel->before_select = &before_select;
-    channel->after_select  = &after_select;
-    channel->destroy       = &destroy;
-    channel->recover_fds   = &recover_fds;
+    channel->before_poll  = &epc_before_poll;
+    channel->after_poll   = &epc_after_poll;
+    channel->destroy      = &epc_destroy;
 
     return 0;
 }

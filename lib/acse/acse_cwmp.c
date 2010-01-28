@@ -52,14 +52,6 @@
 /** Single REALM for Digest Auth. which we support. */
 const char *authrealm = "tr-069";
 
-/** CWMP Dispatcher state machine states */
-typedef enum { want_read, want_write } cwmp_t;
-
-/** CWMP Dispatcher state machine private data */
-typedef struct {
-    cwmp_t state; /**< Session Requester state machine current state */
-} cwmp_data_t;
-
 static te_errno
 before_select(void *data, fd_set *rd_set, fd_set *wr_set, int *fd_max)
 {
@@ -88,13 +80,6 @@ destroy(void *data)
 
     free(cwmp);
     return 0;
-}
-
-static te_errno
-recover_fds(void *data)
-{
-    UNUSED(data);
-    return -1;
 }
 
 te_errno

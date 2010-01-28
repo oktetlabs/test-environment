@@ -44,38 +44,31 @@
 #include "acse_internal.h"
 
 /** The list of "channels" */
-static STAILQ_HEAD(channel_list_t, channel_item_t)
-channel_list = STAILQ_HEAD_INITIALIZER(&channel_list); 
+static LIST_HEAD(channel_list_t, channel_t)
+        channel_list = LIST_HEAD_INITIALIZER(&channel_list); 
+static channel_number = 0;
 
 static void
-destroy_all_items(void)
+clear_channels(void)
 {
-    channel_item_t *item;
-    channel_item_t *tmp;
+    channel_t *item;
+    channel_t *tmp;
 
-    STAILQ_FOREACH_SAFE(item, &channel_list, link, tmp)
+    LIST_FOREACH_SAFE(item, &channel_list, links, tmp)
     {
-        (*item->channel.destroy)(item->channel.data);
+        (*item->destroy)(item->data);
         free(item);
     }
+    channel_list = LIST_HEAD_INITIALIZER(&channel_list); 
+    channel_number = 0;
 }
 
-static int
-recover_on_select_failure(void)
+static void
+add_channel(channel_t *ch_item)
 {
-    channel_item_t *item;
-    channel_item_t *tmp;
-
-    STAILQ_FOREACH_SAFE(item, &channel_list, link, tmp)
-    {
-        if ((*item->channel.recover_fds)(item->channel.data) != 0)
-        {
-            destroy_all_items();
-            return -1;
-        }
-    }
-
-    return 0;
+    assert(ch_item != NULL)
+    LIST_INSERT_HEAD(&channel_list, ch_item, links);
+    channel_number++;
 }
 
 /* See description in acse.h */
@@ -100,102 +93,96 @@ check_fd(int fd)
  * @param params        Shared memory for LRPC parameters
  * @param sock          Socket for LRPC synchronization
  *
- * @return              0 if OK, otherwise -1
+ * @return              status code
  */
-static int
+te_errno
 create_dispatchers(params_t *params, int sock)
 {
-    channel_item_t *item = malloc(sizeof *item);
+    channel_t *ch_item;
+    te_errno rc = 0; 
 
-    if (item != NULL &&
-        acse_lrpc_create(&item->channel, params, sock) == 0)
+    if ((ch_item = malloc(sizeof *ch_item)) != NULL &&
+        (rc = acse_epc_create(ch_item, params, sock)) == 0)
     {
-        STAILQ_INSERT_TAIL(&channel_list, item, link);
-
-        if ((item = malloc(sizeof *item)) != NULL &&
-            acse_conn_create(&item->channel) == 0)
-        {
-            STAILQ_INSERT_TAIL(&channel_list, item, link);
-
-            if ((item = malloc(sizeof *item)) != NULL &&
-                acse_cwmp_create(&item->channel) == 0)
-            {
-                STAILQ_INSERT_TAIL(&channel_list, item, link);
-
-                if ((item = malloc(sizeof *item)) != NULL &&
-                    acse_sreq_create(&item->channel) == 0)
-                {
-                    STAILQ_INSERT_TAIL(&channel_list, item, link);
-                    return 0;
-                }
-            }
-        }
+        add_channel(ch_item);
+    }
+    else
+    {
+        WARN("Fail create EPC dispatcher");
+        return TE_RC(TE_ACSE, rc);
     }
 
-    destroy_all_items();
-    return -1;
+    if ((ch_item = malloc(sizeof *ch_item)) != NULL &&
+        acse_conn_create(ch_item) == 0)
+    {
+        add_channel(ch_item);
+    }
+    else
+    {
+        WARN("Fail create TCP Listener dispatcher");
+        return TE_RC(TE_ACSE, rc);
+    }
+
+    return 0;
 }
 
+enum {MAX_POLL = 128};
+
 /* See description in acse.h */
-void acse_loop(params_t *params, int sock)
+void
+acse_loop(params_t *params, int sock)
 {
     if (create_dispatchers(params, sock) == 0)
     {
-        RING("I am acse_loop, now from the ACSE library!!!");
+        RING("I am acse_loop, now from the ACSE library!");
 
         for(;;)
         {
-            int             r;
-            int             fd_max = 0;
-            fd_set          rd_set;
-            fd_set          wr_set;
-            channel_item_t *item;
+            int         r;
+            int         i;
+            int         fd_max = 0;
+            channel_t  *item;
+            struct pollfd *pfd =
+                    calloc(channel_number, sizeof(struct pollfd));
 
-            FD_ZERO(&rd_set);
-            FD_ZERO(&wr_set);
-
-            STAILQ_FOREACH(item, &channel_list, link)
+            i = 0;
+            LINK_FOREACH(item, &channel_list, links)
             {
-                if ((*item->channel.before_select)(item->channel.data,
-                                                   &rd_set, &wr_set,
-                                                   &fd_max) != 0)
+                if ((*item->before_poll)(item->data, pfd + i) != 0)
+                {
+                    /* TODO something? */
+                    break;
+                }
+                i++;
+            }
+
+            r = poll(pfd, channel_number, -1);
+
+            if (r == -1)
+            {
+                perror("poll failed");
+                /* TODO something? */
+                break;
+            }
+
+            channel_item_t *last_item = LINK_LAST(
+                                            &channel_list,
+                                            channel_item_t,
+                                            links);
+            channel_item_t *tmp;
+
+            LINK_FOREACH_SAFE(item, &channel_list,
+                                links, tmp)
+            {
+                if ((*item->channel.after_select)(
+                        item->channel.data,
+                        &rd_set, &wr_set) != 0)
                 {
                     destroy_all_items();
                     return;
                 }
-            }
 
-            switch (r = select(fd_max, &rd_set, &wr_set, NULL, NULL))
-            {
-                case -1:
-                    if (recover_on_select_failure() != 0)
-                        return;
-
-                    break;
-                default:
-                    {
-                        channel_item_t *last_item = STAILQ_LAST(
-                                                        &channel_list,
-                                                        channel_item_t,
-                                                        link);
-                        channel_item_t *tmp;
-
-                        STAILQ_FOREACH_SAFE(item, &channel_list,
-                                            link, tmp)
-                        {
-                            if ((*item->channel.after_select)(
-                                    item->channel.data,
-                                    &rd_set, &wr_set) != 0)
-                            {
-                                destroy_all_items();
-                                return;
-                            }
-
-                            if (item == last_item)
-                                break;
-                        }
-                    }
-
+                if (item == last_item)
                     break;
             }
         }
