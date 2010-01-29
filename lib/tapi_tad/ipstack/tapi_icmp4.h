@@ -181,6 +181,27 @@ extern te_errno tapi_icmp_ip4_eth_csap_create(
                     in_addr_t      dst_addr,
                     csap_handle_t *icmp_csap);
 
+
+/**
+ * Create 'icmp.ip4' CSAP on the specified Agent
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param ifname        Name of interface
+ * @param src_addr      Local IP address in network byte order (or NULL)
+ * @param dst_addr      Remote IP address in network byte order (or NULL)
+ * @param icmp_csap     Location for the CSAP handle (OUT)
+ *
+ * @return Zero on success or error code
+ */
+te_errno
+tapi_icmp_ip4_csap_create(const char    *ta_name,
+                          int            sid,
+                          const char    *ifname,
+                          in_addr_t      src_addr,
+                          in_addr_t      dst_addr,
+                          csap_handle_t *icmp_csap);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

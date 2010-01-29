@@ -320,3 +320,63 @@ tapi_icmp_ip4_eth_csap_create(const char    *ta_name,
 
     return TE_RC(TE_TAPI, rc);
 }
+
+/**
+ * Create 'icmp.ip4' CSAP on the specified Agent
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param ifname        Name of interface
+ * @param src_addr      Local IP address in network byte order (or NULL)
+ * @param dst_addr      Remote IP address in network byte order (or NULL)
+ * @param icmp_csap     Location for the CSAP handle (OUT)
+ *
+ * @return Zero on success or error code
+ */
+te_errno
+tapi_icmp_ip4_csap_create(const char    *ta_name,
+                          int            sid,
+                          const char    *ifname,
+                          in_addr_t      src_addr,
+                          in_addr_t      dst_addr,
+                          csap_handle_t *icmp_csap)
+{
+    te_errno    rc;
+    asn_value  *csap_spec = NULL;
+
+    do {
+        if ((rc = tapi_tad_csap_add_layer(&csap_spec,
+                                          ndn_icmp4_csap,
+                                          "#icmp4", NULL)) != 0)
+        {
+            WARN("%s(): add ICMP csap layer failed %r", __FUNCTION__, rc);
+            break;
+        }
+
+        if ((rc = tapi_ip4_add_csap_layer(&csap_spec,
+                                          src_addr, dst_addr,
+                                          -1 /* default proto */,
+                                          -1 /* default ttl */,
+                                          -1 /* default tos */)) != 0)
+        {
+            WARN("%s(): add IP4 csap layer failed %r", __FUNCTION__, rc);
+            break;
+        }
+
+        rc = asn_write_string(csap_spec, ifname,
+                              "layers.1.#ip4.ifname.#plain");
+        if (rc != 0)
+        {
+            WARN("%s(): write IP4 layer value 'ifname' failed %r",
+                 __FUNCTION__, rc);
+            break;
+        }
+
+        rc = tapi_tad_csap_create(ta_name, sid, "icmp4.ip4",
+                                  csap_spec, icmp_csap);
+    } while (0);
+
+    asn_free_value(csap_spec);
+
+    return TE_RC(TE_TAPI, rc);
+}
