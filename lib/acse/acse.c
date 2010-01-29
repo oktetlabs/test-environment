@@ -37,6 +37,7 @@
 
 #include <stddef.h>
 #include<string.h>
+#include<assert.h>
 
 #include "te_errno.h"
 #include "te_queue.h"
@@ -46,10 +47,10 @@
 /** The list of "channels" */
 static LIST_HEAD(channel_list_t, channel_t)
         channel_list = LIST_HEAD_INITIALIZER(&channel_list); 
-static channel_number = 0;
+static int channel_number = 0;
 
-static void
-clear_channels(void)
+void
+acse_clear_channels(void)
 {
     channel_t *item;
     channel_t *tmp;
@@ -59,16 +60,26 @@ clear_channels(void)
         (*item->destroy)(item->data);
         free(item);
     }
-    channel_list = LIST_HEAD_INITIALIZER(&channel_list); 
+    LIST_INIT(&channel_list);
     channel_number = 0;
 }
 
-static void
-add_channel(channel_t *ch_item)
+void
+acse_add_channel(channel_t *ch_item)
 {
-    assert(ch_item != NULL)
+    assert(ch_item != NULL);
     LIST_INSERT_HEAD(&channel_list, ch_item, links);
     channel_number++;
+}
+
+void
+acse_remove_channel(channel_t *ch_item)
+{
+    assert(ch_item != NULL);
+    LIST_REMOVE(ch_item, links);
+    channel_number--;
+    ch_item->destroy(ch_item->data);
+    free(ch_item);
 }
 
 /* See description in acse.h */
@@ -104,22 +115,11 @@ create_dispatchers(params_t *params, int sock)
     if ((ch_item = malloc(sizeof *ch_item)) != NULL &&
         (rc = acse_epc_create(ch_item, params, sock)) == 0)
     {
-        add_channel(ch_item);
+        acse_add_channel(ch_item);
     }
     else
     {
         WARN("Fail create EPC dispatcher");
-        return TE_RC(TE_ACSE, rc);
-    }
-
-    if ((ch_item = malloc(sizeof *ch_item)) != NULL &&
-        acse_conn_create(ch_item) == 0)
-    {
-        add_channel(ch_item);
-    }
-    else
-    {
-        WARN("Fail create TCP Listener dispatcher");
         return TE_RC(TE_ACSE, rc);
     }
 
@@ -140,13 +140,12 @@ acse_loop(params_t *params, int sock)
         {
             int         r;
             int         i;
-            int         fd_max = 0;
             channel_t  *item;
             struct pollfd *pfd =
                     calloc(channel_number, sizeof(struct pollfd));
 
             i = 0;
-            LINK_FOREACH(item, &channel_list, links)
+            LIST_FOREACH(item, &channel_list, links)
             {
                 if ((*item->before_poll)(item->data, pfd + i) != 0)
                 {
@@ -165,26 +164,29 @@ acse_loop(params_t *params, int sock)
                 break;
             }
 
-            channel_item_t *last_item = LINK_LAST(
+#if 0
+            channel_t *last_item = LINK_LAST(
                                             &channel_list,
                                             channel_item_t,
                                             links);
-            channel_item_t *tmp;
+            channel_t *tmp;
+#endif
 
-            LINK_FOREACH_SAFE(item, &channel_list,
-                                links, tmp)
+            LIST_FOREACH(item, &channel_list, links)
             {
-                if ((*item->channel.after_select)(
-                        item->channel.data,
-                        &rd_set, &wr_set) != 0)
+                if ((*item->after_poll)(item->data, pfd + i) != 0)
                 {
-                    destroy_all_items();
-                    return;
+                    /* TODO something? */
+                    break;
                 }
 
+#if 0
                 if (item == last_item)
                     break;
+#endif
             }
         }
     }
 }
+
+

@@ -312,3 +312,21 @@ cwmp_SendConnectionRequest(const char *endpoint,
     soap_end(soap); 
     return 0;
 }
+
+
+/**
+ * Check wheather accepted TCP connection is related to 
+ * particular ACS.
+ *
+ * @return      0 if connection accepted by this ACS;
+ *              TE_ECONNREFUSED if connection NOT accepted by this ACS;
+ *              other error status on some error.
+ */
+te_errno
+cwmp_check_cpe_connection(acs_t *acs, int socket)
+{
+    /* TODO: real check, now accept all, if any CPE registered. */
+
+    return 0;
+}
+

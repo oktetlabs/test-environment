@@ -105,7 +105,8 @@ typedef struct cpe_t{
 
     char const          *name;      /**< CPE record name         */
     char const          *url;       /**< CPE URL for Conn.Req.   */
-    struct sockaddr     *addr;      /**< CPE IP address          */
+    struct sockaddr     *addr;      /**< CPE TCP/IP address for C.R.*/
+    socklen_t            addr_len;  /**< address length          */
     char const          *cert;      /**< CPE certificate         */
     char const          *username;  /**< CPE user name           */
     char const          *password;  /**< CPE user password       */
@@ -125,6 +126,10 @@ typedef struct acs_t {
     const char  *cert;          /**< ACS certificate                */
     const char  *username;      /**< ACS user name                  */
     const char  *password;      /**< ACS user password              */
+
+    struct sockaddr *addr_listen;/**< TCP/IP address to listen      */
+    socklen_t        addr_len;   /**< address length */
+
     int          enabled;       /**< ACS enabled flag               */
     int          ssl;           /**< ACS ssl flag                   */
     int          port;          /**< ACS port value                 */
@@ -145,7 +150,7 @@ typedef struct channel_t {
     te_errno  (*before_poll)(   /**< Called before 'select' syscall     */
         void   *data,           /**< Channel-specific private data      */
         struct pollfd *pfd);    /**< Poll descriptor for events         */
-    te_errno  (*after_select)(  /**< Called after 'select' syscall      */
+    te_errno  (*after_poll)(    /**< Called after 'select' syscall      */
         void   *data,           /**< Channel-specific private data      */
         struct pollfd *pfd);    /**< Poll descriptor for events         */
     te_errno  (*destroy)(       /**< Called on destroy                  */
@@ -157,6 +162,15 @@ extern int cwmp_SendConnectionRequest(const char *endpoint,
                                       const char *username, 
                                       const char *password);
 
+/**
+ * Check wheather accepted TCP connection is related to 
+ * particular ACS.
+ *
+ * @return      0 if connection accepted by this ACS;
+ *              TE_ECONNREFUSED if connection NOT accepted by this ACS;
+ *              other error status on some error.
+ */
+extern te_errno cwmp_check_cpe_connection(acs_t *acs, int socket);
 
 /**
  * Add an ACS object to internal DB
@@ -214,7 +228,14 @@ extern te_errno acse_epc_create(channel_t *channel, params_t *params,
 /**
  * Init TCP Listener dispatcher (named 'conn' - by old style. to be fixed).
  */
-extern te_errno acse_conn_create(channel_t *channel);
+extern te_errno acse_conn_create(void);
+
+
+extern void acse_add_channel(channel_t *ch_item);
+
+extern void acse_remove_channel(channel_t *ch_item);
+
+extern te_errno conn_register_acs(acs_t *acs);
 #ifdef __cplusplus
 }
 #endif

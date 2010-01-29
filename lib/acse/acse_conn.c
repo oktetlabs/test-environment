@@ -1,5 +1,5 @@
 /** @file
- * @brief ACSE Connection Dispatcher
+ * @brief ACSE TCP Listener Dispatcher
  *
  * ACS Emulator support
  *
@@ -24,6 +24,7 @@
  *
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
@@ -43,103 +44,147 @@
 #include "logger_api.h"
 #include "acse_internal.h"
 
-/** Connection Dispatcher state machine states */
-typedef enum { want_read, want_write } conn_t;
+typedef struct conn_data_t {
+    LIST_ENTRY(conn_data_t) links;
 
-/** Connection Dispatcher state machine private data */
-typedef struct {
-    conn_t state; /**< Session Requester state machine current state */
+    int              socket;  /**< TCP listening socket. */
+    struct sockaddr *addr;    /**< Network TCP address, which @p socket 
+                                      is bound. */
+
+    acs_t      **acs_objects;  /**< ACS objects listening on this 
+                                    TCP address. */
+    int          acs_number;   /**< number of ACS objects. */ 
 } conn_data_t;
 
-static te_errno
-before_select(void *data, fd_set *rd_set, fd_set *wr_set, int *fd_max)
-{
-    acs_item_t *item;
+static LIST_HEAD(conn_list_t, conn_data_t)
+        conn_list = LIST_HEAD_INITIALIZER(&conn_list); 
 
-    UNUSED(data);
-    UNUSED(rd_set);
-    UNUSED(wr_set);
-    UNUSED(fd_max);
 
-    STAILQ_FOREACH(item, &acs_list, link)
-    {
-        if (item->acs.soap != NULL && item->acs.soap->master != -1)
-        {
-            FD_SET(item->acs.soap->master, rd_set);
-
-            if (*fd_max < item->acs.soap->master + 1)
-                *fd_max = item->acs.soap->master + 1;
-        }
-    }
-
-    return 0;
-}
-
-static te_errno
-after_select(void *data, fd_set *rd_set, fd_set *wr_set)
-{
-    acs_item_t *item;
-
-    UNUSED(data);
-    UNUSED(rd_set);
-    UNUSED(wr_set);
-
-    STAILQ_FOREACH(item, &acs_list, link)
-    {
-        if (item->acs.soap != NULL && item->acs.soap->master != -1)
-        {
-            if (FD_ISSET(item->acs.soap->master, rd_set))
-            {
-                soap_accept(item->acs.soap);
-
-                if (soap_valid_socket(item->acs.soap->socket))
-                {
-                    /* FIXME: It's a debug message */
-                    RING("Incoming SOAP connection, socket = %d",
-                                item->acs.soap->socket);
-
-                    /* FIXME: Here connection should be handled */
-                    item->acs.soap->fclose(item->acs.soap);
-                }
-
-                soap_end(item->acs.soap);
-            }
-        }
-    }
-
-    return 0;
-}
-
-static te_errno
-destroy(void *data)
+te_errno
+conn_before_poll(void *data, struct pollfd *pfd)
 {
     conn_data_t *conn = data;
+
+    pfd->fd = conn->socket;
+    pfd->events = POLLIN;
+    pfd->revents = 0;
+
+    return 0;
+}
+
+te_errno
+conn_after_poll(void *data, struct pollfd *pfd)
+{
+    conn_data_t *conn = data;
+    struct sockaddr_storage remote_addr;
+    socklen_t addr_len;
+    int sock_acc;
+    int i;
+
+    if (!(pfd->revents & POLLIN))
+        return 0;
+
+    sock_acc = accept(conn->socket, SA(&remote_addr), &addr_len);
+    if (sock_acc < 0)
+    {
+        perror("CWMP connection accept failed!");
+        return TE_RC(TE_ACSE, errno);
+    }
+
+    for (i = 0; i < conn->acs_number; i++)
+    {
+        te_errno rc;
+        rc = cwmp_check_cpe_connection(conn->acs_objects[i], sock_acc); 
+        switch (rc)
+        {
+            case 0: return 0;
+            case TE_ECONNREFUSED: continue;
+            default:
+                WARN("check accepted socket fails, %r", rc);
+                return TE_RC(TE_ACSE, rc);
+        }
+    }
+    /* No ACS found, which accept this connection */
+    close(sock_acc);
+
+    return 0;
+}
+
+te_errno
+conn_destroy(void *data)
+{
+    conn_data_t *conn = data;
+    /* TODO: release all */
 
     free(conn);
     return 0;
 }
 
-static te_errno
-recover_fds(void *data)
+
+te_errno
+conn_register_acs(acs_t *acs)
 {
-    UNUSED(data);
-    return -1;
+    conn_data_t *new_conn;
+
+    if (acs == NULL || acs->addr_listen == NULL)
+        return TE_RC(TE_ACSE, TE_EINVAL);
+
+    /* TODO: check presense of ACS with same address in the list,
+     * if present, do not create new record, but add to the found one. */
+
+
+    new_conn = malloc(sizeof(*new_conn));
+    do 
+    {
+        channel_t *new_ch; 
+
+        new_conn->socket =
+            socket(acs->addr_listen->sa_family, SOCK_STREAM, 0);
+        if (new_conn->socket < 0)
+        {
+            ERROR("fail new socket");
+            break;
+        }
+
+        if (bind(new_conn->socket, acs->addr_listen, acs->addr_len) < 0)
+        {
+            ERROR("fail bind socket");
+            break;
+        }
+
+        if (listen(new_conn->socket, 10) < 0)
+        {
+            ERROR("fail listen socket");
+            break;
+        }
+
+        new_conn->addr = malloc(acs->addr_len);
+        memcpy(new_conn->addr, acs->addr_listen, acs->addr_len);
+        new_conn->acs_objects = malloc(sizeof(acs_t *));
+        new_conn->acs_objects[0] = acs;
+        new_conn->acs_number = 1;
+        LIST_INSERT_HEAD(&conn_list, new_conn, links);
+        acs->enabled = TRUE;
+
+        new_ch = malloc(sizeof(*new_ch)); 
+        new_ch->data = new_conn;
+        new_ch->before_poll = conn_before_poll;
+        new_ch->after_poll = conn_after_poll;
+        new_ch->destroy = conn_destroy;
+
+        return 0;
+    } while (0);
+
+    perror("Register ACSE");
+    if (new_conn->socket > 0)
+        close(new_conn->socket);
+    free(new_conn);
+    return TE_RC(TE_ACSE, errno);
 }
 
+
 extern te_errno
-acse_conn_create(channel_t *channel)
+acse_conn_create(void)
 {
-    conn_data_t *conn = channel->data = malloc(sizeof *conn);
-
-    if (conn == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    conn->state            = want_read;
-
-    channel->before_select = &before_select;
-    channel->after_select  = &after_select;
-    channel->destroy       = &destroy;
-    channel->recover_fds   = &recover_fds;
-
     return 0;
 }
