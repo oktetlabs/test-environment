@@ -53,7 +53,8 @@ te_headers = \
 	te_queue.h \
 	te_test_result.h \
 	tester_internal.h \
-	te_ethtool.h
+	te_ethtool.h \
+	te_cwmp.h
 
 include_HEADERS = te_config_internal.h $(te_headers)
 
