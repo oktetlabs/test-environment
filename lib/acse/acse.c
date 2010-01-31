@@ -107,7 +107,7 @@ check_fd(int fd)
  * @return              status code
  */
 te_errno
-create_dispatchers(params_t *params, int sock)
+create_dispatchers(acse_params_t *params, int sock)
 {
     channel_t *ch_item;
     te_errno rc = 0; 
@@ -130,7 +130,7 @@ enum {MAX_POLL = 128};
 
 /* See description in acse.h */
 void
-acse_loop(params_t *params, int sock)
+acse_loop(acse_params_t *params, int sock)
 {
     if (create_dispatchers(params, sock) == 0)
     {

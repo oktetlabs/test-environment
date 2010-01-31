@@ -48,7 +48,7 @@ extern "C" {
 
 #include "te_errno.h"
 #include "te_queue.h"
-#include "acse.h"
+#include "acse_epc.h"
 #include "acse_soapStub.h"
 
 /** Session states */
@@ -198,7 +198,7 @@ extern te_errno db_add_cpe(const char *acs_name, const char *cpe_name);
  *
  * @param acs_name      Name of the acs instance
  *
- * @return              Acs instance address or NULL if not found
+ * @return              ACS instance address or NULL if not found
  */
 extern acs_t * db_find_acs(const char *acs_name);
 
@@ -209,20 +209,37 @@ extern acs_t * db_find_acs(const char *acs_name);
  * @param acs_name      Name of the acs instance;
  * @param cpe_name      Name of the cpe instance.
  *
- * @return              Cpe instance address or NULL if not found
+ * @return              CPE instance address or NULL if not found
  */
 extern cpe_t * db_find_cpe(acs_t *acs_item,
                            const char *acs_name,
                            const char *cpe_name);
 
 
+/**
+ * Remove a ACS object
+ *
+ * @param acs_item      ACS record to be removed
+ *
+ * @return              status code
+ */
+extern te_errno db_remove_acs(acs_t *acs_item);
+
+/**
+ * Remove a cpe instance from the cpe list of an acs instance
+ *
+ * @param cpe_item      CPE record to be removed
+ *
+ * @return              status code
+ */
+extern te_errno db_remove_cpe(cpe_t *cpe_item);
 
 
 /**
  * Init EPC dispatcher.
  */
-extern te_errno acse_epc_create(channel_t *channel, params_t *params,
-                               int sock);
+extern te_errno acse_epc_create(channel_t *channel, 
+                                acse_params_t *params, int sock);
 
 
 /**

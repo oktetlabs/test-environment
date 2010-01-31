@@ -18,7 +18,7 @@ SOAPCPP2_FLAGS = @SOAPCPP2_FLAGS@
 
 lib_LTLIBRARIES = libacse.la
 
-include_HEADERS = acse.h
+include_HEADERS = acse_epc.h
 
 libacse_la_SOURCES = acse.c \
                     acse_conn.c \

@@ -170,3 +170,16 @@ db_find_cpe(acs_t *acs_item, const char *acs_name, const char *cpe_name)
     return NULL;
 }
 
+te_errno
+db_remove_acs(acs_t *acs_item)
+{
+    /* TODO */
+    return 0;
+}
+
+te_errno
+db_remove_cpe(cpe_t *cpe_item)
+{
+    /* TODO */
+    return 0;
+}

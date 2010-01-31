@@ -80,7 +80,8 @@ typedef struct {
     struct sockaddr_un
               addr;   /**< The address of a requester to answer to      */
     socklen_t len;    /**< The length of the address of a requester     */
-    params_t *params; /**< Parameters passed from TA over shared memory */
+    acse_params_t *params;
+                      /**< Parameters passed from TA over shared memory */
     te_errno  rc;     /**< Return code to be passed back to TA          */
     epc_t    state;  /**< LRPC mechanism state machine current state   */
 } epc_data_t;
@@ -105,9 +106,9 @@ free_const(void const *p)
  * @return              Status code
  */
 static te_errno
-session_hold_requests_get(params_t *params)
+session_hold_requests_get(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -124,9 +125,9 @@ session_hold_requests_get(params_t *params)
  * @return      Status code.
  */
 static te_errno
-session_hold_requests_set(params_t *params)
+session_hold_requests_set(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -143,9 +144,9 @@ session_hold_requests_set(params_t *params)
  * @return              Status code
  */
 static te_errno
-session_enabled_get(params_t *params)
+session_enabled_get(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -162,9 +163,9 @@ session_enabled_get(params_t *params)
  * @return      Status code.
  */
 static te_errno
-session_enabled_set(params_t *params)
+session_enabled_set(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -182,9 +183,9 @@ session_enabled_set(params_t *params)
  * @return              Status code
  */
 static te_errno
-session_state_get(params_t *params)
+session_state_get(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -201,14 +202,14 @@ session_state_get(params_t *params)
  * @return              Status code
  */
 static te_errno
-device_id_serial_number_get(params_t *params)
+device_id_serial_number_get(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strcpy(params->value, cpe_inst->device_id.serial_number);
+    strcpy(params->value, cpe_inst->device_id.SerialNumber);
     return 0;
 }
 
@@ -220,14 +221,14 @@ device_id_serial_number_get(params_t *params)
  * @return              Status code
  */
 static te_errno
-device_id_product_class_get(params_t *params)
+device_id_product_class_get(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strcpy(params->value, cpe_inst->device_id.product_class);
+    strcpy(params->value, cpe_inst->device_id.ProductClass);
     return 0;
 }
 
@@ -239,14 +240,14 @@ device_id_product_class_get(params_t *params)
  * @return              Status code
  */
 static te_errno
-device_id_oui_get(params_t *params)
+device_id_oui_get(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strcpy(params->value, cpe_inst->device_id.oui);
+    strcpy(params->value, cpe_inst->device_id.OUI);
     return 0;
 }
 
@@ -258,14 +259,14 @@ device_id_oui_get(params_t *params)
  * @return              Status code
  */
 static te_errno
-device_id_manufacturer_get(params_t *params)
+device_id_manufacturer_get(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strcpy(params->value, cpe_inst->device_id.manufacturer);
+    strcpy(params->value, cpe_inst->device_id.Manufacturer);
     return 0;
 }
 
@@ -278,9 +279,9 @@ device_id_manufacturer_get(params_t *params)
  * @return              Status code
  */
 static te_errno
-cpe_cert_get(params_t *params)
+cpe_cert_get(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -297,9 +298,9 @@ cpe_cert_get(params_t *params)
  * @return      Status code.
  */
 static te_errno
-cpe_cert_set(params_t *params)
+cpe_cert_set(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -320,9 +321,9 @@ cpe_cert_set(params_t *params)
  * @return              Status code
  */
 static te_errno
-cpe_url_get(params_t *params)
+cpe_url_get(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -339,9 +340,9 @@ cpe_url_get(params_t *params)
  * @return      Status code.
  */
 static te_errno
-cpe_url_set(params_t *params)
+cpe_url_set(acse_params_t *params)
 {
-    cpe_t *cpe_inst = find_cpe(params->acs, params->cpe);
+    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -363,7 +364,7 @@ cpe_url_set(params_t *params)
  * @return              Status code
  */
 static te_errno
-acs_cpe_add(params_t *params)
+acs_cpe_add(acse_params_t *params)
 {
     cpe_t *cpe_item;
     te_errno rc;
@@ -392,36 +393,14 @@ acs_cpe_add(params_t *params)
  * @return              Status code
  */
 static te_errno
-acs_cpe_del(params_t *params)
+acs_cpe_del(acse_params_t *params)
 {
-    acs_item_t *acs_item;
+    cpe_t *cpe_item = db_find_cpe(NULL, params->acs, params->cpe);
 
-    STAILQ_FOREACH(acs_item, &acs_list, link)
-    {
-        if (strcmp(acs_item->acs.name, params->acs) == 0)
-        {
-            cpe_item_t *cpe_item;
+    if (cpe_item == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-            STAILQ_FOREACH(cpe_item, &acs_item->acs.cpe_list, link)
-            {
-                if (strcmp(cpe_item->cpe.name, params->cpe) == 0)
-                {
-                    STAILQ_REMOVE(&acs_item->acs.cpe_list,
-                                  cpe_item, cpe_item_t, link);
-                    free_const(cpe_item->cpe.name);
-                    free_const(cpe_item->cpe.url);
-                    free_const(cpe_item->cpe.cert);
-                    free_const(cpe_item->cpe.username);
-                    free_const(cpe_item->cpe.password);
-                    free(cpe_item);
-
-                    return 0;
-                }
-            }
-        }
-    }
-
-    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    return db_remove_cpe(cpe_item);
 }
 
 /**
@@ -432,25 +411,20 @@ acs_cpe_del(params_t *params)
  * @return              Status code
  */
 static te_errno
-acs_cpe_list(params_t *params)
+acs_cpe_list(acse_params_t *params)
 {
     char        *ptr = params->list;
     unsigned int len = 0;
-    acs_item_t  *acs_item;
-    cpe_item_t  *cpe_item;
+    acs_t  *acs_item;
+    cpe_t  *cpe_item;
 
-    /* Find the acs item */
-    STAILQ_FOREACH(acs_item, &acs_list, link)
-    {
-        if (strcmp(acs_item->acs.name, params->acs) == 0)
-            break;
-    }
+    acs_item = db_find_acs(params->acs);
 
     /* Calculate the whole length (plus 1 sym for trailing ' '/'\0') */
     if (acs_item != NULL)
     {
-        STAILQ_FOREACH(cpe_item, &acs_item->acs.cpe_list, link)
-            len += strlen(cpe_item->cpe.name) + 1;
+        LIST_FOREACH(cpe_item, &acs_item->cpe_list, links)
+            len += strlen(cpe_item->name) + 1;
     }
 
     /* If no items, reserve 1 char for the trailing '\0' */
@@ -460,14 +434,14 @@ acs_cpe_list(params_t *params)
     /* Form the list */
     if (acs_item != NULL)
     {
-        STAILQ_FOREACH(cpe_item, &acs_item->acs.cpe_list, link)
+        LIST_FOREACH(cpe_item, &acs_item->cpe_list, links)
         {
-            if ((len = strlen(cpe_item->cpe.name)) > 0)
+            if ((len = strlen(cpe_item->name)) > 0)
             {
-                if (cpe_item != STAILQ_FIRST(&acs_item->acs.cpe_list))
+                if (cpe_item != LIST_FIRST(&acs_item->cpe_list))
                   *ptr++ = ' ';
 
-                memcpy(ptr, cpe_item->cpe.name, len);
+                memcpy(ptr, cpe_item->name, len);
                 ptr += len;
             }
         }
@@ -485,9 +459,9 @@ acs_cpe_list(params_t *params)
  * @return              Status code
  */
 static te_errno
-acs_port_get(params_t *params)
+acs_port_get(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -504,9 +478,9 @@ acs_port_get(params_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_port_set(params_t *params)
+acs_port_set(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -523,9 +497,9 @@ acs_port_set(params_t *params)
  * @return              Status code
  */
 static te_errno
-acs_ssl_get(params_t *params)
+acs_ssl_get(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -542,9 +516,9 @@ acs_ssl_get(params_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_ssl_set(params_t *params)
+acs_ssl_set(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -561,9 +535,9 @@ acs_ssl_set(params_t *params)
  * @return              Status code
  */
 static te_errno
-acs_enabled_get(params_t *params)
+acs_enabled_get(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -580,15 +554,16 @@ acs_enabled_get(params_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_enabled_set(params_t *params)
+acs_enabled_set(acse_params_t *params)
 {
-    int    prev_value;
     int    new_value = atoi(params->value);
-    acs_t *acs_inst  = find_acs(params->acs);
+    acs_t *acs_inst  = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
+#if 0
+    /* TODO: rewrite at all, is it need? */
     prev_value = acs_inst->enabled;
 
     if (prev_value == 0 && new_value != 0 && acs_inst->port != 0)
@@ -626,7 +601,7 @@ acs_enabled_set(params_t *params)
         acs_inst->soap = NULL;
         acs_inst->enabled = new_value;
     }
-
+#endif
     return 0;
 }
 
@@ -638,14 +613,14 @@ acs_enabled_set(params_t *params)
  * @return              Status code
  */
 static te_errno
-acs_pass_get(params_t *params)
+acs_pass_get(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strcpy(params->value, acs_inst->pass);
+    strcpy(params->value, acs_inst->password);
     return 0;
 }
 
@@ -657,16 +632,16 @@ acs_pass_get(params_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_pass_set(params_t *params)
+acs_pass_set(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    free_const(acs_inst->pass);
+    free_const(acs_inst->password);
 
-    if ((acs_inst->pass = strdup(params->value)) == NULL)
+    if ((acs_inst->password = strdup(params->value)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
@@ -680,14 +655,14 @@ acs_pass_set(params_t *params)
  * @return              Status code
  */
 static te_errno
-acs_user_get(params_t *params)
+acs_user_get(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strcpy(params->value, acs_inst->user);
+    strcpy(params->value, acs_inst->username);
     return 0;
 }
 
@@ -699,16 +674,16 @@ acs_user_get(params_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_user_set(params_t *params)
+acs_user_set(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    free_const(acs_inst->user);
+    free_const(acs_inst->username);
 
-    if ((acs_inst->user = strdup(params->value)) == NULL)
+    if ((acs_inst->username = strdup(params->value)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
@@ -722,9 +697,9 @@ acs_user_set(params_t *params)
  * @return              Status code
  */
 static te_errno
-acs_cert_get(params_t *params)
+acs_cert_get(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -741,9 +716,9 @@ acs_cert_get(params_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_cert_set(params_t *params)
+acs_cert_set(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -764,9 +739,9 @@ acs_cert_set(params_t *params)
  * @return              Status code
  */
 static te_errno
-acs_url_get(params_t *params)
+acs_url_get(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -783,9 +758,9 @@ acs_url_get(params_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_url_set(params_t *params)
+acs_url_set(acse_params_t *params)
 {
-    acs_t *acs_inst = find_acs(params->acs);
+    acs_t *acs_inst = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -806,9 +781,9 @@ acs_url_set(params_t *params)
  * @return              Status code
  */
 static te_errno
-acse_acs_add(params_t *params)
+acse_acs_add(acse_params_t *params)
 {
-    acs_t    item;
+    acs_t    *item;
     te_errno rc;
 
     rc = db_add_acs(params->acs);
@@ -833,10 +808,14 @@ acse_acs_add(params_t *params)
  * @return              Status code
  */
 static te_errno
-acse_acs_del(params_t *params)
+acse_acs_del(acse_params_t *params)
 {
+    acs_t *acs_item = db_find_acs(params->acs);
 
-    return 0;
+    if (acs_item == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return db_remove_acs(acs_item);
 }
 
 /**
@@ -847,21 +826,21 @@ acse_acs_del(params_t *params)
  * @return              Status code
  */
 static te_errno
-acse_acs_list(params_t *params)
+acse_acs_list(acse_params_t *params)
 {
     char        *ptr = params->list;
     unsigned int len = 0;
-    acs_item_t  *item;
+    acs_t       *item;
 
     /* Calculate the whole length (plus 1 sym for trailing ' '/'\0') */
-    LIST_FOREACH(item, &acs_list, link)
+    LIST_FOREACH(item, &acs_list, links)
         len += strlen(item->name) + 1;
 
     if (len > sizeof params->list)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     /* Form the list */
-    LIST_FOREACH(item, &acs_list, link)
+    LIST_FOREACH(item, &acs_list, links)
     {
         if ((len = strlen(item->name)) > 0)
         {
@@ -878,7 +857,7 @@ acse_acs_list(params_t *params)
 }
 
 static te_errno
-cpe_get_rpc_methods(params_t *params)
+cpe_get_rpc_methods(acse_params_t *params)
 {
     strcpy(params->method_list.list[0], "GetRPCMethods");
     strcpy(params->method_list.list[1], "SetParameterValues");
@@ -895,7 +874,7 @@ cpe_get_rpc_methods(params_t *params)
 
 #define RPC_TEST(_fun) \
 static te_errno                                               \
-_fun(params_t *params)                                        \
+_fun(acse_params_t *params)                                        \
 {                                                             \
     UNUSED(params);                                           \
     ERROR("Hi, I am " #_fun "!!!");                           \
@@ -923,17 +902,17 @@ RPC_TEST(cpe_get_options)
 #undef RPC_TEST
 
 static te_errno
-rpc_test(params_t *params)
+rpc_test(acse_params_t *params)
 {
     UNUSED(params);
-    ERROR("Hi, I am rpc_test!!! params->acse = %u", params->acse);
+    RING("Hi, I am rpc_test!!! ");
     return 0;
 }
 
 /** Translation table for calculated goto
  * (shoud correspond to enum acse_fun_t in acse.h) */
 static te_errno
-    (*xlat[])(params_t *) = {
+    (*xlat[])(acse_params_t *) = {
         &acse_acs_add, &acse_acs_del, &acse_acs_list,
         &acs_url_get, &acs_url_set,
         &acs_cert_get, &acs_cert_set,
@@ -1070,19 +1049,19 @@ epc_destroy(void *data)
 }
 
 extern te_errno
-acse_epc_create(channel_t *channel, params_t *params, int sock)
+acse_epc_create(channel_t *channel, acse_params_t *params, int sock)
 {
-    epc_data_t *epc = channel->data = malloc(sizeof *lrpc);
+    epc_data_t *epc = channel->data = malloc(sizeof(*epc));
 
-    if (lrpc == NULL)
+    if (epc == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-    lrpc->sock            = sock;
-    lrpc->addr.sun_family = AF_UNIX;
-    lrpc->len             = sizeof lrpc->addr;
-    lrpc->params          = params;
-    lrpc->rc              = 0;
-    lrpc->state           = want_read;
+    epc->sock            = sock;
+    epc->addr.sun_family = AF_UNIX;
+    epc->len             = sizeof epc->addr;
+    epc->params          = params;
+    epc->rc              = 0;
+    epc->state           = want_read;
 
     channel->before_poll  = &epc_before_poll;
     channel->after_poll   = &epc_after_poll;

@@ -36,7 +36,7 @@
 #include "rcf_common.h"
 #include "tarpc.h"
 
-#include "te_acse.h" 
+#include "te_cwmp.h" 
 
 #ifdef __cplusplus
 extern "C" {
@@ -145,7 +145,7 @@ extern int check_fd(int fd);
  * @param rfd           Local RPC read endpoint
  * @param wfd           Local RPC write endpoint
  */
-extern void acse_loop(params_t *params, int sock);
+extern void acse_loop(acse_params_t *params, int sock);
 
 #ifdef __cplusplus
 }
