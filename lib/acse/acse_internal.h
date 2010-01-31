@@ -164,13 +164,13 @@ extern int cwmp_SendConnectionRequest(const char *endpoint,
 
 /**
  * Check wheather accepted TCP connection is related to 
- * particular ACS.
+ * particular ACS; if it is, start processing of CWMP session.
  *
  * @return      0 if connection accepted by this ACS;
  *              TE_ECONNREFUSED if connection NOT accepted by this ACS;
  *              other error status on some error.
  */
-extern te_errno cwmp_check_cpe_connection(acs_t *acs, int socket);
+extern te_errno cwmp_accept_cpe_connection(acs_t *acs, int socket);
 
 /**
  * Add an ACS object to internal DB

@@ -94,10 +94,10 @@ conn_after_poll(void *data, struct pollfd *pfd)
     for (i = 0; i < conn->acs_number; i++)
     {
         te_errno rc;
-        rc = cwmp_check_cpe_connection(conn->acs_objects[i], sock_acc); 
+        rc = cwmp_accept_cpe_connection(conn->acs_objects[i], sock_acc); 
         switch (rc)
         {
-            case 0: return 0;
+            case 0: /* Stop processing */ return 0;
             case TE_ECONNREFUSED: continue;
             default:
                 WARN("check accepted socket fails, %r", rc);
@@ -171,6 +171,8 @@ conn_register_acs(acs_t *acs)
         new_ch->before_poll = conn_before_poll;
         new_ch->after_poll = conn_after_poll;
         new_ch->destroy = conn_destroy;
+
+        acse_add_channel(new_ch);
 
         return 0;
     } while (0);

@@ -52,53 +52,6 @@
 /** Single REALM for Digest Auth. which we support. */
 const char *authrealm = "tr-069";
 
-static te_errno
-before_select(void *data, fd_set *rd_set, fd_set *wr_set, int *fd_max)
-{
-    UNUSED(data);
-    UNUSED(rd_set);
-    UNUSED(wr_set);
-    UNUSED(fd_max);
-
-    return 0;
-}
-
-static te_errno
-after_select(void *data, fd_set *rd_set, fd_set *wr_set)
-{
-    UNUSED(data);
-    UNUSED(rd_set);
-    UNUSED(wr_set);
-
-    return 0;
-}
-
-static te_errno
-destroy(void *data)
-{
-    cwmp_data_t *cwmp = data;
-
-    free(cwmp);
-    return 0;
-}
-
-te_errno
-acse_cwmp_create(channel_t *channel)
-{
-    cwmp_data_t *cwmp = channel->data = malloc(sizeof *cwmp);
-
-    if (cwmp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    cwmp->state            = want_read;
-
-    channel->before_select = &before_select;
-    channel->after_select  = &after_select;
-    channel->destroy       = &destroy;
-    channel->recover_fds   = &recover_fds;
-
-    return 0;
-}
 
 
 SOAP_FMAC5 int SOAP_FMAC6
@@ -316,16 +269,17 @@ cwmp_SendConnectionRequest(const char *endpoint,
 
 /**
  * Check wheather accepted TCP connection is related to 
- * particular ACS.
+ * particular ACS; if it is, start processing of CWMP session.
  *
  * @return      0 if connection accepted by this ACS;
  *              TE_ECONNREFUSED if connection NOT accepted by this ACS;
  *              other error status on some error.
  */
 te_errno
-cwmp_check_cpe_connection(acs_t *acs, int socket)
+cwmp_accept_cpe_connection(acs_t *acs, int socket)
 {
     /* TODO: real check, now accept all, if any CPE registered. */
+    channel_t *channel = malloc(sizeof(*channel));
 
     return 0;
 }

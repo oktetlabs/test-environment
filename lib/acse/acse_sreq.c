@@ -1,10 +1,10 @@
 /** @file
- * @brief ACSE Session Requester
+ * @brief ACSE Connection Requester
  *
  * ACS Emulator support
  *
  *
- * Copyright (C) 2009 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2010 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -23,7 +23,7 @@
  * MA  02111-1307  USA
  *
  *
- * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
@@ -43,65 +43,68 @@
 #include "logger_api.h"
 #include "acse_internal.h"
 
-/** Session Requester state machine states */
-typedef enum { want_read, want_write } sreq_t;
+typedef struct srec_data_t {
+    LIST_ENTRY(srec_data_t) links;
 
-/** Session Requester state machine private data */
-typedef struct {
-    sreq_t state; /**< Session Requester state machine current state */
+    int              socket;  /**< TCP listening socket. */
+    struct sockaddr *addr;    /**< Network TCP address, which @p socket 
+                                      is bound. */
+
+    cpe_t       *cpe_item;    /**< CPE - object of Connection Request */
 } sreq_data_t;
 
-static te_errno
-before_select(void *data, fd_set *rd_set, fd_set *wr_set, int *fd_max)
-{
-    UNUSED(data);
-    UNUSED(rd_set);
-    UNUSED(wr_set);
-    UNUSED(fd_max);
+static LIST_HEAD(sreq_list_t, sreq_data_t)
+        sreq_list = LIST_HEAD_INITIALIZER(&sreq_list); 
 
-    return 0;
-}
 
-static te_errno
-after_select(void *data, fd_set *rd_set, fd_set *wr_set)
-{
-    UNUSED(data);
-    UNUSED(rd_set);
-    UNUSED(wr_set);
-
-    return 0;
-}
-
-static te_errno
-destroy(void *data)
+te_errno
+sreq_before_poll(void *data, struct pollfd *pfd)
 {
     sreq_data_t *sreq = data;
+
+    pfd->fd = sreq->socket;
+    pfd->events = POLLIN;
+    pfd->revents = 0;
+
+    return 0;
+}
+
+te_errno
+sreq_after_poll(void *data, struct pollfd *pfd)
+{
+    if (!(pfd->revents & POLLIN))
+        return 0;
+
+    return 0;
+}
+
+
+te_errno
+sreq_destroy(void *data)
+{
+    sreq_data_t *sreq = data;
+    /* TODO: release all */
 
     free(sreq);
     return 0;
 }
 
-static te_errno
-recover_fds(void *data)
-{
-    UNUSED(data);
-    return -1;
-}
 
 extern te_errno
-acse_sreq_create(channel_t *channel)
+acse_init_connection_request(cpe_t *cpe_item)
 {
-    sreq_data_t *sreq = channel->data = malloc(sizeof *sreq);
+    sreq_data_t *sreq_data = malloc(sizeof(*sreq_data));
 
-    if (sreq == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    channel_t *channel;
 
-    sreq->state            = want_read;
+    channel = malloc(sizeof(*channel)); 
+    channel->data = sreq_data;
+    channel->before_poll = sreq_before_poll;
+    channel->after_poll = sreq_after_poll;
+    channel->destroy = sreq_destroy;
 
-    channel->before_select = &before_select;
-    channel->after_select  = &after_select;
-    channel->destroy       = &destroy;
-    channel->recover_fds   = &recover_fds;
+    acse_add_channel(channel);
+
 
     return 0;
 }
