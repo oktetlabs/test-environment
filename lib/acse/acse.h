@@ -33,6 +33,11 @@
 #ifndef __TE_LIB_ACSE_H__
 #define __TE_LIB_ACSE_H__
 
+#include "rcf_common.h"
+#include "tarpc.h"
+
+#include "te_acse.h" 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -42,9 +47,8 @@ extern "C" {
 #define LRPC_TA_SOCK   "/tmp/lrpc_ta_sock"
 #define LRPC_RPC_SOCK  "/tmp/lrpc_rpc_sock"
 
-#include "rcf_common.h"
-#include "tarpc.h"
 
+#if 1
 /* This enum should correspond to xlat array in acse_lrpc.c */
 typedef enum { acse_fun_first = 1,
                acse_acs_add_fun = acse_fun_first,
@@ -90,19 +94,32 @@ typedef enum { acse_fun_first = 1,
                rpc_test_fun,
                acse_fun_last = rpc_test_fun
 } acse_fun_t;
+#endif
+
+typedef enum {
+    ACSE_PC_ACS_ADD,
+    ACSE_PC_ACS_DEL,
+    ACSE_PC_ACS_MODIFY,
+    ACSE_PC_ACS_OBTAIN,
+    ACSE_PC_CPE_ADD,
+    ACSE_PC_CPE_DEL,
+    ACSE_PC_CPE_MODIFY,
+    ACSE_PC_CPE_OBTAIN,
+    ACSE_PC_CWMP_CALL,
+} acse_pc_t;
+
 
 typedef struct {
-    unsigned int acse;
-    unsigned int gid;
-    char         oid[RCF_MAX_ID];
+    acse_pc_t    op;
+    char         oid[RCF_MAX_ID]; /**< TE Configurator OID of leaf,
+                                        which is subject of operation */ 
+    char         acs[RCF_MAX_NAME];
+    char         cpe[RCF_MAX_NAME];
 
     union {
         char     value[RCF_MAX_VAL];
         char     list[RCF_MAX_VAL];
     };
-
-    char         acs[RCF_MAX_NAME];
-    char         cpe[RCF_MAX_NAME];
 
     union {
         /** GetRPCMethods output */
@@ -111,7 +128,7 @@ typedef struct {
             tarpc_uint       len;
         } method_list;
     };
-} params_t;
+} acse_params_t;
 
 /**
  * Check fd for acceptance by select call
