@@ -1886,7 +1886,7 @@ TARPC_FUNC(setsockopt,
 
             if (in->raw_optval.raw_optval_val != NULL)
             {
-                len = optlen + in->raw_optval.raw_optval_len;
+                len = optlen + in->raw_optlen;
                 val = malloc(len);
                 assert(val != NULL);
                 memcpy(val, &opt, optlen);
