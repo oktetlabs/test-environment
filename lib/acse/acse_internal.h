@@ -46,6 +46,7 @@ extern "C" {
 
 #include <stdsoap2.h>
 
+#include "te_defs.h"
 #include "te_errno.h"
 #include "te_queue.h"
 #include "acse_epc.h"
@@ -89,52 +90,56 @@ typedef enum {
  */
 
 
-/** Session */
-typedef struct {
-    session_state_t state;         /**< Session state                  */
-    int             hold_requests; /**< Whether to put "hold requests"
-                                        in SOAP msg                    */
-} session_t;
-
 /* forward declaration */
-struct acs_struct;
+struct acs_t;
 
 /** CPE */
 typedef struct cpe_t{
-    LIST_ENTRY(cpe_t) links;
+    /** Fields for internal data integrity. */
 
-    char const          *name;      /**< CPE record name         */
-    char const          *url;       /**< CPE URL for Conn.Req.   */
-    struct sockaddr     *addr;      /**< CPE TCP/IP address for C.R.*/
-    socklen_t            addr_len;  /**< address length          */
-    char const          *cert;      /**< CPE certificate         */
-    char const          *username;  /**< CPE user name           */
-    char const          *password;  /**< CPE user password       */
-    session_t            session;   /**< Session                 */
+    LIST_ENTRY(cpe_t) links;
+    struct acs_t    *acs;       /**< ACS, managing this CPE  */
+
+    /** Fields corresponding to CM leafs in @p cpe node; some may change. */
+
+    char const      *name;      /**< CPE record name         */
+    char const      *url;       /**< CPE URL for Conn.Req.   */
+    char const      *cert;      /**< CPE certificate         */
+    char const      *username;  /**< CPE user name           */
+    char const      *password;  /**< CPE user password       */
+    int              enabled;   /**< Enabled CWMP func. flag */
+    te_bool          hold_requests;  /**< Whether to put "hold requests"
+                                        in SOAP msg                    */
     cwmp__DeviceIdStruct device_id; /**< Device Identifier       */
-    int                  enabled;   /**< Enabled CWMP func. flag */
+
+    /** Fields for internal procedure data during CWMP session. */
+
+    session_state_t      state;     /**< CWMP session state      */
+    struct sockaddr     *addr;      /**< CPE TCP/IP address for C.R.*/
+    socklen_t            addr_len;  /**< address length          */ 
     struct soap         *soap;      /**< SOAP struct             */
-    struct acs_t        *acs;       /**< ACS, managing this CPE  */
 } cpe_t;
 
 /** ACS */
 typedef struct acs_t {
+    /** Fields for internal data integrity. */
     LIST_ENTRY(acs_t) links;
+    LIST_HEAD(cpe_list_t, cpe_t)
+                cpe_list;       /**< The list of CPEs being handled */
 
+    /** Fields corresponding to CM leafs in @p acs node. */
     const char  *name;          /**< ACS name                       */
     const char  *url;           /**< ACS URL                        */
     const char  *cert;          /**< ACS certificate                */
     const char  *username;      /**< ACS user name                  */
     const char  *password;      /**< ACS user password              */
-
-    struct sockaddr *addr_listen;/**< TCP/IP address to listen      */
-    socklen_t        addr_len;   /**< address length */
-
     int          enabled;       /**< ACS enabled flag               */
     int          ssl;           /**< ACS ssl flag                   */
-    int          port;          /**< ACS port value                 */
-    LIST_HEAD(cpe_list_t, cpe_t)
-                cpe_list;       /**< The list of CPEs being handled */
+    int          port;          /**< TCP port value in host byte order */
+
+    /** Fields for internal procedure data. */
+    struct sockaddr *addr_listen;/**< TCP/IP address to listen      */
+    socklen_t        addr_len;   /**< address length */
 } acs_t;
 
 
@@ -253,6 +258,8 @@ extern void acse_add_channel(channel_t *ch_item);
 extern void acse_remove_channel(channel_t *ch_item);
 
 extern te_errno conn_register_acs(acs_t *acs);
+
+extern te_errno acse_enable_acs(acs_t *acs);
 #ifdef __cplusplus
 }
 #endif

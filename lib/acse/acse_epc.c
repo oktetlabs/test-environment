@@ -113,7 +113,7 @@ session_hold_requests_get(acse_params_t *params)
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(params->value, "%i", cpe_inst->session.hold_requests);
+    sprintf(params->value, "%i", cpe_inst->hold_requests);
     return 0;
 }
 
@@ -132,7 +132,7 @@ session_hold_requests_set(acse_params_t *params)
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    cpe_inst->session.hold_requests = atoi(params->value);
+    cpe_inst->hold_requests = atoi(params->value);
     return 0;
 }
 
@@ -190,7 +190,7 @@ session_state_get(acse_params_t *params)
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(params->value, "%i", cpe_inst->session.state);
+    sprintf(params->value, "%i", cpe_inst->state);
     return 0;
 }
 
@@ -377,10 +377,10 @@ acs_cpe_add(acse_params_t *params)
     if (cpe_item == NULL)
         return TE_RC(TE_ACSE, TE_EFAULT);
 
-    cpe_item->session.state         = CWMP_NOP;
-    cpe_item->enabled               = FALSE;
-    cpe_item->session.hold_requests = FALSE;
-    cpe_item->soap                  = NULL;
+    cpe_item->state         = CWMP_NOP;
+    cpe_item->enabled       = FALSE;
+    cpe_item->hold_requests = FALSE;
+    cpe_item->soap          = NULL;
 
     return 0; 
 }

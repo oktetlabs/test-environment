@@ -49,6 +49,20 @@
 
 #include "acse_soapH.h"
 
+SOAP_NMAC struct Namespace namespaces[] =
+{
+    {"SOAP-ENV", "http://schemas.xmlsoap.org/soap/envelope/",
+                "http://www.w3.org/*/soap-envelope", NULL},
+    {"SOAP-ENC", "http://schemas.xmlsoap.org/soap/encoding/",
+                "http://www.w3.org/*/soap-encoding", NULL},
+    {"xsi", "http://www.w3.org/2001/XMLSchema-instance",
+                "http://www.w3.org/*/XMLSchema-instance", NULL},
+    {"xsd", "http://www.w3.org/2001/XMLSchema",
+                "http://www.w3.org/*/XMLSchema", NULL},
+    {"cwmp", "urn:dslforum-org:cwmp-1-1",
+                "urn:dslforum-org:cwmp-1-*", NULL},
+    {NULL, NULL, NULL, NULL}
+};
 /** Single REALM for Digest Auth. which we support. */
 const char *authrealm = "tr-069";
 
@@ -266,10 +280,75 @@ cwmp_SendConnectionRequest(const char *endpoint,
     return 0;
 }
 
+te_errno
+cwmp_before_poll(void *data, struct pollfd *pfd)
+{
+    cpe_t *cpe = data;
+
+    if (cpe == NULL || cpe->soap == NULL || cpe->state == CWMP_NOP)
+    {
+        return TE_EINVAL;
+    }
+
+    pfd->fd = cpe->soap->socket;
+    pfd->events = POLLIN;
+    pfd->revents = 0;
+
+    return 0;
+}
+
+te_errno
+cwmp_after_poll(void *data, struct pollfd *pfd)
+{
+    cpe_t *cpe = data;
+
+    if (!(pfd->revents & POLLIN))
+        return 0;
+
+    switch(cpe->state)
+    {
+        case CWMP_NOP:
+            ERROR("Unexpected state of CPE item '%s': %d\n",
+                    cpe->name, (int)cpe->state);
+            return TE_EINVAL;
+
+        case CWMP_LISTEN:
+        case CWMP_WAIT_AUTH:
+        case CWMP_SERVE:
+            /* Now, after poll() on soap socket, it should not block */
+            soap_serve(cpe->soap);
+            break;
+
+        case CWMP_WAIT_RESPONSE:
+            /* TODO */
+            break;
+    }
+
+    return 0;
+}
+
+te_errno
+cwmp_destroy(void *data)
+{
+    cpe_t *cpe_item = data;
+    /* TODO: release all */
+
+    if (cpe_item->soap)
+    {
+        soap_done(cpe_item->soap);
+        soap_end(cpe_item->soap);
+        soap_free(cpe_item->soap);
+    }
+    free(cpe_item);
+    return 0;
+}
+
 
 /**
  * Check wheather accepted TCP connection is related to 
  * particular ACS; if it is, start processing of CWMP session.
+ * This procedure does not wait any data in TCP connection and 
+ * does not perform regular read from it. 
  *
  * @return      0 if connection accepted by this ACS;
  *              TE_ECONNREFUSED if connection NOT accepted by this ACS;
@@ -278,9 +357,62 @@ cwmp_SendConnectionRequest(const char *endpoint,
 te_errno
 cwmp_accept_cpe_connection(acs_t *acs, int socket)
 {
+    channel_t *channel;
+    cpe_t *cpe_item;
+
     /* TODO: real check, now accept all, if any CPE registered. */
-    channel_t *channel = malloc(sizeof(*channel));
+
+    if (LIST_EMPTY(&acs->cpe_list))
+        return TE_ECONNREFUSED;
+
+    cpe_item = LIST_FIRST(&acs->cpe_list);
+
+    if (cpe_item->state != CWMP_LISTEN)
+        return TE_ECONNREFUSED;
+
+    if ((cpe_item->soap = soap_new()) == NULL)
+        return TE_ENOMEM;
+
+    cpe_item->soap->socket = socket;
+    cpe_item->soap->user = cpe_item;
+
+    soap_imode(cpe_item->soap, SOAP_IO_KEEPALIVE);
+    soap_omode(cpe_item->soap, SOAP_IO_KEEPALIVE);
+
+    soap_register_plugin(cpe_item->soap, http_da); 
+
+    cpe_item->soap->max_keep_alive = 10;
+
+    channel = malloc(sizeof(*channel));
+
+    channel->data = cpe_item;
+    channel->before_poll = cwmp_before_poll;
+    channel->after_poll = cwmp_after_poll;
+    channel->destroy = cwmp_destroy;
+
+    acse_add_channel(channel);
 
     return 0;
 }
 
+
+
+te_errno
+acse_enable_acs(acs_t *acs)
+{
+    struct sockaddr_in *sin;
+
+    if (acs == NULL || acs->port == 0)
+        return TE_EINVAL;
+    sin = malloc(sizeof(struct sockaddr_in));
+    sin->sin_family = AF_INET;
+    sin->sin_addr.s_addr = INADDR_ANY;
+    sin->sin_port = htons(acs->port);
+
+    acs->addr_listen = SA(sin);
+    acs->addr_len = sizeof(struct sockaddr_in);
+
+    acs->enabled = TRUE;
+
+    conn_register_acs(acs);
+}

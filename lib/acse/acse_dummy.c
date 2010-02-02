@@ -51,6 +51,27 @@ SOAP_NMAC struct Namespace namespaces[] =
 /** Static userid for Digest Auth. login, temporary */
 const char* userid = "000261-Home Gateway-V60200000000-0010501606";
 
+#if 1
+int 
+main(int argc, char **argv)
+{
+    acs_t *acs;
+    cpe_t *cpe;
+
+    db_add_acs("ACS");
+    db_add_cpe("ACS", "cpe-dummy");
+
+    acs = db_find_acs("ACS");
+    cpe = db_find_cpe(acs, "ACS", "cpe-dummy");
+
+
+    acs->port = (argc > 1 ? atoi(argv[1]) : 8080);
+    acse_enable_acs(acs);
+    acse_loop(NULL, 0);
+
+    return 0;
+}
+#else
 int 
 main(int argc, char **argv)
 {
@@ -118,3 +139,4 @@ main(int argc, char **argv)
     return 0;
 }
 
+#endif
