@@ -94,7 +94,10 @@ conn_after_poll(void *data, struct pollfd *pfd)
     for (i = 0; i < conn->acs_number; i++)
     {
         te_errno rc;
+
         rc = cwmp_accept_cpe_connection(conn->acs_objects[i], sock_acc); 
+        RING("%s: cwmp_accept_cpe rc %r", __FUNCTION__, rc);
+
         switch (rc)
         {
             case 0: /* Stop processing */ return 0;
@@ -137,6 +140,7 @@ conn_register_acs(acs_t *acs)
     do 
     {
         channel_t *new_ch; 
+        cpe_t *cpe_item;
 
         new_conn->socket =
             socket(acs->addr_listen->sa_family, SOCK_STREAM, 0);
@@ -173,6 +177,11 @@ conn_register_acs(acs_t *acs)
         new_ch->destroy = conn_destroy;
 
         acse_add_channel(new_ch);
+        LIST_FOREACH(cpe_item, &acs->cpe_list, links)
+        {
+            /* TODO: check that all CPE was in NOP state? */
+            cpe_item->state = CWMP_LISTEN;
+        }
 
         return 0;
     } while (0);

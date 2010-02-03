@@ -163,6 +163,7 @@ acse_loop(acse_params_t *params, int sock)
                 /* TODO something? */
                 break;
             }
+            RING("acse_loop, poll rc %d", r);
 
 #if 0
             channel_t *last_item = LINK_LAST(
@@ -172,19 +173,27 @@ acse_loop(acse_params_t *params, int sock)
             channel_t *tmp;
 #endif
 
+            i = 0;
             LIST_FOREACH(item, &channel_list, links)
             {
-                if ((*item->after_poll)(item->data, pfd + i) != 0)
+                RING("acse_loop, process channel N %d", i);
+                if (pfd[i].revents != 0)
                 {
-                    /* TODO something? */
-                    break;
+                    if ((*item->after_poll)(item->data, pfd + i) != 0)
+                    {
+                        /* TODO something, error? */
+                        break;
+                    }
                 }
 
 #if 0
                 if (item == last_item)
                     break;
 #endif
+                i++;
             }
+
+            free(pfd);
         }
     }
 }

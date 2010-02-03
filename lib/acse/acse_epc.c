@@ -871,7 +871,7 @@ cpe_get_rpc_methods(acse_params_t *params)
 
 #define RPC_TEST(_fun) \
 static te_errno                                               \
-_fun(acse_params_t *params)                                        \
+_fun(acse_params_t *params)                                   \
 {                                                             \
     UNUSED(params);                                           \
     ERROR("Hi, I am " #_fun "!!!");                           \

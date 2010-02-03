@@ -363,12 +363,18 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
     /* TODO: real check, now accept all, if any CPE registered. */
 
     if (LIST_EMPTY(&acs->cpe_list))
+    {
+        RING("%s: conn refused 1", __FUNCTION__);
         return TE_ECONNREFUSED;
+    }
 
     cpe_item = LIST_FIRST(&acs->cpe_list);
 
     if (cpe_item->state != CWMP_LISTEN)
+    {
+        RING("%s: conn refused 2", __FUNCTION__);
         return TE_ECONNREFUSED;
+    }
 
     if ((cpe_item->soap = soap_new()) == NULL)
         return TE_ENOMEM;
@@ -391,6 +397,7 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
     channel->destroy = cwmp_destroy;
 
     acse_add_channel(channel);
+    RING("%s: success", __FUNCTION__);
 
     return 0;
 }
