@@ -71,19 +71,16 @@
 #include "logger_api.h"
 #include "acse_internal.h"
 
-/** LRPC mechanism state machine states */
+/** EPC mechanism state machine states */
 typedef enum { want_read, want_write } epc_t;
 
-/** LRPC mechanism state machine private data */
+/** EPC mechanism state machine private data */
 typedef struct {
     int       sock;   /**< The socket endpoint from TA to read/write    */
-    struct sockaddr_un
-              addr;   /**< The address of a requester to answer to      */
-    socklen_t len;    /**< The length of the address of a requester     */
     acse_params_t *params;
                       /**< Parameters passed from TA over shared memory */
     te_errno  rc;     /**< Return code to be passed back to TA          */
-    epc_t    state;  /**< LRPC mechanism state machine current state   */
+    epc_t    state;  /**< EPC mechanism state machine current state   */
 } epc_data_t;
 
 
@@ -986,26 +983,29 @@ epc_after_poll(void *data, struct pollfd *pfd)
         case want_read:
             if (pfd->revents & POLLIN)
             {
-                epc->len = sizeof(epc->addr);
+                ssize_t rc;
 
-                switch (recvfrom(epc->sock, &fun, sizeof fun, 0,
-                                 (struct sockaddr *)&epc->addr,
-                                 &epc->len))
+                rc = read(epc->sock, &fun, sizeof(fun));
+                if (rc == -1)
                 {
-                    case -1:
-                        ERROR("Failed to get call over LRPC: %s",
-                              strerror(errno));
-                        return TE_RC(TE_TA_UNIX, TE_EFAIL);
-                    case sizeof fun:
+                    ERROR("Failed to get call over EPC: %s",
+                          strerror(errno));
+                    return TE_RC(TE_TA_UNIX, TE_EFAIL);
+                }
+                else if (rc == sizeof(fun))
+                {
+                        break; /* do nothing now!!! */
                         epc->rc =
                           fun >= acse_fun_first && fun <= acse_fun_last ?
                             (*xlat[fun - acse_fun_first])(epc->params) :
                             TE_RC(TE_TA_UNIX, TE_ENOSYS);
 
                         epc->state = want_write;
-                        break;
-                    default:
-                        ERROR("Failed to get call over LRPC");
+                }
+                else
+                {
+                        break; /* do nothing now!!! */
+                        WARN("Failed to get call over EPC");
                         return TE_RC(TE_TA_UNIX, TE_EFAIL);
                 }
             }
@@ -1014,11 +1014,10 @@ epc_after_poll(void *data, struct pollfd *pfd)
         case want_write:
             if (pfd->revents & POLLOUT)
             {
-                switch (sendto(epc->sock, &epc->rc, sizeof epc->rc, 0,
-                               (struct sockaddr *)&epc->addr, epc->len))
+                switch (write(epc->sock, &epc->rc, sizeof(epc->rc)))
                 {
                     case -1:
-                        ERROR("Failed to return from call over LRPC: %s",
+                        ERROR("Failed to return from call over EPC: %s",
                               strerror(errno));
                         return TE_RC(TE_TA_UNIX, TE_EFAIL);
                     case sizeof epc->rc:
@@ -1057,8 +1056,6 @@ acse_epc_create(channel_t *channel, acse_params_t *params, int sock)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     epc->sock            = sock;
-    epc->addr.sun_family = AF_UNIX;
-    epc->len             = sizeof epc->addr;
     epc->params          = params;
     epc->rc              = 0;
     epc->state           = want_read;
