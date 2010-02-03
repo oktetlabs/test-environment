@@ -223,11 +223,14 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
                       trc_report_argument *add_args)
 {
     unsigned int        i;
-    trc_test_iter_arg  *arg;
 
     assert(TAILQ_EMPTY(&args->head));
+
     for (i = 0; i < n_args; ++i)
     {
+        trc_test_iter_arg  *arg;
+        trc_test_iter_arg  *insert_after = NULL;
+        
         arg = TE_ALLOC(sizeof(*arg));
         if (arg == NULL)
         {
@@ -239,9 +242,22 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
             }
             return TE_RC(TE_TRC, TE_ENOMEM);
         }
+
         arg->name = add_args[i].name;
         arg->value = add_args[i].value;
-        TAILQ_INSERT_TAIL(&args->head, arg, links);
+
+        TAILQ_FOREACH_REVERSE(insert_after, &args->head, 
+                              trc_test_iter_args_head, 
+                              links)
+        {
+            if (strcmp(insert_after->name, arg->name) < 0)
+                break;
+        }
+
+        if (insert_after == NULL)
+            TAILQ_INSERT_HEAD(&args->head, arg, links);
+        else
+            TAILQ_INSERT_AFTER(&args->head, insert_after, arg, links);
     }
 
     /* Success, names and values are own */

@@ -33,6 +33,7 @@
 #include "te_config.h"
 
 #include <ctype.h>
+#include <search.h>
 
 #include "te_errno.h"
 #include "te_alloc.h"
@@ -312,6 +313,14 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
     return (arg == NULL && i == n_args);
 }
 
+static int
+trc_report_argument_compare (const void *arg1, const void *arg2)
+{
+    return strcmp(((trc_report_argument *)arg1)->name,
+                  ((trc_report_argument *)arg2)->name);
+}
+
+
 /* See the description in te_trc.h */
 te_bool
 trc_db_walker_step_iter(te_trc_db_walker  *walker,
@@ -328,6 +337,7 @@ trc_db_walker_step_iter(te_trc_db_walker  *walker,
     }
     else
     {
+        qsort(args, n_args, sizeof(*args), trc_report_argument_compare);
         for (walker->iter = TAILQ_FIRST(&walker->test->iters.head);
              walker->iter != NULL &&
              !test_iter_args_match(&walker->iter->args,

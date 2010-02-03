@@ -337,7 +337,7 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
 
     p->node = node;
     if (insert_after == NULL)
-        TAILQ_INSERT_TAIL(&args->head, p, links);
+        TAILQ_INSERT_HEAD(&args->head, p, links);
     else
         TAILQ_INSERT_AFTER(&args->head, insert_after, p, links);
 
@@ -347,7 +347,6 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
     {
         ERROR("Failed to get value of the argument '%s'", p->name);
     }
-    /* FIXME: May be it is better to support p->value == NULL */
     else if (p->value == NULL)
     {
         p->value = strdup("");

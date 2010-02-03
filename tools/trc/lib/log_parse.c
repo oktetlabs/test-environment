@@ -45,8 +45,6 @@
 #include <assert.h>
 #endif
 
-#include <search.h>
-
 #include <libxml/tree.h>
 
 #include "te_errno.h"
@@ -793,12 +791,6 @@ trc_report_log_start_element(void *user_data,
     }
 }
 
-static int
-compare_arg_names(const void *v1, const void *v2)
-{
-    return strcmp(((trc_report_argument *)v1)->name,
-                  ((trc_report_argument *)v2)->name);
-}
 
 /**
  * Callback function that is called when XML parser meets the end of 
@@ -938,8 +930,6 @@ trc_report_log_end_element(void *user_data, const xmlChar *name)
 
         case TRC_REPORT_LOG_PARSE_PARAMS:
             assert(strcmp(tag, "params") == 0);
-            qsort(ctx->args, ctx->args_n, sizeof(*ctx->args), 
-                  compare_arg_names);
             ctx->state = TRC_REPORT_LOG_PARSE_META;
             break;
 
