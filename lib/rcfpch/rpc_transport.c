@@ -304,6 +304,7 @@ rpc_transport_init()
     snprintf(addr.sun_path, sizeof(addr.sun_path), 
              "/tmp/terpc_%lu", (unsigned long)getpid());
     len = sizeof(addr) - UNIX_PATH_MAX + strlen(addr.sun_path);
+    unlink(addr.sun_path);
 #endif    
 
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
