@@ -64,6 +64,9 @@ main(int argc, char **argv)
     acs = db_find_acs("ACS");
     cpe = db_find_cpe(acs, "ACS", "cpe-dummy");
 
+    cpe->username = strdup(userid);
+    cpe->password = strdup("passwd");
+
 
     acs->port = (argc > 1 ? atoi(argv[1]) : 8080);
     acse_enable_acs(acs);
