@@ -895,78 +895,120 @@ TARPC_FUNC(write, {},
 
 TARPC_FUNC(readbuf, {},
 {
-    MAKE_CALL(out->retval = func(in->fd, in->buf, in->off, in->len));
+    MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
 ssize_t
-readbuf(int fd, rpc_ptr buf_base, size_t buf_offset, size_t count)
+readbuf(tarpc_readbuf_in *in)
 {
-    return read(fd, rcf_pch_mem_get(buf_base) + buf_offset, count);
+    api_func read_func;
+
+    if (tarpc_find_func(in->common.lib, "read", &read_func) != 0)
+    {
+        ERROR("Failed to find function \"read\"");
+        return -1;
+    }
+
+    return read_func(in->fd, rcf_pch_mem_get(in->buf) + in->off,
+                     in->len);
 }
 
 /*-------------- recvbuf() ------------------------------*/
 
 TARPC_FUNC(recvbuf, {},
 {
-    MAKE_CALL(out->retval = func(in->fd, in->buf, in->off, 
-                                 in->len, in->flags));
+    MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
 ssize_t
-recvbuf(int fd, rpc_ptr buf_base, size_t buf_offset, 
-        size_t count, int flags)
+recvbuf(tarpc_recvbuf_in *in)
 {
-    return recv(fd, rcf_pch_mem_get(buf_base) + buf_offset, count, flags);
+    api_func recv_func;
+
+    if (tarpc_find_func(in->common.lib, "recv", &recv_func) != 0)
+    {
+        ERROR("Failed to find function \"recv\"");
+        return -1;
+    }
+
+    return recv_func(in->fd, rcf_pch_mem_get(in->buf) + in->off,
+                     in->len, in->flags);
 }
 
 /*-------------- writebuf() ------------------------------*/
 
 TARPC_FUNC(writebuf, {},
 {
-    MAKE_CALL(out->retval = func(in->fd, in->buf, in->off, in->len));
+    MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
 ssize_t
-writebuf(int fd, rpc_ptr buf_base, size_t buf_offset, size_t count)
+writebuf(tarpc_writebuf_in *in)
 {
-    return write(fd, rcf_pch_mem_get(buf_base) + buf_offset, count);
+    api_func write_func;
+
+    if (tarpc_find_func(in->common.lib, "write", &write_func) != 0)
+    {
+        ERROR("Failed to find function \"write\"");
+        return -1;
+    }
+    return write_func(in->fd,
+                      rcf_pch_mem_get(in->buf) + in->off,
+                      in->len);
 }
 
 /*-------------- sendbuf() ------------------------------*/
 
 TARPC_FUNC(sendbuf, {},
 {
-    MAKE_CALL(out->retval = func(in->fd, in->buf, in->off, in->len,
-                                 send_recv_flags_rpc2h(in->flags)));
+    MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
 ssize_t
-sendbuf(int fd, rpc_ptr buf_base, size_t buf_offset, 
-        size_t count, int flags)
+sendbuf(tarpc_sendbuf_in *in)
 {
-    return send(fd, rcf_pch_mem_get(buf_base) + buf_offset, count, flags);
+    api_func send_func;
+
+    if (tarpc_find_func(in->common.lib, "send", &send_func) != 0)
+    {
+        ERROR("Failed to find function \"send\"");
+        return -1;
+    }
+    return send_func(in->fd, rcf_pch_mem_get(in->buf) + in->off,
+                     in->len, send_recv_flags_rpc2h(in->flags));
 }
 
 /*------------ send_msg_more() --------------------------*/
 TARPC_FUNC(send_msg_more, {},
 {
-    MAKE_CALL(out->retval = func(in->fd, in->buf, 
-                                 in->first_len, in->second_len));
+    MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
 ssize_t
-send_msg_more(int fd, rpc_ptr buf, size_t first_len, size_t second_len)
+send_msg_more(tarpc_send_msg_more_in *in)
 {
     int res1, res2;
-    if (-1 == (res1 = send(fd, rcf_pch_mem_get(buf), first_len, MSG_MORE)))
+
+    api_func send_func;
+
+    if (tarpc_find_func(in->common.lib, "send", &send_func) != 0)
+    {
+        ERROR("Failed to find function \"send\"");
         return -1;
-    if (-1 == (res2 = send(fd, rcf_pch_mem_get(buf) + first_len,
-                           second_len, 0)))
+    }
+
+    if (-1 == (res1 = send_func(in->fd, rcf_pch_mem_get(in->buf),
+                                in->first_len, MSG_MORE)))
+        return -1;
+
+    if (-1 == (res2 = send_func(in->fd, rcf_pch_mem_get(in->buf) +
+                                        in->first_len,
+                                in->second_len, 0)))
         return -1;
     return res1 + res2;
 }
