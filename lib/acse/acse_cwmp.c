@@ -63,6 +63,7 @@ SOAP_NMAC struct Namespace namespaces[] =
                 "urn:dslforum-org:cwmp-1-*", NULL},
     {NULL, NULL, NULL, NULL}
 };
+
 /** Single REALM for Digest Auth. which we support. */
 const char *authrealm = "tr-069";
 
@@ -87,6 +88,8 @@ __cwmp__Inform(struct soap *soap,
                struct _cwmp__InformResponse *cwmp__InformResponse)
 {
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
+    int auth_pass = FALSE;
+    cpe_t *cpe_item;
 
     if(session == NULL)
     {
@@ -100,15 +103,72 @@ __cwmp__Inform(struct soap *soap,
             cwmp__Inform->DeviceId->OUI);
     soap->keep_alive = 1; 
 
+    switch (session->state)
+    {
+        case CWMP_LISTEN:
+            session->state = CWMP_WAIT_AUTH;
+            break;
+
+        case CWMP_WAIT_AUTH:
+            if (!(soap->authrealm && soap->userid))
+            {
+                ERROR("%s(): No auth infor in WAIT_AUTH state", 
+                      __FUNCTION__);
+                soap->keep_alive = 0; 
+                return 500;
+            }
+
+            if (!strcmp(soap->authrealm, authrealm))
+                break;
+
+            if (!(session->acs_owner))
+            {
+                ERROR("%s(), AUTH. should be ACS owner", 
+                        __FUNCTION__);
+                soap->keep_alive = 0; 
+                return 500;
+            }
+            LIST_FOREACH(cpe_item, &(session->acs_owner->cpe_list), links)
+            {
+                if (strcmp(cpe_item->username, soap->userid) == 0)
+                    break; /* from LIST_FOREACH */
+            }
+            if (cpe_item == NULL)
+            {
+                RING("%s() userid '%s' not found, auth fail", 
+                        __FUNCTION__, soap->userid);
+                break;
+            }
+
+            if (http_da_verify_post(soap, cpe_item->password))
+                break;
+
+            RING("%s(): Digest auth pass, CPE '%s', username '%s'", 
+                __FUNCTION__, cpe_item->name, cpe_item->username);
+            auth_pass = TRUE;
+            session->state = CWMP_SERVE;
+            session->cpe_owner = cpe_item;
+            session->acs_owner = NULL;
+            cpe_item->session = session;
+            break;
+
+        default:
+            /* TODO: maybe, with SSL authentication it will be correct
+               path, not error.. */
+            ERROR("%s(): unexpected session state %d", 
+                  __FUNCTION__, session->state);
+            return 500;
+    }
+
+#if 0
     if (soap->authrealm && soap->userid)
     {
-        printf("%s(): Digest auth, authrealm: '%s', userid '%s'\n", 
+        VERB("%s(): Digest auth, authrealm: '%s', userid '%s'", 
                 __FUNCTION__, soap->authrealm, soap->userid);
         /* TODO: lookup passwd by userid */
         if (!strcmp(soap->authrealm, authrealm) &&
             !strcmp(soap->userid, cpe_record->username))
         {
-
 #if 0
           char *passwd = "z7cD7CTDA1DrQKUb";
 #else
@@ -127,11 +187,15 @@ __cwmp__Inform(struct soap *soap,
         }
         printf("%s(): Should be fault\n", __FUNCTION__);
     }
-    else
+#endif
+
+    if (!auth_pass)
     {
-printf("%s(): Digest auth failed 2\n", __FUNCTION__);
-      soap->authrealm = soap_strdup(soap, authrealm);
-      soap->keep_alive = 1; 
+        VERB("%s(): Digest auth failed\n", __FUNCTION__);
+        if (soap->authrealm)
+            soap_dealloc(soap, soap->authrealm);
+        soap->authrealm = soap_strdup(soap, authrealm);
+        soap->keep_alive = 1; 
 #if 1
         soap->error = SOAP_OK;
         soap_serializeheader(soap);
@@ -140,10 +204,10 @@ printf("%s(): Digest auth failed 2\n", __FUNCTION__);
         soap_response(soap, 401);
         // soap_envelope_end_out(soap);
         soap_end_send(soap);
-      soap->keep_alive = 1; 
-      return SOAP_STOP;
+        soap->keep_alive = 1; 
+        return SOAP_STOP;
 #else
-      return 401;
+        return 401;
 #endif
     }
 
