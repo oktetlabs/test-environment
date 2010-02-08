@@ -86,17 +86,18 @@ __cwmp__Inform(struct soap *soap,
                struct _cwmp__Inform *cwmp__Inform,
                struct _cwmp__InformResponse *cwmp__InformResponse)
 {
-    cpe_t *cpe_record = (cpe_t *)soap->user;
+    cwmp_session_t *session = (cwmp_session_t *)soap->user;
 
-    if(cpe_record == NULL)
+    if(session == NULL)
     {
+        ERROR("%s(): NULL user pointer in soap!", __FUNCTION__);
         /* TODO: correct processing */
         return 500; 
     }
-printf("%s called. Header is %p, enc style is '%s', inform Dev is '%s'\n",
+
+    VERB("%s called. Header is %p, enc style is '%s', inform Dev is '%s'",
             __FUNCTION__, soap->header, soap->encodingStyle,
             cwmp__Inform->DeviceId->OUI);
-
     soap->keep_alive = 1; 
 
     if (soap->authrealm && soap->userid)
@@ -108,7 +109,7 @@ printf("%s called. Header is %p, enc style is '%s', inform Dev is '%s'\n",
             !strcmp(soap->userid, cpe_record->username))
         {
 
-#if 1
+#if 0
           char *passwd = "z7cD7CTDA1DrQKUb";
 #else
           char *passwd = "passwd";
@@ -283,14 +284,15 @@ cwmp_SendConnectionRequest(const char *endpoint,
 te_errno
 cwmp_before_poll(void *data, struct pollfd *pfd)
 {
-    cpe_t *cpe = data;
+    cwmp_session_t *cwmp_sess = data;
 
-    if (cpe == NULL || cpe->soap == NULL || cpe->state == CWMP_NOP)
+    if (cwmp_sess == NULL ||
+        cwmp_sess->state == CWMP_NOP)
     {
         return TE_EINVAL;
     }
 
-    pfd->fd = cpe->soap->socket;
+    pfd->fd = cwmp_sess->m_soap.socket;
     pfd->events = POLLIN;
     pfd->revents = 0;
 
@@ -300,23 +302,23 @@ cwmp_before_poll(void *data, struct pollfd *pfd)
 te_errno
 cwmp_after_poll(void *data, struct pollfd *pfd)
 {
-    cpe_t *cpe = data;
+    cwmp_session_t *cwmp_sess = data;
 
     if (!(pfd->revents & POLLIN))
         return 0;
 
-    switch(cpe->state)
+    switch(cwmp_sess->state)
     {
         case CWMP_NOP:
-            ERROR("Unexpected state of CPE item '%s': %d\n",
-                    cpe->name, (int)cpe->state);
+            ERROR("CWMP after poll, unexpected state %d\n",
+                    (int)cwmp_sess->state);
             return TE_EINVAL;
 
         case CWMP_LISTEN:
         case CWMP_WAIT_AUTH:
         case CWMP_SERVE:
             /* Now, after poll() on soap socket, it should not block */
-            soap_serve(cpe->soap);
+            soap_serve(&cwmp_sess->m_soap);
             break;
 
         case CWMP_WAIT_RESPONSE:
@@ -330,17 +332,9 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
 te_errno
 cwmp_destroy(void *data)
 {
-    cpe_t *cpe_item = data;
-    /* TODO: release all */
+    cwmp_session_t *cwmp_sess = data;
 
-    if (cpe_item->soap)
-    {
-        soap_done(cpe_item->soap);
-        soap_end(cpe_item->soap);
-        soap_free(cpe_item->soap);
-    }
-    free(cpe_item);
-    return 0;
+    return cwmp_close_session(cwmp_sess);
 }
 
 
@@ -359,49 +353,74 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
 {
     channel_t *channel;
     cpe_t *cpe_item;
+    cwmp_session_t *cwmp_sess;
 
     /* TODO: real check, now accept all, if any CPE registered. */
 
     if (LIST_EMPTY(&acs->cpe_list))
     {
-        RING("%s: conn refused 1", __FUNCTION__);
+        RING("%s: conn refused: no CPE for this ACS.", __FUNCTION__);
         return TE_ECONNREFUSED;
     }
 
-    cpe_item = LIST_FIRST(&acs->cpe_list);
 
-    if (cpe_item->state != CWMP_LISTEN)
-    {
-        RING("%s: conn refused 2", __FUNCTION__);
-        return TE_ECONNREFUSED;
-    }
+    cwmp_sess = cwmp_new_session(socket);
 
-    if ((cpe_item->soap = soap_new()) == NULL)
-        return TE_ENOMEM;
+    cwmp_sess->acs_owner = acs;
+    cwmp_sess->state = CWMP_LISTEN; /* Auth not started at all. */
+    acse_add_channel(cwmp_sess->channel);
 
-    cpe_item->soap->socket = socket;
-    cpe_item->soap->user = cpe_item;
-
-    soap_imode(cpe_item->soap, SOAP_IO_KEEPALIVE);
-    soap_omode(cpe_item->soap, SOAP_IO_KEEPALIVE);
-
-    soap_register_plugin(cpe_item->soap, http_da); 
-
-    cpe_item->soap->max_keep_alive = 10;
-
-    channel = malloc(sizeof(*channel));
-
-    channel->data = cpe_item;
-    channel->before_poll = cwmp_before_poll;
-    channel->after_poll = cwmp_after_poll;
-    channel->destroy = cwmp_destroy;
-
-    acse_add_channel(channel);
     RING("%s: success", __FUNCTION__);
 
     return 0;
 }
 
+
+cwmp_session_t *
+cwmp_new_session(int socket)
+{
+    cwmp_session_t *new_sess = malloc(sizeof(*new_sess));
+    channel_t      *channel  = malloc(sizeof(*channel));
+
+    if (new_sess == NULL || channel == NULL)
+        return NULL;
+
+    soap_init(&(new_sess->m_soap));
+
+    new_sess->state = CWMP_NOP;
+    new_sess->acs_owner = NULL;
+    new_sess->cpe_owner = NULL;
+    new_sess->channel = channel;
+    new_sess->m_soap.user = new_sess;
+    new_sess->m_soap.socket = socket;
+
+    soap_imode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
+    soap_omode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
+
+    soap_register_plugin(&new_sess->m_soap, http_da); 
+
+    new_sess->m_soap.max_keep_alive = 10;
+
+    channel->data = new_sess;
+    channel->before_poll = cwmp_before_poll;
+    channel->after_poll = cwmp_after_poll;
+    channel->destroy = cwmp_destroy;
+
+    return new_sess;
+}
+
+te_errno 
+cwmp_close_session(cwmp_session_t *sess)
+{
+    /* TODO: investigate, what else should be closed.. */
+    soap_destroy(&(sess->m_soap));
+    soap_end(&(sess->m_soap));
+    soap_done(&(sess->m_soap));
+
+    free(sess);
+
+    return 0;
+}
 
 
 te_errno
@@ -419,7 +438,8 @@ acse_enable_acs(acs_t *acs)
     acs->addr_listen = SA(sin);
     acs->addr_len = sizeof(struct sockaddr_in);
 
-    acs->enabled = TRUE;
-
     conn_register_acs(acs);
 }
+
+
+

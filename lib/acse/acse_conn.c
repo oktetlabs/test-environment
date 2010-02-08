@@ -44,9 +44,12 @@
 #include "logger_api.h"
 #include "acse_internal.h"
 
-typedef struct conn_data_t {
-    LIST_ENTRY(conn_data_t) links;
+#define CONN_IS_LIST 0
 
+typedef struct conn_data_t {
+#if CONN_IS_LIST
+    LIST_ENTRY(conn_data_t) links;
+#endif /* CONN_IS_LIST */
     int              socket;  /**< TCP listening socket. */
     struct sockaddr *addr;    /**< Network TCP address, which @p socket 
                                       is bound. */
@@ -56,9 +59,10 @@ typedef struct conn_data_t {
     int          acs_number;   /**< number of ACS objects. */ 
 } conn_data_t;
 
+#if CONN_IS_LIST
 static LIST_HEAD(conn_list_t, conn_data_t)
         conn_list = LIST_HEAD_INITIALIZER(&conn_list); 
-
+#endif /* CONN_IS_LIST */ 
 
 te_errno
 conn_before_poll(void *data, struct pollfd *pfd)
@@ -94,6 +98,9 @@ conn_after_poll(void *data, struct pollfd *pfd)
     for (i = 0; i < conn->acs_number; i++)
     {
         te_errno rc;
+
+        if (!(conn->acs_objects[i]->enabled))
+            continue;
 
         rc = cwmp_accept_cpe_connection(conn->acs_objects[i], sock_acc); 
         RING("%s: cwmp_accept_cpe rc %r", __FUNCTION__, rc);
@@ -140,7 +147,6 @@ conn_register_acs(acs_t *acs)
     do 
     {
         channel_t *new_ch; 
-        cpe_t *cpe_item;
 
         new_conn->socket =
             socket(acs->addr_listen->sa_family, SOCK_STREAM, 0);
@@ -167,8 +173,10 @@ conn_register_acs(acs_t *acs)
         new_conn->acs_objects = malloc(sizeof(acs_t *));
         new_conn->acs_objects[0] = acs;
         new_conn->acs_number = 1;
-        LIST_INSERT_HEAD(&conn_list, new_conn, links);
         acs->enabled = TRUE;
+#if CONN_IS_LIST
+        LIST_INSERT_HEAD(&conn_list, new_conn, links);
+#endif /* CONN_IS_LIST */ 
 
         new_ch = malloc(sizeof(*new_ch)); 
         new_ch->data = new_conn;
@@ -177,11 +185,6 @@ conn_register_acs(acs_t *acs)
         new_ch->destroy = conn_destroy;
 
         acse_add_channel(new_ch);
-        LIST_FOREACH(cpe_item, &acs->cpe_list, links)
-        {
-            /* TODO: check that all CPE was in NOP state? */
-            cpe_item->state = CWMP_LISTEN;
-        }
 
         return 0;
     } while (0);

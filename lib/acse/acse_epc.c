@@ -187,7 +187,10 @@ session_state_get(acse_params_t *params)
     if (cpe_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(params->value, "%i", cpe_inst->state);
+    if (cpe_inst->session == NULL)
+        sprintf(params->value, "0");
+    else
+        sprintf(params->value, "%i", cpe_inst->session->state);
     return 0;
 }
 
@@ -374,10 +377,9 @@ acs_cpe_add(acse_params_t *params)
     if (cpe_item == NULL)
         return TE_RC(TE_ACSE, TE_EFAULT);
 
-    cpe_item->state         = CWMP_NOP;
+    cpe_item->session       = NULL;
     cpe_item->enabled       = FALSE;
     cpe_item->hold_requests = FALSE;
-    cpe_item->soap          = NULL;
 
     return 0; 
 }

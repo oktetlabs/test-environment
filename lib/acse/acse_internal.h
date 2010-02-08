@@ -92,6 +92,9 @@ typedef enum {
 
 /* forward declaration */
 struct acs_t;
+struct cpe_t;
+struct cwmp_session_t;
+struct channel_t;
 
 /** CPE */
 typedef struct cpe_t{
@@ -114,10 +117,9 @@ typedef struct cpe_t{
 
     /** Fields for internal procedure data during CWMP session. */
 
-    session_state_t      state;     /**< CWMP session state      */
+    struct cwmp_session_t *session; /**< CWMP session processing */
     struct sockaddr     *addr;      /**< CPE TCP/IP address for C.R.*/
     socklen_t            addr_len;  /**< address length          */ 
-    struct soap         *soap;      /**< SOAP struct             */
 } cpe_t;
 
 /** ACS */
@@ -133,15 +135,17 @@ typedef struct acs_t {
     const char  *cert;          /**< ACS certificate                */
     const char  *username;      /**< ACS user name                  */
     const char  *password;      /**< ACS user password              */
-    int          enabled;       /**< ACS enabled flag               */
-    int          ssl;           /**< ACS ssl flag                   */
+    int          enabled;       /**< Enabled flag, true if listening
+                                    new CWMP connections            */
+    int          ssl;           /**< SSL usage flag                 */
     int          port;          /**< TCP port value in host byte order */
 
     /** Fields for internal procedure data. */
     struct sockaddr *addr_listen;/**< TCP/IP address to listen      */
     socklen_t        addr_len;   /**< address length */
+    struct cwmp_session_t *session; /**< CWMP session, while it is not
+                                       associated with particular CPE */
 } acs_t;
-
 
 typedef LIST_HEAD(acs_list_t, acs_t) acs_list_t;
 
@@ -162,6 +166,40 @@ typedef struct channel_t {
         void   *data);          /**< Channel-specific private data      */
 } channel_t;
 
+
+
+typedef struct cwmp_session_t {
+    session_state_t      state;     /**< CWMP session state      */
+    acs_t               *acs_owner;
+    cpe_t               *cpe_owner;
+    channel_t           *channel; 
+    struct soap          m_soap;      /**< SOAP struct             */
+} cwmp_session_t;
+
+
+/**
+ * Allocate struct for new CWMP session, init session,
+ * init gSOAP sturct, allocate ACSE IO channel for this session.
+ * User of this function is reponsible for insert IO channel
+ * into main loop.
+ * 
+ * @param socket        TCP connection socket, just accepted.
+ * 
+ * @return pointer to new struct or NULL if fails.
+ */
+extern cwmp_session_t *cwmp_new_session(int socket);
+
+
+/**
+ * Close CWMP session, release all data, finish related gSOAP
+ * activity and release gSOAP internal data.
+ * 
+ * Note: passed pointer to session struct is not valid after
+ * return from this function!
+ * 
+ * @return   status code
+ */
+extern te_errno cwmp_close_session(cwmp_session_t *sess);
 
 extern int cwmp_SendConnectionRequest(const char *endpoint,
                                       const char *username, 
