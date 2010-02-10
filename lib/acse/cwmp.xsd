@@ -50,7 +50,6 @@
   <!--
        SOAP Header Elements
   -->
-  <!--
   <xs:element name="ID">
     <xs:complexType>
       <xs:simpleContent>
@@ -60,12 +59,11 @@
       </xs:simpleContent>
     </xs:complexType>
   </xs:element>
-  -->
 
   <xs:element name="HoldRequests">
     <xs:complexType>
       <xs:simpleContent>
-        <xs:extension base="xs:boolean">
+        <xs:extension base="xs:unsignedInt">
           <xs:attribute ref="soapenv:mustUnderstand" use="required" fixed="1"/>
         </xs:extension>
       </xs:simpleContent>

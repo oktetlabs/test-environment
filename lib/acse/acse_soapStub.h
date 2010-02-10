@@ -26,73 +26,73 @@ enum xsd__boolean {xsd__boolean__false_ = 0, xsd__boolean__true_ = 1};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__SetParameterAttributesStruct_Notification
-#define SOAP_TYPE__cwmp__SetParameterAttributesStruct_Notification (88)
+#define SOAP_TYPE__cwmp__SetParameterAttributesStruct_Notification (89)
 /* cwmp:SetParameterAttributesStruct-Notification */
 enum _cwmp__SetParameterAttributesStruct_Notification {_cwmp__SetParameterAttributesStruct_Notification__0 = 0, _cwmp__SetParameterAttributesStruct_Notification__1 = 1, _cwmp__SetParameterAttributesStruct_Notification__2 = 2};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__ParameterAttributeStruct_Notification
-#define SOAP_TYPE__cwmp__ParameterAttributeStruct_Notification (90)
+#define SOAP_TYPE__cwmp__ParameterAttributeStruct_Notification (91)
 /* cwmp:ParameterAttributeStruct-Notification */
 enum _cwmp__ParameterAttributeStruct_Notification {_cwmp__ParameterAttributeStruct_Notification__0 = 0, _cwmp__ParameterAttributeStruct_Notification__1 = 1, _cwmp__ParameterAttributeStruct_Notification__2 = 2};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__QueuedTransferStruct_State
-#define SOAP_TYPE__cwmp__QueuedTransferStruct_State (91)
+#define SOAP_TYPE__cwmp__QueuedTransferStruct_State (92)
 /* cwmp:QueuedTransferStruct-State */
 enum _cwmp__QueuedTransferStruct_State {_cwmp__QueuedTransferStruct_State__1 = 1, _cwmp__QueuedTransferStruct_State__2 = 2, _cwmp__QueuedTransferStruct_State__3 = 3};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__AllQueuedTransferStruct_State
-#define SOAP_TYPE__cwmp__AllQueuedTransferStruct_State (92)
+#define SOAP_TYPE__cwmp__AllQueuedTransferStruct_State (93)
 /* cwmp:AllQueuedTransferStruct-State */
 enum _cwmp__AllQueuedTransferStruct_State {_cwmp__AllQueuedTransferStruct_State__1 = 1, _cwmp__AllQueuedTransferStruct_State__2 = 2, _cwmp__AllQueuedTransferStruct_State__3 = 3};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__OptionStruct_State
-#define SOAP_TYPE__cwmp__OptionStruct_State (93)
+#define SOAP_TYPE__cwmp__OptionStruct_State (94)
 /* cwmp:OptionStruct-State */
 enum _cwmp__OptionStruct_State {_cwmp__OptionStruct_State__0 = 0, _cwmp__OptionStruct_State__1 = 1, _cwmp__OptionStruct_State__2 = 2, _cwmp__OptionStruct_State__3 = 3};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__OptionStruct_Mode
-#define SOAP_TYPE__cwmp__OptionStruct_Mode (94)
+#define SOAP_TYPE__cwmp__OptionStruct_Mode (95)
 /* cwmp:OptionStruct-Mode */
 enum _cwmp__OptionStruct_Mode {_cwmp__OptionStruct_Mode__0 = 0, _cwmp__OptionStruct_Mode__1 = 1, _cwmp__OptionStruct_Mode__2 = 2};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__OptionStruct_IsTransferable
-#define SOAP_TYPE__cwmp__OptionStruct_IsTransferable (97)
+#define SOAP_TYPE__cwmp__OptionStruct_IsTransferable (98)
 /* cwmp:OptionStruct-IsTransferable */
 enum _cwmp__OptionStruct_IsTransferable {_cwmp__OptionStruct_IsTransferable__0 = 0, _cwmp__OptionStruct_IsTransferable__1 = 1};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__SetParameterValuesResponse_Status
-#define SOAP_TYPE__cwmp__SetParameterValuesResponse_Status (102)
+#define SOAP_TYPE__cwmp__SetParameterValuesResponse_Status (103)
 /* cwmp:SetParameterValuesResponse-Status */
 enum _cwmp__SetParameterValuesResponse_Status {_cwmp__SetParameterValuesResponse_Status__0 = 0, _cwmp__SetParameterValuesResponse_Status__1 = 1};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__AddObjectResponse_Status
-#define SOAP_TYPE__cwmp__AddObjectResponse_Status (107)
+#define SOAP_TYPE__cwmp__AddObjectResponse_Status (108)
 /* cwmp:AddObjectResponse-Status */
 enum _cwmp__AddObjectResponse_Status {_cwmp__AddObjectResponse_Status__0 = 0, _cwmp__AddObjectResponse_Status__1 = 1};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__DeleteObjectResponse_Status
-#define SOAP_TYPE__cwmp__DeleteObjectResponse_Status (108)
+#define SOAP_TYPE__cwmp__DeleteObjectResponse_Status (109)
 /* cwmp:DeleteObjectResponse-Status */
 enum _cwmp__DeleteObjectResponse_Status {_cwmp__DeleteObjectResponse_Status__0 = 0, _cwmp__DeleteObjectResponse_Status__1 = 1};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__DownloadResponse_Status
-#define SOAP_TYPE__cwmp__DownloadResponse_Status (109)
+#define SOAP_TYPE__cwmp__DownloadResponse_Status (110)
 /* cwmp:DownloadResponse-Status */
 enum _cwmp__DownloadResponse_Status {_cwmp__DownloadResponse_Status__0 = 0, _cwmp__DownloadResponse_Status__1 = 1};
 #endif
 
 #ifndef SOAP_TYPE__cwmp__UploadResponse_Status
-#define SOAP_TYPE__cwmp__UploadResponse_Status (113)
+#define SOAP_TYPE__cwmp__UploadResponse_Status (114)
 /* cwmp:UploadResponse-Status */
 enum _cwmp__UploadResponse_Status {_cwmp__UploadResponse_Status__0 = 0, _cwmp__UploadResponse_Status__1 = 1};
 #endif
@@ -240,7 +240,7 @@ struct cwmp__ArgStruct
 #endif
 
 #ifndef SOAP_TYPE__cwmp__Fault_SetParameterValuesFault
-#define SOAP_TYPE__cwmp__Fault_SetParameterValuesFault (98)
+#define SOAP_TYPE__cwmp__Fault_SetParameterValuesFault (99)
 /* cwmp:Fault-SetParameterValuesFault */
 struct _cwmp__Fault_SetParameterValuesFault
 {
@@ -251,7 +251,7 @@ struct _cwmp__Fault_SetParameterValuesFault
 #endif
 
 #ifndef SOAP_TYPE__cwmp__Fault
-#define SOAP_TYPE__cwmp__Fault (38)
+#define SOAP_TYPE__cwmp__Fault (39)
 /* cwmp:Fault */
 struct _cwmp__Fault
 {
@@ -263,7 +263,7 @@ struct _cwmp__Fault
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetRPCMethods
-#define SOAP_TYPE__cwmp__GetRPCMethods (39)
+#define SOAP_TYPE__cwmp__GetRPCMethods (40)
 /* cwmp:GetRPCMethods */
 struct _cwmp__GetRPCMethods
 {
@@ -274,7 +274,7 @@ struct _cwmp__GetRPCMethods
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetRPCMethodsResponse
-#define SOAP_TYPE__cwmp__GetRPCMethodsResponse (40)
+#define SOAP_TYPE__cwmp__GetRPCMethodsResponse (41)
 /* cwmp:GetRPCMethodsResponse */
 struct _cwmp__GetRPCMethodsResponse
 {
@@ -283,7 +283,7 @@ struct _cwmp__GetRPCMethodsResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__SetParameterValues
-#define SOAP_TYPE__cwmp__SetParameterValues (41)
+#define SOAP_TYPE__cwmp__SetParameterValues (42)
 /* cwmp:SetParameterValues */
 struct _cwmp__SetParameterValues
 {
@@ -293,7 +293,7 @@ struct _cwmp__SetParameterValues
 #endif
 
 #ifndef SOAP_TYPE__cwmp__SetParameterValuesResponse
-#define SOAP_TYPE__cwmp__SetParameterValuesResponse (42)
+#define SOAP_TYPE__cwmp__SetParameterValuesResponse (43)
 /* cwmp:SetParameterValuesResponse */
 struct _cwmp__SetParameterValuesResponse
 {
@@ -302,7 +302,7 @@ struct _cwmp__SetParameterValuesResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetParameterValues
-#define SOAP_TYPE__cwmp__GetParameterValues (43)
+#define SOAP_TYPE__cwmp__GetParameterValues (44)
 /* cwmp:GetParameterValues */
 struct _cwmp__GetParameterValues
 {
@@ -311,7 +311,7 @@ struct _cwmp__GetParameterValues
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetParameterValuesResponse
-#define SOAP_TYPE__cwmp__GetParameterValuesResponse (44)
+#define SOAP_TYPE__cwmp__GetParameterValuesResponse (45)
 /* cwmp:GetParameterValuesResponse */
 struct _cwmp__GetParameterValuesResponse
 {
@@ -320,7 +320,7 @@ struct _cwmp__GetParameterValuesResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetParameterNames
-#define SOAP_TYPE__cwmp__GetParameterNames (45)
+#define SOAP_TYPE__cwmp__GetParameterNames (46)
 /* cwmp:GetParameterNames */
 struct _cwmp__GetParameterNames
 {
@@ -330,7 +330,7 @@ struct _cwmp__GetParameterNames
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetParameterNamesResponse
-#define SOAP_TYPE__cwmp__GetParameterNamesResponse (46)
+#define SOAP_TYPE__cwmp__GetParameterNamesResponse (47)
 /* cwmp:GetParameterNamesResponse */
 struct _cwmp__GetParameterNamesResponse
 {
@@ -339,7 +339,7 @@ struct _cwmp__GetParameterNamesResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__SetParameterAttributes
-#define SOAP_TYPE__cwmp__SetParameterAttributes (47)
+#define SOAP_TYPE__cwmp__SetParameterAttributes (48)
 /* cwmp:SetParameterAttributes */
 struct _cwmp__SetParameterAttributes
 {
@@ -348,7 +348,7 @@ struct _cwmp__SetParameterAttributes
 #endif
 
 #ifndef SOAP_TYPE__cwmp__SetParameterAttributesResponse
-#define SOAP_TYPE__cwmp__SetParameterAttributesResponse (48)
+#define SOAP_TYPE__cwmp__SetParameterAttributesResponse (49)
 /* cwmp:SetParameterAttributesResponse */
 struct _cwmp__SetParameterAttributesResponse
 {
@@ -359,7 +359,7 @@ struct _cwmp__SetParameterAttributesResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetParameterAttributes
-#define SOAP_TYPE__cwmp__GetParameterAttributes (49)
+#define SOAP_TYPE__cwmp__GetParameterAttributes (50)
 /* cwmp:GetParameterAttributes */
 struct _cwmp__GetParameterAttributes
 {
@@ -368,7 +368,7 @@ struct _cwmp__GetParameterAttributes
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetParameterAttributesResponse
-#define SOAP_TYPE__cwmp__GetParameterAttributesResponse (50)
+#define SOAP_TYPE__cwmp__GetParameterAttributesResponse (51)
 /* cwmp:GetParameterAttributesResponse */
 struct _cwmp__GetParameterAttributesResponse
 {
@@ -377,7 +377,7 @@ struct _cwmp__GetParameterAttributesResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__AddObject
-#define SOAP_TYPE__cwmp__AddObject (51)
+#define SOAP_TYPE__cwmp__AddObject (52)
 /* cwmp:AddObject */
 struct _cwmp__AddObject
 {
@@ -387,7 +387,7 @@ struct _cwmp__AddObject
 #endif
 
 #ifndef SOAP_TYPE__cwmp__AddObjectResponse
-#define SOAP_TYPE__cwmp__AddObjectResponse (52)
+#define SOAP_TYPE__cwmp__AddObjectResponse (53)
 /* cwmp:AddObjectResponse */
 struct _cwmp__AddObjectResponse
 {
@@ -397,7 +397,7 @@ struct _cwmp__AddObjectResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__DeleteObject
-#define SOAP_TYPE__cwmp__DeleteObject (53)
+#define SOAP_TYPE__cwmp__DeleteObject (54)
 /* cwmp:DeleteObject */
 struct _cwmp__DeleteObject
 {
@@ -407,7 +407,7 @@ struct _cwmp__DeleteObject
 #endif
 
 #ifndef SOAP_TYPE__cwmp__DeleteObjectResponse
-#define SOAP_TYPE__cwmp__DeleteObjectResponse (54)
+#define SOAP_TYPE__cwmp__DeleteObjectResponse (55)
 /* cwmp:DeleteObjectResponse */
 struct _cwmp__DeleteObjectResponse
 {
@@ -416,7 +416,7 @@ struct _cwmp__DeleteObjectResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__Download
-#define SOAP_TYPE__cwmp__Download (55)
+#define SOAP_TYPE__cwmp__Download (56)
 /* cwmp:Download */
 struct _cwmp__Download
 {
@@ -434,7 +434,7 @@ struct _cwmp__Download
 #endif
 
 #ifndef SOAP_TYPE__cwmp__DownloadResponse
-#define SOAP_TYPE__cwmp__DownloadResponse (56)
+#define SOAP_TYPE__cwmp__DownloadResponse (57)
 /* cwmp:DownloadResponse */
 struct _cwmp__DownloadResponse
 {
@@ -445,7 +445,7 @@ struct _cwmp__DownloadResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__Reboot
-#define SOAP_TYPE__cwmp__Reboot (57)
+#define SOAP_TYPE__cwmp__Reboot (58)
 /* cwmp:Reboot */
 struct _cwmp__Reboot
 {
@@ -454,7 +454,7 @@ struct _cwmp__Reboot
 #endif
 
 #ifndef SOAP_TYPE__cwmp__RebootResponse
-#define SOAP_TYPE__cwmp__RebootResponse (58)
+#define SOAP_TYPE__cwmp__RebootResponse (59)
 /* cwmp:RebootResponse */
 struct _cwmp__RebootResponse
 {
@@ -465,7 +465,7 @@ struct _cwmp__RebootResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetQueuedTransfers
-#define SOAP_TYPE__cwmp__GetQueuedTransfers (59)
+#define SOAP_TYPE__cwmp__GetQueuedTransfers (60)
 /* cwmp:GetQueuedTransfers */
 struct _cwmp__GetQueuedTransfers
 {
@@ -476,7 +476,7 @@ struct _cwmp__GetQueuedTransfers
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetQueuedTransfersResponse
-#define SOAP_TYPE__cwmp__GetQueuedTransfersResponse (60)
+#define SOAP_TYPE__cwmp__GetQueuedTransfersResponse (61)
 /* cwmp:GetQueuedTransfersResponse */
 struct _cwmp__GetQueuedTransfersResponse
 {
@@ -485,7 +485,7 @@ struct _cwmp__GetQueuedTransfersResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__ScheduleInform
-#define SOAP_TYPE__cwmp__ScheduleInform (61)
+#define SOAP_TYPE__cwmp__ScheduleInform (62)
 /* cwmp:ScheduleInform */
 struct _cwmp__ScheduleInform
 {
@@ -495,7 +495,7 @@ struct _cwmp__ScheduleInform
 #endif
 
 #ifndef SOAP_TYPE__cwmp__ScheduleInformResponse
-#define SOAP_TYPE__cwmp__ScheduleInformResponse (62)
+#define SOAP_TYPE__cwmp__ScheduleInformResponse (63)
 /* cwmp:ScheduleInformResponse */
 struct _cwmp__ScheduleInformResponse
 {
@@ -506,7 +506,7 @@ struct _cwmp__ScheduleInformResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__SetVouchers
-#define SOAP_TYPE__cwmp__SetVouchers (63)
+#define SOAP_TYPE__cwmp__SetVouchers (64)
 /* cwmp:SetVouchers */
 struct _cwmp__SetVouchers
 {
@@ -515,7 +515,7 @@ struct _cwmp__SetVouchers
 #endif
 
 #ifndef SOAP_TYPE__cwmp__SetVouchersResponse
-#define SOAP_TYPE__cwmp__SetVouchersResponse (64)
+#define SOAP_TYPE__cwmp__SetVouchersResponse (65)
 /* cwmp:SetVouchersResponse */
 struct _cwmp__SetVouchersResponse
 {
@@ -526,7 +526,7 @@ struct _cwmp__SetVouchersResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetOptions
-#define SOAP_TYPE__cwmp__GetOptions (65)
+#define SOAP_TYPE__cwmp__GetOptions (66)
 /* cwmp:GetOptions */
 struct _cwmp__GetOptions
 {
@@ -535,7 +535,7 @@ struct _cwmp__GetOptions
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetOptionsResponse
-#define SOAP_TYPE__cwmp__GetOptionsResponse (66)
+#define SOAP_TYPE__cwmp__GetOptionsResponse (67)
 /* cwmp:GetOptionsResponse */
 struct _cwmp__GetOptionsResponse
 {
@@ -544,7 +544,7 @@ struct _cwmp__GetOptionsResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__Upload
-#define SOAP_TYPE__cwmp__Upload (67)
+#define SOAP_TYPE__cwmp__Upload (68)
 /* cwmp:Upload */
 struct _cwmp__Upload
 {
@@ -558,7 +558,7 @@ struct _cwmp__Upload
 #endif
 
 #ifndef SOAP_TYPE__cwmp__UploadResponse
-#define SOAP_TYPE__cwmp__UploadResponse (68)
+#define SOAP_TYPE__cwmp__UploadResponse (69)
 /* cwmp:UploadResponse */
 struct _cwmp__UploadResponse
 {
@@ -569,7 +569,7 @@ struct _cwmp__UploadResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__FactoryReset
-#define SOAP_TYPE__cwmp__FactoryReset (69)
+#define SOAP_TYPE__cwmp__FactoryReset (70)
 /* cwmp:FactoryReset */
 struct _cwmp__FactoryReset
 {
@@ -580,7 +580,7 @@ struct _cwmp__FactoryReset
 #endif
 
 #ifndef SOAP_TYPE__cwmp__FactoryResetResponse
-#define SOAP_TYPE__cwmp__FactoryResetResponse (70)
+#define SOAP_TYPE__cwmp__FactoryResetResponse (71)
 /* cwmp:FactoryResetResponse */
 struct _cwmp__FactoryResetResponse
 {
@@ -591,7 +591,7 @@ struct _cwmp__FactoryResetResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetAllQueuedTransfers
-#define SOAP_TYPE__cwmp__GetAllQueuedTransfers (71)
+#define SOAP_TYPE__cwmp__GetAllQueuedTransfers (72)
 /* cwmp:GetAllQueuedTransfers */
 struct _cwmp__GetAllQueuedTransfers
 {
@@ -602,7 +602,7 @@ struct _cwmp__GetAllQueuedTransfers
 #endif
 
 #ifndef SOAP_TYPE__cwmp__GetAllQueuedTransfersResponse
-#define SOAP_TYPE__cwmp__GetAllQueuedTransfersResponse (72)
+#define SOAP_TYPE__cwmp__GetAllQueuedTransfersResponse (73)
 /* cwmp:GetAllQueuedTransfersResponse */
 struct _cwmp__GetAllQueuedTransfersResponse
 {
@@ -611,7 +611,7 @@ struct _cwmp__GetAllQueuedTransfersResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__Inform
-#define SOAP_TYPE__cwmp__Inform (73)
+#define SOAP_TYPE__cwmp__Inform (74)
 /* cwmp:Inform */
 struct _cwmp__Inform
 {
@@ -625,7 +625,7 @@ struct _cwmp__Inform
 #endif
 
 #ifndef SOAP_TYPE__cwmp__InformResponse
-#define SOAP_TYPE__cwmp__InformResponse (74)
+#define SOAP_TYPE__cwmp__InformResponse (75)
 /* cwmp:InformResponse */
 struct _cwmp__InformResponse
 {
@@ -634,7 +634,7 @@ struct _cwmp__InformResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__TransferComplete
-#define SOAP_TYPE__cwmp__TransferComplete (75)
+#define SOAP_TYPE__cwmp__TransferComplete (76)
 /* cwmp:TransferComplete */
 struct _cwmp__TransferComplete
 {
@@ -646,7 +646,7 @@ struct _cwmp__TransferComplete
 #endif
 
 #ifndef SOAP_TYPE__cwmp__TransferCompleteResponse
-#define SOAP_TYPE__cwmp__TransferCompleteResponse (76)
+#define SOAP_TYPE__cwmp__TransferCompleteResponse (77)
 /* cwmp:TransferCompleteResponse */
 struct _cwmp__TransferCompleteResponse
 {
@@ -657,7 +657,7 @@ struct _cwmp__TransferCompleteResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__AutonomousTransferComplete
-#define SOAP_TYPE__cwmp__AutonomousTransferComplete (77)
+#define SOAP_TYPE__cwmp__AutonomousTransferComplete (78)
 /* cwmp:AutonomousTransferComplete */
 struct _cwmp__AutonomousTransferComplete
 {
@@ -674,7 +674,7 @@ struct _cwmp__AutonomousTransferComplete
 #endif
 
 #ifndef SOAP_TYPE__cwmp__AutonomousTransferCompleteResponse
-#define SOAP_TYPE__cwmp__AutonomousTransferCompleteResponse (78)
+#define SOAP_TYPE__cwmp__AutonomousTransferCompleteResponse (79)
 /* cwmp:AutonomousTransferCompleteResponse */
 struct _cwmp__AutonomousTransferCompleteResponse
 {
@@ -685,7 +685,7 @@ struct _cwmp__AutonomousTransferCompleteResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__Kicked
-#define SOAP_TYPE__cwmp__Kicked (79)
+#define SOAP_TYPE__cwmp__Kicked (80)
 /* cwmp:Kicked */
 struct _cwmp__Kicked
 {
@@ -697,7 +697,7 @@ struct _cwmp__Kicked
 #endif
 
 #ifndef SOAP_TYPE__cwmp__KickedResponse
-#define SOAP_TYPE__cwmp__KickedResponse (80)
+#define SOAP_TYPE__cwmp__KickedResponse (81)
 /* cwmp:KickedResponse */
 struct _cwmp__KickedResponse
 {
@@ -706,7 +706,7 @@ struct _cwmp__KickedResponse
 #endif
 
 #ifndef SOAP_TYPE__cwmp__RequestDownload
-#define SOAP_TYPE__cwmp__RequestDownload (81)
+#define SOAP_TYPE__cwmp__RequestDownload (82)
 /* cwmp:RequestDownload */
 struct _cwmp__RequestDownload
 {
@@ -716,7 +716,7 @@ struct _cwmp__RequestDownload
 #endif
 
 #ifndef SOAP_TYPE__cwmp__RequestDownloadResponse
-#define SOAP_TYPE__cwmp__RequestDownloadResponse (82)
+#define SOAP_TYPE__cwmp__RequestDownloadResponse (83)
 /* cwmp:RequestDownloadResponse */
 struct _cwmp__RequestDownloadResponse
 {
@@ -856,18 +856,28 @@ struct FileTypeArg
 };
 #endif
 
+#ifndef SOAP_TYPE__cwmp__ID
+#define SOAP_TYPE__cwmp__ID (37)
+/* Primitive cwmp:ID schema type: */
+struct _cwmp__ID
+{
+	char *__item;
+	char *SOAP_ENV__mustUnderstand;	/* required attribute of type SOAP-ENV:mustUnderstand */
+};
+#endif
+
 #ifndef SOAP_TYPE__cwmp__HoldRequests
-#define SOAP_TYPE__cwmp__HoldRequests (37)
+#define SOAP_TYPE__cwmp__HoldRequests (38)
 /* Primitive cwmp:HoldRequests schema type: */
 struct _cwmp__HoldRequests
 {
-	enum xsd__boolean __item;
+	unsigned int __item;
 	char *SOAP_ENV__mustUnderstand;	/* required attribute of type SOAP-ENV:mustUnderstand */
 };
 #endif
 
 #ifndef SOAP_TYPE___cwmp__GetRPCMethods
-#define SOAP_TYPE___cwmp__GetRPCMethods (142)
+#define SOAP_TYPE___cwmp__GetRPCMethods (143)
 /* Operation wrapper: */
 struct __cwmp__GetRPCMethods
 {
@@ -876,7 +886,7 @@ struct __cwmp__GetRPCMethods
 #endif
 
 #ifndef SOAP_TYPE___cwmp__Inform
-#define SOAP_TYPE___cwmp__Inform (146)
+#define SOAP_TYPE___cwmp__Inform (147)
 /* Operation wrapper: */
 struct __cwmp__Inform
 {
@@ -885,7 +895,7 @@ struct __cwmp__Inform
 #endif
 
 #ifndef SOAP_TYPE___cwmp__TransferComplete
-#define SOAP_TYPE___cwmp__TransferComplete (150)
+#define SOAP_TYPE___cwmp__TransferComplete (151)
 /* Operation wrapper: */
 struct __cwmp__TransferComplete
 {
@@ -894,7 +904,7 @@ struct __cwmp__TransferComplete
 #endif
 
 #ifndef SOAP_TYPE___cwmp__AutonomousTransferComplete
-#define SOAP_TYPE___cwmp__AutonomousTransferComplete (154)
+#define SOAP_TYPE___cwmp__AutonomousTransferComplete (155)
 /* Operation wrapper: */
 struct __cwmp__AutonomousTransferComplete
 {
@@ -903,7 +913,7 @@ struct __cwmp__AutonomousTransferComplete
 #endif
 
 #ifndef SOAP_TYPE___cwmp__RequestDownload
-#define SOAP_TYPE___cwmp__RequestDownload (158)
+#define SOAP_TYPE___cwmp__RequestDownload (159)
 /* Operation wrapper: */
 struct __cwmp__RequestDownload
 {
@@ -912,7 +922,7 @@ struct __cwmp__RequestDownload
 #endif
 
 #ifndef SOAP_TYPE___cwmp__Kicked
-#define SOAP_TYPE___cwmp__Kicked (162)
+#define SOAP_TYPE___cwmp__Kicked (163)
 /* Operation wrapper: */
 struct __cwmp__Kicked
 {
@@ -921,16 +931,17 @@ struct __cwmp__Kicked
 #endif
 
 #ifndef SOAP_TYPE_SOAP_ENV__Header
-#define SOAP_TYPE_SOAP_ENV__Header (163)
+#define SOAP_TYPE_SOAP_ENV__Header (164)
 /* SOAP Header: */
 struct SOAP_ENV__Header
 {
 	struct _cwmp__HoldRequests cwmp__HoldRequests;	/* required element of type cwmp:HoldRequests */
+	struct _cwmp__ID *cwmp__ID;	/* optional element of type cwmp:ID */
 };
 #endif
 
 #ifndef SOAP_TYPE_SOAP_ENV__Code
-#define SOAP_TYPE_SOAP_ENV__Code (164)
+#define SOAP_TYPE_SOAP_ENV__Code (166)
 /* SOAP Fault Code: */
 struct SOAP_ENV__Code
 {
@@ -940,7 +951,7 @@ struct SOAP_ENV__Code
 #endif
 
 #ifndef SOAP_TYPE_SOAP_ENV__Detail
-#define SOAP_TYPE_SOAP_ENV__Detail (166)
+#define SOAP_TYPE_SOAP_ENV__Detail (168)
 /* SOAP-ENV:Detail */
 struct SOAP_ENV__Detail
 {
@@ -951,7 +962,7 @@ struct SOAP_ENV__Detail
 #endif
 
 #ifndef SOAP_TYPE_SOAP_ENV__Reason
-#define SOAP_TYPE_SOAP_ENV__Reason (169)
+#define SOAP_TYPE_SOAP_ENV__Reason (171)
 /* SOAP-ENV:Reason */
 struct SOAP_ENV__Reason
 {
@@ -960,7 +971,7 @@ struct SOAP_ENV__Reason
 #endif
 
 #ifndef SOAP_TYPE_SOAP_ENV__Fault
-#define SOAP_TYPE_SOAP_ENV__Fault (170)
+#define SOAP_TYPE_SOAP_ENV__Fault (172)
 /* SOAP Fault: */
 struct SOAP_ENV__Fault
 {
@@ -1010,22 +1021,22 @@ typedef char *_SOAP_ENV__mustUnderstand;
 #endif
 
 #ifndef SOAP_TYPE_cwmp__FaultCodeType
-#define SOAP_TYPE_cwmp__FaultCodeType (83)
+#define SOAP_TYPE_cwmp__FaultCodeType (84)
 typedef char *cwmp__FaultCodeType;
 #endif
 
 #ifndef SOAP_TYPE_cwmp__ParameterKeyType
-#define SOAP_TYPE_cwmp__ParameterKeyType (84)
+#define SOAP_TYPE_cwmp__ParameterKeyType (85)
 typedef char *cwmp__ParameterKeyType;
 #endif
 
 #ifndef SOAP_TYPE_cwmp__CommandKeyType
-#define SOAP_TYPE_cwmp__CommandKeyType (85)
+#define SOAP_TYPE_cwmp__CommandKeyType (86)
 typedef char *cwmp__CommandKeyType;
 #endif
 
 #ifndef SOAP_TYPE_cwmp__ObjectNameType
-#define SOAP_TYPE_cwmp__ObjectNameType (86)
+#define SOAP_TYPE_cwmp__ObjectNameType (87)
 typedef char *cwmp__ObjectNameType;
 #endif
 
@@ -1105,6 +1116,7 @@ typedef struct AllTransferList AllTransferList;
 typedef struct VoucherList VoucherList;
 typedef struct OptionList OptionList;
 typedef struct FileTypeArg FileTypeArg;
+typedef struct _cwmp__ID _cwmp__ID;
 typedef struct _cwmp__HoldRequests _cwmp__HoldRequests;
 
 /******************************************************************************\

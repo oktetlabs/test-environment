@@ -236,9 +236,10 @@ __cwmp__Inform(struct soap *soap,
 
     
 
-    cwmp__InformResponse->MaxEnvelopes = 255;
-    soap->header->cwmp__HoldRequests.__item = 1;
+    cwmp__InformResponse->MaxEnvelopes = 1;
+    soap->header->cwmp__HoldRequests.__item = 0;
     soap->header->cwmp__HoldRequests.SOAP_ENV__mustUnderstand = "1";
+    soap->header->cwmp__ID = NULL;
     soap->keep_alive = 1; 
 
     return SOAP_OK;
