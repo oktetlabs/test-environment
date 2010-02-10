@@ -48,6 +48,9 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 			}
 			soap_closesock(soap);
 
+                    if (soap->error == SOAP_EOF)
+                        printf("%s(): EOF detected \n", __FUNCTION__);
+
 			continue;
 		}
 

@@ -118,8 +118,12 @@ __cwmp__Inform(struct soap *soap,
                 return 500;
             }
 
-            if (!strcmp(soap->authrealm, authrealm))
+            if (strcmp(soap->authrealm, authrealm))
+            {
+                VERB("Auth failed: wrong realm '%s', need '%s'",
+                    soap->authrealm, authrealm);
                 break;
+            }
 
             if (!(session->acs_owner))
             {
@@ -140,8 +144,13 @@ __cwmp__Inform(struct soap *soap,
                 break;
             }
 
+            VERB("check authfor user '%s', pass '%s'",
+                cpe_item->username, cpe_item->password);
             if (http_da_verify_post(soap, cpe_item->password))
+            {
+                RING("Auth failed: digest verify not pass ");
                 break;
+            }
 
             RING("%s(): Digest auth pass, CPE '%s', username '%s'", 
                 __FUNCTION__, cpe_item->name, cpe_item->username);
@@ -383,6 +392,12 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
         case CWMP_SERVE:
             /* Now, after poll() on soap socket, it should not block */
             soap_serve(&cwmp_sess->m_soap);
+            RING("status after serve: %d", cwmp_sess->m_soap.error);
+            if (cwmp_sess->m_soap.error == SOAP_EOF)
+            {
+                RING(" CWMP processing, EOF");
+                return TE_ENOTCONN;
+            }
             break;
 
         case CWMP_WAIT_RESPONSE:
@@ -439,6 +454,11 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
     return 0;
 }
 
+int cwmp_serveloop(struct soap *soap)
+{
+    soap->error = SOAP_STOP; /* to stop soap_serve loop. */
+    return soap->error;
+}
 
 cwmp_session_t *
 cwmp_new_session(int socket)
@@ -457,6 +477,7 @@ cwmp_new_session(int socket)
     new_sess->channel = channel;
     new_sess->m_soap.user = new_sess;
     new_sess->m_soap.socket = socket;
+    new_sess->m_soap.fserveloop = cwmp_serveloop;
 
     soap_imode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
     soap_omode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
@@ -480,6 +501,11 @@ cwmp_close_session(cwmp_session_t *sess)
     soap_destroy(&(sess->m_soap));
     soap_end(&(sess->m_soap));
     soap_done(&(sess->m_soap));
+
+    if (sess->acs_owner)
+        sess->acs_owner->session = NULL;
+    if (sess->cpe_owner)
+        sess->cpe_owner->session = NULL;
 
     free(sess);
 

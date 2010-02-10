@@ -68,6 +68,12 @@ main(int argc, char **argv)
     cpe->password = strdup("passwd");
 
 
+    db_add_cpe("ACS", "CPE-box");
+    cpe = db_find_cpe(acs, "ACS", "CPE-box");
+
+    cpe->username = strdup("000261-Home Gateway-V601L622R1A0-1001742119");
+    cpe->password = strdup("z7cD7CTDA1DrQKUb");
+            
     acs->port = (argc > 1 ? atoi(argv[1]) : 8080);
     acse_enable_acs(acs);
     acse_loop(NULL, 0);

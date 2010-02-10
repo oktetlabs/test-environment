@@ -44,6 +44,9 @@ extern "C" {
 #include <sys/types.h>
 #endif
 
+#define LOG_LEVEL 0xff
+#define TE_LOG_LEVEL 0xff
+
 #include <stdsoap2.h>
 
 #include "te_defs.h"

@@ -138,9 +138,10 @@ acse_loop(acse_params_t *params, int sock)
 
         for(;;)
         {
-            int         r;
+            int         r_poll;
             int         i;
             channel_t  *item;
+            te_errno    rc;
             struct pollfd *pfd =
                     calloc(channel_number, sizeof(struct pollfd));
 
@@ -155,15 +156,15 @@ acse_loop(acse_params_t *params, int sock)
                 i++;
             }
 
-            r = poll(pfd, channel_number, -1);
+            r_poll = poll(pfd, channel_number, -1);
 
-            if (r == -1)
+            if (r_poll == -1)
             {
                 perror("poll failed");
                 /* TODO something? */
                 break;
             }
-            RING("acse_loop, poll rc %d", r);
+            INFO("acse_loop, poll return %d", r_poll);
 
 #if 0
             channel_t *last_item = LINK_LAST(
@@ -176,12 +177,17 @@ acse_loop(acse_params_t *params, int sock)
             i = 0;
             LIST_FOREACH(item, &channel_list, links)
             {
-                RING("acse_loop, process channel N %d", i);
+                VERB("acse_loop, process channel N %d", i);
                 if (pfd[i].revents != 0)
                 {
-                    if ((*item->after_poll)(item->data, pfd + i) != 0)
+                    rc = (*item->after_poll)(item->data, pfd + i);
+
+                    if (rc != 0)
                     {
-                        /* TODO something, error? */
+                        if (rc != TE_ENOTCONN)
+                            RING("acse_loop, process channel N %d, rc %r",
+                                 i, rc);
+                        acse_remove_channel(item);
                         break;
                     }
                 }
