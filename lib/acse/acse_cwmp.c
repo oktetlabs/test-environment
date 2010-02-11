@@ -51,15 +51,15 @@
 
 SOAP_NMAC struct Namespace namespaces[] =
 {
-    {"SOAP-ENV", "http://schemas.xmlsoap.org/soap/envelope/",
-                "http://www.w3.org/*/soap-envelope", NULL},
     {"SOAP-ENC", "http://schemas.xmlsoap.org/soap/encoding/",
                 "http://www.w3.org/*/soap-encoding", NULL},
+    {"SOAP-ENV", "http://schemas.xmlsoap.org/soap/envelope/",
+                "http://www.w3.org/*/soap-envelope", NULL},
     {"xsi", "http://www.w3.org/2001/XMLSchema-instance",
                 "http://www.w3.org/*/XMLSchema-instance", NULL},
     {"xsd", "http://www.w3.org/2001/XMLSchema",
                 "http://www.w3.org/*/XMLSchema", NULL},
-    {"cwmp", "urn:dslforum-org:cwmp-1-1",
+    {"cwmp", "urn:dslforum-org:cwmp-1-0",
                 "urn:dslforum-org:cwmp-1-*", NULL},
     {NULL, NULL, NULL, NULL}
 };
@@ -455,10 +455,23 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
     return 0;
 }
 
-int cwmp_serveloop(struct soap *soap)
+int
+cwmp_serveloop(struct soap *soap)
 {
     soap->error = SOAP_STOP; /* to stop soap_serve loop. */
     return soap->error;
+}
+
+int
+cwmp_fparse(struct soap *soap)
+{
+    cwmp_session_t *session = (cwmp_session_t *)soap->user;
+    int rc = session->orig_fparse(soap);
+
+    if (rc == SOAP_OK && soap->length == 0)
+        rc = SOAP_STOP;
+
+    return rc;
 }
 
 cwmp_session_t *
@@ -491,6 +504,9 @@ cwmp_new_session(int socket)
     channel->before_poll = cwmp_before_poll;
     channel->after_poll = cwmp_after_poll;
     channel->destroy = cwmp_destroy;
+
+    new_sess->orig_fparse = new_sess->m_soap.fparse;
+    new_sess->m_soap.fparse = cwmp_fparse;
 
     return new_sess;
 }
@@ -533,4 +549,50 @@ acse_enable_acs(acs_t *acs)
 }
 
 
+/**
+ * Process empty HTTP POST from CPE, send response.
+ * 
+ * @param soap        gSOAP struct.
+ * 
+ * @return gSOAP status.
+ */
+int
+acse_cwmp_empty_post(struct soap* soap)
+{
+    cwmp_session_t *session = (cwmp_session_t *)soap->user;
+    cpe_t          *cpe;
+
+    if (session == NULL || (cpe = session->cpe_owner) == NULL)
+    {
+        ERROR("Internal ACSE error at empty POST processing");
+        soap->keep_alive = 0;
+        soap_closesock(soap);
+        return 500;
+    }
+
+    if (session->state != CWMP_SERVE)
+    {
+        /* TODO: think, what would be correct in unexpected state?..
+         * Now just close connection. */
+        ERROR("Empty POST processing, cpe '%s', unexpected state %d",
+                cpe->name, session->state);
+        soap->keep_alive = 0;
+        soap_closesock(soap);
+        return 500;
+    } 
+    if (TAILQ_EMPTY(&cpe->rpc_list))
+    {
+        INFO("Empty POST for '%s', empty list of RPC calls, response 204",
+              cpe->name);
+        soap->keep_alive = 0;
+        soap_begin_count(soap);
+        soap_end_count(soap);
+        soap_response(soap, 204);
+        soap_end_send(soap);
+        return 0;
+    }
+
+    /* TODO: Send RPC  :) */
+    return 0;
+}
 

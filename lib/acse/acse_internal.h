@@ -99,6 +99,32 @@ struct cpe_t;
 struct cwmp_session_t;
 struct channel_t;
 
+/** CPE RPC queue */
+typedef struct cpe_rpc_t {
+    TAILQ_ENTRY(cpe_rpc_t) links;
+    te_cwmp_rpc_cpe_t      rpc_code;
+
+    union {
+        _cwmp__GetRPCMethods            *get_rpc_methods;
+        _cwmp__SetParameterValues       *set_parameter_values;
+        _cwmp__GetParameterValues       *get_parameter_values;
+        _cwmp__GetParameterNames        *get_parameter_names;
+        _cwmp__SetParameterAttributes   *set_parameter_attributes;
+        _cwmp__GetParameterAttributes   *get_parameter_attributes;
+        _cwmp__AddObject                *add_object;
+        _cwmp__DeleteObject             *delete_object;
+        _cwmp__Reboot                   *reboot;
+        _cwmp__Download                 *download;
+        _cwmp__Upload                   *upload;
+        _cwmp__FactoryReset             *factory_reset;
+        _cwmp__GetQueuedTransfers       *get_queued_transfers;
+        _cwmp__GetAllQueuedTransfers    *get_all_queued_transfers;
+        _cwmp__ScheduleInform           *schedule_inform;
+        _cwmp__SetVouchers              *set_vouchers;
+        _cwmp__GetOptions               *get_options;
+    } arg;
+} cpe_rpc_t;
+
 /** CPE */
 typedef struct cpe_t{
     /** Fields for internal data integrity. */
@@ -117,6 +143,9 @@ typedef struct cpe_t{
     te_bool          hold_requests;  /**< Whether to put "hold requests"
                                         in SOAP msg                    */
     cwmp__DeviceIdStruct device_id; /**< Device Identifier       */
+
+    TAILQ_HEAD(cpe_rpc_list_t, cpe_rpc_t)
+                     rpc_list;  /**< List of RPC to be sent to CPE */
 
     /** Fields for internal procedure data during CWMP session. */
 
@@ -177,6 +206,8 @@ typedef struct cwmp_session_t {
     cpe_t               *cpe_owner;
     channel_t           *channel; 
     struct soap          m_soap;      /**< SOAP struct             */
+
+    int (*orig_fparse)(struct soap*);
 } cwmp_session_t;
 
 

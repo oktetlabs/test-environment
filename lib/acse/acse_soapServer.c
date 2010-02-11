@@ -20,45 +20,33 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 
 	do
 	{
-#ifdef WITH_FASTCGI
-		if (FCGI_Accept() < 0)
-		{
-			soap->error = SOAP_EOF;
-			return soap_send_fault(soap);
-		}
-#endif
 
 		soap_begin(soap);
 
-#ifndef WITH_FASTCGI
 		if (soap->max_keep_alive > 0 && !--k)
 			soap->keep_alive = 0;
-#endif
 
 		if (soap_begin_recv(soap))
 		{
-                        if ((soap->error != SOAP_EOF) && 
-                            (soap->error < SOAP_STOP))
-			{
-#ifdef WITH_FASTCGI
-				soap_send_fault(soap);
-#else 
-				return soap_send_fault(soap);
-#endif
-			}
-			soap_closesock(soap);
+                    if ((soap->error != SOAP_EOF) && 
+                        (soap->error < SOAP_STOP))
+                    {
+                        return soap_send_fault(soap);
+                    }
 
                     if (soap->error == SOAP_EOF)
+                    {
+			soap_closesock(soap);
                         printf("%s(): EOF detected \n", __FUNCTION__);
+                    }
 
-			continue;
+                    if (soap->length == 0)
+                    {
+                        return acse_cwmp_empty_post(soap);
+                    }
+                    break;
 		}
 
-                if (soap->length == 0)
-                {
-                    /* TODO: Here should be processing of empty POST!!! */
-                    printf("%s(): Content Length ZERO!\n", __FUNCTION__);
-                }
 
 		if (soap_envelope_begin_in(soap)
 		 || soap_recv_header(soap)
@@ -66,21 +54,12 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 		 || soap_serve_request(soap)
 		 || (soap->fserveloop && soap->fserveloop(soap)))
 		{
-#ifdef WITH_FASTCGI
-			soap_send_fault(soap);
-#else
 			return soap_send_fault(soap);
-#endif
 		}
 
                 printf("%s():%d; end loop body\n", __FUNCTION__, __LINE__);
-#ifdef WITH_FASTCGI
-		soap_destroy(soap);
-		soap_end(soap);
-	} while (1);
-#else
 	} while (soap->keep_alive);
-#endif
+
 	return SOAP_OK;
 }
 

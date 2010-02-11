@@ -26,6 +26,7 @@ DEFINE_LGR_ENTITY("ACSE_DUMMY");
 #include "acse_internal.h"
 #include "acse_soapStub.h"
 #if 0
+#if 0
 #include "cwmp.nsmap"
 
 #else
@@ -44,6 +45,7 @@ SOAP_NMAC struct Namespace namespaces[] =
                 "urn:dslforum-org:cwmp-1-*", NULL},
     {NULL, NULL, NULL, NULL}
 };
+#endif
 #endif
 
 #include "httpda.h"
