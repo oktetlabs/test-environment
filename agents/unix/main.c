@@ -1752,7 +1752,7 @@ ta_system(const char *cmd)
     pid_t   pid = te_shell_cmd(cmd, -1, NULL, NULL, NULL);
     int     status = -1;
 
-    if (pid < 0)
+    if (pid <= 0)
         return -1;
 
     ta_waitpid(pid, &status, 0);
