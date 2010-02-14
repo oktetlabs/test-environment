@@ -15,6 +15,9 @@
 #include<sys/socket.h>
 #include<netinet/in.h>
 
+#include "acse_internal.h"
+#include "acse_soapStub.h"
+
 #include "te_defs.h"
 #include "te_errno.h"
 
@@ -23,8 +26,6 @@
 DEFINE_LGR_ENTITY("ACSE_DUMMY");
 
 
-#include "acse_internal.h"
-#include "acse_soapStub.h"
 #if 0
 #if 0
 #include "cwmp.nsmap"

@@ -38,14 +38,15 @@
 #include <stddef.h>
 #include<string.h>
 
+#include "acse_internal.h"
+#include "httpda.h"
+
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_queue.h"
 #include "te_defs.h"
 #include "logger_api.h"
-#include "acse_internal.h"
 
-#include "httpda.h"
 
 #include "acse_soapH.h"
 
@@ -431,8 +432,6 @@ cwmp_destroy(void *data)
 te_errno
 cwmp_accept_cpe_connection(acs_t *acs, int socket)
 {
-    channel_t *channel;
-    cpe_t *cpe_item;
     cwmp_session_t *cwmp_sess;
 
     /* TODO: real check, now accept all, if any CPE registered. */
@@ -546,6 +545,8 @@ acse_enable_acs(acs_t *acs)
     acs->addr_len = sizeof(struct sockaddr_in);
 
     conn_register_acs(acs);
+
+    return 0;
 }
 
 

@@ -37,11 +37,12 @@
 #include <stddef.h>
 #include<string.h>
 
+#include "acse_internal.h"
+
 #include "te_errno.h"
 #include "te_queue.h"
 #include "te_defs.h"
 #include "logger_api.h"
-#include "acse_internal.h"
 
 typedef struct srec_data_t {
     LIST_ENTRY(srec_data_t) links;
@@ -74,6 +75,7 @@ sreq_after_poll(void *data, struct pollfd *pfd)
 {
     if (!(pfd->revents & POLLIN))
         return 0;
+    /* TODO */
 
     return 0;
 }
@@ -96,6 +98,10 @@ acse_init_connection_request(cpe_t *cpe_item)
     sreq_data_t *sreq_data = malloc(sizeof(*sreq_data));
 
     channel_t *channel;
+
+    sreq_data->cpe_item = cpe_item;
+    sreq_data->addr = malloc(sizeof(struct sockaddr_in));
+    sreq_data->socket = -1; /* TODO !! */
 
     channel = malloc(sizeof(*channel)); 
     channel->data = sreq_data;

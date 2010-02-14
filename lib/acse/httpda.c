@@ -95,6 +95,10 @@ A commercial use license is available from Genivia, Inc., contact@genivia.com
 
 #include "httpda.h"
 
+#ifndef UNUSED
+#define UNUSED(_x)      (void)(_x)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -130,7 +134,7 @@ static int http_da_preparesend(struct soap *soap, const char *buf, size_t len);
 static int http_da_preparerecv(struct soap *soap, const char *buf, size_t len);
 static int http_da_disconnect(struct soap *soap);
 
-static int http_da_verify_method(struct soap *soap, char *method, char *passwd);
+static int http_da_verify_method(struct soap *soap, const char *method, const char *passwd);
 static void http_da_session_start(const char *realm, const char *nonce, const char *opaque);
 static int http_da_session_update(const char *realm, const char *nonce, const char *opaque, const char *cnonce, const char *ncount);
 static void http_da_session_cleanup();
@@ -148,6 +152,7 @@ static void http_da_calc_response(struct soap *soap, void **context, char HA1hex
 
 int http_da(struct soap *soap, struct soap_plugin *p, void *arg)
 {
+  UNUSED(arg);
   p->id = http_da_id;
   p->data = (void*)SOAP_MALLOC(soap, sizeof(struct http_da_data));
   p->fcopy = http_da_copy;
@@ -179,6 +184,7 @@ static int http_da_init(struct soap *soap, struct http_da_data *data)
 
 static int http_da_copy(struct soap *soap, struct soap_plugin *dst, struct soap_plugin *src)
 {
+  UNUSED(soap);
   *dst = *src;
   dst->data = (void*)SOAP_MALLOC(soap, sizeof(struct http_da_data));
   memcpy(dst->data, src->data, sizeof(struct http_da_data));
@@ -204,6 +210,7 @@ static void http_da_delete(struct soap *soap, struct soap_plugin *p)
       md5_handler(soap, &data->context, MD5_DELETE, NULL, 0);
     SOAP_FREE(soap, data);
   }
+  UNUSED(p);
 }
 
 /******************************************************************************\
@@ -513,17 +520,17 @@ void http_da_release(struct soap *soap, struct http_da_info *info)
  *
 \******************************************************************************/
 
-int http_da_verify_post(struct soap *soap, char *passwd)
+int http_da_verify_post(struct soap *soap, const char *passwd)
 {
   return http_da_verify_method(soap, "POST", passwd);
 }
 
-int http_da_verify_get(struct soap *soap, char *passwd)
+int http_da_verify_get(struct soap *soap, const char *passwd)
 {
   return http_da_verify_method(soap, "GET", passwd);
 }
 
-static int http_da_verify_method(struct soap *soap, char *method, char *passwd)
+static int http_da_verify_method(struct soap *soap, const char *method, const char *passwd)
 {
   struct http_da_data *data = (struct http_da_data*)soap_lookup_plugin(soap, http_da_id);
   char HA1[33], entityHAhex[33], response[33];
@@ -683,11 +690,13 @@ void http_da_calc_nonce(struct soap *soap, char nonce[HTTP_DA_NONCELEN])
 {
   static short count = 0xCA53;
   sprintf(nonce, "%8.8x%4.4hx%8.8x", (int)time(NULL), count++, soap_random);
+  UNUSED(soap);
 }
 
 void http_da_calc_opaque(struct soap *soap, char opaque[HTTP_DA_OPAQUELEN])
 {
   sprintf(opaque, "%8.8x", soap_random);
+  UNUSED(soap);
 }
 
 /******************************************************************************\

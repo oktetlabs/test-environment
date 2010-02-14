@@ -38,11 +38,12 @@
 #include <stddef.h>
 #include<string.h>
 
+#include "acse_internal.h"
+
 #include "te_errno.h"
 #include "te_queue.h"
 #include "te_defs.h"
 #include "logger_api.h"
-#include "acse_internal.h"
 
 #define CONN_IS_LIST 0
 

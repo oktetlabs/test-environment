@@ -39,10 +39,11 @@
 #include<string.h>
 #include<assert.h>
 
+#include "acse_internal.h"
+
 #include "te_errno.h"
 #include "te_queue.h"
 #include "logger_api.h"
-#include "acse_internal.h"
 
 /** The list of "channels" */
 static LIST_HEAD(channel_list_t, channel_t)

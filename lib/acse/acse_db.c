@@ -36,12 +36,13 @@
 #include <stddef.h>
 #include<string.h>
 
+#include "acse_internal.h"
+
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_queue.h"
 #include "te_defs.h"
 #include "logger_api.h"
-#include "acse_internal.h"
 
 /** The list af acs instances */
 acs_list_t acs_list = LIST_HEAD_INITIALIZER(&acs_list); 

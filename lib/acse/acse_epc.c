@@ -63,13 +63,13 @@
 #endif
 
 #include <string.h>
+#include "acse_internal.h"
 
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_queue.h"
 #include "te_defs.h"
 #include "logger_api.h"
-#include "acse_internal.h"
 
 /** EPC mechanism state machine states */
 typedef enum { want_read, want_write } epc_t;
@@ -555,13 +555,13 @@ acs_enabled_get(acse_params_t *params)
 static te_errno
 acs_enabled_set(acse_params_t *params)
 {
-    int    new_value = atoi(params->value);
     acs_t *acs_inst  = db_find_acs(params->acs);
 
     if (acs_inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
 #if 0
+    int    new_value = atoi(params->value);
     /* TODO: rewrite at all, is it need? */
     prev_value = acs_inst->enabled;
 
