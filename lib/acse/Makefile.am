@@ -23,7 +23,7 @@ include_HEADERS = acse_epc.h
 libacse_la_SOURCES = acse.c \
                     acse_conn.c \
                     acse_epc.c \
-                    acse_sreq.c \
+                    acse_creq.c \
                     acse_cwmp.c \
                     acse_db.c \
                     acse_soapC.c \
