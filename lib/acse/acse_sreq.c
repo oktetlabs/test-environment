@@ -45,25 +45,19 @@
 #include "te_defs.h"
 #include "logger_api.h"
 
-typedef struct srec_data_t {
-    LIST_ENTRY(srec_data_t) links;
-
+typedef struct conn_req_t {
     struct soap     m_soap;
-
     cpe_t       *cpe_item;    /**< CPE - object of Connection Request */
+} conn_req_t;
 
-} sreq_data_t;
-
-static LIST_HEAD(sreq_list_t, sreq_data_t)
-        sreq_list = LIST_HEAD_INITIALIZER(&sreq_list); 
 
 
 te_errno
-sreq_before_poll(void *data, struct pollfd *pfd)
+conn_req_before_poll(void *data, struct pollfd *pfd)
 {
-    sreq_data_t *sreq = data;
+    conn_req_t *conn_req = data;
 
-    pfd->fd = sreq->m_soap.socket;
+    pfd->fd = conn_req->m_soap.socket;
     pfd->events = POLLIN;
     pfd->revents = 0;
 
@@ -71,16 +65,16 @@ sreq_before_poll(void *data, struct pollfd *pfd)
 }
 
 te_errno
-sreq_after_poll(void *data, struct pollfd *pfd)
+conn_req_after_poll(void *data, struct pollfd *pfd)
 {
-    sreq_data_t *sreq = data;
+    conn_req_t *conn_req = data;
     struct soap *soap;
     struct http_da_info info;
 
     if (!(pfd->revents & POLLIN))
         return 0;
 
-    soap = &(sreq->m_soap);
+    soap = &(conn_req->m_soap);
     /* should not block after poll() */
     if (soap_begin_recv(soap))
     {
@@ -90,14 +84,15 @@ sreq_after_poll(void *data, struct pollfd *pfd)
                   soap->authrealm);
             /* save userid and passwd for basic or digest authentication */
             http_da_save(soap, &info, soap->authrealm,
-                         sreq->cpe_item->username,
-                         sreq->cpe_item->password);
+                         conn_req->cpe_item->username,
+                         conn_req->cpe_item->password);
             soap_begin_count(soap);
             soap_end_count(soap);
 
             info.qop = soap_strdup(soap, "auth");
             http_da_restore(soap, &info);
-            soap_connect_command(soap, SOAP_GET, sreq->cpe_item->url, "");
+            soap_connect_command(soap, SOAP_GET,
+                                 conn_req->cpe_item->url, "");
             soap_end_send(soap);
             return 0;
         }
@@ -118,13 +113,12 @@ sreq_after_poll(void *data, struct pollfd *pfd)
 
 
 te_errno
-sreq_destroy(void *data)
+conn_req_destroy(void *data)
 {
-    sreq_data_t *sreq = data;
-    /* TODO: release all */
+    conn_req_t *conn_req = data;
 
-    soap_end(&(sreq->m_soap));
-    free(sreq);
+    soap_end(&(conn_req->m_soap));
+    free(conn_req);
     return 0;
 }
 
@@ -132,23 +126,23 @@ sreq_destroy(void *data)
 extern te_errno
 acse_init_connection_request(cpe_t *cpe_item)
 {
-    sreq_data_t *sreq_data = malloc(sizeof(*sreq_data));
+    conn_req_t *conn_req_data = malloc(sizeof(*conn_req_data));
     struct soap *soap;
     channel_t   *channel = malloc(sizeof(*channel)); 
 
     struct http_da_info info;
 
-    if (sreq_data == NULL || channel == NULL)
+    if (conn_req_data == NULL || channel == NULL)
         return TE_ENOMEM;
 
-    soap_init(&(sreq_data->m_soap));
-    soap = &(sreq_data->m_soap);
+    soap_init(&(conn_req_data->m_soap));
+    soap = &(conn_req_data->m_soap);
 
     soap_register_plugin(soap, http_da);
 
     soap_begin(soap);
 
-    sreq_data->cpe_item = cpe_item;
+    conn_req_data->cpe_item = cpe_item;
 
 
     soap_begin_count(soap);
@@ -159,15 +153,15 @@ acse_init_connection_request(cpe_t *cpe_item)
         soap_print_fault(soap, stderr); 
         ERROR("%s failed, soap error %d", __FUNCTION__, soap->error);
         soap_end(soap);
-        free(sreq_data);
+        free(conn_req_data);
         free(channel);
         return TE_EFAIL;
     } 
 
-    channel->data = sreq_data;
-    channel->before_poll = sreq_before_poll;
-    channel->after_poll = sreq_after_poll;
-    channel->destroy = sreq_destroy;
+    channel->data = conn_req_data;
+    channel->before_poll = conn_req_before_poll;
+    channel->after_poll = conn_req_after_poll;
+    channel->destroy = conn_req_destroy;
 
     acse_add_channel(channel);
 
@@ -175,6 +169,7 @@ acse_init_connection_request(cpe_t *cpe_item)
 }
 
 
+#if 0
 int
 cwmp_SendConnectionRequest(const char *endpoint,
                            const char *username, 
@@ -229,3 +224,4 @@ cwmp_SendConnectionRequest(const char *endpoint,
     soap_end(soap); 
     return 0;
 }
+#endif
