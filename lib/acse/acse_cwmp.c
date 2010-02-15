@@ -69,6 +69,33 @@ SOAP_NMAC struct Namespace namespaces[] =
 const char *authrealm = "tr-069";
 
 
+te_errno
+cpe_find_conn_req_url(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
+{
+    cwmp__ParameterValueStruct *param_v;
+    int i;
+
+    for (i = 0; i < cwmp__Inform->ParameterList->__size; i++)
+    {
+        param_v =
+            cwmp__Inform->ParameterList->__ptrParameterValueStruct[i];
+        VERB("%s, param name '%s', \n    val '%s'",
+             __FUNCTION__, param_v->Name, param_v->Value);
+        if (strcmp(param_v->Name, 
+            "InternetGatewayDevice.ManagementServer.ConnectionRequestURL")
+            == 0)
+        {
+            if (cpe_item->url)
+                free((char *)cpe_item->url);
+            cpe_item->url = strdup(param_v->Value);
+            RING("Found new ConnReq URL in Inform: '%s', save it.",
+                 param_v->Value);
+            break;
+        }
+    }
+    return 0;
+}
+
 
 SOAP_FMAC5 int SOAP_FMAC6
 __cwmp__GetRPCMethods(struct soap *soap, 
@@ -170,35 +197,6 @@ __cwmp__Inform(struct soap *soap,
             return 500;
     }
 
-#if 0
-    if (soap->authrealm && soap->userid)
-    {
-        VERB("%s(): Digest auth, authrealm: '%s', userid '%s'", 
-                __FUNCTION__, soap->authrealm, soap->userid);
-        /* TODO: lookup passwd by userid */
-        if (!strcmp(soap->authrealm, authrealm) &&
-            !strcmp(soap->userid, cpe_record->username))
-        {
-#if 0
-          char *passwd = "z7cD7CTDA1DrQKUb";
-#else
-          char *passwd = "passwd";
-#endif
-
-          if (http_da_verify_post(soap, passwd))
-          {
-            printf("%s(): Digest auth failed RRRRRRRRRRRR\n", __FUNCTION__);
-              soap_dealloc(soap, soap->authrealm);
-              soap->authrealm = soap_strdup(soap, authrealm);
-              soap->keep_alive = 1; 
-            return 401;
-          }
-          printf("%s(): AUTH passed\n", __FUNCTION__);
-        }
-        printf("%s(): Should be fault\n", __FUNCTION__);
-    }
-#endif
-
     if (!auth_pass)
     {
         VERB("%s(): Digest auth failed\n", __FUNCTION__);
@@ -212,7 +210,6 @@ __cwmp__Inform(struct soap *soap,
         soap_begin_count(soap);
         soap_end_count(soap);
         soap_response(soap, 401);
-        // soap_envelope_end_out(soap);
         soap_end_send(soap);
         soap->keep_alive = 1; 
         return SOAP_STOP;
@@ -235,7 +232,7 @@ __cwmp__Inform(struct soap *soap,
         soap->encodingStyle = NULL;
     }
 
-    
+    cpe_find_conn_req_url(cwmp__Inform, cpe_item);
 
     cwmp__InformResponse->MaxEnvelopes = 1;
     soap->header->cwmp__HoldRequests.__item = 0;

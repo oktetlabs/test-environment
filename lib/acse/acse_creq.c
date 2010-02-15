@@ -130,8 +130,6 @@ acse_init_connection_request(cpe_t *cpe_item)
     struct soap *soap;
     channel_t   *channel = malloc(sizeof(*channel)); 
 
-    struct http_da_info info;
-
     if (conn_req_data == NULL || channel == NULL)
         return TE_ENOMEM;
 
