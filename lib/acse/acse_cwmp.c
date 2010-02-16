@@ -172,7 +172,7 @@ __cwmp__Inform(struct soap *soap,
                 break;
             }
 
-            VERB("check authfor user '%s', pass '%s'",
+            VERB("check auth for user '%s', pass '%s'",
                 cpe_item->username, cpe_item->password);
             if (http_da_verify_post(soap, cpe_item->password))
             {

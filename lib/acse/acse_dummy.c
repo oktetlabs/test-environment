@@ -22,8 +22,9 @@
 #include "te_errno.h"
 
 #include "logger_api.h"
+#include "logger_file.h"
 
-DEFINE_LGR_ENTITY("ACSE_DUMMY");
+DEFINE_LGR_ENTITY("ACSE");
 
 
 #if 0
@@ -51,15 +52,14 @@ SOAP_NMAC struct Namespace namespaces[] =
 
 #include "httpda.h"
 
-/** Static userid for Digest Auth. login, temporary */
-const char* userid = "000261-Home Gateway-V60200000000-0010501606";
-
 #if 1
 int 
 main(int argc, char **argv)
 {
+    FILE *logfile;
     acs_t *acs;
     cpe_t *cpe;
+    int port;
 
     db_add_acs("ACS");
     db_add_cpe("ACS", "cpe-dummy");
@@ -67,7 +67,20 @@ main(int argc, char **argv)
     acs = db_find_acs("ACS");
     cpe = db_find_cpe(acs, "ACS", "cpe-dummy");
 
-    cpe->username = strdup(userid);
+    acs->port = (argc > 1 ? atoi(argv[1]) : 8080);
+
+    if (argc > 2)
+    {
+        logfile = fopen(argv[2], "a");
+        if (logfile == NULL)
+        {
+            perror("open logfile failed");
+            return 2;
+        }
+        te_log_message_file_out = logfile;
+    }
+
+    cpe->username = strdup("000261-Home Gateway-V60200000000-0010501606");
     cpe->password = strdup("passwd");
 
 
@@ -77,9 +90,11 @@ main(int argc, char **argv)
     cpe->username = strdup("000261-Home Gateway-V601L622R1A0-1001742119");
     cpe->password = strdup("z7cD7CTDA1DrQKUb");
             
-    acs->port = (argc > 1 ? atoi(argv[1]) : 8080);
+
+
     acse_enable_acs(acs);
     acse_loop(NULL, 0);
+
 
     return 0;
 }
