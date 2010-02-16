@@ -113,12 +113,7 @@ create_dispatchers(acse_params_t *params, int sock)
     channel_t *ch_item;
     te_errno rc = 0; 
 
-    if ((ch_item = malloc(sizeof *ch_item)) != NULL &&
-        (rc = acse_epc_create(ch_item, params, sock)) == 0)
-    {
-        acse_add_channel(ch_item);
-    }
-    else
+    if ((rc = acse_epc_create(params, sock)) != 0)
     {
         WARN("Fail create EPC dispatcher");
         return TE_RC(TE_ACSE, rc);
@@ -126,8 +121,6 @@ create_dispatchers(acse_params_t *params, int sock)
 
     return 0;
 }
-
-enum {MAX_POLL = 128};
 
 /* See description in acse.h */
 void

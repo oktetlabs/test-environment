@@ -316,8 +316,7 @@ extern te_errno db_remove_cpe(cpe_t *cpe_item);
 /**
  * Init EPC dispatcher.
  */
-extern te_errno acse_epc_create(channel_t *channel, 
-                                acse_params_t *params, int sock);
+extern te_errno acse_epc_create(acse_params_t *params, int sock);
 
 
 /**
@@ -333,6 +332,9 @@ extern void acse_remove_channel(channel_t *ch_item);
 extern te_errno conn_register_acs(acs_t *acs);
 
 extern te_errno acse_enable_acs(acs_t *acs);
+
+extern te_errno acse_init_connection_request(cpe_t *cpe_item);
+
 #ifdef __cplusplus
 }
 #endif

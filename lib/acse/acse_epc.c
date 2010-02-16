@@ -63,6 +63,8 @@
 #endif
 
 #include <string.h>
+#include <ctype.h>
+
 #include "acse_internal.h"
 
 #include "te_stdint.h"
@@ -974,19 +976,130 @@ epc_before_poll(void *data, struct pollfd *pfd)
     return 0;
 }
 
+static te_errno
+epc_cpe_list(const char *args)
+{
+    int i;
+    acse_params_t pars;
+
+    for (i = 0; args[i] && !isspace(args[i]); i++)
+        pars.acs[i] = args[i];
+    pars.acs[i] = '\0';
+    pars.op = ACSE_PC_CPE_LIST;
+    pars.oid[0] = '\0';
+    pars.cpe[0] = '\0';
+
+    acs_cpe_list(&pars);
+    printf("CPE list under '%s': %s\n", pars.acs, pars.list);
+    return 0;
+}
+
+static te_errno
+epc_cpe_cr(const char *args)
+{
+    int i;
+    cpe_t *cpe;
+    char acs_name[100] = "";
+    char cpe_name[100] = "";
+    te_errno rc;
+
+    for (i = 0; args[i] && !isspace(args[i]) && (args[i] != '/'); i++)
+        acs_name[i] = args[i];
+    acs_name[i] = '\0';
+    args += i;
+
+    while((*args) && (isspace(*args) || (*args == '/')))
+        args++;
+    
+    for (i = 0; args[i] && !isspace(args[i]) ; i++)
+        cpe_name[i] = args[i];
+    if (i == 0)
+    {
+        printf("Call CR fails, args '%s', CPE name not detected\n");
+        return 1;
+    }
+    cpe_name[i] = '\0';
+
+    cpe = db_find_cpe(NULL, acs_name, cpe_name);
+    if (cpe == NULL)
+    {
+        printf("Call connection request fails, '%s':'%s' not found\n",
+               acs_name, cpe_name);
+        return 2;
+    }
+
+    rc = acse_init_connection_request(cpe);
+    if (rc != 0)
+    {
+        ERROR("Conn Req failed: %r", rc);
+        return 3;
+    }
+    return 0;
+}
+
+static te_errno
+epc_parse_exec_cpe(const char *args)
+{
+    cpe_t *cpe;
+    if (strncmp(args, "list ", 5) == 0)
+        return epc_cpe_list(args + 5);
+    if (strncmp(args, "cr ", 3) == 0)
+        return epc_cpe_cr(args + 3);
+    return 0;
+}
+
+static te_errno
+epc_parse_exec_acs(const char *args)
+{
+    return 0;
+}
+
+static te_errno
+epc_parse_cli(const char *buf, size_t len)
+{
+    if (strncmp(buf, "cpe ", 4) == 0)
+        return epc_parse_exec_cpe(buf + 4);
+
+    if (strncmp(buf, "acs ", 4) == 0)
+        return epc_parse_exec_cpe(buf + 4);
+
+    return 0;
+}
+
+
 te_errno
 epc_after_poll(void *data, struct pollfd *pfd)
 {
     acse_fun_t   fun;
-    epc_data_t *epc = data;
+    epc_data_t  *epc = data;
+    te_errno     te_rc;
+
+    char buf[256];
 
     switch (epc->state)
     {
         case want_read:
             if (pfd->revents & POLLIN)
             {
-                ssize_t rc;
-
+                ssize_t rc; 
+#if 1
+                rc = read(epc->sock, buf, sizeof(buf));
+                if (rc == -1)
+                {
+                    ERROR("Failed to read EPC command: %s",
+                          strerror(errno));
+                    return TE_RC(TE_ACSE, TE_EFAIL);
+                }
+                if ((te_rc = epc_parse_cli(buf, rc)) != 0)
+                {
+                    ERROR("Failed to parse EPC command: %r", te_rc);
+#if 0
+                    return TE_RC(TE_ACSE, te_rc);
+#else
+                    return 0; /* do not stop main loop */
+#endif
+                }
+#else
                 rc = read(epc->sock, &fun, sizeof(fun));
                 if (rc == -1)
                 {
@@ -1010,6 +1123,7 @@ epc_after_poll(void *data, struct pollfd *pfd)
                         WARN("Failed to get call over EPC");
                         return TE_RC(TE_TA_UNIX, TE_EFAIL);
                 }
+#endif
             }
 
             break;
@@ -1050,12 +1164,15 @@ epc_destroy(void *data)
 }
 
 extern te_errno
-acse_epc_create(channel_t *channel, acse_params_t *params, int sock)
+acse_epc_create(acse_params_t *params, int sock)
 {
+    channel_t  *channel = malloc(sizeof(channel_t));
     epc_data_t *epc = channel->data = malloc(sizeof(*epc));
 
-    if (epc == NULL)
+    if (epc == NULL || channel == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    channel->data = epc;
 
     epc->sock            = sock;
     epc->params          = params;
@@ -1065,6 +1182,8 @@ acse_epc_create(channel_t *channel, acse_params_t *params, int sock)
     channel->before_poll  = &epc_before_poll;
     channel->after_poll   = &epc_after_poll;
     channel->destroy      = &epc_destroy;
+
+    acse_add_channel(channel);
 
     return 0;
 }
