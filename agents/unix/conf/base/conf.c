@@ -199,20 +199,8 @@ typedef struct pam_message const pam_message_t;
 #include <linux/sockios.h>
 #endif
 
-#ifdef USE_NETLINK
 #ifdef USE_LIBNETCONF
 #include <netconf.h>
-#else
-#include <sys/select.h>
-#include <asm/types.h>
-#include <linux/netlink.h>
-#include <fnmatch.h>
-#include <iproute/libnetlink.h>
-#include <iproute/rt_names.h>
-#include <iproute/utils.h>
-#include <iproute/ll_map.h>
-#include <iproute/ip_common.h>
-#endif
 #endif
 
 #ifndef ENABLE_IFCONFIG_STATS
@@ -227,11 +215,9 @@ typedef struct pam_message const pam_message_t;
 #define IF_NAMESIZE IFNAMSIZ
 #endif
 
-#if !defined(__linux__) && defined(USE_NETLINK)
+#if ((!defined(__linux__)) && (defined(USE_LIBNETCONF)))
 #error netlink can be used on Linux only
 #endif
-
-#undef NEIGH_USE_NETLINK
 
 #ifdef ENABLE_8021X
 extern te_errno ta_unix_conf_supplicant_init();
@@ -266,22 +252,8 @@ extern te_errno ta_unix_conf_iptables_init();
 extern te_errno ta_unix_conf_sys_init();
 extern te_errno ta_unix_conf_phy_init();
 
-#ifdef USE_NETLINK
 #ifdef USE_LIBNETCONF
 netconf_handle nh = NETCONF_HANDLE_INVALID;
-#else
-/** Netlink message storage */
-typedef struct agt_nlmsg_entry {
-    TAILQ_ENTRY(agt_nlmsg_entry) links;  /**< List links */
-    struct nlmsghdr *hdr; /**< Pointer to netlink message */
-} agt_nlmsg_entry;
-
-/** Head of netlink messages list */
-typedef TAILQ_HEAD(agt_nlmsg_list, agt_nlmsg_entry) agt_nlmsg_list;
-
-static void free_nlmsg_list(agt_nlmsg_list *list);
-
-#endif
 #endif
 
 /**
@@ -1008,26 +980,12 @@ rcf_ch_conf_root(void)
 {
     if (!init)
     {
-#ifdef USE_NETLINK
 #ifdef USE_LIBNETCONF
         if (netconf_open(&nh) != 0)
         {
             ERROR("Failed to open netconf session");
             return NULL;
         }
-#else
-        struct rtnl_handle rth;
-
-        memset(&rth, 0, sizeof(rth));
-        if (rtnl_open(&rth, 0) < 0)
-        {
-            ERROR("Failed to open a netlink socket");
-            return NULL;
-        }
-
-        ll_init_map(&rth);
-        rtnl_close(&rth);
-#endif
 #endif
 
         if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -1535,415 +1493,6 @@ prefix_check(const char *value, sa_family_t family, unsigned int *prefix)
 
     return 0;
 }
-
-#ifdef USE_NETLINK
-#if !defined(USE_LIBNETCONF)
-/**
- * Store answer from RTM_GETXXX in netlink message list.
- *
- * @param who  address pointer
- * @param msg  address info to be stored
- * @param arg  list for netlink messages, which should be filled in
- *
- * @retval  0  success
- * @retval -1  failure
- */
-static int
-store_nlmsg(const struct sockaddr_nl *who,
-            struct nlmsghdr *msg, void *arg)
-{
-    agt_nlmsg_list  *list = (agt_nlmsg_list *)arg;
-    agt_nlmsg_entry *entry;
-
-    /*
-     * Allocate contiguous piece of memory for "list entry" and
-     * netlink message:
-     * [List Entry: <hdr> ] [netlink message]
-     *                |      ^
-     *                |------|
-     */
-    entry = (agt_nlmsg_entry *)malloc(sizeof(*entry) + msg->nlmsg_len);
-    if (entry == NULL)
-        return -1;
-
-    entry->hdr = (struct nlmsghdr *)(entry + 1);
-    memcpy(entry->hdr, msg, msg->nlmsg_len);
-
-    TAILQ_INSERT_TAIL(list, entry, links);
-
-    return ll_remember_index(who, msg, NULL);
-}
-
-/**
- * Free nlmsg list.
- *
- * @param linfo   nlmsg list to be freed
- */
-static void
-free_nlmsg_list(agt_nlmsg_list *list)
-{
-    agt_nlmsg_entry *entry;
-
-    while ((entry = TAILQ_FIRST(list)) != NULL)
-    {
-        TAILQ_REMOVE(list, entry, links);
-        free(entry);
-    }
-}
-
-/**
- * Get link/protocol addresses information from all interfaces.
- *
- * @param family  AF_INET, AF_INET6
- * @param list    list to be filled in with address entries
- *
- * @return Status code
- */
-static te_errno
-ip_addr_get(int family, agt_nlmsg_list *list)
-{
-    struct rtnl_handle rth;
-
-    if (family != AF_INET && family != AF_INET6)
-    {
-        ERROR("%s: invalid address family (%d)", __FUNCTION__, family);
-        return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-    }
-
-    memset(&rth, 0, sizeof(rth));
-    if (rtnl_open(&rth, 0) < 0)
-    {
-        ERROR("%s: rtnl_open() failed, %s",
-              __FUNCTION__, strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    ll_init_map(&rth);
-
-    if (rtnl_wilddump_request(&rth, family, RTM_GETADDR) < 0)
-    {
-        ERROR("%s: Cannot send dump request, %s",
-              __FUNCTION__, strerror(errno));
-        rtnl_close(&rth);
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    if (rtnl_dump_filter(&rth, store_nlmsg, list, NULL, NULL) < 0)
-    {
-        ERROR("%s: Dump terminated, %s",
-              __FUNCTION__, strerror(errno));
-        rtnl_close(&rth);
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-    rtnl_close(&rth);
-    return 0;
-}
-
-/**
- * Find name of the interface with specified address and retrieve
- * attributes of the address.
- *
- * @param str_addr  Address in dotted notation
- * @param ifname    Name the interface or NULL
- * @param addr      Location for the address or NULL
- * @param prefix    Location for prefix or NULL
- * @param bcast     Location for broadcast address or NULL
- *
- * @return Pointer to interface name in ll_map static buffer or NULL.
- */
-static const char *
-nl_find_net_addr(const char *str_addr, const char *ifname,
-                 gen_ip_address *addr, unsigned int *prefix,
-                 gen_ip_address *bcast)
-{
-    gen_ip_address     ip_addr;
-    agt_nlmsg_list     addr_list;
-    agt_nlmsg_entry   *a;
-    struct nlmsghdr   *n = NULL;
-    struct ifaddrmsg  *ifa = NULL;
-    struct rtattr     *rta_tb[IFA_MAX + 1];
-    int                ifindex = 0;
-    sa_family_t        family;
-    int                rc;
-
-
-    TAILQ_INIT(&addr_list);
-
-    /* If address contains a colon, it is IPv6 address */
-    family = str_addr_family(str_addr);
-
-    if (bcast != NULL)
-        memset(bcast, 0, sizeof(*bcast));
-
-    if (ifname != NULL && (strlen(ifname) >= IF_NAMESIZE))
-    {
-        ERROR("Interface name '%s' too long", ifname);
-        return NULL;
-    }
-
-    if ((rc = inet_pton(family, str_addr, &ip_addr)) <= 0)
-    {
-        ERROR("%s(): inet_pton() failed for address '%s': %s",
-              __FUNCTION__, str_addr,
-              (rc < 0) ?
-              "Address family not supported" : "Incorrect address");
-        return NULL;
-    }
-
-    if (ip_addr_get(family, &addr_list) != 0)
-    {
-        ERROR("%s(): Cannot get addresses list", __FUNCTION__);
-        return NULL;
-    }
-
-    TAILQ_FOREACH(a, &addr_list, links)
-    {
-        n = a->hdr;
-        ifa = NLMSG_DATA(n);
-
-        if (n->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
-        {
-            ERROR("%s(): Bad netlink message header length", __FUNCTION__);
-            free_nlmsg_list(&addr_list);
-            return NULL;
-        }
-
-        memset(rta_tb, 0, sizeof(rta_tb));
-        parse_rtattr(rta_tb, IFA_MAX, IFA_RTA(ifa),
-                     n->nlmsg_len - NLMSG_LENGTH(sizeof(*ifa)));
-        if (!rta_tb[IFA_LOCAL])
-            rta_tb[IFA_LOCAL] = rta_tb[IFA_ADDRESS];
-        if (!rta_tb[IFA_ADDRESS])
-             rta_tb[IFA_ADDRESS] = rta_tb[IFA_LOCAL];
-        if (rta_tb[IFA_LOCAL])
-        {
-            if (((family == AF_INET) &&
-                 (*(uint32_t *)(RTA_DATA(rta_tb[IFA_LOCAL])) ==
-                 ip_addr.ip4_addr.s_addr)) ||
-                 ((family == AF_INET6) &&
-                  (memcmp(RTA_DATA(rta_tb[IFA_LOCAL]),
-                         &ip_addr.ip6_addr, sizeof(struct in6_addr)) == 0)))
-            {
-                if (ifname == NULL ||
-                    ((int)if_nametoindex(ifname) == ifa->ifa_index))
-                    break;
-
-                WARN("Interfaces '%s' and '%s' have the same address '%s'",
-                     ifname, ll_index_to_name(ifa->ifa_index), str_addr);
-            }
-        }
-    }
-    /* If address was obtained, write it to the given locations */
-    if (a != NULL)
-    {
-        if (prefix != NULL)
-            *prefix = ifa->ifa_prefixlen;
-        ifindex = ifa->ifa_index;
-        if (family == AF_INET)
-        {
-            if (addr != NULL)
-                addr->ip4_addr = ip_addr.ip4_addr;
-            if (bcast != NULL)
-            {
-                bcast->ip4_addr.s_addr = (rta_tb[IFA_BROADCAST]) ?
-                    *(uint32_t *)RTA_DATA(rta_tb[IFA_BROADCAST]) :
-                    htonl(INADDR_BROADCAST);
-            }
-        }
-        else
-        {
-            if (addr != NULL)
-                memcpy(&addr->ip6_addr, &ip_addr.ip6_addr,
-                       sizeof(struct in6_addr));
-        }
-    }
-
-    free_nlmsg_list(&addr_list);
-
-    return (a == NULL) ? NULL :
-           (ifname != NULL) ? ifname :
-                              (const char *)ll_index_to_name(ifindex);
-}
-
-
-/**
- * Add/delete AF_INET/AF_INET6 address.
- *
- * @param cmd           Command (see enum net_addr_ops)
- * @param ifname        Interface name
- * @param family        Address family (AF_INET or AF_INET6)
- * @param addr          Address
- * @param prefix        Prefix to set or 0
- * @param bcast         Broadcast to set or 0
- *
- * @return              Status code
- */
-static te_errno
-nl_ip_addr_add_del(int cmd, const char *ifname,
-                   int family, gen_ip_address *addr,
-                   unsigned int prefix, gen_ip_address *bcast)
-{
-    te_errno            rc;
-    struct rtnl_handle  rth;
-    struct {
-        struct nlmsghdr  n;
-        struct ifaddrmsg ifa;
-        char             buf[256];
-    } req;
-
-    inet_prefix  lcl;
-    inet_prefix  brd;
-
-    char         addrstr[INET6_ADDRSTRLEN];
-
-#endif /* !USE_LIBNETCONF */
-#define AF_INET_DEFAULT_BYTELEN  (sizeof(struct in_addr))
-#define AF_INET_DEFAULT_BITLEN   (AF_INET_DEFAULT_BYTELEN << 3)
-#define AF_INET6_DEFAULT_BYTELEN (sizeof(struct in6_addr))
-#define AF_INET6_DEFAULT_BITLEN  (AF_INET6_DEFAULT_BYTELEN << 3)
-#if !defined(USE_LIBNETCONF)
-
-    ENTRY("cmd=%d ifname=%s addr=0x%x prefix=%u bcast=%s",
-          cmd, ifname, addr, prefix, bcast == NULL ? "<null>" :
-          inet_ntop(family, bcast, addrstr, INET6_ADDRSTRLEN));
-
-    memset(&req, 0, sizeof(req));
-    memset(&lcl, 0, sizeof(lcl));
-    memset(&brd, 0, sizeof(brd));
-    memset(&rth, 0, sizeof(rth));
-
-    lcl.family = family;
-    if (family == AF_INET)
-    {
-        lcl.bytelen = AF_INET_DEFAULT_BYTELEN;
-        lcl.bitlen = prefix;
-    }
-    else
-    {
-        assert(family == AF_INET6);
-        lcl.bytelen = AF_INET6_DEFAULT_BYTELEN;
-        lcl.bitlen = prefix;
-    }
-    memcpy(lcl.data, addr, lcl.bytelen);
-
-    req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
-    req.n.nlmsg_flags = NLM_F_REQUEST;
-    req.n.nlmsg_type = cmd;
-    req.ifa.ifa_family = family;
-    req.ifa.ifa_prefixlen = lcl.bitlen;
-
-    addattr_l(&req.n, sizeof(req), IFA_LOCAL, &lcl.data, lcl.bytelen);
-
-    if (bcast != 0)
-    {
-        brd.family = family;
-        brd.bytelen = lcl.bytelen;
-        brd.bitlen = lcl.bitlen;
-        memcpy(brd.data, bcast, brd.bytelen);
-        addattr_l(&req.n, sizeof(req), IFA_BROADCAST,
-                  &brd.data, brd.bytelen);
-    }
-
-    memset(&rth, 0, sizeof(rth));
-    if (rtnl_open(&rth, 0) < 0)
-    {
-        rc = TE_OS_RC(TE_TA_UNIX, errno);
-        ERROR("%s(): Cannot open netlink socket", __FUNCTION__);
-        return rc;
-    }
-
-    ll_init_map(&rth);
-    req.ifa.ifa_index = if_nametoindex(ifname);
-
-    if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
-    {
-        rc = TE_OS_RC(TE_TA_UNIX, errno);
-        ERROR("%s(): rtnl_talk() failed", __FUNCTION__);
-        rtnl_close(&rth);
-        return rc;
-    }
-    rtnl_close(&rth);
-
-    EXIT("OK");
-
-    return 0;
-}
-
-
-/** Operations over network addresses */
-enum net_addr_ops {
-    NET_ADDR_ADD,       /**< Add a new address */
-    NET_ADDR_DELETE,    /**< Delete an existing address */
-    NET_ADDR_MODIFY     /**< Modify an existing address */
-};
-
-/**
- * Modify AF_INET or AF_INET6 address.
- *
- * @param cmd           Command (see enum net_addr_ops)
- * @param ifname        Interface name
- * @param addr          Address as string
- * @param new_prefix    Pointer to the prefix to set or NULL
- * @param new_bcast     Pointer to the broadcast address to set or NULL
- *
- * @return              Status code
- */
-static te_errno
-nl_ip_addr_modify(enum net_addr_ops cmd,
-                   const char *ifname, const char *addr,
-                   unsigned int *new_prefix, gen_ip_address *new_bcast)
-{
-    unsigned int    prefix = 0;
-    gen_ip_address  bcast;
-    te_errno        rc = 0;
-    sa_family_t     family;
-    gen_ip_address  ip_addr;
-
-    /* If address contains ':', it is IPv6 address */
-    family = str_addr_family(addr);
-
-    if (cmd == NET_ADDR_ADD)
-    {
-        if (inet_pton(family, addr, &ip_addr) <= 0)
-        {
-            ERROR("Failed to convert address '%s' from string", addr);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-    }
-    else
-    {
-        if (nl_find_net_addr(addr, ifname, &ip_addr,
-                             &prefix, &bcast) == NULL)
-        {
-            ERROR("Address '%s' on interface '%s' not found", addr, ifname);
-            return TE_RC(TE_TA_UNIX, TE_ENOENT);
-        }
-    }
-
-    if (new_prefix != NULL)
-        prefix = *new_prefix;
-    /* Broadcast is supported in IPv4 only */
-    if ((family == AF_INET) && (new_bcast != NULL))
-        bcast = *new_bcast;
-
-    if (cmd != NET_ADDR_ADD)
-    {
-        rc = nl_ip_addr_add_del(RTM_DELADDR, ifname, family,
-                                &ip_addr, prefix, 0);
-    }
-
-    if (rc == 0 && cmd != NET_ADDR_DELETE)
-    {
-        rc = nl_ip_addr_add_del(RTM_NEWADDR, ifname, family,
-                                &ip_addr, prefix, &bcast);
-    }
-
-    return rc;
-}
-
-#endif
-#endif /* USE_NETLINK */
-
 
 #ifdef USE_IOCTL
 te_errno
@@ -3383,7 +2932,13 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 #endif
-#ifdef USE_NETLINK
+
+#ifdef USE_LIBNETCONF
+#define AF_INET_DEFAULT_BYTELEN  (sizeof(struct in_addr))
+#define AF_INET_DEFAULT_BITLEN   (AF_INET_DEFAULT_BYTELEN << 3)
+#define AF_INET6_DEFAULT_BYTELEN (sizeof(struct in6_addr))
+#define AF_INET6_DEFAULT_BITLEN  (AF_INET6_DEFAULT_BYTELEN << 3)
+
 static te_errno
 net_addr_add(unsigned int gid, const char *oid, const char *value,
              const char *ifname, const char *addr)
@@ -3447,7 +3002,6 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         broadcast.ip4_addr.s_addr = (~mask) | ip_addr.ip4_addr.s_addr;
     }
 
-#if defined(USE_LIBNETCONF)
     {
         unsigned int      ifindex;
         unsigned int      addrlen;
@@ -3513,28 +3067,8 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
         return 0;
     }
-#else
-    {
-        const char *name;
-
-        /*
-         * Check that address has not been assigned to any
-         * interface yet.
-         */
-        name = nl_find_net_addr(addr, NULL, &ip_addr, NULL, NULL);
-        if (name != NULL)
-        {
-            ERROR("%s(): Address '%s' already exists on interface '%s'",
-                  __FUNCTION__, addr, name);
-            return TE_RC(TE_TA_UNIX, TE_EEXIST);
-        }
-
-        return nl_ip_addr_modify(NET_ADDR_ADD, ifname, addr,
-                                  &prefix, &broadcast);
-    }
-#endif
 }
-#endif
+#endif /* USE_LIBNETCONF */
 
 #ifdef USE_IOCTL
 /**
@@ -3619,7 +3153,6 @@ net_addr_del(unsigned int gid, const char *oid,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-#if defined(USE_NETLINK)
 #if defined(USE_LIBNETCONF)
     {
         sa_family_t             family;
@@ -3695,9 +3228,6 @@ net_addr_del(unsigned int gid, const char *oid,
 
         return 0;
     }
-#else
-    return nl_ip_addr_modify(NET_ADDR_DELETE, ifname, addr, NULL, NULL);
-#endif
 #elif defined(USE_IOCTL)
     {
         sa_family_t  family = str_addr_family(addr);
@@ -3744,6 +3274,7 @@ net_addr_del(unsigned int gid, const char *oid,
 
 #define ADDR_LIST_BULK      (INET6_ADDRSTRLEN * 4)
 
+#ifdef USE_LIBNETCONF
 /**
  * Get instance list for object "agent/interface/net_addr".
  *
@@ -3756,13 +3287,9 @@ net_addr_del(unsigned int gid, const char *oid,
  * @retval TE_ENOENT        no such instance
  * @retval TE_ENOMEM        cannot allocate memory
  */
-
-
-#ifdef USE_NETLINK
 static te_errno
 net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
-#if defined(USE_LIBNETCONF)
 {
     te_errno            rc;
     unsigned int        ifindex;
@@ -3847,138 +3374,6 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 
     return 0;
 }
-#else
-{
-    int               len = 0;
-    te_errno          rc;
-    agt_nlmsg_list    addr_list;
-    agt_nlmsg_entry **first_inet6_addr;
-    agt_nlmsg_entry  *a;
-    sa_family_t       cur_family;
-    char             *cur_ptr;
-    int               ifindex;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    TAILQ_INIT(&addr_list);
-
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-    {
-        /* Alias does not exist from Configurator point of view */
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-
-    ifindex = if_nametoindex(ifname);
-    if (ifindex <= 0)
-    {
-        ERROR("Device \"%s\" does not exist", ifname);
-        return TE_RC(TE_TA_UNIX, TE_ENODEV);
-    }
-
-    if ((rc = ip_addr_get(AF_INET, &addr_list)) != 0)
-    {
-        ERROR("%s: ip_addr_get() for IPv4 failed", __FUNCTION__);
-        return rc;
-    }
-    /*
-     * Keep in mind "next" field of the last entry
-     * in the list of IPv4 addresses.
-     */
-    first_inet6_addr = addr_list.tqh_last;
-
-    if ((rc = ip_addr_get(AF_INET6, &addr_list)) != 0)
-    {
-        free_nlmsg_list(&addr_list);
-        ERROR("%s: ip_addr_get() for IPv6 failed", __FUNCTION__);
-        return rc;
-    }
-
-    if ((*list = strdup("")) == NULL)
-    {
-        free_nlmsg_list(&addr_list);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
-    cur_family = AF_INET;
-    cur_ptr = *list;
-    TAILQ_FOREACH(a, &addr_list, links)
-    {
-        struct nlmsghdr  *hdr = a->hdr;
-        struct ifaddrmsg *ifa = NLMSG_DATA(hdr);
-        struct rtattr    *rta_tb[IFA_MAX + 1];
-
-        /* IPv4 addresses are all printed, start printing IPv6 addresses */
-        if (a == *first_inet6_addr)
-            cur_family = AF_INET6;
-
-        if (hdr->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
-        {
-            ERROR("%s(): bad netlink message hdr length", __FUNCTION__);
-            free(*list);
-            free_nlmsg_list(&addr_list);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-
-        if (ifa->ifa_index != ifindex)
-            continue;
-
-        /*
-         * Sometimes netlink does not take into account family type
-         * specified in request, so check it here explicitly.
-         */
-        if (ifa->ifa_family != cur_family)
-            continue;
-
-        memset(rta_tb, 0, sizeof(rta_tb));
-        parse_rtattr(rta_tb, IFA_MAX, IFA_RTA(ifa),
-                     hdr->nlmsg_len - NLMSG_LENGTH(sizeof(*ifa)));
-
-        if (!rta_tb[IFA_LOCAL])
-            rta_tb[IFA_LOCAL] = rta_tb[IFA_ADDRESS];
-        if (!rta_tb[IFA_ADDRESS])
-            rta_tb[IFA_ADDRESS] = rta_tb[IFA_LOCAL];
-
-        assert(cur_ptr >= *list);
-        assert(cur_ptr - (*list) <= len);
-        /*
-         * We need space at least for one IPv6 address and
-         * one space char.
-         */
-        if ((*list + len - cur_ptr) <= (INET6_ADDRSTRLEN + 1))
-        {
-            char *tmp;
-            uint32_t str_len = cur_ptr - *list;
-
-            len += ADDR_LIST_BULK;
-            if ((tmp = (char *)realloc(*list, len)) == NULL)
-            {
-                ERROR("%s(): realloc() failed", __FUNCTION__);
-                free(*list);
-                free_nlmsg_list(&addr_list);
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            }
-            *list = tmp;
-            cur_ptr = *list + str_len;
-        }
-
-        if (inet_ntop(cur_family, RTA_DATA(rta_tb[IFA_LOCAL]),
-                      cur_ptr, INET6_ADDRSTRLEN) == NULL)
-        {
-            ERROR("%s(): Cannot save network address", __FUNCTION__);
-            free(*list);
-            free_nlmsg_list(&addr_list);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-        cur_ptr += strlen(cur_ptr);
-        snprintf(cur_ptr, (*list + len - cur_ptr), " ");
-        cur_ptr += strlen(cur_ptr);
-    }
-
-    free_nlmsg_list(&addr_list);
-    return 0;
-}
-#endif
 
 #elif USE_IOCTL
 
@@ -4159,7 +3554,6 @@ prefix_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-#if defined(USE_NETLINK)
 #if defined(USE_LIBNETCONF)
     {
         te_errno                rc;
@@ -4225,14 +3619,6 @@ prefix_get(unsigned int gid, const char *oid, char *value,
             return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
     }
-#else
-    if (nl_find_net_addr(addr, ifname, NULL, &prefix, NULL) == NULL)
-    {
-        ERROR("Address '%s' on interface '%s' to get prefix not found",
-              addr, ifname);
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
-#endif
 #elif defined(USE_IOCTL)
     strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
     if (strchr(addr, ':') == NULL)
@@ -4311,7 +3697,6 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
     if (rc != 0)
         return rc;
 
-#if defined(USE_NETLINK)
 #if defined(USE_LIBNETCONF)
     {
         te_errno                rc;
@@ -4405,9 +3790,6 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
 
         return 0;
     }
-#else
-    return nl_ip_addr_modify(NET_ADDR_MODIFY, ifname, addr, &prefix, NULL);
-#endif
 #elif defined(USE_IOCTL)
     {
         const char *name;
@@ -4456,7 +3838,6 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
 
     memset(&bcast, 0, sizeof(bcast));
 
-#if defined(USE_NETLINK)
 #if defined(USE_LIBNETCONF)
     {
         te_errno                rc;
@@ -4525,14 +3906,6 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
             return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
     }
-#else
-    if (nl_find_net_addr(addr, ifname, NULL, NULL, &bcast) == NULL)
-    {
-        ERROR("Address '%s' on interface '%s' to get broadcast address "
-              "not found", addr, ifname);
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
-#endif
 #elif defined(USE_IOCTL)
     strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
     if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
@@ -4610,7 +3983,6 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-#if defined(USE_NETLINK)
 #if defined(USE_LIBNETCONF)
     {
         te_errno                rc;
@@ -4699,9 +4071,6 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
 
         return 0;
     }
-#else
-    return nl_ip_addr_modify(NET_ADDR_MODIFY, ifname, addr, NULL, &bcast);
-#endif
 #elif defined(USE_IOCTL)
     {
         const char *name;
@@ -4725,7 +4094,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
 }
 
 
-#if defined(USE_NETLINK) || defined(HAVE_SYS_DLPI_H)
+#if ((defined(USE_LIBNETCONF)) || (defined(HAVE_SYS_DLPI_H)))
 /*
  * Next functions are pulled out from iproute internals
  * to be accessible here and renamed.
@@ -5064,7 +4433,6 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
         return 0;
     }
 
-#ifdef USE_NETLINK
 #if defined(USE_LIBNETCONF)
     {
         unsigned int            ifindex;
@@ -5109,105 +4477,6 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
 
         return 0;
     }
-#else
-{
-    struct rtnl_handle  rth;
-    int                 ifindex;
-    agt_nlmsg_list      info_list;
-    agt_nlmsg_entry    *a_aux;
-    struct nlmsghdr    *n_aux = NULL;
-    struct ifinfomsg   *ifi = NULL;
-    struct rtattr      *tb[IFLA_MAX+1];
-    int                 len;
-
-
-    TAILQ_INIT(&info_list);
-
-    memset(&rth, 0, sizeof(rth));
-    if (rtnl_open(&rth, 0) < 0)
-    {
-        ERROR("%s: rtnl_open() failed", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    ll_init_map(&rth);
-
-    ifindex = if_nametoindex(ifname);
-    if (ifindex <= 0)
-    {
-        ERROR("%s: Device \"%s\" does not exist.\n",
-              __FUNCTION__, ifname);
-        rc = TE_RC(TE_TA_UNIX, TE_ENODEV);
-        goto exit;
-    }
-
-    if (rtnl_wilddump_request(&rth, AF_PACKET, RTM_GETLINK) < 0)
-    {
-        ERROR("%s: Cannot send dump request", __FUNCTION__);
-        rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        goto exit;
-    }
-
-    if (rtnl_dump_filter(&rth, store_nlmsg, &info_list, NULL, NULL) < 0)
-    {
-        ERROR("%s: Dump terminated ", __FUNCTION__);
-        rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        goto exit;
-    }
-
-    TAILQ_FOREACH(a_aux, &info_list, links)
-    {
-        n_aux = a_aux->hdr;
-        len = n_aux->nlmsg_len;
-        ifi = NLMSG_DATA(n_aux);
-
-        if (n_aux->nlmsg_type != RTM_NEWLINK &&
-            n_aux->nlmsg_type != RTM_DELLINK)
-            continue;
-
-        if (ifi->ifi_index != ifindex)
-            continue;
-
-        len -= NLMSG_LENGTH(sizeof(*ifi));
-        if (len < 0)
-            continue;
-
-        if (ifi->ifi_index != ifindex)
-            continue;
-
-        memset(tb, 0, sizeof(tb));
-        parse_rtattr(tb, IFLA_MAX, IFLA_RTA(ifi), len);
-        if (tb[IFLA_IFNAME] == NULL)
-        {
-            ERROR("%s: BUG! For ifindex %d ifname is not "
-                  "set into returned info", __FUNCTION__, ifindex);
-            rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
-            goto exit;
-        }
-
-        if (tb[IFLA_BROADCAST])
-        {
-            link_addr_n2a(RTA_DATA(tb[IFLA_BROADCAST]),
-                          RTA_PAYLOAD(tb[IFLA_BROADCAST]),
-                          value, RCF_MAX_VAL);
-#ifdef LOCAL_FUNC_DEBUGGING
-            ERROR("IGORV: %s: tb[IFLA_BROADCAST] is TRUE - "
-                  "%s: %s", __FUNCTION__, ifname, buf);
-#endif
-            /* Success */
-            goto exit;
-        }
-        break;
-    }
-    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-exit:
-    rtnl_close(&rth);
-    free_nlmsg_list(&info_list);
-
-    return rc;
-}
-#endif
 #elif HAVE_SYS_DLPI_H
     do {
         size_t  len = sizeof(buf);
@@ -5785,95 +5054,10 @@ promisc_set(unsigned int gid, const char *oid, const char *value,
 }
 
 
-#ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
-#if !defined(USE_LIBNETCONF)
-/** Find neighbour entry and return its parameters */
-/**< User data for neigh_find_cb() callback function */
-typedef struct {
-    char      ifname[IFNAMSIZ];     /**< Interface name */
-    char     *addr;                 /**< IP address in human notation */
-    te_bool   dynamic;              /**< Dynamic or static neighbour */
-    char     *mac_addr;             /**< MAC address (OUT) */
-    uint16_t  state;                /**< Neighbour state (OUT) */
-    te_bool   found;                /**< Neighbour already found */
-} neigh_find_cb_param;
-
-int
-neigh_find_cb(const struct sockaddr_nl *who, struct nlmsghdr *n,
-              void *arg)
-{
-    neigh_find_cb_param *p = (neigh_find_cb_param *)arg;
-    sa_family_t          af = str_addr_family(p->addr);
-    struct ndmsg        *r = NLMSG_DATA(n);
-    struct rtattr       *tb[NDA_MAX+1] = {NULL,};
-    uint8_t              addr_buf[sizeof(struct in6_addr)];
-
-    /* One item was already found, skip others */
-    if (p->found)
-    {
-        return 0;
-    }
-
-    /* Neighbour from alien interface */
-    if ((int)if_nametoindex(p->ifname) != r->ndm_ifindex)
-    {
-        return 0;
-    }
-
-    parse_rtattr(tb, NDA_MAX, NDA_RTA(r), n->nlmsg_len -
-                 NLMSG_LENGTH(sizeof(*r)));
-
-    if (inet_pton(af, p->addr, addr_buf) < 0)
-    {
-        return 0;
-    }
-
-    /* Check that destination is one we look for */
-    if (tb[NDA_DST] == NULL ||
-        memcmp(RTA_DATA(tb[NDA_DST]), addr_buf, (af == AF_INET)?
-               sizeof(struct in_addr) : sizeof(struct in6_addr)) != 0)
-        return 0;
-
-    /* Check neighbour state */
-    if (r->ndm_state == NUD_NONE || r->ndm_state & NUD_FAILED)
-        return 0;
-
-    if (p->dynamic == !!(r->ndm_state & NUD_PERMANENT))
-        return 0;
-
-    if (tb[NDA_LLADDR] == NULL)
-        return 0;
-
-    /* Save MAC address */
-    if (p->mac_addr != NULL)
-    {
-        int      i;
-        char    *s = p->mac_addr;
-
-        for (i = 0; i < 6; i++)
-        {
-            sprintf(s, "%02x:", ((uint8_t *)RTA_DATA(tb[NDA_LLADDR]))[i]);
-            s += strlen(s);
-        }
-        *(s - 1) = '\0';
-    }
-
-    /* Save neighbour state */
-    p->state = r->ndm_state;
-    p->found = TRUE;
-
-    UNUSED(who);
-
-    return 0;
-}
-#endif
-#endif
-
 static te_errno
 neigh_find(const char *oid, const char *ifname, const char *addr,
            char *mac_p, unsigned int *state_p)
 {
-#ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
 #if defined(USE_LIBNETCONF)
     te_errno            rc;
     sa_family_t         family;
@@ -5954,48 +5138,6 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     return 0;
-#else
-    struct rtnl_handle   rth;
-    neigh_find_cb_param  user_data;
-    te_errno             rc;
-
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
-    memset(&rth, 0, sizeof(rth));
-    if (rtnl_open(&rth, 0) < 0)
-    {
-        ERROR("Failed to open a netlink socket");
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-    ll_init_map(&rth);
-
-    memset(&user_data, 0, sizeof(user_data));
-
-    strcpy(user_data.ifname, ifname);
-    user_data.addr = (char *)addr;
-    user_data.dynamic = strstr(oid, "dynamic") != NULL;
-    user_data.mac_addr = mac_p;
-    user_data.found = FALSE;
-
-    rtnl_wilddump_request(&rth, str_addr_family(addr), RTM_GETNEIGH);
-    rtnl_dump_filter(&rth, neigh_find_cb, &user_data, NULL, NULL);
-
-    if (!user_data.found)
-    {
-        rtnl_close(&rth);
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
-
-    if (state_p != NULL)
-    {
-        *state_p = user_data.state;
-    }
-
-    rtnl_close(&rth);
-    return 0;
-
-#endif
 #else
     UNUSED(oid);
     UNUSED(ifname);
@@ -6132,108 +5274,6 @@ neigh_set(unsigned int gid, const char *oid, const char *value,
     return neigh_add(gid, oid, value, ifname, addr);
 }
 
-#ifdef NEIGH_USE_NETLINK
-#if !defined(USE_LIBNETCONF)
-/** Add or delete a neighbour entry.
- *
- * @param oid           Object instance identifier
- * @param addr          Destination IP address in human notation.
- * @param ifname        Interface name
- * @param value         Entry value (raw MAC address)
- * @param cmd           RTM_NEWNEIGH to add a neighbour,
- *                      RTM_DELNEIGH to delete it.
- *
- * @return Status code
- */
-static te_errno
-neigh_change(const char *oid, const char *addr, const char *ifname,
-             uint8_t *value, int cmd)
-{
-    struct rtnl_handle rth;
-    struct {
-        struct nlmsghdr         n;
-        struct ndmsg            ndm;
-        char                    buf[256];
-    } req;
-    inet_prefix dst;
-
-    ENTRY("oid=%s addr=%s ifname=%s value=%x:%x:%x:%x:%x:%x cmd=%d",
-          oid, addr, ifname, value[0], value[1], value[2], value[3],
-          value[4], value[5], cmd);
-
-    /* TODO: check that address corresponds to interface */
-
-    memset(&req, 0, sizeof(req));
-    req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ndmsg));
-    req.n.nlmsg_flags = NLM_F_REQUEST;
-
-    if (cmd == RTM_NEWNEIGH)
-    {
-        req.n.nlmsg_flags |= (NLM_F_CREATE | NLM_F_REPLACE);
-    }
-
-    req.n.nlmsg_type = cmd;
-
-    dst.family = str_addr_family(addr);
-    dst.bytelen = (dst.family == AF_INET) ?
-                  sizeof(struct in_addr) : sizeof(struct in6_addr);
-    dst.bitlen = dst.bytelen << 3;
-    if (inet_pton(dst.family, addr, dst.data) < 0)
-    {
-        ERROR("Invalid neighbour address (%s)", addr);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    req.ndm.ndm_family = dst.family;
-
-    if (cmd == RTM_NEWNEIGH)
-    {
-        if (strstr(oid, "dynamic") == NULL)
-            req.ndm.ndm_state = NUD_PERMANENT;
-        else
-            req.ndm.ndm_state = NUD_REACHABLE;
-    }
-    else
-    {
-        req.ndm.ndm_state = NUD_NONE;
-    }
-
-    addattr_l(&req.n, sizeof(req), NDA_DST, &dst.data, dst.bytelen);
-
-    if (value != NULL)
-    {
-        addattr_l(&req.n, sizeof(req), NDA_LLADDR, value, ETHER_ADDR_LEN);
-    }
-
-    if (rtnl_open(&rth, 0) < 0)
-    {
-        ERROR("Failed to open Netlink socket");
-        return TE_RC(TE_TA_UNIX, errno);
-    }
-
-    ll_init_map(&rth);
-
-    if ((req.ndm.ndm_ifindex = if_nametoindex(ifname)) == 0)
-    {
-        rtnl_close(&rth);
-        ERROR("No device (%s) found", ifname);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
-    {
-        rtnl_close(&rth);
-        ERROR("Failed to send the Netlink message");
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    rtnl_close(&rth);
-
-    return 0;
-}
-#endif
-#endif
-
 /**
  * Add a new neighbour entry.
  *
@@ -6249,7 +5289,7 @@ static te_errno
 neigh_add(unsigned int gid, const char *oid, const char *value,
           const char *ifname, const char *addr)
 {
-#if defined(USE_NETLINK) && defined(USE_LIBNETCONF)
+#if defined(USE_LIBNETCONF)
     te_errno            rc;
     te_bool             dynamic;
     sa_family_t         family;
@@ -6312,10 +5352,8 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
 
     return 0;
 #else
-#ifndef NEIGH_USE_NETLINK
     struct arpreq arp_req;
     int           i;
-#endif
 
     int           int_addr[ETHER_ADDR_LEN];
     int           res;
@@ -6329,23 +5367,6 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     if (res != 6)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-#ifdef NEIGH_USE_NETLINK
-    if (value != NULL)
-    {
-        unsigned int    i;
-        uint8_t         raw_addr[ETHER_ADDR_LEN];
-
-        for (i = 0; i < ETHER_ADDR_LEN; i++)
-        {
-            raw_addr[i] = (uint8_t)int_addr[i];
-        }
-        return neigh_change(oid, addr, ifname, raw_addr, RTM_NEWNEIGH);
-    }
-    else
-    {
-        return neigh_change(oid, addr, ifname, NULL, RTM_NEWNEIGH);
-    }
-#else /* USE_IOCTL */
     /* TODO: check that address corresponds to interface */
     UNUSED(ifname);
 
@@ -6381,7 +5402,6 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
 #endif
-#endif
 }
 
 /**
@@ -6410,7 +5430,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
         }
         return rc;
     }
-#if defined(USE_NETLINK) && defined(USE_LIBNETCONF)
+#if defined(USE_LIBNETCONF)
     {
         sa_family_t         family;
         unsigned int        ifindex;
@@ -6453,9 +5473,6 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 
         return 0;
     }
-#else
-#ifdef NEIGH_USE_NETLINK
-    return neigh_change(oid, addr, ifname, NULL, RTM_DELNEIGH);
 #else /* USE_IOCTL */
     {
         struct arpreq arp_req;
@@ -6492,10 +5509,8 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 #endif
     }
 #endif
-#endif
 }
 
-#ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
 #if defined(USE_LIBNETCONF)
 static te_errno
 ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
@@ -6606,97 +5621,6 @@ ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
 
     return 0;
 }
-#else
-typedef struct {
-    te_bool dynamic;
-    char    ifname[IFNAMSIZ];
-    char   *list;
-} neigh_print_cb_param;
-
-int
-neigh_print_cb(const struct sockaddr_nl *who, struct nlmsghdr *n,
-               void *arg)
-{
-    neigh_print_cb_param *p = (neigh_print_cb_param *)arg;
-
-    struct ndmsg   *r = NLMSG_DATA(n);
-    struct rtattr  *tb[NDA_MAX+1] = {NULL,};
-    char           *s = p->list + strlen(p->list);
-
-    UNUSED(who);
-
-    if ((int)if_nametoindex(p->ifname) != r->ndm_ifindex)
-        return 0;
-
-    if (r->ndm_state == NUD_NONE || (r->ndm_state & NUD_INCOMPLETE) != 0)
-        return 0;
-
-    if (!!(r->ndm_state & NUD_PERMANENT) == p->dynamic)
-        return 0;
-
-    parse_rtattr(tb, NDA_MAX, NDA_RTA(r), n->nlmsg_len -
-                 NLMSG_LENGTH(sizeof(*r)));
-
-    if (tb[NDA_LLADDR] == NULL)
-        return 0;
-
-    if (tb[NDA_DST] == NULL ||
-        inet_ntop(r->ndm_family, RTA_DATA(tb[NDA_DST]), s,
-                  INET6_ADDRSTRLEN) == NULL)
-        return 0;
-
-    s += strlen(s);
-    sprintf(s, " ");
-
-    return 0;
-}
-
-static te_errno
-ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
-                        char **list)
-{
-    struct rtnl_handle   rth;
-    neigh_print_cb_param user_data;
-
-    buf[0] = '\0';
-
-    if (strcmp(ifname, "lo") == 0)
-        return 0;
-
-    memset(&rth, 0, sizeof(rth));
-    if (rtnl_open(&rth, 0) < 0)
-    {
-        ERROR("Failed to open a netlink socket");
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-    ll_init_map(&rth);
-
-    strcpy(user_data.ifname, ifname);
-    user_data.dynamic = !is_static;
-    user_data.list = buf;
-
-    rtnl_wilddump_request(&rth, AF_INET, RTM_GETNEIGH);
-    rtnl_dump_filter(&rth, neigh_print_cb, &user_data, NULL, NULL);
-
-#ifdef NEIGH_USE_NETLINK
-    /*
-     * We cannot list IPv6 entries because we'll not be able
-     * to delete them
-     */
-    user_data.list = buf + strlen(buf);
-
-    rtnl_wilddump_request(&rth, AF_INET6, RTM_GETNEIGH);
-    rtnl_dump_filter(&rth, neigh_print_cb, &user_data, NULL, NULL);
-#endif
-
-    rtnl_close(&rth);
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
-}
-#endif
 #elif !HAVE_INET_MIB2_H
 static te_errno
 ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,

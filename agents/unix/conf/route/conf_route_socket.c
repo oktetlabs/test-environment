@@ -1452,6 +1452,6 @@ ta_unix_conf_route_list(char **list)
     return 0;
 }
 
-#endif /* HAVE_SYS_SYSCTL_H && !defined(USE_NETLINK) */
+#endif /* HAVE_SYS_SYSCTL_H */
 
 #endif /* USE_ROUTE_SOCKET */

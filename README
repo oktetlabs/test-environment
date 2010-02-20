@@ -38,7 +38,6 @@ We've tested engine on Linux only.
 Unix Test Agent:
 
 - expect and expect-dev (for TAD CLI only) [expect, expect-dev]
-- libnetlink + iproute/ headers [iproute, iproute-dev]
 - flex >= 2.5.31 from sourceforge; flex 2.5.4a from gnu.org does not work
 - libexpat
 - libpcap0.8-dev (for TAD PCAP only) [libpcap0.8-dev]
@@ -73,8 +72,7 @@ Supported OSes:
 Linux:
 All works fine with Debian 3.1 (Sarge) native packages.
 For Fedora Core, you need to install new flex (we use package from PLD
-distribution) and netlink library (we use home-made iproute rpm which
-includes the library).
+distribution).
 
 Solaris:
 Test agent is tested with OpenSolaris SunOS thorin 5.11 snv_59, both i86

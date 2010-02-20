@@ -28,9 +28,10 @@
  * $Id: $
  */
 
-#if defined(USE_NETLINK) && defined(USE_LIBNETCONF)
+#if defined(USE_LIBNETCONF)
 
 #if !defined(__linux__)
+/* libnetconf is only available for linux now */
 #error Netlink can be used on Linux only
 #endif
 
@@ -580,4 +581,4 @@ ta_unix_conf_route_blackhole_del(ta_rt_info_t *rt_info)
     return ta_unix_conf_route_change(TA_CFG_OBJ_DELETE, rt_info);
 }
 
-#endif /* USE_NETLINK && USE_LIBNETCONF */
+#endif /* USE_LIBNETCONF */

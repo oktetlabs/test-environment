@@ -293,11 +293,6 @@ EXTRA_LDADD=
 AC_PROG_LEX
 AC_PROG_YACC
 
-if test x"$host" != x"${host/linux/}" ; then
-    # Linux platform
-    ifcfg_via_netlink=yes
-fi
-
 AC_ARG_ENABLE([wifi],
               AS_HELP_STRING([--enable-wifi],
                              [enable WiFi support (default is NO)]),
@@ -417,25 +412,30 @@ AM_CONDITIONAL(CFG_UNIX_DAEMONS_VTUND,
 AM_CONDITIONAL([CFG_UNIX_DAEMONS_RADIUS],
     [expr "$with_cfg_unix_daemons" : ".*radius" >/dev/null])
 
-if test -n "$ifcfg_via_netlink" ; then
-    # On Linux netlink is default way to configure interfaces and IP
-    use_netlink=yes
-    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_NETLINK"
+AC_ARG_WITH([libnetconf],
+            AS_HELP_STRING([--with-libnetconf],
+                           [enable libnetconf support (defaults are:
+                            YES for linux, NO for others)]),
+            [],
+            [with_libnetconf=check])
 
-    if test "$with_libnetlink" ; then
-        AC_CHECK_LIB([netlink], [rtnl_open], [],
-                     AC_MSG_ERROR([Cannot find libnetlink!]))
-        EXTRA_LDADD="$EXTRA_LDADD -lnetlink"
-
+if test "x$with_libnetconf" = xcheck; then
+    if test x"$host" != x"${host/linux/}" ; then
+        # Linux platform - use libnetconf by default
+        with_libnetconf=yes
     else
-        EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_LIBNETCONF"
-        EXTRA_LDADD="$EXTRA_LDADD -lnetconf"
+        with_libnetconf=no
     fi
+fi
+
+if test x"$with_libnetconf" != xno; then
+    # On Linux netlink is default way to configure interfaces and IP
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_LIBNETCONF"
+    EXTRA_LDADD="$EXTRA_LDADD -lnetconf"
 else 
     # The rest should use IOCTL interface for now
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_IOCTL -DUSE_ROUTE_SOCKET"
 fi
-AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$use_netlink")
 
 AC_ARG_ENABLE([vcm],
               AS_HELP_STRING([--enable-vcm],

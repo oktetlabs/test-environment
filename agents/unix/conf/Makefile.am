@@ -30,7 +30,6 @@ libconf_a_SOURCES = \
 	base/conf_sys.c \
 	base/conf_phy.c \
 	route/conf_route.c \
-	route/conf_route_netlink.c \
 	route/conf_route_libnetconf.c \
 	route/conf_route_socket.c \
 	util/conf_getmsg.c \
