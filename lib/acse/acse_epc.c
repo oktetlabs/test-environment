@@ -73,6 +73,8 @@
 #include "te_defs.h"
 #include "logger_api.h"
 
+#include "cwmp_data.h"
+
 /** EPC mechanism state machine states */
 typedef enum { want_read, want_write } epc_t;
 
