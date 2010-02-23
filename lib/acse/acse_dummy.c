@@ -80,15 +80,20 @@ main(int argc, char **argv)
         te_log_message_file_out = logfile;
     }
 
-    cpe->username = strdup("000261-Home Gateway-V60200000000-0010501606");
-    cpe->password = strdup("passwd");
+    cpe->acs_auth.login = 
+        strdup("000261-Home Gateway-V60200000000-0010501606");
+    cpe->acs_auth.passwd = strdup("passwd");
 
 
     db_add_cpe("ACS", "CPE-box");
     cpe = db_find_cpe(acs, "ACS", "CPE-box");
 
-    cpe->username = strdup("000261-Home Gateway-V601L622R1A0-1001742119");
-    cpe->password = strdup("z7cD7CTDA1DrQKUb");
+    cpe->acs_auth.login =
+        strdup("000261-Home Gateway-V601L622R1A0-1001742119");
+    cpe->acs_auth.passwd = strdup("z7cD7CTDA1DrQKUb");
+
+    cpe->cr_auth.login  = strdup(cpe->acs_auth.login);
+    cpe->cr_auth.passwd = strdup(cpe->acs_auth.passwd);
             
 
 

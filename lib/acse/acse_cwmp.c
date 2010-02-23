@@ -162,7 +162,7 @@ __cwmp__Inform(struct soap *soap,
             }
             LIST_FOREACH(cpe_item, &(session->acs_owner->cpe_list), links)
             {
-                if (strcmp(cpe_item->username, soap->userid) == 0)
+                if (strcmp(cpe_item->acs_auth.login, soap->userid) == 0)
                     break; /* from LIST_FOREACH */
             }
             if (cpe_item == NULL)
@@ -173,15 +173,15 @@ __cwmp__Inform(struct soap *soap,
             }
 
             VERB("check auth for user '%s', pass '%s'",
-                cpe_item->username, cpe_item->password);
-            if (http_da_verify_post(soap, cpe_item->password))
+                soap->userid, cpe_item->acs_auth.passwd);
+            if (http_da_verify_post(soap, cpe_item->acs_auth.passwd))
             {
                 RING("Auth failed: digest verify not pass ");
                 break;
             }
 
             RING("%s(): Digest auth pass, CPE '%s', username '%s'", 
-                __FUNCTION__, cpe_item->name, cpe_item->username);
+                __FUNCTION__, cpe_item->name, cpe_item->acs_auth.login);
             auth_pass = TRUE;
             session->state = CWMP_SERVE;
             session->cpe_owner = cpe_item;

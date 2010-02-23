@@ -37,6 +37,7 @@
 #include "tarpc.h"
 
 #include "te_cwmp.h" 
+#include "acse_soapStub.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -123,13 +124,28 @@ typedef struct {
         char     list[RCF_MAX_VAL];
     };
 
+    te_cwmp_rpc_cpe_t      rpc_code;
+
     union {
-        /** GetRPCMethods output */
-        struct {
-            tarpc_string64_t list[32];
-            tarpc_uint       len;
-        } method_list;
-    };
+        _cwmp__GetRPCMethods            *get_rpc_methods;
+        _cwmp__SetParameterValues       *set_parameter_values;
+        _cwmp__GetParameterValues       *get_parameter_values;
+        _cwmp__GetParameterNames        *get_parameter_names;
+        _cwmp__SetParameterAttributes   *set_parameter_attributes;
+        _cwmp__GetParameterAttributes   *get_parameter_attributes;
+        _cwmp__AddObject                *add_object;
+        _cwmp__DeleteObject             *delete_object;
+        _cwmp__Reboot                   *reboot;
+        _cwmp__Download                 *download;
+        _cwmp__Upload                   *upload;
+        _cwmp__FactoryReset             *factory_reset;
+        _cwmp__GetQueuedTransfers       *get_queued_transfers;
+        _cwmp__GetAllQueuedTransfers    *get_all_queued_transfers;
+        _cwmp__ScheduleInform           *schedule_inform;
+        _cwmp__SetVouchers              *set_vouchers;
+        _cwmp__GetOptions               *get_options;
+    } arg;
+
 } acse_params_t;
 
 /**

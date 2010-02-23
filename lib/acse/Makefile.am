@@ -18,7 +18,7 @@ SOAPCPP2_FLAGS = @SOAPCPP2_FLAGS@
 
 lib_LTLIBRARIES = libacse.la
 
-include_HEADERS = acse_epc.h
+include_HEADERS = acse_epc.h acse_soapStub.h cwmp_data.h
 
 libacse_la_SOURCES = acse.c \
                     acse_conn.c \
@@ -30,6 +30,7 @@ libacse_la_SOURCES = acse.c \
                     stdsoap2.c \
                     httpda.c \
                     md5evp.c \
+                    cwmp_data.c \
                     acse_soapServer.c 
 
 

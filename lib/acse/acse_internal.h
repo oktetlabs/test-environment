@@ -100,6 +100,11 @@ struct cpe_t;
 struct cwmp_session_t;
 struct channel_t;
 
+typedef struct auth_t {
+    const char *login;
+    const char *passwd;
+} auth_t;
+
 /** CPE RPC queue */
 typedef struct cpe_rpc_t {
     TAILQ_ENTRY(cpe_rpc_t) links;
@@ -135,12 +140,14 @@ typedef struct cpe_t{
 
     /** Fields corresponding to CM leafs in @p cpe node; some may change. */
 
-    char const      *name;      /**< CPE record name         */
-    char const      *url;       /**< CPE URL for Conn.Req.   */
-    char const      *cert;      /**< CPE certificate         */
-    char const      *username;  /**< CPE user name           */
-    char const      *password;  /**< CPE user password       */
-    int              enabled;   /**< Enabled CWMP func. flag */
+    const char      *name;      /**< CPE record name.           */
+    const char      *url;       /**< CPE URL for Conn.Req.      */
+    const char      *cert;      /**< CPE SSL certificate.       */
+    auth_t           cr_auth;   /**< Authenticate fields for 
+                                     Connection Request.        */
+    auth_t           acs_auth;  /**< Authenticate fields for 
+                                     CPE->ACS Sessions.         */
+    int              enabled;   /**< Enabled CWMP func. flag.   */
     te_bool          hold_requests;  /**< Whether to put "hold requests"
                                         in SOAP msg                    */
     cwmp__DeviceIdStruct device_id; /**< Device Identifier       */

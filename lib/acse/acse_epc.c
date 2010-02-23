@@ -860,6 +860,7 @@ acse_acs_list(acse_params_t *params)
 static te_errno
 cpe_get_rpc_methods(acse_params_t *params)
 {
+#if 0
     strcpy(params->method_list.list[0], "GetRPCMethods");
     strcpy(params->method_list.list[1], "SetParameterValues");
     strcpy(params->method_list.list[2], "GetParameterValues");
@@ -868,6 +869,9 @@ cpe_get_rpc_methods(acse_params_t *params)
     strcpy(params->method_list.list[5], "DeleteObject");
     strcpy(params->method_list.list[6], "ScheduleInform");
     params->method_list.len = 7;
+#else
+    UNUSED(params);
+#endif
     return 0;
 }
 

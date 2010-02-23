@@ -84,8 +84,8 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
                   soap->authrealm);
             /* save userid and passwd for basic or digest authentication */
             http_da_save(soap, &info, soap->authrealm,
-                         conn_req->cpe_item->username,
-                         conn_req->cpe_item->password);
+                         conn_req->cpe_item->cr_auth.login,
+                         conn_req->cpe_item->cr_auth.passwd);
             soap_begin_count(soap);
             soap_end_count(soap);
 
