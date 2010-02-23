@@ -1,7 +1,7 @@
 /** @file
  * @brief ACSE dispatcher framework
  *
- * ACS Emulator support
+ * ACS Emulator support. Processing of EPC in ACSE.
  *
  *
  * Copyright (C) 2009 Test Environment authors (see file AUTHORS
@@ -83,7 +83,6 @@ acse_remove_channel(channel_t *ch_item)
     free(ch_item);
 }
 
-/* See description in acse.h */
 extern int
 check_fd(int fd)
 {
@@ -99,102 +98,84 @@ check_fd(int fd)
     return 0;
 }
 
-/**
- * Create all dispatchers
- *
- * @param params        Shared memory for LRPC parameters
- * @param sock          Socket for LRPC synchronization
- *
- * @return              status code
- */
-te_errno
-create_dispatchers(acse_params_t *params, int sock)
-{
-    channel_t *ch_item;
-    te_errno rc = 0; 
 
-    if ((rc = acse_epc_create(params, sock)) != 0)
+/* See description in acse.h */
+void
+acse_loop(void)
+{
+    te_errno rc;
+
+    /* TODO correct parameters for EPC */
+    if ((rc = acse_epc_disp_init("", "")) != 0)
     {
         WARN("Fail create EPC dispatcher");
         return TE_RC(TE_ACSE, rc);
     }
 
-    return 0;
-}
-
-/* See description in acse.h */
-void
-acse_loop(acse_params_t *params, int sock)
-{
-    if (create_dispatchers(params, sock) == 0)
+    while(1)
     {
-        RING("I am acse_loop, now from the ACSE library!");
+        int         r_poll;
+        int         i;
+        channel_t  *item;
+        te_errno    rc;
+        struct pollfd *pfd =
+                calloc(channel_number, sizeof(struct pollfd));
 
-        for(;;)
+        i = 0;
+        LIST_FOREACH(item, &channel_list, links)
         {
-            int         r_poll;
-            int         i;
-            channel_t  *item;
-            te_errno    rc;
-            struct pollfd *pfd =
-                    calloc(channel_number, sizeof(struct pollfd));
-
-            i = 0;
-            LIST_FOREACH(item, &channel_list, links)
+            if ((*item->before_poll)(item->data, pfd + i) != 0)
             {
-                if ((*item->before_poll)(item->data, pfd + i) != 0)
-                {
-                    /* TODO something? */
-                    break;
-                }
-                i++;
-            }
-
-            r_poll = poll(pfd, channel_number, -1);
-
-            if (r_poll == -1)
-            {
-                perror("poll failed");
                 /* TODO something? */
                 break;
             }
-            INFO("acse_loop, poll return %d", r_poll);
+            i++;
+        }
+
+        r_poll = poll(pfd, channel_number, -1);
+
+        if (r_poll == -1)
+        {
+            perror("poll failed");
+            /* TODO something? */
+            break;
+        }
+        INFO("acse_loop, poll return %d", r_poll);
 
 #if 0
-            channel_t *last_item = LINK_LAST(
-                                            &channel_list,
-                                            channel_item_t,
-                                            links);
-            channel_t *tmp;
+        channel_t *last_item = LINK_LAST(
+                                        &channel_list,
+                                        channel_item_t,
+                                        links);
+        channel_t *tmp;
 #endif
 
-            i = 0;
-            LIST_FOREACH(item, &channel_list, links)
+        i = 0;
+        LIST_FOREACH(item, &channel_list, links)
+        {
+            VERB("acse_loop, process channel N %d", i);
+            if (pfd[i].revents != 0)
             {
-                VERB("acse_loop, process channel N %d", i);
-                if (pfd[i].revents != 0)
+                rc = (*item->after_poll)(item->data, pfd + i);
+
+                if (rc != 0)
                 {
-                    rc = (*item->after_poll)(item->data, pfd + i);
-
-                    if (rc != 0)
-                    {
-                        if (rc != TE_ENOTCONN)
-                            RING("acse_loop, process channel N %d, rc %r",
-                                 i, rc);
-                        acse_remove_channel(item);
-                        break;
-                    }
-                }
-
-#if 0
-                if (item == last_item)
+                    if (rc != TE_ENOTCONN)
+                        RING("acse_loop, process channel N %d, rc %r",
+                             i, rc);
+                    acse_remove_channel(item);
                     break;
-#endif
-                i++;
+                }
             }
 
-            free(pfd);
+#if 0
+            if (item == last_item)
+                break;
+#endif
+            i++;
         }
+
+        free(pfd);
     }
 }
 

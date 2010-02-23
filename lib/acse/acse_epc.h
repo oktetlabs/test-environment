@@ -34,6 +34,7 @@
 #define __TE_LIB_ACSE_H__
 
 #include "rcf_common.h"
+#include "te_errno.h" 
 #include "tarpc.h"
 
 #include "te_cwmp.h" 
@@ -113,6 +114,7 @@ typedef enum {
 
 
 typedef struct {
+    size_t       length;
     acse_pc_t    op;
     char         oid[RCF_MAX_ID]; /**< TE Configurator OID of leaf,
                                         which is subject of operation */ 
@@ -127,7 +129,6 @@ typedef struct {
     te_cwmp_rpc_cpe_t      rpc_code;
 
     union {
-        _cwmp__GetRPCMethods            *get_rpc_methods;
         _cwmp__SetParameterValues       *set_parameter_values;
         _cwmp__GetParameterValues       *get_parameter_values;
         _cwmp__GetParameterNames        *get_parameter_names;
@@ -138,32 +139,65 @@ typedef struct {
         _cwmp__Reboot                   *reboot;
         _cwmp__Download                 *download;
         _cwmp__Upload                   *upload;
-        _cwmp__FactoryReset             *factory_reset;
-        _cwmp__GetQueuedTransfers       *get_queued_transfers;
-        _cwmp__GetAllQueuedTransfers    *get_all_queued_transfers;
         _cwmp__ScheduleInform           *schedule_inform;
         _cwmp__SetVouchers              *set_vouchers;
         _cwmp__GetOptions               *get_options;
-    } arg;
+    } to_cpe;
 
-} acse_params_t;
+    union {
+        _cwmp__Inform                         *inform;
+        _cwmp__GetRPCMethodsResponse          *get_rpc_methods_r;
+        _cwmp__SetParameterValuesResponse     *set_parameter_values_r;
+        _cwmp__GetParameterValuesResponse     *get_parameter_values_r;
+        _cwmp__GetParameterNamesResponse      *get_parameter_names_r;
+        _cwmp__GetParameterAttributes         *get_parameter_attributes_r;
+        _cwmp__AddObjectResponse              *add_object_r;
+        _cwmp__DeleteObjectResponse           *delete_object_r;
+        _cwmp__DownloadResponse               *download_r;
+        _cwmp__UploadResponse                 *upload_r;
+        _cwmp__GetQueuedTransfersResponse     *get_queued_transfers_r;
+        _cwmp__GetAllQueuedTransfersResponse  *get_all_queued_transfers_r;
+        _cwmp__GetOptionsResponse             *get_options_r;
+    } from_cpe;
+
+} acse_epc_msg_t;
+
+typedef enum {
+    ACSE_EPC_SERVER,
+    ACSE_EPC_CLIENT
+} acse_epc_role_t;
 
 /**
- * Check fd for acceptance by select call
+ * Open EPC connection.
  *
- * @param fd            File descriptor
+ * @param msg_sock_name         Name of pipe socket for messages.
  *
- * @return              0 if OK, otherwise -1
+ * @return status code
  */
-extern int check_fd(int fd);
+extern te_errno acse_epc_open(const char *msg_sock_name,
+                              const char *shmem_name,
+                              acse_epc_role_t role);
 
 /**
- * ACSE main loop
+ * Close EPC connection.
  *
- * @param rfd           Local RPC read endpoint
- * @param wfd           Local RPC write endpoint
  */
-extern void acse_loop(acse_params_t *params, int sock);
+extern te_errno acse_epc_close(void);
+
+/**
+ * Return EPC message socket fd for poll(). 
+ * Do not read/write in it, use acse_epc_{send|recv}() instead.
+ */
+extern int acse_epc_sock(void);
+
+/**
+ * Return pointer to EPC data transfer buffer. 
+ */
+extern void* acse_epc_shmem(void);
+
+extern te_errno acse_epc_send(const acse_epc_msg_t *params);
+
+extern te_errno acse_epc_recv(acse_epc_msg_t **params);
 
 #ifdef __cplusplus
 }

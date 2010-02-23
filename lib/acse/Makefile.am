@@ -16,35 +16,36 @@ WSDL2H_FLAGS = @WSDL2H_FLAGS@
 SOAPCPP2 = @SOAPCPP2@
 SOAPCPP2_FLAGS = @SOAPCPP2_FLAGS@
 
-lib_LTLIBRARIES = libacse.la
+lib_LTLIBRARIES = libacse_epc.la
+
+bin_PROGRAMS = acse
 
 include_HEADERS = acse_epc.h acse_soapStub.h cwmp_data.h
 
-libacse_la_SOURCES = acse.c \
+acse_SOURCES = acse.c acse_dummy.c \
                     acse_conn.c \
-                    acse_epc.c \
                     acse_creq.c \
                     acse_cwmp.c \
+                    acse_epc_disp.c \
                     acse_db.c \
                     acse_soapC.c \
-                    stdsoap2.c \
                     httpda.c \
                     md5evp.c \
-                    cwmp_data.c \
+                    stdsoap2.c \
                     acse_soapServer.c 
 
+libacse_epc_la_SOURCES = acse_epc.c \
+                    cwmp_data.c
+                    
 
 #libacse_a_LIBADD = /usr/lib/libssl.a /usr/lib/libcrypto.a /usr/lib/libz.a
 
-bin_PROGRAMS = acse_dummy
-
-acse_dummy_SOURCES = acse_dummy.c
 
 # acse_dummy_LDFLAGS = -lgsoap
-acse_dummy_LDADD = -lacse -lz -llogger_file -ltools -lcrypto
+acse_LDADD = -lacse_epc -lz -llogger_file -ltools -lcrypto
 
 install-exec-hook:
-	touch -c -r libacse.* $(DESTDIR)/$(libdir)/libacse.*
+	touch -c -r libacse_epc.* $(DESTDIR)/$(libdir)/libacse_epc.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

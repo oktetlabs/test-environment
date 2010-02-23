@@ -323,7 +323,8 @@ extern te_errno db_remove_cpe(cpe_t *cpe_item);
 /**
  * Init EPC dispatcher.
  */
-extern te_errno acse_epc_create(acse_params_t *params, int sock);
+extern te_errno acse_epc_disp_init(const char *msg_sock_name,
+                                   const char *shmem_name);
 
 
 /**
