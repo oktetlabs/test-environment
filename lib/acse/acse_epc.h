@@ -51,6 +51,17 @@ extern "C" {
 
 
 #if 1
+/* This enum should correspond to xlat array in acse_epc_disp.c */
+typedef enum { ACSE_FUN_FIRST = 0,
+               ACSE_DB = ACSE_FUN_FIRST, /**< ACSE db operation: 
+                                              add/delete ACS or CPE */
+               ACSE_CONFIG,              /**< Modify some fields in 
+                                              particular ACS or CPE */
+               ACSE_CWMP,                /**< Perform CWMP operation */
+               EPC_TEST_FUN,
+               ACSE_FUN_LAST = EPC_TEST_FUN
+} acse_fun_t;
+#else
 /* This enum should correspond to xlat array in acse_lrpc.c */
 typedef enum { acse_fun_first = 1,
                acse_acs_add_fun = acse_fun_first,
@@ -159,6 +170,8 @@ typedef struct {
         _cwmp__GetAllQueuedTransfersResponse  *get_all_queued_transfers_r;
         _cwmp__GetOptionsResponse             *get_options_r;
     } from_cpe;
+
+    uint8_t data[0]; /* start of space after msg header, for packed data */
 
 } acse_epc_msg_t;
 

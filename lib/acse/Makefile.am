@@ -18,7 +18,7 @@ SOAPCPP2_FLAGS = @SOAPCPP2_FLAGS@
 
 lib_LTLIBRARIES = libacse_epc.la
 
-bin_PROGRAMS = acse
+bin_PROGRAMS = acse acse_cli
 
 include_HEADERS = acse_epc.h acse_soapStub.h cwmp_data.h
 
@@ -37,12 +37,15 @@ acse_SOURCES = acse.c acse_dummy.c \
 libacse_epc_la_SOURCES = acse_epc.c \
                     cwmp_data.c
                     
+acse_cli_SOURCES = acse_cli.c
 
 #libacse_a_LIBADD = /usr/lib/libssl.a /usr/lib/libcrypto.a /usr/lib/libz.a
 
 
 # acse_dummy_LDFLAGS = -lgsoap
-acse_LDADD = -lacse_epc -lz -llogger_file -ltools -lcrypto
+acse_LDADD = -lacse_epc -lz -llogger_file -ltools -lcrypto -lrt
+
+acse_cli_LDADD = -lacse_epc -llogger_file -ltools -lrt
 
 install-exec-hook:
 	touch -c -r libacse_epc.* $(DESTDIR)/$(libdir)/libacse_epc.*

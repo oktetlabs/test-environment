@@ -82,7 +82,7 @@ typedef struct {
     acse_epc_msg_t *params;
                       /**< Parameters passed from TA over shared memory */
     te_errno  rc;     /**< Return code to be passed back to TA          */
-    epc_t    state;  /**< EPC mechanism state machine current state   */
+    epc_t    state;   /**< EPC mechanism state machine current state   */
 } epc_data_t;
 
 
@@ -879,7 +879,7 @@ cpe_get_rpc_methods(acse_epc_msg_t *params)
 
 #define RPC_TEST(_fun) \
 static te_errno                                               \
-_fun(acse_epc_msg_t *params)                                   \
+_fun(acse_epc_msg_t *params)                                  \
 {                                                             \
     UNUSED(params);                                           \
     ERROR("Hi, I am " #_fun "!!!");                           \
@@ -907,13 +907,76 @@ RPC_TEST(cpe_get_options)
 #undef RPC_TEST
 
 static te_errno
-rpc_test(acse_epc_msg_t *params)
+acse_epc_test(acse_epc_msg_t *params)
 {
     UNUSED(params);
     RING("Hi, I am rpc_test!!! ");
     return 0;
 }
 
+
+/**
+ * ACSE DB operation
+ *
+ * @param params        Parameters object
+ *
+ * @return              Status code
+ */
+static te_errno
+acse_epc_db(acse_epc_msg_t *params)
+{
+    acs_t *acs_item = db_find_acs(params->acs);
+    cpe_t *cpe_item = NULL;
+
+    if (acs_item == NULL && params->op != ACSE_PC_ACS_ADD)
+        return TE_RC(TE_ACSE, TE_ENOENT);
+    
+    switch (params->op)
+    {
+        case ACSE_PC_ACS_ADD:
+            break;
+        case ACSE_PC_ACS_DEL:
+            return db_remove_acs(acs_item);
+
+        case ACSE_PC_CPE_ADD:
+            break;
+        case ACSE_PC_CPE_DEL:
+            cpe_item = db_find_cpe(acs_item, params->acs, params->cpe);
+            if (cpe_item == NULL)
+                return TE_RC(TE_ACSE, TE_ENOENT);
+            else
+                return db_remove_cpe(cpe_item);
+            break;
+        default:
+            WARN("Unexpected op %d in %s", params->op, __FUNCTION__);
+            return TE_RC(TE_ACSE, TE_EINVAL);
+    }
+
+
+    return 0;
+}
+
+static te_errno
+acse_epc_config(acse_epc_msg_t *params)
+{
+    return 0;
+}
+
+static te_errno
+acse_epc_cwmp(acse_epc_msg_t *params)
+{
+    return 0;
+}
+#if 1
+/** Translation table for calculated goto
+ * (shoud correspond to enum acse_fun_t in acse.h) */
+static te_errno
+    (*xlat[])(acse_epc_msg_t *) = {
+        &acse_epc_db,
+        &acse_epc_config,
+        &acse_epc_cwmp,
+        &acse_epc_test };
+#else
 /** Translation table for calculated goto
  * (shoud correspond to enum acse_fun_t in acse.h) */
 static te_errno
@@ -954,6 +1017,7 @@ static te_errno
         &cpe_set_vouchers,
         &cpe_get_options,
         &rpc_test };
+#endif
 
 static te_errno
 epc_before_poll(void *data, struct pollfd *pfd)
@@ -980,96 +1044,6 @@ epc_before_poll(void *data, struct pollfd *pfd)
     return 0;
 }
 
-static te_errno
-epc_cpe_list(const char *args)
-{
-    int i;
-    acse_epc_msg_t pars;
-
-    for (i = 0; args[i] && !isspace(args[i]); i++)
-        pars.acs[i] = args[i];
-    pars.acs[i] = '\0';
-    pars.op = ACSE_PC_CPE_LIST;
-    pars.oid[0] = '\0';
-    pars.cpe[0] = '\0';
-
-    acs_cpe_list(&pars);
-    printf("CPE list under '%s': %s\n", pars.acs, pars.list);
-    return 0;
-}
-
-static te_errno
-epc_cpe_cr(const char *args)
-{
-    int i;
-    cpe_t *cpe;
-    char acs_name[100] = "";
-    char cpe_name[100] = "";
-    te_errno rc;
-
-    for (i = 0; args[i] && !isspace(args[i]) && (args[i] != '/'); i++)
-        acs_name[i] = args[i];
-    acs_name[i] = '\0';
-    args += i;
-
-    while((*args) && (isspace(*args) || (*args == '/')))
-        args++;
-    
-    for (i = 0; args[i] && !isspace(args[i]) ; i++)
-        cpe_name[i] = args[i];
-    if (i == 0)
-    {
-        printf("Call CR fails, args '%s', CPE name not detected\n");
-        return 1;
-    }
-    cpe_name[i] = '\0';
-
-    cpe = db_find_cpe(NULL, acs_name, cpe_name);
-    if (cpe == NULL)
-    {
-        printf("Call connection request fails, '%s':'%s' not found\n",
-               acs_name, cpe_name);
-        return 2;
-    }
-
-    rc = acse_init_connection_request(cpe);
-    if (rc != 0)
-    {
-        ERROR("Conn Req failed: %r", rc);
-        return 3;
-    }
-    return 0;
-}
-
-static te_errno
-epc_parse_exec_cpe(const char *args)
-{
-    cpe_t *cpe;
-    if (strncmp(args, "list ", 5) == 0)
-        return epc_cpe_list(args + 5);
-    if (strncmp(args, "cr ", 3) == 0)
-        return epc_cpe_cr(args + 3);
-    return 0;
-}
-
-static te_errno
-epc_parse_exec_acs(const char *args)
-{
-    return 0;
-}
-
-static te_errno
-epc_parse_cli(const char *buf, size_t len)
-{
-    if (strncmp(buf, "cpe ", 4) == 0)
-        return epc_parse_exec_cpe(buf + 4);
-
-    if (strncmp(buf, "acs ", 4) == 0)
-        return epc_parse_exec_cpe(buf + 4);
-
-    return 0;
-}
-
 
 te_errno
 epc_after_poll(void *data, struct pollfd *pfd)
@@ -1086,7 +1060,7 @@ epc_after_poll(void *data, struct pollfd *pfd)
             if (pfd->revents & POLLIN)
             {
                 ssize_t rc; 
-#if 1
+#if 0
                 rc = read(epc->sock, buf, sizeof(buf));
                 if (rc == -1)
                 {
@@ -1115,8 +1089,8 @@ epc_after_poll(void *data, struct pollfd *pfd)
                 {
                         break; /* do nothing now!!! */
                         epc->rc =
-                          fun >= acse_fun_first && fun <= acse_fun_last ?
-                            (*xlat[fun - acse_fun_first])(epc->params) :
+                          fun >= ACSE_FUN_FIRST && fun <= ACSE_FUN_LAST ?
+                            (*xlat[fun])(epc->params) :
                             TE_RC(TE_TA_UNIX, TE_ENOSYS);
 
                         epc->state = want_write;
@@ -1184,10 +1158,10 @@ acse_epc_disp_init(const char *msg_sock_name, const char *shmem_name)
 
     channel->data = epc;
 
-    epc->sock            = acse_epc_sock();
-    epc->params          = acse_epc_shmem();
-    epc->rc              = 0;
-    epc->state           = want_read;
+    epc->sock    = acse_epc_sock();
+    epc->params  = acse_epc_shmem();
+    epc->rc      = 0;
+    epc->state   = want_read;
 
     channel->before_poll  = &epc_before_poll;
     channel->after_poll   = &epc_after_poll;
