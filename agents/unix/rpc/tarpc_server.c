@@ -3095,12 +3095,12 @@ TARPC_FUNC(epoll_wait,
 
     unsigned int i;
 
-    VERB("epoll(): call with epfd=%d, events=0x%lx, maxevents=%d,"
+    VERB("epoll_wait(): call with epfd=%d, events=0x%lx, maxevents=%d,"
          " timeout=%d",
          in->epfd, (unsigned long int)events, in->maxevents, in->timeout);
     MAKE_CALL(out->retval = func(in->epfd, events, in->maxevents,
                                  in->timeout));
-    VERB("poll(): retval=%d", out->retval);
+    VERB("epoll_wait(): retval=%d", out->retval);
 
     for (i = 0; i < out->events.events_len; i++)
     {

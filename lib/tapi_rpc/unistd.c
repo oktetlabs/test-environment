@@ -1114,9 +1114,9 @@ rpc_epoll_create(rcf_rpc_server *rpcs, int size)
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(poll, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_create(%d) -> %d",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_create(%d) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 size, out.retval);
+                 size, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(epoll_create, out.retval);
 }
@@ -1158,9 +1158,10 @@ rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_ctl, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_ctl(%d, %d, %d, %p) -> %d",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_ctl(%d, %d, %d, %p) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 epfd, oper, fd, event, out.retval);
+                 epfd, oper, fd, event, out.retval,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(epoll_ctl, out.retval);
 }
@@ -1199,6 +1200,11 @@ rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
     in.events.events_len = maxevents;
     in.events.events_val = (struct tarpc_epoll_event *)evts;
 
+    if ((timeout > 0) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
+    {
+        rpcs->timeout = TE_SEC2MS(TAPI_RPC_TIMEOUT_EXTRA_SEC) + timeout;
+    }
+
     rcf_rpc_call(rpcs, "epoll_wait", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
@@ -1217,9 +1223,10 @@ rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_wait, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_wait(%d, %d, %d, %p) -> %d",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_wait(%d, %p, %d, %d) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 epfd, events, maxevents, timeout, out.retval);
+                 epfd, events, maxevents, timeout, out.retval,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(epoll_wait, out.retval);
 }
