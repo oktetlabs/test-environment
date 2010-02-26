@@ -1201,6 +1201,18 @@ rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
 
     rcf_rpc_call(rpcs, "epoll_wait", &in, &out);
 
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        if (events != NULL && out.events.events_val != NULL)
+        {
+            for (i = 0; i < out.retval; i++)
+            {
+                events[i].events = out.events.events_val[i].events;
+                events[i].data.fd =
+                    out.events.events_val[i].data.tarpc_epoll_data_u.fd;
+            }
+        }
+    }
     /* TODO: write analog for pollreq2str function */
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_wait, out.retval);
