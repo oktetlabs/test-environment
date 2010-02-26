@@ -66,6 +66,7 @@ typedef struct rpc_ptr_off {
 #include "te_rpc_net_if.h"
 #include "te_rpc_signal.h"
 #include "te_rpc_sys_poll.h"
+#include "te_rpc_sys_epoll.h"
 #include "te_rpc_sys_stat.h"
 #include "te_rpc_sys_wait.h"
 #include "te_rpc_sys_resource.h"

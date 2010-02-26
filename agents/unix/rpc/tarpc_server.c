@@ -3054,6 +3054,66 @@ TARPC_FUNC(poll,
 }
 )
 
+/*-------------- epoll_create() ------------------------*/
+
+TARPC_FUNC(epoll_create, {}, { MAKE_CALL(out->retval = func(1)); } )
+
+/*-------------- epoll_ctl() --------------------------------*/
+
+TARPC_FUNC(epoll_ctl, {},
+{
+    struct epoll_event event;
+
+    event.events = epoll_event_rpc2h(in->event.event_val[0].events);
+    /* TODO: Should be substituted by correct handling of union */
+    event.data.fd = in->fd;
+
+    VERB("epoll_ctl(): call with epfd=%d op=%d fd=%d event=0x%lx",
+         in->epfd, in->op, in->fd, (unsigned long int)in->event.event_val);
+
+    MAKE_CALL(out->retval = func(in->epfd, in->op, in->fd, &event));
+    VERB("epoll_ctl(): retval=%d", out->retval);
+}
+)
+
+/*-------------- epoll_wait() --------------------------------*/
+
+TARPC_FUNC(epoll_wait,
+{
+    /* TODO: RPC_POLL_NFDS_MAX should be substituted */
+    if (in->events.events_len > RPC_POLL_NFDS_MAX)
+    {
+        ERROR("Too many events is passed to the epoll_wait()");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        return TRUE;
+    }
+    COPY_ARG(events);
+},
+{
+    /* TODO: RPC_POLL_NFDS_MAX should be substituted */
+    struct epoll_event events[RPC_POLL_NFDS_MAX];
+
+    unsigned int i;
+
+    VERB("epoll(): call with epfd=%d, events=0x%lx, maxevents=%d,"
+         " timeout=%d",
+         in->epfd, (unsigned long int)events, in->maxevents, in->timeout);
+    MAKE_CALL(out->retval = func(in->epfd, events, in->maxevents,
+                                 in->timeout));
+    VERB("poll(): retval=%d", out->retval);
+
+    for (i = 0; i < out->events.events_len; i++)
+    {
+        out->events.events_val[i].events =
+            epoll_event_h2rpc(events[i].events);
+        /* TODO: should be substituted by correct handling of union */
+        out->events.events_val[i].data.type = TARPC_ED_INT;
+        out->events.events_val[i].data.tarpc_epoll_data_u.fd =
+            events[i].data.fd;
+    }
+}
+)
+
 /**
  * Convert host representation of the hostent to the RPC one.
  * The memory is allocated by the routine.

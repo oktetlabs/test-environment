@@ -1091,6 +1091,128 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
 }
 
 int
+rpc_epoll_create(rcf_rpc_server *rpcs, int size)
+{
+    rcf_rpc_op             op;
+    tarpc_epoll_create_in  in;
+    tarpc_epoll_create_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(epoll_create, -1);
+    }
+
+    op = rpcs->op;
+
+    in.size = size;
+
+    rcf_rpc_call(rpcs, "epoll_create", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(poll, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_create(%d) -> %d",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 size, out.retval);
+
+    RETVAL_INT(epoll_create, out.retval);
+}
+
+int
+rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
+              struct rpc_epoll_event *event)
+{
+    rcf_rpc_op          op;
+    tarpc_epoll_ctl_in  in;
+    tarpc_epoll_ctl_out out;
+    tarpc_epoll_event *evt;
+    evt = malloc(sizeof(tarpc_epoll_event));
+
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(epoll_ctl, -1);
+    }
+
+    op = rpcs->op;
+
+    in.epfd = epfd;
+    in.op = oper;
+    in.fd = fd;
+    evt->events = event->events;
+    evt->data.type = TARPC_ED_INT;
+    evt->data.tarpc_epoll_data_u.fd = event->data.fd;
+    in.event.event_len = 1;
+    in.event.event_val = evt;
+
+    rcf_rpc_call(rpcs, "epoll_ctl", &in, &out);
+
+    /* TODO: write analog for pollreq2str function */
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_ctl, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_ctl(%d, %d, %d, %p) -> %d",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 epfd, oper, fd, event, out.retval);
+
+    RETVAL_INT(epoll_ctl, out.retval);
+}
+
+int
+rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
+               struct rpc_epoll_event *events, int maxevents, int timeout)
+{
+    rcf_rpc_op           op;
+    tarpc_epoll_wait_in  in;
+    tarpc_epoll_wait_out out;
+    int i;
+    tarpc_epoll_event *evts;
+    evts = calloc(maxevents, sizeof(tarpc_epoll_event));
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(epoll_wait, -1);
+    }
+
+    op = rpcs->op;
+
+    in.epfd = epfd;
+    in.timeout = timeout;
+    in.maxevents = maxevents;
+    for (i = 0; i < maxevents; i++)
+    {
+        evts[i].events = events[i].events;
+        evts[i].data.type = TARPC_ED_INT;
+        evts[i].data.tarpc_epoll_data_u.fd = events[i].data.fd;
+    }
+    in.events.events_len = maxevents;
+    in.events.events_val = (struct tarpc_epoll_event *)evts;
+
+    rcf_rpc_call(rpcs, "epoll_wait", &in, &out);
+
+    /* TODO: write analog for pollreq2str function */
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_wait, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_wait(%d, %d, %d, %p) -> %d",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 epfd, events, maxevents, timeout, out.retval);
+
+    RETVAL_INT(epoll_wait, out.retval);
+}
+
+int
 rpc_open(rcf_rpc_server *rpcs,
          const char *path, rpc_fcntl_flags flags, rpc_file_mode_flags mode)
 {

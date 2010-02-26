@@ -16,6 +16,7 @@ include_HEADERS = \
 	te_rpc_net_if.h \
 	te_rpc_signal.h \
 	te_rpc_sys_poll.h \
+	te_rpc_sys_epoll.h \
 	te_rpc_sys_resource.h \
 	te_rpc_sys_systeminfo.h \
 	te_rpc_sys_time.h \
@@ -50,6 +51,7 @@ EXTRA_DIST=\
 	net_if.c \
 	signal.c \
 	sys_poll.c \
+	sys_epoll.c \
 	sys_resource.c \
 	sys_stat.c \
 	sys_wait.c 
@@ -69,6 +71,7 @@ nodist_librpc_types_la_SOURCES = \
 	net_if_conv.c \
 	signal_conv.c \
 	sys_poll_conv.c \
+	sys_epoll_conv.c \
 	sys_resource_conv.c \
 	sys_systeminfo_conv.c \
 	sys_stat_conv.c \
@@ -86,6 +89,7 @@ EXTRA_DIST=\
 	net_if.c \
 	signal.c \
 	sys_poll.c \
+	sys_epoll.c \
 	sys_resource.c \
 	sys_systeminfo.c \
 	sys_stat.c \

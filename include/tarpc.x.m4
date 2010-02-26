@@ -2016,6 +2016,70 @@ struct tarpc_poll_out {
 };
 
 
+/* epoll_create() */
+
+struct tarpc_epoll_create_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int           size;
+};
+
+typedef struct tarpc_int_retval_out tarpc_epoll_create_out;
+
+/* epoll_ctl() */
+
+/* For epoll_data union */
+enum tarpc_epoll_data_type {
+    TARPC_ED_PTR = 1,
+    TARPC_ED_INT = 2,
+    TARPC_ED_U32 = 3,
+    TARPC_ED_U64 = 4
+};
+
+union tarpc_epoll_data
+    switch (tarpc_epoll_data_type type)
+{
+    case TARPC_ED_PTR: tarpc_ptr    ptr;
+    case TARPC_ED_INT: tarpc_int    fd;
+    case TARPC_ED_U32: uint32_t     u32;
+    case TARPC_ED_U64: uint64_t     u64;
+};
+
+struct tarpc_epoll_event {
+    uint32_t             events;
+    tarpc_epoll_data     data;
+};
+
+struct tarpc_epoll_ctl_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int                epfd;
+    tarpc_int                op;
+    tarpc_int                fd;
+    struct tarpc_epoll_event event<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_epoll_ctl_out;
+
+/* epoll_wait() */
+
+struct tarpc_epoll_wait_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int                epfd;
+    struct tarpc_epoll_event events<>;
+    tarpc_int                maxevents;
+    tarpc_int                timeout;
+};
+
+struct tarpc_epoll_wait_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_int               retval;
+
+    struct tarpc_epoll_event events<>;
+};
+
 /*
  * Socket options
  */
@@ -3914,6 +3978,10 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(select)
         RPC_DEF(pselect)
         RPC_DEF(poll)
+
+        RPC_DEF(epoll_create)
+        RPC_DEF(epoll_ctl)
+        RPC_DEF(epoll_wait)
 
         RPC_DEF(getsockopt)
         RPC_DEF(setsockopt)

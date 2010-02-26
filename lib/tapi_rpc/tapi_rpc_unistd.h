@@ -491,6 +491,27 @@ struct rpc_pollfd {
     short revents;    /**< returned events FIXME */
 };
 
+/* TODO: Add description */
+typedef union rpc_epoll_data {
+    void *ptr;
+    int fd;
+    uint32_t u32;
+    uint64_t u64;
+} rpc_epoll_data_t;
+
+
+struct rpc_epoll_event {
+    uint32_t         events;      /* Epoll events */
+    rpc_epoll_data_t data;      /* User data variable */
+};
+
+extern int rpc_epoll_create(rcf_rpc_server *rpcs, int size);
+extern int rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
+                         struct rpc_epoll_event *event);
+extern int rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
+                          struct rpc_epoll_event *events, int maxevents,
+                          int timeout);
+
 /**
  * Provide a generic mechanism for reporting I/O conditions associated with
  * a set of file descriptors and waiting for one or more specified 
