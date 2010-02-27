@@ -71,6 +71,26 @@ typedef enum rpc_epoll_evt {
                               RPC_EPOLLMSG | \
                               RPC_EPOLLERR | RPC_EPOLLHUP | RPC_EPOLLET)
 
+/** List of mapping numerical value to string for 'rpc_poll_event' */
+#define EPOLL_EVENT_MAPPING_LIST \
+            RPC_BIT_MAP_ENTRY(EPOLLIN), \
+            RPC_BIT_MAP_ENTRY(EPOLLPRI), \
+            RPC_BIT_MAP_ENTRY(EPOLLOUT), \
+            RPC_BIT_MAP_ENTRY(EPOLLRDNORM), \
+            RPC_BIT_MAP_ENTRY(EPOLLWRNORM), \
+            RPC_BIT_MAP_ENTRY(EPOLLRDBAND), \
+            RPC_BIT_MAP_ENTRY(EPOLLWRBAND), \
+            RPC_BIT_MAP_ENTRY(EPOLLERR), \
+            RPC_BIT_MAP_ENTRY(EPOLLHUP), \
+            RPC_BIT_MAP_ENTRY(EPOLLMSG), \
+            RPC_BIT_MAP_ENTRY(EPOLLET), \
+            RPC_BIT_MAP_ENTRY(EPOLL_UNKNOWN)
+
+/**
+ * epoll_event_rpc2str()
+ */
+RPCBITMAP2STR(epoll_event, EPOLL_EVENT_MAPPING_LIST)
+
 extern unsigned int epoll_event_rpc2h(unsigned int events);
 
 extern unsigned int epoll_event_h2rpc(unsigned int events);

@@ -1030,6 +1030,63 @@ pollreq2str(struct rpc_pollfd *ufds, unsigned int nfds,
     ERROR("Too small buffer for poll request conversion");
 }
 
+/**
+ * Convert array of epoll events to human-readable string.
+ *
+ * @param evts      Array of events
+ * @param n_evts    Number of events
+ * @param buf       Buffer to put string
+ * @param buflen    Length of the buffer
+ */
+static void
+epollevt2str(struct rpc_epoll_event *evts, unsigned int n_evts,
+             char *buf, size_t buflen)
+{
+    unsigned int    i;
+    int             rc;
+
+    if (buflen == 0)
+    {
+        ERROR("Too small buffer for epoll events conversion");
+        return;
+    }
+
+    if (evts == NULL)
+    {
+        buf[0] = '\0';
+        return;
+    }
+
+    do {
+        rc = snprintf(buf, buflen, "{");
+        if ((size_t)rc > buflen)
+            break;
+        buflen -= rc;
+        buf += rc;
+        for (i = 0; i < n_evts; ++i)
+        {
+            /* TODO: Correct union field should be chosen. */
+            rc = snprintf(buf, buflen, "{%d,%s}",
+                          evts[i].data.fd,
+                          epoll_event_rpc2str(evts[i].events));
+            if ((size_t)rc > buflen)
+                break;
+            buflen -= rc;
+            buf += rc;
+        }
+        rc = snprintf(buf, buflen, "}");
+        if ((size_t)rc > buflen)
+            break;
+        buflen -= rc;
+        buf += rc;
+
+        return;
+
+    } while (0);
+
+    ERROR("Too small buffer for epoll events conversion");
+}
+
 int
 rpc_poll_gen(rcf_rpc_server *rpcs,
              struct rpc_pollfd *ufds, unsigned int nfds,
@@ -1158,9 +1215,11 @@ rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_ctl, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_ctl(%d, %d, %d, %p) -> %d (%s)",
+    epollevt2str(event, 1,  str_buf_1, sizeof(str_buf_1));
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_ctl(%d, %d, %d, %p%s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 epfd, oper, fd, event, out.retval,
+                 epfd, oper, fd, event, str_buf_1, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(epoll_ctl, out.retval);
@@ -1218,15 +1277,20 @@ rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
                     out.events.events_val[i].data.tarpc_epoll_data_u.fd;
             }
         }
+        epollevt2str(events, out.retval,  str_buf_1, sizeof(str_buf_1));
+    }
+    else
+    {
+        *str_buf_1 = '\0';
     }
     /* TODO: write analog for pollreq2str function */
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_wait, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_wait(%d, %p, %d, %d) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_wait(%d, %p, %d, %d) -> %d (%s) %s",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  epfd, events, maxevents, timeout, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+                 errno_rpc2str(RPC_ERRNO(rpcs)), str_buf_1);
 
     RETVAL_INT(epoll_wait, out.retval);
 }
