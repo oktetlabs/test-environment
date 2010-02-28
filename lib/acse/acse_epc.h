@@ -44,10 +44,10 @@
 extern "C" {
 #endif
 
-#define LRPC_MMAP_AREA "/lrpc_mmap_area"
-#define LRPC_ACSE_SOCK "/tmp/lrpc_acse_sock"
-#define LRPC_TA_SOCK   "/tmp/lrpc_ta_sock"
-#define LRPC_RPC_SOCK  "/tmp/lrpc_rpc_sock"
+#define EPC_MMAP_AREA "/lrpc_mmap_area"
+#define EPC_ACSE_SOCK "/tmp/lrpc_acse_sock"
+#define EPC_TA_SOCK   "/tmp/lrpc_ta_sock"
+#define EPC_RPC_SOCK  "/tmp/lrpc_rpc_sock"
 
 
 #if 1
@@ -109,24 +109,64 @@ typedef enum { acse_fun_first = 1,
 } acse_fun_t;
 #endif
 
+#define ACSE_MSG_CODE_MAGIC 0x1985
+#define ACSE_EPC_CONFIG_MAGIC 0x1977
+#define ACSE_EPC_CWMP_MAGIC 0x1950
+
+
 typedef enum {
-    ACSE_PC_ACS_ADD,
-    ACSE_PC_ACS_DEL,
-    ACSE_PC_ACS_MODIFY,
-    ACSE_PC_ACS_OBTAIN,
-    ACSE_PC_ACS_LIST,
-    ACSE_PC_CPE_ADD,
-    ACSE_PC_CPE_DEL,
-    ACSE_PC_CPE_MODIFY,
-    ACSE_PC_CPE_OBTAIN,
-    ACSE_PC_CPE_LIST,
-    ACSE_PC_CWMP_CALL,
-} acse_pc_t;
+    ACSE_CONFIG_CALL = ACSE_MSG_CODE_MAGIC,
+    ACSE_CONFIG_RESPONSE,
+    ACSE_CWMP_CALL,
+    ACSE_CWMP_RESPONSE,
+} acse_msg_code_t;
 
 
+/**
+ * Struct for message exchange between ACSE and its client via AF_UNIX
+ * pipe. 
+ * All large data passed through shared memory, but not via this connection.
+ * ACSE must answer to request as soon as possible. 
+ * ACSE may read/write from/to shared memory only between receive this 
+ * request and answer response. 
+ * All operations with shared memory is hidden behind API, defined in this
+ * file (and implemented in acse_epc.c and cwmp_data.c).
+ */
 typedef struct {
-    size_t       length;
-    acse_pc_t    op;
+    acse_msg_code_t  opcode; /**< Code of operation */
+    void            *data;   /**< In user APІ is pointer to:
+                                either @acse_epc_config_data_t,
+                                or @acse_epc_cwmp_data_t.
+                                In messages really passing via pipe 
+                                is not used. */
+    size_t           length; /**< Lenght of data, related to the message.
+                                Ignored as INPUT parameter in user API. */
+} acse_epc_msg_t;
+
+typedef enum {
+    ACSE_CFG_ACS = 1,
+    ACSE_CFG_CPE
+} acse_cfg_level_t;
+
+typedef enum {
+    ACSE_CFG_ADD,
+    ACSE_CFG_DEL,
+    ACSE_CFG_MODIFY,
+    ACSE_CFG_OBTAIN,
+    ACSE_CFG_LIST,
+} acse_cfg_op_t;
+
+/**
+ * Struct for data, related to config EPC from/to ACSE.
+ * This struct should be stored in shared memory. 
+ */
+typedef struct {
+    struct {
+        unsigned         magic:16;
+        acse_cfg_level_t level:2;
+        acse_cfg_op_t    fun:4;
+    } op;
+
     char         oid[RCF_MAX_ID]; /**< TE Configurator OID of leaf,
                                         which is subject of operation */ 
     char         acs[RCF_MAX_NAME];
@@ -137,7 +177,13 @@ typedef struct {
         char     list[RCF_MAX_VAL];
     };
 
+} acse_epc_config_data_t;
+
+typedef struct {
     te_cwmp_rpc_cpe_t      rpc_code;
+
+    char         acs[RCF_MAX_NAME];
+    char         cpe[RCF_MAX_NAME];
 
     union {
         _cwmp__SetParameterValues       *set_parameter_values;
@@ -173,7 +219,7 @@ typedef struct {
 
     uint8_t data[0]; /* start of space after msg header, for packed data */
 
-} acse_epc_msg_t;
+} acse_epc_cwmp_data_t;
 
 typedef enum {
     ACSE_EPC_SERVER,
@@ -204,13 +250,19 @@ extern te_errno acse_epc_close(void);
 extern int acse_epc_sock(void);
 
 /**
- * Return pointer to EPC data transfer buffer. 
+ * Send message to other site in EPC connection. 
+ * Field data must point to structure of proper type.
  */
-extern void* acse_epc_shmem(void);
+extern te_errno acse_epc_send(const acse_epc_msg_t *user_message);
 
-extern te_errno acse_epc_send(const acse_epc_msg_t *params);
-
-extern te_errno acse_epc_recv(acse_epc_msg_t **params);
+/**
+ * Receive message from other site in EPC connection. 
+ * Field @p data will point to structure of proper type.
+ * Memory for data is allocated by malloc(), and should be free'd by 
+ * user. Allocated block have size, stored in field @p length 
+ * in the message, it may be used for boundary checks.
+ */
+extern te_errno acse_epc_recv(acse_epc_msg_t **user_message);
 
 #ifdef __cplusplus
 }
