@@ -49,8 +49,10 @@
 
 static int epc_socket = -1;
 static acse_epc_role_t epc_role = ACSE_EPC_SERVER;
+
 static void *epc_shmem = NULL;
 static const char *epc_shmem_name = NULL;
+static size_t epc_shmem_size = 0;
 
 /**
  * Create unix socket, bind it and connect it to another one if specified.
@@ -115,7 +117,7 @@ unix_socket(char const *unix_path, char const *connect_to)
  *                      or NULL in case of an error
  */
 static void *
-shared_mem(te_bool create, long *size, const char *shmem_name)
+shared_mem(te_bool create, size_t *size, const char *shmem_name)
 {
     void *shm_ptr = NULL;
     int   shm_fd;
@@ -187,13 +189,15 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
             == -1)
         return TE_RC(TE_ACSE, errno);
 
-    epc_shmem = shared_mem(role == ACSE_EPC_SERVER, 32 * 1024, shmem_name);
+    epc_shmem_size = 32 * 1024;
+    epc_shmem = shared_mem(role == ACSE_EPC_SERVER,
+                           &epc_shmem_size, shmem_name);
     if (epc_shmem == NULL)
     {
         int saved_errno = errno;
         close(epc_socket);
         epc_socket = -1;
-        return TE_RC(TE_ACSE, errno);
+        return TE_RC(TE_ACSE, saved_errno);
     }
     epc_shmem_name = strdup(shmem_name);
     RING("%s(): shmem addr: %p, socket %d", __FUNCTION__,
@@ -218,18 +222,78 @@ acse_epc_close(void)
 {
     close(epc_socket); epc_socket = -1;
     shm_unlink(epc_shmem_name);
-    free(epc_shmem_name); epc_shmem_name = NULL;
+    free((char *)epc_shmem_name); epc_shmem_name = NULL;
     return 0;
 }
 
-te_errno
-acse_epc_send(const acse_epc_msg_t *params)
+static ssize_t
+epc_pack_data(char *buf, acse_epc_cwmp_data_t *cwmp_data)
 {
+    switch
+}
+
+te_errno
+acse_epc_send(const acse_epc_msg_t *user_message)
+{
+    ssize_t sendrc;
+
+    if (user_message == NULL || user_message->data == NULL)
+        return TE_EINVAL;
+    if (epc_socket == -1)
+    {
+        ERROR("Try send, but EPC is not initialized");
+        return TE_EBADFD;
+    }
+    
+    /* check consistance of opcode and role */
+    switch (user_message->opcode)
+    {
+    case EPC_CONFIG_CALL:
+    case EPC_CWMP_CALL:
+        if (epc_role != ACSE_EPC_CLIENT)
+        {
+            ERROR("Try call EPC function, but role is not CLIENT!");
+            return TE_EINVAL;
+        }
+        break;
+    case EPC_CONFIG_RESPONSE:
+    case EPC_CWMP_RESPONSE:
+        if (epc_role != ACSE_EPC_SERVER)
+        {
+            ERROR("Try response EPC function, but role is not SERVER!");
+            return TE_EINVAL;
+        }
+        break;
+    default:
+        ERROR("Try send EPC with wrong opcode!");
+        return TE_EINVAL;
+        
+    }
+
+    /* Now prepare data */
+    switch (user_message->opcode)
+    {
+    case EPC_CONFIG_CALL:
+    case EPC_CONFIG_RESPONSE:
+        acse_epc_config_data_t *cfg_data = user_message->data;
+        memcpy(epc_shmem, cfg_data, sizeof(*cfg_data));
+        sendrc = send(epc_socket, user_message, sizeof(*user_message), 0);
+        if (sendrc < 0)
+        {
+            ERROR("%s(): send failed %r", __FUNCTION__, errno);
+            return TE_RC(TE_ACSE, errno);
+        }
+        break;
+    case EPC_CWMP_CALL:
+    case EPC_CWMP_RESPONSE:
+        acse_epc_cwmp_data_t *cwmp_data = user_message->data;
+        break;
+    }
     return 0;
 }
 
 te_errno
-acse_epc_recv(acse_epc_msg_t **params)
+acse_epc_recv(acse_epc_msg_t **user_message)
 {
     return 0;
 }

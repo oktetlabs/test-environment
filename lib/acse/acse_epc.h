@@ -50,6 +50,7 @@ extern "C" {
 #define EPC_RPC_SOCK  "/tmp/lrpc_rpc_sock"
 
 
+#if 0
 #if 1
 /* This enum should correspond to xlat array in acse_epc_disp.c */
 typedef enum { ACSE_FUN_FIRST = 0,
@@ -108,17 +109,18 @@ typedef enum { acse_fun_first = 1,
                acse_fun_last = rpc_test_fun
 } acse_fun_t;
 #endif
+#endif
 
-#define ACSE_MSG_CODE_MAGIC 0x1985
-#define ACSE_EPC_CONFIG_MAGIC 0x1977
-#define ACSE_EPC_CWMP_MAGIC 0x1950
+#define EPC_MSG_CODE_MAGIC 0x1985
+#define EPC_CONFIG_MAGIC 0x1977
+#define EPC_CWMP_MAGIC 0x1950
 
 
 typedef enum {
-    ACSE_CONFIG_CALL = ACSE_MSG_CODE_MAGIC,
-    ACSE_CONFIG_RESPONSE,
-    ACSE_CWMP_CALL,
-    ACSE_CWMP_RESPONSE,
+    EPC_CONFIG_CALL = EPC_MSG_CODE_MAGIC,
+    EPC_CONFIG_RESPONSE,
+    EPC_CWMP_CALL,
+    EPC_CWMP_RESPONSE,
 } acse_msg_code_t;
 
 
@@ -144,16 +146,16 @@ typedef struct {
 } acse_epc_msg_t;
 
 typedef enum {
-    ACSE_CFG_ACS = 1,
-    ACSE_CFG_CPE
+    EPC_CFG_ACS = 1,
+    EPC_CFG_CPE
 } acse_cfg_level_t;
 
 typedef enum {
-    ACSE_CFG_ADD,
-    ACSE_CFG_DEL,
-    ACSE_CFG_MODIFY,
-    ACSE_CFG_OBTAIN,
-    ACSE_CFG_LIST,
+    EPC_CFG_ADD,
+    EPC_CFG_DEL,
+    EPC_CFG_MODIFY,
+    EPC_CFG_OBTAIN,
+    EPC_CFG_LIST,
 } acse_cfg_op_t;
 
 /**
@@ -162,7 +164,7 @@ typedef enum {
  */
 typedef struct {
     struct {
-        unsigned         magic:16;
+        unsigned         magic:16; /**< Should store EPC_CONFIG_MAGIC */
         acse_cfg_level_t level:2;
         acse_cfg_op_t    fun:4;
     } op;
@@ -176,14 +178,27 @@ typedef struct {
         char     value[RCF_MAX_VAL];
         char     list[RCF_MAX_VAL];
     };
-
 } acse_epc_config_data_t;
 
-typedef struct {
-    te_cwmp_rpc_cpe_t      rpc_code;
 
-    char         acs[RCF_MAX_NAME];
-    char         cpe[RCF_MAX_NAME];
+typedef enum {
+    EPC_RPC_CALL = EPC_CWMP_MAGIC,
+    EPC_RPC_CHECK,
+    EPC_CONN_REQ,
+    EPC_CONN_REQ_CHECK,
+    EPC_GET_INFORM,
+} acse_epc_cwmp_op_t;
+
+typedef struct {
+    acse_epc_cwmp_op_t  op;
+
+    char        acs[RCF_MAX_NAME];
+    char        cpe[RCF_MAX_NAME];
+
+    te_cwmp_rpc_cpe_t   rpc_cpe; /**< Code of RPC call to be put 
+                                      into queue desired for CPE.*/
+
+    int         index; /**< IN/OUT field for position in queue */
 
     union {
         _cwmp__SetParameterValues       *set_parameter_values;

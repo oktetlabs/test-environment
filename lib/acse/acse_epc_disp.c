@@ -105,7 +105,7 @@ free_const(void const *p)
  * @return              Status code
  */
 static te_errno
-session_hold_requests_get(acse_epc_msg_t *params)
+session_hold_requests_get(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -124,7 +124,7 @@ session_hold_requests_get(acse_epc_msg_t *params)
  * @return      Status code.
  */
 static te_errno
-session_hold_requests_set(acse_epc_msg_t *params)
+session_hold_requests_set(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -143,7 +143,7 @@ session_hold_requests_set(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-session_enabled_get(acse_epc_msg_t *params)
+session_enabled_get(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -162,7 +162,7 @@ session_enabled_get(acse_epc_msg_t *params)
  * @return      Status code.
  */
 static te_errno
-session_enabled_set(acse_epc_msg_t *params)
+session_enabled_set(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -182,7 +182,7 @@ session_enabled_set(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-session_state_get(acse_epc_msg_t *params)
+session_state_get(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -204,7 +204,7 @@ session_state_get(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-device_id_serial_number_get(acse_epc_msg_t *params)
+device_id_serial_number_get(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -223,7 +223,7 @@ device_id_serial_number_get(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-device_id_product_class_get(acse_epc_msg_t *params)
+device_id_product_class_get(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -242,7 +242,7 @@ device_id_product_class_get(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-device_id_oui_get(acse_epc_msg_t *params)
+device_id_oui_get(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -261,7 +261,7 @@ device_id_oui_get(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-device_id_manufacturer_get(acse_epc_msg_t *params)
+device_id_manufacturer_get(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -281,7 +281,7 @@ device_id_manufacturer_get(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-cpe_cert_get(acse_epc_msg_t *params)
+cpe_cert_get(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -300,7 +300,7 @@ cpe_cert_get(acse_epc_msg_t *params)
  * @return      Status code.
  */
 static te_errno
-cpe_cert_set(acse_epc_msg_t *params)
+cpe_cert_set(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -323,7 +323,7 @@ cpe_cert_set(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-cpe_url_get(acse_epc_msg_t *params)
+cpe_url_get(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -342,7 +342,7 @@ cpe_url_get(acse_epc_msg_t *params)
  * @return      Status code.
  */
 static te_errno
-cpe_url_set(acse_epc_msg_t *params)
+cpe_url_set(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -366,7 +366,7 @@ cpe_url_set(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acs_cpe_add(acse_epc_msg_t *params)
+acs_cpe_add(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_item;
     te_errno rc;
@@ -394,7 +394,7 @@ acs_cpe_add(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acs_cpe_del(acse_epc_msg_t *params)
+acs_cpe_del(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_item = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -412,7 +412,7 @@ acs_cpe_del(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acs_cpe_list(acse_epc_msg_t *params)
+acs_cpe_list(acse_epc_config_data_t *params)
 {
     char        *ptr = params->list;
     unsigned int len = 0;
@@ -460,7 +460,7 @@ acs_cpe_list(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acs_port_get(acse_epc_msg_t *params)
+acs_port_get(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -479,7 +479,7 @@ acs_port_get(acse_epc_msg_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_port_set(acse_epc_msg_t *params)
+acs_port_set(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -498,7 +498,7 @@ acs_port_set(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acs_ssl_get(acse_epc_msg_t *params)
+acs_ssl_get(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -517,7 +517,7 @@ acs_ssl_get(acse_epc_msg_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_ssl_set(acse_epc_msg_t *params)
+acs_ssl_set(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -536,7 +536,7 @@ acs_ssl_set(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acs_enabled_get(acse_epc_msg_t *params)
+acs_enabled_get(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -555,7 +555,7 @@ acs_enabled_get(acse_epc_msg_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_enabled_set(acse_epc_msg_t *params)
+acs_enabled_set(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst  = db_find_acs(params->acs);
 
@@ -614,7 +614,7 @@ acs_enabled_set(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acs_pass_get(acse_epc_msg_t *params)
+acs_pass_get(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -633,7 +633,7 @@ acs_pass_get(acse_epc_msg_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_pass_set(acse_epc_msg_t *params)
+acs_pass_set(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -656,7 +656,7 @@ acs_pass_set(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acs_user_get(acse_epc_msg_t *params)
+acs_user_get(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -675,7 +675,7 @@ acs_user_get(acse_epc_msg_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_user_set(acse_epc_msg_t *params)
+acs_user_set(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -698,7 +698,7 @@ acs_user_set(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acs_cert_get(acse_epc_msg_t *params)
+acs_cert_get(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -717,7 +717,7 @@ acs_cert_get(acse_epc_msg_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_cert_set(acse_epc_msg_t *params)
+acs_cert_set(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -740,7 +740,7 @@ acs_cert_set(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acs_url_get(acse_epc_msg_t *params)
+acs_url_get(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -759,7 +759,7 @@ acs_url_get(acse_epc_msg_t *params)
  * @return      Status code.
  */
 static te_errno
-acs_url_set(acse_epc_msg_t *params)
+acs_url_set(acse_epc_config_data_t *params)
 {
     acs_t *acs_inst = db_find_acs(params->acs);
 
@@ -782,7 +782,7 @@ acs_url_set(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acse_acs_add(acse_epc_msg_t *params)
+acse_acs_add(acse_epc_config_data_t *params)
 {
     acs_t    *item;
     te_errno rc;
@@ -809,7 +809,7 @@ acse_acs_add(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acse_acs_del(acse_epc_msg_t *params)
+acse_acs_del(acse_epc_config_data_t *params)
 {
     acs_t *acs_item = db_find_acs(params->acs);
 
@@ -827,7 +827,7 @@ acse_acs_del(acse_epc_msg_t *params)
  * @return              Status code
  */
 static te_errno
-acse_acs_list(acse_epc_msg_t *params)
+acse_acs_list(acse_epc_config_data_t *params)
 {
     char        *ptr = params->list;
     unsigned int len = 0;
@@ -858,7 +858,7 @@ acse_acs_list(acse_epc_msg_t *params)
 }
 
 static te_errno
-cpe_get_rpc_methods(acse_epc_msg_t *params)
+cpe_get_rpc_methods(acse_epc_config_data_t *params)
 {
 #if 0
     strcpy(params->method_list.list[0], "GetRPCMethods");
@@ -879,7 +879,7 @@ cpe_get_rpc_methods(acse_epc_msg_t *params)
 
 #define RPC_TEST(_fun) \
 static te_errno                                               \
-_fun(acse_epc_msg_t *params)                                  \
+_fun(acse_epc_config_data_t *params)                                  \
 {                                                             \
     UNUSED(params);                                           \
     ERROR("Hi, I am " #_fun "!!!");                           \
@@ -907,7 +907,7 @@ RPC_TEST(cpe_get_options)
 #undef RPC_TEST
 
 static te_errno
-acse_epc_test(acse_epc_msg_t *params)
+acse_epc_test(acse_epc_config_data_t *params)
 {
     UNUSED(params);
     RING("Hi, I am rpc_test!!! ");
@@ -967,6 +967,8 @@ acse_epc_cwmp(acse_epc_msg_t *params)
 {
     return 0;
 }
+
+#if 0
 #if 1
 /** Translation table for calculated goto
  * (shoud correspond to enum acse_fun_t in acse.h) */
@@ -1018,6 +1020,7 @@ static te_errno
         &cpe_get_options,
         &rpc_test };
 #endif
+#endif
 
 static te_errno
 epc_before_poll(void *data, struct pollfd *pfd)
@@ -1048,19 +1051,53 @@ epc_before_poll(void *data, struct pollfd *pfd)
 te_errno
 epc_after_poll(void *data, struct pollfd *pfd)
 {
+    acse_epc_msg_t *msg;
     acse_fun_t   fun;
     epc_data_t  *epc = data;
-    te_errno     te_rc;
+    te_errno     rc;
 
-    char buf[256];
 
-    switch (epc->state)
+    if (!(pfd->revents & POLLIN))
     {
-        case want_read:
-            if (pfd->revents & POLLIN)
-            {
-                ssize_t rc; 
+        return 0;
+    }
+
+    rc = acse_epc_recv(&msg);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to get EPC message %r",
+              __FUNCTION__, rc);
+        return TE_RC(TE_ACSE, rc);
+    }
+    else if (msg == NULL)
+    {
+        ERROR("%s(): NULL in 'msg' after 'epc_recv'", 
+              __FUNCTION__);
+        return TE_RC(TE_ACSE, TE_EFAIL);
+    }
+
+    switch(msg->opcode)
+    {
+    case ACSE_CONFIG_CALL:
+        acse_epc_config_data_t *cfg_data = msg->data;
+
+        break;
+
+    case ACSE_CWMP_CALL:
+        acse_epc_cwmp_data_t *cwmp_data = msg->data;
+        /* TODO */
+        break;
+
+    case ACSE_CONFIG_RESPONSE:
+    case ACSE_CWMP_RESPONSE:
+    default:
+        ERROR("%s(): unexpected msg opcode 0x%x",
+                __FUNCTION__, msg->opcode);
+        return TE_RC(TE_ACSE, TE_EFAIL);
+    }
+
 #if 0
+                char buf[256];
                 rc = read(epc->sock, buf, sizeof(buf));
                 if (rc == -1)
                 {
@@ -1078,15 +1115,8 @@ epc_after_poll(void *data, struct pollfd *pfd)
 #endif
                 }
 #else
-                rc = read(epc->sock, &fun, sizeof(fun));
-                if (rc == -1)
-                {
-                    ERROR("Failed to get call over EPC: %s",
-                          strerror(errno));
-                    return TE_RC(TE_TA_UNIX, TE_EFAIL);
-                }
-                else if (rc == sizeof(fun))
-                {
+
+#if 0
                         break; /* do nothing now!!! */
                         epc->rc =
                           fun >= ACSE_FUN_FIRST && fun <= ACSE_FUN_LAST ?
@@ -1094,39 +1124,8 @@ epc_after_poll(void *data, struct pollfd *pfd)
                             TE_RC(TE_TA_UNIX, TE_ENOSYS);
 
                         epc->state = want_write;
-                }
-                else
-                {
-                        break; /* do nothing now!!! */
-                        WARN("Failed to get call over EPC");
-                        return TE_RC(TE_TA_UNIX, TE_EFAIL);
-                }
 #endif
-            }
-
-            break;
-        case want_write:
-            if (pfd->revents & POLLOUT)
-            {
-                switch (write(epc->sock, &epc->rc, sizeof(epc->rc)))
-                {
-                    case -1:
-                        ERROR("Failed to return from call over EPC: %s",
-                              strerror(errno));
-                        return TE_RC(TE_TA_UNIX, TE_EFAIL);
-                    case sizeof epc->rc:
-                        epc->state = want_read;
-                        break;
-                    default:
-                        ERROR("Failed to return from call over LRPC");
-                        return TE_RC(TE_TA_UNIX, TE_EFAIL);
-                }
-            }
-
-            break;
-        default:
-            break;
-    }
+#endif
 
     return 0;
 }
