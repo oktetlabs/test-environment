@@ -3139,7 +3139,8 @@ struct tarpc_recv_verify_out {
 enum iomux_func {
     FUNC_SELECT = 1,
     FUNC_PSELECT = 2,
-    FUNC_POLL = 3
+    FUNC_POLL = 3,
+    FUNC_EPOLL = 4
 };
 
 

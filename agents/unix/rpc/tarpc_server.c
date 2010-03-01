@@ -4153,6 +4153,10 @@ flooder(tarpc_flooder_in *in)
     api_func read_func;
     api_func send_func;
     api_func recv_func;
+    api_func epoll_create_func;
+    api_func epoll_ctl_func;
+    api_func epoll_wait_func;
+    api_func close_func;
     api_func ioctl_func;
 
     flood_api_func poll_func;
@@ -4182,6 +4186,14 @@ flooder(tarpc_flooder_in *in)
     int             ufds_elements = (sndnum >= rcvnum) ? sndnum: rcvnum;
     int             max_descr = 0;
 
+    int                 epfd = -1;
+    struct epoll_event  event;
+    /* TODO: RPC_POLL_NFDS_MAX should be substituted by someone more
+     * specific for epoll()
+     */
+    struct epoll_event  events[RPC_POLL_NFDS_MAX];
+    int                 maxevents = (sndnum >= rcvnum) ? sndnum: rcvnum;
+
     struct timeval  timeout;
     struct timeval  timestamp;
     struct timeval  call_timeout;
@@ -4193,13 +4205,20 @@ flooder(tarpc_flooder_in *in)
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 'X', FLOODER_BUF);
 
-    if ((tarpc_find_func(in->common.lib, "select", &select_func) != 0)   ||
-        (tarpc_find_func(in->common.lib, "pselect", &pselect_func) != 0) ||
-        (tarpc_find_func(in->common.lib, "poll", &p_func) != 0)          ||
-        (tarpc_find_func(in->common.lib, "read", &read_func) != 0)       ||
-        (tarpc_find_func(in->common.lib, "write", &write_func) != 0)     ||
-        (tarpc_find_func(in->common.lib, "recv", &recv_func) != 0)       ||
-        (tarpc_find_func(in->common.lib, "send", &send_func) != 0)       ||
+    if ((tarpc_find_func(in->common.lib, "select", &select_func) != 0)    ||
+        (tarpc_find_func(in->common.lib, "pselect", &pselect_func) != 0)  ||
+        (tarpc_find_func(in->common.lib, "poll", &p_func) != 0)           ||
+        (tarpc_find_func(in->common.lib, "epoll_create",
+                         &epoll_create_func) != 0)                        ||
+        (tarpc_find_func(in->common.lib, "epoll_ctl",
+                         &epoll_ctl_func) != 0)                           ||
+        (tarpc_find_func(in->common.lib, "epoll_wait",
+                         &epoll_wait_func) != 0)                          ||
+        (tarpc_find_func(in->common.lib, "read", &read_func) != 0)        ||
+        (tarpc_find_func(in->common.lib, "write", &write_func) != 0)      ||
+        (tarpc_find_func(in->common.lib, "recv", &recv_func) != 0)        ||
+        (tarpc_find_func(in->common.lib, "send", &send_func) != 0)        ||
+        (tarpc_find_func(in->common.lib, "close", &close_func) != 0)      ||
         (tarpc_find_func(in->common.lib, "ioctl", &ioctl_func) != 0))
     {
         ERROR("failed to resolve function");
@@ -4258,6 +4277,42 @@ flooder(tarpc_flooder_in *in)
             {
                 if (ufds[i].fd == l_array[j])
                     ufds[i].events |= l_flag;
+            }
+        }
+    }
+
+    if (iomux == FUNC_EPOLL)
+    {
+        int  j;
+        int *b_array = (sndnum >= rcvnum) ? sndrs: rcvrs;
+        int  b_length = (sndnum >= rcvnum) ? sndnum: rcvnum;
+        int  b_flag = (sndnum >= rcvnum) ? EPOLLOUT: EPOLLIN;
+        int *l_array = (sndnum >= rcvnum) ? rcvrs: sndrs;
+        int  l_length = (sndnum >= rcvnum) ? rcvnum: sndnum;
+        int  l_flag = (sndnum >= rcvnum) ? EPOLLIN: EPOLLOUT;
+
+        if ((epfd = epoll_create_func(1)) == -1)
+        {
+            ERROR("%s(): epoll_create() function failed.");
+            return -1;
+        }
+
+        for (i = 0; i < b_length; i++)
+        {
+            event.data.fd = b_array[i];
+            event.events = b_flag;
+            for (j = 0; j < l_length; j ++)
+            {
+                if (event.data.fd == l_array[j])
+                    event.events |= l_flag;
+            }
+
+            if (epoll_ctl_func(epfd, EPOLL_CTL_ADD, event.data.fd,
+                               &event) == -1)
+            {
+                ERROR("%s(): epoll_ctl() function failed.");
+                close_func(epfd);
+                return (-1);
             }
         }
     }
@@ -4380,33 +4435,52 @@ flooder(tarpc_flooder_in *in)
                 }
             }
         }
-        else if (iomux == FUNC_POLL) /* poll() should be used as iomux */
+        else if (iomux == FUNC_POLL || iomux == FUNC_EPOLL)
+        /* poll() or epoll() should be used as iomux */
         {
-            rc = poll_func(ufds, ufds_elements,
-                           TE_SEC2MS(call_timeout.tv_sec) +
-                           TE_US2MS(call_timeout.tv_usec));
+            int      el_num;
+            int      fd;
+
+            if (iomux == FUNC_POLL)
+                rc = poll_func(ufds, ufds_elements,
+                               TE_SEC2MS(call_timeout.tv_sec) +
+                               TE_US2MS(call_timeout.tv_usec));
+            else
+                rc = epoll_wait_func(epfd, events, maxevents,
+                                     TE_SEC2MS(call_timeout.tv_sec) +
+                                     TE_US2MS(call_timeout.tv_usec));
 
             if (rc < 0)
             {
                 if (errno != EINTR)
                 {
-                    ERROR("%s(): poll() failed: %d", __FUNCTION__, errno);
+                    ERROR("%s(): %spoll() failed: %d", __FUNCTION__,
+                          (iomux == FUNC_EPOLL) ? "e" : "", errno);
+                    if (iomux == FUNC_EPOLL)
+                        close_func(epfd);
                     return -1;
                 }
                 else
                     rc = 0;
             }
+            el_num = (iomux == FUNC_POLL) ? ufds_elements : rc;
 
-            for (i = 0; (rc > 0) && i < ufds_elements; i++)
+            for (i = 0; (rc > 0) && i < el_num; i++)
             {
-                if (time2run_not_expired && (ufds[i].revents & POLLOUT))
+                fd = (iomux == FUNC_POLL) ? ufds[i].fd : events[i].data.fd;
+
+                if (time2run_not_expired &&
+                    ((iomux == FUNC_POLL && (ufds[i].revents & POLLOUT)) ||
+                    (iomux == FUNC_EPOLL && (events[i].events & EPOLLOUT))))
                 {
-                    sent = write_func(ufds[i].fd, snd_buf, bulkszs);
+                    sent = write_func(fd, snd_buf, bulkszs);
                     if ((sent < 0) && (errno != EINTR) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
                         ERROR("%s(): write() failed: %d",
                               __FUNCTION__, errno);
+                        if (iomux == FUNC_EPOLL)
+                            close_func(epfd);
                         return -1;
                     }
                     if ((sent > 0) && (tx_stat != NULL))
@@ -4414,15 +4488,18 @@ flooder(tarpc_flooder_in *in)
                         tx_stat[i] += sent;
                     }
                 }
-                if (ufds[i].revents & POLLIN)
+                if ((iomux == FUNC_POLL && (ufds[i].revents & POLLIN)) ||
+                    (iomux == FUNC_EPOLL && (events[i].events & EPOLLIN)))
                 {
-                    received = read_func(ufds[i].fd, rcv_buf,
+                    received = read_func(fd, rcv_buf,
                                          sizeof(rcv_buf));
                     if ((received < 0) && (errno != EINTR) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
                         ERROR("%s(): read() failed: %d",
                               __FUNCTION__, errno);
+                        if (iomux == FUNC_EPOLL)
+                            close_func(epfd);
                         return -1;
                     }
                     if (received > 0)
@@ -4438,7 +4515,8 @@ flooder(tarpc_flooder_in *in)
                 }
 #ifdef DEBUG
                 if ((!time2run_not_expired) &&
-                    (ufds[i].revents & ~POLLIN))
+                    ((iomux == FUNC_POLL && (ufds[i].revents & POLLIN)) ||
+                    (iomux == FUNC_EPOLL && (events[i].events & EPOLLIN))))
                 {
                     WARN("poll() returned unexpected events: 0x%x",
                          ufds[i].revents);
@@ -4452,13 +4530,14 @@ flooder(tarpc_flooder_in *in)
             return -1;
         }
 
-
         if (time2run_not_expired)
         {
             if (gettimeofday(&timestamp, NULL))
             {
                 ERROR("%s(): gettimeofday(timestamp) failed): %d",
                       __FUNCTION__, errno);
+                if (iomux == FUNC_EPOLL)
+                    close_func(epfd);
                 return -1;
             }
             call_timeout.tv_sec  = timeout.tv_sec  - timestamp.tv_sec;
@@ -4506,6 +4585,9 @@ flooder(tarpc_flooder_in *in)
         }
 
     } while (time2run_not_expired || session_rx);
+
+    if (iomux == FUNC_EPOLL)
+        close_func(epfd);
 
     if (rx_nb)
     {
