@@ -4332,6 +4332,7 @@ flooder(tarpc_flooder_in *in)
          time2run, (long)timeout.tv_sec, (long)timeout.tv_usec);
 
     do {
+        int      el_num;
         session_rx = FALSE;
 
         /* If select() or pselect() should be used as iomux function */
@@ -4438,7 +4439,6 @@ flooder(tarpc_flooder_in *in)
         else if (iomux == FUNC_POLL || iomux == FUNC_EPOLL)
         /* poll() or epoll() should be used as iomux */
         {
-            int      el_num;
             int      fd;
 
             if (iomux == FUNC_POLL)
@@ -4519,7 +4519,8 @@ flooder(tarpc_flooder_in *in)
                     (iomux == FUNC_EPOLL && (events[i].events & EPOLLIN))))
                 {
                     WARN("poll() returned unexpected events: 0x%x",
-                         ufds[i].revents);
+                         (iomux == FUNC_POLL) ? ufds[i].revents :
+                         events[i].events);
                 }
 #endif
             }
@@ -4558,9 +4559,35 @@ flooder(tarpc_flooder_in *in)
             {
                 time2run_not_expired = FALSE;
                 /* Clean up POLLOUT requests for all descriptors */
-                for (i = 0; i < ufds_elements; ++i)
+                if (iomux == FUNC_POLL)
                 {
-                    ufds[i].events &= ~POLLOUT;
+                    for (i = 0; i < ufds_elements; ++i)
+                    {
+                        ufds[i].events &= ~POLLOUT;
+                    }
+                }
+                else
+                {
+                    for (i = 0; i < el_num; i++)
+                    {
+                        event.data.fd = events[i].data.fd;
+                        event.events = events[i].events & ~EPOLLOUT;
+                        if (epoll_ctl_func(epfd, EPOLL_CTL_MOD,
+                                           event.data.fd,
+                                           &event) == -1)
+                        {
+                            /* This was done because the socket in this
+                             * moment can been closed.
+                             */
+                            if (errno != EBADF)
+                            {
+                                ERROR("%s(): epoll_ctl(EPOLL_CTL_MOD) "
+                                      "function failed.");
+                                close_func(epfd);
+                                return (-1);
+                            }
+                        }
+                    }
                 }
                 /* Just to make sure that we'll get all from buffers */
                 session_rx = TRUE;
@@ -4642,6 +4669,10 @@ echoer(tarpc_echoer_in *in)
     api_func pselect_func;
     api_func p_func;
     api_func write_func;
+    api_func epoll_create_func;
+    api_func epoll_ctl_func;
+    api_func epoll_wait_func;
+    api_func close_func;
     api_func read_func;
 
     flood_api_func poll_func;
@@ -4665,6 +4696,15 @@ echoer(tarpc_echoer_in *in)
     int             ufds_elements = socknum;
     int             max_descr = 0;
 
+    int             epfd = -1;
+    int             maxevents = socknum;
+    struct epoll_event event;
+    /* TODO: RPC_POLL_NFDS_MAX should be substituted by someone specific
+     * for epoll
+     */
+    struct epoll_event events[RPC_POLL_NFDS_MAX];
+
+
     struct timeval  timeout;
     struct timeval  timestamp;
     struct timeval  call_timeout;
@@ -4679,6 +4719,13 @@ echoer(tarpc_echoer_in *in)
         (tarpc_find_func(in->common.lib, "pselect", &pselect_func) != 0) ||
         (tarpc_find_func(in->common.lib, "poll", &p_func) != 0)          ||
         (tarpc_find_func(in->common.lib, "read", &read_func) != 0)       ||
+        (tarpc_find_func(in->common.lib, "epoll_create",
+                         &epoll_create_func) != 0)                       ||
+        (tarpc_find_func(in->common.lib, "epoll_ctl",
+                         &epoll_ctl_func) != 0)                          ||
+        (tarpc_find_func(in->common.lib, "epoll_wait",
+                         &epoll_wait_func) != 0)                         ||
+        (tarpc_find_func(in->common.lib, "close", &close_func) != 0)     ||
         (tarpc_find_func(in->common.lib, "write", &write_func) != 0))
     {
         return -1;
@@ -4702,10 +4749,34 @@ echoer(tarpc_echoer_in *in)
         }
     }
 
+    if (iomux == FUNC_EPOLL)
+    {
+        if ((epfd = epoll_create_func(1)) == -1)
+        {
+            ERROR("%s(): epoll_create() function failed.");
+            return -1;
+        }
+
+        for (i = 0; i < socknum; i++)
+        {
+            event.data.fd = sockets[i];
+            event.events = EPOLLIN;
+            if (epoll_ctl_func(epfd, EPOLL_CTL_ADD, event.data.fd,
+                               &event) == -1)
+            {
+                ERROR("%s(): epoll_ctl() function failed.");
+                close_func(epfd);
+                return (-1);
+            }
+        }
+    }
+
     if (gettimeofday(&timeout, NULL))
     {
         ERROR("%s(): gettimeofday(timeout) failed: %d",
               __FUNCTION__, errno);
+        if (iomux == FUNC_EPOLL)
+            close_func(epfd);
         return -1;
     }
     timeout.tv_sec += time2run;
@@ -4774,38 +4845,56 @@ echoer(tarpc_echoer_in *in)
                 }
             }
         }
-        else if (iomux == FUNC_POLL) /* poll() should be used as iomux */
+        else if (iomux == FUNC_POLL || iomux == FUNC_EPOLL)
+            /* poll()/epoll() should be used as iomux */
         {
-            rc = poll_func(ufds, ufds_elements,
-                           TE_SEC2MS(call_timeout.tv_sec) +
-                           TE_US2MS(call_timeout.tv_usec));
+            int el_num;
+            if (iomux == FUNC_POLL)
+                rc = poll_func(ufds, ufds_elements,
+                               TE_SEC2MS(call_timeout.tv_sec) +
+                               TE_US2MS(call_timeout.tv_usec));
+            else
+                rc = epoll_wait_func(epfd, events, maxevents,
+                                     TE_SEC2MS(call_timeout.tv_sec) +
+                                     TE_US2MS(call_timeout.tv_usec));
 
             if (rc < 0)
             {
                 ERROR("%s(): poll() failed: %d", __FUNCTION__, errno);
+                if (iomux == FUNC_EPOLL)
+                    close_func(epfd);
                 return -1;
             }
+            el_num = (iomux == FUNC_POLL) ? ufds_elements : rc;
 
-            for (i = 0; i < ufds_elements; i++)
+            for (i = 0; i < el_num; i++)
             {
-                if (ufds[i].revents & POLLIN)
+                int fd;
+                fd = (iomux == FUNC_POLL) ? ufds[i].fd : events[i].data.fd;
+
+                if ((iomux == FUNC_POLL && ufds[i].revents & POLLIN) ||
+                    (iomux == FUNC_EPOLL && events[i].events & EPOLLIN))
                 {
-                    received = read_func(ufds[i].fd, buf, sizeof(buf));
+                    received = read_func(fd, buf, sizeof(buf));
                     if (received < 0)
                     {
                         ERROR("%s(): read() failed: %d",
                               __FUNCTION__, errno);
+                        if (iomux == FUNC_EPOLL)
+                            close_func(epfd);
                         return -1;
                     }
                     if (rx_stat != NULL)
                         rx_stat[i] += received;
                     session_rx = TRUE;
 
-                    sent = write_func(ufds[i].fd, buf, received);
+                    sent = write_func(fd, buf, received);
                     if (sent < 0)
                     {
                         ERROR("%s(): write() failed: %d",
                               __FUNCTION__, errno);
+                        if (iomux == FUNC_EPOLL)
+                            close_func(epfd);
                         return -1;
                     }
                     if (tx_stat != NULL)
@@ -4826,6 +4915,8 @@ echoer(tarpc_echoer_in *in)
             {
                 ERROR("%s(): gettimeofday(timestamp) failed: %d",
                       __FUNCTION__, errno);
+                if (iomux == FUNC_EPOLL)
+                    close_func(epfd);
                 return -1;
             }
             call_timeout.tv_sec  = timeout.tv_sec  - timestamp.tv_sec;
@@ -4868,6 +4959,8 @@ echoer(tarpc_echoer_in *in)
 
     } while (time2run_not_expired || session_rx);
 
+    if (iomux == FUNC_EPOLL)
+        close_func(epfd);
     INFO("%s(): OK", __FUNCTION__);
 
     return 0;
