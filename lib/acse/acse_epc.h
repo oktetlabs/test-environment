@@ -145,6 +145,7 @@ typedef struct {
                                 Significant only in messages passing 
                                 via pipe between ACSE and its client.
                                 Ignored as INPUT parameter in user API. */
+    te_errno         status; /**< Significant only in response */
 } acse_epc_msg_t;
 
 typedef enum {
@@ -244,6 +245,11 @@ typedef struct {
 
 } acse_epc_cwmp_data_t;
 
+/**
+ * Role of EPC endpoint: Server (that is ACSE itself) or 
+ * Client (application, which ask ACSE to do something by CWMP, 
+ * that is TA of separate simple CLI tool).
+ */
 typedef enum {
     ACSE_EPC_SERVER,
     ACSE_EPC_CLIENT

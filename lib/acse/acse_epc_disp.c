@@ -73,6 +73,7 @@
 #include "te_defs.h"
 #include "logger_api.h"
 
+#if 0
 /** EPC mechanism state machine states */
 typedef enum { want_read, want_write } epc_t;
 
@@ -84,6 +85,7 @@ typedef struct {
     te_errno  rc;     /**< Return code to be passed back to TA          */
     epc_t    state;   /**< EPC mechanism state machine current state   */
 } epc_data_t;
+#endif
 
 
 /**
@@ -915,56 +917,53 @@ acse_epc_test(acse_epc_config_data_t *params)
 }
 
 
-/**
- * ACSE DB operation
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
+
 static te_errno
-acse_epc_db(acse_epc_msg_t *params)
+acse_epc_config(acse_epc_config_data_t *cfg_pars)
 {
-    acs_t *acs_item = db_find_acs(params->acs);
+    acs_t *acs_item = NULL;
     cpe_t *cpe_item = NULL;
 
-    if (acs_item == NULL && params->op != ACSE_PC_ACS_ADD)
-        return TE_RC(TE_ACSE, TE_ENOENT);
-    
-    switch (params->op)
+    if (cfg_pars->op.level != EPC_CFG_ACS && 
+        cfg_pars->op.level != EPC_CFG_CPE)
     {
-        case ACSE_PC_ACS_ADD:
-            break;
-        case ACSE_PC_ACS_DEL:
-            return db_remove_acs(acs_item);
-
-        case ACSE_PC_CPE_ADD:
-            break;
-        case ACSE_PC_CPE_DEL:
-            cpe_item = db_find_cpe(acs_item, params->acs, params->cpe);
-            if (cpe_item == NULL)
-                return TE_RC(TE_ACSE, TE_ENOENT);
-            else
-                return db_remove_cpe(cpe_item);
-            break;
-        default:
-            WARN("Unexpected op %d in %s", params->op, __FUNCTION__);
-            return TE_RC(TE_ACSE, TE_EINVAL);
+        ERROR("%s(): wrong op.level %d", __FUNCTION__, cfg_pars->op.level);
+        return TE_RC(TE_ACSE, TE_EINVAL);
     }
 
+    switch (cfg_pars->op.fun) { case EPC_CFG_ADD: if (cfg_pars->op.level ==
+    EPC_CFG_ACS) return db_add_acs(cfg_pars->acs);
+
+        return db_add_cpe(cfg_pars->acs, cfg_pars->cpe);
+
+    case EPC_CFG_DEL:
+        if ((acs_item = db_find_acs(cfg_pars->acs)) == NULL)
+            return TE_ENOENT;
+        if (cfg_pars->op.level == EPC_CFG_ACS)
+            return db_remove_acs(acs_item);
+        if ((cpe_item = 
+                db_find_cpe(acs_item, cfg_pars->acs, cfg_pars->cpe)) 
+            == NULL)
+            return TE_ENOENT;
+        return db_remove_cpe(cpe_item);
+
+    case EPC_CFG_MODIFY:
+    case EPC_CFG_OBTAIN:
+    /* TODO */
+        break;
+    case EPC_CFG_LIST:
+        if (cfg_pars->op.level == EPC_CFG_ACS)
+            return acse_acs_list(cfg_pars);
+        return acs_cpe_list(cfg_pars);
+    }
 
     return 0;
 }
 
 static te_errno
-acse_epc_config(acse_epc_msg_t *params)
+acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
 {
-    return 0;
-}
-
-static te_errno
-acse_epc_cwmp(acse_epc_msg_t *params)
-{
+    /* TODO */
     return 0;
 }
 
@@ -1025,24 +1024,11 @@ static te_errno
 static te_errno
 epc_before_poll(void *data, struct pollfd *pfd)
 {
-    epc_data_t *epc = data;
-
-    pfd->fd = epc->sock;
+    UNUSED(data);
+    pfd->fd = acse_epc_sock();
     pfd->revents = 0;
-
-    switch (epc->state)
-    {
-        case want_read:
-            pfd->events = POLLIN;
-            break;
-        case want_write:
-            pfd->events = POLLOUT;
-            break;
-        default:
-            pfd->events = 0;
-            pfd->fd = -1;
-            break;
-    }
+    if (pfd->fd > 0)
+        pfd->events = POLLIN;
 
     return 0;
 }
@@ -1052,8 +1038,6 @@ te_errno
 epc_after_poll(void *data, struct pollfd *pfd)
 {
     acse_epc_msg_t *msg;
-    acse_fun_t   fun;
-    epc_data_t  *epc = data;
     te_errno     rc;
 
 
@@ -1069,7 +1053,7 @@ epc_after_poll(void *data, struct pollfd *pfd)
               __FUNCTION__, rc);
         return TE_RC(TE_ACSE, rc);
     }
-    else if (msg == NULL)
+    else if (msg == NULL || msg->data == NULL)
     {
         ERROR("%s(): NULL in 'msg' after 'epc_recv'", 
               __FUNCTION__);
@@ -1078,24 +1062,32 @@ epc_after_poll(void *data, struct pollfd *pfd)
 
     switch(msg->opcode)
     {
-    case ACSE_CONFIG_CALL:
-        acse_epc_config_data_t *cfg_data = msg->data;
-
+    case EPC_CONFIG_CALL:
+        msg->status = acse_epc_config(msg->data);
+        msg->opcode = EPC_CONFIG_RESPONSE;
         break;
 
-    case ACSE_CWMP_CALL:
-        acse_epc_cwmp_data_t *cwmp_data = msg->data;
-        RING("%s():%d TODO", __FUNCTION__, __LINE__);
-        /* TODO */
+    case EPC_CWMP_CALL:
+        msg->status = acse_epc_cwmp(msg->data);
+        msg->opcode = EPC_CWMP_RESPONSE;
         break;
 
-    case ACSE_CONFIG_RESPONSE:
-    case ACSE_CWMP_RESPONSE:
     default:
         ERROR("%s(): unexpected msg opcode 0x%x",
                 __FUNCTION__, msg->opcode);
         return TE_RC(TE_ACSE, TE_EFAIL);
     }
+
+    /* Now send response, all data prepared in specific calls above. */
+    rc = acse_epc_send(msg);
+
+    free(msg->data);
+    free(msg);
+
+    if (rc != 0)
+        ERROR("%s(): send EPC failed %r", __FUNCTION__, rc);
+
+    return rc;
 
 #if 0
                 char buf[256];
@@ -1128,40 +1120,29 @@ epc_after_poll(void *data, struct pollfd *pfd)
 #endif
 #endif
 
-    return 0;
 }
 
 te_errno
 epc_destroy(void *data)
 {
-    epc_data_t *epc = data;
-
-    close(epc->sock);
-    free(epc);
-    return 0;
+    UNUSED(data);
+    return acse_epc_close();
 }
 
 extern te_errno
 acse_epc_disp_init(const char *msg_sock_name, const char *shmem_name)
 {
     channel_t  *channel = malloc(sizeof(channel_t));
-    epc_data_t *epc = channel->data = malloc(sizeof(*epc));
-
     te_errno rc;
 
-    if (epc == NULL || channel == NULL)
+    channel->data = NULL; 
+
+    if (channel == NULL)
         return TE_RC(TE_ACSE, TE_ENOMEM);
 
     if ((rc = acse_epc_open(msg_sock_name, shmem_name, ACSE_EPC_SERVER))
         != 0)
         return TE_RC(TE_ACSE, rc);
-
-    channel->data = epc;
-
-    epc->sock    = acse_epc_sock();
-    epc->params  = acse_epc_shmem();
-    epc->rc      = 0;
-    epc->state   = want_read;
 
     channel->before_poll  = &epc_before_poll;
     channel->after_poll   = &epc_after_poll;

@@ -382,6 +382,7 @@ acse_epc_send(const acse_epc_msg_t *user_message)
     {
         acse_epc_cwmp_data_t *cwmp_data = user_message->data;
         uint8_t *buf;
+        ssize_t packed_len;
         size_t len;
 
         memcpy(epc_shmem, cwmp_data, sizeof(*cwmp_data));
@@ -389,15 +390,15 @@ acse_epc_send(const acse_epc_msg_t *user_message)
         len = epc_shmem_size - sizeof(*cwmp_data);
 
         if (message.opcode == EPC_CWMP_CALL)
-            message.length = epc_pack_call_data(buf, cwmp_data, len);
+            packed_len = epc_pack_call_data(buf, len, cwmp_data);
         else
-            message.length = epc_pack_response_data(buf, cwmp_data, len);
-        if (message.length < 0)
+            packed_len = epc_pack_response_data(buf, len, cwmp_data);
+        if (packed_len < 0)
         {
             ERROR("%s(): pack data failed, not send", __FUNCTION__);
             return TE_RC(TE_ACSE, TE_EFAIL);
         }
-        message.length += sizeof(*cwmp_data);
+        message.length = packed_len + sizeof(*cwmp_data);
         break;
     }
     }
@@ -476,6 +477,7 @@ epc_unpack_response_data(void *buf, size_t len,
     cwmp_data->from_cpe.p = buf;
 
     if (cwmp_data->op == EPC_GET_INFORM)
+    {
         if (te_cwmp_unpack__Inform(buf, len) == NULL)
         {
             ERROR("%s(): unpack inform failed", __FUNCTION__);
@@ -483,6 +485,7 @@ epc_unpack_response_data(void *buf, size_t len,
         }
         else 
             return 0;
+    }
 
     /* other operations do not require passing of CWMP data */
     if (cwmp_data->op != EPC_RPC_CHECK)
@@ -521,8 +524,11 @@ epc_unpack_response_data(void *buf, size_t len,
 te_errno
 acse_epc_recv(acse_epc_msg_t **user_message)
 {
+    acse_epc_cwmp_data_t *cwmp_data;
+    acse_epc_config_data_t *cfg_data;
     acse_epc_msg_t message;
     ssize_t recvrc;
+    te_errno rc = 0;
 
     if (user_message == NULL)
         return TE_EINVAL;
@@ -534,8 +540,8 @@ acse_epc_recv(acse_epc_msg_t **user_message)
         return TE_RC(TE_ACSE, errno);
     }
 
-    switch (message.opcode)
-    {
+    switch (message.opcode) 
+    {/* check role */
     case EPC_CONFIG_CALL:
     case EPC_CWMP_CALL:
         if (epc_role != ACSE_EPC_SERVER)
@@ -557,16 +563,34 @@ acse_epc_recv(acse_epc_msg_t **user_message)
         return TE_EINVAL;
     }
 
+    /* TODO check magic here */
+
     message.data = malloc(message.length);
     memcpy(message.data, epc_shmem, message.length);
 
-    if (message.opcode == EPC_CWMP_CALL ||
-        message.opcode == EPC_CWMP_RESPONSE)
+    cwmp_data = message.data;
+    switch (message.opcode)
     {
-        acse_epc_cwmp_data_t *cwmp_data = message.data;
-    }
+    case EPC_CWMP_CALL:
+        rc = epc_unpack_call_data(cwmp_data->data,
+                    message.length, cwmp_data);
+        break;
+    case EPC_CWMP_RESPONSE:
+        rc = epc_unpack_response_data(cwmp_data->data,
+                    message.length, cwmp_data);
+        break;
 
+    case EPC_CONFIG_CALL:
+    case EPC_CONFIG_RESPONSE:
+        cfg_data = message.data;
+        if (cfg_data->op.magic != EPC_CONFIG_MAGIC)
+        {
+            ERROR("EPC: wrong magic for config message");
+            free(message.data);
+            return TE_RC(TE_ACSE, TE_EFAIL);
+        }
+    }
     *user_message = malloc(sizeof(acse_epc_msg_t));
     memcpy(*user_message, &message, sizeof(message));
-    return 0;
+    return rc;
 }
