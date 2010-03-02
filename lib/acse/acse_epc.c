@@ -226,16 +226,110 @@ acse_epc_close(void)
     return 0;
 }
 
+/**
+ * Pack data for message client->ACSE.
+ * 
+ * @param buf           Place for packed data (usually in 
+ *                      shared memory segment).
+ * @param len           Length of memory area for packed data.
+ * @param cwmp_data     User-provided struct with data to be sent.
+ * 
+ * @return      -1 on error, 0 if no data presented,
+ *              or length of used memory block in @p buf.
+ */
 static ssize_t
-epc_pack_data(char *buf, acse_epc_cwmp_data_t *cwmp_data)
+epc_pack_call_data(void *buf, size_t len,
+                   acse_epc_cwmp_data_t *cwmp_data)
 {
-    switch
+    if (cwmp_data->to_cpe.p == NULL || cwmp_data->op != EPC_RPC_CALL)
+        return 0;
+    switch (cwmp_data->rpc_cpe)
+    {
+    case CWMP_RPC_set_parameter_values:
+    case CWMP_RPC_get_parameter_values:
+    case CWMP_RPC_get_parameter_names:
+    case CWMP_RPC_set_parameter_attributes:
+    case CWMP_RPC_get_parameter_attributes:
+    case CWMP_RPC_add_object:
+    case CWMP_RPC_delete_object:
+    case CWMP_RPC_reboot:
+    case CWMP_RPC_download:
+    case CWMP_RPC_upload:
+    case CWMP_RPC_schedule_inform:
+    case CWMP_RPC_set_vouchers:
+    case CWMP_RPC_get_options:
+        /* TODO */
+        RING("%s():%d TODO", __FUNCTION__, __LINE__);
+        return 0;
+    case CWMP_RPC_get_rpc_methods:
+    case CWMP_RPC_factory_reset:
+    case CWMP_RPC_get_queued_transfers:
+    case CWMP_RPC_get_all_queued_transfers:
+        /* do nothing, no data to CPE */
+        return 0;
+    }
+    return 0;
 }
 
+/**
+ * Pack data for message ACSE->client.
+ * 
+ * @param buf           Place for packed data (usually in 
+ *                      shared memory segment).
+ * @param len           Length of memory area for packed data.
+ * @param cwmp_data     User-provided struct with data to be sent.
+ * 
+ * @return      -1 on error, 0 if no data presented,
+ *              or length of used memory block in @p buf.
+ */
+static ssize_t
+epc_pack_response_data(void *buf, size_t len,
+                       acse_epc_cwmp_data_t *cwmp_data)
+{
+    if (cwmp_data->from_cpe.p == NULL)
+        return 0;
+
+    if (cwmp_data->op == EPC_GET_INFORM)
+        return te_cwmp_pack__Inform(cwmp_data->from_cpe.inform, buf, len);
+
+    /* other operations do not require passing of CWMP data */
+    if (cwmp_data->op != EPC_RPC_CHECK)
+        return 0;
+
+    switch (cwmp_data->rpc_cpe)
+    {
+    case CWMP_RPC_set_parameter_values:
+    case CWMP_RPC_get_parameter_values:
+    case CWMP_RPC_get_parameter_names:
+    case CWMP_RPC_get_parameter_attributes:
+    case CWMP_RPC_add_object:
+    case CWMP_RPC_delete_object:
+    case CWMP_RPC_download:
+    case CWMP_RPC_upload:
+    case CWMP_RPC_get_queued_transfers:
+    case CWMP_RPC_get_all_queued_transfers:
+    case CWMP_RPC_get_options:
+        /* TODO */
+        RING("%s():%d TODO", __FUNCTION__, __LINE__);
+        return 0;
+    case CWMP_RPC_schedule_inform:
+    case CWMP_RPC_set_vouchers:
+    case CWMP_RPC_reboot:
+    case CWMP_RPC_set_parameter_attributes:
+    case CWMP_RPC_get_rpc_methods:
+    case CWMP_RPC_factory_reset:
+        /* do nothing, no data to CPE */
+        return 0;
+    }
+    return 0;
+}
+
+/* see description in acse_epc.h */
 te_errno
 acse_epc_send(const acse_epc_msg_t *user_message)
 {
     ssize_t sendrc;
+    acse_epc_msg_t message = *user_message;
 
     if (user_message == NULL || user_message->data == NULL)
         return TE_EINVAL;
@@ -252,7 +346,7 @@ acse_epc_send(const acse_epc_msg_t *user_message)
     case EPC_CWMP_CALL:
         if (epc_role != ACSE_EPC_CLIENT)
         {
-            ERROR("Try call EPC function, but role is not CLIENT!");
+            ERROR("Try call EPC, but role is not CLIENT!");
             return TE_EINVAL;
         }
         break;
@@ -260,7 +354,7 @@ acse_epc_send(const acse_epc_msg_t *user_message)
     case EPC_CWMP_RESPONSE:
         if (epc_role != ACSE_EPC_SERVER)
         {
-            ERROR("Try response EPC function, but role is not SERVER!");
+            ERROR("Try response EPC, but role is not SERVER!");
             return TE_EINVAL;
         }
         break;
@@ -271,29 +365,208 @@ acse_epc_send(const acse_epc_msg_t *user_message)
     }
 
     /* Now prepare data */
+    message.data = epc_shmem;
+
     switch (user_message->opcode)
     {
     case EPC_CONFIG_CALL:
     case EPC_CONFIG_RESPONSE:
+    {
         acse_epc_config_data_t *cfg_data = user_message->data;
+        message.length = sizeof(*cfg_data);
         memcpy(epc_shmem, cfg_data, sizeof(*cfg_data));
-        sendrc = send(epc_socket, user_message, sizeof(*user_message), 0);
-        if (sendrc < 0)
-        {
-            ERROR("%s(): send failed %r", __FUNCTION__, errno);
-            return TE_RC(TE_ACSE, errno);
-        }
+    }
         break;
-    case EPC_CWMP_CALL:
-    case EPC_CWMP_RESPONSE:
+
+    default: /* CWMP operation */
+    {
         acse_epc_cwmp_data_t *cwmp_data = user_message->data;
+        uint8_t *buf;
+        size_t len;
+
+        memcpy(epc_shmem, cwmp_data, sizeof(*cwmp_data));
+        buf = ((acse_epc_cwmp_data_t *)epc_shmem)->data;
+        len = epc_shmem_size - sizeof(*cwmp_data);
+
+        if (message.opcode == EPC_CWMP_CALL)
+            message.length = epc_pack_call_data(buf, cwmp_data, len);
+        else
+            message.length = epc_pack_response_data(buf, cwmp_data, len);
+        if (message.length < 0)
+        {
+            ERROR("%s(): pack data failed, not send", __FUNCTION__);
+            return TE_RC(TE_ACSE, TE_EFAIL);
+        }
+        message.length += sizeof(*cwmp_data);
         break;
+    }
+    }
+
+    sendrc = send(epc_socket, &message, sizeof(message), 0);
+    if (sendrc < 0)
+    {
+        ERROR("%s(): send failed %r", __FUNCTION__, errno);
+        return TE_RC(TE_ACSE, errno);
+    }
+
+    return 0;
+}
+
+/*
+ * Unpack data from message client->ACSE.
+ * 
+ * @param buf           Place with packed data (usually in 
+ *                      local copy of transfered struct).
+ * @param len           Length of packed data.
+ * @param cwmp_data     Specific CWMP datawith unpacked payload.
+ * 
+ * @return status code
+ */
+static te_errno
+epc_unpack_call_data(void *buf, size_t len,
+                   acse_epc_cwmp_data_t *cwmp_data)
+{
+    if (cwmp_data->op != EPC_RPC_CALL)
+        return 0;
+
+    cwmp_data->to_cpe.p = buf;
+
+    switch (cwmp_data->rpc_cpe)
+    {
+    case CWMP_RPC_set_parameter_values:
+    case CWMP_RPC_get_parameter_values:
+    case CWMP_RPC_get_parameter_names:
+    case CWMP_RPC_set_parameter_attributes:
+    case CWMP_RPC_get_parameter_attributes:
+    case CWMP_RPC_add_object:
+    case CWMP_RPC_delete_object:
+    case CWMP_RPC_reboot:
+    case CWMP_RPC_download:
+    case CWMP_RPC_upload:
+    case CWMP_RPC_schedule_inform:
+    case CWMP_RPC_set_vouchers:
+    case CWMP_RPC_get_options:
+        /* TODO */
+        RING("%s():%d TODO", __FUNCTION__, __LINE__);
+        return 0;
+    case CWMP_RPC_get_rpc_methods:
+    case CWMP_RPC_factory_reset:
+    case CWMP_RPC_get_queued_transfers:
+    case CWMP_RPC_get_all_queued_transfers:
+        /* do nothing, no data to CPE */
+        return 0;
     }
     return 0;
 }
 
+/**
+ * Unpack data from message ACSE->client.
+ * 
+ * @param buf           Place with packed data (usually in 
+ *                      local copy of transfered struct).
+ * @param len           Length of memory area with packed data.
+ * @param cwmp_data     Specific CWMP datawith unpacked payload.
+ * 
+ * @return status code
+ */
+static te_errno
+epc_unpack_response_data(void *buf, size_t len,
+                       acse_epc_cwmp_data_t *cwmp_data)
+{
+    cwmp_data->from_cpe.p = buf;
+
+    if (cwmp_data->op == EPC_GET_INFORM)
+        if (te_cwmp_unpack__Inform(buf, len) == NULL)
+        {
+            ERROR("%s(): unpack inform failed", __FUNCTION__);
+            return TE_RC(TE_ACSE, TE_EFAIL);
+        }
+        else 
+            return 0;
+
+    /* other operations do not require passing of CWMP data */
+    if (cwmp_data->op != EPC_RPC_CHECK)
+        return 0;
+
+    switch (cwmp_data->rpc_cpe)
+    {
+    case CWMP_RPC_set_parameter_values:
+    case CWMP_RPC_get_parameter_values:
+    case CWMP_RPC_get_parameter_names:
+    case CWMP_RPC_get_parameter_attributes:
+    case CWMP_RPC_add_object:
+    case CWMP_RPC_delete_object:
+    case CWMP_RPC_download:
+    case CWMP_RPC_upload:
+    case CWMP_RPC_get_queued_transfers:
+    case CWMP_RPC_get_all_queued_transfers:
+    case CWMP_RPC_get_options:
+        /* TODO */
+        RING("%s():%d TODO", __FUNCTION__, __LINE__);
+        return 0;
+    case CWMP_RPC_schedule_inform:
+    case CWMP_RPC_set_vouchers:
+    case CWMP_RPC_reboot:
+    case CWMP_RPC_set_parameter_attributes:
+    case CWMP_RPC_get_rpc_methods:
+    case CWMP_RPC_factory_reset:
+        /* do nothing, no data to CPE */
+        return 0;
+    }
+    return 0;
+}
+
+
+/* see description in acse_epc.h */
 te_errno
 acse_epc_recv(acse_epc_msg_t **user_message)
 {
+    acse_epc_msg_t message;
+    ssize_t recvrc;
+
+    if (user_message == NULL)
+        return TE_EINVAL;
+
+    recvrc = recv(epc_socket, &message, sizeof(message), 0);
+    if (recvrc < 0)
+    {
+        ERROR("%s(): send failed %r", __FUNCTION__, errno);
+        return TE_RC(TE_ACSE, errno);
+    }
+
+    switch (message.opcode)
+    {
+    case EPC_CONFIG_CALL:
+    case EPC_CWMP_CALL:
+        if (epc_role != ACSE_EPC_SERVER)
+        {
+            ERROR("Receive EPC call, but role is not SERVER!");
+            return TE_EINVAL;
+        }
+        break;
+    case EPC_CONFIG_RESPONSE:
+    case EPC_CWMP_RESPONSE:
+        if (epc_role != ACSE_EPC_CLIENT)
+        {
+            ERROR("receive response EPC, but role is not CLIENT!");
+            return TE_EINVAL;
+        }
+        break;
+    default:
+        ERROR("Received EPC with wrong opcode!");
+        return TE_EINVAL;
+    }
+
+    message.data = malloc(message.length);
+    memcpy(message.data, epc_shmem, message.length);
+
+    if (message.opcode == EPC_CWMP_CALL ||
+        message.opcode == EPC_CWMP_RESPONSE)
+    {
+        acse_epc_cwmp_data_t *cwmp_data = message.data;
+    }
+
+    *user_message = malloc(sizeof(acse_epc_msg_t));
+    memcpy(*user_message, &message, sizeof(message));
     return 0;
 }

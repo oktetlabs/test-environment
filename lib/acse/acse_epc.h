@@ -142,6 +142,8 @@ typedef struct {
                                 In messages really passing via pipe 
                                 is not used. */
     size_t           length; /**< Lenght of data, related to the message.
+                                Significant only in messages passing 
+                                via pipe between ACSE and its client.
                                 Ignored as INPUT parameter in user API. */
 } acse_epc_msg_t;
 
@@ -201,6 +203,7 @@ typedef struct {
     int         index; /**< IN/OUT field for position in queue */
 
     union {
+        void *p;
         _cwmp__SetParameterValues       *set_parameter_values;
         _cwmp__GetParameterValues       *get_parameter_values;
         _cwmp__GetParameterNames        *get_parameter_names;
@@ -214,9 +217,12 @@ typedef struct {
         _cwmp__ScheduleInform           *schedule_inform;
         _cwmp__SetVouchers              *set_vouchers;
         _cwmp__GetOptions               *get_options;
-    } to_cpe;
+    } to_cpe; /**< Typed pointer to call-specific CWMP data. 
+                   This field is processed only
+                   in messages client->ACSE */
 
     union {
+        void *p;
         _cwmp__Inform                         *inform;
         _cwmp__GetRPCMethodsResponse          *get_rpc_methods_r;
         _cwmp__SetParameterValuesResponse     *set_parameter_values_r;
@@ -230,7 +236,9 @@ typedef struct {
         _cwmp__GetQueuedTransfersResponse     *get_queued_transfers_r;
         _cwmp__GetAllQueuedTransfersResponse  *get_all_queued_transfers_r;
         _cwmp__GetOptionsResponse             *get_options_r;
-    } from_cpe;
+    } from_cpe; /**< Typed pointer to call-specific CWMP data. 
+                   This field is processed only
+                   in messages ACSE->client */
 
     uint8_t data[0]; /* start of space after msg header, for packed data */
 
