@@ -31,6 +31,7 @@
 
 
 #include <string.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
@@ -93,7 +94,9 @@ unix_socket(char const *unix_path, char const *connect_to)
             strcpy(addr.sun_path, connect_to);
 
             if (connect(s, (struct sockaddr *)&addr, sizeof addr) != -1)
-              return s;
+                return s;
+            else
+                ERROR("%s(): connect refused, %d", __FUNCTION__, errno);
         }
         else
             errno = ENAMETOOLONG;
@@ -159,6 +162,8 @@ shared_mem(te_bool create, size_t *size, const char *shmem_name)
 
         errno = saved_errno;
     }
+    else
+        perror("shm open failed");
 
     return shm_ptr;
 }
@@ -172,6 +177,9 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
     const char *remote_sock_name;
     epc_role = role;
 
+    fprintf(stderr, "UUUUUUUUUUUUUUU\n");
+    RING("%s(sock_name = %s, shmem = %s, role = %d", 
+        __FUNCTION__, msg_sock_name, shmem_name, role);
     switch(role)
     {
         case ACSE_EPC_SERVER:
@@ -179,7 +187,7 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
             remote_sock_name = NULL;
             break;
         case ACSE_EPC_CLIENT:
-            local_sock_name = mktemp("/tmp/acse_epc_XXXXXX");
+            local_sock_name = mktemp(strdup("/tmp/acse_epc_XXXXXX"));
             remote_sock_name = msg_sock_name;
             break;
         default:
@@ -187,7 +195,11 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
     }
     if ((epc_socket = unix_socket(local_sock_name, remote_sock_name))
             == -1)
-        return TE_RC(TE_ACSE, errno);
+    {
+        int saved_errno = errno;
+        ERROR("create EPC socket failed, errno %d", saved_errno);
+        return TE_RC(TE_ACSE, saved_errno);
+    }
 
     epc_shmem_size = 32 * 1024;
     epc_shmem = shared_mem(role == ACSE_EPC_SERVER,
@@ -195,6 +207,7 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
     if (epc_shmem == NULL)
     {
         int saved_errno = errno;
+        ERROR("open shared mem failed, errno %d", saved_errno);
         close(epc_socket);
         epc_socket = -1;
         return TE_RC(TE_ACSE, saved_errno);
