@@ -103,15 +103,6 @@ check_fd(int fd)
 void
 acse_loop(void)
 {
-    te_errno rc;
-
-    /* TODO correct parameters for EPC */
-    if ((rc = acse_epc_disp_init("", "")) != 0)
-    {
-        WARN("Fail create EPC dispatcher");
-        return TE_RC(TE_ACSE, rc);
-    }
-
     while(1)
     {
         int         r_poll;

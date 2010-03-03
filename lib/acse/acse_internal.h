@@ -343,6 +343,12 @@ extern te_errno acse_enable_acs(acs_t *acs);
 
 extern te_errno acse_init_connection_request(cpe_t *cpe_item);
 
+
+/**
+ * Main ACSE loop: waiting events from all channels, processing them.
+ */
+extern void acse_loop(void);
+
 #ifdef __cplusplus
 }
 #endif

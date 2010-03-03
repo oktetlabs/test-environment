@@ -45,9 +45,8 @@ extern "C" {
 #endif
 
 #define EPC_MMAP_AREA "/lrpc_mmap_area"
-#define EPC_ACSE_SOCK "/tmp/lrpc_acse_sock"
-#define EPC_TA_SOCK   "/tmp/lrpc_ta_sock"
-#define EPC_RPC_SOCK  "/tmp/lrpc_rpc_sock"
+#define EPC_ACSE_SOCK "/tmp/epc_acse_sock"
+#define EPC_TA_SOCK   "/tmp/epc_ta_sock"
 
 
 #if 0

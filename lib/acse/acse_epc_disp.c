@@ -361,7 +361,7 @@ cpe_url_set(acse_epc_config_data_t *params)
 
 
 /**
- * Add the acs cpe instance.
+ * Add the CPE instance.
  *
  * @param params        Parameters object
  *
@@ -389,7 +389,7 @@ acs_cpe_add(acse_epc_config_data_t *params)
 }
 
 /**
- * Delete the acs cpe instance.
+ * Delete the CPE instance.
  *
  * @param params        Parameters object
  *
@@ -407,9 +407,10 @@ acs_cpe_del(acse_epc_config_data_t *params)
 }
 
 /**
- * Get the list of acs cpe instances.
+ * Get the list of CPE instances under ACS. Put result into passed 
+ * config data @p params.
  *
- * @param params        Parameters object
+ * @param params        Parameters object (IN/OUT)
  *
  * @return              Status code
  */
@@ -455,9 +456,9 @@ acs_cpe_list(acse_epc_config_data_t *params)
 }
 
 /**
- * Get the acs port value.
+ * Get the ACS port value.
  *
- * @param params        Parameters object
+ * @param params        Parameters object (IN/OUT)
  *
  * @return              Status code
  */
@@ -949,6 +950,7 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
 
     case EPC_CFG_MODIFY:
     case EPC_CFG_OBTAIN:
+    RING("%s():%d TODO", __FUNCTION__, __LINE__);
     /* TODO */
         break;
     case EPC_CFG_LIST:
@@ -963,7 +965,35 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
 static te_errno
 acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
 {
+    cpe_t    *cpe;
+    te_errno  rc;
+
+    switch(cwmp_pars->op)
+    {
+    case EPC_RPC_CALL:
+    case EPC_RPC_CHECK:
+    case EPC_CONN_REQ_CHECK:
+    case EPC_GET_INFORM:
+    RING("%s():%d TODO", __FUNCTION__, __LINE__);
     /* TODO */
+        break;
+    case EPC_CONN_REQ:
+        cpe = db_find_cpe(NULL, cwmp_pars->acs, cwmp_pars->cpe);
+        if (cpe == NULL)
+        {
+            ERROR("EPC CONN_REQ fails, '%s':'%s' not found\n",
+                   cwmp_pars->acs, cwmp_pars->cpe);
+            return TE_ENOENT;
+        }
+
+        rc = acse_init_connection_request(cpe);
+        if (rc != 0)
+        {
+            ERROR("CONN_REQ failed: %r", rc);
+            return rc;
+        }
+        break;
+    }
     return 0;
 }
 

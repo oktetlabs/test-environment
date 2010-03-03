@@ -56,10 +56,13 @@ SOAP_NMAC struct Namespace namespaces[] =
 int 
 main(int argc, char **argv)
 {
-    FILE *logfile;
-    acs_t *acs;
-    cpe_t *cpe;
-    int port;
+    FILE   *logfile;
+    char    *msg_sock_name;
+    int      port;
+    acs_t   *acs;
+    cpe_t   *cpe;
+
+    te_errno rc;
 
     db_add_acs("ACS");
     db_add_cpe("ACS", "cpe-dummy");
@@ -79,6 +82,10 @@ main(int argc, char **argv)
         }
         te_log_message_file_out = logfile;
     }
+    if (argc > 3)
+        msg_sock_name = strdup(argv[3]);
+    else
+        msg_sock_name = strdup(EPC_ACSE_SOCK);
 
     cpe->acs_auth.login = 
         strdup("000261-Home Gateway-V60200000000-0010501606");
@@ -98,8 +105,14 @@ main(int argc, char **argv)
 
 
     acse_enable_acs(acs);
-    acse_loop(NULL, 0);
 
+    if ((rc = acse_epc_disp_init(msg_sock_name, EPC_MMAP_AREA)) != 0)
+    {
+        ERROR("Fail create EPC dispatcher %r", rc);
+        return 1;
+    }
+
+    acse_loop();
 
     return 0;
 }
