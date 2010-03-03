@@ -4175,6 +4175,7 @@ flooder(tarpc_flooder_in *in)
     uint64_t   *rx_stat = in->rx_stat.rx_stat_val;
 
     int      i;
+    int      j;
     int      rc;
     int      sent;
     int      received;
@@ -4261,7 +4262,6 @@ flooder(tarpc_flooder_in *in)
      */
     if (iomux == FUNC_POLL)
     {
-        int  j;
         int *b_array = (sndnum >= rcvnum) ? sndrs: rcvrs;
         int  b_length = (sndnum >= rcvnum) ? sndnum: rcvnum;
         int  b_flag = (sndnum >= rcvnum) ? POLLOUT: POLLIN;
@@ -4283,7 +4283,6 @@ flooder(tarpc_flooder_in *in)
 
     if (iomux == FUNC_EPOLL)
     {
-        int  j;
         int *b_array = (sndnum >= rcvnum) ? sndrs: rcvrs;
         int  b_length = (sndnum >= rcvnum) ? sndnum: rcvnum;
         int  b_flag = (sndnum >= rcvnum) ? EPOLLOUT: EPOLLIN;
@@ -4510,7 +4509,7 @@ flooder(tarpc_flooder_in *in)
                             rx_stat[i] += received;
                         }
                         if (!time2run_not_expired)
-                            VERB("FD=%d Rx=%d", ufds[i].fd, received);
+                            VERB("FD=%d Rx=%d", fd, received);
                     }
                 }
 #ifdef DEBUG
@@ -4559,7 +4558,7 @@ flooder(tarpc_flooder_in *in)
             {
                 time2run_not_expired = FALSE;
                 /* Clean up POLLOUT requests for all descriptors */
-                if (iomux == FUNC_POLL)
+                if (iomux != FUNC_EPOLL)
                 {
                     for (i = 0; i < ufds_elements; ++i)
                     {
@@ -4568,24 +4567,26 @@ flooder(tarpc_flooder_in *in)
                 }
                 else
                 {
-                    for (i = 0; i < el_num; i++)
+                    for (i = 0; i < sndnum; i++)
                     {
-                        event.data.fd = events[i].data.fd;
-                        event.events = events[i].events & ~EPOLLOUT;
+                        event.data.fd = sndrs[i];
+                        event.events = 0;
+                        for (j = 0; i < rcvnum; j++)
+                        {
+                            if (event.data.fd == rcvrs[j])
+                            {
+                                event.events = POLLIN;
+                                break;
+                            }
+                        }
                         if (epoll_ctl_func(epfd, EPOLL_CTL_MOD,
                                            event.data.fd,
                                            &event) == -1)
                         {
-                            /* This was done because the socket in this
-                             * moment can been closed.
-                             */
-                            if (errno != EBADF)
-                            {
-                                ERROR("%s(): epoll_ctl(EPOLL_CTL_MOD) "
-                                      "function failed.");
-                                close_func(epfd);
-                                return (-1);
-                            }
+                            ERROR("%s(): epoll_ctl(EPOLL_CTL_MOD) "
+                                  "function failed.");
+                            close_func(epfd);
+                            return (-1);
                         }
                     }
                 }
