@@ -1277,7 +1277,8 @@ rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
                     out.events.events_val[i].data.tarpc_epoll_data_u.fd;
             }
         }
-        epollevt2str(events, out.retval,  str_buf_1, sizeof(str_buf_1));
+        epollevt2str(events, MAX(out.retval, 0),
+                     str_buf_1, sizeof(str_buf_1));
     }
     else
     {
