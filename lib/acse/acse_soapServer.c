@@ -37,7 +37,6 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
                     if (soap->error == SOAP_EOF)
                     {
 			soap_closesock(soap);
-                        printf("%s(): EOF detected \n", __FUNCTION__);
                     }
 
                     if (soap->length == 0)
@@ -57,7 +56,6 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 			return soap_send_fault(soap);
 		}
 
-                printf("%s():%d; end loop body\n", __FUNCTION__, __LINE__);
 	} while (soap->keep_alive);
 
 	return SOAP_OK;

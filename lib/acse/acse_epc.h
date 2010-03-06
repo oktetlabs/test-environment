@@ -114,6 +114,22 @@ typedef enum { acse_fun_first = 1,
 #define EPC_CONFIG_MAGIC 0x1977
 #define EPC_CWMP_MAGIC 0x1950
 
+/** State of Connection Request to CPE. */
+typedef enum acse_cr_state_t {
+    CR_NONE = 0,        /**< No Conn.Req operation was inited */
+    CR_WAIT_AUTH,       /**< Connection Request started, but waiting 
+                            for successful authenticate. */
+    CR_DONE,            /**< Connection Request was sent and gets 
+                            successful HTTP response. 
+                            Swith back to CR_NONE after receive Inform
+                            with EventCode  = @c CONNECTION REQUEST*/
+    CR_ERROR,            /**< Connection Request was sent and gets 
+                            HTTP error. 
+                            Swith back to CR_NONE after read 
+                            Conn.Req. status by EPC */
+} acse_cr_state_t;
+    
+
 
 typedef enum {
     EPC_CONFIG_CALL = EPC_MSG_CODE_MAGIC,
@@ -222,6 +238,7 @@ typedef struct {
                    in messages client->ACSE */
 
     union {
+        acse_cr_state_t      cr_state;
         void *p;
         _cwmp__Inform                         *inform;
         _cwmp__GetRPCMethodsResponse          *get_rpc_methods_r;
@@ -236,6 +253,7 @@ typedef struct {
         _cwmp__GetQueuedTransfersResponse     *get_queued_transfers_r;
         _cwmp__GetAllQueuedTransfersResponse  *get_all_queued_transfers_r;
         _cwmp__GetOptionsResponse             *get_options_r;
+
     } from_cpe; /**< Typed pointer to call-specific CWMP data. 
                    This field is processed only
                    in messages ACSE->client */
@@ -255,9 +273,15 @@ typedef enum {
 } acse_epc_role_t;
 
 /**
- * Open EPC connection.
+ * Open EPC connection. This function may be called only once
+ * in process life. 
+ * For SERVER, this function blocks until EPC pipe will be 
+ * established, waiting for Client connection.
  *
  * @param msg_sock_name         Name of pipe socket for messages.
+ * @param shmem_name            Name of shared memory block, must
+ *                              be same in related Server and Client.
+ * @param role                  EPC role, which current application plays.
  *
  * @return status code
  */

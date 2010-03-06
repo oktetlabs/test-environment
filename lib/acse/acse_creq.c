@@ -78,6 +78,7 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
     /* should not block after poll() */
     if (soap_begin_recv(soap))
     {
+        /* was something wrong for gSOAP */
         if (soap->error == 401)
         {
             RING("ConnectionRequest, attempt failed, realm: '%s'\n",
@@ -94,21 +95,26 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
             soap_connect_command(soap, SOAP_GET,
                                  conn_req->cpe_item->url, "");
             soap_end_send(soap);
-            return 0;
+            return 0; /* Continue operation on this I/O channel */
         }
+
+        if (soap->error == SOAP_NO_DATA)
+            conn_req->cpe_item->cr_state = CR_DONE;
         else
         {
             ERROR("Recv after Conn.Req., soap error %d", soap->error);
+            conn_req->cpe_item->cr_state = CR_ERROR;
         }
     }
     else
-        soap_end_recv(soap);
+        conn_req->cpe_item->cr_state = CR_DONE;
 
+    soap_end_recv(soap);
 
     RING("Recv after Conn req, status %d", soap->error);
 
     soap_closesock(soap);
-    return TE_ENOTCONN;
+    return TE_ENOTCONN; /* Finish this I/O channel */
 }
 
 
@@ -123,6 +129,7 @@ conn_req_destroy(void *data)
 }
 
 
+/* see description in acse_internal.h */
 extern te_errno
 acse_init_connection_request(cpe_t *cpe_item)
 {
@@ -155,6 +162,7 @@ acse_init_connection_request(cpe_t *cpe_item)
         free(channel);
         return TE_EFAIL;
     } 
+    cpe_item->cr_state = CR_WAIT_AUTH;
 
     channel->data = conn_req_data;
     channel->before_poll = conn_req_before_poll;

@@ -878,6 +878,7 @@ cpe_get_rpc_methods(acse_epc_config_data_t *params)
     return 0;
 }
 
+#if 0
 #undef RPC_TEST
 
 #define RPC_TEST(_fun) \
@@ -908,17 +909,20 @@ RPC_TEST(cpe_get_options)
 
 
 #undef RPC_TEST
-
-static te_errno
-acse_epc_test(acse_epc_config_data_t *params)
-{
-    UNUSED(params);
-    RING("Hi, I am rpc_test!!! ");
-    return 0;
-}
+#endif
 
 
-
+/**
+ * Process EPC related to local configuration: DB, etc. 
+ * This function do not blocks, and fills @p cwmp_pars 
+ * with immediately result of operation, if any.
+ * Usually config operations may be performed without blocking, 
+ * and they are performed during this call.
+ *
+ * @param cfg_pars     struct with EPC parameters.
+ *
+ * @return status code.
+ */
 static te_errno
 acse_epc_config(acse_epc_config_data_t *cfg_pars)
 {
@@ -932,8 +936,11 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
         return TE_RC(TE_ACSE, TE_EINVAL);
     }
 
-    switch (cfg_pars->op.fun) { case EPC_CFG_ADD: if (cfg_pars->op.level ==
-    EPC_CFG_ACS) return db_add_acs(cfg_pars->acs);
+    switch (cfg_pars->op.fun) 
+    { 
+    case EPC_CFG_ADD:
+        if (cfg_pars->op.level == EPC_CFG_ACS)
+            return db_add_acs(cfg_pars->acs);
 
         return db_add_cpe(cfg_pars->acs, cfg_pars->cpe);
 
@@ -950,10 +957,11 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
 
     case EPC_CFG_MODIFY:
     case EPC_CFG_OBTAIN:
-    RING("%s():%d TODO", __FUNCTION__, __LINE__);
-    /* TODO */
+        RING("%s():%d TODO", __FUNCTION__, __LINE__);
+        /* TODO */
         break;
     case EPC_CFG_LIST:
+        RING("acse_epc_config(): LIST... ");
         if (cfg_pars->op.level == EPC_CFG_ACS)
             return acse_acs_list(cfg_pars);
         return acs_cpe_list(cfg_pars);
@@ -962,36 +970,50 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
     return 0;
 }
 
+/**
+ * Process EPC related to CWMP.
+ * This function do not blocks, and fills @p cwmp_pars 
+ * with immediately result of operation, if any.
+ *
+ * @param cwmp_pars     struct with EPC parameters.
+ *
+ * @return status code.
+ */
 static te_errno
 acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
 {
     cpe_t    *cpe;
     te_errno  rc;
 
+    cpe = db_find_cpe(NULL, cwmp_pars->acs, cwmp_pars->cpe);
+    if (cpe == NULL)
+    {
+        ERROR("EPC CONN_REQ fails, '%s':'%s' not found\n",
+               cwmp_pars->acs, cwmp_pars->cpe);
+        return TE_ENOENT;
+    }
+
     switch(cwmp_pars->op)
     {
     case EPC_RPC_CALL:
     case EPC_RPC_CHECK:
-    case EPC_CONN_REQ_CHECK:
     case EPC_GET_INFORM:
     RING("%s():%d TODO", __FUNCTION__, __LINE__);
     /* TODO */
         break;
     case EPC_CONN_REQ:
-        cpe = db_find_cpe(NULL, cwmp_pars->acs, cwmp_pars->cpe);
-        if (cpe == NULL)
-        {
-            ERROR("EPC CONN_REQ fails, '%s':'%s' not found\n",
-                   cwmp_pars->acs, cwmp_pars->cpe);
-            return TE_ENOENT;
-        }
-
         rc = acse_init_connection_request(cpe);
         if (rc != 0)
         {
             ERROR("CONN_REQ failed: %r", rc);
             return rc;
         }
+        cwmp_pars->from_cpe.cr_state = cpe->cr_state;
+        break;
+    case EPC_CONN_REQ_CHECK:
+        cwmp_pars->from_cpe.cr_state = cpe->cr_state;
+        if (cpe->cr_state == CR_ERROR)
+            cpe->cr_state = CR_NONE;
         break;
     }
     return 0;
@@ -1068,19 +1090,18 @@ te_errno
 epc_after_poll(void *data, struct pollfd *pfd)
 {
     acse_epc_msg_t *msg;
-    te_errno     rc;
-
+    te_errno     rc; 
 
     if (!(pfd->revents & POLLIN))
-    {
         return 0;
-    }
 
     rc = acse_epc_recv(&msg);
     if (rc != 0)
     {
-        ERROR("%s(): failed to get EPC message %r",
-              __FUNCTION__, rc);
+        if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
+            ERROR("%s(): failed to get EPC message %r",
+                  __FUNCTION__, rc);
+
         return TE_RC(TE_ACSE, rc);
     }
     else if (msg == NULL || msg->data == NULL)
@@ -1110,6 +1131,7 @@ epc_after_poll(void *data, struct pollfd *pfd)
 
     /* Now send response, all data prepared in specific calls above. */
     rc = acse_epc_send(msg);
+    RING("%s(): send EPC rc %r", __FUNCTION__, rc);
 
     free(msg->data);
     free(msg);
@@ -1118,38 +1140,6 @@ epc_after_poll(void *data, struct pollfd *pfd)
         ERROR("%s(): send EPC failed %r", __FUNCTION__, rc);
 
     return rc;
-
-#if 0
-                char buf[256];
-                rc = read(epc->sock, buf, sizeof(buf));
-                if (rc == -1)
-                {
-                    ERROR("Failed to read EPC command: %s",
-                          strerror(errno));
-                    return TE_RC(TE_ACSE, TE_EFAIL);
-                }
-                if ((te_rc = epc_parse_cli(buf, rc)) != 0)
-                {
-                    ERROR("Failed to parse EPC command: %r", te_rc);
-#if 0
-                    return TE_RC(TE_ACSE, te_rc);
-#else
-                    return 0; /* do not stop main loop */
-#endif
-                }
-#else
-
-#if 0
-                        break; /* do nothing now!!! */
-                        epc->rc =
-                          fun >= ACSE_FUN_FIRST && fun <= ACSE_FUN_LAST ?
-                            (*xlat[fun])(epc->params) :
-                            TE_RC(TE_TA_UNIX, TE_ENOSYS);
-
-                        epc->state = want_write;
-#endif
-#endif
-
 }
 
 te_errno

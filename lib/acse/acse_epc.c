@@ -55,6 +55,10 @@ static void *epc_shmem = NULL;
 static const char *epc_shmem_name = NULL;
 static size_t epc_shmem_size = 0;
 
+
+static const char *local_sock_name = NULL;
+static const char *remote_sock_name = NULL;
+
 /**
  * Create unix socket, bind it and connect it to another one if specified.
  *
@@ -70,6 +74,9 @@ unix_socket(char const *unix_path, char const *connect_to)
     struct sockaddr_un addr = { .sun_family = AF_UNIX };
     int s = socket(AF_UNIX, SOCK_SEQPACKET, 0);
     int saved_errno;
+
+    VERB("%s(): local path '%s', connect to '%s'",
+         __FUNCTION__, unix_path, connect_to);
 
     if (s == -1)
         return -1;
@@ -169,17 +176,13 @@ shared_mem(te_bool create, size_t *size, const char *shmem_name)
 }
 
 
+/* see description in acse_epc.h */
 te_errno
 acse_epc_open(const char *msg_sock_name, const char *shmem_name,
                               acse_epc_role_t role)
 {
-    const char *local_sock_name;
-    const char *remote_sock_name;
     epc_role = role;
 
-    fprintf(stderr, "UUUUUUUUUUUUUUU\n");
-    RING("%s(sock_name = %s, shmem = %s, role = %d", 
-        __FUNCTION__, msg_sock_name, shmem_name, role);
     switch(role)
     {
         case ACSE_EPC_SERVER:
@@ -193,13 +196,9 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
         default:
             return TE_RC(TE_ACSE, TE_EINVAL);
     }
-    if ((epc_socket = unix_socket(local_sock_name, remote_sock_name))
-            == -1)
-    {
-        int saved_errno = errno;
-        ERROR("create EPC socket failed, errno %d", saved_errno);
-        return TE_RC(TE_ACSE, saved_errno);
-    }
+
+    VERB("%s(): sock_name = %s, shmem = %s, role = %d", 
+        __FUNCTION__, msg_sock_name, shmem_name, (int)role);
 
     epc_shmem_size = 32 * 1024;
     epc_shmem = shared_mem(role == ACSE_EPC_SERVER,
@@ -208,12 +207,31 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
     {
         int saved_errno = errno;
         ERROR("open shared mem failed, errno %d", saved_errno);
-        close(epc_socket);
-        epc_socket = -1;
+        return TE_OS_RC(TE_ACSE, saved_errno);
+    }
+
+    if ((epc_socket = unix_socket(local_sock_name, remote_sock_name))
+            == -1)
+    {
+        int saved_errno = errno;
+        ERROR("create EPC socket failed, errno %d", saved_errno);
+        shm_unlink(shmem_name);
+        if (local_sock_name)
+            unlink(local_sock_name);
         return TE_RC(TE_ACSE, saved_errno);
     }
+
+    if (role == ACSE_EPC_SERVER)
+    {
+        int accepted;
+        listen(epc_socket, 1);
+        accepted = accept(epc_socket, NULL, NULL);
+        close(epc_socket);
+        epc_socket = accepted;
+    }
+
     epc_shmem_name = strdup(shmem_name);
-    RING("%s(): shmem addr: %p, socket %d", __FUNCTION__,
+    VERB("%s(): shmem addr: %p, socket %d", __FUNCTION__,
             epc_shmem, epc_socket);
     return 0;
 }
@@ -236,6 +254,8 @@ acse_epc_close(void)
     close(epc_socket); epc_socket = -1;
     shm_unlink(epc_shmem_name);
     free((char *)epc_shmem_name); epc_shmem_name = NULL;
+    if (local_sock_name)
+        unlink(local_sock_name);
     return 0;
 }
 
@@ -487,10 +507,9 @@ static te_errno
 epc_unpack_response_data(void *buf, size_t len,
                        acse_epc_cwmp_data_t *cwmp_data)
 {
-    cwmp_data->from_cpe.p = buf;
-
     if (cwmp_data->op == EPC_GET_INFORM)
     {
+        cwmp_data->from_cpe.p = buf;
         if (te_cwmp_unpack__Inform(buf, len) == NULL)
         {
             ERROR("%s(): unpack inform failed", __FUNCTION__);
@@ -503,6 +522,8 @@ epc_unpack_response_data(void *buf, size_t len,
     /* other operations do not require passing of CWMP data */
     if (cwmp_data->op != EPC_RPC_CHECK)
         return 0;
+
+    cwmp_data->from_cpe.p = buf;
 
     switch (cwmp_data->rpc_cpe)
     {
@@ -550,8 +571,19 @@ acse_epc_recv(acse_epc_msg_t **user_message)
     if (recvrc < 0)
     {
         ERROR("%s(): send failed %r", __FUNCTION__, errno);
-        return TE_RC(TE_ACSE, errno);
+        return TE_OS_RC(TE_ACSE, errno);
     }
+    if (recvrc == 0) /* Connection normally closed */
+    {
+        RING("connection closed by peer");
+        return TE_ENOTCONN;
+    }
+    if (recvrc != sizeof(message))
+        ERROR("EPC: wrong recv rc %d", (int)recvrc);
+    /* TODO with this error should be done something more serious */
+
+    fprintf(stderr, "received message: opcode=0x%x, len=%d, status=%d\n",
+            (int)message.opcode, message.length, message.status);
 
     switch (message.opcode) 
     {/* check role */
@@ -572,7 +604,7 @@ acse_epc_recv(acse_epc_msg_t **user_message)
         }
         break;
     default:
-        ERROR("Received EPC with wrong opcode!");
+        ERROR("Received EPC with wrong opcode! %d", (int)message.opcode);
         return TE_EINVAL;
     }
 
@@ -598,7 +630,8 @@ acse_epc_recv(acse_epc_msg_t **user_message)
         cfg_data = message.data;
         if (cfg_data->op.magic != EPC_CONFIG_MAGIC)
         {
-            ERROR("EPC: wrong magic for config message");
+            ERROR("EPC: wrong magic for config message: 0x%x",
+                 (int)cfg_data->op.magic);
             free(message.data);
             return TE_RC(TE_ACSE, TE_EFAIL);
         }

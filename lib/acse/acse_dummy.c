@@ -52,11 +52,21 @@ SOAP_NMAC struct Namespace namespaces[] =
 
 #include "httpda.h"
 
+FILE   *logfile = NULL;
+
+static void
+acse_exit_handler(void)
+{
+    RING("Normal exit from CLI");
+    acse_clear_channels();
+    if (logfile != NULL)
+        fclose(logfile);
+}
+
 #if 1
 int 
 main(int argc, char **argv)
 {
-    FILE   *logfile;
     char    *msg_sock_name;
     int      port;
     acs_t   *acs;

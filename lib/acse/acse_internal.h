@@ -134,7 +134,6 @@ typedef struct cpe_rpc_t {
 /** CPE */
 typedef struct cpe_t{
     /** Fields for internal data integrity. */
-
     LIST_ENTRY(cpe_t) links;
     struct acs_t    *acs;       /**< ACS, managing this CPE  */
 
@@ -160,7 +159,10 @@ typedef struct cpe_t{
     struct cwmp_session_t *session; /**< CWMP session processing */
     struct sockaddr     *addr;      /**< CPE TCP/IP address for C.R.*/
     socklen_t            addr_len;  /**< address length          */ 
+
+    acse_cr_state_t      cr_state;  /**< State of ConnectionRequest */
 } cpe_t;
+
 
 /** ACS */
 typedef struct acs_t {
@@ -341,6 +343,13 @@ extern te_errno conn_register_acs(acs_t *acs);
 
 extern te_errno acse_enable_acs(acs_t *acs);
 
+/**
+ * Initiate CWMP Connection Request to specified CPE. 
+ *
+ * @param cpe_item      CPE
+ *
+ * @return status code.
+ */
 extern te_errno acse_init_connection_request(cpe_t *cpe_item);
 
 

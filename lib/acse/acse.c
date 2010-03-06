@@ -131,7 +131,7 @@ acse_loop(void)
             /* TODO something? */
             break;
         }
-        INFO("acse_loop, poll return %d", r_poll);
+        VERB("acse_loop, poll return %d", r_poll);
 
 #if 0
         channel_t *last_item = LINK_LAST(
@@ -151,9 +151,9 @@ acse_loop(void)
 
                 if (rc != 0)
                 {
-                    if (rc != TE_ENOTCONN)
-                        RING("acse_loop, process channel N %d, rc %r",
-                             i, rc);
+                    if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
+                        WARN("acse_loop, error on channel, rc %r",
+                             rc);
                     acse_remove_channel(item);
                     break;
                 }
