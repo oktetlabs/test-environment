@@ -4028,16 +4028,29 @@ if_stats_get(const char *ifname, if_stats *stats, ndis_stats *raw_stats)
 RCF_PCH_CFG_NODE_RO(node_phy_state, "state", NULL, NULL,
                     phy_state_get);
 
-RCF_PCH_CFG_NODE_RWC(node_phy_speed, "speed", NULL, &node_phy_state,
-                    phy_speed_get, phy_speed_set, &node_phy);
+/* TODO: Should write separate methods for oper/admin values */
+RCF_PCH_CFG_NODE_RO(node_phy_speed_oper, "speed_oper", NULL,
+                    &node_phy_state, phy_speed_get);
 
-RCF_PCH_CFG_NODE_RWC(node_phy_duplex, "duplex", NULL, &node_phy_speed,
+RCF_PCH_CFG_NODE_RWC(node_phy_speed_admin, "speed_admin", NULL,
+                     &node_phy_speed_oper,
+                     phy_speed_get, phy_speed_set, &node_phy);
+
+RCF_PCH_CFG_NODE_RO(node_phy_duplex_oper, "duplex_oper", NULL,
+                    &node_phy_speed_admin, phy_duplex_get);
+
+RCF_PCH_CFG_NODE_RWC(node_phy_duplex_admin, "duplex_admin", NULL,
+                     &node_phy_duplex_oper,
                      phy_duplex_get, phy_duplex_set, &node_phy);
 
-RCF_PCH_CFG_NODE_RWC(node_phy_autoneg, "autoneg", NULL, &node_phy_duplex,
+RCF_PCH_CFG_NODE_RO(node_phy_autoneg_oper, "autoneg_oper", NULL,
+                     &node_phy_duplex_admin, phy_autoneg_get);
+
+RCF_PCH_CFG_NODE_RWC(node_phy_autoneg_admin, "autoneg_admin", NULL,
+                     &node_phy_autoneg_oper,
                      phy_autoneg_get, phy_autoneg_set, &node_phy);
 
-RCF_PCH_CFG_NODE_NA_COMMIT(node_phy, "phy", &node_phy_autoneg, 
+RCF_PCH_CFG_NODE_NA_COMMIT(node_phy, "phy", &node_phy_autoneg_admin,
                            NULL, phy_commit);
 
 /**

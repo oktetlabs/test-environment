@@ -115,15 +115,15 @@ main(int argc, char *argv[])
                   iface_name);
     
     /* Get autonegotiation state */
-    CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
+    CHECK_RC(tapi_cfg_phy_autoneg_oper_get(ta, iface_name, &autoneg));
     RING("Autonegatiation state: %d", autoneg);
     
     autoneg = TE_PHY_AUTONEG_OFF;
-    CHECK_RC(tapi_cfg_phy_autoneg_set(ta, iface_name, autoneg));
+    CHECK_RC(tapi_cfg_phy_autoneg_admin_set(ta, iface_name, autoneg));
     
-    CHECK_RC(tapi_cfg_phy_speed_set(ta, iface_name, speed));
+    CHECK_RC(tapi_cfg_phy_speed_admin_set(ta, iface_name, speed));
     
-    CHECK_RC(tapi_cfg_phy_duplex_set(ta, iface_name, duplex));
+    CHECK_RC(tapi_cfg_phy_duplex_admin_set(ta, iface_name, duplex));
     
     CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
     
@@ -134,12 +134,12 @@ main(int argc, char *argv[])
      */
     
     /* Check that PHY duplex state has been set correctly */
-    CHECK_RC(tapi_cfg_phy_duplex_get(ta, iface_name, &tmp_duplex));
+    CHECK_RC(tapi_cfg_phy_duplex_oper_get(ta, iface_name, &tmp_duplex));
     if (tmp_duplex != duplex)
         TEST_FAIL("failed to set duplex to value: %d", duplex);
 
     /* Check that PHY speed has been set correctly */
-    CHECK_RC(tapi_cfg_phy_speed_get(ta, iface_name, &tmp_speed));
+    CHECK_RC(tapi_cfg_phy_speed_oper_get(ta, iface_name, &tmp_speed));
     if (tmp_speed != speed)
         TEST_FAIL("failed to set speed to value: %d", speed);
 
@@ -147,7 +147,7 @@ main(int argc, char *argv[])
     autoneg = -1;
     
     /* Check that PHY autonegotiation is at state OFF */
-    CHECK_RC(tapi_cfg_phy_autoneg_get(ta, iface_name, &autoneg));
+    CHECK_RC(tapi_cfg_phy_autoneg_oper_get(ta, iface_name, &autoneg));
     if (autoneg != TE_PHY_AUTONEG_OFF)
         TEST_FAIL("failed to set autonegotiation to state OFF");
 
@@ -158,7 +158,7 @@ main(int argc, char *argv[])
     
     /* Turn PHY autonegotiation to state ON */
     autoneg = TE_PHY_AUTONEG_ON;
-    CHECK_RC(tapi_cfg_phy_autoneg_set(ta, iface_name, autoneg));
+    CHECK_RC(tapi_cfg_phy_autoneg_admin_set(ta, iface_name, autoneg));
     CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
     CFG_WAIT_CHANGES;
     

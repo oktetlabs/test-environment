@@ -73,17 +73,25 @@
   <register>
       <object oid="/agent/interface/phy"
               access="read_only" type="none"/>
-      <object oid="/agent/interface/phy/autoneg"
+      <object oid="/agent/interface/phy/autoneg_admin"
               access="read_write" type="integer"/>
-      <object oid="/agent/interface/phy/duplex"
+      <object oid="/agent/interface/phy/autoneg_oper"
+              access="read_only" type="integer" volatile="true"/>
+      <object oid="/agent/interface/phy/duplex_admin"
               access="read_write" type="string">
-          <depends oid="/agent/interface/phy/autoneg"/>
+          <depends oid="/agent/interface/phy/autoneg_admin"/>
           <depends oid="/agent/interface/phy/modes/speed/duplex"/>
       </object>
-      <object oid="/agent/interface/phy/speed"
+      <object oid="/agent/interface/phy/duplex_oper"
+              access="read_only" type="string">
+      </object>
+        <object oid="/agent/interface/phy/speed_admin"
               access="read_write" type="integer">
-          <depends oid="/agent/interface/phy/autoneg"/>
+          <depends oid="/agent/interface/phy/autoneg_admin"/>
           <depends oid="/agent/interface/phy/modes/speed/duplex"/>
+      </object>        
+      <object oid="/agent/interface/phy/speed_oper"
+              access="read_only" type="integer" volatile="true">
       </object>
       <object oid="/agent/interface/phy/modes"
               access="read_only" type="none"/>
@@ -93,8 +101,6 @@
               access="read_write" type="integer"/>
       <object oid="/agent/interface/phy/state"
               access="read_only" type="integer" volatile="true">
-          <depends oid="/agent/interface/phy/autoneg"/>
-          <depends oid="/agent/interface/phy/modes/speed/duplex"/>
       </object>
   </register>
 
@@ -164,13 +170,13 @@
               value="/agent/interface/phy"/>
     <instance oid="/conf_delay:phy/ta:" value="5000"/>
     <instance oid="/conf_delay:phy_autoneg"
-              value="/agent/interface/phy/autoneg"/>
+              value="/agent/interface/phy/autoneg_admin"/>
     <instance oid="/conf_delay:phy_autoneg/ta:" value="5000"/>
     <instance oid="/conf_delay:phy_duplex"
-              value="/agent/interface/phy/duplex"/>
+              value="/agent/interface/phy/duplex_admin"/>
     <instance oid="/conf_delay:phy_duplex/ta:" value="5000"/>
     <instance oid="/conf_delay:phy_speed"
-              value="/agent/interface/phy/speed"/>
+              value="/agent/interface/phy/speed_admin"/>
     <instance oid="/conf_delay:phy_speed/ta:" value="5000"/>
     <instance oid="/conf_delay:phy_state"
               value="/agent/interface/phy/state"/>

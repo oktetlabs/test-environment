@@ -236,26 +236,49 @@
          Value: -1 - Not supported
                  0 - ON
                  1 - OFF -->
-    <object oid="/agent/interface/phy/autoneg" access="read_write"
+    <object oid="/agent/interface/phy/autoneg_admin" access="read_write"
             type="integer"/>
-    
+
+     <!-- Network interface autonegotiation state oper value
+         Name: none
+         Value: -1 - Not supported
+                 0 - ON
+                 1 - OFF -->
+    <object oid="/agent/interface/phy/autoneg_oper" access="read_only"
+            type="integer" volatile="true"/>
+   
     <!-- Network interface duplex control; set value denied when autonegotiation
          state on
          Name: none
          Value: half          - half duplex
                 full          - full duplex
                 not supported - not supported -->
-    <object oid="/agent/interface/phy/duplex" access="read_write"
+    <object oid="/agent/interface/phy/duplex_admin" access="read_write"
             type="string"/>
-    
+
+     <!-- Network interface duplex oper value
+         Name: none
+         Value: half          - half duplex
+                full          - full duplex
+                not supported - not supported -->
+    <object oid="/agent/interface/phy/duplex_oper" access="read_only"
+            type="string" volatile="true"/>
+   
     <!-- Network interface speed control; set value denied when autonegotiation
          state on
          Name: none
          Value: integer equal PHY speed in Mbit/sec or -1
                 if not supported -->
-    <object oid="/agent/interface/phy/speed" access="read_write"
+    <object oid="/agent/interface/phy/speed_admin" access="read_write"
             type="integer"/>
-    
+
+     <!-- Network interface speed oper value
+         Name: none
+         Value: integer equal PHY speed in Mbit/sec or -1
+                if not supported -->
+    <object oid="/agent/interface/phy/speed_oper" access="read_only"
+            type="integer" volatile="true"/>
+   
     <!-- PHY supported mode list
          Name: none -->
     <object oid="/agent/interface/phy/modes" access="none"

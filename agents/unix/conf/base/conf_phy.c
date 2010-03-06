@@ -120,18 +120,23 @@
  * Methods
  */
 
+static te_errno phy_autoneg_oper_get(unsigned int, const char *, char *,
+                                     const char *);
 
-static te_errno phy_autoneg_get(unsigned int, const char *, char *,
-                                const char *);
+static te_errno phy_autoneg_admin_get(unsigned int, const char *, char *,
+                                      const char *);
 
-static te_errno phy_autoneg_set(unsigned int, const char *, const char *,
-                                const char *);
+static te_errno phy_autoneg_admin_set(unsigned int, const char *,
+                                      const char *, const char *);
 
-static te_errno phy_duplex_get(unsigned int, const char *, char *,
-                               const char *);
+static te_errno phy_duplex_oper_get(unsigned int, const char *, char *,
+                                    const char *);
 
-static te_errno phy_duplex_set(unsigned int, const char *, const char *,
-                               const char *);
+static te_errno phy_duplex_admin_get(unsigned int, const char *, char *,
+                                    const char *);
+
+static te_errno phy_duplex_admin_set(unsigned int, const char *,
+                                     const char *, const char *);
 
 static te_errno phy_modes_speed_duplex_get(unsigned int, const char *,
                                            char *, const char *,
@@ -150,11 +155,14 @@ static te_errno phy_modes_speed_list(unsigned int, const char *, char **,
                                      const char *);
 
 
-static te_errno phy_speed_get(unsigned int, const char *, char *,
-                              const char *);
+static te_errno phy_speed_oper_get(unsigned int, const char *, char *,
+                                   const char *);
 
-static te_errno phy_speed_set(unsigned int, const char *, const char *,
-                              const char *);
+static te_errno phy_speed_admin_get(unsigned int, const char *, char *,
+                                    const char *);
+
+static te_errno phy_speed_admin_set(unsigned int, const char *,
+                                    const char *, const char *);
 
 static te_errno phy_state_get(unsigned int, const char *, char *,
                               const char *);
@@ -186,18 +194,39 @@ RCF_PCH_CFG_NODE_COLLECTION(node_phy_modes_speed, "speed",
 RCF_PCH_CFG_NODE_RO(node_phy_modes, "modes", &node_phy_modes_speed,
                     &node_phy_state, NULL);
 
-RCF_PCH_CFG_NODE_RWC(node_phy_speed, "speed", NULL, &node_phy_modes,
-                     phy_speed_get, phy_speed_set, &node_phy);
+RCF_PCH_CFG_NODE_RWC(node_phy_speed_admin, "speed_admin", NULL,
+                     &node_phy_modes, phy_speed_admin_get,
+                     phy_speed_admin_set, &node_phy);
 
-RCF_PCH_CFG_NODE_RWC(node_phy_duplex, "duplex", NULL, &node_phy_speed,
-                     phy_duplex_get, phy_duplex_set, &node_phy);
+RCF_PCH_CFG_NODE_RO(node_phy_speed_oper, "speed_oper", NULL,
+                    &node_phy_speed_admin, phy_speed_oper_get);
 
-RCF_PCH_CFG_NODE_RWC(node_phy_autoneg, "autoneg", NULL, &node_phy_duplex,
-                     phy_autoneg_get, phy_autoneg_set, &node_phy);
+RCF_PCH_CFG_NODE_RWC(node_phy_duplex_admin, "duplex_admin", NULL,
+                     &node_phy_speed_oper, phy_duplex_admin_get,
+                     phy_duplex_admin_set, &node_phy);
 
-RCF_PCH_CFG_NODE_NA_COMMIT(node_phy, "phy", &node_phy_autoneg, NULL,
+RCF_PCH_CFG_NODE_RO(node_phy_duplex_oper, "duplex_oper", NULL,
+                    &node_phy_duplex_admin,
+                    phy_duplex_oper_get);
+
+RCF_PCH_CFG_NODE_RWC(node_phy_autoneg_admin, "autoneg_admin", NULL,
+                     &node_phy_duplex_oper, phy_autoneg_admin_get,
+                     phy_autoneg_admin_set, &node_phy);
+
+RCF_PCH_CFG_NODE_RO(node_phy_autoneg_oper, "autoneg_oper", NULL,
+                    &node_phy_autoneg_admin,
+                    phy_autoneg_oper_get);
+
+RCF_PCH_CFG_NODE_NA_COMMIT(node_phy, "phy", &node_phy_autoneg_oper, NULL,
                            phy_commit);
 
+
+/* Admin values of interface parameters */
+static struct admin_params {
+    uint16_t speed;     /**< Speed value */
+    uint8_t  duplex;    /**< Duplex value */
+    uint8_t  autoneg;   /**< Autonegotiation ON/OFF */
+} admin_params;
 
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
 /* A list of the interfaces parameters */
@@ -206,6 +235,8 @@ static struct phy_iflist_head {
     struct phy_iflist_head *prev;           /**< Previous list item */
     const char             *ifname;         /**< Interface name  */
     struct ethtool_cmd      ecmd;           /**< Interface parameters */
+    struct admin_params     admin;          /**< Admininstrative values 
+                                                 of interface parameters */
     te_bool                 adver_cached;   /**< Adver cache state flag */
 } phy_iflist;
 
@@ -254,6 +285,11 @@ phy_iflist_add_item(struct phy_iflist_head *list, const char *ifname)
     new_list_item->ecmd.duplex = TE_PHY_DUPLEX_UNKNOWN;
     new_list_item->ecmd.autoneg = TE_PHY_AUTONEG_UNKNOWN;
     new_list_item->adver_cached = FALSE;
+
+    /* FIXME: */
+    new_list_item->admin.speed = TE_PHY_SPEED_100;
+    new_list_item->admin.duplex = TE_PHY_DUPLEX_FULL;
+    new_list_item->admin.autoneg = TE_PHY_AUTONEG_ON;
     
     return new_list_item;
 }
@@ -597,7 +633,7 @@ phy_extract_ifname(const char *ifname, char *drv, int *instance)
 #endif /* __sun__ */
 
 /**
- * Get PHY autonegotiation state.
+ * Get PHY autonegotiation oper state.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instance identifier (unused)
@@ -607,8 +643,8 @@ phy_extract_ifname(const char *ifname, char *drv, int *instance)
  * @return              Status code
  */
 static te_errno
-phy_autoneg_get(unsigned int gid, const char *oid, char *value,
-                const char *ifname)
+phy_autoneg_oper_get(unsigned int gid, const char *oid, char *value,
+                     const char *ifname)
 {
     UNUSED(gid);
     UNUSED(oid);
@@ -724,8 +760,8 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
  * @return              Status code
  */
 static te_errno
-phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
-                const char *ifname)
+phy_autoneg_admin_set(unsigned int gid, const char *oid, const char *value,
+                      const char *ifname)
 {
     UNUSED(oid);
     UNUSED(gid);
@@ -751,6 +787,7 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
     }
     
     list_item->ecmd.autoneg = (uint8_t)autoneg;
+    list_item->admin.autoneg = (uint8_t)autoneg;
     
     return 0;
 #else
@@ -761,6 +798,53 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 
+/**
+ * Get PHY autonegotiation admin state.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         location of value
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_autoneg_admin_get(unsigned int gid, const char *oid, char *value,
+                      const char *ifname)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+    
+#if defined __linux__
+    struct phy_iflist_head *list_item;
+    
+    /* Try to get a pointer to list item associated with
+     * current interface name */
+    list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
+    if (list_item == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+     /* Check for valid value */
+    switch (list_item->admin.autoneg)
+    {
+        case TE_PHY_AUTONEG_ON:
+            snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_ON);
+            break;
+
+        case TE_PHY_AUTONEG_OFF:
+            snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_OFF);
+            break;
+
+        default:
+            snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
+    };
+#else
+    UNUSED(ifname);
+    snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
+#endif /* __linux__ */
+
+    return 0;
+}
 
 /**
  * Get PHY duplex state.
@@ -773,8 +857,8 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
  * @return              Status code
  */
 static te_errno
-phy_duplex_get(unsigned int gid, const char *oid, char *value,
-               const char *ifname)
+phy_duplex_oper_get(unsigned int gid, const char *oid, char *value,
+                    const char *ifname)
 {
     UNUSED(gid);
     UNUSED(oid);
@@ -889,8 +973,8 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
  * @return              Status code
  */
 static te_errno
-phy_duplex_set(unsigned int gid, const char *oid, const char *value,
-           const char *ifname)
+phy_duplex_admin_set(unsigned int gid, const char *oid, const char *value,
+                     const char *ifname)
 {
     UNUSED(oid);
     UNUSED(gid);
@@ -914,6 +998,7 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
     }
     
     list_item->ecmd.duplex = duplex;
+    list_item->admin.duplex = duplex;
     
     return 0;
 #else
@@ -922,6 +1007,50 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
 #endif /* __linux__ */
     ERROR("change duplex state is not supported at this platform");
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+}
+
+/**
+ * Get PHY duplex admin state.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         location of value
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_duplex_admin_get(unsigned int gid, const char *oid, char *value,
+                     const char *ifname)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+    
+#if defined __linux__
+    char                   *duplex = NULL;
+    struct phy_iflist_head *list_item;
+    
+    /* Try to get a pointer to list item associated with
+     * current interface name */
+    list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
+    if (list_item == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    
+    duplex = phy_get_duplex_by_id(list_item->admin.duplex); 
+    if (duplex == NULL)
+    {
+        ERROR("unknown duplex value %d at %s",
+              list_item->admin.duplex, ifname);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    
+    snprintf(value, RCF_MAX_VAL, "%s", duplex);
+    
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+#endif /* __linux__ */
+    return 0;
 }
 
 /**
@@ -1238,8 +1367,8 @@ phy_modes_speed_list(unsigned int gid, const char *oid, char **list,
  * @return              Status code
  */
 static te_errno
-phy_speed_get(unsigned int gid, const char *oid, char *value,
-              const char *ifname)
+phy_speed_oper_get(unsigned int gid, const char *oid, char *value,
+                   const char *ifname)
 {
     UNUSED(gid);
     UNUSED(oid);
@@ -1321,8 +1450,8 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
  * @return              Status code
  */
 static te_errno
-phy_speed_set(unsigned int gid, const char *oid, const char *value,
-              const char *ifname)
+phy_speed_admin_set(unsigned int gid, const char *oid, const char *value,
+                    const char *ifname)
 {
     UNUSED(oid);
     UNUSED(gid);
@@ -1342,6 +1471,7 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
     sscanf(value, "%d", &speed);
     
     list_item->ecmd.speed = speed;
+    list_item->admin.speed = speed;
     
     return 0;
 #else
@@ -1350,6 +1480,42 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
 #endif /* __linux__ */
     ERROR("change speed state is not supported at this platform");
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+}
+
+/**
+ * Get PHY speed admin value.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         location of value
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_speed_admin_get(unsigned int gid, const char *oid, char *value,
+                    const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if defined __linux__
+    struct phy_iflist_head *list_item;
+    
+    /* Try to get a pointer to list item associated with
+     * current interface name */
+    
+    list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
+    if (list_item == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    snprintf(value, RCF_MAX_VAL, "%d", list_item->admin.speed);
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+#endif /* __linux__ */
+    return 0;
+   
 }
 
 /**

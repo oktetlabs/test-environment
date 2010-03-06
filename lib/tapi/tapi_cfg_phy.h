@@ -45,7 +45,7 @@ extern "C" {
 #define TE_PHY_SLEEP_TIME   (10)
 
 /**
- * Get PHY autonegotiation state.
+ * Get PHY autonegotiation oper state.
  *
  * NOTE: Output parameters are valid if function returns
  * positive result only.
@@ -59,8 +59,25 @@ extern "C" {
  * @return Status code
  */
 extern te_errno
-tapi_cfg_phy_autoneg_get(const char *ta, const char *if_name,
-                         int *state);
+tapi_cfg_phy_autoneg_oper_get(const char *ta, const char *if_name,
+                              int *state);
+/**
+ * Get PHY autonegotiation admin state.
+ *
+ * NOTE: Output parameters are valid if function returns
+ * positive result only.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Pointer to the returned autonegotiation state value:
+ *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
+ *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_phy_autoneg_admin_get(const char *ta, const char *if_name,
+                               int *state);
 
 /**
  * Set PHY autonegotiation state.
@@ -74,11 +91,11 @@ tapi_cfg_phy_autoneg_get(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_phy_autoneg_set(const char *ta, const char *if_name,
-                         int state);
+tapi_cfg_phy_autoneg_admin_set(const char *ta, const char *if_name,
+                               int state);
 
 /**
- * Get PHY duplex state.
+ * Get PHY duplex oper state.
  *
  * NOTE: Output parameters are valid if function returns
  * positive result only.
@@ -92,8 +109,26 @@ tapi_cfg_phy_autoneg_set(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_phy_duplex_get(const char *ta, const char *if_name,
-                        int *state);
+tapi_cfg_phy_duplex_oper_get(const char *ta, const char *if_name,
+                             int *state);
+
+/**
+ * Get PHY duplex admin state.
+ *
+ * NOTE: Output parameters are valid if function returns
+ * positive result only.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Pointer to the returned duplex state value:
+ *                      TE_PHY_DUPLEX_HALF - half duplex
+ *                      TE_PHY_DUPLEX_FULL - full duplex
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_phy_duplex_admin_get(const char *ta, const char *if_name,
+                              int *state);
 
 /**
  * Set PHY duplex state.
@@ -107,11 +142,11 @@ tapi_cfg_phy_duplex_get(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_phy_duplex_set(const char *ta, const char *if_name,
-                        int state);
+tapi_cfg_phy_duplex_admin_set(const char *ta, const char *if_name,
+                              int state);
 
 /**
- * Get PHY speed value.
+ * Get PHY speed oper value.
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
@@ -124,8 +159,24 @@ tapi_cfg_phy_duplex_set(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_phy_speed_get(const char *ta, const char *if_name,
-                       int *speed);
+tapi_cfg_phy_speed_oper_get(const char *ta, const char *if_name,
+                            int *speed);
+/**
+ * Get PHY speed admin value.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param speed         Pointer to the returned speed value
+ *                      TE_PHY_SPEED_10    - 10 Mbit/sec
+ *                      TE_PHY_SPEED_100   - 100 Mbit/sec
+ *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
+ *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_phy_speed_admin_get(const char *ta, const char *if_name,
+                            int *speed);
 
 /**
  * Set PHY speed.
@@ -141,11 +192,11 @@ tapi_cfg_phy_speed_get(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_phy_speed_set(const char *ta, const char *if_name,
-                       int speed);
+tapi_cfg_phy_speed_admin_set(const char *ta, const char *if_name,
+                             int speed);
 
 /**
- * Get PHY interface mode: speed and duplex state.
+ * Get PHY interface mode: speed and duplex oper state.
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
@@ -161,8 +212,27 @@ tapi_cfg_phy_speed_set(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_phy_mode_get(const char *ta, const char *if_name,
-                      int *speed, int *duplex);
+tapi_cfg_phy_mode_oper_get(const char *ta, const char *if_name,
+                            int *speed, int *duplex);
+/**
+ * Get PHY interface mode: speed and duplex admin state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param speed         Speed value
+ *                      TE_PHY_SPEED_10    - 10 Mbit/sec
+ *                      TE_PHY_SPEED_100   - 100 Mbit/sec
+ *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
+ *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ * @param duplex        Duplex state value
+ *                      TE_PHY_DUPLEX_HALF - half duplex
+ *                      TE_PHY_DUPLEX_FULL - full duplex
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_phy_mode_admin_get(const char *ta, const char *if_name,
+                            int *speed, int *duplex);
 
 /**
  * Set PHY interface mode: speed and duplex state.
@@ -181,8 +251,8 @@ tapi_cfg_phy_mode_get(const char *ta, const char *if_name,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_phy_mode_set(const char *ta, const char *if_name,
-                      int speed, int duplex);
+tapi_cfg_phy_mode_admin_set(const char *ta, const char *if_name,
+                            int speed, int duplex);
 
 /**
  * Get PHY link state.
