@@ -425,6 +425,7 @@ te_rc_mod2str(te_errno err)
         MOD2STR(ISCSI_TARGET);
         MOD2STR(TOOL_EXT);
         MOD2STR(TRC);
+        MOD2STR(ACSE);
         case 0: return "";
         default:
             snprintf(unknown_module, sizeof(unknown_module),
