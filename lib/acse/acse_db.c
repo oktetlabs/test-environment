@@ -110,7 +110,10 @@ db_add_cpe(const char *acs_name, const char *cpe_name)
 
     memset(cpe_item, 0, sizeof(*cpe_item));
     cpe_item->name = strdup(cpe_name);
+
     TAILQ_INIT(&(cpe_item->rpc_list));
+
+    LIST_INIT(&cpe_item->inform_list);
 
     LIST_INSERT_HEAD(&(acs_item->cpe_list), cpe_item, links);
 

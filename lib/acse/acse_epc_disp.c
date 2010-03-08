@@ -983,9 +983,30 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
     {
     case EPC_RPC_CALL:
     case EPC_RPC_CHECK:
-    case EPC_GET_INFORM:
     RING("%s():%d TODO", __FUNCTION__, __LINE__);
     /* TODO */
+        break;
+    case EPC_GET_INFORM:
+        {
+            cpe_inform_t *inform_rec;
+            if (cwmp_pars->index == -1)
+                inform_rec = LIST_FIRST(&(cpe->inform_list));
+            else 
+                LIST_FOREACH(inform_rec, &(cpe->inform_list), links)
+                {
+                    if (inform_rec->index == cwmp_pars->index)
+                        break;
+                }
+            /* If not found, error */
+            if (inform_rec == NULL)
+            {
+                cwmp_pars->index = -1;
+                cwmp_pars->from_cpe.inform = NULL;
+                return TE_ENOENT;
+            }
+            cwmp_pars->index = inform_rec->index;
+            cwmp_pars->from_cpe.inform = inform_rec->inform;
+        }
         break;
     case EPC_CONN_REQ:
         rc = acse_init_connection_request(cpe);

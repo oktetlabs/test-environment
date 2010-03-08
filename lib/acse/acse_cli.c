@@ -26,6 +26,39 @@
 
 DEFINE_LGR_ENTITY("ACSE CLI");
 
+
+static te_errno
+cli_args_acs_cpe(const char *args, size_t *offset, char *acs, char *cpe)
+{
+    int i;
+    const char *start_args = args;
+
+    if (!(args && offset && acs && cpe))
+        return TE_EINVAL;
+
+    for (i = 0; args[i] && !isspace(args[i]) && (args[i] != '/'); i++)
+        acs[i] = args[i];
+    acs[i] = '\0';
+    args += i;
+
+    while((*args) && (isspace(*args) || (*args == '/')))
+        args++;
+    
+    for (i = 0; args[i] && !isspace(args[i]) ; i++)
+        cpe[i] = args[i];
+    if (i == 0)
+    {
+        printf("Call CR fails, args '%s', CPE name not detected\n",
+              args);
+        return TE_EFAIL;
+    }
+    cpe[i] = '\0';
+
+    *offset = args - start_args;
+
+    return 0;
+}
+
 static te_errno
 cli_cpe_list(const char *args)
 {
@@ -105,13 +138,49 @@ cli_cpe_cr(const char *args)
 }
 
 static te_errno
+cli_cpe_inform(const char *args)
+{
+    te_errno rc;
+    size_t offset = 0;
+
+    acse_epc_msg_t msg;
+    acse_epc_cwmp_data_t c_data;
+
+    msg.opcode = EPC_CWMP_CALL;
+    msg.data = &c_data;
+    msg.length = sizeof(c_data);
+
+    memset(&c_data, 0, sizeof(c_data));
+
+    c_data.index = atoi(args);
+
+    while (isdigit(*args)) args++;
+    while (isspace(*args)) args++;
+
+    rc = cli_args_acs_cpe(args, &offset, c_data.acs, c_data.cpe);
+    if (rc != 0)
+    {
+        fprintf(stderr, "Parse error 0x%x\n", rc);
+        return rc;
+    }
+    args += offset;
+
+    rc = acse_epc_send(&msg);
+    if (rc != 0)
+        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
+
+    return 0;
+}
+
+static te_errno
 cli_parse_exec_cpe(const char *args)
 {
-    cpe_t *cpe;
     if (strncmp(args, "list ", 5) == 0)
         return cli_cpe_list(args + 5);
     if (strncmp(args, "cr ", 3) == 0)
         return cli_cpe_cr(args + 3);
+    if (strncmp(args, "inform ", 7) == 0)
+        return cli_cpe_inform(args + 7);
     return 0;
 }
 

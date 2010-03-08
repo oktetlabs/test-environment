@@ -131,6 +131,15 @@ typedef struct cpe_rpc_t {
     } arg;
 } cpe_rpc_t;
 
+/* TODO: think, maybe not all Inform should be stored, only some Events? */
+/** CPE Inform list */
+typedef struct cpe_inform_t {
+    LIST_ENTRY(cpe_inform_t) links;
+
+    _cwmp__Inform *inform;
+    int            index;
+} cpe_inform_t;
+
 /** CPE */
 typedef struct cpe_t{
     /** Fields for internal data integrity. */
@@ -151,8 +160,12 @@ typedef struct cpe_t{
                                         in SOAP msg                    */
     cwmp__DeviceIdStruct device_id; /**< Device Identifier       */
 
+
     TAILQ_HEAD(cpe_rpc_list_t, cpe_rpc_t)
-                     rpc_list;  /**< List of RPC to be sent to CPE */
+                 rpc_list;  /**< List of RPC to be sent to CPE */
+    LIST_HEAD(cpe_inform_list_t, cpe_inform_t)
+                 inform_list; /**< List of Informs, received from CPE;
+                                   last Inform stored first in this list.*/
 
     /** Fields for internal procedure data during CWMP session. */
 

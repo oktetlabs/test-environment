@@ -97,6 +97,20 @@ cpe_find_conn_req_url(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
 }
 
 
+te_errno
+cpe_store_inform(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
+{
+
+    cpe_inform_t *inf_store = malloc(sizeof(cpe_inform_t));
+    int last_index = LIST_FIRST(&(cpe_item->inform_list))->index;
+
+    inf_store->inform = cwmp__Inform;
+    inf_store->index = last_index + 1;
+    LIST_INSERT_HEAD(&(cpe_item->inform_list), inf_store, links);
+    return 0;
+}
+
+
 SOAP_FMAC5 int SOAP_FMAC6
 __cwmp__GetRPCMethods(struct soap *soap, 
             struct _cwmp__GetRPCMethods *cwmp__GetRPCMethods, 
@@ -233,6 +247,7 @@ __cwmp__Inform(struct soap *soap,
     }
 
     cpe_find_conn_req_url(cwmp__Inform, cpe_item);
+    cpe_store_inform(cwmp__Inform, cpe_item);
 
     cwmp__InformResponse->MaxEnvelopes = 1;
     soap->header->cwmp__HoldRequests.__item = 0;
