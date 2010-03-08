@@ -104,6 +104,18 @@ te_cwmp_pack__Inform(const _cwmp__Inform *src, void *msg, size_t max_len)
 }
 
 
+ssize_t
+te_cwmp_pack__EventStruct(const cwmp__EventStruct *src,
+                          void *msg, size_t max_len)
+{
+    size_t packed_length = 0;
+    cwmp__EventStruct *dst = msg;
+
+    CWMP_PACK(src, msg, sizeof(*src), packed_length, max_len);
+
+    CWMP_PACK_STR(src, msg, packed_length, max_len, EventCode);
+    CWMP_PACK_STR(src, msg, packed_length, max_len, CommandKey);
+}
 
 
 cwmp__DeviceIdStruct *
@@ -118,6 +130,7 @@ te_cwmp_unpack__DeviceIdStruct(void *msg, size_t len)
 
     return ret;
 }
+
 
 cwmp__EventStruct *
 te_cwmp_unpack__EventStruct(void *msg, size_t len)

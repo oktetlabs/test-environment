@@ -294,6 +294,7 @@ epc_pack_call_data(void *buf, size_t len,
         /* TODO */
         RING("%s():%d TODO", __FUNCTION__, __LINE__);
         return 0;
+    case CWMP_RPC_NONE:
     case CWMP_RPC_get_rpc_methods:
     case CWMP_RPC_factory_reset:
     case CWMP_RPC_get_queued_transfers:
@@ -345,6 +346,7 @@ epc_pack_response_data(void *buf, size_t len,
         /* TODO */
         RING("%s():%d TODO", __FUNCTION__, __LINE__);
         return 0;
+    case CWMP_RPC_NONE:
     case CWMP_RPC_schedule_inform:
     case CWMP_RPC_set_vouchers:
     case CWMP_RPC_reboot:
@@ -483,6 +485,7 @@ epc_unpack_call_data(void *buf, size_t len,
         /* TODO */
         RING("%s():%d TODO", __FUNCTION__, __LINE__);
         return 0;
+    case CWMP_RPC_NONE:
     case CWMP_RPC_get_rpc_methods:
     case CWMP_RPC_factory_reset:
     case CWMP_RPC_get_queued_transfers:
@@ -541,6 +544,7 @@ epc_unpack_response_data(void *buf, size_t len,
         /* TODO */
         RING("%s():%d TODO", __FUNCTION__, __LINE__);
         return 0;
+    case CWMP_RPC_NONE:
     case CWMP_RPC_schedule_inform:
     case CWMP_RPC_set_vouchers:
     case CWMP_RPC_reboot:

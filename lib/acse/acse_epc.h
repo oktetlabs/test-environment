@@ -163,15 +163,21 @@ typedef struct {
     te_errno         status; /**< Significant only in response */
 } acse_epc_msg_t;
 
+/**
+ * Level of EPC configuration command: either ACS or CPE.
+ */
 typedef enum {
-    EPC_CFG_ACS = 1,
+    EPC_CFG_ACS = 1, 
     EPC_CFG_CPE
 } acse_cfg_level_t;
 
+/**
+ * Type of EPC configuration command.
+ */
 typedef enum {
-    EPC_CFG_ADD,
-    EPC_CFG_DEL,
-    EPC_CFG_MODIFY,
+    EPC_CFG_ADD,        /**< Add record on ACSE: either ACS or CPE */
+    EPC_CFG_DEL,        /**< Remove record on ACSE: either ACS or CPE */
+    EPC_CFG_MODIFY,     /**< Modify some parameter in record */
     EPC_CFG_OBTAIN,
     EPC_CFG_LIST,
 } acse_cfg_op_t;

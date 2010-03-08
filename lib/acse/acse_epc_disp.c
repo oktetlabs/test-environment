@@ -73,20 +73,6 @@
 #include "te_defs.h"
 #include "logger_api.h"
 
-#if 0
-/** EPC mechanism state machine states */
-typedef enum { want_read, want_write } epc_t;
-
-/** EPC mechanism state machine private data */
-typedef struct {
-    int       sock;   /**< The socket endpoint from TA to read/write    */
-    acse_epc_msg_t *params;
-                      /**< Parameters passed from TA over shared memory */
-    te_errno  rc;     /**< Return code to be passed back to TA          */
-    epc_t    state;   /**< EPC mechanism state machine current state   */
-} epc_data_t;
-#endif
-
 
 /**
  * Avoid warning when freeing pointers to const data

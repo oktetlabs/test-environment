@@ -12,6 +12,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "acse_epc.h"
+#include "acse_internal.h"
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -19,8 +21,6 @@
 #include "te_defs.h"
 #include "te_cwmp.h"
 #include "logger_api.h"
-#include "acse_epc.h"
-#include "acse_internal.h"
 
 #include "logger_file.h"
 
