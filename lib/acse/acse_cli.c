@@ -89,8 +89,8 @@ cli_cpe_list(const char *args)
 static te_errno
 cli_cpe_cr(const char *args)
 {
-    int i;
     te_errno rc;
+    size_t offset = 0;
 
     acse_epc_msg_t msg;
     acse_epc_cwmp_data_t c_data;
@@ -112,23 +112,13 @@ cli_cpe_cr(const char *args)
     }
     args += 5;
 
-    for (i = 0; args[i] && !isspace(args[i]) && (args[i] != '/'); i++)
-        c_data.acs[i] = args[i];
-    c_data.acs[i] = '\0';
-    args += i;
-
-    while((*args) && (isspace(*args) || (*args == '/')))
-        args++;
-    
-    for (i = 0; args[i] && !isspace(args[i]) ; i++)
-        c_data.cpe[i] = args[i];
-    if (i == 0)
+    rc = cli_args_acs_cpe(args, &offset, c_data.acs, c_data.cpe);
+    if (rc != 0)
     {
-        printf("Call CR fails, args '%s', CPE name not detected\n",
-              args);
-        return TE_EFAIL;
+        fprintf(stderr, "Parse error 0x%x\n", rc);
+        return rc;
     }
-    c_data.cpe[i] = '\0';
+    args += offset;
 
     rc = acse_epc_send(&msg);
     if (rc != 0)
@@ -152,6 +142,7 @@ cli_cpe_inform(const char *args)
 
     memset(&c_data, 0, sizeof(c_data));
 
+    c_data.op = EPC_GET_INFORM;
     c_data.index = atoi(args);
 
     while (isdigit(*args)) args++;
@@ -266,9 +257,28 @@ print_cwmp_response(acse_epc_cwmp_data_t *cwmp_resp)
                 cwmp_resp->acs, cwmp_resp->cpe, cwmp_resp->index);
         break;
     case EPC_RPC_CHECK:
-    case EPC_GET_INFORM:
         RING("%s():%d TODO", __FUNCTION__, __LINE__);
         /* TODO */
+        break;
+    case EPC_GET_INFORM:
+        {
+            _cwmp__Inform *inform = cwmp_resp->from_cpe.inform;
+            printf("Get Inform from %s/%s, index %d\n",
+                    cwmp_resp->acs, cwmp_resp->cpe, cwmp_resp->index);
+            printf("Device OUI: '%s'\n", inform->DeviceId->OUI);
+            if (inform->Event != NULL)
+            {
+                int i;
+                for(i = 0; i < inform->Event->__size; i++)
+                {
+                    cwmp__EventStruct *ev =
+                        inform->Event->__ptrEventStruct[i];
+                    if (ev != NULL)
+                        printf("Event[%d]: '%s'\n", i, ev->EventCode);
+                }
+            }
+        }
+        break;
     }
     return 0;
 }
@@ -344,11 +354,12 @@ main(int argc, char **argv)
             {
                 acse_epc_msg_t *msg_resp;
                 rc = acse_epc_recv(&msg_resp);
-                if (rc != 0)
+                if (TE_RC_GET_ERROR(rc) == TE_ENOTCONN)
+                    break;
+                else if (rc != 0)
                     RING("EPC recv error %r", rc);
-                else
+                else if (msg_resp->status == 0)
                 {
-                    printf("Status %d, ", msg_resp->status);
                     switch (msg_resp->opcode)
                     {
                         case EPC_CONFIG_RESPONSE:
@@ -362,6 +373,9 @@ main(int argc, char **argv)
                                  msg_resp->opcode);
                     }
                 }
+                else
+                    printf("ERROR in response: %s\n",
+                        te_rc_err2str(msg_resp->status));
             }
         }
     }

@@ -34,6 +34,8 @@
 
 #include "cwmp_data.h"
 
+#include <string.h>
+
 /* Do not make any alignment */
 #define CWMP_PACK(_src, _msg, _item_length, _packed_length, _max_length) \
     do { \
@@ -96,8 +98,16 @@ te_cwmp_pack__Inform(const _cwmp__Inform *src, void *msg, size_t max_len)
     dst->DeviceId = (void*)((char *)msg - (char*)dst);
     packed_length += rc;
     msg += rc;
+
+
+    rc = te_cwmp_pack__EventList(src->Event, msg, max_len - packed_length);
+    if (rc < 0)
+        return -1;
+    dst->Event = (void*)((char *)msg - (char*)dst);
+    packed_length += rc;
+    msg += rc;
+
     /* TODO */
-    dst->Event = 0;
     dst->ParameterList = 0;
 
     return packed_length;
@@ -115,55 +125,190 @@ te_cwmp_pack__EventStruct(const cwmp__EventStruct *src,
 
     CWMP_PACK_STR(src, msg, packed_length, max_len, EventCode);
     CWMP_PACK_STR(src, msg, packed_length, max_len, CommandKey);
+
+    return packed_length;
 }
 
 
-cwmp__DeviceIdStruct *
-te_cwmp_unpack__DeviceIdStruct(void *msg, size_t len)
+ssize_t
+te_cwmp_pack__EventList(const EventList *src,
+                          void *msg, size_t max_len)
 {
-    cwmp__DeviceIdStruct *ret = msg;
+    ssize_t rc;
+    size_t packed_length = 0;
+    size_t array_memlen = 0;
+    EventList *dst = msg;
+    int i = 0;
 
-    ret->Manufacturer += (unsigned int)msg;
-    ret->OUI          += (unsigned int)msg;
-    ret->ProductClass += (unsigned int)msg;
-    ret->SerialNumber += (unsigned int)msg;
+    CWMP_PACK(src, msg, sizeof(*src), packed_length, max_len);
+    
+    /* For fill links to array elements here it is convenient
+       to have real pointer to the array start */
+    dst->__ptrEventStruct = msg; 
 
-    return ret;
+    array_memlen = sizeof(void*) * src->__size;
+    msg += array_memlen;
+    packed_length += array_memlen;
+
+    for (i = 0; i < src->__size; i++)
+    {
+        rc = te_cwmp_pack__EventStruct(src->__ptrEventStruct[i], 
+                                       msg, max_len - packed_length);
+        if (rc < 0)
+            return -1;
+        dst->__ptrEventStruct[i] = (void*)((char *)msg - (char*)dst);
+        packed_length += rc;
+        msg += rc;
+    }
+    /* Put array offset instead of real pointer */
+    dst->__ptrEventStruct =
+        (void*)((char *)dst->__ptrEventStruct - (char*)dst);
+
+    return packed_length;
 }
 
 
-cwmp__EventStruct *
-te_cwmp_unpack__EventStruct(void *msg, size_t len)
+
+/*
+ * ============= UN-PACK methods ================
+ */
+
+
+/* Assume function parameters 'msg' and 'max_len' */
+#define CWMP_UNPACK_STRING(_field, _ofs) \
+    do { \
+        unsigned int f = (unsigned int)(_field); \
+        if (f >= max_len) return -1; \
+        if ((_ofs) < f) (_ofs) = f; \
+        (_field) += (unsigned int) (msg); \
+    } while (0)
+
+ssize_t
+te_cwmp_unpack__DeviceIdStruct(void *msg, size_t max_len)
 {
-    return NULL;
+    cwmp__DeviceIdStruct *res = msg;
+    size_t ofs = 0;
+
+    CWMP_UNPACK_STRING(res->Manufacturer, ofs);
+    CWMP_UNPACK_STRING(res->OUI, ofs);
+    CWMP_UNPACK_STRING(res->ProductClass, ofs);
+    CWMP_UNPACK_STRING(res->SerialNumber, ofs);
+    /* now 'ofs' is maximum offset from all strings */
+
+#if 1
+    ofs += strlen(((char *)msg) + ofs);
+#else
+    ofs += strnlen(((char *)msg) + ofs, (max_len) - ofs);
+#endif
+
+    return ofs;
 }
 
-cwmp__ParameterValueStruct *
-te_cwmp_unpack__ParameterValueStruct(void *msg, size_t len)
+
+ssize_t
+te_cwmp_unpack__EventStruct(void *msg, size_t max_len)
 {
-    return NULL;
+    cwmp__EventStruct *res = msg;
+    size_t ofs = 0;
+
+    CWMP_UNPACK_STRING(res->EventCode,  ofs);
+    CWMP_UNPACK_STRING(res->CommandKey, ofs);
+
+#if 0
+    ofs += strnlen(((char *)msg) + ofs, (max_len) - ofs);
+#else
+    ofs += strlen(((char *)msg) + ofs);
+#endif
+
+    return ofs;
 }
 
-_cwmp__Inform *
-te_cwmp_unpack__Inform(void *msg, size_t len)
+/* TODO: make macro for array unpack */
+
+ssize_t
+te_cwmp_unpack__EventList(void *msg, size_t max_len)
+{
+    EventList *res = msg;
+    unsigned int ofs;
+    int i;
+    ssize_t rc = 0;
+
+    ofs = (unsigned int)(res->__ptrEventStruct);
+    if (res->__size == 0 || ofs == 0)
+    {
+        res->__ptrEventStruct = NULL;
+        return sizeof(EventList);
+    }
+
+    if (ofs >= max_len)
+        return -1;
+
+    res->__ptrEventStruct = (void *)((char *)msg + ofs);
+    for (i = 0; i < res->__size; i++)
+    {
+        ofs = (unsigned int)(res->__ptrEventStruct[i]);
+        rc = te_cwmp_unpack__EventStruct(msg + ofs, max_len - ofs);
+        if (rc < 0)
+            return -1;
+        res->__ptrEventStruct[i] = msg + ofs;
+    }
+    /* now 'ofs' is offset of last element in array */
+    ofs += rc;
+
+    return ofs;
+}
+
+ssize_t
+te_cwmp_unpack__ParameterValueStruct(void *msg, size_t max_len)
+{
+    return -1;
+}
+
+ssize_t
+te_cwmp_unpack__Inform(void *msg, size_t max_len)
 {
     _cwmp__Inform *ret = msg;
     unsigned int ofs;
+    ssize_t rc;
 
     ofs = (unsigned int)ret->DeviceId;
     if (ofs != 0)
     {
-        if (ofs >= len)
-            return NULL;
-        ret->DeviceId  = 
-            te_cwmp_unpack__DeviceIdStruct(msg + ofs, len - ofs);
+        if (ofs >= max_len)
+            return -1;
+        rc = te_cwmp_unpack__DeviceIdStruct(msg + ofs, max_len - ofs);
+        if (rc < 0)
+            return -1;
+        ret->DeviceId = msg + ofs;
+        ofs += rc;
     }
-    return ret;
+    else
+    {
+        ret->DeviceId = NULL;
+        ofs = sizeof(_cwmp__Inform);
+    }
+
+
+    ofs = (unsigned int)ret->Event;
+    if (ofs >= max_len)
+            return -1;
+    if (ofs != 0)
+    {
+        rc = te_cwmp_unpack__EventList(msg + ofs, max_len - ofs);
+        if (rc < 0)
+            return -1;
+        ret->Event = msg + ofs;
+        ofs += rc;
+    }
+    else
+        ret->Event = NULL;
+
+    return ofs;
 }
 
-_cwmp__InformResponse *
-te_cwmp_unpack__InformResponse(void *msg, size_t len)
+ssize_t
+te_cwmp_unpack__InformResponse(void *msg, size_t max_len)
 {
     /* TODO */
-    return NULL;
+    return -1;
 }

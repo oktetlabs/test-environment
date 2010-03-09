@@ -68,7 +68,6 @@ int
 main(int argc, char **argv)
 {
     char    *msg_sock_name;
-    int      port;
     acs_t   *acs;
     cpe_t   *cpe;
 

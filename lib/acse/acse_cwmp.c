@@ -102,7 +102,8 @@ cpe_store_inform(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
 {
 
     cpe_inform_t *inf_store = malloc(sizeof(cpe_inform_t));
-    int last_index = LIST_FIRST(&(cpe_item->inform_list))->index;
+    cpe_inform_t *inf_last = LIST_FIRST(&(cpe_item->inform_list));
+    int last_index = (inf_last != NULL) ? inf_last->index : 0;
 
     inf_store->inform = cwmp__Inform;
     inf_store->index = last_index + 1;

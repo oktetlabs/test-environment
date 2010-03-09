@@ -371,6 +371,14 @@ extern te_errno acse_init_connection_request(cpe_t *cpe_item);
  */
 extern void acse_loop(void);
 
+
+/**
+ * Clear ACSE internal main loop channels; that is call destructor 
+ * for every registered channel.
+ * Usually means finish of ACSE operation.
+ */
+extern void acse_clear_channels(void);
+
 #ifdef __cplusplus
 }
 #endif

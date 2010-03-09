@@ -625,8 +625,9 @@ acse_epc_recv(acse_epc_msg_t **user_message)
                     message.length, cwmp_data);
         break;
     case EPC_CWMP_RESPONSE:
-        rc = epc_unpack_response_data(cwmp_data->data,
-                    message.length, cwmp_data);
+        if (message.status == 0)
+            rc = epc_unpack_response_data(cwmp_data->data,
+                        message.length, cwmp_data);
         break;
 
     case EPC_CONFIG_CALL:
