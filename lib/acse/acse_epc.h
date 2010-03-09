@@ -114,54 +114,6 @@ typedef enum { acse_fun_first = 1,
 #define EPC_CONFIG_MAGIC 0x1977
 #define EPC_CWMP_MAGIC 0x1950
 
-/** State of Connection Request to CPE. */
-typedef enum acse_cr_state_t {
-    CR_NONE = 0,        /**< No Conn.Req operation was inited */
-    CR_WAIT_AUTH,       /**< Connection Request started, but waiting 
-                            for successful authenticate. */
-    CR_DONE,            /**< Connection Request was sent and gets 
-                            successful HTTP response. 
-                            Swith back to CR_NONE after receive Inform
-                            with EventCode  = @c CONNECTION REQUEST*/
-    CR_ERROR,            /**< Connection Request was sent and gets 
-                            HTTP error. 
-                            Swith back to CR_NONE after read 
-                            Conn.Req. status by EPC */
-} acse_cr_state_t;
-    
-
-
-typedef enum {
-    EPC_CONFIG_CALL = EPC_MSG_CODE_MAGIC,
-    EPC_CONFIG_RESPONSE,
-    EPC_CWMP_CALL,
-    EPC_CWMP_RESPONSE,
-} acse_msg_code_t;
-
-
-/**
- * Struct for message exchange between ACSE and its client via AF_UNIX
- * pipe. 
- * All large data passed through shared memory, but not via this connection.
- * ACSE must answer to request as soon as possible. 
- * ACSE may read/write from/to shared memory only between receive this 
- * request and answer response. 
- * All operations with shared memory is hidden behind API, defined in this
- * file (and implemented in acse_epc.c and cwmp_data.c).
- */
-typedef struct {
-    acse_msg_code_t  opcode; /**< Code of operation */
-    void            *data;   /**< In user APІ is pointer to:
-                                either @acse_epc_config_data_t,
-                                or @acse_epc_cwmp_data_t.
-                                In messages really passing via pipe 
-                                is not used. */
-    size_t           length; /**< Lenght of data, related to the message.
-                                Significant only in messages passing 
-                                via pipe between ACSE and its client.
-                                Ignored as INPUT parameter in user API. */
-    te_errno         status; /**< Significant only in response */
-} acse_epc_msg_t;
 
 /**
  * Level of EPC configuration command: either ACS or CPE.
@@ -213,6 +165,27 @@ typedef enum {
     EPC_GET_INFORM,
 } acse_epc_cwmp_op_t;
 
+
+/** State of Connection Request to CPE. */
+typedef enum acse_cr_state_t {
+    CR_NONE = 0,        /**< No Conn.Req operation was inited */
+    CR_WAIT_AUTH,       /**< Connection Request started, but waiting 
+                            for successful authenticate. */
+    CR_DONE,            /**< Connection Request was sent and gets 
+                            successful HTTP response. 
+                            Swith back to CR_NONE after receive Inform
+                            with EventCode  = @c CONNECTION REQUEST*/
+    CR_ERROR,            /**< Connection Request was sent and gets 
+                            HTTP error. 
+                            Swith back to CR_NONE after read 
+                            Conn.Req. status by EPC */
+} acse_cr_state_t;
+    
+
+
+/**
+ * Message with request/response for CWMP-related operation on ACSE.
+ */
 typedef struct {
     acse_epc_cwmp_op_t  op;
 
@@ -264,9 +237,50 @@ typedef struct {
                    This field is processed only
                    in messages ACSE->client */
 
-    uint8_t data[0]; /* start of space after msg header, for packed data */
+    uint8_t enc_start[0]; /**< Start of space after msg header,
+                               for packed data */
 
 } acse_epc_cwmp_data_t;
+
+
+
+
+typedef enum {
+    EPC_CONFIG_CALL = EPC_MSG_CODE_MAGIC,
+    EPC_CONFIG_RESPONSE,
+    EPC_CWMP_CALL,
+    EPC_CWMP_RESPONSE,
+} acse_msg_code_t;
+
+
+/**
+ * Struct for message exchange between ACSE and its client via AF_UNIX
+ * pipe. 
+ * All large data passed through shared memory, but not via this connection.
+ * ACSE must answer to request as soon as possible. 
+ * ACSE may read/write from/to shared memory only between receive this 
+ * request and answer response. 
+ * All operations with shared memory is hidden behind API, defined in this
+ * file (and implemented in acse_epc.c and cwmp_data.c).
+ */
+typedef struct {
+    acse_msg_code_t opcode; /**< Code of operation */
+
+    union {
+        void *p;
+
+        acse_epc_config_data_t *cfg;
+        acse_epc_cwmp_data_t   *cwmp;
+    }       data;    /**< In user APІ is pointer to operation specific
+                          structure.  In messages really passing 
+                          via pipe it is not used. */
+
+    size_t   length; /**< Lenght of data, related to the message.
+                          Significant only in messages passing 
+                          via pipe between ACSE and its client.
+                          Ignored as INPUT parameter in user API. */
+    te_errno status; /**< Significant only in response */
+} acse_epc_msg_t;
 
 /**
  * Role of EPC endpoint: Server (that is ACSE itself) or 

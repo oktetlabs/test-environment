@@ -36,7 +36,9 @@ cli_args_acs_cpe(const char *args, size_t *offset, char *acs, char *cpe)
     if (!(args && offset && acs && cpe))
         return TE_EINVAL;
 
-    for (i = 0; args[i] && !isspace(args[i]) && (args[i] != '/'); i++)
+    while (isspace(*args)) args++;
+
+    for (i = 0; args[i] && (!isspace(args[i])) && (args[i] != '/'); i++)
         acs[i] = args[i];
     acs[i] = '\0';
     args += i;
@@ -48,7 +50,7 @@ cli_args_acs_cpe(const char *args, size_t *offset, char *acs, char *cpe)
         cpe[i] = args[i];
     if (i == 0)
     {
-        printf("Call CR fails, args '%s', CPE name not detected\n",
+        fprintf(stderr, "Call CR fails, args '%s', CPE name not detected\n",
               args);
         return TE_EFAIL;
     }
@@ -67,7 +69,7 @@ cli_cpe_list(const char *args)
     acse_epc_config_data_t cfg_data;
 
     msg.opcode = EPC_CONFIG_CALL;
-    msg.data = &cfg_data;
+    msg.data.cfg = &cfg_data;
     msg.length = sizeof(cfg_data);
     msg.status = 0;
 
@@ -96,7 +98,7 @@ cli_cpe_cr(const char *args)
     acse_epc_cwmp_data_t c_data;
 
     msg.opcode = EPC_CWMP_CALL;
-    msg.data = &c_data;
+    msg.data.cwmp = &c_data;
     msg.length = sizeof(c_data);
 
     memset(&c_data, 0, sizeof(c_data));
@@ -137,7 +139,7 @@ cli_cpe_inform(const char *args)
     acse_epc_cwmp_data_t c_data;
 
     msg.opcode = EPC_CWMP_CALL;
-    msg.data = &c_data;
+    msg.data.cwmp = &c_data;
     msg.length = sizeof(c_data);
 
     memset(&c_data, 0, sizeof(c_data));
@@ -363,10 +365,10 @@ main(int argc, char **argv)
                     switch (msg_resp->opcode)
                     {
                         case EPC_CONFIG_RESPONSE:
-                            print_config_response(msg_resp->data);
+                            print_config_response(msg_resp->data.cfg);
                             break;
                         case EPC_CWMP_RESPONSE:
-                            print_cwmp_response(msg_resp->data);
+                            print_cwmp_response(msg_resp->data.cwmp);
                             break;
                         default:
                             ERROR("Unexpected opcode 0x%x from EPC",

@@ -1111,7 +1111,7 @@ epc_after_poll(void *data, struct pollfd *pfd)
 
         return TE_RC(TE_ACSE, rc);
     }
-    else if (msg == NULL || msg->data == NULL)
+    else if (msg == NULL || msg->data.p == NULL)
     {
         ERROR("%s(): NULL in 'msg' after 'epc_recv'", 
               __FUNCTION__);
@@ -1121,12 +1121,12 @@ epc_after_poll(void *data, struct pollfd *pfd)
     switch(msg->opcode)
     {
     case EPC_CONFIG_CALL:
-        msg->status = acse_epc_config(msg->data);
+        msg->status = acse_epc_config(msg->data.cfg);
         msg->opcode = EPC_CONFIG_RESPONSE;
         break;
 
     case EPC_CWMP_CALL:
-        msg->status = acse_epc_cwmp(msg->data);
+        msg->status = acse_epc_cwmp(msg->data.cwmp);
         msg->opcode = EPC_CWMP_RESPONSE;
         break;
 
@@ -1140,7 +1140,7 @@ epc_after_poll(void *data, struct pollfd *pfd)
     rc = acse_epc_send(msg);
     RING("%s(): send EPC rc %r", __FUNCTION__, rc);
 
-    free(msg->data);
+    free(msg->data.p);
     free(msg);
 
     if (rc != 0)

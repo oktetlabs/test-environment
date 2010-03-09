@@ -366,7 +366,7 @@ acse_epc_send(const acse_epc_msg_t *user_message)
     ssize_t sendrc;
     acse_epc_msg_t message = *user_message;
 
-    if (user_message == NULL || user_message->data == NULL)
+    if (user_message == NULL || user_message->data.p == NULL)
         return TE_EINVAL;
     if (epc_socket == -1)
     {
@@ -400,14 +400,14 @@ acse_epc_send(const acse_epc_msg_t *user_message)
     }
 
     /* Now prepare data */
-    message.data = epc_shmem;
+    message.data.p = epc_shmem;
 
     switch (user_message->opcode)
     {
     case EPC_CONFIG_CALL:
     case EPC_CONFIG_RESPONSE:
     {
-        acse_epc_config_data_t *cfg_data = user_message->data;
+        acse_epc_config_data_t *cfg_data = user_message->data.cfg;
         message.length = sizeof(*cfg_data);
         memcpy(epc_shmem, cfg_data, sizeof(*cfg_data));
     }
@@ -415,13 +415,13 @@ acse_epc_send(const acse_epc_msg_t *user_message)
 
     default: /* CWMP operation */
     {
-        acse_epc_cwmp_data_t *cwmp_data = user_message->data;
+        acse_epc_cwmp_data_t *cwmp_data = user_message->data.cwmp;
         uint8_t *buf;
         ssize_t packed_len;
         size_t len;
 
         memcpy(epc_shmem, cwmp_data, sizeof(*cwmp_data));
-        buf = ((acse_epc_cwmp_data_t *)epc_shmem)->data;
+        buf = ((acse_epc_cwmp_data_t *)epc_shmem)->enc_start;
         len = epc_shmem_size - sizeof(*cwmp_data);
 
         if (message.opcode == EPC_CWMP_CALL)
@@ -614,30 +614,30 @@ acse_epc_recv(acse_epc_msg_t **user_message)
 
     /* TODO check magic here */
 
-    message.data = malloc(message.length);
-    memcpy(message.data, epc_shmem, message.length);
+    message.data.p = malloc(message.length);
+    memcpy(message.data.p, epc_shmem, message.length);
 
-    cwmp_data = message.data;
+    cwmp_data = message.data.cwmp;
     switch (message.opcode)
     {
     case EPC_CWMP_CALL:
-        rc = epc_unpack_call_data(cwmp_data->data,
+        rc = epc_unpack_call_data(cwmp_data->enc_start,
                     message.length, cwmp_data);
         break;
     case EPC_CWMP_RESPONSE:
         if (message.status == 0)
-            rc = epc_unpack_response_data(cwmp_data->data,
+            rc = epc_unpack_response_data(cwmp_data->enc_start,
                         message.length, cwmp_data);
         break;
 
     case EPC_CONFIG_CALL:
     case EPC_CONFIG_RESPONSE:
-        cfg_data = message.data;
+        cfg_data = message.data.cfg;
         if (cfg_data->op.magic != EPC_CONFIG_MAGIC)
         {
             ERROR("EPC: wrong magic for config message: 0x%x",
                  (int)cfg_data->op.magic);
-            free(message.data);
+            free(message.data.p);
             return TE_RC(TE_ACSE, TE_EFAIL);
         }
     }

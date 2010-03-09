@@ -129,7 +129,8 @@ typedef struct cpe_rpc_t {
         _cwmp__SetVouchers              *set_vouchers;
         _cwmp__GetOptions               *get_options;
     } arg;
-} cpe_rpc_t;
+} cpe_rpc_item_t;
+
 
 /* TODO: think, maybe not all Inform should be stored, only some Events? */
 /** CPE Inform list */
@@ -161,8 +162,9 @@ typedef struct cpe_t{
     cwmp__DeviceIdStruct device_id; /**< Device Identifier       */
 
 
-    TAILQ_HEAD(cpe_rpc_list_t, cpe_rpc_t)
+    TAILQ_HEAD(cpe_rpc_list_t, cpe_rpc_item_t)
                  rpc_list;  /**< List of RPC to be sent to CPE */
+
     LIST_HEAD(cpe_inform_list_t, cpe_inform_t)
                  inform_list; /**< List of Informs, received from CPE;
                                    last Inform stored first in this list.*/
