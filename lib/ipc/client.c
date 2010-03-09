@@ -619,6 +619,19 @@ ipc_init_client(const char *name, te_bool conn,
         }
 
 #ifdef TE_IPC_AF_UNIX
+        {
+            int optval = 1;
+            if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
+                           &optval, sizeof(optval)) != 0)
+            {
+                rc = errno;
+                fprintf(stderr, "IPC client '%s' init failed: "
+                        "setsockopt(): %s\n",
+                        name, strerror(rc));
+                return TE_OS_RC(TE_IPC, rc);
+            }
+        }
+
         /* Assign a name to socket */
         {
             struct sockaddr_un addr;
