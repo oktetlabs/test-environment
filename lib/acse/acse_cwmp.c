@@ -540,7 +540,7 @@ acse_cwmp_empty_post(struct soap* soap)
         soap_closesock(soap);
         return 500;
     } 
-    if (TAILQ_EMPTY(&cpe->rpc_list))
+    if (TAILQ_EMPTY(&cpe->rpc_queue))
     {
         INFO("Empty POST for '%s', empty list of RPC calls, response 204",
               cpe->name);

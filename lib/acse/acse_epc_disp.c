@@ -982,9 +982,26 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
     switch(cwmp_pars->op)
     {
     case EPC_RPC_CALL:
+        {
+            /* Insert RPC to queue, ACSE will deliver it during first
+               established CWMP session with CPE. */
+            cpe_rpc_item_t *rpc_item = malloc(sizeof(*rpc_item));
+            rpc_item->params = cwmp_pars;
+            cwmp_pars->index = rpc_item->index = ++cpe->last_queue_index;
+            TAILQ_INSERT_TAIL(&cpe->rpc_queue, rpc_item, links);
+            cwmp_pars->from_cpe.p = NULL; /* nothing yet.. */
+        }
+        break;
     case EPC_RPC_CHECK:
-    RING("%s():%d TODO", __FUNCTION__, __LINE__);
-    /* TODO */
+        {
+            cpe_rpc_item_t *rpc_item;
+            TAILQ_FOREACH(rpc_item, &cpe->rpc_queue, links)
+            {
+                if (rpc_item->index == cwmp_pars->index)
+                    break;
+            }
+            /* TODO ... */
+        }
         break;
     case EPC_GET_INFORM:
         {
@@ -1140,7 +1157,11 @@ epc_after_poll(void *data, struct pollfd *pfd)
     rc = acse_epc_send(msg);
     RING("%s(): send EPC rc %r", __FUNCTION__, rc);
 
-    free(msg->data.p);
+    /* Do NOT free cwmp params for RPC call operation - they are stored
+       in queue, and will be free'd after recieve RPC response and 
+       report about it. */
+    if (msg->opcode != EPC_CWMP_CALL)
+        free(msg->data.p); 
     free(msg);
 
     if (rc != 0)

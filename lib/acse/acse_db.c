@@ -111,7 +111,7 @@ db_add_cpe(const char *acs_name, const char *cpe_name)
     memset(cpe_item, 0, sizeof(*cpe_item));
     cpe_item->name = strdup(cpe_name);
 
-    TAILQ_INIT(&(cpe_item->rpc_list));
+    TAILQ_INIT(&(cpe_item->rpc_queue));
 
     LIST_INIT(&cpe_item->inform_list);
 

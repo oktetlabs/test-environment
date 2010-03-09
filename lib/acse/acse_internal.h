@@ -107,28 +107,9 @@ typedef struct auth_t {
 
 /** CPE RPC queue */
 typedef struct cpe_rpc_t {
-    TAILQ_ENTRY(cpe_rpc_t) links;
-    te_cwmp_rpc_cpe_t      rpc_code;
-
-    union {
-        _cwmp__GetRPCMethods            *get_rpc_methods;
-        _cwmp__SetParameterValues       *set_parameter_values;
-        _cwmp__GetParameterValues       *get_parameter_values;
-        _cwmp__GetParameterNames        *get_parameter_names;
-        _cwmp__SetParameterAttributes   *set_parameter_attributes;
-        _cwmp__GetParameterAttributes   *get_parameter_attributes;
-        _cwmp__AddObject                *add_object;
-        _cwmp__DeleteObject             *delete_object;
-        _cwmp__Reboot                   *reboot;
-        _cwmp__Download                 *download;
-        _cwmp__Upload                   *upload;
-        _cwmp__FactoryReset             *factory_reset;
-        _cwmp__GetQueuedTransfers       *get_queued_transfers;
-        _cwmp__GetAllQueuedTransfers    *get_all_queued_transfers;
-        _cwmp__ScheduleInform           *schedule_inform;
-        _cwmp__SetVouchers              *set_vouchers;
-        _cwmp__GetOptions               *get_options;
-    } arg;
+    TAILQ_ENTRY(cpe_rpc_t)  links;
+    acse_epc_cwmp_data_t   *params;
+    int                     index;
 } cpe_rpc_item_t;
 
 
@@ -163,7 +144,8 @@ typedef struct cpe_t{
 
 
     TAILQ_HEAD(cpe_rpc_list_t, cpe_rpc_item_t)
-                 rpc_list;  /**< List of RPC to be sent to CPE */
+                 rpc_queue;  /**< List of RPC to be sent to CPE */
+    unsigned int last_queue_index;
 
     LIST_HEAD(cpe_inform_list_t, cpe_inform_t)
                  inform_list; /**< List of Informs, received from CPE;

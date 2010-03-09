@@ -38,6 +38,7 @@
 #include "tarpc.h"
 
 #include "te_cwmp.h" 
+#include "te_defs.h" 
 #include "acse_soapStub.h"
 
 #ifdef __cplusplus
@@ -195,7 +196,13 @@ typedef struct {
     te_cwmp_rpc_cpe_t   rpc_cpe; /**< Code of RPC call to be put 
                                       into queue desired for CPE.*/
 
-    int         index; /**< IN/OUT field for position in queue */
+    int         index; /**< IN/OUT field for position in queue;
+                            IN - for 'get/check' operation, 
+                            OUT - for 'call' operation. */
+
+    te_bool     hold_requests; /**< Flag denotes whether this call
+                                    should be sent before serve 
+                                    RPC from CPE. */
 
     union {
         void *p;
