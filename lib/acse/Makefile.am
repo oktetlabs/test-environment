@@ -31,8 +31,7 @@ acse_SOURCES = acse.c acse_dummy.c \
                     acse_soapC.c \
                     httpda.c \
                     md5evp.c \
-                    stdsoap2.c \
-                    acse_soapServer.c 
+                    acse_soapServer.c
 
 libacse_epc_la_SOURCES = acse_epc.c \
                     cwmp_data.c
@@ -43,7 +42,8 @@ acse_cli_SOURCES = acse_cli.c
 
 
 # acse_dummy_LDFLAGS = -lgsoap
-acse_LDADD = -lacse_epc -lz -llogger_file -ltools -lcrypto -lrt
+acse_LDADD = -lacse_epc -lgsoap -lz -llogger_file -ltools -lcrypto -lrt
+#acse_LDADD = -lacse_epc -lz -llogger_file -ltools -lcrypto -lrt
 
 acse_cli_LDADD = -lacse_epc -llogger_file -ltools -lrt
 

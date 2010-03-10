@@ -240,12 +240,19 @@ __cwmp__Inform(struct soap *soap,
     }
 
 
-    if (soap->header)
+    if (soap->header && soap->header->cwmp__HoldRequests)
         printf("hold_request in Header: %d\n",
-                (int)soap->header->cwmp__HoldRequests.__item);
-    else
+                (int)soap->header->cwmp__HoldRequests->__item);
+    if (soap->header == NULL)
     {
         soap->header = soap_malloc(soap, sizeof(struct SOAP_ENV__Header));
+        memset(soap->header, 0, sizeof(*(soap->header)));
+    }
+
+    if (soap->header->cwmp__HoldRequests == NULL)
+    {
+        soap->header->cwmp__HoldRequests = 
+                soap_malloc(soap, sizeof(_cwmp__HoldRequests));
     }
 
     if (soap->encodingStyle)
@@ -257,8 +264,8 @@ __cwmp__Inform(struct soap *soap,
     cpe_store_inform(cwmp__Inform, cpe_item);
 
     cwmp__InformResponse->MaxEnvelopes = 1;
-    soap->header->cwmp__HoldRequests.__item = 0;
-    soap->header->cwmp__HoldRequests.SOAP_ENV__mustUnderstand = "1";
+    soap->header->cwmp__HoldRequests->__item = 0;
+    soap->header->cwmp__HoldRequests->SOAP_ENV__mustUnderstand = "1";
     soap->header->cwmp__ID = NULL;
     soap->keep_alive = 1; 
 
@@ -527,11 +534,9 @@ acse_enable_acs(acs_t *acs)
 int 
 acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
 {
-    fprintf(stderr, "UUUUUUUUU, RPC id %d\n", (int)request->rpc_cpe);
     switch(request->rpc_cpe)
     {
         case CWMP_RPC_get_rpc_methods:
-            fprintf(stderr, "OOOOOOOOOOOOOO, GetRPCMethods \n");
             {
                 _cwmp__GetRPCMethods arg;
                 soap_default__cwmp__GetRPCMethods(soap, &arg);
@@ -578,6 +583,8 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     if (TAILQ_EMPTY(&cpe->rpc_queue))
     {
+        /* TODO add check, whether HoldRequests was set on */
+
         INFO("Empty POST for '%s', empty list of RPC calls, response 204",
               cpe->name);
         soap->keep_alive = 0;
@@ -589,13 +596,20 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
         return 0;
     }
     request = session->rpc_item->params;
-    fprintf(stderr, "AAAAAAAAAA, cwmp_data %p, rpc id %d\n",
-            request, (int)request->rpc_cpe);
 
     if (soap->header == NULL)
+    {
         soap->header = soap_malloc(soap, sizeof(struct SOAP_ENV__Header));
-    soap->header->cwmp__HoldRequests.__item = request->hold_requests;
-    soap->header->cwmp__HoldRequests.SOAP_ENV__mustUnderstand = "1";
+        memset(soap->header, 0, sizeof(*(soap->header)));
+    }
+
+    if (soap->header->cwmp__HoldRequests == NULL)
+    {
+        soap->header->cwmp__HoldRequests = 
+                soap_malloc(soap, sizeof(_cwmp__HoldRequests));
+    }
+    soap->header->cwmp__HoldRequests->__item = request->hold_requests;
+    soap->header->cwmp__HoldRequests->SOAP_ENV__mustUnderstand = "1";
     soap->header->cwmp__ID = NULL;
     soap->keep_alive = 1; 
     soap_serializeheader(soap);
@@ -704,18 +718,23 @@ acse_cwmp_empty_post(struct soap* soap)
 void
 acse_soap_serve_response(cwmp_session_t *cwmp_sess)
 {
-    struct soap *soap = &cwmp_sess->m_soap;
-    cpe_t *cpe = cwmp_sess->cpe_owner;
+    cpe_t       *cpe  = cwmp_sess->cpe_owner;
+    struct soap *soap = &(cwmp_sess->m_soap);
+
     acse_epc_cwmp_data_t *request = cwmp_sess->rpc_item->params;
 
     /* This function works in state WAIT_RESPONSE, when CWMP session
-       is already associated with particular CPE. */
+       is already associated with particular CPE. */ 
 
     if (soap_begin_recv(soap)
          || soap_envelope_begin_in(soap)
          || soap_recv_header(soap)
          || soap_body_begin_in(soap))
+    {
+        ERROR("serve CWMP resp, soap err %d", soap->error);
         return; /* TODO: study, do soap_closesock() here ??? */
+    }
+
     switch (request->rpc_cpe)
     {
         case CWMP_RPC_get_rpc_methods:
@@ -763,4 +782,6 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
         ERROR("after get SOAP body, error %d", soap->error);
         /* TODO: think, return here? */
     }
+
+    acse_cwmp_send_rpc(soap, cwmp_sess);
 }

@@ -595,9 +595,6 @@ acse_epc_recv(acse_epc_msg_t **user_message)
         ERROR("EPC: wrong recv rc %d", (int)recvrc);
     /* TODO with this error should be done something more serious */
 
-    fprintf(stderr, "received message: opcode=0x%x, len=%d, status=%d\n",
-            (int)message.opcode, message.length, message.status);
-
     switch (message.opcode) 
     {/* check role */
     case EPC_CONFIG_CALL:

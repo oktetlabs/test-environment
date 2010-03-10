@@ -339,6 +339,7 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
     case CWMP_RPC_set_vouchers: 
     case CWMP_RPC_get_options: 
         printf("TODO... \n");
+        break;
     }
 }
 
@@ -364,7 +365,8 @@ print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
                 rpc_cpe_to_string(cwmp_resp->rpc_cpe),
                 cwmp_resp->acs, cwmp_resp->cpe,
                 te_rc_err2str(status));
-        print_rpc_response(cwmp_resp);
+        if (status == 0)
+            print_rpc_response(cwmp_resp);
         break;
     case EPC_GET_INFORM:
         {

@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-SOAP_SOURCE_STAMP("@(#) acse_soapC.c ver 2.7.9l 2010-02-10 19:12:15 GMT")
+SOAP_SOURCE_STAMP("@(#) acse_soapC.c ver 2.7.9l 2010-03-10 17:45:23 GMT")
 
 
 #ifndef WITH_NOGLOBAL
@@ -242,6 +242,8 @@ SOAP_FMAC3 void * SOAP_FMAC4 soap_getelement(struct soap *soap, int *type)
 		return soap_in_SOAP_ENC__base64(soap, NULL, NULL, "SOAP-ENC:base64");
 	case SOAP_TYPE_PointerTo_cwmp__ID:
 		return soap_in_PointerTo_cwmp__ID(soap, NULL, NULL, "cwmp:ID");
+	case SOAP_TYPE_PointerTo_cwmp__HoldRequests:
+		return soap_in_PointerTo_cwmp__HoldRequests(soap, NULL, NULL, "cwmp:HoldRequests");
 	case SOAP_TYPE_PointerTo_cwmp__KickedResponse:
 		return soap_in_PointerTo_cwmp__KickedResponse(soap, NULL, NULL, "cwmp:KickedResponse");
 	case SOAP_TYPE_PointerTo_cwmp__Kicked:
@@ -1032,6 +1034,8 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_putelement(struct soap *soap, const void *ptr, co
 		return soap_out_SOAP_ENC__base64(soap, tag, id, (const struct SOAP_ENC__base64 *)ptr, "SOAP-ENC:base64");
 	case SOAP_TYPE_PointerTo_cwmp__ID:
 		return soap_out_PointerTo_cwmp__ID(soap, tag, id, (struct _cwmp__ID *const*)ptr, "cwmp:ID");
+	case SOAP_TYPE_PointerTo_cwmp__HoldRequests:
+		return soap_out_PointerTo_cwmp__HoldRequests(soap, tag, id, (struct _cwmp__HoldRequests *const*)ptr, "cwmp:HoldRequests");
 	case SOAP_TYPE_PointerTo_cwmp__KickedResponse:
 		return soap_out_PointerTo_cwmp__KickedResponse(soap, tag, id, (struct _cwmp__KickedResponse *const*)ptr, "cwmp:KickedResponse");
 	case SOAP_TYPE_PointerTo_cwmp__Kicked:
@@ -1400,6 +1404,9 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_markelement(struct soap *soap, const void *ptr, 
 		break;
 	case SOAP_TYPE_PointerTo_cwmp__ID:
 		soap_serialize_PointerTo_cwmp__ID(soap, (struct _cwmp__ID *const*)ptr);
+		break;
+	case SOAP_TYPE_PointerTo_cwmp__HoldRequests:
+		soap_serialize_PointerTo_cwmp__HoldRequests(soap, (struct _cwmp__HoldRequests *const*)ptr);
 		break;
 	case SOAP_TYPE_PointerTo_cwmp__KickedResponse:
 		soap_serialize_PointerTo_cwmp__KickedResponse(soap, (struct _cwmp__KickedResponse *const*)ptr);
@@ -3161,14 +3168,14 @@ SOAP_FMAC3 struct SOAP_ENV__Code * SOAP_FMAC4 soap_in_SOAP_ENV__Code(struct soap
 SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Header(struct soap *soap, struct SOAP_ENV__Header *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
-	soap_default__cwmp__HoldRequests(soap, &a->cwmp__HoldRequests);
+	a->cwmp__HoldRequests = NULL;
 	a->cwmp__ID = NULL;
 }
 
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Header(struct soap *soap, const struct SOAP_ENV__Header *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
-	soap_serialize__cwmp__HoldRequests(soap, &a->cwmp__HoldRequests);
+	soap_serialize_PointerTo_cwmp__HoldRequests(soap, &a->cwmp__HoldRequests);
 	soap_serialize_PointerTo_cwmp__ID(soap, &a->cwmp__ID);
 }
 
@@ -3184,7 +3191,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Header(struct soap *soap, const cha
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_SOAP_ENV__Header), type))
 		return soap->error;
-	if (soap_out__cwmp__HoldRequests(soap, "cwmp:HoldRequests", -1, &a->cwmp__HoldRequests, ""))
+	if (soap_out_PointerTo_cwmp__HoldRequests(soap, "cwmp:HoldRequests", -1, &a->cwmp__HoldRequests, ""))
 		return soap->error;
 	if (soap_out_PointerTo_cwmp__ID(soap, "cwmp:ID", -1, &a->cwmp__ID, ""))
 		return soap->error;
@@ -3213,7 +3220,7 @@ SOAP_FMAC3 struct SOAP_ENV__Header * SOAP_FMAC4 soap_in_SOAP_ENV__Header(struct 
 		for (;;)
 		{	soap->error = SOAP_TAG_MISMATCH;
 			if (soap_flag_cwmp__HoldRequests && soap->error == SOAP_TAG_MISMATCH)
-				if (soap_in__cwmp__HoldRequests(soap, "cwmp:HoldRequests", &a->cwmp__HoldRequests, ""))
+				if (soap_in_PointerTo_cwmp__HoldRequests(soap, "cwmp:HoldRequests", &a->cwmp__HoldRequests, ""))
 				{	soap_flag_cwmp__HoldRequests--;
 					continue;
 				}
@@ -3236,10 +3243,6 @@ SOAP_FMAC3 struct SOAP_ENV__Header * SOAP_FMAC4 soap_in_SOAP_ENV__Header(struct 
 	{	a = (struct SOAP_ENV__Header *)soap_id_forward(soap, soap->href, (void*)a, 0, SOAP_TYPE_SOAP_ENV__Header, 0, sizeof(struct SOAP_ENV__Header), 0, NULL);
 		if (soap->body && soap_element_end_in(soap, tag))
 			return NULL;
-	}
-	if ((soap_flag_cwmp__HoldRequests > 0))
-	{	soap->error = SOAP_OCCURS;
-		return NULL;
 	}
 	return a;
 }
@@ -10404,6 +10407,57 @@ SOAP_FMAC3 struct _cwmp__ID ** SOAP_FMAC4 soap_in_PointerTo_cwmp__ID(struct soap
 	}
 	else
 	{	a = (struct _cwmp__ID **)soap_id_lookup(soap, soap->href, (void**)a, SOAP_TYPE__cwmp__ID, sizeof(struct _cwmp__ID), 0);
+		if (soap->body && soap_element_end_in(soap, tag))
+			return NULL;
+	}
+	return a;
+}
+
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__HoldRequests(struct soap *soap, struct _cwmp__HoldRequests *const*a)
+{
+	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__HoldRequests))
+		soap_serialize__cwmp__HoldRequests(soap, *a);
+}
+
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__HoldRequests(struct soap *soap, struct _cwmp__HoldRequests *const*a, const char *tag, const char *type)
+{
+	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__HoldRequests);
+	if (soap_out_PointerTo_cwmp__HoldRequests(soap, tag, id, a, type))
+		return soap->error;
+	return soap_putindependent(soap);
+}
+
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__HoldRequests(struct soap *soap, const char *tag, int id, struct _cwmp__HoldRequests *const*a, const char *type)
+{
+	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__HoldRequests);
+	if (id < 0)
+		return soap->error;
+	return soap_out__cwmp__HoldRequests(soap, tag, id, *a, type);
+}
+
+SOAP_FMAC3 struct _cwmp__HoldRequests ** SOAP_FMAC4 soap_get_PointerTo_cwmp__HoldRequests(struct soap *soap, struct _cwmp__HoldRequests **p, const char *tag, const char *type)
+{
+	if ((p = soap_in_PointerTo_cwmp__HoldRequests(soap, tag, p, type)))
+		if (soap_getindependent(soap))
+			return NULL;
+	return p;
+}
+
+SOAP_FMAC3 struct _cwmp__HoldRequests ** SOAP_FMAC4 soap_in_PointerTo_cwmp__HoldRequests(struct soap *soap, const char *tag, struct _cwmp__HoldRequests **a, const char *type)
+{
+	if (soap_element_begin_in(soap, tag, 1, NULL))
+		return NULL;
+	if (!a)
+		if (!(a = (struct _cwmp__HoldRequests **)soap_malloc(soap, sizeof(struct _cwmp__HoldRequests *))))
+			return NULL;
+	*a = NULL;
+	if (!soap->null && *soap->href != '#')
+	{	soap_revert(soap);
+		if (!(*a = soap_in__cwmp__HoldRequests(soap, tag, *a, type)))
+			return NULL;
+	}
+	else
+	{	a = (struct _cwmp__HoldRequests **)soap_id_lookup(soap, soap->href, (void**)a, SOAP_TYPE__cwmp__HoldRequests, sizeof(struct _cwmp__HoldRequests), 0);
 		if (soap->body && soap_element_end_in(soap, tag))
 			return NULL;
 	}

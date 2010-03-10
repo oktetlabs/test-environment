@@ -987,8 +987,6 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                established CWMP session with CPE. */
             cpe_rpc_item_t *rpc_item = malloc(sizeof(*rpc_item));
             rpc_item->params = cwmp_pars;
-            fprintf(stderr, "EEEEEEEEEE, cwmp_data %p, rpc id %d\n",
-                    cwmp_pars, (int)cwmp_pars->rpc_cpe);
 
             cwmp_pars->index = rpc_item->index = ++cpe->last_queue_index;
             TAILQ_INSERT_TAIL(&cpe->rpc_queue, rpc_item, links);
@@ -999,8 +997,6 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
         {
             cpe_rpc_item_t *rpc_item;
             void *result;
-
-            cwmp_pars->from_cpe.p = NULL;
 
             TAILQ_FOREACH(rpc_item, &cpe->rpc_queue, links)
             {
@@ -1018,6 +1014,8 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             if (rpc_item == NULL)
                 return TE_ENOENT;
             
+            cwmp_pars->rpc_cpe = rpc_item->params->rpc_cpe;
+
             if ((result = rpc_item->params->from_cpe.p) == NULL)
                 return TE_EPENDING;
            
@@ -1149,6 +1147,8 @@ epc_after_poll(void *data, struct pollfd *pfd)
         if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
             ERROR("%s(): failed to get EPC message %r",
                   __FUNCTION__, rc);
+        else /* Normal close of EPC connection leads to ACSE stop */
+            exit(0);
 
         return TE_RC(TE_ACSE, rc);
     }

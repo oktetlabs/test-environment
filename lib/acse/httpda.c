@@ -93,6 +93,7 @@ A commercial use license is available from Genivia, Inc., contact@genivia.com
 --------------------------------------------------------------------------------
 */
 
+#include <stdlib.h>
 #include "httpda.h"
 
 #ifndef UNUSED
@@ -623,7 +624,7 @@ static int http_da_session_update(const char *realm, const char *nonce, const ch
 
   if (session)
   {
-    unsigned long nc = soap_strtoul(ncount, NULL, 16);
+    unsigned long nc = strtoul(ncount, NULL, 16);
 
     if (session->nc >= nc)
     {

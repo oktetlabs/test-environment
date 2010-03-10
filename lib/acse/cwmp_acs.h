@@ -1375,6 +1375,6 @@ int __cwmp__Kicked(_cwmp__Kicked *cwmp__Kicked, _cwmp__KickedResponse *cwmp__Kic
 
 struct SOAP_ENV__Header
 {
-    _cwmp__HoldRequests cwmp__HoldRequests;
+    _cwmp__HoldRequests *cwmp__HoldRequests;
     _cwmp__ID           *cwmp__ID;
 };
