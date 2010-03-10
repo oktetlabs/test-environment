@@ -169,6 +169,58 @@ te_cwmp_pack__EventList(const EventList *src,
 
 
 
+
+ssize_t
+te_cwmp_pack__MethodList(const MethodList *src, void *msg, size_t max_len)
+{
+    size_t packed_length = 0;
+    size_t array_memlen = 0;
+    MethodList *dst = msg;
+    int i = 0;
+
+    CWMP_PACK(src, msg, sizeof(*src), packed_length, max_len);
+    
+    /* For fill links to array elements here it is convenient
+       to have real pointer to the array start */
+    dst->__ptrstring = msg; 
+
+    array_memlen = sizeof(void*) * src->__size;
+    msg += array_memlen;
+    packed_length += array_memlen;
+
+    for (i = 0; i < src->__size; i++)
+    {
+        CWMP_PACK_STR(src, msg, packed_length, max_len, __ptrstring[i] );
+    }
+    /* Put array offset instead of real pointer */
+    dst->__ptrstring =
+        (void*)((char *)dst->__ptrstring - (char*)dst);
+
+    return packed_length;
+}
+
+ssize_t
+te_cwmp_pack__GetRPCMethodsResponse(
+        const _cwmp__GetRPCMethodsResponse *src,
+        void *msg, size_t max_len)
+{
+    size_t packed_length = 0;
+    ssize_t rc;
+    _cwmp__GetRPCMethodsResponse *dst = msg;
+
+    CWMP_PACK(src, msg, sizeof(*src), packed_length, max_len);
+
+    rc = te_cwmp_pack__MethodList(src->MethodList_, msg,
+                                  max_len - packed_length);
+    if (rc < 0)
+        return -1;
+    dst->MethodList_ = (void*)((char *)msg - (char*)dst);
+    packed_length += rc;
+    msg += rc;
+
+    return packed_length;
+}
+
 /*
  * ============= UN-PACK methods ================
  */
@@ -306,9 +358,57 @@ te_cwmp_unpack__Inform(void *msg, size_t max_len)
     return ofs;
 }
 
+
 ssize_t
-te_cwmp_unpack__InformResponse(void *msg, size_t max_len)
+te_cwmp_unpack__MethodList(void *msg, size_t max_len)
 {
-    /* TODO */
-    return -1;
+    MethodList *res = msg;
+    unsigned int ofs;
+    int i;
+
+    ofs = (unsigned int)(res->__ptrstring);
+    if (res->__size == 0 || ofs == 0)
+    {
+        res->__ptrstring = NULL;
+        return sizeof(MethodList);
+    }
+
+    if (ofs >= max_len)
+        return -1;
+
+    res->__ptrstring = (void *)((char *)msg + ofs);
+    for (i = 0; i < res->__size; i++)
+    {
+        ofs = (unsigned int)(res->__ptrstring[i]);
+        res->__ptrstring[i] = msg + ofs;
+    }
+    /* now 'ofs' is offset of last element in array */
+    ofs += strlen(((char *)msg) + ofs);
+
+    return ofs;
 }
+
+ssize_t
+te_cwmp_unpack__GetRPCMethodsResponse(void *msg, size_t max_len)
+{
+    _cwmp__GetRPCMethodsResponse *res = msg;
+    unsigned int ofs;
+    ssize_t rc;
+
+    ofs = (unsigned int)res->MethodList_;
+    if (ofs >= max_len)
+            return -1;
+    if (ofs != 0)
+    {
+        rc = te_cwmp_unpack__MethodList(msg + ofs, max_len - ofs);
+        if (rc < 0)
+            return -1;
+        res->MethodList_ = msg + ofs;
+        ofs += rc;
+    }
+    else
+        res->MethodList_ = NULL;
+
+    return ofs;
+}
+

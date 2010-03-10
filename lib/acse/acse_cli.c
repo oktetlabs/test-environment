@@ -129,6 +129,63 @@ cli_cpe_cr(const char *args)
     return 0;
 }
 
+
+static te_errno
+cli_cpe_rpc(const char *args)
+{
+    te_errno rc;
+    size_t offset = 0;
+
+    acse_epc_msg_t msg;
+    acse_epc_cwmp_data_t c_data;
+
+    msg.opcode = EPC_CWMP_CALL;
+    msg.data.cwmp = &c_data;
+    msg.length = sizeof(c_data);
+
+    memset(&c_data, 0, sizeof(c_data));
+
+    if (strncmp(args, "call ", 5) == 0)
+    {
+        args += 5;
+        c_data.op = EPC_RPC_CALL ;
+        
+        /* todo full parsing */
+        c_data.hold_requests = 0;
+        c_data.rpc_cpe = CWMP_RPC_get_rpc_methods; 
+        c_data.to_cpe.p = NULL; 
+    }
+    else if (strncmp(args, "show ", 5) == 0)
+    {
+        args += 5;
+        c_data.op = EPC_RPC_CHECK;
+        c_data.index = atoi(args);
+
+        while (isdigit(*args)) args++;
+        while (isspace(*args)) args++;
+    }
+    else
+    {
+        printf("unsupported command for 'cpe cr'\n");
+        return TE_EFAIL;
+    }
+
+    rc = cli_args_acs_cpe(args, &offset, c_data.acs, c_data.cpe);
+    if (rc != 0)
+    {
+        fprintf(stderr, "Parse error 0x%x\n", rc);
+        return rc;
+    }
+    args += offset;
+
+    rc = acse_epc_send(&msg);
+    if (rc != 0)
+        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
+
+    return 0;
+}
+
+
 static te_errno
 cli_cpe_inform(const char *args)
 {
@@ -174,6 +231,8 @@ cli_parse_exec_cpe(const char *args)
         return cli_cpe_cr(args + 3);
     if (strncmp(args, "inform ", 7) == 0)
         return cli_cpe_inform(args + 7);
+    if (strncmp(args, "rpc ", 4) == 0)
+        return cli_cpe_rpc(args + 4);
     return 0;
 }
 
@@ -242,8 +301,50 @@ rpc_cpe_to_string(te_cwmp_rpc_cpe_t rpc_cpe)
     return "???";
 }
 
+
+static void
+print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
+{
+    switch (cwmp_resp->rpc_cpe)
+    {
+    case CWMP_RPC_get_rpc_methods: 
+    {
+        MethodList *mlist;
+        if ((mlist = cwmp_resp->from_cpe.get_rpc_methods_r->MethodList_)
+                != NULL)
+        {
+            int i;
+            printf("RPC methods: ");
+            for (i = 0; i < mlist->__size; i++)
+                printf("'%s', ", mlist->__ptrstring[i]);
+            printf("\n");
+        }
+    }
+        break;
+    case CWMP_RPC_NONE:
+    case CWMP_RPC_set_parameter_values: 
+    case CWMP_RPC_get_parameter_values: 
+    case CWMP_RPC_get_parameter_names: 
+    case CWMP_RPC_set_parameter_attributes: 
+    case CWMP_RPC_get_parameter_attributes: 
+    case CWMP_RPC_add_object: 
+    case CWMP_RPC_delete_object: 
+    case CWMP_RPC_reboot: 
+    case CWMP_RPC_download: 
+    case CWMP_RPC_upload: 
+    case CWMP_RPC_factory_reset: 
+    case CWMP_RPC_get_queued_transfers: 
+    case CWMP_RPC_get_all_queued_transfers: 
+    case CWMP_RPC_schedule_inform: 
+    case CWMP_RPC_set_vouchers: 
+    case CWMP_RPC_get_options: 
+        printf("TODO... \n");
+    }
+}
+
+
 static te_errno
-print_cwmp_response(acse_epc_cwmp_data_t *cwmp_resp)
+print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
 {
     switch(cwmp_resp->op)
     {
@@ -259,8 +360,11 @@ print_cwmp_response(acse_epc_cwmp_data_t *cwmp_resp)
                 cwmp_resp->acs, cwmp_resp->cpe, cwmp_resp->index);
         break;
     case EPC_RPC_CHECK:
-        RING("%s():%d TODO", __FUNCTION__, __LINE__);
-        /* TODO */
+        printf("RPC check, '%s' to %s/%s, status %s\n",
+                rpc_cpe_to_string(cwmp_resp->rpc_cpe),
+                cwmp_resp->acs, cwmp_resp->cpe,
+                te_rc_err2str(status));
+        print_rpc_response(cwmp_resp);
         break;
     case EPC_GET_INFORM:
         {
@@ -286,9 +390,13 @@ print_cwmp_response(acse_epc_cwmp_data_t *cwmp_resp)
 }
 
 static te_errno
-print_config_response(acse_epc_config_data_t *cfg_resp)
+print_config_response(te_errno status, acse_epc_config_data_t *cfg_resp)
 {
-    printf("Result: %s\n", cfg_resp->value);
+    if (status != 0)
+        printf("ERROR in response: %s\n",
+            te_rc_err2str(status));
+    else 
+        printf("Result: %s\n", cfg_resp->value);
     return 0;
 }
 
@@ -360,24 +468,21 @@ main(int argc, char **argv)
                     break;
                 else if (rc != 0)
                     RING("EPC recv error %r", rc);
-                else if (msg_resp->status == 0)
+                switch (msg_resp->opcode)
                 {
-                    switch (msg_resp->opcode)
-                    {
-                        case EPC_CONFIG_RESPONSE:
-                            print_config_response(msg_resp->data.cfg);
-                            break;
-                        case EPC_CWMP_RESPONSE:
-                            print_cwmp_response(msg_resp->data.cwmp);
-                            break;
-                        default:
-                            ERROR("Unexpected opcode 0x%x from EPC",
-                                 msg_resp->opcode);
-                    }
+                    case EPC_CONFIG_RESPONSE:
+                        print_config_response(msg_resp->status,
+                                              msg_resp->data.cfg);
+                        break;
+                    case EPC_CWMP_RESPONSE:
+                        print_cwmp_response(msg_resp->status,
+                                            msg_resp->data.cwmp);
+                        break;
+                    default:
+                        ERROR("Unexpected opcode 0x%x from EPC",
+                             msg_resp->opcode);
                 }
-                else
-                    printf("ERROR in response: %s\n",
-                        te_rc_err2str(msg_resp->status));
+                printf("\n> ");
             }
         }
     }

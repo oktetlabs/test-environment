@@ -346,12 +346,15 @@ epc_pack_response_data(void *buf, size_t len,
         /* TODO */
         RING("%s():%d TODO", __FUNCTION__, __LINE__);
         return 0;
+    case CWMP_RPC_get_rpc_methods:
+        return te_cwmp_pack__GetRPCMethodsResponse(
+                        cwmp_data->from_cpe.get_rpc_methods_r,
+                        buf, len);
     case CWMP_RPC_NONE:
     case CWMP_RPC_schedule_inform:
     case CWMP_RPC_set_vouchers:
     case CWMP_RPC_reboot:
     case CWMP_RPC_set_parameter_attributes:
-    case CWMP_RPC_get_rpc_methods:
     case CWMP_RPC_factory_reset:
         /* do nothing, no data to CPE */
         return 0;
@@ -510,10 +513,11 @@ static te_errno
 epc_unpack_response_data(void *buf, size_t len,
                        acse_epc_cwmp_data_t *cwmp_data)
 {
+    te_errno rc = 0;
     if (cwmp_data->op == EPC_GET_INFORM)
     {
         cwmp_data->from_cpe.p = buf;
-        if (te_cwmp_unpack__Inform(buf, len) == NULL)
+        if (te_cwmp_unpack__Inform(buf, len) < 0)
         {
             ERROR("%s(): unpack inform failed", __FUNCTION__);
             return TE_RC(TE_ACSE, TE_EFAIL);
@@ -544,17 +548,22 @@ epc_unpack_response_data(void *buf, size_t len,
         /* TODO */
         RING("%s():%d TODO", __FUNCTION__, __LINE__);
         return 0;
+    case CWMP_RPC_get_rpc_methods:
+        rc = (te_cwmp_unpack__GetRPCMethodsResponse(buf, len) > 0) 
+                ? 0 : TE_EFAIL;  
+        break;
     case CWMP_RPC_NONE:
     case CWMP_RPC_schedule_inform:
     case CWMP_RPC_set_vouchers:
     case CWMP_RPC_reboot:
     case CWMP_RPC_set_parameter_attributes:
-    case CWMP_RPC_get_rpc_methods:
     case CWMP_RPC_factory_reset:
         /* do nothing, no data to CPE */
         return 0;
     }
-    return 0;
+    if (rc != 0)
+        ERROR("EPC unpack failed: %r", rc);
+    return rc;
 }
 
 

@@ -50,6 +50,12 @@
 
 #include "acse_soapH.h"
 
+
+/* Forward declarations */
+
+
+void acse_soap_serve_response(cwmp_session_t *cwmp_sess);
+ 
 SOAP_NMAC struct Namespace namespaces[] =
 {
     {"SOAP-ENC", "http://schemas.xmlsoap.org/soap/encoding/",
@@ -362,7 +368,14 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             break;
 
         case CWMP_WAIT_RESPONSE:
-            /* TODO */
+            /* Now, after poll() on soap socket, it should not block */
+            acse_soap_serve_response(cwmp_sess);
+            RING("status after serve: %d", cwmp_sess->m_soap.error);
+            if (cwmp_sess->m_soap.error == SOAP_EOF)
+            {
+                RING(" CWMP processing, EOF");
+                return TE_ENOTCONN;
+            }
             break;
     }
 
@@ -447,6 +460,7 @@ cwmp_new_session(int socket)
     new_sess->acs_owner = NULL;
     new_sess->cpe_owner = NULL;
     new_sess->channel = channel;
+    new_sess->rpc_item = NULL;
     new_sess->m_soap.user = new_sess;
     new_sess->m_soap.socket = socket;
     new_sess->m_soap.fserveloop = cwmp_serveloop;
@@ -509,6 +523,147 @@ acse_enable_acs(acs_t *acs)
 }
 
 
+
+int 
+acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
+{
+    fprintf(stderr, "UUUUUUUUU, RPC id %d\n", (int)request->rpc_cpe);
+    switch(request->rpc_cpe)
+    {
+        case CWMP_RPC_get_rpc_methods:
+            fprintf(stderr, "OOOOOOOOOOOOOO, GetRPCMethods \n");
+            {
+                _cwmp__GetRPCMethods arg;
+                soap_default__cwmp__GetRPCMethods(soap, &arg);
+                return soap_put__cwmp__GetRPCMethods(soap, &arg,
+                                            "cwmp:GetRPCMethods", "");
+            }
+            break;
+        case CWMP_RPC_set_parameter_values:
+        case CWMP_RPC_get_parameter_values:
+        case CWMP_RPC_get_parameter_names:
+        case CWMP_RPC_set_parameter_attributes:
+        case CWMP_RPC_get_parameter_attributes:
+        case CWMP_RPC_add_object:
+        case CWMP_RPC_delete_object:
+        case CWMP_RPC_reboot:
+        case CWMP_RPC_download:
+        case CWMP_RPC_upload:
+        case CWMP_RPC_factory_reset:
+        case CWMP_RPC_get_queued_transfers:
+        case CWMP_RPC_get_all_queued_transfers:
+        case CWMP_RPC_schedule_inform:
+        case CWMP_RPC_set_vouchers:
+        case CWMP_RPC_get_options:
+            RING("TODO send RPC with code %d", request->rpc_cpe);
+    }
+    return 0;
+}
+
+/**
+ * Send RPC to CPE.
+ *
+ * @param soap        gSOAP struct.
+ * @param request     Internals struct, specifying RPC to be sent.
+ * 
+ * @return gSOAP status.
+ */
+int 
+acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
+{
+    acse_epc_cwmp_data_t *request;
+    cpe_t *cpe = session->cpe_owner;
+
+    session->rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
+
+    if (TAILQ_EMPTY(&cpe->rpc_queue))
+    {
+        INFO("Empty POST for '%s', empty list of RPC calls, response 204",
+              cpe->name);
+        soap->keep_alive = 0;
+        soap_begin_count(soap);
+        soap_end_count(soap);
+        soap_response(soap, 204);
+        soap_end_send(soap);
+        session->state = CWMP_SERVE;
+        return 0;
+    }
+    request = session->rpc_item->params;
+    fprintf(stderr, "AAAAAAAAAA, cwmp_data %p, rpc id %d\n",
+            request, (int)request->rpc_cpe);
+
+    if (soap->header == NULL)
+        soap->header = soap_malloc(soap, sizeof(struct SOAP_ENV__Header));
+    soap->header->cwmp__HoldRequests.__item = request->hold_requests;
+    soap->header->cwmp__HoldRequests.SOAP_ENV__mustUnderstand = "1";
+    soap->header->cwmp__ID = NULL;
+    soap->keep_alive = 1; 
+    soap_serializeheader(soap);
+
+    switch(request->rpc_cpe)
+    {
+        case CWMP_RPC_get_rpc_methods: 
+        {
+            _cwmp__GetRPCMethods arg;
+            soap_default__cwmp__GetRPCMethodsResponse(soap, &arg);
+            soap_serialize__cwmp__GetRPCMethods(soap, &arg);
+        }
+            break;
+        case CWMP_RPC_set_parameter_values:
+        case CWMP_RPC_get_parameter_values:
+        case CWMP_RPC_get_parameter_names:
+        case CWMP_RPC_set_parameter_attributes:
+        case CWMP_RPC_get_parameter_attributes:
+        case CWMP_RPC_add_object:
+        case CWMP_RPC_delete_object:
+        case CWMP_RPC_reboot:
+        case CWMP_RPC_download:
+        case CWMP_RPC_upload:
+        case CWMP_RPC_factory_reset:
+        case CWMP_RPC_get_queued_transfers:
+        case CWMP_RPC_get_all_queued_transfers:
+        case CWMP_RPC_schedule_inform:
+        case CWMP_RPC_set_vouchers:
+        case CWMP_RPC_get_options:
+            RING("TODO send RPC with code %d", request->rpc_cpe);
+    }
+
+    if (soap_begin_count(soap))
+        return soap->error;
+    if (soap->mode & SOAP_IO_LENGTH)
+    {
+        if (soap_envelope_begin_out(soap)
+             || soap_putheader(soap)
+             || soap_body_begin_out(soap)
+             || acse_soap_put_cwmp(soap, request)
+             || soap_body_end_out(soap)
+             || soap_envelope_end_out(soap))
+        {
+            ERROR("%s(): 1, soap error %d", __FUNCTION__, soap->error);
+            return soap->error;
+        }
+    }
+    if (soap_end_count(soap)
+     || soap_response(soap, SOAP_OK)
+     || soap_envelope_begin_out(soap)
+     || soap_putheader(soap)
+     || soap_body_begin_out(soap)
+     || acse_soap_put_cwmp(soap, request)
+     || soap_body_end_out(soap)
+     || soap_envelope_end_out(soap)
+     || soap_end_send(soap))
+    {
+        ERROR("%s(): 2, soap error %d", __FUNCTION__, soap->error);
+        return soap->error;
+    }
+    session->state = CWMP_WAIT_RESPONSE;
+
+    TAILQ_REMOVE(&cpe->rpc_queue, session->rpc_item, links);
+    TAILQ_INSERT_TAIL(&cpe->rpc_results, session->rpc_item, links);
+
+    return 0;
+}
+
 /**
  * Process empty HTTP POST from CPE, send response.
  * 
@@ -519,6 +674,7 @@ acse_enable_acs(acs_t *acs)
 int
 acse_cwmp_empty_post(struct soap* soap)
 {
+    int rc;
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
     cpe_t          *cpe;
 
@@ -540,19 +696,71 @@ acse_cwmp_empty_post(struct soap* soap)
         soap_closesock(soap);
         return 500;
     } 
-    if (TAILQ_EMPTY(&cpe->rpc_queue))
-    {
-        INFO("Empty POST for '%s', empty list of RPC calls, response 204",
-              cpe->name);
-        soap->keep_alive = 0;
-        soap_begin_count(soap);
-        soap_end_count(soap);
-        soap_response(soap, 204);
-        soap_end_send(soap);
-        return 0;
-    }
 
-    /* TODO: Send RPC  :) */
-    return 0;
+    return  acse_cwmp_send_rpc(soap, session);
 }
 
+
+void
+acse_soap_serve_response(cwmp_session_t *cwmp_sess)
+{
+    struct soap *soap = &cwmp_sess->m_soap;
+    cpe_t *cpe = cwmp_sess->cpe_owner;
+    acse_epc_cwmp_data_t *request = cwmp_sess->rpc_item->params;
+
+    /* This function works in state WAIT_RESPONSE, when CWMP session
+       is already associated with particular CPE. */
+
+    if (soap_begin_recv(soap)
+         || soap_envelope_begin_in(soap)
+         || soap_recv_header(soap)
+         || soap_body_begin_in(soap))
+        return; /* TODO: study, do soap_closesock() here ??? */
+    switch (request->rpc_cpe)
+    {
+        case CWMP_RPC_get_rpc_methods:
+        {
+            _cwmp__GetRPCMethodsResponse *resp = 
+                                    soap_malloc(soap, sizeof(*resp));
+            soap_default__cwmp__GetRPCMethodsResponse(soap, resp);
+            soap_get__cwmp__GetRPCMethodsResponse(soap, resp,
+                                    "cwmp:GetRPCMethodsResponse", "");
+            request->from_cpe.get_rpc_methods_r = resp;
+        }
+        break;
+        case CWMP_RPC_set_parameter_values:
+        case CWMP_RPC_get_parameter_values:
+        case CWMP_RPC_get_parameter_names:
+        case CWMP_RPC_set_parameter_attributes:
+        case CWMP_RPC_get_parameter_attributes:
+        case CWMP_RPC_add_object:
+        case CWMP_RPC_delete_object:
+        case CWMP_RPC_reboot:
+        case CWMP_RPC_download:
+        case CWMP_RPC_upload:
+        case CWMP_RPC_factory_reset:
+        case CWMP_RPC_get_queued_transfers:
+        case CWMP_RPC_get_all_queued_transfers:
+        case CWMP_RPC_schedule_inform:
+        case CWMP_RPC_set_vouchers:
+        case CWMP_RPC_get_options:
+            /* TODO */
+        default:
+            break;
+    }
+
+    cwmp_sess->rpc_item = NULL; /* It is already processed. */
+
+    if (soap->error)
+    {
+        ERROR("Fail get SOAP response, error %d", soap->error);
+        /* TODO: think, return here? */
+    }
+    if (soap_body_end_in(soap)
+         || soap_envelope_end_in(soap)
+         || soap_end_recv(soap))
+    {
+        ERROR("after get SOAP body, error %d", soap->error);
+        /* TODO: think, return here? */
+    }
+}

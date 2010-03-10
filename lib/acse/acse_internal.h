@@ -143,9 +143,12 @@ typedef struct cpe_t{
     cwmp__DeviceIdStruct device_id; /**< Device Identifier       */
 
 
-    TAILQ_HEAD(cpe_rpc_list_t, cpe_rpc_item_t)
+    TAILQ_HEAD(cpe_rpc_queue_t, cpe_rpc_item_t)
                  rpc_queue;  /**< List of RPC to be sent to CPE */
     unsigned int last_queue_index;
+
+    TAILQ_HEAD(cpe_rpc_results_t, cpe_rpc_item_t)
+                 rpc_results;  /**< List of RPC responses from CPE */
 
     LIST_HEAD(cpe_inform_list_t, cpe_inform_t)
                  inform_list; /**< List of Informs, received from CPE;
@@ -211,6 +214,8 @@ typedef struct cwmp_session_t {
     session_state_t      state;     /**< CWMP session state      */
     acs_t               *acs_owner;
     cpe_t               *cpe_owner;
+    cpe_rpc_item_t      *rpc_item;  /**< NULL or last sent RPC in 
+                                          @c WAIT_RESPONSE state. */
     channel_t           *channel; 
     struct soap          m_soap;      /**< SOAP struct             */
 
