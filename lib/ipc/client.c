@@ -634,11 +634,14 @@ ipc_init_client(const char *name, te_bool conn,
 
         /* Assign a name to socket */
         {
+            time_t now;
             struct sockaddr_un addr;
 
             addr.sun_family = AF_UNIX;
             memset(addr.sun_path, 0, UNIX_PATH_MAX);
-            strcpy(addr.sun_path + 1, name);
+            now = time(NULL);
+            snprintf(addr.sun_path + 1, UNIX_PATH_MAX - 1,
+                     "%s_%ld", name, now);
 
             if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
             {
