@@ -47,7 +47,7 @@
  * Table 5 in [TR-069].
  */
 typedef enum {
-    CWMP_RPC_NONE,
+    CWMP_RPC_NONE = 0,
     CWMP_RPC_get_rpc_methods,
     CWMP_RPC_set_parameter_values,
     CWMP_RPC_get_parameter_values,
