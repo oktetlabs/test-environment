@@ -73,6 +73,8 @@ main(int argc, char **argv)
 
     te_errno rc;
 
+    atexit(acse_exit_handler);
+
     db_add_acs("ACS");
     db_add_cpe("ACS", "cpe-dummy");
 

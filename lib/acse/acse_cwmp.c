@@ -117,41 +117,25 @@ cpe_store_inform(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
     return 0;
 }
 
-
-SOAP_FMAC5 int SOAP_FMAC6
-__cwmp__GetRPCMethods(struct soap *soap, 
-            struct _cwmp__GetRPCMethods *cwmp__GetRPCMethods, 
-            struct _cwmp__GetRPCMethodsResponse
-                                  *cwmp__GetRPCMethodsResponse)
+/**
+ *
+ * @return TRUE if auth passed, FALSE if not.
+ */
+int
+acse_basic_auth(struct soap *soap, cwmp_session_t *session)
 {
-    UNUSED(soap);
-    UNUSED(cwmp__GetRPCMethods);
-    UNUSED(cwmp__GetRPCMethodsResponse);
-
-    return 0;
+    /* TODO */
+    return FALSE;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 
-__cwmp__Inform(struct soap *soap,
-               struct _cwmp__Inform *cwmp__Inform,
-               struct _cwmp__InformResponse *cwmp__InformResponse)
+/**
+ *
+ * @return TRUE if auth passed, FALSE if not.
+ */
+int
+acse_digest_auth(struct soap *soap, cwmp_session_t *session)
 {
-    cwmp_session_t *session = (cwmp_session_t *)soap->user;
-    int auth_pass = FALSE;
     cpe_t *cpe_item;
-
-    if(session == NULL)
-    {
-        ERROR("%s(): NULL user pointer in soap!", __FUNCTION__);
-        /* TODO: correct processing */
-        return 500; 
-    }
-
-    VERB("%s called. Header is %p, enc style is '%s', inform Dev is '%s'",
-            __FUNCTION__, soap->header, soap->encodingStyle,
-            cwmp__Inform->DeviceId->OUI);
-    soap->keep_alive = 1; 
-
     switch (session->state)
     {
         case CWMP_LISTEN:
@@ -159,12 +143,14 @@ __cwmp__Inform(struct soap *soap,
             break;
 
         case CWMP_WAIT_AUTH:
+
             if (!(soap->authrealm && soap->userid))
             {
                 ERROR("%s(): No auth infor in WAIT_AUTH state", 
                       __FUNCTION__);
                 soap->keep_alive = 0; 
-                return 500;
+
+                return FALSE;
             }
 
             if (strcmp(soap->authrealm, authrealm))
@@ -174,13 +160,6 @@ __cwmp__Inform(struct soap *soap,
                 break;
             }
 
-            if (!(session->acs_owner))
-            {
-                ERROR("%s(), AUTH. should be ACS owner", 
-                        __FUNCTION__);
-                soap->keep_alive = 0; 
-                return 500;
-            }
             LIST_FOREACH(cpe_item, &(session->acs_owner->cpe_list), links)
             {
                 if (strcmp(cpe_item->acs_auth.login, soap->userid) == 0)
@@ -203,41 +182,102 @@ __cwmp__Inform(struct soap *soap,
 
             RING("%s(): Digest auth pass, CPE '%s', username '%s'", 
                 __FUNCTION__, cpe_item->name, cpe_item->acs_auth.login);
-            auth_pass = TRUE;
-            session->state = CWMP_SERVE;
-            session->cpe_owner = cpe_item;
-            session->acs_owner = NULL;
-            cpe_item->session = session;
-            break;
+            return TRUE;
 
         default:
             /* TODO: maybe, with SSL authentication it will be correct
                path, not error.. */
             ERROR("%s(): unexpected session state %d", 
                   __FUNCTION__, session->state);
-            return 500;
+            return FALSE;
     }
 
-    if (!auth_pass)
+    VERB("%s(): Auth failed\n", __FUNCTION__);
+    if (soap->authrealm)
+        soap_dealloc(soap, soap->authrealm);
+    soap->authrealm = soap_strdup(soap, authrealm);
+    soap->keep_alive = 1; 
+
+    soap->error = SOAP_OK;
+    soap_serializeheader(soap);
+    soap_begin_count(soap);
+    soap_end_count(soap);
+    soap_response(soap, 401);
+    soap_end_send(soap);
+    soap->keep_alive = 1; 
+
+    return FALSE;
+}
+
+
+SOAP_FMAC5 int SOAP_FMAC6
+__cwmp__GetRPCMethods(struct soap *soap, 
+            struct _cwmp__GetRPCMethods *cwmp__GetRPCMethods, 
+            struct _cwmp__GetRPCMethodsResponse
+                                  *cwmp__GetRPCMethodsResponse)
+{
+    UNUSED(soap);
+    UNUSED(cwmp__GetRPCMethods);
+    UNUSED(cwmp__GetRPCMethodsResponse);
+
+    return 0;
+}
+
+
+SOAP_FMAC5 int SOAP_FMAC6 
+__cwmp__Inform(struct soap *soap,
+               struct _cwmp__Inform *cwmp__Inform,
+               struct _cwmp__InformResponse *cwmp__InformResponse)
+{
+    cwmp_session_t *session = (cwmp_session_t *)soap->user;
+    int auth_pass = FALSE;
+    cpe_t *cpe_item;
+
+    if(session == NULL)
     {
-        VERB("%s(): Digest auth failed\n", __FUNCTION__);
-        if (soap->authrealm)
-            soap_dealloc(soap, soap->authrealm);
-        soap->authrealm = soap_strdup(soap, authrealm);
-        soap->keep_alive = 1; 
-#if 1
-        soap->error = SOAP_OK;
-        soap_serializeheader(soap);
-        soap_begin_count(soap);
-        soap_end_count(soap);
-        soap_response(soap, 401);
-        soap_end_send(soap);
-        soap->keep_alive = 1; 
-        return SOAP_STOP;
-#else
-        return 401;
-#endif
+        ERROR("%s(): NULL user pointer in soap!", __FUNCTION__);
+        /* TODO: correct processing */
+        return 500; 
     }
+
+    VERB("%s called. Header is %p, enc style is '%s', inform Dev is '%s'",
+            __FUNCTION__, soap->header, soap->encodingStyle,
+            cwmp__Inform->DeviceId->OUI);
+    soap->keep_alive = 1; 
+
+    if (!(session->acs_owner))
+    {
+        /* TODO: think, what should be done with session in such 
+            ugly internal error??? */
+        ERROR("catch Inform, session should have ACS owner");
+        soap->keep_alive = 0; 
+        return 500;
+    }
+
+
+    switch (session->acs_owner->auth_mode)
+    {
+        case ACSE_AUTH_NONE:
+            auth_pass = TRUE;
+            /* TODO: search CPE */
+            break;
+        case ACSE_AUTH_BASIC:
+            auth_pass = acse_basic_auth(soap, session);
+            break;
+        case ACSE_AUTH_DIGEST:
+            auth_pass = acse_digest_auth(soap, session);
+            break;
+    }
+    if (auth_pass == TRUE)
+    {
+        session->state = CWMP_SERVE;
+        session->cpe_owner = cpe_item;
+        session->acs_owner = NULL;
+        cpe_item->session = session;
+    }
+    else
+        return SOAP_STOP; /* HTTP response already sent. */
+
 
 
     if (soap->header && soap->header->cwmp__HoldRequests)
@@ -561,6 +601,8 @@ acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
         case CWMP_RPC_set_vouchers:
         case CWMP_RPC_get_options:
             RING("TODO send RPC with code %d", request->rpc_cpe);
+        default:
+            break; /* do nothing */
     }
     return 0;
 }
@@ -619,7 +661,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
         case CWMP_RPC_get_rpc_methods: 
         {
             _cwmp__GetRPCMethods arg;
-            soap_default__cwmp__GetRPCMethodsResponse(soap, &arg);
+            soap_default__cwmp__GetRPCMethods(soap, &arg);
             soap_serialize__cwmp__GetRPCMethods(soap, &arg);
         }
             break;
@@ -640,6 +682,8 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
         case CWMP_RPC_set_vouchers:
         case CWMP_RPC_get_options:
             RING("TODO send RPC with code %d", request->rpc_cpe);
+        default: /* do nothing */
+            break;
     }
 
     if (soap_begin_count(soap))
@@ -672,8 +716,8 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     }
     session->state = CWMP_WAIT_RESPONSE;
 
-    TAILQ_REMOVE(&cpe->rpc_queue, session->rpc_item, links);
     TAILQ_INSERT_TAIL(&cpe->rpc_results, session->rpc_item, links);
+    TAILQ_REMOVE(&cpe->rpc_queue, session->rpc_item, links);
 
     return 0;
 }
@@ -688,7 +732,6 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 int
 acse_cwmp_empty_post(struct soap* soap)
 {
-    int rc;
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
     cpe_t          *cpe;
 
@@ -718,7 +761,6 @@ acse_cwmp_empty_post(struct soap* soap)
 void
 acse_soap_serve_response(cwmp_session_t *cwmp_sess)
 {
-    cpe_t       *cpe  = cwmp_sess->cpe_owner;
     struct soap *soap = &(cwmp_sess->m_soap);
 
     acse_epc_cwmp_data_t *request = cwmp_sess->rpc_item->params;

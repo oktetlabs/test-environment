@@ -77,6 +77,9 @@ db_add_acs(const char *acs_name)
     LIST_INIT(&acs_item->cpe_list);
     LIST_INSERT_HEAD(&acs_list, acs_item, links);
 
+    /* default AUTH mode for CWMP sessions from CPE */
+    acs_item->auth_mode = ACSE_AUTH_DIGEST;
+
     return 0;
 }
 
@@ -117,6 +120,7 @@ db_add_cpe(const char *acs_name, const char *cpe_name)
     LIST_INIT(&cpe_item->inform_list);
 
     LIST_INSERT_HEAD(&(acs_item->cpe_list), cpe_item, links);
+
 
     return 0;
 }

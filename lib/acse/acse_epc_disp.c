@@ -73,6 +73,36 @@
 #include "te_defs.h"
 #include "logger_api.h"
 
+typedef struct str_to_int_t {
+    const char *s_val;
+    int         i_val;
+} str_to_int_t;
+
+int 
+str_to_int(str_to_int_t *tab, const char *str)
+{
+    int i;
+    for (i = 0; tab[i].s_val != NULL; i++)
+    {
+        if (strcmp(str, tab[i].s_val) == 0)
+            return tab[i].i_val;
+    }
+    return tab[i].i_val; /* value in the last record is default */
+}
+
+
+const char * 
+int_to_str(str_to_int_t *tab, int i_val)
+{
+    int i;
+    for (i = 0; tab[i].s_val != NULL; i++)
+    {
+        if (tab[i].i_val == i_val)
+            return tab[i].s_val;
+    }
+    return ""; 
+}
+
 
 /**
  * Avoid warning when freeing pointers to const data
@@ -93,7 +123,7 @@ free_const(void const *p)
  * @return              Status code
  */
 static te_errno
-session_hold_requests_get(acse_epc_config_data_t *params)
+hold_requests_get(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -112,7 +142,7 @@ session_hold_requests_get(acse_epc_config_data_t *params)
  * @return      Status code.
  */
 static te_errno
-session_hold_requests_set(acse_epc_config_data_t *params)
+hold_requests_set(acse_epc_config_data_t *params)
 {
     cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
@@ -303,94 +333,7 @@ cpe_cert_set(acse_epc_config_data_t *params)
     return 0;
 }
 
-/**
- * Get the cpe url.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-cpe_url_get(acse_epc_config_data_t *params)
-{
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
 
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, cpe_inst->url);
-    return 0;
-}
-
-/**
- * Set the cpe url.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-cpe_url_set(acse_epc_config_data_t *params)
-{
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    free_const(cpe_inst->url);
-
-    if ((cpe_inst->url = strdup(params->value)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
-}
-
-
-/**
- * Add the CPE instance.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-acs_cpe_add(acse_epc_config_data_t *params)
-{
-    cpe_t *cpe_item;
-    te_errno rc;
-
-    rc = db_add_cpe(params->acs, params->cpe);
-    if (rc)
-        return rc;
-
-    cpe_item = db_find_cpe(NULL, params->acs, params->cpe);
-    if (cpe_item == NULL)
-        return TE_RC(TE_ACSE, TE_EFAULT);
-
-    cpe_item->session       = NULL;
-    cpe_item->enabled       = FALSE;
-    cpe_item->hold_requests = FALSE;
-
-    return 0; 
-}
-
-/**
- * Delete the CPE instance.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-acs_cpe_del(acse_epc_config_data_t *params)
-{
-    cpe_t *cpe_item = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_item == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    return db_remove_cpe(cpe_item);
-}
 
 /**
  * Get the list of CPE instances under ACS. Put result into passed 
@@ -595,89 +538,6 @@ acs_enabled_set(acse_epc_config_data_t *params)
     return 0;
 }
 
-/**
- * Get the acs password.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-acs_pass_get(acse_epc_config_data_t *params)
-{
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, acs_inst->password);
-    return 0;
-}
-
-/**
- * Set the acs password.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-acs_pass_set(acse_epc_config_data_t *params)
-{
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    free_const(acs_inst->password);
-
-    if ((acs_inst->password = strdup(params->value)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
-}
-
-/**
- * Get the acs user name.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-acs_user_get(acse_epc_config_data_t *params)
-{
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, acs_inst->username);
-    return 0;
-}
-
-/**
- * Set the acs user name.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-acs_user_set(acse_epc_config_data_t *params)
-{
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    free_const(acs_inst->username);
-
-    if ((acs_inst->username = strdup(params->value)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
-}
 
 /**
  * Get the acs certificate value.
@@ -721,92 +581,84 @@ acs_cert_set(acse_epc_config_data_t *params)
     return 0;
 }
 
+
+static inline te_errno
+cfg_string_access(const char **pstring, acse_epc_config_data_t *params)
+{
+    assert(pstring);
+    if (params->op.fun == EPC_CFG_MODIFY)
+    {
+        free_const(*pstring);
+
+        if ((*pstring = strdup(params->value)) == NULL)
+            return TE_RC(TE_ACSE, TE_ENOMEM);
+    }
+    else
+    {
+        if (*pstring != NULL)
+            strcpy(params->value, *pstring);
+        else 
+            params->value[0] = '\0';
+    }
+    return 0;
+}
 /**
- * Get the acs url value.
+ * Access to the url of ACS.
  *
- * @param params        Parameters object
+ * @param acs           ACS object.
+ * @param params        Parameters object.
  *
  * @return              Status code
  */
 static te_errno
-acs_url_get(acse_epc_config_data_t *params)
+acs_url(acs_t *acs, acse_epc_config_data_t *params)
 {
-    acs_t *acs_inst = db_find_acs(params->acs);
+    return cfg_string_access(&acs->url, params);
+}
 
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strcpy(params->value, acs_inst->url);
+/**
+ * Access to the url of CPE.
+ *
+ * @param cpe           CPE record.
+ * @param params        Parameters object.
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_url(cpe_t *cpe, acse_epc_config_data_t *params)
+{
+    return cfg_string_access(&cpe->url, params);
+}
+
+
+str_to_int_t auth_types[] = 
+{
+    {"noauth", ACSE_AUTH_NONE},
+    {"basic",  ACSE_AUTH_BASIC},
+    {"digest", ACSE_AUTH_DIGEST},
+    {NULL, ACSE_AUTH_DIGEST} /* default */
+};
+
+/**
+ * Access to the auth type of CPE.
+ *
+ * @param cpe           CPE object.
+ * @param params        Parameters object.
+ *
+ * @return              Status code
+ */
+static te_errno
+acs_auth_mode(acs_t *acs, acse_epc_config_data_t *params)
+{
+    if (params->op.fun == EPC_CFG_MODIFY)
+        acs->auth_mode = str_to_int(auth_types, params->value);
+    else
+        strcpy(params->value, int_to_str(auth_types, acs->auth_mode));
+
     return 0;
 }
 
-/**
- * Set the acs url value.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-acs_url_set(acse_epc_config_data_t *params)
-{
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    free_const(acs_inst->url);
-
-    if ((acs_inst->url = strdup(params->value)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
-}
-
-/**
- * Add an acs instance.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-acse_acs_add(acse_epc_config_data_t *params)
-{
-    acs_t    *item;
-    te_errno rc;
-
-    rc = db_add_acs(params->acs);
-    if (rc)
-        return rc;
-    /* Now fill ACS with some significant */
-
-    item = db_find_acs(params->acs);
-
-    item->enabled = 0;
-    item->ssl     = 0;
-    item->port    = 0;
-
-    return 0; 
-}
-
-/**
- * Delete an acs instance.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-acse_acs_del(acse_epc_config_data_t *params)
-{
-    acs_t *acs_item = db_find_acs(params->acs);
-
-    if (acs_item == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    return db_remove_acs(acs_item);
-}
 
 /**
  * Get the list of acs instances.
@@ -822,6 +674,7 @@ acse_acs_list(acse_epc_config_data_t *params)
     unsigned int len = 0;
     acs_t       *item;
 
+printf("get 'acs list'\n");
     /* Calculate the whole length (plus 1 sym for trailing ' '/'\0') */
     LIST_FOREACH(item, &acs_list, links)
         len += strlen(item->name) + 1;
@@ -843,64 +696,69 @@ acse_acs_list(acse_epc_config_data_t *params)
     }
 
     *ptr = '\0';
+printf("result of 'acs list': '%s'\n", params->list);
     return 0;
+}
+
+typedef te_errno (*config_acs_fun_t)(acs_t *, acse_epc_config_data_t *);
+
+struct config_acs_item_t {
+    const char       *label;
+    config_acs_fun_t  fun;
+} cfg_acs_array [] = 
+{
+    {"url", acs_url},
+    {"auth-mode", acs_auth_mode},
+};
+
+typedef te_errno (*config_cpe_fun_t)(cpe_t *, acse_epc_config_data_t *);
+
+struct config_cpe_item_t {
+    const char       *label;
+    config_cpe_fun_t  fun;
+} cfg_cpe_array [] = 
+{
+    {"url", cpe_url},
+};
+
+te_errno
+config_cpe(acse_epc_config_data_t *cfg_pars)
+{
+    cpe_t  *cpe = db_find_cpe(NULL, cfg_pars->acs, cfg_pars->cpe);
+    unsigned int i;
+
+    if (cpe == NULL)
+        return TE_ENOENT;
+
+    for (i = 0; 
+         i < sizeof(cfg_cpe_array)/sizeof(cfg_cpe_array[0]); i++)
+        if (strcmp(cfg_cpe_array[i].label, cfg_pars->oid) == 0)
+            return cfg_cpe_array[i].fun(cpe, cfg_pars);
+
+    WARN("config CPE, param '%s' not found", cfg_pars->oid); 
+    return TE_EINVAL;
 }
 
 static te_errno
-cpe_get_rpc_methods(acse_epc_config_data_t *params)
+config_acs(acse_epc_config_data_t *cfg_pars) 
 {
-#if 0
-    strcpy(params->method_list.list[0], "GetRPCMethods");
-    strcpy(params->method_list.list[1], "SetParameterValues");
-    strcpy(params->method_list.list[2], "GetParameterValues");
-    strcpy(params->method_list.list[3], "GetParameterNames");
-    strcpy(params->method_list.list[4], "AddObject");
-    strcpy(params->method_list.list[5], "DeleteObject");
-    strcpy(params->method_list.list[6], "ScheduleInform");
-    params->method_list.len = 7;
-#else
-    UNUSED(params);
-#endif
-    return 0;
+    acs_t  *acs = db_find_acs(cfg_pars->acs);
+    unsigned int i;
+
+    if (acs == NULL)
+        return TE_ENOENT;
+
+    for (i = 0; i < sizeof(cfg_acs_array)/sizeof(cfg_acs_array[0]); i++)
+        if (strcmp(cfg_acs_array[i].label, cfg_pars->oid) == 0)
+            return cfg_acs_array[i].fun(acs, cfg_pars);
+
+    WARN("config ACS, param '%s' not found", cfg_pars->oid); 
+    return TE_EINVAL;
 }
-
-#if 0
-#undef RPC_TEST
-
-#define RPC_TEST(_fun) \
-static te_errno                                               \
-_fun(acse_epc_config_data_t *params)                                  \
-{                                                             \
-    UNUSED(params);                                           \
-    ERROR("Hi, I am " #_fun "!!!");                           \
-    return 0;                                                 \
-}
-
-RPC_TEST(cpe_set_parameter_values)
-RPC_TEST(cpe_get_parameter_values)
-RPC_TEST(cpe_get_parameter_names)
-RPC_TEST(cpe_set_parameter_attributes)
-RPC_TEST(cpe_get_parameter_attributes)
-RPC_TEST(cpe_add_object)
-RPC_TEST(cpe_delete_object)
-RPC_TEST(cpe_reboot)
-RPC_TEST(cpe_download)
-RPC_TEST(cpe_upload)
-RPC_TEST(cpe_factory_reset)
-RPC_TEST(cpe_get_queued_transfers)
-RPC_TEST(cpe_get_all_queued_transfers)
-RPC_TEST(cpe_schedule_inform)
-RPC_TEST(cpe_set_vouchers)
-RPC_TEST(cpe_get_options)
-
-
-#undef RPC_TEST
-#endif
-
 
 /**
  * Process EPC related to local configuration: DB, etc. 
- * This function do not blocks, and fills @p cwmp_pars 
+ * This function do not blocks, and fills @p cfg_pars 
  * with immediately result of operation, if any.
  * Usually config operations may be performed without blocking, 
  * and they are performed during this call.
@@ -909,7 +767,7 @@ RPC_TEST(cpe_get_options)
  *
  * @return status code.
  */
-static te_errno
+te_errno
 acse_epc_config(acse_epc_config_data_t *cfg_pars)
 {
     acs_t *acs_item = NULL;
@@ -943,9 +801,9 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
 
     case EPC_CFG_MODIFY:
     case EPC_CFG_OBTAIN:
-        RING("%s():%d TODO", __FUNCTION__, __LINE__);
-        /* TODO */
-        break;
+        if (cfg_pars->op.level == EPC_CFG_ACS)
+            return config_acs(cfg_pars);
+        return config_cpe(cfg_pars);
     case EPC_CFG_LIST:
         RING("acse_epc_config(): LIST... ");
         if (cfg_pars->op.level == EPC_CFG_ACS)
@@ -1065,60 +923,6 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
     return 0;
 }
 
-#if 0
-#if 1
-/** Translation table for calculated goto
- * (shoud correspond to enum acse_fun_t in acse.h) */
-static te_errno
-    (*xlat[])(acse_epc_msg_t *) = {
-        &acse_epc_db,
-        &acse_epc_config,
-        &acse_epc_cwmp,
-        &acse_epc_test };
-#else
-/** Translation table for calculated goto
- * (shoud correspond to enum acse_fun_t in acse.h) */
-static te_errno
-    (*xlat[])(acse_epc_msg_t *) = {
-        &acse_acs_add, &acse_acs_del, &acse_acs_list,
-        &acs_url_get, &acs_url_set,
-        &acs_cert_get, &acs_cert_set,
-        &acs_user_get, &acs_user_set,
-        &acs_pass_get, &acs_pass_set,
-        &acs_enabled_get, &acs_enabled_set,
-        &acs_ssl_get, &acs_ssl_set,
-        &acs_port_get, &acs_port_set,
-        &acs_cpe_add, &acs_cpe_del, &acs_cpe_list,
-        &cpe_url_get, &cpe_url_set,
-        &cpe_cert_get, &cpe_cert_set,
-        &device_id_manufacturer_get,
-        &device_id_oui_get,
-        &device_id_product_class_get,
-        &device_id_serial_number_get,
-        &session_state_get,
-        &session_enabled_get, &session_enabled_set,
-        &session_hold_requests_get, &session_hold_requests_set,
-        &cpe_get_rpc_methods,
-        &cpe_set_parameter_values,
-        &cpe_get_parameter_values,
-        &cpe_get_parameter_names,
-        &cpe_set_parameter_attributes,
-        &cpe_get_parameter_attributes,
-        &cpe_add_object,
-        &cpe_delete_object,
-        &cpe_reboot,
-        &cpe_download,
-        &cpe_upload,
-        &cpe_factory_reset,
-        &cpe_get_queued_transfers,
-        &cpe_get_all_queued_transfers,
-        &cpe_schedule_inform,
-        &cpe_set_vouchers,
-        &cpe_get_options,
-        &rpc_test };
-#endif
-#endif
-
 static te_errno
 epc_before_poll(void *data, struct pollfd *pfd)
 {
@@ -1136,7 +940,9 @@ te_errno
 epc_after_poll(void *data, struct pollfd *pfd)
 {
     acse_epc_msg_t *msg;
-    te_errno     rc; 
+    te_errno        rc; 
+
+    UNUSED(data);
 
     if (!(pfd->revents & POLLIN))
         return 0;

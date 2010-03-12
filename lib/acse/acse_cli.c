@@ -26,6 +26,27 @@
 
 DEFINE_LGR_ENTITY("ACSE CLI");
 
+/**
+ * Copy token from line to separate place.
+ * Tokens are sperated by spaces.
+ *
+ * @return offset in @p line of the end of token, i.e. offset
+ *              of the first symbol after token.
+ */
+static inline size_t 
+cli_token_copy(const char *line, char *token)
+{
+    size_t t, s;
+
+    for (s = 0; isspace(line[s]); s++);
+    line += s;
+
+    for (t = 0; line[t] && (!isspace(line[t])); t++)
+        token[t] = line[t];
+    token[t] = '\0';
+
+    return s + t;
+}
 
 static te_errno
 cli_args_acs_cpe(const char *args, size_t *offset, char *acs, char *cpe)
@@ -46,15 +67,13 @@ cli_args_acs_cpe(const char *args, size_t *offset, char *acs, char *cpe)
     while((*args) && (isspace(*args) || (*args == '/')))
         args++;
     
-    for (i = 0; args[i] && !isspace(args[i]) ; i++)
-        cpe[i] = args[i];
-    if (i == 0)
+    if ((i = cli_token_copy(args, cpe)) == 0)
     {
         fprintf(stderr, "Call CR fails, args '%s', CPE name not detected\n",
-              args);
+              start_args);
         return TE_EFAIL;
     }
-    cpe[i] = '\0';
+    args += i;
 
     *offset = args - start_args;
 
@@ -62,9 +81,8 @@ cli_args_acs_cpe(const char *args, size_t *offset, char *acs, char *cpe)
 }
 
 static te_errno
-cli_cpe_list(const char *args)
+cli_cfg_list(const char *args, acse_cfg_level_t level)
 {
-    int i;
     acse_epc_msg_t msg;
     acse_epc_config_data_t cfg_data;
 
@@ -73,16 +91,78 @@ cli_cpe_list(const char *args)
     msg.length = sizeof(cfg_data);
     msg.status = 0;
 
-    for (i = 0; args[i] && !isspace(args[i]); i++)
-        cfg_data.acs[i] = args[i];
-    cfg_data.acs[i] = '\0';
-
+    if (level == EPC_CFG_CPE)
+        cli_token_copy(args, cfg_data.acs);
     
     cfg_data.op.magic = EPC_CONFIG_MAGIC;
-    cfg_data.op.level = EPC_CFG_CPE;
+    cfg_data.op.level = level;
     cfg_data.op.fun = EPC_CFG_LIST;
-    cfg_data.oid[0] = '\0';
+
+    acse_epc_send(&msg);
+    return 0;
+}
+
+
+
+static te_errno
+cli_acs_config(const char *args, acse_cfg_op_t fun)
+{
+    acse_epc_msg_t         msg;
+    acse_epc_config_data_t cfg_data;
+
+    msg.opcode = EPC_CONFIG_CALL;
+    msg.data.cfg = &cfg_data;
+    msg.length = sizeof(cfg_data);
+    msg.status = 0;
+
+    args += cli_token_copy(args, cfg_data.acs);
+
+    args += cli_token_copy(args, cfg_data.oid);
+
+    cli_token_copy(args, cfg_data.value);
+
+    cfg_data.op.magic = EPC_CONFIG_MAGIC;
+    cfg_data.op.level = EPC_CFG_ACS;
+    cfg_data.op.fun = fun;
     cfg_data.cpe[0] = '\0';
+
+    acse_epc_send(&msg);
+
+    return 0;
+}
+
+static te_errno
+cli_cpe_config(const char *args, acse_cfg_op_t fun)
+{
+    te_errno    rc;
+    size_t      offset = 0;
+
+    acse_epc_msg_t         msg;
+    acse_epc_config_data_t cfg_data;
+
+    msg.opcode = EPC_CONFIG_CALL;
+    msg.data.cfg = &cfg_data;
+    msg.length = sizeof(cfg_data);
+    msg.status = 0;
+
+    rc = cli_args_acs_cpe(args, &offset, cfg_data.acs, cfg_data.cpe);
+    if (rc != 0)
+    {
+        fprintf(stderr, "Parse error 0x%x\n", rc);
+        return rc;
+    }
+    args += offset;
+
+    args += cli_token_copy(args, cfg_data.oid);
+
+    if (fun == EPC_CFG_MODIFY)
+        cli_token_copy(args, cfg_data.value);
+    else
+        cfg_data.value[0] = '\0';
+
+    cfg_data.op.magic = EPC_CONFIG_MAGIC;
+    cfg_data.op.level = EPC_CFG_CPE;
+    cfg_data.op.fun = fun;
 
     acse_epc_send(&msg);
     return 0;
@@ -226,21 +306,29 @@ static te_errno
 cli_parse_exec_cpe(const char *args)
 {
     if (strncmp(args, "list ", 5) == 0)
-        return cli_cpe_list(args + 5);
+        return cli_cfg_list(args + 5, EPC_CFG_CPE);
     if (strncmp(args, "cr ", 3) == 0)
         return cli_cpe_cr(args + 3);
     if (strncmp(args, "inform ", 7) == 0)
         return cli_cpe_inform(args + 7);
     if (strncmp(args, "rpc ", 4) == 0)
         return cli_cpe_rpc(args + 4);
+    if (strncmp(args, "modify ", 7) == 0)
+        return cli_cpe_config(args + 7, EPC_CFG_MODIFY);
+    if (strncmp(args, "obtain ", 7) == 0)
+        return cli_cpe_config(args + 7, EPC_CFG_OBTAIN);
     return 0;
 }
 
 static te_errno
 cli_parse_exec_acs(const char *args)
 {
-    /* TODO */
-    RING("%s():%d TODO", __FUNCTION__, __LINE__);
+    if (strncmp(args, "list", 4) == 0)
+        return cli_cfg_list(args + 4, EPC_CFG_ACS);
+    if (strncmp(args, "modify ", 7) == 0)
+        return cli_acs_config(args + 7, EPC_CFG_MODIFY);
+    if (strncmp(args, "obtain ", 7) == 0)
+        return cli_acs_config(args + 7, EPC_CFG_OBTAIN);
     return 0;
 }
 
@@ -373,6 +461,11 @@ print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
             _cwmp__Inform *inform = cwmp_resp->from_cpe.inform;
             printf("Get Inform from %s/%s, index %d\n",
                     cwmp_resp->acs, cwmp_resp->cpe, cwmp_resp->index);
+            if (status != 0)
+            {
+                printf("failed, status '%s'\n", te_rc_err2str(status));
+                break;
+            }
             printf("Device OUI: '%s'\n", inform->DeviceId->OUI);
             if (inform->Event != NULL)
             {
@@ -393,7 +486,8 @@ print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
 
 static te_errno
 print_config_response(te_errno status, acse_epc_config_data_t *cfg_resp)
-{
+{ 
+
     if (status != 0)
         printf("ERROR in response: %s\n",
             te_rc_err2str(status));
@@ -458,6 +552,7 @@ main(int argc, char **argv)
                 if (r == 0) /* The end of input */
                     break;
 
+                buf[r] = '\0';
                 rc = epc_parse_cli(buf, r);
                 if (rc != 0)
                     RING("parse error %r", rc);

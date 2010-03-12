@@ -100,14 +100,23 @@ struct cpe_t;
 struct cwmp_session_t;
 struct channel_t;
 
+
+typedef enum {
+    ACSE_AUTH_NONE,  
+    ACSE_AUTH_BASIC,    
+    ACSE_AUTH_DIGEST,
+} auth_mode_t;
+/**
+ * Authentication data collection.
+ */
 typedef struct auth_t {
     const char *login;
     const char *passwd;
 } auth_t;
 
 /** CPE RPC queue */
-typedef struct cpe_rpc_t {
-    TAILQ_ENTRY(cpe_rpc_t)  links;
+typedef struct cpe_rpc_item_t {
+    TAILQ_ENTRY(cpe_rpc_item_t)  links;
     acse_epc_cwmp_data_t   *params;
     int                     index;
 } cpe_rpc_item_t;
@@ -122,7 +131,7 @@ typedef struct cpe_inform_t {
     int            index;
 } cpe_inform_t;
 
-/** CPE */
+/** CPE record */
 typedef struct cpe_t{
     /** Fields for internal data integrity. */
     LIST_ENTRY(cpe_t) links;
@@ -175,12 +184,11 @@ typedef struct acs_t {
     const char  *name;          /**< ACS name                       */
     const char  *url;           /**< ACS URL                        */
     const char  *cert;          /**< ACS certificate                */
-    const char  *username;      /**< ACS user name                  */
-    const char  *password;      /**< ACS user password              */
     int          enabled;       /**< Enabled flag, true if listening
                                     new CWMP connections            */
     int          ssl;           /**< SSL usage flag                 */
     int          port;          /**< TCP port value in host byte order */
+    auth_mode_t  auth_mode;     /**< Authentication mode            */
 
     /** Fields for internal procedure data. */
     struct sockaddr *addr_listen;/**< TCP/IP address to listen      */

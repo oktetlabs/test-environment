@@ -256,6 +256,8 @@ acse_epc_close(void)
     free((char *)epc_shmem_name); epc_shmem_name = NULL;
     if (local_sock_name)
         unlink(local_sock_name);
+    if (remote_sock_name && epc_role == ACSE_EPC_SERVER)
+        unlink(remote_sock_name);
     return 0;
 }
 

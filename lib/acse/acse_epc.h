@@ -50,67 +50,6 @@ extern "C" {
 #define EPC_TA_SOCK   "/tmp/epc_ta_sock"
 
 
-#if 0
-#if 1
-/* This enum should correspond to xlat array in acse_epc_disp.c */
-typedef enum { ACSE_FUN_FIRST = 0,
-               ACSE_DB = ACSE_FUN_FIRST, /**< ACSE db operation: 
-                                              add/delete ACS or CPE */
-               ACSE_CONFIG,              /**< Modify some fields in 
-                                              particular ACS or CPE */
-               ACSE_CWMP,                /**< Perform CWMP operation */
-               EPC_TEST_FUN,
-               ACSE_FUN_LAST = EPC_TEST_FUN
-} acse_fun_t;
-#else
-/* This enum should correspond to xlat array in acse_lrpc.c */
-typedef enum { acse_fun_first = 1,
-               acse_acs_add_fun = acse_fun_first,
-               acse_acs_del_fun, acse_acs_list_fun,
-               acs_url_get_fun, acs_url_set_fun,
-               acs_cert_get_fun, acs_cert_set_fun,
-               acs_user_get_fun, acs_user_set_fun,
-               acs_pass_get_fun, acs_pass_set_fun,
-               acs_enabled_get_fun, acs_enabled_set_fun,
-               acs_ssl_get_fun, acs_ssl_set_fun,
-               acs_port_get_fun, acs_port_set_fun,
-               acs_cpe_add_fun, acs_cpe_del_fun, acs_cpe_list_fun,
-               cpe_ip_addr_get_fun, cpe_ip_addr_set_fun,
-               cpe_url_get_fun, cpe_url_set_fun,
-               cpe_cert_get_fun, cpe_cert_set_fun,
-               cpe_user_get_fun, cpe_user_set_fun,
-               cpe_pass_get_fun, cpe_pass_set_fun,
-               device_id_manufacturer_get_fun,
-               device_id_oui_get_fun,
-               device_id_product_class_get_fun,
-               device_id_serial_number_get_fun,
-               session_state_get_fun,
-               session_target_state_get_fun, session_target_state_set_fun,
-               session_enabled_get_fun, session_enabled_set_fun,
-               session_hold_requests_get_fun, session_hold_requests_set_fun,
-               fun_cpe_get_rpc_methods,
-               fun_cpe_set_parameter_values,
-               fun_cpe_get_parameter_values,
-               fun_cpe_get_parameter_names,
-               fun_cpe_set_parameter_attributes,
-               fun_cpe_get_parameter_attributes,
-               fun_cpe_add_object,
-               fun_cpe_delete_object,
-               fun_cpe_reboot,
-               fun_cpe_download,
-               fun_cpe_upload,
-               fun_cpe_factory_reset,
-               fun_cpe_get_queued_transfers,
-               fun_cpe_get_all_queued_transfers,
-               fun_cpe_schedule_inform,
-               fun_cpe_set_vouchers,
-               fun_cpe_get_options,
-               rpc_test_fun,
-               acse_fun_last = rpc_test_fun
-} acse_fun_t;
-#endif
-#endif
-
 #define EPC_MSG_CODE_MAGIC 0x1985
 #define EPC_CONFIG_MAGIC 0x1977
 #define EPC_CWMP_MAGIC 0x1950
@@ -146,11 +85,11 @@ typedef struct {
         acse_cfg_op_t    fun:4;
     } op;
 
-    char         oid[RCF_MAX_ID]; /**< TE Configurator OID of leaf,
-                                        which is subject of operation */ 
     char         acs[RCF_MAX_NAME];
     char         cpe[RCF_MAX_NAME];
 
+    char         oid[RCF_MAX_ID]; /**< TE Configurator OID of leaf,
+                                        which is subject of operation */ 
     union {
         char     value[RCF_MAX_VAL];
         char     list[RCF_MAX_VAL];
@@ -287,6 +226,8 @@ typedef struct {
                           via pipe between ACSE and its client.
                           Ignored as INPUT parameter in user API. */
     te_errno status; /**< Significant only in response */
+    /* TODO: design simple and universal scheme for passing 
+        status of operation and internal errors! */
 } acse_epc_msg_t;
 
 /**
