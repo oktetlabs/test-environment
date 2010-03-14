@@ -96,6 +96,16 @@ extern "C" {
     } while (0)
 
 /**
+ * Template action to be done on jump in TEST_START_SPECIFIC.
+ */
+#define TEST_ON_JMP_DO_SPECIFIC \
+    do {                                                             \
+        result = (TE_RC_GET_ERROR(jmp_rc) == TE_EOK) ? EXIT_SUCCESS  \
+                                                     : EXIT_FAILURE; \
+        goto cleanup_specific;                                       \
+    } while (0)
+
+/**
  * The first action of any test @b main() function.
  *
  * Variable @a rc and @a result are defined.
@@ -131,7 +141,11 @@ extern "C" {
      */                                                             \
     (void)signal(SIGUSR1, te_test_sig_handler);                     \
                                                                     \
-    TAPI_ON_JMP(TEST_ON_JMP_DO);                                    \
+    /*                                                              \
+     * Set jump point to cleanup_specific label to handle           \
+     * if TEST_START_SPECIFIC fail                                  \
+     */                                                             \
+    TAPI_ON_JMP(TEST_ON_JMP_DO_SPECIFIC);                           \
     TEST_GET_INT_PARAM(te_test_id);                                 \
                                                                     \
     /* Initialize pseudo-random generator */                        \
@@ -143,7 +157,11 @@ extern "C" {
         RING("Pseudo-random seed is %d", te_rand_seed);             \
     }                                                               \
                                                                     \
-    TEST_START_SPECIFIC
+    TEST_START_SPECIFIC;                                            \
+                                                                    \
+    /* Resetup jump point to cleanup label */                       \
+    TAPI_JMP_POP;                                                   \
+    TAPI_ON_JMP(TEST_ON_JMP_DO)
 
 /**
  * The last action of the test @b main() function.
@@ -151,6 +169,7 @@ extern "C" {
  * @note To define test-specific action define TEST_END_SPECIFIC macro
  */
 #define TEST_END \
+cleanup_specific:                                                   \
     TEST_END_SPECIFIC;                                              \
     return result
 
