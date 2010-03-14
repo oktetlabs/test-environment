@@ -2088,6 +2088,8 @@ rcf_ta_del_file(const char *ta_name, int session, const char *rfile)
 te_errno
 rcf_tr_op_log(te_bool ring)
 {
+    RING("Turn RCF traffic operations logging %s",
+         ring ? "ON" : "OFF");
     rcf_tr_op_ring = ring;
     return 0;
 }
