@@ -3036,8 +3036,9 @@ TARPC_FUNC(poll,
         INIT_CHECKED_ARG((char *)&(ufds[i].events),
                          sizeof(ufds[i].events), 0);
         ufds[i].revents = poll_event_rpc2h(out->ufds.ufds_val[i].revents);
-        VERB("poll(): IN fd=%d events=%hd revents=%hd",
-             ufds[i].fd, ufds[i].events, ufds[i].revents);
+        VERB("poll(): IN fd=%d events=%hx(rpc %hx) revents=%hx",
+             ufds[i].fd, ufds[i].events, out->ufds.ufds_val[i].events,
+             ufds[i].revents);
     }
 
     VERB("poll(): call with ufds=0x%lx, nfds=%u, timeout=%d",
@@ -3048,7 +3049,7 @@ TARPC_FUNC(poll,
     for (i = 0; i < out->ufds.ufds_len; i++)
     {
         out->ufds.ufds_val[i].revents = poll_event_h2rpc(ufds[i].revents);
-        VERB("poll(): OUT host-revents=%hd rpc-revents=%hd",
+        VERB("poll(): OUT host-revents=%hx rpc-revents=%hx",
              ufds[i].revents, out->ufds.ufds_val[i].revents);
     }
 }
