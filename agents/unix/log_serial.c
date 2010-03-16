@@ -330,8 +330,6 @@ log_serial(void *ready, int argc, char *argv[])
      * attempting to be over-smart. -- artem
      */
     char * volatile buffer;
-    char * volatile other_buffer;
-    char * volatile rest = NULL;
     char * volatile current;
     char * volatile fence;
     volatile int    current_timeout = LOG_SERIAL_ALIVE_TIMEOUT;
@@ -340,6 +338,7 @@ log_serial(void *ready, int argc, char *argv[])
     char           *newline;
     int             interval;
     int             len;
+    int             rest_len;
     struct pollfd   poller;
 
     time_t now;
@@ -351,35 +350,26 @@ log_serial(void *ready, int argc, char *argv[])
         {                                                           \
             *current = '\0';                                        \
             newline = strrchr(buffer, '\n');                        \
-            if (newline)                                            \
+            if (newline == NULL)                                    \
             {                                                       \
-                *newline = '\0';                                    \
-                if (newline[1] == '\r')                             \
-                   newline++;                                       \
-            }                                                       \
-            LGR_MESSAGE(TE_LL_WARN, user, "%s%s",                   \
-                        rest ? rest : "",                           \
-                        buffer);                                    \
-            if (!newline)                                           \
-            {                                                       \
-                fence = buffer + TE_LOG_FIELD_MAX;                  \
-                *fence = '\0';                                      \
-                rest = NULL;                                        \
+                rest_len = 0;                                       \
             }                                                       \
             else                                                    \
             {                                                       \
-                char *tmp;                                          \
-                                                                    \
-                rest = newline + 1;                                 \
-                tmp = buffer;                                       \
-                buffer = other_buffer;                              \
-                other_buffer = tmp;                                 \
-                fence =                                             \
-                    buffer + TE_LOG_FIELD_MAX - (current - rest);   \
-                *fence = '\0';                                      \
+                *newline++ = '\0';                                  \
+                if (*newline == '\r')                               \
+                   newline++;                                       \
+                rest_len = current - newline;                       \
             }                                                       \
+                                                                    \
+            if (*buffer != '\0')                                    \
+                LGR_MESSAGE(TE_LL_WARN, user, "%s", buffer);        \
+            if (rest_len > 0)                                       \
+                memmove(buffer, newline, rest_len);                 \
+                                                                    \
+            current = buffer + rest_len;                            \
+            *current = '\0';                                        \
             current_timeout = LOG_SERIAL_ALIVE_TIMEOUT;             \
-            current = buffer;                                       \
         }                                                           \
     } while (0)
 
@@ -407,15 +397,6 @@ log_serial(void *ready, int argc, char *argv[])
     }
 
     if ((buffer = malloc(TE_LOG_FIELD_MAX + 1)) == NULL)
-    {
-        int rc = errno;
-
-        ERROR("%s(): malloc failed at line %d: %d", __FUNCTION__,
-              __LINE__, rc);
-        sem_post(ready);
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    if ((other_buffer = malloc(TE_LOG_FIELD_MAX + 1)) == NULL)
     {
         int rc = errno;
 
@@ -482,6 +463,8 @@ log_serial(void *ready, int argc, char *argv[])
 
 
     current = buffer;
+    *current = '\0';
+
     fence   = buffer + TE_LOG_FIELD_MAX;
     *fence  = '\0';
 
@@ -490,7 +473,6 @@ log_serial(void *ready, int argc, char *argv[])
                          (void *)(long)poller.fd);
 #endif
     pthread_cleanup_push(free, buffer);
-    pthread_cleanup_push(free, other_buffer);
     for (;;)
     {
         poller.revents = 0;
@@ -523,8 +505,10 @@ log_serial(void *ready, int argc, char *argv[])
                 ERROR("Terminal is closed");
                 break;
             }
-            VERB("%d bytes actually read", len);
             current += len;
+            *current = '\0';
+            VERB("%d bytes actually read: %s", len, current - len);
+
             if (current == fence)
             {
                 MAYBE_DO_LOG;
@@ -553,7 +537,6 @@ log_serial(void *ready, int argc, char *argv[])
             MAYBE_DO_LOG;
         }
     }
-    pthread_cleanup_pop(1); /* free other buffer */
     pthread_cleanup_pop(1); /* free buffer */
 #if 0
     pthread_cleanup_pop(1); /* close fd */
