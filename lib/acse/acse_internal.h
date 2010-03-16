@@ -238,10 +238,11 @@ typedef struct cwmp_session_t {
  * into main loop.
  * 
  * @param socket        TCP connection socket, just accepted.
+ * @param acs           ACS object which responsible for this session.
  * 
  * @return pointer to new struct or NULL if fails.
  */
-extern cwmp_session_t *cwmp_new_session(int socket);
+extern cwmp_session_t *cwmp_new_session(int socket, acs_t *acs);
 
 
 /**

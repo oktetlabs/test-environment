@@ -71,7 +71,7 @@ SOAP_NMAC struct Namespace namespaces[] =
     {NULL, NULL, NULL, NULL}
 };
 
-/** Single REALM for Digest Auth. which we support. */
+/** Single REALM for Basic/Digest Auth. which we support. */
 const char *authrealm = "tr-069";
 
 
@@ -122,20 +122,12 @@ cpe_store_inform(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
  * @return TRUE if auth passed, FALSE if not.
  */
 int
-acse_basic_auth(struct soap *soap, cwmp_session_t *session)
-{
-    /* TODO */
-    return FALSE;
-}
-
-/**
- *
- * @return TRUE if auth passed, FALSE if not.
- */
-int
-acse_digest_auth(struct soap *soap, cwmp_session_t *session)
+acse_cwmp_auth(struct soap *soap, cwmp_session_t *session, cpe_t **cpe)
 {
     cpe_t *cpe_item;
+
+printf("Start authenticate, state %d, for '%s'\n", session->state, 
+        session->acs_owner->name);
     switch (session->state)
     {
         case CWMP_LISTEN:
@@ -144,18 +136,21 @@ acse_digest_auth(struct soap *soap, cwmp_session_t *session)
 
         case CWMP_WAIT_AUTH:
 
-            if (!(soap->authrealm && soap->userid))
+            if (!(soap->userid))
             {
-                ERROR("%s(): No auth infor in WAIT_AUTH state", 
+                ERROR("%s(): No userid information in WAIT_AUTH state", 
                       __FUNCTION__);
+                printf("No userid information in WAIT_AUTH state, error");
                 soap->keep_alive = 0; 
+                soap->error = 500;
 
                 return FALSE;
             }
 
-            if (strcmp(soap->authrealm, authrealm))
+            if (session->acs_owner->auth_mode == ACSE_AUTH_DIGEST &&
+                (!soap->authrealm || strcmp(soap->authrealm, authrealm)))
             {
-                VERB("Auth failed: wrong realm '%s', need '%s'",
+                RING("Digest Auth failed: wrong realm '%s', need '%s'",
                     soap->authrealm, authrealm);
                 break;
             }
@@ -165,6 +160,7 @@ acse_digest_auth(struct soap *soap, cwmp_session_t *session)
                 if (strcmp(cpe_item->acs_auth.login, soap->userid) == 0)
                     break; /* from LIST_FOREACH */
             }
+
             if (cpe_item == NULL)
             {
                 RING("%s() userid '%s' not found, auth fail", 
@@ -172,16 +168,36 @@ acse_digest_auth(struct soap *soap, cwmp_session_t *session)
                 break;
             }
 
+            printf("check auth for user '%s', pass '%s'\n",
+                soap->userid, cpe_item->acs_auth.passwd);
             VERB("check auth for user '%s', pass '%s'",
                 soap->userid, cpe_item->acs_auth.passwd);
-            if (http_da_verify_post(soap, cpe_item->acs_auth.passwd))
+            if (session->acs_owner->auth_mode == ACSE_AUTH_DIGEST)
             {
-                RING("Auth failed: digest verify not pass ");
-                break;
+                if (http_da_verify_post(soap, cpe_item->acs_auth.passwd))
+                {
+                    RING("Digest Auth failed: verify not pass ");
+                    printf("Digest Auth failed: verify not pass\n");
+                    break;
+                }
+            }
+            else
+            {
+                if (strcmp (soap->passwd, cpe_item->acs_auth.passwd) != 0)
+                {
+                    RING("Basic Auth failed: passwd not match");
+                    printf("Basic Auth failed: passwd not match\n");
+                    break;
+                }
             }
 
-            RING("%s(): Digest auth pass, CPE '%s', username '%s'", 
+            RING("%s(): Authentication passed, CPE '%s', username '%s'", 
                 __FUNCTION__, cpe_item->name, cpe_item->acs_auth.login);
+            printf("Authentication passed, CPE '%s', username '%s'\n", 
+                cpe_item->name, cpe_item->acs_auth.login);
+
+            *cpe = cpe_item;
+
             return TRUE;
 
         default:
@@ -189,12 +205,14 @@ acse_digest_auth(struct soap *soap, cwmp_session_t *session)
                path, not error.. */
             ERROR("%s(): unexpected session state %d", 
                   __FUNCTION__, session->state);
+            soap->error = 500;
             return FALSE;
     }
 
-    VERB("%s(): Auth failed\n", __FUNCTION__);
+    VERB("Auth failed, send authrealm, etc.. to client");
     if (soap->authrealm)
         soap_dealloc(soap, soap->authrealm);
+
     soap->authrealm = soap_strdup(soap, authrealm);
     soap->keep_alive = 1; 
 
@@ -205,6 +223,8 @@ acse_digest_auth(struct soap *soap, cwmp_session_t *session)
     soap_response(soap, 401);
     soap_end_send(soap);
     soap->keep_alive = 1; 
+
+    soap->error = SOAP_OK;
 
     return FALSE;
 }
@@ -258,14 +278,19 @@ __cwmp__Inform(struct soap *soap,
     switch (session->acs_owner->auth_mode)
     {
         case ACSE_AUTH_NONE:
+            cpe_item = LIST_FIRST(&(session->acs_owner->cpe_list));
+            if (cpe_item == NULL)
+            {
+                ERROR("catch Inform for ACS without CPE.");
+                soap->keep_alive = 0; 
+                return 500;
+            }
             auth_pass = TRUE;
-            /* TODO: search CPE */
             break;
+
         case ACSE_AUTH_BASIC:
-            auth_pass = acse_basic_auth(soap, session);
-            break;
         case ACSE_AUTH_DIGEST:
-            auth_pass = acse_digest_auth(soap, session);
+            auth_pass = acse_cwmp_auth(soap, session, &cpe_item);
             break;
     }
     if (auth_pass == TRUE)
@@ -276,7 +301,12 @@ __cwmp__Inform(struct soap *soap,
         cpe_item->session = session;
     }
     else
-        return SOAP_STOP; /* HTTP response already sent. */
+    {
+        if (soap->error == SOAP_OK)
+            return SOAP_STOP; /* HTTP response already sent. */
+        else
+            return soap->error;
+    }
 
 
 
@@ -461,8 +491,7 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
         return TE_ECONNREFUSED;
     }
 
-
-    cwmp_sess = cwmp_new_session(socket);
+    cwmp_sess = cwmp_new_session(socket, acs);
 
     cwmp_sess->acs_owner = acs;
     cwmp_sess->state = CWMP_LISTEN; /* Auth not started at all. */
@@ -493,7 +522,7 @@ cwmp_fparse(struct soap *soap)
 }
 
 cwmp_session_t *
-cwmp_new_session(int socket)
+cwmp_new_session(int socket, acs_t *acs)
 {
     cwmp_session_t *new_sess = malloc(sizeof(*new_sess));
     channel_t      *channel  = malloc(sizeof(*channel));
@@ -504,7 +533,7 @@ cwmp_new_session(int socket)
     soap_init(&(new_sess->m_soap));
 
     new_sess->state = CWMP_NOP;
-    new_sess->acs_owner = NULL;
+    new_sess->acs_owner = acs;
     new_sess->cpe_owner = NULL;
     new_sess->channel = channel;
     new_sess->rpc_item = NULL;
@@ -515,7 +544,11 @@ cwmp_new_session(int socket)
     soap_imode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
     soap_omode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
 
-    soap_register_plugin(&new_sess->m_soap, http_da); 
+printf("init CWMP session for ACS '%s', auth mode %d\n",
+        acs->name, (int)acs->auth_mode);
+
+    if (acs->auth_mode == ACSE_AUTH_DIGEST)
+        soap_register_plugin(&new_sess->m_soap, http_da); 
 
     new_sess->m_soap.max_keep_alive = 10;
 

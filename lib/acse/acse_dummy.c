@@ -102,6 +102,7 @@ main(int argc, char **argv)
         strdup("000261-Home Gateway-V60200000000-0010501606");
     cpe->acs_auth.passwd = strdup("passwd");
 
+    acs->auth_mode = ACSE_AUTH_NONE;
 
     db_add_cpe("ACS", "CPE-box");
     cpe = db_find_cpe(acs, "ACS", "CPE-box");

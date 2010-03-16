@@ -539,49 +539,6 @@ acs_enabled_set(acse_epc_config_data_t *params)
 }
 
 
-/**
- * Get the acs certificate value.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-acs_cert_get(acse_epc_config_data_t *params)
-{
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, acs_inst->cert);
-    return 0;
-}
-
-/**
- * Set the acs certificate value.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-acs_cert_set(acse_epc_config_data_t *params)
-{
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    free_const(acs_inst->cert);
-
-    if ((acs_inst->cert = strdup(params->value)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
-}
-
-
 static inline te_errno
 cfg_string_access(const char **pstring, acse_epc_config_data_t *params)
 {
@@ -617,6 +574,22 @@ acs_url(acs_t *acs, acse_epc_config_data_t *params)
 }
 
 
+
+/**
+ * Access to the ACS certificate value.
+ *
+ * @param acs           ACS object.
+ * @param params        Parameters object
+ *
+ * @return      Status code.
+ */
+static te_errno
+acs_cert(acs_t *acs, acse_epc_config_data_t *params)
+{
+    return cfg_string_access(&acs->cert, params);
+}
+
+
 /**
  * Access to the url of CPE.
  *
@@ -629,6 +602,63 @@ static te_errno
 cpe_url(cpe_t *cpe, acse_epc_config_data_t *params)
 {
     return cfg_string_access(&cpe->url, params);
+}
+
+/**
+ * Access to the login name of CPE to ACS.
+ *
+ * @param cpe           CPE record.
+ * @param params        Parameters object.
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_acs_login(cpe_t *cpe, acse_epc_config_data_t *params)
+{
+    return cfg_string_access(&cpe->acs_auth.login, params);
+}
+
+/**
+ * Access to the passwd of CPE to ACS.
+ *
+ * @param cpe           CPE record.
+ * @param params        Parameters object.
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_acs_passwd(cpe_t *cpe, acse_epc_config_data_t *params)
+{
+    return cfg_string_access(&cpe->acs_auth.passwd, params);
+}
+
+
+/**
+ * Access to the login name on CPE for Connection Request.
+ *
+ * @param cpe           CPE record.
+ * @param params        Parameters object.
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_cr_login(cpe_t *cpe, acse_epc_config_data_t *params)
+{
+    return cfg_string_access(&cpe->cr_auth.login, params);
+}
+
+/**
+ * Access to the passwd on CPE for Connection Request.
+ *
+ * @param cpe           CPE record.
+ * @param params        Parameters object.
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_cr_passwd(cpe_t *cpe, acse_epc_config_data_t *params)
+{
+    return cfg_string_access(&cpe->cr_auth.passwd, params);
 }
 
 
@@ -709,6 +739,7 @@ struct config_acs_item_t {
 {
     {"url", acs_url},
     {"auth-mode", acs_auth_mode},
+    {"cert", acs_cert},
 };
 
 typedef te_errno (*config_cpe_fun_t)(cpe_t *, acse_epc_config_data_t *);
@@ -718,7 +749,11 @@ struct config_cpe_item_t {
     config_cpe_fun_t  fun;
 } cfg_cpe_array [] = 
 {
-    {"url", cpe_url},
+    {"url",    cpe_url},
+    {"login",  cpe_acs_login},
+    {"passwd", cpe_acs_passwd},
+    {"cr-login",  cpe_cr_login},
+    {"cr-passwd", cpe_cr_passwd},
 };
 
 te_errno
