@@ -66,6 +66,8 @@
 
 #include "unix_internal.h"
 
+/** Time interval for Log Serial Alive messages */
+#define LOG_SERIAL_ALIVE_TIMEOUT    60000
 
 /** Conserver escape sequences */
 #define CONSERVER_ESCAPE    "\05c"
@@ -332,13 +334,16 @@ log_serial(void *ready, int argc, char *argv[])
     char * volatile rest = NULL;
     char * volatile current;
     char * volatile fence;
-    volatile int    current_timeout = -1;
+    volatile int    current_timeout = LOG_SERIAL_ALIVE_TIMEOUT;
 
     te_log_level    level;
     char           *newline;
     int             interval;
     int             len;
     struct pollfd   poller;
+
+    time_t now;
+    time_t last_alive = 0;
 
 #define MAYBE_DO_LOG \
     do {                                                            \
@@ -373,7 +378,7 @@ log_serial(void *ready, int argc, char *argv[])
                     buffer + TE_LOG_FIELD_MAX - (current - rest);   \
                 *fence = '\0';                                      \
             }                                                       \
-            current_timeout = -1;                                   \
+            current_timeout = LOG_SERIAL_ALIVE_TIMEOUT;             \
             current = buffer;                                       \
         }                                                           \
     } while (0)
@@ -491,8 +496,16 @@ log_serial(void *ready, int argc, char *argv[])
         poller.revents = 0;
         poller.events = POLLIN;
         poll(&poller, 1, current_timeout);
+
         VERB("something is available");
         pthread_testcancel();
+
+        now = time(NULL);
+        if (now - last_alive >= LOG_SERIAL_ALIVE_TIMEOUT / 1000)
+        {
+            RING("%s() thread is alive", __FUNCTION__);
+            last_alive = now;
+        }
 
         if (poller.revents & POLLIN)
         {
@@ -518,8 +531,7 @@ log_serial(void *ready, int argc, char *argv[])
             }
             else
             {
-                if (current_timeout < 0)
-                    current_timeout = interval;
+                current_timeout = interval;
                 VERB("timeout will be %d", current_timeout);
             }
         }
