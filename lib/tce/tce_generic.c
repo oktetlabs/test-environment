@@ -25,8 +25,6 @@
  *
  */
 
-#define _GNU_SOURCE 1
-
 #include "te_config.h"
 
 #include <stdarg.h>

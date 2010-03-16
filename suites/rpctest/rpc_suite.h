@@ -31,8 +31,6 @@
 
 #include "te_config.h"
 
-//#define _GNU_SOURCE     1
-
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif

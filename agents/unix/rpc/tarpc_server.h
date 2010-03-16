@@ -37,13 +37,6 @@
 #endif
 
 
-#if __sun__
-/* Required on Solaris2 (SunOS 5.11) to get msg_control etc. */
-#define _XOPEN_SOURCE           
-#define _XOPEN_SOURCE_EXTENDED  1
-#define __EXTENSIONS__
-#endif
-
 #ifdef HAVE_STDIO_H
 #include <stdio.h>
 #endif

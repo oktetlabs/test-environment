@@ -35,7 +35,6 @@
 #include "config.h"
 #endif
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #ifdef STDC_HEADERS
 #include <stdlib.h>

@@ -260,9 +260,6 @@ extern te_errno ta_interface_status_get(const char *ifname,
  */
 extern te_errno ta_interface_status_set(const char *ifname, te_bool status);
 
-/** Environment */
-extern char const * const *environ;
-
 /* Sockets to be used by various parts of configurator */
 extern int cfg_socket;
 extern int cfg6_socket;

@@ -34,7 +34,6 @@
  * $Id$
  */
 
-#define _GNU_SOURCE
 #include <te_config.h>
 #include <te_defs.h>
 #include <stddef.h>

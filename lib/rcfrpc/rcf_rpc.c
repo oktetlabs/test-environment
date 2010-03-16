@@ -30,9 +30,6 @@
 
 #define TE_LGR_USER     "RCF RPC"
 
-/* To get pthread_mutexattr_settype() definition in pthread.h */
-#define _GNU_SOURCE 
-
 #include "te_config.h"
 
 #include <stdio.h>

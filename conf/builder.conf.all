@@ -18,7 +18,7 @@ TE_TOOLS([rgt rpcgen trc tce millicom])
 #
 # Host platform
 #
-TE_PLATFORM([], [], [], [], [],
+TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
             [tools logic_expr conf_oid rpcxdr rpc_types asn ndn \
              comm_net_agent loggerta rcfpch tce tad tad_dummy \
              iscsi_unh_target iscsi_initiator_conf \
@@ -53,7 +53,7 @@ TE_TA_TYPE([power_ctl], [], [power-ctl],
 
 # linux_other platform is either 32-bit for 64-bit engine or
 # 64-bit for 32-bit engine
-TE_PLATFORM([linux_other], [--host=${OTHER_HOST}], [], [], [],
+TE_PLATFORM([linux_other], [--host=${OTHER_HOST}], [-D_GNU_SOURCE], [], [],
             [tools comm_net_agent loggerta conf_oid rpcxdr rpc_types rcfpch \
              asn ndn tad tad_dummy iscsi_unh_target iscsi_initiator_conf netconf])
 
@@ -78,7 +78,8 @@ TE_TA_TYPE([linux64_lite], [${LINUX64_PLATFORM}], [unix],
 # Solaris2 platform
 #
 TE_PLATFORM([solaris], [--host=i386-pc-solaris2.11], 
-            [-I${SOLARIS2_HOME}/sys-include], [-pthreads],
+            [-I${SOLARIS2_HOME}/sys-include -D_XOPEN_SOURCE=600 -D_XOPEN_SOURCE_EXTENDED=1 -D__EXTENSIONS__],
+            [-pthreads],
             [-L${SOLARIS2_HOME}/lib],
             [tools rpcxdr rpc_types conf_oid asn ndn \
              loggerta comm_net_agent rcfpch tad])
@@ -93,7 +94,8 @@ TE_TA_TYPE([solaris2], [solaris], [unix],
 
 TE_PLATFORM([solaris_64],
             [--host=i386-pc-solaris2.11 CC=i386-pc-solaris2.11-gcc-4.1.2],
-            [-I${SOLARIS2_HOME}/sys-include], [-m64 -pthreads],
+            [-I${SOLARIS2_HOME}/sys-include -D_XOPEN_SOURCE=600 -D_XOPEN_SOURCE_EXTENDED=1 -D__EXTENSIONS__],
+            [-m64 -pthreads],
             [-L${SOLARIS2_HOME}/lib/amd64 \
              -Wl,-rpath-link,${SOLARIS2_HOME}/lib/amd64],
             [tools rpcxdr rpc_types conf_oid asn ndn \

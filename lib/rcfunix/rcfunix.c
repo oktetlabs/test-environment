@@ -30,13 +30,6 @@
 
 #include "te_config.h"
 
-/*
- * To get getpgid() prototype from unistd.h.
- * 'man' recommends to define _XOPEN_SOURCE  and _XOPEN_SOURCE_EXTENDED,
- * but prototype of snprintf() is lost in such case.
- */
-#define _GNU_SOURCE
-
 #include <stdio.h>
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>

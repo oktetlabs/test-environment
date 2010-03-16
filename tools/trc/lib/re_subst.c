@@ -28,8 +28,6 @@
  * $Id$
  */
 
-#define _GNU_SOURCE
-
 #include "te_config.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"

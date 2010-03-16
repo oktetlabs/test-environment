@@ -38,9 +38,6 @@ const char main_rcsid[] =
  * rpc_main.c, Top level of the RPC protocol compiler.
  */
 
-/* Andrew Rybchenko: define it to have stpcpy() */
-#define _GNU_SOURCE
-
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>

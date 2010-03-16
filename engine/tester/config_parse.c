@@ -31,8 +31,6 @@
 /** Logging user name to be used here */
 #define TE_LGR_USER     "Config File Parser"
 
-/** To get strndup() */
-#define _GNU_SOURCE     1
 #include "te_config.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
