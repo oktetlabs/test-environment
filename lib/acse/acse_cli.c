@@ -9,8 +9,10 @@
  */
 #include "te_config.h"
 
-#include <string.h>
-#include <ctype.h>
+#include<string.h>
+#include<ctype.h>
+#include<popt.h>
+
 
 #include "acse_epc.h"
 #include "acse_internal.h"
@@ -25,6 +27,8 @@
 #include "logger_file.h"
 
 DEFINE_LGR_ENTITY("ACSE CLI");
+
+/* TODO some normal way to parse command line?.. */
 
 /**
  * Copy token from line to separate place.
@@ -103,6 +107,32 @@ cli_cfg_list(const char *args, acse_cfg_level_t level)
 }
 
 
+static te_errno
+cli_cfg_add(const char *args, acse_cfg_level_t level)
+{
+    acse_epc_msg_t         msg;
+    acse_epc_config_data_t cfg_data;
+
+    msg.opcode = EPC_CONFIG_CALL;
+    msg.data.cfg = &cfg_data;
+    msg.length = sizeof(cfg_data);
+    msg.status = 0;
+
+    args += cli_token_copy(args, cfg_data.acs);
+    
+    if (level == EPC_CFG_CPE)
+        cli_token_copy(args, cfg_data.cpe);
+    else
+        cfg_data.cpe[0] = '\0';
+
+    cfg_data.op.magic = EPC_CONFIG_MAGIC;
+    cfg_data.op.level = level;
+    cfg_data.op.fun = EPC_CFG_ADD;
+
+    acse_epc_send(&msg);
+
+    return 0;
+}
 
 static te_errno
 cli_acs_config(const char *args, acse_cfg_op_t fun)
@@ -305,6 +335,8 @@ cli_cpe_inform(const char *args)
 static te_errno
 cli_parse_exec_cpe(const char *args)
 {
+    if (strncmp(args, "add ", 4) == 0)
+        return cli_cfg_add(args + 4, EPC_CFG_CPE);
     if (strncmp(args, "list ", 5) == 0)
         return cli_cfg_list(args + 5, EPC_CFG_CPE);
     if (strncmp(args, "cr ", 3) == 0)
@@ -323,6 +355,8 @@ cli_parse_exec_cpe(const char *args)
 static te_errno
 cli_parse_exec_acs(const char *args)
 {
+    if (strncmp(args, "add ", 4) == 0)
+        return cli_cfg_add(args + 4, EPC_CFG_ACS);
     if (strncmp(args, "list", 4) == 0)
         return cli_cfg_list(args + 4, EPC_CFG_ACS);
     if (strncmp(args, "modify ", 7) == 0)
@@ -505,19 +539,36 @@ cli_exit_handler(void)
     acse_epc_close();
 }
 
-int 
-main(int argc, char **argv)
+char *epc_sock_name = NULL;
+char *script_name = NULL;
+
+struct poptOption acse_cli_opts[] = 
 {
-    const char *msg_sock_name;
+    {"epc-socket", 'e', POPT_ARG_STRING, &epc_sock_name, 0,
+            "filename for EPC socket", "EPC socket"},
+    {"script",     's', POPT_ARG_STRING, &script_name, 0, 
+            "filename with list of commands to perform before operation",
+            "script"},
+    {NULL, 0, 0, NULL, 0, NULL, NULL}
+};
+
+
+
+int 
+main(int argc, const char **argv)
+{
     te_errno rc;
-    int rpoll;
+    int rpoll, rpopt;
+    poptContext cont;
 
-    if (argc > 1)
-        msg_sock_name = strdup(argv[1]);
-    else 
-        msg_sock_name = strdup(EPC_ACSE_SOCK);
+    cont = poptGetContext(NULL, argc, argv, acse_cli_opts, 0);
+    
+    rpopt = poptGetNextOpt(cont); /* this really parse all command line */
 
-    if ((rc = acse_epc_open(msg_sock_name, EPC_MMAP_AREA, ACSE_EPC_CLIENT))
+    if (epc_sock_name == NULL)
+        epc_sock_name = strdup(EPC_ACSE_SOCK);
+
+    if ((rc = acse_epc_open(epc_sock_name, EPC_MMAP_AREA, ACSE_EPC_CLIENT))
         != 0)
     {
         ERROR("open EPC failed %r", rc);
@@ -525,6 +576,7 @@ main(int argc, char **argv)
     }
     atexit(&cli_exit_handler);
 
+    /* TODO process command line script */
     /* main loop */
     while (1)
     {

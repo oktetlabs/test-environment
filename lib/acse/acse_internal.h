@@ -186,7 +186,7 @@ typedef struct acs_t {
     const char  *cert;          /**< ACS certificate                */
     int          enabled;       /**< Enabled flag, true if listening
                                     new CWMP connections            */
-    int          ssl;           /**< SSL usage flag                 */
+    int          ssl;           /**< SSL usage boolean flag         */
     int          port;          /**< TCP port value in host byte order */
     auth_mode_t  auth_mode;     /**< Authentication mode            */
 
@@ -233,16 +233,16 @@ typedef struct cwmp_session_t {
 
 /**
  * Allocate struct for new CWMP session, init session,
- * init gSOAP sturct, allocate ACSE IO channel for this session.
- * User of this function is reponsible for insert IO channel
- * into main loop.
+ * init gSOAP struct, init Digest plugin or SSL if need, 
+ * allocate ACSE IO channel for this session,
+ * insert IO channel into main loop.
  * 
  * @param socket        TCP connection socket, just accepted.
  * @param acs           ACS object which responsible for this session.
  * 
- * @return pointer to new struct or NULL if fails.
+ * @return status code
  */
-extern cwmp_session_t *cwmp_new_session(int socket, acs_t *acs);
+extern te_errno cwmp_new_session(int socket, acs_t *acs);
 
 
 /**
@@ -263,6 +263,8 @@ extern int cwmp_SendConnectionRequest(const char *endpoint,
 /**
  * Check wheather accepted TCP connection is related to 
  * particular ACS; if it is, start processing of CWMP session.
+ * This procedure does not wait any data in TCP connection and 
+ * does not perform regular read from it. 
  *
  * @return      0 if connection accepted by this ACS;
  *              TE_ECONNREFUSED if connection NOT accepted by this ACS;

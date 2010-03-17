@@ -4,17 +4,10 @@ SUBDIRS = .
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) @SOAP_CPPFLAGS@
-AM_CFLAGS = @TE_CFLAGS@ 
+AM_CFLAGS = @TE_CFLAGS@ -DWITH_OPENSSL
 
 AM_LDFLAGS = @TE_LDFLAGS@
 
-# WSDL/XSD to C declarations generation/transformation tool and its flags
-WSDL2H = @WSDL2H@
-WSDL2H_FLAGS = @WSDL2H_FLAGS@
-
-# SOAP implementation generation tool and its flags
-SOAPCPP2 = @SOAPCPP2@
-SOAPCPP2_FLAGS = @SOAPCPP2_FLAGS@
 
 lib_LTLIBRARIES = libacse_epc.la
 
@@ -42,10 +35,11 @@ acse_cli_SOURCES = acse_cli.c
 
 
 # acse_dummy_LDFLAGS = -lgsoap
-acse_LDADD = -lacse_epc -lgsoap -lz -llogger_file -ltools -lcrypto -lrt
+acse_LDADD = -lacse_epc -lgsoapssl -lz -llogger_file -ltools \
+             -lcrypto -lrt -lssl
 #acse_LDADD = -lacse_epc -lz -llogger_file -ltools -lcrypto -lrt
 
-acse_cli_LDADD = -lacse_epc -llogger_file -ltools -lrt
+acse_cli_LDADD = -lacse_epc -llogger_file -ltools -lrt -lpopt
 
 install-exec-hook:
 	touch -c -r libacse_epc.* $(DESTDIR)/$(libdir)/libacse_epc.*

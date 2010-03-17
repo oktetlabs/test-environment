@@ -181,15 +181,58 @@ db_find_cpe(acs_t *acs_item, const char *acs_name, const char *cpe_name)
 }
 
 te_errno
-db_remove_acs(acs_t *acs_item)
+db_remove_acs(acs_t *acs)
 {
-    /* TODO */
+    if (!acs)
+        return TE_EINVAL;
+
+    if (acs->enabled)
+    {
+        WARN("attempt to remove enabled ACS object '%s'", acs->name);
+        return TE_EBUSY;
+    }
+    while (! (LIST_EMPTY(&acs->cpe_list)))
+    {
+        cpe_t    *cpe_item = LIST_FIRST(&acs->cpe_list);
+        te_errno  rc       = db_remove_cpe(cpe_item);
+        if (rc != 0)
+        {
+            WARN("remove ACS failed because CPE remove failed %r", rc);
+            return rc;
+        }
+    }
+    LIST_REMOVE(acs, links);
+    free(acs);
     return 0;
 }
 
 te_errno
-db_remove_cpe(cpe_t *cpe_item)
+db_remove_cpe(cpe_t *cpe)
 {
-    /* TODO */
+    if (!cpe)
+        return TE_EINVAL;
+    if (cpe->session != NULL || cpe->cr_state != CR_NONE)
+    {
+        WARN("attempt to remove busy CPE record '%s/%s'",
+             cpe->acs->name, cpe->name);
+        return TE_EBUSY;
+    }
+    while (!(LIST_EMPTY(&cpe->inform_list)))
+    {
+        cpe_inform_t *inf_rec = LIST_FIRST(&cpe->inform_list);
+        LIST_REMOVE(inf_rec, links);
+        /* TODO free Inform,
+           and besides correct copy Inform to this list.. */
+        free(inf_rec);
+    }
+
+    while (!(TAILQ_EMPTY(&cpe->rpc_queue)))
+    {
+        cpe_rpc_item_t *rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
+        TAILQ_REMOVE(&cpe->rpc_queue, rpc_item, links);
+    }
+
+    LIST_REMOVE(cpe, links);
+    free(cpe);
     return 0;
 }

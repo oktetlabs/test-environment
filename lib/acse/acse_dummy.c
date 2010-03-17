@@ -75,6 +75,8 @@ main(int argc, char **argv)
 
     atexit(acse_exit_handler);
 
+    soap_ssl_init(); /* init OpenSSL (just once) */
+
     db_add_acs("ACS");
     db_add_cpe("ACS", "cpe-dummy");
 

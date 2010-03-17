@@ -111,6 +111,9 @@ cpe_store_inform(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
     cpe_inform_t *inf_last = LIST_FIRST(&(cpe_item->inform_list));
     int last_index = (inf_last != NULL) ? inf_last->index : 0;
 
+    /* TODO correct copy Inform to this list:
+      memory for this instance is allocated by gSOAP */
+
     inf_store->inform = cwmp__Inform;
     inf_store->index = last_index + 1;
     LIST_INSERT_HEAD(&(cpe_item->inform_list), inf_store, links);
@@ -398,6 +401,7 @@ __cwmp__Kicked(struct soap *soap,
 
 
 
+/* callback for generic ACSE I/O channel */
 te_errno
 cwmp_before_poll(void *data, struct pollfd *pfd)
 {
@@ -416,6 +420,7 @@ cwmp_before_poll(void *data, struct pollfd *pfd)
     return 0;
 }
 
+/* callback for generic ACSE I/O channel */
 te_errno
 cwmp_after_poll(void *data, struct pollfd *pfd)
 {
@@ -459,6 +464,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
     return 0;
 }
 
+/* callback for generic ACSE I/O channel */
 te_errno
 cwmp_destroy(void *data)
 {
@@ -468,40 +474,23 @@ cwmp_destroy(void *data)
 }
 
 
-/**
- * Check wheather accepted TCP connection is related to 
- * particular ACS; if it is, start processing of CWMP session.
- * This procedure does not wait any data in TCP connection and 
- * does not perform regular read from it. 
- *
- * @return      0 if connection accepted by this ACS;
- *              TE_ECONNREFUSED if connection NOT accepted by this ACS;
- *              other error status on some error.
- */
+/* see description in acse_internal.h */
 te_errno
 cwmp_accept_cpe_connection(acs_t *acs, int socket)
 {
     cwmp_session_t *cwmp_sess;
-
-    /* TODO: real check, now accept all, if any CPE registered. */
 
     if (LIST_EMPTY(&acs->cpe_list))
     {
         RING("%s: conn refused: no CPE for this ACS.", __FUNCTION__);
         return TE_ECONNREFUSED;
     }
+    /* TODO: real check, now accept all, if any CPE registered. */
 
-    cwmp_sess = cwmp_new_session(socket, acs);
-
-    cwmp_sess->acs_owner = acs;
-    cwmp_sess->state = CWMP_LISTEN; /* Auth not started at all. */
-    acse_add_channel(cwmp_sess->channel);
-
-    RING("%s: success", __FUNCTION__);
-
-    return 0;
+    return cwmp_new_session(socket, acs);
 }
 
+/* callback fserveloop for gSOAP */
 int
 cwmp_serveloop(struct soap *soap)
 {
@@ -509,6 +498,7 @@ cwmp_serveloop(struct soap *soap)
     return soap->error;
 }
 
+/* callback fparse for gSOAP, to return STOP if empty POST was received. */
 int
 cwmp_fparse(struct soap *soap)
 {
@@ -521,16 +511,46 @@ cwmp_fparse(struct soap *soap)
     return rc;
 }
 
-cwmp_session_t *
+/* see description in acse_internal.h */
+te_errno
 cwmp_new_session(int socket, acs_t *acs)
 {
     cwmp_session_t *new_sess = malloc(sizeof(*new_sess));
     channel_t      *channel  = malloc(sizeof(*channel));
 
     if (new_sess == NULL || channel == NULL)
-        return NULL;
+        return TE_ENOMEM;
 
     soap_init(&(new_sess->m_soap));
+
+    if (acs->ssl)
+    {
+        /* TODO: test SSL */
+        if (soap_ssl_server_context(&new_sess->m_soap,
+              SOAP_SSL_DEFAULT,
+              acs->cert, /* keyfile: required when server must
+                            authenticate to clients */
+              "password", /* password to read the key file */
+              "cacert.pem", /* optional cacert file to store
+                               trusted certificates */
+              NULL, /* optional capath to directory with
+                        trusted certificates */
+              "dh512.pem", /* DH file, if NULL use RSA */
+              NULL, /* if randfile!=NULL: use a file with
+                        random data to seed randomness */
+              NULL /* optional server identification
+                    to enable SSL session cache (must be a unique name) */
+            ))
+        {
+            soap_print_fault(&new_sess->m_soap, stderr);
+            ERROR("soap_ssl_server_context failed, soap error %d",
+                new_sess->m_soap.error);
+            free(new_sess);
+            free(channel);
+            /* TODO: what error return here? */
+            return TE_ECONNREFUSED;
+        }
+    }
 
     new_sess->state = CWMP_NOP;
     new_sess->acs_owner = acs;
@@ -544,11 +564,26 @@ cwmp_new_session(int socket, acs_t *acs)
     soap_imode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
     soap_omode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
 
-printf("init CWMP session for ACS '%s', auth mode %d\n",
-        acs->name, (int)acs->auth_mode);
+    if (acs->ssl)
+    {
+        if (soap_ssl_accept(&new_sess->m_soap))
+        {
+            RING("soap_ssl_accept failed, soap error %d",
+                new_sess->m_soap.error);
+            soap_free(&new_sess->m_soap);
+            free(new_sess);
+            free(channel);
+            return TE_ECONNREFUSED;
+        }
+    }
 
+    /* TODO: investigate, is it possible in gSOAP to use 
+       Digest auth. over SSL connection */
     if (acs->auth_mode == ACSE_AUTH_DIGEST)
         soap_register_plugin(&new_sess->m_soap, http_da); 
+
+    VERB("init CWMP session for ACS '%s', auth mode %d",
+            acs->name, (int)acs->auth_mode);
 
     new_sess->m_soap.max_keep_alive = 10;
 
@@ -560,7 +595,10 @@ printf("init CWMP session for ACS '%s', auth mode %d\n",
     new_sess->orig_fparse = new_sess->m_soap.fparse;
     new_sess->m_soap.fparse = cwmp_fparse;
 
-    return new_sess;
+    new_sess->state = CWMP_LISTEN; 
+    acse_add_channel(channel);
+
+    return 0;
 }
 
 te_errno 
