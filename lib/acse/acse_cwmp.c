@@ -525,17 +525,19 @@ cwmp_new_session(int socket, acs_t *acs)
 
     if (acs->ssl)
     {
-        /* TODO: test SSL */
+        /* TODO: Investigate, how to pass SSL certificate correct.
+                 Test SSL. */
         if (soap_ssl_server_context(&new_sess->m_soap,
-              SOAP_SSL_DEFAULT,
+              SOAP_SSL_REQUIRE_SERVER_AUTHENTICATION |
+              SOAP_SSLv3_TLSv1 | SOAP_SSL_RSA,
               acs->cert, /* keyfile: required when server must
                             authenticate to clients */
-              "password", /* password to read the key file */
+              "", /* password to read the key file */
               "cacert.pem", /* optional cacert file to store
                                trusted certificates */
               NULL, /* optional capath to directory with
                         trusted certificates */
-              "dh512.pem", /* DH file, if NULL use RSA */
+              NULL, /* DH file, if NULL use RSA */
               NULL, /* if randfile!=NULL: use a file with
                         random data to seed randomness */
               NULL /* optional server identification
