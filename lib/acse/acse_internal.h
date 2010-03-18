@@ -56,20 +56,6 @@ extern "C" {
 #include "acse_epc.h"
 #include "acse_soapStub.h"
 
-/** Session states */
-typedef enum { 
-    CWMP_NOP,           /**< No any TCP activity: neither active
-                          connection, nor listening for incoming ones.  */
-    CWMP_LISTEN,        /**< Listening for incoming HTTP connection.    */
-    CWMP_WAIT_AUTH,     /**< TCP connection established, first HTTP
-                            request received, but not authenicated,
-                            response with our WWW-Authenticate is sent. */
-    CWMP_SERVE,         /**< CWMP session established, waiting for
-                            incoming SOAP RPC requests from CPE.        */
-    CWMP_WAIT_RESPONSE, /**< CWMP session established, SOAP RPC is sent
-                            to the CPE, waiting for response.           */
-} session_state_t;
-
 /*
  * State machine diargam for CWMP session entity:
 
@@ -146,7 +132,10 @@ typedef struct cpe_t{
                                      Connection Request.        */
     auth_t           acs_auth;  /**< Authenticate fields for 
                                      CPE->ACS Sessions.         */
-    int              enabled;   /**< Enabled CWMP func. flag.   */
+    int              enabled;   /**< Flag denotes whether CWMP sessions
+                                     are enabled from this CPE.
+                                     Set to FALSE during active 
+                                     CWMP session leads to stop it.*/
     te_bool          hold_requests;  /**< Whether to put "hold requests"
                                         in SOAP msg                    */
     cwmp__DeviceIdStruct device_id; /**< Device Identifier       */
@@ -219,7 +208,7 @@ typedef struct channel_t {
 
 
 typedef struct cwmp_session_t {
-    session_state_t      state;     /**< CWMP session state      */
+    cwmp_sess_state_t    state;     /**< CWMP session state      */
     acs_t               *acs_owner;
     cpe_t               *cpe_owner;
     cpe_rpc_item_t      *rpc_item;  /**< NULL or last sent RPC in 
@@ -348,13 +337,57 @@ extern te_errno acse_epc_disp_init(const char *msg_sock_name,
 extern te_errno acse_conn_create(void);
 
 
+/**
+ * Add I/O channel to ACSE internal main loop.
+ *
+ * @param ch_item       Channel item, should have all callbacks 
+ *                      set to function addresses.
+ *
+ * @return none
+ */
 extern void acse_add_channel(channel_t *ch_item);
 
+/**
+ * Remove I/O channel from ACSE internal main loop.
+ * Call 'destroy' callback for channel.
+ *
+ * @param ch_item       Channel. 
+ *
+ * @return none
+ */
 extern void acse_remove_channel(channel_t *ch_item);
 
+/**
+ * Register ACS object in TCP Connection Dispatcher.
+ * This action require to set on remote_addr internal field in ACS.
+ * 
+ * @param acs           ACS object
+ *
+ * @return status code
+ */
 extern te_errno conn_register_acs(acs_t *acs);
 
+/**
+ * Enable ACS object to receipt CWMP sessions.
+ * This action require to set on @p port field in ACS. 
+ * After success of this action ACS object will be registered 
+ * in TCP Connection Dispatcher.
+ * 
+ * @param acs           ACS object
+ *
+ * @return status code
+ */
 extern te_errno acse_enable_acs(acs_t *acs);
+
+/**
+ * Disable ACS object to receipt CWMP sessions, deregister
+ * ACS from TCP Connection Dispatcher.
+ * 
+ * @param acs           ACS object
+ *
+ * @return status code
+ */
+extern te_errno acse_disable_acs(acs_t *acs);
 
 /**
  * Initiate CWMP Connection Request to specified CPE. 
@@ -378,6 +411,7 @@ extern void acse_loop(void);
  * Usually means finish of ACSE operation.
  */
 extern void acse_clear_channels(void);
+
 
 #ifdef __cplusplus
 }

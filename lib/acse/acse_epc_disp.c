@@ -116,220 +116,150 @@ free_const(void const *p)
 }
 
 /**
- * Get the session 'hold_requests' flag.
+ * Access to 'hold_requests' flag for CPE CWMP session.
  *
- * @param params        Parameters object
+ * @param cpe           CPE record
+ * @param params        EPC parameters struct
  *
  * @return              Status code
  */
 static te_errno
-hold_requests_get(acse_epc_config_data_t *params)
+cpe_hold_requests(cpe_t *cpe, acse_epc_config_data_t *params)
 {
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    sprintf(params->value, "%i", cpe_inst->hold_requests);
+    if (params->op.fun == EPC_CFG_OBTAIN)
+        sprintf(params->value, "%i", cpe->hold_requests);
+    else 
+        cpe->hold_requests = atoi(params->value);
     return 0;
 }
 
-/**
- * Set the session 'hold_requests' flag.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-hold_requests_set(acse_epc_config_data_t *params)
-{
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    cpe_inst->hold_requests = atoi(params->value);
-    return 0;
-}
 
 /**
  * Get the session 'enabled' flag.
  *
- * @param params        Parameters object
+ * @param cpe           CPE record
+ * @param params        EPC parameters struct
  *
  * @return              Status code
  */
 static te_errno
-session_enabled_get(acse_epc_config_data_t *params)
+cpe_enabled(cpe_t *cpe, acse_epc_config_data_t *params)
 {
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
+    if (params->op.fun == EPC_CFG_OBTAIN)
+    {
+        sprintf(params->value, "%i", cpe->enabled);
+        return 0;
+    }
 
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    sprintf(params->value, "%i", cpe_inst->enabled);
-    return 0;
-}
-
-/**
- * Set the session 'enabled' flag.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-session_enabled_set(acse_epc_config_data_t *params)
-{
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    cpe_inst->enabled = atoi(params->value);
+    /* TODO check if new value is FALSE, stop current session if it is. */
+    cpe->enabled = atoi(params->value);
     return 0;
 }
 
 
 /**
- * Get the session state.
+ * Get the CWMP session state.
  *
- * @param params        Parameters object
+ * @param cpe           CPE record
+ * @param params        EPC parameters struct
  *
  * @return              Status code
  */
 static te_errno
-session_state_get(acse_epc_config_data_t *params)
+cpe_cwmp_state(cpe_t *cpe, acse_epc_config_data_t *params)
 {
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (cpe_inst->session == NULL)
+    if (params->op.fun == EPC_CFG_MODIFY)
+        return TE_EACCES;
+    if (cpe->session == NULL)
         sprintf(params->value, "0");
     else
-        sprintf(params->value, "%i", cpe_inst->session->state);
+        sprintf(params->value, "%i", cpe->session->state);
     return 0;
 }
+
+/**
+ * Get the CPE Connection Request state.
+ *
+ * @param cpe           CPE record
+ * @param params        EPC parameters struct
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_cr_state(cpe_t *cpe, acse_epc_config_data_t *params)
+{
+    if (params->op.fun == EPC_CFG_MODIFY)
+        return TE_EACCES;
+    sprintf(params->value, "%i", cpe->cr_state);
+    return 0;
+}
+
 
 /**
  * Get the device ID serial nuber.
  *
- * @param params        Parameters object
+ * @param cpe           CPE record
+ * @param params        EPC parameters struct
  *
  * @return              Status code
  */
 static te_errno
-device_id_serial_number_get(acse_epc_config_data_t *params)
+device_id_serial_number(cpe_t *cpe, acse_epc_config_data_t *params)
 {
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, cpe_inst->device_id.SerialNumber);
+    if (params->op.fun == EPC_CFG_MODIFY)
+        return TE_EACCES;
+    strcpy(params->value, cpe->device_id.SerialNumber);
     return 0;
 }
 
 /**
  * Get the device ID product class.
  *
- * @param params        Parameters object
+ * @param cpe           CPE record
+ * @param params        EPC parameters struct
  *
  * @return              Status code
  */
 static te_errno
-device_id_product_class_get(acse_epc_config_data_t *params)
+device_id_product_class(cpe_t *cpe, acse_epc_config_data_t *params)
 {
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, cpe_inst->device_id.ProductClass);
+    if (params->op.fun == EPC_CFG_MODIFY)
+        return TE_EACCES;
+    strcpy(params->value, cpe->device_id.ProductClass);
     return 0;
 }
 
 /**
  * Get the device ID organizational unique ID.
  *
- * @param params        Parameters object
+ * @param cpe           CPE record
+ * @param params        EPC parameters struct
  *
  * @return              Status code
  */
 static te_errno
-device_id_oui_get(acse_epc_config_data_t *params)
+device_id_oui(cpe_t *cpe, acse_epc_config_data_t *params)
 {
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, cpe_inst->device_id.OUI);
+    if (params->op.fun == EPC_CFG_MODIFY)
+        return TE_EACCES;
+    strcpy(params->value, cpe->device_id.OUI);
     return 0;
 }
 
 /**
  * Get the device ID manufacturer.
  *
- * @param params        Parameters object
+ * @param cpe           CPE record
+ * @param params        EPC parameters struct
  *
  * @return              Status code
  */
 static te_errno
-device_id_manufacturer_get(acse_epc_config_data_t *params)
-{
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, cpe_inst->device_id.Manufacturer);
-    return 0;
-}
-
-
-/**
- * Get the cpe certificate.
- *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-cpe_cert_get(acse_epc_config_data_t *params)
-{
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    strcpy(params->value, cpe_inst->cert);
-    return 0;
-}
-
-/**
- * Set the cpe certificate.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-cpe_cert_set(acse_epc_config_data_t *params)
-{
-    cpe_t *cpe_inst = db_find_cpe(NULL, params->acs, params->cpe);
-
-    if (cpe_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    free_const(cpe_inst->cert);
-
-    if ((cpe_inst->cert = strdup(params->value)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
+device_id_manufacturer(cpe_t *cpe, acse_epc_config_data_t *params)
+{ 
+    if (params->op.fun == EPC_CFG_MODIFY)
+        return TE_EACCES;
+    strcpy(params->value, cpe->device_id.Manufacturer);
     return 0;
 }
 
@@ -339,7 +269,7 @@ cpe_cert_set(acse_epc_config_data_t *params)
  * Get the list of CPE instances under ACS. Put result into passed 
  * config data @p params.
  *
- * @param params        Parameters object (IN/OUT)
+ * @param params        EPC parameters struct
  *
  * @return              Status code
  */
@@ -384,159 +314,83 @@ acs_cpe_list(acse_epc_config_data_t *params)
     return 0;
 }
 
-/**
- * Get the ACS port value.
- *
- * @param params        Parameters object (IN/OUT)
- *
- * @return              Status code
- */
-static te_errno
-acs_port_get(acse_epc_config_data_t *params)
-{
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    sprintf(params->value, "%i", acs_inst->port);
-    return 0;
-}
 
 /**
- * Set the acs port.
+ * Access to the ACS port value.
  *
- * @param params        Parameters object
+ * @param acs           ACS record
+ * @param params        EPC parameters struct
  *
  * @return      Status code.
  */
 static te_errno
-acs_port_set(acse_epc_config_data_t *params)
+acs_port(acs_t *acs, acse_epc_config_data_t *params)
 {
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    acs_inst->port = atoi(params->value);
+    if (params->op.fun == EPC_CFG_MODIFY)
+        acs->port = atoi(params->value);
+    else
+        sprintf(params->value, "%i", acs->port);
     return 0;
 }
 
 /**
- * Get the acs ssl flag.
+ * Set the ACS SSL flag.
  *
- * @param params        Parameters object
- *
- * @return              Status code
- */
-static te_errno
-acs_ssl_get(acse_epc_config_data_t *params)
-{
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    sprintf(params->value, "%i", acs_inst->ssl);
-    return 0;
-}
-
-/**
- * Set the acs ssl flag.
- *
- * @param params        Parameters object
+ * @param acs           ACS record
+ * @param params        EPC parameters struct
  *
  * @return      Status code.
  */
 static te_errno
-acs_ssl_set(acse_epc_config_data_t *params)
+acs_ssl(acs_t *acs, acse_epc_config_data_t *params)
 {
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    acs_inst->ssl = atoi(params->value);
+    if (params->op.fun == EPC_CFG_MODIFY)
+        acs->ssl = atoi(params->value);
+    else
+        sprintf(params->value, "%i", acs->ssl);
     return 0;
 }
 
 /**
- * Get the acs enabled flag.
+ * Get the ACS enabled flag.
  *
- * @param params        Parameters object
+ * @param acs           ACS record
+ * @param params        EPC parameters struct
  *
  * @return              Status code
  */
 static te_errno
-acs_enabled_get(acse_epc_config_data_t *params)
+acs_enabled(acs_t *acs, acse_epc_config_data_t *params)
 {
-    acs_t *acs_inst = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    sprintf(params->value, "%i", acs_inst->enabled);
-    return 0;
-}
-
-/**
- * Set the acs enabled flag.
- *
- * @param params        Parameters object
- *
- * @return      Status code.
- */
-static te_errno
-acs_enabled_set(acse_epc_config_data_t *params)
-{
-    acs_t *acs_inst  = db_find_acs(params->acs);
-
-    if (acs_inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-#if 0
-    int    new_value = atoi(params->value);
-    /* TODO: rewrite at all, is it need? */
-    prev_value = acs_inst->enabled;
-
-    if (prev_value == 0 && new_value != 0 && acs_inst->port != 0)
+    int prev_value, new_value;
+    if (params->op.fun == EPC_CFG_OBTAIN)
     {
-        if ((acs_inst->soap = soap_new2(SOAP_IO_KEEPALIVE,
-                                        SOAP_IO_DEFAULT)) != NULL)
-        {
-            acs_inst->soap->bind_flags = SO_REUSEADDR;
+        sprintf(params->value, "%i", acs->enabled);
+        return 0;
+    }
+    prev_value = acs->enabled;
+    new_value = atoi(params->value);
 
-            if (soap_bind(acs_inst->soap, NULL,
-                          acs_inst->port, 5) != SOAP_INVALID_SOCKET)
-            {
-                acs_inst->enabled = new_value;
-                return 0;
-            }
-            else
-            {
-                te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-                soap_end(acs_inst->soap);
-                soap_free(acs_inst->soap);
-                acs_inst->soap = NULL;
-                return rc;
-            }
-        }
-        else
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    if (new_value != 0 && acs->port == 0)
+    {
+        WARN("Attempt to activate ACS '%s', but no net port provided",
+              acs->name);
+        return TE_EFAULT;
     }
 
-    if (prev_value != 0 && new_value == 0 && acs_inst->soap != NULL)
-    {
-        free(acs_inst->soap->user);
-        soap_end(acs_inst->soap);
-        soap_free(acs_inst->soap);
-        acs_inst->soap = NULL;
-        acs_inst->enabled = new_value;
-    }
-#endif
+    /* field acs->enabled will be set in these specific methods. */
+
+    if (prev_value == 0 && new_value != 0)
+        return acse_enable_acs(acs);
+
+    if (prev_value != 0 && new_value == 0)
+        return acse_disable_acs(acs);
+
+    /* Here new and previous values are the same:) */
+
     return 0;
 }
+
 
 
 static inline te_errno
@@ -738,8 +592,11 @@ struct config_acs_item_t {
 } cfg_acs_array [] = 
 {
     {"url", acs_url},
-    {"auth-mode", acs_auth_mode},
+    {"auth_mode", acs_auth_mode},
     {"cert", acs_cert},
+    {"ssl",  acs_ssl},
+    {"port", acs_port},
+    {"enabled", acs_enabled},
 };
 
 typedef te_errno (*config_cpe_fun_t)(cpe_t *, acse_epc_config_data_t *);
@@ -750,10 +607,18 @@ struct config_cpe_item_t {
 } cfg_cpe_array [] = 
 {
     {"url",    cpe_url},
+    {"enabled", cpe_enabled},
+    {"cwmp_state", cpe_cwmp_state},
+    {"cr_state", cpe_cr_state},
+    {"hold_requests", cpe_hold_requests},
     {"login",  cpe_acs_login},
     {"passwd", cpe_acs_passwd},
-    {"cr-login",  cpe_cr_login},
-    {"cr-passwd", cpe_cr_passwd},
+    {"cr_login",  cpe_cr_login},
+    {"cr_passwd", cpe_cr_passwd},
+    {"dev_serial_number", device_id_serial_number},
+    {"dev_product_class", device_id_product_class},
+    {"dev_oui", device_id_oui},
+    {"dev_manufacturer", device_id_manufacturer},
 };
 
 te_errno

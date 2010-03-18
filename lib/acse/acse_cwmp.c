@@ -431,19 +431,16 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
 
     switch(cwmp_sess->state)
     {
-        case CWMP_NOP:
-            ERROR("CWMP after poll, unexpected state %d\n",
-                    (int)cwmp_sess->state);
-            return TE_EINVAL;
-
         case CWMP_LISTEN:
         case CWMP_WAIT_AUTH:
         case CWMP_SERVE:
             /* Now, after poll() on soap socket, it should not block */
             soap_serve(&cwmp_sess->m_soap);
             RING("status after serve: %d", cwmp_sess->m_soap.error);
+            printf("status after serve: %d\n", cwmp_sess->m_soap.error);
             if (cwmp_sess->m_soap.error == SOAP_EOF)
             {
+                printf("CWMP processing, after soap_serve, EOF\n");
                 RING(" CWMP processing, EOF");
                 return TE_ENOTCONN;
             }
@@ -455,9 +452,14 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             RING("status after serve: %d", cwmp_sess->m_soap.error);
             if (cwmp_sess->m_soap.error == SOAP_EOF)
             {
+                printf("CWMP processing, catch response, EOF\n");
                 RING(" CWMP processing, EOF");
                 return TE_ENOTCONN;
             }
+            break;
+        default: /* do nothing here */
+            WARN("CWMP after poll, unexpected state %d\n",
+                    (int)cwmp_sess->state);
             break;
     }
 
@@ -478,8 +480,6 @@ cwmp_destroy(void *data)
 te_errno
 cwmp_accept_cpe_connection(acs_t *acs, int socket)
 {
-    cwmp_session_t *cwmp_sess;
-
     if (LIST_EMPTY(&acs->cpe_list))
     {
         RING("%s: conn refused: no CPE for this ACS.", __FUNCTION__);
@@ -605,7 +605,9 @@ te_errno
 cwmp_close_session(cwmp_session_t *sess)
 {
     /* TODO: investigate, what else should be closed.. */
-    soap_destroy(&(sess->m_soap));
+    printf("close cwmp session\n");
+
+    soap_dealloc(&(sess->m_soap), NULL);
     soap_end(&(sess->m_soap));
     soap_done(&(sess->m_soap));
 
@@ -620,28 +622,48 @@ cwmp_close_session(cwmp_session_t *sess)
 }
 
 
+/* See description in acse_internal.h */
 te_errno
 acse_enable_acs(acs_t *acs)
 {
     struct sockaddr_in *sin;
+    te_errno rc;
 
     if (acs == NULL || acs->port == 0)
         return TE_EINVAL;
     sin = malloc(sizeof(struct sockaddr_in));
     sin->sin_family = AF_INET;
+
+    /* TODO: get host from URL field of ACS */
     sin->sin_addr.s_addr = INADDR_ANY;
     sin->sin_port = htons(acs->port);
 
     acs->addr_listen = SA(sin);
     acs->addr_len = sizeof(struct sockaddr_in);
 
-    conn_register_acs(acs);
 
-    return 0;
+    rc = conn_register_acs(acs);
+    if (rc == 0)
+        acs->enabled = 1;
+
+    return rc;
+}
+
+/* See description in acse_internal.h */
+te_errno
+acse_disable_acs(acs_t *acs)
+{
+    /* TODO: think, should it stop already established CWMP sessions,
+      or should only disable new CWMP sessions? */
+    /* TODO operation itself... */
+    return TE_EFAULT;
 }
 
 
-
+/**
+ * Put CWMP data into gSOAP buffer.
+ * @return gSOAP status code.
+ */
 int 
 acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
 {
@@ -693,11 +715,13 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     cpe_t *cpe = session->cpe_owner;
 
     session->rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
+    printf("Start of send RPC: first rpc_item: %p\n", session->rpc_item);
 
     if (TAILQ_EMPTY(&cpe->rpc_queue))
     {
         /* TODO add check, whether HoldRequests was set on */
 
+        printf("Send RPC:  empty list of RPC calls, response 204\n");
         INFO("Empty POST for '%s', empty list of RPC calls, response 204",
               cpe->name);
         soap->keep_alive = 0;
@@ -787,8 +811,17 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     }
     session->state = CWMP_WAIT_RESPONSE;
 
-    TAILQ_INSERT_TAIL(&cpe->rpc_results, session->rpc_item, links);
     TAILQ_REMOVE(&cpe->rpc_queue, session->rpc_item, links);
+
+    printf(
+"End of send RPC: move rpc_item: %p queue to results; first in q: %p\n",
+            session->rpc_item, TAILQ_FIRST(&cpe->rpc_queue));
+
+    TAILQ_INSERT_TAIL(&cpe->rpc_results, session->rpc_item, links);
+
+    printf(
+"End of send RPC: move rpc_item: %p queue to results; first in q: %p\n",
+            session->rpc_item, TAILQ_FIRST(&cpe->rpc_queue));
 
     return 0;
 }
@@ -835,6 +868,8 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
     struct soap *soap = &(cwmp_sess->m_soap);
 
     acse_epc_cwmp_data_t *request = cwmp_sess->rpc_item->params;
+    printf("Start of serve reponse: processed rpc_item: %p\n",
+           cwmp_sess->rpc_item);
 
     /* This function works in state WAIT_RESPONSE, when CWMP session
        is already associated with particular CPE. */ 
@@ -844,6 +879,7 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
          || soap_recv_header(soap)
          || soap_body_begin_in(soap))
     {
+        printf("serve CWMP resp, soap err %d\n", soap->error);
         ERROR("serve CWMP resp, soap err %d", soap->error);
         return; /* TODO: study, do soap_closesock() here ??? */
     }
@@ -896,5 +932,7 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
         /* TODO: think, return here? */
     }
 
+    printf("End of serve reponse: first rpc_item in queue: %p\n",
+            TAILQ_FIRST(&(cwmp_sess->cpe_owner->rpc_queue)));
     acse_cwmp_send_rpc(soap, cwmp_sess);
 }

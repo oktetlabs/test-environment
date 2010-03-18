@@ -121,6 +121,22 @@ typedef enum acse_cr_state_t {
                             Conn.Req. status by EPC */
 } acse_cr_state_t;
     
+/** CWMP Session states */
+typedef enum { 
+    CWMP_NOP,           /**< No any TCP activity: neither active
+                          connection, nor listening for incoming ones.  */
+    CWMP_LISTEN,        /**< Listening for incoming HTTP connection.    */
+    CWMP_WAIT_AUTH,     /**< TCP connection established, first HTTP
+                            request received, but not authenicated,
+                            response with our WWW-Authenticate is sent. */
+    CWMP_SERVE,         /**< CWMP session established, waiting for
+                            incoming SOAP RPC requests from CPE.        */
+    CWMP_WAIT_RESPONSE, /**< CWMP session established, SOAP RPC is sent
+                            to the CPE, waiting for response.           */
+    CWMP_PENDING,       /**< CWMP session established, waiting for
+                             RPC to be sent on CPE, from EPC.           */
+} cwmp_sess_state_t;
+
 
 
 /**

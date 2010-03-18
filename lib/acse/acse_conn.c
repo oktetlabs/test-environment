@@ -132,6 +132,7 @@ conn_destroy(void *data)
 }
 
 
+/* See description in acse_internal.h */
 te_errno
 conn_register_acs(acs_t *acs)
 {
