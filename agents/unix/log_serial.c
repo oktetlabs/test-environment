@@ -69,6 +69,9 @@
 /** Time interval for Log Serial Alive messages */
 #define LOG_SERIAL_ALIVE_TIMEOUT    60000
 
+/** Maximum length of accumulated log */
+#define LOG_SERIAL_MAX_LEN          (4096 - 1)
+
 /** Conserver escape sequences */
 #define CONSERVER_ESCAPE    "\05c"
 #define CONSERVER_CMDLEN    3
@@ -396,7 +399,7 @@ log_serial(void *ready, int argc, char *argv[])
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    if ((buffer = malloc(TE_LOG_FIELD_MAX + 1)) == NULL)
+    if ((buffer = malloc(LOG_SERIAL_MAX_LEN + 1)) == NULL)
     {
         int rc = errno;
 
@@ -465,7 +468,7 @@ log_serial(void *ready, int argc, char *argv[])
     current = buffer;
     *current = '\0';
 
-    fence   = buffer + TE_LOG_FIELD_MAX;
+    fence   = buffer + LOG_SERIAL_MAX_LEN;
     *fence  = '\0';
 
 #if 0
