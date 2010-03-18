@@ -105,26 +105,26 @@
     <!-- User name used in ConnectionRequest while authenticating to a CPE.
          Name: none
          Value: user name -->
-    <object oid="/agent/acse/acs/cpe/cr_user" access="read_write"
+    <object oid="/agent/acse/acs/cpe/cr_login" access="read_write"
             type="string"/>
 
     <!-- User password used in ConnectionRequest while authenticating
              to a CPE.
          Name: none
          Value: user password -->
-    <object oid="/agent/acse/acs/cpe/cr_pass" access="read_write"
+    <object oid="/agent/acse/acs/cpe/cr_passwd" access="read_write"
             type="string"/>
 
     <!-- User name used by CPE while authenticating to a ACS.
          Name: none
          Value: user name -->
-    <object oid="/agent/acse/acs/cpe/user" access="read_write"
+    <object oid="/agent/acse/acs/cpe/login" access="read_write"
             type="string"/>
 
     <!-- User password used by CPE while authenticating to a ACS.
          Name: none
          Value: user password -->
-    <object oid="/agent/acse/acs/cpe/pass" access="read_write"
+    <object oid="/agent/acse/acs/cpe/passwd" access="read_write"
             type="string"/>
 
     <!-- CPE device ID object.
