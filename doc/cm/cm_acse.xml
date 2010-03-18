@@ -21,7 +21,8 @@
         Software Foundation, Inc., 59 Temple Place, Suite 330,
         Boston, MA  02111-1307  USA
         
-        Author: Edward Makarov E-mail: Edward.Makarov@oktetlabs.ru
+        Author: Edward Makarov <Edward.Makarov@oktetlabs.ru>
+        Author: Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
     -->
 
     <!-- ACSE object.
@@ -46,34 +47,30 @@
          Name: unique name -->
     <object oid="/agent/acse/acs" access="read_create" type="none"/>
 
-    <!-- ACS URL.
+    <!-- Enabled flag used to enable acceptance of connections on an ACS.
+         Name: none
+         Value: 0 if disabled, otherwise - enabled -->
+    <object oid="/agent/acse/acs/enabled" access="read_write"
+            type="integer"/>
+
+    <!-- ACS URL for CWMP connections from CPE.
          Name: none
          Value: URL -->
     <object oid="/agent/acse/acs/url" access="read_write"
             type="string"/>
 
-    <!-- ACS SSL certificate.
+    <!-- Authenticate algorithm used for particular ACS.
          Name: none
-         Value: certificate serialized into string representation -->
-    <object oid="/agent/acse/acs/ssl_cert" access="read_write"
-            type="string"/>
+         Value: noauth (0)
+                basic (1)
+                digest (2) -->
+    <object oid="/agent/acse/acs/auth_mode" access="read_write"
+            type="integer"/>
 
-    <!-- User name used while authenticating to an ACS.
+    <!-- Port value used for CWMP connections on an ACS.
          Name: none
-         Value: user name -->
-    <object oid="/agent/acse/acs/user" access="read_write"
-            type="string"/>
-
-    <!-- User password used while authenticating to an ACS.
-         Name: none
-         Value: user password -->
-    <object oid="/agent/acse/acs/pass" access="read_write"
-            type="string"/>
-
-    <!-- Enabled flag used to enable acceptance of connections on an ACS.
-         Name: none
-         Value: 0 if disabled, otherwise - enabled -->
-    <object oid="/agent/acse/acs/enabled" access="read_write"
+         Value: port -->
+    <object oid="/agent/acse/acs/port" access="read_write"
             type="integer"/>
 
     <!-- SSL flag used to enable SSL on connections on an ACS.
@@ -82,28 +79,22 @@
     <object oid="/agent/acse/acs/ssl" access="read_write"
             type="integer"/>
 
-    <!-- Port value used on connections on an ACS.
+    <!-- ACS SSL certificate.
          Name: none
-         Value: port -->
-    <object oid="/agent/acse/acs/port" access="read_write"
-            type="integer"/>
+         Value: certificate serialized into string representation -->
+    <object oid="/agent/acse/acs/ssl_cert" access="read_write"
+            type="string"/>
 
     <!-- CPE object.
          Name: unique name -->
     <object oid="/agent/acse/acs/cpe" access="read_create"
             type="none"/>
 
-    <!-- CPE IP address.
-         Name: none
-         Value: IP address -->
-    <object oid="/agent/acse/acs/cpe/ip_addr" access="read_write"
-            type="address"/>
-
-    <!-- CPE URL.
+    <!-- CPE URL for Connection Request.
          Name: none
          Value: URL -->
-    <object oid="/agent/acse/acs/cpe/url" access="read_write"
-            type="string"/>
+    <object oid="/agent/acse/acs/cpe/cr_url" access="read_write"
+            type="string" volatile="true"/>
 
     <!-- CPE certificate.
          Name: none
@@ -111,13 +102,26 @@
     <object oid="/agent/acse/acs/cpe/cert" access="read_write"
             type="string"/>
 
-    <!-- User name used while authenticating to a CPE.
+    <!-- User name used in ConnectionRequest while authenticating to a CPE.
+         Name: none
+         Value: user name -->
+    <object oid="/agent/acse/acs/cpe/cr_user" access="read_write"
+            type="string"/>
+
+    <!-- User password used in ConnectionRequest while authenticating
+             to a CPE.
+         Name: none
+         Value: user password -->
+    <object oid="/agent/acse/acs/cpe/cr_pass" access="read_write"
+            type="string"/>
+
+    <!-- User name used by CPE while authenticating to a ACS.
          Name: none
          Value: user name -->
     <object oid="/agent/acse/acs/cpe/user" access="read_write"
             type="string"/>
 
-    <!-- User password used while authenticating to a CPE.
+    <!-- User password used by CPE while authenticating to a ACS.
          Name: none
          Value: user password -->
     <object oid="/agent/acse/acs/cpe/pass" access="read_write"
@@ -132,67 +136,58 @@
          Name: none
          Value: Manufacturer of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/manufacturer"
-            access="read_write" type="string"/>
+            access="read_only" type="string" volatile="true"/>
 
     <!-- CPE device ID Organizationally Unique Identifier subobject.
          Name: none
          Value: OUI of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/oui"
-            access="read_write" type="string"/>
+            access="read_only" type="string" volatile="true"/>
 
     <!-- CPE device ID ProductClass subobject.
          Name: none
          Value: Product Class of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/product_class"
-            access="read_write" type="string"/>
+            access="read_only" type="string" volatile="true"/>
 
     <!-- CPE device ID SerialNumber subobject.
          Name: none
          Value: Serial Number of the device -->
     <object oid="/agent/acse/acs/cpe/device_id/serial_number"
-            access="read_write" type="string"/>
+            access="read_only" type="string" volatile="true"/>
 
-    <!-- Session object.
-         Name: based on Configurator invocationally unique ID -->
-    <object oid="/agent/acse/acs/cpe/session"
-            access="read_only" type="none"/>
-
-    <!-- Actual state of a session.
+    <!-- Actual state of the CWMP session.
          Name: none
-         Value: 1 - SESSION_CONNECTED
-                2 - SESSION_AUTHENTICATED
-                3 - SESSION_PREINITIATED
-                4 - SESSION_INITIATED
-                5 - SESSIOD_INSIDE_TRANSACTION
-                6 - SESSION_OUT_OF_TRANSACTION -->
-    <object oid="/agent/acse/acs/cpe/session/state"
+         Value: 0 - CWMP_NOP
+                1 - CWMP_WAIT_AUTH
+                2 - CWMP_SERVE
+                3 - CWMP_WAIT_RESPONSE
+                4 - CWMP_PENDING
+                 -->
+    <object oid="/agent/acse/acs/cpe/cwmp_state"
             access="read_only" type="integer" volatile="true"/>
 
-    <!-- Target state of a session.
+    <!-- Enable (let CWMP activity go)/disable (stop CWMP activity).
          Name: none
-         Value: 0 - SESSION_NO_STATE
-                1 - SESSION_CONNECTED
-                2 - SESSION_AUTHENTICATED
-                3 - SESSION_PREINITIATED
-                4 - SESSION_INITIATED
-                5 - SESSIOD_INSIDE_TRANSACTION
-                6 - SESSION_OUT_OF_TRANSACTION -->
-    <object oid="/agent/acse/acs/cpe/session/target_state"
+         Value: 0 - disable, 1 - enable -->
+    <object oid="/agent/acse/acs/cpe/enabled"
             access="read_write" type="integer"/>
 
-    <!-- Enable (let a session go)/disable (stop) a session.
-         Name: none
-         Value: 0 - disable, 1 - enable
-
-         Notes: When target state is reached the session is
-                automatically disabled (stopped) -->
-    <object oid="/agent/acse/acs/cpe/session/enabled"
-            access="read_write" type="integer"/>
-
-    <!-- Hold or do not hold requests during (a part of) a session.
+    <!-- Flag 'HoldRequests' value for CWMP RPC messages,
+         which will be sent to the CPE
          Name: none
          Value: 0 - do not hold requests, 1 - hold requests -->
-    <object oid="/agent/acse/acs/cpe/session/hold_requests"
-            access="read_write" type="integer"/>
+    <object oid="/agent/acse/acs/cpe/hold_requests"
+            access="read_write" type="integer" volatile="true"/>
+
+    <!-- Actual state of the Connection Request to the CPE.
+         Name: none
+         Value: 0 - CR_NONE
+                1 - CR_WAIT_AUTH
+                2 - CR_DONE
+                3 - CR_ERROR
+                 -->
+    <object oid="/agent/acse/acs/cpe/cr_state"
+            access="read_only" type="integer" volatile="true"/>
 
 </backup>
