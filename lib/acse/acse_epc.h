@@ -30,8 +30,8 @@
  * $Id$
  */
 
-#ifndef __TE_LIB_ACSE_H__
-#define __TE_LIB_ACSE_H__
+#ifndef __TE_LIB_ACSE_EPC_H__
+#define __TE_LIB_ACSE_EPC_H__
 
 #include "rcf_common.h"
 #include "te_errno.h" 
@@ -304,4 +304,4 @@ extern te_errno acse_epc_recv(acse_epc_msg_t **user_message);
 }
 #endif
 
-#endif /* __TE_LIB_ACSE_H__ */
+#endif /* __TE_LIB_ACSE_EPC_H__ */
