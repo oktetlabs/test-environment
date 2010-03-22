@@ -55,6 +55,8 @@ extern "C" {
 #include "te_queue.h"
 #include "acse_epc.h"
 #include "acse_soapStub.h"
+#include "acse_mem.h"
+
 
 /*
  * State machine diargam for CWMP session entity:
@@ -105,6 +107,7 @@ typedef struct cpe_rpc_item_t {
     TAILQ_ENTRY(cpe_rpc_item_t)  links;
     acse_epc_cwmp_data_t   *params;
     int                     index;
+    mheap_t                 heap;
 } cpe_rpc_item_t;
 
 
@@ -215,6 +218,8 @@ typedef struct cwmp_session_t {
                                           @c WAIT_RESPONSE state. */
     channel_t           *channel; 
     struct soap          m_soap;      /**< SOAP struct             */
+    mheap_t              def_heap;    /**< default memory heap,
+                                           when @p rpc_item is NULL */
 
     int (*orig_fparse)(struct soap*);
 } cwmp_session_t;
@@ -411,6 +416,21 @@ extern void acse_loop(void);
  * Usually means finish of ACSE operation.
  */
 extern void acse_clear_channels(void);
+
+
+/**
+ * Memory allocation wrapper for SOAP engine. 
+ * Designed for usage of deserialized SOAP data after free of soap 
+ * context, because RPC replies and Informs may wait their report 
+ * after CWMP session close.
+ *
+ * @param soap          gSOAP context.
+ * @param n             size of block.
+ *
+ * @return pointer to allocated memory block, which first @p n bytes 
+ *         are available for user. 
+ */
+extern void *acse_cwmp_malloc(struct soap *soap, size_t n);
 
 
 #ifdef __cplusplus

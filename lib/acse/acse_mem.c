@@ -23,7 +23,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #include <stdlib.h>
@@ -51,6 +51,15 @@ static size_t heaps_table_size = 0;
 #define TABLE_SIZE_BLOCK 32
 #define TABLE_FIRST 1
 
+static inline void
+mheap_clear(mheap_t heap)
+{
+    heaps_table[heap].id = MHEAP_NONE;
+    heaps_table[heap].first.ptr = NULL;
+    heaps_table[heap].first.user_size = 0;
+    heaps_table[heap].n_users = 0;
+    memset(heaps_table[heap].users, 0, sizeof(heaps_table[heap].users));
+}
 void 
 increase_heaps_table(void)
 {
@@ -58,45 +67,47 @@ increase_heaps_table(void)
     size_t new_size = heaps_table_size + TABLE_SIZE_BLOCK;
     heaps_table = realloc(heaps_table, new_size * sizeof(mheap_descr_t));
     for (i = heaps_table_size; i < new_size; i++)
-    {
-        heaps_table[i].id = MHEAP_NONE;
-        heaps_table[i].first.ptr = NULL;
-        heaps_table[i].first.user_size = 0;
-        heaps_table[i].n_users = 0;
-        memset(heaps_table[i].users, 0, sizeof(heaps_table[i].users));
-    }
+        mheap_clear(i);
+
     heaps_table_size = new_size;
 }
 
 mheap_t
-mheap_init(void)
+mheap_create(void *user)
 {
     size_t i;
-    if (heaps_table_size == 0)
+
+    if (0 == heaps_table_size)
         increase_heaps_table();
     for (i = TABLE_FIRST; i < heaps_table_size; i++)
     {
-        if (heaps_table[i].id == MHEAP_NONE)
+        if (MHEAP_NONE == heaps_table[i].id)
             break;
     }
     if (i == heaps_table_size)
         increase_heaps_table();
 
-    heaps_table[i].id = i;
+    heaps_table[i].id = i; 
+    heaps_table[i].users[0] = user;
+    heaps_table[i].n_users = 1;
+
     return i;
 }
 
 int
-mheap_reg_user(mheap_t heap, void *user)
+mheap_add_user(mheap_t heap, void *user)
 {
     unsigned i;
+
+    if (heap >= heaps_table_size || heaps_table[heap].id != heap)
+        return -1;
 
     if (heaps_table[heap].n_users >= MHEAP_MAX_USERS)
         return -1;
 
     for (i = 0; i < MHEAP_MAX_USERS; i++)
     {
-        if (heaps_table[heap].users[i] == NULL)
+        if (NULL == heaps_table[heap].users[i])
         {
             heaps_table[heap].users[i] = user;
             heaps_table[heap].n_users ++;
@@ -111,29 +122,34 @@ mheap_free_heap(mheap_t heap)
 {
     next_block_descr_t bd = heaps_table[heap].first;
 
-    while (bd.ptr != NULL)
+    while (NULL != bd.ptr)
     {
         void *ptr = bd.ptr;
-        next_block_descr_t *next_bd = bd.ptr + bd.user_size;
-        bd = *next_bd;
+        memcpy(&bd, bd.ptr + bd.user_size, sizeof(bd));
         free(ptr);
     }
+    mheap_clear(heap);
 }
 
 
 void *
 mheap_alloc(mheap_t heap, size_t n)
 {
-    void *ptr = malloc(n + sizeof(next_block_descr_t));
-    next_block_descr_t *nbd;
+    next_block_descr_t nbd;
+    void *ptr;
 
-    if (ptr == NULL)
+    if (heap >= heaps_table_size || heaps_table[heap].id != heap)
+        return NULL;
+
+    ptr = malloc(n + sizeof(next_block_descr_t));
+
+    if (NULL == ptr)
         return NULL;
 
     /* now insert new block to the head of list in heap */
-    nbd = ptr + n;
-    nbd->ptr = heaps_table[heap].first.ptr;
-    nbd->user_size = heaps_table[heap].first.user_size;
+    nbd.ptr = heaps_table[heap].first.ptr;
+    nbd.user_size = heaps_table[heap].first.user_size;
+    memcpy(ptr + n, &nbd, sizeof(nbd));
 
     heaps_table[heap].first.ptr = ptr;
     heaps_table[heap].first.user_size = n;
@@ -146,12 +162,15 @@ void
 mheap_free_user(mheap_t heap, void *user)
 {
     unsigned i;
-    if (heap == MHEAP_NONE)
+    if (MHEAP_NONE == heap)
     {
         for (heap = 0; heap < heaps_table_size; heap++)
             mheap_free_user(heap, user);
         return;
     }
+
+    if (heap >= heaps_table_size)
+        return;
 
     for (i = 0; i < MHEAP_MAX_USERS; i++)
     {
@@ -160,7 +179,7 @@ mheap_free_user(mheap_t heap, void *user)
             heaps_table[heap].users[i] = NULL;
             heaps_table[heap].n_users --;
 
-            if (heaps_table[heap].n_users == 0)
+            if (0 == heaps_table[heap].n_users)
                 mheap_free_heap(heap);
 
             break;

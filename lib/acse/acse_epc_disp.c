@@ -745,8 +745,8 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                established CWMP session with CPE. */
             cpe_rpc_item_t *rpc_item = malloc(sizeof(*rpc_item));
             rpc_item->params = cwmp_pars;
+            rpc_item->index = cwmp_pars->index = ++cpe->last_queue_index;
 
-            cwmp_pars->index = rpc_item->index = ++cpe->last_queue_index;
             TAILQ_INSERT_TAIL(&cpe->rpc_queue, rpc_item, links);
             cwmp_pars->from_cpe.p = NULL; /* nothing yet.. */
         }

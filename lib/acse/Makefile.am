@@ -21,6 +21,7 @@ acse_SOURCES = acse.c acse_dummy.c \
                     acse_cwmp.c \
                     acse_epc_disp.c \
                     acse_db.c \
+                    acse_mem.c \
                     acse_soapC.c \
                     httpda.c \
                     md5evp.c \

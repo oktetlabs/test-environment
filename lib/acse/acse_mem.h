@@ -23,7 +23,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #ifndef __TE_ACSE_MEM_H__
@@ -40,11 +40,13 @@ enum {MHEAP_NONE = (mheap_t)(-1), /**< Undefined heap. */
 }; 
 
 /**
- * Init new heap.
+ * Create new heap for user.
+ *
+ * @param user          user address, which is used only as ID.
  *
  * @return heap ID or MHEAP_NONE on error.
  */
-extern mheap_t mheap_init(void);
+extern mheap_t mheap_create(void *user);
 
 /**
  * Add new user to user-list of specified heap. 
@@ -56,7 +58,7 @@ extern mheap_t mheap_init(void);
  *
  * @return 0 on success, -1 on error.
  */
-extern int mheap_reg_user(mheap_t heap, void *user);
+extern int mheap_add_user(mheap_t heap, void *user);
 
 /**
  * Remove user from user-list of specified heap.

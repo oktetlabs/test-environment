@@ -47,8 +47,9 @@
 #include "te_defs.h"
 #include "logger_api.h"
 
-
 #include "acse_soapH.h"
+
+#include "acse_mem.h"
 
 
 /* Forward declarations */
@@ -104,18 +105,18 @@ cpe_find_conn_req_url(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
 
 
 te_errno
-cpe_store_inform(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
+cpe_store_inform(struct _cwmp__Inform *cwmp__Inform,
+                 cpe_t *cpe_item, mheap_t heap)
 {
 
     cpe_inform_t *inf_store = malloc(sizeof(cpe_inform_t));
     cpe_inform_t *inf_last = LIST_FIRST(&(cpe_item->inform_list));
     int last_index = (inf_last != NULL) ? inf_last->index : 0;
 
-    /* TODO correct copy Inform to this list:
-      memory for this instance is allocated by gSOAP */
-
     inf_store->inform = cwmp__Inform;
     inf_store->index = last_index + 1;
+    mheap_add_user(heap, inf_store);
+
     LIST_INSERT_HEAD(&(cpe_item->inform_list), inf_store, links);
     return 0;
 }
@@ -334,7 +335,7 @@ __cwmp__Inform(struct soap *soap,
     }
 
     cpe_find_conn_req_url(cwmp__Inform, cpe_item);
-    cpe_store_inform(cwmp__Inform, cpe_item);
+    cpe_store_inform(cwmp__Inform, cpe_item, session->def_heap);
 
     cwmp__InformResponse->MaxEnvelopes = 1;
     soap->header->cwmp__HoldRequests->__item = 0;
@@ -559,9 +560,11 @@ cwmp_new_session(int socket, acs_t *acs)
     new_sess->cpe_owner = NULL;
     new_sess->channel = channel;
     new_sess->rpc_item = NULL;
+    new_sess->def_heap = mheap_create(new_sess);
     new_sess->m_soap.user = new_sess;
     new_sess->m_soap.socket = socket;
     new_sess->m_soap.fserveloop = cwmp_serveloop;
+    new_sess->m_soap.fmalloc = acse_cwmp_malloc;
 
     soap_imode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
     soap_omode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
@@ -608,6 +611,9 @@ cwmp_close_session(cwmp_session_t *sess)
 {
     /* TODO: investigate, what else should be closed.. */
     printf("close cwmp session\n");
+
+    /* free all heaps, where this session was user of memory */
+    mheap_free_user(MHEAP_NONE, sess); 
 
     soap_dealloc(&(sess->m_soap), NULL);
     soap_end(&(sess->m_soap));
@@ -718,6 +724,8 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     session->rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
     printf("Start of send RPC: first rpc_item: %p\n", session->rpc_item);
+    session->rpc_item->heap = mheap_create(session->rpc_item);
+    mheap_add_user(session->rpc_item->heap, session);
 
     if (TAILQ_EMPTY(&cpe->rpc_queue))
     {
@@ -937,4 +945,28 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
     printf("End of serve reponse: first rpc_item in queue: %p\n",
             TAILQ_FIRST(&(cwmp_sess->cpe_owner->rpc_queue)));
     acse_cwmp_send_rpc(soap, cwmp_sess);
+}
+
+
+
+
+void *
+acse_cwmp_malloc(struct soap *soap, size_t n)
+{
+    cwmp_session_t *session;
+    mheap_t heap;
+
+    if (NULL == soap)
+        return NULL;
+
+    if (NULL == soap->user)
+        return SOAP_MALLOC(soap, n);
+
+    session = (cwmp_session_t *)soap->user;
+    if (NULL == session->rpc_item)
+        heap = session->def_heap;
+    else
+        heap = session->rpc_item->heap;
+
+    return mheap_alloc(heap, n);
 }
