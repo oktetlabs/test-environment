@@ -7,14 +7,14 @@
      reqs(?) - set of configuration specific requirements used to run/skip test iterations
      tags - set of configuration specific tags used for results comparison
  */
-CREATE TABLE configurations {
-    id       INT NOT NULL AUTO INCREMENT PRIMARY KEY,
-    name     VARCHAR UNIQUE,
-    board    VARCHAR,
-    descr    VARCHAR,
-    reqs     VARCHAR, -- WIFI_SPECIFIC, LANGROUPS_SPECIFIC, PLATFORM_WAN_ATM/PLATFORM_WAN_ETH,...
-    tags     VARCHAR
-};
+CREATE TABLE configurations (
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name     VARCHAR(16) UNIQUE,
+    board    VARCHAR(16),
+    descr    VARCHAR(512),
+    reqs     VARCHAR(128), -- WIFI_SPECIFIC, LANGROUPS_SPECIFIC, PLATFORM_WAN_ATM/PLATFORM_WAN_ETH,...
+    tags     VARCHAR(128)
+);
 
 /* Table configurations describes all configurations involved in night testing
      name - Name of branch
@@ -23,14 +23,14 @@ CREATE TABLE configurations {
      reqs(?) - set of branch specific requirements
      tags - set of branch specific tags
  */
-CREATE TABLE branches {
-    id       INT NOT NULL AUTO INCREMENT PRIMARY KEY,
-    name     VARCHAR,
-    descr    VARCHAR,
+CREATE TABLE branches (
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name     VARCHAR(16),
+    descr    VARCHAR(128),
     build    TIMESTAMP,
-    reqs     VARCHAR, -- !IGMPV3_SPECIFIC,...
-    tags     VARCHAR
-}
+    reqs     VARCHAR(128), -- !IGMPV3_SPECIFIC,...
+    tags     VARCHAR(128)
+);
 
 /* Table scrips describes original test scripts without any parameters
      name - name of script
@@ -38,12 +38,12 @@ CREATE TABLE branches {
      objective - test objective, cut from test script doxygen objective field
      description(?) - 
  */
-CREATE TABLE scripts {
-    id           INT NOT NULL AUTO INCREMENT PRIMARY KEY,
-    name         VARCHAR,
-    path         VARCHAR,
-    objective    VARCHAR
-};
+CREATE TABLE scripts (
+    id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name         VARCHAR(32),
+    path         VARCHAR(128),
+    objective    VARCHAR(512)
+);
 
 /* Table iterations describes all available iterations for each test script, also contains all sessions with parameters
      script_id - index of test script in scripts table 
@@ -52,14 +52,14 @@ CREATE TABLE scripts {
      params - normalised params of the iteration
      subsystems - subsystems that should be tested by this certain iteration
  */
-CREATE TABLE iterations {
-    id           INT NOT NULL AUTO INCREMENT PRIMARY KEY,
-    script_id    INT FOREIGN KEY REFERENCES scripts(id);
-    name         VARCHAR,
+CREATE TABLE iterations (
+    id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    script_id    INT REFERENCES scripts(id),
+    name         VARCHAR(32),
     session      INT,
-    params       VARCHAR,
-    subsystems   VARCHAR
-};
+    params       VARCHAR(1024),
+    subsystems   VARCHAR(128)
+);
 
 /* Table results stores all night testing results
      iter - index of iteration that was run
@@ -71,17 +71,17 @@ CREATE TABLE iterations {
      result - testing result (PASSED/FAILED)
      verdict - resulted test verdict
  */
-CREATE TABLE results {
-    id                  INT NOT NULL AUTO INCREMENT PRIMARY KEY,
-    iter                INT FOREIGN KEY REFERENCES iterations(id),
-    configuraion        INT FOREIGN KEY REFERENCES configuraions(id),
-    branch              INT FOREIGN KEY REFERENCES branches(id),
+CREATE TABLE results (
+    id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    iter                INT REFERENCES iterations(id),
+    configuraion        INT REFERENCES configuraions(id),
+    branch              INT REFERENCES branches(id),
     start               TIMESTAMP,
     end                 TIMESTAMP,
     tin                 INT,
-    result              VARCHAR,
-    verdict             VARCHAR
-};
+    result              BOOLEAN,
+    verdict             VARCHAR(512)
+);
 
 /* Table expected results represents current trc.xml that contains all expected results for comparison
      iter - index of iteration in iterations table
@@ -90,15 +90,15 @@ CREATE TABLE results {
      tags - set of tags to match the iteration result
      result - expected result
      verdict - expected test verdict for this iteration
-     keys - set of keywords/bugs which this result corresponds to
+     bugs - set of keywords/bugs which this result corresponds to
  */
-CREATE TABLE expected_results {
-    id                  INT NOT NULL AUTO INCREMENT PRIMARY KEY,
-    iter                INT FOREIGN KEY REFERENCES iterations(id),
-    configuraion        INT FOREIGN KEY REFERENCES configuraions(id),
-    branch              INT FOREIGN KEY REFERENCES branches(id),
-    tags                VARCHAR,
-    result              VARCHAR,
-    verdict             VARCHAR,
-    keys                VARCHAR
-};
+CREATE TABLE expected_results (
+    id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    iter                INT REFERENCES iterations(id),
+    configuraion        INT REFERENCES configuraions(id),
+    branch              INT REFERENCES branches(id),
+    tags                VARCHAR(128),
+    result              BOOLEAN,
+    verdict             VARCHAR(512),
+    bugs                VARCHAR(128)
+);
