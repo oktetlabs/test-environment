@@ -1,0 +1,104 @@
+/* Night testing results tracking database */
+
+/* Table configurations describes all configurations involved in night testing
+     name - Name of configuration
+     board - board type used in configuration
+     descr - configuration description
+     reqs(?) - set of configuration specific requirements used to run/skip test iterations
+     tags - set of configuration specific tags used for results comparison
+ */
+CREATE TABLE configurations {
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY_KEY,
+    name     VARCHAR UNIQUE,
+    board    VARCHAR,
+    descr    VARCHAR,
+    reqs     VARCHAR, -- WIFI_SPECIFIC, LANGROUPS_SPECIFIC, PLATFORM_WAN_ATM/PLATFORM_WAN_ETH,...
+    tags     VARCHAR
+};
+
+/* Table configurations describes all configurations involved in night testing
+     name - Name of branch
+     descr - branch description (kernel version,...)
+     build - build timestamp
+     reqs(?) - set of branch specific requirements
+     tags - set of branch specific tags
+ */
+CREATE TABLE branches {
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY_KEY,
+    name     VARCHAR,
+    descr    VARCHAR,
+    build    TIMESTAMP,
+    reqs     VARCHAR, -- !IGMPV3_SPECIFIC,...
+    tags     VARCHAR
+}
+
+/* Table scrips describes original test scripts without any parameters
+     name - name of script
+     path - full path of test script within test suite
+     objective - test objective, cut from test script doxygen objective field
+     description(?) - 
+ */
+CREATE TABLE scripts {
+    id           INT NOT NULL AUTO_INCREMENT PRIMARY_KEY,
+    name         VARCHAR,
+    path         VARCHAR,
+    objective    VARCHAR
+};
+
+/* Table iterations describes all available iterations for each test script, also contains all sessions with parameters
+     script_id - index of test script in scripts table 
+     name - name of iteration
+     session_id - index of session in the same iterations table
+     params - normalised params of the iteration
+     subsystems - subsystems that should be tested by this certain iteration
+ */
+CREATE TABLE iterations {
+    id           INT NOT NULL AUTO_INCREMENT PRIMARY_KEY,
+    script_id    INT FOREIGN KEY REFERENCES scripts(id);
+    name         VARCHAR,
+    session      INT,
+    params       VARCHAR,
+    subsystems   VARCHAR
+};
+
+/* Table results stores all night testing results
+     iter - index of iteration that was run
+     configuration - configuration where the iteration was run
+     branch - version of firmware that was tested
+     start - start timestamp of iteration
+     end - end timestamp of iteration
+     tin - test iteration number (may differs for different configurations)
+     result - testing result (PASSED/FAILED)
+     verdict - resulted test verdict
+ */
+CREATE TABLE results {
+    id                  INT NOT NULL AUTO_INCREMENT PRIMARY_KEY,
+    iter                INT FOREIGN KEY REFERENCES iterations(id),
+    configuraion        INT FOREIGN KEY REFERENCES configuraions(id),
+    branch              INT FOREIGN KEY REFERENCES branches(id),
+    start               TIMESTAMP,
+    end                 TIMESTAMP,
+    tin                 INT,
+    result              VARCHAR,
+    verdict             VARCHAR
+};
+
+/* Table expected results represents current trc.xml that contains all expected results for comparison
+     iter - index of iteration in iterations table
+     configuration - configuration to run the iteration on
+     branch - version of firmware to run the iteration on
+     tags - set of tags to match the iteration result
+     result - expected result
+     verdict - expected test verdict for this iteration
+     keys - set of keywords/bugs which this result corresponds to
+ */
+CREATE TABLE expected_results {
+    id                  INT NOT NULL AUTO_INCREMENT PRIMARY_KEY,
+    iter                INT FOREIGN KEY REFERENCES iterations(id),
+    configuraion        INT FOREIGN KEY REFERENCES configuraions(id),
+    branch              INT FOREIGN KEY REFERENCES branches(id),
+    tags                VARCHAR,
+    result              VARCHAR,
+    verdict             VARCHAR,
+    keys                VARCHAR
+};
