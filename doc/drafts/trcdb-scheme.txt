@@ -1,35 +1,124 @@
 /* Night testing results tracking database */
 
+/* Table tags describes all tags used in TRC
+     name - Name of tag
+     descr - Textual description of the tag
+ */
+CREATE TABLE tags (
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name     VARCHAR(16) UNIQUE,
+    descr    TEXT
+);
+
+/* Table reqs describes all requirements used in TRC
+     name - Name of requirement (WIFI_SPECIFIC, LANGROUPS_SPECIFIC,...)
+     descr - Textual description of the requirement
+ */
+CREATE TABLE reqs (
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name     VARCHAR(16) UNIQUE,
+    descr    TEXT
+);
+
+/* Table boards describes all requirements used in TRC
+     name - Name of the board (1311i, 1350,...)
+     descr - Textual description of the board
+ */
+CREATE TABLE boards (
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name     VARCHAR(16) UNIQUE,
+    descr    TEXT
+);
+
+/* Table board_tags describes a set of tags for each board type
+     board - board index in boards table
+     tag - tag index in tags table
+ */ 
+CREATE TABLE board_tags (
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    board    INT REFERENCES boards(id),
+    tag      INT REFERENCES tags(id)
+);
+
+/* Table board_reqs describes a set of requirements
+   for each board
+     board - board index in boards table
+     req - requirement index in requirements table
+ */ 
+CREATE TABLE board_reqs (
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    board    INT REFERENCES boards(id),
+    req      INT REFERENCES requirements(id)
+);
+
 /* Table configurations describes all configurations involved in night testing
      name - Name of configuration
      board - board type used in configuration
      descr - configuration description
-     reqs(?) - set of configuration specific requirements used to run/skip test iterations
+     reqs(?) - set of configuration specific requirements used to
+               run/skip test iterations
      tags - set of configuration specific tags used for results comparison
  */
 CREATE TABLE configurations (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name     VARCHAR(16) UNIQUE,
-    board    VARCHAR(16),
-    descr    VARCHAR(512),
-    reqs     VARCHAR(128), -- WIFI_SPECIFIC, LANGROUPS_SPECIFIC, PLATFORM_WAN_ATM/PLATFORM_WAN_ETH,...
-    tags     VARCHAR(128)
+    board    INT REFERENCES boards(id),
+    descr    TEXT,
 );
 
-/* Table configurations describes all configurations involved in night testing
+/* Table configuration_tags describes a set of tags for each configuration
+     cfg - configuration index in configurations table
+     tag - tag index in tags table
+ */ 
+CREATE TABLE configuration_tags (
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    cfg      INT REFERENCES configurations(id),
+    tag      INT REFERENCES tags(id)
+);
+
+/* Table configuration_reqs describes a set of requirements
+   for each configuration
+     cfg - configuration index in configurations table
+     req - requirement index in requirements table
+ */ 
+CREATE TABLE configuration_reqs (
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    cfg      INT REFERENCES configurations(id),
+    req      INT REFERENCES requirements(id)
+);
+
+/* Table branches describes all branches that should be tested
      name - Name of branch
      descr - branch description (kernel version,...)
-     build - build timestamp
-     reqs(?) - set of branch specific requirements
-     tags - set of branch specific tags
+     build - firmware build timestamp
+     revision - version control revision of the branch
  */
 CREATE TABLE branches (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name     VARCHAR(16),
     descr    VARCHAR(128),
     build    TIMESTAMP,
-    reqs     VARCHAR(128), -- !IGMPV3_SPECIFIC,...
-    tags     VARCHAR(128)
+    revision INT,
+);
+
+/* Table branch_tags describes a set of tags for each branch
+     branch - branch index in branches table
+     tag - tag index in tags table
+ */ 
+CREATE TABLE branch_tags (
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    branch   INT REFERENCES branches(id),
+    tag      INT REFERENCES tags(id)
+);
+
+/* Table branch_reqs describes a set of requirements for each branch
+     branch - branch index in branches table
+     req - requirement index in requirements table
+ */ 
+CREATE TABLE branch_reqs (
+    id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    branch   INT REFERENCES branches(id),
+    req      INT REFERENCES requirements(id)
 );
 
 /* Table scrips describes original test scripts without any parameters
@@ -42,63 +131,149 @@ CREATE TABLE scripts (
     id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name         VARCHAR(32),
     path         VARCHAR(128),
-    objective    VARCHAR(512)
+    objective    TEXT
 );
 
-/* Table iterations describes all available iterations for each test script, also contains all sessions with parameters
-     script_id - index of test script in scripts table 
+/* Table parameters describes all parameter lists for all iterations
+     iter - iteration index the parameter refers to
+     name - parameter name
+     value - parameter value
+ */
+CREATE TABLE parameters (
+     id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+     iter        INT REFERENCES iterations(id),
+     name        VARCHAR(32),
+     value       VARCHAR(1024)
+);
+
+/* Table subsystems describes the list of subsystems that are tested with each iteration
+     name - subsystem name
+ */
+CREATE TABLE subsystems (
+     id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+     name        VARCHAR(32),
+);
+
+/* Table tested_subsystems describes the list of subsystems
+   that are tested with each iteration
+     iter - iteration index the subsystem is tested with
+     sub_id - subsystem index
+ */
+CREATE TABLE tested_subsystems (
+     id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+     iter        INT REFERENCES iterations(id),
+     sub_id      INT REFERENCES subsystems(id),
+);
+
+/* Table iterations describes all available iterations for each test script,
+   also contains all sessions with parameters.
+     script - index of test script in scripts table 
      name - name of iteration
-     session_id - index of session in the same iterations table
-     params - normalised params of the iteration
-     subsystems - subsystems that should be tested by this certain iteration
+     session - index of session the iteration is running in
  */
 CREATE TABLE iterations (
     id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    script_id    INT REFERENCES scripts(id),
+    script       INT REFERENCES scripts(id),
     name         VARCHAR(32),
-    session      INT,
-    params       VARCHAR(1024),
-    subsystems   VARCHAR(128)
+    session      INT REFERENCES iterations(id)
 );
 
-/* Table results stores all night testing results
+/* Table result_types describes all possible types of test results
+     result - testing result (PASSED/FAILED/SKIPPED/CORED/KILLED/ERROR)
+ */
+CREATE TABLE result_types (
+    id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,    
+    result       VARCHAR(8);
+);
+
+/* Table verdicts describes all possible verdicts generated by tests
+     verdict - verdict text string
+ */
+CREATE TABLE verdicts (
+    id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,    
+    verdict      TEXT
+);
+
+/* Table test_results stores all night testing results
      iter - index of iteration that was run
      configuration - configuration where the iteration was run
      branch - version of firmware that was tested
      start - start timestamp of iteration
      end - end timestamp of iteration
-     tin - test iteration number (may differs for different configurations)
-     result - testing result (PASSED/FAILED)
-     verdict - resulted test verdict
+     result - testing result (PASSED/FAILED/SKIPPED/CORED/KILLED/ERROR)
+     session - session index the test is running in
  */
-CREATE TABLE results (
+CREATE TABLE test_results (
     id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     iter                INT REFERENCES iterations(id),
     configuraion        INT REFERENCES configuraions(id),
     branch              INT REFERENCES branches(id),
     start               TIMESTAMP,
     end                 TIMESTAMP,
-    tin                 INT,
-    result              BOOLEAN,
-    verdict             VARCHAR(512)
+    result              INT REFERENCES result_types(id),
+    session             INT REFERENCES test_results(id)
 );
 
-/* Table expected results represents current trc.xml that contains all expected results for comparison
+/* Table result_verdicts describes sets of verdicts generated by each test run
+     result - index of test run in test_results table
+     verdict - index of verdict in verdicts table
+ */
+CREATE TABLE result_verdicts (
+    id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    result              INT REFERENCES test_results(id),
+    verdict             INT REFERENCES verdicts(id)
+);
+
+
+/* Table expected results represents current trc.xml that contains
+   all expected results for comparison
      iter - index of iteration in iterations table
-     configuration - configuration to run the iteration on
-     branch - version of firmware to run the iteration on
-     tags - set of tags to match the iteration result
      result - expected result
-     verdict - expected test verdict for this iteration
-     bugs - set of keywords/bugs which this result corresponds to
  */
 CREATE TABLE expected_results (
     id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     iter                INT REFERENCES iterations(id),
-    configuraion        INT REFERENCES configuraions(id),
-    branch              INT REFERENCES branches(id),
-    tags                VARCHAR(128),
-    result              BOOLEAN,
-    verdict             VARCHAR(512),
-    bugs                VARCHAR(128)
+    result              INT REFERENCES result_types(id),
+);
+
+/* Table expected_tags describes sets of tags for each expected result
+     result - index of test run in expected_results table
+     tag - index of tag in tags table
+ */
+CREATE TABLE expected_tags (
+    id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    result              INT REFERENCES expected_results(id),
+    tag                 INT REFERENCES tags(id)
+);
+
+/* Table result_verdicts describes sets of verdicts generated by each test run
+     result - index of test run in expected_results table
+     verdict - index of verdict in verdicts table
+ */
+CREATE TABLE expected_verdicts (
+    id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    result              INT REFERENCES expected_results(id),
+    verdict             INT REFERENCES verdicts(id)
+);
+
+/* Table bugs describes all related bugs
+     name - short name of the bug: "OL 4500"
+     url - link to corresponding bugzilla
+     descr - subject of bugzilla bug
+ */
+CREATE TABLE bugs (
+    id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(16),
+    url                 VARCHAR(128),
+    descr               TEXT
+);
+
+/* Table expected_bugs describes sets of bugs for each expected result
+     result - index of test run in expected_results table
+     bug - index of bug in bugzilla
+ */
+CREATE TABLE expected_bugs (
+    id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    result              INT REFERENCES expected_results(id),
+    bug                 INT REFERENCES bugs(id)
 );
