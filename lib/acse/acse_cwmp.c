@@ -52,8 +52,6 @@
 #include "acse_mem.h"
 
 
-/* Forward declarations */
-
 
  
 SOAP_NMAC struct Namespace namespaces[] =
@@ -75,6 +73,14 @@ SOAP_NMAC struct Namespace namespaces[] =
 const char *authrealm = "tr-069";
 
 
+/**
+ * Find URL for ConnectionRequest in Inform parameter list.
+ *
+ * @param cwmp__Inform          received Inform.
+ * @param cpe_item              CPE record, where URL will be stored.
+ *
+ * @return status code
+ */
 te_errno
 cpe_find_conn_req_url(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
 {
@@ -130,13 +136,20 @@ cpe_store_inform(struct _cwmp__Inform *cwmp__Inform,
 }
 
 /**
+ * Check authentication for incoming connection, response if necessary.
+ * If auth passed, fills @p cpe with ptr to CPE record.
+ *
+ * @param soap          internal gSOAP connection descriptor.
+ * @param session       ACSE descriptor of CWMP session.
+ * @param cpe           CPE record, to which connection is
+ *                      authenticated (OUT).
  *
  * @return TRUE if auth passed, FALSE if not.
  */
 int
 acse_cwmp_auth(struct soap *soap, cwmp_session_t *session, cpe_t **cpe)
 {
-    cpe_t *cpe_item;
+    cpe_t *cpe_item = NULL;
 
     VERB("Start authenticate, state %d, for '%s'", session->state, 
         session->acs_owner->name);
@@ -690,8 +703,17 @@ acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
             }
             break;
         case CWMP_RPC_set_parameter_values:
+            return soap_put__cwmp__SetParameterValues(soap, 
+                            request->to_cpe.set_parameter_values,
+                            "cwmp:SetParameterValues", "");
         case CWMP_RPC_get_parameter_values:
+            return soap_put__cwmp__GetParameterValues(soap, 
+                            request->to_cpe.get_parameter_values,
+                            "cwmp:GetParameterValues", "");
         case CWMP_RPC_get_parameter_names:
+            return soap_put__cwmp__GetParameterNames(soap, 
+                            request->to_cpe.get_parameter_names,
+                            "cwmp:GetParameterNames", "");
         case CWMP_RPC_set_parameter_attributes:
         case CWMP_RPC_get_parameter_attributes:
         case CWMP_RPC_add_object:
