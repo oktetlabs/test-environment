@@ -130,7 +130,7 @@ acse_cwmp_auth(struct soap *soap, cwmp_session_t *session, cpe_t **cpe)
 {
     cpe_t *cpe_item;
 
-printf("Start authenticate, state %d, for '%s'\n", session->state, 
+    VERB("Start authenticate, state %d, for '%s'", session->state, 
         session->acs_owner->name);
     switch (session->state)
     {
@@ -144,7 +144,6 @@ printf("Start authenticate, state %d, for '%s'\n", session->state,
             {
                 ERROR("%s(): No userid information in WAIT_AUTH state", 
                       __FUNCTION__);
-                printf("No userid information in WAIT_AUTH state, error");
                 soap->keep_alive = 0; 
                 soap->error = 500;
 
@@ -172,8 +171,6 @@ printf("Start authenticate, state %d, for '%s'\n", session->state,
                 break;
             }
 
-            printf("check auth for user '%s', pass '%s'\n",
-                soap->userid, cpe_item->acs_auth.passwd);
             VERB("check auth for user '%s', pass '%s'",
                 soap->userid, cpe_item->acs_auth.passwd);
             if (session->acs_owner->auth_mode == ACSE_AUTH_DIGEST)
@@ -181,7 +178,6 @@ printf("Start authenticate, state %d, for '%s'\n", session->state,
                 if (http_da_verify_post(soap, cpe_item->acs_auth.passwd))
                 {
                     RING("Digest Auth failed: verify not pass ");
-                    printf("Digest Auth failed: verify not pass\n");
                     break;
                 }
             }
@@ -190,15 +186,12 @@ printf("Start authenticate, state %d, for '%s'\n", session->state,
                 if (strcmp (soap->passwd, cpe_item->acs_auth.passwd) != 0)
                 {
                     RING("Basic Auth failed: passwd not match");
-                    printf("Basic Auth failed: passwd not match\n");
                     break;
                 }
             }
 
             RING("%s(): Authentication passed, CPE '%s', username '%s'", 
                 __FUNCTION__, cpe_item->name, cpe_item->acs_auth.login);
-            printf("Authentication passed, CPE '%s', username '%s'\n", 
-                cpe_item->name, cpe_item->acs_auth.login);
 
             *cpe = cpe_item;
 
@@ -257,7 +250,7 @@ __cwmp__Inform(struct soap *soap,
     int auth_pass = FALSE;
     cpe_t *cpe_item;
 
-    if(session == NULL)
+    if(NULL == session)
     {
         ERROR("%s(): NULL user pointer in soap!", __FUNCTION__);
         /* TODO: correct processing */
@@ -297,7 +290,7 @@ __cwmp__Inform(struct soap *soap,
             auth_pass = acse_cwmp_auth(soap, session, &cpe_item);
             break;
     }
-    if (auth_pass == TRUE)
+    if (TRUE == auth_pass)
     {
         session->state = CWMP_SERVE;
         session->cpe_owner = cpe_item;
@@ -306,7 +299,7 @@ __cwmp__Inform(struct soap *soap,
     }
     else
     {
-        if (soap->error == SOAP_OK)
+        if (SOAP_OK == soap->error)
             return SOAP_STOP; /* HTTP response already sent. */
         else
             return soap->error;
@@ -314,9 +307,6 @@ __cwmp__Inform(struct soap *soap,
 
 
 
-    if (soap->header && soap->header->cwmp__HoldRequests)
-        printf("hold_request in Header: %d\n",
-                (int)soap->header->cwmp__HoldRequests->__item);
     if (soap->header == NULL)
     {
         soap->header = soap_malloc(soap, sizeof(struct SOAP_ENV__Header));
@@ -438,10 +428,8 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             /* Now, after poll() on soap socket, it should not block */
             soap_serve(&cwmp_sess->m_soap);
             RING("status after serve: %d", cwmp_sess->m_soap.error);
-            printf("status after serve: %d\n", cwmp_sess->m_soap.error);
             if (cwmp_sess->m_soap.error == SOAP_EOF)
             {
-                printf("CWMP processing, after soap_serve, EOF\n");
                 RING(" CWMP processing, EOF");
                 return TE_ENOTCONN;
             }
@@ -453,7 +441,6 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             RING("status after serve: %d", cwmp_sess->m_soap.error);
             if (cwmp_sess->m_soap.error == SOAP_EOF)
             {
-                printf("CWMP processing, catch response, EOF\n");
                 RING(" CWMP processing, EOF");
                 return TE_ENOTCONN;
             }
@@ -507,7 +494,9 @@ cwmp_fparse(struct soap *soap)
     int rc = session->orig_fparse(soap);
 
     if (rc == SOAP_OK && soap->length == 0)
+    {
         rc = SOAP_STOP;
+    }
 
     return rc;
 }
@@ -609,8 +598,9 @@ cwmp_new_session(int socket, acs_t *acs)
 te_errno 
 cwmp_close_session(cwmp_session_t *sess)
 {
+    INFO("close cwmp session");
+
     /* TODO: investigate, what else should be closed.. */
-    printf("close cwmp session\n");
 
     /* free all heaps, where this session was user of memory */
     mheap_free_user(MHEAP_NONE, sess); 
@@ -722,16 +712,10 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     acse_epc_cwmp_data_t *request;
     cpe_t *cpe = session->cpe_owner;
 
-    session->rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
-    printf("Start of send RPC: first rpc_item: %p\n", session->rpc_item);
-    session->rpc_item->heap = mheap_create(session->rpc_item);
-    mheap_add_user(session->rpc_item->heap, session);
-
     if (TAILQ_EMPTY(&cpe->rpc_queue))
     {
         /* TODO add check, whether HoldRequests was set on */
 
-        printf("Send RPC:  empty list of RPC calls, response 204\n");
         INFO("Empty POST for '%s', empty list of RPC calls, response 204",
               cpe->name);
         soap->keep_alive = 0;
@@ -742,11 +726,15 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
         session->state = CWMP_SERVE;
         return 0;
     }
+    session->rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
+    session->rpc_item->heap = mheap_create(session->rpc_item);
+    mheap_add_user(session->rpc_item->heap, session);
+
     request = session->rpc_item->params;
 
     if (soap->header == NULL)
     {
-        soap->header = soap_malloc(soap, sizeof(struct SOAP_ENV__Header));
+        soap->header = soap_malloc(soap, sizeof(*(soap->header)));
         memset(soap->header, 0, sizeof(*(soap->header)));
     }
 
@@ -759,6 +747,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     soap->header->cwmp__HoldRequests->SOAP_ENV__mustUnderstand = "1";
     soap->header->cwmp__ID = NULL;
     soap->keep_alive = 1; 
+    soap->error = SOAP_OK;
     soap_serializeheader(soap);
 
     switch(request->rpc_cpe)
@@ -793,6 +782,8 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     if (soap_begin_count(soap))
         return soap->error;
+
+
     if (soap->mode & SOAP_IO_LENGTH)
     {
         if (soap_envelope_begin_out(soap)
@@ -823,15 +814,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     TAILQ_REMOVE(&cpe->rpc_queue, session->rpc_item, links);
 
-    printf(
-"End of send RPC: move rpc_item: %p queue to results; first in q: %p\n",
-            session->rpc_item, TAILQ_FIRST(&cpe->rpc_queue));
-
     TAILQ_INSERT_TAIL(&cpe->rpc_results, session->rpc_item, links);
-
-    printf(
-"End of send RPC: move rpc_item: %p queue to results; first in q: %p\n",
-            session->rpc_item, TAILQ_FIRST(&cpe->rpc_queue));
 
     return 0;
 }
@@ -878,7 +861,7 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
     struct soap *soap = &(cwmp_sess->m_soap);
 
     acse_epc_cwmp_data_t *request = cwmp_sess->rpc_item->params;
-    printf("Start of serve reponse: processed rpc_item: %p\n",
+    VERB("Start of serve reponse: processed rpc_item: %p",
            cwmp_sess->rpc_item);
 
     /* This function works in state WAIT_RESPONSE, when CWMP session
@@ -889,7 +872,6 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
          || soap_recv_header(soap)
          || soap_body_begin_in(soap))
     {
-        printf("serve CWMP resp, soap err %d\n", soap->error);
         ERROR("serve CWMP resp, soap err %d", soap->error);
         return; /* TODO: study, do soap_closesock() here ??? */
     }
@@ -942,7 +924,7 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
         /* TODO: think, return here? */
     }
 
-    printf("End of serve reponse: first rpc_item in queue: %p\n",
+    VERB("End of serve reponse: first rpc_item in queue: %p\n",
             TAILQ_FIRST(&(cwmp_sess->cpe_owner->rpc_queue)));
     acse_cwmp_send_rpc(soap, cwmp_sess);
 }

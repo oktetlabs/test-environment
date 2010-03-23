@@ -37,6 +37,7 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
                     if (soap->error == SOAP_EOF)
                     {
 			soap_closesock(soap);
+                        break;
                     }
 
                     if (soap->length == 0)

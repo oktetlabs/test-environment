@@ -558,7 +558,6 @@ acse_acs_list(acse_epc_config_data_t *params)
     unsigned int len = 0;
     acs_t       *item;
 
-printf("get 'acs list'\n");
     /* Calculate the whole length (plus 1 sym for trailing ' '/'\0') */
     LIST_FOREACH(item, &acs_list, links)
         len += strlen(item->name) + 1;
@@ -580,7 +579,6 @@ printf("get 'acs list'\n");
     }
 
     *ptr = '\0';
-printf("result of 'acs list': '%s'\n", params->list);
     return 0;
 }
 
