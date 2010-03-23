@@ -93,41 +93,48 @@ struct cwmp_session_t;
 struct channel_t;
 
 
+/** HTTP Authentication mode in ACS */
 typedef enum {
-    ACSE_AUTH_NONE,  
-    ACSE_AUTH_BASIC,    
-    ACSE_AUTH_DIGEST,
+    ACSE_AUTH_NONE,  /**< No authentication */
+    ACSE_AUTH_BASIC, /**< Basic HTTP authentication */
+    ACSE_AUTH_DIGEST,/**< Digest HTTP authentication */
 } auth_mode_t;
+
 /**
  * Authentication data collection.
  */
 typedef struct auth_t {
-    const char *login;
-    const char *passwd;
+    const char *login;  /**< Login name */
+    const char *passwd; /**< Password */
 } auth_t;
 
 /** CPE RPC queue */
 typedef struct cpe_rpc_item_t {
-    TAILQ_ENTRY(cpe_rpc_item_t)  links;
-    acse_epc_cwmp_data_t   *params;
-    int                     index;
-    mheap_t                 heap;
+    TAILQ_ENTRY(cpe_rpc_item_t)  links;/**< List links */
+    acse_epc_cwmp_data_t   *params;    /**< CWMP parameters for RPC */
+    int                     index;     /**< index of RPC in queue */
+    mheap_t                 heap;      /**< Memory heapwhich contains 
+                                        response data, deserialized by
+                                        gSOAP engine. Should be freed 
+                                        when response is removed from
+                                        queue. */
+                                        
 } cpe_rpc_item_t;
 
 
 /* TODO: think, maybe not all Inform should be stored, only some Events? */
-/** CPE Inform list */
+/** CPE Inform list, in order they were received. */
 typedef struct cpe_inform_t {
-    LIST_ENTRY(cpe_inform_t) links;
+    LIST_ENTRY(cpe_inform_t) links;/**< List links */
 
-    _cwmp__Inform *inform;
-    int            index;
+    _cwmp__Inform *inform;      /**< Deserialed inform */
+    int            index;       /**< index of Inform in list. */
 } cpe_inform_t;
 
 /** CPE record */
 typedef struct cpe_t{
     /** Fields for internal data integrity. */
-    LIST_ENTRY(cpe_t) links;
+    LIST_ENTRY(cpe_t) links;    /**< List links */
     struct acs_t    *acs;       /**< ACS, managing this CPE  */
 
     /** Fields corresponding to CM leafs in @p cpe node; some may change. */
@@ -150,7 +157,9 @@ typedef struct cpe_t{
 
     TAILQ_HEAD(cpe_rpc_queue_t, cpe_rpc_item_t)
                  rpc_queue;  /**< List of RPC to be sent to CPE */
-    unsigned int last_queue_index;
+    unsigned int last_queue_index; /**< Last used index in RPC queue.
+                                        It increased every time when new
+                                        RPC is added. */
 
     TAILQ_HEAD(cpe_rpc_results_t, cpe_rpc_item_t)
                  rpc_results;  /**< List of RPC responses from CPE */
@@ -172,7 +181,7 @@ typedef struct cpe_t{
 /** ACS */
 typedef struct acs_t {
     /** Fields for internal data integrity. */
-    LIST_ENTRY(acs_t) links;
+    LIST_ENTRY(acs_t) links;    /**< List links */
     LIST_HEAD(cpe_list_t, cpe_t)
                 cpe_list;       /**< The list of CPEs being handled */
 
@@ -193,23 +202,27 @@ typedef struct acs_t {
                                        associated with particular CPE */
 } acs_t;
 
+/** Type for list of ACS objects */
 typedef LIST_HEAD(acs_list_t, acs_t) acs_list_t;
 
-/** The list af acs instances */
+/** The list af ACS instances */
 extern acs_list_t acs_list;
 
 /** Abstraction structure for the 'channel' object */
 typedef struct channel_t {
-    LIST_ENTRY(channel_t) links;
+    LIST_ENTRY(channel_t) links;/**< List links */
     void       *data;           /**< Channel-specific private data      */
-    te_errno  (*before_poll)(   /**< Called before 'select' syscall     */
+
+    te_errno  (*before_poll)(   
         void   *data,           /**< Channel-specific private data      */
-        struct pollfd *pfd);    /**< Poll descriptor for events         */
-    te_errno  (*after_poll)(    /**< Called after 'select' syscall      */
+        struct pollfd *pfd      /**< Poll descriptor for events         */
+        );    /**< Called before poll(), should prepare @p pfd.  */
+    te_errno  (*after_poll)(    
         void   *data,           /**< Channel-specific private data      */
-        struct pollfd *pfd);    /**< Poll descriptor for events         */
-    te_errno  (*destroy)(       /**< Called on destroy                  */
-        void   *data);          /**< Channel-specific private data      */
+        struct pollfd *pfd      /**< Poll descriptor for events         */
+        );    /**< Called after poll(), should process detected event.  */
+    te_errno  (*destroy)(       
+        void   *data);          /**< Called on channel destroy    */
 } channel_t;
 
 
@@ -219,25 +232,25 @@ typedef struct channel_t {
  *  Fields cwmp_session_t::acs_owner and 
  */
 typedef struct cwmp_session_t {
-    cwmp_sess_state_t    state;     /**< CWMP session state.      */
-    acs_t               *acs_owner; /**< NULL or master ACS.      */
+    cwmp_sess_state_t    state;     /**< CWMP session state.        */
+    acs_t               *acs_owner; /**< NULL or master ACS.        */
     cpe_t               *cpe_owner; /**< NULL or master CPE record. */
     cpe_rpc_item_t      *rpc_item;  /**< NULL or last sent RPC in 
-                                          @c WAIT_RESPONSE state. */
-    channel_t           *channel; 
-    struct soap          m_soap;      /**< SOAP struct             */
-    mheap_t              def_heap;    /**< default memory heap,
+                                          @c WAIT_RESPONSE state.   */
+    channel_t           *channel;   /**< I/O ACSE channel.          */
+    struct soap          m_soap;     /**< SOAP struct               */
+    mheap_t              def_heap;   /**< default memory heap,
                                            when @p rpc_item is NULL */
 
-    int (*orig_fparse)(struct soap*);  /**< Original fparse in gSOAP */
+    int (*orig_fparse)(struct soap*);/**< Original fparse in gSOAP  */
 } cwmp_session_t;
 
 
 /**
  * Allocate struct for new CWMP session, init session,
  * init gSOAP struct, init Digest plugin or SSL if need, 
- * allocate ACSE IO channel for this session,
- * insert IO channel into main loop.
+ * allocate ACSE I/O channel for this session,
+ * insert I/O channel into main loop.
  * 
  * @param socket        TCP connection socket, just accepted.
  * @param acs           ACS object which responsible for this session.
@@ -258,9 +271,6 @@ extern te_errno cwmp_new_session(int socket, acs_t *acs);
  */
 extern te_errno cwmp_close_session(cwmp_session_t *sess);
 
-extern int cwmp_SendConnectionRequest(const char *endpoint,
-                                      const char *username, 
-                                      const char *password);
 
 /**
  * Check wheather accepted TCP connection is related to 
@@ -440,6 +450,12 @@ extern void acse_clear_channels(void);
  */
 extern void *acse_cwmp_malloc(struct soap *soap, size_t n);
 
+/**
+ * Read from gSOAP HTTP request which is RPC response to previous call.
+ *
+ * @param cwmp_sess     CWMP session descriptor.
+ */
+extern void acse_soap_serve_response(cwmp_session_t *cwmp_sess);
 
 #ifdef __cplusplus
 }

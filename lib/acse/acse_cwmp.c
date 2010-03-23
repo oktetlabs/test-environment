@@ -55,7 +55,6 @@
 /* Forward declarations */
 
 
-void acse_soap_serve_response(cwmp_session_t *cwmp_sess);
  
 SOAP_NMAC struct Namespace namespaces[] =
 {
@@ -104,6 +103,15 @@ cpe_find_conn_req_url(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
 }
 
 
+/**
+ * Store received Inform in CPE record.
+ *
+ * @param cwmp__Inform  deserialized CWMP Inform.
+ * @param cpe_item      CPE record, corresponding to Inform.
+ * @param heap          Memory heap containing Inform data.
+ *
+ * @return status code
+ */
 te_errno
 cpe_store_inform(struct _cwmp__Inform *cwmp__Inform,
                  cpe_t *cpe_item, mheap_t heap)
@@ -227,6 +235,7 @@ acse_cwmp_auth(struct soap *soap, cwmp_session_t *session, cpe_t **cpe)
 }
 
 
+/** gSOAP callback for GetRPCMethods ACS Method */
 SOAP_FMAC5 int SOAP_FMAC6
 __cwmp__GetRPCMethods(struct soap *soap, 
             struct _cwmp__GetRPCMethods *cwmp__GetRPCMethods, 
@@ -241,6 +250,7 @@ __cwmp__GetRPCMethods(struct soap *soap,
 }
 
 
+/** gSOAP callback for Inform ACS Method */
 SOAP_FMAC5 int SOAP_FMAC6 
 __cwmp__Inform(struct soap *soap,
                struct _cwmp__Inform *cwmp__Inform,
@@ -337,6 +347,7 @@ __cwmp__Inform(struct soap *soap,
 }
 
 
+/** gSOAP callback for TransferComplete ACS Method */
 SOAP_FMAC5 int SOAP_FMAC6 
 __cwmp__TransferComplete(struct soap *soap, 
                     struct _cwmp__TransferComplete *cwmp__TransferComplete,
@@ -350,6 +361,7 @@ __cwmp__TransferComplete(struct soap *soap,
     return 0;
 }
 
+/** gSOAP callback for AutonomousTransferComplete ACS Method */
 SOAP_FMAC5 int SOAP_FMAC6 
 __cwmp__AutonomousTransferComplete(struct soap *soap, 
             struct _cwmp__AutonomousTransferComplete
@@ -364,6 +376,7 @@ __cwmp__AutonomousTransferComplete(struct soap *soap,
     return 0;
 }
 
+/** gSOAP callback for RequestDownload ACS Method */
 SOAP_FMAC5 int SOAP_FMAC6
 __cwmp__RequestDownload(struct soap *soap, 
         struct _cwmp__RequestDownload *cwmp__RequestDownload, 
@@ -377,6 +390,7 @@ __cwmp__RequestDownload(struct soap *soap,
     return 0;
 }
 
+/** gSOAP callback for Kicked ACS Method */
 SOAP_FMAC5 int SOAP_FMAC6 
 __cwmp__Kicked(struct soap *soap, 
                 struct _cwmp__Kicked *cwmp__Kicked, 
@@ -855,6 +869,7 @@ acse_cwmp_empty_post(struct soap* soap)
 }
 
 
+/* See description in acse_internal.h */
 void
 acse_soap_serve_response(cwmp_session_t *cwmp_sess)
 {
@@ -932,6 +947,7 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
 
 
 
+/* See description in acse_internal.h */
 void *
 acse_cwmp_malloc(struct soap *soap, size_t n)
 {

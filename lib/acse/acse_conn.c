@@ -47,9 +47,11 @@
 
 #define CONN_IS_LIST 0
 
+/** TCP Connection Listener descriptor.
+ */
 typedef struct conn_data_t {
 #if CONN_IS_LIST
-    LIST_ENTRY(conn_data_t) links;
+    LIST_ENTRY(conn_data_t) links; 
 #endif /* CONN_IS_LIST */
     int              socket;  /**< TCP listening socket. */
     struct sockaddr *addr;    /**< Network TCP address, which @p socket 
@@ -65,6 +67,10 @@ static LIST_HEAD(conn_list_t, conn_data_t)
         conn_list = LIST_HEAD_INITIALIZER(&conn_list); 
 #endif /* CONN_IS_LIST */ 
 
+/** 
+ * Callback for I/O ACSE channel, called before poll() 
+ * Its prototype matches with field #channel_t::before_poll.
+ */
 te_errno
 conn_before_poll(void *data, struct pollfd *pfd)
 {
@@ -77,6 +83,11 @@ conn_before_poll(void *data, struct pollfd *pfd)
     return 0;
 }
 
+/** 
+ * Callback for I/O ACSE channel, called before poll() 
+ * Its prototype matches with field #channel_t::after_poll.
+ * This function should process detected event (usually, incoming data).
+ */
 te_errno
 conn_after_poll(void *data, struct pollfd *pfd)
 {
@@ -121,6 +132,10 @@ conn_after_poll(void *data, struct pollfd *pfd)
     return 0;
 }
 
+/** 
+ * Callback for I/O ACSE channel, called before poll() 
+ * Its prototype matches with field #channel_t::before_poll.
+ */
 te_errno
 conn_destroy(void *data)
 {
