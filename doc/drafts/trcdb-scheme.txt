@@ -11,7 +11,8 @@ USE trc;
 CREATE TABLE tags (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name     VARCHAR(16) UNIQUE,
-    descr    TEXT
+    descr    TEXT,
+    INDEX(name)
 );
 
 /* Table reqs describes all requirements used in TRC
@@ -21,7 +22,8 @@ CREATE TABLE tags (
 CREATE TABLE reqs (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name     VARCHAR(16) UNIQUE,
-    descr    TEXT
+    descr    TEXT,
+    INDEX(name)
 );
 
 /* Table boards describes all requirements used in TRC
@@ -31,7 +33,8 @@ CREATE TABLE reqs (
 CREATE TABLE boards (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name     VARCHAR(16) UNIQUE,
-    descr    TEXT
+    descr    TEXT,
+    INDEX(name)
 );
 
 /* Table board_tags describes a set of tags for each board type
@@ -40,8 +43,11 @@ CREATE TABLE boards (
  */ 
 CREATE TABLE board_tags (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    board    INT REFERENCES boards(id),
-    tag      INT REFERENCES tags(id)
+    board    INT NOT NULL,
+    tag      INT NOT NULL,
+    INDEX (board, tag),
+    FOREIGN KEY (board) REFERENCES boards(id),
+    FOREIGN KEY (tag) REFERENCES tags(id)
 );
 
 /* Table board_reqs describes a set of requirements
@@ -51,8 +57,11 @@ CREATE TABLE board_tags (
  */ 
 CREATE TABLE board_reqs (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    board    INT REFERENCES boards(id),
-    req      INT REFERENCES requirements(id)
+    board    INT NOT NULL,
+    req      INT NOT NULL,
+    INDEX (board, req),
+    FOREIGN KEY (board) REFERENCES boards(id),
+    FOREIGN KEY (req) REFERENCES requirements(id)
 );
 
 /* Table configurations describes all configurations involved in night testing
@@ -66,8 +75,10 @@ CREATE TABLE board_reqs (
 CREATE TABLE configurations (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name     VARCHAR(16) UNIQUE,
-    board    INT REFERENCES boards(id),
-    descr    TEXT
+    board    INT,
+    descr    TEXT,
+    INDEX(name),
+    FOREIGN KEY (board) REFERENCES boards(id)
 );
 
 /* Table configuration_tags describes a set of tags for each configuration
@@ -76,8 +87,11 @@ CREATE TABLE configurations (
  */ 
 CREATE TABLE configuration_tags (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    cfg      INT REFERENCES configurations(id),
-    tag      INT REFERENCES tags(id)
+    cfg      INT NOT NULL,
+    tag      INT NOT NULL,
+    INDEX (cfg, tag),
+    FOREIGN KEY (cfg) REFERENCES configurations(id),
+    FOREIGN KEY (tag) REFERENCES tags(id)
 );
 
 /* Table configuration_reqs describes a set of requirements
@@ -87,8 +101,11 @@ CREATE TABLE configuration_tags (
  */ 
 CREATE TABLE configuration_reqs (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    cfg      INT REFERENCES configurations(id),
-    req      INT REFERENCES reqs(id)
+    cfg      INT NOT NULL,
+    req      INT NOT NULL,
+    INDEX (cfg, req),
+    FOREIGN KEY (cfg) REFERENCES configurations(id),
+    FOREIGN KEY (req) REFERENCES reqs(id)
 );
 
 /* Table branches describes all branches that should be tested
@@ -99,10 +116,11 @@ CREATE TABLE configuration_reqs (
  */
 CREATE TABLE branches (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name     VARCHAR(16),
+    name     VARCHAR(16) NOT NULL,
     descr    VARCHAR(128),
     build    TIMESTAMP,
-    revision INT
+    revision INT,
+    INDEX (name)
 );
 
 /* Table branch_tags describes a set of tags for each branch
@@ -111,8 +129,11 @@ CREATE TABLE branches (
  */ 
 CREATE TABLE branch_tags (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    branch   INT REFERENCES branches(id),
-    tag      INT REFERENCES tags(id)
+    branch   INT NOT NULL,
+    tag      INT NOT NULL,
+    INDEX (branch, tag),
+    FOREIGN KEY (branch) REFERENCES branches(id),
+    FOREIGN KEY (tag) REFERENCES tags(id)
 );
 
 /* Table branch_reqs describes a set of requirements for each branch
@@ -121,8 +142,11 @@ CREATE TABLE branch_tags (
  */ 
 CREATE TABLE branch_reqs (
     id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    branch   INT REFERENCES branches(id),
-    req      INT REFERENCES requirements(id)
+    branch   INT NOT NULL,
+    req      INT NOT NULL,
+    INDEX (branch, req),
+    FOREIGN KEY (branch) REFERENCES branches(id),
+    FOREIGN KEY (req) REFERENCES reqs(id)
 );
 
 /* Table scrips describes original test scripts without any parameters
@@ -133,9 +157,10 @@ CREATE TABLE branch_reqs (
  */
 CREATE TABLE scripts (
     id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name         VARCHAR(32),
-    path         VARCHAR(128),
-    objective    TEXT
+    name         VARCHAR(32) NOT NULL,
+    path         VARCHAR(128) UNIQUE,
+    objective    TEXT,
+    INDEX (name, path)
 );
 
 /* Table parameters describes all parameter lists for all iterations
@@ -145,9 +170,11 @@ CREATE TABLE scripts (
  */
 CREATE TABLE parameters (
      id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-     iter        INT REFERENCES iterations(id),
+     iter        INT NOT NULL,
      name        VARCHAR(32),
-     value       VARCHAR(1024)
+     value       VARCHAR(1024),
+     INDEX (iter, name),
+     FOREIGN KEY (iter) REFERENCES iterations(id)
 );
 
 /* Table subsystems describes the list of subsystems that are tested with each iteration
@@ -155,7 +182,8 @@ CREATE TABLE parameters (
  */
 CREATE TABLE subsystems (
      id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-     name        VARCHAR(32)
+     name        VARCHAR(32) NOT NULL,
+     INDEX (name)
 );
 
 /* Table tested_subsystems describes the list of subsystems
@@ -165,8 +193,11 @@ CREATE TABLE subsystems (
  */
 CREATE TABLE tested_subsystems (
      id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-     iter        INT REFERENCES iterations(id),
-     sub_id      INT REFERENCES subsystems(id)
+     iter        INT NOT NULL,
+     sub_id      INT NOT NULL,
+     INDEX (iter, sub_id),
+     FOREIGN KEY (iter) REFERENCES iterations(id),
+     FOREIGN KEY (sub_id) REFERENCES subsystems(id)
 );
 
 /* Table iterations describes all available iterations for each test script,
@@ -177,9 +208,11 @@ CREATE TABLE tested_subsystems (
  */
 CREATE TABLE iterations (
     id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    script       INT REFERENCES scripts(id),
+    script       INT,
     name         VARCHAR(32),
-    session      INT REFERENCES iterations(id)
+    session      INT,
+    FOREIGN KEY (script)  REFERENCES scripts(id),
+    FOREIGN KEY (session) REFERENCES iterations(id)
 );
 
 /* Table result_types describes all possible types of test results
@@ -209,23 +242,34 @@ CREATE TABLE verdicts (
  */
 CREATE TABLE test_results (
     id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    iter                INT REFERENCES iterations(id),
-    configuraion        INT REFERENCES configuraions(id),
-    branch              INT REFERENCES branches(id),
+    iter                INT,
+    cfg                 INT,
+    branch              INT,
     start               TIMESTAMP,
     end                 TIMESTAMP,
-    result              INT REFERENCES result_types(id),
-    session             INT REFERENCES test_results(id)
+    result              INT,
+    session             INT,
+    INDEX (iter, cfg, branch),
+    FOREIGN KEY (iter) REFERENCES iterations(id),
+    FOREIGN KEY (cfg) REFERENCES configuraions(id),
+    FOREIGN KEY (branch) REFERENCES branches(id),
+    FOREIGN KEY (result) REFERENCES result_types(id),
+    FOREIGN KEY (session) REFERENCES test_results(id)
 );
 
 /* Table result_verdicts describes sets of verdicts generated by each test run
-     result - index of test run in test_results table
-     verdict - index of verdict in verdicts table
+     test_result - index of test run in test_results table
+     verdict_no - verdict sequence number 
+     verdict_id - index of verdict in verdicts table
  */
 CREATE TABLE result_verdicts (
     id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    result              INT REFERENCES test_results(id),
-    verdict             INT REFERENCES verdicts(id)
+    test_result         INT NOT NULL,
+    verdict_no          INT NOT NULL,
+    verdict_id          INT NOT NULL,
+    INDEX (test_result, verdict_no),
+    FOREIGN KEY (test_result) REFERENCES test_results(id),
+    FOREIGN KEY (verdict_id) REFERENCES verdicts(id)
 );
 
 
@@ -236,8 +280,11 @@ CREATE TABLE result_verdicts (
  */
 CREATE TABLE expected_results (
     id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    iter                INT REFERENCES iterations(id),
-    result              INT REFERENCES result_types(id)
+    iter                INT NOT NULL,
+    result              INT NOT NULL,
+    INDEX (iter),
+    FOREIGN KEY (iter) REFERENCES iterations(id),
+    FOREIGN KEY (result) REFERENCES result_types(id)
 );
 
 /* Table expected_tags describes sets of tags for each expected result
@@ -246,18 +293,26 @@ CREATE TABLE expected_results (
  */
 CREATE TABLE expected_tags (
     id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    result              INT REFERENCES expected_results(id),
-    tag                 INT REFERENCES tags(id)
+    expected_result     INT NOT NULL,
+    tag                 INT NOT NULL,
+    INDEX (expected_result, tag),
+    FOREIGN KEY (expected_result) REFERENCES expected_results(id),
+    FOREIGN KEY (tag) REFERENCES tags(id)
 );
 
 /* Table result_verdicts describes sets of verdicts generated by each test run
-     result - index of test run in expected_results table
-     verdict - index of verdict in verdicts table
+     expected_result - index of test run in expected_results table
+     verdict_no - verdict sequence number 
+     verdict_id - index of verdict in verdicts table
  */
 CREATE TABLE expected_verdicts (
     id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    result              INT REFERENCES expected_results(id),
-    verdict             INT REFERENCES verdicts(id)
+    expected_result     INT NOT NULL,
+    verdict_no          INT NOT NULL,
+    verdict_id          INT NOT NULL,
+    INDEX (expected_result, verdict_no),
+    FOREIGN KEY (expected_result) REFERENCES expected_results(id),
+    FOREIGN KEY (verdict_id)  REFERENCES verdicts(id)
 );
 
 /* Table bugs describes all related bugs
@@ -267,17 +322,21 @@ CREATE TABLE expected_verdicts (
  */
 CREATE TABLE bugs (
     id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name                VARCHAR(16),
+    name                VARCHAR(16) NOT NULL,
     url                 VARCHAR(128),
-    descr               TEXT
+    descr               TEXT,
+    INDEX (name)
 );
 
 /* Table expected_bugs describes sets of bugs for each expected result
-     result - index of test run in expected_results table
+     expected_result - index of test run in expected_results table
      bug - index of bug in bugzilla
  */
 CREATE TABLE expected_bugs (
     id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    result              INT REFERENCES expected_results(id),
-    bug                 INT REFERENCES bugs(id)
+    expected_result     INT NOT NULL,
+    bug                 INT NOT NULL,
+    INDEX (expected_result, bug),
+    FOREIGN KEY (expected_result) REFERENCES expected_results(id),
+    FOREIGN KEY (bug) REFERENCES bugs(id)
 );
