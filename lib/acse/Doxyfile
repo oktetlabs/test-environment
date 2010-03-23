@@ -593,7 +593,7 @@ EXCLUDE                = httpda.h md5evp.h \
                          cwmp_decls.h cwmp_acs.h \
                          acse_soapStub.h acse_soapH.h \
                          acse_soapServer.c acse_soapC.c \
-                         acse_cli.c
+                         acse_cli.c cwmp_data.h cwmp_data.c
 
 # The EXCLUDE_SYMLINKS tag can be used select whether or not files or 
 # directories that are symbolic links (a Unix filesystem feature) are excluded 

@@ -45,13 +45,24 @@
 #include "te_defs.h"
 #include "logger_api.h"
 
+/** Struct for ConnectionRequest descriptor */
 typedef struct conn_req_t {
-    struct soap     m_soap;
+    struct soap     m_soap;   /**< internal gSOAP environment */
     cpe_t       *cpe_item;    /**< CPE - object of Connection Request */
 } conn_req_t;
 
 
 
+/** 
+ * Callback for I/O ACSE channel, called before poll().
+ * It fills @p pfd according with specific channel situation.
+ * Its prototype matches with field #channel_t::before_poll.
+ *
+ * @param data      Channel-specific private data.
+ * @param pfd       Poll file descriptor struct (OUT)
+ *
+ * @return status code.
+ */
 te_errno
 conn_req_before_poll(void *data, struct pollfd *pfd)
 {
@@ -64,6 +75,17 @@ conn_req_before_poll(void *data, struct pollfd *pfd)
     return 0;
 }
 
+/** 
+ * Callback for I/O ACSE channel, called after poll() 
+ * Its prototype matches with field #channel_t::after_poll.
+ * This function should process detected event (usually, incoming data).
+ *
+ * @param data      Channel-specific private data.
+ * @param pfd       Poll file descriptor struct with marks, which 
+ *                  event happen.
+ *
+ * @return status code.
+ */
 te_errno
 conn_req_after_poll(void *data, struct pollfd *pfd)
 {
@@ -118,6 +140,14 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
 }
 
 
+/** 
+ * Callback for I/O ACSE channel, called at channel destroy. 
+ * Its prototype matches with field #channel_t::destroy.
+ *
+ * @param data      Channel-specific private data.
+ *
+ * @return status code.
+ */
 te_errno
 conn_req_destroy(void *data)
 {

@@ -65,6 +65,8 @@ mheap_clear(mheap_t heap)
     heaps_table[heap].n_users = 0;
     memset(heaps_table[heap].users, 0, sizeof(heaps_table[heap].users));
 }
+
+/** Increase heaps table by @c TABLE_SIZE_BLOCK */
 void 
 increase_heaps_table(void)
 {

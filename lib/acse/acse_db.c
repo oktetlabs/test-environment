@@ -125,13 +125,7 @@ db_add_cpe(const char *acs_name, const char *cpe_name)
     return 0;
 }
 
-/**
- * Find an acs instance from the acs list
- *
- * @param acs_name      Name of the acs instance
- *
- * @return              Acs instance address or NULL if not found
- */
+/* see description in acse_internal.h */
 extern acs_t *
 db_find_acs(const char *acs_name)
 {
@@ -146,14 +140,7 @@ db_find_acs(const char *acs_name)
     return NULL;
 }
 
-/**
- * Find a cpe instance from the cpe list of an acs instance
- *
- * @param acs_name      Name of the acs instance
- * @param cpe_name      Name of the cpe instance
- *
- * @return              Cpe instance address or NULL if not found
- */
+/* see description in acse_internal.h */
 extern cpe_t *
 db_find_cpe(acs_t *acs_item, const char *acs_name, const char *cpe_name)
 {
@@ -180,6 +167,7 @@ db_find_cpe(acs_t *acs_item, const char *acs_name, const char *cpe_name)
     return NULL;
 }
 
+/* see description in acse_internal.h */
 te_errno
 db_remove_acs(acs_t *acs)
 {
@@ -206,6 +194,7 @@ db_remove_acs(acs_t *acs)
     return 0;
 }
 
+/* see description in acse_internal.h */
 te_errno
 db_remove_cpe(cpe_t *cpe)
 {

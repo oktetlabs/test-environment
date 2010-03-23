@@ -73,11 +73,21 @@
 #include "te_defs.h"
 #include "logger_api.h"
 
+/** struct to item of strint-integer convertor in enumerated sets */
 typedef struct str_to_int_t {
-    const char *s_val;
-    int         i_val;
+    const char *s_val; /**< string value */
+    int         i_val; /**< integer value */
 } str_to_int_t;
 
+/**
+ * Convert string to integer corresponding with specified 
+ * enumerated set.
+ *
+ * @param tab    enumerate table
+ * @param str    input string with value name
+ *
+ * @return converted value.
+ */
 int 
 str_to_int(str_to_int_t *tab, const char *str)
 {
@@ -91,6 +101,15 @@ str_to_int(str_to_int_t *tab, const char *str)
 }
 
 
+/**
+ * Convert integer to string corresponding with specified 
+ * enumerated set.
+ *
+ * @param tab    enumerate table
+ * @param i_val  input integer 
+ *
+ * @return converted string value.
+ */
 const char * 
 int_to_str(str_to_int_t *tab, int i_val)
 {
@@ -516,7 +535,8 @@ cpe_cr_passwd(cpe_t *cpe, acse_epc_config_data_t *params)
 }
 
 
-str_to_int_t auth_types[] = 
+/** Enumeration for authenticate modes */
+str_to_int_t auth_mode_enum[] = 
 {
     {"noauth", ACSE_AUTH_NONE},
     {"basic",  ACSE_AUTH_BASIC},
@@ -536,9 +556,9 @@ static te_errno
 acs_auth_mode(acs_t *acs, acse_epc_config_data_t *params)
 {
     if (params->op.fun == EPC_CFG_MODIFY)
-        acs->auth_mode = str_to_int(auth_types, params->value);
+        acs->auth_mode = str_to_int(auth_mode_enum, params->value);
     else
-        strcpy(params->value, int_to_str(auth_types, acs->auth_mode));
+        strcpy(params->value, int_to_str(auth_mode_enum, acs->auth_mode));
 
     return 0;
 }
@@ -582,11 +602,13 @@ acse_acs_list(acse_epc_config_data_t *params)
     return 0;
 }
 
+/** Callback for access to ACS object conf.field */
 typedef te_errno (*config_acs_fun_t)(acs_t *, acse_epc_config_data_t *);
 
+/** struct for ACS configuration fields descriptors */
 struct config_acs_item_t {
-    const char       *label;
-    config_acs_fun_t  fun;
+    const char       *label; /**< name of conf.field */ 
+    config_acs_fun_t  fun;   /**< function to access conf.field */
 } cfg_acs_array [] = 
 {
     {"url", acs_url},
@@ -597,11 +619,13 @@ struct config_acs_item_t {
     {"enabled", acs_enabled},
 };
 
+/** Callback for access to CPE record conf.field */
 typedef te_errno (*config_cpe_fun_t)(cpe_t *, acse_epc_config_data_t *);
 
+/** struct for CPE configuration fields descriptors */
 struct config_cpe_item_t {
-    const char       *label;
-    config_cpe_fun_t  fun;
+    const char       *label; /**< name of conf.field */
+    config_cpe_fun_t  fun;   /**< function to access conf.field */
 } cfg_cpe_array [] = 
 {
     {"url",    cpe_url},
@@ -617,8 +641,15 @@ struct config_cpe_item_t {
     {"dev_product_class", device_id_product_class},
     {"dev_oui", device_id_oui},
     {"dev_manufacturer", device_id_manufacturer},
-};
+}; 
 
+/**
+ * Perform configuration EPC request on CPE level.
+ * 
+ * @param cfg_pars      input EPC parameters
+ * 
+ * @return status code
+ */
 te_errno
 config_cpe(acse_epc_config_data_t *cfg_pars)
 {
@@ -821,6 +852,16 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
     return 0;
 }
 
+/** 
+ * Callback for I/O ACSE channel, called before poll().
+ * It fills @p pfd according with specific channel situation.
+ * Its prototype matches with field #channel_t::before_poll.
+ *
+ * @param data      Channel-specific private data.
+ * @param pfd       Poll file descriptor struct (OUT)
+ *
+ * @return status code.
+ */
 static te_errno
 epc_before_poll(void *data, struct pollfd *pfd)
 {
@@ -834,6 +875,17 @@ epc_before_poll(void *data, struct pollfd *pfd)
 }
 
 
+/** 
+ * Callback for I/O ACSE channel, called after poll() 
+ * Its prototype matches with field #channel_t::after_poll.
+ * This function should process detected event (usually, incoming data).
+ *
+ * @param data      Channel-specific private data.
+ * @param pfd       Poll file descriptor struct with marks, which 
+ *                  event happen.
+ *
+ * @return status code.
+ */
 te_errno
 epc_after_poll(void *data, struct pollfd *pfd)
 {
@@ -898,6 +950,14 @@ epc_after_poll(void *data, struct pollfd *pfd)
     return rc;
 }
 
+/** 
+ * Callback for I/O ACSE channel, called at channel destroy. 
+ * Its prototype matches with field #channel_t::destroy.
+ *
+ * @param data      Channel-specific private data.
+ *
+ * @return status code.
+ */
 te_errno
 epc_destroy(void *data)
 {

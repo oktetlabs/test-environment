@@ -70,6 +70,11 @@ static LIST_HEAD(conn_list_t, conn_data_t)
 /** 
  * Callback for I/O ACSE channel, called before poll() 
  * Its prototype matches with field #channel_t::before_poll.
+ *
+ * @param data      Channel-specific private data.
+ * @param pfd       Poll file descriptor struct (OUT)
+ *
+ * @return status code.
  */
 te_errno
 conn_before_poll(void *data, struct pollfd *pfd)
@@ -87,6 +92,12 @@ conn_before_poll(void *data, struct pollfd *pfd)
  * Callback for I/O ACSE channel, called before poll() 
  * Its prototype matches with field #channel_t::after_poll.
  * This function should process detected event (usually, incoming data).
+ *
+ * @param data      Channel-specific private data.
+ * @param pfd       Poll file descriptor struct with marks, which 
+ *                  event happen.
+ *
+ * @return status code.
  */
 te_errno
 conn_after_poll(void *data, struct pollfd *pfd)
@@ -133,8 +144,13 @@ conn_after_poll(void *data, struct pollfd *pfd)
 }
 
 /** 
- * Callback for I/O ACSE channel, called before poll() 
- * Its prototype matches with field #channel_t::before_poll.
+ * Callback for I/O ACSE channel, called at channel destroy. 
+ * It fills @p pfd according with specific channel situation.
+ * Its prototype matches with field #channel_t::destroy.
+ *
+ * @param data      Channel-specific private data.
+ *
+ * @return status code.
  */
 te_errno
 conn_destroy(void *data)

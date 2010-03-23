@@ -48,8 +48,10 @@
 /** The list of "channels" */
 static LIST_HEAD(channel_list_t, channel_t)
         channel_list = LIST_HEAD_INITIALIZER(&channel_list); 
+/** Number of channels */
 static int channel_number = 0;
 
+/* see description in acse_internal.h */
 void
 acse_clear_channels(void)
 {
@@ -65,6 +67,7 @@ acse_clear_channels(void)
     channel_number = 0;
 }
 
+/* see description in acse_internal.h */
 void
 acse_add_channel(channel_t *ch_item)
 {
@@ -73,6 +76,7 @@ acse_add_channel(channel_t *ch_item)
     channel_number++;
 }
 
+/* see description in acse_internal.h */
 void
 acse_remove_channel(channel_t *ch_item)
 {
@@ -82,22 +86,6 @@ acse_remove_channel(channel_t *ch_item)
     ch_item->destroy(ch_item->data);
     free(ch_item);
 }
-
-extern int
-check_fd(int fd)
-{
-    fd_set         set;
-    struct timeval t = { .tv_sec = 0, .tv_usec = 0 };
-
-    FD_ZERO(&set);
-    FD_SET(fd, &set);
-
-    if (select(fd + 1, &set, NULL, NULL, &t) == -1)
-        return -1;
-
-    return 0;
-}
-
 
 /* See description in acse.h */
 void

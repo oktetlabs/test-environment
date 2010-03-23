@@ -54,6 +54,7 @@
 
 
  
+/** XML namespaces for gSOAP */
 SOAP_NMAC struct Namespace namespaces[] =
 {
     {"SOAP-ENC", "http://schemas.xmlsoap.org/soap/encoding/",
@@ -419,7 +420,16 @@ __cwmp__Kicked(struct soap *soap,
 
 
 
-/* callback for generic ACSE I/O channel */
+/** 
+ * Callback for I/O ACSE channel, called before poll() 
+ * It fills @p pfd according with specific channel situation.
+ * Its prototype matches with field #channel_t::before_poll.
+ *
+ * @param data      Channel-specific private data.
+ * @param pfd       Poll file descriptor struct (OUT)
+ *
+ * @return status code.
+ */
 te_errno
 cwmp_before_poll(void *data, struct pollfd *pfd)
 {
@@ -438,7 +448,17 @@ cwmp_before_poll(void *data, struct pollfd *pfd)
     return 0;
 }
 
-/* callback for generic ACSE I/O channel */
+/** 
+ * Callback for I/O ACSE channel, called before poll() 
+ * Its prototype matches with field #channel_t::after_poll.
+ * This function should process detected event (usually, incoming data).
+ *
+ * @param data      Channel-specific private data.
+ * @param pfd       Poll file descriptor struct with marks, which 
+ *                  event happen.
+ *
+ * @return status code.
+ */
 te_errno
 cwmp_after_poll(void *data, struct pollfd *pfd)
 {
@@ -481,7 +501,14 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
     return 0;
 }
 
-/* callback for generic ACSE I/O channel */
+/** 
+ * Callback for I/O ACSE channel, called at channel destroy. 
+ * Its prototype matches with field #channel_t::destroy.
+ *
+ * @param data      Channel-specific private data.
+ *
+ * @return status code.
+ */
 te_errno
 cwmp_destroy(void *data)
 {
@@ -505,7 +532,7 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
     return cwmp_new_session(socket, acs);
 }
 
-/* callback fserveloop for gSOAP */
+/** Callback fserveloop for gSOAP */
 int
 cwmp_serveloop(struct soap *soap)
 {
@@ -513,7 +540,7 @@ cwmp_serveloop(struct soap *soap)
     return soap->error;
 }
 
-/* callback fparse for gSOAP, to return STOP if empty POST was received. */
+/** Callback fparse for gSOAP, to return STOP if empty POST was received.*/
 int
 cwmp_fparse(struct soap *soap)
 {
@@ -737,8 +764,17 @@ acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
 /**
  * Send RPC to CPE.
  *
+ * This function check RPC queue in CPE record, take first item
+ * if it present, and send it to CPE in the HTTP response.
+ * If there is no RPC items in queue, it send empty HTTP response
+ * with no keep-alive to finish CWMP session.
+ *
+ * After sending RPC to CPE request item is moved to results queue
+ * in CPE record, where response from CPE will be stored, when 
+ * it will be received later.
+ *
  * @param soap        gSOAP struct.
- * @param request     Internals struct, specifying RPC to be sent.
+ * @param session     current CWMP session.
  * 
  * @return gSOAP status.
  */
