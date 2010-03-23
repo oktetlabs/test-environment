@@ -31,7 +31,9 @@
 #ifndef __TE_LIB_ACSE_EPC_H__
 #define __TE_LIB_ACSE_EPC_H__
 
-#include "rcf_common.h" #include "te_errno.h" #include "tarpc.h"
+#include "rcf_common.h"
+#include "te_errno.h"
+#include "tarpc.h"
 
 #include "te_cwmp.h" 
 #include "te_defs.h" 
