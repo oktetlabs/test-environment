@@ -30,27 +30,32 @@
 #include <string.h>
 #include "acse_mem.h"
 
-/** Struct which placed in to the end of any allocated block. */ 
+/** Descriptor for memory block in heap.
+  This struct is placed to the end of any allocated block. 
+*/ 
 typedef struct {
     void   *ptr;       /**< start of next block in the heap or NULL */
     size_t  user_size; /**< size of user-part of next block or 0. */
 } next_block_descr_t;
 
+/** Descriptor of memory heap. */ 
 typedef struct {
-    mheap_t id;
+    mheap_t             id;    /**< Heap ID, really index in array */
 
-    next_block_descr_t first;
+    next_block_descr_t  first; /**< Descriptor of first block in heap */
 
-    void   *users[MHEAP_MAX_USERS]; 
-    size_t  n_users;
+    void   *users[MHEAP_MAX_USERS];  /**< users of this heap */
+    size_t  n_users;                 /**< number of users */
 } mheap_descr_t;
 
 static mheap_descr_t *heaps_table = NULL;
 static size_t heaps_table_size = 0;
 
+/** Quantum to increase heaps table */
 #define TABLE_SIZE_BLOCK 32
-#define TABLE_FIRST 1
 
+
+/** Clear particular heap descriptor */
 static inline void
 mheap_clear(mheap_t heap)
 {
@@ -79,7 +84,7 @@ mheap_create(void *user)
 
     if (0 == heaps_table_size)
         increase_heaps_table();
-    for (i = TABLE_FIRST; i < heaps_table_size; i++)
+    for (i = 0; i < heaps_table_size; i++)
     {
         if (MHEAP_NONE == heaps_table[i].id)
             break;
@@ -117,6 +122,10 @@ mheap_add_user(mheap_t heap, void *user)
     return -1;
 }
 
+/** Free all blocks in the heap, clear the heap.
+ *
+ * @param heap          heap ID
+ */
 void
 mheap_free_heap(mheap_t heap)
 {

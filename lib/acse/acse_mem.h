@@ -32,6 +32,7 @@
 
 #include <sys/types.h>
 
+/** Identifier of particular heap. */
 typedef unsigned int mheap_t;
 
 /* constants for library */

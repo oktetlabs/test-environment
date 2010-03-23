@@ -58,8 +58,11 @@ extern "C" {
 #include "acse_mem.h"
 
 
-/*
- * State machine diargam for CWMP session entity:
+/**
+ * @section State machine diargam for CWMP session entity:
+
+@htmlonly
+<pre>
 
    ( NOP )----->( LISTEN )------>[ Reply ]----->( WAIT_AUTH )<-\
       ^                                              |         |
@@ -79,6 +82,7 @@ extern "C" {
       V                                               |
 [ Send Request to CPE ]--->( WAIT_RESPONSE )---->[ Process Response ] 
    
+@endhtmlonly
  */
 
 
@@ -210,10 +214,14 @@ typedef struct channel_t {
 
 
 
+/** Descriptor of active CWMP session.
+ *  Used as user-info in gSOAP internal struct. 
+ *  Fields cwmp_session_t::acs_owner and 
+ */
 typedef struct cwmp_session_t {
-    cwmp_sess_state_t    state;     /**< CWMP session state      */
-    acs_t               *acs_owner;
-    cpe_t               *cpe_owner;
+    cwmp_sess_state_t    state;     /**< CWMP session state.      */
+    acs_t               *acs_owner; /**< NULL or master ACS.      */
+    cpe_t               *cpe_owner; /**< NULL or master CPE record. */
     cpe_rpc_item_t      *rpc_item;  /**< NULL or last sent RPC in 
                                           @c WAIT_RESPONSE state. */
     channel_t           *channel; 
@@ -221,7 +229,7 @@ typedef struct cwmp_session_t {
     mheap_t              def_heap;    /**< default memory heap,
                                            when @p rpc_item is NULL */
 
-    int (*orig_fparse)(struct soap*);
+    int (*orig_fparse)(struct soap*);  /**< Original fparse in gSOAP */
 } cwmp_session_t;
 
 

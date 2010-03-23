@@ -1,0 +1,23 @@
+/**@mainpage
+
+@copyright_notice
+
+Copyright (c) 2010 OKTET Labs, St.-Petersburg, Russia
+
+@par External documentation
+
+
+@par Overview
+
+Here should be some overview
+
+@par Subvalues identification
+
+
+EPC low level API: acse_epc.h
+
+Internal declarations: acse_internal.h
+
+
+
+*/

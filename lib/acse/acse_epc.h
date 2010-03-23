@@ -1,11 +1,13 @@
 /** @file
- * @brief ACSE API
+ * @brief ACSE EPC API
  *
- * ACSE declarations, common for both sites: ACSE process
+ * ACSE EPC declarations, common for both sites: ACSE process
  *      and head TA process.
  *
+ * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2010 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -22,10 +24,6 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
- *
- *
- * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
