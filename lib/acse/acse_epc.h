@@ -31,9 +31,7 @@
 #ifndef __TE_LIB_ACSE_EPC_H__
 #define __TE_LIB_ACSE_EPC_H__
 
-#include "rcf_common.h"
-#include "te_errno.h" 
-#include "tarpc.h"
+#include "rcf_common.h" #include "te_errno.h" #include "tarpc.h"
 
 #include "te_cwmp.h" 
 #include "te_defs.h" 
@@ -57,8 +55,8 @@ extern "C" {
  * Level of EPC configuration command: either ACS or CPE.
  */
 typedef enum {
-    EPC_CFG_ACS = 1, 
-    EPC_CFG_CPE
+    EPC_CFG_ACS = 1, /**< ACS object configuring level */
+    EPC_CFG_CPE      /**< CPE record configuring level */
 } acse_cfg_level_t;
 
 /**
@@ -68,8 +66,8 @@ typedef enum {
     EPC_CFG_ADD,        /**< Add record on ACSE: either ACS or CPE */
     EPC_CFG_DEL,        /**< Remove record on ACSE: either ACS or CPE */
     EPC_CFG_MODIFY,     /**< Modify some parameter in record */
-    EPC_CFG_OBTAIN,
-    EPC_CFG_LIST,
+    EPC_CFG_OBTAIN,     /**< Obtain value of some parameter */
+    EPC_CFG_LIST,       /**< Get list of objects on specified level */
 } acse_cfg_op_t;
 
 /**
@@ -78,29 +76,30 @@ typedef enum {
  */
 typedef struct {
     struct {
-        unsigned         magic:16; /**< Should store EPC_CONFIG_MAGIC */
-        acse_cfg_level_t level:2;
-        acse_cfg_op_t    fun:4;
-    } op;
+        unsigned         magic:16; /**< Should contain EPC_CONFIG_MAGIC */
+        acse_cfg_level_t level:2;  /**< Level of config operation */
+        acse_cfg_op_t    fun:4;    /**< Function to do */
+    } op;               /**< Config operation code */
 
-    char         acs[RCF_MAX_NAME];
-    char         cpe[RCF_MAX_NAME];
+    char         acs[RCF_MAX_NAME]; /**< Name of ACS object */
+    char         cpe[RCF_MAX_NAME]; /**< Name of CPE record */
 
     char         oid[RCF_MAX_ID]; /**< TE Configurator OID of leaf,
                                         which is subject of operation */ 
     union {
-        char     value[RCF_MAX_VAL];
-        char     list[RCF_MAX_VAL];
+        char     value[RCF_MAX_VAL]; /**< operation result: single value */
+        char     list[RCF_MAX_VAL];  /**< operation result: name list */
     };
 } acse_epc_config_data_t;
 
 
+/** CWMP operation code */
 typedef enum {
-    EPC_RPC_CALL = EPC_CWMP_MAGIC,
-    EPC_RPC_CHECK,
-    EPC_CONN_REQ,
-    EPC_CONN_REQ_CHECK,
-    EPC_GET_INFORM,
+    EPC_RPC_CALL = EPC_CWMP_MAGIC, /**< Call RPC on CPE */
+    EPC_RPC_CHECK,        /**< Check status of sent RPC */
+    EPC_CONN_REQ,         /**< Send ConnectionRequest to CPE */
+    EPC_CONN_REQ_CHECK,   /**< Check status of ConnectionRequest */
+    EPC_GET_INFORM,       /**< Get Inform already received from CPE */
 } acse_epc_cwmp_op_t;
 
 
@@ -141,10 +140,10 @@ typedef enum {
  * Message with request/response for CWMP-related operation on ACSE.
  */
 typedef struct {
-    acse_epc_cwmp_op_t  op;
+    acse_epc_cwmp_op_t  op;     /**< Code of operation */
 
-    char        acs[RCF_MAX_NAME];
-    char        cpe[RCF_MAX_NAME];
+    char        acs[RCF_MAX_NAME]; /**< Name of ACS object */
+    char        cpe[RCF_MAX_NAME]; /**< Name of CPE record */
 
     te_cwmp_rpc_cpe_t   rpc_cpe; /**< Code of RPC call to be put 
                                       into queue desired for CPE.*/
@@ -205,11 +204,12 @@ typedef struct {
 
 
 
+/** Code of EPC message */
 typedef enum {
-    EPC_CONFIG_CALL = EPC_MSG_CODE_MAGIC,
-    EPC_CONFIG_RESPONSE,
-    EPC_CWMP_CALL,
-    EPC_CWMP_RESPONSE,
+    EPC_CONFIG_CALL = EPC_MSG_CODE_MAGIC, /**< Config, user->ACSE */
+    EPC_CONFIG_RESPONSE, /**< Config response ACSE->user */
+    EPC_CWMP_CALL,       /**< CWMP operation call */
+    EPC_CWMP_RESPONSE,   /**< CWMP operation response */
 } acse_msg_code_t;
 
 
@@ -227,10 +227,10 @@ typedef struct {
     acse_msg_code_t opcode; /**< Code of operation */
 
     union {
-        void *p;
+        void *p;        /**< Useful pointer to data */
 
-        acse_epc_config_data_t *cfg;
-        acse_epc_cwmp_data_t   *cwmp;
+        acse_epc_config_data_t *cfg; /**< Config user data */
+        acse_epc_cwmp_data_t   *cwmp;/**< CWMP user data   */
     }       data;    /**< In user APІ is pointer to operation specific
                           structure.  In messages really passing 
                           via pipe it is not used. */
@@ -250,8 +250,8 @@ typedef struct {
  * that is TA of separate simple CLI tool).
  */
 typedef enum {
-    ACSE_EPC_SERVER,
-    ACSE_EPC_CLIENT
+    ACSE_EPC_SERVER, /**< endpoint is ACSE */
+    ACSE_EPC_CLIENT  /**< endpoint is user, i.d. TA or CLI tool */
 } acse_epc_role_t;
 
 /**
@@ -286,6 +286,10 @@ extern int acse_epc_sock(void);
 /**
  * Send message to other site in EPC connection. 
  * Field data must point to structure of proper type.
+ *
+ * @param user_message          Message to be sent
+ *
+ * @return status code
  */
 extern te_errno acse_epc_send(const acse_epc_msg_t *user_message);
 
@@ -295,6 +299,10 @@ extern te_errno acse_epc_send(const acse_epc_msg_t *user_message);
  * Memory for data is allocated by malloc(), and should be free'd by 
  * user. Allocated block have size, stored in field @p length 
  * in the message, it may be used for boundary checks.
+ *
+ * @param user_message          Location for ptr to received message
+ *
+ * @return status code 
  */
 extern te_errno acse_epc_recv(acse_epc_msg_t **user_message);
 
