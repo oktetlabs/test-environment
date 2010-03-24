@@ -67,6 +67,9 @@
 #include "unix_internal.h"
 
 
+/** Maximum length of accumulated log */
+#define LOG_REMOTE_MAX_LEN          (4096 - 1)
+
 static te_log_level
 map_name_to_level(const char *name)
 {
@@ -225,7 +228,7 @@ log_remote(void *ready, int argc, char *argv[])
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
-    if ((buffer = malloc(TE_LOG_FIELD_MAX + 1)) == NULL)
+    if ((buffer = malloc(LOG_REMOTE_MAX_LEN + 1)) == NULL)
     {
         int rc = errno;
 
@@ -261,7 +264,7 @@ log_remote(void *ready, int argc, char *argv[])
         if (FD_ISSET(s, &r_set))
         {
             /* read logs and log them */
-            rc = read(s, buffer, TE_LOG_FIELD_MAX);
+            rc = read(s, buffer, LOG_REMOTE_MAX_LEN);
             if (rc < 0)
                 continue;
 
