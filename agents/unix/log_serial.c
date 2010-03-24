@@ -488,7 +488,7 @@ log_serial(void *ready, int argc, char *argv[])
         now = time(NULL);
         if (now - last_alive >= LOG_SERIAL_ALIVE_TIMEOUT / 1000)
         {
-            RING("%s() thread is alive", __FUNCTION__);
+            INFO("%s() thread is alive", __FUNCTION__);
             last_alive = now;
         }
 
