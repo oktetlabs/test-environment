@@ -3976,8 +3976,10 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
     }
 
     if (inet_pton(family, value, &bcast) <= 0 ||
-        ((family == AF_INET) && (bcast.ip4_addr.s_addr == 0 ||
-        (ntohl(bcast.ip4_addr.s_addr) & 0xe0000000) == 0xe0000000)))
+        ((family == AF_INET) &&
+         ((bcast.ip4_addr.s_addr == 0) ||
+          (((ntohl(bcast.ip4_addr.s_addr) & 0xe0000000) == 0xe0000000) &&
+           (ntohl(bcast.ip4_addr.s_addr) != 0xffffffff)))))
     {
         ERROR("%s(): Invalid broadcast %s", __FUNCTION__, value);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
