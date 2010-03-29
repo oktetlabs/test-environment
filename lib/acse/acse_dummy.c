@@ -98,7 +98,7 @@ main(int argc, char **argv)
     if (argc > 3)
         msg_sock_name = strdup(argv[3]);
     else
-        msg_sock_name = strdup(EPC_ACSE_SOCK);
+        msg_sock_name = NULL;
 
     cpe->acs_auth.login = 
         strdup("000261-Home Gateway-V60200000000-0010501606");
@@ -120,7 +120,7 @@ main(int argc, char **argv)
 
     acse_enable_acs(acs);
 
-    if ((rc = acse_epc_disp_init(msg_sock_name, EPC_MMAP_AREA)) != 0)
+    if ((rc = acse_epc_disp_init(msg_sock_name, NULL)) != 0)
     {
         ERROR("Fail create EPC dispatcher %r", rc);
         return 1;

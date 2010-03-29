@@ -565,10 +565,7 @@ main(int argc, const char **argv)
     
     rpopt = poptGetNextOpt(cont); /* this really parse all command line */
 
-    if (epc_sock_name == NULL)
-        epc_sock_name = strdup(EPC_ACSE_SOCK);
-
-    if ((rc = acse_epc_open(epc_sock_name, EPC_MMAP_AREA, ACSE_EPC_CLIENT))
+    if ((rc = acse_epc_open(epc_sock_name, NULL, ACSE_EPC_CLIENT))
         != 0)
     {
         ERROR("open EPC failed %r", rc);

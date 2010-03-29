@@ -6,18 +6,20 @@ Copyright (c) 2010 OKTET Labs, St.-Petersburg, Russia
 
 @par External documentation
 
+[TR-069]
+"CPE WAN Management Protocol v. 1.1"
+
+[ACSE HLD]
+OKTL-HLD-0000358-TE_ACS "Test Environment: ACS Emulator"
 
 @par Overview
-
-Here should be some overview
-
-@par Subvalues identification
-
+ 
+ACS Emulator operates accordingly with [ACSE HLD].
+It consists on 
 
 EPC low level API: acse_epc.h
 
 Internal declarations: acse_internal.h
-
 
 
 */

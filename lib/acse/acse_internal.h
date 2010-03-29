@@ -3,6 +3,9 @@
  * 
  * ACSE internal declarations. 
  *
+ * @ref acse-main_loop
+ * 
+ * @ref acse-cwmp_dispatcher
  *
  * Copyright (C) 2009-2010 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution). 
@@ -21,7 +24,6 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
- *
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
@@ -59,7 +61,10 @@ extern "C" {
 
 
 /**
- * @section State machine diargam for CWMP session entity:
+ * @page acse-cwmp_dispatcher CWMP dispatcher
+ * @{
+ *
+ * @section cwmp-st_m State machine diargam for CWMP session entity:
 
 @htmlonly
 <pre>
@@ -81,8 +86,9 @@ extern "C" {
       |          \------------------------------------\
       V                                               |
 [ Send Request to CPE ]--->( WAIT_RESPONSE )---->[ Process Response ] 
-   
+</pre>   
 @endhtmlonly
+ * @}
  */
 
 
@@ -134,8 +140,8 @@ typedef struct cpe_inform_t {
 /** CPE record */
 typedef struct cpe_t{
     /** Fields for internal data integrity. */
-    LIST_ENTRY(cpe_t) links;    /**< List links */
-    struct acs_t    *acs;       /**< ACS, managing this CPE  */
+    LIST_ENTRY(cpe_t)  links;   /**< List links */
+    struct acs_t      *acs;     /**< ACS, managing this CPE  */
 
     /** Fields corresponding to CM leafs in @p cpe node; some may change. */
 
@@ -146,12 +152,13 @@ typedef struct cpe_t{
                                      Connection Request.        */
     auth_t           acs_auth;  /**< Authenticate fields for 
                                      CPE->ACS Sessions.         */
-    int              enabled;   /**< Flag denotes whether CWMP sessions
+    te_bool          enabled;   /**< Flag denotes whether CWMP sessions
                                      are enabled from this CPE.
                                      Set to FALSE during active 
                                      CWMP session leads to stop it.*/
-    te_bool          hold_requests;  /**< Whether to put "hold requests"
-                                        in SOAP msg                    */
+    te_bool          hold_requests; /**< Whether to put "hold requests"
+                                         in SOAP msg                   */
+
     cwmp__DeviceIdStruct device_id; /**< Device Identifier       */
 
 
@@ -170,11 +177,11 @@ typedef struct cpe_t{
 
     /** Fields for internal procedure data during CWMP session. */
 
-    struct cwmp_session_t *session; /**< CWMP session processing */
-    struct sockaddr     *addr;      /**< CPE TCP/IP address for C.R.*/
-    socklen_t            addr_len;  /**< address length          */ 
+    struct cwmp_session_t *session;  /**< CWMP session processing     */
+    struct sockaddr       *addr;     /**< CPE TCP/IP address for C.R. */
+    socklen_t              addr_len; /**< address length              */ 
 
-    acse_cr_state_t      cr_state;  /**< State of ConnectionRequest */
+    acse_cr_state_t        cr_state; /**< State of ConnectionRequest  */
 } cpe_t;
 
 
@@ -189,15 +196,16 @@ typedef struct acs_t {
     const char  *name;          /**< ACS name                       */
     const char  *url;           /**< ACS URL                        */
     const char  *cert;          /**< ACS certificate                */
-    int          enabled;       /**< Enabled flag, true if listening
+    te_bool      enabled;       /**< Enabled flag, true if listening
                                     new CWMP connections            */
-    int          ssl;           /**< SSL usage boolean flag         */
-    int          port;          /**< TCP port value in host byte order */
+    te_bool      ssl;           /**< SSL usage boolean flag         */
+    uint16_t     port;          /**< TCP port value in host byte order */
     auth_mode_t  auth_mode;     /**< Authentication mode            */
 
     /** Fields for internal procedure data. */
     struct sockaddr *addr_listen;/**< TCP/IP address to listen      */
     socklen_t        addr_len;   /**< address length */
+
     struct cwmp_session_t *session; /**< CWMP session, while it is not
                                        associated with particular CPE */
 } acs_t;
@@ -208,7 +216,23 @@ typedef LIST_HEAD(acs_list_t, acs_t) acs_list_t;
 /** The list af ACS instances */
 extern acs_list_t acs_list;
 
-/** Abstraction structure for the 'channel' object */
+/**
+ * @page acse-main_loop Main loop
+ * @{
+ * ACSE main event loop process set of input abstract channels. 
+ * Each channel described by instance of #channel_t structure.
+ * Channels can be registered by acse_add_channel() procedure.
+ * 
+ * User, who register new channel, is responsible for initiate
+ * all internal context before register, and for release it 
+ * when channel is closed and channel_t::destroy callback is called.
+ * 
+ */
+
+/** 
+ * Abstraction structure for the 'channel' object 
+ * @ingroup acse-main_loop
+ */
 typedef struct channel_t {
     LIST_ENTRY(channel_t) links;/**< List links */
     void       *data;           /**< Channel-specific private data      */
@@ -220,12 +244,37 @@ typedef struct channel_t {
     te_errno  (*after_poll)(    
         void   *data,           /**< Channel-specific private data      */
         struct pollfd *pfd      /**< Poll descriptor for events         */
-        );    /**< Called after poll(), should process detected event.  */
+        );    /**< Called after poll(), should process detected event. 
+                  Return code TE_ENOTCONN denote that underlying
+                  connection is closed and channel should be finished. */
     te_errno  (*destroy)(       
         void   *data);          /**< Called on channel destroy    */
 } channel_t;
 
 
+/**
+ * Add I/O channel to ACSE internal main loop.
+ *
+ * @param ch_item       Channel item, should have all callbacks 
+ *                      set to function addresses.
+ *
+ * @return none
+ */
+extern void acse_add_channel(channel_t *ch_item);
+
+/**
+ * Remove I/O channel from ACSE internal main loop.
+ * Call 'destroy' callback for channel.
+ *
+ * @param ch_item       Channel. 
+ *
+ * @return none
+ */
+extern void acse_remove_channel(channel_t *ch_item);
+
+/**
+ * @}
+ */
 
 /** Descriptor of active CWMP session.
  *  Used as user-info in gSOAP internal struct. 
@@ -312,7 +361,7 @@ extern te_errno db_add_cpe(const char *acs_name, const char *cpe_name);
  *
  * @return              ACS instance address or NULL if not found
  */
-extern acs_t * db_find_acs(const char *acs_name);
+extern acs_t *db_find_acs(const char *acs_name);
 
 /**
  * Find a cpe instance from the cpe list of an acs instance
@@ -323,9 +372,9 @@ extern acs_t * db_find_acs(const char *acs_name);
  *
  * @return              CPE instance address or NULL if not found
  */
-extern cpe_t * db_find_cpe(acs_t *acs_item,
-                           const char *acs_name,
-                           const char *cpe_name);
+extern cpe_t *db_find_cpe(acs_t *acs_item,
+                          const char *acs_name,
+                          const char *cpe_name);
 
 
 /**
@@ -349,6 +398,13 @@ extern te_errno db_remove_cpe(cpe_t *cpe_item);
 
 /**
  * Init EPC dispatcher.
+ * 
+ * @param msg_sock_name    name of PF_UNIX socket for EPC messages, 
+ *                              or NULL for internal EPC default;
+ * @param shmem_name       name of shared memory space for EPC data
+ *                            exchange or NULL for internal default.
+ * 
+ * @return              status code
  */
 extern te_errno acse_epc_disp_init(const char *msg_sock_name,
                                    const char *shmem_name);
@@ -356,29 +412,12 @@ extern te_errno acse_epc_disp_init(const char *msg_sock_name,
 
 /**
  * Init TCP Listener dispatcher (named 'conn' - by old style. to be fixed).
+ * 
+ * @return              status code
  */
 extern te_errno acse_conn_create(void);
 
 
-/**
- * Add I/O channel to ACSE internal main loop.
- *
- * @param ch_item       Channel item, should have all callbacks 
- *                      set to function addresses.
- *
- * @return none
- */
-extern void acse_add_channel(channel_t *ch_item);
-
-/**
- * Remove I/O channel from ACSE internal main loop.
- * Call 'destroy' callback for channel.
- *
- * @param ch_item       Channel. 
- *
- * @return none
- */
-extern void acse_remove_channel(channel_t *ch_item);
 
 /**
  * Register ACS object in TCP Connection Dispatcher.

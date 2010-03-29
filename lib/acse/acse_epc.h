@@ -43,13 +43,14 @@
 extern "C" {
 #endif
 
-#define EPC_MMAP_AREA "/lrpc_mmap_area"
-#define EPC_ACSE_SOCK "/tmp/epc_acse_sock"
-#define EPC_TA_SOCK   "/tmp/epc_ta_sock"
 
-
+/** Magic number, start of EPC message codes, for validity check */
 #define EPC_MSG_CODE_MAGIC 0x1985
+
+/** Magic number, for EPC configuration commands, for validity check */
 #define EPC_CONFIG_MAGIC 0x1977
+
+/** Magic number, for EPC CWMP commands, for validity check */
 #define EPC_CWMP_MAGIC 0x1950
 
 
@@ -103,39 +104,6 @@ typedef enum {
     EPC_CONN_REQ_CHECK,   /**< Check status of ConnectionRequest */
     EPC_GET_INFORM,       /**< Get Inform already received from CPE */
 } acse_epc_cwmp_op_t;
-
-
-/** State of Connection Request to CPE. */
-typedef enum acse_cr_state_t {
-    CR_NONE = 0,        /**< No Conn.Req operation was inited */
-    CR_WAIT_AUTH,       /**< Connection Request started, but waiting 
-                            for successful authenticate. */
-    CR_DONE,            /**< Connection Request was sent and gets 
-                            successful HTTP response. 
-                            Swith back to CR_NONE after receive Inform
-                            with EventCode  = @c CONNECTION REQUEST*/
-    CR_ERROR,            /**< Connection Request was sent and gets 
-                            HTTP error. 
-                            Swith back to CR_NONE after read 
-                            Conn.Req. status by EPC */
-} acse_cr_state_t;
-    
-/** CWMP Session states */
-typedef enum { 
-    CWMP_NOP,           /**< No any TCP activity: neither active
-                          connection, nor listening for incoming ones.  */
-    CWMP_LISTEN,        /**< Listening for incoming HTTP connection.    */
-    CWMP_WAIT_AUTH,     /**< TCP connection established, first HTTP
-                            request received, but not authenicated,
-                            response with our WWW-Authenticate is sent. */
-    CWMP_SERVE,         /**< CWMP session established, waiting for
-                            incoming SOAP RPC requests from CPE.        */
-    CWMP_WAIT_RESPONSE, /**< CWMP session established, SOAP RPC is sent
-                            to the CPE, waiting for response.           */
-    CWMP_PENDING,       /**< CWMP session established, waiting for
-                             RPC to be sent on CPE, from EPC.           */
-} cwmp_sess_state_t;
-
 
 
 /**
@@ -262,9 +230,11 @@ typedef enum {
  * For SERVER, this function blocks until EPC pipe will be 
  * established, waiting for Client connection.
  *
- * @param msg_sock_name         Name of pipe socket for messages.
+ * @param msg_sock_name         Name of pipe socket for messages 
+ *                                  or NULL for internal default.
  * @param shmem_name            Name of shared memory block, must
  *                              be same in related Server and Client.
+ *                              May be NULL for internal default.
  * @param role                  EPC role, which current application plays.
  *
  * @return status code

@@ -711,33 +711,33 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
 
     switch (cfg_pars->op.fun) 
     { 
-    case EPC_CFG_ADD:
-        if (cfg_pars->op.level == EPC_CFG_ACS)
-            return db_add_acs(cfg_pars->acs);
+        case EPC_CFG_ADD:
+            if (cfg_pars->op.level == EPC_CFG_ACS)
+                return db_add_acs(cfg_pars->acs);
 
-        return db_add_cpe(cfg_pars->acs, cfg_pars->cpe);
+            return db_add_cpe(cfg_pars->acs, cfg_pars->cpe);
 
-    case EPC_CFG_DEL:
-        if ((acs_item = db_find_acs(cfg_pars->acs)) == NULL)
-            return TE_ENOENT;
-        if (cfg_pars->op.level == EPC_CFG_ACS)
-            return db_remove_acs(acs_item);
-        if ((cpe_item = 
-                db_find_cpe(acs_item, cfg_pars->acs, cfg_pars->cpe)) 
-            == NULL)
-            return TE_ENOENT;
-        return db_remove_cpe(cpe_item);
+        case EPC_CFG_DEL:
+            if ((acs_item = db_find_acs(cfg_pars->acs)) == NULL)
+                return TE_ENOENT;
+            if (cfg_pars->op.level == EPC_CFG_ACS)
+                return db_remove_acs(acs_item);
+            if ((cpe_item = 
+                    db_find_cpe(acs_item, cfg_pars->acs, cfg_pars->cpe)) 
+                == NULL)
+                return TE_ENOENT;
+            return db_remove_cpe(cpe_item);
 
-    case EPC_CFG_MODIFY:
-    case EPC_CFG_OBTAIN:
-        if (cfg_pars->op.level == EPC_CFG_ACS)
-            return config_acs(cfg_pars);
-        return config_cpe(cfg_pars);
-    case EPC_CFG_LIST:
-        RING("acse_epc_config(): LIST... ");
-        if (cfg_pars->op.level == EPC_CFG_ACS)
-            return acse_acs_list(cfg_pars);
-        return acs_cpe_list(cfg_pars);
+        case EPC_CFG_MODIFY:
+        case EPC_CFG_OBTAIN:
+            if (cfg_pars->op.level == EPC_CFG_ACS)
+                return config_acs(cfg_pars);
+            return config_cpe(cfg_pars);
+        case EPC_CFG_LIST:
+            RING("acse_epc_config(): LIST... ");
+            if (cfg_pars->op.level == EPC_CFG_ACS)
+                return acse_acs_list(cfg_pars);
+            return acs_cpe_list(cfg_pars);
     }
 
     return 0;
@@ -965,7 +965,8 @@ epc_destroy(void *data)
     return acse_epc_close();
 }
 
-extern te_errno
+/* see description in acse_internal.h */
+te_errno
 acse_epc_disp_init(const char *msg_sock_name, const char *shmem_name)
 {
     channel_t  *channel = malloc(sizeof(channel_t));

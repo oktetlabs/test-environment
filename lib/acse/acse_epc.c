@@ -48,6 +48,11 @@
 
 #include "cwmp_data.h"
 
+
+#define EPC_MMAP_AREA "/epc_mmap_area"
+#define EPC_ACSE_SOCK "/tmp/epc_acse_sock"
+
+
 static int epc_socket = -1;
 static acse_epc_role_t epc_role = ACSE_EPC_SERVER;
 
@@ -182,6 +187,12 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
                               acse_epc_role_t role)
 {
     epc_role = role;
+
+    if (msg_sock_name == NULL)
+        msg_sock_name = strdup(EPC_ACSE_SOCK);
+
+    if (shmem_name == NULL)
+        shmem_name = strdup(EPC_MMAP_AREA);
 
     switch(role)
     {
