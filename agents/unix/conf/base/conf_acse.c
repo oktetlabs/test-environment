@@ -25,7 +25,7 @@
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
- * $Id: conf_acse.c 45424 2007-12-18 11:01:12Z edward $
+ * $Id$
  */
 
 #define TE_LGR_USER     "Conf ACSE"
@@ -1206,57 +1206,6 @@ acse_get(unsigned int gid, char const *oid,
     return 0;
 }
 
-/**
- * Create unix socket, bind it and connect it to another one if specified.
- *
- * @param unix_path     Unnix path to bind to
- * @param connect_to    Unix path to connect to
- *                      or NULL if no connection is needed
- *
- * @return              Socket or -1 in case of an error
- */
-static int
-unix_socket(char const *unix_path, char const *connect_to)
-{
-    int s = socket(AF_UNIX, SOCK_DGRAM, 0);
-
-    if (s != -1)
-    {
-        struct sockaddr_un addr = { .sun_family = AF_UNIX };
-
-        if (strlen(unix_path) < sizeof addr.sun_path)
-        {
-            int saved_errno;
-
-            strcpy(addr.sun_path, unix_path);
-
-            if (bind(s, (struct sockaddr *)&addr, sizeof addr) != -1)
-            {
-                if (connect_to == NULL)
-                    return s;
-
-                if (strlen(connect_to) < sizeof addr.sun_path)
-                {
-                    memset(addr.sun_path, 0, sizeof addr.sun_path);
-                    strcpy(addr.sun_path, connect_to);
-
-                    if (connect(s, (struct sockaddr *)&addr, sizeof addr) != -1)
-                      return s;
-                }
-                else
-                    errno = ENAMETOOLONG;
-            }
-
-            saved_errno = errno;
-            close(s);
-            errno = saved_errno;
-        }
-        else
-            errno = ENAMETOOLONG;
-    }
-
-    return -1;
-}
 
 /**
  * Create/open shared memory object and perform mapping for it.
