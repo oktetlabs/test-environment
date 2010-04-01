@@ -12,6 +12,9 @@
 #include<string.h>
 #include<ctype.h>
 #include<popt.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 
 #include "acse_epc.h"
@@ -26,7 +29,9 @@
 
 #include "logger_file.h"
 
-DEFINE_LGR_ENTITY("ACSE CLI");
+DEFINE_LGR_ENTITY("ACSE");
+
+#define TE_LGR_USER     "CLI"
 
 /* TODO some normal way to parse command line?.. */
 
@@ -541,17 +546,28 @@ cli_exit_handler(void)
 
 char *epc_sock_name = NULL;
 char *script_name = NULL;
+int   acse_fork = 0;
+
+char *cli_logfile = NULL;
+char *acse_logfile = NULL;
 
 struct poptOption acse_cli_opts[] = 
 {
     {"epc-socket", 'e', POPT_ARG_STRING, &epc_sock_name, 0,
             "filename for EPC socket", "EPC socket"},
+    {"fork",       'f', POPT_ARG_NONE,   &acse_fork, 0,
+            "filename for EPC socket", "EPC socket"},
     {"script",     's', POPT_ARG_STRING, &script_name, 0, 
             "filename with list of commands to perform before operation",
             "script"},
+#ifndef CLI_SINGLE
+    {"daemon-logfile",'d', POPT_ARG_STRING, &acse_logfile, 0,
+            "filename for ACSE daemon logfile", "CLI logfile"},
+#endif
+    {"cli-logfile",'c', POPT_ARG_STRING,   &cli_logfile, 0,
+            "filename for CLI logfile", "CLI logfile"},
     {NULL, 0, 0, NULL, 0, NULL, NULL}
 };
-
 
 
 int 
@@ -560,11 +576,61 @@ main(int argc, const char **argv)
     te_errno rc;
     int rpoll, rpopt;
     poptContext cont;
+    pid_t acse_main_pid = 0;
+    int acse_main_status;
 
     cont = poptGetContext(NULL, argc, argv, acse_cli_opts, 0);
     
     rpopt = poptGetNextOpt(cont); /* this really parse all command line */
 
+#ifndef CLI_SINGLE
+    if (acse_fork)
+    {
+        acse_main_pid = fork();
+        if (acse_main_pid == 0)
+        {
+
+            te_lgr_entity = "ACSE daemon";
+            if (acse_logfile != NULL)
+            {
+                FILE   *log_fd = fopen(acse_logfile, "a");
+                if (log_fd == NULL)
+                {
+                    perror("open ACSE logfile failed");
+                    exit(1);
+                }
+                te_log_message_file_out = log_fd;
+            }
+
+            if ((rc = acse_epc_disp_init(NULL, NULL)) != 0)
+            {
+                ERROR("Fail create EPC dispatcher %r", rc);
+                return 1;
+            }
+
+            acse_loop();
+            exit(0);
+        }
+        if (acse_main_pid < 0)
+        {
+            perror("fork failed");
+            exit(2);
+        }
+        /* Now we in CLI process, just continue.*/
+    }
+#endif /* CLI_SINGLE */
+    if (cli_logfile != NULL)
+    {
+        FILE   *log_fd = fopen(cli_logfile, "a");
+        if (log_fd == NULL)
+        {
+            perror("open CLI logfile failed");
+            exit(1);
+        }
+        te_log_message_file_out = log_fd;
+    }
+
+    sleep(1);
     if ((rc = acse_epc_open(epc_sock_name, NULL, ACSE_EPC_CLIENT))
         != 0)
     {
@@ -578,6 +644,7 @@ main(int argc, const char **argv)
     while (1)
     {
         struct pollfd pfd[2];
+
         pfd[0].fd = 0; /* stdin */
         pfd[0].events = POLLIN;
         pfd[0].revents = 0;
@@ -608,7 +675,7 @@ main(int argc, const char **argv)
             }
             if (pfd[1].revents)
             {
-                acse_epc_msg_t *msg_resp;
+                acse_epc_msg_t *msg_resp = NULL;
                 rc = acse_epc_recv(&msg_resp);
                 if (TE_RC_GET_ERROR(rc) == TE_ENOTCONN)
                     break;
@@ -628,10 +695,23 @@ main(int argc, const char **argv)
                         ERROR("Unexpected opcode 0x%x from EPC",
                              msg_resp->opcode);
                 }
+                free(msg_resp);
                 printf("\n> ");
             }
         }
     }
+    if ((rc = acse_epc_close()) != 0)
+    {
+        ERROR("CLI: EPC close failed %r", rc);
+    }
+#ifndef CLI_SINGLE
+    acse_main_status = 0;
+    waitpid(acse_main_pid, &acse_main_status, 0);
+    if (acse_main_status)
+    {
+        WARN("ACSE finished with status %d", acse_main_status);
+    }
+#endif
     return 0;
 }
 

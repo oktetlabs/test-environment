@@ -86,11 +86,22 @@ acse_remove_channel(channel_t *ch_item)
     ch_item->destroy(ch_item->data);
     free(ch_item);
 }
+/**
+ * normal exit handler, clear all resourcess, close connections, etc.
+ */
+static void
+acse_exit_handler(void)
+{
+    RING("Normal exit from CLI");
+    acse_clear_channels();
+    /* TODO close logger */
+}
 
 /* See description in acse.h */
 void
 acse_loop(void)
 {
+    atexit(acse_exit_handler);
     while(1)
     {
         int         r_poll;
@@ -140,8 +151,7 @@ acse_loop(void)
                 if (rc != 0)
                 {
                     if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
-                        WARN("acse_loop, error on channel, rc %r",
-                             rc);
+                        WARN("acse_loop, error on channel, rc %r", rc);
                     acse_remove_channel(item);
                     break;
                 }

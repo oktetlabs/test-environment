@@ -962,6 +962,7 @@ te_errno
 epc_destroy(void *data)
 {
     UNUSED(data);
+printf("EPC dispatcher destroy, pid %d\n", getpid()); 
     return acse_epc_close();
 }
 

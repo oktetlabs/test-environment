@@ -53,16 +53,16 @@
 #define EPC_ACSE_SOCK "/tmp/epc_acse_sock"
 
 
-static int epc_socket = -1;
-static acse_epc_role_t epc_role = ACSE_EPC_SERVER;
+int epc_socket = -1;
+acse_epc_role_t epc_role = ACSE_EPC_SERVER;
 
-static void *epc_shmem = NULL;
-static const char *epc_shmem_name = NULL;
-static size_t epc_shmem_size = 0;
+void *epc_shmem = NULL;
+const char *epc_shmem_name = NULL;
+size_t epc_shmem_size = 0;
 
 
-static const char *local_sock_name = NULL;
-static const char *remote_sock_name = NULL;
+const char *local_sock_name = NULL;
+const char *remote_sock_name = NULL;
 
 /**
  * Create unix socket, bind it and connect it to another one if specified.
@@ -192,7 +192,7 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
         msg_sock_name = strdup(EPC_ACSE_SOCK);
 
     if (shmem_name == NULL)
-        shmem_name = strdup(EPC_MMAP_AREA);
+        shmem_name = EPC_MMAP_AREA;
 
     switch(role)
     {
@@ -217,6 +217,7 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
     if (epc_shmem == NULL)
     {
         int saved_errno = errno;
+        fprintf(stderr, "open shared mem failed, errno %d\n", saved_errno);
         ERROR("open shared mem failed, errno %d", saved_errno);
         return TE_OS_RC(TE_ACSE, saved_errno);
     }
@@ -263,8 +264,11 @@ te_errno
 acse_epc_close(void)
 {
     close(epc_socket); epc_socket = -1;
-    shm_unlink(epc_shmem_name);
-    free((char *)epc_shmem_name); epc_shmem_name = NULL;
+    if (epc_shmem_name)
+    {
+        shm_unlink(epc_shmem_name);
+        free((char *)epc_shmem_name); epc_shmem_name = NULL;
+    }
     if (local_sock_name)
         unlink(local_sock_name);
     if (remote_sock_name && epc_role == ACSE_EPC_SERVER)
@@ -601,11 +605,11 @@ acse_epc_recv(acse_epc_msg_t **user_message)
     }
     if (recvrc == 0) /* Connection normally closed */
     {
-        RING("connection closed by peer");
+        RING("EPC recv: connection closed by peer");
         return TE_ENOTCONN;
     }
     if (recvrc != sizeof(message))
-        ERROR("EPC: wrong recv rc %d", (int)recvrc);
+        ERROR("EPC recv: wrong recv rc %d", (int)recvrc);
     /* TODO with this error should be done something more serious */
 
     switch (message.opcode) 

@@ -26,6 +26,12 @@
 
 DEFINE_LGR_ENTITY("ACSE");
 
+#ifdef TE_LGR_USER
+#undef TE_LGR_USER
+#endif
+
+#define TE_LGR_USER     "Single"
+
 
 #if 0
 #if 0
@@ -73,8 +79,6 @@ main(int argc, char **argv)
 
     te_errno rc;
 
-    atexit(acse_exit_handler);
-
     soap_ssl_init(); /* init OpenSSL (just once) */
 
     db_add_acs("ACS");
@@ -116,8 +120,6 @@ main(int argc, char **argv)
     cpe->cr_auth.login  = strdup(cpe->acs_auth.login);
     cpe->cr_auth.passwd = strdup(cpe->acs_auth.passwd);
             
-
-
     acse_enable_acs(acs);
 
     if ((rc = acse_epc_disp_init(msg_sock_name, NULL)) != 0)
