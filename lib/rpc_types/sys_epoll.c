@@ -52,7 +52,7 @@
                           EPOLLRDNORM | EPOLLWRNORM | \
                           EPOLLRDBAND | EPOLLWRBAND | \
                           EPOLLMSG | EPOLLERR | EPOLLHUP | \
-                          EPOLLET)
+                          EPOLLONESHOT | EPOLLET)
 
 uint32_t
 epoll_event_rpc2h(uint32_t events)
@@ -70,6 +70,7 @@ epoll_event_rpc2h(uint32_t events)
            (!!(events & RPC_EPOLLMSG) * EPOLLMSG) |
            (!!(events & RPC_EPOLLERR) * EPOLLERR) |
            (!!(events & RPC_EPOLLHUP) * EPOLLHUP) |
+           (!!(events & RPC_EPOLLONESHOT) * EPOLLONESHOT) |
            (!!(events & RPC_EPOLLET) * EPOLLET);
 }
 
@@ -87,6 +88,7 @@ epoll_event_h2rpc(uint32_t events)
            | (!!(events & EPOLLMSG) * RPC_EPOLLMSG)
            | (!!(events & EPOLLERR) * RPC_EPOLLERR)
            | (!!(events & EPOLLHUP) * RPC_EPOLLHUP)
+           | (!!(events & EPOLLONESHOT) * RPC_EPOLLONESHOT)
            | (!!(events & EPOLLET) * RPC_EPOLLET)
            ;
 }

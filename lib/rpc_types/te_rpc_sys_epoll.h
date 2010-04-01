@@ -45,23 +45,24 @@ extern "C" {
 #define RPC_EPOLL_CTL_MOD 3
 
 typedef enum rpc_epoll_evt {
-    RPC_EPOLLIN     = 0x001,
-    RPC_EPOLLPRI    = 0x002,
-    RPC_EPOLLOUT    = 0x004,
+    RPC_EPOLLIN      = 0x001,
+    RPC_EPOLLPRI     = 0x002,
+    RPC_EPOLLOUT     = 0x004,
 
-    RPC_EPOLLRDNORM = 0x040,
-    RPC_EPOLLRDBAND = 0x080,
-    RPC_EPOLLWRNORM = 0x100,
-    RPC_EPOLLWRBAND = 0x200,
+    RPC_EPOLLRDNORM  = 0x040,
+    RPC_EPOLLRDBAND  = 0x080,
+    RPC_EPOLLWRNORM  = 0x100,
+    RPC_EPOLLWRBAND  = 0x200,
 
-    RPC_EPOLLMSG    = 0x400,
+    RPC_EPOLLMSG     = 0x400,
 
-    RPC_EPOLLERR    = 0x008,
-    RPC_EPOLLHUP    = 0x010,
+    RPC_EPOLLERR     = 0x008,
+    RPC_EPOLLHUP     = 0x010,
 
     RPC_EPOLL_UNKNOWN = 0x800,  /**< Invalid poll event */
 
-    RPC_EPOLLET     = (1<<31)
+    RPC_EPOLLONESHOT = (1 << 30),
+    RPC_EPOLLET      = (1 << 31)
 } rpc_epoll_evt;
 
 /** All known poll events */
@@ -69,7 +70,8 @@ typedef enum rpc_epoll_evt {
                               RPC_EPOLLRDNORM | RPC_EPOLLWRNORM | \
                               RPC_EPOLLRDBAND | RPC_EPOLLWRBAND | \
                               RPC_EPOLLMSG | \
-                              RPC_EPOLLERR | RPC_EPOLLHUP | RPC_EPOLLET)
+                              RPC_EPOLLERR | RPC_EPOLLHUP | \
+                              EPOLLONESHOT | RPC_EPOLLET)
 
 /** List of mapping numerical value to string for 'rpc_poll_event' */
 #define EPOLL_EVENT_MAPPING_LIST \
@@ -83,6 +85,7 @@ typedef enum rpc_epoll_evt {
             RPC_BIT_MAP_ENTRY(EPOLLERR), \
             RPC_BIT_MAP_ENTRY(EPOLLHUP), \
             RPC_BIT_MAP_ENTRY(EPOLLMSG), \
+            RPC_BIT_MAP_ENTRY(EPOLLONESHOT), \
             RPC_BIT_MAP_ENTRY(EPOLLET), \
             RPC_BIT_MAP_ENTRY(EPOLL_UNKNOWN)
 

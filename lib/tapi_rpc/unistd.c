@@ -1284,8 +1284,6 @@ rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
     {
         *str_buf_1 = '\0';
     }
-    /* TODO: write analog for pollreq2str function */
-
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_wait, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_wait(%d, %p, %d, %d) -> %d (%s) %s",
