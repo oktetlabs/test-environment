@@ -23,6 +23,7 @@
  * MA  02111-1307  USA
  *
  *
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
  * $Id$
