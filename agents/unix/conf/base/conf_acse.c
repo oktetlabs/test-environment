@@ -63,24 +63,26 @@
 #include "rcf_pch.h"
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
-#include "acse.h"
+#include "te_cwmp.h"
+#include "acse_epc.h"
 #include "tarpc.h"
 
+#if 0
 /** The ACSE instance */
 static struct {
     pid_t     pid;         /**< ACSE process ID                         */
-    params_t *params;      /**< Parameters passed through shared memory */
-    long      params_size; /**< Shared memory region size               */
-    int       sock;        /**< Synchronization socket for LRPC         */
-} acse_inst = { .pid = -1, .params = NULL, .params_size = 0, .sock = -1 };
+} acse_inst = { .pid = -1, .params = NULL, .params_size = 0,
+                .sock = -1, .acse = 0 };
+#endif
+
+/** Process ID of ACSE */
+static pid_t acse_pid = -1;
 
 /** Shared memory name */
-static char const lrpc_mmap_area[] = LRPC_MMAP_AREA;
+const char *epc_mmap_area = NULL;
 
 /** Unix socket names for ACSE, TA and RPC */
-static char const lrpc_acse_sock[] = LRPC_ACSE_SOCK;
-static char const lrpc_ta_sock[]   = LRPC_TA_SOCK;
-static char const lrpc_rpc_sock[]  = LRPC_RPC_SOCK;
+const char *epc_acse_sock = NULL;
 
 /**
  * Initializes the list of instances to be empty.
@@ -110,52 +112,9 @@ empty_list(char **list)
 static inline te_bool
 acse_value(void)
 {
-    return acse_inst.params != NULL &&
-           acse_inst.params->acse != 0 ? TRUE : FALSE;
+    return (acse_pid != -1) && (acse_epc_socket() > 0);
 }
 
-/**
- * Initializes the list of instances to be empty.
- *
- * @param fun           The particular fun to call
- *
- * @return              Status code
- */
-static te_errno
-call_fun(acse_fun_t fun)
-{
-    te_errno rc;
-
-    if (!acse_value())
-        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
-
-    switch (write(acse_inst.sock, &fun, sizeof fun))
-    {
-        case -1:
-            ERROR("Failed to call ACSE over LRPC: %s", strerror(errno));
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        case sizeof fun:
-            break;
-        default:
-            ERROR("Failed to call ACSE over LRPC");
-            return TE_RC(TE_TA_UNIX, TE_EUNKNOWN);
-    }
-
-    switch (read(acse_inst.sock, &rc, sizeof rc))
-    {
-        case -1:
-            ERROR("Failed to return from ACSE call over LRPC: %s",
-                  strerror(errno));
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        case sizeof rc:
-            break;
-        default:
-            ERROR("Failed to return from ACSE call over LRPC");
-            return TE_RC(TE_TA_UNIX, TE_EUNKNOWN);
-    }
-
-    return rc;
-}
 
 /**
  * Initializes acse params substructure with the supplied parameters.
@@ -168,35 +127,34 @@ call_fun(acse_fun_t fun)
  * @return              Status code
  */
 static te_errno
-prepare_params(unsigned int gid, char const *oid,
+prepare_params(acse_epc_config_data_t *config_params,
+               char const *oid,
                char const *acs, char const *cpe)
 {
-    acse_inst.params->gid = gid;
-
-    if (strlen(oid) >= sizeof acse_inst.params->oid)
+    if (strlen(oid) >= sizeof(config_params->oid))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strcpy(acse_inst.params->oid, oid);
+    strcpy(config_params->oid, oid);
 
     if (acs != NULL)
     {
-        if (strlen(acs) >= sizeof acse_inst.params->acs)
+        if (strlen(acs) >= sizeof(config_params->acs))
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-        strcpy(acse_inst.params->acs, acs);
+        strcpy(config_params->acs, acs);
     }
     else
-        *acse_inst.params->acs = '\0';
+        config_params->acs[0] = '\0';
 
     if (cpe != NULL)
     {
-        if (strlen(cpe) >= sizeof acse_inst.params->cpe)
+        if (strlen(cpe) >= sizeof(config_params->cpe))
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-        strcpy(acse_inst.params->cpe, cpe);
+        strcpy(config_params->cpe, cpe);
     }
     else
-        *acse_inst.params->cpe = '\0';
+        config_params->cpe[0] = '\0';
 
     return 0;
 }
@@ -204,7 +162,6 @@ prepare_params(unsigned int gid, char const *oid,
 /**
  * Initializes the list of instances to be empty.
  *
- * @param gid           Group identifier
  * @param oid           Object identifier
  * @param value         The value of the instance to get
  * @param acs           Name of the acs instance
@@ -214,10 +171,10 @@ prepare_params(unsigned int gid, char const *oid,
  * @return              Status code
  */
 static te_errno
-call_get(unsigned int gid, char const *oid, char *value,
-         char const *acs, char const *cpe, acse_fun_t fun)
+call_get( char const *oid, char *value,
+         char const *acs, char const *cpe)
 {
-    te_errno rc = prepare_params(gid, oid, acs, cpe);
+    te_errno rc = prepare_params( oid, acs, cpe);
 
     if (rc != 0 || (rc = call_fun(fun)) != 0)
         return rc;
@@ -1366,16 +1323,30 @@ static te_errno
 start_acse(void)
 {
     te_errno rc = 0;
-    int      sock_ta;
-    int      sock_acse;
 
-    shm_unlink(lrpc_mmap_area);
-    unlink(lrpc_acse_sock);
-    unlink(lrpc_ta_sock);
+    acse_pid = fork();
+    if (acse_pid == 0) /* we are in child */
+    {
+        rcf_pch_detach();
+        setpgid(0, 0);
+        logfork_register_user("ACSE");
+        if ((rc = acse_epc_disp_init(NULL, NULL)) != 0)
+        {
+            ERROR("Fail create EPC dispatcher %r", rc);
+            exit(1);
+        }
 
-    long  size = sizeof *acse_inst.params;
-    void *p = shared_mem(TRUE, &size);
-
+        acse_loop();
+        exit(0); 
+    }
+    if (acse_pid == -1)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("%s: fork() failed: %r", __FUNCTION__, rc);
+        return rc;
+    }
+    
+#if 0
     if (p != NULL)
     {
         memset(p, 0, size);
@@ -1406,7 +1377,7 @@ start_acse(void)
                     default:
                         acse_inst.params = p;
                         acse_inst.params_size = size;
-                        acse_inst.params->acse = 1;
+                        acse_inst.acse = 1;
                         acse_inst.sock = sock_ta;
                         close(sock_acse);
                         break;
@@ -1420,6 +1391,7 @@ start_acse(void)
     }
     else
         rc = TE_OS_RC(TE_TA_UNIX, errno);
+#endif
 
     return rc;
 }
@@ -1433,49 +1405,26 @@ static te_errno
 stop_acse(void)
 {
     te_errno rc = 0;
+    int acse_status = 0;
 
-    if (acse_inst.pid != -1)
+    if (-1 == acse_pid)
+        return 0; /* nothing to do */
+
+    if ((rc = acse_epc_close()) != 0)
     {
-        if (kill(-acse_inst.pid, SIGTERM) == 0)
+        ERROR("Stop ACSE, EPC close failed %r, now try to kill", rc);
+        if (kill(acse_pid, SIGTERM))
         {
-            RING("Sent SIGTERM to the process with PID = %u",
-                 acse_inst.pid);
-            acse_inst.pid = -1;
-        }
-        else
-        {
-            rc = TE_OS_RC(TE_TA_UNIX, errno);
-            ERROR("Failed to send SIGTERM to the process with "
-                  "PID = %u: %r", acse_inst.pid, rc);
-
-            if (kill(-acse_inst.pid, SIGKILL) == 0)
-            {
-                RING("Sent SIGKILL to the process with PID = %u",
-                     acse_inst.pid);
-                acse_inst.pid = -1;
-            }
-            else
-            {
-                rc = TE_OS_RC(TE_TA_UNIX, errno);
-                ERROR("Failed to send SIGKILL to the process with "
-                      "PID = %u: %r", acse_inst.pid, rc);
-            }
+            int saved_errno = errno;
+            ERROR("ACSE kill failed %s", strerror(saved_errno));
+            /* failed to stop ACSE, just return ... */
+            return TE_OS_RC(TE_TA_UNIX, saved_errno);
         }
     }
+    waitpid(acse_pid, &acse_status, 0);
 
-    if (rc == 0)
-    {
-        acse_inst.params->acse = 0;
-        munmap(acse_inst.params, acse_inst.params_size);
-        acse_inst.params = NULL;
-        acse_inst.params_size = 0;
-        shm_unlink(lrpc_mmap_area);
-        unlink(lrpc_acse_sock);
-        unlink(lrpc_ta_sock);
-        unlink(lrpc_rpc_sock);
-        close(acse_inst.sock);
-        acse_inst.sock = -1;
-    }
+    if (acse_status)
+        WARN("ACSE exit status %d", acse_status);
 
     return rc;
 }
@@ -1647,7 +1596,7 @@ lrpc_rpc_init(void)
         return FALSE;
     }
 
-    if (acse_inst.params->acse == 0)
+    if (acse_inst.acse == 0)
     {
         errno = ENOSYS;
         return FALSE;

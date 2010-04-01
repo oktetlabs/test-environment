@@ -903,8 +903,10 @@ epc_after_poll(void *data, struct pollfd *pfd)
         if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
             ERROR("%s(): failed to get EPC message %r",
                   __FUNCTION__, rc);
+#if 0 /* Will normal break from main loop.*/
         else /* Normal close of EPC connection leads to ACSE stop */
             exit(0);
+#endif
 
         return TE_RC(TE_ACSE, rc);
     }

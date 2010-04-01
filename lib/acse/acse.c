@@ -102,7 +102,9 @@ void
 acse_loop(void)
 {
     atexit(acse_exit_handler);
-    while(1)
+    /* EPC pipe should be already established */
+
+    while(acse_epc_sock() > 0)
     {
         int         r_poll;
         int         i;
@@ -153,7 +155,7 @@ acse_loop(void)
                     if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
                         WARN("acse_loop, error on channel, rc %r", rc);
                     acse_remove_channel(item);
-                    break;
+                    break; /* from LIST_FOREACH */
                 }
             }
 
@@ -166,6 +168,7 @@ acse_loop(void)
 
         free(pfd);
     }
+    acse_clear_channels();
 }
 
 

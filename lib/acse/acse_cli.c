@@ -31,6 +31,9 @@
 
 DEFINE_LGR_ENTITY("ACSE");
 
+#ifdef TE_LGR_USER
+#undef TE_LGR_USER
+#endif
 #define TE_LGR_USER     "CLI"
 
 /* TODO some normal way to parse command line?.. */
@@ -630,7 +633,6 @@ main(int argc, const char **argv)
         te_log_message_file_out = log_fd;
     }
 
-    sleep(1);
     if ((rc = acse_epc_open(epc_sock_name, NULL, ACSE_EPC_CLIENT))
         != 0)
     {

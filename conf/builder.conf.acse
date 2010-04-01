@@ -4,11 +4,11 @@ TE_TOOLS([rgt trc tce])
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [], [])
 TE_APP_PARMS([tester], [--with-trc])
 
-TE_PLATFORM([], [], [], [], [],
+TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
             [tools logic_expr ipc bsapi loggerten rpcxdr rpc_types \
              rcfapi conf_oid confapi tapi comm_net_engine rcfunix \
              loggerta comm_net_agent rcfpch asn ndn tad rcfrpc \
-             tapi_rpc tapi_env tapi_tad trc acse])
+             tapi_rpc tapi_env tapi_tad trc acse netconf])
 
 TE_LIB_PARMS([tad], [], [],
              [--with-dhcp], [], [], [])
@@ -19,7 +19,7 @@ TE_LIB_PARMS([tapi_tad], [], [],
 
 TE_TA_TYPE([linux], [], [unix],
            [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo' \
-            --with-tr069],
-           [], [], [], [comm_net_agent ndn asn])
+            --with-tr069 --with-libnetconf],
+           [], [], [], [comm_net_agent ndn asn acse_epc acse_cwmp])
 
 
