@@ -52,6 +52,7 @@
 
 #include <string.h>
 #include <fcntl.h>
+#include <poll.h>
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -85,11 +86,113 @@ const char *epc_mmap_area = NULL;
 /** Unix socket names for ACSE, TA and RPC */
 const char *epc_acse_sock = NULL;
 
+/* Methods declarations */
+
+static te_errno prepare_params(acse_epc_config_data_t *config_params,
+                               char const *oid,
+                               char const *acs, char const *cpe);
+
+/**
+ * Perform EPC configuration method and wait for result, 
+ * which should come ASAP. 
+ * Note: here is hardcoded timeout to wait response. 
+ * TODO: think, maybe, make this timeout configurable?
+ *
+ * @return              Status code
+ */
+te_errno
+conf_acse_call(char const *oid, char const *acs, char const *cpe,
+               const char *value,
+               acse_cfg_op_t fun,
+               acse_epc_config_data_t **cfg_result)
+{
+    te_errno    rc;
+
+    acse_epc_msg_t          msg;
+    acse_epc_msg_t         *msg_resp;
+    acse_epc_config_data_t  cfg_data;
+    acse_cfg_level_t        level;
+
+
+    if (NULL == cfg_result)
+        return TE_EINVAL;
+
+    if (EPC_CFG_MODIFY == fun && NULL == value)
+        return TE_EINVAL;
+
+    if (EPC_CFG_LIST == fun)
+    {
+        if (acs != NULL && acs[0]) /* check is there ACS label */
+            level = EPC_CFG_CPE; /* ACS specified, get list of its CPE */
+        else
+            level = EPC_CFG_ACS; /* ACS not specified, get list of ACS */
+    }
+    else
+    {
+        if (cpe != NULL && cpe[0]) /* check is there CPE label */
+            level = EPC_CFG_CPE; 
+        else
+            level = EPC_CFG_ACS;
+    }
+    msg.opcode = EPC_CONFIG_CALL;
+    msg.data.cfg = &cfg_data;
+    msg.length = sizeof(cfg_data);
+    msg.status = 0;
+
+    cfg_data.op.magic = EPC_CONFIG_MAGIC;
+    cfg_data.op.level = level;
+    cfg_data.op.fun = fun;
+
+    rc = prepare_params(&cfg_data, oid, acs, cpe);
+    if (rc != 0)
+    {
+        ERROR("wrong labels passed to ACSE configurator subtree");
+        return rc;
+    }
+    if (EPC_CFG_MODIFY == fun)
+        strncpy(cfg_data.value, value, sizeof(cfg_data.value));
+
+    acse_epc_send(&msg);
+
+    {
+        int             epc_socket = acse_epc_socket();
+        struct timespec epc_ts = {0, 1000000}; /* 1 ms */
+        struct pollfd   pfd = {0, POLLIN, 0};
+        int             pollrc;
+
+        pfd.fd = epc_socket;
+        pollrc = ppoll(&pfd, 1, &epc_ts, NULL);
+        if (pollrc < 0)
+        {
+            int saved_errno = errno;
+            ERROR("poll on EPC socket failed, sys errno: %s",
+                    strerror(saved_errno));
+            return TE_OS_RC(TE_TA_UNIX, saved_errno);
+        }
+        if (pollrc == 0)
+        {
+            ERROR("config EPC operation timed out");
+            return TE_RC(TE_TA_UNIX, TE_ETIMEDOUT);
+        }
+    }
+
+    rc = acse_epc_recv(&msg_resp);
+    if (rc != 0)
+    {
+        ERROR("EPC recv failed %r", rc);
+        return rc;
+    }
+
+    *cfg_result = msg_resp->data.cfg;
+    free(msg_resp);
+    return 0;
+}
+
 /**
  * Initializes the list of instances to be empty.
  *
  * @param list          The list of instances
- *
+ * 
  * @return              Status code
  */
 static te_errno
@@ -161,140 +264,56 @@ prepare_params(acse_epc_config_data_t *config_params,
 }
 
 /**
- * Initializes the list of instances to be empty.
+ * Perform ACSE Config Get operation via EPC interface.
  *
+ * @param gid           Group identifier (unused)
  * @param oid           Object identifier
- * @param value         The value of the instance to get
+ * @param value         The value of the instance to get (OUT)
+ * @param acse          Name of the acse instance (unused)
  * @param acs           Name of the acs instance
- * @param cpe           Name of the cpe instance
- * @param fun           The particular fun to call
+ * @param cpe           Name of the acs cpe instance
  *
  * @return              Status code
  */
 static te_errno
-call_get( char const *oid, char *value,
-         char const *acs, char const *cpe)
+cfg_call_get(unsigned int gid, const char *oid, char *value,
+             const char *acse, const char *acs, const char *cpe)
 {
-    te_errno rc = prepare_params( oid, acs, cpe);
+    te_errno rc;
 
-    if (rc != 0 || (rc = call_fun(fun)) != 0)
-        return rc;
+    acse_epc_config_data_t *cfg_result = NULL;
 
-    strcpy(value, acse_inst.params->value);
-    return 0;
-}
+    UNUSED(gid);
+    UNUSED(acse);
 
-/**
- * Initializes the list of instances to be empty.
- *
- * @param gid           Group identifier
- * @param oid           Object identifier
- * @param value         The value of the instance to set
- * @param acs           Name of the acs instance
- * @param cpe           Name of the cpe instance
- * @param fun           The particular fun to call
- *
- * @return              Status code
- */
-static te_errno
-call_set(unsigned int gid, char const *oid, char const *value,
-         char const *acs, char const *cpe, acse_fun_t fun)
-{
-    te_errno rc = prepare_params(gid, oid, acs, cpe);
-
+    rc = conf_acse_call(oid, acs, cpe, NULL, EPC_CFG_OBTAIN, &cfg_result);
     if (rc != 0)
-        return rc;
-
-    if (strlen(value) >= sizeof acse_inst.params->value)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    strcpy(acse_inst.params->value, value);
-    return call_fun(fun);
-}
-
-/**
- * Initializes the list of instances to be empty.
- *
- * @param gid           Group identifier
- * @param oid           Object identifier
- * @param value         The value of the instance to set
- * @param acs           Name of the acs instance
- * @param cpe           Name of the cpe instance
- * @param fun           The particular fun to call
- *
- * @return              Status code
- */
-static te_errno
-call_add(unsigned int gid, char const *oid, char const *value,
-         char const *acs, char const *cpe, acse_fun_t fun)
-{
-    return call_set(gid, oid, value, acs, cpe, fun);
-}
-
-/**
- * Initializes the list of instances to be empty.
- *
- * @param gid           Group identifier
- * @param oid           Object identifier
- * @param acs           Name of the acs instance
- * @param cpe           Name of the cpe instance
- * @param fun           The particular fun to call
- *
- * @return              Status code
- */
-static te_errno
-call_del(unsigned int gid, char const *oid,
-         char const *acs, char const *cpe, acse_fun_t fun)
-{
-    te_errno rc = prepare_params(gid, oid, acs, cpe);
-
-    if (rc != 0)
-        return rc;
-
-    return call_fun(fun);
-}
-
-/**
- * Initializes the list of instances to be empty.
- *
- * @param gid           Group identifier
- * @param oid           Object identifier
- * @param list          The list of acses/cpes/sessions
- * @param acs           Name of the acs instance
- * @param fun           The particular fun to call
- *
- * @return              Status code
- */
-static te_errno
-call_list(unsigned int gid, char const *oid, char **list,
-          char const *acs, acse_fun_t fun)
-{
-    if (acse_value())
     {
-        te_errno rc = prepare_params(gid, oid, acs, NULL);
-
-        if (rc == 0 && (rc = call_fun(fun)) == 0)
-        {
-            char *l = strdup(acse_inst.params->list);
-
-            if (l == NULL)
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-            *list = l;
-        }
-
+        WARN("ACSE config EPC failed %r", rc);
         return rc;
     }
 
-    return empty_list(list);
+    strcpy(value, cfg_result->value);
+
+    free(cfg_result);
+
+    return 0;
 }
 
+static te_errno
+cfg_acs_call_get(unsigned int gid, const char *oid, char *value,
+                 const char *acse, const char *acs)
+{
+    return cfg_call_get(gid, oid, value, acse, acs, NULL);
+}
+
+
 /**
- * Get the session 'hold_requests' flag.
+ * Perform ACSE Config Get operation via EPC interface.
  *
  * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the sesion 'hold_requests' flag
+ * @param oid           Object identifier
+ * @param value         The value of the instance to set 
  * @param acse          Name of the acse instance (unused)
  * @param acs           Name of the acs instance
  * @param cpe           Name of the acs cpe instance
@@ -302,468 +321,64 @@ call_list(unsigned int gid, char const *oid, char **list,
  * @return              Status code
  */
 static te_errno
-session_hold_requests_get(unsigned int gid, char const *oid,
-                          char *value, char const *acse,
-                          char const *acs, char const *cpe)
+cfg_call_set(unsigned int gid, const char *oid, char *value,
+             const char *acse, const char *acs, const char *cpe)
 {
+    te_errno rc;
+
+    acse_epc_config_data_t *cfg_result = NULL;
+
+    UNUSED(gid);
     UNUSED(acse);
 
-    return call_get(gid, oid, value, acs, cpe,
-                    session_hold_requests_get_fun);
+    rc = conf_acse_call(oid, acs, cpe, value, EPC_CFG_MODIFY, &cfg_result);
+    if (rc != 0)
+    {
+        WARN("ACSE config EPC failed %r", rc);
+        return rc;
+    }
+
+    free(cfg_result);
+
+    return 0;
 }
 
-/**
- * Set the session 'hold_requests' flag.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the session 'hold_requests' flag
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return      Status code.
- */
 static te_errno
-session_hold_requests_set(unsigned int gid, char const *oid,
-                          char const *value, char const *acse,
-                          char const *acs, char const *cpe)
+cfg_acs_call_set(unsigned int gid, const char *oid, char *value,
+                 const char *acse, const char *acs)
 {
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, cpe,
-                    session_hold_requests_set_fun);
+    return cfg_call_set(gid, oid, value, acse, acs, NULL);
 }
 
 /**
- * Get the session 'enabled' flag.
+ * Get list of ACS ojects or CPE records from ACSE.
  *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the session 'enabled' flag
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
+ * @param gid           Group identifier
+ * @param oid           Object identifier
+ * @param list          The list of acses/cpes
+ * @param acs           Name of the acs instance or NULL
  *
  * @return              Status code
  */
 static te_errno
-session_enabled_get(unsigned int gid, char const *oid,
-                    char *value, char const *acse,
-                    char const *acs, char const *cpe)
+call_list(char **list, char const *acs)
 {
-    UNUSED(acse);
+    te_errno rc;
+    acse_epc_config_data_t  *cfg_result = NULL;
 
-    return call_get(gid, oid, value, acs, cpe,
-                    session_enabled_get_fun);
+    if (!acse_value())
+        return empty_list(list);
+
+    rc = conf_acse_call(NULL, acs, NULL, NULL, EPC_CFG_LIST, &cfg_result);
+    if (rc == 0)
+        *list = strdup(cfg_result->list);
+
+    return rc;
 }
 
-/**
- * Set the session 'enabled' flag.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the session 'enabled' flag
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return      Status code.
- */
-static te_errno
-session_enabled_set(unsigned int gid, char const *oid,
-                    char const *value, char const *acse,
-                    char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, cpe,
-                    session_enabled_set_fun);
-}
 
 /**
- * Get the session target_state.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the session target_state
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return              Status code
- */
-static te_errno
-session_target_state_get(unsigned int gid, char const *oid,
-                         char *value, char const *acse,
-                         char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, cpe,
-                    session_target_state_get_fun);
-}
-
-/**
- * Set the session target_state.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the session target_state
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return      Status code.
- */
-static te_errno
-session_target_state_set(unsigned int gid, char const *oid,
-                         char const *value, char const *acse,
-                         char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, cpe,
-                    session_target_state_set_fun);
-}
-
-/**
- * Get the session state.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the session state
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return              Status code
- */
-static te_errno
-session_state_get(unsigned int gid, char const *oid,
-                  char *value, char const *acse,
-                  char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, cpe,
-                    session_state_get_fun);
-}
-
-/**
- * Get the device ID serial nuber.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the device ID serial number
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return              Status code
- */
-static te_errno
-device_id_serial_number_get(unsigned int gid, char const *oid,
-                            char *value, char const *acse,
-                            char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, cpe,
-                    device_id_serial_number_get_fun);
-}
-
-/**
- * Get the device ID product class.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the device ID product class
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return              Status code
- */
-static te_errno
-device_id_product_class_get(unsigned int gid, char const *oid,
-                            char *value, char const *acse,
-                            char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, cpe,
-                    device_id_product_class_get_fun);
-}
-
-/**
- * Get the device ID organizational unique ID.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the device ID organizational unique ID
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return              Status code
- */
-static te_errno
-device_id_oui_get(unsigned int gid, char const *oid,
-                  char *value, char const *acse,
-                  char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, cpe,
-                    device_id_oui_get_fun);
-}
-
-/**
- * Get the device ID manufacturer.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the device ID manufacturer
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return              Status code
- */
-static te_errno
-device_id_manufacturer_get(unsigned int gid, char const *oid,
-                           char *value, char const *acse,
-                           char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, cpe,
-                    device_id_manufacturer_get_fun);
-}
-
-/**
- * Get the cpe password.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the cpe password
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return              Status code
- */
-static te_errno
-cpe_pass_get(unsigned int gid, char const *oid,
-             char *value, char const *acse,
-             char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, cpe, cpe_pass_get_fun);
-}
-
-/**
- * Set the cpe password.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the cpe password
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return      Status code.
- */
-static te_errno
-cpe_pass_set(unsigned int gid, char const *oid,
-             char const *value, char const *acse,
-             char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, cpe, cpe_pass_set_fun);
-}
-
-/**
- * Get the cpe user name.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the cpe user name
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return              Status code
- */
-static te_errno
-cpe_user_get(unsigned int gid, char const *oid,
-             char *value, char const *acse,
-             char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, cpe, cpe_user_get_fun);
-}
-
-/**
- * Set the cpe user name.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the cpe user name
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return      Status code.
- */
-static te_errno
-cpe_user_set(unsigned int gid, char const *oid,
-             char const *value, char const *acse,
-             char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, cpe, cpe_user_set_fun);
-}
-
-/**
- * Get the cpe certificate.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the cpe certificate
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return              Status code
- */
-static te_errno
-cpe_cert_get(unsigned int gid, char const *oid,
-             char *value, char const *acse,
-             char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, cpe, cpe_cert_get_fun);
-}
-
-/**
- * Set the cpe certificate.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the cpe certificate
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return      Status code.
- */
-static te_errno
-cpe_cert_set(unsigned int gid, char const *oid,
-             char const *value, char const *acse,
-             char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, cpe, cpe_cert_set_fun);
-}
-
-/**
- * Get the cpe url.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the cpe url
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return              Status code
- */
-static te_errno
-cpe_url_get(unsigned int gid, char const *oid,
-            char *value, char const *acse,
-            char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, cpe, cpe_url_get_fun);
-}
-
-/**
- * Set the cpe url.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the cpe url
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return      Status code.
- */
-static te_errno
-cpe_url_set(unsigned int gid, char const *oid,
-            char const *value, char const *acse,
-            char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, cpe, cpe_url_set_fun);
-}
-
-/**
- * Get the cpe IP address.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the cpe IP address
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return              Status code
- */
-static te_errno
-cpe_ip_addr_get(unsigned int gid, char const *oid,
-                char *value, char const *acse,
-                char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, cpe, cpe_ip_addr_get_fun);
-}
-
-/**
- * Set the cpe IP address.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the cpe IP address
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- * @param cpe           Name of the acs cpe instance
- *
- * @return      Status code.
- */
-static te_errno
-cpe_ip_addr_set(unsigned int gid, char const *oid,
-                char const *value, char const *acse,
-                char const *acs, char const *cpe)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, cpe, cpe_ip_addr_set_fun);
-}
-
-/**
- * Add the acs cpe instance.
+ * Add the CPE record on ACSE
  *
  * @param gid           Group identifier (unused)
  * @param oid           Object identifier (unused)
@@ -776,12 +391,20 @@ cpe_ip_addr_set(unsigned int gid, char const *oid,
  */
 static te_errno
 acs_cpe_add(unsigned int gid, char const *oid,
-            char const *value, char const *acse,
-            char const *acs, char const *cpe)
+            char const *value, char const *acse, char const *acs,
+            char const *cpe)
 {
+    te_errno                 rc; 
+    acse_epc_config_data_t  *cfg_result = NULL;
+
+    UNUSED(gid);
     UNUSED(acse);
 
-    return call_set(gid, oid, value, acs, cpe, acs_cpe_add_fun);
+    rc = conf_acse_call(oid, acs, cpe, value, EPC_CFG_ADD, &cfg_result);
+
+    free(cfg_result);
+
+    return rc;
 }
 
 /**
@@ -799,9 +422,16 @@ static te_errno
 acs_cpe_del(unsigned int gid, char const *oid,
             char const *acse, char const *acs, char const *cpe)
 {
+    te_errno rc; 
+    acse_epc_config_data_t *cfg_result = NULL;
+
+    UNUSED(gid);
     UNUSED(acse);
 
-    return call_del(gid, oid, acs, cpe, acs_cpe_del_fun);
+    rc = conf_acse_call(oid, acs, cpe, NULL, EPC_CFG_DEL, &cfg_result);
+    free(cfg_result);
+
+    return rc;
 }
 
 /**
@@ -819,290 +449,13 @@ static te_errno
 acs_cpe_list(unsigned int gid, char const *oid,
              char **list, char const *acse, char const *acs)
 {
+    UNUSED(gid);
+    UNUSED(oid);
     UNUSED(acse);
 
-    return call_list(gid, oid, list, acs, acs_cpe_list_fun);
+    return call_list(list, acs);
 }
 
-/**
- * Get the acs port value.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the acs port
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return              Status code
- */
-static te_errno
-acs_port_get(unsigned int gid, char const *oid,
-             char *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, NULL, acs_port_get_fun);
-}
-
-/**
- * Set the acs port value.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the acs port
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return      Status code.
- */
-static te_errno
-acs_port_set(unsigned int gid, char const *oid,
-             char const *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, NULL, acs_port_set_fun);
-}
-
-/**
- * Get the acs ssl flag.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the acs ssl flag
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return              Status code
- */
-static te_errno
-acs_ssl_get(unsigned int gid, char const *oid,
-            char *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, NULL, acs_ssl_get_fun);
-}
-
-/**
- * Set the acs ssl flag.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the acs ssl flag
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return      Status code.
- */
-static te_errno
-acs_ssl_set(unsigned int gid, char const *oid,
-            char const *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, NULL, acs_ssl_set_fun);
-}
-
-/**
- * Get the acs enabled flag.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the acs enabled flag
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return              Status code
- */
-static te_errno
-acs_enabled_get(unsigned int gid, char const *oid,
-                char *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, NULL, acs_enabled_get_fun);
-}
-
-/**
- * Set the acs enabled flag.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the acs enabled flag
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return      Status code.
- */
-static te_errno
-acs_enabled_set(unsigned int gid, char const *oid,
-                char const *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, NULL, acs_enabled_set_fun);
-}
-
-/**
- * Get the acs password.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the acs password
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return              Status code
- */
-static te_errno
-acs_pass_get(unsigned int gid, char const *oid,
-             char *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, NULL, acs_pass_get_fun);
-}
-
-/**
- * Set the acs password.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the acs password
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return      Status code.
- */
-static te_errno
-acs_pass_set(unsigned int gid, char const *oid,
-             char const *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, NULL, acs_pass_set_fun);
-}
-
-/**
- * Get the acs user name.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the acs user name
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return              Status code
- */
-static te_errno
-acs_user_get(unsigned int gid, char const *oid,
-             char *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, NULL, acs_user_get_fun);
-}
-
-/**
- * Set the acs user name.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the acs user name
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return      Status code.
- */
-static te_errno
-acs_user_set(unsigned int gid, char const *oid,
-             char const *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, NULL, acs_user_set_fun);
-}
-
-/**
- * Get the acs certificate value.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the acse certificate
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return              Status code
- */
-static te_errno
-acs_cert_get(unsigned int gid, char const *oid,
-             char *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, NULL, acs_cert_get_fun);
-}
-
-/**
- * Set the acs certificate value.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the acs certificate
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return      Status code.
- */
-static te_errno
-acs_cert_set(unsigned int gid, char const *oid,
-             char const *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, NULL, acs_cert_set_fun);
-}
-
-/**
- * Get the acs url value.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         The value of the acs url
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return              Status code
- */
-static te_errno
-acs_url_get(unsigned int gid, char const *oid,
-            char *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_get(gid, oid, value, acs, NULL, acs_url_get_fun);
-}
-
-/**
- * Set the acs url value.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
- * @param value         New value of the acs url
- * @param acse          Name of the acse instance (unused)
- * @param acs           Name of the acs instance
- *
- * @return      Status code.
- */
-static te_errno
-acs_url_set(unsigned int gid, char const *oid,
-            char const *value, char const *acse, char const *acs)
-{
-    UNUSED(acse);
-
-    return call_set(gid, oid, value, acs, NULL, acs_url_set_fun);
-}
 
 /**
  * Add an acs instance.
@@ -1119,9 +472,17 @@ static te_errno
 acse_acs_add(unsigned int gid, char const *oid,
              char const *value, char const *acse, char const *acs)
 {
+    te_errno                 rc; 
+    acse_epc_config_data_t  *cfg_result = NULL;
+
+    UNUSED(gid);
     UNUSED(acse);
 
-    return call_add(gid, oid, value, acs, NULL, acse_acs_add_fun);
+    rc = conf_acse_call(oid, acs, NULL, value, EPC_CFG_ADD, &cfg_result);
+
+    free(cfg_result);
+
+    return rc;
 }
 
 /**
@@ -1137,9 +498,17 @@ static te_errno
 acse_acs_del(unsigned int gid, char const *oid,
              char const *acse, char const *acs)
 {
+    te_errno                 rc; 
+    acse_epc_config_data_t  *cfg_result = NULL;
+
+    UNUSED(gid);
     UNUSED(acse);
 
-    return call_del(gid, oid, acs, NULL, acse_acs_del_fun);
+    rc = conf_acse_call(oid, acs, NULL, NULL, EPC_CFG_DEL, &cfg_result);
+
+    free(cfg_result);
+
+    return rc;
 }
 
 /**
@@ -1156,9 +525,11 @@ static te_errno
 acse_acs_list(unsigned int gid, char const *oid,
               char **list, char const *acse)
 {
+    UNUSED(gid);
+    UNUSED(oid);
     UNUSED(acse);
 
-    return call_list(gid, oid, list, NULL, acse_acs_list_fun);
+    return call_list(list, NULL);
 }
 
 /**
@@ -1208,61 +579,6 @@ acse_get(unsigned int gid, char const *oid,
 }
 
 
-/**
- * Create/open shared memory object and perform mapping for it.
- *
- * @param create        Whether to create rather than open a memory object
- * @param size          Desired size that will be rounded up on success
- *
- * @return              Address of allocated memory
- *                      or NULL in case of an error
- */
-static void *
-shared_mem(te_bool create, long *size)
-{
-    void *shm_ptr = NULL;
-    int   shm_fd;
-
-    if (create)
-        shm_unlink(lrpc_mmap_area);
-
-    if ((shm_fd = shm_open(lrpc_mmap_area,
-                           (create ? (O_CREAT | O_EXCL) : 0) | O_RDWR,
-                           S_IRWXU | S_IRWXG | S_IRWXO)) != -1)
-    {
-        int  saved_errno;
-        long sz = sysconf(_SC_PAGESIZE);
-
-        if (sz != -1)
-        {
-            if (sz > 0)
-            {
-                sz = (*size / sz + (*size % sz ? 1 : 0)) * sz;
-
-                if (ftruncate(shm_fd, sz) != -1 &&
-                    (shm_ptr = mmap(NULL, sz, PROT_READ | PROT_WRITE,
-                                    MAP_SHARED, shm_fd, 0)) != MAP_FAILED)
-                {
-                    *size = sz;
-                }
-                else
-                    shm_ptr = NULL;
-            }
-            else
-                errno = EINVAL;
-        }
-
-        saved_errno = errno;
-        close(shm_fd);
-
-        if (shm_ptr == NULL && create)
-            shm_unlink(lrpc_mmap_area);
-
-        errno = saved_errno;
-    }
-
-    return shm_ptr;
-}
 
 /**
  * Initialize necessary entities and start ACSE.
@@ -1400,108 +716,107 @@ acse_set(unsigned int gid, char const *oid,
     UNUSED(oid);
     UNUSED(acse);
 
-    if ((new_acse_value && !old_acse_value) ||
-        (!new_acse_value && old_acse_value))
-    {
-        return (*(new_acse_value ? &start_acse : &stop_acse))();
-    }
+    if (new_acse_value && !old_acse_value) 
+        return start_acse();
+    if (!new_acse_value && old_acse_value)
+        return stop_acse();
 
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_session_hold_requests, "hold_requests",
+RCF_PCH_CFG_NODE_RO(node_cpe_connreq_status, "cr_state",
                     NULL, NULL,
-                    &session_hold_requests_get, &session_hold_requests_set);
+                    &cfg_call_get);
+
+RCF_PCH_CFG_NODE_RW(node_session_hold_requests, "hold_requests",
+                    NULL, &node_cpe_connreq_status,
+                    &cfg_call_get, &cfg_call_set);
 
 RCF_PCH_CFG_NODE_RW(node_session_enabled, "enabled",
                     NULL, &node_session_hold_requests,
-                    &session_enabled_get, &session_enabled_set);
+                    &cfg_call_get, &cfg_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_session_target_state, "target_state",
+RCF_PCH_CFG_NODE_RO(node_session_state, "cwmp_state",
                     NULL, &node_session_enabled,
-                    &session_target_state_get, &session_target_state_set);
-
-RCF_PCH_CFG_NODE_RO(node_session_state, "state",
-                    NULL, &node_session_target_state,
-                    &session_state_get);
-
-RCF_PCH_CFG_NODE_NA(node_cpe_session, "session",
-                    &node_session_state, NULL);
+                    &cfg_call_get);
 
 RCF_PCH_CFG_NODE_RO(node_device_id_serial_number, "serial_number",
                     NULL, NULL,
-                    &device_id_serial_number_get);
+                    &cfg_call_get);
 
 RCF_PCH_CFG_NODE_RO(node_device_id_product_class, "product_class",
                     NULL, &node_device_id_serial_number,
-                    &device_id_product_class_get);
+                    &cfg_call_get);
 
 RCF_PCH_CFG_NODE_RO(node_device_id_oui, "oui",
                     NULL, &node_device_id_product_class,
-                    &device_id_oui_get);
+                    &cfg_call_get);
 
 RCF_PCH_CFG_NODE_RO(node_device_id_manufacturer, "manufacturer",
                     NULL, &node_device_id_oui,
-                    &device_id_manufacturer_get);
+                    &cfg_call_get);
 
 RCF_PCH_CFG_NODE_NA(node_cpe_device_id, "device_id", 
-                    &node_device_id_manufacturer, &node_cpe_session);
+                    &node_device_id_manufacturer, &node_session_state);
 
-RCF_PCH_CFG_NODE_RW(node_cpe_pass, "pass", 
+RCF_PCH_CFG_NODE_RW(node_cpe_passwd, "passwd", 
                     NULL, &node_cpe_device_id,
-                    &cpe_pass_get, &cpe_pass_set);
+                    &cfg_call_get, &cfg_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_cpe_user, "user", 
-                    NULL, &node_cpe_pass,
-                    &cpe_user_get, &cpe_user_set);
+RCF_PCH_CFG_NODE_RW(node_cpe_login, "login", 
+                    NULL, &node_cpe_passwd,
+                    &cfg_call_get, &cfg_call_set);
+
+RCF_PCH_CFG_NODE_RW(node_cpe_cr_passwd, "cr_passwd", 
+                    NULL, &node_cpe_login,
+                    &cfg_call_get, &cfg_call_set);
+
+RCF_PCH_CFG_NODE_RW(node_cpe_cr_login, "cr_login", 
+                    NULL, &node_cpe_cr_passwd,
+                    &cfg_call_get, &cfg_call_set);
 
 RCF_PCH_CFG_NODE_RW(node_cpe_cert, "cert", 
-                    NULL, &node_cpe_user,
-                    &cpe_cert_get, &cpe_cert_set);
+                    NULL, &node_cpe_cr_login,
+                    &cfg_call_get, &cfg_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_cpe_url, "url", 
+RCF_PCH_CFG_NODE_RW(node_cpe_url, "cr_url", 
                     NULL, &node_cpe_cert,
-                    &cpe_url_get, &cpe_url_set);
-
-RCF_PCH_CFG_NODE_RW(node_cpe_ip_addr, "ip_addr", 
-                    NULL, &node_cpe_url,
-                    &cpe_ip_addr_get, &cpe_ip_addr_set);
+                    &cfg_call_get, &cfg_call_set);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_acs_cpe, "cpe",
-                            &node_cpe_ip_addr, NULL,
+                            &node_cpe_url, NULL,
                             &acs_cpe_add, &acs_cpe_del,
                             &acs_cpe_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_acs_port, "port", 
+
+
+
+RCF_PCH_CFG_NODE_RW(node_acs_cert, "ssl_cert", 
                     NULL, &node_acs_cpe,
-                    &acs_port_get, &acs_port_set);
+                    &cfg_acs_call_get, &cfg_acs_call_set);
 
 RCF_PCH_CFG_NODE_RW(node_acs_ssl, "ssl", 
-                    NULL, &node_acs_port,
-                    &acs_ssl_get, &acs_ssl_set);
+                    NULL, &node_acs_cert,
+                    &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_enabled, "enabled", 
+RCF_PCH_CFG_NODE_RW(node_acs_port, "port", 
                     NULL, &node_acs_ssl,
-                    &acs_enabled_get, &acs_enabled_set);
+                    &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_pass, "pass", 
-                    NULL, &node_acs_enabled,
-                    &acs_pass_get, &acs_pass_set);
-
-RCF_PCH_CFG_NODE_RW(node_acs_user, "user", 
-                    NULL, &node_acs_pass,
-                    &acs_user_get, &acs_user_set);
-
-RCF_PCH_CFG_NODE_RW(node_acs_cert, "cert", 
-                    NULL, &node_acs_user,
-                    &acs_cert_get, &acs_cert_set);
+RCF_PCH_CFG_NODE_RW(node_acs_auth_mode, "auth_mode", 
+                    NULL, &node_acs_port,
+                    &cfg_acs_call_get, &cfg_acs_call_set);
 
 RCF_PCH_CFG_NODE_RW(node_acs_url, "url", 
-                    NULL, &node_acs_cert,
-                    &acs_url_get, &acs_url_set);
+                    NULL, &node_acs_auth_mode,
+                    &cfg_acs_call_get, &cfg_acs_call_set);
+
+RCF_PCH_CFG_NODE_RW(node_acs_enabled, "enabled", 
+                    NULL, &node_acs_url,
+                    &cfg_acs_call_get, &cfg_acs_call_set);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_acse_acs, "acs",
-                            &node_acs_url, NULL,
+                            &node_acs_enabled, NULL,
                             &acse_acs_add, &acse_acs_del,
                             &acse_acs_list, NULL);
 
@@ -1524,6 +839,7 @@ ta_unix_conf_acse_init()
     return rcf_pch_add_node("/agent", &node_acse);
 }
 
+#if 0
 /** TR-069 stuff */
 
 /** Executive routines for mapping of the CPE CWMP RPC methods
@@ -2019,3 +1335,4 @@ cpe_get_options(tarpc_cpe_get_options_in *in,
 
     return 0;
 }
+#endif

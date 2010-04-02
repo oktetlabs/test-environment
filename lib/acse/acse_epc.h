@@ -78,6 +78,8 @@ typedef enum {
  * This struct should be stored in shared memory. 
  */
 typedef struct {
+    /* TODO: level seems unnecessaryhere, it could be obtained by 
+            presense of CPE name. Think about it, may be remove it? */
     struct {
         unsigned         magic:16; /**< Should contain EPC_CONFIG_MAGIC */
         acse_cfg_level_t level:2;  /**< Level of config operation */

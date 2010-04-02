@@ -637,10 +637,10 @@ struct config_cpe_item_t {
     {"passwd", cpe_acs_passwd},
     {"cr_login",  cpe_cr_login},
     {"cr_passwd", cpe_cr_passwd},
-    {"dev_serial_number", device_id_serial_number},
-    {"dev_product_class", device_id_product_class},
-    {"dev_oui", device_id_oui},
-    {"dev_manufacturer", device_id_manufacturer},
+    {"serial_number", device_id_serial_number},
+    {"product_class", device_id_product_class},
+    {"oui", device_id_oui},
+    {"manufacturer", device_id_manufacturer},
 }; 
 
 /**
