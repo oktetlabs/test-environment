@@ -65,9 +65,11 @@
 #include "rcf_pch.h"
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
+#include "tarpc.h"
 #include "te_cwmp.h"
 #include "acse_epc.h"
-#include "tarpc.h"
+
+
 
 #if 0
 /** The ACSE instance */

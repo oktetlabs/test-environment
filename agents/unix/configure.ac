@@ -457,7 +457,7 @@ AM_CONDITIONAL(CFG_TR069, test x"$with_tr069" != xno)
 AS_IF([test x"$with_tr069" != xno],
       [AC_DEFINE([WITH_TR069_SUPPORT], [], \
       [Whether to enable TR-069 support]) \
-      EXTRA_LDADD="$EXTRA_LDADD -lacse -lssl -lcrypto -lz"])
+      EXTRA_LDADD="$EXTRA_LDADD -lgsoapssl -lssl -lcrypto -lz"])
 
 AM_CONDITIONAL(ISCSI_TARGET_USE, test -n "$with_iscsi")
 if test -n "$with_iscsi"; then

@@ -53,8 +53,8 @@
 #define EPC_ACSE_SOCK "/tmp/epc_acse_sock"
 
 
-int epc_socket = -1;
-acse_epc_role_t epc_role = ACSE_EPC_SERVER;
+static int epc_socket = -1;
+static acse_epc_role_t epc_role = ACSE_EPC_SERVER;
 
 void *epc_shmem = NULL;
 const char *epc_shmem_name = NULL;
@@ -266,7 +266,7 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
 }
 
 int
-acse_epc_sock(void)
+acse_epc_socket(void)
 {
     return epc_socket;
 }

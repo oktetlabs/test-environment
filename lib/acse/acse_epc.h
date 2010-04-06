@@ -255,7 +255,7 @@ extern te_errno acse_epc_close(void);
  * Return EPC message socket fd for poll(). 
  * Do not read/write in it, use acse_epc_{send|recv}() instead.
  */
-extern int acse_epc_sock(void);
+extern int acse_epc_socket(void);
 
 /**
  * Send message to other site in EPC connection. 

@@ -650,7 +650,7 @@ main(int argc, const char **argv)
         pfd[0].fd = 0; /* stdin */
         pfd[0].events = POLLIN;
         pfd[0].revents = 0;
-        pfd[1].fd = acse_epc_sock();
+        pfd[1].fd = acse_epc_socket();
         pfd[1].events = POLLIN;
         pfd[1].revents = 0;
 
