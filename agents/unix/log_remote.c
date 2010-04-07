@@ -68,7 +68,7 @@
 
 
 /** Maximum length of accumulated log */
-#define LOG_REMOTE_MAX_LEN          (4096 - 1)
+#define LOG_REMOTE_MAX_LEN          2047
 
 static te_log_level
 map_name_to_level(const char *name)

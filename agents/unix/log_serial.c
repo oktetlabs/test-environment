@@ -70,7 +70,7 @@
 #define LOG_SERIAL_ALIVE_TIMEOUT    60000
 
 /** Maximum length of accumulated log */
-#define LOG_SERIAL_MAX_LEN          (4096 - 1)
+#define LOG_SERIAL_MAX_LEN          2047
 
 /** Conserver escape sequences */
 #define CONSERVER_ESCAPE    "\05c"
