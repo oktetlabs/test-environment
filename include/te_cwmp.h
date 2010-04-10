@@ -33,11 +33,6 @@
 
 #include "te_stdint.h"
 
-/**
- * This file contains definitions of structures and enumerated
- * types according with CWMP standard 
- * "TR-069: CPE WAN Management Protocol v1.1, Amendment 2".
- */
 
 
 

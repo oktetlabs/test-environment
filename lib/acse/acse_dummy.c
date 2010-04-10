@@ -16,7 +16,7 @@
 #include<netinet/in.h>
 
 #include "acse_internal.h"
-#include "acse_soapStub.h"
+#include "cwmp_soapStub.h"
 
 #include "te_defs.h"
 #include "te_errno.h"

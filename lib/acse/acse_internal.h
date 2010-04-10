@@ -56,7 +56,7 @@ extern "C" {
 #include "te_errno.h"
 #include "te_queue.h"
 #include "acse_epc.h"
-#include "acse_soapStub.h"
+#include "cwmp_soapStub.h"
 #include "acse_mem.h"
 
 

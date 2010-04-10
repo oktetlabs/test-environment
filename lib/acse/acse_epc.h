@@ -37,7 +37,7 @@
 
 #include "te_cwmp.h" 
 #include "te_defs.h" 
-#include "acse_soapStub.h"
+#include "cwmp_soapStub.h"
 
 #ifdef __cplusplus
 extern "C" {

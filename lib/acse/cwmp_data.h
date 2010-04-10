@@ -2,7 +2,7 @@
  * @brief CWMP data common methods
  * 
  * CWMP data exchange common methods, useful for transfer CWMP message
- * structures, declared in acse_soapStub.h, between processes with 
+ * structures, declared in cwmp_soapStub.h, between processes with 
  * different address spaces.
  *
  *
@@ -34,7 +34,7 @@
 #define __TE_CWMP_DATA__H__
 
 #include "te_errno.h"
-#include "acse_soapStub.h"
+#include "cwmp_soapStub.h"
 
 #ifdef __cplusplus
 extern "C" {

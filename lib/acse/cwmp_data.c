@@ -3,7 +3,7 @@
  * @brief CWMP data common methods implementation
  * 
  * CWMP data exchange common methods, useful for transfer CWMP message
- * structures, declared in acse_soapStub.h, between processes with 
+ * structures, declared in cwmp_soapStub.h, between processes with 
  * different address spaces.
  *
  *

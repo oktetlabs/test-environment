@@ -5,6 +5,12 @@
    GPL, the gSOAP public license, or Genivia's license for commercial use.
 */
 
+/**
+ * This file contains definitions of structures and enumerated
+ * types according with CWMP standard 
+ * "TR-069: CPE WAN Management Protocol v1.1, Amendment 2".
+ */
+
 #ifndef acse_soapStub_H
 #define acse_soapStub_H
 #include "stdsoap2.h"

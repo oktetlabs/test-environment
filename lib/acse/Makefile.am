@@ -13,7 +13,7 @@ lib_LTLIBRARIES = libacse_epc.la libacse_cwmp.la
 
 bin_PROGRAMS = acse_single acse_cli
 
-include_HEADERS = acse_epc.h acse_soapStub.h cwmp_data.h
+include_HEADERS = acse_epc.h cwmp_data.h
 
 acse_single_SOURCES = acse_dummy.c
 

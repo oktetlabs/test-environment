@@ -7,7 +7,7 @@
 
 #ifndef acse_soapH_H
 #define acse_soapH_H
-#include "acse_soapStub.h"
+#include "cwmp_soapStub.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
