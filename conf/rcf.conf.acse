@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <rcf>
   <ta name="Agt_A" type="linux" fake="no" synch_time="no" rebootable="no"
-      rcflib="rcfunix" confstr="iut:18001:sudo:"/>
+      rcflib="rcfunix" confstr=":18001:sudo:"/>
   <ta name="Agt_B" type="linux" fake="no" synch_time="no" rebootable="no"
-      rcflib="rcfunix" confstr="tst1:18002:sudo:"/>
+      rcflib="rcfunix" confstr=":18002:sudo:"/>
 </rcf>
 

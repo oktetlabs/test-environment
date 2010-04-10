@@ -188,27 +188,21 @@
   </add>
 
   <add>
-    <instance oid="/agent:Agt_A/rsrc:eth1" 
-              value="/agent:Agt_A/interface:eth1"/>
-    <instance oid="/agent:Agt_B/rsrc:eth1" 
-              value="/agent:Agt_B/interface:eth1"/>
+    <instance oid="/agent:Agt_A/rsrc:eth0" 
+              value="/agent:Agt_A/interface:eth0"/>
   </add>
   <add>
     <instance oid="/net:net1"/>
-    <instance oid="/net:net1/node:A" value="/agent:Agt_A/interface:eth1"/>
+    <instance oid="/net:net1/node:A" value="/agent:Agt_A/interface:eth0"/>
     <instance oid="/net:net1/node:A/type:" value="1"/>
-    <instance oid="/net:net1/node:B" value="/agent:Agt_B/interface:eth1"/>
-    <instance oid="/net:net1/node:B/type:" value="0"/>
   </add>
 
   <add>
     <instance oid="/net_pool:ip4"/>
     <instance oid="/net_pool:ip4/entry:10.18.10.0" value="0"/>
-    <instance oid="/net_pool:ip4/entry:10.18.11.0" value="0"/>
   </add>
   <set>
     <instance oid="/net_pool:ip4/entry:10.18.10.0/prefix:" value="24"/>
-    <instance oid="/net_pool:ip4/entry:10.18.11.0/prefix:" value="24"/>
   </set>
 
   <add>
