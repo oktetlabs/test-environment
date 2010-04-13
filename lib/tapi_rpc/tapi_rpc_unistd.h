@@ -508,9 +508,17 @@ struct rpc_epoll_event {
 extern int rpc_epoll_create(rcf_rpc_server *rpcs, int size);
 extern int rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
                          struct rpc_epoll_event *event);
-extern int rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
-                          struct rpc_epoll_event *events, int maxevents,
-                          int timeout);
+extern int rpc_epoll_wait_gen(rcf_rpc_server *rpcs, int epfd,
+                              struct rpc_epoll_event *events, int rmaxev,
+                              int maxevents, int timeout);
+static inline int
+rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
+               struct rpc_epoll_event *events, int maxevents,
+               int timeout)
+{
+    return rpc_epoll_wait_gen(rpcs, epfd, events, maxevents, maxevents,
+                              timeout);
+}
 
 /**
  * Provide a generic mechanism for reporting I/O conditions associated with

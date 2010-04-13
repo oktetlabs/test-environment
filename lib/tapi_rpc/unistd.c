@@ -1226,15 +1226,17 @@ rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
 }
 
 int
-rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
-               struct rpc_epoll_event *events, int maxevents, int timeout)
+rpc_epoll_wait_gen(rcf_rpc_server *rpcs, int epfd,
+                   struct rpc_epoll_event *events, int rmaxev,
+                   int maxevents, int timeout)
 {
     rcf_rpc_op           op;
     tarpc_epoll_wait_in  in;
     tarpc_epoll_wait_out out;
     int i;
     tarpc_epoll_event *evts;
-    evts = calloc(maxevents, sizeof(tarpc_epoll_event));
+
+    evts = calloc(rmaxev, sizeof(tarpc_epoll_event));
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1250,13 +1252,13 @@ rpc_epoll_wait(rcf_rpc_server *rpcs, int epfd,
     in.epfd = epfd;
     in.timeout = timeout;
     in.maxevents = maxevents;
-    for (i = 0; i < maxevents; i++)
+    for (i = 0; i < rmaxev; i++)
     {
         evts[i].events = events[i].events;
         evts[i].data.type = TARPC_ED_INT;
         evts[i].data.tarpc_epoll_data_u.fd = events[i].data.fd;
     }
-    in.events.events_len = maxevents;
+    in.events.events_len = rmaxev;
     in.events.events_val = (struct tarpc_epoll_event *)evts;
 
     if ((timeout > 0) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
