@@ -3105,9 +3105,12 @@ TARPC_FUNC(epoll_wait,
 },
 {
     /* TODO: RPC_POLL_NFDS_MAX should be substituted */
-    struct epoll_event events[RPC_POLL_NFDS_MAX];
-
+    struct epoll_event *events = NULL;
+    int len = in->events.events_len;
     unsigned int i;
+
+    if (len)
+        events = calloc(len, sizeof(struct epoll_event));
 
     VERB("epoll_wait(): call with epfd=%d, events=0x%lx, maxevents=%d,"
          " timeout=%d",
@@ -3125,6 +3128,7 @@ TARPC_FUNC(epoll_wait,
         out->events.events_val[i].data.tarpc_epoll_data_u.fd =
             events[i].data.fd;
     }
+    free(events);
 }
 )
 

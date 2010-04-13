@@ -1188,7 +1188,6 @@ rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
     tarpc_epoll_event *evt;
     evt = malloc(sizeof(tarpc_epoll_event));
 
-
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
@@ -1219,7 +1218,7 @@ rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
 
     rcf_rpc_call(rpcs, "epoll_ctl", &in, &out);
 
-    /* TODO: write analog for pollreq2str function */
+    free(evt);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_ctl, out.retval);
 
@@ -1297,6 +1296,7 @@ rpc_epoll_wait_gen(rcf_rpc_server *rpcs, int epfd,
     {
         *str_buf_1 = '\0';
     }
+    free(evts);
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_wait, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_wait(%d, %p, %d, %d) -> %d (%s) %s",
