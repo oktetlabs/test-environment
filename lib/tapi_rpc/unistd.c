@@ -1203,11 +1203,19 @@ rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
     in.epfd = epfd;
     in.op = oper;
     in.fd = fd;
-    evt->events = event->events;
-    evt->data.type = TARPC_ED_INT;
-    evt->data.tarpc_epoll_data_u.fd = event->data.fd;
-    in.event.event_len = 1;
-    in.event.event_val = evt;
+    if (event)
+    {
+        evt->events = event->events;
+        evt->data.type = TARPC_ED_INT;
+        evt->data.tarpc_epoll_data_u.fd = event->data.fd;
+        in.event.event_len = 1;
+        in.event.event_val = evt;
+    }
+    else
+    {
+        in.event.event_len = 0;
+        in.event.event_val = NULL;
+    }
 
     rcf_rpc_call(rpcs, "epoll_ctl", &in, &out);
 
@@ -1215,7 +1223,10 @@ rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_ctl, out.retval);
 
-    epollevt2str(event, 1,  str_buf_1, sizeof(str_buf_1));
+    if (event)
+        epollevt2str(event, 1,  str_buf_1, sizeof(str_buf_1));
+    else
+        *str_buf_1 = '\0';
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_ctl(%d, %d, %d, %p%s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),

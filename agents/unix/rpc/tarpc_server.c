@@ -3067,16 +3067,25 @@ TARPC_FUNC(epoll_create, {},
 
 TARPC_FUNC(epoll_ctl, {},
 {
-    struct epoll_event event;
+    struct epoll_event  event;
+    struct epoll_event *ptr;
 
-    event.events = epoll_event_rpc2h(in->event.event_val[0].events);
-    /* TODO: Should be substituted by correct handling of union */
-    event.data.fd = in->fd;
+    if (in->event.event_len)
+    {
+        ptr = &event;
+        event.events = epoll_event_rpc2h(in->event.event_val[0].events);
+        /* TODO: Should be substituted by correct handling of union */
+        event.data.fd = in->fd;
+    }
+    else
+        ptr = NULL;
 
     VERB("epoll_ctl(): call with epfd=%d op=%d fd=%d event=0x%lx",
-         in->epfd, in->op, in->fd, (unsigned long int)in->event.event_val);
+         in->epfd, in->op, in->fd,
+         (in->event.event_len) ? (unsigned long int)in->event.event_val :
+                                 0);
 
-    MAKE_CALL(out->retval = func(in->epfd, in->op, in->fd, &event));
+    MAKE_CALL(out->retval = func(in->epfd, in->op, in->fd, ptr));
     VERB("epoll_ctl(): retval=%d", out->retval);
 }
 )
