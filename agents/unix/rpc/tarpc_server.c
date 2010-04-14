@@ -3106,7 +3106,7 @@ TARPC_FUNC(epoll_wait,
 {
     /* TODO: RPC_POLL_NFDS_MAX should be substituted */
     struct epoll_event *events = NULL;
-    int len = in->events.events_len;
+    int len = out->events.events_len;
     unsigned int i;
 
     if (len)
