@@ -681,7 +681,8 @@ tad_igmp_match_do_cb(csap_p           csap,
                 break;
 
             len = tad_pkt_len(pdu) - (bitoff >> 3) - 4;
-            if (len == 0)
+            /* TODO: somtimes len == -4 */
+            if (len <= 0)
                 break;
 
             /* Reallocate Group Records List binary data */
