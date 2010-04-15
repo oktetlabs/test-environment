@@ -5378,6 +5378,8 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         ret = select_func(in->sock + 1, NULL, &writefds, NULL, &tv);
         if (ret < 0)
         {
+            if (errno == EINTR)
+                continue; /* probably, SIGCHLD */
             out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
             ERROR("%s(): select() failed", __FUNCTION__);
             goto overfill_buffers_exit;
