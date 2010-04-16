@@ -178,6 +178,8 @@ conf_acse_call(char const *oid, char const *acs, char const *cpe,
     }
     if (EPC_CFG_MODIFY == fun)
         strncpy(cfg_data.value, value, sizeof(cfg_data.value));
+    else
+        cfg_data.value[0] = '\0';
 
     acse_epc_send(&msg);
 
