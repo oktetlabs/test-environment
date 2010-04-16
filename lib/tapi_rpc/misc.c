@@ -1291,26 +1291,21 @@ int
 tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
                         int s, int timeout, char *type)
 {
-    tarpc_timeval   tv = { 0 , 0 };
-    rpc_fd_set_p    fds = RPC_NULL;
+    struct rpc_pollfd   fds[1];
     int             rc = -1;
     int             result = -1;
 
-    fds = rpc_fd_set_new(rpcs);
-    rpc_do_fd_zero(rpcs, fds);
-    rpc_do_fd_set(rpcs, s, fds);
-
-    tv.tv_sec = timeout;
-
+    fds[0].fd = s;
     if (type[0] == 'R')
-        rc = rpc_select(rpcs, s + 1, fds, RPC_NULL, RPC_NULL, &tv);
+        fds[0].events = RPC_POLLIN;
     else
-        rc = rpc_select(rpcs, s + 1, RPC_NULL, fds, RPC_NULL, &tv);
+        fds[0].events = RPC_POLLOUT;
+    fds[0].revents = 0;
+        
+    rc = rpc_poll(rpcs, fds, 1, timeout);
 
     *answer = (rc == 1);
     result = 0;
-
-    rpc_fd_set_delete(rpcs, fds);
 
     return result;
 }
