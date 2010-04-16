@@ -577,6 +577,7 @@ acse_acs_list(acse_epc_config_data_t *params)
     char        *ptr = params->list;
     unsigned int len = 0;
     acs_t       *item;
+    RING("%s start", __FUNCTION__);
 
     /* Calculate the whole length (plus 1 sym for trailing ' '/'\0') */
     LIST_FOREACH(item, &acs_list, links)
@@ -599,6 +600,8 @@ acse_acs_list(acse_epc_config_data_t *params)
     }
 
     *ptr = '\0';
+    RING("%s stop, len %d, result is '%s'",
+         __FUNCTION__, len, params->list);
     return 0;
 }
 
@@ -734,8 +737,9 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
                 return config_acs(cfg_pars);
             return config_cpe(cfg_pars);
         case EPC_CFG_LIST:
-            RING("acse_epc_config(): LIST... ");
-            if (cfg_pars->op.level == EPC_CFG_ACS)
+            RING("acse_epc_config(): list, level is %d ",
+                 (int)cfg_pars->op.level);
+            if (EPC_CFG_ACS == cfg_pars->op.level)
                 return acse_acs_list(cfg_pars);
             return acs_cpe_list(cfg_pars);
     }
@@ -964,7 +968,7 @@ te_errno
 epc_destroy(void *data)
 {
     UNUSED(data);
-printf("EPC dispatcher destroy, pid %d\n", getpid()); 
+    RING("EPC dispatcher destroy, pid %d\n", getpid()); 
     return acse_epc_close();
 }
 

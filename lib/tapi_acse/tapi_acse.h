@@ -1,7 +1,7 @@
 /** @file
- * @brief Test API 
+ * @brief Test API for ACSE usage
  *
- * Declaration of Test API
+ * Declarations of Test API to ACS Emulator on Test Agent.
  *
  * Copyright (C) 2009 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -29,16 +29,20 @@
 #ifndef __TE_TAPI_ACSE_H__
 #define __TE_TAPI_ACSE_H__
 
-#include "te_stdint.h"
 #include "te_defs.h"
+#include "te_stdint.h"
+#include "te_errno.h"
+
+#include "te_cwmp.h"
+#include "cwmp_soapStub.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-/* */
-extern void *va_end_list_ptr;
+/** End of var-args list. */
+extern void * const va_end_list_ptr;
 #define VA_END_LIST (va_end_list_ptr)
 
 /*
@@ -49,6 +53,7 @@ typedef enum {
     ACSE_OP_ADD,
     ACSE_OP_DEL,
     ACSE_OP_MODIFY,
+    ACSE_OP_OBTAIN,
 } acse_op_t;
 
 /**
@@ -80,16 +85,22 @@ extern te_errno tapi_acse_stop(const char *ta);
  *                          if @c ACSE_OP_MODIFY, object should exist;
  * @param ...           list of pairs (@p name, @p value), where @p name
  *                      should match with name of leaf under 
- *                      $c /agent/acse/acs/ in ConfiguratorModel, 
- *                      and @p value is new value; list should be finished
+ *                      $c /agent/acse/acs/ in ConfiguratorModel, and 
+ *                      #value is new value or place for current value;
+ *                      list should be finished
  *                      with macro @c VA_END_LIST.
+ *                      Type of @p value should correspond to type of 
+ *                      @p name leaf in Conḟ.Model.
  *                      List should be empty if @p opcode is 
  *                      @c ACSE_OP_DEL.
+ *                      List may be non-empty if @p opcode is 
+ *                      @c ACSE_OP_ADD, in this case values are set 
+ *                      after add.
  *
  * @return status code
  */
 extern te_errno tapi_acse_manage_acs(const char *ta,
-                                     const char *acs_name  ,
+                                     const char *acs_name,
                                      acse_op_t opcode,
                                      ...);
 
@@ -102,13 +113,8 @@ extern te_errno tapi_acse_manage_acs(const char *ta,
  * @param cpe_name      Name of CPE record within @p ta ACSE;
  * @param opcode        code of operation to be performed with 
  *                      specified CPE record;
- * @param ...           list of pairs (@p name, @p value), where @p name
- *                      should match with name of leaf under 
- *                      $c /agent/acse/acs/cpe in ConfiguratorModel, 
- *                      and @p value is new value; list should be finished
- *                      with macro @c VA_END_LIST.
- *                      List should be empty if @p opcode is 
- *                      @c ACSE_OP_DEL.
+ * @param ...           list of parameters, with same semantic 
+ *                      as for function tapi_acse_manage_acs().
  *
  * @return status code
  */
@@ -136,7 +142,7 @@ extern te_errno tapi_acse_manage_cpe(const char *ta,
 extern te_errno tapi_acse_cpe_last_inform(const char *ta,
                                      const char *acs_name,
                                      const char *cpe_name,
-                                     te_cwmp_inform_t *inform_descr);
+                                     _cwmp__Inform *inform_descr);
 
 /**
  * Get state of CWMP session with particular CPE.
@@ -151,7 +157,7 @@ extern te_errno tapi_acse_cpe_last_inform(const char *ta,
 extern te_errno tapi_acse_session_state(const char *ta,
                                      const char *acs_name,
                                      const char *cpe_name,
-                                     te_cwmp_session_state_t *state);
+                                     cwmp_sess_state_t *state);
 
 /**
  * Issue CWMP ConnectionRequest to particular CPE.

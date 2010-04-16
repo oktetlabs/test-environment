@@ -109,15 +109,16 @@ unix_socket(char const *unix_path, char const *connect_to)
 
             if (connect(s, (struct sockaddr *)&addr, sizeof addr) != -1)
                 return s;
-            else if (errno == ECONNREFUSED)
+            else /* if (errno == ECONNREFUSED) */
             {
-                struct timeval tv = {0, 1000}; /* wait 1 ms */
+                struct timeval tv = {0, 30000}; /* wait 30 ms */
                 select(0, NULL, NULL, NULL, &tv);
                 if (connect(s, (struct sockaddr *)&addr, sizeof addr) 
                     != -1)
                     return s;
             }
-            ERROR("%s(): connect refused, %d", __FUNCTION__, errno);
+            ERROR("%s(): connect failed, OS errno %s",
+                    __FUNCTION__, strerror(errno));
         }
         else
             errno = ENAMETOOLONG;
@@ -260,8 +261,8 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
     }
 
     epc_shmem_name = strdup(shmem_name);
-    VERB("%s(): shmem addr: %p, socket %d", __FUNCTION__,
-            epc_shmem, epc_socket);
+    RING("%s(): shmem addr: %p, shmem size %u, socket %d", __FUNCTION__,
+            epc_shmem, epc_shmem_size, epc_socket);
     return 0;
 }
 
@@ -414,26 +415,25 @@ acse_epc_send(const acse_epc_msg_t *user_message)
     /* check consistance of opcode and role */
     switch (user_message->opcode)
     {
-    case EPC_CONFIG_CALL:
-    case EPC_CWMP_CALL:
-        if (epc_role != ACSE_EPC_CLIENT)
-        {
-            ERROR("Try call EPC, but role is not CLIENT!");
-            return TE_EINVAL;
-        }
-        break;
-    case EPC_CONFIG_RESPONSE:
-    case EPC_CWMP_RESPONSE:
-        if (epc_role != ACSE_EPC_SERVER)
-        {
-            ERROR("Try response EPC, but role is not SERVER!");
-            return TE_EINVAL;
-        }
-        break;
-    default:
-        ERROR("Try send EPC with wrong opcode!");
-        return TE_EINVAL;
-        
+        case EPC_CONFIG_CALL:
+        case EPC_CWMP_CALL:
+            if (epc_role != ACSE_EPC_CLIENT)
+            {
+                ERROR("Try call EPC, but role is not CLIENT!");
+                return TE_EINVAL;
+            }
+            break;
+        case EPC_CONFIG_RESPONSE:
+        case EPC_CWMP_RESPONSE:
+            if (epc_role != ACSE_EPC_SERVER)
+            {
+                ERROR("Try response EPC, but role is not SERVER!");
+                return TE_EINVAL;
+            }
+            break;
+        default:
+            ERROR("Try send EPC with wrong opcode!");
+            return TE_EINVAL; 
     }
 
     /* Now prepare data */
@@ -441,38 +441,40 @@ acse_epc_send(const acse_epc_msg_t *user_message)
 
     switch (user_message->opcode)
     {
-    case EPC_CONFIG_CALL:
-    case EPC_CONFIG_RESPONSE:
-    {
-        acse_epc_config_data_t *cfg_data = user_message->data.cfg;
-        message.length = sizeof(*cfg_data);
-        memcpy(epc_shmem, cfg_data, sizeof(*cfg_data));
-    }
-        break;
-
-    default: /* CWMP operation */
-    {
-        acse_epc_cwmp_data_t *cwmp_data = user_message->data.cwmp;
-        uint8_t *buf;
-        ssize_t packed_len;
-        size_t len;
-
-        memcpy(epc_shmem, cwmp_data, sizeof(*cwmp_data));
-        buf = ((acse_epc_cwmp_data_t *)epc_shmem)->enc_start;
-        len = epc_shmem_size - sizeof(*cwmp_data);
-
-        if (message.opcode == EPC_CWMP_CALL)
-            packed_len = epc_pack_call_data(buf, len, cwmp_data);
-        else
-            packed_len = epc_pack_response_data(buf, len, cwmp_data);
-        if (packed_len < 0)
+        case EPC_CONFIG_CALL:
+        case EPC_CONFIG_RESPONSE:
         {
-            ERROR("%s(): pack data failed, not send", __FUNCTION__);
-            return TE_RC(TE_ACSE, TE_EFAIL);
+            acse_epc_config_data_t *cfg_data = user_message->data.cfg;
+            message.length = sizeof(*cfg_data);
+            memcpy(epc_shmem, cfg_data, sizeof(*cfg_data));
+            RING("%s(): send config message, value '%s', msglen %d", 
+                 __FUNCTION__, cfg_data->value, message.length);
         }
-        message.length = packed_len + sizeof(*cwmp_data);
-        break;
-    }
+            break;
+
+        default: /* CWMP operation */
+        {
+            acse_epc_cwmp_data_t *cwmp_data = user_message->data.cwmp;
+            uint8_t *buf;
+            ssize_t packed_len;
+            size_t len;
+
+            memcpy(epc_shmem, cwmp_data, sizeof(*cwmp_data));
+            buf = ((acse_epc_cwmp_data_t *)epc_shmem)->enc_start;
+            len = epc_shmem_size - sizeof(*cwmp_data);
+
+            if (message.opcode == EPC_CWMP_CALL)
+                packed_len = epc_pack_call_data(buf, len, cwmp_data);
+            else
+                packed_len = epc_pack_response_data(buf, len, cwmp_data);
+            if (packed_len < 0)
+            {
+                ERROR("%s(): pack data failed, not send", __FUNCTION__);
+                return TE_RC(TE_ACSE, TE_EFAIL);
+            }
+            message.length = packed_len + sizeof(*cwmp_data);
+            break;
+        }
     }
 
     sendrc = send(epc_socket, &message, sizeof(message), 0);
@@ -633,25 +635,25 @@ acse_epc_recv(acse_epc_msg_t **user_message)
 
     switch (message.opcode) 
     {/* check role */
-    case EPC_CONFIG_CALL:
-    case EPC_CWMP_CALL:
-        if (epc_role != ACSE_EPC_SERVER)
-        {
-            ERROR("Receive EPC call, but role is not SERVER!");
+        case EPC_CONFIG_CALL:
+        case EPC_CWMP_CALL:
+            if (epc_role != ACSE_EPC_SERVER)
+            {
+                ERROR("Receive EPC call, but role is not SERVER!");
+                return TE_EINVAL;
+            }
+            break;
+        case EPC_CONFIG_RESPONSE:
+        case EPC_CWMP_RESPONSE:
+            if (epc_role != ACSE_EPC_CLIENT)
+            {
+                ERROR("receive response EPC, but role is not CLIENT!");
+                return TE_EINVAL;
+            }
+            break;
+        default:
+            ERROR("Received EPC wrong opcode! %d", (int)message.opcode);
             return TE_EINVAL;
-        }
-        break;
-    case EPC_CONFIG_RESPONSE:
-    case EPC_CWMP_RESPONSE:
-        if (epc_role != ACSE_EPC_CLIENT)
-        {
-            ERROR("receive response EPC, but role is not CLIENT!");
-            return TE_EINVAL;
-        }
-        break;
-    default:
-        ERROR("Received EPC with wrong opcode! %d", (int)message.opcode);
-        return TE_EINVAL;
     }
 
     /* TODO check magic here */
@@ -662,26 +664,29 @@ acse_epc_recv(acse_epc_msg_t **user_message)
     cwmp_data = message.data.cwmp;
     switch (message.opcode)
     {
-    case EPC_CWMP_CALL:
-        rc = epc_unpack_call_data(cwmp_data->enc_start,
-                    message.length, cwmp_data);
-        break;
-    case EPC_CWMP_RESPONSE:
-        if (message.status == 0)
-            rc = epc_unpack_response_data(cwmp_data->enc_start,
+        case EPC_CWMP_CALL:
+            rc = epc_unpack_call_data(cwmp_data->enc_start,
                         message.length, cwmp_data);
-        break;
+            break;
+        case EPC_CWMP_RESPONSE:
+            if (message.status == 0)
+                rc = epc_unpack_response_data(cwmp_data->enc_start,
+                            message.length, cwmp_data);
+            break;
 
-    case EPC_CONFIG_CALL:
-    case EPC_CONFIG_RESPONSE:
-        cfg_data = message.data.cfg;
-        if (cfg_data->op.magic != EPC_CONFIG_MAGIC)
-        {
-            ERROR("EPC: wrong magic for config message: 0x%x",
-                 (int)cfg_data->op.magic);
-            free(message.data.p);
-            return TE_RC(TE_ACSE, TE_EFAIL);
-        }
+        case EPC_CONFIG_CALL:
+        case EPC_CONFIG_RESPONSE:
+            cfg_data = message.data.cfg;
+            if (cfg_data->op.magic != EPC_CONFIG_MAGIC)
+            {
+                ERROR("EPC: wrong magic for config message: 0x%x",
+                     (int)cfg_data->op.magic);
+                free(message.data.p);
+                return TE_RC(TE_ACSE, TE_EFAIL);
+            }
+            RING("%s(): recv config message, value '%s'", 
+                 __FUNCTION__, cfg_data->value);
+            break;
     }
     *user_message = malloc(sizeof(acse_epc_msg_t));
     memcpy(*user_message, &message, sizeof(message));

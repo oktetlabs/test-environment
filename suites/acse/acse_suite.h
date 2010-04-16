@@ -86,12 +86,17 @@
 #include "tapi_rpcsock_macros.h"
 #include "tapi_env.h"
 
+#if 0
 #define TEST_START_VARS TEST_START_ENV_VARS
 #define TEST_START_SPECIFIC TEST_START_ENV
 #define TEST_END_SPECIFIC TEST_END_ENV
+#else
+#define TEST_START_VARS
+#define TEST_START_SPECIFIC
+#define TEST_END_SPECIFIC
+#endif
 
 #include "tapi_test.h"
-#include "tapi_cfg_acse.h"
-#include "tapi_rpc_tr069.h"
+#include "tapi_acse.h"
 
 #endif /* __XEN_SUITE_H__ */

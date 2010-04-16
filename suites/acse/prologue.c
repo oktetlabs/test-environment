@@ -1,38 +1,47 @@
 /** @file
- * @brief XEN Test Suite
+ * @brief ACSE Test Suite
  *
- * Test Suite prologue.
+ * ACSE Test Suite prologue.
  *
- * Copyright (C) 2005 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2010 OKTET Labs Ltd., St.-Petersburg, Russia
  *
- * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin Abramenko@oktetlabs.ru>
  *
- * $Id: prologue.c $
+ * $Id: $
  */
 
 /** Logging subsystem entity name */
-#define TE_TEST_NAME    "prologue"
+#define TE_TEST_NAME    "ACSE prologue"
 
 #include <stdlib.h>
 #include <signal.h>
 #include <sys/socket.h>
 
 #include "tapi_test.h"
-#include "tapi_cfg_net.h"
+#include "tapi_acse.h"
 
 
 int
-main(void)
+main(int argc, char *argv[])
 {
     int result = EXIT_FAILURE;
+    const char *ta_acse;
+    cfg_val_type type = CVT_INTEGER;
+    int cfg_value;
+    
+    TEST_GET_STRING_PARAM(ta_acse);
 
     signal(SIGINT, te_test_sig_handler);
     te_lgr_entity = TE_TEST_NAME;
     TAPI_ON_JMP(TEST_ON_JMP_DO);
 
-    CHECK_RC(tapi_cfg_net_all_up(TRUE));
-    CHECK_RC(tapi_cfg_net_all_assign_ip(AF_INET));
-    CHECK_RC(cfg_synchronize("/:", TRUE));
+    CHECK_RC(tapi_acse_start(ta_acse));
+
+    type = CVT_INTEGER;
+    CHECK_RC(cfg_get_instance_fmt(&type, &cfg_value, 
+                                 "/agent:%s/acse:", ta_acse));
+
+    RING("value of acse leaf: %d", cfg_value);
 
     TEST_SUCCESS;
 

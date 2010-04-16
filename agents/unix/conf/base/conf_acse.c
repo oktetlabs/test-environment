@@ -50,6 +50,8 @@
 #include <sys/stat.h>
 #endif
 
+#include <sys/wait.h>
+
 #include <string.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -82,17 +84,38 @@ static struct {
 /** Process ID of ACSE */
 static pid_t acse_pid = -1;
 
+/** Flag setting "at exit" callback */
+static te_bool need_atexit = TRUE;
+
 /** Shared memory name */
 const char *epc_mmap_area = NULL;
 
 /** Unix socket names for ACSE, TA and RPC */
 const char *epc_acse_sock = NULL;
 
-/* Methods declarations */
+/* Methods forward declarations */
 
 static te_errno prepare_params(acse_epc_config_data_t *config_params,
                                char const *oid,
                                char const *acs, char const *cpe);
+
+static te_errno stop_acse(void);
+
+/**
+ * Determines whether ACSE is started and link to it is initialized.
+ *
+ * @return              TRUE is ACSE is started and link to it
+                        is initialized, otherwise - FALSE
+ */
+static inline te_bool
+acse_value(void)
+{
+#if 0
+    return (acse_pid != -1) && (acse_epc_socket() > 0);
+#else
+    return (acse_pid != -1);
+#endif
+}
 
 /**
  * Perform EPC configuration method and wait for result, 
@@ -115,6 +138,8 @@ conf_acse_call(char const *oid, char const *acs, char const *cpe,
     acse_epc_config_data_t  cfg_data;
     acse_cfg_level_t        level;
 
+    if (!acse_value())
+        return TE_ENOTCONN;
 
     if (NULL == cfg_result)
         return TE_EINVAL;
@@ -158,7 +183,7 @@ conf_acse_call(char const *oid, char const *acs, char const *cpe,
 
     {
         int             epc_socket = acse_epc_socket();
-        struct timespec epc_ts = {0, 1000000}; /* 1 ms */
+        struct timespec epc_ts = {0, 300000000}; /* 300 ms */
         struct pollfd   pfd = {0, POLLIN, 0};
         int             pollrc;
 
@@ -209,18 +234,6 @@ empty_list(char **list)
     return 0;
 }
 
-/**
- * Determines whether ACSE is started and link to it is initialized.
- *
- * @return              TRUE is ACSE is started and link to it
-                        is initialized, otherwise - FALSE
- */
-static inline te_bool
-acse_value(void)
-{
-    return (acse_pid != -1) && (acse_epc_socket() > 0);
-}
-
 
 /**
  * Initializes acse params substructure with the supplied parameters.
@@ -237,10 +250,15 @@ prepare_params(acse_epc_config_data_t *config_params,
                char const *oid,
                char const *acs, char const *cpe)
 {
-    if (strlen(oid) >= sizeof(config_params->oid))
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    if (oid != NULL)
+    {
+        if (strlen(oid) >= sizeof(config_params->oid))
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strcpy(config_params->oid, oid);
+        strcpy(config_params->oid, oid);
+    }
+    else
+        config_params->oid[0] = '\0';
 
     if (acs != NULL)
     {
@@ -289,7 +307,14 @@ cfg_call_get(unsigned int gid, const char *oid, char *value,
     UNUSED(acse);
 
     rc = conf_acse_call(oid, acs, cpe, NULL, EPC_CFG_OBTAIN, &cfg_result);
-    if (rc != 0)
+
+    if (TE_ENOTCONN == rc)
+    {
+        value[0] = '\0'; /* return empty string */
+        return 0;
+    }
+
+    if (0 != rc)
     {
         WARN("ACSE config EPC failed %r", rc);
         return rc;
@@ -592,6 +617,8 @@ start_acse(void)
 {
     te_errno rc = 0;
 
+    RING("Start ACSE process");
+
     acse_pid = fork();
     if (acse_pid == 0) /* we are in child */
     {
@@ -612,6 +639,26 @@ start_acse(void)
         rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("%s: fork() failed: %r", __FUNCTION__, rc);
         return rc;
+    }
+
+    RING("ACSE process was started with PID %d", (int)acse_pid);
+    if ((rc = acse_epc_open(NULL, NULL, ACSE_EPC_CLIENT))
+        != 0)
+    {
+        int res;
+        ERROR("open EPC failed %r", rc);
+
+#if 1
+        kill(acse_pid, SIGTERM);
+        waitpid(acse_pid, &res, 0);
+#endif
+        acse_pid = -1;
+        return 0;
+    }
+
+    if (need_atexit)
+    {
+        atexit(&stop_acse);
     }
     
 #if 0
@@ -691,6 +738,8 @@ stop_acse(void)
     }
     waitpid(acse_pid, &acse_status, 0);
 
+    acse_pid = -1;
+
     if (acse_status)
         WARN("ACSE exit status %d", acse_status);
 
@@ -718,6 +767,8 @@ acse_set(unsigned int gid, char const *oid,
     UNUSED(oid);
     UNUSED(acse);
 
+    RING("Set to 'acse' node. old val %d, new val %d",
+            old_acse_value, new_acse_value);
     if (new_acse_value && !old_acse_value) 
         return start_acse();
     if (!new_acse_value && old_acse_value)
