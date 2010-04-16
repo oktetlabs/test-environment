@@ -23,7 +23,7 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id: tapi_acse.h 62516 2009-12-30 20:17:37Z konst $
+ * $Id$
  */
 
 #include "te_config.h"
