@@ -446,7 +446,7 @@ acse_epc_send(const acse_epc_msg_t *user_message)
         {
             acse_epc_config_data_t *cfg_data = user_message->data.cfg;
             message.length = sizeof(*cfg_data);
-            memcpy(epc_shmem, cfg_data, sizeof(*cfg_data));
+            memcpy(epc_shmem, cfg_data, message.length);
             RING("%s(): send config message, value '%s', msglen %d", 
                  __FUNCTION__, cfg_data->value, message.length);
         }
@@ -684,8 +684,8 @@ acse_epc_recv(acse_epc_msg_t **user_message)
                 free(message.data.p);
                 return TE_RC(TE_ACSE, TE_EFAIL);
             }
-            RING("%s(): recv config message, value '%s'", 
-                 __FUNCTION__, cfg_data->value);
+            RING("%s(): recv config message, value '%s', msglen %u", 
+                 __FUNCTION__, cfg_data->value, message.length);
             break;
     }
     *user_message = malloc(sizeof(acse_epc_msg_t));
