@@ -41,11 +41,9 @@
 
     <!-- Authenticate algorithm used for particular ACS.
          Name: none
-         Value: noauth (0)
-                basic (1)
-                digest (2) -->
+         Value: "noauth" | "basic" | "digest" -->
     <object oid="/agent/acse/acs/auth_mode" access="read_write"
-            type="integer"/>
+            type="string"/>
 
     <!-- Port value used for CWMP connections on an ACS.
          Name: none
@@ -62,7 +60,7 @@
     <!-- ACS SSL certificate.
          Name: none
          Value: certificate serialized into string representation -->
-    <object oid="/agent/acse/acs/ssl_cert" access="read_write"
+    <object oid="/agent/acse/acs/cert" access="read_write"
             type="string"/>
 
     <!-- CPE object.

@@ -213,8 +213,11 @@ conf_acse_call(char const *oid, char const *acs, char const *cpe,
     }
 
     *cfg_result = msg_resp->data.cfg;
+    if ((rc = msg_resp->status) != 0)
+        WARN("%s(): status of EPC operation %r", __FUNCTION__, rc);
+
     free(msg_resp);
-    return 0;
+    return rc;
 }
 
 /**
@@ -254,10 +257,19 @@ prepare_params(acse_epc_config_data_t *config_params,
 {
     if (oid != NULL)
     {
-        if (strlen(oid) >= sizeof(config_params->oid))
+        char *last_label = rindex(oid, '/');
+        unsigned i;
+
+        if (NULL == last_label)
+            last_label = oid;
+        else 
+            last_label++; /* shift to the label begin */
+        if (strlen(last_label) >= sizeof(config_params->oid))
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-        strcpy(config_params->oid, oid);
+        for (i = 0; last_label[i] != '\0' && last_label[i] != ':'; i++)
+            config_params->oid[i] = last_label[i];
+        config_params->oid[i] = '\0';
     }
     else
         config_params->oid[0] = '\0';
@@ -311,22 +323,20 @@ cfg_call_get(unsigned int gid, const char *oid, char *value,
     rc = conf_acse_call(oid, acs, cpe, NULL, EPC_CFG_OBTAIN, &cfg_result);
 
     if (TE_ENOTCONN == rc)
-    {
+    { /* There is no connection with ACSE, cfg_result was not allocated. */
         value[0] = '\0'; /* return empty string */
         return 0;
     }
 
     if (0 != rc)
-    {
         WARN("ACSE config EPC failed %r", rc);
-        return rc;
-    }
 
-    strcpy(value, cfg_result->value);
+    if (0 == rc)
+        strcpy(value, cfg_result->value);
 
     free(cfg_result);
 
-    return 0;
+    return rc;
 }
 
 static te_errno
@@ -410,7 +420,7 @@ call_list(char **list, char const *acs)
  * Add the CPE record on ACSE
  *
  * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
+ * @param oid           Object identifier
  * @param value         The value of acs cpe being added
  * @param acse          Name of the acse instance (unused)
  * @param acs           Name of the acs instance

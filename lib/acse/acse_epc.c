@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "ACSE EPC messaging"
+
 #include "te_config.h"
 
 

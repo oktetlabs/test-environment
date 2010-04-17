@@ -199,19 +199,19 @@ typedef struct {
     acse_msg_code_t opcode; /**< Code of operation */
 
     union {
-        void *p;        /**< Useful pointer to data */
+        void *p;     /**< Syntax convenient pointer to user data */
 
         acse_epc_config_data_t *cfg; /**< Config user data */
         acse_epc_cwmp_data_t   *cwmp;/**< CWMP user data   */
-    }       data;    /**< In user APІ is pointer to operation specific
+    }         data;  /**< In user APІ is pointer to operation specific
                           structure.  In messages really passing 
                           via pipe it is not used. */
 
-    size_t   length; /**< Lenght of data, related to the message.
+    size_t    length;/**< Lenght of data, related to the message.
                           Significant only in messages passing 
                           via pipe between ACSE and its client.
                           Ignored as INPUT parameter in user API. */
-    te_errno status; /**< Significant only in response */
+    te_errno  status;/**< Status of operation (in response). */
     /* TODO: design simple and universal scheme for passing 
         status of operation and internal errors! */
 } acse_epc_msg_t;

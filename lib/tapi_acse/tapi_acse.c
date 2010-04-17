@@ -26,9 +26,12 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAPI ACSE"
+
 #include "te_config.h"
 
 #include "logger_api.h"
+#include "rcf_common.h"
 #include "tapi_acse.h"
 #include "tapi_cfg_base.h"
 
@@ -60,6 +63,16 @@ tapi_acse_stop(const char *ta)
     return rc;
 }
 
+static inline int
+acse_is_int_var(const char *name)
+{
+    return
+        ((0 == strcmp(name, "port"))     || 
+         (0 == strcmp(name, "ssl"))      ||
+         (0 == strcmp(name, "enabled"))  ||
+         (0 == strcmp(name, "cr_state")) ||
+         (0 == strcmp(name, "cwmp_state"))  );
+}
 
 /* see description in tapi_acse.h */
 te_errno
@@ -67,12 +80,12 @@ tapi_acse_manage_acs(const char *ta, const char *acs_name,
                      acse_op_t opcode, ...)
 {
     va_list  ap;
-    te_errno rc = 0;
+    te_errno gen_rc = 0;
 
     if (ACSE_OP_ADD == opcode)
     {
-        rc = cfg_add_instance_fmt(NULL, CFG_VAL(NONE, 0),
-                                  "/agent:%s/acse:/acs:%s", ta, acs_name);
+        gen_rc = cfg_add_instance_fmt(NULL, CFG_VAL(NONE, 0),
+                          "/agent:%s/acse:/acs:%s", ta, acs_name);
     }
 
     va_start(ap, opcode);
@@ -80,19 +93,51 @@ tapi_acse_manage_acs(const char *ta, const char *acs_name,
     while (1)
     {
         char *name = va_arg(ap, char *);
+        char buf[RCF_MAX_PATH];
+        te_errno rc = 0;
+
+        snprintf(buf, RCF_MAX_PATH, "/agent:%s/acse:/acs:%s/%s:",
+                 ta, acs_name, name);
+
         if (VA_END_LIST == name)
             break;
-        /* integer parameters */
-        if (strcmp(name, "port") == 0)
-        {
-            int val;
+
+        if (ACSE_OP_OBTAIN == opcode)
+        { 
+            cfg_val_type type;
+
+            if (acse_is_int_var(name))
+            {/* integer parameters */
+                int *p_val = va_arg(ap, int *);
+                type = CVT_INTEGER;
+                rc = cfg_get_instance_fmt(&type, "%s", buf, p_val);
+            }
+            else /* string parameters */
+            {
+                char **p_val = va_arg(ap, char **);
+                type = CVT_STRING;
+                rc = cfg_get_instance_fmt(&type, "%s", buf, p_val);
+            }
         }
-        else /* string parameters */
+        else
         {
+            if (acse_is_int_var(name))
+            {/* integer parameters */
+                int val = va_arg(ap, int);
+                rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, val), "%s", buf);
+            }
+            else /* string parameters */
+            {
+                char *val = va_arg(ap, char *);
+                rc = cfg_set_instance_fmt(CFG_VAL(STRING, val), "%s", buf);
+            }
         }
+        if (0 == gen_rc) /* store in 'gen_rc' first TE errno */
+            gen_rc = rc;
     }
 
     va_end(ap);
 
-    return 0;
+    return gen_rc;
 }
+

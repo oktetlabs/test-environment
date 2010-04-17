@@ -43,6 +43,9 @@ main(int argc, char *argv[])
 
     RING("value of acse leaf: %d", cfg_value);
 
+    CHECK_RC(tapi_acse_manage_acs(ta_acse, "A", ACSE_OP_ADD,
+                                  "port", 8080, VA_END_LIST));
+
     TEST_SUCCESS;
 
 cleanup:

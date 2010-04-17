@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "ACSE EPC dispatcher"
+
 #include "te_config.h"
 
 #if HAVE_SYS_TIME_H
