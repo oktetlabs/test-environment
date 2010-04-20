@@ -221,6 +221,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         TESTER_OPT_TRC_DB,
         TESTER_OPT_TRC_TAG,
+        TESTER_OPT_TRC_COMPARISON,
     };
 
     /* Option Table */
@@ -333,6 +334,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
           "TRC database to be used.", NULL },
         { "trc-tag", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_TRC_TAG,
           "Tags to customize TRC expectations.", NULL },
+        { "trc-comparison", '\0', POPT_ARG_STRING, NULL, 
+          TESTER_OPT_TRC_COMPARISON,
+          "Parameter comparison method (default is 'exact').",
+          "exact|casefold|normalised|tokens" },
 
         { "out-tin", 't', POPT_ARG_NONE, NULL, TESTER_OPT_OUT_TIN,
           "Output Test Identification Numbers (TINs) to terminal.", NULL },
@@ -523,6 +528,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
             case TESTER_OPT_TRC_DB:
             case TESTER_OPT_TRC_TAG:
+            case TESTER_OPT_TRC_COMPARISON:
                 if (!no_trc)
                 {
 #if WITH_TRC
@@ -537,6 +543,32 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                             return rc;
                         }
                         global->flags &= ~TESTER_NO_TRC;
+                    }
+                    else if (rc == TESTER_OPT_TRC_COMPARISON)
+                    {
+                        const char *method = poptGetOptArg(optCon);
+                        
+                        if (strcmp(method, "exact") == 0)
+                        {
+                            trc_db_compare_values = strcmp;
+                        }
+                        else if (strcmp(method, "casefold") == 0)
+                        {
+                            trc_db_compare_values = strcasecmp;
+                        }
+                        else if (strcmp(method, "normalised") == 0)
+                        {
+                            trc_db_compare_values = trc_db_strcmp_normspace;
+                        }
+                        else if (strcmp(method, "tokens") == 0)
+                        {
+                            trc_db_compare_values = trc_db_strcmp_tokens;
+                        }
+                        else
+                        {
+                            poptFreeContext(optCon);
+                            return TE_RC(TE_TESTER, TE_EINVAL);
+                        }
                     }
                     else
                     {

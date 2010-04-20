@@ -343,6 +343,12 @@ extern te_errno trc_db_free_user_data(te_trc_db *db,
                                       void (*test_free)(void *),
                                       void (*iter_free)(void *));
 
+extern int (*trc_db_compare_values)(const char *s1, const char *s2);
+
+extern int trc_db_strcmp_tokens(const char *s1, const char *s2);
+extern int trc_db_strcmp_normspace(const char *s1, const char *s2);
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

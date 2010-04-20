@@ -200,7 +200,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
           NULL },
         { "comparison", '\0', POPT_ARG_STRING, NULL, TRC_OPT_COMPARISON,
           "Parameter comparison method (default is 'exact').",
-          "exact|casefold|tokens" },
+          "exact|casefold|normalised|tokens" },
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_OPT_VERSION, 
           "Display version information.", NULL },
 

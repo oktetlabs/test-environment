@@ -384,6 +384,10 @@ process_opts()
                 TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}"
                 TESTER_OPTS="${TESTER_OPTS} --trc-db=${TRC_DB}"
                 ;;
+            --trc-comparison=*) 
+                TRC_OPTS="${TRC_OPTS} --comparison=${1#--trc-comparison=}"
+                TESTER_OPTS="${TESTER_OPTS} $1"
+                ;;
             --trc-key2html=*) 
                 TRC_KEY2HTML="${1#--trc-key2html=}"
                 if test "${TRC_KEY2HTML:0:1}" != "/" ; then 

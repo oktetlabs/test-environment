@@ -203,11 +203,6 @@ extern te_errno trc_db_save(te_trc_db *db, const char *filename);
 
 extern void trc_db_free(te_trc_db *db);
 
-extern int (*trc_db_compare_values)(const char *s1, const char *s2);
-
-extern int trc_db_strcmp_tokens(const char *s1, const char *s2);
-extern int trc_db_strcmp_normspace(const char *s1, const char *s2);
-
 extern trc_test *trc_db_walker_get_test(const te_trc_db_walker *walker);
 extern trc_test_iter *trc_db_walker_get_iter(
                           const te_trc_db_walker *walker);
