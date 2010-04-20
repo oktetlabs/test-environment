@@ -1788,7 +1788,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     {
         if (status == TESTER_TEST_SKIPPED)
             ctx->group_result.status = TESTER_TEST_SKIPPED;
-        else
+        else if (status != TESTER_TEST_EMPTY)
             ctx->group_result.status = TESTER_TEST_PROLOG;
         assert(SLIST_NEXT(ctx, links) != NULL);
         SLIST_NEXT(ctx, links)->group_step = TRUE;
@@ -1864,7 +1864,7 @@ run_epilogue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     {
         if (status == TESTER_TEST_SKIPPED)
             ctx->group_result.status = TESTER_TEST_SKIPPED;
-        else
+        else if (status != TESTER_TEST_EMPTY)
             ctx->group_result.status = TESTER_TEST_EPILOG;
         EXIT("SKIP");
         return TESTER_CFG_WALK_SKIP;
