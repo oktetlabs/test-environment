@@ -167,7 +167,7 @@ Generic options:
   --trc-comparison=<method>     Specify the method to match parameter values in TRC
                                 - exact (the default)
                                 - casefold 
-                                - normalise (XML-style space normalization)
+                                - normalised (XML-style space normalization)
                                 - tokens (the values are split into tokens which are
                                 either sequences of XML name characters or single characters;
                                 the matching is done on these lists; in additional, numeric
