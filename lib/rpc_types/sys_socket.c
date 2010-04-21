@@ -633,7 +633,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_IPV6_MULTICAST_HOPS:
         case RPC_IPV6_MULTICAST_IF:
         case RPC_IPV6_ADDRFORM:
-        case RPC_IPV6_PKTINFO:
+        case RPC_IPV6_RECVPKTINFO:
         case RPC_IPV6_PKTOPTIONS:
         case RPC_IPV6_CHECKSUM:
         case RPC_IPV6_RTHDR:
@@ -641,7 +641,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_IPV6_DSTOPTS:
         case RPC_IPV6_HOPOPTS:
         case RPC_IPV6_FLOWINFO:
-        case RPC_IPV6_HOPLIMIT:
+        case RPC_IPV6_RECVHOPLIMIT:
         case RPC_IPV6_NEXTHOP:
         case RPC_IPV6_MULTICAST_LOOP:
         case RPC_IPV6_ADD_MEMBERSHIP:
@@ -742,7 +742,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IPV6_MULTICAST_HOPS);
         RPC2STR(IPV6_MULTICAST_IF);
         RPC2STR(IPV6_ADDRFORM);
-        RPC2STR(IPV6_PKTINFO);
+        RPC2STR(IPV6_RECVPKTINFO);
         RPC2STR(IPV6_PKTOPTIONS);
         RPC2STR(IPV6_CHECKSUM);
         RPC2STR(IPV6_RTHDR);
@@ -750,7 +750,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IPV6_DSTOPTS);
         RPC2STR(IPV6_HOPOPTS);
         RPC2STR(IPV6_FLOWINFO);
-        RPC2STR(IPV6_HOPLIMIT);
+        RPC2STR(IPV6_RECVHOPLIMIT);
         RPC2STR(IPV6_NEXTHOP);
         RPC2STR(IPV6_MULTICAST_LOOP);
         RPC2STR(IPV6_ADD_MEMBERSHIP);
@@ -847,13 +847,13 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(IP_RECEIVE_BROADCAST);
         RPC2H_CHECK(IP_DONTFRAGMENT);
         RPC2H_CHECK(IPV6_ADDRFORM);
-        RPC2H_CHECK(IPV6_PKTINFO);
+        RPC2H_CHECK(IPV6_RECVPKTINFO);
         RPC2H_CHECK(IPV6_HOPOPTS);
         RPC2H_CHECK(IPV6_DSTOPTS);
         RPC2H_CHECK(IPV6_RTHDR);
         RPC2H_CHECK(IPV6_PKTOPTIONS);
         RPC2H_CHECK(IPV6_CHECKSUM);
-        RPC2H_CHECK(IPV6_HOPLIMIT);
+        RPC2H_CHECK(IPV6_RECVHOPLIMIT);
         RPC2H_CHECK(IPV6_NEXTHOP);
         RPC2H_CHECK(IPV6_AUTHHDR);
         RPC2H_CHECK(IPV6_UNICAST_HOPS);
@@ -999,7 +999,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(IPV6_MULTICAST_HOPS);
                 H2RPC_CHECK(IPV6_MULTICAST_IF);
                 H2RPC_CHECK(IPV6_ADDRFORM);
-                H2RPC_CHECK(IPV6_PKTINFO);
+                H2RPC_CHECK(IPV6_RECVPKTINFO);
                 H2RPC_CHECK(IPV6_PKTOPTIONS);
                 H2RPC_CHECK(IPV6_CHECKSUM);
                 H2RPC_CHECK(IPV6_RTHDR);
@@ -1007,7 +1007,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(IPV6_DSTOPTS);
                 H2RPC_CHECK(IPV6_HOPOPTS);
                 H2RPC_CHECK(IPV6_FLOWINFO);
-                H2RPC_CHECK(IPV6_HOPLIMIT);
+                H2RPC_CHECK(IPV6_RECVHOPLIMIT);
                 H2RPC_CHECK(IPV6_NEXTHOP);
                 H2RPC_CHECK(IPV6_MULTICAST_LOOP);
                 H2RPC_CHECK(IPV6_ADD_MEMBERSHIP);
@@ -1067,7 +1067,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_IP_RECEIVE_BROADCAST:
         case RPC_IP_DONTFRAGMENT:
 
-        case RPC_IPV6_PKTINFO:
+        case RPC_IPV6_RECVPKTINFO:
         case RPC_IPV6_PKTOPTIONS:
         case RPC_IPV6_CHECKSUM:
         case RPC_IPV6_MULTICAST_LOOP:

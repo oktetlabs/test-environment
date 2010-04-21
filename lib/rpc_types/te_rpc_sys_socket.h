@@ -384,7 +384,7 @@ typedef enum rpc_sockopt {
     
     RPC_IPV6_ADDRFORM,      /**< Turn AF_INET6 socket to AF_INET family */
 
-    RPC_IPV6_PKTINFO,       /**< Whether to receive control messages
+    RPC_IPV6_RECVPKTINFO,   /**< Whether to receive control messages
                                  on incoming datagrams */
     
     RPC_IPV6_PKTOPTIONS,    /**< Specify packet options */
@@ -433,7 +433,7 @@ typedef enum rpc_sockopt {
     
     RPC_IPV6_FLOWINFO,      /**< Deliver the flow ID */
     
-    RPC_IPV6_HOPLIMIT,      /**< Deliver the hop count of the packet */
+    RPC_IPV6_RECVHOPLIMIT,  /**< Deliver the hop count of the packet */
  
     RPC_TCP_MAXSEG,         /**< Set/get the maximum segment size for
                                  outgoing TCP packets */
