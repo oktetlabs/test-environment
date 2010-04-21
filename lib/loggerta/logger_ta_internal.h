@@ -88,7 +88,7 @@ extern "C" {
 #define LGR_RB_BIG_MESSAGE_LEN  3597
 
 /* Maximum number of big messages to be logged into Ring Buffer */
-#if 0
+#if 1
 #define LGR_MAX_BIG_MESSAGES    100
 #else
 #define LGR_MAX_BIG_MESSAGES    1000
@@ -382,9 +382,6 @@ lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
                          uint8_t **arg_addr)
 {
     uint32_t start_pos = 0;
-#if 0
-    uint32_t tail;
-#endif
     uint32_t need_elements;
 
     if (length > TE_LOG_FIELD_MAX)
@@ -402,20 +399,10 @@ lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
 
     *arg_addr = LGR_GET_MESSAGE_ARRAY(ring_buffer, start_pos);
 
-#if 0
-    tail = start_pos = ring_buffer->tail;
-
-
-    if (tail < LGR_TOTAL_RB_EL)
-    {
-        memcpy(*arg_addr, start, length);
-    }
-#else
     if ((start_pos + need_elements) < LGR_TOTAL_RB_EL)
     {
         memcpy(*arg_addr, start, length);
     }
-#endif
     else
     {
         uint32_t  length_aux;
