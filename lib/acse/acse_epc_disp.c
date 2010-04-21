@@ -464,9 +464,22 @@ acs_cert(acs_t *acs, acse_epc_config_data_t *params)
     return cfg_string_access(&acs->cert, params);
 }
 
+/**
+ * Access to the cert of CPE.
+ *
+ * @param cpe           CPE record.
+ * @param params        Parameters object.
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_cert(cpe_t *cpe, acse_epc_config_data_t *params)
+{
+    return cfg_string_access(&cpe->cert, params);
+}
 
 /**
- * Access to the url of CPE.
+ * Access to the CR url of CPE.
  *
  * @param cpe           CPE record.
  * @param params        Parameters object.
@@ -633,19 +646,20 @@ struct config_cpe_item_t {
     config_cpe_fun_t  fun;   /**< function to access conf.field */
 } cfg_cpe_array [] = 
 {
-    {"url",    cpe_url},
-    {"enabled", cpe_enabled},
-    {"cwmp_state", cpe_cwmp_state},
-    {"cr_state", cpe_cr_state},
-    {"hold_requests", cpe_hold_requests},
-    {"login",  cpe_acs_login},
-    {"passwd", cpe_acs_passwd},
+    {"cr_url",    cpe_url},
+    {"cert",    cpe_cert},
     {"cr_login",  cpe_cr_login},
     {"cr_passwd", cpe_cr_passwd},
-    {"serial_number", device_id_serial_number},
-    {"product_class", device_id_product_class},
-    {"oui", device_id_oui},
+    {"login",  cpe_acs_login},
+    {"passwd", cpe_acs_passwd},
     {"manufacturer", device_id_manufacturer},
+    {"oui", device_id_oui},
+    {"product_class", device_id_product_class},
+    {"serial_number", device_id_serial_number},
+    {"cwmp_state", cpe_cwmp_state},
+    {"enabled", cpe_enabled},
+    {"hold_requests", cpe_hold_requests},
+    {"cr_state", cpe_cr_state},
 }; 
 
 /**

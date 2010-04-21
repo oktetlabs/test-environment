@@ -665,7 +665,7 @@ start_acse(void)
         waitpid(acse_pid, &res, 0);
 #endif
         acse_pid = -1;
-        return 0;
+        return rc;
     }
 
     if (need_atexit)

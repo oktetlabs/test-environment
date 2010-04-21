@@ -74,21 +74,27 @@ acse_is_int_var(const char *name)
          (0 == strcmp(name, "cwmp_state"))  );
 }
 
-/* see description in tapi_acse.h */
-te_errno
-tapi_acse_manage_acs(const char *ta, const char *acs_name,
-                     acse_op_t opcode, ...)
+
+
+/** generic internal method for ACSE manage operations */
+static inline te_errno
+tapi_acse_manage_vlist(const char *ta, const char *acs_name,
+                     const char *cpe_name,
+                     acse_op_t opcode, va_list  ap)
 {
-    va_list  ap;
     te_errno gen_rc = 0;
+
+    char cpe_name_buf[RCF_MAX_PATH] = "";
+
+    if (cpe_name != NULL)
+        snprintf(cpe_name_buf, RCF_MAX_PATH, "/cpe:%s", cpe_name);
 
     if (ACSE_OP_ADD == opcode)
     {
         gen_rc = cfg_add_instance_fmt(NULL, CFG_VAL(NONE, 0),
-                          "/agent:%s/acse:/acs:%s", ta, acs_name);
+                          "/agent:%s/acse:/acs:%s%s", ta, acs_name,
+                          cpe_name_buf);
     }
-
-    va_start(ap, opcode);
 
     while (1)
     {
@@ -96,8 +102,8 @@ tapi_acse_manage_acs(const char *ta, const char *acs_name,
         char buf[RCF_MAX_PATH];
         te_errno rc = 0;
 
-        snprintf(buf, RCF_MAX_PATH, "/agent:%s/acse:/acs:%s/%s:",
-                 ta, acs_name, name);
+        snprintf(buf, RCF_MAX_PATH, "/agent:%s/acse:/acs:%s%s/%s:",
+                 ta, acs_name, cpe_name_buf, name);
 
         if (VA_END_LIST == name)
             break;
@@ -134,10 +140,36 @@ tapi_acse_manage_acs(const char *ta, const char *acs_name,
         }
         if (0 == gen_rc) /* store in 'gen_rc' first TE errno */
             gen_rc = rc;
-    }
-
-    va_end(ap);
+    } 
 
     return gen_rc;
+}
+
+
+
+te_errno
+tapi_acse_manage_cpe(const char *ta, const char *acs_name,
+                     const char *cpe_name,
+                     acse_op_t opcode, ...)
+{
+    va_list  ap;
+    te_errno rc;
+    va_start(ap, opcode);
+    rc = tapi_acse_manage_vlist(ta, acs_name, cpe_name, opcode, ap);
+    va_end(ap);
+}
+
+
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_manage_acs(const char *ta, const char *acs_name,
+                     acse_op_t opcode, ...)
+{
+    va_list  ap;
+    te_errno rc;
+    va_start(ap, opcode);
+    rc = tapi_acse_manage_vlist(ta, acs_name, NULL, opcode, ap);
+    va_end(ap);
 }
 

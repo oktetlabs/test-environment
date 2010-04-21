@@ -46,6 +46,11 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_acse_manage_acs(ta_acse, "A", ACSE_OP_ADD,
                                   "port", 8080, VA_END_LIST));
 
+    CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_ADD,
+          "login", "000261-Home Gateway-V601L622R1A0-1001742119", 
+          "passwd", "z7cD7CTDA1DrQKUb", 
+          VA_END_LIST));
+
     TEST_SUCCESS;
 
 cleanup:

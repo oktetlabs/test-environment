@@ -119,8 +119,9 @@ unix_socket(char const *unix_path, char const *connect_to)
                     != -1)
                     return s;
             }
-            ERROR("%s(): connect failed, OS errno %s",
-                    __FUNCTION__, strerror(errno));
+            ERROR("%s(): connect '%s' to '%s' failed, OS errno %s",
+                    __FUNCTION__, unix_path, connect_to,
+                    strerror(errno));
         }
         else
             errno = ENAMETOOLONG;
