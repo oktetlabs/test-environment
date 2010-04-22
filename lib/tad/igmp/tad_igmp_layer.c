@@ -608,7 +608,7 @@ tad_igmp_match_do_cb(csap_p           csap,
     tad_igmp_proto_pdu_data *pkt_data  = meta_pkt->layers[layer].opaque;
     te_errno                 rc;
     unsigned int             bitoff    = 0;
-    unsigned int             len;
+    size_t                   len;
     int                      type;
 
     UNUSED(ptrn_pdu);
@@ -681,7 +681,7 @@ tad_igmp_match_do_cb(csap_p           csap,
                 break;
 
             len = tad_pkt_len(pdu) - (bitoff >> 3) - 4;
-            /* TODO: somtimes len == -4 */
+            /* TODO: sometimes len == -4 */
             if (len <= 0)
                 break;
 
