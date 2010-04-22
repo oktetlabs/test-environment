@@ -88,7 +88,7 @@ extern "C" {
 #define LGR_RB_BIG_MESSAGE_LEN  3597
 
 /* Maximum number of big messages to be logged into Ring Buffer */
-#if 1
+#if 0
 #define LGR_MAX_BIG_MESSAGES    100
 #else
 #define LGR_MAX_BIG_MESSAGES    1000
