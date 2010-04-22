@@ -28,7 +28,12 @@ AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@ \
 AM_CFLAGS = @TE_CFLAGS@ -Wextra -Werror
 GEN_LDADD = @TE_LDFLAGS@
 
-bin_PROGRAMS = rgt-idx-make
+bin_PROGRAMS = rgt-idx-make rgt-idx-apply
 
 rgt_idx_make_SOURCES = make.c
 rgt_idx_make_LDADD = $(GEN_LDADD)
+
+rgt_idx_apply_SOURCES = apply.c
+rgt_idx_apply_LDADD = $(GEN_LDADD)
+
+
