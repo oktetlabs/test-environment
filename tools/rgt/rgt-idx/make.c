@@ -51,7 +51,7 @@
 /** Message reading result code */
 typedef enum read_message_rc {
     READ_MESSAGE_RC_ERR         = -2,   /**< A reading error occurred or
-                                             unexpected EOF was hit */
+                                             unexpected EOF was reached */
     READ_MESSAGE_RC_WRONG_VER   = -1,   /**< A message of unsupported
                                              version was encountered */
     READ_MESSAGE_RC_EOF         = 0,    /**< The EOF was encountered instead
@@ -147,9 +147,9 @@ read_message_ts(FILE *input, uint64_t *pntimestamp)
  * @param offset        Message offset in the host byte order.
  * @param ntimestamp    Message timestamp in the network byte order.
  *
- * @return 1 if the entry was written successfully, 0 otherwise.
+ * @return TRUE if the entry was written successfully, FALSE otherwise.
  */
-static int
+static te_bool
 write_entry(FILE *output, uint64_t offset, uint64_t ntimestamp)
 {
     uint8_t buf[sizeof(offset) + sizeof(ntimestamp)];
@@ -160,12 +160,9 @@ write_entry(FILE *output, uint64_t offset, uint64_t ntimestamp)
         buf[i] = offset & 0xFF;
 
     if (fwrite(&buf, sizeof(buf), 1, output) != 1)
-    {
-        ERROR("Failed to write index entry: %s", strerror(errno));
-        return 0;
-    }
+        return FALSE;
 
-    return 1;
+    return TRUE;
 }
 
 
@@ -250,7 +247,7 @@ run(const char *input_name, const char *output_name)
         }
 
         /* Output index entry */
-        if (write_entry(output, offset, ntimestamp) != 1)
+        if (!write_entry(output, offset, ntimestamp))
             ERROR_CLEANUP("Failed writing output: %s", strerror(errno));
     }
 
@@ -280,6 +277,7 @@ usage(FILE *stream, const char *progname)
             stream, 
             "Usage: %s [OPTION]... [INPUT_LOG [OUTPUT_INDEX]]\n"
             "Generate a timestamp index of a TE log file.\n"
+            "\n"
             "With no INPUT_LOG, or when INPUT_LOG is -, read standard input.\n"
             "With no OUTPUT_INDEX, or when OUTPUT_INDEX is -, "
             "write standard output.\n"
