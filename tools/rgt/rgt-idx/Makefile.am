@@ -25,7 +25,7 @@
 
 AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@ \
               -D_FILE_OFFSET_BITS=64
-AM_CFLAGS = @TE_CFLAGS@ -Wextra -Werror -O0 -ggdb
+AM_CFLAGS = @TE_CFLAGS@ -Wextra -Werror
 GEN_LDADD = @TE_LDFLAGS@
 
 noinst_HEADERS = common.h
