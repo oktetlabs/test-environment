@@ -197,7 +197,9 @@ AC_CONFIG_FILES([Makefile
                  rgt-format/xml2html/images/Makefile
                  rgt-format/xml2html/misc/Makefile
                  rgt-format/xml2text/Makefile
-                 rgt-format/xml2text/tmpls/Makefile])
+                 rgt-format/xml2text/tmpls/Makefile
+                 rgt-idx/Makefile
+])
 
 if test "x$TE_INSTALL" != "x"
 then
