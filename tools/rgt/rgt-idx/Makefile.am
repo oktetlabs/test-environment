@@ -25,10 +25,10 @@
 
 AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@ \
               -D_FILE_OFFSET_BITS=64
-AM_CFLAGS = @TE_CFLAGS@ -Wextra -Werror
+AM_CFLAGS = @TE_CFLAGS@ -Wextra -Werror -O0 -ggdb
 GEN_LDADD = @TE_LDFLAGS@
 
-bin_PROGRAMS = rgt-idx-make rgt-idx-apply
+bin_PROGRAMS = rgt-idx-make rgt-idx-apply rgt-idx-sort-mem
 
 rgt_idx_make_SOURCES = make.c
 rgt_idx_make_LDADD = $(GEN_LDADD)
@@ -36,4 +36,11 @@ rgt_idx_make_LDADD = $(GEN_LDADD)
 rgt_idx_apply_SOURCES = apply.c
 rgt_idx_apply_LDADD = $(GEN_LDADD)
 
+rgt_idx_sort_mem_SOURCES = sort-mem.c
+rgt_idx_sort_mem_LDADD = $(GEN_LDADD)
+
+check_PROGRAMS = rgt-idx-sort-vrfy
+
+rgt_idx_sort_vrfy_SOURCES = sort-vrfy.c
+rgt_idx_sort_vrfy_LDADD = $(GEN_LDADD)
 

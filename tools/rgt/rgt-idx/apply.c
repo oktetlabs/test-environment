@@ -1,5 +1,5 @@
 /** @file 
- * @brief Test Environment: RGT - log index applying utility
+ * @brief Test Environment: RGT - log index application utility
  *
  * Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -356,7 +356,7 @@ usage(FILE *stream, const char *progname)
         fprintf(
             stream, 
             "Usage: %s [OPTION]... INPUT_LOG [INPUT_INDEX [OUTPUT_LOG]]\n"
-            "Apply a log index to a log, "
+            "Apply a log index to a TE log, "
             "outputting it in the index order.\n"
             "\n"
             "With no INPUT_INDEX, or when INPUT_INDEX is -, "
@@ -443,6 +443,5 @@ main(int argc, char * const argv[])
      */
     return run(input_name, index_name, output_name);
 }
-
 
 
