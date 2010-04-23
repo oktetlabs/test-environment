@@ -91,7 +91,7 @@ extern "C" {
 #if 0
 #define LGR_MAX_BIG_MESSAGES    100
 #else
-#define LGR_MAX_BIG_MESSAGES    1000
+#define LGR_MAX_BIG_MESSAGES    4000
 #endif
 
 /* Total of the ring buffer elements */
