@@ -577,17 +577,26 @@ tad_igmp_match_post_cb(csap_p              csap,
     if (rc != 0)
         return rc;
 
-    rc = tad_bps_pkt_frag_match_post(&proto_data->v3_query,
-                                     &pkt_data->v3_query,
-                                     pkt, &bitoff, meta_pkt_layer->nds);
-    if (rc != 0)
+    /* End of packet - no more matching */
+    if (tad_pkt_len(pkt) <= (bitoff >> 3))
         return rc;
 
-    rc = tad_bps_pkt_frag_match_post(&proto_data->v3_report,
-                                     &pkt_data->v3_report,
-                                     pkt, &bitoff, meta_pkt_layer->nds);
-    if (rc != 0)
-        return rc;
+    if (pkt_data->hdr.dus[0].val_i32 == IGMP_HOST_MEMBERSHIP_QUERY)
+    {
+        rc = tad_bps_pkt_frag_match_post(&proto_data->v3_query,
+                                         &pkt_data->v3_query,
+                                         pkt, &bitoff, meta_pkt_layer->nds);
+        if (rc != 0)
+            return rc;
+    }
+    else if (pkt_data->hdr.dus[0].val_i32 == IGMPV3_HOST_MEMBERSHIP_REPORT)
+    {
+        rc = tad_bps_pkt_frag_match_post(&proto_data->v3_report,
+                                         &pkt_data->v3_report,
+                                         pkt, &bitoff, meta_pkt_layer->nds);
+        if (rc != 0)
+            return rc;
+    }
 
     return rc;
 }
@@ -608,7 +617,7 @@ tad_igmp_match_do_cb(csap_p           csap,
     tad_igmp_proto_pdu_data *pkt_data  = meta_pkt->layers[layer].opaque;
     te_errno                 rc;
     unsigned int             bitoff    = 0;
-    size_t                   len;
+    ssize_t                  len;
     int                      type;
 
     UNUSED(ptrn_pdu);
@@ -680,7 +689,7 @@ tad_igmp_match_do_cb(csap_p           csap,
             if (type != IGMP_HOST_MEMBERSHIP_QUERY)
                 break;
 
-            len = tad_pkt_len(pdu) - (bitoff >> 3) - 4;
+            len = ((ssize_t)tad_pkt_len(pdu)) - (bitoff >> 3) - 4;
             /* TODO: sometimes len == -4 */
             if (len <= 0)
                 break;
