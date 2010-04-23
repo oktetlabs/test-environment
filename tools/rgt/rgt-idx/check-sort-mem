@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e -u -o pipefail
+
+for o in eq inc dec rand; do
+    echo "Checking rgt-idx-sort-mem with $o order..." >&2
+    rgt-idx-fake -o $o | rgt-idx-sort-mem | rgt-idx-sort-vrfy
+    echo "done." >&2
+done

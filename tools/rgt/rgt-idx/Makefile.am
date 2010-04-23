@@ -49,3 +49,8 @@ rgt_idx_fake_LDADD = $(GEN_LDADD)
 rgt_idx_sort_vrfy_SOURCES = sort-vrfy.c
 rgt_idx_sort_vrfy_LDADD = $(GEN_LDADD)
 
+check_SCRIPTS = check-sort-mem
+
+TESTS_ENVIRONMENT = PATH="$$PATH:$(builddir):$(srcdir)"
+
+TESTS = check-sort-mem
