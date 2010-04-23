@@ -36,23 +36,9 @@
 
 #include "te_defs.h"
 
+#include "common.h"
+
 #define MIN_BUF_SIZE    16384
-
-#define ERROR(_fmt, _args...) fprintf(stderr, _fmt "\n", ##_args)
-
-#define ERROR_CLEANUP(_fmt, _args...) \
-    do {                                \
-        ERROR(_fmt, ##_args);           \
-        goto cleanup;                   \
-    } while (0)
-
-#define ERROR_USAGE_RETURN(_fmt, _args...) \
-    do {                                                \
-        ERROR(_fmt, ##_args);                           \
-        usage(stderr, program_invocation_short_name);   \
-        return 1;                                       \
-    } while (0)
-
 
 te_bool
 read_whole_fd(int fd, void **pbuf, size_t *psize)
@@ -172,10 +158,6 @@ write_whole_file(const char *name, void *buf, size_t size)
 
     return result;
 }
-
-
-/** Index entry */
-typedef uint64_t entry[2];
 
 
 /** Merge list */

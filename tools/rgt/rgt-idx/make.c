@@ -35,30 +35,10 @@
 #include "te_defs.h"
 #include "te_raw_log.h"
 
+#include "common.h"
 
 #define INPUT_BUF_SIZE  16384
 #define OUTPUT_BUF_SIZE 16384
-
-
-#define ERROR(_fmt, _args...) fprintf(stderr, _fmt "\n", ##_args)
-
-#define ERROR_CLEANUP(_fmt, _args...) \
-    do {                                \
-        ERROR(_fmt, ##_args);           \
-        goto cleanup;                   \
-    } while (0)
-
-/** Message reading result code */
-typedef enum read_message_rc {
-    READ_MESSAGE_RC_ERR         = -2,   /**< A reading error occurred or
-                                             unexpected EOF was reached */
-    READ_MESSAGE_RC_WRONG_VER   = -1,   /**< A message of unsupported
-                                             version was encountered */
-    READ_MESSAGE_RC_EOF         = 0,    /**< The EOF was encountered instead
-                                             of the message */
-    READ_MESSAGE_RC_OK          = 1,    /**< The message was read
-                                              successfully */
-} read_message_rc;
 
 /**
  * Read a message timestamp from a stream, position the stream at next
@@ -299,7 +279,7 @@ main(int argc, char * const argv[])
 {
     static const struct option  long_opt_list[] = {
         {.name      = "help",
-         .has_arg   = 0,
+         .has_arg   = no_argument,
          .flag      = NULL,
          .val       = OPT_VAL_HELP},
     };
@@ -335,11 +315,7 @@ main(int argc, char * const argv[])
         {
             output_name = argv[optind++];
             if (optind < argc)
-            {
-                ERROR("Too many arguments");
-                usage(stderr, program_invocation_short_name);
-                return 1;
-            }
+                    ERROR_USAGE_RETURN("Too many arguments");
         }
     }
 
@@ -347,17 +323,9 @@ main(int argc, char * const argv[])
      * Verify command line arguments
      */
     if (*input_name == '\0')
-    {
-        ERROR("Empty input file name");
-        usage(stderr, program_invocation_short_name);
-        return 1;
-    }
+        ERROR_USAGE_RETURN("Empty input file name");
     if (*output_name == '\0')
-    {
-        ERROR("Empty output file name");
-        usage(stderr, program_invocation_short_name);
-        return 1;
-    }
+        ERROR_USAGE_RETURN("Empty output file name");
 
     /*
      * Run

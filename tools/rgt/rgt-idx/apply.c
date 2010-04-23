@@ -35,43 +35,13 @@
 #include "te_defs.h"
 #include "te_raw_log.h"
 
-#define OFF_T_MAX   (off_t)((uint64_t)-1 >> \
-                            ((sizeof(uint64_t) - sizeof(off_t)) * 8 + 1))
+#include "common.h"
 
 #define INDEX_BUF_SIZE  16384
 #define INPUT_BUF_SIZE  4096
 #define OUTPUT_BUF_SIZE 16384
 
 #define MIN_BUF_SIZE    4096
-
-#define ERROR(_fmt, _args...) fprintf(stderr, _fmt "\n", ##_args)
-
-#define ERROR_CLEANUP(_fmt, _args...) \
-    do {                                \
-        ERROR(_fmt, ##_args);           \
-        goto cleanup;                   \
-    } while (0)
-
-#define ERROR_USAGE_RETURN(_fmt, _args...) \
-    do {                                                \
-        ERROR(_fmt, ##_args);                           \
-        usage(stderr, program_invocation_short_name);   \
-        return 1;                                       \
-    } while (0)
-
-
-/** Message reading result code */
-typedef enum read_message_rc {
-    READ_MESSAGE_RC_ERR         = -2,   /**< A reading error occurred or
-                                             unexpected EOF was reached */
-    READ_MESSAGE_RC_WRONG_VER   = -1,   /**< A message of unsupported
-                                             version was encountered */
-    READ_MESSAGE_RC_EOF         = 0,    /**< The EOF was encountered instead
-                                             of the message */
-    READ_MESSAGE_RC_OK          = 1,    /**< The message was read
-                                              successfully */
-} read_message_rc;
-
 
 /**
  * Grow a buffer to accomodate specified contents length.
@@ -381,7 +351,7 @@ main(int argc, char * const argv[])
 {
     static const struct option  long_opt_list[] = {
         {.name      = "help",
-         .has_arg   = 0,
+         .has_arg   = no_argument,
          .flag      = NULL,
          .val       = OPT_VAL_HELP},
     };

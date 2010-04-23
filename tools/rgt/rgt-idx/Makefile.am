@@ -28,6 +28,8 @@ AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@ \
 AM_CFLAGS = @TE_CFLAGS@ -Wextra -Werror -O0 -ggdb
 GEN_LDADD = @TE_LDFLAGS@
 
+noinst_HEADERS = common.h
+
 bin_PROGRAMS = rgt-idx-make rgt-idx-apply rgt-idx-sort-mem
 
 rgt_idx_make_SOURCES = make.c
