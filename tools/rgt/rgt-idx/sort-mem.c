@@ -187,9 +187,9 @@ merge_sort(entry *list, size_t len)
     if (memcmp(list[len - 1] + 1, list[0] + 1, sizeof(**list)) <= 0)
     {
         /* Swap them */
-        memcpy(merge_list, list, left);
-        memmove(list, list + left, right);
-        memcpy(list + right, merge_list, left);
+        memcpy(merge_list, list, left * sizeof(*list));
+        memmove(list, list + left, right * sizeof(*list));
+        memcpy(list + right, merge_list, left * sizeof(*list));
         return;
     }
 
@@ -208,12 +208,12 @@ merge_sort(entry *list, size_t len)
                 memcpy(merge_list + m, list + r++, sizeof(*list));
         }
         if (l < left)
-            memcpy(merge_list + m, list + l, left - l);
+            memcpy(merge_list + m, list + l, (left - l) * sizeof(*list));
         else if (r < len)
-            memcpy(merge_list + m, list + r, len - r);
+            memcpy(merge_list + m, list + r, (len - r) * sizeof(*list));
     }
 
-    memcpy(list, merge_list, len);
+    memcpy(list, merge_list, len * sizeof(*list));
 }
 
 
