@@ -41,7 +41,10 @@ rgt_idx_apply_LDADD = $(GEN_LDADD)
 rgt_idx_sort_mem_SOURCES = sort-mem.c
 rgt_idx_sort_mem_LDADD = $(GEN_LDADD)
 
-check_PROGRAMS = rgt-idx-sort-vrfy
+check_PROGRAMS = rgt-idx-fake rgt-idx-sort-vrfy
+
+rgt_idx_fake_SOURCES = fake.c
+rgt_idx_fake_LDADD = $(GEN_LDADD)
 
 rgt_idx_sort_vrfy_SOURCES = sort-vrfy.c
 rgt_idx_sort_vrfy_LDADD = $(GEN_LDADD)
