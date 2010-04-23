@@ -3,7 +3,7 @@
 # generation tools only.
 #
 
-TE_PLATFORM([], [], [], [], [],
+TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
             [tools logic_expr trc])
 
 TE_APP([])
