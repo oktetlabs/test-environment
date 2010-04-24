@@ -3895,6 +3895,73 @@ struct tarpc_cpe_get_options_out {
     option_struct_t option_list<>;
 };
 
+
+
+struct tarpc_cwmp_op_call_in {
+    struct tarpc_in_arg common;
+
+    string              acs_name<>; /**< Name of ACS object */ 
+    string              cpe_name<>; /**< Name of CPE record */ 
+    tarpc_int           cwmp_rpc;   /**< CWMP RPC call type */
+    uint8_t             buf<>;      /**< Buffer with CWMP call data */
+};
+
+
+struct tarpc_cwmp_op_call_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_int          status;     /**< status of operation */
+    tarpc_uint         call_index; /**< Index of CWMP RPC call type */
+};
+
+
+struct tarpc_cwmp_op_check_in {
+    struct tarpc_in_arg common;
+
+    string              acs_name<>; /**< Name of ACS object */ 
+    string              cpe_name<>; /**< Name of CPE record */ 
+    tarpc_uint          call_index; /**< Index of CWMP RPC call type */
+    uint8_t             buf<>;      /**< Buffer for CWMP response data */
+};
+
+struct tarpc_cwmp_op_check_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_int           status;     /**< status of operation */
+    uint8_t             buf<>;      /**< Buffer with CWMP response data */
+};
+
+
+struct tarpc_cwmp_conn_req_in {
+    struct tarpc_in_arg common;
+
+    string              acs_name<>; /**< Name of ACS object */ 
+    string              cpe_name<>; /**< Name of CPE record */ 
+};
+
+struct tarpc_cwmp_conn_req_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_int           status;     /**< status of operation */
+};
+
+
+struct tarpc_cwmp_get_inform_in {
+    struct tarpc_in_arg common;
+
+    string              acs_name<>; /**< Name of ACS object */ 
+    string              cpe_name<>; /**< Name of CPE record */ 
+    tarpc_uint          index; /**< Index of CWMP Inform */
+};
+
+struct tarpc_cwmp_get_inform_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_int           status;     /**< status of operation */
+    uint8_t             buf<>;      /**< Buffer with CWMP Inform data */
+};
+
+
 program tarpc
 {
     version ver0
@@ -4144,22 +4211,9 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(mcast_join_leave)
 
-        RPC_DEF(cpe_get_rpc_methods)
-        RPC_DEF(cpe_set_parameter_values)
-        RPC_DEF(cpe_get_parameter_values)
-        RPC_DEF(cpe_get_parameter_names)
-        RPC_DEF(cpe_set_parameter_attributes)
-        RPC_DEF(cpe_get_parameter_attributes)
-        RPC_DEF(cpe_add_object)
-        RPC_DEF(cpe_delete_object)
-        RPC_DEF(cpe_reboot)
-        RPC_DEF(cpe_download)
-        RPC_DEF(cpe_upload)
-        RPC_DEF(cpe_factory_reset)
-        RPC_DEF(cpe_get_queued_transfers)
-        RPC_DEF(cpe_get_all_queued_transfers)
-        RPC_DEF(cpe_schedule_inform)
-        RPC_DEF(cpe_set_vouchers)
-        RPC_DEF(cpe_get_options)
+        RPC_DEF(cwmp_op_call)
+        RPC_DEF(cwmp_op_check)
+        RPC_DEF(cwmp_conn_req)
+        RPC_DEF(cwmp_get_inform)
     } = 1;
 } = 1;

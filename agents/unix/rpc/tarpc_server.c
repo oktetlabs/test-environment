@@ -3664,6 +3664,28 @@ TARPC_FUNC(setuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
 TARPC_FUNC(seteuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
 
 
+
+/*-------------- cwmp_op_call() -------------------*/
+TARPC_FUNC(cwmp_op_call, {},
+{
+    MAKE_CALL(func_ptr(in, out));
+}
+)
+
+/*-------------- cwmp_op_check() -------------------*/
+TARPC_FUNC(cwmp_op_check, {},
+{
+    MAKE_CALL(func_ptr(in, out));
+}
+)
+
+/*-------------- cwmp_conn_req() -------------------*/
+TARPC_FUNC(cwmp_conn_req, {}, { MAKE_CALL(func_ptr(in, out)); })
+
+
+/*-------------- cwmp_get_inform() -------------------*/
+TARPC_FUNC(cwmp_get_inform, {}, { MAKE_CALL(func_ptr(in, out)); })
+
 /*-------------- cpe_get_rpc_methods() -------------------*/
 TARPC_FUNC(cpe_get_rpc_methods, {},
 {

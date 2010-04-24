@@ -176,6 +176,7 @@ conf_acse_call(char const *oid, char const *acs, char const *cpe,
         ERROR("wrong labels passed to ACSE configurator subtree");
         return rc;
     }
+
     if (EPC_CFG_MODIFY == fun)
         strncpy(cfg_data.value, value, sizeof(cfg_data.value));
     else
@@ -257,7 +258,7 @@ prepare_params(acse_epc_config_data_t *config_params,
 {
     if (oid != NULL)
     {
-        char *last_label = rindex(oid, '/');
+        const char *last_label = rindex(oid, '/');
         unsigned i;
 
         if (NULL == last_label)
@@ -392,8 +393,6 @@ cfg_acs_call_set(unsigned int gid, const char *oid, char *value,
 /**
  * Get list of ACS ojects or CPE records from ACSE.
  *
- * @param gid           Group identifier
- * @param oid           Object identifier
  * @param list          The list of acses/cpes
  * @param acs           Name of the acs instance or NULL
  *
@@ -642,7 +641,6 @@ start_acse(void)
             ERROR("Fail create EPC dispatcher %r", rc);
             exit(1);
         }
-
         acse_loop();
         exit(0); 
     }
@@ -652,6 +650,7 @@ start_acse(void)
         ERROR("%s: fork() failed: %r", __FUNCTION__, rc);
         return rc;
     }
+    sleep(1);
 
     RING("ACSE process was started with PID %d", (int)acse_pid);
     if ((rc = acse_epc_open(NULL, NULL, ACSE_EPC_CLIENT))
@@ -902,6 +901,132 @@ te_errno
 ta_unix_conf_acse_init()
 {
     return rcf_pch_add_node("/agent", &node_acse);
+}
+
+
+
+int
+cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
+              tarpc_cwmp_conn_req_out *out)
+{
+    acse_epc_msg_t msg;
+    acse_epc_msg_t *msg_resp = NULL;
+    acse_epc_cwmp_data_t c_data;
+
+    te_errno rc;
+
+    if (!acse_value())
+    {
+        return -1;
+    }
+
+    RING("Issue CWMP Connection Request to %s/%s ", 
+         in->acs_name, in->cpe_name);
+
+    msg.opcode = EPC_CWMP_CALL;
+    msg.data.cwmp = &c_data;
+    msg.length = sizeof(c_data);
+
+    memset(&c_data, 0, sizeof(c_data));
+
+    c_data.op = EPC_CONN_REQ ;
+        
+    strcpy(c_data.acs, in->acs_name);
+    strcpy(c_data.cpe, in->cpe_name);
+        
+    rc = acse_epc_send(&msg);
+    if (rc != 0)
+        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
+
+    rc = acse_epc_recv(&msg_resp);
+    if (rc != 0)
+        ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
+
+    out->status = msg_resp->status;
+
+    return 0;
+}
+
+int
+cwmp_op_call(tarpc_cwmp_op_call_in *in,
+             tarpc_cwmp_op_call_out *out)
+{
+    acse_epc_msg_t msg;
+    acse_epc_msg_t *msg_resp = NULL;
+    acse_epc_cwmp_data_t c_data;
+
+    te_errno rc;
+
+    if (!acse_value())
+    {
+        return -1;
+    }
+
+    RING("cwmp operation %d to %s/%s called ", 
+         (int)in->cwmp_rpc, in->acs_name, in->cpe_name);
+
+    msg.opcode = EPC_CWMP_CALL;
+    msg.data.cwmp = &c_data;
+    msg.length = sizeof(c_data);
+
+    memset(&c_data, 0, sizeof(c_data));
+
+    c_data.op = EPC_RPC_CALL ;
+    strcpy(c_data.acs, in->acs_name);
+    strcpy(c_data.cpe, in->cpe_name);
+        
+    c_data.hold_requests = 0;
+    c_data.rpc_cpe = in->cwmp_rpc; 
+    if (in->buf.buf_len > 0)
+    {
+        rc = cwmp_unpack_call_data(in->buf.buf_val, in->buf.buf_len,
+                                    &c_data);
+        if (rc != 0)
+        {
+            ERROR("%s(): unpack cwmp data failed %r", __FUNCTION__, rc);
+            out->status = rc;
+            return 0;
+        }
+    }
+
+    rc = acse_epc_send(&msg);
+    if (rc != 0)
+        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
+
+    rc = acse_epc_recv(&msg_resp);
+    if (rc != 0)
+        ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
+
+    out->status = msg_resp->status;
+    out->call_index = msg_resp->data.cwmp->index;
+
+    return 0;
+}
+
+
+int
+cwmp_op_check(tarpc_cwmp_op_check_in *in,
+              tarpc_cwmp_op_check_out *out)
+{
+    if (!acse_value())
+    {
+        return -1;
+    }
+
+    RING("cwmp check operation No %d to %s/%s called ", 
+         (int)in->call_index, in->acs_name, in->cpe_name);
+
+    out->status = 0;
+
+    return 0;
+}
+
+
+int
+cwmp_get_inform(tarpc_cwmp_get_inform_in *in,
+                tarpc_cwmp_get_inform_out *out)
+{
+    return 0;
 }
 
 #if 0
