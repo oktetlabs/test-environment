@@ -5,9 +5,8 @@
  * functions and useful extensions.
  *
  *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+ * Copyright (C) 2009-2010 Test Environment authors (see file AUTHORS in
  * the root directory of the distribution).
- * Copyright (c) 2005 Level5 Networks Corp.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -25,6 +24,7 @@
  * MA  02111-1307  USA
  *
  *
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
  * $Id: tapi_rpc_tr069.h 43076 2007-09-24 06:48:00Z kam $
@@ -36,6 +36,8 @@
 #include <stdio.h>
 
 #include "rcf_rpc.h"
+
+#include "te_cwmp.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -434,6 +436,37 @@ extern int rpc_cpe_get_options(
                rcf_rpc_server *rpcs,
                cpe_get_options_t *req,
                cpe_get_options_response_t *resp);
+
+
+
+
+/* ============================= NEW API ============================= */
+
+
+extern int rpc_cwmp_op_call(
+               rcf_rpc_server *rpcs,
+               const char *acs_name, const char *cpe_name,
+               te_cwmp_rpc_cpe_t cwmp_rpc,
+               uint8_t *buf, size_t buflen, 
+               int *index);
+
+
+extern int rpc_cwmp_op_check(
+               rcf_rpc_server *rpcs,
+               const char *acs_name, const char *cpe_name,
+               int index,
+               uint8_t *buf, size_t buflen);
+
+
+extern int rpc_cwmp_conn_req(
+               rcf_rpc_server *rpcs,
+               const char *acs_name, const char *cpe_name);
+
+extern int rpc_cwmp_get_inform(
+               rcf_rpc_server *rpcs,
+               const char *acs_name, const char *cpe_name, 
+               int index, uint8_t *buf, size_t *buflen);
+
 
 
 #ifdef __cplusplus
