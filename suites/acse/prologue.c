@@ -28,6 +28,8 @@ main(int argc, char *argv[])
     const char *ta_acse;
     cfg_val_type type = CVT_INTEGER;
     int cfg_value;
+    char *cr_url = NULL;
+    int cr_url_wait_count;
     
     TEST_GET_STRING_PARAM(ta_acse);
 
@@ -50,6 +52,32 @@ main(int argc, char *argv[])
           "login", "000261-Home Gateway-V601L622R1A0-1001742119", 
           "passwd", "z7cD7CTDA1DrQKUb", 
           VA_END_LIST));
+
+    CHECK_RC(tapi_acse_manage_acs(ta_acse, "A", ACSE_OP_MODIFY,
+                                  "enabled", 1, VA_END_LIST));
+
+    CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_OBTAIN,
+          "cr_url", &cr_url, VA_END_LIST));
+
+    if (cr_url != NULL)
+        RING("got ConnReq url '%s'", cr_url);
+    else
+        RING("got ConnReq url empty");
+
+    cr_url_wait_count = 20;
+
+    while (cr_url == NULL || strlen(cr_url) == 0)
+    {
+        sleep(1);
+        CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
+                 ACSE_OP_OBTAIN, "cr_url", &cr_url, VA_END_LIST));
+
+        if ((cr_url_wait_count--) < 0)
+            break;
+    }
+
+    if (cr_url == NULL || strlen(cr_url) == 0)
+        TEST_FAIL("No Conn Req url on ACSE");
 
     TEST_SUCCESS;
 

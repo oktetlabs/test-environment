@@ -34,37 +34,51 @@
 int
 main(int argc, char *argv[])
 {
+    char cwmp_buf[1024];
     unsigned int u;
+    int r;
+    int call_index;
 
-    rcf_rpc_server *pco_iut = NULL;
-    rcf_rpc_server *pco_aux = NULL;
+    rcf_rpc_server *rpcs_acse = NULL;
 
-    struct sockaddr_in dst_in[2] =
-        { { .sin_family = AF_INET, .sin_port = htons(80) },
-          { .sin_family = AF_INET, .sin_port = htons(443) } };
-    struct sockaddr_in src_in[2] =
-        { { .sin_family = AF_INET },
-          { .sin_family = AF_INET } };
-
-    struct sockaddr const *iut_dst[2] =
-        { (struct sockaddr *)&dst_in[0],
-          (struct sockaddr *)&dst_in[1] };
-
-    struct sockaddr const *aux_src[2] =
-        { (struct sockaddr *)&src_in[0],
-          (struct sockaddr *)&src_in[1] };
-
-    struct sockaddr const *iut_addr = NULL;
-    struct sockaddr const *aux_addr = NULL;
-
-    int aux_s[2];
+    const char *ta_acse;
+    te_errno te_rc;
 
     TEST_START;
 
+    TEST_GET_STRING_PARAM(ta_acse);
+
+#if 1
+    te_rc = rcf_rpc_server_create_ta_thread(ta_acse, "acse_ctl",
+                &rpcs_acse);
+#else
+    te_rc = rcf_rpc_server_get(ta_acse, "local", NULL, FALSE, TRUE, FALSE,
+                                &rpcs);
+#endif
+
+    CHECK_RC(te_rc);
+
+    r = rpc_cwmp_op_call(rpcs_acse, "A", "box", CWMP_RPC_get_rpc_methods,
+                        NULL, 0, &call_index);
+
+    RING("rc of cwmp op call %d", r);
+
+    r = rpc_cwmp_conn_req(rpcs_acse, "A", "box");
+
+    RING("rc of cwmp conn req %d", r);
+
+    sleep(5);
+    r = rpc_cwmp_op_check(rpcs_acse, "A", "box", call_index,
+                          cwmp_buf, sizeof(cwmp_buf));
+
+    RING("rc of cwmp op check %d", r);
+
+    CHECK_RC(rcf_rpc_server_destroy(rpcs_acse));
+
     TEST_SUCCESS;
     return result;
+
 #if 0
-    TEST_GET_PCO(pco_iut);
     TEST_GET_PCO(pco_aux);
 
     TEST_GET_ADDR(iut_addr);

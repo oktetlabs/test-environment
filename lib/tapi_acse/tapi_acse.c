@@ -116,13 +116,13 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
             {/* integer parameters */
                 int *p_val = va_arg(ap, int *);
                 type = CVT_INTEGER;
-                rc = cfg_get_instance_fmt(&type, "%s", buf, p_val);
+                rc = cfg_get_instance_fmt(&type, p_val, "%s", buf);
             }
             else /* string parameters */
             {
                 char **p_val = va_arg(ap, char **);
                 type = CVT_STRING;
-                rc = cfg_get_instance_fmt(&type, "%s", buf, p_val);
+                rc = cfg_get_instance_fmt(&type, p_val, "%s", buf);
             }
         }
         else

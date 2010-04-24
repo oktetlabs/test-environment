@@ -12,10 +12,15 @@
             <arg name="ta_acse" ref="ta_acse"/>
         </prologue>
 
+        <epilogue>
+            <script name="epilogue"/>
+            <arg name="ta_acse" ref="ta_acse"/>
+        </epilogue>
+
         <run>
             <script name="acse"/>
             <arg name="ta_acse" ref="ta_acse"/>
-        </run>
+        </run> 
 
     </session>
 </package>

@@ -9,7 +9,7 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 MY_LDADD = -ltapi_rpc -lrpc_types -ltapi_env -ltapi -lrcfrpc \
            -lconfapi -lconf_oid -lrcfapi -lrpcxdr -llogger_ten -lipc \
-           -llog_bufs -ltools -lpthread -ltapi_acse
+           -llog_bufs -ltools -lpthread -ltapi_acse -lcwmp_data
 
 MY_DEPS = \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtapi_rpc.a \
@@ -29,7 +29,7 @@ MY_DEPS = \
 
 noinst_HEADERS = acse_suite.h
 
-tetest_PROGRAMS = prologue acse
+tetest_PROGRAMS = prologue acse epilogue
 
 prologue_SOURCES = prologue.c
 prologue_LDADD = $(MY_LDADD)
@@ -38,3 +38,10 @@ prologue_DEPENDENCIES = $(MY_DEPS)
 acse_SOURCES = acse.c
 acse_LDADD = $(MY_LDADD)
 acse_DEPENDENCIES = $(MY_DEPS)
+
+epilogue_SOURCES = epilogue.c
+epilogue_LDADD = $(MY_LDADD)
+epilogue_DEPENDENCIES = $(MY_DEPS)
+
+
+

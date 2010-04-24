@@ -14,6 +14,8 @@ lib_LTLIBRARIES=libtapi_acse.la
 
 libtapi_acse_la_SOURCES= tapi_acse.c 
 
+libtapi_acse_la_LDFLAGS=-lcwmp_data
+
 install-exec-hook:
 	touch -c -r libtapi_acse.la $(DESTDIR)/$(libdir)/libtapi_acse.*
 

@@ -191,6 +191,7 @@ typedef uint32_t tapi_acse_call_handle_t;
 /* TODO: think, maybe use TE common te_errno instead special 
  * call status? Or encode here some [TR-069] error codes? */
 typedef enum {
+    ACSE_RPC_PENDING,
     ACSE_RPC_SUCCESS,
     ACSE_RPC_TIMEDOUT,
 } tapi_acse_call_status_t;
