@@ -38,8 +38,6 @@
 extern "C" {
 #endif
 
-#define LOG_LEVEL 0xff
-#define TE_LOG_LEVEL 0xff
 
 #include "te_config.h"
 

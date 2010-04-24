@@ -9,13 +9,13 @@ AM_CFLAGS = @TE_CFLAGS@ -DWITH_OPENSSL
 AM_LDFLAGS = @TE_LDFLAGS@
 
 
-lib_LTLIBRARIES = libacse_epc.la libacse_cwmp.la
+lib_LTLIBRARIES = libacse_epc.la libacse_cwmp.la libcwmp_data.la
 
-bin_PROGRAMS = acse_single acse_cli
+bin_PROGRAMS = acse_cli
 
 include_HEADERS = acse_epc.h cwmp_data.h
 
-acse_single_SOURCES = acse_dummy.c
+# acse_single_SOURCES = acse_dummy.c
 
 libacse_cwmp_la_SOURCES = acse.c \
                     acse_conn.c \
@@ -29,8 +29,10 @@ libacse_cwmp_la_SOURCES = acse.c \
                     md5evp.c \
                     acse_soapServer.c
 
-libacse_epc_la_SOURCES = acse_epc.c \
-                    cwmp_data.c
+libacse_epc_la_SOURCES = acse_epc.c cwmp_data.c
+
+libcwmp_data_la_SOURCES = cwmp_data.c
+                    
                     
 acse_cli_SOURCES = acse_cli.c
 
@@ -38,8 +40,8 @@ acse_cli_SOURCES = acse_cli.c
 
 
 # acse_dummy_LDFLAGS = -lgsoap
-acse_single_LDADD = -lacse_epc -lacse_cwmp -lgsoapssl -lz \
-            -llogger_file -ltools -lcrypto -lrt -lssl
+# acse_single_LDADD = -lacse_epc -lacse_cwmp -lgsoapssl -lz \
+#             -llogger_file -ltools -lcrypto -lrt -lssl
 
 acse_cli_LDADD = -lacse_epc  -lacse_cwmp -lgsoapssl -lz -llogger_file \
             -ltools -lcrypto -lrt -lssl -lpopt

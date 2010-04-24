@@ -22,12 +22,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- *
- * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
+
+#define TE_LGR_USER     "ACSE CWMP dispatcher"
 
 #include "te_config.h"
 
@@ -788,7 +788,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     {
         /* TODO add check, whether HoldRequests was set on */
 
-        INFO("Empty POST for '%s', empty list of RPC calls, response 204",
+        RING("Empty POST for '%s', empty list of RPC calls, response 204",
               cpe->name);
         soap->keep_alive = 0;
         soap_begin_count(soap);
@@ -803,6 +803,9 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     mheap_add_user(session->rpc_item->heap, session);
 
     request = session->rpc_item->params;
+
+    RING("%s(): Try send RPC for '%s', rpc type %d, ind %d ",
+         __FUNCTION__, cpe->name, request->rpc_cpe, request->index);
 
     if (soap->header == NULL)
     {

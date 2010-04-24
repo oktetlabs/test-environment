@@ -32,6 +32,8 @@
 */
 
 
+#include "te_config.h"
+#include "logger_api.h"
 #include "cwmp_data.h"
 
 #include <string.h>
@@ -411,4 +413,228 @@ te_cwmp_unpack__GetRPCMethodsResponse(void *msg, size_t max_len)
 
     return ofs;
 }
+
+
+
+/**
+ * Pack data for message client->ACSE.
+ * 
+ * @param buf           Place for packed data (usually in 
+ *                      shared memory segment).
+ * @param len           Length of memory area for packed data.
+ * @param cwmp_data     User-provided struct with data to be sent.
+ * 
+ * @return      -1 on error, 0 if no data presented,
+ *              or length of used memory block in @p buf.
+ */
+ssize_t
+cwmp_pack_call_data(void *buf, size_t len,
+                   acse_epc_cwmp_data_t *cwmp_data)
+{
+    if (cwmp_data->to_cpe.p == NULL || cwmp_data->op != EPC_RPC_CALL)
+        return 0;
+    switch (cwmp_data->rpc_cpe)
+    {
+    case CWMP_RPC_set_parameter_values:
+    case CWMP_RPC_get_parameter_values:
+    case CWMP_RPC_get_parameter_names:
+    case CWMP_RPC_set_parameter_attributes:
+    case CWMP_RPC_get_parameter_attributes:
+    case CWMP_RPC_add_object:
+    case CWMP_RPC_delete_object:
+    case CWMP_RPC_reboot:
+    case CWMP_RPC_download:
+    case CWMP_RPC_upload:
+    case CWMP_RPC_schedule_inform:
+    case CWMP_RPC_set_vouchers:
+    case CWMP_RPC_get_options:
+        /* TODO */
+        RING("%s():%d TODO", __FUNCTION__, __LINE__);
+        return 0;
+    case CWMP_RPC_NONE:
+    case CWMP_RPC_get_rpc_methods:
+    case CWMP_RPC_factory_reset:
+    case CWMP_RPC_get_queued_transfers:
+    case CWMP_RPC_get_all_queued_transfers:
+        /* do nothing, no data to CPE */
+        return 0;
+    }
+    return 0;
+}
+
+/**
+ * Pack data for message ACSE->client.
+ * 
+ * @param buf           Place for packed data (usually in 
+ *                      shared memory segment).
+ * @param len           Length of memory area for packed data.
+ * @param cwmp_data     User-provided struct with data to be sent.
+ * 
+ * @return      -1 on error, 0 if no data presented,
+ *              or length of used memory block in @p buf.
+ */
+ssize_t
+cwmp_pack_response_data(void *buf, size_t len,
+                        acse_epc_cwmp_data_t *cwmp_data)
+{
+    if (cwmp_data->from_cpe.p == NULL)
+        return 0;
+
+    if (cwmp_data->op == EPC_GET_INFORM)
+        return te_cwmp_pack__Inform(cwmp_data->from_cpe.inform, buf, len);
+
+    /* other operations do not require passing of CWMP data */
+    if (cwmp_data->op != EPC_RPC_CHECK)
+        return 0;
+
+    switch (cwmp_data->rpc_cpe)
+    {
+    case CWMP_RPC_set_parameter_values:
+    case CWMP_RPC_get_parameter_values:
+    case CWMP_RPC_get_parameter_names:
+    case CWMP_RPC_get_parameter_attributes:
+    case CWMP_RPC_add_object:
+    case CWMP_RPC_delete_object:
+    case CWMP_RPC_download:
+    case CWMP_RPC_upload:
+    case CWMP_RPC_get_queued_transfers:
+    case CWMP_RPC_get_all_queued_transfers:
+    case CWMP_RPC_get_options:
+        /* TODO */
+        RING("%s():%d TODO", __FUNCTION__, __LINE__);
+        return 0;
+    case CWMP_RPC_get_rpc_methods:
+        return te_cwmp_pack__GetRPCMethodsResponse(
+                        cwmp_data->from_cpe.get_rpc_methods_r,
+                        buf, len);
+    case CWMP_RPC_NONE:
+    case CWMP_RPC_schedule_inform:
+    case CWMP_RPC_set_vouchers:
+    case CWMP_RPC_reboot:
+    case CWMP_RPC_set_parameter_attributes:
+    case CWMP_RPC_factory_reset:
+        /* do nothing, no data to CPE */
+        return 0;
+    }
+    return 0;
+}
+
+
+
+/*
+ * Unpack data from message client->ACSE.
+ * 
+ * @param buf           Place with packed data (usually in 
+ *                      local copy of transfered struct).
+ * @param len           Length of packed data.
+ * @param cwmp_data     Specific CWMP datawith unpacked payload.
+ * 
+ * @return status code
+ */
+te_errno
+cwmp_unpack_call_data(void *buf, size_t len,
+                   acse_epc_cwmp_data_t *cwmp_data)
+{
+    if (cwmp_data->op != EPC_RPC_CALL)
+        return 0;
+
+    cwmp_data->to_cpe.p = buf;
+
+    switch (cwmp_data->rpc_cpe)
+    {
+        case CWMP_RPC_set_parameter_values:
+        case CWMP_RPC_get_parameter_values:
+        case CWMP_RPC_get_parameter_names:
+        case CWMP_RPC_set_parameter_attributes:
+        case CWMP_RPC_get_parameter_attributes:
+        case CWMP_RPC_add_object:
+        case CWMP_RPC_delete_object:
+        case CWMP_RPC_reboot:
+        case CWMP_RPC_download:
+        case CWMP_RPC_upload:
+        case CWMP_RPC_schedule_inform:
+        case CWMP_RPC_set_vouchers:
+        case CWMP_RPC_get_options:
+            /* TODO */
+            RING("%s():%d TODO", __FUNCTION__, __LINE__);
+            return 0;
+        case CWMP_RPC_NONE:
+        case CWMP_RPC_get_rpc_methods:
+        case CWMP_RPC_factory_reset:
+        case CWMP_RPC_get_queued_transfers:
+        case CWMP_RPC_get_all_queued_transfers:
+            /* do nothing, no data to CPE */
+            return 0;
+    }
+    return 0;
+}
+
+/**
+ * Unpack data from message ACSE->client.
+ * 
+ * @param buf           Place with packed data (usually in 
+ *                      local copy of transfered struct).
+ * @param len           Length of memory area with packed data.
+ * @param cwmp_data     Specific CWMP datawith unpacked payload.
+ * 
+ * @return status code
+ */
+te_errno
+cwmp_unpack_response_data(void *buf, size_t len,
+                       acse_epc_cwmp_data_t *cwmp_data)
+{
+    te_errno rc = 0;
+    if (cwmp_data->op == EPC_GET_INFORM)
+    {
+        cwmp_data->from_cpe.p = buf;
+        if (te_cwmp_unpack__Inform(buf, len) < 0)
+        {
+            ERROR("%s(): unpack inform failed", __FUNCTION__);
+            return TE_RC(TE_ACSE, TE_EFAIL);
+        }
+        else 
+            return 0;
+    }
+
+    /* other operations do not require passing of CWMP data */
+    if (cwmp_data->op != EPC_RPC_CHECK)
+        return 0;
+
+    cwmp_data->from_cpe.p = buf;
+
+    switch (cwmp_data->rpc_cpe)
+    {
+    case CWMP_RPC_set_parameter_values:
+    case CWMP_RPC_get_parameter_values:
+    case CWMP_RPC_get_parameter_names:
+    case CWMP_RPC_get_parameter_attributes:
+    case CWMP_RPC_add_object:
+    case CWMP_RPC_delete_object:
+    case CWMP_RPC_download:
+    case CWMP_RPC_upload:
+    case CWMP_RPC_get_queued_transfers:
+    case CWMP_RPC_get_all_queued_transfers:
+    case CWMP_RPC_get_options:
+        /* TODO */
+        RING("%s():%d TODO", __FUNCTION__, __LINE__);
+        return 0;
+    case CWMP_RPC_get_rpc_methods:
+        rc = (te_cwmp_unpack__GetRPCMethodsResponse(buf, len) > 0) 
+                ? 0 : TE_EFAIL;  
+        break;
+    case CWMP_RPC_NONE:
+    case CWMP_RPC_schedule_inform:
+    case CWMP_RPC_set_vouchers:
+    case CWMP_RPC_reboot:
+    case CWMP_RPC_set_parameter_attributes:
+    case CWMP_RPC_factory_reset:
+        /* do nothing, no data to CPE */
+        return 0;
+    }
+    if (rc != 0)
+        ERROR("EPC unpack failed: %r", rc);
+    return rc;
+}
+
+
 

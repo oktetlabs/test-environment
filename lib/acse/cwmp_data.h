@@ -35,10 +35,69 @@
 
 #include "te_errno.h"
 #include "cwmp_soapStub.h"
+#include "acse_epc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * Pack data for message client->ACSE.
+ * 
+ * @param buf           Place for packed data (usually in 
+ *                      shared memory segment).
+ * @param len           Length of memory area for packed data.
+ * @param cwmp_data     User-provided struct with data to be sent.
+ * 
+ * @return      -1 on error, 0 if no data presented,
+ *              or length of used memory block in @p buf.
+ */
+extern ssize_t cwmp_pack_call_data(void *buf, size_t len,
+                               acse_epc_cwmp_data_t *cwmp_data);
+
+/**
+ * Pack data for message ACSE->client.
+ * 
+ * @param buf           Place for packed data (usually in 
+ *                      shared memory segment).
+ * @param len           Length of memory area for packed data.
+ * @param cwmp_data     User-provided struct with data to be sent.
+ * 
+ * @return      -1 on error, 0 if no data presented,
+ *              or length of used memory block in @p buf.
+ */
+extern ssize_t cwmp_pack_response_data(void *buf, size_t len,
+                                       acse_epc_cwmp_data_t *cwmp_data);
+
+
+/*
+ * Unpack data from message client->ACSE.
+ * 
+ * @param buf           Place with packed data (usually in 
+ *                      local copy of transfered struct).
+ * @param len           Length of packed data.
+ * @param cwmp_data     Specific CWMP datawith unpacked payload.
+ * 
+ * @return status code
+ */
+extern te_errno cwmp_unpack_call_data(void *buf, size_t len,
+                                      acse_epc_cwmp_data_t *cwmp_data);
+
+
+/**
+ * Unpack data from message ACSE->client.
+ * 
+ * @param buf           Place with packed data (usually in 
+ *                      local copy of transfered struct).
+ * @param len           Length of memory area with packed data.
+ * @param cwmp_data     Specific CWMP datawith unpacked payload.
+ * 
+ * @return status code
+ */
+extern te_errno cwmp_unpack_response_data(void *buf, size_t len,
+                                       acse_epc_cwmp_data_t *cwmp_data);
+
+
 
 
 extern ssize_t te_cwmp_pack__FaultStruct(const cwmp__FaultStruct *src, void *msg, size_t max_len);

@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "ACSE ConnectionRequester"
+
 #include "te_config.h"
 
 #if HAVE_SYS_TYPES_H
@@ -96,6 +98,9 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
     if (!(pfd->revents & POLLIN))
         return 0;
 
+    RING("Processing ConnectionRequest to '%s'\n",
+         conn_req->cpe_item->name);
+
     soap = &(conn_req->m_soap);
     /* should not block after poll() */
     if (soap_begin_recv(soap))
@@ -133,7 +138,8 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
 
     soap_end_recv(soap);
 
-    RING("Recv after Conn req, status %d", soap->error);
+    RING("Recv after Conn req to '%s', status %d", 
+         conn_req->cpe_item->name, soap->error);
 
     soap_closesock(soap);
     return TE_ENOTCONN; /* Finish this I/O channel */

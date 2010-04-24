@@ -22,7 +22,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
@@ -136,6 +135,55 @@ free_const(void const *p)
  free((void *)p);
 }
 
+
+/**
+ * Utility functions for access to readonly configurator value
+ * of string type.
+ *
+ * @return status
+ */
+static inline te_errno
+cfg_string_readonly(const char *string, acse_epc_config_data_t *params)
+{
+    if (params->op.fun == EPC_CFG_MODIFY)
+        return TE_EACCES;
+
+    if (NULL == string)
+        params->value[0] = '\0';
+    else
+        strcpy(params->value, string);
+    return 0;
+}
+
+
+/**
+ * Utility functions for access to readwrite configurator value
+ * of string type.
+ *
+ * @return status
+ */
+static inline te_errno
+cfg_string_access(const char **pstring, acse_epc_config_data_t *params)
+{
+    assert(pstring);
+    if (params->op.fun == EPC_CFG_MODIFY)
+    {
+        free_const(*pstring);
+
+        if ((*pstring = strdup(params->value)) == NULL)
+            return TE_RC(TE_ACSE, TE_ENOMEM);
+    }
+    else
+    {
+        if (*pstring != NULL)
+            strcpy(params->value, *pstring);
+        else 
+            params->value[0] = '\0';
+    }
+    return 0;
+}
+
+
 /**
  * Access to 'hold_requests' flag for CPE CWMP session.
  *
@@ -227,10 +275,7 @@ cpe_cr_state(cpe_t *cpe, acse_epc_config_data_t *params)
 static te_errno
 device_id_serial_number(cpe_t *cpe, acse_epc_config_data_t *params)
 {
-    if (params->op.fun == EPC_CFG_MODIFY)
-        return TE_EACCES;
-    strcpy(params->value, cpe->device_id.SerialNumber);
-    return 0;
+    return cfg_string_readonly(cpe->device_id.SerialNumber, params);
 }
 
 /**
@@ -244,10 +289,7 @@ device_id_serial_number(cpe_t *cpe, acse_epc_config_data_t *params)
 static te_errno
 device_id_product_class(cpe_t *cpe, acse_epc_config_data_t *params)
 {
-    if (params->op.fun == EPC_CFG_MODIFY)
-        return TE_EACCES;
-    strcpy(params->value, cpe->device_id.ProductClass);
-    return 0;
+    return cfg_string_readonly(cpe->device_id.ProductClass, params);
 }
 
 /**
@@ -261,10 +303,7 @@ device_id_product_class(cpe_t *cpe, acse_epc_config_data_t *params)
 static te_errno
 device_id_oui(cpe_t *cpe, acse_epc_config_data_t *params)
 {
-    if (params->op.fun == EPC_CFG_MODIFY)
-        return TE_EACCES;
-    strcpy(params->value, cpe->device_id.OUI);
-    return 0;
+    return cfg_string_readonly(cpe->device_id.OUI, params);
 }
 
 /**
@@ -278,10 +317,7 @@ device_id_oui(cpe_t *cpe, acse_epc_config_data_t *params)
 static te_errno
 device_id_manufacturer(cpe_t *cpe, acse_epc_config_data_t *params)
 { 
-    if (params->op.fun == EPC_CFG_MODIFY)
-        return TE_EACCES;
-    strcpy(params->value, cpe->device_id.Manufacturer);
-    return 0;
+    return cfg_string_readonly(cpe->device_id.Manufacturer, params);
 }
 
 
@@ -332,6 +368,8 @@ acs_cpe_list(acse_epc_config_data_t *params)
     }
 
     *ptr = '\0';
+    INFO("%s(): list of %s, result '%s'", 
+         __FUNCTION__, params->acs, params->list);
     return 0;
 }
 
@@ -347,10 +385,15 @@ acs_cpe_list(acse_epc_config_data_t *params)
 static te_errno
 acs_port(acs_t *acs, acse_epc_config_data_t *params)
 {
+    VERB("ACS-port config, fun %d, value '%s', acs ptr %p, old val %d",
+            (int)params->op.fun, params->value, acs, (int)acs->port);
     if (params->op.fun == EPC_CFG_MODIFY)
         acs->port = atoi(params->value);
     else
         sprintf(params->value, "%i", acs->port);
+
+    VERB("ACS-port config, value '%s', new val %d",
+            params->value, (int)acs->port);
     return 0;
 }
 
@@ -414,26 +457,6 @@ acs_enabled(acs_t *acs, acse_epc_config_data_t *params)
 
 
 
-static inline te_errno
-cfg_string_access(const char **pstring, acse_epc_config_data_t *params)
-{
-    assert(pstring);
-    if (params->op.fun == EPC_CFG_MODIFY)
-    {
-        free_const(*pstring);
-
-        if ((*pstring = strdup(params->value)) == NULL)
-            return TE_RC(TE_ACSE, TE_ENOMEM);
-    }
-    else
-    {
-        if (*pstring != NULL)
-            strcpy(params->value, *pstring);
-        else 
-            params->value[0] = '\0';
-    }
-    return 0;
-}
 /**
  * Access to the url of ACS.
  *
@@ -592,9 +615,10 @@ acse_acs_list(acse_epc_config_data_t *params)
     char        *ptr = params->list;
     unsigned int len = 0;
     acs_t       *item;
-    RING("%s start", __FUNCTION__);
+    VERB("%s start", __FUNCTION__);
 
-    /* Calculate the whole length (plus 1 sym for trailing ' '/'\0') */
+    *ptr = '\0';
+    /* Calculate the whole length, plus 1 sym for trailing ' '|'\0' */
     LIST_FOREACH(item, &acs_list, links)
         len += strlen(item->name) + 1;
 
@@ -615,8 +639,7 @@ acse_acs_list(acse_epc_config_data_t *params)
     }
 
     *ptr = '\0';
-    RING("%s stop, len %d, result is '%s'",
-         __FUNCTION__, len, params->list);
+    VERB("%s stop, result is '%s'", __FUNCTION__, params->list);
     return 0;
 }
 
@@ -728,6 +751,9 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
         return TE_RC(TE_ACSE, TE_EINVAL);
     }
 
+    if (EPC_CFG_MODIFY != cfg_pars->op.fun)
+        memset(cfg_pars->value, 0, sizeof(cfg_pars->value));
+
     switch (cfg_pars->op.fun) 
     { 
         case EPC_CFG_ADD:
@@ -753,7 +779,7 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
                 return config_acs(cfg_pars);
             return config_cpe(cfg_pars);
         case EPC_CFG_LIST:
-            RING("acse_epc_config(): list, level is %d ",
+            VERB("acse_epc_config(): list, level is %d ",
                  (int)cfg_pars->op.level);
             if (EPC_CFG_ACS == cfg_pars->op.level)
                 return acse_acs_list(cfg_pars);
@@ -798,6 +824,8 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
 
             TAILQ_INSERT_TAIL(&cpe->rpc_queue, rpc_item, links);
             cwmp_pars->from_cpe.p = NULL; /* nothing yet.. */
+            RING("EPC CWMP op, add RPC call to '%s', type %d, ind %d",
+                 cwmp_pars->cpe, cwmp_pars->rpc_cpe, rpc_item->index);
         }
         break;
     case EPC_RPC_CHECK:
@@ -862,6 +890,8 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             return rc;
         }
         cwmp_pars->from_cpe.cr_state = cpe->cr_state;
+        RING("EPC CWMP Issue ConnReq to '%s'", cwmp_pars->cpe);
+
         break;
     case EPC_CONN_REQ_CHECK:
         cwmp_pars->from_cpe.cr_state = cpe->cr_state;
@@ -957,7 +987,7 @@ epc_after_poll(void *data, struct pollfd *pfd)
 
     /* Now send response, all data prepared in specific calls above. */
     rc = acse_epc_send(msg);
-    RING("%s(): send EPC rc %r", __FUNCTION__, rc);
+    VERB("%s(): send EPC rc %r", __FUNCTION__, rc);
 
     /* Do NOT free cwmp params for RPC call operation - they are stored
        in queue, and will be free'd after recieve RPC response and 

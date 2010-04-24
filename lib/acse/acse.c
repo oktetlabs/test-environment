@@ -29,6 +29,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "ACSE main loop"
+
 #include "te_config.h"
 
 #if HAVE_SYS_TYPES_H
