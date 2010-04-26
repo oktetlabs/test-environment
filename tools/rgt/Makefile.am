@@ -23,7 +23,7 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-SUBDIRS = lib rgt-cfg rgt-core rgt-format rgt-idx .
+SUBDIRS = lib rgt-cfg rgt-core rgt-format .
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
