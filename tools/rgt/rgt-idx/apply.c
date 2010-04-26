@@ -27,6 +27,7 @@
 #include "te_config.h"
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <getopt.h>
@@ -263,14 +264,13 @@ run(const char *input_name, const char *index_name, const char *output_name)
         }
         /* Check offset range */
         if (offset > OFF_T_MAX)
-            ERROR_CLEANUP("Index entry contains unsupported offset %llu",
-                          offset);
+            ERROR_CLEANUP("Index entry contains "
+                          "unsupported offset %" PRIu64, offset);
 
         /* Seek the input log */
         if (fseeko(input, (off_t)offset, SEEK_SET) != 0)
-            ERROR_CLEANUP("Failed to seek to input position %llu: %s",
-                          (unsigned long long int)offset,
-                          strerror(errno));
+            ERROR_CLEANUP("Failed to seek to input position "
+                          "%" PRIu64 ": %s", offset, strerror(errno));
 
         /* Read a message from the input */
         read_rc = read_message(input, &buf, &size, &len);
@@ -278,15 +278,14 @@ run(const char *input_name, const char *index_name, const char *output_name)
         {
             if (read_rc == READ_MESSAGE_RC_WRONG_VER)
                 ERROR("Message with unsupported version encountered "
-                      "at position %llu", (unsigned long long int)offset);
+                      "at position %" PRIu64, offset);
             else
             {
                 int read_errno = errno;
 
                 ERROR("Failed reading input message "
-                      "(starting at %llu) at %lld: %s",
-                      (unsigned long long int)offset,
-                      (long long int)ftello(input),
+                      "(starting at %" PRIu64 ") at %" PRId64 ": %s",
+                      offset, (int64_t)ftello(input),
                       read_rc == READ_MESSAGE_RC_EOF
                           ? "unexpected EOF"
                           : strerror(read_errno));

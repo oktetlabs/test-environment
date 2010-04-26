@@ -27,6 +27,7 @@
 #include "te_config.h"
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <getopt.h>
@@ -67,15 +68,15 @@ run(const char *input_name)
     while (fread(&e, sizeof(e), 1, input) == 1)
     {
         if (memcmp(prev_e + 1, e + 1, sizeof(*e)) > 0)
-            ERROR_CLEANUP("An entry at offset %llu/0x%llX is out of order",
-                          offset, offset);
+            ERROR_CLEANUP("An entry at offset %" PRIu64 "/0x%"
+                          PRIX64 " is out of order", offset, offset);
 
         memcpy(prev_e + 1, e + 1, sizeof(*e));
         offset += sizeof(e);
     }
 
     if (!feof(input))
-        ERROR_CLEANUP("Failed to read input at %llu: %s",
+        ERROR_CLEANUP("Failed to read input at %" PRIu64 ": %s",
                       offset, strerror(errno));
 
     result = 0;
