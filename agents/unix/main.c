@@ -1684,14 +1684,18 @@ ta_waitpid(pid_t pid, int *p_status, int options)
          */
         if (!found && wp_rc == 0)
         {
+            int wait_iter = 0;
+
+#define WAIT_SIGCHLD_TIMEOUT_WARN       (90)
+
             saved_errno = errno;
 
             /* Sleep in unlocked state */
             UNLOCK;
-            while ((rc = sem_wait(&wake->sem)) != 0)
+            while (sem_trywait(&wake->sem) != 0)
             {
-                if (errno != EINTR)
-                    IMPOSSIBLE_LOG_AND_RET(sem_wait);
+                if (errno != EAGAIN && errno != EINTR)
+                    IMPOSSIBLE_LOG_AND_RET(sem_trywait);
                 /*
                  * Really, if it is "our" signal (SIGCHLD), we can try to
                  * call find_dead_child, but we should not free(wake) before
@@ -1699,8 +1703,21 @@ ta_waitpid(pid_t pid, int *p_status, int options)
                  * ta_sigchld_handler will wake up us explicitly.
                  */
                 errno = saved_errno;
+
+                /*
+                 * Force call of handler to avoid dead lock if the system
+                 * loses SIGCHLD.
+                 */
+                ta_sigchld_handler();
+                wait_iter++;
+                if (wait_iter == WAIT_SIGCHLD_TIMEOUT_WARN)
+                    WARN("Waiting of SIGCHLD signal from the process "
+                         "with pid %d have crossed %d secs threshold.",
+                         pid, WAIT_SIGCHLD_TIMEOUT_WARN);
+                sleep(1);
             }
             LOCK;
+#undef WAIT_SIGCHLD_TIMEOUT_WARN
         }
 
         /* Clean up wait queue */
