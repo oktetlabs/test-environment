@@ -17,6 +17,8 @@
 #include <signal.h>
 #include <sys/socket.h>
 
+#include "acse_suite.h" 
+#include "tapi_rpc_tr069.h"
 #include "tapi_test.h"
 #include "tapi_acse.h"
 
@@ -28,12 +30,17 @@ main(int argc, char *argv[])
     const char *ta_acse;
     cfg_val_type type = CVT_INTEGER;
     int cfg_value;
+    rcf_rpc_server *rpcs_acse = NULL; 
+    te_errno te_rc;
     
     TEST_GET_STRING_PARAM(ta_acse);
 
     signal(SIGINT, te_test_sig_handler);
     te_lgr_entity = TE_TEST_NAME;
     TAPI_ON_JMP(TEST_ON_JMP_DO);
+
+    te_rc = rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
+                               FALSE, TRUE, FALSE, &rpcs_acse);
 
     CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_DEL,
                                   VA_END_LIST));
@@ -47,6 +54,9 @@ main(int argc, char *argv[])
     type = CVT_INTEGER;
     CHECK_RC(cfg_get_instance_fmt(&type, &cfg_value, 
                                  "/agent:%s/acse:", ta_acse));
+
+
+    CHECK_RC(rcf_rpc_server_destroy(rpcs_acse));
 
     RING("value of acse leaf: %d", cfg_value);
 

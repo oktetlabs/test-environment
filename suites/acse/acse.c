@@ -31,6 +31,10 @@
 
 #include "acse_suite.h"
 
+#include "tapi_rpc_tr069.h"
+#include "acse_epc.h"
+#include "cwmp_data.h"
+
 int
 main(int argc, char *argv[])
 {
@@ -38,42 +42,82 @@ main(int argc, char *argv[])
     unsigned int u;
     int r;
     int call_index;
+    int cr_state;
+    te_cwmp_rpc_cpe_t cwmp_rpc = CWMP_RPC_get_rpc_methods;
+    _cwmp__GetRPCMethodsResponse *get_rpc_meth_r = NULL;
 
-    rcf_rpc_server *rpcs_acse = NULL;
-
-    const char *ta_acse;
+    rcf_rpc_server *rpcs_acse = NULL; 
     te_errno te_rc;
+    const char *ta_acse;
 
     TEST_START;
 
     TEST_GET_STRING_PARAM(ta_acse);
 
-#if 1
+#if 0
     te_rc = rcf_rpc_server_create_ta_thread(ta_acse, "acse_ctl",
                 &rpcs_acse);
 #else
-    te_rc = rcf_rpc_server_get(ta_acse, "local", NULL, FALSE, TRUE, FALSE,
-                                &rpcs);
+    te_rc = rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
+                               FALSE, TRUE, FALSE, &rpcs_acse);
 #endif
 
     CHECK_RC(te_rc);
 
-    r = rpc_cwmp_op_call(rpcs_acse, "A", "box", CWMP_RPC_get_rpc_methods,
-                        NULL, 0, &call_index);
+    CHECK_RC(tapi_acse_cpe_get_rpc_methods(rpcs_acse, "A", "box",
+                                           &call_index));
 
-    RING("rc of cwmp op call %d", r);
+    RING("GetRPCMethods queued with index %d", call_index);
 
     r = rpc_cwmp_conn_req(rpcs_acse, "A", "box");
 
     RING("rc of cwmp conn req %d", r);
 
-    sleep(5);
-    r = rpc_cwmp_op_check(rpcs_acse, "A", "box", call_index,
-                          cwmp_buf, sizeof(cwmp_buf));
+    cr_state = -1;
 
-    RING("rc of cwmp op check %d", r);
+    r = 10;
+    do {
+    sleep(1);
+    CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_OBTAIN,
+          "cr_state", &cr_state, VA_END_LIST));
 
-    CHECK_RC(rcf_rpc_server_destroy(rpcs_acse));
+    RING("cr_state on box is %d", cr_state);
+    r--;
+    } while (cr_state != CR_DONE && r > 0);
+
+    sleep(3);
+
+    r = 20;
+    do {
+        sleep(1);
+        CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_OBTAIN,
+              "cwmp_state", &cr_state, VA_END_LIST));
+
+        RING("cwmp_state on box is %d", cr_state);
+        r--;
+    } while (cr_state != 0 && r > 0);
+
+    te_rc = tapi_acse_cpe_get_rpc_methods_resp(rpcs_acse, "A", "box",
+                          call_index, &get_rpc_meth_r);
+
+    RING("rc of cwmp op check %r", te_rc);
+    if (te_rc == 0 && get_rpc_meth_r != NULL)
+    {
+        MethodList *mlist;
+        char answer_buf[1000] = "";
+        char *p = answer_buf;
+        p += sprintf(p, "RPC methods: ");
+
+        if ((mlist = get_rpc_meth_r->MethodList_)
+            != NULL)
+        {
+            int i;
+            for (i = 0; i < mlist->__size; i++)
+                p += sprintf(p, "'%s', ", mlist->__ptrstring[i]);
+        }
+        RING("%s", answer_buf);
+    }
+
 
     TEST_SUCCESS;
     return result;
