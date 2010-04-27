@@ -35,8 +35,12 @@
 #include "tapi_acse.h"
 #include "tapi_cfg_base.h"
 
+#include "tapi_rpc_tr069.h"
+#include "acse_epc.h"
+#include "cwmp_data.h"
 
-const int va_end_list_var = 10;
+
+int va_end_list_var = 10;
 void * const va_end_list_ptr = &va_end_list_ptr;
 
 /* see description in tapi_acse.h */
@@ -157,6 +161,7 @@ tapi_acse_manage_cpe(const char *ta, const char *acs_name,
     va_start(ap, opcode);
     rc = tapi_acse_manage_vlist(ta, acs_name, cpe_name, opcode, ap);
     va_end(ap);
+    return rc;
 }
 
 
@@ -171,5 +176,55 @@ tapi_acse_manage_acs(const char *ta, const char *acs_name,
     va_start(ap, opcode);
     rc = tapi_acse_manage_vlist(ta, acs_name, NULL, opcode, ap);
     va_end(ap);
+    return rc;
 }
 
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_cpe_get_rpc_methods( rcf_rpc_server *rpcs,
+                               const char *acs_name,
+                               const char *cpe_name,
+                               int *call_index)
+{
+    return rpc_cwmp_op_call(rpcs, acs_name, cpe_name,
+                        CWMP_RPC_get_rpc_methods,
+                        NULL, 0, call_index);
+}
+
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_cpe_get_rpc_methods_resp(
+                               rcf_rpc_server *rpcs,
+                               const char *acs_name,
+                               const char *cpe_name,
+                               int call_index,
+                               _cwmp__GetRPCMethodsResponse **resp)
+{
+    te_errno rc;
+    uint8_t *cwmp_buf = NULL;
+    size_t buflen = 0;
+
+    rc = rpc_cwmp_op_check(rpcs, acs_name, cpe_name, call_index,
+                           &cwmp_buf, &buflen);
+    if (0 == rc && NULL != resp)
+    {
+        acse_epc_cwmp_data_t cwmp_data;
+
+        cwmp_data.op = EPC_RPC_CHECK;
+        cwmp_data.rpc_cpe = CWMP_RPC_get_rpc_methods;
+
+        rc = cwmp_unpack_response_data(cwmp_buf, buflen,
+                                          &cwmp_data);
+        if (0 == rc)
+            *resp = cwmp_data.from_cpe.get_rpc_methods_r;
+        else
+        {
+            *resp = NULL;
+            ERROR("%s(): unpack error %r", __FUNCTION__, rc);
+        }
+
+    }
+    return rc;
+}
