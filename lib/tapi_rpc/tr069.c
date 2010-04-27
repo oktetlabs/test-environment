@@ -24,9 +24,8 @@
  * MA  02111-1307  USA
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- * @author Edward Malarov <Edward.Makarov@oktetlabs.ru>
  *
- * $Id: tr069.c 43076 2007-09-24 06:48:00Z kam $
+ * $Id$
  */
 
 #include "te_config.h"
@@ -52,167 +51,6 @@
 #include "tapi_rpc_tr069.h"
 
 
-
-#undef STR_EXECUTIVE
-#undef STR
-
-#undef RPC_CALL
-#undef RPC_CALL_NO_REQ
-#undef RPC_CALL_NO_RESP
-#undef RPC_CALL_NO_REQ_NO_RESP
-
-#define STR_EXECUTIVE(_fun) _fun
-
-#define STR(_fun) STR_EXECUTIVE(_fun)
-
-#define RPC_CALL(_fun, _actions_before_call,                             \
-                 _actions_after_call, _actions_after_log)                \
-    extern int rpc_##_fun(rcf_rpc_server *rpcs,                          \
-                         _fun##_t *req,                                  \
-                         _fun##_response_t *resp)                        \
-    RPC_CALL_BODY(_fun, _actions_before_call,                            \
-                  _actions_after_call, _actions_after_log,               \
-                  rpcs != NULL && req != NULL && resp != NULL)
-
-#define RPC_CALL_NO_REQ(_fun, _actions_before_call,                      \
-                        _actions_after_call, _actions_after_log)         \
-    extern int rpc_##_fun(rcf_rpc_server *rpcs, _fun##_response_t *resp) \
-    RPC_CALL_BODY(_fun, _actions_before_call,                            \
-                  _actions_after_call, _actions_after_log,               \
-                  rpcs != NULL && resp != NULL)
-
-#define RPC_CALL_NO_RESP(_fun, _actions_before_call,                     \
-                         _actions_after_call, _actions_after_log)        \
-    extern int rpc_##_fun(rcf_rpc_server *rpcs, _fun##_t *req)           \
-    RPC_CALL_BODY(_fun, _actions_before_call,                            \
-                  _actions_after_call, _actions_after_log,               \
-                  rpcs != NULL && req != NULL)
-
-#define RPC_CALL_NO_REQ_NO_RESP(_fun, _actions_before_call,              \
-                                _actions_after_call, _actions_after_log) \
-    extern int rpc_##_fun(rcf_rpc_server *rpcs)                          \
-    RPC_CALL_BODY(_fun, _actions_before_call,                            \
-                  _actions_after_call, _actions_after_log,               \
-                  rpcs != NULL)
-
-#define RPC_CALL_BODY(_fun, _actions_before_call, _actions_after_call,   \
-                      _actions_after_log, _param_check_expression)       \
-{                                                                        \
-    size_t u;                                                            \
-                                                                         \
-    tarpc_##_fun##_in in;                                                \
-    tarpc_##_fun##_out out;                                              \
-                                                                         \
-    memset(&in, 0, sizeof(in));                                          \
-    memset(&out, 0, sizeof(out));                                        \
-                                                                         \
-    ERROR("RPC_API: rpc_" #_fun "()");                                   \
-                                                                         \
-    if (!(_param_check_expression))                     \
-    {                                                                    \
-        ERROR("%s(): Invalid RPC parameter", __FUNCTION__);              \
-        RETVAL_INT(STR(_fun), -1);                                       \
-    }                                                                    \
-                                                                         \
-    rpcs->op = RCF_RPC_CALL_WAIT;                                        \
-                                                                         \
-    { _actions_before_call }                                             \
-                                                                         \
-    rcf_rpc_call(rpcs, #_fun, &in, &out);           \
-                                                                         \
-    { _actions_after_call }                                              \
-                                                                         \
-    TAPI_RPC_LOG("RPC (%s,%s): " #_fun "() -> %d (%s)",                  \
-                 rpcs->ta, rpcs->name,                                   \
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));            \
-                                                                         \
-    { _actions_after_log }                                               \
-                                                                         \
-    RETVAL_ZERO_INT(STR(_fun), out.retval);                              \
-}
-
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL_NO_REQ(cpe_get_rpc_methods,
-{
-    ERROR("out.method_list.method_list_val = %x, out.method_list.method_list_len = %u", out.method_list.method_list_val, out.method_list.method_list_len);
-    for (u = 0; u < out.method_list.method_list_len; u++)
-    {
-        ERROR("out.method_list.method_list_val[%u] = '%s'", u, out.method_list.method_list_val[u]);
-    }
-},
-{
-    ERROR("out.method_list.method_list_val = %x, out.method_list.method_list_len = %u", out.method_list.method_list_val, out.method_list.method_list_len);
-    for (u = 0; u < out.method_list.method_list_len; u++)
-    {
-        ERROR("out.method_list.method_list_val[%u] = '%s'", u, out.method_list.method_list_val[u]);
-    }
-},
-{
-    if (out.retval == 0)
-    {
-        resp->method_list = out.method_list.method_list_val;
-        out.method_list.method_list_val = NULL;
-        resp->n = out.method_list.method_list_len;
-        out.method_list.method_list_len = 0;
-    }
-})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_set_parameter_values, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_get_parameter_values, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_get_parameter_names, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_set_parameter_attributes, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_get_parameter_attributes, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_add_object, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_delete_object, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_reboot, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_download, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_upload, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_factory_reset, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_get_queued_transfers, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_get_all_queued_transfers, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_schedule_inform, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_set_vouchers, {}, {}, {})
-
-/* See description in tapi_rpc_tr069.h */
-RPC_CALL(cpe_get_options, {}, {}, {})
-
-#undef STR_EXECUTIVE
-#undef STR
-
-#undef RPC_CALL
-#undef RPC_CALL_NO_REQ
-#undef RPC_CALL_NO_RESP
-#undef RPC_CALL_NO_REQ_NO_RESP
 
 
 
@@ -274,7 +112,7 @@ int
 rpc_cwmp_op_check( rcf_rpc_server *rpcs,
                    const char *acs_name, const char *cpe_name,
                    int index,
-                   uint8_t *buf, size_t buflen)
+                   uint8_t **buf, size_t *buflen)
 {
     tarpc_cwmp_op_check_in  in;
     tarpc_cwmp_op_check_out out;
@@ -299,12 +137,14 @@ rpc_cwmp_op_check( rcf_rpc_server *rpcs,
     in.cpe_name = strdup(cpe_name);
     in.call_index = index;
 
-    if (buf != NULL && buflen != 0)
+#if 0 /* it seems unneccessary. */
+    if (buf != NULL && buflen != NULL)
     {
-        in.buf.buf_len = buflen;
-        in.buf.buf_val = buf;
+        in.buf.buf_len = *buflen;
+        in.buf.buf_val = *buf;
     }
     else
+#endif
     {
         in.buf.buf_len = 0;
         in.buf.buf_val = NULL;
@@ -312,8 +152,12 @@ rpc_cwmp_op_check( rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "cwmp_op_check", &in, &out);
 
-    if (buf != NULL && out.buf.buf_val != NULL)
-        memcpy(buf, out.buf.buf_val, out.buf.buf_len);
+    if (buf != NULL && buflen != NULL && out.buf.buf_val != NULL)
+    {
+        *buflen = out.buf.buf_len;
+        *buf = malloc(out.buf.buf_len);
+        memcpy(*buf, out.buf.buf_val, out.buf.buf_len);
+    }
 
     TAPI_RPC_LOG("RPC (%s,%s): cwmp_op_check(%s, %s, %d) -> %d (%s)",
                  rpcs->ta, rpcs->name,
