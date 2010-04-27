@@ -33,6 +33,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 
+#include "tapi_rpc.h"
 #include "te_cwmp.h"
 #include "cwmp_soapStub.h"
 
@@ -208,6 +209,533 @@ extern te_errno tapi_acse_cpe_rpc_call_response(const char *ta,
                                      const char *cpe_name,
                                      tapi_acse_call_handle_t call,
                                      tapi_acse_call_status_t *status);
+
+
+/**
+ * Call CPE GetRPCMethods method.
+ *
+ * @param rpcs        TE RPC server handle
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_rpc_methods(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int *call_index);
+
+/**
+ * Get CPE GetRPCMethods response.
+ *
+ * @param rpcs     TE RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the GetRPCMethods method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_rpc_methods_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__GetRPCMethodsResponse **resp);
+/**
+ * Call CPE SetParameterValues method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the SetParameterValues method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_set_parameter_values(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__SetParameterValues *req,
+               int *call_index);
+
+/**
+ * Get CPE SetParameterValues response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the SetParameterValues method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_set_parameter_values_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__SetParameterValuesResponse **resp);
+
+
+/**
+ * Call CPE GetParameterValues method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the GetParameterValues method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_parameter_values(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__GetParameterValues *req,
+               int *call_index);
+
+/**
+ * Get CPE GetParameterValues response
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the GetParameterValues method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_parameter_values_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__GetParameterValuesResponse **resp);
+
+
+/**
+ * Call CPE GetParameterNames method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the GetParameterNames method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_parameter_names(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__GetParameterNames *req,
+               int *call_index);
+
+/**
+ * Get CPE GetParameterNames response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the GetParameterNames method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_parameter_names_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__GetParameterNamesResponse **resp);
+
+
+/**
+ * Call CPE SetParameterAttributes method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the SetParameterAttributes method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_set_parameter_attributes(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__SetParameterAttributes *req,
+               int *call_index);
+
+/**
+ * Get CPE SetParameterAttributes response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_set_parameter_attributes_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index);
+
+
+/**
+ * Call CPE GetParameterAttributes method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the GetParameterAttributes method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_parameter_attributes(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__GetParameterAttributes *req,
+               int *call_index);
+
+/**
+ * Get CPE GetParameterAttributes response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the GetParameterAttributes method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_parameter_attributes_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__GetParameterAttributesResponse **resp);
+
+/**
+ * Call CPE AddObject method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the AddObject method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_add_object(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__AddObject *req,
+               int *call_index);
+
+/**
+ * Get CPE AddObject response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the AddObject method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_add_object_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__AddObjectResponse **resp);
+
+/**
+ * Call CPE DeleteObject method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the DeleteObject method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_delete_object(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__DeleteObject *req,
+               int *call_index);
+/**
+ * Get CPE DeleteObject response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the DeleteObject method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_delete_object_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__DeleteObjectResponse **resp);
+
+/**
+ * Call CPE Reboot method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the Reboot method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_reboot(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__Reboot *req,
+               int *call_index);
+
+/**
+ * Get CPE Reboot response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_reboot_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index);
+
+/** 
+ * Call CPE Download method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the Download method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_download(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__Download *req,
+               int *call_index);
+
+/** 
+ * Get CPE Download response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the Download method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_download_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__DownloadResponse **resp);
+
+/**
+ * Call CPE Upload method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the Upload method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_upload(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__Upload *req,
+               int *call_index);
+/**
+ * Get CPE Upload response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the Upload method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_upload_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__UploadResponse **resp);
+
+/**
+ * Call CPE FactoryReset method.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_factory_reset(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int *call_index);
+
+/**
+ * Get CPE FactoryReset response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_factory_reset_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index);
+
+/**
+ * Call CPE GetQueuedTransfers method.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_queued_transfers(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int *call_index);
+/**
+ * Get CPE GetQueuedTransfers response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the GetQueuedTransfers method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_queued_transfers_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__GetQueuedTransfersResponse **resp);
+
+/**
+ * Call CPE GetAllQueuedTransfers method.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  location for index of TR RPC.
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_all_queued_transfers(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int *call_index);
+
+/**
+ * Get CPE GetAllQueuedTransfers response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the GetAllQueuedTransfers method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_all_queued_transfers_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__GetAllQueuedTransfersResponse **resp);
+
+/**
+ * Call CPE ScheduleInform method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the ScheduleInform method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_schedule_inform(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__ScheduleInform *req,
+               int *call_index);
+
+/**
+ * Get CPE ScheduleInform response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_schedule_inform_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index);
+
+/**
+ * Call CPE SetVouchers method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the SetVouchers method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_set_vouchers(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__SetVouchers *req,
+               int *call_index);
+/**
+ * Get CPE SetVouchers response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_set_vouchers_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index);
+
+/**
+ * Call CPE GetOptions method.
+ *
+ * @param rpcs     RPC server handle
+ * @param req      ACS request for the GetOptions method
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_options(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               _cwmp__GetOptions *req,
+               int *call_index);
+/**
+ * Get CPE GetOptions response.
+ *
+ * @param rpcs     RPC server handle
+ * @param call_index  index of TR RPC.
+ * @param resp     CPE response to the GetOptions method
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_get_options_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name,
+               const char *cpe_name,
+               int call_index,
+               _cwmp__GetOptionsResponse **resp);
+
+
 
 #ifdef __cplusplus
 } /* extern "C" */
