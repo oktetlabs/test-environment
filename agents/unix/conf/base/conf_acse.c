@@ -70,6 +70,7 @@
 #include "tarpc.h"
 #include "te_cwmp.h"
 #include "acse_epc.h"
+#include "cwmp_data.h"
 
 
 
@@ -903,7 +904,52 @@ ta_unix_conf_acse_init()
     return rcf_pch_add_node("/agent", &node_acse);
 }
 
+#if 0
+static te_errno
+cwmp_conn_req_util(const char *acs, const char *cpe, 
+                   acse_epc_cwmp_op_t op, int *index)
+{
+    acse_epc_msg_t msg;
+    acse_epc_msg_t *msg_resp = NULL;
+    acse_epc_cwmp_data_t c_data;
 
+    te_errno rc;
+
+    if (NULL == acs || NULL == cpe || NULL == index)
+        return TE_EINVAL;
+
+    if (!acse_value())
+    {
+        return TE_EFAIL;
+    }
+
+    RING("Issue CWMP Connection Request to %s/%s, op %d ", 
+         acs, cpe, op);
+
+    msg.opcode = EPC_CWMP_CALL;
+    msg.data.cwmp = &c_data;
+    msg.length = sizeof(c_data);
+
+    memset(&c_data, 0, sizeof(c_data));
+
+    c_data.op = op;
+        
+    strcpy(c_data.acs, acs);
+    strcpy(c_data.cpe, cpe);
+        
+    rc = acse_epc_send(&msg);
+    if (rc != 0)
+        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
+
+    rc = acse_epc_recv(&msg_resp);
+    if (rc != 0)
+        ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
+
+    out->status = msg_resp->status;
+
+    return 0;
+}
+#endif
 
 int
 cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
@@ -1008,6 +1054,12 @@ int
 cwmp_op_check(tarpc_cwmp_op_check_in *in,
               tarpc_cwmp_op_check_out *out)
 {
+    acse_epc_msg_t msg;
+    acse_epc_msg_t *msg_resp = NULL;
+    acse_epc_cwmp_data_t c_data;
+
+    te_errno rc;
+
     if (!acse_value())
     {
         return -1;
@@ -1016,7 +1068,47 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
     RING("cwmp check operation No %d to %s/%s called ", 
          (int)in->call_index, in->acs_name, in->cpe_name);
 
-    out->status = 0;
+    msg.opcode = EPC_CWMP_CALL;
+    msg.data.cwmp = &c_data;
+    msg.length = sizeof(c_data);
+
+    memset(&c_data, 0, sizeof(c_data));
+
+    c_data.op = EPC_RPC_CHECK;
+    strcpy(c_data.acs, in->acs_name);
+    strcpy(c_data.cpe, in->cpe_name);
+    c_data.index = in->call_index;
+        
+    rc = acse_epc_send(&msg);
+    if (rc != 0)
+        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
+
+    rc = acse_epc_recv(&msg_resp);
+    if (rc != 0)
+    {
+        ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
+        out->status = TE_RC(TE_TA_UNIX, rc);
+    }
+    else
+    {
+        ssize_t packed_len;
+
+        out->status = TE_RC(TE_ACSE, msg_resp->status);
+        RING("%s(): status is %r", __FUNCTION__, msg_resp->status);
+
+        if (0 == msg_resp->status)
+        { 
+            out->buf.buf_val = malloc(msg_resp->length);
+            out->buf.buf_len = msg_resp->length;
+            packed_len = cwmp_pack_response_data(out->buf.buf_val, 
+                            msg_resp->length, msg_resp->data.cwmp);
+        }
+        else
+        {
+            out->buf.buf_val = NULL;
+            out->buf.buf_len = 0;
+        }
+    }
 
     return 0;
 }
