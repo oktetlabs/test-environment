@@ -75,7 +75,14 @@
                 TEST_FAIL("'env' is mandatory parameter");              \
             }                                                           \
             rc = tapi_env_get(str_, &env);                              \
-            if (rc != 0)                                                \
+            if (TE_RC_GET_ERROR(rc) == TE_ETADEAD)                      \
+            {                                                           \
+                result = TE_EXIT_ERROR;                                 \
+                ERROR("Stopping test execution because of "             \
+                      "unsolvable problems");                           \
+                TEST_STOP;                                              \
+            }                                                           \
+            else if (rc != 0)                                           \
             {                                                           \
                 TEST_FAIL("tapi_env_get() failed: %s : %r", str_, rc);  \
             }                                                           \

@@ -84,6 +84,8 @@ typedef enum te_bool3 {
 
 /** Exit from application because of caught SIGINT signal */
 #define TE_EXIT_SIGINT      0x2
+/** Exit with biiig problems  */
+#define TE_EXIT_ERROR       0x3
 /** Script to be run not found */
 #define TE_EXIT_NOT_FOUND   0x7f
 

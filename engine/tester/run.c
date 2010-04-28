@@ -885,7 +885,7 @@ tester_test_status_to_te_test_result(tester_test_status status,
     {
         te_test_verdict *v;
 
-#if 0
+#if 1
         /* TODO: Verdict message has to have correct ID */
         /* 
          * Put additional verdict into the log to have correct
@@ -1139,7 +1139,11 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
                     ERROR("ID=%d was not run, executable not found",
                           exec_id);
                     break;
-
+                case TE_EXIT_ERROR:
+                    *status = TESTER_TEST_STOPPED;
+                    ERROR("Serious error occured during execution of "
+                          "the test, shut down");
+                    break;
                 default:
                     *status = TESTER_TEST_FAILED;
             }
