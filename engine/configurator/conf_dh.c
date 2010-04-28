@@ -168,6 +168,16 @@ cfg_dh_process_add(xmlNodePtr node)
     while (node != NULL &&
            xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
     {
+        xmlChar   *attr = NULL;
+
+        if ((attr = (xmlChar *)xmlGetProp_exp(node, (xmlChar *)"cond"))
+            != NULL)
+        {
+            /* in case add condition is specified */
+            if (strcmp(attr, "false") == 0 || strcmp(attr, "") == 0)
+                goto next;
+        }
+
         if ((oid = (xmlChar *)xmlGetProp_exp(node,
                    (const xmlChar *)"oid")) == NULL)
             RETERR(TE_EINVAL, "Incorrect add command format");
@@ -220,6 +230,7 @@ cfg_dh_process_add(xmlNodePtr node)
         free(oid);
         oid = NULL;
 
+next:
         node = xmlNodeNext(node);
     }
     if (node != NULL)
@@ -461,6 +472,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
         }   /* unregister */
         else if (xmlStrcmp(cmd->name , (const xmlChar *)"add") == 0)
         {
+            
             if (!postsync)
                 continue;
 
