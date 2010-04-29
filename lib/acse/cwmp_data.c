@@ -109,8 +109,13 @@ te_cwmp_pack__Inform(const _cwmp__Inform *src, void *msg, size_t max_len)
     packed_length += rc;
     msg += rc;
 
-    /* TODO */
-    dst->ParameterList = 0;
+    rc = te_cwmp_pack__ParameterValueList(src->ParameterList, msg,
+                                          max_len - packed_length);
+    if (rc < 0)
+        return -1;
+    dst->ParameterList = (void*)((char *)msg - (char*)dst);
+    packed_length += rc;
+    msg += rc;
 
     return packed_length;
 }
@@ -132,6 +137,48 @@ te_cwmp_pack__EventStruct(const cwmp__EventStruct *src,
 }
 
 
+#define CWMP_PACK_LIST_FUNC(_list_type, _elem_type) \
+ssize_t \
+te_cwmp_pack__ ## _list_type (const _list_type *src, \
+                          void *msg, size_t max_len) \
+{ \
+    ssize_t rc; \
+    size_t packed_length = 0; \
+    size_t array_memlen = 0; \
+    _list_type *dst = msg; \
+    int i = 0; \
+ \
+    CWMP_PACK(src, msg, sizeof(*src), packed_length, max_len); \
+     \
+    /* For fill links to array elements here it is convenient \
+       to have real pointer to the array start */ \
+    dst->__ptr ## _elem_type = msg;  \
+ \
+    array_memlen = sizeof(void*) * src->__size; \
+    msg += array_memlen; \
+    packed_length += array_memlen; \
+ \
+    for (i = 0; i < src->__size; i++) \
+    { \
+        rc = te_cwmp_pack__ ## _elem_type(src->__ptr ## _elem_type[i],  \
+                                       msg, max_len - packed_length); \
+        if (rc < 0) \
+            return -1; \
+        dst->__ptr ## _elem_type[i] = (void*)((char *)msg - (char*)dst); \
+        packed_length += rc; \
+        msg += rc; \
+    } \
+    /* Put array offset instead of real pointer */ \
+    dst->__ptr ## _elem_type = \
+        (void*)((char *)dst->__ptr ## _elem_type - (char*)dst); \
+ \
+    return packed_length; \
+}
+
+
+#if 1
+CWMP_PACK_LIST_FUNC(EventList, EventStruct)
+#else
 ssize_t
 te_cwmp_pack__EventList(const EventList *src,
                           void *msg, size_t max_len)
@@ -168,38 +215,61 @@ te_cwmp_pack__EventList(const EventList *src,
 
     return packed_length;
 }
+#endif
 
 
+#define CWMP_PACK_STR_LIST_FUNC(_list_type) \
+ssize_t \
+te_cwmp_pack__ ## _list_type(const _list_type *src, \
+                             void *msg, size_t max_len) \
+{ \
+    size_t packed_length = 0; \
+    size_t array_memlen = 0; \
+    _list_type *dst = msg; \
+    int i = 0; \
+ \
+    CWMP_PACK(src, msg, sizeof(*src), packed_length, max_len); \
+     \
+    /* For fill links to array elements here it is convenient */ \
+    /*  to have real pointer to the array start */ \
+    dst->__ptrstring = msg;  \
+ \
+    array_memlen = sizeof(void*) * src->__size; \
+    msg += array_memlen; \
+    packed_length += array_memlen; \
+ \
+    for (i = 0; i < src->__size; i++) \
+    { \
+        CWMP_PACK_STR(src, msg, packed_length, max_len, __ptrstring[i] ); \
+    } \
+    /* Put array offset instead of real pointer */ \
+    dst->__ptrstring = \
+        (void*)((char *)dst->__ptrstring - (char*)dst); \
+ \
+    return packed_length; \
+}
 
+CWMP_PACK_STR_LIST_FUNC(MethodList)
+
+
+CWMP_PACK_STR_LIST_FUNC(ParameterNames)
+
+CWMP_PACK_LIST_FUNC(ParameterValueList, ParameterValueStruct)
 
 ssize_t
-te_cwmp_pack__MethodList(const MethodList *src, void *msg, size_t max_len)
+te_cwmp_pack__ParameterValueStruct(const cwmp__ParameterValueStruct *src, void *msg, size_t max_len)
 {
     size_t packed_length = 0;
-    size_t array_memlen = 0;
-    MethodList *dst = msg;
-    int i = 0;
+    cwmp__ParameterValueStruct *dst = msg;
 
     CWMP_PACK(src, msg, sizeof(*src), packed_length, max_len);
-    
-    /* For fill links to array elements here it is convenient
-       to have real pointer to the array start */
-    dst->__ptrstring = msg; 
 
-    array_memlen = sizeof(void*) * src->__size;
-    msg += array_memlen;
-    packed_length += array_memlen;
-
-    for (i = 0; i < src->__size; i++)
-    {
-        CWMP_PACK_STR(src, msg, packed_length, max_len, __ptrstring[i] );
-    }
-    /* Put array offset instead of real pointer */
-    dst->__ptrstring =
-        (void*)((char *)dst->__ptrstring - (char*)dst);
+    CWMP_PACK_STR(src, msg, packed_length, max_len, Name);
+    CWMP_PACK_STR(src, msg, packed_length, max_len, Value);
 
     return packed_length;
 }
+
 
 ssize_t
 te_cwmp_pack__GetRPCMethodsResponse(
@@ -222,6 +292,107 @@ te_cwmp_pack__GetRPCMethodsResponse(
 
     return packed_length;
 }
+
+
+ssize_t
+te_cwmp_pack__SetParameterValues
+    (const _cwmp__SetParameterValues *src,
+     void *msg, size_t max_len)
+{
+    size_t packed_length = 0;
+    ssize_t rc;
+    _cwmp__SetParameterValues *dst = msg;
+
+    CWMP_PACK(src, msg, sizeof(_cwmp__SetParameterValues),
+              packed_length, max_len);
+
+    rc = te_cwmp_pack__ParameterValueList(src->ParameterList, msg,
+                                          max_len - packed_length);
+    if (rc < 0)
+        return -1;
+    dst->ParameterList = (void*)((char *)msg - (char*)dst);
+    packed_length += rc;
+    msg += rc;
+
+    CWMP_PACK_STR(src, msg, packed_length, max_len, ParameterKey);
+
+    return packed_length;
+}
+
+ssize_t
+te_cwmp_pack__SetParameterValuesResponse
+    (const _cwmp__SetParameterValuesResponse *src,
+     void *msg, size_t max_len)
+{
+    size_t packed_length = 0;
+    CWMP_PACK(src, msg, sizeof(_cwmp__SetParameterValuesResponse),
+              packed_length, max_len);
+    return packed_length;
+}
+
+
+ssize_t
+te_cwmp_pack__GetParameterValues(const _cwmp__GetParameterValues *src,
+                                 void *msg, size_t max_len)
+{
+    size_t packed_length = 0;
+    ssize_t rc;
+    _cwmp__GetParameterValues *dst = msg;
+
+    CWMP_PACK(src, msg, sizeof(*src), packed_length, max_len);
+
+    rc = te_cwmp_pack__ParameterNames(src->ParameterNames_, msg,
+                                  max_len - packed_length);
+    if (rc < 0)
+        return -1;
+    dst->ParameterNames_ = (void*)((char *)msg - (char*)dst);
+    packed_length += rc;
+    msg += rc;
+
+    return packed_length;
+}
+
+ssize_t
+te_cwmp_pack__GetParameterValuesResponse
+    (const _cwmp__GetParameterValuesResponse *src,
+    void *msg, size_t max_len)
+{
+    size_t packed_length = 0;
+    ssize_t rc;
+    _cwmp__Inform *dst = msg;
+
+    CWMP_PACK(src, msg, sizeof(*src), packed_length, max_len);
+
+    rc = te_cwmp_pack__ParameterValueList(src->ParameterList, msg,
+                                          max_len - packed_length);
+    if (rc < 0)
+        return -1;
+    dst->ParameterList = (void*)((char *)msg - (char*)dst);
+    packed_length += rc;
+    msg += rc;
+
+    return packed_length;
+
+}
+
+ssize_t
+te_cwmp_pack__GetParameterNames(const _cwmp__GetParameterNames *src,
+                                void *msg, size_t max_len)
+{
+    size_t packed_length = 0;
+    ssize_t rc;
+    _cwmp__GetParameterNames *dst = msg;
+
+    CWMP_PACK(src, msg, sizeof(*src), packed_length, max_len);
+}
+
+ssize_t
+te_cwmp_pack__GetParameterNamesResponse
+            (const _cwmp__GetParameterNamesResponse *src,
+            void *msg, size_t max_len)
+{
+}
+
 
 /*
  * ============= UN-PACK methods ================
@@ -257,7 +428,6 @@ te_cwmp_unpack__DeviceIdStruct(void *msg, size_t max_len)
 
     return ofs;
 }
-
 
 ssize_t
 te_cwmp_unpack__EventStruct(void *msg, size_t max_len)
@@ -315,7 +485,15 @@ te_cwmp_unpack__EventList(void *msg, size_t max_len)
 ssize_t
 te_cwmp_unpack__ParameterValueStruct(void *msg, size_t max_len)
 {
-    return -1;
+    cwmp__ParameterValueStruct *res = msg;
+    size_t ofs = 0;
+
+    CWMP_UNPACK_STRING(res->Name,  ofs);
+    CWMP_UNPACK_STRING(res->Value, ofs);
+
+    ofs += strlen(((char *)msg) + ofs);
+
+    return ofs;
 }
 
 ssize_t

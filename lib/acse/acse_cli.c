@@ -572,6 +572,30 @@ struct poptOption acse_cli_opts[] =
     {NULL, 0, 0, NULL, 0, NULL, NULL}
 };
 
+static int
+dummy_init()
+{
+    acs_t *acs;
+    cpe_t *cpe;
+    
+    db_add_acs("A");
+    db_add_cpe("A", "box");
+
+    acs = db_find_acs("A");
+    cpe = db_find_cpe(acs, "A", "box");
+
+    acs->port = 8080;
+
+    cpe->acs_auth.login =
+        strdup("000261-Home Gateway-V601L622R1A0-1001742119");
+    cpe->acs_auth.passwd = strdup("z7cD7CTDA1DrQKUb");
+
+    cpe->cr_auth.login  = strdup(cpe->acs_auth.login);
+    cpe->cr_auth.passwd = strdup(cpe->acs_auth.passwd);
+            
+    acse_enable_acs(acs);
+    return 0;
+}
 
 int 
 main(int argc, const char **argv)
@@ -604,6 +628,7 @@ main(int argc, const char **argv)
                 }
                 te_log_message_file_out = log_fd;
             }
+            dummy_init();
 
             if ((rc = acse_epc_disp_init(NULL, NULL)) != 0)
             {

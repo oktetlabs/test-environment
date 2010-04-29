@@ -471,7 +471,7 @@ acse_epc_recv(acse_epc_msg_t **user_message)
         case EPC_CONFIG_RESPONSE:
             cfg_data = message.data.cfg;
 
-#if 0
+#if 0 /* Debug printf.. */
             if (cfg_data->value[0])
             {
                 char *p = cfg_data->value;
