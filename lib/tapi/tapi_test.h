@@ -90,7 +90,8 @@ extern "C" {
  */
 #define TEST_ON_JMP_DO \
     do {                                                             \
-        result = (TE_RC_GET_ERROR(jmp_rc) == TE_EOK) ? EXIT_SUCCESS  \
+        if (result == EXIT_SUCCESS || result == EXIT_FAILURE) \
+            result = (TE_RC_GET_ERROR(jmp_rc) == TE_EOK) ? EXIT_SUCCESS  \
                                                      : EXIT_FAILURE; \
         goto cleanup;                                                \
     } while (0)
@@ -100,6 +101,7 @@ extern "C" {
  */
 #define TEST_ON_JMP_DO_SPECIFIC \
     do {                                                             \
+        if (result == EXIT_SUCCESS || result == EXIT_FAILURE) \
         result = (TE_RC_GET_ERROR(jmp_rc) == TE_EOK) ? EXIT_SUCCESS  \
                                                      : EXIT_FAILURE; \
         goto cleanup_specific;                                       \
