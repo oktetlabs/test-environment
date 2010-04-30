@@ -954,7 +954,8 @@ flow_tree_attach_message(log_msg *msg)
     if (msg->id == TE_LOG_ID_UNDEFINED)
     {
         /* There could be no verdicts until we start test or package */
-        assert((msg->flags & RGT_MSG_FLG_VERDICT) == 0);
+        /* FIXME: may be something was actually wrong here */
+        /* assert((msg->flags & RGT_MSG_FLG_VERDICT) == 0); */
 
         flow_tree_attach_from_node(root, msg);
         return;
