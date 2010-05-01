@@ -380,7 +380,9 @@ sync_ta_subtree(const char *ta, const char *oid)
 
     olist *list = NULL, *entry;
 
-    cfg_handle handle;
+    cfg_handle *handles = NULL;
+    int         h_num;
+    int         i;
 
     if (do_log_syncing)
         RING("Synchronize TA '%s' subtree '%s'", ta, oid);
@@ -433,9 +435,8 @@ sync_ta_subtree(const char *ta, const char *oid)
 
     VERB("%s instances:\n%s", ta, cfg_get_buf);
 
-    rc = cfg_db_find(oid, &handle);
-
-    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    rc = cfg_db_find_pattern(oid, (unsigned int *)&h_num, &handles);
+    if (rc != 0)
     {
         rcf_ta_cfg_group(ta, 0, FALSE);
         return rc;
@@ -457,10 +458,8 @@ sync_ta_subtree(const char *ta, const char *oid)
     limit = cfg_get_buf + strlen(cfg_get_buf);
     sprintf(limit, " %s", oid);
 
-    if (rc == 0)
-        remove_excessive(CFG_GET_INST(handle), cfg_get_buf);
-    else
-        rc = 0;
+    for (i = 0; i < h_num; i++)
+        remove_excessive(CFG_GET_INST(handles[i]), cfg_get_buf);
 
     /* Calculate number of OIDs to be synchronized */
     for (tmp = cfg_get_buf; tmp < limit; tmp = next)
