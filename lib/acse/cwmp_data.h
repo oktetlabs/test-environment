@@ -34,40 +34,46 @@
 #define __TE_CWMP_DATA__H__
 
 #include "te_errno.h"
+#include "te_cwmp.h"
 #include "cwmp_soapStub.h"
-#include "acse_epc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * Pack data for message client->ACSE.
+ * Pack data for EPC message client->ACSE, with call data to CPE.
  * 
- * @param buf           Place for packed data (usually in 
+ * @param src           Pointer togSOAP struct with data to be
+ *                      packed.
+ * @param rpc_cpe       CWMP RPC type.
+ * @param msg           Place for packed data (usually in 
  *                      shared memory segment).
  * @param len           Length of memory area for packed data.
- * @param cwmp_data     User-provided struct with data to be sent.
  * 
  * @return      -1 on error, 0 if no data presented,
  *              or length of used memory block in @p buf.
  */
-extern ssize_t cwmp_pack_call_data(void *buf, size_t len,
-                               acse_epc_cwmp_data_t *cwmp_data);
+extern ssize_t cwmp_pack_call_data(cwmp_data_to_cpe_t src,
+                                   te_cwmp_rpc_cpe_t rpc_cpe,
+                                   void *msg, size_t len);
 
 /**
- * Pack data for message ACSE->client.
+ * Pack data for EPC message ACSE->client, with response data from CPE.
  * 
- * @param buf           Place for packed data (usually in 
+ * @param src           Pointer togSOAP struct with data to be
+ *                      packed.
+ * @param rpc_cpe       CWMP RPC type.
+ * @param msg           Place for packed data (usually in 
  *                      shared memory segment).
  * @param len           Length of memory area for packed data.
- * @param cwmp_data     User-provided struct with data to be sent.
  * 
  * @return      -1 on error, 0 if no data presented,
  *              or length of used memory block in @p buf.
  */
-extern ssize_t cwmp_pack_response_data(void *buf, size_t len,
-                                       acse_epc_cwmp_data_t *cwmp_data);
+extern ssize_t cwmp_pack_response_data(cwmp_data_from_cpe_t src,
+                                       te_cwmp_rpc_cpe_t rpc_cpe,
+                                       void *msg, size_t len);
 
 
 /*
@@ -81,7 +87,7 @@ extern ssize_t cwmp_pack_response_data(void *buf, size_t len,
  * @return status code
  */
 extern te_errno cwmp_unpack_call_data(void *buf, size_t len,
-                                      acse_epc_cwmp_data_t *cwmp_data);
+                                      te_cwmp_rpc_cpe_t rpc_cpe);
 
 
 /**
@@ -95,7 +101,7 @@ extern te_errno cwmp_unpack_call_data(void *buf, size_t len,
  * @return status code
  */
 extern te_errno cwmp_unpack_response_data(void *buf, size_t len,
-                                       acse_epc_cwmp_data_t *cwmp_data);
+                                          te_cwmp_rpc_cpe_t rpc_cpe);
 
 
 
