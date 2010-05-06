@@ -4,7 +4,7 @@
  * ACS Emulator support
  *
  *
- * Copyright (C) 2009 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2009-2010 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -22,12 +22,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- *
- * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
+
+#define TE_LGR_USER     "ACSE TCP listener"
 
 #include "te_config.h"
 
@@ -60,6 +60,7 @@ typedef struct conn_data_t {
     acs_t      **acs_objects;  /**< ACS objects listening on this 
                                     TCP address. */
     int          acs_number;   /**< number of ACS objects. */ 
+    channel_t   *own_channel;  /**< main loop channel ref. */
 } conn_data_t;
 
 #if CONN_IS_LIST
@@ -111,6 +112,9 @@ conn_after_poll(void *data, struct pollfd *pfd)
     if (!(pfd->revents & POLLIN))
         return 0;
 
+    addr_len = sizeof(remote_addr);
+    memset(&remote_addr, 0, sizeof(remote_addr));
+
     sock_acc = accept(conn->socket, SA(&remote_addr), &addr_len);
     if (sock_acc < 0)
     {
@@ -121,9 +125,6 @@ conn_after_poll(void *data, struct pollfd *pfd)
     for (i = 0; i < conn->acs_number; i++)
     {
         te_errno rc;
-
-        if (!(conn->acs_objects[i]->enabled))
-            continue;
 
         rc = cwmp_accept_cpe_connection(conn->acs_objects[i], sock_acc); 
         RING("%s: cwmp_accept_cpe rc %r", __FUNCTION__, rc);
@@ -156,8 +157,9 @@ te_errno
 conn_destroy(void *data)
 {
     conn_data_t *conn = data;
-    /* TODO: release all */
-
+    close(conn->socket);
+    free(conn->addr);
+    free(conn->acs_objects);
     free(conn);
     return 0;
 }
@@ -168,6 +170,7 @@ te_errno
 conn_register_acs(acs_t *acs)
 {
     conn_data_t *new_conn;
+    int s_errno = 0;
 
     if (acs == NULL || acs->addr_listen == NULL)
         return TE_RC(TE_ACSE, TE_EINVAL);
@@ -185,19 +188,19 @@ conn_register_acs(acs_t *acs)
             socket(acs->addr_listen->sa_family, SOCK_STREAM, 0);
         if (new_conn->socket < 0)
         {
-            ERROR("fail new socket");
+            ERROR("%s(): fail new socket", __FUNCTION__);
             break;
         }
 
         if (bind(new_conn->socket, acs->addr_listen, acs->addr_len) < 0)
         {
-            ERROR("fail bind socket");
+            ERROR("%s(): fail bind socket", __FUNCTION__);
             break;
         }
 
         if (listen(new_conn->socket, 10) < 0)
         {
-            ERROR("fail listen socket");
+            ERROR("%s(): fail listen socket", __FUNCTION__);
             break;
         }
 
@@ -206,7 +209,8 @@ conn_register_acs(acs_t *acs)
         new_conn->acs_objects = malloc(sizeof(acs_t *));
         new_conn->acs_objects[0] = acs;
         new_conn->acs_number = 1;
-        acs->enabled = TRUE;
+        acs->conn_listen = new_conn;
+
 #if CONN_IS_LIST
         LIST_INSERT_HEAD(&conn_list, new_conn, links);
 #endif /* CONN_IS_LIST */ 
@@ -217,20 +221,58 @@ conn_register_acs(acs_t *acs)
         new_ch->after_poll = conn_after_poll;
         new_ch->destroy = conn_destroy;
 
+        new_conn->own_channel = new_ch;
+
         acse_add_channel(new_ch);
+
+        RING("ACS '%s' registered to listen incoming connections, sock %d",
+              acs->name, new_conn->socket);
+
 
         return 0;
     } while (0);
+    s_errno = errno;
 
-    perror("Register ACSE");
+    perror("Register ACS");
     if (new_conn->socket > 0)
         close(new_conn->socket);
     free(new_conn);
-    return TE_RC(TE_ACSE, errno);
+
+    ERROR("Register ACS fail, OS errno %d(%s)", s_errno, strerror(s_errno));
+
+    return TE_RC(TE_ACSE, s_errno);
 }
 
+te_errno
+conn_deregister_acs(acs_t *acs)
+{
+    conn_data_t *conn;
+    int i;
+    if (NULL == acs || NULL == acs->conn_listen)
+        return TE_EINVAL;
+    conn = acs->conn_listen;
+    for (i = 0; i < conn->acs_number; i++)
+        if (acs == conn->acs_objects[i])
+            break;
+    if (i == conn->acs_number)
+    {
+        ERROR("%s(): generic fail, not found ACS ptr in conn descriptor",
+              __FUNCTION__);
+        return TE_EFAIL;
+    }
+    acs->conn_listen = NULL;
+    conn->acs_objects[i] = NULL;
+    conn->acs_number--;
+    for (;i < conn->acs_number; i++)
+        conn->acs_objects[i] = conn->acs_objects[i+1];
 
-extern te_errno
+    if (0 == conn->acs_number)
+        acse_remove_channel(conn->own_channel);
+
+    return 0;
+}
+
+te_errno
 acse_conn_create(void)
 {
     return 0;

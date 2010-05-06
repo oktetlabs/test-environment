@@ -73,6 +73,19 @@ SOAP_NMAC struct Namespace namespaces[] =
 /** Single REALM for Basic/Digest Auth. which we support. */
 const char *authrealm = "tr-069";
 
+static te_errno
+cwmp_force_stop_session(cwmp_session_t *sess)
+{
+    if (NULL == sess || NULL == sess->channel)
+        return TE_EINVAL;
+
+    if (sess->m_soap.fclose)
+        sess->m_soap.fclose(&sess->m_soap);
+
+    acse_remove_channel(sess->channel);
+
+    return 0;
+}
 
 /**
  * Find URL for ConnectionRequest in Inform parameter list.
@@ -679,7 +692,6 @@ te_errno
 acse_enable_acs(acs_t *acs)
 {
     struct sockaddr_in *sin;
-    te_errno rc;
 
     if (acs == NULL || acs->port == 0)
         return TE_EINVAL;
@@ -691,24 +703,37 @@ acse_enable_acs(acs_t *acs)
     sin->sin_port = htons(acs->port);
 
     acs->addr_listen = SA(sin);
-    acs->addr_len = sizeof(struct sockaddr_in);
+    acs->addr_len = sizeof(struct sockaddr_in); 
 
-
-    rc = conn_register_acs(acs);
-    if (rc == 0)
-        acs->enabled = 1;
-
-    return rc;
+    return conn_register_acs(acs);
 }
 
 /* See description in acse_internal.h */
 te_errno
 acse_disable_acs(acs_t *acs)
 {
-    /* TODO: think, should it stop already established CWMP sessions,
-      or should only disable new CWMP sessions? */
-    /* TODO operation itself... */
-    return TE_EFAULT;
+    te_errno rc;
+    cpe_t *cpe_item = NULL;
+
+    if ((rc = conn_deregister_acs(acs)) != 0)
+        return rc;
+
+    if (acs->session)
+    {
+        cwmp_force_stop_session(acs->session);
+        acs->session = NULL;
+    }
+    /* Now stop active CWMP sessions, if any */
+    LIST_FOREACH(cpe_item, &(acs->cpe_list), links)
+    {
+        if (cpe_item->session)
+        {
+            cwmp_force_stop_session(cpe_item->session);
+            cpe_item->session = NULL;
+        }
+    }
+
+    return 0;
 }
 
 

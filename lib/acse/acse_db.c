@@ -174,9 +174,9 @@ db_remove_acs(acs_t *acs)
     if (!acs)
         return TE_EINVAL;
 
-    if (acs->enabled)
+    if (acs->conn_listen != NULL)
     {
-        WARN("attempt to remove enabled ACS object '%s'", acs->name);
+        WARN("attempt to remove active ACS object '%s'", acs->name);
         return TE_EBUSY;
     }
     while (! (LIST_EMPTY(&acs->cpe_list)))

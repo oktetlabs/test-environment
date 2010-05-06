@@ -416,7 +416,7 @@ acs_ssl(acs_t *acs, acse_epc_config_data_t *params)
 }
 
 /**
- * Get the ACS enabled flag.
+ * Access to the ACS enabled flag.
  *
  * @param acs           ACS record
  * @param params        EPC parameters struct
@@ -429,10 +429,10 @@ acs_enabled(acs_t *acs, acse_epc_config_data_t *params)
     int prev_value, new_value;
     if (params->op.fun == EPC_CFG_OBTAIN)
     {
-        sprintf(params->value, "%i", acs->enabled);
+        sprintf(params->value, "%i", !(NULL == acs->conn_listen));
         return 0;
     }
-    prev_value = acs->enabled;
+    prev_value = !(NULL == acs->conn_listen);
     new_value = atoi(params->value);
 
     if (new_value != 0 && acs->port == 0)
@@ -987,7 +987,7 @@ epc_after_poll(void *data, struct pollfd *pfd)
 
     /* Now send response, all data prepared in specific calls above. */
     rc = acse_epc_send(msg);
-    VERB("%s(): send EPC rc %r", __FUNCTION__, rc);
+    VERB("%s(): send EPC response rc %r", __FUNCTION__, rc);
 
     /* Do NOT free cwmp params for RPC call operation - they are stored
        in queue, and will be free'd after recieve RPC response and 

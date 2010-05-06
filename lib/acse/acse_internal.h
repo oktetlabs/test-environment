@@ -95,6 +95,7 @@ struct acs_t;
 struct cpe_t;
 struct cwmp_session_t;
 struct channel_t;
+struct conn_data_t;
 
 
 /** HTTP Authentication mode in ACS */
@@ -194,8 +195,6 @@ typedef struct acs_t {
     const char  *name;          /**< ACS name                       */
     const char  *url;           /**< ACS URL                        */
     const char  *cert;          /**< ACS certificate                */
-    te_bool      enabled;       /**< Enabled flag, true if listening
-                                    new CWMP connections            */
     te_bool      ssl;           /**< SSL usage boolean flag         */
     uint16_t     port;          /**< TCP port value in host byte order */
     auth_mode_t  auth_mode;     /**< Authentication mode            */
@@ -203,6 +202,9 @@ typedef struct acs_t {
     /** Fields for internal procedure data. */
     struct sockaddr *addr_listen;/**< TCP/IP address to listen      */
     socklen_t        addr_len;   /**< address length */
+    struct conn_data_t    *conn_listen;  /**< Listen TCP connection 
+                                      descriptor, 
+                                      or NULL if ACS is disabled. */
 
     struct cwmp_session_t *session; /**< CWMP session, while it is not
                                        associated with particular CPE */
@@ -426,6 +428,16 @@ extern te_errno acse_conn_create(void);
  * @return status code
  */
 extern te_errno conn_register_acs(acs_t *acs);
+
+/**
+ * Register ACS object in TCP Connection Dispatcher.
+ * This action require to set on remote_addr internal field in ACS.
+ * 
+ * @param acs           ACS object
+ *
+ * @return status code
+ */
+extern te_errno conn_deregister_acs(acs_t *acs);
 
 /**
  * Enable ACS object to receipt CWMP sessions.
