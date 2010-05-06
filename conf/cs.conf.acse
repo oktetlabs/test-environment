@@ -4,7 +4,7 @@
   <!-- Socket API testing configuration with 3 hosts and Level5
        environment, but Linux kernel stack testing. -->
 
-  <register>
+  <register> 
     <!-- ACSE object.
          Name: none
          Value: 0/1
@@ -170,4 +170,27 @@
 
   </register>
 
+
+  <set>
+    <instance oid="/agent:Agt_A/acse:" value="1"/>
+  </set>
+
+  <add>
+    <instance oid="/agent:Agt_A/rpcserver:acse_ctl" value="thread_local"/> 
+    <instance oid="/agent:Agt_A/acse:/acs:A"/>
+    <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box"/>
+  </add>
+
+  <set>
+    <instance oid="/agent:Agt_A/acse:/acs:A/auth_mode:" value="digest"/>
+    <instance oid="/agent:Agt_A/acse:/acs:A/port:" value="8080"/>
+    <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box/login:"
+                value="000261-Home Gateway-V601L622R1A0-1001742119"/>
+    <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box/passwd:"
+                value="z7cD7CTDA1DrQKUb"/>
+    <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box/cr_login:"
+                value="000261-Home Gateway-V601L622R1A0-1001742119"/>
+    <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box/cr_passwd:"
+                value="z7cD7CTDA1DrQKUb"/>
+  </set>
 </history>

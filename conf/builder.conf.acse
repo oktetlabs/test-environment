@@ -13,6 +13,9 @@ TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
 TE_LIB_PARMS([tad], [], [],
              [--with-dhcp], [], [], [])
 
+TE_LIB_PARMS([tapi_rpc], [], [],
+             [--with-tr069], [], [], [])
+
 TE_LIB_PARMS([tapi_tad], [], [],
              [--without-snmp --without-atm --without-bridge])
 
