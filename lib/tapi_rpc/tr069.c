@@ -47,6 +47,9 @@
 #include <strings.h>
 #endif
 
+#ifndef WITH_TR069_SUPPORT
+#error This source should not be compiled without tr069 configured support.
+#endif
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_tr069.h"
 

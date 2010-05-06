@@ -17,6 +17,19 @@ TE_LIB_SET
 
 RPC_XFILE=${srcdir}/../../include/tarpc.x.m4
 
+AC_ARG_WITH([tr069],
+            AS_HELP_STRING([--with-tr069],
+                           [enable TR-069 support (default is NO)]),
+            [],
+            [with_tr069=no])
+
+AM_CONDITIONAL(CFG_TR069, test x"$with_tr069" != xno)
+
+AS_IF([test x"$with_tr069" != xno],
+      [AC_DEFINE([WITH_TR069_SUPPORT], [], \
+      [Whether to enable TR-069 support]) 
+      AC_CHECK_HEADERS([stdsoap2.h], , , ),[]) ])
+
 AC_SUBST([RPC_XFILE])
 
 AC_CONFIG_HEADERS([package.h])

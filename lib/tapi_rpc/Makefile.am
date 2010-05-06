@@ -20,8 +20,8 @@ include_HEADERS= \
     tapi_rpc_client_server.h \
     tapi_rpcsock_macros.h \
     tapi_rpc_params.h \
-    tapi_rpc_internal.h \
-    tapi_rpc_tr069.h
+    tapi_rpc_internal.h 
+    
 
 lib_LTLIBRARIES=libtapi_rpc.la
 
@@ -36,8 +36,12 @@ libtapi_rpc_la_SOURCES= \
     socket.c \
     stdio.c \
     unistd.c \
-    wsa.c \
-    tr069.c
+    wsa.c 
+
+if CFG_TR069
+include_HEADERS += tapi_rpc_tr069.h
+libtapi_rpc_la_SOURCES += tr069.c
+endif
 
 install-exec-hook:
 	touch -c -r libtapi_rpc.la $(DESTDIR)/$(libdir)/libtapi_rpc.*
