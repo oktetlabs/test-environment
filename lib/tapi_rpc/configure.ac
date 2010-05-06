@@ -27,12 +27,11 @@ AM_CONDITIONAL(CFG_TR069, test x"$with_tr069" != xno)
 
 AS_IF([test x"$with_tr069" != xno],
       [AC_DEFINE([WITH_TR069_SUPPORT], [], \
-      [Whether to enable TR-069 support]) 
-      AC_CHECK_HEADERS([stdsoap2.h], , , ) ])
+      [Whether to enable TR-069 support]) ])
 
 AC_SUBST([RPC_XFILE])
 
-AC_CONFIG_HEADERS([package.h])
+AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_FILES([Makefile])
 
