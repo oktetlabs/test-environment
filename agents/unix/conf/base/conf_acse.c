@@ -1025,7 +1025,7 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
     c_data.rpc_cpe = in->cwmp_rpc; 
     if (in->buf.buf_len > 0)
     {
-        rc = cwmp_unpack_call_data(in->buf.buf_val, in->buf.buf_len,
+        rc = epc_unpack_call_data(in->buf.buf_val, in->buf.buf_len,
                                     &c_data);
         if (rc != 0)
         {
@@ -1100,7 +1100,7 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
         { 
             out->buf.buf_val = malloc(msg_resp->length);
             out->buf.buf_len = msg_resp->length;
-            packed_len = cwmp_pack_response_data(out->buf.buf_val, 
+            packed_len = epc_pack_response_data(out->buf.buf_val, 
                             msg_resp->length, msg_resp->data.cwmp);
         }
         else
