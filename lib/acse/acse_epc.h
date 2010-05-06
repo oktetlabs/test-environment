@@ -128,45 +128,13 @@ typedef struct {
                                     should be sent before serve 
                                     RPC from CPE. */
 
-    union {
-        void *p;
-        _cwmp__SetParameterValues       *set_parameter_values;
-        _cwmp__GetParameterValues       *get_parameter_values;
-        _cwmp__GetParameterNames        *get_parameter_names;
-        _cwmp__SetParameterAttributes   *set_parameter_attributes;
-        _cwmp__GetParameterAttributes   *get_parameter_attributes;
-        _cwmp__AddObject                *add_object;
-        _cwmp__DeleteObject             *delete_object;
-        _cwmp__Reboot                   *reboot;
-        _cwmp__Download                 *download;
-        _cwmp__Upload                   *upload;
-        _cwmp__ScheduleInform           *schedule_inform;
-        _cwmp__SetVouchers              *set_vouchers;
-        _cwmp__GetOptions               *get_options;
-    } to_cpe; /**< Typed pointer to call-specific CWMP data. 
-                   This field is processed only
-                   in messages client->ACSE */
+    cwmp_data_to_cpe_t   to_cpe;   /**< RPC specific CWMP data. 
+                                        This field is processed only
+                                        in messages client->ACSE */
 
-    union {
-        acse_cr_state_t      cr_state;
-        void *p;
-        _cwmp__Inform                         *inform;
-        _cwmp__GetRPCMethodsResponse          *get_rpc_methods_r;
-        _cwmp__SetParameterValuesResponse     *set_parameter_values_r;
-        _cwmp__GetParameterValuesResponse     *get_parameter_values_r;
-        _cwmp__GetParameterNamesResponse      *get_parameter_names_r;
-        _cwmp__GetParameterAttributes         *get_parameter_attributes_r;
-        _cwmp__AddObjectResponse              *add_object_r;
-        _cwmp__DeleteObjectResponse           *delete_object_r;
-        _cwmp__DownloadResponse               *download_r;
-        _cwmp__UploadResponse                 *upload_r;
-        _cwmp__GetQueuedTransfersResponse     *get_queued_transfers_r;
-        _cwmp__GetAllQueuedTransfersResponse  *get_all_queued_transfers_r;
-        _cwmp__GetOptionsResponse             *get_options_r;
-
-    } from_cpe; /**< Typed pointer to call-specific CWMP data. 
-                   This field is processed only
-                   in messages ACSE->client */
+    cwmp_data_from_cpe_t from_cpe; /**< RPC specific CWMP data. 
+                                        This field is processed only
+                                        in messages ACSE->client */
 
     uint8_t enc_start[0]; /**< Start of space after msg header,
                                for packed data */
@@ -279,6 +247,65 @@ extern te_errno acse_epc_send(const acse_epc_msg_t *user_message);
  * @return status code 
  */
 extern te_errno acse_epc_recv(acse_epc_msg_t **user_message);
+
+
+/**
+ * Pack data for message client->ACSE.
+ * 
+ * @param buf           Place for packed data (usually in 
+ *                      shared memory segment).
+ * @param len           Length of memory area for packed data.
+ * @param cwmp_data     User-provided struct with data to be sent.
+ * 
+ * @return      -1 on error, 0 if no data presented,
+ *              or length of used memory block in @p buf.
+ */
+extern ssize_t epc_pack_call_data(void *buf, size_t len,
+                                   acse_epc_cwmp_data_t *cwmp_data);
+
+/**
+ * Pack data for message ACSE->client.
+ * 
+ * @param buf           Place for packed data (usually in 
+ *                      shared memory segment).
+ * @param len           Length of memory area for packed data.
+ * @param cwmp_data     User-provided struct with data to be sent.
+ * 
+ * @return      -1 on error, 0 if no data presented,
+ *              or length of used memory block in @p buf.
+ */
+extern ssize_t epc_pack_response_data(void *buf, size_t len,
+                                       acse_epc_cwmp_data_t *cwmp_data);
+
+
+/*
+ * Unpack data from message client->ACSE.
+ * 
+ * @param buf           Place with packed data (usually in 
+ *                      local copy of transfered struct).
+ * @param len           Length of packed data.
+ * @param cwmp_data     Specific CWMP data with unpacked payload.
+ * 
+ * @return status code
+ */
+extern te_errno epc_unpack_call_data(void *buf, size_t len,
+                                      acse_epc_cwmp_data_t *cwmp_data);
+
+
+/**
+ * Unpack data from message ACSE->client.
+ * 
+ * @param buf           Place with packed data (usually in 
+ *                      local copy of transfered struct).
+ * @param len           Length of memory area with packed data.
+ * @param cwmp_data     Specific CWMP data with unpacked payload.
+ * 
+ * @return status code
+ */
+extern te_errno epc_unpack_response_data(void *buf, size_t len,
+                                          acse_epc_cwmp_data_t *cwmp_data);
+
+
 
 #ifdef __cplusplus
 }
