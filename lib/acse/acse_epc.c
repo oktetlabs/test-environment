@@ -371,9 +371,9 @@ acse_epc_send(const acse_epc_msg_t *user_message)
             len = epc_shmem_size - sizeof(*cwmp_data);
 
             if (message.opcode == EPC_CWMP_CALL)
-                packed_len = epc_pack_call_data(buf, len, cwmp_data);
+                packed_len = cwmp_pack_call_data(buf, len, cwmp_data);
             else
-                packed_len = epc_pack_response_data(buf, len, cwmp_data);
+                packed_len = cwmp_pack_response_data(buf, len, cwmp_data);
             if (packed_len < 0)
             {
                 ERROR("%s(): pack data failed, not send", __FUNCTION__);
@@ -458,13 +458,13 @@ acse_epc_recv(acse_epc_msg_t **user_message)
     switch (message.opcode)
     {
         case EPC_CWMP_CALL:
-            rc = epc_unpack_call_data(cwmp_data->enc_start,
-                                      message.length, cwmp_data);
+            rc = cwmp_unpack_call_data(cwmp_data->enc_start,
+                        message.length, cwmp_data);
             break;
         case EPC_CWMP_RESPONSE:
             if (message.status == 0)
-                rc = epc_unpack_response_data(cwmp_data->enc_start,
-                                              message.length, cwmp_data);
+                rc = cwmp_unpack_response_data(cwmp_data->enc_start,
+                            message.length, cwmp_data);
             break;
 
         case EPC_CONFIG_CALL:
@@ -501,75 +501,4 @@ acse_epc_recv(acse_epc_msg_t **user_message)
     *user_message = malloc(sizeof(acse_epc_msg_t));
     memcpy(*user_message, &message, sizeof(message));
     return rc;
-}
-
-
-
-/* see description in acse_epc.h */
-ssize_t
-epc_pack_call_data(void *buf, size_t len,
-                   acse_epc_cwmp_data_t *cwmp_data)
-{
-    if (cwmp_data->to_cpe.p == NULL || cwmp_data->op != EPC_RPC_CALL)
-        return 0;
-    return cwmp_pack_call_data(cwmp_data->to_cpe, cwmp_data->rpc_cpe, 
-                               buf, len);
-}
-
-
-
-ssize_t
-epc_pack_response_data(void *buf, size_t len,
-                       acse_epc_cwmp_data_t *cwmp_data)
-{
-    if (cwmp_data->from_cpe.p == NULL)
-        return 0;
-
-    if (cwmp_data->op == EPC_GET_INFORM)
-        return te_cwmp_pack__Inform(cwmp_data->from_cpe.inform, buf, len);
-
-    /* other operations do not require passing of CWMP data */
-    if (cwmp_data->op != EPC_RPC_CHECK)
-        return 0;
-
-    return cwmp_pack_response_data(cwmp_data->from_cpe, cwmp_data->rpc_cpe,
-                                   buf, len);
-}
-
-
-te_errno
-epc_unpack_call_data(void *buf, size_t len,
-                   acse_epc_cwmp_data_t *cwmp_data)
-{
-    if (cwmp_data->op != EPC_RPC_CALL)
-        return 0;
-
-    cwmp_data->to_cpe.p = buf;
-
-    return cwmp_unpack_call_data(buf, len, cwmp_data->rpc_cpe);
-}
-
-te_errno
-epc_unpack_response_data(void *buf, size_t len,
-                         acse_epc_cwmp_data_t *cwmp_data)
-{
-    if (cwmp_data->op == EPC_GET_INFORM)
-    {
-        cwmp_data->from_cpe.p = buf;
-        if (te_cwmp_unpack__Inform(buf, len) < 0)
-        {
-            ERROR("%s(): unpack inform failed", __FUNCTION__);
-            return TE_RC(TE_ACSE, TE_EFAIL);
-        }
-        else 
-            return 0;
-    }
-
-    /* other operations do not require passing of CWMP data */
-    if (cwmp_data->op != EPC_RPC_CHECK)
-        return 0;
-
-    cwmp_data->from_cpe.p = buf;
-
-    return cwmp_unpack_response_data(buf, len, cwmp_data->rpc_cpe);
 }

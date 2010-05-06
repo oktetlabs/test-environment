@@ -34,7 +34,7 @@
 #include "te_stdint.h"
 
 
-#include "cwmp_soapStub.h"
+
 
 /**
  * This enumeration contains types of RPC calls, which 
@@ -133,42 +133,7 @@ typedef enum {
                              RPC to be sent on CPE, from EPC.           */
 } cwmp_sess_state_t;
 
-/**< Typed pointer to call-specific CWMP data from ACS to CPE. */
-typedef union {
-        void *p;
-        _cwmp__SetParameterValues       *set_parameter_values;
-        _cwmp__GetParameterValues       *get_parameter_values;
-        _cwmp__GetParameterNames        *get_parameter_names;
-        _cwmp__SetParameterAttributes   *set_parameter_attributes;
-        _cwmp__GetParameterAttributes   *get_parameter_attributes;
-        _cwmp__AddObject                *add_object;
-        _cwmp__DeleteObject             *delete_object;
-        _cwmp__Reboot                   *reboot;
-        _cwmp__Download                 *download;
-        _cwmp__Upload                   *upload;
-        _cwmp__ScheduleInform           *schedule_inform;
-        _cwmp__SetVouchers              *set_vouchers;
-        _cwmp__GetOptions               *get_options;
-    } cwmp_data_to_cpe_t; 
 
-/**< Typed pointer to call-specific CWMP data from CPE to ACS. */
-typedef union {
-        acse_cr_state_t      cr_state;
-        void *p;
-        _cwmp__Inform                         *inform;
-        _cwmp__GetRPCMethodsResponse          *get_rpc_methods_r;
-        _cwmp__SetParameterValuesResponse     *set_parameter_values_r;
-        _cwmp__GetParameterValuesResponse     *get_parameter_values_r;
-        _cwmp__GetParameterNamesResponse      *get_parameter_names_r;
-        _cwmp__GetParameterAttributes         *get_parameter_attributes_r;
-        _cwmp__AddObjectResponse              *add_object_r;
-        _cwmp__DeleteObjectResponse           *delete_object_r;
-        _cwmp__DownloadResponse               *download_r;
-        _cwmp__UploadResponse                 *upload_r;
-        _cwmp__GetQueuedTransfersResponse     *get_queued_transfers_r;
-        _cwmp__GetAllQueuedTransfersResponse  *get_all_queued_transfers_r;
-        _cwmp__GetOptionsResponse             *get_options_r;
 
-    } cwmp_data_from_cpe_t; 
 
 #endif /*__TE_CWMP_H__ */
