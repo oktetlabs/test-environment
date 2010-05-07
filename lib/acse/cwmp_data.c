@@ -48,10 +48,14 @@ static inline ssize_t
 te_cwmp_pack__string(char *src, void *msg, size_t max_len)
 {
     char *dst = msg;
-    size_t str_size = strlen(src) + 1;
+    size_t str_size;
     size_t alig_padding; 
-    size_t packed_length = str_size;
+    size_t packed_length;
 
+    if (NULL == src)
+        return 0;
+
+    packed_length = str_size = strlen(src) + 1;
 
     if ((alig_padding = (str_size & 3)) != 0)
         packed_length += 4 - alig_padding; 
@@ -113,11 +117,19 @@ te_cwmp_unpack__string(void *msg, size_t max_len)
 
 #define CWMP_PACK_LEAF(_f_type, _field) \
     do { \
+        if (NULL == src -> _field) \
+        { \
+            dst-> _field = (void*)0; \
+            break; \
+        } \
         rc = te_cwmp_pack__ ## _f_type (src -> _field, msg, \
                                         (max_len) - (packed_length)); \
         if (rc < 0) \
             return -1; \
-        dst-> _field = (void*)((char *)(msg) - (char*)(dst)); \
+        if (rc > 0) \
+            dst-> _field = (void*)((char *)(msg) - (char*)(dst)); \
+        else \
+            dst-> _field = (void*)0; \
         packed_length += rc; \
         msg += rc; \
     } while (0)
