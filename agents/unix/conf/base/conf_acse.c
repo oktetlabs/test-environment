@@ -148,6 +148,8 @@ conf_acse_call(char const *oid, char const *acs, char const *cpe,
     if (EPC_CFG_MODIFY == fun && NULL == value)
         return TE_EINVAL;
 
+    memset(&cfg_data, 0, sizeof(cfg_data));
+
     if (EPC_CFG_LIST == fun)
     {
         if (acs != NULL && acs[0]) /* check is there ACS label */
@@ -183,11 +185,12 @@ conf_acse_call(char const *oid, char const *acs, char const *cpe,
     else
         cfg_data.value[0] = '\0';
 
-    acse_epc_send(&msg);
+    rc = acse_epc_send(&msg);
+    VERB("EPC send rc %r", rc);
 
     {
         int             epc_socket = acse_epc_socket();
-        struct timespec epc_ts = {0, 300000000}; /* 300 ms */
+        struct timespec epc_ts = {0, 500000000}; /* 500 ms */
         struct pollfd   pfd = {0, POLLIN, 0};
         int             pollrc;
 
@@ -734,6 +737,8 @@ stop_acse(void)
     te_errno rc = 0;
     int acse_status = 0;
 
+    RING("Stop ACSE process, pid %d", acse_pid);
+
     if (-1 == acse_pid)
         return 0; /* nothing to do */
 
@@ -919,7 +924,7 @@ cwmp_conn_req_util(const char *acs, const char *cpe,
         return TE_EINVAL;
 
     if (!acse_value())
-    {
+    { 
         return TE_EFAIL;
     }
 
@@ -963,6 +968,7 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
 
     if (!acse_value())
     {
+        RING("%s(): no ACSE started, pid %d", __FUNCTION__, (int)acse_pid);
         return -1;
     }
 
