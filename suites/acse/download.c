@@ -23,11 +23,11 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  * 
- * $Id$
+ * $Id: acse.c 64029 2010-04-27 12:06:01Z konst $
  */
 
 
-#define TE_TEST_NAME "acse/acse"
+#define TE_TEST_NAME "acse/download"
 
 #include "acse_suite.h"
 
@@ -43,8 +43,9 @@ main(int argc, char *argv[])
     int r;
     int call_index;
     int cr_state;
-    te_cwmp_rpc_cpe_t cwmp_rpc = CWMP_RPC_get_rpc_methods;
-    _cwmp__GetRPCMethodsResponse *get_rpc_meth_r = NULL;
+    te_cwmp_rpc_cpe_t cwmp_rpc = CWMP_RPC_download;
+    _cwmp__Download download_pars;
+    _cwmp__DownloadResponse *download_resp;
 
     rcf_rpc_server *rpcs_acse = NULL; 
     te_errno te_rc;
@@ -54,15 +55,18 @@ main(int argc, char *argv[])
 
     TEST_GET_STRING_PARAM(ta_acse);
 
-    te_rc = rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
-                               FALSE, TRUE, FALSE, &rpcs_acse);
+    CHECK_RC(rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
+                               FALSE, TRUE, FALSE, &rpcs_acse));
 
-    CHECK_RC(te_rc);
+    memset(&download_pars, 0, sizeof(download_pars));
+    download_pars.CommandKey = "SW upgrade";
+    download_pars.FileType = "1 Firmware Upgrade Image";
+    download_pars.URL = "http://10.20.1.1:8080/a/firmware_std.bin";
 
-    CHECK_RC(tapi_acse_cpe_get_rpc_methods(rpcs_acse, "A", "box",
-                                           &call_index));
+    CHECK_RC(tapi_acse_cpe_download(rpcs_acse, "A", "box",
+                                    &download_pars, &call_index));
 
-    RING("GetRPCMethods queued with index %d", call_index);
+    RING("Download queued with index %d", call_index);
 
     r = rpc_cwmp_conn_req(rpcs_acse, "A", "box");
 
@@ -82,7 +86,7 @@ main(int argc, char *argv[])
 
     sleep(3);
 
-    r = 1;
+    r = 20;
     do {
         sleep(1);
         CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_OBTAIN,
@@ -92,25 +96,13 @@ main(int argc, char *argv[])
         r--;
     } while (cr_state != 0 && r > 0);
 
-    te_rc = tapi_acse_cpe_get_rpc_methods_resp(rpcs_acse, "A", "box",
-                          TRUE, call_index, &get_rpc_meth_r);
+    te_rc = tapi_acse_cpe_download_resp(rpcs_acse, "A", "box",
+                          TRUE, call_index, &download_resp);
 
-    RING("rc of cwmp op check %r", te_rc);
-    if (te_rc == 0 && get_rpc_meth_r != NULL)
+    RING("rc of download_resp: %r", te_rc);
+    if (te_rc == 0 && download_resp != NULL)
     {
-        MethodList *mlist;
-        char answer_buf[1000] = "";
-        char *p = answer_buf;
-        p += sprintf(p, "RPC methods: ");
-
-        if ((mlist = get_rpc_meth_r->MethodList_)
-            != NULL)
-        {
-            int i;
-            for (i = 0; i < mlist->__size; i++)
-                p += sprintf(p, "'%s', ", mlist->__ptrstring[i]);
-        }
-        RING("%s", answer_buf);
+        RING("Download status %d", (int)download_resp->Status);
     }
 
 

@@ -22,6 +22,11 @@
             <arg name="ta_acse" ref="ta_acse"/>
         </run> 
 
+        <run>
+            <script name="download"/>
+            <arg name="ta_acse" ref="ta_acse"/>
+        </run> 
+
     </session>
 </package>
 

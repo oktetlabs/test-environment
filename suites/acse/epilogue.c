@@ -42,6 +42,7 @@ main(int argc, char *argv[])
     te_rc = rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
                                FALSE, TRUE, FALSE, &rpcs_acse);
 
+#if 0
     CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_DEL,
                                   VA_END_LIST));
 
@@ -50,6 +51,7 @@ main(int argc, char *argv[])
 
 
     CHECK_RC(tapi_acse_stop(ta_acse));
+#endif
 
     type = CVT_INTEGER;
     CHECK_RC(cfg_get_instance_fmt(&type, &cfg_value, 

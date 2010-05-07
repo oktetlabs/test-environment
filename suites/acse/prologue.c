@@ -45,6 +45,7 @@ main(int argc, char *argv[])
     te_lgr_entity = TE_TEST_NAME;
     TAPI_ON_JMP(TEST_ON_JMP_DO);
 
+#if 0
     CHECK_RC(tapi_acse_start(ta_acse));
 
     te_rc = rcf_rpc_server_create_ta_thread(ta_acse, "acse_ctl",
@@ -66,7 +67,7 @@ main(int argc, char *argv[])
           "cr_login", "000261-Home Gateway-V601L622R1A0-1001742119", 
           "cr_passwd", "z7cD7CTDA1DrQKUb", 
           VA_END_LIST));
-
+#endif
     CHECK_RC(tapi_acse_manage_acs(ta_acse, "A", ACSE_OP_MODIFY,
                                   "enabled", 1, VA_END_LIST));
 
@@ -88,7 +89,7 @@ main(int argc, char *argv[])
 
         RING("got ConnReq url '%s', count %d", cr_url, cr_url_wait_count);
 
-        if ((cr_url_wait_count--) < 0)
+        if ((--cr_url_wait_count) < 0)
             break;
     }
 
