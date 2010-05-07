@@ -211,6 +211,15 @@ extern te_errno tapi_acse_cpe_rpc_call_response(const char *ta,
                                      tapi_acse_call_status_t *status);
 
 
+
+
+
+/*
+ * ==================== CWMP RPC methods =========================
+ */
+
+
+
 /**
  * Call CPE GetRPCMethods method.
  *
@@ -228,7 +237,10 @@ extern te_errno tapi_acse_cpe_get_rpc_methods(
 /**
  * Get CPE GetRPCMethods response.
  *
- * @param rpcs     TE RPC server handle
+ * @param rpcs     TE RPC server handle.
+ * @param acs_name Name of ACS object on ACSE.
+ * @param cpe_name Name of CPE object on ACSE.
+ * @param block    Whether block to wait response or return immediately.
  * @param call_index  index of TR RPC.
  * @param resp     CPE response to the GetRPCMethods method
  *
@@ -238,6 +250,7 @@ extern te_errno tapi_acse_cpe_get_rpc_methods_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__GetRPCMethodsResponse **resp);
 /**
@@ -260,6 +273,9 @@ extern te_errno tapi_acse_cpe_set_parameter_values(
  * Get CPE SetParameterValues response.
  *
  * @param rpcs     RPC server handle
+ * @param acs_name Name of ACS object on ACSE.
+ * @param cpe_name Name of CPE object on ACSE.
+ * @param block    Whether block to wait response or return immediately.
  * @param call_index  index of TR RPC.
  * @param resp     CPE response to the SetParameterValues method
  *
@@ -269,6 +285,7 @@ extern te_errno tapi_acse_cpe_set_parameter_values_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__SetParameterValuesResponse **resp);
 
@@ -302,6 +319,7 @@ extern te_errno tapi_acse_cpe_get_parameter_values_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__GetParameterValuesResponse **resp);
 
@@ -335,6 +353,7 @@ extern te_errno tapi_acse_cpe_get_parameter_names_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__GetParameterNamesResponse **resp);
 
@@ -367,6 +386,7 @@ extern te_errno tapi_acse_cpe_set_parameter_attributes_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index);
 
 
@@ -399,6 +419,7 @@ extern te_errno tapi_acse_cpe_get_parameter_attributes_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__GetParameterAttributesResponse **resp);
 
@@ -431,6 +452,7 @@ extern te_errno tapi_acse_cpe_add_object_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__AddObjectResponse **resp);
 
@@ -462,6 +484,7 @@ extern te_errno tapi_acse_cpe_delete_object_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__DeleteObjectResponse **resp);
 
@@ -493,6 +516,7 @@ extern te_errno tapi_acse_cpe_reboot_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index);
 
 /** 
@@ -524,6 +548,7 @@ extern te_errno tapi_acse_cpe_download_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__DownloadResponse **resp);
 
@@ -555,6 +580,7 @@ extern te_errno tapi_acse_cpe_upload_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__UploadResponse **resp);
 
@@ -584,6 +610,7 @@ extern te_errno tapi_acse_cpe_factory_reset_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index);
 
 /**
@@ -612,6 +639,7 @@ extern te_errno tapi_acse_cpe_get_queued_transfers_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__GetQueuedTransfersResponse **resp);
 
@@ -642,6 +670,7 @@ extern te_errno tapi_acse_cpe_get_all_queued_transfers_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__GetAllQueuedTransfersResponse **resp);
 
@@ -673,6 +702,7 @@ extern te_errno tapi_acse_cpe_schedule_inform_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index);
 
 /**
@@ -702,6 +732,7 @@ extern te_errno tapi_acse_cpe_set_vouchers_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index);
 
 /**
@@ -732,6 +763,7 @@ extern te_errno tapi_acse_cpe_get_options_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
+               te_bool block,
                int call_index,
                _cwmp__GetOptionsResponse **resp);
 
