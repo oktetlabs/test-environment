@@ -118,7 +118,11 @@ typedef struct {
     char        cpe[RCF_MAX_NAME]; /**< Name of CPE record */
 
     te_cwmp_rpc_cpe_t   rpc_cpe; /**< Code of RPC call to be put 
-                                      into queue desired for CPE.*/
+                                      into queue desired for CPE,
+                                      or already sent to CPE. */
+
+    te_cwmp_rpc_acs_t   rpc_acs; /**< Code of RPC catched from CPE.*/
+
 
     int         index; /**< IN/OUT field for position in queue;
                             IN - for 'get/check' operation, 

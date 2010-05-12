@@ -802,7 +802,7 @@ static te_errno
 acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
 {
     cpe_t    *cpe;
-    te_errno  rc;
+    te_errno  rc = 0;
 
     cpe = db_find_cpe(NULL, cwmp_pars->acs, cwmp_pars->cpe);
     if (cpe == NULL)
@@ -814,7 +814,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
 
     switch(cwmp_pars->op)
     {
-    case EPC_RPC_CALL:
+        case EPC_RPC_CALL:
         {
             /* Insert RPC to queue, ACSE will deliver it during first
                established CWMP session with CPE. */
@@ -828,10 +828,10 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                  cwmp_pars->cpe, cwmp_pars->rpc_cpe, rpc_item->index);
         }
         break;
-    case EPC_RPC_CHECK:
+        case EPC_RPC_CHECK:
         {
             cpe_rpc_item_t *rpc_item;
-            void *result;
+            void *result = NULL;
 
             TAILQ_FOREACH(rpc_item, &cpe->rpc_queue, links)
             {
@@ -855,12 +855,16 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                 return TE_EPENDING;
            
             cwmp_pars->from_cpe.p = result;
+            mheap_add_user(rpc_item->heap, cwmp_pars);
+
             TAILQ_REMOVE(&cpe->rpc_results, rpc_item, links);
-            free(rpc_item->params);
-            free(rpc_item);
+            acse_rpc_item_free(rpc_item);
+
+            if (CWMP_RPC_FAULT == cwmp_pars->rpc_cpe)
+                rc = TE_CWMP_FAULT;
         }
         break;
-    case EPC_GET_INFORM:
+        case EPC_GET_INFORM:
         {
             cpe_inform_t *inform_rec;
             if (cwmp_pars->index == -1)
@@ -882,24 +886,23 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             cwmp_pars->from_cpe.inform = inform_rec->inform;
         }
         break;
-    case EPC_CONN_REQ:
-        rc = acse_init_connection_request(cpe);
-        if (rc != 0)
-        {
-            ERROR("CONN_REQ failed: %r", rc);
-            return rc;
-        }
-        cwmp_pars->from_cpe.cr_state = cpe->cr_state;
-        RING("EPC CWMP Issue ConnReq to '%s'", cwmp_pars->cpe);
-
+        case EPC_CONN_REQ:
+            rc = acse_init_connection_request(cpe);
+            if (rc != 0)
+            {
+                ERROR("CONN_REQ failed: %r", rc);
+                return rc;
+            }
+            cwmp_pars->from_cpe.cr_state = cpe->cr_state;
+            RING("EPC CWMP Issue ConnReq to '%s'", cwmp_pars->cpe); 
         break;
-    case EPC_CONN_REQ_CHECK:
-        cwmp_pars->from_cpe.cr_state = cpe->cr_state;
-        if (cpe->cr_state == CR_ERROR)
-            cpe->cr_state = CR_NONE;
+        case EPC_CONN_REQ_CHECK:
+            cwmp_pars->from_cpe.cr_state = cpe->cr_state;
+            if (cpe->cr_state == CR_ERROR)
+                cpe->cr_state = CR_NONE;
         break;
     }
-    return 0;
+    return rc;
 }
 
 /** 

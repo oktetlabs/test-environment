@@ -187,8 +187,6 @@ extern te_errno tapi_acse_cpe_disconnect(const char *ta,
                                          const char *cpe_name);
 
 
-typedef uint32_t tapi_acse_call_handle_t;
-
 /* TODO: think, maybe use TE common te_errno instead special 
  * call status? Or encode here some [TR-069] error codes? */
 typedef enum {
@@ -197,19 +195,29 @@ typedef enum {
     ACSE_RPC_TIMEDOUT,
 } tapi_acse_call_status_t;
 
-extern te_errno tapi_acse_cpe_rpc_call(const char *ta,
-                                     const char *acs_name,
-                                     const char *cpe_name,
-                                     te_cwmp_rpc_cpe_t cpe_rpc_code,
-                                     tapi_acse_call_handle_t *call,
-                                     ...);
 
-extern te_errno tapi_acse_cpe_rpc_call_response(const char *ta,
-                                     const char *acs_name,
-                                     const char *cpe_name,
-                                     tapi_acse_call_handle_t call,
-                                     tapi_acse_call_status_t *status);
 
+/**
+ * Call CPE GetRPCMethods method.
+ *
+ * @param rpcs        TE RPC server handle
+ * @param call_index  location for index of TR RPC (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_rpc(rcf_rpc_server *rpcs,
+                                  const char *acs_name,
+                                  const char *cpe_name,
+                                  te_cwmp_rpc_cpe_t cpe_rpc_code,
+                                  int *call_index,
+                                  cwmp_data_to_cpe_t to_cpe);
+
+extern te_errno tapi_acse_cpe_rpc_response(rcf_rpc_server *rpcs,
+                                   const char *acs_name,
+                                   const char *cpe_name,
+                                   int timeout, int call_index,
+                                   te_cwmp_rpc_cpe_t *cpe_rpc_code,
+                                   cwmp_data_from_cpe_t *from_cpe);
 
 
 
@@ -236,11 +244,15 @@ extern te_errno tapi_acse_cpe_get_rpc_methods(
 
 /**
  * Get CPE GetRPCMethods response.
+ * If there was CWMP Fault received as response, then TE_CWMP_FAULT
+ * returned, and ptr to fault struct is stored in #resp place.
  *
  * @param rpcs     TE RPC server handle.
  * @param acs_name Name of ACS object on ACSE.
  * @param cpe_name Name of CPE object on ACSE.
- * @param block    Whether block to wait response or return immediately.
+ * @param timeout  Timeout in seconds to wait response,
+ *                      zero for return immediately, just check,
+ *                      negative value for wait forever.
  * @param call_index  index of TR RPC.
  * @param resp     CPE response to the GetRPCMethods method
  *
@@ -250,8 +262,7 @@ extern te_errno tapi_acse_cpe_get_rpc_methods_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
-               te_bool block,
-               int call_index,
+               int timeout, int call_index,
                _cwmp__GetRPCMethodsResponse **resp);
 /**
  * Call CPE SetParameterValues method.
@@ -271,11 +282,15 @@ extern te_errno tapi_acse_cpe_set_parameter_values(
 
 /**
  * Get CPE SetParameterValues response.
+ * If there was CWMP Fault received as response, then TE_CWMP_FAULT
+ * returned, and ptr to fault struct is stored in #resp place.
  *
  * @param rpcs     RPC server handle
  * @param acs_name Name of ACS object on ACSE.
  * @param cpe_name Name of CPE object on ACSE.
- * @param block    Whether block to wait response or return immediately.
+ * @param timeout  Timeout in seconds to wait response,
+ *                    zero for return immediately, just check,
+ *                      negative value for wait forever.
  * @param call_index  index of TR RPC.
  * @param resp     CPE response to the SetParameterValues method
  *
@@ -285,8 +300,7 @@ extern te_errno tapi_acse_cpe_set_parameter_values_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
-               te_bool block,
-               int call_index,
+               int timeout, int call_index,
                _cwmp__SetParameterValuesResponse **resp);
 
 
@@ -548,8 +562,7 @@ extern te_errno tapi_acse_cpe_download_resp(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
-               te_bool block,
-               int call_index,
+               int timeout, int call_index,
                _cwmp__DownloadResponse **resp);
 
 /**

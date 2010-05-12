@@ -60,6 +60,7 @@ typedef enum {
     CWMP_RPC_schedule_inform,
     CWMP_RPC_set_vouchers,
     CWMP_RPC_get_options,
+    CWMP_RPC_FAULT,
 } te_cwmp_rpc_cpe_t;
 
 /**
@@ -149,6 +150,7 @@ typedef union {
         _cwmp__ScheduleInform           *schedule_inform;
         _cwmp__SetVouchers              *set_vouchers;
         _cwmp__GetOptions               *get_options;
+        _cwmp__Fault                    *fault;
     } cwmp_data_to_cpe_t; 
 
 /**< Typed pointer to call-specific CWMP data from CPE to ACS. */
@@ -156,6 +158,8 @@ typedef union {
         acse_cr_state_t      cr_state;
         void *p;
         _cwmp__Inform                         *inform;
+        _cwmp__Fault                          *fault;
+        _cwmp__TransferComplete               *transfer_complete;
         _cwmp__GetRPCMethodsResponse          *get_rpc_methods_r;
         _cwmp__SetParameterValuesResponse     *set_parameter_values_r;
         _cwmp__GetParameterValuesResponse     *get_parameter_values_r;
@@ -168,7 +172,6 @@ typedef union {
         _cwmp__GetQueuedTransfersResponse     *get_queued_transfers_r;
         _cwmp__GetAllQueuedTransfersResponse  *get_all_queued_transfers_r;
         _cwmp__GetOptionsResponse             *get_options_r;
-
     } cwmp_data_from_cpe_t; 
 
 #endif /*__TE_CWMP_H__ */

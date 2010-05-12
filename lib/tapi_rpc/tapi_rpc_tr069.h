@@ -44,12 +44,12 @@ extern "C" {
 
 
 
-extern int rpc_cwmp_op_call(
-               rcf_rpc_server *rpcs,
-               const char *acs_name, const char *cpe_name,
-               te_cwmp_rpc_cpe_t cwmp_rpc,
-               uint8_t *buf, size_t buflen, 
-               int *index);
+extern te_errno rpc_cwmp_op_call(
+                           rcf_rpc_server *rpcs,
+                           const char *acs_name, const char *cpe_name,
+                           te_cwmp_rpc_cpe_t cwmp_rpc,
+                           uint8_t *buf, size_t buflen, 
+                           int *index);
 
 
 /**
@@ -65,21 +65,19 @@ extern int rpc_cwmp_op_call(
  *
  * @return status
  */
-extern int rpc_cwmp_op_check(
-               rcf_rpc_server *rpcs,
-               const char *acs_name, const char *cpe_name,
-               int index,
-               uint8_t **buf, size_t *buflen);
+extern te_errno rpc_cwmp_op_check(rcf_rpc_server *rpcs,
+                           const char *acs_name, const char *cpe_name,
+                           int index,
+                           te_cwmp_rpc_cpe_t *cwmp_rpc,
+                           uint8_t **buf, size_t *buflen);
 
 
-extern int rpc_cwmp_conn_req(
-               rcf_rpc_server *rpcs,
-               const char *acs_name, const char *cpe_name);
+extern te_errno rpc_cwmp_conn_req(rcf_rpc_server *rpcs,
+                           const char *acs_name, const char *cpe_name);
 
-extern int rpc_cwmp_get_inform(
-               rcf_rpc_server *rpcs,
-               const char *acs_name, const char *cpe_name, 
-               int index, uint8_t *buf, size_t *buflen);
+extern te_errno rpc_cwmp_get_inform(rcf_rpc_server *rpcs,
+                       const char *acs_name, const char *cpe_name, 
+                       int index, uint8_t *buf, size_t *buflen);
 
 
 

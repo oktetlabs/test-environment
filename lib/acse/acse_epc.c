@@ -49,6 +49,7 @@
 #include "logger_api.h"
 
 #include "cwmp_data.h"
+#include "acse_mem.h"
 
 
 #define EPC_MMAP_AREA "/epc_mmap_area"
@@ -380,6 +381,9 @@ acse_epc_send(const acse_epc_msg_t *user_message)
                 return TE_RC(TE_ACSE, TE_EFAIL);
             }
             message.length = packed_len + sizeof(*cwmp_data);
+            if (ACSE_EPC_SERVER == epc_role &&
+                NULL != cwmp_data->from_cpe.p)
+                mheap_free_user(MHEAP_NONE, cwmp_data); 
             break;
         }
     }
@@ -462,7 +466,7 @@ acse_epc_recv(acse_epc_msg_t **user_message)
                                       message.length, cwmp_data);
             break;
         case EPC_CWMP_RESPONSE:
-            if (message.status == 0)
+            if (0 == message.status || TE_CWMP_FAULT == message.status)
                 rc = epc_unpack_response_data(cwmp_data->enc_start,
                                               message.length, cwmp_data);
             break;

@@ -293,8 +293,13 @@ typedef enum {
 /*@}*/
 
 /** @name IPC errno's */
-    TE_ESYNCFAILED = TE_MIN_ERRNO + 1200 
+    TE_ESYNCFAILED = TE_MIN_ERRNO + 1200,
                        /**< IPC synchronisation is broken */
+/*@}*/
+
+/** @name ACSE errno's */
+    TE_GSOAP_ERROR = TE_MIN_ERRNO + 1300, /**< Internal gSOAP error */
+    TE_CWMP_FAULT,      /**< CWMP Fault received */
 /*@}*/
 } te_errno_codes;
 
@@ -669,6 +674,9 @@ te_rc_err2str(te_errno err)
 
         ERR2STR(ESYNCFAILED);
         
+        ERR2STR(GSOAP_ERROR);
+        ERR2STR(CWMP_FAULT);
+
         case 0:  return "OK";
         default:
             snprintf(unknown_errno, sizeof(unknown_errno),

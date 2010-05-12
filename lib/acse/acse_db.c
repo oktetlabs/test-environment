@@ -113,6 +113,7 @@ db_add_cpe(const char *acs_name, const char *cpe_name)
 
     memset(cpe_item, 0, sizeof(*cpe_item));
     cpe_item->name = strdup(cpe_name);
+    cpe_item->acs = acs_item;
 
     TAILQ_INIT(&(cpe_item->rpc_queue));
     TAILQ_INIT(&(cpe_item->rpc_results));
@@ -198,8 +199,14 @@ db_remove_acs(acs_t *acs)
 te_errno
 db_remove_cpe(cpe_t *cpe)
 {
-    if (!cpe)
+    if (NULL == cpe)
         return TE_EINVAL;
+    if (NULL == cpe->acs)
+    {
+        ERROR("No acs ptr in CPE");
+        return TE_EFAULT;
+    }
+
     if (cpe->session != NULL || cpe->cr_state != CR_NONE)
     {
         WARN("attempt to remove busy CPE record '%s/%s'",
@@ -210,18 +217,44 @@ db_remove_cpe(cpe_t *cpe)
     {
         cpe_inform_t *inf_rec = LIST_FIRST(&cpe->inform_list);
         LIST_REMOVE(inf_rec, links);
-        /* TODO free Inform,
-           and besides correct copy Inform to this list.. */
-        free(inf_rec);
+        mheap_free_user(MHEAP_NONE, inf_rec); 
     }
 
     while (!(TAILQ_EMPTY(&cpe->rpc_queue)))
     {
         cpe_rpc_item_t *rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
         TAILQ_REMOVE(&cpe->rpc_queue, rpc_item, links);
+        acse_rpc_item_free(rpc_item);
     }
 
+    while (!(TAILQ_EMPTY(&cpe->rpc_results)))
+    {
+        cpe_rpc_item_t *rpc_item = TAILQ_FIRST(&cpe->rpc_results);
+        TAILQ_REMOVE(&cpe->rpc_results, rpc_item, links);
+        acse_rpc_item_free(rpc_item);
+    }
     LIST_REMOVE(cpe, links);
     free(cpe);
+    return 0;
+}
+
+
+/* see description in acse_internal.h */
+te_errno
+acse_rpc_item_free(cpe_rpc_item_t *rpc_item)
+{
+    if (NULL == rpc_item)
+        return 0; /* nothing to free */
+
+    if (MHEAP_NONE == rpc_item->heap)
+    {
+        if (rpc_item->params->to_cpe.p != NULL)
+            free(rpc_item->params->to_cpe.p);
+    }
+    else
+        mheap_free_user(rpc_item->heap, rpc_item); 
+
+    free(rpc_item->params);
+    free(rpc_item);
     return 0;
 }

@@ -1085,21 +1085,43 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
         return; /* TODO: study, do soap_closesock() here ??? */
     }
 
-    acse_soap_get_response(soap, request);
+    if (!soap_getfault(soap))
+    {
+        soap_print_fault(soap, stderr);
+        if(soap->fault && soap->fault->detail)
+        {
+            RING("%s(): fault SOAP type %d.", __FUNCTION__, 
+                 soap->fault->detail->__type);
+            if (SOAP_TYPE__cwmp__Fault == soap->fault->detail->__type)
+            {
+                _cwmp__Fault *c_fault = soap->fault->detail->fault;
+                WARN("CWMP fault %s (%s), size %d",
+                    c_fault->FaultCode, c_fault->FaultString,
+                    c_fault->__sizeSetParameterValuesFault);
+                request->from_cpe.fault = c_fault;
+                request->rpc_cpe = CWMP_RPC_FAULT;
+            }
+        }
+        WARN("%s(): Fault received '%s'",
+                __FUNCTION__, soap_faultdetail(soap));
+        /* do not return here, we have to continue normal CWMP session.*/
+    }
+    else 
+        acse_soap_get_response(soap, request);
 
     cwmp_sess->rpc_item = NULL; /* It is already processed. */
 
     if (soap->error)
     {
         ERROR("Fail get SOAP response, error %d", soap->error);
-        /* TODO: think, return here? */
+        return;
     }
     if (soap_body_end_in(soap)
          || soap_envelope_end_in(soap)
          || soap_end_recv(soap))
     {
         ERROR("after get SOAP body, error %d", soap->error);
-        /* TODO: think, return here? */
+        return;
     }
 
     VERB("End of serve reponse: first rpc_item in queue: %p\n",

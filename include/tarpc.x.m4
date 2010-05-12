@@ -3902,7 +3902,7 @@ struct tarpc_cwmp_op_call_in {
 
     string              acs_name<>; /**< Name of ACS object */ 
     string              cpe_name<>; /**< Name of CPE record */ 
-    tarpc_int           cwmp_rpc;   /**< CWMP RPC call type */
+    tarpc_uint          cwmp_rpc;   /**< CWMP RPC call type */
     uint8_t             buf<>;      /**< Buffer with CWMP call data */
 };
 
@@ -3910,7 +3910,7 @@ struct tarpc_cwmp_op_call_in {
 struct tarpc_cwmp_op_call_out {
     struct tarpc_out_arg  common;
 
-    tarpc_int          status;     /**< status of operation */
+    tarpc_uint         status;    /**< status of operation - te_errno */
     tarpc_uint         call_index; /**< Index of CWMP RPC call type */
 };
 
@@ -3921,13 +3921,13 @@ struct tarpc_cwmp_op_check_in {
     string              acs_name<>; /**< Name of ACS object */ 
     string              cpe_name<>; /**< Name of CPE record */ 
     tarpc_uint          call_index; /**< Index of CWMP RPC call type */
-    uint8_t             buf<>;      /**< Buffer for CWMP response data */
 };
 
 struct tarpc_cwmp_op_check_out {
     struct tarpc_out_arg  common;
 
-    tarpc_int           status;     /**< status of operation */
+    tarpc_uint          status;     /**< status of operation - te_errno */
+    tarpc_uint          cwmp_rpc;   /**< CWMP RPC call type */
     uint8_t             buf<>;      /**< Buffer with CWMP response data */
 };
 

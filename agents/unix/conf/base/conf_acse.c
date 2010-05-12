@@ -190,7 +190,11 @@ conf_acse_call(char const *oid, char const *acs, char const *cpe,
 
     {
         int             epc_socket = acse_epc_socket();
+#if 0
         struct timespec epc_ts = {0, 500000000}; /* 500 ms */
+#else
+        struct timespec epc_ts = {2, 0}; /* 2 sec */
+#endif
         struct pollfd   pfd = {0, POLLIN, 0};
         int             pollrc;
 
@@ -1102,18 +1106,24 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
         out->status = TE_RC(TE_ACSE, msg_resp->status);
         RING("%s(): status is %r", __FUNCTION__, msg_resp->status);
 
-        if (0 == msg_resp->status)
+        if (0 == msg_resp->status || TE_CWMP_FAULT == msg_resp->status)
         { 
             out->buf.buf_val = malloc(msg_resp->length);
             out->buf.buf_len = msg_resp->length;
             packed_len = epc_pack_response_data(out->buf.buf_val, 
                             msg_resp->length, msg_resp->data.cwmp);
+            if (TE_CWMP_FAULT == msg_resp->status)
+            {
+                _cwmp__Fault *f = msg_resp->data.cwmp->from_cpe.fault;
+                RING("pass Fault %s (%s)", f->FaultCode, f->FaultString);
+            }
         }
         else
         {
             out->buf.buf_val = NULL;
             out->buf.buf_len = 0;
         }
+        out->cwmp_rpc = msg_resp->data.cwmp->rpc_cpe;
     }
 
     return 0;

@@ -53,13 +53,11 @@
 #error This source should not be compiled without tr069 configured support.
 #endif
 #include "tapi_rpc_internal.h"
-#include "tapi_rpc_tr069.h"
+#include "tapi_rpc_tr069.h" 
 
 
 
-
-
-int
+te_errno
 rpc_cwmp_op_call(rcf_rpc_server *rpcs,
                  const char *acs_name, const char *cpe_name,
                  te_cwmp_rpc_cpe_t cwmp_rpc,
@@ -102,10 +100,10 @@ rpc_cwmp_op_call(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "cwmp_op_call", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): cwmp_op_call(%s, %s, %d) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): cwmp_op_call(%s, %s, %d) -> %r",
                  rpcs->ta, rpcs->name,
                  acs_name, cpe_name, (int)cwmp_rpc,
-                 out.status, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 (te_errno)out.status);
 
     *index = out.call_index;
 
@@ -113,11 +111,12 @@ rpc_cwmp_op_call(rcf_rpc_server *rpcs,
 }
 
 
-int
-rpc_cwmp_op_check( rcf_rpc_server *rpcs,
-                   const char *acs_name, const char *cpe_name,
-                   int index,
-                   uint8_t **buf, size_t *buflen)
+te_errno
+rpc_cwmp_op_check(rcf_rpc_server *rpcs,
+                  const char *acs_name, const char *cpe_name,
+                  int index,
+                  te_cwmp_rpc_cpe_t *cwmp_rpc,
+                  uint8_t **buf, size_t *buflen)
 {
     tarpc_cwmp_op_check_in  in;
     tarpc_cwmp_op_check_out out;
@@ -142,19 +141,6 @@ rpc_cwmp_op_check( rcf_rpc_server *rpcs,
     in.cpe_name = strdup(cpe_name);
     in.call_index = index;
 
-#if 0 /* it seems unneccessary. */
-    if (buf != NULL && buflen != NULL)
-    {
-        in.buf.buf_len = *buflen;
-        in.buf.buf_val = *buf;
-    }
-    else
-#endif
-    {
-        in.buf.buf_len = 0;
-        in.buf.buf_val = NULL;
-    }
-
     rcf_rpc_call(rpcs, "cwmp_op_check", &in, &out);
 
     if (buf != NULL && buflen != NULL && out.buf.buf_val != NULL)
@@ -164,22 +150,27 @@ rpc_cwmp_op_check( rcf_rpc_server *rpcs,
         memcpy(*buf, out.buf.buf_val, out.buf.buf_len);
     }
 
-    TAPI_RPC_LOG("RPC (%s,%s): cwmp_op_check(%s, %s, %d) -> %d (%s)",
+    if (NULL != cwmp_rpc)
+        *cwmp_rpc = out.cwmp_rpc;
+
+    TAPI_RPC_LOG("RPC (%s,%s): cwmp_op_check(%s, %s, %d) -> %r",
                  rpcs->ta, rpcs->name,
                  acs_name, cpe_name, (int)index,
-                 out.status, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 (te_errno)out.status);
 
     return out.status;
 }
 
 
-int
+te_errno
 rpc_cwmp_conn_req(rcf_rpc_server *rpcs,
                   const char *acs_name, const char *cpe_name)
 {
     tarpc_cwmp_conn_req_in  in;
     tarpc_cwmp_conn_req_out out;
 
+    RING("%s() called, srv %s, to %s/%s",
+         __FUNCTION__, rpcs->name, acs_name, cpe_name);
     if (NULL == rpcs)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);

@@ -60,8 +60,19 @@ main(int argc, char *argv[])
 
     memset(&download_pars, 0, sizeof(download_pars));
     download_pars.CommandKey = "SW upgrade";
+#if 0
     download_pars.FileType = "1 Firmware Upgrade Image";
-    download_pars.URL = "http://10.20.1.1:8080/a/firmware_std.bin";
+#else
+    download_pars.FileType = "3 Vendor Configuration File";
+#endif
+
+    download_pars.URL = "http://10.20.1.1:8080/file.cfg";
+    download_pars.Username = "";
+    download_pars.Password = "";
+    download_pars.FileSize = 100;
+    download_pars.TargetFileName = "file.cfg";
+    download_pars.SuccessURL = "";
+    download_pars.FailureURL = "";
 
     CHECK_RC(tapi_acse_cpe_download(rpcs_acse, "A", "box",
                                     &download_pars, &call_index));
@@ -103,6 +114,12 @@ main(int argc, char *argv[])
     if (te_rc == 0 && download_resp != NULL)
     {
         RING("Download status %d", (int)download_resp->Status);
+    }
+
+    if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
+    {
+        _cwmp__Fault *f = (_cwmp__Fault *)download_resp;
+        RING("Fault detected: %s(%s)", f->FaultCode, f->FaultString);
     }
 
 

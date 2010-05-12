@@ -422,6 +422,64 @@ te_cwmp_pack__Reboot(const _cwmp__Reboot *src, void *msg, size_t max_len)
     return packed_length;
 }
 
+ssize_t
+te_cwmp_pack__FaultStruct(const cwmp__FaultStruct *src,
+                          void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(cwmp__FaultStruct);
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, FaultCode);
+    CWMP_PACK_LEAF(string, FaultString);
+    return packed_length;
+}
+
+
+ssize_t
+te_cwmp_pack__TransferComplete(const _cwmp__TransferComplete *src,
+                               void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__TransferComplete);
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, CommandKey);
+    CWMP_PACK_LEAF(FaultStruct, FaultStruct);
+    return packed_length;
+}
+
+ssize_t
+te_cwmp_pack__Fault(const _cwmp__Fault *src, void *msg, size_t max_len)
+{
+    size_t array_memlen = 0;
+    int i = 0;
+    CWMP_PACK_COMMON_VARS(_cwmp__Fault);
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, FaultCode);
+    CWMP_PACK_LEAF(string, FaultString);
+
+    /* Here start some ugly hacks because for this type gSOAP generated
+     * non-usual presentation of array. */
+
+    dst->SetParameterValuesFault = msg;
+
+    array_memlen = sizeof(struct _cwmp__Fault_SetParameterValuesFault) *
+                    src->__sizeSetParameterValuesFault;
+    msg += array_memlen;
+    packed_length += array_memlen;
+
+    for (i = 0; i < src->__sizeSetParameterValuesFault; i++) \
+    {
+        CWMP_PACK_LEAF(string, SetParameterValuesFault[i].ParameterName);
+        CWMP_PACK_LEAF(string, SetParameterValuesFault[i].FaultCode);
+        CWMP_PACK_LEAF(string, SetParameterValuesFault[i].FaultString);
+    }
+    /* Put array offset instead of real pointer */
+    dst->SetParameterValuesFault = 
+        (void*)((char *)dst->SetParameterValuesFault - (char*)dst);
+
+    return packed_length;
+}
+
+
+
 /*
  * ============= UN-PACK methods ================
  */
@@ -443,7 +501,7 @@ te_cwmp_pack__Reboot(const _cwmp__Reboot *src, void *msg, size_t max_len)
         size_t ofs = (size_t)(res-> _leaf);  \
                                         \
         if (ofs >= max_len) return -1;  \
-        if (ofs == 0) \
+        if (0 == ofs) \
         { \
             res-> _leaf = NULL; \
             break; \
@@ -672,6 +730,59 @@ te_cwmp_unpack__Reboot(void *msg, size_t max_len)
     CWMP_UNPACK_LEAF(string, CommandKey);
     return unpack_size;
 }
+
+
+ssize_t
+te_cwmp_unpack__FaultStruct(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(cwmp__FaultStruct);
+    CWMP_UNPACK_LEAF(string, FaultCode);
+    CWMP_UNPACK_LEAF(string, FaultString);
+    return unpack_size;
+}
+
+ssize_t
+te_cwmp_unpack__TransferComplete(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__TransferComplete);
+    CWMP_UNPACK_LEAF(string, CommandKey);
+    CWMP_UNPACK_LEAF(FaultStruct, FaultStruct);
+    return unpack_size;
+}
+
+ssize_t
+te_cwmp_unpack__Fault(void *msg, size_t max_len)
+{
+    size_t array_ofs = 0;
+    int i = 0;
+    CWMP_UNPACK_VARS(_cwmp__Fault);
+    CWMP_UNPACK_LEAF(string, FaultCode);
+    CWMP_UNPACK_LEAF(string, FaultString);
+
+    /* Here start some ugly hacks because for this type gSOAP generated
+     * non-usual presentation of array. */
+
+    array_ofs = (size_t)(res->SetParameterValuesFault);
+                                        \
+    if (array_ofs >= max_len) return -1;
+    if (0 == array_ofs || 0 == res->__sizeSetParameterValuesFault)
+        res->SetParameterValuesFault = NULL;
+    else
+        res->SetParameterValuesFault = msg + array_ofs;
+
+    unpack_size += sizeof(struct _cwmp__Fault_SetParameterValuesFault) *
+                    res->__sizeSetParameterValuesFault;
+
+    for (i = 0; i < res->__sizeSetParameterValuesFault; i++) \
+    {
+        CWMP_UNPACK_LEAF(string, SetParameterValuesFault[i].ParameterName);
+        CWMP_UNPACK_LEAF(string, SetParameterValuesFault[i].FaultCode);
+        CWMP_UNPACK_LEAF(string, SetParameterValuesFault[i].FaultString);
+    }
+
+    return unpack_size;
+}
+
 /*
  * ============= Generic utils ================
  */
@@ -722,6 +833,7 @@ cwmp_pack_call_data(cwmp_data_to_cpe_t src,
         case CWMP_RPC_factory_reset:
         case CWMP_RPC_get_queued_transfers:
         case CWMP_RPC_get_all_queued_transfers:
+        case CWMP_RPC_FAULT:
             /* do nothing, no data to CPE */
             return 0;
     }
@@ -751,24 +863,21 @@ cwmp_pack_response_data(cwmp_data_from_cpe_t src,
             return 0;
         case CWMP_RPC_get_rpc_methods:
             return te_cwmp_pack__GetRPCMethodsResponse(
-                            src.get_rpc_methods_r,
-                            msg, len);
+                            src.get_rpc_methods_r, msg, len);
         case CWMP_RPC_set_parameter_values:
             return te_cwmp_pack__SetParameterValuesResponse(
-                            src.set_parameter_values_r,
-                            msg, len);
+                            src.set_parameter_values_r, msg, len);
         case CWMP_RPC_get_parameter_values:
             return te_cwmp_pack__GetParameterValuesResponse(
-                            src.get_parameter_values_r,
-                            msg, len);
+                            src.get_parameter_values_r, msg, len);
         case CWMP_RPC_get_parameter_names:
             return te_cwmp_pack__GetParameterNamesResponse(
-                            src.get_parameter_names_r,
-                            msg, len);
+                            src.get_parameter_names_r, msg, len);
         case CWMP_RPC_download:
             return te_cwmp_pack__DownloadResponse(
-                            src.download_r,
-                            msg, len);
+                            src.download_r, msg, len);
+        case CWMP_RPC_FAULT:
+            return te_cwmp_pack__Fault(src.fault, msg, len);
 
         /* Calls with no data */
         case CWMP_RPC_NONE:
@@ -840,6 +949,7 @@ cwmp_unpack_call_data(void *buf, size_t len,
         case CWMP_RPC_factory_reset:
         case CWMP_RPC_get_queued_transfers:
         case CWMP_RPC_get_all_queued_transfers:
+        case CWMP_RPC_FAULT:
             /* do nothing, no data to CPE */
             return 0;
     }
@@ -885,6 +995,9 @@ cwmp_unpack_response_data(void *buf, size_t len,
         case CWMP_RPC_download:
             rc = (te_cwmp_unpack__DownloadResponse(buf, len) > 0) 
                     ? 0 : TE_EFAIL;  
+            break;
+        case CWMP_RPC_FAULT:
+            rc = (te_cwmp_unpack__Fault(buf, len) > 0) ? 0 : TE_EFAIL;
             break;
 
         case CWMP_RPC_NONE:

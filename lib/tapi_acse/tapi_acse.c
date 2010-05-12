@@ -43,6 +43,7 @@
 int va_end_list_var = 10;
 void * const va_end_list_ptr = &va_end_list_ptr;
 
+
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_start(const char *ta)
@@ -180,12 +181,100 @@ tapi_acse_manage_acs(const char *ta, const char *acs_name,
 }
 
 
+
+
+
+/*
+ * =============== Generic methods for CWMP RPC ====================
+ */
+
+#define ACSE_BUF_SIZE 65536
+
+te_errno
+tapi_acse_cpe_rpc(rcf_rpc_server *rpcs,
+                  const char *acs_name, const char *cpe_name,
+                  te_cwmp_rpc_cpe_t cpe_rpc_code, int *call_index,
+                  cwmp_data_to_cpe_t to_cpe)
+{
+    uint8_t *buf = malloc(ACSE_BUF_SIZE);
+    ssize_t pack_s;
+
+    if (NULL != to_cpe.p)
+    {
+        pack_s = cwmp_pack_call_data(to_cpe, cpe_rpc_code,
+                                     buf, ACSE_BUF_SIZE);
+        if (pack_s < 0)
+        {
+            ERROR("%s(): pack fail", __FUNCTION__);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    }
+    else 
+        pack_s = 0;
+
+    return rpc_cwmp_op_call(rpcs, acs_name, cpe_name,
+                            cpe_rpc_code, buf, pack_s, call_index);
+}
+
+te_errno
+tapi_acse_cpe_rpc_response(rcf_rpc_server *rpcs,
+                           const char *acs_name, const char *cpe_name,
+                           int timeout, int call_index,
+                           te_cwmp_rpc_cpe_t *cpe_rpc_code,
+                           cwmp_data_from_cpe_t *from_cpe)
+{
+    te_errno rc;
+    uint8_t *cwmp_buf = NULL;
+    size_t buflen = 0;
+    te_cwmp_rpc_cpe_t cwmp_rpc_loc;
+
+    do {
+        rc = rpc_cwmp_op_check(rpcs, acs_name, cpe_name, call_index,
+                               &cwmp_rpc_loc, &cwmp_buf, &buflen);
+    } while ((timeout < 0 || (timeout--) > 0) &&
+             (TE_EPENDING == TE_RC_GET_ERROR(rc)) &&
+             (sleep(1) == 0));
+    RING("%s(): rc %r, cwmp_rpc %d", __FUNCTION__, rc, (int)cwmp_rpc_loc);
+
+    if ((0 == rc || TE_CWMP_FAULT == TE_RC_GET_ERROR(rc)) &&
+        NULL != from_cpe)
+    {
+        ssize_t unp_rc;
+        if (NULL == cwmp_buf || 0 == buflen)
+        {
+            WARN("op_check return success, but buffer is NULL.");
+            return 0;
+        }
+        unp_rc = cwmp_unpack_response_data(cwmp_buf, buflen, cwmp_rpc_loc);
+
+        if (0 == unp_rc)
+            from_cpe->p = cwmp_buf;
+        else
+        {
+            from_cpe->p = NULL;
+            ERROR("%s(): unpack error, rc %r", __FUNCTION__, unp_rc);
+            return TE_RC(TE_TAPI, unp_rc);
+        }
+        if (NULL != cpe_rpc_code)
+            *cpe_rpc_code = cwmp_rpc_loc;
+
+    }
+    return rc;
+}
+
+/*
+ * ==================== CWMP RPC methods =========================
+ */
+
+
+
+
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_get_rpc_methods( rcf_rpc_server *rpcs,
-                               const char *acs_name,
-                               const char *cpe_name,
-                               int *call_index)
+tapi_acse_cpe_get_rpc_methods(rcf_rpc_server *rpcs,
+                              const char *acs_name,
+                              const char *cpe_name,
+                              int *call_index)
 {
     return rpc_cwmp_op_call(rpcs, acs_name, cpe_name,
                         CWMP_RPC_get_rpc_methods,
@@ -199,41 +288,15 @@ tapi_acse_cpe_get_rpc_methods_resp(
                                rcf_rpc_server *rpcs,
                                const char *acs_name,
                                const char *cpe_name,
-                               te_bool block,
-                               int call_index,
+                               int timeout, int call_index,
                                _cwmp__GetRPCMethodsResponse **resp)
 {
-    te_errno rc;
-    uint8_t *cwmp_buf = NULL;
-    size_t buflen = 0;
-
-    do {
-        rc = rpc_cwmp_op_check(rpcs, acs_name, cpe_name, call_index,
-                               &cwmp_buf, &buflen);
-    } while (block &&
-             (TE_EPENDING == TE_RC_GET_ERROR(rc)) &&
-             (sleep(1) >= 0));
-
-    if (0 == rc && NULL != resp)
-    {
-        ssize_t unp_s;
-        if (NULL == cwmp_buf || 0 == buflen)
-        {
-            WARN("op_check return success, but buffer is NULL.");
-            return 0;
-        }
-        unp_s = te_cwmp_unpack__GetRPCMethodsResponse(cwmp_buf, buflen);
-
-        if (unp_s > 0)
-            *resp = (_cwmp__GetRPCMethodsResponse *)cwmp_buf;
-        else
-        {
-            *resp = NULL;
-            ERROR("%s(): unpack error, rc %d", __FUNCTION__, unp_s);
-            return TE_RC(TE_TAPI, TE_EFAIL);
-        }
-
-    }
+    cwmp_data_from_cpe_t from_cpe_loc;
+    te_errno rc = tapi_acse_cpe_rpc_response(rpcs, acs_name, cpe_name, 
+                                             timeout, call_index,
+                                             NULL, &from_cpe_loc);
+    if (NULL != resp && NULL != from_cpe_loc.p)
+        *resp = from_cpe_loc.get_rpc_methods_r;
     return rc;
 }
 
@@ -245,56 +308,28 @@ tapi_acse_cpe_download(rcf_rpc_server *rpcs,
                        _cwmp__Download *req,
                        int *call_index)
 {
-    uint8_t buf[2048];
-    ssize_t pack_s;
+    cwmp_data_to_cpe_t to_cpe_loc;
+    to_cpe_loc.download = req;
 
-    if (NULL != req)
-    {
-        pack_s = te_cwmp_pack__Download(req, buf, sizeof(buf));
-        if (pack_s < 0)
-        {
-            ERROR("%s(): pack fail", __FUNCTION__);
-            return TE_RC(TE_TAPI, TE_EINVAL);
-        }
-    }
-    else 
-        pack_s = 0;
-
-    return rpc_cwmp_op_call(rpcs, acs_name, cpe_name,
-                        CWMP_RPC_download,
-                        buf, pack_s, call_index);
+    return tapi_acse_cpe_rpc(rpcs, acs_name, cpe_name,
+                             CWMP_RPC_download, call_index,
+                             to_cpe_loc);
 }
 
 te_errno
 tapi_acse_cpe_download_resp(rcf_rpc_server *rpcs,
                            const char *acs_name,
                            const char *cpe_name,
-                           te_bool block,
-                           int call_index,
+                           int timeout, int call_index,
                            _cwmp__DownloadResponse **resp)
 {
-    te_errno rc;
-    uint8_t *cwmp_buf = NULL;
-    size_t buflen = 0;
-
-    do {
-        rc = rpc_cwmp_op_check(rpcs, acs_name, cpe_name, call_index,
-                               &cwmp_buf, &buflen);
-    } while (block &&
-             (TE_EPENDING == TE_RC_GET_ERROR(rc)) &&
-             (sleep(1) >= 0));
-
-    if (0 == rc && NULL != resp)
-    {
-        if (NULL == cwmp_buf || 0 == buflen)
-        {
-            WARN("op_check return success, but buffer is NULL.");
-            return 0;
-        }
-
-        /* no unpack need for download response */
-        *resp = (_cwmp__DownloadResponse *)cwmp_buf;
-    }
+    cwmp_data_from_cpe_t from_cpe_loc;
+    te_errno rc = tapi_acse_cpe_rpc_response(rpcs, acs_name, cpe_name, 
+                                             timeout, call_index,
+                                             NULL, &from_cpe_loc);
+    if (NULL != resp && NULL != from_cpe_loc.p)
+        *resp = from_cpe_loc.download_r;
     return rc;
 }
+
 

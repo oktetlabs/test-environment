@@ -506,6 +506,18 @@ extern void *acse_cwmp_malloc(struct soap *soap, size_t n);
  */
 extern void acse_soap_serve_response(cwmp_session_t *cwmp_sess);
 
+
+/**
+ * Free allocated memory, related to RPC item in #rpc_queue or
+ * #rpc_results. Should be called after remove item from respecitve
+ * queue.
+ *
+ * @param rpc_item      pointer to item.
+ *
+ * @return status
+ */ 
+extern te_errno acse_rpc_item_free(cpe_rpc_item_t *rpc_item);
+
 #ifdef __cplusplus
 }
 #endif

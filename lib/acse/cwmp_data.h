@@ -252,6 +252,7 @@ extern ssize_t te_cwmp_unpack__AllTransferList(void *msg, size_t max_len);
 extern ssize_t te_cwmp_unpack__VoucherList(void *msg, size_t max_len);
 extern ssize_t te_cwmp_unpack__OptionList(void *msg, size_t max_len);
 extern ssize_t te_cwmp_unpack__FileTypeArg(void *msg, size_t max_len);
+extern ssize_t te_cwmp_unpack__Fault_SetParameterValuesFault(void *msg, size_t max_len);
 
 #ifdef __cplusplus
 }
