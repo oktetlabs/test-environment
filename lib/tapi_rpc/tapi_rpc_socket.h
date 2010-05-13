@@ -434,9 +434,22 @@ extern ssize_t rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
  *
  * @return Number of bytes received, otherwise -1 when error occured
  */
-extern tarpc_ssize_t rpc_recvbuf(rcf_rpc_server *rpcs, 
-                                 int fd, rpc_ptr_off *buf, size_t count, 
-                                 rpc_send_recv_flags flags);
+extern tarpc_ssize_t rpc_recvbuf_gen(rcf_rpc_server *rpcs,
+                                     int fd, rpc_ptr buf, size_t buf_off,
+                                     size_t count,
+                                     rpc_send_recv_flags flags);
+static inline tarpc_ssize_t
+rpc_recvbuf(rcf_rpc_server *rpcs, int fd, rpc_ptr buf,
+            size_t count, rpc_send_recv_flags flags)
+{
+    return rpc_recvbuf_gen(rpcs, fd, buf, 0, count, flags);
+}
+static inline tarpc_ssize_t
+rpc_recvbuf_off(rcf_rpc_server *rpcs, int fd, rpc_ptr_off *buf,
+                size_t count, rpc_send_recv_flags flags)
+{
+    return rpc_recvbuf_gen(rpcs, fd, buf->base, buf->offset, count, flags);
+}
 
 /**
  * Parse TA-dependent in_pktinfo structure type data returned 
