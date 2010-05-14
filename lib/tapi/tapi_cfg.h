@@ -43,6 +43,7 @@
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "conf_api.h"
+#include "logger_api.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -651,6 +652,98 @@ extern te_errno tapi_cfg_env_local_to_agent(void);
  * @return Status code.
  */
 extern te_errno tapi_cfg_rpcs_local_to_agent(void);
+
+extern char *te_sprintf(const char *fmt, ...);
+
+extern int te_asprintf(char **strp, const char *fmt, ...);
+
+extern int te_vasprintf(char **strp, const char *fmt, va_list ap);
+
+#define TAPI_CFG_LINK_PREFIX "cfg:"
+
+/**
+ * Check if string is configurator link.
+ *
+ * @param s        String to check, whether it has configurator link prefix
+ *
+ * @return True if string has configurator link prefix, False otherwise.
+ */
+static inline te_bool
+tapi_is_cfg_link(char *s)
+{
+    return (strncmp(s, TAPI_CFG_LINK_PREFIX,
+            strlen(TAPI_CFG_LINK_PREFIX)) == 0);
+}
+
+/**
+ * Resolve configurator link into its value.
+ *
+ * @param link     Link to string to dereference
+ *
+ * @return Dereferenced link value from the configuration tree.
+ */
+static inline char * tapi_get_cfg_link(char *link)
+{
+    char     *cur = link + strlen(TAPI_CFG_LINK_PREFIX);
+    char     *c;
+    int       rc = 0;
+
+    c = strchr(cur + 1, '/');
+
+    do {
+        char          *s = NULL;
+        cfg_handle     handle;
+        cfg_obj_descr  descr;
+
+        *c = '\0';
+
+        if ((rc = cfg_find_fmt(&handle, "%s", cur)) != 0)
+        {
+            ERROR("Failed to get configurator object '%s': rc=%r",
+                  cur, rc);
+            return NULL;
+        }
+
+        if ((rc = cfg_get_object_descr(handle, &descr)) != 0)
+        {
+            ERROR("Failed to get configurator object description: rc=%r",
+                  rc);
+            return NULL;
+        }
+
+        if (descr.type != CVT_NONE)
+        {
+            if ((rc = cfg_get_instance_fmt(NULL, &s, cur)) != 0)
+            {
+                ERROR("Failed to get configurator object '%s': rc=%r",
+                      cur, rc);
+                return NULL;
+            }
+        }
+        *c = '/';
+
+        if (s != NULL && tapi_is_cfg_link(s))
+        {
+            te_asprintf(&cur, "%s/%s", s + strlen(TAPI_CFG_LINK_PREFIX),
+                    c + 1);
+            RING("%s: %s", __FUNCTION__, cur);
+            c = cur;
+        }
+
+        c = strchr(c + 1, '/');
+        if (c == NULL)
+        {
+            if ((rc = cfg_get_instance_fmt(NULL, &s, cur)) != 0)
+            {
+                ERROR("Failed to get configurator object '%s': rc=%r",
+                      cur, rc);
+                return NULL;
+            }
+            return s;
+        }
+    } while (1);
+    return NULL;
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

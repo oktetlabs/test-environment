@@ -145,6 +145,17 @@ else
 EXTRA_DIST += $(PCAP_HDRS) $(PCAP_SRCS)
 endif
 
+# FLOW
+FLOW_HDRS = flow/tapi_flow.h
+FLOW_SRCS = flow/tapi_flow.c
+if WITH_FLOW
+AM_CPPFLAGS += -I$(srcdir)/flow
+EXTRA_HEADERS += $(FLOW_HDRS)
+EXTRA_SOURCES += $(FLOW_SRCS)
+else
+EXTRA_DIST += $(FLOW_HDRS) $(FLOW_SRCS)
+endif
+
 # SNMP
 SNMP_HDRS = \
 	snmp/tapi_snmp.h \
