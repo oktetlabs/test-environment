@@ -47,6 +47,10 @@
 /** Invalid epoll evend */
 #define EPOLL_UNKNOWN 0xFFFFFFFF
 
+#ifndef EPOLLONESHOT
+#define EPOLLONESHOT  0
+#endif
+
 /** All known poll events */
 #define EPOLL_ALL        (EPOLLIN | EPOLLPRI | EPOLLOUT | \
                           EPOLLRDNORM | EPOLLWRNORM | \
