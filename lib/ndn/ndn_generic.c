@@ -223,15 +223,12 @@ static asn_named_entry_t _ndn_csap_spec_ne_array[] = {
     { "params", &ndn_csap_params_s, { PRIVATE, NDN_CSAP_PARAMS } },
 }; 
 
-static asn_type ndn_csap_spec_s = {
+asn_type ndn_csap_spec_s = {
     "CSAP-spec", { PRIVATE, NDN_CSAP_SPEC }, SEQUENCE,
     TE_ARRAY_LEN(_ndn_csap_spec_ne_array), { _ndn_csap_spec_ne_array }
 };
 
 const asn_type * const ndn_csap_spec = &ndn_csap_spec_s;
-
-
-
 
 
 static asn_type ndn_integer_seq_s = { 
@@ -292,7 +289,7 @@ static asn_type ndn_template_parameter_sequence_s = {
 const asn_type * const ndn_template_params_seq = 
                             &ndn_template_parameter_sequence_s;
 
-static asn_type ndn_generic_pdu_sequence_s = {
+asn_type ndn_generic_pdu_sequence_s = {
     "Generic-PDU-sequence", {PRIVATE, NDN_TMPL_PDUS}, 
     SEQUENCE_OF, 0, {subtype: &ndn_generic_pdu_s} 
 };
