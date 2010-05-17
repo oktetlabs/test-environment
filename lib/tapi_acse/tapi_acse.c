@@ -216,6 +216,7 @@ tapi_acse_cpe_rpc(rcf_rpc_server *rpcs,
                             cpe_rpc_code, buf, pack_s, call_index);
 }
 
+/* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_rpc_response(rcf_rpc_server *rpcs,
                            const char *acs_name, const char *cpe_name,
@@ -230,7 +231,7 @@ tapi_acse_cpe_rpc_response(rcf_rpc_server *rpcs,
 
     do {
         rc = rpc_cwmp_op_check(rpcs, acs_name, cpe_name, call_index,
-                               &cwmp_rpc_loc, &cwmp_buf, &buflen);
+                               0, &cwmp_rpc_loc, &cwmp_buf, &buflen);
     } while ((timeout < 0 || (timeout--) > 0) &&
              (TE_EPENDING == TE_RC_GET_ERROR(rc)) &&
              (sleep(1) == 0));
@@ -258,6 +259,48 @@ tapi_acse_cpe_rpc_response(rcf_rpc_server *rpcs,
         if (NULL != cpe_rpc_code)
             *cpe_rpc_code = cwmp_rpc_loc;
 
+    }
+    return rc;
+}
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_get_rpc_acs(rcf_rpc_server *rpcs,
+                      const char *acs_name,
+                      const char *cpe_name,
+                      int timeout, te_cwmp_rpc_acs_t rpc_acs,
+                      cwmp_data_from_cpe_t *from_cpe)
+{
+    te_errno rc;
+    uint8_t *cwmp_buf = NULL;
+    size_t buflen = 0;
+
+    do {
+        rc = rpc_cwmp_op_check(rpcs, acs_name, cpe_name, 0,
+                               rpc_acs, NULL, &cwmp_buf, &buflen);
+    } while ((timeout < 0 || (timeout--) > 0) &&
+             (TE_EPENDING == TE_RC_GET_ERROR(rc)) &&
+             (sleep(1) == 0));
+    RING("%s(): rc %r", __FUNCTION__, rc);
+
+    if (0 == rc && NULL != from_cpe)
+    {
+        ssize_t unp_rc;
+        if (NULL == cwmp_buf || 0 == buflen)
+        {
+            WARN("op_check return success, but buffer is NULL.");
+            return 0;
+        }
+        unp_rc = cwmp_unpack_acs_rpc_data(cwmp_buf, buflen, rpc_acs);
+
+        if (0 == unp_rc)
+            from_cpe->p = cwmp_buf;
+        else
+        {
+            from_cpe->p = NULL;
+            ERROR("%s(): unpack error, rc %r", __FUNCTION__, unp_rc);
+            return TE_RC(TE_TAPI, unp_rc);
+        }
     }
     return rc;
 }

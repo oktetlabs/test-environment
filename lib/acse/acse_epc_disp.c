@@ -833,23 +833,37 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             cpe_rpc_item_t *rpc_item;
             void *result = NULL;
 
+            if (0 == cwmp_pars->index && 0 == cwmp_pars->rpc_acs)
+                return TE_EINVAL;
+
             TAILQ_FOREACH(rpc_item, &cpe->rpc_queue, links)
             {
                 if (rpc_item->index == cwmp_pars->index)
                     break;
             }
-            if (rpc_item == NULL)
+
+            if (rpc_item != NULL)
+                return TE_EPENDING;
+
+            TAILQ_FOREACH(rpc_item, &cpe->rpc_results, links)
             {
-                TAILQ_FOREACH(rpc_item, &cpe->rpc_results, links)
+                if (CWMP_RPC_ACS_NONE == cwmp_pars->rpc_acs)
                 {
                     if (rpc_item->index == cwmp_pars->index)
                         break;
                 }
+                else
+                {
+                    if (rpc_item->params->rpc_acs == cwmp_pars->rpc_acs)
+                        break;
+                }
             }
+
             if (rpc_item == NULL)
                 return TE_ENOENT;
             
             cwmp_pars->rpc_cpe = rpc_item->params->rpc_cpe;
+            cwmp_pars->index = rpc_item->params->index;
 
             if ((result = rpc_item->params->from_cpe.p) == NULL)
                 return TE_EPENDING;
@@ -867,7 +881,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
         case EPC_GET_INFORM:
         {
             cpe_inform_t *inform_rec;
-            if (cwmp_pars->index == -1)
+            if (0 == cwmp_pars->index)
                 inform_rec = LIST_FIRST(&(cpe->inform_list));
             else 
                 LIST_FOREACH(inform_rec, &(cpe->inform_list), links)
@@ -878,7 +892,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             /* If not found, error */
             if (inform_rec == NULL)
             {
-                cwmp_pars->index = -1;
+                cwmp_pars->index = 0;
                 cwmp_pars->from_cpe.inform = NULL;
                 return TE_ENOENT;
             }
@@ -972,20 +986,20 @@ epc_after_poll(void *data, struct pollfd *pfd)
 
     switch(msg->opcode)
     {
-    case EPC_CONFIG_CALL:
-        msg->status = acse_epc_config(msg->data.cfg);
-        msg->opcode = EPC_CONFIG_RESPONSE;
-        break;
+        case EPC_CONFIG_CALL:
+            msg->status = acse_epc_config(msg->data.cfg);
+            msg->opcode = EPC_CONFIG_RESPONSE;
+            break;
 
-    case EPC_CWMP_CALL:
-        msg->status = acse_epc_cwmp(msg->data.cwmp);
-        msg->opcode = EPC_CWMP_RESPONSE;
-        break;
+        case EPC_CWMP_CALL:
+            msg->status = acse_epc_cwmp(msg->data.cwmp);
+            msg->opcode = EPC_CWMP_RESPONSE;
+            break;
 
-    default:
-        ERROR("%s(): unexpected msg opcode 0x%x",
-                __FUNCTION__, msg->opcode);
-        return TE_RC(TE_ACSE, TE_EFAIL);
+        default:
+            ERROR("%s(): unexpected msg opcode 0x%x",
+                    __FUNCTION__, msg->opcode);
+            return TE_RC(TE_ACSE, TE_EFAIL);
     }
 
     /* Now send response, all data prepared in specific calls above. */

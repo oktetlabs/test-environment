@@ -53,12 +53,15 @@ extern te_errno rpc_cwmp_op_call(
 
 
 /**
- * Check status of queued CWMP RPC call on ACSE.
+ * Check status of queued CWMP RPC on ACSE or get received ACS RPC.
  * 
  * @param rpcs          TE rpc server.
  * @param acs_name      name of ACS object on ACSE.
  * @param cpe_name      name of CPE record on ACSE.
  * @param index         queue index of CWMP call on ACSE.
+ * @param cwmp_rpc_acs  type of RPC message to ACS, should be zero 
+ *                       for get response on issued CPE RPC.
+ * @param cwmp_rpc      location for type of RPC response, may be NULL.
  * @param buf           location for ptr to response data; 
  *                              user have to free() it.
  * @param buflen        location for size of response data.
@@ -68,6 +71,7 @@ extern te_errno rpc_cwmp_op_call(
 extern te_errno rpc_cwmp_op_check(rcf_rpc_server *rpcs,
                            const char *acs_name, const char *cpe_name,
                            int index,
+                           te_cwmp_rpc_acs_t cwmp_rpc_acs,
                            te_cwmp_rpc_cpe_t *cwmp_rpc,
                            uint8_t **buf, size_t *buflen);
 

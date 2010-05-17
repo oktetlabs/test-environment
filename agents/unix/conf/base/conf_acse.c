@@ -191,7 +191,7 @@ conf_acse_call(char const *oid, char const *acs, char const *cpe,
     {
         int             epc_socket = acse_epc_socket();
 #if 0
-        struct timespec epc_ts = {0, 500000000}; /* 500 ms */
+        struct timespec epc_ts = {0, 300000000}; /* 300 ms */
 #else
         struct timespec epc_ts = {2, 0}; /* 2 sec */
 #endif
@@ -1075,8 +1075,8 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
         return -1;
     }
 
-    RING("cwmp check operation No %d to %s/%s called ", 
-         (int)in->call_index, in->acs_name, in->cpe_name);
+    RING("cwmp check operation No %d (rpc %d) to %s/%s called ", 
+         (int)in->call_index, in->cwmp_rpc, in->acs_name, in->cpe_name);
 
     msg.opcode = EPC_CWMP_CALL;
     msg.data.cwmp = &c_data;
@@ -1088,7 +1088,9 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
     strcpy(c_data.acs, in->acs_name);
     strcpy(c_data.cpe, in->cpe_name);
     c_data.index = in->call_index;
-        
+    if (in->cwmp_rpc != CWMP_RPC_ACS_NONE)
+        c_data.rpc_acs = in->cwmp_rpc;
+
     rc = acse_epc_send(&msg);
     if (rc != 0)
         ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
@@ -1104,7 +1106,7 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
         ssize_t packed_len;
 
         out->status = TE_RC(TE_ACSE, msg_resp->status);
-        RING("%s(): status is %r", __FUNCTION__, msg_resp->status);
+        INFO("%s(): status is %r", __FUNCTION__, msg_resp->status);
 
         if (0 == msg_resp->status || TE_CWMP_FAULT == msg_resp->status)
         { 
@@ -1112,18 +1114,23 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
             out->buf.buf_len = msg_resp->length;
             packed_len = epc_pack_response_data(out->buf.buf_val, 
                             msg_resp->length, msg_resp->data.cwmp);
+#if 0 /* Debug print */
             if (TE_CWMP_FAULT == msg_resp->status)
             {
                 _cwmp__Fault *f = msg_resp->data.cwmp->from_cpe.fault;
                 RING("pass Fault %s (%s)", f->FaultCode, f->FaultString);
             }
+#endif
         }
         else
         {
             out->buf.buf_val = NULL;
             out->buf.buf_len = 0;
         }
-        out->cwmp_rpc = msg_resp->data.cwmp->rpc_cpe;
+        if (msg_resp->data.cwmp->rpc_cpe != CWMP_RPC_NONE)
+            out->cwmp_rpc = msg_resp->data.cwmp->rpc_cpe;
+        else if (msg_resp->data.cwmp->rpc_acs != CWMP_RPC_ACS_NONE)
+            out->cwmp_rpc = msg_resp->data.cwmp->rpc_acs;
     }
 
     return 0;
@@ -1137,500 +1144,3 @@ cwmp_get_inform(tarpc_cwmp_get_inform_in *in,
     return 0;
 }
 
-#if 0
-/** TR-069 stuff */
-
-/** Executive routines for mapping of the CPE CWMP RPC methods
- * (defined in conf/base/conf_acse.c, used from rpc/tarpc_server.c)
- */
-
-/**
- * Checks shared mem and socket for RPC and initializes them if necessary.
- *
- * @return Status code (see te_errno.h)
- */
-static te_bool
-lrpc_rpc_init(void)
-{
-    long size = sizeof *acse_inst.params;
-
-    if (acse_inst.params == NULL &&
-        (acse_inst.params = shared_mem(FALSE, &size)) == NULL)
-    {
-        return FALSE;
-    }
-
-    if (acse_inst.acse == 0)
-    {
-        errno = ENOSYS;
-        return FALSE;
-    }
-
-    if (acse_inst.sock == -1)
-    {
-        unlink(lrpc_rpc_sock);
-
-        if((acse_inst.sock = unix_socket(lrpc_rpc_sock,
-                                         lrpc_acse_sock)) == -1)
-        {
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_get_rpc_methods(tarpc_cpe_get_rpc_methods_in *in,
-                    tarpc_cpe_get_rpc_methods_out *out)
-{
-    int          errno_save = errno;
-    unsigned int len;
-
-    UNUSED(in);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_get_rpc_methods);
-
-    if ((len = acse_inst.params->method_list.len) > 0)
-    {
-        tarpc_uint        u;
-        tarpc_string64_t **dst = &out->method_list.method_list_val;
-        tarpc_string64_t *src  = acse_inst.params->method_list.list;
-
-        if ((*dst = calloc(len, sizeof **dst)) == NULL)
-            return -1;
-
-        for (u = 0; u < len; u++)
-            strcpy((*dst)[u], src[u]);
-
-        out->method_list.method_list_len = len;
-    }
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_set_parameter_values(tarpc_cpe_set_parameter_values_in *in,
-                         tarpc_cpe_set_parameter_values_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_set_parameter_values);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_get_parameter_values(tarpc_cpe_get_parameter_values_in *in,
-                         tarpc_cpe_get_parameter_values_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_get_parameter_values);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_get_parameter_names(tarpc_cpe_get_parameter_names_in *in,
-                        tarpc_cpe_get_parameter_names_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_get_parameter_names);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_set_parameter_attributes(tarpc_cpe_set_parameter_attributes_in *in,
-                             tarpc_cpe_set_parameter_attributes_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_set_parameter_attributes);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_get_parameter_attributes(tarpc_cpe_get_parameter_attributes_in *in,
-                             tarpc_cpe_get_parameter_attributes_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_get_parameter_attributes);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_add_object(tarpc_cpe_add_object_in *in,
-               tarpc_cpe_add_object_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_add_object);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_delete_object(tarpc_cpe_delete_object_in *in,
-                  tarpc_cpe_delete_object_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_delete_object);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_reboot(tarpc_cpe_reboot_in *in,
-           tarpc_cpe_reboot_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_reboot);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_download(tarpc_cpe_download_in *in,
-             tarpc_cpe_download_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_download);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_upload(tarpc_cpe_upload_in *in,
-           tarpc_cpe_upload_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_upload);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_factory_reset(tarpc_cpe_factory_reset_in *in,
-                  tarpc_cpe_factory_reset_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_factory_reset);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_get_queued_transfers(tarpc_cpe_get_queued_transfers_in *in,
-                         tarpc_cpe_get_queued_transfers_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_get_queued_transfers);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_get_all_queued_transfers(tarpc_cpe_get_all_queued_transfers_in *in,
-                             tarpc_cpe_get_all_queued_transfers_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_get_all_queued_transfers);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_schedule_inform(tarpc_cpe_schedule_inform_in *in,
-                    tarpc_cpe_schedule_inform_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_schedule_inform);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_set_vouchers(tarpc_cpe_set_vouchers_in *in,
-                 tarpc_cpe_set_vouchers_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_set_vouchers);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/* See description in unix_internal.h */
-extern int
-cpe_get_options(tarpc_cpe_get_options_in *in,
-                tarpc_cpe_get_options_out *out)
-{
-    int   errno_save = errno;
-
-    UNUSED(in);
-    UNUSED(out);
-
-    if (!lrpc_rpc_init())
-    {
-        return -1;
-    }
-
-    call_fun(fun_cpe_get_options);
-
-    errno = ENOSYS;
-    return -1;
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-#endif

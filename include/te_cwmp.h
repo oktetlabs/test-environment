@@ -69,12 +69,14 @@ typedef enum {
  * Table 5 in [TR-069].
  */
 typedef enum {
+    CWMP_RPC_ACS_NONE = 0,
     CWMP_RPC_ACS_get_rpc_methods,
     CWMP_RPC_inform,
     CWMP_RPC_transfer_complete,
     CWMP_RPC_autonomous_transfer_complete,
     CWMP_RPC_request_download,
     CWMP_RPC_kicked,
+    CWMP_RPC_ACS_FAULT,
 } te_cwmp_rpc_acs_t;
 
 /**
@@ -160,6 +162,9 @@ typedef union {
         _cwmp__Inform                         *inform;
         _cwmp__Fault                          *fault;
         _cwmp__TransferComplete               *transfer_complete;
+        _cwmp__AutonomousTransferComplete     *aut_transfer_complete;
+        _cwmp__Kicked                         *kicked;
+        _cwmp__RequestDownload                *request_download;
         _cwmp__GetRPCMethodsResponse          *get_rpc_methods_r;
         _cwmp__SetParameterValuesResponse     *set_parameter_values_r;
         _cwmp__GetParameterValuesResponse     *get_parameter_values_r;

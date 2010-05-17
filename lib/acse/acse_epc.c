@@ -536,8 +536,15 @@ epc_pack_response_data(void *buf, size_t len,
     if (cwmp_data->op != EPC_RPC_CHECK)
         return 0;
 
-    return cwmp_pack_response_data(cwmp_data->from_cpe, cwmp_data->rpc_cpe,
-                                   buf, len);
+    if (cwmp_data->rpc_cpe != CWMP_RPC_NONE)
+        return cwmp_pack_response_data(cwmp_data->from_cpe,
+                                       cwmp_data->rpc_cpe,
+                                       buf, len);
+    else if (cwmp_data->rpc_acs != CWMP_RPC_ACS_NONE)
+        return cwmp_pack_acs_rpc_data(cwmp_data->from_cpe,
+                                      cwmp_data->rpc_acs,
+                                      buf, len);
+    return 0;
 }
 
 
@@ -575,5 +582,9 @@ epc_unpack_response_data(void *buf, size_t len,
 
     cwmp_data->from_cpe.p = buf;
 
-    return cwmp_unpack_response_data(buf, len, cwmp_data->rpc_cpe);
+    if (cwmp_data->rpc_cpe != CWMP_RPC_NONE)
+        return cwmp_unpack_response_data(buf, len, cwmp_data->rpc_cpe);
+    else if (cwmp_data->rpc_acs != CWMP_RPC_ACS_NONE)
+        return cwmp_unpack_acs_rpc_data(buf, len, cwmp_data->rpc_acs);
+    return 0;
 }

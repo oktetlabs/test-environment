@@ -73,8 +73,14 @@ acse_clear_channels(void)
 void
 acse_add_channel(channel_t *ch_item)
 {
+    channel_t *ch_first = LIST_FIRST(&channel_list);
     assert(ch_item != NULL);
-    LIST_INSERT_HEAD(&channel_list, ch_item, links);
+    /* First channel, if present, is EPC disp, it should remain first.*/
+    if (NULL == ch_first)
+        LIST_INSERT_HEAD(&channel_list, ch_item, links);
+    else
+        LIST_INSERT_AFTER(ch_first, ch_item, links);
+
     channel_number++;
 }
 

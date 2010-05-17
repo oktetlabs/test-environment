@@ -38,39 +38,36 @@
 int
 main(int argc, char *argv[])
 {
-    char cwmp_buf[1024];
-    unsigned int u;
     int r;
     int call_index;
     int cr_state;
-    te_cwmp_rpc_cpe_t cwmp_rpc = CWMP_RPC_download;
     _cwmp__Download download_pars;
     _cwmp__DownloadResponse *download_resp;
 
     rcf_rpc_server *rpcs_acse = NULL; 
     te_errno te_rc;
     const char *ta_acse;
+    const char *file_type;
+    const char *url;
 
     TEST_START;
 
     TEST_GET_STRING_PARAM(ta_acse);
+    TEST_GET_STRING_PARAM(file_type);
+    TEST_GET_STRING_PARAM(url);
 
     CHECK_RC(rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
                                FALSE, TRUE, FALSE, &rpcs_acse));
 
     memset(&download_pars, 0, sizeof(download_pars));
     download_pars.CommandKey = "SW upgrade";
-#if 0
-    download_pars.FileType = "1 Firmware Upgrade Image";
-#else
-    download_pars.FileType = "3 Vendor Configuration File";
-#endif
+    download_pars.FileType = strdup(file_type);
 
-    download_pars.URL = "http://10.20.1.1:8080/file.cfg";
+    download_pars.URL = strdup(url);
     download_pars.Username = "";
     download_pars.Password = "";
-    download_pars.FileSize = 100;
-    download_pars.TargetFileName = "file.cfg";
+    download_pars.FileSize = 100; /* TODO: fix */
+    download_pars.TargetFileName = basename(url);
     download_pars.SuccessURL = "";
     download_pars.FailureURL = "";
 
@@ -108,10 +105,10 @@ main(int argc, char *argv[])
     } while (cr_state != 0 && r > 0);
 
     te_rc = tapi_acse_cpe_download_resp(rpcs_acse, "A", "box",
-                          TRUE, call_index, &download_resp);
+                          10, call_index, &download_resp);
 
     RING("rc of download_resp: %r", te_rc);
-    if (te_rc == 0 && download_resp != NULL)
+    if (0 == te_rc && download_resp != NULL)
     {
         RING("Download status %d", (int)download_resp->Status);
     }
@@ -120,6 +117,20 @@ main(int argc, char *argv[])
     {
         _cwmp__Fault *f = (_cwmp__Fault *)download_resp;
         RING("Fault detected: %s(%s)", f->FaultCode, f->FaultString);
+    }
+    if (0 == te_rc && 1 == download_resp->Status)
+    { /* Try wait for TransferComplete */
+        cwmp_data_from_cpe_t from_cpe;
+        te_rc = tapi_acse_get_rpc_acs(rpcs_acse, "A", "box", 20, 
+                                      CWMP_RPC_transfer_complete,
+                                      &from_cpe);
+        if (0 == te_rc)
+        {
+            _cwmp__TransferComplete *tc = from_cpe.transfer_complete;
+            RING("TransferComplete, key %s, fault: %s (%s)", 
+                 tc->CommandKey, tc->FaultStruct->FaultCode, 
+                 tc->FaultStruct->FaultString);
+        }
     }
 
 

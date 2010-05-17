@@ -104,7 +104,8 @@ acse_http_get(struct soap *soap)
     soap_send(soap, "<HTML>Page not found</HTML>");
     soap_end_send(soap);
 
-    RING("%s(): Yaahooo, GET received!", __FUNCTION__);
+    RING("%s(): Yaahooo, GET to '%s' received! soap %p, usr ptr (ss) %p",
+         __FUNCTION__ , soap->path, soap, soap->user);
 
     return SOAP_OK;
 
@@ -142,6 +143,36 @@ cpe_find_conn_req_url(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
             break;
         }
     }
+    return 0;
+}
+
+/**
+ * Store received ACS RPC in CPE record.
+ *
+ * @param rpc_acs_type  type of ACS RPC received.
+ * @param rpc_acs_data  deserialized ACS RPC in gSOAP presentation.
+ * @param cpe_item      CPE record, from which RPC is received.
+ * @param heap          Memory heap containing RPC data.
+ *
+ * @return status code
+ */
+te_errno
+cpe_store_acs_rpc(te_cwmp_rpc_acs_t rpc_acs_type,
+                  void *rpc_acs_data, cpe_t *cpe_item, mheap_t heap)
+{
+    cpe_rpc_item_t  *rpc_item = calloc(1, sizeof(*rpc_item));
+    acse_epc_cwmp_data_t *c_data = calloc(1, sizeof(*c_data));
+
+    rpc_item->index = 0;
+    rpc_item->heap = heap;
+    rpc_item->params = c_data;
+
+    c_data->from_cpe.p = rpc_acs_data;
+    c_data->rpc_acs = rpc_acs_type;
+
+    mheap_add_user(heap, rpc_item);
+
+    TAILQ_INSERT_TAIL(&(cpe_item->rpc_results), rpc_item, links);
     return 0;
 }
 
@@ -285,6 +316,8 @@ acse_cwmp_auth(struct soap *soap, cwmp_session_t *session, cpe_t **cpe)
 }
 
 
+
+
 /** gSOAP callback for GetRPCMethods ACS Method */
 SOAP_FMAC5 int SOAP_FMAC6
 __cwmp__GetRPCMethods(struct soap *soap, 
@@ -387,6 +420,9 @@ __cwmp__Inform(struct soap *soap,
     cpe_find_conn_req_url(cwmp__Inform, cpe_item);
     cpe_store_inform(cwmp__Inform, cpe_item, session->def_heap);
 
+    cpe_store_acs_rpc(CWMP_RPC_inform, cwmp__Inform, cpe_item,
+                      session->def_heap);
+
     cwmp__InformResponse->MaxEnvelopes = 1;
     soap->header->cwmp__HoldRequests->__item = 0;
     soap->header->cwmp__HoldRequests->SOAP_ENV__mustUnderstand = "1";
@@ -404,8 +440,22 @@ __cwmp__TransferComplete(struct soap *soap,
                     struct _cwmp__TransferCompleteResponse
                             *cwmp__TransferCompleteResponse)
 {
-    UNUSED(soap);
-    UNUSED(cwmp__TransferComplete);
+    cwmp_session_t *session = (cwmp_session_t *)soap->user;
+    cpe_t *cpe_item;
+
+    if(NULL == session)
+    {
+        ERROR("%s(): NULL user pointer in soap!", __FUNCTION__);
+        return 500; 
+    }
+    if (NULL == (cpe_item = session->cpe_owner))
+    {
+        ERROR("%s(): NULL CPE pointer in session!", __FUNCTION__);
+        return 500; 
+    }
+
+    cpe_store_acs_rpc(CWMP_RPC_transfer_complete, cwmp__TransferComplete,
+                      cpe_item, session->def_heap);
     UNUSED(cwmp__TransferCompleteResponse);
 
     return 0;
@@ -983,9 +1033,10 @@ acse_cwmp_empty_post(struct soap* soap)
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
     cpe_t          *cpe;
 
-    if (session == NULL || (cpe = session->cpe_owner) == NULL)
+    if (NULL == session || NULL == (cpe = session->cpe_owner))
     {
-        ERROR("Internal ACSE error at empty POST processing");
+        ERROR("Internal ACSE error at empty POST, soap %p, ss %p",
+                soap, session);
         soap->keep_alive = 0;
         soap_closesock(soap);
         return 500;

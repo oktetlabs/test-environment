@@ -82,7 +82,7 @@ extern ssize_t cwmp_pack_response_data(cwmp_data_from_cpe_t src,
  * @param buf           Place with packed data (usually in 
  *                      local copy of transfered struct).
  * @param len           Length of packed data.
- * @param cwmp_data     Specific CWMP datawith unpacked payload.
+ * @param rpc_cpe       CWMP RPC type.
  * 
  * @return status code
  */
@@ -96,13 +96,45 @@ extern te_errno cwmp_unpack_call_data(void *buf, size_t len,
  * @param buf           Place with packed data (usually in 
  *                      local copy of transfered struct).
  * @param len           Length of memory area with packed data.
- * @param cwmp_data     Specific CWMP data with unpacked payload.
+ * @param rpc_cpe       CWMP RPC type.
  * 
  * @return status code
  */
 extern te_errno cwmp_unpack_response_data(void *buf, size_t len,
                                           te_cwmp_rpc_cpe_t rpc_cpe);
 
+
+
+/**
+ * Pack data for EPC message ACSE->client, with call data 
+ * from CPE to ACS.
+ * 
+ * @param src           Pointer to gSOAP struct with data to be
+ *                      packed.
+ * @param rpc_acs       CWMP RPC type.
+ * @param msg           Place for packed data (usually in 
+ *                      shared memory segment).
+ * @param len           Length of memory area for packed data.
+ * 
+ * @return      -1 on error, 0 if no data presented,
+ *              or length of used memory block in @p buf.
+ */
+extern te_errno cwmp_pack_acs_rpc_data(cwmp_data_from_cpe_t src,
+                                       te_cwmp_rpc_acs_t rpc_acs,
+                                       void *msg, size_t len);
+
+/**
+ * Unpack data from message ACSE->client, with CPE->ACS RPC. 
+ * 
+ * @param buf           Place with packed data (usually in 
+ *                      local copy of transfered struct).
+ * @param len           Length of memory area with packed data.
+ * @param rpc_acs       CWMP RPC type.
+ * 
+ * @return status code
+ */
+extern te_errno cwmp_unpack_acs_rpc_data(void *buf, size_t len,
+                                          te_cwmp_rpc_acs_t rpc_acs);
 
 
 

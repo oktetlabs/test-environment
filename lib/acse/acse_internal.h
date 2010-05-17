@@ -116,8 +116,10 @@ typedef struct auth_t {
 /** CPE RPC queue */
 typedef struct cpe_rpc_item_t {
     TAILQ_ENTRY(cpe_rpc_item_t)  links;/**< List links */
+    /* TODO: move hear some fields from #acse_epc_cwmp_data_t 
+       instead of this pointer to EPC request. */
     acse_epc_cwmp_data_t   *params;    /**< CWMP parameters for RPC */
-    int                     index;     /**< index of RPC in queue */
+    uint32_t                index;     /**< index of RPC in queue */
     mheap_t                 heap;      /**< Memory heapwhich contains 
                                         response data, deserialized by
                                         gSOAP engine. Should be freed 
@@ -133,7 +135,7 @@ typedef struct cpe_inform_t {
     LIST_ENTRY(cpe_inform_t) links;/**< List links */
 
     _cwmp__Inform *inform;      /**< Deserialed inform */
-    int            index;       /**< index of Inform in list. */
+    uint32_t       index;       /**< index of Inform in list. */
 } cpe_inform_t;
 
 /** CPE record */

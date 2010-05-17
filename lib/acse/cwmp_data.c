@@ -974,7 +974,7 @@ cwmp_unpack_response_data(void *buf, size_t len,
         case CWMP_RPC_get_all_queued_transfers:
         case CWMP_RPC_get_options:
             /* TODO */
-            RING("%s():%d TODO", __FUNCTION__, __LINE__);
+            WARN("%s():%d TODO", __FUNCTION__, __LINE__);
             return 0;
         case CWMP_RPC_get_rpc_methods:
             rc = (te_cwmp_unpack__GetRPCMethodsResponse(buf, len) > 0)
@@ -1016,3 +1016,64 @@ cwmp_unpack_response_data(void *buf, size_t len,
 
 
 
+te_errno
+cwmp_pack_acs_rpc_data(cwmp_data_from_cpe_t src,
+                        te_cwmp_rpc_acs_t rpc_acs,
+                        void *msg, size_t len)
+{
+    if (NULL == src.p)
+        return 0;
+    switch (rpc_acs)
+    {
+        case CWMP_RPC_transfer_complete:
+            return te_cwmp_pack__TransferComplete(src.transfer_complete,
+                                                  msg, len);
+        case CWMP_RPC_inform:
+            return te_cwmp_pack__Inform(src.inform, msg, len);
+
+        case CWMP_RPC_ACS_get_rpc_methods:
+        case CWMP_RPC_autonomous_transfer_complete: 
+        case CWMP_RPC_request_download:
+        case CWMP_RPC_kicked:
+        case CWMP_RPC_ACS_FAULT:
+            /* TODO */
+            WARN("%s():%d TODO", __FUNCTION__, __LINE__);
+            return 0;
+        case CWMP_RPC_ACS_NONE:
+            /* nothing to do */
+            return 0;
+    }
+    return 0;
+}
+
+
+te_errno
+cwmp_unpack_acs_rpc_data(void *buf, size_t len,
+                         te_cwmp_rpc_acs_t rpc_acs)
+{
+    te_errno rc = 0;
+
+    switch (rpc_acs)
+    {
+        case CWMP_RPC_inform:
+            rc = (te_cwmp_unpack__Inform(buf, len) > 0)
+                    ? 0 : TE_EFAIL;
+            break;
+        case CWMP_RPC_transfer_complete:
+            rc = (te_cwmp_unpack__TransferComplete(buf, len) > 0)
+                    ? 0 : TE_EFAIL;  
+            break;
+        case CWMP_RPC_ACS_get_rpc_methods:
+        case CWMP_RPC_autonomous_transfer_complete:
+        case CWMP_RPC_request_download:
+        case CWMP_RPC_kicked:
+            /* TODO */
+            WARN("%s():%d TODO", __FUNCTION__, __LINE__);
+            return 0;
+        case CWMP_RPC_ACS_NONE:
+        case CWMP_RPC_ACS_FAULT:
+            /* nothing to do */
+            return 0;
+    }
+    return rc;
+}

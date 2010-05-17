@@ -101,7 +101,8 @@ typedef struct {
 /** CWMP operation code */
 typedef enum {
     EPC_RPC_CALL = EPC_CWMP_MAGIC, /**< Call RPC on CPE */
-    EPC_RPC_CHECK,        /**< Check status of sent RPC */
+    EPC_RPC_CHECK,        /**< Check status of sent RPC and get response or 
+                               get received from CPE the ACS RPC. */
     EPC_CONN_REQ,         /**< Send ConnectionRequest to CPE */
     EPC_CONN_REQ_CHECK,   /**< Check status of ConnectionRequest */
     EPC_GET_INFORM,       /**< Get Inform already received from CPE */
@@ -121,10 +122,14 @@ typedef struct {
                                       into queue desired for CPE,
                                       or already sent to CPE. */
 
-    te_cwmp_rpc_acs_t   rpc_acs; /**< Code of RPC catched from CPE.*/
+    te_cwmp_rpc_acs_t   rpc_acs; /**< Code of RPC catched from CPE.
+                                    If is not CWMP_RPC_ACS_NONE and 
+                                    if op== EPC_RPC_CHECK,
+                                    message is request to find 
+                                    received RPC from CPE.*/
 
 
-    int         index; /**< IN/OUT field for position in queue;
+    uint32_t    index; /**< IN/OUT field for position in queue;
                             IN - for 'get/check' operation, 
                             OUT - for 'call' operation. */
 

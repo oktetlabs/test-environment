@@ -3,28 +3,40 @@
     <description>General ACSE test</description>
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
     <session track_conf="silent">
-        <var name="ta_acse" handdown="true">
+        <arg name="ta_acse" handdown="true">
             <value>Agt_A</value>
-        </var>
+        </arg>
 
         <prologue>
             <script name="prologue"/>
-            <arg name="ta_acse" ref="ta_acse"/>
+            <arg name="ta_acse"/>
         </prologue>
 
         <epilogue>
             <script name="epilogue"/>
-            <arg name="ta_acse" ref="ta_acse"/>
+            <arg name="ta_acse"/>
         </epilogue>
 
         <run>
             <script name="acse"/>
-            <arg name="ta_acse" ref="ta_acse"/>
+            <arg name="ta_acse"/>
         </run> 
 
         <run>
             <script name="download"/>
-            <arg name="ta_acse" ref="ta_acse"/>
+            <arg name="ta_acse"/>
+            <arg name="file_type" list="">
+                <value>1 Firmware Upgrade Image</value>
+                <value>3 Vendor Configuration File</value>
+                <value>5 Some Stuff</value>
+                <value>1 Firmware Upgrade Image</value>
+            </arg>
+            <arg name="url" list="">
+                <value>http://10.20.1.1:8080/stuff.txt</value>
+                <value>http://10.20.1.1:8080/file.cfg</value>
+                <value>http://10.20.1.1:8080/stuff.txt</value>
+                <value>http://10.20.1.1:8080/firmware_std.bin</value>
+            </arg>
         </run> 
 
     </session>

@@ -115,6 +115,7 @@ te_errno
 rpc_cwmp_op_check(rcf_rpc_server *rpcs,
                   const char *acs_name, const char *cpe_name,
                   int index,
+                  te_cwmp_rpc_acs_t cwmp_rpc_acs,
                   te_cwmp_rpc_cpe_t *cwmp_rpc,
                   uint8_t **buf, size_t *buflen)
 {
@@ -140,6 +141,7 @@ rpc_cwmp_op_check(rcf_rpc_server *rpcs,
     in.acs_name = strdup(acs_name);
     in.cpe_name = strdup(cpe_name);
     in.call_index = index;
+    in.cwmp_rpc = cwmp_rpc_acs;
 
     rcf_rpc_call(rpcs, "cwmp_op_check", &in, &out);
 

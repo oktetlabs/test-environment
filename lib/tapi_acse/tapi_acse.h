@@ -198,10 +198,12 @@ typedef enum {
 
 
 /**
- * Call CPE GetRPCMethods method.
+ * Call CPE RPC method.
  *
- * @param rpcs        TE RPC server handle
- * @param call_index  location for index of TR RPC (OUT).
+ * @param rpcs          TE RPC server handle
+ * @param acs_name      name of ACS object on ACSE.
+ * @param cpe_name      name of CPE record on ACSE.
+ * @param call_index    location for index of TR RPC (OUT).
  *
  * @return status code
  */
@@ -212,11 +214,51 @@ extern te_errno tapi_acse_cpe_rpc(rcf_rpc_server *rpcs,
                                   int *call_index,
                                   cwmp_data_to_cpe_t to_cpe);
 
+/**
+ * Check status of queued CWMP RPC on ACSE.
+ * 
+ * @param rpcs          TE rpc server.
+ * @param acs_name      name of ACS object on ACSE.
+ * @param cpe_name      name of CPE record on ACSE.
+ * @param timeout       interval for wait response,
+ *                              value <=0 for infinite wait.
+ * @param call_index    queue index of CWMP call on ACSE.
+ * @param cpe_rpc_code  location for type of RPC response, may be NULL.
+ * @param buf           location for ptr to response data; 
+ *                              user have to free() it.
+ * @param buflen        location for size of response data.
+ *
+ * @return status
+ */
 extern te_errno tapi_acse_cpe_rpc_response(rcf_rpc_server *rpcs,
                                    const char *acs_name,
                                    const char *cpe_name,
                                    int timeout, int call_index,
                                    te_cwmp_rpc_cpe_t *cpe_rpc_code,
+                                   cwmp_data_from_cpe_t *from_cpe);
+
+
+/**
+ * Check status of queued CWMP RPC on ACSE or get received ACS RPC.
+ * Return ENOENT if there was not such RPC caught from specified CPE.
+ * 
+ * @param rpcs          TE rpc server.
+ * @param acs_name      name of ACS object on ACSE.
+ * @param cpe_name      name of CPE record on ACSE.
+ * @param timeout       interval for wait response,
+ *                              value <=0 for infinite wait.
+ * @param rpc_acs       type of ACS RPC.
+ * @param buf           location for ptr to response data; 
+ *                              user have to free() it.
+ * @param buflen        location for size of response data.
+ *
+ * @return status
+ */
+extern te_errno tapi_acse_get_rpc_acs(rcf_rpc_server *rpcs,
+                                   const char *acs_name,
+                                   const char *cpe_name,
+                                   int timeout,
+                                   te_cwmp_rpc_acs_t rpc_acs,
                                    cwmp_data_from_cpe_t *from_cpe);
 
 
