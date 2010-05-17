@@ -54,7 +54,11 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/un.h>
+#ifdef _SYS_QUEUE_H_
 #include <sys/queue.h>
+#else
+#include "te_queue.h"
+#endif
 
 #ifdef __linux__
 #include <elf.h>
