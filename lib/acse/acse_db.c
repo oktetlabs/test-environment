@@ -197,22 +197,10 @@ db_remove_acs(acs_t *acs)
 
 /* see description in acse_internal.h */
 te_errno
-db_remove_cpe(cpe_t *cpe)
+db_clear_cpe(cpe_t *cpe)
 {
     if (NULL == cpe)
         return TE_EINVAL;
-    if (NULL == cpe->acs)
-    {
-        ERROR("No acs ptr in CPE");
-        return TE_EFAULT;
-    }
-
-    if (cpe->session != NULL || cpe->cr_state != CR_NONE)
-    {
-        WARN("attempt to remove busy CPE record '%s/%s'",
-             cpe->acs->name, cpe->name);
-        return TE_EBUSY;
-    }
     while (!(LIST_EMPTY(&cpe->inform_list)))
     {
         cpe_inform_t *inf_rec = LIST_FIRST(&cpe->inform_list);
@@ -233,6 +221,30 @@ db_remove_cpe(cpe_t *cpe)
         TAILQ_REMOVE(&cpe->rpc_results, rpc_item, links);
         acse_rpc_item_free(rpc_item);
     }
+    return 0;
+}
+
+/* see description in acse_internal.h */
+te_errno
+db_remove_cpe(cpe_t *cpe)
+{
+    if (NULL == cpe)
+        return TE_EINVAL;
+    if (NULL == cpe->acs)
+    {
+        ERROR("No acs ptr in CPE");
+        return TE_EFAULT;
+    }
+
+    if (cpe->session != NULL || cpe->cr_state != CR_NONE)
+    {
+        WARN("attempt to remove busy CPE record '%s/%s'",
+             cpe->acs->name, cpe->name);
+        return TE_EBUSY;
+    }
+
+    db_clear_cpe(cpe);
+
     LIST_REMOVE(cpe, links);
     free(cpe);
     return 0;

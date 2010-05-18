@@ -472,6 +472,20 @@ acs_url(acs_t *acs, acse_epc_config_data_t *params)
 }
 
 
+/**
+ * Access to the http_root of ACS.
+ *
+ * @param acs           ACS object.
+ * @param params        Parameters object.
+ *
+ * @return              Status code
+ */
+static te_errno
+acs_http_root(acs_t *acs, acse_epc_config_data_t *params)
+{
+    return cfg_string_access(&acs->http_root, params);
+}
+
 
 /**
  * Access to the ACS certificate value.
@@ -653,6 +667,7 @@ struct config_acs_item_t {
 } cfg_acs_array [] = 
 {
     {"url", acs_url},
+    {"http_root", acs_http_root},
     {"auth_mode", acs_auth_mode},
     {"cert", acs_cert},
     {"ssl",  acs_ssl},

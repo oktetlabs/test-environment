@@ -26,13 +26,11 @@
             <script name="download"/>
             <arg name="ta_acse"/>
             <arg name="file_type" list="">
-                <value>1 Firmware Upgrade Image</value>
                 <value>3 Vendor Configuration File</value>
                 <value>5 Some Stuff</value>
                 <value>1 Firmware Upgrade Image</value>
             </arg>
             <arg name="url" list="">
-                <value>http://10.20.1.1:8080/stuff.txt</value>
                 <value>http://10.20.1.1:8080/file.cfg</value>
                 <value>http://10.20.1.1:8080/stuff.txt</value>
                 <value>http://10.20.1.1:8080/firmware_std.bin</value>

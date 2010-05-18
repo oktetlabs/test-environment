@@ -35,8 +35,11 @@
 #include <sys/types.h>
 #endif
 
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <stddef.h>
-#include<string.h>
+#include <string.h>
 
 #include "acse_internal.h"
 #include "httpda.h"
@@ -98,17 +101,80 @@ cwmp_force_stop_session(cwmp_session_t *sess)
 int
 acse_http_get(struct soap *soap)
 {
+    cwmp_session_t *session = (cwmp_session_t *)soap->user;
+
+    acs_t   *acs;
+    char     path_buf[1024] = "";
+
+    FILE        *fd;
+    struct stat  fs;
+
+    
     soap_end_recv(soap);
 
-    soap_response(soap, 404); 
-    soap_send(soap, "<HTML>Page not found</HTML>");
+    RING("%s(): Yaahooo, GET to '%s' received! ",
+         __FUNCTION__ , soap->path);
+
+
+    if (NULL != session && NULL != (acs = session->acs_owner))
+    {
+        char *relative_path = soap->path;
+        size_t i;
+        for (i = 0; acs->url[i] != '\0' && acs->url[i] == soap->path[i]; 
+             i++);
+        relative_path = soap->path + i;
+
+        snprintf(path_buf, sizeof(path_buf), "/%s/%s",
+                 acs->http_root, relative_path);
+        RING("%s() construct real local filesystem path '%s'", 
+             __FUNCTION__, path_buf);
+    }
+
+    if (strlen(path_buf) == 0 || 
+        stat(path_buf, &fs) != 0 ||
+        NULL == (fd = fopen(path_buf, "r")))
+    {
+        int http_status;
+        char *err_descr = strerror(errno);
+
+        WARN("%s(): stat|fopen (%s) failed %d (%s)",
+                __FUNCTION__, path_buf, errno, err_descr);
+        switch (errno)
+        {
+            case EFAULT: http_status = 400; break;
+            case EACCES: http_status = 403; break;
+            case ENOENT: http_status = 404; break;
+            default: http_status = 500;
+                err_descr = "Internal ACSE error";
+        }
+        soap->http_content = "text/html";
+        soap_response(soap, http_status); 
+        soap_send(soap, "<HTML><body>");
+        soap_send(soap, err_descr);
+        soap_send(soap, "</body></HTML>");
+        soap_end_send(soap);
+        return SOAP_OK;
+    }
+
+    RING("%s(): reply with %d bytes...",
+         __FUNCTION__ , (int)fs.st_size);
+
+    soap->http_content = "application/octet-stream";
+    soap->length = fs.st_size;
+
+    soap_response(soap, SOAP_FILE); 
+    while (1)
+    {
+        size_t r = fread(soap->tmpbuf, 1, sizeof(soap->tmpbuf), fd);
+        if (!r)
+            break;
+        if (soap_send_raw(soap, soap->tmpbuf, r))
+            break; // can't send, but little we can do about that
+    }
+    fclose(fd);
     soap_end_send(soap);
 
-    RING("%s(): Yaahooo, GET to '%s' received! soap %p, usr ptr (ss) %p",
-         __FUNCTION__ , soap->path, soap, soap->user);
-
     return SOAP_OK;
-
 }
 
 /**
@@ -325,9 +391,20 @@ __cwmp__GetRPCMethods(struct soap *soap,
             struct _cwmp__GetRPCMethodsResponse
                                   *cwmp__GetRPCMethodsResponse)
 {
+    static char *acs_method_list[] = {
+            "GetRPCMethods",
+            "Inform",
+            "TransferComplete",
+        };
+    struct MethodList m_list;
+
+    m_list.__size = sizeof(acs_method_list)/sizeof(acs_method_list[0]);
+    m_list.__ptrstring = acs_method_list;
+
     UNUSED(soap);
     UNUSED(cwmp__GetRPCMethods);
-    UNUSED(cwmp__GetRPCMethodsResponse);
+
+    cwmp__GetRPCMethodsResponse->MethodList_ = &m_list;
 
     return 0;
 }
@@ -453,6 +530,9 @@ __cwmp__TransferComplete(struct soap *soap,
         ERROR("%s(): NULL CPE pointer in session!", __FUNCTION__);
         return 500; 
     }
+    RING("%s(): for CPE record %s/%s, Key '%s'", __FUNCTION__, 
+         cpe_item->acs->name, cpe_item->name, 
+         cwmp__TransferComplete->CommandKey);
 
     cpe_store_acs_rpc(CWMP_RPC_transfer_complete, cwmp__TransferComplete,
                       cpe_item, session->def_heap);
@@ -469,8 +549,26 @@ __cwmp__AutonomousTransferComplete(struct soap *soap,
             struct _cwmp__AutonomousTransferCompleteResponse 
                             *cwmp__AutonomousTransferCompleteResponse)
 {
-    UNUSED(soap);
-    UNUSED(cwmp__AutonomousTransferComplete);
+    cwmp_session_t *session = (cwmp_session_t *)soap->user;
+    cpe_t *cpe_item;
+
+    if(NULL == session)
+    {
+        ERROR("%s(): NULL user pointer in soap!", __FUNCTION__);
+        return 500; 
+    }
+    if (NULL == (cpe_item = session->cpe_owner))
+    {
+        ERROR("%s(): NULL CPE pointer in session!", __FUNCTION__);
+        return 500; 
+    }
+    RING("%s(): for CPE record %s/%s, URL '%s'", __FUNCTION__, 
+         cpe_item->acs->name, cpe_item->name, 
+         cwmp__AutonomousTransferComplete->AnnounceURL);
+
+    cpe_store_acs_rpc(CWMP_RPC_autonomous_transfer_complete,
+                      cwmp__AutonomousTransferComplete,
+                      cpe_item, session->def_heap);
     UNUSED(cwmp__AutonomousTransferCompleteResponse);
 
     return 0;
@@ -484,7 +582,9 @@ __cwmp__RequestDownload(struct soap *soap,
                                      *cwmp__RequestDownloadResponse)
 {
     UNUSED(soap);
-    UNUSED(cwmp__RequestDownload);
+    RING("%s(): File type '%s'", __FUNCTION__,
+         cwmp__RequestDownload->FileType);
+
     UNUSED(cwmp__RequestDownloadResponse);
 
     return 0;
@@ -717,7 +817,7 @@ cwmp_new_session(int socket, acs_t *acs)
     if (acs->auth_mode == ACSE_AUTH_DIGEST)
         soap_register_plugin(&new_sess->m_soap, http_da); 
 
-    VERB("init CWMP session for ACS '%s', auth mode %d",
+    RING("init CWMP session for ACS '%s', auth mode %d",
             acs->name, (int)acs->auth_mode);
 
     new_sess->m_soap.max_keep_alive = 10;
@@ -797,13 +897,14 @@ acse_disable_acs(acs_t *acs)
         cwmp_force_stop_session(acs->session);
         acs->session = NULL;
     }
-    /* Now stop active CWMP sessions, if any */
+    /* Now stop active CWMP sessions, if any, and clear all caches */
     LIST_FOREACH(cpe_item, &(acs->cpe_list), links)
     {
         if (cpe_item->session)
         {
             cwmp_force_stop_session(cpe_item->session);
             cpe_item->session = NULL;
+            db_clear_cpe(cpe_item);
         }
     }
 
@@ -1032,6 +1133,8 @@ acse_cwmp_empty_post(struct soap* soap)
 {
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
     cpe_t          *cpe;
+
+RING("%s(): soap error %d", __FUNCTION__, soap->error);
 
     if (NULL == session || NULL == (cpe = session->cpe_owner))
     {

@@ -59,6 +59,11 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
                                FALSE, TRUE, FALSE, &rpcs_acse));
 
+    CHECK_RC(tapi_acse_clear_acs(ta_acse, "A"));
+
+    CHECK_RC(tapi_acse_manage_acs(ta_acse, "A", ACSE_OP_MODIFY,
+          "http_root", "/home/konst/acse_http", VA_END_LIST));
+
     memset(&download_pars, 0, sizeof(download_pars));
     download_pars.CommandKey = "SW upgrade";
     download_pars.FileType = strdup(file_type);
@@ -66,7 +71,7 @@ main(int argc, char *argv[])
     download_pars.URL = strdup(url);
     download_pars.Username = "";
     download_pars.Password = "";
-    download_pars.FileSize = 100; /* TODO: fix */
+    download_pars.FileSize = 0; /* TODO: fix */
     download_pars.TargetFileName = basename(url);
     download_pars.SuccessURL = "";
     download_pars.FailureURL = "";
@@ -121,7 +126,8 @@ main(int argc, char *argv[])
     if (0 == te_rc && 1 == download_resp->Status)
     { /* Try wait for TransferComplete */
         cwmp_data_from_cpe_t from_cpe;
-        te_rc = tapi_acse_get_rpc_acs(rpcs_acse, "A", "box", 20, 
+        sleep(10); /* time to pass file */
+        te_rc = tapi_acse_get_rpc_acs(rpcs_acse, "A", "box", 30, 
                                       CWMP_RPC_transfer_complete,
                                       &from_cpe);
         if (0 == te_rc)

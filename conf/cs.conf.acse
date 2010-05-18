@@ -39,6 +39,12 @@
     <object oid="/agent/acse/acs/url" access="read_write"
             type="string"/>
 
+    <!-- HTTP root dir for HTTP GET to ACS  from CPE.
+         Name: none
+         Value: URL -->
+    <object oid="/agent/acse/acs/http_root" access="read_write"
+            type="string"/>
+
     <!-- Authenticate algorithm used for particular ACS.
          Name: none
          Value: "noauth" | "basic" | "digest" -->
@@ -184,6 +190,7 @@
   <set>
     <instance oid="/agent:Agt_A/acse:/acs:A/auth_mode:" value="digest"/>
     <instance oid="/agent:Agt_A/acse:/acs:A/port:" value="8080"/>
+    <instance oid="/agent:Agt_A/acse:/acs:A/url:" value="/a"/>
     <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box/login:"
                 value="000261-Home Gateway-V601L622R1A0-1001742119"/>
     <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box/passwd:"

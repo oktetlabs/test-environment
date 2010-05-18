@@ -881,8 +881,12 @@ RCF_PCH_CFG_NODE_RW(node_acs_auth_mode, "auth_mode",
                     NULL, &node_acs_port,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_url, "url", 
+RCF_PCH_CFG_NODE_RW(node_acs_http_root, "http_root", 
                     NULL, &node_acs_auth_mode,
+                    &cfg_acs_call_get, &cfg_acs_call_set);
+
+RCF_PCH_CFG_NODE_RW(node_acs_url, "url", 
+                    NULL, &node_acs_http_root,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
 RCF_PCH_CFG_NODE_RW(node_acs_enabled, "enabled", 

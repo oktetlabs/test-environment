@@ -196,6 +196,7 @@ typedef struct acs_t {
     /** Fields corresponding to CM leafs in @p acs node. */
     const char  *name;          /**< ACS name                       */
     const char  *url;           /**< ACS URL                        */
+    const char  *http_root;     /**< root dir for HTTP GET          */
     const char  *cert;          /**< ACS certificate                */
     te_bool      ssl;           /**< SSL usage boolean flag         */
     uint16_t     port;          /**< TCP port value in host byte order */
@@ -397,6 +398,14 @@ extern te_errno db_remove_acs(acs_t *acs_item);
  */
 extern te_errno db_remove_cpe(cpe_t *cpe_item);
 
+/**
+ * Clear a cpe instance from all received and queued RPC items.
+ *
+ * @param cpe_item      CPE record to be cleared
+ *
+ * @return              status code
+ */
+extern te_errno db_clear_cpe(cpe_t *cpe_item);
 
 /**
  * Init EPC dispatcher.

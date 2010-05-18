@@ -181,7 +181,22 @@ tapi_acse_manage_acs(const char *ta, const char *acs_name,
 }
 
 
+/*
+ * ==================== Useful config ACSE methods =====================
+ */
 
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_clear_acs(const char *ta_acse, const char *acs_name)
+{
+    te_errno rc;
+    rc = tapi_acse_manage_acs(ta_acse, acs_name, ACSE_OP_MODIFY,
+                              "enabled", 0, VA_END_LIST);
+    if (0 == rc)
+        rc = tapi_acse_manage_acs(ta_acse, acs_name, ACSE_OP_MODIFY,
+                                  "enabled", 1, VA_END_LIST);
+    return rc;
+}
 
 
 /*
@@ -279,7 +294,7 @@ tapi_acse_get_rpc_acs(rcf_rpc_server *rpcs,
         rc = rpc_cwmp_op_check(rpcs, acs_name, cpe_name, 0,
                                rpc_acs, NULL, &cwmp_buf, &buflen);
     } while ((timeout < 0 || (timeout--) > 0) &&
-             (TE_EPENDING == TE_RC_GET_ERROR(rc)) &&
+             (TE_ENOENT == TE_RC_GET_ERROR(rc)) &&
              (sleep(1) == 0));
     RING("%s(): rc %r", __FUNCTION__, rc);
 
