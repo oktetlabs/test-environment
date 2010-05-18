@@ -1,0 +1,12 @@
+#!/usr/bin/env lua
+
+require("strict")
+local co = require("co")
+
+local t = co.train.new(io.stdout)
+
+local c1    = t:new_chunk()
+local c2    = t:new_chunk()
+local c3    = t:new_chunk()
+
+

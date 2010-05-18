@@ -200,6 +200,9 @@ AC_CONFIG_FILES([Makefile
                  rgt-format/xml2text/tmpls/Makefile
                  rgt-idx/Makefile
                  rgt-dump/Makefile
+                 rgt-raw2xml/Makefile
+                 rgt-raw2xml/lua/Makefile
+                 rgt-raw2xml/lua/co/Makefile
 ])
 
 if test "x$TE_INSTALL" != "x"
