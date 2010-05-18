@@ -28,8 +28,7 @@ noinst_HEADERS = \
 	lvm.h \
 	lzio.h
 
-# Programs are not build since they are not needed currently
-# bin_PROGRAMS = lua luac
+bin_PROGRAMS = lua luac
 
 lib_LTLIBRARIES = liblua.la
 
