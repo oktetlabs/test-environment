@@ -33,6 +33,13 @@
 
 #include "te_config.h"
 
+#ifdef STDC_HEADERS
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#endif
+
 /** printf()-like length modified for 8-bit integers */
 #if (SIZEOF_CHAR == 1)
 #define TE_PRINTF_8         "hh"
@@ -91,6 +98,48 @@
 #else
 #error Unable to print socklen_t integers
 #endif
+
+static inline int
+te_vasprintf(char **strp, const char *fmt, va_list ap)
+{
+    int len;
+
+    len = vsnprintf(NULL, 0, fmt, ap) + 1;
+
+    *strp = calloc(len, 1);
+
+    return vsnprintf(*strp, len, fmt, ap);
+}
+
+static inline int
+te_asprintf(char **strp, const char *fmt, ...)
+{
+    int     rc;
+    va_list ap;
+
+    va_start(ap, fmt);
+    rc = te_vasprintf(strp, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+static inline char *
+te_sprintf(const char *fmt, ...)
+{
+    va_list  ap;
+    char    *c;
+    int      rc;
+
+    va_start(ap, fmt);
+    rc = te_vasprintf(&c, fmt, ap);
+    va_end(ap);
+
+    if (rc < 0)
+        return NULL;
+
+    return c;
+}
 
 #ifdef __cplusplus
 } /* extern "C" */
