@@ -70,7 +70,7 @@ typedef struct tapi_flow_s {
     int                 marked;
 } tapi_flow_t;
 
-extern char * tapi_flow_preprocess(char *flow_spec);
+extern char * tapi_flow_preprocess(const char *flow_spec);
 
 extern te_errno tapi_flow_parse(tapi_flow_t **flow_p, asn_value *flow_spec);
 

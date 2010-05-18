@@ -47,6 +47,7 @@ typedef enum {
     NDN_FLOW_EP_CSAP_SPEC,
     NDN_FLOW_PDU_SEND,
     NDN_FLOW_PDU_RECV,
+    NDN_FLOW_PDU_PAYLOAD_LENGTH,
     NDN_FLOW_PDU,
     NDN_FLOW_PDU_SEQUENCE,
     NDN_FLOW_EP,
@@ -74,7 +75,9 @@ const asn_type * const ndn_flow_ep = &ndn_flow_ep_s;
 
 static asn_named_entry_t _ndn_flow_pdu_ne_array [] = {
     { "send", &ndn_traffic_template_s, {PRIVATE, NDN_FLOW_PDU_SEND } },
-    { "recv", &ndn_traffic_pattern_s, {PRIVATE, NDN_FLOW_PDU_RECV } }
+    { "recv", &ndn_traffic_pattern_s, {PRIVATE, NDN_FLOW_PDU_RECV } },
+    { "payload-length", &ndn_data_unit_int16_s,
+      {PRIVATE, NDN_FLOW_PDU_PAYLOAD_LENGTH } }
 };
 
 asn_type ndn_flow_pdu_s = {
