@@ -35,6 +35,9 @@
 #define __TE_RPC_SYS_POLL_H__
 
 #include "te_rpc_defs.h"
+#ifndef WINDOWS
+#include "tarpc.h"
+#endif
 
 
 #ifdef __cplusplus
@@ -88,6 +91,24 @@ extern unsigned int poll_event_rpc2h(unsigned int events);
 
 extern unsigned int poll_event_h2rpc(unsigned int events);
 
+
+static inline const char *
+iomux2str(iomux_func iomux)
+{
+    switch (iomux)
+    {
+        case FUNC_SELECT:
+            return "select";
+        case FUNC_PSELECT:
+            return "pselect";
+        case FUNC_POLL:
+            return "poll";
+        case FUNC_EPOLL:
+            return "epoll";
+        default:
+            return "<unknown>";
+    }
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

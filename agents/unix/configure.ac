@@ -218,6 +218,13 @@ AC_CHECK_HEADERS([sys/utsname.h])
 AC_CHECK_HEADERS([sys/systeminfo.h])
 AC_CHECK_HEADERS([linux/if_vlan.h])
 
+dnl
+dnl We do not need epoll really, since we use it via RPC and dlopen,
+dnl but we do need the header for struct epoll_event.
+dnl
+AC_CHECK_TYPES([struct epoll_event], [], [],
+               [#include <sys/epoll.h>])
+
 if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
     dnl
     dnl Dynamic linker functions are provided by:

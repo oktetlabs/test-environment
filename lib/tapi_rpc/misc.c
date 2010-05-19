@@ -644,7 +644,7 @@ int
 rpc_iomux_flooder(rcf_rpc_server *rpcs,
                   int *sndrs, int sndnum, int *rcvrs, int rcvnum,
                   int bulkszs, int time2run, int time2wait, int iomux,
-                  te_bool rx_nonblock, uint64_t *tx_stat, uint64_t *rx_stat)
+                  uint64_t *tx_stat, uint64_t *rx_stat)
 {
     rcf_rpc_op        op;
     tarpc_flooder_in  in;
@@ -674,7 +674,6 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     in.time2run = time2run;
     in.time2wait = time2wait;
     in.iomux = iomux;
-    in.rx_nonblock = rx_nonblock;
 
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
     {
@@ -705,11 +704,11 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(flooder, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "flooder(%p, %d, %p, %d, %d, %d, %d, %d, %p, %p) "
+                 "flooder(%p, %d, %p, %d, %d, %d, %d, %s, %p, %p) "
                  "-> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), sndrs, 
                  sndnum, rcvrs, rcvnum, bulkszs, time2run, time2wait,
-                 iomux,
+                 iomux2str(iomux),
                  tx_stat, rx_stat, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
     RETVAL_INT(flooder, out.retval);
@@ -777,9 +776,9 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(echoer, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: echoer(%p, %d, %d, %d) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: echoer(%p, %d, %d, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 sockets, socknum, time2run, iomux,
+                 sockets, socknum, time2run, iomux2str(iomux),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(echoer, out.retval);
@@ -954,7 +953,8 @@ rpc_ftp_close(rcf_rpc_server *rpcs, int sock)
 }
 
 int
-rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
+rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
+                         iomux_func iomux)
 {
     rcf_rpc_op                 op;
     tarpc_overfill_buffers_in  in;
@@ -972,6 +972,7 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
 
     in.sock = sock;
     in.is_nonblocking = FALSE;
+    in.iomux = iomux;
 
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = RCF_RPC_DEFAULT_TIMEOUT * 4;
@@ -983,9 +984,10 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_buffers, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: overfill_buffers(%d) -> %d (%s) sent=%d",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: overfill_buffers(%d, %s) -> "
+                 "%d (%s) sent=%d",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 sock,
+                 sock, iomux2str(iomux),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  (sent != NULL) ? (int)(*sent) : -1);
 

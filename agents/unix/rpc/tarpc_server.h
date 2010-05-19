@@ -97,8 +97,9 @@
 #include <sys/poll.h>
 #endif
 
-/* TODO: Correct ifdef should be added. */
+#if HAVE_STRUCT_EPOLL_EVENT
 #include <sys/epoll.h>
+#endif
 
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>

@@ -253,23 +253,18 @@ extern int rpc_recv_verify(rcf_rpc_server *handle, int s,
  * @param time2wait     how long wait data (in seconds)
  * @param iomux         type of I/O Multiplexing function
  *                      (@b select(), @b pselect(), @b poll())
- * @param rx_nonblock   push all Rx sockets in nonblocking mode
  * @param tx_stat       Tx statistics for set of sender socket to be
  *                      updated (IN/OUT)
  * @param rx_stat       Rx statistics for set of receiver socket to be
  *                      updated (IN/OUT)
- *
- * @attention Non-blocking mode is required if the same socket is used
- *            in many contexts (in order to avoid deadlocks).
  *
  * @return number of sent bytes or -1 in the case of failure
  */
 extern int rpc_iomux_flooder(rcf_rpc_server *handle,
                              int *sndrs, int sndnum, int *rcvrs, int rcvnum,
                              int bulkszs, int time2run, int time2wait,
-                             int iomux, te_bool rx_nonblock,
-                             uint64_t *tx_stat,
-                             uint64_t *rx_stat);
+                             int iomux,
+                             uint64_t *tx_stat, uint64_t *rx_stat);
 
 /**
  * Routine which receives data from specified set of
@@ -349,8 +344,13 @@ extern int rpc_ftp_close(rcf_rpc_server *handle, int sock);
  *
  * @return -1 in the case of failure or 0 on success
  */
-extern int rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock,
-                                uint64_t *sent);
+extern int rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock,
+                                    uint64_t *sent, iomux_func iomux);
+static inline int
+rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
+{
+    rpc_overfill_buffers_gen(rpcs, sock, sent, FUNC_SELECT);
+}
 
 /**
  * VM trasher to keep memory pressure on the

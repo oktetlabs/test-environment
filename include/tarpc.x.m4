@@ -3489,6 +3489,7 @@ struct tarpc_overfill_buffers_in {
 
     tarpc_int       sock;
     tarpc_bool      is_nonblocking;
+    iomux_func      iomux;
 };
 
 struct tarpc_overfill_buffers_out {
