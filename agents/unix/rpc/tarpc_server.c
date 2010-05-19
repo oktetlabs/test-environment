@@ -4155,7 +4155,8 @@ recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
 /* TODO: iomux_funcs should include iomux type, making arg list for all the
  * functions shorter. */
 typedef union iomux_funcs {
-    api_func    func; /* TODO: api_func select; api_func_ptr poll; */
+    api_func        select;
+    api_func_ptr    poll;
 #if HAVE_STRUCT_EPOLL_EVENT
     struct {
         api_func    wait;
@@ -4195,10 +4196,17 @@ typedef union iomux_return {
 #endif
 } iomux_return;
 
-
+/** Iterator for iomux_return structure. */
 typedef int iomux_return_iterator;
 #define IOMUX_RETURN_ITERATOR_START 0
 #define IOMUX_RETURN_ITERATOR_END   -1
+
+/* Mapping to/from select and POLL*.  Copied from Linux kernel. */
+#define IOMUX_SELECT_READ \
+    (POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR)
+#define IOMUX_SELECT_WRITE \
+    (POLLWRBAND | POLLWRNORM | POLLOUT | POLLERR)
+#define IOMUX_SELECT_EXCEPT (POLLPRI)
 
 /** Resolve all functions used by particular iomux and store them into
  * iomux_funcs. */
@@ -4210,13 +4218,13 @@ iomux_find_func(const char *lib, iomux_func iomux, iomux_funcs *funcs)
     switch (iomux)
     {
         case FUNC_SELECT:
-            rc = tarpc_find_func(lib, "select", &funcs->func);
+            rc = tarpc_find_func(lib, "select", &funcs->select);
             break;
         case FUNC_PSELECT:
-            rc = tarpc_find_func(lib, "pselect", &funcs->func);
+            rc = tarpc_find_func(lib, "pselect", &funcs->select);
             break;
         case FUNC_POLL:
-            rc = tarpc_find_func(lib, "poll", &funcs->func);
+            rc = tarpc_find_func(lib, "poll", (api_func)&funcs->poll);
             break;
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
@@ -4273,9 +4281,38 @@ iomux_create_state(iomux_func iomux, iomux_funcs *funcs,
     return 0;
 }
 
+static inline iomux_select_set_state(iomux_state *state, int fd,
+                                     int events, te_bool do_clear)
+{
+    /* Hack: POLERR is present in both read and write. Do not set both if
+     * not really necessary */
+    if ((events & POLLERR))
+    {
+        if ((events & ((IOMUX_SELECT_READ | IOMUX_SELECT_WRITE) &
+                       ~POLLERR)) == 0)
+        {
+            events |= POLLIN;
+        }
+        events &= ~POLLERR;
+    }
+
+    /* Set and clear events */
+    if ((events & IOMUX_SELECT_READ))
+        FD_SET(fd, &state->select.rfds);
+    else if (do_clear)
+        FD_CLR(fd, &state->select.rfds);
+    if ((events & IOMUX_SELECT_WRITE))
+        FD_SET(fd, &state->select.wfds);
+    else if (do_clear)
+        FD_CLR(fd, &state->select.wfds);
+    if ((events & IOMUX_SELECT_EXCEPT))
+        FD_SET(fd, &state->select.exfds);
+    else if (do_clear)
+        FD_CLR(fd, &state->select.exfds);
+}
+
 /** Add fd to the list of watched fds, with given events (in POLL-events).
  * For select, all fds are added to exception list. 
- * POLLIN & POLLOUT are mapped to read and write respectifully.
  * For some iomuxes, the function will produce error when adding the same
  * fd twice, so iomux_mod_fd() should be used. */
 static inline int
@@ -4286,11 +4323,7 @@ iomux_add_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
     {
         case FUNC_SELECT:
         case FUNC_PSELECT:
-            if ((events | POLLIN))
-                FD_SET(fd, &state->select.rfds);
-            if ((events | POLLOUT))
-                FD_SET(fd, &state->select.wfds);
-            FD_SET(fd, &state->select.exfds);
+            iomux_select_set_state(state, fd, events, FALSE);
             state->select.maxfds = MAX(state->select.maxfds, fd);
             state->select.fds[state->select.nfds] = fd;
             state->select.nfds++;
@@ -4329,15 +4362,7 @@ iomux_mod_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
     {
         case FUNC_SELECT:
         case FUNC_PSELECT:
-            if ((events | POLLIN))
-                FD_SET(fd, &state->select.rfds);
-            else
-                FD_CLR(fd, &state->select.rfds);
-            if ((events | POLLOUT))
-                FD_SET(fd, &state->select.wfds);
-            else
-                FD_CLR(fd, &state->select.wfds);
-            FD_SET(fd, &state->select.exfds);
+            iomux_select_set_state(state, fd, events, TRUE);
             state->select.maxfds = MAX(state->select.maxfds, fd);
             state->select.fds[state->select.nfds] = fd;
             state->select.nfds++;
@@ -4401,21 +4426,21 @@ iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
                    sizeof(state->select.exfds));
             if (iomux == FUNC_SELECT)
             {
-                rc = funcs->func(state->select.maxfds, &ret->select.rfds,
-                                 &ret->select.wfds, &ret->select.exfds,
-                                 &tv);
+                rc = funcs->select(state->select.maxfds, &ret->select.rfds,
+                                   &ret->select.wfds, &ret->select.exfds,
+                                   &tv);
             }
             else /* FUNC_PSELECT */
             {
-                rc = funcs->func(state->select.maxfds, &ret->select.rfds,
-                                 &ret->select.wfds, &ret->select.exfds,
-                                 &tv, NULL);
+                rc = funcs->select(state->select.maxfds, &ret->select.rfds,
+                                   &ret->select.wfds, &ret->select.exfds,
+                                   &tv, NULL);
             }
             break;
         }
         case FUNC_POLL:
-            rc = ((api_func_ptr)funcs->func)(&state->poll.fds[0],
-                                             state->poll.nfds, timeout);
+            rc = funcs->poll(&state->poll.fds[0], state->poll.nfds,
+                             timeout);
             break;
 
 #if HAVE_STRUCT_EPOLL_EVENT
@@ -4465,12 +4490,15 @@ iomux_return_iterate(iomux_func iomux, iomux_state *st, iomux_return *ret,
             {
                 int fd = st->select.fds[i];
 
+                /* TODO It is incorrect, but everything works.
+                 * In any case, we can't do better: POLLHUP is reported as
+                 * part of rdset only... */
                 if (FD_ISSET(fd, &ret->select.rfds))
-                    events |= POLLIN;
+                    events |= IOMUX_SELECT_READ;
                 if (FD_ISSET(fd, &ret->select.wfds))
-                    events |= POLLOUT;
+                    events |= IOMUX_SELECT_WRITE;
                 if (FD_ISSET(fd, &ret->select.exfds))
-                    events |= POLLERR;
+                    events |= IOMUX_SELECT_EXCEPT;
                 if (events != 0)
                 {
                     *p_fd = fd;
@@ -4704,7 +4732,9 @@ flooder(tarpc_flooder_in *in)
             {
                 /* We use recv() instead of read() here to avoid false
                  * positives from iomux functions.  On linux, select()
-                 * sometimes return false read events. */
+                 * sometimes return false read events.
+                 * Such misbihaviour may be tested in separate functions,
+                 * not here. */
                 received = recv_func(fd, rcv_buf, sizeof(rcv_buf),
                                      MSG_DONTWAIT);
                 if ((received < 0) && (errno != EINTR) &&

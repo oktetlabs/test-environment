@@ -349,7 +349,7 @@ extern int rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock,
 static inline int
 rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
 {
-    rpc_overfill_buffers_gen(rpcs, sock, sent, FUNC_SELECT);
+    rpc_overfill_buffers_gen(rpcs, sock, sent, FUNC_POLL);
 }
 
 /**
