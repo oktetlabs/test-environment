@@ -783,8 +783,8 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
                  iomux2str(iomux),
                  tx_stat, rx_stat, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)),
-                 tarpc_array2string(sndnum, tx_stat, sizeof(rx_stat[0])),
-                 tarpc_array2string(rcvnum, tx_stat, sizeof(tx_stat[0])));
+                 tarpc_array2string(sndnum, tx_stat, sizeof(tx_stat[0])),
+                 tarpc_array2string(rcvnum, rx_stat, sizeof(rx_stat[0])));
     RETVAL_INT(flooder, out.retval);
 }
 
