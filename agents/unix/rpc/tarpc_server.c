@@ -4224,7 +4224,7 @@ iomux_find_func(const char *lib, iomux_func iomux, iomux_funcs *funcs)
             rc = tarpc_find_func(lib, "pselect", &funcs->select);
             break;
         case FUNC_POLL:
-            rc = tarpc_find_func(lib, "poll", (api_func)&funcs->poll);
+            rc = tarpc_find_func(lib, "poll", (api_func *)&funcs->poll);
             break;
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
@@ -4281,8 +4281,9 @@ iomux_create_state(iomux_func iomux, iomux_funcs *funcs,
     return 0;
 }
 
-static inline iomux_select_set_state(iomux_state *state, int fd,
-                                     int events, te_bool do_clear)
+static inline void
+iomux_select_set_state(iomux_state *state, int fd, int events,
+                       te_bool do_clear)
 {
     /* Hack: POLERR is present in both read and write. Do not set both if
      * not really necessary */
@@ -4363,9 +4364,6 @@ iomux_mod_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
         case FUNC_SELECT:
         case FUNC_PSELECT:
             iomux_select_set_state(state, fd, events, TRUE);
-            state->select.maxfds = MAX(state->select.maxfds, fd);
-            state->select.fds[state->select.nfds] = fd;
-            state->select.nfds++;
             return 0;
 
         case FUNC_POLL:
@@ -4411,13 +4409,11 @@ iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
         case FUNC_SELECT:
         case FUNC_PSELECT:
         {
-            struct timeval tv;
             iomux_return   sret;
 
             if (ret == NULL)
                 ret = &sret;
 
-            TE_US2TV(TE_MS2US(timeout), &tv);
             memcpy(&ret->select.rfds, &state->select.rfds,
                    sizeof(state->select.rfds));
             memcpy(&ret->select.wfds, &state->select.wfds,
@@ -4426,16 +4422,33 @@ iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
                    sizeof(state->select.exfds));
             if (iomux == FUNC_SELECT)
             {
-                rc = funcs->select(state->select.maxfds, &ret->select.rfds,
-                                   &ret->select.wfds, &ret->select.exfds,
+                struct timeval tv;
+                tv.tv_sec = timeout / 1000UL;
+                tv.tv_usec = timeout % 1000UL;
+                rc = funcs->select(state->select.maxfds + 1,
+                                   &ret->select.rfds,
+                                   &ret->select.wfds,
+                                   &ret->select.exfds,
                                    &tv);
             }
             else /* FUNC_PSELECT */
             {
-                rc = funcs->select(state->select.maxfds, &ret->select.rfds,
-                                   &ret->select.wfds, &ret->select.exfds,
-                                   &tv, NULL);
+                struct timespec ts;
+                ts.tv_sec = timeout / 1000UL;
+                ts.tv_nsec = (timeout % 1000UL) * 1000UL;
+                rc = funcs->select(state->select.maxfds + 1,
+                                   &ret->select.rfds,
+                                   &ret->select.wfds,
+                                   &ret->select.exfds,
+                                   &ts, NULL);
             }
+#if 0
+            ERROR("got %d: %x %x %x", rc, 
+                  ((int *)&ret->select.rfds)[0],
+                  ((int *)&ret->select.wfds)[0],
+                  ((int *)&ret->select.exfds)[0]
+                  );
+#endif
             break;
         }
         case FUNC_POLL:
@@ -4608,8 +4621,6 @@ flooder(tarpc_flooder_in *in)
     int      i;
     int      j;
     int      rc;
-    int      sent;
-    int      received;
     char     rcv_buf[FLOODER_BUF];
     char     snd_buf[FLOODER_BUF];
 
@@ -4712,6 +4723,9 @@ flooder(tarpc_flooder_in *in)
              it = iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
                                        it, &fd, &events))
         {
+            int sent;
+            int received;
+
             if (!time2run_expired && (events & POLLOUT))
             {
                 sent = send_func(fd, snd_buf, bulkszs, 0);
@@ -4725,7 +4739,13 @@ flooder(tarpc_flooder_in *in)
                 }
                 else if ((sent > 0) && (tx_stat != NULL))
                 {
-                    tx_stat[i] += sent;
+                    for (i = 0; i < sndnum; i++)
+                    {
+                        if (sndrs[i] != fd)
+                            continue;
+                        tx_stat[i] += sent;
+                        break;
+                    }
                 }
             }
             if ((events & POLLIN))
@@ -4750,7 +4770,13 @@ flooder(tarpc_flooder_in *in)
                     session_rx = TRUE;
                     if (rx_stat != NULL)
                     {
-                        rx_stat[i] += received;
+                        for (i = 0; i < rcvnum; i++)
+                        {
+                            if (rcvrs[i] != fd)
+                                continue;
+                            rx_stat[i] += received;
+                            break;
+                        }
                     }
                     if (time2run_expired)
                         VERB("FD=%d Rx=%d", fd, received);
@@ -4870,8 +4896,6 @@ echoer(tarpc_echoer_in *in)
 
     int      i;
     int      rc;
-    int      sent;
-    int      received;
     char     buf[FLOODER_BUF];
 
     iomux_state             iomux_st;
@@ -4903,7 +4927,7 @@ echoer(tarpc_echoer_in *in)
     for (i = 0; i < socknum; i++)
     {
         if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
-                               sockets[i], POLLIN)) != 0)
+                               sockets[i], POLLIN | POLLOUT)) != 0)
         {
             ERROR("%s(): failed to add fd to iomux list", __FUNCTION__);
             iomux_close(iomux, &iomux_f, &iomux_st);
@@ -4947,6 +4971,8 @@ echoer(tarpc_echoer_in *in)
              it = iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
                                        it, &fd, &events))
         {
+            int sent = 0;
+            int received = 0;
 
             if ((events & POLLIN))
             {
@@ -4957,10 +4983,10 @@ echoer(tarpc_echoer_in *in)
                     iomux_close(iomux, &iomux_f, &iomux_st);
                     return -1;
                 }
-                if (rx_stat != NULL)
-                    rx_stat[i] += received;
                 session_rx = TRUE;
-
+            }
+            if ((events & POLLOUT))
+            {
                 sent = write_func(fd, buf, received);
                 if (sent < 0)
                 {
@@ -4968,8 +4994,21 @@ echoer(tarpc_echoer_in *in)
                     iomux_close(iomux, &iomux_f, &iomux_st);
                     return -1;
                 }
-                if (tx_stat != NULL)
-                    tx_stat[i] += sent;
+            }
+
+            if ((received > 0 && rx_stat != NULL) ||
+                (sent > 0 && tx_stat != NULL))
+            {
+                for (i = 0; i < socknum; i++)
+                {
+                    if (sockets[i] != fd)
+                        continue;
+                    if (rx_stat != NULL)
+                        rx_stat[i] += received;
+                    if (tx_stat != NULL)
+                        tx_stat[i] += sent;
+                    break;
+                }
             }
         }
 

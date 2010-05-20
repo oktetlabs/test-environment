@@ -638,6 +638,72 @@ rpc_recv_verify(rcf_rpc_server *rpcs, int s,
     RETVAL_INT(recv_verify, out.retval);
 }
 
+/**
+ * Convert 'struct tarpc_timeval' to string.
+ *
+ * @note Static buffer is used for return value.
+ *
+ * @param tv        Pointer to 'struct tarpc_timeval'
+ *
+ * @return NUL-terminated string
+ */
+const char *
+tarpc_array2string(int len, const void *array, int member_size)
+{
+
+/* Number of buffers used in the function */
+#define BUF_SIZE 128
+#define N_BUFS  10
+
+    static char buf[N_BUFS][BUF_SIZE];
+    static char (*cur_buf)[BUF_SIZE] = (char (*)[BUF_SIZE])buf[0];
+
+    char *ptr;
+    int   i;
+    int used;
+
+    if (len <= 0 || array == NULL)
+        return "";
+
+    /*
+     * Firt time the function is called we start from the second buffer, but
+     * then after a turn we'll use all N_BUFS buffer.
+     */
+    if (cur_buf == (char (*)[BUF_SIZE])buf[N_BUFS - 1])
+        cur_buf = (char (*)[BUF_SIZE])buf[0];
+    else
+        cur_buf++;
+
+    ptr = *cur_buf;
+
+    if (member_size == 4)
+    {
+        const int32_t *arr = array;
+        used = snprintf(ptr, BUF_SIZE, "%"TE_PRINTF_32"d", arr[0]);
+        for (i = 1; i < len; i++)
+        {
+            used += snprintf(ptr + used, BUF_SIZE - used,
+                             ", %"TE_PRINTF_32"d", arr[i]);
+        }
+    }
+    else if (member_size == 8)
+    {
+        const int64_t *arr = array;
+        used = snprintf(ptr, BUF_SIZE, "%"TE_PRINTF_64"d", arr[0]);
+        for (i = 1; i < len; i++)
+        {
+            used += snprintf(ptr + used, BUF_SIZE - used,
+                             ", %"TE_PRINTF_64"d", arr[i]);
+        }
+    }
+    ptr[BUF_SIZE - 1] = '\0';
+
+#undef BUF_SIZE
+#undef N_BUFS
+
+    return ptr;
+}
+
 
 /* See description in tapi_rpcsock.h */
 int
@@ -695,22 +761,30 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     if (RPC_IS_CALL_OK(rpcs))
     {
         if (tx_stat != NULL)
+        {
             memcpy(tx_stat, out.tx_stat.tx_stat_val,
                    out.tx_stat.tx_stat_len * sizeof(tx_stat[0]));
+        }
         if (rx_stat != NULL)
+        {
             memcpy(rx_stat, out.rx_stat.rx_stat_val,
                    out.rx_stat.rx_stat_len * sizeof(rx_stat[0]));
+        }
     }
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(flooder, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "flooder(%p, %d, %p, %d, %d, %d, %d, %s, %p, %p) "
-                 "-> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op), sndrs, 
-                 sndnum, rcvrs, rcvnum, bulkszs, time2run, time2wait,
+                 "flooder([%s], [%s], %d, %d, %d, %s, %p, %p) "
+                 "-> %d (%s) tx=[%s] rx=[%s]",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 tarpc_array2string(sndnum, sndrs, sizeof(sndrs[0])),
+                 tarpc_array2string(rcvnum, rcvrs, sizeof(rcvrs[0])),
+                 bulkszs, time2run, time2wait,
                  iomux2str(iomux),
                  tx_stat, rx_stat, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+                 errno_rpc2str(RPC_ERRNO(rpcs)),
+                 tarpc_array2string(sndnum, tx_stat, sizeof(rx_stat[0])),
+                 tarpc_array2string(rcvnum, tx_stat, sizeof(tx_stat[0])));
     RETVAL_INT(flooder, out.retval);
 }
 
@@ -767,19 +841,28 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
     if (RPC_IS_CALL_OK(rpcs))
     {
         if (tx_stat != NULL)
+        {
             memcpy(tx_stat, out.tx_stat.tx_stat_val,
                    out.tx_stat.tx_stat_len * sizeof(tx_stat[0]));
+        }
         if (rx_stat != NULL)
+        {
             memcpy(rx_stat, out.rx_stat.rx_stat_val,
                    out.rx_stat.rx_stat_len * sizeof(rx_stat[0]));
+        }
     }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(echoer, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: echoer(%p, %d, %d, %s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: echoer([%s], %d, %s) -> %d (%s) "
+                 "tx=[%s] rx=[%s]",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 sockets, socknum, time2run, iomux2str(iomux),
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 tarpc_array2string(socknum, sockets, sizeof(sockets[0])),
+                 time2run, iomux2str(iomux),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 tarpc_array2string(socknum, tx_stat, sizeof(tx_stat[0])),
+                 tarpc_array2string(socknum, rx_stat, sizeof(rx_stat[0])));
+
 
     RETVAL_INT(echoer, out.retval);
 }
