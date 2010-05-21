@@ -8,9 +8,9 @@
  * $Id$
  */
 
-#define TE_LGR_USER "Forw/Tasks"
+#define TE_LGR_USER "TAD Forw/Tasks"
 
-#include "config.h"
+#include "te_config.h"
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h> /* For 'struct timeval' */ 

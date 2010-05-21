@@ -173,6 +173,17 @@ else
 EXTRA_DIST += $(SNMP_HDRS) $(SNMP_SRCS)
 endif
 
+# FORW
+FORW_HDRS = forw/tapi_forw.h
+FORW_SRCS = forw/tapi_forw.c
+if WITH_FORW
+AM_CPPFLAGS += -I$(srcdir)/forw
+EXTRA_HEADERS += $(FORW_HDRS)
+EXTRA_SOURCES += $(FORW_SRCS)
+else
+EXTRA_DIST += $(FORW_HDRS) $(FORW_SRCS)
+endif
+
 include_HEADERS = \
 	tapi_tad.h \
 	tapi_ndn.h \

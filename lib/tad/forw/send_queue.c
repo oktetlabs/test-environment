@@ -15,7 +15,7 @@
 #include "te_config.h" 
 #include "config.h" 
 
-#define TE_LGR_USER "Forw/SendQ"
+#define TE_LGR_USER "TE Forw/SendQ"
 
 #ifdef HAVE_STDIO_H
 #include <stdio.h>

@@ -8,8 +8,8 @@
  * $Id$
  */
 
-#ifndef __TE_FORWARDER_SEND_QUEUE_H__
-#define __TE_FORWARDER_SEND_QUEUE_H__
+#ifndef __TE_SEND_QUEUE_H__
+#define __TE_SEND_QUEUE_H__
 
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
@@ -270,4 +270,4 @@ timeval_compare(struct timeval tv1, struct timeval tv2)
     return 0;
 }
 
-#endif /* __TE_FORWARDER_SEND_QUEUE_H__ */
+#endif /* __TE_SEND_QUEUE_H__ */

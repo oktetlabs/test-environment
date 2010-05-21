@@ -21,7 +21,8 @@ AC_PROG_INSTALL
 TE_LIB_SET
 
 dnl List of all layers
-layers="arp atm bridge cli dhcp eth ipstack iscsi pcap snmp igmp ppp flow"
+layers="arp atm bridge cli dhcp eth ipstack iscsi\
+        pcap snmp igmp ppp flow forw"
 dnl Whether any --with-<layer> option specified
 layers_specified=
 for layer in $layers ; do
@@ -65,6 +66,7 @@ AM_CONDITIONAL(WITH_ISCSI,   test "$with_iscsi" = "yes")
 AM_CONDITIONAL(WITH_PCAP,    test "$with_pcap" = "yes")
 AM_CONDITIONAL(WITH_SNMP,    test "$with_snmp" = "yes")
 AM_CONDITIONAL(WITH_FLOW,    test "$with_flow" = "yes")
+AM_CONDITIONAL(WITH_FORW,    test "$with_forw" = "yes")
 
 if test "$with_snmp" = "yes" ; then
     AC_MSG_CHECKING(for net-snmp library)

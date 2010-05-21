@@ -276,6 +276,14 @@ if test $w_eth = true -o $w_atm = true ; then
    AC_CONFIG_FILES([llc/Makefile])
 fi
 
+AC_ARG_WITH([forw],,
+[if test "${withval}" = yes; then
+   w_forw=true;
+   proto_specific forw;
+   AC_CONFIG_FILES([forw/Makefile])
+ fi
+], [w_forw=false])
+
 AC_SUBST([TAD_LIBLIST])
 AC_SUBST([TAD_SUBDIRS])
 AC_SUBST([TAD_CH_DEFS])

@@ -9,7 +9,7 @@
  */
 
 
-#include "config.h"
+#include "te_config.h"
 
 #define TE_LGR_USER "TAPI Forwarder" 
 
