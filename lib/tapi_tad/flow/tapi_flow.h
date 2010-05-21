@@ -62,7 +62,7 @@ typedef struct tapi_flow_s {
 
     tapi_flow_ep_t      snd;
     tapi_flow_ep_t      rcv;
-    tapi_flow_ep_t      exp;
+    tapi_flow_ep_t      rcv_base;
     asn_value          *traffic;
 
     /* Traffic flow counters  */
@@ -77,12 +77,10 @@ extern te_errno tapi_flow_parse(tapi_flow_t **flow_p, asn_value *flow_spec);
 #define TAPI_FLOW_RECV_TIMEOUT 1000
 #define TAPI_FLOW_RECV_COUNT_MAX 10
 
-/* Remove ip4.ip-tos & eth.eth-prio fields from receive pattern */
-extern te_errno tapi_flow_remove_marking_ptrn(asn_value *ptrn);
-
 /* Send and receive traffic described in traffic pattern */
-extern te_errno tapi_flow_check(tapi_flow_t *flow, te_bool expected,
-                                int *rcv_num_p, int *exp_num_p);
+extern te_errno tapi_flow_check(tapi_flow_t *flow,
+                                int         *rcv_num_p,
+                                int         *exp_num_p);
 
 extern te_errno tapi_flow_init(tapi_flow_t *flow);
 

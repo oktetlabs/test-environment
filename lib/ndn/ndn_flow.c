@@ -43,8 +43,7 @@
  */
 typedef enum {
     NDN_FLOW_EP_TA = 11111,
-    NDN_FLOW_EP_CSAP_DESC,
-    NDN_FLOW_EP_CSAP_SPEC,
+    NDN_FLOW_EP_CSAP,
     NDN_FLOW_PDU_SEND,
     NDN_FLOW_PDU_RECV,
     NDN_FLOW_PDU_PAYLOAD_LENGTH,
@@ -60,9 +59,7 @@ typedef enum {
 
 static asn_named_entry_t _ndn_flow_ep_ne_array [] = {
     { "ta", &ndn_data_unit_char_string_s, { PRIVATE, NDN_FLOW_EP_TA } },
-    { "csap-desc", &ndn_data_unit_char_string_s,
-      { PRIVATE, NDN_FLOW_EP_CSAP_DESC } },
-    { "csap-spec", &ndn_csap_spec_s, { PRIVATE, NDN_FLOW_EP_CSAP_SPEC } },
+    { "csap", &ndn_csap_spec_s, { PRIVATE, NDN_FLOW_EP_CSAP } },
 };
 
 asn_type ndn_flow_ep_s = {
