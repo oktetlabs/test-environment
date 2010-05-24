@@ -313,10 +313,10 @@ tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn, asn_value **base_ptrn_p)
     VERB("%s() started", __FUNCTION__);
     for (i = 0;; i++)
     {
-        RING("%s(): try to get %d layer", __FUNCTION__, i);
+        VERB("%s(): try to get %d layer", __FUNCTION__, i);
         if ((rc = asn_get_indexed(rcv_ptrn, &layer, i, "0.pdus")) != 0)
         {
-            RING("%s(): failed to get %d layer", __FUNCTION__, i);
+            VERB("%s(): failed to get %d layer", __FUNCTION__, i);
             break;
         }
         if ((rc = asn_get_choice_value(layer, &layer, NULL, NULL)) != 0)
@@ -324,7 +324,7 @@ tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn, asn_value **base_ptrn_p)
             ERROR("%s(): failed to get %d layer choice", __FUNCTION__, i);
             return rc;
         }
-        RING("%s: layer %d - %s", __FUNCTION__, i, layer->name);
+        VERB("%s: layer %d - %s", __FUNCTION__, i, layer->name);
 
         if ((strcmp(layer->name, "udp") == 0) ||
             (strcmp(layer->name, "tcp") == 0))
@@ -391,7 +391,7 @@ tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn, asn_value **base_ptrn_p)
 
             if ((addr_len = asn_get_length(layer, "src-addr.#plain")) > 0)
             {
-                RING("Lenngth of src-addr: %d bytes", addr_len);
+                VERB("Length of src-addr: %d bytes", addr_len);
 
                 if ((rc = asn_read_value_field(layer, addr, &addr_len,
                                                "src-addr.#plain")) != 0)
@@ -410,7 +410,7 @@ tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn, asn_value **base_ptrn_p)
 
             if ((addr_len = asn_get_length(layer, "dst-addr.#plain")) > 0)
             {
-                RING("Lenngth of dst-addr: %d bytes", addr_len);
+                VERB("Length of dst-addr: %d bytes", addr_len);
 
                 if ((rc = asn_read_value_field(layer, addr, &addr_len,
                                                "dst-addr.#plain")) != 0)
@@ -643,7 +643,7 @@ tapi_flow_prepare(tapi_flow_t **flow_p, const char *flow_text)
         ERROR("Failed to preprocess textual flow specification: %r", rc);
         return rc;
     }
-    RING("Preprocessed flow:\n%s", flow_text_deref);
+    VERB("Preprocessed flow:\n%s", flow_text_deref);
 
     if ((rc = asn_parse_value_text(flow_text_deref, ndn_flow, &asn_flow, &num)) != 0)
     {
@@ -652,7 +652,7 @@ tapi_flow_prepare(tapi_flow_t **flow_p, const char *flow_text)
     }
 
     asn_sprint_value(asn_flow, buf, 4096, 4);
-    RING("Parsed %d:\n%s", num, buf);
+    VERB("Parsed %d:\n%s", num, buf);
 
     if ((rc = tapi_flow_parse(flow_p, asn_flow)) != 0)
     {
