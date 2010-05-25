@@ -1,5 +1,5 @@
 ---
--- Chunked output - chunk train module
+-- Chunked output - chunk manager module
 --
 -- Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
 -- root directory of the distribution).
@@ -24,32 +24,27 @@
 -- @release $Id$
 --
 
+local oo    = require("loop.base")
 local co    = {}
-co.chunk    = require("co.chunk")
-co.train    = {}
-
-co.train.__index = co.train
+co.manager  = oo.class({
+                        max_mem  = nil, --- Maximum memory for chunks
+                        used_mem = 0,   --- Memory used by in-memory chunks
+                       })
 
 ---
--- Create new instance of a chunk train.
+-- Create a chunk manager.
 --
--- @param file      Output file handle.
 -- @param max_mem   Maximum amount of memory allowed to be taken up by
---                  memory-based chunk contents
+--                  memory-based chunk contents.
 --
--- @return New chunk train instance.
+-- @return New chunk manager instance.
 --
-function co.train.new(file, max_mem)
-    local self   = setmetatable({max_mem = max_mem,
-                                 used_mem = 0},
-                                co.train)
+function co.manager:__init(max_mem)
+    assert(type(max_mem) == "number")
+    assert(math.floor(max_mem) == max_mem)
+    assert(max_mem >= 0)
 
-    local chunk  = co.chunk.new(self, file, 0)
-
-    self.first = chunk
-    self.last = chunk
-
-    return self
+    return oo.rawnew(self, {max_mem = max_mem})
 end
 
 ---
@@ -67,71 +62,71 @@ local function xtmpfile()
 end
 
 ---
--- Add a new based chunk.
---
--- @return New chunk
---
-function co.train:new_chunk()
-    local chunk = co.chunk.new(self, {}, 0)
-
-    self.last.next = chunk
-    self.last = chunk
-
-    return chunk
-end
-
----
--- Check if a train is finished.
---
--- @return True if the train is finished, false otherwise.
---
-function co.train:finished()
-    return self.first.finished and self.first.next == nil
-end
-
----
 -- Request an amount of memory for a memory-based chunk contents
 --
+-- @param chunk Chunk requesting the memory.
 -- @param size  Amount of memory being requested.
 --
-function co.train:chunk_request_mem(size)
+function co.manager:request_mem(chunk, size)
+    assert(oo.instanceof(chunk, require("co.chunk")))
+    assert(type(size) == "number")
+    assert(math.floor(size) == size)
+    assert(size >= 0)
+
     self.used_mem = self.used_mem + size
 end
 
 ---
 -- Return an amount of memory used by a memory-based chunk contents
 --
+-- @param chunk Chunk returning the memory.
 -- @param size  Amount of memory being returned.
 --
-function co.train:chunk_return_mem(size)
+function co.manager:return_mem(chunk, size)
+    assert(oo.instanceof(chunk, require("co.chunk")))
+    assert(type(size) == "number")
+    assert(math.floor(size) == size)
+    assert(size >= 0)
     assert(size <= self.used_mem)
+
     self.used_mem = self.used_mem - size
 end
 
 ---
 -- Inform about a finished chunk
 --
-function co.train:chunk_finished()
-    local prev, chunk
+-- @param chunk Chunk being finished.
+--
+function co.manager:finished(chunk)
+    local prev
+
+    assert(oo.instanceof(chunk, require("co.chunk")))
 
     --
-    -- Try to collapse the chunks starting from the first
+    -- Try to reach the first chunk via finished chunks
     --
-    chunk = self.first
-
-    if not chunk.finished then
-        return
+    while chunk.prev ~= nil do
+        chunk = chunk.prev
+        if not chunk.finished then
+            return
+        end
     end
 
+    --
+    -- Collapse as much chunks as possible
+    --
     while true do
         prev = chunk
         chunk = prev.next
         if chunk == nil or not chunk.finished then
             break
         end
-        self.first = chunk
+        -- Detach the previous chunk
+        chunk.prev = nil
+        prev.next = nil
+        -- Relocate the chunk to the previous chunk's storage
         chunk:relocate(prev:yield())
     end
 end
 
-return co.train
+return co.manager

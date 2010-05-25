@@ -1,12 +1,14 @@
 #!/usr/bin/env lua
 
-require("strict")
 local co = require("co")
 
-local t = co.train.new(io.stdout)
+local c1    = co.chunk(co.manager(2 ^ 20), io.stdout, 0)
+local c3    = c1:fork_next()
+local c2    = c3:fork_prev()
 
-local c1    = t:new_chunk()
-local c2    = t:new_chunk()
-local c3    = t:new_chunk()
-
-
+c1:write("xxx\n"):finish()
+c3:write("zzz\n"):finish()
+c2:write("yyy\n"):finish()
+c1:finish()
+c3:finish()
+c2:finish()

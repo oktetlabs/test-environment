@@ -24,13 +24,17 @@
 -- @release $Id$
 --
 
+local oo    = require("loop.base")
 local co    = {}
-co.chunk    = {}
-
----
--- File->file relocation buffer size
---
-co.chunk.relocate_buf_size  = 32768
+co.chunk    = oo.class({
+                        buf_size = 32768,   --- Relocation buffer size
+                        manager  = nil,     --- Chunk manager
+                        storage  = nil,     --- Storage: table or file
+                        size     = 0,       --- Storage contents size
+                        finished = nil,     --- "Finished" flag
+                        prev     = nil,     --- Previous chunk
+                        next     = nil,     --- Next chunk
+                       })
 
 ---
 -- Calculate/retrieve size of a storage (file or table) contents.
@@ -64,34 +68,78 @@ end
 ---
 -- Create a new chunk.
 --
--- @param train     A train to which the chunk belongs.
+-- @param manager   A chunk manager to which the chunk belongs.
 -- @param storage   Chunk storage - either a table or a file.
 -- @param size      Storage contents size, or nil to have it determined.
 --
 -- @return New chunk.
 --
-function co.chunk.new(train, storage, size)
-    assert(train ~= nil)
+function co.chunk:__init(manager, storage, size)
+    assert(oo.instanceof(manager, require("co.manager")))
     assert(storage ~= nil)
+    assert(size == nil or
+           type(size) == "number" and
+           math.floor(size) == size and
+           size >= 0)
 
-    return setmetatable({train = train,
-                         size = size or storage_size(storage),
-                         storage = storage},
-                        co.chunk)
+    return oo.rawnew(self,
+                     {manager = manager,
+                      storage = storage,
+                      size = size or storage_size(storage)})
 end
 
 ---
--- Add a string to an (unfinished) chunk
+-- Insert a new chunk before this one.
+--
+-- @return New chunk inserted before this one.
+--
+function co.chunk:fork_prev()
+    local chunk = co.chunk(self.manager, {}, 0)
+
+    if self.prev ~= nil then
+        self.prev.next = chunk
+        chunk.prev = self.prev
+    end
+    chunk.next = self
+    self.prev = chunk
+
+    return chunk
+end
+
+
+---
+-- Insert a new chunk after this one.
+--
+-- @return New chunk inserted after this one.
+--
+function co.chunk:fork_next()
+    local chunk = co.chunk(self.manager, {}, 0)
+
+    if self.next ~= nil then
+        self.next.prev = chunk
+        chunk.next = self.next
+    end
+    chunk.prev = self
+    self.next = chunk
+
+    return chunk
+end
+
+
+---
+-- Write a string to an (unfinished) chunk
 --
 -- @param str   String to add
 --
-function co.chunk:add(str)
-    assert(self.finished ~= true)
+-- @return The chunk.
+--
+function co.chunk:write(str)
+    assert(not self.finished)
     assert(str ~= nil)
 
     if type(self.storage) == "table" then
         -- Request the memory
-        self.train:chunk_request_mem(#str)
+        self.manager:request_mem(self, #str)
     end
 
     -- NOTE: we may get displaced as a result, so check the type again
@@ -102,30 +150,34 @@ function co.chunk:add(str)
     end
 
     self.size = self.size + #str
+
+    return self
 end
 
 ---
 -- Finish the chunk.
 --
+-- @return The chunk.
+--
 function co.chunk:finish()
     self.finished = true
-    self.train:chunk_finished(self)
+    self.manager:finished(self)
 end
 
 ---
--- Yield the chunk storage.
+-- Yield the (finished) chunk storage.
 --
 -- @return Storage and size
 --
 function co.chunk:yield()
-    local storage, size
+    local storage
+
+    assert(self.finished)
 
     storage = self.storage
-    size = self.size
     self.storage = nil
-    self.size = 0
 
-    return storage, size
+    return storage, self.size
 end
 
 ---
@@ -144,7 +196,7 @@ local function relocate_to_table(self, storage)
         end
     else
         -- Request memory for the file contents
-        self.train:chunk_request_mem(self.size)
+        self.manager:request_mem(self, self.size)
 
         -- Rewind the file
         result, err = self.storage:seek("set", 0)
@@ -187,13 +239,13 @@ local function relocate_to_file(self, storage)
         end
 
         -- Return the memory
-        self.train:chunk_return_mem(self.size)
+        self.manager:return_mem(self, self.size)
     else
         local read_size = 0
 
         -- Transfer the file contents
         while true do
-            local block = self.storage:read(co.chunk.relocate_buf_size)
+            local block = self.storage:read(self.buf_size)
             if block == nil then
                 break
             end
@@ -208,11 +260,6 @@ local function relocate_to_file(self, storage)
         -- Close the file
         self.storage:close()
     end
-
-    result, err = storage:seek("cur", 0)
-    if result == nil then
-        error("failed to seek chunk storage file: " .. err)
-    end
 end
 
 ---
@@ -223,7 +270,9 @@ end
 -- @param size      Target storage contents size or nil to have it
 --                  determined.
 --
-function co.chunk.relocate(storage, size)
+-- @return The chunk.
+--
+function co.chunk:relocate(storage, size)
     if size == nil then
         size = storage_size(storage)
     end
@@ -236,6 +285,8 @@ function co.chunk.relocate(storage, size)
 
     self.storage = storage
     self.size = size + self.size
+
+    return self
 end
 
 return co.chunk
