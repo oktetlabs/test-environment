@@ -199,6 +199,60 @@ tapi_acse_clear_acs(const char *ta_acse, const char *acs_name)
 }
 
 
+
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_wait_cwmp_state(const char *ta,
+                          const char *acs_name, const char *cpe_name,
+                          cwmp_sess_state_t want_state, int timeout)
+{
+    cwmp_sess_state_t cur_state = 0;
+    te_errno rc;
+
+    do {
+        rc = tapi_acse_manage_cpe(ta, acs_name, cpe_name, ACSE_OP_OBTAIN,
+                  "cwmp_state", &cur_state, VA_END_LIST);
+        if (rc != 0)
+            return rc;
+
+    } while ((timeout < 0 || (timeout--) > 0) &&
+             (want_state != cur_state) &&
+             (sleep(1) == 0));
+
+    if (0 == timeout && want_state != cur_state)
+        return TE_ETIMEDOUT;
+
+    return 0;
+}
+
+
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_wait_cr_state(const char *ta,
+                          const char *acs_name, const char *cpe_name,
+                          acse_cr_state_t want_state, int timeout)
+{
+    acse_cr_state_t cur_state = 0;
+    te_errno rc;
+
+    do {
+        rc = tapi_acse_manage_cpe(ta, acs_name, cpe_name, ACSE_OP_OBTAIN,
+                  "cr_state", &cur_state, VA_END_LIST);
+        if (rc != 0)
+            return rc;
+
+    } while ((timeout < 0 || (timeout--) > 0) &&
+             (want_state != cur_state) &&
+             (sleep(1) == 0));
+
+    if (0 == timeout && want_state != cur_state)
+        return TE_ETIMEDOUT;
+
+    return 0;
+}
+
 /*
  * =============== Generic methods for CWMP RPC ====================
  */
@@ -359,6 +413,7 @@ tapi_acse_cpe_get_rpc_methods_resp(
 }
 
 
+/* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_download(rcf_rpc_server *rpcs,
                        const char *acs_name,
@@ -374,6 +429,7 @@ tapi_acse_cpe_download(rcf_rpc_server *rpcs,
                              to_cpe_loc);
 }
 
+/* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_download_resp(rcf_rpc_server *rpcs,
                            const char *acs_name,
@@ -391,3 +447,120 @@ tapi_acse_cpe_download_resp(rcf_rpc_server *rpcs,
 }
 
 
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_cpe_get_parameter_values(rcf_rpc_server *rpcs,
+                                   const char *acs_name,
+                                   const char *cpe_name,
+                                   _cwmp__GetParameterValues *req,
+                                   int *call_index)
+{
+    cwmp_data_to_cpe_t to_cpe_loc;
+    to_cpe_loc.get_parameter_values = req;
+
+    return tapi_acse_cpe_rpc(rpcs, acs_name, cpe_name,
+                             CWMP_RPC_get_parameter_values, call_index,
+                             to_cpe_loc);
+}
+
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_cpe_get_parameter_values_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name, const char *cpe_name,
+               int timeout, int call_index,
+               _cwmp__GetParameterValuesResponse **resp)
+{
+    cwmp_data_from_cpe_t from_cpe_loc;
+    te_errno rc = tapi_acse_cpe_rpc_response(rpcs, acs_name, cpe_name, 
+                                             timeout, call_index,
+                                             NULL, &from_cpe_loc);
+    if (NULL != resp && NULL != from_cpe_loc.p)
+        *resp = from_cpe_loc.get_parameter_values_r;
+    return rc;
+}
+
+
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_cpe_get_parameter_names(rcf_rpc_server *rpcs,
+                                   const char *acs_name,
+                                   const char *cpe_name,
+                                   _cwmp__GetParameterNames *req,
+                                   int *call_index)
+{
+    cwmp_data_to_cpe_t to_cpe_loc;
+    to_cpe_loc.get_parameter_names = req;
+
+    return tapi_acse_cpe_rpc(rpcs, acs_name, cpe_name,
+                             CWMP_RPC_get_parameter_names, call_index,
+                             to_cpe_loc);
+}
+
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_cpe_get_parameter_names_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name, const char *cpe_name,
+               int timeout, int call_index,
+               _cwmp__GetParameterNamesResponse **resp)
+{
+    cwmp_data_from_cpe_t from_cpe_loc;
+    te_errno rc = tapi_acse_cpe_rpc_response(rpcs, acs_name, cpe_name, 
+                                             timeout, call_index,
+                                             NULL, &from_cpe_loc);
+    if (NULL != resp && NULL != from_cpe_loc.p)
+        *resp = from_cpe_loc.get_parameter_names_r;
+    return rc;
+}
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_cpe_set_parameter_values(rcf_rpc_server *rpcs,
+                                   const char *acs_name,
+                                   const char *cpe_name,
+                                   _cwmp__SetParameterValues *req,
+                                   int *call_index)
+{
+    cwmp_data_to_cpe_t to_cpe_loc;
+    to_cpe_loc.set_parameter_values = req;
+
+    return tapi_acse_cpe_rpc(rpcs, acs_name, cpe_name,
+                             CWMP_RPC_set_parameter_values, call_index,
+                             to_cpe_loc);
+}
+
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_cpe_set_parameter_values_resp(
+               rcf_rpc_server *rpcs,
+               const char *acs_name, const char *cpe_name,
+               int timeout, int call_index,
+               _cwmp__SetParameterValuesResponse **resp)
+{
+    cwmp_data_from_cpe_t from_cpe_loc;
+    te_errno rc = tapi_acse_cpe_rpc_response(rpcs, acs_name, cpe_name, 
+                                             timeout, call_index,
+                                             NULL, &from_cpe_loc);
+    if (NULL != resp && NULL != from_cpe_loc.p)
+        *resp = from_cpe_loc.set_parameter_values_r;
+    return rc;
+}
+
+
+
+
+
+te_errno
+tapi_acse_cpe_disconnect(rcf_rpc_server *acse_rpcs,
+                         const char *acs_name,
+                         const char *cpe_name)
+{
+    return rpc_cwmp_op_call(acse_rpcs, acs_name, cpe_name,
+                            CWMP_RPC_NONE, NULL, 0, NULL);
+}

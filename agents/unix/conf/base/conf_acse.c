@@ -814,6 +814,10 @@ RCF_PCH_CFG_NODE_RO(node_session_state, "cwmp_state",
                     NULL, &node_session_enabled,
                     &cfg_call_get);
 
+RCF_PCH_CFG_NODE_RW(node_sync_mode, "sync_mode",
+                    NULL, &node_session_state,
+                    &cfg_call_get, &cfg_call_set);
+
 RCF_PCH_CFG_NODE_RO(node_device_id_serial_number, "serial_number",
                     NULL, NULL,
                     &cfg_call_get);
@@ -831,7 +835,7 @@ RCF_PCH_CFG_NODE_RO(node_device_id_manufacturer, "manufacturer",
                     &cfg_call_get);
 
 RCF_PCH_CFG_NODE_NA(node_cpe_device_id, "device_id", 
-                    &node_device_id_manufacturer, &node_session_state);
+                    &node_device_id_manufacturer, &node_sync_mode);
 
 RCF_PCH_CFG_NODE_RW(node_cpe_passwd, "passwd", 
                     NULL, &node_cpe_device_id,

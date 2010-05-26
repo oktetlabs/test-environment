@@ -100,8 +100,11 @@ typedef struct {
 
 /** CWMP operation code */
 typedef enum {
-    EPC_RPC_CALL = EPC_CWMP_MAGIC, /**< Call RPC on CPE */
-    EPC_RPC_CHECK,        /**< Check status of sent RPC and get response or 
+    EPC_RPC_CALL = EPC_CWMP_MAGIC, /**< Call RPC on CPE. 
+                                If sync mode is ON and RPC code
+                                is 'CWMP_RPC_NONE', 
+                                CWMP session will be terminated. */
+    EPC_RPC_CHECK,        /**< Check status of sent RPC and get response or
                                get received from CPE the ACS RPC. */
     EPC_CONN_REQ,         /**< Send ConnectionRequest to CPE */
     EPC_CONN_REQ_CHECK,   /**< Check status of ConnectionRequest */

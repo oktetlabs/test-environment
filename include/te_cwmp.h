@@ -122,7 +122,7 @@ typedef enum acse_cr_state_t {
     
 /** CWMP Session states */
 typedef enum { 
-    CWMP_NOP,           /**< No any TCP activity: neither active
+    CWMP_NOP = 0,       /**< No any TCP activity: neither active
                           connection, nor listening for incoming ones.  */
     CWMP_LISTEN,        /**< Listening for incoming HTTP connection.    */
     CWMP_WAIT_AUTH,     /**< TCP connection established, first HTTP

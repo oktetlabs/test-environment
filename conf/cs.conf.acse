@@ -157,6 +157,12 @@
     <object oid="/agent/acse/acs/cpe/enabled"
             access="read_write" type="integer"/>
 
+    <!-- CWMP session syncronous mode.
+         Name: none
+         Value: 0 - automatic mode, 1 - sync mode -->
+    <object oid="/agent/acse/acs/cpe/sync_mode"
+            access="read_write" type="integer"/>
+
     <!-- Flag 'HoldRequests' value for CWMP RPC messages,
          which will be sent to the CPE
          Name: none

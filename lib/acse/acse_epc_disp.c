@@ -202,9 +202,27 @@ cpe_hold_requests(cpe_t *cpe, acse_epc_config_data_t *params)
     return 0;
 }
 
+/**
+ * Access to 'sync_mode' flag for CPE CWMP session.
+ *
+ * @param cpe           CPE record
+ * @param params        EPC parameters struct
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_sync_mode(cpe_t *cpe, acse_epc_config_data_t *params)
+{
+    if (params->op.fun == EPC_CFG_OBTAIN)
+        sprintf(params->value, "%i", cpe->sync_mode);
+    else 
+        cpe->sync_mode = atoi(params->value);
+    return 0;
+}
+
 
 /**
- * Get the session 'enabled' flag.
+ * Access to the 'enabled' flag.
  *
  * @param cpe           CPE record
  * @param params        EPC parameters struct
@@ -695,6 +713,7 @@ struct config_cpe_item_t {
     {"product_class", device_id_product_class},
     {"serial_number", device_id_serial_number},
     {"cwmp_state", cpe_cwmp_state},
+    {"sync_mode", cpe_sync_mode},
     {"enabled", cpe_enabled},
     {"hold_requests", cpe_hold_requests},
     {"cr_state", cpe_cr_state},
@@ -831,14 +850,24 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
     {
         case EPC_RPC_CALL:
         {
+            te_bool need_call = FALSE;
             /* Insert RPC to queue, ACSE will deliver it during first
                established CWMP session with CPE. */
             cpe_rpc_item_t *rpc_item = malloc(sizeof(*rpc_item));
             rpc_item->params = cwmp_pars;
             rpc_item->index = cwmp_pars->index = ++cpe->last_queue_index;
 
+            need_call = (cpe->sync_mode &&
+                         TAILQ_EMPTY(&cpe->rpc_queue) &&
+                         (cpe->session != NULL) &&
+                         (CWMP_PENDING == cpe->session->state));
+
             TAILQ_INSERT_TAIL(&cpe->rpc_queue, rpc_item, links);
             cwmp_pars->from_cpe.p = NULL; /* nothing yet.. */
+
+            if (need_call)
+                acse_cwmp_send_rpc(&(cpe->session->m_soap), cpe->session);
+
             RING("EPC CWMP op, add RPC call to '%s', type %d, ind %d",
                  cwmp_pars->cpe, cwmp_pars->rpc_cpe, rpc_item->index);
         }

@@ -157,6 +157,10 @@ typedef struct cpe_t{
                                      are enabled from this CPE.
                                      Set to FALSE during active 
                                      CWMP session leads to stop it.*/
+    te_bool          sync_mode; /**< Sync mode: if TRUE, 
+                                    while processing CWMP session, 
+                                    wait for EPC messages with next
+                                    CPE RPC if queue is empty. */
     te_bool          hold_requests; /**< Whether to put "hold requests"
                                          in SOAP msg                   */
 
@@ -528,6 +532,26 @@ extern void acse_soap_serve_response(cwmp_session_t *cwmp_sess);
  * @return status
  */ 
 extern te_errno acse_rpc_item_free(cpe_rpc_item_t *rpc_item);
+
+
+/**
+ * Send RPC to CPE.
+ *
+ * This function check RPC queue in CPE record, take first item
+ * if it present, and send it to CPE in the HTTP response.
+ * If there is no RPC items in queue, it send empty HTTP response
+ * with no keep-alive to finish CWMP session.
+ *
+ * After sending RPC to CPE request item is moved to results queue
+ * in CPE record, where response from CPE will be stored, when 
+ * it will be received later.
+ *
+ * @param soap        gSOAP struct.
+ * @param session     current CWMP session.
+ * 
+ * @return gSOAP status.
+ */
+extern int acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session);
 
 #ifdef __cplusplus
 }

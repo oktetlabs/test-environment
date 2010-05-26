@@ -1039,12 +1039,19 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     acse_epc_cwmp_data_t *request;
     cpe_t *cpe = session->cpe_owner;
 
-    if (TAILQ_EMPTY(&cpe->rpc_queue))
+    if (TAILQ_EMPTY(&cpe->rpc_queue) && cpe->sync_mode)
+    { 
+        /* do nothing, wait for EPC with RPC to be sent */
+        session->state = CWMP_PENDING;
+        return 0; 
+    }
+    if (TAILQ_EMPTY(&cpe->rpc_queue) || 
+        CWMP_RPC_NONE == (TAILQ_FIRST(&cpe->rpc_queue))->params->rpc_cpe)
     {
         /* TODO add check, whether HoldRequests was set on */
 
-        RING("Empty POST for '%s', empty list of RPC calls, response 204",
-              cpe->name);
+        RING("CPE '%s', empty list of RPC calls, response 204, terminate",
+             cpe->name);
         soap->keep_alive = 0;
         soap_begin_count(soap);
         soap_end_count(soap);

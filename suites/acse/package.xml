@@ -36,6 +36,10 @@
                 <value>http://10.20.1.1:8080/firmware_std.bin</value>
             </arg>
         </run> 
+        <run>
+            <script name="change_wan"/>
+            <arg name="ta_acse"/>
+        </run> 
 
     </session>
 </package>

@@ -105,7 +105,8 @@ rpc_cwmp_op_call(rcf_rpc_server *rpcs,
                  acs_name, cpe_name, (int)cwmp_rpc,
                  (te_errno)out.status);
 
-    *index = out.call_index;
+    if (NULL != index)
+        *index = out.call_index;
 
     return out.status;
 }
