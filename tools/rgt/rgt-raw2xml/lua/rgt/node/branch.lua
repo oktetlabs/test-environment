@@ -1,5 +1,5 @@
 ---
--- Report generation tool - internal node type.
+-- Report generation tool - branch node type.
 --
 -- Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
 -- root directory of the distribution).
@@ -28,43 +28,25 @@ local oo            = require("loop.simple")
 local rgt           = {}
 rgt.node            = {}
 rgt.node.basic      = require("rgt.node.basic")
-rgt.node.internal   = oo.class({
-                                child   = nil   --- Child node
-                               }, rgt.node.basic)
+rgt.node.internal   = require("rgt.node.internal")
+rgt.node.branch     = oo.class({}, rgt.node.internal)
 
-function rgt.node.internal:log(ts, level, entity, user, text)
-    if self.child ~= nil then
-        self.child:log(ts, level, entity, user, text)
-    else
-        rgt.node.basic.log(self, ts, level, entity, user, text)
-    end
-end
-
-function rgt.node.internal:get_child()
-    return self.child
-end
-
-function rgt.node.internal:add_child(node)
-    assert(oo.instanceof(node, rgt.node.basic))
-    assert(self:child == nil)
+function rgt.node.branch:start()
     assert(self.chunk ~= nil)
 
-    if self.logging then
-        self:finish_logging()
-    end
-
-    node:give_chunk(self.chunk)
-    self.chunk = nil
-    self.child = node
+    self.chunk:write((" "):rep(self.depth))
+    self.chunk:write("<branch>\n")
+    self.depth = self.depth + 1
+    rgt.node.internal.start(self)
 end
 
-function rgt.node.internal:del_child(node)
-    assert(oo.instanceof(node, rgt.node.basic))
-    assert(self.child == node)
-    assert(self.chunk == nil)
+function rgt.node.branch:finish()
+    assert(self.chunk ~= nil)
 
-    self.chunk = self.child:take_chunk()
-    self.child = nil
+    rgt.node.internal.finish(self)
+    self.depth = self.depth - 1
+    self.chunk:write((" "):rep(self.depth))
+    self.chunk:write("</branch>\n")
 end
 
-return rgt.node.internal
+return rgt.node.branch

@@ -31,7 +31,7 @@ rgt.node        = {}
 rgt.node.basic  = oo.class({
                             depth       = nil,  --- depth in the tree
                             logging     = nil,  --- "logging" flag
-                            chunk       = nil   --- log output chunk
+                            chunk       = nil,  --- log output chunk
                            })
 
 ---
@@ -64,15 +64,21 @@ function rgt.node.basic:__init(inst)
 end
 
 ---
--- Start node output.
+-- Give the output chunk to an (unstarted) node.
 --
--- @param chunk The chunk to start output to.
+-- @param chunk Output chunk
 --
-function rgt.node.basic:start(chunk)
+function rgt.node.basic:give_chunk(chunk)
     assert(self.chunk == nil)
     assert(chunk ~= nil)
 
-    self.chunk = chunk
+end
+
+---
+-- Start node output.
+--
+function rgt.node.basic:start()
+    assert(self.chunk ~= nil)
 end
 
 function rgt.node.basic:start_logging()
@@ -83,16 +89,6 @@ function rgt.node.basic:start_logging()
     self.chunk:write("<log>\n")
     self.logging = true
     self.depth = self.depth + 1
-end
-
-function rgt.node.basic:finish_logging()
-    assert(self.chunk ~= nil)
-    assert(self.logging)
-
-    self.chunk:write(string.rep(" ", self.depth))
-    self.chunk:write("</log>\n")
-    self.logging = nil
-    self.depth = self.depth - 1
 end
 
 ---
@@ -115,19 +111,36 @@ function rgt.node.basic:log(msg)
                    msg.entity, msg.user, msg.text))
 end
 
+function rgt.node.basic:finish_logging()
+    assert(self.chunk ~= nil)
+    assert(self.logging)
+
+    self.chunk:write(string.rep(" ", self.depth))
+    self.chunk:write("</log>\n")
+    self.logging = nil
+    self.depth = self.depth - 1
+end
+
 ---
 -- Finish node output.
 --
--- @return The chunk to which the end of the node was written.
---
 function rgt.node.basic:finish()
-    local chunk
-
     assert(self.chunk ~= nil)
 
     if self.logging then
         self:finish_logging()
     end
+end
+
+---
+-- Take the output chunk from a (finished) node.
+--
+-- @return The output chunk
+--
+function rgt.node.basic:take_chunk()
+    local chunk
+
+    assert(self.chunk ~= nil)
 
     chunk = self.chunk
     self.chunk = nil
