@@ -29,15 +29,27 @@ local rgt           = {}
 rgt.node            = {}
 rgt.node.basic      = require("rgt.node.basic")
 rgt.node.internal   = oo.class({
-                                child   = nil   --- Child node
+                                child       = nil   --- Child node
+                                head_chunk  = nil   --- Head chunk
+                                tail_chunk  = nil   --- Tail chunk
                                }, rgt.node.basic)
 
-function rgt.node.internal:log(ts, level, entity, user, text)
-    if self.child ~= nil then
-        self.child:log(ts, level, entity, user, text)
-    else
-        rgt.node.basic.log(self, ts, level, entity, user, text)
-    end
+function rgt.node.internal:grab_chunk(chunk)
+    self.head_chunk = chunk
+    chunk = self.head_chunk:fork_next()
+    self.tail_chunk = chunk:fork_next()
+    rgt.node.basic.grab_chunk(self, chunk)
+end
+
+function rgt.node.internal:yield_chunk(chunk)
+    local chunk = self.tail_chunk
+
+    self.head_chunk:finish()
+    self.head_chunk = nil
+    rgt.node.basic.yield_chunk():finish()
+    self.tail_chunk = nil
+
+    return chunk
 end
 
 function rgt.node.internal:get_child()
@@ -53,7 +65,7 @@ function rgt.node.internal:add_child(node)
         self:finish_logging()
     end
 
-    node:give_chunk(self.chunk)
+    node:grab_chunk(self.chunk)
     self.chunk = nil
     self.child = node
 end
@@ -63,8 +75,16 @@ function rgt.node.internal:del_child(node)
     assert(self.child == node)
     assert(self.chunk == nil)
 
-    self.chunk = self.child:take_chunk()
+    self.chunk = self.child:yield_chunk()
     self.child = nil
+end
+
+function rgt.node.internal:log(ts, level, entity, user, text)
+    if self.child ~= nil then
+        self:get_child():log(ts, level, entity, user, text)
+    else
+        rgt.node.basic.log(self, ts, level, entity, user, text)
+    end
 end
 
 return rgt.node.internal

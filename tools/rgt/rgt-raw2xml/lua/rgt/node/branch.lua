@@ -34,9 +34,7 @@ rgt.node.branch     = oo.class({}, rgt.node.internal)
 function rgt.node.branch:start()
     assert(self.chunk ~= nil)
 
-    self.chunk:write((" "):rep(self.depth))
-    self.chunk:write("<branch>\n")
-    self.depth = self.depth + 1
+    self.chunk:start_tag("branch")
     rgt.node.internal.start(self)
 end
 
@@ -44,9 +42,7 @@ function rgt.node.branch:finish()
     assert(self.chunk ~= nil)
 
     rgt.node.internal.finish(self)
-    self.depth = self.depth - 1
-    self.chunk:write((" "):rep(self.depth))
-    self.chunk:write("</branch>\n")
+    self.chunk:end_tag("branch")
 end
 
 return rgt.node.branch

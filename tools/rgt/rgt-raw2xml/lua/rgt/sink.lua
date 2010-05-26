@@ -31,12 +31,12 @@ rgt.node.root       = require("rgt.node.root")
 rgt.node.package    = require("rgt.node.package")
 rgt.node.session    = require("rgt.node.session")
 rgt.node.test       = require("rgt.node.test")
-rgt.xml_sink        = oo.class({
+rgt.sink            = oo.class({
                                 root    = nil,  -- Root node
                                 map     = nil,  -- ID->node map
                                })
 
-function rgt.xml_sink:__init(file)
+function rgt.sink:__init(file)
     local inst  = {}
 
     inst.root = rgt.node.root{id = 0, depth = 0}
@@ -154,7 +154,7 @@ local function ctl_parse_text(ctl, text)
 end
 
 
-function rgt.xml_sink:put(msg)
+function rgt.sink:put(msg)
     -- If it is not a control message
     if msg.id ~= 0 or msg.user ~= "Control" or msg.entity ~= "Tester" then
         local node = map[msg.id]
@@ -189,6 +189,9 @@ function rgt.xml_sink:put(msg)
 
             -- add to the parent's children list
             parent:add_child(ctl.id, node)
+
+            -- start node output
+            node:start()
         else
             -- lookup node
             node = self.map[ctl.id]

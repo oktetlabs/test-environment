@@ -27,7 +27,8 @@ lua_codir = $(datadir)/lua/co
 
 dist_lua_co_DATA = \
     manager.lua     \
-    chunk.lua
+    chunk.lua       \
+    xml_chunk.lua
 
 dist_noinst_SCRIPTS = test
 

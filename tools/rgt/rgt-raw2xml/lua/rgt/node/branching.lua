@@ -33,16 +33,18 @@ rgt.node.branching  = oo.class({
                                 branches    = nil   --- branch array
                                }, rgt.node.internal)
 
-function rgt.node.branching:__init(inst)
-    assert(type(inst) == "table")
+function rgt.node.branching:start()
+    local branch
 
-    rgt.node.internal:__init(inst)
+    assert(self.chunk ~= nil)
 
-    inst.branches = {}
-
-    return oo.rawnew(self, inst)
+    -- Create main branch
+    branch = rgt.node.branch({})
+    table.insert(self.branches, branch)
+    branch:grab_chunk(self.tail_chunk:fork_prev())
+    branch:start()
+    self.branches = {branch}
 end
-
 
 function rgt.node.branching:add_child(node)
     local branch
@@ -60,17 +62,18 @@ function rgt.node.branching:add_child(node)
     -- If a vacant branch is not found
     if branch == nil then
         -- Create new branch
-        branch = rgt.node.branch({depth = self.depth})
+        branch = rgt.node.branch({})
         table.insert(self.branches, branch)
-        branch:start(self.tail_chunk:fork_prev())
+        branch:grab_chunk(self.tail_chunk:fork_prev())
+        branch:start()
     end
 
     -- Add the child to the branch
     branch:add_child(node)
 
-    -- Make the branch be our child, if there was none before
-    if self.child == nil then
-        self.child = branch
+    -- Make it our child, if there was none before
+    if self:get_child() == nil then
+        rgt.node.internal.add_child(self, branch)
     end
 end
 
@@ -93,21 +96,21 @@ function rgt.node.branching:del_child(node)
     branch:del_child(node)
 
     -- If this branch is not our child
-    if branch ~= self.child then
+    if branch ~= self:get_child() then
         return
     end
 
+    -- Remove the child
+    rgt.node.internal.del_child(self, branch)
+
     -- Lookup the first branch with a child
-    branch = nil
     for i, b in ipairs(self.branches) do
         if b:get_child() ~= nil then
-            branch = b
+            -- Make it our child
+            rgt.node.internal.add_child(self, b)
             break
         end
     end
-
-    -- Make it (if any) our child
-    self.child = branch
 end
 
 

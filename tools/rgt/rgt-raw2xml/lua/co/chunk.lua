@@ -94,7 +94,7 @@ end
 -- @return New chunk inserted before this one.
 --
 function co.chunk:fork_prev()
-    local chunk = co.chunk(self.manager, {}, 0)
+    local chunk = oo.classof(self)(self.manager, {}, 0)
 
     if self.prev ~= nil then
         self.prev.next = chunk
@@ -113,7 +113,7 @@ end
 -- @return New chunk inserted after this one.
 --
 function co.chunk:fork_next()
-    local chunk = co.chunk(self.manager, {}, 0)
+    local chunk = oo.classof(self)(self.manager, {}, 0)
 
     if self.next ~= nil then
         self.next.prev = chunk

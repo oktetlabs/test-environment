@@ -24,39 +24,24 @@
 -- @release $Id$
 --
 
-local oo        = require("loop.base")
-local rgt       = {}
-rgt.msg         = require("rgt.msg")
-rgt.node        = {}
-rgt.node.basic  = oo.class({
-                            depth       = nil,  --- depth in the tree
-                            logging     = nil,  --- "logging" flag
-                            chunk       = nil,  --- log output chunk
-                           })
-
----
--- Check if a node depth is valid.
---
--- @param depth Depth to check
---
--- @return True if the depth is valid, false otherwise.
---
-function rgt.node.basic.valid_depth(depth)
-    return type(depth) == "number" and
-           math.floor(depth) == depth and
-           depth >= 0
-end
+local oo            = require("loop.base")
+local co            = {}
+local co.xml_chunk  = require("co.chunk")
+local rgt           = {}
+rgt.msg             = require("rgt.msg")
+rgt.node            = {}
+rgt.node.basic      = oo.class({
+                                logging     = nil,  --- "Logging" flag
+                                chunk       = nil,  --- Output chunk
+                               })
 
 ---
 -- Initialize a basic node instance.
 --
--- @param inst  Instance parameters:
---              depth   - node depth.
+-- @param inst  Instance parameter table
 --
 function rgt.node.basic:__init(inst)
     assert(type(inst) == "table")
-    assert(rgt.node.basic.valid_depth(inst.depth))
-    assert(chunk == nil or oo.instanceof(chunk, require("co.chunk")))
 
     inst.logging = nil
 
@@ -64,14 +49,15 @@ function rgt.node.basic:__init(inst)
 end
 
 ---
--- Give the output chunk to an (unstarted) node.
+-- Take (possession of) the output chunk.
 --
 -- @param chunk Output chunk
 --
-function rgt.node.basic:give_chunk(chunk)
+function rgt.node.basic:grab_chunk(chunk)
     assert(self.chunk == nil)
-    assert(chunk ~= nil)
+    assert(oo.instanceof(chunk, co.xml_chunk))
 
+    self.chunk = chunk
 end
 
 ---
@@ -85,10 +71,8 @@ function rgt.node.basic:start_logging()
     assert(self.chunk ~= nil)
     assert(not self.logging)
 
-    self.chunk:write(string.rep(" ", self.depth))
-    self.chunk:write("<log>\n")
+    self.chunk:start_tag("log")
     self.logging = true
-    self.depth = self.depth + 1
 end
 
 ---
@@ -104,21 +88,19 @@ function rgt.node.basic:log(msg)
         self:start_logging()
     end
 
-    self.chunk:write(string.rep(" ", self.depth))
-    self.chunk:write(
-        ("<msg ts=\"%s\" level=\"%s\" entity=\"%s\" user=\"%s\">%s</msg>\n"):
-            format(msg.ts:format_short_abs(), msg.level,
-                   msg.entity, msg.user, msg.text))
+    self.chunk:element("msg",
+                       {ts      = msg.ts:format_short_abs(),
+                        level   = msg.level,
+                        entity  = msg.entity,
+                        user    = msg.user},
+                       msg.text)
 end
 
 function rgt.node.basic:finish_logging()
     assert(self.chunk ~= nil)
     assert(self.logging)
 
-    self.chunk:write(string.rep(" ", self.depth))
-    self.chunk:write("</log>\n")
-    self.logging = nil
-    self.depth = self.depth - 1
+    self.chunk:end_tag("log")
 end
 
 ---
@@ -133,11 +115,11 @@ function rgt.node.basic:finish()
 end
 
 ---
--- Take the output chunk from a (finished) node.
+-- Yield (surrender) the (last) output chunk.
 --
 -- @return The output chunk
 --
-function rgt.node.basic:take_chunk()
+function rgt.node.basic:yield_chunk()
     local chunk
 
     assert(self.chunk ~= nil)
