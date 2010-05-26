@@ -1,0 +1,35 @@
+basic
+    id
+    parent_id
+    chunk
+    depth
+    log(ts, lvl, entity, user, text)
+
+spanning
+    start
+    end
+
+parametrized
+    args
+
+named
+    name
+    objective
+    authors
+
+internal [basic]
+    children
+    add_child(id, child)
+    del_child(id)
+
+root [internal]
+    add_child(id, child)    - with restriction of one child max
+
+package [internal, named, parametrized, spanning]
+
+session [internal, parametrized, spanning]
+
+test [basic, named, parametrized, spanning]
+    tin
+    page
+    verdicts

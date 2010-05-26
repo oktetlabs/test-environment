@@ -1,5 +1,5 @@
 ---
--- Chunked output module
+-- Report generation tool - package node type.
 --
 -- Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
 -- root directory of the distribution).
@@ -24,8 +24,24 @@
 -- @release $Id$
 --
 
-local co = {}
-co.manager  = require("co.manager")
-co.chunk    = require("co.chunk")
+local oo            = require("loop.multi")
+local rgt           = {}
+rgt.node            = {}
+rgt.node.basic      = require("rgt.node.basic")
+rgt.node.package    = oo.class({
+                               },
+                               rgt.node.internal,
+                               rgt.node.named,
+                               rgt.node.parametrized,
+                               rgt.node.spanning)
 
-return co
+function rgt.node.package:__init(inst)
+    rgt.node.internal:__init(inst)
+    rgt.node.named:__init(inst)
+    rgt.node.parametrized:__init(inst)
+    rgt.node.spanning:__init(inst)
+
+    return oo.rawnew(self, inst)
+end
+
+return rgt.node.package

@@ -1,5 +1,5 @@
 ---
--- Chunked output module
+-- Report generation tool - root node type.
 --
 -- Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
 -- root directory of the distribution).
@@ -24,8 +24,29 @@
 -- @release $Id$
 --
 
-local co = {}
-co.manager  = require("co.manager")
-co.chunk    = require("co.chunk")
+local oo            = require("loop.simple")
+local rgt           = {}
+rgt.msg             = require("rgt.msg")
+rgt.node            = {}
+rgt.node.internal   = require("rgt.node.internal")
+rgt.node.root       = oo.class({
+                               }, rgt.node.internal)
 
-return co
+function rgt.node.root:__init(inst)
+    assert(type(inst) == "table")
+    assert(inst.parent_id = nil)
+
+    rgt.node.internal:__init(inst)
+
+    return oo.rawnew(self, inst)
+end
+
+function rgt.node.root:add_child(id, node)
+    assert(id ~= nil)
+    assert(oo.instanceof(node, rgt.node.basic))
+    assert(self.children[1] == nil)
+
+    rgt.node.internal.add_child(self, id, node)
+end
+
+return rgt.node.root

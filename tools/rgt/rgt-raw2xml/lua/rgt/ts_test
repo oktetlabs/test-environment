@@ -1,5 +1,6 @@
+#!/usr/bin/env lua
 ---
--- Chunked output module
+-- Report generation tool - timestamp module test.
 --
 -- Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
 -- root directory of the distribution).
@@ -21,11 +22,22 @@
 -- 
 -- @author Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
 -- 
--- @release $Id$
+-- @release $Id: train.lua 64325 2010-05-18 08:38:55Z knu $
 --
 
-local co = {}
-co.manager  = require("co.manager")
-co.chunk    = require("co.chunk")
+require("strict")
+local rgt   = {}
+rgt.ts      = require("rgt.ts")
 
-return co
+assert(rgt.ts(0, 0):format_short_rel() ==
+       "00:00:00   0 ms")
+assert(rgt.ts(0, 0):format_short_abs() ==
+       "03:00:00   0 ms")
+assert(rgt.ts(24 * 60 * 60, 0):format_short_abs() ==
+       "03:00:00   0 ms")
+assert(rgt.ts(23 * 60 * 60 + 59 * 60 + 59, 10 ^ 6 - 1):format_short_rel() ==
+       "23:59:59 999 ms")
+assert((rgt.ts(24 * 60 * 60, 0) - rgt.ts(0, 1)):format_short_rel() ==
+       "23:59:59 999 ms")
+assert((rgt.ts(10, 20000) - rgt.ts(5, 30000)):format_short_rel() ==
+       "00:00:04 990 ms")

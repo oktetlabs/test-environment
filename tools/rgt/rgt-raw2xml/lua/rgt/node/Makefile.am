@@ -1,5 +1,5 @@
 #
-# automake file for RGT raw2xml/lua directory
+# automake file for RGT raw2xml/lua/rgt directory
 # Process with automake
 #
 # Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
@@ -23,9 +23,15 @@
 # Author: Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
 #
 
-SUBDIRS = loop co rgt
+lua_rgt_nodedir = $(datadir)/lua/rgt/node
 
-luadir = $(datadir)/lua
-
-dist_lua_DATA = \
-    co.lua
+dist_lua_rgt_node_DATA = \
+    basic.lua               \
+    internal.lua            \
+    named.lua               \
+    package.lua             \
+    parametrized.lua        \
+    root.lua                \
+    session.lua             \
+    spanning.lua            \
+    test.lua

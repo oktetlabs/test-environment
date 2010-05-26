@@ -1,5 +1,5 @@
 ---
--- Chunked output module
+-- Report generation tool - parametrized node interface.
 --
 -- Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
 -- root directory of the distribution).
@@ -24,8 +24,18 @@
 -- @release $Id$
 --
 
-local co = {}
-co.manager  = require("co.manager")
-co.chunk    = require("co.chunk")
+local oo                = require("loop.base")
+local rgt               = {}
+rgt.node                = {}
+rgt.node.parametrized   = oo.class({
+                                    args    = nil,  -- {name, value} array
+                                   })
 
-return co
+function rgt.node.parametrized:__init(inst)
+    assert(type(inst) == "table")
+    assert(type(inst.args) == "table")
+
+    return oo.rawnew(self, inst)
+end
+
+return rgt.node.parametrized

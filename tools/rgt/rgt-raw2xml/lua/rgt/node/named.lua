@@ -1,5 +1,5 @@
 ---
--- Chunked output module
+-- Report generation tool - named node interface.
 --
 -- Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
 -- root directory of the distribution).
@@ -24,8 +24,22 @@
 -- @release $Id$
 --
 
-local co = {}
-co.manager  = require("co.manager")
-co.chunk    = require("co.chunk")
+local oo        = require("loop.base")
+local rgt       = {}
+rgt.node        = {}
+rgt.node.named  = oo.class({
+                            name        = nil,  --- Name string
+                            objective   = nil,  --- Objective string
+                            authors     = nil,  --- Author e-mail array
+                           })
 
-return co
+function rgt.node.named:__init(inst)
+    assert(type(inst) == "table")
+    assert(type(inst.name) == "string")
+    assert(type(inst.objective) == "string")
+    assert(type(inst.authors) == "table")
+
+    return oo.rawnew(self, inst)
+end
+
+return rgt.node.named
