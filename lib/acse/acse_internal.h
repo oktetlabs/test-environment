@@ -477,6 +477,15 @@ extern te_errno acse_enable_acs(acs_t *acs);
 extern te_errno acse_disable_acs(acs_t *acs);
 
 /**
+ * Disable CPE record to receipt CWMP sessions, clear cache.
+ *
+ * @param cpe           CPE record
+ *
+ * @return status code
+ */
+extern te_errno acse_disable_cpe(cpe_t *cpe);
+
+/**
  * Initiate CWMP Connection Request to specified CPE. 
  *
  * @param cpe_item      CPE

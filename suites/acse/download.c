@@ -59,7 +59,7 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
                                FALSE, TRUE, FALSE, &rpcs_acse));
 
-    CHECK_RC(tapi_acse_clear_acs(ta_acse, "A"));
+    CHECK_RC(tapi_acse_clear_cpe(ta_acse, "A", "box"));
 
     CHECK_RC(tapi_acse_manage_acs(ta_acse, "A", ACSE_OP_MODIFY,
           "http_root", "/home/konst/acse_http", VA_END_LIST));

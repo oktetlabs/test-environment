@@ -752,6 +752,9 @@ cwmp_new_session(int socket, acs_t *acs)
         return TE_ENOMEM;
 
     soap_init(&(new_sess->m_soap));
+    /* TODO: investigate more correct way to set version,
+       maybe specify correct SOAPENV in namespaces .. */
+    new_sess->m_soap.version = 1;
 
     if (acs->ssl)
     {
@@ -900,17 +903,25 @@ acse_disable_acs(acs_t *acs)
     /* Now stop active CWMP sessions, if any, and clear all caches */
     LIST_FOREACH(cpe_item, &(acs->cpe_list), links)
     {
-        if (cpe_item->session)
-        {
-            cwmp_force_stop_session(cpe_item->session);
-            cpe_item->session = NULL;
-            db_clear_cpe(cpe_item);
-        }
+        acse_disable_cpe(cpe_item);
     }
 
     return 0;
 }
 
+/* See description in acse_internal.h */
+te_errno
+acse_disable_cpe(cpe_t *cpe)
+{
+    if (cpe->session)
+    {
+        cwmp_force_stop_session(cpe->session);
+        cpe->session = NULL;
+    }
+    db_clear_cpe(cpe);
+    cpe->enabled = FALSE;
+    return 0;
+}
 
 /**
  * Put CWMP data into gSOAP buffer.
@@ -938,6 +949,9 @@ acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
                             request->to_cpe.get_parameter_values,
                             "cwmp:GetParameterValues", "");
         case CWMP_RPC_get_parameter_names:
+            RING("%s(): send GetParameterNames for '%s'",
+                __FUNCTION__,
+                request->to_cpe.get_parameter_names->ParameterPath[0]);
             return soap_put__cwmp__GetParameterNames(soap, 
                             request->to_cpe.get_parameter_names,
                             "cwmp:GetParameterNames", "");

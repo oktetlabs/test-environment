@@ -140,6 +140,19 @@ extern te_errno tapi_acse_manage_cpe(const char *ta,
 extern te_errno tapi_acse_clear_acs(const char *ta, const char *acs_name);
 
 /**
+ * Clear CWMP activity and its cache on CPE object on the ACSE.
+ *
+ * @param ta            Test Agent name;
+ * @param acs_name      Name of ACS object within @p ta ACSE;
+ * @param cpe_name      Name of CPE record within @p ta ACSE;
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_clear_cpe(const char *ta,
+                                    const char *acs_name,
+                                    const char *cpe_name);
+
+/**
  * Wait for particular state of CWMP session with specified CPE on ACSE.
  *
  * @param ta            Test Agent name;

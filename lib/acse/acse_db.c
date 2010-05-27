@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "ACSE internal DB"
+
 #include "te_config.h"
 
 #if HAVE_SYS_TYPES_H
@@ -114,6 +116,7 @@ db_add_cpe(const char *acs_name, const char *cpe_name)
     memset(cpe_item, 0, sizeof(*cpe_item));
     cpe_item->name = strdup(cpe_name);
     cpe_item->acs = acs_item;
+    cpe_item->enabled = TRUE;
 
     TAILQ_INIT(&(cpe_item->rpc_queue));
     TAILQ_INIT(&(cpe_item->rpc_results));

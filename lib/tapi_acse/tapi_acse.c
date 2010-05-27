@@ -76,6 +76,8 @@ acse_is_int_var(const char *name)
          (0 == strcmp(name, "ssl"))      ||
          (0 == strcmp(name, "enabled"))  ||
          (0 == strcmp(name, "cr_state")) ||
+         (0 == strcmp(name, "sync_mode")) ||
+         (0 == strcmp(name, "hold_requests")) ||
          (0 == strcmp(name, "cwmp_state"))  );
 }
 
@@ -198,6 +200,22 @@ tapi_acse_clear_acs(const char *ta_acse, const char *acs_name)
     return rc;
 }
 
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_clear_cpe(const char *ta_acse, 
+                    const char *acs_name, const char *cpe_name)
+{
+    te_errno rc;
+    rc = tapi_acse_manage_cpe(ta_acse, acs_name, cpe_name,
+                              ACSE_OP_MODIFY,
+                              "enabled", FALSE, VA_END_LIST);
+    if (0 == rc)
+        rc = tapi_acse_manage_cpe(ta_acse, acs_name, cpe_name,
+                                  ACSE_OP_MODIFY,
+                                  "enabled", TRUE, VA_END_LIST);
+    return rc;
+}
 
 
 

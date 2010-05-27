@@ -237,9 +237,16 @@ cpe_enabled(cpe_t *cpe, acse_epc_config_data_t *params)
         sprintf(params->value, "%i", cpe->enabled);
         return 0;
     }
+    else
+    {
+        int new_value = atoi(params->value);
 
-    /* TODO check if new value is FALSE, stop current session if it is. */
-    cpe->enabled = atoi(params->value);
+        if (new_value && !cpe->enabled)
+            cpe->enabled = TRUE;
+
+        if (!new_value && cpe->enabled)
+            acse_disable_cpe(cpe);
+    }
     return 0;
 }
 
@@ -853,7 +860,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             te_bool need_call = FALSE;
             /* Insert RPC to queue, ACSE will deliver it during first
                established CWMP session with CPE. */
-            cpe_rpc_item_t *rpc_item = malloc(sizeof(*rpc_item));
+            cpe_rpc_item_t *rpc_item = calloc(1, sizeof(*rpc_item));
             rpc_item->params = cwmp_pars;
             rpc_item->index = cwmp_pars->index = ++cpe->last_queue_index;
 
@@ -1023,7 +1030,7 @@ epc_after_poll(void *data, struct pollfd *pfd)
     }
     else if (msg == NULL || msg->data.p == NULL)
     {
-        ERROR("%s(): NULL in 'msg' after 'epc_recv'", 
+        ERROR("%s(): NULL in 'msg' after success 'epc_recv'", 
               __FUNCTION__);
         return TE_RC(TE_ACSE, TE_EFAIL);
     }

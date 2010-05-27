@@ -160,13 +160,14 @@ conn_req_destroy(void *data)
     conn_req_t *conn_req = data;
 
     soap_end(&(conn_req->m_soap));
+    soap_done(&(conn_req->m_soap));
     free(conn_req);
     return 0;
 }
 
 
 /* see description in acse_internal.h */
-extern te_errno
+te_errno
 acse_init_connection_request(cpe_t *cpe_item)
 {
     conn_req_t *conn_req_data = malloc(sizeof(*conn_req_data));
@@ -178,6 +179,7 @@ acse_init_connection_request(cpe_t *cpe_item)
 
     soap_init(&(conn_req_data->m_soap));
     soap = &(conn_req_data->m_soap);
+    soap->version = 1;
 
     soap_register_plugin(soap, http_da);
 

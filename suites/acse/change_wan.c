@@ -40,6 +40,7 @@ main(int argc, char *argv[])
 {
     int r;
     int call_index;
+    cwmp_sess_state_t cwmp_state = 0;
     _cwmp__GetParameterNames            get_names;
     _cwmp__GetParameterNamesResponse   *get_names_resp;
     _cwmp__GetParameterValues           get_values;
@@ -48,7 +49,7 @@ main(int argc, char *argv[])
     _cwmp__SetParameterValuesResponse  *set_values_resp;
 
     char *param_path = 
-            "InternaetGatewayDevice.WANDevice.1.WANConnectionDevice."
+            "InternetGatewayDevice.WANDevice.1.WANConnectionDevice."
             "1.WANIPConnection.";
     char *wan_ip_conn_path;
 
@@ -63,7 +64,7 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
                                FALSE, TRUE, FALSE, &rpcs_acse));
 
-    CHECK_RC(tapi_acse_clear_acs(ta_acse, "A"));
+    CHECK_RC(tapi_acse_clear_cpe(ta_acse, "A", "box"));
 
     CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_MODIFY,
           "sync_mode", 1, VA_END_LIST));
@@ -86,8 +87,14 @@ main(int argc, char *argv[])
 
     RING("GetParNames queued with index %d", call_index);
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_names_resp(rpcs_acse, "A", "box",
-                          10, call_index, &get_names_resp));
+    te_rc = tapi_acse_cpe_get_parameter_names_resp(rpcs_acse, "A", "box",
+                          10, call_index, &get_names_resp);
+    if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
+    {
+        _cwmp__Fault *f = (_cwmp__Fault *)get_names_resp;
+        TEST_FAIL("CWMP Fault received: %s(%s)",
+                    f->FaultCode, f->FaultString);
+    }
 
     if (get_names_resp == NULL)
     {
@@ -104,14 +111,45 @@ main(int argc, char *argv[])
 
     /* TODO: make good TAPI for it.. */
     {
+        struct ParameterNames par_names;
+        char **names_array = calloc(1, sizeof(char*));
+        par_names.__size = 1;
+        par_names.__ptrstring = names_array;
+        names_array[0] = calloc(256, 1);
+        sprintf(names_array[0],
+                "%s%s", wan_ip_conn_path, "ExternalIPAddress");
+        get_values.ParameterNames_ = &par_names;
+
+        CHECK_RC(tapi_acse_cpe_get_parameter_values(rpcs_acse, "A", "box",
+                                        &get_values, &call_index));
+        te_rc = tapi_acse_cpe_get_parameter_values_resp(
+                rpcs_acse, "A", "box", 20, call_index, &get_values_resp);
+        if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
+        {
+            _cwmp__Fault *f = (_cwmp__Fault *)set_values_resp;
+            ERROR("CWMP Fault received: %s(%s)",
+                    f->FaultCode, f->FaultString);
+            TEST_FAIL("GetParameterValues failed");
+        }
+        RING("GetParamValues [0] resp: %s = %s", 
+            get_values_resp ->ParameterList->
+                    __ptrParameterValueStruct[0]->Name,
+            get_values_resp ->ParameterList->
+                    __ptrParameterValueStruct[0]->Value);
+    }
+
+    /* TODO: make good TAPI for it.. */
+    {
         struct ParameterValueList par_list;
         struct cwmp__ParameterValueStruct par_array[] = 
         {
-            {".AddressingType", "Static"},
-            {".ExternalIPAddress", "10.20.1.3"},
-            {".SubnetMask", "255.255.255.0"},
-            {".DefaultGateway", "10.20.1.1"},
-            {".DNSServers", "10.20.1.1"},
+            {"ExternalIPAddress", "10.20.1.3"},
+#if 0
+            {"AddressingType", "Static"},
+            {"SubnetMask", "255.255.255.0"},
+            {"DefaultGateway", "10.20.1.1"},
+            {"DNSServers", "10.20.1.1"},
+#endif
         };
         size_t sz = sizeof(par_array) / sizeof(par_array[0]);
         unsigned i;
@@ -133,21 +171,44 @@ main(int argc, char *argv[])
 
         CHECK_RC(tapi_acse_cpe_set_parameter_values(rpcs_acse, "A", "box",
                                         &set_values, &call_index));
-        CHECK_RC(tapi_acse_cpe_set_parameter_values_resp(
-                rpcs_acse, "A", "box", 20, call_index, &set_values_resp));
+
+        te_rc = tapi_acse_cpe_set_parameter_values_resp(
+                rpcs_acse, "A", "box", 20, call_index, &set_values_resp);
+        if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
+        {
+            _cwmp__Fault *f = (_cwmp__Fault *)set_values_resp;
+            size_t f_s = f->__sizeSetParameterValuesFault;
+            size_t i;
+
+
+            ERROR("CWMP Fault received: %s(%s), arr len %d",
+                    f->FaultCode, f->FaultString, (int)f_s);
+            for (i = 0; i < f_s; i++)
+                ERROR("SetValue Fault [%d], Name '%s', Err %s(%s)",
+                    (int)i,
+                    f->SetParameterValuesFault[i].ParameterName,
+                    f->SetParameterValuesFault[i].FaultCode,
+                    f->SetParameterValuesFault[i].FaultString);
+            
+            TEST_FAIL("SetParameterValues failed, see details above.");
+        }
     }
 
-    /* We are in sync mode, terminate CWMP session manually. */
-    CHECK_RC(tapi_acse_cpe_disconnect(rpcs_acse, "A", "box"));
 
-    CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_MODIFY,
-          "sync_mode", 0, VA_END_LIST));
 
     TEST_SUCCESS;
 
-    return result;
-
 cleanup:
+    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
+                ACSE_OP_OBTAIN, "cwmp_state", &cwmp_state, VA_END_LIST));
+    if (cwmp_state != CWMP_NOP)
+        CLEANUP_CHECK_RC(tapi_acse_cpe_disconnect(rpcs_acse, "A", "box"));
+
+    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
+                ACSE_OP_MODIFY, "sync_mode", FALSE, VA_END_LIST));
+
+    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
+                ACSE_OP_MODIFY, "enabled", FALSE, VA_END_LIST));
 
     TEST_END;
 }

@@ -344,6 +344,8 @@ te_cwmp_pack__GetParameterNames(const _cwmp__GetParameterNames *src,
     if (NULL != src->ParameterPath)
     {
         dst->ParameterPath = msg;
+        msg += sizeof(void*);
+        packed_length += sizeof(void*);
 
         CWMP_PACK_LEAF(string, ParameterPath[0]);
 

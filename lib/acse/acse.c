@@ -163,8 +163,11 @@ acse_loop(void)
                     if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
                         WARN("acse_loop, error on channel, rc %r", rc);
                     acse_remove_channel(item);
-                    break; /* from LIST_FOREACH */
                 }
+                /* Leave loop LIST_FOREACH: occured event can change 
+                   channel_list itself, and array pfd and list could 
+                   become inconsistant. */
+                break; 
             }
 
 #if 0
