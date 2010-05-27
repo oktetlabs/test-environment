@@ -1,8 +1,5 @@
 basic
-    id
-    parent_id
     chunk
-    depth
     log(ts, lvl, entity, user, text)
 
 spanning
@@ -18,16 +15,20 @@ named
     authors
 
 internal [basic]
-    children
-    add_child(id, child)
-    del_child(id)
+    child
+    add_child(child)
+    del_child(child)
+
+branching [internal]
+    branches
+    add_child(child)
+    del_child(child)
 
 root [internal]
-    add_child(id, child)    - with restriction of one child max
 
-package [internal, named, parametrized, spanning]
+package [branching, named, parametrized, spanning]
 
-session [internal, parametrized, spanning]
+session [branching, parametrized, spanning]
 
 test [basic, named, parametrized, spanning]
     tin

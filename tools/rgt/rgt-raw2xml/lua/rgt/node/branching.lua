@@ -40,10 +40,9 @@ function rgt.node.branching:start()
 
     -- Create main branch
     branch = rgt.node.branch({})
-    table.insert(self.branches, branch)
-    branch:grab_chunk(self.tail_chunk:fork_prev())
-    branch:start()
     self.branches = {branch}
+    rgt.node.internal.add_child(self.branch)
+    branch:start()
 end
 
 function rgt.node.branching:add_child(node)
@@ -64,17 +63,20 @@ function rgt.node.branching:add_child(node)
         -- Create new branch
         branch = rgt.node.branch({})
         table.insert(self.branches, branch)
-        branch:grab_chunk(self.tail_chunk:fork_prev())
+        -- If we have no child
+        if self:get_child() == nil then
+            -- Make the branch our child
+            rgt.node.internal.add_child(self, branch)
+        else
+            -- Give the branch a chunk at the end
+            branch:grab_chunk(self.tail_chunk:fork_prev():descend())
+        end
+        -- Start the branch
         branch:start()
     end
 
     -- Add the child to the branch
     branch:add_child(node)
-
-    -- Make it our child, if there was none before
-    if self:get_child() == nil then
-        rgt.node.internal.add_child(self, branch)
-    end
 end
 
 function rgt.node.branching:del_child(node)

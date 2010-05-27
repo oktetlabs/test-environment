@@ -74,43 +74,47 @@ function rgt.node.test:start(chunk)
     self.tail_chunk = self.chunk:fork_next()
 end
 
-function rgt.node.test:finish_head()
-    local d = self.depth
-    local c = self.head_chunk
+function rgt.node.test:finish(ts, result, err)
+    rgt.node.spanning:finish(self, ts, result, err)
+    rgt.node.branching:finish(self)
 
-    c:write((" "):rep(d))
-    c:write(("<test name=\"%s\" result=\"%s\" err=\"%s\">\n"):
-                format(self.name, self.result, self.err))
-    d = d + 1
-    c:write((" "):rep(d))
-    c:write("<meta>\n")
-    d = d + 1
-    c:write((" "):rep(d))
-    c:write(("<start-ts>%s</start-ts>\n"):format(self.start:format_short_abs()))
-    c:write((" "):rep(d))
-    c:write(("<end-ts>%s</end-ts>\n"):format(self["end"]:format_short_abs()))
-    c:write((" "):rep(d))
-    c:write(("<duration>%s</duration>\n"):
-                format((self["end"] - self.start):format_short_rel()))
-    c:finish()
+    self.head_chunk:start_tag("test",
+                              {name = self.name,
+                               result = self.result,
+                               err = self.err}):
+                    start_tag("meta"):
+                    element("start-ts", nil, self.start:format_short_abs()):
+                    element("end-ts", nil, self["end"]:format_short_abs()):
+                    element("duration", nil,
+                            (self["end"] - self.start):format_short_rel()):
+                    element("objective", nil, self.objective)
+
+    if #self.authors > 0 then
+        self.head_chunk:start_tag("authors")
+        for i, a in self.authors do
+            self.head_chunk:element("author", {email = a})
+        end
+        self.head_chunk:end_tag("authors"):
+    end
+
+    if #self.args > 0 then
+        self.head_chunk:start_tag("params")
+        for i, a in self.args do
+            self.head_chunk:element("param", {name = a[1], value = a[2]})
+        end
+        self.head_chunk:end_tag("params")
+    end
+
+    if #self.verdicts > 0 then
+        self.head_chunk:start_tag("verdicts")
+        for i, v in self.verdicts do
+            self.head_chunk:element("verdict", nil, v)
+        end
+        self.head_chunk:end_tag("verdicts"):
+    end
+
+    self.head_chunk:end_tag("meta")
+    self.tail_chunk:end_tag("test")
 end
 
-function rgt.node.test:finish(ts, result, err)
-    local head_chunk
-    local tail_chunk
-
-    assert(self.chunk ~= nil)
-
-    rgt.node.spanning.finish(self, ts, result, err)
-    rgt.node.basic.finish(self):finish()
-
-    self:finish_head()
-    self.head_chunk = nil
-
-    tail_chunk = self.tail_chunk
-    self.tail_chunk = nil
-    tail_chunk:write((" "):rep(self.depth))
-    tail_chunk:write("</test>\n")
-
-    return tail_chunk
 return rgt.node.test

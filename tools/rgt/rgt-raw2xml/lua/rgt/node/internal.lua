@@ -36,9 +36,8 @@ rgt.node.internal   = oo.class({
 
 function rgt.node.internal:grab_chunk(chunk)
     self.head_chunk = chunk
-    chunk = self.head_chunk:fork_next()
     self.tail_chunk = chunk:fork_next()
-    rgt.node.basic.grab_chunk(self, chunk)
+    rgt.node.basic.grab_chunk(self, self.tail_chunk:fork_prev():descend())
 end
 
 function rgt.node.internal:yield_chunk(chunk)
@@ -46,7 +45,7 @@ function rgt.node.internal:yield_chunk(chunk)
 
     self.head_chunk:finish()
     self.head_chunk = nil
-    rgt.node.basic.yield_chunk():finish()
+    rgt.node.basic.yield_chunk(self):finish()
     self.tail_chunk = nil
 
     return chunk

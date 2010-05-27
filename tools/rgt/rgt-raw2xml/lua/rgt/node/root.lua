@@ -29,24 +29,23 @@ local rgt           = {}
 rgt.msg             = require("rgt.msg")
 rgt.node            = {}
 rgt.node.internal   = require("rgt.node.internal")
-rgt.node.root       = oo.class({
-                               }, rgt.node.internal)
+rgt.node.root       = oo.class({}, rgt.node.internal)
 
-function rgt.node.root:__init(inst)
-    assert(type(inst) == "table")
-    assert(inst.parent_id = nil)
+function rgt.node.root:start()
+    assert(self.chunk ~= nil)
 
-    rgt.node.internal:__init(inst)
-
-    return oo.rawnew(self, inst)
+    self.chunk:write("<?xml version="1.0"?>\n")
+    self.chunk.start_tag("proteos:log_report",
+                         {"xmlns:proteos" =
+                          "http://www.oktetlabs.ru/proteos"})
+    rgt.node.basic.start(self)
 end
 
-function rgt.node.root:add_child(id, node)
-    assert(id ~= nil)
-    assert(oo.instanceof(node, rgt.node.basic))
-    assert(self.children[1] == nil)
+function rgt.node.root:finish()
+    assert(self.chunk ~= nil)
 
-    rgt.node.internal.add_child(self, id, node)
+    rgt.node.basic.finish(self)
+    self.chunk.end_tag("proteos:log_report")
 end
 
 return rgt.node.root

@@ -38,9 +38,9 @@ rgt.node.spanning   = oo.class({
 function rgt.node.spanning:__init(inst)
     assert(type(inst) == "table")
     assert(oo.instanceof(inst.start, rgt.ts))
-    assert(inst.end == nil or
-           oo.instanceof(inst.end, rgt.ts) and
-           inst.start <= inst.end)
+    assert(inst.end == nil)
+    assert(inst.result == nil)
+    assert(inst.err == nil)
 
     return oo.rawnew(self, inst)
 end
@@ -49,7 +49,7 @@ function rgt.node.spanning:finish(ts, result, err)
     assert(oo.instanceof(ts, rgt.ts))
     assert(ts >= self.start)
     assert(type(result) == "string")
-    assert(err == nil or type(err) == "string")
+    assert(type(err) == "string")
 
     self["end"] = ts
     self.result = result

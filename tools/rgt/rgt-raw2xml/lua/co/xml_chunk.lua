@@ -88,6 +88,17 @@ function co.xml_chunk:fork_next()
 end
 
 
+function co.xml_chunk:descend()
+    self.depth = self.depth + 1
+    return self
+end
+
+function co.xml_chunk:ascend()
+    assert(self.depth > 0)
+    self.depth = self.depth - 1
+    return self
+end
+
 local function format_attrs(attrs)
     local str   = ""
 
@@ -141,35 +152,33 @@ function co.xml_chunk:start_tag(name, attrs)
     assert(type(name) == "string")
     assert(attrs == nil or type(attrs) == "table")
 
-    self:write((" "):rep(self.depth) ..
-               format_start_tag(name, attrs) .. "\n")
-    self.depth = self.depth + 1
+    return self:write((" "):rep(self.depth) ..
+                      format_start_tag(name, attrs) .. "\n"):descend()
 end
 
 function co.xml_chunk:end_tag(name)
     assert(type(name) == "string")
 
-    self:write((" "):rep(self.depth) ..
-               format_end_tag(name) .. "\n")
-    self.depth = self.depth - 1
+    return self:write((" "):rep(self.depth) ..
+                      format_end_tag(name) .. "\n"):ascend()
 end
 
 function co.xml_chunk:empty_tag(name, attrs)
     assert(type(name) == "string")
     assert(attrs == nil or type(attrs) == "table")
 
-    self:write((" "):rep(self.depth) ..
-               format_empty_tag(name, attrs) .. "\n")
+    return self:write((" "):rep(self.depth) ..
+                      format_empty_tag(name, attrs) .. "\n")
 end
 
 function co.xml_chunk:cdata(text)
     assert(type(text) == "string")
 
-    self:write(format_cdata(text):
-               -- indent
-               gsub("\n", "%0" .. (" "):rep(self.depth)):
-               -- add newline if necessary
-               gsub("[^\n]$", "%0\n"))
+    return self:write(format_cdata(text):
+                      -- indent
+                      gsub("\n", "%0" .. (" "):rep(self.depth)):
+                      -- add newline if necessary
+                      gsub("[^\n]$", "%0\n"))
 end
 
 function co.xml_chunk:element(name, attrs, text)
@@ -187,7 +196,7 @@ function co.xml_chunk:element(name, attrs, text)
             format_end_tag(name)
     end
 
-    self:write((" "):rep(self.depth) .. e .. "\n")
+    return self:write((" "):rep(self.depth) .. e .. "\n")
 end
 
 return co.xml_chunk

@@ -162,6 +162,7 @@ end
 function co.chunk:finish()
     self.finished = true
     self.manager:finished(self)
+    return self
 end
 
 ---
