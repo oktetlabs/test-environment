@@ -23,7 +23,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  * 
- * $Id: acse.c 64029 2010-04-27 12:06:01Z konst $
+ * $Id$
  */
 
 

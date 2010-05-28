@@ -23,7 +23,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  * 
- * $Id: acse.c 64029 2010-04-27 12:06:01Z konst $
+ * $Id$
  */
 
 
@@ -199,6 +199,13 @@ main(int argc, char *argv[])
     TEST_SUCCESS;
 
 cleanup:
+    {
+        int cr_state;
+    tapi_acse_manage_cpe(ta_acse, "A", "box",
+                ACSE_OP_OBTAIN, "cr_state", &cr_state, VA_END_LIST);
+        RING("CHECK cr_state: %d", cr_state);
+    }
+
     CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
                 ACSE_OP_OBTAIN, "cwmp_state", &cwmp_state, VA_END_LIST));
     if (cwmp_state != CWMP_NOP)
@@ -206,9 +213,6 @@ cleanup:
 
     CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
                 ACSE_OP_MODIFY, "sync_mode", FALSE, VA_END_LIST));
-
-    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
-                ACSE_OP_MODIFY, "enabled", FALSE, VA_END_LIST));
 
     TEST_END;
 }
