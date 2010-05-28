@@ -29,7 +29,7 @@ MY_DEPS = \
 
 noinst_HEADERS = acse_suite.h
 
-tetest_PROGRAMS = prologue epilogue acse download change_wan
+tetest_PROGRAMS = prologue epilogue acse download set_param change_wan
 
 prologue_SOURCES = prologue.c
 prologue_LDADD = $(MY_LDADD)
@@ -38,6 +38,10 @@ prologue_DEPENDENCIES = $(MY_DEPS)
 acse_SOURCES = acse.c
 acse_LDADD = $(MY_LDADD)
 acse_DEPENDENCIES = $(MY_DEPS)
+
+set_param_SOURCES = set_param.c
+set_param_LDADD = $(MY_LDADD)
+set_param_DEPENDENCIES = $(MY_DEPS)
 
 download_SOURCES = download.c
 download_LDADD = $(MY_LDADD)
