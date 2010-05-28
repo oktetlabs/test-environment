@@ -59,6 +59,12 @@
     <object oid="/agent/acse/acs/url" access="read_write"
             type="string"/>
 
+    <!-- HTTP root dir for HTTP GET to ACS  from CPE.
+         Name: none
+         Value: URL -->
+    <object oid="/agent/acse/acs/http_root" access="read_write"
+            type="string"/>
+
     <!-- Authenticate algorithm used for particular ACS.
          Name: none
          Value: "noauth" | "basic" | "digest" -->
