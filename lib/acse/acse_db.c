@@ -241,8 +241,9 @@ db_remove_cpe(cpe_t *cpe)
 
     if (cpe->session != NULL || cpe->cr_state != CR_NONE)
     {
-        WARN("attempt to remove busy CPE record '%s/%s'",
-             cpe->acs->name, cpe->name);
+        WARN("attempt to remove busy CPE record '%s/%s', "
+              "session %p, cr state %d",
+             cpe->acs->name, cpe->name, cpe->session, (int)cpe->cr_state);
         return TE_EBUSY;
     }
 

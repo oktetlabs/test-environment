@@ -60,10 +60,10 @@
 /** XML namespaces for gSOAP */
 SOAP_NMAC struct Namespace namespaces[] =
 {
-    {"SOAP-ENC", "http://schemas.xmlsoap.org/soap/encoding/",
-                "http://www.w3.org/*/soap-encoding", NULL},
     {"SOAP-ENV", "http://schemas.xmlsoap.org/soap/envelope/",
                 "http://www.w3.org/*/soap-envelope", NULL},
+    {"SOAP-ENC", "http://schemas.xmlsoap.org/soap/encoding/",
+                "http://www.w3.org/*/soap-encoding", NULL},
     {"xsi", "http://www.w3.org/2001/XMLSchema-instance",
                 "http://www.w3.org/*/XMLSchema-instance", NULL},
     {"xsd", "http://www.w3.org/2001/XMLSchema",
@@ -842,7 +842,7 @@ cwmp_new_session(int socket, acs_t *acs)
 te_errno 
 cwmp_close_session(cwmp_session_t *sess)
 {
-    INFO("close cwmp session");
+    RING("close cwmp session");
 
     /* TODO: investigate, what else should be closed.. */
 
@@ -1051,6 +1051,8 @@ int
 acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 {
     acse_epc_cwmp_data_t *request;
+    cpe_rpc_item_t       *rpc_item;
+
     cpe_t *cpe = session->cpe_owner;
 
     if (TAILQ_EMPTY(&cpe->rpc_queue) && cpe->sync_mode)
@@ -1059,10 +1061,13 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
         session->state = CWMP_PENDING;
         return 0; 
     }
+    rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
+
+    /* TODO add check, whether HoldRequests was set on */
+
     if (TAILQ_EMPTY(&cpe->rpc_queue) || 
-        CWMP_RPC_NONE == (TAILQ_FIRST(&cpe->rpc_queue))->params->rpc_cpe)
+        CWMP_RPC_NONE == rpc_item->params->rpc_cpe)
     {
-        /* TODO add check, whether HoldRequests was set on */
 
         RING("CPE '%s', empty list of RPC calls, response 204, terminate",
              cpe->name);
@@ -1072,13 +1077,16 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
         soap_response(soap, 204);
         soap_end_send(soap);
         session->state = CWMP_SERVE;
+        if (rpc_item != NULL)
+            TAILQ_REMOVE(&cpe->rpc_queue, rpc_item, links);
         return 0;
     }
-    session->rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
-    session->rpc_item->heap = mheap_create(session->rpc_item);
-    mheap_add_user(session->rpc_item->heap, session);
+    session->rpc_item = rpc_item;
 
-    request = session->rpc_item->params;
+    rpc_item->heap = mheap_create(session->rpc_item);
+    mheap_add_user(rpc_item->heap, session);
+
+    request = rpc_item->params;
 
     RING("%s(): Try send RPC for '%s', rpc type %d, ind %d ",
          __FUNCTION__, cpe->name, request->rpc_cpe, request->index);
@@ -1135,9 +1143,9 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     }
     session->state = CWMP_WAIT_RESPONSE;
 
-    TAILQ_REMOVE(&cpe->rpc_queue, session->rpc_item, links);
+    TAILQ_REMOVE(&cpe->rpc_queue, rpc_item, links);
 
-    TAILQ_INSERT_TAIL(&cpe->rpc_results, session->rpc_item, links);
+    TAILQ_INSERT_TAIL(&cpe->rpc_results, rpc_item, links);
 
     return 0;
 }
