@@ -57,7 +57,7 @@ SOAP_FMAC3 unsigned int * SOAP_FMAC4 soap_get_unsignedInt(struct soap*, unsigned
 SOAP_FMAC3 unsigned int * SOAP_FMAC4 soap_in_unsignedInt(struct soap*, const char*, unsigned int *, const char*);
 
 #ifndef SOAP_TYPE_time
-#define SOAP_TYPE_time (96)
+#define SOAP_TYPE_time (98)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default_time(struct soap*, time_t *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_time(struct soap*, const time_t *, const char*, const char*);
@@ -66,7 +66,7 @@ SOAP_FMAC3 time_t * SOAP_FMAC4 soap_get_time(struct soap*, time_t *, const char*
 SOAP_FMAC3 time_t * SOAP_FMAC4 soap_in_time(struct soap*, const char*, time_t *, const char*);
 
 #ifndef SOAP_TYPE__cwmp__UploadResponse_Status
-#define SOAP_TYPE__cwmp__UploadResponse_Status (114)
+#define SOAP_TYPE__cwmp__UploadResponse_Status (116)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__UploadResponse_Status(struct soap*, enum _cwmp__UploadResponse_Status *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__UploadResponse_Status(struct soap*, const enum _cwmp__UploadResponse_Status *, const char*, const char*);
@@ -79,7 +79,7 @@ SOAP_FMAC3 enum _cwmp__UploadResponse_Status * SOAP_FMAC4 soap_in__cwmp__UploadR
 SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__UploadResponse_Status(struct soap*, const char*, enum _cwmp__UploadResponse_Status *);
 
 #ifndef SOAP_TYPE__cwmp__DownloadResponse_Status
-#define SOAP_TYPE__cwmp__DownloadResponse_Status (110)
+#define SOAP_TYPE__cwmp__DownloadResponse_Status (112)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DownloadResponse_Status(struct soap*, enum _cwmp__DownloadResponse_Status *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DownloadResponse_Status(struct soap*, const enum _cwmp__DownloadResponse_Status *, const char*, const char*);
@@ -92,7 +92,7 @@ SOAP_FMAC3 enum _cwmp__DownloadResponse_Status * SOAP_FMAC4 soap_in__cwmp__Downl
 SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__DownloadResponse_Status(struct soap*, const char*, enum _cwmp__DownloadResponse_Status *);
 
 #ifndef SOAP_TYPE__cwmp__DeleteObjectResponse_Status
-#define SOAP_TYPE__cwmp__DeleteObjectResponse_Status (109)
+#define SOAP_TYPE__cwmp__DeleteObjectResponse_Status (111)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DeleteObjectResponse_Status(struct soap*, enum _cwmp__DeleteObjectResponse_Status *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DeleteObjectResponse_Status(struct soap*, const enum _cwmp__DeleteObjectResponse_Status *, const char*, const char*);
@@ -105,7 +105,7 @@ SOAP_FMAC3 enum _cwmp__DeleteObjectResponse_Status * SOAP_FMAC4 soap_in__cwmp__D
 SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__DeleteObjectResponse_Status(struct soap*, const char*, enum _cwmp__DeleteObjectResponse_Status *);
 
 #ifndef SOAP_TYPE__cwmp__AddObjectResponse_Status
-#define SOAP_TYPE__cwmp__AddObjectResponse_Status (108)
+#define SOAP_TYPE__cwmp__AddObjectResponse_Status (110)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AddObjectResponse_Status(struct soap*, enum _cwmp__AddObjectResponse_Status *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AddObjectResponse_Status(struct soap*, const enum _cwmp__AddObjectResponse_Status *, const char*, const char*);
@@ -118,7 +118,7 @@ SOAP_FMAC3 enum _cwmp__AddObjectResponse_Status * SOAP_FMAC4 soap_in__cwmp__AddO
 SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__AddObjectResponse_Status(struct soap*, const char*, enum _cwmp__AddObjectResponse_Status *);
 
 #ifndef SOAP_TYPE__cwmp__SetParameterValuesResponse_Status
-#define SOAP_TYPE__cwmp__SetParameterValuesResponse_Status (103)
+#define SOAP_TYPE__cwmp__SetParameterValuesResponse_Status (105)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterValuesResponse_Status(struct soap*, enum _cwmp__SetParameterValuesResponse_Status *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterValuesResponse_Status(struct soap*, const enum _cwmp__SetParameterValuesResponse_Status *, const char*, const char*);
@@ -131,7 +131,7 @@ SOAP_FMAC3 enum _cwmp__SetParameterValuesResponse_Status * SOAP_FMAC4 soap_in__c
 SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__SetParameterValuesResponse_Status(struct soap*, const char*, enum _cwmp__SetParameterValuesResponse_Status *);
 
 #ifndef SOAP_TYPE__cwmp__OptionStruct_IsTransferable
-#define SOAP_TYPE__cwmp__OptionStruct_IsTransferable (98)
+#define SOAP_TYPE__cwmp__OptionStruct_IsTransferable (100)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_IsTransferable(struct soap*, enum _cwmp__OptionStruct_IsTransferable *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__OptionStruct_IsTransferable(struct soap*, const enum _cwmp__OptionStruct_IsTransferable *, const char*, const char*);
@@ -144,7 +144,7 @@ SOAP_FMAC3 enum _cwmp__OptionStruct_IsTransferable * SOAP_FMAC4 soap_in__cwmp__O
 SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_IsTransferable(struct soap*, const char*, enum _cwmp__OptionStruct_IsTransferable *);
 
 #ifndef SOAP_TYPE__cwmp__OptionStruct_Mode
-#define SOAP_TYPE__cwmp__OptionStruct_Mode (95)
+#define SOAP_TYPE__cwmp__OptionStruct_Mode (97)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_Mode(struct soap*, enum _cwmp__OptionStruct_Mode *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__OptionStruct_Mode(struct soap*, const enum _cwmp__OptionStruct_Mode *, const char*, const char*);
@@ -157,7 +157,7 @@ SOAP_FMAC3 enum _cwmp__OptionStruct_Mode * SOAP_FMAC4 soap_in__cwmp__OptionStruc
 SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_Mode(struct soap*, const char*, enum _cwmp__OptionStruct_Mode *);
 
 #ifndef SOAP_TYPE__cwmp__OptionStruct_State
-#define SOAP_TYPE__cwmp__OptionStruct_State (94)
+#define SOAP_TYPE__cwmp__OptionStruct_State (96)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_State(struct soap*, enum _cwmp__OptionStruct_State *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__OptionStruct_State(struct soap*, const enum _cwmp__OptionStruct_State *, const char*, const char*);
@@ -170,7 +170,7 @@ SOAP_FMAC3 enum _cwmp__OptionStruct_State * SOAP_FMAC4 soap_in__cwmp__OptionStru
 SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_State(struct soap*, const char*, enum _cwmp__OptionStruct_State *);
 
 #ifndef SOAP_TYPE__cwmp__AllQueuedTransferStruct_State
-#define SOAP_TYPE__cwmp__AllQueuedTransferStruct_State (93)
+#define SOAP_TYPE__cwmp__AllQueuedTransferStruct_State (95)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AllQueuedTransferStruct_State(struct soap*, enum _cwmp__AllQueuedTransferStruct_State *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AllQueuedTransferStruct_State(struct soap*, const enum _cwmp__AllQueuedTransferStruct_State *, const char*, const char*);
@@ -183,7 +183,7 @@ SOAP_FMAC3 enum _cwmp__AllQueuedTransferStruct_State * SOAP_FMAC4 soap_in__cwmp_
 SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__AllQueuedTransferStruct_State(struct soap*, const char*, enum _cwmp__AllQueuedTransferStruct_State *);
 
 #ifndef SOAP_TYPE__cwmp__QueuedTransferStruct_State
-#define SOAP_TYPE__cwmp__QueuedTransferStruct_State (92)
+#define SOAP_TYPE__cwmp__QueuedTransferStruct_State (94)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__QueuedTransferStruct_State(struct soap*, enum _cwmp__QueuedTransferStruct_State *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__QueuedTransferStruct_State(struct soap*, const enum _cwmp__QueuedTransferStruct_State *, const char*, const char*);
@@ -196,7 +196,7 @@ SOAP_FMAC3 enum _cwmp__QueuedTransferStruct_State * SOAP_FMAC4 soap_in__cwmp__Qu
 SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__QueuedTransferStruct_State(struct soap*, const char*, enum _cwmp__QueuedTransferStruct_State *);
 
 #ifndef SOAP_TYPE__cwmp__ParameterAttributeStruct_Notification
-#define SOAP_TYPE__cwmp__ParameterAttributeStruct_Notification (91)
+#define SOAP_TYPE__cwmp__ParameterAttributeStruct_Notification (93)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__ParameterAttributeStruct_Notification(struct soap*, enum _cwmp__ParameterAttributeStruct_Notification *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ParameterAttributeStruct_Notification(struct soap*, const enum _cwmp__ParameterAttributeStruct_Notification *, const char*, const char*);
@@ -209,7 +209,7 @@ SOAP_FMAC3 enum _cwmp__ParameterAttributeStruct_Notification * SOAP_FMAC4 soap_i
 SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__ParameterAttributeStruct_Notification(struct soap*, const char*, enum _cwmp__ParameterAttributeStruct_Notification *);
 
 #ifndef SOAP_TYPE__cwmp__SetParameterAttributesStruct_Notification
-#define SOAP_TYPE__cwmp__SetParameterAttributesStruct_Notification (89)
+#define SOAP_TYPE__cwmp__SetParameterAttributesStruct_Notification (91)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterAttributesStruct_Notification(struct soap*, enum _cwmp__SetParameterAttributesStruct_Notification *);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterAttributesStruct_Notification(struct soap*, const enum _cwmp__SetParameterAttributesStruct_Notification *, const char*, const char*);
@@ -265,7 +265,7 @@ SOAP_FMAC3 struct SOAP_ENV__Reason * SOAP_FMAC4 soap_in_SOAP_ENV__Reason(struct 
 #ifndef WITH_NOGLOBAL
 
 #ifndef SOAP_TYPE_SOAP_ENV__Detail
-#define SOAP_TYPE_SOAP_ENV__Detail (169)
+#define SOAP_TYPE_SOAP_ENV__Detail (171)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Detail(struct soap*, struct SOAP_ENV__Detail *);
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Detail(struct soap*, const struct SOAP_ENV__Detail *);
@@ -279,7 +279,7 @@ SOAP_FMAC3 struct SOAP_ENV__Detail * SOAP_FMAC4 soap_in_SOAP_ENV__Detail(struct 
 #ifndef WITH_NOGLOBAL
 
 #ifndef SOAP_TYPE_SOAP_ENV__Code
-#define SOAP_TYPE_SOAP_ENV__Code (167)
+#define SOAP_TYPE_SOAP_ENV__Code (169)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Code(struct soap*, struct SOAP_ENV__Code *);
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Code(struct soap*, const struct SOAP_ENV__Code *);
@@ -293,7 +293,7 @@ SOAP_FMAC3 struct SOAP_ENV__Code * SOAP_FMAC4 soap_in_SOAP_ENV__Code(struct soap
 #ifndef WITH_NOGLOBAL
 
 #ifndef SOAP_TYPE_SOAP_ENV__Header
-#define SOAP_TYPE_SOAP_ENV__Header (164)
+#define SOAP_TYPE_SOAP_ENV__Header (166)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Header(struct soap*, struct SOAP_ENV__Header *);
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Header(struct soap*, const struct SOAP_ENV__Header *);
@@ -305,7 +305,7 @@ SOAP_FMAC3 struct SOAP_ENV__Header * SOAP_FMAC4 soap_in_SOAP_ENV__Header(struct 
 #endif
 
 #ifndef SOAP_TYPE___cwmp__Kicked
-#define SOAP_TYPE___cwmp__Kicked (163)
+#define SOAP_TYPE___cwmp__Kicked (165)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__Kicked(struct soap*, struct __cwmp__Kicked *);
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__Kicked(struct soap*, const struct __cwmp__Kicked *);
@@ -315,7 +315,7 @@ SOAP_FMAC3 struct __cwmp__Kicked * SOAP_FMAC4 soap_get___cwmp__Kicked(struct soa
 SOAP_FMAC3 struct __cwmp__Kicked * SOAP_FMAC4 soap_in___cwmp__Kicked(struct soap*, const char*, struct __cwmp__Kicked *, const char*);
 
 #ifndef SOAP_TYPE___cwmp__RequestDownload
-#define SOAP_TYPE___cwmp__RequestDownload (159)
+#define SOAP_TYPE___cwmp__RequestDownload (161)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__RequestDownload(struct soap*, struct __cwmp__RequestDownload *);
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__RequestDownload(struct soap*, const struct __cwmp__RequestDownload *);
@@ -325,7 +325,7 @@ SOAP_FMAC3 struct __cwmp__RequestDownload * SOAP_FMAC4 soap_get___cwmp__RequestD
 SOAP_FMAC3 struct __cwmp__RequestDownload * SOAP_FMAC4 soap_in___cwmp__RequestDownload(struct soap*, const char*, struct __cwmp__RequestDownload *, const char*);
 
 #ifndef SOAP_TYPE___cwmp__AutonomousTransferComplete
-#define SOAP_TYPE___cwmp__AutonomousTransferComplete (155)
+#define SOAP_TYPE___cwmp__AutonomousTransferComplete (157)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__AutonomousTransferComplete(struct soap*, struct __cwmp__AutonomousTransferComplete *);
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__AutonomousTransferComplete(struct soap*, const struct __cwmp__AutonomousTransferComplete *);
@@ -335,7 +335,7 @@ SOAP_FMAC3 struct __cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_get___cwm
 SOAP_FMAC3 struct __cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_in___cwmp__AutonomousTransferComplete(struct soap*, const char*, struct __cwmp__AutonomousTransferComplete *, const char*);
 
 #ifndef SOAP_TYPE___cwmp__TransferComplete
-#define SOAP_TYPE___cwmp__TransferComplete (151)
+#define SOAP_TYPE___cwmp__TransferComplete (153)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__TransferComplete(struct soap*, struct __cwmp__TransferComplete *);
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__TransferComplete(struct soap*, const struct __cwmp__TransferComplete *);
@@ -345,7 +345,7 @@ SOAP_FMAC3 struct __cwmp__TransferComplete * SOAP_FMAC4 soap_get___cwmp__Transfe
 SOAP_FMAC3 struct __cwmp__TransferComplete * SOAP_FMAC4 soap_in___cwmp__TransferComplete(struct soap*, const char*, struct __cwmp__TransferComplete *, const char*);
 
 #ifndef SOAP_TYPE___cwmp__Inform
-#define SOAP_TYPE___cwmp__Inform (147)
+#define SOAP_TYPE___cwmp__Inform (149)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__Inform(struct soap*, struct __cwmp__Inform *);
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__Inform(struct soap*, const struct __cwmp__Inform *);
@@ -355,7 +355,7 @@ SOAP_FMAC3 struct __cwmp__Inform * SOAP_FMAC4 soap_get___cwmp__Inform(struct soa
 SOAP_FMAC3 struct __cwmp__Inform * SOAP_FMAC4 soap_in___cwmp__Inform(struct soap*, const char*, struct __cwmp__Inform *, const char*);
 
 #ifndef SOAP_TYPE___cwmp__GetRPCMethods
-#define SOAP_TYPE___cwmp__GetRPCMethods (143)
+#define SOAP_TYPE___cwmp__GetRPCMethods (145)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__GetRPCMethods(struct soap*, struct __cwmp__GetRPCMethods *);
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__GetRPCMethods(struct soap*, const struct __cwmp__GetRPCMethods *);
@@ -365,7 +365,7 @@ SOAP_FMAC3 struct __cwmp__GetRPCMethods * SOAP_FMAC4 soap_get___cwmp__GetRPCMeth
 SOAP_FMAC3 struct __cwmp__GetRPCMethods * SOAP_FMAC4 soap_in___cwmp__GetRPCMethods(struct soap*, const char*, struct __cwmp__GetRPCMethods *, const char*);
 
 #ifndef SOAP_TYPE__cwmp__Fault_SetParameterValuesFault
-#define SOAP_TYPE__cwmp__Fault_SetParameterValuesFault (99)
+#define SOAP_TYPE__cwmp__Fault_SetParameterValuesFault (101)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Fault_SetParameterValuesFault(struct soap*, struct _cwmp__Fault_SetParameterValuesFault *);
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Fault_SetParameterValuesFault(struct soap*, const struct _cwmp__Fault_SetParameterValuesFault *);
@@ -1123,7 +1123,7 @@ SOAP_FMAC3 struct SOAP_ENV__Detail ** SOAP_FMAC4 soap_in_PointerToSOAP_ENV__Deta
 #ifndef WITH_NOGLOBAL
 
 #ifndef SOAP_TYPE_PointerToSOAP_ENV__Code
-#define SOAP_TYPE_PointerToSOAP_ENV__Code (168)
+#define SOAP_TYPE_PointerToSOAP_ENV__Code (170)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSOAP_ENV__Code(struct soap*, struct SOAP_ENV__Code *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENV__Code(struct soap*, struct SOAP_ENV__Code *const*, const char*, const char*);
@@ -1134,7 +1134,7 @@ SOAP_FMAC3 struct SOAP_ENV__Code ** SOAP_FMAC4 soap_in_PointerToSOAP_ENV__Code(s
 #endif
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__ID
-#define SOAP_TYPE_PointerTo_cwmp__ID (166)
+#define SOAP_TYPE_PointerTo_cwmp__ID (168)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__ID(struct soap*, struct _cwmp__ID *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__ID(struct soap*, struct _cwmp__ID *const*, const char*, const char*);
@@ -1143,7 +1143,7 @@ SOAP_FMAC3 struct _cwmp__ID ** SOAP_FMAC4 soap_get_PointerTo_cwmp__ID(struct soa
 SOAP_FMAC3 struct _cwmp__ID ** SOAP_FMAC4 soap_in_PointerTo_cwmp__ID(struct soap*, const char*, struct _cwmp__ID **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__HoldRequests
-#define SOAP_TYPE_PointerTo_cwmp__HoldRequests (165)
+#define SOAP_TYPE_PointerTo_cwmp__HoldRequests (167)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__HoldRequests(struct soap*, struct _cwmp__HoldRequests *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__HoldRequests(struct soap*, struct _cwmp__HoldRequests *const*, const char*, const char*);
@@ -1152,7 +1152,7 @@ SOAP_FMAC3 struct _cwmp__HoldRequests ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Hol
 SOAP_FMAC3 struct _cwmp__HoldRequests ** SOAP_FMAC4 soap_in_PointerTo_cwmp__HoldRequests(struct soap*, const char*, struct _cwmp__HoldRequests **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__KickedResponse
-#define SOAP_TYPE_PointerTo_cwmp__KickedResponse (161)
+#define SOAP_TYPE_PointerTo_cwmp__KickedResponse (163)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__KickedResponse(struct soap*, struct _cwmp__KickedResponse *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__KickedResponse(struct soap*, struct _cwmp__KickedResponse *const*, const char*, const char*);
@@ -1161,7 +1161,7 @@ SOAP_FMAC3 struct _cwmp__KickedResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__K
 SOAP_FMAC3 struct _cwmp__KickedResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__KickedResponse(struct soap*, const char*, struct _cwmp__KickedResponse **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__Kicked
-#define SOAP_TYPE_PointerTo_cwmp__Kicked (160)
+#define SOAP_TYPE_PointerTo_cwmp__Kicked (162)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__Kicked(struct soap*, struct _cwmp__Kicked *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Kicked(struct soap*, struct _cwmp__Kicked *const*, const char*, const char*);
@@ -1170,7 +1170,7 @@ SOAP_FMAC3 struct _cwmp__Kicked ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Kicked(st
 SOAP_FMAC3 struct _cwmp__Kicked ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Kicked(struct soap*, const char*, struct _cwmp__Kicked **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__RequestDownloadResponse
-#define SOAP_TYPE_PointerTo_cwmp__RequestDownloadResponse (157)
+#define SOAP_TYPE_PointerTo_cwmp__RequestDownloadResponse (159)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__RequestDownloadResponse(struct soap*, struct _cwmp__RequestDownloadResponse *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__RequestDownloadResponse(struct soap*, struct _cwmp__RequestDownloadResponse *const*, const char*, const char*);
@@ -1179,7 +1179,7 @@ SOAP_FMAC3 struct _cwmp__RequestDownloadResponse ** SOAP_FMAC4 soap_get_PointerT
 SOAP_FMAC3 struct _cwmp__RequestDownloadResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__RequestDownloadResponse(struct soap*, const char*, struct _cwmp__RequestDownloadResponse **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__RequestDownload
-#define SOAP_TYPE_PointerTo_cwmp__RequestDownload (156)
+#define SOAP_TYPE_PointerTo_cwmp__RequestDownload (158)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__RequestDownload(struct soap*, struct _cwmp__RequestDownload *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__RequestDownload(struct soap*, struct _cwmp__RequestDownload *const*, const char*, const char*);
@@ -1188,7 +1188,7 @@ SOAP_FMAC3 struct _cwmp__RequestDownload ** SOAP_FMAC4 soap_get_PointerTo_cwmp__
 SOAP_FMAC3 struct _cwmp__RequestDownload ** SOAP_FMAC4 soap_in_PointerTo_cwmp__RequestDownload(struct soap*, const char*, struct _cwmp__RequestDownload **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__AutonomousTransferCompleteResponse
-#define SOAP_TYPE_PointerTo_cwmp__AutonomousTransferCompleteResponse (153)
+#define SOAP_TYPE_PointerTo_cwmp__AutonomousTransferCompleteResponse (155)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__AutonomousTransferCompleteResponse(struct soap*, struct _cwmp__AutonomousTransferCompleteResponse *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__AutonomousTransferCompleteResponse(struct soap*, struct _cwmp__AutonomousTransferCompleteResponse *const*, const char*, const char*);
@@ -1197,7 +1197,7 @@ SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse ** SOAP_FMAC4 soap_g
 SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__AutonomousTransferCompleteResponse(struct soap*, const char*, struct _cwmp__AutonomousTransferCompleteResponse **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__AutonomousTransferComplete
-#define SOAP_TYPE_PointerTo_cwmp__AutonomousTransferComplete (152)
+#define SOAP_TYPE_PointerTo_cwmp__AutonomousTransferComplete (154)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__AutonomousTransferComplete(struct soap*, struct _cwmp__AutonomousTransferComplete *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__AutonomousTransferComplete(struct soap*, struct _cwmp__AutonomousTransferComplete *const*, const char*, const char*);
@@ -1206,7 +1206,7 @@ SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete ** SOAP_FMAC4 soap_get_Point
 SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete ** SOAP_FMAC4 soap_in_PointerTo_cwmp__AutonomousTransferComplete(struct soap*, const char*, struct _cwmp__AutonomousTransferComplete **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__TransferCompleteResponse
-#define SOAP_TYPE_PointerTo_cwmp__TransferCompleteResponse (149)
+#define SOAP_TYPE_PointerTo_cwmp__TransferCompleteResponse (151)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__TransferCompleteResponse(struct soap*, struct _cwmp__TransferCompleteResponse *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__TransferCompleteResponse(struct soap*, struct _cwmp__TransferCompleteResponse *const*, const char*, const char*);
@@ -1215,7 +1215,7 @@ SOAP_FMAC3 struct _cwmp__TransferCompleteResponse ** SOAP_FMAC4 soap_get_Pointer
 SOAP_FMAC3 struct _cwmp__TransferCompleteResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__TransferCompleteResponse(struct soap*, const char*, struct _cwmp__TransferCompleteResponse **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__TransferComplete
-#define SOAP_TYPE_PointerTo_cwmp__TransferComplete (148)
+#define SOAP_TYPE_PointerTo_cwmp__TransferComplete (150)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__TransferComplete(struct soap*, struct _cwmp__TransferComplete *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__TransferComplete(struct soap*, struct _cwmp__TransferComplete *const*, const char*, const char*);
@@ -1224,7 +1224,7 @@ SOAP_FMAC3 struct _cwmp__TransferComplete ** SOAP_FMAC4 soap_get_PointerTo_cwmp_
 SOAP_FMAC3 struct _cwmp__TransferComplete ** SOAP_FMAC4 soap_in_PointerTo_cwmp__TransferComplete(struct soap*, const char*, struct _cwmp__TransferComplete **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__InformResponse
-#define SOAP_TYPE_PointerTo_cwmp__InformResponse (145)
+#define SOAP_TYPE_PointerTo_cwmp__InformResponse (147)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__InformResponse(struct soap*, struct _cwmp__InformResponse *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__InformResponse(struct soap*, struct _cwmp__InformResponse *const*, const char*, const char*);
@@ -1233,7 +1233,7 @@ SOAP_FMAC3 struct _cwmp__InformResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__I
 SOAP_FMAC3 struct _cwmp__InformResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__InformResponse(struct soap*, const char*, struct _cwmp__InformResponse **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__Inform
-#define SOAP_TYPE_PointerTo_cwmp__Inform (144)
+#define SOAP_TYPE_PointerTo_cwmp__Inform (146)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__Inform(struct soap*, struct _cwmp__Inform *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Inform(struct soap*, struct _cwmp__Inform *const*, const char*, const char*);
@@ -1242,7 +1242,7 @@ SOAP_FMAC3 struct _cwmp__Inform ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Inform(st
 SOAP_FMAC3 struct _cwmp__Inform ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Inform(struct soap*, const char*, struct _cwmp__Inform **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__GetRPCMethodsResponse
-#define SOAP_TYPE_PointerTo_cwmp__GetRPCMethodsResponse (141)
+#define SOAP_TYPE_PointerTo_cwmp__GetRPCMethodsResponse (143)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__GetRPCMethodsResponse(struct soap*, struct _cwmp__GetRPCMethodsResponse *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__GetRPCMethodsResponse(struct soap*, struct _cwmp__GetRPCMethodsResponse *const*, const char*, const char*);
@@ -1251,7 +1251,7 @@ SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse ** SOAP_FMAC4 soap_get_PointerTo_
 SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__GetRPCMethodsResponse(struct soap*, const char*, struct _cwmp__GetRPCMethodsResponse **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__GetRPCMethods
-#define SOAP_TYPE_PointerTo_cwmp__GetRPCMethods (140)
+#define SOAP_TYPE_PointerTo_cwmp__GetRPCMethods (142)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__GetRPCMethods(struct soap*, struct _cwmp__GetRPCMethods *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__GetRPCMethods(struct soap*, struct _cwmp__GetRPCMethods *const*, const char*, const char*);
@@ -1260,7 +1260,7 @@ SOAP_FMAC3 struct _cwmp__GetRPCMethods ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Ge
 SOAP_FMAC3 struct _cwmp__GetRPCMethods ** SOAP_FMAC4 soap_in_PointerTo_cwmp__GetRPCMethods(struct soap*, const char*, struct _cwmp__GetRPCMethods **, const char*);
 
 #ifndef SOAP_TYPE_PointerToPointerTocwmp__ArgStruct
-#define SOAP_TYPE_PointerToPointerTocwmp__ArgStruct (139)
+#define SOAP_TYPE_PointerToPointerTocwmp__ArgStruct (141)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ArgStruct(struct soap*, struct cwmp__ArgStruct **const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ArgStruct(struct soap*, struct cwmp__ArgStruct **const*, const char*, const char*);
@@ -1269,7 +1269,7 @@ SOAP_FMAC3 struct cwmp__ArgStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp
 SOAP_FMAC3 struct cwmp__ArgStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ArgStruct(struct soap*, const char*, struct cwmp__ArgStruct ***, const char*);
 
 #ifndef SOAP_TYPE_PointerTocwmp__ArgStruct
-#define SOAP_TYPE_PointerTocwmp__ArgStruct (138)
+#define SOAP_TYPE_PointerTocwmp__ArgStruct (140)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ArgStruct(struct soap*, struct cwmp__ArgStruct *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ArgStruct(struct soap*, struct cwmp__ArgStruct *const*, const char*, const char*);
@@ -1278,7 +1278,7 @@ SOAP_FMAC3 struct cwmp__ArgStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__ArgStruc
 SOAP_FMAC3 struct cwmp__ArgStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ArgStruct(struct soap*, const char*, struct cwmp__ArgStruct **, const char*);
 
 #ifndef SOAP_TYPE_PointerToPointerTocwmp__OptionStruct
-#define SOAP_TYPE_PointerToPointerTocwmp__OptionStruct (137)
+#define SOAP_TYPE_PointerToPointerTocwmp__OptionStruct (139)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__OptionStruct(struct soap*, struct cwmp__OptionStruct **const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__OptionStruct(struct soap*, struct cwmp__OptionStruct **const*, const char*, const char*);
@@ -1287,7 +1287,7 @@ SOAP_FMAC3 struct cwmp__OptionStruct *** SOAP_FMAC4 soap_get_PointerToPointerToc
 SOAP_FMAC3 struct cwmp__OptionStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__OptionStruct(struct soap*, const char*, struct cwmp__OptionStruct ***, const char*);
 
 #ifndef SOAP_TYPE_PointerTocwmp__OptionStruct
-#define SOAP_TYPE_PointerTocwmp__OptionStruct (136)
+#define SOAP_TYPE_PointerTocwmp__OptionStruct (138)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__OptionStruct(struct soap*, struct cwmp__OptionStruct *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__OptionStruct(struct soap*, struct cwmp__OptionStruct *const*, const char*, const char*);
@@ -1296,7 +1296,7 @@ SOAP_FMAC3 struct cwmp__OptionStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__Optio
 SOAP_FMAC3 struct cwmp__OptionStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__OptionStruct(struct soap*, const char*, struct cwmp__OptionStruct **, const char*);
 
 #ifndef SOAP_TYPE_PointerToPointerToSOAP_ENC__base64
-#define SOAP_TYPE_PointerToPointerToSOAP_ENC__base64 (135)
+#define SOAP_TYPE_PointerToPointerToSOAP_ENC__base64 (137)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerToSOAP_ENC__base64(struct soap*, struct SOAP_ENC__base64 **const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerToSOAP_ENC__base64(struct soap*, struct SOAP_ENC__base64 **const*, const char*, const char*);
@@ -1305,7 +1305,7 @@ SOAP_FMAC3 struct SOAP_ENC__base64 *** SOAP_FMAC4 soap_get_PointerToPointerToSOA
 SOAP_FMAC3 struct SOAP_ENC__base64 *** SOAP_FMAC4 soap_in_PointerToPointerToSOAP_ENC__base64(struct soap*, const char*, struct SOAP_ENC__base64 ***, const char*);
 
 #ifndef SOAP_TYPE_PointerToSOAP_ENC__base64
-#define SOAP_TYPE_PointerToSOAP_ENC__base64 (134)
+#define SOAP_TYPE_PointerToSOAP_ENC__base64 (136)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSOAP_ENC__base64(struct soap*, struct SOAP_ENC__base64 *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENC__base64(struct soap*, struct SOAP_ENC__base64 *const*, const char*, const char*);
@@ -1314,7 +1314,7 @@ SOAP_FMAC3 struct SOAP_ENC__base64 ** SOAP_FMAC4 soap_get_PointerToSOAP_ENC__bas
 SOAP_FMAC3 struct SOAP_ENC__base64 ** SOAP_FMAC4 soap_in_PointerToSOAP_ENC__base64(struct soap*, const char*, struct SOAP_ENC__base64 **, const char*);
 
 #ifndef SOAP_TYPE_PointerToPointerTocwmp__AllQueuedTransferStruct
-#define SOAP_TYPE_PointerToPointerTocwmp__AllQueuedTransferStruct (133)
+#define SOAP_TYPE_PointerToPointerTocwmp__AllQueuedTransferStruct (135)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__AllQueuedTransferStruct(struct soap*, struct cwmp__AllQueuedTransferStruct **const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__AllQueuedTransferStruct(struct soap*, struct cwmp__AllQueuedTransferStruct **const*, const char*, const char*);
@@ -1323,7 +1323,7 @@ SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct *** SOAP_FMAC4 soap_get_PointerT
 SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__AllQueuedTransferStruct(struct soap*, const char*, struct cwmp__AllQueuedTransferStruct ***, const char*);
 
 #ifndef SOAP_TYPE_PointerTocwmp__AllQueuedTransferStruct
-#define SOAP_TYPE_PointerTocwmp__AllQueuedTransferStruct (132)
+#define SOAP_TYPE_PointerTocwmp__AllQueuedTransferStruct (134)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__AllQueuedTransferStruct(struct soap*, struct cwmp__AllQueuedTransferStruct *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__AllQueuedTransferStruct(struct soap*, struct cwmp__AllQueuedTransferStruct *const*, const char*, const char*);
@@ -1332,7 +1332,7 @@ SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct ** SOAP_FMAC4 soap_get_PointerTo
 SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__AllQueuedTransferStruct(struct soap*, const char*, struct cwmp__AllQueuedTransferStruct **, const char*);
 
 #ifndef SOAP_TYPE_PointerToPointerTocwmp__QueuedTransferStruct
-#define SOAP_TYPE_PointerToPointerTocwmp__QueuedTransferStruct (131)
+#define SOAP_TYPE_PointerToPointerTocwmp__QueuedTransferStruct (133)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__QueuedTransferStruct(struct soap*, struct cwmp__QueuedTransferStruct **const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__QueuedTransferStruct(struct soap*, struct cwmp__QueuedTransferStruct **const*, const char*, const char*);
@@ -1341,7 +1341,7 @@ SOAP_FMAC3 struct cwmp__QueuedTransferStruct *** SOAP_FMAC4 soap_get_PointerToPo
 SOAP_FMAC3 struct cwmp__QueuedTransferStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__QueuedTransferStruct(struct soap*, const char*, struct cwmp__QueuedTransferStruct ***, const char*);
 
 #ifndef SOAP_TYPE_PointerTocwmp__QueuedTransferStruct
-#define SOAP_TYPE_PointerTocwmp__QueuedTransferStruct (130)
+#define SOAP_TYPE_PointerTocwmp__QueuedTransferStruct (132)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__QueuedTransferStruct(struct soap*, struct cwmp__QueuedTransferStruct *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__QueuedTransferStruct(struct soap*, struct cwmp__QueuedTransferStruct *const*, const char*, const char*);
@@ -1350,7 +1350,7 @@ SOAP_FMAC3 struct cwmp__QueuedTransferStruct ** SOAP_FMAC4 soap_get_PointerTocwm
 SOAP_FMAC3 struct cwmp__QueuedTransferStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__QueuedTransferStruct(struct soap*, const char*, struct cwmp__QueuedTransferStruct **, const char*);
 
 #ifndef SOAP_TYPE_PointerToPointerTocwmp__ParameterAttributeStruct
-#define SOAP_TYPE_PointerToPointerTocwmp__ParameterAttributeStruct (129)
+#define SOAP_TYPE_PointerToPointerTocwmp__ParameterAttributeStruct (131)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ParameterAttributeStruct(struct soap*, struct cwmp__ParameterAttributeStruct **const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterAttributeStruct(struct soap*, struct cwmp__ParameterAttributeStruct **const*, const char*, const char*);
@@ -1359,7 +1359,7 @@ SOAP_FMAC3 struct cwmp__ParameterAttributeStruct *** SOAP_FMAC4 soap_get_Pointer
 SOAP_FMAC3 struct cwmp__ParameterAttributeStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ParameterAttributeStruct(struct soap*, const char*, struct cwmp__ParameterAttributeStruct ***, const char*);
 
 #ifndef SOAP_TYPE_PointerTocwmp__ParameterAttributeStruct
-#define SOAP_TYPE_PointerTocwmp__ParameterAttributeStruct (128)
+#define SOAP_TYPE_PointerTocwmp__ParameterAttributeStruct (130)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ParameterAttributeStruct(struct soap*, struct cwmp__ParameterAttributeStruct *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterAttributeStruct(struct soap*, struct cwmp__ParameterAttributeStruct *const*, const char*, const char*);
@@ -1368,7 +1368,7 @@ SOAP_FMAC3 struct cwmp__ParameterAttributeStruct ** SOAP_FMAC4 soap_get_PointerT
 SOAP_FMAC3 struct cwmp__ParameterAttributeStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ParameterAttributeStruct(struct soap*, const char*, struct cwmp__ParameterAttributeStruct **, const char*);
 
 #ifndef SOAP_TYPE_PointerToPointerTocwmp__SetParameterAttributesStruct
-#define SOAP_TYPE_PointerToPointerTocwmp__SetParameterAttributesStruct (127)
+#define SOAP_TYPE_PointerToPointerTocwmp__SetParameterAttributesStruct (129)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__SetParameterAttributesStruct(struct soap*, struct cwmp__SetParameterAttributesStruct **const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__SetParameterAttributesStruct(struct soap*, struct cwmp__SetParameterAttributesStruct **const*, const char*, const char*);
@@ -1377,7 +1377,7 @@ SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct *** SOAP_FMAC4 soap_get_Poi
 SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__SetParameterAttributesStruct(struct soap*, const char*, struct cwmp__SetParameterAttributesStruct ***, const char*);
 
 #ifndef SOAP_TYPE_PointerTocwmp__SetParameterAttributesStruct
-#define SOAP_TYPE_PointerTocwmp__SetParameterAttributesStruct (126)
+#define SOAP_TYPE_PointerTocwmp__SetParameterAttributesStruct (128)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__SetParameterAttributesStruct(struct soap*, struct cwmp__SetParameterAttributesStruct *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__SetParameterAttributesStruct(struct soap*, struct cwmp__SetParameterAttributesStruct *const*, const char*, const char*);
@@ -1386,7 +1386,7 @@ SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct ** SOAP_FMAC4 soap_get_Poin
 SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__SetParameterAttributesStruct(struct soap*, const char*, struct cwmp__SetParameterAttributesStruct **, const char*);
 
 #ifndef SOAP_TYPE_PointerToPointerTocwmp__ParameterInfoStruct
-#define SOAP_TYPE_PointerToPointerTocwmp__ParameterInfoStruct (125)
+#define SOAP_TYPE_PointerToPointerTocwmp__ParameterInfoStruct (127)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ParameterInfoStruct(struct soap*, struct cwmp__ParameterInfoStruct **const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterInfoStruct(struct soap*, struct cwmp__ParameterInfoStruct **const*, const char*, const char*);
@@ -1395,7 +1395,7 @@ SOAP_FMAC3 struct cwmp__ParameterInfoStruct *** SOAP_FMAC4 soap_get_PointerToPoi
 SOAP_FMAC3 struct cwmp__ParameterInfoStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ParameterInfoStruct(struct soap*, const char*, struct cwmp__ParameterInfoStruct ***, const char*);
 
 #ifndef SOAP_TYPE_PointerTocwmp__ParameterInfoStruct
-#define SOAP_TYPE_PointerTocwmp__ParameterInfoStruct (124)
+#define SOAP_TYPE_PointerTocwmp__ParameterInfoStruct (126)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ParameterInfoStruct(struct soap*, struct cwmp__ParameterInfoStruct *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterInfoStruct(struct soap*, struct cwmp__ParameterInfoStruct *const*, const char*, const char*);
@@ -1404,7 +1404,7 @@ SOAP_FMAC3 struct cwmp__ParameterInfoStruct ** SOAP_FMAC4 soap_get_PointerTocwmp
 SOAP_FMAC3 struct cwmp__ParameterInfoStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ParameterInfoStruct(struct soap*, const char*, struct cwmp__ParameterInfoStruct **, const char*);
 
 #ifndef SOAP_TYPE_PointerToPointerTocwmp__ParameterValueStruct
-#define SOAP_TYPE_PointerToPointerTocwmp__ParameterValueStruct (123)
+#define SOAP_TYPE_PointerToPointerTocwmp__ParameterValueStruct (125)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ParameterValueStruct(struct soap*, struct cwmp__ParameterValueStruct **const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterValueStruct(struct soap*, struct cwmp__ParameterValueStruct **const*, const char*, const char*);
@@ -1413,7 +1413,7 @@ SOAP_FMAC3 struct cwmp__ParameterValueStruct *** SOAP_FMAC4 soap_get_PointerToPo
 SOAP_FMAC3 struct cwmp__ParameterValueStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ParameterValueStruct(struct soap*, const char*, struct cwmp__ParameterValueStruct ***, const char*);
 
 #ifndef SOAP_TYPE_PointerTocwmp__ParameterValueStruct
-#define SOAP_TYPE_PointerTocwmp__ParameterValueStruct (122)
+#define SOAP_TYPE_PointerTocwmp__ParameterValueStruct (124)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ParameterValueStruct(struct soap*, struct cwmp__ParameterValueStruct *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterValueStruct(struct soap*, struct cwmp__ParameterValueStruct *const*, const char*, const char*);
@@ -1422,7 +1422,7 @@ SOAP_FMAC3 struct cwmp__ParameterValueStruct ** SOAP_FMAC4 soap_get_PointerTocwm
 SOAP_FMAC3 struct cwmp__ParameterValueStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ParameterValueStruct(struct soap*, const char*, struct cwmp__ParameterValueStruct **, const char*);
 
 #ifndef SOAP_TYPE_PointerToPointerTocwmp__EventStruct
-#define SOAP_TYPE_PointerToPointerTocwmp__EventStruct (121)
+#define SOAP_TYPE_PointerToPointerTocwmp__EventStruct (123)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__EventStruct(struct soap*, struct cwmp__EventStruct **const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__EventStruct(struct soap*, struct cwmp__EventStruct **const*, const char*, const char*);
@@ -1431,7 +1431,7 @@ SOAP_FMAC3 struct cwmp__EventStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocw
 SOAP_FMAC3 struct cwmp__EventStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__EventStruct(struct soap*, const char*, struct cwmp__EventStruct ***, const char*);
 
 #ifndef SOAP_TYPE_PointerTocwmp__EventStruct
-#define SOAP_TYPE_PointerTocwmp__EventStruct (120)
+#define SOAP_TYPE_PointerTocwmp__EventStruct (122)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__EventStruct(struct soap*, struct cwmp__EventStruct *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__EventStruct(struct soap*, struct cwmp__EventStruct *const*, const char*, const char*);
@@ -1440,7 +1440,7 @@ SOAP_FMAC3 struct cwmp__EventStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__EventS
 SOAP_FMAC3 struct cwmp__EventStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__EventStruct(struct soap*, const char*, struct cwmp__EventStruct **, const char*);
 
 #ifndef SOAP_TYPE_PointerToFileTypeArg
-#define SOAP_TYPE_PointerToFileTypeArg (119)
+#define SOAP_TYPE_PointerToFileTypeArg (121)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToFileTypeArg(struct soap*, struct FileTypeArg *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToFileTypeArg(struct soap*, struct FileTypeArg *const*, const char*, const char*);
@@ -1449,7 +1449,7 @@ SOAP_FMAC3 struct FileTypeArg ** SOAP_FMAC4 soap_get_PointerToFileTypeArg(struct
 SOAP_FMAC3 struct FileTypeArg ** SOAP_FMAC4 soap_in_PointerToFileTypeArg(struct soap*, const char*, struct FileTypeArg **, const char*);
 
 #ifndef SOAP_TYPE_PointerTocwmp__FaultStruct
-#define SOAP_TYPE_PointerTocwmp__FaultStruct (118)
+#define SOAP_TYPE_PointerTocwmp__FaultStruct (120)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__FaultStruct(struct soap*, struct cwmp__FaultStruct *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__FaultStruct(struct soap*, struct cwmp__FaultStruct *const*, const char*, const char*);
@@ -1458,7 +1458,7 @@ SOAP_FMAC3 struct cwmp__FaultStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__FaultS
 SOAP_FMAC3 struct cwmp__FaultStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__FaultStruct(struct soap*, const char*, struct cwmp__FaultStruct **, const char*);
 
 #ifndef SOAP_TYPE_PointerToEventList
-#define SOAP_TYPE_PointerToEventList (117)
+#define SOAP_TYPE_PointerToEventList (119)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToEventList(struct soap*, struct EventList *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToEventList(struct soap*, struct EventList *const*, const char*, const char*);
@@ -1467,7 +1467,7 @@ SOAP_FMAC3 struct EventList ** SOAP_FMAC4 soap_get_PointerToEventList(struct soa
 SOAP_FMAC3 struct EventList ** SOAP_FMAC4 soap_in_PointerToEventList(struct soap*, const char*, struct EventList **, const char*);
 
 #ifndef SOAP_TYPE_PointerTocwmp__DeviceIdStruct
-#define SOAP_TYPE_PointerTocwmp__DeviceIdStruct (116)
+#define SOAP_TYPE_PointerTocwmp__DeviceIdStruct (118)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__DeviceIdStruct(struct soap*, struct cwmp__DeviceIdStruct *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__DeviceIdStruct(struct soap*, struct cwmp__DeviceIdStruct *const*, const char*, const char*);
@@ -1476,7 +1476,7 @@ SOAP_FMAC3 struct cwmp__DeviceIdStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__Dev
 SOAP_FMAC3 struct cwmp__DeviceIdStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__DeviceIdStruct(struct soap*, const char*, struct cwmp__DeviceIdStruct **, const char*);
 
 #ifndef SOAP_TYPE_PointerToAllTransferList
-#define SOAP_TYPE_PointerToAllTransferList (115)
+#define SOAP_TYPE_PointerToAllTransferList (117)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToAllTransferList(struct soap*, struct AllTransferList *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToAllTransferList(struct soap*, struct AllTransferList *const*, const char*, const char*);
@@ -1485,7 +1485,7 @@ SOAP_FMAC3 struct AllTransferList ** SOAP_FMAC4 soap_get_PointerToAllTransferLis
 SOAP_FMAC3 struct AllTransferList ** SOAP_FMAC4 soap_in_PointerToAllTransferList(struct soap*, const char*, struct AllTransferList **, const char*);
 
 #ifndef SOAP_TYPE_PointerToOptionList
-#define SOAP_TYPE_PointerToOptionList (113)
+#define SOAP_TYPE_PointerToOptionList (115)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToOptionList(struct soap*, struct OptionList *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToOptionList(struct soap*, struct OptionList *const*, const char*, const char*);
@@ -1494,7 +1494,7 @@ SOAP_FMAC3 struct OptionList ** SOAP_FMAC4 soap_get_PointerToOptionList(struct s
 SOAP_FMAC3 struct OptionList ** SOAP_FMAC4 soap_in_PointerToOptionList(struct soap*, const char*, struct OptionList **, const char*);
 
 #ifndef SOAP_TYPE_PointerToVoucherList
-#define SOAP_TYPE_PointerToVoucherList (112)
+#define SOAP_TYPE_PointerToVoucherList (114)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToVoucherList(struct soap*, struct VoucherList *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToVoucherList(struct soap*, struct VoucherList *const*, const char*, const char*);
@@ -1503,7 +1503,7 @@ SOAP_FMAC3 struct VoucherList ** SOAP_FMAC4 soap_get_PointerToVoucherList(struct
 SOAP_FMAC3 struct VoucherList ** SOAP_FMAC4 soap_in_PointerToVoucherList(struct soap*, const char*, struct VoucherList **, const char*);
 
 #ifndef SOAP_TYPE_PointerToTransferList
-#define SOAP_TYPE_PointerToTransferList (111)
+#define SOAP_TYPE_PointerToTransferList (113)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToTransferList(struct soap*, struct TransferList *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToTransferList(struct soap*, struct TransferList *const*, const char*, const char*);
@@ -1512,7 +1512,7 @@ SOAP_FMAC3 struct TransferList ** SOAP_FMAC4 soap_get_PointerToTransferList(stru
 SOAP_FMAC3 struct TransferList ** SOAP_FMAC4 soap_in_PointerToTransferList(struct soap*, const char*, struct TransferList **, const char*);
 
 #ifndef SOAP_TYPE_PointerToParameterAttributeList
-#define SOAP_TYPE_PointerToParameterAttributeList (107)
+#define SOAP_TYPE_PointerToParameterAttributeList (109)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterAttributeList(struct soap*, struct ParameterAttributeList *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterAttributeList(struct soap*, struct ParameterAttributeList *const*, const char*, const char*);
@@ -1521,7 +1521,7 @@ SOAP_FMAC3 struct ParameterAttributeList ** SOAP_FMAC4 soap_get_PointerToParamet
 SOAP_FMAC3 struct ParameterAttributeList ** SOAP_FMAC4 soap_in_PointerToParameterAttributeList(struct soap*, const char*, struct ParameterAttributeList **, const char*);
 
 #ifndef SOAP_TYPE_PointerToSetParameterAttributesList
-#define SOAP_TYPE_PointerToSetParameterAttributesList (106)
+#define SOAP_TYPE_PointerToSetParameterAttributesList (108)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSetParameterAttributesList(struct soap*, struct SetParameterAttributesList *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSetParameterAttributesList(struct soap*, struct SetParameterAttributesList *const*, const char*, const char*);
@@ -1530,7 +1530,7 @@ SOAP_FMAC3 struct SetParameterAttributesList ** SOAP_FMAC4 soap_get_PointerToSet
 SOAP_FMAC3 struct SetParameterAttributesList ** SOAP_FMAC4 soap_in_PointerToSetParameterAttributesList(struct soap*, const char*, struct SetParameterAttributesList **, const char*);
 
 #ifndef SOAP_TYPE_PointerToParameterInfoList
-#define SOAP_TYPE_PointerToParameterInfoList (105)
+#define SOAP_TYPE_PointerToParameterInfoList (107)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterInfoList(struct soap*, struct ParameterInfoList *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterInfoList(struct soap*, struct ParameterInfoList *const*, const char*, const char*);
@@ -1539,7 +1539,7 @@ SOAP_FMAC3 struct ParameterInfoList ** SOAP_FMAC4 soap_get_PointerToParameterInf
 SOAP_FMAC3 struct ParameterInfoList ** SOAP_FMAC4 soap_in_PointerToParameterInfoList(struct soap*, const char*, struct ParameterInfoList **, const char*);
 
 #ifndef SOAP_TYPE_PointerToParameterNames
-#define SOAP_TYPE_PointerToParameterNames (104)
+#define SOAP_TYPE_PointerToParameterNames (106)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterNames(struct soap*, struct ParameterNames *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterNames(struct soap*, struct ParameterNames *const*, const char*, const char*);
@@ -1548,7 +1548,7 @@ SOAP_FMAC3 struct ParameterNames ** SOAP_FMAC4 soap_get_PointerToParameterNames(
 SOAP_FMAC3 struct ParameterNames ** SOAP_FMAC4 soap_in_PointerToParameterNames(struct soap*, const char*, struct ParameterNames **, const char*);
 
 #ifndef SOAP_TYPE_PointerToParameterValueList
-#define SOAP_TYPE_PointerToParameterValueList (102)
+#define SOAP_TYPE_PointerToParameterValueList (104)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterValueList(struct soap*, struct ParameterValueList *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterValueList(struct soap*, struct ParameterValueList *const*, const char*, const char*);
@@ -1557,7 +1557,7 @@ SOAP_FMAC3 struct ParameterValueList ** SOAP_FMAC4 soap_get_PointerToParameterVa
 SOAP_FMAC3 struct ParameterValueList ** SOAP_FMAC4 soap_in_PointerToParameterValueList(struct soap*, const char*, struct ParameterValueList **, const char*);
 
 #ifndef SOAP_TYPE_PointerToMethodList
-#define SOAP_TYPE_PointerToMethodList (101)
+#define SOAP_TYPE_PointerToMethodList (103)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToMethodList(struct soap*, struct MethodList *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToMethodList(struct soap*, struct MethodList *const*, const char*, const char*);
@@ -1566,7 +1566,7 @@ SOAP_FMAC3 struct MethodList ** SOAP_FMAC4 soap_get_PointerToMethodList(struct s
 SOAP_FMAC3 struct MethodList ** SOAP_FMAC4 soap_in_PointerToMethodList(struct soap*, const char*, struct MethodList **, const char*);
 
 #ifndef SOAP_TYPE_PointerTo_cwmp__Fault_SetParameterValuesFault
-#define SOAP_TYPE_PointerTo_cwmp__Fault_SetParameterValuesFault (100)
+#define SOAP_TYPE_PointerTo_cwmp__Fault_SetParameterValuesFault (102)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__Fault_SetParameterValuesFault(struct soap*, struct _cwmp__Fault_SetParameterValuesFault *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Fault_SetParameterValuesFault(struct soap*, struct _cwmp__Fault_SetParameterValuesFault *const*, const char*, const char*);
@@ -1575,7 +1575,7 @@ SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault ** SOAP_FMAC4 soap_get_Po
 SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Fault_SetParameterValuesFault(struct soap*, const char*, struct _cwmp__Fault_SetParameterValuesFault **, const char*);
 
 #ifndef SOAP_TYPE_PointerTotime
-#define SOAP_TYPE_PointerTotime (97)
+#define SOAP_TYPE_PointerTotime (99)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTotime(struct soap*, time_t *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTotime(struct soap*, time_t *const*, const char*, const char*);
@@ -1584,7 +1584,7 @@ SOAP_FMAC3 time_t ** SOAP_FMAC4 soap_get_PointerTotime(struct soap*, time_t **, 
 SOAP_FMAC3 time_t ** SOAP_FMAC4 soap_in_PointerTotime(struct soap*, const char*, time_t **, const char*);
 
 #ifndef SOAP_TYPE_PointerToAccessList
-#define SOAP_TYPE_PointerToAccessList (90)
+#define SOAP_TYPE_PointerToAccessList (92)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToAccessList(struct soap*, struct AccessList *const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToAccessList(struct soap*, struct AccessList *const*, const char*, const char*);
@@ -1593,7 +1593,7 @@ SOAP_FMAC3 struct AccessList ** SOAP_FMAC4 soap_get_PointerToAccessList(struct s
 SOAP_FMAC3 struct AccessList ** SOAP_FMAC4 soap_in_PointerToAccessList(struct soap*, const char*, struct AccessList **, const char*);
 
 #ifndef SOAP_TYPE_PointerTostring
-#define SOAP_TYPE_PointerTostring (88)
+#define SOAP_TYPE_PointerTostring (90)
 #endif
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTostring(struct soap*, char **const*);
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTostring(struct soap*, char **const*, const char*, const char*);

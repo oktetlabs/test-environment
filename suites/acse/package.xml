@@ -43,6 +43,11 @@
         </run> 
 
         <run>
+            <script name="get_param"/>
+            <arg name="ta_acse"/>
+        </run> 
+
+        <run>
             <script name="change_wan"/>
             <arg name="ta_acse"/>
         </run> 

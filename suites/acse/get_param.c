@@ -27,13 +27,32 @@
  */
 
 
-#define TE_TEST_NAME "acse/set_param"
+#define TE_TEST_NAME "acse/get_param"
+
 
 #include "acse_suite.h"
 
 #include "tapi_rpc_tr069.h"
 #include "acse_epc.h"
 #include "cwmp_data.h"
+
+
+#ifndef SOAP_TYPE_string
+#define SOAP_TYPE_string (3)
+#endif
+
+#ifndef SOAP_TYPE_xsd__anySimpleType
+#define SOAP_TYPE_xsd__anySimpleType (10)
+#endif
+
+#ifndef SOAP_TYPE_SOAP_ENC__base64
+#define SOAP_TYPE_SOAP_ENC__base64 (6)
+#endif
+
+#ifndef SOAP_TYPE_time
+#define SOAP_TYPE_time (98)
+#endif
+
 
 int
 main(int argc, char *argv[])
@@ -45,8 +64,6 @@ main(int argc, char *argv[])
     _cwmp__GetParameterNamesResponse   *get_names_resp = NULL;
     _cwmp__GetParameterValues           get_values;
     _cwmp__GetParameterValuesResponse  *get_values_resp = NULL;
-    _cwmp__SetParameterValues           set_values;
-    _cwmp__SetParameterValuesResponse  *set_values_resp = NULL;
 
     char *param_path = 
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
@@ -111,9 +128,8 @@ main(int argc, char *argv[])
     lan_ip_conn_path = strdup(get_names_resp->ParameterList->
                                 __ptrParameterInfoStruct[0]->Name);
 
-
     /* TODO: make good TAPI for it.. */
-    if (0) {
+    {
         size_t i;
         struct ParameterNames par_names;
         char **names_array = calloc(4, sizeof(char*));
@@ -150,66 +166,31 @@ main(int argc, char *argv[])
 
         for (i = 0; i < get_values_resp ->ParameterList->__size; i++)
         {
-            RING("GetParamValues [%u] resp: %s = %s", i, 
+            char buf[1024];
+            char *p = buf;
+            void *v  = get_values_resp ->ParameterList->
+                            __ptrParameterValueStruct[i]->Value;
+            int type = get_values_resp ->ParameterList->
+                            __ptrParameterValueStruct[i]->__type;
+
+            p += sprintf(p, "GetParamValues [%u] resp: %s = (type %d)", i, 
                 get_values_resp ->ParameterList->
-                        __ptrParameterValueStruct[i]->Name,
-                get_values_resp ->ParameterList->
-                        __ptrParameterValueStruct[i]->Value);
+                        __ptrParameterValueStruct[i]->Name, type);
+            switch(type)
+            {
+                case SOAP_TYPE_string:
+                case SOAP_TYPE_xsd__anySimpleType:
+                    p+= sprintf(p, "'%s'", (char *)v);
+                    break;
+                case SOAP_TYPE_time:
+                    p+= sprintf(p, "time %d sec", (int)(*((time_t *)v)));
+                    break;
+                default: /* integer, boolean types storen similar usual int. */
+                    p+= sprintf(p, "%d", *((int *)v));
+                    break;
+            }
+            RING(buf);
         }
-    }
-
-    /* TODO: make good TAPI for it.. */
-    {
-        struct ParameterValueList par_list;
-        int enabled = 0;
-        struct cwmp__ParameterValueStruct par_array[] = 
-        {
-            {"Enable", 11, &enabled}, 
-            {"IPInterfaceIPAddress", 3, "192.168.2.26"},
-        };
-        size_t sz = sizeof(par_array) / sizeof(par_array[0]);
-        unsigned i;
-
-        par_list.__size = sz;
-        par_list.__ptrParameterValueStruct = malloc(sizeof(void *) * sz);
-
-        for (i = 0; i < sz; i++)
-        {
-            char *full_name = malloc(256);
-            strcpy(full_name, lan_ip_conn_path);
-            strcat(full_name, par_array[i].Name);
-            par_array[i].Name = full_name;
-            par_list.__ptrParameterValueStruct[i] = &par_array[i];
-        }
-
-        set_values.ParameterKey = "1";
-        set_values.ParameterList = &par_list;
-
-        CHECK_RC(tapi_acse_cpe_set_parameter_values(rpcs_acse, "A", "box",
-                                        &set_values, &call_index));
-
-        te_rc = tapi_acse_cpe_set_parameter_values_resp(
-                rpcs_acse, "A", "box", 20, call_index, &set_values_resp);
-        if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
-        {
-            _cwmp__Fault *f = (_cwmp__Fault *)set_values_resp;
-            size_t f_s = f->__sizeSetParameterValuesFault;
-            size_t i;
-
-
-            ERROR("CWMP Fault received: %s(%s), arr len %d",
-                    f->FaultCode, f->FaultString, (int)f_s);
-            for (i = 0; i < f_s; i++)
-                ERROR("SetValue Fault [%d], Name '%s', Err %s(%s)",
-                    (int)i,
-                    f->SetParameterValuesFault[i].ParameterName,
-                    f->SetParameterValuesFault[i].FaultCode,
-                    f->SetParameterValuesFault[i].FaultString);
-            
-            TEST_FAIL("SetParameterValues failed, see details above.");
-        }
-    if (te_rc != 0)
-        TEST_FAIL("Unexpected error on SetParamValues response: %r", te_rc);
     }
 
 

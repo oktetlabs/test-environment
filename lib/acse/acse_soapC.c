@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-SOAP_SOURCE_STAMP("@(#) acse_soapC.c ver 2.7.9l 2010-03-10 17:45:23 GMT")
+SOAP_SOURCE_STAMP("@(#) acse_soapC.c ver 2.7.9l 2010-05-30 18:33:09 GMT")
 
 
 #ifndef WITH_NOGLOBAL
@@ -9539,14 +9539,15 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ParameterValueStruct(struct soap *
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->Name);
-	soap_default_xsd__anySimpleType(soap, &a->Value);
+	a->__type = 0;
+	a->Value = NULL;
 }
 
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ParameterValueStruct(struct soap *soap, const struct cwmp__ParameterValueStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->Name);
-	soap_serialize_xsd__anySimpleType(soap, &a->Value);
+	soap_markelement(soap, a->Value, a->__type);
 }
 
 SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterValueStruct(struct soap *soap, const struct cwmp__ParameterValueStruct *a, const char *tag, const char *type)
@@ -9563,7 +9564,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterValueStruct(struct soap *soap,
 		return soap->error;
 	if (soap_out_string(soap, "Name", -1, &a->Name, ""))
 		return soap->error;
-	if (soap_out_xsd__anySimpleType(soap, "Value", -1, &a->Value, "xsd:string"))
+	if (soap_putelement(soap, a->Value, "Value", -1, a->__type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
@@ -9594,9 +9595,9 @@ SOAP_FMAC3 struct cwmp__ParameterValueStruct * SOAP_FMAC4 soap_in_cwmp__Paramete
 				{	soap_flag_Name--;
 					continue;
 				}
-			if (soap_flag_Value && (soap->error == SOAP_TAG_MISMATCH || soap->error == SOAP_NO_TAG))
-				if (soap_in_xsd__anySimpleType(soap, "Value", &a->Value, "xsd:anySimpleType"))
-				{	soap_flag_Value--;
+			if (soap_flag_Value && soap->error == SOAP_TAG_MISMATCH)
+				if ((a->Value = soap_getelement(soap, &a->__type)))
+				{	soap_flag_Value = 0;
 					continue;
 				}
 			if (soap->error == SOAP_TAG_MISMATCH)

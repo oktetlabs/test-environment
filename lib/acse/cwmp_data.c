@@ -36,6 +36,7 @@
 #include "te_defs.h"
 #include "logger_api.h"
 #include "cwmp_data.h"
+#include "acse_soapH.h"
 
 #include <string.h>
 
@@ -89,6 +90,43 @@ te_cwmp_unpack__string(void *msg, size_t max_len)
 
     return str_size;
 }
+
+
+static inline ssize_t
+te_cwmp_pack__integer(int *src, void *msg, size_t max_len)
+{
+    if (NULL == src)
+        return 0;
+
+    *((int *)msg) = *src;
+
+    return sizeof(int);
+}
+
+static inline ssize_t
+te_cwmp_unpack__integer(void *msg, size_t max_len)
+{
+    return sizeof(int);
+}
+
+
+static inline ssize_t
+te_cwmp_pack__time(time_t *src, void *msg, size_t max_len)
+{
+    if (NULL == src)
+        return 0;
+
+    *((time_t *)msg) = *src;
+
+    return sizeof(time_t);
+}
+
+static inline ssize_t
+te_cwmp_unpack__time(void *msg, size_t max_len)
+{
+    return sizeof(time_t);
+}
+
 
 /* 
  * Packing macros, assume the following local variables and 
@@ -250,14 +288,31 @@ CWMP_PACK_LIST_FUNC(ParameterNames, string)
 CWMP_PACK_LIST_FUNC(ParameterValueList, ParameterValueStruct)
 
 ssize_t
-te_cwmp_pack__ParameterValueStruct(const cwmp__ParameterValueStruct *src, void *msg, size_t max_len)
+te_cwmp_pack__ParameterValueStruct(const cwmp__ParameterValueStruct *src,
+                                   void *msg, size_t max_len)
 {
     CWMP_PACK_COMMON_VARS(cwmp__ParameterValueStruct);
 
     CWMP_PACK_ROW(sizeof(*src));
 
     CWMP_PACK_LEAF(string, Name);
-    CWMP_PACK_LEAF(string, Value);
+    switch (src->__type)
+    {
+        case SOAP_TYPE_string:
+        case SOAP_TYPE_xsd__anySimpleType:
+            CWMP_PACK_LEAF(string, Value);
+            break;
+        case SOAP_TYPE_SOAP_ENC__base64:
+            WARN("%s(): TODO, base64 should be implemented", __FUNCTION__);
+            /* TODO */
+            break;
+        case SOAP_TYPE_time:
+            CWMP_PACK_LEAF(time, Value);
+            break;
+        default: /* integer, boolean types storen similar usual int. */
+            CWMP_PACK_LEAF(integer, Value);
+            break;
+    }
 
     return packed_length;
 }
@@ -591,7 +646,24 @@ te_cwmp_unpack__ParameterValueStruct(void *msg, size_t max_len)
     CWMP_UNPACK_VARS(cwmp__ParameterValueStruct);
 
     CWMP_UNPACK_LEAF(string, Name);
-    CWMP_UNPACK_LEAF(string, Value);
+
+    switch (res->__type)
+    {
+        case SOAP_TYPE_string:
+        case SOAP_TYPE_xsd__anySimpleType:
+            CWMP_UNPACK_LEAF(string, Value);
+            break;
+        case SOAP_TYPE_SOAP_ENC__base64:
+            WARN("%s(): TODO, base64 should be implemented", __FUNCTION__);
+            /* TODO */
+            break;
+        case SOAP_TYPE_time:
+            CWMP_UNPACK_LEAF(time, Value);
+            break;
+        default: /* integer, boolean types storen similar usual int. */
+            CWMP_UNPACK_LEAF(integer, Value);
+            break;
+    }
 
     return unpack_size;
 }
