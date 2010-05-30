@@ -9563,7 +9563,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterValueStruct(struct soap *soap,
 		return soap->error;
 	if (soap_out_string(soap, "Name", -1, &a->Name, ""))
 		return soap->error;
-	if (soap_out_xsd__anySimpleType(soap, "Value", -1, &a->Value, ""))
+	if (soap_out_xsd__anySimpleType(soap, "Value", -1, &a->Value, "xsd:string"))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
