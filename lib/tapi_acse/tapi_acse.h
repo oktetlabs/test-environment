@@ -886,6 +886,54 @@ extern te_errno tapi_acse_cpe_get_options_resp(
 
 
 
+
+/*
+ * ============= Useful routines for prepare CWMP RPC params =============
+ */
+
+/**
+ * Construct GetParameterNames argument.
+ */
+extern _cwmp__GetParameterNames *cwmp_get_names_alloc(const char *name,
+                                                      te_bool next_level);
+
+/**
+ * Free GetParameterNames argument.
+ */
+extern void cwmp_get_names_free(_cwmp__GetParameterNames *arg);
+
+/**
+ * Free GetParameterNames response, which is got from regular TAPI.
+ */
+extern void cwmp_get_names_resp_free(_cwmp__GetParameterNamesResponse *r);
+
+/**
+ * Construct GetParameterValues argument.
+ */
+extern _cwmp__GetParameterValues *cwmp_get_values_alloc(const char *name,
+                                                        ...);
+
+/**
+ * Add name to GetParameterValues argument.
+ */
+
+/**
+ * Free GetParameterValues argument.
+ */
+
+/**
+ * Iterate over GetParameterValues response.
+ */
+
+/**
+ * Find param in GetParameterValues response.
+ */
+
+/**
+ * Free GetParameterValues response.
+ */
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
