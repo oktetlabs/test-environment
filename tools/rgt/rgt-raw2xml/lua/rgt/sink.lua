@@ -1,5 +1,5 @@
 ---
--- Report generation tool - XML format sink module.
+-- Report generation tool - sink module.
 --
 -- Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
 -- root directory of the distribution).
@@ -25,186 +25,123 @@
 --
 
 local oo            = require("loop.base")
+local co            = require("co")
 local rgt           = {}
+rgt.msg_ctl_text    = require("rgt.msg_ctl_text")
 rgt.node            = {}
 rgt.node.root       = require("rgt.node.root")
 rgt.node.package    = require("rgt.node.package")
 rgt.node.session    = require("rgt.node.session")
 rgt.node.test       = require("rgt.node.test")
 rgt.sink            = oo.class({
-                                root    = nil,  -- Root node
-                                map     = nil,  -- ID->node map
+                                chunk   = nil,  --- The output chunk
+                                map     = nil,  --- ID->node map
+                                max_mem = nil,  --- Maximum memory allowed
+                                                --  for output
                                })
 
-function rgt.sink:__init(file)
-    local inst  = {}
+function rgt.sink:__init(max_mem)
+    assert(type(max_mem) == "number")
+    assert(math.floor(max_mem) == max_mem)
+    assert(max_mem >= 0)
 
-    inst.root = rgt.node.root{id = 0, depth = 0}
-    inst.map = {[0] = inst.root}
-
-    return oo.rawnew(self, inst)
+    return oo.rawnew(self, {map = {}, max_mem = max_mem})
 end
 
-local function ctl_read_quoted_string(text, pos)
-    local unquoted
-
-    if text:sub(pos, pos + 1) ~= "\"" then
-        unquoted, pos = match("([^%s]*)()")
-    else
-        local chunk, char, new_pos
-
-        pos = pos + 1
-        unquoted = ""
-
-        repeat
-            chunk, char, new_pos = text:match("^(.-)([\"\\])()", pos)
-            unquoted = unquoted .. chunk
-            pos = new_pos + 1
-        until char == "\""
-    end
-
-    return unquoted, pos
+function rgt.sink:take_file(file)
+    assert(self.chunk == nil)
+    assert(self.map[0] == nil)
+    assert(file ~= nil)
+    self.chunk = co.xml_chunk(co.manager(self.max_mem), file, 0)
 end
 
-local ctl_token_parse = {}
-
-function ctl_token_parse.tin(ctl, text, pos)
-    ctl.tin, pos = text:match("^%s*(%d+)()", pos)
-    return pos
+function rgt.sink:start()
+    assert(self.map[0] == nil)
+    inst.map[0] = rgt.node.root():take_chunk(self.chunk):start()
+    self.chunk = nil
 end
-
-function ctl_token_parse.page(ctl, text, pos)
-    ctl.page, pos = text:match("^%s*([^%s]+)()", pos)
-    return pos
-end
-
-function ctl_token_parse.authors(ctl, text, pos)
-    ctl.authors = {}
-
-    while true do
-        local mail, new_pos = text:match("^%s*mailto:([^%s]+)()", pos)
-        if mail == nil then
-            break
-        end
-        table.insert(ctl.authors, mail)
-        pos = new_pos
-    end
-
-    return pos
-end
-
-function ctl_token_parse.args(ctl, text, pos)
-    ctl.args = {}
-
-    while true do
-        local name, value_pos, value
-        name, value_pos = text:match("^%s*([^=]+)=()", pos)
-        if name == nil then
-            break
-        end
-        value, pos = ctl_read_quoted_string(text, value_pos)
-        table.insert(ctl.args, {name, value})
-    end
-
-    return pos
-end
-
-local function ctl_parse_start_text(ctl, text, pos)
-    if ctl.event == "package" or ctl.event == "test" then
-        -- Retrieve node name and objective
-        ctl.name, ctl.objective, pos =
-            text:match("^%s*([^%s]+)%s+\"([^\"]+)\"()", pos)
-    end
-
-    -- Parse the message body
-    repeat
-        local token
-
-        token, pos = text:match("^%s*([^%s]+)()", pos)
-
-        if token ~= nil then
-            local parse_fn = ctl_token_parse[token:lower()]
-            
-            if parse_fn == nil then
-                error("Unknown token \"" .. token .. "\"")
-            end
-
-            pos = parse_fn(ctl, text, pos)
-        end
-    until token == nil
-end
-
-local function ctl_parse_text(ctl, text)
-    local event
-    local pos
-
-    -- Parse the message header
-    ctl.parent_id, ctl.id, event, pos =
-            text:match("^(%d+)%s+(%d+)%s+(%w+)()$")
-
-    event = event:lower()
-    ctl.event = event
-
-    -- If it is a node start
-    if event == "package" or event == "session" or event == "test" then
-        ctl_parse_start_text(ctl, text, pos)
-    else
-        ctl.err = text:match("^%s*(.*)$")
-    end
-end
-
 
 function rgt.sink:put(msg)
+    local prm
+    local parent, node
+
+    assert(self.map[0] ~= nil)
+
     -- If it is not a control message
     if msg.id ~= 0 or msg.user ~= "Control" or msg.entity ~= "Tester" then
-        local node = map[msg.id]
-
+        -- log the message to its node
+        node = map[msg.id]
         node:log(msg.ts, msg.level, msg.entity, msg.user, msg.text)
+        return
+    end
+
+    -- parse control message text
+    prm = rgt.msg_ctl_text.parse({}, msg.text)
+
+    -- lookup parent node
+    parent = self.map[prm.parent_id]
+
+    -- If it is a node opening
+    if prm.event == "package" or
+       prm.event == "session" or
+       prm.event == "test" then
+        -- create new node
+        node = rgt.node[prm.event]{
+                start       = msg.ts,
+                name        = prm.name,
+                objective   = prm.objective,
+                tin         = prm.tin
+                page        = prm.page,
+                authors     = prm.authors,
+                args        = prm.args,
+                start       = msg.ts}
+
+        -- add to the map
+        self.map[prm.id] = node
+
+        -- add to the parent's children list
+        parent:add_child(prm.id, node)
+
+        -- start node output
+        node:start()
     else
-        local ctl = {}
-        local parent, node
+        -- lookup node
+        node = self.map[prm.id]
 
-        ctl_parse_text(ctl, msg.text)
+        -- finish the node with the result
+        node:finish(msg.ts, prm.event, prm.err)
 
-        -- lookup parent node
-        parent = self.map[ctl.parent_id]
+        -- remove the node from the parent
+        parent:del_child(prm.id)
 
-        -- If it is a node opening
-        if ctl.event == "package" or
-           ctl.event == "session" or
-           ctl.event == "test" then
-            -- create new node
-            node = rgt.node[ctl.event]{
-                    start       = msg.ts,
-                    name        = ctl.name,
-                    objective   = ctl.objective,
-                    tin         = ctl.tin
-                    page        = ctl.page,
-                    authors     = ctl.authors,
-                    args        = ctl.args,
-                    start       = msg.ts}
-
-            -- add to the map
-            self.map[ctl.id] = node
-
-            -- add to the parent's children list
-            parent:add_child(ctl.id, node)
-
-            -- start node output
-            node:start()
-        else
-            -- lookup node
-            node = self.map[ctl.id]
-
-            -- finish the node with the result
-            node:finish(msg.ts, ctl.event, ctl.err)
-
-            -- remove the node from the parent
-            parent:del_child(ctl.id)
-
-            -- remove the node from the map
-            self.map[ctl.id] = nil
-        end
+        -- remove the node from the map
+        self.map[prm.id] = nil
     end
 end
 
+function rgt.sink:finish()
+    assert(self.map[0] ~= nil)
+    assert(self.chunk == nil)
+
+    -- Finish the root node and take its chunk
+    self.chunk = self.map[0]:finish():yield_chunk()
+
+    -- Remove the root node
+    self.map[0] = nil
+end
+
+function rgt.sink:yield_file()
+    local file, size
+
+    assert(self.map[0] == nil)
+    assert(self.chunk ~= nil)
+
+    -- Finish the chunk and retrieve its storage and size
+    file, size = self.chunk:finish():yield()
+    -- Remove the chunk
+    self.chunk = nil
+
+    return file, size
+end
+
+return rgt.sink

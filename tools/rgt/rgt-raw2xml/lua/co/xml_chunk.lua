@@ -56,7 +56,7 @@ function co.xml_chunk:__init(manager, storage, size, depth)
            depth >= 0)
 
     inst = co.chunk(manager, storage, size)
-    inst.depth = depth
+    inst.depth = depth or 0
     return oo.rawnew(self, inst)
 end
 

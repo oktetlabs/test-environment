@@ -45,11 +45,9 @@ function rgt.node.test:__init(inst)
            math.floor(inst.tin) == inst.tin and
            inst.tin >= 0)
     assert(inst.page == nil or type(inst.page) == "string")
-    assert(inst.verdicts == nil or type(inst.verdicts) == "table")
+    assert(inst.verdicts == nil)
 
-    if inst.verdicts == nil then
-        inst.verdicts = {}
-    end
+    inst.verdicts = {}
 
     rgt.node.named:__init(inst)
 

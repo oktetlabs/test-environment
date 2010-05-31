@@ -25,7 +25,8 @@
 --
 
 local co = {}
-co.manager  = require("co.manager")
-co.chunk    = require("co.chunk")
+co.manager      = require("co.manager")
+co.chunk        = require("co.chunk")
+co.xml_chunk    = require("co.xml_chunk")
 
 return co
