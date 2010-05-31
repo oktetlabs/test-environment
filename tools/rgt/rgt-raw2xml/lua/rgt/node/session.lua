@@ -24,48 +24,10 @@
 -- @release $Id$
 --
 
-local oo            = require("loop.multi")
+local oo            = require("loop.simple")
 local rgt           = {}
 rgt.node            = {}
-rgt.node.branching  = require("rgt.node.branching")
-rgt.node.session    = oo.class({
-                               },
-                               rgt.node.branching,
-                               rgt.node.parametrized,
-                               rgt.node.spanning)
-
-function rgt.node.session:__init(inst)
-    rgt.node.branching:__init(inst)
-    rgt.node.parametrized:__init(inst)
-    rgt.node.spanning:__init(inst)
-
-    return oo.rawnew(self, inst)
-end
-
-function rgt.node.session:finish(ts, result, err)
-    rgt.node.spanning:finish(self, ts, result, err)
-    rgt.node.branching:finish(self)
-
-    self.head_chunk:start_tag("session",
-                              {name = self.name,
-                               result = self.result,
-                               err = self.err}):
-                    start_tag("meta"):
-                    element("start-ts", nil, self.start:format_short_abs()):
-                    element("end-ts", nil, self["end"]:format_short_abs()):
-                    element("duration", nil,
-                            (self["end"] - self.start):format_short_rel())
-
-    if #self.args > 0 then
-        self.head_chunk:start_tag("params")
-        for i, a in self.args do
-            self.head_chunk:element("param", {name = a[1], value = a[2]})
-        end
-        self.head_chunk:end_tag("params")
-    end
-
-    self.head_chunk:end_tag("meta")
-    self.tail_chunk:end_tag("session")
-end
+rgt.node.running    = require("rgt.node.running")
+rgt.node.session    = oo.class({element = "session"}, rgt.node.running)
 
 return rgt.node.session

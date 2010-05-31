@@ -26,12 +26,10 @@
 lua_rgt_nodedir = $(datadir)/lua/rgt/node
 
 dist_lua_rgt_node_DATA = \
-    basic.lua               \
-    internal.lua            \
+    general.lua             \
     named.lua               \
     package.lua             \
-    parametrized.lua        \
     root.lua                \
+    running.lua             \
     session.lua             \
-    spanning.lua            \
     test.lua

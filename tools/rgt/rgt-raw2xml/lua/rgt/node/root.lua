@@ -28,24 +28,31 @@ local oo            = require("loop.simple")
 local rgt           = {}
 rgt.msg             = require("rgt.msg")
 rgt.node            = {}
-rgt.node.internal   = require("rgt.node.internal")
-rgt.node.root       = oo.class({}, rgt.node.internal)
+rgt.node.general    = require("rgt.node.general")
+rgt.node.root       = oo.class({}, rgt.node.general)
 
 function rgt.node.root:start()
     assert(self.chunk ~= nil)
 
-    self.chunk:write("<?xml version="1.0"?>\n")
-    self.chunk.start_tag("proteos:log_report",
-                         {"xmlns:proteos" =
-                          "http://www.oktetlabs.ru/proteos"})
-    rgt.node.basic.start(self)
+    self.head:write("<?xml version="1.0"?>\n")
+    self.head:start_tag("proteos:log_report",
+                        {"xmlns:proteos" =
+                         "http://www.oktetlabs.ru/proteos"})
+    rgt.node.general.start(self)
+end
+
+function rgt.node.root:add_child(child)
+    assert(oo.instanceof(child, rgt.node.general))
+    -- One branch at most
+    assert(self.branches[1].child == nil)
+    rgt.node.general.add_child(self, child)
 end
 
 function rgt.node.root:finish()
     assert(self.chunk ~= nil)
 
-    rgt.node.basic.finish(self)
-    self.chunk.end_tag("proteos:log_report")
+    rgt.node.general.finish(self)
+    self.tail:end_tag("proteos:log_report")
 end
 
 return rgt.node.root

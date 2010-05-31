@@ -24,29 +24,22 @@
 -- @release $Id$
 --
 
-local oo                = require("loop.multi")
-local rgt               = {}
-rgt.node                = {}
-rgt.node.basic          = require("rgt.node.basic")
-rgt.node.named          = require("rgt.node.named")
-rgt.node.parametrized   = require("rgt.node.parametrized")
-rgt.node.spanning       = require("rgt.node.spanning")
-rgt.node.test           = oo.class({
-                                    tin         = nil,  -- Test ID number
-                                    page        = nil,  -- Page string
-                                    verdicts    = nil,  -- Verdict array
-                                   },
-                                   rgt.node.basic,
-                                   rgt.node.named,
-                                   rgt.node.parametrized,
-                                   rgt.node.spanning)
+local oo            = require("loop.simple")
+local co            = {}
+local co.xml_chunk  = require("co.xml_chunk")
+local rgt           = {}
+rgt.node            = {}
+rgt.node.named      = require("rgt.node.named")
+rgt.node.test       = oo.class({
+                                element     = "test",
+                                tin         = nil,      -- Test ID number
+                                page        = nil,      -- Page string
+                                verdicts    = nil,      -- Verdict array
+                               },
+                               rgt.node.named)
 
 function rgt.node.test:__init(inst)
-    rgt.node.basic:__init(inst)
-    rgt.node.named:__init(inst)
-    rgt.node.parametrized:__init(inst)
-    rgt.node.spanning:__init(inst)
-
+    assert(type(inst) == "table")
     assert(inst.tin == nil or
            type(inst.tin) == "number" and
            math.floor(inst.tin) == inst.tin and
@@ -58,63 +51,45 @@ function rgt.node.test:__init(inst)
         inst.verdicts = {}
     end
 
+    rgt.node.named:__init(inst)
+
     return oo.rawnew(self, inst)
 end
 
----
--- Start node output.
---
--- @param chunk The chunk to start output to.
---
-function rgt.node.test:start(chunk)
-    rgt.node.basic.start(chunk)
+function rgt.node.test:fill_attrs(attrs)
+    assert(type(attrs) == "table")
 
-    self.head_chunk = self.chunk
-    self.chunk = self.head_chunk:fork_next()
-    self.tail_chunk = self.chunk:fork_next()
+    rgt.node.named.fill_attrs(self, attrs)
+
+    attrs.tin = self.tin
+
+    return attrs
 end
 
-function rgt.node.test:finish(ts, result, err)
-    rgt.node.spanning:finish(self, ts, result, err)
-    rgt.node.branching:finish(self)
+function rgt.node.test:write_meta(chunk)
+    assert(oo.instanceof(chunk, co.xml_chunk))
 
-    self.head_chunk:start_tag("test",
-                              {name = self.name,
-                               result = self.result,
-                               err = self.err}):
-                    start_tag("meta"):
-                    element("start-ts", nil, self.start:format_short_abs()):
-                    element("end-ts", nil, self["end"]:format_short_abs()):
-                    element("duration", nil,
-                            (self["end"] - self.start):format_short_rel()):
-                    element("objective", nil, self.objective)
+    rgt.node.named.write_meta(self, chunk)
 
-    if #self.authors > 0 then
-        self.head_chunk:start_tag("authors")
-        for i, a in self.authors do
-            self.head_chunk:element("author", {email = a})
-        end
-        self.head_chunk:end_tag("authors"):
-    end
-
-    if #self.args > 0 then
-        self.head_chunk:start_tag("params")
-        for i, a in self.args do
-            self.head_chunk:element("param", {name = a[1], value = a[2]})
-        end
-        self.head_chunk:end_tag("params")
+    if self.page ~= nil then
+        chunk:element("page", nil, self.page)
     end
 
     if #self.verdicts > 0 then
-        self.head_chunk:start_tag("verdicts")
+        chunk:start_tag("verdicts")
         for i, v in self.verdicts do
-            self.head_chunk:element("verdict", nil, v)
+            chunk:element("verdict", nil, v)
         end
-        self.head_chunk:end_tag("verdicts"):
+        chunk:end_tag("verdicts"):
     end
 
-    self.head_chunk:end_tag("meta")
-    self.tail_chunk:end_tag("test")
+    return chunk
+end
+
+function rgt.node.test:add_child(child)
+    assert(oo.instanceof(child, rgt.node.general))
+    -- No children allowed
+    assert(false)
 end
 
 return rgt.node.test
