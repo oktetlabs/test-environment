@@ -159,8 +159,8 @@ end
 function co.xml_chunk:end_tag(name)
     assert(type(name) == "string")
 
-    return self:write((" "):rep(self.depth) ..
-                      format_end_tag(name) .. "\n"):ascend()
+    return self:ascend():write((" "):rep(self.depth) ..
+                               format_end_tag(name) .. "\n")
 end
 
 function co.xml_chunk:empty_tag(name, attrs)
