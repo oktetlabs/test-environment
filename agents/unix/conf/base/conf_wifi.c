@@ -59,6 +59,10 @@ extern te_errno ds_supplicant_network_set(unsigned int gid, const char *oid,
                                           const char *instance, ...);
 #endif
 
+#ifndef KILO
+#define KILO    1e3
+#endif
+
 #if 0
 /** The list of ioctls supported by the Agent */
 enum ta_priv_ioctl_e {
