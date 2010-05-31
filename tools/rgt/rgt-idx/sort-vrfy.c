@@ -122,6 +122,10 @@ main(int argc, char * const argv[])
          .has_arg   = no_argument,
          .flag      = NULL,
          .val       = OPT_VAL_HELP},
+        {.name      = NULL,
+         .has_arg   = 0,
+         .flag      = NULL,
+         .val       = 0}
     };
     static const char          *short_opt_list = "h";
 

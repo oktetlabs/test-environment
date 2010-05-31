@@ -271,6 +271,10 @@ main(int argc, char * const argv[])
          .has_arg   = required_argument,
          .flag      = NULL,
          .val       = OPT_VAL_SEED},
+        {.name      = NULL,
+         .has_arg   = 0,
+         .flag      = NULL,
+         .val       = 0}
     };
     static const char          *short_opt_list = "hl:o:s:";
 
