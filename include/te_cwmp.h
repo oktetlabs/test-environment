@@ -179,4 +179,34 @@ typedef union {
         _cwmp__GetOptionsResponse             *get_options_r;
     } cwmp_data_from_cpe_t; 
 
+
+/*
+ * Primitive SOAP type constants, copied here from acse_coapH.h
+ * for convenient compile. 
+ */ 
+#ifndef SOAP_TYPE_int
+#define SOAP_TYPE_int (1)
+#endif
+
+#ifndef SOAP_TYPE_byte
+#define SOAP_TYPE_byte (2)
+#endif
+
+#ifndef SOAP_TYPE_string
+#define SOAP_TYPE_string (3)
+#endif
+
+#ifndef SOAP_TYPE_unsignedInt
+#define SOAP_TYPE_unsignedInt (7)
+#endif
+
+#ifndef SOAP_TYPE_unsignedByte
+#define SOAP_TYPE_unsignedByte (8)
+#endif
+
+#ifndef SOAP_TYPE_time
+#define SOAP_TYPE_time (98)
+#endif
+
+
 #endif /*__TE_CWMP_H__ */
