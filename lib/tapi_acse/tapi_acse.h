@@ -903,27 +903,39 @@ extern _cwmp__GetParameterNames *cwmp_get_names_alloc(const char *name,
 extern void cwmp_get_names_free(_cwmp__GetParameterNames *arg);
 
 /**
+ * Iterate over GetParameterNames response.
+ */
+#define GET_NAMES_RESP_FOREACH(resp_, item_) \
+    for ()
+
+/**
  * Free GetParameterNames response, which is got from regular TAPI.
  */
 extern void cwmp_get_names_resp_free(_cwmp__GetParameterNamesResponse *r);
 
 /**
  * Construct GetParameterValues argument.
+ * Last argument in list should be VA_END_LIST;
  */
 extern _cwmp__GetParameterValues *cwmp_get_values_alloc(const char *name,
                                                         ...);
 
 /**
  * Add name to GetParameterValues argument.
+ * Last argument in list should be VA_END_LIST;
  */
+extern te_errno cwmp_get_values_add(_cwmp__GetParameterValues *req,
+                                    const char *name, ...);
 
 /**
  * Free GetParameterValues argument.
  */
+extern void cwmp_get_values_free(_cwmp__GetParameterValues *req);
 
 /**
  * Iterate over GetParameterValues response.
  */
+
 
 /**
  * Find param in GetParameterValues response.
@@ -932,8 +944,29 @@ extern _cwmp__GetParameterValues *cwmp_get_values_alloc(const char *name,
 /**
  * Free GetParameterValues response.
  */
+extern void cwmp_get_values_resp_free(_cwmp__GetParameterValues *resp);
 
 
+/**
+ * Construct SetParameterValues argument.
+ * All agruments, besides last one, should be separated 
+ * to the triples <name>, <type>, <value>.
+ * Last argument (instead of next <name>) in list should be VA_END_LIST.
+ * Parameter <type> should be int value, <value> should be respective:
+ *   <type>                          expected C type of <value>
+ * SOAP_TYPE_int                        int       
+ * SOAP_TYPE_byte                       char
+ * SOAP_TYPE_string                     const char *
+ * SOAP_TYPE_unsignedInt                uint32_t
+ * SOAP_TYPE_unsignedByte               uint8_t
+ * SOAP_TYPE_time                       time_t
+ * SOAP_TYPE_SOAP_ENC__base64           const char * (??)
+ * 
+ */
+extern _cwmp__SetParameterValues *cwmp_set_values_alloc(
+                            const char *par_key,
+                            const char *f_name,
+                            ...);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

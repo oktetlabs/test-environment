@@ -574,6 +574,7 @@ tapi_acse_cpe_set_parameter_values_resp(
 
 
 
+/* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_disconnect(rcf_rpc_server *acse_rpcs,
                          const char *acs_name,
@@ -581,4 +582,198 @@ tapi_acse_cpe_disconnect(rcf_rpc_server *acse_rpcs,
 {
     return rpc_cwmp_op_call(acse_rpcs, acs_name, cpe_name,
                             CWMP_RPC_NONE, NULL, 0, NULL);
+}
+
+
+
+/*
+ * ============= Useful routines for prepare CWMP RPC params =============
+ */
+
+/* see description in tapi_acse.h */
+_cwmp__GetParameterNames *
+cwmp_get_names_alloc(const char *name, te_bool next_level)
+{
+    _cwmp__GetParameterNames *ret = calloc(1, sizeof(*ret));
+    ret->NextLevel = next_level;
+    ret->ParameterPath = malloc(sizeof(char*));
+    if (NULL == name)
+        ret->ParameterPath[0] = NULL;
+    else    
+        ret->ParameterPath[0] = strdup(name);
+    return ret;
+}
+
+/* see description in tapi_acse.h */
+void
+cwmp_get_names_free(_cwmp__GetParameterNames *arg)
+{
+    if (NULL == arg)
+        return;
+    do {
+        if (NULL == arg->ParameterPath)
+            break;
+        free(arg->ParameterPath);
+        if (NULL == arg->ParameterPath[0])
+            break;
+        free(arg->ParameterPath[0]);
+    } while (0);
+    free(arg);
+    return;
+}
+
+
+
+/* see description in tapi_acse.h */
+void
+cwmp_get_names_resp_free(_cwmp__GetParameterNamesResponse *resp)
+{
+    if (NULL == resp)
+        return;
+    /* response is assumed to be obtained from this TAPI, with pointers,
+        which are filled by cwmp_data_unpack_* methods, so there is only
+        one block of allocated memory */
+    free(resp);
+    return;
+}
+
+#define CWMP_VAL_ARR_QUANTUM 8
+
+
+/* see description in tapi_acse.h */
+_cwmp__GetParameterValues *
+cwmp_get_values_alloc(const char *first_name, ...)
+{
+    va_list     ap;
+    size_t      real_arr_len = 0, i = 0;
+    const char *v_name = first_name;
+    char      **array = NULL;
+
+    _cwmp__GetParameterValues *ret = malloc(sizeof(*ret));
+
+    va_start(ap, first_name);
+    do {
+        if (real_arr_len <= i)
+        {
+            real_arr_len += CWMP_VAL_ARR_QUANTUM;
+            array = realloc(array, real_arr_len * sizeof(char*));
+        }
+        array[i] = (NULL != v_name ? strdup(v_name) : NULL);
+
+        v_name = va_arg(ap, const char *);
+        i++;
+    } while (VA_END_LIST != v_name);
+    va_end(ap);
+
+    ret->ParameterNames_ = malloc(sizeof(struct ParameterNames));
+    ret->ParameterNames_->__size = i;
+    ret->ParameterNames_->__ptrstring = array;
+
+    return ret;
+} 
+
+/* see description in tapi_acse.h */
+te_errno
+cwmp_get_values_add(_cwmp__GetParameterValues *req, const char *name, ...)
+{
+    ERROR("%s(): TODO", __FUNCTION__);
+    return TE_EFAIL;
+}
+
+
+/* see description in tapi_acse.h */
+void
+cwmp_get_values_free(_cwmp__GetParameterValues *req)
+{
+    size_t i;
+    if (NULL == req)
+        return;
+    do {
+        if (NULL == req->ParameterNames_)
+            break;
+        for (i = 0; i < req->ParameterNames_->__size; i++)
+            free(req->ParameterNames_->__ptrstring[i]);
+        free(req->ParameterNames_);
+    } while (0);
+    free(req);
+}
+
+/* see description in tapi_acse.h */
+void
+cwmp_get_values_resp_free(_cwmp__GetParameterValues *resp)
+{
+    if (NULL == resp)
+        return;
+    /* response is assumed to be obtained from this TAPI, with pointers,
+        which are filled by cwmp_data_unpack_* methods, so there is only
+        one block of allocated memory */
+    free(resp);
+    return;
+}
+
+
+
+
+_cwmp__SetParameterValues *
+cwmp_set_values_alloc(const char *par_key, const char *first_name, ...)
+{
+    va_list     ap;
+    size_t      real_arr_len = 0, i = 0;
+    const char *v_name = first_name;
+
+    struct cwmp__ParameterValueStruct **array = NULL;
+
+    _cwmp__SetParameterValues *ret = malloc(sizeof(*ret));
+
+    ret->ParameterKey = strdup(NULL != par_key ? par_key : "tapi acse");
+
+    va_start(ap, first_name);
+    do {
+        if (real_arr_len <= i)
+        {
+            real_arr_len += CWMP_VAL_ARR_QUANTUM;
+            array = realloc(array, real_arr_len * sizeof(array[0]));
+        }
+        array[i] = malloc(sizeof(struct cwmp__ParameterValueStruct));
+        array[i]->Name = strdup(NULL != v_name ? v_name : "");
+        array[i]->__type = va_arg(ap, int);
+        switch (array[i]->__type)
+        {
+#define SET_SOAP_TYPE(type_, arg_type_) \
+            do { \
+                type_ val = va_arg(ap, arg_type_ ); \
+                array[i]->Value = malloc(sizeof(type_)); \
+                *((type_ *)array[i]->Value) = val; \
+            } while (0)
+
+            case SOAP_TYPE_int:         
+                SET_SOAP_TYPE(int, int);  break;
+            case SOAP_TYPE_byte:
+                SET_SOAP_TYPE(char, int); break;
+            case SOAP_TYPE_unsignedInt:
+                SET_SOAP_TYPE(uint32_t, int); break;
+            case SOAP_TYPE_unsignedByte:
+                SET_SOAP_TYPE(uint8_t, int); break;
+            case SOAP_TYPE_time:
+                SET_SOAP_TYPE(time_t, time_t); break;
+
+            case SOAP_TYPE_string:
+            case SOAP_TYPE_SOAP_ENC__base64:
+                {
+                    const char * val = va_arg(ap, const char *);
+                    array[i]->Value = strdup(NULL != val ? val : "");
+                }
+                break;
+        }
+
+        v_name = va_arg(ap, const char *);
+        i++;
+    } while (VA_END_LIST != v_name);
+    va_end(ap);
+
+    ret->ParameterList = malloc(sizeof(struct ParameterValueList));
+    ret->ParameterList->__size = i;
+    ret->ParameterList->__ptrParameterValueStruct = array;
+
+    return ret;
 }
