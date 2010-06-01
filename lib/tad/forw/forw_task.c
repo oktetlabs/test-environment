@@ -214,7 +214,7 @@ ftask_hash_remove(forw_task_descr_t *ftask_p)
 }
 
 /* See description in forwader.h */
-int 
+int
 tadf_add_forw_task(const char *forw_asn_spec, int sendq_id)
 {
     int rc = 0;
@@ -232,7 +232,7 @@ tadf_add_forw_task(const char *forw_asn_spec, int sendq_id)
             break;
         }
 
-        rc = asn_parse_value_text(forw_asn_spec, ndn_forw_action, 
+        rc = asn_parse_value_text(forw_asn_spec, ndn_forw_action,
                                   &forward_action_spec, &syms);
         if (rc)
         {
@@ -240,20 +240,20 @@ tadf_add_forw_task(const char *forw_asn_spec, int sendq_id)
             break;
         }
 
-        new_task_descr = calloc(1, sizeof(*new_task_descr)); 
+        new_task_descr = calloc(1, sizeof(*new_task_descr));
         if (new_task_descr == NULL)
         {
-            rc = TE_ENOMEM; 
+            rc = TE_ENOMEM;
             break;
         }
 
         new_task_descr->asn_forw_action = forward_action_spec;
 
-        rc = ndn_forw_action_asn_to_plain(forward_action_spec, 
+        rc = ndn_forw_action_asn_to_plain(forward_action_spec,
                                           &(new_task_descr->spec));
         if (rc != 0)
         {
-            ERROR("%s: convert ASN to plain value failed: %r", 
+            ERROR("%s: convert ASN to plain value failed: %r",
                     __FUNCTION__, rc);
             break;
         }
@@ -265,20 +265,20 @@ tadf_add_forw_task(const char *forw_asn_spec, int sendq_id)
             break;
         }
 
-        rc = ftask_hash_insert(new_task_descr); 
+        rc = ftask_hash_insert(new_task_descr);
         if (rc != 0)
         {
             ERROR("Forw task %s entry insert fails %r",
                   new_task_descr->spec.id, rc);
             break;
-        } 
+        }
     } while(0);
 
-    if (rc != 0)
-    { 
-        /* 
+    if (rc != 0 && new_task_descr != NULL)
+    {
+        /*
          * Last operation, which may fail, is insertion into hash,
-         * so if error occured, in any case, entry is not inserted in 
+         * so if error occured, in any case, entry is not inserted in
          * hash. Do not try to remove it.
          */
         asn_free_value(new_task_descr->asn_forw_action);
