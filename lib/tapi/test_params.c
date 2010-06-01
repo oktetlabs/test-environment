@@ -41,9 +41,15 @@
 #endif
 
 #include "te_defs.h"
+#include "te_ethernet.h"
 #include "logger_api.h"
 
 #include "tapi_test.h"
+#include "tapi_cfg.h"
+#include "asn_impl.h"
+#include "asn_usr.h"
+#include "ndn.h"
+#include "ndn_base.h"
 
 
 /** Global variable with entity name for logging */
@@ -262,5 +268,369 @@ test_split_param_list(const char *list, char ***array_p)
             ptr++;
     }
     /* Unreachable */
+}
+
+#define BUFLEN 512
+/*
+ * Structure to store (parameter name, value) pair
+ */
+typedef struct tapi_asn_param_pair {
+    char *name;
+    char *value;
+} tapi_asn_param_pair;
+
+/**
+ * Function parses value and converts it to ASN value.
+ * It also handles cfg links.
+ *
+ * @param ns    Preallocated buffer for updated value
+ */
+te_errno
+tapi_asn_param_value_parse(char              *pwd,
+                           char             **s,
+                           const asn_type    *type,
+                           asn_value        **parsed_val,
+                           int               *parsed_syms,
+                           char              *ns)
+{
+    te_errno rc;
+
+    if (type == ndn_base_octets)
+    {
+        /*
+         * Check and convert if necessary human-readable notation
+         * 10.0.0.1 to ASN standard notation '0a 00 00 01'H
+         */
+        char *p;
+        struct in_addr addr;
+
+        p = strchr(*s, '.');
+        if (p != NULL)
+        {
+            /* We need a conversion */
+            if (inet_aton(*s, &addr) == 0)
+            {
+                ERROR("Failed to parse IP address '%s'", *s);
+                rc = TE_EFAULT;
+                return rc;
+            }
+
+            snprintf(ns, BUFLEN, "'%02x %02x %02x %02x'H",
+                     (addr.s_addr) & 0xff,
+                     (addr.s_addr >> 8) & 0xff,
+                     (addr.s_addr >> 16) & 0xff,
+                     (addr.s_addr >> 24) & 0xff);
+
+            *s = ns;
+        }
+    }
+
+    INFO("%s: called, pwd='%s' %d", __FUNCTION__, pwd, strlen(pwd));
+    /* in case we deal with cfg link */
+    if (tapi_is_cfg_link(*s))
+    {
+        int                 int_val = 0;
+        struct sockaddr    *address_val = NULL;
+        uint8_t             mac_val[ETHER_ADDR_LEN];
+        int                 pwd_offset = strlen(pwd);
+        char               *c = (*s + strlen(TAPI_CFG_LINK_PREFIX));
+        int                 add;
+
+        /* *c = ('/' | '.' | 'letter') */
+        if (*c == '/')
+            pwd_offset = 0;
+
+        add = snprintf(pwd + pwd_offset, BUFLEN - pwd_offset,
+                       "/%s", c + (*c == '.' ? 2 : *c == '/' ? 1 : 0));
+
+        if (*c != '.')
+            pwd_offset += add;
+
+        rc = cfg_get_instance_fmt(NULL,
+                                  (void*)((type == ndn_base_octets) ?
+                                  &address_val : &int_val),
+                                  "%s", pwd);
+        pwd[pwd_offset] = '\0';
+        if (rc != 0)
+        {
+            ERROR("%s: bad cfg link '%s' (pwd='%s') given: %r",
+                  __FUNCTION__, *s, pwd, rc);
+            return rc;
+        }
+
+        /* Fixme: looks ugly */
+        if (strstr(pwd, "link_addr") != NULL)
+        {
+            memcpy(mac_val, address_val->sa_data, ETHER_ADDR_LEN);
+
+            snprintf(ns, BUFLEN, "'%02x %02x %02x %02x %02x %02x'H",
+                     mac_val[0], mac_val[1], mac_val[2],
+                     mac_val[3], mac_val[4], mac_val[5]);
+        }
+        else if (type == ndn_base_octets)
+        {
+            snprintf(ns, BUFLEN, "'%02x %02x %02x %02x'H",
+                     (SIN(address_val)->sin_addr.s_addr) & 0xff,
+                     (SIN(address_val)->sin_addr.s_addr >> 8) & 0xff,
+                     (SIN(address_val)->sin_addr.s_addr >> 16) & 0xff,
+                     (SIN(address_val)->sin_addr.s_addr >> 24) & 0xff);
+        }
+        else
+        {
+            snprintf(ns, BUFLEN, "%d", int_val);
+        }
+
+        free(address_val);
+        *s = ns;
+    }
+
+    rc = asn_parse_value_text(*s, type, parsed_val, parsed_syms);
+
+    return rc;
+}
+
+
+/* See description in tapi_test.h */
+te_errno
+tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
+                    const asn_type *conf_type, asn_value *conf_value)
+{
+    te_errno        rc = 0;
+    int             i;
+    const char     *type_suffix = ".type";
+    char           *name = NULL;
+    char           *value = NULL;
+    char           *p = NULL;
+    int             parsed_syms;
+    asn_value      *asn_param_value;
+    int             index;
+    const asn_type *asn_param_type;
+    char            asn_path[BUFLEN];
+    unsigned int    asn_path_len = BUFLEN;
+    char            temp_buf[BUFLEN];
+
+    tapi_asn_param_pair *param = NULL;
+
+    /* Sets for different kind of parameters */
+    tapi_asn_param_pair *creation_param = NULL;
+    tapi_asn_param_pair *change_param = NULL;
+    int                  creation_param_count = 0;
+    int                  change_param_count = 0;
+
+    char pwd[BUFLEN];    /* filled with zeroes on init */
+
+    /* should be all filled with zeroes */
+    memset(pwd, 0, sizeof(pwd));
+
+    creation_param = malloc(argc * sizeof(tapi_asn_param_pair));
+    if (creation_param == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto cleanup;
+    }
+
+    change_param = malloc(argc * sizeof(tapi_asn_param_pair));
+    if (change_param == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto cleanup;
+    }
+
+    /*
+     * Separate parameters to several sets:
+     *  - Object creation (type specification) - ends with '.type'
+     *  - Parameters change
+     *  - Other non-ASN parameter
+     */
+    for (i = 0; i < argc; i++)
+    {
+        if (0 != strncmp(argv[i], conf_prefix, strlen(conf_prefix)))
+            continue;
+
+        name = malloc(strlen(argv[i]) + 1);
+        strcpy(name, argv[i] + strlen(conf_prefix));
+        value = strchr(name, '=');
+        *value = '\0';
+        value++;
+        p = strstr(name, type_suffix);
+        if ((p != NULL) &&
+            (unsigned)(p - name) == strlen(name) - strlen(type_suffix) &&
+            strcmp(value, "INVALID") != 0)
+        {
+            /* This is creation */
+            creation_param[creation_param_count].name = name;
+            creation_param[creation_param_count].name[strlen(name) -
+                strlen(type_suffix)] = '\0';
+            creation_param[creation_param_count].value = value;
+            creation_param_count++;
+        }
+        else
+        {
+            if (strcmp(value, "INVALID") != 0)
+            {
+                /* This is parameter change */
+                change_param[change_param_count].name = name;
+                change_param[change_param_count].value = value;
+                change_param_count++;
+            }
+        }
+    }
+
+    if (creation_param_count + change_param_count == 0)
+    {
+        ERROR("No ASN configuration test parameters found");
+    }
+    else
+    {
+        RING("Found %d ASN configuration parameters",
+             creation_param_count + change_param_count);
+    }
+
+    /* Process creation parameters */
+    INFO("%s: process creation parameters", __FUNCTION__);
+    for (i = 0; i < creation_param_count; i++)
+    {
+        unsigned int subtype_id;
+
+        param = &creation_param[i];
+        RING("%s: name='%s' value='%s'",
+             __FUNCTION__, param->name, param->value);
+
+        for (subtype_id = 0; subtype_id < conf_type->len; subtype_id++)
+        {
+            const asn_named_entry_t *entry =
+                &conf_type->sp.named_entries[subtype_id];
+
+            RING("Iterate entry %s", entry->name);
+
+            if (strncmp(param->name, entry->name, strlen(entry->name)) == 0)
+            {
+                if (entry->type->syntax != SEQUENCE_OF)
+                {
+                    ERROR("Syntax of %s is not SEQUENCE_OF", entry->name);
+                    rc = TE_EINVAL;
+                    break;
+                }
+                rc = asn_parse_value_text(param->value,
+                                          &entry->type->sp.subtype[0],
+                                          &asn_param_value, &parsed_syms);
+                break;
+            }
+        }
+        if (subtype_id >= conf_type->len)
+        {
+            RING("Failed to find matching entry for %s", param->name);
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        if (rc != 0)
+        {
+            ERROR("Failed to parse creation param #%d, value='%s'."
+                  "\nError at '%s'",
+                  i, param->value,
+                 param->value + parsed_syms);
+            goto cleanup;
+        }
+
+        rc = asn_insert_value_extended_path(conf_value,
+                                            param->name,
+                                            asn_param_value,
+                                            &index);
+        if (rc != 0)
+        {
+            ERROR("Failed to insert parameter #%d into ASN configuration, "
+                  "rc=%r", i, rc);
+            goto cleanup;
+        }
+    }
+
+    RING("Creation params processed");
+
+    /* Process parameter change */
+    for (i = 0; i < change_param_count; i++)
+    {
+        param = &change_param[i];
+#if 0
+        RING("%s: name='%s' value='%s'", __FUNCTION__,
+             param->name, param->value);
+#endif
+        rc = asn_path_from_extended(conf_value,
+                                    param->name,
+                                    asn_path,
+                                    asn_path_len,
+                                    TRUE);
+        if (rc != 0)
+        {
+            ERROR("Failed to convert extended path to normal, path='%s', "
+                  "rc=%r", param->name, rc);
+            goto cleanup;
+        }
+
+        rc = asn_get_subtype(conf_type, &asn_param_type, asn_path);
+        if (rc != 0)
+        {
+            ERROR("Failed to get subtype for path '%s', rc=%r",
+                  asn_path, rc);
+            goto cleanup;
+        }
+
+        /* internal function call, NOT ASN! */
+        rc = tapi_asn_param_value_parse(pwd, &param->value, asn_param_type,
+                                        &asn_param_value, &parsed_syms,
+                                        temp_buf);
+        if (rc != 0)
+        {
+            ERROR("Failed to parse ASN value '%s'."
+                  "\nError at '%s', rc=%r",
+                  param->value, param->value + parsed_syms, rc);
+            goto cleanup;
+        }
+
+        rc = asn_put_descendent(conf_value,
+                                asn_param_value,
+                                asn_path);
+        if (rc != 0)
+        {
+            ERROR("Failed to add item into configuration tree at '%s', "
+                  "rc=%r", asn_path, rc);
+            goto cleanup;
+        }
+    }
+
+
+    INFO("Changed params processed");
+
+cleanup:
+    if (creation_param != NULL)
+    {
+        for (i = 0; i < creation_param_count; i++)
+        {
+            if (creation_param[i].name != NULL)
+                free(creation_param[i].name);
+        }
+
+        free(creation_param);
+    }
+    if (change_param != NULL)
+    {
+        for (i = 0; i < change_param_count; i++)
+        {
+            if (change_param[i].name != NULL)
+                free(change_param[i].name);
+        }
+
+        free(change_param);
+    }
+
+    if (rc == 0)
+    {
+        RING("ASN parameters parsed succesfully");
+    }
+    else
+    {
+        ERROR("Failed to parse ASN parameters, rc=%r", rc);
+    }
+
+    return rc;
 }
 

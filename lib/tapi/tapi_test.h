@@ -52,6 +52,8 @@
 #include "logger_ten.h"
 #include "tapi_jmp.h"
 #include "tapi_test_log.h"
+#include "asn_impl.h"
+#include "asn_usr.h"
 
 #include "te_tools.h"
 
@@ -647,6 +649,35 @@ test_sleep_scale(void)
 
     return scale;
 }
+
+/**
+ * Function parses value and converts it to ASN value.
+ * It also handles cfg links.
+ *
+ * @param ns    Preallocated buffer for updated value
+ */
+extern te_errno
+tapi_asn_param_value_parse(char              *pwd,
+                           char             **s,
+                           const asn_type    *type,
+                           asn_value        **parsed_val,
+                           int               *parsed_syms,
+                           char              *ns);
+
+/**
+ * Parse test ASN parameters.
+ *
+ * @param argc          Amount of test parameters
+ * @param argv          Test parameters array
+ * @param conf_prefix   Test ASN parameters prefix
+ * @param conf_type     Test ASN parameters aggregation type
+ * @param conf_value    Resulted ASN parameters aggregation value
+ *
+ * @return 0 if success, or corresponding error otherwise
+ */
+extern te_errno
+tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
+                    const asn_type *conf_type, asn_value *conf_value);
 
 /**
  * Scalable sleep (sleep scale times for _to_sleep seconds).

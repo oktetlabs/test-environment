@@ -19,6 +19,7 @@ lib_LTLIBRARIES=libndn.la
 include_HEADERS = \
 	ndn.h \
 	ndn_internal.h \
+	ndn_base.h \
 	ndn_pcap.h \
 	ndn_ppp.h \
 	ndn_atm.h \
@@ -40,6 +41,7 @@ include_HEADERS = \
 libndn_la_SOURCES = \
 	ndn_generic.c \
 	ndn_context.c \
+	ndn_base.c \
 	ndn_pcap.c \
 	ndn_ppp.c \
 	ndn_atm.c \
