@@ -81,6 +81,16 @@ static const char * const trc_html_doc_start =
 "    .E {font-weight: bold; text-align: right; "
 "padding-left: 0.14in; padding-right: 0.14in}\n"
 "  </style>\n"
+"  <script type=\"text/javascript\">\n"
+"    function showSpoiler(obj)\n"
+"    {\n"
+"      var inner = obj.parentNode.getElementsByTagName(\"div\")[0];\n"
+"      if (inner.style.display == \"none\")\n"
+"        inner.style.display = \"\";\n"
+"      else\n"
+"        inner.style.display = \"none\";\n"
+"    }\n"
+"  </script>\n"
 "</head>\n"
 "<body lang=\"en-US\" dir=\"ltr\">\n";
 
@@ -313,6 +323,14 @@ static const char * const trc_test_exp_got_row_start =
 "      </td>\n"
 "      <td>";
 
+static const char * const trc_test_exp_got_row_params_start =
+"<input type=\"button\" onclick=\"showSpoiler(this);\""
+" value=\"Parameters\" />\n"
+"          <div class=\"inner\" style=\"display:none;\">";
+
+static const char * const trc_test_exp_got_row_params_end =
+" </div>";
+
 static const char * const trc_test_exp_got_row_mid =
 " </td>\n<td>";
 
@@ -453,9 +471,13 @@ trc_report_exp_got_to_html(FILE                *f,
                     test->name);
             *anchor = FALSE;
 
+            WRITE_STR(trc_test_exp_got_row_params_start);
+
             rc = trc_test_iter_args_to_html(f, &iter->args, 0);
             if (rc != 0)
                 break;
+
+            WRITE_STR(trc_test_exp_got_row_params_end);
 
             WRITE_STR(trc_test_exp_got_row_mid);
 
