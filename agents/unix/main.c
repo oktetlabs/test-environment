@@ -2153,6 +2153,7 @@ main(int argc, char **argv)
     }
 
     /* FIXME Correct retval to return */
+    ta_log_shutdown();
     return retval;
 }
 

@@ -24,9 +24,9 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AC_PREREQ([2.59])
+AC_PREREQ(2.61)
 
-AC_INIT([test_environment], [0.9], [Elena.Vengerova@oktetlabs.ru])
+AC_INIT([test_environment],[0.9],[Elena.Vengerova@oktetlabs.ru])
 
 AC_CONFIG_AUX_DIR([auxdir])
 

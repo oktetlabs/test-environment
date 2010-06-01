@@ -777,3 +777,30 @@ cwmp_set_values_alloc(const char *par_key, const char *first_name, ...)
 
     return ret;
 }
+
+
+void
+cwmp_set_values_free(_cwmp__SetParameterValues *req)
+{
+    size_t i;
+    if (NULL == req)
+        return;
+    do {
+        free(req->ParameterKey);
+
+        if (NULL == req->ParameterList)
+            break;
+        for (i = 0; i < req->ParameterList->__size; i++)
+        {
+            struct cwmp__ParameterValueStruct *par_val = 
+                req->ParameterList->__ptrParameterValueStruct[i];
+            free(par_val->Name);
+            free(par_val->Value);
+            free(par_val);
+        }
+        free(req->ParameterList);
+    } while (0);
+    free(req);
+}
+
+
