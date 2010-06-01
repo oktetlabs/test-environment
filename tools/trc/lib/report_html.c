@@ -48,6 +48,8 @@
 #include "trc_report.h"
 #include "re_subst.h"
 
+/** Define to 1 to use spoilers to show/hide test parameters */
+#define TRC_USE_PARAMS_SPOILERS 0
 
 #define WRITE_STR(str) \
     do {                                                \
@@ -81,18 +83,28 @@ static const char * const trc_html_doc_start =
 "    .E {font-weight: bold; text-align: right; "
 "padding-left: 0.14in; padding-right: 0.14in}\n"
 "  </style>\n"
+#if TRC_USE_PARAMS_SPOILERS
 "  <script type=\"text/javascript\">\n"
 "    function showSpoiler(obj)\n"
 "    {\n"
+"      var button = obj.parentNode.getElementsByTagName(\"input\")[0];\n"
 "      var inner = obj.parentNode.getElementsByTagName(\"div\")[0];\n"
 "      if (inner.style.display == \"none\")\n"
+"      {\n"
 "        inner.style.display = \"\";\n"
+"        button.value=\"Hide Parameters\";"
+"      }\n"
 "      else\n"
+"      {\n"
 "        inner.style.display = \"none\";\n"
+"        button.value=\"Show Parameters\";"
+"      }\n"
 "    }\n"
 "  </script>\n"
+#endif
 "</head>\n"
 "<body lang=\"en-US\" dir=\"ltr\">\n";
+
 
 static const char * const trc_html_doc_end =
 "</body>\n"
@@ -321,15 +333,17 @@ static const char * const trc_test_exp_got_row_start =
 "      <td>\n"
 "        %s<b><a %s%s%shref=\"#OBJECTIVE%s\">%s</a></b>\n"
 "      </td>\n"
-"      <td>";
+"      <td valign=top>";
 
+#if TRC_USE_PARAMS_SPOILERS
 static const char * const trc_test_exp_got_row_params_start =
 "<input type=\"button\" onclick=\"showSpoiler(this);\""
-" value=\"Parameters\" />\n"
+" value=\"Show Parameters\" />\n"
 "          <div class=\"inner\" style=\"display:none;\">";
 
 static const char * const trc_test_exp_got_row_params_end =
 " </div>";
+#endif
 
 static const char * const trc_test_exp_got_row_mid =
 " </td>\n<td>";
@@ -471,13 +485,19 @@ trc_report_exp_got_to_html(FILE                *f,
                     test->name);
             *anchor = FALSE;
 
-            WRITE_STR(trc_test_exp_got_row_params_start);
+#if TRC_USE_PARAMS_SPOILERS
+            if (!TAILQ_EMPTY(&iter->args.head))
+                WRITE_STR(trc_test_exp_got_row_params_start);
+#endif
 
             rc = trc_test_iter_args_to_html(f, &iter->args, 0);
             if (rc != 0)
                 break;
 
-            WRITE_STR(trc_test_exp_got_row_params_end);
+#if TRC_USE_PARAMS_SPOILERS
+            if (!TAILQ_EMPTY(&iter->args.head))
+                WRITE_STR(trc_test_exp_got_row_params_end);
+#endif
 
             WRITE_STR(trc_test_exp_got_row_mid);
 
