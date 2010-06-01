@@ -189,66 +189,157 @@ asn_type ndn_ip6_pld_chksm_s = {
     {_ndn_ip6_pld_chksm_ne_array}
 };
 
+
+/**
+ * Type-Length-Value (TLV) encoded "options" (see RFC 2460, section 4.2).
+ */
+static asn_named_entry_t _ndn_ip6_ext_header_option_tlv_ne_array [] = {
+    { "type",   &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPT_TYPE } },
+    { "length", &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPT_LEN } },
+    { "data",   &ndn_data_unit_octet_string_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPT_DATA } } ,
+};
+
+asn_type ndn_ip6_ext_header_option_tlv_s = {
+    "IP6-Extention-Header-Option-TLV",
+    {PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPT_TLV}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_ip6_ext_header_option_tlv_ne_array),
+    {_ndn_ip6_ext_header_option_tlv_ne_array}
+};
+
+/**
+ * Router Alert Option definition (see RFC 2711).
+ */
+static asn_named_entry_t _ndn_ip6_ext_header_option_ra_ne_array [] = {
+    { "type",   &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPT_TYPE } },
+    { "length", &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPT_LEN } },
+    { "value",   &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPT_VALUE } } ,
+};
+
+asn_type ndn_ip6_ext_header_option_router_alert_s = {
+    "IP6-Extention-Header-Option-Router-Alert",
+    {PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPT_ROUTER_ALERT}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_ip6_ext_header_option_ra_ne_array),
+    {_ndn_ip6_ext_header_option_ra_ne_array}
+};
+
+/**
+ * An array of possible option types carried in Hop-by-Hop and
+ * Destination extention headers (see RFC 2460, section 4.2).
+ */
+static asn_named_entry_t _ndn_ip6_ext_header_option_ne_array [] = {
+    { "pad1", &asn_base_null_s,
+      {PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPT_PAD1} },
+    { "tlv",  &ndn_ip6_ext_header_option_tlv_s,
+      {PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPT_TLV} },
+    { "router-alert",  &ndn_ip6_ext_header_option_router_alert_s,
+      {PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPT_ROUTER_ALERT} },
+};
+
+asn_type ndn_ip6_ext_header_option_s = {
+    "IPv6-Extention-Header-Option",
+    {PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPTIONS}, CHOICE,
+    TE_ARRAY_LEN(_ndn_ip6_ext_header_option_ne_array),
+    {_ndn_ip6_ext_header_option_ne_array}
+};
+
+const asn_type * const ndn_ip6_ext_header_option =
+                                        &ndn_ip6_ext_header_option_s;
+
+asn_type ndn_ip6_ext_header_options_seq_s = {
+    "SEQUENCE OF IPv6-Extention-Header-Option",
+    {PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPTIONS}, SEQUENCE_OF, 0,
+    {subtype: &ndn_ip6_ext_header_option_s}
+};
+
+const asn_type * const ndn_ip6_ext_header_options_seq =
+                                        &ndn_ip6_ext_header_options_seq_s;
+
+/**
+ * Sequence of fields for Options Header:
+ * Hop-by-Hop and Destination headers.
+ *
+ * IP6-Extention-Header-[Hop-by-Hop|Destination] ::= SEQUENCE {
+ *     next-header [0] DATA-UNIT{INTEGER (0..255) }
+ *     length      [1] DATA-UNIT{INTEGER (0..255) } OPTIONAL,
+ *     options     [3] SEQUENCE OF IPv6-Extention-Header-Option OPTIONAL,
+ * }
+ */
+static asn_named_entry_t _ndn_ip6_ext_header_options_hdr_ne_array [] = {
+    { "next-header",  &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_NEXT_HEADER } },
+    { "length",       &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_LEN } },
+    { "options", &ndn_ip6_ext_header_options_seq_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPTIONS } },
+};
+
+asn_type ndn_ip6_ext_header_hop_by_hop_s = {
+    "IP6-Extention-Header-Hop-by-Hop",
+    {PRIVATE, NDN_TAG_IP6_EXT_HEADER_HOP_BY_HOP}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_ip6_ext_header_options_hdr_ne_array),
+    {_ndn_ip6_ext_header_options_hdr_ne_array}
+};
+const asn_type * const ndn_ip6_ext_header_hop_by_hop =
+                                &ndn_ip6_ext_header_hop_by_hop_s;
+
+asn_type ndn_ip6_ext_header_destination_s = {
+    "IP6-Extention-Header-Destination",
+    {PRIVATE, NDN_TAG_IP6_EXT_HEADER_DESTINATION}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_ip6_ext_header_options_hdr_ne_array),
+    {_ndn_ip6_ext_header_options_hdr_ne_array}
+};
+const asn_type * const ndn_ip6_ext_header_destination =
+                                &ndn_ip6_ext_header_destination_s;
+
+static asn_named_entry_t _ndn_ip6_ext_header_ne_array [] = {
+    { "hop-by-hop", &ndn_ip6_ext_header_hop_by_hop_s,
+                    {PRIVATE, NDN_TAG_IP6_EXT_HEADER_HOP_BY_HOP} },
+    { "destination", &ndn_ip6_ext_header_destination_s,
+                    {PRIVATE, NDN_TAG_IP6_EXT_HEADER_DESTINATION} },
+};
+
+asn_type ndn_ip6_ext_header_s = {
+    "IPv6-Extention-Header", {PRIVATE, NDN_TAG_IP6_EXT_HEADERS}, CHOICE,
+    TE_ARRAY_LEN(_ndn_ip6_ext_header_ne_array),
+    {_ndn_ip6_ext_header_ne_array}
+};
+
+const asn_type * const ndn_ip6_ext_header = &ndn_ip6_ext_header_s;
+
+asn_type ndn_ip6_ext_headers_seq_s = {
+    "SEQUENCE OF IPv6-Extention-Header",
+    {PRIVATE, NDN_TAG_IP6_EXT_HEADERS}, SEQUENCE_OF, 0,
+    {subtype: &ndn_ip6_ext_header_s}
+};
+
+const asn_type * const ndn_ip6_ext_headers_seq = &ndn_ip6_ext_headers_seq_s;
+
 static asn_named_entry_t _ndn_ip6_header_ne_array [] = {
     { "version",         &ndn_data_unit_int4_s,
       { PRIVATE, NDN_TAG_IP6_VERSION } },
-    { "traffic-class",        &ndn_data_unit_int8_s,
+    { "traffic-class",   &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_IP6_TCL } },
-    { "flow-label", &ndn_data_unit_int32_s,
+    { "flow-label",      &ndn_data_unit_int32_s,
       { PRIVATE, NDN_TAG_IP6_FLAB } },
-    { "payload-length",    &ndn_data_unit_int16_s,
+    { "payload-length",  &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_IP6_LEN } },
-    { "next-header",        &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_NHDR } },
-    { "hop-limit",   &ndn_data_unit_int8_s,
+    { "next-header",     &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_NEXT_HEADER } },
+    { "hop-limit",       &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_IP6_HLIM } },
     { "src-addr",        &ndn_data_unit_ip6_address_s,
       { PRIVATE, NDN_TAG_IP6_SRC_ADDR } },
     { "dst-addr",        &ndn_data_unit_ip6_address_s,
       { PRIVATE, NDN_TAG_IP6_DST_ADDR } },
 
-    { "next-header-hbh",    &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_EXTH_HBH_NHDR } },
-    { "hdr-ext-len-hbh",    &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_EXTH_HBH_HEXL } },
-    { "options-hbh",        &ndn_data_unit_octet_string_s,
-      { PRIVATE, NDN_TAG_IP6_EXTH_HBH_OPTIONS } },
-
-    { "next-header-doh1",    &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_EXTH_DOH1_NHDR } },
-    { "hdr-ext-len-doh1",    &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_EXTH_DOH1_HEXL } },
-    { "options-doh1",        &ndn_data_unit_octet_string_s,
-      { PRIVATE, NDN_TAG_IP6_EXTH_DOH1_OPTIONS } },
-
-    { "next-header-doh2",    &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_EXTH_DOH2_NHDR } },
-    { "hdr-ext-len-doh2",    &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_EXTH_DOH2_HEXL } },
-    { "options-doh2",        &ndn_data_unit_octet_string_s,
-      { PRIVATE, NDN_TAG_IP6_EXTH_DOH2_OPTIONS } },
-
-    { "next-header-rh",      &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_RH_NHDR } },
-    { "hdr-ext-len-rh",      &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_RH_HEXL } },
-    { "routing-type",       &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_RH_RT } },
-    { "segments-left",      &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_RH_SL } },
-    { "type-specific-data", &ndn_data_unit_octet_string_s,
-      { PRIVATE, NDN_TAG_IP6_RH_TSD } },
-
-    { "next-header-fh",  &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_FH_NHDR } },
-    { "reserved",        &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_IP6_FH_RESERVED } },
-    { "fragment-offset", &ndn_data_unit_int16_s,
-      { PRIVATE, NDN_TAG_IP6_FH_FO } },
-    { "res",        &ndn_data_unit_int4_s,
-      { PRIVATE, NDN_TAG_IP6_FH_RES } },
-    { "mflag",        &ndn_data_unit_int1_s,
-      { PRIVATE, NDN_TAG_IP6_FH_MF } },
+    { "ext-headers",     &ndn_ip6_ext_headers_seq_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADERS } } ,
 
     { "pld-checksum",    &ndn_ip6_pld_chksm_s,
       { PRIVATE, NDN_TAG_IP6_PLD_CHECKSUM } },
@@ -264,7 +355,7 @@ const asn_type * const ndn_ip6_header = &ndn_ip6_header_s;
 
 static asn_named_entry_t _ndn_ip6_csap_ne_array [] = {
     { "next-header", &ndn_data_unit_int8_s,
-        {PRIVATE, NDN_TAG_IP6_NHDR} },
+        {PRIVATE, NDN_TAG_IP6_NEXT_HEADER} },
     { "local-addr",      &ndn_data_unit_ip6_address_s,
         {PRIVATE, NDN_TAG_IP6_LOCAL_ADDR} },
     { "remote-addr",     &ndn_data_unit_ip6_address_s,

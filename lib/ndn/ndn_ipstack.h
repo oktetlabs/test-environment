@@ -67,39 +67,37 @@ typedef enum {
 
 
 typedef enum {
+    NDN_TAG_IP6_PLD_CH_OFFSET,
+    NDN_TAG_IP6_PLD_CH_DISABLE,
+    NDN_TAG_IP6_PLD_CH_DIFF,
+    NDN_TAG_IP6_PLD_CHECKSUM,
+
+    NDN_TAG_IP6_EXT_HEADER_OPT_TYPE,
+    NDN_TAG_IP6_EXT_HEADER_OPT_LEN,
+    NDN_TAG_IP6_EXT_HEADER_OPT_DATA,
+    NDN_TAG_IP6_EXT_HEADER_OPT_VALUE,
+
+    NDN_TAG_IP6_EXT_HEADER_OPT_PAD1,
+    NDN_TAG_IP6_EXT_HEADER_OPT_TLV,
+    NDN_TAG_IP6_EXT_HEADER_OPT_ROUTER_ALERT,
+
+    NDN_TAG_IP6_EXT_HEADER_LEN,
+    NDN_TAG_IP6_EXT_HEADER_OPTIONS,
+    NDN_TAG_IP6_EXT_HEADER_HOP_BY_HOP,
+    NDN_TAG_IP6_EXT_HEADER_DESTINATION,
+
     NDN_TAG_IP6_VERSION,
     NDN_TAG_IP6_TCL,
     NDN_TAG_IP6_FLAB,
     NDN_TAG_IP6_LEN,
-    NDN_TAG_IP6_NHDR,
+    NDN_TAG_IP6_NEXT_HEADER,
     NDN_TAG_IP6_HLIM,
     NDN_TAG_IP6_SRC_ADDR,
     NDN_TAG_IP6_DST_ADDR,
+    NDN_TAG_IP6_EXT_HEADERS,
+
     NDN_TAG_IP6_LOCAL_ADDR,
     NDN_TAG_IP6_REMOTE_ADDR,
-    NDN_TAG_IP6_PLD_CHECKSUM,
-    NDN_TAG_IP6_PLD_CH_OFFSET,
-    NDN_TAG_IP6_PLD_CH_DISABLE,
-    NDN_TAG_IP6_PLD_CH_DIFF,
-    NDN_TAG_IP6_EXTH_HBH_NHDR,
-    NDN_TAG_IP6_EXTH_HBH_HEXL,
-    NDN_TAG_IP6_EXTH_HBH_OPTIONS,
-    NDN_TAG_IP6_EXTH_DOH1_NHDR,
-    NDN_TAG_IP6_EXTH_DOH1_HEXL,
-    NDN_TAG_IP6_EXTH_DOH1_OPTIONS,
-    NDN_TAG_IP6_EXTH_DOH2_NHDR,
-    NDN_TAG_IP6_EXTH_DOH2_HEXL,
-    NDN_TAG_IP6_EXTH_DOH2_OPTIONS,
-    NDN_TAG_IP6_RH_NHDR,
-    NDN_TAG_IP6_RH_HEXL,
-    NDN_TAG_IP6_RH_RT,
-    NDN_TAG_IP6_RH_SL,
-    NDN_TAG_IP6_RH_TSD,
-    NDN_TAG_IP6_FH_NHDR,
-    NDN_TAG_IP6_FH_RESERVED,
-    NDN_TAG_IP6_FH_FO,
-    NDN_TAG_IP6_FH_RES,
-    NDN_TAG_IP6_FH_MF,
 } ndn_ip6_tags_t;
 
 typedef enum {
@@ -187,6 +185,16 @@ typedef enum {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern const asn_type * const ndn_ip6_header;
+extern const asn_type * const ndn_ip6_csap; 
+
+extern const asn_type * const ndn_ip6_ext_header_option;
+extern const asn_type * const ndn_ip6_ext_header_options_seq;
+extern const asn_type * const ndn_ip6_ext_header_hop_by_hop;
+extern const asn_type * const ndn_ip6_ext_header_destination;
+extern const asn_type * const ndn_ip6_ext_header;
+extern const asn_type * const ndn_ip6_ext_headers_seq;
 
 extern const asn_type * const ndn_ip4_header;
 extern const asn_type * const ndn_ip4_csap; 

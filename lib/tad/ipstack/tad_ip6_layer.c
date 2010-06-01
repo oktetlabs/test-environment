@@ -23,6 +23,7 @@
  * MA  02111-1307  USA
  *
  * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
+ * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  * $Id$
  */
@@ -53,6 +54,8 @@
 #include <netinet/ip.h>
 #endif
 
+#include <netinet/ip6.h>
+
 #include "te_defs.h"
 #include "te_alloc.h"
 #include "logger_api.h"
@@ -65,54 +68,68 @@
  * IPv6 layer specific data
  */
 
-/* RFC 2460: 4.1 
- * Each extension header should occur at most once, except for the
- * Destination Options header which should occur at most twice (once
- * before a Routing header and once before the upper-layer header).
- */
+/** Structure to keep default values for parts of IPv6 header. */
 typedef struct tad_ip6_proto_data {
+    /** Default values for IPv6 Header fields */
     tad_bps_pkt_frag_def    hdr;
-    tad_bps_pkt_frag_def    hbh;
-    tad_bps_pkt_frag_def    doh1;
-    tad_bps_pkt_frag_def    rh;
-    tad_bps_pkt_frag_def    fh;
-    tad_bps_pkt_frag_def    ah;
-    tad_bps_pkt_frag_def    esph;
-    tad_bps_pkt_frag_def    doh2;
+    /** Default values for Options Header (Hop-By-Hop and Destination) */
+    tad_bps_pkt_frag_def    opts_hdr;
+
+    /** Default values for PAD1 option */
+    tad_bps_pkt_frag_def    opt_pad1;
+    /** Default values for generic TLV option */
+    tad_bps_pkt_frag_def    opt_tlv;
+    /** DEfault values for Router Alert option */
+    tad_bps_pkt_frag_def    opt_ra;
+    
+    /**
+     * The value for the last "next-header" field in the list
+     * of extension headers.
+     */
+    uint8_t                 upper_protocol;
 } tad_ip6_proto_data;
 
 /**
- * IPv6 layer specific data for PDU processing (both send and
- * receive).
+ * Structure to keep information about an Option specified
+ * in one of extension headers (in template PDU).
  */
-typedef struct tad_ip6_proto_pdu_data {
-    tad_bps_pkt_frag_data   hdr; /* TODO: I think here should be extentions
-                                  * headers
-                                  */
-    tad_bps_pkt_frag_data   hbh;
-    tad_bps_pkt_frag_data   doh1;
-    tad_bps_pkt_frag_data   rh;
-    tad_bps_pkt_frag_data   fh;
-    tad_bps_pkt_frag_data   ah;
-    tad_bps_pkt_frag_data   esph;
-    tad_bps_pkt_frag_data   doh2;
-} tad_ip6_proto_pdu_data;
+typedef struct tad_ip6_ext_hdr_opt_data {
+    /** Option-specific values obtained from layer PDU template */
+    tad_bps_pkt_frag_data  opt;
+    /** Pointer to the default values for this option */
+    tad_bps_pkt_frag_def  *opt_def;
+} tad_ip6_ext_hdr_opt_data;
 
-enum {
-    EXT_HDR_HBH,
-    EXT_HDR_DOH1,
-    EXT_HDR_RH,
-    EXT_HDR_FH,
-    EXT_HDR_AH,
-    EXT_HDR_ESPH,
-    EXT_HDR_DOH2,
-    EXT_HDR_MAX,
-};
-
-static int ext_hdr[EXT_HDR_MAX];
+/** Structure to keep information about Extension Header */
+typedef struct tad_ip6_ext_hdr_data {
+    /** Actual values for Extension header */
+    tad_bps_pkt_frag_data     hdr;
+    /** Pointer to the default values for this header */
+    tad_bps_pkt_frag_def     *hdr_def;
+    /** The number of options in this Extension header */
+    uint32_t                  opts_num;
+    /** An array of options */
+    tad_ip6_ext_hdr_opt_data *opts;
+    /** The number of bytes used for options in this Extension header */
+    uint32_t                  opts_len;
+} tad_ip6_ext_hdr_data;
 
 /**
- * Definition of Internet Protocol version 6 (IPv6) header.
+ * IPv6 layer specific data for PDU processing (both send and receive).
+ */
+typedef struct tad_ip6_proto_pdu_data {
+    /** Data for IPv6 header */
+    tad_bps_pkt_frag_data   hdr;
+    /** An array of extension headers */
+    tad_ip6_ext_hdr_data   *ext_hdrs;
+    /** The number of extension headers in 'ext_hdrs' array */
+    uint32_t                ext_hdrs_num;
+    /** Length of all IPv6 extension headers in bytes */
+    uint32_t                ext_hdrs_len;
+} tad_ip6_proto_pdu_data;
+
+/**
+ * Definition of Internet Protocol version 6 (IPv6) header (see RFC 2460).
  */
 static const tad_bps_pkt_frag tad_ip6_bps_hdr[] =
 {
@@ -124,7 +141,7 @@ static const tad_bps_pkt_frag tad_ip6_bps_hdr[] =
       TAD_DU_I32, FALSE },
     { "payload-length",  16, BPS_FLD_CONST_DEF(NDN_TAG_IP6_LEN, 0),
       TAD_DU_I32, TRUE },
-    { "next-header",      8, BPS_FLD_SIMPLE(NDN_TAG_IP6_NHDR),
+    { "next-header",      8, BPS_FLD_SIMPLE(NDN_TAG_IP6_NEXT_HEADER),
       TAD_DU_I32, FALSE },
     { "hop-limit",        8, BPS_FLD_CONST_DEF(NDN_TAG_IP6_HLIM, 64),
       TAD_DU_I32, FALSE },
@@ -136,70 +153,82 @@ static const tad_bps_pkt_frag tad_ip6_bps_hdr[] =
       TAD_DU_OCTS, FALSE },
 };
 
-static const tad_bps_pkt_frag tad_ip6_exth_hbh_bps_hdr[] =
+/**
+ * Definition of Options Header type:
+ * - Hop-by-Hop Options Header (RFC2460, section 4.3)
+ * - Destination Options Header (RFC2460, section 4.6)
+ */
+static const tad_bps_pkt_frag tad_ip6_ext_hdr_opts_bps_hdr[] =
 {
-    { "next-header-hbh",  8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXTH_HBH_NHDR),
+    { "next-header", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_NEXT_HEADER),
       TAD_DU_I32, FALSE },
-    { "hdr-ext-len-hbh",  8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXTH_HBH_HEXL),
+    { "length", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXT_HEADER_LEN),
       TAD_DU_I32, FALSE },
-    { "options-hbh", 0, BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXTH_HBH_OPTIONS, 0),
+};
+
+/* Generic TLV Option */
+static const tad_bps_pkt_frag tad_ip6_tlv_option[] =
+{
+    { "type",   8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXT_HEADER_OPT_TYPE),
+      TAD_DU_I32, FALSE },
+    { "length", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXT_HEADER_OPT_LEN),
+      TAD_DU_I32, FALSE },
+    { "data",   0,
+      BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_OPT_DATA, 0),
       TAD_DU_OCTS, FALSE },
 };
 
-static const tad_bps_pkt_frag tad_ip6_exth_doh1_bps_hdr[] =
+/* PAD1 Option */
+static const tad_bps_pkt_frag tad_ip6_pad1_option[] =
 {
-    { "next-header-doh1", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXTH_DOH1_NHDR),
-      TAD_DU_I32, FALSE },
-    { "hdr-ext-len-doh1", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXTH_DOH1_HEXL),
-      TAD_DU_I32, FALSE },
-    { "options-doh1", 0,
-      BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXTH_DOH1_OPTIONS, 0),
-      TAD_DU_OCTS, FALSE },
+    { "type", 8, BPS_FLD_CONST(IP6OPT_PAD1), TAD_DU_I32, FALSE },
 };
 
-static const tad_bps_pkt_frag tad_ip6_exth_doh2_bps_hdr[] =
+/* Router Alert Option (see RFC 2711) */
+static const tad_bps_pkt_frag tad_ip6_ra_option[] =
 {
-    { "next-header-doh2", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXTH_DOH2_NHDR),
+    { "type",   8, BPS_FLD_CONST(IP6OPT_ROUTER_ALERT), TAD_DU_I32, FALSE },
+    { "length", 8, BPS_FLD_CONST(2), TAD_DU_I32, FALSE },
+    { "value", 16, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXT_HEADER_OPT_VALUE),
       TAD_DU_I32, FALSE },
-    { "hdr-ext-len-doh2", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXTH_DOH2_HEXL),
-      TAD_DU_I32, FALSE },
-    { "options-doh2", 0,
-      BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXTH_DOH2_OPTIONS, 0),
-      TAD_DU_OCTS, FALSE },
 };
 
-static const tad_bps_pkt_frag tad_ip6_rh_bps_hdr[] =
+/**
+ * Convert te_tad_protocols_t into IANA protocol numbers.
+ *
+ * @param  te_proto TE enumeration for protocol value
+ *
+ * @return IANA protocol number.
+ */
+static uint8_t
+tad_te_proto2ip_proto(te_tad_protocols_t te_proto)
 {
-    { "next-header-rh",     8, BPS_FLD_NO_DEF(NDN_TAG_IP6_RH_NHDR),
-      TAD_DU_I32, FALSE },
-    { "hdr-ext-len-rh",     8, BPS_FLD_NO_DEF(NDN_TAG_IP6_RH_HEXL),
-      TAD_DU_I32, FALSE },
-    { "routing-type",       8, BPS_FLD_NO_DEF(NDN_TAG_IP6_RH_RT),
-      TAD_DU_I32, FALSE },
-    { "segments-left",      8, BPS_FLD_NO_DEF(NDN_TAG_IP6_RH_SL),
-      TAD_DU_I32, FALSE },
-    { "type-specific-data", 0, BPS_FLD_CONST_DEF(NDN_TAG_IP6_RH_TSD, 0),
-      TAD_DU_OCTS, FALSE },
-};
+    switch (te_proto)
+    {
+#define TE_PROTO2IP_PROTO(te_val_, ip_val_) \
+        case TE_PROTO_ ## te_val_: return IPPROTO_ ## ip_val_
 
-static const tad_bps_pkt_frag tad_ip6_fh_bps_hdr[] =
-{
-    { "next-header-fh",    8, BPS_FLD_NO_DEF(NDN_TAG_IP6_FH_NHDR),
-      TAD_DU_I32, FALSE },
-    { "reserved",       8, BPS_FLD_NO_DEF(NDN_TAG_IP6_FH_RESERVED),
-      TAD_DU_I32, FALSE },
-    { "fragment-offset",   13, BPS_FLD_NO_DEF(NDN_TAG_IP6_FH_FO),
-      TAD_DU_I32, FALSE },
-    { "res",               2, BPS_FLD_NO_DEF(NDN_TAG_IP6_FH_RES),
-      TAD_DU_I32, FALSE },
-     { "mflag",            1, BPS_FLD_NO_DEF(NDN_TAG_IP6_FH_MF),
-      TAD_DU_I32, FALSE },
-};
+        TE_PROTO2IP_PROTO(IP4, IPIP);
+        TE_PROTO2IP_PROTO(UDP, UDP);
+        TE_PROTO2IP_PROTO(TCP, TCP);
+        TE_PROTO2IP_PROTO(ICMP4, ICMP);
+        TE_PROTO2IP_PROTO(IGMP, IGMP);
+        TE_PROTO2IP_PROTO(IP6, IPV6);
+        TE_PROTO2IP_PROTO(ICMP6, ICMPV6);
+
+#undef TE_PROTO2IP_PROTO
+
+        default:
+            return IPPROTO_NONE;
+    }
+}
 
 /* See description tad_ipstack_impl.h */
 te_errno
 tad_ip6_init_cb(csap_p csap, unsigned int layer)
 {
+    UNUSED(csap);
+    UNUSED(layer);
     te_errno            rc;
     tad_ip6_proto_data *proto_data;
     const asn_value    *layer_nds;
@@ -218,57 +247,35 @@ tad_ip6_init_cb(csap_p csap, unsigned int layer)
 
     if (rc != 0)
         return rc;
-
-    rc = tad_bps_pkt_frag_init(tad_ip6_exth_hbh_bps_hdr,
-                               TE_ARRAY_LEN(tad_ip6_exth_hbh_bps_hdr),
-                               layer_nds, &proto_data->hbh);
-
+    rc = tad_bps_pkt_frag_init(tad_ip6_ext_hdr_opts_bps_hdr,
+                               TE_ARRAY_LEN(tad_ip6_ext_hdr_opts_bps_hdr),
+                               NULL, &proto_data->opts_hdr);
     if (rc != 0)
         return rc;
 
-    rc = tad_bps_pkt_frag_init(tad_ip6_exth_doh1_bps_hdr,
-                               TE_ARRAY_LEN(tad_ip6_exth_doh1_bps_hdr),
-                               layer_nds, &proto_data->doh1);
-
+    rc = tad_bps_pkt_frag_init(tad_ip6_tlv_option,
+                               TE_ARRAY_LEN(tad_ip6_tlv_option),
+                               NULL, &proto_data->opt_tlv);
     if (rc != 0)
         return rc;
 
-    rc = tad_bps_pkt_frag_init(tad_ip6_rh_bps_hdr,
-                               TE_ARRAY_LEN(tad_ip6_rh_bps_hdr),
-                               layer_nds, &proto_data->rh);
-
-    if (rc != 0)
-        return rc;
-
-    rc = tad_bps_pkt_frag_init(tad_ip6_fh_bps_hdr,
-                               TE_ARRAY_LEN(tad_ip6_fh_bps_hdr),
-                               layer_nds, &proto_data->fh);
-
-    if (rc != 0)
-        return rc;
-#if 0
-    rc = tad_bps_pkt_frag_init(,
-                               TE_ARRAY_LEN(),
-                               layer_nds, &proto_data->ah);
-
+    rc = tad_bps_pkt_frag_init(tad_ip6_pad1_option,
+                               TE_ARRAY_LEN(tad_ip6_pad1_option),
+                               NULL, &proto_data->opt_pad1);
     if (rc != 0)
         return rc;
     
-    rc = tad_bps_pkt_frag_init(,
-                               TE_ARRAY_LEN(),
-                               layer_nds, &proto_data->esph);
-
-    if (rc != 0)
-        return rc;
-#endif
-    rc = tad_bps_pkt_frag_init(tad_ip6_exth_doh2_bps_hdr,
-                               TE_ARRAY_LEN(tad_ip6_exth_doh2_bps_hdr),
-                               layer_nds, &proto_data->doh2);
-
+    rc = tad_bps_pkt_frag_init(tad_ip6_ra_option,
+                               TE_ARRAY_LEN(tad_ip6_ra_option),
+                               NULL, &proto_data->opt_ra);
     if (rc != 0)
         return rc;
 
-    /* TODO: Perhaps some checks should be added here */
+
+    if (layer > 0)
+        proto_data->upper_protocol = tad_te_proto2ip_proto(csap->layers[layer - 1].proto_tag);
+    else
+        proto_data->upper_protocol = IPPROTO_NONE;
 
     return 0;
 }
@@ -278,104 +285,169 @@ tad_ip6_init_cb(csap_p csap, unsigned int layer)
 te_errno
 tad_ip6_destroy_cb(csap_p csap, unsigned int layer)
 {
+    UNUSED(csap);
+    UNUSED(layer);
     tad_ip6_proto_data *proto_data;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
     csap_set_proto_spec_data(csap, layer, NULL);
 
     tad_bps_pkt_frag_free(&proto_data->hdr);
-    tad_bps_pkt_frag_free(&proto_data->hbh);
-    tad_bps_pkt_frag_free(&proto_data->doh1);
-    tad_bps_pkt_frag_free(&proto_data->rh);
-    tad_bps_pkt_frag_free(&proto_data->fh);
-#if 0
-    tad_bps_pkt_frag_free(&proto_data->ah);
-    tad_bps_pkt_frag_free(&proto_data->esph);
-#endif
-    tad_bps_pkt_frag_free(&proto_data->doh2);
+    tad_bps_pkt_frag_free(&proto_data->opts_hdr);
+    tad_bps_pkt_frag_free(&proto_data->opt_tlv);
+    tad_bps_pkt_frag_free(&proto_data->opt_pad1);
+    tad_bps_pkt_frag_free(&proto_data->opt_ra);
 
     free(proto_data);
-
     return 0;
 }
 
 /**
- * Convert traffic template/pattern NDS to BPS internal data.
+ * Convert traffic template NDS to BPS internal data and
+ * check the result for completeness.
  *
- * @param csap          CSAP instance
- * @param proto_data    Protocol data prepared during CSAP creation
- * @param layer_pdu     Layer NDS
- * @param p_pdu_data    Location for PDU data pointer (updated in any
- *                      case and should be released by caller even in
- *                      the case of failure)
+ * @param def   default values for packet fragment
+ * @param nds   ASN value for this packet fragment
+ * @param data  BPS internal data to fill and check
  *
- * @return Status code.
+ * @return Status of the operation
  */
 static te_errno
-tad_ip6_nds_to_pdu_data(csap_p csap, tad_ip6_proto_data *proto_data,
-                        const asn_value *layer_pdu,
-                        tad_ip6_proto_pdu_data **p_pdu_data)
+tad_ip6_nds_to_data_and_confirm(tad_bps_pkt_frag_def *def, asn_value *nds,
+                                tad_bps_pkt_frag_data *data)
 {
+    te_errno rc;
 
-    te_errno                    rc;
-    tad_ip6_proto_pdu_data     *pdu_data;
+    rc = tad_bps_nds_to_data_units(def, nds, data);
+    if (rc != 0)
+        return rc;
+    return tad_bps_confirm_send(def, data);
+}
 
-    UNUSED(csap);
+/**
+ * Process options of IPv6 Options Extension header.
+ *
+ * @param proto_data  layer-specific context
+ * @param hdr_data    options header context to be filled in
+ *                    with option-specific values
+ * @parma opts        ASN sequence of options
+ *
+ * @return Status of the operation
+ */
+static te_errno
+opts_hdr_process_opts(tad_ip6_proto_data *proto_data,
+                      tad_ip6_ext_hdr_data *hdr_data, asn_value *opts)
+{
+    asn_value *opt;
+    int        opts_num;
+    int        opt_len;
+    int        i;
+    int        rc;
 
-    assert(proto_data != NULL);
-    assert(layer_pdu != NULL);
-    assert(p_pdu_data != NULL);
+    hdr_data->opts = NULL;
+    hdr_data->opts_num = 0;
+    hdr_data->opts_len = 0;
+    
+    opts_num = asn_get_length(opts, "");
+    if (opts_num <= 0)
+        return 0;
 
-    *p_pdu_data = pdu_data = TE_ALLOC(sizeof(*pdu_data));
-    if (pdu_data == NULL)
+    hdr_data->opts = TE_ALLOC(opts_num * sizeof(*hdr_data->opts));
+    if (hdr_data->opts == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
-    rc = tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
-                                   &pdu_data->hdr);
+    hdr_data->opts_num = opts_num;
 
-    if (rc != 0)
-        return rc;
+    for (i = 0; i < opts_num; i++)
+    {
+        rc = asn_get_indexed(opts, &opt, i, "");
+        if (rc == 0)
+        {
+            asn_tag_class t_cl;
+            asn_tag_value t_val;
+            int           val;
 
-    rc = tad_bps_nds_to_data_units(&proto_data->hbh, layer_pdu,
-                                   &pdu_data->hbh);
+            asn_get_choice_value(opt, &opt, &t_cl, &t_val);
+            switch (t_val)
+            {
+                case NDN_TAG_IP6_EXT_HEADER_OPT_PAD1:
+                    /* PAD1 option is 1 byte length option. */
+                    rc = tad_ip6_nds_to_data_and_confirm(&proto_data->opt_pad1, opt,
+                                                         &hdr_data->opts[i].opt);
+                    if (rc != 0)
+                        return rc;
 
-    if (rc != 0)
-        return rc;
+                    hdr_data->opts[i].opt_def = &proto_data->opt_pad1;
+                    hdr_data->opts_len += 1;
+                    INFO("Option PAD1");
+                    break;
 
-    rc = tad_bps_nds_to_data_units(&proto_data->doh1, layer_pdu,
-                                   &pdu_data->doh1);
+                case NDN_TAG_IP6_EXT_HEADER_OPT_TLV:
+                    /* Check if we need to detect the value for Length field */
+                    if ((rc = asn_read_int32(opt, &val, "length")) != 0)
+                    {
+                        if ((opt_len = asn_get_length(opt, "data")) >= 0)
+                        {
+                            rc = asn_write_int32(opt, opt_len, "length.#plain");
+                            if (rc != 0)
+                            {
+                                ERROR("Failed to write 'length' field for TLV option, %r", rc);
+                                return rc;
+                            }
+                        }
+                    }
+                    rc = tad_ip6_nds_to_data_and_confirm(&proto_data->opt_tlv, opt,
+                                                         &hdr_data->opts[i].opt);
+                    if (rc != 0)
+                        return rc;
+                    INFO("Option TLV");
 
-    if (rc != 0)
-        return rc;
+                    hdr_data->opts[i].opt_def = &proto_data->opt_tlv;
+                    hdr_data->opts_len += (2 + asn_get_length(opt, "data"));
+                    break;
 
-    rc = tad_bps_nds_to_data_units(&proto_data->rh, layer_pdu,
-                                   &pdu_data->rh);
+                case NDN_TAG_IP6_EXT_HEADER_OPT_ROUTER_ALERT:
+                    rc = tad_ip6_nds_to_data_and_confirm(&proto_data->opt_ra, opt,
+                                                         &hdr_data->opts[i].opt);
+                    if (rc != 0)
+                        return rc;
+                    INFO("Option Router-Alert");
 
-    if (rc != 0)
-        return rc;
+                    hdr_data->opts[i].opt_def = &proto_data->opt_ra;
+                    hdr_data->opts_len += 4;
+                    break;
 
-    rc = tad_bps_nds_to_data_units(&proto_data->fh, layer_pdu,
-                                   &pdu_data->fh);
 
-    if (rc != 0)
-        return rc;
-#if 0
-    rc = tad_bps_nds_to_data_units(&proto_data->ah, layer_pdu,
-                                   &pdu_data->ah);
+                default:
+                    ERROR("Unsupported option type");
+                    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+            }
+        }
+    }
+    return 0;
+}
 
-    if (rc != 0)
-        return rc;
-
-    rc = tad_bps_nds_to_data_units(&proto_data->esph, layer_pdu,
-                                   &pdu_data->esph);
-
-    if (rc != 0)
-        return rc;
-#endif
-    rc = tad_bps_nds_to_data_units(&proto_data->doh2, layer_pdu,
-                                   &pdu_data->doh2);
-
-    return rc;
+/**
+ * Convert ASN TAG value of IPv6 Extension Header type to
+ * IANA constant for Next-Header value.
+ *
+ * @param tag  ASN TAG of an extension header
+ *
+ * @return IANA value for this extension header
+ */
+static unsigned int
+next_hdr_tag2bin(asn_tag_value tag)
+{
+    switch (tag)
+    {
+        case NDN_TAG_IP6_EXT_HEADER_HOP_BY_HOP:
+            return IPPROTO_HOPOPTS;
+        case NDN_TAG_IP6_EXT_HEADER_DESTINATION:
+            return IPPROTO_DSTOPTS;
+        default:
+            ERROR("%s() Unsupported TAG %d specified", tag);
+            return 0xff;
+    }
 }
 
 /* See description in tad_ipstack_impl.h */
@@ -383,268 +455,180 @@ te_errno
 tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                         asn_value *layer_pdu, void **p_opaque)
 {
-    te_errno                    rc;
-    tad_ip6_proto_data         *proto_data;
-    tad_ip6_proto_pdu_data     *tmpl_data;
+    tad_ip6_proto_data     *proto_data;
+    tad_ip6_proto_pdu_data *tmpl_data;
+    tad_bps_pkt_frag_def   *ext_hdr_def = NULL;
+    uint32_t                ext_hdr_id = 0;
+    asn_value              *prev_hdr = layer_pdu;
+    asn_value              *hdrs;
+    int                     val;
+    te_errno                rc;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    rc = tad_ip6_nds_to_pdu_data(csap, proto_data, layer_pdu, &tmpl_data);
+    tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
     *p_opaque = tmpl_data;
-    if (rc != 0)
-        return rc;
+    if (tmpl_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
-    tmpl_data = *p_opaque;
+    tmpl_data->ext_hdrs = NULL;
+    tmpl_data->ext_hdrs_num = 0;
+    tmpl_data->ext_hdrs_len = 0;
 
-    rc = tad_bps_confirm_send(&proto_data->hdr, &tmpl_data->hdr);
-    if (rc != 0)
-        return rc;
-
-    if (tad_bps_confirm_send(&proto_data->hbh, &tmpl_data->hbh) != 0)
-        ext_hdr[EXT_HDR_HBH] = 0;
-    else
-        ext_hdr[EXT_HDR_HBH] = 1;
-
-    if (tad_bps_confirm_send(&proto_data->doh1, &tmpl_data->doh1) != 0)
-        ext_hdr[EXT_HDR_DOH1] = 0;
-    else
-        ext_hdr[EXT_HDR_DOH1] = 1;
-
-    if (tad_bps_confirm_send(&proto_data->rh, &tmpl_data->rh) != 0)
-        ext_hdr[EXT_HDR_RH] = 0;
-    else
-        ext_hdr[EXT_HDR_RH] = 1;
-
-        if (tad_bps_confirm_send(&proto_data->fh, &tmpl_data->fh) != 0)
-        ext_hdr[EXT_HDR_FH] = 0;
-    else
-        ext_hdr[EXT_HDR_FH] = 1;
-#if 0
-    if (tad_bps_confirm_send(&proto_data->ah, &tmpl_data->ah) != 0)
-        ext_hdr[EXT_HDR_AH] = 0;
-    else
-        ext_hdr[EXT_HDR_AH] = 1;
-
-    if (tad_bps_confirm_send(&proto_data->esph, &tmpl_data->esph) != 0)
-        ext_hdr[EXT_HDR_ESPH] = 0;
-    else
-        ext_hdr[EXT_HDR_ESPH] = 1;
-#endif
-    if (tad_bps_confirm_send(&proto_data->doh2, &tmpl_data->doh2) != 0)
-        ext_hdr[EXT_HDR_DOH2] = 0;
-    else
-        ext_hdr[EXT_HDR_DOH2] = 1;
-
-    return rc;
-}
-
-/* TODO: See this structure, may be there are some extra fields */
-/** Data to be passed as opaque to tad_ip6_gen_bin_cb_per_sdu() callback. */
-typedef struct tad_ip6_gen_bin_cb_per_sdu_data {
-
-    const asn_value    *tmpl_pdu;   /**< ASN.1 template of IPv6 PDU */
-
-    tad_pkts   *pdus;   /**< List to put generated IPv6 PDUs */
-    uint8_t    *hdr;    /**< Binary template of the IPv6 header */
-    size_t      hlen;   /**< Length of the IPv6 header */
-    int         upper_chksm_offset; /**< Offset of the upper layer
-                                         checksum in the IPv6 SDU */
-    te_bool     use_phdr;           /**< Should pseudo-header be included
-                                         in checksum calculation */
-    uint32_t    init_chksm;
-
-} tad_ip6_gen_bin_cb_per_sdu_data;
-
-/**
- * Segment payload checksum calculation data.
- */
-typedef struct tad_ip6_upper_checksum_seg_cb_data {
-    uint32_t    checksum;   /**< Accumulated checksum */
-} tad_ip6_upper_checksum_seg_cb_data;
-
-/**
- * Calculate checksum of the segment data.
- *
- * This function complies with tad_pkt_seg_enum_cb prototype.
- */
-static te_errno
-tad_ip6_upper_checksum_seg_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
-                              unsigned int seg_num, void *opaque)
-{
-    tad_ip6_upper_checksum_seg_cb_data *data = opaque;
-
-    /* Data length is even or it is the last segument */
-    assert(((seg->data_len & 1) == 0) ||
-           (seg_num == tad_pkt_seg_num(pkt) - 1));
-    data->checksum += calculate_checksum(seg->data_ptr, seg->data_len);
-
-    return 0;
-}
-
-/* See description in tad_ipstack_impl.h */
-static te_errno
-tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
-{
-/* TODO: Add extention headers to this function */
-    tad_ip6_gen_bin_cb_per_sdu_data    *data = opaque;
-
-    te_errno            rc;
-    size_t              sdu_len = tad_pkt_len(sdu);
-    const asn_value    *frags_seq = NULL;
-    unsigned int        frags_num = 1;
-    unsigned int        frags_i;
-    tad_pkts            frags;
-    tad_pkt            *frag;
-
-    if (data->upper_chksm_offset != -1)
+    rc = asn_get_descendent(layer_pdu, &hdrs, "ext-headers");
+    if (rc == 0)
     {
-        /* Generate and insert upper layer checksum */
-        tad_pkt_seg    *seg = tad_pkt_first_seg(sdu);
+        asn_value *hdr;
+        asn_value *opts;
+        int        hdr_num;
+        int        i;
 
-        if (seg == NULL ||
-            seg->data_len < (size_t)data->upper_chksm_offset + 2)
+        hdr_num = asn_get_length(hdrs, "");
+        if (hdr_num <= 0)
+            goto ext_hdr_end;
+
+        tmpl_data->ext_hdrs = TE_ALLOC(hdr_num * sizeof(*tmpl_data->ext_hdrs));
+        if (tmpl_data->ext_hdrs == NULL)
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
+        tmpl_data->ext_hdrs_num = hdr_num;
+
+        for (i = 0; i < hdr_num; i++, prev_hdr = hdr)
         {
-            WARN("Skip calculation of upper layer checksum, since "
-                 "the first segment of IPv6 SDU is too short");
-        }
-        else
-        {
-            tad_ip6_upper_checksum_seg_cb_data  seg_data;
-            uint16_t                            tmp;
-
-            if (sdu_len > 0xffff)
+            rc = asn_get_indexed(hdrs, &hdr, i, "");
+            if (rc == 0)
             {
-                ERROR("SDU is too big to put its length in IPv6 "
-                      "pseudo-header to calculate checksum");
-                return TE_RC(TE_TAD_CSAP, TE_E2BIG);
+                asn_tag_class t_cl;
+                asn_tag_value t_val;
+
+                rc = asn_get_choice_value(hdr, &hdr, &t_cl, &t_val);
+                if (rc != 0)
+                    return rc;
+
+                /*
+                 * Update "Next-Header" field of IPv6 header or Extension
+                 * Headers in case it is not specified in layer PDU.
+                 */
+                if ((rc = asn_read_int32(prev_hdr, &val, "next-header")) != 0)
+                {
+                    rc = asn_write_int32(prev_hdr, next_hdr_tag2bin(t_val), "next-header.#plain");
+                    if (rc != 0)
+                        return rc;
+                    
+                    /* 
+                     * Convert and check only Extension headers.
+                     * IPv6 Header will be validated and converted
+                     * in the end.
+                     */
+                    if (ext_hdr_def != NULL)
+                    {
+                        rc = tad_ip6_nds_to_data_and_confirm(ext_hdr_def, prev_hdr,
+                                                             &tmpl_data->ext_hdrs[ext_hdr_id].hdr);
+                        if (rc != 0)
+                            return rc;
+                    }
+                }
+
+                switch (t_val)
+                {
+                    case NDN_TAG_IP6_EXT_HEADER_HOP_BY_HOP:
+                    case NDN_TAG_IP6_EXT_HEADER_DESTINATION:
+                        INFO("Header type %s",
+                             t_val == NDN_TAG_IP6_EXT_HEADER_HOP_BY_HOP ?
+                                 "Hop-by-Hop" : "Destination");
+                        rc = asn_get_descendent(hdr, &opts, "options");
+                        if (rc != 0)
+                            return rc;
+                        rc = opts_hdr_process_opts(proto_data, &tmpl_data->ext_hdrs[i], opts);
+                        if (rc != 0)
+                            return rc;
+
+                        if ((rc = asn_read_int32(hdr, &val, "length")) != 0)
+                        {
+                            if (tmpl_data->ext_hdrs[i].opts_len == 0 ||
+                                (tmpl_data->ext_hdrs[i].opts_len + 2) % 8 != 0)
+                            {
+                                ERROR("Total length of options is not correct %d",
+                                      tmpl_data->ext_hdrs[i].opts_len);
+                                return TE_RC(TE_TAD_CSAP, TE_ETADCSAPSTATE);
+                            }
+                            rc = asn_write_int32(hdr,
+                                                 (tmpl_data->ext_hdrs[i].opts_len + 2) / 8  - 1,
+                                                 "length.#plain");
+                            if (rc != 0)
+                                return rc;
+                        }
+                        tmpl_data->ext_hdrs_len += (2 + tmpl_data->ext_hdrs[i].opts_len);
+                        tmpl_data->ext_hdrs[i].hdr_def = &proto_data->opts_hdr;
+                        ext_hdr_def = &proto_data->opts_hdr;
+                        ext_hdr_id = i;
+                        break;
+
+                    default:
+                        ERROR("Not supported IPv6 Extension header");
+                        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPSTATE);
+                }
+            
             }
-            tmp = htons(sdu_len);
-
-            seg_data.checksum = data->init_chksm;
-            if (data->use_phdr)
-            {
-                /* Pseudo-header checksum */
-                seg_data.checksum += calculate_checksum(&tmp, sizeof(tmp));
-            }
-
-            /* Preset checksum field by zeros */
-            memset((uint8_t *)seg->data_ptr + data->upper_chksm_offset,
-                   0, 2);
-
-            /* Upper layer data checksum */
-            (void)tad_pkt_enumerate_seg(sdu, tad_ip6_upper_checksum_seg_cb,
-                                        &seg_data);
-
-            /* Finalize checksum calculation */
-            tmp = ~((seg_data.checksum & 0xffff) +
-                    (seg_data.checksum >> 16));
-
-            /* Write calculcated checksum to packet */
-            memcpy((uint8_t *)seg->data_ptr + data->upper_chksm_offset,
-                   &tmp, sizeof(tmp));
         }
     }
+ext_hdr_end:
 
     /* 
-     * Allocate PDU packets with one pre-allocated segment for IPv6
-     * header
+     * Set the last "next-header" field (either the field of IPv6 header or
+     * the field of the last extension header) to upper layer protocol 
      */
-    tad_pkts_init(&frags);
-    rc = tad_pkts_alloc(&frags, frags_num, 1, data->hlen);
-    if (rc != 0)
-        return rc;
-
-    for (frags_i = 0, frag = tad_pkts_first_pkt(&frags);
-         frags_i < frags_num;
-         frags_i++, frag = frag->links.cqe_next)
+    if ((rc = asn_read_int32(prev_hdr, &val, "next-header")) != 0)
     {
-        uint8_t    *hdr = tad_pkt_first_seg(frag)->data_ptr;
-        asn_value  *frag_spec = NULL;
-        int32_t     i32_tmp;
-        int16_t     i16_tmp;
-
-        size_t      ip6_pld_real_len;
-        int32_t     frag_offset;
-
-        /* Copy template of the header */
-        memcpy(hdr, data->hdr, data->hlen);
-
-#define ASN_READ_FRAG_SPEC(_type, _fld, _var) \
-    do {                                                            \
-        rc = asn_read_##_type(frag_spec, _var, _fld);               \
-        if (rc != 0)                                                \
-        {                                                           \
-            ERROR("%s(): asn_read_%s(%s) failed: %r", __FUNCTION__, \
-                  #_type, _fld, rc);                                \
-            return TE_RC(TE_TAD_CSAP, rc);                          \
-        }                                                           \
-    } while (0)
-
-        /* Real length of the IPv6 packet payload */
-        if (frags_seq != NULL)
-        {
-            rc = asn_get_indexed(frags_seq, &frag_spec, frags_i, NULL); 
-            if (rc != 0)
-            {
-                ERROR("%s(): Failed to get %u fragment specification "
-                      "from IPv6 PDU template: %r", __FUNCTION__,
-                      frags_i, rc);
-                return TE_RC(TE_TAD_CSAP, rc);
-            }
-            assert(frag_spec != NULL);
-
-            ASN_READ_FRAG_SPEC(int32, "real-length", &i32_tmp);
-            ip6_pld_real_len = i32_tmp;
-        }
-        else
-        {
-            ip6_pld_real_len = sdu_len;
-        }
-
-        /* Version, header length and TOS are kept unchanged */
-
-        /* Total Length */
-        if (frag_spec == NULL)
-        {
-            if (data->hlen + ip6_pld_real_len > 0xffff)
-            {
-                ERROR("SDU is too big to be IPv6 packet SDU");
-                return TE_RC(TE_TAD_CSAP, TE_E2BIG);
-            }
-            i16_tmp = htons(ip6_pld_real_len + data->hlen - 40);
-        }
-        else
-        {
-            ASN_READ_FRAG_SPEC(int32, "hdr-length", &i32_tmp);
-            assert((uint32_t)i32_tmp <= 0xffff);
-            i16_tmp = htons(i32_tmp);
-        }
-        memcpy(hdr + 4, &i16_tmp, 2);
-
-        /* Real offset of the fragment */
-        if (frag_spec == NULL)
-            frag_offset = 0;
-        else
-            ASN_READ_FRAG_SPEC(int32, "real-offset", &frag_offset);
-
-        /* Prepare fragment payload */
-        rc = tad_pkt_get_frag(frag, sdu,
-                              frag_offset, ip6_pld_real_len,
-                              TAD_PKT_GET_FRAG_RAND);
+        rc = asn_write_int32(prev_hdr, proto_data->upper_protocol, "next-header.#plain");
         if (rc != 0)
-        {
-            ERROR("%s(): Failed to get fragment %d:%u from payload: %r",
-                  __FUNCTION__, (int)frag_offset,
-                  (unsigned)ip6_pld_real_len, rc);
             return rc;
-        }
+    }
+    /* Convert the last Extension Header */
+    if (ext_hdr_def != NULL)
+    {
+        rc = tad_ip6_nds_to_data_and_confirm(ext_hdr_def, prev_hdr,
+                                             &tmpl_data->ext_hdrs[ext_hdr_id].hdr);
+        if (rc != 0)
+            return rc;
+    }
 
-#undef ASN_READ_FRAG_SPEC
+    /* Check IPv6 Header */
+    return tad_ip6_nds_to_data_and_confirm(&proto_data->hdr, layer_pdu, &tmpl_data->hdr);
+}
 
-    } /* for */
+/**
+ * Callback to set up the correct value of Payload-Length
+ * field in IPv6 Header.
+ *
+ * This function complies with tad_pkt_enum_cb prototype.
+ */
+static te_errno
+tad_ip6_gen_bin_cb_per_pdu(tad_pkt *pdu, void *hdr)
+{
+    size_t       len = tad_pkt_len(pdu);
+    uint16_t     tmp;
+    tad_pkt_seg *seg = tad_pkt_first_seg(pdu);
 
-    /* Move all fragments to IPv6 PDUs */
-    tad_pkts_move(data->pdus, &frags);
+    if (len > 0xffff)
+    {
+        ERROR("PDU is too big to be IP6 PDU");
+        return TE_RC(TE_TAD_CSAP, TE_E2BIG);
+    }
+
+    /* TODO: Move these defines somewhere in generic place */
+#define IP6_HDR_LEN         40
+#define IP6_HDR_PLEN_OFFSET 4
+
+    assert(seg->data_ptr != NULL);
+    assert(seg->data_len >= IP6_HDR_LEN);
+
+    /* Copy IPv6 Header with extension headers */
+    memcpy(seg->data_ptr, hdr, seg->data_len);
+
+    /* Set correct Payload-Length in the header template */
+    tmp = htons(len);
+    memcpy(seg->data_ptr + IP6_HDR_PLEN_OFFSET, &tmp, sizeof(tmp));
 
     return 0;
 }
@@ -656,17 +640,14 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
                    const tad_tmpl_arg_t *args, size_t arg_num, 
                    tad_pkts *sdus, tad_pkts *pdus)
 {
-    tad_ip6_proto_data                 *proto_data;
-    tad_ip6_proto_pdu_data             *tmpl_data = opaque;
-    tad_ip6_gen_bin_cb_per_sdu_data     cb_data;
-    tad_ip6_gen_bin_cb_per_sdu_data     fake_cb_data;
-    const tad_data_unit_t              *du;
-
-    const asn_value    *pld_checksum;
-
-    te_errno        rc;
-    size_t          bitlen;
-    unsigned int    bitoff;
+    tad_ip6_proto_data     *proto_data;
+    tad_ip6_proto_pdu_data *tmpl_data = opaque;
+    uint8_t                *hdr;
+    uint32_t                hdrlen;
+    te_errno                rc;
+    size_t                  bitlen;
+    unsigned int            bitoff;
+    uint32_t                i, j;
 
     assert(csap != NULL);
     F_ENTRY("(%d:%u) tmpl_pdu=%p args=%p arg_num=%u sdus=%p pdus=%p",
@@ -675,261 +656,70 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    /* Calculate max total length */
+    /* Calculate IPv6 header length */
     bitlen = tad_bps_pkt_frag_data_bitlen(&proto_data->hdr,
-                                           &tmpl_data->hdr);
-    if (ext_hdr[EXT_HDR_HBH])
-        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->hbh,
-                                               &tmpl_data->hbh);
-    if (ext_hdr[EXT_HDR_DOH1])
-        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->doh1,
-                                               &tmpl_data->doh1);
-    if (ext_hdr[EXT_HDR_RH])
-        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->rh,
-                                               &tmpl_data->rh);
-    if (ext_hdr[EXT_HDR_FH])
-        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->fh,
-                                               &tmpl_data->fh);
-#if 0
-    if (ext_hdr[EXT_HDR_AH])
-        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->ah,
-                                               &tmpl_data->ah);
-    if (ext_hdr[EXT_HDR_ESPH])
-        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->esph,
-                                               &tmpl_data->esph);
-#endif
-    if (ext_hdr[EXT_HDR_DOH2])
-        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->doh2,
-                                               &tmpl_data->doh2);
+                                          &tmpl_data->hdr);
+
+    /* Add length of all IPv6 extension headers */
+    bitlen += tmpl_data->ext_hdrs_len * 8;
 
     assert((bitlen & 7) == 0);
-    cb_data.hlen = (((bitlen >> 3) + 3) >> 2) << 2;
 
-    /* FIXME: Override 'h-length' */
-    tmpl_data->hdr.dus[1].du_type = TAD_DU_I32;
-    tmpl_data->hdr.dus[1].val_i32 = cb_data.hlen >> 2;
+    hdrlen = (((bitlen >> 3) + 3) >> 2) << 2;
 
     /* Allocate memory for binary template of the header */
-    cb_data.hdr = malloc(cb_data.hlen);
-    if (cb_data.hdr == NULL)
+    if ((hdr = TE_ALLOC(hdrlen)) == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     bitoff = 0;
     rc = tad_bps_pkt_frag_gen_bin(&proto_data->hdr, &tmpl_data->hdr,
-                                  args, arg_num, cb_data.hdr,
+                                  args, arg_num, hdr,
                                   &bitoff, bitlen);
     if (rc != 0)
     {
         ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for header: %r",
               __FUNCTION__, rc);
-        free(cb_data.hdr);
-        return rc;
+        goto cleanup;
     }
 
-    if (ext_hdr[EXT_HDR_HBH])
+    for (i = 0; i < tmpl_data->ext_hdrs_num; i++)
     {
-        rc = tad_bps_pkt_frag_gen_bin(&proto_data->hbh, &tmpl_data->hbh,
-                                  args, arg_num, cb_data.hdr,
-                                  &bitoff, bitlen);
-        if (rc != 0)
-        {
-            ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for hop-by-hop "
-                  "options header: %r", __FUNCTION__, rc);
-            free(cb_data.hdr);
-            return rc;
-        }
-    }
-
-    if (ext_hdr[EXT_HDR_DOH1])
-    {
-        rc = tad_bps_pkt_frag_gen_bin(&proto_data->doh1, &tmpl_data->doh1,
-                                  args, arg_num, cb_data.hdr,
-                                  &bitoff, bitlen);
-        if (rc != 0)
-        {
-            ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for destination"
-                  " options header: %r", __FUNCTION__, rc);
-            free(cb_data.hdr);
-            return rc;
-        }
-    }
-
-    if (ext_hdr[EXT_HDR_RH])
-    {
-        rc = tad_bps_pkt_frag_gen_bin(&proto_data->rh, &tmpl_data->rh,
-                                  args, arg_num, cb_data.hdr,
-                                  &bitoff, bitlen);
-        if (rc != 0)
-        {
-            ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for routing "
-                  "header: %r", __FUNCTION__, rc);
-            free(cb_data.hdr);
-            return rc;
-        }
-    }
-
-    if (ext_hdr[EXT_HDR_FH])
-    {
-        rc = tad_bps_pkt_frag_gen_bin(&proto_data->fh, &tmpl_data->fh,
-                                  args, arg_num, cb_data.hdr,
-                                  &bitoff, bitlen);
-        if (rc != 0)
-        {
-            ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for fragment "
-                  "header: %r", __FUNCTION__, rc);
-            free(cb_data.hdr);
-            return rc;
-        }
-    }
-#if 0
-    if (ext_hdr[EXT_HDR_AH])
-    {
-        rc = tad_bps_pkt_frag_gen_bin(&proto_data->ah, &tmpl_data->ah,
-                                  args, arg_num, cb_data.hdr,
-                                  &bitoff, bitlen);
-        if (rc != 0)
-        {
-            ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for "
-                  "authentication header: %r", __FUNCTION__, rc);
-            free(cb_data.hdr);
-            return rc;
-        }
-    }
-
-    if (ext_hdr[EXT_HDR_ESPH])
-    {
-        rc = tad_bps_pkt_frag_gen_bin(&proto_data->esph, &tmpl_data->esph,
-                                      args, arg_num, cb_data.hdr,
+        rc = tad_bps_pkt_frag_gen_bin(tmpl_data->ext_hdrs[i].hdr_def,
+                                      &tmpl_data->ext_hdrs[i].hdr,
+                                      args, arg_num, hdr,
                                       &bitoff, bitlen);
         if (rc != 0)
+            goto cleanup;
+
+        for (j = 0; j < tmpl_data->ext_hdrs[i].opts_num; j++)
         {
-            ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for "
-                  "encapsulating security payload header: %r", __FUNCTION__,
-                  rc);
-            free(cb_data.hdr);
-            return rc;
-        }
-    }
-#endif
-    if (ext_hdr[EXT_HDR_DOH2])
-    {
-        rc = tad_bps_pkt_frag_gen_bin(&proto_data->doh2, &tmpl_data->doh2,
-                                  args, arg_num, cb_data.hdr,
-                                  &bitoff, bitlen);
-        if (rc != 0)
-        {
-            ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for hestination "
-                  "options header: %r", __FUNCTION__, rc);
-            free(cb_data.hdr);
-            return rc;
+            rc = tad_bps_pkt_frag_gen_bin(tmpl_data->ext_hdrs[i].opts[j].opt_def,
+                                          &tmpl_data->ext_hdrs[i].opts[j].opt,
+                                          args, arg_num, hdr,
+                                          &bitoff, bitlen);
+            if (rc != 0)
+                goto cleanup;
         }
     }
 
     assert(bitoff == bitlen);
 
-    cb_data.init_chksm = 0;
-    /* Checksum field offset */
-    switch (cb_data.hdr[6])
-    {
-        case IPPROTO_ICMPV6:
-            cb_data.upper_chksm_offset = 2;
-            cb_data.use_phdr = TRUE;
-            break;
+    /* Move all fragments to IPv6 PDUs */
+    tad_pkts_move(pdus, sdus);
 
-        default:
-            cb_data.upper_chksm_offset = -1; /* Do nothing */
-            break;
-    }
+    /*
+     * Prepend each packet with space necessary for
+     * IPv6 Header together with all extension headers.
+    */
+    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, hdrlen, NULL);
 
-    /* 
-     * Location of the upper protocol checksum which uses IP
-     * pseudo-header.
-     */
-    rc = asn_get_child_value(tmpl_pdu, &pld_checksum,
-                             PRIVATE, NDN_TAG_IP6_PLD_CHECKSUM);
-    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
-    {
-        /* Nothing special */
-    }
-    else if (rc != 0)
-    {
-        ERROR("%s(): asn_get_child_value() failed for 'pld-checksum': "
-              "%r", __FUNCTION__, rc);
-        return TE_RC(TE_TAD_CSAP, rc);
-    }
-    else
-    {
-        asn_tag_value   tv;
+    /* Per-PDU processing - set correct Payload Length value of IPv6 Header */
+    rc = tad_pkt_enumerate(pdus, tad_ip6_gen_bin_cb_per_pdu, hdr);
 
-        rc = asn_get_choice_value(pld_checksum,
-                                  (asn_value **)&pld_checksum,
-                                  NULL, &tv);
-        if (rc != 0)
-        {
-            ERROR("%s(): asn_get_choice_value() failed for "
-                  "'pld-checksum': %r", __FUNCTION__, rc);
-            return rc;
-        }
-        switch (tv)
-        {
-            case NDN_TAG_IP6_PLD_CH_DISABLE:
-                cb_data.upper_chksm_offset = -1;
-                break;
+cleanup:
+    free(hdr);
 
-            case NDN_TAG_IP6_PLD_CH_OFFSET:
-                rc = asn_read_int32(pld_checksum,
-                                    &cb_data.upper_chksm_offset,
-                                    NULL);
-                if (rc != 0)
-                {
-                    ERROR("%s(): asn_read_int32() failed for "
-                          "'pld-checksum.#offset': %r", __FUNCTION__, rc);
-                    return rc;
-                }
-                break;
-
-            case NDN_TAG_IP6_PLD_CH_DIFF:
-            {
-                int32_t tmp;
-
-                rc = asn_read_int32(pld_checksum, &tmp, NULL);
-                if (rc != 0)
-                {
-                    ERROR("%s(): asn_read_int32() failed for "
-                          "'pld-checksum.#diff': %r", __FUNCTION__, rc);
-                    return rc;
-                }
-                cb_data.init_chksm += tmp;
-                break;
-            }
-
-            default:
-                ERROR("%s(): Unexpected choice tag value for "
-                      "'pld-checksum'", __FUNCTION__);
-                return TE_RC(TE_TAD_CSAP, TE_EASNOTHERCHOICE);
-        }
-    }
-
-    /* Precalculate checksum of the pseudo-header */
-    if (cb_data.upper_chksm_offset != -1 && cb_data.use_phdr)
-    {
-        uint8_t proto[2] = { 0, cb_data.hdr[6] };
-
-        cb_data.init_chksm += calculate_checksum(cb_data.hdr + 8, 32) +
-                              calculate_checksum(proto, sizeof(proto));
-    }
-
-    /* Per-SDU processing */
-    cb_data.tmpl_pdu = tmpl_pdu;
-    cb_data.pdus = pdus;
-    rc = tad_pkt_enumerate(sdus, tad_ip6_gen_bin_cb_per_sdu, &cb_data);
-    if (rc != 0)
-    {
-        ERROR("Failed to process IPv6 SDUs: %r", rc);
-        return rc;
-    }
-
-    return 0;
+    return rc;
 }
 
 void
@@ -943,17 +733,22 @@ tad_ip6_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
 
     if (pdu_data != NULL)
     {
-        tad_bps_free_pkt_frag_data(&proto_data->hdr, &pdu_data->hdr);
-        tad_bps_free_pkt_frag_data(&proto_data->hbh, &pdu_data->hbh);
-        tad_bps_free_pkt_frag_data(&proto_data->doh1, &pdu_data->doh1);
-        tad_bps_free_pkt_frag_data(&proto_data->rh, &pdu_data->rh);
-        tad_bps_free_pkt_frag_data(&proto_data->fh, &pdu_data->fh);
-#if 0
-        tad_bps_free_pkt_frag_data(&proto_data->ah, &pdu_data->ah);
-        tad_bps_free_pkt_frag_data(&proto_data->esph, &pdu_data->esph);
-#endif
-        tad_bps_free_pkt_frag_data(&proto_data->doh2, &pdu_data->doh2);
+        uint32_t i, j;
 
+        tad_bps_free_pkt_frag_data(&proto_data->hdr, &pdu_data->hdr);
+
+        for (i = 0; i < pdu_data->ext_hdrs_num; i++)
+        {
+            for (j = 0; j < pdu_data->ext_hdrs[i].opts_num; j++)
+            {
+                tad_bps_free_pkt_frag_data(pdu_data->ext_hdrs[i].opts[j].opt_def,
+                                           &pdu_data->ext_hdrs[i].opts[j].opt);
+            }
+            free(pdu_data->ext_hdrs[i].opts);
+            tad_bps_free_pkt_frag_data(pdu_data->ext_hdrs[i].hdr_def,
+                                       &pdu_data->ext_hdrs[i].hdr);
+        }
+        free(pdu_data->ext_hdrs);
         free(pdu_data);
     }
 }
