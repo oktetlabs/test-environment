@@ -2245,6 +2245,15 @@ TARPC_FUNC(pselect, {},
                                  (fd_set *)rcf_pch_mem_get(in->exceptfds),
                                  in->timeout.timeout_len == 0 ? NULL : &tv,
                                  rcf_pch_mem_get(in->sigmask)));
+#ifdef __linux__
+    if (out->retval >= 0 && out->common.errno_changed &&
+        out->common._errno == RPC_ENOSYS)
+    {
+        WARN("pselect() returned non-negative value, but changed "
+             "errno to ENOSYS");
+        out->common.errno_changed = 0;
+    }
+#endif
 }
 )
 
