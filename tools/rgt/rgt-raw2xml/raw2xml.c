@@ -153,16 +153,126 @@ cleanup:
 
 
 /**
+ * Format an argument
+ */
+te_bool
+format_arg(const char **pp; luaL_Buffer *buf,
+           const void *arg_buf, size_t arg_len)
+{
+    te_bool result          = FALSE;
+    char    c;
+    char    conv_buf[64];
+
+    /* Switch on the format specifier character */
+    c = **p;
+    switch (c)
+    {
+#define CHECK_ARG(_expr) \
+    do {                                                        \
+        if (!(_expr))                                           \
+        {                                                       \
+            errno = EINVAL;                                     \
+            ERROR_CLEANUP("Invalid %%%c format argument", c)    \
+        }                                                       \
+    } while (0)
+
+        case 'c':
+            {
+                uint32_t    val;
+
+                CHECK_ARG(arg_len == sizeof(val));
+
+                val = ntohl(*(uint32_t *)arg_buf);
+                luaL_addchar(buf, (char)val);
+            }
+            (*pp)++;
+            break;
+
+        case 's':
+            luaL_addlstring(buf, (const char *)arg_buf, arg_len);
+            (*pp)++;
+            break;
+
+        case 'd':
+        case 'u':
+        case 'o':
+        case 'x':
+        case 'X':
+            {
+                const char  fmt[3]  = {'%', *p, '\0'};
+                uint32_t    val;
+
+                CHECK_ARG(arg_len == sizeof(val));
+
+                val = ntohl(*(uint32_t *)arg->val);
+
+                sprintf(conv_buf, fmt, val);
+                luaL_addstring(buf, conv_buf);
+            }
+            (*pp)++;
+            break;
+
+        case 'p':
+            {
+                uint32_t    val;
+                size_t      i;
+                size_t      l;
+                te_bool     zero_run;
+
+                CHECK_ARG(arg_len > 0 && arg_len % sizeof(val) == 0):
+
+                luaL_addstring(buf, "0x");
+
+                l = arg_len / sizeof(val);
+                zero_run = TRUE;
+                for (i = 0; i < l; i++)
+                {
+                    val = *((uint32_t *)arg_buf + i);
+
+                    /* Skip leading zeroes */
+                    if (zero_run)
+                    {
+                        if (val != 0)
+                            zero_run = FALSE;
+                        else if ((i + 1) < l)
+                            continue;
+                    }
+
+                    sprintf(conv_buf, "%08x", val);
+                    luaL_addstring(buf, conv_buf);
+                }
+            }
+            (*pp)++;
+            break;
+
+        default:
+            /* Unknown format specifier - output as is */
+            luaL_addchar(buf, '%');
+            break;
+
+#undef CHECK_ARG
+    }
+
+    result = TRUE;
+
+cleanup:
+
+    return result;
+}
+
+
+/**
  * Read and format a message text.
  */
-static read_message_rc
+static te_bool
 read_text(FILE *input, const char *fmt, size_t len, lua_State *L)
 {
-    read_message_rc     result      = READ_MESAGE_RC_ERR;
+    te_bool             result      = FALSE;
     luaL_Buffer         buf;
     const char         *prevp;
     const char         *p;
-    read_message_rc     arg_rc;
+    const char         *end;
+    read_message_rc     rc;
     void               *arg_buf     = NULL;
     size_t              arg_len;
 
@@ -170,79 +280,82 @@ read_text(FILE *input, const char *fmt, size_t len, lua_State *L)
 
     prevp = fmt;
     p = fmt;
+    end = fmt + len;
 
-    for (; len > 0 && *p != '%'; p++, len--);
-    if (p > prevp)
-        luaL_addlstring(&buf, prevp, p - prevp);
-    p++;
-
-    /* If it is an escaped '%' */
-    if (*p == '%')
+    for (; ; prevp = p)
     {
-        prevp = p;
-        continue;
-    }
-
-    /* If it is an incomplete format specification */
-    if (*p == '\0')
-    {
-        p--
-        goto finish;
-    }
-
-#define READ_ARG \
-    do {                                            \
-        read_message_rc rc;                         \
-                                                    \
-        rc = read_arg(input, &arg_buf, &arg_len);   \
-        if (rc == READ_MESSAGE_RC_ERR)              \
-            goto cleanup;                           \
-        else if (rc == READ_MESSAGE_RC_EOF)         \
-            goto finish;                            \
-    } while (0)
-
-    switch (*p)
-    {
-        case 'c':
+        /* Lookup a '%' or the end of the string */
+        for (; p < end && *p != '%'; p++)
+        /* Add intermittent format string characters */
+        if (p > prevp)
+            luaL_addlstring(&buf, prevp, p - prevp);
+        /* If reached the end of the string or a trailing '%' */
+        if ((end - p) <= 1)
+        {
+            /* Read out the rest of the arguments */
+            do
             {
-                uint32_t    val;
-
-                READ_ARG;
-                if (arg_len != sizeof(val))
-                    ERROR_CLEANUP("Invalid %%c format argument");
-                val = ntohl(*(uint32_t *)arg_buf);
-                luaL_addchar(&buf, (char)val);
-                free(buf);
-                buf = NULL;
-            }
+                rc = read_arg(input, NULL, NULL);
+                if (rc == READ_MESSAGE_RC_ERR)
+                    goto cleanup;
+            } while (rc != READ_MESSAGE_RC_EOF);
+            /* Finish */
             break;
+        }
+        /* Move on to the format specifier character */
+        p++;
+        /* If it is an escaped '%' */
+        if (*p == '%')
+        {
+            luaL_addchar(&buf, '%');
+            p++;
+            continue;
+        }
 
-        case 's':
-            {
-                READ_ARG;
-                luaL_addstring(&buf, (const char *)arg_buf);
-                free(buf);
-                buf = NULL;
-            }
+        /* Read the format argument */
+        rc = read_arg(input, &arg_buf, &arg_len);
+        /* If an error occurred */
+        if (rc == READ_MESSAGE_RC_ERR)
+            goto cleanup;
+        /* Else, if we are short of arguments */
+        else if (rc == READ_MESSAGE_RC_EOF)
+        {
+            /*
+             * Output last encountered format specifier and the rest of the
+             * format string as is.
+             */
+            p--;
+            break;
+        }
 
-        case 'd':
-        case 'u':
-        case 'o':
-        case 'x':
-        case 'X':
+        /* Format the argument */
+        if (!format_arg(&p, &buf, arg_buf, arg_len))
+            goto cleanup;
+
+        /* Free the argument */
+        free(arg_buf);
+        arg_buf = NULL;
     }
 
-#undef READ_ARG
+    /* Output the rest of the format string */
+    if (p < end)
+        luaL_addlstring(&buf, p, end - p);
 
-
-    luaL_pushresult(&buf);
+    result = TRUE;
 
 cleanup:
 
     free(arg_buf);
 
+    /*
+     * Push the resulting string on the stack. There is no way to abort
+     * buffer addition, so this constitutes as a cleanup.
+     */
+    luaL_pushresult(&buf);
+
     return result;
 }
+
 
 /**
  * Read a message from a stream and place its parts on a Lua stack.
@@ -368,11 +481,14 @@ read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
      * Transfer text
      */
     READ_FLD;
-    result = read_text(input, buf, len, L);
+    if (!read_text(input, buf, len, L))
+        goto cleanup;
     free(buf);
     buf = NULL;
 
 #undef READ_FLD
+
+    result = READ_MESSAGE_RC_OK;
 
 cleanup:
 
@@ -488,12 +604,11 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     /*
      * Supply sink instance with the output file
      */
-    /* Retrieve sink instance "take_file" method */
     lua_getfield(L, sink_idx, "take_file");
-    /* Copy sink instance to the top */
     lua_pushvalue(L, sink_idx);
 
     /* Open/push output file */
+    /* Get "io" table */
     lua_getglobal(L, "io");
     if (output_name[0] == '-' && output_name[1] == '\0')
         lua_getfield(L, -1, "stdout");
@@ -504,6 +619,7 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
         lua_pushliteral(L, "w");
         LUA_PCALL_CLEANUP(2, 1);
     }
+    /* Remove "io" table */
     lua_remove(L, -2);
 
     /* Call "take_file" instance method to supply the sink with the file */
@@ -512,14 +628,13 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     /*
      * Start sink output
      */
-    /* Retrieve sink instance "start" method */
     lua_getfield(L, sink_idx, "start");
-    /* Copy sink instance to the top */
     lua_pushvalue(L, sink_idx);
-
-    /* Call "start" instance method */
     LUA_PCALL_CLEANUP(1, 0);
 
+    /*
+     * Run with input file and Lua state
+     */
     /* Retrieve sink instance "put" method */
     lua_getfield(L, sink_idx, "put");
     sink_put_idx = lua_gettop(L);
@@ -532,31 +647,22 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     /*
      * Finish sink output
      */
-    /* Retrieve sink instance "finish" method */
     lua_getfield(L, sink_idx, "finish");
-    /* Copy sink instance to the top */
     lua_pushvalue(L, sink_idx);
-    /* Call sink instance "finish" method */
     LUA_PCALL_CLEANUP(1, 0);
 
     /*
      * Take the output file from the sink
      */
-    /* Retrieve sink instance "yield_file" method */
     lua_getfield(L, sink_idx, "yield_file");
-    /* Copy sink instance to the top */
     lua_pushvalue(L, sink_idx);
-    /* Call sink instance "yield_file" method */
     LUA_PCALL_CLEANUP(1, 1);
 
     /*
      * Close the output
      */
-    /* Retrieve file "close" method */
     lua_getfield(L, -1, "close");
-    /* Copy file to the top */
     lua_pushvalue(L, -2);
-    /* Call file "close" method */
     LUA_PCALL_CLEANUP(2, 0);
 
     result = TRUE;
@@ -603,12 +709,20 @@ run(const char *input_name, const char *output_name, unsigned long max_mem)
     if (version != 1)
         ERROR_CLEANUP("Unsupported log file version %hhu", version);
 
+    /*
+     * Run with input file
+     */
     if (!run_input(input, output_name, max_mem))
+        goto cleanup;
 
     /*
      * Close the input
      */
     fclose(input);
+    input = NULL;
+
+    /* Success */
+    result = 0;
 
 cleanup:
 
