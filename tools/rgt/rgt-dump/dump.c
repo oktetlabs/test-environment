@@ -779,7 +779,7 @@ main(int argc, char * const argv[])
         {
             output_name = argv[optind++];
             if (optind < argc)
-                    ERROR_USAGE_RETURN("Too many arguments");
+                ERROR_USAGE_RETURN("Too many arguments");
         }
     }
 
