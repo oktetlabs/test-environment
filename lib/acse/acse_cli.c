@@ -269,7 +269,6 @@ cli_cpe_rpc(const char *args)
         c_data.op = EPC_RPC_CALL ;
         
         /* todo full parsing */
-        c_data.hold_requests = 0;
         c_data.rpc_cpe = CWMP_RPC_get_rpc_methods; 
         c_data.to_cpe.p = NULL; 
     }

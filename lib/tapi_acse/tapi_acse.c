@@ -261,6 +261,11 @@ tapi_acse_wait_cr_state(const char *ta,
         if (rc != 0)
             return rc;
 
+        if (CR_ERROR == cur_state)
+        {
+            ERROR("ConnectionRequest status is ERROR");
+            return TE_EFAIL;
+        }
     } while ((timeout < 0 || (timeout--) > 0) &&
              (want_state != cur_state) &&
              (sleep(1) == 0));
@@ -580,6 +585,14 @@ tapi_acse_cpe_disconnect(rcf_rpc_server *acse_rpcs,
                          const char *acs_name,
                          const char *cpe_name)
 {
+    /* TODO : this simple activate sending empty response, this is 
+     * do not automatically leads to terminate CWMP session.
+     * Investigate standard and real behaviour of clients,
+     * maybe add here some more actions and/or checks state... 
+     * 
+     * Usually this will terminate session. Single exclusion,
+     * it seems, is true HoldRequests status.
+     */
     return rpc_cwmp_op_call(acse_rpcs, acs_name, cpe_name,
                             CWMP_RPC_NONE, NULL, 0, NULL);
 }

@@ -136,10 +136,6 @@ typedef struct {
                             IN - for 'get/check' operation, 
                             OUT - for 'call' operation. */
 
-    te_bool     hold_requests; /**< Flag denotes whether this call
-                                    should be sent before serve 
-                                    RPC from CPE. */
-
     cwmp_data_to_cpe_t   to_cpe;   /**< RPC specific CWMP data. 
                                         This field is processed only
                                         in messages client->ACSE */

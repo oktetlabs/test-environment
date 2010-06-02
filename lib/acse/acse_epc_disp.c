@@ -963,7 +963,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
         break;
         case EPC_CONN_REQ_CHECK:
             cwmp_pars->from_cpe.cr_state = cpe->cr_state;
-            if (cpe->cr_state == CR_ERROR)
+            if (cpe->cr_state == CR_ERROR || cpe->cr_state == CR_DONE)
                 cpe->cr_state = CR_NONE;
         break;
     }

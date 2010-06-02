@@ -42,9 +42,39 @@ extern "C" {
 #endif
 
 
+
+
 /** End of var-args list. */
 extern void * const va_end_list_ptr;
 #define VA_END_LIST (va_end_list_ptr)
+
+
+/**
+ * Check status of CWMP RPC response in main test body.
+ * If the expression is something else than zero, test fails.
+ * If there was CWMP Fault detected, it will be print in log, and
+ * test fails.
+ * 
+ * @param expr_  Expression with TAPI call to get CWMP RPC response.
+ * @param var_   Variable where pointer to response should be put.
+ */
+#define CHECK_CWMP_RESP_RC(expr_, var_) \
+    do {                                                                \
+        int rc_;                                                        \
+                                                                        \
+        if (0 == (rc_ = (expr_)))                                       \
+            break;                                                      \
+        if (TE_CWMP_FAULT == TE_RC_GET_ERROR(rc_))                      \
+        {                                                               \
+            _cwmp__Fault *f = (_cwmp__Fault *) var_;                    \
+            TEST_FAIL("CWMP Fault received: %s(%s)",                    \
+                        f->FaultCode, f->FaultString);                  \
+        }                                                               \
+        else                                                            \
+            TEST_FAIL("line %d: %s returns 0x%X (%r), but expected 0",  \
+                      __LINE__, # expr_, rc_, rc_);                     \
+    } while (0)
+
 
 /*
  * ================= Configuring of ACSE ===================

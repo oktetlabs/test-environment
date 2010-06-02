@@ -96,16 +96,7 @@ main(int argc, char *argv[])
     if (cr_url == NULL || strlen(cr_url) == 0)
         TEST_FAIL("No Conn Req url on ACSE");
 
-    session_finish_count = 10;
-    do {
-        sleep(1);
-        CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_OBTAIN,
-              "cwmp_state", &cr_state, VA_END_LIST));
-
-        RING("cwmp_state on box is %d", cr_state);
-        session_finish_count--;
-    } while (cr_state != 0 && session_finish_count > 0);
-
+    CHECK_RC(tapi_acse_wait_cwmp_state(ta_acse, "A", "box", CWMP_NOP, 20));
 
     TEST_SUCCESS;
 

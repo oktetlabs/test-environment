@@ -410,6 +410,32 @@ __cwmp__GetRPCMethods(struct soap *soap,
 }
 
 
+static inline void
+cwmp_prepare_soap_header(struct soap *soap, cpe_t *cpe)
+{
+    if (NULL == soap->header)
+    {
+        soap->header = soap_malloc(soap, sizeof(struct SOAP_ENV__Header));
+        memset(soap->header, 0, sizeof(*(soap->header)));
+    }
+
+    if (NULL == soap->header->cwmp__HoldRequests)
+    {
+        soap->header->cwmp__HoldRequests = 
+                soap_malloc(soap, sizeof(_cwmp__HoldRequests));
+    }
+
+    if (soap->encodingStyle)
+    {
+        soap->encodingStyle = NULL;
+    }
+
+    soap->header->cwmp__HoldRequests->__item = cpe->hold_requests;
+    soap->header->cwmp__HoldRequests->SOAP_ENV__mustUnderstand = "1";
+    soap->header->cwmp__ID = NULL;
+    soap->keep_alive = 1; 
+}
+
 /** gSOAP callback for Inform ACS Method */
 SOAP_FMAC5 int SOAP_FMAC6 
 __cwmp__Inform(struct soap *soap,
@@ -466,6 +492,8 @@ __cwmp__Inform(struct soap *soap,
         session->cpe_owner = cpe_item;
         session->acs_owner = NULL;
         cpe_item->session = session;
+        /* State of ConnectionRequest to this CPE is not actual now. */
+        cpe_item->cr_state = CR_NONE; 
     }
     else
     {
@@ -475,25 +503,6 @@ __cwmp__Inform(struct soap *soap,
             return soap->error;
     }
 
-
-
-    if (soap->header == NULL)
-    {
-        soap->header = soap_malloc(soap, sizeof(struct SOAP_ENV__Header));
-        memset(soap->header, 0, sizeof(*(soap->header)));
-    }
-
-    if (soap->header->cwmp__HoldRequests == NULL)
-    {
-        soap->header->cwmp__HoldRequests = 
-                soap_malloc(soap, sizeof(_cwmp__HoldRequests));
-    }
-
-    if (soap->encodingStyle)
-    {
-        soap->encodingStyle = NULL;
-    }
-
     cpe_find_conn_req_url(cwmp__Inform, cpe_item);
     cpe_store_inform(cwmp__Inform, cpe_item, session->def_heap);
 
@@ -501,10 +510,8 @@ __cwmp__Inform(struct soap *soap,
                       session->def_heap);
 
     cwmp__InformResponse->MaxEnvelopes = 1;
-    soap->header->cwmp__HoldRequests->__item = 0;
-    soap->header->cwmp__HoldRequests->SOAP_ENV__mustUnderstand = "1";
-    soap->header->cwmp__ID = NULL;
-    soap->keep_alive = 1; 
+
+    cwmp_prepare_soap_header(soap, cpe_item);
 
     return SOAP_OK;
 }
@@ -1069,9 +1076,8 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
         CWMP_RPC_NONE == rpc_item->params->rpc_cpe)
     {
 
-        RING("CPE '%s', empty list of RPC calls, response 204, terminate",
-             cpe->name);
-        soap->keep_alive = 0;
+        RING("CPE '%s', empty list of RPC calls, response 204", cpe->name);
+        // soap->keep_alive = 0;
         soap_begin_count(soap);
         soap_end_count(soap);
         soap_response(soap, 204);
@@ -1091,20 +1097,8 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     RING("%s(): Try send RPC for '%s', rpc type %d, ind %d ",
          __FUNCTION__, cpe->name, request->rpc_cpe, request->index);
 
-    if (soap->header == NULL)
-    {
-        soap->header = soap_malloc(soap, sizeof(*(soap->header)));
-        memset(soap->header, 0, sizeof(*(soap->header)));
-    }
+    cwmp_prepare_soap_header(soap, cpe);
 
-    if (soap->header->cwmp__HoldRequests == NULL)
-    {
-        soap->header->cwmp__HoldRequests = 
-                soap_malloc(soap, sizeof(_cwmp__HoldRequests));
-    }
-    soap->header->cwmp__HoldRequests->__item = request->hold_requests;
-    soap->header->cwmp__HoldRequests->SOAP_ENV__mustUnderstand = "1";
-    soap->header->cwmp__ID = NULL;
     soap->keep_alive = 1; 
     soap->error = SOAP_OK;
     soap_serializeheader(soap);
@@ -1163,7 +1157,7 @@ acse_cwmp_empty_post(struct soap* soap)
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
     cpe_t          *cpe;
 
-RING("%s(): soap error %d", __FUNCTION__, soap->error);
+    VERB("%s(): soap error %d", __FUNCTION__, soap->error);
 
     if (NULL == session || NULL == (cpe = session->cpe_owner))
     {
@@ -1178,7 +1172,7 @@ RING("%s(): soap error %d", __FUNCTION__, soap->error);
     {
         /* TODO: think, what would be correct in unexpected state?..
          * Now just close connection. */
-        ERROR("Empty POST processing, cpe '%s', unexpected state %d",
+        ERROR("Empty POST processing, cpe '%s', state is %d, not SERVE",
                 cpe->name, session->state);
         soap->keep_alive = 0;
         soap_closesock(soap);

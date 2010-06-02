@@ -38,12 +38,12 @@
         </run> 
 
         <run>
-            <script name="set_param"/>
+            <script name="get_param"/>
             <arg name="ta_acse"/>
         </run> 
 
         <run>
-            <script name="get_param"/>
+            <script name="set_param"/>
             <arg name="ta_acse"/>
         </run> 
 
@@ -51,6 +51,12 @@
             <script name="change_wan"/>
             <arg name="ta_acse"/>
         </run> 
+
+        <run>
+            <script name="hold_req"/>
+            <arg name="ta_acse"/>
+        </run> 
+
 
     </session>
 </package>

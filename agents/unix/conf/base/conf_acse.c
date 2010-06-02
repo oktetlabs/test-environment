@@ -1039,7 +1039,6 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
     strcpy(c_data.acs, in->acs_name);
     strcpy(c_data.cpe, in->cpe_name);
         
-    c_data.hold_requests = 0;
     c_data.rpc_cpe = in->cwmp_rpc; 
     if (in->buf.buf_len > 0)
     {
