@@ -30,8 +30,8 @@ AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@ \
 AM_CFLAGS = @TE_CFLAGS@ -Wextra -Werror
 GEN_LDADD = @TE_LDFLAGS@
 
-#bin_PROGRAMS = rgt-raw2xml
+bin_PROGRAMS = rgt-raw2xml
 
 rgt_raw2xml_SOURCES = raw2xml.c
-rgt_raw2xml_LDADD = $(GEN_LDADD) ../../../lib/lua/src/liblua.la
+rgt_raw2xml_LDADD = $(GEN_LDADD) -llua
 

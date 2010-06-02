@@ -29,9 +29,15 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <ctype.h>
+#include <arpa/inet.h>
+#include <sys/sysinfo.h>
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
 
 #include "te_defs.h"
 #include "te_raw_log.h"
+#include "logger_defs.h"
 
 #define ERROR(_fmt, _args...) fprintf(stderr, _fmt "\n", ##_args)
 
@@ -86,7 +92,7 @@ traceback(lua_State *L)
 #define LUA_PCALL_CLEANUP(_nargs, _nresults) \
     do {                                                            \
         if (lua_pcall(L, _nargs, _nresults, traceback_idx) != 0)    \
-            ERROR_CLEANUP("%s", lua_tostring(L, -1, &len));         \
+            ERROR_CLEANUP("%s", lua_tostring(L, -1));               \
     } while (0)
 
 
@@ -156,7 +162,7 @@ cleanup:
  * Format an argument
  */
 te_bool
-format_arg(const char **pp; luaL_Buffer *buf,
+format_arg(const char **pp, luaL_Buffer *buf,
            const void *arg_buf, size_t arg_len)
 {
     te_bool result          = FALSE;
@@ -164,7 +170,7 @@ format_arg(const char **pp; luaL_Buffer *buf,
     char    conv_buf[64];
 
     /* Switch on the format specifier character */
-    c = **p;
+    c = **pp;
     switch (c)
     {
 #define CHECK_ARG(_expr) \
@@ -172,7 +178,7 @@ format_arg(const char **pp; luaL_Buffer *buf,
         if (!(_expr))                                           \
         {                                                       \
             errno = EINVAL;                                     \
-            ERROR_CLEANUP("Invalid %%%c format argument", c)    \
+            ERROR_CLEANUP("Invalid %%%c format argument", c);   \
         }                                                       \
     } while (0)
 
@@ -199,12 +205,12 @@ format_arg(const char **pp; luaL_Buffer *buf,
         case 'x':
         case 'X':
             {
-                const char  fmt[3]  = {'%', *p, '\0'};
+                const char  fmt[3]  = {'%', c, '\0'};
                 uint32_t    val;
 
                 CHECK_ARG(arg_len == sizeof(val));
 
-                val = ntohl(*(uint32_t *)arg->val);
+                val = ntohl(*(uint32_t *)arg_buf);
 
                 sprintf(conv_buf, fmt, val);
                 luaL_addstring(buf, conv_buf);
@@ -219,7 +225,7 @@ format_arg(const char **pp; luaL_Buffer *buf,
                 size_t      l;
                 te_bool     zero_run;
 
-                CHECK_ARG(arg_len > 0 && arg_len % sizeof(val) == 0):
+                CHECK_ARG(arg_len > 0 && arg_len % sizeof(val) == 0);
 
                 luaL_addstring(buf, "0x");
 
@@ -375,9 +381,10 @@ read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
     te_log_ts_sec       ts_secs;
     te_log_ts_usec      ts_usecs;
     te_log_level        level;
+    te_log_id           id;
     const char         *str;
     te_log_nfl          len;
-    uint8_t            *buf;
+    char               *buf;
 
     /*
      * Transfer version
@@ -395,7 +402,7 @@ read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
         ERROR_CLEANUP("Unknown log message version %u", version);
     }
     /* Push version */
-    lua_pushnumber(L, ver);
+    lua_pushnumber(L, version);
 
     /*
      * Transfer timestamp
@@ -408,14 +415,14 @@ read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
     ts_usecs = ntohl(ts_usecs);
     /* Create timestamp instance */
     lua_pushvalue(L, ts_class_idx);
-    lua_pushnumber(ts_secs);
-    lua_pushnumber(ts_usecs);
+    lua_pushnumber(L, ts_secs);
+    lua_pushnumber(L, ts_usecs);
     LUA_PCALL_CLEANUP(2, 1);
 
     /*
      * Transfer level
      */
-    if (fread(level, sizeof(level), 1, input) != 1)
+    if (fread(&level, sizeof(level), 1, input) != 1)
         goto cleanup;
 #if SIZEOF_TE_LOG_LEVEL == 4
     level = ntohl(level);
@@ -435,7 +442,7 @@ read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
     /*
      * Transfer ID
      */
-    if (fread(id, sizeof(id), 1, input) != 1)
+    if (fread(&id, sizeof(id), 1, input) != 1)
         goto cleanup;
 #if SIZEOF_TE_LOG_ID == 4
     id = ntohl(id);
@@ -501,7 +508,7 @@ cleanup:
 static te_bool
 run_input_and_output(FILE *input,
                      lua_State *L, int traceback_idx,
-                     int ts_class_idx, int msg_class idx
+                     int ts_class_idx, int msg_class_idx,
                      int sink_idx, int sink_put_idx)
 {
     te_bool             result      = FALSE;
@@ -573,6 +580,8 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     L = luaL_newstate();
     if (L == NULL)
         ERROR_CLEANUP("Failed to create Lua state");
+    /* Load standard libraries */
+    luaL_openlibs(L);
 
     /* Push traceback function */
     lua_pushcfunction(L, traceback);
@@ -597,7 +606,7 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     lua_getglobal(L, "require");
     lua_pushliteral(L, "rgt.sink");
     LUA_PCALL_CLEANUP(1, 1);
-    lua_pushnumber((lua_Number)max_mem * 1024 * 1024);
+    lua_pushnumber(L, (lua_Number)max_mem * 1024 * 1024);
     LUA_PCALL_CLEANUP(2, 1);
     sink_idx = lua_gettop(L);
 
@@ -615,7 +624,7 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     else
     {
         lua_getfield(L, -1, "open");
-        lua_pushstring(L, input_name);
+        lua_pushstring(L, output_name);
         lua_pushliteral(L, "w");
         LUA_PCALL_CLEANUP(2, 1);
     }
@@ -793,7 +802,7 @@ main(int argc, char * const argv[])
      */
     sysinfo(&si);
     max_mem = (unsigned long)
-                (((uint64_t)(si.totalram) * mem_unit) / (4*1024*1024));
+                (((uint64_t)(si.totalram) * si.mem_unit) / (4*1024*1024));
     if (max_mem > 4096)
         max_mem = 4096;
 
@@ -814,7 +823,7 @@ main(int argc, char * const argv[])
                     const char *end;
 
                     errno = 0;
-                    max_mem = strtoul(optarg, &end, 0);
+                    max_mem = strtoul(optarg, (char **)&end, 0);
                     for (; isspace(*end); end++);
                     if (errno != 0 || *end != '\0' || max_mem > 4096)
                         ERROR_USAGE_RETURN("Invalid maximum memory option value");
