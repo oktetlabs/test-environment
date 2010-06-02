@@ -138,13 +138,16 @@ read_arg(FILE *input, void **pbuf, size_t *plen)
         result = READ_MESSAGE_RC_EOF;
         goto cleanup;
     }
-    /* Allocate the buffer */
-    buf = malloc(len);
-    if (buf == NULL)
-        goto cleanup;
-    /* Read the field */
-    if (fread(buf, len, 1, input) != 1)
-        goto cleanup;
+    if (len > 0)
+    {
+        /* Allocate the buffer */
+        buf = malloc(len);
+        if (buf == NULL)
+            goto cleanup;
+        /* Read the field */
+        if (fread(buf, len, 1, input) != 1)
+            goto cleanup;
+    }
 
     if (pbuf != NULL)
     {
@@ -298,7 +301,7 @@ read_text(FILE *input, const char *fmt, size_t len, lua_State *L)
     for (; ; prevp = p)
     {
         /* Lookup a '%' or the end of the string */
-        for (; p < end && *p != '%'; p++)
+        for (; p < end && *p != '%'; p++);
         /* Add intermittent format string characters */
         if (p > prevp)
             luaL_addlstring(&buf, prevp, p - prevp);
@@ -466,13 +469,18 @@ read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
         if (fread(&len, sizeof(len), 1, input) != 1)    \
             goto cleanup;                               \
         len = LENTOH(len);                              \
-        /* Allocate the buffer */                       \
-        buf = malloc(len);                              \
-        if (buf == NULL)                                \
-            goto cleanup;                               \
-        /* Read the field */                            \
-        if (fread(buf, len, 1, input) != 1)             \
-            goto cleanup;                               \
+        if (len == 0)                                   \
+            buf = NULL;                                 \
+        else                                            \
+        {                                               \
+            /* Allocate the buffer */                   \
+            buf = malloc(len);                          \
+            if (buf == NULL)                            \
+                goto cleanup;                           \
+            /* Read the field */                        \
+            if (fread(buf, len, 1, input) != 1)         \
+                goto cleanup;                           \
+        }                                               \
     } while (0)
 
     /*
@@ -593,6 +601,11 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     /* Push traceback function */
     lua_pushcfunction(L, traceback);
     traceback_idx = lua_gettop(L);
+
+    /* Require "strict" module */
+    lua_getglobal(L, "require");
+    lua_pushliteral(L, "strict");
+    LUA_PCALL(1, 0);
 
     /* Require rgt.ts */
     LUA_REQUIRE("rgt.ts");
