@@ -190,7 +190,7 @@ function co.xml_chunk:element(name, attrs, text)
     local e
 
     assert(type(name) == "string")
-    assert(attrs = nil or type(attrs) == "table")
+    assert(attrs == nil or type(attrs) == "table")
     assert(text == nil or type(text) == "string")
 
     if text == nil or #text == 0 then

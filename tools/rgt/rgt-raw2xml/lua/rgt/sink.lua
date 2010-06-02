@@ -90,7 +90,7 @@ function rgt.sink:put(msg)
                 start       = msg.ts,
                 name        = prm.name,
                 objective   = prm.objective,
-                tin         = prm.tin
+                tin         = prm.tin,
                 page        = prm.page,
                 authors     = prm.authors,
                 args        = prm.args,

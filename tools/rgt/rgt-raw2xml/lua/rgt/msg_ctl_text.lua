@@ -115,7 +115,7 @@ local function parse_start(prm, text, pos)
     until token == nil
 end
 
-local function msg_ctl_text.parse(prm, text)
+function msg_ctl_text.parse(prm, text)
     local event
     local pos
 

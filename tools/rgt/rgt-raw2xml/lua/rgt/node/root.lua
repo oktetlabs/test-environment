@@ -34,9 +34,9 @@ rgt.node.root       = oo.class({}, rgt.node.general)
 function rgt.node.root:start()
     assert(self.chunk ~= nil)
 
-    self.head:write("<?xml version="1.0"?>\n")
+    self.head:write("<?xml version=\"1.0\"?>\n")
     self.head:start_tag("proteos:log_report",
-                        {"xmlns:proteos" =
+                        {["xmlns:proteos"] =
                          "http://www.oktetlabs.ru/proteos"})
     rgt.node.general.start(self)
 end

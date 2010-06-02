@@ -26,7 +26,7 @@
 
 local oo            = require("loop.base")
 local co            = {}
-local co.xml_chunk  = require("co.xml_chunk")
+co.xml_chunk        = require("co.xml_chunk")
 local rgt           = {}
 rgt.msg             = require("rgt.msg")
 rgt.node            = {}

@@ -26,7 +26,7 @@
 
 local oo            = require("loop.simple")
 local co            = {}
-local co.xml_chunk  = require("co.xml_chunk")
+co.xml_chunk        = require("co.xml_chunk")
 local rgt           = {}
 rgt.node            = {}
 rgt.node.running    = require("rgt.node.running")
@@ -55,7 +55,7 @@ function rgt.node.named:fill_attrs(attrs)
 end
 
 function rgt.node.named:write_meta(chunk)
-    assert(oo.instanceof(chunk, co.xml_chunk)
+    assert(oo.instanceof(chunk, co.xml_chunk))
 
     rgt.node.running.write_meta(self, chunk)
 
@@ -66,7 +66,7 @@ function rgt.node.named:write_meta(chunk)
         for i, e in self.authors do
             chunk:element("author", {email = e})
         end
-        chunk:end_tag("authors"):
+        chunk:end_tag("authors")
     end
 
     return chunk

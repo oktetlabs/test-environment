@@ -28,13 +28,13 @@ local oo    = require("loop.base")
 local rgt   = {}
 rgt.ts      = require("rgt.ts")
 rgt.msg     = oo.class({
-                        version = nil   --- Version
-                        ts      = nil   --- Timestamp
-                        level   = nil   --- Level
-                        id      = nil   --- Node ID
-                        entity  = nil   --- Entity name
-                        user    = nil   --- User name
-                        text    = nil   --- Text
+                        version = nil,  --- Version
+                        ts      = nil,  --- Timestamp
+                        level   = nil,  --- Level
+                        id      = nil,  --- Node ID
+                        entity  = nil,  --- Entity name
+                        user    = nil,  --- User name
+                        text    = nil,  --- Text
                        })
 
 function rgt.msg.id_valid(id)

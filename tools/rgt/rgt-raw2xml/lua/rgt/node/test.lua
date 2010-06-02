@@ -26,7 +26,7 @@
 
 local oo            = require("loop.simple")
 local co            = {}
-local co.xml_chunk  = require("co.xml_chunk")
+co.xml_chunk        = require("co.xml_chunk")
 local rgt           = {}
 rgt.node            = {}
 rgt.node.named      = require("rgt.node.named")
@@ -78,7 +78,7 @@ function rgt.node.test:write_meta(chunk)
         for i, v in self.verdicts do
             chunk:element("verdict", nil, v)
         end
-        chunk:end_tag("verdicts"):
+        chunk:end_tag("verdicts")
     end
 
     return chunk

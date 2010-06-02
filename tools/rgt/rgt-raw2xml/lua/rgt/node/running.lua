@@ -26,7 +26,7 @@
 
 local oo            = require("loop.simple")
 local co            = {}
-local co.xml_chunk  = require("co.xml_chunk")
+co.xml_chunk        = require("co.xml_chunk")
 local rgt           = {}
 rgt.ts              = require("rgt.ts")
 rgt.node            = {}
@@ -45,7 +45,7 @@ function rgt.node.running:__init(inst)
     assert(type(inst) == "table")
     assert(type(inst.args) == "table")
     assert(oo.instanceof(inst.start, rgt.ts))
-    assert(inst.end == nil)
+    assert(inst["end"] == nil)
     assert(inst.result == nil)
     assert(inst.err == nil)
 
@@ -76,7 +76,7 @@ function rgt.node.running:fill_attrs(attrs)
 end
 
 function rgt.node.running:write_meta(chunk)
-    assert(oo.instanceof(chunk, co.xml_chunk)
+    assert(oo.instanceof(chunk, co.xml_chunk))
 
     chunk:element("start-ts", nil, self.start:format_short_abs()):
           element("end-ts", nil, self["end"]:format_short_abs()):
