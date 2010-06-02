@@ -48,196 +48,52 @@
         return 1;                                       \
     } while (0)
 
-
 #define INPUT_BUF_SIZE  16384
-#define OUTPUT_BUF_SIZE 16384
 
-#define MESSAGE_ARG_LIST_MIN_SIZE   8
-#define MESSAGE_ARG_LIST_THRES_SIZE 128
-
-#define SCRAP_MIN_SIZE  16384
-
-
-static void    *scrap_buf   = NULL;
-static size_t   scrap_size  = 0;
-
-te_bool
-scrap_grow(size_t size)
+/* Taken from lua.c */
+static int
+traceback(lua_State *L)
 {
-    size_t  new_scrap_size  = scrap_size;
-    void   *new_scrap_buf;
+    /* 'message' not a string? */
+    if (!lua_isstring(L, 1))
+        /* Keep it intact */
+        return 1;
 
-    if (size <= scrap_size)
-        return TRUE;
-
-    if (new_scrap_size < SCRAP_MIN_SIZE)
-        new_scrap_size = SCRAP_MIN_SIZE;
-
-    while (new_scrap_size < size)
-        new_scrap_size += new_scrap_size / 2;
-
-    new_scrap_buf = realloc(scrap_buf, new_scrap_size);
-    if (new_scrap_buf == NULL)
-        return FALSE;
-
-    scrap_buf = new_scrap_buf;
-    scrap_size = new_scrap_size;
-
-    return TRUE;
-}
-
-
-void
-scrap_clear(void)
-{
-    free(scrap_buf);
-    scrap_size = 0;
-}
-
-
-/** Message variable-length field */
-typedef struct message_fld {
-    uint8_t    *buf;
-    te_log_nfl  len;
-} message_fld;
-
-
-static te_bool
-message_fld_valid(const message_fld *f)
-{
-    return f != NULL &&
-           (f->buf != NULL || f->len == 0);
-}
-
-
-static te_bool
-message_fld_list_valid(const message_fld *list, size_t num)
-{
-    if (list == NULL && num > 0)
-        return FALSE;
-
-    for (; num > 0; list++, num--)
-        if (!message_fld_valid(list))
-            return FALSE;
-
-    return TRUE;
-}
-
-
-/** Message */
-typedef struct message {
-    te_log_version      version;
-    te_log_ts_sec       ts_secs;
-    te_log_ts_usec      ts_usecs;
-    te_log_level        level;
-    te_log_id           id;
-    message_fld         entity_name;
-    message_fld         user_name;
-    message_fld         format;
-    message_fld        *arg_list;
-    size_t              arg_size;
-    size_t              arg_num;
-} message;
-
-
-static te_bool
-message_valid(const message *m)
-{
-    return m != NULL &&
-           message_fld_valid(&m->entity_name) &&
-           message_fld_valid(&m->user_name) &&
-           message_fld_valid(&m->format) &&
-           m->arg_num <= m->arg_size &&
-           message_fld_list_valid(m->arg_list, m->arg_num);
-}
-
-
-static te_bool
-message_init(message *m)
-{
-    memset(m, 0, sizeof(*m));
-
-    m->arg_list     = malloc(sizeof(*m->arg_list) *
-                             MESSAGE_ARG_LIST_MIN_SIZE);
-    if (m->arg_list == NULL)
-        return FALSE;
-
-    m->arg_size     = MESSAGE_ARG_LIST_MIN_SIZE;
-
-    return TRUE;
-}
-
-
-static void
-message_clnp(message *m)
-{
-    size_t  i;
-
-    assert(message_valid(m));
-
-    free(m->entity_name.buf);
-    free(m->user_name.buf);
-    free(m->format.buf);
-
-    for (i = 0; i < m->arg_num; i++)
-        free(m->arg_list[i].buf);
-
-    free(m->arg_list);
-}
-
-
-static void
-message_arg_list_clear(message *m)
-{
-    assert(message_valid(m));
-
-    for (; m->arg_num > 0; m->arg_num--)
-        free(m->arg_list[m->arg_num - 1].buf);
-
-    if (m->arg_size > MESSAGE_ARG_LIST_THRES_SIZE)
+    lua_getglobal(L, "debug");
+    if (!lua_istable(L, -1))
     {
-        m->arg_list = realloc(m->arg_list,
-                              sizeof(*m->arg_list) *
-                              MESSAGE_ARG_LIST_THRES_SIZE);
-        m->arg_size = MESSAGE_ARG_LIST_THRES_SIZE;
-    }
-}
-
-
-static te_bool
-message_arg_list_adda(message *m, uint8_t *buf, te_log_nfl len)
-{
-    assert(message_valid(m));
-    assert(buf != NULL || len == 0);
-
-    if (m->arg_num >= m->arg_size)
-    {
-        message_fld    *new_arg_list;
-        size_t          new_arg_size;
-
-        new_arg_size = m->arg_size + m->arg_size / 2;
-        new_arg_list = realloc(m->arg_list,
-                               new_arg_size * sizeof(*new_arg_list));
-        if (new_arg_list == NULL)
-            return FALSE;
-        m->arg_list = new_arg_list;
-        m->arg_size = new_arg_size;
+        lua_pop(L, 1);
+        return 1;
     }
 
-    m->arg_list[m->arg_num].buf = buf;
-    m->arg_list[m->arg_num].len = len;
-    m->arg_num++;
+    lua_getfield(L, -1, "traceback");
+    if (!lua_isfunction(L, -1))
+    {
+        lua_pop(L, 2);
+        return 1;
+    }
 
-    return TRUE;
+    /* Pass error message */
+    lua_pushvalue(L, 1);
+    /* Skip this function and traceback */
+    lua_pushinteger(L, 2);
+    /* Call debug.traceback */
+    lua_call(L, 2, 1);
+
+    return 1;
 }
+
+#define LUA_PCALL_CLEANUP(_nargs, _nresults) \
+    do {                                                            \
+        if (lua_pcall(L, _nargs, _nresults, traceback_idx) != 0)    \
+            ERROR_CLEANUP("%s", lua_tostring(L, -1, &len));         \
+    } while (0)
 
 
 /** Message reading result code */
 typedef enum read_message_rc {
-    READ_MESSAGE_RC_ERR         = -2,   /**< A reading error occurred or
+    READ_MESSAGE_RC_ERR         = -1,   /**< A reading error occurred or
                                              unexpected EOF was reached */
-    READ_MESSAGE_RC_WRONG_VER   = -1,   /**< A message of unsupported
-                                             version was encountered */
     READ_MESSAGE_RC_EOF         = 0,    /**< The EOF was encountered instead
                                              of the message */
     READ_MESSAGE_RC_OK          = 1,    /**< The message was read
@@ -245,178 +101,522 @@ typedef enum read_message_rc {
 } read_message_rc;
 
 
-/**
- * Read a message from a stream.
- *
- * @param input The stream to read from.
- * @param m     Message to write into.
- *
- * @return Result code.
- */
-static read_message_rc
-read_message(FILE *input, message *m)
-{
-    te_log_version  ver;
-    te_log_nfl      len;
-    uint8_t        *buf;
-    /* NOTE: reverse order */
-    message_fld    *req_fld_list[]    = {&m->format,
-                                         &m->user_name,
-                                         &m->entity_name};
-    size_t          req_fld_num       = sizeof(req_fld_list) /
-                                        sizeof(*req_fld_list);
-
-    assert(input != NULL);
-    assert(message_valid(m));
-
-    /* Read and verify log message version */
-    if (fread(&ver, sizeof(ver), 1, input) != 1)
-    {
-        if (feof(input))
-            return READ_MESSAGE_RC_EOF;
-        return READ_MESSAGE_RC_ERR;
-    }
-    if (ver != TE_LOG_VERSION)
-        return READ_MESSAGE_RC_WRONG_VER;
-    /* Store version */
-    m->version = ver;
-
-    /*
-     * Read timestamp, level and ID
-     */
-    if (fread(&m->ts_secs, sizeof(m->ts_secs), 1, input) != 1 ||
-        fread(&m->ts_usecs, sizeof(m->ts_usecs), 1, input) != 1 ||
-        fread(&m->level, sizeof(m->level), 1, input) != 1 ||
-        fread(&m->id, sizeof(m->id), 1, input) != 1)
-        return READ_MESSAGE_RC_ERR;
-
-    /*
-     * Convert timestamp, level and ID
-     */
-    m->ts_secs = ntohl(m->ts_secs);
-    m->ts_usecs = ntohl(m->ts_usecs);
-#if SIZEOF_TE_LOG_LEVEL == 4
-    m->level = ntohl(m->level);
-#elif SIZEOF_TE_LOG_LEVEL == 2
-    m->level = ntohs(m->level);
-#elif SIZEOF_TE_LOG_LEVEL != 1
-#error Unexpected value of SIZEOF_TE_LOG_LEVEL
-#endif
-#if SIZEOF_TE_LOG_ID == 4
-    m->id = ntohl(m->id);
-#elif SIZEOF_TE_LOG_ID == 2
-    m->id = ntohs(m->id);
-#elif SIZEOF_TE_LOG_ID != 1
-#error Unexpected value of SIZEOF_TE_LOG_ID
-#endif
-
-    /* Reset message format argument list */
-    message_arg_list_clear(m);
-
-    /*
-     * Read remaining required variable-length fields and optional format
-     * arguments.
-     */
-    while (TRUE)
-    {
-        /* Read and convert the field length */
-        if (fread(&len, sizeof(len), 1, input) != 1)
-            return READ_MESSAGE_RC_ERR;
 #if SIZEOF_TE_LOG_NFL == 4
-        len = ntohl(len);
+#define LENTOH(_len) ntohl(len)
 #elif SIZEOF_TE_LOG_NFL == 2
-        len = ntohs(len);
+#define LENTOH(_len) ntohs(len)
 #elif SIZEOF_TE_LOG_NFL != 1
 #error Unexpected value of SIZEOF_TE_LOG_NFL
 #endif
 
-        /*
-         * If it is not a required field and it is a special (terminating)
-         * field length.
-         */
-        if (req_fld_num == 0 && len == TE_LOG_RAW_EOR_LEN)
-            break;
+static read_message_rc
+read_arg(FILE *input, void **pbuf, size_t *plen)
+{
+    read_message_rc     result  = READ_MESSAGE_RC_ERR;
+    void               *buf     = NULL;
+    te_log_nfl          len;
 
-        /*
-         * Read the field
-         */
-        if (len == 0)
-            buf = NULL;
-        else
-        {
-            buf = malloc(len);
-            if (buf == NULL)
-                return READ_MESSAGE_RC_ERR;
-            if (fread(buf, len, 1, input) != 1)
-            {
-                free(buf);
-                return READ_MESSAGE_RC_ERR;
-            }
-        }
+    /* Read and convert the field length */
+    if (fread(&len, sizeof(len), 1, input) != 1)
+        goto cleanup;
+    len = LENTOH(len);
+    if (len == TE_LOG_RAW_EOR_LEN)
+    {
+        result = READ_MESSAGE_RC_EOF;
+        goto cleanup;
+    }
+    /* Allocate the buffer */
+    buf = malloc(len);
+    if (buf == NULL)
+        goto cleanup;
+    /* Read the field */
+    if (fread(buf, len, 1, input) != 1)
+        goto cleanup;
 
-        /*
-         * Store the field
-         */
-        if (req_fld_num > 0)
-        {
-            req_fld_num--;
-            free(req_fld_list[req_fld_num]->buf);
-            req_fld_list[req_fld_num]->buf = buf;
-            req_fld_list[req_fld_num]->len = len;
-        }
-        else if (!message_arg_list_adda(m, buf, len))
-        {
-            free(buf);
-            return READ_MESSAGE_RC_ERR;
-        }
+    if (pbuf != NULL)
+    {
+        *pbuf = buf;
+        buf = NULL;
     }
 
-    return READ_MESSAGE_RC_OK;
+    if (plen != NULL)
+        *plen = len;
+
+    result = READ_MESSAGE_RC_OK;
+
+cleanup:
+
+    free(buf);
+
+    return result;
 }
 
 
-static int
-run(unsigned long max_mem, const char *input_name, const char *output_name)
+/**
+ * Read and format a message text.
+ */
+static read_message_rc
+read_text(FILE *input, const char *fmt, size_t len, lua_State *L)
 {
-    /* Create Lua instance */
-    /* Require rgt.msg */
-    /* Require rgt.sink */
-    /* Push max_mem */
-    /* Call rgt.sink to create sink instance */
-    /* Retrieve sink instance "take_file" method */
-    /* Copy sink instance to the top */
-    /* Open/push output file */
-    /* Call "take_file" instance method to supply the sink with the file */
-    /* Retrieve sink instance "start" method */
-    /* Copy sink instance to the top */
-    /* Call "start" instance method */
-    /* Retrieve sink instance "put" method */
+    read_message_rc     result      = READ_MESAGE_RC_ERR;
+    luaL_Buffer         buf;
+    const char         *prevp;
+    const char         *p;
+    read_message_rc     arg_rc;
+    void               *arg_buf     = NULL;
+    size_t              arg_len;
 
-    /* Read log file version */
+    luaL_buffinit(L, &buf);
+
+    prevp = fmt;
+    p = fmt;
+
+    for (; len > 0 && *p != '%'; p++, len--);
+    if (p > prevp)
+        luaL_addlstring(&buf, prevp, p - prevp);
+    p++;
+
+    /* If it is an escaped '%' */
+    if (*p == '%')
+    {
+        prevp = p;
+        continue;
+    }
+
+    /* If it is an incomplete format specification */
+    if (*p == '\0')
+    {
+        p--
+        goto finish;
+    }
+
+#define READ_ARG \
+    do {                                            \
+        read_message_rc rc;                         \
+                                                    \
+        rc = read_arg(input, &arg_buf, &arg_len);   \
+        if (rc == READ_MESSAGE_RC_ERR)              \
+            goto cleanup;                           \
+        else if (rc == READ_MESSAGE_RC_EOF)         \
+            goto finish;                            \
+    } while (0)
+
+    switch (*p)
+    {
+        case 'c':
+            {
+                uint32_t    val;
+
+                READ_ARG;
+                if (arg_len != sizeof(val))
+                    ERROR_CLEANUP("Invalid %%c format argument");
+                val = ntohl(*(uint32_t *)arg_buf);
+                luaL_addchar(&buf, (char)val);
+                free(buf);
+                buf = NULL;
+            }
+            break;
+
+        case 's':
+            {
+                READ_ARG;
+                luaL_addstring(&buf, (const char *)arg_buf);
+                free(buf);
+                buf = NULL;
+            }
+
+        case 'd':
+        case 'u':
+        case 'o':
+        case 'x':
+        case 'X':
+    }
+
+#undef READ_ARG
+
+
+    luaL_pushresult(&buf);
+
+cleanup:
+
+    free(arg_buf);
+
+    return result;
+}
+
+/**
+ * Read a message from a stream and place its parts on a Lua stack.
+ *
+ * @param input         The stream to read from.
+ * @param L             Lua state to put the message parts to.
+ * @param traceback_idx Error traceback function stack index.
+ * @param ts_class_idx  Timestamp class stack index.
+ *
+ * @return Result code.
+ */
+static read_message_rc
+read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
+{
+    read_message_rc     result      = READ_MESSAGE_RC_ERR;
+    te_log_version      version;
+    te_log_ts_sec       ts_secs;
+    te_log_ts_usec      ts_usecs;
+    te_log_level        level;
+    const char         *str;
+    te_log_nfl          len;
+    uint8_t            *buf;
+
+    /*
+     * Transfer version
+     */
+    /* Read and verify log message version */
+    if (fread(&version, sizeof(version), 1, input) != 1)
+    {
+        if (feof(input))
+            result = READ_MESSAGE_RC_EOF;
+        goto cleanup;
+    }
+    if (version != TE_LOG_VERSION)
+    {
+        errno = EINVAL;
+        ERROR_CLEANUP("Unknown log message version %u", version);
+    }
+    /* Push version */
+    lua_pushnumber(L, ver);
+
+    /*
+     * Transfer timestamp
+     */
+    /* Read the timestamp fields */
+    if (fread(&ts_secs, sizeof(ts_secs), 1, input) != 1 ||
+        fread(&ts_usecs, sizeof(ts_usecs), 1, input) != 1)
+        goto cleanup;
+    ts_secs = ntohl(ts_secs);
+    ts_usecs = ntohl(ts_usecs);
+    /* Create timestamp instance */
+    lua_pushvalue(L, ts_class_idx);
+    lua_pushnumber(ts_secs);
+    lua_pushnumber(ts_usecs);
+    LUA_PCALL_CLEANUP(2, 1);
+
+    /*
+     * Transfer level
+     */
+    if (fread(level, sizeof(level), 1, input) != 1)
+        goto cleanup;
+#if SIZEOF_TE_LOG_LEVEL == 4
+    level = ntohl(level);
+#elif SIZEOF_TE_LOG_LEVEL == 2
+    level = ntohs(level);
+#elif SIZEOF_TE_LOG_LEVEL != 1
+#error Unexpected value of SIZEOF_TE_LOG_LEVEL
+#endif
+    str = te_log_level2str(level);
+    if (str == NULL)
+    {
+        errno = EINVAL;
+        ERROR_CLEANUP("Unknown log level %u", level);
+    }
+    lua_pushstring(L, str);
+
+    /*
+     * Transfer ID
+     */
+    if (fread(id, sizeof(id), 1, input) != 1)
+        goto cleanup;
+#if SIZEOF_TE_LOG_ID == 4
+    id = ntohl(id);
+#elif SIZEOF_TE_LOG_ID == 2
+    id = ntohs(id);
+#elif SIZEOF_TE_LOG_ID != 1
+#error Unexpected value of SIZEOF_TE_LOG_ID
+#endif
+    lua_pushnumber(L, id);
+
+#define READ_FLD \
+    do {                                                \
+        /* Read and convert the field length */         \
+        if (fread(&len, sizeof(len), 1, input) != 1)    \
+            goto cleanup;                               \
+        len = LENTOH(len);                              \
+        /* Allocate the buffer */                       \
+        buf = malloc(len);                              \
+        if (buf == NULL)                                \
+            goto cleanup;                               \
+        /* Read the field */                            \
+        if (fread(buf, len, 1, input) != 1)             \
+            goto cleanup;                               \
+    } while (0)
+
+    /*
+     * Transfer entity
+     */
+    READ_FLD;
+    lua_pushlstring(L, buf, len);
+    free(buf);
+    buf = NULL;
+
+    /*
+     * Transfer user
+     */
+    READ_FLD;
+    lua_pushlstring(L, buf, len);
+    free(buf);
+    buf = NULL;
+
+    /*
+     * Transfer text
+     */
+    READ_FLD;
+    result = read_text(input, buf, len, L);
+    free(buf);
+    buf = NULL;
+
+#undef READ_FLD
+
+cleanup:
+
+    free(buf);
+
+    return result;
+}
+
+
+static te_bool
+run_input_and_output(FILE *input,
+                     lua_State *L, int traceback_idx,
+                     int ts_class_idx, int msg_class idx
+                     int sink_idx, int sink_put_idx)
+{
+    te_bool             result      = FALSE;
+    off_t               offset;
+    read_message_rc     read_rc;
 
     while (TRUE)
     {
         /* Copy "put" sink instance method to the top */
+        lua_pushvalue(L, sink_put_idx);
         /* Copy sink instance to the top */
+        lua_pushvalue(L, sink_idx);
         /* Copy rgt.msg to the top */
+        lua_pushvalue(L, msg_class_idx);
+
+        /* Retrieve current offset */
+        offset = ftello(input);
+
         /* Call read_message to supply the arguments */
-        /* If there are no more messages */
-            /* Break */
-        /* If an error occurred */
-            /* Abort */
+        read_rc = read_message(input, L, traceback_idx, ts_class_idx);
+        if (read_rc < READ_MESSAGE_RC_OK)
+        {
+            if (read_rc == READ_MESSAGE_RC_EOF)
+                break;
+            else
+            {
+                int read_errno = errno;
+
+                ERROR_CLEANUP("Failed reading input message "
+                              "(starting at %lld) at %lld: %s",
+                              (long long int)offset,
+                              (long long int)ftello(input),
+                              feof(input)
+                                  ? "unexpected EOF"
+                                  : strerror(read_errno));
+            }
+        }
+
         /* Call rgt.msg with the arguments to create message instance */
+        LUA_PCALL_CLEANUP(7, 1);
+
         /* Call "put" sink instance method to feed the message */
+        LUA_PCALL_CLEANUP(2, 0);
     }
 
+    result = TRUE;
+
+cleanup:
+
+    return result;
+}
+
+
+static te_bool
+run_input(FILE *input, const char *output_name, unsigned long max_mem)
+{
+    te_bool     result          = FALSE;
+    lua_State  *L               = NULL;
+    int         traceback_idx;
+    int         ts_class_idx;
+    int         msg_class_idx;
+    int         sink_idx;
+    int         sink_put_idx;
+
+    /*
+     * Setup Lua
+     */
+    /* Create Lua instance */
+    L = luaL_newstate();
+    if (L == NULL)
+        ERROR_CLEANUP("Failed to create Lua state");
+
+    /* Push traceback function */
+    lua_pushcfunction(L, traceback);
+    traceback_idx = lua_gettop(L);
+
+    /* Require rgt.ts */
+    lua_getglobal(L, "require");
+    lua_pushliteral(L, "rgt.ts");
+    LUA_PCALL_CLEANUP(1, 1);
+    ts_class_idx = lua_gettop(L);
+
+    /* Require rgt.msg */
+    lua_getglobal(L, "require");
+    lua_pushliteral(L, "rgt.msg");
+    LUA_PCALL_CLEANUP(1, 1);
+    msg_class_idx = lua_gettop(L);
+
+    /*
+     * Create sink instance
+     */
+    /* Call rgt.sink(max_mem) to create sink instance */
+    lua_getglobal(L, "require");
+    lua_pushliteral(L, "rgt.sink");
+    LUA_PCALL_CLEANUP(1, 1);
+    lua_pushnumber((lua_Number)max_mem * 1024 * 1024);
+    LUA_PCALL_CLEANUP(2, 1);
+    sink_idx = lua_gettop(L);
+
+    /*
+     * Supply sink instance with the output file
+     */
+    /* Retrieve sink instance "take_file" method */
+    lua_getfield(L, sink_idx, "take_file");
+    /* Copy sink instance to the top */
+    lua_pushvalue(L, sink_idx);
+
+    /* Open/push output file */
+    lua_getglobal(L, "io");
+    if (output_name[0] == '-' && output_name[1] == '\0')
+        lua_getfield(L, -1, "stdout");
+    else
+    {
+        lua_getfield(L, -1, "open");
+        lua_pushstring(L, input_name);
+        lua_pushliteral(L, "w");
+        LUA_PCALL_CLEANUP(2, 1);
+    }
+    lua_remove(L, -2);
+
+    /* Call "take_file" instance method to supply the sink with the file */
+    LUA_PCALL_CLEANUP(2, 0);
+
+    /*
+     * Start sink output
+     */
+    /* Retrieve sink instance "start" method */
+    lua_getfield(L, sink_idx, "start");
+    /* Copy sink instance to the top */
+    lua_pushvalue(L, sink_idx);
+
+    /* Call "start" instance method */
+    LUA_PCALL_CLEANUP(1, 0);
+
+    /* Retrieve sink instance "put" method */
+    lua_getfield(L, sink_idx, "put");
+    sink_put_idx = lua_gettop(L);
+
+    if (!run_input_and_output(input, L, traceback_idx,
+                              ts_class_idx, msg_class_idx,
+                              sink_idx, sink_put_idx))
+        goto cleanup;
+
+    /*
+     * Finish sink output
+     */
     /* Retrieve sink instance "finish" method */
+    lua_getfield(L, sink_idx, "finish");
     /* Copy sink instance to the top */
+    lua_pushvalue(L, sink_idx);
     /* Call sink instance "finish" method */
+    LUA_PCALL_CLEANUP(1, 0);
+
+    /*
+     * Take the output file from the sink
+     */
     /* Retrieve sink instance "yield_file" method */
+    lua_getfield(L, sink_idx, "yield_file");
     /* Copy sink instance to the top */
+    lua_pushvalue(L, sink_idx);
     /* Call sink instance "yield_file" method */
+    LUA_PCALL_CLEANUP(1, 1);
+
+    /*
+     * Close the output
+     */
     /* Retrieve file "close" method */
+    lua_getfield(L, -1, "close");
     /* Copy file to the top */
+    lua_pushvalue(L, -2);
     /* Call file "close" method */
+    LUA_PCALL_CLEANUP(2, 0);
+
+    result = TRUE;
+
+cleanup:
+
+    if (L != NULL)
+        lua_close(L);
+
+    return result;
+}
+
+
+static int
+run(const char *input_name, const char *output_name, unsigned long max_mem)
+{
+    int                 result          = 1;
+    FILE               *input           = NULL;
+    void               *input_buf       = NULL;
+    te_log_version      version;
+
+    /*
+     * Setup input
+     */
+    /* Open input */
+    if (input_name[0] == '-' && input_name[1] == '\0')
+        input = stdin;
+    else
+    {
+        input = fopen(input_name, "r");
+        if (input == NULL)
+            ERROR_CLEANUP("Failed to open \"%s\": %s",
+                          input_name, strerror(errno));
+    }
+
+    /* Set input buffer */
+    input_buf = malloc(INPUT_BUF_SIZE);
+    setvbuf(input, input_buf, _IOFBF, INPUT_BUF_SIZE);
+
+    /* Read and verify log file version */
+    if (fread(&version, sizeof(version), 1, input) != 1)
+        ERROR_CLEANUP("Failed to read log file version: %s",
+                      feof(input) ? "unexpected EOF" : strerror(errno));
+    if (version != 1)
+        ERROR_CLEANUP("Unsupported log file version %hhu", version);
+
+    if (!run_input(input, output_name, max_mem))
+
+    /*
+     * Close the input
+     */
+    fclose(input);
+
+cleanup:
+
+    if (input != NULL)
+        fclose(input);
+    free(input_buf);
+
+    return result;
 }
 
 
@@ -535,7 +735,7 @@ main(int argc, char * const argv[])
     /*
      * Run
      */
-    return run(max_mem, input_name, output_name);
+    return run(input_name, output_name, max_mem);
 }
 
 
