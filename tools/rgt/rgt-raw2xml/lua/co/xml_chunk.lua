@@ -106,12 +106,13 @@ local function format_attrs(attrs)
 
     for n, v in pairs(attrs) do
         str = str .. " " .. name .. "=\"" .. 
-               v:gsub("([<>&\"])",
+               v:gsub("[<>&\"\000-\031\127]",
                       function (c)
                         return c == "<" and "&lt;" or
                                c == ">" and "&gt;" or
                                c == "&" and "&amp;" or
-                               "&quot;"
+                               c == '"' and "&quot;" or
+                               ("&#" .. c:byte() .. ";")
                       end)
     end
 
@@ -140,12 +141,16 @@ end
 
 local function format_cdata(text)
     assert(type(text) == "string")
-    return text:gsub("[<>&]",
+    return text:gsub("[<>&\000-\009\011\012\014-\031\127]",
                      function (c)
                         return c == "<" and "&lt;" or
                                c == ">" and "&gt;" or
-                               "&amp;"
-                     end)
+                               c == "&" and "&amp;" or
+                               ("&#" .. c:byte() .. ";")
+                     end):
+                -- FIXME I hate this
+                gsub("\r\n", "<br/>"):
+                gsub("[\r\n]", "<br/>")
 end
 
 function co.xml_chunk:start_tag(name, attrs)
