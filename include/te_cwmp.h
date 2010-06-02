@@ -204,6 +204,9 @@ typedef union {
 #define SOAP_TYPE_unsignedByte (8)
 #endif
 
+#ifndef SOAP_TYPE_xsd__boolean
+#define SOAP_TYPE_xsd__boolean (11)
+#endif
 #ifndef SOAP_TYPE_time
 #define SOAP_TYPE_time (98)
 #endif

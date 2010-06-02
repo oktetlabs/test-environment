@@ -915,17 +915,23 @@ extern void cwmp_get_names_resp_free(_cwmp__GetParameterNamesResponse *r);
 
 /**
  * Construct GetParameterValues argument.
- * Last argument in list should be VA_END_LIST;
+ * First argument is base name, subsequent strings will 
+ * be concatenated with the base name; 
+ * last argument in list should be VA_END_LIST.
+ *
+ * @return new allocated value, ready to send.
  */
-extern _cwmp__GetParameterValues *cwmp_get_values_alloc(const char *name,
+extern _cwmp__GetParameterValues *cwmp_get_values_alloc(const char *b_name,
+                                                        const char *f_name,
                                                         ...);
 
 /**
  * Add name to GetParameterValues argument.
- * Last argument in list should be VA_END_LIST;
+ * Last argument in list should be VA_END_LIST.
  */
 extern te_errno cwmp_get_values_add(_cwmp__GetParameterValues *req,
-                                    const char *name, ...);
+                                    const char *b_name,
+                                    const char *f_name, ...);
 
 /**
  * Free GetParameterValues argument.
@@ -954,19 +960,29 @@ extern void cwmp_get_values_resp_free(_cwmp__GetParameterValues *resp);
  * Last argument (instead of next <name>) in list should be VA_END_LIST.
  * Parameter <type> should be int value, <value> should be respective:
  *   <type>                          expected C type of <value>
+ * SOAP_TYPE_boolean                    int       
  * SOAP_TYPE_int                        int       
- * SOAP_TYPE_byte                       char
+ * SOAP_TYPE_byte                       int
  * SOAP_TYPE_string                     const char *
  * SOAP_TYPE_unsignedInt                uint32_t
- * SOAP_TYPE_unsignedByte               uint8_t
+ * SOAP_TYPE_unsignedByte               uint32_t
  * SOAP_TYPE_time                       time_t
  * SOAP_TYPE_SOAP_ENC__base64           const char * (??)
  * 
  */
 extern _cwmp__SetParameterValues *cwmp_set_values_alloc(
                             const char *par_key,
+                            const char *b_name,
                             const char *f_name,
                             ...);
+
+/**
+ * Print ParameterValueStruct to the string buffer, for human read.
+ *
+ * @return used buffer length.
+ */
+extern size_t snprint_ParamValueStruct(char *buf, size_t len, 
+                                       cwmp__ParameterValueStruct *p_v);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

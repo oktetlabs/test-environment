@@ -57,12 +57,12 @@
 int
 main(int argc, char *argv[])
 {
-    int r;
+    int r, i;
     int call_index;
     cwmp_sess_state_t cwmp_state = 0;
-    _cwmp__GetParameterNames            get_names;
+    _cwmp__GetParameterNames           *get_names;
     _cwmp__GetParameterNamesResponse   *get_names_resp = NULL;
-    _cwmp__GetParameterValues           get_values;
+    _cwmp__GetParameterValues          *get_values;
     _cwmp__GetParameterValuesResponse  *get_values_resp = NULL;
 
     char *param_path = 
@@ -91,16 +91,13 @@ main(int argc, char *argv[])
 
     te_rc = tapi_acse_wait_cr_state(ta_acse, "A", "box", CR_DONE, 10);
 
-    memset(&get_names, 0, sizeof(get_names));
-    get_names.NextLevel = 1;
-    get_names.ParameterPath = &param_path;
-
+    get_names = cwmp_get_names_alloc(param_path, 1);
 
     CHECK_RC(tapi_acse_wait_cwmp_state(ta_acse, "A", "box",
                                       CWMP_PENDING, 20));
 
     CHECK_RC(tapi_acse_cpe_get_parameter_names(rpcs_acse, "A", "box",
-                                    &get_names, &call_index));
+                                               get_names, &call_index));
 
     RING("GetParNames queued with index %d", call_index);
 
@@ -120,6 +117,8 @@ main(int argc, char *argv[])
         TEST_FAIL("NULL response for GetNames ");
     }
 
+    cwmp_get_names_free(get_names);
+
     RING("GetNames number %d, first name '%s'",
         (int)get_names_resp->ParameterList->__size,
         get_names_resp->ParameterList->
@@ -128,72 +127,39 @@ main(int argc, char *argv[])
     lan_ip_conn_path = strdup(get_names_resp->ParameterList->
                                 __ptrParameterInfoStruct[0]->Name);
 
-    /* TODO: make good TAPI for it.. */
+    get_values = cwmp_get_values_alloc(lan_ip_conn_path,
+                        "Enable",
+                        "IPInterfaceIPAddress",
+                        "IPInterfaceSubnetMask", 
+                        "IPInterfaceAddressingType",
+                        VA_END_LIST);
+
+    CHECK_RC(tapi_acse_cpe_get_parameter_values(rpcs_acse, "A", "box",
+                                    get_values, &call_index));
+    te_rc = tapi_acse_cpe_get_parameter_values_resp(
+            rpcs_acse, "A", "box", 20, call_index, &get_values_resp);
+    if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
     {
-        size_t i;
-        struct ParameterNames par_names;
-        char **names_array = calloc(4, sizeof(char*));
-        par_names.__size = 4;
-        par_names.__ptrstring = names_array;
-        names_array[0] = calloc(256, 1);
-        sprintf(names_array[0],
-                "%s%s", lan_ip_conn_path, "Enable");
-        names_array[1] = calloc(256, 1);
-        sprintf(names_array[1],
-                "%s%s", lan_ip_conn_path, "IPInterfaceIPAddress");
-        names_array[2] = calloc(256, 1);
-        sprintf(names_array[2],
-                "%s%s", lan_ip_conn_path, "IPInterfaceSubnetMask");
-        names_array[3] = calloc(256, 1);
-        sprintf(names_array[3],
-                "%s%s", lan_ip_conn_path, "IPInterfaceAddressingType");
-        get_values.ParameterNames_ = &par_names;
-
-        CHECK_RC(tapi_acse_cpe_get_parameter_values(rpcs_acse, "A", "box",
-                                        &get_values, &call_index));
-        te_rc = tapi_acse_cpe_get_parameter_values_resp(
-                rpcs_acse, "A", "box", 20, call_index, &get_values_resp);
-        if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
-        {
-            _cwmp__Fault *f = (_cwmp__Fault *)get_values_resp;
-            ERROR("CWMP Fault received: %s(%s)",
-                    f->FaultCode, f->FaultString);
-            TEST_FAIL("GetParameterValues failed");
-        }
-
-    if (te_rc != 0)
-        TEST_FAIL("Unexpected error on GetParamValues response: %r", te_rc);
-
-        for (i = 0; i < get_values_resp ->ParameterList->__size; i++)
-        {
-            char buf[1024];
-            char *p = buf;
-            void *v  = get_values_resp ->ParameterList->
-                            __ptrParameterValueStruct[i]->Value;
-            int type = get_values_resp ->ParameterList->
-                            __ptrParameterValueStruct[i]->__type;
-
-            p += sprintf(p, "GetParamValues [%u] resp: %s = (type %d)", i, 
-                get_values_resp ->ParameterList->
-                        __ptrParameterValueStruct[i]->Name, type);
-            switch(type)
-            {
-                case SOAP_TYPE_string:
-                case SOAP_TYPE_xsd__anySimpleType:
-                    p+= sprintf(p, "'%s'", (char *)v);
-                    break;
-                case SOAP_TYPE_time:
-                    p+= sprintf(p, "time %d sec", (int)(*((time_t *)v)));
-                    break;
-                default: /* integer, boolean types storen similar usual int. */
-                    p+= sprintf(p, "%d", *((int *)v));
-                    break;
-            }
-            RING(buf);
-        }
+        _cwmp__Fault *f = (_cwmp__Fault *)get_values_resp;
+        ERROR("CWMP Fault received: %s(%s)",
+                f->FaultCode, f->FaultString);
+        TEST_FAIL("GetParameterValues failed");
     }
 
+    if (te_rc != 0)
+        TEST_FAIL("Unexpected error on GetParamValues response: %r",
+            te_rc);
 
+    for (i = 0; i < get_values_resp ->ParameterList->__size; i++)
+    {
+        char buf[1024];
+        snprint_ParamValueStruct(buf, sizeof(buf), 
+                                get_values_resp->ParameterList->
+                                        __ptrParameterValueStruct[i]);
+        RING("GetParValues result [%d]: %s", i, buf);
+    }
+
+    cwmp_get_values_free(get_values);
 
     TEST_SUCCESS;
 

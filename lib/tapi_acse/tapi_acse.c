@@ -613,10 +613,8 @@ cwmp_get_names_free(_cwmp__GetParameterNames *arg)
     do {
         if (NULL == arg->ParameterPath)
             break;
-        free(arg->ParameterPath);
-        if (NULL == arg->ParameterPath[0])
-            break;
         free(arg->ParameterPath[0]);
+        free(arg->ParameterPath);
     } while (0);
     free(arg);
     return;
@@ -642,23 +640,33 @@ cwmp_get_names_resp_free(_cwmp__GetParameterNamesResponse *resp)
 
 /* see description in tapi_acse.h */
 _cwmp__GetParameterValues *
-cwmp_get_values_alloc(const char *first_name, ...)
+cwmp_get_values_alloc(const char *b_name, const char *first_name, ...)
 {
     va_list     ap;
     size_t      real_arr_len = 0, i = 0;
     const char *v_name = first_name;
     char      **array = NULL;
+    size_t      b_len, n_len;
 
+    if (NULL == b_name || NULL == first_name)
+        return NULL;
+
+    b_len = strlen(b_name);
     _cwmp__GetParameterValues *ret = malloc(sizeof(*ret));
 
     va_start(ap, first_name);
     do {
+        n_len = (NULL != v_name ? strlen(v_name) : 0);
+
         if (real_arr_len <= i)
         {
             real_arr_len += CWMP_VAL_ARR_QUANTUM;
             array = realloc(array, real_arr_len * sizeof(char*));
         }
-        array[i] = (NULL != v_name ? strdup(v_name) : NULL);
+        array[i] = malloc(b_len + n_len + 1);
+        strcpy(array[i], b_name);
+        if (v_name != NULL)
+            strcpy(array[i] + b_len, v_name);
 
         v_name = va_arg(ap, const char *);
         i++;
@@ -674,7 +682,9 @@ cwmp_get_values_alloc(const char *first_name, ...)
 
 /* see description in tapi_acse.h */
 te_errno
-cwmp_get_values_add(_cwmp__GetParameterValues *req, const char *name, ...)
+cwmp_get_values_add(_cwmp__GetParameterValues *req,
+                    const char *b_name,
+                    const char *f_name, ...)
 {
     ERROR("%s(): TODO", __FUNCTION__);
     return TE_EFAIL;
@@ -715,13 +725,18 @@ cwmp_get_values_resp_free(_cwmp__GetParameterValues *resp)
 
 
 _cwmp__SetParameterValues *
-cwmp_set_values_alloc(const char *par_key, const char *first_name, ...)
+cwmp_set_values_alloc(const char *par_key,
+                      const char *base_name, 
+                      const char *first_name, ...)
 {
     va_list     ap;
     size_t      real_arr_len = 0, i = 0;
     const char *v_name = first_name;
+    size_t      b_len, v_len;
 
     struct cwmp__ParameterValueStruct **array = NULL;
+
+    b_len = (NULL == base_name ? 0 : strlen(base_name));
 
     _cwmp__SetParameterValues *ret = malloc(sizeof(*ret));
 
@@ -734,8 +749,12 @@ cwmp_set_values_alloc(const char *par_key, const char *first_name, ...)
             real_arr_len += CWMP_VAL_ARR_QUANTUM;
             array = realloc(array, real_arr_len * sizeof(array[0]));
         }
+        v_len = (NULL != v_name ? strlen(v_name) : 0);
         array[i] = malloc(sizeof(struct cwmp__ParameterValueStruct));
-        array[i]->Name = strdup(NULL != v_name ? v_name : "");
+        array[i]->Name = malloc(b_len + v_len + 1);
+        memcpy(array[i]->Name, base_name, b_len);
+        memcpy(array[i]->Name + b_len, v_name, v_len);
+
         array[i]->__type = va_arg(ap, int);
         switch (array[i]->__type)
         {
@@ -746,6 +765,7 @@ cwmp_set_values_alloc(const char *par_key, const char *first_name, ...)
                 *((type_ *)array[i]->Value) = val; \
             } while (0)
 
+            case SOAP_TYPE_xsd__boolean:         
             case SOAP_TYPE_int:         
                 SET_SOAP_TYPE(int, int);  break;
             case SOAP_TYPE_byte:
@@ -803,4 +823,63 @@ cwmp_set_values_free(_cwmp__SetParameterValues *req)
     free(req);
 }
 
+static inline const char *
+soap_simple_type_string(int type)
+{
+    static char buf[10];
+    switch (type)
+    {
+        case SOAP_TYPE_int:          return "SOAP_TYPE_int";
+        case SOAP_TYPE_xsd__boolean: return "SOAP_TYPE_boolean";
+        case SOAP_TYPE_byte:         return "SOAP_TYPE_byte";
+        case SOAP_TYPE_string:       return "SOAP_TYPE_string";
+        case SOAP_TYPE_unsignedInt:  return "SOAP_TYPE_unsignedInt";
+        case SOAP_TYPE_unsignedByte: return "SOAP_TYPE_unsignedByte";
+        case SOAP_TYPE_time:         return "SOAP_TYPE_time";
+        case SOAP_TYPE_SOAP_ENC__base64: return "SOAP_TYPE_base64";
+    }
+    snprintf(buf, sizeof(buf), "<unknown: %d>", type);
+    return buf;
+}
 
+size_t
+snprint_ParamValueStruct(char *buf, size_t len, 
+                         cwmp__ParameterValueStruct *p_v)
+{
+    size_t rest_len = len;
+    size_t used;
+
+    char *p = buf;
+    void *v  = p_v->Value;
+    int  type = p_v->__type;
+
+    used = sprintf(p, "%s (type %s) = ", p_v->Name, 
+            soap_simple_type_string(p_v->__type));
+    p+= used; rest_len -= used;
+    switch(type)
+    {
+        case SOAP_TYPE_string:
+        case SOAP_TYPE_SOAP_ENC__base64:
+            p+= snprintf(p, rest_len, "'%s'", (char *)v);
+            break;
+        case SOAP_TYPE_time:
+            p+= snprintf(p, rest_len, "time %dsec", (int)(*((time_t *)v)));
+            break;
+        case SOAP_TYPE_byte:
+            p+= snprintf(p, rest_len, "%d", (int)(*((char *)v)));
+            break;
+        case SOAP_TYPE_int:    
+            p+= snprintf(p, rest_len, "%d", *((int *)v));
+            break;
+        case SOAP_TYPE_unsignedInt:
+            p+= snprintf(p, rest_len, "%u", *((uint32_t *)v));
+            break;
+        case SOAP_TYPE_unsignedByte:
+            p+= snprintf(p, rest_len, "%u", (uint32_t)(*((uint8_t *)v)));
+            break;
+        case SOAP_TYPE_xsd__boolean:
+            p+= snprintf(p, rest_len, *((int *)v) ? "True" : "False");
+            break;
+    }
+    return p - buf;
+}
