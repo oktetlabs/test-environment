@@ -24,7 +24,7 @@
 -- @release $Id$
 --
 
-local oo    = require("loop.base")
+local oo    = require("loop.simple")
 local co    = {}
 co.manager  = oo.class({
                         max_mem  = nil, --- Maximum memory for chunks

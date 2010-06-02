@@ -109,4 +109,7 @@ function rgt.node.running:finish(ts, result, err)
     self:write_meta(self.head)
     self.head:end_tag("meta")
     self.tail:end_tag(self.element)
+    return self
 end
+
+return rgt.node.running

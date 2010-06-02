@@ -62,3 +62,4 @@ function rgt.msg:__init(version, ts, level, id, entity, user, text)
                       text      = text})
 end
 
+return rgt.msg

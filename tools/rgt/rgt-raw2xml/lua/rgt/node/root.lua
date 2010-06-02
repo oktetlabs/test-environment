@@ -32,13 +32,15 @@ rgt.node.general    = require("rgt.node.general")
 rgt.node.root       = oo.class({}, rgt.node.general)
 
 function rgt.node.root:start()
-    assert(self.chunk ~= nil)
+    assert(self.head ~= nil)
 
     self.head:write("<?xml version=\"1.0\"?>\n")
     self.head:start_tag("proteos:log_report",
                         {["xmlns:proteos"] =
                          "http://www.oktetlabs.ru/proteos"})
     rgt.node.general.start(self)
+
+    return self
 end
 
 function rgt.node.root:add_child(child)
@@ -46,6 +48,7 @@ function rgt.node.root:add_child(child)
     -- One branch at most
     assert(self.branches[1].child == nil)
     rgt.node.general.add_child(self, child)
+    return self
 end
 
 function rgt.node.root:finish()
@@ -53,6 +56,7 @@ function rgt.node.root:finish()
 
     rgt.node.general.finish(self)
     self.tail:end_tag("proteos:log_report")
+    return self
 end
 
 return rgt.node.root

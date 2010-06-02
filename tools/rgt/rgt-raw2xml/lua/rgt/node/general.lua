@@ -24,7 +24,7 @@
 -- @release $Id$
 --
 
-local oo            = require("loop.base")
+local oo            = require("loop.simple")
 local co            = {}
 co.xml_chunk        = require("co.xml_chunk")
 local rgt           = {}
@@ -54,17 +54,19 @@ function rgt.node.general:start()
 end
 
 function rgt.node.general:start_branch(branch)
+    assert(type(branch) == "table")
     return branch
 end
 
 function rgt.node.general:start_branch_logging(branch)
+    assert(type(branch) == "table")
     assert(not branch.logging)
     branch.chunk:start_tag("logs")
     branch.logging = true
     return branch
 end
 
-function rgt.node.add_child(child)
+function rgt.node.general:add_child(child)
     local branch
 
     assert(oo.instanceof(child, rgt.node.general))
@@ -90,9 +92,11 @@ function rgt.node.add_child(child)
     end
     branch.child = child:take_chunk(branch.chunk)
     branch.chunk = nil
+
+    return self
 end
 
-function rgt.node.log(ts, level, entity, user, text)
+function rgt.node.general:log(ts, level, entity, user, text)
 
     -- Lookup first branch with a child
     for i, b in ipairs(self.branches) do
@@ -113,9 +117,10 @@ function rgt.node.log(ts, level, entity, user, text)
                                     level   = level,
                                     entity  = entity,
                                     user    = user})
+    return self
 end
 
-function rgt.node.del_child(child)
+function rgt.node.general:del_child(child)
     assert(oo.instanceof(child, rgt.node.general))
 
     -- Lookup the branch holding the child
@@ -126,6 +131,7 @@ function rgt.node.del_child(child)
             b.chunk = b.child:yield_chunk()
             -- Remove the child
             b.child = nil
+            return self
         end
     end
 
@@ -133,6 +139,7 @@ function rgt.node.del_child(child)
 end
 
 function rgt.node.general:finish_branch_logging(branch)
+    assert(type(branch) == "table")
     assert(branch.logging)
     branch.chunk:end_tag("logs")
     branch.logging = nil
@@ -140,6 +147,7 @@ function rgt.node.general:finish_branch_logging(branch)
 end
 
 function rgt.node.general:finish_branch(branch)
+    assert(type(branch) == "table")
     if branch.logging then
         self:finish_branch_logging(branch)
     end
@@ -152,6 +160,7 @@ function rgt.node.general:finish()
         assert(b.chunk ~= nil)
         self:finish_branch(b)
     end
+    return self
 end
 
 function rgt.node.general:yield_chunk()
@@ -173,3 +182,4 @@ function rgt.node.general:yield_chunk()
     return chunk
 end
 
+return rgt.node.general

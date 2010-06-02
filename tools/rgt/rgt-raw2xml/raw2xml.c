@@ -89,10 +89,17 @@ traceback(lua_State *L)
     return 1;
 }
 
-#define LUA_PCALL_CLEANUP(_nargs, _nresults) \
+#define LUA_PCALL(_nargs, _nresults) \
     do {                                                            \
         if (lua_pcall(L, _nargs, _nresults, traceback_idx) != 0)    \
             ERROR_CLEANUP("%s", lua_tostring(L, -1));               \
+    } while (0)
+
+#define LUA_REQUIRE(_mod) \
+    do {                                \
+        lua_getglobal(L, "require");    \
+        lua_pushliteral(L, _mod);       \
+        LUA_PCALL(1, 1);                \
     } while (0)
 
 
@@ -417,7 +424,7 @@ read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
     lua_pushvalue(L, ts_class_idx);
     lua_pushnumber(L, ts_secs);
     lua_pushnumber(L, ts_usecs);
-    LUA_PCALL_CLEANUP(2, 1);
+    LUA_PCALL(2, 1);
 
     /*
      * Transfer level
@@ -548,10 +555,10 @@ run_input_and_output(FILE *input,
         }
 
         /* Call rgt.msg with the arguments to create message instance */
-        LUA_PCALL_CLEANUP(7, 1);
+        LUA_PCALL(7, 1);
 
         /* Call "put" sink instance method to feed the message */
-        LUA_PCALL_CLEANUP(2, 0);
+        LUA_PCALL(2, 0);
     }
 
     result = TRUE;
@@ -588,26 +595,20 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     traceback_idx = lua_gettop(L);
 
     /* Require rgt.ts */
-    lua_getglobal(L, "require");
-    lua_pushliteral(L, "rgt.ts");
-    LUA_PCALL_CLEANUP(1, 1);
+    LUA_REQUIRE("rgt.ts");
     ts_class_idx = lua_gettop(L);
 
     /* Require rgt.msg */
-    lua_getglobal(L, "require");
-    lua_pushliteral(L, "rgt.msg");
-    LUA_PCALL_CLEANUP(1, 1);
+    LUA_REQUIRE("rgt.msg");
     msg_class_idx = lua_gettop(L);
 
     /*
      * Create sink instance
      */
     /* Call rgt.sink(max_mem) to create sink instance */
-    lua_getglobal(L, "require");
-    lua_pushliteral(L, "rgt.sink");
-    LUA_PCALL_CLEANUP(1, 1);
+    LUA_REQUIRE("rgt.sink");
     lua_pushnumber(L, (lua_Number)max_mem * 1024 * 1024);
-    LUA_PCALL_CLEANUP(2, 1);
+    LUA_PCALL(1, 1);
     sink_idx = lua_gettop(L);
 
     /*
@@ -626,20 +627,20 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
         lua_getfield(L, -1, "open");
         lua_pushstring(L, output_name);
         lua_pushliteral(L, "w");
-        LUA_PCALL_CLEANUP(2, 1);
+        LUA_PCALL(2, 1);
     }
     /* Remove "io" table */
     lua_remove(L, -2);
 
     /* Call "take_file" instance method to supply the sink with the file */
-    LUA_PCALL_CLEANUP(2, 0);
+    LUA_PCALL(2, 0);
 
     /*
      * Start sink output
      */
     lua_getfield(L, sink_idx, "start");
     lua_pushvalue(L, sink_idx);
-    LUA_PCALL_CLEANUP(1, 0);
+    LUA_PCALL(1, 0);
 
     /*
      * Run with input file and Lua state
@@ -658,21 +659,21 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
      */
     lua_getfield(L, sink_idx, "finish");
     lua_pushvalue(L, sink_idx);
-    LUA_PCALL_CLEANUP(1, 0);
+    LUA_PCALL(1, 0);
 
     /*
      * Take the output file from the sink
      */
     lua_getfield(L, sink_idx, "yield_file");
     lua_pushvalue(L, sink_idx);
-    LUA_PCALL_CLEANUP(1, 1);
+    LUA_PCALL(1, 1);
 
     /*
      * Close the output
      */
     lua_getfield(L, -1, "close");
     lua_pushvalue(L, -2);
-    LUA_PCALL_CLEANUP(2, 0);
+    LUA_PCALL(2, 0);
 
     result = TRUE;
 

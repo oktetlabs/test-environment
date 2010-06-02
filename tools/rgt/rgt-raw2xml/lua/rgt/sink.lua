@@ -24,7 +24,7 @@
 -- @release $Id$
 --
 
-local oo            = require("loop.base")
+local oo            = require("loop.simple")
 local co            = require("co")
 local rgt           = {}
 rgt.msg_ctl_text    = require("rgt.msg_ctl_text")
@@ -57,7 +57,7 @@ end
 
 function rgt.sink:start()
     assert(self.map[0] == nil)
-    inst.map[0] = rgt.node.root():take_chunk(self.chunk):start()
+    self.map[0] = rgt.node.root({}):take_chunk(self.chunk):start()
     self.chunk = nil
 end
 
@@ -70,7 +70,7 @@ function rgt.sink:put(msg)
     -- If it is not a control message
     if msg.id ~= 0 or msg.user ~= "Control" or msg.entity ~= "Tester" then
         -- log the message to its node
-        node = map[msg.id]
+        node = self.map[msg.id]
         node:log(msg.ts, msg.level, msg.entity, msg.user, msg.text)
         return
     end

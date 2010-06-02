@@ -24,7 +24,7 @@
 -- @release $Id$
 --
 
-local oo        = require("loop.base")
+local oo        = require("loop.simple")
 local co        = {}
 co.chunk        = require("co.chunk")
 co.xml_chunk    = oo.class({
@@ -105,15 +105,15 @@ local function format_attrs(attrs)
     assert(type(attrs) == "table")
 
     for n, v in pairs(attrs) do
-        str = str .. " " .. name .. "=\"" .. 
-               v:gsub("[<>&\"\000-\031\127]",
+        str = str .. " " .. n .. "=\"" .. 
+               v:gsub("[<>&\"\001-\031\127]",
                       function (c)
                         return c == "<" and "&lt;" or
                                c == ">" and "&gt;" or
                                c == "&" and "&amp;" or
                                c == '"' and "&quot;" or
                                ("&#" .. c:byte() .. ";")
-                      end)
+                      end) .. "\""
     end
 
     return str

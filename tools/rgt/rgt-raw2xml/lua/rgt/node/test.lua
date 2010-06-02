@@ -88,6 +88,7 @@ function rgt.node.test:add_child(child)
     assert(oo.instanceof(child, rgt.node.general))
     -- No children allowed
     assert(false)
+    return self
 end
 
 return rgt.node.test

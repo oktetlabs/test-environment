@@ -24,7 +24,7 @@
 -- @release $Id$
 --
 
-local oo    = require("loop.base")
+local oo    = require("loop.simple")
 local co    = {}
 co.chunk    = oo.class({
                         buf_size = 32768,   --- Relocation buffer size
