@@ -19,7 +19,7 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
-AC_SUBST([LUA_ROOT], ["$prefix"])
+AC_SUBST([LUA_ROOT], ["$prefix/"])
 
 AC_CONFIG_FILES(Makefile src/luaconf.h src/Makefile etc/Makefile)
 
