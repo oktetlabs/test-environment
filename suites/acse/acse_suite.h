@@ -1,7 +1,7 @@
 /** @file
- * @brief XEN Test Suite
+ * @brief ACSE Test Suite
  *
- * Common definitions for RPC test suite.
+ * Common definitions for ACSE test suite.
  * 
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -21,13 +21,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  * 
  * $Id$
  */
 
-#ifndef __XEN_SUITE_H__
-#define __XEN_SUITE_H__
+#ifndef __ACSE_SUITE_H__
+#define __ACSE_SUITE_H__
 
 #include "te_config.h"
 
@@ -99,4 +99,4 @@
 #include "tapi_test.h"
 #include "tapi_acse.h"
 
-#endif /* __XEN_SUITE_H__ */
+#endif /* __ACSE_SUITE_H__ */
