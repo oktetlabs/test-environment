@@ -219,6 +219,8 @@ tadf_add_forw_task(const char *forw_asn_spec, int sendq_id)
 {
     int rc = 0;
     int syms = 0;
+    char *forw_asn_spec_dup = NULL;
+    char *ptr;
 
     asn_value           *forward_action_spec;
     forw_task_descr_t   *new_task_descr = NULL;
@@ -232,8 +234,34 @@ tadf_add_forw_task(const char *forw_asn_spec, int sendq_id)
             break;
         }
 
-        rc = asn_parse_value_text(forw_asn_spec, ndn_forw_action,
+        /*
+         * FIXME We have to cut off spare backslash symbols
+         * inserted by write_str function.
+         */
+        if ((forw_asn_spec_dup = strdup(forw_asn_spec)) == NULL)
+        {
+            rc = TE_ENOMEM;
+            break;
+        }
+
+        ptr = forw_asn_spec_dup;
+
+        while ((ptr = strstr(ptr, "\\n")) != NULL)
+        {
+            *ptr = '\n';
+            *(ptr + 1) = ' ';
+        }
+
+        ptr = forw_asn_spec_dup;
+
+        while ((ptr = strstr(ptr, "\\\"")) != NULL)
+            *ptr = ' ';
+
+        rc = asn_parse_value_text(forw_asn_spec_dup, ndn_forw_action,
                                   &forward_action_spec, &syms);
+
+        free(forw_asn_spec_dup);
+
         if (rc)
         {
             ERROR("%s: ASN parse %r, sym %d", __FUNCTION__, rc, syms);
