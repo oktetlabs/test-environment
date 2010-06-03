@@ -91,6 +91,7 @@ end
 function rgt.ts:format_short_abs()
     assert(rgt.ts.valid(self))
     -- return os.date(("%%H:%%M:%%S %3u ms"):
+    -- FIXME MIMICKING ORIGINAL
     return os.date(("%%H:%%M:%%S %u ms"):
             format(self.us / 10 ^ 3), self.s)
 end
@@ -98,6 +99,7 @@ end
 function rgt.ts:format_short_rel()
     assert(rgt.ts.valid(self))
     -- return ("%.2u:%.2u:%.2u %3u ms"):
+    -- FIXME MIMICKING ORIGINAL
     return ("%u:%u:%u %u ms"):
                 format(math.floor(self.s / (60 * 60)),
                        math.floor(self.s % (60 * 60) / 60),

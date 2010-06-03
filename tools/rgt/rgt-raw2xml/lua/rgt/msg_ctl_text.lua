@@ -116,7 +116,8 @@ local function parse_start(prm, text, pos)
             local parse_fn = token_parse[token:lower()]
             
             if parse_fn == nil then
-                error("Unknown token \"" .. token .. "\"")
+                error(("Unknown token \"%s\" in control message \"%s\""):
+                      format(token, text))
             end
 
             pos = parse_fn(prm, text, pos)

@@ -36,6 +36,7 @@
 #include <lauxlib.h>
 
 #include "te_defs.h"
+#include "te_errno.h"
 #include "te_raw_log.h"
 #include "logger_defs.h"
 
@@ -183,7 +184,7 @@ format_arg(const char **pp, luaL_Buffer *buf,
     c = **pp;
     switch (c)
     {
-#define CHECK_ARG(_expr) \
+#define ASSERT_ARG(_expr) \
     do {                                                        \
         if (!(_expr))                                           \
         {                                                       \
@@ -192,23 +193,12 @@ format_arg(const char **pp, luaL_Buffer *buf,
         }                                                       \
     } while (0)
 
-        case 'c':
-            {
-                uint32_t    val;
-
-                CHECK_ARG(arg_len == sizeof(val));
-
-                val = ntohl(*(uint32_t *)arg_buf);
-                luaL_addchar(buf, (char)val);
-            }
-            (*pp)++;
-            break;
-
         case 's':
             luaL_addlstring(buf, (const char *)arg_buf, arg_len);
             (*pp)++;
             break;
 
+        case 'c':
         case 'd':
         case 'u':
         case 'o':
@@ -218,7 +208,7 @@ format_arg(const char **pp, luaL_Buffer *buf,
                 const char  fmt[3]  = {'%', c, '\0'};
                 uint32_t    val;
 
-                CHECK_ARG(arg_len == sizeof(val));
+                ASSERT_ARG(arg_len == sizeof(val));
 
                 val = ntohl(*(uint32_t *)arg_buf);
 
@@ -235,7 +225,7 @@ format_arg(const char **pp, luaL_Buffer *buf,
                 size_t      l;
                 te_bool     zero_run;
 
-                CHECK_ARG(arg_len > 0 && arg_len % sizeof(val) == 0);
+                ASSERT_ARG(arg_len > 0 && arg_len % sizeof(val) == 0);
 
                 luaL_addstring(buf, "0x");
 
@@ -261,12 +251,34 @@ format_arg(const char **pp, luaL_Buffer *buf,
             (*pp)++;
             break;
 
+        case 'r':
+            {
+                int32_t     err;
+                const char *src;
+                const char *str;
+
+                ASSERT_ARG(arg_len == sizeof(err));
+
+                err = ntohl(*(int32_t *)arg_buf);
+
+                src = te_rc_mod2str(err);
+                str = te_rc_err2str(err);
+                if (*src != '\0')
+                {
+                    luaL_addstring(buf, src);
+                    luaL_addchar(buf, '-');
+                }
+                luaL_addstring(buf, str);
+            }
+            (*pp)++;
+            break;
+
         default:
             /* Unknown format specifier - output as is */
             luaL_addchar(buf, '%');
             break;
 
-#undef CHECK_ARG
+#undef ASSERT_ARG
     }
 
     result = TRUE;
@@ -566,7 +578,9 @@ run_input_and_output(FILE *input,
         LUA_PCALL(7, 1);
 
         /* Call "put" sink instance method to feed the message */
-        LUA_PCALL(2, 0);
+        if (lua_pcall(L, 2, 0, traceback_idx) != 0)
+            ERROR_CLEANUP("Failed to output message starting at %lld:\n%s",
+                          offset, lua_tostring(L, -1));
     }
 
     result = TRUE;

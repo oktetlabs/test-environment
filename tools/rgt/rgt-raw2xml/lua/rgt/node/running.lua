@@ -83,14 +83,6 @@ function rgt.node.running:write_meta(chunk)
           element("duration", nil,
                   (self.end_ts - self.start_ts):format_short_rel())
 
-    if self.args ~= nil and #self.args > 0 then
-        chunk:start_tag("params")
-        for i, a in ipairs(self.args) do
-            chunk:element("param", {{"name", a[1]}, {"value", a[2]}})
-        end
-        chunk:end_tag("params")
-    end
-
     return chunk
 end
 
@@ -107,6 +99,14 @@ function rgt.node.running:finish(ts, result, err)
     self.head:start_tag(self.element, self:add_attrs({}))
     self.head:start_tag("meta")
     self:write_meta(self.head)
+    -- FIXME MIMICKING ORIGINAL - move to write_meta
+    if self.args ~= nil and #self.args > 0 then
+        self.head:start_tag("params")
+        for i, a in ipairs(self.args) do
+            self.head:element("param", {{"name", a[1]}, {"value", a[2]}})
+        end
+        self.head:end_tag("params")
+    end
     self.head:end_tag("meta")
     rgt.node.general.finish(self)
     self.tail:end_tag(self.element)

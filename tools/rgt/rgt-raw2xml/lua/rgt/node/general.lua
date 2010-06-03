@@ -97,7 +97,6 @@ function rgt.node.general:add_child(child)
 end
 
 function rgt.node.general:log(ts, level, entity, user, text)
-
     -- Lookup first branch with a child
     for i, b in ipairs(self.branches) do
         if b.child ~= nil then
@@ -119,7 +118,9 @@ function rgt.node.general:log(ts, level, entity, user, text)
                                     {"user",    user},
                                     {"ts",      ts:format_short_abs()}
                                    },
-                                   text)
+                                   text
+                                   -- FIXME MIMICKING ORIGINAL
+                                   :gsub("\n+$", ""))
     return self
 end
 
