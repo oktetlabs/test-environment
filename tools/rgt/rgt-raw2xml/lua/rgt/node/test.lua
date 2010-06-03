@@ -29,6 +29,7 @@ local co            = {}
 co.xml_chunk        = require("co.xml_chunk")
 local rgt           = {}
 rgt.node            = {}
+rgt.node.general    = require("rgt.node.general")
 rgt.node.named      = require("rgt.node.named")
 rgt.node.test       = oo.class({
                                 element     = "test",
@@ -49,18 +50,25 @@ function rgt.node.test:__init(inst)
 
     inst.verdicts = {}
 
-    rgt.node.named:__init(inst)
-
-    return oo.rawnew(self, inst)
+    return rgt.node.named.__init(self, inst)
 end
 
-function rgt.node.test:fill_attrs(attrs)
+function rgt.node.test:start_branch(branch)
+    assert(type(branch) == "table")
+    return rgt.node.general.start_branch(self, branch)
+end
+
+function rgt.node.test:finish_branch(branch)
+    assert(type(branch) == "table")
+    return rgt.node.general.finish_branch(self, branch)
+end
+
+function rgt.node.test:add_attrs(attrs)
     assert(type(attrs) == "table")
-
-    rgt.node.named.fill_attrs(self, attrs)
-
-    attrs.tin = self.tin
-
+    if self.tin ~= nil then
+        table.insert(attrs, {"tin", tostring(self.tin)})
+    end
+    rgt.node.named.add_attrs(self, attrs)
     return attrs
 end
 
@@ -73,9 +81,9 @@ function rgt.node.test:write_meta(chunk)
         chunk:element("page", nil, self.page)
     end
 
-    if #self.verdicts > 0 then
+    if self.verdicts ~= nil and #self.verdicts > 0 then
         chunk:start_tag("verdicts")
-        for i, v in self.verdicts do
+        for i, v in ipairs(self.verdicts) do
             chunk:element("verdict", nil, v)
         end
         chunk:end_tag("verdicts")

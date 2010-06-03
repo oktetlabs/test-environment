@@ -90,12 +90,15 @@ end
 
 function rgt.ts:format_short_abs()
     assert(rgt.ts.valid(self))
-    return os.date(("%%H:%%M:%%S %3u ms"):format(self.us / 10 ^ 3), self.s)
+    -- return os.date(("%%H:%%M:%%S %3u ms"):
+    return os.date(("%%H:%%M:%%S %u ms"):
+            format(self.us / 10 ^ 3), self.s)
 end
 
 function rgt.ts:format_short_rel()
     assert(rgt.ts.valid(self))
-    return ("%.2u:%.2u:%.2u %3u ms"):
+    -- return ("%.2u:%.2u:%.2u %3u ms"):
+    return ("%u:%u:%u %u ms"):
                 format(math.floor(self.s / (60 * 60)),
                        math.floor(self.s % (60 * 60) / 60),
                        self.s % 60,

@@ -40,17 +40,15 @@ function rgt.node.named:__init(inst)
     assert(type(inst) == "table")
     assert(type(inst.name) == "string")
     assert(type(inst.objective) == "string")
-    assert(type(inst.authors) == "table")
+    assert(inst.authors == nil or type(inst.authors) == "table")
 
-    rgt.node.general:__init(inst)
-
-    return oo.rawnew(self, inst)
+    return rgt.node.running.__init(self, inst)
 end
 
-function rgt.node.named:fill_attrs(attrs)
+function rgt.node.named:add_attrs(attrs)
     assert(type(attrs) == "table")
-    rgt.node.running.fill_attrs(self, attrs)
-    attrs.name = self.name
+    table.insert(attrs, {"name", self.name})
+    rgt.node.running.add_attrs(self, attrs)
     return attrs
 end
 
@@ -59,12 +57,14 @@ function rgt.node.named:write_meta(chunk)
 
     rgt.node.running.write_meta(self, chunk)
 
-    chunk:element("objective", nil, self.objective)
+    if #self.objective > 0 then
+        chunk:element("objective", nil, self.objective)
+    end
 
-    if #self.authors > 0 then
+    if self.authors ~= nil and #self.authors > 0 then
         chunk:start_tag("authors")
-        for i, e in self.authors do
-            chunk:element("author", {email = e})
+        for i, e in ipairs(self.authors) do
+            chunk:element("author", {{"email", e}})
         end
         chunk:end_tag("authors")
     end

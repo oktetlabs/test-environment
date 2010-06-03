@@ -686,7 +686,7 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
      */
     lua_getfield(L, -1, "close");
     lua_pushvalue(L, -2);
-    LUA_PCALL(2, 0);
+    LUA_PCALL(1, 0);
 
     result = TRUE;
 

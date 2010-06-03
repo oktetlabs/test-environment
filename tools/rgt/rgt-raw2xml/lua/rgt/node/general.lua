@@ -44,8 +44,8 @@ end
 
 function rgt.node.general:take_chunk(chunk)
     self.head = chunk
-    self.tail = chunk:fork_next()
-    self.branches = {self:start_branch({chunk = chunk:fork_next()})}
+    self.tail = chunk:fork_next():descend()
+    self.branches = {self:start_branch({chunk = self.tail:fork_prev()})}
     return self
 end
 
@@ -88,7 +88,7 @@ function rgt.node.general:add_child(child)
     end
 
     if branch.logging then
-        self:stop_branch_logging(branch)
+        self:finish_branch_logging(branch)
     end
     branch.child = child:take_chunk(branch.chunk)
     branch.chunk = nil
@@ -113,10 +113,13 @@ function rgt.node.general:log(ts, level, entity, user, text)
         self:start_branch_logging(self.branches[1])
     end
     self.branches[1].chunk:element("msg",
-                                   {ts      = ts:format_short_abs(),
-                                    level   = level,
-                                    entity  = entity,
-                                    user    = user})
+                                   {
+                                    {"level",   level},
+                                    {"entity",  entity},
+                                    {"user",    user},
+                                    {"ts",      ts:format_short_abs()}
+                                   },
+                                   text)
     return self
 end
 

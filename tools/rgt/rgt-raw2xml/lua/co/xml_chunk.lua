@@ -28,7 +28,9 @@ local oo        = require("loop.simple")
 local co        = {}
 co.chunk        = require("co.chunk")
 co.xml_chunk    = oo.class({
-                            depth   = 0,    -- Nesting depth
+                            indent  = 2,    --- Number of characters
+                                            --  per nesting level
+                            depth   = 0,    --- Nesting depth
                            }, co.chunk)
 
 ---
@@ -55,9 +57,11 @@ function co.xml_chunk:__init(manager, storage, size, depth)
            math.floor(depth) == depth and
            depth >= 0)
 
-    inst = co.chunk(manager, storage, size)
+    inst = co.chunk.__init(self, manager, storage, size)
+
     inst.depth = depth or 0
-    return oo.rawnew(self, inst)
+
+    return inst
 end
 
 ---
@@ -104,16 +108,16 @@ local function format_attrs(attrs)
 
     assert(type(attrs) == "table")
 
-    for n, v in pairs(attrs) do
-        str = str .. " " .. n .. "=\"" .. 
-               v:gsub("[<>&\"\001-\031\127]",
-                      function (c)
-                        return c == "<" and "&lt;" or
-                               c == ">" and "&gt;" or
-                               c == "&" and "&amp;" or
-                               c == '"' and "&quot;" or
-                               ("&#" .. c:byte() .. ";")
-                      end) .. "\""
+    for i, a in ipairs(attrs) do
+        str = str .. " " .. a[1] .. "=\"" .. 
+               a[2]:gsub("[<>&\"\001-\031\127]",
+                         function (c)
+                            return c == "<" and "&lt;" or
+                                   c == ">" and "&gt;" or
+                                   c == "&" and "&amp;" or
+                                   c == '"' and "&quot;" or
+                                   ("&#" .. c:byte() .. ";")
+                         end) .. "\""
     end
 
     return str
@@ -141,7 +145,7 @@ end
 
 local function format_cdata(text)
     assert(type(text) == "string")
-    return text:gsub("[<>&\000-\009\011\012\014-\031\127]",
+    return text:gsub("[<>&\001-\009\011\012\014-\031\127]",
                      function (c)
                         return c == "<" and "&lt;" or
                                c == ">" and "&gt;" or
@@ -157,14 +161,14 @@ function co.xml_chunk:start_tag(name, attrs)
     assert(type(name) == "string")
     assert(attrs == nil or type(attrs) == "table")
 
-    return self:write((" "):rep(self.depth) ..
+    return self:write((" "):rep(self.indent * self.depth) ..
                       format_start_tag(name, attrs) .. "\n"):descend()
 end
 
 function co.xml_chunk:end_tag(name)
     assert(type(name) == "string")
 
-    return self:ascend():write((" "):rep(self.depth) ..
+    return self:ascend():write((" "):rep(self.indent * self.depth) ..
                                format_end_tag(name) .. "\n")
 end
 
@@ -172,7 +176,7 @@ function co.xml_chunk:empty_tag(name, attrs)
     assert(type(name) == "string")
     assert(attrs == nil or type(attrs) == "table")
 
-    return self:write((" "):rep(self.depth) ..
+    return self:write((" "):rep(self.indent * self.depth) ..
                       format_empty_tag(name, attrs) .. "\n")
 end
 
@@ -181,7 +185,8 @@ function co.xml_chunk:cdata(text)
 
     return self:write(format_cdata(text):
                       -- indent
-                      gsub("\n", "%0" .. (" "):rep(self.depth)):
+                      gsub("\n",
+                           "%0" .. (" "):rep(self.indent * self.depth)):
                       -- add newline if necessary
                       gsub("[^\n]$", "%0\n"))
 end
@@ -201,7 +206,7 @@ function co.xml_chunk:element(name, attrs, text)
             format_end_tag(name)
     end
 
-    return self:write((" "):rep(self.depth) .. e .. "\n")
+    return self:write((" "):rep(self.indent * self.depth) .. e .. "\n")
 end
 
 return co.xml_chunk

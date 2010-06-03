@@ -29,8 +29,8 @@ local msg_ctl_text   = {}
 local function read_quoted_string(text, pos)
     local unquoted
 
-    if text:sub(pos, pos + 1) ~= "\"" then
-        unquoted, pos = match("([^%s]*)()")
+    if text:sub(pos, pos) ~= "\"" then
+        unquoted, pos = text:match("([^%s]*)()", pos)
     else
         local chunk, char, new_pos
 
@@ -51,11 +51,16 @@ local token_parse = {}
 
 function token_parse.tin(prm, text, pos)
     prm.tin, pos = text:match("^%s*(%d+)()", pos)
+    prm.tin = tonumber(prm.tin)
     return pos
 end
 
 function token_parse.page(prm, text, pos)
     prm.page, pos = text:match("^%s*([^%s]+)()", pos)
+    if prm.page == nil then
+        error(("Failed to extract test page from control message \"%s\""):
+              format(text))
+    end
     return pos
 end
 
@@ -83,7 +88,7 @@ function token_parse.args(prm, text, pos)
         if name == nil then
             break
         end
-        value, pos = prm.read_quoted_string(text, value_pos)
+        value, pos = read_quoted_string(text, value_pos)
         table.insert(prm.args, {name, value})
     end
 
@@ -94,7 +99,11 @@ local function parse_start(prm, text, pos)
     if prm.event == "package" or prm.event == "test" then
         -- Retrieve node name and objective
         prm.name, prm.objective, pos =
-            text:match("^%s*([^%s]+)%s+\"([^\"]+)\"()", pos)
+            text:match("^%s*([^%s]+)%s+\"([^\"]*)\"()", pos)
+        if prm.name == nil then
+            error(("Failed to extract name and objective " ..
+                   "from control message \"%s\""):format(text))
+        end
     end
 
     -- Parse the message body
@@ -121,7 +130,14 @@ function msg_ctl_text.parse(prm, text)
 
     -- Parse the message header
     prm.parent_id, prm.id, event, pos =
-            text:match("^(%d+)%s+(%d+)%s+(%w+)()$")
+            text:match("^(%d+)%s+(%d+)%s+(%w+)()")
+
+    if prm.parent_id == nil then
+        error(("Failed to extract header from control message \"%s\""):
+              format(text))
+    end
+    prm.parent_id = tonumber(prm.parent_id)
+    prm.id = tonumber(prm.id)
 
     event = event:lower()
     prm.event = event
@@ -130,8 +146,36 @@ function msg_ctl_text.parse(prm, text)
     if event == "package" or event == "session" or event == "test" then
         parse_start(prm, text, pos)
     else
-        prm.err = text:match("^%s*(.*)$")
+        prm.err = text:match("^%s*(.*)$", pos)
     end
+
+    --[[
+    io.stderr:write("CONTROL TEXT: \"" .. text .. "\"\n")
+    io.stderr:write("CONTROL PARAMETERS:\n")
+    for k, v in pairs(prm) do
+        io.stderr:write(k .. "=")
+        if type(v) == "table" then
+            io.stderr:write("{")
+            for vk, vv in pairs(v) do
+                io.stderr:write(vk .. "=")
+                if type(vv) == "table" then
+                    io.stderr:write("{")
+                    for vvk, vvv in pairs(vv) do
+                        io.stderr:write(vvk .. "=\"" .. vvv .. "\", ")
+                    end
+                    io.stderr:write("}")
+                else
+                    io.stderr:write("\"" .. vv .. "\"")
+                end
+                io.stderr:write(", ")
+            end
+            io.stderr:write("}")
+        else
+            io.stderr:write("\"" .. v .. "\"")
+        end
+        io.stderr:write("\n")
+    end
+    --]]
 
     return prm
 end

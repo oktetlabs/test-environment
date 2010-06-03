@@ -71,6 +71,9 @@ function rgt.sink:put(msg)
     if msg.id ~= 0 or msg.user ~= "Control" or msg.entity ~= "Tester" then
         -- log the message to its node
         node = self.map[msg.id]
+        if node == nil then
+            error(("Node ID %u not found"):format(msg.id))
+        end
         node:log(msg.ts, msg.level, msg.entity, msg.user, msg.text)
         return
     end
@@ -80,39 +83,44 @@ function rgt.sink:put(msg)
 
     -- lookup parent node
     parent = self.map[prm.parent_id]
+    if parent == nil then
+        error(("Node ID %u not found"):format(prm.parent_id))
+    end
 
     -- If it is a node opening
     if prm.event == "package" or
        prm.event == "session" or
        prm.event == "test" then
         -- create new node
-        node = rgt.node[prm.event]{
-                start       = msg.ts,
+        node = rgt.node[prm.event]({
+                start_ts    = msg.ts,
                 name        = prm.name,
                 objective   = prm.objective,
                 tin         = prm.tin,
                 page        = prm.page,
                 authors     = prm.authors,
-                args        = prm.args,
-                start       = msg.ts}
+                args        = prm.args})
 
         -- add to the map
         self.map[prm.id] = node
 
         -- add to the parent's children list
-        parent:add_child(prm.id, node)
+        parent:add_child(node)
 
         -- start node output
         node:start()
     else
         -- lookup node
         node = self.map[prm.id]
+        if node == nil then
+            error(("Node ID %u not found"):format(prm.id))
+        end
 
         -- finish the node with the result
         node:finish(msg.ts, prm.event, prm.err)
 
         -- remove the node from the parent
-        parent:del_child(prm.id)
+        parent:del_child(node)
 
         -- remove the node from the map
         self.map[prm.id] = nil
