@@ -40,12 +40,13 @@ main(int argc, char *argv[])
 {
     int r;
     int call_index;
+    size_t i;
     cwmp_sess_state_t cwmp_state = 0;
-    _cwmp__GetParameterNames            get_names;
+    _cwmp__GetParameterNames           *get_names;
     _cwmp__GetParameterNamesResponse   *get_names_resp;
-    _cwmp__GetParameterValues           get_values;
+    _cwmp__GetParameterValues          *get_values;
     _cwmp__GetParameterValuesResponse  *get_values_resp;
-    _cwmp__SetParameterValues           set_values;
+    _cwmp__SetParameterValues          *set_values;
     _cwmp__SetParameterValuesResponse  *set_values_resp;
 
     char *param_path = 
@@ -74,32 +75,19 @@ main(int argc, char *argv[])
 
     te_rc = tapi_acse_wait_cr_state(ta_acse, "A", "box", CR_DONE, 10);
 
-    memset(&get_names, 0, sizeof(get_names));
-    get_names.NextLevel = 1;
-    get_names.ParameterPath = &param_path;
+    get_names = cwmp_get_names_alloc(param_path, 1);
 
 
     CHECK_RC(tapi_acse_wait_cwmp_state(ta_acse, "A", "box",
                                       CWMP_PENDING, 20));
-
     CHECK_RC(tapi_acse_cpe_get_parameter_names(rpcs_acse, "A", "box",
-                                    &get_names, &call_index));
+                                     get_names, &call_index));
 
     RING("GetParNames queued with index %d", call_index);
 
-    te_rc = tapi_acse_cpe_get_parameter_names_resp(rpcs_acse, "A", "box",
-                          10, call_index, &get_names_resp);
-    if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
-    {
-        _cwmp__Fault *f = (_cwmp__Fault *)get_names_resp;
-        TEST_FAIL("CWMP Fault received: %s(%s)",
-                    f->FaultCode, f->FaultString);
-    }
-
-    if (get_names_resp == NULL)
-    {
-        TEST_FAIL("NULL response for GetNames ");
-    }
+    CHECK_CWMP_RESP_RC(
+         tapi_acse_cpe_get_parameter_names_resp(rpcs_acse, "A", "box",
+                      10, call_index, &get_names_resp), get_names_resp);
 
     RING("GetNames number %d, first name '%s'",
         (int)get_names_resp->ParameterList->__size,
@@ -109,99 +97,73 @@ main(int argc, char *argv[])
     wan_ip_conn_path = strdup(get_names_resp->ParameterList->
                                 __ptrParameterInfoStruct[0]->Name);
 
-    /* TODO: make good TAPI for it.. */
-    {
-        struct ParameterNames par_names;
-        char **names_array = calloc(1, sizeof(char*));
-        par_names.__size = 1;
-        par_names.__ptrstring = names_array;
-        names_array[0] = calloc(256, 1);
-        sprintf(names_array[0],
-                "%s%s", wan_ip_conn_path, "ExternalIPAddress");
-        get_values.ParameterNames_ = &par_names;
+    set_values = cwmp_set_values_alloc("1", wan_ip_conn_path,
+                "ExternalIPAddress", SOAP_TYPE_string, "10.20.1.3",
+                "DefaultGateway", SOAP_TYPE_string, "10.20.1.1",
+                "DNSServers", SOAP_TYPE_string, "10.20.1.1",
+                    VA_END_LIST);
 
-        CHECK_RC(tapi_acse_cpe_get_parameter_values(rpcs_acse, "A", "box",
-                                        &get_values, &call_index));
-        te_rc = tapi_acse_cpe_get_parameter_values_resp(
-                rpcs_acse, "A", "box", 20, call_index, &get_values_resp);
-        if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
-        {
-            _cwmp__Fault *f = (_cwmp__Fault *)set_values_resp;
-            ERROR("CWMP Fault received: %s(%s)",
-                    f->FaultCode, f->FaultString);
-            TEST_FAIL("GetParameterValues failed");
-        }
-        RING("GetParamValues [0] resp: %s = %s", 
-            get_values_resp ->ParameterList->
-                    __ptrParameterValueStruct[0]->Name,
-            get_values_resp ->ParameterList->
-                    __ptrParameterValueStruct[0]->Value);
+    CHECK_RC(tapi_acse_cpe_set_parameter_values(rpcs_acse, "A", "box",
+                                    set_values, &call_index));
+
+
+    te_rc = tapi_acse_cpe_set_parameter_values_resp(
+            rpcs_acse, "A", "box", 20, call_index, &set_values_resp);
+
+    if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
+    {
+        _cwmp__Fault *f = (_cwmp__Fault *)set_values_resp;
+        size_t f_s = f->__sizeSetParameterValuesFault;
+
+
+        ERROR("CWMP Fault received: %s(%s), arr len %d",
+                f->FaultCode, f->FaultString, (int)f_s);
+        for (i = 0; i < f_s; i++)
+            ERROR("SetValue Fault [%d], Name '%s', Err %s(%s)",
+                (int)i,
+                f->SetParameterValuesFault[i].ParameterName,
+                f->SetParameterValuesFault[i].FaultCode,
+                f->SetParameterValuesFault[i].FaultString);
+        
+        TEST_FAIL("SetParameterValues failed, see details above.");
     }
 
-    /* TODO: make good TAPI for it.. */
+    CHECK_RC(tapi_acse_cpe_disconnect(rpcs_acse, "A", "box"));
+
+    sleep(10);
+
+    rpc_cwmp_conn_req(rpcs_acse, "A", "box"); 
+
+    get_values = cwmp_get_values_alloc(wan_ip_conn_path,
+                                       "ExternalIPAddress",
+                                       "DefaultGateway",
+                                       "DNSServers",
+                                       VA_END_LIST);
+
+    CHECK_RC(tapi_acse_cpe_get_parameter_values(rpcs_acse, "A", "box",
+                                    get_values, &call_index));
+    CHECK_CWMP_RESP_RC(
+                tapi_acse_cpe_get_parameter_values_resp(
+                    rpcs_acse, "A", "box", 20, call_index,
+                    &get_values_resp),
+                get_values_resp);
+
+
+    for (i = 0; i < get_values_resp->ParameterList->__size; i++)
     {
-        struct ParameterValueList par_list;
-        struct cwmp__ParameterValueStruct par_array[] = 
-        {
-            {"ExternalIPAddress", "10.20.1.3"},
-#if 0
-            {"AddressingType", "Static"},
-            {"SubnetMask", "255.255.255.0"},
-            {"DefaultGateway", "10.20.1.1"},
-            {"DNSServers", "10.20.1.1"},
-#endif
-        };
-        size_t sz = sizeof(par_array) / sizeof(par_array[0]);
-        unsigned i;
-
-        par_list.__size = sz;
-        par_list.__ptrParameterValueStruct = malloc(sizeof(void *) * sz);
-
-        for (i = 0; i < sz; i++)
-        {
-            char *full_name = malloc(256);
-            strcpy(full_name, wan_ip_conn_path);
-            strcat(full_name, par_array[i].Name);
-            par_array[i].Name = full_name;
-            par_list.__ptrParameterValueStruct[i] = &par_array[i];
-        }
-
-        set_values.ParameterKey = "1";
-        set_values.ParameterList = &par_list;
-
-        CHECK_RC(tapi_acse_cpe_set_parameter_values(rpcs_acse, "A", "box",
-                                        &set_values, &call_index));
-
-        te_rc = tapi_acse_cpe_set_parameter_values_resp(
-                rpcs_acse, "A", "box", 20, call_index, &set_values_resp);
-        if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
-        {
-            _cwmp__Fault *f = (_cwmp__Fault *)set_values_resp;
-            size_t f_s = f->__sizeSetParameterValuesFault;
-            size_t i;
-
-
-            ERROR("CWMP Fault received: %s(%s), arr len %d",
-                    f->FaultCode, f->FaultString, (int)f_s);
-            for (i = 0; i < f_s; i++)
-                ERROR("SetValue Fault [%d], Name '%s', Err %s(%s)",
-                    (int)i,
-                    f->SetParameterValuesFault[i].ParameterName,
-                    f->SetParameterValuesFault[i].FaultCode,
-                    f->SetParameterValuesFault[i].FaultString);
-            
-            TEST_FAIL("SetParameterValues failed, see details above.");
-        }
+        char buf[1024];
+        snprint_ParamValueStruct(buf, sizeof(buf), 
+                                get_values_resp->ParameterList->
+                                        __ptrParameterValueStruct[i]);
+        RING("GetParValues result [%d]: %s", i, buf);
     }
-
-
 
     TEST_SUCCESS;
 
 cleanup:
     {
         int cr_state;
-    tapi_acse_manage_cpe(ta_acse, "A", "box",
+        tapi_acse_manage_cpe(ta_acse, "A", "box",
                 ACSE_OP_OBTAIN, "cr_state", &cr_state, VA_END_LIST);
         RING("CHECK cr_state: %d", cr_state);
     }
