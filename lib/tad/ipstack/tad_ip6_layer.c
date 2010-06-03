@@ -184,6 +184,11 @@ static const tad_bps_pkt_frag tad_ip6_pad1_option[] =
     { "type", 8, BPS_FLD_CONST(IP6OPT_PAD1), TAD_DU_I32, FALSE },
 };
 
+/* FIXME: This constant should be defined in the proper place. */
+#ifndef IP6OPT_ROUTER_ALERT
+#define IP6OPT_ROUTER_ALERT 0x05
+#endif
+
 /* Router Alert Option (see RFC 2711) */
 static const tad_bps_pkt_frag tad_ip6_ra_option[] =
 {
