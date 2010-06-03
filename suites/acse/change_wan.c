@@ -54,6 +54,9 @@ main(int argc, char *argv[])
             "1.WANIPConnection.";
     char *wan_ip_conn_path;
 
+    const char *old_wan_ip;
+    const char *new_wan_ip = "10.20.1.4";
+
     rcf_rpc_server *rpcs_acse = NULL; 
     te_errno te_rc;
     const char *ta_acse;
@@ -98,7 +101,7 @@ main(int argc, char *argv[])
                                 __ptrParameterInfoStruct[0]->Name);
 
     set_values = cwmp_set_values_alloc("1", wan_ip_conn_path,
-                "ExternalIPAddress", SOAP_TYPE_string, "10.20.1.3",
+                "ExternalIPAddress", SOAP_TYPE_string, new_wan_ip,
                 "DefaultGateway", SOAP_TYPE_string, "10.20.1.1",
                 "DNSServers", SOAP_TYPE_string, "10.20.1.1",
                     VA_END_LIST);
@@ -148,6 +151,16 @@ main(int argc, char *argv[])
                     &get_values_resp),
                 get_values_resp);
 
+    {
+        /* first value should be ExternalIPAddress */
+        const char *got_wan_ip =
+            get_values_resp->ParameterList->
+                __ptrParameterValueStruct[0]->Value;
+
+        if (strcmp(got_wan_ip, new_wan_ip))
+            TEST_FAIL("get shows value '%s' differ then was set '%s'",
+                    got_wan_ip, new_wan_ip);
+    }
 
     for (i = 0; i < get_values_resp->ParameterList->__size; i++)
     {
