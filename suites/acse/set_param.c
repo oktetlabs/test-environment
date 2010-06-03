@@ -82,19 +82,9 @@ main(int argc, char *argv[])
 
     RING("GetParNames queued with index %d", call_index);
 
-    te_rc = tapi_acse_cpe_get_parameter_names_resp(rpcs_acse, "A", "box",
-                          10, call_index, &get_names_resp);
-    if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
-    {
-        _cwmp__Fault *f = (_cwmp__Fault *)get_names_resp;
-        TEST_FAIL("CWMP Fault received: %s(%s)",
-                    f->FaultCode, f->FaultString);
-    }
-    if (te_rc != 0)
-        TEST_FAIL("Unexpected error on GetParamNames response: %r", te_rc);
-
-    if (get_names_resp == NULL)
-        TEST_FAIL("NULL response for GetNames ");
+    CHECK_CWMP_RESP_RC(
+         tapi_acse_cpe_get_parameter_names_resp(rpcs_acse, "A", "box",
+                      10, call_index, &get_names_resp), get_names_resp);
 
     RING("GetNames number %d, first name '%s'",
         (int)get_names_resp->ParameterList->__size,

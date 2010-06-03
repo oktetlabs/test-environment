@@ -70,27 +70,11 @@ main(int argc, char *argv[])
 
     cr_state = -1;
 
-    r = 10;
-    do {
-    sleep(1);
-    CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_OBTAIN,
-          "cr_state", &cr_state, VA_END_LIST));
-
-    RING("cr_state on box is %d", cr_state);
-    r--;
-    } while (cr_state != CR_DONE && r > 0);
+    CHECK_RC(tapi_acse_wait_cr_state(ta_acse, "A", "box", CR_DONE, 10));
 
     sleep(3);
 
-    r = 1;
-    do {
-        sleep(1);
-        CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_OBTAIN,
-              "cwmp_state", &cr_state, VA_END_LIST));
-
-        RING("cwmp_state on box is %d", cr_state);
-        r--;
-    } while (cr_state != 0 && r > 0);
+    CHECK_RC(tapi_acse_wait_cwmp_state(ta_acse, "A", "box", CWMP_NOP, 10));
 
     te_rc = tapi_acse_cpe_get_rpc_methods_resp(rpcs_acse, "A", "box",
                           TRUE, call_index, &get_rpc_meth_r);
@@ -112,6 +96,8 @@ main(int argc, char *argv[])
         }
         RING("%s", answer_buf);
     }
+    else
+        TEST_FAIL("GetRPCMethodsResponse fails %r", te_rc);
 
 
     TEST_SUCCESS;

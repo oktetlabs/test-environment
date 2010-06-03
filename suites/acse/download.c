@@ -87,27 +87,12 @@ main(int argc, char *argv[])
 
     cr_state = -1;
 
-    r = 10;
-    do {
-    sleep(1);
-    CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_OBTAIN,
-          "cr_state", &cr_state, VA_END_LIST));
+    CHECK_RC(tapi_acse_wait_cr_state(ta_acse, "A", "box", CR_DONE, 10));
 
-    RING("cr_state on box is %d", cr_state);
-    r--;
-    } while (cr_state != CR_DONE && r > 0);
-
+    /* time to establish CWMP session */
     sleep(3);
 
-    r = 20;
-    do {
-        sleep(1);
-        CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_OBTAIN,
-              "cwmp_state", &cr_state, VA_END_LIST));
-
-        RING("cwmp_state on box is %d", cr_state);
-        r--;
-    } while (cr_state != 0 && r > 0);
+    CHECK_RC(tapi_acse_wait_cwmp_state(ta_acse, "A", "box", CWMP_NOP, 20));
 
     te_rc = tapi_acse_cpe_download_resp(rpcs_acse, "A", "box",
                           10, call_index, &download_resp);
@@ -117,14 +102,17 @@ main(int argc, char *argv[])
     {
         RING("Download status %d", (int)download_resp->Status);
     }
-
-    if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
+    else if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
     {
         _cwmp__Fault *f = (_cwmp__Fault *)download_resp;
         RING("Fault detected: %s(%s)", f->FaultCode, f->FaultString);
     }
+    else 
+        TEST_FAIL("Download unexpected fail %r", te_rc);
+
     if (0 == te_rc && 1 == download_resp->Status)
-    { /* Try wait for TransferComplete */
+    { 
+        /* Try wait for TransferComplete */
         cwmp_data_from_cpe_t from_cpe;
         sleep(10); /* time to pass file */
         te_rc = tapi_acse_get_rpc_acs(rpcs_acse, "A", "box", 30, 
@@ -138,6 +126,9 @@ main(int argc, char *argv[])
                  tc->FaultStruct->FaultString);
         }
     }
+    /* TODO check test result according with test parameters: with 
+    different types of download and different sources normal expected
+    results are differ. */
 
 
     TEST_SUCCESS;

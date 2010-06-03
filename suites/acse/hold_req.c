@@ -122,6 +122,9 @@ main(int argc, char *argv[])
 
     if (1 == download_resp->Status)
     {
+        /* TODO test is incomplete, Dimark client on CPE has strange
+            behaviour */
+
         /* Issue empty HTTP response, in sync mode */
         rpc_cwmp_op_call(rpcs_acse, "A", "box",
                          CWMP_RPC_NONE, NULL, 0, NULL);
