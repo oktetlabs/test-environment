@@ -29,6 +29,8 @@ rgt.msg_fmt             = require("rgt.msg_fmt")
 local meta              = {__index = rgt.msg_fmt}
 rgt.msg_fmt_xml_chunk   = setmetatable({}, meta)
 
+rgt.msg_fmt_xml_chunk.handler = setmetatable({}, {__index = rgt.msg_fmt.handler})
+
 function rgt.msg_fmt_xml_chunk:write(output, str)
     output:cdata(str)
 end

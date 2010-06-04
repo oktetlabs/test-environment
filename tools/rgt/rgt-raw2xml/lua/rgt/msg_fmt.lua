@@ -35,7 +35,7 @@ end
 
 local function handler_uint32(self, output, c, fmt, pos, arg)
     if #arg ~= 4 then
-        error("Invalid %%%s format argument", c)
+        error(("Invalid %%%s format argument"):format(c))
     end
 
     self:write(output,
@@ -52,6 +52,52 @@ rgt.msg_fmt.handler.u   = handler_uint32
 rgt.msg_fmt.handler.o   = handler_uint32
 rgt.msg_fmt.handler.x   = handler_uint32
 rgt.msg_fmt.handler.X   = handler_uint32
+
+function rgt.msg_fmt.handler.p(self, output, c, fmt, pos, arg)
+    local zero_run  = true
+
+    if #arg == 0 or #arg % 4 ~= 0 then
+        error(("Invalid %%%s format argument"):format(c))
+    end
+
+    self:write(output, "0x")
+    for i = 1, #arg, 4 do
+        local v = arg:byte(i) * 2^24 +
+                  arg:byte(i + 1) * 2^16 +
+                  arg:byte(i + 2) * 2^8 +
+                  arg:byte(i + 3)
+        if zero_run and v ~= 0 then
+            zero_run = false
+        end
+        if not zero_run or (i + 4) < #arg then
+            self:write(output, ("%08X"):format(v))
+        end
+    end
+
+    return pos
+end
+
+function rgt.msg_fmt.handler.r(self, output, c, fmt, pos, arg)
+    local v
+
+    if #arg ~= 4 then
+        error(("Invalid %%%s format argument"):format(c))
+    end
+
+    v = arg:byte(1) * 2^24 +
+        arg:byte(2) * 2^16 +
+        arg:byte(3) * 2^8 +
+        arg:byte(4)
+
+    if v >= 2^31 then
+        v = 2^31 - v - 1
+    end
+
+    self:write(output,
+               -- This function is defined in raw2xml.c
+               te_rc_to_str(v))
+    return pos
+end
 
 function rgt.msg_fmt:write(output, str)
     assert(false, "Abstract function called")
@@ -92,13 +138,15 @@ function rgt.msg_fmt:apply(output, fmt, arg_list)
                 break
             end
 
+            arg_pos = arg_pos + 1
+
             -- Lookup handler
             handler = self.handler[c]
 
             -- If handler is found
             if handler ~= nil then
                 -- Handle the format specifier
-                handler(self, output, c, fmt, pos, arg)
+                pos = handler(self, output, c, fmt, pos, arg)
             else
                 -- Write format specifier as is
                 self:write(output, fmt:sub(pos - 2, pos - 1))

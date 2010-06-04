@@ -59,7 +59,7 @@
 
 /* Taken from lua.c */
 static int
-traceback(lua_State *L)
+l_traceback(lua_State *L)
 {
     /* 'message' not a string? */
     if (!lua_isstring(L, 1))
@@ -86,6 +86,24 @@ traceback(lua_State *L)
     lua_pushinteger(L, 2);
     /* Call debug.traceback */
     lua_call(L, 2, 1);
+
+    return 1;
+}
+
+static int
+l_te_rc_to_str(lua_State *L)
+{
+    lua_Number  rc  = luaL_checknumber(L, 1);
+    const char *src;
+    const char *str;
+
+    src = te_rc_mod2str(rc);
+    str = te_rc_err2str(rc);
+
+    if (*src == '\0')
+        lua_pushstring(L, str);
+    else
+        lua_pushfstring(L, "%s-%s", src, str);
 
     return 1;
 }
@@ -622,8 +640,12 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     luaL_openlibs(L);
 
     /* Push traceback function */
-    lua_pushcfunction(L, traceback);
+    lua_pushcfunction(L, l_traceback);
     traceback_idx = lua_gettop(L);
+
+    /* Register te_rc_to_str function for use when formatting messages */
+    lua_pushcfunction(L, l_te_rc_to_str);
+    lua_setglobal(L, "te_rc_to_str");
 
     /* Require "strict" module */
     lua_getglobal(L, "require");
