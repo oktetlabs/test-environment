@@ -123,6 +123,7 @@ typedef enum read_message_rc {
 #error Unexpected value of SIZEOF_TE_LOG_NFL
 #endif
 
+#if 0
 static read_message_rc
 read_arg(FILE *input, void **pbuf, size_t *plen)
 {
@@ -383,6 +384,7 @@ cleanup:
 
     return result;
 }
+#endif
 
 
 /**
@@ -405,12 +407,10 @@ read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
     te_log_level        level;
     te_log_id           id;
     const char         *str;
+    lua_Number          i;
     te_log_nfl          len;
     char               *buf;
 
-    /*
-     * Transfer version
-     */
     /* Read and verify log message version */
     if (fread(&version, sizeof(version), 1, input) != 1)
     {
@@ -423,8 +423,6 @@ read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
         errno = EINVAL;
         ERROR_CLEANUP("Unknown log message version %u", version);
     }
-    /* Push version */
-    lua_pushnumber(L, version);
 
     /*
      * Transfer timestamp
@@ -475,52 +473,63 @@ read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
 #endif
     lua_pushnumber(L, id);
 
-#define READ_FLD \
-    do {                                                \
-        /* Read and convert the field length */         \
-        if (fread(&len, sizeof(len), 1, input) != 1)    \
-            goto cleanup;                               \
-        len = LENTOH(len);                              \
-        if (len == 0)                                   \
-            buf = NULL;                                 \
-        else                                            \
-        {                                               \
-            /* Allocate the buffer */                   \
-            buf = malloc(len);                          \
-            if (buf == NULL)                            \
-                goto cleanup;                           \
-            /* Read the field */                        \
-            if (fread(buf, len, 1, input) != 1)         \
-                goto cleanup;                           \
-        }                                               \
-    } while (0)
+    /*
+     * Transfer entity, user and format string
+     */
+    for (i = 0; i < 3; i++)
+    {
+        /* Read and convert the field length */
+        if (fread(&len, sizeof(len), 1, input) != 1)
+            goto cleanup;
+        len = LENTOH(len);
+        if (len == 0)
+            buf = NULL;
+        else
+        {
+            /* Allocate the buffer */
+            buf = malloc(len);
+            if (buf == NULL)
+                goto cleanup;
+            /* Read the field */
+            if (fread(buf, len, 1, input) != 1)
+                goto cleanup;
+        }
+        lua_pushlstring(L, buf, len);
+        free(buf);
+        buf = NULL;
+    }
 
     /*
-     * Transfer entity
+     * Transfer format arguments
      */
-    READ_FLD;
-    lua_pushlstring(L, buf, len);
-    free(buf);
-    buf = NULL;
-
-    /*
-     * Transfer user
-     */
-    READ_FLD;
-    lua_pushlstring(L, buf, len);
-    free(buf);
-    buf = NULL;
-
-    /*
-     * Transfer text
-     */
-    READ_FLD;
-    if (!read_text(input, buf, len, L))
-        goto cleanup;
-    free(buf);
-    buf = NULL;
-
-#undef READ_FLD
+    lua_newtable(L);
+    for (i = 1; ; i++)
+    {
+        /* Read and convert the field length */
+        if (fread(&len, sizeof(len), 1, input) != 1)
+            goto cleanup;
+        len = LENTOH(len);
+        /* If it is the terminating field length */
+        if (len == TE_LOG_RAW_EOR_LEN)
+            break;
+        if (len == 0)
+            buf = NULL;
+        else
+        {
+            /* Allocate the buffer */
+            buf = malloc(len);
+            if (buf == NULL)
+                goto cleanup;
+            /* Read the field */
+            if (fread(buf, len, 1, input) != 1)
+                goto cleanup;
+        }
+        lua_pushinteger(L, i);
+        lua_pushlstring(L, buf, len);
+        lua_rawset(L, -3);
+        free(buf);
+        buf = NULL;
+    }
 
     result = READ_MESSAGE_RC_OK;
 
