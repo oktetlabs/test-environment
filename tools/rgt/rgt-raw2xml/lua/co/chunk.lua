@@ -234,9 +234,11 @@ local function relocate_to_file(self, storage)
 
     if type(self.storage) == "table" then
         -- Write the contents to the file
-        result, err = storage:write(unpack(self.storage))
-        if result == nil then
-            error("failed writing chunk storage file: " .. err)
+        for i, s in ipairs(self.storage) do
+            result, err = storage:write(s)
+            if result == nil then
+                error("failed writing chunk storage file: " .. err)
+            end
         end
 
         -- Return the memory

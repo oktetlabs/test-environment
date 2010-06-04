@@ -27,8 +27,8 @@
 local oo    = require("loop.base")
 local rgt   = {}
 rgt.ts      = require("rgt.ts")
+rgt.msg_ctl = require("rgt.msg_ctl")
 rgt.msg     = oo.class({
-                        version = nil,  --- Version
                         ts      = nil,  --- Timestamp
                         level   = nil,  --- Level
                         id      = nil,  --- Node ID
@@ -43,23 +43,53 @@ function rgt.msg.id_valid(id)
            id >= 0
 end
 
-function rgt.msg:__init(version, ts, level, id, entity, user, text)
-    assert(version == 1)
+function rgt.msg:__init(ts, level, id, entity, user, fmt, args)
     assert(oo.instanceof(ts, rgt.ts))
     assert(type(level) == "string")
     assert(rgt.msg.id_valid(id))
     assert(type(entity) == "string")
     assert(type(user) == "string")
-    assert(type(text) == "string")
+    assert(type(fmt) == "string")
+    assert(type(args) == "table")
 
     return oo.rawnew(self,
-                     {version   = version,
-                      ts        = ts,
+                     {ts        = ts,
                       level     = level,
                       id        = id,
                       entity    = entity,
                       user      = user,
-                      text      = text})
+                      fmt       = fmt,
+                      args      = args})
+end
+
+function rgt.msg:make_arg_fetch(pos)
+    local args = self.args
+
+    assert(pos == nil or type(pos) == "number")
+
+    if pos == nil then
+        pos = 1
+    end
+
+    return function ()
+                local arg = args[pos]
+
+                if arg ~= nil then
+                    pos = pos + 1
+                end
+                return arg
+           end
+end
+
+function rgt.msg:is_ctl()
+    return self.id == 0 and
+           self.user == "Control" and
+           self.entity == "Tester"
+end
+
+function rgt.msg:extr_ctl()
+    assert(self:is_ctl())
+    return rgt.msg_ctl.parse({}, self.fmt, self:make_arg_fetch())
 end
 
 return rgt.msg

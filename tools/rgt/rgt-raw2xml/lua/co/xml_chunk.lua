@@ -31,6 +31,9 @@ co.xml_chunk    = oo.class({
                             indent  = 2,    --- Number of characters
                                             --  per nesting level
                             depth   = 0,    --- Nesting depth
+                            inline  = nil,  --- Depth at which elements
+                                            --  should be output on a single
+                                            --  line
                            }, co.chunk)
 
 ---
@@ -152,43 +155,59 @@ local function format_cdata(text)
                                c == "&" and "&amp;" or
                                ("&#" .. c:byte() .. ";")
                      end):
-                -- FIXME I hate this
+                -- FIXME MIMICKING ORIGINAL
                 gsub("\r\n", "<br/>"):
                 gsub("[\r\n]", "<br/>")
 end
 
-function co.xml_chunk:start_tag(name, attrs)
+function co.xml_chunk:sol()
+    return self.inline ~= nil and "" or (" "):rep(self.indent * self.depth)
+end
+
+function co.xml_chunk:eol()
+    return self.inline ~= nil and "" or "\n"
+end
+
+function co.xml_chunk:start_tag(name, attrs, inline)
+    local s
+
     assert(type(name) == "string")
     assert(attrs == nil or type(attrs) == "table")
 
-    return self:write((" "):rep(self.indent * self.depth) ..
-                      format_start_tag(name, attrs) .. "\n"):descend()
+    s = self:sol() .. format_start_tag(name, attrs)
+    self:descend()
+    if inline then
+        self.inline = self.depth
+    end
+
+    return self:write(s .. self:eol())
 end
 
 function co.xml_chunk:end_tag(name)
+    local s
+
     assert(type(name) == "string")
 
-    return self:ascend():write((" "):rep(self.indent * self.depth) ..
-                               format_end_tag(name) .. "\n")
+    self:ascend()
+    s = self:sol() .. format_end_tag(name)
+    if self.inline ~= nil and self.depth < self.inline then
+        self.inline = nil
+    end
+    return self:write(s .. self:eol())
 end
 
 function co.xml_chunk:empty_tag(name, attrs)
     assert(type(name) == "string")
     assert(attrs == nil or type(attrs) == "table")
 
-    return self:write((" "):rep(self.indent * self.depth) ..
-                      format_empty_tag(name, attrs) .. "\n")
+    return self:write(self:sol() ..
+                      format_empty_tag(name, attrs) ..
+                      self:eol())
 end
 
 function co.xml_chunk:cdata(text)
     assert(type(text) == "string")
-
-    return self:write(format_cdata(text):
-                      -- indent
-                      gsub("\n",
-                           "%0" .. (" "):rep(self.indent * self.depth)):
-                      -- add newline if necessary
-                      gsub("[^\n]$", "%0\n"))
+    return self:write(self:sol() .. format_cdata(text) .. self:eol())
 end
 
 function co.xml_chunk:element(name, attrs, text)
@@ -206,7 +225,7 @@ function co.xml_chunk:element(name, attrs, text)
             format_end_tag(name)
     end
 
-    return self:write((" "):rep(self.indent * self.depth) .. e .. "\n")
+    return self:write(self:sol() .. e .. self:eol())
 end
 
 return co.xml_chunk

@@ -24,11 +24,13 @@
 -- @release $Id$
 --
 
-local oo            = require("loop.simple")
-local co            = {}
-co.xml_chunk        = require("co.xml_chunk")
-local rgt           = {}
-rgt.msg             = require("rgt.msg")
+local oo                = require("loop.simple")
+local co                = {}
+co.xml_chunk            = require("co.xml_chunk")
+local rgt               = {}
+rgt.msg                 = require("rgt.msg")
+rgt.msg_fmt_xml_chunk   = require("rgt.msg_fmt_xml_chunk")
+
 rgt.node            = {}
 rgt.node.general    = oo.class({
                                 head     = nil,  --- Head output chunk
@@ -96,31 +98,41 @@ function rgt.node.general:add_child(child)
     return self
 end
 
-function rgt.node.general:log(ts, level, entity, user, text)
+local function write_msg(chunk, msg)
+end
+
+function rgt.node.general:log(msg)
+    local branch, chunk
+
     -- Lookup first branch with a child
     for i, b in ipairs(self.branches) do
         if b.child ~= nil then
             -- Delegate logging to the child
-            b.child:log(ts, level, entity, user, text)
+            b.child:log(msg)
             return
         end
     end
 
     -- No children found
 
-    if not self.branches[1].logging then
-        self:start_branch_logging(self.branches[1])
+    branch = self.branches[1]
+    if not branch.logging then
+        self:start_branch_logging(branch)
     end
-    self.branches[1].chunk:element("msg",
-                                   {
-                                    {"level",   level},
-                                    {"entity",  entity},
-                                    {"user",    user},
-                                    {"ts",      ts:format_short_abs()}
-                                   },
-                                   text
-                                   -- FIXME MIMICKING ORIGINAL
-                                   :gsub("\n+$", ""))
+
+    chunk = branch.chunk
+    chunk:start_tag("msg",
+                    {
+                        {"level",   msg.level},
+                        {"entity",  msg.entity},
+                        {"user",    msg.user},
+                        {"ts",      msg.ts:format_short_abs()}
+                    },
+                    -- start single line element
+                    true)
+    rgt.msg_fmt_xml_chunk(chunk, msg.fmt, msg.args)
+    chunk:end_tag("msg")
+
     return self
 end
 

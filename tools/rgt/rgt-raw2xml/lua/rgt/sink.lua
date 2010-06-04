@@ -27,7 +27,6 @@
 local oo            = require("loop.simple")
 local co            = require("co")
 local rgt           = {}
-rgt.msg_ctl_text    = require("rgt.msg_ctl_text")
 rgt.node            = {}
 rgt.node.root       = require("rgt.node.root")
 rgt.node.package    = require("rgt.node.package")
@@ -68,18 +67,18 @@ function rgt.sink:put(msg)
     assert(self.map[0] ~= nil)
 
     -- If it is not a control message
-    if msg.id ~= 0 or msg.user ~= "Control" or msg.entity ~= "Tester" then
+    if not msg:is_ctl() then
         -- log the message to its node
         node = self.map[msg.id]
         if node == nil then
             error(("Node ID %u not found"):format(msg.id))
         end
-        node:log(msg.ts, msg.level, msg.entity, msg.user, msg.text)
+        node:log(msg)
         return
     end
 
     -- parse control message text
-    prm = rgt.msg_ctl_text.parse({}, msg.text)
+    prm = msg:extr_ctl()
 
     -- lookup parent node
     parent = self.map[prm.parent_id]
