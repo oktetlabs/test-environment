@@ -48,6 +48,7 @@ extern "C" {
 extern void * const va_end_list_ptr;
 #define VA_END_LIST (va_end_list_ptr)
 
+#define CWMP_FAULT(__p) ((_cwmp__Fault *)(__p))
 
 /**
  * Check status of CWMP RPC response in main test body.
@@ -583,7 +584,8 @@ extern te_errno tapi_acse_cpe_add_object(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
-               _cwmp__AddObject *req,
+               const char *obj_name,
+               const char *param_key,
                int *call_index);
 
 /**
@@ -591,7 +593,6 @@ extern te_errno tapi_acse_cpe_add_object(
  *
  * @param rpcs     RPC server handle
  * @param call_index  index of TR RPC.
- * @param resp     CPE response to the AddObject method
  *
  * @return status code
  */
@@ -601,7 +602,8 @@ extern te_errno tapi_acse_cpe_add_object_resp(
                const char *cpe_name,
                int timeout,
                int call_index,
-               _cwmp__AddObjectResponse **resp);
+               int *obj_index,
+               int *add_status);
 
 /**
  * Call CPE DeleteObject method.
@@ -616,7 +618,8 @@ extern te_errno tapi_acse_cpe_delete_object(
                rcf_rpc_server *rpcs,
                const char *acs_name,
                const char *cpe_name,
-               _cwmp__DeleteObject *req,
+               const char *obj_name,
+               const char *param_key,
                int *call_index);
 /**
  * Get CPE DeleteObject response.
@@ -633,7 +636,7 @@ extern te_errno tapi_acse_cpe_delete_object_resp(
                const char *cpe_name,
                int timeout,
                int call_index,
-               _cwmp__DeleteObjectResponse **resp);
+               int *add_status);
 
 /**
  * Call CPE Reboot method.
@@ -1013,6 +1016,13 @@ extern _cwmp__SetParameterValues *cwmp_set_values_alloc(
  */
 extern size_t snprint_ParamValueStruct(char *buf, size_t len, 
                                        cwmp__ParameterValueStruct *p_v);
+
+
+/**
+ * Put description of CWMP Fault to TE log. 
+ */
+extern void tapi_acse_log_fault(_cwmp__Fault *fault); 
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -872,11 +872,12 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             TAILQ_INSERT_TAIL(&cpe->rpc_queue, rpc_item, links);
             cwmp_pars->from_cpe.p = NULL; /* nothing yet.. */
 
+            RING("EPC CWMP, RPC call to '%s', type %d, ind %d, need %d",
+                 cwmp_pars->cpe, cwmp_pars->rpc_cpe, rpc_item->index,
+                 need_call);
+
             if (need_call)
                 acse_cwmp_send_rpc(&(cpe->session->m_soap), cpe->session);
-
-            RING("EPC CWMP op, add RPC call to '%s', type %d, ind %d",
-                 cwmp_pars->cpe, cwmp_pars->rpc_cpe, rpc_item->index);
         }
         break;
         case EPC_RPC_CHECK:

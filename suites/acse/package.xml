@@ -57,6 +57,11 @@
             <arg name="ta_acse"/>
         </run> 
 
+        <run>
+            <script name="add_object"/>
+            <arg name="ta_acse"/>
+        </run> 
+
 
     </session>
 </package>

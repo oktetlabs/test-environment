@@ -599,6 +599,54 @@ tapi_acse_cpe_disconnect(rcf_rpc_server *acse_rpcs,
 
 
 
+te_errno
+tapi_acse_cpe_add_object(rcf_rpc_server *rpcs,
+                         const char *acs_name, const char *cpe_name,
+                         const char *obj_name, const char *param_key,
+                         int *call_index)
+{
+    _cwmp__AddObject add_object;
+    cwmp_data_to_cpe_t to_cpe_loc;
+    to_cpe_loc.add_object = &add_object;
+
+    add_object.ObjectName = obj_name;
+    add_object.ParameterKey = param_key;
+
+    return tapi_acse_cpe_rpc(rpcs, acs_name, cpe_name,
+                             CWMP_RPC_add_object, call_index,
+                             to_cpe_loc);
+}
+
+
+
+te_errno
+tapi_acse_cpe_add_object_resp(rcf_rpc_server *rpcs,
+                              const char *acs_name, const char *cpe_name,
+                              int timeout, int call_index,
+                              int *obj_index, int *add_status)
+{
+    cwmp_data_from_cpe_t from_cpe_loc;
+    te_errno             rc;
+
+    from_cpe_loc.p = NULL;
+    rc = tapi_acse_cpe_rpc_response(rpcs, acs_name, cpe_name, 
+                                    timeout, call_index,
+                                    NULL, &from_cpe_loc);
+
+    if (TE_CWMP_FAULT == TE_RC_GET_ERROR(rc))
+        tapi_acse_log_fault(from_cpe_loc.fault);
+    else if (rc == 0)
+    {
+        if (NULL != obj_index)
+            *obj_index = from_cpe_loc.add_object_r->InstanceNumber;
+        if (NULL != add_status)
+            *add_status = from_cpe_loc.add_object_r->Status;
+    }
+    free(from_cpe_loc.p);
+    return rc;
+}
+
+
 /*
  * ============= Useful routines for prepare CWMP RPC params =============
  */
@@ -896,3 +944,35 @@ snprint_ParamValueStruct(char *buf, size_t len,
     }
     return p - buf;
 }
+
+#define BUF_LOG_SIZE 32768
+static char buf_log[BUF_LOG_SIZE];
+
+void
+tapi_acse_log_fault(_cwmp__Fault *f)
+{
+    char *p = buf_log;
+
+    p += snprintf(p, BUF_LOG_SIZE - (p - buf_log), 
+                  "CWMP Fault: %s (%s)", f->FaultCode, f->FaultString);
+    if (f->__sizeSetParameterValuesFault > 0)
+    {
+        int i;
+        p += snprintf(p, BUF_LOG_SIZE - (p - buf_log), 
+                      "; Set details: ");
+        for (i = 0; i < f->__sizeSetParameterValuesFault; i++)
+        {
+            struct _cwmp__Fault_SetParameterValuesFault *p_v_f = 
+                                        &(f->SetParameterValuesFault[i]);
+            p += snprintf(p, BUF_LOG_SIZE - (p - buf_log), 
+                          "param[%d], name %s, fault %s(%s)",
+                          i, p_v_f->ParameterName,
+                          p_v_f->FaultCode,
+                          p_v_f->FaultString);
+        }
+    }
+    WARN(buf_log);
+    buf_log[0] = '\0';
+}
+
+

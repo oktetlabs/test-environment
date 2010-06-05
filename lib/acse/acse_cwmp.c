@@ -966,10 +966,17 @@ acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
             return soap_put__cwmp__Download(soap, 
                             request->to_cpe.download,
                             "cwmp:Download", "");
+        case CWMP_RPC_add_object:
+            return soap_put__cwmp__AddObject(soap, 
+                            request->to_cpe.add_object,
+                            "cwmp:AddObject", ""); 
+        case CWMP_RPC_delete_object:
+            return soap_put__cwmp__DeleteObject(soap, 
+                            request->to_cpe.delete_object,
+                            "cwmp:DeleteObject", "");
+
         case CWMP_RPC_set_parameter_attributes:
         case CWMP_RPC_get_parameter_attributes:
-        case CWMP_RPC_add_object:
-        case CWMP_RPC_delete_object:
         case CWMP_RPC_reboot:
         case CWMP_RPC_upload:
         case CWMP_RPC_factory_reset:
@@ -1018,10 +1025,17 @@ acse_soap_serialize_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
             soap_serialize__cwmp__Download(soap,
                     request->to_cpe.download);
             break;
+        case CWMP_RPC_add_object:
+            soap_serialize__cwmp__AddObject(soap,
+                    request->to_cpe.add_object);
+            break;
+        case CWMP_RPC_delete_object:
+            soap_serialize__cwmp__DeleteObject(soap,
+                    request->to_cpe.delete_object);
+            break;
+
         case CWMP_RPC_set_parameter_attributes:
         case CWMP_RPC_get_parameter_attributes:
-        case CWMP_RPC_add_object:
-        case CWMP_RPC_delete_object:
         case CWMP_RPC_reboot:
         case CWMP_RPC_upload:
         case CWMP_RPC_factory_reset:
@@ -1062,6 +1076,8 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     cpe_t *cpe = session->cpe_owner;
 
+    RING("%s() called, cwmp sess state %d", __FUNCTION__, session->state);
+
     if (TAILQ_EMPTY(&cpe->rpc_queue) && cpe->sync_mode)
     { 
         /* do nothing, wait for EPC with RPC to be sent */
@@ -1070,7 +1086,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     }
     rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
 
-    /* TODO add check, whether HoldRequests was set on */
+    /* TODO add check, whether HoldRequests was set on - think, for what? */
 
     if (TAILQ_EMPTY(&cpe->rpc_queue) || 
         CWMP_RPC_NONE == rpc_item->params->rpc_cpe)
@@ -1217,12 +1233,16 @@ acse_soap_get_response(struct soap *soap, acse_epc_cwmp_data_t *request)
             break;
         case CWMP_RPC_download:
             SOAP_GET_RESPONSE(DownloadResponse, download_r);
+            break; 
+        case CWMP_RPC_add_object:
+            SOAP_GET_RESPONSE(AddObjectResponse, add_object_r);
+            break;
+        case CWMP_RPC_delete_object:
+            SOAP_GET_RESPONSE(DeleteObjectResponse, delete_object_r);
             break;
 
         case CWMP_RPC_set_parameter_attributes:
         case CWMP_RPC_get_parameter_attributes:
-        case CWMP_RPC_add_object:
-        case CWMP_RPC_delete_object:
         case CWMP_RPC_reboot:
         case CWMP_RPC_upload:
         case CWMP_RPC_factory_reset:

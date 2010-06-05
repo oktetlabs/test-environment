@@ -32,7 +32,7 @@ MY_DEPS = \
 noinst_HEADERS = acse_suite.h
 
 tetest_PROGRAMS = prologue epilogue acse download set_param change_wan \
-                    get_param hold_req
+                    get_param hold_req add_object
 
 prologue_SOURCES = prologue.c
 prologue_LDADD = $(MY_LDADD)
@@ -61,6 +61,10 @@ change_wan_DEPENDENCIES = $(MY_DEPS)
 hold_req_SOURCES = hold_req.c
 hold_req_LDADD = $(MY_LDADD)
 hold_req_DEPENDENCIES = $(MY_DEPS)
+
+add_object_SOURCES = add_object.c
+add_object_LDADD = $(MY_LDADD)
+add_object_DEPENDENCIES = $(MY_DEPS)
 
 epilogue_SOURCES = epilogue.c
 epilogue_LDADD = $(MY_LDADD)
