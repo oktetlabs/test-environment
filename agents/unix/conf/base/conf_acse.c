@@ -70,6 +70,7 @@
 #include "tarpc.h"
 #include "te_cwmp.h"
 #include "acse_epc.h"
+#include "acse_user.h"
 #include "cwmp_data.h"
 
 

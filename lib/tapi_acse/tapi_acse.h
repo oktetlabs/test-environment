@@ -36,6 +36,7 @@
 #include "tapi_rpc.h"
 #include "te_cwmp.h"
 #include "cwmp_soapStub.h"
+#include "cwmp_utils.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,9 +45,6 @@ extern "C" {
 
 
 
-/** End of var-args list. */
-extern void * const va_end_list_ptr;
-#define VA_END_LIST (va_end_list_ptr)
 
 #define CWMP_FAULT(__p) ((_cwmp__Fault *)(__p))
 
@@ -946,82 +944,6 @@ extern void cwmp_get_names_free(_cwmp__GetParameterNames *arg);
  */
 extern void cwmp_get_names_resp_free(_cwmp__GetParameterNamesResponse *r);
 
-/**
- * Construct GetParameterValues argument.
- * First argument is base name, subsequent strings will 
- * be concatenated with the base name; 
- * last argument in list should be VA_END_LIST.
- *
- * @return new allocated value, ready to send.
- */
-extern _cwmp__GetParameterValues *cwmp_get_values_alloc(const char *b_name,
-                                                        const char *f_name,
-                                                        ...);
-
-/**
- * Add name to GetParameterValues argument.
- * Last argument in list should be VA_END_LIST.
- */
-extern te_errno cwmp_get_values_add(_cwmp__GetParameterValues *req,
-                                    const char *b_name,
-                                    const char *f_name, ...);
-
-/**
- * Free GetParameterValues argument.
- */
-extern void cwmp_get_values_free(_cwmp__GetParameterValues *req);
-
-/**
- * Iterate over GetParameterValues response.
- */
-
-
-/**
- * Find param in GetParameterValues response.
- */
-
-/**
- * Free GetParameterValues response.
- */
-extern void cwmp_get_values_resp_free(_cwmp__GetParameterValues *resp);
-
-
-/**
- * Construct SetParameterValues argument.
- * All agruments, besides last one, should be separated 
- * to the triples <name>, <type>, <value>.
- * Last argument (instead of next <name>) in list should be VA_END_LIST.
- * Parameter <type> should be int value, <value> should be respective:
- *   <type>                          expected C type of <value>
- * SOAP_TYPE_boolean                    int       
- * SOAP_TYPE_int                        int       
- * SOAP_TYPE_byte                       int
- * SOAP_TYPE_string                     const char *
- * SOAP_TYPE_unsignedInt                uint32_t
- * SOAP_TYPE_unsignedByte               uint32_t
- * SOAP_TYPE_time                       time_t
- * SOAP_TYPE_SOAP_ENC__base64           const char * (??)
- * 
- */
-extern _cwmp__SetParameterValues *cwmp_set_values_alloc(
-                            const char *par_key,
-                            const char *b_name,
-                            const char *f_name,
-                            ...);
-
-/**
- * Print ParameterValueStruct to the string buffer, for human read.
- *
- * @return used buffer length.
- */
-extern size_t snprint_ParamValueStruct(char *buf, size_t len, 
-                                       cwmp__ParameterValueStruct *p_v);
-
-
-/**
- * Put description of CWMP Fault to TE log. 
- */
-extern void tapi_acse_log_fault(_cwmp__Fault *fault); 
 
 #ifdef __cplusplus
 } /* extern "C" */
