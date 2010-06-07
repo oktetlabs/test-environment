@@ -28,6 +28,7 @@ local oo            = require("loop.simple")
 local co            = {}
 co.xml_chunk        = require("co.xml_chunk")
 local rgt           = {}
+rgt.msg_fmt_str     = require("rgt.msg_fmt_str")
 rgt.node            = {}
 rgt.node.general    = require("rgt.node.general")
 rgt.node.named      = require("rgt.node.named")
@@ -97,6 +98,13 @@ function rgt.node.test:add_child(child)
     -- No children allowed
     assert(false)
     return self
+end
+
+function rgt.node.test:log(msg)
+    if msg.user == "Control" then
+        table.insert(self.verdicts, rgt.msg_fmt_str(msg.fmt, msg.args))
+    end
+    rgt.node.named.log(self, msg)
 end
 
 return rgt.node.test

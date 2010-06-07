@@ -47,28 +47,7 @@ local function divert_fmt(name, str, arg_fetch)
                'format string "%s"'):format(name, fmt))
     end
 
-    return rgt.msg_fmt_str(str, arg)
-end
-
-local function read_quoted_string(text, pos)
-    local unquoted
-
-    if text:sub(pos, pos) ~= "\"" then
-        unquoted, pos = text:match("([^%s]*)()", pos)
-    else
-        local chunk, char, new_pos
-
-        pos = pos + 1
-        unquoted = ""
-
-        repeat
-            chunk, char, new_pos = text:match("^(.-)([\"\\])()", pos)
-            unquoted = unquoted .. chunk
-            pos = new_pos + 1
-        until char == "\""
-    end
-
-    return unquoted, pos
+    return rgt.msg_fmt_str(str, {arg})
 end
 
 local token_parse = {}
@@ -113,7 +92,7 @@ function token_parse.authors(prm, fmt, pos, arg_fetch)
                'format string "%s"'):format("authors", fmt))
     end
 
-    text = rgt.msg_fmt_str(spec, arg)
+    text = rgt.msg_fmt_str(spec, {arg})
 
     text_pos = 1
     while true do
@@ -135,6 +114,31 @@ function token_parse.authors(prm, fmt, pos, arg_fetch)
     return pos
 end
 
+local function read_quoted_string(text, pos)
+    local unquoted
+
+    if text:sub(pos, pos) ~= "\"" then
+        unquoted, pos = text:match("([^%s]*)()", pos)
+    else
+        local chunk, char, new_pos
+
+        pos = pos + 1
+        unquoted = ""
+
+        while true do
+            chunk, char, pos = text:match('^(.-)([\\"])()', pos)
+            unquoted = unquoted .. chunk
+            if char == '"' then
+                break
+            end
+            unquoted = unquoted .. text:sub(pos, pos)
+            pos = pos + 1
+        end
+    end
+
+    return unquoted, pos
+end
+
 function token_parse.args(prm, fmt, pos, arg_fetch)
     local spec, arg, text
     local args = {}
@@ -154,7 +158,7 @@ function token_parse.args(prm, fmt, pos, arg_fetch)
                'format string "%s"'):format("args", fmt))
     end
 
-    text = rgt.msg_fmt_str(spec, arg)
+    text = rgt.msg_fmt_str(spec, {arg})
 
     text_pos = 1
     while true do

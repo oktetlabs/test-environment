@@ -112,15 +112,18 @@ local function format_attrs(attrs)
     assert(type(attrs) == "table")
 
     for i, a in ipairs(attrs) do
-        str = str .. " " .. a[1] .. "=\"" .. 
-               a[2]:gsub("[<>&\"\001-\031\127]",
+        str = str .. ' ' .. a[1] .. '="' .. 
+               a[2]:gsub('[<>&"%z\001-\008\010-\031\127-\255]',
                          function (c)
                             return c == "<" and "&lt;" or
                                    c == ">" and "&gt;" or
                                    c == "&" and "&amp;" or
                                    c == '"' and "&quot;" or
-                                   ("&#" .. c:byte() .. ";")
-                         end) .. "\""
+                                   -- I hate this too
+                                   c == "\r" and "&#13;" or
+                                   c == "\n" and "&#10;" or
+                                   ("&lt;0x%02x&gt;"):format(c:byte())
+                         end) .. '"'
     end
 
     return str
@@ -148,12 +151,13 @@ end
 
 local function format_cdata(text)
     assert(type(text) == "string")
-    return text:gsub("[<>&\001-\009\011\012\014-\031\127]",
+    return text:gsub("[<>&%z\001-\008\011\012\014-\031\127-\255]",
                      function (c)
                         return c == "<" and "&lt;" or
                                c == ">" and "&gt;" or
                                c == "&" and "&amp;" or
-                               ("&#" .. c:byte() .. ";")
+                               -- I hate this too
+                               ("&lt;0x%02x&gt;"):format(c:byte())
                      end):
                 -- FIXME MIMICKING ORIGINAL
                 gsub("\r\n", "<br/>"):

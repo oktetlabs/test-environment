@@ -33,10 +33,10 @@ function rgt.msg_fmt_str:write(output, str)
     output[1] = output[1] .. str
 end
 
-function meta.__call(self, fmt, ...)
+function meta.__call(self, fmt, args)
     local output    = {""}
 
-    self:apply(output, fmt, {...})
+    self:apply(output, fmt, args)
 
     return output[1]
 end

@@ -29,7 +29,72 @@ rgt.msg_fmt             = require("rgt.msg_fmt")
 local meta              = {__index = rgt.msg_fmt}
 rgt.msg_fmt_xml_chunk   = setmetatable({}, meta)
 
-rgt.msg_fmt_xml_chunk.handler = setmetatable({}, {__index = rgt.msg_fmt.handler})
+function rgt.msg_fmt_xml_chunk:apply_spec_body(output, fmt, pos, arg)
+    local new_pos
+    local s
+
+    new_pos = rgt.msg_fmt.apply_spec_body(self, output, fmt, pos, arg)
+    if new_pos > pos then
+        return new_pos
+    end
+
+    s = fmt:sub(pos, pos + 1)
+
+    if s == "Tf" then
+        output:element("file", {{"name", "TODO"}}, arg)
+        return pos + 2
+    end
+
+    if s == "Tm" then
+        local rl, el, new_pos
+
+        pos = pos + 2
+        rl, el, new_pos = fmt:match("^%[%[(%d)%]%.%[(%d)%]%]()", pos)
+        if rl == nil then
+            rl  = 16
+            el  = 1
+        else
+            if el == 0 then
+                error(("Invalid %%%s format specifier parameters"):format(s))
+            end
+            if #arg % el ~= 0 then
+                error(("Invalid %%%s format specifier argument"):format(s))
+            end
+            pos = new_pos
+        end
+
+        output:start_tag("mem-dump")
+        output:start_tag("row")
+        if #arg > 0 then
+            local i = 1
+            local e = ""
+
+            while true do
+                e = e .. ("%02X"):format(arg:byte(i))
+                if i % el == 0 then
+                    output:element("elem", nil, e)
+                    e = ""
+                end
+                if i % rl == 0 then
+                    output:end_tag("row")
+                end
+                if i >= #arg then
+                    break
+                end
+                if i % rl == 0 then
+                    output:start_tag("row")
+                end
+                i = i + 1
+            end
+        end
+        output:end_tag("row")
+        output:end_tag("mem-dump")
+
+        return pos
+    end
+
+    return pos
+end
 
 function rgt.msg_fmt_xml_chunk:write(output, str)
     output:cdata(str)
