@@ -43,6 +43,7 @@ main(int argc, char *argv[])
     int object_number = 0, add_status;
     _cwmp__SetParameterValues          *set_values;
     _cwmp__SetParameterValuesResponse  *set_values_resp = NULL;
+    tapi_acse_context_t *ctx;
 
     char *param_path = 
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
@@ -54,6 +55,8 @@ main(int argc, char *argv[])
     const char *ta_acse;
 
     TEST_START;
+
+    TAPI_ACSE_CTX_INIT(ctx);
 
     TEST_GET_STRING_PARAM(ta_acse);
 
@@ -70,11 +73,10 @@ main(int argc, char *argv[])
 
     te_rc = tapi_acse_wait_cr_state(ta_acse, "A", "box", CR_DONE, 10);
 
-    CHECK_RC(tapi_acse_cpe_add_object(rpcs_acse, "A", "box",
-                                      param_path, "test", &call_index)); 
+    CHECK_RC(tapi_acse_cpe_add_object(ctx, param_path, "test")); 
 
-    CHECK_RC(tapi_acse_cpe_add_object_resp(rpcs_acse, "A", "box",
-                      20, call_index, &object_number, &add_status));
+    CHECK_RC(tapi_acse_cpe_add_object_resp(ctx, &object_number,
+                                           &add_status));
 
     RING("Add object with number %d, status %d", object_number, add_status);
 
