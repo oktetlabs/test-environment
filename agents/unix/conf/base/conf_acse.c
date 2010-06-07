@@ -925,7 +925,7 @@ ta_unix_conf_acse_init()
 #if 0
 static te_errno
 cwmp_conn_req_util(const char *acs, const char *cpe, 
-                   acse_epc_cwmp_op_t op, int *index)
+                   acse_epc_cwmp_op_t op, int *request_id)
 {
     acse_epc_msg_t msg;
     acse_epc_msg_t *msg_resp = NULL;
@@ -933,7 +933,7 @@ cwmp_conn_req_util(const char *acs, const char *cpe,
 
     te_errno rc;
 
-    if (NULL == acs || NULL == cpe || NULL == index)
+    if (NULL == acs || NULL == cpe || NULL == request_id)
         return TE_EINVAL;
 
     if (!acse_value())
@@ -1062,7 +1062,7 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
 
     out->status = msg_resp->status;
-    out->call_index = msg_resp->data.cwmp->index;
+    out->request_id = msg_resp->data.cwmp->request_id;
 
     return 0;
 }
@@ -1084,7 +1084,7 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
     }
 
     RING("cwmp check operation No %d (rpc %d) to %s/%s called ", 
-         (int)in->call_index, in->cwmp_rpc, in->acs_name, in->cpe_name);
+         (int)in->request_id, in->cwmp_rpc, in->acs_name, in->cpe_name);
 
     msg.opcode = EPC_CWMP_CALL;
     msg.data.cwmp = &c_data;
@@ -1095,7 +1095,7 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
     c_data.op = EPC_RPC_CHECK;
     strcpy(c_data.acs, in->acs_name);
     strcpy(c_data.cpe, in->cpe_name);
-    c_data.index = in->call_index;
+    c_data.request_id = in->request_id;
     if (in->cwmp_rpc != CWMP_RPC_ACS_NONE)
         c_data.rpc_acs = in->cwmp_rpc;
 

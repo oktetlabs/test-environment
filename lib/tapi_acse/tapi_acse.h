@@ -45,7 +45,6 @@ extern "C" {
 
 
 
-
 #define CWMP_FAULT(__p) ((_cwmp__Fault *)(__p))
 
 /**
@@ -74,6 +73,73 @@ extern "C" {
                       __LINE__, # expr_, rc_, rc_);                     \
     } while (0)
 
+
+
+/**
+ * Descriptor of TAPI context for work with ACSE.
+ */
+typedef struct tapi_acse_context_s {
+    const char     *ta;      /*< Name of TA, which is connected with
+                                  ACSE. Init from test argument 'ta_acse'.
+                                  If user change it, he must ensure,
+                                  that new TA has started its ACSE, and
+                                  RPC server is actual. 
+                                  It is highly recommended do NOT change
+                                  this field, but init new context for
+                                  another TA. */
+    rcf_rpc_server *rpc_srv; /*< TA RCF RPC server for connection with
+                                  ACSE.
+                                  Init: started server with name
+                                  'acse_ctl' on TA. */
+
+    const char     *acs_name;/*< Name of used ACS object on ACSE.
+                                  Init: first presend ACS object in 
+                                  CS subtree on the ACSE. 
+                                  If user change it, he must ensure
+                                  presense of that ACS object. */
+    const char     *cpe_name;/*< Name of used CPE record on ACSE.
+                                  Init: first presend ACS object in CS
+                                  subtree on the ACSE. 
+                                  If user change it, he must ensure
+                                  presense of that CPE record. */
+    int             timeout; /*< Timeout in seconds of operation. 
+                                  Has sense only for get response from ACSE.
+                                  Because poll is absent in communication
+                                  with ACSE, such methods ask periodically
+                                  whether response was got on ACSE. 
+                                  User is free to change it. */
+
+    acse_request_id_t req_id;/*< CWMP request ID.  This field is filled
+                                  by 'call' methods, and is used by
+                                  'get_response' methods. 
+                                  Thus, if user change it before get
+                                  response, he will get response for some
+                                  other operation then the last one. */
+} tapi_acse_context_t;
+
+
+/**
+ * Init ACSE TAPI context, according with its description.
+ *
+ * @param ta            name of TA where ACSE is started.
+ *
+ * @return new allocated and correctly initialized context, or NULL
+ *         if there is some test configuration errors. 
+ */
+extern tapi_acse_context_t *tapi_acse_ctx_init(const char *ta);
+
+
+/**
+ * Macro for usage at start of CWMP tests to init context.
+ * Assume test paremeter 'ta_acse' with name of TA with ACSE.
+ */
+#define TAPI_ACSE_CTX_INIT(ctx_var_) \
+    do {                                                        \
+        const char *ta_acse;                                    \
+        TEST_GET_STRING_PARAM(ta_acse);                         \
+        if (NULL == (ctx_var_ = tapi_acse_ctx_init(ta_acse)))   \
+            TEST_FAIL("Init ACSE TAPI context failed");         \
+    } while (0)
 
 /*
  * ================= Configuring of ACSE ===================
@@ -297,12 +363,12 @@ typedef enum {
  *
  * @return status code
  */
-extern te_errno tapi_acse_cpe_rpc(rcf_rpc_server *rpcs,
-                                  const char *acs_name,
-                                  const char *cpe_name,
-                                  te_cwmp_rpc_cpe_t cpe_rpc_code,
-                                  int *call_index,
-                                  cwmp_data_to_cpe_t to_cpe);
+extern te_errno tapi_acse_cpe_rpc_call(rcf_rpc_server *rpcs,
+                                       const char *acs_name,
+                                       const char *cpe_name,
+                                       te_cwmp_rpc_cpe_t cpe_rpc_code,
+                                       acse_request_id_t *request_id,
+                                       cwmp_data_to_cpe_t to_cpe);
 
 /**
  * Check status of queued CWMP RPC on ACSE.
@@ -321,11 +387,11 @@ extern te_errno tapi_acse_cpe_rpc(rcf_rpc_server *rpcs,
  * @return status
  */
 extern te_errno tapi_acse_cpe_rpc_response(rcf_rpc_server *rpcs,
-                                   const char *acs_name,
-                                   const char *cpe_name,
-                                   int timeout, int call_index,
-                                   te_cwmp_rpc_cpe_t *cpe_rpc_code,
-                                   cwmp_data_from_cpe_t *from_cpe);
+                                           const char *acs_name,
+                                           const char *cpe_name,
+                                           int timeout, int call_index,
+                                           te_cwmp_rpc_cpe_t *cpe_rpc_code,
+                                           cwmp_data_from_cpe_t *from_cpe);
 
 
 /**
@@ -572,36 +638,29 @@ extern te_errno tapi_acse_cpe_get_parameter_attributes_resp(
 /**
  * Call CPE AddObject method.
  *
- * @param rpcs     RPC server handle
- * @param req      ACS request for the AddObject method
- * @param call_index  location for index of TR RPC (OUT).
+ * @param ctx        ACSE TAPI context.
+ * @param obj_name   name of object for AddObject method.
+ * @param param_key  ParameterKey for AddObject method.
  *
  * @return status code
  */
-extern te_errno tapi_acse_cpe_add_object(
-               rcf_rpc_server *rpcs,
-               const char *acs_name,
-               const char *cpe_name,
-               const char *obj_name,
-               const char *param_key,
-               int *call_index);
+extern te_errno tapi_acse_cpe_add_object(tapi_acse_context_t *ctx,
+                                         const char *obj_name,
+                                         const char *param_key);
 
 /**
  * Get CPE AddObject response.
  *
- * @param rpcs     RPC server handle
- * @param call_index  index of TR RPC.
+ * @param ctx        ACSE TAPI context.
+ * @param obj_index  location for index of created object,
+ *                              unchanged on error.
+ * @param add_status location for Status from AddObjectResponse.
  *
  * @return status code
  */
-extern te_errno tapi_acse_cpe_add_object_resp(
-               rcf_rpc_server *rpcs,
-               const char *acs_name,
-               const char *cpe_name,
-               int timeout,
-               int call_index,
-               int *obj_index,
-               int *add_status);
+extern te_errno tapi_acse_cpe_add_object_resp(tapi_acse_context_t *ctx,
+                                              int *obj_index,
+                                              int *add_status);
 
 /**
  * Call CPE DeleteObject method.

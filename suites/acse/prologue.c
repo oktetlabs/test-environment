@@ -38,8 +38,17 @@ main(int argc, char *argv[])
     rcf_rpc_server *rpcs_acse = NULL; 
     te_errno te_rc;
     int cr_state;
+
+    tapi_acse_context_t *ctx;
+
     
     TEST_GET_STRING_PARAM(ta_acse);
+
+    if (NULL != (ctx = tapi_acse_ctx_init(ta_acse)))
+    {
+        printf("found ACS '%s', CPE '%s'\n", ctx->acs_name, ctx->cpe_name);
+    }
+
 
     signal(SIGINT, te_test_sig_handler);
     te_lgr_entity = TE_TEST_NAME;

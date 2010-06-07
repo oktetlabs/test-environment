@@ -119,8 +119,8 @@ typedef struct cpe_rpc_item_t {
     /* TODO: move hear some fields from #acse_epc_cwmp_data_t 
        instead of this pointer to EPC request. */
     acse_epc_cwmp_data_t   *params;    /**< CWMP parameters for RPC */
-    uint32_t                index;     /**< index of RPC in queue */
-    mheap_t                 heap;      /**< Memory heapwhich contains 
+    acse_request_id_t       request_id;/**< index of RPC in queue */
+    mheap_t                 heap;      /**< Memory heap which contains 
                                         response data, deserialized by
                                         gSOAP engine. Should be freed 
                                         when response is removed from
@@ -134,8 +134,8 @@ typedef struct cpe_rpc_item_t {
 typedef struct cpe_inform_t {
     LIST_ENTRY(cpe_inform_t) links;/**< List links */
 
-    _cwmp__Inform *inform;      /**< Deserialed inform */
-    uint32_t       index;       /**< index of Inform in list. */
+    _cwmp__Inform     *inform;      /**< Deserialed inform */
+    acse_request_id_t  request_id;  /**< index of Inform in list. */
 } cpe_inform_t;
 
 /** CPE record */

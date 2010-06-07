@@ -132,9 +132,10 @@ typedef struct {
                                     received RPC from CPE.*/
 
 
-    uint32_t    index; /**< IN/OUT field for position in queue;
-                            IN - for 'get/check' operation, 
-                            OUT - for 'call' operation. */
+    acse_request_id_t    request_id; /**< IN/OUT field for position 
+                                            in queue;
+                                        IN - for 'get/check' operation, 
+                                        OUT - for 'call' operation. */
 
     cwmp_data_to_cpe_t   to_cpe;   /**< RPC specific CWMP data. 
                                         This field is processed only

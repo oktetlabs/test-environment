@@ -862,7 +862,8 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                established CWMP session with CPE. */
             cpe_rpc_item_t *rpc_item = calloc(1, sizeof(*rpc_item));
             rpc_item->params = cwmp_pars;
-            rpc_item->index = cwmp_pars->index = ++cpe->last_queue_index;
+            rpc_item->request_id = cwmp_pars->request_id =
+                                        ++cpe->last_queue_index;
 
             need_call = (cpe->sync_mode &&
                          TAILQ_EMPTY(&cpe->rpc_queue) &&
@@ -873,7 +874,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             cwmp_pars->from_cpe.p = NULL; /* nothing yet.. */
 
             RING("EPC CWMP, RPC call to '%s', type %d, ind %d, need %d",
-                 cwmp_pars->cpe, cwmp_pars->rpc_cpe, rpc_item->index,
+                 cwmp_pars->cpe, cwmp_pars->rpc_cpe, rpc_item->request_id,
                  need_call);
 
             if (need_call)
@@ -885,12 +886,12 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             cpe_rpc_item_t *rpc_item;
             void *result = NULL;
 
-            if (0 == cwmp_pars->index && 0 == cwmp_pars->rpc_acs)
+            if (0 == cwmp_pars->request_id && 0 == cwmp_pars->rpc_acs)
                 return TE_EINVAL;
 
             TAILQ_FOREACH(rpc_item, &cpe->rpc_queue, links)
             {
-                if (rpc_item->index == cwmp_pars->index)
+                if (rpc_item->request_id == cwmp_pars->request_id)
                     break;
             }
 
@@ -901,7 +902,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             {
                 if (CWMP_RPC_ACS_NONE == cwmp_pars->rpc_acs)
                 {
-                    if (rpc_item->index == cwmp_pars->index)
+                    if (rpc_item->request_id == cwmp_pars->request_id)
                         break;
                 }
                 else
@@ -915,7 +916,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                 return TE_ENOENT;
             
             cwmp_pars->rpc_cpe = rpc_item->params->rpc_cpe;
-            cwmp_pars->index = rpc_item->params->index;
+            cwmp_pars->request_id = rpc_item->params->request_id;
 
             if ((result = rpc_item->params->from_cpe.p) == NULL)
                 return TE_EPENDING;
@@ -933,22 +934,22 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
         case EPC_GET_INFORM:
         {
             cpe_inform_t *inform_rec;
-            if (0 == cwmp_pars->index)
+            if (0 == cwmp_pars->request_id)
                 inform_rec = LIST_FIRST(&(cpe->inform_list));
             else 
                 LIST_FOREACH(inform_rec, &(cpe->inform_list), links)
                 {
-                    if (inform_rec->index == cwmp_pars->index)
+                    if (inform_rec->request_id == cwmp_pars->request_id)
                         break;
                 }
             /* If not found, error */
             if (inform_rec == NULL)
             {
-                cwmp_pars->index = 0;
+                cwmp_pars->request_id = 0;
                 cwmp_pars->from_cpe.inform = NULL;
                 return TE_ENOENT;
             }
-            cwmp_pars->index = inform_rec->index;
+            cwmp_pars->request_id = inform_rec->request_id;
             cwmp_pars->from_cpe.inform = inform_rec->inform;
         }
         break;

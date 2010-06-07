@@ -229,7 +229,7 @@ cpe_store_acs_rpc(te_cwmp_rpc_acs_t rpc_acs_type,
     cpe_rpc_item_t  *rpc_item = calloc(1, sizeof(*rpc_item));
     acse_epc_cwmp_data_t *c_data = calloc(1, sizeof(*c_data));
 
-    rpc_item->index = 0;
+    rpc_item->request_id = 0;
     rpc_item->heap = heap;
     rpc_item->params = c_data;
 
@@ -259,10 +259,10 @@ cpe_store_inform(struct _cwmp__Inform *cwmp__Inform,
 
     cpe_inform_t *inf_store = malloc(sizeof(cpe_inform_t));
     cpe_inform_t *inf_last = LIST_FIRST(&(cpe_item->inform_list));
-    int last_index = (inf_last != NULL) ? inf_last->index : 0;
+    int last_index = (inf_last != NULL) ? inf_last->request_id : 0;
 
     inf_store->inform = cwmp__Inform;
-    inf_store->index = last_index + 1;
+    inf_store->request_id = last_index + 1;
     mheap_add_user(heap, inf_store);
 
     LIST_INSERT_HEAD(&(cpe_item->inform_list), inf_store, links);
@@ -1110,8 +1110,8 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     request = rpc_item->params;
 
-    RING("%s(): Try send RPC for '%s', rpc type %d, ind %d ",
-         __FUNCTION__, cpe->name, request->rpc_cpe, request->index);
+    RING("%s(): Try send RPC for '%s', rpc type %d, id %u ",
+         __FUNCTION__, cpe->name, request->rpc_cpe, request->request_id);
 
     cwmp_prepare_soap_header(soap, cpe);
 

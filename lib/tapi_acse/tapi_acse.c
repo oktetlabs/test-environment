@@ -79,6 +79,78 @@ acse_is_int_var(const char *name)
 }
 
 
+tapi_acse_context_t *
+tapi_acse_ctx_init(const char *ta)
+{
+    tapi_acse_context_t *ctx = calloc(1, sizeof(*ctx));
+    te_errno rc = 0;
+
+    ctx->ta = strdup(ta);
+
+    do {
+        unsigned num = 0;
+        cfg_handle *handles = NULL;
+        char *name;
+
+        if ((rc = rcf_rpc_server_get(ta, "acse_ctl", NULL, FALSE, TRUE,
+                                     FALSE, &(ctx->rpc_srv)) ) != 0)
+        {
+            ERROR("Init RPC server on TA '%s' failed %r", ta, rc);
+            break;
+        }
+
+        /* Find first ACS */
+        if ((rc = cfg_find_pattern_fmt(&num, &handles,
+                                       "/agent:%s/acse:/acs:*",
+                                       ta)) != 0)
+        {
+            ERROR("Cannot find ACS on TA '%s': rc %r", ta, rc);
+            break;
+        }
+        if (0 == num)
+        {
+            ERROR("Cannot find ACS on TA '%s': zero objects", ta);
+            break;
+        }
+
+        if ((rc = cfg_get_inst_name(handles[0], &name)) != 0)
+        {
+            ERROR("Cannot get ACS name TA '%s': rc %r", ta, rc);
+            break;
+        }
+        ctx->acs_name = name;
+
+        free(handles); handles = NULL;
+        /* Find first CPE */
+        if ((rc = cfg_find_pattern_fmt(&num, &handles,
+                                       "/agent:%s/acse:/acs:%s/cpe:*",
+                                       ta, ctx->acs_name)) != 0)
+        {
+            ERROR("Cannot find CPE on TA '%s' : rc %r", ta, rc);
+            break;
+        }
+        if (0 == num)
+        {
+            ERROR("Cannot find CPE on TA '%s': zero objects", ta);
+            break;
+        }
+
+        if ((rc = cfg_get_inst_name(handles[0], &name)) != 0)
+        {
+            ERROR("Cannot get CPE name TA '%s': rc %r", ta, rc);
+            break;
+        }
+        ctx->cpe_name = name;
+
+        ctx->timeout = 20; /* Experimentally discovered optimal value. */
+        ctx->req_id = 0;
+
+
+        return ctx;
+    } while (0);
+    free(ctx);
+    return NULL;
+}
 
 /** generic internal method for ACSE manage operations */
 static inline te_errno
@@ -282,7 +354,8 @@ tapi_acse_wait_cr_state(const char *ta,
 te_errno
 tapi_acse_cpe_rpc(rcf_rpc_server *rpcs,
                   const char *acs_name, const char *cpe_name,
-                  te_cwmp_rpc_cpe_t cpe_rpc_code, int *call_index,
+                  te_cwmp_rpc_cpe_t cpe_rpc_code,
+                  acse_request_id_t *request_id,
                   cwmp_data_to_cpe_t to_cpe)
 {
     uint8_t *buf = malloc(ACSE_BUF_SIZE);
@@ -302,7 +375,7 @@ tapi_acse_cpe_rpc(rcf_rpc_server *rpcs,
         pack_s = 0;
 
     return rpc_cwmp_op_call(rpcs, acs_name, cpe_name,
-                            cpe_rpc_code, buf, pack_s, call_index);
+                            cpe_rpc_code, buf, pack_s, request_id);
 }
 
 /* see description in tapi_acse.h */
@@ -596,38 +669,39 @@ tapi_acse_cpe_disconnect(rcf_rpc_server *acse_rpcs,
 
 
 
+
 te_errno
-tapi_acse_cpe_add_object(rcf_rpc_server *rpcs,
-                         const char *acs_name, const char *cpe_name,
-                         const char *obj_name, const char *param_key,
-                         int *call_index)
+tapi_acse_cpe_add_object(tapi_acse_context_t *ctx,
+                         const char *obj_name, const char *param_key)
 {
-    _cwmp__AddObject add_object;
-    cwmp_data_to_cpe_t to_cpe_loc;
+    char                obj_name_buf[256];
+    char                param_key_buf[256];
+    _cwmp__AddObject    add_object = {obj_name_buf, param_key_buf};
+    cwmp_data_to_cpe_t  to_cpe_loc;
+
     to_cpe_loc.add_object = &add_object;
 
-    add_object.ObjectName = obj_name;
-    add_object.ParameterKey = param_key;
+    strncpy(obj_name_buf, obj_name, sizeof(obj_name_buf));
+    strncpy(param_key_buf, param_key, sizeof(param_key_buf));
 
-    return tapi_acse_cpe_rpc(rpcs, acs_name, cpe_name,
-                             CWMP_RPC_add_object, call_index,
+    return tapi_acse_cpe_rpc(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name,
+                             CWMP_RPC_add_object, &(ctx->req_id),
                              to_cpe_loc);
 }
 
 
 
 te_errno
-tapi_acse_cpe_add_object_resp(rcf_rpc_server *rpcs,
-                              const char *acs_name, const char *cpe_name,
-                              int timeout, int call_index,
+tapi_acse_cpe_add_object_resp(tapi_acse_context_t *ctx,
                               int *obj_index, int *add_status)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
     te_errno             rc;
 
     from_cpe_loc.p = NULL;
-    rc = tapi_acse_cpe_rpc_response(rpcs, acs_name, cpe_name, 
-                                    timeout, call_index,
+    rc = tapi_acse_cpe_rpc_response(ctx->rpc_srv,
+                                    ctx->acs_name, ctx->cpe_name, 
+                                    ctx->timeout, ctx->req_id,
                                     NULL, &from_cpe_loc);
 
     if (TE_CWMP_FAULT == TE_RC_GET_ERROR(rc))

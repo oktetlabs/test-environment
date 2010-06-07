@@ -179,6 +179,10 @@ typedef union {
         _cwmp__GetOptionsResponse             *get_options_r;
     } cwmp_data_from_cpe_t; 
 
+/**
+ * Type for ACSE CWMP request identifier in queue.
+ */
+typedef uint32_t acse_request_id_t;
 
 /*
  * Primitive SOAP type constants, copied here from acse_coapH.h
@@ -207,6 +211,11 @@ typedef union {
 #ifndef SOAP_TYPE_xsd__boolean
 #define SOAP_TYPE_xsd__boolean (11)
 #endif
+
+#ifndef SOAP_TYPE_boolean
+#define SOAP_TYPE_boolean (11)
+#endif
+
 #ifndef SOAP_TYPE_time
 #define SOAP_TYPE_time (98)
 #endif

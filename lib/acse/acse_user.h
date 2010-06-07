@@ -48,5 +48,9 @@ extern te_errno acse_epc_disp_init(const char *msg_sock_name,
                                    const char *shmem_name);
 
 
+/**
+ */
+extern te_errno acse_send_set_parameter_values(int *request_id,
+                                               ...);
 
 #endif /* __TE_LIB_ACSE_INTERNAL_H__ */

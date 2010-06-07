@@ -44,12 +44,12 @@ extern "C" {
 
 
 
-extern te_errno rpc_cwmp_op_call(
-                           rcf_rpc_server *rpcs,
-                           const char *acs_name, const char *cpe_name,
-                           te_cwmp_rpc_cpe_t cwmp_rpc,
-                           uint8_t *buf, size_t buflen, 
-                           int *index);
+extern te_errno rpc_cwmp_op_call(rcf_rpc_server *rpcs,
+                                 const char *acs_name,
+                                 const char *cpe_name,
+                                 te_cwmp_rpc_cpe_t cwmp_rpc,
+                                 uint8_t *buf, size_t buflen, 
+                                 acse_request_id_t *request_id);
 
 
 /**
@@ -58,7 +58,7 @@ extern te_errno rpc_cwmp_op_call(
  * @param rpcs          TE rpc server.
  * @param acs_name      name of ACS object on ACSE.
  * @param cpe_name      name of CPE record on ACSE.
- * @param index         queue index of CWMP call on ACSE.
+ * @param request_id    queue index of CWMP call on ACSE.
  * @param cwmp_rpc_acs  type of RPC message to ACS, should be zero 
  *                       for get response on issued CPE RPC.
  * @param cwmp_rpc      location for type of RPC response, may be NULL.
@@ -69,19 +69,23 @@ extern te_errno rpc_cwmp_op_call(
  * @return status
  */
 extern te_errno rpc_cwmp_op_check(rcf_rpc_server *rpcs,
-                           const char *acs_name, const char *cpe_name,
-                           int index,
-                           te_cwmp_rpc_acs_t cwmp_rpc_acs,
-                           te_cwmp_rpc_cpe_t *cwmp_rpc,
-                           uint8_t **buf, size_t *buflen);
+                                  const char *acs_name,
+                                  const char *cpe_name,
+                                  acse_request_id_t request_id,
+                                  te_cwmp_rpc_acs_t cwmp_rpc_acs,
+                                  te_cwmp_rpc_cpe_t *cwmp_rpc,
+                                  uint8_t **buf, size_t *buflen);
 
 
 extern te_errno rpc_cwmp_conn_req(rcf_rpc_server *rpcs,
-                           const char *acs_name, const char *cpe_name);
+                                  const char *acs_name,
+                                  const char *cpe_name);
 
 extern te_errno rpc_cwmp_get_inform(rcf_rpc_server *rpcs,
-                       const char *acs_name, const char *cpe_name, 
-                       int index, uint8_t *buf, size_t *buflen);
+                                    const char *acs_name,
+                                    const char *cpe_name, 
+                                    int index, uint8_t *buf,
+                                    size_t *buflen);
 
 
 

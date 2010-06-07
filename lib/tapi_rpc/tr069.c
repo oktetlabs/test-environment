@@ -62,7 +62,7 @@ rpc_cwmp_op_call(rcf_rpc_server *rpcs,
                  const char *acs_name, const char *cpe_name,
                  te_cwmp_rpc_cpe_t cwmp_rpc,
                  uint8_t *buf, size_t buflen, 
-                 int *index) 
+                 acse_request_id_t *request_id) 
 {
     tarpc_cwmp_op_call_in  in;
     tarpc_cwmp_op_call_out out;
@@ -100,13 +100,13 @@ rpc_cwmp_op_call(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "cwmp_op_call", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): cwmp_op_call(%s, %s, %d) -> %r",
+    TAPI_RPC_LOG("RPC (%s,%s): cwmp_op_call(%s, %s, rpc %d) -> %r",
                  rpcs->ta, rpcs->name,
                  acs_name, cpe_name, (int)cwmp_rpc,
                  (te_errno)out.status);
 
-    if (NULL != index)
-        *index = out.call_index;
+    if (NULL != request_id)
+        *request_id = out.request_id;
 
     return out.status;
 }
@@ -115,7 +115,7 @@ rpc_cwmp_op_call(rcf_rpc_server *rpcs,
 te_errno
 rpc_cwmp_op_check(rcf_rpc_server *rpcs,
                   const char *acs_name, const char *cpe_name,
-                  int index,
+                  acse_request_id_t request_id,
                   te_cwmp_rpc_acs_t cwmp_rpc_acs,
                   te_cwmp_rpc_cpe_t *cwmp_rpc,
                   uint8_t **buf, size_t *buflen)
@@ -141,7 +141,7 @@ rpc_cwmp_op_check(rcf_rpc_server *rpcs,
 
     in.acs_name = strdup(acs_name);
     in.cpe_name = strdup(cpe_name);
-    in.call_index = index;
+    in.request_id = request_id;
     in.cwmp_rpc = cwmp_rpc_acs;
 
     rcf_rpc_call(rpcs, "cwmp_op_check", &in, &out);
@@ -156,9 +156,9 @@ rpc_cwmp_op_check(rcf_rpc_server *rpcs,
     if (NULL != cwmp_rpc)
         *cwmp_rpc = out.cwmp_rpc;
 
-    TAPI_RPC_LOG("RPC (%s,%s): cwmp_op_check(%s, %s, %d) -> %r",
+    TAPI_RPC_LOG("RPC (%s,%s): cwmp_op_check(%s, %s, req %d) -> %r",
                  rpcs->ta, rpcs->name,
-                 acs_name, cpe_name, (int)index,
+                 acs_name, cpe_name, (int)request_id,
                  (te_errno)out.status);
 
     return out.status;

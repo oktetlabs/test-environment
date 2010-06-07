@@ -276,7 +276,7 @@ cli_cpe_rpc(const char *args)
     {
         args += 5;
         c_data.op = EPC_RPC_CHECK;
-        c_data.index = atoi(args);
+        c_data.request_id = atoi(args);
 
         while (isdigit(*args)) args++;
         while (isspace(*args)) args++;
@@ -319,7 +319,7 @@ cli_cpe_inform(const char *args)
     memset(&c_data, 0, sizeof(c_data));
 
     c_data.op = EPC_GET_INFORM;
-    c_data.index = atoi(args);
+    c_data.request_id = atoi(args);
 
     while (isdigit(*args)) args++;
     while (isspace(*args)) args++;
@@ -485,9 +485,9 @@ print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
                 (int)cwmp_resp->from_cpe.cr_state);
         break;
     case EPC_RPC_CALL:
-        printf("RPC call'%s' to %s/%s, index %d\n",
+        printf("RPC call '%s' to %s/%s, id %d\n",
                 rpc_cpe_to_string(cwmp_resp->rpc_cpe),
-                cwmp_resp->acs, cwmp_resp->cpe, cwmp_resp->index);
+                cwmp_resp->acs, cwmp_resp->cpe, cwmp_resp->request_id);
         break;
     case EPC_RPC_CHECK:
         printf("RPC check, '%s' to %s/%s, status %s\n",
@@ -500,8 +500,8 @@ print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
     case EPC_GET_INFORM:
         {
             _cwmp__Inform *inform = cwmp_resp->from_cpe.inform;
-            printf("Get Inform from %s/%s, index %d\n",
-                    cwmp_resp->acs, cwmp_resp->cpe, cwmp_resp->index);
+            printf("Get Inform from %s/%s, id %d\n",
+                    cwmp_resp->acs, cwmp_resp->cpe, cwmp_resp->request_id);
             if (status != 0)
             {
                 printf("failed, status '%s'\n", te_rc_err2str(status));
