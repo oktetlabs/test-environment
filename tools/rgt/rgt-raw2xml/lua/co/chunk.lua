@@ -93,8 +93,11 @@ end
 -- @return New chunk inserted after this one.
 --
 function co.chunk:fork()
-    local chunk = oo.classof(self)(self.manager, {}, 0)
+    local chunk
 
+    assert(self.storage ~= nil)
+
+    chunk = oo.classof(self)(self.manager, {}, 0)
     chunk.next = self.next
     self.next = chunk
 
@@ -110,6 +113,7 @@ end
 -- @return The chunk.
 --
 function co.chunk:write(str)
+    assert(self.storage ~= nil)
     assert(not self.finished)
     assert(str ~= nil)
 
@@ -136,6 +140,8 @@ end
 -- @return The chunk.
 --
 function co.chunk:finish()
+    assert(self.storage ~= nil)
+    assert(not self.finished)
     self.finished = true
     self.manager:finished(self)
     return self
@@ -149,6 +155,7 @@ end
 function co.chunk:yield()
     local storage
 
+    assert(self.storage ~= nil)
     assert(self.finished)
 
     storage = self.storage
@@ -166,6 +173,9 @@ end
 --
 local function relocate_to_table(self, storage)
     local result, err
+
+    assert(self.storage ~= nil)
+    assert(storage ~= nil)
 
     if type(self.storage) == "table" then
         for i, v in ipars(self.storage) do
@@ -208,6 +218,9 @@ end
 local function relocate_to_file(self, storage)
     local result, err
 
+    assert(self.storage ~= nil)
+    assert(storage ~= nil)
+
     if type(self.storage) == "table" then
         -- Write the contents to the file
         for i, s in ipairs(self.storage) do
@@ -223,6 +236,10 @@ local function relocate_to_file(self, storage)
         local read_size = 0
 
         -- Transfer the file contents
+        result, err = self.storage:seek("cur", -self.size)
+        if result == nil then
+            error("failed seeking chunk storage file: " .. err)
+        end
         while true do
             local block = self.storage:read(self.buf_size)
             if block == nil then
@@ -252,6 +269,13 @@ end
 -- @return The chunk.
 --
 function co.chunk:relocate(storage, size)
+    assert(self.storage ~= nil)
+    assert(storage ~= nil)
+    assert(size == nil or
+           type(size) == "number" and
+           math.floor(size) == size and
+           size >= 0)
+
     if size == nil then
         size = storage_size(storage)
     end

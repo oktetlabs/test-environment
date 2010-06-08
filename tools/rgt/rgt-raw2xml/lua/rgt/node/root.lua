@@ -38,9 +38,9 @@ function rgt.node.root:start()
     self.head:start_tag("proteos:log_report",
                         {{"xmlns:proteos",
                           "http://www.oktetlabs.ru/proteos"}})
-    rgt.node.general.start(self)
-
-    return self
+    self.head:finish()
+    self.head = nil
+    return rgt.node.general.start(self)
 end
 
 function rgt.node.root:add_child(child)

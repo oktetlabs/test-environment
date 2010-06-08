@@ -186,8 +186,10 @@ end
 function rgt.node.general:yield_chunk()
     local chunk
 
-    self.head:finish()
-    self.head = nil
+    if self.head ~= nil then
+        self.head:finish()
+        self.head = nil
+    end
 
     for i, b in ipairs(self.branches) do
         assert(b.child == nil)
