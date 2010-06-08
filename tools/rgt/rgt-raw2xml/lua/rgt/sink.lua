@@ -33,10 +33,9 @@ rgt.node.package    = require("rgt.node.package")
 rgt.node.session    = require("rgt.node.session")
 rgt.node.test       = require("rgt.node.test")
 rgt.sink            = oo.class({
+                                manager = nil,  --- The output chunk manager
                                 chunk   = nil,  --- The output chunk
                                 map     = nil,  --- ID->node map
-                                max_mem = nil,  --- Maximum memory allowed
-                                                --  for output
                                })
 
 function rgt.sink:__init(max_mem)
@@ -44,17 +43,22 @@ function rgt.sink:__init(max_mem)
     assert(math.floor(max_mem) == max_mem)
     assert(max_mem >= 0)
 
-    return oo.rawnew(self, {map = {}, max_mem = max_mem})
+    return oo.rawnew(self, {manager = co.manager(max_mem), map = {}})
 end
 
 function rgt.sink:take_file(file)
+    local chunk
+
     assert(self.chunk == nil)
     assert(self.map[0] == nil)
     assert(file ~= nil)
-    self.chunk = co.xml_chunk(co.manager(self.max_mem), file, 0)
+
+    self.chunk = co.xml_chunk(self.manager, file, 0)
+    self.manager:set_first(self.chunk)
 end
 
 function rgt.sink:start()
+    assert(self.chunk ~= nil)
     assert(self.map[0] == nil)
     self.map[0] = rgt.node.root({}):take_chunk(self.chunk):start()
     self.chunk = nil

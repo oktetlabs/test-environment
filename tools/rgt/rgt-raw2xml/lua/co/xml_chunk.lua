@@ -68,26 +68,12 @@ function co.xml_chunk:__init(manager, storage, size, depth)
 end
 
 ---
--- Insert a new XML chunk before this one.
---
--- @return New XML chunk inserted before this one.
---
-function co.xml_chunk:fork_prev()
-    local chunk = co.chunk.fork_prev(self)
-
-    chunk.depth = self.depth
-
-    return chunk
-end
-
-
----
 -- Insert a new XML chunk after this one.
 --
 -- @return New XML chunk inserted after this one.
 --
-function co.xml_chunk:fork_next()
-    local chunk = co.chunk.fork_next(self)
+function co.xml_chunk:fork()
+    local chunk = co.chunk.fork(self)
 
     chunk.depth = self.depth
 

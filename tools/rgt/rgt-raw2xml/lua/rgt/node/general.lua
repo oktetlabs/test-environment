@@ -45,9 +45,11 @@ function rgt.node.general:__init(inst)
 end
 
 function rgt.node.general:take_chunk(chunk)
+    local body
     self.head = chunk
-    self.tail = chunk:fork_next():descend()
-    self.branches = {self:start_branch({chunk = self.tail:fork_prev()})}
+    body = chunk:fork():descend()
+    self.tail = body:fork()
+    self.branches = {self:start_branch({chunk = body})}
     return self
 end
 
@@ -85,8 +87,10 @@ function rgt.node.general:add_child(child)
     -- If there was none
     if branch == nil then
         -- Create and start new branch
-        branch = self:start_branch({chunk = self.tail:fork_prev()})
+        local new_tail  = self.tail:fork()
+        branch = self:start_branch({chunk = self.tail})
         table.insert(self.branches, branch)
+        self.tail = new_tail
     end
 
     if branch.logging then

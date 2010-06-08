@@ -32,7 +32,6 @@ co.chunk    = oo.class({
                         storage  = nil,     --- Storage: table or file
                         size     = 0,       --- Storage contents size
                         finished = nil,     --- "Finished" flag
-                        prev     = nil,     --- Previous chunk
                         next     = nil,     --- Next chunk
                        })
 
@@ -68,7 +67,7 @@ end
 ---
 -- Create a new chunk.
 --
--- @param manager   A chunk manager to which the chunk belongs.
+-- @param manager   A chunk manager to which the chunk reports.
 -- @param storage   Chunk storage - either a table or a file.
 -- @param size      Storage contents size, or nil to have it determined.
 --
@@ -89,37 +88,14 @@ function co.chunk:__init(manager, storage, size)
 end
 
 ---
--- Insert a new chunk before this one.
---
--- @return New chunk inserted before this one.
---
-function co.chunk:fork_prev()
-    local chunk = oo.classof(self)(self.manager, {}, 0)
-
-    if self.prev ~= nil then
-        self.prev.next = chunk
-        chunk.prev = self.prev
-    end
-    chunk.next = self
-    self.prev = chunk
-
-    return chunk
-end
-
-
----
 -- Insert a new chunk after this one.
 --
 -- @return New chunk inserted after this one.
 --
-function co.chunk:fork_next()
+function co.chunk:fork()
     local chunk = oo.classof(self)(self.manager, {}, 0)
 
-    if self.next ~= nil then
-        self.next.prev = chunk
-        chunk.next = self.next
-    end
-    chunk.prev = self
+    chunk.next = self.next
     self.next = chunk
 
     return chunk

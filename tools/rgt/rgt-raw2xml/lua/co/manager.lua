@@ -29,6 +29,7 @@ local co    = {}
 co.manager  = oo.class({
                         max_mem  = nil, --- Maximum memory for chunks
                         used_mem = 0,   --- Memory used by in-memory chunks
+                        first    = nil  --- First chunk
                        })
 
 ---
@@ -45,6 +46,29 @@ function co.manager:__init(max_mem)
     assert(max_mem >= 0)
 
     return oo.rawnew(self, {max_mem = max_mem})
+end
+
+
+---
+-- Set first chunk - the chunk to whose storage all the successive chunks
+-- will be relocated, once finished.
+--
+-- @param chunk The first chunk.
+--
+function co.manager:set_first(chunk)
+    assert(oo.instanceof(chunk, require("co.chunk")))
+    self.first = chunk
+end
+
+
+---
+-- Get first chunk - the chunk to whose storage all the successive chunks
+-- are relocated, once finished.
+--
+-- @return The first chunk.
+--
+function co.manager:get_first(chunk)
+    return self.first
 end
 
 ---
@@ -100,32 +124,24 @@ end
 function co.manager:finished(chunk)
     local prev
 
+    assert(self.first ~= nil)
     assert(oo.instanceof(chunk, require("co.chunk")))
 
-    --
-    -- Try to reach the first chunk via finished chunks
-    --
-    while chunk.prev ~= nil do
-        chunk = chunk.prev
-        if not chunk.finished then
-            return
-        end
-    end
+    -- chunk argument is not used currently
 
     --
-    -- Collapse as much chunks as possible
+    -- Relocate as much chunks as possible to the first chunk storage
     --
-    while true do
-        prev = chunk
-        chunk = prev.next
-        if chunk == nil or not chunk.finished then
+    while self.first.finished do
+        chunk = self.first.next
+        if chunk == nil then
             break
         end
-        -- Detach the previous chunk
-        chunk.prev = nil
-        prev.next = nil
-        -- Relocate the chunk to the previous chunk's storage
-        chunk:relocate(prev:yield())
+        -- Detach the first chunk
+        self.first.next = nil
+        -- Relocate the chunk to the first chunk's storage
+        chunk:relocate(self.first:yield())
+        self.first = chunk
     end
 end
 
