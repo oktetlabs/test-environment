@@ -195,7 +195,7 @@ const asn_type * const ndn_payload = &ndn_payload_s;
 
 
 
-static asn_type ndn_csap_layers_s = {
+asn_type ndn_csap_layers_s = {
     "CSAP-layers", {PRIVATE, NDN_CSAP_LAYERS}, SEQUENCE_OF, 0,
     {subtype: &ndn_generic_csap_layer_s}
 };
