@@ -38,11 +38,6 @@ libtapi_rpc_la_SOURCES= \
     unistd.c \
     wsa.c 
 
-if CFG_TR069
-include_HEADERS += tapi_rpc_tr069.h
-libtapi_rpc_la_SOURCES += tr069.c
-endif
-
 install-exec-hook:
 	touch -c -r libtapi_rpc.la $(DESTDIR)/$(libdir)/libtapi_rpc.*
 

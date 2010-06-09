@@ -31,42 +31,37 @@
 
 #include "acse_suite.h"
 
-#include "tapi_rpc_tr069.h"
-#include "acse_epc.h"
+#include "tapi_acse.h"
 #include "cwmp_data.h"
 
 int
 main(int argc, char *argv[])
 {
-    int call_index;
-
     _cwmp__Download download_pars;
     _cwmp__DownloadResponse *download_resp;
 
-    _cwmp__GetParameterNames           *get_names;
     _cwmp__GetParameterNamesResponse   *get_names_resp = NULL;
 
-    rcf_rpc_server *rpcs_acse = NULL; 
     te_errno te_rc;
 
     cwmp_data_from_cpe_t from_cpe;
 
-    const char *ta_acse;
+    tapi_acse_context_t *ctx;
 
     TEST_START;
 
-    TEST_GET_STRING_PARAM(ta_acse);
+    TAPI_ACSE_CTX_INIT(ctx);
 
-    CHECK_RC(rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
-                               FALSE, TRUE, FALSE, &rpcs_acse));
+    CHECK_RC(tapi_acse_clear_cpe(ctx));
 
-    CHECK_RC(tapi_acse_clear_cpe(ta_acse, "A", "box"));
+    CHECK_RC(tapi_acse_manage_acs(ctx, ACSE_OP_MODIFY,
+                                  "http_root", "/home/konst/acse_http",
+                                  VA_END_LIST));
 
-    CHECK_RC(tapi_acse_manage_acs(ta_acse, "A", ACSE_OP_MODIFY,
-          "http_root", "/home/konst/acse_http", VA_END_LIST));
-
-    CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_MODIFY,
-          "sync_mode", 1, "hold_requests", 1, VA_END_LIST));
+    CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
+                                  "sync_mode", TRUE,
+                                  "hold_requests", TRUE,
+                                  VA_END_LIST));
 
 
     memset(&download_pars, 0, sizeof(download_pars));
@@ -83,64 +78,58 @@ main(int argc, char *argv[])
     download_pars.DelaySeconds = 1;
 
 
-    RING("Download queued with index %d", call_index);
+    CHECK_RC(tapi_acse_cpe_connect(ctx));
 
-    rpc_cwmp_conn_req(rpcs_acse, "A", "box");
+    CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE)); 
+    CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
 
-    CHECK_RC(tapi_acse_wait_cr_state(ta_acse, "A", "box", CR_DONE, 10));
+    CHECK_RC(tapi_acse_cpe_download(ctx, &download_pars));
 
-    CHECK_RC(tapi_acse_wait_cwmp_state(ta_acse, "A", "box",
-                                      CWMP_PENDING, 20));
-
-    CHECK_RC(tapi_acse_cpe_download(rpcs_acse, "A", "box",
-                                    &download_pars, &call_index));
-
-    CHECK_CWMP_RESP_RC(tapi_acse_cpe_download_resp(rpcs_acse, "A", "box",
-                          10, call_index, &download_resp), download_resp);
+    CHECK_RC(tapi_acse_cpe_download_resp(ctx, &download_resp));
 
     if (download_resp != NULL)
         RING("Download status %d", (int)download_resp->Status);
     else
         TEST_FAIL("Download resp is NULL!");
 
-    get_names = cwmp_get_names_alloc(
-        "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
-            "IPInterface.", 1);
+    CHECK_RC(tapi_acse_cpe_get_parameter_names(ctx, TRUE,
+                    "InternetGatewayDevice.LANDevice.1."
+                    "LANHostConfigManagement.IPInterface."));
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_names(rpcs_acse, "A", "box",
-                                    get_names, &call_index));
+    CHECK_RC(tapi_acse_cpe_get_parameter_names_resp(ctx, &get_names_resp));
 
-    CHECK_CWMP_RESP_RC(
-        tapi_acse_cpe_get_parameter_names_resp(rpcs_acse, "A", "box",
-                      10, call_index, &get_names_resp), get_names_resp);
+    CHECK_RC(tapi_acse_cpe_disconnect(ctx));
 
     /* Check that there is no Transfer Complete */
-    te_rc = tapi_acse_get_rpc_acs(rpcs_acse, "A", "box", 0, 
-                                  CWMP_RPC_transfer_complete,
+    te_rc = tapi_acse_get_rpc_acs(ctx, CWMP_RPC_transfer_complete,
                                   &from_cpe);
-    RING(" get TransferComplete rc %r", te_rc);
+    RING("get TransferComplete rc %r", te_rc);
+    if (TE_ENOENT != TE_RC_GET_ERROR(te_rc))
+        TEST_FAIL("unexpected rc for attempt to get TransferComplete");
 
     if (1 == download_resp->Status)
     {
         /* TODO test is incomplete, Dimark client on CPE has strange
             behaviour */
 
+#if 0
         /* Issue empty HTTP response, in sync mode */
         rpc_cwmp_op_call(rpcs_acse, "A", "box",
                          CWMP_RPC_NONE, NULL, 0, NULL);
-        CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_MODIFY,
-              "sync_mode", 0, "hold_requests", 0, VA_END_LIST));
+#endif
+        CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
+                                      "sync_mode", FALSE,
+                                      "hold_requests", FALSE,
+                                      VA_END_LIST));
 
-        sleep(10);
+        ctx->timeout = 50;
+        CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_SERVE));
 
-    CHECK_RC(tapi_acse_wait_cwmp_state(ta_acse, "A", "box",
-                                      CWMP_SERVE, 50));
-
-    CHECK_RC(tapi_acse_wait_cwmp_state(ta_acse, "A", "box",
-                                      CWMP_NOP, 20));
+        ctx->timeout = 30;
+        CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_NOP));
 
 
-        te_rc = tapi_acse_get_rpc_acs(rpcs_acse, "A", "box", 10, 
+        te_rc = tapi_acse_get_rpc_acs(ctx,
                                       CWMP_RPC_transfer_complete,
                                       &from_cpe);
         if (0 == te_rc)
@@ -160,13 +149,12 @@ main(int argc, char *argv[])
 
 cleanup:
 
-    CLEANUP_CHECK_RC(tapi_acse_cpe_disconnect(rpcs_acse, "A", "box"));
+    CLEANUP_CHECK_RC(tapi_acse_cpe_disconnect(ctx));
 
-    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
-                ACSE_OP_MODIFY, 
-                "sync_mode", FALSE, "hold_requests", FALSE, 
-                VA_END_LIST));
-
+    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY, 
+                                          "sync_mode", FALSE,
+                                          "hold_requests", FALSE, 
+                                          VA_END_LIST));
 
     TEST_END;
 }

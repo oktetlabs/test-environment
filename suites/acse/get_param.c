@@ -32,8 +32,7 @@
 
 #include "acse_suite.h"
 
-#include "tapi_rpc_tr069.h"
-#include "acse_epc.h"
+#include "tapi_acse.h"
 #include "cwmp_data.h"
 
 
@@ -57,55 +56,38 @@
 int
 main(int argc, char *argv[])
 {
-    int r, i;
-    int call_index;
+    int i;
     cwmp_sess_state_t cwmp_state = 0;
-    _cwmp__GetParameterNames           *get_names;
-    _cwmp__GetParameterNamesResponse   *get_names_resp = NULL;
     _cwmp__GetParameterValues          *get_values;
     _cwmp__GetParameterValuesResponse  *get_values_resp = NULL;
+    _cwmp__GetParameterNamesResponse   *get_names_resp = NULL;
 
     char *param_path = 
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
             "IPInterface.";
     char *lan_ip_conn_path;
 
-    rcf_rpc_server *rpcs_acse = NULL; 
-    te_errno te_rc;
-    const char *ta_acse;
+    tapi_acse_context_t *ctx;
 
     TEST_START;
 
-    TEST_GET_STRING_PARAM(ta_acse);
+    TAPI_ACSE_CTX_INIT(ctx);
 
-    CHECK_RC(rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
-                               FALSE, TRUE, FALSE, &rpcs_acse));
+    CHECK_RC(tapi_acse_clear_cpe(ctx));
 
-    CHECK_RC(tapi_acse_clear_cpe(ta_acse, "A", "box"));
+    CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
+                                  "sync_mode", TRUE, VA_END_LIST));
 
-    CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_MODIFY,
-          "sync_mode", 1, VA_END_LIST));
+    CHECK_RC(tapi_acse_cpe_connect(ctx));
 
-    r = rpc_cwmp_conn_req(rpcs_acse, "A", "box"); 
-    RING("rc of cwmp conn req %d", r);
+    CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
 
-    te_rc = tapi_acse_wait_cr_state(ta_acse, "A", "box", CR_DONE, 10);
+    CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
+    CHECK_RC(tapi_acse_cpe_get_parameter_names(ctx, TRUE, param_path));
 
-    get_names = cwmp_get_names_alloc(param_path, 1);
+    RING("GetParNames queued with index %u", ctx->req_id);
 
-    CHECK_RC(tapi_acse_wait_cwmp_state(ta_acse, "A", "box",
-                                      CWMP_PENDING, 20));
-
-    CHECK_RC(tapi_acse_cpe_get_parameter_names(rpcs_acse, "A", "box",
-                                               get_names, &call_index));
-
-    RING("GetParNames queued with index %d", call_index);
-
-    CHECK_CWMP_RESP_RC(
-        tapi_acse_cpe_get_parameter_names_resp(rpcs_acse, "A", "box",
-                      10, call_index, &get_names_resp), get_names_resp);
-
-    cwmp_get_names_free(get_names);
+    CHECK_RC(tapi_acse_cpe_get_parameter_names_resp(ctx, &get_names_resp));
 
     RING("GetNames number %d, first name '%s'",
         (int)get_names_resp->ParameterList->__size,
@@ -122,14 +104,9 @@ main(int argc, char *argv[])
                         "IPInterfaceAddressingType",
                         VA_END_LIST);
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_values(rpcs_acse, "A", "box",
-                                    get_values, &call_index));
-    CHECK_CWMP_RESP_RC(
-                tapi_acse_cpe_get_parameter_values_resp(
-                    rpcs_acse, "A", "box", 20, call_index,
-                    &get_values_resp),
-                get_values_resp);
-
+    CHECK_RC(tapi_acse_cpe_get_parameter_values(ctx, get_values));
+    CHECK_RC(tapi_acse_cpe_get_parameter_values_resp(ctx,
+                                                     &get_values_resp));
 
     for (i = 0; i < get_values_resp ->ParameterList->__size; i++)
     {
@@ -147,18 +124,20 @@ main(int argc, char *argv[])
 cleanup:
     {
         int cr_state;
-    tapi_acse_manage_cpe(ta_acse, "A", "box",
-                ACSE_OP_OBTAIN, "cr_state", &cr_state, VA_END_LIST);
+        tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
+                             "cr_state", &cr_state, VA_END_LIST);
         RING("CHECK cr_state: %d", cr_state);
     }
 
-    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
-                ACSE_OP_OBTAIN, "cwmp_state", &cwmp_state, VA_END_LIST));
+    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
+                                          "cwmp_state", &cwmp_state,
+                                          VA_END_LIST));
     if (cwmp_state != CWMP_NOP)
-        CLEANUP_CHECK_RC(tapi_acse_cpe_disconnect(rpcs_acse, "A", "box"));
+        CLEANUP_CHECK_RC(tapi_acse_cpe_disconnect(ctx));
 
-    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
-                ACSE_OP_MODIFY, "sync_mode", FALSE, VA_END_LIST));
+    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
+                                          "sync_mode", FALSE,
+                                          VA_END_LIST));
 
     TEST_END;
 }

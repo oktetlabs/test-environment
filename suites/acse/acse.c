@@ -31,53 +31,35 @@
 
 #include "acse_suite.h"
 
-#include "tapi_rpc_tr069.h"
-#include "acse_epc.h"
+#include "tapi_acse.h"
 #include "cwmp_data.h"
 
 int
 main(int argc, char *argv[])
 {
-    char cwmp_buf[1024];
-    unsigned int u;
-    int r;
-    int call_index;
-    int cr_state;
-    te_cwmp_rpc_cpe_t cwmp_rpc = CWMP_RPC_get_rpc_methods;
     _cwmp__GetRPCMethodsResponse *get_rpc_meth_r = NULL;
 
-    rcf_rpc_server *rpcs_acse = NULL; 
     te_errno te_rc;
-    const char *ta_acse;
+
+    tapi_acse_context_t *ctx;
 
     TEST_START;
 
-    TEST_GET_STRING_PARAM(ta_acse);
+    TAPI_ACSE_CTX_INIT(ctx);
 
-    te_rc = rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
-                               FALSE, TRUE, FALSE, &rpcs_acse);
+    CHECK_RC(tapi_acse_cpe_get_rpc_methods(ctx));
 
-    CHECK_RC(te_rc);
+    RING("GetRPCMethods queued with index %u", ctx->req_id);
 
-    CHECK_RC(tapi_acse_cpe_get_rpc_methods(rpcs_acse, "A", "box",
-                                           &call_index));
+    CHECK_RC(tapi_acse_cpe_connect(ctx));
 
-    RING("GetRPCMethods queued with index %d", call_index);
-
-    r = rpc_cwmp_conn_req(rpcs_acse, "A", "box");
-
-    RING("rc of cwmp conn req %d", r);
-
-    cr_state = -1;
-
-    CHECK_RC(tapi_acse_wait_cr_state(ta_acse, "A", "box", CR_DONE, 10));
+    CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
 
     sleep(3);
 
-    CHECK_RC(tapi_acse_wait_cwmp_state(ta_acse, "A", "box", CWMP_NOP, 10));
+    CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_NOP));
 
-    te_rc = tapi_acse_cpe_get_rpc_methods_resp(rpcs_acse, "A", "box",
-                          TRUE, call_index, &get_rpc_meth_r);
+    te_rc = tapi_acse_cpe_get_rpc_methods_resp(ctx, &get_rpc_meth_r);
 
     RING("rc of cwmp op check %r", te_rc);
     if (te_rc == 0 && get_rpc_meth_r != NULL)

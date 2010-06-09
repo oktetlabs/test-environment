@@ -31,66 +31,49 @@
 
 #include "acse_suite.h"
 
-#include "tapi_rpc_tr069.h"
-#include "acse_epc.h"
+#include "tapi_acse.h"
 #include "cwmp_data.h"
 
 int
 main(int argc, char *argv[])
 {
-    int r;
-    int call_index;
     size_t i;
     cwmp_sess_state_t cwmp_state = 0;
-    _cwmp__GetParameterNames           *get_names;
-    _cwmp__GetParameterNamesResponse   *get_names_resp;
+    _cwmp__GetParameterNamesResponse   *get_names_resp = NULL;
     _cwmp__GetParameterValues          *get_values;
-    _cwmp__GetParameterValuesResponse  *get_values_resp;
+    _cwmp__GetParameterValuesResponse  *get_values_resp = NULL;
     _cwmp__SetParameterValues          *set_values;
-    _cwmp__SetParameterValuesResponse  *set_values_resp;
+    _cwmp__SetParameterValuesResponse  *set_values_resp = NULL;
 
     char *param_path = 
             "InternetGatewayDevice.WANDevice.1.WANConnectionDevice."
             "1.WANIPConnection.";
     char *wan_ip_conn_path;
 
+    tapi_acse_context_t *ctx; 
+
     const char *old_wan_ip;
     const char *new_wan_ip = "10.20.1.4";
 
-    rcf_rpc_server *rpcs_acse = NULL; 
     te_errno te_rc;
-    const char *ta_acse;
 
     TEST_START;
+    TAPI_ACSE_CTX_INIT(ctx);
 
-    TEST_GET_STRING_PARAM(ta_acse);
+    CHECK_RC(tapi_acse_clear_cpe(ctx));
 
-    CHECK_RC(rcf_rpc_server_get(ta_acse, "acse_ctl", NULL,
-                               FALSE, TRUE, FALSE, &rpcs_acse));
+    CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
+                                  "sync_mode", 1, VA_END_LIST));
 
-    CHECK_RC(tapi_acse_clear_cpe(ta_acse, "A", "box"));
+    CHECK_RC(tapi_acse_cpe_connect(ctx)); 
+    CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
 
-    CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box", ACSE_OP_MODIFY,
-          "sync_mode", 1, VA_END_LIST));
+    CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
+    CHECK_RC(tapi_acse_cpe_get_parameter_names(ctx, TRUE, param_path));
 
-    r = rpc_cwmp_conn_req(rpcs_acse, "A", "box"); 
-    RING("rc of cwmp conn req %d", r);
+    RING("GetParNames queued with index %u", ctx->req_id);
 
-    te_rc = tapi_acse_wait_cr_state(ta_acse, "A", "box", CR_DONE, 10);
-
-    get_names = cwmp_get_names_alloc(param_path, 1);
-
-
-    CHECK_RC(tapi_acse_wait_cwmp_state(ta_acse, "A", "box",
-                                      CWMP_PENDING, 20));
-    CHECK_RC(tapi_acse_cpe_get_parameter_names(rpcs_acse, "A", "box",
-                                     get_names, &call_index));
-
-    RING("GetParNames queued with index %d", call_index);
-
-    CHECK_CWMP_RESP_RC(
-         tapi_acse_cpe_get_parameter_names_resp(rpcs_acse, "A", "box",
-                      10, call_index, &get_names_resp), get_names_resp);
+    CHECK_RC(tapi_acse_cpe_get_parameter_names_resp(ctx, &get_names_resp));
 
     RING("GetNames number %d, first name '%s'",
         (int)get_names_resp->ParameterList->__size,
@@ -106,12 +89,10 @@ main(int argc, char *argv[])
                 "DNSServers", SOAP_TYPE_string, "10.20.1.1",
                     VA_END_LIST);
 
-    CHECK_RC(tapi_acse_cpe_set_parameter_values(rpcs_acse, "A", "box",
-                                    set_values, &call_index));
+    CHECK_RC(tapi_acse_cpe_set_parameter_values(ctx, set_values));
 
 
-    te_rc = tapi_acse_cpe_set_parameter_values_resp(
-            rpcs_acse, "A", "box", 20, call_index, &set_values_resp);
+    te_rc = tapi_acse_cpe_set_parameter_values_resp(ctx, &set_values_resp);
 
     if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
     {
@@ -131,11 +112,11 @@ main(int argc, char *argv[])
         TEST_FAIL("SetParameterValues failed, see details above.");
     }
 
-    CHECK_RC(tapi_acse_cpe_disconnect(rpcs_acse, "A", "box"));
+    CHECK_RC(tapi_acse_cpe_disconnect(ctx));
 
     sleep(10);
 
-    rpc_cwmp_conn_req(rpcs_acse, "A", "box"); 
+    CHECK_RC(tapi_acse_cpe_connect(ctx)); 
 
     get_values = cwmp_get_values_alloc(wan_ip_conn_path,
                                        "ExternalIPAddress",
@@ -143,14 +124,11 @@ main(int argc, char *argv[])
                                        "DNSServers",
                                        VA_END_LIST);
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_values(rpcs_acse, "A", "box",
-                                    get_values, &call_index));
-    CHECK_CWMP_RESP_RC(
-                tapi_acse_cpe_get_parameter_values_resp(
-                    rpcs_acse, "A", "box", 20, call_index,
-                    &get_values_resp),
-                get_values_resp);
+    CHECK_RC(tapi_acse_cpe_get_parameter_values(ctx, get_values));
+    CHECK_RC(tapi_acse_cpe_get_parameter_values_resp(ctx,
+                                                     &get_values_resp));
 
+    /* TODO API for check received value */
     {
         /* first value should be ExternalIPAddress */
         const char *got_wan_ip =
@@ -176,18 +154,19 @@ main(int argc, char *argv[])
 cleanup:
     {
         int cr_state;
-        tapi_acse_manage_cpe(ta_acse, "A", "box",
-                ACSE_OP_OBTAIN, "cr_state", &cr_state, VA_END_LIST);
+        tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
+                             "cr_state", &cr_state, VA_END_LIST);
         RING("CHECK cr_state: %d", cr_state);
     }
 
-    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
-                ACSE_OP_OBTAIN, "cwmp_state", &cwmp_state, VA_END_LIST));
+    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
+                                          "cwmp_state", &cwmp_state,
+                                          VA_END_LIST));
     if (cwmp_state != CWMP_NOP)
-        CLEANUP_CHECK_RC(tapi_acse_cpe_disconnect(rpcs_acse, "A", "box"));
+        CLEANUP_CHECK_RC(tapi_acse_cpe_disconnect(ctx));
 
-    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ta_acse, "A", "box",
-                ACSE_OP_MODIFY, "sync_mode", FALSE, VA_END_LIST));
+    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
+                                          "sync_mode", FALSE, VA_END_LIST));
 
     TEST_END;
 }

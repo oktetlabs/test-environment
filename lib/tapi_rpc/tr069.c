@@ -52,7 +52,7 @@
 #ifndef WITH_TR069_SUPPORT
 #error This source should not be compiled without tr069 configured support.
 #endif
-#include "tapi_rpc_internal.h"
+// #include "tapi_rpc_internal.h"
 #include "tapi_rpc_tr069.h" 
 
 
@@ -100,7 +100,7 @@ rpc_cwmp_op_call(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "cwmp_op_call", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): cwmp_op_call(%s, %s, rpc %d) -> %r",
+    RING("RPC (%s,%s): cwmp_op_call(%s, %s, rpc %d) -> %r",
                  rpcs->ta, rpcs->name,
                  acs_name, cpe_name, (int)cwmp_rpc,
                  (te_errno)out.status);
