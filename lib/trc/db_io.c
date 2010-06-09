@@ -172,6 +172,18 @@ xmlNodeSkipComment(xmlNodePtr node)
     return node;
 }
 
+static xmlNodePtr
+xmlNodeSkipExtra(xmlNodePtr node)
+{
+    while ((node != NULL) &&
+           ((xmlStrcmp(node->name, (const xmlChar *)("comment")) == 0) ||
+            (xmlStrcmp(node->name, (const xmlChar *)("text")) == 0)))
+    {
+        node = node->next;
+    }
+    return node;
+}
+
 /**
  * Go to the next XML node, skip 'comment' nodes.
  *
@@ -183,8 +195,9 @@ static inline xmlNodePtr
 xmlNodeChildren(xmlNodePtr node)
 {
     assert(node != NULL);
-    return xmlNodeSkipComment(node->children);
+    return xmlNodeSkipExtra(node->children);
 }
+
 
 /**
  * Go to the next XML node, skip 'comment' nodes.
@@ -197,7 +210,7 @@ static inline xmlNodePtr
 xmlNodeNext(xmlNodePtr node)
 {
     assert(node != NULL);
-    return xmlNodeSkipComment(node->next);
+    return xmlNodeSkipExtra(node->next);
 }
 
 
@@ -644,7 +657,11 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
 
     p = trc_db_new_test(tests, parent, NULL);
     if (p == NULL)
+    {
+        ERROR("%s: failed to alloc\n");
         return TE_RC(TE_TRC, TE_ENOMEM);
+    }
+    
     p->node = p->iters.node = node;
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
@@ -706,7 +723,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
     rc = get_node_with_text_content(&node, "objective", &p->objective);
     if (rc != 0)
     {
-        ERROR("Failed to get objective of the test '%s'", p->name);
+        ERROR("Failed to get objective of the test '%s': %r", p->name, rc);
         return rc;
     }
 
@@ -754,14 +771,18 @@ get_tests(xmlNodePtr *node, trc_tests *tests, trc_test_iter *parent)
     assert(tests != NULL);
 
     while (*node != NULL &&
-           xmlStrcmp((*node)->name, CONST_CHAR2XML("test")) == 0 &&
-           (rc = alloc_and_get_test(*node, tests, parent)) == 0)
+           (
+               (xmlStrcmp((*node)->name, CONST_CHAR2XML("test")) == 0 &&
+                    (rc = alloc_and_get_test(*node, tests, parent)) == 0) ||
+               (xmlStrcmp((*node)->name, CONST_CHAR2XML("include")) == 0)
+           )
+         )
     {
         *node = xmlNodeNext(*node);
     }
     if (*node != NULL)
     {
-        ERROR("Unexpected element '%s'", (*node)->name);
+        ERROR("%s: Unexpected element '%s'", __FUNCTION__, (*node)->name);
         rc = TE_RC(TE_TRC, TE_EFMT);
     }
 
@@ -779,6 +800,7 @@ trc_db_open(const char *location, te_trc_db **db)
     xmlError           *err;
 #endif
     te_errno            rc;
+    int subst;
 
     if (location == NULL)
     {
@@ -817,6 +839,20 @@ trc_db_open(const char *location, te_trc_db **db)
 #endif
         xmlFreeParserCtxt(parser);
         return TE_RC(TE_TRC, TE_EFMT);
+    }
+
+    subst = xmlXIncludeProcess((*db)->xml_doc);
+    if (subst < 0)
+    {
+#if HAVE_XMLERROR
+        xmlError *err = xmlGetLastError();
+
+        ERROR("XInclude processing failed: %s", err->message);
+#else
+        ERROR("XInclude processing failed");
+#endif
+        xmlCleanupParser();
+        return TE_EINVAL;
     }
 
     node = xmlDocGetRootElement((*db)->xml_doc);
