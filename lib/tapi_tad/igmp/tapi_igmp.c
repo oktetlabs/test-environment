@@ -193,6 +193,11 @@ tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
     if (dst_addr == htonl(INADDR_ANY))
         dst_addr = TAPI_MCAST_ADDR_ALL_HOSTS;
 
+    if (src_addr == htonl(INADDR_ANY))
+    {
+        WARN("Invalid zero IPv4 source address field is used");
+    }
+
     /* Add IPv4 layer header to PDU template/pattern */
     rc = tapi_ip4_add_pdu(tmpl_or_ptrn, &ip4_pdu, is_pattern,
                           src_addr, dst_addr,
