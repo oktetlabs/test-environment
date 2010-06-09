@@ -42,6 +42,9 @@
 
 #define TAPI_FLOW_PREFIX "FLOW."
 
+#define TAPI_FLOW_PEER_LINK_FMT "cfg:/local:/peer:%s:"
+#define TAPI_FLOW_PLAIN_VAL_FMT "plain:%s"
+#define TAPI_FLOW_QUOTED_FMT    "'%s'"
 
 te_errno
 tapi_flow_conf_get(int argc, char **argv,
@@ -469,7 +472,7 @@ tapi_flow_prepare_traffic(tapi_flow_t *flow)
 
         /* Get receive pattern */
         if ((rc = tapi_flow_gen_base_ptrn(traffic->recv_ptrn,
-                                          traffic->recv_base_ptrn)) != 0)
+                                          &traffic->recv_base_ptrn)) != 0)
         {
             ERROR("Failed to make base receive pattern: rc=%r", rc);
             return rc;
@@ -609,6 +612,106 @@ tapi_cfg_extract_link(char *buf)
     return p;
 }
 
+/**
+ * Preprocess textual flow description and
+ * interpret values in single quotes.
+ *
+ * @param flow_spec     Textual flow description
+ *
+ * @return              Preprocessed flow description which could be parsed by
+ *                      asn_parse_text(), or NULL if something fails
+ */
+char *
+tapi_flow_preprocess_quotes(const char *flow_spec)
+{
+    char *p        = NULL;
+    char *src      = (char *)flow_spec;
+    int   buf_size = (strlen(flow_spec) * 2) + 1;
+    char *buf      = malloc(buf_size);
+    char *dst      = buf;
+    char *link     = NULL;
+    char *value    = NULL;
+    int   unused   = strlen(flow_spec);
+
+    RING("%s() started", __FUNCTION__);
+
+    if (buf == NULL)
+    {
+        ERROR("Failed to allocate memory to process flow spec");
+        return NULL;
+    }
+
+    while (flow_spec != NULL)
+    {
+        /* Find opening quote */
+        if ((src = strchr(flow_spec, '\'')) == NULL)
+        {
+            VERB("copy the rest of buffer: %s", flow_spec);
+            strcpy(dst, flow_spec);
+            break;
+        }
+
+        /* Copy text before open quote */
+        memcpy(dst, flow_spec, src - flow_spec);
+        dst += src - flow_spec;
+
+        /* Find closing quote */
+        if ((p = strchr(src + 1, '\'')) == NULL)
+        {
+            VERB("copy the rest of buffer: %s", flow_spec);
+            strcpy(dst, src);
+            break;
+        }
+
+        link = strndup(src + 1, p - src - 1);
+        flow_spec = src + strlen(link) + 2;
+        value = link;
+
+        /* Check if quoted value is has '/' symbol */
+        if (strchr(link, '/') != NULL)
+        {
+            link = te_sprintf(TAPI_FLOW_PEER_LINK_FMT, link);
+            value = tapi_cfg_link_dereference(link);
+        }
+
+        /* Check if quoted value already has 'plain:' prefix */
+        if (*(src - 1) != ':')
+        {
+            value = te_sprintf(TAPI_FLOW_PLAIN_VAL_FMT, value);
+        }
+        else /* Keep value quoted */
+        {
+            value = te_sprintf(TAPI_FLOW_QUOTED_FMT, value);
+        }
+
+        VERB("Link: %s = %s", link, value);
+
+        if (strlen(value) > 2 + strlen(link) + unused)
+        {
+            buf_size += strlen(value) - strlen(link) - unused;
+            unused = 0;
+
+            if ((buf = realloc(buf, buf_size)) == NULL)
+            {
+                ERROR("Failed to allocate memory for preprocessed flow");
+                return NULL;
+            }
+        }
+        else
+        {
+            unused += strlen(link) - strlen(value);
+        }
+        strcpy(dst, value);
+
+        dst += strlen(value);
+        free(value);
+        free(link);
+    }
+
+    RING("%s: Preprocessed buf:\n%s", __FUNCTION__, buf);
+    return buf;
+}
+
 
 /**
  * Preprocess textual flow description and dereference configurator links.
@@ -619,7 +722,7 @@ tapi_cfg_extract_link(char *buf)
  *                      asn_parse_text(), or NULL if something fails
  */
 char *
-tapi_flow_preprocess(const char *flow_spec)
+tapi_flow_preprocess_links(const char *flow_spec)
 {
     char *src      = (char *)flow_spec;
     int   buf_size = strlen(flow_spec) + 1;
@@ -676,7 +779,7 @@ tapi_flow_preprocess(const char *flow_spec)
         free(link);
     }
 
-    VERB("Preprocessed buf:\n%s", buf);
+    RING("%s: Preprocessed buf:\n%s", __FUNCTION__, buf);
     return buf;
 }
 
@@ -944,7 +1047,9 @@ tapi_flow_preprocess_args(int argc, char **argv)
 
     for (i = 0; i < argc; i++)
     {
-        if ((new_argv[i] = tapi_flow_preprocess(argv[i])) == NULL)
+        char *tmp = tapi_flow_preprocess_quotes(argv[i]);
+
+        if ((new_argv[i] = tapi_flow_preprocess_links(tmp)) == NULL)
         {
             ERROR("Failed to preprocess argument '%s'", argv[i]);
         }
