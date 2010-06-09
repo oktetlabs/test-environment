@@ -123,7 +123,8 @@ typedef struct tapi_flow_s {
 } tapi_flow_t;
 
 
-extern char *tapi_flow_preprocess(const char *flow_spec);
+extern char *tapi_flow_preprocess_links(const char *flow_spec);
+extern char *tapi_flow_preprocess_quotes(const char *flow_spec);
 
 extern char **tapi_flow_preprocess_args(int argc, char **argv);
 
