@@ -120,6 +120,9 @@ typedef enum {
     NDN_TAG_ICMP6_CHECKSUM,
     NDN_TAG_ICMP6_ID,
     NDN_TAG_ICMP6_SEQ,
+    NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY,
+    NDN_TAG_ICMP6_MLD_RESERVED,
+    NDN_TAG_IP6_GROUP_ADDR,
 } ndn_icmp6_tags_t;
 
 typedef enum {
@@ -187,7 +190,7 @@ extern "C" {
 #endif
 
 extern const asn_type * const ndn_ip6_header;
-extern const asn_type * const ndn_ip6_csap; 
+extern const asn_type * const ndn_ip6_csap;
 
 extern const asn_type * const ndn_ip6_ext_header_option;
 extern const asn_type * const ndn_ip6_ext_header_options_seq;
@@ -196,8 +199,11 @@ extern const asn_type * const ndn_ip6_ext_header_destination;
 extern const asn_type * const ndn_ip6_ext_header;
 extern const asn_type * const ndn_ip6_ext_headers_seq;
 
+extern const asn_type * const ndn_icmp6_message;
+extern const asn_type * const ndn_icmp6_csap;
+
 extern const asn_type * const ndn_ip4_header;
-extern const asn_type * const ndn_ip4_csap; 
+extern const asn_type * const ndn_ip4_csap;
 
 extern const asn_type * const ndn_ip4_frag_spec;
 extern const asn_type * const ndn_ip4_frag_seq;

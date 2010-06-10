@@ -68,12 +68,23 @@
 /* TODO: chenge this value */
 #define TE_TAD_ICMP6_MAXLEN     (20)
 
+/*
+ * The following constants could be found in linux/icmpv6.h
+ * but in order to minimize dependencies we define there constants here.
+ */
+#define ICMPV6_TYPE_ECHO_REQUEST             128
+#define ICMPV6_TYPE_ECHO_REPLY               129
+#define ICMPV6_TYPE_MLD_QUERY                130
+#define ICMPV6_TYPE_MLD_REPORT               131
+#define ICMPV6_TYPE_MLD_DONE                 132
+
 /**
  * ICMPv6 layer specific data
  */
 typedef struct tad_icmp6_proto_data {
     tad_bps_pkt_frag_def    hdr;
-    tad_bps_pkt_frag_def    echo_data;
+    tad_bps_pkt_frag_def    echo_body;
+    tad_bps_pkt_frag_def    mld_body;
 } tad_icmp6_proto_data;
 
 /**
@@ -82,7 +93,8 @@ typedef struct tad_icmp6_proto_data {
  */
 typedef struct tad_icmp6_proto_pdu_data {
     tad_bps_pkt_frag_data   hdr;
-    tad_bps_pkt_frag_data   echo_data;
+    tad_bps_pkt_frag_data   body;
+    tad_bps_pkt_frag_def   *body_def;
 } tad_icmp6_proto_pdu_data;
 
 
@@ -94,7 +106,7 @@ static const tad_bps_pkt_frag tad_icmp6_bps_hdr[] =
 {
     { "type",      8, BPS_FLD_NO_DEF(NDN_TAG_ICMP6_TYPE),
       TAD_DU_I32, TRUE },
-    { "code",      8, BPS_FLD_NO_DEF(NDN_TAG_ICMP6_CODE),
+    { "code",      8, BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_CODE, 0),
       TAD_DU_I32, FALSE },
     { "checksum", 16, BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_CHECKSUM, 0),
       TAD_DU_I32, TRUE },
@@ -109,6 +121,19 @@ static const tad_bps_pkt_frag tad_icmp6_echo_bps_hdr[] =
       TAD_DU_I32, FALSE },
     { "seq",      16, BPS_FLD_NO_DEF(NDN_TAG_ICMP6_SEQ),
       TAD_DU_I32, FALSE },
+};
+
+/**
+ * Definition of MLDv1 Message subheader.
+ */
+static const tad_bps_pkt_frag tad_icmp6_mld_pbs_hdr[] =
+{
+    { "max-response-delay", 16,
+      BPS_FLD_NO_DEF(NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY),
+      TAD_DU_I32, FALSE },
+    { "reserved",           16, BPS_FLD_CONST(0), TAD_DU_I32, FALSE },
+    { "group-addr",         128, BPS_FLD_CONST_DEF(NDN_TAG_IP6_GROUP_ADDR, 0),
+      TAD_DU_OCTS, FALSE },
 };
 
 /* See description tad_ipstack_impl.h */
@@ -136,8 +161,14 @@ tad_icmp6_init_cb(csap_p csap, unsigned int layer)
 
     rc = tad_bps_pkt_frag_init(tad_icmp6_echo_bps_hdr,
                                TE_ARRAY_LEN(tad_icmp6_echo_bps_hdr),
-                               NULL, &proto_data->echo_data);
-    return 0; 
+                               NULL, &proto_data->echo_body);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_init(tad_icmp6_mld_pbs_hdr,
+                               TE_ARRAY_LEN(tad_icmp6_mld_pbs_hdr),
+                               NULL, &proto_data->mld_body);
+    return rc;
 }
 
 /* See description tad_ipstack_impl.h */
@@ -150,51 +181,11 @@ tad_icmp6_destroy_cb(csap_p csap, unsigned int layer)
     csap_set_proto_spec_data(csap, layer, NULL);
 
     tad_bps_pkt_frag_free(&proto_data->hdr);
-    tad_bps_pkt_frag_free(&proto_data->echo_data);
+    tad_bps_pkt_frag_free(&proto_data->echo_body);
+    tad_bps_pkt_frag_free(&proto_data->mld_body);
 
     free(proto_data);
 
-    return 0;
-}
-
-/**
- * Convert traffic template/pattern NDS to BPS internal data.
- *
- * @param csap          CSAP instance
- * @param proto_data    Protocol data prepared during CSAP creation
- * @param layer_pdu     Layer NDS
- * @param p_pdu_data    Location for PDU data pointer (updated in any
- *                      case and should be released by caller even in
- *                      the case of failure)
- *
- * @return Status code.
- */
-static te_errno
-tad_icmp6_nds_to_pdu_data(csap_p csap, tad_icmp6_proto_data *proto_data,
-                          const asn_value *layer_pdu,
-                          tad_icmp6_proto_pdu_data **p_pdu_data)
-{
-    te_errno                    rc;
-    tad_icmp6_proto_pdu_data   *pdu_data;
-
-    UNUSED(csap);
-
-    assert(proto_data != NULL);
-    assert(layer_pdu != NULL);
-    assert(p_pdu_data != NULL);
-
-    *p_pdu_data = pdu_data = TE_ALLOC(sizeof(*pdu_data));
-    if (pdu_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-
-    rc = tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
-                                   &pdu_data->hdr);
-
-    if (rc != 0)
-        return rc;
-
-    rc = tad_bps_nds_to_data_units(&proto_data->echo_data, layer_pdu,
-                                   &pdu_data->echo_data);
     return 0;
 }
 
@@ -212,27 +203,32 @@ tad_icmp6_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
     {
         tad_bps_free_pkt_frag_data(&proto_data->hdr,
                                    &pdu_data->hdr);
-        tad_bps_free_pkt_frag_data(&proto_data->echo_data,
-                                   &pdu_data->echo_data);
+        tad_bps_free_pkt_frag_data(pdu_data->body_def,
+                                   &pdu_data->body);
         free(pdu_data);
     }
 }
 
 /**
- * ICMP message fragment control structures by ICMP message type.
+ * Convert traffic template NDS to BPS internal data and
+ * check the result for completeness.
+ *
+ * @param def   default values for packet fragment
+ * @param nds   ASN value for this packet fragment
+ * @param data  BPS internal data to fill and check
+ *
+ * @return Status of the operation
  */
-static void
-tad_icmp6_frag_structs_by_type(const unsigned int         type,
-                               tad_icmp6_proto_data      *proto_data,
-                               tad_icmp6_proto_pdu_data  *tmpl_data,
-                               tad_bps_pkt_frag_def     **def,
-                               tad_bps_pkt_frag_data    **data)
+static te_errno
+tad_ip6_nds_to_data_and_confirm(tad_bps_pkt_frag_def *def, asn_value *nds,
+                                tad_bps_pkt_frag_data *data)
 {
-    /* TODO: write this function */
-    UNUSED(type);
+    te_errno rc;
 
-    *def = &proto_data->echo_data;
-    *data = &tmpl_data->echo_data;
+    rc = tad_bps_nds_to_data_units(def, nds, data);
+    if (rc != 0)
+        return rc;
+    return tad_bps_confirm_send(def, data);
 }
 
 /* See description in tad_ipstack_impl.h */
@@ -243,33 +239,46 @@ tad_icmp6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     te_errno                    rc;
     tad_icmp6_proto_data       *proto_data;
     tad_icmp6_proto_pdu_data   *tmpl_data;
-    tad_bps_pkt_frag_def       *add_def;
-    tad_bps_pkt_frag_data      *add_data;
+    int                         type;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    rc = tad_icmp6_nds_to_pdu_data(csap, proto_data, layer_pdu, &tmpl_data);
+    tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
+    if (tmpl_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     *p_opaque = tmpl_data;
-    if (rc != 0)
-        return rc;
 
-    tmpl_data = *p_opaque;
-
-    rc = tad_bps_confirm_send(&proto_data->hdr, &tmpl_data->hdr);
-    if (rc != 0)
-        return rc;
-
-    if (tmpl_data->hdr.dus[0].du_type != TAD_DU_I32)
+    if ((rc = asn_read_int32(layer_pdu, &type, "type")) != 0)
     {
-        ERROR("Sending ICMP messages with not plain specification of "
-              "the type is not supported yet");
-        return TE_RC(TE_TAD_CSAP, TE_ENOSYS);
+        ERROR("Failed to get ICMPv6 message type value, %r", rc);
+        return rc;
     }
-    tad_icmp6_frag_structs_by_type(tmpl_data->hdr.dus[0].val_i32,
-                                   proto_data, tmpl_data,
-                                   &add_def, &add_data);
-    rc = tad_bps_confirm_send(add_def, add_data);
 
+    rc = tad_ip6_nds_to_data_and_confirm(&proto_data->hdr,
+                                         layer_pdu, &tmpl_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    switch (type)
+    {
+        case ICMPV6_TYPE_ECHO_REQUEST:
+        case ICMPV6_TYPE_ECHO_REPLY:
+            tmpl_data->body_def = &proto_data->echo_body;
+            break;
+
+        case ICMPV6_TYPE_MLD_QUERY:
+        case ICMPV6_TYPE_MLD_REPORT:
+        case ICMPV6_TYPE_MLD_DONE:
+            tmpl_data->body_def = &proto_data->mld_body;
+            break;
+
+        default:
+            ERROR("Unsupported ICMPv6 message type %d specified", type);
+            return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+    }
+
+    rc = tad_ip6_nds_to_data_and_confirm(tmpl_data->body_def,
+                                         layer_pdu, &tmpl_data->body);
     return rc;
 }
 
@@ -281,7 +290,7 @@ tad_icmp6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 static te_errno
 tad_icmp6_gen_bin_cb_per_pdu(tad_pkt *pdu, void *hdr)
 {
-    tad_pkt_seg    *seg = tad_pkt_first_seg(pdu);
+    tad_pkt_seg *seg = tad_pkt_first_seg(pdu);
 
     /* Copy header template to packet */
     assert(seg->data_ptr != NULL);
@@ -299,13 +308,10 @@ tad_icmp6_gen_bin_cb(csap_p csap, unsigned int layer,
 {
     tad_icmp6_proto_data     *proto_data;
     tad_icmp6_proto_pdu_data *tmpl_data = opaque;
-    tad_bps_pkt_frag_def     *add_def;
-    tad_bps_pkt_frag_data    *add_data;
-
-    te_errno        rc;
-    unsigned int    bitoff;
-    uint8_t         hdr[TE_TAD_ICMP6_MAXLEN];
-
+    te_errno                  rc;
+    unsigned int              bitoff;
+    size_t                    bitlen;
+    uint8_t                  *hdr;
 
     assert(csap != NULL);
     F_ENTRY("(%d:%u) tmpl_pdu=%p args=%p arg_num=%u sdus=%p pdus=%p",
@@ -313,50 +319,53 @@ tad_icmp6_gen_bin_cb(csap_p csap, unsigned int layer,
             (unsigned)arg_num, sdus, pdus);
 
     proto_data = csap_get_proto_spec_data(csap, layer);
- 
+
+    bitlen = tad_bps_pkt_frag_data_bitlen(&proto_data->hdr,
+                                          &tmpl_data->hdr);
+    bitlen += tad_bps_pkt_frag_data_bitlen(tmpl_data->body_def,
+                                           &tmpl_data->body);
+    /* Allocate memory for binary template of the header */
+    if ((hdr = TE_ALLOC(bitlen)) == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
     /* Generate binary template of the header */
     bitoff = 0;
     rc = tad_bps_pkt_frag_gen_bin(&proto_data->hdr, &tmpl_data->hdr,
                                   args, arg_num, hdr,
-                                  &bitoff, sizeof(hdr) << 3);
+                                  &bitoff, bitlen);
     if (rc != 0)
     {
-        ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for addresses: %r",
+        ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for header: %r",
               __FUNCTION__, rc);
-        return rc;
+        goto cleanup;
     }
-    tad_icmp6_frag_structs_by_type(hdr[0], proto_data, tmpl_data,
-                                   &add_def, &add_data);
-    rc = tad_bps_pkt_frag_gen_bin(add_def, add_data,
+    rc = tad_bps_pkt_frag_gen_bin(tmpl_data->body_def, &tmpl_data->body,
                                   args, arg_num, hdr,
-                                  &bitoff, sizeof(hdr) << 3);
+                                  &bitoff, bitlen);
     if (rc != 0)
     {
-        ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for addition: %r",
+        ERROR("%s(): tad_bps_pkt_frag_gen_bin failed for body: %r",
               __FUNCTION__, rc);
-        return rc;
+        goto cleanup;
     }
     assert((bitoff & 7) == 0);
 
     /* ICMPv6 layer does no fragmentation, just copy all SDUs to PDUs */
     tad_pkts_move(pdus, sdus);
 
-    /* Allocate and add ICMPv6 header to all packets */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, bitoff >> 3, NULL);
+    /* Allocate a segment for ICMPv6 header and body for all pkts */
+    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, bitlen >> 3, NULL);
     if (rc != 0)
         return rc;
 
     /* Per-PDU processing - set correct length */
     rc = tad_pkt_enumerate(pdus, tad_icmp6_gen_bin_cb_per_pdu, hdr);
-    if (rc != 0)
-    {
-        ERROR("Failed to process ICMPv6 PDUs: %r", rc);
-        return rc;
-    }
 
-    return 0;
+cleanup:
+    free(hdr);
+
+    return rc;
 }
-
 
 
 /* See description in tad_ipstack_impl.h */
@@ -364,6 +373,14 @@ te_errno
 tad_icmp6_confirm_ptrn_cb(csap_p csap, unsigned int layer,
                           asn_value *layer_pdu, void **p_opaque)
 {
+#if 1
+    UNUSED(csap);
+    UNUSED(layer);
+    UNUSED(layer_pdu);
+    UNUSED(p_opaque);
+
+    return 0;
+#else
     te_errno                    rc;
     tad_icmp6_proto_data       *proto_data;
     tad_icmp6_proto_pdu_data   *ptrn_data;
@@ -377,6 +394,7 @@ tad_icmp6_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     *p_opaque = ptrn_data;
 
     return rc;
+#endif
 }
 
 
