@@ -81,7 +81,7 @@ typedef struct tad_ip6_proto_data {
     tad_bps_pkt_frag_def    opt_tlv;
     /** DEfault values for Router Alert option */
     tad_bps_pkt_frag_def    opt_ra;
-    
+
     /**
      * The value for the last "next-header" field in the list
      * of extension headers.
@@ -269,7 +269,7 @@ tad_ip6_init_cb(csap_p csap, unsigned int layer)
                                NULL, &proto_data->opt_pad1);
     if (rc != 0)
         return rc;
-    
+
     rc = tad_bps_pkt_frag_init(tad_ip6_ra_option,
                                TE_ARRAY_LEN(tad_ip6_ra_option),
                                NULL, &proto_data->opt_ra);
@@ -352,7 +352,7 @@ opts_hdr_process_opts(tad_ip6_proto_data *proto_data,
     hdr_data->opts = NULL;
     hdr_data->opts_num = 0;
     hdr_data->opts_len = 0;
-    
+
     opts_num = asn_get_length(opts, "");
     if (opts_num <= 0)
         return 0;
@@ -519,8 +519,8 @@ tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                     rc = asn_write_int32(prev_hdr, next_hdr_tag2bin(t_val), "next-header.#plain");
                     if (rc != 0)
                         return rc;
-                    
-                    /* 
+
+                    /*
                      * Convert and check only Extension headers.
                      * IPv6 Header will be validated and converted
                      * in the end.
@@ -573,19 +573,19 @@ tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                         ERROR("Not supported IPv6 Extension header");
                         return TE_RC(TE_TAD_CSAP, TE_ETADCSAPSTATE);
                 }
-            
             }
         }
     }
 ext_hdr_end:
 
-    /* 
+    /*
      * Set the last "next-header" field (either the field of IPv6 header or
-     * the field of the last extension header) to upper layer protocol 
+     * the field of the last extension header) to upper layer protocol
      */
     if ((rc = asn_read_int32(prev_hdr, &val, "next-header")) != 0)
     {
-        rc = asn_write_int32(prev_hdr, proto_data->upper_protocol, "next-header.#plain");
+        rc = asn_write_int32(prev_hdr, proto_data->upper_protocol,
+                             "next-header.#plain");
         if (rc != 0)
             return rc;
     }
@@ -599,7 +599,8 @@ ext_hdr_end:
     }
 
     /* Check IPv6 Header */
-    return tad_ip6_nds_to_data_and_confirm(&proto_data->hdr, layer_pdu, &tmpl_data->hdr);
+    return tad_ip6_nds_to_data_and_confirm(&proto_data->hdr, layer_pdu,
+                                           &tmpl_data->hdr);
 }
 
 /**
@@ -717,6 +718,8 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
      * IPv6 Header together with all extension headers.
     */
     rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, hdrlen, NULL);
+    if (rc != 0)
+        goto cleanup;
 
     /* Per-PDU processing - set correct Payload Length value of IPv6 Header */
     rc = tad_pkt_enumerate(pdus, tad_ip6_gen_bin_cb_per_pdu, hdr);
