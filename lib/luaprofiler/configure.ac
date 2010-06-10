@@ -23,6 +23,6 @@ TE_LIB_SET
 EXTRA_CPPFLAGS=-DTESTS
 AC_SUBST([EXTRA_CPPFLAGS])
 
-AC_CONFIG_FILES(Makefile src/Makefile)
+AC_CONFIG_FILES([Makefile src/Makefile src/analyzer/Makefile])
 TE_LIB_RESTORE
 AC_OUTPUT
