@@ -419,7 +419,13 @@ opts_hdr_process_opts(tad_ip6_proto_data *proto_data,
                     INFO("Option Router-Alert");
 
                     hdr_data->opts[i].opt_def = &proto_data->opt_ra;
-                    hdr_data->opts_len += 4;
+                    /*
+                     * Router Alert Option (see RFC 2711):
+                     * It is fixed length option (type, length, value)
+                     * where type and length are 1 byte fields and value
+                     * is two bytes field.
+                     */
+                    hdr_data->opts_len += (2 + 2);
                     break;
 
 
