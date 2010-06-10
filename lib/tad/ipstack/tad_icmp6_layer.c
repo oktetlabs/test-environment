@@ -129,7 +129,7 @@ static const tad_bps_pkt_frag tad_icmp6_echo_bps_hdr[] =
 static const tad_bps_pkt_frag tad_icmp6_mld_pbs_hdr[] =
 {
     { "max-response-delay", 16,
-      BPS_FLD_NO_DEF(NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY),
+      BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY, 0),
       TAD_DU_I32, FALSE },
     { "reserved",           16, BPS_FLD_CONST(0), TAD_DU_I32, FALSE },
     { "group-addr",         128, BPS_FLD_CONST_DEF(NDN_TAG_IP6_GROUP_ADDR, 0),
@@ -203,8 +203,9 @@ tad_icmp6_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
     {
         tad_bps_free_pkt_frag_data(&proto_data->hdr,
                                    &pdu_data->hdr);
-        tad_bps_free_pkt_frag_data(pdu_data->body_def,
-                                   &pdu_data->body);
+        if (pdu_data->body_def != NULL)
+            tad_bps_free_pkt_frag_data(pdu_data->body_def,
+                                       &pdu_data->body);
         free(pdu_data);
     }
 }

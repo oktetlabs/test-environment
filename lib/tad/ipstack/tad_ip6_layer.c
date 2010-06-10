@@ -749,12 +749,17 @@ tad_ip6_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
         {
             for (j = 0; j < pdu_data->ext_hdrs[i].opts_num; j++)
             {
-                tad_bps_free_pkt_frag_data(pdu_data->ext_hdrs[i].opts[j].opt_def,
-                                           &pdu_data->ext_hdrs[i].opts[j].opt);
+                if (pdu_data->ext_hdrs[i].opts[j].opt_def != NULL)
+                {
+                    tad_bps_free_pkt_frag_data(
+                            pdu_data->ext_hdrs[i].opts[j].opt_def,
+                            &pdu_data->ext_hdrs[i].opts[j].opt);
+                }
             }
             free(pdu_data->ext_hdrs[i].opts);
-            tad_bps_free_pkt_frag_data(pdu_data->ext_hdrs[i].hdr_def,
-                                       &pdu_data->ext_hdrs[i].hdr);
+            if (pdu_data->ext_hdrs[i].hdr_def != NULL)
+                tad_bps_free_pkt_frag_data(pdu_data->ext_hdrs[i].hdr_def,
+                                           &pdu_data->ext_hdrs[i].hdr);
         }
         free(pdu_data->ext_hdrs);
         free(pdu_data);
