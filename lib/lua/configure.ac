@@ -19,6 +19,10 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
+AC_CHECK_FUNC([dlopen], [],
+              AC_CHECK_LIB([dl], [dlopen], [],
+                           AC_MSG_ERROR([No dynamic linker API found])))
+
 AC_SUBST([LUA_ROOT], ["$prefix/"])
 
 AC_CONFIG_FILES(Makefile src/luaconf.h src/Makefile etc/Makefile)

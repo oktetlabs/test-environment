@@ -1,4 +1,5 @@
 
+AM_CPPFLAGS = -DLUA_USE_DLOPEN -DLUA_USE_POSIX
 AM_LDFLAGS = -rdynamic -Wl,--export-dynamic
 
 include_HEADERS = \
@@ -70,5 +71,5 @@ liblua_la_SOURCES = \
 	lvm.c \
 	lzio.c
 
-liblua_la_LIBADD = -lm
+liblua_la_LIBADD = -lm -ldl
 
