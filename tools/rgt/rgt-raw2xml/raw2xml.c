@@ -90,6 +90,7 @@ l_traceback(lua_State *L)
     return 1;
 }
 
+
 static int
 l_te_rc_to_str(lua_State *L)
 {
@@ -107,6 +108,75 @@ l_te_rc_to_str(lua_State *L)
 
     return 1;
 }
+
+
+static int
+l_xtmpfile(lua_State *L)
+{
+    const char *tmpdir;
+    char       *path;
+    int         fd;
+    FILE       *file;
+    FILE      **pfile;
+
+    tmpdir = getenv("TMPDIR");
+    if (tmpdir == NULL || *tmpdir == '\0')
+        tmpdir = "/tmp";
+
+    if (asprintf(&path, "%s/raw2xml_XXXXXX", tmpdir) < 0)
+        return luaL_error(L, "Failed to format temporary file template: %s",
+                          strerror(errno));
+
+    fd = mkstemp(path);
+    if (fd < 0)
+    {
+        free(path);
+        if (errno == EMFILE || errno == ENFILE)
+        {
+            /*
+             * Have to resort to hardcoded error description to avoid locale
+             * dependence
+             */
+            return luaL_error(L, "Failed to create temporary file: %s",
+                              "too many open files");
+        }
+        else
+            return luaL_error(L, "Failed to create temporary file: %s",
+                              strerror(errno));
+    }
+
+    if (unlink(path) < 0)
+    {
+        free(path);
+        return luaL_error(L, "Failed to unlink temporary file: %s",
+                         strerror(errno));
+    }
+
+    free(path);
+
+    file = fdopen(fd, "w+");
+    if (file == NULL)
+        return luaL_error(L, "Failed to convert temporary file "
+                             "descriptor to a FILE: %s", strerror(errno));
+
+    /* Create the file userdata */
+    pfile = (FILE **)lua_newuserdata(L, sizeof(*pfile));
+    *pfile = file;
+    luaL_getmetatable(L, LUA_FILEHANDLE);
+    lua_setmetatable(L, -2);
+    /*
+     * A hack: get io.close environment and assign it to the file to make
+     * closing work
+     */
+    lua_getglobal(L, "io");
+    lua_getfield(L, -1, "close");
+    lua_remove(L, -2);
+    lua_getfenv(L, -1);
+    lua_remove(L, -2);
+    lua_setfenv(L, -2);
+    return 1;
+}
+
 
 #define LUA_PCALL(_nargs, _nresults) \
     do {                                                            \
@@ -382,6 +452,10 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     /* Register te_rc_to_str function for use when formatting messages */
     lua_pushcfunction(L, l_te_rc_to_str);
     lua_setglobal(L, "te_rc_to_str");
+
+    /* Register xtmpfile function for use with output chunks */
+    lua_pushcfunction(L, l_xtmpfile);
+    lua_setglobal(L, "xtmpfile");
 
     /* Require "strict" module */
     lua_getglobal(L, "require");

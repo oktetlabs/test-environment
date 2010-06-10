@@ -126,7 +126,10 @@ function co.chunk:write(str)
     if type(self.storage) == "table" then
         table.insert(self.storage, str)
     else
-        self.storage:write(str)
+        local ok, err = self.storage:write(str)
+        if not ok then
+            error("failed writing chunk storage file: " .. err)
+        end
     end
 
     self.size = self.size + #str
@@ -186,7 +189,7 @@ local function relocate_to_table(self, storage)
         self.manager:request_mem(self, self.size)
 
         -- Rewind the file
-        result, err = self.storage:seek("set", 0)
+        result, err = self.storage:seek("cur", -self.size)
         if result == nil then
             error("failed rewinding chunk storage file: " .. err)
         end
@@ -197,7 +200,8 @@ local function relocate_to_table(self, storage)
             error("failed reading chunk storage file: " .. err)
         end
         if #result ~= self.size then
-            error("short read of chunk storage file")
+            error(("short read of chunk storage file "..
+                   "(expected: %d, read: %d)"):format(self.size, #result))
         end
 
         -- Add to the new storage
@@ -235,22 +239,29 @@ local function relocate_to_file(self, storage)
     else
         local read_size = 0
 
-        -- Transfer the file contents
+        -- Rewind the file
         result, err = self.storage:seek("cur", -self.size)
         if result == nil then
-            error("failed seeking chunk storage file: " .. err)
+            error("failed rewinding chunk storage file: " .. err)
         end
+
+        -- Transfer the file via a buffer
         while true do
             local block = self.storage:read(self.buf_size)
             if block == nil then
                 break
             end
             read_size = read_size + #block
-            storage:write(block)
+            result, err = storage:write(block)
+            if result == nil then
+                error("failed writing chunk storage file: " .. err)
+            end
         end
 
+        -- Check transferred size
         if read_size ~= self.size then
-            error("short read of chunk storage file")
+            error(("short read of chunk storage file "..
+                   "(expected: %d, read: %d)"):format(self.size, read_size))
         end
 
         -- Close the file

@@ -71,21 +71,6 @@ function co.manager:get_first(chunk)
     return self.first
 end
 
----
--- Create a temporary file, raising an error in case of failure.
---
--- @return New temporary file handle
---
-local function xtmpfile()
-    local file, err
-
-    file, err = io.tmpfile()
-    if file == nil then
-        error("failed creating a temporary file: " .. err)
-    end
-
-    return file
-end
 
 ---
 -- Collapse all finished memory-based chunk strips into files, until there
@@ -114,6 +99,7 @@ function co.manager:displace_finished_strips(requesting_chunk, size)
             chunk = chunk.next
         else
             if type(chunk.storage) == "table" then
+                -- xtmpfile is defined in raw2xml.c
                 chunk:relocate(xtmpfile(), 0)
             end
             -- Chunk is finished and file-based (now)
@@ -199,6 +185,7 @@ function co.manager:displace_all(requesting_chunk, size)
 
     -- Displace until half the memory is free
     for i, chunk_and_size in ipairs(list) do
+        -- xtmpfile is defined in raw2xml.c
         chunk_and_size[1]:relocate(xtmpfile(), 0)
         -- Nullify request if the requesting chunk was displaced
         if chunk_and_size[1] == requesting_chunk then
@@ -214,13 +201,50 @@ end
 
 
 ---
+-- Collapse finished file-based chunk strips
+--
+function co.manager:collapse_file_strips()
+    local prev, chunk, next
+
+    chunk = self.first
+    repeat
+        if not chunk.finished or type(chunk.storage) == "table" then
+            prev = chunk
+            chunk = chunk.next
+        else
+            repeat
+                -- Retrieve next chunk
+                next = chunk.next
+                -- If there is no next chunk or it is memory-based
+                if next == nil or type(next.storage) == "table" then
+                    prev = chunk
+                    chunk = next
+                    break
+                end
+                -- Relocate next chunk into this chunk storage
+                next:relocate(chunk:yield())
+                -- Remove this chunk
+                if prev == nil then
+                    self.first = next
+                else
+                    prev.next = next
+                end
+                -- Move to the next chunk
+                chunk = next
+            until not chunk.finished
+        end
+    until chunk == nil
+end
+
+
+---
 -- Request an amount of memory for a memory-based chunk contents
 --
 -- @param chunk Chunk requesting the memory.
 -- @param size  Amount of memory being requested.
 --
 function co.manager:request_mem(requesting_chunk, size)
-    local new_mem, satisfied
+    local new_mem, first_attempt
 
     assert(oo.instanceof(requesting_chunk, require("co.chunk")))
     assert(not requesting_chunk.finished)
@@ -236,13 +260,43 @@ function co.manager:request_mem(requesting_chunk, size)
         return
     end
 
-    satisfied, size = self:displace_finished_strips(requesting_chunk, size)
+    first_attempt = true
+    while true do
+        local ok, err
 
-    if not satisfied then
-        size = self:displace_all(requesting_chunk, size)
+        -- Displace chunks to files until enough memory is freed
+        ok, err = pcall(function ()
+                            local satisfied
+
+                            satisfied, size =
+                                self:displace_finished_strips(
+                                                        requesting_chunk,
+                                                        size)
+
+                            if not satisfied then
+                                size = self:displace_all(requesting_chunk,
+                                                         size)
+                            end
+                        end)
+
+        -- If succeeded
+        if ok then
+            self.used_mem = self.used_mem + size
+            return
+        else
+            -- If it was the first attempt and it is xtmpfile (defined in
+            -- raw2xml.c) telling us we're out of filehandles
+            if first_attempt and
+               type(err) == "string" and
+               err:match("too many open files$") then
+                -- Try to minimize the number of open files
+                self:collapse_file_strips()
+                first_attempt = false
+            else
+                error(err)
+            end
+        end
     end
-
-    self.used_mem = self.used_mem + size
 end
 
 ---
