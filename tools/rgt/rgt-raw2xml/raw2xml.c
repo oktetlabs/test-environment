@@ -434,6 +434,9 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     int         msg_class_idx;
     int         sink_idx;
     int         sink_put_idx;
+#ifdef RGT_USE_LUA_PROFILER
+    int         profiler_idx;
+#endif
 
     /*
      * Setup Lua
@@ -461,6 +464,12 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     lua_getglobal(L, "require");
     lua_pushliteral(L, "strict");
     LUA_PCALL(1, 0);
+
+#ifdef RGT_USE_LUA_PROFILER
+    /* Require "profiler" module */
+    LUA_REQUIRE("profiler");
+    profiler_idx = lua_gettop(L);
+#endif
 
     /* Require rgt.ts */
     LUA_REQUIRE("rgt.ts");
@@ -503,6 +512,12 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     /* Call "take_file" instance method to supply the sink with the file */
     LUA_PCALL(2, 0);
 
+#ifdef RGT_USE_LUA_PROFILER
+    /* Start profiling */
+    lua_getfield(L, profiler_idx, "start");
+    LUA_PCALL(0, 0);
+#endif
+
     /*
      * Start sink output
      */
@@ -528,6 +543,12 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     lua_getfield(L, sink_idx, "finish");
     lua_pushvalue(L, sink_idx);
     LUA_PCALL(1, 0);
+
+#ifdef RGT_USE_LUA_PROFILER
+    /* Stop profiling */
+    lua_getfield(L, profiler_idx, "stop");
+    LUA_PCALL(0, 0);
+#endif
 
     /*
      * Take the output file from the sink
