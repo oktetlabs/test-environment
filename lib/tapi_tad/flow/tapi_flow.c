@@ -624,7 +624,8 @@ tapi_cfg_extract_link(char *buf)
 char *
 tapi_flow_preprocess_quotes(const char *flow_spec)
 {
-    char *p        = NULL;
+    char *open_q   = NULL;          /* Opening quote */
+    char *close_q  = NULL;          /* Closing quote */
     char *src      = (char *)flow_spec;
     int   buf_size = (strlen(flow_spec) * 2) + 1;
     char *buf      = malloc(buf_size);
@@ -641,30 +642,30 @@ tapi_flow_preprocess_quotes(const char *flow_spec)
         return NULL;
     }
 
-    while (flow_spec != NULL)
+    while (src != NULL)
     {
         /* Find opening quote */
-        if ((src = strchr(flow_spec, '\'')) == NULL)
+        if ((open_q = strchr(src, '\'')) == NULL)
         {
-            VERB("copy the rest of buffer: %s", flow_spec);
-            strcpy(dst, flow_spec);
-            break;
-        }
-
-        /* Copy text before open quote */
-        memcpy(dst, flow_spec, src - flow_spec);
-        dst += src - flow_spec;
-
-        /* Find closing quote */
-        if ((p = strchr(src + 1, '\'')) == NULL)
-        {
-            VERB("copy the rest of buffer: %s", flow_spec);
+            VERB("copy the rest of buffer: %s", src);
             strcpy(dst, src);
             break;
         }
 
-        link = strndup(src + 1, p - src - 1);
-        flow_spec = src + strlen(link) + 2;
+        /* Copy text before open quote */
+        memcpy(dst, src, open_q - src);
+        dst += open_q - src;
+
+        /* Find closing quote */
+        if ((close_q = strchr(open_q + 1, '\'')) == NULL)
+        {
+            VERB("copy the rest of buffer: %s", src);
+            strcpy(dst, open_q);
+            break;
+        }
+
+        link = strndup(open_q + 1, close_q - open_q - 1);
+        src = open_q + strlen(link) + 2;
         value = link;
 
         /* Check if quoted value is has '/' symbol */
@@ -675,7 +676,7 @@ tapi_flow_preprocess_quotes(const char *flow_spec)
         }
 
         /* Check if quoted value already has 'plain:' prefix */
-        if (*(src - 1) != ':')
+        if ((open_q > flow_spec) && (*(open_q - 1) != ':'))
         {
             value = te_sprintf(TAPI_FLOW_PLAIN_VAL_FMT, value);
         }
