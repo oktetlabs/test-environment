@@ -115,16 +115,17 @@ asn_impl_pt_label(const char *text, char *label, int *syms)
 
     ENTRY("text='%s' label=%p syms=%p", text, label, syms);
 
-    while (isspace(*pt)) 
+    while (isspace(*pt))
         pt++;
 
     l_begin = pt;
-        
+
     /* first letter in 'valuereference' should be lower case character */
-    if (!islower(*pt)) 
+    if (!islower(*pt))
     {
         *syms = pt - text;
-        EXIT("EASNTXTVALNAME because of '%d'", *pt);
+        EXIT("EASNTXTVALNAME because label starts from "
+             "Upper case letter '%c'", *pt);
         return TE_EASNTXTVALNAME; 
     }
     pt++, l++;
