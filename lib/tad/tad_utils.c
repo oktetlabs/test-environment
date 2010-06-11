@@ -84,6 +84,50 @@ tad_confirm_pdus(csap_p csap, te_bool recv, asn_value *pdus,
     /* FIXME */
     assert(layer_opaque != NULL);
 #endif
+#if 1
+    for (layer = 0; (rc == 0) && (layer < csap->depth); layer++)
+    {
+        char       label[40];
+        asn_value *layer_pdu;
+
+        snprintf(label, sizeof(label), "%d.#%s",
+                 layer, csap->layers[layer].proto);
+
+        rc = asn_get_descendent(pdus, &layer_pdu, label);
+        if (rc != 0)
+        {
+            ERROR("%s(CSAP %d): asn_get_descendent rc %r, "
+                  "confirm layer %d, label %s",
+                  __FUNCTION__, csap->id, rc, layer, label);
+            break;
+        }
+        csap->layers[layer].pdu = layer_pdu;
+    }
+    if (rc != 0)
+        return rc;
+
+    for (layer = 0; (rc == 0) && (layer < csap->depth); layer++)
+    {
+        csap_layer_confirm_pdu_cb_t  confirm_cb;
+
+        confirm_cb = (recv) ?
+            csap_get_proto_support(csap, layer)->confirm_ptrn_cb :
+            csap_get_proto_support(csap, layer)->confirm_tmpl_cb;
+        if (confirm_cb != NULL)
+        {
+            /* FIXME */
+            rc = confirm_cb(csap, layer, csap->layers[layer].pdu,
+                            (layer_opaque == NULL) ?
+                                NULL : (layer_opaque + layer));
+            if (rc != 0)
+            {
+                ERROR(CSAP_LOG_FMT "PDUs do not confirm to CSAP on the "
+                      "layer %u: %r", CSAP_LOG_ARGS(csap), layer, rc);
+                break;
+            }
+        }
+    }
+#else
     for (layer = 0; (rc == 0) && (layer < csap->depth); layer++)
     { 
         csap_layer_confirm_pdu_cb_t  confirm_cb;
@@ -120,7 +164,7 @@ tad_confirm_pdus(csap_p csap, te_bool recv, asn_value *pdus,
             }
         }
     }
-
+#endif
     return rc;
 }
 

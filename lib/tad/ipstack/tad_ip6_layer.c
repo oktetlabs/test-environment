@@ -198,6 +198,49 @@ static const tad_bps_pkt_frag tad_ip6_ra_option[] =
       TAD_DU_I32, FALSE },
 };
 
+static te_errno
+tad_bps_pkt_frag_data_get_oct_str(tad_bps_pkt_frag_def *def,
+                                  tad_bps_pkt_frag_data *data,
+                                  asn_tag_value tag,
+                                  size_t len, const uint8_t **ptr)
+{
+    unsigned int i;
+
+    for (i = 0; i < def->fields; i++)
+    {
+        if (def->descr[i].tag == tag)
+        {
+            tad_data_unit_t *du;
+
+            if (data->dus[i].du_type != TAD_DU_UNDEF)
+                du = data->dus + i;
+            else if (def->tx_def[i].du_type != TAD_DU_UNDEF)
+                du = def->tx_def + i;
+            else
+            {
+                ERROR("%s(): Missing specification for '%s' to get data",
+                      __FUNCTION__, def->descr[i].name);
+                return TE_RC(TE_TAD_CSAP, TE_ETADMISSNDS);
+            }
+            if (du->du_type != TAD_DU_OCTS)
+            {
+                ERROR("Field %s is not OCTET STRING", def->descr[i].name);
+                return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+            }
+            if (du->val_data.len < len)
+            {
+                ERROR("The length of %s field value is %d, not %d",
+                      def->descr[i].name,
+                      du->val_data.len, len);
+                return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+            }
+            *ptr = du->val_data.oct_str;
+            return 0;
+        }
+    }
+    return TE_RC(TE_TAD_CSAP, TE_ENOENT);
+}
+
 /**
  * Convert te_tad_protocols_t into IANA protocol numbers.
  *
@@ -461,6 +504,32 @@ next_hdr_tag2bin(asn_tag_value tag)
     }
 }
 
+static te_errno
+fill_tmpl_addr(asn_value *tmpl,
+               tad_bps_pkt_frag_def *def, tad_bps_pkt_frag_data *data,
+               asn_tag_value tag, const char *label)
+{
+    const uint8_t *ip6_addr;
+    void          *tmp_ptr;
+    te_errno       rc;
+
+    /* Check if we have an address specified */
+    if (asn_get_field_data(tmpl, (void *)&tmp_ptr, label) == 0)
+        return 0;
+
+    rc = tad_bps_pkt_frag_data_get_oct_str(def, data, tag,
+                                           IP6_ADDR_LEN, &ip6_addr);
+    if (rc != 0)
+        return rc;
+
+    rc = asn_write_value_field(tmpl, ip6_addr, IP6_ADDR_LEN, label);
+    if (rc != 0)
+    {
+        ERROR("Failed to set '%s' field, %r", rc);
+    }
+    return rc;
+}
+
 /* See description in tad_ipstack_impl.h */
 te_errno
 tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
@@ -472,6 +541,7 @@ tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     uint32_t                ext_hdr_id = 0;
     asn_value              *prev_hdr = layer_pdu;
     asn_value              *hdrs;
+    void                   *tmp_ptr;
     int                     val;
     te_errno                rc;
 
@@ -595,6 +665,7 @@ ext_hdr_end:
         if (rc != 0)
             return rc;
     }
+
     /* Convert the last Extension Header */
     if (ext_hdr_def != NULL)
     {
@@ -605,8 +676,63 @@ ext_hdr_end:
     }
 
     /* Check IPv6 Header */
-    return tad_ip6_nds_to_data_and_confirm(&proto_data->hdr, layer_pdu,
-                                           &tmpl_data->hdr);
+    rc = tad_ip6_nds_to_data_and_confirm(&proto_data->hdr, layer_pdu,
+                                         &tmpl_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    /*
+     * In case destination IPv6 address is multicast and there is no
+     * MAC address specified in Ethernet layer template, then map IPv6
+     * address to Ethernet multicast address according to RFC2464.
+     */
+    if ((layer + 1) < csap->depth &&
+        csap->layers[layer + 1].proto_tag == TE_PROTO_ETH &&
+        csap->layers[layer + 1].pdu != NULL &&
+        asn_get_field_data(csap->layers[layer + 1].pdu,
+                   (void *)&tmp_ptr, "dst-addr.#plain") == TE_EASNINCOMPLVAL)
+    {
+        const uint8_t *ip6_dst;
+
+        rc = tad_bps_pkt_frag_data_get_oct_str(&proto_data->hdr,
+                                               &tmpl_data->hdr,
+                                               NDN_TAG_IP6_DST_ADDR,
+                                               IP6_ADDR_LEN, &ip6_dst);
+        if (rc != 0)
+            return rc;
+
+        if (IN6_IS_ADDR_MULTICAST(ip6_dst))
+        {
+            uint8_t mcast_mac[6] = { 0x33, 0x33, };
+
+            mcast_mac[2] = ip6_dst[12];
+            mcast_mac[3] = ip6_dst[13];
+            mcast_mac[4] = ip6_dst[14];
+            mcast_mac[5] = ip6_dst[15];
+            rc = asn_write_value_field(csap->layers[layer + 1].pdu,
+                                       mcast_mac, sizeof(mcast_mac),
+                                       "dst-addr.#plain");
+            if (rc != 0)
+            {
+                ERROR("Failed to set Ethernet 'dst-addr' to "
+                      "IPv6 multicast mapped value, %r", rc);
+                return rc;
+            }
+        }
+    }
+
+    /*
+     * Set IPv6 SRC and DST addresses in template in order to let
+     * upper layers to build pseudo header for checksum calculation.
+     */
+    rc = fill_tmpl_addr(layer_pdu, &proto_data->hdr, &tmpl_data->hdr,
+                        NDN_TAG_IP6_DST_ADDR, "dst-addr.#plain");
+    if (rc != 0)
+        return rc;
+    rc = fill_tmpl_addr(layer_pdu, &proto_data->hdr, &tmpl_data->hdr,
+                        NDN_TAG_IP6_SRC_ADDR, "src-addr.#plain");
+
+    return rc;
 }
 
 /**
@@ -639,7 +765,7 @@ tad_ip6_gen_bin_cb_per_pdu(tad_pkt *pdu, void *hdr)
     memcpy(seg->data_ptr, hdr, seg->data_len);
 
     /* Set correct Payload-Length in the header template */
-    tmp = htons(len);
+    tmp = htons(len - IP6_HDR_LEN);
     memcpy(seg->data_ptr + IP6_HDR_PLEN_OFFSET, &tmp, sizeof(tmp));
 
     return 0;
@@ -872,4 +998,18 @@ tad_ip6_read_cb(csap_p csap, unsigned int timeout,
     UNUSED(pkt_len);
 
     return 0;
+}
+
+void
+tad_ip6_fill_pseudo_hdr(uint8_t *pseudo_hdr,
+                        uint8_t *src, uint8_t *dst,
+                        uint32_t pkt_len, uint8_t next_header)
+{
+    memcpy(pseudo_hdr, src, IP6_ADDR_LEN);
+    memcpy(pseudo_hdr + IP6_ADDR_LEN, dst, IP6_ADDR_LEN);
+    pkt_len = htonl(pkt_len);
+    memcpy(pseudo_hdr + IP6_ADDR_LEN * 2, &pkt_len, sizeof(pkt_len));
+    memset(pseudo_hdr + IP6_ADDR_LEN * 2 + sizeof(pkt_len), 0, 4);
+    memcpy(pseudo_hdr + IP6_ADDR_LEN * 2 + sizeof(pkt_len) + 3,
+           &next_header, sizeof(next_header));
 }

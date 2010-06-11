@@ -283,19 +283,91 @@ tad_icmp6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     return rc;
 }
 
+
+static te_errno
+tad_get_ip6_addr(uint8_t *addr, csap_p csap, unsigned int layer,
+                 const char *label)
+{
+    te_errno  rc = TE_RC(TE_TAD_CSAP, TE_ENOENT);
+    uint8_t  *ptr;
+
+    if ((layer + 1) < csap->depth &&
+        csap->layers[layer + 1].proto_tag == TE_PROTO_IP6 &&
+        csap->layers[layer + 1].pdu != NULL &&
+        (rc = asn_get_field_data(csap->layers[layer + 1].pdu,
+                                 (void *)&ptr, label)) == 0)
+    {
+        memcpy(addr, ptr, IP6_ADDR_LEN);
+    }
+    return rc;
+}
+
+#define tad_get_ip6_src(addr_, csap_, layer_) \
+            tad_get_ip6_addr(addr_, csap_, layer_, "src-addr.#plain")
+
+#define tad_get_ip6_dst(addr_, csap_, layer_) \
+            tad_get_ip6_addr(addr_, csap_, layer_, "dst-addr.#plain")
+
+/** Structure to pass per-PDU context in PDU enumeration function */
+typedef struct per_pdu_ctx {
+    uint8_t  ip6_src[IP6_ADDR_LEN]; /**< IPv6 source address */
+    uint8_t  ip6_dst[IP6_ADDR_LEN]; /**< IPv6 destination address */
+    size_t   msg_len; /**< Size of ICMPv6 message in bytes */
+    uint8_t *msg; /**< ICMPv6 message data */
+} per_pdu_ctx;
+
+/**
+ * Calculate checksum of the segment data.
+ *
+ * This function complies with tad_pkt_seg_enum_cb prototype.
+ */
+static te_errno
+csum_seg_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
+            unsigned int seg_num, void *opaque)
+{
+    uint32_t *csum = (uint32_t *)opaque;
+
+    /* Data length is even or it is the last segument */
+    assert(((seg->data_len & 1) == 0) ||
+           (seg_num == tad_pkt_seg_num(pkt) - 1));
+    *csum += calculate_checksum(seg->data_ptr, seg->data_len);
+
+    return 0;
+}
+
 /**
  * Callback to generate binary data per PDU.
  *
  * This function complies with tad_pkt_enum_cb prototype.
  */
 static te_errno
-tad_icmp6_gen_bin_cb_per_pdu(tad_pkt *pdu, void *hdr)
+tad_icmp6_gen_bin_cb_per_pdu(tad_pkt *pdu, void *opaque)
 {
     tad_pkt_seg *seg = tad_pkt_first_seg(pdu);
+    per_pdu_ctx *ctx = (per_pdu_ctx *)opaque;
+    uint8_t      pseudo_hdr[IP6_PSEUDO_HDR_LEN];
+    uint32_t     csum;
+    uint16_t     csum_val;
 
     /* Copy header template to packet */
     assert(seg->data_ptr != NULL);
-    memcpy(seg->data_ptr, hdr, seg->data_len);
+    assert(seg->data_len == ctx->msg_len);
+    memcpy(seg->data_ptr, ctx->msg, seg->data_len);
+
+    /*
+     * Calculate checksum
+     * TODO: If checksum existed in PDU template this should not be done
+     */
+    tad_ip6_fill_pseudo_hdr(pseudo_hdr, ctx->ip6_src, ctx->ip6_dst,
+                            tad_pkt_len(pdu), IPPROTO_ICMPV6);
+
+    csum = calculate_checksum(pseudo_hdr, sizeof(pseudo_hdr));
+    /* ICMPv6 message checksum */
+    tad_pkt_enumerate_seg(pdu, csum_seg_cb, &csum);
+    /* Finalize checksum calculation */
+    csum_val = ~((csum & 0xffff) + (csum >> 16));
+
+    memcpy(seg->data_ptr + 2, &csum_val, sizeof(csum_val));
 
     return 0;
 }
@@ -312,7 +384,8 @@ tad_icmp6_gen_bin_cb(csap_p csap, unsigned int layer,
     te_errno                  rc;
     unsigned int              bitoff;
     size_t                    bitlen;
-    uint8_t                  *hdr;
+    per_pdu_ctx               ctx;
+    uint8_t                  *msg;
 
     assert(csap != NULL);
     F_ENTRY("(%d:%u) tmpl_pdu=%p args=%p arg_num=%u sdus=%p pdus=%p",
@@ -326,13 +399,13 @@ tad_icmp6_gen_bin_cb(csap_p csap, unsigned int layer,
     bitlen += tad_bps_pkt_frag_data_bitlen(tmpl_data->body_def,
                                            &tmpl_data->body);
     /* Allocate memory for binary template of the header */
-    if ((hdr = TE_ALLOC(bitlen)) == NULL)
+    if ((msg = TE_ALLOC(bitlen)) == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     /* Generate binary template of the header */
     bitoff = 0;
     rc = tad_bps_pkt_frag_gen_bin(&proto_data->hdr, &tmpl_data->hdr,
-                                  args, arg_num, hdr,
+                                  args, arg_num, msg,
                                   &bitoff, bitlen);
     if (rc != 0)
     {
@@ -341,7 +414,7 @@ tad_icmp6_gen_bin_cb(csap_p csap, unsigned int layer,
         goto cleanup;
     }
     rc = tad_bps_pkt_frag_gen_bin(tmpl_data->body_def, &tmpl_data->body,
-                                  args, arg_num, hdr,
+                                  args, arg_num, msg,
                                   &bitoff, bitlen);
     if (rc != 0)
     {
@@ -359,11 +432,21 @@ tad_icmp6_gen_bin_cb(csap_p csap, unsigned int layer,
     if (rc != 0)
         return rc;
 
+    rc = tad_get_ip6_src(ctx.ip6_src, csap, layer);
+    if (rc != 0)
+        return rc;
+    rc = tad_get_ip6_dst(ctx.ip6_dst, csap, layer);
+    if (rc != 0)
+        return rc;
+
+    ctx.msg_len = bitlen >> 3;
+    ctx.msg = msg;
+
     /* Per-PDU processing - set correct length */
-    rc = tad_pkt_enumerate(pdus, tad_icmp6_gen_bin_cb_per_pdu, hdr);
+    rc = tad_pkt_enumerate(pdus, tad_icmp6_gen_bin_cb_per_pdu, &ctx);
 
 cleanup:
-    free(hdr);
+    free(msg);
 
     return rc;
 }

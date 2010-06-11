@@ -59,6 +59,14 @@
 extern "C" {
 #endif
 
+/** Size of IPv6 address in bytes */
+#define IP6_ADDR_LEN 16
+
+/**
+ * The length of IPv6 Pseudo Header used in calculation of
+ * Upper-Layer checksums (see RFC 2460, section 8.1 for details)
+ */
+#define IP6_PSEUDO_HDR_LEN (IP6_ADDR_LEN * 2 + 8)
 
 /* 
  * TCP CSAP specific data
@@ -568,6 +576,20 @@ extern te_errno tad_ip6_write_cb(csap_p csap, const tad_pkt *pkt);
  */
 extern te_errno tad_ip6_read_cb(csap_p csap, unsigned int timeout,
                                 tad_pkt *pkt, size_t *pkt_len);
+
+/**
+ * Fill memory buffer according to pseudo header format
+ * (RFC 2460, section 8.1).
+ *
+ * @param pseudo_hdr  Memory buffer of @c IP6_PSEUDO_HDR_LEN bytes in size
+ * @param src         IPv6 source address
+ * @param dst         IPv6 destination address
+ * @param pkt_len     Upper-layer packet length (in host byte order)
+ * @param next_hdr    Upper-layer protocol
+ */
+extern void tad_ip6_fill_pseudo_hdr(uint8_t *pseudo_hdr,
+                                    uint8_t *src, uint8_t *dst,
+                                    uint32_t pkt_len, uint8_t next_hdr);
 
 /**
  * Callback for init 'icmp6' CSAP layer.

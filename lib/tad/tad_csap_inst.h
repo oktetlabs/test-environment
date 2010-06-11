@@ -122,6 +122,14 @@ typedef struct csap_layer_t {
     asn_value   *nds;               /**< ASN.1 value with CSAP
                                          specification layer PDU */
 
+    asn_value   *pdu;               /**< Current value of PDU on
+                                         this layer to be sent.
+                                         It might be useful to allow one
+                                         layer to set/update PDU fields
+                                         of another layer.
+                                         (This field is used for
+                                          traffic templates only) */
+
     struct csap_spt_type_t *proto_support; /**< Protocol layer 
                                                 support descriptor */
 } csap_layer_t;
