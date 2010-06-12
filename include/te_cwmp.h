@@ -1,7 +1,7 @@
 /** @file
  * @brief Test Environment CWMP support
  *
- * Definitions for CPE WAN Management Protocol (TR-069).
+ * Common definitions for CPE WAN Management Protocol (TR-069).
  * 
  * 
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
@@ -33,8 +33,116 @@
 
 #include "te_stdint.h"
 
-
+/* gSOAP generated structs */
 #include "cwmp_soapStub.h"
+
+/*
+ * Typedef synonyms independent from gSOAP tool.
+ */
+
+typedef struct  cwmp__FaultStruct  cwmp_fault_struct_t;
+typedef struct  cwmp__DeviceIdStruct  cwmp_device_id_struct_t;
+typedef struct  cwmp__EventStruct  cwmp_event_struct_t;
+typedef struct  cwmp__ParameterValueStruct
+                    cwmp_parameter_value_struct_t;
+typedef struct  cwmp__ParameterInfoStruct
+                    cwmp_parameter_info_struct_t;
+typedef struct  cwmp__SetParameterAttributesStruct
+                    cwmp_set_parameter_attributes_struct_t;
+typedef struct  cwmp__ParameterAttributeStruct
+                    cwmp_parameter_attribute_struct_t;
+typedef struct  cwmp__QueuedTransferStruct
+                    cwmp_queued_transfer_struct_t;
+typedef struct  cwmp__AllQueuedTransferStruct
+                    cwmp_all_queued_transfer_struct_t;
+typedef struct  cwmp__OptionStruct  cwmp_option_struct_t;
+typedef struct  cwmp__ArgStruct  cwmp_arg_struct_t;
+typedef struct  _cwmp__Fault  cwmp_fault_t;
+typedef struct  _cwmp__GetRPCMethods  cwmp_get_rpc_methods_t;
+typedef struct  _cwmp__GetRPCMethodsResponse
+                    cwmp_get_rpc_methods_response_t;
+typedef struct  _cwmp__SetParameterValues
+                    cwmp_set_parameter_values_t;
+typedef struct  _cwmp__SetParameterValuesResponse
+                    cwmp_set_parameter_values_response_t;
+typedef struct  _cwmp__GetParameterValues
+                    cwmp_get_parameter_values_t;
+typedef struct  _cwmp__GetParameterValuesResponse
+                    cwmp_get_parameter_values_response_t;
+typedef struct  _cwmp__GetParameterNames
+                    cwmp_get_parameter_names_t;
+typedef struct  _cwmp__GetParameterNamesResponse 
+                    cwmp_get_parameter_names_response_t;
+typedef struct  _cwmp__SetParameterAttributes 
+                    cwmp_set_parameter_attributes_t;
+typedef struct  _cwmp__SetParameterAttributesResponse 
+                    cwmp_set_parameter_attributes_response_t;
+typedef struct  _cwmp__GetParameterAttributes 
+                    cwmp_get_parameter_attributes_t;
+typedef struct  _cwmp__GetParameterAttributesResponse 
+                    cwmp_get_parameter_attributes_response_t;
+typedef struct  _cwmp__AddObject  cwmp_add_object_t;
+typedef struct  _cwmp__AddObjectResponse  cwmp_add_object_response_t;
+typedef struct  _cwmp__DeleteObject  cwmp_delete_object_t;
+typedef struct  _cwmp__DeleteObjectResponse  cwmp_delete_object_response_t;
+typedef struct  _cwmp__Download  cwmp_download_t;
+typedef struct  _cwmp__DownloadResponse  cwmp_download_response_t;
+typedef struct  _cwmp__Reboot  cwmp_reboot_t;
+typedef struct  _cwmp__RebootResponse  cwmp_reboot_response_t;
+typedef struct  _cwmp__GetQueuedTransfers  cwmp_get_queued_transfers_t;
+typedef struct  _cwmp__GetQueuedTransfersResponse 
+                    cwmp_get_queued_transfers_response_t;
+typedef struct  _cwmp__ScheduleInform  cwmp_schedule_inform_t;
+typedef struct  _cwmp__ScheduleInformResponse 
+                    cwmp_schedule_inform_response_t;
+typedef struct  _cwmp__SetVouchers  cwmp_set_vouchers_t;
+typedef struct  _cwmp__SetVouchersResponse 
+                    cwmp_set_vouchers_response_t;
+typedef struct  _cwmp__GetOptions  cwmp_get_options_t;
+typedef struct  _cwmp__GetOptionsResponse 
+                    cwmp_get_options_response_t;
+typedef struct  _cwmp__Upload  cwmp_upload_t;
+typedef struct  _cwmp__UploadResponse  cwmp_upload_response_t;
+typedef struct  _cwmp__FactoryReset  cwmp_factory_reset_t;
+typedef struct  _cwmp__FactoryResetResponse 
+                    cwmp_factory_reset_response_t;
+typedef struct  _cwmp__GetAllQueuedTransfers 
+                    cwmp_get_all_queued_transfers_t;
+typedef struct  _cwmp__GetAllQueuedTransfersResponse 
+                    cwmp_get_all_queued_transfers_response_t;
+typedef struct  _cwmp__Inform  cwmp_inform_t;
+typedef struct  _cwmp__InformResponse  cwmp_inform_response_t;
+typedef struct  _cwmp__TransferComplete  cwmp_transfer_complete_t;
+typedef struct  _cwmp__TransferCompleteResponse
+                    cwmp_transfer_complete_response_t;
+typedef struct  _cwmp__AutonomousTransferComplete
+                    cwmp_autonomous_transfer_complete_t;
+typedef struct  _cwmp__AutonomousTransferCompleteResponse
+                    cwmp_autonomous_transfer_complete_response_t;
+typedef struct  _cwmp__Kicked  cwmp_kicked_t;
+typedef struct  _cwmp__KickedResponse  cwmp_kicked_response_t;
+typedef struct  _cwmp__RequestDownload  cwmp_request_download_t;
+typedef struct  _cwmp__RequestDownloadResponse
+                    cwmp_request_download_response_t;
+typedef struct  MethodList  cwmp_method_list_t;
+typedef struct  EventList  cwmp_event_list_t;
+typedef struct  ParameterValueList  cwmp_parameter_value_list_t;
+typedef struct  ParameterInfoList  cwmp_parameter_info_list_t;
+typedef struct  ParameterNames  cwmp_parameter_names_t;
+typedef struct  AccessList  cwmp_access_list_t;
+typedef struct  SetParameterAttributesList 
+                    cwmp_set_parameter_attributes_list_t;
+typedef struct  ParameterAttributeList  cwmp_parameter_attribute_list_t;
+typedef struct  TransferList  cwmp_transfer_list_t;
+typedef struct  AllTransferList  cwmp_all_transfer_list_t;
+typedef struct  VoucherList  cwmp_voucher_list_t;
+typedef struct  OptionList  cwmp_option_list_t;
+typedef struct  FileTypeArg  cwmp_file_type_arg_t;
+typedef struct  _cwmp__ID  cwmp_id_t;
+typedef struct  _cwmp__HoldRequests  cwmp_hold_requests_t;
+
+
+
 
 /**
  * This enumeration contains types of RPC calls, which 
@@ -139,44 +247,46 @@ typedef enum {
 /**< Typed pointer to call-specific CWMP data from ACS to CPE. */
 typedef union {
         void *p;
-        _cwmp__SetParameterValues       *set_parameter_values;
-        _cwmp__GetParameterValues       *get_parameter_values;
-        _cwmp__GetParameterNames        *get_parameter_names;
-        _cwmp__SetParameterAttributes   *set_parameter_attributes;
-        _cwmp__GetParameterAttributes   *get_parameter_attributes;
-        _cwmp__AddObject                *add_object;
-        _cwmp__DeleteObject             *delete_object;
-        _cwmp__Reboot                   *reboot;
-        _cwmp__Download                 *download;
-        _cwmp__Upload                   *upload;
-        _cwmp__ScheduleInform           *schedule_inform;
-        _cwmp__SetVouchers              *set_vouchers;
-        _cwmp__GetOptions               *get_options;
-        _cwmp__Fault                    *fault;
+        cwmp_set_parameter_values_t       *set_parameter_values;
+        cwmp_get_parameter_values_t      *get_parameter_values;
+        cwmp_get_parameter_names_t       *get_parameter_names;
+        cwmp_set_parameter_attributes_t  *set_parameter_attributes;
+        cwmp_get_parameter_attributes_t  *get_parameter_attributes;
+        cwmp_add_object_t                *add_object;
+        cwmp_delete_object_t             *delete_object;
+        cwmp_reboot_t                    *reboot;
+        cwmp_download_t                  *download;
+        cwmp_upload_t                    *upload;
+        cwmp_schedule_inform_t           *schedule_inform;
+        cwmp_set_vouchers_t              *set_vouchers;
+        cwmp_get_options_t               *get_options;
+        cwmp_fault_t                     *fault;
     } cwmp_data_to_cpe_t; 
 
 /**< Typed pointer to call-specific CWMP data from CPE to ACS. */
 typedef union {
         acse_cr_state_t      cr_state;
+
         void *p;
-        _cwmp__Inform                         *inform;
-        _cwmp__Fault                          *fault;
-        _cwmp__TransferComplete               *transfer_complete;
-        _cwmp__AutonomousTransferComplete     *aut_transfer_complete;
-        _cwmp__Kicked                         *kicked;
-        _cwmp__RequestDownload                *request_download;
-        _cwmp__GetRPCMethodsResponse          *get_rpc_methods_r;
-        _cwmp__SetParameterValuesResponse     *set_parameter_values_r;
-        _cwmp__GetParameterValuesResponse     *get_parameter_values_r;
-        _cwmp__GetParameterNamesResponse      *get_parameter_names_r;
-        _cwmp__GetParameterAttributes         *get_parameter_attributes_r;
-        _cwmp__AddObjectResponse              *add_object_r;
-        _cwmp__DeleteObjectResponse           *delete_object_r;
-        _cwmp__DownloadResponse               *download_r;
-        _cwmp__UploadResponse                 *upload_r;
-        _cwmp__GetQueuedTransfersResponse     *get_queued_transfers_r;
-        _cwmp__GetAllQueuedTransfersResponse  *get_all_queued_transfers_r;
-        _cwmp__GetOptionsResponse             *get_options_r;
+        cwmp_inform_t                        *inform;
+        cwmp_fault_t                         *fault;
+        cwmp_transfer_complete_t             *transfer_complete;
+        cwmp_autonomous_transfer_complete_t  *aut_transfer_complete;
+        cwmp_kicked_t                        *kicked;
+        cwmp_request_download_t              *request_download;
+        cwmp_get_rpc_methods_response_t      *get_rpc_methods_r;
+        cwmp_set_parameter_values_response_t *set_parameter_values_r;
+        cwmp_get_parameter_values_response_t *get_parameter_values_r;
+        cwmp_get_parameter_names_response_t  *get_parameter_names_r;
+        cwmp_get_parameter_attributes_t      *get_parameter_attributes_r;
+        cwmp_add_object_response_t           *add_object_r;
+        cwmp_delete_object_response_t        *delete_object_r;
+        cwmp_download_response_t             *download_r;
+        cwmp_upload_response_t               *upload_r;
+        cwmp_get_queued_transfers_response_t *get_queued_transfers_r;
+        cwmp_get_all_queued_transfers_response_t
+                                             *get_all_queued_transfers_r;
+        cwmp_get_options_response_t          *get_options_r;
     } cwmp_data_from_cpe_t; 
 
 /**
@@ -220,5 +330,18 @@ typedef uint32_t acse_request_id_t;
 #define SOAP_TYPE_time (98)
 #endif
 
+/*
+ * Useful structs to some CWMP parameters processing.
+ */
+
+typedef struct {
+    char   **arr;
+    size_t   size;
+} string_array_t;
+
+typedef struct {
+    cwmp_parameter_value_struct_t **arr;
+    size_t       size;
+} cwmp_values_array_t;
 
 #endif /*__TE_CWMP_H__ */
