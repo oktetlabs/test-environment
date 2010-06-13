@@ -41,10 +41,6 @@ co.manager  = oo.class({
 -- @return New chunk manager instance.
 --
 function co.manager:__init(max_mem)
-    assert(type(max_mem) == "number")
-    assert(math.floor(max_mem) == max_mem)
-    assert(max_mem >= 0)
-
     return oo.rawnew(self, {max_mem = max_mem})
 end
 
@@ -56,7 +52,6 @@ end
 -- @param chunk The first chunk.
 --
 function co.manager:set_first(chunk)
-    assert(oo.instanceof(chunk, require("co.chunk")))
     self.first = chunk
 end
 
@@ -86,19 +81,13 @@ end
 function co.manager:displace_finished_strips(requesting_chunk, size)
     local prev, chunk, next
 
-    assert(oo.instanceof(requesting_chunk, require("co.chunk")))
-    assert(not requesting_chunk.finished)
-    assert(type(size) == "number" and
-           math.floor(size) == size and
-           size >= 0)
-
     chunk = self.first
     while (self.used_mem + size) > ((self.max_mem * 3) / 4) do
         if not chunk.finished then
             prev = chunk
             chunk = chunk.next
         else
-            if type(chunk.storage) == "table" then
+            if chunk:is_mem() then
                 -- xtmpfile is defined in raw2xml.c
                 chunk:relocate(xtmpfile(), 0)
             end
@@ -112,7 +101,7 @@ function co.manager:displace_finished_strips(requesting_chunk, size)
                 end
                 next = chunk.next
                 -- If there is no next chunk or it is file-based
-                if next == nil or type(next.storage) ~= "table" then
+                if next == nil or next:is_file() then
                     prev = chunk
                     chunk = next
                     break
@@ -161,17 +150,11 @@ function co.manager:displace_all(requesting_chunk, size)
     local list
     local chunk
 
-    assert(oo.instanceof(requesting_chunk, require("co.chunk")))
-    assert(not requesting_chunk.finished)
-    assert(type(size) == "number" and
-           math.floor(size) == size and
-           size >= 0)
-
     -- Build a list of non-empty memory-based chunks
     list = {}
     chunk = self.first
     repeat
-        if type(chunk.storage) == "table" then
+        if chunk:is_mem() then
             local size = (chunk == requesting_chunk) and size or chunk.size
             if size > 0 then
                 table.insert(list, {chunk, size})
@@ -208,7 +191,7 @@ function co.manager:collapse_file_strips()
 
     chunk = self.first
     repeat
-        if not chunk.finished or type(chunk.storage) == "table" then
+        if not chunk.finished or chunk:is_mem() then
             prev = chunk
             chunk = chunk.next
         else
@@ -216,7 +199,7 @@ function co.manager:collapse_file_strips()
                 -- Retrieve next chunk
                 next = chunk.next
                 -- If there is no next chunk or it is memory-based
-                if next == nil or type(next.storage) == "table" then
+                if next == nil or chunk:is_mem() then
                     prev = chunk
                     chunk = next
                     break
@@ -245,12 +228,6 @@ end
 --
 function co.manager:request_mem(requesting_chunk, size)
     local new_mem, first_attempt
-
-    assert(oo.instanceof(requesting_chunk, require("co.chunk")))
-    assert(not requesting_chunk.finished)
-    assert(type(size) == "number" and
-           math.floor(size) == size and
-           size >= 0)
 
     new_mem = self.used_mem + size
 
@@ -306,12 +283,6 @@ end
 -- @param size  Amount of memory being returned.
 --
 function co.manager:return_mem(chunk, size)
-    assert(oo.instanceof(chunk, require("co.chunk")))
-    assert(type(size) == "number")
-    assert(math.floor(size) == size)
-    assert(size >= 0)
-    assert(size <= self.used_mem)
-
     self.used_mem = self.used_mem - size
 end
 
@@ -322,9 +293,6 @@ end
 --
 function co.manager:finished(chunk)
     local prev, next
-
-    assert(self.first ~= nil)
-    assert(oo.instanceof(chunk, require("co.chunk")))
 
     -- chunk argument is not used currently
 
@@ -359,9 +327,7 @@ function co.manager:dump(file)
         file:write(
                 tostring(chunk) .. " " ..
                 ("%6s %10u%s\n"):
-                    format(type(chunk.storage) == "table"
-                            and "memory"
-                             or "file",
+                    format(chunk:is_mem() and "memory" or "file",
                            chunk.size,
                            chunk.finished and " finished" or ""))
         chunk = chunk.next

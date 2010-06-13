@@ -33,33 +33,10 @@ rgt.ts      = oo.class({
 
 
 function rgt.ts:__init(seconds, microseconds)
-    assert(type(seconds) == "number")
-    assert(math.floor(seconds) == seconds)
-    assert(seconds >= 0)
-
-    assert(type(microseconds) == "number")
-    assert(math.floor(microseconds) == microseconds)
-    assert(microseconds >= 0)
-    assert(microseconds < 10 ^ 6)
-
     return oo.rawnew(self, {s = seconds, us = microseconds})
 end
 
-function rgt.ts:valid()
-    return oo.instanceof(self, rgt.ts) and
-           type(self.s) == "number" and
-           math.floor(self.s) == self.s and
-           self.s >= 0 and
-           type(self.us) == "number" and
-           math.floor(self.us) == self.us and
-           self.us >= 0 and
-           self.us < 10 ^ 6
-end
-
 function rgt.ts.__sub(x, y)
-    assert(rgt.ts.valid(x))
-    assert(rgt.ts.valid(y))
-
     if x.us > y.us then
         return rgt.ts(x.s - y.s, x.us - y.us)
     else
@@ -68,28 +45,18 @@ function rgt.ts.__sub(x, y)
 end
 
 function rgt.ts.__eq(x, y)
-    assert(rgt.ts.valid(x))
-    assert(rgt.ts.valid(y))
-
     return x.s == y.s and x.us == y.us
 end
 
 function rgt.ts.__lt(x, y)
-    assert(rgt.ts.valid(x))
-    assert(rgt.ts.valid(y))
-
     return x.s < y.s or x.s == y.s and x.us < y.us
 end
 
 function rgt.ts.__le(x, y)
-    assert(rgt.ts.valid(x))
-    assert(rgt.ts.valid(y))
-
     return x.s < y.s or x.s == y.s and x.us <= y.us
 end
 
 function rgt.ts:format_short_abs()
-    assert(rgt.ts.valid(self))
     -- return os.date(("%%H:%%M:%%S %3u ms"):
     -- FIXME MIMICKING ORIGINAL
     return os.date(("%%H:%%M:%%S %u ms"):
@@ -97,7 +64,6 @@ function rgt.ts:format_short_abs()
 end
 
 function rgt.ts:format_short_rel()
-    assert(rgt.ts.valid(self))
     -- return ("%.2u:%.2u:%.2u %3u ms"):
     -- FIXME MIMICKING ORIGINAL
     return ("%u:%u:%u %u ms"):

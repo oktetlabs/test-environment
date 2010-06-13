@@ -41,34 +41,22 @@ rgt.node.running    = oo.class({
                                }, rgt.node.general)
 
 function rgt.node.running:__init(inst)
-    assert(type(self.element) == "string")
-    assert(type(inst) == "table")
-    assert(inst.args == nil or type(inst.args) == "table")
-    assert(oo.instanceof(inst.start_ts, rgt.ts))
-    assert(inst.end_ts == nil)
-    assert(inst.result == nil)
-    assert(inst.err == nil)
-
     return rgt.node.general.__init(self, inst)
 end
 
 function rgt.node.running:start_branch(branch)
-    assert(type(branch) == "table")
     branch.chunk:start_tag("branch")
     rgt.node.general.start_branch(self, branch)
     return branch
 end
 
 function rgt.node.running:finish_branch(branch)
-    assert(type(branch) == "table")
     rgt.node.general.finish_branch(self, branch)
     branch.chunk:end_tag("branch")
     return branch
 end
 
 function rgt.node.running:add_attrs(attrs)
-    assert(type(attrs) == "table")
-
     table.insert(attrs, {"result", self.result:upper()})
     table.insert(attrs, {"err", self.err})
 
@@ -76,8 +64,6 @@ function rgt.node.running:add_attrs(attrs)
 end
 
 function rgt.node.running:write_meta(chunk)
-    assert(oo.instanceof(chunk, co.xml_chunk))
-
     chunk:element("start-ts", nil, self.start_ts:format_short_abs()):
           element("end-ts", nil, self.end_ts:format_short_abs()):
           element("duration", nil,
@@ -87,11 +73,6 @@ function rgt.node.running:write_meta(chunk)
 end
 
 function rgt.node.running:finish(ts, result, err)
-    assert(oo.instanceof(ts, rgt.ts))
-    assert(ts >= self.start_ts)
-    assert(type(result) == "string")
-    assert(type(err) == "string")
-
     self.end_ts = ts
     self.result = result
     self.err    = err

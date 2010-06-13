@@ -29,12 +29,10 @@ rgt.msg_fmt         = {}
 
 
 function rgt.msg_fmt:write(output, str)
-    assert(false, "Abstract function called")
 end
 
 
 function rgt.msg_fmt:spec_valid(spec)
-    assert(type(spec) == "string")
     return spec:match("^%%[%%scduoxXpr]$") ~= nil
 end
 

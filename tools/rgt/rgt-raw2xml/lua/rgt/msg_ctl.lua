@@ -33,10 +33,6 @@ rgt.msg_ctl     = {}
 local function divert_fmt(name, str, arg_fetch)
     local arg
 
-    assert(type(name) == "string")
-    assert(type(str) == "string")
-    assert(type(arg_fetch) == "function")
-
     if not rgt.msg_fmt_str:spec_valid(str) then
         return str
     end
@@ -223,10 +219,6 @@ end
 function rgt.msg_ctl.parse(prm, fmt, arg_fetch)
     local event
     local pos       = 1
-
-    assert(type(prm) == "table")
-    assert(type(fmt) == "string")
-    assert(type(arg_fetch) == "function")
 
     -- Parse the message header
     prm.parent_id, prm.id, event, pos =

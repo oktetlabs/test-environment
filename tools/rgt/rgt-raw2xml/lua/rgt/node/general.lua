@@ -40,7 +40,6 @@ rgt.node.general    = oo.class({
                                })
 
 function rgt.node.general:__init(inst)
-    assert(type(inst) == "table")
     return oo.rawnew(self, inst)
 end
 
@@ -58,13 +57,10 @@ function rgt.node.general:start()
 end
 
 function rgt.node.general:start_branch(branch)
-    assert(type(branch) == "table")
     return branch
 end
 
 function rgt.node.general:start_branch_logging(branch)
-    assert(type(branch) == "table")
-    assert(not branch.logging)
     branch.chunk:start_tag("logs")
     branch.logging = true
     return branch
@@ -73,13 +69,9 @@ end
 function rgt.node.general:add_child(child)
     local branch
 
-    assert(oo.instanceof(child, rgt.node.general))
-
     -- Lookup first vacant branch
     for i, b in ipairs(self.branches) do
-        assert(b.child ~= child)
         if b.child == nil then
-            assert(b.chunk ~= nil)
             branch = b
         end
     end
@@ -141,12 +133,9 @@ function rgt.node.general:log(msg)
 end
 
 function rgt.node.general:del_child(child)
-    assert(oo.instanceof(child, rgt.node.general))
-
     -- Lookup the branch holding the child
     for i, b in ipairs(self.branches) do
         if b.child == child then
-            assert(b.chunk == nil)
             -- Get back the chunk
             b.chunk = b.child:yield_chunk()
             -- Remove the child
@@ -159,15 +148,12 @@ function rgt.node.general:del_child(child)
 end
 
 function rgt.node.general:finish_branch_logging(branch)
-    assert(type(branch) == "table")
-    assert(branch.logging)
     branch.chunk:end_tag("logs")
     branch.logging = nil
     return branch
 end
 
 function rgt.node.general:finish_branch(branch)
-    assert(type(branch) == "table")
     if branch.logging then
         self:finish_branch_logging(branch)
     end
@@ -176,8 +162,6 @@ end
 
 function rgt.node.general:finish()
     for i, b in ipairs(self.branches) do
-        assert(b.child == nil)
-        assert(b.chunk ~= nil)
         self:finish_branch(b)
     end
     return self
@@ -192,8 +176,6 @@ function rgt.node.general:yield_chunk()
     end
 
     for i, b in ipairs(self.branches) do
-        assert(b.child == nil)
-        assert(b.chunk ~= nil)
         b.chunk:finish()
         b.chunk = nil
     end

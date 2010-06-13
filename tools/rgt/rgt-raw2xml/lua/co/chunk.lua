@@ -26,14 +26,27 @@
 
 local oo    = require("loop.simple")
 local co    = {}
+co.buf      = require("co.buf")
 co.chunk    = oo.class({
                         buf_size = 32768,   --- Relocation buffer size
                         manager  = nil,     --- Chunk manager
-                        storage  = nil,     --- Storage: table or file
+                        storage  = nil,     --- Storage: buf or file
                         size     = 0,       --- Storage contents size
                         finished = nil,     --- "Finished" flag
                         next     = nil,     --- Next chunk
                        })
+
+---
+-- Check if the storage is memory-based (a buffer).
+--
+-- @param storage   Storage to check.
+--
+-- @return True if the storage is memory-based, false otherwise.
+--
+local function storage_is_mem(storage)
+    return getmetatable(storage) == co.buf
+end
+
 
 ---
 -- Calculate/retrieve size of a storage (file or table) contents.
@@ -45,13 +58,8 @@ co.chunk    = oo.class({
 local function storage_size(storage)
     local size
 
-    assert(storage ~= nil)
-
-    if type(storage) == "table" then
-        size = 0
-        for i, v in ipairs(storage) do
-            size = size + #v
-        end
+    if storage_is_mem(storage) then
+        return #storage
     else
         local result, err = storage:seek("cur", 0)
         if result == nil then
@@ -68,19 +76,12 @@ end
 -- Create a new chunk.
 --
 -- @param manager   A chunk manager to which the chunk reports.
--- @param storage   Chunk storage - either a table or a file.
+-- @param storage   Chunk storage - either a buffer or a file.
 -- @param size      Storage contents size, or nil to have it determined.
 --
 -- @return New chunk.
 --
 function co.chunk:__init(manager, storage, size)
-    assert(oo.instanceof(manager, require("co.manager")))
-    assert(storage ~= nil)
-    assert(size == nil or
-           type(size) == "number" and
-           math.floor(size) == size and
-           size >= 0)
-
     return oo.rawnew(self,
                      {manager = manager,
                       storage = storage,
@@ -88,16 +89,36 @@ function co.chunk:__init(manager, storage, size)
 end
 
 ---
+-- Check if a chunk is memory-based.
+--
+-- @return True if the chunk is memory-based, false otherwise.
+--
+function co.chunk:is_mem()
+    return storage_is_mem(self.storage)
+end
+
+
+---
+-- Check if a chunk is file-based.
+--
+-- @return True if the chunk is file-based, false otherwise.
+--
+function co.chunk:is_file()
+    return not storage_is_mem(self.storage)
+end
+
+
+---
 -- Insert a new chunk after this one.
+--
+-- @param size  Memory to preallocate for chunk contents, or nil.
 --
 -- @return New chunk inserted after this one.
 --
-function co.chunk:fork()
+function co.chunk:fork(size)
     local chunk
 
-    assert(self.storage ~= nil)
-
-    chunk = oo.classof(self)(self.manager, {}, 0)
+    chunk = oo.classof(self)(self.manager, co.buf(size), 0)
     chunk.next = self.next
     self.next = chunk
 
@@ -113,18 +134,14 @@ end
 -- @return The chunk.
 --
 function co.chunk:write(str)
-    assert(self.storage ~= nil)
-    assert(not self.finished)
-    assert(str ~= nil)
-
-    if type(self.storage) == "table" then
+    if self:is_mem() then
         -- Request the memory
         self.manager:request_mem(self, #str)
     end
 
     -- NOTE: we may get displaced as a result, so check the type again
-    if type(self.storage) == "table" then
-        table.insert(self.storage, str)
+    if self:is_mem() then
+        self.storage:append(str)
     else
         local ok, err = self.storage:write(str)
         if not ok then
@@ -143,9 +160,10 @@ end
 -- @return The chunk.
 --
 function co.chunk:finish()
-    assert(self.storage ~= nil)
-    assert(not self.finished)
     self.finished = true
+    if self:is_mem() then
+        self.storage:retension()
+    end
     self.manager:finished(self)
     return self
 end
@@ -158,9 +176,6 @@ end
 function co.chunk:yield()
     local storage
 
-    assert(self.storage ~= nil)
-    assert(self.finished)
-
     storage = self.storage
     self.storage = nil
 
@@ -168,22 +183,18 @@ function co.chunk:yield()
 end
 
 ---
--- Relocate chunk contents to a table storage, appending to existing
+-- Relocate chunk contents to a memory storage, appending to existing
 -- contents.
 --
 -- @param self      Chunk to relocate.
--- @param storage   Target storage - a table.
+-- @param storage   Target storage - a buffer.
 --
-local function relocate_to_table(self, storage)
+local function relocate_to_mem(self, storage)
     local result, err
 
-    assert(self.storage ~= nil)
-    assert(storage ~= nil)
-
-    if type(self.storage) == "table" then
-        for i, v in ipars(self.storage) do
-            table.insert(storage, v)
-        end
+    if self:is_mem() then
+        -- Merge our storage with the new storage (our storage is cleared)
+        storage:merge(self.storage)
     else
         -- Request memory for the file contents
         self.manager:request_mem(self, self.size)
@@ -194,18 +205,12 @@ local function relocate_to_table(self, storage)
             error("failed rewinding chunk storage file: " .. err)
         end
 
-        -- Read the whole contents
-        result, err = self.storage:read(self.size)
-        if result == nil then
-            error("failed reading chunk storage file: " .. err)
-        end
-        if #result ~= self.size then
+        -- Read the file contents into the new storage
+        result = storage:readin(self.storage)
+        if result ~= self.size then
             error(("short read of chunk storage file "..
-                   "(expected: %d, read: %d)"):format(self.size, #result))
+                   "(expected: %d, read: %d)"):format(self.size, result))
         end
-
-        -- Add to the new storage
-        table.insert(storage, result)
 
         -- Close the file
         self.storage:close()
@@ -222,18 +227,11 @@ end
 local function relocate_to_file(self, storage)
     local result, err
 
-    assert(self.storage ~= nil)
-    assert(storage ~= nil)
-
-    if type(self.storage) == "table" then
+    if self:is_mem() then
         -- Write the contents to the file
-        for i, s in ipairs(self.storage) do
-            result, err = storage:write(s)
-            if result == nil then
-                error("failed writing chunk storage file: " .. err)
-            end
-        end
-
+        self.storage:writeout(storage)
+        -- Clear the buffer
+        self.storage:clear()
         -- Return the memory
         self.manager:return_mem(self, self.size)
     else
@@ -273,26 +271,19 @@ end
 -- Relocate chunk contents to another storage, appending to existing
 -- contents.
 --
--- @param storage   Target storage - either memory or file.
+-- @param storage   Target storage - either buffer or file.
 -- @param size      Target storage contents size or nil to have it
 --                  determined.
 --
 -- @return The chunk.
 --
 function co.chunk:relocate(storage, size)
-    assert(self.storage ~= nil)
-    assert(storage ~= nil)
-    assert(size == nil or
-           type(size) == "number" and
-           math.floor(size) == size and
-           size >= 0)
-
     if size == nil then
         size = storage_size(storage)
     end
 
-    if type(storage) == "table" then
-        relocate_to_table(self, storage)
+    if storage_is_mem(storage) then
+        relocate_to_mem(self, storage)
     else
         relocate_to_file(self, storage)
     end

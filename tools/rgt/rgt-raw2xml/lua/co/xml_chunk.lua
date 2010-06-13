@@ -49,17 +49,6 @@ co.xml_chunk    = oo.class({
 function co.xml_chunk:__init(manager, storage, size, depth)
     local inst
 
-    assert(oo.instanceof(manager, require("co.manager")))
-    assert(storage ~= nil)
-    assert(size == nil or
-           type(size) == "number" and
-           math.floor(size) == size and
-           size >= 0)
-    assert(depth == nil or
-           type(depth) == "number" and
-           math.floor(depth) == depth and
-           depth >= 0)
-
     inst = co.chunk.__init(self, manager, storage, size)
 
     inst.depth = depth or 0
@@ -87,15 +76,12 @@ function co.xml_chunk:descend()
 end
 
 function co.xml_chunk:ascend()
-    assert(self.depth > 0)
     self.depth = self.depth - 1
     return self
 end
 
 local function format_attrs(attrs)
     local str   = ""
-
-    assert(type(attrs) == "table")
 
     for i, a in ipairs(attrs) do
         str = str .. ' ' .. a[1] .. '="' .. 
@@ -116,27 +102,18 @@ local function format_attrs(attrs)
 end
 
 local function format_start_tag(name, attrs)
-    assert(type(name) == "string")
-    assert(attrs == nil or type(attrs) == "table")
-
     return "<" .. name .. (attrs and format_attrs(attrs) or "") .. ">"
 end
 
 local function format_empty_tag(name, attrs)
-    assert(type(name) == "string")
-    assert(attrs == nil or type(attrs) == "table")
-
     return "<" .. name .. (attrs and format_attrs(attrs) or "") .. "/>"
 end
 
 local function format_end_tag(name)
-    assert(type(name) == "string")
-
     return "</" .. name .. ">"
 end
 
 local function format_cdata(text)
-    assert(type(text) == "string")
     return text:gsub("[<>&%z\001-\008\011\012\014-\031\127-\255]",
                      function (c)
                         return c == "<" and "&lt;" or
@@ -161,9 +138,6 @@ end
 function co.xml_chunk:start_tag(name, attrs, inline)
     local s
 
-    assert(type(name) == "string")
-    assert(attrs == nil or type(attrs) == "table")
-
     s = self:sol() .. format_start_tag(name, attrs)
     self:descend()
     if inline then
@@ -176,8 +150,6 @@ end
 function co.xml_chunk:end_tag(name)
     local s
 
-    assert(type(name) == "string")
-
     self:ascend()
     s = self:sol() .. format_end_tag(name)
     if self.inline ~= nil and self.depth < self.inline then
@@ -187,25 +159,17 @@ function co.xml_chunk:end_tag(name)
 end
 
 function co.xml_chunk:empty_tag(name, attrs)
-    assert(type(name) == "string")
-    assert(attrs == nil or type(attrs) == "table")
-
     return self:write(self:sol() ..
                       format_empty_tag(name, attrs) ..
                       self:eol())
 end
 
 function co.xml_chunk:cdata(text)
-    assert(type(text) == "string")
     return self:write(self:sol() .. format_cdata(text) .. self:eol())
 end
 
 function co.xml_chunk:element(name, attrs, text)
     local e
-
-    assert(type(name) == "string")
-    assert(attrs == nil or type(attrs) == "table")
-    assert(text == nil or type(text) == "string")
 
     if text == nil or #text == 0 then
         e = format_empty_tag(name, attrs)

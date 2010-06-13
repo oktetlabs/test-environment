@@ -44,14 +44,6 @@ function rgt.msg.id_valid(id)
 end
 
 function rgt.msg:__init(ts, level, id, entity, user, fmt, args)
-    assert(oo.instanceof(ts, rgt.ts))
-    assert(type(level) == "string")
-    assert(rgt.msg.id_valid(id))
-    assert(type(entity) == "string")
-    assert(type(user) == "string")
-    assert(type(fmt) == "string")
-    assert(type(args) == "table")
-
     return oo.rawnew(self,
                      {ts        = ts,
                       level     = level,
@@ -64,8 +56,6 @@ end
 
 function rgt.msg:make_arg_fetch(pos)
     local args = self.args
-
-    assert(pos == nil or type(pos) == "number")
 
     if pos == nil then
         pos = 1
@@ -88,7 +78,6 @@ function rgt.msg:is_ctl()
 end
 
 function rgt.msg:extr_ctl()
-    assert(self:is_ctl())
     return rgt.msg_ctl.parse({}, self.fmt, self:make_arg_fetch())
 end
 

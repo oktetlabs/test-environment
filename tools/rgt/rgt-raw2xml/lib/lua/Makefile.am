@@ -1,5 +1,5 @@
 #
-# automake file for RGT raw2xml directory
+# automake file for RGT raw2xml/lib/lua directory
 # Process with automake
 #
 # Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
@@ -23,15 +23,4 @@
 # Author: Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
 #
 
-SUBDIRS = lib lua
-
-AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@ \
-              -D_FILE_OFFSET_BITS=64
-AM_CFLAGS = @TE_CFLAGS@ -Wextra -Werror
-GEN_LDADD = @TE_LDFLAGS@
-
-bin_PROGRAMS = rgt-raw2xml
-
-rgt_raw2xml_SOURCES = raw2xml.c
-rgt_raw2xml_LDADD = $(GEN_LDADD) -llua
-
+SUBDIRS = co

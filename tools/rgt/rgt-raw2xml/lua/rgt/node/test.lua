@@ -41,31 +41,19 @@ rgt.node.test       = oo.class({
                                rgt.node.named)
 
 function rgt.node.test:__init(inst)
-    assert(type(inst) == "table")
-    assert(inst.tin == nil or
-           type(inst.tin) == "number" and
-           math.floor(inst.tin) == inst.tin and
-           inst.tin >= 0)
-    assert(inst.page == nil or type(inst.page) == "string")
-    assert(inst.verdicts == nil)
-
     inst.verdicts = {}
-
     return rgt.node.named.__init(self, inst)
 end
 
 function rgt.node.test:start_branch(branch)
-    assert(type(branch) == "table")
     return rgt.node.general.start_branch(self, branch)
 end
 
 function rgt.node.test:finish_branch(branch)
-    assert(type(branch) == "table")
     return rgt.node.general.finish_branch(self, branch)
 end
 
 function rgt.node.test:add_attrs(attrs)
-    assert(type(attrs) == "table")
     if self.tin ~= nil then
         table.insert(attrs, {"tin", tostring(self.tin)})
     end
@@ -74,8 +62,6 @@ function rgt.node.test:add_attrs(attrs)
 end
 
 function rgt.node.test:write_meta(chunk)
-    assert(oo.instanceof(chunk, co.xml_chunk))
-
     rgt.node.named.write_meta(self, chunk)
 
     if self.page ~= nil then
@@ -94,7 +80,6 @@ function rgt.node.test:write_meta(chunk)
 end
 
 function rgt.node.test:add_child(child)
-    assert(oo.instanceof(child, rgt.node.general))
     -- No children allowed
     assert(false)
     return self

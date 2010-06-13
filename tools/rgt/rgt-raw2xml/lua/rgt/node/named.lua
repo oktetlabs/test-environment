@@ -37,24 +37,16 @@ rgt.node.named      = oo.class({
                                }, rgt.node.running)
 
 function rgt.node.named:__init(inst)
-    assert(type(inst) == "table")
-    assert(type(inst.name) == "string")
-    assert(type(inst.objective) == "string")
-    assert(inst.authors == nil or type(inst.authors) == "table")
-
     return rgt.node.running.__init(self, inst)
 end
 
 function rgt.node.named:add_attrs(attrs)
-    assert(type(attrs) == "table")
     table.insert(attrs, {"name", self.name})
     rgt.node.running.add_attrs(self, attrs)
     return attrs
 end
 
 function rgt.node.named:write_meta(chunk)
-    assert(oo.instanceof(chunk, co.xml_chunk))
-
     rgt.node.running.write_meta(self, chunk)
 
     if #self.objective > 0 then

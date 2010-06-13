@@ -233,7 +233,7 @@ read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
     const char         *str;
     lua_Number          i;
     te_log_nfl          len;
-    char               *buf;
+    char               *buf         = NULL;
 
     /* Read and verify log message version */
     if (fread(&version, sizeof(version), 1, input) != 1)
@@ -434,7 +434,7 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     int         msg_class_idx;
     int         sink_idx;
     int         sink_put_idx;
-#ifdef RGT_USE_LUA_PROFILER
+#ifdef RGT_WITH_LUA_PROFILER
     int         profiler_idx;
 #endif
 
@@ -465,7 +465,7 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     lua_pushliteral(L, "strict");
     LUA_PCALL(1, 0);
 
-#ifdef RGT_USE_LUA_PROFILER
+#ifdef RGT_WITH_LUA_PROFILER
     /* Require "profiler" module */
     LUA_REQUIRE("profiler");
     profiler_idx = lua_gettop(L);
@@ -512,7 +512,7 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     /* Call "take_file" instance method to supply the sink with the file */
     LUA_PCALL(2, 0);
 
-#ifdef RGT_USE_LUA_PROFILER
+#ifdef RGT_WITH_LUA_PROFILER
     /* Start profiling */
     lua_getfield(L, profiler_idx, "start");
     LUA_PCALL(0, 0);
@@ -544,7 +544,7 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     lua_pushvalue(L, sink_idx);
     LUA_PCALL(1, 0);
 
-#ifdef RGT_USE_LUA_PROFILER
+#ifdef RGT_WITH_LUA_PROFILER
     /* Stop profiling */
     lua_getfield(L, profiler_idx, "stop");
     LUA_PCALL(0, 0);

@@ -39,27 +39,15 @@ rgt.sink            = oo.class({
                                })
 
 function rgt.sink:__init(max_mem)
-    assert(type(max_mem) == "number")
-    assert(math.floor(max_mem) == max_mem)
-    assert(max_mem >= 0)
-
     return oo.rawnew(self, {manager = co.manager(max_mem), map = {}})
 end
 
 function rgt.sink:take_file(file)
-    local chunk
-
-    assert(self.chunk == nil)
-    assert(self.map[0] == nil)
-    assert(file ~= nil)
-
     self.chunk = co.xml_chunk(self.manager, file, 0)
     self.manager:set_first(self.chunk)
 end
 
 function rgt.sink:start()
-    assert(self.chunk ~= nil)
-    assert(self.map[0] == nil)
     self.map[0] = rgt.node.root({}):take_chunk(self.chunk):start()
     self.chunk = nil
 end
@@ -67,8 +55,6 @@ end
 function rgt.sink:put(msg)
     local prm
     local parent, node
-
-    assert(self.map[0] ~= nil)
 
     -- If it is not a control message
     if not msg:is_ctl() then
@@ -131,21 +117,14 @@ function rgt.sink:put(msg)
 end
 
 function rgt.sink:finish()
-    assert(self.map[0] ~= nil)
-    assert(self.chunk == nil)
-
     -- Finish the root node and take its chunk
     self.chunk = self.map[0]:finish():yield_chunk()
-
     -- Remove the root node
     self.map[0] = nil
 end
 
 function rgt.sink:yield_file()
     local file, size
-
-    assert(self.map[0] == nil)
-    assert(self.chunk ~= nil)
 
     -- Finish the chunk and retrieve its storage and size
     file, size = self.chunk:finish():yield()
