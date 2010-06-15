@@ -46,7 +46,7 @@ extern "C" {
 
 
 
-#define CWMP_FAULT(__p) ((_cwmp__Fault *)(__p))
+#define CWMP_FAULT(__p) ((cwmp_fault_t *)(__p))
 
 /**
  * Check status of CWMP RPC response in main test body.
@@ -65,7 +65,7 @@ extern "C" {
             break;                                                      \
         if (TE_CWMP_FAULT == TE_RC_GET_ERROR(rc_))                      \
         {                                                               \
-            _cwmp__Fault *f = (_cwmp__Fault *) var_;                    \
+            cwmp_fault_t *f = (cwmp_fault_t *) var_;                    \
             TEST_FAIL("CWMP Fault received: %s(%s)",                    \
                         f->FaultCode, f->FaultString);                  \
         }                                                               \
@@ -289,7 +289,7 @@ extern te_errno tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
 extern te_errno tapi_acse_cpe_last_inform(const char *ta,
                                      const char *acs_name,
                                      const char *cpe_name,
-                                     _cwmp__Inform *inform_descr);
+                                     cwmp_inform_t *inform_descr);
 
 /**
  * Get state of CWMP session with particular CPE.
@@ -424,7 +424,7 @@ extern te_errno tapi_acse_cpe_get_rpc_methods(tapi_acse_context_t *ctx);
  */
 extern te_errno tapi_acse_cpe_get_rpc_methods_resp(
                 tapi_acse_context_t *ctx,
-               _cwmp__GetRPCMethodsResponse **resp);
+                cwmp_get_rpc_methods_response_t **resp);
 /**
  * Call CPE SetParameterValues method.
  *
@@ -436,7 +436,7 @@ extern te_errno tapi_acse_cpe_get_rpc_methods_resp(
  */
 extern te_errno tapi_acse_cpe_set_parameter_values(
                                    tapi_acse_context_t *ctx,
-                                   _cwmp__SetParameterValues *req);
+                                   cwmp_set_parameter_values_t *req);
 
 /**
  * Get CPE SetParameterValues response.
@@ -456,7 +456,7 @@ extern te_errno tapi_acse_cpe_set_parameter_values(
  */
 extern te_errno tapi_acse_cpe_set_parameter_values_resp(
                 tapi_acse_context_t *ctx,
-                _cwmp__SetParameterValuesResponse **resp);
+                cwmp_set_parameter_values_response_t **resp);
 
 
 /**
@@ -470,7 +470,7 @@ extern te_errno tapi_acse_cpe_set_parameter_values_resp(
  */
 extern te_errno tapi_acse_cpe_get_parameter_values(
                 tapi_acse_context_t *ctx,
-                _cwmp__GetParameterValues *req);
+                cwmp_get_parameter_values_t *req);
 
 /**
  * Get CPE GetParameterValues response
@@ -483,7 +483,7 @@ extern te_errno tapi_acse_cpe_get_parameter_values(
  */
 extern te_errno tapi_acse_cpe_get_parameter_values_resp(
                 tapi_acse_context_t *ctx,
-                _cwmp__GetParameterValuesResponse **resp);
+                cwmp_get_parameter_values_response_t **resp);
 
 
 /**
@@ -511,7 +511,7 @@ extern te_errno tapi_acse_cpe_get_parameter_names(
  */
 extern te_errno tapi_acse_cpe_get_parameter_names_resp(
                tapi_acse_context_t *ctx,
-               _cwmp__GetParameterNamesResponse **resp);
+               cwmp_get_parameter_names_response_t **resp);
 
 
 /**
@@ -525,7 +525,7 @@ extern te_errno tapi_acse_cpe_get_parameter_names_resp(
  */
 extern te_errno tapi_acse_cpe_set_parameter_attributes(
                 tapi_acse_context_t *ctx,
-                _cwmp__SetParameterAttributes *req);
+                cwmp_set_parameter_attributes_t *req);
 
 /**
  * Get CPE SetParameterAttributes response.
@@ -550,7 +550,7 @@ extern te_errno tapi_acse_cpe_set_parameter_attributes_resp(
  */
 extern te_errno tapi_acse_cpe_get_parameter_attributes(
                 tapi_acse_context_t *ctx,
-               _cwmp__GetParameterAttributes *req);
+                cwmp_get_parameter_attributes_t *req);
 
 /**
  * Get CPE GetParameterAttributes response.
@@ -563,7 +563,7 @@ extern te_errno tapi_acse_cpe_get_parameter_attributes(
  */
 extern te_errno tapi_acse_cpe_get_parameter_attributes_resp(
                 tapi_acse_context_t *ctx,
-                _cwmp__GetParameterAttributesResponse **resp);
+                cwmp_get_parameter_attributes_response_t **resp);
 
 /**
  * Call CPE AddObject method.
@@ -627,7 +627,7 @@ extern te_errno tapi_acse_cpe_delete_object_resp(
  * @return status code
  */
 extern te_errno tapi_acse_cpe_reboot(tapi_acse_context_t *ctx,
-                                       _cwmp__Reboot *req);
+                                       cwmp_reboot_t *req);
 
 /**
  * Get CPE Reboot response.
@@ -649,7 +649,7 @@ extern te_errno tapi_acse_cpe_reboot_resp(tapi_acse_context_t *ctx);
  * @return status code
  */
 extern te_errno tapi_acse_cpe_download(tapi_acse_context_t *ctx,
-               _cwmp__Download *req);
+               cwmp_download_t *req);
 
 /** 
  * Get CPE Download response.
@@ -661,7 +661,7 @@ extern te_errno tapi_acse_cpe_download(tapi_acse_context_t *ctx,
  * @return status code
  */
 extern te_errno tapi_acse_cpe_download_resp(tapi_acse_context_t *ctx,
-               _cwmp__DownloadResponse **resp);
+               cwmp_download_response_t **resp);
 
 /**
  * Call CPE Upload method.
@@ -673,7 +673,7 @@ extern te_errno tapi_acse_cpe_download_resp(tapi_acse_context_t *ctx,
  * @return status code
  */
 extern te_errno tapi_acse_cpe_upload(tapi_acse_context_t *ctx,
-               _cwmp__Upload *req);
+               cwmp_upload_t *req);
 /**
  * Get CPE Upload response.
  *
@@ -684,7 +684,7 @@ extern te_errno tapi_acse_cpe_upload(tapi_acse_context_t *ctx,
  * @return status code
  */
 extern te_errno tapi_acse_cpe_upload_resp(tapi_acse_context_t *ctx,
-               _cwmp__UploadResponse **resp);
+               cwmp_upload_response_t **resp);
 
 /**
  * Call CPE FactoryReset method.
@@ -726,7 +726,7 @@ extern te_errno tapi_acse_cpe_get_queued_transfers(tapi_acse_context_t *c);
  */
 extern te_errno tapi_acse_cpe_get_queued_transfers_resp(
                     tapi_acse_context_t *ctx,
-                    _cwmp__GetQueuedTransfersResponse **resp);
+                    cwmp_get_queued_transfers_response_t **resp);
 
 /**
  * Call CPE GetAllQueuedTransfers method.
@@ -750,7 +750,7 @@ extern te_errno tapi_acse_cpe_get_all_queued_transfers(
  */
 extern te_errno tapi_acse_cpe_get_all_queued_transfers_resp(
                 tapi_acse_context_t *ctx,
-                _cwmp__GetAllQueuedTransfersResponse **resp);
+                cwmp_get_all_queued_transfers_response_t **resp);
 
 /**
  * Call CPE ScheduleInform method.
@@ -762,7 +762,7 @@ extern te_errno tapi_acse_cpe_get_all_queued_transfers_resp(
  * @return status code
  */
 extern te_errno tapi_acse_cpe_schedule_inform(tapi_acse_context_t *ctx,
-               _cwmp__ScheduleInform *req);
+               cwmp_schedule_inform_t *req);
 
 /**
  * Get CPE ScheduleInform response.
@@ -785,7 +785,7 @@ extern te_errno tapi_acse_cpe_schedule_inform_resp(
  * @return status code
  */
 extern te_errno tapi_acse_cpe_set_vouchers(tapi_acse_context_t *ctx,
-               _cwmp__SetVouchers *req);
+               cwmp_set_vouchers_t *req);
 /**
  * Get CPE SetVouchers response.
  *
@@ -806,7 +806,7 @@ extern te_errno tapi_acse_cpe_set_vouchers_resp(tapi_acse_context_t *ctx);
  * @return status code
  */
 extern te_errno tapi_acse_cpe_get_options(tapi_acse_context_t *ctx,
-               _cwmp__GetOptions *req);
+               cwmp_get_options_t *req);
 /**
  * Get CPE GetOptions response.
  *
@@ -817,7 +817,7 @@ extern te_errno tapi_acse_cpe_get_options(tapi_acse_context_t *ctx,
  * @return status code
  */
 extern te_errno tapi_acse_cpe_get_options_resp(tapi_acse_context_t *ctx,
-               _cwmp__GetOptionsResponse **resp);
+               cwmp_get_options_response_t **resp);
 
 
 
@@ -831,7 +831,8 @@ extern te_errno tapi_acse_cpe_get_options_resp(tapi_acse_context_t *ctx,
 /**
  * Free GetParameterNames response, which is got from regular TAPI.
  */
-extern void cwmp_get_names_resp_free(_cwmp__GetParameterNamesResponse *r);
+extern void cwmp_get_names_resp_free(
+            cwmp_get_parameter_names_response_t *r);
 
 
 #ifdef __cplusplus

@@ -637,7 +637,7 @@ tapi_acse_cpe_get_rpc_methods(tapi_acse_context_t *ctx)
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_get_rpc_methods_resp(tapi_acse_context_t *ctx,
-                               _cwmp__GetRPCMethodsResponse **resp)
+                               cwmp_get_rpc_methods_response_t **resp)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
 
@@ -652,7 +652,7 @@ tapi_acse_cpe_get_rpc_methods_resp(tapi_acse_context_t *ctx,
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_download(tapi_acse_context_t *ctx,
-                       _cwmp__Download *req)
+                       cwmp_download_t *req)
 {
     cwmp_data_to_cpe_t to_cpe_loc;
     to_cpe_loc.download = req;
@@ -663,7 +663,7 @@ tapi_acse_cpe_download(tapi_acse_context_t *ctx,
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_download_resp(tapi_acse_context_t *ctx,
-                           _cwmp__DownloadResponse **resp)
+                           cwmp_download_response_t **resp)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
@@ -677,7 +677,7 @@ tapi_acse_cpe_download_resp(tapi_acse_context_t *ctx,
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_get_parameter_values(tapi_acse_context_t *ctx,
-                                   _cwmp__GetParameterValues *req)
+                                   cwmp_get_parameter_values_t *req)
 {
     cwmp_data_to_cpe_t to_cpe_loc;
     to_cpe_loc.get_parameter_values = req;
@@ -690,7 +690,7 @@ tapi_acse_cpe_get_parameter_values(tapi_acse_context_t *ctx,
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_get_parameter_values_resp(tapi_acse_context_t *ctx,
-               _cwmp__GetParameterValuesResponse **resp)
+               cwmp_get_parameter_values_response_t **resp)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
     te_errno rc = tapi_acse_cpe_rpc_response(ctx,
@@ -711,7 +711,7 @@ tapi_acse_cpe_get_parameter_names(tapi_acse_context_t *ctx,
     char name[256];
     char *name_ptr = name;
     va_list  ap;
-    _cwmp__GetParameterNames req;
+    cwmp_get_parameter_names_t req;
     cwmp_data_to_cpe_t to_cpe_loc;
 
     va_start(ap, fmt);
@@ -730,7 +730,7 @@ tapi_acse_cpe_get_parameter_names(tapi_acse_context_t *ctx,
 te_errno
 tapi_acse_cpe_get_parameter_names_resp(
                tapi_acse_context_t *ctx,
-               _cwmp__GetParameterNamesResponse **resp)
+               cwmp_get_parameter_names_response_t **resp)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
@@ -742,7 +742,7 @@ tapi_acse_cpe_get_parameter_names_resp(
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_set_parameter_values(tapi_acse_context_t *ctx,
-                                   _cwmp__SetParameterValues *req)
+                                   cwmp_set_parameter_values_t *req)
 {
     cwmp_data_to_cpe_t to_cpe_loc;
     to_cpe_loc.set_parameter_values = req;
@@ -756,7 +756,7 @@ tapi_acse_cpe_set_parameter_values(tapi_acse_context_t *ctx,
 te_errno
 tapi_acse_cpe_set_parameter_values_resp(
                tapi_acse_context_t *ctx,
-               _cwmp__SetParameterValuesResponse **resp)
+               cwmp_set_parameter_values_response_t **resp)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
@@ -800,7 +800,7 @@ tapi_acse_cpe_add_object(tapi_acse_context_t *ctx,
 {
     char                obj_name_buf[256];
     char                param_key_buf[256];
-    _cwmp__AddObject    add_object = {obj_name_buf, param_key_buf};
+    cwmp_add_object_t   add_object = {obj_name_buf, param_key_buf};
     cwmp_data_to_cpe_t  to_cpe_loc;
 
     to_cpe_loc.add_object = &add_object;
@@ -842,11 +842,12 @@ tapi_acse_cpe_add_object_resp(tapi_acse_context_t *ctx,
  * ============= Useful routines for prepare CWMP RPC params =============
  */
 
+#if 0
 /* see description in tapi_acse.h */
-_cwmp__GetParameterNames *
+cwmp_get_parameter_names *
 cwmp_get_names_alloc(const char *name, te_bool next_level)
 {
-    _cwmp__GetParameterNames *ret = calloc(1, sizeof(*ret));
+    cwmp_get_parameter_names *ret = calloc(1, sizeof(*ret));
     ret->NextLevel = next_level;
     ret->ParameterPath = malloc(sizeof(char*));
     if (NULL == name)
@@ -873,10 +874,11 @@ cwmp_get_names_free(_cwmp__GetParameterNames *arg)
 }
 
 
+#endif
 
 /* see description in tapi_acse.h */
 void
-cwmp_get_names_resp_free(_cwmp__GetParameterNamesResponse *resp)
+cwmp_get_names_resp_free(cwmp_get_parameter_names_response_t *resp)
 {
     if (NULL == resp)
         return;
