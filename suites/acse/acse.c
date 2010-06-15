@@ -37,7 +37,7 @@
 int
 main(int argc, char *argv[])
 {
-    _cwmp__GetRPCMethodsResponse *get_rpc_meth_r = NULL;
+    cwmp_get_rpc_methods_response_t *get_rpc_meth_r = NULL;
 
     te_errno te_rc;
 

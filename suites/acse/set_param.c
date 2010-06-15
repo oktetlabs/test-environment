@@ -31,17 +31,16 @@
 
 #include "acse_suite.h"
 
-#include "tapi_rpc_tr069.h"
-#include "acse_epc.h"
+#include "tapi_acse.h"
 #include "cwmp_data.h"
 
 int
 main(int argc, char *argv[])
 {
     cwmp_sess_state_t cwmp_state = 0;
-    _cwmp__SetParameterValues          *set_values;
-    _cwmp__SetParameterValuesResponse  *set_values_resp = NULL;
-    _cwmp__GetParameterNamesResponse   *get_names_resp = NULL;
+    cwmp_set_parameter_values_t          *set_values;
+    cwmp_set_parameter_values_response_t *set_values_resp = NULL;
+    cwmp_get_parameter_names_response_t  *get_names_resp = NULL;
 
     char *param_path = 
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
@@ -90,7 +89,7 @@ main(int argc, char *argv[])
 
     if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
     {
-        _cwmp__Fault *f = (_cwmp__Fault *)set_values_resp;
+        cwmp_fault_t *f = (cwmp_fault_t *)set_values_resp;
         size_t f_s = f->__sizeSetParameterValuesFault;
         size_t i;
 

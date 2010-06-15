@@ -19,8 +19,6 @@
 
 #include "acse_suite.h"
 
-#include "tapi_rpc_tr069.h"
-#include "acse_epc.h"
 #include "cwmp_data.h"
 #include "tapi_test.h"
 #include "tapi_acse.h"
@@ -49,7 +47,7 @@ main(int argc, char *argv[])
     else
         RING("got ConnReq url empty");
 
-    cr_url_wait_count = 20;
+    cr_url_wait_count = 200;
 
     while (cr_url == NULL || strlen(cr_url) == 0)
     {

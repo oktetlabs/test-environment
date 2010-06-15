@@ -37,8 +37,8 @@
 int
 main(int argc, char *argv[])
 {
-    _cwmp__Download download_pars;
-    _cwmp__DownloadResponse *download_resp;
+    cwmp_download_t download_pars;
+    cwmp_download_response_t *download_resp;
 
     _cwmp__GetParameterNamesResponse   *get_names_resp = NULL;
 

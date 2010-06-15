@@ -37,8 +37,8 @@
 int
 main(int argc, char *argv[])
 {
-    _cwmp__Download download_pars;
-    _cwmp__DownloadResponse *download_resp;
+    cwmp_download_t download_pars;
+    cwmp_download_response_t *download_resp;
 
     te_errno te_rc;
     const char *file_type;
@@ -93,7 +93,7 @@ main(int argc, char *argv[])
     }
     else if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
     {
-        _cwmp__Fault *f = (_cwmp__Fault *)download_resp;
+        cwmp_fault_t *f = (cwmp_fault_t *)download_resp;
         RING("Fault detected: %s(%s)", f->FaultCode, f->FaultString);
     }
     else 
@@ -108,7 +108,7 @@ main(int argc, char *argv[])
                                       &from_cpe);
         if (0 == te_rc)
         {
-            _cwmp__TransferComplete *tc = from_cpe.transfer_complete;
+            cwmp_transfer_complete_t *tc = from_cpe.transfer_complete;
             RING("TransferComplete, key %s, fault: %s (%s)", 
                  tc->CommandKey, tc->FaultStruct->FaultCode, 
                  tc->FaultStruct->FaultString);

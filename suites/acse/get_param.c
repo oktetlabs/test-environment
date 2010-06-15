@@ -58,9 +58,9 @@ main(int argc, char *argv[])
 {
     int i;
     cwmp_sess_state_t cwmp_state = 0;
-    _cwmp__GetParameterValues          *get_values;
-    _cwmp__GetParameterValuesResponse  *get_values_resp = NULL;
-    _cwmp__GetParameterNamesResponse   *get_names_resp = NULL;
+    cwmp_get_parameter_values_t           *get_values;
+    cwmp_get_parameter_values_response_t  *get_values_resp = NULL;
+    cwmp_get_parameter_names_response_t   *get_names_resp = NULL;
 
     char *param_path = 
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."

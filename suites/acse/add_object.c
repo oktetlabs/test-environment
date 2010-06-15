@@ -38,8 +38,8 @@ int
 main(int argc, char *argv[])
 {
     int object_number = 0, add_status;
-    _cwmp__SetParameterValues          *set_values;
-    _cwmp__SetParameterValuesResponse  *set_values_resp = NULL;
+    cwmp_set_parameter_values_t          *set_values;
+    cwmp_set_parameter_values_response_t *set_values_resp = NULL;
     tapi_acse_context_t *ctx; 
     char *param_path = 
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
