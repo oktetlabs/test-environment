@@ -31,11 +31,11 @@ lib_luadir = $(libdir)/lua
 lib_LTLIBRARIES = librgt-raw2xml.la
 
 librgt_raw2xml_la_SOURCES = \
-    lua_rgt_cbuf.c          \
-    rgt_cbuf.c              \
-    rgt_co_chunk.c          \
-    rgt_co_mngr.c           \
-    rgt_co_strg.c
+    lua_cbuf.c              \
+    cbuf.c                  \
+    co_chunk.c              \
+    co_mngr.c               \
+    co_strg.c
 
 install-exec-hook:
 	@INSTALL@ -d $(lib_luadir)
