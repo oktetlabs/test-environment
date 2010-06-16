@@ -23,7 +23,7 @@
 # Author: Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
 #
 
-SUBDIRS = lib lua
+SUBDIRS = include lib lua
 
 AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@ \
               -D_FILE_OFFSET_BITS=64

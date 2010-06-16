@@ -23,4 +23,20 @@
 # Author: Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
 #
 
-SUBDIRS = lua
+AM_CPPFLAGS = @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@
+AM_CFLAGS = @TE_CFLAGS@ -I $(srcdir)/../include -Wextra -Werror
+
+lib_luadir = $(libdir)/lua
+
+lib_LTLIBRARIES = librgt-raw2xml.la
+
+librgt_raw2xml_la_SOURCES = \
+    lua_rgt_cbuf.c          \
+    rgt_cbuf.c              \
+    rgt_co_chunk.c          \
+    rgt_co_mngr.c           \
+    rgt_co_strg.c
+
+install-exec-hook:
+	@INSTALL@ -d $(lib_luadir)
+	@LN_S@ -f ../librgt-raw2xml.so.0.0.0 $(lib_luadir)/rgt.so

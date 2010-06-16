@@ -1,5 +1,5 @@
 #
-# automake file for RGT raw2xml/lib/lua directory
+# automake file for RGT raw2xml/include directory
 # Process with automake
 #
 # Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
@@ -23,4 +23,8 @@
 # Author: Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
 #
 
-SUBDIRS = co
+noinst_HEADERS = \
+    rgt_cbuf.h      \
+    rgt_co_chunk.h  \
+    rgt_co_mngr.h   \
+    rgt_co_strg.h

@@ -26,7 +26,7 @@
 
 local oo    = require("loop.simple")
 local co    = {}
-co.buf      = require("co.buf")
+co.buf      = require("rgt.cbuf")
 co.chunk    = oo.class({
                         buf_size = 32768,   --- Relocation buffer size
                         manager  = nil,     --- Chunk manager
@@ -162,7 +162,7 @@ end
 function co.chunk:finish()
     self.finished = true
     if self:is_mem() then
-        self.storage:retension()
+        self.storage:retention()
     end
     self.manager:finished(self)
     return self
