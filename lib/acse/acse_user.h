@@ -23,7 +23,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 #ifndef __TE_LIB_ACSE_INTERNAL_H__
 #define __TE_LIB_ACSE_INTERNAL_H__

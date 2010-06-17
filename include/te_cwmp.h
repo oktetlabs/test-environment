@@ -330,18 +330,5 @@ typedef uint32_t acse_request_id_t;
 #define SOAP_TYPE_time (98)
 #endif
 
-/*
- * Useful structs to some CWMP parameters processing.
- */
-
-typedef struct {
-    char   **arr;
-    size_t   size;
-} string_array_t;
-
-typedef struct {
-    cwmp_parameter_value_struct_t **arr;
-    size_t       size;
-} cwmp_values_array_t;
 
 #endif /*__TE_CWMP_H__ */

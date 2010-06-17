@@ -9,7 +9,7 @@ AM_CFLAGS = @TE_CFLAGS@ -DWITH_OPENSSL
 AM_LDFLAGS = @TE_LDFLAGS@
 
 
-lib_LTLIBRARIES = libacse_epc.la libacse_cwmp.la libcwmp_data.la
+lib_LTLIBRARIES = libacse_cwmp.la libcwmp_data.la
 
 bin_PROGRAMS = acse_cli
 
@@ -21,6 +21,7 @@ libacse_cwmp_la_SOURCES = acse.c \
                     acse_conn.c \
                     acse_creq.c \
                     acse_cwmp.c \
+                    acse_epc.c \
                     acse_epc_disp.c \
                     acse_db.c \
                     acse_mem.c \
@@ -29,10 +30,7 @@ libacse_cwmp_la_SOURCES = acse.c \
                     md5evp.c \
                     acse_soapServer.c
 
-libacse_epc_la_SOURCES = acse_epc.c cwmp_data.c
-
-libcwmp_data_la_SOURCES = cwmp_data.c
-                    
+libcwmp_data_la_SOURCES = cwmp_data.c cwmp_utils.c
                     
 acse_cli_SOURCES = acse_cli.c
 
@@ -43,12 +41,12 @@ acse_cli_SOURCES = acse_cli.c
 # acse_single_LDADD = -lacse_epc -lacse_cwmp -lgsoapssl -lz \
 #             -llogger_file -ltools -lcrypto -lrt -lssl
 
-acse_cli_LDADD = -lacse_epc  -lacse_cwmp -lgsoapssl -lz -llogger_file \
+acse_cli_LDADD = -lcwmp_data  -lacse_cwmp -lgsoapssl -lz -llogger_file \
             -ltools -lcrypto -lrt -lssl -lpopt
 # acse_cli_LDADD = -lacse_epc -llogger_file -ltools -lrt -lpopt
 
 install-exec-hook:
-	touch -c -r libacse_epc.* $(DESTDIR)/$(libdir)/libacse_epc.*
+	touch -c -r libacse_cwmp.* $(DESTDIR)/$(libdir)/libacse_cwmp.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

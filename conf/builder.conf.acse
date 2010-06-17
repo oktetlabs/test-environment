@@ -13,16 +13,12 @@ TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
 TE_LIB_PARMS([tad], [], [],
              [--with-dhcp], [], [], [])
 
-TE_LIB_PARMS([tapi_rpc], [], [],
-             [--with-tr069], [], [], [])
-
 TE_LIB_PARMS([tapi_tad], [], [],
              [--without-snmp --without-atm --without-bridge])
-
 
 TE_TA_TYPE([linux], [], [unix],
            [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo' \
             --with-tr069 --with-libnetconf],
-           [], [], [], [comm_net_agent ndn asn acse_epc acse_cwmp])
+           [], [], [], [comm_net_agent ndn asn acse_cwmp cwmp_data])
 
 

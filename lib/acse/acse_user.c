@@ -23,7 +23,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: acse_epc.c 64313 2010-05-17 09:06:25Z konst $
+ * $Id$
  */
 
 #define TE_LGR_USER     "ACSE user utils"

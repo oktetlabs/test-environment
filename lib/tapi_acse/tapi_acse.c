@@ -502,8 +502,8 @@ rpc_cwmp_conn_req(rcf_rpc_server *rpcs,
 
 te_errno
 tapi_acse_cpe_rpc_call(tapi_acse_context_t *ctx,
-                  te_cwmp_rpc_cpe_t cpe_rpc_code,
-                  cwmp_data_to_cpe_t to_cpe)
+                       te_cwmp_rpc_cpe_t cpe_rpc_code,
+                       cwmp_data_to_cpe_t to_cpe)
 {
     uint8_t *buf = malloc(ACSE_BUF_SIZE);
     ssize_t pack_s;
@@ -622,11 +622,26 @@ tapi_acse_get_rpc_acs(tapi_acse_context_t *ctx,
  */
 
 
+/**
+ * Copy internal gSOAP CWMP array of strings to string_array_t. 
+ * Parameter src_ is assumed to have fields 'char ** __ptrstring' and
+ * 'int __size'.
+ * Parameter 'arr_' is local variable for pointer to new string_array_t.
+ */
+#define COPY_STRING_ARRAY(src_, arr_) \
+    do { \
+        int i; \
+        (arr_) = (string_array_t *)malloc(sizeof(string_array_t)); \
+        (arr_)->size = (src_)->__size; \
+        (arr_)->items = calloc((arr_)->size, sizeof(char*)); \
+        for (i = 0; i < (src_)->__size; i++) \
+            (arr_)->items[i] = strdup((src_)->__ptrstring[i]); \
+    } while (0)
 
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_get_rpc_methods(tapi_acse_context_t *ctx)
+tapi_acse_get_rpc_methods(tapi_acse_context_t *ctx)
 {
     return rpc_cwmp_op_call(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name,
                             CWMP_RPC_get_rpc_methods,
@@ -636,23 +651,24 @@ tapi_acse_cpe_get_rpc_methods(tapi_acse_context_t *ctx)
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_get_rpc_methods_resp(tapi_acse_context_t *ctx,
-                               cwmp_get_rpc_methods_response_t **resp)
+tapi_acse_get_rpc_methods_resp(tapi_acse_context_t *ctx,
+                               string_array_t **resp)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
 
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
 
-    if (NULL != resp && NULL != from_cpe_loc.p)
-        *resp = from_cpe_loc.get_rpc_methods_r;
+    if (0 == rc && NULL != resp && NULL != from_cpe_loc.p)
+        COPY_STRING_ARRAY(from_cpe_loc.get_rpc_methods_r->MethodList_,
+                          *resp);
     return rc;
 }
 
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_download(tapi_acse_context_t *ctx,
-                       cwmp_download_t *req)
+tapi_acse_download(tapi_acse_context_t *ctx,
+                   cwmp_download_t *req)
 {
     cwmp_data_to_cpe_t to_cpe_loc;
     to_cpe_loc.download = req;
@@ -662,8 +678,8 @@ tapi_acse_cpe_download(tapi_acse_context_t *ctx,
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_download_resp(tapi_acse_context_t *ctx,
-                           cwmp_download_response_t **resp)
+tapi_acse_download_resp(tapi_acse_context_t *ctx,
+                        cwmp_download_response_t **resp)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
@@ -676,27 +692,45 @@ tapi_acse_cpe_download_resp(tapi_acse_context_t *ctx,
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_get_parameter_values(tapi_acse_context_t *ctx,
-                                   cwmp_get_parameter_values_t *req)
+tapi_acse_get_parameter_values(tapi_acse_context_t *ctx,
+                               string_array_t *names)
 {
     cwmp_data_to_cpe_t to_cpe_loc;
-    to_cpe_loc.get_parameter_values = req;
+    ParameterNames             par_list;
+    _cwmp__GetParameterValues  req;
+
+    req.ParameterNames_ = &par_list;
+    to_cpe_loc.get_parameter_values = &req;
+
+    par_list.__ptrstring = names->items;
+    par_list.__size      = names->size;
 
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_get_parameter_values,
                                   to_cpe_loc);
 }
 
-
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_get_parameter_values_resp(tapi_acse_context_t *ctx,
-               cwmp_get_parameter_values_response_t **resp)
+tapi_acse_get_parameter_values_resp(tapi_acse_context_t *ctx,
+                                    cwmp_values_array_t **resp)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
-    te_errno rc = tapi_acse_cpe_rpc_response(ctx,
-                                             NULL, &from_cpe_loc);
-    if (NULL != resp && NULL != from_cpe_loc.p)
-        *resp = from_cpe_loc.get_parameter_values_r;
+
+    te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
+
+    /* Copy good response if it is necessary for user */
+    if (0 == rc && NULL != resp && NULL != from_cpe_loc.p)
+    {
+        unsigned i;
+        ParameterValueList *par_list =
+            from_cpe_loc.get_parameter_values_r->ParameterList;
+        *resp = malloc(sizeof(cwmp_values_array_t));
+        (*resp)->size = par_list->__size;
+        (*resp)->items = calloc((*resp)->size, sizeof(char*));
+        for (i = 0; i < (*resp)->size; i++)
+            (*resp)->items[i] = cwmp_copy_par_value(
+                                par_list->__ptrParameterValueStruct[i]);
+    }
     return rc;
 }
 
@@ -704,7 +738,7 @@ tapi_acse_cpe_get_parameter_values_resp(tapi_acse_context_t *ctx,
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_get_parameter_names(tapi_acse_context_t *ctx,
+tapi_acse_get_parameter_names(tapi_acse_context_t *ctx,
                                   te_bool next_level,
                                   const char *fmt, ...)
 {
@@ -728,24 +762,42 @@ tapi_acse_cpe_get_parameter_names(tapi_acse_context_t *ctx,
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_get_parameter_names_resp(
-               tapi_acse_context_t *ctx,
-               cwmp_get_parameter_names_response_t **resp)
+tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
+                                   string_array_t **resp)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
-    if (NULL != resp && NULL != from_cpe_loc.p)
-        *resp = from_cpe_loc.get_parameter_names_r;
+    if (0 == rc && NULL != resp && NULL != from_cpe_loc.p)
+    { 
+        int i;
+        ParameterInfoList *name_list =
+            from_cpe_loc.get_parameter_names_r->ParameterList;
+        (*resp) = (string_array_t *)malloc(sizeof(string_array_t));
+        (*resp)->size = name_list->__size;
+        (*resp)->items = calloc(name_list->__size, sizeof(char*));
+        for (i = 0; i < name_list->__size; i++)
+            (*resp)->items[i] =
+                strdup((name_list->__ptrParameterInfoStruct[i])->Name);
+    }
     return rc;
 }
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_set_parameter_values(tapi_acse_context_t *ctx,
-                                   cwmp_set_parameter_values_t *req)
+tapi_acse_set_parameter_values(tapi_acse_context_t *ctx,
+                               const char *par_key,
+                               cwmp_values_array_t *val_arr)
 {
     cwmp_data_to_cpe_t to_cpe_loc;
-    to_cpe_loc.set_parameter_values = req;
+    cwmp_set_parameter_values_t req;
+    ParameterValueList pv_list;
+
+    pv_list.__ptrParameterValueStruct = val_arr->items;
+    pv_list.__size = val_arr->size;
+
+    req.ParameterList = &pv_list;
+    req.ParameterKey = strdup(par_key);
+    to_cpe_loc.set_parameter_values = &req;
 
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_set_parameter_values,
                              to_cpe_loc);
@@ -754,14 +806,12 @@ tapi_acse_cpe_set_parameter_values(tapi_acse_context_t *ctx,
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_set_parameter_values_resp(
-               tapi_acse_context_t *ctx,
-               cwmp_set_parameter_values_response_t **resp)
+tapi_acse_set_parameter_values_resp(tapi_acse_context_t *ctx, int *status)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
-    if (NULL != resp && NULL != from_cpe_loc.p)
-        *resp = from_cpe_loc.set_parameter_values_r;
+    if (0 == rc && NULL != status && NULL != from_cpe_loc.p)
+        *status = from_cpe_loc.set_parameter_values_r->Status;
     return rc;
 }
 
@@ -769,7 +819,7 @@ tapi_acse_cpe_set_parameter_values_resp(
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
+tapi_acse_connect(tapi_acse_context_t *ctx)
 {
     return rpc_cwmp_conn_req(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name);
 }
@@ -777,7 +827,7 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
+tapi_acse_disconnect(tapi_acse_context_t *ctx)
 {
     /* TODO : this simple activate sending empty response, this is 
      * do not automatically leads to terminate CWMP session.
@@ -795,7 +845,7 @@ tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
 
 
 te_errno
-tapi_acse_cpe_add_object(tapi_acse_context_t *ctx,
+tapi_acse_add_object(tapi_acse_context_t *ctx,
                          const char *obj_name, const char *param_key)
 {
     char                obj_name_buf[256];
@@ -815,7 +865,7 @@ tapi_acse_cpe_add_object(tapi_acse_context_t *ctx,
 
 
 te_errno
-tapi_acse_cpe_add_object_resp(tapi_acse_context_t *ctx,
+tapi_acse_add_object_resp(tapi_acse_context_t *ctx,
                               int *obj_index, int *add_status)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
