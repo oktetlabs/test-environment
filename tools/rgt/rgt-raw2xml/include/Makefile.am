@@ -25,6 +25,5 @@
 
 noinst_HEADERS = \
     rgt_cbuf.h      \
-    rgt_co_chunk.h  \
-    rgt_co_mngr.h   \
+    rgt_co.h        \
     rgt_co_strg.h

@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: RGT chunked output - manager.
+ * @brief Test Environment: RGT chunked output.
  *
  * Copyright (C) 2010 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -26,10 +26,13 @@
 
 #include <stdarg.h>
 #include <stdint.h>
-#include "rgt_co_mngr.h"
+#include "rgt_co.h"
 
 #define TABSTOP 2
 
+/**********************************************************
+ * MANAGER
+ **********************************************************/
 te_bool
 rgt_co_mngr_valid(const rgt_co_mngr *mngr)
 {
@@ -45,27 +48,27 @@ rgt_co_mngr_init(rgt_co_mngr *mngr, size_t max_mem)
 
     mngr->max_mem     = max_mem;
     mngr->used_mem    = 0;
-    mngr->first       = NULL;
-    mngr->free        = NULL;
+    mngr->first_used  = NULL;
+    mngr->first_free  = NULL;
 
     return mngr;
 }
 
 
-rgt_co_chunk *
-rgt_co_mngr_add_chunk(rgt_co_mngr *mngr, rgt_co_chunk *prev, size_t depth)
+static rgt_co_chunk *
+add_chunk(rgt_co_mngr *mngr, rgt_co_chunk *prev, size_t depth)
 {
-    rgt_co_chunk   *chunk;
+    rgt_co_chunk  *chunk;
 
     assert(rgt_co_mngr_valid(mngr));
     assert(prev == NULL || rgt_co_chunk_valid(prev));
 
     /* If there are any free chunks */
-    if (mngr->free != NULL)
+    if (mngr->first_free != NULL)
     {
         /* Take a free chunk */
-        chunk = mngr->free;
-        mngr->free = chunk->next;
+        chunk = mngr->first_free;
+        mngr->first_free = chunk->next;
     }
     else
     {
@@ -73,16 +76,19 @@ rgt_co_mngr_add_chunk(rgt_co_mngr *mngr, rgt_co_chunk *prev, size_t depth)
         chunk = malloc(sizeof(*chunk));
         if (chunk == NULL)
             return NULL;
+        chunk->mngr = mngr;
     }
 
-    /* Initialize chunk */
-    rgt_co_chunk_init(chunk, depth);
+    /* Initialize the chunk */
+    rgt_co_strg_init(&chunk->strg);
+    chunk->depth = depth;
+    chunk->finished = FALSE;
 
-    /* Link new chunk */
+    /* Link the new chunk */
     if (prev == NULL)
     {
-        chunk->next = mngr->first;
-        mngr->first = chunk;
+        chunk->next = mngr->first_used;
+        mngr->first_used = chunk;
     }
     else
     {
@@ -94,9 +100,24 @@ rgt_co_mngr_add_chunk(rgt_co_mngr *mngr, rgt_co_chunk *prev, size_t depth)
 }
 
 
+rgt_co_chunk *
+rgt_co_mngr_add_first_chunk(rgt_co_mngr *mngr, size_t depth)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    return add_chunk(mngr, NULL, depth);
+}
+
+
+rgt_co_chunk *
+rgt_co_mngr_add_chunk(rgt_co_chunk *prev, size_t depth)
+{
+    assert(rgt_co_chunk_valid(prev));
+    return add_chunk(prev->mngr, prev, depth);
+}
+
+
 void
-rgt_co_mngr_del_chunk(rgt_co_mngr  *mngr,
-                      rgt_co_chunk *prev)
+del_chunk(rgt_co_mngr *mngr, rgt_co_chunk *prev)
 {
     rgt_co_chunk *chunk;
 
@@ -106,9 +127,9 @@ rgt_co_mngr_del_chunk(rgt_co_mngr  *mngr,
     /* Retrieve and unlink the chunk */
     if (prev == NULL)
     {
-        chunk = mngr->first;
+        chunk = mngr->first_used;
         assert(chunk != NULL);
-        mngr->first = chunk->next;
+        mngr->first_used = chunk->next;
     }
     else
     {
@@ -117,42 +138,103 @@ rgt_co_mngr_del_chunk(rgt_co_mngr  *mngr,
         prev->next = chunk->next;
     }
 
+    /* Cleanup the chunk ignoring any errors */
+    (void)rgt_co_strg_clnp(&chunk->strg);
+
     /* Link the chunk to the free list */
-    chunk->next = mngr->free;
-    mngr->free = chunk;
+    chunk->next = mngr->first_free;
+    mngr->first_free = chunk;
+}
+
+
+void
+rgt_co_mngr_del_first_chunk(rgt_co_mngr  *mngr)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    del_chunk(mngr, NULL);
+}
+
+
+void
+rgt_co_mngr_del_chunk(rgt_co_chunk *prev)
+{
+    assert(rgt_co_chunk_valid(prev));
+    del_chunk(prev->mngr, prev);
 }
 
 
 te_bool
-rgt_co_mngr_chunk_append(rgt_co_mngr   *mngr,
-                         rgt_co_chunk  *chunk,
-                         const void    *ptr,
-                         size_t         len)
+rgt_co_mngr_finished(const rgt_co_mngr *mngr)
 {
     assert(rgt_co_mngr_valid(mngr));
+
+    return mngr->first_used != NULL &&
+           rgt_co_chunk_finished(mngr->first_used) &&
+           mngr->first_used->next == NULL;
+}
+
+
+void
+rgt_co_mngr_clnp(rgt_co_mngr *mngr)
+{
+    rgt_co_chunk   *chunk;
+    rgt_co_chunk   *next_chunk;
+
+    /* Free the "free" chunks */
+    for (chunk = mngr->first_free; chunk != NULL; chunk = next_chunk)
+    {
+        next_chunk = chunk->next;
+        assert(rgt_co_chunk_is_void(chunk));
+        free(chunk);
+    }
+
+    /* Free the "used" chunks */
+    for (chunk = mngr->first_used; chunk != NULL; chunk = next_chunk)
+    {
+        next_chunk = chunk->next;
+        /* Cleanup the chunk, ignoring any errors */
+        (void)rgt_co_strg_clnp(&chunk->strg);
+        free(chunk);
+    }
+}
+
+
+/**********************************************************
+ * CHUNK
+ **********************************************************/
+te_bool
+rgt_co_chunk_valid(const rgt_co_chunk *chunk)
+{
+    return chunk != NULL &&
+           chunk->mngr != NULL &&
+           rgt_co_strg_valid(&chunk->strg);
+}
+
+
+te_bool
+rgt_co_chunk_append(rgt_co_chunk *chunk, const void *ptr, size_t len)
+{
     assert(rgt_co_chunk_valid(chunk));
     assert(ptr != NULL || len == 0);
 
-    if (!rgt_co_chunk_append(chunk, ptr, len))
+    if (!rgt_co_strg_append(&chunk->strg, ptr, len))
         return FALSE;
 
     if (rgt_co_chunk_is_mem(chunk))
-        mngr->used_mem += len;
+        chunk->mngr->used_mem += len;
 
     return TRUE;
 }
 
 
 te_bool
-rgt_co_mngr_chunk_appendvf(rgt_co_mngr *mngr, rgt_co_chunk *chunk,
-                           const char *fmt, va_list ap)
+rgt_co_chunk_appendvf(rgt_co_chunk *chunk, const char   *fmt, va_list ap)
 {
     va_list     ap_copy;
     int         rc;
     size_t      size;
     char       *buf;
 
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(fmt != NULL);
 
@@ -165,86 +247,78 @@ rgt_co_mngr_chunk_appendvf(rgt_co_mngr *mngr, rgt_co_chunk *chunk,
 
     buf = alloca(size);
     snprintf(buf, size, fmt, ap);
-    return rgt_co_mngr_chunk_append(mngr, chunk, buf, rc);
+    return rgt_co_chunk_append(chunk, buf, rc);
 }
 
 
 te_bool
-rgt_co_mngr_chunk_appendf(rgt_co_mngr *mngr, rgt_co_chunk *chunk,
-                          const char *fmt, ...)
+rgt_co_chunk_appendf(rgt_co_chunk *chunk, const char *fmt, ...)
 {
     va_list ap;
     te_bool result;
 
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(fmt != NULL);
 
     va_start(ap, fmt);
-    result = rgt_co_mngr_chunk_appendvf(mngr, chunk, fmt, ap);
+    result = rgt_co_chunk_appendvf(chunk, fmt, ap);
     va_end(ap);
     return result;
 }
 
 
 te_bool
-rgt_co_mngr_chunk_append_span(rgt_co_mngr  *mngr,
-                              rgt_co_chunk *chunk,
-                              char          c,
-                              size_t        n)
+rgt_co_chunk_append_span(rgt_co_chunk *chunk, char c, size_t n)
 {
-    void   *buf;
-
-    assert(rgt_co_mngr_valid(mngr));
+    char   buf[n];
     assert(rgt_co_chunk_valid(chunk));
-
-    buf = alloca(n);
     memset(buf, c, n);
-    return rgt_co_mngr_chunk_append(mngr, chunk, buf, n);
+    return rgt_co_chunk_append(chunk, buf, n);
 }
 
 
-static inline te_bool
-append_indent(rgt_co_mngr     *mngr,
-              rgt_co_chunk    *chunk)
+te_bool
+rgt_co_chunk_finish(rgt_co_chunk *chunk)
 {
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
-    return rgt_co_mngr_chunk_append_span(mngr, chunk,
+    return rgt_co_chunk_finish(chunk);
+}
+
+
+/**********************************************************
+ * XML CHUNK
+ **********************************************************/
+static inline te_bool
+append_indent(rgt_co_chunk *chunk)
+{
+    assert(rgt_co_chunk_valid(chunk));
+    return rgt_co_chunk_append_span(chunk,
                                          ' ', chunk->depth * TABSTOP);
 }
 
 
 static inline te_bool
-append_newline(rgt_co_mngr     *mngr,
-               rgt_co_chunk    *chunk)
+append_newline(rgt_co_chunk *chunk)
 {
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
-    return rgt_co_mngr_chunk_append_char(mngr, chunk, '\n');
+    return rgt_co_chunk_append_char(chunk, '\n');
 }
 
 
 static inline te_bool
-append_start_tag_start(rgt_co_mngr    *mngr,
-                       rgt_co_chunk   *chunk,
-                       const char     *name)
+append_start_tag_start(rgt_co_chunk *chunk, const char *name)
 {
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
 
-    return rgt_co_mngr_chunk_append_char(mngr, chunk, '<') &&
-           rgt_co_mngr_chunk_append_str(mngr, chunk, name);
+    return rgt_co_chunk_append_char(chunk, '<') &&
+           rgt_co_chunk_append_str(chunk, name);
 }
 
 
 static te_bool
-append_attr_value(rgt_co_mngr     *mngr,
-                  rgt_co_chunk    *chunk,
-                  const uint8_t   *ptr,
-                  size_t           len)
+append_attr_value(rgt_co_chunk *chunk, const uint8_t *ptr, size_t len)
 {
     static const char       xd[]        = "0123456789abcdef";
     static char             enc_buf[]   = "&lt;0xXX&gt;";
@@ -257,7 +331,6 @@ append_attr_value(rgt_co_mngr     *mngr,
     const char     *r;
     size_t          l;
 
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(ptr != NULL || len == 0);
 
@@ -305,32 +378,29 @@ append_attr_value(rgt_co_mngr     *mngr,
         }
 
         if ((p > prev_p &&
-             !rgt_co_mngr_chunk_append(mngr, chunk,
-                                       prev_p, (p - prev_p))) ||
-            !rgt_co_mngr_chunk_append(mngr, chunk, r, l))
+             !rgt_co_chunk_append(chunk, prev_p, (p - prev_p))) ||
+            !rgt_co_chunk_append(chunk, r, l))
             return FALSE;
         p++;
         prev_p = p;
     }
 
     return p == prev_p ||
-           rgt_co_mngr_chunk_append(mngr, chunk, prev_p, (p - prev_p));
+           rgt_co_chunk_append(chunk, prev_p, (p - prev_p));
 }
 
 
 static te_bool
-append_attr(rgt_co_mngr   *mngr,
-            rgt_co_chunk  *chunk,
-            const char    *name,
-            const void    *value_ptr,
-            size_t         value_len)
+append_attr(rgt_co_chunk   *chunk,
+            const char     *name,
+            const void     *value_ptr,
+            size_t          value_len)
 {
     size_t  name_len;
     size_t  buf_len;
     char   *buf;
     char   *p;
 
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
@@ -349,24 +419,21 @@ append_attr(rgt_co_mngr   *mngr,
     *p++ = '=';
     *p = '"';
 
-    return rgt_co_mngr_chunk_append(mngr, chunk, buf, buf_len) &&
-           append_attr_value(mngr, chunk,
+    return rgt_co_chunk_append(chunk, buf, buf_len) &&
+           append_attr_value(chunk,
                              (const uint8_t *)value_ptr, value_len) &&
-           rgt_co_mngr_chunk_append_char(mngr, chunk, '"');
+           rgt_co_chunk_append_char(chunk, '"');
 }
 
 
 static te_bool
-append_attr_list(rgt_co_mngr              *mngr,
-                 rgt_co_chunk             *chunk,
-                 const rgt_co_mngr_attr   *list)
+append_attr_list(rgt_co_chunk *chunk, const rgt_co_chunk_attr *list)
 {
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(list != NULL);
 
     for (; list->name != NULL; list++)
-        if (!append_attr(mngr, chunk,
+        if (!append_attr(chunk,
                          list->name, list->value_ptr, list->value_len))
             return FALSE;
 
@@ -375,66 +442,55 @@ append_attr_list(rgt_co_mngr              *mngr,
 
 
 static inline te_bool
-append_start_tag_end(rgt_co_mngr  *mngr,
-                     rgt_co_chunk *chunk)
+append_start_tag_end(rgt_co_chunk *chunk)
 {
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
-    return rgt_co_mngr_chunk_append_literal(mngr, chunk, ">\n");
+    return rgt_co_chunk_append_literal(chunk, ">\n");
 }
 
 
 static te_bool
-append_start_tag(rgt_co_mngr              *mngr,
-                 rgt_co_chunk             *chunk,
-                 const char               *name,
-                 const rgt_co_mngr_attr   *attr_list)
+append_start_tag(rgt_co_chunk              *chunk,
+                 const char                *name,
+                 const rgt_co_chunk_attr   *attr_list)
 {
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
     assert(attr_list != NULL);
 
-    return append_start_tag_start(mngr, chunk, name) &&
-           append_attr_list(mngr, chunk, attr_list) &&
-           append_start_tag_end(mngr, chunk);
+    return append_start_tag_start(chunk, name) &&
+           append_attr_list(chunk, attr_list) &&
+           append_start_tag_end(chunk);
 }
 
 
 static inline te_bool
-append_empty_tag_end(rgt_co_mngr  *mngr,
-                     rgt_co_chunk *chunk)
+append_empty_tag_end(rgt_co_chunk *chunk)
 {
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
-    return rgt_co_mngr_chunk_append_literal(mngr, chunk, "/>\n");
+    return rgt_co_chunk_append_literal(chunk, "/>\n");
 }
 
 
 static te_bool
-append_empty_tag(rgt_co_mngr              *mngr,
-                 rgt_co_chunk             *chunk,
-                 const char               *name,
-                 const rgt_co_mngr_attr   *attr_list)
+append_empty_tag(rgt_co_chunk              *chunk,
+                 const char                *name,
+                 const rgt_co_chunk_attr   *attr_list)
 {
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
     assert(attr_list != NULL);
 
-    return append_start_tag_start(mngr, chunk, name) &&
-           append_attr_list(mngr, chunk, attr_list) &&
-           append_empty_tag_end(mngr, chunk);
+    return append_start_tag_start(chunk, name) &&
+           append_attr_list(chunk, attr_list) &&
+           append_empty_tag_end(chunk);
 }
 
 
 static te_bool
-append_cdata(rgt_co_mngr   *mngr,
-             rgt_co_chunk  *chunk,
-             const uint8_t *ptr,
-             size_t         len)
+append_cdata(rgt_co_chunk *chunk, const uint8_t *ptr, size_t len)
 {
     static const char       xd[]        = "0123456789abcdef";
     static char             enc_buf[]   = "&lt;0xXX&gt;";
@@ -447,7 +503,6 @@ append_cdata(rgt_co_mngr   *mngr,
     const char     *r;
     size_t          l;
 
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(ptr != NULL || len == 0);
 
@@ -477,9 +532,9 @@ append_cdata(rgt_co_mngr   *mngr,
 
                 /* It is "\r\n" */
                 if ((p > prev_p &&
-                     !rgt_co_mngr_chunk_append(mngr, chunk,
+                     !rgt_co_chunk_append(chunk,
                                                prev_p, (p - prev_p))) ||
-                    !rgt_co_mngr_chunk_append(mngr, chunk, r, l))
+                    !rgt_co_chunk_append(chunk, r, l))
                     return FALSE;
                 p += 2;
                 prev_p = p;
@@ -503,30 +558,26 @@ append_cdata(rgt_co_mngr   *mngr,
         }
 
         if ((p > prev_p &&
-             !rgt_co_mngr_chunk_append(mngr, chunk,
-                                       prev_p, (p - prev_p))) ||
-            !rgt_co_mngr_chunk_append(mngr, chunk, r, l))
+             !rgt_co_chunk_append(chunk, prev_p, (p - prev_p))) ||
+            !rgt_co_chunk_append(chunk, r, l))
             return FALSE;
         p++;
         prev_p = p;
     }
 
     return p == prev_p ||
-           rgt_co_mngr_chunk_append(mngr, chunk, prev_p, (p - prev_p));
+           rgt_co_chunk_append(chunk, prev_p, (p - prev_p));
 }
 
 
 static te_bool
-append_end_tag(rgt_co_mngr    *mngr,
-               rgt_co_chunk   *chunk,
-               const char     *name)
+append_end_tag(rgt_co_chunk *chunk, const char *name)
 {
     size_t  name_len;
     size_t  buf_len;
     char   *buf;
     char   *p;
 
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
@@ -544,26 +595,24 @@ append_end_tag(rgt_co_mngr    *mngr,
     p += name_len;
     *p = '>';
 
-    return rgt_co_mngr_chunk_append(mngr, chunk, buf, buf_len);
+    return rgt_co_chunk_append(chunk, buf, buf_len);
 }
 
 
 te_bool
-rgt_co_mngr_chunk_append_start_tag(rgt_co_mngr             *mngr,
-                                   rgt_co_chunk            *chunk,
-                                   const char              *name,
-                                   const rgt_co_mngr_attr  *attr_list)
+rgt_co_chunk_append_start_tag(rgt_co_chunk             *chunk,
+                              const char               *name,
+                              const rgt_co_chunk_attr  *attr_list)
 {
     te_bool success;
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
     assert(attr_list != NULL);
 
-    success = append_indent(mngr, chunk) &&
-              append_start_tag(mngr, chunk, name, attr_list) &&
-              append_newline(mngr, chunk);
+    success = append_indent(chunk) &&
+              append_start_tag(chunk, name, attr_list) &&
+              append_newline(chunk);
 
     if (success)
         rgt_co_chunk_descend(chunk);
@@ -573,48 +622,39 @@ rgt_co_mngr_chunk_append_start_tag(rgt_co_mngr             *mngr,
 
 
 te_bool
-rgt_co_mngr_chunk_append_cdata(rgt_co_mngr   *mngr,
-                               rgt_co_chunk  *chunk,
-                               const void    *ptr,
-                               size_t         len)
+rgt_co_chunk_append_cdata(rgt_co_chunk *chunk, const void *ptr, size_t len)
 {
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(ptr != NULL || len == 0);
 
-    return append_indent(mngr, chunk) &&
-           append_cdata(mngr, chunk, (const uint8_t *)ptr, len) &&
-           append_newline(mngr, chunk);
+    return append_indent(chunk) &&
+           append_cdata(chunk, (const uint8_t *)ptr, len) &&
+           append_newline(chunk);
 }
 
 
 te_bool
-rgt_co_mngr_chunk_append_end_tag(rgt_co_mngr   *mngr,
-                                 rgt_co_chunk  *chunk,
-                                 const char    *name)
+rgt_co_chunk_append_end_tag(rgt_co_chunk *chunk, const char *name)
 {
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
 
     rgt_co_chunk_ascend(chunk);
 
-    return append_indent(mngr, chunk) &&
-           append_end_tag(mngr, chunk, name) &&
-           append_newline(mngr, chunk);
+    return append_indent(chunk) &&
+           append_end_tag(chunk, name) &&
+           append_newline(chunk);
 }
 
 
 te_bool
-rgt_co_mngr_chunk_append_element(rgt_co_mngr               *mngr,
-                                 rgt_co_chunk              *chunk,
-                                 const char                *name,
-                                 const rgt_co_mngr_attr    *attr_list,
-                                 const void                *content_ptr,
-                                 size_t                     content_len)
+rgt_co_chunk_append_element(rgt_co_chunk               *chunk,
+                            const char                 *name,
+                            const rgt_co_chunk_attr    *attr_list,
+                            const void                 *content_ptr,
+                            size_t                      content_len)
 {
-    assert(rgt_co_mngr_valid(mngr));
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
@@ -622,66 +662,16 @@ rgt_co_mngr_chunk_append_element(rgt_co_mngr               *mngr,
     assert(content_ptr != NULL || content_len == 0);
 
     if (content_len == 0)
-        return append_indent(mngr, chunk) &&
-               append_empty_tag(mngr, chunk, name, attr_list) &&
-               append_newline(mngr, chunk);
+        return append_indent(chunk) &&
+               append_empty_tag(chunk, name, attr_list) &&
+               append_newline(chunk);
     else
-        return append_indent(mngr, chunk) &&
-               append_start_tag(mngr, chunk, name, attr_list) &&
-               append_cdata(mngr, chunk,
+        return append_indent(chunk) &&
+               append_start_tag(chunk, name, attr_list) &&
+               append_cdata(chunk,
                             (const uint8_t *)content_ptr, content_len) &&
-               append_end_tag(mngr, chunk, name) &&
-               append_newline(mngr, chunk);
+               append_end_tag(chunk, name) &&
+               append_newline(chunk);
 }
 
 
-te_bool
-rgt_co_mngr_chunk_finish(rgt_co_mngr *mngr, rgt_co_chunk *chunk)
-{
-    assert(rgt_co_mngr_valid(mngr));
-    assert(rgt_co_chunk_valid(chunk));
-
-    return rgt_co_chunk_finish(chunk);
-}
-
-
-te_bool
-rgt_co_mngr_finished(const rgt_co_mngr *mngr)
-{
-    assert(rgt_co_mngr_valid(mngr));
-
-    return mngr->first != NULL &&
-           rgt_co_chunk_finished(mngr->first) &&
-           mngr->first->next == NULL;
-}
-
-
-te_bool
-rgt_co_mngr_clnp(rgt_co_mngr *mngr)
-{
-    rgt_co_chunk   *chunk;
-    rgt_co_chunk   *next_chunk;
-
-    for (chunk = mngr->free; chunk != NULL; chunk = next_chunk)
-    {
-        next_chunk = chunk->next;
-        assert(rgt_co_chunk_is_void(chunk));
-        /* Cleaning void chunk never fails */
-        rgt_co_chunk_clnp(chunk);
-        free(chunk);
-    }
-
-    for (chunk = mngr->first; chunk != NULL; chunk = next_chunk)
-    {
-        next_chunk = chunk->next;
-        if (!rgt_co_chunk_clnp(chunk))
-        {
-            /* Just so we can resume later */
-            mngr->first = chunk;
-            return FALSE;
-        }
-        free(chunk);
-    }
-
-    return TRUE;
-}
