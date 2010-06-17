@@ -33,6 +33,7 @@
 extern "C" {
 #endif
 
+/** Chunk */
 typedef struct rgt_co_chunk rgt_co_chunk;
 
 struct rgt_co_chunk {
@@ -299,6 +300,7 @@ rgt_co_chunk_append(rgt_co_chunk *c, const void *ptr, size_t len)
     return rgt_co_strg_append(&c->strg, ptr, len);
 }
 
+
 /**
  * Merge two chunks.
  *
@@ -319,6 +321,31 @@ rgt_co_chunk_merge(rgt_co_chunk *dst, rgt_co_chunk *src)
     assert(rgt_co_chunk_valid(src));
 
     return rgt_co_strg_move_media(&dst->strg, &src->strg);
+}
+
+/**
+ * Increase chunk nesting depth.
+ *
+ * @param c The chunk to descend.
+ */
+static inline void
+rgt_co_chunk_descend(rgt_co_chunk *c)
+{
+    assert(rgt_co_chunk_valid(c));
+    c->depth++;
+}
+
+/**
+ * Decrease chunk nesting depth.
+ *
+ * @param c The chunk to ascend.
+ */
+static inline void
+rgt_co_chunk_ascend(rgt_co_chunk *c)
+{
+    assert(rgt_co_chunk_valid(c));
+    assert(c->depth > 0);
+    c->depth--;
 }
 
 #ifdef __cplusplus

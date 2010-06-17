@@ -24,8 +24,11 @@
  * $Id$
  */
 
+#include <stdarg.h>
+#include <stdint.h>
 #include "rgt_co_mngr.h"
 
+#define TABSTOP 2
 
 te_bool
 rgt_co_mngr_valid(const rgt_co_mngr *mngr)
@@ -33,6 +36,7 @@ rgt_co_mngr_valid(const rgt_co_mngr *mngr)
     return mngr != NULL &&
            mngr->used_mem <= mngr->max_mem;
 }
+
 
 rgt_co_mngr *
 rgt_co_mngr_init(rgt_co_mngr *mngr, size_t max_mem)
@@ -92,21 +96,26 @@ rgt_co_mngr_add_chunk(rgt_co_mngr *mngr, rgt_co_chunk *prev, size_t depth)
 
 void
 rgt_co_mngr_del_chunk(rgt_co_mngr  *mngr,
-                      rgt_co_chunk *prev,
-                      rgt_co_chunk *chunk)
+                      rgt_co_chunk *prev)
 {
+    rgt_co_chunk *chunk;
+
     assert(rgt_co_mngr_valid(mngr));
     assert(prev == NULL || rgt_co_chunk_valid(prev));
-    assert(rgt_co_chunk_valid(chunk));
-    assert(rgt_co_chunk_is_void(chunk));
-    assert((prev == NULL && mngr->first == chunk) ||
-           (prev != NULL && prev->next == chunk));
 
-    /* Unlink the chunk */
+    /* Retrieve and unlink the chunk */
     if (prev == NULL)
+    {
+        chunk = mngr->first;
+        assert(chunk != NULL);
         mngr->first = chunk->next;
+    }
     else
+    {
+        chunk = prev->next;
+        assert(chunk != NULL);
         prev->next = chunk->next;
+    }
 
     /* Link the chunk to the free list */
     chunk->next = mngr->free;
@@ -131,6 +140,498 @@ rgt_co_mngr_chunk_append(rgt_co_mngr   *mngr,
         mngr->used_mem += len;
 
     return TRUE;
+}
+
+
+te_bool
+rgt_co_mngr_chunk_appendvf(rgt_co_mngr *mngr, rgt_co_chunk *chunk,
+                           const char *fmt, va_list ap)
+{
+    va_list     ap_copy;
+    int         rc;
+    size_t      size;
+    char       *buf;
+
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(fmt != NULL);
+
+    va_copy(ap_copy, ap);
+    rc = snprintf(NULL, 0, fmt, ap_copy);
+    va_end(ap_copy);
+    if (rc < 0)
+        return FALSE;
+    size = rc + 1;
+
+    buf = alloca(size);
+    snprintf(buf, size, fmt, ap);
+    return rgt_co_mngr_chunk_append(mngr, chunk, buf, rc);
+}
+
+
+te_bool
+rgt_co_mngr_chunk_appendf(rgt_co_mngr *mngr, rgt_co_chunk *chunk,
+                          const char *fmt, ...)
+{
+    va_list ap;
+    te_bool result;
+
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(fmt != NULL);
+
+    va_start(ap, fmt);
+    result = rgt_co_mngr_chunk_appendvf(mngr, chunk, fmt, ap);
+    va_end(ap);
+    return result;
+}
+
+
+te_bool
+rgt_co_mngr_chunk_append_span(rgt_co_mngr  *mngr,
+                              rgt_co_chunk *chunk,
+                              char          c,
+                              size_t        n)
+{
+    void   *buf;
+
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+
+    buf = alloca(n);
+    memset(buf, c, n);
+    return rgt_co_mngr_chunk_append(mngr, chunk, buf, n);
+}
+
+
+static inline te_bool
+append_indent(rgt_co_mngr     *mngr,
+              rgt_co_chunk    *chunk)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    return rgt_co_mngr_chunk_append_span(mngr, chunk,
+                                         ' ', chunk->depth * TABSTOP);
+}
+
+
+static inline te_bool
+append_newline(rgt_co_mngr     *mngr,
+               rgt_co_chunk    *chunk)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    return rgt_co_mngr_chunk_append_char(mngr, chunk, '\n');
+}
+
+
+static inline te_bool
+append_start_tag_start(rgt_co_mngr    *mngr,
+                       rgt_co_chunk   *chunk,
+                       const char     *name)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(name != NULL);
+    assert(*name != '\0');
+
+    return rgt_co_mngr_chunk_append_char(mngr, chunk, '<') &&
+           rgt_co_mngr_chunk_append_str(mngr, chunk, name);
+}
+
+
+static te_bool
+append_attr_value(rgt_co_mngr     *mngr,
+                  rgt_co_chunk    *chunk,
+                  const uint8_t   *ptr,
+                  size_t           len)
+{
+    static const char       xd[]        = "0123456789abcdef";
+    static char             enc_buf[]   = "&lt;0xXX&gt;";
+    static char * const     enc_pos1    = enc_buf + 6;  /* first X */
+    static char * const     enc_pos2    = enc_buf + 7;  /* second X */
+
+    const uint8_t  *prev_p;
+    const uint8_t  *p;
+    uint8_t         c;
+    const char     *r;
+    size_t          l;
+
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(ptr != NULL || len == 0);
+
+    for (p = ptr, prev_p = ptr; len > 0; len--)
+    {
+        c = *p;
+        switch (c)
+        {
+            case '<':
+                r = "&lt;";
+                l = 4;
+                break;
+            case '>':
+                r = "&gt;";
+                l = 4;
+                break;
+            case '&':
+                r = "&amp;";
+                l = 5;
+                break;
+            case '"':
+                r = "&quot;";
+                l = 6;
+                break;
+            case '\r':
+                r = "&#13;";
+                l = 5;
+                break;
+            case '\n':
+                r = "&#10;";
+                l = 5;
+                break;
+            default:
+                if ((c >= ' ' && c < '\x7F') || c == '\t')
+                {
+                    p++;
+                    continue;
+                }
+
+                *enc_pos1 = xd[c >> 4];
+                *enc_pos2 = xd[c & 0xF];
+                r = enc_buf;
+                l = sizeof(enc_buf) - 1;
+                break;
+        }
+
+        if ((p > prev_p &&
+             !rgt_co_mngr_chunk_append(mngr, chunk,
+                                       prev_p, (p - prev_p))) ||
+            !rgt_co_mngr_chunk_append(mngr, chunk, r, l))
+            return FALSE;
+        p++;
+        prev_p = p;
+    }
+
+    return p == prev_p ||
+           rgt_co_mngr_chunk_append(mngr, chunk, prev_p, (p - prev_p));
+}
+
+
+static te_bool
+append_attr(rgt_co_mngr   *mngr,
+            rgt_co_chunk  *chunk,
+            const char    *name,
+            const void    *value_ptr,
+            size_t         value_len)
+{
+    size_t  name_len;
+    size_t  buf_len;
+    char   *buf;
+    char   *p;
+
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(name != NULL);
+    assert(*name != '\0');
+    assert(value_ptr != NULL || value_len == 0);
+
+    /*
+     * Construct " name=\""
+     */
+    name_len = strlen(name);
+    buf_len = name_len + 3;
+    buf = alloca(buf_len);
+    p = buf;
+    *p++ = ' ';
+    memcpy(p, name, name_len);
+    p += name_len;
+    *p++ = '=';
+    *p = '"';
+
+    return rgt_co_mngr_chunk_append(mngr, chunk, buf, buf_len) &&
+           append_attr_value(mngr, chunk,
+                             (const uint8_t *)value_ptr, value_len) &&
+           rgt_co_mngr_chunk_append_char(mngr, chunk, '"');
+}
+
+
+static te_bool
+append_attr_list(rgt_co_mngr              *mngr,
+                 rgt_co_chunk             *chunk,
+                 const rgt_co_mngr_attr   *list)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(list != NULL);
+
+    for (; list->name != NULL; list++)
+        if (!append_attr(mngr, chunk,
+                         list->name, list->value_ptr, list->value_len))
+            return FALSE;
+
+    return TRUE;
+}
+
+
+static inline te_bool
+append_start_tag_end(rgt_co_mngr  *mngr,
+                     rgt_co_chunk *chunk)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    return rgt_co_mngr_chunk_append_literal(mngr, chunk, ">\n");
+}
+
+
+static te_bool
+append_start_tag(rgt_co_mngr              *mngr,
+                 rgt_co_chunk             *chunk,
+                 const char               *name,
+                 const rgt_co_mngr_attr   *attr_list)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(name != NULL);
+    assert(*name != '\0');
+    assert(attr_list != NULL);
+
+    return append_start_tag_start(mngr, chunk, name) &&
+           append_attr_list(mngr, chunk, attr_list) &&
+           append_start_tag_end(mngr, chunk);
+}
+
+
+static inline te_bool
+append_empty_tag_end(rgt_co_mngr  *mngr,
+                     rgt_co_chunk *chunk)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    return rgt_co_mngr_chunk_append_literal(mngr, chunk, "/>\n");
+}
+
+
+static te_bool
+append_empty_tag(rgt_co_mngr              *mngr,
+                 rgt_co_chunk             *chunk,
+                 const char               *name,
+                 const rgt_co_mngr_attr   *attr_list)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(name != NULL);
+    assert(*name != '\0');
+    assert(attr_list != NULL);
+
+    return append_start_tag_start(mngr, chunk, name) &&
+           append_attr_list(mngr, chunk, attr_list) &&
+           append_empty_tag_end(mngr, chunk);
+}
+
+
+static te_bool
+append_cdata(rgt_co_mngr   *mngr,
+             rgt_co_chunk  *chunk,
+             const uint8_t *ptr,
+             size_t         len)
+{
+    static const char       xd[]        = "0123456789abcdef";
+    static char             enc_buf[]   = "&lt;0xXX&gt;";
+    static char * const     enc_pos1    = enc_buf + 6;  /* first X */
+    static char * const     enc_pos2    = enc_buf + 7;  /* second X */
+
+    const uint8_t  *prev_p;
+    const uint8_t  *p;
+    uint8_t         c;
+    const char     *r;
+    size_t          l;
+
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(ptr != NULL || len == 0);
+
+    for (p = ptr, prev_p = ptr; len > 0; len--)
+    {
+        c = *p;
+        switch (c)
+        {
+            case '<':
+                r = "&lt;";
+                l = 4;
+                break;
+            case '>':
+                r = "&gt;";
+                l = 4;
+                break;
+            case '&':
+                r = "&amp;";
+                l = 5;
+                break;
+            case '\r':
+                r = "<br/>";
+                l = 5;
+                /* If it is not "\r\n" */
+                if (len == 1 || *(p + 1) != '\n')
+                    break;
+
+                /* It is "\r\n" */
+                if ((p > prev_p &&
+                     !rgt_co_mngr_chunk_append(mngr, chunk,
+                                               prev_p, (p - prev_p))) ||
+                    !rgt_co_mngr_chunk_append(mngr, chunk, r, l))
+                    return FALSE;
+                p += 2;
+                prev_p = p;
+                continue;
+            case '\n':
+                r = "<br/>";
+                l = 5;
+                break;
+            default:
+                if ((c >= ' ' && c < '\x7F') || c == '\t')
+                {
+                    p++;
+                    continue;
+                }
+
+                *enc_pos1 = xd[c >> 4];
+                *enc_pos2 = xd[c & 0xF];
+                r = enc_buf;
+                l = sizeof(enc_buf) - 1;
+                break;
+        }
+
+        if ((p > prev_p &&
+             !rgt_co_mngr_chunk_append(mngr, chunk,
+                                       prev_p, (p - prev_p))) ||
+            !rgt_co_mngr_chunk_append(mngr, chunk, r, l))
+            return FALSE;
+        p++;
+        prev_p = p;
+    }
+
+    return p == prev_p ||
+           rgt_co_mngr_chunk_append(mngr, chunk, prev_p, (p - prev_p));
+}
+
+
+static te_bool
+append_end_tag(rgt_co_mngr    *mngr,
+               rgt_co_chunk   *chunk,
+               const char     *name)
+{
+    size_t  name_len;
+    size_t  buf_len;
+    char   *buf;
+    char   *p;
+
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(name != NULL);
+    assert(*name != '\0');
+
+    /*
+     * Construct "</name>"
+     */
+    name_len = strlen(name);
+    buf_len = name_len + 3;
+    buf = alloca(buf_len);
+    p = buf;
+    *p++ = '<';
+    *p++ = '/';
+    memcpy(p, name, name_len);
+    p += name_len;
+    *p = '>';
+
+    return rgt_co_mngr_chunk_append(mngr, chunk, buf, buf_len);
+}
+
+
+te_bool
+rgt_co_mngr_chunk_append_start_tag(rgt_co_mngr             *mngr,
+                                   rgt_co_chunk            *chunk,
+                                   const char              *name,
+                                   const rgt_co_mngr_attr  *attr_list)
+{
+    te_bool success;
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(name != NULL);
+    assert(*name != '\0');
+    assert(attr_list != NULL);
+
+    success = append_indent(mngr, chunk) &&
+              append_start_tag(mngr, chunk, name, attr_list) &&
+              append_newline(mngr, chunk);
+
+    if (success)
+        rgt_co_chunk_descend(chunk);
+
+    return success;
+}
+
+
+te_bool
+rgt_co_mngr_chunk_append_cdata(rgt_co_mngr   *mngr,
+                               rgt_co_chunk  *chunk,
+                               const void    *ptr,
+                               size_t         len)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(ptr != NULL || len == 0);
+
+    return append_indent(mngr, chunk) &&
+           append_cdata(mngr, chunk, (const uint8_t *)ptr, len) &&
+           append_newline(mngr, chunk);
+}
+
+
+te_bool
+rgt_co_mngr_chunk_append_end_tag(rgt_co_mngr   *mngr,
+                                 rgt_co_chunk  *chunk,
+                                 const char    *name)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(name != NULL);
+    assert(*name != '\0');
+
+    rgt_co_chunk_ascend(chunk);
+
+    return append_indent(mngr, chunk) &&
+           append_end_tag(mngr, chunk, name) &&
+           append_newline(mngr, chunk);
+}
+
+
+te_bool
+rgt_co_mngr_chunk_append_element(rgt_co_mngr               *mngr,
+                                 rgt_co_chunk              *chunk,
+                                 const char                *name,
+                                 const rgt_co_mngr_attr    *attr_list,
+                                 const void                *content_ptr,
+                                 size_t                     content_len)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(chunk));
+    assert(name != NULL);
+    assert(*name != '\0');
+    assert(attr_list != NULL);
+    assert(content_ptr != NULL || content_len == 0);
+
+    if (content_len == 0)
+        return append_indent(mngr, chunk) &&
+               append_empty_tag(mngr, chunk, name, attr_list) &&
+               append_newline(mngr, chunk);
+    else
+        return append_indent(mngr, chunk) &&
+               append_start_tag(mngr, chunk, name, attr_list) &&
+               append_cdata(mngr, chunk,
+                            (const uint8_t *)content_ptr, content_len) &&
+               append_end_tag(mngr, chunk, name) &&
+               append_newline(mngr, chunk);
 }
 
 
