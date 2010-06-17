@@ -73,7 +73,7 @@ main(int argc, char *argv[])
     download_pars.SuccessURL = "";
     download_pars.FailureURL = "";
 
-    CHECK_RC(tapi_acse_cpe_download(ctx, &download_pars));
+    CHECK_RC(tapi_acse_download(ctx, &download_pars));
 
     CHECK_RC(tapi_acse_cpe_connect(ctx));
 
@@ -84,7 +84,7 @@ main(int argc, char *argv[])
 
     CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_NOP));
 
-    te_rc = tapi_acse_cpe_download_resp(ctx, &download_resp);
+    te_rc = tapi_acse_download_resp(ctx, &download_resp);
 
     RING("rc of download_resp: %r", te_rc);
     if (0 == te_rc && download_resp != NULL)

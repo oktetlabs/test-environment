@@ -37,10 +37,10 @@
 int
 main(int argc, char *argv[])
 {
+    int set_status;
     cwmp_sess_state_t cwmp_state = 0;
-    cwmp_set_parameter_values_t          *set_values;
-    cwmp_set_parameter_values_response_t *set_values_resp = NULL;
-    cwmp_get_parameter_names_response_t  *get_names_resp = NULL;
+    cwmp_values_array_t          *set_values;
+    string_array_t               *get_names_resp = NULL;
 
     char *param_path = 
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
@@ -65,46 +65,28 @@ main(int argc, char *argv[])
 
     CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_names(ctx, TRUE, param_path));
+    CHECK_RC(tapi_acse_get_parameter_names(ctx, TRUE, param_path));
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_names_resp(ctx, &get_names_resp));
+    CHECK_RC(tapi_acse_get_parameter_names_resp(ctx, &get_names_resp));
 
     RING("GetNames number %d, first name '%s'",
-        (int)get_names_resp->ParameterList->__size,
-        get_names_resp->ParameterList->
-                __ptrParameterInfoStruct[0]->Name);
+        (int)get_names_resp->size, get_names_resp->items[0]);
 
-    lan_ip_conn_path = strdup(get_names_resp->ParameterList->
-                                __ptrParameterInfoStruct[0]->Name);
+    lan_ip_conn_path = strdup(get_names_resp->items[0]);
 
-    set_values = cwmp_set_values_alloc("1", lan_ip_conn_path,
-                    "Enable", SOAP_TYPE_xsd__boolean, 1,
-                    "IPInterfaceIPAddress", SOAP_TYPE_string,
-                                        "192.168.2.32",
-                    VA_END_LIST);
+    set_values = cwmp_val_array_alloc(lan_ip_conn_path,
+                        "Enable", SOAP_TYPE_boolean, TRUE,
+                        "IPInterfaceIPAddress", SOAP_TYPE_string,
+                                        "192.168.2.31",
+                        VA_END_LIST);
 
-    CHECK_RC(tapi_acse_cpe_set_parameter_values(ctx, set_values));
+    CHECK_RC(tapi_acse_set_parameter_values(ctx, "test", set_values));
 
-    te_rc = tapi_acse_cpe_set_parameter_values_resp(ctx, &set_values_resp);
+    te_rc = tapi_acse_set_parameter_values_resp(ctx, &set_status);
 
     if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
-    {
-        cwmp_fault_t *f = (cwmp_fault_t *)set_values_resp;
-        size_t f_s = f->__sizeSetParameterValuesFault;
-        size_t i;
-
-
-        ERROR("CWMP Fault received: %s(%s), arr len %d",
-                f->FaultCode, f->FaultString, (int)f_s);
-        for (i = 0; i < f_s; i++)
-            ERROR("SetValue Fault [%d], Name '%s', Err %s(%s)",
-                (int)i,
-                f->SetParameterValuesFault[i].ParameterName,
-                f->SetParameterValuesFault[i].FaultCode,
-                f->SetParameterValuesFault[i].FaultString);
-        
         TEST_FAIL("SetParameterValues failed, see details above.");
-    }
+
     if (te_rc != 0)
         TEST_FAIL("Unexpected error on SetParamValues response: %r", te_rc);
 

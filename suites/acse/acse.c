@@ -38,6 +38,7 @@ int
 main(int argc, char *argv[])
 {
     cwmp_get_rpc_methods_response_t *get_rpc_meth_r = NULL;
+    string_array_t *methods;
 
     te_errno te_rc;
 
@@ -47,7 +48,7 @@ main(int argc, char *argv[])
 
     TAPI_ACSE_CTX_INIT(ctx);
 
-    CHECK_RC(tapi_acse_cpe_get_rpc_methods(ctx));
+    CHECK_RC(tapi_acse_get_rpc_methods(ctx));
 
     RING("GetRPCMethods queued with index %u", ctx->req_id);
 
@@ -59,23 +60,18 @@ main(int argc, char *argv[])
 
     CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_NOP));
 
-    te_rc = tapi_acse_cpe_get_rpc_methods_resp(ctx, &get_rpc_meth_r);
+    te_rc = tapi_acse_get_rpc_methods_resp(ctx, &methods);
 
     RING("rc of cwmp op check %r", te_rc);
     if (te_rc == 0 && get_rpc_meth_r != NULL)
     {
-        MethodList *mlist;
-        char answer_buf[1000] = "";
+        char answer_buf[1000];
         char *p = answer_buf;
+        int i;
         p += sprintf(p, "RPC methods: ");
 
-        if ((mlist = get_rpc_meth_r->MethodList_)
-            != NULL)
-        {
-            int i;
-            for (i = 0; i < mlist->__size; i++)
-                p += sprintf(p, "'%s', ", mlist->__ptrstring[i]);
-        }
+        for (i = 0; i < methods->size; i++)
+            p += sprintf(p, "'%s', ", methods->items[i]);
         RING("%s", answer_buf);
     }
     else
