@@ -819,7 +819,7 @@ tapi_acse_set_parameter_values_resp(tapi_acse_context_t *ctx, int *status)
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_connect(tapi_acse_context_t *ctx)
+tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
 {
     return rpc_cwmp_conn_req(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name);
 }
@@ -827,7 +827,7 @@ tapi_acse_connect(tapi_acse_context_t *ctx)
 
 /* see description in tapi_acse.h */
 te_errno
-tapi_acse_disconnect(tapi_acse_context_t *ctx)
+tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
 {
     /* TODO : this simple activate sending empty response, this is 
      * do not automatically leads to terminate CWMP session.

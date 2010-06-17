@@ -159,6 +159,8 @@ cwmp_val_array_add_va(cwmp_values_array_t *a,
 
     cwmp_parameter_value_struct_t **array = a->items;
 
+    b_len = strlen(base_name);
+
     do {
         if (real_arr_len <= i)
         {
@@ -221,13 +223,73 @@ cwmp_val_array_add_va(cwmp_values_array_t *a,
 
 
 cwmp_values_array_t *
-cwmp_val_array_alloc(const char *b_name, const char *f_name, ...);
+cwmp_val_array_alloc(const char *b_name, const char *first_name, ...)
+{
+    va_list         ap;
+    te_errno        rc; 
+
+    cwmp_values_array_t *ret;
+
+    if (NULL == b_name || NULL == first_name)
+        return NULL;
+
+    if (NULL == (ret = malloc(sizeof(*ret))))
+        return NULL;
+    ret->items = NULL;
+    ret->size = 0;
+
+    va_start(ap, first_name);
+    rc = cwmp_val_array_add_va(ret, b_name, first_name, ap);
+    va_end(ap);
+    if (rc != 0)
+    {
+        WARN("%s(): alloc string array failed %r", __FUNCTION__, rc);
+        cwmp_val_array_free(ret);
+        return NULL;
+    } 
+
+    return ret;
+}
 
 
 te_errno
 cwmp_val_array_add(cwmp_values_array_t *a,
-                   const char *b_name, const char *f_name, ...);
+                   const char *b_name, const char *first_name, ...)
+{
+    va_list     ap;
+    te_errno    rc;
 
+    if (NULL == a || NULL == b_name || NULL == first_name)
+        return TE_EINVAL;
+
+    va_start(ap, first_name);
+    rc = cwmp_val_array_add_va(a, b_name, first_name, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+
+
+/* see description in cwmp_utils.h */
+void
+cwmp_val_array_free(cwmp_values_array_t *a)
+{
+    if (NULL == a)
+        return;
+    if (a->size > 0)
+    {
+        unsigned i;
+        for (i = 0; i < a->size; i++)
+        {
+            free(a->items[i]->Name);
+            free(a->items[i]->Value);
+            free(a->items[i]);
+        }
+    }
+    free(a->items);
+    free(a);
+}
 
 
 
