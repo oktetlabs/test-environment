@@ -29,9 +29,7 @@
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
-#include "rgt_cbuf.h"
-
-#define LUA_RGT_CBUF_NAME "rgt.cbuf"
+#include "lua_rgt_cbuf.h"
 
 static int
 l___call(lua_State *L)

@@ -24,8 +24,8 @@
  * $Id$
  */
 
-#ifndef __TE_RGT_CO_STRG_H__
-#define __TE_RGT_CO_STRG_H__
+#ifndef __RGT_CO_STRG_H__
+#define __RGT_CO_STRG_H__
 
 #include <assert.h>
 #include <stdio.h>
@@ -171,4 +171,4 @@ rgt_co_strg_retention(rgt_co_strg *strg)
 } /* extern "C" */
 #endif
 
-#endif /* !__TE_RGT_CO_STRG_H__ */
+#endif /* !__RGT_CO_STRG_H__ */

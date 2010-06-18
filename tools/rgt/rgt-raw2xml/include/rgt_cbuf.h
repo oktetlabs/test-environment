@@ -24,8 +24,8 @@
  * $Id$
  */
 
-#ifndef __TE_RGT_CBUF_H__
-#define __TE_RGT_CBUF_H__
+#ifndef __RGT_CBUF_H__
+#define __RGT_CBUF_H__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -189,4 +189,4 @@ extern void rgt_cbuf_free(rgt_cbuf *b);
 } /* extern "C" */
 #endif
 
-#endif /* !__TE_RGT_CBUF_H__ */
+#endif /* !__RGT_CBUF_H__ */

@@ -24,9 +24,11 @@
  * $Id$
  */
 
-#ifndef __TE_RGT_MSG_H__
-#define __TE_RGT_MSG_H__
+#ifndef __RGT_MSG_H__
+#define __RGT_MSG_H__
 
+#include <assert.h>
+#include <stddef.h>
 #include "te_defs.h"
 #include "te_raw_log.h"
 
@@ -48,16 +50,32 @@ struct rgt_msg_fld {
 };
 
 /**
+ * Check if a message field is terminator field.
+ *
+ * @param fld   The message field to check.
+ *
+ * @return TRUE if the field is the terminator, FALSE otherwise.
+ */
+static inline te_bool
+rgt_msg_fld_is_term(const rgt_msg_fld *fld)
+{
+    assert(fld != NULL);
+    return fld->len == TE_LOG_RAW_EOR_LEN;
+}
+
+/**
  * Retrieve next message field.
  *
- * @param arg   The previous message field.
+ * @param fld   The previous message field.
  *
  * @return Next message field.
  */
-static inline rgt_msg_fld *
-rgt_msg_fld_next(rgt_msg_fld *fld)
+static inline const rgt_msg_fld *
+rgt_msg_fld_next(const rgt_msg_fld *fld)
 {
-    return (rgt_msg_fld *)((char *)fld + fld->size);
+    assert(fld != NULL);
+    assert(!rgt_msg_fld_is_term(fld));
+    return (const rgt_msg_fld *)((char *)fld + fld->size);
 }
 
 /** Message */
@@ -99,4 +117,4 @@ extern te_bool rgt_msg_is_control(const rgt_msg *msg);
 } /* extern "C" */
 #endif
 
-#endif /* !__TE_RGT_MSG_H__ */
+#endif /* !__RGT_MSG_H__ */

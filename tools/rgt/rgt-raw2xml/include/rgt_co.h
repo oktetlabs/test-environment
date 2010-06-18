@@ -24,8 +24,8 @@
  * $Id$
  */
 
-#ifndef __TE_RGT_CO_H__
-#define __TE_RGT_CO_H__
+#ifndef __RGT_CO_H__
+#define __RGT_CO_H__
 
 #include <string.h>
 #include "rgt_co_strg.h"
@@ -577,4 +577,4 @@ extern te_bool rgt_co_chunk_append_msg(rgt_co_chunk    *chunk,
 } /* extern "C" */
 #endif
 
-#endif /* !__TE_RGT_CO_H__ */
+#endif /* !__RGT_CO_H__ */
