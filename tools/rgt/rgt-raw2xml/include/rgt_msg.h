@@ -34,22 +34,36 @@
 extern "C" {
 #endif
 
-typedef struct rgt_msg_fld {
-    te_log_nfl  len;    /**< Field length */
+typedef struct rgt_msg_fld rgt_msg_fld;
+
+struct rgt_msg_fld {
     /*
-     * Let's hope a zero size member won't be padded
-     * in a struct with only one real member.
-     * Besides, this member would have lower or the same
-     * alignment requirements and thus would not increase
-     * the padding.
+     * ATTENTION
+     * The manual alignment in raw2xml.c may depend
+     * on the order and size of the fields.
      */
-    uint8_t     buf[0]; /**< Field contents */
-} rgt_msg_fld;
+    size_t          size;   /**< Field size */
+    te_log_nfl      len;    /**< Field contents length */
+    uint8_t         buf[0]; /**< Field contents */
+};
+
+/**
+ * Retrieve next message field.
+ *
+ * @param arg   The previous message field.
+ *
+ * @return Next message field.
+ */
+static inline rgt_msg_fld *
+rgt_msg_fld_next(rgt_msg_fld *fld)
+{
+    return (rgt_msg_fld *)((char *)fld + fld->size);
+}
 
 /** Message */
 typedef struct rgt_msg {
     te_log_ts_sec   ts_secs;    /**< Timestamp seconds */
-    te_log_ts_usec  ts_usecs;   /**< Timestamp miliseconds */
+    te_log_ts_usec  ts_usecs;   /**< Timestamp milliseconds */
     te_log_level    level;      /**< Log level */
     te_log_id       id;         /**< Node ID */
     /*
@@ -80,19 +94,6 @@ extern te_bool rgt_msg_is_tester_control(const rgt_msg *msg);
  * @return TRUE or FALSE.
  */
 extern te_bool rgt_msg_is_control(const rgt_msg *msg);
-
-/**
- * Retrieve message next format argument.
- *
- * @param arg   The previous message format argument.
- *
- * @return Next message format argument.
- */
-static inline rgt_msg_fld *
-rgt_msg_arg_next(rgt_msg_fld *arg)
-{
-    return (rgt_msg_fld *)(arg->buf + arg->len);
-}
 
 #ifdef __cplusplus
 } /* extern "C" */

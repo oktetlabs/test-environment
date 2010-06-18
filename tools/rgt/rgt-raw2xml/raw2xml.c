@@ -40,6 +40,8 @@
 #include "te_raw_log.h"
 #include "logger_defs.h"
 
+#include "rgt_msg.h"
+
 #define ERROR(_fmt, _args...) fprintf(stderr, _fmt "\n", ##_args)
 
 #define ERROR_CLEANUP(_fmt, _args...) \
@@ -56,6 +58,217 @@
     } while (0)
 
 #define INPUT_BUF_SIZE  16384
+
+#define SCRAP_MIN_SIZE  16384
+
+static void    *scrap_buf   = NULL;
+static size_t   scrap_size  = 0;
+
+te_bool
+scrap_grow(size_t size)
+{
+    size_t  new_scrap_size  = scrap_size;
+    void   *new_scrap_buf;
+
+    if (new_scrap_size < SCRAP_MIN_SIZE)
+        new_scrap_size = SCRAP_MIN_SIZE;
+
+    while (new_scrap_size < size)
+        new_scrap_size += new_scrap_size / 2;
+
+    new_scrap_buf = realloc(scrap_buf, new_scrap_size);
+    if (new_scrap_buf == NULL)
+        return FALSE;
+
+    scrap_buf = new_scrap_buf;
+    scrap_size = new_scrap_size;
+
+    return TRUE;
+}
+
+#define SCRAP_CHECK_GROW(size) \
+    (((size) <= scrap_size) ? TRUE : scrap_grow(size))
+
+void
+scrap_clear(void)
+{
+    free(scrap_buf);
+    scrap_size = 0;
+}
+
+
+/** Message reading result code */
+typedef enum read_message_rc {
+    READ_MESSAGE_RC_ERR         = -1,   /**< A reading error occurred or
+                                             unexpected EOF was reached */
+    READ_MESSAGE_RC_EOF         = 0,    /**< The EOF was encountered instead
+                                             of the message */
+    READ_MESSAGE_RC_OK          = 1,    /**< The message was read
+                                              successfully */
+} read_message_rc;
+
+
+/**
+ * Read message variable length fields from a stream and place them into the
+ * scrap buffer.
+ *
+ * @param input The stream to read from.
+ * @param msg   The message to output field references to.
+ *
+ * @return Result code.
+ */
+static read_message_rc
+read_message_flds(FILE *input, rgt_msg *msg)
+{
+    static size_t       entity_pos;
+    static size_t       user_pos;
+    static size_t       fmt_pos;
+    static size_t       args_pos;
+    static size_t      *fld_pos[]   = {&entity_pos, &user_pos,
+                                       &fmt_pos, &args_pos};
+    size_t              fld_idx     = 0;
+
+    size_t              size        = 0;
+    te_log_nfl          len;
+    te_log_nfl          buf_len;
+    size_t              fld_size;
+    size_t              remainder;
+    size_t              new_size;
+    rgt_msg_fld        *fld;
+
+    do {
+        /* Read and convert the field length */
+        if (fread(&len, sizeof(len), 1, input) != 1)
+            return READ_MESSAGE_RC_ERR;
+#if SIZEOF_TE_LOG_NFL == 4
+        len = ntohl(len);
+#elif SIZEOF_TE_LOG_NFL == 2
+        len = ntohs(len);
+#elif SIZEOF_TE_LOG_NFL != 1
+#error Unexpected value of SIZEOF_TE_LOG_NFL
+#endif
+
+        /* If it is an optional field and it is the terminating length */
+        if (fld_idx >= (sizeof(fld_pos) / sizeof(*fld_pos) - 1) &&
+            len == TE_LOG_RAW_EOR_LEN)
+            buf_len = 0;
+        else
+            buf_len = len;
+
+        /* Calculate field size, with alignment */
+        fld_size = sizeof(*fld) + buf_len;
+        remainder = fld_size % sizeof(*fld);
+        if (remainder != 0)
+            fld_size += sizeof(*fld) - remainder;
+
+        /* Calculate new size and grow the buffer */
+        new_size += size + fld_size;
+        if (!SCRAP_CHECK_GROW(new_size))
+            return READ_MESSAGE_RC_ERR;
+
+        /* If it is a directly referenced field */
+        if (fld_idx < sizeof(fld_pos) / sizeof(*fld_pos))
+            /* Output the field position */
+            *fld_pos[fld_idx] = size;
+
+        /* Calculate field pointer */
+        fld = (rgt_msg_fld *)((char *)scrap_buf + size);
+
+        /* Fill-in and read-in the field */
+        fld->size = fld_size;
+        fld->len = len;
+        if (buf_len > 0 && fread(fld->buf, buf_len, 1, input) != 1)
+            return READ_MESSAGE_RC_ERR;
+
+        /* Seal the field */
+        size = new_size;
+    } while (
+         /* While it is a mandatory field or not a terminating length */
+         fld_idx++ < (sizeof(fld_pos) / sizeof(*fld_pos) - 1) ||
+         len != TE_LOG_RAW_EOR_LEN);
+
+    /*
+     * Output field pointers
+     */
+    msg->entity = (rgt_msg_fld *)((char *)scrap_buf + entity_pos);
+    msg->user   = (rgt_msg_fld *)((char *)scrap_buf + user_pos);
+    msg->fmt    = (rgt_msg_fld *)((char *)scrap_buf + fmt_pos);
+    msg->args   = (rgt_msg_fld *)((char *)scrap_buf + args_pos);
+
+    return READ_MESSAGE_RC_OK;
+}
+
+
+/**
+ * Read a message from a stream and place variable length fields into the
+ * scrap buffer.
+ *
+ * @param input The stream to read from.
+ * @param msg   The message to output to.
+ *
+ * @return Result code.
+ */
+static read_message_rc
+read_message(FILE *input, rgt_msg *msg)
+{
+    te_log_version      version;
+    te_log_ts_sec       ts_secs;
+    te_log_ts_usec      ts_usecs;
+    te_log_level        level;
+    te_log_id           id;
+
+    /* Read and verify log message version */
+    if (fread(&version, sizeof(version), 1, input) != 1)
+        return feof(input) ? READ_MESSAGE_RC_EOF : READ_MESSAGE_RC_ERR;
+    if (version != TE_LOG_VERSION)
+    {
+        errno = EINVAL;
+        ERROR("Unknown log message version %u", version);
+        return READ_MESSAGE_RC_ERR;
+    }
+
+    /*
+     * Transfer timestamp
+     */
+    /* Read the timestamp fields */
+    if (fread(&ts_secs, sizeof(ts_secs), 1, input) != 1 ||
+        fread(&ts_usecs, sizeof(ts_usecs), 1, input) != 1)
+        return READ_MESSAGE_RC_ERR;
+    msg->ts_secs = ntohl(ts_secs);
+    msg->ts_usecs = ntohl(ts_usecs);
+
+    /*
+     * Transfer level
+     */
+    if (fread(&level, sizeof(level), 1, input) != 1)
+        return READ_MESSAGE_RC_ERR;
+#if SIZEOF_TE_LOG_LEVEL == 4
+    msg->level = ntohl(level);
+#elif SIZEOF_TE_LOG_LEVEL == 2
+    msg->level = ntohs(level);
+#elif SIZEOF_TE_LOG_LEVEL != 1
+#error Unexpected value of SIZEOF_TE_LOG_LEVEL
+#endif
+
+    /*
+     * Transfer ID
+     */
+    if (fread(&id, sizeof(id), 1, input) != 1)
+        return READ_MESSAGE_RC_ERR;
+#if SIZEOF_TE_LOG_ID == 4
+    msg->id = ntohl(id);
+#elif SIZEOF_TE_LOG_ID == 2
+    msg->id = ntohs(id);
+#elif SIZEOF_TE_LOG_ID != 1
+#error Unexpected value of SIZEOF_TE_LOG_ID
+#endif
+
+    /*
+     * Transfer variable-length fields
+     */
+    return read_message_flds(input, msg);
+}
+
 
 /* Taken from lua.c */
 static int
@@ -91,6 +304,7 @@ l_traceback(lua_State *L)
 }
 
 
+#if 0
 static int
 l_te_rc_to_str(lua_State *L)
 {
@@ -176,6 +390,7 @@ l_xtmpfile(lua_State *L)
     lua_setfenv(L, -2);
     return 1;
 }
+#endif
 
 
 #define LUA_PCALL(_nargs, _nresults) \
@@ -192,187 +407,15 @@ l_xtmpfile(lua_State *L)
     } while (0)
 
 
-/** Message reading result code */
-typedef enum read_message_rc {
-    READ_MESSAGE_RC_ERR         = -1,   /**< A reading error occurred or
-                                             unexpected EOF was reached */
-    READ_MESSAGE_RC_EOF         = 0,    /**< The EOF was encountered instead
-                                             of the message */
-    READ_MESSAGE_RC_OK          = 1,    /**< The message was read
-                                              successfully */
-} read_message_rc;
-
-
-#if SIZEOF_TE_LOG_NFL == 4
-#define LENTOH(_len) ntohl(len)
-#elif SIZEOF_TE_LOG_NFL == 2
-#define LENTOH(_len) ntohs(len)
-#elif SIZEOF_TE_LOG_NFL != 1
-#error Unexpected value of SIZEOF_TE_LOG_NFL
-#endif
-
-/**
- * Read a message from a stream and place its parts on a Lua stack.
- *
- * @param input         The stream to read from.
- * @param L             Lua state to put the message parts to.
- * @param traceback_idx Error traceback function stack index.
- * @param ts_class_idx  Timestamp class stack index.
- *
- * @return Result code.
- */
-static read_message_rc
-read_message(FILE *input, lua_State *L, int traceback_idx, int ts_class_idx)
-{
-    read_message_rc     result      = READ_MESSAGE_RC_ERR;
-    te_log_version      version;
-    te_log_ts_sec       ts_secs;
-    te_log_ts_usec      ts_usecs;
-    te_log_level        level;
-    te_log_id           id;
-    const char         *str;
-    lua_Number          i;
-    te_log_nfl          len;
-    char               *buf         = NULL;
-
-    /* Read and verify log message version */
-    if (fread(&version, sizeof(version), 1, input) != 1)
-    {
-        if (feof(input))
-            result = READ_MESSAGE_RC_EOF;
-        goto cleanup;
-    }
-    if (version != TE_LOG_VERSION)
-    {
-        errno = EINVAL;
-        ERROR_CLEANUP("Unknown log message version %u", version);
-    }
-
-    /*
-     * Transfer timestamp
-     */
-    /* Read the timestamp fields */
-    if (fread(&ts_secs, sizeof(ts_secs), 1, input) != 1 ||
-        fread(&ts_usecs, sizeof(ts_usecs), 1, input) != 1)
-        goto cleanup;
-    ts_secs = ntohl(ts_secs);
-    ts_usecs = ntohl(ts_usecs);
-    /* Create timestamp instance */
-    lua_pushvalue(L, ts_class_idx);
-    lua_pushnumber(L, ts_secs);
-    lua_pushnumber(L, ts_usecs);
-    LUA_PCALL(2, 1);
-
-    /*
-     * Transfer level
-     */
-    if (fread(&level, sizeof(level), 1, input) != 1)
-        goto cleanup;
-#if SIZEOF_TE_LOG_LEVEL == 4
-    level = ntohl(level);
-#elif SIZEOF_TE_LOG_LEVEL == 2
-    level = ntohs(level);
-#elif SIZEOF_TE_LOG_LEVEL != 1
-#error Unexpected value of SIZEOF_TE_LOG_LEVEL
-#endif
-    str = te_log_level2str(level);
-    if (str == NULL)
-    {
-        errno = EINVAL;
-        ERROR_CLEANUP("Unknown log level %u", level);
-    }
-    lua_pushstring(L, str);
-
-    /*
-     * Transfer ID
-     */
-    if (fread(&id, sizeof(id), 1, input) != 1)
-        goto cleanup;
-#if SIZEOF_TE_LOG_ID == 4
-    id = ntohl(id);
-#elif SIZEOF_TE_LOG_ID == 2
-    id = ntohs(id);
-#elif SIZEOF_TE_LOG_ID != 1
-#error Unexpected value of SIZEOF_TE_LOG_ID
-#endif
-    lua_pushnumber(L, id);
-
-    /*
-     * Transfer entity, user and format string
-     */
-    for (i = 0; i < 3; i++)
-    {
-        /* Read and convert the field length */
-        if (fread(&len, sizeof(len), 1, input) != 1)
-            goto cleanup;
-        len = LENTOH(len);
-        if (len == 0)
-            buf = NULL;
-        else
-        {
-            /* Allocate the buffer */
-            buf = malloc(len);
-            if (buf == NULL)
-                goto cleanup;
-            /* Read the field */
-            if (fread(buf, len, 1, input) != 1)
-                goto cleanup;
-        }
-        lua_pushlstring(L, buf, len);
-        free(buf);
-        buf = NULL;
-    }
-
-    /*
-     * Transfer format arguments
-     */
-    lua_newtable(L);
-    for (i = 1; ; i++)
-    {
-        /* Read and convert the field length */
-        if (fread(&len, sizeof(len), 1, input) != 1)
-            goto cleanup;
-        len = LENTOH(len);
-        /* If it is the terminating field length */
-        if (len == TE_LOG_RAW_EOR_LEN)
-            break;
-        if (len == 0)
-            buf = NULL;
-        else
-        {
-            /* Allocate the buffer */
-            buf = malloc(len);
-            if (buf == NULL)
-                goto cleanup;
-            /* Read the field */
-            if (fread(buf, len, 1, input) != 1)
-                goto cleanup;
-        }
-        lua_pushinteger(L, i);
-        lua_pushlstring(L, buf, len);
-        lua_rawset(L, -3);
-        free(buf);
-        buf = NULL;
-    }
-
-    result = READ_MESSAGE_RC_OK;
-
-cleanup:
-
-    free(buf);
-
-    return result;
-}
-
-
 static te_bool
 run_input_and_output(FILE *input,
                      lua_State *L, int traceback_idx,
-                     int ts_class_idx, int msg_class_idx,
+                     int msg_class_idx,
                      int sink_idx, int sink_put_idx)
 {
     te_bool             result      = FALSE;
     off_t               offset;
+    rgt_msg             msg;
     read_message_rc     read_rc;
 
     while (TRUE)
@@ -388,7 +431,7 @@ run_input_and_output(FILE *input,
         offset = ftello(input);
 
         /* Call read_message to supply the arguments */
-        read_rc = read_message(input, L, traceback_idx, ts_class_idx);
+        read_rc = read_message(input, &msg);
         if (read_rc < READ_MESSAGE_RC_OK)
         {
             if (read_rc == READ_MESSAGE_RC_EOF)
@@ -430,7 +473,6 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     te_bool     result          = FALSE;
     lua_State  *L               = NULL;
     int         traceback_idx;
-    int         ts_class_idx;
     int         msg_class_idx;
     int         sink_idx;
     int         sink_put_idx;
@@ -452,14 +494,6 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     lua_pushcfunction(L, l_traceback);
     traceback_idx = lua_gettop(L);
 
-    /* Register te_rc_to_str function for use when formatting messages */
-    lua_pushcfunction(L, l_te_rc_to_str);
-    lua_setglobal(L, "te_rc_to_str");
-
-    /* Register xtmpfile function for use with output chunks */
-    lua_pushcfunction(L, l_xtmpfile);
-    lua_setglobal(L, "xtmpfile");
-
     /* Require "strict" module */
     lua_getglobal(L, "require");
     lua_pushliteral(L, "strict");
@@ -470,10 +504,6 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     LUA_REQUIRE("profiler");
     profiler_idx = lua_gettop(L);
 #endif
-
-    /* Require rgt.ts */
-    LUA_REQUIRE("rgt.ts");
-    ts_class_idx = lua_gettop(L);
 
     /* Require rgt.msg */
     LUA_REQUIRE("rgt.msg");
@@ -533,7 +563,7 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     sink_put_idx = lua_gettop(L);
 
     if (!run_input_and_output(input, L, traceback_idx,
-                              ts_class_idx, msg_class_idx,
+                              msg_class_idx,
                               sink_idx, sink_put_idx))
         goto cleanup;
 
