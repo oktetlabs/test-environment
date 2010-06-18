@@ -113,16 +113,30 @@ tad_ip4_rw_init_cb(csap_p csap)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     csap_set_rw_data(csap, spec_data);
 
-    /* opening incoming socket */    
+    /* opening incoming socket */
 #ifdef PF_PACKET
     len = sizeof(ifname);
-    rc = asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds, 
+    rc = asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds,
                               ifname, &len, "ifname");
     if (rc != 0 && rc != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
 
     spec_data->sa_op.sll_ifindex = if_nametoindex(ifname);
     spec_data->sa_op.sll_protocol = htons(ETH_P_IP);
+
+    spec_data->sa_op.sll_halen = ETHER_ADDR_LEN;
+    rc = asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds,
+                              spec_data->sa_op.sll_addr,
+                              &spec_data->sa_op.sll_halen,
+                              "remote-hwaddr");
+    if (rc != 0)
+    {
+        if (rc != TE_EASNINCOMPLVAL)
+            return TE_RC(TE_TAD_CSAP, rc);
+
+        spec_data->sa_op.sll_halen = 0;
+    }
+
     spec_data->socket = socket(PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP)); 
 #else
     len = sizeof(struct in_addr);

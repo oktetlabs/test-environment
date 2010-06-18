@@ -31,8 +31,7 @@
 #include "asn_impl.h"
 #include "ndn_internal.h"
 #include "ndn_ipstack.h"
-
-
+#include "ndn_eth.h"
 
 /*
  * IPv4
@@ -158,6 +157,8 @@ static asn_named_entry_t _ndn_ip4_csap_ne_array [] = {
         {PRIVATE, NDN_TAG_IP4_MTU} },
     { "ifname", &ndn_data_unit_char_string_s,
         {PRIVATE, NDN_TAG_IP4_IFNAME} },
+    { "remote-hwaddr", &ndn_data_unit_eth_address_s,
+      { PRIVATE, NDN_TAG_ETH_REMOTE } },
 };
 
 asn_type ndn_ip4_csap_s = {
