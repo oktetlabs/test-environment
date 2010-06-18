@@ -26,6 +26,9 @@
 
 #include <stdarg.h>
 #include <stdint.h>
+#include <stddef.h>
+#include <sys/time.h>
+#include "logger_defs.h"
 #include "rgt_co.h"
 
 #define TABSTOP 2
@@ -426,6 +429,70 @@ append_attr(rgt_co_chunk   *chunk,
 }
 
 
+static inline te_bool
+append_str_attr(rgt_co_chunk   *chunk,
+                const char     *name,
+                const char     *value)
+{
+    assert(rgt_co_chunk_valid(chunk));
+    assert(name != NULL);
+    assert(*name != '\0');
+    assert(value != NULL);
+
+    return append_attr(chunk, name, value, strlen(value));
+}
+
+
+static te_bool
+append_safe_attr(rgt_co_chunk   *chunk,
+                 const char     *name,
+                 const void     *value_ptr,
+                 size_t          value_len)
+{
+    size_t  name_len;
+    size_t  buf_len;
+    char   *buf;
+    char   *p;
+
+    assert(rgt_co_chunk_valid(chunk));
+    assert(name != NULL);
+    assert(*name != '\0');
+    assert(value_ptr != NULL || value_len == 0);
+
+    /*
+     * Construct " name=\"value\""
+     */
+    name_len = strlen(name);
+    buf_len = name_len + value_len + 4;
+    buf = alloca(buf_len);
+    p = buf;
+    *p++ = ' ';
+    memcpy(p, name, name_len);
+    p += name_len;
+    *p++ = '=';
+    *p++ = '"';
+    memcpy(p, value_ptr, value_len);
+    p += value_len;
+    *p = '"';
+
+    return rgt_co_chunk_append(chunk, buf, buf_len);
+}
+
+
+static inline te_bool
+append_safe_str_attr(rgt_co_chunk  *chunk,
+                     const char    *name,
+                     const char    *value)
+{
+    assert(rgt_co_chunk_valid(chunk));
+    assert(name != NULL);
+    assert(*name != '\0');
+    assert(value != NULL);
+
+    return append_safe_attr(chunk, name, value, strlen(value));
+}
+
+
 static te_bool
 append_attr_list(rgt_co_chunk *chunk, const rgt_co_chunk_attr *list)
 {
@@ -672,6 +739,43 @@ rgt_co_chunk_append_element(rgt_co_chunk               *chunk,
                             (const uint8_t *)content_ptr, content_len) &&
                append_end_tag(chunk, name) &&
                append_newline(chunk);
+}
+
+
+/**********************************************************
+ * MSG CHUNK
+ **********************************************************/
+static te_bool
+append_msg_cdata(rgt_co_chunk *chunk,
+                 const rgt_msg_fld *fmt,
+                 const rgt_msg_fld *args)
+{
+    assert(rgt_co_chunk_valid(chunk));
+    assert(fmt != NULL);
+    assert(args != NULL);
+
+    return TRUE;
+}
+
+
+te_bool
+rgt_co_chunk_append_msg(rgt_co_chunk *chunk, const rgt_msg *msg)
+{
+    assert(rgt_co_chunk_valid(chunk));
+    assert(rgt_msg_valid(msg));
+
+    return append_indent(chunk) &&
+           append_start_tag_start(chunk, "msg") &&
+           append_safe_str_attr(chunk, "level",
+                                te_log_level2str(msg->level)) &&
+           append_attr(chunk, "entity",
+                       msg->entity->buf, msg->entity->len) &&
+           append_attr(chunk, "user",
+                       msg->user->buf, msg->user->len) &&
+           append_start_tag_end(chunk) &&
+           append_msg_cdata(chunk, msg->fmt, msg->args) &&
+           append_end_tag(chunk, "msg") &&
+           append_newline(chunk);
 }
 
 

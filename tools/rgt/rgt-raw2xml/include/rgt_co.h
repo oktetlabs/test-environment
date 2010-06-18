@@ -29,6 +29,7 @@
 
 #include <string.h>
 #include "rgt_co_strg.h"
+#include "rgt_msg.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -557,6 +558,20 @@ extern te_bool rgt_co_chunk_append_element(
                                 const rgt_co_chunk_attr    *attr_list,
                                 const void                 *content_ptr,
                                 size_t                      content_len);
+
+/**********************************************************
+ * MSG CHUNK
+ **********************************************************/
+/**
+ * Append a message XML element to a chunk.
+ *
+ * @param chunk The chunk to append to.
+ * @param msg   The message to append.
+ *
+ * @return TRUE if appended successfully, FALSE otherwise.
+ */
+extern te_bool rgt_co_chunk_append_msg(rgt_co_chunk    *chunk,
+                                       const rgt_msg   *msg);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -34,7 +34,8 @@ librgt_raw2xml_la_SOURCES = \
     cbuf.c                  \
     co.c                    \
     co_strg.c               \
-    lua_cbuf.c
+    lua_cbuf.c              \
+    msg.c
 
 install-exec-hook:
 	@INSTALL@ -d $(lib_luadir)
