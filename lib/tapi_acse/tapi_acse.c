@@ -846,7 +846,7 @@ tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
 
 te_errno
 tapi_acse_add_object(tapi_acse_context_t *ctx,
-                         const char *obj_name, const char *param_key)
+                     const char *obj_name, const char *param_key)
 {
     char                obj_name_buf[256];
     char                param_key_buf[256];
@@ -866,7 +866,7 @@ tapi_acse_add_object(tapi_acse_context_t *ctx,
 
 te_errno
 tapi_acse_add_object_resp(tapi_acse_context_t *ctx,
-                              int *obj_index, int *add_status)
+                          int *obj_index, int *add_status)
 {
     cwmp_data_from_cpe_t from_cpe_loc;
     te_errno             rc;
@@ -886,6 +886,57 @@ tapi_acse_add_object_resp(tapi_acse_context_t *ctx,
     free(from_cpe_loc.p);
     return rc;
 }
+
+te_errno
+tapi_acse_delete_object(tapi_acse_context_t *ctx,
+                        const char *obj_name, const char *param_key)
+{
+    char  obj_name_buf[256];
+    char  param_key_buf[256];
+
+    cwmp_delete_object_t  del_object = {obj_name_buf, param_key_buf};
+    cwmp_data_to_cpe_t    to_cpe_loc;
+
+    to_cpe_loc.delete_object = &del_object;
+
+    strncpy(obj_name_buf, obj_name, sizeof(obj_name_buf));
+    strncpy(param_key_buf, param_key, sizeof(param_key_buf));
+
+    return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_delete_object,
+                                  to_cpe_loc);
+}
+
+te_errno
+tapi_acse_delete_object_resp(tapi_acse_context_t *ctx, int *del_status)
+{
+    cwmp_data_from_cpe_t from_cpe_loc;
+    te_cwmp_rpc_cpe_t    resp_code;
+    te_errno             rc;
+
+    from_cpe_loc.p = NULL;
+    rc = tapi_acse_cpe_rpc_response(ctx, &resp_code, &from_cpe_loc);
+
+    if (TE_CWMP_FAULT == TE_RC_GET_ERROR(rc))
+        tapi_acse_log_fault(from_cpe_loc.fault);
+    else if (rc == 0)
+    {
+        if (CWMP_RPC_delete_object == resp_code)
+        {
+            if (NULL != del_status)
+                *del_status = from_cpe_loc.delete_object_r->Status;
+        }
+        else
+        {
+            WARN("%s(): received unexpected response %d",
+                 __FUNCTION__, resp_code);
+            rc = TE_EFAIL;
+        }
+    }
+    free(from_cpe_loc.p);
+    return rc;
+}
+
+
 
 
 /*

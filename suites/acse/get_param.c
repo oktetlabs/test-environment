@@ -58,9 +58,9 @@ main(int argc, char *argv[])
 {
     int i;
     cwmp_sess_state_t cwmp_state = 0;
-    cwmp_get_parameter_values_t           *get_values;
-    cwmp_get_parameter_values_response_t  *get_values_resp = NULL;
-    cwmp_get_parameter_names_response_t   *get_names_resp = NULL;
+    string_array_t               *get_names_resp = NULL;
+    cwmp_values_array_t          *get_values_resp = NULL;
+    string_array_t               *get_values;
 
     char *param_path = 
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
@@ -83,37 +83,32 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
 
     CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
-    CHECK_RC(tapi_acse_cpe_get_parameter_names(ctx, TRUE, param_path));
+    CHECK_RC(tapi_acse_get_parameter_names(ctx, TRUE, param_path));
 
     RING("GetParNames queued with index %u", ctx->req_id);
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_names_resp(ctx, &get_names_resp));
+    CHECK_RC(tapi_acse_get_parameter_names_resp(ctx, &get_names_resp));
 
     RING("GetNames number %d, first name '%s'",
-        (int)get_names_resp->ParameterList->__size,
-        get_names_resp->ParameterList->
-                __ptrParameterInfoStruct[0]->Name);
+        (int)get_names_resp->size, get_names_resp->items[0]);
 
-    lan_ip_conn_path = strdup(get_names_resp->ParameterList->
-                                __ptrParameterInfoStruct[0]->Name);
+    lan_ip_conn_path = strdup(get_names_resp->items[0]);
 
-    get_values = cwmp_get_values_alloc(lan_ip_conn_path,
+    get_values = cwmp_str_array_alloc(lan_ip_conn_path,
                         "Enable",
                         "IPInterfaceIPAddress",
                         "IPInterfaceSubnetMask", 
                         "IPInterfaceAddressingType",
                         VA_END_LIST);
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_values(ctx, get_values));
-    CHECK_RC(tapi_acse_cpe_get_parameter_values_resp(ctx,
-                                                     &get_values_resp));
+    CHECK_RC(tapi_acse_get_parameter_values(ctx, get_values));
+    CHECK_RC(tapi_acse_get_parameter_values_resp(ctx, &get_values_resp));
 
-    for (i = 0; i < get_values_resp ->ParameterList->__size; i++)
+    for (i = 0; i < get_values_resp->size; i++)
     {
         char buf[1024];
         snprint_ParamValueStruct(buf, sizeof(buf), 
-                                get_values_resp->ParameterList->
-                                        __ptrParameterValueStruct[i]);
+                                 get_values_resp->items[i]);
         RING("GetParValues result [%d]: %s", i, buf);
     }
 

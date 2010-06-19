@@ -40,7 +40,7 @@ main(int argc, char *argv[])
     cwmp_download_t download_pars;
     cwmp_download_response_t *download_resp;
 
-    _cwmp__GetParameterNamesResponse   *get_names_resp = NULL;
+    string_array_t               *get_names_resp = NULL;
 
     te_errno te_rc;
 
@@ -83,20 +83,20 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE)); 
     CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
 
-    CHECK_RC(tapi_acse_cpe_download(ctx, &download_pars));
+    CHECK_RC(tapi_acse_download(ctx, &download_pars));
 
-    CHECK_RC(tapi_acse_cpe_download_resp(ctx, &download_resp));
+    CHECK_RC(tapi_acse_download_resp(ctx, &download_resp));
 
     if (download_resp != NULL)
         RING("Download status %d", (int)download_resp->Status);
     else
         TEST_FAIL("Download resp is NULL!");
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_names(ctx, TRUE,
+    CHECK_RC(tapi_acse_get_parameter_names(ctx, TRUE,
                     "InternetGatewayDevice.LANDevice.1."
                     "LANHostConfigManagement.IPInterface."));
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_names_resp(ctx, &get_names_resp));
+    CHECK_RC(tapi_acse_get_parameter_names_resp(ctx, &get_names_resp));
 
     CHECK_RC(tapi_acse_cpe_disconnect(ctx));
 
@@ -134,7 +134,7 @@ main(int argc, char *argv[])
                                       &from_cpe);
         if (0 == te_rc)
         {
-            _cwmp__TransferComplete *tc = from_cpe.transfer_complete;
+            cwmp_transfer_complete_t *tc = from_cpe.transfer_complete;
             RING("TransferComplete, key %s, fault: %s (%s)", 
                  tc->CommandKey, tc->FaultStruct->FaultCode, 
                  tc->FaultStruct->FaultString);

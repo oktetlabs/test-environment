@@ -37,13 +37,12 @@
 int
 main(int argc, char *argv[])
 {
-    size_t i;
     cwmp_sess_state_t cwmp_state = 0;
-    cwmp_get_parameter_names_response_t   *get_names_resp = NULL;
-    cwmp_get_parameter_values_t           *get_values;
-    cwmp_get_parameter_values_response_t  *get_values_resp = NULL;
-    cwmp_set_parameter_values_t           *set_values;
-    cwmp_set_parameter_values_response_t  *set_values_resp = NULL;
+    string_array_t               *get_names_resp = NULL;
+    cwmp_values_array_t          *get_values_resp = NULL;
+    string_array_t               *get_values;
+    cwmp_values_array_t          *set_values;
+    int set_status;
 
     char *param_path = 
             "InternetGatewayDevice.WANDevice.1.WANConnectionDevice."
@@ -54,6 +53,7 @@ main(int argc, char *argv[])
 
     const char *old_wan_ip;
     const char *new_wan_ip = "10.20.1.4";
+    size_t i;
 
     te_errno te_rc;
 
@@ -69,48 +69,29 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
 
     CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
-    CHECK_RC(tapi_acse_cpe_get_parameter_names(ctx, TRUE, param_path));
+    CHECK_RC(tapi_acse_get_parameter_names(ctx, TRUE, param_path));
 
     RING("GetParNames queued with index %u", ctx->req_id);
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_names_resp(ctx, &get_names_resp));
+    CHECK_RC(tapi_acse_get_parameter_names_resp(ctx, &get_names_resp));
 
     RING("GetNames number %d, first name '%s'",
-        (int)get_names_resp->ParameterList->__size,
-        get_names_resp->ParameterList->
-                __ptrParameterInfoStruct[0]->Name);
+        (int)get_names_resp->size, get_names_resp->items[0]);
 
-    wan_ip_conn_path = strdup(get_names_resp->ParameterList->
-                                __ptrParameterInfoStruct[0]->Name);
+    wan_ip_conn_path = strdup(get_names_resp->items[0]);
 
-    set_values = cwmp_set_values_alloc("1", wan_ip_conn_path,
-                "ExternalIPAddress", SOAP_TYPE_string, new_wan_ip,
-                "DefaultGateway", SOAP_TYPE_string, "10.20.1.1",
-                "DNSServers", SOAP_TYPE_string, "10.20.1.1",
+    set_values = cwmp_val_array_alloc(wan_ip_conn_path,
+                    "ExternalIPAddress", SOAP_TYPE_string, new_wan_ip,
+                    "DefaultGateway", SOAP_TYPE_string, "10.20.1.1",
+                    "DNSServers", SOAP_TYPE_string, "10.20.1.1",
                     VA_END_LIST);
 
-    CHECK_RC(tapi_acse_cpe_set_parameter_values(ctx, set_values));
+    CHECK_RC(tapi_acse_set_parameter_values(ctx, "WAN test", set_values));
 
-
-    te_rc = tapi_acse_cpe_set_parameter_values_resp(ctx, &set_values_resp);
+    te_rc = tapi_acse_set_parameter_values_resp(ctx, &set_status);
 
     if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
-    {
-        cwmp_fault_t *f = (cwmp_fault_t *)set_values_resp;
-        size_t f_s = f->__sizeSetParameterValuesFault;
-
-
-        ERROR("CWMP Fault received: %s(%s), arr len %d",
-                f->FaultCode, f->FaultString, (int)f_s);
-        for (i = 0; i < f_s; i++)
-            ERROR("SetValue Fault [%d], Name '%s', Err %s(%s)",
-                (int)i,
-                f->SetParameterValuesFault[i].ParameterName,
-                f->SetParameterValuesFault[i].FaultCode,
-                f->SetParameterValuesFault[i].FaultString);
-        
         TEST_FAIL("SetParameterValues failed, see details above.");
-    }
 
     CHECK_RC(tapi_acse_cpe_disconnect(ctx));
 
@@ -118,34 +99,30 @@ main(int argc, char *argv[])
 
     CHECK_RC(tapi_acse_cpe_connect(ctx)); 
 
-    get_values = cwmp_get_values_alloc(wan_ip_conn_path,
+    get_values = cwmp_str_array_alloc(wan_ip_conn_path,
                                        "ExternalIPAddress",
                                        "DefaultGateway",
                                        "DNSServers",
                                        VA_END_LIST);
 
-    CHECK_RC(tapi_acse_cpe_get_parameter_values(ctx, get_values));
-    CHECK_RC(tapi_acse_cpe_get_parameter_values_resp(ctx,
-                                                     &get_values_resp));
+    CHECK_RC(tapi_acse_get_parameter_values(ctx, get_values));
+    CHECK_RC(tapi_acse_get_parameter_values_resp(ctx, &get_values_resp));
 
     /* TODO API for check received value */
     {
         /* first value should be ExternalIPAddress */
-        const char *got_wan_ip =
-            get_values_resp->ParameterList->
-                __ptrParameterValueStruct[0]->Value;
+        const char *got_wan_ip = get_values_resp->items[0]->Value;
 
         if (strcmp(got_wan_ip, new_wan_ip))
             TEST_FAIL("get shows value '%s' differ then was set '%s'",
                     got_wan_ip, new_wan_ip);
     }
 
-    for (i = 0; i < get_values_resp->ParameterList->__size; i++)
+    for (i = 0; i < get_values_resp->size; i++)
     {
         char buf[1024];
-        snprint_ParamValueStruct(buf, sizeof(buf), 
-                                get_values_resp->ParameterList->
-                                        __ptrParameterValueStruct[i]);
+        snprint_ParamValueStruct(buf, sizeof(buf),
+                                 get_values_resp->items[i]);
         RING("GetParValues result [%d]: %s", i, buf);
     }
 

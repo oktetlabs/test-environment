@@ -247,7 +247,7 @@ typedef enum {
 /**< Typed pointer to call-specific CWMP data from ACS to CPE. */
 typedef union {
         void *p;
-        cwmp_set_parameter_values_t       *set_parameter_values;
+        cwmp_set_parameter_values_t      *set_parameter_values;
         cwmp_get_parameter_values_t      *get_parameter_values;
         cwmp_get_parameter_names_t       *get_parameter_names;
         cwmp_set_parameter_attributes_t  *set_parameter_attributes;

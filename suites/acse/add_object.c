@@ -37,10 +37,11 @@
 int
 main(int argc, char *argv[])
 {
-    int object_number = 0, add_status;
-    cwmp_set_parameter_values_t          *set_values;
-    cwmp_set_parameter_values_response_t *set_values_resp = NULL;
+    int object_number = 0, add_status, del_status, set_status;
+
+    cwmp_values_array_t *set_values;
     tapi_acse_context_t *ctx; 
+
     char *param_path = 
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
             "IPInterface.";
@@ -61,10 +62,9 @@ main(int argc, char *argv[])
 
     CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
 
-    CHECK_RC(tapi_acse_cpe_add_object(ctx, param_path, "test")); 
+    CHECK_RC(tapi_acse_add_object(ctx, param_path, "test")); 
 
-    CHECK_RC(tapi_acse_cpe_add_object_resp(ctx, &object_number,
-                                           &add_status));
+    CHECK_RC(tapi_acse_add_object_resp(ctx, &object_number, &add_status));
 
     RING("Add object with number %d, status %d", object_number, add_status);
 
@@ -74,23 +74,27 @@ main(int argc, char *argv[])
     RING("Now Set parameters for new LAN IP interface, name '%s'",
          lan_ip_conn_path);
 
-    set_values = cwmp_set_values_alloc("test", lan_ip_conn_path,
+    set_values = cwmp_val_array_alloc(lan_ip_conn_path,
                     "Enable", SOAP_TYPE_xsd__boolean, TRUE,
                     "IPInterfaceIPAddress", SOAP_TYPE_string,
                                         "192.168.3.84",
                     VA_END_LIST);
 
-    CHECK_RC(tapi_acse_cpe_set_parameter_values(ctx, set_values));
+    CHECK_RC(tapi_acse_set_parameter_values(ctx, "Set LAN IP", set_values));
 
-    te_rc = tapi_acse_cpe_set_parameter_values_resp(ctx, &set_values_resp);
+    te_rc = tapi_acse_set_parameter_values_resp(ctx, &set_status);
 
     if (TE_CWMP_FAULT == TE_RC_GET_ERROR(te_rc))
-    {
-        tapi_acse_log_fault(CWMP_FAULT(set_values_resp));
         TEST_FAIL("SetParameterValues failed, see details above.");
-    }
+
     if (te_rc != 0)
         TEST_FAIL("Unexpected error on SetParamValues response: %r", te_rc);
+
+    /* TODO check here by some other way that LAN is added, before delete.*/
+
+    CHECK_RC(tapi_acse_delete_object(ctx, lan_ip_conn_path, "test")); 
+
+    CHECK_RC(tapi_acse_delete_object_resp(ctx, &del_status));
 
     TEST_SUCCESS;
 
