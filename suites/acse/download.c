@@ -124,5 +124,8 @@ main(int argc, char *argv[])
 
 cleanup:
 
+    CLEANUP_CHECK_RC(tapi_acse_manage_acs(ctx, ACSE_OP_MODIFY,
+                                          "http_root", "", VA_END_LIST));
+
     TEST_END;
 }

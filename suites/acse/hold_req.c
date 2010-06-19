@@ -147,14 +147,15 @@ main(int argc, char *argv[])
     TEST_SUCCESS;
     return result;
 
-cleanup:
-
+cleanup: 
     CLEANUP_CHECK_RC(tapi_acse_cpe_disconnect(ctx));
 
     CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY, 
                                           "sync_mode", FALSE,
                                           "hold_requests", FALSE, 
                                           VA_END_LIST));
+    CLEANUP_CHECK_RC(tapi_acse_manage_acs(ctx, ACSE_OP_MODIFY,
+                                          "http_root", "", VA_END_LIST));
 
     TEST_END;
 }

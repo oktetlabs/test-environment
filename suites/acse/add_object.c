@@ -77,7 +77,7 @@ main(int argc, char *argv[])
     set_values = cwmp_val_array_alloc(lan_ip_conn_path,
                     "Enable", SOAP_TYPE_xsd__boolean, TRUE,
                     "IPInterfaceIPAddress", SOAP_TYPE_string,
-                                        "192.168.3.84",
+                                        "192.168.3.85",
                     VA_END_LIST);
 
     CHECK_RC(tapi_acse_set_parameter_values(ctx, "Set LAN IP", set_values));

@@ -37,8 +37,7 @@
 int
 main(int argc, char *argv[])
 {
-    cwmp_get_rpc_methods_response_t *get_rpc_meth_r = NULL;
-    string_array_t *methods;
+    string_array_t *methods = NULL;
 
     te_errno te_rc;
 
@@ -63,7 +62,7 @@ main(int argc, char *argv[])
     te_rc = tapi_acse_get_rpc_methods_resp(ctx, &methods);
 
     RING("rc of cwmp op check %r", te_rc);
-    if (te_rc == 0 && get_rpc_meth_r != NULL)
+    if (te_rc == 0 && methods != NULL)
     {
         char answer_buf[1000];
         char *p = answer_buf;
@@ -75,7 +74,8 @@ main(int argc, char *argv[])
         RING("%s", answer_buf);
     }
     else
-        TEST_FAIL("GetRPCMethodsResponse fails %r", te_rc);
+        TEST_FAIL("GetRPCMethodsResponse fails %r, methods %p",
+                  te_rc, methods);
 
 
     TEST_SUCCESS;
