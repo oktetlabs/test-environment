@@ -1,25 +1,19 @@
-
 /** @file
- * @brief Common declarations for utilities, used in CWMP-related tests 
- *  for make some management of CPE behind CWMP. 
- *
- * Common definitions for RPC test suite.
- *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ * @brief Functions, used in CWMP-related tests for make 
+ * some management of CPE behind CWMP. 
  * 
- * $Id$
+ * @author Marina Maslova <Marina.Maslova@oktetlabs.ru>
+ * 
+ * $Id: $
  */
-#ifndef __CPE_BACKDOOR__H__
-#define __CPE_BACKDOOR__H__
 
-/* TODO: invent actual and portable ID for box, which will 
-   help background implementation to connect with it.
-   This is temporary. */
-typedef struct board_id_s {
-    const char              *ta;
-    rcf_rpc_server          *pco;
-    struct sockaddr_storage  addr;
-} board_id_t;
+#include "cpe_backdoor.h"
+#include "platform-ts.h"
+#include "tapi_rpc_crm.h"
+#include "tapi_webui.h"
+
+#define ACS_CONNREQ_URL         "/tr069/acs/conn_req/url"
+#define ACS_CONNREQ_LOGIN       "/tr069/acs/conn_req/username"
 
 /**
  * Get URL for ConnectionRequest from CPE.
@@ -30,41 +24,30 @@ typedef struct board_id_s {
  *
  * @return status
  */
-extern te_errno cpe_get_cr_url(board_id_t cpe,
-                               char *cr_url, size_t bufsize);
+te_errno
+cpe_get_cr_url(board_id_t cpe, char *cr_url, size_t bufsize)
+{
+    rpc_ptr             mapi;
+    crm_tc_id           tid;
+    const char         *tmp;
 
-/**
- * Get URL of ACS from CPE.
- *
- * @param cpe           ID of board with CPE.
- * @param acs_url       location for URL.
- * @param bufsize       size of location buffer.
- *
- * @return status
- */
-extern te_errno cpe_get_acs_url(board_id_t cpe,
-                                char *acs_url, size_t bufsize);
+    rpc_http_webui_login(cpe.pco, (struct sockaddr *)&cpe.addr, "root",
+                         tapi_cfg_get_webui_passwd("root"));
+    tapi_http_webui_access_on(cpe.pco, (struct sockaddr *)&cpe.addr);
 
-/**
- * Set URL of ACS on CPE.
- *
- * @param cpe           ID of board with CPE.
- * @param acs_url       string with URL.
- *
- * @return status
- */
-extern te_errno cpe_set_acs_url(board_id_t cpe, char *acs_url);
+    RPC_TRANSACTION_OPEN(cpe.pco, (struct sockaddr *)&cpe.addr,
+                         CRM_TC_RO, TC_TIMEO);
+    rpc_crm_get_string(cpe.pco, mapi, TC_USER, tid, &tmp,
+                       ACS_CONNREQ_URL);
+    RPC_TRANSACTION_CLOSE(cpe.pco);
 
-/**
- * Activate TR069 management protocol on CPE. 
- * Set URL of ACS on CPE, if specified.
- *
- * @param cpe           ID of board with CPE.
- * @param acs_url       string with URL, may be NULL.
- *
- * @return status
- */
-extern te_errno cpe_activate_tr069_mgmt(board_id_t cpe, char *acs_url);
+    if (bufsize < strlen(tmp) + 1)
+        return TE_ENOBUFS;
+
+    strcpy(cr_url, tmp);
+
+    return 0;
+}
 
 /**
  * Set ConnectionRequest login username on CPE, that is, login for
@@ -75,8 +58,26 @@ extern te_errno cpe_activate_tr069_mgmt(board_id_t cpe, char *acs_url);
  *
  * @return status
  */
-extern te_errno cpe_set_cr_login(board_id_t cpe,  const char *cr_login);
+te_errno
+cpe_set_cr_login(board_id_t cpe,  const char *cr_login)
+{
+    rpc_ptr             mapi;
+    crm_tc_id           tid;
+    const char         *tmp;
 
+    rpc_http_webui_login(cpe.pco, (struct sockaddr *)&cpe.addr, "root",
+                         tapi_cfg_get_webui_passwd("root"));
+    tapi_http_webui_access_on(cpe.pco, (struct sockaddr *)&cpe.addr);
+
+    RPC_TRANSACTION_OPEN(cpe.pco, (struct sockaddr *)&cpe.addr,
+                         CRM_TC_RW, TC_TIMEO);
+    rpc_crm_set_string(cpe.pco, mapi, TC_USER, tid, cr_login,
+                       ACS_CONNREQ_LOGIN);
+    RPC_TRANSACTION_CLOSE(cpe.pco);
+
+    return 0;
+}
+#if 0
 /**
  * Set ConnectionRequest login password on CPE.
  *
@@ -156,5 +157,4 @@ extern te_errno cpe_get_acs_login(board_id_t cpe,
 extern te_errno cpe_get_acs_passwd(board_id_t cpe,
                                    char *acs_passwd, size_t bufsize);
 
-
-#endif /* __CPE_BACKDOOR__H__ */ 
+#endif
