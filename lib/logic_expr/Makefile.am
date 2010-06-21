@@ -4,7 +4,7 @@ ACLOCAL_AMFLAGS = -I @TE_M4@
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ 
 AM_LDFLAGS = @TE_LDFLAGS@ 
-AM_LFLAGS = --header-file=$*.h -o $(LEX_OUTPUT_ROOT).c
+AM_LFLAGS = --header-file=$(abs_builddir)/$*.h -o $(LEX_OUTPUT_ROOT).c
 AM_YFLAGS = -d
 
 
@@ -22,8 +22,6 @@ liblogic_expr_la_SOURCES = \
 CLEANFILES = logic_expr_gram.h logic_expr_gram.c \
              logic_expr_lex.h logic_expr_lex.c
 BUILT_SOURCES = logic_expr_gram.h logic_expr_lex.h
-# logic_expr_gram.h is included in dist automatically
-EXTRA_DIST = logic_expr_lex.h
 
 logic_expr_lex.h: logic_expr_lex.c
 
