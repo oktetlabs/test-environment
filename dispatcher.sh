@@ -589,6 +589,10 @@ if test -n "${TRC_TAGS}" ; then
 fi
 
 # Build Test Environment
+
+# Workaround for bug in latest libtool: libtool defines ECHO, but uses $echo
+export echo=echo
+
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 if test -n "$BUILDER" ; then
     pushd "${TE_BASE}" >/dev/null
