@@ -29,21 +29,14 @@
 #include "rgt_msg_fmt.h"
 
 te_bool
-rgt_msg_fmt_spec(const char           **pspec,
-                 const rgt_msg_fld    **parg,
-                 rgt_msg_fmt_out_fn    *out_fn,
-                 void                  *out_data)
+rgt_msg_fmt_out_obstack(void        *obstack,
+                        const void  *ptr,
+                        size_t       len)
 {
-    const char         *spec;
-    const char         *p;
-    char                c;
-    const rgt_msg_fld  *arg;
+    obstack_grow((struct obstack *)obstack, ptr, len);
+    return TRUE;
+}
 
-    assert(pspec != NULL);
-    assert(*pspec != NULL);
-    assert(parg != NULL);
-    assert(*parg != NULL);
-    assert(out_fn != NULL);
 
 #define OUT(_ptr, _len) \
     do {                                        \
@@ -51,13 +44,45 @@ rgt_msg_fmt_spec(const char           **pspec,
             return FALSE;                       \
     } while (0)
 
+
+te_bool
+rgt_msg_fmt_spec_plain(const char         **pspec,
+                       size_t              *plen,
+                       const rgt_msg_fld  **parg,
+                       rgt_msg_fmt_out_fn  *out_fn,
+                       void                *out_data)
+{
+    const char         *spec;
+    size_t              len;
+    const char         *p;
+    char                c;
+    const rgt_msg_fld  *arg;
+
+    assert(pspec != NULL);
+    assert(*pspec != NULL);
+    assert(plen != NULL);
+    assert(parg != NULL);
+    assert(*parg != NULL);
+    assert(out_fn != NULL);
+
     spec = *pspec;
     p = spec;
-    if (*p != '%')
+    len = *plen;
+    if (len == 0 || *p != '%')
         return TRUE;
     p++;
+    len--;
+
+    if (len == 0)
+    {
+        OUT(spec, p - spec);
+        *pspec = spec;
+        *plen = len;
+        return TRUE;
+    }
 
     c = *p++;
+    len--;
     arg = *parg;
     switch (c)
     {
@@ -65,7 +90,10 @@ rgt_msg_fmt_spec(const char           **pspec,
             if (rgt_msg_fld_is_term(arg))
                 OUT(spec, p - spec);
             else
+            {
                 OUT(arg->buf, arg->len);
+                *parg = rgt_msg_fld_next(arg);
+            }
             break;
 
         case 'r':
@@ -100,6 +128,9 @@ rgt_msg_fmt_spec(const char           **pspec,
                     memcpy(p, err, err_len);
                     OUT(buf, len);
                 }
+
+                *parg = rgt_msg_fld_next(arg);
+
                 break;
             }
 
@@ -127,7 +158,7 @@ rgt_msg_fmt_spec(const char           **pspec,
 
                 OUT(buf, sprintf(buf, fmt,
                                  ntohl(*(const uint32_t *)arg->buf)));
-
+                *parg = rgt_msg_fld_next(arg);
                 break;
             }
 
@@ -138,7 +169,9 @@ rgt_msg_fmt_spec(const char           **pspec,
                 break;
             }
 
-            if (arg->len == 0 || (arg->len % sizeof(uint32_t)) != 0)
+            if (arg->len == 0 || (arg->len % sizeof(uint32_t)) != 0 ||
+                /* For stack safety - 128 bit addresses should be enough */
+                arg->len > (sizeof(uint64_t) * 2))
             {
                 errno = EINVAL;
                 return FALSE;
@@ -171,16 +204,64 @@ rgt_msg_fmt_spec(const char           **pspec,
                 /* Output result */
                 OUT(buf, sizeof(buf));
             }
+
+            *parg = rgt_msg_fld_next(arg);
+
             break;
 
         case '%':
             OUT(&c, 1);
-            *pspec = p;
             return TRUE;
+
+        default:
+            OUT(spec, p - spec);
+            if (!rgt_msg_fld_is_term(arg))
+                *parg = rgt_msg_fld_next(arg);
+            break;
     }
 
     *pspec = p;
-    *parg = rgt_msg_fld_next(arg);
+    *plen = len;
 
     return TRUE;
 }
+
+
+te_bool rgt_msg_fmt(const char             *fmt,
+                    size_t                  len,
+                    const rgt_msg_fld     **parg,
+                    rgt_msg_fmt_spec_fn    *spec_fn,
+                    rgt_msg_fmt_out_fn     *out_fn,
+                    void                   *out_data)
+{
+    const char *prev_p;
+    const char *p;
+    size_t      l;
+
+    assert(fmt != NULL);
+    assert(parg != NULL);
+    assert(*parg != NULL);
+    assert(out_fn != NULL);
+
+    prev_p = fmt;
+    p = prev_p;
+    l = len;
+
+    while (TRUE)
+    {
+        for (; *p != '%' && l > 0; p++, l--);
+
+        if (p > prev_p)
+            OUT(prev_p, p - prev_p);
+
+        if (l == 0)
+            return TRUE;
+
+        if (!(*spec_fn)(&p, &l, parg, out_fn, out_data))
+            return FALSE;
+
+        prev_p = p;
+    }
+}
+
+
