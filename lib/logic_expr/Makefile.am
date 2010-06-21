@@ -4,7 +4,7 @@ ACLOCAL_AMFLAGS = -I @TE_M4@
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ 
 AM_LDFLAGS = @TE_LDFLAGS@ 
-AM_LFLAGS = --header-file=$(abs_builddir)/$*.h -o $(LEX_OUTPUT_ROOT).c
+AM_LFLAGS = --header-file=$(ABS_BUILDDIR)/$*.h -o $(LEX_OUTPUT_ROOT).c
 AM_YFLAGS = -d
 
 
