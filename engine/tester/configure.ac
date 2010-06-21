@@ -48,4 +48,7 @@ AC_CONFIG_FILES([Makefile tests/Makefile])
 
 TE_APP_RESTORE
 
+ABS_BUILDDIR="`pwd`"
+AC_SUBST(ABS_BUILDDIR)
+
 AC_OUTPUT
