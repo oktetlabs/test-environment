@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/time.h>
+#include <time.h>
 #include "logger_defs.h"
 #include "rgt_msg_fmt.h"
 #include "rgt_co.h"
@@ -822,8 +823,19 @@ append_msg_cdata(rgt_co_chunk      *chunk,
 te_bool
 rgt_co_chunk_append_msg(rgt_co_chunk *chunk, const rgt_msg *msg)
 {
+    time_t      ts;
+    struct tm  *tm;
+    char        ts_buf[16];
+    size_t      ts_len;
+
     assert(rgt_co_chunk_valid(chunk));
     assert(rgt_msg_valid(msg));
+
+    ts = msg->ts_secs;
+    tm = localtime(&ts);
+    ts_len = strftime(ts_buf, sizeof(ts_buf), "%H:%M:%S", tm);
+    ts_len += snprintf(ts_buf + ts_len, sizeof(ts_buf) - ts_len,
+                       " %u ms", msg->ts_usecs / 1000);
 
     return append_indent(chunk) &&
            append_start_tag_start(chunk, "msg") &&
@@ -833,6 +845,7 @@ rgt_co_chunk_append_msg(rgt_co_chunk *chunk, const rgt_msg *msg)
                        msg->entity->buf, msg->entity->len) &&
            append_attr(chunk, "user",
                        msg->user->buf, msg->user->len) &&
+           append_attr(chunk, "ts", ts_buf, ts_len) &&
            append_start_tag_end(chunk) &&
            append_msg_cdata(chunk, msg->fmt, msg->args) &&
            append_end_tag(chunk, "msg") &&
