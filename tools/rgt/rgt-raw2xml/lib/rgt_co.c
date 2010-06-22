@@ -601,7 +601,7 @@ append_cdata(rgt_co_chunk *chunk, const uint8_t *ptr, size_t len)
     assert(rgt_co_chunk_valid(chunk));
     assert(ptr != NULL || len == 0);
 
-    for (p = ptr, prev_p = ptr; len > 0; len--)
+    for (p = ptr, prev_p = ptr; len > 0;)
     {
         c = *p;
         switch (c)
@@ -632,6 +632,7 @@ append_cdata(rgt_co_chunk *chunk, const uint8_t *ptr, size_t len)
                     !rgt_co_chunk_append(chunk, r, l))
                     return FALSE;
                 p += 2;
+                len -= 2;
                 prev_p = p;
                 continue;
             case '\n':
@@ -642,6 +643,7 @@ append_cdata(rgt_co_chunk *chunk, const uint8_t *ptr, size_t len)
                 if ((c >= ' ' && c < '\x7F') || c == '\t')
                 {
                     p++;
+                    len--;
                     continue;
                 }
 
@@ -657,6 +659,7 @@ append_cdata(rgt_co_chunk *chunk, const uint8_t *ptr, size_t len)
             !rgt_co_chunk_append(chunk, r, l))
             return FALSE;
         p++;
+        len--;
         prev_p = p;
     }
 
