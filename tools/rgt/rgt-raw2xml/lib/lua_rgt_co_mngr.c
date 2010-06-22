@@ -54,8 +54,10 @@ static int
 l_take_file(lua_State *L)
 {
     rgt_co_mngr    *mngr    = luaL_checkudata(L, 1, LUA_RGT_CO_MNGR_NAME);
-    FILE           *file    = luaL_checkudata(L, 2, LUA_FILEHANDLE);
+    FILE          **pfile   = luaL_checkudata(L, 2, LUA_FILEHANDLE);
     rgt_co_chunk   *chunk;
+
+    luaL_argcheck(L, *pfile != NULL, 2, "closed");
 
     /*
      * Store the file in the environment to prevent garbage collection
@@ -82,7 +84,7 @@ l_take_file(lua_State *L)
     chunk = rgt_co_mngr_add_first_chunk(mngr, 0);
     if (chunk == NULL)
         luaL_error(L, "memory allocation failed");
-    rgt_co_chunk_take_file(chunk, file, 0);
+    rgt_co_chunk_take_file(chunk, *pfile, 0);
 
     lua_rgt_co_chunk_wrap(L, 1, chunk);
 
