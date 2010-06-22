@@ -1,9 +1,9 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.59])
+AC_PREREQ(2.59)
 
-AC_INIT(rgt, 1.00, Oleg.Kravtsov@oktetlabs.ru)
+AC_INIT([rgt],[1.00],[Oleg.Kravtsov@oktetlabs.ru])
 AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_SRCDIR([rgt-core/rgt_core.c])
@@ -136,7 +136,7 @@ if test "x$xml_lib" = "x"; then
     xml_lib=libxml
 fi
 
-AC_CHECKING([XML Parser library])
+AS_MESSAGE([checking XML Parser library...])
 
 if test "x$xml_lib" = "xlibxml" || test "x$xml_lib" = "x"
 then
@@ -172,12 +172,14 @@ AC_ARG_WITH([te-headers-path],
 
 
 CFLAGS=${CFLAGS}" "${XML2_CFLAGS}
-AC_CHECK_MEMBERS([\
-struct _xmlSAXHandler._private, \
-struct _xmlSAXHandler.startElementNs, \
-struct _xmlSAXHandler.endElementNs, \
-struct _xmlSAXHandler.serror \
-], [], [], [#include <libxml/parser.h>])
+AC_CHECK_MEMBER([struct _xmlSAXHandler._private], [], [], 
+                [#include <libxml/parser.h>])
+AC_CHECK_MEMBER([struct _xmlSAXHandler.startElementNs], [], [], 
+                [#include <libxml/parser.h>])
+AC_CHECK_MEMBER([struct _xmlSAXHandler.endElementNs], [], [], 
+                [#include <libxml/parser.h>])
+AC_CHECK_MEMBER([struct _xmlSAXHandler.serror], [], [], 
+                [#include <libxml/parser.h>])
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
