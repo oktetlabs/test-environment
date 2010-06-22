@@ -118,12 +118,17 @@ AC_ARG_WITH([atm],,
  fi
 ], [w_atm=false])
 
+AC_CHECK_LIB([pcap], [pcap_open_live], [PCAP_LIBS=-lpcap])
+
+[ test -n "${PCAP_LIBS}" ] && {
+AC_CHECK_LIB([nl], [nlmsg_alloc], [PCAP_LIBS="$PCAP_LIBS -lnl"])
+}
+
 AC_ARG_WITH([eth],, 
 [if test "${withval}" = yes; then
    w_eth=true;
    proto_specific eth;
-   AC_CHECK_LIB([pcap], [pcap_open_live],
-                [TA_TAD_LIBS="$TA_TAD_LIBS -lpcap"])
+   TA_TAD_LIBS="$TA_TAD_LIBS ${PCAP_LIBS}"
    AC_CONFIG_FILES([eth/Makefile])
  fi
 ], [w_eth=false])
@@ -251,7 +256,7 @@ AC_ARG_WITH([pcap],,
 [if test "${withval}" = yes; then
     w_pcap=true;
     proto_specific pcap;
-    TA_TAD_LIBS="$TA_TAD_LIBS -lpcap";
+    TA_TAD_LIBS="$TA_TAD_LIBS ${PCAP_LIBS}";
     AC_CONFIG_FILES([pcap/Makefile])
  fi
 ], [w_pcap=false])
