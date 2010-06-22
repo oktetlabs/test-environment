@@ -16,6 +16,7 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
 TE_APP_SET
@@ -203,10 +204,11 @@ AC_CONFIG_FILES([Makefile
                  rgt-idx/Makefile
                  rgt-dump/Makefile
                  rgt-raw2xml/Makefile
+                 rgt-raw2xml/include/Makefile
+                 rgt-raw2xml/lib/Makefile
                  rgt-raw2xml/lua/Makefile
                  rgt-raw2xml/lua/loop/Makefile
                  rgt-raw2xml/lua/loop/collection/Makefile
-                 rgt-raw2xml/lua/co/Makefile
                  rgt-raw2xml/lua/rgt/Makefile
                  rgt-raw2xml/lua/rgt/node/Makefile
 ])
