@@ -8,7 +8,7 @@ AM_CFLAGS = @TE_CFLAGS@
 AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
 
-include_HEADERS= tapi_acse.h 
+include_HEADERS= tapi_acse.h cpe_backdoor.h
 
 lib_LTLIBRARIES=libtapi_acse.la
 
