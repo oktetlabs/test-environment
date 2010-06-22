@@ -120,7 +120,7 @@ rgt_co_mngr_add_chunk(rgt_co_chunk *prev, size_t depth)
 }
 
 
-void
+static void
 del_chunk(rgt_co_mngr *mngr, rgt_co_chunk *prev)
 {
     rgt_co_chunk *chunk;

@@ -434,7 +434,7 @@ parse_tag_args(lua_State           *L,
 }
 
 
-te_bool
+static te_bool
 parse_node_start_tags(lua_State            *L,
                       struct obstack       *obs,
                       const char           *fmt,
