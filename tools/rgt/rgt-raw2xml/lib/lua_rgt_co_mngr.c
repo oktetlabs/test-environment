@@ -51,14 +51,6 @@ l___call(lua_State *L)
 
 
 static int
-l___gc(lua_State *L)
-{
-    rgt_co_mngr_clnp(luaL_checkudata(L, 1, LUA_RGT_CO_MNGR_NAME));
-    return 0;
-}
-
-
-static int
 l_take_file(lua_State *L)
 {
     rgt_co_mngr    *mngr    = luaL_checkudata(L, 1, LUA_RGT_CO_MNGR_NAME);
@@ -123,6 +115,29 @@ l_yield_file(lua_State *L)
     lua_pushinteger(L, len);
 
     return 2;
+}
+
+
+static int
+l___gc(lua_State *L)
+{
+    rgt_co_mngr    *mngr    = luaL_checkudata(L, 1, LUA_RGT_CO_MNGR_NAME);
+    /*
+     * Remove the file from the first chunk, since it doesn't belong to us.
+     */
+    lua_getfenv(L, 1);
+    if (!lua_isnil(L, -1))
+    {
+        lua_getfield(L, -1, "file");
+        if (!lua_isnil(L, -1))
+        {
+            lua_pushnil(L);
+            lua_setfield(L, -2, "file");
+            rgt_co_chunk_yield_file(mngr->first_used, NULL);
+        }
+    }
+    rgt_co_mngr_clnp(mngr);
+    return 0;
 }
 
 

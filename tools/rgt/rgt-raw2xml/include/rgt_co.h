@@ -314,7 +314,6 @@ static inline FILE *
 rgt_co_chunk_yield_file(rgt_co_chunk *chunk, size_t *plen)
 {
     assert(rgt_co_chunk_valid(chunk));
-    assert(rgt_co_chunk_finished(chunk));
     assert(rgt_co_chunk_is_file(chunk));
     return rgt_co_strg_yield_file(&chunk->strg, plen);
 }
@@ -332,7 +331,6 @@ static inline rgt_cbuf *
 rgt_co_chunk_yield_mem(rgt_co_chunk *chunk, size_t *plen)
 {
     assert(rgt_co_chunk_valid(chunk));
-    assert(rgt_co_chunk_finished(chunk));
     assert(rgt_co_chunk_is_mem(chunk));
     return rgt_co_strg_yield_mem(&chunk->strg, plen);
 }
