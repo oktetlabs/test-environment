@@ -111,7 +111,8 @@ rgt_co_strg_append(rgt_co_strg *strg, const void *ptr, size_t size)
     assert(rgt_co_strg_valid(strg));
     assert(!rgt_co_strg_is_void(strg));
 
-    if (!(rgt_co_strg_is_mem(strg)
+    if (size != 0 &&
+        !(rgt_co_strg_is_mem(strg)
             ? rgt_cbuf_append(strg->media.mem, ptr, size)
             : fwrite(ptr, size, 1, strg->media.file) == 1))
         return FALSE;
