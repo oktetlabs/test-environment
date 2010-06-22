@@ -616,7 +616,8 @@ static const luaL_Reg lib[] = {
 };
 
 
-int luaopen_rgt_msg(lua_State *L)
+int
+luaopen_rgt_msg(lua_State *L)
 {
     /* Register the library */
     luaL_register(L, LUA_RGT_MSG_NAME, lib);

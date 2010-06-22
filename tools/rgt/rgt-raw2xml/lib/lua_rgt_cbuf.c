@@ -177,7 +177,8 @@ static const luaL_Reg lib[] = {
   {NULL, NULL}
 };
 
-int luaopen_rgt_cbuf(lua_State *L)
+int
+luaopen_rgt_cbuf(lua_State *L)
 {
     /* Register the library */
     luaL_register(L, LUA_RGT_CBUF_NAME, lib);

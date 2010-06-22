@@ -24,11 +24,13 @@
 #
 
 noinst_HEADERS = \
-    lua_rgt_cbuf.h  \
-    lua_rgt_msg.h   \
-    rgt_cbuf.h      \
-    rgt_co.h        \
-    rgt_co_strg.h   \
-    rgt_msg.h       \
+    lua_rgt_cbuf.h      \
+    lua_rgt_co_chunk.h  \
+    lua_rgt_co_mngr.h   \
+    lua_rgt_msg.h       \
+    rgt_cbuf.h          \
+    rgt_co.h            \
+    rgt_co_strg.h       \
+    rgt_msg.h           \
     rgt_msg_fmt.h
 

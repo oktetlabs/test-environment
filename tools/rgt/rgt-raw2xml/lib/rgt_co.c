@@ -29,6 +29,7 @@
 #include <stddef.h>
 #include <sys/time.h>
 #include "logger_defs.h"
+#include "rgt_msg_fmt.h"
 #include "rgt_co.h"
 
 #define TABSTOP 2
@@ -190,6 +191,7 @@ rgt_co_mngr_clnp(rgt_co_mngr *mngr)
         assert(rgt_co_chunk_is_void(chunk));
         free(chunk);
     }
+    mngr->first_free = NULL;
 
     /* Free the "used" chunks */
     for (chunk = mngr->first_used; chunk != NULL; chunk = next_chunk)
@@ -199,6 +201,7 @@ rgt_co_mngr_clnp(rgt_co_mngr *mngr)
         (void)rgt_co_strg_clnp(&chunk->strg);
         free(chunk);
     }
+    mngr->first_used = NULL;
 }
 
 
@@ -745,8 +748,40 @@ rgt_co_chunk_append_element(rgt_co_chunk               *chunk,
 /**********************************************************
  * MSG CHUNK
  **********************************************************/
+static te_bool append_msg_cdata_out(void       *data,
+                                    const void *ptr,
+                                    size_t      len)
+{
+    rgt_co_chunk   *chunk   = (rgt_co_chunk *)data;
+
+    assert(data != NULL);
+    assert(rgt_co_chunk_valid(chunk));
+    assert(ptr != NULL || len == 0);
+
+    return append_cdata(data, ptr, len);
+}
+
+
 static te_bool
-append_msg_cdata(rgt_co_chunk *chunk,
+append_msg_cdata_spec(const char          **pspec,
+                      size_t               *plen,
+                      const rgt_msg_fld   **parg,
+                      rgt_msg_fmt_out_fn   *out_fn,
+                      void                 *out_data)
+{
+    assert(pspec != NULL);
+    assert(*pspec != NULL);
+    assert(plen != NULL);
+    assert(parg != NULL);
+    assert(*parg != NULL);
+    assert(out_fn != NULL);
+
+    return rgt_msg_fmt_spec_plain(pspec, plen, parg, out_fn, out_data);
+}
+
+
+static te_bool
+append_msg_cdata(rgt_co_chunk      *chunk,
                  const rgt_msg_fld *fmt,
                  const rgt_msg_fld *args)
 {
@@ -754,7 +789,9 @@ append_msg_cdata(rgt_co_chunk *chunk,
     assert(fmt != NULL);
     assert(args != NULL);
 
-    return TRUE;
+    return rgt_msg_fmt((const char *)fmt->buf, fmt->len, &args,
+                       append_msg_cdata_spec,
+                       append_msg_cdata_out, chunk);
 }
 
 
