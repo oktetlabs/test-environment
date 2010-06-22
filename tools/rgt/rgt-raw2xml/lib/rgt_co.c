@@ -27,6 +27,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <errno.h>
 #include <sys/time.h>
 #include <time.h>
 #include "logger_defs.h"
@@ -525,7 +526,9 @@ static te_bool
 append_attr_list(rgt_co_chunk *chunk, const rgt_co_chunk_attr *list)
 {
     assert(rgt_co_chunk_valid(chunk));
-    assert(list != NULL);
+
+    if (list == NULL)
+        return TRUE;
 
     for (; list->name != NULL; list++)
         if (!append_attr(chunk,
@@ -552,7 +555,6 @@ append_start_tag(rgt_co_chunk              *chunk,
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
-    assert(attr_list != NULL);
 
     return append_start_tag_start(chunk, name) &&
            append_attr_list(chunk, attr_list) &&
@@ -576,7 +578,6 @@ append_empty_tag(rgt_co_chunk              *chunk,
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
-    assert(attr_list != NULL);
 
     return append_start_tag_start(chunk, name) &&
            append_attr_list(chunk, attr_list) &&
@@ -706,7 +707,6 @@ rgt_co_chunk_append_start_tag(rgt_co_chunk             *chunk,
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
-    assert(attr_list != NULL);
 
     success = append_indent(chunk) &&
               append_start_tag(chunk, name, attr_list) &&
@@ -756,7 +756,6 @@ rgt_co_chunk_append_element(rgt_co_chunk               *chunk,
     assert(rgt_co_chunk_valid(chunk));
     assert(name != NULL);
     assert(*name != '\0');
-    assert(attr_list != NULL);
     assert(content_ptr != NULL || content_len == 0);
 
     if (content_len == 0)
@@ -798,6 +797,9 @@ append_msg_cdata_spec(const char          **pspec,
                       void                 *out_data)
 {
     const char         *p;
+    char                c;
+    rgt_co_chunk       *chunk;
+    const rgt_msg_fld  *arg;
 
     assert(pspec != NULL);
     assert(*pspec != NULL);
@@ -808,43 +810,97 @@ append_msg_cdata_spec(const char          **pspec,
 
     p = *pspec;
 
-    if (*p++ == '%' && *p++ == 'T' &&
-        (*p == 'f' || *p == 'm') &&
-        !rgt_msg_fld_is_term(*parg))
+    /* If it is not our format specifier or there are no more arguments */
+    if (*p++ != '%' || *p++ != 'T' ||
+        (*p != 'f' && *p != 'm') ||
+        rgt_msg_fld_is_term(*parg))
+        return rgt_msg_fmt_spec_plain(pspec, plen, parg, out_fn, out_data);
+
+    c       = *p;
+    chunk   = (rgt_co_chunk *)out_data;
+    arg     = *parg;
+
+    p++;
+
+    if (c == 'f')
     {
-        char                c       = *p;
-        rgt_co_chunk       *chunk   = (rgt_co_chunk *)out_data;
-        const rgt_msg_fld  *arg     = *parg;
+        if (!append_start_tag_start(chunk, "file") ||
+            !append_safe_attr(chunk, "name", "TODO", 4))
+            return FALSE;
 
-        p++;
-
-        if (c == 'f')
+        if (arg->len > 0)
         {
-            if (!append_start_tag_start(chunk, "file") ||
-                !append_safe_attr(chunk, "name", "TODO", 4))
+            if (!append_start_tag_end(chunk) ||
+                !append_cdata(chunk, arg->buf, arg->len) ||
+                !append_end_tag(chunk, "file"))
+                return FALSE;
+        }
+        else if (!append_empty_tag_end(chunk))
+                return FALSE;
+    }
+    else if (c == 'm')
+    {
+        static const char   xd[]    = "0123456789ABCDEF";
+
+        size_t          rl;
+        size_t          el;
+        int             read;
+        size_t          i;
+        const uint8_t  *bp;
+        uint8_t         b;
+        char            bs[2];
+
+        if (sscanf(p, "[[%zu].[%zu]]%n", &rl, &el, &read) < 2)
+        {
+            rl = 16;
+            el = 1;
+        }
+        else
+        {
+            if (el == 0 || arg->len % el != 0)
+            {
+                errno = EINVAL;
+                return FALSE;
+            }
+            p += read;
+        }
+
+        if (!append_start_tag(chunk, "mem-dump", NULL))
+            return FALSE;
+
+        for (bp = arg->buf, i = 0; i < arg->len; bp++)
+        {
+            if (i % rl == 0 && !append_start_tag(chunk, "row", NULL))
                 return FALSE;
 
-            if (arg->len > 0)
-            {
-                if (!append_start_tag_end(chunk) ||
-                    !append_cdata(chunk, arg->buf, arg->len) ||
-                    !append_end_tag(chunk, "file"))
-                    return FALSE;
-            }
-            else if (!append_empty_tag_end(chunk))
-                    return FALSE;
-        }
-        else if (c == 'm')
-        {
+            if (i % el == 0 && !append_start_tag(chunk, "elem", NULL))
+                return FALSE;
+
+            b = *bp;
+            bs[0] = xd[b >> 4];
+            bs[1] = xd[b & 0xF];
+
+            if (!rgt_co_chunk_append(chunk, bs, 2))
+                return FALSE;
+
+            i++;
+
+            if (i % el == 0 && !append_end_tag(chunk, "elem"))
+                return FALSE;
+
+            if (i % rl == 0 && !append_end_tag(chunk, "row"))
+                return FALSE;
         }
 
-        *parg = rgt_msg_fld_next(arg);
-        *pspec = p;
-        (*plen) -= 3;
-        return TRUE;
+        if ((i % rl != 0 && !append_end_tag(chunk, "row")) ||
+            !append_end_tag(chunk, "mem-dump"))
+            return FALSE;
     }
 
-    return rgt_msg_fmt_spec_plain(pspec, plen, parg, out_fn, out_data);
+    *parg = rgt_msg_fld_next(arg);
+    *pspec = p;
+    (*plen) -= 3;
+    return TRUE;
 }
 
 
