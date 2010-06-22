@@ -161,11 +161,6 @@ dnl
 AC_SEARCH_LIBS([socket], [socket], [],
     AC_MSG_ERROR([No library with Berkley Socket API found]))
 
-dnl
-dnl lib pcap
-dnl
-AC_SEARCH_LIBS([pcap_lookupdev], [pcap], [],
-    AC_MSG_ERROR([No library with packet capture found]))
     
 dnl
 dnl sendfile() is provided by:
