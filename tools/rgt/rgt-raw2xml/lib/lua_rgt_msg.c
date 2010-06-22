@@ -58,6 +58,7 @@ l_is_control(lua_State *L)
     return 1;
 }
 
+
 #define SET_FIELD(_type, _name, _args...) \
     do {                                    \
         lua_pushliteral(L, #_name);         \
@@ -65,9 +66,20 @@ l_is_control(lua_State *L)
         lua_rawset(L, -3);                  \
     } while (0)
 
+
 #define SKIP_SPACE(_p) \
     do {                                \
         for (; isspace(*(_p)); (_p)++); \
+    } while (0)
+
+
+#define PARSE_FAIL(_p, _object) \
+    do {                                                        \
+        lua_pushfstring(L,                                      \
+                        "Failed to extract %s from control "    \
+                        "message format string at \"%s\"",      \
+                       _object, _p);                            \
+        return FALSE;                                           \
     } while (0)
 
 
@@ -223,16 +235,6 @@ parse_non_space(char              **pstr,
 
     return TRUE;
 }
-
-
-#define PARSE_FAIL(_p, _object) \
-    do {                                                        \
-        lua_pushfstring(L,                                      \
-                        "Failed to extract %s from control "    \
-                        "message format string at \"%s\"",      \
-                       _object, _p);                            \
-        return FALSE;                                           \
-    } while (0)
 
 
 static te_bool
@@ -540,8 +542,8 @@ parse_tester_control(lua_State         *L,
     if (sscanf(p, "%" PRIu32 " %" PRIu32 " %n", &parent_id, &id, &read) < 2)
         PARSE_FAIL(p, "parent and node IDs");
     p += read;
-    SET_FIELD(integer, parent_id, parent_id);
-    SET_FIELD(integer, id, id);
+    SET_FIELD(number, parent_id, parent_id);
+    SET_FIELD(number, id, id);
 
     /* Extract the event */
     for (next_p = p; isalnum(*next_p); next_p++);
@@ -577,6 +579,7 @@ parse_tester_control(lua_State         *L,
 }
 
 #undef PARSE_FAIL
+#undef SKIP_SPACE
 #undef SET_FIELD
 
 
@@ -599,7 +602,7 @@ l_parse_tester_control(lua_State *L)
     /* Create the output table */
     lua_newtable(L);
 
-    /* Parse the message */
+    /* Parse the message into the table */
     success = parse_tester_control(L, &obs, fmt, msg->args);
 
     obstack_free(&obs, NULL);
@@ -608,10 +611,75 @@ l_parse_tester_control(lua_State *L)
 }
 
 
+static int
+l_get_id(lua_State *L)
+{
+    rgt_msg   **pmsg    = luaL_checkudata(L, 1, LUA_RGT_MSG_NAME);
+    lua_pushnumber(L, (*pmsg)->id);
+    return 1;
+}
+
+
+static int
+l_get_ts(lua_State *L)
+{
+    rgt_msg   **pmsg    = luaL_checkudata(L, 1, LUA_RGT_MSG_NAME);
+
+    /* Create an instance of rgt.ts */
+    lua_getglobal(L, "require");
+    lua_pushliteral(L, "rgt.ts");
+    lua_call(L, 1, 1);
+    lua_pushnumber(L, (*pmsg)->ts_secs);
+    lua_pushnumber(L, (*pmsg)->ts_usecs);
+    lua_call(L, 2, 1);
+
+    return 1;
+}
+
+
+static te_bool
+rgt_msg_fmt_out_lua_buffer(void        *data,
+                           const void  *ptr,
+                           size_t       len)
+{
+    assert(data != NULL);
+    assert(ptr != NULL || len == 0);
+
+    luaL_addlstring((luaL_Buffer *)data, ptr, len);
+
+    return TRUE;
+}
+
+
+static int
+l_get_text(lua_State *L)
+{
+    rgt_msg           **pmsg        = luaL_checkudata(L, 1,
+                                                      LUA_RGT_MSG_NAME);
+    rgt_msg            *msg         = *pmsg;
+    const rgt_msg_fld  *arg         = msg->args;
+    luaL_Buffer         buf;
+    te_bool             success;
+
+    luaL_buffinit(L, &buf);
+    success = rgt_msg_fmt_plain((const char *)msg->fmt->buf, msg->fmt->len,
+                                &arg, rgt_msg_fmt_out_lua_buffer, &buf);
+    luaL_pushresult(&buf);
+    if (!success)
+        return luaL_error(L, "Failed formatting message text: %s",
+                          strerror(errno));
+
+    return 1;
+}
+
+
 static const luaL_Reg lib[] = {
   {"is_tester_control",     l_is_tester_control},
   {"is_control",            l_is_control},
   {"parse_tester_control",  l_parse_tester_control},
+  {"get_id",                l_get_id},
+  {"get_ts",                l_get_ts},
+  {"get_text",              l_get_text},
   {NULL, NULL}
 };
 

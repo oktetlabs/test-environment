@@ -1,5 +1,5 @@
 /** @file 
- * @brief Test Environment: RGT chunked output chunk Lua interface.
+ * @brief Test Environment: RGT chunked output Lua interface.
  *
  * Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -24,25 +24,30 @@
  * $Id$
  */
 
-#ifndef __LUA_RGT_CO_CHUNK_H__
-#define __LUA_RGT_CO_CHUNK_H__
+#include <lua.h>
+#include <lauxlib.h>
+#include "lua_rgt_co.h"
 
-#include "rgt_co.h"
+static const luaL_Reg lib[] = {
+  {NULL, NULL}
+};
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+int
+luaopen_rgt_co(lua_State *L)
+{
+    /* Register the library */
+    luaL_register(L, LUA_RGT_CO_NAME, lib);
 
-#define LUA_RGT_CO_CHUNK_NAME "rgt.co.chunk"
+    /* Load rgt.co.mngr */
+    luaopen_rgt_co_mngr(L);
+    lua_setfield(L, -2, "mngr");
 
-extern int lua_rgt_co_chunk_wrap(lua_State     *L,
-                                 int            mngr_idx,
-                                 rgt_co_chunk  *chunk);
+    /* Load rgt.co.chunk */
+    luaopen_rgt_co_chunk(L);
+    lua_setfield(L, -2, "chunk");
 
-extern int luaopen_rgt_co_chunk(lua_State *L);
+    return 1;
+}
 
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
 
-#endif /* !__LUA_RGT_CO_CHUNK_H__ */
+

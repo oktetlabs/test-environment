@@ -24,13 +24,8 @@
 -- @release $Id$
 --
 
-local oo                = require("loop.simple")
-local co                = {}
-co.xml_chunk            = require("co.xml_chunk")
-local rgt               = {}
-rgt.msg                 = require("rgt.msg")
-rgt.msg_fmt_xml_chunk   = require("rgt.msg_fmt_xml_chunk")
-
+local oo            = require("loop.simple")
+local rgt           = {}
 rgt.node            = {}
 rgt.node.general    = oo.class({
                                 head     = nil,  --- Head output chunk
@@ -61,7 +56,7 @@ function rgt.node.general:start_branch(branch)
 end
 
 function rgt.node.general:start_branch_logging(branch)
-    branch.chunk:start_tag("logs")
+    branch.chunk:append_start_tag("logs")
     branch.logging = true
     return branch
 end
@@ -98,7 +93,7 @@ local function write_msg(chunk, msg)
 end
 
 function rgt.node.general:log(msg)
-    local branch, chunk
+    local branch
 
     -- Lookup first branch with a child
     for i, b in ipairs(self.branches) do
@@ -116,18 +111,7 @@ function rgt.node.general:log(msg)
         self:start_branch_logging(branch)
     end
 
-    chunk = branch.chunk
-    chunk:start_tag("msg",
-                    {
-                        {"level",   msg.level},
-                        {"entity",  msg.entity},
-                        {"user",    msg.user},
-                        {"ts",      msg.ts:format_short_abs()}
-                    },
-                    -- start single line element
-                    true)
-    rgt.msg_fmt_xml_chunk(chunk, msg.fmt, msg.args)
-    chunk:end_tag("msg")
+    branch.chunk:append_msg(msg)
 
     return self
 end
@@ -148,7 +132,7 @@ function rgt.node.general:del_child(child)
 end
 
 function rgt.node.general:finish_branch_logging(branch)
-    branch.chunk:end_tag("logs")
+    branch.chunk:append_end_tag("logs")
     branch.logging = nil
     return branch
 end

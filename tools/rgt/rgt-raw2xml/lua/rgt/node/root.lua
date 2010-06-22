@@ -32,10 +32,10 @@ rgt.node.general    = require("rgt.node.general")
 rgt.node.root       = oo.class({}, rgt.node.general)
 
 function rgt.node.root:start()
-    self.head:write("<?xml version=\"1.0\"?>\n")
-    self.head:start_tag("proteos:log_report",
-                        {{"xmlns:proteos",
-                          "http://www.oktetlabs.ru/proteos"}})
+    self.head:append("<?xml version=\"1.0\"?>\n")
+    self.head:append_start_tag("proteos:log_report",
+                               {{"xmlns:proteos",
+                                 "http://www.oktetlabs.ru/proteos"}})
     self.head:finish()
     self.head = nil
     return rgt.node.general.start(self)
@@ -50,7 +50,7 @@ end
 
 function rgt.node.root:finish()
     rgt.node.general.finish(self)
-    self.tail:end_tag("proteos:log_report")
+    self.tail:append_end_tag("proteos:log_report")
     return self
 end
 

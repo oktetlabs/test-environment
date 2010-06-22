@@ -25,8 +25,6 @@
 --
 
 local oo            = require("loop.simple")
-local co            = {}
-co.xml_chunk        = require("co.xml_chunk")
 local rgt           = {}
 rgt.node            = {}
 rgt.node.running    = require("rgt.node.running")
@@ -50,15 +48,15 @@ function rgt.node.named:write_meta(chunk)
     rgt.node.running.write_meta(self, chunk)
 
     if #self.objective > 0 then
-        chunk:element("objective", nil, self.objective)
+        chunk:append_element("objective", nil, self.objective)
     end
 
     if self.authors ~= nil and #self.authors > 0 then
-        chunk:start_tag("authors")
+        chunk:append_start_tag("authors")
         for i, e in ipairs(self.authors) do
-            chunk:element("author", {{"email", e}})
+            chunk:append_element("author", {{"email", e}})
         end
-        chunk:end_tag("authors")
+        chunk:append_end_tag("authors")
     end
 
     return chunk

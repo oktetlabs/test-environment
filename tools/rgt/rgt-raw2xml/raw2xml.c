@@ -40,7 +40,7 @@
 #include "te_raw_log.h"
 #include "logger_defs.h"
 
-#include "rgt_msg.h"
+#include "lua_rgt_msg.h"
 
 #define ERROR(_fmt, _args...) fprintf(stderr, _fmt "\n", ##_args)
 
@@ -410,27 +410,24 @@ l_xtmpfile(lua_State *L)
 static te_bool
 run_input_and_output(FILE *input,
                      lua_State *L, int traceback_idx,
-                     int msg_class_idx,
                      int sink_idx, int sink_put_idx)
 {
     te_bool             result      = FALSE;
     off_t               offset;
     rgt_msg             msg;
+    int                 msg_idx;
     read_message_rc     read_rc;
+
+    /* Create message reference userdata */
+    lua_rgt_msg_wrap(L, &msg);
+    msg_idx = lua_gettop(L);
 
     while (TRUE)
     {
-        /* Copy "put" sink instance method to the top */
-        lua_pushvalue(L, sink_put_idx);
-        /* Copy sink instance to the top */
-        lua_pushvalue(L, sink_idx);
-        /* Copy rgt.msg to the top */
-        lua_pushvalue(L, msg_class_idx);
-
         /* Retrieve current offset */
         offset = ftello(input);
 
-        /* Call read_message to supply the arguments */
+        /* Read a message */
         read_rc = read_message(input, &msg);
         if (read_rc < READ_MESSAGE_RC_OK)
         {
@@ -450,8 +447,12 @@ run_input_and_output(FILE *input,
             }
         }
 
-        /* Call rgt.msg with the arguments to create message instance */
-        LUA_PCALL(7, 1);
+        /* Copy "put" sink instance method to the top */
+        lua_pushvalue(L, sink_put_idx);
+        /* Copy sink instance to the top */
+        lua_pushvalue(L, sink_idx);
+        /* Copy message to the top */
+        lua_pushvalue(L, msg_idx);
 
         /* Call "put" sink instance method to feed the message */
         if (lua_pcall(L, 2, 0, traceback_idx) != 0)
@@ -463,6 +464,12 @@ run_input_and_output(FILE *input,
 
 cleanup:
 
+    /* Remove the message reference userdata, since it becomes invalid */
+    lua_remove(L, msg_idx);
+
+    /* Free scrap buffer used to hold message variable-length fields */
+    scrap_clear();
+
     return result;
 }
 
@@ -473,7 +480,6 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     te_bool     result          = FALSE;
     lua_State  *L               = NULL;
     int         traceback_idx;
-    int         msg_class_idx;
     int         sink_idx;
     int         sink_put_idx;
 #ifdef RGT_WITH_LUA_PROFILER
@@ -506,8 +512,9 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
 #endif
 
     /* Require rgt.msg */
-    LUA_REQUIRE("rgt.msg");
-    msg_class_idx = lua_gettop(L);
+    lua_getglobal(L, "require");
+    lua_pushliteral(L, LUA_RGT_MSG_NAME);
+    LUA_PCALL(1, 0);
 
     /*
      * Create sink instance
@@ -563,7 +570,6 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
     sink_put_idx = lua_gettop(L);
 
     if (!run_input_and_output(input, L, traceback_idx,
-                              msg_class_idx,
                               sink_idx, sink_put_idx))
         goto cleanup;
 

@@ -37,19 +37,14 @@ extern "C" {
 #define LUA_RGT_MSG_NAME "rgt.msg"
 
 static inline void
-lua_rgt_msg_wrap_idx(lua_State *L, int meta_idx, rgt_msg *msg)
-{
-    lua_newuserdata(L, sizeof(msg));
-    lua_setmetatable(L, meta_idx);
-}
-
-static inline void
 lua_rgt_msg_wrap(lua_State *L, rgt_msg *msg)
 {
     lua_newuserdata(L, sizeof(msg));
     luaL_getmetatable(L, LUA_RGT_MSG_NAME);
     lua_setmetatable(L, -2);
 }
+
+extern int luaopen_rgt_msg(lua_State *L);
 
 #ifdef __cplusplus
 } /* extern "C" */

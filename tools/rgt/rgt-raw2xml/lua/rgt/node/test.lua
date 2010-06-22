@@ -65,15 +65,15 @@ function rgt.node.test:write_meta(chunk)
     rgt.node.named.write_meta(self, chunk)
 
     if self.page ~= nil then
-        chunk:element("page", nil, self.page)
+        chunk:append_element("page", nil, self.page)
     end
 
     if self.verdicts ~= nil and #self.verdicts > 0 then
-        chunk:start_tag("verdicts")
+        chunk:append_start_tag("verdicts")
         for i, v in ipairs(self.verdicts) do
-            chunk:element("verdict", nil, v)
+            chunk:append_element("verdict", nil, v)
         end
-        chunk:end_tag("verdicts")
+        chunk:append_end_tag("verdicts")
     end
 
     return chunk
@@ -86,8 +86,8 @@ function rgt.node.test:add_child(child)
 end
 
 function rgt.node.test:log(msg)
-    if msg.user == "Control" then
-        table.insert(self.verdicts, rgt.msg_fmt_str(msg.fmt, msg.args))
+    if msg:is_control() then
+        table.insert(self.verdicts, msg:get_text())
     end
     rgt.node.named.log(self, msg)
 end

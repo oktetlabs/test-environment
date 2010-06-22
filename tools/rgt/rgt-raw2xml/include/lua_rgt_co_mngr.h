@@ -35,6 +35,8 @@ extern "C" {
 
 #define LUA_RGT_CO_MNGR_NAME "rgt.co.mngr"
 
+extern int luaopen_rgt_co_mngr(lua_State *L);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -286,8 +286,32 @@ rgt_co_chunk_append_span(rgt_co_chunk *chunk, char c, size_t n)
 te_bool
 rgt_co_chunk_finish(rgt_co_chunk *chunk)
 {
+    rgt_co_mngr    *mngr;
+    rgt_co_chunk   *next;
+
     assert(rgt_co_chunk_valid(chunk));
-    return rgt_co_chunk_finish(chunk);
+
+    mngr = chunk->mngr;
+    chunk->finished = TRUE;
+
+    /*
+     * Relocate as much chunks as possible to the first chunk storage
+     */
+    for (chunk = mngr->first_used;
+         rgt_co_chunk_finished(chunk);
+         chunk = next)
+    {
+        if (!rgt_co_chunk_finished(chunk))
+            break;
+        next = chunk->next;
+        if (next == NULL)
+            break;
+        if (!rgt_co_strg_move_media(&next->strg, &chunk->strg))
+            return FALSE;
+        rgt_co_mngr_del_first_chunk(mngr);
+    }
+
+    return TRUE;
 }
 
 

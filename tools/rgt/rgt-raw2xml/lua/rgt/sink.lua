@@ -25,26 +25,25 @@
 --
 
 local oo            = require("loop.simple")
-local co            = require("co")
 local rgt           = {}
+rgt.co              = require("rgt.co")
 rgt.node            = {}
 rgt.node.root       = require("rgt.node.root")
 rgt.node.package    = require("rgt.node.package")
 rgt.node.session    = require("rgt.node.session")
 rgt.node.test       = require("rgt.node.test")
 rgt.sink            = oo.class({
-                                manager = nil,  --- The output chunk manager
+                                mngr = nil,  --- The output chunk manager
                                 chunk   = nil,  --- The output chunk
                                 map     = nil,  --- ID->node map
                                })
 
 function rgt.sink:__init(max_mem)
-    return oo.rawnew(self, {manager = co.manager(max_mem), map = {}})
+    return oo.rawnew(self, {mngr = rgt.co.mngr(max_mem), map = {}})
 end
 
 function rgt.sink:take_file(file)
-    self.chunk = co.xml_chunk(self.manager, file, 0)
-    self.manager:set_first(self.chunk)
+    self.chunk = self.mngr:take_file(file)
 end
 
 function rgt.sink:start()
@@ -57,18 +56,18 @@ function rgt.sink:put(msg)
     local parent, node
 
     -- If it is not a control message
-    if not msg:is_ctl() then
+    if not msg:is_tester_control() then
         -- log the message to its node
-        node = self.map[msg.id]
+        node = self.map[msg:get_id()]
         if node == nil then
-            error(("Node ID %u not found"):format(msg.id))
+            error(("Node ID %u not found"):format(msg.get_id()))
         end
         node:log(msg)
         return
     end
 
     -- parse control message text
-    prm = msg:extr_ctl()
+    prm = msg:parse_tester_control()
 
     -- lookup parent node
     parent = self.map[prm.parent_id]
@@ -82,7 +81,7 @@ function rgt.sink:put(msg)
        prm.event == "test" then
         -- create new node
         node = rgt.node[prm.event]({
-                start_ts    = msg.ts,
+                start_ts    = msg:get_ts(),
                 name        = prm.name,
                 objective   = prm.objective,
                 tin         = prm.tin,
@@ -106,7 +105,7 @@ function rgt.sink:put(msg)
         end
 
         -- finish the node with the result
-        node:finish(msg.ts, prm.event, prm.err)
+        node:finish(msg:get_ts(), prm.event, prm.err)
 
         -- remove the node from the parent
         parent:del_child(node)
@@ -124,14 +123,12 @@ function rgt.sink:finish()
 end
 
 function rgt.sink:yield_file()
-    local file, size
-
-    -- Finish the chunk and retrieve its storage and size
-    file, size = self.chunk:finish():yield()
-    -- Remove the chunk
+    -- Finish and remove the chunk
+    self.chunk:finish()
     self.chunk = nil
 
-    return file, size
+    -- Take the file and size from the manager
+    return self.mngr:yield_file()
 end
 
 return rgt.sink

@@ -156,7 +156,7 @@ extern te_bool rgt_co_strg_clnp(rgt_co_strg *strg);
  *  yyy - dst contents
  */
 extern te_bool rgt_co_strg_move_media(rgt_co_strg *dst,
-                                         rgt_co_strg *src);
+                                      rgt_co_strg *src);
 
 static inline te_bool
 rgt_co_strg_retention(rgt_co_strg *strg)
