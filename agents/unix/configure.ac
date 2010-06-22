@@ -161,6 +161,7 @@ dnl
 AC_SEARCH_LIBS([socket], [socket], [],
     AC_MSG_ERROR([No library with Berkley Socket API found]))
 
+AC_SEARCH_LIBS([nlmsg_alloc], [nl])
     
 dnl
 dnl sendfile() is provided by:
