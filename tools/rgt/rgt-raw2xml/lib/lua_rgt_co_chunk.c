@@ -112,6 +112,37 @@ l___len(lua_State *L)
 
 
 static int
+l_fork(lua_State *L)
+{
+    rgt_co_chunk  **pchunk      = luaL_checkudata(L, 1,
+                                                  LUA_RGT_CO_CHUNK_NAME);
+    rgt_co_chunk   *chunk       = *pchunk;
+    rgt_co_chunk   *new_chunk;
+    rgt_cbuf       *cbuf;
+
+    /* Retrieve manager reference from the chunk environment */
+    lua_getfenv(L, 1);
+    lua_getfield(L, -1, "mngr");
+
+    /* Create new chunk with the same depth */
+    new_chunk = rgt_co_mngr_add_chunk(chunk, chunk->depth);
+    if (new_chunk == NULL)
+        return luaL_error(L, "memory allocation failed");
+
+    /* Create new chunked buffer */
+    cbuf = rgt_cbuf_new(0);
+    if (cbuf == NULL)
+        return luaL_error(L, "memory allocation failed");
+
+    /* Supply the new chunk with the chunked buffer */
+    rgt_co_chunk_take_mem(new_chunk, cbuf, 0);
+
+    /* Wrap the new chunk and the manager into a userdata */
+    return lua_rgt_co_chunk_wrap(L, -1, new_chunk);
+}
+
+
+static int
 l_descend(lua_State *L)
 {
     rgt_co_chunk  **pchunk  = luaL_checkudata(L, 1, LUA_RGT_CO_CHUNK_NAME);
@@ -139,7 +170,7 @@ l_append(lua_State *L)
     const void     *ptr     = luaL_checklstring(L, 2, &len);
 
     if (!rgt_co_chunk_append(*pchunk, ptr, len))
-        return luaL_error(L, "Failed to append to chunk: %s",
+        return luaL_error(L, "Failed to append to a chunk: %s",
                           strerror(errno));
 
     lua_settop(L, 1);
@@ -161,7 +192,7 @@ table_to_attr_list(struct obstack *obs, lua_State *L, int idx)
     idx = lua_abs_index(L, idx);
 
     /* Allocate the list */
-    num = lua_objlen(L, idx);
+    num = lua_isnoneornil(L, idx) ? 0 : lua_objlen(L, idx);
     list = obstack_alloc(obs, sizeof(*list) * (num + 1));
 
     /* Fill-in the list */
@@ -208,7 +239,8 @@ l_append_start_tag(lua_State *L)
     te_bool             success;
     int                 append_errno;
 
-    luaL_checktype(L, 3, LUA_TTABLE);
+    if (!lua_isnoneornil(L, 3))
+        luaL_checktype(L, 3, LUA_TTABLE);
 
     obstack_init(&obs);
     success = rgt_co_chunk_append_start_tag(*pchunk, name,
@@ -217,7 +249,7 @@ l_append_start_tag(lua_State *L)
     obstack_free(&obs, NULL);
 
     if (!success)
-        return luaL_error(L, "Failed to append start tag to chunk: %s",
+        return luaL_error(L, "Failed to append start tag to a chunk: %s",
                           strerror(append_errno));
 
     lua_settop(L, 1);
@@ -234,7 +266,7 @@ l_append_cdata(lua_State *L)
     const void         *ptr     = luaL_checklstring(L, 2, &len);
 
     if (!rgt_co_chunk_append_cdata(*pchunk, ptr, len))
-        return luaL_error(L, "Failed to append cdata to chunk: %s",
+        return luaL_error(L, "Failed to append cdata to a chunk: %s",
                           strerror(errno));
 
     lua_settop(L, 1);
@@ -250,7 +282,7 @@ l_append_end_tag(lua_State *L)
     const char         *name    = luaL_checkstring(L, 2);
 
     if (!rgt_co_chunk_append_end_tag(*pchunk, name))
-        return luaL_error(L, "Failed to append end tag to chunk: %s",
+        return luaL_error(L, "Failed to append end tag to a chunk: %s",
                           strerror(errno));
 
     lua_settop(L, 1);
@@ -266,14 +298,15 @@ l_append_element(lua_State *L)
     const char         *name    = luaL_checkstring(L, 2);
 
     size_t              content_len;
-    const void         *content_ptr     = luaL_checklstring(L, 4,
-                                                            &content_len);
+    const void         *content_ptr     = luaL_optlstring(L, 4, NULL,
+                                                          &content_len);
 
     struct obstack      obs;
     te_bool             success;
     int                 append_errno;
 
-    luaL_checktype(L, 3, LUA_TTABLE);
+    if (!lua_isnoneornil(L, 3))
+        luaL_checktype(L, 3, LUA_TTABLE);
 
     obstack_init(&obs);
     success = rgt_co_chunk_append_element(*pchunk, name,
@@ -283,7 +316,7 @@ l_append_element(lua_State *L)
     obstack_free(&obs, NULL);
 
     if (!success)
-        return luaL_error(L, "Failed to append start tag to chunk: %s",
+        return luaL_error(L, "Failed to append start tag to a chunk: %s",
                           strerror(append_errno));
 
     lua_settop(L, 1);
@@ -300,7 +333,21 @@ l_append_msg(lua_State *L)
                                                   LUA_RGT_MSG_NAME);
 
     if (!rgt_co_chunk_append_msg(*pchunk, *pmsg))
-        return luaL_error(L, "Failed to append message tag to chunk: %s",
+        return luaL_error(L, "Failed to append message tag to a chunk: %s",
+                          strerror(errno));
+
+    lua_settop(L, 1);
+    return 1;
+}
+
+
+static int
+l_finish(lua_State *L)
+{
+    rgt_co_chunk  **pchunk  = luaL_checkudata(L, 1,
+                                              LUA_RGT_CO_CHUNK_NAME);
+    if (!rgt_co_chunk_finish(*pchunk))
+        return luaL_error(L, "Failed to finish a chunk: %s",
                           strerror(errno));
 
     lua_settop(L, 1);
@@ -314,6 +361,7 @@ static const luaL_Reg lib[] = {
   {"is_file",           l_is_file},
   {"is_mem",            l_is_mem},
   {"__len",             l___len},
+  {"fork",              l_fork},
   {"descend",           l_descend},
   {"ascend",            l_ascend},
   {"append",            l_append},
@@ -322,6 +370,7 @@ static const luaL_Reg lib[] = {
   {"append_end_tag",    l_append_end_tag},
   {"append_element",    l_append_element},
   {"append_msg",        l_append_msg},
+  {"finish",            l_finish},
   {NULL, NULL}
 };
 

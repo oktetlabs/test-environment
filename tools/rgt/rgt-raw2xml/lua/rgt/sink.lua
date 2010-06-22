@@ -52,7 +52,7 @@ function rgt.sink:start()
 end
 
 function rgt.sink:put(msg)
-    local prm
+    local prm, event
     local parent, node
 
     -- If it is not a control message
@@ -69,18 +69,45 @@ function rgt.sink:put(msg)
     -- parse control message text
     prm = msg:parse_tester_control()
 
+    io.stderr:write("CONTROL PARAMETERS:\n")
+    for k, v in pairs(prm) do
+        io.stderr:write(k .. "=")
+        if type(v) == "table" then
+            io.stderr:write("{")
+            for vk, vv in pairs(v) do
+                io.stderr:write(vk .. "=")
+                if type(vv) == "table" then
+                    io.stderr:write("{")
+                    for vvk, vvv in pairs(vv) do
+                        io.stderr:write(vvk .. "=\"" .. vvv .. "\", ")
+                    end
+                    io.stderr:write("}")
+                else
+                    io.stderr:write("\"" .. vv .. "\"")
+                end
+                io.stderr:write(", ")
+            end
+            io.stderr:write("}")
+        else
+            io.stderr:write("\"" .. v .. "\"")
+        end
+        io.stderr:write("\n")
+    end
+
     -- lookup parent node
     parent = self.map[prm.parent_id]
     if parent == nil then
         error(("Node ID %u not found"):format(prm.parent_id))
     end
 
+    event = prm.event:lower()
+
     -- If it is a node opening
-    if prm.event == "package" or
-       prm.event == "session" or
-       prm.event == "test" then
+    if event == "package" or
+       event == "session" or
+       event == "test" then
         -- create new node
-        node = rgt.node[prm.event]({
+        node = rgt.node[event]({
                 start_ts    = msg:get_ts(),
                 name        = prm.name,
                 objective   = prm.objective,

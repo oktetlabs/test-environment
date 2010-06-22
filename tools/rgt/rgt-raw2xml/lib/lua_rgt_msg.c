@@ -106,14 +106,16 @@ fmt_spec(struct obstack *obs, const char **pp, const rgt_msg_fld **parg)
 
 
 static te_bool
-parse_quoted_string(char              **pstr,
-                    size_t             *plen,
-                    struct obstack     *obs,
-                    const char        **pp,
-                    const rgt_msg_fld **parg)
+parse_optionally_quoted_string(char               **pstr,
+                               size_t              *plen,
+                               struct obstack      *obs,
+                               const char         **pp,
+                               const rgt_msg_fld  **parg)
 {
     const char     *p;
     const char     *next_p;
+    const char     *fmt_str;
+    size_t          fmt_len;
 
     assert(pstr != NULL);
     assert(plen != NULL);
@@ -125,22 +127,29 @@ parse_quoted_string(char              **pstr,
 
     p = *pp;
 
-    if (*p != '"')
+    if (*p == '"')
     {
-        errno = EINVAL;
-        return FALSE;
-    }
-    p++;
+        p++;
 
-    /* Seek closing " or \0 */
-    for (next_p = p; *next_p != '"' && *next_p != '\0'; next_p++);
-    if (*next_p == '\0')
+        /* Seek closing " or \0 */
+        for (next_p = p; *next_p != '"' && *next_p != '\0'; next_p++);
+        if (*next_p == '\0')
+        {
+            errno = EINVAL;
+            return FALSE;
+        }
+        fmt_str = p;
+        fmt_len = next_p - p;
+        p = next_p + 1;
+    }
+    else
     {
-        errno = EINVAL;
-        return FALSE;
+        for (next_p = p; *next_p != '\0' && !isspace(*next_p); next_p++);
+        fmt_str = p;
+        fmt_len = next_p - p;
     }
 
-    if (!rgt_msg_fmt_plain_obstack(obs, p, next_p - p, parg))
+    if (!rgt_msg_fmt_plain_obstack(obs, fmt_str, fmt_len, parg))
     {
         obstack_free(obs, obstack_finish(obs));
         return FALSE;
@@ -148,7 +157,6 @@ parse_quoted_string(char              **pstr,
     *plen = obstack_object_size(obs);
     *pstr = obstack_finish(obs);
 
-    p++;
     *pp = p;
     return TRUE;
 }
@@ -197,7 +205,7 @@ parse_quoted_escaped_string(char              **pstr,
         p++;
     }
 
-    *pp = p + 1;
+    *pp = next_p + 1;
     *plen = obstack_object_size(obs);
     *pstr = obstack_finish(obs);
 
@@ -230,6 +238,7 @@ parse_non_space(char              **pstr,
         obstack_free(obs, obstack_finish(obs));
         return FALSE;
     }
+    *pp = next_p;
     *plen = obstack_object_size(obs);
     *pstr = obstack_finish(obs);
 
@@ -343,6 +352,7 @@ parse_tag_authors(lua_State            *L,
         lua_rawset(L, -3);
 
         i++;
+        p = next_p;
     }
 
     /* Set authors field */
@@ -460,13 +470,13 @@ parse_node_start_tags(lua_State            *L,
         tag = obstack_copy0(obs, p, next_p - p);
 
         if (strcasecmp(tag, "tin") == 0)
-            success = parse_tag_tin(L, obs, &p, &arg);
+            success = parse_tag_tin(L, obs, &next_p, &arg);
         else if (strcasecmp(tag, "page") == 0)
-            success = parse_tag_page(L, obs, &p, &arg);
+            success = parse_tag_page(L, obs, &next_p, &arg);
         else if (strcasecmp(tag, "authors") == 0)
-            success = parse_tag_authors(L, obs, &p, &arg);
+            success = parse_tag_authors(L, obs, &next_p, &arg);
         else if (strcasecmp(tag, "args") == 0)
-            success = parse_tag_args(L, obs, &p, &arg);
+            success = parse_tag_args(L, obs, &next_p, &arg);
         else
         {
             lua_pushfstring(L, "Unknown tag \"%s\" encountered in message "
@@ -476,6 +486,8 @@ parse_node_start_tags(lua_State            *L,
 
         if (!success)
             return FALSE;
+
+        p = next_p;
     }
 
     return TRUE;
@@ -508,7 +520,7 @@ parse_node_start(lua_State         *L,
 
         /* Extract objective */
         SKIP_SPACE(p);
-        if (!parse_quoted_string(&str, &len, obs, &p, &arg))
+        if (!parse_optionally_quoted_string(&str, &len, obs, &p, &arg))
             PARSE_FAIL(p, "objective");
         SET_FIELD(lstring, objective, str, len);
     }
@@ -527,7 +539,8 @@ parse_tester_control(lua_State         *L,
     uint32_t    id;
     const char *p;
     int         read;
-    const char *next_p;
+    char       *ptr;
+    size_t      len;
     char       *event;
 
     assert(L != NULL);
@@ -546,12 +559,10 @@ parse_tester_control(lua_State         *L,
     SET_FIELD(number, id, id);
 
     /* Extract the event */
-    for (next_p = p; isalnum(*next_p); next_p++);
-    if (next_p == p)
+    if (!parse_non_space(&ptr, &len, obs, &p, &arg))
         PARSE_FAIL(p, "event");
-    SET_FIELD(lstring, event, p, next_p - p);
-    event = obstack_copy0(obs, p, next_p - p);
-    p = next_p;
+    SET_FIELD(lstring, event, ptr, len);
+    event = obstack_copy0(obs, ptr, len);
 
     /* If it's a package or test start */
     if (strcasecmp(event, "package") == 0 ||
@@ -565,14 +576,11 @@ parse_tester_control(lua_State         *L,
     /* Otherwise it is a node end */
     else
     {
-        char   *str;
-        size_t  len;
-
         /* Extract error message */
         SKIP_SPACE(p);
-        if (!parse_quoted_string(&str, &len, obs, &p, &arg))
+        if (!parse_optionally_quoted_string(&ptr, &len, obs, &p, &arg))
             PARSE_FAIL(p, "error message");
-        SET_FIELD(lstring, err, str, len);
+        SET_FIELD(lstring, err, ptr, len);
     }
 
     return TRUE;

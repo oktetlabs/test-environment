@@ -539,7 +539,7 @@ static inline te_bool
 append_start_tag_end(rgt_co_chunk *chunk)
 {
     assert(rgt_co_chunk_valid(chunk));
-    return rgt_co_chunk_append_literal(chunk, ">\n");
+    return rgt_co_chunk_append_literal(chunk, ">");
 }
 
 
@@ -563,7 +563,7 @@ static inline te_bool
 append_empty_tag_end(rgt_co_chunk *chunk)
 {
     assert(rgt_co_chunk_valid(chunk));
-    return rgt_co_chunk_append_literal(chunk, "/>\n");
+    return rgt_co_chunk_append_literal(chunk, "/>");
 }
 
 

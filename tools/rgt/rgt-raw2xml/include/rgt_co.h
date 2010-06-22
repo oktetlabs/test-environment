@@ -74,7 +74,7 @@ extern rgt_co_mngr *rgt_co_mngr_init(rgt_co_mngr *mngr, size_t max_mem);
  * @param mngr  The manager.
  * @param depth The new chunk depth.
  *
- * @return New first chunk.
+ * @return New first chunk, or NULL if failed to allocate memory.
  */
 extern rgt_co_chunk *rgt_co_mngr_add_first_chunk(rgt_co_mngr  *mngr,
                                                  size_t        depth);
@@ -93,7 +93,7 @@ extern void rgt_co_mngr_del_first_chunk(rgt_co_mngr *mngr);
  *              NULL, if the new chunk should be first.
  * @param depth The new chunk depth.
  *
- * @return New chunk.
+ * @return New chunk, or NULL if failed to allocate memory.
  */
 extern rgt_co_chunk *rgt_co_mngr_add_chunk(rgt_co_chunk  *prev,
                                            size_t         depth);

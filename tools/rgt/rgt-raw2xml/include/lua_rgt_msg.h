@@ -39,8 +39,9 @@ extern "C" {
 static inline void
 lua_rgt_msg_wrap(lua_State *L, rgt_msg *msg)
 {
-    lua_newuserdata(L, sizeof(msg));
+    *(rgt_msg **)lua_newuserdata(L, sizeof(msg)) = msg;
     luaL_getmetatable(L, LUA_RGT_MSG_NAME);
+    assert(!lua_isnil(L, -1));
     lua_setmetatable(L, -2);
 }
 

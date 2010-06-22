@@ -162,7 +162,7 @@ read_message_flds(FILE *input, rgt_msg *msg)
             fld_size += sizeof(*fld) - remainder;
 
         /* Calculate new size and grow the buffer */
-        new_size += size + fld_size;
+        new_size = size + fld_size;
         if (!SCRAP_CHECK_GROW(new_size))
             return READ_MESSAGE_RC_ERR;
 
@@ -414,6 +414,7 @@ run_input_and_output(FILE *input,
 {
     te_bool             result      = FALSE;
     off_t               offset;
+    off_t               msg_num     = 1;
     rgt_msg             msg;
     int                 msg_idx;
     read_message_rc     read_rc;
@@ -437,8 +438,9 @@ run_input_and_output(FILE *input,
             {
                 int read_errno = errno;
 
-                ERROR_CLEANUP("Failed reading input message "
+                ERROR_CLEANUP("Failed reading input message #%lld "
                               "(starting at %lld) at %lld: %s",
+                              (long long int)msg_num,
                               (long long int)offset,
                               (long long int)ftello(input),
                               feof(input)
@@ -456,8 +458,13 @@ run_input_and_output(FILE *input,
 
         /* Call "put" sink instance method to feed the message */
         if (lua_pcall(L, 2, 0, traceback_idx) != 0)
-            ERROR_CLEANUP("Failed to output message starting at %lld:\n%s",
-                          offset, lua_tostring(L, -1));
+            ERROR_CLEANUP("Failed to output message #%lld "
+                          "starting at %lld:\n%s",
+                          (long long int)msg_num,
+                          (long long int)offset,
+                          lua_tostring(L, -1));
+
+        msg_num++;
     }
 
     result = TRUE;

@@ -25,10 +25,7 @@
 --
 
 local oo            = require("loop.simple")
-local co            = {}
-co.xml_chunk        = require("co.xml_chunk")
 local rgt           = {}
-rgt.msg_fmt_str     = require("rgt.msg_fmt_str")
 rgt.node            = {}
 rgt.node.general    = require("rgt.node.general")
 rgt.node.named      = require("rgt.node.named")

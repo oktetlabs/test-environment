@@ -40,7 +40,7 @@ l___call(lua_State *L)
     size = luaL_optinteger(L, 2, 0);
 
     if (rgt_cbuf_init(lua_newuserdata(L, sizeof(rgt_cbuf)), size) == NULL)
-        luaL_error(L, "memory allocation failed");
+        return luaL_error(L, "memory allocation failed");
     lua_pushvalue(L, 1);
     lua_setmetatable(L, -2);
 
@@ -56,7 +56,7 @@ l_append(lua_State *L)
     const char *str     = luaL_checklstring(L, 2, &len);
 
     if (!rgt_cbuf_append(b, str, len))
-        luaL_error(L, "memory allocation failed");
+        return luaL_error(L, "memory allocation failed");
 
     lua_settop(L, 1);
     return 1;
@@ -98,7 +98,7 @@ l_merge(lua_State *L)
     rgt_cbuf   *y   = luaL_checkudata(L, 2, LUA_RGT_CBUF_NAME);
 
     if (!rgt_cbuf_merge(x, y))
-        luaL_error(L, "memory allocation failed");
+        return luaL_error(L, "memory allocation failed");
 
     lua_settop(L, 1);
     return 1;
@@ -117,8 +117,8 @@ l_readin(lua_State *L)
     clearerr(*pf);
     read = rgt_cbuf_readin(b, *pf);
     if (ferror(*pf))
-        luaL_error(L, "failed reading a file into the buffer: %s",
-                   strerror(errno));
+        return luaL_error(L, "failed reading a file into the buffer: %s",
+                          strerror(errno));
 
     lua_pushinteger(L, read);
     return 1;
@@ -134,8 +134,8 @@ l_writeout(lua_State *L)
     luaL_argcheck(L, (*pf != NULL), 2, "closed file");
 
     if (!rgt_cbuf_writeout(b, *pf))
-        luaL_error(L, "failed writing the buffer to a file: %s",
-                   strerror(errno));
+        return luaL_error(L, "failed writing the buffer to a file: %s",
+                          strerror(errno));
 
     lua_settop(L, 1);
     return 1;
@@ -148,7 +148,7 @@ l_retention(lua_State *L)
     rgt_cbuf   *b   = luaL_checkudata(L, 1, LUA_RGT_CBUF_NAME);
 
     if (!rgt_cbuf_retention(b))
-        luaL_error(L, "memory allocation failed");
+        return luaL_error(L, "memory allocation failed");
 
     lua_settop(L, 1);
     return 1;
