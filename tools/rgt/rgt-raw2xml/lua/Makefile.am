@@ -23,9 +23,4 @@
 # Author: Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
 #
 
-SUBDIRS = loop co rgt
-
-luadir = $(datadir)/lua
-
-dist_lua_DATA = \
-    co.lua
+SUBDIRS = loop rgt

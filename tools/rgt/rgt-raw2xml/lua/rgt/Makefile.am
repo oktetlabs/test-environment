@@ -28,11 +28,6 @@ SUBDIRS = node
 lua_rgtdir = $(datadir)/lua/rgt
 
 dist_lua_rgt_DATA = \
-    msg.lua                 \
-    msg_ctl.lua             \
-    msg_fmt.lua             \
-    msg_fmt_str.lua         \
-    msg_fmt_xml_chunk.lua   \
     sink.lua                \
     ts.lua
 
