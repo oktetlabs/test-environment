@@ -69,6 +69,7 @@ function rgt.sink:put(msg)
     -- parse control message text
     prm = msg:parse_tester_control()
 
+    --[[
     io.stderr:write("CONTROL PARAMETERS:\n")
     for k, v in pairs(prm) do
         io.stderr:write(k .. "=")
@@ -93,6 +94,7 @@ function rgt.sink:put(msg)
         end
         io.stderr:write("\n")
     end
+    --]]
 
     -- lookup parent node
     parent = self.map[prm.parent_id]
