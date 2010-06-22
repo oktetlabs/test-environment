@@ -797,12 +797,52 @@ append_msg_cdata_spec(const char          **pspec,
                       rgt_msg_fmt_out_fn   *out_fn,
                       void                 *out_data)
 {
+    const char         *p;
+
     assert(pspec != NULL);
     assert(*pspec != NULL);
     assert(plen != NULL);
     assert(parg != NULL);
     assert(*parg != NULL);
     assert(out_fn != NULL);
+
+    p = *pspec;
+
+    if (*p++ == '%' && *p++ == 'T' &&
+        (*p == 'f' || *p == 'm') &&
+        !rgt_msg_fld_is_term(*parg))
+    {
+        char                c       = *p;
+        rgt_co_chunk       *chunk   = (rgt_co_chunk *)out_data;
+        const rgt_msg_fld  *arg     = *parg;
+
+        p++;
+
+        if (c == 'f')
+        {
+            if (!append_start_tag_start(chunk, "file") ||
+                !append_safe_attr(chunk, "name", "TODO", 4))
+                return FALSE;
+
+            if (arg->len > 0)
+            {
+                if (!append_start_tag_end(chunk) ||
+                    !append_cdata(chunk, arg->buf, arg->len) ||
+                    !append_end_tag(chunk, "file"))
+                    return FALSE;
+            }
+            else if (!append_empty_tag_end(chunk))
+                    return FALSE;
+        }
+        else if (c == 'm')
+        {
+        }
+
+        *parg = rgt_msg_fld_next(arg);
+        *pspec = p;
+        (*plen) -= 3;
+        return TRUE;
+    }
 
     return rgt_msg_fmt_spec_plain(pspec, plen, parg, out_fn, out_data);
 }
@@ -848,7 +888,7 @@ rgt_co_chunk_append_msg(rgt_co_chunk *chunk, const rgt_msg *msg)
                        msg->entity->buf, msg->entity->len) &&
            append_attr(chunk, "user",
                        msg->user->buf, msg->user->len) &&
-           append_attr(chunk, "ts", ts_buf, ts_len) &&
+           append_safe_attr(chunk, "ts", ts_buf, ts_len) &&
            append_start_tag_end(chunk) &&
            append_msg_cdata(chunk, msg->fmt, msg->args) &&
            append_end_tag(chunk, "msg") &&
