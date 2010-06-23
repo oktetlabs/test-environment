@@ -496,7 +496,7 @@ typedef te_errno (* test_entity_value_enum_error_cb)(
  * @return Status code.
  */
 extern te_errno test_entity_values_enum(
-                    const test_vars_args            *vars,
+                    const run_item                  *ri,
                     const test_entity_values        *values,
                     test_entity_value_enum_cb        callback,
                     void                            *opaque,
