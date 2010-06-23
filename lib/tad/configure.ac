@@ -21,14 +21,13 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
-
 # FIXME: make it AC macro
 find_lib()
 {
 LIB_PATHNAME=
 START=`pwd`
-DIRS="`${CC} --print-search-dirs | grep libraries | \
-      sed s/libraries// | sed s/=//g | sed s/:/\ /g`"
+DIRS="`${CC} ${TE_CPPFLAGS} ${TE_CFLAGS} --print-search-dirs | \
+      grep libraries | sed s/libraries// | sed s/=//g | sed s/:/\ /g`"
 DIRS="$DIRS `echo $LD_LIBRARY_PATH | sed s/:/\ /g`"
 for i in $DIRS ; do
     if cd $i 2>/dev/null ; then
