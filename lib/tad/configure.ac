@@ -44,7 +44,7 @@ for i in $DIRS ; do
             fi
         fi
 
-        for j in `find $DIR -name lib$1\*.a 2>/dev/null` ; do
+        for j in `find -L $DIR -name lib$1\*.a 2>/dev/null` ; do
             name=`basename $j`;
             suffix=${name/lib$1/};
             if test "$suffix" = ".a" ||
