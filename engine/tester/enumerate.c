@@ -77,7 +77,7 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
             /* Session variable with true 'handdown' are arguments */
             if (var->handdown)
             {
-                /* 
+                /*
                  * Check that handdown variable is not overridden by
                  * argument with the same name.
                  */
@@ -163,7 +163,7 @@ test_run_item_find_arg_cb(const test_var_arg *va, void *opaque)
 
     if (list != NULL)
     {
-        /* 
+        /*
          * Iteration of the list is started at position of the first
          * member.
          */
@@ -246,13 +246,13 @@ test_entity_value_enum_values(const test_vars_args *vars,
 
         if (rc != 0 && enum_error_cb != NULL)
             enum_error_cb(value, rc, ee_opaque);
-            
+
         return rc;
     }
     else if (value->ref != NULL)
     {
         assert(value->ref != value);
-        /* 
+        /*
          * Forward variable to the reference since it is in the same
          * context.
          */
@@ -262,7 +262,7 @@ test_entity_value_enum_values(const test_vars_args *vars,
 
         if (rc != 0 && enum_error_cb != NULL)
             enum_error_cb(value, rc, ee_opaque);
-            
+
         return rc;
     }
     else if (value->ext != NULL)
@@ -277,7 +277,7 @@ test_entity_value_enum_values(const test_vars_args *vars,
 
             if (rc != 0 && enum_error_cb != NULL)
                 enum_error_cb(value, rc, ee_opaque);
-                
+
             return rc;
         }
         else
@@ -290,7 +290,7 @@ test_entity_value_enum_values(const test_vars_args *vars,
 
             if (var != NULL)
             {
-                /* 
+                /*
                  * Found variable with required name, enumerate its
                  * values, but variable does not have any context.
                  */
@@ -300,7 +300,7 @@ test_entity_value_enum_values(const test_vars_args *vars,
 
                 if (rc != 0 && enum_error_cb != NULL)
                     enum_error_cb(value, rc, ee_opaque);
-                    
+
                 return rc;
             }
             else
@@ -314,7 +314,7 @@ test_entity_value_enum_values(const test_vars_args *vars,
     {
         VERB("%s(): Enumerate type '%s' values %p", __FUNCTION__,
              value->type->name, &value->type->values);
-        /* 
+        /*
          * Enumerate values of the specified type.
          * Type does not have variables context.
          */
@@ -324,7 +324,7 @@ test_entity_value_enum_values(const test_vars_args *vars,
 
         if (rc != 0 && enum_error_cb != NULL)
             enum_error_cb(value, rc, ee_opaque);
-            
+
         return rc;
     }
     else
@@ -427,7 +427,7 @@ te_errno
 test_var_arg_get_value(const run_item                   *ri,
                        const test_var_arg               *va,
                        const unsigned int                index,
-                       test_entity_value_enum_error_cb   enum_error_cb,  
+                       test_entity_value_enum_error_cb   enum_error_cb,
                        void                             *ee_opaque,
                        const test_entity_value         **value)
 {

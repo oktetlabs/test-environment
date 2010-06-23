@@ -76,7 +76,6 @@
 /** Duplicate 'xmlChar *' as 'char *' */
 #define XML2CHAR_DUP(p) XML2CHAR(xmlStrdup(p))
 
-
 enum {
     TESTER_RUN_ITEM_SERVICE  = 1 << 0,
     TESTER_RUN_ITEM_INHERITABLE = 1 << 1,
@@ -178,6 +177,18 @@ xmlNodeChildren(xmlNodePtr node)
     return xmlNodeSkipText(xmlNodeSkipComment(node->children));
 }
 
+static xmlNodePtr
+xmlNodeSkipExtra(xmlNodePtr node)
+{
+    while ((node != NULL) &&
+           ((xmlStrcmp(node->name, (const xmlChar *)("comment")) == 0) ||
+            (xmlStrcmp(node->name, (const xmlChar *)("text")) == 0)))
+    {
+        node = node->next;
+    }
+    return node;
+}
+
 /**
  * Go to the next XML node, skip 'comment' nodes.
  *
@@ -189,7 +200,7 @@ static xmlNodePtr
 xmlNodeNext(xmlNodePtr node)
 {
     assert(node != NULL);
-    return xmlNodeSkipComment(node->next);
+    return xmlNodeSkipExtra(node->next);
 }
 
 
@@ -1031,7 +1042,7 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
         return TE_RC(TE_TESTER, TE_ENOMEM);
     TAILQ_INIT(&p->reqs);
     TAILQ_INSERT_TAIL(&values->head, p, links);
-    
+
     /* 'name' is optional */
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
     /* 'type' is optional */
@@ -1303,6 +1314,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
     char               *value;
     char               *s;
 
+    ENTRY("session=%p", session);
     p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
@@ -1423,6 +1435,68 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
     return 0;
 }
 
+static te_errno
+vars_process(xmlNodePtr *node, test_session *session,
+             te_bool children, int *parse_break)
+{
+    te_errno rc = 0;
+    xmlNodePtr local_node = *node;
+
+    assert(parse_break != NULL);
+    ENTRY("session=%p", session);
+
+    if (children)
+        *node = xmlNodeChildren(*node);
+
+    *parse_break = 0;
+    while (*node != NULL)
+    {
+        VERB("%s: node->name=%s", __FUNCTION__, (*node)->name);
+        if (xmlStrcmp((*node)->name, CONST_CHAR2XML("arg")) == 0)
+            rc = alloc_and_get_var_arg(*node, FALSE, session,
+                                       &session->vars);
+        else if (xmlStrcmp((*node)->name, CONST_CHAR2XML("var")) == 0)
+            rc = alloc_and_get_var_arg(*node, TRUE, session,
+                                       &session->vars);
+        else if (xmlStrcmp((*node)->name, CONST_CHAR2XML("enum")) == 0)
+            rc = alloc_and_get_enum(*node, session, &session->types);
+        else if (xmlStrcmp((*node)->name, CONST_CHAR2XML("include")) == 0)
+        {
+            VERB("%s: includes processing: %s", __FUNCTION__,
+                 XML2CHAR(xmlGetProp(*node, CONST_CHAR2XML("href"))));
+            rc = 0;
+        }
+        else if (xmlStrcmp((*node)->name, CONST_CHAR2XML("vars")) == 0)
+        {
+            VERB("%s: vars list", __FUNCTION__);
+            rc = vars_process(node, session, TRUE, parse_break);
+            *node = local_node;
+        }
+        else
+        {
+            VERB("%s: breaking, node->name=%s", __FUNCTION__,
+                 (*node)->name);
+            *parse_break = 1;
+            rc = 0;
+            break;
+        }
+        if (rc != 0)
+        {
+            ERROR("%s: something failed: %r", __FUNCTION__, rc);
+            break;
+        }
+        if (*parse_break == 1)
+            break;
+
+        (*node) = xmlNodeNext(*node);
+        local_node = *node;
+    }
+
+    *node = local_node;
+
+    return rc;
+}
+
 
 /**
  * Get session description.
@@ -1439,7 +1513,9 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
             test_session *session)
 {
     te_errno rc;
+    int parse_break;
 
+    ENTRY("session=%p", session);
     session->parent = parent;
 
     /* Get run item attributes */
@@ -1455,31 +1531,18 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
 
     node = xmlNodeChildren(node);
 
-    /* Get information about types */
-    while (node != NULL)
-    {
-        if (xmlStrcmp(node->name, CONST_CHAR2XML("enum")) == 0)
-            rc = alloc_and_get_enum(node, session, &session->types);
-        else
-            break;
-        if (rc != 0)
-            return rc;
-        node = xmlNodeNext(node);
-    }
-
     /* Get information about variables */
     while (node != NULL)
     {
-        if (xmlStrcmp(node->name, CONST_CHAR2XML("var")) == 0)
-            rc = alloc_and_get_var_arg(node, TRUE, session,
-                                       &session->vars);
-        else if (xmlStrcmp(node->name, CONST_CHAR2XML("arg")) == 0)
-            rc = alloc_and_get_var_arg(node, FALSE, session,
-                                       &session->vars);
-        else
+        if ((rc = vars_process(&node, session, FALSE, &parse_break)) == 0 &&
+                 parse_break == 1)
             break;
+
         if (rc != 0)
+        {
+            VERB("%s: something failed: %r", __FUNCTION__, rc);
             return rc;
+        }
         node = xmlNodeNext(node);
     }
 
@@ -2272,16 +2335,19 @@ parse_test_package(tester_cfg *cfg, const test_session *session,
         goto cleanup;
     }
 
+    (void)xmlXIncludeProcess(doc);
+
     if (stat(ti_path, &st_buf) == 0)
     {
         if ((ti_doc = xmlCtxtReadFile(parser, ti_path, NULL,
                                       XML_PARSE_NOBLANKS |
+                                      XML_PARSE_XINCLUDE |
                                       XML_PARSE_NONET)) == NULL)
         {
 #if HAVE_XMLERROR
             xmlError   *err = xmlCtxtGetLastError(parser);
 
-            ERROR("Error occured during parsing Tests Info file:\n"
+            ERROR("Error occured during parsing Tests Infol file:\n"
                   "    %s:%d\n    %s", pkg->path, err->line, err->message);
 #else
             ERROR("Error occured during parsing Tests Info file:\n"

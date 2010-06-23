@@ -29,7 +29,7 @@
  */
 
 /** Logging user name to be used here */
-#define TE_LGR_USER     "Config Prepare"
+#define TE_LGR_USER "Config Prepare"
 
 #include "te_config.h"
 #ifdef HAVE_CONFIG_H
