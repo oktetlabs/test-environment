@@ -43,6 +43,7 @@ typedef struct rgt_co_chunk rgt_co_chunk;
 
 /** Chunked output manager */
 typedef struct rgt_co_mngr {
+    char           *tmp_dir;    /**< Directory for temporary files */
     size_t          max_mem;    /**< Maximum memory for contents */
     size_t          used_mem;   /**< Memory used by chunk contents */
     rgt_co_chunk   *first_used; /**< First "used" chunk */
@@ -62,11 +63,14 @@ extern te_bool rgt_co_mngr_valid(const rgt_co_mngr *mngr);
  * Initialize a manager.
  *
  * @param mngr      Manager to initialize.
+ * @param tmp_dir   Directory for temporary files.
  * @param max_mem   Maximium memory allowed for chunk contents.
  *
- * @return Initialized manager.
+ * @return Initialized manager, or NULL if failed to allocate memory.
  */
-extern rgt_co_mngr *rgt_co_mngr_init(rgt_co_mngr *mngr, size_t max_mem);
+extern rgt_co_mngr *rgt_co_mngr_init(rgt_co_mngr   *mngr,
+                                     const char    *tmp_dir,
+                                     size_t         max_mem);
 
 /**
  * Add a new first chunk to the chain.

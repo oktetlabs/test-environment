@@ -43,19 +43,23 @@ te_bool
 rgt_co_mngr_valid(const rgt_co_mngr *mngr)
 {
     return mngr != NULL &&
+           mngr->tmp_dir != NULL &&
            mngr->used_mem <= mngr->max_mem;
 }
 
 
 rgt_co_mngr *
-rgt_co_mngr_init(rgt_co_mngr *mngr, size_t max_mem)
+rgt_co_mngr_init(rgt_co_mngr *mngr, const char *tmp_dir, size_t max_mem)
 {
     assert(mngr != NULL);
+    assert(tmp_dir != NULL);
+    assert(*tmp_dir != '\0');
 
-    mngr->max_mem     = max_mem;
-    mngr->used_mem    = 0;
-    mngr->first_used  = NULL;
-    mngr->first_free  = NULL;
+    mngr->tmp_dir       = strdup(tmp_dir);
+    mngr->max_mem       = max_mem;
+    mngr->used_mem      = 0;
+    mngr->first_used    = NULL;
+    mngr->first_free    = NULL;
 
     return mngr;
 }
@@ -186,6 +190,8 @@ rgt_co_mngr_clnp(rgt_co_mngr *mngr)
     rgt_co_chunk   *chunk;
     rgt_co_chunk   *next_chunk;
 
+    assert(rgt_co_mngr_valid(mngr));
+
     /* Free the "free" chunks */
     for (chunk = mngr->first_free; chunk != NULL; chunk = next_chunk)
     {
@@ -203,6 +209,10 @@ rgt_co_mngr_clnp(rgt_co_mngr *mngr)
         free(chunk);
     }
     mngr->first_used = NULL;
+
+    /* Free the temporary directory */
+    free(mngr->tmp_dir);
+    mngr->tmp_dir = NULL;
 }
 
 
@@ -543,7 +553,7 @@ rgt_co_chunk_displace(rgt_co_chunk *chunk)
     assert(rgt_co_chunk_valid(chunk));
     assert(rgt_co_chunk_is_mem(chunk));
 
-    return rgt_co_strg_take_tmpfile(&strg) &&
+    return rgt_co_strg_take_tmpfile(&strg, chunk->mngr->tmp_dir) &&
            rgt_co_strg_move_media(&chunk->strg, &strg) &&
            return_mem(chunk->mngr, chunk, rgt_co_chunk_get_len(chunk));
 }

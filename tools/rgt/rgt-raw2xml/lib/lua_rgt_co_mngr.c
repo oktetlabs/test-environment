@@ -35,13 +35,15 @@
 static int
 l___call(lua_State *L)
 {
-    lua_Integer max_mem;
+    const char     *tmp_dir;
+    lua_Integer     max_mem;
 
     luaL_checktype(L, 1, LUA_TTABLE);
-    max_mem = luaL_optinteger(L, 2, 0);
+    tmp_dir = luaL_optstring(L, 2, "/tmp");
+    max_mem = luaL_optinteger(L, 3, 0);
 
     if (rgt_co_mngr_init(lua_newuserdata(L, sizeof(rgt_co_mngr)),
-                         max_mem) == NULL)
+                         tmp_dir, max_mem) == NULL)
         luaL_error(L, "memory allocation failed");
     lua_pushvalue(L, 1);
     lua_setmetatable(L, -2);

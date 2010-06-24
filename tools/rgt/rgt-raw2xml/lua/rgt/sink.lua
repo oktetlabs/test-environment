@@ -33,13 +33,13 @@ rgt.node.package    = require("rgt.node.package")
 rgt.node.session    = require("rgt.node.session")
 rgt.node.test       = require("rgt.node.test")
 rgt.sink            = oo.class({
-                                mngr = nil,  --- The output chunk manager
+                                mngr    = nil,  --- The output chunk manager
                                 chunk   = nil,  --- The output chunk
                                 map     = nil,  --- ID->node map
                                })
 
-function rgt.sink:__init(max_mem)
-    return oo.rawnew(self, {mngr = rgt.co.mngr(max_mem), map = {}})
+function rgt.sink:__init(tmp_dir, max_mem)
+    return oo.rawnew(self, {mngr = rgt.co.mngr(tmp_dir, max_mem), map = {}})
 end
 
 function rgt.sink:take_file(file)

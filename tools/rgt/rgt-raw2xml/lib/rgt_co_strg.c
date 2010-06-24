@@ -60,18 +60,17 @@ rgt_co_strg_take_file(rgt_co_strg *strg, FILE *file, size_t len)
 
 
 te_bool
-rgt_co_strg_take_tmpfile(rgt_co_strg *strg)
+rgt_co_strg_take_tmpfile(rgt_co_strg *strg, const char *tmp_dir)
 {
-    const char *tmpdir;
     char       *path;
     int         fd;
     FILE       *file;
 
-    tmpdir = getenv("TMPDIR");
-    if (tmpdir == NULL || *tmpdir == '\0')
-        tmpdir = "/tmp";
+    assert(rgt_co_strg_valid(strg));
+    assert(tmp_dir != NULL);
+    assert(*tmp_dir != '\0');
 
-    if (asprintf(&path, "%s/raw2xml_XXXXXX", tmpdir) < 0)
+    if (asprintf(&path, "%s/raw2xml_XXXXXX", tmp_dir) < 0)
         return FALSE;
 
     fd = mkstemp(path);

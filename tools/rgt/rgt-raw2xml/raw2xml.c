@@ -482,7 +482,8 @@ cleanup:
 
 
 static te_bool
-run_input(FILE *input, const char *output_name, unsigned long max_mem)
+run_input(FILE *input, const char *output_name,
+          const char *tmp_dir, unsigned long max_mem)
 {
     te_bool     result          = FALSE;
     lua_State  *L               = NULL;
@@ -528,8 +529,9 @@ run_input(FILE *input, const char *output_name, unsigned long max_mem)
      */
     /* Call rgt.sink(max_mem) to create sink instance */
     LUA_REQUIRE("rgt.sink");
+    lua_pushstring(L, tmp_dir);
     lua_pushnumber(L, (lua_Number)max_mem * 1024 * 1024);
-    LUA_PCALL(1, 1);
+    LUA_PCALL(2, 1);
     sink_idx = lua_gettop(L);
 
     /*
@@ -619,7 +621,8 @@ cleanup:
 
 
 static int
-run(const char *input_name, const char *output_name, unsigned long max_mem)
+run(const char *input_name, const char *output_name,
+    const char *tmp_dir, unsigned long max_mem)
 {
     int                 result          = 1;
     FILE               *input           = NULL;
@@ -654,7 +657,7 @@ run(const char *input_name, const char *output_name, unsigned long max_mem)
     /*
      * Run with input file
      */
-    if (!run_input(input, output_name, max_mem))
+    if (!run_input(input, output_name, tmp_dir, max_mem))
         goto cleanup;
 
     /*
@@ -691,9 +694,11 @@ usage(FILE *stream, const char *progname)
             "write standard output.\n"
             "\n"
             "Options:\n"
-            "  -h, --help       this help message\n"
-            "  -m, --max-mem=MB maximum memory to use for output (MB)\n"
-            "                   (default: RAM size / 4, maximum: 4096)\n"
+            "  -h, --help           this help message\n"
+            "  -t, --tmp-dir=DIR    directory for temporary files\n"
+            "                       (default: /tmp)\n"
+            "  -m, --max-mem=MB     maximum memory to use for output (MB)\n"
+            "                       (default: RAM / 4, maximum: 4096)\n"
             "\n",
             progname);
 }
@@ -701,6 +706,7 @@ usage(FILE *stream, const char *progname)
 
 typedef enum opt_val {
     OPT_VAL_HELP        = 'h',
+    OPT_VAL_TMP_DIR     = 't',
     OPT_VAL_MAX_MEM     = 'm',
 } opt_val;
 
@@ -713,6 +719,10 @@ main(int argc, char * const argv[])
          .has_arg   = no_argument,
          .flag      = NULL,
          .val       = OPT_VAL_HELP},
+        {.name      = "tmp-dir",
+         .has_arg   = required_argument,
+         .flag      = NULL,
+         .val       = OPT_VAL_TMP_DIR},
         {.name      = "max-mem",
          .has_arg   = required_argument,
          .flag      = NULL,
@@ -722,12 +732,13 @@ main(int argc, char * const argv[])
          .flag      = NULL,
          .val       = 0}
     };
-    static const char          *short_opt_list = "hm:";
+    static const char          *short_opt_list = "ht:m:";
 
     int             c;
     const char     *input_name  = "-";
     const char     *output_name = "-";
     struct sysinfo  si;
+    const char     *tmp_dir     = "/tmp";
     unsigned long   max_mem;
 
     /*
@@ -750,6 +761,9 @@ main(int argc, char * const argv[])
             case OPT_VAL_HELP:
                 usage(stdout, program_invocation_short_name);
                 return 0;
+                break;
+            case OPT_VAL_TMP_DIR:
+                tmp_dir = optarg;
                 break;
             case OPT_VAL_MAX_MEM:
                 {
@@ -783,6 +797,8 @@ main(int argc, char * const argv[])
     /*
      * Verify command line arguments
      */
+    if (*tmp_dir == '\0')
+        ERROR_USAGE_RETURN("Empty temporary directory path");
     if (*input_name == '\0')
         ERROR_USAGE_RETURN("Empty input file name");
     if (*output_name == '\0')
@@ -791,7 +807,7 @@ main(int argc, char * const argv[])
     /*
      * Run
      */
-    return run(input_name, output_name, max_mem);
+    return run(input_name, output_name, tmp_dir, max_mem);
 }
 
 

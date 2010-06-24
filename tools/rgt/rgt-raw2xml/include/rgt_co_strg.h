@@ -114,11 +114,12 @@ extern rgt_co_strg *rgt_co_strg_take_file(rgt_co_strg *strg,
 /**
  * Supply a storage with a temporary file media.
  *
- * @param strg  The storage to supply with a temporary file.
+ * @param strg      The storage to supply with a temporary file.
+ * @param tmp_dir   The directory to create temporary file in.
  *
  * @return TRUE if the file was created successfully, false otherwise.
  */
-extern te_bool rgt_co_strg_take_tmpfile(rgt_co_strg *strg);
+extern te_bool rgt_co_strg_take_tmpfile(rgt_co_strg *strg, const char *tmp_dir);
 
 /**
  * Supply a storage with a memory media (a buffer).
