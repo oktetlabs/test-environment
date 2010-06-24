@@ -23,7 +23,8 @@
 # Author: Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
 #
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@
+AM_CPPFLAGS = @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@ \
+              -D_FILE_OFFSET_BITS=64 -DNDEBUG
 AM_CFLAGS = @TE_CFLAGS@ -I $(srcdir)/../include -Wextra -Werror
 
 lib_luadir = $(libdir)/lua

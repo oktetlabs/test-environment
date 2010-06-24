@@ -188,7 +188,7 @@ relocate_to_mem(rgt_co_strg *dst, rgt_co_strg *src)
     else
     {
         /* Rewind the source file */
-        if (fseeko(src->media.file, -src->len, SEEK_CUR) != 0)
+        if (fseeko(src->media.file, -(off_t)src->len, SEEK_CUR) != 0)
             return FALSE;
 
         /* Read the file contents into the buffer */
@@ -234,7 +234,7 @@ relocate_to_file(rgt_co_strg *dst, rgt_co_strg *src)
         result = FALSE;
 
         /* Rewind the source file */
-        if (fseeko(src->media.file, -src->len, SEEK_CUR) != 0)
+        if (fseeko(src->media.file, -(off_t)src->len, SEEK_CUR) != 0)
             goto cleanup;
 
         /* Transfer the source file contents via the buffer */

@@ -457,6 +457,8 @@ return_mem(rgt_co_mngr *mngr, rgt_co_chunk *ret_chunk, size_t size)
     assert(!rgt_co_chunk_is_mem(ret_chunk));
     assert(size <= mngr->used_mem);
 
+    (void)ret_chunk;
+
     mngr->used_mem -= size;
 
     return TRUE;
@@ -1153,7 +1155,7 @@ static te_bool append_msg_cdata_out(void       *data,
     assert(rgt_co_chunk_valid(chunk));
     assert(ptr != NULL || len == 0);
 
-    return append_cdata(data, ptr, len);
+    return append_cdata(chunk, ptr, len);
 }
 
 

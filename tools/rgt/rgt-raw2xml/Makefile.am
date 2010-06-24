@@ -26,7 +26,7 @@
 SUBDIRS = include lib lua
 
 AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@ \
-              -D_FILE_OFFSET_BITS=64
+              -D_FILE_OFFSET_BITS=64 -DNDEBUG
 AM_CFLAGS = @TE_CFLAGS@ -I $(srcdir)/include -Wextra -Werror
 GEN_LDADD = @TE_LDFLAGS@
 
