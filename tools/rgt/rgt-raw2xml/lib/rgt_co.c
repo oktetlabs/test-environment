@@ -1147,6 +1147,101 @@ static te_bool append_msg_cdata_out(void       *data,
 }
 
 
+/**
+ * Read a %Tm format specifier arguments.
+ *
+ * @param pp    Location of/for the format string pointer.
+ * @param pl    Location of/for the remaining format string length.
+ * @param prl   Location for the row length in elements.
+ * @param pel   Location for the element length in bytes.
+ *
+ * @return TRUE if parsed successfully, FALSE otherwise.
+ *
+ * @note This is crazy manual work, I know. This is rather due to the need
+ *       to process format strings containing 0's (which is due to
+ *       reluctance to terminate the format strings read from the raw log)
+ *       and an attempt to avoid catering for a sscanf, which needs copying
+ *       and termination.
+ */
+static te_bool
+parse_memdump_spec_args(const char    **pp,
+                        size_t         *pl,
+                        size_t         *prl,
+                        size_t         *pel)
+{
+    const char *p;
+    char        c;
+    size_t      l;
+    size_t      rl;
+    size_t      el;
+
+    assert(pp != NULL);
+    assert(*pp != NULL);
+    assert(pl != NULL);
+    assert(prl != NULL);
+    assert(pel != NULL);
+
+    p = *pp;
+    l = *pl;
+
+    /*
+     * The format regex is \[\[\d+\]\.\[\d+\]\].
+     * Example: [[16].[4]]
+     */
+
+    /* Match \[\[\d */
+    if (l-- == 0 || *p++ != '[' ||
+        l-- == 0 || *p++ != '[' ||
+        l-- == 0 || (c = *p++) < '0' || c > '9')
+        return FALSE;
+
+    /* Match \d*\] */
+    rl = c - '0';
+    while (TRUE)
+    {
+        if (l-- == 0)
+            return FALSE;
+        c = *p++;
+        if (c == ']')
+            break;
+        if (c < '0' || c > '9')
+            return FALSE;
+        rl = rl * 10 + (c - '0');
+    }
+
+    /* Match \.\[\d */
+    if (l-- == 0 || *p++ != '.' ||
+        l-- == 0 || *p++ != '[' ||
+        l-- == 0 || (c = *p++) < '0' || c > '9')
+        return FALSE;
+
+    /* Match \d*\] */
+    el = c - '0';
+    while (TRUE)
+    {
+        if (l-- == 0)
+            return FALSE;
+        c = *p++;
+        if (c == ']')
+            break;
+        if (c < '0' || c > '9')
+            return FALSE;
+        el = el * 10 + (c - '0');
+    }
+
+    /* Match \] */
+    if (l-- == 0 || *p++ != ']')
+        return FALSE;
+
+    *pp = p;
+    *pl = l;
+    *prl = rl;
+    *pel = el;
+
+    return TRUE;
+}
+
+
 static te_bool
 append_msg_cdata_spec(const char          **pspec,
                       size_t               *plen,
@@ -1156,6 +1251,7 @@ append_msg_cdata_spec(const char          **pspec,
 {
     const char         *p;
     char                c;
+    size_t              l;
     rgt_co_chunk       *chunk;
     const rgt_msg_fld  *arg;
 
@@ -1167,16 +1263,18 @@ append_msg_cdata_spec(const char          **pspec,
     assert(out_fn != NULL);
 
     p = *pspec;
+    l = *plen;
 
     /* If it is not our format specifier or there are no more arguments */
-    if (*p++ != '%' || *p++ != 'T' ||
-        (*p != 'f' && *p != 'm') ||
+    if (l < 3 ||
+        *p++ != '%' || *p++ != 'T' ||
+        ((c = *p) != 'f' && c != 'm') ||
         rgt_msg_fld_is_term(*parg))
         return rgt_msg_fmt_spec_plain(pspec, plen, parg, out_fn, out_data);
 
-    c       = *p;
-    chunk   = (rgt_co_chunk *)out_data;
-    arg     = *parg;
+    l -= 3;
+    chunk = (rgt_co_chunk *)out_data;
+    arg = *parg;
 
     p++;
 
@@ -1196,31 +1294,26 @@ append_msg_cdata_spec(const char          **pspec,
         else if (!append_empty_tag_end(chunk))
                 return FALSE;
     }
-    else if (c == 'm')
+    else
     {
         static const char   xd[]    = "0123456789ABCDEF";
 
         size_t          rl;
         size_t          el;
-        int             read;
         size_t          i;
         const uint8_t  *bp;
         uint8_t         b;
         char            bs[2];
 
-        if (sscanf(p, "[[%zu].[%zu]]%n", &rl, &el, &read) < 2)
+        if (!parse_memdump_spec_args(&p, &l, &rl, &el))
         {
             rl = 16;
             el = 1;
         }
-        else
+        else if (el == 0 || arg->len % el != 0)
         {
-            if (el == 0 || arg->len % el != 0)
-            {
-                errno = EINVAL;
-                return FALSE;
-            }
-            p += read;
+            errno = EINVAL;
+            return FALSE;
         }
 
         if (!append_start_tag(chunk, "mem-dump", NULL))
@@ -1228,7 +1321,7 @@ append_msg_cdata_spec(const char          **pspec,
 
         for (bp = arg->buf, i = 0; i < arg->len; bp++)
         {
-            if (i % rl == 0 && !append_start_tag(chunk, "row", NULL))
+            if (i % (el * rl) == 0 && !append_start_tag(chunk, "row", NULL))
                 return FALSE;
 
             if (i % el == 0 && !append_start_tag(chunk, "elem", NULL))
@@ -1246,18 +1339,18 @@ append_msg_cdata_spec(const char          **pspec,
             if (i % el == 0 && !append_end_tag(chunk, "elem"))
                 return FALSE;
 
-            if (i % rl == 0 && !append_end_tag(chunk, "row"))
+            if (i % (el * rl) == 0 && !append_end_tag(chunk, "row"))
                 return FALSE;
         }
 
-        if ((i % rl != 0 && !append_end_tag(chunk, "row")) ||
+        if ((i % (el * rl) != 0 && !append_end_tag(chunk, "row")) ||
             !append_end_tag(chunk, "mem-dump"))
             return FALSE;
     }
 
     *parg = rgt_msg_fld_next(arg);
     *pspec = p;
-    (*plen) -= 3;
+    *plen = l;
     return TRUE;
 }
 

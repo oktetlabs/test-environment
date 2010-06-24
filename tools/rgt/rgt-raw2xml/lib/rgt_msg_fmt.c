@@ -227,12 +227,13 @@ rgt_msg_fmt_spec_plain(const char         **pspec,
 }
 
 
-te_bool rgt_msg_fmt(const char             *fmt,
-                    size_t                  len,
-                    const rgt_msg_fld     **parg,
-                    rgt_msg_fmt_spec_fn    *spec_fn,
-                    rgt_msg_fmt_out_fn     *out_fn,
-                    void                   *out_data)
+te_bool
+rgt_msg_fmt(const char             *fmt,
+            size_t                  len,
+            const rgt_msg_fld     **parg,
+            rgt_msg_fmt_spec_fn    *spec_fn,
+            rgt_msg_fmt_out_fn     *out_fn,
+            void                   *out_data)
 {
     const char *prev_p;
     const char *p;
