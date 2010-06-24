@@ -249,7 +249,7 @@ te_bool rgt_msg_fmt(const char             *fmt,
 
     while (TRUE)
     {
-        for (; *p != '%' && l > 0; p++, l--);
+        for (; l > 0 && *p != '%'; p++, l--);
 
         if (p > prev_p)
             OUT(prev_p, p - prev_p);
