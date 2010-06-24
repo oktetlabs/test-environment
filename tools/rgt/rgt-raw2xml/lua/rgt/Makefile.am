@@ -28,16 +28,6 @@ SUBDIRS = node
 lua_rgtdir = $(datadir)/lua/rgt
 
 dist_lua_rgt_DATA = \
-    sink.lua                \
+    sink.lua        \
     ts.lua
-
-dist_noinst_SCRIPTS = \
-    ts_test
-
-TESTS_ENVIRONMENT = \
-    PATH="$(top_builddir)/../../lib/lua/src:$$PATH"         \
-    LUA_PATH="$(builddir)/../?.lua;$(datadir)/lua/?.lua"
-
-TESTS = \
-    ts_test
 
