@@ -742,10 +742,12 @@ stop_acse(void)
     te_errno rc = 0;
     int acse_status = 0;
 
-    RING("Stop ACSE process, pid %d", acse_pid);
+    fprintf(stderr, "Stop ACSE process, pid %d\n", acse_pid);
 
     if (-1 == acse_pid)
         return 0; /* nothing to do */
+
+    RING("Stop ACSE process, pid %d", acse_pid);
 
     if ((rc = acse_epc_close()) != 0)
     {
