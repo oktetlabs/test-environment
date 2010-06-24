@@ -144,8 +144,8 @@ del_chunk(rgt_co_mngr *mngr, rgt_co_chunk *prev)
         prev->next = chunk->next;
     }
 
-    /* Cleanup the chunk ignoring any errors */
-    (void)rgt_co_strg_clnp(&chunk->strg);
+    /* Cleanup the chunk */
+    rgt_co_strg_clnp(&chunk->strg);
 
     /* Link the chunk to the free list */
     chunk->next = mngr->first_free;
@@ -199,11 +199,307 @@ rgt_co_mngr_clnp(rgt_co_mngr *mngr)
     for (chunk = mngr->first_used; chunk != NULL; chunk = next_chunk)
     {
         next_chunk = chunk->next;
-        /* Cleanup the chunk, ignoring any errors */
-        (void)rgt_co_strg_clnp(&chunk->strg);
+        rgt_co_strg_clnp(&chunk->strg);
         free(chunk);
     }
     mngr->first_used = NULL;
+}
+
+
+
+/**
+ * Collapse all finished memory-based chunk strips into files, until there
+ * are no more of them, or enough memory is freed.
+ * 
+ * @param mngr          The manager.
+ * @param req_chunk     The chunk requesting the memory.
+ * @param psize         Location of/for amount of memory requested; will be
+ *                      set to 0 if the requesting chunk is displaced.
+ * @param psatisfied    Location for "satisfied" flag; will be set to TRUE
+ *                      if enough memory was freed after displacing finished
+ *                      strips, otherwise will be set to FALSE.
+ * 
+ * @return TRUE if displaced successfully, false otherwise.
+ */
+static te_bool
+displace_finished_strips(rgt_co_mngr   *mngr,
+                         rgt_co_chunk  *req_chunk,
+                         size_t        *psize,
+                         te_bool       *psatisfied)
+{
+    size_t          acceptable_mem;
+    rgt_co_chunk   *prev;
+    rgt_co_chunk   *chunk;
+    rgt_co_chunk   *next;
+
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(req_chunk));
+    assert(psize != NULL);
+    assert(psatisfied != NULL);
+
+    acceptable_mem = mngr->max_mem * 3 / 4;
+    prev = NULL;
+    chunk = mngr->first_used;
+
+    while (chunk != NULL && (mngr->used_mem + *psize) > acceptable_mem)
+    {
+        if (rgt_co_chunk_finished(chunk))
+        {
+            if (rgt_co_chunk_is_mem(chunk) &&
+                !rgt_co_chunk_displace(chunk))
+                return FALSE;
+
+            while (TRUE)
+            {
+                if ((mngr->used_mem + *psize) <= acceptable_mem)
+                    break;
+                next = chunk->next;
+                if (next == NULL || rgt_co_chunk_is_file(next))
+                    break;
+
+                if (!rgt_co_chunk_move_media(next, chunk))
+                    return FALSE;
+                /* Delete *this* (chunk) chunk */
+                del_chunk(mngr, prev);
+
+                chunk = next;
+
+                if (!rgt_co_chunk_finished(chunk))
+                {
+                    if (chunk == req_chunk)
+                        *psize = 0;
+                    break;
+                }
+            }
+        }
+        prev = chunk;
+        chunk = chunk->next;
+    }
+
+    *psatisfied = (mngr->used_mem + *psize) <= acceptable_mem;
+    return TRUE;
+}
+
+
+static int
+chunk_len_rcmp(const void *px, const void *py)
+{
+    size_t          xl  = rgt_co_chunk_get_len(*(rgt_co_chunk **)px);
+    size_t          yl  = rgt_co_chunk_get_len(*(rgt_co_chunk **)py);
+
+    return (xl < yl) ? 1 : ((xl == yl) ? 0 : -1);
+}
+
+
+/**
+ * Displace all chunks to files (biggest first), until enough memory is
+ * freed.
+ *
+ * @param mngr          The manager.
+ * @param req_chunk     The chunk requesting the memory.
+ * @param psize         Location of/for amount of memory requested; will be
+ *                      set to 0 if the requesting chunk is displaced.
+ *
+ * @return TRUE if displaced successfully, false otherwise.
+ */
+static te_bool
+displace_all(rgt_co_mngr   *mngr,
+             rgt_co_chunk  *req_chunk,
+             size_t        *psize)
+{
+    size_t          list_len;
+    rgt_co_chunk   *chunk;
+    rgt_co_chunk  **list;
+    rgt_co_chunk  **pchunk;
+    size_t          acceptable_mem;
+
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(req_chunk));
+    assert(psize != NULL);
+
+    /* Count memory-based chunks */
+    list_len = 0;
+    for (chunk = mngr->first_used; chunk != NULL; chunk = chunk->next)
+        if (rgt_co_chunk_is_mem(chunk))
+            list_len++;
+
+    if (list_len == 0)
+        return TRUE;
+
+    /* Allocate memory-based chunk list */
+    list = malloc(sizeof(*list) * list_len);
+    if (list == NULL)
+        return FALSE;
+
+    /* Fill-in the memory-based chunk list */
+    for (pchunk = list, chunk = mngr->first_used;
+         chunk != NULL; chunk = chunk->next)
+        if (rgt_co_chunk_is_mem(chunk))
+            *pchunk++ = chunk;
+
+    /* Sort the chunk list */
+    qsort(list, list_len, sizeof(*list), chunk_len_rcmp);
+
+    /* Displace the chunks until half the memory is free */
+    acceptable_mem = mngr->max_mem / 2;
+    for (pchunk = list; list_len > 0; pchunk++, list_len--)
+    {
+        if (!rgt_co_chunk_displace(*pchunk))
+        {
+            free(list);
+            return FALSE;
+        }
+        if (*pchunk == req_chunk)
+            *psize = 0;
+        if (mngr->used_mem + *psize <= acceptable_mem)
+            break;
+    }
+
+    free(list);
+
+    return TRUE;
+}
+
+
+/**
+ * Collapse finished file-based chunk strips.
+ *
+ * @param mngr          The manager.
+ *
+ * @return TRUE if collapsed successfully, FALSE otherwise.
+ */
+static te_bool
+collapse_file_strips(rgt_co_mngr *mngr)
+{
+    rgt_co_chunk   *prev;
+    rgt_co_chunk   *chunk;
+    rgt_co_chunk   *next;
+
+    assert(rgt_co_mngr_valid(mngr));
+
+    prev = NULL;
+    chunk = mngr->first_used;
+    while (chunk != NULL)
+    {
+        if (rgt_co_chunk_finished(chunk) && rgt_co_chunk_is_file(chunk))
+        {
+            do {
+                next = chunk->next;
+                if (next == NULL || !rgt_co_chunk_is_file(chunk))
+                    break;
+                if (!rgt_co_chunk_move_media(next, chunk))
+                    return FALSE;
+                del_chunk(mngr, prev);
+                chunk = next;
+            } while (rgt_co_chunk_finished(chunk));
+        }
+        prev = chunk;
+        chunk = chunk->next;
+    }
+
+    return TRUE;
+}
+
+
+static te_bool
+request_mem(rgt_co_mngr *mngr, rgt_co_chunk *req_chunk, size_t size)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(req_chunk));
+    assert(rgt_co_chunk_is_mem(req_chunk));
+    assert(!rgt_co_chunk_finished(req_chunk));
+
+    if (mngr->used_mem + size > mngr->max_mem)
+    {
+        te_bool first_attempt   = TRUE;
+        te_bool satisfied;
+
+        /*
+         * Displace chunks to files until enough memory is freed
+         */
+        while (TRUE)
+        {
+            if (displace_finished_strips(mngr, req_chunk,
+                                         &size, &satisfied) &&
+                (satisfied || displace_all(mngr, req_chunk, &size)))
+                break;
+            else if ((errno != EMFILE && errno != ENFILE) || !first_attempt)
+                return FALSE;
+
+            if (!collapse_file_strips(mngr))
+                return FALSE;
+            first_attempt = FALSE;
+        }
+    }
+
+    mngr->used_mem += size;
+    assert(mngr->used_mem <= mngr->max_mem);
+
+    return TRUE;
+}
+
+
+static inline te_bool
+return_mem(rgt_co_mngr *mngr, rgt_co_chunk *ret_chunk, size_t size)
+{
+    assert(rgt_co_mngr_valid(mngr));
+    assert(rgt_co_chunk_valid(ret_chunk));
+    assert(!rgt_co_chunk_is_mem(ret_chunk));
+    assert(size <= mngr->used_mem);
+
+    mngr->used_mem -= size;
+
+    return TRUE;
+}
+
+
+te_bool
+rgt_co_mngr_dump(const rgt_co_mngr *mngr, FILE *file)
+{
+    const rgt_co_chunk *chunk;
+    size_t              used_num;
+    size_t              free_num;
+
+    assert(rgt_co_mngr_valid(mngr));
+    assert(file != NULL);
+
+    if (fprintf(file, "Memory: %zu/%zu %zu%%\n",
+                mngr->used_mem, mngr->max_mem,
+                mngr->max_mem == 0
+                    ? 100
+                    : (mngr->used_mem * 100 / mngr->max_mem)) < 0)
+        return FALSE;
+
+    /* Count used chunks */
+    used_num = 0;
+    for (chunk = mngr->first_used; chunk != NULL; chunk = chunk->next)
+        used_num++;
+
+    /* Count free chunks */
+    free_num = 0;
+    for (chunk = mngr->first_free; chunk != NULL; chunk = chunk->next)
+        free_num++;
+
+    if (fprintf(file, "Chunks: %zu/%zu %zu%%\n",
+                used_num, free_num,
+                free_num == 0 ? 100 : (used_num * 100 / free_num)) < 0)
+        return FALSE;
+
+    for (chunk = mngr->first_used; chunk != NULL; chunk = chunk->next)
+    {
+        if (fprintf(file, "%8p %6s %10zu%s\n",
+                    chunk,
+                    rgt_co_chunk_is_mem(chunk)
+                        ? "memory"
+                        : rgt_co_chunk_is_file(chunk)
+                            ? "file"
+                            : "void",
+                    rgt_co_chunk_get_len(chunk),
+                    rgt_co_chunk_finished(chunk) ? " finished" : "") < 0)
+            return FALSE;
+    }
+
+    return TRUE;
 }
 
 
@@ -219,19 +515,81 @@ rgt_co_chunk_valid(const rgt_co_chunk *chunk)
 }
 
 
+rgt_co_strg *
+rgt_co_chunk_yield(rgt_co_strg *strg, rgt_co_chunk *chunk)
+{
+    size_t  returned;
+
+    assert(rgt_co_strg_valid(strg));
+    assert(rgt_co_strg_is_void(strg));
+    assert(rgt_co_chunk_valid(chunk));
+
+    returned = rgt_co_chunk_is_mem(chunk) ? rgt_co_chunk_get_len(chunk) : 0;
+
+    memcpy(strg, &chunk->strg, sizeof(*strg));
+    rgt_co_strg_void(&chunk->strg);
+    if (returned != 0)
+        (void)return_mem(chunk->mngr, chunk, returned);
+
+    return strg;
+}
+
+
+te_bool
+rgt_co_chunk_displace(rgt_co_chunk *chunk)
+{
+    rgt_co_strg strg        = RGT_CO_STRG_VOID;
+
+    assert(rgt_co_chunk_valid(chunk));
+    assert(rgt_co_chunk_is_mem(chunk));
+
+    return rgt_co_strg_take_tmpfile(&strg) &&
+           rgt_co_strg_move_media(&chunk->strg, &strg) &&
+           return_mem(chunk->mngr, chunk, rgt_co_chunk_get_len(chunk));
+}
+
+
+te_bool
+rgt_co_chunk_move_media(rgt_co_chunk *dst, rgt_co_chunk *src)
+{
+    size_t  requested   = 0;
+    size_t  returned    = 0;
+
+    assert(rgt_co_chunk_valid(dst));
+    assert(rgt_co_chunk_valid(src));
+    assert(dst->mngr == src->mngr);
+
+    if (rgt_co_chunk_is_mem(src))
+    {
+        /* If we're moving from file to memory */
+        if (!rgt_co_chunk_is_mem(dst))
+            requested = rgt_co_chunk_get_len(dst);
+    }
+    else
+    {
+        /* If we're moving from memory to file */
+        if (rgt_co_chunk_is_mem(dst))
+            returned = rgt_co_chunk_get_len(dst);
+    }
+
+    return (requested == 0 || request_mem(src->mngr, src, requested)) &&
+           rgt_co_strg_move_media(&dst->strg, &src->strg) &&
+           (returned == 0 || return_mem(dst->mngr, dst, returned));
+}
+
+
 te_bool
 rgt_co_chunk_append(rgt_co_chunk *chunk, const void *ptr, size_t len)
 {
     assert(rgt_co_chunk_valid(chunk));
+    assert(!rgt_co_chunk_is_void(chunk));
+    assert(!rgt_co_chunk_finished(chunk));
     assert(ptr != NULL || len == 0);
 
-    if (!rgt_co_strg_append(&chunk->strg, ptr, len))
-        return FALSE;
-
-    if (rgt_co_chunk_is_mem(chunk))
-        chunk->mngr->used_mem += len;
-
-    return TRUE;
+    return
+        (!rgt_co_chunk_is_mem(chunk) ||
+         request_mem(chunk->mngr, chunk, len)) &&
+        rgt_co_strg_append(&chunk->strg, ptr, len);
 }
 
 
@@ -308,7 +666,7 @@ rgt_co_chunk_finish(rgt_co_chunk *chunk)
         next = chunk->next;
         if (next == NULL)
             break;
-        if (!rgt_co_strg_move_media(&next->strg, &chunk->strg))
+        if (!rgt_co_chunk_move_media(next, chunk))
             return FALSE;
         rgt_co_mngr_del_first_chunk(mngr);
     }

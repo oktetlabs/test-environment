@@ -56,6 +56,7 @@ l_take_file(lua_State *L)
     rgt_co_mngr    *mngr    = luaL_checkudata(L, 1, LUA_RGT_CO_MNGR_NAME);
     FILE          **pfile   = luaL_checkudata(L, 2, LUA_FILEHANDLE);
     rgt_co_chunk   *chunk;
+    rgt_co_strg     strg    = RGT_CO_STRG_VOID;
 
     luaL_argcheck(L, *pfile != NULL, 2, "closed");
 
@@ -84,7 +85,7 @@ l_take_file(lua_State *L)
     chunk = rgt_co_mngr_add_first_chunk(mngr, 0);
     if (chunk == NULL)
         luaL_error(L, "memory allocation failed");
-    rgt_co_chunk_take_file(chunk, *pfile, 0);
+    rgt_co_chunk_take(chunk, rgt_co_strg_take_file(&strg, *pfile, 0));
 
     lua_rgt_co_chunk_wrap(L, 1, chunk);
 
@@ -97,6 +98,7 @@ l_yield_file(lua_State *L)
 {
     rgt_co_mngr    *mngr    = luaL_checkudata(L, 1, LUA_RGT_CO_MNGR_NAME);
     size_t          len;
+    rgt_co_strg     strg    = RGT_CO_STRG_VOID;
 
     luaL_argcheck(L, rgt_co_mngr_finished(mngr), 1, "not finished");
 
@@ -113,7 +115,8 @@ l_yield_file(lua_State *L)
     /*
      * Take the file from the chunk
      */
-    rgt_co_chunk_yield_file(mngr->first_used, &len);
+    rgt_co_strg_yield_file(rgt_co_chunk_yield(&strg, mngr->first_used),
+                           &len);
     lua_pushinteger(L, len);
 
     return 2;
@@ -124,6 +127,7 @@ static int
 l___gc(lua_State *L)
 {
     rgt_co_mngr    *mngr    = luaL_checkudata(L, 1, LUA_RGT_CO_MNGR_NAME);
+    rgt_co_strg     strg    = RGT_CO_STRG_VOID;
     /*
      * Remove the file from the first chunk, since it doesn't belong to us.
      */
@@ -135,7 +139,7 @@ l___gc(lua_State *L)
         {
             lua_pushnil(L);
             lua_setfield(L, -2, "file");
-            rgt_co_chunk_yield_file(mngr->first_used, NULL);
+            rgt_co_chunk_yield(&strg, mngr->first_used);
         }
     }
     rgt_co_mngr_clnp(mngr);
@@ -143,10 +147,28 @@ l___gc(lua_State *L)
 }
 
 
+static int
+l_dump(lua_State *L)
+{
+    rgt_co_mngr    *mngr    = luaL_checkudata(L, 1, LUA_RGT_CO_MNGR_NAME);
+    FILE          **pfile   = luaL_checkudata(L, 2, LUA_FILEHANDLE);
+
+    luaL_argcheck(L, *pfile != NULL, 2, "closed");
+
+    if (!rgt_co_mngr_dump(mngr, *pfile))
+        return luaL_error(L, "Failed dumping a manager: %s",
+                          strerror(errno));
+
+    lua_settop(L, 1);
+    return 1;
+}
+
+
 static const luaL_Reg lib[] = {
   {"__gc",          l___gc},
   {"take_file",     l_take_file},
   {"yield_file",    l_yield_file},
+  {"dump",          l_dump},
   {NULL, NULL}
 };
 

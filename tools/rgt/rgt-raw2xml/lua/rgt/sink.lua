@@ -156,6 +156,8 @@ function rgt.sink:yield_file()
     self.chunk:finish()
     self.chunk = nil
 
+    self.mngr:dump(io.stderr)
+
     -- Take the file and size from the manager
     return self.mngr:yield_file()
 end

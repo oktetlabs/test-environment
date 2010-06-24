@@ -106,7 +106,7 @@ static int
 l___len(lua_State *L)
 {
     rgt_co_chunk  **pchunk  = luaL_checkudata(L, 1, LUA_RGT_CO_CHUNK_NAME);
-    lua_pushinteger(L, (*pchunk)->strg.len);
+    lua_pushinteger(L, rgt_co_chunk_get_len(*pchunk));
     return 1;
 }
 
@@ -119,6 +119,7 @@ l_fork(lua_State *L)
     rgt_co_chunk   *chunk       = *pchunk;
     rgt_co_chunk   *new_chunk;
     rgt_cbuf       *cbuf;
+    rgt_co_strg     strg        = RGT_CO_STRG_VOID;
 
     /* Retrieve manager reference from the chunk environment */
     lua_getfenv(L, 1);
@@ -135,7 +136,7 @@ l_fork(lua_State *L)
         return luaL_error(L, "memory allocation failed");
 
     /* Supply the new chunk with the chunked buffer */
-    rgt_co_chunk_take_mem(new_chunk, cbuf, 0);
+    rgt_co_chunk_take(new_chunk, rgt_co_strg_take_mem(&strg, cbuf, 0));
 
     /* Wrap the new chunk and the manager into a userdata */
     return lua_rgt_co_chunk_wrap(L, -1, new_chunk);

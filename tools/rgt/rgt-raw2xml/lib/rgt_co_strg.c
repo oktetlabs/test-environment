@@ -25,6 +25,7 @@
  */
 
 #include <string.h>
+#include <unistd.h>
 #include "rgt_co_strg.h"
 
 #define RELOCATE_BUF_SIZE   32768
@@ -44,21 +45,10 @@ rgt_co_strg_valid(const rgt_co_strg *strg)
 
 
 rgt_co_strg *
-rgt_co_strg_init(rgt_co_strg *strg)
-{
-    assert(strg != NULL);
-
-    strg->type          = RGT_CO_STRG_TYPE_VOID;
-    strg->len           = 0;
-
-    return (rgt_co_strg *)rgt_co_strg_validate(strg);
-}
-
-
-rgt_co_strg *
 rgt_co_strg_take_file(rgt_co_strg *strg, FILE *file, size_t len)
 {
     assert(rgt_co_strg_valid(strg));
+    assert(rgt_co_strg_is_void(strg));
     assert(file != NULL);
 
     strg->type          = RGT_CO_STRG_TYPE_FILE;
@@ -69,10 +59,54 @@ rgt_co_strg_take_file(rgt_co_strg *strg, FILE *file, size_t len)
 }
 
 
+te_bool
+rgt_co_strg_take_tmpfile(rgt_co_strg *strg)
+{
+    const char *tmpdir;
+    char       *path;
+    int         fd;
+    FILE       *file;
+
+    tmpdir = getenv("TMPDIR");
+    if (tmpdir == NULL || *tmpdir == '\0')
+        tmpdir = "/tmp";
+
+    if (asprintf(&path, "%s/raw2xml_XXXXXX", tmpdir) < 0)
+        return FALSE;
+
+    fd = mkstemp(path);
+    if (fd < 0)
+    {
+        free(path);
+        return FALSE;
+    }
+
+    if (unlink(path) < 0)
+    {
+        free(path);
+        return FALSE;
+    }
+
+    free(path);
+
+    file = fdopen(fd, "w+");
+    if (file == NULL)
+    {
+        close(fd);
+        return FALSE;
+    }
+
+    rgt_co_strg_take_file(strg, file, 0);
+
+    return TRUE;
+}
+
+
 rgt_co_strg *
 rgt_co_strg_take_mem(rgt_co_strg *strg, rgt_cbuf *mem, size_t len)
 {
     assert(rgt_co_strg_valid(strg));
+    assert(rgt_co_strg_is_void(strg));
     assert(rgt_cbuf_valid(mem));
 
     strg->type      = RGT_CO_STRG_TYPE_MEM;
@@ -119,25 +153,20 @@ rgt_co_strg_yield_file(rgt_co_strg *strg, size_t *plen)
 }
 
 
-te_bool
+void
 rgt_co_strg_clnp(rgt_co_strg *strg)
 {
     assert(rgt_co_strg_valid(strg));
 
     if (rgt_co_strg_is_void(strg))
-        return TRUE;
+        return;
 
     if (rgt_co_strg_is_mem(strg))
         rgt_cbuf_free(strg->media.mem);
     else
-    {
-        if (fclose(strg->media.file) != 0)
-            return FALSE;
-    }
+        fclose(strg->media.file);
 
     rgt_co_strg_void(strg);
-
-    return TRUE;
 }
 
 
@@ -160,7 +189,7 @@ relocate_to_mem(rgt_co_strg *dst, rgt_co_strg *src)
     else
     {
         /* Rewind the source file */
-        if (fseek(src->media.file, -src->len, SEEK_CUR) != 0)
+        if (fseeko(src->media.file, -src->len, SEEK_CUR) != 0)
             return FALSE;
 
         /* Read the file contents into the buffer */
@@ -196,6 +225,7 @@ relocate_to_file(rgt_co_strg *dst, rgt_co_strg *src)
     {
         te_bool     result;
         void       *buf;
+        size_t      read;
 
         /* Allocate the transfer buffer */
         buf = malloc(RELOCATE_BUF_SIZE);
@@ -205,23 +235,19 @@ relocate_to_file(rgt_co_strg *dst, rgt_co_strg *src)
         result = FALSE;
 
         /* Rewind the source file */
-        if (fseek(src->media.file, -src->len, SEEK_CUR) != 0)
+        if (fseeko(src->media.file, -src->len, SEEK_CUR) != 0)
             goto cleanup;
 
         /* Transfer the source file contents via the buffer */
-        while (TRUE)
+        do
         {
-            if (fread(buf, RELOCATE_BUF_SIZE, 1, src->media.file) != 1)
-            {
-                if (ferror(src->media.file))
-                    goto cleanup;
-                else
-                    break;
-            }
-
-            if (fwrite(buf, RELOCATE_BUF_SIZE, 1, dst->media.file) != 1)
+            read = fread(buf, 1, RELOCATE_BUF_SIZE, src->media.file);
+            if (read < RELOCATE_BUF_SIZE && ferror(src->media.file))
                 goto cleanup;
-        }
+
+            if (fwrite(buf, read, 1, dst->media.file) != 1)
+                goto cleanup;
+        } while (read == RELOCATE_BUF_SIZE);
 
         /* Close the file */
         if (fclose(src->media.file) != 0)
@@ -245,7 +271,10 @@ rgt_co_strg_move_media(rgt_co_strg *dst, rgt_co_strg *src)
     assert(rgt_co_strg_valid(src));
 
     if (rgt_co_strg_is_void(src))
-        return rgt_co_strg_clnp(dst);
+    {
+        rgt_co_strg_clnp(dst);
+        return TRUE;
+    }
 
     if (rgt_co_strg_is_void(dst))
     {

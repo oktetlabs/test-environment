@@ -124,6 +124,16 @@ extern te_bool rgt_co_mngr_finished(const rgt_co_mngr *mngr);
  */
 extern void rgt_co_mngr_clnp(rgt_co_mngr *mngr);
 
+/**
+ * Dump a manager state description to a file.
+ *
+ * @param mngr  The manager to dump.
+ * @param file  The file to dump to.
+ *
+ * @return TRUE if dumped successfully, FALSE otherwise.
+ */
+extern te_bool rgt_co_mngr_dump(const rgt_co_mngr *mngr, FILE *file);
+
 /**********************************************************
  * CHUNK
  **********************************************************/
@@ -160,6 +170,21 @@ rgt_co_chunk_validate(const rgt_co_chunk *chunk)
 }
 
 /**
+ * Retrieve chunk contents length.
+ *
+ * @param chunk The chunk to retrieve length from.
+ *
+ * @return The chunk contents length.
+ */
+static inline size_t
+rgt_co_chunk_get_len(const rgt_co_chunk *chunk)
+{
+    assert(rgt_co_chunk_valid(chunk));
+    return chunk->strg.len;
+}
+
+
+/**
  * Check if a chunk is finished.
  *
  * @param chunk The chunk to check.
@@ -174,40 +199,22 @@ rgt_co_chunk_finished(const rgt_co_chunk *chunk)
 }
 
 /**
- * Supply a chunk with a file as a storage media.
+ * Supply a chunk with a storage media.
  *
- * @param chunk The chunk to supply with the file.
- * @param file  The file to supply with.
- * @param len   The file contents length.
- *
- * @return The chunk using the supplied media.
- */
-static inline rgt_co_chunk *
-rgt_co_chunk_take_file(rgt_co_chunk *chunk, FILE *file, size_t len)
-{
-    assert(rgt_co_chunk_valid(chunk));
-    assert(rgt_co_strg_is_void(&chunk->strg));
-    assert(file != NULL);
-    rgt_co_strg_take_file(&chunk->strg, file, len);
-    return chunk;
-}
-
-/**
- * Supply a chunk with a buffer as a storage media.
- *
- * @param chunk The chunk to supply with the buffer.
- * @param mem   The buffer to supply with.
- * @param len   The buffer contents length.
+ * @param chunk The chunk to supply with the media.
+ * @param strg  The storage holding the supplied media; becomes void after
+ *              transfer.
  *
  * @return The chunk using the supplied media.
  */
 static inline rgt_co_chunk *
-rgt_co_chunk_take_mem(rgt_co_chunk *chunk, rgt_cbuf *mem, size_t len)
+rgt_co_chunk_take(rgt_co_chunk *chunk, rgt_co_strg *strg)
 {
     assert(rgt_co_chunk_valid(chunk));
     assert(rgt_co_strg_is_void(&chunk->strg));
-    assert(rgt_cbuf_valid(mem));
-    rgt_co_strg_take_mem(&chunk->strg, mem, len);
+    assert(rgt_co_strg_valid(strg));
+    memcpy(&chunk->strg, strg, sizeof(*strg));
+    rgt_co_strg_void(strg);
     return chunk;
 }
 
@@ -254,89 +261,27 @@ rgt_co_chunk_is_mem(const rgt_co_chunk *chunk)
 }
 
 /**
- * Relocate chunk storage contents to another (file) media.
+ * Take the storage media from a chunk; the chunk storage becomes void.
  *
- * @param chunk The chunk to relocate.
- * @param file  The file to relocate to.
- * @param len   The file contents length.
- *
- * @return The chunk relocated to the specified media.
- */
-static inline te_bool
-rgt_co_chunk_relocate_to_file(rgt_co_chunk *chunk, FILE *file, size_t len)
-{
-    rgt_co_strg  strg;
-
-    assert(rgt_co_chunk_valid(chunk));
-    assert(file != NULL);
-
-    return
-        rgt_co_strg_move_media(
-                &chunk->strg,
-                rgt_co_strg_take_file(
-                    rgt_co_strg_init(&strg), file, len));
-}
-
-/**
- * Relocate chunk storage contents to another (buffer) media.
- *
- * @param chunk The chunk to relocate.
- * @param mem   The buffer to relocate to.
- * @param len   The buffer contents length.
- *
- * @return The chunk relocated to the specified media.
- */
-static inline te_bool
-rgt_co_chunk_relocate_to_mem(rgt_co_chunk *chunk, rgt_cbuf *mem, size_t len)
-{
-    rgt_co_strg  strg;
-
-    assert(rgt_co_chunk_valid(chunk));
-    assert(rgt_cbuf_valid(mem));
-
-    return
-        rgt_co_strg_move_media(
-                &chunk->strg,
-                rgt_co_strg_take_mem(
-                    rgt_co_strg_init(&strg), mem, len));
-}
-
-/**
- * Take the file media from a finished chunk; the chunk storage becomes
- * void.
- *
+ * @param strg  Storage for the yielded media.
  * @param chunk The chunk to retrieve the media from.
- * @param plen  Location for the contents length, or NULL.
  *
- * @return The chunk file media.
+ * @return The destination storage.
  */
-static inline FILE *
-rgt_co_chunk_yield_file(rgt_co_chunk *chunk, size_t *plen)
-{
-    assert(rgt_co_chunk_valid(chunk));
-    assert(rgt_co_chunk_is_file(chunk));
-    return rgt_co_strg_yield_file(&chunk->strg, plen);
-}
+extern rgt_co_strg *rgt_co_chunk_yield(rgt_co_strg     *strg,
+                                       rgt_co_chunk    *chunk);
 
 /**
- * Take the buffer media from a finished chunk; the chunk storage becomes
- * void.
+ * Displace a memory chunk to a temporary file.
  *
- * @param chunk The chunk to retrieve the media from.
- * @param plen  Location for the contents length, or NULL.
+ * @param chunk The chunk to displace.
  *
- * @return The chunk buffer media.
+ * @return TRUE if displaced successfully, FALSE otherwise.
  */
-static inline rgt_cbuf *
-rgt_co_chunk_yield_mem(rgt_co_chunk *chunk, size_t *plen)
-{
-    assert(rgt_co_chunk_valid(chunk));
-    assert(rgt_co_chunk_is_mem(chunk));
-    return rgt_co_strg_yield_mem(&chunk->strg, plen);
-}
+extern te_bool rgt_co_chunk_displace(rgt_co_chunk *chunk);
 
 /**
- * Merge two chunks.
+ * Move a chunk storage media to another chunk.
  *
  * @alg The destination chunk storage contents gets appended to the source
  *      chunk storage, the destination chunk storage media is freed and the
@@ -348,39 +293,8 @@ rgt_co_chunk_yield_mem(rgt_co_chunk *chunk, size_t *plen)
  *
  * @return TRUE if merged successfully, FALSE otherwise.
  */
-static inline te_bool
-rgt_co_chunk_merge(rgt_co_chunk *dst, rgt_co_chunk *src)
-{
-    assert(rgt_co_chunk_valid(dst));
-    assert(rgt_co_chunk_valid(src));
-
-    return rgt_co_strg_move_media(&dst->strg, &src->strg);
-}
-
-/**
- * Increase chunk nesting depth.
- *
- * @param chunk The chunk to descend.
- */
-static inline void
-rgt_co_chunk_descend(rgt_co_chunk *chunk)
-{
-    assert(rgt_co_chunk_valid(chunk));
-    chunk->depth++;
-}
-
-/**
- * Decrease chunk nesting depth.
- *
- * @param chunk The chunk to ascend.
- */
-static inline void
-rgt_co_chunk_ascend(rgt_co_chunk *chunk)
-{
-    assert(rgt_co_chunk_valid(chunk));
-    assert(chunk->depth > 0);
-    chunk->depth--;
-}
+extern te_bool rgt_co_chunk_move_media(rgt_co_chunk    *dst,
+                                       rgt_co_chunk    *src);
 
 /**
  * Append a memory chunk to a chunk contents.
@@ -502,6 +416,31 @@ typedef struct rgt_co_chunk_attr {
     void       *value_ptr;  /**< Value pointer */
     size_t      value_len;  /**< Value length */
 } rgt_co_chunk_attr;
+
+/**
+ * Increase chunk nesting depth.
+ *
+ * @param chunk The chunk to descend.
+ */
+static inline void
+rgt_co_chunk_descend(rgt_co_chunk *chunk)
+{
+    assert(rgt_co_chunk_valid(chunk));
+    chunk->depth++;
+}
+
+/**
+ * Decrease chunk nesting depth.
+ *
+ * @param chunk The chunk to ascend.
+ */
+static inline void
+rgt_co_chunk_ascend(rgt_co_chunk *chunk)
+{
+    assert(rgt_co_chunk_valid(chunk));
+    assert(chunk->depth > 0);
+    chunk->depth--;
+}
 
 /**
  * Append an XML start tag to a chunk.
