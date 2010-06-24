@@ -415,6 +415,8 @@ run_input_and_output(FILE *input,
     te_bool             result      = FALSE;
     off_t               offset;
     off_t               msg_num     = 1;
+    te_log_ts_sec       last_secs   = 0;
+    te_log_ts_usec      last_usecs  = 0;
     rgt_msg             msg;
     int                 msg_idx;
     read_message_rc     read_rc;
@@ -448,6 +450,16 @@ run_input_and_output(FILE *input,
                                   : strerror(read_errno));
             }
         }
+
+        /* Check message order */
+        if (msg.ts_secs < last_secs ||
+            (msg.ts_secs == last_secs && msg.ts_usecs < last_usecs))
+            ERROR_CLEANUP("Message #%lld (starting at %lld) "
+                          "is out of order",
+                          (long long int)msg_num,
+                          (long long int)offset);
+        last_secs = msg.ts_secs;
+        last_usecs = msg.ts_usecs;
 
         /* Copy "put" sink instance method to the top */
         lua_pushvalue(L, sink_put_idx);
