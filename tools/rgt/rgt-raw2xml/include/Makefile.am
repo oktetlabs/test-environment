@@ -24,7 +24,6 @@
 #
 
 noinst_HEADERS = \
-    lua_rgt_cbuf.h      \
     lua_rgt_co.h        \
     lua_rgt_co_chunk.h  \
     lua_rgt_co_mngr.h   \

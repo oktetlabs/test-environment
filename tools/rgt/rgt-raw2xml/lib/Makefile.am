@@ -32,7 +32,6 @@ lib_luadir = $(libdir)/lua
 lib_LTLIBRARIES = librgt-raw2xml.la
 
 librgt_raw2xml_la_SOURCES = \
-    lua_rgt_cbuf.c          \
     lua_rgt_co.c            \
     lua_rgt_co_chunk.c      \
     lua_rgt_co_mngr.c       \
