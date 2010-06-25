@@ -29,7 +29,7 @@
  */
 
 /** Logging user name to be used here */
-#define TE_LGR_USER     "Enumerate"
+#define TE_LGR_USER "Enumerate"
 
 #include "te_config.h"
 #ifdef HAVE_CONFIG_H
@@ -78,9 +78,9 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
             if (var->handdown)
             {
                 /*
-                 * Check that handdown variable is not overridden by
-                 * argument with the same name.
-                 */
+                  * Check that handdown variable is not overridden by
+                  * argument with the same name.
+                  */
                 for (arg = TAILQ_FIRST(&ri->args);
                      arg != NULL && strcmp(var->name, arg->name) != 0;
                      arg = TAILQ_NEXT(arg, links));
