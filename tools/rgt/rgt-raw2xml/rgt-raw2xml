@@ -1,0 +1,93 @@
+#!/bin/bash
+#
+# Sort and convert a raw TE log to XML
+#
+
+set -e -u -o pipefail
+
+function usage () {
+    cat >&2 <<EOC
+
+Usage: `basename $0` [OPTION]... <RAW_INPUT_FILE> [XML_OUTPUT]
+Convert a raw TE log file to XML.
+
+With no XML_OUTPUT, or when XML_OUTPUT is -, write standard output.
+
+Options:
+
+    -h, --help          this help message
+    -t, --tmp-dir=DIR   directory for temporary files (default: /tmp)
+    -m, --max-mem=MB    maximum memory to use for output (MB)
+                        (default: RAM / 4, maximum: 4096)
+
+EOC
+}
+
+
+ARGS=
+PROGNAME=`basename $0`
+OPTS=
+TMP_DIR=
+MAX_MEM=
+INPUT=
+OUTPUT=-
+
+# Normalize command-line arguments
+if ! ARGS=`getopt \
+        -n "$PROGNAME"          \
+        -o "ht:m:"          \
+        -l "help,tmp-dir:,max-mem:"  \
+        -- "$@"`; then
+    usage
+    exit 1
+fi
+
+# Reset positional parameters to those produced by getopt
+eval set -- "$ARGS"
+
+# Process command-line arguments
+while true; do
+    case "$1" in
+        -h|--help) usage; exit 0;;
+        -t|--tmp-dir) TMP_DIR="$2"; shift 2;;
+        -m|--max-mem) MAX_MEM="$2"; shift 2;;
+        --) shift; break;;
+        *) fail "Unknown option \"$1\" encountered.";;
+    esac
+done
+
+# Verify command-line arguments
+if [ -n "$TMP_DIR" ]; then
+    OPTS="$OPTS --tmp-dir=$TMP_DIR"
+fi
+
+if [ -n "$MAX_MEM" ]; then
+    if echo -n "$MAX_MEM" | grep -v '[0-9]' >/dev/null ||
+       (( $MAX_MEM > 4096 )); then
+        echo "Invalid maximum memory value." >&2
+        usage
+        exit 1
+    fi
+    OPTS="$OPTS --max-mem=$MAX_MEM"
+fi
+
+# Read positional arguments
+if [[ $# == 0 ]]; then
+    echo "Input file is not specified" >&2
+    usage
+    exit 1
+else
+    INPUT="$1"
+    shift
+    if [[ $# > 0 ]]; then
+        OUTPUT="$1"
+        shift
+    fi
+fi
+
+# Run
+rgt-idx-make "$INPUT" | \
+rgt-idx-sort-mem | \
+rgt-idx-apply "$INPUT" | \
+rgt-raw2xml-sorted $OPTS - "$OUTPUT"
+

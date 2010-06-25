@@ -334,8 +334,8 @@ l_append_msg(lua_State *L)
                                                   LUA_RGT_MSG_NAME);
 
     if (!rgt_co_chunk_append_msg(*pchunk, *pmsg))
-        return luaL_error(L, "Failed to append message tag to a chunk: %s",
-                          strerror(errno));
+        return luaL_error(L, "Failed to append message element "
+                             "to a chunk: %s", strerror(errno));
 
     lua_settop(L, 1);
     return 1;

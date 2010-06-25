@@ -30,8 +30,9 @@ AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@ \
 AM_CFLAGS = @TE_CFLAGS@ -I $(srcdir)/include -Wextra -Werror
 GEN_LDADD = @TE_LDFLAGS@
 
-bin_PROGRAMS = rgt-raw2xml
+bin_PROGRAMS = rgt-raw2xml-sorted
 
-rgt_raw2xml_SOURCES = raw2xml.c
-rgt_raw2xml_LDADD = $(GEN_LDADD) -llua
+rgt_raw2xml_sorted_SOURCES = raw2xml-sorted.c
+rgt_raw2xml_sorted_LDADD = $(GEN_LDADD) -llua
 
+dist_bin_SCRIPTS = rgt-raw2xml

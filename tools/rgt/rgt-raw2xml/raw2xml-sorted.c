@@ -609,7 +609,7 @@ usage(FILE *stream, const char *progname)
         fprintf(
             stream, 
             "Usage: %s [OPTION]... [INPUT_RAW [OUTPUT_XML]]\n"
-            "Convert a raw TE log file to XML.\n"
+            "Convert a sorted raw TE log to XML.\n"
             "\n"
             "With no INPUT_RAW, or when INPUT_RAW is -, "
             "read standard input.\n"
