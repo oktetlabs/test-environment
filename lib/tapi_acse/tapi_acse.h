@@ -174,8 +174,6 @@ extern te_errno tapi_acse_stop(const char *ta);
 /**
  * Manage ACS object on the ACSE.
  *
- * @param ta            Test Agent name;
- * @param acs_name      Name of ACS object within @p ta ACSE;
  * @param opcode        code of operation to be performed with 
  *                      specified ACS object: 
  *                          if @c ACSE_OP_ADD, object should not exist,
@@ -356,12 +354,7 @@ extern te_errno tapi_acse_cpe_rpc_call(tapi_acse_context_t *ctx,
 /**
  * Check status of queued CWMP RPC on ACSE.
  * 
- * @param rpcs          TE rpc server.
- * @param acs_name      name of ACS object on ACSE.
- * @param cpe_name      name of CPE record on ACSE.
- * @param timeout       interval for wait response,
- *                              value <=0 for infinite wait.
- * @param call_index    queue index of CWMP call on ACSE.
+ * @param ctx          ACSE TAPI context.
  * @param cpe_rpc_code  location for type of RPC response, may be NULL.
  * @param buf           location for ptr to response data; 
  *                              user have to free() it.
@@ -378,8 +371,8 @@ extern te_errno tapi_acse_cpe_rpc_response(tapi_acse_context_t *ctx,
  * Check status of queued CWMP RPC on ACSE or get received ACS RPC.
  * Return ENOENT if there was not such RPC caught from specified CPE.
  * 
- * @param ctx        ACSE TAPI context.
- * @param rpc_acs       type of ACS RPC.
+ * @param ctx          ACSE TAPI context.
+ * @param rpc_acs      type of ACS RPC.
  *
  * @return status
  */
@@ -799,6 +792,22 @@ extern te_errno tapi_acse_get_options(tapi_acse_context_t *ctx,
 extern te_errno tapi_acse_get_options_resp(tapi_acse_context_t *ctx,
                cwmp_get_options_response_t **resp);
 
+
+
+
+/**
+ * Get ACS full URL for establish CWMP session.
+ *
+ * @param ctx     ACSE TAPI context.
+ * @param addr    Network address of ACS, when it will accept connection.
+ * @param str     location for URL
+ * @param buflen  size of buffer for URL
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_get_full_url(tapi_acse_context_t *ctx,
+                                       struct sockaddr *addr,
+                                       char *str, size_t buflen);
 
 
 

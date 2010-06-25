@@ -41,6 +41,7 @@
 #include "acse_epc.h"
 #include "cwmp_data.h"
 
+#include "te_sockaddr.h"
 
 
 /* see description in tapi_acse.h */
@@ -84,8 +85,14 @@ acse_is_int_var(const char *name)
 tapi_acse_context_t *
 tapi_acse_ctx_init(const char *ta)
 {
+    const char  *box_name = getenv("BOX_NAME");
     tapi_acse_context_t *ctx = calloc(1, sizeof(*ctx));
     te_errno rc = 0;
+
+    if (NULL == box_name)
+        WARN("init ACSE context, no BOX_NAME, find first CPE in firsr ACS");
+    else
+        RING("init ACSE context, BOX_NAME='%s', find this CPE...");
 
     ctx->ta = strdup(ta);
 
@@ -101,6 +108,32 @@ tapi_acse_ctx_init(const char *ta)
             break;
         }
 
+        ctx->timeout = 20; /* Experimentally discovered optimal value. */
+        ctx->req_id = 0;
+
+
+        if (NULL != box_name)
+        {
+            cfg_handle father;
+            if ((rc = cfg_find_pattern_fmt(&num, &handles,
+                                           "/agent:%s/acse:/acs:*/cpe:%s",
+                                           ta, box_name)) != 0)
+            {
+                ERROR("Cannot find ACS on TA '%s': rc %r", ta, rc);
+                break;
+            }
+            if (0 == num)
+            {
+                ERROR("Cannot find ACS on TA '%s': zero objects", ta);
+                break;
+            }
+            cfg_get_father(handles[0], &father);
+            cfg_get_inst_name(father, &name);
+            ctx->cpe_name = box_name;
+            ctx->acs_name = name;
+            RING("init ctx: %s/%s", ctx->acs_name, ctx->cpe_name);
+            return ctx;
+        }
         /* Find first ACS */
         if ((rc = cfg_find_pattern_fmt(&num, &handles,
                                        "/agent:%s/acse:/acs:*",
@@ -143,10 +176,6 @@ tapi_acse_ctx_init(const char *ta)
             break;
         }
         ctx->cpe_name = name;
-
-        ctx->timeout = 20; /* Experimentally discovered optimal value. */
-        ctx->req_id = 0;
-
 
         return ctx;
     } while (0);
@@ -988,5 +1017,41 @@ cwmp_get_names_resp_free(cwmp_get_parameter_names_response_t *resp)
         one block of allocated memory */
     free(resp);
     return;
+}
+
+
+/* 
+ * =========== misc =============================
+ */
+
+te_errno
+tapi_acse_get_full_url(tapi_acse_context_t *ctx,
+                       struct sockaddr *addr,
+                       char *str, size_t buflen)
+{
+    char  acs_addr_buf[200];
+    int   acs_port;
+    char *acs_url;
+    int   acs_ssl;
+
+    te_errno rc;
+
+    inet_ntop(addr->sa_family, te_sockaddr_get_netaddr(addr),
+              acs_addr_buf, sizeof(acs_addr_buf));
+
+    rc = tapi_acse_manage_acs(ctx, ACSE_OP_OBTAIN,
+                                  "port", &acs_port,
+                                  "ssl", &acs_ssl,
+                                  "url", &acs_url,
+                                  VA_END_LIST);
+    if (rc != 0)
+        return rc;
+
+    snprintf(str, buflen, "http%s://%s:%u%s",
+             acs_ssl ? "s" : "", 
+             acs_addr_buf, acs_port, acs_url);
+    RING("prepared ACS url: '%s'", str);
+
+    return 0;
 }
 
