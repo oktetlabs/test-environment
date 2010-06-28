@@ -282,7 +282,7 @@ const asn_type * const ndn_template_parameter = &ndn_template_parameter_s;
 
 
 
-static asn_type ndn_template_parameter_sequence_s = {
+asn_type ndn_template_parameter_sequence_s = {
     "SEQENCE OF Template-Parameter", {PRIVATE, NDN_TMPL_ARGS}, 
     SEQUENCE_OF, 0, {subtype: &ndn_template_parameter_s} 
 };

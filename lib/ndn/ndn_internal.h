@@ -92,6 +92,7 @@ extern asn_type ndn_octet_string6_s;
 
 extern asn_type ndn_generic_pdu_s;
 extern asn_type ndn_generic_csap_layer_s;
+extern asn_type ndn_template_parameter_sequence_s;
 extern asn_type ndn_generic_pdu_sequence_s;
 extern asn_type ndn_traffic_template_s;
 extern asn_type ndn_traffic_pattern_s;
