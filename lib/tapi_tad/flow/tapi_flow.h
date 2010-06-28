@@ -156,8 +156,18 @@ extern void tapi_flow_init(tapi_flow_t *flow);
 extern void tapi_flow_fini(tapi_flow_t *flow);
 
 /* Send and receive traffic described in traffic pattern */
+extern te_errno tapi_flow_start(tapi_flow_t *flow, char *name);
+
+extern te_errno tapi_flow_stop(tapi_flow_t *flow, char *name,
+                               int *rcv_num_p, int *rcv_base_num_p);
+
 extern te_errno tapi_flow_check(tapi_flow_t *flow, char *name,
                                 int *rcv_num_p, int *rcv_base_num_p);
+
+extern te_errno tapi_flow_check_sequence(tapi_flow_t *flow,...);
+
+extern te_errno tapi_flow_check_all(tapi_flow_t *flow,
+                                    const char *traffic_prefix);
 
 
 #ifdef __cplusplus

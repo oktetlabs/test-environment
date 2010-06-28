@@ -1322,7 +1322,7 @@ tapi_flow_check(tapi_flow_t *flow, char *name,
 }
 
 te_errno
-tapi_flow_check_sequence(tapi_flow_t *flow, long int timeout,...)
+tapi_flow_check_sequence(tapi_flow_t *flow,...)
 {
     int rc = 0;
     char *name = NULL;
@@ -1330,7 +1330,7 @@ tapi_flow_check_sequence(tapi_flow_t *flow, long int timeout,...)
     int rcv_base;
     va_list ap;
 
-    va_start(ap, timeout);
+    va_start(ap, flow);
     while ((name = va_arg(ap, char *)) != NULL)
     {
         if ((rc = tapi_flow_check(flow, name,
@@ -1347,6 +1347,43 @@ tapi_flow_check_sequence(tapi_flow_t *flow, long int timeout,...)
         }
     }
     va_end(ap);
+
+    return 0;
+}
+
+te_errno
+tapi_flow_check_all(tapi_flow_t *flow, const char *traffic_prefix)
+{
+    tapi_flow_traffic  *traffic;
+    char               *name = NULL;
+    int                 rcv_matched;
+    int                 rcv_base;
+    int                 rc = 0;
+
+    RING("%s() started", __FUNCTION__);
+
+    for (traffic = SLIST_FIRST(&flow->traffic_list);
+         traffic != NULL;
+         traffic = SLIST_NEXT(traffic, link))
+    {
+        if ((traffic_prefix == NULL) || 
+            (strncmp(traffic->name, traffic_prefix,
+             strlen(traffic_prefix)) != 0))
+            continue;
+
+        if ((rc = tapi_flow_check(flow, name,
+                                  &rcv_matched, &rcv_base)) != 0)
+        {
+            ERROR("Failed to perform '%s' traffic exchange", name);
+            return rc;
+        }
+
+        if (rcv_matched != rcv_base)
+        {
+            ERROR("No matched packets received for '%s' traffic exchange");
+            return rc;
+        }
+    }
 
     return 0;
 }
