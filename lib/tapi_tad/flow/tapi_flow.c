@@ -137,9 +137,9 @@ tapi_flow_prepare_endpoints(tapi_flow_t *flow)
     asn_value      *endpoints = NULL;
     asn_value      *ep_desc = NULL;
     asn_value      *layers = NULL;
-    unsigned int    ep_count = 0;
-    unsigned int    syms;
-    unsigned int    i;
+    int             ep_count = 0;
+    int             i;
+    int             syms;
     char            buf[4096];
 
     RING("%s() started", __FUNCTION__);
@@ -323,9 +323,9 @@ tapi_flow_prepare_traffic(tapi_flow_t *flow)
     char              *snd_ep = NULL;
     char              *rcv_ep = NULL;
     char              *rcv_base_ep = NULL;
-    unsigned int       list_size = 0;
-    unsigned int       syms;
-    unsigned int       i;
+    int                list_size = 0;
+    int                syms;
+    int                i;
 
     RING("%s() started", __FUNCTION__);
 
@@ -379,113 +379,144 @@ tapi_flow_prepare_traffic(tapi_flow_t *flow)
 
         /* Process send template */
 
-        /* Get traffic sender */
-        if ((rc = asn_read_string(traffic_desc, &snd_ep, "src")) != 0)
-        {
-            ERROR("Failed to get traffic source endpoint name, rc=%r", rc);
-            return rc;
-        }
-
-        if ((traffic->snd = tapi_flow_find_ep(flow, snd_ep)) == NULL)
-        {
-            ERROR("Failed to find traffic source endpoint %s", snd_ep);
-            return TE_RC(TE_TAPI, TE_EINVAL);
-        }
-
-        /* Get send template pdu */
-        if ((rc = asn_get_descendent(traffic_desc, &send_pdu, "send")) != 0)
-        {
-            ERROR("Failed to read send template, rc=%r", rc);
-            return rc;
-        }
-
-#if 1
-        if ((rc = asn_parse_value_text("{ pdus {} }", &ndn_traffic_template_s,
-                                       &traffic->send_tmpl, &syms)) != 0)
-#else
-        if ((traffic->send_tmpl =
-             asn_init_value(&ndn_traffic_template_s)) == NULL)
-#endif
-        {
-            ERROR("Failed to initialise empty csap send template: rc=%r", rc);
-            return rc;
-        }
-
-        if ((rc = asn_write_component_value(traffic->send_tmpl, send_pdu,
-                                            "pdus")) != 0)
-        {
-            ERROR("Failed to commit pdu to csap send template: rc=%r", rc);
-            return rc;
-        }
-
-        /* Get traffic receiver */
-        if ((rc = asn_read_string(traffic_desc, &rcv_ep, "dst")) != 0)
-        {
-            ERROR("Failed to get traffic source endpoint name, rc=%r", rc);
-            return rc;
-        }
-
-        if ((traffic->rcv = tapi_flow_find_ep(flow, rcv_ep)) == NULL)
-        {
-            ERROR("Failed to find traffic source endpoint %s", rcv_ep);
-            return TE_RC(TE_TAPI, TE_EINVAL);
-        }
-
-        /* Get receive pattern */
-        if ((rc = asn_get_descendent(traffic_desc, &recv_pdu, "recv")) != 0)
-        {
-            ERROR("Failed to read receive pattern, rc=%r", rc);
-            return rc;
-        }
-
-#if 1
-        if ((rc = asn_parse_value_text("{{ pdus {} }}", &ndn_traffic_pattern_s,
-                                       &traffic->recv_ptrn, &syms)) != 0)
-#else
-        if ((traffic->recv_ptrn =
-             asn_init_value(&ndn_traffic_pattern_s)) == NULL)
-#endif
-        {
-            ERROR("Failed to initialise empty csap template: rc=%r", rc);
-            return rc;
-        }
-
-        if ((rc = asn_write_component_value(traffic->recv_ptrn, recv_pdu,
-                                            "0.pdus")) != 0)
-        {
-            ERROR("Failed to commit CSAP asn receive pattern: rc=%r", rc);
-            return rc;
-        }
-
-        /* Create base traffic receiver */
-        rcv_base_ep = te_sprintf("%s-base", rcv_ep);
-        if (tapi_flow_find_ep(flow, rcv_base_ep) == NULL)
-        {
-            if ((traffic->rcv_base =
-                 tapi_flow_ep_copy(flow, rcv_ep, rcv_base_ep)) == NULL)
+        do {
+            /* Get traffic sender */
+            if ((rc = asn_read_string(traffic_desc, &snd_ep, "src")) != 0)
             {
-                ERROR("Failed to duplicate receive endpoint "
-                      "for base matching, rc=%r", rc);
+                ERROR("Failed to get traffic source endpoint name, rc=%r",
+                      rc);
+                break;
+            }
+
+            if ((traffic->snd = tapi_flow_find_ep(flow, snd_ep)) == NULL)
+            {
+                ERROR("Failed to find traffic source endpoint %s", snd_ep);
+                return TE_RC(TE_TAPI, TE_EINVAL);
+            }
+
+            /* Get send template pdu */
+            if ((rc = asn_get_descendent(traffic_desc, &send_pdu,
+                                         "send")) != 0)
+            {
+                WARN("Failed to read send template, rc=%r", rc);
+                break;
+            }
+
+            if ((rc = asn_parse_value_text("{ pdus {} }",
+                                           &ndn_traffic_template_s,
+                                           &traffic->send_tmpl, &syms)) != 0)
+            {
+                ERROR("Failed to initialise empty csap send template: rc=%r",
+                      rc);
                 return rc;
             }
-        }
 
-        /* Get receive pattern */
-        if ((rc = tapi_flow_gen_base_ptrn(traffic->recv_ptrn,
-                                          &traffic->recv_base_ptrn)) != 0)
+            if ((rc = asn_write_component_value(traffic->send_tmpl, send_pdu,
+                                                "pdus")) != 0)
+            {
+                ERROR("Failed to commit pdu to csap send template: rc=%r",
+                      rc);
+                return rc;
+            }
+        } while (0);
+
+        do {
+            /* Get traffic receiver */
+            if ((rc = asn_read_string(traffic_desc, &rcv_ep, "dst")) != 0)
+            {
+                WARN("Failed to get traffic source endpoint name, rc=%r", rc);
+                break;
+            }
+
+            if ((traffic->rcv = tapi_flow_find_ep(flow, rcv_ep)) == NULL)
+            {
+                ERROR("Failed to find traffic source endpoint %s", rcv_ep);
+                return TE_RC(TE_TAPI, TE_EINVAL);
+            }
+
+            /* Get receive pattern */
+            if ((rc = asn_get_descendent(traffic_desc, &recv_pdu, "recv")) != 0)
+            {
+                WARN("Failed to read receive pattern, rc=%r", rc);
+                break;
+            }
+
+            if ((rc = asn_parse_value_text("{{ pdus {} }}",
+                                           &ndn_traffic_pattern_s,
+                                           &traffic->recv_ptrn, &syms)) != 0)
+            {
+                ERROR("Failed to initialise empty csap template: rc=%r", rc);
+                return rc;
+            }
+
+            if ((rc = asn_write_component_value(traffic->recv_ptrn, recv_pdu,
+                                                "0.pdus")) != 0)
+            {
+                ERROR("Failed to commit CSAP asn receive pattern: rc=%r", rc);
+                return rc;
+            }
+
+            /* Create base traffic receiver */
+            rcv_base_ep = te_sprintf("%s-base", rcv_ep);
+            if (tapi_flow_find_ep(flow, rcv_base_ep) == NULL)
+            {
+                if ((traffic->rcv_base =
+                     tapi_flow_ep_copy(flow, rcv_ep, rcv_base_ep)) == NULL)
+                {
+                    ERROR("Failed to duplicate receive endpoint "
+                          "for base matching, rc=%r", rc);
+                    return rc;
+                }
+            }
+
+            /* Generate base pattern for receive matching */
+            if ((rc = tapi_flow_gen_base_ptrn(traffic->recv_ptrn,
+                                              &traffic->recv_base_ptrn)) != 0)
+            {
+                ERROR("Failed to make base receive pattern: rc=%r", rc);
+                return rc;
+            }
+        } while (0);
+
+        if ((rc = asn_read_int32(traffic_desc, &traffic->plen,
+            "plen.#plain")) != 0)
         {
-            ERROR("Failed to make base receive pattern: rc=%r", rc);
-            return rc;
+            traffic->plen = 0;
         }
 
-        if ((rc = asn_read_int32(traffic_desc, &traffic->plen, "plen.#plain")) != 0)
-            traffic->plen = 0;
-
-        if ((rc = asn_read_int32(traffic_desc, &traffic->count, "count.#plain")) != 0)
+        if ((rc = asn_read_int32(traffic_desc, &traffic->count,
+            "count.#plain")) != 0)
+        {
             traffic->count = 1;
+        }
         else
         {
-            /* TODO: insert simple-for here into the send template */
+            if (traffic->send_tmpl != NULL)
+            {
+                /* TODO: insert simple-for here into the send template */
+                char *arg_sets = te_sprintf("{ simple-for:{begin 1, end %d}}",
+                                        traffic->count);
+                asn_value *actions = NULL;
+                int syms = 0;
+
+                if ((rc = asn_parse_value_text(arg_sets,
+                              &ndn_template_parameter_sequence_s,
+                              &actions, &syms)) != 0)
+                {
+                    ERROR("Failed to prepare simple-for parameter: rc=%r",
+                          rc);
+                    return rc;
+                }
+
+                if ((rc = asn_write_component_value(traffic->send_tmpl,
+                                                    actions,
+                                                    "arg-sets")) != 0)
+                {
+                    ERROR("Failed to insert simple-for parameter into "
+                          "send pattern: rc=%r", rc);
+                    return rc;
+                }
+            }
         }
 
         SLIST_INSERT_HEAD(&flow->traffic_list, traffic, link);
@@ -1111,15 +1142,10 @@ tapi_flow_fill_random(void *data, unsigned int len)
         *p++ = rand_range(0, UCHAR_MAX);
 }
 
-/* Send and receive traffic described in traffic pattern */
 te_errno
-tapi_flow_check(tapi_flow_t *flow, char *name,
-                int *rcv_num_p, int *rcv_base_num_p)
+tapi_flow_start(tapi_flow_t *flow, char *name)
 {
     int           rc;
-
-    unsigned int  rcv_num  = 0;
-    unsigned int  rcv_base_num  = 0;
 
     uint8_t             *payload = NULL;
     tapi_flow_traffic   *traffic = NULL;
@@ -1129,6 +1155,12 @@ tapi_flow_check(tapi_flow_t *flow, char *name,
     if ((traffic = tapi_flow_find_traffic(flow, name)) == NULL)
     {
         ERROR("Cannot find traffic entry with name '%s'", name);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (traffic->started)
+    {
+        ERROR("Traffic exchange '%' is already running", name);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
@@ -1156,61 +1188,103 @@ tapi_flow_check(tapi_flow_t *flow, char *name,
         RING("No payload length specified");
     }
 
-    /* Start base receive */
-    if ((rc = tapi_tad_trrecv_start(traffic->rcv_base->ta,
-                                    traffic->rcv_base->sid,
-                                    traffic->rcv_base->csap_id,
-                                    traffic->recv_base_ptrn,
-                                    TAPI_FLOW_RECV_TIMEOUT,
-                                    traffic->count * 5,
-                                    RCF_TRRECV_PACKETS)) != 0)
+    if ((traffic->rcv_base != NULL) && (traffic->recv_base_ptrn != NULL))
     {
-        ERROR("Failed to start receive operation");
-        return rc;
+        /* Start base receive */
+        if ((rc = tapi_tad_trrecv_start(traffic->rcv_base->ta,
+                                        traffic->rcv_base->sid,
+                                        traffic->rcv_base->csap_id,
+                                        traffic->recv_base_ptrn,
+                                        TAD_TIMEOUT_INF,
+                                        traffic->count + 1,
+                                        RCF_TRRECV_PACKETS)) != 0)
+        {
+            ERROR("Failed to start receive operation");
+            return rc;
+        }
     }
 
-    /* Start matching receive */
-    if ((rc = tapi_tad_trrecv_start(traffic->rcv->ta,
-                                    traffic->rcv->sid,
-                                    traffic->rcv->csap_id,
-                                    traffic->recv_ptrn,
-                                    TAPI_FLOW_RECV_TIMEOUT,
-                                    traffic->count * 5,
-                                    RCF_TRRECV_PACKETS)) != 0)
+    if ((traffic->rcv != NULL) && (traffic->recv_ptrn != NULL))
     {
-        ERROR("Failed to start receive operation");
-        return rc;
+        /* Start matching receive */
+        if ((rc = tapi_tad_trrecv_start(traffic->rcv->ta,
+                                        traffic->rcv->sid,
+                                        traffic->rcv->csap_id,
+                                        traffic->recv_ptrn,
+                                        TAD_TIMEOUT_INF,
+                                        traffic->count + 1,
+                                        RCF_TRRECV_PACKETS)) != 0)
+        {
+            ERROR("Failed to start receive operation");
+            return rc;
+        }
     }
 
-    /* Send traffic */
-    if ((rc = tapi_tad_trsend_start(traffic->snd->ta,
-                                    traffic->snd->sid,
-                                    traffic->snd->csap_id,
-                                    traffic->send_tmpl,
-                                    RCF_MODE_BLOCKING)) != 0)
+    if ((traffic->snd != NULL) && (traffic->send_tmpl != NULL))
     {
-        ERROR("Failed to start send operation");
-        return rc;
+        /* Send traffic */
+        if ((rc = tapi_tad_trsend_start(traffic->snd->ta,
+                                        traffic->snd->sid,
+                                        traffic->snd->csap_id,
+                                        traffic->send_tmpl,
+                                        RCF_MODE_BLOCKING)) != 0)
+        {
+            ERROR("Failed to start send operation");
+            return rc;
+        }
     }
 
-    MSLEEP(TAPI_FLOW_RECV_TIMEOUT - 1000);
+    traffic->started = TRUE;
+}
 
-    if ((rc = tapi_tad_trrecv_stop(traffic->rcv->ta,
-                                   traffic->rcv->sid,
-                                   traffic->rcv->csap_id,
-                                   NULL, &rcv_num)) != 0)
+te_errno
+tapi_flow_stop(tapi_flow_t *flow, char *name,
+               int *rcv_num_p, int *rcv_base_num_p)
+{
+    int           rc;
+
+    unsigned int  rcv_num  = 0;
+    unsigned int  rcv_base_num  = 0;
+
+    uint8_t             *payload = NULL;
+    tapi_flow_traffic   *traffic = NULL;
+
+    RING("%s() started", __FUNCTION__);
+
+    if ((traffic = tapi_flow_find_traffic(flow, name)) == NULL)
     {
-        ERROR("Failed to stop receive operation");
-        return rc;
+        ERROR("Cannot find traffic entry with name '%s'", name);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    if ((rc = tapi_tad_trrecv_stop(traffic->rcv_base->ta,
-                                   traffic->rcv_base->sid,
-                                   traffic->rcv_base->csap_id,
-                                   NULL, &rcv_base_num)) != 0)
+    if (!traffic->started)
     {
-        ERROR("Failed to stop receive operation");
-        return rc;
+        ERROR("Traffic step is not started");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if ((traffic->rcv != NULL) && (traffic->recv_ptrn != NULL))
+    {
+        if ((rc = tapi_tad_trrecv_stop(traffic->rcv->ta,
+                                       traffic->rcv->sid,
+                                       traffic->rcv->csap_id,
+                                       NULL, &rcv_num)) != 0)
+        {
+            ERROR("Failed to stop receive operation");
+            return rc;
+        }
+    }
+
+    if ((traffic->rcv_base != NULL) && (traffic->recv_base_ptrn != NULL))
+    {
+        if ((rc = tapi_tad_trrecv_stop(traffic->rcv_base->ta,
+                                       traffic->rcv_base->sid,
+                                       traffic->rcv_base->csap_id,
+                                       NULL, &rcv_base_num)) != 0)
+        {
+            ERROR("Failed to stop receive operation");
+            return rc;
+        }
     }
 
     if (rcv_num_p != NULL)
@@ -1218,5 +1292,62 @@ tapi_flow_check(tapi_flow_t *flow, char *name,
     if (rcv_base_num_p != NULL)
         *rcv_base_num_p = rcv_base_num;
 
+    traffic->started = FALSE;
+
     return 0;
 }
+
+/* Send and receive traffic described in traffic pattern */
+te_errno
+tapi_flow_check(tapi_flow_t *flow, char *name,
+                int *rcv_num_p, int *rcv_base_num_p)
+{
+    int           rc;
+
+    if ((rc = tapi_flow_start(flow, name)) != 0)
+    {
+        ERROR("Failed to start traffic '%s'", name);
+        return rc;
+    }
+
+    MSLEEP(TAPI_FLOW_RECV_TIMEOUT);
+
+    if ((rc = tapi_flow_stop(flow, name, rcv_num_p, rcv_base_num_p)) != 0)
+    {
+        ERROR("Failed to stop traffic '%s'", name);
+        return rc;
+    }
+
+    return 0;
+}
+
+te_errno
+tapi_flow_check_sequence(tapi_flow_t *flow, long int timeout,...)
+{
+    int rc = 0;
+    char *name = NULL;
+    int rcv_matched;
+    int rcv_base;
+    va_list ap;
+
+    va_start(ap, timeout);
+    while ((name = va_arg(ap, char *)) != NULL)
+    {
+        if ((rc = tapi_flow_check(flow, name,
+                                  &rcv_matched, &rcv_base)) != 0)
+        {
+            ERROR("Failed to perform '%s' traffic exchange", name);
+            return rc;
+        }
+
+        if (rcv_matched != rcv_base)
+        {
+            ERROR("No matched packets received for '%s' traffic exchange");
+            return rc;
+        }
+    }
+    va_end(ap);
+
+    return 0;
+}
+

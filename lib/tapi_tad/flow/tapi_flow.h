@@ -109,6 +109,8 @@ struct tapi_flow_traffic {
     int             plen;
     int             count;
 
+    te_bool         started;
+
     /* Traffic flow counters  */
     int             total;
     int             marked;
