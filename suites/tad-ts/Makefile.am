@@ -20,6 +20,6 @@ AM_CFLAGS = @TS_CFLAGS@
 
 AM_LDFLAGS = @TS_LDFLAGS@
 
-LDADD = @TS_LIBS@
+LDADD = @TS_LIBS@ -lasn -lndn
 
 tetest_PROGRAMS = prologue
