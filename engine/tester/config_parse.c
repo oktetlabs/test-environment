@@ -1318,8 +1318,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
     p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    p->handdown = TRUE;
-    p->variable = is_var;
+    p->handdown = !is_var;
     TAILQ_INIT(&p->values.head);
     TAILQ_INSERT_TAIL(list, p, links);
 
@@ -1615,8 +1614,8 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("run")) == 0)
     {
-        rc = alloc_and_get_run_item(node, cfg, TESTER_RUN_ITEM_INHERITABLE,
-                                    session, &session->run_items, NULL);
+        rc = alloc_and_get_run_item(node, cfg, 0, session, 
+                                    &session->run_items, NULL);
         if (rc != 0)
             return rc;
         node = xmlNodeNext(node);

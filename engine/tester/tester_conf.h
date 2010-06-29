@@ -129,7 +129,7 @@ typedef enum tester_handdown {
 } tester_handdown;
 
 /** Default value of the executable handdown attribute */
-#define TESTER_HANDDOWN_DEF TESTER_HANDDOWN_DESCENDANTS
+#define TESTER_HANDDOWN_DEF TESTER_HANDDOWN_NONE
 
 
 /** Types of Tester configuration tracking */
@@ -177,11 +177,10 @@ typedef struct test_var_arg {
 
     char                    *list;      /**< Name of the iteration list */
     const test_entity_value *preferred; /**< Preferred value for list 
-                                           iteration */
+                                             iteration */
 
     te_bool                  handdown;  /**< Handdown session variable
                                              to all children */
-    te_bool                  variable;  /**< Is variable */
 } test_var_arg;
 
 /** List of test session variables */
@@ -497,7 +496,7 @@ typedef te_errno (* test_entity_value_enum_error_cb)(
  * @return Status code.
  */
 extern te_errno test_entity_values_enum(
-                    const run_item                  *ri,
+                    const test_vars_args            *vars,
                     const test_entity_values        *values,
                     test_entity_value_enum_cb        callback,
                     void                            *opaque,
