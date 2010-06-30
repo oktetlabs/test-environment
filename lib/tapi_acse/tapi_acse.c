@@ -85,14 +85,14 @@ acse_is_int_var(const char *name)
 tapi_acse_context_t *
 tapi_acse_ctx_init(const char *ta)
 {
-    const char  *box_name = getenv("BOX_NAME");
+    const char  *box_name = getenv("CPE_NAME");
     tapi_acse_context_t *ctx = calloc(1, sizeof(*ctx));
     te_errno rc = 0;
 
     if (NULL == box_name)
-        WARN("init ACSE context, no BOX_NAME, find first CPE in firsr ACS");
+        WARN("init ACSE context, no CPE_NAME, find first CPE in firsr ACS");
     else
-        RING("init ACSE context, BOX_NAME='%s', find this CPE...");
+        RING("init ACSE context, CPE_NAME='%s', let's find this CPE...");
 
     ctx->ta = strdup(ta);
 
@@ -134,6 +134,8 @@ tapi_acse_ctx_init(const char *ta)
             RING("init ctx: %s/%s", ctx->acs_name, ctx->cpe_name);
             return ctx;
         }
+        /* If failed, try to use first ACS and first CPE */
+
         /* Find first ACS */
         if ((rc = cfg_find_pattern_fmt(&num, &handles,
                                        "/agent:%s/acse:/acs:*",
