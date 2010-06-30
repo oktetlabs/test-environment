@@ -447,4 +447,41 @@ rpcop2str(rcf_rpc_op op)
  */
 extern te_bool rcf_rpc_server_has_children(rcf_rpc_server *rpcs);
 
+
+/**
+ * Get RPC server handle, restart it if necessary.
+ *
+ * @param _ta     name of Test Agent
+ * @param _name   name of RCF RPC server
+ * @param _rpcs   variable for RPC server handle
+ */
+#define TEST_GET_RPCS(_ta, _name, _rpcs) \
+    do {                                                               \
+        te_errno    rc = 0;                                            \
+        int         is_dead = 0;                                       \
+                                                                       \
+        if ((rc = rcf_rpc_server_get(_ta, _name, NULL, FALSE,          \
+                                     TRUE, FALSE, &(_rpcs))) != 0)     \
+            TEST_FAIL("Failed to get RPC server handle: %r", rc);      \
+                                                                       \
+        /* Restart RPC server if it is dead */                         \
+        if ((rc = cfg_get_instance_fmt(NULL, &is_dead,                 \
+                                       "/agent:%s/rpcserver:%s/dead:", \
+                                       _ta, _name)) != 0)              \
+            TEST_FAIL("Failed to get 'dead' status of RPC "            \
+                      "server %s: %r", _name, rc);                     \
+                                                                       \
+        if (is_dead == 1)                                              \
+        {                                                              \
+            WARN("RPC server %s is dead, try to restart", _name);      \
+                                                                       \
+            if ((rc = rcf_rpc_server_restart(_rpcs)) != 0)             \
+                TEST_FAIL("Failed to restart dead RPC server %s: %r",  \
+                          _name, rc);                                  \
+        }                                                              \
+    } while (0)
+
+
+
+
 #endif /* !__TE_RCF_RPC_H__ */
