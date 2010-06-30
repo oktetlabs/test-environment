@@ -98,7 +98,7 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
     if (!(pfd->revents & POLLIN))
         return 0;
 
-    RING("Processing ConnectionRequest to '%s'\n",
+    INFO("Processing ConnectionRequest to '%s'\n",
          conn_req->cpe_item->name);
 
     soap = &(conn_req->m_soap);
@@ -108,12 +108,21 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
         /* was something wrong for gSOAP */
         if (soap->error == 401)
         {
-            RING("ConnectionRequest, attempt failed, realm: '%s'\n",
-                  soap->authrealm);
+            const char *userid = conn_req->cpe_item->cr_auth.login;
+            const char *passwd = conn_req->cpe_item->cr_auth.passwd;
+
+            /* If ConnReq auth params not specified, use ones for 
+                login CPE->ACS */
+            if (NULL == userid)
+                userid = conn_req->cpe_item->acs_auth.login;
+            if (NULL == passwd)
+                passwd = conn_req->cpe_item->acs_auth.passwd;
+
+            INFO("ConnectionRequest, attempt failed, "
+                 "realm: '%s'; try login '%s'",
+                  soap->authrealm, userid);
             /* save userid and passwd for basic or digest authentication */
-            http_da_save(soap, &info, soap->authrealm,
-                         conn_req->cpe_item->cr_auth.login,
-                         conn_req->cpe_item->cr_auth.passwd);
+            http_da_save(soap, &info, soap->authrealm, userid, passwd);
             soap_begin_count(soap);
             soap_end_count(soap);
 
@@ -138,7 +147,7 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
 
     soap_end_recv(soap);
 
-    RING("Recv after Conn req to '%s', status %d", 
+    INFO("Recv after Conn req to '%s', status %d", 
          conn_req->cpe_item->name, soap->error);
 
     soap_closesock(soap);
