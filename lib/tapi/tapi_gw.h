@@ -33,6 +33,9 @@
 #ifndef __TE_TAPI_GW_H__
 #define __TE_TAPI_GW_H__
 
+#include "conf_api.h"
+#include "tapi_cfg.h"
+
 /**
  * Get tagged network address from Configurator.
  *
@@ -40,10 +43,12 @@
  * @param _tag    name in CS of address. 
  */
 #define TEST_GET_TAG_ADDR(_addr, _tag) \
-    do {                                                            \
-        te_errno rc = tapi_cfg_get_tagged_addr(#_tag, &(_addr));    \
-        if (rc != 0)                                                \
-            TEST_FAIL("Failed to get tagged address: %r", rc);      \
+    do {                                                        \
+        te_errno rc;                                            \
+        rc = cfg_get_instance_fmt(NULL, &(_addr),               \
+                      "/local:/addr:/entry:%s/address:", #_tag);\
+        if (rc != 0)                                            \
+            TEST_FAIL("Failed to get tagged address: %r", rc);  \
     } while (0)
 
 
