@@ -491,31 +491,12 @@ tapi_flow_prepare_traffic(tapi_flow_t *flow)
         }
         else
         {
-            if (traffic->send_tmpl != NULL)
+            if ((rc =tapi_tad_add_iterator_for(traffic->send_tmpl,
+                                               1, traffic->count, 1)) != 0)
             {
-                /* TODO: insert simple-for here into the send template */
-                char *arg_sets = te_sprintf("{ simple-for:{begin 1, end %d}}",
-                                        traffic->count);
-                asn_value *actions = NULL;
-                int syms = 0;
-
-                if ((rc = asn_parse_value_text(arg_sets,
-                              &ndn_template_parameter_sequence_s,
-                              &actions, &syms)) != 0)
-                {
-                    ERROR("Failed to prepare simple-for parameter: rc=%r",
-                          rc);
-                    return rc;
-                }
-
-                if ((rc = asn_write_component_value(traffic->send_tmpl,
-                                                    actions,
-                                                    "arg-sets")) != 0)
-                {
-                    ERROR("Failed to insert simple-for parameter into "
-                          "send pattern: rc=%r", rc);
-                    return rc;
-                }
+                ERROR("Failed to add FOR iterator to send template: rc=%r",
+                      rc);
+                return rc;
             }
         }
 
@@ -526,6 +507,72 @@ tapi_flow_prepare_traffic(tapi_flow_t *flow)
 }
 
 #define TAPI_FLOW_PREPROCESS_BUF_SIZE 1024
+
+#define TAPI_CFG_RANDOM_PREFIX  "/random:"
+
+#define TAPI_CFG_RANDOM_PORT_MIN    10000
+#define TAPI_CFG_RANDOM_PORT_MAX    60000
+
+#define TAPI_CFG_RANDOM_MCAST_0_MIN 224
+#define TAPI_CFG_RANDOM_MCAST_0_MAX 254
+
+#define TAPI_CFG_RANDOM_IP_0_MIN    64
+#define TAPI_CFG_RANDOM_IP_0_MAX    126
+
+#define TAPI_CFG_RANDOM_IP_X_MIN    1
+#define TAPI_CFG_RANDOM_IP_X_MAX    254
+
+static inline char *tapi_cfg_link_random(char *link)
+{
+    char *type = strstr(link, TAPI_CFG_RANDOM_PREFIX);
+    if (type != NULL)
+        type += strlen(TAPI_CFG_RANDOM_PREFIX);
+    if (strcmp(type, "port") == 0)
+    {
+        return te_sprintf("plain:%d",
+                          rand_range(TAPI_CFG_RANDOM_PORT_MIN,
+                                     TAPI_CFG_RANDOM_PORT_MAX));
+    }
+    else if ((strcmp(type, "ip") == 0) || (strcmp(type, "mcast") == 0))
+    {
+        int i;
+        uint8_t addr[4];
+
+        if (strcmp(type, "ip") == 0)
+        {
+            addr[0] = rand_range(TAPI_CFG_RANDOM_IP_0_MIN,
+                                 TAPI_CFG_RANDOM_IP_0_MAX);
+        }
+        else
+        {
+            addr[0] = rand_range(TAPI_CFG_RANDOM_MCAST_0_MIN,
+                                 TAPI_CFG_RANDOM_MCAST_0_MAX);
+        }
+        for (i = 1; i < 4; i++)
+        {
+            addr[i] = rand_range(TAPI_CFG_RANDOM_IP_0_MIN,
+                                 TAPI_CFG_RANDOM_IP_0_MAX);
+        }
+
+        return te_sprintf("plain:'%02x %02x %02x %02x'H",
+                          addr[0], addr[1], addr[2], addr[3]);
+    }
+    else if (strcmp(type, "mac") == 0)
+    {
+        int i;
+        uint8_t mac[6];
+        for (i = 0; i < 6; i++)
+        {
+            mac[i] = rand_range(TAPI_CFG_RANDOM_IP_0_MIN,
+                                TAPI_CFG_RANDOM_IP_0_MAX);
+        }
+
+        return te_sprintf("plain:'%02x %02x %02x %02x %02x %02x'H",
+                          mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    }
+
+    return NULL;
+}
 
 /**
  * Resolve configurator link into its value.
@@ -544,6 +591,10 @@ static inline char *tapi_cfg_link_dereference(char *link)
     int             rc = 0;
 
     RING("%s() started", __FUNCTION__);
+    if (strstr(link, TAPI_CFG_RANDOM_PREFIX) != NULL)
+    {
+        return tapi_cfg_link_random(link);
+    }
 
     if ((rc = cfg_find_fmt(&handle, "%s", cur)) != 0)
     {
@@ -1197,7 +1248,7 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
                                         traffic->recv_base_ptrn,
                                         TAD_TIMEOUT_INF,
                                         traffic->count + 1,
-                                        RCF_TRRECV_PACKETS)) != 0)
+                                        RCF_TRRECV_COUNT)) != 0)
         {
             ERROR("Failed to start receive operation");
             return rc;
@@ -1213,7 +1264,7 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
                                         traffic->recv_ptrn,
                                         TAD_TIMEOUT_INF,
                                         traffic->count + 1,
-                                        RCF_TRRECV_PACKETS)) != 0)
+                                        RCF_TRRECV_COUNT)) != 0)
         {
             ERROR("Failed to start receive operation");
             return rc;
@@ -1235,6 +1286,8 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
     }
 
     traffic->started = TRUE;
+
+    return 0;
 }
 
 te_errno
@@ -1246,7 +1299,6 @@ tapi_flow_stop(tapi_flow_t *flow, char *name,
     unsigned int  rcv_num  = 0;
     unsigned int  rcv_base_num  = 0;
 
-    uint8_t             *payload = NULL;
     tapi_flow_traffic   *traffic = NULL;
 
     RING("%s() started", __FUNCTION__);
