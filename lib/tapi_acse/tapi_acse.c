@@ -222,7 +222,8 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
             cfg_val_type type;
 
             if (acse_is_int_var(name))
-            {/* integer parameters */
+            {
+                /* integer parameters */
                 int *p_val = va_arg(ap, int *);
                 type = CVT_INTEGER;
                 rc = cfg_get_instance_fmt(&type, p_val, "%s", buf);
