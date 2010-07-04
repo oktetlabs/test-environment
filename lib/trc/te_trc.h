@@ -44,8 +44,9 @@ extern "C" {
 
 /** TE log test argument */
 typedef struct trc_report_argument {
-    char *name; /**< Argument name */
-    char *value; /**< Argument value */
+    char    *name;              /**< Argument name */
+    char    *value;             /**< Argument value */
+    te_bool  variable;          /**< Is this argument in fact a variable */
 } trc_report_argument;
 
 

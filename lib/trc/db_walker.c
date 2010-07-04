@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TRC DB walker"
+#define TE_LGR_USER "TRC DB walker"
 
 #include "te_config.h"
 
@@ -116,6 +116,8 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
                         te_bool force)
 {
     assert(walker->is_iter);
+
+    ENTRY("test_name = '%s'", test_name);
 
     if (walker->unknown > 0)
     {
@@ -289,10 +291,15 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
 
     for (arg = TAILQ_FIRST(&db_args->head), i = 0;
          arg != NULL && i < n_args;
-         arg = TAILQ_NEXT(arg, links), i++)
+         i++)
     {
+        /* Skip variables */
+        if (args[i].variable)
+            continue;
+
         VERB("Argument from TRC DB: %s=%s", arg->name, arg->value);
         VERB("Compare with: %s=%s", args[i].name, args[i].value);
+
         if (strcmp(args[i].name, arg->name) != 0)
         {
             VERB("Mismatch: %s vs %s", args[i].name, arg->name);
@@ -307,10 +314,25 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
                 return FALSE;
             }
         }
+        /* next arg */
+        arg = TAILQ_NEXT(arg, links);
     }
-    if (arg != NULL || i != n_args)
-        VERB("Argument count mismatch: %d vs %d", i, n_args);
-    return (arg == NULL && i == n_args);
+    if (arg == NULL)
+    {
+        for (; i < n_args; i++)
+        {
+            if (!args[i].variable)
+            {
+                VERB("Argument count mismatch: %d vs %d", i, n_args);
+                return FALSE;
+            }
+        }
+        assert(arg == NULL && i == n_args);
+    }
+    else
+        return FALSE;
+
+    return TRUE;
 }
 
 static int

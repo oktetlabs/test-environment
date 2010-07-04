@@ -29,7 +29,7 @@
  */
 
 /** Logging user name to be used here */
-#define TE_LGR_USER     "Enumerate"
+#define TE_LGR_USER "Enumerate"
 
 #include "te_config.h"
 #ifdef HAVE_CONFIG_H
@@ -78,9 +78,9 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
             if (var->handdown)
             {
                 /*
-                 * Check that handdown variable is not overridden by
-                 * argument with the same name.
-                 */
+                  * Check that handdown variable is not overridden by
+                  * argument with the same name.
+                  */
                 for (arg = TAILQ_FIRST(&ri->args);
                      arg != NULL && strcmp(var->name, arg->name) != 0;
                      arg = TAILQ_NEXT(arg, links));
@@ -227,7 +227,7 @@ test_run_item_find_arg(const run_item *ri, const char *name,
  * @return Status code.
  */
 static te_errno
-test_entity_value_enum_values(const test_vars_args *vars,
+test_entity_value_enum_values(const run_item          *ri,
                               const test_entity_value *value,
                               test_entity_value_enum_cb callback,
                               void *opaque,
@@ -238,6 +238,8 @@ test_entity_value_enum_values(const test_vars_args *vars,
 
     assert(value != NULL);
     assert(callback != NULL);
+
+    ENTRY("ri=%p value=%p", ri, value);
 
     if (value->plain != NULL)
     {
@@ -256,7 +258,7 @@ test_entity_value_enum_values(const test_vars_args *vars,
          * Forward variable to the reference since it is in the same
          * context.
          */
-        rc = test_entity_value_enum_values(vars, value->ref,
+        rc = test_entity_value_enum_values(ri, value->ref,
                                            callback, opaque,
                                            enum_error_cb, ee_opaque);
 
@@ -267,7 +269,7 @@ test_entity_value_enum_values(const test_vars_args *vars,
     }
     else if (value->ext != NULL)
     {
-        if (vars == NULL)
+        if (ri == NULL || ri->context == NULL)
         {
             /*
              * No variables context, therefore, it is a singleton
@@ -282,11 +284,25 @@ test_entity_value_enum_values(const test_vars_args *vars,
         }
         else
         {
-            test_var_arg *var;
+            const test_vars_args *vars;
+            const test_session  *ctx = ri->context;
+            test_var_arg   *var;
 
-            for (var = TAILQ_FIRST(vars);
-                 var != NULL && strcmp(value->ext, var->name) != 0;
-                 var = TAILQ_NEXT(var, links));
+            do
+            {
+                vars = &(ctx->vars);
+
+                for (var = TAILQ_FIRST(vars);
+                     var != NULL && strcmp(value->ext, var->name) != 0;
+                     var = TAILQ_NEXT(var, links));
+                if (var != NULL)
+                    break;
+                else
+                {
+                    /* look in parent context */
+                    ctx = ctx->parent;
+                }
+            } while (ctx != NULL);
 
             if (var != NULL)
             {
@@ -295,8 +311,8 @@ test_entity_value_enum_values(const test_vars_args *vars,
                  * values, but variable does not have any context.
                  */
                 rc = test_var_arg_enum_values(NULL, var,
-                                                callback, opaque,
-                                                enum_error_cb, ee_opaque);
+                                              callback, opaque,
+                                              enum_error_cb, ee_opaque);
 
                 if (rc != 0 && enum_error_cb != NULL)
                     enum_error_cb(value, rc, ee_opaque);
@@ -336,7 +352,7 @@ test_entity_value_enum_values(const test_vars_args *vars,
 
 /* See the description in tester_conf.h */
 te_errno
-test_entity_values_enum(const test_vars_args            *vars,
+test_entity_values_enum(const run_item                  *ri,
                         const test_entity_values        *values,
                         test_entity_value_enum_cb        callback,
                         void                            *opaque,
@@ -346,14 +362,14 @@ test_entity_values_enum(const test_vars_args            *vars,
     te_errno                    rc = TE_RC(TE_TESTER, TE_ENOENT);
     const test_entity_value    *v;
 
-    ENTRY("vars=%p values=%p callback=%p opaque=%p",
-          vars, values, callback, opaque);
+    ENTRY("ri=%p values=%p callback=%p opaque=%p",
+          ri, values, callback, opaque);
 
     assert(values != NULL);
 
     TAILQ_FOREACH(v, &values->head, links)
     {
-        rc = test_entity_value_enum_values(vars, v, callback, opaque,
+        rc = test_entity_value_enum_values(ri, v, callback, opaque,
                                            enum_error_cb, ee_opaque);
         if (rc != 0)
             break;
@@ -381,10 +397,7 @@ test_var_arg_enum_values(const run_item *ri, const test_var_arg *va,
     }
     else
     {
-        const test_vars_args   *vars =
-            (ri != NULL && ri->context != NULL) ? &ri->context->vars : NULL;
-
-        return test_entity_values_enum(vars, &va->values, callback, opaque,
+        return test_entity_values_enum(ri, &va->values, callback, opaque,
                                        enum_error_cb, ee_opaque);
     }
 }

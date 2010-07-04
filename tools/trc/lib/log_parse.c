@@ -351,6 +351,7 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         }
         ctx->args[ctx->args_n].name = NULL;
         ctx->args[ctx->args_n].value = NULL;
+        ctx->args[ctx->args_n].variable = FALSE;
     }
 
     while (attrs[0] != NULL && attrs[1] != NULL)

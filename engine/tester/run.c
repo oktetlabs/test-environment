@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "Run"
+#define TE_LGR_USER "Run"
 
 #include "te_config.h"
 #ifdef HAVE_CONFIG_H
@@ -613,6 +613,9 @@ test_params_to_string(char *str, const unsigned int n_args,
     for (i = 0, p = args; i < n_args; ++i, ++p)
     {
         size_t req = test_param_space(p);
+
+        if (p->variable)
+            continue;
 
         VERB("%s(): parameter %s=%s", __FUNCTION__, p->name, p->value);
         while (rest < req)
@@ -2219,6 +2222,7 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
     if (rc != 0)
         return rc;
 
+    data->arg->variable = va->variable;
     data->arg->value = run_get_value(value, data->ctx_args,
                                      data->ctx_n_args, &data->arg->reqs);
     if (data->arg->value == NULL)
@@ -2363,6 +2367,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         {
             args[i].name = (char *)ctx->args[i].name;
             args[i].value = (char *)ctx->args[i].value;
+            args[i].variable = ctx->args[i].variable;
         }
         /* 
          * It is guaranteed that trc_db_walker_step_iter() does not
