@@ -80,8 +80,13 @@ help="
 Try \`$me --help' for more information."
 
 # TE exception
-[ "$1" == "te" ] && {
-    echo te-te-te
+[ "$1" == "host-oktl-te" ] && {
+    echo host-oktl-te
+    exit 0
+}
+
+[ "$1" == "build-oktl-te" ] && {
+    echo build-oktl-te
     exit 0
 }
 

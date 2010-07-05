@@ -62,11 +62,14 @@ autotool()
 # Call configure and make
 configure_package()
 {
-    echo ${PKGSRC}/configure -q --build=te --prefix=$PREFIX ${PARMS}
-    
+    echo $PARMS | grep "\-\-host=" >/dev/null || PARMS="--host=host-oktl-te $PARMS"
+    PARMS="$PARMS --build=build-oktl-te"
+
+    echo ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS}
+
     TE_DEPENDENCIES="$DEPENDENCIES" \
     CFLAGS= \
-    eval ${PKGSRC}/configure '-q --build=te --prefix=$PREFIX' ${PARMS}
+    eval ${PKGSRC}/configure '-q --prefix=$PREFIX' ${PARMS}
 }
 
 # Create list of linked libraries and dependencies for the package

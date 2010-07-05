@@ -92,7 +92,7 @@ if test ! -e Makefile ; then
         PARMS="$PARMS CC=$HOST_CC"
     fi
 
-    PARMS="$PARMS \
+    PARMS="$PARMS --build=build-oktl-te \
            TE_BASE=\"$TE_BASE\" \
            TE_PATH=\"$TE_PATH\" \
            TE_M4=\"$TE_BASE/auxdir\" \
@@ -101,11 +101,13 @@ if test ! -e Makefile ; then
            TE_LDFLAGS=\"-L${TE_INSTALL}/${TE_HOST}/lib ${ADD_LDFLAGS}\" \
            TE_LDADD=\"$LDADD\" \
            TE_PLATFORM=$TE_HOST"
-                 
-    echo "${SOURCES}/configure -q --build=te --prefix=${TE_INSTALL_SUITE} $PARMS"
+
+    echo $PARMS | grep "\-\-host=" >/dev/null || PARMS="--host=host-oktl-te $PARMS"
+
+    echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} $PARMS"
 
     CFLAGS="" \
-    eval "${SOURCES}/configure" -q --build=te --prefix="${TE_INSTALL_SUITE}" \
+    eval "${SOURCES}/configure" -q --prefix="${TE_INSTALL_SUITE}" \
           $PARMS || exit 1
 fi
 make install || exit 1
