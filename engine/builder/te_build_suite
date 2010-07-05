@@ -92,7 +92,7 @@ if test ! -e Makefile ; then
         PARMS="$PARMS CC=$HOST_CC"
     fi
 
-    PARMS="$PARMS --build=build-oktl-te \
+    PARMS="$PARMS \
            TE_BASE=\"$TE_BASE\" \
            TE_PATH=\"$TE_PATH\" \
            TE_M4=\"$TE_BASE/auxdir\" \
@@ -102,7 +102,10 @@ if test ! -e Makefile ; then
            TE_LDADD=\"$LDADD\" \
            TE_PLATFORM=$TE_HOST"
 
-    echo $PARMS | grep "\-\-host=" >/dev/null || PARMS="--host=host-oktl-te $PARMS"
+    echo $PARMS | grep "\-\-host=" >/dev/null || {
+        [ -n "${TE_CROSS_COMPILING_ALWAYS}" ] && \
+            PARMS="--host=host-oktl-te --build=build-oktl-te $PARMS"
+    }
 
     echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} $PARMS"
 
