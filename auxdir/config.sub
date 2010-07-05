@@ -79,17 +79,6 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
 help="
 Try \`$me --help' for more information."
 
-# TE exception
-[ "$1" == "host-oktl-te" ] && {
-    echo host-oktl-te
-    exit 0
-}
-
-[ "$1" == "build-oktl-te" ] && {
-    echo build-oktl-te
-    exit 0
-}
-
 # Parse command line
 while test $# -gt 0 ; do
   case $1 in

@@ -62,10 +62,7 @@ autotool()
 # Call configure and make
 configure_package()
 {
-    echo $PARMS | grep "\-\-host=" >/dev/null || {
-        [ -n "${TE_CROSS_COMPILING_ALWAYS}" ] && \
-            PARMS="--host=host-oktl-te --build=build-oktl-te $PARMS"
-    }
+    echo $PARMS | grep "\-\-host=" >/dev/null || PARMS="--host=linux $PARMS"
 
     echo ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS}
 
