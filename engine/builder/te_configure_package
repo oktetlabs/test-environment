@@ -62,11 +62,11 @@ autotool()
 # Call configure and make
 configure_package()
 {
-    echo ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS}
+    echo ${PKGSRC}/configure -q --build=te --prefix=$PREFIX ${PARMS}
     
     TE_DEPENDENCIES="$DEPENDENCIES" \
     CFLAGS= \
-    eval ${PKGSRC}/configure '-q --prefix=$PREFIX' ${PARMS}
+    eval ${PKGSRC}/configure '-q --build=te --prefix=$PREFIX' ${PARMS}
 }
 
 # Create list of linked libraries and dependencies for the package

@@ -79,6 +79,12 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
 help="
 Try \`$me --help' for more information."
 
+# TE exception
+[ "$1" == "te" ] && {
+    echo te
+    exit 0
+}
+
 # Parse command line
 while test $# -gt 0 ; do
   case $1 in
