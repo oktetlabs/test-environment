@@ -92,7 +92,7 @@ if test ! -e Makefile ; then
         PARMS="$PARMS CC=$HOST_CC"
     fi
 
-    PARMS="$PARMS --build=`gcc -dumpmachine` \
+    PARMS="$PARMS \
            TE_BASE=\"$TE_BASE\" \
            TE_PATH=\"$TE_PATH\" \
            TE_M4=\"$TE_BASE/auxdir\" \

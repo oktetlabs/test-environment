@@ -81,7 +81,7 @@ Try \`$me --help' for more information."
 
 # TE exception
 [ "$1" == "te" ] && {
-    echo te
+    echo te-te-te
     exit 0
 }
 

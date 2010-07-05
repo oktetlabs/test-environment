@@ -141,7 +141,7 @@ if test "$KIND" != "TA" ; then
     ADD_CPPFLAGS="$ADD_CPPFLAGS -I${PREFIX}/include "
     ADD_LDFLAGS="$ADD_LDFLAGS -L${PREFIX}/lib "
 fi
-PARMS="$PARMS --build=`gcc -dumpmachine` \
+PARMS="$PARMS \
        TE_BASE=\"$TE_BASE\" \
        TE_M4=\"$TE_BASE/auxdir\" \
        TE_CPPFLAGS=\"${ADD_CPPFLAGS}\" \
