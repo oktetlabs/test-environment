@@ -715,12 +715,23 @@ cwmp_destroy(void *data)
 te_errno
 cwmp_accept_cpe_connection(acs_t *acs, int socket)
 {
+
     if (LIST_EMPTY(&acs->cpe_list))
     {
         RING("%s: conn refused: no CPE for this ACS.", __FUNCTION__);
         return TE_ECONNREFUSED;
     }
-    /* TODO: real check, now accept all, if any CPE registered. */
+
+    if (!acs->ssl)
+    {
+        char buf[1024]; /* seems enough for HTTP header */
+        ssize_t len = sizeof(buf);
+        len = recv(socket, buf, len, MSG_PEEK);
+        if (strncmp(buf, "POST ", 5)) 
+            return TE_ECONNREFUSED; /* It is not POST request */
+        if (strncmp(buf + 5, acs->url, strlen(acs->url))) 
+            return TE_ECONNREFUSED; /* It is not our URL */
+    }
 
     return cwmp_new_session(socket, acs);
 }
