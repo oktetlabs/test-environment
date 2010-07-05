@@ -25,6 +25,7 @@
 # serial 47 AC_PROG_LIBTOOL
 # Debian $Rev: 214 $
 
+AC_DEFUN([AC_SET_CROSS_COMPILING], [cross_compiling=yes])
 
 # AC_PROVIDE_IFELSE(MACRO-NAME, IF-PROVIDED, IF-NOT-PROVIDED)
 # -----------------------------------------------------------
