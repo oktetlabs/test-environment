@@ -150,7 +150,7 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
             }
             else
             {
-                RING("Step test '%s' - unknown", test_name);
+                ERROR("Step test '%s' - unknown", test_name);
                 walker->unknown++;
             }
         }
