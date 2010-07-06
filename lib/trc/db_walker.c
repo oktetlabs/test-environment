@@ -523,7 +523,11 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
 
     if (walker->unknown > 0)
     {
-        ERROR("Iteration is not known");
+        /*
+         * Here an ERROR was logged, but as TRC is often out of date -
+         * tonns of ERRORs in the log are observed
+         */
+        VERB("Iteration is not known");
         /* Test iteration is unknown. No expected result. */
         return NULL;
     }
