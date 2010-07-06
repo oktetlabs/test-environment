@@ -165,7 +165,8 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
     return (walker->unknown == 0);
 }
 
-int (*trc_db_compare_values)(const char *s1, const char *s2) = strcmp;
+int (*trc_db_compare_values)(const char *s1, const char *s2) =
+    trc_db_strcmp_normspace;
 
 static unsigned
 next_token(const char *pos, const char **start, te_bool *is_numeric)
