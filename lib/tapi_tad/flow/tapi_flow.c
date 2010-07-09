@@ -698,23 +698,23 @@ tapi_cfg_extract_link(char *buf)
  * Preprocess textual flow description and
  * interpret values in single quotes.
  *
- * @param flow_spec     Textual flow description
+ * @param param     Textual flow description
  *
- * @return              Preprocessed flow description which could be parsed by
- *                      asn_parse_text(), or NULL if something fails
+ * @return          Preprocessed flow description which could be parsed by
+ *                  asn_parse_text(), or NULL if something fails
  */
 char *
-tapi_flow_preprocess_quotes(const char *flow_spec)
+tapi_flow_preprocess_quotes(const char *param)
 {
     char *open_q   = NULL;          /* Opening quote */
     char *close_q  = NULL;          /* Closing quote */
-    char *src      = (char *)flow_spec;
-    int   buf_size = (strlen(flow_spec) * 2) + 1;
+    char *src      = (char *)param;
+    int   buf_size = (strlen(param) * 2) + 1;
     char *buf      = malloc(buf_size);
     char *dst      = buf;
     char *link     = NULL;
     char *value    = NULL;
-    int   unused   = strlen(flow_spec);
+    int   unused   = strlen(param);
 
     RING("%s() started", __FUNCTION__);
 
@@ -758,7 +758,7 @@ tapi_flow_preprocess_quotes(const char *flow_spec)
         }
 
         /* Check if quoted value already has 'plain:' prefix */
-        if ((open_q > flow_spec) && (*(open_q - 1) != ':'))
+        if ((open_q > param) && (*(open_q - 1) != ':'))
         {
             value = te_sprintf(TAPI_FLOW_PLAIN_VAL_FMT, value);
         }
@@ -799,16 +799,16 @@ tapi_flow_preprocess_quotes(const char *flow_spec)
 /**
  * Preprocess textual flow description and dereference configurator links.
  *
- * @param flow_spec     Textual flow description
+ * @param param     Textual flow description
  *
  * @return              Preprocessed flow description which could be parsed by
  *                      asn_parse_text(), or NULL if something fails
  */
 char *
-tapi_flow_preprocess_links(const char *flow_spec)
+tapi_flow_preprocess_links(const char *param)
 {
-    char *src      = (char *)flow_spec;
-    int   buf_size = strlen(flow_spec) + 1;
+    char *src      = (char *)param;
+    int   buf_size = strlen(param) + 1;
     char *buf      = malloc(buf_size);
     char *dst      = buf;
     char *link     = NULL;
@@ -823,17 +823,17 @@ tapi_flow_preprocess_links(const char *flow_spec)
         return NULL;
     }
 
-    while (flow_spec != NULL)
+    while (param != NULL)
     {
-        if ((src = strstr(flow_spec, TAPI_CFG_LINK_PREFIX)) == NULL)
+        if ((src = strstr(param, TAPI_CFG_LINK_PREFIX)) == NULL)
         {
-            VERB("copy the rest of buffer: %s", flow_spec);
-            strcpy(dst, flow_spec);
+            VERB("copy the rest of buffer: %s", param);
+            strcpy(dst, param);
             break;
         }
 
-        memcpy(dst, flow_spec, src - flow_spec);
-        dst += src - flow_spec;
+        memcpy(dst, param, src - param);
+        dst += src - param;
 
         link  = tapi_cfg_extract_link(src);
         value = tapi_cfg_link_dereference(link);
@@ -857,7 +857,7 @@ tapi_flow_preprocess_links(const char *flow_spec)
         strcpy(dst, value);
 
         dst += strlen(value);
-        flow_spec = src + strlen(link);
+        param = src + strlen(link);
         free(value);
         free(link);
     }
@@ -1410,6 +1410,7 @@ tapi_flow_check_all(tapi_flow_t *flow, const char *traffic_prefix)
     char               *name = NULL;
     int                 rcv_matched;
     int                 rcv_base;
+    int                 errors = 0;
     int                 rc = 0;
 
     RING("%s() started", __FUNCTION__);
@@ -1418,25 +1419,30 @@ tapi_flow_check_all(tapi_flow_t *flow, const char *traffic_prefix)
          traffic != NULL;
          traffic = SLIST_NEXT(traffic, link))
     {
-        if ((traffic_prefix == NULL) || 
+        if ((traffic_prefix != NULL) &&
             (strncmp(traffic->name, traffic_prefix,
              strlen(traffic_prefix)) != 0))
             continue;
 
-        if ((rc = tapi_flow_check(flow, name,
+        if ((rc = tapi_flow_check(flow, traffic->name,
                                   &rcv_matched, &rcv_base)) != 0)
         {
-            ERROR("Failed to perform '%s' traffic exchange", name);
-            return rc;
+            ERROR_VERDICT("Failed to perform '%s' traffic exchange",
+                          traffic->name);
+            errors++;
         }
 
         if (rcv_matched != rcv_base)
         {
-            ERROR("No matched packets received for '%s' traffic exchange");
-            return rc;
+            ERROR_VERDICT("No matched packets received for '%s' "
+                          "traffic exchange", traffic->name);
+            errors++;
         }
     }
 
-    return 0;
+    if (errors > 0)
+        return TE_RC(TE_TAPI, TE_ETIMEDOUT);
+    else
+        return 0;
 }
 
