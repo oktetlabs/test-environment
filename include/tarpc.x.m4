@@ -903,6 +903,70 @@ struct tarpc_connect_in {
 
 typedef struct tarpc_int_retval_out tarpc_connect_out;
 
+/* telephony_open_channel() */
+struct tarpc_telephony_open_channel_in {
+    struct tarpc_in_arg     common;
+    
+    tarpc_int               port;       /**< TA-local telephony card port */   
+};                                               
+
+typedef struct tarpc_int_retval_out tarpc_telephony_open_channel_out;
+
+/* telephony_close_channel() */
+struct tarpc_telephony_close_channel_in {
+    struct tarpc_in_arg     common;
+    
+    tarpc_int               chan;       /**< TA-local telephony channel */   
+};                                               
+
+typedef struct tarpc_int_retval_out tarpc_telephony_close_channel_out;
+
+/* telephony_pickup() */
+struct tarpc_telephony_pickup_in {
+    struct tarpc_in_arg     common;
+    
+    tarpc_int               chan;       /**< TA-local telephony channel*/   
+};                                               
+
+typedef struct tarpc_int_retval_out tarpc_telephony_pickup_out;
+
+/* telephony_hangup() */
+struct tarpc_telephony_hangup_in {
+    struct tarpc_in_arg     common;
+    
+    tarpc_int               chan;       /**< TA-local telephony channel */
+};                                               
+
+typedef struct tarpc_int_retval_out tarpc_telephony_hangup_out;
+
+/* telephony_check_dial_tone() */
+struct tarpc_telephony_check_dial_tone_in {
+    struct tarpc_in_arg     common;
+    
+    tarpc_int               chan;       /**< TA-local telephony channel */   
+};                                               
+
+typedef struct tarpc_int_retval_out tarpc_telephony_check_dial_tone_out;
+
+/* telephony_dial_number() */
+struct tarpc_telephony_dial_number_in {
+    struct tarpc_in_arg     common;
+    
+    tarpc_int               chan;       /**< TA-local telephony channel */
+    string                  number<>;   /**< Telephone number to dial */
+};
+
+typedef struct tarpc_int_retval_out tarpc_telephony_dial_number_out;
+
+/* telephony_call_wait() */
+struct tarpc_telephony_call_wait_in {
+    struct tarpc_in_arg     common;
+    
+    tarpc_int               chan;       /**< TA-local telephony channel */   
+};                                               
+
+typedef struct tarpc_int_retval_out tarpc_telephony_call_wait_out;
+
 /* ConnectEx() */
 struct tarpc_connect_ex_in {
     struct tarpc_in_arg     common;
@@ -4149,6 +4213,14 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(close_event)
         RPC_DEF(create_overlapped)
         RPC_DEF(delete_overlapped)
+
+        RPC_DEF(telephony_open_channel)
+        RPC_DEF(telephony_close_channel)
+        RPC_DEF(telephony_pickup)
+        RPC_DEF(telephony_hangup)
+        RPC_DEF(telephony_check_dial_tone)
+        RPC_DEF(telephony_dial_number)
+        RPC_DEF(telephony_call_wait)
 
         RPC_DEF(connect_ex)
         RPC_DEF(wsa_accept)

@@ -705,6 +705,63 @@ TARPC_FUNC(gettimeofday,
 }
 )
 
+/*-------------- telephony_check_dial_tone() -----------------------*/
+
+TARPC_FUNC(telephony_open_channel, {},
+{
+    MAKE_CALL(out->retval = func(in->port));
+}
+)
+
+/*-------------- telephony_check_dial_tone() -----------------------*/
+
+TARPC_FUNC(telephony_close_channel, {},
+{
+    MAKE_CALL(out->retval = func(in->chan));
+}
+)
+
+/*-------------- telephony_pickup() -----------------------*/
+
+TARPC_FUNC(telephony_pickup, {},
+{
+    MAKE_CALL(out->retval = func(in->chan));
+}
+)
+
+/*-------------- telephony_hangup() -----------------------*/
+
+TARPC_FUNC(telephony_hangup, {},
+{
+    MAKE_CALL(out->retval = func(in->chan));
+}
+)
+
+/*-------------- telephony_check_dial_tone() -----------------------*/
+
+TARPC_FUNC(telephony_check_dial_tone, {},
+{
+    MAKE_CALL(out->retval = func(in->chan));
+}
+)
+
+/*-------------- telephony_dial_number() -----------------------*/
+
+TARPC_FUNC(telephony_dial_number, {},
+{
+    MAKE_CALL(out->retval = func(in->chan, in->number));
+}
+)
+
+/*-------------- telephony_dial_number() -----------------------*/
+
+TARPC_FUNC(telephony_call_wait, {},
+{
+    MAKE_CALL(out->retval = func(in->chan));
+}
+)
+
+
 /*-------------- socket() ------------------------------*/
 
 TARPC_FUNC(socket, {},

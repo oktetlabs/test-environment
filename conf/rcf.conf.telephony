@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<rcf>
+  <ta name="Agt_A" type="linux" fake="no" synch_time="no" rebootable="no"
+      rcflib="rcfunix" confstr="anor:18001:sudo:"/>
+</rcf>
+

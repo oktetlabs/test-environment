@@ -22,7 +22,7 @@ noinst_HEADERS = unix_internal.h
 
 taexec_PROGRAMS = ta
 
-ta_SOURCES = main.c ftp_routines.c log_serial.c log_remote.c
+ta_SOURCES = main.c ftp_routines.c log_serial.c log_remote.c telephony.c
 
 ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch \
            -l$(TAD) $(TE_LDADD) \
@@ -31,7 +31,7 @@ ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch \
 
 CLEANFILES = symtbl.c
 
-SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o log_remote.o
+SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o log_remote.o telephony.o
 SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib$(TAD).a \

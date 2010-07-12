@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<tester_cfg version="1.0">
+    
+  <maintainer mailto="Evgeny.Omelchenko@oktetlabs.ru"/>
+
+  <description>All telephony test on TE itself</description>
+    
+  <suite name="telephony"/>
+
+  <run>
+    <package name="telephony"/>
+  </run>
+</tester_cfg>

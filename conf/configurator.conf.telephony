@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+<history>
+  <register>
+    <object oid="/agent/env" access="read_create" type="string"/>
+    <object oid="/agent/uname" access="read_only" type="string"/>
+    <object oid="/agent/ip4_fw" access="read_write" type="integer">
+      <depends oid="/agent/rsrc"/>
+    </object>
+    <object oid="/agent/ip6_fw" access="read_write" type="integer">
+      <depends oid="/agent/rsrc"/>
+    </object>
+    <object oid="/agent/route" access="read_create" type="address">
+      <depends oid="/agent/interface"/>
+      <depends oid="/agent/interface/status"/>
+      <depends oid="/agent/interface/net_addr"/>
+      <depends oid="/agent/rsrc"/>
+    </object>
+    <object oid="/agent/route/mtu" access="read_write" type="integer"/>
+    <object oid="/agent/route/win" access="read_write" type="integer"/>
+    <object oid="/agent/route/irtt" access="read_write" type="integer"/>
+    <object oid="/agent/route/dev" access="read_write" type="string"/>
+    <object oid="/agent/rpcserver" access="read_create" type="string"/>
+    <object oid="/agent/user" access="read_create" type="none"/>
+  </register>
+
+  <register>
+    <object oid="/agent/interface"
+            access="read_only" type="none" >
+      <depends oid="/agent/rsrc"/>
+      <depends oid="/agent/interface/vlans" scope="object"/>
+    </object>
+    <object oid="/agent/interface/index"
+            access="read_only" type="integer"/>
+    <object oid="/agent/interface/net_addr"
+            access="read_create" type="integer">
+      <depends oid="/agent/interface/link_addr"/>
+    </object>
+    <object oid="/agent/interface/net_addr/broadcast"
+            access="read_write" type="address"/>
+    <object oid="/agent/interface/link_addr"
+            access="read_write" type="address"/>
+    <object oid="/agent/interface/bcast_link_addr"
+            access="read_write" type="address"/>
+    <object oid="/agent/interface/arp"
+            access="read_write" type="integer"/>
+    <object oid="/agent/interface/mtu"
+            access="read_write" type="integer"/>
+    <object oid="/agent/interface/ip4_ttl"
+            access="read_write" type="integer"/>
+    <object oid="/agent/interface/status"
+            access="read_write" type="integer"/>
+    <object oid="/agent/interface/neigh_static" access="read_create" 
+            type="address">
+      <depends oid="/agent/interface"/>
+      <depends oid="/agent/interface/status"/>
+    </object>
+    <object oid="/agent/interface/neigh_dynamic" access="read_create" 
+            type="address" volatile="true">
+      <depends oid="/agent/interface"/>
+      <depends oid="/agent/interface/status"/>
+    </object>
+    <object oid="/agent/interface/neigh_dynamic/state" access="read_only" 
+            type="integer" volatile="true"/>
+  </register>
+  
+  <register>
+      <object oid="/agent/interface/vlans" access="read_create"
+          type="none"/>
+      <object oid="/agent/interface/vlans/ifname" access="read_only"
+          type="string"/>
+  </register>
+
+  <register>
+      <object oid="/agent/interface/phy"
+              access="read_only" type="none"/>
+      <object oid="/agent/interface/phy/autoneg_admin"
+              access="read_write" type="integer"/>
+      <object oid="/agent/interface/phy/autoneg_oper"
+              access="read_only" type="integer" volatile="true"/>
+      <object oid="/agent/interface/phy/duplex_admin"
+              access="read_write" type="string">
+          <depends oid="/agent/interface/phy/autoneg_admin"/>
+          <depends oid="/agent/interface/phy/modes/speed/duplex"/>
+      </object>
+      <object oid="/agent/interface/phy/duplex_oper"
+              access="read_only" type="string">
+      </object>
+        <object oid="/agent/interface/phy/speed_admin"
+              access="read_write" type="integer">
+          <depends oid="/agent/interface/phy/autoneg_admin"/>
+          <depends oid="/agent/interface/phy/modes/speed/duplex"/>
+      </object>        
+      <object oid="/agent/interface/phy/speed_oper"
+              access="read_only" type="integer" volatile="true">
+      </object>
+      <object oid="/agent/interface/phy/modes"
+              access="read_only" type="none"/>
+      <object oid="/agent/interface/phy/modes/speed"
+              access="read_only" type="none"/>
+      <object oid="/agent/interface/phy/modes/speed/duplex"
+              access="read_write" type="integer"/>
+      <object oid="/agent/interface/phy/state"
+              access="read_only" type="integer" volatile="true">
+      </object>
+  </register>
+
+  <register>
+    <object oid="/net" access="read_create" type="none"/>
+    <object oid="/net/ip4_subnet" access="read_create" type="address"/>
+    <object oid="/net/node" access="read_create" type="string"/>
+    <object oid="/net/node/type" access="read_create" type="integer"/>
+    <object oid="/net/node/ip4_address" access="read_create"
+            type="address"/>
+  </register>
+
+  <register>
+    <object oid="/net_pool"
+            access="read_create" type="none"/>
+    <object oid="/net_pool/entry"
+            access="read_create" type="integer"/>
+    <object oid="/net_pool/entry/prefix"
+            access="read_write" type="integer"/>
+    <object oid="/net_pool/entry/n_entries"
+            access="read_write" type="integer"/>
+    <object oid="/net_pool/entry/pool"
+            access="read_write" type="none"/>
+    <object oid="/net_pool/entry/pool/entry"
+            access="read_create" type="integer"/>
+  </register>
+
+  <register>
+    <object oid="/local" access="read_create" type="none"/>
+    <object oid="/local/env" access="read_create" type="string"/>
+  </register>
+
+  <register>
+    <object oid="/local/prologue_sleep"
+            access="read_create" type="integer"/>
+    <object oid="/local/socklib"
+            access="read_create" type="string"/>
+    <object oid="/local/libdir"
+            access="read_create" type="string"/>
+    <object oid="/local/use_static_arp"
+            access="read_create" type="integer"/>
+  </register>
+
+  <register>
+    <object oid="/volatile" access="read_create" type="none"
+            volatile="true"/>
+    <object oid="/volatile/sockaddr_port" access="read_create"
+            type="integer" volatile="true"/>
+    <object oid="/volatile/ta_sockets" 
+            access="read_create" type="string" volatile="true"/>
+    <object oid="/rpcserver_sid" 
+            access="read_create" type="integer" volatile="true"/>
+  </register>
+
+  <add>
+    
+    <instance oid="/conf_delay:route" value="/agent/route"/>
+    <instance oid="/conf_delay:route/ta:" value="5000"/>
+    <instance oid="/conf_delay:if_status"
+              value="/agent/interface/status"/>
+    <instance oid="/conf_delay:if_status/ta:" value="5000"/>
+
+    <instance oid="/conf_delay:phy"
+              value="/agent/interface/phy"/>
+    <instance oid="/conf_delay:phy/ta:" value="5000"/>
+    <instance oid="/conf_delay:phy_autoneg"
+              value="/agent/interface/phy/autoneg_admin"/>
+    <instance oid="/conf_delay:phy_autoneg/ta:" value="5000"/>
+    <instance oid="/conf_delay:phy_duplex"
+              value="/agent/interface/phy/duplex_admin"/>
+    <instance oid="/conf_delay:phy_duplex/ta:" value="5000"/>
+    <instance oid="/conf_delay:phy_speed"
+              value="/agent/interface/phy/speed_admin"/>
+    <instance oid="/conf_delay:phy_speed/ta:" value="5000"/>
+    <instance oid="/conf_delay:phy_state"
+              value="/agent/interface/phy/state"/>
+    <instance oid="/conf_delay:phy_state/ta:" value="5000"/>
+    <instance oid="/conf_delay:phy_modes"
+              value="/agent/interface/phy/modes/speed/duplex"/>
+    <instance oid="/conf_delay:phy_modes/ta:" value="5000"/>
+
+  </add>
+  <add>
+    <instance oid="/agent:Agt_A/rsrc:eth2" 
+              value="/agent:Agt_A/interface:eth2"/>
+  </add>
+    <add>
+    <instance oid="/volatile:"/>
+    <instance oid="/volatile:/sockaddr_port:" value="0"/>
+  </add>
+
+</history>

@@ -1,5 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <trc_db>
+  <test name="telephony" type="package">
+    <objective>Tests on telephony functionality.</objective>
+    <notes/>
+    <iter result="PASSED">
+      <notes/>
+      <test name="check_dial_tone" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <arg name="port">1</arg>
+          <notes/>
+        </iter>
+        <iter result="PASSED">
+          <arg name="port">2</arg>
+          <notes/>
+        </iter>
+      </test>
+      <test name="make_call" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <arg name="port_from">1</arg>
+          <arg name="port_to">2</arg>
+          <arg name="number">11#</arg>
+          <notes/>
+        </iter>
+        <iter result="PASSED">
+          <arg name="port_from">2</arg>
+          <arg name="port_to">1</arg>
+          <arg name="number">10#</arg>
+          <notes/>
+        </iter>
+      </test>
+    </iter>
+  </test>
   <test name="rcftest" type="package">
     <objective>Tests on RCF functionality.</objective>
     <notes/>

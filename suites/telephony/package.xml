@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package version="1.0">
+
+  <description>Telephony test.</description>
+
+  <author mailto="Evgeny.Omelchenko@oktetlabs.ru"/>
+
+  <session track_conf="silent">
+    <run>
+      <script name="check_dial_tone"/>
+      <arg name="port">
+        <value>1</value>
+        <value>2</value>
+      </arg>
+    </run>
+    <run>
+      <script name="make_call"/>
+      <arg name="port_from" list="">
+        <value>1</value>
+        <value>2</value>
+      </arg>
+      <arg name="port_to" list="">
+        <value>2</value>
+        <value>1</value>
+      </arg>
+      <arg name="number" list="">
+        <value>11#</value>
+        <value>10#</value>
+      </arg>
+
+     </run>
+    </session>
+</package>

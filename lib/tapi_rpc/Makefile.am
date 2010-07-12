@@ -15,13 +15,13 @@ include_HEADERS= \
     tapi_rpc_signal.h \
     tapi_rpc_socket.h \
     tapi_rpc_stdio.h \
+    tapi_rpc_telephony.h \
     tapi_rpc_unistd.h \
     tapi_rpc_winsock2.h \
     tapi_rpc_client_server.h \
     tapi_rpcsock_macros.h \
     tapi_rpc_params.h \
-    tapi_rpc_internal.h 
-    
+    tapi_rpc_internal.h  
 
 lib_LTLIBRARIES=libtapi_rpc.la
 
@@ -35,8 +35,10 @@ libtapi_rpc_la_SOURCES= \
     signal.c \
     socket.c \
     stdio.c \
+    telephony.c \
     unistd.c \
-    wsa.c 
+    wsa.c
+
 
 install-exec-hook:
 	touch -c -r libtapi_rpc.la $(DESTDIR)/$(libdir)/libtapi_rpc.*
