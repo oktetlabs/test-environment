@@ -534,6 +534,8 @@ typedef enum rpc_ioctl_code {
 
     RPC_SIOCGIFCONF,        /**< Get the list of network interfaces
                                  and their configuration */
+    RPC_SIOCGIFNAME,
+    RPC_SIOCGIFINDEX,
     RPC_SIOCGIFFLAGS,       /**< Get interface flags */
     RPC_SIOCSIFFLAGS,       /**< Set interface flags */
     RPC_SIOCGIFADDR,        /**< Get the network interface address */

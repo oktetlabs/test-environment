@@ -2585,6 +2585,21 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 #endif
                     break;
 
+                case RPC_SIOCGIFNAME:
+                    memcpy(out->req.req_val[0].ioctl_request_u.req_ifreq.
+                           rpc_ifr_name.rpc_ifr_name_val,
+                           req->ifreq.ifr_name,
+                           sizeof(req->ifreq.ifr_name));
+                    out->req.req_val[0].ioctl_request_u.req_ifreq.
+                            rpc_ifr_name.rpc_ifr_name_len =
+                            sizeof(req->ifreq.ifr_name);
+                    break;
+
+                case RPC_SIOCGIFINDEX:
+                    out->req.req_val[0].ioctl_request_u.req_ifreq.
+                            rpc_ifr_ifindex = req->ifreq.ifr_ifindex;
+                    break;
+
                 case RPC_SIOCGIFADDR:
                 case RPC_SIOCSIFADDR:
                 case RPC_SIOCGIFNETMASK:

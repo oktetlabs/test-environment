@@ -261,6 +261,7 @@ struct tarpc_ifreq {
     char            rpc_ifr_name<>; /**< Interface name */
     struct tarpc_sa rpc_ifr_addr;   /**< Different interface addresses */
     tarpc_int       rpc_ifr_flags;  /**< Interface flags */
+    tarpc_int       rpc_ifr_ifindex;/**< Interface index */
     uint32_t        rpc_ifr_mtu;    /**< Interface MTU */
     tarpc_ethtool   rpc_ifr_ethtool; /**< Ethtool command structure */
 };
