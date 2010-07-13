@@ -58,7 +58,10 @@ main(int argc, char *argv[])
 
     chan = rpc_telephony_open_channel(pco, port);
     rpc_telephony_pickup(pco, chan);
-    rpc_telephony_check_dial_tone(pco, chan, &state);
+
+    RPC_AWAIT_IUT_ERROR(pco);
+    if (rpc_telephony_check_dial_tone(pco, chan, &state) < 0)
+        TEST_VERDICT("unable to check dial tone on port %d", port);
     
     if (state != TRUE)
         TEST_FAIL("there is no dial tone on port %d", port);
