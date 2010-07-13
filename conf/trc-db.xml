@@ -21,14 +21,14 @@
         <objective/>
         <notes/>
         <iter result="PASSED">
-          <arg name="port_from">1</arg>
-          <arg name="port_to">2</arg>
+          <arg name="port_src">1</arg>
+          <arg name="port_dst">2</arg>
           <arg name="number">11#</arg>
           <notes/>
         </iter>
         <iter result="PASSED">
-          <arg name="port_from">2</arg>
-          <arg name="port_to">1</arg>
+          <arg name="port_dst">2</arg>
+          <arg name="port_src">1</arg>
           <arg name="number">10#</arg>
           <notes/>
         </iter>

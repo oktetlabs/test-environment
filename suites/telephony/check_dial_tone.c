@@ -57,22 +57,17 @@ main(int argc, char *argv[])
     rcf_rpc_server_create("Agt_A", "First", &pco);
 
     chan = rpc_telephony_open_channel(pco, port);
-    
     rpc_telephony_pickup(pco, chan);
-    
-    if (rpc_telephony_check_dial_tone(pco, chan, &state))
-        TEST_FAIL("failed to check dial tone on port %d", port);
+    rpc_telephony_check_dial_tone(pco, chan, &state);
     
     if (state != TRUE)
         TEST_FAIL("there is no dial tone on port %d", port);
 
-    rpc_telephony_hangup(pco, chan);
-
-    rpc_telephony_close_channel(pco, chan);
-
     TEST_SUCCESS;
 
 cleanup:
+    rpc_telephony_hangup(pco, chan);
+    rpc_telephony_close_channel(pco, chan);
 
     TEST_END;
 }

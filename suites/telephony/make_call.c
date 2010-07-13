@@ -43,40 +43,39 @@
 int
 main(int argc, char *argv[])
 {
-    int chan_iut;
-    int chan_aux;
-    int port_from;
-    int port_to;
+    int chan_src;
+    int chan_dst;
+    int port_src;
+    int port_dst;
     char *number;
-    rcf_rpc_server *pco_iut = NULL;
-    rcf_rpc_server *pco_aux = NULL;
+    rcf_rpc_server *pco_src = NULL;
+    rcf_rpc_server *pco_dst = NULL;
 
     TEST_START; 
    
-    TEST_GET_INT_PARAM(port_from);
-    TEST_GET_INT_PARAM(port_to);
+    TEST_GET_INT_PARAM(port_src);
+    TEST_GET_INT_PARAM(port_dst);
     TEST_GET_STRING_PARAM(number);
 
 
-    rcf_rpc_server_create("Agt_A", "First", &pco_iut);
-    rcf_rpc_server_create("Agt_A", "Second", &pco_aux);
+    rcf_rpc_server_create("Agt_A", "First", &pco_src);
+    rcf_rpc_server_create("Agt_A", "Second", &pco_dst);
 
-    chan_iut = rpc_telephony_open_channel(pco_iut, port_from);
-    chan_aux = rpc_telephony_open_channel(pco_aux, port_to);
+    chan_src = rpc_telephony_open_channel(pco_src, port_src);
+    chan_dst = rpc_telephony_open_channel(pco_dst, port_dst);
     
-    rpc_telephony_pickup(pco_iut, chan_iut);
-    sleep(2);
-    rpc_telephony_dial_number(pco_iut, chan_iut, number);
-    rpc_telephony_call_wait(pco_aux, chan_aux);
-    rpc_telephony_pickup(pco_aux, chan_aux);
-    rpc_telephony_hangup(pco_aux, chan_aux);
-    rpc_telephony_hangup(pco_iut, chan_iut);
-    rpc_telephony_close_channel(pco_iut, chan_iut);
-    rpc_telephony_close_channel(pco_aux, chan_aux);
+    rpc_telephony_pickup(pco_src, chan_src);
+    rpc_telephony_dial_number(pco_src, chan_src, number);
+    rpc_telephony_call_wait(pco_dst, chan_dst);
+    rpc_telephony_pickup(pco_dst, chan_dst);
 
     TEST_SUCCESS;
 
 cleanup:
+    rpc_telephony_hangup(pco_dst, chan_dst);
+    rpc_telephony_hangup(pco_src, chan_src);
+    rpc_telephony_close_channel(pco_dst, chan_dst);
+    rpc_telephony_close_channel(pco_src, chan_src);
 
     TEST_END;
 }

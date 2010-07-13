@@ -47,9 +47,9 @@
 int
 rpc_telephony_open_channel(rcf_rpc_server *rpcs, int port)
 {
-    rcf_rpc_op op;
-    tarpc_telephony_open_channel_in  in;
-    tarpc_telephony_open_channel_out out;
+    rcf_rpc_op                          op;
+    tarpc_telephony_open_channel_in     in;
+    tarpc_telephony_open_channel_out    out;
     
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -76,9 +76,9 @@ rpc_telephony_open_channel(rcf_rpc_server *rpcs, int port)
 int
 rpc_telephony_close_channel(rcf_rpc_server *rpcs, int chan)
 {
-    rcf_rpc_op op;
-    tarpc_telephony_close_channel_in  in;
-    tarpc_telephony_close_channel_out out;
+    rcf_rpc_op                          op;
+    tarpc_telephony_close_channel_in    in;
+    tarpc_telephony_close_channel_out   out;
     
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -105,9 +105,9 @@ rpc_telephony_close_channel(rcf_rpc_server *rpcs, int chan)
 int
 rpc_telephony_pickup(rcf_rpc_server *rpcs, int chan)
 {
-    rcf_rpc_op op;
-    tarpc_telephony_pickup_in  in;
-    tarpc_telephony_pickup_out out;
+    rcf_rpc_op                  op;
+    tarpc_telephony_pickup_in   in;
+    tarpc_telephony_pickup_out  out;
     
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -134,9 +134,9 @@ rpc_telephony_pickup(rcf_rpc_server *rpcs, int chan)
 int
 rpc_telephony_hangup(rcf_rpc_server *rpcs, int chan)
 {
-    rcf_rpc_op op;
-    tarpc_telephony_hangup_in  in;
-    tarpc_telephony_hangup_out out;
+    rcf_rpc_op                  op;
+    tarpc_telephony_hangup_in   in;
+    tarpc_telephony_hangup_out  out;
     
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -163,7 +163,7 @@ rpc_telephony_hangup(rcf_rpc_server *rpcs, int chan)
 int
 rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, int chan, te_bool *state)
 {
-    rcf_rpc_op op;
+    rcf_rpc_op                          op;
     tarpc_telephony_check_dial_tone_in  in;
     tarpc_telephony_check_dial_tone_out out;
     
@@ -198,7 +198,7 @@ rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, int chan, te_bool *state)
 int
 rpc_telephony_dial_number(rcf_rpc_server *rpcs, int chan, char *number)
 {
-    rcf_rpc_op op;
+    rcf_rpc_op                      op;
     tarpc_telephony_dial_number_in  in;
     tarpc_telephony_dial_number_out out;
     
@@ -229,9 +229,9 @@ int
 rpc_telephony_call_wait(rcf_rpc_server *rpcs, int chan)
 {
 
-    rcf_rpc_op op;
-    tarpc_telephony_call_wait_in  in;
-    tarpc_telephony_call_wait_out out;
+    rcf_rpc_op                      op;
+    tarpc_telephony_call_wait_in    in;
+    tarpc_telephony_call_wait_out   out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));

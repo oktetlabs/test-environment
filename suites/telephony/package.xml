@@ -15,11 +15,11 @@
     </run>
     <run>
       <script name="make_call"/>
-      <arg name="port_from" list="">
+      <arg name="port_src" list="">
         <value>1</value>
         <value>2</value>
       </arg>
-      <arg name="port_to" list="">
+      <arg name="port_dst" list="">
         <value>2</value>
         <value>1</value>
       </arg>

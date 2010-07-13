@@ -80,16 +80,16 @@ extern int rpc_telephony_pickup(rcf_rpc_server *rpcs, int chan);
 extern int rpc_telephony_hangup(rcf_rpc_server *rpcs, int chan);
 
 /**
- * Check dial tone on specified port.
+ * Check dial tone on specified channel.
  *
  * @param rpcs      RPC server handle
  * @param chan      channel file descriptor
- * @param state     pointer on result of telephony_check_dial_tone()
+ * @param state     pointer on result of telephony_check_dial_tone() (OUT)
  *
  * @return 0 on success or -1 on failure
  */
-extern int rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs,
-                               int chan, te_bool *state);
+extern int rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, 
+                                         int chan, te_bool *state);
 
 /**
   * Dial number
@@ -100,8 +100,8 @@ extern int rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs,
   *
   * @return 0 on success or -1 on failure
   */
-extern int rpc_telephony_dial_number(rcf_rpc_server *rpcs,
-                           int chan, char *number);
+extern int rpc_telephony_dial_number(rcf_rpc_server *rpcs, 
+                                     int chan, const char *number);
 
 /**
   * Wait to call on the channel
