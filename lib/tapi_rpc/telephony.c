@@ -196,7 +196,8 @@ rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, int chan, te_bool *state)
 }
 
 int
-rpc_telephony_dial_number(rcf_rpc_server *rpcs, int chan, char *number)
+rpc_telephony_dial_number(rcf_rpc_server *rpcs,
+                          int chan, const char *number)
 {
     rcf_rpc_op                      op;
     tarpc_telephony_dial_number_in  in;

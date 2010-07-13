@@ -61,10 +61,10 @@ main(int argc, char *argv[])
 
     RPC_AWAIT_IUT_ERROR(pco);
     if (rpc_telephony_check_dial_tone(pco, chan, &state) < 0)
-        TEST_VERDICT("unable to check dial tone on port %d", port);
+        TEST_FAIL("unable to check dial tone on port %d", port);
     
     if (state != TRUE)
-        TEST_FAIL("there is no dial tone on port %d", port);
+        TEST_VERDICT("there is no dial tone on port %d", port);
 
     TEST_SUCCESS;
 
