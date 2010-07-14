@@ -4609,6 +4609,7 @@ iomux_return_iterate(iomux_func iomux, iomux_state *st, iomux_return *ret,
                 }
             }
             it = IOMUX_RETURN_ITERATOR_END;
+            break;
         }
 
         case FUNC_POLL:
@@ -4625,15 +4626,20 @@ iomux_return_iterate(iomux_func iomux, iomux_state *st, iomux_return *ret,
                 goto out;
             }
             it = IOMUX_RETURN_ITERATOR_END;
+            break;
         }
 
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
+            if (it >= ret->epoll.nevents)
+            {
+                it = IOMUX_RETURN_ITERATOR_END;
+                break;
+            }
             *p_fd = ret->epoll.events[it].data.fd;
             *p_events = ret->epoll.events[it].events;
             it++;
-            if (it >= ret->epoll.nevents)
-                it = IOMUX_RETURN_ITERATOR_END;
+            break;
 #endif
         default:
             it = IOMUX_RETURN_ITERATOR_END;
@@ -4806,7 +4812,9 @@ flooder(tarpc_flooder_in *in)
             return -1;
         }
 
-        for (it = IOMUX_RETURN_ITERATOR_START;
+        it = IOMUX_RETURN_ITERATOR_START;
+        for (it = iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
+                                       it, &fd, &events);
              it != IOMUX_RETURN_ITERATOR_END;
              it = iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
                                        it, &fd, &events))
