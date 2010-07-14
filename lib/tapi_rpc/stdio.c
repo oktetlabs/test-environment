@@ -764,7 +764,7 @@ rpc_getenv(rcf_rpc_server *rpcs, const char *name)
  * @param value         new value
  * @param overwrite     0, value of the existing variable is not changed
  *
- * @return variable value (memory is allocated by the function) or NULL
+ * @return return code
  */
 int 
 rpc_setenv(rcf_rpc_server *rpcs, const char *name, 
@@ -794,6 +794,42 @@ rpc_setenv(rcf_rpc_server *rpcs, const char *name,
     TAPI_RPC_LOG("RPC (%s,%s): setenv(%s, %s, %d) -> %d (%s)",
                  rpcs->ta, rpcs->name,
                  name, val, overwrite,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 
+    RETVAL_INT(setenv, out.retval);
+}
+
+/**
+ * Remove environment variable.
+ *
+ * @param rpcs          RPC server handle
+ * @param name          variable name
+ *
+ * @return return code
+ */
+int 
+rpc_unsetenv(rcf_rpc_server *rpcs, const char *name)
+{
+    tarpc_unsetenv_in  in;
+    tarpc_unsetenv_out out;
+    
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL || name == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_RPC_PTR(setenv, RPC_NULL);
+    }
+    
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.name = (char *)name;
+
+    rcf_rpc_call(rpcs, "unsetenv", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): unsetenv(%s) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 name,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
                  
     RETVAL_INT(setenv, out.retval);

@@ -2887,6 +2887,20 @@ struct tarpc_setenv_out {
     tarpc_int retval;
 };
 
+/* unsetenv() */
+struct tarpc_unsetenv_in {
+    struct tarpc_in_arg common;
+    
+    string     name<>;
+};
+
+
+struct tarpc_unsetenv_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_int retval;
+};
+
 /* uname() */
 
 struct tarpc_utsname {

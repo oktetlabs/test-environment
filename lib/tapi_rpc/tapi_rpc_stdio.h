@@ -255,6 +255,16 @@ extern char *rpc_getenv(rcf_rpc_server *rpcs, const char *name);
 extern int rpc_setenv(rcf_rpc_server *rpcs, 
                       const char *name, const char *value, int overwrite);
 
+/**
+ * Remove environment variable.
+ *
+ * @param rpcs          RPC server handle
+ * @param name          variable name
+ *
+ * @return return code
+ */
+extern int rpc_unsetenv(rcf_rpc_server *rpcs, const char *name);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

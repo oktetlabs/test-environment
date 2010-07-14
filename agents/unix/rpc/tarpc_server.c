@@ -3623,6 +3623,13 @@ TARPC_FUNC(setenv, {},
 }
 )
 
+/*-------------- unsetenv() --------------------------------*/
+TARPC_FUNC(unsetenv, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in->name));
+}
+)
+
 
 /*-------------- getpwnam() --------------------------------*/
 #define PUT_STR(_field) \
