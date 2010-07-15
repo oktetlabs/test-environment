@@ -382,6 +382,16 @@ ip4_pkt_handler(asn_value *pkt, void *user_param)
                __FUNCTION__, rc);
     plain_pkt.offset = hdr_field;
 
+    rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_TTL, &hdr_field);
+    CHECK_FAIL("%s(): get IP4 TTL fails, rc = %r",
+               __FUNCTION__, rc);
+    plain_pkt.ttl = hdr_field;
+
+    rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_TOS, &hdr_field);
+    CHECK_FAIL("%s(): get IP4 ToS fails, rc = %r",
+               __FUNCTION__, rc);
+    plain_pkt.tos = hdr_field;
+
     rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_MORE_FRAGS, &hdr_field);
     CHECK_FAIL("%s(): get IP4 more_frags flag fails, rc = %r",
                __FUNCTION__, rc);

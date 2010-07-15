@@ -64,6 +64,9 @@ typedef struct tapi_ip4_packet_t {
     int         len;
     uint8_t     ip_proto;
 
+    uint8_t     ttl;
+    uint8_t     tos;
+
     uint8_t    *payload;
     size_t      pld_len;
 
