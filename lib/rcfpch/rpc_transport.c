@@ -887,6 +887,8 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
     (void)tcp_nodelay_enable(s);
 #endif
 
+    fcntl(s, F_SETFD, FD_CLOEXEC); /* Ignore result */
+
     *p_handle = (rpc_transport_handle)s;
 
     return 0;
