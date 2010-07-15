@@ -479,17 +479,6 @@ if test -n "$with_iptables"; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_IPTABLES"
 fi
 
-AC_ARG_WITH([dahdi],
-            AS_HELP_STRING([--with-dahidi],
-                           [enable DAHDI support (default is NO)]),
-            [],
-            [with_dahdi=no])
-
-AS_IF([test x"$with_dahdi" != xno],
-      [AC_DEFINE([WITH_DAHDI_SUPPORT], [], \
-      [Whether to enable DAHDI support]) \
-      EXTRA_LDADD="$EXTRA_LDADD -lm"])
-
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 

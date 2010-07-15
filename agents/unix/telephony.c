@@ -32,17 +32,16 @@
 #include "te_config.h"
 #include "config.h"
 
-#ifdef WITH_DAHDI_SUPPORT
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/fcntl.h>
 #include <sys/ioctl.h>
-#include <dahdi/user.h>
 #include <math.h>
 #include <unistd.h>
 #include <string.h>
 
+#include "dahdi_user.h"
 #include "logger_api.h"
 #include "te_errno.h"
 
@@ -340,4 +339,3 @@ telephony_call_wait(int chan)
     return 0;
 }
 
-#endif /* WITH_DAHDI_SUPPORT */

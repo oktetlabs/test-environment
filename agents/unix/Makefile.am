@@ -24,7 +24,7 @@ taexec_PROGRAMS = ta
 
 ta_SOURCES = main.c ftp_routines.c log_serial.c log_remote.c telephony.c
 
-ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch \
+ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch -lm \
            -l$(TAD) $(TE_LDADD) \
            -lrpcxdr -lrpc_types -lconf_oid -lloggerta -lrcfpch -ltools \
            $(EXTRA_LDADD)
