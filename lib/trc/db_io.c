@@ -626,11 +626,22 @@ get_test_iters(xmlNodePtr *node, trc_test *parent)
     assert(node != NULL);
     assert(parent != NULL);
 
-    while (*node != NULL &&
-           xmlStrcmp((*node)->name, CONST_CHAR2XML("iter")) == 0 &&
-           (rc = alloc_and_get_test_iter(*node, parent)) == 0)
+    for (; *node != NULL; *node = xmlNodeNext(*node))
     {
-        *node = xmlNodeNext(*node);
+        if (xmlStrcmp((*node)->name, CONST_CHAR2XML("iter")) == 0)
+        {
+            if ((rc = alloc_and_get_test_iter(*node, parent)) != 0)
+                break;
+        }
+        else if (xmlStrcmp((*node)->name, CONST_CHAR2XML("include")) == 0)
+        {
+            INFO("%s(): found 'include' entry", __FUNCTION__);
+        }
+        else
+        {
+            /* Unexpected entry found */
+            break;
+        }
     }
 
     return rc;
