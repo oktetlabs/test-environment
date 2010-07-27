@@ -155,9 +155,6 @@ telephony_open_channel(int port)
         return -1;
     }
 
-    /* Ignore getting the phone sound */
-    sleep(2);
-
     return chan;
 }
 
@@ -196,6 +193,9 @@ telephony_pickup(int chan)
         ERROR("picking up failed: errno %d (%s)", errno, strerror(errno));
         return -1;
     }
+
+    /* Ignore getting the phone sound */
+    sleep(2);
 
     return 0;
 }
