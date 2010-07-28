@@ -480,7 +480,8 @@ extern int rpc_select(rcf_rpc_server *rpcs,
  */
 extern int rpc_pselect(rcf_rpc_server *rpcs,
                        int n, rpc_fd_set_p readfds, rpc_fd_set_p writefds,
-                       rpc_fd_set_p exceptfds, struct timespec *timeout,
+                       rpc_fd_set_p exceptfds, 
+                       struct tarpc_timespec *timeout,
                        const rpc_sigset_p sigmask);
 
 

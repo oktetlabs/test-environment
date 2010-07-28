@@ -918,14 +918,12 @@ rpc_select(rcf_rpc_server *rpcs,
 int
 rpc_pselect(rcf_rpc_server *rpcs,
             int n, rpc_fd_set_p readfds, rpc_fd_set_p writefds,
-            rpc_fd_set_p exceptfds, struct timespec *timeout,
+            rpc_fd_set_p exceptfds, struct tarpc_timespec *timeout,
             const rpc_sigset_p sigmask)
 {
     rcf_rpc_op        op;
     tarpc_pselect_in  in;
     tarpc_pselect_out out;
-
-    struct tarpc_timespec tv;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -946,10 +944,8 @@ rpc_pselect(rcf_rpc_server *rpcs,
 
     if (timeout != NULL && rpcs->op != RCF_RPC_WAIT)
     {
-        tv.tv_sec = timeout->tv_sec;
-        tv.tv_nsec = timeout->tv_nsec;
         in.timeout.timeout_len = 1;
-        in.timeout.timeout_val = &tv;
+        in.timeout.timeout_val = timeout;
     }
 
     if ((timeout != NULL) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
@@ -966,7 +962,8 @@ rpc_pselect(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG("RPC (%s,%s)%s: pselect(%d, 0x%x, 0x%x, 0x%x, %s, 0x%x) "
                  "-> %d (%s)", rpcs->ta, rpcs->name,
                  rpcop2str(op), n, (unsigned)readfds, (unsigned)writefds,
-                 (unsigned)exceptfds, timespec2str(timeout),
+                 (unsigned)exceptfds, 
+                 timespec2str((struct timespec *)timeout),
                  (unsigned)sigmask,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 

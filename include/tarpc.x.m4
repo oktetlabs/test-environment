@@ -313,7 +313,7 @@ struct tarpc_sgio {
 /** struct timespec */
 struct tarpc_timespec {
     int32_t     tv_sec;
-    int32_t     tv_nsec;
+    int64_t     tv_nsec;
 };
 
 /** Function gets nothing */
