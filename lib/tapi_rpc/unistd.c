@@ -1224,9 +1224,10 @@ rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
     else
         *str_buf_1 = '\0';
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_ctl(%d, %d, %d, %p%s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_ctl(%d, %s, %d, %p%s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 epfd, oper, fd, event, str_buf_1, out.retval,
+                 epfd, rpc_epoll_ctl_op2str(oper), fd, event,
+                 str_buf_1, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(epoll_ctl, out.retval);

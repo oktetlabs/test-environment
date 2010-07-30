@@ -94,6 +94,18 @@ typedef enum rpc_epoll_evt {
  */
 RPCBITMAP2STR(epoll_event, EPOLL_EVENT_MAPPING_LIST)
 
+
+static inline char *
+rpc_epoll_ctl_op2str(int op)
+{
+    switch (op) {
+        case RPC_EPOLL_CTL_ADD: return "add";
+        case RPC_EPOLL_CTL_DEL: return "del";
+        case RPC_EPOLL_CTL_MOD: return "mod";
+    }
+    return "unknown";
+}
+
 extern unsigned int epoll_event_rpc2h(unsigned int events);
 
 extern unsigned int epoll_event_h2rpc(unsigned int events);
