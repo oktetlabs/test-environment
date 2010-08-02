@@ -108,10 +108,11 @@ extern int rpc_telephony_dial_number(rcf_rpc_server *rpcs,
   *
   * @param rpcs     RPC server handle
   * @param chan     channel file descriptor
+  * @param timeout  timeout in microsecond
   *
   * @return 0 on success or -1 on failure
   */
-extern int rpc_telephony_call_wait(rcf_rpc_server *rpcs, int chan);
+extern int rpc_telephony_call_wait(rcf_rpc_server *rpcs, int chan, int timeout);
 
 #ifdef __cplusplus
 } /* extern "C" */

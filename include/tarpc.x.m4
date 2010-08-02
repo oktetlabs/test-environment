@@ -964,6 +964,7 @@ struct tarpc_telephony_call_wait_in {
     struct tarpc_in_arg     common;
     
     tarpc_int               chan;       /**< TA-local telephony channel */   
+    tarpc_int               timeout;    /**< Timeout in microsecond */   
 };                                               
 
 typedef struct tarpc_int_retval_out tarpc_telephony_call_wait_out;

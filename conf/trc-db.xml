@@ -24,12 +24,19 @@
           <arg name="port_src">1</arg>
           <arg name="port_dst">2</arg>
           <arg name="number">11#</arg>
+          <arg name="timeout">3000</arg>
           <notes/>
         </iter>
         <iter result="PASSED">
+          <results>
+            <result value="FAILED">
+              <verdict>Internal call have been maked but not catched</verdict>
+            </result>
+          </results>
           <arg name="port_dst">2</arg>
           <arg name="port_src">1</arg>
           <arg name="number">10#</arg>
+          <arg name="timeout">3000</arg>
           <notes/>
         </iter>
       </test>

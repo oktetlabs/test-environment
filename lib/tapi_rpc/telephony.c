@@ -227,7 +227,7 @@ rpc_telephony_dial_number(rcf_rpc_server *rpcs,
 }
 
 int
-rpc_telephony_call_wait(rcf_rpc_server *rpcs, int chan)
+rpc_telephony_call_wait(rcf_rpc_server *rpcs, int chan, int timeout)
 {
 
     rcf_rpc_op                      op;
@@ -246,12 +246,13 @@ rpc_telephony_call_wait(rcf_rpc_server *rpcs, int chan)
 
     op = rpcs->op;
     in.chan = chan;
+    in.timeout = timeout;
 
     rcf_rpc_call(rpcs, "telephony_call_wait", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: telephony_call_wait(%d) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: telephony_call_wait(%d, %d) "
                  "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 chan, out.retval,
+                 chan, timeout, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(telephony_call_wait, out.retval);

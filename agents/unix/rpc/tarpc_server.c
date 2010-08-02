@@ -757,7 +757,7 @@ TARPC_FUNC(telephony_dial_number, {},
 
 TARPC_FUNC(telephony_call_wait, {},
 {
-    MAKE_CALL(out->retval = func(in->chan));
+    MAKE_CALL(out->retval = func(in->chan, in->timeout));
 }
 )
 

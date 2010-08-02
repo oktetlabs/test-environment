@@ -47,7 +47,9 @@ main(int argc, char *argv[])
     int chan_dst;
     int port_src;
     int port_dst;
+    int timeout;
     char *number;
+    te_errno errno;
     rcf_rpc_server *pco_src = NULL;
     rcf_rpc_server *pco_dst = NULL;
 
@@ -56,6 +58,7 @@ main(int argc, char *argv[])
     TEST_GET_INT_PARAM(port_src);
     TEST_GET_INT_PARAM(port_dst);
     TEST_GET_STRING_PARAM(number);
+    TEST_GET_INT_PARAM(timeout);
 
 
     rcf_rpc_server_create("Agt_A", "First", &pco_src);
@@ -66,7 +69,14 @@ main(int argc, char *argv[])
     
     rpc_telephony_pickup(pco_src, chan_src);
     rpc_telephony_dial_number(pco_src, chan_src, number);
-    rpc_telephony_call_wait(pco_dst, chan_dst);
+    
+    errno = rpc_telephony_call_wait(pco_dst, chan_dst, timeout);
+
+    if (errno == TE_ERPCTIMEOUT)
+        TEST_VERDICT("Internal call have been maked but not catched");
+    else if (errno != 0)
+        TEST_VERDICT("Can't make internal call");
+
     rpc_telephony_pickup(pco_dst, chan_dst);
 
     TEST_SUCCESS;

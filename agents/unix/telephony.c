@@ -310,32 +310,33 @@ telephony_dial_number(int chan, char *number)
  * Wait to call on the channel
  *
  * @param chan     channel file descriptor
+ * @param timeout  timeout in microsecond
  *
- * @return 0 on success or -1 on failure
+ * @return Status code
  */
-int
-telephony_call_wait(int chan)
+te_errno
+telephony_call_wait(int chan, int timeout)
 {
-    int param;
+    int     param;
+    fd_set  ex_fds;
+    struct timeval tval;
+    
+    tval.tv_sec = timeout / 1000;
+    tval.tv_usec = (timeout % 1000) * 1000;
 
     do {
-        do {
-            param = DAHDI_IOMUX_SIGEVENT;
+        FD_ZERO(&ex_fds);
+        FD_SET(chan, &ex_fds);
 
-            if (ioctl(chan, DAHDI_IOMUX, &param) < 0)
-            {
-                ERROR("unable to waiting call: %d (%s)", errno, strerror(errno));
-                return -1;
-            }
-        } while (!(param & DAHDI_IOMUX_SIGEVENT));
-
-        if (ioctl(chan, DAHDI_GETEVENT, &param) < 0)
-        {
-            ERROR("unable to getting dahdi event: %d (%s)", errno, strerror(errno));
-            return -1;
-        }
+        param = select(chan + 1, NULL, NULL, &ex_fds, &tval);
+        
+        if (param == 0)
+            return TE_ERPCTIMEOUT;
+        else 
+            return TE_RC(TE_TA_UNIX, errno);
+        ioctl(chan, DAHDI_GETEVENT, &param);
     } while (param != DAHDI_EVENT_RINGBEGIN);
 
-    return 0;
+   return 0;
 }
 
