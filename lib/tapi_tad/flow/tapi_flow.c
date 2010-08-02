@@ -302,7 +302,8 @@ tapi_flow_setup_endpoints(tapi_flow_t *flow)
                                        ep->csap_spec,
                                        &ep->csap_id)) != 0)
         {
-            ERROR("Failed to create send CSAP '%s'", ep->csap_desc);
+            ERROR("Failed to create endpoint '%s' CSAP '%s'",
+                  ep->name, ep->csap_desc);
             return rc;
         }
     }
@@ -1211,7 +1212,7 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
     uint8_t             *payload = NULL;
     tapi_flow_traffic   *traffic = NULL;
 
-    RING("%s() started", __FUNCTION__);
+    RING("%s('%s') started", __FUNCTION__, name);
 
     if ((traffic = tapi_flow_find_traffic(flow, name)) == NULL)
     {
@@ -1268,10 +1269,8 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
     }
     else
     {
-        WARN("No base receive pattern found for '%s' traffic entry",
+        WARN("No base receive pattern was found for '%s' traffic entry",
              traffic->name);
-        WARN("rcv_base=%p, recv_base_ptrn=%p",
-             traffic->rcv_base, traffic->recv_base_ptrn);
     }
 
     if ((traffic->rcv != NULL) && (traffic->recv_ptrn != NULL))
@@ -1293,15 +1292,15 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
     }
     else
     {
-        WARN("No matching receive pattern found for '%s' traffic entry",
+        WARN("No matching receive pattern was found for '%s' traffic entry",
              traffic->name);
-        WARN("rcv=%p, recv_ptrn=%p",
-             traffic->rcv, traffic->recv_ptrn);
     }
 
     if ((traffic->snd != NULL) && (traffic->send_tmpl != NULL))
     {
         /* Send traffic */
+        RING("Send PDU from '%s' endpoint for %s traffic entry",
+             traffic->snd->csap_desc, traffic->name);
         if ((rc = tapi_tad_trsend_start(traffic->snd->ta,
                                         traffic->snd->sid,
                                         traffic->snd->csap_id,
@@ -1311,6 +1310,11 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
             ERROR("Failed to start send operation");
             return rc;
         }
+    }
+    else
+    {
+        WARN("No send template was found for '%s' traffic entry",
+             traffic->name);
     }
 
     traffic->started = TRUE;
@@ -1329,7 +1333,7 @@ tapi_flow_stop(tapi_flow_t *flow, char *name,
 
     tapi_flow_traffic   *traffic = NULL;
 
-    RING("%s() started", __FUNCTION__);
+    RING("%s('%s') started", __FUNCTION__, name);
 
     if ((traffic = tapi_flow_find_traffic(flow, name)) == NULL)
     {
