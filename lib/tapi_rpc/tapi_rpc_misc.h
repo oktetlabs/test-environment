@@ -157,6 +157,16 @@ extern const char *tarpc_timeval2str(const struct tarpc_timeval *tv);
  */
 extern const char *timespec2str(const struct timespec *tv);
 
+/**
+ * Convert 'struct tarpc_timespec' to string.
+ *
+ * @note Static buffer is used for return value.
+ *
+ * @param tv     pointer to 'struct tarpc_timespec'
+ *
+ * @return null-terminated string
+ */
+extern const char *tarpc_timespec2str(const struct tarpc_timespec *tv);
 
 /**
  * Simple sender.

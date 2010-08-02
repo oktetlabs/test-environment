@@ -962,8 +962,7 @@ rpc_pselect(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG("RPC (%s,%s)%s: pselect(%d, 0x%x, 0x%x, 0x%x, %s, 0x%x) "
                  "-> %d (%s)", rpcs->ta, rpcs->name,
                  rpcop2str(op), n, (unsigned)readfds, (unsigned)writefds,
-                 (unsigned)exceptfds, 
-                 timespec2str((struct timespec *)timeout),
+                 (unsigned)exceptfds, tarpc_timespec2str(timeout),
                  (unsigned)sigmask,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 

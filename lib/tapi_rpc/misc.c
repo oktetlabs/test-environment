@@ -404,11 +404,35 @@ timespec2str(const struct timespec *tv)
     }
     else
     {
-        sprintf(buf, "{%ld,%ld}", tv->tv_sec, tv->tv_nsec);
+        sprintf(buf, "{%lld,%lld}", tv->tv_sec, tv->tv_nsec);
     }
     return buf;
 }
 
+/**
+ * Convert 'struct tarpc_timespec' to string.
+ *
+ * @note Static buffer is used for return value.
+ *
+ * @param tv    - pointer to 'struct tarpc_timespec'
+ *
+ * @return null-terminated string
+ */
+const char *
+tarpc_timespec2str(const struct tarpc_timespec *tv)
+{
+    static char buf[32];
+
+    if (tv == NULL)
+    {
+        strcpy(buf, "(nil)");
+    }
+    else
+    {
+        sprintf(buf, "{%lld,%lld}", tv->tv_sec, tv->tv_nsec);
+    }
+    return buf;
+}
 
 /**
  * Simple sender.
