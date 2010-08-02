@@ -98,7 +98,7 @@ tapi_flow_find_ep(tapi_flow_t *flow, const char *name)
 {
     tapi_flow_ep *ep;
 
-    RING("%s() started", __FUNCTION__);
+    RING("%s('%s') started", __FUNCTION__, name);
 
     for (ep = SLIST_FIRST(&flow->ep_list);
          ep != NULL;
@@ -116,7 +116,7 @@ tapi_flow_find_traffic(tapi_flow_t *flow, const char *name)
 {
     tapi_flow_traffic *traffic;
 
-    RING("%s() started", __FUNCTION__);
+    RING("%s('%s') started", __FUNCTION__, name);
 
     for (traffic = SLIST_FIRST(&flow->traffic_list);
          traffic != NULL;
@@ -431,10 +431,26 @@ tapi_flow_prepare_traffic(tapi_flow_t *flow)
                 break;
             }
 
+            /* Get traffic receiver */
             if ((traffic->rcv = tapi_flow_find_ep(flow, rcv_ep)) == NULL)
             {
                 ERROR("Failed to find traffic source endpoint %s", rcv_ep);
                 return TE_RC(TE_TAPI, TE_EINVAL);
+            }
+
+            /* Create base traffic receiver */
+            rcv_base_ep = te_sprintf("%s-base", rcv_ep);
+            RING("Create base traffic receiver endpoint %s", rcv_base_ep);
+            if ((traffic->rcv_base =
+                 tapi_flow_find_ep(flow, rcv_base_ep)) == NULL)
+            {
+                if ((traffic->rcv_base =
+                     tapi_flow_ep_copy(flow, rcv_ep, rcv_base_ep)) == NULL)
+                {
+                    ERROR("Failed to duplicate receive endpoint "
+                          "for base matching, rc=%r", rc);
+                    return rc;
+                }
             }
 
             /* Get receive pattern */
@@ -459,18 +475,6 @@ tapi_flow_prepare_traffic(tapi_flow_t *flow)
                 return rc;
             }
 
-            /* Create base traffic receiver */
-            rcv_base_ep = te_sprintf("%s-base", rcv_ep);
-            if (tapi_flow_find_ep(flow, rcv_base_ep) == NULL)
-            {
-                if ((traffic->rcv_base =
-                     tapi_flow_ep_copy(flow, rcv_ep, rcv_base_ep)) == NULL)
-                {
-                    ERROR("Failed to duplicate receive endpoint "
-                          "for base matching, rc=%r", rc);
-                    return rc;
-                }
-            }
 
             /* Generate base pattern for receive matching */
             if ((rc = tapi_flow_gen_base_ptrn(traffic->recv_ptrn,
@@ -1248,6 +1252,8 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
     if ((traffic->rcv_base != NULL) && (traffic->recv_base_ptrn != NULL))
     {
         /* Start base receive */
+        RING("Starting base receive for '%s' traffic entry",
+             traffic->name);
         if ((rc = tapi_tad_trrecv_start(traffic->rcv_base->ta,
                                         traffic->rcv_base->sid,
                                         traffic->rcv_base->csap_id,
@@ -1260,10 +1266,19 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
             return rc;
         }
     }
+    else
+    {
+        WARN("No base receive pattern found for '%s' traffic entry",
+             traffic->name);
+        WARN("rcv_base=%p, recv_base_ptrn=%p",
+             traffic->rcv_base, traffic->recv_base_ptrn);
+    }
 
     if ((traffic->rcv != NULL) && (traffic->recv_ptrn != NULL))
     {
         /* Start matching receive */
+        RING("Starting matching receive for '%s' traffic entry",
+             traffic->name);
         if ((rc = tapi_tad_trrecv_start(traffic->rcv->ta,
                                         traffic->rcv->sid,
                                         traffic->rcv->csap_id,
@@ -1275,6 +1290,13 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
             ERROR("Failed to start receive operation");
             return rc;
         }
+    }
+    else
+    {
+        WARN("No matching receive pattern found for '%s' traffic entry",
+             traffic->name);
+        WARN("rcv=%p, recv_ptrn=%p",
+             traffic->rcv, traffic->recv_ptrn);
     }
 
     if ((traffic->snd != NULL) && (traffic->send_tmpl != NULL))
@@ -1302,8 +1324,8 @@ tapi_flow_stop(tapi_flow_t *flow, char *name,
 {
     int           rc;
 
-    unsigned int  rcv_num  = 0;
-    unsigned int  rcv_base_num  = 0;
+    unsigned int  rcv_num = 0;
+    unsigned int  rcv_base_num = 0;
 
     tapi_flow_traffic   *traffic = NULL;
 
@@ -1441,6 +1463,13 @@ tapi_flow_check_all(tapi_flow_t *flow, const char *traffic_prefix)
         if (rcv_matched != rcv_base)
         {
             ERROR_VERDICT("No matched packets received for '%s' "
+                          "traffic exchange", traffic->name);
+            errors++;
+        }
+
+        if (rcv_base == 0)
+        {
+            ERROR_VERDICT("No packets received for '%s' "
                           "traffic exchange", traffic->name);
             errors++;
         }
