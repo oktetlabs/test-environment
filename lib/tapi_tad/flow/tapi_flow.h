@@ -62,12 +62,14 @@ extern "C" {
  *                         receive configuration (OUT)
  *
  */
-#define TEST_GET_FLOW_CONFIG(_flow) \
+#define TEST_GET_FLOW_CONFIG(_flow, _do_preprocess) \
     do {                                                            \
         te_errno rc;                                                \
                                                                     \
         tapi_flow_init((_flow));                                    \
-        if (0 != (rc = tapi_flow_conf_get(argc, argv, (_flow))))    \
+        if (0 != (rc = tapi_flow_conf_get(argc, argv,               \
+                                          (_do_preprocess),         \
+                                          (_flow))))                \
         {                                                           \
             TEST_FAIL("Failed to get ASN-based flow description, "  \
                       "rc=%r", rc);                                 \
@@ -182,6 +184,7 @@ extern char **tapi_flow_preprocess_args(int argc, char **argv);
  * @return 0, if success, or -1 otherwise
  */
 extern te_errno tapi_flow_conf_get(int argc, char **argv,
+                                   te_bool do_preprocess,
                                    tapi_flow_t *flow);
 
 /**
@@ -216,7 +219,8 @@ extern te_errno tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn,
 
 extern te_errno tapi_flow_setup_endpoints(tapi_flow_t *flow);
 
-extern te_errno tapi_flow_prepare(int argc, char **argv, tapi_flow_t *flow);
+extern te_errno tapi_flow_prepare(int argc, char **argv,
+                                  te_bool do_preprocess, tapi_flow_t *flow);
 
 extern void tapi_flow_init(tapi_flow_t *flow);
 

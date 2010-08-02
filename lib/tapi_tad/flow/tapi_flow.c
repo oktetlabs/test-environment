@@ -48,17 +48,20 @@
 
 te_errno
 tapi_flow_conf_get(int argc, char **argv,
-                   tapi_flow_t *flow)
+                   te_bool do_preprocess, tapi_flow_t *flow)
 {
     int rc;
     int syms;
 
     RING("%s() started", __FUNCTION__);
 
-    /* To make sure all links are resolved */
-    if ((argv = tapi_flow_preprocess_args(argc, argv)) == NULL)
+    if (do_preprocess)
     {
-        TEST_FAIL("Failed to preprocess test parameters");
+        /* To make sure all links are resolved */
+        if ((argv = tapi_flow_preprocess_args(argc, argv)) == NULL)
+        {
+            TEST_FAIL("Failed to preprocess test parameters");
+        }
     }
 
     /* Create root configuration node */
@@ -758,13 +761,15 @@ tapi_flow_preprocess_quotes(const char *param)
         }
 
         /* Check if quoted value already has 'plain:' prefix */
-        if ((open_q > param) && (*(open_q - 1) != ':'))
+        if (((open_q > param) && (*(open_q - 1) == ':')) ||
+            ((*(close_q + 1) == 'H') || (*(close_q + 1) == 'h')))
+        {
+            /* Keep value quoted */
+            value = te_sprintf(TAPI_FLOW_QUOTED_FMT, value);
+        }
+        else /* Add plain: prefix */
         {
             value = te_sprintf(TAPI_FLOW_PLAIN_VAL_FMT, value);
-        }
-        else /* Keep value quoted */
-        {
-            value = te_sprintf(TAPI_FLOW_QUOTED_FMT, value);
         }
 
         VERB("Link: %s = %s", link, value);
@@ -1143,11 +1148,12 @@ tapi_flow_preprocess_args(int argc, char **argv)
 
 
 te_errno
-tapi_flow_prepare(int argc, char **argv, tapi_flow_t *flow)
+tapi_flow_prepare(int argc, char **argv,
+                  te_bool do_preprocess, tapi_flow_t *flow)
 {
     RING("%s() started", __FUNCTION__);
 
-    TEST_GET_FLOW_CONFIG(flow);
+    TEST_GET_FLOW_CONFIG(flow, do_preprocess);
 
     CHECK_RC(tapi_flow_prepare_endpoints(flow));
     CHECK_RC(tapi_flow_prepare_traffic(flow));
