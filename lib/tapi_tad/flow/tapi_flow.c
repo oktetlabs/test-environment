@@ -1261,7 +1261,7 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
                                         traffic->recv_base_ptrn,
                                         TAD_TIMEOUT_INF,
                                         traffic->count + 1,
-                                        RCF_TRRECV_COUNT)) != 0)
+                                        RCF_TRRECV_PACKETS)) != 0)
         {
             ERROR("Failed to start receive operation");
             return rc;
