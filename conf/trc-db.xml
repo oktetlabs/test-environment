@@ -10,12 +10,25 @@
         <notes/>
         <iter result="PASSED">
           <arg name="port">1</arg>
+          <arg name="plan">0</arg>
           <notes/>
         </iter>
         <iter result="PASSED">
           <arg name="port">2</arg>
+          <arg name="plan">0</arg>
           <notes/>
         </iter>
+        <iter result="PASSED">
+          <arg name="port">1</arg>
+          <arg name="plan"></arg>
+          <notes/>
+        </iter>
+        <iter result="PASSED">
+          <arg name="port">2</arg>
+          <arg name="plan">1</arg>
+          <notes/>
+        </iter>
+
       </test>
       <test name="make_call" type="script">
         <objective/>

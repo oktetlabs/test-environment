@@ -161,7 +161,8 @@ rpc_telephony_hangup(rcf_rpc_server *rpcs, int chan)
 }
 
 int
-rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, int chan, te_bool *state)
+rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, int chan,
+                              enum te_numbering_plan plan, te_bool *state)
 {
     rcf_rpc_op                          op;
     tarpc_telephony_check_dial_tone_in  in;
@@ -178,12 +179,14 @@ rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, int chan, te_bool *state)
 
     op = rpcs->op;
     in.chan = chan;
+    in.plan = plan;
 
     rcf_rpc_call(rpcs, "telephony_check_dial_tone", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: telephony_check_dial_tone(%d) "
-                 "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 chan, out.retval ? (out.retval == -1 ? "true" : "-1") : "false",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: telephony_check_dial_tone(%d, %d) "
+                 "-> %s (%s)", rpcs->ta, rpcs->name,
+                 rpcop2str(op), chan, plan,
+                 out.retval ? (out.retval == -1 ? "true" : "-1") : "false",
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     if (out.retval < 0)

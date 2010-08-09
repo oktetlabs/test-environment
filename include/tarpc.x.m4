@@ -32,7 +32,6 @@
 
 %#include "te_config.h"
 
-
 typedef int32_t     tarpc_int;
 typedef uint32_t    tarpc_uint;
 typedef uint8_t     tarpc_bool;
@@ -945,6 +944,7 @@ struct tarpc_telephony_check_dial_tone_in {
     struct tarpc_in_arg     common;
     
     tarpc_int               chan;       /**< TA-local telephony channel */   
+    tarpc_int               plan;       /**< Numbering plan */   
 };                                               
 
 typedef struct tarpc_int_retval_out tarpc_telephony_check_dial_tone_out;

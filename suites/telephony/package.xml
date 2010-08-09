@@ -8,6 +8,10 @@
   <session track_conf="silent">
     <run>
       <script name="check_dial_tone"/>
+      <arg name="plan">
+        <value>0</value>
+        <value>1</value>
+      </arg>
       <arg name="port">
         <value>1</value>
         <value>2</value>

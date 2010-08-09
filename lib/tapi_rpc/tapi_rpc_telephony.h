@@ -39,6 +39,16 @@
 extern "C" {
 #endif
 
+/** Numbering plans */
+enum te_numbering_plan {
+    TE_TELEPHONY_NANP        = (1 << 3) | (1 << 9),     /**< North America numbering plan */
+    TE_TELEPHONY_FRANCE      = (1 << 9),                /**< France numbering plan */
+    TE_TELEPHONY_EUROPE_425  = (1 << 7),                /**< Most Europe numbering plan */
+    TE_TELEPHONY_JP          = (1 << 4),                /**< Japan numbering plan */
+    TE_TELEPHONY_CHINA       = (1 << 10)                /**< China numbering plan */
+};
+
+
 /**
   * Open channel and bind telephony card port with it
   *
@@ -84,12 +94,14 @@ extern int rpc_telephony_hangup(rcf_rpc_server *rpcs, int chan);
  *
  * @param rpcs      RPC server handle
  * @param chan      channel file descriptor
+ * @param plan      numbering plan
  * @param state     pointer on result of telephony_check_dial_tone() (OUT)
  *
  * @return 0 on success or -1 on failure
  */
 extern int rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, 
-                                         int chan, te_bool *state);
+                                         int chan, enum te_numbering_plan plan,
+                                         te_bool *state);
 
 /**
   * Dial number

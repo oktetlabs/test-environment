@@ -29,6 +29,7 @@
  * @objective Check dial tone on some telephony port
  *
  * @param port      Telephony port
+ * @param plan      Numbering plan
  *
  * @author Evgeny Omelchenko <Evgeny.Omelchenko@oktetlabs.ru>
  */
@@ -53,6 +54,7 @@ main(int argc, char *argv[])
     TEST_START; 
    
     TEST_GET_INT_PARAM(port);
+    TEST_GET_INT_PARAM(plan);
 
     rcf_rpc_server_create("Agt_A", "First", &pco);
 
@@ -60,11 +62,11 @@ main(int argc, char *argv[])
     rpc_telephony_pickup(pco, chan);
 
     RPC_AWAIT_IUT_ERROR(pco);
-    if (rpc_telephony_check_dial_tone(pco, chan, &state) < 0)
+    if (rpc_telephony_check_dial_tone(pco, chan, plan, &state) < 0)
         TEST_FAIL("unable to check dial tone on port %d", port);
     
     if (state != TRUE)
-        TEST_VERDICT("there is no dial tone on port %d", port);
+        TEST_VERDICT("there is no %d dial tone on port %d", plan, port);
 
     TEST_SUCCESS;
 

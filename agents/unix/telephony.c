@@ -45,23 +45,16 @@
 #include "logger_api.h"
 #include "te_errno.h"
 
-#define BLOCKSIZE       183     /**< Size of block for reading from channel */
+#define BLOCKSIZE       360     /**< Size of block for reading from channel */
 #define SAMPLE_RATE     8000.0  /**< Sample rate */
 #define SILENCE_TONE    10000.0 /**< Max goertzel result for silence */
-#define GET_PHONE       9000    /**< Bytes to wait dialtone */
+#define GET_PHONE       10000    /**< Bytes to wait dialtone */
 #define DAHDI_DEV_LEN   40      /**< Length of dahdi channel device name */
 
-/** Relationship between frequencies and an indexies of frequencies array */
-enum {
-    HZ350 = 0,  /**< Index of 350hz */
-    HZ440 = 1,  /**< Index of 440hz */
-    HZ480 = 2,  /**< Index of 480hz */
-    HZ620 = 3   /**< Index of 620hz */
-};
 
 /** Frequncies array */
-static float freqs[4] = {
-    350.0, 440.0, 480.0, 620.0
+double freqs[] = {
+    200.0, 300.0, 330.0, 350.0, 400.0, 413.0, 420.0, 425.0, 438.0, 440.0, 450.0, 660.0, 700.0, 800.0, 1000.0
 };
 
 /**
@@ -73,35 +66,24 @@ static float freqs[4] = {
  *
  * @return @b freq DFT component of @b seq
  */
-static float
-telephony_goertzel(short *seq, int len, float freq)
+
+static double
+telephony_goertzel(short *buf, int len, double freq)
 {
-    int s = 0;
-    int s1 = 0;
-    int s2 = 0;
-    int chunky = 0;
-    int fac = (int)(32768.0 * 2.0 * cos(2.0 * M_PI * freq / SAMPLE_RATE));
+    double s = 0.0;
+    double s1 = 0.0;
+    double s2 = 0;
+    double coeff = 2.0 * cos(2.0 * M_PI * freq / SAMPLE_RATE);
     int i;
 
     for (i = 0; i < len; i++)
     {
-
+        s = buf[i] + coeff * s1 - s2;
         s2 = s1;
         s1 = s;
-
-        s = ((fac * s1) >> 15) - s2 + (seq[i] >> chunky);
-
-        if (abs(s) > 32768) {
-
-            chunky++;
-            s >>=  1;
-            s1 >>= 1;
-            s2 >>= 1;
-        }
     }
 
-    return (float)((s * s) + (s1 * s1) -  ((s1 * s) >> 15) * fac) *
-        (float)(1 << (chunky * 2));
+    return s2*s2 + s1*s1 - coeff*s2*s1;
 }
 
 /**
@@ -229,22 +211,27 @@ telephony_hangup(int chan)
  * @return 0 on dial tone, 1 on another signal or  -1 on failure
  */
 int
-telephony_check_dial_tone(int chan)
+telephony_check_dial_tone(int chan, int plan)
 {
+    int     max1 = -1;
+    int     max2 = -1;
+    int     max3 = -1;
+    int     max4 = -1;
     short   buf[BLOCKSIZE];
     int     len;
     int     i;
-    float   pows[4];
+    int     result = 1;
+    float   pows[sizeof(freqs) / sizeof(double)];
 
     for (i = 0; i < GET_PHONE / (BLOCKSIZE * 2); i++)
     {
-
         /* Ignore getting the phone sound */
         len = read(chan, buf, BLOCKSIZE * 2);
 
         if (len < 0)
         {
-            ERROR("unable to read() channel: errno %d (%s)", errno, strerror(errno));
+            ERROR("unable to read() channel: errno %d (%s)",
+                  errno, strerror(errno));
             return -1;
         }
 
@@ -255,28 +242,48 @@ telephony_check_dial_tone(int chan)
 
             if (ioctl(chan, DAHDI_GETEVENT, &param) < 0)
             {
-                ERROR("unable to getting dahdi event: %d (%s)", errno, strerror(errno));
+                ERROR("unable to getting dahdi event: %d (%s)",
+                      errno, strerror(errno));
                 return -1;
             }
             i--;
         }
     }
+    
+    for (i = 0; i < sizeof(freqs) / sizeof(double); i++)
+        pows[i] = telephony_goertzel(buf, BLOCKSIZE, freqs[i]);
+ 
+    for (i = 0; i < sizeof(freqs) / sizeof(double); i++)
+    {
+        if (pows[i] < SILENCE_TONE)
+            continue;
 
-    pows[HZ350] = telephony_goertzel(buf, BLOCKSIZE, freqs[HZ350]);
-    pows[HZ440] = telephony_goertzel(buf, BLOCKSIZE, freqs[HZ440]);
-    pows[HZ480] = telephony_goertzel(buf, BLOCKSIZE, freqs[HZ480]);
-    pows[HZ620] = telephony_goertzel(buf, BLOCKSIZE, freqs[HZ620]);
-
-    if (pows[HZ350] < SILENCE_TONE || pows[HZ440] < SILENCE_TONE)
+        if (max1 == -1 || pows[i] > pows[max1])
+        {
+            max4 = max3;
+            max3 = max2;
+            max2 = max1;
+            max1 = i;
+        }
+        else if (max2 == -1 | pows[i] > pows[max2])
+        {
+            max4 = max3;
+            max3 = max2;
+            max2 = i;
+        }
+        else if (max3 == -1 || pows[i] > pows[max3])
+        {
+            max4 = max3;
+            max3 = i;
+        }
+        else if (max4 == -1 || pows[i] > pows[max4])
+            max4 = i;
+    }
+    
+    if (((1 << max1 | 1 << max2 | 1 << max3 | 1 << max4) & plan) != plan)
         return 0;
-
-    if (pows[HZ350] < (pows[HZ480] * 5.0) || pows[HZ350] < (pows[HZ620] * 5.0))
-        return 0;
-
-    if (pows[HZ440] < (pows[HZ480] * 5.0) || pows[HZ440] < (pows[HZ620] * 5.0))
-        return 0;
-
-    return 1;
+    else
+        return 1;
 }
 
 /**
@@ -288,7 +295,7 @@ telephony_check_dial_tone(int chan)
  * @return 0 on success or -1 on failure
  */
 int
-telephony_dial_number(int chan, char *number)
+telephony_dial_number(int chan, const char *number)
 {
     struct dahdi_dialoperation dop;
 
