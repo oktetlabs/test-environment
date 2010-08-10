@@ -5,10 +5,12 @@
 TE_SHELL([TE64=`gcc -dumpmachine | grep 64`])
 TE_SHELL([if test "$TE64" ; then \
               OTHER_HOST=i386-pc-linux ; \
+              OTHER_CFLAGS=-m32 ; \
               LINUX32_PLATFORM=linux_other ; \
               LINUX64_PLATFORM= ; \
           else \
               OTHER_HOST=x86_64-pc-linux ; \
+              OTHER_CFLAGS=-m64 ; \
               LINUX32_PLATFORM= ; \
               LINUX64_PLATFORM=linux_other ; \
           fi])
@@ -53,7 +55,8 @@ TE_TA_TYPE([power_ctl], [], [power-ctl],
 
 # linux_other platform is either 32-bit for 64-bit engine or
 # 64-bit for 32-bit engine
-TE_PLATFORM([linux_other], [--host=${OTHER_HOST}], [-D_GNU_SOURCE], [], [],
+TE_PLATFORM([linux_other], [--host=${OTHER_HOST} CC=gcc LD=ld AR=ar],
+            [${OTHER_CFLAGS} -D_GNU_SOURCE], [${OTHER_CFLAGS}], [],
             [tools comm_net_agent loggerta conf_oid rpcxdr rpc_types rcfpch \
              asn ndn tad tad_dummy iscsi_unh_target iscsi_initiator_conf netconf])
 
