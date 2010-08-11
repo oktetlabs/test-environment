@@ -353,6 +353,175 @@ static const char * const trc_test_exp_got_row_end =
 "      <td>%s %s</td>\n"
 "    </tr>\n";
 
+static const char * const trc_keys_table_start =
+"<table border=1 cellpadding=4 cellspacing=3>\n"
+"  <tr>\n"
+"    <td><b>Key</b></td>\n"
+"    <td><b>Priority</b></td>\n"
+"    <td><b>Severity</b></td>\n"
+"    <td><b>Status</b></td>\n"
+"    <td><b>Summary</b></td>\n"
+"    <td><b>Product</b></td>\n"
+"    <td><b>Component</b></td>\n"
+"  </tr>\n";
+
+static const char * const trc_keys_table_end =
+"</table>\n";
+
+static TAILQ_HEAD(, trc_report_key_entry) keys;
+
+static trc_report_key_entry *
+trc_report_key_find(const char *key_name)
+{
+    trc_report_key_entry *key;
+    for (key = TAILQ_FIRST(&keys);
+         key != NULL;
+         key = TAILQ_NEXT(key, links))
+    {
+        if (strcmp(key->name, key_name) == 0)
+        {
+            VERB("%s key found\n", key_name);
+            break;
+        }
+    }
+    return key;
+}
+
+static trc_report_key_entry *
+trc_report_key_add(const char *key_name,
+                   const trc_report_test_iter_entry *iter)
+{
+    trc_report_key_entry        *key = trc_report_key_find(key_name);
+    trc_report_key_iter_entry   *key_iter = NULL;
+
+    /* Create new key entry, if key does not exist */
+    if (key == NULL)
+    {
+        VERB("%s key not found, allocate space\n", key_name);
+        if ((key = calloc(1, sizeof(trc_report_key_entry))) == NULL)
+            return NULL;
+
+        key->name = strdup(key_name);
+        TAILQ_INIT(&key->iters);
+        TAILQ_INSERT_TAIL(&keys, key, links);
+    }
+
+    if ((key_iter = calloc(1, sizeof(trc_report_key_iter_entry))) == NULL)
+    {
+        ERROR("Failed to allocate structure to store iteration key");
+        return NULL;
+    }
+    key_iter->iter = (trc_report_test_iter_entry *)iter;
+    TAILQ_INSERT_TAIL(&key->iters, key_iter, links);
+
+    return key;
+}
+
+static int
+trc_report_keys_add(const char *key_names,
+                    const trc_report_test_iter_entry *iter)
+{
+    int     count = 0;
+    char   *p = NULL;
+
+    VERB("Add keys '%s' for test iteration %p\n", key_names, iter);
+
+    /* Iterate through keys list with ',' delimiter */
+    while ((key_names != NULL) && (*key_names != '\0'))
+    {
+        if ((p = strchr(key_names, ',')) != NULL)
+        {
+            char *tmp_key_name = strndup(key_names, p - key_names);
+            VERB("Add key '%s'\n", tmp_key_name);
+
+            if (tmp_key_name == NULL)
+                break;
+
+            trc_report_key_add(tmp_key_name, iter);
+            free(tmp_key_name);
+            key_names = p + 1;
+            while (*key_names == ' ')
+                key_names++;
+        }
+        else
+        {
+            VERB("Add key '%s'\n", key_names);
+            trc_report_key_add(key_names, iter);
+            key_names = NULL;
+        }
+        count++;
+    }
+
+    return count;
+}
+
+static void
+trc_report_init_keys()
+{
+    TAILQ_INIT(&keys);
+}
+
+#define TRC_REPORT_OL_KEY_PREFIX        "OL "
+#define TRC_REPORT_KEY_TOOL_CMD_SIZE    8192
+
+/**
+ * Output key entry to HTML report.
+ *
+ * @param f             File stream to write to
+ * @param flags         Current output flags
+ * @param test_path     Test path
+ * @param level_str     String to represent depth of the test in the
+ *                      suite
+ *
+ * @return Status code.
+ */
+static te_errno
+trc_report_keys_to_html(FILE *f, char *keytool_fn)
+{
+    FILE                   *f_in = NULL;
+    trc_report_key_entry   *key;
+    int                     key_id;
+    char                    buf[TRC_REPORT_KEY_TOOL_CMD_SIZE];
+    int                     buf_len = TRC_REPORT_KEY_TOOL_CMD_SIZE;
+    int                     len = 0;
+    char                   *p = buf;
+
+    fprintf(f, "%s", trc_keys_table_start);
+
+    p = buf + sprintf(p, "%s", keytool_fn);
+
+    VERB("%s() started\n", __FUNCTION__);
+    for (key = TAILQ_FIRST(&keys);
+         key != NULL;
+         key = TAILQ_NEXT(key, links))
+    {
+        VERB("Check %s key\n", key->name);
+        if (strncmp(key->name, TRC_REPORT_OL_KEY_PREFIX,
+                    strlen(TRC_REPORT_OL_KEY_PREFIX)) == 0)
+        {
+            if (sscanf(key->name, TRC_REPORT_OL_KEY_PREFIX "%d",
+                &key_id) == 1)
+            {
+                p += sprintf(p, " %d", key_id);
+            }
+        }
+    }
+
+    VERB("Start command %s\n", buf);
+
+    f_in = popen(buf, "r");
+    while ((len = fread(buf, 1, buf_len - 1, f_in)) > 0)
+    {
+        buf[len] = '\0';
+        fprintf(f, "%s", buf);
+    }
+    pclose(f_in);
+
+    fprintf(f, "%s", trc_keys_table_end);
+
+    return 0;
+}
+
 
 /**
  * Output grand total statistics to HTML.
@@ -518,6 +687,7 @@ trc_report_exp_got_to_html(FILE                *f,
                 iter_data->exp_result->key != NULL)
             {
                 trc_re_key_substs(iter_data->exp_result->key, f);
+                trc_report_keys_add(iter_data->exp_result->key, iter_entry);
             }
 
             fprintf(f, trc_test_exp_got_row_end,
@@ -532,48 +702,6 @@ cleanup:
     return rc;
 }
 
-#if 0
-/**
- * Generate a list (in a string separated by HTML new line) of unique
- * (as strings) keys for iterations to be output.
- *
- * @param test      Test
- * @param flags     Output flags
- *
- * @se Update 'output' field of each iteration to be used further.
- *
- * @return Pointer a generated string (static buffer).
- */
-static const char *
-test_iters_check_output_and_get_keys(trc_test *test, unsigned int flags)
-{
-    static char buf[0x10000];
-
-    const trc_test_iter    *p;
-    const trc_test_iter    *q;
-    char                   *s = buf;
-
-
-    buf[0] = '\0';
-    TAILQ_FOREACH(p, &test->iters.head, links)
-    {
-        if (trc_report_test_iter_entry_output(test, p, flags) &&
-            (p->exp_result.key != NULL))
-        {
-            for (q = TAILQ_FIRST(&test->iters.head);
-                 (q != p) &&
-                 ((q->exp_result.key == NULL) || (!q->output) ||
-                  (strcmp(p->exp_result.key, q->exp_result.key) != 0));
-                 q = TAILQ_NEXT(q, links));
-
-            if (p == q)
-                s += sprintf(s, "%s<br/>", p->exp_result.key);
-        }
-    }
-
-    return buf;
-}
-#endif
 
 /**
  * Should test entry be output in accordance with expected/obtained
@@ -646,8 +774,9 @@ trc_report_test_stats_to_html(FILE             *f,
         trc_report_test_output(stats, flags))
     {
         te_bool     name_link;
-        const char *keys = NULL; /*
-            test_iters_check_output_and_get_keys(test, flags); */
+        const char *keys = NULL;
+
+        /* test_iters_check_output_and_get_keys(test, flags); */
 
         name_link = ((flags & TRC_REPORT_NO_SCRIPTS) ||
                      ((~flags & TRC_REPORT_NO_SCRIPTS) &&
@@ -776,7 +905,6 @@ trc_report_html_table(FILE *f, trc_report_ctx *ctx,
                 break;
         }
     }
-
     if (is_stats)
         WRITE_STR(trc_tests_stats_end);
     else
@@ -860,6 +988,12 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         }
     }
 
+    if (~flags & TRC_REPORT_NO_KEYS)
+    {
+        VERB("Initialise keys tailq\n");
+        trc_report_init_keys();
+    }
+
     if (~flags & TRC_REPORT_NO_TOTAL_STATS)
     {
         /* Grand total */
@@ -892,6 +1026,11 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         rc = trc_report_html_table(f, gctx, FALSE, flags);
         if (rc != 0)
             goto cleanup;
+    }
+
+    if (~flags & TRC_REPORT_NO_KEYS)
+    {
+        trc_report_keys_to_html(f, "te-trc-key");
     }
 
     /* HTML footer */

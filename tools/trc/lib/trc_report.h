@@ -101,11 +101,12 @@ enum trc_report_flags {
     TRC_REPORT_NO_STATS_NOT_RUN = 0x100, /**< Hide entries with
                                               unexpected not run
                                               statistic */
+    TRC_REPORT_NO_KEYS          = 0x200, /**< Hide actual key entries */
 
     /* DB processing options */
-    TRC_REPORT_UPDATE_DB        = 0x200, /**< Update TRC database */
-    TRC_REPORT_IGNORE_LOG_TAGS  = 0x400, /**< Ignore TRC tags extracted
-                                              from the log */
+    TRC_REPORT_UPDATE_DB        = 0x2000, /**< Update TRC database */
+    TRC_REPORT_IGNORE_LOG_TAGS  = 0x4000, /**< Ignore TRC tags extracted
+                                               from the log */
 };
 
 /** Result of test iteration run */
@@ -140,6 +141,38 @@ typedef struct trc_report_ctx {
     trc_report_stats    stats;  /**< Grand total statistics */
     unsigned int        db_uid; /**< TRC database user ID */
 } trc_report_ctx;
+
+/** OL Bug specific data (unused) */
+typedef struct trc_report_ol_bug_key_entry {
+    int   id;           /**< Key ID */
+    char *summary;      /**< Bug summary */
+    char *status;       /**< Bug status */
+    char *product;      /**< Bug product */
+    char *component;    /**< Bug component */
+    char *platform;     /**< Bug platform */
+    char *priority;     /**< Bug priority */
+    char *importance;   /**< Bug severity */
+    char *assigned_to;  /**< Bug assigned person */
+    char *qa_contact;   /**< Bug QA person */
+    char *blocks;       /**< List of blocked bugs */
+    char *depends;      /**< List of depended bugs */
+} trc_report_ol_bug_key_entry;
+
+/** Auxilary structure to list iterations marked by specific key */
+typedef struct trc_report_key_iter_entry {
+    TAILQ_ENTRY(trc_report_key_iter_entry)   links; /**< List links */
+    trc_report_test_iter_entry              *iter;  /**< Iteration entry */
+} trc_report_key_iter_entry;
+
+/** Key list entry */
+typedef struct trc_report_key_entry {
+    TAILQ_ENTRY(trc_report_key_entry) links; /**< List links */
+    char *name; /**< Key name */
+    union {
+        trc_report_ol_bug_key_entry ol; /**< OL specific key data */
+    } specific; /**< Specific data union */
+    TAILQ_HEAD(, trc_report_key_iter_entry) iters; /**< Iterations list */
+} trc_report_key_entry;
 
 /**
  * Initialize TRC report tool context.
