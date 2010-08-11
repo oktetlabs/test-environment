@@ -161,7 +161,7 @@ typedef struct trc_report_ol_bug_key_entry {
 /** Auxilary structure to list iterations marked by specific key */
 typedef struct trc_report_key_iter_entry {
     TAILQ_ENTRY(trc_report_key_iter_entry)   links; /**< List links */
-    trc_report_test_iter_entry              *iter;  /**< Iteration entry */
+    trc_report_test_iter_data               *iter;  /**< Iteration data */
 } trc_report_key_iter_entry;
 
 /** Key list entry */

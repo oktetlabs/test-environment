@@ -380,7 +380,6 @@ trc_report_key_find(const char *key_name)
     {
         if (strcmp(key->name, key_name) == 0)
         {
-            VERB("%s key found\n", key_name);
             break;
         }
     }
@@ -389,7 +388,7 @@ trc_report_key_find(const char *key_name)
 
 static trc_report_key_entry *
 trc_report_key_add(const char *key_name,
-                   const trc_report_test_iter_entry *iter)
+                   const trc_report_test_iter_data *iter_data)
 {
     trc_report_key_entry        *key = trc_report_key_find(key_name);
     trc_report_key_iter_entry   *key_iter = NULL;
@@ -397,7 +396,6 @@ trc_report_key_add(const char *key_name,
     /* Create new key entry, if key does not exist */
     if (key == NULL)
     {
-        VERB("%s key not found, allocate space\n", key_name);
         if ((key = calloc(1, sizeof(trc_report_key_entry))) == NULL)
             return NULL;
 
@@ -411,7 +409,7 @@ trc_report_key_add(const char *key_name,
         ERROR("Failed to allocate structure to store iteration key");
         return NULL;
     }
-    key_iter->iter = (trc_report_test_iter_entry *)iter;
+    key_iter->iter = (trc_report_test_iter_data *)iter_data;
     TAILQ_INSERT_TAIL(&key->iters, key_iter, links);
 
     return key;
@@ -419,12 +417,23 @@ trc_report_key_add(const char *key_name,
 
 static int
 trc_report_keys_add(const char *key_names,
-                    const trc_report_test_iter_entry *iter)
+                    const trc_report_test_iter_data *iter_data)
 {
     int     count = 0;
     char   *p = NULL;
+    trc_report_test_iter_entry *iter = NULL;
 
-    VERB("Add keys '%s' for test iteration %p\n", key_names, iter);
+    for (iter = TAILQ_FIRST(&iter_data->runs);
+         iter != NULL;
+         iter = TAILQ_NEXT(iter, links))
+    {
+        if ((iter->result.status != TE_TEST_PASSED) &&
+            (iter->result.status != TE_TEST_SKIPPED))
+            break;
+    }
+
+    if (iter == NULL)
+        return 0;
 
     /* Iterate through keys list with ',' delimiter */
     while ((key_names != NULL) && (*key_names != '\0'))
@@ -432,12 +441,11 @@ trc_report_keys_add(const char *key_names,
         if ((p = strchr(key_names, ',')) != NULL)
         {
             char *tmp_key_name = strndup(key_names, p - key_names);
-            VERB("Add key '%s'\n", tmp_key_name);
 
             if (tmp_key_name == NULL)
                 break;
 
-            trc_report_key_add(tmp_key_name, iter);
+            trc_report_key_add(tmp_key_name, iter_data);
             free(tmp_key_name);
             key_names = p + 1;
             while (*key_names == ' ')
@@ -445,8 +453,7 @@ trc_report_keys_add(const char *key_names,
         }
         else
         {
-            VERB("Add key '%s'\n", key_names);
-            trc_report_key_add(key_names, iter);
+            trc_report_key_add(key_names, iter_data);
             key_names = NULL;
         }
         count++;
@@ -490,7 +497,6 @@ trc_report_keys_to_html(FILE *f, char *keytool_fn)
 
     p = buf + sprintf(p, "%s", keytool_fn);
 
-    VERB("%s() started\n", __FUNCTION__);
     for (key = TAILQ_FIRST(&keys);
          key != NULL;
          key = TAILQ_NEXT(key, links))
@@ -555,11 +561,11 @@ trc_report_stats_to_html(FILE *f, const trc_report_stats *stats)
 static te_bool
 trc_report_test_iter_entry_output(
     const trc_test                   *test,
-    const trc_report_test_iter_entry *iter_data,
+    const trc_report_test_iter_entry *iter,
     unsigned int                      flags)
 {
     te_test_status status =
-        (iter_data == NULL) ? TE_TEST_UNSPEC : iter_data->result.status;
+        (iter == NULL) ? TE_TEST_UNSPEC : iter->result.status;
 
     return (/* NO_SCRIPTS is clear or it is NOT a script */
             (~flags & TRC_REPORT_NO_SCRIPTS) ||
@@ -575,12 +581,12 @@ trc_report_test_iter_entry_output(
               * obtained result is not PASSED as expected
               */
              (~flags & TRC_REPORT_NO_EXP_PASSED) ||
-             (status != TE_TEST_PASSED) || (!iter_data->is_exp)) &&
+             (status != TE_TEST_PASSED) || (!iter->is_exp)) &&
             (/* 
               * NO_EXPECTED is clear or obtained result is equal
               * to expected
               */
-             (~flags & TRC_REPORT_NO_EXPECTED) || (!iter_data->is_exp));
+             (~flags & TRC_REPORT_NO_EXPECTED) || (!iter->is_exp));
 }
 
 /**
@@ -687,7 +693,7 @@ trc_report_exp_got_to_html(FILE                *f,
                 iter_data->exp_result->key != NULL)
             {
                 trc_re_key_substs(iter_data->exp_result->key, f);
-                trc_report_keys_add(iter_data->exp_result->key, iter_entry);
+                trc_report_keys_add(iter_data->exp_result->key, iter_data);
             }
 
             fprintf(f, trc_test_exp_got_row_end,
@@ -990,7 +996,6 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
 
     if (~flags & TRC_REPORT_NO_KEYS)
     {
-        VERB("Initialise keys tailq\n");
         trc_report_init_keys();
     }
 
