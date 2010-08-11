@@ -1,0 +1,96 @@
+#!/usr/bin/perl
+#
+# Oktetlabs bugzilla page parser script
+#
+
+my @bugs = ();
+
+for my $bug_id (@ARGV)
+{
+    my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=$bug_id";
+    my $field = ();
+    my %bug = ();
+
+    #curl -s -u : --negotiate "${BUZILLA_URL}/show_bug.cgi?id=${bug_id}"
+    for my $line (`curl -s -u : --negotiate \"$bug_url\"`)
+    {
+        # Parse BUG ID field
+        if ($line =~ m/name=\"id\" value=\"(\d*)\"/i)
+        {
+            #printf("Id: %s\n", $1);
+            $bug{'id'} = $1;
+        }
+
+        # Parse BUG Objective
+        if ($line =~ m/short_desc_nonedit_display\"\>([\w|\s|.|,|:|;|-|_|\\|\/|]*)/i)
+        {
+            #printf("Objective: %s\n", $1);
+            $bug{'objective'} = $1;
+        }
+
+        # Parse BUG Status
+        if ($line =~ m/static_bug_status\"\>([\w| ]*)/i)
+        {
+            #printf("Status: %s\n", $1);
+            $bug{'status'} = $1;
+        }
+
+        # Parse Selected options
+        if ($line =~ m/select id=\"([\w|\s]*)\"/i)
+        {
+            $field = $1;
+        }
+
+        if ($line =~ m/option value=\"([\w|\s]*)\" selected/i)
+        {
+            if ($field)
+            {
+                #printf("%s: %s\n", $field, $1);
+                $bug{$field} = $1;
+                $field = ();
+            }
+        }
+    }
+    push(@bugs, {%bug});
+}
+
+@bugs = sort {$a->{'id'} <=> $b->{'id'}} @bugs;
+@bugs = sort {$a->{'bug_severity'} cmp $b->{'bug_severity'}} @bugs;
+@bugs = sort {$a->{'priority'} cmp $b->{'priority'}} @bugs;
+
+push @bg_colors, {'priority'};
+
+# There should be html output
+for my $b (@bugs)
+{
+    my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=".$b->{'id'};
+    printf("<a name=\"bug_ol_%s\"/>\n", $b->{'id'});
+
+    if (($b->{'priority'} eq 'P1') or
+        (($b->{'bug_severity'} eq 'blocker')) or
+        (($b->{'bug_severity'} eq 'critical')) or
+        (($b->{'bug_severity'} eq 'major')))
+    {
+        printf("<tr style=\"color:#FF0000\">\n");
+    }
+    elsif (($b->{'priority'} eq 'P3') or
+             ($b->{'priority'} eq 'P4') or
+             ($b->{'priority'} eq 'P5') or
+             (($b->{'bug_severity'} eq 'minor')) or
+             (($b->{'bug_severity'} eq 'enhancement')))
+    {
+        printf("<tr style=\"color:#0000FF\">\n");
+    }
+    else
+    {
+        printf("<tr>\n");
+    }
+    printf("  <td><a href=%s>OL %s</a></td>\n", $bug_url, $b->{'id'});
+    printf("  <td>%s</td>\n", $b->{'priority'});
+    printf("  <td>%s</td>\n", $b->{'bug_severity'});
+    printf("  <td>%s</td>\n", $b->{'status'});
+    printf("  <td>%s</td>\n", $b->{'objective'});
+    printf("  <td>%s</td>\n", $b->{'product'});
+    printf("  <td>%s</td>\n", $b->{'component'});
+    printf("</tr>\n");
+}

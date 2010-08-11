@@ -1,5 +1,5 @@
 
-SUBDIRS = lib trc-log trc-report trc-diff .
+SUBDIRS = lib trc-log trc-report trc-diff trc-key .
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 

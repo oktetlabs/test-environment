@@ -41,6 +41,7 @@ lib/Makefile
 trc-log/Makefile
 trc-report/Makefile
 trc-diff/Makefile
+trc-key/Makefile
 ])
 
 TE_APP_RESTORE
