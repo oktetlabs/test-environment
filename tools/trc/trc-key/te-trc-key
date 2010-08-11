@@ -1,10 +1,35 @@
 #!/usr/bin/perl
 #
+# Test Environment: Testing Results Comparator
+#
 # Oktetlabs bugzilla page parser script
+#
+# Copyright (C) 2006 Test Environment authors (see file AUTHORS
+# in the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
+#
+# $Id: $
 #
 
 my @bugs = ();
 
+# Iterate through the list of Bug IDs
 for my $bug_id (@ARGV)
 {
     my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=$bug_id";
@@ -21,11 +46,11 @@ for my $bug_id (@ARGV)
             $bug{'id'} = $1;
         }
 
-        # Parse BUG Objective
+        # Parse BUG Summary
         if ($line =~ m/short_desc_nonedit_display\"\>([\w|\s|.|,|:|;|-|_|\\|\/|]*)/i)
         {
-            #printf("Objective: %s\n", $1);
-            $bug{'objective'} = $1;
+            #printf("Summary: %s\n", $1);
+            $bug{'summary'} = $1;
         }
 
         # Parse BUG Status
@@ -38,10 +63,17 @@ for my $bug_id (@ARGV)
         # Parse Selected options
         if ($line =~ m/select id=\"([\w|\s]*)\"/i)
         {
+            #printf("Found %s select id\n", $1);
+            $field = $1;
+        }
+        elsif ($line =~ m/select name=\"([\w|\s]*)\"/i)
+        {
+            #printf("Found %s select name\n", $1);
             $field = $1;
         }
 
-        if ($line =~ m/option value=\"([\w|\s]*)\" selected/i)
+        if (($line =~ m/option value=\"([\w|\s]*)\"\s*selected/i) or
+            ($line =~ m/option selected value=\"([\w|\s]*)\"/i))
         {
             if ($field)
             {
@@ -54,42 +86,48 @@ for my $bug_id (@ARGV)
     push(@bugs, {%bug});
 }
 
+# Sort bugs by ID, severity and priority
 @bugs = sort {$a->{'id'} <=> $b->{'id'}} @bugs;
 @bugs = sort {$a->{'bug_severity'} cmp $b->{'bug_severity'}} @bugs;
 @bugs = sort {$a->{'priority'} cmp $b->{'priority'}} @bugs;
 
-push @bg_colors, {'priority'};
+# Function returns text color due to bug priority
+sub colorify
+{
+    my ($priority, $severity) = @_;
+    my $color = "#000000";
 
-# There should be html output
+    if (($priority eq 'P1') or
+        (($severity eq 'blocker')) or
+        (($severity eq 'critical')) or
+        (($severity eq 'major')))
+    {
+        $color = "FF0000";
+    }
+    elsif (($priority eq 'P3') or
+             ($priority eq 'P4') or
+             ($priority eq 'P5') or
+             (($severity eq 'minor')) or
+             (($severity eq 'enhancement')))
+    {
+        $color = "0000FF";
+    }
+
+    return $color;
+}
+
+# Produce HTML output
 for my $b (@bugs)
 {
     my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=".$b->{'id'};
     printf("<a name=\"bug_ol_%s\"/>\n", $b->{'id'});
 
-    if (($b->{'priority'} eq 'P1') or
-        (($b->{'bug_severity'} eq 'blocker')) or
-        (($b->{'bug_severity'} eq 'critical')) or
-        (($b->{'bug_severity'} eq 'major')))
-    {
-        printf("<tr style=\"color:#FF0000\">\n");
-    }
-    elsif (($b->{'priority'} eq 'P3') or
-             ($b->{'priority'} eq 'P4') or
-             ($b->{'priority'} eq 'P5') or
-             (($b->{'bug_severity'} eq 'minor')) or
-             (($b->{'bug_severity'} eq 'enhancement')))
-    {
-        printf("<tr style=\"color:#0000FF\">\n");
-    }
-    else
-    {
-        printf("<tr>\n");
-    }
+    printf("<tr style=\"color:#%s\">\n", colorify($b->{'priority'}, $b->{'bug_severity'}));
     printf("  <td><a href=%s>OL %s</a></td>\n", $bug_url, $b->{'id'});
     printf("  <td>%s</td>\n", $b->{'priority'});
     printf("  <td>%s</td>\n", $b->{'bug_severity'});
-    printf("  <td>%s</td>\n", $b->{'status'});
-    printf("  <td>%s</td>\n", $b->{'objective'});
+    printf("  <td>%s %s</td>\n", $b->{'bug_status'}, $b->{'resolution'});
+    printf("  <td>%s</td>\n", $b->{'summary'});
     printf("  <td>%s</td>\n", $b->{'product'});
     printf("  <td>%s</td>\n", $b->{'component'});
     printf("</tr>\n");
