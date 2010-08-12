@@ -143,6 +143,18 @@ sub colorify
 }
 
 # Produce HTML output
+printf("<table border=1 cellpadding=4 cellspacing=3>\n");
+printf("  <tr>\n");
+printf("    <td><b>Key</b></td>\n");
+printf("    <td><b>Priority</b></td>\n");
+printf("    <td><b>Severity</b></td>\n");
+printf("    <td><b>Status</b></td>\n");
+printf("    <td><b>Summary</b></td>\n");
+printf("    <td><b>Product</b></td>\n");
+printf("    <td><b>Component</b></td>\n");
+printf("    <td><b>Tests</b></td>\n");
+printf("  </tr>\n");
+
 for my $b (@bugs)
 {
     my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=".$b->{'id'};
@@ -159,3 +171,5 @@ for my $b (@bugs)
     printf("  <td>%s</td>\n", $b->{'tests'});
     printf("</tr>\n");
 }
+
+printf("</table>\n");

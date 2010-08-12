@@ -354,36 +354,6 @@ static const char * const trc_test_exp_got_row_end =
 "      <td>%s %s</td>\n"
 "    </tr>\n";
 
-static const char * const trc_keys_table_start =
-"<table border=1 cellpadding=4 cellspacing=3>\n"
-"  <tr>\n"
-"    <td><b>Key</b></td>\n"
-"    <td><b>Priority</b></td>\n"
-"    <td><b>Severity</b></td>\n"
-"    <td><b>Status</b></td>\n"
-"    <td><b>Summary</b></td>\n"
-"    <td><b>Product</b></td>\n"
-"    <td><b>Component</b></td>\n"
-"    <td><b>Tests</b></td>\n"
-"  </tr>\n";
-
-static const char * const trc_keys_table_entry_fmt =
-"  <tr>\n"
-"    <td>%s</td>\n"
-"    <td>%s</td>\n"
-"    <td>%s</td>\n"
-"    <td>%s</td>\n"
-"    <td>%s</td>\n"
-"    <td>%s</td>\n"
-"    <td>%s</td>\n"
-"    <td>";
-
-static const char * const trc_keys_table_entry_end =
-"    </td>"
-"  </tr>\n";
-
-static const char * const trc_keys_table_end =
-"</table>\n";
 
 static TAILQ_HEAD(, trc_report_key_entry) keys;
 
@@ -499,6 +469,28 @@ trc_report_keys_add(const char *key_names,
     return count;
 }
 
+char *
+trc_report_key_test_path(FILE *f, char *test_path, char *key_names)
+{
+    char *path = te_sprintf("%s-%s", test_path, key_names);
+    char *p;
+
+    if (path == NULL)
+        return NULL;
+
+    for (p = path; *p != '\0'; p++)
+    {
+        if (*p == ' ')
+            *p = '_';
+        else if (*p == ',')
+            *p = '-';
+    }
+
+    fprintf(f, "<a name=\"%s\"/>", path);
+
+    return path;
+}
+
 static void
 trc_report_init_keys()
 {
@@ -506,7 +498,6 @@ trc_report_init_keys()
 }
 
 #define TRC_REPORT_OL_KEY_PREFIX        "OL "
-#define TRC_REPORT_KEY_TOOL_CMD_SIZE    8192
 
 /**
  * Output key entry to HTML report.
@@ -528,8 +519,6 @@ trc_report_keys_to_html(FILE *f, char *keytool_fn)
     FILE                   *f_out = NULL;
     pid_t                   pid;
     trc_report_key_entry   *key;
-
-    fprintf(f, "%s", trc_keys_table_start);
 
     if ((pid = te_shell_cmd_inline(keytool_fn, -1,
                                    &fd_in, &fd_out, NULL)) < 0)
@@ -567,8 +556,6 @@ trc_report_keys_to_html(FILE *f, char *keytool_fn)
 
     fclose(f_out);
     close(fd_out);
-
-    fprintf(f, "%s", trc_keys_table_end);
 
     return 0;
 }
@@ -737,6 +724,10 @@ trc_report_exp_got_to_html(FILE                *f,
             if (iter_data->exp_result != NULL &&
                 iter_data->exp_result->key != NULL)
             {
+                char *key_test_path =
+                    trc_report_key_test_path(f, (char *)test_path,
+                                             iter_data->exp_result->key);
+
                 trc_re_key_substs(iter_data->exp_result->key, f);
 
                 /*
@@ -744,7 +735,9 @@ trc_report_exp_got_to_html(FILE                *f,
                  * use test name and path instead of
                  */
                 trc_report_keys_add(iter_data->exp_result->key, iter_data,
-                                    test->name, (char *)test_path);
+                                    test->name, key_test_path);
+
+                free(key_test_path);
             }
 
             fprintf(f, trc_test_exp_got_row_end,
