@@ -162,6 +162,8 @@ typedef struct trc_report_ol_bug_key_entry {
 typedef struct trc_report_key_iter_entry {
     TAILQ_ENTRY(trc_report_key_iter_entry)   links; /**< List links */
     trc_report_test_iter_data               *iter;  /**< Iteration data */
+    char                                    *name;  /**< Iteration name */
+    char                                    *path;  /**< Iteration path */
 } trc_report_key_iter_entry;
 
 /** Key list entry */
@@ -173,6 +175,15 @@ typedef struct trc_report_key_entry {
     } specific; /**< Specific data union */
     TAILQ_HEAD(, trc_report_key_iter_entry) iters; /**< Iterations list */
 } trc_report_key_entry;
+
+/** TRC report context */
+typedef struct trc_report_key_ctx {
+    FILE            *f;      /**< File created by popen of key script */
+    unsigned int     flags;  /**< Report options */
+} trc_report_key_ctx;
+
+extern int trc_report_key_read_cb(void *ctx, char *buffer, int len);
+extern int trc_report_key_close_cb(void *ctx);
 
 /**
  * Initialize TRC report tool context.

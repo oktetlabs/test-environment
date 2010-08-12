@@ -30,8 +30,20 @@
 my @bugs = ();
 
 # Iterate through the list of Bug IDs
-for my $bug_id (@ARGV)
+for my $bug_line (<STDIN>)
 {
+    #printf("Bug line: %s\n", $bug_line);
+    if ($bug_line =~ m/OL (\d*):/i)
+    {
+        $bug_id = $1;
+        $bug_tests = $';
+        chomp $bug_tests;
+    }
+    else
+    {
+        last;
+    }
+
     my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=$bug_id";
     my $field = ();
     my %bug = ();
@@ -83,6 +95,20 @@ for my $bug_id (@ARGV)
             }
         }
     }
+
+    my $test_links;
+    for my $test_line (split(',', $bug_tests))
+    {
+        if ($test_line)
+        {
+            my ($test_name, $test_ref) = split('#', $test_line);
+            $test_links .= "<a href=\"#$test_ref\">$test_name</a><br/>"
+        }
+    }
+    #printf("%s\n", $test_links);
+
+    $bug{'tests'} = $test_links;
+
     push(@bugs, {%bug});
 }
 
@@ -130,5 +156,6 @@ for my $b (@bugs)
     printf("  <td>%s</td>\n", $b->{'summary'});
     printf("  <td>%s</td>\n", $b->{'product'});
     printf("  <td>%s</td>\n", $b->{'component'});
+    printf("  <td>%s</td>\n", $b->{'tests'});
     printf("</tr>\n");
 }

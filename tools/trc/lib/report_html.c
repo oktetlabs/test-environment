@@ -47,6 +47,7 @@
 #include "trc_html.h"
 #include "trc_report.h"
 #include "re_subst.h"
+#include "te_shell_cmd.h"
 
 /** Define to 1 to use spoilers to show/hide test parameters */
 #define TRC_USE_PARAMS_SPOILERS 0
@@ -363,12 +364,30 @@ static const char * const trc_keys_table_start =
 "    <td><b>Summary</b></td>\n"
 "    <td><b>Product</b></td>\n"
 "    <td><b>Component</b></td>\n"
+"    <td><b>Tests</b></td>\n"
+"  </tr>\n";
+
+static const char * const trc_keys_table_entry_fmt =
+"  <tr>\n"
+"    <td>%s</td>\n"
+"    <td>%s</td>\n"
+"    <td>%s</td>\n"
+"    <td>%s</td>\n"
+"    <td>%s</td>\n"
+"    <td>%s</td>\n"
+"    <td>%s</td>\n"
+"    <td>";
+
+static const char * const trc_keys_table_entry_end =
+"    </td>"
 "  </tr>\n";
 
 static const char * const trc_keys_table_end =
 "</table>\n";
 
 static TAILQ_HEAD(, trc_report_key_entry) keys;
+
+static int file_to_file(FILE *dst, FILE *src);
 
 static trc_report_key_entry *
 trc_report_key_find(const char *key_name)
@@ -388,7 +407,8 @@ trc_report_key_find(const char *key_name)
 
 static trc_report_key_entry *
 trc_report_key_add(const char *key_name,
-                   const trc_report_test_iter_data *iter_data)
+                   const trc_report_test_iter_data *iter_data,
+                   char *iter_name, char *iter_path)
 {
     trc_report_key_entry        *key = trc_report_key_find(key_name);
     trc_report_key_iter_entry   *key_iter = NULL;
@@ -404,12 +424,26 @@ trc_report_key_add(const char *key_name,
         TAILQ_INSERT_TAIL(&keys, key, links);
     }
 
+    for (key_iter = TAILQ_FIRST(&key->iters);
+         key_iter != NULL;
+         key_iter = TAILQ_NEXT(key_iter, links))
+    {
+        if (strcmp(iter_path, key_iter->path) == 0)
+        {
+            /* Do not duplicate iterations, exit */
+            return key;
+        }
+    }
+
+    /* Create new key iteration entry, if not found */
     if ((key_iter = calloc(1, sizeof(trc_report_key_iter_entry))) == NULL)
     {
         ERROR("Failed to allocate structure to store iteration key");
         return NULL;
     }
     key_iter->iter = (trc_report_test_iter_data *)iter_data;
+    key_iter->name = strdup(iter_name);
+    key_iter->path = strdup(iter_path);
     TAILQ_INSERT_TAIL(&key->iters, key_iter, links);
 
     return key;
@@ -417,7 +451,8 @@ trc_report_key_add(const char *key_name,
 
 static int
 trc_report_keys_add(const char *key_names,
-                    const trc_report_test_iter_data *iter_data)
+                    const trc_report_test_iter_data *iter_data,
+                    char *iter_name, char *iter_path)
 {
     int     count = 0;
     char   *p = NULL;
@@ -445,7 +480,8 @@ trc_report_keys_add(const char *key_names,
             if (tmp_key_name == NULL)
                 break;
 
-            trc_report_key_add(tmp_key_name, iter_data);
+            trc_report_key_add(tmp_key_name, iter_data,
+                               iter_name, iter_path);
             free(tmp_key_name);
             key_names = p + 1;
             while (*key_names == ' ')
@@ -453,7 +489,8 @@ trc_report_keys_add(const char *key_names,
         }
         else
         {
-            trc_report_key_add(key_names, iter_data);
+            trc_report_key_add(key_names, iter_data,
+                               iter_name, iter_path);
             key_names = NULL;
         }
         count++;
@@ -485,43 +522,51 @@ trc_report_init_keys()
 static te_errno
 trc_report_keys_to_html(FILE *f, char *keytool_fn)
 {
+    int                     fd_in = -1;
+    int                     fd_out = -1;
     FILE                   *f_in = NULL;
+    FILE                   *f_out = NULL;
+    pid_t                   pid;
     trc_report_key_entry   *key;
-    int                     key_id;
-    char                    buf[TRC_REPORT_KEY_TOOL_CMD_SIZE];
-    int                     buf_len = TRC_REPORT_KEY_TOOL_CMD_SIZE;
-    int                     len = 0;
-    char                   *p = buf;
 
     fprintf(f, "%s", trc_keys_table_start);
 
-    p = buf + sprintf(p, "%s", keytool_fn);
+    if ((pid = te_shell_cmd_inline(keytool_fn, -1,
+                                   &fd_in, &fd_out, NULL)) < 0)
+    {
+        return pid;
+    }
+    f_in = fdopen(fd_in, "w");
+    f_out = fdopen(fd_out, "r");
 
     for (key = TAILQ_FIRST(&keys);
          key != NULL;
          key = TAILQ_NEXT(key, links))
     {
-        VERB("Check %s key\n", key->name);
         if (strncmp(key->name, TRC_REPORT_OL_KEY_PREFIX,
                     strlen(TRC_REPORT_OL_KEY_PREFIX)) == 0)
         {
-            if (sscanf(key->name, TRC_REPORT_OL_KEY_PREFIX "%d",
-                &key_id) == 1)
+            trc_report_key_iter_entry *key_iter = NULL;
+
+            fprintf(f_in, "%s:", key->name);
+
+            for (key_iter = TAILQ_FIRST(&key->iters);
+                 key_iter != NULL;
+                 key_iter = TAILQ_NEXT(key_iter, links))
             {
-                p += sprintf(p, " %d", key_id);
+                fprintf(f_in, "%s#%s,", key_iter->name, key_iter->path);
             }
+            fprintf(f_in, "\n");
         }
     }
 
-    VERB("Start command %s\n", buf);
+    fclose(f_in);
+    close(fd_in);
 
-    f_in = popen(buf, "r");
-    while ((len = fread(buf, 1, buf_len - 1, f_in)) > 0)
-    {
-        buf[len] = '\0';
-        fprintf(f, "%s", buf);
-    }
-    pclose(f_in);
+    file_to_file(f, f_out);
+
+    fclose(f_out);
+    close(fd_out);
 
     fprintf(f, "%s", trc_keys_table_end);
 
@@ -679,21 +724,27 @@ trc_report_exp_got_to_html(FILE                *f,
             rc = trc_exp_result_to_html(f, iter_data->exp_result, 0);
             if (rc != 0)
                 break;
-            
+
             WRITE_STR(trc_test_exp_got_row_mid);
 
             rc = te_test_result_to_html(f, (iter_entry == NULL) ? NULL :
                                                &iter_entry->result);
             if (rc != 0)
                 break;
-            
+
             WRITE_STR(trc_test_exp_got_row_mid);
 
             if (iter_data->exp_result != NULL &&
                 iter_data->exp_result->key != NULL)
             {
                 trc_re_key_substs(iter_data->exp_result->key, f);
-                trc_report_keys_add(iter_data->exp_result->key, iter_data);
+
+                /*
+                 * Iterations does not have unique names and paths yet,
+                 * use test name and path instead of
+                 */
+                trc_report_keys_add(iter_data->exp_result->key, iter_data,
+                                    test->name, (char *)test_path);
             }
 
             fprintf(f, trc_test_exp_got_row_end,
