@@ -112,7 +112,7 @@ static const char * const trc_html_doc_end =
 "</html>\n";
 
 static const char * const trc_stats_table =
-"<table border=1 cellpadding=4 cellspacing=3>\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
 "  <tr>\n"
 "    <td rowspan=7>\n"
 "      <h2>Run</h2>\n"
@@ -199,10 +199,10 @@ static const char * const trc_stats_table =
 "      %u\n"
 "    </td>\n"
 "  </tr>\n"
-"</TABLE>\n";
+"</table>\n";
 
 static const char * const trc_report_html_tests_stats_start =
-"<table border=1 cellpadding=4 cellspacing=3>\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
 "  <thead>\n"
 "    <tr>\n"
 "      <td rowspan=2>\n"
@@ -300,7 +300,7 @@ static const char * const trc_tests_stats_row =
 "    </tr>\n";
 
 static const char * const trc_report_html_test_exp_got_start =
-"<table border=1 cellpadding=4 cellspacing=3>\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
 "  <thead>\n"
 "    <tr>\n"
 "      <td>\n"

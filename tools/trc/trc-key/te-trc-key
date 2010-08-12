@@ -143,7 +143,7 @@ sub colorify
 }
 
 # Produce HTML output
-printf("<table border=1 cellpadding=4 cellspacing=3>\n");
+printf("<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n");
 printf("  <tr>\n");
 printf("    <td><b>Key</b></td>\n");
 printf("    <td><b>Priority</b></td>\n");
