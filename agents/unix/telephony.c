@@ -170,7 +170,7 @@ int
 telephony_pickup(int chan)
 {
     int param = DAHDI_OFFHOOK;
-    
+
     if (ioctl(chan, DAHDI_HOOK, &param) < 0) {
         ERROR("picking up failed: errno %d (%s)", errno, strerror(errno));
         return -1;
@@ -193,7 +193,7 @@ int
 telephony_hangup(int chan)
 {
     int param = DAHDI_ONHOOK;
-    
+
     if (ioctl(chan, DAHDI_HOOK, &param) < 0) {
         ERROR("hanging up failed: errno %d (%s)", errno, strerror(errno));
         return -1;
@@ -249,7 +249,7 @@ telephony_check_dial_tone(int chan, int plan)
             i--;
         }
     }
-    
+
     for (i = 0; i < sizeof(freqs) / sizeof(double); i++)
         pows[i] = telephony_goertzel(buf, BLOCKSIZE, freqs[i]);
  
@@ -265,7 +265,7 @@ telephony_check_dial_tone(int chan, int plan)
             max2 = max1;
             max1 = i;
         }
-        else if (max2 == -1 | pows[i] > pows[max2])
+        else if (max2 == -1 || pows[i] > pows[max2])
         {
             max4 = max3;
             max3 = max2;
@@ -279,7 +279,7 @@ telephony_check_dial_tone(int chan, int plan)
         else if (max4 == -1 || pows[i] > pows[max4])
             max4 = i;
     }
-    
+
     if (((1 << max1 | 1 << max2 | 1 << max3 | 1 << max4) & plan) != plan)
         return 0;
     else
@@ -302,7 +302,7 @@ telephony_dial_number(int chan, const char *number)
     memset(&dop, 0, sizeof(dop));
     dop.op = DAHDI_DIAL_OP_REPLACE;
     dop.dialstr[0] = 'T';
-    
+
     dahdi_copy_string(dop.dialstr + 1, number, sizeof(dop.dialstr));
 
     if (ioctl(chan, DAHDI_DIAL, &dop) < 0) {
@@ -327,7 +327,7 @@ telephony_call_wait(int chan, int timeout)
     int     param;
     fd_set  ex_fds;
     struct timeval tval;
-    
+
     tval.tv_sec = timeout / 1000;
     tval.tv_usec = (timeout % 1000) * 1000;
 
@@ -336,7 +336,7 @@ telephony_call_wait(int chan, int timeout)
         FD_SET(chan, &ex_fds);
 
         param = select(chan + 1, NULL, NULL, &ex_fds, &tval);
-        
+
         if (param == 0)
             return TE_ERPCTIMEOUT;
         else 
