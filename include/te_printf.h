@@ -99,17 +99,30 @@
 #error Unable to print socklen_t integers
 #endif
 
+/* Note: enable this for solaris if asprintf is not implemented */
+#if TE_USE_SPECIFIC_ASPRINTF
 static inline int
 te_vasprintf(char **strp, const char *fmt, va_list ap)
 {
+    va_list aux;
     int len;
 
-    len = vsnprintf(NULL, 0, fmt, ap) + 1;
+    /* Duplicate va_list, because vprintf functions modify it */
+    va_copy(aux, ap);
 
-    *strp = calloc(len, 1);
+    /* Calculate length of formatted string */
+    if ((len = vsnprintf(NULL, 0, fmt, aux) + 1) <= 0)
+        return len;
+
+    /* Allocate buffer with calculated length */
+    if ((*strp = calloc(1, len)) == NULL)
+        return 0;
 
     return vsnprintf(*strp, len, fmt, ap);
 }
+#else
+#define te_vasprintf(strp_, fmt_, ap_) vasprintf((strp_), (fmt_), (ap_))
+#endif
 
 static inline int
 te_asprintf(char **strp, const char *fmt, ...)
@@ -128,7 +141,7 @@ static inline char *
 te_sprintf(const char *fmt, ...)
 {
     va_list  ap;
-    char    *c;
+    char    *c = NULL;
     int      rc;
 
     va_start(ap, fmt);
