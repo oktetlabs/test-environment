@@ -121,7 +121,11 @@ te_vasprintf(char **strp, const char *fmt, va_list ap)
     return vsnprintf(*strp, len, fmt, ap);
 }
 #else
-#define te_vasprintf(strp_, fmt_, ap_) vasprintf((strp_), (fmt_), (ap_))
+static inline int
+te_vasprintf(char **strp, const char *fmt, va_list ap)
+{
+    return vasprintf(strp, fmt, ap);
+}
 #endif
 
 static inline int
