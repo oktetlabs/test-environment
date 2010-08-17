@@ -681,7 +681,7 @@ ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
 static te_errno
 ds_dhcpserver_commit(unsigned int gid, const char *oid)
 {
-    te_errno rc;
+    te_errno rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
