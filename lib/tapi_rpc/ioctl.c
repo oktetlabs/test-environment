@@ -211,6 +211,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
         case RPC_SIOCGIFHWADDR:
         case RPC_SIOCGIFFLAGS:
         case RPC_SIOCGIFMTU:
+        case RPC_SIOCGIFINDEX:
             in.access = IOCTL_RD;
             if (arg != NULL)
             {
@@ -225,6 +226,23 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 sockaddr_input_h2rpc(&((struct ifreq *)arg)->ifr_addr,
                                      &in.req.req_val[0].ioctl_request_u.
                                          req_ifreq.rpc_ifr_addr);
+            }
+            break;
+
+        case RPC_SIOCGIFNAME:
+            in.access = IOCTL_RD;
+            if (arg != NULL)
+            {
+                in.req.req_val[0].type = IOCTL_IFREQ;
+                in.req.req_val[0].ioctl_request_u.req_ifreq.
+                    rpc_ifr_name.rpc_ifr_name_val =
+                    ((struct ifreq *)arg)->ifr_name;
+                in.req.req_val[0].ioctl_request_u.req_ifreq.
+                    rpc_ifr_name.rpc_ifr_name_len =
+                    sizeof(((struct ifreq *)arg)->ifr_name);
+                in.req.req_val[0].ioctl_request_u.req_ifreq.
+                    rpc_ifr_ifindex = 
+                    ((struct ifreq *)arg)->ifr_ifindex;
             }
             break;
 
@@ -529,6 +547,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                            &ifreq->ifr_data);
                         break;
 #endif
+                    case RPC_SIOCGIFINDEX:
+                        ifreq->ifr_ifindex = rpc_ifreq->rpc_ifr_ifindex;
 
                     default:
                         break;
@@ -720,6 +740,14 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                              ((struct ifreq *)arg)->ifr_mtu);
                     break;
 
+                case RPC_SIOCGIFNAME:
+                case RPC_SIOCGIFINDEX:
+                    snprintf(ifreq_buf + strlen(ifreq_buf),
+                             sizeof(ifreq_buf) - strlen(ifreq_buf),
+                             "ifindex: %u ",
+                             ((struct ifreq *)arg)->ifr_ifindex);
+                    break;
+                
                 case RPC_SIOCGIFFLAGS:
                 case RPC_SIOCSIFFLAGS:
                     snprintf(ifreq_buf + strlen(ifreq_buf),

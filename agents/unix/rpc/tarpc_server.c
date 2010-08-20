@@ -2394,6 +2394,12 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                                 req_ifreq.rpc_ifr_flags);
                     break;
 
+                case RPC_SIOCGIFNAME:
+                    req->ifreq.ifr_ifindex =
+                        out->req.req_val[0].ioctl_request_u.
+                        req_ifreq.rpc_ifr_ifindex;
+                    break;
+
                 case RPC_SIOCSIFMTU:
 #if HAVE_STRUCT_IFREQ_IFR_MTU
                     req->ifreq.ifr_mtu =
