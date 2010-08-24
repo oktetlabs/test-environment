@@ -550,6 +550,11 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     case RPC_SIOCGIFINDEX:
                         ifreq->ifr_ifindex = rpc_ifreq->rpc_ifr_ifindex;
 
+                    case RPC_SIOCGIFNAME:
+                        memcpy(ifreq->ifr_name,
+                               rpc_ifreq->rpc_ifr_name.rpc_ifr_name_val,
+                               sizeof(ifreq->ifr_name));
+
                     default:
                         break;
                 }

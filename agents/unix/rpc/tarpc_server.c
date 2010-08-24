@@ -2382,8 +2382,9 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                        rpc_ifr_name.rpc_ifr_name_val,
                    sizeof(req->ifreq.ifr_name));
 
-            INIT_CHECKED_ARG(req->ifreq.ifr_name,
-                             strlen(req->ifreq.ifr_name) + 1, 0);
+            if (in->code != RPC_SIOCGIFNAME)
+                INIT_CHECKED_ARG(req->ifreq.ifr_name,
+                                 strlen(req->ifreq.ifr_name) + 1, 0);
 
             switch (in->code)
             {
