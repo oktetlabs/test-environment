@@ -234,7 +234,8 @@ tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
     te_errno       rc     = 0;
     const uint16_t ip_eth = ETHERTYPE_IP;
     uint8_t        eth_dst[ETHER_ADDR_LEN];
-    asn_value     *ip4_pdu;
+    asn_value     *ip4_pdu = NULL;
+    asn_value     *eth_pdu = NULL;
     int            dont_frag = 1;
 
     if (dst_addr == htonl(INADDR_ANY))
@@ -266,12 +267,18 @@ tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
         tapi_ip4_to_mac(dst_addr, eth_dst);
 
     /* Add Ethernet layer header to PDU template/pattern */
-    rc = tapi_eth_add_pdu(tmpl_or_ptrn, pdu, is_pattern,
+    rc = tapi_eth_add_pdu(tmpl_or_ptrn, &eth_pdu, is_pattern,
                           (dst_addr == htonl(INADDR_ANY)) ? NULL : eth_dst,
                           eth_src,
                           &ip_eth,
                           TE_BOOL3_ANY,
                           TE_BOOL3_ANY);
+    if (rc != 0)
+        return rc;
+
+    /* Force untagged frames */
+    rc = asn_write_value_field(eth_pdu, NULL, 0,
+                               "tagged.#untagged");
     if (rc != 0)
         return rc;
 
