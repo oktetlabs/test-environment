@@ -52,6 +52,12 @@
 /** Define to 1 to use spoilers to show/hide test parameters */
 #define TRC_USE_PARAMS_SPOILERS 0
 
+/** Define to 1 to enable statistics popups */
+#define TRC_USE_STATS_POPUP 0
+
+/** Define to 1 to enable hidden columns in statistics tables */
+#define TRC_USE_HIDDEN_STATS 0
+
 #define WRITE_STR(str) \
     do {                                                \
         fflush(f);                                      \
@@ -63,8 +69,42 @@
         }                                               \
     } while (0)
 
-#define PRINT_STR(str_)  (((str_) != NULL) ? (str_) : "")
+#define PRINT_STR(str_) (((str_) != NULL) ? (str_) : "")
 
+#if TRC_USE_STATS_POPUP
+
+/** Maximum number of nested test packages */
+#define TRC_DB_NEST_LEVEL_MAX       8
+
+#define PRINT_STR1(expr_, str1_) \
+    ((expr_) ? (str1_) : "")
+
+#define PRINT_STR2(expr_, str1_, str2_) \
+    PRINT_STR1(expr_, str1_), \
+    PRINT_STR1(expr_, str2_)
+
+#define PRINT_STR3(expr_, str1_, str2_, str3_) \
+    PRINT_STR2(expr_, str1_, str2_), \
+    PRINT_STR1(expr_, str3_)
+
+#define PRINT_STR4(expr_, str1_, str2_, str3_, str4_) \
+    PRINT_STR2(expr_, str1_, str2_), \
+    PRINT_STR2(expr_, str3_, str4_)
+
+#define PRINT_STR5(expr_, str1_, str2_, str3_, str4_, str5_) \
+    PRINT_STR2(expr_, str1_, str2_), \
+    PRINT_STR2(expr_, str3_, str4_), \
+    PRINT_STR1(expr_, str5_)
+
+#define TRC_STATS_SHOW_HREF_START \
+    "        <a href=\"javascript:showStats('StatsTip','"
+
+#define TRC_STATS_SHOW_HREF_CLOSE "')\">"
+
+#define TRC_STATS_SHOW_HREF_CLOSE_PARAM_PREFIX "', '"
+
+#define TRC_STATS_SHOW_HREF_END "</a>"
+#endif
 
 static const char * const trc_html_title_def =
     "Testing Results Comparison Report";
@@ -83,6 +123,46 @@ static const char * const trc_html_doc_start =
 "    .D {text-align: right; padding-left: 0.24in; padding-right: 0.24in}\n"
 "    .E {font-weight: bold; text-align: right; "
 "padding-left: 0.14in; padding-right: 0.14in}\n"
+"    .test_stats_name { font-weight: bold;}\n"
+"    .test_stats_objective { }\n"
+"    .test_stats_run_total { font-weight: bold; text-align: right; "
+"padding-left: 0.14in; padding-right: 0.14in}\n"
+"    .test_stats_passed_exp { text-align: right; padding-left: 0.14in; "
+"padding-right: 0.14in}\n"
+"    .test_stats_failed_exp { text-align: right; padding-left: 0.14in; "
+"padding-right: 0.14in}\n"
+"    .test_stats_passed_unexp { text-align: right; padding-left: 0.14in; "
+"padding-right: 0.14in}\n"
+"    .test_stats_failed_unexp { text-align: right; padding-left: 0.14in; "
+"padding-right: 0.14in}\n"
+"    .test_stats_aborted_new { text-align: right; padding-left: 0.14in; "
+"padding-right: 0.14in}\n"
+"    .test_stats_not_run_total { font-weight: bold; text-align: right; "
+"padding-left: 0.14in; padding-right: 0.14in}\n"
+"    .test_stats_skipped_exp { text-align: right; padding-left: 0.14in; "
+"padding-right: 0.14in}\n"
+"    .test_stats_skipped_unexp { text-align: right; padding-left: 0.14in; "
+"padding-right: 0.14in}\n"
+"    .test_stats_keys { }\n"
+"    .test_stats_names { }\n"
+#if TRC_USE_STATS_POPUP
+"    #StatsTip {\n"
+"        position: absolute;\n"
+"        visibility: hidden;\n"
+"        font-size: small;\n"
+"        overflow: auto;\n"
+"        width: 600px;\n"
+"        height: 400px;\n"
+"        left: 200px;\n"
+"        top: 100px;\n"
+"        background-color: #c0c0c0;\n"
+"        border: 1px solid #000000;\n"
+"        padding: 10px;\n"
+"    }\n"
+"    #close {\n"
+"        float: right;\n"
+"    }\n"
+#endif
 "  </style>\n"
 #if TRC_USE_PARAMS_SPOILERS
 "  <script type=\"text/javascript\">\n"
@@ -103,8 +183,216 @@ static const char * const trc_html_doc_start =
 "    }\n"
 "  </script>\n"
 #endif
+#if TRC_USE_STATS_POPUP
+"  <script type=\"text/javascript\">\n"
+#if TRC_USE_HIDDEN_STATS
+"    function statsHideColumn(column)\n"
+"    {\n"
+"        var cells = document.getElementsByName('test_stats_' + column);\n"
+"        for (var cell_no in cells)\n"
+"        {\n"
+"            cells[cell_no].style.visibility = 'none';\n"
+"        }\n"
+"    }\n"
+#endif
+"    function fillStats(name)\n"
+"    {\n"
+"        var package = test_stats[name];\n"
+"        if (package == null)\n"
+"        {\n"
+"            alert('Failed to get element ' + name);\n"
+"            return;\n"
+"        }\n"
+"\n"
+"        var test_list = package['subtests'];\n"
+"        if (test_list == null)\n"
+"        {\n"
+"            alert('Failed to get subtests of ' + name);\n"
+"            return;\n"
+"        }\n"
+"\n"
+"        var innerHTML = '';\n"
+"        innerHTML += '<span id=\"close\"> ' +\n"
+"                     '<a href=\"javascript:hideStats(\\'StatsTip\\')\"' +"
+"\n"
+"                     'style=\"text-decoration: none\">' +\n"
+"                     '<strong>[x]</strong></a></span>';\n"
+"        innerHTML += '<table border=1 cellpadding=4 cellspacing=3 ' +\n"
+"                     'width=100%% style=\"font-size:small;"
+"text-align:right;\">';\n"
+"        innerHTML += '<tr><td colspan=7 align=\"center\">' +\n"
+"                     '<b>Package: ' + package['name'] + "
+"'</b></td></tr>';\n"
+"        innerHTML += '<tr><td><b>Test</b></td>' +\n"
+"                     '<td><b>Total</b></td>' +\n"
+"                     '<td><b>Passed<br/>expect</b></td>' +\n"
+"                     '<td><b>Failed<br/>expect</b></td>' +\n"
+"                     '<td><b>Passed<br/>unexpect</b></td>' +\n"
+"                     '<td><b>Failed<br/>unexpect</b></td>' +\n"
+"                     '<td><b>Not run</b></td></tr>';\n"
+"        var test_no;\n"
+"        for (test_no in test_list)\n"
+"        {\n"
+"            var test = test_stats[test_list[test_no]];\n"
+"\n"
+"            innerHTML += '<tr>';\n"
+"            innerHTML += '<td><a href=\"#' + test['path'] + '\">' + \n"
+"                         test['name'] + '</a></td>' +\n"
+"                         '<td>' + test['total'] + '</td>' +\n"
+"                         '<td>' + test['passed_exp'] + '</td>' +\n"
+"                         '<td>' + test['failed_exp'] + '</td>' +\n"
+"                         '<td>' + test['passed_unexp'] + '</td>' +\n"
+"                         '<td>' + test['failed_unexp'] + '</td>' +\n"
+"                         '<td>' + test['not_run'] + '</td>';\n"
+"            innerHTML += '</tr>';\n"
+"        }\n"
+"        innerHTML += '</table>';\n"
+"        innerHTML += '<span id=\"close\"> ' +\n"
+"                     '<a href=\"javascript:hideStats(\\'StatsTip\\') \"' +"
+"\n"
+"                     'style=\"text-decoration: none\">' +\n"
+"                     '<strong>[x]</strong></a></span>';\n"
+"\n"
+"        return innerHTML;\n"
+"    }\n"
+"\n"
+"    function filterStats(name,field)\n"
+"    {\n"
+"        var package = test_stats[name];\n"
+"        if (package === null)\n"
+"        {\n"
+"            alert('Failed to get element ' + name);\n"
+"            return;\n"
+"        }\n"
+"\n"
+"        var test_list = package['subtests'];\n"
+"        if (test_list === null)\n"
+"        {\n"
+"            alert('Failed to get subtests of ' + name);\n"
+"            return;\n"
+"        }\n"
+"\n"
+"        var innerHTML = '';\n"
+"        innerHTML += '<span id=\"close\"> ' +\n"
+"                     '<a href=\"javascript:hideStats(\\'StatsTip\\') \"' +"
+"\n"
+"                     'style=\"text-decoration: none\">' +\n"
+"                     '<strong>[x]</strong></a></span>';\n"
+"        innerHTML += '<table border=1 cellpadding=4 cellspacing=3 ' +\n"
+"                     'width=100%% style=\"font-size:small;"
+"text-align:right;\">';\n"
+"        innerHTML += '<tr><td colspan=2 align=\"center\">' +\n"
+"                     '<b>Package: ' + package['name'] + '</b></td></tr>';"
+"\n"
+"        innerHTML += '<tr><td><b>Test</b></td>' +\n"
+"                     '<td><b>' + field + '</b></td></tr>';\n"
+"        var test_no;\n"
+"        for (test_no in test_list)\n"
+"        {\n"
+"            var test = test_stats[test_list[test_no]];\n"
+"            if (test[field] <= 0)\n"
+"                continue;\n"
+"\n"
+"            innerHTML += '<tr>';\n"
+"            innerHTML += '<td><a href=\"#' + test['path'] + '\">' +\n"
+"                         test['name'] + '</a></td>' +\n"
+"                         '<td>' + test[field] + '</td>';\n"
+"            innerHTML += '</tr>';\n"
+"        }\n"
+"        innerHTML += '</table>';\n"
+"        innerHTML += '<span id=\"close\"> ' +\n"
+"                     '<a href=\"javascript:hideStats(\\'StatsTip\\')"
+"\"' +\n"
+"                     'style=\"text-decoration: none\">' +\n"
+"                     '<strong>[x]</strong></a></span>';\n"
+"\n"
+"        return innerHTML;\n"
+"    }\n"
+"\n"
+"    function centerStats(obj)\n"
+"    {\n"
+"        var scrolled_x, scrolled_y;\n"
+"        if (self.pageYOffset)\n"
+"        {\n"
+"            scrolled_x = self.pageXOffset;\n"
+"            scrolled_y = self.pageYOffset;\n"
+"        }\n"
+"        else if (document.documentElement &&\n"
+"                 document.documentElement.scrollTop)\n"
+"        {\n"
+"            scrolled_x = document.documentElement.scrollLeft;\n"
+"            scrolled_y = document.documentElement.scrollTop;\n"
+"        }\n"
+"        else if (document.body)\n"
+"        {\n"
+"            scrolled_x = document.body.scrollLeft;\n"
+"            scrolled_y = document.body.scrollTop;\n"
+"        }\n"
+"\n"
+"        var center_x, center_y;\n"
+"        if (self.innerHeight)\n"
+"        {\n"
+"            center_x = self.innerWidth;\n"
+"            center_y = self.innerHeight;\n"
+"        }\n"
+"        else if (document.documentElement &&\n"
+"                 document.documentElement.clientHeight)\n"
+"        {\n"
+"            center_x = document.documentElement.clientWidth;\n"
+"            center_y = document.documentElement.clientHeight;\n"
+"        }\n"
+"        else if (document.body)\n"
+"        {\n"
+"            center_x = document.body.clientWidth;\n"
+"            center_y = document.body.clientHeight;\n"
+"        }\n"
+"\n"
+"        var leftOffset = scrolled_x + (center_x - obj.offsetWidth) / 2;\n"
+"        var topOffset = scrolled_y + (center_y - obj.offsetHeight) / 2;\n"
+"\n"
+"        obj.style.top = topOffset + 'px';\n"
+"        obj.style.left = leftOffset + 'px';\n"
+"    }\n"
+"\n"
+"    function showStats(obj_name,name,field)\n"
+"    {\n"
+"        var obj = document.getElementById(obj_name);\n"
+"        if (typeof obj == 'undefined')\n"
+"            alert('Failed to get object ' + obj_name);\n"
+"\n"
+"        if (field)\n"
+"        {\n"
+"            obj.innerHTML = filterStats(name,field);\n"
+"        }\n"
+"        else\n"
+"        {\n"
+"            obj.innerHTML = fillStats(name);\n"
+"        }\n"
+"        //alert(obj.innerHTML);\n"
+"        centerStats(obj);\n"
+"        obj.style.visibility = \"visible\";\n"
+"    }\n"
+"\n"
+"    function hideStats(obj_name)\n"
+"    {\n"
+"        var obj = document.getElementById(obj_name);\n"
+"        if (typeof obj == 'undefined')\n"
+"            alert('Failed to get object ' + obj_name);\n"
+"\n"
+"        obj.style.visibility = \"hidden\";\n"
+"    }\n"
+"  </script>\n"
+#endif
 "</head>\n"
-"<body lang=\"en-US\" dir=\"ltr\">\n";
+"<body lang=\"en-US\" dir=\"ltr\">\n"
+#if TRC_USE_STATS_POPUP
+"    <div id=\"StatsTip\">\n"
+"      <span id=\"close\"><a href=\"javascript:hideStats('StatsTip')\" "
+"style=\"text-decoration: none\"><strong>[x]</strong></a></span>\n"
+"      <p>Tests Statistics</p><br/>\n"
+"    </div>\n"
+#endif
+;
 
 
 static const char * const trc_html_doc_end =
@@ -225,32 +513,67 @@ static const char * const trc_report_html_tests_stats_start =
 "      </td>\n"
 "    </tr>\n"
 "    <tr>\n"
-"      <td>\n"
+"      <td class=\"test_stats_total\" name=\"test_stats_total\">\n"
 "        <b>Total</b>\n"
+#if TRC_USE_HIDDEN_STATS
+"        <a href=\"javascript:statsHideColumn('total')\">x</a>\n"
+#endif
 "      </td>\n"
-"      <td>\n"
+"      <td class=\"test_stats_passed_exp\" "
+"name=\"test_stats_passed_exp\">\n"
 "        Passed expect\n"
+#if TRC_USE_HIDDEN_STATS
+"        <a href=\"javascript:statsHideColumn('passed_exp')\">x</a>\n"
+#endif
 "      </td>\n"
-"      <td>\n"
+"      <td class=\"test_stats_failed_exp\" "
+"name=\"test_stats_failed_exp\">\n"
 "        Failed expect\n"
+#if TRC_USE_HIDDEN_STATS
+"        <a href=\"javascript:statsHideColumn('failed_exp')\">x</a>\n"
+#endif
 "      </td>\n"
-"      <td>\n"
+"      <td class=\"test_stats_passed_unexp\" "
+"name=\"test_stats_passed_unexp\">\n"
 "        Passed unexp\n"
+#if TRC_USE_HIDDEN_STATS
+"        <a href=\"javascript:statsHideColumn('passed_unexp')\">x</a>\n"
+#endif
 "      </td>\n"
-"      <td>\n"
+"      <td class=\"test_stats_failed_unexp\" "
+"name=\"test_stats_failed_unexp\">\n"
 "        Failed unexp\n"
+#if TRC_USE_HIDDEN_STATS
+"        <a href=\"javascript:statsHideColumn('failed_unexp')\">x</a>\n"
+#endif
 "      </td>\n"
-"      <td>\n"
+"      <td class=\"test_stats_aborted_new\" "
+"name=\"test_stats_aborted_new\">\n"
 "        Aborted, New\n"
+#if TRC_USE_HIDDEN_STATS
+"        <a href=\"javascript:statsHideColumn('aborted_new')\">x</a>\n"
+#endif
 "      </td>\n"
-"      <td>\n"
+"      <td class=\"test_stats_not_run\" "
+"name=\"test_stats_not_run\">\n"
 "        <b>Total</b>\n"
+#if TRC_USE_HIDDEN_STATS
+"        <a href=\"javascript:statsHideColumn('not_run')\">x</a>\n"
+#endif
 "      </td>\n"
-"      <td>\n"
+"      <td class=\"test_stats_skipped_exp\" "
+"name=\"test_stats_skipped_exp\">\n"
 "        Skipped expect\n"
+#if TRC_USE_HIDDEN_STATS
+"        <a href=\"javascript:statsHideColumn('skipped_exp')\">x</a>\n"
+#endif
 "      </td>\n"
-"      <td>\n"
+"      <td class=\"test_stats_skipped_unexp\" "
+"name=\"test_stats_skipped_unexp\">\n"
 "        Skipped unexp\n"
+#if TRC_USE_HIDDEN_STATS
+"        <a href=\"javascript:statsHideColumn('skipped_unexp')\">x</a>\n"
+#endif
 "      </td>\n"
 "    </tr>\n"
 "  </thead>\n"
@@ -260,43 +583,62 @@ static const char * const trc_tests_stats_end =
 "  </tbody>\n"
 "</table>\n";
 
+#if TRC_USE_STATS_POPUP
+#define TRC_TESTS_STATS_FIELD_FMT   "        %s%s%s%s%s%u%s\n"
+#else
+#define TRC_TESTS_STATS_FIELD_FMT   "        %u\n"
+#endif
+
 static const char * const trc_tests_stats_row =
 "    <tr>\n"
-"      <td>\n"
+"      <td class=\"test_stats_name\" name=\"test_stats_name\">\n"
 "        %s<b><a %s=\"%s%s\">%s</a></b>\n"
+#if TRC_USE_STATS_POPUP
+"        %s%s%s\n"
+#endif
 "      </td>\n"
-"      <td>\n"
+"      <td class=\"test_stats_objective\" "
+"name=\"test_stats_objective\">\n"
 "        %s%s%s%s%s\n"
 "      </td>\n"
-"      <td class=\"E\">\n"
+"      <td class=\"test_stats_total\" "
+"name=\"test_stats_total\">\n"
+       TRC_TESTS_STATS_FIELD_FMT
+"      </td>\n"
+"      <td class=\"test_stats_passed_exp\" "
+"name=\"test_stats_passed_exp\">\n"
+       TRC_TESTS_STATS_FIELD_FMT
+"      </td>\n"
+"      <td class=\"test_stats_failed_exp\" "
+"name=\"test_stats_failed_exp\">\n"
+       TRC_TESTS_STATS_FIELD_FMT
+"      </td>\n"
+"      <td class=\"test_stats_passed_unexp\" "
+"name=\"test_stats_passed_unexp\">\n"
+       TRC_TESTS_STATS_FIELD_FMT
+"      </td>\n"
+"      <td class=\"test_stats_failed_unexp\" "
+"name=\"test_stats_failed_unexp\">\n"
+       TRC_TESTS_STATS_FIELD_FMT
+"      </td>\n"
+"      <td class=\"test_stats_aborted_new\" "
+"name=\"test_stats_aborted_new\">\n"
+       TRC_TESTS_STATS_FIELD_FMT
+"      </td>\n"
+"      <td class=\"test_stats_not_run\" "
+"name=\"test_stats_not_run\">\n"
+       TRC_TESTS_STATS_FIELD_FMT
+"      </td>\n"
+"      <td class=\"test_stats_skip_exp\" "
+"name=\"test_stats_skip_exp\">\n"
 "        %u\n"
 "      </td>\n"
-"      <td class=\"C\">\n"
+"      <td class=\"test_stats_skip_unexp\" "
+"name=\"test_stats_skip_unexp\">\n"
 "        %u\n"
-"      </td>\n"
-"      <td class=\"C\">\n"
-"        %u\n"
-"      </td>\n"
-"      <td class=\"C\">\n"
-"        %u\n"
-"      </td>\n"
-"      <td class=\"C\">\n"
-"        %u\n"
-"      </td>\n"
-"      <td class=\"C\">\n"
-"        %u\n"
-"      </td>\n"
-"      <td class=\"E\">\n"
-"        %u\n"
-"      </td>\n"
-"      <td class=\"C\">\n"
-"        %u\n"
-"      </td>\n"
-"      <td class=\"C\">\n"
-"        %u\n"
-"      </td>\n"
-"      <td>%s</td>\n"
-"      <td>%s</td>\n"
+"      </td >\n"
+"      <td class=\"test_stats_keys\" name=\"test_stats_keys\">%s</td>\n"
+"      <td class=\"test_stats_notes\" name=\"test_stats_notes\">%s</td>\n"
 "    </tr>\n";
 
 static const char * const trc_report_html_test_exp_got_start =
@@ -331,7 +673,7 @@ static const char * const trc_test_exp_got_end =
 
 static const char * const trc_test_exp_got_row_start =
 "    <tr>\n"
-"      <td>\n"
+"      <td valign=top>\n"
 "        %s<b><a %s%s%shref=\"#OBJECTIVE%s\">%s</a></b>\n"
 "      </td>\n"
 "      <td valign=top>";
@@ -354,12 +696,48 @@ static const char * const trc_test_exp_got_row_end =
 "      <td>%s %s</td>\n"
 "    </tr>\n";
 
+#if TRC_USE_STATS_POPUP
+static const char * const trc_report_javascript_table_start =
+"  <script type=\"text/javascript\">\n"
+"    var test_stats = new Array();\n"
+"\n"
+"    function updateStats(test_name, stats)\n"
+"    {\n"
+"        if (test_stats[test_name])\n"
+"        {\n"
+"            var test = test_stats[test_name];\n"
+"            test['total'] += stats['total'];\n"
+"            test['passed_exp'] += stats['passed_exp'];\n"
+"            test['failed_exp'] += stats['failed_exp'];\n"
+"            test['passed_unexp'] += stats['passed_unexp'];\n"
+"            test['failed_unexp'] += stats['failed_unexp'];\n"
+"            test['aborted_new'] += stats['aborted_new'];\n"
+"            test['not_run'] += stats['not_run'];\n"
+"        }\n"
+"        else\n"
+"        {\n"
+"            test_stats[test_name] = stats;\n"
+"        }\n"
+"    }\n"
+"\n";
+
+static const char * const trc_report_javascript_table_end =
+"  </script>\n";
+
+static const char * const trc_report_javascript_table_row =
+"    updateStats('%s', {name:'%s', path:'%s', total:%d, passed_exp:%d, "
+"failed_exp:%d, passed_unexp:%d, failed_unexp:%d, aborted_new:%d, "
+"not_run:%d, skipped_exp:%d, skipped_unexp:%d});\n";
+
+static const char * const trc_report_javascript_table_subtests =
+"    test_stats['%s'].subtests = [%s];\n";
+#endif
 
 static TAILQ_HEAD(, trc_report_key_entry) keys;
 
 static int file_to_file(FILE *dst, FILE *src);
 
-static trc_report_key_entry *
+trc_report_key_entry *
 trc_report_key_find(const char *key_name)
 {
     trc_report_key_entry *key;
@@ -375,10 +753,10 @@ trc_report_key_find(const char *key_name)
     return key;
 }
 
-static trc_report_key_entry *
+trc_report_key_entry *
 trc_report_key_add(const char *key_name,
                    const trc_report_test_iter_data *iter_data,
-                   char *iter_name, char *iter_path)
+                   const char *iter_name, const char *iter_path)
 {
     trc_report_key_entry        *key = trc_report_key_find(key_name);
     trc_report_key_iter_entry   *key_iter = NULL;
@@ -419,10 +797,10 @@ trc_report_key_add(const char *key_name,
     return key;
 }
 
-static int
+int
 trc_report_keys_add(const char *key_names,
                     const trc_report_test_iter_data *iter_data,
-                    char *iter_name, char *iter_path)
+                    const char *iter_name, const char *iter_path)
 {
     int     count = 0;
     char   *p = NULL;
@@ -470,7 +848,8 @@ trc_report_keys_add(const char *key_names,
 }
 
 char *
-trc_report_key_test_path(FILE *f, char *test_path, char *key_names)
+trc_report_key_test_path(FILE *f, const char *test_path,
+                         const char *key_names)
 {
     char *path = te_sprintf("%s-%s", test_path, key_names);
     char *p;
@@ -491,7 +870,7 @@ trc_report_key_test_path(FILE *f, char *test_path, char *key_names)
     return path;
 }
 
-static void
+void
 trc_report_init_keys()
 {
     TAILQ_INIT(&keys);
@@ -510,7 +889,7 @@ trc_report_init_keys()
  *
  * @return Status code.
  */
-static te_errno
+te_errno
 trc_report_keys_to_html(FILE *f, char *keytool_fn)
 {
     int                     fd_in = -1;
@@ -635,7 +1014,7 @@ trc_report_test_iter_entry_output(
  *
  * @return Status code.
  */
-static te_errno
+te_errno
 trc_report_exp_got_to_html(FILE                *f,
                            trc_report_ctx      *ctx,
                            te_trc_db_walker    *walker,
@@ -725,7 +1104,7 @@ trc_report_exp_got_to_html(FILE                *f,
                 iter_data->exp_result->key != NULL)
             {
                 char *key_test_path =
-                    trc_report_key_test_path(f, (char *)test_path,
+                    trc_report_key_test_path(f, test_path,
                                              iter_data->exp_result->key);
 
                 trc_re_key_substs(iter_data->exp_result->key, f);
@@ -789,6 +1168,7 @@ trc_report_test_output(const trc_report_stats *stats, unsigned int flags)
             (~flags & TRC_REPORT_NO_STATS_NOT_RUN)))));
 }
 
+
 /**
  * Output test entry to HTML report.
  *
@@ -832,28 +1212,230 @@ trc_report_test_stats_to_html(FILE             *f,
                      ((~flags & TRC_REPORT_NO_SCRIPTS) &&
                      (test->type == TRC_TEST_SCRIPT)));
 
+#if TRC_USE_STATS_POPUP
+#define TRC_STATS_FIELD_POPUP(field_,value_,expr_) \
+    PRINT_STR5((test->type == TRC_TEST_PACKAGE) && \
+               ((value_) > 0) && (expr_), \
+               TRC_STATS_SHOW_HREF_START, \
+               test_path, \
+               TRC_STATS_SHOW_HREF_CLOSE_PARAM_PREFIX, \
+               (field_), \
+               TRC_STATS_SHOW_HREF_CLOSE), \
+    (value_), \
+    PRINT_STR1((test->type == TRC_TEST_PACKAGE) && \
+               ((value_) > 0) && (expr_), \
+               TRC_STATS_SHOW_HREF_END)
+#else
+#define TRC_STATS_FIELD_POPUP(field_,value_,expr_) (value_)
+#endif
+
         fprintf(f, trc_tests_stats_row,
                 PRINT_STR(level_str),
                 name_link ? "href" : "name",
                 name_link ? "#" : "",
                 test_path,
                 test->name,
+
+#if TRC_USE_STATS_POPUP
+                PRINT_STR3((test->type == TRC_TEST_PACKAGE) &&
+                           (flags & TRC_REPORT_NO_SCRIPTS) &&
+                           (TRC_STATS_RUN(stats) > 0),
+                           TRC_STATS_SHOW_HREF_START,
+                           test_path,
+                           TRC_STATS_SHOW_HREF_CLOSE
+                           "[...]"
+                           TRC_STATS_SHOW_HREF_END),
+#endif
                 test_path != NULL ? "<a name=\"OBJECTIVE" : "",
                 PRINT_STR(test_path),
                 test_path != NULL ? "\">": "",
                 PRINT_STR(test->objective),
                 test_path != NULL ? "</a>": "",
-                TRC_STATS_RUN(stats),
-                stats->pass_exp, stats->fail_exp,
-                stats->pass_une, stats->fail_une,
-                stats->aborted + stats->new_run,
-                TRC_STATS_NOT_RUN(stats),
+                TRC_STATS_FIELD_POPUP("total", TRC_STATS_RUN(stats), TRUE),
+                TRC_STATS_FIELD_POPUP("passed_exp", stats->pass_exp, TRUE),
+                TRC_STATS_FIELD_POPUP("failed_exp", stats->fail_exp, TRUE),
+                TRC_STATS_FIELD_POPUP("passed_unexp",
+                                      stats->pass_une, TRUE),
+                TRC_STATS_FIELD_POPUP("failed_unexp",
+                                      stats->fail_une, TRUE),
+                TRC_STATS_FIELD_POPUP("aborted_new",
+                                      stats->aborted +
+                                      stats->new_run, TRUE),
+                TRC_STATS_FIELD_POPUP("not_run", TRC_STATS_NOT_RUN(stats),
+                                      TRC_STATS_RUN(stats) > 0),
                 stats->skip_exp, stats->skip_une,
                 PRINT_STR(keys), PRINT_STR(test->notes));
+#undef TRC_STATS_FIELD_POPUP
     }
 
     return 0;
 }
+
+#if TRC_USE_STATS_POPUP
+/**
+ * Generate javascript tests table in HTML report.
+ *
+ * @param f             File stream to write to
+ * @param test_name     Test name
+ * @param test_path     Full test path
+ * @param stats         Test stats
+ *
+ * @return Status code.
+ */
+te_errno
+trc_report_javascript_table_entry(FILE                   *f,
+                                  const char             *test_name,
+                                  const char             *test_path,
+                                  const trc_report_stats *stats)
+{
+    te_errno    rc = 0;
+
+    if ((test_name == NULL) || (test_path == NULL) || (stats == NULL))
+        return 0;
+
+    fprintf(f, trc_report_javascript_table_row,
+            test_path, test_name, test_path,
+            TRC_STATS_RUN(stats),
+            stats->pass_exp, stats->fail_exp,
+            stats->pass_une, stats->fail_une,
+            stats->aborted + stats->new_run,
+            TRC_STATS_NOT_RUN(stats),
+            stats->skip_exp, stats->skip_une);
+
+    return rc;
+}
+
+/**
+ * Fill javascript subtests.
+ *
+ * @param f             File stream to write to
+ * @param test_name     Test name
+ * @param test_path     Full test path
+ * @param stats         Test stats
+ *
+ * @return Status code.
+ */
+te_errno
+trc_report_javascript_package_subtests(FILE *f,
+                                       const char *test_name,
+                                       const char *subtests)
+{
+    te_errno    rc = 0;
+
+    if ((test_name == NULL) || (subtests == NULL))
+        return 0;
+
+    fprintf(f, trc_report_javascript_table_subtests,
+            test_name, PRINT_STR(subtests));
+
+    return rc;
+}
+
+/**
+ * Generate javascript test statistics tree in HTML report.
+ *
+ * @param f         File stream to write to
+ * @param ctx       TRC report context
+ * @param flags     Output flags
+ *
+ * @return Status code.
+ */
+static te_errno
+trc_report_javascript_table(FILE *f, trc_report_ctx *ctx, 
+                            unsigned int flags)
+{
+    te_errno                rc = 0;
+    te_trc_db_walker       *walker;
+    trc_db_walker_motion    mv;
+    unsigned int            level = 0;
+    const char             *last_test_name = NULL;
+    te_string               test_path = TE_STRING_INIT;
+    te_string               init_string = TE_STRING_INIT;
+    te_string               subtests[TRC_DB_NEST_LEVEL_MAX];
+
+    walker = trc_db_new_walker(ctx->db);
+    if (walker == NULL)
+        return TE_ENOMEM;
+
+    WRITE_STR(trc_report_javascript_table_start);
+
+    while ((rc == 0) &&
+           ((mv = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
+    {
+        const trc_test *test = trc_db_walker_get_test(walker);
+        const trc_report_test_data *test_data =
+            trc_db_walker_get_user_data(walker, ctx->db_uid);
+        const trc_report_stats *stats =
+            test_data ? &test_data->stats : NULL;
+
+        switch (mv)
+        {
+            case TRC_DB_WALKER_SON:
+                subtests[level++] = init_string;
+                /*@fallthrough@*/
+
+            case TRC_DB_WALKER_BROTHER:
+                if ((level & 1) == 1)
+                {
+                    /* Test entry */
+                    if (mv != TRC_DB_WALKER_SON)
+                    {
+                        te_string_cut(&test_path,
+                                      strlen(last_test_name) + 1);
+                    }
+
+                    last_test_name = trc_db_walker_get_test(walker)->name;
+
+                    rc = te_string_append(&test_path, "-%s",
+                                          last_test_name);
+                    if (rc != 0)
+                        break;
+
+                    if (!trc_report_test_output(stats, flags))
+                        break;
+
+                    rc = te_string_append(&subtests[level - 1], "'%s',",
+                                          test_path);
+                    if (rc != 0)
+                        break;
+
+                    rc = trc_report_javascript_table_entry(f, test->name,
+                                                           test_path.ptr,
+                                                           stats);
+                }
+                break;
+
+            case TRC_DB_WALKER_FATHER:
+                level--;
+                if ((level & 1) == 0)
+                {
+                    /* Back from the test to parent iteration */
+                    te_string_cut(&test_path,
+                                  strlen(last_test_name) + 1);
+
+                    last_test_name = trc_db_walker_get_test(walker)->name;
+
+                    rc = trc_report_javascript_package_subtests(f,
+                                     test_path.ptr, subtests[level].ptr);
+    
+                    te_string_free(&subtests[level]);
+                }
+                break;
+
+            default:
+                assert(FALSE);
+                break;
+        }
+    }
+    WRITE_STR(trc_report_javascript_table_end);
+
+cleanup:
+    trc_db_free_walker(walker);
+    te_string_free(&test_path);
+    return rc;
+}
+#endif
+
 
 /**
  * Generate one table in HTML report.
@@ -1042,6 +1624,16 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
     {
         trc_report_init_keys();
     }
+
+#if TRC_USE_STATS_POPUP
+    if (~flags & TRC_REPORT_NO_SCRIPTS)
+    {
+        /* Build javascript tree of tests */
+        rc = trc_report_javascript_table(f, gctx, flags);
+        if (rc != 0)
+            goto cleanup;
+    }
+#endif
 
     if (~flags & TRC_REPORT_NO_TOTAL_STATS)
     {
