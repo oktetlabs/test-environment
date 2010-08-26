@@ -22,9 +22,38 @@ TE_APP_SET
 # Checks for libraries
 TE_PATH_LIBXML2
 
+CPPFLAGS=${XML2_CFLAGS}
+
+# Check 'with' options
+AC_ARG_WITH([spoilers],, 
+[if test "${withval}" = yes; then
+    with_spoilers=yes;
+ fi
+], [with_spoilers=no])
+
+AC_ARG_WITH([popups],, 
+[if test "${withval}" = yes; then
+    with_popups=yes;
+ fi
+], [with_popups=no])
+
+AM_CONDITIONAL(WITH_SPOILERS,     test "$with_spoilers" = "yes")
+AM_CONDITIONAL(WITH_POPUPS,       test "$with_popups" = "yes")
+
+if test "$with_spoilers" = "yes"; then
+  TE_CFLAGS="$TE_CFLAGS -DWITH_SPOILERS"
+fi
+
+if test "$with_popups" = "yes"; then
+  TE_CFLAGS="$TE_CFLAGS -DWITH_POPUPS"
+fi
+
+AC_SUBST([TE_CFLAGS])
+
+AC_ARG_VAR([TE_CFLAGS])
+
 AC_CONFIG_HEADERS([config.h])
 
-CPPFLAGS=${XML2_CFLAGS}
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 AC_CHECK_MEMBER([struct _xmlSAXHandler._private], [], [], 
                 [#include <libxml/parser.h>])
