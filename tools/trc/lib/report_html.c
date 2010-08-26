@@ -50,13 +50,25 @@
 #include "te_shell_cmd.h"
 
 /** Define to 1 to use spoilers to show/hide test parameters */
+#ifdef WITH_SPOILERS
+#define TRC_USE_PARAMS_SPOILERS 1
+#else
 #define TRC_USE_PARAMS_SPOILERS 0
+#endif
 
 /** Define to 1 to enable statistics popups */
+#ifdef WITH_POPUPS
+#define TRC_USE_STATS_POPUP 1
+#else
 #define TRC_USE_STATS_POPUP 0
+#endif
 
 /** Define to 1 to enable hidden columns in statistics tables */
+#ifdef WITH_HIDDEN_STATS
+#define TRC_USE_HIDDEN_STATS 1
+#else
 #define TRC_USE_HIDDEN_STATS 0
+#endif
 
 #define WRITE_STR(str) \
     do {                                                \
