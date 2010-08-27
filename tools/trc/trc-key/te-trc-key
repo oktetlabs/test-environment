@@ -146,13 +146,13 @@ sub colorify
 printf("<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n");
 printf("  <tr>\n");
 printf("    <td><b>Key</b></td>\n");
+printf("    <td><b>Tests</b></td>\n");
 printf("    <td><b>Priority</b></td>\n");
 printf("    <td><b>Severity</b></td>\n");
 printf("    <td><b>Status</b></td>\n");
 printf("    <td><b>Summary</b></td>\n");
 printf("    <td><b>Product</b></td>\n");
 printf("    <td><b>Component</b></td>\n");
-printf("    <td><b>Tests</b></td>\n");
 printf("  </tr>\n");
 
 for my $b (@bugs)
@@ -162,13 +162,13 @@ for my $b (@bugs)
 
     printf("<tr style=\"color:#%s\">\n", colorify($b->{'priority'}, $b->{'bug_severity'}));
     printf("  <td><a href=%s>OL %s</a></td>\n", $bug_url, $b->{'id'});
+    printf("  <td>%s</td>\n", $b->{'tests'});
     printf("  <td>%s</td>\n", $b->{'priority'});
     printf("  <td>%s</td>\n", $b->{'bug_severity'});
     printf("  <td>%s %s</td>\n", $b->{'bug_status'}, $b->{'resolution'});
     printf("  <td>%s</td>\n", $b->{'summary'});
     printf("  <td>%s</td>\n", $b->{'product'});
     printf("  <td>%s</td>\n", $b->{'component'});
-    printf("  <td>%s</td>\n", $b->{'tests'});
     printf("</tr>\n");
 }
 
