@@ -58,7 +58,7 @@
 
 /** Define to 1 to enable statistics popups */
 #ifdef WITH_POPUPS
-#define TRC_USE_STATS_POPUP 0
+#define TRC_USE_STATS_POPUP 1
 #else
 #define TRC_USE_STATS_POPUP 0
 #endif
