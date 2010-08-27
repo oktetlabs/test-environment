@@ -58,7 +58,7 @@
 
 /** Define to 1 to enable statistics popups */
 #ifdef WITH_POPUPS
-#define TRC_USE_STATS_POPUP 1
+#define TRC_USE_STATS_POPUP 0
 #else
 #define TRC_USE_STATS_POPUP 0
 #endif
@@ -398,15 +398,18 @@ static const char * const trc_html_doc_start =
 "  </script>\n"
 #endif
 "</head>\n"
-"<body lang=\"en-US\" dir=\"ltr\" onClick=\"hideStats('StatsTip')\">\n"
+"<body lang=\"en-US\" dir=\"ltr\" "
 #if TRC_USE_STATS_POPUP
+"onClick=\"hideStats('StatsTip')\" "
+"onScroll=\"centerStats(document.getElementById('StatsTip'))\">\n"
 "    <div id=\"StatsTip\" onClick=\"doNothing(event)\">\n"
 "      <span id=\"close\"><a href=\"javascript:hideStats('StatsTip')\" "
 "style=\"text-decoration: none\"><strong>[x]</strong></a></span>\n"
 "      <p>Tests Statistics</p><br/>\n"
-"    </div>\n"
+"    </div>\n";
+#else
+">\n";
 #endif
-;
 
 
 static const char * const trc_html_doc_end =
