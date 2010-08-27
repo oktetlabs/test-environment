@@ -121,7 +121,7 @@ for my $bug_line (<STDIN>)
 sub colorify
 {
     my ($priority, $severity) = @_;
-    my $color = "#000000";
+    my $color = "000000";
 
     if (($priority eq 'P1') or
         (($severity eq 'blocker')) or
