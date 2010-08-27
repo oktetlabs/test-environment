@@ -37,6 +37,7 @@
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #endif
 
 #include "te_defs.h"
@@ -821,19 +822,6 @@ trc_report_keys_add(const char *key_names,
 {
     int     count = 0;
     char   *p = NULL;
-    trc_report_test_iter_entry *iter = NULL;
-
-    for (iter = TAILQ_FIRST(&iter_data->runs);
-         iter != NULL;
-         iter = TAILQ_NEXT(iter, links))
-    {
-        if ((iter->result.status != TE_TEST_PASSED) &&
-            (iter->result.status != TE_TEST_SKIPPED))
-            break;
-    }
-
-    if (iter == NULL)
-        return 0;
 
     /* Iterate through keys list with ',' delimiter */
     while ((key_names != NULL) && (*key_names != '\0'))
@@ -1018,6 +1006,30 @@ trc_report_test_iter_entry_output(
 }
 
 /**
+ * Modify keys string to alter substitution rule to generate
+ * reference to link
+ *
+ * @param keys      Keys string to modify
+ *
+ * @return Modified keys string.
+ */
+static inline char *
+trc_link_keys(const char *keys)
+{
+    char *p;
+    char *link_keys = strdup(keys);
+
+    if (link_keys == NULL)
+        return NULL;
+
+    for (p = link_keys; *p != '\0'; p++)
+        *p = tolower(*p);
+
+    return link_keys;
+}
+
+
+/**
  * Output test iteration expected/obtained results to HTML report.
  *
  * @param f             File stream to write to
@@ -1126,12 +1138,33 @@ trc_report_exp_got_to_html(FILE                *f,
 
                 trc_re_key_substs(iter_data->exp_result->key, f);
 
-                /*
-                 * Iterations does not have unique names and paths yet,
-                 * use test name and path instead of
-                 */
-                trc_report_keys_add(iter_data->exp_result->key, iter_data,
-                                    test->name, key_test_path);
+                for (iter_entry = TAILQ_FIRST(&iter_data->runs);
+                     iter_entry != NULL;
+                     iter_entry = TAILQ_NEXT(iter_entry, links))
+                {
+                    if ((iter_entry->result.status == TE_TEST_FAILED) ||
+                        ((iter_entry->result.status == TE_TEST_PASSED) &&
+                         (TAILQ_FIRST(&iter_entry->result.verdicts) !=
+                          NULL)))
+                        break;
+                }
+
+                if (iter_entry != NULL)
+                {
+                    char *link_keys;
+                    /*
+                     * Iterations does not have unique names and paths yet,
+                     * use test name and path instead of
+                     */
+                    trc_report_keys_add(iter_data->exp_result->key,
+                                        iter_data, test->name,
+                                        key_test_path);
+
+                    /* Add also link to keys table */
+                    link_keys = trc_link_keys(iter_data->exp_result->key);
+                    trc_re_key_substs(link_keys, f);
+                    free(link_keys);
+                }
 
                 free(key_test_path);
             }
