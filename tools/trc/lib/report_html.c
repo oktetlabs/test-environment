@@ -71,6 +71,13 @@
 #define TRC_USE_HIDDEN_STATS 0
 #endif
 
+/** Define to 1 to enable hidden columns in statistics tables */
+#ifdef WITH_LOG_URLS
+#define TRC_USE_LOG_URLS 1
+#else
+#define TRC_USE_LOG_URLS 0
+#endif
+
 #define WRITE_STR(str) \
     do {                                                \
         fflush(f);                                      \
@@ -83,11 +90,6 @@
     } while (0)
 
 #define PRINT_STR(str_) (((str_) != NULL) ? (str_) : "")
-
-#if TRC_USE_STATS_POPUP
-
-/** Maximum number of nested test packages */
-#define TRC_DB_NEST_LEVEL_MAX       8
 
 #define PRINT_STR1(expr_, str1_) \
     ((expr_) ? (str1_) : "")
@@ -105,9 +107,13 @@
     PRINT_STR2(expr_, str3_, str4_)
 
 #define PRINT_STR5(expr_, str1_, str2_, str3_, str4_, str5_) \
-    PRINT_STR2(expr_, str1_, str2_), \
-    PRINT_STR2(expr_, str3_, str4_), \
+    PRINT_STR4(expr_, str1_, str2_, str3_, str4_), \
     PRINT_STR1(expr_, str5_)
+
+#if TRC_USE_STATS_POPUP
+
+/** Maximum number of nested test packages */
+#define TRC_DB_NEST_LEVEL_MAX       8
 
 #define TRC_STATS_SHOW_HREF_START \
     "        <a href=\"javascript:showStats('StatsTip','"
@@ -172,6 +178,21 @@ static const char * const trc_html_doc_start =
 "        border: 1px solid #000000;\n"
 "        padding: 10px;\n"
 "    }\n"
+#if TRC_USE_LOG_URLS
+"    #TestLog {\n"
+"        position: absolute;\n"
+"        visibility: hidden;\n"
+"        font-size: small;\n"
+"        overflow: auto;\n"
+"        width: 75%%;\n"
+"        height: 80%%;\n"
+"        left: 120px;\n"
+"        top: 100px;\n"
+"        background-color: #c0c0c0;\n"
+"        border: 1px solid #000000;\n"
+"        padding: 10px;\n"
+"    }\n"
+#endif
 "    #close {\n"
 "        float: right;\n"
 "    }\n"
@@ -226,7 +247,7 @@ static const char * const trc_html_doc_start =
 "\n"
 "        var innerHTML = '';\n"
 "        innerHTML += '<span id=\"close\"> ' +\n"
-"                     '<a href=\"javascript:hideStats(\\'StatsTip\\')\"' +"
+"                     '<a href=\"javascript:hidePopups()\"' +"
 "\n"
 "                     'style=\"text-decoration: none\">' +\n"
 "                     '<strong>[x]</strong></a></span>';\n"
@@ -283,7 +304,7 @@ static const char * const trc_html_doc_start =
 "\n"
 "        var innerHTML = '';\n"
 "        innerHTML += '<span id=\"close\"> ' +\n"
-"                     '<a href=\"javascript:hideStats(\\'StatsTip\\') \"' +"
+"                     '<a href=\"javascript:hidePopups()\"' +"
 "\n"
 "                     'style=\"text-decoration: none\">' +\n"
 "                     '<strong>[x]</strong></a></span>';\n"
@@ -314,7 +335,7 @@ static const char * const trc_html_doc_start =
 "        return innerHTML;\n"
 "    }\n"
 "\n"
-"    function centerStats(obj)\n"
+"    function centerStats(obj,pos)\n"
 "    {\n"
 "        var scrolled_x, scrolled_y;\n"
 "        if (self.pageYOffset)\n"
@@ -352,7 +373,13 @@ static const char * const trc_html_doc_start =
 "            center_y = document.body.clientHeight;\n"
 "        }\n"
 "\n"
-"        var leftOffset = scrolled_x + (center_x - obj.offsetWidth) / 2;\n"
+"        if (pos == 'right')\n"
+"            var leftOffset = scrolled_x + "
+"(center_x - obj.offsetWidth) - 20;\n"
+"        else\n"
+"            var leftOffset = scrolled_x + "
+"(center_x - obj.offsetWidth) / 2;\n"
+"\n"
 "        var topOffset = scrolled_y + (center_y - obj.offsetHeight) / 2;\n"
 "\n"
 "        obj.style.top = topOffset + 'px';\n"
@@ -378,13 +405,21 @@ static const char * const trc_html_doc_start =
 "        obj.style.visibility = \"visible\";\n"
 "    }\n"
 "\n"
-"    function hideStats(obj_name)\n"
+"    function hideObject(obj_name)\n"
 "    {\n"
 "        var obj = document.getElementById(obj_name);\n"
 "        if (typeof obj == 'undefined')\n"
 "            alert('Failed to get object ' + obj_name);\n"
 "\n"
 "        obj.style.visibility = \"hidden\";\n"
+"    }\n"
+"\n"
+"    function hidePopups()\n"
+"    {\n"
+"        hideObject('StatsTip');\n"
+#if TRC_USE_LOG_URLS
+"        hideObject('TestLog');\n"
+#endif
 "    }\n"
 "\n"
 "    function doNothing(ev)\n"
@@ -396,22 +431,58 @@ static const char * const trc_html_doc_start =
 "            ev.stopPropagation();\n"
 "        }\n"
 "    }\n"
+"\n"
+#if TRC_USE_LOG_URLS
+"    function showLog(name, url, event)\n"
+"    {\n"
+"        hidePopups();\n"
+"        //loadLogStart(url, 'TestLog');\n"
+"        var obj = document.getElementById('TestLog');\n"
+"        var innerHTML = '';\n"
+"        innerHTML += '<span id=\"close\"> ' +\n"
+"                     '<a href=\"javascript:hidePopups();\"' +\n"
+"                     'style=\"text-decoration: none\">' +\n"
+"                     '<strong>[x]</strong></a></span>';\n"
+"        innerHTML += '<div align=\"center\"><b>Test: ' + name + "
+"'</b></div>';\n"
+"        innerHTML += '<iframe name=\"Log\" src=\"' + url + '\" ' +\n"
+"                     'style=\"width:100%%; height:96%%\"/>';\n"
+"        obj.innerHTML = innerHTML;\n"
+"        centerStats(obj, 'right');\n"
+"        obj.style.visibility = \"visible\";\n"
+"        if (event)\n"
+"            doNothing(event);\n"
+"        return false;\n"
+"    }\n"
+#endif
 "  </script>\n"
 #endif
 "</head>\n"
 "<body lang=\"en-US\" dir=\"ltr\" "
 #if TRC_USE_STATS_POPUP
-"onClick=\"hideStats('StatsTip')\" "
-"onScroll=\"centerStats(document.getElementById('StatsTip'))\">\n"
+"onClick=\"hidePopups()\" "
+"onScroll=\"centerStats(document.getElementById('StatsTip'));"
+#if TRC_USE_LOG_URLS
+"centerStats(document.getElementById('TestLog'), 'right');"
+#endif
+"return false;\">\n"
 "    <div id=\"StatsTip\" onClick=\"doNothing(event)\">\n"
-"      <span id=\"close\"><a href=\"javascript:hideStats('StatsTip')\" "
+"      <span id=\"close\"><a href=\"javascript:hidePopups()\" "
 "style=\"text-decoration: none\"><strong>[x]</strong></a></span>\n"
 "      <p>Tests Statistics</p><br/>\n"
-"    </div>\n";
-#else
-">\n";
+"    </div>\n"
+#if TRC_USE_LOG_URLS
+"    <div id=\"TestLog\" onClick=\"doNothing(event);\" "
+"onScroll=\"doNothing(event);\">\n"
+"      <span id=\"close\"><a href=\"javascript:hidePopups()\" "
+"style=\"text-decoration: none\"><strong>[x]</strong></a></span>\n"
+"      <p>Tests Log</p><br/>\n"
+"    </div>\n"
 #endif
-
+#else
+">\n"
+#endif
+"\n";
 
 static const char * const trc_html_doc_end =
 "</body>\n"
@@ -689,10 +760,22 @@ static const char * const trc_test_exp_got_end =
 "  </tbody>\n"
 "</table>\n";
 
+#if TRC_USE_LOG_URLS
+static const char * const trc_test_log_url =
+"<a href=\"node_%d.html\" "
+#if TRC_USE_STATS_POPUP
+"onClick=\"showLog('%s', 'node_%d.html', event); return false;\""
+#endif
+">[log]</a>";
+#endif
+
 static const char * const trc_test_exp_got_row_start =
 "    <tr>\n"
 "      <td valign=top>\n"
 "        %s<b><a %s%s%shref=\"#OBJECTIVE%s\">%s</a></b>\n"
+#if TRC_USE_LOG_URLS
+"        %s\n"
+#endif
 "      </td>\n"
 "      <td valign=top>";
 
@@ -1069,6 +1152,20 @@ trc_report_exp_got_to_html(FILE                *f,
     do {
         if (trc_report_test_iter_entry_output(test, iter_entry, flags))
         {
+#if TRC_USE_LOG_URLS
+            char *test_url = NULL;
+            if (iter_entry->tin >= 0)
+            {
+                test_url = te_sprintf(trc_test_log_url,
+#if TRC_USE_STATS_POPUP
+                                      iter_entry->tin,
+                                      test->name, iter_entry->tin);
+#else
+                                      iter_entry->tin);
+#endif
+            }
+#endif
+
             if (iter_data == NULL)
             {
                 iter_data = TE_ALLOC(sizeof(*iter_data));
@@ -1093,12 +1190,20 @@ trc_report_exp_got_to_html(FILE                *f,
 
             fprintf(f, trc_test_exp_got_row_start,
                     PRINT_STR(level_str),
-                    anchor ? "name=\"" : "",
-                    anchor ? test_path : "",
-                    anchor ? "\" " : "",
-                    test_path,
-                    test->name);
+                    PRINT_STR3(anchor, "name=\"", test_path, "\" "),
+#if TRC_USE_LOG_URLS
+                    test_path, test->name, PRINT_STR(test_url));
+#else
+                    test_path, test->name);
+#endif
             *anchor = FALSE;
+
+#if TRC_USE_LOG_URLS
+            if (test_url != NULL)
+            {
+                free(test_url);
+            }
+#endif
 
 #if TRC_USE_PARAMS_SPOILERS
             if (!TAILQ_EMPTY(&iter->args.head))

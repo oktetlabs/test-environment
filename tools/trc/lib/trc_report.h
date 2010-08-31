@@ -113,6 +113,7 @@ enum trc_report_flags {
 typedef struct trc_report_test_iter_entry {
     TAILQ_ENTRY(trc_report_test_iter_entry) links;  /**< List links */
 
+    int             tin;        /**< Test Identification Number */
     te_test_result  result;     /**< Obtained result */
     te_bool         is_exp;     /**< Does obtained result match one of
                                      expected? */
@@ -142,22 +143,6 @@ typedef struct trc_report_ctx {
     unsigned int        db_uid; /**< TRC database user ID */
 } trc_report_ctx;
 
-/** OL Bug specific data (unused) */
-typedef struct trc_report_ol_bug_key_entry {
-    int   id;           /**< Key ID */
-    char *summary;      /**< Bug summary */
-    char *status;       /**< Bug status */
-    char *product;      /**< Bug product */
-    char *component;    /**< Bug component */
-    char *platform;     /**< Bug platform */
-    char *priority;     /**< Bug priority */
-    char *importance;   /**< Bug severity */
-    char *assigned_to;  /**< Bug assigned person */
-    char *qa_contact;   /**< Bug QA person */
-    char *blocks;       /**< List of blocked bugs */
-    char *depends;      /**< List of depended bugs */
-} trc_report_ol_bug_key_entry;
-
 /** Auxilary structure to list iterations marked by specific key */
 typedef struct trc_report_key_iter_entry {
     TAILQ_ENTRY(trc_report_key_iter_entry)   links; /**< List links */
@@ -170,9 +155,6 @@ typedef struct trc_report_key_iter_entry {
 typedef struct trc_report_key_entry {
     TAILQ_ENTRY(trc_report_key_entry) links; /**< List links */
     char *name; /**< Key name */
-    union {
-        trc_report_ol_bug_key_entry ol; /**< OL specific key data */
-    } specific; /**< Specific data union */
     TAILQ_HEAD(, trc_report_key_iter_entry) iters; /**< Iterations list */
 } trc_report_key_entry;
 

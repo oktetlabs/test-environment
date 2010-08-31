@@ -37,8 +37,15 @@ AC_ARG_WITH([popups],,
  fi
 ], [with_popups=no])
 
+AC_ARG_WITH([log_urls],, 
+[if test "${withval}" = yes; then
+    with_log_urls=yes;
+ fi
+], [with_log_urls=no])
+
 AM_CONDITIONAL(WITH_SPOILERS,     test "$with_spoilers" = "yes")
 AM_CONDITIONAL(WITH_POPUPS,       test "$with_popups" = "yes")
+AM_CONDITIONAL(WITH_LOG_URLS,     test "$with_log_urls" = "yes")
 
 if test "$with_spoilers" = "yes"; then
   TE_CFLAGS="$TE_CFLAGS -DWITH_SPOILERS"
@@ -46,6 +53,10 @@ fi
 
 if test "$with_popups" = "yes"; then
   TE_CFLAGS="$TE_CFLAGS -DWITH_POPUPS"
+fi
+
+if test "$with_log_urls" = "yes"; then
+  TE_CFLAGS="$TE_CFLAGS -DWITH_LOG_URLS"
 fi
 
 AC_SUBST([TE_CFLAGS])

@@ -88,7 +88,6 @@ typedef struct trc_report_log_parse_ctx {
     unsigned int        db_uid;     /**< TRC database user ID */
     const char         *log;        /**< Name of the file with log */
     tqh_strings        *tags;       /**< List of tags */
-
     te_trc_db_walker   *db_walker;  /**< TRC database walker */
 
     trc_report_log_parse_state  state;  /**< Log parse state */
@@ -240,6 +239,7 @@ te_test_str2status(const char *str, te_test_status *status)
 static void
 trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
 {
+    int             tin = -1;
     te_bool         name_found = FALSE;
     te_bool         status_found = FALSE;
     te_test_status  status = TE_TEST_UNSPEC;
@@ -284,6 +284,13 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
             status_found = TRUE;
             ctx->rc = te_test_str2status(XML2CHAR(attrs[1]), &status);
         }
+        else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("tin")) == 0)
+        {
+            if (sscanf(XML2CHAR(attrs[1]), "%d", &tin) < 1)
+            {
+                ctx->rc = TE_EFMT;
+            }
+        }
         attrs += 2;
     }
 
@@ -315,6 +322,7 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         }
         te_test_result_init(&entry->result);
         entry->result.status = status;
+        entry->tin = tin;
 
         assert(ctx->iter_data == NULL);
         ctx->iter_data = TE_ALLOC(sizeof(*ctx->iter_data));
