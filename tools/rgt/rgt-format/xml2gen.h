@@ -101,7 +101,6 @@ typedef struct rgt_depth_ctx {
     rgt_node_t  type; /**< Current node type */
     uint32_t    seq; /**< Current sequence number used on the 
                                particular depth */
-    int         tin; /**< Current node Test Identification Number */
     void       *user_data; /**< User-specific data pointer */
 } rgt_depth_ctx_t;
 
