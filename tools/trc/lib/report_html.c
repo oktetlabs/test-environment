@@ -324,8 +324,8 @@ static const char * const trc_html_doc_start =
 "                continue;\n"
 "\n"
 "            innerHTML += '<tr>';\n"
-"            innerHTML += '<td><a href=\"#' + test['path'] + '\">' +\n"
-"                         test['name'] + '</a></td>' +\n"
+"            innerHTML += '<td><a href=\"#' + test['path'] + '_' + \n"
+"                         field + '\">' + test['name'] + '</a></td>' +\n"
 "                         '<td>' + test[field] + '</td>';\n"
 "            innerHTML += '</tr>';\n"
 "        }\n"
@@ -789,12 +789,15 @@ static const char * const trc_test_exp_got_row_params_end =
 " </div>";
 #endif
 
+static const char * const trc_test_exp_got_row_result_anchor =
+"  <a name=\"%s_%s\"> </a>";
+
 static const char * const trc_test_exp_got_row_mid =
-" </td>\n<td>";
+" </td>\n<td valign=top>";
 
 static const char * const trc_test_exp_got_row_end =
 "</td>\n"
-"      <td>%s %s</td>\n"
+"      <td valign=top>%s %s</td>\n"
 "    </tr>\n";
 
 #if TRC_USE_STATS_POPUP
@@ -1111,6 +1114,55 @@ trc_link_keys(const char *keys)
     return link_keys;
 }
 
+#if TRC_USE_STATS_POPUP
+/**
+ * Convert iteration result to string.
+ *
+ * @param iter          Iteration entry with test result
+ *
+ * @return Status code.
+ */
+static inline char *
+trc_report_result_to_string(const trc_report_test_iter_entry *iter)
+{
+    switch (iter->result.status)
+    {
+        case TE_TEST_PASSED:
+            return (iter->is_exp) ? "passed_exp" : "passed_unexp";
+
+        case TE_TEST_FAILED:
+            return (iter->is_exp) ? "failed_exp" : "failed_unexp";
+
+        case TE_TEST_INCOMPLETE:
+        case TE_TEST_UNSPEC:
+            return "aborted_new";
+
+        default:
+            return "not_run";
+    }
+
+    return NULL;
+}
+
+/**
+ * Output anchor to test iteration result to HTML report.
+ *
+ * @param f             File stream to write to
+ * @param test_path     Full test path
+ * @param iter          Iteration entry with test result
+ *
+ * @return Status code.
+ */
+static inline int
+trc_report_result_anchor(FILE *f, const char *test_path,
+                         const trc_report_test_iter_entry *iter)
+{
+    fprintf(f, trc_test_exp_got_row_result_anchor, test_path,
+            PRINT_STR(trc_report_result_to_string(iter)));
+
+    return 0;
+}
+#endif
 
 /**
  * Output test iteration expected/obtained results to HTML report.
@@ -1226,6 +1278,12 @@ trc_report_exp_got_to_html(FILE                *f,
                 break;
 
             WRITE_STR(trc_test_exp_got_row_mid);
+
+#if TRC_USE_STATS_POPUP
+            rc = trc_report_result_anchor(f, test_path, iter_entry);
+            if (rc != 0)
+                break;
+#endif
 
             rc = te_test_result_to_html(f, (iter_entry == NULL) ? NULL :
                                                &iter_entry->result);
