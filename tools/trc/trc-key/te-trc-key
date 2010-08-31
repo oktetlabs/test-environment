@@ -167,10 +167,15 @@ for my $bug_line (<STDIN>)
 # Function returns text color due to bug priority
 sub colorify
 {
-    my ($priority, $severity) = @_;
+    my ($priority, $severity, $status) = @_;
     my $color = "000000";
 
-    if (($priority eq 'P1') or
+    if (($status eq 'CLOSED') or
+        ($status eq 'RESOLVED'))
+    {
+        $color = "7F7F7F";
+    }
+    elsif (($priority eq 'P1') or
         (($severity eq 'blocker')) or
         (($severity eq 'critical')) or
         (($severity eq 'major')))
@@ -207,7 +212,7 @@ for my $b (@bugs)
     my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=".$b->{'id'};
     printf("<a name=\"bug_ol_%s\"/>\n", $b->{'id'});
 
-    printf("<tr style=\"color:#%s\">\n", colorify($b->{'priority'}, $b->{'bug_severity'}));
+    printf("<tr style=\"color:#%s\">\n", colorify($b->{'priority'}, $b->{'bug_severity'}, $b->{'bug_status'}));
     printf("  <td><a href=%s>OL %s</a></td>\n", $bug_url, $b->{'id'});
     printf("  <td>%s</td>\n", $b->{'tests'});
     printf("  <td>%s</td>\n", $b->{'priority'});
