@@ -1814,6 +1814,8 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
     if (gctx->db->version != NULL)
         fprintf(f, "<h2 align=center>%s</h2>\n", gctx->db->version);
 
+    WRITE_STR("<a name=\"start\"> </a>\n");
+
     /* TRC tags */
     WRITE_STR("<b>Tags:</b>");
     TAILQ_FOREACH(tag, &gctx->tags, links)
@@ -1821,6 +1823,11 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         fprintf(f, "  %s", tag->v);
     }
     WRITE_STR("<p/>");
+
+    if (~flags & TRC_REPORT_NO_KEYS)
+    {
+        WRITE_STR("<a href=\"#keys_table\"><b>Keys</b></a>\n");
+    }
 
     /* Header provided by user */
     if (header != NULL)
@@ -1884,8 +1891,10 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
 
     if (~flags & TRC_REPORT_NO_KEYS)
     {
+        WRITE_STR("<a name=\"keys_table\"> </a>\n");
         trc_report_keys_to_html(f, "te-trc-key");
     }
+    WRITE_STR("<a href=\"#start\"><b>Up</b></a>\n");
 
     /* HTML footer */
     WRITE_STR(trc_html_doc_end);
