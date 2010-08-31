@@ -41,6 +41,8 @@
 #include "xml2gen.h"
 #include "xml2html-multi.h"
 
+#define RGT_HTML_USE_TIN_NAMES 1
+
 /** Structure to keep basic user data in general parsing context */
 typedef struct gen_ctx_user {
     FILE *js_fd; /**< File descriptor of JavaScript file */
@@ -592,8 +594,18 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
                                     rgt_depth_ctx_t, (ctx->depth - 2));
     prev_depth_user = prev_depth_ctx->user_data;
 
-    snprintf(fname, sizeof(fname), "node_%d_%d.html",
-             ctx->depth, depth_ctx->seq);
+#if RGT_HTML_USE_TIN_NAMES
+    if (tin != NULL)
+    {
+        snprintf(fname, sizeof(fname), "node_%s.html", tin);
+    }
+    else
+#endif
+    {
+        snprintf(fname, sizeof(fname), "node_%d_%d.html",
+                 ctx->depth, depth_ctx->seq);
+    }
+
     if ((depth_user->fd = fopen(fname, "w")) == NULL)
     {
         fprintf(stderr, "Cannot create %s file: %s\n",
