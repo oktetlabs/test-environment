@@ -1125,6 +1125,9 @@ trc_link_keys(const char *keys)
 static inline char *
 trc_report_result_to_string(const trc_report_test_iter_entry *iter)
 {
+    if (iter == NULL)
+        return NULL;
+
     switch (iter->result.status)
     {
         case TE_TEST_PASSED:
@@ -1206,7 +1209,7 @@ trc_report_exp_got_to_html(FILE                *f,
         {
 #if TRC_USE_LOG_URLS
             char *test_url = NULL;
-            if (iter_entry->tin >= 0)
+            if ((iter_entry != NULL) && (iter_entry->tin >= 0))
             {
                 test_url = te_sprintf(trc_test_log_url,
 #if TRC_USE_STATS_POPUP
