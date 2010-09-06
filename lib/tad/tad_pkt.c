@@ -270,10 +270,9 @@ tad_pkt_cleanup_segs(tad_pkt *pkt)
      * Clean up each segment of the list in reverse direction.
      * Don't care about integrity of the total packet data length.
      */
-    for (p = pkt->segs.cqh_last;
-         p != (void *)&(pkt->segs);
-         p = p->links.cqe_prev)
+    CIRCLEQ_FOREACH_REVERSE(p, &pkt->segs, links)
     {
+        CIRCLEQ_REMOVE(&pkt->segs, p, links);
         tad_pkt_cleanup_seg_data(p);
     }
 
@@ -285,15 +284,15 @@ tad_pkt_cleanup_segs(tad_pkt *pkt)
 void
 tad_pkt_free_segs(tad_pkt *pkt)
 {
-    tad_pkt_seg    *p, *q;
+    tad_pkt_seg    *p;
 
     /* 
      * Free each segment of the list in reverse direction.
      * Don't care about list integrity.
      */
-    for (p = pkt->segs.cqh_last; p != (void *)&(pkt->segs); p = q)
+    while ((p = CIRCLEQ_LAST(&pkt->segs)) != (void *)&(pkt->segs))
     {
-        q = p->links.cqe_prev;
+        CIRCLEQ_REMOVE(&pkt->segs, p, links);
         tad_pkt_free_seg(p);
     }
 
@@ -415,15 +414,15 @@ tad_cleanup_pkts(tad_pkts *pkts)
 void
 tad_free_pkts(tad_pkts *pkts)
 {
-    tad_pkt    *p, *q;
+    tad_pkt    *p;
 
     /* 
      * Free each packet of the list in reverse direction.
      * Don't care about list integrity.
      */
-    for (p = pkts->pkts.cqh_last; p != (void *)&(pkts->pkts); p = q)
+    while ((p = CIRCLEQ_LAST(&pkts->pkts)) != (void *)&(pkts->pkts))
     {
-        q = p->links.cqe_prev;
+        CIRCLEQ_REMOVE(&pkts->pkts, p, links);
         tad_pkt_free(p);
     }
 
@@ -488,17 +487,15 @@ tad_pkts_add_new_seg(tad_pkts *pkts, te_bool header,
     seg = (tad_pkt_seg *)mem;
     data = (uint8_t *)(seg + tad_pkts_get_num(pkts));
 
-    for (pkt = pkts->pkts.cqh_first;
-         pkt != (void *)&(pkts->pkts);
-         pkt = pkt->links.cqe_next, seg++)
+    CIRCLEQ_FOREACH(pkt, &pkts->pkts, links)
     {
         /* Set non-NULL free function for the first packet segment only */
-        seg->my_free = (pkt == pkts->pkts.cqh_first) ? free : NULL;
+        seg->my_free = (pkt == CIRCLEQ_FIRST(&pkts->pkts)) ? free : NULL;
 
         if (data_ptr != 0)
         {
             tad_pkt_init_seg_data(seg, data_ptr, data_len,
-                                  (pkt == pkts->pkts.cqh_first) ?
+                                  (pkt == CIRCLEQ_FIRST(&pkts->pkts)) ?
                                       data_free : NULL);
         }
         else if (data_len > 0)
@@ -515,6 +512,8 @@ tad_pkts_add_new_seg(tad_pkts *pkts, te_bool header,
             tad_pkt_prepend_seg(pkt, seg);
         else
             tad_pkt_append_seg(pkt, seg);
+
+        seg++;
     }
 
     return 0;
@@ -761,9 +760,9 @@ tad_pkt_next_not_empty_seg(tad_pkt *pkt, tad_pkt_seg *seg)
 {
     do {
         if (seg == NULL)
-            seg = pkt->segs.cqh_first;
+            seg = CIRCLEQ_FIRST(&pkt->segs);
         else
-            seg = seg->links.cqe_next;
+            seg = CIRCLEQ_NEXT(seg, links);
     } while (seg != NULL && seg->data_len == 0);
 
     return seg;

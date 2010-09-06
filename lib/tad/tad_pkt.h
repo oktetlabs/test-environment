@@ -41,6 +41,9 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#if HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
+#endif
 #if HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif
