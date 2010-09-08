@@ -423,6 +423,7 @@ tad_free_pkts(tad_pkts *pkts)
     while ((p = CIRCLEQ_LAST(&pkts->pkts)) != (void *)&(pkts->pkts))
     {
         CIRCLEQ_REMOVE(&pkts->pkts, p, links);
+        pkts->n_pkts--;
         tad_pkt_free(p);
     }
 
@@ -450,15 +451,23 @@ tad_pkts_del_one(tad_pkts *pkts, tad_pkt *pkt)
 void
 tad_pkts_move(tad_pkts *dst, tad_pkts *src)
 {
-    if (src->pkts.cqh_first != (void *)&src->pkts)
+    if (!CIRCLEQ_EMPTY(&src->pkts))
     {
-        src->pkts.cqh_last->links.cqe_next = (void *)&dst->pkts;
-        src->pkts.cqh_first->links.cqe_prev = dst->pkts.cqh_last;
-        if (dst->pkts.cqh_first == (void *)&dst->pkts)
-            dst->pkts.cqh_first = src->pkts.cqh_first;
+        CIRCLEQ_NEXT(CIRCLEQ_LAST(&src->pkts), links) =
+            (void *)&dst->pkts;
+        CIRCLEQ_PREV(CIRCLEQ_FIRST(&src->pkts), links) =
+            CIRCLEQ_LAST(&dst->pkts);
+
+        if (CIRCLEQ_EMPTY(&dst->pkts))
+        {
+            CIRCLEQ_FIRST(&dst->pkts) = CIRCLEQ_FIRST(&src->pkts);
+        }
         else
-            dst->pkts.cqh_last->links.cqe_next = src->pkts.cqh_first;
-        dst->pkts.cqh_last = src->pkts.cqh_last;
+        {
+            CIRCLEQ_NEXT(CIRCLEQ_LAST(&dst->pkts), links) =
+                CIRCLEQ_FIRST(&src->pkts);
+        }
+        CIRCLEQ_LAST(&dst->pkts) = CIRCLEQ_LAST(&src->pkts);
 
         dst->n_pkts += src->n_pkts;
         tad_pkts_init(src);

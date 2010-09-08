@@ -648,6 +648,7 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
 {
     te_errno    rc;
     tad_pkts   *pkts;
+    int         i;
 
 #if 1 /* FIXME: More part of this processing to prepare stage */
     tad_special_send_pkt_cb  send_cb = NULL;
@@ -660,6 +661,11 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
     pkts = malloc((csap->depth + 1) * sizeof(*pkts));
     if (pkts == NULL)
         return TE_RC(TE_TAD_CH, TE_ENOMEM);
+
+    for (i = 0; i <= csap->depth; i++)
+    {
+        tad_pkts_init(&pkts[i]);
+    }
 
 #if 1 /* FIXME: More part of this processing to prepare stage */
     rc = asn_read_string(tu_data->nds, &send_cb_name, "send-func");
@@ -723,13 +729,16 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
 
         /* Free resources allocated for packets */
         tad_send_free_packets(pkts, csap->depth + 1);
-        
+
     } while (rc == 0 &&
              tad_iterate_tmpl_args(tu_data->arg_specs, 
                                    tu_data->arg_num,
                                    tu_data->arg_iterated) > 0);
 
+#if 0
+    /* Looks like double free */
     tad_send_free_packets(pkts, csap->depth + 1);
+#endif
     free(pkts);
     free(send_cb_name);
 
