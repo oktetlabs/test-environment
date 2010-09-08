@@ -107,11 +107,12 @@ read_message(FILE *input, uint8_t **pbuf, size_t *psize, size_t *plen)
      * Grow the buffer to accomodate fixed message part plus next field
      * length.
      */
-    *plen = 1 +                     /* Version */
-            8 +                     /* Timestamp */
-            sizeof(te_log_level) +  /* Level */
-            sizeof(te_log_id) +     /* ID */
-            sizeof(flen);           /* entity name length */
+    *plen = sizeof(te_log_version) +    /* version */
+            sizeof(te_log_ts_sec) +     /* timestamp seconds */
+            sizeof(te_log_ts_usec) +    /* timestamp microseconds */
+            sizeof(te_log_level) +      /* level */
+            sizeof(te_log_id) +         /* ID */
+            sizeof(te_log_nfl);         /* entity name length */
     if (!grow_buf(pbuf, psize, *plen))
         return READ_MESSAGE_RC_ERR;
 
