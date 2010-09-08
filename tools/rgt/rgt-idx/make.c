@@ -26,8 +26,12 @@
 
 #include "te_config.h"
 
+#if HAVE_STDINT_H
 #include <stdint.h>
+#endif
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <stdio.h>
 #include <getopt.h>
 #include <arpa/inet.h>
