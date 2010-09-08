@@ -164,8 +164,8 @@ read_message(FILE *input, uint8_t **pbuf, size_t *psize, size_t *plen)
 
 
 /**
- * Read an index entry offset from a stream, position the stream at the next
- * entry.
+ * Read an index entry offset from a stream in the host order, position the
+ * stream at the next entry.
  *
  * @param index     The stream to read from.
  * @param poffset   Location for the offset.
