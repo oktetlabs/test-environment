@@ -1301,21 +1301,22 @@ trc_report_exp_got_to_html(FILE                *f,
                 char *key_test_path =
                     trc_report_key_test_path(f, test_path,
                                              iter_data->exp_result->key);
+                const trc_report_test_iter_entry *search_iter;
 
                 trc_re_key_substs(iter_data->exp_result->key, f);
 
-                for (iter_entry = TAILQ_FIRST(&iter_data->runs);
-                     iter_entry != NULL;
-                     iter_entry = TAILQ_NEXT(iter_entry, links))
+                for (search_iter = TAILQ_FIRST(&iter_data->runs);
+                     search_iter != NULL;
+                     search_iter = TAILQ_NEXT(iter_entry, links))
                 {
-                    if ((iter_entry->result.status == TE_TEST_FAILED) ||
-                        ((iter_entry->result.status == TE_TEST_PASSED) &&
-                         (TAILQ_FIRST(&iter_entry->result.verdicts) !=
+                    if ((search_iter->result.status == TE_TEST_FAILED) ||
+                        ((search_iter->result.status == TE_TEST_PASSED) &&
+                         (TAILQ_FIRST(&search_iter->result.verdicts) !=
                           NULL)))
                         break;
                 }
 
-                if (iter_entry != NULL)
+                if (search_iter != NULL)
                 {
                     char *link_keys;
                     /*
