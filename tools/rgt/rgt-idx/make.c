@@ -85,13 +85,14 @@ read_message_ts(FILE *input, uint64_t *pntimestamp)
         return READ_MESSAGE_RC_ERR;
 
     /*
-     * Skip remaining required variable-length fields and optional format
-     * arguments.
+     * Skip remaining variable-length fields: required first (this includes
+     * entity name, user name and format specification), then optional ones.
+     * Abort on the special terminating field length.
      */
-    /* This includes entity name, user name and format specification */
     req_var_field_num = 3;
     while (TRUE)
     {
+        /* Read next field length */
         if (fread(&len, sizeof(len), 1, input) != 1)
             return READ_MESSAGE_RC_ERR;
 #if SIZEOF_TE_LOG_NFL == 4

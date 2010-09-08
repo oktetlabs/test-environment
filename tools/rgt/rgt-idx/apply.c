@@ -127,7 +127,11 @@ read_message(FILE *input, uint8_t **pbuf, size_t *psize, size_t *plen)
         return READ_MESSAGE_RC_ERR;
     pos = *plen;
 
-    /* This includes entity name, user name and format specification */
+    /*
+     * Read variable-length fields: required first (this includes entity
+     * name, user name and format specification), then optional ones.
+     * Abort on the special terminating field length.
+     */
     req_var_field_num = 3;
     while (TRUE)
     {
