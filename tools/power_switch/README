@@ -1,0 +1,19 @@
+Code to control power switch device from tester host.
+
+File power_sw_orig.c - original code written by Igor Vasiliev
+<Igor.Vasiliev@oktetlabs.ru>. LPT power switch devices with four
+power lines are only supported.
+
+File power_sw.c - modified code.
+Enabled support for LPT power switch devices with up to eight power lines
+and COM/USB power swicth devices with up to sixteen power lines.
+Support for COM/USB power switch devices was written by Ivan Soloducha
+<Ivan.Soloducha@oktetlabs.ru>, code was merged and debugged by
+Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>.
+
+Files power_sw.asm and tn2313def.inc - assembler code for AVR
+attiny2313 controller used in COM/USB power switch devices. Written
+and debugged by Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>.
+
+File power_sw_descr - description of command set used in COM/USB
+power switch devices.

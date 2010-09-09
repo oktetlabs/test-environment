@@ -1,0 +1,183 @@
+1.
+    Plug in device.
+    New device file /dev/ttyUSBx must appear.
+    Let it be /dev/ttyUSB1.
+
+    Device must have the following HW parameters:
+    115200 baud
+    8 bit
+    no parity
+    no rts/cts
+
+    The easiest way to control HW parameters is to specify
+    them in conserver.cf file. Specify device in conserver.cf file
+    and restart conserver.
+
+2.  Power switch device allows to control up to 16 power lines.
+    It can turn off and turn on power line with specified number.
+    Optionally it can restart power line with specified number.
+    Number of servicable power lines is optional parameter too.
+    Optional parameters are returned in device signature on reply to
+    the command 'transmit signature' (see below).
+
+    Commands transmitted by user have the following format:
+    <command_byte>CR_BYTE
+
+    Each command byte has appropriate printable symbol.
+    One of the ways to control device is to send commands
+    into device /dev/ttyUSB1 with command echo:
+
+    echo -e "<command_symbol>\r" > /dev/ttyUSB1
+
+    See below for command byte format and command symbols.
+
+3.  Command byte has the following binary format
+
+    +-----+-----+-----+-----+-----+-----+-----+-----+
+    |  0  | 1/0 | 1/0 | 1/0 | 1/0 | 1/0 | 1/0 | 1/0 |
+    +-----+-----+-----+-----+-----+-----+-----+-----+
+       |     |     |     |     |     |     |     |
+       |     |     |     |     +-----+-----+-----+- Line number 0 - 15
+       |     |     |     |
+       |     +-----+-----+------------------------- Command code:
+       |
+       |                                            000 - forbidden
+       |                                            001 - forbidden
+       |                                            010 - forbidden,
+       |                                                  (one exception)
+       |                                            011 - forbidden
+       |                                            100 - 'turn off line'
+       |                                            101 - 'restart line'
+       |                                                  if 'restart line'
+       |                                                  is supported
+       |                                                - forbidden
+       |                                                  if 'restart line'
+       |                                                  is not supported
+       |                                            110 - 'turn on line'
+       |                                            111 - forbidden
+       |
+       +------------------------------------------- Reserved, must be 0
+
+    Exception:
+    0x24 (binary 00100100) - command 'transmit signature'
+
+    All commands have printable symbols.
+
+    Turn ON/OFF and restart have the following symbols:
+    +-------------+----------+----------+----------+
+    | line number | turn off | turn on  | restart* |
+    +-------------+----------+----------+----------+
+    |          0  |        @ |        ` |        P |
+    +-------------+----------+----------+----------+
+    |          1  |        A |        a |        Q |
+    +-------------+----------+----------+----------+
+    |          2  |        B |        b |        R |
+    +-------------+----------+----------+----------+
+    |          3  |        C |        c |        S |
+    +-------------+----------+----------+----------+
+    |          4  |        D |        d |        T |
+    +-------------+----------+----------+----------+
+    |          5  |        E |        e |        U |
+    +-------------+----------+----------+----------+
+    |          6  |        F |        f |        V |
+    +-------------+----------+----------+----------+
+    |          7  |        G |        g |        W |
+    +-------------+----------+----------+----------+
+    |          8  |        H |        h |        X |
+    +-------------+----------+----------+----------+
+    |          9  |        I |        i |        Y |
+    +-------------+----------+----------+----------+
+    |          10 |        J |        j |        Z |
+    +-------------+----------+----------+----------+
+    |          11 |        K |        k |        [ |
+    +-------------+----------+----------+----------+
+    |          12 |        L |        l |        \ |
+    +-------------+----------+----------+----------+
+    |          13 |        M |        m |        ] |
+    +-------------+----------+----------+----------+
+    |          14 |        N |        n |        ^ |
+    +-------------+----------+----------+----------+
+    |          15 |        O |        o |        _ |
+    +-------------+----------+----------+----------+
+    * if supported
+
+    Command 'transmit signature' has appropriate symbol $.
+
+5.  Device has feedback to control its operability.
+
+    When device receives command byte it transmits received byte
+    and awaits CR_BYTE.
+
+    When device receives CR_BYTE it tries to execute received command
+    and transmits reply.
+
+
+    1)  When valid command was received and executed device transmits
+
+        [<command_output>]#
+
+        Bytes <command_output> are transmitted on reply to command
+        'transmit signature' only (see below).
+
+
+    2)  When invalid command was received and not executed device transmits
+
+        !
+
+    '#' - ACK symbol
+    '!' - NACK symbol
+
+    You may use command 'cat /dev/ttyUSB1' to look at device's feedback.
+
+5)  Bytes <command_output> are returned only on execution
+    of the command 'transmit signature'.  On reply to the command
+    'transmit signature' device must transmit the following:
+
+    <signature_byte_1><signature_byte_2><signature_byte_3>#
+
+    Signature bytes are
+
+    signature_byte_1 denotes device type.
+    Device types:
+        '0'     -   not specified
+        '1'     -   power switch, single byte commands
+        other   -   reserved
+
+    signature_byte_2 and signature_byte_3 denote device parameters.
+    Device parameters:
+        '0'     -   not specified
+        other   -   depend on device type
+
+    Device of the type '1' has signature '1<signature_byte_2>0'
+        signature_byte_1    -   '1'
+        signature_byte_3    -   '0'
+
+        signature_byte_2    has the following binary format
+
+        +-----+-----+-----+-----+-----+-----+-----+-----+
+        |  0  |  1  | 1/0 | 1/0 | 1/0 | 1/0 | 1/0 | 1/0 |
+        +-----+-----+-----+-----+-----+-----+-----+-----+
+           |     |     |     |     |     |     |     |
+           |     |     |     +-----+-----+-----+-----+--    Number of
+           |     |     |                                    servicable
+           |     |     |                                    power lines
+           |     |     |                                    1 ... 16
+           |     |     |
+           |     |     +--------------------------------    Command
+           |     |                                          'restart line X'
+           |     |                                          1 - supported
+           |     |                                          0 - not supported
+           |     |
+           |     +--------------------------------------    Reserved,
+           |                                                must be 1.
+           |
+           +--------------------------------------------    Reserved,
+                                                            must be 0.
+
+        Examples
+
+        1) signature "1D0" denotes four-channel power switch with no
+        support of 'restart line X' command.
+
+        2) signature "1d0" denotes four-channel power switch with
+        support of 'restart line X' command.
