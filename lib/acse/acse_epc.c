@@ -416,7 +416,7 @@ acse_epc_recv(acse_epc_msg_t **user_message)
     recvrc = recv(epc_socket, &message, sizeof(message), 0);
     if (recvrc < 0)
     {
-        ERROR("%s(): send failed %r", __FUNCTION__, errno);
+        ERROR("%s(): recv failed , errno %d", __FUNCTION__, errno);
         return TE_OS_RC(TE_ACSE, errno);
     }
     if (recvrc == 0) /* Connection normally closed */

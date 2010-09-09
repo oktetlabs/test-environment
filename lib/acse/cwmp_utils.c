@@ -83,6 +83,24 @@ cwmp_str_array_add_va(string_array_t *a,
 
 /* see description in cwmp_utils.h */
 string_array_t *
+cwmp_str_array_copy(string_array_t *src)
+{
+    unsigned i;
+    string_array_t *res = malloc(sizeof(*res));
+    if (NULL == src)
+        return NULL;
+    res->size = src->size;
+    if (NULL == (res->items = calloc(src->size, sizeof(char *))))
+        return NULL;
+    for (i = 0; i < src->size; i++)
+        if (src->items[i])
+            if (NULL == (res->items[i] = strdup(src->items[i])))
+                return NULL;
+    return res;
+}
+
+/* see description in cwmp_utils.h */
+string_array_t *
 cwmp_str_array_alloc(const char *b_name, const char *first_name, ...)
 {
     va_list         ap;
@@ -129,6 +147,34 @@ cwmp_str_array_add(string_array_t *a,
 
     return rc;
 }
+
+
+/* see description in cwmp_utils.h */
+te_errno
+cwmp_str_array_cat_tail(string_array_t *a, const char *suffix)
+{
+    size_t s_len;
+    unsigned i;
+
+    if (NULL == a || NULL == suffix)
+        return TE_EINVAL;
+
+    s_len = strlen(suffix);
+    for (i = 0; i < a->size; i++)
+    {
+        size_t item_len;
+        if (NULL == a->items[i])
+            continue;
+        item_len = strlen(a->items[i]);
+        a->items[i] = realloc(a->items[i], item_len + s_len + 1);
+        if (NULL == a->items[i]) 
+            /* out of memory, it seems unnecessary to leave consistancy */
+            return TE_ENOMEM;
+        memcpy(a->items[i] + item_len, suffix, s_len + 1);
+    }
+    return 0;
+}
+
 
 /* see description in cwmp_utils.h */
 void
@@ -344,7 +390,7 @@ cwmp_get_values_add(_cwmp__GetParameterValues *req,
 void
 cwmp_get_values_free(_cwmp__GetParameterValues *req)
 {
-    size_t i;
+    ssize_t i;
     if (NULL == req)
         return;
     do {

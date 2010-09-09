@@ -83,7 +83,28 @@ extern te_errno cwmp_str_array_add(string_array_t *a,
                                    ...);
 
 /**
+ * Add the same suffix to all strings in array. 
+ *
+ * @param a             array with strings
+ * @param suffix        string which should be concatenated with all items.
+ *
+ * @return status code.
+ */
+extern te_errno cwmp_str_array_cat_tail(string_array_t *a,
+                                        const char *suffix);
+
+
+/**
+ * Copy string array. 
+ * 
+ * @param a             array with strings to be copied
+ */
+extern string_array_t * cwmp_str_array_copy(string_array_t *a);
+
+/**
  * Free string array. 
+ * 
+ * @param a             array with strings to be freed
  */
 extern void cwmp_str_array_free(string_array_t *a);
 
@@ -115,7 +136,10 @@ extern cwmp_values_array_t *cwmp_val_array_alloc(const char *b_name,
 
 /**
  * Add values to the array. 
- * Parameters similar to funcion cwmp_val_array_alloc()
+ * 
+ * @param a             array with CWMP values
+ *
+ * Rest parameters similar to funcion cwmp_val_array_alloc()
  *
  * @return status code.
  */
