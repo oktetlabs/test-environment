@@ -731,6 +731,8 @@ tapi_acse_get_parameter_values(tapi_acse_context_t *ctx,
     ParameterNames             par_list;
     _cwmp__GetParameterValues  req;
 
+    cwmp_str_array_log(TE_LL_RING, "Issue GetParameterValues", names);
+
     req.ParameterNames_ = &par_list;
     to_cpe_loc.get_parameter_values = &req;
 
@@ -762,6 +764,8 @@ tapi_acse_get_parameter_values_resp(tapi_acse_context_t *ctx,
         for (i = 0; i < (*resp)->size; i++)
             (*resp)->items[i] = cwmp_copy_par_value(
                                 par_list->__ptrParameterValueStruct[i]);
+        cwmp_val_array_log(TE_LL_RING,
+                           "Got GetParameterValuesResponse", *resp);
     }
     return rc;
 }
@@ -810,6 +814,7 @@ tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
         for (i = 0; i < name_list->__size; i++)
             (*resp)->items[i] =
                 strdup((name_list->__ptrParameterInfoStruct[i])->Name);
+        cwmp_str_array_log(TE_LL_RING, "Issue GetParameterValues", *resp);
     }
     return rc;
 }
@@ -824,12 +829,18 @@ tapi_acse_set_parameter_values(tapi_acse_context_t *ctx,
     cwmp_set_parameter_values_t req;
     ParameterValueList pv_list;
 
+    if (NULL == ctx || NULL == par_key || NULL == val_arr)
+        return TE_EINVAL;
+
+    cwmp_val_array_log(TE_LL_RING, "Issue SetParameterValues", val_arr);
+
     pv_list.__ptrParameterValueStruct = val_arr->items;
     pv_list.__size = val_arr->size;
 
     req.ParameterList = &pv_list;
     req.ParameterKey = strdup(par_key);
     to_cpe_loc.set_parameter_values = &req;
+
 
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_set_parameter_values,
                              to_cpe_loc);
