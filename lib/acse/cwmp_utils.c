@@ -192,6 +192,34 @@ cwmp_str_array_free(string_array_t *a)
     free(a);
 }
 
+/* */
+#define STR_LOG_MAX 256
+
+te_errno
+cwmp_str_array_log(unsigned log_level, const char *intro, string_array_t *a)
+{
+    size_t log_buf_size = STR_LOG_MAX * (a->size + 1);
+    char *log_buf = malloc(log_buf_size);
+    char *s = log_buf;
+    size_t p, total_p = 0, i;
+    if (NULL == log_buf) return TE_ENOMEM;
+
+    if (NULL == intro) intro = "CWMP_UTILS, array of string";
+    p = snprintf(s, log_buf_size - total_p, "%s:\n", intro);
+    s += p; total_p += p;
+
+    for (i = 0; (i < a->size) && (total_p < log_buf_size); i++)
+    {
+        p = snprintf(s, log_buf_size - total_p, "   %s:\n", a->items[i]);
+        s += p; total_p += p;
+    }
+
+    LGR_MESSAGE(log_level, TE_LGR_USER, log_buf);
+
+    free(log_buf);
+
+    return 0;
+}
 
 /* Internal common method */
 static inline te_errno
@@ -338,6 +366,34 @@ cwmp_val_array_free(cwmp_values_array_t *a)
 }
 
 
+#define VAL_LOG_MAX 512
+
+te_errno
+cwmp_val_array_log(unsigned log_level, const char *intro,
+                   cwmp_values_array_t *a)
+{
+    size_t log_buf_size = VAL_LOG_MAX * (a->size + 1);
+    char *log_buf = malloc(log_buf_size);
+    char *s = log_buf;
+    size_t p, total_p = 0, i;
+    if (NULL == log_buf) return TE_ENOMEM;
+
+    if (NULL == intro) intro = "CWMP_UTILS, array of values";
+    p = snprintf(s, log_buf_size - total_p, "%s:\n", s);
+    s += p; total_p += p;
+
+    for (i = 0; (i < a->size) && (total_p < log_buf_size); i++)
+    {
+        p = snprint_ParamValueStruct(s, log_buf_size-total_p, a->items[i]);
+        s += p; total_p += p;
+    }
+
+    LGR_MESSAGE(log_level, TE_LGR_USER, log_buf);
+
+    free(log_buf);
+
+    return 0;
+}
 
 /* ================= OLD style API =========================== */
 

@@ -108,6 +108,22 @@ extern string_array_t * cwmp_str_array_copy(string_array_t *a);
  */
 extern void cwmp_str_array_free(string_array_t *a);
 
+/**
+ * Print string array to the long string buffer. 
+ * 
+ * @param a     array with strings 
+ */
+extern te_errno cwmp_str_array_snprint(string_array_t *a);
+
+/**
+ * Write string array to the log.
+ * 
+ * @param log_level     level of loggind, macro TE_LL_*, see logger_defs.h
+ * @param intro         preface to log message.
+ * @param a             array with strings to be logged.
+ */
+extern te_errno cwmp_str_array_log(unsigned log_level, const char *intro,
+                                   string_array_t *a);
 
 /**
  * Construct value array for argument of UI for CWMP RPC.
@@ -230,6 +246,16 @@ extern te_errno cwmp_val_array_check_str(cwmp_values_array_t *a,
  */
 extern void cwmp_val_array_free(cwmp_values_array_t *a);
 
+
+/**
+ * Write cwmp_values array to the log.
+ * 
+ * @param log_level     level of loggind, macro TE_LL_*, see logger_defs.h
+ * @param intro         preface to log message.
+ * @param a             array with strings to be logged.
+ */
+extern te_errno cwmp_val_array_log(unsigned log_level, const char *intro,
+                                   cwmp_values_array_t *a);
 
 static inline cwmp_parameter_value_struct_t *
 cwmp_copy_par_value(cwmp_parameter_value_struct_t *src)
