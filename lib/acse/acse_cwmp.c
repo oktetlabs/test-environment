@@ -1087,7 +1087,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     cpe_t *cpe = session->cpe_owner;
 
-    RING("%s() called, cwmp sess state %d", __FUNCTION__, session->state);
+    INFO("%s() called, cwmp sess state %d", __FUNCTION__, session->state);
 
     if (TAILQ_EMPTY(&cpe->rpc_queue) && cpe->sync_mode)
     { 
@@ -1103,7 +1103,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
         CWMP_RPC_NONE == rpc_item->params->rpc_cpe)
     {
 
-        RING("CPE '%s', empty list of RPC calls, response 204", cpe->name);
+        INFO("CPE '%s', empty list of RPC calls, response 204", cpe->name);
         // soap->keep_alive = 0;
         soap_begin_count(soap);
         soap_end_count(soap);
@@ -1121,7 +1121,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     request = rpc_item->params;
 
-    RING("%s(): Try send RPC for '%s', rpc type %d, id %u ",
+    INFO("%s(): Try send RPC for '%s', rpc type %d, id %u ",
          __FUNCTION__, cpe->name, request->rpc_cpe, request->request_id);
 
     cwmp_prepare_soap_header(soap, cpe);
@@ -1311,7 +1311,7 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
             }
         }
         WARN("%s(): Fault received '%s'",
-                __FUNCTION__, soap_faultdetail(soap));
+                __FUNCTION__, *(soap_faultdetail(soap)));
         /* do not return here, we have to continue normal CWMP session.*/
     }
     else 
