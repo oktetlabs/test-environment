@@ -987,7 +987,7 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
         return -1;
     }
 
-    RING("Issue CWMP Connection Request to %s/%s ", 
+    INFO("Issue CWMP Connection Request to %s/%s ", 
          in->acs_name, in->cpe_name);
 
     msg.opcode = EPC_CWMP_CALL;
@@ -1029,7 +1029,7 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
         return -1;
     }
 
-    RING("cwmp operation %d to %s/%s called ", 
+    INFO("cwmp operation %d to %s/%s called ", 
          (int)in->cwmp_rpc, in->acs_name, in->cpe_name);
 
     msg.opcode = EPC_CWMP_CALL;
@@ -1085,7 +1085,7 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
         return -1;
     }
 
-    RING("cwmp check operation No %d (rpc %d) to %s/%s called ", 
+    INFO("cwmp check operation No %d (rpc %d) to %s/%s called ", 
          (int)in->request_id, in->cwmp_rpc, in->acs_name, in->cpe_name);
 
     msg.opcode = EPC_CWMP_CALL;
