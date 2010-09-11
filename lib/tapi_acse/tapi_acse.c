@@ -577,7 +577,7 @@ tapi_acse_cpe_rpc_response(tapi_acse_context_t *ctx,
     } while ((timeout < 0 || (timeout--) > 0) &&
              (TE_EPENDING == TE_RC_GET_ERROR(rc)) &&
              (sleep(1) == 0));
-    RING("%s(): rc %r, cwmp_rpc %d", __FUNCTION__, rc, (int)cwmp_rpc_loc);
+    VERB("%s(): rc %r, cwmp rpc %d", __FUNCTION__, rc, (int)cwmp_rpc_loc);
 
     if ((0 == rc || TE_CWMP_FAULT == TE_RC_GET_ERROR(rc)) &&
         NULL != from_cpe)
@@ -625,7 +625,7 @@ tapi_acse_get_rpc_acs(tapi_acse_context_t *ctx,
     } while ((timeout < 0 || (timeout--) > 0) &&
              (TE_ENOENT == TE_RC_GET_ERROR(rc)) &&
              (sleep(1) == 0));
-    RING("%s(): rc %r", __FUNCTION__, rc);
+    VERB("%s(): rc %r", __FUNCTION__, rc);
 
     if (0 == rc && NULL != from_cpe)
     {
@@ -767,6 +767,9 @@ tapi_acse_get_parameter_values_resp(tapi_acse_context_t *ctx,
         cwmp_val_array_log(TE_LL_RING,
                            "Got GetParameterValuesResponse", *resp);
     }
+    else
+        RING("Got GetParameterValuesResponse, rc %r, from_cpe %p",
+             rc, from_cpe_loc.p);
     return rc;
 }
 
@@ -814,7 +817,8 @@ tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
         for (i = 0; i < name_list->__size; i++)
             (*resp)->items[i] =
                 strdup((name_list->__ptrParameterInfoStruct[i])->Name);
-        cwmp_str_array_log(TE_LL_RING, "Issue GetParameterValues", *resp);
+        cwmp_str_array_log(TE_LL_RING, "Got GetParameterNamesResponse",
+                           *resp);
     }
     return rc;
 }
@@ -855,6 +859,8 @@ tapi_acse_set_parameter_values_resp(tapi_acse_context_t *ctx, int *status)
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
     if (0 == rc && NULL != status && NULL != from_cpe_loc.p)
         *status = from_cpe_loc.set_parameter_values_r->Status;
+    RING("Got SetParameterValuesResponse, rc %r, status %d",
+         rc, from_cpe_loc.set_parameter_values_r->Status);
     return rc;
 }
 
