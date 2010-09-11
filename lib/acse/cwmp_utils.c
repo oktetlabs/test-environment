@@ -379,7 +379,7 @@ cwmp_val_array_log(unsigned log_level, const char *intro,
     if (NULL == log_buf) return TE_ENOMEM;
 
     if (NULL == intro) intro = "CWMP_UTILS, array of values";
-    p = snprintf(s, log_buf_size - total_p, "%s:\n    ", s);
+    p = snprintf(s, log_buf_size - total_p, "%s:\n    ", intro);
     s += p; total_p += p;
 
     for (i = 0; (i < a->size) && (total_p < log_buf_size); i++)
