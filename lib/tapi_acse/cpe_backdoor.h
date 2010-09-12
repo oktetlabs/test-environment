@@ -34,6 +34,18 @@ extern te_errno cpe_get_cr_url(board_id_t cpe,
                                char *cr_url, size_t bufsize);
 
 /**
+ * Get ACS URL from CPE.
+ *
+ * @param cpe           ID of board with CPE.
+ * @param acs_url       location for URL.
+ * @param bufsize       size of location buffer.
+ *
+ * @return status
+ */
+extern te_errno cpe_get_acs_url(board_id_t cpe, char *acs_url,
+                                size_t bufsize);
+
+/**
  * Get URL of ACS from CPE.
  *
  * @param cpe           ID of board with CPE.
