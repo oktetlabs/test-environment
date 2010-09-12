@@ -79,6 +79,7 @@ enum xsd__boolean { xsd__boolean__false_, xsd__boolean__true_ };
 typedef char* _SOAP_ENV__mustUnderstand;
 
 
+
 /// Typedef synonym for struct MethodList.
 typedef struct MethodList MethodList;
 
@@ -383,7 +384,9 @@ struct cwmp__ParameterValueStruct
     char*                                                              
                                          Name                           1;	///< Required element.
 /// Element Value of type xs:anySimpleType.
-    xsd__anySimpleType                   Value                          1;	///< Required element.
+///  xsd__anySimpleType                   Value                          1;	///< Required element.
+    int                                 __type ;
+    void *                               Value                          1;
 };
 
 /// "urn:dslforum-org:cwmp-1-1":ParameterInfoStruct is a complexType.
