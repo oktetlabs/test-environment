@@ -235,6 +235,9 @@ cwmp_val_array_add_va(cwmp_values_array_t *a,
 
     b_len = strlen(base_name);
 
+    VERB("add vals to val_array. b_len %d; first_name '%s'", 
+         b_len, first_name);
+
     do {
         if (real_arr_len <= i)
         {
@@ -251,7 +254,10 @@ cwmp_val_array_add_va(cwmp_values_array_t *a,
             return TE_ENOMEM;
 
         memcpy(array[i]->Name, base_name, b_len);
-        memcpy(array[i]->Name + b_len, v_name, v_len);
+        memcpy(array[i]->Name + b_len, v_name, v_len + 1);
+
+        VERB("add val to val_array[%d]: v_len %d; sfx '%s', Name '%s'", 
+             i, v_len, v_name, array[i]->Name);
 
         array[i]->__type = va_arg(ap, int);
         switch (array[i]->__type)
@@ -274,7 +280,7 @@ cwmp_val_array_add_va(cwmp_values_array_t *a,
                 SET_SOAP_TYPE(uint8_t, int); break;
             case SOAP_TYPE_time:
                 SET_SOAP_TYPE(time_t, time_t); break;
-
+#undef SET_SOAP_TYPE
             case SOAP_TYPE_string:
             case SOAP_TYPE_SOAP_ENC__base64:
                 {
@@ -557,7 +563,7 @@ cwmp_set_values_alloc(const char *par_key,
 void
 cwmp_set_values_free(_cwmp__SetParameterValues *req)
 {
-    size_t i;
+    int i;
     if (NULL == req)
         return;
     do {
