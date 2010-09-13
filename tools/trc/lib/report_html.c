@@ -837,6 +837,8 @@ static const char * const trc_report_javascript_table_subtests =
 "    test_stats['%s'].subtests = [%s];\n";
 #endif
 
+#define TRC_REPORT_KEY_UNSPEC   "unspecified"
+
 static TAILQ_HEAD(, trc_report_key_entry) keys;
 
 static int file_to_file(FILE *dst, FILE *src);
@@ -909,6 +911,13 @@ trc_report_keys_add(const char *key_names,
     int     count = 0;
     char   *p = NULL;
 
+    if ((key_names == NULL) || (*key_names == '\0'))
+    {
+        trc_report_key_add(TRC_REPORT_KEY_UNSPEC, iter_data,
+                           iter_name, iter_path);
+        return ++count;
+    }
+
     /* Iterate through keys list with ',' delimiter */
     while ((key_names != NULL) && (*key_names != '\0'))
     {
@@ -942,7 +951,8 @@ char *
 trc_report_key_test_path(FILE *f, const char *test_path,
                          const char *key_names)
 {
-    char *path = te_sprintf("%s-%s", test_path, key_names);
+    char *path = te_sprintf("%s-%s", test_path, (key_names != NULL) ?
+                            key_names : TRC_REPORT_KEY_UNSPEC);
     char *p;
 
     if (path == NULL)
@@ -1002,21 +1012,17 @@ trc_report_keys_to_html(FILE *f, char *keytool_fn)
          key != NULL;
          key = TAILQ_NEXT(key, links))
     {
-        if (strncmp(key->name, TRC_REPORT_OL_KEY_PREFIX,
-                    strlen(TRC_REPORT_OL_KEY_PREFIX)) == 0)
-        {
-            trc_report_key_iter_entry *key_iter = NULL;
+         trc_report_key_iter_entry *key_iter = NULL;
 
-            fprintf(f_in, "%s:", key->name);
+         fprintf(f_in, "%s:", key->name);
 
-            for (key_iter = TAILQ_FIRST(&key->iters);
-                 key_iter != NULL;
-                 key_iter = TAILQ_NEXT(key_iter, links))
-            {
-                fprintf(f_in, "%s#%s,", key_iter->name, key_iter->path);
-            }
-            fprintf(f_in, "\n");
-        }
+         for (key_iter = TAILQ_FIRST(&key->iters);
+              key_iter != NULL;
+              key_iter = TAILQ_NEXT(key_iter, links))
+         {
+             fprintf(f_in, "%s#%s,", key_iter->name, key_iter->path);
+         }
+         fprintf(f_in, "\n");
     }
 
     fclose(f_in);
@@ -1103,7 +1109,7 @@ static inline char *
 trc_link_keys(const char *keys)
 {
     char *p;
-    char *link_keys = strdup(keys);
+    char *link_keys = strdup((keys) ? keys : TRC_REPORT_KEY_UNSPEC);
 
     if (link_keys == NULL)
         return NULL;
@@ -1295,30 +1301,22 @@ trc_report_exp_got_to_html(FILE                *f,
 
             WRITE_STR(trc_test_exp_got_row_mid);
 
-            if (iter_data->exp_result != NULL &&
-                iter_data->exp_result->key != NULL)
+            if ((test->type == TRC_TEST_SCRIPT) &&
+                (iter_data->exp_result != NULL))
             {
-                char *key_test_path =
-                    trc_report_key_test_path(f, test_path,
-                                             iter_data->exp_result->key);
-                const trc_report_test_iter_entry *search_iter;
+                if (iter_data->exp_result->key != NULL)
+                    trc_re_key_substs(iter_data->exp_result->key, f);
 
-                trc_re_key_substs(iter_data->exp_result->key, f);
-
-                for (search_iter = TAILQ_FIRST(&iter_data->runs);
-                     search_iter != NULL;
-                     search_iter = TAILQ_NEXT(iter_entry, links))
-                {
-                    if ((search_iter->result.status == TE_TEST_FAILED) ||
-                        ((search_iter->result.status == TE_TEST_PASSED) &&
-                         (TAILQ_FIRST(&search_iter->result.verdicts) !=
-                          NULL)))
-                        break;
-                }
-
-                if (search_iter != NULL)
+                if ((iter_entry != NULL) &&
+                    ((iter_entry->result.status == TE_TEST_FAILED) ||
+                     ((iter_entry->result.status == TE_TEST_PASSED) &&
+                      (TAILQ_FIRST(&iter_entry->result.verdicts) !=
+                      NULL))))
                 {
                     char *link_keys;
+                    char *key_test_path =
+                        trc_report_key_test_path(f, test_path,
+                            iter_data->exp_result->key);
                     /*
                      * Iterations does not have unique names and paths yet,
                      * use test name and path instead of
@@ -1327,13 +1325,13 @@ trc_report_exp_got_to_html(FILE                *f,
                                         iter_data, test->name,
                                         key_test_path);
 
+                    free(key_test_path);
+
                     /* Add also link to keys table */
                     link_keys = trc_link_keys(iter_data->exp_result->key);
                     trc_re_key_substs(link_keys, f);
                     free(link_keys);
                 }
-
-                free(key_test_path);
             }
 
             fprintf(f, trc_test_exp_got_row_end,

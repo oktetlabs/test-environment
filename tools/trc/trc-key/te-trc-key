@@ -32,114 +32,125 @@ my @bugs = ();
 # Iterate through the list of Bug IDs
 for my $bug_line (<STDIN>)
 {
-    #printf("Bug line: %s\n", $bug_line);
-    if ($bug_line =~ m/OL (\d*):/i)
+    my %bug = ();
+    my $bug_id = ();
+    my $bug_tests = ();
+
+    if ($bug_line =~ m/unspecified:/i)
+    {
+        $bug{'id'} = 'unspecified';
+        $bug{'summary'} = 'Test failures are expected but no keys are specified';
+        $bug{'bug_severity'} = 'unknown';
+        $bug{'priority'} = 'unknown';
+        $bug{'bug_status'} = 'unknown';
+        $bug_tests = $';
+        chomp $bug_tests;
+    }
+    elsif ($bug_line =~ m/OL (\d*):/i)
     {
         $bug_id = $1;
         $bug_tests = $';
         chomp $bug_tests;
+
+        my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=$bug_id";
+        my $field = ();
+        my $label = ();
+        my $assume = ();
+
+        #curl -s -u : --negotiate "${BUZILLA_URL}/show_bug.cgi?id=${bug_id}"
+        for my $line (`curl -s -u : --negotiate \"$bug_url\"`)
+        {
+            # Parse BUG ID field
+            if ($line =~ m/name=\"id\" value=\"(\d*)\"/i)
+            {
+                #printf("Id: %s\n", $1);
+                $bug{'id'} = $1;
+            }
+
+            # Parse BUG Summary
+            if ($line =~ m/short_desc_nonedit_display\"\>([\w|\s|.|,|:|;|-|_|\\|\/|]*)/i)
+            {
+                #printf("Summary: %s\n", $1);
+                $bug{'summary'} = $1;
+            }
+
+            # Parse assumptions if any
+            if ($assume)
+            {
+                if ($line =~ m/\s*(\w*)\s*/i)
+                {
+                    #printf("Assume %s=%s\n", $assume, $1);
+                    $bug{$assume} = $1;
+                    $assume=();
+                }
+            }
+
+            # Parse BUG Status
+            if ($line =~ m/static_bug_status\"\>([\w| ]*)/i)
+            {
+                #printf("Status: %s\n", $1);
+                $bug{'status'} = $1;
+                # Assume the next line contains bug resolution
+                $assume='resolution';
+            }
+
+            # Parse Selected options
+            if (($line =~ m/select id=\"([\w|\s]*)\"/i) or
+                ($line =~ m/select name=\"([\w|\s]*)\"/i))
+            {
+                #printf("Found %s select id\n", $1);
+                $field = $1;
+            }
+
+            if ($line =~ m/label for=\"([\w|\s]*)\"/i)
+            {
+                #printf("Found %s label\n", $1);
+                $label = $1;
+            }
+
+            # Parse label for construction, in case there are no selections
+            # due to read-only access to bugzilla
+            if ($line =~ m/<td>([\w|\s]*)/i)
+            {
+                if ($label)
+                {
+                    #printf("%s: %s\n", $label, $1);
+                    $bug{$label} = $1;
+                    chomp $bug{$label};
+                    $label = ();
+                }
+            }
+
+            # Parse selections
+            if (($line =~ m/option value=\"([\w|\s]*)\"\s*selected/i) or
+                ($line =~ m/option selected value=\"([\w|\s]*)\"/i))
+            {
+                if ($field)
+                {
+                    #printf("%s: %s\n", $field, $1);
+                    $bug{$field} = $1;
+                    $field = ();
+                }
+            }
+        }
+
+        # Check priority field is simple.
+        # Split it to priority and severity if not.
+        if ($bug{'priority'} =~ m/(P[\d]*) ([\w|\s]*)/i)
+        {
+            $bug{'bug_severity'} = $2;
+            $bug{'priority'} = $1;
+        }
+
+        # Update bug status, if not parsed yet
+        if ((not $bug{'bug_status'}) and ($bug{'status'}))
+        {
+            $bug{'bug_status'} = $bug{'status'};
+        }
     }
     else
     {
         last;
-    }
-
-    my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=$bug_id";
-    my $field = ();
-    my $label = ();
-    my $assume = ();
-    my %bug = ();
-
-    #curl -s -u : --negotiate "${BUZILLA_URL}/show_bug.cgi?id=${bug_id}"
-    for my $line (`curl -s -u : --negotiate \"$bug_url\"`)
-    {
-        # Parse BUG ID field
-        if ($line =~ m/name=\"id\" value=\"(\d*)\"/i)
-        {
-            #printf("Id: %s\n", $1);
-            $bug{'id'} = $1;
-        }
-
-        # Parse BUG Summary
-        if ($line =~ m/short_desc_nonedit_display\"\>([\w|\s|.|,|:|;|-|_|\\|\/|]*)/i)
-        {
-            #printf("Summary: %s\n", $1);
-            $bug{'summary'} = $1;
-        }
-
-        # Parse assumptions if any
-        if ($assume)
-        {
-            if ($line =~ m/\s*(\w*)\s*/i)
-            {
-                #printf("Assume %s=%s\n", $assume, $1);
-                $bug{$assume} = $1;
-                $assume=();
-            }
-        }
-
-        # Parse BUG Status
-        if ($line =~ m/static_bug_status\"\>([\w| ]*)/i)
-        {
-            #printf("Status: %s\n", $1);
-            $bug{'status'} = $1;
-            # Assume the next line contains bug resolution
-            $assume='resolution';
-        }
-
-        # Parse Selected options
-        if (($line =~ m/select id=\"([\w|\s]*)\"/i) or
-            ($line =~ m/select name=\"([\w|\s]*)\"/i))
-        {
-            #printf("Found %s select id\n", $1);
-            $field = $1;
-        }
-
-        if ($line =~ m/label for=\"([\w|\s]*)\"/i)
-        {
-            #printf("Found %s label\n", $1);
-            $label = $1;
-        }
-
-        # Parse label for construction, in case there are no selections
-        # due to read-only access to bugzilla
-        if ($line =~ m/<td>([\w|\s]*)/i)
-        {
-            if ($label)
-            {
-                #printf("%s: %s\n", $label, $1);
-                $bug{$label} = $1;
-                chomp $bug{$label};
-                $label = ();
-            }
-        }
-
-        # Parse selections
-        if (($line =~ m/option value=\"([\w|\s]*)\"\s*selected/i) or
-            ($line =~ m/option selected value=\"([\w|\s]*)\"/i))
-        {
-            if ($field)
-            {
-                #printf("%s: %s\n", $field, $1);
-                $bug{$field} = $1;
-                $field = ();
-            }
-        }
-
-    }
-
-    # Check priority field is simple.
-    # Split it to priority and severity if not.
-    if ($bug{'priority'} =~ m/(P[\d]*) ([\w|\s]*)/i)
-    {
-        $bug{'bug_severity'} = $2;
-        $bug{'priority'} = $1;
-    }
-
-    # Update bug status, if not parsed yet
-    if ((not $bug{'bug_status'}) and ($bug{'status'}))
-    {
-        $bug{'bug_status'} = $bug{'status'};
     }
 
     # Process bug test list
@@ -209,11 +220,18 @@ printf("  </tr>\n");
 
 for my $b (@bugs)
 {
-    my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=".$b->{'id'};
-    printf("<a name=\"bug_ol_%s\"/>\n", $b->{'id'});
+    my $bug_url;
 
     printf("<tr style=\"color:#%s\">\n", colorify($b->{'priority'}, $b->{'bug_severity'}, $b->{'bug_status'}));
-    printf("  <td><a href=%s>OL %s</a></td>\n", $bug_url, $b->{'id'});
+    if ($b->{'id'} ne 'unspecified')
+    {
+        $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=".$b->{'id'};
+        printf("  <td><a name=\"bug_ol_%s\" href=%s>OL %s</a></td>\n", $b->{'id'}, $bug_url, $b->{'id'});
+    }
+    else
+    {
+        printf("  <td><a name=\"bug_unspecified\">Unspecified</a></td>\n");
+    }
     printf("  <td>%s</td>\n", $b->{'tests'});
     printf("  <td>%s</td>\n", $b->{'priority'});
     printf("  <td>%s</td>\n", $b->{'bug_severity'});
