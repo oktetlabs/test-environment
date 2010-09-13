@@ -695,10 +695,10 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
                                            (_csap), (_group_addr),    \
                                            (_src_addr), (_src_mac)))
 
-#define IGMP2_SEND_QUERY(_pco, _csap, _group_addr, _src_addr, _skip_eth, _src_mac) \
-    CHECK_RC(tapi_igmp2_ip4_eth_send_query((_pco)->ta, (_pco)->sid,    \
-                                           (_csap), (_group_addr),    \
-                                           (_src_addr), (_skip_eth), \
+#define IGMP2_SEND_QUERY(_pco,_csap,_group_addr,_src_addr,_skip_eth,_src_mac) \
+    CHECK_RC(tapi_igmp2_ip4_eth_send_query((_pco)->ta, (_pco)->sid,           \
+                                           (_csap), 0, (_group_addr),         \
+                                           (_src_addr), (_skip_eth),          \
                                            (_src_mac)))
 
 
