@@ -84,6 +84,7 @@ unix_socket(char const *unix_path, char const *connect_to)
     struct sockaddr_un addr = { .sun_family = AF_UNIX };
     int s = socket(AF_UNIX, SOCK_SEQPACKET, 0);
     int saved_errno;
+    int ret;
 
     VERB("%s(): local path '%s', connect to '%s'",
          __FUNCTION__, unix_path, connect_to);
@@ -100,7 +101,17 @@ unix_socket(char const *unix_path, char const *connect_to)
 
     strcpy(addr.sun_path, unix_path);
 
-    if (bind(s, (struct sockaddr *)&addr, sizeof addr) != -1)
+    ret = bind(s, (struct sockaddr *)&addr, sizeof addr);
+
+    if (ret == -1 && errno == EADDRINUSE)
+    {
+        RING("Creating AF_UNIX socket, try to fix EADDRINUSE,"
+             " remove existing unix socket file");
+        unlink(unix_path);
+        ret = bind(s, (struct sockaddr *)&addr, sizeof addr);
+    }
+
+    if (ret != -1)
     {
         if (connect_to == NULL)
             return s;
@@ -235,6 +246,7 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
             == -1)
     {
         int saved_errno = errno;
+
         ERROR("create EPC socket failed, errno %d", saved_errno);
 
         if (epc_shmem != NULL)
