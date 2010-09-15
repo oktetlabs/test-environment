@@ -6075,6 +6075,13 @@ TARPC_FUNC(getrlimit,
 }
 )
 
+/*------------ power_sw() -----------------------------------*/
+TARPC_FUNC(power_sw, {},
+{
+    MAKE_CALL(out->retval = func(in->type, in->dev, in->mask, in->cmd));
+}
+)
+
 /*------------ mcast_join_leave() ---------------------------*/
 void
 mcast_join_leave(tarpc_mcast_join_leave_in  *in,

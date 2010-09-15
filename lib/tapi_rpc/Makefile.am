@@ -21,7 +21,8 @@ include_HEADERS= \
     tapi_rpc_client_server.h \
     tapi_rpcsock_macros.h \
     tapi_rpc_params.h \
-    tapi_rpc_internal.h  
+    tapi_rpc_internal.h \
+    tapi_rpc_power_sw.h
 
 lib_LTLIBRARIES=libtapi_rpc.la
 
@@ -37,7 +38,8 @@ libtapi_rpc_la_SOURCES= \
     stdio.c \
     telephony.c \
     unistd.c \
-    wsa.c
+    wsa.c \
+    power_sw.c
 
 
 install-exec-hook:

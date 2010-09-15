@@ -4048,6 +4048,16 @@ struct tarpc_cwmp_get_inform_out {
     uint8_t             buf<>;      /**< Buffer with CWMP Inform data */
 };
 
+struct tarpc_power_sw_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int           type;   /**< Device type */
+    string              dev<>;  /**< Device name */
+    tarpc_int           mask;   /**< Power lines bitmask */
+    tarpc_int           cmd;    /**< Power switch command */
+};
+
+typedef struct tarpc_int_retval_out tarpc_power_sw_out;
 
 program tarpc
 {
@@ -4310,5 +4320,6 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(cwmp_op_check)
         RPC_DEF(cwmp_conn_req)
         RPC_DEF(cwmp_get_inform)
+        RPC_DEF(power_sw)
     } = 1;
 } = 1;

@@ -55,7 +55,8 @@ te_headers = \
 	tester_internal.h \
 	te_ethtool.h \
 	te_cwmp.h \
-        cwmp_soapStub.h
+        cwmp_soapStub.h \
+	te_power_sw.h
 
 include_HEADERS = te_config_internal.h $(te_headers)
 

@@ -215,6 +215,16 @@ AC_CHECK_HEADERS([sys/systeminfo.h])
 AC_CHECK_HEADERS([linux/if_vlan.h])
 
 dnl
+dnl Terminal devices
+dnl
+AC_CHECK_HEADERS([termios.h])
+
+dnl
+dnl Parport devices
+dnl
+AC_CHECK_HEADERS([linux/ppdev.h])
+
+dnl
 dnl We do not need epoll really, since we use it via RPC and dlopen,
 dnl but we do need the header for struct epoll_event.
 dnl
