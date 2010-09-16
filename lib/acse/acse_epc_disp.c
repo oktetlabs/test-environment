@@ -285,6 +285,10 @@ cpe_cr_state(cpe_t *cpe, acse_epc_config_data_t *params)
     if (params->op.fun == EPC_CFG_MODIFY)
         return TE_EACCES;
     sprintf(params->value, "%i", cpe->cr_state);
+
+    if (cpe->cr_state == CR_ERROR || cpe->cr_state == CR_DONE)
+        cpe->cr_state = CR_NONE;
+
     return 0;
 }
 

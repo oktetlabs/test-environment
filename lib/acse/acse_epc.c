@@ -105,7 +105,7 @@ unix_socket(char const *unix_path, char const *connect_to)
 
     if (ret == -1 && errno == EADDRINUSE)
     {
-        RING("Creating AF_UNIX socket, try to fix EADDRINUSE,"
+        RING("Binding AF_UNIX socket, try to fix EADDRINUSE,"
              " remove existing unix socket file");
         unlink(unix_path);
         ret = bind(s, (struct sockaddr *)&addr, sizeof addr);
