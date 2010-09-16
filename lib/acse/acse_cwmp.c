@@ -967,7 +967,7 @@ acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
                             request->to_cpe.get_parameter_values,
                             "cwmp:GetParameterValues", "");
         case CWMP_RPC_get_parameter_names:
-            RING("%s(): send GetParameterNames for '%s'",
+            VERB("%s(): send GetParameterNames for '%s'",
                 __FUNCTION__,
                 request->to_cpe.get_parameter_names->ParameterPath[0]);
             return soap_put__cwmp__GetParameterNames(soap, 
