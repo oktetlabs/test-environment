@@ -124,7 +124,9 @@ typedef struct tapi_acse_context_s {
  * This method expects defined environment variable CPE_NAME
  * with CS name of CPE which is interesing for running configuration. 
  * By the way, while context is just inited and no operations
- * was performed, user is free to modify ACS and CPE names.
+ * was performed, user is free to modify ACS and CPE names,
+ * but in this case he is responsible for presence of wanted CPE cfg
+ * parameters in TA acse CS subtree (use tapi_acse_ta_cs_init() ).
  *
  * @param ta            name of TA where ACSE is started.
  *
@@ -146,6 +148,15 @@ extern tapi_acse_context_t *tapi_acse_ctx_init(const char *ta);
             TEST_FAIL("Init ACSE TAPI context failed");         \
     } while (0)
 
+/**
+ * Copy parameters for ACS and CPE from local static CS subtree
+ * to the run-time subtree on specified TA. 
+ *
+ * @param ctx           ACSE TAPI context.
+ *
+ * @return status code.
+ */
+extern te_errno tapi_acse_ta_cs_init(tapi_acse_context_t *ctx);
 /*
  * ================= Configuring of ACSE ===================
  */

@@ -68,6 +68,7 @@ tapi_acse_stop(const char *ta)
     return rc;
 }
 
+/* see description in tapi_acse.h */
 static inline int
 acse_is_int_var(const char *name)
 {
@@ -81,7 +82,99 @@ acse_is_int_var(const char *name)
          (0 == strcmp(name, "cwmp_state"))  );
 }
 
+te_errno
+tapi_acse_ta_cs_init(tapi_acse_context_t *ctx)
+{
+    char          buf[CFG_OID_MAX];
+    int           i_val;
+    cfg_val_type  type;
+    unsigned      num = 0;
+    cfg_handle   *handles = NULL;
+    cfg_handle    acs_handle = CFG_HANDLE_INVALID,
+                  cpe_handle = CFG_HANDLE_INVALID;
+    te_errno      rc;
 
+    /* Check, if there running ACSE itself */
+    type = CVT_INTEGER;
+    rc = cfg_get_instance_fmt(&type, &i_val, "/agent:%s/acse:", ctx->ta);
+    if (rc != 0) return TE_RC(TE_TAPI, rc);
+    if (i_val != 1)
+    {
+        WARN("ACSE is not running, val %d", i_val);
+        return TE_RC(TE_TAPI, TE_ESRCH);
+    }
+
+#define C_ACS 1
+#define C_CPE 2
+
+#define CHECK_CREATE_ACS_CPE(_lv) \
+    do {                                                                \
+        snprintf(buf, sizeof(buf), "/agent:%s/acse:/acs:%s%s%s",       \
+                 ctx->ta, ctx->acs_name,                                \
+                 (_lv == C_CPE) ? "/cpe:" : "",                         \
+                 (_lv == C_CPE) ? ctx->cpe_name : "" );                 \
+        if ((rc = cfg_find_str(buf, (_lv == C_CPE) ?                    \
+                                    &cpe_handle : &acs_handle)) != 0)   \
+        {                                                               \
+            if (TE_ENOENT == TE_RC_GET_ERROR(rc))                       \
+                rc = cfg_add_instance_str(buf, NULL, CVT_NONE);         \
+            else                                                        \
+                ERROR("%s(): find '%s', %r", __FUNCTION__, buf, rc);    \
+        }                                                               \
+        if (0 != rc)                                                    \
+            return TE_RC(TE_TAPI, rc);                                  \
+    } while (0)
+
+#define COPY_ACS_CPE_PARAM(_lv, _type, _par_name) \
+    do { \
+        char *str = NULL; int num = 0;                                  \
+        type = _type;                                                   \
+        if ((rc = cfg_get_instance_fmt(&type,                           \
+                    (CVT_INTEGER == _type) ? (void*)&num : (void*)&str, \
+                    "/local:/acse:/%s:%s/%s:",                          \
+                    (_lv == C_CPE) ? "cpe" : "acs",                     \
+                    (_lv == C_CPE) ? ctx->cpe_name : ctx->acs_name,     \
+                        _par_name)                               ) != 0 \
+            || (rc = cfg_set_instance_fmt(_type,                        \
+                            (CVT_INTEGER == _type) ? (void*)num : str,  \
+                            "/agent:%s/acse:/acs:%s%s%s/%s:",           \
+                            ctx->ta, ctx->acs_name,                     \
+                            (_lv == C_CPE) ? "/cpe:" : "",              \
+                            (_lv == C_CPE) ? ctx->cpe_name : "",        \
+                            _par_name)                          ) != 0) \
+        {                                                               \
+            ERROR("copy '%s' %s param from local to TA tailed, %r",     \
+                 _par_name, (_lv == C_CPE) ? "cpe" : "acs", rc);        \
+            return TE_RC(TE_TAPI, rc);                                  \
+        }                                                               \
+    } while (0)
+
+    /* Check, if there wanted ACS on the running ACSE */
+    CHECK_CREATE_ACS_CPE(C_ACS);
+    /* Check, if there wanted CPE on the running ACSE */
+    CHECK_CREATE_ACS_CPE(C_CPE);
+
+    if (CFG_HANDLE_INVALID == acs_handle) /* ACS on ACSE was created */
+    { 
+        COPY_ACS_CPE_PARAM(C_ACS, CVT_INTEGER, "port");
+        COPY_ACS_CPE_PARAM(C_ACS, CVT_STRING, "http_root");
+        COPY_ACS_CPE_PARAM(C_ACS, CVT_STRING, "auth_mode");
+        COPY_ACS_CPE_PARAM(C_ACS, CVT_STRING, "url");
+    }
+
+    if (CFG_HANDLE_INVALID == cpe_handle) /* CPE on ACSE was created */
+    { 
+        COPY_ACS_CPE_PARAM(C_CPE, CVT_STRING, "login");
+        COPY_ACS_CPE_PARAM(C_CPE, CVT_STRING, "passwd");
+    }
+
+#undef COPY_ACS_PARAM
+#undef C_ACS
+#undef C_CPE
+    return 0;
+}
+
+/* see description in tapi_acse.h */
 tapi_acse_context_t *
 tapi_acse_ctx_init(const char *ta)
 {
@@ -90,9 +183,10 @@ tapi_acse_ctx_init(const char *ta)
     te_errno rc = 0;
 
     if (NULL == box_name)
-        WARN("init ACSE context, no CPE_NAME, find first CPE in firsr ACS");
+        WARN("init TAPI ACSE context, no CPE_NAME, find first CPE");
     else
-        RING("init ACSE context, CPE_NAME='%s', let's find this CPE...");
+        RING("init ACSE context, CPE_NAME='%s', let's find this CPE...", 
+             box_name);
 
     ctx->ta = strdup(ta);
 
@@ -111,73 +205,39 @@ tapi_acse_ctx_init(const char *ta)
         ctx->timeout = 20; /* Experimentally discovered optimal value. */
         ctx->req_id = 0;
 
+        if ((rc = cfg_find_pattern_fmt(&num, &handles,
+                                       "/local:/acse:/acs:*")) != 0 ||
+            0 == num)
+        {
+            ERROR("Cannot find ACS in local db: rc %r, num found %d",
+                  rc, num);
+            break;
+        }
+        cfg_get_inst_name(handles[0], &name);
+        ctx->acs_name = name;
+        free(handles); handles = NULL; num = 0;
 
         if (NULL != box_name)
         {
-            cfg_handle father;
-            if ((rc = cfg_find_pattern_fmt(&num, &handles,
-                                           "/agent:%s/acse:/acs:*/cpe:%s",
-                                           ta, box_name)) != 0)
-            {
-                ERROR("Cannot find ACS on TA '%s': rc %r", ta, rc);
-                break;
-            }
-            if (0 == num)
-            {
-                ERROR("Cannot find ACS on TA '%s': zero objects", ta);
-                break;
-            }
-            cfg_get_father(handles[0], &father);
-            cfg_get_inst_name(father, &name);
             ctx->cpe_name = box_name;
-            ctx->acs_name = name;
             RING("init ctx: %s/%s", ctx->acs_name, ctx->cpe_name);
-            return ctx;
         }
-        /* If failed, try to use first ACS and first CPE */
-
-        /* Find first ACS */
-        if ((rc = cfg_find_pattern_fmt(&num, &handles,
-                                       "/agent:%s/acse:/acs:*",
-                                       ta)) != 0)
+        else
         {
-            ERROR("Cannot find ACS on TA '%s': rc %r", ta, rc);
-            break;
-        }
-        if (0 == num)
-        {
-            ERROR("Cannot find ACS on TA '%s': zero objects", ta);
-            break;
+            if ((rc = cfg_find_pattern_fmt(&num, &handles,
+                                           "/local:/acse:/cpe:*")) != 0 ||
+                0 == num)
+            {
+                ERROR("Cannot find CPE in local db: rc %r, num found %d",
+                      rc, num);
+                break;
+            }
+            cfg_get_inst_name(handles[0], &name);
+            ctx->cpe_name = name;
         }
 
-        if ((rc = cfg_get_inst_name(handles[0], &name)) != 0)
-        {
-            ERROR("Cannot get ACS name TA '%s': rc %r", ta, rc);
+        if (0 != (rc = tapi_acse_ta_cs_init(ctx)))
             break;
-        }
-        ctx->acs_name = name;
-
-        free(handles); handles = NULL;
-        /* Find first CPE */
-        if ((rc = cfg_find_pattern_fmt(&num, &handles,
-                                       "/agent:%s/acse:/acs:%s/cpe:*",
-                                       ta, ctx->acs_name)) != 0)
-        {
-            ERROR("Cannot find CPE on TA '%s' : rc %r", ta, rc);
-            break;
-        }
-        if (0 == num)
-        {
-            ERROR("Cannot find CPE on TA '%s': zero objects", ta);
-            break;
-        }
-
-        if ((rc = cfg_get_inst_name(handles[0], &name)) != 0)
-        {
-            ERROR("Cannot get CPE name TA '%s': rc %r", ta, rc);
-            break;
-        }
-        ctx->cpe_name = name;
 
         return ctx;
     } while (0);
