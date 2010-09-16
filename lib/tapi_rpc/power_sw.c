@@ -74,13 +74,14 @@ rpc_power_sw(rcf_rpc_server *rpcs, const char *type,
         return -1;
     }
 
-    in.dev = (dev == NULL) ? NULL : strdup(dev);
+    in.dev = (dev == NULL) ? strdup("unspec") : strdup(dev);
 
     rcf_rpc_call(rpcs, "power_sw", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: power_sw(%s, %s, %X, %s) "
                  "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 type, (dev != NULL) ? dev : "unspec",
+                 (type != NULL) ? type : "unspec",
+                 (dev != NULL) ? dev : "unspec",
                  mask, cmd, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 

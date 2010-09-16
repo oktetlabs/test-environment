@@ -204,11 +204,11 @@ power_sw(int type, const char *dev, int mask, int cmd)
     if (type == DEV_TYPE_UNSPEC)
         type = DEV_TYPE_DFLT;
 
-    if (dev == NULL)
+    if (dev == NULL || strcmp(dev, "unspec") == 0)
     {
         dev = (type == DEV_TYPE_PARPORT) ?
-            parport_dev_dflt :
-                tty_dev_dflt;
+                            parport_dev_dflt :
+                                        tty_dev_dflt;
     }
 
     if (cmd == CMD_UNSPEC)
