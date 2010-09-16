@@ -119,7 +119,7 @@ recognize_power_switch(int fd, int *rebootable, int *sockets_num)
     /* Read 1 byte of echo, 3 bytes of reply, and 1 more byte for '#'. */
     rc = read(fd, reply, 5);
     /* Check if signature (bytes 1-3) is valid. */
-    if (reply[1] != '1' || !reply[2] & 0x40 || reply[3] != '0' )
+    if (reply[1] != '1' || (reply[2] & 0x40) == 0 || reply[3] != '0' )
     {
         ERROR("Power switch signature was not received on specified"
               "power TTY device.");
