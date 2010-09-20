@@ -154,6 +154,11 @@ for my $bug_line (<STDIN>)
         last;
     }
 
+    if ($bug{'keywords'})
+    {
+        $bug{'keywords'} = join('<br/>', split(', ', $bug{'keywords'}));
+    }
+
     # Process bug test list
     my $test_links;
     for my $test_line (split(',', $bug_tests))
