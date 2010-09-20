@@ -1828,7 +1828,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
 
     if (~flags & TRC_REPORT_NO_KEYS)
     {
-        WRITE_STR("<a href=\"#keys_table\"><b>Keys</b></a>\n");
+        WRITE_STR("<a href=\"#keys_table\"><b>Bugs</b></a>\n");
     }
 
     /* Header provided by user */
