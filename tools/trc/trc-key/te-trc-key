@@ -134,6 +134,14 @@ for my $bug_line (<STDIN>)
                     $field = ();
                 }
             }
+
+            if ($line =~ m/href=\"mailto\:([\w\&\#\;\.]*)\" title=\"([\w\&\#\;\.]*)\" ><span class=\"fn\">([\w\s]*)/i)
+            {
+                if (!$bug{'assigned_to'})
+                {
+                    $bug{'assigned_to'} = "<br/><a href=\"mailto:$1\">$3</a>";
+                }
+            }
         }
 
         # Check priority field is simple.
@@ -243,7 +251,7 @@ for my $b (@bugs)
     printf("  <td>%s</td>\n", $b->{'tests'});
     printf("  <td>%s</td>\n", $b->{'priority'});
     printf("  <td>%s</td>\n", $b->{'bug_severity'});
-    printf("  <td>%s %s</td>\n", $b->{'bug_status'}, $b->{'resolution'});
+    printf("  <td>%s %s %s</td>\n", $b->{'bug_status'}, $b->{'resolution'}, $b->{'assigned_to'});
     printf("  <td>%s</td>\n", $b->{'summary'});
     printf("  <td>%s</td>\n", $b->{'product'});
     printf("  <td>%s</td>\n", $b->{'component'});
