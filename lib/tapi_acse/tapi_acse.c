@@ -264,6 +264,13 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
                           "/agent:%s/acse:/acs:%s%s", ta, acs_name,
                           cpe_name_buf);
     }
+    if (ACSE_OP_DEL == opcode)
+    {
+        gen_rc = cfg_del_instance_fmt(TRUE,
+                                      "/agent:%s/acse:/acs:%s%s",
+                                      ta, acs_name, cpe_name_buf);
+        return gen_rc;
+    }
 
     while (1)
     {
