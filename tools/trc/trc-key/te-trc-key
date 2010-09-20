@@ -68,7 +68,7 @@ for my $bug_line (<STDIN>)
             }
 
             # Parse BUG Summary
-            if ($line =~ m/short_desc_nonedit_display\"\>([\w|\s|.|,|:|;|-|_|\\|\/|]*)/i)
+            if ($line =~ m/short_desc_nonedit_display\"\>([\w\s.,:\;\-\\_\/]*)/i)
             {
                 #printf("Summary: %s\n", $1);
                 $bug{'summary'} = $1;
@@ -86,7 +86,7 @@ for my $bug_line (<STDIN>)
             }
 
             # Parse BUG Status
-            if ($line =~ m/static_bug_status\"\>([\w| ]*)/i)
+            if ($line =~ m/static_bug_status\"\>([\w ]*)/i)
             {
                 #printf("Status: %s\n", $1);
                 $bug{'status'} = $1;
@@ -110,7 +110,8 @@ for my $bug_line (<STDIN>)
             # Parse label for construction, in case there are no selections
             # due to read-only access to bugzilla
             if (($line =~ m/<td>([\w\s]*)/i) or
-                ($line =~ m/span title=\"([\w|\s|,]*)\"/i))
+                ($line =~ m/span title=\"([\w\s,]*)\"/i) or
+                ($line =~ m/<td colspan=\"2\">([\w]+)/i))
             {
                 if ($label)
                 {
