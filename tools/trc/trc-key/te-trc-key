@@ -110,8 +110,8 @@ for my $bug_line (<STDIN>)
             # Parse label for construction, in case there are no selections
             # due to read-only access to bugzilla
             if (($line =~ m/<td>([\w\s]*)/i) or
-                ($line =~ m/span title=\"([\w\s,]*)\"/i) or
-                ($line =~ m/<td colspan=\"2\">([\w]+)/i))
+                ($line =~ m/span title=\"([\w\s\,]*)\"/i) or
+                ($line =~ m/<td colspan=\"2\">([\w\s\,]*)  $/i))
             {
                 if ($label)
                 {
@@ -125,7 +125,7 @@ for my $bug_line (<STDIN>)
             # Parse selections
             if (($line =~ m/option value=\"([\w\s]*)\"\s*selected/i) or
                 ($line =~ m/option selected value=\"([\w\s]*)\"/i) or
-                ($line =~ m/^\s*value=\"([\w\s,]*)\"/i))
+                ($line =~ m/^\s*value=\"([\w\s\,]*)\"/i))
             {
                 if ($field)
                 {
