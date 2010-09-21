@@ -68,7 +68,7 @@ for my $bug_line (<STDIN>)
             }
 
             # Parse BUG Summary
-            if ($line =~ m/short_desc_nonedit_display\"\>([\w\s.,:\;\-\\_\/]*)/i)
+            if ($line =~ m/short_desc_nonedit_display\"\>([\w\s.,<>:\;\?\=\-\\_\/\"\(\)\'\{\}\[\]\#\@\!\~\$\%\^\&\*\|]*)/i)
             {
                 #printf("Summary: %s\n", $1);
                 $bug{'summary'} = $1;
