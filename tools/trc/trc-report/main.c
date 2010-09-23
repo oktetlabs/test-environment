@@ -79,6 +79,9 @@ enum {
     TRC_OPT_NO_EXP_PASSED,
     TRC_OPT_NO_EXPECTED,
     TRC_OPT_NO_STATS_NOT_RUN,
+    TRC_OPT_NO_KEYS,
+    TRC_OPT_KEYS_ONLY,
+    TRC_OPT_KEYS_SANITY,
     TRC_OPT_IGNORE_LOG_TAGS,
     TRC_OPT_COMPARISON,
 };
@@ -197,6 +200,15 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         { "no-stats-not-run", '\0', POPT_ARG_NONE, NULL,
           TRC_OPT_NO_STATS_NOT_RUN,
           "Do not entries with unexpected 'not run' statistics.",
+          NULL },
+        { "no-keys", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_KEYS,
+          "Do not generate keys table.",
+          NULL },
+        { "keys-only", '\0', POPT_ARG_NONE, NULL, TRC_OPT_KEYS_ONLY,
+          "Do not include details about iterations, keys table only.",
+          NULL },
+        { "keys-sanity", '\0', POPT_ARG_NONE, NULL, TRC_OPT_KEYS_SANITY,
+          "Perform sanity check for keys table.",
           NULL },
         { "comparison", '\0', POPT_ARG_STRING, NULL, TRC_OPT_COMPARISON,
           "Parameter comparison method (default is 'exact').",
@@ -380,6 +392,9 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             TRC_OPT_FLAG(NO_EXP_PASSED);
             TRC_OPT_FLAG(NO_EXPECTED);
             TRC_OPT_FLAG(NO_STATS_NOT_RUN);
+            TRC_OPT_FLAG(NO_KEYS);
+            TRC_OPT_FLAG(KEYS_ONLY);
+            TRC_OPT_FLAG(KEYS_SANITY);
 
 #undef TRC_OPT_FLAG
 
