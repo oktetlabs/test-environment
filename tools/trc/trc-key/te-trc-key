@@ -175,7 +175,14 @@ for my $bug_line (<STDIN>)
         if ($test_line)
         {
             my ($test_name, $test_ref) = split('#', $test_line);
-            $test_links .= "<a href=\"#$test_ref\">$test_name</a><br/>"
+            if ($test_ref)
+            {
+                $test_links .= "<a href=\"#$test_ref\">$test_name</a><br/>"
+            }
+            else
+            {
+                $test_links .= "$test_name<br/>"
+            }
         }
     }
     #printf("%s\n", $test_links);
@@ -229,8 +236,7 @@ printf("    <td><b>Priority</b></td>\n");
 printf("    <td><b>Severity</b></td>\n");
 printf("    <td><b>Status</b></td>\n");
 printf("    <td><b>Summary</b></td>\n");
-printf("    <td><b>Product</b></td>\n");
-printf("    <td><b>Component</b></td>\n");
+printf("    <td><b>Product: Component</b></td>\n");
 printf("    <td><b>Keywords</b></td>\n");
 printf("  </tr>\n");
 
@@ -251,10 +257,11 @@ for my $b (@bugs)
     printf("  <td>%s</td>\n", $b->{'tests'});
     printf("  <td>%s</td>\n", $b->{'priority'});
     printf("  <td>%s</td>\n", $b->{'bug_severity'});
-    printf("  <td>%s %s %s</td>\n", $b->{'bug_status'}, $b->{'resolution'}, $b->{'assigned_to'});
+    printf("  <td>%s %s %s</td>\n", $b->{'bug_status'},
+           $b->{'resolution'}, $b->{'assigned_to'});
     printf("  <td>%s</td>\n", $b->{'summary'});
-    printf("  <td>%s</td>\n", $b->{'product'});
-    printf("  <td>%s</td>\n", $b->{'component'});
+    printf("  <td>%s%s%s</td>\n", $b->{'product'},
+          ($b->{'component'}) ? ": " : "", $b->{'component'});
     printf("  <td>%s</td>\n", $b->{'keywords'});
     printf("</tr>\n");
 }
