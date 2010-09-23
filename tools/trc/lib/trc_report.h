@@ -102,6 +102,8 @@ enum trc_report_flags {
                                               unexpected not run
                                               statistic */
     TRC_REPORT_NO_KEYS          = 0x200, /**< Hide actual key entries */
+    TRC_REPORT_KEYS_ONLY        = 0x400, /**< Show only keys table */
+    TRC_REPORT_KEYS_SANITY      = 0x800, /**< Perform keys sanity check */
 
     /* DB processing options */
     TRC_REPORT_UPDATE_DB        = 0x2000, /**< Update TRC database */
@@ -149,13 +151,18 @@ typedef struct trc_report_key_iter_entry {
     trc_report_test_iter_data               *iter;  /**< Iteration data */
     char                                    *name;  /**< Iteration name */
     char                                    *path;  /**< Iteration path */
+    int                                      count; /**< Amount of iteration
+                                                         failed due to
+                                                         specific key */
 } trc_report_key_iter_entry;
+
 
 /** Key list entry */
 typedef struct trc_report_key_entry {
     TAILQ_ENTRY(trc_report_key_entry) links; /**< List links */
-    char *name; /**< Key name */
     TAILQ_HEAD(, trc_report_key_iter_entry) iters; /**< Iterations list */
+    char *name; /**< Key name */
+    int   count; /**< Amount of test iterations failed to specific key */
 } trc_report_key_entry;
 
 /** TRC report context */
