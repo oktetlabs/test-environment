@@ -843,6 +843,16 @@ static TAILQ_HEAD(, trc_report_key_entry) keys;
 
 static int file_to_file(FILE *dst, FILE *src);
 
+static te_bool
+trc_report_test_iter_entry_output(
+    const trc_test                   *test,
+    const trc_report_test_iter_entry *iter,
+    unsigned int                      flags);
+
+static te_bool
+trc_report_test_output(const trc_report_stats *stats,
+                       unsigned int flags);
+
 trc_report_key_entry *
 trc_report_key_find(const char *key_name)
 {
@@ -885,6 +895,8 @@ trc_report_key_add(const char *key_name,
         if (strcmp(iter_path, key_iter->path) == 0)
         {
             /* Do not duplicate iterations, exit */
+            key_iter->count++;
+            key->count++;
             return key;
         }
     }
@@ -898,8 +910,10 @@ trc_report_key_add(const char *key_name,
     key_iter->iter = (trc_report_test_iter_data *)iter_data;
     key_iter->name = strdup(iter_name);
     key_iter->path = strdup(iter_path);
+    key_iter->count++;
     TAILQ_INSERT_TAIL(&key->iters, key_iter, links);
 
+    key->count++;
     return key;
 }
 
@@ -948,7 +962,7 @@ trc_report_keys_add(const char *key_names,
 }
 
 char *
-trc_report_key_test_path(FILE *f, const char *test_path,
+trc_report_key_test_path(const char *test_path,
                          const char *key_names)
 {
     char *path = te_sprintf("%s-%s", test_path, (key_names != NULL) ?
@@ -966,8 +980,6 @@ trc_report_key_test_path(FILE *f, const char *test_path,
             *p = '-';
     }
 
-    fprintf(f, "<a name=\"%s\"/>", path);
-
     return path;
 }
 
@@ -975,6 +987,206 @@ void
 trc_report_init_keys()
 {
     TAILQ_INIT(&keys);
+}
+
+#define TRC_REPORT_KEYS_FILENAME_SUFFIX ".keys"
+#define TRC_REPORT_KEYS_FILENAME_EXTENSION ".html"
+
+/**
+ * Generate test iteration expected/obtained results to HTML report.
+ *
+ * @param ctx           TRC report context
+ * @param walker        TRC database walker position
+ * @param flags         Current output flags
+ * @param test_path     Full test path for anchor
+ *
+ * @return Status code.
+ */
+char *trc_keys_filename(const char *filename)
+{
+    char *keys_filename;
+    char *suffix = strstr(filename, TRC_REPORT_KEYS_FILENAME_EXTENSION);
+    char *prefix = strndup(filename, (suffix == NULL) ? strlen(filename) :
+                           (unsigned)(suffix - filename));
+    if (prefix == NULL)
+        return NULL;
+
+    keys_filename = te_sprintf("%s%s%s", prefix,
+                               TRC_REPORT_KEYS_FILENAME_SUFFIX,
+                               TRC_REPORT_KEYS_FILENAME_EXTENSION);
+
+    free(prefix);
+
+    return keys_filename;
+}
+
+/**
+ * Output test iteration expected/obtained results to HTML report.
+ *
+ * @param ctx           TRC report context
+ * @param walker        TRC database walker position
+ * @param flags         Current output flags
+ * @param test_path     Full test path for anchor
+ *
+ * @return Status code.
+ */
+te_errno
+trc_keys_iter_add(trc_report_ctx      *ctx,
+                  te_trc_db_walker    *walker,
+                  unsigned int         flags,
+                  const char          *test_path)
+{
+    const trc_test                   *test;
+    const trc_test_iter              *iter;
+    trc_report_test_iter_data        *iter_data;
+    const trc_report_test_iter_entry *iter_entry;
+    te_errno                          rc = 0;
+
+    assert(test_path != NULL);
+
+    iter = trc_db_walker_get_iter(walker);
+    test = iter->parent;
+    iter_data = trc_db_walker_get_user_data(walker, ctx->db_uid);
+    iter_entry = (iter_data == NULL) ? NULL : TAILQ_FIRST(&iter_data->runs);
+
+    do {
+        if ((iter_data == NULL) || (iter_entry == NULL))
+            return 0;
+
+        if (trc_report_test_iter_entry_output(test, iter_entry, flags))
+        {
+            if ((test->type == TRC_TEST_SCRIPT) &&
+                (iter_data->exp_result != NULL))
+            {
+                char *key_test_path =
+                    trc_report_key_test_path(test_path,
+                        iter_data->exp_result->key);
+
+                if (~flags & TRC_REPORT_KEYS_SANITY)
+                {
+                    if ((iter_entry->result.status == TE_TEST_FAILED) ||
+                         ((iter_entry->result.status == TE_TEST_PASSED) &&
+                          (TAILQ_FIRST(&iter_entry->result.verdicts) !=
+                          NULL)))
+                    {
+                        /*
+                         * Iterations does not have unique names and
+                         * paths yet, use test name and path instead of
+                         */
+                        trc_report_keys_add(iter_data->exp_result->key,
+                                            iter_data, test->name,
+                                            key_test_path);
+                    }
+                }
+                else
+                {
+                    if ((iter_data->exp_result->key != NULL) &&
+                        ((!iter_entry->is_exp) ||
+                         (TAILQ_FIRST(&iter_entry->result.verdicts) ==
+                          NULL)))
+                    {
+                        trc_report_keys_add(iter_data->exp_result->key,
+                                            iter_data, test->name,
+                                            key_test_path);
+                    }
+                }
+
+                free(key_test_path);
+            }
+        }
+    } while (iter_entry != NULL &&
+             (iter_entry = TAILQ_NEXT(iter_entry, links)) != NULL);
+
+    return rc;
+}
+
+/**
+ * Aggregate all test keys into one table.
+ *
+ * @param ctx       TRC report context
+ * @param flags     Output flags
+ *
+ * @return Status code.
+ */
+static te_errno
+trc_report_keys_collect(trc_report_ctx *ctx, 
+                        unsigned int flags)
+{
+    te_errno                rc = 0;
+    te_trc_db_walker       *walker;
+    trc_db_walker_motion    mv;
+    unsigned int            level = 0;
+    const char             *last_test_name = NULL;
+    te_string               test_path = TE_STRING_INIT;
+
+    walker = trc_db_new_walker(ctx->db);
+    if (walker == NULL)
+        return TE_ENOMEM;
+
+    while ((rc == 0) &&
+           ((mv = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
+    {
+        const trc_report_test_data *test_data =
+            trc_db_walker_get_user_data(walker, ctx->db_uid);
+        const trc_report_stats *stats =
+            test_data ? &test_data->stats : NULL;
+        const trc_test *test = trc_db_walker_get_test(walker);
+
+        switch (mv)
+        {
+            case TRC_DB_WALKER_SON:
+                level++;
+                /*@fallthrough@*/
+
+            case TRC_DB_WALKER_BROTHER:
+                if ((level & 1) == 1)
+                {
+                    /* Test entry */
+                    if (mv != TRC_DB_WALKER_SON)
+                    {
+                        te_string_cut(&test_path,
+                                      strlen(last_test_name) + 1);
+                    }
+
+                    last_test_name = trc_db_walker_get_test(walker)->name;
+
+                    rc = te_string_append(&test_path, "-%s",
+                                          last_test_name);
+                    if (rc != 0)
+                        break;
+
+                    if (!trc_report_test_output(stats, flags))
+                        break;
+                }
+                else
+                {
+                    if (test->type == TRC_TEST_SCRIPT)
+                        trc_keys_iter_add(ctx, walker, flags,
+                                          test_path.ptr);
+                }
+                break;
+
+            case TRC_DB_WALKER_FATHER:
+                level--;
+                if ((level & 1) == 0)
+                {
+                    /* Back from the test to parent iteration */
+                    te_string_cut(&test_path,
+                                  strlen(last_test_name) + 1);
+
+                    last_test_name = trc_db_walker_get_test(walker)->name;
+                }
+                break;
+
+            default:
+                assert(FALSE);
+                break;
+        }
+    }
+
+    trc_db_free_walker(walker);
+    te_string_free(&test_path);
+    return rc;
 }
 
 #define TRC_REPORT_OL_KEY_PREFIX        "OL "
@@ -991,7 +1203,7 @@ trc_report_init_keys()
  * @return Status code.
  */
 te_errno
-trc_report_keys_to_html(FILE *f, char *keytool_fn)
+trc_report_keys_to_html(FILE *f, char *keytool_fn, te_bool keys_only)
 {
     int                     fd_in = -1;
     int                     fd_out = -1;
@@ -1020,7 +1232,8 @@ trc_report_keys_to_html(FILE *f, char *keytool_fn)
               key_iter != NULL;
               key_iter = TAILQ_NEXT(key_iter, links))
          {
-             fprintf(f_in, "%s#%s,", key_iter->name, key_iter->path);
+             fprintf(f_in, "%s[%d]%s%s,", key_iter->name, key_iter->count,
+                     PRINT_STR2(!keys_only, "#", key_iter->path));
          }
          fprintf(f_in, "\n");
     }
@@ -1315,8 +1528,10 @@ trc_report_exp_got_to_html(FILE                *f,
                 {
                     char *link_keys;
                     char *key_test_path =
-                        trc_report_key_test_path(f, test_path,
+                        trc_report_key_test_path(test_path,
                             iter_data->exp_result->key);
+
+                    fprintf(f, "<a name=\"%s\"/>", key_test_path);
                     /*
                      * Iterations does not have unique names and paths yet,
                      * use test name and path instead of
@@ -1816,92 +2031,108 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
     if (gctx->db->version != NULL)
         fprintf(f, "<h2 align=center>%s</h2>\n", gctx->db->version);
 
-    WRITE_STR("<a name=\"start\"> </a>\n");
-
-    /* TRC tags */
-    WRITE_STR("<b>Tags:</b>");
-    TAILQ_FOREACH(tag, &gctx->tags, links)
+    if (~flags & TRC_REPORT_KEYS_ONLY)
     {
-        fprintf(f, "  %s", tag->v);
-    }
-    WRITE_STR("<p/>");
+        WRITE_STR("<a name=\"start\"> </a>\n");
 
-    if (~flags & TRC_REPORT_NO_KEYS)
-    {
-        WRITE_STR("<a href=\"#keys_table\"><b>Bugs</b></a>\n");
-    }
-
-    /* Header provided by user */
-    if (header != NULL)
-    {
-        rc = file_to_file(f, header);
-        if (rc != 0)
+        /* TRC tags */
+        WRITE_STR("<b>Tags:</b>");
+        TAILQ_FOREACH(tag, &gctx->tags, links)
         {
-            ERROR("Failed to copy header to HTML report");
-            goto cleanup;
+            fprintf(f, "  %s", tag->v);
         }
-    }
+        WRITE_STR("<p/>");
 
-    if (~flags & TRC_REPORT_NO_KEYS)
-    {
-        trc_report_init_keys();
-    }
+        if (~flags & TRC_REPORT_NO_KEYS)
+        {
+            WRITE_STR("<a href=\"#keys_table\"><b>Bugs</b></a>\n");
+        }
+
+        /* Header provided by user */
+        if (header != NULL)
+        {
+            rc = file_to_file(f, header);
+            if (rc != 0)
+            {
+                ERROR("Failed to copy header to HTML report");
+                goto cleanup;
+            }
+        }
+
+        if (~flags & TRC_REPORT_NO_KEYS)
+        {
+            trc_report_init_keys();
+        }
 
 #if TRC_USE_STATS_POPUP
-    if (~flags & TRC_REPORT_NO_SCRIPTS)
-    {
-        /* Build javascript tree of tests */
-        rc = trc_report_javascript_table(f, gctx, flags);
-        if (rc != 0)
-            goto cleanup;
-    }
+        if (~flags & TRC_REPORT_NO_SCRIPTS)
+        {
+            /* Build javascript tree of tests */
+            rc = trc_report_javascript_table(f, gctx, flags);
+            if (rc != 0)
+                goto cleanup;
+        }
 #endif
 
-    if (~flags & TRC_REPORT_NO_TOTAL_STATS)
+        if (~flags & TRC_REPORT_NO_TOTAL_STATS)
+        {
+            /* Grand total */
+            rc = trc_report_stats_to_html(f, &gctx->stats);
+            if (rc != 0)
+                goto cleanup;
+        }
+
+        if (~flags & TRC_REPORT_NO_PACKAGES_ONLY)
+        {
+            /* Report for packages */
+            rc = trc_report_html_table(f, gctx, TRUE,
+                                       flags | TRC_REPORT_NO_SCRIPTS);
+            if (rc != 0)
+                goto cleanup;
+        }
+
+        if (~flags & TRC_REPORT_NO_SCRIPTS)
+        {
+            /*
+             * Report with iterations of packages and
+             * w/o iterations of tests
+             */
+            rc = trc_report_html_table(f, gctx, TRUE, flags);
+            if (rc != 0)
+                goto cleanup;
+        }
+
+        if ((~flags & TRC_REPORT_STATS_ONLY) &&
+            (~flags & TRC_REPORT_NO_SCRIPTS))
+        {
+            /* Full report */
+            rc = trc_report_html_table(f, gctx, FALSE, flags);
+            if (rc != 0)
+                goto cleanup;
+        }
+
+        if (~flags & TRC_REPORT_NO_KEYS)
+        {
+            WRITE_STR("<a name=\"keys_table\"> </a>\n");
+            trc_report_keys_to_html(f, "te-trc-key", FALSE);
+        }
+        WRITE_STR("<a href=\"#start\"><b>Up</b></a>\n");
+
+        /* HTML footer */
+        WRITE_STR(trc_html_doc_end);
+    }
+    else
     {
-        /* Grand total */
-        rc = trc_report_stats_to_html(f, &gctx->stats);
+        trc_report_init_keys();
+
+        rc = trc_report_keys_collect(gctx, flags);
         if (rc != 0)
             goto cleanup;
+
+        trc_report_keys_to_html(f, "te-trc-key", TRUE);
     }
-
-    if (~flags & TRC_REPORT_NO_PACKAGES_ONLY)
-    {
-        /* Report for packages */
-        rc = trc_report_html_table(f, gctx, TRUE,
-                                   flags | TRC_REPORT_NO_SCRIPTS);
-        if (rc != 0)
-            goto cleanup;
-    }
-
-    if (~flags & TRC_REPORT_NO_SCRIPTS)
-    {
-        /* Report with iterations of packages and w/o iterations of tests */
-        rc = trc_report_html_table(f, gctx, TRUE, flags);
-        if (rc != 0)
-            goto cleanup;
-    }
-
-    if ((~flags & TRC_REPORT_STATS_ONLY) &&
-        (~flags & TRC_REPORT_NO_SCRIPTS))
-    {
-        /* Full report */
-        rc = trc_report_html_table(f, gctx, FALSE, flags);
-        if (rc != 0)
-            goto cleanup;
-    }
-
-    if (~flags & TRC_REPORT_NO_KEYS)
-    {
-        WRITE_STR("<a name=\"keys_table\"> </a>\n");
-        trc_report_keys_to_html(f, "te-trc-key");
-    }
-    WRITE_STR("<a href=\"#start\"><b>Up</b></a>\n");
-
-    /* HTML footer */
-    WRITE_STR(trc_html_doc_end);
-
     fclose(f);
+
     return 0;
 
 cleanup:
