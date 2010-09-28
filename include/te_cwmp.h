@@ -172,6 +172,41 @@ typedef enum {
 } te_cwmp_rpc_cpe_t;
 
 /**
+ * Convert internal value of CWMP CPE RPC type to string, for printing.
+ */
+static inline const char *
+cwmp_rpc_cpe_string(te_cwmp_rpc_cpe_t r)
+{
+    switch (r)
+    {
+        case CWMP_RPC_NONE:             return "NONE";
+        case CWMP_RPC_get_rpc_methods:  return "GetRPCMethods";
+        case CWMP_RPC_set_parameter_values: return "SetParameterValues";
+        case CWMP_RPC_get_parameter_values: return "GetParameterValues";
+        case CWMP_RPC_get_parameter_names:  return "GetParameterNames";
+        case CWMP_RPC_set_parameter_attributes:
+                                        return "SetParameterAttributes";
+        case CWMP_RPC_get_parameter_attributes:
+                                        return "GetParameterAttributes";
+        case CWMP_RPC_add_object:       return "AddObject";
+        case CWMP_RPC_delete_object:    return "DeleteObject";
+        case CWMP_RPC_reboot:           return "Reboot";
+        case CWMP_RPC_download:         return "Download";
+        case CWMP_RPC_upload:           return "Upload";
+        case CWMP_RPC_factory_reset:    return "FactoryReset";
+        case CWMP_RPC_get_queued_transfers:
+                                        return "GetQueuedTransfers";
+        case CWMP_RPC_get_all_queued_transfers:
+                                        return "GetAllQueuedTransfers";
+        case CWMP_RPC_schedule_inform:  return "ScheduleInform";
+        case CWMP_RPC_set_vouchers:     return "SetVouchers";
+        case CWMP_RPC_get_options:      return "GetOptions";
+        case CWMP_RPC_FAULT:            return "Fault";
+    }
+    return "unknown";
+}
+
+/**
  * This enumeration contains types of RPC calls, which 
  * could be called on ACS via CWMP, according with 
  * Table 5 in [TR-069].
@@ -187,6 +222,26 @@ typedef enum {
     CWMP_RPC_ACS_FAULT,
 } te_cwmp_rpc_acs_t;
 
+/**
+ * Convert internal value of CWMP ACS RPC type to string, for printing.
+ */
+static inline const char *
+cwmp_rpc_acs_string(te_cwmp_rpc_acs_t r)
+{
+    switch (r)
+    {
+        case CWMP_RPC_ACS_NONE:         return "NONE";
+        case CWMP_RPC_ACS_get_rpc_methods: return "GetRPCMethods";
+        case CWMP_RPC_inform:           return "Inform";
+        case CWMP_RPC_transfer_complete:return "TransferComplete";
+        case CWMP_RPC_autonomous_transfer_complete: 
+                                        return "AutonomousTransferComplete";
+        case CWMP_RPC_request_download: return "RequestDownload";
+        case CWMP_RPC_kicked:           return "Kicked";
+        case CWMP_RPC_ACS_FAULT:        return "Fault";
+    }
+    return "unknown";
+}
 /**
  * This enumeration contains types of Events, which 
  * may occur in Inform from CPE to ACS, according with

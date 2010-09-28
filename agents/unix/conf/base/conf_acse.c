@@ -1029,8 +1029,8 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
         return -1;
     }
 
-    INFO("cwmp operation %d to %s/%s called ", 
-         (int)in->cwmp_rpc, in->acs_name, in->cpe_name);
+    INFO("cwmp RPC %s to %s/%s called", 
+         cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
 
     msg.opcode = EPC_CWMP_CALL;
     msg.data.cwmp = &c_data;
@@ -1085,8 +1085,9 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
         return -1;
     }
 
-    INFO("cwmp check operation No %d (rpc %d) to %s/%s called ", 
-         (int)in->request_id, in->cwmp_rpc, in->acs_name, in->cpe_name);
+    INFO("cwmp check operation No %d (rpc %s) to %s/%s called ", 
+         (int)in->request_id, 
+         cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
 
     msg.opcode = EPC_CWMP_CALL;
     msg.data.cwmp = &c_data;
@@ -1147,10 +1148,11 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
 }
 
 
+#if 0
 int
 cwmp_get_inform(tarpc_cwmp_get_inform_in *in,
                 tarpc_cwmp_get_inform_out *out)
 {
     return 0;
 }
-
+#endif

@@ -493,9 +493,10 @@ rpc_cwmp_op_call(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "cwmp_op_call", &in, &out);
 
-    RING("RPC (%s,%s): cwmp_op_call(%s, %s, rpc %d) -> %r",
+    RING("TE RPC(%s,%s): cwmp_op_call(%s/%s, %s) -> %r",
                  rpcs->ta, rpcs->name,
-                 acs_name, cpe_name, (int)cwmp_rpc,
+                 acs_name, cpe_name,
+                 cwmp_rpc_cpe_string(cwmp_rpc),
                  (te_errno)out.status);
 
     if (NULL != request_id)
@@ -549,7 +550,7 @@ rpc_cwmp_op_check(rcf_rpc_server *rpcs,
     if (NULL != cwmp_rpc)
         *cwmp_rpc = out.cwmp_rpc;
 
-    RING("RPC (%s,%s): cwmp_op_check(%s, %s, req %d) -> %r",
+    RING("RPC (%s,%s): cwmp_op_check(%s, %s, req No %d) -> %r",
                  rpcs->ta, rpcs->name,
                  acs_name, cpe_name, (int)request_id,
                  (te_errno)out.status);
@@ -644,7 +645,8 @@ tapi_acse_cpe_rpc_response(tapi_acse_context_t *ctx,
     } while ((timeout < 0 || (timeout--) > 0) &&
              (TE_EPENDING == TE_RC_GET_ERROR(rc)) &&
              (sleep(1) == 0));
-    VERB("%s(): rc %r, cwmp rpc %d", __FUNCTION__, rc, (int)cwmp_rpc_loc);
+    VERB("%s(): rc %r, cwmp rpc %s", __FUNCTION__, rc,
+         cwmp_rpc_cpe_string(cwmp_rpc_loc));
 
     if ((0 == rc || TE_CWMP_FAULT == TE_RC_GET_ERROR(rc)) &&
         NULL != from_cpe)
@@ -1043,8 +1045,8 @@ tapi_acse_delete_object_resp(tapi_acse_context_t *ctx, int *del_status)
         }
         else
         {
-            WARN("%s(): received unexpected response %d",
-                 __FUNCTION__, resp_code);
+            WARN("%s(): received unexpected response, RPC %s",
+                 __FUNCTION__, cwmp_rpc_cpe_string(resp_code));
             rc = TE_EFAIL;
         }
     }
