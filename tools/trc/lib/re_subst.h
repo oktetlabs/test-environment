@@ -119,6 +119,30 @@ extern void trc_re_substs_exec_start(const trc_re_substs *substs,
  */
 extern void trc_re_key_substs(const char *key, FILE *f);
 
+/**
+ * Execute substitutions.
+ *
+ * @param substs        List of substitutions to do
+ * @param str           String to substitute in
+ * @param buf           Buffer to put substituted string
+ * @param buf_size      Buffer size
+ *
+ * @return              Status code.
+ */
+extern ssize_t trc_re_substs_exec_buf_start(const trc_re_substs *substs,
+                                            const char          *str,
+                                            char                *buf,
+                                            ssize_t              buf_size);
+
+/**
+ * Do regular expression key substitutions.
+ *
+ * @param key           Keys string
+ *
+ * @return              Substituted string or NULL.
+ */
+extern char *trc_re_key_substs_buf(const char *key);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

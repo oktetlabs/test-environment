@@ -7,25 +7,38 @@
 # Copyright (C) 2006 Test Environment authors (see file AUTHORS
 # in the root directory of the distribution).
 #
-# Test Environment is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License as 
-# published by the Free Software Foundation; either version 2 of 
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
 # the License, or (at your option) any later version.
-# 
+#
 # Test Environment is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA  02111-1307  USA
 #
 # Author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
 #
 # $Id: $
 #
+
+use Getopt::Long;
+
+my $title;
+my @keywords_list = ();
+GetOptions("title=s" => \$title,
+           "keyword=s" => \@keywords_list);
+
+my %keywords = ();
+for my $keyw (@keywords_list)
+{
+    $keywords{$keyw} = 'TRUE';
+}
 
 my @bugs = ();
 
@@ -165,7 +178,14 @@ for my $bug_line (<STDIN>)
 
     if ($bug{'keywords'})
     {
-        $bug{'keywords'} = join('<br/>', split(', ', $bug{'keywords'}));
+        my $new_keywords = ();
+        for my $bug_keyword (split(', ', $bug{'keywords'}))
+        {
+            $bug_keyword = '<b>' . $bug_keyword . '</b>' if ($keywords{$bug_keyword});
+            $new_keywords .= '<br/>' if ($new_keywords);
+            $new_keywords .= $bug_keyword;
+        }
+        $bug{'keywords'} = $new_keywords;
     }
 
     # Process bug test list
@@ -174,14 +194,38 @@ for my $bug_line (<STDIN>)
     {
         if ($test_line)
         {
+            my @tins;
             my ($test_name, $test_ref) = split('#', $test_line);
             if ($test_ref)
             {
-                $test_links .= "<a href=\"#$test_ref\">$test_name</a><br/>"
+                @tins = split('\|', $test_ref);
+                $test_ref = $tins[0];
+                $test_links .= "<a href=\"#$test_ref\">$test_name</a>";
+
+                for (my $iter_no = 1; $iter_no <= $#tins; $iter_no++)
+                {
+                    if ($iter_no == 1)
+                    {
+                        if ($#tins < 4)
+                        {
+                            $test_links .= "&nbsp;[";
+                        }
+                        else
+                        {
+                            $test_links .= " [";
+                        }
+                    }
+                    else
+                    {
+                        $test_links .= ",";
+                    }
+                    $test_links .= "<a href=\"#tin_$tins[$iter_no]\">$iter_no</a>";
+                }
+                $test_links .= "]<br/>";
             }
             else
             {
-                $test_links .= "$test_name<br/>"
+                $test_links .= "$test_name<br/>";
             }
         }
     }
@@ -229,6 +273,7 @@ sub colorify
 
 # Produce HTML output
 printf("<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n");
+printf("  <tr><td colspan=8 align=center><b>$title</b></td></tr>\n") if ($title);
 printf("  <tr>\n");
 printf("    <td><b>Key</b></td>\n");
 printf("    <td><b>Tests</b></td>\n");
@@ -237,7 +282,9 @@ printf("    <td><b>Severity</b></td>\n");
 printf("    <td><b>Status</b></td>\n");
 printf("    <td><b>Summary</b></td>\n");
 printf("    <td><b>Product: Component</b></td>\n");
-printf("    <td><b>Keywords</b></td>\n");
+printf("    <td><b>Keywords");
+printf(": %s", join(', ', @keywords_list)) if (@keywords_list);
+printf("</b></td>\n");
 printf("  </tr>\n");
 
 for my $b (@bugs)

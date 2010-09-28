@@ -284,6 +284,88 @@ trc_re_substs_exec(const trc_re_subst *subst, const char *str, regoff_t max,
         fputc(str[i], f);
 }
 
+/**
+ * Execute substitutions.
+ *
+ * @param subst Substitution to start with
+ * @param str   String to substitute in
+ * @param max   Maximum length of string to use
+ * @param f     File to write to
+ *
+ * @return      Status code.
+ */
+static ssize_t
+trc_re_substs_exec_buf(const trc_re_subst *subst, const char *str,
+                       regoff_t max, char *buf, ssize_t buf_size)
+{
+    const trc_re_subst *next;
+    ssize_t             len = 0;
+    regoff_t            i;
+
+    for (; subst != NULL; subst = next)
+    {
+        next = TAILQ_NEXT(subst, links);
+        while (regexec(&subst->re, str,
+                       subst->max_match, subst->matches, 0) == 0 &&
+               subst->matches[0].rm_eo <= max)
+        {
+            const trc_re_match_subst   *ms;
+
+            if (subst->matches[0].rm_so != 0)
+                len += trc_re_substs_exec_buf(next, str,
+                                              subst->matches[0].rm_so,
+                                              (buf != NULL) ?
+                                              buf + len : NULL,
+                                              (buf != NULL) ?
+                                              buf_size - len : 0);
+
+            TAILQ_FOREACH(ms, &subst->with, links)
+            {
+                if (!ms->match)
+                {
+                    if (buf != NULL)
+                        len += snprintf(buf + len, buf_size - len,
+                                        "%s", ms->u.str);
+                    else
+                        len += strlen(ms->u.str);
+                }
+                else if (subst->matches[ms->u.match].rm_so != -1)
+                {
+                    for (i = subst->matches[ms->u.match].rm_so;
+                         i < subst->matches[ms->u.match].rm_eo;
+                         ++i)
+                    {
+                        if (buf != NULL)
+                        {
+                            if (len < buf_size - 1)
+                                buf[len++] = str[i];
+                        }
+                        else
+                            len++;
+                    }
+                }
+            }
+            str += subst->matches[0].rm_eo;
+            max -= subst->matches[0].rm_eo;
+        }
+    }
+    for (i = 0; i < max; ++i)
+    {
+        if (buf != NULL)
+        {
+            if (len < buf_size - 1)
+                buf[len++] = str[i];
+        }
+        else
+            len++;
+    }
+
+    if (buf != NULL)
+        buf[len] = '\0';
+
+    return len;
+}
+
 /* See the description in re_subst.h */
 void
 trc_re_substs_exec_start(const trc_re_substs *substs, const char *str,
@@ -297,4 +379,32 @@ void
 trc_re_key_substs(const char *key, FILE *f)
 {
     trc_re_substs_exec_start(&key_substs, key, f);
+}
+
+/* See the description in re_subst.h */
+ssize_t
+trc_re_substs_exec_buf_start(const trc_re_substs *substs, const char *str,
+                         char *buf, ssize_t buf_size)
+{
+    trc_re_substs_exec_buf(TAILQ_FIRST(substs), str, strlen(str),
+                           buf, buf_size);
+}
+
+/* See the description in re_subst.h */
+char *
+trc_re_key_substs_buf(const char *key)
+{
+    char    *buf = NULL;
+    ssize_t  buf_size =
+        trc_re_substs_exec_buf_start(&key_substs, key, NULL, 0);
+
+    if (buf_size++ <= 0)
+        return NULL;
+
+    if ((buf = calloc(1, buf_size)) == NULL)
+        return NULL;
+
+    trc_re_substs_exec_buf_start(&key_substs, key, buf, buf_size);
+
+    return buf;
 }

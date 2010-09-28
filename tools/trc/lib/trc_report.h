@@ -145,23 +145,29 @@ typedef struct trc_report_ctx {
     unsigned int        db_uid; /**< TRC database user ID */
 } trc_report_ctx;
 
-/** Auxilary structure to list iterations marked by specific key */
 typedef struct trc_report_key_iter_entry {
-    TAILQ_ENTRY(trc_report_key_iter_entry)   links; /**< List links */
-    trc_report_test_iter_data               *iter;  /**< Iteration data */
-    char                                    *name;  /**< Iteration name */
-    char                                    *path;  /**< Iteration path */
+    TAILQ_ENTRY(trc_report_key_iter_entry)  links; /**< List links */
+    const trc_report_test_iter_entry       *iter;  /**< Link to iteration
+                                                        entry */
+} trc_report_key_iter_entry;
+
+/** Auxilary structure to list iterations marked by specific key */
+typedef struct trc_report_key_test_entry {
+    TAILQ_ENTRY(trc_report_key_test_entry)   links; /**< List links */
+    TAILQ_HEAD(, trc_report_key_iter_entry)  iters; /**< Iterations list */
+    char                                    *name;  /**< Test name */
+    char                                    *path;  /**< Test path */
     int                                      count; /**< Amount of iteration
                                                          failed due to
                                                          specific key */
-} trc_report_key_iter_entry;
+} trc_report_key_test_entry;
 
 
 /** Key list entry */
 typedef struct trc_report_key_entry {
-    TAILQ_ENTRY(trc_report_key_entry) links; /**< List links */
-    TAILQ_HEAD(, trc_report_key_iter_entry) iters; /**< Iterations list */
-    char *name; /**< Key name */
+    TAILQ_ENTRY(trc_report_key_entry) links;       /**< List links */
+    TAILQ_HEAD(, trc_report_key_test_entry) tests; /**< Tests list */
+    char *name;                                    /**< Key name */
     int   count; /**< Amount of test iterations failed to specific key */
 } trc_report_key_entry;
 
