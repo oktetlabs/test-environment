@@ -405,6 +405,7 @@ cwmp_val_array_log(unsigned log_level, const char *intro,
 
 /* ================= OLD style API =========================== */
 
+#if 0
 /* see description in cwmp_utils.h */
 _cwmp__GetParameterValues *
 cwmp_get_values_alloc(const char *b_name, const char *first_name, ...)
@@ -583,6 +584,7 @@ cwmp_set_values_free(_cwmp__SetParameterValues *req)
     } while (0);
     free(req);
 }
+#endif
 
 static inline const char *
 soap_simple_type_string(int type)

@@ -319,14 +319,6 @@ extern _cwmp__GetParameterValues *cwmp_get_values_alloc(const char *b_name,
                                                         ...);
 
 /**
- * Add name to GetParameterValues argument.
- * Last argument in list should be VA_END_LIST.
- */
-extern te_errno cwmp_get_values_add(_cwmp__GetParameterValues *req,
-                                    const char *b_name,
-                                    const char *f_name, ...);
-
-/**
  * Free GetParameterValues argument.
  */
 extern void cwmp_get_values_free(_cwmp__GetParameterValues *req);
