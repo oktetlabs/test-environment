@@ -860,7 +860,9 @@ cwmp_new_session(int socket, acs_t *acs)
 te_errno 
 cwmp_close_session(cwmp_session_t *sess)
 {
-    RING("close cwmp session");
+    RING("close cwmp session on ACS '%s' with CPE '%s'", 
+        sess->acs_owner ? sess->acs_owner->name : "none", 
+        sess->cpe_owner ? sess->cpe_owner->name : "none");
 
     /* TODO: investigate, what else should be closed.. */
 
