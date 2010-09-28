@@ -51,12 +51,14 @@ extern void te_fill_buf(void *buf, size_t len);
 /**
  * Allocate buffer of random size from @b min to @b max and preset
  * it by random numbers.
+ * Note, that this function will never return NULL and so all function
+ * which call it.
  *
  * @param min     minimum size of buffer
  * @param max     maximum size of buffer
  * @param p_len   location for real size of allocated buffer
  *
- * @return Pointer to allocated buffer.
+ * @return Pointer to allocated buffer or exit(1)!
  */
 extern void *te_make_buf(size_t min, size_t max, size_t *p_len);
 

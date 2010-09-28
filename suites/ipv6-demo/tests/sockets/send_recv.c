@@ -56,8 +56,8 @@ int main(int argc, char *argv[])
     TEST_GET_ADDR(tst_addr);
 
     /* Prepare read/write buffer for data exchange */
-    CHECK_NOT_NULL(wr_buf = te_make_buf(20, 100, &buf_len));
-    CHECK_NOT_NULL(rd_buf = te_make_buf_by_len(buf_len));
+    wr_buf = te_make_buf(20, 100, &buf_len);
+    rd_buf = te_make_buf_by_len(buf_len);
 
     iut_s = rpc_socket(pco_iut, rpc_socket_domain_by_addr(iut_addr), 
                        sock_type, RPC_PROTO_DEF);
