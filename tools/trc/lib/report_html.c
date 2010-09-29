@@ -1555,8 +1555,9 @@ trc_report_exp_got_to_html(FILE             *f,
             assert(iter_data != NULL);
 
             tin_ref[0] = '\0';
-            if ((~flags & TRC_REPORT_NO_KEYS)    &&
+            if ((~flags & TRC_REPORT_NO_KEYS)   &&
                 (test->type == TRC_TEST_SCRIPT) &&
+                (iter_entry != NULL) &&
                 (iter_entry->tin >= 0))
             {
                 sprintf(tin_ref, trc_test_exp_got_row_tin_ref,
