@@ -5548,7 +5548,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
      * can be considered as not writable.
      */
     do {
-        ret = iomux_wait(in->iomux, &iomux_f, &iomux_st, NULL, 500);
+        ret = iomux_wait(in->iomux, &iomux_f, &iomux_st, NULL, 1000);
         if (ret < 0)
         {
             if (errno == EINTR)
