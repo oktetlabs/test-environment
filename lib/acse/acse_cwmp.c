@@ -40,6 +40,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <assert.h>
 
 #include "acse_internal.h"
 #include "httpda.h"
@@ -667,7 +668,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
         case CWMP_SERVE:
             /* Now, after poll() on soap socket, it should not block */
             soap_serve(&cwmp_sess->m_soap);
-            RING("status after serve: %d", cwmp_sess->m_soap.error);
+            VERB("status after serve: %d", cwmp_sess->m_soap.error);
             if (cwmp_sess->m_soap.error == SOAP_EOF)
             {
                 RING(" CWMP processing, EOF");
@@ -860,11 +861,13 @@ cwmp_new_session(int socket, acs_t *acs)
 te_errno 
 cwmp_close_session(cwmp_session_t *sess)
 {
-    RING("close cwmp session on ACS '%s' with CPE '%s'", 
-        sess->acs_owner ? sess->acs_owner->name : "none", 
-        sess->cpe_owner ? sess->cpe_owner->name : "none");
+    assert(NULL != sess);
 
-    /* TODO: investigate, what else should be closed.. */
+    RING("close cwmp session on %s '%s'", 
+        sess->acs_owner ? "ACS" : "CPE", 
+        sess->acs_owner ? sess->acs_owner->name : sess->cpe_owner->name);
+
+    /* TODO: investigate, what else should be closed. */
 
     /* free all heaps, where this session was user of memory */
     mheap_free_user(MHEAP_NONE, sess); 

@@ -285,7 +285,9 @@ extern void acse_remove_channel(channel_t *ch_item);
 
 /** Descriptor of active CWMP session.
  *  Used as user-info in gSOAP internal struct. 
- *  Fields cwmp_session_t::acs_owner and 
+ *  Fields cwmp_session_t::acs_owner and cpe_owner should
+ *  not contain pointers simultaneously, exactly one of them
+ *  should be non-NULL for correct session. 
  */
 typedef struct cwmp_session_t {
     cwmp_sess_state_t    state;     /**< CWMP session state.        */
