@@ -217,6 +217,11 @@ for my $bug_line (<STDIN>)
                     }
                     else
                     {
+                        if (($#tins > 4) and ($iter_no > 3) and ($iter_no < $#tins))
+                        {
+                            $test_links .= ",..." if ($iter_no == 4);
+                            next;
+                        }
                         $test_links .= ",";
                     }
                     $test_links .= "<a href=\"#tin_$tins[$iter_no]\">$iter_no</a>";
