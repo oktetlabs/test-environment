@@ -502,7 +502,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
 #endif
     if ((rc = ta_system(buf)) != 0)
     {
-        ERROR("Command '%s' failed with exit code %d", buf, rc);
+        ERROR("Command '%s' failed with exit code %r", buf, rc);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     
@@ -2727,8 +2727,10 @@ smtp_grab(const char *name)
         return rc;
     }
     
-    if (file_exists(SENDMAIL_CONF_DIR "sendmail.mc") &&
-        (rc = ds_create_backup(SENDMAIL_CONF_DIR, "sendmail.mc", 
+
+    /* in case smtp config file is missing we report
+     * that smtp is not installed */
+    if ((rc = ds_create_backup(SENDMAIL_CONF_DIR, "sendmail.mc", 
                                &sendmail_index)) != 0)
     {
         smtp_release(NULL);
@@ -3028,7 +3030,11 @@ vncserver_grab(const char *name)
     UNUSED(name);
 
     ta_system("rm -rf /tmp/.vnc");
-        
+
+    rc = te_shell_cmd("which vncserver", -1, NULL, NULL, NULL);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
     if (mkdir("/tmp/.vnc", 0700) < 0)
     {
         rc = TE_OS_RC(TE_TA_UNIX, errno);
