@@ -288,7 +288,7 @@ printf("    <td><b>Status</b></td>\n");
 printf("    <td><b>Summary</b></td>\n");
 printf("    <td><b>Product: Component</b></td>\n");
 printf("    <td><b>Keywords");
-printf(": %s", join(', ', @keywords_list)) if (@keywords_list);
+printf(":<br/>%s", join('<br/>', @keywords_list)) if (@keywords_list);
 printf("</b></td>\n");
 printf("  </tr>\n");
 
