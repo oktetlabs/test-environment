@@ -311,11 +311,8 @@ te_cwmp_pack__ParameterValueStruct(const cwmp__ParameterValueStruct *src,
     {
         case SOAP_TYPE_string:
         case SOAP_TYPE_xsd__anySimpleType:
-            CWMP_PACK_LEAF(string, Value);
-            break;
         case SOAP_TYPE_SOAP_ENC__base64:
-            WARN("%s(): TODO, base64 should be implemented", __FUNCTION__);
-            /* TODO */
+            CWMP_PACK_LEAF(string, Value);
             break;
         case SOAP_TYPE_time:
             CWMP_PACK_LEAF(time, Value);
@@ -585,6 +582,74 @@ te_cwmp_pack__DeleteObjectResponse(const _cwmp__DeleteObjectResponse *src,
     CWMP_PACK_ROW(sizeof(*src)); 
     return packed_length;
 }
+
+
+ssize_t
+te_cwmp_pack__GetOptions(const _cwmp__GetOptions *src,
+                         void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__GetOptions);
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, OptionName);
+    return packed_length;
+}
+
+ssize_t
+te_cwmp_pack__OptionStruct(const cwmp__OptionStruct *src,
+                           void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(cwmp__OptionStruct);
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, OptionName);
+
+    if (NULL != src->ExpirationDate)
+    {
+        WARN("pack OptionStruct: TODO pack ExpirationData");
+        dst->ExpirationDate = NULL;
+    }
+    return packed_length;
+}
+
+CWMP_PACK_LIST_FUNC(OptionList, OptionStruct)
+
+ssize_t
+te_cwmp_pack__GetOptionsResponse(const _cwmp__GetOptionsResponse *src,
+                                 void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__GetOptionsResponse);
+    CWMP_PACK_ROW(sizeof(*src));
+    CWMP_PACK_LEAF(OptionList, OptionList_);
+
+    return packed_length;
+}
+
+CWMP_PACK_LIST_FUNC(AccessList, string)
+
+ssize_t
+te_cwmp_pack__SetParameterAttributesStruct(
+            const cwmp__SetParameterAttributesStruct *src,
+            void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(cwmp__SetParameterAttributesStruct);
+
+    CWMP_PACK_ROW(sizeof(*src));
+
+    if (NULL != src->Name)
+    {
+        dst->Name = msg;
+        msg += sizeof(void*);
+        packed_length += sizeof(void*);
+
+        CWMP_PACK_LEAF(string, Name[0]);
+
+        dst->Name = (void*)((char*)dst->Name - (char*)dst);
+    }
+    CWMP_PACK_LEAF(AccessList, AccessList_);
+
+    return packed_length;
+}
+
+
 /*
  * ============= UN-PACK methods ================
  */
@@ -699,11 +764,8 @@ te_cwmp_unpack__ParameterValueStruct(void *msg, size_t max_len)
     {
         case SOAP_TYPE_string:
         case SOAP_TYPE_xsd__anySimpleType:
-            CWMP_UNPACK_LEAF(string, Value);
-            break;
         case SOAP_TYPE_SOAP_ENC__base64:
-            WARN("%s(): TODO, base64 should be implemented", __FUNCTION__);
-            /* TODO */
+            CWMP_UNPACK_LEAF(string, Value);
             break;
         case SOAP_TYPE_time:
             CWMP_UNPACK_LEAF(time, Value);
@@ -907,6 +969,34 @@ te_cwmp_unpack__DeleteObjectResponse(void *msg, size_t max_len)
 
 
 ssize_t
+te_cwmp_unpack__GetOptions(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__GetOptions);
+    CWMP_UNPACK_LEAF(string, OptionName);
+    return unpack_size;
+}
+
+ssize_t
+te_cwmp_unpack__OptionStruct(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(cwmp__OptionStruct);
+    CWMP_UNPACK_LEAF(string, OptionName);
+    return unpack_size;
+}
+
+CWMP_UNPACK_LIST_FUNC(OptionList, OptionStruct)
+
+ssize_t
+te_cwmp_unpack__GetOptionsResponse(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__GetOptionsResponse);
+    CWMP_UNPACK_LEAF(OptionList, OptionList_);
+
+    return unpack_size;
+}
+
+
+ssize_t
 te_cwmp_unpack__Fault(void *msg, size_t max_len)
 {
     size_t array_ofs = 0;
@@ -940,7 +1030,26 @@ te_cwmp_unpack__Fault(void *msg, size_t max_len)
 }
 
 
+CWMP_UNPACK_LIST_FUNC(AccessList, string)
 
+ssize_t
+te_cwmp_unpack__SetParameterAttributesStruct(void *msg, size_t max_len)
+{
+    size_t f;
+    CWMP_UNPACK_VARS(cwmp__SetParameterAttributesStruct);
+
+    f = (size_t)res->Name;
+    if (0 != f)
+    {
+        res->Name = msg + f;
+        CWMP_UNPACK_LEAF(string, Name[0]);
+    }
+    else
+        res->Name = NULL;
+    CWMP_UNPACK_LEAF(AccessList, AccessList_);
+
+    return unpack_size;
+}
 
 
 /*
@@ -963,10 +1072,13 @@ cwmp_pack_call_data(cwmp_data_to_cpe_t src,
         case CWMP_RPC_upload:
         case CWMP_RPC_schedule_inform:
         case CWMP_RPC_set_vouchers:
-        case CWMP_RPC_get_options:
             /* TODO */
             RING("%s():%d TODO", __FUNCTION__, __LINE__);
             return 0;
+        case CWMP_RPC_get_options:
+            return te_cwmp_pack__GetOptions(
+                            src.get_options,
+                            msg, len);
         case CWMP_RPC_set_parameter_values:
             return te_cwmp_pack__SetParameterValues(
                             src.set_parameter_values,
@@ -1019,10 +1131,12 @@ cwmp_pack_response_data(cwmp_data_from_cpe_t src,
         case CWMP_RPC_upload:
         case CWMP_RPC_get_queued_transfers:
         case CWMP_RPC_get_all_queued_transfers:
-        case CWMP_RPC_get_options:
             /* TODO */
             RING("%s():%d TODO", __FUNCTION__, __LINE__);
             return 0;
+        case CWMP_RPC_get_options:
+            return te_cwmp_pack__GetOptionsResponse(
+                            src.get_options_r, msg, len);
         case CWMP_RPC_get_rpc_methods:
             return te_cwmp_pack__GetRPCMethodsResponse(
                             src.get_rpc_methods_r, msg, len);
@@ -1085,10 +1199,13 @@ cwmp_unpack_call_data(void *buf, size_t len,
         case CWMP_RPC_upload:
         case CWMP_RPC_schedule_inform:
         case CWMP_RPC_set_vouchers:
-        case CWMP_RPC_get_options:
             /* TODO */
             RING("%s():%d TODO", __FUNCTION__, __LINE__);
             return 0;
+        case CWMP_RPC_get_options:
+            rc = (te_cwmp_unpack__GetOptions(buf, len) > 0) 
+                    ? 0 : TE_EFAIL;  
+            break;
         case CWMP_RPC_set_parameter_values:
             rc = (te_cwmp_unpack__SetParameterValues(buf, len) > 0) 
                     ? 0 : TE_EFAIL;  
@@ -1144,10 +1261,13 @@ cwmp_unpack_response_data(void *buf, size_t len,
         case CWMP_RPC_upload:
         case CWMP_RPC_get_queued_transfers:
         case CWMP_RPC_get_all_queued_transfers:
-        case CWMP_RPC_get_options:
             /* TODO */
             WARN("%s():%d TODO", __FUNCTION__, __LINE__);
             return 0;
+        case CWMP_RPC_get_options:
+            rc = (te_cwmp_unpack__GetOptionsResponse(buf, len) > 0) 
+                    ? 0 : TE_EFAIL;  
+            break;
         case CWMP_RPC_get_rpc_methods:
             rc = (te_cwmp_unpack__GetRPCMethodsResponse(buf, len) > 0)
                     ? 0 : TE_EFAIL;  
