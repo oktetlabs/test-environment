@@ -206,14 +206,7 @@ for my $bug_line (<STDIN>)
                 {
                     if ($iter_no == 1)
                     {
-                        if ($#tins < 4)
-                        {
-                            $test_links .= "&nbsp;[";
-                        }
-                        else
-                        {
-                            $test_links .= " [";
-                        }
+                        $test_links .= "&nbsp;[";
                     }
                     else
                     {
