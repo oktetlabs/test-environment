@@ -112,7 +112,7 @@ main(int argc, char *argv[])
         RING("GetParValues result [%d]: %s", i, buf);
     }
 
-    cwmp_get_values_free(get_values);
+    cwmp_str_array_free(get_values);
 
     TEST_SUCCESS;
 
